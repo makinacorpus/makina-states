@@ -6,6 +6,7 @@ ntp-pkgs:
     - pkgs:
       - ntp
       - ntpdate
+      - libopts25
     - watch_in:
       - mc_proxy: ntp-post-install-hook
     - watch:
