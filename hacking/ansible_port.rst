@@ -1,5 +1,5 @@
-Ansible PORT TODO
-====================
+Ansible PORT TODO (port to `corpusos <https://github.com/corpusops>`_   )
+==================================================================================
 Salt States
 ---------------
 - [x] localsettings/apparmor
@@ -10,15 +10,15 @@ Salt States
 - [x] localsettings/nscd
 - (x] localsettings/sudo
 - [x] localsettings/pkgs/mgr
-- localsettings/pkgs
-- localsettings/editor
-- localsettings/env
-- [x] localsettings/screen
-- localsettings/vim
+- [x] localsettings/golang
 - [x] localsettings/git
-- localsettings/sysctl
-- localsettings/locales
-- localsettings/golang
+- [x] localsettings/screen
+- [x] localsettings/pkgs
+- [x] localsettings/editor
+- [x] localsettings/env
+- [x] localsettings/sysctl
+- [x] localsettings/locales
+- localsettings/profile
 - localsettings/groups
 - services/base/cron
 - services/base/ssh/server
@@ -123,6 +123,7 @@ Project helpers
 
 Wont be ported yet
 ------------------
+- localsettings/vim
 - localsettings/casperjs
 - localsettings/phantomjs
 - services/firewall/firewalld
