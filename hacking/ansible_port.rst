@@ -18,11 +18,11 @@ Salt States
 - [x] localsettings/env
 - [x] localsettings/sysctl
 - [x] localsettings/locales
-- localsettings/profile
-- localsettings/groups
-- services/base/cron
-- services/base/ssh/server
-- services/base/ssh/client
+- [x] localsettings/profile <- localsettings/shell
+- [x] services/base/cron
+- [x] services/base/ssh/server
+- [x] services/base/ssh/client
+- services/base/ssh/rootkey
 - services/log/rsyslog
 - localsettings/grub
 - localsettings/hostname
@@ -42,10 +42,8 @@ Salt States
 - localsettings/repository_dotdeb
 - localsettings/timezone
 - localsettings/updatedb
-- localsettings/users
 - localsettings/nodejs
 - localsettings/rvm
-- localsettings/shell
 - localsettings/sshkeys
 - localsettings/systemd
 - localsettings/npm
@@ -123,6 +121,7 @@ Project helpers
 
 Wont be ported yet
 ------------------
+- localsettings/groups
 - localsettings/vim
 - localsettings/casperjs
 - localsettings/phantomjs
@@ -130,6 +129,7 @@ Wont be ported yet
 - services/firewall/psad
 - services/firewall/shorewall
 - services/backup/bacula/fd
+- localsettings/users
 - services/backup/users
 - services/backup/rdiff-backup
 - services/monitoring/snmpd
