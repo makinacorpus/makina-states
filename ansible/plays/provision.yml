@@ -1,5 +1,0 @@
----
-- hosts: "{{hosts|default('all')}}"
-  roles: 
-    - role: ms_provision
-      when: 'ms_server_type!=None'
