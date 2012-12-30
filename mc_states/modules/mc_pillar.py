@@ -40,6 +40,7 @@ import datetime
 from salt.utils.pycrypto import secure_password
 from salt.utils.odict import OrderedDict
 import traceback
+from mc_states.api import magicstring
 from mc_states.saltapi import (
     IPRetrievalError, RRError, NoResultError, PillarError)
 six = mc_states.api.six
@@ -1437,6 +1438,36 @@ def rrs_mx_for(domain, ttl=PILLAR_TTL):
     return _dorrs_mx_for(domain)
 
 
+def get_nameserver_exposed(domain, server, nstype=None):
+    '''
+    From a mapped name or a nameserver real name
+    return the name of the nameserver if exposed
+    or None in othercase
+    '''
+    nss_conf = query('dns_servers', {})
+    ns_servers = get_nss_for_zone(domain)
+    ns = server
+    for fmapped, target in six.iteritems(nss_conf.get('map', {})):
+        if target == ns:
+            ns = fmapped
+            break
+    if nstype is None:
+        if ns in ns_servers['master']:
+            nstype = 'master'
+        elif ns in ns_servers['slaves']:
+            nstype = 'slave'
+    if nstype == 'master':
+        default_exposed = not ns_servers['slaves']
+    else:
+        default_exposed = True
+    domain_exposed = nss_conf.get(domain, {}).get('exposed', {})
+    default_exposed = nss_conf.get('default', {}).get('exposed', {})
+    exposed = domain_exposed.get(ns, default_exposed.get(ns, default_exposed))
+    if not exposed:
+        ns = None
+    return ns
+
+
 def rrs_ns_for(domain, ttl=PILLAR_TTL):
     '''
     Return all configured NS records for a domain
@@ -1444,14 +1475,18 @@ def rrs_ns_for(domain, ttl=PILLAR_TTL):
     def _dorrs_ns_for(domain):
         rrs_ttls = __salt__[__name + '.query']('rrs_ttls', {})
         all_rrs = OrderedDict()
-        servers = get_nss_for_zone(domain)
-        slaves = servers['slaves']
-        if not slaves:
-            rrs = all_rrs.setdefault(domain, [])
-            rrs.append(
-                rr_entry('@', ["{0}.".format(servers['master'])],
-                         rrs_ttls, record_type='NS'))
-        for ns_map, fqdn in slaves.items():
+        ns_servers = get_nss_for_zone(domain)
+        slaves = ns_servers['slaves']
+        servers = {}
+        ns_master = get_nameserver_exposed(domain, ns_servers['master'])
+        if ns_master:
+            servers[ns_master] = ns_master
+        for dom, domain_data in six.iteritems(slaves):
+            # search for subdomains, if not handled
+            ns_slave = get_nameserver_exposed(domain, dom)
+            if ns_slave:
+                servers[ns_slave] = ns_slave
+        for ns_map, fqdn in six.iteritems(servers):
             # ensure NS A mapping is there if it is on same domain
             if fqdn.startswith(domain):
                 ip = ips_for(fqdn)
@@ -4006,16 +4041,23 @@ def json_pillars(id_, pillar=None, raise_error=True, *args, **kw):
             for i in [a
                       for a in os.listdir(pdir)
                       if a.endswith('.json')]:
-                # do not load cache pillar on controller, we will rely here on
-                # mc_pillar and other ext_pillars directly
-                sanei = re.sub('[.-_]', '', i)
-                if has_db() and 'makinastates' in sanei.lower():
-                    continue
                 try:
                     pf = os.path.join(pdir, i)
                     with open(pf) as fic:
-                        data = _s['mc_utils.dictupdate'](
-                            data, json.loads(fic.read()))
+                        pillar_data = json.loads(fic.read())
+                        # do not load cache pillar on controller, we will rely here on
+                        # mc_pillar and other ext_pillars directly
+                        sanei = re.sub('[.-_]', '', i)
+                        if has_db():
+                            for key in pillar_data:
+                                if "{0}".format(
+                                    magicstring(key).replace('-', '')
+                                ).startswith('makinastates'):
+                                    gid = pillar_data.get('mc_pillar.generated_by',
+                                                          __opts__['id'])
+                                    if gid == __opts__['id']:
+                                        continue
+                        data = _s['mc_utils.dictupdate'](data, pillar_data)
                 except (IOError, ValueError):
                     pass
     data = _s['mc_utils.unicode_free'](data)
@@ -4112,6 +4154,7 @@ def ext_pillar_do(id_, pillar=None, raise_error=True, *args, **kw):
             # only dictupdate if there is key overlay
             subpillar = _s[callback](id_)
             data = dictupdate(data, subpillar)
+            data['mc_pillar.generated_by'] = __opts__['id']
         except Exception, ex:
             trace = traceback.format_exc()
             msg = 'ERROR in mc_pillar: {0}/{1}'.format(callback, id_)
@@ -4332,12 +4375,17 @@ def get_masterless_makinastates_groups(host, pillar=None):
     mpref = 'makina-states.services.backup.burp.server'
     if pillar.get(mpref, False):
         groups.add('burp_servers')
+    mpref = 'makina-states.services.dns.slapd'
+    if pillar.get(mpref, False):
+        groups.add('sldapd')
     mpref = 'makina-states.services.dns.bind.is_master'
     if pillar.get(mpref, False):
         groups.add('dns_masters')
+        groups.add('dns_bind')
     mpref = 'makina-states.services.dns.bind.is_slave'
     if pillar.get(mpref, False):
         groups.add('dns_slaves')
+        groups.add('dns_bind')
     if True in [('dns.bind.servers' in a) for a in pillar]:
         groups.add('dns')
     if target:

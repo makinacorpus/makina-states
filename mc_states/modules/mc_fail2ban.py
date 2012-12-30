@@ -96,41 +96,38 @@ def settings():
     def _settings():
         _s = __salt__
         _g = _s['mc_utils.assert_good_grains'](__grains__)
-        shorewall = _s['mc_shorewall.settings']()
         services_registry = _s['mc_services.registry']()
-        firewalld = _s['mc_firewalld.settings']()
         banaction = 'iptables'
         if (
             services_registry['has']['firewall.ms_iptables']
         ):
             banaction = 'iptables'
-        elif (
-            (
-                services_registry['has']['firewall.shorewall'] and
-                shorewall['shw_enabled']
-            ) and (
-                os.path.exists('/usr/bin/shorewall') or
-                os.path.exists('/sbin/shorewall') or
-                os.path.exists('/usr/sbin/shorewall') or
-                os.path.exists('/usr/bin/shorewall') or
-                os.path.exists('/usr/local/sbin/shorewall') or
-                os.path.exists('/usr/local/bin/shorewall')
-            )
-        ):
-            banaction = 'shorewall'
-        if (
-            services_registry['has']['firewall.firewalld']
-        ) and (
-            os.path.exists('/usr/sbin/firewalld') or
-            os.path.exists('/sbin/firewalld') or
-            os.path.exists('/usr/sbin/firewalld') or
-            os.path.exists('/usr/bin/firewalld') or
-            os.path.exists('/usr/local/sbin/firewalld') or
-            os.path.exists('/usr/local/bin/firewalld')
-        ) and (
-            not firewalld.get('permissive_mode')
-        ):
-            banaction = 'firewallcmd-ipset'
+        elif services_registry['has']['firewall.shorewall']:
+            shorewall = _s['mc_shorewall.settings']()
+            if (
+                shorewall['shw_enabled'] and (
+                    os.path.exists('/usr/bin/shorewall') or
+                    os.path.exists('/sbin/shorewall') or
+                    os.path.exists('/usr/sbin/shorewall') or
+                    os.path.exists('/usr/bin/shorewall') or
+                    os.path.exists('/usr/local/sbin/shorewall') or
+                    os.path.exists('/usr/local/bin/shorewall')
+                )
+            ):
+                banaction = 'shorewall'
+        elif services_registry['has']['firewall.firewalld']:
+            firewalld = _s['mc_firewalld.settings']()
+            if (
+                not firewalld.get('permissive_mode') and (
+                    os.path.exists('/usr/sbin/firewalld') or
+                    os.path.exists('/sbin/firewalld') or
+                    os.path.exists('/usr/sbin/firewalld') or
+                    os.path.exists('/usr/bin/firewalld') or
+                    os.path.exists('/usr/local/sbin/firewalld') or
+                    os.path.exists('/usr/local/bin/firewalld')
+                )
+            ):
+                banaction = 'firewallcmd-ipset'
         locs = _s['mc_locations.settings']()
         destmail = 'root@localhost'
         if 'fqdn' in _g:

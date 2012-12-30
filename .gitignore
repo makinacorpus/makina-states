@@ -89,6 +89,7 @@ boot_salt_top
 /etc/masterless_pillars/
 /ansible/**/*.retry
 /etc/ansible/inventories
+/etc/ansible/*_inventories/
 /salt/_modules/
 /salt/_pillar/
 *.retry

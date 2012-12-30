@@ -386,7 +386,7 @@ get_ansible_url() {
 }
 
 get_ansible_branch() {
-    get_default_knob ansible_branch "${ANSIBLE_BRANCH}" "stable-2.0"
+    get_default_knob ansible_branch "${ANSIBLE_BRANCH}" "stable-2.2"
 }
 
 get_ms_url() {
@@ -1093,6 +1093,7 @@ setup_virtualenv() {
         if [ "x${install_git}" != "x" ]; then
             ${SED} -r \
                 -e "s#^\# (-e.*__(SALT|ANSIBLE))#\1#g" \
+                -e "s#__WHOAMI__#$(whoami)#g" \
                 -e "s#__SALT_URL__#$(get_salt_url)#g" \
                 -e "s#__SALT_BRANCH__#$(get_salt_branch)#g" \
                 -e "s#__ANSIBLE_URL__#$(get_ansible_url)#g" \
@@ -1170,6 +1171,7 @@ reconfigure() {
             synchronize_code --no-deps
         fi
     fi
+    chmod 700 "${SALT_MS}/etc" "${SALT_MS}/pillar"
     local ansible_localhost="${CONF_ROOT}/ansible/inventories/local"
     overwrite="
     ${CONF_PREFIX}/minion.d/01_local.conf
@@ -1193,6 +1195,7 @@ reconfigure() {
         then
             "${SED}" -i -r \
                 -e "s/__MS_MINIONID__/$mid/g" \
+                -e "s|__WHOAMI__|$(whoami)|g" \
                 -e "s|__MS_PREFIX__|${PREFIX}|g" \
                 -e "s|__MS_MS__|${SALT_MS}|g" \
                 -e "s|__MS_NODETYPE__|$(get_nodetype)|g" \

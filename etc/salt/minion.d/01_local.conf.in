@@ -1,4 +1,5 @@
 makina-states.nodetypes.__MS_NODETYPE__: true
+user: __WHOAMI__
 id: __MS_MINIONID__
 file_roots:
   base:

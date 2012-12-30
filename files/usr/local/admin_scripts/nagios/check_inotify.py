@@ -46,7 +46,7 @@ def get_container(pid):
             if 'lxc' in content:
                 # 9:blkio:NAME
                 lxc = content.split('\n')[0].split(':')[-1]
-    if '/lxc' in lxc:
+    if '/lxc/' in lxc:
         lxc = lxc.split('/lxc/', 1)[1]
     if lxc == 'MAIN_HOST' and os.path.isfile(envf):
         with open(envf) as fic:

@@ -94,7 +94,7 @@ def settings():
             'defaults': {'extra_opts': '', 'enabled': '1'},
             'crt_dir': ssl['config_dir'] + '/certs',
             'ssl': {
-                  'frontend_bind_options': "crt {main_cert} crt {crt_dir}",
+                  'frontend_bind_options': "crt '{main_cert}' crt {crt_dir}",
                   'bind_options': "no-sslv3 no-tls-tickets",
                   'server_bind_options': "no-sslv3 no-tls-tickets",
                   'bind_ciphers': CIPHERS,

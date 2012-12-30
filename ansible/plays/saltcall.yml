@@ -10,7 +10,7 @@
 #       -e "function=cmd.run saltargs='cmd=\"ls /\" python_shell=True'"
 
 - hosts: "{{hosts|default('all')}}"
-  roles: [makinastates_pillar] 
+  roles: [makinastates_pillar]
 
 - hosts: "{{hosts|default('all')}}"
   tasks:
@@ -18,6 +18,6 @@
             salt-call
             {{function|default('state.sls')}}
             {{saltargs|default('')}}
-      saltcall: 
-        function: "{{function|default('state.sls')}}" 
-        args: "{{saltargs|default('')}}" 
+      saltcall:
+        function: "{{function|default('state.sls')}}"
+        args: "{{saltargs|default('')}}"

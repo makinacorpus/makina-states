@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-for i in var/cache/salt var/lib/docker var/lib/lxc;do
+mountpoints="var/cache/salt var/lib/docker var/lib/lxc"
+mountpoints="var/lib/docker var/lib/lxc"
+for i in $mountpoints;do
  orig="/srv/mountpoints/${i//\//_}"
  dest="/$i"
  mkdir -p "$orig" "$dest"

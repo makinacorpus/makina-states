@@ -6,3 +6,10 @@
     dest={{makinastates_dest}}/pillar/private.pillar.d/makinastates.json
     mode=0600
   tags: [makinastates_pillar]
+- name: cleanup cache files
+  file:
+    path: "{{item}}"
+    state: absent
+  with_items:
+    - "{{makinastates_dest}}/etc/makina-states/makina_projects.pack"
+    - "{{makinastates_dest}}/etc/makina-states/disk_cache.pack"
