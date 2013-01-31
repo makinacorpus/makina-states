@@ -127,8 +127,7 @@ def settings():
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        grains = __grains__
-        pillar = __pillar__
+        _g, _s, _p = __grains__, __salt__, __pillar__
         pkgs = __salt__['mc_pkgs.settings']()
         dist = pkgs['lts_dist']
         defaultPgVersion = '9.6'
@@ -188,15 +187,15 @@ def settings():
         if not defaultVersions:
             defaultVersions.append(defaultPgVersion)
 
-        pgSettings = __salt__['mc_utils.defaults'](
+        pgSettings = _s['mc_utils.defaults'](
             PREFIX, {
                 'pgDbs': {},
                 'postgresqlUsers': {},
                 'dist': dist,
                 'user': 'postgres',
                 'version': defaultPgVersion,
-                'defaultPgVersion': defaultPgVersion,
                 'versions': defaultVersions,
+                'defaultPgVersion': defaultPgVersion,
                 'encoding': 'utf8',
                 'locale': 'fr_FR.UTF-8',
                 'postgis_db': 'postgis',
@@ -266,7 +265,7 @@ def settings():
             scripts =  'postgresql-{0}-postgis-scripts'.format(version)
             if scripts not in postgis_pkgs:
                 postgis_pkgs.append(scripts)
-            if grains['os_family'] in ['Debian']:
+            if _g['os_family'] in ['Debian']:
                 for pkgs, candidates in [
                     [client_pkgs, ['postgresql-client-{0}'.format(version)]],
                     [packages, ['postgresql-{0}',
@@ -282,8 +281,7 @@ def settings():
                              'postgis': postgis,
                              'client_pkgs': client_pkgs,
                              'postgis_pkgs': postgis_pkgs}
-        second_round = __salt__['mc_utils.defaults'](
-            PREFIX, data_second_round)
+        second_round = _s['mc_utils.defaults'](PREFIX, copy.deepcopy(data_second_round))
         for i in data_second_round:
             pgSettings[i] = second_round[i]
 
@@ -293,7 +291,7 @@ def settings():
             pgconf = pgSettings['pg_conf'].setdefault(
                 ver, OrderedDict())
             pgconf.setdefault('port', dport + i)
-            pgSettings['pg_conf'][ver] = __salt__[
+            pgSettings['pg_conf'][ver] = _s[
                 'mc_utils.dictupdate'](
                     copy.deepcopy(dpgconf), pgconf)
         return pgSettings
