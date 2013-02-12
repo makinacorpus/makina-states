@@ -129,28 +129,6 @@ def settings():
     def _settings():
         grains = __grains__
         pillar = __pillar__
-        #
-        # PostGRESQL:  (services.db.postgresql)
-        # default postgresql/ grains configured databases (see service doc)
-        #
-        pgDbs = {}
-        for dbk, data in pillar.items():
-            if dbk.endswith('-makina-postgresql'):
-                db = data.get('name', dbk.split('-makina-postgresql')[0])
-                pgDbs.update({db: data})
-        #
-        # default postgresql/ grains configured users (see service doc)
-        #
-        postgresqlUsers = {}
-        for userk, data in pillar.items():
-            if userk.endswith('-makina-services-sql-user'):
-                userk = data.get(
-                    'name',
-                    userk.replace('-makina-services-postgresql-user', ''))
-                if data.get('groups', None):
-                    if isinstance(data['groups'], basestring):
-                        data['groups'] = data['groups'].split(',')
-                postgresqlUsers.update({userk: data})
         pkgs = __salt__['mc_pkgs.settings']()
         dist = pkgs['lts_dist']
         defaultPgVersion = '9.6'
@@ -212,6 +190,8 @@ def settings():
 
         pgSettings = __salt__['mc_utils.defaults'](
             PREFIX, {
+                'pgDbs': {},
+                'postgresqlUsers': {},
                 'dist': dist,
                 'user': 'postgres',
                 'version': defaultPgVersion,
@@ -316,8 +296,6 @@ def settings():
             pgSettings['pg_conf'][ver] = __salt__[
                 'mc_utils.dictupdate'](
                     copy.deepcopy(dpgconf), pgconf)
-        pgSettings['pgDbs'] = pgDbs
-        pgSettings['postgresqlUsers'] = postgresqlUsers
         return pgSettings
     return _settings()
 
