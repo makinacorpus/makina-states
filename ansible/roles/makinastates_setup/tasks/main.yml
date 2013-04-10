@@ -1,7 +1,15 @@
 ---
 - name: run makina-states setup
   shell: |
-         {{makinastates_dest}}/bin/boot-salt.sh -C \
+         c_args=""
+         if [ -e {{makinastates_dest}}/bin/boot-salt2.sh  ];then
+           sc="{{makinastates_dest}}/bin/boot-salt2.sh"
+         else
+           sc="{{makinastates_dest}}/bin/boot-salt.sh"
+           c_args="${c_args} {% if makinastates_nodetype %}-n "{{makinastates_nodetype}}" {% endif %}"
+         fi
+         "${sc}" -C \
+         ${c_args} \
           {{(makinastates_repo is not none) | ternary(
             '-g {0}'.format(makinastates_repo), '') }} \
           {{(makinastates_version is not none) | ternary(
