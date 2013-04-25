@@ -1,0 +1,36 @@
+---
+- name: install prerequisites
+  package:
+    name: "{{item}}"
+    state: latest
+  with_items: [ntp, ntpdate, libopts25]
+  tags: ms_services_base_ntpd
+- name: foo
+  tags: ms_services_base_ntpd
+  debug:
+    msg: "{{vars}}"
+- name: configs
+  template:
+    src: templates/{{item.name}}
+    dest: "{{item.name}}"
+    mode: "{{item.mode|default(omit)}}"
+  with_items: "{{ms_ntp_configs}}"
+  tags: ms_services_base_ntpd
+- name: kill
+  shell: /sbin/ntp-kill.sh
+  when: "not ms_ntp_activated|bool"
+  tags: ms_services_base_ntpd
+- name: run
+  shell: /sbin/ntp-sync.sh
+  when: "ms_ntp_activated|bool"
+  tags: ms_services_base_ntpd
+- service:
+    state: restarted
+    name: ntpd
+    enabled: True
+  when: "not ms_ntp_activated|bool"
+- service:
+    state: stopped
+    name: ntpd
+    enabled: false
+  when: "ms_ntp_activated|bool"
