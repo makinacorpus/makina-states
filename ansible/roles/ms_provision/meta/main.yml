@@ -1,2 +1,10 @@
 ---
-dependencies: []
+dependencies:
+  - role: ms_provision_server
+    when: >
+          ms_server_type in [
+          'baremetal',
+          'kvm',
+          'vagrant',
+          'lxccontainer'
+          ]

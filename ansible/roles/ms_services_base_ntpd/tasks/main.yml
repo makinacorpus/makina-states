@@ -5,10 +5,6 @@
     state: latest
   with_items: [ntp, ntpdate, libopts25]
   tags: ms_services_base_ntpd
-- name: foo
-  tags: ms_services_base_ntpd
-  debug:
-    msg: "{{vars}}"
 - name: configs
   template:
     src: templates/{{item.name}}

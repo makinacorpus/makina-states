@@ -12,7 +12,7 @@
 ]
 'ms_ntp_restrict': []
 'ms_ntp_default_all': True
-'ms_ntp_activated': None
+'ms_ntp_activated': True
 'ms_ntp_block_ext': False
 'ms_ntp_ignore': False
 'ms_ntp_kod': True
