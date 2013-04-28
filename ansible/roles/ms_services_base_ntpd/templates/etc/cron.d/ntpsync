@@ -1,1 +1,0 @@
-0 2 * * * root if [ -x /sbin/ntp-sync.sh ];then /sbin/ntp-sync.sh;fi
