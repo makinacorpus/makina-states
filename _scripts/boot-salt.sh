@@ -1093,6 +1093,7 @@ setup_virtualenv() {
         if [ "x${install_git}" != "x" ]; then
             ${SED} -r \
                 -e "s#^\# (-e.*__(SALT|ANSIBLE))#\1#g" \
+                -e "s#__WHOAMI__#$(whoami)#g" \
                 -e "s#__SALT_URL__#$(get_salt_url)#g" \
                 -e "s#__SALT_BRANCH__#$(get_salt_branch)#g" \
                 -e "s#__ANSIBLE_URL__#$(get_ansible_url)#g" \
@@ -1194,6 +1195,7 @@ reconfigure() {
         then
             "${SED}" -i -r \
                 -e "s/__MS_MINIONID__/$mid/g" \
+                -e "s|__WHOAMI__|$(whoami)|g" \
                 -e "s|__MS_PREFIX__|${PREFIX}|g" \
                 -e "s|__MS_MS__|${SALT_MS}|g" \
                 -e "s|__MS_NODETYPE__|$(get_nodetype)|g" \
