@@ -13,7 +13,7 @@
 - name: apparmor_ntp_patch-transfer
   tags: ms_localsettings_apparmor
   copy:
-    src: "templates/usr.sbin.ntpd.patch"
+    src: "../../../../files/etc/apparmor.d/usr.sbin.ntpd.patch"
     dest: /tmp/apparmor.patch
   when: "apparmor_ntp_patch.rc==0"
 - name: apparmor_ntp_patch-apply
@@ -40,7 +40,7 @@
 - name: apparmor_ntp_patch-transfer2
   tags: ms_localsettings_apparmor
   copy:
-    src: "templates/usr.sbin.ntpd.perms.patch"
+    src: "../../../../files/etc/apparmor.d/usr.sbin.ntpd.perms.patch"
     dest: /tmp/apparmor.patch
   when: "apparmor_ntp_patch2.rc==0"
 - name: apparmor_ntp_patch-apply
