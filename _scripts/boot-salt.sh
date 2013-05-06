@@ -1170,6 +1170,7 @@ reconfigure() {
             synchronize_code --no-deps
         fi
     fi
+    chmod 700 "${SALT_MS}/etc" "${SALT_MS}/pillar"
     local ansible_localhost="${CONF_ROOT}/ansible/inventories/local"
     overwrite="
     ${CONF_PREFIX}/minion.d/01_local.conf
