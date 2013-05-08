@@ -40,6 +40,7 @@ import datetime
 from salt.utils.pycrypto import secure_password
 from salt.utils.odict import OrderedDict
 import traceback
+from mc_states.api import magicstring
 from mc_states.saltapi import (
     IPRetrievalError, RRError, NoResultError, PillarError)
 six = mc_states.api.six
@@ -4040,16 +4041,23 @@ def json_pillars(id_, pillar=None, raise_error=True, *args, **kw):
             for i in [a
                       for a in os.listdir(pdir)
                       if a.endswith('.json')]:
-                # do not load cache pillar on controller, we will rely here on
-                # mc_pillar and other ext_pillars directly
-                sanei = re.sub('[.-_]', '', i)
-                if has_db() and 'makinastates' in sanei.lower():
-                    continue
                 try:
                     pf = os.path.join(pdir, i)
                     with open(pf) as fic:
-                        data = _s['mc_utils.dictupdate'](
-                            data, json.loads(fic.read()))
+                        pillar_data = json.loads(fic.read())
+                        # do not load cache pillar on controller, we will rely here on
+                        # mc_pillar and other ext_pillars directly
+                        sanei = re.sub('[.-_]', '', i)
+                        if has_db():
+                            for key in pillar_data:
+                                if "{0}".format(
+                                    magicstring(key).replace('-', '')
+                                ).startswith('makinastates'):
+                                    gid = pillar_data.get('mc_pillar.generated_by',
+                                                          __opts__['id'])
+                                    if gid == __opts__['id']:
+                                        continue
+                        data = _s['mc_utils.dictupdate'](data, pillar_data)
                 except (IOError, ValueError):
                     pass
     data = _s['mc_utils.unicode_free'](data)
