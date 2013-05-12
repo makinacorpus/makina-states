@@ -247,7 +247,9 @@ def settings():
 
         if __grains__.get('os', '') == 'Ubuntu':
             if LooseVersion(__grains__.get('osrelease', '0')) < LooseVersion('16.04'):
-                postgis_pkgs.add('liblwgeom-dev')
+                for p in ['liblwgeom-dev']:
+                    if p not in postgis_pkgs:
+                        postgis_pkgs.append(p)
 
         for version in pgSettings['versions']:
             if LooseVersion(version) >= '9.6':
