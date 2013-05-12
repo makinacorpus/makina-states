@@ -10,27 +10,19 @@ include:
 {% set pkgs = salt['mc_pkgs.settings']() %}
 {% set settings = salt['mc_pgsql.settings']() %}
 
+{% if settings.packages %}
 postgresql-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
-    - pkgs:
-      - python-virtualenv {# noop #}
-      {% if grains['os_family'] in ['Debian'] %}
-      {% for pgver in settings.versions %}
-      - postgresql-{{pgver}}
-      - postgresql-server-dev-{{pgver}}
-      - postgresql-{{pgver}}-pgextwlist
-      {% endfor %}
-      - libpq-dev
-      - postgresql-contrib
-      {% endif %}
-    {% if grains['os_family'] in ['Debian'] %}
+    - pkgs: {{settings.packages}}
     - require:
+      {% if grains['os_family'] in ['Debian'] %}
       - pkgrepo: pgsql-repo
+      {% endif %}
       - pkg: postgresql-pkgs-client
       - mc_proxy: {{orchestrate['base']['prepkg']}}
     - require_in:
       - mc_proxy: {{orchestrate['base']['postpkg']}}
-    {% endif %}
+{% endif %}
 
 postpkg-pgtune:
   file.managed:
