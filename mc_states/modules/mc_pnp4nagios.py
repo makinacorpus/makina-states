@@ -263,7 +263,7 @@ def settings():
                 data['nginx']['ssl_cert'] = cert + chain
         data['nginx']['pnp4nagios']['fastcgi_pass'] = (
             "unix:/var/spool/www/{0}.fpm.sock".format(
-                data['nginx']['domain'].replace('.', '_')
+                data['nginx']['vhost_basename'].replace('.', '_')
             )
         )
 
