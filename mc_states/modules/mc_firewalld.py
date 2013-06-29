@@ -173,8 +173,13 @@ def add_real_interfaces(data=None):
             z = 'rpn'
         elif iface in ['br0', 'eth0', 'em0']:
             z = dz
-        elif iface.startswith('eth') or iface.startswith('em'):
+        elif (
+            iface.startswith('eth') or
+            iface.startswith('em')
+        ):
             z = 'internal'
+        else:
+            z = dz
         if z:
             zone = fzones.setdefault(z, {})
             ifs = zone.setdefault('interfaces', [])
