@@ -1437,6 +1437,36 @@ def rrs_mx_for(domain, ttl=PILLAR_TTL):
     return _dorrs_mx_for(domain)
 
 
+def get_nameserver_exposed(domain, server, nstype=None):
+    '''
+    From a mapped name or a nameserver real name
+    return the name of the nameserver if exposed
+    or None in othercase
+    '''
+    nss_conf = query('dns_servers', {})
+    ns_servers = get_nss_for_zone(domain)
+    ns = server
+    for fmapped, target in six.iteritems(nss_conf.get('map', {})):
+        if target == ns:
+            ns = fmapped
+            break
+    if nstype is None:
+        if ns in ns_servers['master']:
+            nstype = 'master'
+        elif ns in ns_servers['slaves']:
+            nstype = 'slave'
+    if nstype == 'master':
+        default_exposed = not ns_servers['slaves']
+    else:
+        default_exposed = True
+    domain_exposed = nss_conf.get(domain, {}).get('exposed', {})
+    default_exposed = nss_conf.get('default', {}).get('exposed', {})
+    exposed = domain_exposed.get(ns, default_exposed.get(ns, default_exposed))
+    if not exposed:
+        ns = None
+    return ns
+
+
 def rrs_ns_for(domain, ttl=PILLAR_TTL):
     '''
     Return all configured NS records for a domain
@@ -1446,24 +1476,15 @@ def rrs_ns_for(domain, ttl=PILLAR_TTL):
         all_rrs = OrderedDict()
         ns_servers = get_nss_for_zone(domain)
         slaves = ns_servers['slaves']
-        nss_conf = query('dns_servers', {})
-        mapped = nss_conf.get('map', {})
-        default_exposed = nss_conf.get('default',
-                                       {}).get('expose_master', False)
-        exposed = nss_conf.get(domain,
-                               {}).get('expose_master', default_exposed)
         servers = {}
-        if exposed or not slaves:
-            master = ns_servers['master']
-            for fmapped, target in six.iteritems(mapped):
-                if target == master:
-                    master = fmapped
-                    break
-            servers[master] = master
+        ns_master = get_nameserver_exposed(domain, ns_servers['master'])
+        if ns_master:
+            servers[ns_master] = ns_master
         for dom, domain_data in six.iteritems(slaves):
             # search for subdomains, if not handled
-            servers[dom] = domain_data
-
+            ns_slave = get_nameserver_exposed(domain, dom)
+            if ns_slave:
+                servers[ns_slave] = ns_slave
         for ns_map, fqdn in six.iteritems(servers):
             # ensure NS A mapping is there if it is on same domain
             if fqdn.startswith(domain):
