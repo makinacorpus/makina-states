@@ -141,18 +141,10 @@ def registry():
                 'cache.memcached': {'active': False},
                 'virt.docker-shorewall': {'active': False},
                 'virt.virtualbox': {'active': False},
-                'virt.kvm': {'active': vagrantvm},
-                'virt.lxc': {'active': vagrantvm},
-                'virt.docker': {'active': vagrantvm},
+                'virt.kvm': {'active': False},
+                'virt.lxc': {'active': False},
+                'virt.docker': {'active': False},
                 'virt.lxc-shorewall': {'active': False}}
-        nodetypes_registry = __salt__['mc_nodetypes.registry']()
-        if 'laptop' in nodetypes_registry['actives']:
-            data.update({
-                'backup.burp.client': {'active': true},
-                'virt.virtualbox': {'active': true},
-                'virt.docker': {'active': true},
-                'virt.lxc': {'active': true},
-                'virt.kvm': {'active': true}})
         data = __salt__[
             'mc_macros.construct_registry_configuration'
         ](__name, defaults=data)
