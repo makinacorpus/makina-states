@@ -2,6 +2,26 @@
 set -xe
 ip="${1}"
 die(){ echo "$@" >&2 ; exit 1; }
+is_container() {
+    if cat -e /proc/1/cgroup 2>/dev/null|egrep -q 'docker|lxc'; then
+        return 0
+    else
+        return 1
+    fi
+}
+filter_host_pids() {
+    pids=""
+    if is_container;then
+        pids="${pids} $(echo "${@}")"
+    else
+        for pid in ${@};do
+            if ! egrep -q "/(docker|lxc)/" /proc/${pid}/cgroup 2>/dev/null;then
+                pids="${pids} $(echo "${pid}")"
+            fi
+         done
+    fi
+    echo "${pids}" | sed -e "s/\(^ \+\)\|\( \+$\)//g"
+}
 [[ -z "${@}" ]] && die "NO IPs"
 if ! hash service;then
     SERVICE_PREF_COMMAND=/etc/init.d/
@@ -17,7 +37,7 @@ for ip in $@;do
             /etc/fail2ban/jail.conf
       fi
   fi
-  if [ -e /etc/init.d/fail2ban ];then
+  if test $(filter_host_pids $(ps afux|grep fail2ban|grep -v grep|awk '{print $2}')|wc -w) -gt 0;then
       ${SERVICE_PREF_COMMAND}fail2ban restart
   fi
   if hash shorewall &>/dev/null;then
