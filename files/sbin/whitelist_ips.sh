@@ -3,6 +3,11 @@ set -xe
 ip="${1}"
 die(){ echo "$@" >&2 ; exit 1; }
 [[ -z "${@}" ]] && die "NO IPs"
+if ! hash service;then
+    SERVICE_PREF_COMMAND=/etc/init.d/
+else
+    SERVICE_PREF_COMMAND="service "
+fi
 for ip in $@;do
   if [ -e /etc/fail2ban/jail.conf ];then
       if egrep -q "ignoreip = 127.0.0.1.*${ip}" /etc/fail2ban/jail.conf;then
@@ -13,7 +18,7 @@ for ip in $@;do
       fi
   fi
   if [ -e /etc/init.d/fail2ban ];then
-      /etc/init.d/fail2ban restart
+      ${SERVICE_PREF_COMMAND}fail2ban restart
   fi
   if hash shorewall &>/dev/null;then
     shorewall allow $ip || $(which true)
