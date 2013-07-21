@@ -6,7 +6,7 @@
         mode: 755
         dest: "/sbin/whitelist_ips.sh"
         src: "../../../../files/sbin/whitelist_ips.sh"
-    - name: "run supervision auth"
+    - name: "run whitelist for {{ip}}"
       shell: '/sbin/whitelist_ips.sh {{ip}}'
 # VARIABLES:
 #   - ip
