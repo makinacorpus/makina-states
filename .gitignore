@@ -91,4 +91,3 @@ boot_salt_top
 /etc/ansible/inventories
 /salt/_modules/
 /salt/_pillar/
-*.retry
