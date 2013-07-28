@@ -2789,23 +2789,13 @@ def get_supervision_objects_defs(id_):
             if host not in parents:
                 parents.append(host)
             # set the local ip for snmp and ssh
-            # case of VMs running along side the supervision node
-            # and natted from the public internet
-            # we in this case access the VMS via their private network IP
             if vm_parent == host:
                 ssh_host = snmp_host = 'localhost'
                 eext_pillar = __salt__['mc_cloud_vm.vm_extpillar'](vm)
                 ssh_host = snmp_host = eext_pillar['ip']
             # we can access sshd and snpd on cloud vms
             # thx to special port mappings
-            # ONLYIF
-            #   - the vms are not in the same network of the supervision node
-            #   - the vms are not publicly routable
-            if (
-                is_cloud_vm(vm) and
-                vt in ['lxc'] and
-                ((vm_parent != host and tipaddr == host_ip))
-            ):
+            if is_cloud_vm(vm) and (vm_parent != host) and vt in ['lxc']:
                 ssh_port = (
                     __salt__['mc_cloud_compute_node.get_ssh_port'](vm))
                 snmp_port = (
@@ -2813,13 +2803,10 @@ def get_supervision_objects_defs(id_):
             no_common_checks = vdata.get('no_common_checks', False)
             if tipaddr == host_ip and vt in ['lxc']:
                 no_common_checks = True
-            cloud_vm_attrs = query('cloud_vm_attrs')
-            np = cloud_vm_attrs.get('network_profile', {})
-            other_ips = []
-            if np:
-                other_ips = [a['ipv4'] for ifc, a in six.iteritems(np)
-                             if ifc not in ['eth0']]
-
+            other_ips = [a.get('ip', None)
+                         for a in query('cloud_vm_attrs').get(
+                             vm, {}).get('additional_ips', [])
+                         if a.get('ip', None)]
             if (
                 tipaddr in other_ips and
                 tipaddr != host_ip and
