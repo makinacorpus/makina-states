@@ -5,6 +5,7 @@
 #}
 {% set pkgsettings = salt['mc_pkgs.settings']()%}
 {% set locs = salt['mc_locations.settings']()%}
+{% set settings = salt['mc_nodejs.settings']()%}
 include:
   - makina-states.localsettings.nodejs.hooks
 {%  if grains['os'] in ['Ubuntu'] -%}
@@ -22,14 +23,24 @@ nodejs-repo-old:
     - watch_in:
       - mc_proxy: nodejs-post-system-install
 nodejs-repo:
+  file.absent:
+    - name: {{locs.conf_dir}}/apt/sources.list.d/nodejs_c.list
+    - onlyif: |
+              set -e
+              test -e {{locs.conf_dir}}/apt/sources.list.d/nodejs_c.list
+              grep -qv '{{settings.repo}} ' {{locs.conf_dir}}/apt/sources.list.d/nodejs_c.list
+    - watch:
+      - file: nodejs-repo-old
+      - mc_proxy: nodejs-pre-system-install
   pkgrepo.managed:
     - name: nodejs
     - humanname: Node.js PPA
-    - name: deb https://deb.nodesource.com/node {{pkgsettings.dist}} main
+    - name: deb https://deb.nodesource.com/{{settings.repo}} {{pkgsettings.dist}} main
     - dist: {{pkgsettings.dist}}
     - file: {{locs.conf_dir}}/apt/sources.list.d/nodejs_c.list
     - key_url: "https://deb.nodesource.com/gpgkey/nodesource.gpg.key"
     - watch:
+      - file: nodejs-repo
       - mc_proxy: nodejs-pre-system-install
 {% endif %}
 nodejs-pkgs:
