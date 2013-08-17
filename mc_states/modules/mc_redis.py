@@ -49,7 +49,7 @@ def settings():
         pw = redis_reg.setdefault(
             'password', __salt__['mc_utils.generate_password']())
         locs = __salt__['mc_locations.settings']()
-        daemonize = 'yes'
+        daemonize = 'no'
         if __salt__['mc_nodetypes.is_docker']():
             daemonize = 'no'
         data = __salt__['mc_utils.defaults'](
