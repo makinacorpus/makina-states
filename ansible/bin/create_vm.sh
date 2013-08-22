@@ -59,6 +59,6 @@ fi
 if [[ -n "${no_vm}" ]];then
     echo "Skip vm $cn setup"
 else
-    ANSIBLE_TARGETS="$cn,$vm" bin/ansible-playbook -vvvvv  ansible/plays/cloud/create_container.yml -e "lxc_from_container=$vm_tmpl"
+    ANSIBLE_TARGETS="$cn,$vm" bin/ansible-playbook -vvvvv  ansible/plays/cloud/create_container.yml -e "lxc_from_container=$vm_tmpl" $vm_args_create
 fi
 # vim:set et sts=4 ts=4 tw=80:
