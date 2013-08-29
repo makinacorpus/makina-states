@@ -23,7 +23,7 @@ Prerequisite
 
 Install a new salt-managed box
 ---------------------------------
-ON A DEV BOX
+On a dev box
 ++++++++++++++++++++++++++++++++++++++++++
 - Run the install buildout::
 
