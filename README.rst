@@ -38,9 +38,9 @@ ON A DEV BOX
 
 - You ll have then a saltmaster/minion waiting for insttructions, up to you to mangle a top.sls to start from
 
-On A MAKINA CORPUS SERVER
+On a server
 +++++++++++++++++++++++++++
-AUTOMATIC
+Scripted
 ~~~~~~~~~~~~
 run the script::
 
@@ -57,7 +57,7 @@ Do any further needed configuration from mastersalt::
     mastersalt 'thisminion' state.show_highstate
     mastersalt 'thisminion' state.highstate
 
-FALLBACK: MANUAL WIRE
+fallback: manual mode
 ~~~~~~~~~~~~~~~~~~~~~~
 - Run the install buildout::
 
@@ -80,7 +80,7 @@ What states can be found in makina-states
 Most states are in ``makina.services``.
 Outstanding features are:
 
-    - Bootstapping our saltstack binaries
+    - Bootstrapping our saltstack binaries
     - Managing lxc containers
     - Managing /etc/hosts
     - Managing network (debian-style)
