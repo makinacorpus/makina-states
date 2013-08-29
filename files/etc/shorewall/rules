@@ -1,0 +1,44 @@
+# ! DO NOT EDIT / MANAGED VIA SALT !
+#
+# Shorewall version 4.0 - Sample Rules File for three-interface configuration.
+# Copyright (C) 2006,2007 by the Shorewall Team
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# See the file README.txt for further details.
+#------------------------------------------------------------------------------------------------------------
+# For information about entries in this file, type "man shorewall-rules"
+######################################################################################################################################################################################
+#ACTION		SOURCE		DEST		PROTO	DEST	SOURCE		ORIGINAL	RATE		USER/	MARK	CONNLIMIT	TIME         HEADERS         SWITCH
+#							PORT	PORT(S)		DEST		LIMIT		GROUP
+{% set rules={} -%}
+{% set default_state='new' -%}
+{% for sid, shorewall in pillar.items() -%}
+  {% if sid.endswith('makina-shorewall') -%}
+    {% set k='rules' -%}
+    {% set cfg = shorewall.get(k, {}) -%}
+    {% for i in cfg-%}
+      {% set section=i.get('section', default_state).upper() -%}
+      {% if section not in rules -%}
+        {% set dummy=rules.update({section: []}) -%}
+      {% endif -%}
+      {% set dummy=rules[section].append(i) -%}
+    {% endfor -%}
+  {% endif -%}
+{% endfor -%}
+{% for key in ['all', 'established', 'related', 'new'] -%}
+  {% set section=key.upper() -%}
+SECTION {{ section }}
+{% for i in rules.get(section, []) -%}
+{% set comment=i.get('comment', '').strip() -%}
+{% if comment -%}
+{{ '\n# ' + comment }}
+{% else -%}
+{{ i['action'] }} {{ i['source'] }} {{ i['dest'] }} {{ i.get('proto', ' ') }} {{ i.get('dport', ' ') }} {{ i.get('sport', ' ') }} {{ i.get('odest', ' ') }} {{ i.get('rate', ' ') }} {{ i.get('user', ' ') }} {{ i.get('mark', ' ') }} {{ i.get('connlimit', ' ') }} {{ i.get('time', ' ') }} {{ i.get('headers', ' ') }} {{ i.get('switch', ' ') }}
+{% endif -%}
+{% endfor -%}
+{% endfor %}
+#LAST LINE -- DO NOT REMOVE

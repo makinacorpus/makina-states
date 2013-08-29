@@ -1,0 +1,56 @@
+# This file describes the network interfaces available on your system
+# and how to activate them. For more information, see interfaces(5).
+# DO NOT EDIT !
+# MANAGED via SALT !
+# The loopback network interface
+auto lo
+iface lo inet loopback
+{% set makinanet={} -%}
+{# lxc configuration has the network configuration inlined in the state -#}
+{# and not in pillar -#}
+{% set dummy=makinanet.update(makina_network) -%}
+{# it can be also done for other states like this -#}
+{% if not makinanet -%}
+{% for k in pillar -%}
+{% if k.endswith('makina-network') -%}
+{% set dummy=makinanet.update(pillar[k]) -%}
+{% endif -%}
+{% endfor -%}
+{% endif -%}
+{% for ifname, ifc in makinanet.items() %}
+{% set auto = ifc.get('auto', '') -%}
+{% set mode = ifc.get('mode', '') %}
+{% set address = ifc.get('address', '') -%}
+{% set netmask = ifc.get('netmask', '') -%}
+{% set gateway = ifc.get('gateway', '') -%}
+{% set dnsservers = ifc.get('dnsservers', '') -%}
+{% if not mode -%}
+{% if address -%}
+{% set mode='static' -%}
+{% else -%}
+{% set mode='dhcp' -%}
+{% endif -%}
+{% endif -%}
+{% if not 'auto' in ifc -%}
+{% if ((mode=='dhcp') or address) -%}
+{% set auto = True -%}
+{% endif -%}
+{% endif -%}      
+{% if auto -%}
+auto {{ ifname }}
+{% endif -%}
+iface {{ ifname }} inet {{ mode -}}
+{% if address %}
+    address {{ address -}}
+{% endif -%}
+{% if netmask %}
+    netmask {{ netmask -}}
+{% endif -%}
+{% if gateway %}
+    gateway {{ gateway -}}
+{% endif -%}
+{% if dnsservers %}
+    dns-nameservers {{ dnsservers -}}
+{% endif -%}
+{% endfor -%}
+

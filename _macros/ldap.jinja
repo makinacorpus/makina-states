@@ -1,0 +1,14 @@
+{% set ldap_pillar = pillar.get('makina_ldap', {}) %}
+{% set ldap_variables = {
+  'ldap_uri':  ldap_pillar.get('ldap_uri', 'ldaps://localhost:636/'),
+  'ldap_base':  ldap_pillar.get('ldap_base', 'dc=company,dc=org'),
+  'ldap_passwd':  ldap_pillar.get('ldap_passwd', 'ou=People,dc=company,dc=org?sub'),
+  'ldap_shadow':  ldap_pillar.get('ldap_shadow', 'ou=People,dc=company,dc=org?sub'),
+  'ldap_group':  ldap_pillar.get('ldap_group', 'ou=Group,dc=company,dc=org?sub'),
+  'ldap_cacert':  ldap_pillar.get('ldap_cacert', ''),
+} %}
+{%- macro set_ldap_variables() -%}
+    {% for i in ldap_variables -%}
+    - {{ i }}: {{ ldap_variables[i] }}
+    {% endfor -%}   
+{%- endmacro -%}

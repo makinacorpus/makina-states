@@ -1,0 +1,26 @@
+{% set package_table = {
+  'Debian': {'salt-master': 'salt-master',
+    'salt-syndic': 'salt-syndic',
+    'salt-minion': 'salt-minion'},
+  'Ubuntu': {'salt-master': 'salt-master',
+    'salt-syndic': 'salt-syndic',
+    'salt-minion': 'salt-minion'},
+  'CentOS': {'salt-master': 'salt-master',
+    'salt-syndic': 'salt-syndic',
+    'salt-minion': 'salt-minion'},
+  'Fedora': {'salt-master': 'salt-master',
+    'salt-syndic': 'salt-syndic',
+    'salt-minion': 'salt-minion'},
+  'RedHat': {'salt-master': 'salt-master',
+    'salt-syndic': 'salt-syndic',
+    'salt-minion': 'salt-minion'},
+  'Gentoo': {'salt-master': 'app-admin/salt',
+    'salt-syndic': 'app-admin/salt',
+    'salt-minion': 'app-admin/salt'}
+} %}
+
+{% if 'package_table' in pillar %}
+    {% set pkgs = pillar['package_table'] %}
+{% elif grains['os'] in package_table %}
+    {% set pkgs = package_table[grains['os']] %}
+{% endif %}
