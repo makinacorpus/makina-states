@@ -3,6 +3,23 @@ saltstates makina tree
 
 .. contents::
 
+What states can be found in makina-states
+-----------------------------------------
+Most states are in ``makina.services``.
+Outstanding features are:
+
+    - Bootstrapping our saltstack binaries
+    - Managing lxc containers
+    - Managing /etc/hosts
+    - Managing network (debian-style)
+    - Managing shorewall
+    - Managing ssh & users
+    - Integrating system with an ldap server
+    - Configuring ntp
+    - Configuring sudo
+    - Configuring git to correctly attack our gitorious
+    - Configuring bacula file daemon
+
 Prerequisite
 ----------------
 - Install those packages::
@@ -75,19 +92,3 @@ fallback: manual mode
 
     salt-key -A
 
-What states can be found in makina-states
------------------------------------------
-Most states are in ``makina.services``.
-Outstanding features are:
-
-    - Bootstrapping our saltstack binaries
-    - Managing lxc containers
-    - Managing /etc/hosts
-    - Managing network (debian-style)
-    - Managing shorewall
-    - Managing ssh & users
-    - Integrating system with an ldap server
-    - Configuring ntp
-    - Configuring sudo
-    - Configuring git to correctly attack our gitorious
-    - Configuring bacula file daemon
