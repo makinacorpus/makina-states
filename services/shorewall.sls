@@ -1,4 +1,4 @@
-# Shoreline Firewall 'shorewall) configuration
+# Shoreline Firewall (shorewall) configuration
 #
 # Configuration is based on pillar information
 # As of all makina states, you can use something in
