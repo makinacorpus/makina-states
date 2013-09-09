@@ -131,7 +131,7 @@
       {% set dummy=settings.update({'ishorewallen': 1}) -%}
     {% endif -%}
   {% endif -%}
-{% endfor -%} 
+{% endfor -%}
 
 shorewall-pkgs:
   pkg.installed:
@@ -145,14 +145,12 @@ shorewall-test-cfg:
 
 shorewall-restart:
   cmd.run:
-    - name: service shorewall restart
+    - name: /etc/rc.local.d/shorewall.sh fromsalt
+    - stateful: True
     - require:
       - pkg: shorewall-pkgs
-
-shorewall-restart:
-  cmd.run:
-    - name: service shorewall restart
     - require:
+      - file: shorewall-rc-local-d
       - pkg: shorewall-pkgs
 
 shorewall-config:
@@ -183,14 +181,18 @@ shorewall-e:
       - shorewall
       - shorewall6
     - enable: False
+    - require_in:
+      - cmd: shorewall-restart
 
 shorewall-d:
   service.disabled:
     - names:
       - shorewall
       - shorewall6
+    - require_in:
+      - cmd: shorewall-restart
 
-# shorewall is not managed via init scripts as we really need 
+# shorewall is not managed via init scripts as we really need
 # everything to be up before firewall to cut the garden off.
 shorewall-rc-local-d:
   file.managed:

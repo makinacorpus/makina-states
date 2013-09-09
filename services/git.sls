@@ -33,3 +33,11 @@ gitorious_base_ssh_configs-append-{{ i }}:
             HostName=gitorious.makina-corpus.net
             Port=2242
 {% endfor %}
+
+global-git-config:
+  file.managed:
+    - name: /etc/gitconfig
+    - source: salt://makina-states/files/etc/gitconfig
+    - mode: 755
+    - template: jinja
+

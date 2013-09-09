@@ -23,6 +23,7 @@ sys-pkgs:
       - smartmontools
       - unzip
       - zip
+      - cronolog
 
 dev-pkgs:
   pkg.installed:
@@ -66,3 +67,8 @@ net-packages:
       - wakeonlan
       - wget
       - whois
+
+salt-pkgs:
+  pkg.installed:
+    - names: 
+      - python-apt 

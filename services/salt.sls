@@ -107,4 +107,28 @@ makina-env-bin:
     - flags: g
 {% endif %}
 
+salt-dirs-perms:
+  file.directory:
+    - names:
+      - /var/log/salt
+      - /etc/salt
+      - /var/run/salt
+      - /var/cache/salt
+      - /srv/salt
+    - user: root
+    - group: root
+    - mode: 700
+    - recurse: [user, group, mode]
+
+salt-logs:
+  file.managed:
+    - names:
+      - /var/log/salt/key
+      - /var/log/salt/master
+      - /var/log/salt/minion
+      - /var/log/salt/syndic.log
+    - mode: 700
+  require:
+    - service: salt-master
+    - service: salt-minion
 

@@ -21,13 +21,6 @@ mastersalt-conf:
     - template: jinja
     - source: salt://makina-states/files/etc/mastersalt/master
 
-mastersalt-salt-bin:
-  file.managed:
-    - name: /usr/bin/mastersalt
-    - source: salt://makina-states/files/usr/bin/mastersalt
-    - mode: 755
-    - makedirs: True
-
 mastersalt-key-bin:
   file.managed:
     - name: /usr/bin/mastersalt-key
@@ -52,4 +45,13 @@ mastersalt-pki:
     - name: /etc/mastersalt/pki/master
     - mode: 700
     - makedirs: True
- 
+
+mastersalt-master-logs:
+  file.managed:
+    - names:
+      - /var/log/salt/key-mastersalt
+      - /var/log/salt/mastersalt
+    - mode: 700
+  require:
+    - service: mastersalt
+

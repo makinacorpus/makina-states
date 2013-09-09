@@ -1,4 +1,5 @@
 include:
+  - makina-states.services.vim
   - makina-states.services.git
   - makina-states.services.users
   - makina-states.services.salt
