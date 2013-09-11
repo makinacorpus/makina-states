@@ -26,27 +26,55 @@ lxc-services-enabling:
       - lxc
       - lxc-net
 
-{% for k, lxc_data in pillar.items() %}
-{% if k.endswith('lxc-server-def')  %}
-{% set lxc_name = lxc_data.get('name', k.split('-lxc-server-def')[0]) %}
-{% set lxc_mac = lxc_data['mac'] %}
-{% set lxc_ip4 = lxc_data['ip4'] %}
-{% set lxc_template = lxc_data.get('template', 'ubuntu') %}
-{% set lxc_netmask = lxc_data.get('netmask', '255.255.255.0') %}
-{% set lxc_gateway = lxc_data.get('gateway', '10.0.3.1') %}
-{% set lxc_dnsservers = lxc_data.get('dnsservers', '10.0.3.1') %}
-{% set lxc_root = lxc_data.get('root', '/var/lib/lxc/' + lxc_name) %}
-{% set lxc_rootfs = lxc_data.get('rootfs', lxc_root + '/rootfs') %}
-{% set lxc_config = lxc_data.get('config', lxc_root + '/config') %}
 
+# as it is often a mount -bind, we must ensure we can attach dependencies there
+# we must can :
+# react before the bind mount
+# react after the bind mount
+# eg you can define your bind root as follow
+# lxc-mount:
+#   mount.mounted:
+#     - require:
+#       - file: lxc-dir
+#     - name: /var/lib/lxc
+#     - device:  /mnt/data
+#     - fstype: none
+#     - mkmnt: True
+#     - opts: bind
+#     - require:
+#       - file: lxc-root
+#     - require_in:
+#       - file: lxc-after-maybe-bind-root
+lxc-root:
+  file.directory:
+    - name: /var/lib/lxc
+
+lxc-after-maybe-bind-root:
+  file.directory:
+    - name: /var/lib/lxc
+  require:
+    - file: lxc-root
+
+{% for k, lxc_data in pillar.items() -%}
+{% if k.endswith('lxc-server-def')  -%}
+{% set lxc_name = lxc_data.get('name', k.split('-lxc-server-def')[0]) -%}
+{% set lxc_mac = lxc_data['mac'] -%}
+{% set lxc_ip4 = lxc_data['ip4'] -%}
+{% set lxc_template = lxc_data.get('template', 'ubuntu') -%}
+{% set lxc_netmask = lxc_data.get('netmask', '255.255.255.0') -%}
+{% set lxc_gateway = lxc_data.get('gateway', '10.0.3.1') -%}
+{% set lxc_dnsservers = lxc_data.get('dnsservers', '10.0.3.1') -%}
+{% set lxc_root = lxc_data.get('root', '/var/lib/lxc/' + lxc_name) -%}
+{% set lxc_rootfs = lxc_data.get('rootfs', lxc_root + '/rootfs') -%}
+{% set lxc_config = lxc_data.get('config', lxc_root + '/config') -%}
 {{ lxc_name }}-lxc:
   cmd.script:
-    - require:
-      - mount: lxc-mount
     - source: salt://makina-states/_scripts/lxc-init.sh
     - name: /srv/salt/.running-lxc-init.sh
     - args: {{ lxc_name }} {{ lxc_template }}
     - stateful: True
+  require:
+    - file: lxc-after-maybe-bind-root
 
 {{ lxc_name }}-lxc-salt-pillar:
   file.directory:
@@ -130,14 +158,14 @@ start-{{ lxc_name }}-lxc-service:
       - file: {{lxc_name}}-lxc-network-cfg
     - name: lxc-start -n {{ lxc_name }} -d && echo changed=false
 
-{% set makinahosts=[] %}
-{% for k, data in pillar.items() %}
-{% if k.endswith('makina-hosts') %}
-{% set dummy=makinahosts.extend(data) %}
-{% endif %}
-{% endfor %}
-{% for host in makinahosts %}
-{% if host['ip'] == '127.0.0.1' %}
+{% set makinahosts=[] -%}
+{% for k, data in pillar.items() -%}
+{% if k.endswith('makina-hosts') -%}
+{% set dummy=makinahosts.extend(data) -%}
+{% endif -%}
+{% endfor -%}
+{% for host in makinahosts -%}
+{% if host['ip'] == '127.0.0.1' -%}
 lxc-{{ lxc_name }}{{ host['ip'].replace('.', '_') }}-{{ host['hosts'].replace(' ', '_') }}-host:
   file.append:
     - require:
@@ -155,5 +183,5 @@ bootstrap-salt-in-{{ lxc_name }}-lxc:
     - require:
       - file: {{ lxc_name }}-lxc-salt
       - cmd: start-{{ lxc_name }}-lxc-service
-{% endif %}
-{% endfor %}
+{% endif -%}
+{%- endfor %}
