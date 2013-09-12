@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+if [[  $1 == "*" ]];then
+    shift
+    salt -c /etc/mastersalt '*' $@
+else
+    salt -c /etc/mastersalt $@
+fi
+# vim:set ft=bash:

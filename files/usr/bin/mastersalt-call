@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+salt-call -c /etc/mastersalt $@
+# vim:set ft=bash:
