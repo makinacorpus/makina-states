@@ -26,7 +26,6 @@ lxc-services-enabling:
       - lxc
       - lxc-net
 
-
 # as it is often a mount -bind, we must ensure we can attach dependencies there
 # we must can :
 # react before the bind mount

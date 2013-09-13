@@ -7,7 +7,13 @@ fi
 i_prereq() {
     apt-get install -y build-essential m4 libtool pkg-config autoconf gettext bzip2 groff man-db automake libsigc++-2.0-dev tcl8.5 git python-dev swig libssl-dev libzmq-dev
 }
-i_prereq
+die_in_error() {
+    ret=$?
+    if [[ $ret != 0 ]];then
+        exit $ret
+    fi 
+}
+i_prereq || die_in_error
 mark="/srv/salt/makina-states/.sbootstrapped"
 if [[ $? == 0 ]];then
     if [[ -f $mark ]];then

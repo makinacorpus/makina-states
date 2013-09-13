@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+cp $0 /tmp/tt
 LXC_NAME="$1"
 LXC_TEMPLATE="$2"
 LXC_PATH="/var/lib/lxc/$LXC_NAME/rootfs"

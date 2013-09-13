@@ -122,6 +122,9 @@
 #         - {action: Invalid(DROP), source: net, dest: all, proto: 'tcp,udp', dport: 25}
 #         - {action: ACCEPT       , source: lxc, dest: fw , proto: 'tcp,udp', dport: 25}
 
+include:
+  - makina-states.services.localservices
+
 {% set settings = {'ishorewallen': 0} %}
 {% for sid in pillar -%}
   {% if sid.endswith('makina-shorewall') -%}
