@@ -1,16 +1,13 @@
 #!/usr/bin/env bash
-cp $0 /tmp/tt
-LXC_NAME="$1"
-LXC_TEMPLATE="$2"
+export LXC_NAME="$1"
+export SALT_BOOT="$2"
 LXC_PATH="/var/lib/lxc/$LXC_NAME/rootfs"
 mark="$LXC_PATH/srv/salt/makina-states/.salt-lxc-bootstrapped"
-bootstrap="makina-states.services.bootstrap"
-if [[ -n $2 ]];then
-    bootstrap="${bootstrap}_${2}"
-fi
+echo there>/tmp/fo1
 if [[ -f $mark ]];then exit 0;fi
+echo there>/tmp/fo2
 if [[ -d "$LXC_PATH" ]];then
-    lxc-attach -n "$LXC_NAME" -- /srv/salt/makina-states/_scripts/boot-salt.sh $2 \
+    lxc-attach -n "$LXC_NAME" -- /srv/salt/makina-states/_scripts/boot-salt.sh SALT_BOOT="$SALT_BOOT"\
     && if [[ $(hostname) == "cloud-admin" ]];then
         mastersalt-key -A -y
     fi

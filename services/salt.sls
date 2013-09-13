@@ -95,8 +95,6 @@ salt-env:
     - require_in:
       - service: salt-master
       - service: salt-minion
-      - service: mastersalt-minion
-#      - service: salt-syndic
 
 {% if grains['os'] == 'Ubuntu' %}
 makina-env-bin:
@@ -117,7 +115,7 @@ salt-dirs-perms:
       - /srv/salt
     - user: root
     - group: root
-    - mode: 700
+    - dir_mode: 0750
     - recurse: [user, group, mode]
 
 salt-logs:

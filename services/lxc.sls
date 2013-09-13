@@ -11,6 +11,10 @@
 #  template: ubuntu (opt)
 #  rootfs: root directory (opt)
 #  config: config path (opt)
+#  salt_bootstrap: bootstrap state to use in salt default "mastersalt"
+#           - server
+#           - mastersalt
+#           - salt
 # and it will create an ubuntu templated lxc host
 
 lxc-pkgs:
@@ -60,6 +64,7 @@ lxc-after-maybe-bind-root:
 {% set lxc_mac = lxc_data['mac'] -%}
 {% set lxc_ip4 = lxc_data['ip4'] -%}
 {% set lxc_template = lxc_data.get('template', 'ubuntu') -%}
+{% set salt_bootstrap = lxc_data.get('salt_bootstrap', 'mastersalt') -%}
 {% set lxc_netmask = lxc_data.get('netmask', '255.255.255.0') -%}
 {% set lxc_gateway = lxc_data.get('gateway', '10.0.3.1') -%}
 {% set lxc_dnsservers = lxc_data.get('dnsservers', '10.0.3.1') -%}
@@ -177,7 +182,7 @@ lxc-{{ lxc_name }}{{ host['ip'].replace('.', '_') }}-{{ host['hosts'].replace(' 
 bootstrap-salt-in-{{ lxc_name }}-lxc:
   cmd.script:
     - source: salt://makina-states/_scripts/lxc-salt.sh
-    - args: {{ lxc_name }} server
+    - args: {{ lxc_name }} {{ salt_bootstrap }}
     - stateful: True
     - require:
       - file: {{ lxc_name }}-lxc-salt

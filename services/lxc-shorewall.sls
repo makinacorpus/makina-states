@@ -2,6 +2,9 @@
 # LXC and shorewall integration, be sure to add
 # lxc guests to shorewall running state
 # upon creation
+# A big sentence to say, restart shorewall
+# after each lxc creation to enable
+# the container network
 #
 include:
   - makina-states.services.shorewall

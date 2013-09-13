@@ -1,3 +1,6 @@
+include:
+  - makina-states.services.salt
+
 mastersalt-minion-conf:
   file.managed:
     - name: /etc/mastersalt/minion
