@@ -64,7 +64,7 @@ lxc-after-maybe-bind-root:
 {% set lxc_mac = lxc_data['mac'] -%}
 {% set lxc_ip4 = lxc_data['ip4'] -%}
 {% set lxc_template = lxc_data.get('template', 'ubuntu') -%}
-{% set salt_bootstrap = lxc_data.get('salt_bootstrap', 'mastersalt') -%}
+{% set salt_bootstrap = lxc_data.get('salt_bootstrap', 'vm') -%}
 {% set lxc_netmask = lxc_data.get('netmask', '255.255.255.0') -%}
 {% set lxc_gateway = lxc_data.get('gateway', '10.0.3.1') -%}
 {% set lxc_dnsservers = lxc_data.get('dnsservers', '10.0.3.1') -%}

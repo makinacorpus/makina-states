@@ -26,6 +26,11 @@ openssh-formulae:
     - require:
       - git: openssh-formulae
 
+makina-states:
+  git.latest:
+    - name: https://github.com/makinacorpus/makina-states.git
+    - target: /srv/salt/makina-states
+
 salt-formulae:
   git.latest:
     - name: http://github.com/saltstack-formulas/salt-formula.git
@@ -75,6 +80,7 @@ salt-master:
       - git: openssh-formulae
       - git: openstack-formulae
       - git: salt-formulae
+      - git: makina-states
       - cmd: salt-modules
 
 salt-minion:
@@ -86,8 +92,14 @@ salt-minion:
     - enable: True
     - watch:
       - file: salt-minion-conf
-
-
+      - service: salt-master
+      - file: salt-master
+      - file: makina-states-dirs
+      - git: openssh-formulae
+      - git: openstack-formulae
+      - git: salt-formulae
+      - git: makina-states
+      - cmd: salt-modules
 
 # disabled, syndic cannot sync files !
 # salt-syndic:
