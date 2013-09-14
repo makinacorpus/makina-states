@@ -16,7 +16,7 @@
     {% endfor%}
   {% endif %}
 {% endfor %}
-{% for id, udata in users.items() %} 
+{% for id, udata in users.items() %}
 {{id}}:
   group.present:
     - name: {{ id }}
@@ -47,7 +47,7 @@
       {%- if grains['os_family'] != 'Debian' %}
       - admin
       - wheel
-      {% endif %} 
+      {% endif %}
 {% endif %}
 {% endif %}
 {% endfor %}

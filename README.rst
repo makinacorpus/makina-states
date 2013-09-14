@@ -28,9 +28,13 @@ If you want to install salt directly on your machine::
 
     export SALT_BOOT=""
 
-If you want to install salt on a vm::
+If you want to install salt on a bare server::
 
     export SALT_BOOT="server"
+
+If you want to install salt on a vm::
+
+    export SALT_BOOT="vm"
 
 If you want to install salt on a server wired to mastersalt::
 
