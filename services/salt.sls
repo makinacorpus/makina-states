@@ -1,3 +1,55 @@
+{% set salt_modules=[
+    '_grains',
+    '_macros',
+    '_modules',
+    '_renderers',
+    '_returners',
+    '_scripts',
+    '_states',] %}
+
+
+makina-states-dirs:
+  file.directory:
+    - names:
+      {% for i in  salt_modules -%}
+      - /srv/salt/{{i}}
+      - /srv/salt/makina-states/{{i}}
+      {% endfor %}
+
+openssh-formulae:
+  git.latest:
+    - name: http://github.com/saltstack-formulas/openssh-formula.git
+    - target: /srv/salt/formulas/openssh
+  file.symlink:
+    - target: /srv/salt/formulas/openssh/openssh
+    - name: /srv/salt/openssh
+    - require:
+      - git: openssh-formulae
+
+salt-formulae:
+  git.latest:
+    - name: http://github.com/saltstack-formulas/salt-formula.git
+    - target: /srv/salt/formulas/salt
+  file.symlink:
+    - target: /srv/salt/formulas/salt/salt
+    - name: /srv/salt/salt
+    - require:
+      - git: salt-formulae
+
+salt-modules:
+  cmd.run:
+    - name: |
+            for i in _states _grains _modules _renderers _returners;do
+              for f in $(find /srv/salt/makina-states/$i -name "*py" -type f);do
+                  ln -vsf "$f" "/srv/salt/$i";
+              done;
+            done;
+
+openstack-formulae:
+  git.latest:
+    - name: https://github.com/kiorky/openstack-salt-states.git
+    - target: /srv/salt/openstack
+
 salt-master-conf:
   file.managed:
     - name: /etc/salt/master
@@ -19,6 +71,11 @@ salt-master:
     - enable: True
     - watch:
       - file: salt-master
+      - file: makina-states-dirs
+      - git: openssh-formulae
+      - git: openstack-formulae
+      - git: salt-formulae
+      - cmd: salt-modules
 
 salt-minion:
   file.managed:
