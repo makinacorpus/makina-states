@@ -14,6 +14,10 @@
 #   ldap_group: ou=Group,dc=company,dc=org?sub
 #   ldap_cacert: /etc/ssl/cacerts/cacert.pem (opt)
 
+
+include:
+  - makina-states.services.nscd
+
 ldap-pkgs:
   pkg.installed:
     - names:
@@ -35,6 +39,8 @@ nslcd:
     - watch:
       - pkg: nslcd
       - file: nslcd
+    - watch_in:
+      - cmd: nscd-restart  
   file.managed:
     - name: /etc/nslcd.conf
     - user: nslcd
@@ -46,15 +52,18 @@ nslcd:
       - pkg: ldap-pkgs
       - file: ldap-cacerts-cert
     {{ set_ldap_variables() }}
+    - watch_in:
+      - cmd: nscd-restart 
 
 # add ldap tonsswitch
-/etc/nsswitch.conf:
+nslcd-nsswitch-conf:
   file.sed:
+    - name: /etc/nsswitch.conf
     - before: 'compat( ldap)*'
     - after: 'compat ldap'
     - limit: '^(passwd|group|shadow):'
     - flags: g
-    - require_in:
+    - watch_in:
       - cmd: nscd-restart
 
 /etc/pam.d/common-session:

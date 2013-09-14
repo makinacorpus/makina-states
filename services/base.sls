@@ -1,10 +1,14 @@
+{% set data=pillar.get('makina_ldap', {}) %}
+{% set ldap_en=data.get('enabled', False) %}
 include:
-  - makina-states.services.bootstrap_mastersalt
+  - makina-states.services.bootstrap_server
   - makina-states.services.localservices
   - makina-states.services.nscd
   - makina-states.services.ntp
   - makina-states.services.ssh
+  {%- if ldap_en %}
   - makina-states.services.ldap
+  {% endif %}
 
 # DONE MINION BY MINION, CANT BE GENERIC
 #  - makina-states.services.shorewall

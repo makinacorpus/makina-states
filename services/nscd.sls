@@ -16,6 +16,8 @@ nscd:
       - cmd: nscd-restart
     - watch:
       - pkg: nscd
-      - pkg: nslcd
       - file: /etc/nsswitch.conf
+
+/etc/nsswitch.conf:
+  file.touch: []
 
