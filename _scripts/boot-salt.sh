@@ -73,6 +73,8 @@ if [[ ! -f "$ROOT/.boot_prereq" ]];then
 fi
 if [[ ! -d "$MS/.git" ]];then
     git clone "$STATES_URL" "$MS" || die_in_error "Failed to download makina-states"
+else
+    git pull
 fi
 cd $MS
 if [[ ! -f "$ROOT/.boot_bootstrap" ]];then
@@ -109,7 +111,6 @@ fi
 if [[ ! -f "$ROOT/.boot_bootstrap_salt" ]];then
     ds=y
     cd $MS
-    git pull
     ps aux|egrep "salt-(master|minion|syndic)" |awk '{print $2}'|xargs kill -9
     ret=$(salt_call --local state.sls $bootstrap)
     if [[ $ret != 0 ]];then
