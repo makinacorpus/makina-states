@@ -13,16 +13,17 @@ salt-git:
     - name: http://github.com/makinacorpus/salt.git
     - target: /srv/salt/makina-states/src/salt
     - rev: remotes/origin/develop
+    - force_checkout: true
 SaltTesting-git:
   git.latest:
     - name: http://github.com/saltstack/salt-testing.git
     - target: /srv/salt/makina-states/src/SaltTesting
-    - rev: remotes/origin/master
+    - force_checkout: true
 m2crypto-git:
   git.latest:
     - name: https://github.com/makinacorpus/M2Crypto.git
     - target: /srv/salt/makina-states/src/m2crypto
-    - rev: remotes/origin/master
+    - force_checkout: true
 
 makina-states-dirs:
   file.directory:
