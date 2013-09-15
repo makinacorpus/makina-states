@@ -11,10 +11,8 @@
 #  template: ubuntu (opt)
 #  rootfs: root directory (opt)
 #  config: config path (opt)
-#  salt_bootstrap: bootstrap state to use in salt default "mastersalt"
-#           - server
-#           - mastersalt
-#           - salt
+#  salt_bootstrap: bootstrap state to use in salt default "vm"
+#           - vm | standalone | server | mastersalt
 # and it will create an ubuntu templated lxc host
 
 lxc-pkgs:

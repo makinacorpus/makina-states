@@ -1,3 +1,6 @@
+include:
+    makina-states.services.users
+
 {% set vimrc_default_users = ['root', 'sysadmin'] %}
 {% if grains['os'] == 'Ubuntu' %}
   {% set dummy = vimrc_default_users.append('ubuntu') %}
