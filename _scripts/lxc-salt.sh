@@ -7,7 +7,7 @@ if [[ -f $mark ]];then exit 0;fi
 if [[ -d "$LXC_PATH" ]];then
     lxc-attach -n "$LXC_NAME" -- /srv/salt/makina-states/_scripts/boot-salt.sh SALT_BOOT="$SALT_BOOT"
     bootret=$?
-    if [[ $ret != 0 ]];then
+    if [[ $bootret != 0 ]];then
         echo "Failed LXC SALT bootstrap for $LXC_NAME"
         exit $bootret
     fi
@@ -22,9 +22,6 @@ if [[ -d "$LXC_PATH" ]];then
     if [[ $bootret == 0 ]];then
         touch $mark
         echo "changed=yes comment='salt bootstrapped in $LXC_NAME'"
-     else
-        echo "there were errors bootstrapping salt !!!"
-        exit $bootret
     fi
 fi
 # vim:set et sts=4 ts=4 tw=80:
