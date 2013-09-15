@@ -78,7 +78,6 @@ lxc-after-maybe-bind-root:
     - source: salt://makina-states/_scripts/lxc-init.sh
     - mode: 750
   cmd.run:
-    - source: salt://makina-states/_scripts/lxc-init.sh
     - name: {{lxc_init}} {{ lxc_name }} {{ lxc_template }}
     - stateful: True
     - require:
@@ -189,8 +188,8 @@ bootstrap-salt-in-{{ lxc_name }}-lxc:
     - name: {{salt_init}}
     - source: salt://makina-states/_scripts/lxc-salt.sh
     - mode: 750
-  cmd.script:
-    - name: {{lxc_init}} {{ lxc_name }} {{ salt_bootstrap }}
+  cmd.run:
+    - name: {{salt_init}} {{ lxc_name }} {{ salt_bootstrap }}
     - stateful: True
     - require:
       - file: bootstrap-salt-in-{{ lxc_name }}-lxc
