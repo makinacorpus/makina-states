@@ -12,6 +12,7 @@
 {% set repos={
   'salt-git': {
     'name': 'http://github.com/makinacorpus/salt.git',
+    'rev': 'develop',
     'target': '/srv/salt/makina-states/src/salt'},
   'SaltTesting-git': {
     'name': 'http://github.com/saltstack/salt-testing.git',
@@ -36,6 +37,7 @@
 } %}
 {% for i, data in repos.items() -%}
 {% set git=data['target']+'/.git'  -%}
+{% set rev=data.get('rev', False) %}
 {{i}}:
 # on next runs as we reset perms on repos, just set filemode=false
 # do not use cwd as if dir does not exist, if will fail the entire state
@@ -46,6 +48,7 @@
   git.latest:
     - name: {{data['name']}}
     - target: {{data['target']}}
+    {% if rev %}- rev: {{rev}}{% endif %}
     - require:
       - cmd: {{i}}
 {% endfor %}
