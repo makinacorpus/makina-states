@@ -32,17 +32,19 @@
     'target': '/srv/salt/makina-states'},
 } %}
 {% for i, data in repos.items() -%}
-# as we reset perms on repos, just set filemode=false
+{% set git=data['target']+'/.git'  %}
 {{i}}:
+# on next runs as we reset perms on repos, just set filemode=false
+# do not use cwd as if dir does not exist, if will fail the entire state
   cmd.run:
-    - name: git config --local core.filemode false
-    - cwd: {{data['target']}}
-    - onlyif: ls -d {{data['target']+'/.git' }} 
+    - name: cd {{data['target']}}  && git config --local core.filemode false
+    - onlyif: ls -d {{git}}
+# on each run, update the code
   git.latest:
     - name: {{data['name']}}
     - target: {{data['target']}}
     - require:
-      - cmd: {{i}} 
+      - cmd: {{i}}
 {% endfor %}
 
 makina-states-dirs:
@@ -99,6 +101,8 @@ salt-master:
       - cmd: salt-modules
       - file: makina-states-dirs
       - file: salt-master
+      - file: l-openssh-formulae
+      - file: l-salt-formulae
       - git: m2crypto
       - git: makina-states
       - git: openssh-formulae
