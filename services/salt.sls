@@ -8,23 +8,49 @@
     '_states',] %}
 
 # Keep those 3 following in sync with buildout
-salt-git:
+{% set repos={
+  'salt-git': {
+    'name': 'http://github.com/makinacorpus/salt.git',
+    'target': '/srv/salt/makina-states/src/salt'},
+  'SaltTesting-git': {
+    'name': 'http://github.com/saltstack/salt-testing.git',
+    'target': '/srv/salt/makina-states/src/SaltTesting'},
+  'm2crypto': {
+    'name': 'https://github.com/makinacorpus/M2Crypto.git',
+    'target': '/srv/salt/makina-states/src/m2crypto'},
+  'salt-formulae': {
+    'name': 'http://github.com/saltstack-formulas/salt-formula.git',
+    'target': '/srv/salt/formulas/salt'},
+  'openssh-formulae': {
+    'name': 'http://github.com/saltstack-formulas/openssh-formula.git',
+    'target': '/srv/salt/formulas/openssh'},
+  'openstack-formulae': {
+    'name': 'https://github.com/kiorky/openstack-salt-states.git',
+    'target': '/srv/salt/openstack'},
+  'makina-states': {
+    'name': 'https://github.com/makinacorpus/makina-states.git',
+    'target': '/srv/salt/makina-states'},
+} %}
+{% for i, data in repos.items() -%}
+{% set force=data.get('force', False) -%}
+{% if force %}
+{{i}}-reset-repo:
+  cmd.run:
+    - name: git reset --hard
+    - cwd: {{data['target']}}
+    - onlyif: ls -d {{data['target']+'/.git' }}
+{% endif %}
+{{i}}:
   git.latest:
-    - name: http://github.com/makinacorpus/salt.git
-    - target: /srv/salt/makina-states/src/salt
-    - rev: remotes/origin/develop
-    - force_checkout: true
-SaltTesting-git:
-  git.latest:
-    - name: http://github.com/saltstack/salt-testing.git
-    - target: /srv/salt/makina-states/src/SaltTesting
-    - force_checkout: true
-    - force: true
-m2crypto-git:
-  git.latest:
-    - name: https://github.com/makinacorpus/M2Crypto.git
-    - target: /srv/salt/makina-states/src/m2crypto
-    - force_checkout: true
+    - name: {{data['name']}}
+    - target: {{data['target']}}
+# as we reset perms on repos, just set filemode=false
+  cmd.run:
+    - name: git config --local core.filemode false
+    - cwd: {{data['target']}}
+    - require:
+      - git: {{i}}
+{% endfor %}
 
 makina-states-dirs:
   file.directory:
@@ -34,25 +60,14 @@ makina-states-dirs:
       - /srv/salt/makina-states/{{i}}
       {% endfor %}
 
-openssh-formulae:
-  git.latest:
-    - name: http://github.com/saltstack-formulas/openssh-formula.git
-    - target: /srv/salt/formulas/openssh
+l-openssh-formulae:
   file.symlink:
     - target: /srv/salt/formulas/openssh/openssh
     - name: /srv/salt/openssh
     - require:
       - git: openssh-formulae
 
-makina-states:
-  git.latest:
-    - name: https://github.com/makinacorpus/makina-states.git
-    - target: /srv/salt/makina-states
-
-salt-formulae:
-  git.latest:
-    - name: http://github.com/saltstack-formulas/salt-formula.git
-    - target: /srv/salt/formulas/salt
+l-salt-formulae:
   file.symlink:
     - target: /srv/salt/formulas/salt/salt
     - name: /srv/salt/salt
@@ -67,11 +82,6 @@ salt-modules:
                   ln -vsf "$f" "/srv/salt/$i";
               done;
             done;
-
-openstack-formulae:
-  git.latest:
-    - name: https://github.com/kiorky/openstack-salt-states.git
-    - target: /srv/salt/openstack
 
 salt-master-conf:
   file.managed:
@@ -96,7 +106,7 @@ salt-master:
       - cmd: salt-modules
       - file: makina-states-dirs
       - file: salt-master
-      - git: m2crypto-git
+      - git: m2crypto
       - git: makina-states
       - git: openssh-formulae
       - git: openstack-formulae
@@ -116,7 +126,7 @@ salt-minion:
       - file: makina-states-dirs
       - file: salt-master
       - file: salt-minion-conf
-      - git: m2crypto-git
+      - git: m2crypto
       - git: makina-states
       - git: openssh-formulae
       - git: openstack-formulae
