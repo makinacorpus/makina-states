@@ -1,20 +1,22 @@
-{% set default_os_mirror='http://foo.com' %}
+{% set default_os_mirrors='http://foo.com' %}
 {% set default_dist='' %}
 {% set default_comps='' %}
 {% set default_url='' %}
 
 {% if grains['os'] == 'Ubuntu' %}
-{% set default_os_mirror='http://archive.ubuntu.com/ubuntu' %}
+{% set default_os_mirrors='http://archive.ubuntu.com/ubuntu' %}
 {% set default_url='http://fr.archive.ubuntu.com/ubuntu' %}
 {% set default_dist=grains.get('lsb_distrib_codename', 'raring') %}
 {% set default_comps= 'main restricted universe multiverse' %}
 {% endif %}
 
-{% set os_mirror=salt['config.get']('os_mirror', default_os_mirror) %}
+{% set default_os_mirrors=salt['config.get']('default_os_mirrors', default_os_mirrors) %}
+{% if grains['os'] == 'Ubuntu' %}
+{% set default_os_mirrors='http://archive.ubuntu.com/ubuntu|'+default_os_mirrors %}
+{% endif %}
 {% set comps=salt['config.get']('apt_comps', default_comps) %}
 {% set mirror=salt['config.get']('apt_mirror', default_url) %}
 {% set dist=salt['config.get']('apt_dist', default_dist) %}
-
 
 {% macro set_packages_repos(root='', suf='', update=True) %}
 # can be adapted to other debian systems, but not the time right now
@@ -35,7 +37,7 @@ remove-default-repos{{suf}}:
     - name: {{root}}/etc/apt/sources.list
     - before: .*
     - after: ''
-    - limit: ({{os_mirror}}|{{mirror}})
+    - limit: ({{default_os_mirrors}}|{{mirror}})
 
 main-repos{{suf}}:
   file.append:
