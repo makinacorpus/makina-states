@@ -7,6 +7,20 @@
     '_scripts',
     '_states',] %}
 
+# Keep those 3 following in sync with buildout
+salt-git:
+  git.latest:
+    - name: http://github.com/makinacorpus/salt.git
+    - target: /srv/salt/makina-states/src/salt
+    - rev: remotes/origin/develop
+SaltTesting-git:
+  git.latest:
+    - name: http://github.com/saltstack/salt-testing.git
+    - target: /srv/salt/makina-states/src/SaltTesting
+m2crypto-git:
+  git.latest:
+    - name: https://github.com/makinacorpus/M2Crypto.git
+    - target: /srv/salt/makina-states/src/m2crypto
 
 makina-states-dirs:
   file.directory:
@@ -75,13 +89,16 @@ salt-master:
   service.running:
     - enable: True
     - watch:
-      - file: salt-master
+      - cmd: salt-modules
       - file: makina-states-dirs
+      - file: salt-master
+      - git: m2crypto-git
+      - git: makina-states
       - git: openssh-formulae
       - git: openstack-formulae
       - git: salt-formulae
-      - git: makina-states
-      - cmd: salt-modules
+      - git: salt-git
+      - git: SaltTesting-git
 
 salt-minion:
   file.managed:
@@ -91,15 +108,18 @@ salt-minion:
   service.running:
     - enable: True
     - watch:
-      - file: salt-minion-conf
-      - service: salt-master
-      - file: salt-master
+      - cmd: salt-modules
       - file: makina-states-dirs
+      - file: salt-master
+      - file: salt-minion-conf
+      - git: m2crypto-git
+      - git: makina-states
       - git: openssh-formulae
       - git: openstack-formulae
       - git: salt-formulae
-      - git: makina-states
-      - cmd: salt-modules
+      - git: salt-git
+      - git: SaltTesting-git
+      - service: salt-master
 
 # disabled, syndic cannot sync files !
 # salt-syndic:
