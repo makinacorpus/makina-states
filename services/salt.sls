@@ -12,7 +12,7 @@
 {% set repos={
   'salt-git': {
     'name': 'http://github.com/makinacorpus/salt.git',
-    'rev': 'develop',
+    'rev': 'remotes/origin/develop',
     'target': '/srv/salt/makina-states/src/salt'},
   'SaltTesting-git': {
     'name': 'http://github.com/saltstack/salt-testing.git',
