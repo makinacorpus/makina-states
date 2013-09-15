@@ -68,15 +68,22 @@ lxc-after-maybe-bind-root:
 {% set lxc_dnsservers = lxc_data.get('dnsservers', '10.0.3.1') -%}
 {% set lxc_root = lxc_data.get('root', '/var/lib/lxc/' + lxc_name) -%}
 {% set lxc_rootfs = lxc_data.get('rootfs', lxc_root + '/rootfs') -%}
+{% set lxc_s = rootfs + '/srv/salt' %}
+{% set salt_init = rootfs + '/.salt-init.sh' %}
+{% set lxc_init = '/srv/salt/.lxc-'+ lxc_name + '.sh' %}
 {% set lxc_config = lxc_data.get('config', lxc_root + '/config') -%}
 {{ lxc_name }}-lxc:
-  cmd.script:
+  file.managed:
+    - name: {{lxc_init}}
     - source: salt://makina-states/_scripts/lxc-init.sh
-    - name: /srv/salt/.running-lxc-init.sh
-    - args: {{ lxc_name }} {{ lxc_template }}
+    - mode: 750
+  cmd.run:
+    - source: salt://makina-states/_scripts/lxc-init.sh
+    - name: {{lxc_init}} {{ lxc_name }} {{ lxc_template }}
     - stateful: True
-  require:
-    - file: lxc-after-maybe-bind-root
+    - require:
+      - file: {{ lxc_name }}-lxc
+      - file: lxc-after-maybe-bind-root
 
 {{ lxc_name }}-lxc-salt-pillar:
   file.directory:
@@ -178,11 +185,15 @@ lxc-{{ lxc_name }}{{ host['ip'].replace('.', '_') }}-{{ host['hosts'].replace(' 
 {% endfor %}
 
 bootstrap-salt-in-{{ lxc_name }}-lxc:
-  cmd.script:
+  file.managed:
+    - name: {{salt_init}}
     - source: salt://makina-states/_scripts/lxc-salt.sh
-    - args: {{ lxc_name }} {{ salt_bootstrap }}
+    - mode: 750
+  cmd.script:
+    - name: {{lxc_init}} {{ lxc_name }} {{ salt_bootstrap }}
     - stateful: True
     - require:
+      - file: bootstrap-salt-in-{{ lxc_name }}-lxc
       - file: {{ lxc_name }}-lxc-salt
       - cmd: start-{{ lxc_name }}-lxc-service
 {% endif -%}
