@@ -1,3 +1,6 @@
+include:
+  - makina.services.users
+
 {% set ssh_default_users = ['root', 'sysadmin'] %}
 {% if grains['os'] == 'Ubuntu' %}
   {% set dummy = ssh_default_users.append('ubuntu') %}
