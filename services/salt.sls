@@ -48,7 +48,10 @@
   git.latest:
     - name: {{data['name']}}
     - target: {{data['target']}}
-    {% if rev %}- rev: {{rev}}{% endif %}
+    {% if rev %}
+    - rev: {{rev}}
+    - always_fetch: True
+    {% endif %}
     - require:
       - cmd: {{i}}
 {% endfor %}
