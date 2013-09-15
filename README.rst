@@ -121,9 +121,13 @@ Prerequisite
 
         /srv/salt/makina-states/bin/salt-call -lall --local state.sls makina-states.services.bootstrap
 
-    -:server or dev VM or docker or virtualbox: ::
+    -:server: ::
 
         /srv/salt/makina-states/bin/salt-call -lall --local state.sls makina-states.services.bootstrap_server
+    
+    -:dev VM or docker or virtualbox: ::
+
+        /srv/salt/makina-states/bin/salt-call -lall --local state.sls makina-states.services.bootstrap_vm
 
     -:server wired to mastersalt: ::
 
