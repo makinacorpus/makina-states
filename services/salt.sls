@@ -19,6 +19,7 @@ SaltTesting-git:
     - name: http://github.com/saltstack/salt-testing.git
     - target: /srv/salt/makina-states/src/SaltTesting
     - force_checkout: true
+    - force: true
 m2crypto-git:
   git.latest:
     - name: https://github.com/makinacorpus/M2Crypto.git
