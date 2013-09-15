@@ -126,7 +126,7 @@ if [[ ! -f "$ROOT/.boot_bootstrap_salt" ]];then
     sleep 10
     salt-key -A -y
     ret=$?
-    if [[ $ret == 0 ]];then
+    if [[ $ret != 0 ]];then
         echo "Failed accepting keys"
         exit $ret
     fi
