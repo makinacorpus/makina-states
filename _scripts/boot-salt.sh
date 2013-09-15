@@ -18,6 +18,8 @@ if [[ -n $SALT_BOOT ]];then
     bootstrap="${bootstrap}_${SALT_BOOT}"
 fi
 i_prereq() {
+    echo "Installing pre requisites"
+    echo 'changed="yes" comment="prerequisites installed"'
     apt-get update && apt-get install -y build-essential m4 libtool pkg-config autoconf gettext bzip2 groff man-db automake libsigc++-2.0-dev tcl8.5 git python-dev swig libssl-dev libzmq-dev
 }
 die_in_error() {
@@ -78,10 +80,12 @@ else
 fi
 cd $MS
 if [[ ! -f "$ROOT/.boot_bootstrap" ]];then
+    echo "Launching buildout bootstrap for salt initialisation"
     python bootstrap.py || die_in_error "Failed bootstrap"
     touch "$ROOT/.boot_bootstrap"
 fi
 if [[ ! -f "$ROOT/.boot_buildout" ]];then
+    echo "Launching buildout for salt initialisation"
     bin/buildout || die_in_error "Failed buildout"
     touch "$ROOT/.boot_buildout"
 fi
@@ -112,6 +116,7 @@ if [[ ! -f "$ROOT/.boot_bootstrap_salt" ]];then
     ds=y
     cd $MS
     ps aux|egrep "salt-(master|minion|syndic)" |awk '{print $2}'|xargs kill -9
+    echo "Boostrapping salt"
     ret=$(salt_call --local state.sls $bootstrap)
     if [[ $ret != 0 ]];then
         echo "Failed bootstrap: $bootstrap !"
@@ -139,6 +144,7 @@ if [[ -n $PROJECT_URL ]];then
     project_mark="$ROOT/.${project_mark}"
     if [[ -f "${project_mark}" ]];then
         echo "$PROJECT_URL / $PROJECT_BRANCH / $PROJECT_TOPSTATE already done"
+        echo "changed=\"false\" comment=\"$PROJECT_URL / $PROJECT_BRANCH / $PROJECT_TOPSTATE already done\""
     else
         BR=""
         if [[ -n $PROJECT_BRANCH ]];then
@@ -147,7 +153,7 @@ if [[ -n $PROJECT_URL ]];then
         if [[ -e "${project_tmpdir}" ]];then
             rm -rf "${project_tmpdir}"
         fi
-        echo git clone $BR "$PROJECT_URL" "${project_tmpdir}"
+        echo "Cloning  $PROJECT_URL / $PROJECT_BRANCH"
         git clone $BR "$PROJECT_URL" "${project_tmpdir}"
         ret=$?
         if [[ $ret != 0 ]];then
@@ -160,6 +166,7 @@ if [[ -n $PROJECT_URL ]];then
             PROJECT_SETUPSTATE=setup
         fi
         if [[ -n $PROJECT_SETUPSTATE ]];then
+            echo "Luanching saltstack setup ($PROJECT_SETUPSTATE) for $PROJECT_URL"
             ret=$(salt_call --local state.sls $PROJECT_SETUPSTATE)
             cat $SALT_OUTFILE
             if [[ $ret != 0 ]];then
@@ -167,6 +174,7 @@ if [[ -n $PROJECT_URL ]];then
                 exit -1
             fi
         fi
+        echo "Luanching saltstack top state ($PROJECT_TOPSTATE) for $PROJECT_URL"
         ret=$(salt_call --local $PROJECT_TOPSTATE)
         if [[ $ret == 0 ]];then
             cat $SALT_OUTFILE
