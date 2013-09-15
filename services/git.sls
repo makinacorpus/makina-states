@@ -1,5 +1,5 @@
 include:
-  - makina.services.users
+  - makina-states.services.users
 
 {% set ssh_default_users = ['root', 'sysadmin'] %}
 {% if grains['os'] == 'Ubuntu' %}
