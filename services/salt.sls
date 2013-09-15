@@ -32,24 +32,17 @@
     'target': '/srv/salt/makina-states'},
 } %}
 {% for i, data in repos.items() -%}
-{% set force=data.get('force', False) -%}
-{% if force %}
-{{i}}-reset-repo:
-  cmd.run:
-    - name: git reset --hard
-    - cwd: {{data['target']}}
-    - onlyif: ls -d {{data['target']+'/.git' }}
-{% endif %}
-{{i}}:
-  git.latest:
-    - name: {{data['name']}}
-    - target: {{data['target']}}
 # as we reset perms on repos, just set filemode=false
+{{i}}:
   cmd.run:
     - name: git config --local core.filemode false
     - cwd: {{data['target']}}
+    - onlyif: ls -d {{data['target']+'/.git' }} 
+  git.latest:
+    - name: {{data['name']}}
+    - target: {{data['target']}}
     - require:
-      - git: {{i}}
+      - cmd: {{i}} 
 {% endfor %}
 
 makina-states-dirs:
