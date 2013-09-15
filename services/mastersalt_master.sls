@@ -3,17 +3,25 @@
 # We have the local master in /etc/salt
 # We have the running syndic/master/minion in /etc/salt
 # and on mastersalt, we have another master daemon configured in /etc/mastersalt
-mastersalt:
+
+include:
+  - makina-states.services.salt
+
+mastersalt-master:
   file.managed:
-    - name: /etc/init/mastersalt.conf
+    - name: /etc/init/mastersalt-master.conf
     - source: salt://makina-states/files/etc/init/mastersalt.conf
   service.running:
     - require:
       - file: salt-profile
     - enable: True
     - watch:
-       - file: mastersalt
+       - file: mastersalt-master
        - file: mastersalt-conf
+  grains.present:
+    - value: True
+    - require:
+      - service: mastersalt-master
 
 mastersalt-conf:
   file.managed:
@@ -53,5 +61,6 @@ mastersalt-master-logs:
       - /var/log/salt/mastersalt
     - mode: 700
   require:
-    - service: mastersalt
+    - service: mastersalt-master
+
 

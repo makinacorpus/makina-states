@@ -1,7 +1,6 @@
 {% set data=pillar.get('makina_ldap', {}) %}
 {% set ldap_en=data.get('enabled', False) %}
 include:
-  - makina-states.services.bootstrap_server
   - makina-states.services.localservices
   - makina-states.services.nscd
   - makina-states.services.ntp

@@ -7,7 +7,8 @@
     '_scripts',
     '_states',] %}
 
-# Keep those 3 following in sync with buildout
+# Keep those 3 first following in sync with buildout mr.developer content
+# those repos are the one needed to bootstrap the core daemons
 {% set repos={
   'salt-git': {
     'name': 'http://github.com/makinacorpus/salt.git',
@@ -18,6 +19,8 @@
   'm2crypto': {
     'name': 'https://github.com/makinacorpus/M2Crypto.git',
     'target': '/srv/salt/makina-states/src/m2crypto'},
+
+
   'salt-formulae': {
     'name': 'http://github.com/saltstack-formulas/salt-formula.git',
     'target': '/srv/salt/formulas/salt'},
@@ -32,7 +35,7 @@
     'target': '/srv/salt/makina-states'},
 } %}
 {% for i, data in repos.items() -%}
-{% set git=data['target']+'/.git'  %}
+{% set git=data['target']+'/.git'  -%}
 {{i}}:
 # on next runs as we reset perms on repos, just set filemode=false
 # do not use cwd as if dir does not exist, if will fail the entire state

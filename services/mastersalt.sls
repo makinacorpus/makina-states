@@ -19,6 +19,21 @@ mastersalt-minion:
       - file: salt-env
     - watch:
       - file: mastersalt-minion-conf
+      - cmd: salt-modules
+      - file: makina-states-dirs
+      - file: l-openssh-formulae
+      - file: l-salt-formulae
+      - git: m2crypto
+      - git: makina-states
+      - git: openssh-formulae
+      - git: openstack-formulae
+      - git: salt-formulae
+      - git: salt-git
+      - git: SaltTesting-git
+  grains.present:
+    - value: True
+    - require:
+      - service: mastersalt-minion
 
 mastersalt-minion-cache:
   file.directory:
