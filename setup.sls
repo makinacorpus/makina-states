@@ -47,7 +47,7 @@ salt-buildout-bootstrap:
       - git: makina-states
       - git: salt-git
       - git: m2crypto
-      - git: SaltTesting
+      - git: SaltTesting-git
 
 salt-buildout-run:
   cmd.run:
