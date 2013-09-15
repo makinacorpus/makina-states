@@ -117,15 +117,17 @@ if [[ ! -f "$ROOT/.boot_bootstrap_salt" ]];then
         echo "Failed bootstrap: $bootstrap !"
         exit $ret
     fi
-    sleep 2 && salt-key -A -y
+    echo "Waiting for key to be accepted"
+    sleep 10
+    salt-key -A -y
     ret=$?
     if [[ $ret == 0 ]];then
-        touch "$ROOT/.boot_bootstrap_salt"
-        echo "changed=yes comment='salt installed'"
-     else
         echo "Failed accepting keys"
         exit $ret
     fi
+    cat $SALT_OUTFILE
+    echo "changed=yes comment='salt installed'"
+    touch "$ROOT/.boot_bootstrap_salt"
 fi
 if [[ -z $ds ]];then
     echo 'changed="false" comment="already bootstrapped"'
