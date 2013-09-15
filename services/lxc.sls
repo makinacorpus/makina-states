@@ -68,8 +68,8 @@ lxc-after-maybe-bind-root:
 {% set lxc_dnsservers = lxc_data.get('dnsservers', '10.0.3.1') -%}
 {% set lxc_root = lxc_data.get('root', '/var/lib/lxc/' + lxc_name) -%}
 {% set lxc_rootfs = lxc_data.get('rootfs', lxc_root + '/rootfs') -%}
-{% set lxc_s = rootfs + '/srv/salt' %}
-{% set salt_init = rootfs + '/.salt-init.sh' %}
+{% set lxc_s = lxc_rootfs + '/srv/salt' %}
+{% set salt_init = lxc_s + '/.salt-init.sh' %}
 {% set lxc_init = '/srv/salt/.lxc-'+ lxc_name + '.sh' %}
 {% set lxc_config = lxc_data.get('config', lxc_root + '/config') -%}
 {{ lxc_name }}-lxc:
