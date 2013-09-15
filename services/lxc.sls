@@ -1,3 +1,7 @@
+{% import 'makina-states/services/pkgs.sls'  as pkgs with context %}
+include:
+  - makina-states.services.pkgs
+
 {% set lxc_root = '/var/lib/lxc' %}
 # define in pillar an entry "*-lxc-server-def
 # as:
@@ -80,9 +84,14 @@ lxc-after-maybe-bind-root:
   cmd.run:
     - name: {{lxc_init}} {{ lxc_name }} {{ lxc_template }}
     - stateful: True
+    - require_in:
+      - file: main-repos-updates-{{lxc_name}}
+      - file: main-repos-{{lxc_name}}
     - require:
       - file: {{ lxc_name }}-lxc
       - file: lxc-after-maybe-bind-root
+
+{{pkgs.set_packages_repos(lxc_rootfs, '-'+lxc_name, update=False)}}
 
 {{ lxc_name }}-lxc-salt-pillar:
   file.directory:
@@ -192,6 +201,8 @@ bootstrap-salt-in-{{ lxc_name }}-lxc:
     - name: {{salt_init}} {{ lxc_name }} {{ salt_bootstrap }}
     - stateful: True
     - require:
+      - file: main-repos-updates-{{lxc_name}}
+      - file: main-repos-{{lxc_name}}
       - file: bootstrap-salt-in-{{ lxc_name }}-lxc
       - file: {{ lxc_name }}-lxc-salt
       - cmd: start-{{ lxc_name }}-lxc-service
