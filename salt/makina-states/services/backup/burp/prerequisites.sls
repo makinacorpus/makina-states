@@ -1,3 +1,4 @@
+{% import "makina-states/_macros/h.jinja" as h with context %}
 include:
   - makina-states.services.backup.burp.hooks
 {%- set locs = salt['mc_locations.settings']() %}
@@ -37,7 +38,9 @@ install-burp-pkg:
       - mc_proxy: burp-pre-install-hook
     - watch_in:
       - mc_proxy: burp-post-install-hook
-
+{{ h.retry_apt_get(failed_from=['pkg: install-burp-pkg'],
+                   pkgs=burp.pkgs, pref='burp',
+                   fromrepo=burp.fromrepo)}}
 {% if burp.source %}
 installburp:
   file.managed:
