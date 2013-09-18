@@ -86,6 +86,41 @@
 {% set dummy = proxy %}
 
 
+{% macro retry_apt_get(pref='', suf='', pkgs=None, pkg=None, update=True,
+                       failed_from=None, fromrepo=None,
+                       install_function='pkg.latest') %}
+{% if not pkgs %}
+{% set pkgs = [] %}
+{% endif %}
+{% if pkg and (pkg not in pkgs) %}{% do pkgs.append(pkg) %} {% endif %}
+{% if update %}
+{{pref}}-aptgetretry-update-{{suf}}:
+  cmd.run:
+    - name: apt-get update
+    {% if failed_from %}
+    - onfail:
+      {% for i in failed_from %}
+      - {{i}}
+      {% endfor %}
+    {% endif %}
+    - watch_in:
+        {{install_function.split('.')[0]}}: {{pref}}-aptgetretry-retry-{{suf}}
+{% endif %}
+{{pref}}-aptgetretry-retry-{{suf}}:
+  {{install_function}}:
+    - pkgs: {{pkgs}}
+    {% if fromrepo %}
+    - fromrepo: {{ fromrepo }}
+    {% endif %}
+    {% if failed_from %}
+    - onfail:
+      {% for i in failed_from %}
+      - {{i}}
+      {% endfor %}
+    {% endif %}
+{% endmacro %}
+
+
 {#
  # wrapper to service restart/reload that also ensure that systemd is reloaded
  # if case of the first activation fails
