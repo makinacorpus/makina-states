@@ -2,21 +2,23 @@
 
 # Idea is to create any user/group needed for ssh managment
 
-{% set users = {'root': {'admin':True},'sysadmin': {'admin':True},} %}
+{% set users={'root': {'admin':True},'sysadmin': {'admin':True},} %}
 {%- if grains['os'] == 'Ubuntu' %}
-{% set nodo = users.update({'ubuntu': {'admin':True}}) %}
+{% set dummy = users.update({'ubuntu': {'admin':True}}) %}
 {% endif %}
-{% for sid, sshdata in pillar.items() %}
+{% for sid, data in pillar.items() %}
   {% if 'makina-users' in sid %}
-    {% set susers = sshdata.get('users', []) %}
-    {% for uid in susers %}
+    {% set susers=data.get('users', {}) %}
+    {% for uid, udata in susers.items() %}
       {% if uid not in users %}
-        {% set dummy = users.update({uid: {}})%}
+        {% set dummy=users.update({uid: udata})%}
       {% endif %}
     {% endfor%}
   {% endif %}
 {% endfor %}
+
 {% for id, udata in users.items() %}
+{% set password=udata.get('password', False) %} 
 {{id}}:
   group.present:
     - name: {{ id }}
@@ -32,6 +34,7 @@
     - home: /home/{{ id }}
     - gid_from_name: True
     - remove_groups: False
+    {%- if password %}- password:  {{password}} {% endif %}
     - optional_groups:
       - {{ id }}
       - cdrom

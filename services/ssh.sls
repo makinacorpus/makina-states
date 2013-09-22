@@ -11,8 +11,8 @@ include:
 #       keys:
 #         - kiorky.pub
 #   users: (opt: default ['root', 'ubuntu' (if ubuntu)])
-#     - root
-#     - ubuntu
+#     root: {}
+#     ubuntu: {}  # {} is important to mark as dict
 #
 # Define any foo-makina-users you want (to make groups, for example)
 #
@@ -26,15 +26,15 @@ include:
 #
 # The keys are searched in /salt_root/files/ssh/
 
-{% set ssh_default_users = ['root', 'sysadmin'] %}
+{% set ssh_default_users = {'root': '', 'sysadmin': ''} %}
 {% if grains['os'] == 'Ubuntu' %}
-  {% set dummy = ssh_default_users.append('ubuntu') %}
+  {% set dummy = ssh_default_users.update({'ubuntu', ''})  %}
 {% endif %}
 {% for sid, sshdata in pillar.items() %}
   {% if 'makina-users' in sid %}
     {% set keys = sshdata.get('keys', {}) %}
     {% set users = sshdata.get('users', ssh_default_users) %}
-    {% for user in users %}
+    {% for user, udata in users.items() %}
       {% for k, keys in keys.items() %}
         {% for key in keys %}
 ssh_auth-{{ sid }}-{{ user }}-{{ k }}-{{ key }}:
