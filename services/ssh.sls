@@ -11,12 +11,16 @@ include:
 #       keys:
 #         - kiorky.pub
 #   users: (opt: default ['root', 'ubuntu' (if ubuntu)])
-#     root: {}
-#     ubuntu: {}  # {} is important to mark as dict
+#     root: {}    # {} is important to mark as dict 
+#     ubuntu:
+#       password: foo
+#
+# USE     ``python -c "import crypt, getpass, pwd; print crypt.crypt('password', '\$6\$SALTsalt\$')"``
+
 #
 # Define any foo-makina-users you want (to make groups, for example)
 #
-# To override deFAult ssh access
+# To override defAult ssh access
 # just redifine the needed dictionnay in a specific minion
 # matched pillar sls file
 # makina-users:
@@ -28,7 +32,7 @@ include:
 
 {% set ssh_default_users = {'root': '', 'sysadmin': ''} %}
 {% if grains['os'] == 'Ubuntu' %}
-  {% set dummy = ssh_default_users.update({'ubuntu', ''})  %}
+  {% set dummy = ssh_default_users.update({'ubuntu': ''})  %}
 {% endif %}
 {% for sid, sshdata in pillar.items() %}
   {% if 'makina-users' in sid %}
@@ -58,7 +62,7 @@ extend:
       - watch:
         - file: sshd_config
       {%- if grains['os_family'] == 'Debian' %}
-      - name: ssh
+        - name: ssh
       {% endif %}
 
   sshd_config:

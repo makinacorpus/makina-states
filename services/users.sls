@@ -12,13 +12,18 @@
     {% for uid, udata in susers.items() %}
       {% if uid not in users %}
         {% set dummy=users.update({uid: udata})%}
+      {% else %}
+        {% set u=users[uid] %}
+        {% for k, value in udata.items() %}
+          {% set dummy=u.update({k: value}) %}
+        {% endfor %}
       {% endif %}
     {% endfor%}
   {% endif %}
 {% endfor %}
 
 {% for id, udata in users.items() %}
-{% set password=udata.get('password', False) %} 
+{% set password=udata.get('password', False) %}
 {{id}}:
   group.present:
     - name: {{ id }}
@@ -34,7 +39,7 @@
     - home: /home/{{ id }}
     - gid_from_name: True
     - remove_groups: False
-    {%- if password %}- password:  {{password}} {% endif %}
+    {% if password %}- password:  {{password}} {% endif %}
     - optional_groups:
       - {{ id }}
       - cdrom
