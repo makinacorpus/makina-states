@@ -152,17 +152,19 @@ docker-after-maybe-bind-root:
       - file: docker-root
 
 {% set dkey='-docker-servers-def' %}
-{% for id, data in pillar.items() %}
-  {% if id.endswith(dkey) %}
+{% for did, data in pillar.items() %}
+  {% if did.endswith(dkey) %}
     {% for cid, data in docker_data.get('dockers', {}) %}
-      {% set pre=data.split(dkey)[0] %}
+      {% set pre=did.split(dkey)[0] %}
       {% set id = pre+'-'+cid %}
       {% set image=data.get('image', False) %}
       {% set hostname=data.get('hostname', id) %}
       {% set url=data.get('url', False) %}
       {% set count=int(data.get('count', 1)) %}
       {% set volumes=data.get('volumes', {}).items() %}
+      {% set docker_dir = data.get('docker-dir', '.') %}
       {% set ports=data.get('ports', {}).items() %}
+      {% set branch=data.get('branch', 'salt')  %}
       {% set volumes_passed=[] %}
       {% if volumes %}
         {% for mountpoint, volume in volumes %}
@@ -184,12 +186,12 @@ docker-{{id}}{{instancenumstr}}:
         {% if not image %}
   git.latest:
     - name: {{url}}
-    - rev: remotes/origin/{{data.get('branch', 'salt')}}
+    - rev: remotes/origin/{{branch}}
     - target: /srv/salt/dockers-repo-cache/dockers-{{id}}
         {% endif %}
   makina_docker.installed:
     - hostname: {{hostname}}
-    - docker_dir: {{data.get('docker-dir', '.')}}
+    - docker_dir: {{docker_dir}}
         {% if volumes_passed or not image %}
     - require:
           {% for v in volumes_passed %}
