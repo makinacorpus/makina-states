@@ -97,6 +97,8 @@ sys-pkgs:
       - unzip
       - zip
       - cronolog
+      - lvm2
+      - xfsprogs
 
 dev-pkgs:
   pkg.installed:
