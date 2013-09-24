@@ -239,3 +239,15 @@ salt-logs:
     - service: salt-master
     - service: salt-minion
 
+# update makina-state
+update-salt:
+  cmd.run:
+    - name: bin/buildout && cat buildout.cfg|md5sum|awk '{print $1}'>.saltcheck
+    - unless: test "$(cat buildout.cfg|md5sum|awk '{print $1}')" = "$(cat .saltcheck)"
+    - cwd: /srv/salt/makina-states
+    - require:
+      - git: salt-git
+    - watch_in:
+      - service: salt-master
+      - service: salt-minion 
+

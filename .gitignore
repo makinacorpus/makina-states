@@ -7,3 +7,5 @@ eggs/
 parts/
 src/
 !files/
+!_states
+!_modules

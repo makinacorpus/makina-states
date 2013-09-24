@@ -34,25 +34,39 @@ lxc-services-enabling:
 
 # as it is often a mount -bind, we must ensure we can attach dependencies there
 # we must can :
-# react before the bind mount
-# react after the bind mount
-# eg you can define your bind root as follow
-# lxc-mount:
-#   mount.mounted:
-#     - require:
-#       - file: lxc-dir
-#     - name: /var/lib/lxc
-#     - device:  /mnt/data
-#     - fstype: none
-#     - mkmnt: True
-#     - opts: bind
-#     - require:
-#       - file: lxc-root
-#     - require_in:
-#       - file: lxc-after-maybe-bind-root
+# set in pillar:
+# lxc.directory: real dest
+
+{% set lxc_dir = pillar.get('lxc.directory', '') %}
+{% set lxc_root = '/var/lib/lxc' %}
 lxc-root:
   file.directory:
-    - name: /var/lib/lxc
+    - name: {{lxc_root}}
+
+{% if lxc_dir %}
+lxc-dir:
+  file.directory:
+    - name: {{lxc_dir}}
+
+lxc-mount:
+  mount.mounted:
+    - require:
+      - file: lxc-dir
+    - name: {{lxc_root}}
+    - device: {{lxc_dir}}
+    - fstype: none
+    - mkmnt: True
+    - opts: bind
+    - require:
+      - file: lxc-root
+      - file: lxc-dir
+    - require_in:
+      - file: lxc-after-maybe-bind-root
+{% endif %}
+
+lxc-root:
+  file.directory:
+    - name: {{lxc_dir}}
 
 lxc-after-maybe-bind-root:
   file.directory:

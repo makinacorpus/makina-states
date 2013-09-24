@@ -6,7 +6,7 @@
 
 include:
   - makina-states.services.pkgs
-  - makina-states.services.docker
+  - makina-states.services.salt
 
 # To configure a global registry use this:
 #
@@ -80,10 +80,17 @@ docker-repo:
     - file: /etc/apt/sources.list.d/docker.list
     - key_url: https://get.docker.io/gpg
 
+# require dockerpy in salt
+
+
+
 docker-pkgs:
   pkg.installed:
     - require:
       - pkgrepo: docker-repo
+      - service: salt-master
+      - service: salt-minion 
+      - cmd: update-salt
     - names:
       - lxc-docker
 
@@ -119,29 +126,35 @@ docker-preload-images:
 
 # as it is often a mount -bind, we must ensure we can attach dependencies there
 # we must can :
-# react before the bind mount
-# react after the bind mount
-# eg you can define your bind root as follow
-# docker-dir:
-#   file.directory:
-#     - name: /data/docker
-# docker-mount:
-#   mount.mounted:
-#     - require:
-#       - file: docker-dir
-#     - name: /var/lib/docker
-#     - device: /data/docker
-#     - fstype: none
-#     - mkmnt: True
-#     - opts: bind
-#     - require:
-#       - file: docker-root
-#     - require_in:
-#       - file: docker-after-maybe-bind-root
+# set in pillar:
+# docker.directory: real dest
 
+{% set docker_dir = pillar.get('docker.directory', '') %}
+{% set docker_root = '/var/lib/docker' %}
 docker-root:
   file.directory:
-    - name: /var/lib/docker
+    - name: {{docker_root}}
+
+{% if docker_dir %}
+docker-dir:
+  file.directory:
+    - name: {{docker_dir}}
+
+docker-mount:
+  mount.mounted:
+    - require:
+      - file: docker-dir
+    - name: {{docker_root}}
+    - device: {{docker_dir}}
+    - fstype: none
+    - mkmnt: True
+    - opts: bind
+    - require:
+      - file: docker-root
+      - file: docker-dir
+    - require_in:
+      - file: docker-after-maybe-bind-root
+{% endif %}
 
 docker-after-maybe-bind-root:
   file.directory:
@@ -152,15 +165,15 @@ docker-after-maybe-bind-root:
       - file: docker-root
 
 {% set dkey='-docker-servers-def' %}
-{% for did, data in pillar.items() %}
+{% for did, dockers_data in pillar.items() %}
   {% if did.endswith(dkey) %}
-    {% for cid, data in docker_data.get('dockers', {}) %}
+    {% for cid, data in dockers_data.get('dockers', {}).items() %}
       {% set pre=did.split(dkey)[0] %}
       {% set id = pre+'-'+cid %}
       {% set image=data.get('image', False) %}
       {% set hostname=data.get('hostname', id) %}
       {% set url=data.get('url', False) %}
-      {% set count=int(data.get('count', 1)) %}
+      {% set count=data.get('count', '1')|int %}
       {% set volumes=data.get('volumes', {}).items() %}
       {% set docker_dir = data.get('docker-dir', '.') %}
       {% set ports=data.get('ports', {}).items() %}
@@ -177,10 +190,10 @@ docker-volume-{{mountpoint}}:
         {% endfor %}
       {% endif %}
 # donnerait 'project-prod-1 project-dev-1 project-db-dev, ...'
-      {% for instancenum in enumerate(count) %}
+      {% for instancenum in range(count) %}
         {% set instancenumstr=''%}
         {% if count > 1 %}
-          {% set instancenumstr='-'+instancenum%}
+          {% set instancenumstr = '_%s' % instancenum %}
         {% endif %}
 docker-{{id}}{{instancenumstr}}:
         {% if not image %}
@@ -209,7 +222,9 @@ docker-{{id}}{{instancenumstr}}:
         {% if ports %}
     - ports:
           {% for host_port, container_port in  ports %}
-      - {{int(host_port) + instancenum - 1}}: {{int(container_port) + instancenum - 1}}
+      {% set host_port=host_port|int %}
+      {% set host_port=container_port|int %}
+      - {{host_port + instancenum - 1}}: {{container_port + instancenum - 1}}
           {% endfor %}
         {% endif %}
         {% if volumes %}
