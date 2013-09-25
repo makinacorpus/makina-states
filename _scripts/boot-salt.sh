@@ -20,7 +20,7 @@ fi
 i_prereq() {
     echo "Installing pre requisites"
     echo 'changed="yes" comment="prerequisites installed"'
-    apt-get update && apt-get install -y build-essential m4 libtool pkg-config autoconf gettext bzip2 groff man-db automake libsigc++-2.0-dev tcl8.5 git python-dev swig libssl-dev libzmq-dev
+    apt-get update && apt-get install -y build-essential m4 libtool pkg-config autoconf gettext bzip2 groff man-db automake libsigc++-2.0-dev tcl8.5 git python-dev swig libssl-dev libzmq-dev libyaml-dev
 }
 die_in_error() {
     ret=$?
@@ -124,6 +124,8 @@ if [[ ! -f "$ROOT/.boot_bootstrap_salt" ]];then
     fi
     echo "Waiting for key to be accepted"
     sleep 10
+    ps aux|grep salt-minion|awk '{print $2}'|xargs kill -9
+    service salt-minion restart
     salt-key -A -y
     ret=$?
     if [[ $ret != 0 ]];then
