@@ -12,7 +12,8 @@ def get_client():
 
 def get_containers():
     client = get_client()
-    client.containers(all=True, trunc=False)
+    ret = client.containers(all=True, trunc=False)
+    return ret
 
 def stop(cid):
     client = get_client()

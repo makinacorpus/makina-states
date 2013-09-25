@@ -183,8 +183,6 @@ if  [[ ! -e "$ROOT/.boot_bootstrap_mastersalt" ]] \
         echo "Failed bootstrap: $bootstrap !"
         exit $ret
     fi
-    echo "Waiting for key to be accepted"
-    sleep 10
     ps aux|grep salt-minion|grep mastersalt|awk '{print $2}'|xargs kill -9
     service mastersalt-minion restart
     cat $SALT_OUTFILE
