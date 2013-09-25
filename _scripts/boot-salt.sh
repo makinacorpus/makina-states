@@ -1,4 +1,21 @@
 #!/usr/bin/env bash
+#
+# SEE MAKINA-STATES DOCS FOR FURTHER INSTRUCTIONS:
+#
+#    - https://github.com/makinacorpus/makina-states
+#
+# BOOTSTRAP SALT ON A BARE UBUNTU MACHINE FOR RUNNING MAKINA-STATES
+# - install prerequisites
+# - configure pillar for salt and maybe mastersalt
+# - bootstrap salt
+# - maybe bootstrap a salt base project
+#
+#
+# Toubleshooting:
+# - If the script fails, just relaunch it and it will continue where it was
+# - You can safely relaunch it
+#
+
 export PATH=/srv/salt/makina-states/bin:$PATH
 MASTERSALT="${MASTERSALT:-mastersalt.makina-corpus.net}"
 MASTERSALT_PORT="${MASTERSALT_PORT:-4506}"
@@ -29,7 +46,6 @@ die_in_error() {
         exit $ret
     fi
 }
-
 #
 # check if salt got errors:
 # - First, check for fatal errors (retcode not in [0, 2]
@@ -89,7 +105,19 @@ if [[ ! -f "$ROOT/.boot_buildout" ]];then
     bin/buildout || die_in_error "Failed buildout"
     touch "$ROOT/.boot_buildout"
 fi
-if [[ $SALT_BOOT == "mastersalt" ]];then
+if [[ ! -f /srv/pillar/top.sls ]];then
+
+    cat > /srv/pillar/top.sls << EOF
+base:
+  '*':
+EOF
+fi
+if [[ $SALT_BOOT == "salt" ]];then
+    if grep -vq "- salt.sls" /srv/pillar/top.sls;then
+        sed -re "/('|\")\*('|\"):/ {
+i     - salt.sls
+}" -i /srv/pillar/top.sls
+    fi
     if [[ ! -f /srv/pillar/salt.sls ]];then
         cat > /srv/pillar/salt.sls << EOF
 salt:
@@ -98,19 +126,19 @@ salt:
     interface: 127.0.0.1
   master:
     interface: 127.0.0.1
-
+EOF
+fi
+if [[ $SALT_BOOT == "mastersalt" ]] && [[ ! -f /srv/pillar/mastersalt.sls ]];then
+    if grep -vq "- mastersalt.sls" /srv/pillar/top.sls;then
+        sed -re "/('|\")\*('|\"):/ {
+i     - mastersalt.sls
+}" -i /srv/pillar/top.sls
+    fi
+    cat > /srv/pillar/mastersalt.sls << EOF
 mastersalt-minion:
   master: ${MASTERSALT}
   master_port: ${MASTERSALT_PORT}
 EOF
-    fi
-    if [[ ! -f /srv/pillar/top.sls ]];then
-        cat > /srv/pillar/top.sls << EOF
-base:
-  '*':
-    - salt
-EOF
-    fi
 fi
 if [[ ! -f "$ROOT/.boot_bootstrap_salt" ]];then
     ds=y
@@ -135,6 +163,34 @@ if [[ ! -f "$ROOT/.boot_bootstrap_salt" ]];then
     cat $SALT_OUTFILE
     echo "changed=yes comment='salt installed'"
     touch "$ROOT/.boot_bootstrap_salt"
+    if [[ "$bootstrap" == "mastersalt" ]];then
+        touch "$ROOT/.boot_bootstrap_mastersalt"
+    fi
+fi
+# in case of redoing a bootstrap for wiring on mastersalt
+# after having already bootstrapped using a regular salt
+# installation,
+# we will run the specific mastersalt parts to wire
+# on the global mastersalt
+if  [[ ! -e "$ROOT/.boot_bootstrap_mastersalt" ]] \
+    && [[ "$bootstrap" == "mastersalt" ]];\
+then
+    ds=y
+    cd $MS
+    ps aux|egrep "salt-(master|minion|syndic)" |awk '{print $2}'|xargs kill -9
+    echo "Boostrapping salt"
+    ret=$(salt_call --local state.sls $bootstrap)
+    if [[ $ret != 0 ]];then
+        echo "Failed bootstrap: $bootstrap !"
+        exit $ret
+    fi
+    echo "Waiting for key to be accepted"
+    sleep 10
+    ps aux|grep salt-minion|grep mastersalt|awk '{print $2}'|xargs kill -9
+    service mastersalt-minion restart
+    cat $SALT_OUTFILE
+    echo "changed=yes comment='mastersalt installed'"
+    touch "$ROOT/.boot_bootstrap_mastersalt"
 fi
 if [[ -z $ds ]];then
     echo 'changed="false" comment="already bootstrapped"'
@@ -185,4 +241,4 @@ if [[ -n $PROJECT_URL ]];then
         fi
     fi
 fi
-# vim:set et sts=5 ts=4 tw=80:
+# vim:set et sts=5 ts=4 tw=0:
