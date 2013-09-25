@@ -43,14 +43,15 @@ If you want to install salt on a server wired to mastersalt::
 To install our base salt installation, just run this script as **ROOT**, please read next paragraphe before running this command::
 
     wget http://raw.github.com/makinacorpus/makina-states/master/_scripts/boot-salt.sh -O - | bash
+    . /etc/profile
 
 This will do install prereq, salt, and accept the key locally for the local master/minion, and maybe isntall a project after
 
 Running project states
 ------------------------------
-At makina corpus where the states tree resides in a salt branch of our projects, we can use
-You can then download and integrate in ``/srv/salt`` your project saltstack states tree.
-Prior to execute the script, you can tell which project, branch and state to bootstrap::
+At makina corpus where the states tree resides in a salt branch of our projects, we can use this script to deploy a project from salt to the project itself.
+For this, pior to execute the script, you can tell which project, branch and state to bootstrap
+::
 
     mkdir /srv/pillar
     $ED /srv/pillar/top.sls
