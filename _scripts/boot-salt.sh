@@ -19,7 +19,7 @@
 export PATH=/srv/salt/makina-states/bin:$PATH
 MASTERSALT="${MASTERSALT:-mastersalt.makina-corpus.net}"
 MASTERSALT_PORT="${MASTERSALT_PORT:-4506}"
-PILLAR=${PILLAR:-/srv/salt}
+PILLAR=${PILLAR:-/srv/pillar}
 ROOT=${ROOT:-/srv/salt}
 MS=$ROOT/makina-states
 STATES_URL="https://github.com/makinacorpus/makina-states.git"
@@ -106,20 +106,18 @@ if [[ ! -f "$ROOT/.boot_buildout" ]];then
     touch "$ROOT/.boot_buildout"
 fi
 if [[ ! -f /srv/pillar/top.sls ]];then
-
     cat > /srv/pillar/top.sls << EOF
 base:
   '*':
 EOF
 fi
-if [[ $SALT_BOOT == "salt" ]];then
-    if grep -vq "- salt.sls" /srv/pillar/top.sls;then
+if [[ $(grep -- "- salt" /srv/pillar/top.sls|wc -l) == "0" ]];then
         sed -re "/('|\")\*('|\"):/ {
-i     - salt.sls
+a\     - salt
 }" -i /srv/pillar/top.sls
-    fi
-    if [[ ! -f /srv/pillar/salt.sls ]];then
-        cat > /srv/pillar/salt.sls << EOF
+fi
+if [[ ! -f /srv/pillar/salt.sls ]];then
+    cat > /srv/pillar/salt.sls << EOF
 salt:
   minion:
     master: 127.0.0.1
@@ -129,16 +127,18 @@ salt:
 EOF
 fi
 if [[ $SALT_BOOT == "mastersalt" ]] && [[ ! -f /srv/pillar/mastersalt.sls ]];then
-    if grep -vq "- mastersalt.sls" /srv/pillar/top.sls;then
+    if [[ $(grep -- "- mastersalt" /srv/pillar/top.sls|wc -l) == "0" ]];then
         sed -re "/('|\")\*('|\"):/ {
-i     - mastersalt.sls
+a\     - mastersalt
 }" -i /srv/pillar/top.sls
     fi
-    cat > /srv/pillar/mastersalt.sls << EOF
+    if [[ ! -f /srv/pillar/mastersalt.sls ]];then
+        cat > /srv/pillar/mastersalt.sls << EOF
 mastersalt-minion:
   master: ${MASTERSALT}
   master_port: ${MASTERSALT_PORT}
 EOF
+    fi
 fi
 if [[ ! -f "$ROOT/.boot_bootstrap_salt" ]];then
     ds=y
@@ -173,8 +173,7 @@ fi
 # we will run the specific mastersalt parts to wire
 # on the global mastersalt
 if  [[ ! -e "$ROOT/.boot_bootstrap_mastersalt" ]] \
-    && [[ "$bootstrap" == "mastersalt" ]];\
-then
+    && [[ "$bootstrap" == "mastersalt" ]];then
     ds=y
     cd $MS
     ps aux|egrep "salt-(master|minion|syndic)" |awk '{print $2}'|xargs kill -9
