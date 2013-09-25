@@ -48,9 +48,9 @@ This will do install prereq, salt, and accept the key locally for the local mast
 
 Running project states
 ------------------------------
-At makina corpus where the states tree resides in a salt branch of our projects, we can use
-You can then download and integrate in ``/srv/salt`` your project saltstack states tree.
-Prior to execute the script, you can tell which project, branch and state to bootstrap::
+At makina corpus where the states tree resides in a salt branch of our projects, we can use this script to deploy a project from salt to the project itself.
+For this, pior to execute the script, you can tell which project, branch and state to bootstrap
+::
 
     mkdir /srv/pillar
     $ED /srv/pillar/top.sls
