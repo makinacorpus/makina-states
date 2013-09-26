@@ -30,11 +30,11 @@
   # detect presence of the same host name with another IP
   file.replace:
     - require_in:
-      - sls: {{ host['ip'].replace('.', '_') }}-{{ host['hosts'].replace(' ', '_') }}-host
+      - file: {{ host['ip'].replace('.', '_') }}-{{ host['hosts'].replace(' ', '_') }}-host
     - name: /etc/hosts
     - pattern: ^((?!{{ host['ip'].replace('.', '\.')  }}).)*{{ host['hosts'].replace('.', '\.') }}(.)*$
     - repl: "" 
-    - flags: ['IGNORECASE']
+    - flags: ['IGNORECASE','MULTILINE', 'DOTALL']
     - bufsize: file
     - show_changes: True
 # the state name should not contain dots and spaces
