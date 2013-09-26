@@ -37,7 +37,7 @@ fi
 i_prereq() {
     echo "Installing pre requisites"
     echo 'changed="yes" comment="prerequisites installed"'
-    apt-get update && apt-get install -y build-essential m4 libtool pkg-config autoconf gettext bzip2 groff man-db automake libsigc++-2.0-dev tcl8.5 git python-dev swig libssl-dev libzmq-dev libyaml-dev
+    apt-get update && apt-get install -y build-essential m4 libtool pkg-config autoconf gettext bzip2 groff man-db automake libsigc++-2.0-dev tcl8.5 git python-dev swig libssl-dev libzmq-dev libyaml-dev debconf-utils
 }
 die_in_error() {
     ret=$?
