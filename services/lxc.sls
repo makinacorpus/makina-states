@@ -170,19 +170,57 @@ lxc-after-maybe-bind-root:
          gateway: {{ lxc_gateway }}
          dnsservers: {{ lxc_dnsservers }}
 
+# Remove entries on lxc guest's /etc/hosts whith
+# host fqdn associated with another IP than the
+# gateway IP (if this gateway has moved for example)
+{{ lxc_name }}-lxc-host-host-cleanup:
+  file.replace:
+    - require_in:
+      file: {{ lxc_name }}-lxc-host-host
+    - name: {{ lxc_rootfs }}/etc/hosts
+    # match the domain ( grain fqdn ) on lines not containing the ip ( lxc_gateway )
+    - pattern: ^((?!{{ lxc_gateway.replace('.', '\.')  }}).)*{{ grains.get('fqdn').replace('.', '\.') }}(.)*$
+    - repl: ""
+    - flags: ['IGNORECASE','MULTILINE', 'DOTALL']
+    - bufsize: file
+    - show_changes: True
+
+# Add DNS record in lxc guest's /etc/hosts
+# record fqdn names of the lxc host
+# with the gateway IP
+#
 {{ lxc_name }}-lxc-host-host:
   file.append:
     - require_in:
       - cmd: start-{{ lxc_name }}-lxc-service
     - name: {{ lxc_rootfs }}/etc/hosts
-    - text: {{ lxc_gateway }} {{ grains.get('fqdn') }}
+    - text: "{{ lxc_gateway }} {{ grains.get('fqdn') }} # entry managed by salt, lxc host fqdn"
 
+# Remove entries on lxc guests containers's /etc/hosts whith
+# lxc_name associated with another IP
+#
+{{ lxc_name }}-lxc-host-guest-cleanup:
+  file.replace:
+    - require_in:
+      file: {{ lxc_name }}-lxc-host-guest
+    - name: {{ lxc_rootfs }}/etc/hosts
+    # match the domain ( lxc_name ) on lines not containing the ip ( lxc_ip4 )
+    - pattern: ^((?!{{ lxc_ip4.replace('.', '\.')  }}).)*{{ lxc_name.replace('.', '\.') }}(.)*$
+    - repl: ""
+    - flags: ['IGNORECASE','MULTILINE', 'DOTALL']
+    - bufsize: file
+    - show_changes: True
+
+# Add entries on lxc guests's /etc/hosts with
+# lxc_name and related IP on the lxc netxwork
+# network
+#
 {{ lxc_name }}-lxc-host-guest:
   file.append:
     - require_in:
       - cmd: start-{{ lxc_name }}-lxc-service
     - name: {{ lxc_rootfs }}/etc/hosts
-    - text: {{ lxc_ip4 }} {{ lxc_name }}
+    - text: "{{ lxc_ip4 }} {{ lxc_name }} # entry managed by salt lxc-host detection"
 
 start-{{ lxc_name }}-lxc-service:
   cmd.run:
@@ -197,14 +235,35 @@ start-{{ lxc_name }}-lxc-service:
 {% set dummy=makinahosts.extend(data) -%}
 {% endif -%}
 {% endfor -%}
+
+# loop to create a dynamic list of states based on pillar content
+# Adding hosts records, similar as the ones explained in servers.hosts state
+# But only recording the one using 127.0.0.1 (the lxc host loopback)
 {% for host in makinahosts -%}
+### Manage only refs to localhost
 {% if host['ip'] == '127.0.0.1' -%}
+# the state name should not contain dots and spaces
+{{ host['ip'].replace('.', '_') }}-{{ host['hosts'].replace(' ', '_') }}-host-cleanup:
+  # detect presence of the same host name with another IP
+  file.replace:
+    - require:
+      - cmd: {{ lxc_name }}-lxc
+    - require_in:
+      - file: {{ host['ip'].replace('.', '_') }}-{{ host['hosts'].replace(' ', '_') }}-host
+    - name: {{ lxc_rootfs }}/etc/hosts
+    # match the domain ( host['hosts']) on lines not containing the ip (lxc_gateway)
+    - pattern: ^((?!{{ lxc_gateway.replace('.', '\.')  }}).)*{{ host['hosts'].replace('.', '\.') }}(.)*$
+    - repl: ""
+    - flags: ['IGNORECASE','MULTILINE', 'DOTALL']
+    - bufsize: file
+    - show_changes: True
+# the state name should not contain dots and spaces
 lxc-{{ lxc_name }}{{ host['ip'].replace('.', '_') }}-{{ host['hosts'].replace(' ', '_') }}-host:
   file.append:
     - require:
       - cmd: {{ lxc_name }}-lxc
     - name: {{ lxc_rootfs }}/etc/hosts
-    - text: {{ lxc_gateway }} {{ host['hosts'] }}
+    - text: "{{ lxc_gateway }} {{ host['hosts'] }} # entry managed by salt"
 {% endif %}
 {% endfor %}
 
