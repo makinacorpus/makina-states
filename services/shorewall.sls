@@ -168,12 +168,12 @@ shorewall-config:
       - cmd: shorewall-restart
 
 toggle-shorewall:
-  file.sed:
+  file.replace:
     - name: /etc/default/shorewall
-    - before: 'startup\s*=\s*.*'
-    - after: 'startup={{ settings['ishorewallen'] }}'
-    - limit: 'startup\s*=\s*(0|1|True|False)'
-    - flags: g
+    - pattern: 'startup\s*=\s*.*'
+    - replace: 'startup={{ settings['ishorewallen'] }}'
+    - search_only: 'startup\s*=\s*(0|1|True|False)'
+    - flags: ['MULTILINE', 'DOTALL']
     - require_in:
       - cmd: shorewall-restart
       - file: rc-local

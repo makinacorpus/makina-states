@@ -57,12 +57,12 @@ nslcd:
 
 # add ldap tonsswitch
 nslcd-nsswitch-conf:
-  file.sed:
+  file.replace:
     - name: /etc/nsswitch.conf
-    - before: 'compat( ldap)*'
-    - after: 'compat ldap'
-    - limit: '^(passwd|group|shadow):'
-    - flags: g
+    - pattern: 'compat( ldap)*'
+    - replace: 'compat ldap'
+    - search_only: '^(passwd|group|shadow):'
+    - flags: ['MULTILINE', 'DOTALL']
     - watch_in:
       - cmd: nscd-restart
 

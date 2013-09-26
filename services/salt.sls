@@ -207,11 +207,11 @@ salt-env:
 
 {% if grains['os'] == 'Ubuntu' %}
 makina-env-bin:
-   file.sed:
+   file.replace:
     - name: /etc/environment
-    - before: '({{ saltbinpath }}:)*/usr/local/sbin'
-    - after: '{{ saltbinpath }}:/usr/local/sbin'
-    - flags: g
+    - pattern: '({{ saltbinpath }}:)*/usr/local/sbin'
+    - replace: '{{ saltbinpath }}:/usr/local/sbin'
+    - flags: ['MULTILINE', 'DOTALL']
 {% endif %}
 
 salt-dirs-perms:

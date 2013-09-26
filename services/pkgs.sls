@@ -35,9 +35,10 @@ update-default-repos{{suf}}:
 remove-default-repos{{suf}}:
   file.sed:
     - name: {{root}}/etc/apt/sources.list
-    - before: .*
-    - after: ''
-    - limit: ({{default_os_mirrors}}|{{mirror}})
+    - pattern: .*
+    - replace: ''
+    - search_only: ({{default_os_mirrors}}|{{mirror}})
+    - flags: ['MULTILINE', 'DOTALL']
 
 main-repos{{suf}}:
   file.append:
