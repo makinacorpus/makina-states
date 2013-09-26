@@ -92,6 +92,7 @@ sys-pkgs:
       - mc
       - mlocate
       - psmisc
+      - debconf-utils
       - pwgen
       - smartmontools
       - unzip
