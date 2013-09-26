@@ -33,7 +33,7 @@ update-default-repos{{suf}}:
       - file: main-repos-updates{{suf}}
 {% endif %}
 remove-default-repos{{suf}}:
-  file.sed:
+  file.replace:
     - name: {{root}}/etc/apt/sources.list
     - pattern: .*
     - replace: ''
