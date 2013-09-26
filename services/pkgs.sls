@@ -32,10 +32,16 @@ update-default-repos{{suf}}:
       - file: main-repos{{suf}}
       - file: main-repos-updates{{suf}}
 {% endif %}
+remove-default-src-repos{{suf}}:
+  file.replace:
+    - name: {{root}}/etc/apt/sources.list
+    - pattern: deb-src\s.*({{default_os_mirrors}}|{{mirror}}).*
+    - repl: ''
+    - flags: ['MULTILINE', 'DOTALL']
 remove-default-repos{{suf}}:
   file.replace:
     - name: {{root}}/etc/apt/sources.list
-    - pattern: .*({{default_os_mirrors}}|{{mirror}}).*
+    - pattern: deb\s.*({{default_os_mirrors}}|{{mirror}}).*
     - repl: ''
     - flags: ['MULTILINE', 'DOTALL']
 
@@ -43,6 +49,19 @@ main-repos{{suf}}:
   file.append:
     - name: {{root}}/etc/apt/sources.list
     - text: deb {{mirror}} {{dist}} {{comps}}
+    - require:
+      - file: remove-default-repos{{suf}}
+    {% if root=='' %}
+    - require_in:
+      - pkg: sys-pkgs
+      - pkg: dev-pkgs
+      - pkg: net-pkgs
+      - pkg: salt-pkgs
+    {% endif %}
+main-src-repos{{suf}}:
+  file.append:
+    - name: {{root}}/etc/apt/sources.list
+    - text: deb-src {{mirror}} {{dist}} {{comps}}
     - require:
       - file: remove-default-repos{{suf}}
     {% if root=='' %}
