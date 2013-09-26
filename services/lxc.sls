@@ -243,7 +243,7 @@ start-{{ lxc_name }}-lxc-service:
 ### Manage only refs to localhost
 {% if host['ip'] == '127.0.0.1' -%}
 # the state name should not contain dots and spaces
-{{ host['ip'].replace('.', '_') }}-{{ host['hosts'].replace(' ', '_') }}-host-cleanup:
+{{ host['ip'].replace('.', '_') }}-{{ host['hosts'].replace(' ', '_') }}-lxc-host-cleanup:
   # detect presence of the same host name with another IP
   file.replace:
     - require:
