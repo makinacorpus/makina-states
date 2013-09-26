@@ -210,7 +210,7 @@ makina-env-bin:
    file.replace:
     - name: /etc/environment
     - pattern: '({{ saltbinpath }}:)*/usr/local/sbin'
-    - replace: '{{ saltbinpath }}:/usr/local/sbin'
+    - repl: '{{ saltbinpath }}:/usr/local/sbin'
     - flags: ['MULTILINE', 'DOTALL']
 {% endif %}
 

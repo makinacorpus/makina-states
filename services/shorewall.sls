@@ -170,9 +170,8 @@ shorewall-config:
 toggle-shorewall:
   file.replace:
     - name: /etc/default/shorewall
-    - pattern: 'startup\s*=\s*.*'
-    - replace: 'startup={{ settings['ishorewallen'] }}'
-    - search_only: 'startup\s*=\s*(0|1|True|False)'
+    - pattern: 'startup\s*=\s*(0|1|True|False)'
+    - repl: 'startup={{ settings['ishorewallen'] }}'
     - flags: ['MULTILINE', 'DOTALL']
     - require_in:
       - cmd: shorewall-restart

@@ -35,9 +35,8 @@ update-default-repos{{suf}}:
 remove-default-repos{{suf}}:
   file.replace:
     - name: {{root}}/etc/apt/sources.list
-    - pattern: .*
-    - replace: ''
-    - search_only: ({{default_os_mirrors}}|{{mirror}})
+    - pattern: .*({{default_os_mirrors}}|{{mirror}}).*
+    - repl: ''
     - flags: ['MULTILINE', 'DOTALL']
 
 main-repos{{suf}}:

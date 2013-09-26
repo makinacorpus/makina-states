@@ -61,9 +61,7 @@ extend:
       - enable: True
       - watch:
         - file: sshd_config
-      {%- if grains['os_family'] == 'Debian' %}
-        - name: ssh
-      {% endif %}
+      {% if grains['os_family'] == 'Debian' %}- name: ssh{% endif %}
 
   sshd_config:
     file.managed:

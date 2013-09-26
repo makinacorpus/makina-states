@@ -59,9 +59,9 @@ nslcd:
 nslcd-nsswitch-conf:
   file.replace:
     - name: /etc/nsswitch.conf
-    - pattern: 'compat( ldap)*'
-    - replace: 'compat ldap'
-    - search_only: '^(passwd|group|shadow):'
+    - search_only: ''
+    - pattern: '^(passwd|group|shadow):\s*compat( ldap)*'
+    - repl: '\1: compat ldap'
     - flags: ['MULTILINE', 'DOTALL']
     - watch_in:
       - cmd: nscd-restart
