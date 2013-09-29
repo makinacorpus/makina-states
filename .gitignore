@@ -1,4 +1,8 @@
 .installed.cfg
+.saltcheck
+include
+lib
+local
 bin
 .mr.developer.cfg
 develop-eggs/

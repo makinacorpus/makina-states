@@ -1,3 +1,18 @@
+#
+# Salt base installation
+# We set
+#   - salt root in /srv/salt
+#   - salt conf in /etc/salt
+#   - pillar in /srv/pillar
+#   - projects code source is to be managed in /srv/projects
+#
+# We create a group called salt-admin which has rights in /srv/{pillar, salt, projects}
+#
+
+{% set group = pillar.get('salt.filesystem.group', 'salt-admin') %}
+{% set group_id = pillar.get('salt.filesystem.gid', 65753) %}
+
+
 {% set salt_modules=[
     '_grains',
     '_macros',
@@ -214,18 +229,52 @@ makina-env-bin:
     - flags: ['MULTILINE', 'DOTALL']
 {% endif %}
 
+{{group}}:
+  group.present:
+    - system: True
+    {% if group_id %}- gid: {{group_id}}{% endif %}
+
 salt-dirs-perms:
   file.directory:
     - names:
-      - /var/log/salt
       - /etc/salt
-      - /var/run/salt
-      - /var/cache/salt
       - /srv/salt
+      - /srv/pillar
+      - /srv/projects
+    - user: root
+    - group: {{group}}
+    - dir_mode: 0770
+    - recurse: [user, group, mode]
+    - require:
+      - group: {{group}}
+
+salt-dirs-reset-perms-for-virtualenv:
+  file.directory:
+    - names:
+      - /srv/salt/makina-states/bin
+      - /srv/salt/makina-states/lib
+      - /srv/salt/makina-states/include
+      - /srv/salt/makina-states/local
     - user: root
     - group: root
     - dir_mode: 0750
     - recurse: [user, group, mode]
+    - require:
+        - file: salt-dirs-perms
+
+salt-dirs-restricted-perms:
+  file.directory:
+    - names:
+      - /var/log/salt
+      - /var/run/salt
+      - /var/cache/salt
+      - /etc/salt/pki
+    - user: root
+    - group: salt
+    - dir_mode: 0750
+    - recurse: [user, group, mode]
+    - require:
+        - file: salt-dirs-perms
 
 salt-logs:
   file.managed:
@@ -249,5 +298,5 @@ update-salt:
       - git: salt-git
     - watch_in:
       - service: salt-master
-      - service: salt-minion 
+      - service: salt-minion
 
