@@ -185,7 +185,6 @@ minion-sock:
     - mode: 700
     - makedirs: True
 
-
 salt-sock:
   file.directory:
     - name: /var/run/salt/salt
@@ -248,20 +247,6 @@ salt-dirs-perms:
     - require:
       - group: {{group}}
 
-salt-dirs-reset-perms-for-virtualenv:
-  file.directory:
-    - names:
-      - /srv/salt/makina-states/bin
-      - /srv/salt/makina-states/lib
-      - /srv/salt/makina-states/include
-      - /srv/salt/makina-states/local
-    - user: root
-    - group: root
-    - dir_mode: 0750
-    - recurse: [user, group, mode]
-    - require:
-        - file: salt-dirs-perms
-
 salt-dirs-restricted-perms:
   file.directory:
     - names:
@@ -275,6 +260,22 @@ salt-dirs-restricted-perms:
     - recurse: [user, group, mode]
     - require:
         - file: salt-dirs-perms
+
+salt-dirs-reset-perms-for-virtualenv:
+  file.directory:
+    - names:
+      - /srv/salt/makina-states/bin
+      - /srv/salt/makina-states/lib
+      - /srv/salt/makina-states/include
+      - /srv/salt/makina-states/local
+    - user: root
+    - group: root
+    - dir_mode: 0755
+    - recurse: [user, group, mode]
+    - require:
+        - file: salt-dirs-perms
+        - file: salt-dirs-restricted-perms
+        - cmd: update-salt
 
 salt-logs:
   file.managed:
