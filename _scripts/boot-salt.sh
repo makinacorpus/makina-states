@@ -37,7 +37,7 @@ fi
 i_prereq() {
     echo "Installing pre requisites"
     echo 'changed="yes" comment="prerequisites installed"'
-    apt-get update && apt-get install -y build-essential m4 libtool pkg-config autoconf gettext bzip2 groff man-db automake libsigc++-2.0-dev tcl8.5 git python-dev swig libssl-dev libzmq-dev libyaml-dev debconf-utils
+    apt-get update && apt-get install -y build-essential m4 libtool pkg-config autoconf gettext bzip2 groff man-db automake libsigc++-2.0-dev tcl8.5 git python-dev swig libssl-dev libzmq-dev libyaml-dev debconf-utils python-virtualenv
 }
 die_in_error() {
     ret=$?
@@ -95,15 +95,25 @@ else
     git pull
 fi
 cd $MS
-if [[ ! -f "$ROOT/.boot_bootstrap" ]];then
+if [[ ! -f "$ROOT/.boot_ve_ve" ]];then
+    virtualenv --no-site-packages . &&\
+    . bin/activate &&\
+    easy_install -U setuptools &&\
+    deactivate &&\
+    touch "$ROOT/.boot_ve_ve"
+fi
+if [[ -e bin/activate ]];then
+    . bin/activate
+fi
+if [[ ! -f "$ROOT/.boot_vebootstrap" ]];then
     echo "Launching buildout bootstrap for salt initialisation"
     python bootstrap.py || die_in_error "Failed bootstrap"
-    touch "$ROOT/.boot_bootstrap"
+    touch "$ROOT/.boot_vebootstrap"
 fi
-if [[ ! -f "$ROOT/.boot_buildout" ]];then
+if [[ ! -f "$ROOT/.boot_vebuildout" ]];then
     echo "Launching buildout for salt initialisation"
     bin/buildout || die_in_error "Failed buildout"
-    touch "$ROOT/.boot_buildout"
+    touch "$ROOT/.boot_vebuildout"
 fi
 if [[ ! -f /srv/pillar/top.sls ]];then
     cat > /srv/pillar/top.sls << EOF
@@ -140,7 +150,8 @@ mastersalt-minion:
 EOF
     fi
 fi
-if [[ ! -f "$ROOT/.boot_bootstrap_salt" ]];then
+
+if [[ ! -f "$ROOT/.boot_vebootstrap_salt" ]];then
     ds=y
     cd $MS
     ps aux|egrep "salt-(master|minion|syndic)" |awk '{print $2}'|xargs kill -9
@@ -162,9 +173,9 @@ if [[ ! -f "$ROOT/.boot_bootstrap_salt" ]];then
     fi
     cat $SALT_OUTFILE
     echo "changed=yes comment='salt installed'"
-    touch "$ROOT/.boot_bootstrap_salt"
+    touch "$ROOT/.boot_vebootstrap_salt"
     if [[ "$bootstrap" == "mastersalt" ]];then
-        touch "$ROOT/.boot_bootstrap_mastersalt"
+        touch "$ROOT/.boot_vebootstrap_mastersalt"
     fi
 fi
 # in case of redoing a bootstrap for wiring on mastersalt
@@ -172,7 +183,7 @@ fi
 # installation,
 # we will run the specific mastersalt parts to wire
 # on the global mastersalt
-if  [[ ! -e "$ROOT/.boot_bootstrap_mastersalt" ]] \
+if  [[ ! -e "$ROOT/.boot_vebootstrap_mastersalt" ]] \
     && [[ "$bootstrap" == "mastersalt" ]];then
     ds=y
     cd $MS
@@ -187,7 +198,7 @@ if  [[ ! -e "$ROOT/.boot_bootstrap_mastersalt" ]] \
     service mastersalt-minion restart
     cat $SALT_OUTFILE
     echo "changed=yes comment='mastersalt installed'"
-    touch "$ROOT/.boot_bootstrap_mastersalt"
+    touch "$ROOT/.boot_vebootstrap_mastersalt"
 fi
 if [[ -z $ds ]];then
     echo 'changed="false" comment="already bootstrapped"'
