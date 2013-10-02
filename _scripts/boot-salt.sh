@@ -222,10 +222,6 @@ if     [[ ! -e "/etc/salt" ]]\
     fi
     cat $SALT_OUTFILE
     echo "changed=yes comment='salt installed'"
-    touch "$ROOT/.boot_vebootstrap_salt"
-    if [[ "$bootstrap" == "mastersalt" ]];then
-        touch "$ROOT/.boot_vebootstrap_mastersalt"
-    fi
 fi
 # in case of redoing a bootstrap for wiring on mastersalt
 # after having already bootstrapped using a regular salt
