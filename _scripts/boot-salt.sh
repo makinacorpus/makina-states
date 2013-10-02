@@ -201,7 +201,7 @@ if     [[ ! -e "/etc/salt" ]]\
     cd $MS
     echo "Upgrading salt base code source"
     bin/develop up -fv
-    ps aux|egrep "salt-(master|minion|syndic)" |awk '{print $2}'|xargs kill -9
+    ps aux|egrep "salt-(master|minion|syndic)" |awk '{print $2}'|xargs kill -9 &> /dev/null 
     echo "Boostrapping salt"
     if [[ ! -e /etc/salt ]];then
         mkdir /etc/salt
@@ -213,7 +213,7 @@ if     [[ ! -e "/etc/salt" ]]\
     fi
     echo "Waiting for key to be accepted"
     sleep 10
-    ps aux|grep salt-minion|awk '{print $2}'|xargs kill -9
+    ps aux|grep salt-minion|awk '{print $2}'|xargs kill -9 &> /dev/null 
     service salt-minion restart
     salt-key -A -y
     ret=$?
