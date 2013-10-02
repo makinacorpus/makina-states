@@ -154,7 +154,6 @@ if    [[ ! -e "$MS/bin/buildout" ]]\
         die $ret "Failed buildout"
     fi
 fi
-#exit -1
 if [[ ! -f /srv/pillar/top.sls ]];then
     cat > /srv/pillar/top.sls << EOF
 base:
@@ -181,19 +180,31 @@ if [[ $SALT_BOOT == "mastersalt" ]] && [[ ! -f /srv/pillar/mastersalt.sls ]];the
         sed -re "/('|\")\*('|\"):/ {
 a\     - mastersalt
 }" -i /srv/pillar/top.sls
-fi
-if [[ ! -f /srv/pillar/mastersalt.sls ]];then
+    fi
+    if [[ ! -f /srv/pillar/mastersalt.sls ]];then
     cat > /srv/pillar/mastersalt.sls << EOF
 mastersalt-minion:
   master: ${MASTERSALT}
   master_port: ${MASTERSALT_PORT}
 EOF
+    fi
 fi
-if [[ ! -f "$ROOT/.boot_vebootstrap_salt" ]];then
+#exit -1
+if     [[ ! -e "/etc/salt" ]]\
+    || [[ ! -e "/etc/salt/master" ]]\
+    || [[ ! -e "/etc/salt/pki/minion/minion.pem" ]]\
+    || [[ ! -e "/etc/salt/pki/master/master.pem" ]]\
+    || [[ $(find /etc/salt/pki/master/minions -type f|wc -l) == "0" ]]\
+    || [[ $(ps aux|grep salt-master|wc -l) == "0" ]]\
+    || [[ $(ps aux|grep salt-minion|wc -l) == "0" ]]\
+    ;then
     ds=y
     cd $MS
     ps aux|egrep "salt-(master|minion|syndic)" |awk '{print $2}'|xargs kill -9
     echo "Boostrapping salt"
+    if [[ ! -e /etc/salt ]];then
+        mkdir /etc/salt
+    fi
     ret=$(salt_call --local state.sls $bootstrap)
     if [[ $ret != 0 ]];then
         echo "Failed bootstrap: $bootstrap !"
