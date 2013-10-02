@@ -15,6 +15,10 @@
 # - If the script fails, just relaunch it and it will continue where it was
 # - You can safely relaunch it
 #
+base_packages=""
+base_packages="$base_packages build-essential m4 libtool pkg-config autoconf gettext bzip2"
+base_packages="$base_packages groff man-db automake libsigc++-2.0-dev tcl8.5 git python-dev"
+base_packages="$base_packages swig libssl-dev libzmq-dev libyaml-dev debconf-utils python-virtualenv"
 
 export PATH=/srv/salt/makina-states/bin:$PATH
 MASTERSALT="${MASTERSALT:-mastersalt.makina-corpus.net}"
@@ -35,15 +39,28 @@ if [[ -n $SALT_BOOT ]];then
     bootstrap="${bootstrap}_${SALT_BOOT}"
 fi
 i_prereq() {
-    echo "Installing pre requisites"
-    echo 'changed="yes" comment="prerequisites installed"'
-    apt-get update && apt-get install -y build-essential m4 libtool pkg-config autoconf gettext bzip2 groff man-db automake libsigc++-2.0-dev tcl8.5 git python-dev swig libssl-dev libzmq-dev libyaml-dev debconf-utils python-virtualenv
+    to_install=""
+    for i in $base_packages;do
+        if ! dpkg -l $i &> /dev/null;then
+            to_install="$to_install $i"
+        fi
+    done
+    if [[ -n $to_install ]];then
+        echo "Installing pre requisites: $to_install"
+        echo 'changed="yes" comment="prerequisites installed"'
+        apt-get update && apt-get install -y --force-yes $to_install
+    fi
+}
+die() {
+    ret=$1
+    shift
+    echo $@
+    exit $ret
 }
 die_in_error() {
     ret=$?
     if [[ $ret != 0 ]];then
-        echo $@
-        exit $ret
+        die $ret $@
     fi
 }
 #
@@ -85,35 +102,54 @@ for i in "$PILLAR" "$ROOT";do
         mkdir -pv $i
     fi
 done
-if [[ ! -f "$ROOT/.boot_prereq" ]];then
-    i_prereq || die_in_error "Failed install rerequisites"
-    touch "$ROOT/.boot_prereq"
-fi
+i_prereq || die_in_error "Failed install rerequisites"
 if [[ ! -d "$MS/.git" ]];then
     git clone "$STATES_URL" "$MS" || die_in_error "Failed to download makina-states"
 else
-    git pull
+    cd $MS && git pull || die_in_error "Failed to update makina-states"
 fi
 cd $MS
-if [[ ! -f "$ROOT/.boot_ve_ve" ]];then
-    virtualenv --no-site-packages . &&\
+if     [[ ! -e "$MS/bin/activate" ]] \
+    || [[ ! -e "$MS/lib" ]] \
+    || [[ ! -e "$MS/include" ]] \
+    ;then
+    virtualenv --no-site-packages --unzip-setuptools . &&\
     . bin/activate &&\
     easy_install -U setuptools &&\
-    deactivate &&\
-    touch "$ROOT/.boot_ve_ve"
+    deactivate
 fi
 if [[ -e bin/activate ]];then
     . bin/activate
 fi
-if [[ ! -f "$ROOT/.boot_vebootstrap" ]];then
+if    [[ ! -e "$MS/bin/buildout" ]]\
+   || [[ ! -e "$MS/parts" ]] \
+   || [[ ! -e "$MS/develop-eggs" ]] \
+    ;then
     echo "Launching buildout bootstrap for salt initialisation"
-    python bootstrap.py || die_in_error "Failed bootstrap"
-    touch "$ROOT/.boot_vebootstrap"
+    python bootstrap.py
+    ret=$?
+    if [[ "$ret" != "0" ]];then
+        rm -rf "$MS/parts" "$MS/develop-eggs"
+        die $ret "Failed bootstrap"
+    fi
 fi
-if [[ ! -f "$ROOT/.boot_vebuildout" ]];then
+if    [[ ! -e "$MS/bin/buildout" ]]\
+    || [[ ! -e "$MS/bin/salt-ssh" ]]\
+    || [[ ! -e "$MS/bin/salt" ]]\
+    || [[ ! -e "$MS/bin/mypy" ]]\
+    || [[ ! -e "$MS/.installed.cfg" ]]\
+    || [[ ! -e "$MS/src/salt/setup.py" ]]\
+    || [[ ! -e "$MS/src/docker/setup.py" ]]\
+    || [[ ! -e "$MS/src/m2crypto/setup.py" ]]\
+    || [[ ! -e "$MS/src/SaltTesting/setup.py" ]]\
+    ;then
     echo "Launching buildout for salt initialisation"
     bin/buildout || die_in_error "Failed buildout"
-    touch "$ROOT/.boot_vebuildout"
+    ret=$?
+    if [[ "$ret" != "0" ]];then
+        rm -rf "$MS/.installed.cfg"
+        die $ret "Failed buildout"
+    fi
 fi
 if [[ ! -f /srv/pillar/top.sls ]];then
     cat > /srv/pillar/top.sls << EOF
@@ -122,7 +158,7 @@ base:
 EOF
 fi
 if [[ $(grep -- "- salt" /srv/pillar/top.sls|wc -l) == "0" ]];then
-        sed -re "/('|\")\*('|\"):/ {
+    sed -re "/('|\")\*('|\"):/ {
 a\     - salt
 }" -i /srv/pillar/top.sls
 fi
@@ -141,16 +177,14 @@ if [[ $SALT_BOOT == "mastersalt" ]] && [[ ! -f /srv/pillar/mastersalt.sls ]];the
         sed -re "/('|\")\*('|\"):/ {
 a\     - mastersalt
 }" -i /srv/pillar/top.sls
-    fi
-    if [[ ! -f /srv/pillar/mastersalt.sls ]];then
-        cat > /srv/pillar/mastersalt.sls << EOF
+fi
+if [[ ! -f /srv/pillar/mastersalt.sls ]];then
+    cat > /srv/pillar/mastersalt.sls << EOF
 mastersalt-minion:
   master: ${MASTERSALT}
   master_port: ${MASTERSALT_PORT}
 EOF
-    fi
 fi
-
 if [[ ! -f "$ROOT/.boot_vebootstrap_salt" ]];then
     ds=y
     cd $MS
