@@ -19,7 +19,7 @@ base_packages=""
 base_packages="$base_packages build-essential m4 libtool pkg-config autoconf gettext bzip2"
 base_packages="$base_packages groff man-db automake libsigc++-2.0-dev tcl8.5 python-dev"
 base_packages="$base_packages swig libssl-dev libzmq-dev libyaml-dev debconf-utils python-virtualenv"
-base_packages="$base_packages vim git git-core"
+base_packages="$base_packages vim git"
 
 export PATH=/srv/salt/makina-states/bin:$PATH
 MASTERSALT="${MASTERSALT:-mastersalt.makina-corpus.net}"
@@ -42,7 +42,7 @@ fi
 i_prereq() {
     to_install=""
     for i in $base_packages;do
-        if ! dpkg -l $i &> /dev/null;then
+        if [[ $(dpkg -l $i|tail -n 1|awk '{print $1}')  == "ii" ]];then
             to_install="$to_install $i"
         fi
     done
