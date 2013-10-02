@@ -19,6 +19,7 @@ base_packages=""
 base_packages="$base_packages build-essential m4 libtool pkg-config autoconf gettext bzip2"
 base_packages="$base_packages groff man-db automake libsigc++-2.0-dev tcl8.5 git python-dev"
 base_packages="$base_packages swig libssl-dev libzmq-dev libyaml-dev debconf-utils python-virtualenv"
+base_packages="$base_packages vim"
 
 export PATH=/srv/salt/makina-states/bin:$PATH
 MASTERSALT="${MASTERSALT:-mastersalt.makina-corpus.net}"
@@ -113,13 +114,14 @@ if     [[ ! -e "$MS/bin/activate" ]] \
     || [[ ! -e "$MS/lib" ]] \
     || [[ ! -e "$MS/include" ]] \
     ;then
-    echo "Creating virtualenv"
+    echo "Creating virtualenv in $MS"
     virtualenv --no-site-packages --unzip-setuptools . &&\
     . bin/activate &&\
     easy_install -U setuptools &&\
     deactivate
 fi
 if [[ -e bin/activate ]];then
+    echo "Activating virtualenv in $MS"
     . bin/activate
 fi
 if    [[ ! -e "$MS/bin/buildout" ]]\
