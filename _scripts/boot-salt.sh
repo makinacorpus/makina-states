@@ -113,6 +113,7 @@ if     [[ ! -e "$MS/bin/activate" ]] \
     || [[ ! -e "$MS/lib" ]] \
     || [[ ! -e "$MS/include" ]] \
     ;then
+    echo "Creating virtualenv"
     virtualenv --no-site-packages --unzip-setuptools . &&\
     . bin/activate &&\
     easy_install -U setuptools &&\
@@ -151,6 +152,7 @@ if    [[ ! -e "$MS/bin/buildout" ]]\
         die $ret "Failed buildout"
     fi
 fi
+#exit -1
 if [[ ! -f /srv/pillar/top.sls ]];then
     cat > /srv/pillar/top.sls << EOF
 base:
