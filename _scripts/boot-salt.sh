@@ -42,7 +42,7 @@ fi
 i_prereq() {
     to_install=""
     for i in $base_packages;do
-        if [[ $(dpkg -l $i|tail -n 1|awk '{print $1}')  != "ii" ]];then
+        if [[ $(dpkg-query -s $i 2>/dev/null|egrep "^Status:"|grep installed|wc -l)  == "0" ]];then
             to_install="$to_install $i"
         fi
     done
