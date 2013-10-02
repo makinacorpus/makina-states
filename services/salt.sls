@@ -255,7 +255,7 @@ salt-dirs-restricted-perms:
       - /var/cache/salt
       - /etc/salt/pki
     - user: root
-    - group: salt-admin
+    - group: {{group}}
     - dir_mode: 0750
     - recurse: [user, group, mode]
     - require:
