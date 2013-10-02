@@ -256,7 +256,6 @@ if [[ "$bootstrap" == "mastersalt" ]];then
         service mastersalt-minion restart
         cat $SALT_OUTFILE
         echo "changed=yes comment='mastersalt installed'"
-        touch "$ROOT/.boot_vebootstrap_mastersalt"
     fi
 fi
 if [[ -z $ds ]];then
