@@ -227,7 +227,6 @@ fi
 # installation,
 # we will run the specific mastersalt parts to wire
 # on the global mastersalt
-#exit -1
 if [[ "$bootstrap" == "mastersalt" ]];then
     if     [[ ! -e "/etc/mastersalt" ]]\
         || [[ ! -e "/etc/mastersalt/master" ]]\
