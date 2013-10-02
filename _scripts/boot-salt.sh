@@ -107,7 +107,7 @@ i_prereq || die_in_error "Failed install rerequisites"
 if [[ ! -d "$MS/.git" ]];then
     git clone "$STATES_URL" "$MS" || die_in_error "Failed to download makina-states"
 else
-    cd $MS && git pull || die_in_error "Failed to update makina-states"
+    cd $MS && git checkout master && git pull || die_in_error "Failed to update makina-states"
 fi
 cd $MS
 if     [[ ! -e "$MS/bin/activate" ]] \
@@ -217,11 +217,11 @@ if     [[ ! -e "/etc/salt" ]]\
     service salt-minion restart
     salt-key -A -y
     ret=$?
+    cat $SALT_OUTFILE
     if [[ $ret != 0 ]];then
         echo "Failed accepting keys"
         exit $ret
     fi
-    cat $SALT_OUTFILE
     echo "changed=yes comment='salt installed'"
 fi
 # in case of redoing a bootstrap for wiring on mastersalt
@@ -248,13 +248,13 @@ if [[ "$bootstrap" == "mastersalt" ]];then
         ps aux|egrep "salt-(master|minion|syndic)"|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
         echo "Boostrapping salt"
         ret=$(salt_call --local state.sls $bootstrap)
+        cat $SALT_OUTFILE
         if [[ $ret != 0 ]];then
             echo "Failed bootstrap: $bootstrap !"
             exit $ret
         fi
         ps aux|grep salt-minion|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null 
         service mastersalt-minion restart
-        cat $SALT_OUTFILE
         echo "changed=yes comment='mastersalt installed'"
     fi
 fi
