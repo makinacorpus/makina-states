@@ -189,7 +189,6 @@ mastersalt-minion:
 EOF
     fi
 fi
-#exit -1
 if     [[ ! -e "/etc/salt" ]]\
     || [[ ! -e "/etc/salt/master" ]]\
     || [[ ! -e "/etc/salt/pki/minion/minion.pem" ]]\
@@ -228,22 +227,34 @@ fi
 # installation,
 # we will run the specific mastersalt parts to wire
 # on the global mastersalt
-if  [[ ! -e "$ROOT/.boot_vebootstrap_mastersalt" ]] \
-    && [[ "$bootstrap" == "mastersalt" ]];then
-    ds=y
-    cd $MS
-    ps aux|egrep "salt-(master|minion|syndic)" |awk '{print $2}'|xargs kill -9
-    echo "Boostrapping salt"
-    ret=$(salt_call --local state.sls $bootstrap)
-    if [[ $ret != 0 ]];then
-        echo "Failed bootstrap: $bootstrap !"
-        exit $ret
+#exit -1
+if [[ "$bootstrap" == "mastersalt" ]];then
+    if     [[ ! -e "/etc/mastersalt" ]]\
+        || [[ ! -e "/etc/mastersalt/master" ]]\
+        || [[ ! -e "/etc/mastersalt/pki/minion/minion.pem" ]]\
+        || [[ ! -e "/etc/mastersalt/pki/master/master.pem" ]]\
+        || [[ $(find /etc/salt/pki/master/minions -type f|wc -l) == "0" ]]\
+        || [[ $(ps aux|grep salt-master|grep mastersalt|wc -l) == "0" ]]\
+        || [[ $(ps aux|grep salt-minion|grep mastersalt|wc -l) == "0" ]]\
+        ;then
+        ds=y
+        cd $MS
+        if [[ ! -e /etc/mastersalt ]];then
+            mkdir /etc/mastersalt
+        fi 
+        ps aux|egrep "salt-(master|minion|syndic)" |awk '{print $2}'|xargs kill -9
+        echo "Boostrapping salt"
+        ret=$(salt_call --local state.sls $bootstrap)
+        if [[ $ret != 0 ]];then
+            echo "Failed bootstrap: $bootstrap !"
+            exit $ret
+        fi
+        ps aux|grep salt-minion|grep mastersalt|awk '{print $2}'|xargs kill -9
+        service mastersalt-minion restart
+        cat $SALT_OUTFILE
+        echo "changed=yes comment='mastersalt installed'"
+        touch "$ROOT/.boot_vebootstrap_mastersalt"
     fi
-    ps aux|grep salt-minion|grep mastersalt|awk '{print $2}'|xargs kill -9
-    service mastersalt-minion restart
-    cat $SALT_OUTFILE
-    echo "changed=yes comment='mastersalt installed'"
-    touch "$ROOT/.boot_vebootstrap_mastersalt"
 fi
 if [[ -z $ds ]];then
     echo 'changed="false" comment="already bootstrapped"'
