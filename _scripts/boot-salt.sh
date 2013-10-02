@@ -194,8 +194,8 @@ if     [[ ! -e "/etc/salt" ]]\
     || [[ ! -e "/etc/salt/pki/minion/minion.pem" ]]\
     || [[ ! -e "/etc/salt/pki/master/master.pem" ]]\
     || [[ $(find /etc/salt/pki/master/minions -type f|wc -l) == "0" ]]\
-    || [[ $(ps aux|grep salt-master|wc -l) == "0" ]]\
-    || [[ $(ps aux|grep salt-minion|wc -l) == "0" ]]\
+    || [[ $(ps aux|grep salt-master|grep -v grep|wc -l) == "0" ]]\
+    || [[ $(ps aux|grep salt-minion|grep -v grep|wc -l) == "0" ]]\
     ;then
     ds=y
     cd $MS
@@ -233,8 +233,8 @@ if [[ "$bootstrap" == "mastersalt" ]];then
         || [[ ! -e "/etc/mastersalt/pki/minion/minion.pem" ]]\
         || [[ ! -e "/etc/mastersalt/pki/master/master.pem" ]]\
         || [[ $(find /etc/salt/pki/master/minions -type f|wc -l) == "0" ]]\
-        || [[ $(ps aux|grep salt-master|grep mastersalt|wc -l) == "0" ]]\
-        || [[ $(ps aux|grep salt-minion|grep mastersalt|wc -l) == "0" ]]\
+        || [[ $(ps aux|grep salt-master|grep mastersalt|grep -v grep|wc -l) == "0" ]]\
+        || [[ $(ps aux|grep salt-minion|grep mastersalt|grep -v grep|wc -l) == "0" ]]\
         ;then
         ds=y
         cd $MS
