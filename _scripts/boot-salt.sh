@@ -245,14 +245,14 @@ if [[ "$bootstrap" == "mastersalt" ]];then
         if [[ ! -e /etc/mastersalt ]];then
             mkdir /etc/mastersalt
         fi 
-        ps aux|egrep "salt-(master|minion|syndic)" |awk '{print $2}'|xargs kill -9
+        ps aux|egrep "salt-(master|minion|syndic)" |awk '{print $2}'|xargs kill -9 &> /dev/null
         echo "Boostrapping salt"
         ret=$(salt_call --local state.sls $bootstrap)
         if [[ $ret != 0 ]];then
             echo "Failed bootstrap: $bootstrap !"
             exit $ret
         fi
-        ps aux|grep salt-minion|grep mastersalt|awk '{print $2}'|xargs kill -9
+        ps aux|grep salt-minion|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null 
         service mastersalt-minion restart
         cat $SALT_OUTFILE
         echo "changed=yes comment='mastersalt installed'"
