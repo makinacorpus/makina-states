@@ -17,9 +17,9 @@
 #
 base_packages=""
 base_packages="$base_packages build-essential m4 libtool pkg-config autoconf gettext bzip2"
-base_packages="$base_packages groff man-db automake libsigc++-2.0-dev tcl8.5 git python-dev"
+base_packages="$base_packages groff man-db automake libsigc++-2.0-dev tcl8.5 python-dev"
 base_packages="$base_packages swig libssl-dev libzmq-dev libyaml-dev debconf-utils python-virtualenv"
-base_packages="$base_packages vim"
+base_packages="$base_packages vim git git-core"
 
 export PATH=/srv/salt/makina-states/bin:$PATH
 MASTERSALT="${MASTERSALT:-mastersalt.makina-corpus.net}"
@@ -199,6 +199,8 @@ if     [[ ! -e "/etc/salt" ]]\
     ;then
     ds=y
     cd $MS
+    echo "Upgrading salt base code source"
+    bin/develop up -fv
     ps aux|egrep "salt-(master|minion|syndic)" |awk '{print $2}'|xargs kill -9
     echo "Boostrapping salt"
     if [[ ! -e /etc/salt ]];then
@@ -238,6 +240,8 @@ if [[ "$bootstrap" == "mastersalt" ]];then
         ;then
         ds=y
         cd $MS
+        echo "Upgrading salt base code source"
+        bin/develop up -fv
         if [[ ! -e /etc/mastersalt ]];then
             mkdir /etc/mastersalt
         fi 
