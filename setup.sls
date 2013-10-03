@@ -38,26 +38,3 @@ include:
   {% if mmaster %}
   - makina-states.services.mastersalt_master
   {% endif %}
-
-salt-buildout-bootstrap:
-  cmd.run:
-    - name: python bootstrap.py
-    - cwd: {{msr}}
-    - require:
-      - git: makina-states
-      - git: salt-git
-      - git: m2crypto
-      - git: SaltTesting-git
-
-salt-buildout-run:
-  cmd.run:
-    - name: bin/buildout -N
-    - cwd: {{msr}}
-    - require_in:
-      - service: salt-master
-      - service: salt-minion
-      {% if mmaster %}- service: mastersalt-master  {% endif %}
-      {% if mmaster %}- service: mastersalt-minion  {% endif %}
-    - require:
-      - cmd: salt-buildout-bootstrap
-

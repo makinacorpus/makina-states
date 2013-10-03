@@ -11,6 +11,8 @@
 
 {% set group = pillar.get('salt.filesystem.group', 'salt-admin') %}
 {% set group_id = pillar.get('salt.filesystem.gid', 65753) %}
+{% set msr='/srv/salt/makina-states' %}
+{% set saltbinpath = msr+'/bin' %}
 
 
 {% set salt_modules=[
@@ -57,8 +59,9 @@
 # on next runs as we reset perms on repos, just set filemode=false
 # do not use cwd as if dir does not exist, if will fail the entire state
   cmd.run:
-    - name: cd {{data['target']}}  && git config --local core.filemode false
-    - onlyif: ls -d {{git}}
+    - name: cd "{{data['target']}}" && git config --local core.filemode false
+    - onlyif: ls -d "{{git}}"
+    - unless: if [[ -d "{{git}}" ]];then cd "{{data['target']}}" && grep -q "filemode = false" .git/config;fi
 # on each run, update the code
   git.latest:
     - name: {{data['name']}}
@@ -101,6 +104,24 @@ salt-modules:
                   ln -vsf "$f" "/srv/salt/$i";
               done;
             done;
+    - unless: |
+              for i in _states _grains _modules _renderers _returners;do
+                for f in $(find /srv/salt/makina-states/$i -name "*py" -type f);do
+                  dest="$f";
+                  sym="/srv/salt/$i/$(basename $f)";
+                  if [[ ! -e  "$sym" ]];then
+                    echo "$sym not present";
+                    exit -1;
+                  fi;
+                  if [[ -h "$sym" ]];then
+                    if [[ "$(readlink $sym)" != "$dest" ]];then
+                      echo "$sym != $dest";
+                      exit -1;
+                    fi;
+                  fi;
+                done;
+              done;
+              exit 0;
 
 salt-master-conf:
   file.managed:
@@ -122,6 +143,7 @@ salt-master:
   service.running:
     - enable: True
     - watch:
+      - service: salt-minion
       - cmd: salt-modules
       - file: makina-states-dirs
       - file: salt-master
@@ -132,29 +154,50 @@ salt-master:
       - git: openssh-formulae
       - git: openstack-formulae
       - git: salt-formulae
-      - git: salt-git
       - git: SaltTesting-git
 
-salt-minion:
+# # make a proxy between service and master for when
+# # there is a master restart to let minions re-auth
+# salt-minion-wait-restart:
+#   cmd.run:
+#     - name: sleep 13
+#     - watch_in:
+#      - file:salt-minion-job
+#     - watch:
+#       - cmd: salt-modules
+#       - file: makina-states-dirs
+#       - file: salt-master
+#       - file: salt-minion-conf
+#       - git: m2crypto
+#       - git: makina-states
+#       - git: openssh-formulae
+#       - git: openstack-formulae
+#       - git: salt-formulae
+#       - git: SaltTesting-git
+#       - service: salt-master
+
+salt-minion-job:
   file.managed:
     - name: /etc/init/salt-minion.conf
     - template: jinja
     - source:  salt://makina-states/files/etc/init/salt-minion.conf
+
+salt-minion:
   service.running:
     - enable: True
     - watch:
       - cmd: salt-modules
       - file: makina-states-dirs
       - file: salt-master
-      - file: salt-minion-conf
+      - file: l-openssh-formulae
+      - file: l-salt-formulae
       - git: m2crypto
       - git: makina-states
       - git: openssh-formulae
       - git: openstack-formulae
       - git: salt-formulae
-      - git: salt-git
       - git: SaltTesting-git
-      - service: salt-master
+      - file: salt-minion-job
 
 # disabled, syndic cannot sync files !
 # salt-syndic:
@@ -197,17 +240,6 @@ salt-pki:
     - mode: 700
     - makedirs: True
 
-salt-profile:
-  file.managed:
-    - name: /etc/profile.d/salt.sh
-    - source: salt://makina-states/files/etc/profile.d/salt.sh
-    - mode: 755
-    - require_in:
-      - service: salt-master
-      - service: salt-minion
-#      - service: salt-syndic
-
-{% set saltbinpath = '/srv/salt/makina-states/bin' %}
 salt-env:
   file.managed:
     - name: /etc/profile.d/salt.sh
@@ -264,10 +296,10 @@ salt-dirs-restricted-perms:
 salt-dirs-reset-perms-for-virtualenv:
   file.directory:
     - names:
-      - /srv/salt/makina-states/bin
-      - /srv/salt/makina-states/lib
-      - /srv/salt/makina-states/include
-      - /srv/salt/makina-states/local
+      - {{msr}}/bin
+      - {{msr}}/lib
+      - {{msr}}/include
+      - {{msr}}/local
     - user: root
     - group: root
     - dir_mode: 0755
@@ -275,7 +307,6 @@ salt-dirs-reset-perms-for-virtualenv:
     - require:
         - file: salt-dirs-perms
         - file: salt-dirs-restricted-perms
-        - cmd: update-salt
 
 salt-logs:
   file.managed:
@@ -290,14 +321,25 @@ salt-logs:
     - service: salt-minion
 
 # update makina-state
+salt-buildout-bootstrap:
+  cmd.run:
+    - name: python bootstrap.py
+    - cwd: {{msr}}
+    - unless: test "$(cat buildout.cfg|md5sum|awk '{print $1}')" = "$(cat .saltcheck)"
+    - require_in:
+      - cmd: update-salt
+    - require:
+      - git: makina-states
+
 update-salt:
   cmd.run:
     - name: bin/buildout && cat buildout.cfg|md5sum|awk '{print $1}'>.saltcheck
     - unless: test "$(cat buildout.cfg|md5sum|awk '{print $1}')" = "$(cat .saltcheck)"
     - cwd: /srv/salt/makina-states
-    - require:
-      - git: salt-git
+    - require_in:
+      - service: salt-master
+      - service: salt-minion
+      - service: salt-dirs-reset-perms-for-virtualenv
     - watch_in:
       - service: salt-master
       - service: salt-minion
-
