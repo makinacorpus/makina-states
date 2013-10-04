@@ -154,7 +154,6 @@ salt-master:
       - git: openssh-formulae
       - git: openstack-formulae
       - git: salt-formulae
-      - git: SaltTesting-git
 
 # # make a proxy between service and master for when
 # # there is a master restart to let minions re-auth
@@ -196,7 +195,6 @@ salt-minion:
       - git: openssh-formulae
       - git: openstack-formulae
       - git: salt-formulae
-      - git: SaltTesting-git
       - file: salt-minion-job
 
 # disabled, syndic cannot sync files !
@@ -213,31 +211,26 @@ salt-minion:
 salt-minion-cache:
   file.directory:
     - name: /var/cache/salt/minion
-    - mode: 700
     - makedirs: True
 
 salt-master-cache:
   file.directory:
     - name: /var/cache/salt/master
-    - mode: 700
     - makedirs: True
 
 minion-sock:
   file.directory:
     - name: /var/run/salt/minion
-    - mode: 700
     - makedirs: True
 
 salt-sock:
   file.directory:
     - name: /var/run/salt/salt
-    - mode: 700
     - makedirs: True
 
 salt-pki:
   file.directory:
     - name: /etc/salt/pki/master
-    - mode: 700
     - makedirs: True
 
 salt-env:
@@ -265,10 +258,50 @@ makina-env-bin:
     - system: True
     {% if group_id %}- gid: {{group_id}}{% endif %}
 
-salt-dirs-perms:
+
+
+# this is really factored
+# idea is to create dirs, then requires daemons to issue the chmod
+# without restarting them, otherwise the watch function will
+# restart them everytime !
+etc-salt-dirs:
   file.directory:
     - names:
       - /etc/salt
+      - /srv/salt/master.d
+      - /srv/salt/minion.d
+    - user: root
+    - group: {{group}}
+    - dir_mode: 0770
+    - makedirs: True
+    - require:
+      - group: {{group}}
+etc-salt-dirs-perms:
+  file.directory:
+    - names:
+      - /etc/salt
+    - user: root
+    - group: {{group}}
+    - dir_mode: 0770
+    - recurse: [user, group, mode]
+    - require:
+      - file: etc-salt-dirs
+      - service: salt-master
+      - service: salt-minion
+
+salt-dirs:
+  file.directory:
+    - names:
+      - /srv/salt
+      - /srv/pillar
+      - /srv/projects
+    - user: root
+    - group: {{group}}
+    - dir_mode: 0770
+    - makedirs: True
+salt-dirs-perms:
+  file.directory:
+    - names:
       - /srv/salt
       - /srv/pillar
       - /srv/projects
@@ -277,8 +310,28 @@ salt-dirs-perms:
     - dir_mode: 0770
     - recurse: [user, group, mode]
     - require:
+      - service: salt-master
+      - service: salt-minion
+      - cmd: salt-git-pull
+      - git: SaltTesting-git
+      - git: m2crypto
+      - file: salt-dirs
+      - file: etc-salt-dirs-perms
       - group: {{group}}
 
+salt-dirs-restricted:
+  file.directory:
+    - names:
+      - /var/log/salt
+      - /var/run/salt
+      - /var/cache/salt
+      - /etc/salt/pki
+    - user: root
+    - group: {{group}}
+    - dir_mode: 0750
+    - makedirs: True
+    - require:
+      - file: salt-dirs
 salt-dirs-restricted-perms:
   file.directory:
     - names:
@@ -291,7 +344,11 @@ salt-dirs-restricted-perms:
     - dir_mode: 0750
     - recurse: [user, group, mode]
     - require:
-        - file: salt-dirs-perms
+      - file: salt-dirs-perms
+      - file: salt-dirs-restricted
+      - file: etc-salt-dirs-perms
+      - service: salt-master
+      - service: salt-minion
 
 salt-dirs-reset-perms-for-virtualenv:
   file.directory:
@@ -319,6 +376,16 @@ salt-logs:
   require:
     - service: salt-master
     - service: salt-minion
+
+# non blocking gitpull
+salt-git-pull:
+  cmd.run:
+    - name: git pull;exit 0
+    - cwd: {{msr}}/src/salt
+    - onlyif: ls -d {{msr}}/src/salt/.git
+    - require_in:
+      - service: salt-master
+      - service: salt-minion
 
 # update makina-state
 salt-buildout-bootstrap:
