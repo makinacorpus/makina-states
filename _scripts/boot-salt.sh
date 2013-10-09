@@ -15,11 +15,17 @@
 # - If the script fails, just relaunch it and it will continue where it was
 # - You can safely relaunch it
 #
+
+if [[ -f /etc/lsb-release ]];then
+    . /etc/lsb-release
+fi
 base_packages=""
 base_packages="$base_packages build-essential m4 libtool pkg-config autoconf gettext bzip2"
 base_packages="$base_packages groff man-db automake libsigc++-2.0-dev tcl8.5 python-dev"
-base_packages="$base_packages swig libssl-dev libzmq-dev libyaml-dev debconf-utils python-virtualenv"
+base_packages="$base_packages swig libssl-dev libyaml-dev debconf-utils python-virtualenv libzmq3-dev"
 base_packages="$base_packages vim git"
+UBUNTU_NEXT_RELEASE="saucy"
+CHRONO="$(date "+%F_%H-%M-%S")"
 
 export PATH=/srv/salt/makina-states/bin:$PATH
 MASTERSALT="${MASTERSALT:-mastersalt.makina-corpus.net}"
@@ -40,9 +46,27 @@ if [[ -n $SALT_BOOT ]];then
     bootstrap="${bootstrap}_${SALT_BOOT}"
 fi
 
-
 i_prereq() {
     to_install=""
+    if [[ $(dpkg-query -s python-software-properties 2>/dev/null|egrep "^Status:"|grep installed|wc -l)  == "0" ]];then
+        apt-get install -y --force-yes python-software-properties
+    fi
+    # XXX: only lts package in this ppa
+    if     [[ "$(dpkg-query -s libzmq3     2>/dev/null|egrep "^Status:"|grep installed|wc -l)"  == "0" ]] \
+        || [[ "$(dpkg-query -s libzmq3-dev 2>/dev/null|egrep "^Status:"|grep installed|wc -l)"  == "0" ]];\
+        then
+        echo " [bs] Installing ZeroMQ3"
+        cp  /etc/apt/sources.list /etc/apt/sources.list.$CHRONO.sav
+        sed -re "s/${DISTRIB_CODENAME}/${UBUNTU_NEXT_RELEASE}/g" -i /etc/apt/sources.list
+        apt-get remove -y --force-yes libzmq libzmq1 libzmq-dev &> /dev/null
+        apt-get update -qq && apt-get install -y --force-yes libzmq3-dev
+        ret=$?
+        sed -re "s/${UBUNTU_NEXT_RELEASE}/${DISTRIB_CODENAME}/g" -i /etc/apt/sources.list
+        apt-get update
+        if [[ $ret != "0" ]];then
+            die $ret "Install of zmq3 failed"
+        fi
+    fi
     for i in $base_packages;do
         if [[ $(dpkg-query -s $i 2>/dev/null|egrep "^Status:"|grep installed|wc -l)  == "0" ]];then
             to_install="$to_install $i"
@@ -100,7 +124,7 @@ salt_call_wrapper() {
             echo " [bs] partial content of $outf, check this file for full output" 1>&2;
             egrep -B4 "result: false" "$outf" 1>&2;
             ret=104
-            echo 
+            echo
         else
             ret=0
         fi
@@ -157,12 +181,20 @@ if    [[ ! -e "$MS/bin/buildout" ]]\
         die $ret " [bs] Failed buildout bootstrap"
     fi
 fi
+# remove stale zmq egg (to relink on zmq3)
+test="$(ldd $(find -L "$MS/eggs/pyzmq-"*egg -name *so)|grep zmq.so.1|wc -l)"
+if [[ "$test" != "0" ]];then
+    find -L "$MS/eggs/pyzmq-"*egg -maxdepth 0 -type d|xargs rm -rfv
+fi
 # detect incomplete buildout
+# pyzmq check is for testing upgrade from libzmq to zmq3
 if    [[ ! -e "$MS/bin/buildout" ]]\
     || [[ ! -e "$MS/bin/salt-ssh" ]]\
     || [[ ! -e "$MS/bin/salt" ]]\
     || [[ ! -e "$MS/bin/mypy" ]]\
     || [[ ! -e "$MS/.installed.cfg" ]]\
+    || [[ $(find -L "$MS/eggs/pyzmq"* |wc -l) == "0" ]]\
+    || [[ ! -e "$MS/src/salt/setup.py" ]]\
     || [[ ! -e "$MS/src/salt/setup.py" ]]\
     || [[ ! -e "$MS/src/docker/setup.py" ]]\
     || [[ ! -e "$MS/src/m2crypto/setup.py" ]]\
@@ -185,7 +217,26 @@ base:
   '*':
 EOF
 fi
+echo "bar"
+# Create a default top.sls in the tree it present
+if [[ ! -f /srv/salt/top.sls ]];then
+    echo " [bs] creating default salt's top.sls"
+    cat > /srv/salt/top.sls << EOF
+base:
+  '*':
+    - core
+EOF
+    if [[ ! -f /srv/salt/core.sls ]];then
+        echo " [bs] creating default salt's core.sls"
+            cat > /srv/salt/core.sls << EOF
+test:
+  cmd.run:
+    - name: salt '*' test.ping
+EOF
+    fi
+fi
 
+echo "foo"
 # TODO: comment
 if [[ $(grep -- "- salt" /srv/pillar/top.sls|wc -l) == "0" ]];then
     sed -re "/('|\")\*('|\"):/ {
@@ -238,7 +289,7 @@ if     [[ ! -e "/etc/salt" ]]\
     bin/develop up -fv
 
     # kill salt running daemons if any
-    ps aux|egrep "salt-(master|minion|syndic)" |awk '{print $2}'|xargs kill -9 &> /dev/null 
+    ps aux|egrep "salt-(master|minion|syndic)" |awk '{print $2}'|xargs kill -9 &> /dev/null
 
     echo " [bs] Boostrapping salt"
 
@@ -257,7 +308,7 @@ if     [[ ! -e "/etc/salt" ]]\
     fi
     echo " [bs] Waiting for salt minion key to be accepted"
     sleep 10
-    ps aux|grep salt-minion|awk '{print $2}'|xargs kill -9 &> /dev/null 
+    ps aux|grep salt-minion|awk '{print $2}'|xargs kill -9 &> /dev/null
     service salt-minion restart
     salt-key -A -y
     ret=$?
@@ -293,7 +344,7 @@ if [[ "$bootstrap" == "mastersalt" ]];then
         # create etc/mastersalt
         if [[ ! -e /etc/mastersalt ]];then
             mkdir /etc/mastersalt
-        fi 
+        fi
 
         # kill salt running daemons if any
         ps aux|egrep "salt-(master|minion|syndic)"|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
@@ -304,7 +355,7 @@ if [[ "$bootstrap" == "mastersalt" ]];then
             echo "Failed bootstrap: $bootstrap !"
             exit $ret
         fi
-        ps aux|grep salt-minion|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null 
+        ps aux|grep salt-minion|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
         service mastersalt-minion restart
         echo "changed=yes comment='mastersalt installed'"
     fi
