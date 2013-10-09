@@ -217,7 +217,6 @@ base:
   '*':
 EOF
 fi
-echo "bar"
 # Create a default top.sls in the tree it present
 if [[ ! -f /srv/salt/top.sls ]];then
     echo " [bs] creating default salt's top.sls"
@@ -236,7 +235,6 @@ EOF
     fi
 fi
 
-echo "foo"
 # TODO: comment
 if [[ $(grep -- "- salt" /srv/pillar/top.sls|wc -l) == "0" ]];then
     sed -re "/('|\")\*('|\"):/ {
