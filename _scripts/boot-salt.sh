@@ -337,6 +337,7 @@ if     [[ ! -e "/etc/salt" ]]\
         echo " [bs] Failed accepting keys"
         exit $ret
     fi
+    echo " [bs] Running salt states setup"
     ret=$(salt_call_wrapper --local state.sls "makina-states.setup")
     if [[ $ret != 0 ]];then
         echo " [bs] Failed setup: $bootstrap !"
@@ -373,13 +374,14 @@ if [[ "$bootstrap" == "mastersalt" ]];then
 
         # kill salt running daemons if any
         ps aux|egrep "salt-(master|minion|syndic)"|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
-        echo "Boostrapping mastersalt"
+        echo " [bs] Running mastersalt states $bootstrap"
         ret=$(salt_call_wrapper --local state.sls $bootstrap)
         cat $SALT_OUTFILE
         if [[ $ret != 0 ]];then
             echo "Mastersalt: Failed bootstrap: $bootstrap !"
             exit $ret
         fi
+        echo " [bs] Running mastersalt states setup"
         ret=$(salt_call_wrapper --local state.sls makina-states.setup)
         cat $SALT_OUTFILE
         if [[ $ret != 0 ]];then
