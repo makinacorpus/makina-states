@@ -11,6 +11,9 @@
 #   - Re buildout bootstrap
 #   - Run buildout
 #   - Run left relevant states in makina-states.services.bootstrap_*
+#
+# - Take care of file mode and ownership deployed by salt
+#
 
 {% set ms=salt['config.get']('bootstrap:mastersalt', False) -%}
 {% set mmaster=salt['config.get']('mastersalt-master', False) -%}
