@@ -209,18 +209,37 @@ if    [[ ! -e "$MS/bin/buildout" ]]\
     fi
 fi
 
-# Create a default top.sls in the pillar it present
+# Create a default top.sls in the pillar if not present
 if [[ ! -f /srv/pillar/top.sls ]];then
     echo " [bs] creating default pillar's top.sls"
     cat > /srv/pillar/top.sls << EOF
+#
+# This is the top pillar configuration file, link here all your
+# environment configurations files to their respective minions
+#
 base:
   '*':
 EOF
 fi
-# Create a default top.sls in the tree it present
+# Create a default setup in the tree if not present
+if [[ ! -f /srv/salt/setup.sls ]];then
+    echo " [bs] creating default salt's setup.sls"
+    cat > /srv/salt/setup.sls << EOF
+#
+# Include here your various projet setup files
+#
+include:
+  - makina-states.setup
+EOF
+fi
+# Create a default top.sls in the tree if not present
 if [[ ! -f /srv/salt/top.sls ]];then
     echo " [bs] creating default salt's top.sls"
     cat > /srv/salt/top.sls << EOF
+#
+# This is the salt states configuration file, link here all your
+# environment states files to their respective minions
+#
 base:
   '*':
     - core
@@ -228,6 +247,9 @@ EOF
     if [[ ! -f /srv/salt/core.sls ]];then
         echo " [bs] creating default salt's core.sls"
             cat > /srv/salt/core.sls << EOF
+#
+# Dummy state file example
+#
 test:
   cmd.run:
     - name: salt '*' test.ping
@@ -242,7 +264,7 @@ a\     - salt
 }" -i /srv/pillar/top.sls
 fi
 
-# Create a default salt.sls in the pillar it present
+# Create a default salt.sls in the pillar if not present
 if [[ ! -f /srv/pillar/salt.sls ]];then
     echo " [bs] creating default pillar's salt.sls"
     cat > /srv/pillar/salt.sls << EOF
