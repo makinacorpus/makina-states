@@ -52,8 +52,8 @@ etc-salt-dirs-perms:
     - source:  {{resetperms}}
     - template: jinja
     - msr: {{msr}}
-    - fmode: "2770"
-    - dmode: "0770"
+    - fmode: 2770
+    - dmode: 0770
     - user: "root"
     - group: "{{group}}"
     - reset_paths:
@@ -68,8 +68,8 @@ salt-dirs-perms:
   cmd.script:
     - source: {{resetperms}}
     - template: jinja
-    - fmode: "0770"
-    - dmode: "2770"
+    - fmode: 0770
+    - dmode: 2770
     - msr: {{msr}}
     - user: "root"
     - group: "{{group}}"
@@ -92,9 +92,9 @@ salt-dirs-restricted-perms:
   cmd.script:
     - source: {{resetperms}}
     - template: jinja
-    - fmode: "0750"
+    - fmode: 0750
     - msr: {{msr}}
-    - dmode: "0750"
+    - dmode: 0750
     - user: "root"
     - group: "{{group}}"
     - reset_paths:
@@ -120,12 +120,27 @@ salt-dirs-reset-perms-for-virtualenv:
       - {{msr}}/include
       - {{msr}}/local
     - msr: {{msr}}
-    - fmode: "0755"
-    - dmode: "0755"
+    - fmode: 0755
+    - dmode: 0755
     - user: "root"
     - group: "root"
     - require:
         - cmd: update-salt
         - cmd: salt-dirs-perms
         - cmd: salt-dirs-restricted-perms
+
+
+# recurse does not seem to work well to reset perms
+docker-dirs-if-present:
+  cmd.script:
+    - onlif: ls -d /srv/docker/ubuntu
+    - source: {{resetperms}}
+    - template: jinja
+    - reset_paths:
+      - /srv/docker
+    - msr: {{msr}}
+    - fmode: 2770
+    - dmode: 0770
+    - user: "root"
+    - group: {{group}}
 
