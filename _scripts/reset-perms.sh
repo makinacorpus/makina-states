@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Reset all directories/files perms in subdirectories
+cp $0 /tmp/foo
 
 python <<EOF
 import os
@@ -16,7 +17,14 @@ excludes = [
     os.path.join(m , 'develop-eggs'),
     os.path.join(m , 'parts'),
 ]
-excludes = []
+pexcludes = [
+{% if excludes is defined %}
+{% for i in excludes %}
+    '{{i}}',
+{% endfor %}
+{% endif %}
+]
+
 
 user = "{{user}}"
 try:
@@ -40,6 +48,13 @@ def reset(p):
     print "User:Group: %s:%s\n\n" % (user, group)
     for root, dirs, files in os.walk(p):
         i = root
+        stop = False
+        for p in pexcludes:
+            if p in i:
+                stop = True
+                break
+        if stop:
+            continue
         st = os.stat(i)
         if eval(dmode) != stat.S_IMODE(st.st_mode):
             eval('os.chmod(i, %s)' % dmode)
@@ -47,6 +62,13 @@ def reset(p):
             os.chown(i, uid, uid)
         for item in files:
             i = os.path.join(root, item)
+            stop = False
+            for p in pexcludes:
+                if p in i:
+                    stop = True
+                    break
+            if stop:
+                continue
             st = os.stat(i)
             if eval(fmode) != stat.S_IMODE(st.st_mode):
                 eval('os.chmod(i, %s)' % fmode)

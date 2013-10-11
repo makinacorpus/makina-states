@@ -23,6 +23,12 @@
     '_scripts',
     '_states',] %}
 
+# only here for orchestration purposes
+dummy-pre-salt-checkouts:
+  cmd.run:
+    - name: /bin/true
+    - unless: /bin/true
+
 # Keep those 3 first following in sync with buildout mr.developer content
 # those repos are the one needed to bootstrap the core daemons
 {% set repos={
@@ -59,6 +65,8 @@
 # do not use cwd as if dir does not exist, if will fail the entire state
   cmd.run:
     - name: cd "{{data['target']}}" && git config --local core.filemode false
+    - require:
+      - cmd: dummy-pre-salt-checkouts
     - onlyif: ls -d "{{git}}"
     - unless: if [[ -d "{{git}}" ]];then cd "{{data['target']}}" && grep -q "filemode = false" .git/config;fi
 # on each run, update the code
@@ -283,8 +291,8 @@ salt-dirs:
       - /srv/vagrant
     - user: root
     - group: {{group}}
-    - file_mode: 0770
-    - dir_mode: 2770
+    - file_mode: "0770"
+    - dir_mode: "2770"
     - makedirs: True
 
 salt-dirs-restricted:

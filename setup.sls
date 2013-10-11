@@ -52,8 +52,8 @@ etc-salt-dirs-perms:
     - source:  {{resetperms}}
     - template: jinja
     - msr: {{msr}}
-    - fmode: 2770
-    - dmode: 0770
+    - dmode: 2770
+    - fmode: 0770
     - user: "root"
     - group: "{{group}}"
     - reset_paths:
@@ -68,8 +68,8 @@ salt-dirs-perms:
   cmd.script:
     - source: {{resetperms}}
     - template: jinja
-    - fmode: 0770
     - dmode: 2770
+    - fmode: 0770
     - msr: {{msr}}
     - user: "root"
     - group: "{{group}}"
@@ -78,6 +78,11 @@ salt-dirs-perms:
       - /srv/pillar
       - /srv/projects
       - /srv/vagrant
+    - excludes:
+      - {{msr}}/bin
+      - {{msr}}/lib
+      - {{msr}}/include
+      - {{msr}}/local
     - require:
       - service: salt-master
       - service: salt-minion
@@ -139,8 +144,12 @@ docker-dirs-if-present:
     - reset_paths:
       - /srv/docker
     - msr: {{msr}}
-    - fmode: 2770
-    - dmode: 0770
+    - dmode: 2770
+    - fmode: 0770
     - user: "root"
     - group: {{group}}
+    - require_in:
+      - cmd: dummy-pre-salt-checkouts
+    - excludes:
+      - /docker/debian/cache
 
