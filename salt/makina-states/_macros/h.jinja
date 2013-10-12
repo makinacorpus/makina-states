@@ -108,7 +108,12 @@
 {% if update %}
 {{pref}}{{name}}aptgetretry-update{{suf}}:
   cmd.run:
-    - name: apt-get update
+    - name: |
+            set -ex
+            apt-get update
+            for i in {{ ' '.join(pkgs) }};do
+              apt-cache madison $i
+            done
     - onfail:
       - {{install_module}}: {{pref}}{{name}}{{suf}}
     - {{require_knob}}:
