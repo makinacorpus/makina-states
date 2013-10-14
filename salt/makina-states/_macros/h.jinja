@@ -106,18 +106,18 @@
     {{ rmacro() }}
     {% endif %}
 {% if update %}
-{{pref}}aptgetretry-update{{suf}}:
+{{pref}}{{name}}aptgetretry-update{{suf}}:
   cmd.run:
     - name: apt-get update
     - onfail:
       - {{install_module}}: {{pref}}{{name}}{{suf}}
     - {{require_knob}}:
-      - {{install_module}}: {{pref}}aptgetretry-retry{{suf}}
+      - {{install_module}}: {{pref}}{{name}}aptgetretry-retry{{suf}}
     {% if rmacro %}
     {{ rmacro() }}
     {% endif %}
 {% endif %}
-{{pref}}aptgetretry-retry{{suf}}:
+{{pref}}{{name}}aptgetretry-retry{{suf}}:
   {{install_function}}:
     - pkgs: {{pkgs}}
     {% if fromrepo %}
