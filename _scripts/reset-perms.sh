@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 # Reset all directories/files perms in subdirectories
-cp $0 /tmp/foo
-
 python <<EOF
 import os
 import grp
