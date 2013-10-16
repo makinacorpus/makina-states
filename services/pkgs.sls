@@ -94,7 +94,6 @@ sys-pkgs:
   pkg.installed:
     - names:
       - screen
-      - bootchart
       - bzip2
       - vim
       - atop
