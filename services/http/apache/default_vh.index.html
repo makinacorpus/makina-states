@@ -1,0 +1,11 @@
+<html><body><h1>It Works!</h1>
+{% if mode == 'dev' %}
+<p>This is the default index page for Apache default VirtualHost on a development server:</p>
+<ul>
+<li>Hostname (fqdn) : {{ grains['fqdn'] }}</li>
+<li>IP: {{ grains['ipv4'] }}</li>
+<li>ID: {{ grains['id'] }}</li>
+<li>Server ID: {{ grains['server_id'] }}</li>
+</ul>
+{% endif %}
+</body></html>
