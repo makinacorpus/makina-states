@@ -59,7 +59,7 @@ def reset(p):
         if eval(dmode) != stat.S_IMODE(st.st_mode):
             eval('os.chmod(i, %s)' % dmode)
         if st.st_uid != uid or st.st_gid != gid:
-            os.chown(i, uid, uid)
+            os.chown(i, uid, gid)
         for item in files:
             i = os.path.join(root, item)
             stop = False
@@ -73,7 +73,7 @@ def reset(p):
             if eval(fmode) != stat.S_IMODE(st.st_mode):
                 eval('os.chmod(i, %s)' % fmode)
             if st.st_uid != uid or st.st_gid != gid:
-                os.chown(i, uid, uid)
+                os.chown(i, uid, gid)
 
 {% for pt in reset_paths %}
 reset('{{pt}}')
