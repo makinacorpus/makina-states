@@ -343,6 +343,7 @@ if     [[ ! -e "/etc/salt" ]]\
         echo " [bs] Failed setup: $bootstrap !"
         exit $ret
     fi
+    exit -1
     echo "changed=yes comment='salt installed'"
     touch /root/salt_bootstrap_done
 fi
