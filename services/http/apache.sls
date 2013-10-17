@@ -27,8 +27,7 @@ apache-security-settings:
       - pkg.installed: apache-pkgs
     - name: /etc/apache2/conf.d/_security
     - source:
-      - salt://makina-states/services/http/apache/security.conf.{{ grains['fqdn'] }}
-      - salt://makina-states/services/http/apache/security.conf
+      - salt://makina-states/files/etc/apache2/conf.d/security.conf
     - user: root
     - group: root
     - mode: 644
@@ -51,8 +50,7 @@ apache-default-vhost-index:
       - pkg.installed: apache-pkgs
     - name: /var/www/default/index.html
     - source:
-      - salt://makina-states/services/http/apache/default_vh.index.html.{{ grains['fqdn'] }}
-      - salt://makina-states/services/http/apache/default_vh.index.html
+      - salt://makina-states/files/var/www/etc/default/default_vh.index.html
     - user: root
     - group: root
     - mode: 644
@@ -77,8 +75,7 @@ apache-minimal-default-vhost:
       - file.managed: apache-default-vhost-index
     - name: /etc/apache2/sites-available/default
     - source:
-      - salt://makina-states/services/http/apache/default_vh.conf.{{ grains['fqdn'] }}
-      - salt://makina-states/services/http/apache/default_vh.conf
+      - salt://makina-states/files/etc/apache2/sites-available/default_vh.conf
     - user: root
     - group: root
     - mode: 644
