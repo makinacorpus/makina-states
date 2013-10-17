@@ -1,13 +1,18 @@
 # define in pillar an apache default loglevel :
 #   apache.log_level: debug
-# defautl is warn, 
+#   apache.disabled_modules: 'autoindex cgid negotiation'
+# default is warn, 
 # available values are: debug, info, notice, warn, error, crit, alert, emerg
 # @see apache documentation for LogLevel
 {% set log_level = pillar.get('apache.log_level', 'warn') %}
+{% set disabled_modules = pillar.get('apache.disabled_modules', 'autoindex cgid negotiation') %}
+{% set enabled_modules = pillar.get('apache.enabled_modules', 'deflate status expires headers rewrite') %}
 #
 # 
 #
-
+{% set msr='/srv/salt/makina-states' %}
+{% set a2dismodwrapper = "file://"+msr+"/_scripts/a2dismodwrapper.sh" %}
+{% set a2enmodwrapper = "file://"+msr+"/_scripts/a2enmodwrapper.sh" %}
 
 
 
@@ -88,6 +93,23 @@ apache-minimal-default-vhost:
         mode: "dev"
 {% endif %}
 
+# Enable/Disable Apache modules
+# This is a cmd state. changed status will be assumed if command output is non-empty
+apache-disable-useless-modules:
+  cmd.script:
+    - stateful: True
+    - source: {{a2dismodwrapper}}
+    - args: "{{disabled_modules}}"
+    - require:
+      - pkg.installed: apache-pkgs
+apache-enable-required-modules:
+  cmd.script:
+    - stateful: True
+    - source: {{a2enmodwrapper}}
+    - args: "{{enabled_modules}}"
+    - require:
+      - pkg.installed: apache-pkgs
+
 makina-apache-service:
   service.running:
     - name: apache2
@@ -100,3 +122,6 @@ makina-apache-service:
       - pkg.installed: apache-pkgs
       # reload service in case ofdefault VH alteration
       - file.managed: apache-minimal-default-vhost
+      # reload service in case of modules alterations
+      - cmd: apache-disable-useless-modules
+      - cmd: apache-enable-required-modules
