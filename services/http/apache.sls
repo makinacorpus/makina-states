@@ -50,7 +50,7 @@ apache-default-vhost-index:
       - pkg.installed: apache-pkgs
     - name: /var/www/default/index.html
     - source:
-      - salt://makina-states/files/var/www/etc/default/default_vh.index.html
+      - salt://makina-states/files/var/www/default/default_vh.index.html
     - user: root
     - group: root
     - mode: 644
