@@ -115,24 +115,25 @@ salt-dirs-restricted-perms:
       - service: salt-minion
 
 # recurse does not seem to work well to reset perms
-salt-dirs-reset-perms-for-virtualenv:
-  cmd.script:
-    - source: {{resetperms}}
-    - template: jinja
-    - reset_paths:
-      - {{msr}}/bin
-      - {{msr}}/lib
-      - {{msr}}/include
-      - {{msr}}/local
-    - msr: {{msr}}
-    - fmode: 0755
-    - dmode: 0755
-    - user: "root"
-    - group: "root"
-    - require:
-        - cmd: update-salt
-        - cmd: salt-dirs-perms
-        - cmd: salt-dirs-restricted-perms
+# moved to /srv/salt-env
+# salt-dirs-reset-perms-for-virtualenv:
+#   cmd.script:
+#     - source: {{resetperms}}
+#     - template: jinja
+#     - reset_paths:
+#       - {{msr}}/bin
+#       - {{msr}}/lib
+#       - {{msr}}/include
+#       - {{msr}}/local
+#     - msr: {{msr}}
+#     - fmode: 0755
+#     - dmode: 0755
+#     - user: "root"
+#     - group: "root"
+#     - require:
+#         - cmd: update-salt
+#         - cmd: salt-dirs-perms
+#         - cmd: salt-dirs-restricted-perms
 
 
 # recurse does not seem to work well to reset perms
@@ -152,4 +153,5 @@ docker-dirs-if-present:
       - cmd: dummy-pre-salt-checkouts
     - excludes:
       - /docker/debian/cache
+      - /docker/debian/debootstrap
 
