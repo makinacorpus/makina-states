@@ -25,7 +25,7 @@ base_packages="$base_packages groff man-db automake libsigc++-2.0-dev tcl8.5 pyt
 base_packages="$base_packages swig libssl-dev libyaml-dev debconf-utils python-virtualenv libzmq3-dev"
 base_packages="$base_packages vim git"
 UBUNTU_NEXT_RELEASE="saucy"
-VENV_PATH="/srv/salt-venv"
+VENV_PATH="/salt-venv"
 CHRONO="$(date "+%F_%H-%M-%S")"
 
 export PATH=/srv/salt/makina-states/bin:$PATH
@@ -182,6 +182,7 @@ cleanup_previous_venv() {
     cd $old_d
 }
 cleanup_previous_venv $MS
+cleanup_previous_venv /srv/salt-venv
 cd $MS
 if     [[ ! -e "$VENV_PATH/bin/activate" ]] \
     || [[ ! -e "$VENV_PATH/lib" ]] \
