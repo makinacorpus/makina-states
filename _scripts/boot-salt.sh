@@ -162,7 +162,17 @@ bin/python
 bin/python2*
 bin/python3*
 include/python*
-lib/python*"
+lib/python*
+local/bin/activate
+local/bin/activate.csh
+local/bin/activate.fish
+local/bin/activate_this.py
+local/bin/python
+local/bin/python2*
+local/bin/python3*
+local/include/python*
+local/lib/python*
+"
 cleanup_previous_venv() {
     old_d=$PWD
     cd $1
