@@ -25,6 +25,7 @@ base_packages="$base_packages groff man-db automake libsigc++-2.0-dev tcl8.5 pyt
 base_packages="$base_packages swig libssl-dev libyaml-dev debconf-utils python-virtualenv libzmq3-dev"
 base_packages="$base_packages vim git"
 UBUNTU_NEXT_RELEASE="saucy"
+VENV_PATH="/srv/salt-venv"
 CHRONO="$(date "+%F_%H-%M-%S")"
 
 export PATH=/srv/salt/makina-states/bin:$PATH
@@ -46,6 +47,7 @@ if [[ -n $SALT_BOOT ]];then
     bootstrap="${bootstrap}_${SALT_BOOT}"
 fi
 
+
 i_prereq() {
     to_install=""
     if [[ $(dpkg-query -s python-software-properties 2>/dev/null|egrep "^Status:"|grep installed|wc -l)  == "0" ]];then
@@ -55,7 +57,7 @@ i_prereq() {
     if     [[ "$(dpkg-query -s libzmq3     2>/dev/null|egrep "^Status:"|grep installed|wc -l)"  == "0" ]] \
         || [[ "$(dpkg-query -s libzmq3-dev 2>/dev/null|egrep "^Status:"|grep installed|wc -l)"  == "0" ]];\
         then
-        echo " [bs] Installing ZeroMQ3"
+        bs_log "Installing ZeroMQ3"
         cp  /etc/apt/sources.list /etc/apt/sources.list.$CHRONO.sav
         sed -re "s/${DISTRIB_CODENAME}/${UBUNTU_NEXT_RELEASE}/g" -i /etc/apt/sources.list
         apt-get remove -y --force-yes libzmq libzmq1 libzmq-dev &> /dev/null
@@ -73,11 +75,12 @@ i_prereq() {
         fi
     done
     if [[ -n $to_install ]];then
-        echo " [bs] Installing pre requisites: $to_install"
+        bs_log "Installing pre requisites: $to_install"
         echo 'changed="yes" comment="prerequisites installed"'
         apt-get update && apt-get install -y --force-yes $to_install
     fi
 }
+bs_log(){ echo " [bs] $@"; }
 die() {
     ret=$1
     shift
@@ -107,21 +110,21 @@ salt_call_wrapper() {
     ret=$?
     #echo "result: false">>$outf
     if [[ $ret != 0 ]] && [[ $ret != 2 ]];then
-        echo " [bs] salt-call ERROR, check $logf and $outf for details" 1>&2;
+        bs_log "salt-call ERROR, check $logf and $outf for details" 1>&2;
         ret=100
     elif grep  -q "No matching sls found" "$logf";then
-        echo " [bs] salt-call  ERROR DETECTED : No matching sls found" 1>&2;
+        bs_log "salt-call  ERROR DETECTED : No matching sls found" 1>&2;
         ret=101
         no_check_output=y
     elif egrep -q "\[salt.state       \]\[ERROR   \]" "$logf";then
-        echo " [bs] salt-call  ERROR DETECTED, check $logf for details" 1>&2;
+        bs_log "salt-call  ERROR DETECTED, check $logf for details" 1>&2;
         egrep "\[salt.state       \]\[ERROR   \]" "$logf" 1>&2;
         ret=102
         no_check_output=y
     else
         if egrep -q "result: false" "$outf";then
-            echo " [bs] salt-call  ERROR DETECTED"
-            echo " [bs] partial content of $outf, check this file for full output" 1>&2;
+            bs_log "salt-call  ERROR DETECTED"
+            bs_log "partial content of $outf, check this file for full output" 1>&2;
             egrep -B4 "result: false" "$outf" 1>&2;
             ret=104
             echo
@@ -133,14 +136,14 @@ salt_call_wrapper() {
     echo $ret
 }
 
-echo " [bs] Create base directories"
+bs_log "Create base directories"
 for i in "$PILLAR" "$ROOT";do
     if [[ ! -d $i ]];then
         mkdir -pv $i
     fi
 done
 
-echo " [bs] Check package dependencies"
+bs_log "Check package dependencies"
 i_prereq || die_in_error " [bs] Failed install rerequisites"
 if [[ ! -d "$MS/.git" ]];then
     git clone "$STATES_URL" "$MS" || die_in_error " [bs] Failed to download makina-states"
@@ -148,32 +151,69 @@ else
     cd $MS && git checkout master && git pull || die_in_error " [bs] Failed to update makina-states"
 fi
 # Script is now running in makina-states git location
-cd $MS
-
 # Check for virtualenv presence
-if     [[ ! -e "$MS/bin/activate" ]] \
-    || [[ ! -e "$MS/lib" ]] \
-    || [[ ! -e "$MS/include" ]] \
+REBOOTSTRAP="${SALT_REBOOTSTRAP}"
+VENV_CONTENT="
+bin/activate
+bin/activate.csh
+bin/activate.fish
+bin/activate_this.py
+bin/easy_install*
+bin/pip*
+bin/python
+bin/python2*
+bin/python3*
+bin/sphinx-apidoc
+bin/sphinx-autogen
+bin/sphinx-build
+bin/sphinx-quickstart
+include/python*
+lib/python*"
+cleanup_previous_venv() {
+    old_d=$PWD
+    cd $1
+    CWD=$PWD
+    for i in / /usr /usr/local;do
+        if [[ "$CWD" == "$i" ]];then
+            die 1 "[bs] wrong dir for venv: '$i'"
+        fi
+    done
+    for item in $VENV_CONTENT;do
+        for i in $(find $item -maxdepth 0 2>/dev/null);do
+            bs_log "Cleaning $i"
+            rm -rfv "$i"
+            REBOOTSTRAP=y
+        done
+    done
+    cd $old_d
+}
+cleanup_previous_venv $MS
+cd $MS
+if     [[ ! -e "$VENV_PATH/bin/activate" ]] \
+    || [[ ! -e "$VENV_PATH/lib" ]] \
+    || [[ ! -e "$VENV_PATH/include" ]] \
     ;then
-    echo " [bs] Creating virtualenv in $MS"
-    virtualenv --no-site-packages --unzip-setuptools . &&\
-    . bin/activate &&\
+    bs_log "Creating virtualenv in $MS"
+    virtualenv --no-site-packages --unzip-setuptools $VENV_PATH &&\
+    . $VENV_PATH/bin/activate &&\
     easy_install -U setuptools &&\
     deactivate
+    REBOOTSTRAP=y
 fi
 
 # virtualenv is present, activate it
-if [[ -e bin/activate ]];then
-    echo " [bs] Activating virtualenv in $MS"
-    . bin/activate
+if [[ -e $VENV_PATH/bin/activate ]];then
+    bs_log "Activating virtualenv in $VENV_PATH"
+    . $VENV_PATH/bin/activate
 fi
 
 # Check for buildout things presence
 if    [[ ! -e "$MS/bin/buildout" ]]\
    || [[ ! -e "$MS/parts" ]] \
+   || [[ -n "$REBOOTSTRAP" ]] \
    || [[ ! -e "$MS/develop-eggs" ]] \
     ;then
-    echo " [bs] Launching buildout bootstrap for salt initialisation"
+    bs_log "Launching buildout bootstrap for salt initialisation"
     python bootstrap.py
     ret=$?
     if [[ "$ret" != "0" ]];then
@@ -199,8 +239,9 @@ if    [[ ! -e "$MS/bin/buildout" ]]\
     || [[ ! -e "$MS/src/docker/setup.py" ]]\
     || [[ ! -e "$MS/src/m2crypto/setup.py" ]]\
     || [[ ! -e "$MS/src/SaltTesting/setup.py" ]]\
+    || [[ -n "$REBOOTSTRAP" ]]\
     ;then
-    echo " [bs] Launching buildout for salt initialisation"
+    bs_log "Launching buildout for salt initialisation"
     bin/buildout || die_in_error " [bs] Failed buildout"
     ret=$?
     if [[ "$ret" != "0" ]];then
@@ -211,7 +252,7 @@ fi
 
 # Create a default top.sls in the pillar if not present
 if [[ ! -f /srv/pillar/top.sls ]];then
-    echo " [bs] creating default pillar's top.sls"
+    bs_log "creating default pillar's top.sls"
     cat > /srv/pillar/top.sls << EOF
 #
 # This is the top pillar configuration file, link here all your
@@ -223,7 +264,7 @@ EOF
 fi
 # Create a default setup in the tree if not present
 if [[ ! -f /srv/salt/setup.sls ]];then
-    echo " [bs] creating default salt's setup.sls"
+    bs_log "creating default salt's setup.sls"
     cat > /srv/salt/setup.sls << EOF
 #
 # Include here your various projet setup files
@@ -234,7 +275,7 @@ EOF
 fi
 # Create a default top.sls in the tree if not present
 if [[ ! -f /srv/salt/top.sls ]];then
-    echo " [bs] creating default salt's top.sls"
+    bs_log "creating default salt's top.sls"
     cat > /srv/salt/top.sls << EOF
 #
 # This is the salt states configuration file, link here all your
@@ -245,7 +286,7 @@ base:
     - core
 EOF
     if [[ ! -f /srv/salt/core.sls ]];then
-        echo " [bs] creating default salt's core.sls"
+        bs_log "creating default salt's core.sls"
             cat > /srv/salt/core.sls << EOF
 #
 # Dummy state file example
@@ -266,7 +307,7 @@ fi
 
 # Create a default salt.sls in the pillar if not present
 if [[ ! -f /srv/pillar/salt.sls ]];then
-    echo " [bs] creating default pillar's salt.sls"
+    bs_log "creating default pillar's salt.sls"
     cat > /srv/pillar/salt.sls << EOF
 salt:
   minion:
@@ -295,6 +336,7 @@ EOF
 fi
 
 # --------- SALT install
+NOW_INSTALLED=""
 if     [[ ! -e "/etc/salt" ]]\
     || [[ ! -e "/etc/salt/master" ]]\
     || [[ ! -e "/etc/salt/pki/minion/minion.pem" ]]\
@@ -305,13 +347,13 @@ if     [[ ! -e "/etc/salt" ]]\
     ;then
     ds=y
     cd $MS
-    echo " [bs] Upgrading salt base code source"
+    bs_log "Upgrading salt base code source"
     bin/develop up -fv
 
     # kill salt running daemons if any
     ps aux|egrep "salt-(master|minion|syndic)" |awk '{print $2}'|xargs kill -9 &> /dev/null
 
-    echo " [bs] Boostrapping salt"
+    bs_log "Boostrapping salt"
 
     # create etc directory
     if [[ ! -e /etc/salt ]];then
@@ -320,13 +362,13 @@ if     [[ ! -e "/etc/salt" ]]\
 
      # capture output of a call of bootstrap states
      # by default makina-states.services.bootstrap but could be suffixed
-    echo " [bs] Running salt states $bootstrap"
+    bs_log "Running salt states $bootstrap"
     ret=$(salt_call_wrapper --local state.sls $bootstrap)
     if [[ $ret != 0 ]];then
-        echo " [bs] Failed bootstrap: $bootstrap !"
+        bs_log "Failed bootstrap: $bootstrap !"
         exit $ret
     fi
-    echo " [bs] Waiting for salt minion key to be accepted"
+    bs_log "Waiting for salt minion key to be accepted"
     sleep 10
     ps aux|grep salt-minion|awk '{print $2}'|xargs kill -9 &> /dev/null
     service salt-minion restart
@@ -334,19 +376,12 @@ if     [[ ! -e "/etc/salt" ]]\
     ret=$?
     cat $SALT_OUTFILE
     if [[ $ret != 0 ]];then
-        echo " [bs] Failed accepting keys"
+        bs_log "Failed accepting keys"
         exit $ret
     fi
-    echo " [bs] Running salt states setup"
-    ret=$(salt_call_wrapper --local state.sls "makina-states.setup")
-    if [[ $ret != 0 ]];then
-        echo " [bs] Failed setup: $bootstrap !"
-        exit $ret
-    fi
-    echo "changed=yes comment='salt installed'"
+    NOW_INSTALLED="y"
     touch /root/salt_bootstrap_done
 fi
-
 # --------- MASTERSALT
 # in case of redoing a bootstrap for wiring on mastersalt
 # after having already bootstrapped using a regular salt
@@ -364,7 +399,7 @@ if [[ "$bootstrap" == "mastersalt" ]];then
         ;then
         ds=y
         cd $MS
-        echo " [bs] Upgrading salt base code source"
+        bs_log "Upgrading salt base code source"
         bin/develop up -fv
 
         # create etc/mastersalt
@@ -374,26 +409,29 @@ if [[ "$bootstrap" == "mastersalt" ]];then
 
         # kill salt running daemons if any
         ps aux|egrep "salt-(master|minion|syndic)"|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
-        echo " [bs] Running mastersalt states $bootstrap"
+        bs_log "Running mastersalt states $bootstrap"
         ret=$(salt_call_wrapper --local state.sls $bootstrap)
         cat $SALT_OUTFILE
         if [[ $ret != 0 ]];then
             echo "Mastersalt: Failed bootstrap: $bootstrap !"
             exit $ret
         fi
-        echo " [bs] Running mastersalt states setup"
-        ret=$(salt_call_wrapper --local state.sls makina-states.setup)
-        cat $SALT_OUTFILE
-        if [[ $ret != 0 ]];then
-            echo "Mastersalt: Failed setup: $bootstrap !"
-            exit $ret
-        fi
         ps aux|grep salt-minion|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
         service mastersalt-minion restart
-        echo "changed=yes comment='mastersalt installed'"
+        NOW_INSTALLED="y"
     fi
 fi
-
+bs_log "Running salt states setup"
+ret=$(salt_call_wrapper --local state.sls makina-states.setup)
+cat $SALT_OUTFILE
+if [[ $ret != 0 ]];then
+    echo "Mastersalt: Failed setup: $bootstrap !"
+    exit $ret
+fi
+echo "changed=yes comment='salt setup run'"
+if [[ -n $NOW_INSTALLED ]];then
+    echo "changed=yes comment='salt installed'"
+fi
 # TODO: comment
 if [[ -z $ds ]];then
     echo 'changed="false" comment="already bootstrapped"'
@@ -401,7 +439,7 @@ fi
 
 # -------------- MAKINA PROJECTS
 if [[ -n $PROJECT_URL ]];then
-    echo " [bs] Projects managment"
+    bs_log "Projects managment"
     project_mark="${PROJECT_URL}_${PROJECT_BRANCH}_${PROJECT_TOPSTATE}"
     project_mark="${project_mark//\//_}"
     project_tmpdir="$ROOT/.tmp_${project_mark}"
@@ -411,17 +449,18 @@ if [[ -n $PROJECT_URL ]];then
         echo "changed=\"false\" comment=\"$PROJECT_URL / $PROJECT_BRANCH / $PROJECT_TOPSTATE already done\""
     else
         BR=""
+    echo "changed=yes comment='salt installed'"
         if [[ -n $PROJECT_BRANCH ]];then
             BR="-b $PROJECT_BRANCH"
         fi
         if [[ -e "${project_tmpdir}" ]];then
             rm -rf "${project_tmpdir}"
         fi
-        echo " [bs] Cloning  $PROJECT_URL / $PROJECT_BRANCH"
+        bs_log "Cloning  $PROJECT_URL / $PROJECT_BRANCH"
         git clone $BR "$PROJECT_URL" "${project_tmpdir}"
         ret=$?
         if [[ $ret != 0 ]];then
-            echo " [bs] Failed to download project from $PROJECT_URL, or maybe the saltstack branch $PROJECT_BRANCH does not exist"
+            bs_log "Failed to download project from $PROJECT_URL, or maybe the saltstack branch $PROJECT_BRANCH does not exist"
             exit -1
         fi
         rsync -az "${project_tmpdir}/" "$ROOT/"
@@ -430,15 +469,15 @@ if [[ -n $PROJECT_URL ]];then
             PROJECT_SETUPSTATE=setup
         fi
         if [[ -n $PROJECT_SETUPSTATE ]];then
-            echo " [bs] Launching saltstack setup ($PROJECT_SETUPSTATE) for $PROJECT_URL"
+            bs_log "Launching saltstack setup ($PROJECT_SETUPSTATE) for $PROJECT_URL"
             ret=$(salt_call_wrapper --local state.sls $PROJECT_SETUPSTATE)
             cat $SALT_OUTFILE
             if [[ $ret != 0 ]];then
-                echo " [bs] Failed to run setup.sls"
+                bs_log "Failed to run setup.sls"
                 exit -1
             fi
         fi
-        echo " [bs] Launching saltstack top state ($PROJECT_TOPSTATE) for $PROJECT_URL"
+        bs_log "Launching saltstack top state ($PROJECT_TOPSTATE) for $PROJECT_URL"
         ret=$(salt_call_wrapper --local $PROJECT_TOPSTATE)
         if [[ $ret == 0 ]];then
             cat $SALT_OUTFILE
