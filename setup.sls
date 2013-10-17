@@ -23,7 +23,7 @@
 {% set server=salt['config.get']('bootstrap:makina-states-vm', False) -%}
 {% set sa=salt['config.get']('bootstrap:makina-states-standalone', False) -%}
 {% set msr='/srv/salt/makina-states' %}
-{% set group = pillar.get('salt.filesystem.group', 'salt-admin') %}
+{% set group = pillar.get('salt.filesystem.group', 'editor') %}
 {% set resetperms = "file://"+msr+"/_scripts/reset-perms.sh" %}
 
 include:

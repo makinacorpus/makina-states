@@ -6,10 +6,10 @@
 #   - pillar in /srv/pillar
 #   - projects code source is to be managed in /srv/projects
 #
-# We create a group called salt-admin which has rights in /srv/{pillar, salt, projects}
+# We create a group called editor which has rights in /srv/{pillar, salt, projects}
 #
 
-{% set group = pillar.get('salt.filesystem.group', 'salt-admin') %}
+{% set group = pillar.get('salt.filesystem.group', 'editor') %}
 {% set group_id = pillar.get('salt.filesystem.gid', 65753) %}
 {% set msr='/srv/salt/makina-states' %}
 {% set saltbinpath = msr+'/bin' %}
