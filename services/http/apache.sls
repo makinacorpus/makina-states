@@ -1,21 +1,30 @@
-# define in pillar an apache default loglevel :
-#   apache.log_level: debug
-#   apache.disabled_modules: 'autoindex cgid negotiation'
-# default is warn, 
-# available values are: debug, info, notice, warn, error, crit, alert, emerg
-# @see apache documentation for LogLevel
-{% set log_level = pillar.get('apache.log_level', 'warn') %}
-{% set disabled_modules = pillar.get('apache.disabled_modules', 'autoindex cgid negotiation') %}
-{% set enabled_modules = pillar.get('apache.enabled_modules', 'deflate status expires headers rewrite') %}
+# Apache httpd managment
 #
-# 
+# ------------------------- START pillar example -----------
+#services:
+#  http:
+#    # --- APACHE HTTPD SERVER -----------------------------
+#    apache:
+#      # - LOGS ------------------
+#      # default: warn
+#      # available: debug, info, notice, warn, error, crit, alert, emerg
+#      log_level: info
+#      # - MODULES ------------------
+#      # DO NOT FORGET to re-add default disabled modules or re-disable default enabled modules
+#      # in case of changes
+#      # default is 'autoindex cgid negotiation'
+#      disabled_modules: 'autoindex cgid negotiation'
+#      # default is 'deflate status expires headers rewrite'
+#      enabled_modules: 'deflate status expires headers rewrite'
+# do not forget to launch "salt '*' saltutil.refresh_pillar" after changes 
+# --------------------------- END pillar example ------------
 #
+{% set log_level = salt['pillar.get']('services:http:apache:log_level', 'warn') %}
+{% set disabled_modules = salt['pillar.get']('services:http:apache:disabled_modules', 'autoindex cgid negotiation') %}
+{% set enabled_modules = salt['pillar.get']('services:http:apache:enabled_modules', 'deflate status expires headers rewrite') %}
 {% set msr='/srv/salt/makina-states' %}
 {% set a2dismodwrapper = "file://"+msr+"/_scripts/a2dismodwrapper.sh" %}
 {% set a2enmodwrapper = "file://"+msr+"/_scripts/a2enmodwrapper.sh" %}
-
-
-
 
 apache-pkgs:
   pkg.installed:
@@ -109,6 +118,8 @@ apache-enable-required-modules:
     - args: "{{enabled_modules}}"
     - require:
       - pkg.installed: apache-pkgs
+
+
 
 makina-apache-service:
   service.running:
