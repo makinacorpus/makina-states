@@ -158,15 +158,9 @@ bin/activate
 bin/activate.csh
 bin/activate.fish
 bin/activate_this.py
-bin/easy_install*
-bin/pip*
 bin/python
 bin/python2*
 bin/python3*
-bin/sphinx-apidoc
-bin/sphinx-autogen
-bin/sphinx-build
-bin/sphinx-quickstart
 include/python*
 lib/python*"
 cleanup_previous_venv() {
