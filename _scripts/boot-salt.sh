@@ -299,6 +299,15 @@ EOF
 test:
   cmd.run:
     - name: salt '*' test.ping
+#
+# Dev env SMTP/POP basic services
+#
+{% if grains['makina.devhost'] %}
+include:
+ - makina-states.services.mail.postfix
+ - makina-states.services.mail.dovecot
+{% endif %}
+
 EOF
     fi
 fi
