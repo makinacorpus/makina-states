@@ -1,67 +1,98 @@
 # Apache httpd managment
 #
 # ------------------------- START pillar example -----------
-#services:
-#  http:
-#    # --- APACHE HTTPD SERVER -----------------------------
-#    apache:
-#      # - LOGS ------------------
-#      # default: warn
-#      # available: debug, info, notice, warn, error, crit, alert, emerg
-#      log_level: info
-#      # - MODULES ------------------
-#      # DO NOT FORGET to re-add default disabled modules or re-disable default enabled modules
-#      # in case of changes
-#      # default is 'autoindex cgid negotiation'
-#      disabled_modules: 'autoindex cgid negotiation'
-#      # default is 'deflate status expires headers rewrite'
-#      enabled_modules: 'deflate status expires headers rewrite'
-#      # - SETTINGS ------------------
-#      # bof
-#      serveradmin_mail : 'webmaster@localhost'
-#      # timeout for a client sending HTTP request, keep this quite low to avoid DOS
-#      Timeout: 120
-#      # default is 'On', you can use 'Off', especially in mpm mode
-#      KeepAlive: 'On'
-#      # Please keep this one under 5s, default is "5"
-#      KeepAliveTimeout: 5
-#      # default for theses 3 is 5 in dev mode, 25 else.
-#      prefork_StartServers: 5
-#      prefork_MinSpareServers: 5
-#      prefork_MaxSpareServers: 5
-#      # default is 150 or 10 in dev mode
-#      prefork_MaxClients: 10
-#      # default is 100 or 5 in dev mode
-#      MaxKeepAliveRequests: 5
-#      # default is 3000 set 0 to disable process recylcing
-#      MaxRequestsPerChild: 3000
-#      # Put there any configuration directive for the main apache scope, you can use \n.
-#      extra_configuration : 'ServerLimit 1000'
+# --- APACHE HTTPD SERVER -----------------------------
+#
+# - LOGS ------------------
+# default: warn
+# available: debug, info, notice, warn, error, crit, alert, emerg
+#services-http-apache-log_level: info
+# - MODULES ------------------
+# DO NOT FORGET to re-add default disabled modules or re-disable default enabled modules
+# in case of changes
+# default is 'autoindex cgid negotiation'
+#services-http-apache-disabled_modules: 'autoindex cgid negotiation'
+# default is 'deflate status expires headers rewrite'
+#services-http-apache-enabled_modules: 'deflate status expires headers rewrite'
+# - SETTINGS ------------------
+# bof
+#services-http-apache-serveradmin_mail : 'webmaster@localhost'
+# timeout for a client sending HTTP request, keep this quite low to avoid DOS
+#services-http-apache-Timeout: 120
+# default is 'On', you can use 'Off', especially in mpm mode
+#services-http-apache-KeepAlive: 'On'
+# Please keep this one under 5s, default is "5"
+#services-http-apache-KeepAliveTimeout: 5
+# default for theses 3 is 5 in dev mode, 25 else.
+#services-http-apache-prefork_StartServers: 5
+#services-http-apache-prefork_MinSpareServers: 5
+#services-http-apache-prefork_MaxSpareServers: 5
+# default is 150 or 10 in dev mode
+#services-http-apache-prefork_MaxClients: 10
+# default is 100 or 5 in dev mode
+#services-http-apache-MaxKeepAliveRequests: 5
+# default is 3000 set 0 to disable process recylcing
+#services-http-apache-MaxRequestsPerChild: 3000
+# Put there any configuration directive for the main apache scope, you can use \n.
+#services-http-apache-extra_configuration : 'ServerLimit 1000'
+#
+# --------- VirtualHosts definitions
+# the important thing: state name must end in -apache-virtualhost or -apache-ssl-virtualhost
+# and 3 keys are REQUIRED:
+# * DocumentRoot : Path prefix of files for this VirtualHost
+# * ServerName : the main DNS name for this site
+# * number: the number is the file number defining priorities for VH, 000 is reserved for default virtualhost
+# other keys are OPTIONNAL:
+# * ServerAlias : list with spaces of alternative DNS names
+# * enable: True by default, set to False to disable
+# * allow_htaccess: False by default, set to True to enable .htaccess files starting from DocumentRoot
+# * behind_proxy: False by default, set to True to alter the log format used to get real user IP if you have a reverse proxy
+# examples:
+#my-example-apache-virtualhost:
+#  DocumentRoot: /var/www/toto
+#  ServerName: www.toto.com
+#  number: 100
+#my-second-example-apache-virtualhost:
+#  DocumentRoot: /srv/bar.foo.net
+#  ServerName: bar.foo.net
+#  ServerAlias: bar-foo.net www.bar.foo.net alias.bar.foo.net
+#  NameVirtualhost: *:80
+#  number: 200
+#  enable: False
+#my-second-example-apache-ssl-virtualhost:
+#  DocumentRoot: /srv/bar.foo.net
+#  ServerName: bar.foo.net
+#  ServerAlias: bar-foo.net www.bar.foo.net alias.bar.foo.net
+#  NameVirtualhost: *:8443
+#  Certificate: path/to/thing.crt
+#  number: 210
 # do not forget to launch "salt '*' saltutil.refresh_pillar" after changes 
+# consult pillar values with "salt '*' pillar.items"
 # --------------------------- END pillar example ------------
 #
-{% set log_level = salt['pillar.get']('services:http:apache:log_level', 'warn') %}
-{% set disabled_modules = salt['pillar.get']('services:http:apache:disabled_modules', 'autoindex cgid negotiation') %}
-{% set enabled_modules = salt['pillar.get']('services:http:apache:enabled_modules', 'deflate status expires headers rewrite') %}
-{% set Timeout = salt['pillar.get']('services:http:apache:Timeout', '120') %}
-{% set KeepAlive = salt['pillar.get']('services:http:apache:KeepAlive', 'On') %}
-{% set KeepAliveTimeout = salt['pillar.get']('services:http:apache:KeepAliveTimeout', '5') %}
-{% set extra_configuration = salt['pillar.get']('services:http:apache:extra_configuration', '#') %}
-{% set serveradmin_mail = salt['pillar.get']('services:http:apache:serveradmin_mail', 'webmaster@localhost') %}
+
+{% set log_level = salt['pillar.get']('services-http-apache-log_level', 'warn') %}
+{% set disabled_modules = salt['pillar.get']('services-http-apache-disabled_modules', 'autoindex cgid negotiation') %}
+{% set enabled_modules = salt['pillar.get']('services-http-apache-enabled_modules', 'deflate status expires headers rewrite') %}
+{% set Timeout = salt['pillar.get']('services-http-apache-Timeout', '120') %}
+{% set KeepAlive = salt['pillar.get']('services-http-apache-KeepAlive', 'On') %}
+{% set KeepAliveTimeout = salt['pillar.get']('services-http-apache-KeepAliveTimeout', '5') %}
+{% set extra_configuration = salt['pillar.get']('services-http-apache-extra_configuration', '#') %}
+{% set serveradmin_mail = salt['pillar.get']('services-http-apache-serveradmin_mail', 'webmaster@localhost') %}
 {% if grains['makina.devhost'] %}
-  {% set prefork_StartServers = salt['pillar.get']('services:http:apache:prefork_StartServers', '5') %}
-  {% set prefork_MinSpareServers = salt['pillar.get']('services:http:apache:prefork_MinSpareServers', '5') %}
-  {% set prefork_MaxSpareServers = salt['pillar.get']('services:http:apache:prefork_MaxSpareServers', '5') %}
-  {% set prefork_MaxClients = salt['pillar.get']('services:http:apache:prefork_MaxClients', '10') %}
-  {% set MaxRequestsPerChild = salt['pillar.get']('services:http:apache:MaxRequestsPerChild', '3000') %}
-  {% set MaxKeepAliveRequests = salt['pillar.get']('services:http:apache:MaxKeepAliveRequests', '5') %}
+  {% set prefork_StartServers = salt['pillar.get']('services-http-apache-prefork_StartServers', '5') %}
+  {% set prefork_MinSpareServers = salt['pillar.get']('services-http-apache-prefork_MinSpareServers', '5') %}
+  {% set prefork_MaxSpareServers = salt['pillar.get']('services-http-apache-prefork_MaxSpareServers', '5') %}
+  {% set prefork_MaxClients = salt['pillar.get']('services-http-apache-prefork_MaxClients', '10') %}
+  {% set MaxRequestsPerChild = salt['pillar.get']('services-http-apache-MaxRequestsPerChild', '3000') %}
+  {% set MaxKeepAliveRequests = salt['pillar.get']('services-http-apache-MaxKeepAliveRequests', '5') %}
 {% else %}
-  {% set prefork_StartServers = salt['pillar.get']('services:http:apache:prefork_StartServers', '25') %}
-  {% set prefork_MinSpareServers = salt['pillar.get']('services:http:apache:prefork_MinSpareServers', '25') %}
-  {% set prefork_MaxSpareServers = salt['pillar.get']('services:http:apache:prefork_MaxSpareServers', '25') %}
-  {% set prefork_MaxClients = salt['pillar.get']('services:http:apache:prefork_MaxClients', '150') %}
-  {% set MaxRequestsPerChild = salt['pillar.get']('services:http:apache:MaxRequestsPerChild', '3000') %}
-  {% set MaxKeepAliveRequests = salt['pillar.get']('services:http:apache:MaxKeepAliveRequests', '100') %}
+  {% set prefork_StartServers = salt['pillar.get']('services-http-apache-prefork_StartServers', '25') %}
+  {% set prefork_MinSpareServers = salt['pillar.get']('services-http-apache-prefork_MinSpareServers', '25') %}
+  {% set prefork_MaxSpareServers = salt['pillar.get']('services-http-apache-prefork_MaxSpareServers', '25') %}
+  {% set prefork_MaxClients = salt['pillar.get']('services-http-apache-prefork_MaxClients', '150') %}
+  {% set MaxRequestsPerChild = salt['pillar.get']('services-http-apache-MaxRequestsPerChild', '3000') %}
+  {% set MaxKeepAliveRequests = salt['pillar.get']('services-http-apache-MaxKeepAliveRequests', '100') %}
 {% endif %}
 
 {% set msr='/srv/salt/makina-states' %}
@@ -203,6 +234,44 @@ makina-apache-conf-syntax-check:
     - stateful: True
     - require:
       - pkg.installed: apache-pkgs
+
+#--- VIRTUALHOSTS
+
+#{% set apacheVirtualHosts=[] %}
+#{% for k, data in pillar.items() %}
+#  {% if k.endswith('-apache-virtualhost') %}
+#  {% endif %}
+#{% endfor %}
+# loop to create a dynamic list of states based on pillar content
+#{% for virtualhost in apacheVirtualHosts %}
+# the state name should not contain dots and spaces
+#{{ virtualhost['ServerName'].replace('.', '_') }}-apache-virtualhost:
+#    file.managed:
+#    - require:
+#      - pkg.installed: apache-pkgs
+#    - name: /etc/apache2/sites-available/{{ virtualhost['number'] }}-{{ virtualhost['ServerName'] }}
+#    - source:
+#      - salt://makina-states/files/etc/apache2/sites-available/virtualhost_template.conf
+#    - user: root
+#    - group: root
+#    - mode: 644
+#    - template: jinja
+#    - defaults:
+#        log_level: "{{log_level}}"
+#        serveradmin_mail: "{{serveradmin_mail}}"
+#        ServerName: virtualhost['ServerName']
+#        DocumentRoot: virtualhost['DocumentRoot']
+#        {% if virtualhost.has_key('ServerAlias') %}
+#        ServerAlias: virtualhost['ServerAlias']
+#        {% endif %}
+#        mode: "production"
+#  {% if grains['makina.devhost'] %}
+#    - context:
+#        mode: "dev"
+#  {% endif %}
+#{% endfor %}
+
+#--- MAIN SERVICE RESTART/RELOAD watchers
 
 #@see also makina-apache-service-graceful-reload
 makina-apache-service:
