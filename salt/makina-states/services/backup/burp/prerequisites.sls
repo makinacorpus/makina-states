@@ -28,19 +28,14 @@ burp-repo:
       - mc_proxy: burp-post-install-hook
 {% endif %}
 
-install-burp-pkg:
-  pkg.latest:
-    - pkgs: {{burp.pkgs }}
-    {% if burp.fromrepo %}
-    - fromrepo: {{ burp.fromrepo }}
-    {% endif %}
+{% macro rmacro() %}
     - watch:
       - mc_proxy: burp-pre-install-hook
     - watch_in:
       - mc_proxy: burp-post-install-hook
-{{ h.retry_apt_get(failed_from=['pkg: install-burp-pkg'],
-                   pkgs=burp.pkgs, pref='burp',
-                   fromrepo=burp.fromrepo)}}
+{% endmacro %}
+{{ h.retry_apt_get(
+  'install-burp-pkg', rmacro=rmacro, pkgs=burp.pkgs, fromrepo=burp.fromrepo)}}
 {% if burp.source %}
 installburp:
   file.managed:

@@ -22,14 +22,11 @@ makina-postfix-service:
       - mc_proxy: postfix-prerestart
 
 
-makina-postfix-cli-client:
-  pkg.latest:
-    - pkgs: [mailutils]
+{% macro rmacro() %}
     - watch_in:
       - service: makina-postfix-service
       - mc_proxy: postfix-postrestart
     - watch:
-      - mc_proxy: postfix-prerestart 
-
-{{ h.retry_apt_get(failed_from=['pkg: makina-postfix-cli-client'],
-                   pkgs='mailutils', pref='makina-postfix')}}
+      - mc_proxy: postfix-prerestart
+{% endmacro %}
+{{ h.retry_apt_get('makina-postfix-cli-client', pkgs=['mailutils'], rmacro=rmacro)}}

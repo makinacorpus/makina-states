@@ -86,38 +86,48 @@
 {% set dummy = proxy %}
 
 
-{% macro retry_apt_get(pref='', suf='', pkgs=None, pkg=None, update=True,
-                       failed_from=None, fromrepo=None,
+{% macro retry_apt_get(name, pref='', suf='', rmacro=none,
+                       pkgs=None, pkg=None,
+                       require_knob='require_in',
+                       update=True, fromrepo=None,
                        install_function='pkg.latest') %}
-{% if not pkgs %}
-{% set pkgs = [] %}
-{% endif %}
-{% if pkg and (pkg not in pkgs) %}{% do pkgs.append(pkg) %} {% endif %}
-{% if update %}
-{{pref}}-aptgetretry-update-{{suf}}:
-  cmd.run:
-    - name: apt-get update
-    {% if failed_from %}
-    - onfail:
-      {% for i in failed_from %}
-      - {{i}}
-      {% endfor %}
-    {% endif %}
-    - watch_in:
-        {{install_function.split('.')[0]}}: {{pref}}-aptgetretry-retry-{{suf}}
-{% endif %}
-{{pref}}-aptgetretry-retry-{{suf}}:
+{%- if not pkgs %}
+{%- set pkgs = [] %}
+{%- endif %}
+{%- if pkg and (pkg not in pkgs) %}{% do pkgs.append(pkg) %} {% endif %}
+{%- set install_module = install_function.split('.')[0] %}
+{{pref}}{{name}}{{suf}}:
   {{install_function}}:
     - pkgs: {{pkgs}}
     {% if fromrepo %}
     - fromrepo: {{ fromrepo }}
     {% endif %}
-    {% if failed_from %}
-    - onfail:
-      {% for i in failed_from %}
-      - {{i}}
-      {% endfor %}
+    {% if rmacro %}
+    {{ rmacro() }}
     {% endif %}
+{% if update %}
+{{pref}}aptgetretry-update{{suf}}:
+  cmd.run:
+    - name: apt-get update
+    - onfail:
+      - {{install_module}}: {{pref}}{{name}}{{suf}}
+    - {{require_knob}}:
+      - {{install_module}}: {{pref}}aptgetretry-retry{{suf}}
+    {% if rmacro %}
+    {{ rmacro() }}
+    {% endif %}
+{% endif %}
+{{pref}}aptgetretry-retry{{suf}}:
+  {{install_function}}:
+    - pkgs: {{pkgs}}
+    {% if fromrepo %}
+    - fromrepo: {{ fromrepo }}
+    {% endif %}
+    - onfail:
+      - {{install_module}}: {{pref}}{{name}}{{suf}}
+    {% if rmacro %}
+    {{ rmacro() }}
+    {% endif %} 
 {% endmacro %}
 
 
