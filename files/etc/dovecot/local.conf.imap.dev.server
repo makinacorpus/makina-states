@@ -1,0 +1,3 @@
+protocols = imap
+mail_location = mbox:~/mail:INBOX=/var/spool/mail/%u
+disable_plaintext_auth = no
