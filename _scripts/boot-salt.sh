@@ -60,8 +60,6 @@ export PATH=$MS/bin:$PATH
 # base sls file to run on a mastersalt master
 MASTERSALT_MASTER_ST="makina-states.services.bootstrap_mastersalt_master"
 
-
-
 # boot mode for mastersalt
 # if mastersalt is set, automatic switch on mastersalt mode
 if [[ -n $MASTERSALT ]];then
@@ -78,7 +76,6 @@ MASTERSALT_MAKINA_HOST="cloud-admin"
 # - if we have not defined a mastersalt host,
 #    default to localhost
 #    if we are not on makinacorpus mastersalt
-#
 MASTERSALT_DEFAULT=""
 if [[ $SALT_BOOT == "mastersalt" ]];then
     MASTERSALT_DEFAULT="localhost"
