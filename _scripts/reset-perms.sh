@@ -44,6 +44,9 @@ def reset(p):
     print "Directories: %s" % dmode
     print "Files: %s" % fmode
     print "User:Group: %s:%s\n\n" % (user, group)
+    if not os.path.exists(p):
+        print "\n\nWARNING: %s does not exist\n\n" % p
+        return
     for root, dirs, files in os.walk(p):
         i = root
         stop = False
