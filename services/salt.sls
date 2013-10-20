@@ -105,6 +105,7 @@ salt-modules:
   cmd.run:
     - name: |
             for i in _states _grains _modules _renderers _returners;do
+              if [[ ! -d  "/srv/salt/$i" ]];then mkdir "/srv/salt/$i";fi;
               for f in $(find {{c.msr}}/$i -name "*py" -type f);do
                   ln -vsf "$f" "/srv/salt/$i";
               done;
