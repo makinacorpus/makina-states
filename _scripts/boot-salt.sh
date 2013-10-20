@@ -19,11 +19,16 @@
 RED="\\033[31m"
 CYAN="\\033[36m"
 NORMAL="\\033[0m"
+DEBUG=${BOOT_SALT_DEBUG:-}
 
 bs_log(){ echo -e "${RED}[bs] ${@}${NORMAL}"; }
+warn_log() {
+    bs_log "logs for salt executions availables in $SALT_OUTFILE / $SALT_LOGFILE"
+}
 die() {
     ret=$1
     shift
+    warn_log
     echo "${CYAN}${@}${NORMAL}"
     exit -1
 }
@@ -52,13 +57,6 @@ HOSTNAME="$(hostname)"
 
 export PATH=$MS/bin:$PATH
 
-# if mastersalt is set, automatic switch on mastersalt mode
-
-if [[ -n $MASTERSALT ]];then
-    bs_log " MasterSalt mode switch"
-    SALT_BOOT="mastersalt"
-fi
-
 # base sls file to run on a mastersalt master
 MASTERSALT_MASTER_ST="makina-states.services.bootstrap_mastersalt_master"
 
@@ -80,8 +78,16 @@ if [[ -z "$MASTERSALT_MASTER" ]];then
         MASTERSALT="$MASTERSALT_MAKINA_DNS"
     fi
 fi
+
+# boot mode for mastersalt
+# if mastersalt is set, automatic switch on mastersalt mode
+if [[ -n $MASTERSALT ]];then
+    bs_log " MasterSalt mode switch"
+    SALT_BOOT="server"
+    MASTERSALT_BOOT="mastersalt"
+fi
 if [[ -n "$MASTERSALT_MASTER" ]];then
-    SALT_BOOT="mastersalt_master"
+    MASTERSALT_BOOT="mastersalt_master"
 fi
 
 # set appropriate ports for mastersalt depening on the host and user input
@@ -101,10 +107,18 @@ if [[ -z $SALT_BOOT ]];then
     SALT_BOOT="$1"
 fi
 
+# base sls bootstrap
 bootstrap="makina-states.services.bootstrap"
+mastersalt_bootstrap="$bootstrap"
+
 if [[ -n "$SALT_BOOT" ]];then
     bootstrap="${bootstrap}_${SALT_BOOT}"
 fi
+
+if [[ -n "$MASTERSALT_BOOT" ]];then
+    mastersalt_bootstrap="${bootstrap}_${MASTERSALT_BOOT}"
+fi
+
 
 i_prereq() {
     to_install=""
@@ -179,6 +193,9 @@ salt_call_wrapper() {
     fi
     #rm -rf "$outf" "$logf" 2> /dev/null
     echo $ret
+}
+mastersalt_call_wrapper() {
+    salt_call_wrapper -c /etc/mastersalt $@
 }
 
 bs_log "Create base directories"
@@ -400,6 +417,7 @@ fi
 NOW_INSTALLED=""
 
 # --------- check if we need to run salt setup's
+warn_log
 RUN_SALT_SETUP=""
 master_processes="$(ps aux|grep salt-master|grep -v mastersalt|grep -v grep|wc -l)"
 minion_processes="$(ps aux|grep salt-minion|grep -v mastersalt|grep -v grep|wc -l)"
@@ -414,7 +432,7 @@ if     [[ ! -e "/etc/salt" ]]\
 
 # --------- check if we need to run mastersalt setup's
 RUN_MASTERSALT_SETUP=""
-if [[ "$SALT_BOOT" == "mastersalt" ]];then
+if [[ -n "$MASTERSALT" ]];then
     mminion_processes="$(ps aux|grep salt-minion|grep mastersalt|grep -v grep|wc -l)"
     mminion_keys="$(find /etc/mastersalt/pki/master/minions -type f 2>/dev/null|wc -l)"
     mmaster_processes="$(ps aux|grep salt-master|grep mastersalt|grep -v grep|wc -l)"
@@ -442,7 +460,7 @@ if [[ -n "$RUN_SALT_SETUP" ]];then
     cd $MS
 
     # kill salt running daemons if any
-    ps aux|egrep "salt-(master|minion|syndic)" |awk '{print $2}'|xargs kill -9 &> /dev/null
+    ps aux|egrep "salt-(master|minion|syndic)"|grep -v mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
 
     bs_log "Boostrapping salt"
     # create etc directory
@@ -456,18 +474,31 @@ if [[ -n "$RUN_SALT_SETUP" ]];then
         bs_log "Failed bootstrap: $bootstrap !"
         exit -1
     fi
-    bs_log "Waiting for salt minion key to be accepted"
+    if [[ -n "$DEBUG" ]];then cat $SALT_OUTFILE;fi
+    # restart salt daemons
+    bs_log "Forcing salt master restart"
+    ps aux|grep salt-master|grep -v mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
+    service salt-master restart
     sleep 10
-    ps aux|grep salt-minion|awk '{print $2}'|xargs kill -9 &> /dev/null
+    bs_log "Forcing salt minio restart"
+    ps aux|grep salt-minion|grep -v mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
     service salt-minion restart
-    salt-key -A -y
-    ret=$?
-    cat $SALT_OUTFILE
-    if [[ "$ret" != "0" ]];then
-        bs_log "Failed accepting keys"
-        exit -1
+    # only accept key on fresh install (no keys stored)
+    if [[ "$(ls -1 /etc/salt/pki/master/minions 2>/dev/null|wc -l)" == "0" ]];then
+        bs_log "Waiting for salt minion key hand-shake"
+        sleep 5
+        salt-key -A -y
+        ret=$?
+        if [[ "$ret" != "0" ]];then
+            bs_log "Failed accepting keys"
+            exit -1
+        fi
+    else
+        bs_log "Key already accepted, skipping key handshake"
     fi
     NOW_INSTALLED="y"
+else
+    bs_log "Skip salt installation, already done"
 fi
 
 # --------- MASTERSALT
@@ -490,46 +521,54 @@ if [[ -n "$RUN_MASTERSALT_SETUP" ]];then
     if [[ -n "$MASTERSALT_MASTER" ]];then
         # run mastersalt master+minion setup
         bs_log "Running mastersalt-master/minion setup ($MASTERSALT_MASTER_ST)"
-        ret="$(salt_call_wrapper --local state.sls $MASTERSALT_MASTER_ST)"
-        cat $SALT_OUTFILE
+        ret="$(mastersalt_call_wrapper --local state.sls $MASTERSALT_MASTER_ST)"
+        if [[ -n "$DEBUG" ]];then cat $SALT_OUTFILE;fi
         if [[ "$ret" != "0" ]];then
             echo "Mastersalt: Failed bootstrap of mastersalt master"
             exit -1
         fi
     else
         # run mastersalt minion setup
-        bs_log "Running mastersalt minion states $bootstrap"
-        ret=$(salt_call_wrapper --local state.sls $bootstrap)
-        cat $SALT_OUTFILE
+        bs_log "Running mastersalt minion states $mastersalt_bootstrap"
+        ret=$(mastersalt_call_wrapper --local state.sls $mastersalt_bootstrap)
+        if [[ -n "$DEBUG" ]];then cat $SALT_OUTFILE;fi
         if [[ "$ret" != "0" ]];then
-            echo "Mastersalt: Failed bootstrap: $bootstrap !"
+            echo "Mastersalt: Failed bootstrap: $mastersalt_bootstrap !"
             exit -1
         fi
     fi
+    if [[ -n "$DEBUG" ]];then cat $SALT_OUTFILE;fi
 
-    # kill salt running daemons if any
-    ps aux|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
+    # kill mastersalt running daemons if any
+    ps aux|egrep "salt-(master|minion|syndic)"|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
 
     # restart mastersalt salt-master after setup
     if [[ -n "$MASTERSALT_MASTER" ]];then
         bs_log "Forcing mastersalt master restart"
+        ps aux|grep salt-master|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
         service mastersalt-master restart
+        sleep 10
     fi
 
-    # restart mastersalt salt-minion after setup
-    bs_log "Lauching mastersalt - minion"
+    # restart mastersalt minion
+    bs_log "Forcing mastersalt minion restart"
+    ps aux|grep salt-minion|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
     service mastersalt-minion restart
 
     # in case of a local mastersalt, auto accept the minion key
     if [[ "$MASTERSALT" == "localhost" ]];then
-        bs_log "Waiting for mastersalt minion key to be accepted"
-        sleep 10
-        mastersalt-key -A -y
-        ret=$?
-        cat $SALT_OUTFILE
-        if [[ "$ret" != "0" ]];then
-            bs_log "Failed accepting mastersalt keys"
-            exit -1
+        # only accept key on fresh install (no keys stored)
+        if [[ "$(ls -1 /etc/mastersalt/pki/master/minions 2>/dev/null|wc -l)" == "0" ]];then
+            bs_log "Waiting for mastersalt minion key hand-shake"
+            sleep 5
+            mastersalt-key -A -y
+            ret=$?
+            if [[ "$ret" != "0" ]];then
+                bs_log "Failed accepting mastersalt keys"
+                exit -1
+            fi
+        else
+            bs_log "Key already accepted, skipping mastersalt key handshake"
         fi
     else
         bs_log "*****************************************"
@@ -537,6 +576,8 @@ if [[ -n "$RUN_MASTERSALT_SETUP" ]];then
         bs_log "*****************************************"
     fi
     NOW_INSTALLED="y"
+else
+    if [[ -n "$MASTERSALT" ]];then bs_log "Skip MasterSalt installation, already done";fi
 fi
 
 # --------- POST-SETUP
@@ -546,8 +587,19 @@ if [[ "$ret" != "0" ]];then
     bs_log "Failed post-setup"
     exit -1
 fi
-cat $SALT_OUTFILE
+if [[ -n "$DEBUG" ]];then cat $SALT_OUTFILE;fi
 echo "changed=yes comment='salt post-setup run'"
+
+if [[ -n "$MASTERSALT" ]];then
+    bs_log "Running salt states setup for mastersalt"
+    ret="$(mastersalt_call_wrapper --local state.sls makina-states.setup)"
+    if [[ "$ret" != "0" ]];then
+        bs_log "Failed post-setup for mastersalt"
+        exit -1
+    fi
+    if [[ -n "$DEBUG" ]];then cat $SALT_OUTFILE;fi
+    echo "changed=yes comment='mastersalt post-setup run'"
+fi
 
 # --------- stateful state return: mark as freshly installed
 if [[ -n "$NOW_INSTALLED" ]];then
@@ -593,7 +645,7 @@ if [[ -n "$PROJECT_URL" ]];then
         if [[ -n $PROJECT_SETUPSTATE ]];then
             bs_log "Launching saltstack setup ($PROJECT_SETUPSTATE) for $PROJECT_URL"
             ret=$(salt_call_wrapper --local state.sls $PROJECT_SETUPSTATE)
-            cat $SALT_OUTFILE
+            if [[ -n "$DEBUG" ]];then cat $SALT_OUTFILE;fi
             if [[ "$ret" != "0" ]];then
                 bs_log "Failed to run setup.sls"
                 exit -1
@@ -602,7 +654,7 @@ if [[ -n "$PROJECT_URL" ]];then
         bs_log "Launching saltstack top state ($PROJECT_TOPSTATE) for $PROJECT_URL"
         ret=$(salt_call_wrapper --local $PROJECT_TOPSTATE)
         if [[ "$ret" == "0" ]];then
-            cat $SALT_OUTFILE
+            if [[ -n "$DEBUG" ]];then cat $SALT_OUTFILE;fi
             echo  "changed=\"yes\" comment=\"$PROJECT_URL // $PROJECT_BRANCH // $PROJECT_TOPSTATE Installed\""
             touch "$project_mark"
         fi
