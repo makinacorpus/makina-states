@@ -70,6 +70,10 @@ if [[ -n $MASTERSALT ]];then
     MASTERSALT_BOOT="mastersalt"
 fi
 
+# the current mastersalt.makinacorpus.net hostname
+MASTERSALT_MAKINA_DNS="mastersalt.makina-corpus.net"
+MASTERSALT_MAKINA_HOST="cloud-admin"
+
 # host running the mastersalt salt-master
 # - if we have not defined a mastersalt host,
 #    default to localhost
@@ -79,11 +83,10 @@ MASTERSALT_DEFAULT=""
 if [[ $SALT_BOOT == "mastersalt" ]];then
     MASTERSALT_DEFAULT="localhost"
 fi
+if [[ "$HOSTNAME" == "$MASTERSALT_MAKINA_HOSTNAME" ]];then
+    MASTERSALT="$MASTERSALT_MAKINA_DNS"
+fi
 MASTERSALT="${MASTERSALT:-$MASTERSALT_DEFAULT}"
-
-# the current mastersalt.makinacorpus.net hostname
-MASTERSALT_MAKINA_DNS="mastersalt.makina-corpus.net"
-MASTERSALT_MAKINA_HOST="cloud-admin"
 
 # mark host as a salt-master if mastersalt.makina-corpus.net or localhost
 if [[ -z "$MASTERSALT_MASTER" ]];then
@@ -91,10 +94,7 @@ if [[ -z "$MASTERSALT_MASTER" ]];then
         || [[ "$HOSTNAME" == "$MASTERSALT_MAKINA_HOSTNAME" ]];then
         MASTERSALT_MASTER="y"
     fi
-    if [[ "$HOSTNAME" == "$MASTERSALT_MAKINA_HOSTNAME" ]];then
-        MASTERSALT_MASTER="y"
-        MASTERSALT="$MASTERSALT_MAKINA_DNS"
-    fi
+
 fi
 if [[ -n "$MASTERSALT_MASTER" ]];then
     MASTERSALT_BOOT="mastersalt_master"
