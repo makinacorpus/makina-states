@@ -22,8 +22,9 @@ include:
   - makina-states.services.sudo
   - makina-states.services.users
 
-bootstrap:makina-states-server:
+makina-bootstrap-server-grain:
   grains.present:
+    - name: makina.bootstrap.server
     - value: True
     - require:
       - service: salt-minion

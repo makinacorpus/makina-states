@@ -6,14 +6,12 @@
 #   - pillar in /srv/pillar
 #   - projects code source is to be managed in /srv/projects
 #
+# This state file only install a minion
+#
 # We create a group called editor which has rights in /srv/{pillar, salt, projects}
 #
 
-{% set group = pillar.get('salt.filesystem.group', 'editor') %}
-{% set group_id = pillar.get('salt.filesystem.gid', 65753) %}
-{% set msr='/srv/salt/makina-states' %}
-{% set saltbinpath = msr+'/bin' %}
-
+{% import "makina-states/_macros/salt.sls" as c with context %}
 {% set salt_modules=[
     '_grains',
     '_macros',
@@ -84,7 +82,7 @@ dummy-pre-salt-checkouts:
 makina-states-dirs:
   file.directory:
     - names:
-      {% for i in  salt_modules -%}
+      {% for i in salt_modules -%}
       - /srv/salt/{{i}}
       - /srv/salt/makina-states/{{i}}
       {% endfor %}
@@ -107,13 +105,13 @@ salt-modules:
   cmd.run:
     - name: |
             for i in _states _grains _modules _renderers _returners;do
-              for f in $(find /srv/salt/makina-states/$i -name "*py" -type f);do
+              for f in $(find {{c.msr}}/$i -name "*py" -type f);do
                   ln -vsf "$f" "/srv/salt/$i";
               done;
             done;
     - unless: |
               for i in _states _grains _modules _renderers _returners;do
-                for f in $(find /srv/salt/makina-states/$i -name "*py" -type f);do
+                for f in $(find {{c.msr}}/$i -name "*py" -type f);do
                   dest="$f";
                   sym="/srv/salt/$i/$(basename $f)";
                   if [[ ! -e  "$sym" ]];then
@@ -130,57 +128,27 @@ salt-modules:
               done;
               exit 0;
 
-salt-master-conf:
-  file.managed:
-    - name: /etc/salt/master
+salt-reload-grains:
+  cmd.script:
+    - source: salt://makina-states/_scripts/reload_grains.sh
     - template: jinja
-    - source: salt://makina-states/files/etc/salt/master
+
+#salt-test-grain:
+#  grains.present:
+#    - name: makina.test
+#    - value: True
+#    - require_in:
+#      - cmd: salt-reload-grains
+#  cmd.run:
+#    - name: salt-call --local grains.get makina.test
+#    - require:
+#      - grains: salt-test-grain
 
 salt-minion-conf:
   file.managed:
     - name: /etc/salt/minion
     - template: jinja
     - source: salt://makina-states/files/etc/salt/minion
-
-salt-master:
-  file.managed:
-    - name: /etc/init/salt-master.conf
-    - template: jinja
-    - source: salt://makina-states/files/etc/init/salt-master.conf
-  service.running:
-    - enable: True
-    - watch:
-      - service: salt-minion
-      - cmd: salt-modules
-      - file: makina-states-dirs
-      - file: salt-master
-      - file: l-openssh-formulae
-      - file: l-salt-formulae
-      - git: m2crypto
-      - git: makina-states
-      - git: openssh-formulae
-      - git: openstack-formulae
-      - git: salt-formulae
-
-# # make a proxy between service and master for when
-# # there is a master restart to let minions re-auth
-# salt-minion-wait-restart:
-#   cmd.run:
-#     - name: sleep 13
-#     - watch_in:
-#      - file:salt-minion-job
-#     - watch:
-#       - cmd: salt-modules
-#       - file: makina-states-dirs
-#       - file: salt-master
-#       - file: salt-minion-conf
-#       - git: m2crypto
-#       - git: makina-states
-#       - git: openssh-formulae
-#       - git: openstack-formulae
-#       - git: salt-formulae
-#       - git: SaltTesting-git
-#       - service: salt-master
 
 salt-minion-job:
   file.managed:
@@ -191,54 +159,34 @@ salt-minion-job:
 salt-minion:
   service.running:
     - enable: True
-    - watch:
-      - cmd: salt-modules
-      - file: makina-states-dirs
-      - file: salt-master
-      - file: l-openssh-formulae
-      - file: l-salt-formulae
-      - git: m2crypto
-      - git: makina-states
-      - git: openssh-formulae
-      - git: openstack-formulae
-      - git: salt-formulae
-      - file: salt-minion-job
+    - require:
+        - cmd: restart-salt-minion
 
-# disabled, syndic cannot sync files !
-# salt-syndic:
-#   file.managed:
-#     - name: /etc/init/salt-syndic.conf
-#     - template: jinja
-#     - source:  salt://makina-states/files/etc/init/salt-syndic.conf
-#   service.running:
-#     - enable: True
-#     - watch:
-#       - file: salt-master-conf
+salt-minion-grain:
+  grains.present:
+    - name: makina.salt-minion
+    - value: True
+    - require_in:
+      - cmd: salt-reload-grains
+    - require:
+      - service: salt-minion
 
 salt-minion-cache:
   file.directory:
     - name: /var/cache/salt/minion
     - makedirs: True
 
-salt-master-cache:
-  file.directory:
-    - name: /var/cache/salt/master
-    - makedirs: True
-
-minion-sock:
+salt-minion-sock-dir:
   file.directory:
     - name: /var/run/salt/minion
     - makedirs: True
 
-salt-sock:
+salt-minion-pki:
   file.directory:
-    - name: /var/run/salt/salt
+    - name: /etc/salt/pki/minion
     - makedirs: True
-
-salt-pki:
-  file.directory:
-    - name: /etc/salt/pki/master
-    - makedirs: True
+    - require:
+      - file: etc-salt-dirs
 
 salt-env:
   file.managed:
@@ -246,24 +194,21 @@ salt-env:
     - source: salt://makina-states/files/etc/profile.d/salt.sh
     - mode: 755
     - template: jinja
-    - saltbinpath: {{ saltbinpath }}
-    - require_in:
-      - service: salt-master
-      - service: salt-minion
+    - saltbinpath: {{ c.saltbinpath }}
 
 {% if grains['os'] == 'Ubuntu' %}
 makina-env-bin:
    file.replace:
     - name: /etc/environment
-    - pattern: '({{ saltbinpath }}:)*/usr/local/sbin'
-    - repl: '{{ saltbinpath }}:/usr/local/sbin'
+    - pattern: '({{ c.saltbinpath }}:)*/usr/local/sbin'
+    - repl: '{{ c.saltbinpath }}:/usr/local/sbin'
     - flags: ['MULTILINE', 'DOTALL']
 {% endif %}
 
-{{group}}:
+{{c.group}}:
   group.present:
     - system: True
-    {% if group_id %}- gid: {{group_id}}{% endif %}
+    {% if c.group_id %}- gid: {{c.group_id}}{% endif %}
 
 # this is really factored
 # idea is to create dirs, then requires daemons to issue the chmod
@@ -276,11 +221,11 @@ etc-salt-dirs:
       - /etc/salt/master.d
       - /etc/salt/minion.d
     - user: root
-    - group: {{group}}
+    - group: {{c.group}}
     - dir_mode: 2770
     - makedirs: True
     - require:
-      - group: {{group}}
+      - group: {{c.group}}
 
 salt-dirs:
   file.directory:
@@ -290,7 +235,7 @@ salt-dirs:
       - /srv/projects
       - /srv/vagrant
     - user: root
-    - group: {{group}}
+    - group: {{c.group}}
     - file_mode: "0770"
     - dir_mode: "2770"
     - makedirs: True
@@ -302,42 +247,40 @@ salt-dirs-restricted:
       - /var/run/salt
       - /var/cache/salt
       - /etc/salt/pki
-    - msr: {{msr}}
+    - msr: {{c.msr}}
     - user: root
-    - group: {{group}}
+    - group: {{c.group}}
     - file_mode: 0750
-    - dir_mode: 0750
+    - dir_mode: 2750
     - makedirs: True
     - require:
       - file: salt-dirs
 
-salt-logs:
+salt-minion-logs:
   file.managed:
     - names:
-      - /var/log/salt/key
-      - /var/log/salt/master
       - /var/log/salt/minion
-      - /var/log/salt/syndic.log
-    - mode: 700
-  require:
-    - service: salt-master
-    - service: salt-minion
 
 # non blocking gitpull
 salt-git-pull:
   cmd.run:
     - name: git pull;exit 0
-    - cwd: {{msr}}/src/salt
-    - onlyif: ls -d {{msr}}/src/salt/.git
-    - require_in:
-      - service: salt-master
-      - service: salt-minion
+    - cwd: {{c.msr}}/src/salt
+    - onlyif: ls -d {{c.msr}}/src/salt/.git
+
+# update makina-state
+salt-logrotate:
+  file.managed:
+    - template: jinja
+    - name: /etc/logrotate.d/salt.conf
+    - source: salt://makina-states/files/etc/logrotate.d/salt.conf
+    - rotate: {{ c.rotate }}
 
 # update makina-state
 salt-buildout-bootstrap:
   cmd.run:
     - name: python bootstrap.py
-    - cwd: {{msr}}
+    - cwd: {{c.msr}}
     - unless: test "$(cat buildout.cfg|md5sum|awk '{print $1}')" = "$(cat .saltcheck)"
     - require_in:
       - cmd: update-salt
@@ -346,12 +289,55 @@ salt-buildout-bootstrap:
 
 update-salt:
   cmd.run:
-    - name: bin/buildout && cat buildout.cfg|md5sum|awk '{print $1}'>.saltcheck
+    - name: |
+            bin/buildout &&\
+            cat buildout.cfg|md5sum|awk '{print $1}'>.saltcheck &&\
+            touch "{{c.msr}}/.restart_salt" &&\
+            touch "{{c.msr}}/.restart_msalt" &&\
+            touch "{{c.msr}}/.restart_salt_minion" &&\
+            touch "{{c.msr}}/.restart_msalt_minion"
+    - cwd: {{c.msr}}
     - unless: test "$(cat buildout.cfg|md5sum|awk '{print $1}')" = "$(cat .saltcheck)"
-    - cwd: /srv/salt/makina-states
+
+# done to mitigate authentication errors on restart
+restart-salt-minion:
+  cmd.run:
+    - name: |
+            service salt-minion stop &&\
+            service salt-minion start &&\
+            echo "Reloading salt-minion" &&\
+            sleep 5 &&\
+            rm -f "{{c.msr}}/.restart_salt_minion"
+    - onlyif: ls "{{c.msr}}/.restart_salt_minion"
+    - require:
+      - cmd: restart-salt-master
+      - cmd: salt-daemon-proxy-requires-before-restart
+      - file: salt-minion-cache
+      - file: salt-minion-conf
+      - file: salt-minion-job
+      - file: salt-minion-logs
+      - file: salt-minion-pki
+      - file: salt-minion-sock-dir
+
+# salt master state will attach to this for the minion to be configured
+# before being really restarted
+salt-daemon-proxy-requires-before-restart:
+  cmd.run:
+    - name: echo "dummy"
     - require_in:
-      - service: salt-master
-      - service: salt-minion
-    - watch_in:
-      - service: salt-master
-      - service: salt-minion
+      - cmd: update-salt
+    - require:
+      - cmd: salt-git-pull
+      - cmd: salt-modules
+      - file: l-openssh-formulae
+      - file: l-salt-formulae
+      - file: salt-env
+      - git: m2crypto
+      - git: makina-states
+      - git: openssh-formulae
+      - git: openstack-formulae
+      - git: salt-formulae
+      - file: etc-salt-dirs
+      - file: salt-dirs-restricted
+      - file: salt-logrotate
+

@@ -14,3 +14,8 @@ src/
 !_states
 !_modules
 *~
+.restart_msalt
+.restart_msalt_minion
+.restart_salt
+.restart_salt_minion
+

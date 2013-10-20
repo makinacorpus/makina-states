@@ -14,48 +14,40 @@
 #   - Install salt/mastersalt infrastructure & base pkgs
 #   - Take care of file mode and ownership deployed by salt (see below)
 #
-
-{% set ms=salt['config.get']('bootstrap:mastersalt', False) -%}
-{% set mmaster=salt['config.get']('mastersalt-master', False) -%}
-{% set mminion=salt['config.get']('mastersalt-minion', False) -%}
-{% set mastersalt=mmaster or mminion or ms -%}
-{% set vm=salt['config.get']('bootstrap:makina-states-server', False) -%}
-{% set server=salt['config.get']('bootstrap:makina-states-vm', False) -%}
-{% set sa=salt['config.get']('bootstrap:makina-states-standalone', False) -%}
-{% set msr='/srv/salt/makina-states' %}
-{% set group = pillar.get('salt.filesystem.group', 'editor') %}
-{% set resetperms = "file://"+msr+"/_scripts/reset-perms.sh" %}
+{% import "makina-states/_macros/salt.sls" as c with context %}
 
 include:
-  {% if mastersalt %}
+  {% if c.mastersalt %}
+  {% if c.mmaster %}
+  - makina-states.services.bootstrap_mastersalt_master
+  {% else %}
   - makina-states.services.bootstrap_mastersalt
   {% endif %}
-  {% if server %}
+  {% endif %}
+  {% if c.server %}
   - makina-states.services.bootstrap_server
-  {% elif sa %}
+  {% endif %}
+  {% if c.sa %}
   - makina-states.services.bootstrap_standalone
   {% endif %}
-  {% if vm %}
+  {% if c.vm %}
   - makina-states.services.bootstrap_vm
-  {% else %}
-  - makina-states.services.bootstrap
   {% endif %}
-  {% if mmaster %}
-  - makina-states.services.mastersalt_master
+  {% if c.no_bootstrap %}
+  - makina-states.services.bootstrap
   {% endif %}
 
 # Fix permissions and ownerships
-
 # recurse does not seem to work well to reset perms
 etc-salt-dirs-perms:
   cmd.script:
-    - source:  {{resetperms}}
+    - source:  {{c.resetperms}}
     - template: jinja
-    - msr: {{msr}}
+    - msr: {{c.msr}}
     - dmode: 2770
     - fmode: 0770
     - user: "root"
-    - group: "{{group}}"
+    - group: "{{c.group}}"
     - reset_paths:
       - /etc/salt
     - require:
@@ -66,23 +58,18 @@ etc-salt-dirs-perms:
 # recurse does not seem to work well to reset perms
 salt-dirs-perms:
   cmd.script:
-    - source: {{resetperms}}
+    - source: {{c.resetperms}}
     - template: jinja
     - dmode: 2770
     - fmode: 0770
-    - msr: {{msr}}
+    - msr: {{c.msr}}
     - user: "root"
-    - group: "{{group}}"
+    - group: "{{c.group}}"
     - reset_paths:
       - /srv/salt
       - /srv/pillar
       - /srv/projects
       - /srv/vagrant
-    - excludes:
-      - {{msr}}/bin
-      - {{msr}}/lib
-      - {{msr}}/include
-      - {{msr}}/local
     - require:
       - service: salt-master
       - service: salt-minion
@@ -91,17 +78,23 @@ salt-dirs-perms:
       - git: m2crypto
       - file: salt-dirs
       - cmd: etc-salt-dirs-perms
-      - group: {{group}}
+      - group: {{c.group}}
+# no more virtualenv at the makina-states level
+#    - excludes:
+#      - {{c.msr}}/bin
+#      - {{c.msr}}/lib
+#      - {{c.msr}}/include
+#      - {{c.msr}}/local
 
 salt-dirs-restricted-perms:
   cmd.script:
-    - source: {{resetperms}}
+    - source: {{c.resetperms}}
     - template: jinja
     - fmode: 0750
-    - msr: {{msr}}
+    - msr: {{c.msr}}
     - dmode: 0750
     - user: "root"
-    - group: "{{group}}"
+    - group: "{{c.group}}"
     - reset_paths:
       - /var/log/salt
       - /var/run/salt
@@ -115,43 +108,61 @@ salt-dirs-restricted-perms:
       - service: salt-minion
 
 # recurse does not seem to work well to reset perms
-# moved to /srv/salt-env
-# salt-dirs-reset-perms-for-virtualenv:
-#   cmd.script:
-#     - source: {{resetperms}}
-#     - template: jinja
-#     - reset_paths:
-#       - {{msr}}/bin
-#       - {{msr}}/lib
-#       - {{msr}}/include
-#       - {{msr}}/local
-#     - msr: {{msr}}
-#     - fmode: 0755
-#     - dmode: 0755
-#     - user: "root"
-#     - group: "root"
-#     - require:
-#         - cmd: update-salt
-#         - cmd: salt-dirs-perms
-#         - cmd: salt-dirs-restricted-perms
-
-
-# recurse does not seem to work well to reset perms
 docker-dirs-if-present:
   cmd.script:
     - onlif: ls -d /srv/docker/ubuntu
-    - source: {{resetperms}}
+    - source: {{c.resetperms}}
     - template: jinja
     - reset_paths:
       - /srv/docker
-    - msr: {{msr}}
+    - msr: {{c.msr}}
     - dmode: 2770
     - fmode: 0770
     - user: "root"
-    - group: {{group}}
+    - group: {{c.group}}
     - require_in:
-      - cmd: dummy-pre-salt-checkouts
+      - cmd: update-salt
     - excludes:
+      - /docker/docker/bundles
       - /docker/debian/cache
       - /docker/debian/debootstrap
+      - /docker/ubuntu-debootstrap/cache
+      - /docker/ubuntu-debootstrap/debootstrap
 
+{% if c.mastersalt %}
+# recurse does not seem to work well to reset perms
+etc-mastersalt-dirs-perms:
+  cmd.script:
+    - source:  {{c.resetperms}}
+    - template: jinja
+    - msr: {{c.msr}}
+    - dmode: 2770
+    - fmode: 0770
+    - user: "root"
+    - group: "{{c.group}}"
+    - reset_paths:
+      - /etc/mastersalt
+    - require:
+      - file: etc-mastersalt-dirs
+      - service: mastersalt-minion
+      {% if c.mmaster %}- service: mastersalt-master{% endif %}
+
+mastersalt-dirs-restricted-perms:
+  cmd.script:
+    - source: {{c.resetperms}}
+    - template: jinja
+    - fmode: 0750
+    - msr: {{c.msr}}
+    - dmode: 0750
+    - user: "root"
+    - group: "{{c.group}}"
+    - reset_paths:
+      - /var/log/salt
+      - /var/run/salt
+      - /var/cache/mastersalt
+      - /etc/mastersalt/pki
+    - require:
+      - cmd: etc-mastersalt-dirs-perms
+      - service: mastersalt-minion
+      {% if c.mmaster %}- service: mastersalt-master{% endif %}
+{% endif %}

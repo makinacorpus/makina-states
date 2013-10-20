@@ -10,8 +10,9 @@
 include:
   - makina-states.services.bootstrap_server
 
-bootstrap:makina-states-standalone:
+makina-bootstrap-standalone-grain:
   grains.present:
+    - name: makina.bootstrap.standalone
     - value: True
     - require:
       - service: salt-minion
