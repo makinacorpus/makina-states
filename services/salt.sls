@@ -304,7 +304,7 @@ update-salt:
 restart-salt-minion:
   cmd.run:
     - name: |
-            service salt-minion stop &&\
+            service salt-minion stop ;\
             service salt-minion start &&\
             echo "Reloading salt-minion" &&\
             sleep 5 &&\
