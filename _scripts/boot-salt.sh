@@ -80,6 +80,9 @@ if [[ -z "$MASTERSALT_MASTER" ]];then
         MASTERSALT="$MASTERSALT_MAKINA_DNS"
     fi
 fi
+if [[ -n "$MASTERSALT_MASTER" ]];then
+    SALT_BOOT="mastersalt_master"
+fi
 
 # set appropriate ports for mastersalt depening on the host and user input
 MASTERSALT_DEFAULT_PORT="4606"
