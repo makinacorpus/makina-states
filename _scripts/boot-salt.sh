@@ -595,6 +595,7 @@ if [[ "$ret" != "0" ]];then
     exit -1
 fi
 if [[ -n "$DEBUG" ]];then cat $SALT_OUTFILE;fi
+warn_log
 echo "changed=yes comment='salt post-setup run'"
 
 if [[ -n "$MASTERSALT" ]];then
@@ -605,11 +606,13 @@ if [[ -n "$MASTERSALT" ]];then
         exit -1
     fi
     if [[ -n "$DEBUG" ]];then cat $SALT_OUTFILE;fi
+    warn_log
     echo "changed=yes comment='mastersalt post-setup run'"
 fi
 
 # --------- stateful state return: mark as freshly installed
 if [[ -n "$NOW_INSTALLED" ]];then
+    warn_log
     echo "changed=yes comment='salt installed'"
 fi
 
