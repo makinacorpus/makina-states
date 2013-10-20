@@ -60,8 +60,26 @@ export PATH=$MS/bin:$PATH
 # base sls file to run on a mastersalt master
 MASTERSALT_MASTER_ST="makina-states.services.bootstrap_mastersalt_master"
 
+
+
+# boot mode for mastersalt
+# if mastersalt is set, automatic switch on mastersalt mode
+if [[ -n $MASTERSALT ]];then
+    bs_log " MasterSalt mode switch"
+    SALT_BOOT="server"
+    MASTERSALT_BOOT="mastersalt"
+fi
+
 # host running the mastersalt salt-master
-MASTERSALT="${MASTERSALT:-"localhost"}"
+# - if we have not defined a mastersalt host,
+#    default to localhost
+#    if we are not on makinacorpus mastersalt
+#
+MASTERSALT_DEFAULT=""
+if [[ $SALT_BOOT == "mastersalt" ]];then
+    MASTERSALT_DEFAULT="localhost"
+fi
+MASTERSALT="${MASTERSALT:-$MASTERSALT_DEFAULT}"
 
 # the current mastersalt.makinacorpus.net hostname
 MASTERSALT_MAKINA_DNS="mastersalt.makina-corpus.net"
@@ -77,14 +95,6 @@ if [[ -z "$MASTERSALT_MASTER" ]];then
         MASTERSALT_MASTER="y"
         MASTERSALT="$MASTERSALT_MAKINA_DNS"
     fi
-fi
-
-# boot mode for mastersalt
-# if mastersalt is set, automatic switch on mastersalt mode
-if [[ -n $MASTERSALT ]];then
-    bs_log " MasterSalt mode switch"
-    SALT_BOOT="server"
-    MASTERSALT_BOOT="mastersalt"
 fi
 if [[ -n "$MASTERSALT_MASTER" ]];then
     MASTERSALT_BOOT="mastersalt_master"
