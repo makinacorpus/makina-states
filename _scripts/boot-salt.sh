@@ -338,6 +338,7 @@ base:
   '*':
 EOF
 fi
+
 # Create a default setup in the tree if not present
 if [[ ! -f /srv/salt/setup.sls ]];then
     bs_log "creating default salt's setup.sls"
@@ -349,6 +350,7 @@ include:
   - makina-states.setup
 EOF
 fi
+
 # Create a default top.sls in the tree if not present
 if [[ ! -f /srv/salt/top.sls ]];then
     bs_log "creating default salt's top.sls"
@@ -359,12 +361,19 @@ if [[ ! -f /srv/salt/top.sls ]];then
 #
 base:
   '*':
-    - core
-    - makina-states.dev
 EOF
-    if [[ ! -f /srv/salt/core.sls ]];then
-        bs_log "creating default salt's core.sls"
-            cat > /srv/salt/core.sls << EOF
+fi
+
+# add core if not present
+if [[ $(egrep -- "- core\s*$" /srv/salt/top.sls|wc -l) == "0" ]];then
+    bs_log "Adding core to top file"
+    sed -re "/('|\")\*('|\"):/ {
+a\    - core
+}" -i /srv/salt/top.sls
+fi
+if [[ ! -f /srv/salt/core.sls ]];then
+    bs_log "creating default salt's core.sls"
+    cat > /srv/salt/core.sls << EOF
 #
 # Dummy state file example
 #
@@ -373,13 +382,20 @@ test:
     - name: salt '*' test.ping
 
 EOF
-    fi
+fi
+
+# add makina-salt.dev if not present
+if [[ $(egrep -- "- makina-states\.dev\s*$" /srv/salt/top.sls|wc -l) == "0" ]];then
+    bs_log "Adding makina-states.dev to top file"
+    sed -re "/('|\")\*('|\"):/ {
+a\    - makina-states.dev
+}" -i /srv/salt/top.sls
 fi
 
 # TODO: comment
 if [[ $(grep -- "- salt" /srv/pillar/top.sls|wc -l) == "0" ]];then
     sed -re "/('|\")\*('|\"):/ {
-a\     - salt
+a\    - salt
 }" -i /srv/pillar/top.sls
 fi
 
