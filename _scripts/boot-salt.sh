@@ -496,7 +496,7 @@ if [[ -n "$RUN_SALT_SETUP" ]];then
     ps aux|grep salt-master|grep -v mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
     service salt-master restart
     sleep 10
-    bs_log "Forcing salt minio restart"
+    bs_log "Forcing salt minion restart"
     ps aux|grep salt-minion|grep -v mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
     service salt-minion restart
     # only accept key on fresh install (no keys stored)
