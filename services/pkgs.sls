@@ -119,6 +119,15 @@ sys-pkgs:
       - cronolog
       - lvm2
       - xfsprogs
+      - ncdu
+      - zerofree
+
+{% if grains.get('makina.devhost', False) %}
+devhost-pkgs:
+  pkg.installed:
+    - names:
+      - localepurge
+{% endif %}
 
 dev-pkgs:
   pkg.installed:
