@@ -360,7 +360,7 @@ if [[ ! -f /srv/salt/top.sls ]];then
 base:
   '*':
     - core
-    - dev
+    - makina-states.dev
 EOF
     if [[ ! -f /srv/salt/core.sls ]];then
         bs_log "creating default salt's core.sls"
