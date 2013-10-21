@@ -360,6 +360,7 @@ if [[ ! -f /srv/salt/top.sls ]];then
 base:
   '*':
     - core
+    - dev
 EOF
     if [[ ! -f /srv/salt/core.sls ]];then
         bs_log "creating default salt's core.sls"
@@ -370,14 +371,6 @@ EOF
 test:
   cmd.run:
     - name: salt '*' test.ping
-#
-# Dev env SMTP/POP basic services
-#
-{% if grains.get('makina.devhost', False) %}
-include:
- - makina-states.services.mail.postfix
- - makina-states.services.mail.dovecot
-{% endif %}
 
 EOF
     fi
