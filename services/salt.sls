@@ -105,6 +105,7 @@ salt-modules:
   cmd.run:
     - name: |
             for i in _states _grains _modules _renderers _returners;do
+              if [[ ! -d  "/srv/salt/$i" ]];then mkdir "/srv/salt/$i";fi;
               for f in $(find {{c.msr}}/$i -name "*py" -type f);do
                   ln -vsf "$f" "/srv/salt/$i";
               done;
@@ -303,7 +304,7 @@ update-salt:
 restart-salt-minion:
   cmd.run:
     - name: |
-            service salt-minion stop &&\
+            service salt-minion stop ;\
             service salt-minion start &&\
             echo "Reloading salt-minion" &&\
             sleep 5 &&\

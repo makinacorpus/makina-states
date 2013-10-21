@@ -5,6 +5,7 @@ import os
 import grp
 import stat
 import pwd
+import traceback
 
 m = '{{msr}}'
 excludes = [
@@ -56,25 +57,49 @@ def reset(p):
                 break
         if stop:
             continue
-        st = os.stat(i)
-        if eval(dmode) != stat.S_IMODE(st.st_mode):
-            eval('os.chmod(i, %s)' % dmode)
-        if st.st_uid != uid or st.st_gid != gid:
-            os.chown(i, uid, gid)
-        for item in files:
-            i = os.path.join(root, item)
-            stop = False
-            for p in pexcludes:
-                if p in i:
-                    stop = True
-                    break
-            if stop:
-                continue
+        try:
             st = os.stat(i)
-            if eval(fmode) != stat.S_IMODE(st.st_mode):
-                eval('os.chmod(i, %s)' % fmode)
+            if eval(dmode) != stat.S_IMODE(st.st_mode):
+                try:
+                    eval('os.chmod(i, %s)' % dmode)
+                except:
+                    print traceback.format_exc()
+                    print 'reset failed for %s' % i
             if st.st_uid != uid or st.st_gid != gid:
-                os.chown(i, uid, gid)
+                try:
+                    os.chown(i, uid, gid)
+                except:
+                    print traceback.format_exc()
+                    print 'reset failed for %s' % i
+            for item in files:
+                i = os.path.join(root, item)
+                stop = False
+                for p in pexcludes:
+                    if p in i:
+                        stop = True
+                        break
+                if stop:
+                    continue
+                try:
+                    st = os.stat(i)
+                    if eval(fmode) != stat.S_IMODE(st.st_mode):
+                        try:
+                            eval('os.chmod(i, %s)' % fmode)
+                        except:
+                            print traceback.format_exc()
+                            print 'reset failed for %s' % i
+                    if st.st_uid != uid or st.st_gid != gid:
+                        try:
+                            os.chown(i, uid, gid)
+                        except:
+                            print traceback.format_exc()
+                            print 'reset failed for %s' % i
+                except:
+                    print traceback.format_exc()
+                    print 'reset failed for %s' % i
+        except:
+            print traceback.format_exc()
+            print 'reset failed for %s' % i
 
 {% for pt in reset_paths %}
 reset('{{pt}}')

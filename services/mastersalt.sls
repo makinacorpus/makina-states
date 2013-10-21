@@ -122,6 +122,7 @@ mastersalt-logrotate:
 restart-mastersalt-minion:
   cmd.run:
     - name: |
+            service mastersalt-minion stop;\
             service mastersalt-minion restart &&\
             echo "Reloading mastersalt-minion" &&\
             sleep 5 &&\
