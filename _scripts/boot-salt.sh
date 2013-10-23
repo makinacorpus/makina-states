@@ -421,7 +421,7 @@ fi
 if [[ $SALT_BOOT == "mastersalt" ]] && [[ ! -f /srv/pillar/mastersalt.sls ]];then
     if [[ $(grep -- "- mastersalt" /srv/pillar/top.sls|wc -l) == "0" ]];then
         sed -re "/('|\")\*('|\"):/ {
-a\     - mastersalt
+a\    - mastersalt
 }" -i /srv/pillar/top.sls
     fi
     if [[ ! -f /srv/pillar/mastersalt.sls ]];then
