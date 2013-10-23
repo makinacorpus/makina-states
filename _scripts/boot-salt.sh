@@ -326,6 +326,7 @@ if    [[ ! -e "$MS/bin/buildout" ]]\
     || [[ ! -e "$MS/src/SaltTesting/setup.py" ]]\
     || [[ -n "$REBOOTSTRAP" ]]\
     ;then
+    sed -re "s/filemode =.*/filemode=false/g" -i src/*/.git/config 2>/dev/null
     if [[ -e src/bin/develop ]];then
         bs_log " [bs] pre buildout ugrade"
         bin/develop up -fv
