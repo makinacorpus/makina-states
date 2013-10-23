@@ -23,7 +23,15 @@ DEBUG=${BOOT_SALT_DEBUG:-}
 
 bs_log(){ echo -e "${RED}[bs] ${@}${NORMAL}"; }
 warn_log() {
-    bs_log "logs for salt executions availables in $SALT_OUTFILE / $SALT_LOGFILE"
+    if [[ -e "$SALT_OUTFILE" ]] || [[ -e "$SALT_LOGFILE" ]];then
+        bs_log "logs for salt executions availables in:"
+        if [[ -e "$SALT_OUTFILE" ]];then
+            bs_log "    - $SALT_OUTFILE"
+        fi
+        if [[ -e "$SALT_LOGFILE" ]];then
+            bs_log "    - $SALT_LOGFILE"
+        fi
+    fi
 }
 die() {
     ret=$1
