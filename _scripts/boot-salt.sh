@@ -318,6 +318,17 @@ if    [[ ! -e "$MS/bin/buildout" ]]\
     || [[ ! -e "$MS/src/SaltTesting/setup.py" ]]\
     || [[ -n "$REBOOTSTRAP" ]]\
     ;then
+    if [[ -e src/bin/develop ]];then
+        bs_log " [bs] pre buildout ugrade"
+        bin/develop up -fv
+    else
+        for i in src/m2crypto src/docker src/salt src/SaltTesting;do
+            bs_log " [bs] pre buildout manual ugrade: $i"
+            cd $MS/$i
+            git pull
+        done
+    fi
+    cd $MS
     if [[ -e bin/develop ]];then
         bs_log " [bs] pre buildout ugrade"
         bin/develop up -fv
