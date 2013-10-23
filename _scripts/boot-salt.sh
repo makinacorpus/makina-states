@@ -29,7 +29,7 @@ die() {
     ret=$1
     shift
     warn_log
-    echo "${CYAN}${@}${NORMAL}"
+    echo -e "${CYAN}${@}${NORMAL}"
     exit -1
 }
 die_in_error() {
@@ -298,10 +298,11 @@ if    [[ ! -e "$MS/bin/buildout" ]]\
     fi
 fi
 # remove stale zmq egg (to relink on zmq3)
-test="$(ldd $(find -L "$MS/eggs/pyzmq-"*egg -name *so)|grep zmq.so.1|wc -l)"
+test="$(ldd $(find -L "$MS/eggs/pyzmq-"*egg -name *so 2>/dev/null) 2>/dev/null|grep zmq.so.1|wc -l)"
 if [[ "$test" != "0" ]];then
     find -L "$MS/eggs/pyzmq-"*egg -maxdepth 0 -type d|xargs rm -rfv
 fi
+
 # detect incomplete buildout
 # pyzmq check is for testing upgrade from libzmq to zmq3
 if    [[ ! -e "$MS/bin/buildout" ]]\
