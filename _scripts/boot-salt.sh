@@ -332,9 +332,11 @@ if    [[ ! -e "$MS/bin/buildout" ]]\
         bin/develop up -fv
     else
         for i in src/m2crypto src/docker src/salt src/SaltTesting;do
-            bs_log " [bs] pre buildout manual ugrade: $i"
-            cd $MS/$i
-            git pull
+            if [[ -e $MS/$i ]];then
+                bs_log " [bs] pre buildout manual ugrade: $i"
+                cd $MS/$i
+                git pull
+            fi
         done
     fi
     cd $MS
