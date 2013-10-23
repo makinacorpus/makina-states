@@ -319,7 +319,7 @@ if    [[ ! -e "$MS/bin/buildout" ]]\
     || [[ -n "$REBOOTSTRAP" ]]\
     ;then
     bs_log "Launching buildout for salt initialisation"
-    if [[ -f bin/develop ]];then
+    if [[ -e bin/develop ]];then
         bin/develop up -v
     fi
     bin/buildout || die_in_error " [bs] Failed buildout"
