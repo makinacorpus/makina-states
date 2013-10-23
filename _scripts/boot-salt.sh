@@ -320,6 +320,7 @@ if    [[ ! -e "$MS/bin/buildout" ]]\
     ;then
     bs_log "Launching buildout for salt initialisation"
     if [[ -e bin/develop ]];then
+        bs_log " [bs] pre buildout ugrade"
         bin/develop up -v
     fi
     bin/buildout || die_in_error " [bs] Failed buildout"
