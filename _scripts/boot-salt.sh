@@ -318,11 +318,11 @@ if    [[ ! -e "$MS/bin/buildout" ]]\
     || [[ ! -e "$MS/src/SaltTesting/setup.py" ]]\
     || [[ -n "$REBOOTSTRAP" ]]\
     ;then
-    bs_log "Launching buildout for salt initialisation"
     if [[ -e bin/develop ]];then
         bs_log " [bs] pre buildout ugrade"
-        bin/develop up -v
+        bin/develop up -fv
     fi
+    bs_log "Launching buildout for salt initialisation"
     bin/buildout || die_in_error " [bs] Failed buildout"
     ret=$?
     if [[ "$ret" != "0" ]];then
