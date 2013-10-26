@@ -49,6 +49,19 @@ die_in_error() {
 
 if [[ -f /etc/lsb-release ]];then
     . /etc/lsb-release
+    if [[ "$DISTRIB_CODENAME" == "lucid" ]]\
+        || [[ "$DISTRIB_CODENAME" == "maverick" ]]\
+        || [[ "$DISTRIB_CODENAME" == "natty" ]]\
+        || [[ "$DISTRIB_CODENAME" == "oneiric" ]]\
+        || [[ "$DISTRIB_CODENAME" == "precise" ]]\
+        || [[ "$DISTRIB_CODENAME" == "quantal" ]]\
+        ;then
+        EARLY_UBUNTU=y
+        BEFORE_RARING=y
+    fi
+    if [[ "$DISTRIB_CODENAME" == "raring" ]] || [[ -n "$EARLY_UBUNTU" ]];then
+        BEFORE_SAUCY=y
+    fi
 fi
 base_packages=""
 base_packages="$base_packages build-essential m4 libtool pkg-config autoconf gettext bzip2"
@@ -145,13 +158,18 @@ i_prereq() {
         || [[ "$(dpkg-query -s libzmq3-dev 2>/dev/null|egrep "^Status:"|grep installed|wc -l)"  == "0" ]];\
         then
         bs_log "Installing ZeroMQ3"
-        cp  /etc/apt/sources.list /etc/apt/sources.list.$CHRONO.sav
-        sed -re "s/${DISTRIB_CODENAME}/${UBUNTU_NEXT_RELEASE}/g" -i /etc/apt/sources.list
+        if [[ -n "$BEFORE_SAUCY" ]];then
+            bs_log "from saucy on earlier ubuntu"
+            cp  /etc/apt/sources.list /etc/apt/sources.list.$CHRONO.sav
+            sed -re "s/${DISTRIB_CODENAME}/${UBUNTU_NEXT_RELEASE}/g" -i /etc/apt/sources.list
+        fi
         apt-get remove -y --force-yes libzmq libzmq1 libzmq-dev &> /dev/null
         apt-get update -qq && apt-get install -y --force-yes libzmq3-dev
         ret=$?
-        sed -re "s/${UBUNTU_NEXT_RELEASE}/${DISTRIB_CODENAME}/g" -i /etc/apt/sources.list
-        apt-get update
+        if [[ -n "$BEFORE_SAUCY" ]];then
+            sed -re "s/${UBUNTU_NEXT_RELEASE}/${DISTRIB_CODENAME}/g" -i /etc/apt/sources.list
+            apt-get update
+        fi
         if [[ $ret != "0" ]];then
             die $ret "Install of zmq3 failed"
         fi
