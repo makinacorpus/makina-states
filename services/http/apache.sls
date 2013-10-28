@@ -68,6 +68,7 @@
 #  number: 210
 # do not forget to launch "salt '*' saltutil.refresh_pillar" after changes 
 # consult pillar values with "salt '*' pillar.items"
+# consult grains values with "salt '*' grains.items"
 # --------------------------- END pillar example ------------
 #
 

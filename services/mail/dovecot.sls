@@ -33,12 +33,6 @@ makina-dovecot-dev-imap-conf:
 {% endif %}
 
 
-#makina-dovecot-configuration-check:
-#  cmd.run:
-#    - name: /usr/sbin/postfix check
-#    - require:
-#      - pkg.installed: postfix-pkgs
-
 
 #--- MAIN SERVICE RESTART/RELOAD watchers
 
