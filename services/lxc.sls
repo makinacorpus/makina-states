@@ -221,30 +221,40 @@ start-{{ lxc_name }}-lxc-service:
     - name: lxc-start -n {{ lxc_name }} -d && echo changed=false
 
 {% set makinahosts=[] -%}
+{% set hosts_list=[] %}
 {% for k, data in pillar.items() -%}
 {% if k.endswith('makina-hosts') -%}
 {% set dummy=makinahosts.extend(data) -%}
 {% endif -%}
 {% endfor -%}
 
-# loop to create a dynamic list of states based on pillar content
+# loop to create a dynamic list of hosts based on pillar content
 # Adding hosts records, similar as the ones explained in servers.hosts state
 # But only recording the one using 127.0.0.1 (the lxc host loopback)
-{% for host in makinahosts -%}
+{% for host in makinahosts %}
 ### Manage only refs to localhost
 {% if host['ip'] == '127.0.0.1' -%}
-# the state name should not contain dots and spaces
-lxc-{{ lxc_name }}{{ host['ip'].replace('.', '_') }}-{{ host['hosts'].replace(' ', '_') }}-host:
+  {% set dummy=hosts_list.append( lxc_gateway + ' ' + host['hosts'] ) %}
+{% endif %}
+{% endfor %}
+{% if hosts_list %}
+# spaces are used in the join operation to make this text looks like a yaml multiline text
+{% set separator="\n        "%}
+# this state use an accumulator to store all pillar names found
+# you can reuse this accumulator on other states
+# if you want to add content to the block handled by
+# {{ lxc_name }}-lxc-hosts-guest
+lxc-{{ lxc_name }}-pillar-localhost-host:
   file.accumulated:
     - filename: {{ lxc_rootfs }}/etc/hosts
     - name: lxc-hosts-accumulator-entries
-    - text: "{{ lxc_gateway }} {{ host['hosts'] }}"
+    - text: |
+        {{ hosts_list|sort|join(separator) }}
     - require_in:
       - file: {{ lxc_name }}-lxc-hosts-block
     - require:
       - cmd: {{ lxc_name }}-lxc
 {% endif %}
-{% endfor %}
 
 bootstrap-salt-in-{{ lxc_name }}-lxc:
   file.managed:

@@ -40,7 +40,7 @@
     {% set dummy=makinahosts.extend(data) %}
   {% endif %}
 {% endfor %}
-# loop to create a dynamic list of states based on pillar content
+# loop to create a dynamic list of hosts based on pillar content
 {% for host in makinahosts %}
   {% set dummy=hosts_list.append( host['ip'] + ' ' + host['hosts'] ) %}
 {% endfor %}
