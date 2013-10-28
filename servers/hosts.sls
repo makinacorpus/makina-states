@@ -4,14 +4,14 @@
 #
 #toto-makina-hosts:
 #    - ip: 10.0.0.8
-#      hosts: foo foo.company.com
+#      hosts: foo.company.com foo
 #    - ip: 10.0.0.3
-#      hosts: bar bar.company.com
+#      hosts: bar.company.com bar
 #others-makina-hosts:
 #    - ip: 192.168.1.52.1
-#      hosts: foobar foobar.foo.com
+#      hosts: foobar.foo.com foobar
 #    - ip: 192.168.1.52.2
-#      hosts: toto toto.foo.com toto2.foo.com toto3.foo.com
+#      hosts: toto.foo.com toto2.foo.com toto3.foo.com toto
 #    - ip: 10.0.0.4
 #      hosts: alias alias.foo.com
 # All theses entries will be entered inside a block identified by:
@@ -24,7 +24,7 @@
 # If you want to add some data in this block without using the pillar
 # you can also use a file.accumulated state and push content in
 # an accumulator while targeting /etc/hosts file with filename entry,
-# this way:
+# this way:
 # this-is-my-custom-state
 #    file.accumulated:
 #      - filename: /etc/hosts
@@ -34,6 +34,7 @@
 #        - file: makina-etc-host-vm-management
 
 {% set makinahosts=[] %}
+{% set hosts_list=[] %}
 {% for k, data in pillar.items() %}
   {% if k.endswith('makina-hosts') %}
     {% set dummy=makinahosts.extend(data) %}
@@ -41,35 +42,24 @@
 {% endfor %}
 # loop to create a dynamic list of states based on pillar content
 {% for host in makinahosts %}
-
-## RLE: commented the host removal stuff, file.blockreplace is maaging the whole dynamic block
-## if other entries in manual edit or managed blocks reference the same IP
-## it will be the user stuff to debunk it.
-# the state name should not contain dots and spaces
-#{{ host['ip'].replace('.', '_') }}-{{ host['hosts'].replace(' ', '_') }}-host-cleanup:
-#  # detect presence of the same host name with another IP
-#  file.replace:
-#    - require_in:
-#      - file: {{ host['ip'].replace('.', '_') }}-{{ host['hosts'].replace(' ', '_') }}-host
-#    - name: /etc/hosts
-#    - pattern: ^((?!{{ host['ip'].replace('.', '\.')  }}).)*{{ host['hosts'].replace('.', '\.') }}(.)*$
-#    - repl: ""
-#    - flags: ['IGNORECASE','MULTILINE', 'DOTALL']
-#    - bufsize: file
-#    - show_changes: True
-
-# Theses states will use an accumulator to build the dynamic block content in /etc/hosts
-# (@see makina-etc-host-vm-management)
-# the state name should not contain dots and spaces
-{{ host['ip'].replace('.', '_') }}-{{ host['hosts'].replace(' ', '_') }}-host:
-    file.accumulated:
-      - filename: /etc/hosts
-      - name: hosts-accumulator-makina-hosts-entries
-      - text: "{{ host['ip'] }} {{ host['hosts'] }}"
-      - require_in:
-        - file: makina-etc-host-vm-management
-
+  {% set dummy=hosts_list.append( host['ip'] + ' ' + host['hosts'] ) %}
 {% endfor %}
+{% if hosts_list %}
+# spaces are used in the join operation to make this text looks like a yaml multiline text
+  {% set separator="\n        "%}
+# This state will use an accumulator to build the dynamic block content in /etc/hosts
+# you can reuse this accumulator on other states
+# (@see makina-etc-host-vm-management)
+hosts-accumulator-from-pillar:
+  file.accumulated:
+    - filename: /etc/hosts
+    - name: hosts-accumulator-makina-hosts-entries
+    - text: |
+        {{ hosts_list|sort|join(separator) }}
+    - require_in:
+      - file: makina-etc-host-vm-management
+
+{% endif %}
 
 # States editing a block in /etc/hosts
 # Accumulators targeted on this file will be used
@@ -122,5 +112,6 @@ makina-parent-etc-host-accumulated:
         {{ ip1 }} {{ vm_nat_fqdn }} {{ vm_host }}-nat
     - require_in:
         - file: makina-parent-etc-host-vm-management
+
 {% endif %}
 
