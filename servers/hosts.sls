@@ -75,8 +75,10 @@ makina-etc-host-vm-management:
 
 ## -------- DEVELOPMENT VM ZONE --------
 {% if grains.get('makina.devhost', false) %}
-{% set vm_fqdn = grains.get('fqdn','childhost') %}
+{% set vm_fqdn = grains.get('fqdn','childhost.local') %}
+{% set vm_host = grains.get('host','childhost') %}
 {% set vm_name = vm_fqdn.replace('.', '_').replace(' ', '_') %}
+{% set vm_nat_fqdn = vm_fqdn.split('.')[:1][0]+'-nat.'+'.'.join(vm_fqdn.split('.')[1:]) %}
 {% set ips=grains['ip_interfaces'] %}
 {% set ip1=ips['eth0'][0] %}
 {% set ip2=ips['eth1'][0] %}
@@ -104,7 +106,9 @@ makina-parent-etc-host-accumulated:
   file.accumulated:
     - filename: /mnt/parent_etc/hosts
     - name: parent-hosts-accumulator-{{ vm_name}}-entries
-    - text: "{{ ip2 }} {{ vm_fqdn }}"
+    - text: |
+        {{ ip2 }} {{ vm_fqdn }} {{ vm_host }}
+        {{ ip1 }} {{ vm_nat_fqdn }} {{ vm_host }}-nat
     - require_in:
         - file: makina-parent-etc-host-vm-management
 {% endif %}
