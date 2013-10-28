@@ -83,7 +83,7 @@ makina-etc-host-vm-management:
 
 makina-parent-etc-host-exists:
   file.exists:
-    -name: /mnt/parent_etc/hosts
+    - name: /mnt/parent_etc/hosts
 
 makina-parent-etc-host-vm-management:
   file.blockreplace:
@@ -102,7 +102,7 @@ makina-parent-etc-host-vm-management:
 # host should know about
 makina-parent-etc-host-accumulated:
   file.accumulated:
-    - filename: /srv/foo
+    - filename: /mnt/parent_etc/hosts
     - name: parent-hosts-accumulator-{{ vm_name}}-entries
     - text: "{{ ip2 }} {{ vm_fqdn }}"
     - require_in:
