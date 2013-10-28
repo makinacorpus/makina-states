@@ -12,11 +12,26 @@
 #      hosts: foobar foobar.foo.com
 #    - ip: 192.168.1.52.2
 #      hosts: toto toto.foo.com toto2.foo.com toto3.foo.com
-#    - ip: 10.0.0.3
+#    - ip: 10.0.0.4
 #      hosts: alias alias.foo.com
-# If you alter on host IP or if you already used the given hosts string in your /etc/hosts
-# this host string will be searched upon the file and removed (the whole line)
-# to ensure the same host name is not used with several IPs
+# All theses entries will be entered inside a block identified by:
+# #-- start salt managed zone -- PLEASE, DO NOT EDIT
+# (here)
+# #-- end salt managed zone --
+# It's your job to ensure theses IP will not be used on other
+# entries in this file.
+#
+# If you want to add some data in this block without using the pillar
+# you can also use a file.accumulated state and push content in
+# an accumulator while targeting /etc/hosts file with filename entry,
+# this way:
+# this-is-my-custom-state
+#    file.accumulated:
+#      - filename: /etc/hosts
+#      - name: hosts-accumulator-makina-hosts-entries
+#      - text: "here your text"
+#      - require_in:
+#        - file: makina-etc-host-vm-management
 
 {% set makinahosts=[] %}
 {% for k, data in pillar.items() %}
@@ -47,10 +62,6 @@
 # (@see makina-etc-host-vm-management)
 # the state name should not contain dots and spaces
 {{ host['ip'].replace('.', '_') }}-{{ host['hosts'].replace(' ', '_') }}-host:
-    # append new host record
-    file.append:
-      - name: /etc/hosts
-      - text: "{{ host['ip'] }} {{ host['hosts'] }} # entry managed via salt"
     file.accumulated:
       - filename: /etc/hosts
       - name: hosts-accumulator-makina-hosts-entries
