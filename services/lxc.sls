@@ -170,57 +170,48 @@ lxc-after-maybe-bind-root:
          gateway: {{ lxc_gateway }}
          dnsservers: {{ lxc_dnsservers }}
 
-# Remove entries on lxc guest's /etc/hosts whith
-# host fqdn associated with another IP than the
-# gateway IP (if this gateway has moved for example)
-{{ lxc_name }}-lxc-host-host-cleanup:
-  file.replace:
-    - require_in:
-      file: {{ lxc_name }}-lxc-host-host
+# {{ lxc_rootfs }}/etc/hosts block entry mangment, collecting
+# data from accumulated states and pushing that in the hosts file
+#
+{{ lxc_name }}-lxc-hosts-block:
+  file.blockreplace:
     - name: {{ lxc_rootfs }}/etc/hosts
-    # match the domain ( grain fqdn ) on lines not containing the ip ( lxc_gateway )
-    - pattern: ^((?!{{ lxc_gateway.replace('.', '\.')  }}).)*{{ grains.get('fqdn').replace('.', '\.') }}(.)*$
-    - repl: ""
-    - flags: ['IGNORECASE','MULTILINE', 'DOTALL']
-    - bufsize: file
+    - marker_start: "#-- start salt lxc managed zone -- PLEASE, DO NOT EDIT"
+    - marker_end: "#-- end salt lxc managed zone --"
+    - content: ''
+    - append_if_not_found: True
+    - backup: '.bak'
     - show_changes: True
+    - require_in:
+      - cmd: start-{{ lxc_name }}-lxc-service
 
 # Add DNS record in lxc guest's /etc/hosts
 # record fqdn names of the lxc host
 # with the gateway IP
 #
-{{ lxc_name }}-lxc-host-host:
-  file.append:
+# This states will use an accumulator to build the dynamic block content in {{ lxc_rootfs }}/etc/hosts
+# (@see {{ lxc_name }}-lxc-hosts-block)
+{{ lxc_name }}-lxc-hosts-host:
+  file.accumulated:
+    - filename: {{ lxc_rootfs }}/etc/hosts
+    - name: lxc-hosts-accumulator-entries
+    - text: "{{ lxc_gateway }} {{ grains.get('fqdn') }}"
     - require_in:
-      - cmd: start-{{ lxc_name }}-lxc-service
-    - name: {{ lxc_rootfs }}/etc/hosts
-    - text: "{{ lxc_gateway }} {{ grains.get('fqdn') }} # entry managed by salt, lxc host fqdn"
-
-# Remove entries on lxc guests containers's /etc/hosts whith
-# lxc_name associated with another IP
-#
-{{ lxc_name }}-lxc-host-guest-cleanup:
-  file.replace:
-    - require_in:
-      file: {{ lxc_name }}-lxc-host-guest
-    - name: {{ lxc_rootfs }}/etc/hosts
-    # match the domain ( lxc_name ) on lines not containing the ip ( lxc_ip4 )
-    - pattern: ^((?!{{ lxc_ip4.replace('.', '\.')  }}).)*{{ lxc_name.replace('.', '\.') }}(.)*$
-    - repl: ""
-    - flags: ['IGNORECASE','MULTILINE', 'DOTALL']
-    - bufsize: file
-    - show_changes: True
+      - file: {{ lxc_name }}-lxc-hosts-block
 
 # Add entries on lxc guests's /etc/hosts with
 # lxc_name and related IP on the lxc netxwork
-# network
 #
-{{ lxc_name }}-lxc-host-guest:
-  file.append:
+# This states will use an accumulator to build the dynamic block content in {{ lxc_rootfs }}/etc/hosts
+# (@see {{ lxc_name }}-lxc-hosts-block)
+{{ lxc_name }}-lxc-hosts-guest:
+  file.accumulated:
+    - filename: {{ lxc_rootfs }}/etc/hosts
+    - name: lxc-hosts-accumulator-entries
+    - text: "{{ lxc_ip4 }} {{ lxc_name }}"
     - require_in:
+      - file: {{ lxc_name }}-lxc-hosts-block
       - cmd: start-{{ lxc_name }}-lxc-service
-    - name: {{ lxc_rootfs }}/etc/hosts
-    - text: "{{ lxc_ip4 }} {{ lxc_name }} # entry managed by salt lxc-host detection"
 
 start-{{ lxc_name }}-lxc-service:
   cmd.run:
@@ -243,27 +234,15 @@ start-{{ lxc_name }}-lxc-service:
 ### Manage only refs to localhost
 {% if host['ip'] == '127.0.0.1' -%}
 # the state name should not contain dots and spaces
-{{ host['ip'].replace('.', '_') }}-{{ host['hosts'].replace(' ', '_') }}-lxc-host-cleanup:
-  # detect presence of the same host name with another IP
-  file.replace:
-    - require:
-      - cmd: {{ lxc_name }}-lxc
-    - require_in:
-      - file: {{ host['ip'].replace('.', '_') }}-{{ host['hosts'].replace(' ', '_') }}-host
-    - name: {{ lxc_rootfs }}/etc/hosts
-    # match the domain ( host['hosts']) on lines not containing the ip (lxc_gateway)
-    - pattern: ^((?!{{ lxc_gateway.replace('.', '\.')  }}).)*{{ host['hosts'].replace('.', '\.') }}(.)*$
-    - repl: ""
-    - flags: ['IGNORECASE','MULTILINE', 'DOTALL']
-    - bufsize: file
-    - show_changes: True
-# the state name should not contain dots and spaces
 lxc-{{ lxc_name }}{{ host['ip'].replace('.', '_') }}-{{ host['hosts'].replace(' ', '_') }}-host:
-  file.append:
+  file.accumulated:
+    - filename: {{ lxc_rootfs }}/etc/hosts
+    - name: lxc-hosts-accumulator-entries
+    - text: "{{ lxc_gateway }} {{ host['hosts'] }}"
+    - require_in:
+      - file: {{ lxc_name }}-lxc-hosts-block
     - require:
       - cmd: {{ lxc_name }}-lxc
-    - name: {{ lxc_rootfs }}/etc/hosts
-    - text: "{{ lxc_gateway }} {{ host['hosts'] }} # entry managed by salt"
 {% endif %}
 {% endfor %}
 
