@@ -107,6 +107,23 @@ apache-pkgs:
       - apache2
       - cronolog
 
+apache-main-conf:
+  mc_apache.deployed:
+    - version: 2.4
+    - modules_excluded:
+      - negotiation
+      - autoindex
+      - cgid
+    - modules_included:
+      - rewrite
+      - deflate
+      - status
+      - expires
+      - headers
+    - log_level: debug
+    - require:
+      - pkg.installed: apache-pkgs
+
 # Define some basic security restrictions, like forbidden acces to all
 # directories by default, switch off signatures protect .git, etc
 # file is named _security to be read after the default security file
@@ -214,20 +231,20 @@ apache-minimal-default-vhost:
 
 # Enable/Disable Apache modules
 # This is a cmd state. changed status will be assumed if command output is non-empty
-apache-disable-useless-modules:
-  cmd.script:
-    - stateful: True
-    - source: {{a2dismodwrapper}}
-    - args: "{{disabled_modules}}"
-    - require:
-      - pkg.installed: apache-pkgs
-apache-enable-required-modules:
-  cmd.script:
-    - stateful: True
-    - source: {{a2enmodwrapper}}
-    - args: "{{enabled_modules}}"
-    - require:
-      - pkg.installed: apache-pkgs
+#apache-disable-useless-modules:
+#  cmd.script:
+#    - stateful: True
+#    - source: {{a2dismodwrapper}}
+#    - args: "{{disabled_modules}}"
+#    - require:
+#      - pkg.installed: apache-pkgs
+#apache-enable-required-modules:
+#  cmd.script:
+#    - stateful: True
+#    - source: {{a2enmodwrapper}}
+#    - args: "{{enabled_modules}}"
+#    - require:
+#      - pkg.installed: apache-pkgs
 
 makina-apache-conf-syntax-check:
   cmd.script:
@@ -290,9 +307,8 @@ makina-apache-service:
       # restart service in case of settings alterations
       - file.managed: apache-settings
       - file.managed: apache-security-settings
-      # restart service in case of modules alterations
-      - cmd: apache-disable-useless-modules
-      - cmd: apache-enable-required-modules
+      # restart service in case of main configuration changes
+      - mc_apache.deployed: apache-main-conf
 
 # In case of VirtualHosts change graceful reloads should be enough
 makina-apache-service-graceful-reload:
