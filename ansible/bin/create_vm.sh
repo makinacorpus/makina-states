@@ -4,7 +4,7 @@ cd $(dirname $0)/../..
 usage() {
     set +x
     echo "Usage":
-    echo "  [no_wait=1] [no_vm=1] [no_cn=1] [no_controller=1] vm=x cn=y controller=z create_vm.sh"
+    echo "  [no_cn_setup=1] [no_controller_setup=1] [no_wait=1] [no_vm=1] [no_cn=1] [no_controller=1] vm=x cn=y controller=z create_vm.sh"
     exit 1
 }
 for i in $@;do
@@ -26,26 +26,35 @@ if [[ -z "${no_wait}" ]];then
     read -t 10 || true
 fi
 if [[ -n "${no_controller}" ]];then
-    echo "Skip controller $controller setup"
+    echo "Skip controller $controller step"
 else
-    service memcached restart
-    salt-call -lall state.sls makina-states.services.dns.bind
-    ANSIBLE_TARGETS="$controller" bin/ansible-playbook
+    if [[ -n "${no_controller_setup}" ]];then
+        echo "Skip controller setup"
+    else
+        service memcached restart
+        salt-call -lall state.sls makina-states.services.dns.bind
+    fi
     if [[ -n "${no_sync}" ]];then
         echo "skip sync container to image"
     else
-        ansible/plays/cloud/snapshot_container.yml -e "lxc_template=$vm_tmpl lxc_container_name=lxc$vm_tmpl"
+        ANSIBLE_TARGETS="$controller" bin/ansible-playbook \
+            ansible/plays/cloud/snapshot_container.yml \
+            -e "lxc_template=$vm_tmpl lxc_container_name=lxc$vm_tmpl"
     fi
 fi
 if [[ -n "${no_cn}"  ]];then
-    echo "Skip cn $cn setup"
+    echo "Skip cn $cn step"
 else
     if [[ -n "${no_sync}" ]];then
         echo "skip sync to dest"
     else
         ANSIBLE_TARGETS="$cn" ansible-playbook ansible/plays/cloud/sync_container.yml -e "lxc_orig_host=$controller lxc_container_name=$vm_tmpl"
     fi
-    MS_REFRESH_CACHE=y ANSIBLE_TARGETS="$cn" ansible-playbook -vvvv ansible/plays/cloud/compute_node.yml
+    if [[ -n "${no_cn_setup}" ]];then
+        echo "Skip cn $cn setup"
+    else
+        MS_REFRESH_CACHE=y ANSIBLE_TARGETS="$cn" ansible-playbook -vvvv ansible/plays/cloud/compute_node.yml
+    fi
 fi
 if [[ -n "${no_vm}" ]];then
     echo "Skip vm $cn setup"
