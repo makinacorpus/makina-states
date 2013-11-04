@@ -37,6 +37,7 @@ import logging
 
 # Import salt libs
 import salt.utils
+import salt.utils.odict as odict
 
 log = logging.getLogger(__name__)
 
@@ -44,16 +45,26 @@ _APACHE_DEPLOYED = False
 _MODULES_EXCLUDED = []
 _MODULES_INCLUDED = []
 
+_shared_modules = []
+_static_modules = []
+
+def _load_modules():
+    global _shared_modules
+    global _static_modules
+    if not _shared_modules and not _static_modules:
+        modules = __salt__['apache.modules']()
+        _static_modules = modules['static']
+        _shared_modules = modules['shared']
 
 def _checking_modules( modules_excluded=None, modules_included=None):
     global _MODULES_INCLUDED
     global _MODULES_EXCLUDED
+    global _shared_modules
+    global _static_modules
     ret = {'changes': '',
            'result': None,
            'comment': ''}
-    modules = __salt__['apache.modules']()
-    static_modules = modules['static']
-    shared_modules = modules['shared']
+    _load_modules()
     modifications = []
     comments = []
     # manage junction of _MODULES_[INCLUDED/EXCLUDED] and given parameters
@@ -74,13 +85,13 @@ def _checking_modules( modules_excluded=None, modules_included=None):
     for module in modules_excluded:
         if module in modules_included:
             ret['result'] = False
-            comments.append("module {0} cannot be both in exclusion and inclusion list.".format(module))
+            comments.append("ERROR: module {0} cannot be both in exclusion and inclusion list.".format(module))
             continue
-        elif module+'_module' in static_modules:
+        elif module+'_module' in _static_modules:
             ret['result'] = False
-            comments.append("module {0} cannot be excluded as it is not a shared but a static module.".format(module))
+            comments.append("ERROR: module {0} cannot be excluded as it is not a shared but a static module.".format(module))
             continue
-        elif module+'_module' in shared_modules:
+        elif module+'_module' in _shared_modules:
             log.info(
                 'a2dismod {0}'.format(module)
             )
@@ -97,8 +108,8 @@ def _checking_modules( modules_excluded=None, modules_included=None):
         #else:
         #    comments.append("Module {0} already disabled".format(module))
     for module in modules_included:
-        if module+'_module' not in shared_modules:
-            if module+'_module' in static_modules:
+        if module+'_module' not in _shared_modules:
+            if module+'_module' in _static_modules:
                 comments.append("module {0} is a static module, we do not need activation.".format(module))
             else:
                 log.info(
@@ -142,7 +153,7 @@ def _checking_modules( modules_excluded=None, modules_included=None):
                 else:
                     changes.append(" [-] Disabling module {0}".format(change['module']))
             ret['changes'] = "\n".join(changes)
-    ret['comments'] = "\n".join(comments)
+    ret['comment'] = ("\n"+" "*19).join(comments)
     if ret['result'] is None:
         ret['result'] = True
     return ret
@@ -158,7 +169,7 @@ def include_module(name,
            'comment': ''}
     comments = []
 
-    if not filter(lambda x: 'mc_apache.deployed' in x,
+    if not filter(lambda x: 'mc_apache' in x,
                   kwargs.get('require_in', []) ):
         ret['result'] = False
         ret['comment'] = 'Orphaned include_module {0}, use a require_in targeting mc_apache.deployed'.format(name)
@@ -183,7 +194,7 @@ def include_module(name,
             )
             comments.append('Adding module {0} in inclusion list'.format(module))
             _MODULES_INCLUDED.append(module)
-    ret['comment']="\n".join(comments)
+    ret['comment']=("\n"+" "*19).join(comments)
     ret['result']=True
     return ret
 
@@ -198,7 +209,7 @@ def exclude_module(name,
            'comment': ''}
     comments = []
 
-    if not filter(lambda x: 'mc_apache.deployed' in x,
+    if not filter(lambda x: 'mc_apache' in x,
                   kwargs.get('require_in', []) ):
         ret['result'] = False
         ret['comment'] = 'Orphaned exclude_module {0}, use a require_in targeting mc_apache.deployed'.format(name)
@@ -223,15 +234,15 @@ def exclude_module(name,
             )
             comments.append('Adding module {0} in exclusion list'.format(module))
             _MODULES_EXCLUDED.append(module)
-    ret['comment']="\n".join(comments)
+    ret['comment']=("\n"+" "*19).join(comments)
     ret['result']=True
     return ret
 
 def deployed(name,
+             mpm='prefork',
              version="2.2",
              modules_excluded=None,
              modules_included=None,
-             log_level="warn",
              serveradmin_mail= 'webmaster@localhost',
              timeout= 120,
              keep_alive=True,
@@ -253,21 +264,14 @@ def deployed(name,
     version
         The apache version
 
-    log_level
-        The log_level defined in apache
     '''
     global _APACHE_DEPLOYED
+    global _shared_modules
 
     ret = {'name': name,
            'changes': {},
            'result': None,
            'comment': ''}
-
-    if modules_excluded is None:
-        modules_excluded = ['negotiation','autoindex','cgid']
-    if modules_included is None:
-        modules_included = ['rewrite','status','expires','headers','deflate']
-
 
     if not __salt__.has_key('apache.version'):
         log.warning(
@@ -294,13 +298,38 @@ def deployed(name,
     else:
         ret['comment'] = result['comment']
 
+    # MPM check
     infos = __salt__['apache.fullversion']()
-    mpm = infos['server_mpm']
+    cur_mpm = infos['server_mpm']
+    mpm_check_done = False
+    if cur_mpm != mpm:
+        # try to activate the mpm and deactivate the others
+        # if mpm are shared modules
+        _load_modules()
+        mpm_mods = ['mpm_event','mpm_worker','mpm_prefork']
+        mpm_mod = 'mpm_'+cur_mpm
+        if mpm_mod+'_module' in _shared_modules:
+            for mpm_item in mpm_mods:
+                if mpm_item == 'mpm_'+ mpm:
+                    modules_included.append(mpm_item)
+                else:
+                    modules_excluded.append(mpm_item)
+            # we'll redo the check after modules activation/de-activation
+            ret['comment'] = "1st MPM check: Wrong apache mpm module activated: (requested) {0}!={1} (current). we'll try to alter shared modules to fix that".format(mpm,cur_mpm)
+        else:
+            #if module+'_module' in _static_modules:
+            ret['result'] = False
+            ret['comment'] = 'ERROR: MPM CHECK: Wrong apache core mpm module activated: (requested) {0}!={1} (current). And mpm are not shared modules on this installation. We need another apache package!'.format(mpm,cur_mpm)
+            # stop right here
+            return ret
+    else:
+        mpm_check_done = True
+        ret['comment'] += "\n"+ " "*19 +"MPM check: "+ cur_mpm + ", OK"
 
     # Modules management
-    result = _checking_modules( modules_excluded, modules_included)
+    result = _checking_modules( modules_excluded, modules_included )
     if result['comment'] is not '' :
-        ret['comment'] += "\n" + result['comment']
+        ret['comment'] += "\n" + " "*19 + result['comment']
     if result['changes'] :
         ret['changes']['modules'] = result['changes']
     if not result['result'] :
@@ -308,12 +337,23 @@ def deployed(name,
         # no need to go further
         return ret
     modules = __salt__['apache.modules']()
-    ret['comment'] += "\n"+"Shared modules: "+ ",".join(modules['shared'])
+    ret['comment'] += "\n" + " "*19 + "Shared modules: "+ ",".join(modules['shared'])
 
-    # LogLevel check
+
+    # MPM check
+    if not mpm_check_done:
+        infos = __salt__['apache.fullversion']()
+        cur_mpm = infos['server_mpm']
+        if cur_mpm != mpm:
+            ret['result'] = False
+            ret['comment'] = 'ERROR: 2nd MPM check: Wrong apache core mpm module activated: (requested) {0}!={1} (current)'.format(mpm,cur_mpm)
+            # stop right here
+            return ret
+        else:
+            ret['comment'] += "\n"+ " "*19 +"2nd MPM check: "+ cur_mpm + ", OK"
 
     if ret['result'] is None:
         ret['result'] = True
-    ret['comment'] += "\nApache deployment: All verifications done."
+    ret['comment'] += "\n" + " "*19 + "Apache deployment: All verifications done."
     return ret
 

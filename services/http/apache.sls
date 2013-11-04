@@ -1,21 +1,72 @@
 # Apache httpd managment
 #
+# Makina Corpus Apache Deployment main state
+#
+# Preferred way of altering default settings is to extend the states
+# makina-apache-main-conf and makina-apache-settings this way:
+#------------ state exemple --------------------------------
+## remember theses 4 rules for extend:
+##1-Always include the SLS being extended with an include declaration
+##2-Requisites (watch and require) are appended to, everything else is overwritten
+##3-extend is a top level declaration, like an ID declaration, cannot be declared twice in a single SLS
+##4-Many IDs can be extended under the extend declaration
+#
+#include:
+#  - makina-states.services.http.apache
+#extend:
+#  makina-apache-main-conf:
+#    mc_apache:
+#      - version: 2.4
+#      - mpm: worker
+#  makina-apache-settings:
+#    file:
+#      - context:
+#        KeepAliveTimeout: 3
+#        worker_StartServers: "5"
+#        worker_MinSpareThreads: "60"
+#        worker_MaxSpareThreads: "120"
+#        worker_ThreadLimit: "120"
+#        worker_ThreadsPerChild: "60"
+#        worker_MaxRequestsPerChild: "1000"
+#        worker_MaxClients: "500"
+#
+## Adding or removing modules
+#my-apache-other-module-included1:
+#  mc_apache.include_module:
+#    - modules:
+#      - proxy_http
+#      - proxy_html
+#    - require_in:
+#      - mc_apache: makina-apache-main-conf
+# Adding or removing modules
+#my-apache-other-module-included2:
+#  mc_apache.include_module:
+#    - modules:
+#      - authn_file
+#    - require_in:
+#      - mc_apache: makina-apache-main-conf
+#my-apache-other-module--other-module-excluded:
+#  mc_apache.exclude_module:
+#    - modules:
+#      - rewrite
+#    - require_in:
+#      - mc_apache: makina-apache-main-conf
+#------------ end of state exemple ------------------------------
+#
+# But configuration can also be made in the pillar, to alter
+# default values without using states
+#
 # ------------------------- START pillar example -----------
-# --- APACHE HTTPD SERVER -----------------------------
+#
+# --- APACHE HTTPD SERVER
 #
 # - LOGS ------------------
 # default: warn
 # available: debug, info, notice, warn, error, crit, alert, emerg
 #services-http-apache-log_level: info
-# - MODULES ------------------
-# DO NOT FORGET to re-add default disabled modules or re-disable default enabled modules
-# in case of changes
-# default is 'autoindex cgid negotiation'
-#services-http-apache-disabled_modules: 'autoindex cgid negotiation'
-# default is 'deflate status expires headers rewrite'
-#services-http-apache-enabled_modules: 'deflate status expires headers rewrite'
+#
 # - SETTINGS ------------------
-# bof
+# TODO: review
 #services-http-apache-serveradmin_mail : 'webmaster@localhost'
 # timeout for a client sending HTTP request, keep this quite low to avoid DOS
 #services-http-apache-Timeout: 120
@@ -36,158 +87,247 @@
 # Put there any configuration directive for the main apache scope, you can use \n.
 #services-http-apache-extra_configuration : 'ServerLimit 1000'
 #
-# --------- VirtualHosts definitions
-# the important thing: state name must end in -apache-virtualhost or -apache-ssl-virtualhost
-# and 3 keys are REQUIRED:
-# * DocumentRoot : Path prefix of files for this VirtualHost
-# * ServerName : the main DNS name for this site
-# * number: the number is the file number defining priorities for VH, 000 is reserved for default virtualhost
-# other keys are OPTIONNAL:
-# * ServerAlias : list with spaces of alternative DNS names
-# * enable: True by default, set to False to disable
-# * allow_htaccess: False by default, set to True to enable .htaccess files starting from DocumentRoot
-# * behind_proxy: False by default, set to True to alter the log format used to get real user IP if you have a reverse proxy
-# examples:
-#my-example-apache-virtualhost:
-#  DocumentRoot: /var/www/toto
-#  ServerName: www.toto.com
-#  number: 100
-#my-second-example-apache-virtualhost:
-#  DocumentRoot: /srv/bar.foo.net
-#  ServerName: bar.foo.net
-#  ServerAlias: bar-foo.net www.bar.foo.net alias.bar.foo.net
-#  NameVirtualhost: *:80
-#  number: 200
-#  enable: False
-#my-second-example-apache-ssl-virtualhost:
-#  DocumentRoot: /srv/bar.foo.net
-#  ServerName: bar.foo.net
-#  ServerAlias: bar-foo.net www.bar.foo.net alias.bar.foo.net
-#  NameVirtualhost: *:8443
-#  Certificate: path/to/thing.crt
-#  number: 210
 # do not forget to launch "salt '*' saltutil.refresh_pillar" after changes 
+# ------------------------- END pillar example -------------
+#
 # consult pillar values with "salt '*' pillar.items"
 # consult grains values with "salt '*' grains.items"
-# --------------------------- END pillar example ------------
 #
+# TODO: alter mod_status conf to allow only localhost,monitoring some user defined IP,  ExtendedStatus Off
+# TODO: Vhost states
+# TODO: SSL, ports, and default-ssl
 
-{% set log_level = salt['pillar.get']('services-http-apache-log_level', 'warn') %}
-{% set disabled_modules = salt['pillar.get']('services-http-apache-disabled_modules', 'autoindex cgid negotiation') %}
-{% set enabled_modules = salt['pillar.get']('services-http-apache-enabled_modules', 'deflate status expires headers rewrite') %}
-{% set Timeout = salt['pillar.get']('services-http-apache-Timeout', '120') %}
-{% set KeepAlive = salt['pillar.get']('services-http-apache-KeepAlive', 'On') %}
-{% set KeepAliveTimeout = salt['pillar.get']('services-http-apache-KeepAliveTimeout', '5') %}
-{% set extra_configuration = salt['pillar.get']('services-http-apache-extra_configuration', '#') %}
-{% set serveradmin_mail = salt['pillar.get']('services-http-apache-serveradmin_mail', 'webmaster@localhost') %}
-{% if grains['makina.devhost'] %}
-  {% set prefork_StartServers = salt['pillar.get']('services-http-apache-prefork_StartServers', '5') %}
-  {% set prefork_MinSpareServers = salt['pillar.get']('services-http-apache-prefork_MinSpareServers', '5') %}
-  {% set prefork_MaxSpareServers = salt['pillar.get']('services-http-apache-prefork_MaxSpareServers', '5') %}
-  {% set prefork_MaxClients = salt['pillar.get']('services-http-apache-prefork_MaxClients', '10') %}
-  {% set MaxRequestsPerChild = salt['pillar.get']('services-http-apache-MaxRequestsPerChild', '3000') %}
-  {% set MaxKeepAliveRequests = salt['pillar.get']('services-http-apache-MaxKeepAliveRequests', '5') %}
-{% else %}
-  {% set prefork_StartServers = salt['pillar.get']('services-http-apache-prefork_StartServers', '25') %}
-  {% set prefork_MinSpareServers = salt['pillar.get']('services-http-apache-prefork_MinSpareServers', '25') %}
-  {% set prefork_MaxSpareServers = salt['pillar.get']('services-http-apache-prefork_MaxSpareServers', '25') %}
-  {% set prefork_MaxClients = salt['pillar.get']('services-http-apache-prefork_MaxClients', '150') %}
-  {% set MaxRequestsPerChild = salt['pillar.get']('services-http-apache-MaxRequestsPerChild', '3000') %}
-  {% set MaxKeepAliveRequests = salt['pillar.get']('services-http-apache-MaxKeepAliveRequests', '100') %}
-{% endif %}
 
 {% set msr='/srv/salt/makina-states' %}
-{% set a2dismodwrapper = "file://"+msr+"/_scripts/a2dismodwrapper.sh" %}
-{% set a2enmodwrapper = "file://"+msr+"/_scripts/a2enmodwrapper.sh" %}
 {% set apacheConfCheck = "file://"+msr+"/_scripts/apacheConfCheck.sh" %}
+# Load defaults values -----------------------------------------
+{% set dft_log_level = salt['pillar.get']('services-http-apache-log_level', 'warn') %}
+{% set dft_Timeout = salt['pillar.get']('services-http-apache-Timeout', '120') %}
+{% set dft_KeepAlive = salt['pillar.get']('services-http-apache-KeepAlive', 'On') %}
+{% set dft_KeepAliveTimeout = salt['pillar.get']('services-http-apache-KeepAliveTimeout', '5') %}
+{% set dft_extra_configuration = salt['pillar.get']('services-http-apache-extra_configuration', '#') %}
+{% set dft_serveradmin_mail = salt['pillar.get']('services-http-apache-serveradmin_mail', 'webmaster@localhost') %}
+{% if grains['makina.devhost'] %}
+  {% set dft_MaxKeepAliveRequests = salt['pillar.get']('services-http-apache-MaxKeepAliveRequests', '5') %}
+  # mpm prefork
+  # StartServers: number of server processes to start
+  {% set dft_prefork_StartServers = salt['pillar.get']('services-http-apache-prefork_StartServers', '5') %}
+  # MinSpareServers: minimum number of server processes which are kept spare
+  {% set dft_prefork_MinSpareServers = salt['pillar.get']('services-http-apache-prefork_MinSpareServers', '5') %}
+  # MaxSpareServers: maximum number of server processes which are kept spare
+  {% set dft_prefork_MaxSpareServers = salt['pillar.get']('services-http-apache-prefork_MaxSpareServers', '5') %}
+  # MaxRequestWorkers (alias MaxClients): maximum number of server processes allowed to start
+  {% set dft_prefork_MaxClients = salt['pillar.get']('services-http-apache-prefork_MaxClients', '10') %}
+  # MaxConnectionsPerChild: maximum number of requests a server process serves
+  {% set dft_prefork_MaxRequestsPerChild = salt['pillar.get']('services-http-apache-prefork_MaxRequestsPerChild', '3000') %}
+  # mpm worker
+  # StartServers: initial number of server processes to start
+  {% set dft_worker_StartServers = salt['pillar.get']('services-http-apache-worker_StartServers', '2') %}
+  # MinSpareThreads: minimum number of worker threads which are kept spare
+  {% set dft_worker_MinSpareThreads = salt['pillar.get']('services-http-apache-worker_MinSpareThreads', '25') %}
+  # MaxSpareThreads: maximum number of worker threads which are kept spare
+  {% set dft_worker_MaxSpareThreads = salt['pillar.get']('services-http-apache-worker_MaxSpareThreads', '75') %}
+  # ThreadLimit: ThreadsPerChild can be changed to this maximum value during a
+  #             graceful restart. ThreadLimit can only be changed by stopping
+  #             and starting Apache.
+  {% set dft_worker_ThreadLimit = salt['pillar.get']('services-http-apache-worker_ThreadLimit', '64') %}
+  # ThreadsPerChild: constant number of worker threads in each server process
+  {% set dft_worker_ThreadsPerChild = salt['pillar.get']('services-http-apache-worker_ThreadsPerChild', '25') %}
+  # MaxRequestsPerChild/MaxConnectionsPerChild: maximum number of requests a server process serves
+  {% set dft_worker_MaxRequestsPerChild = salt['pillar.get']('services-http-apache-worker_MaxRequestsPerChild', '0') %}
+  # MaxRequestWorkers (alias MaxClients): maximum number of threads
+  {% set dft_worker_MaxClients = salt['pillar.get']('services-http-apache-worker_MaxClients', '10') %}
+  # mpm event
+  # all workers settings are used
+  # max of concurrent conn is (AsyncRequestWorkerFactor + 1) * MaxRequestWorkers
+  {% set dft_event_AsyncRequestWorkerFactor = salt['pillar.get']('services-http-apache-event_AsyncRequestWorkerFactor', '1.5') %}
 
-apache-pkgs:
+{% else %}
+  {% set dft_MaxKeepAliveRequests = salt['pillar.get']('services-http-apache-MaxKeepAliveRequests', '100') %}
+  {% set dft_prefork_StartServers = salt['pillar.get']('services-http-apache-prefork_StartServers', '25') %}
+  {% set dft_prefork_MinSpareServers = salt['pillar.get']('services-http-apache-prefork_MinSpareServers', '25') %}
+  {% set dft_prefork_MaxSpareServers = salt['pillar.get']('services-http-apache-prefork_MaxSpareServers', '25') %}
+  {% set dft_prefork_MaxClients = salt['pillar.get']('services-http-apache-prefork_MaxClients', '150') %}
+  {% set dft_prefork_MaxRequestsPerChild = salt['pillar.get']('services-http-apache-prefork_MaxRequestsPerChild', '3000') %}
+  {% set dft_worker_StartServers = salt['pillar.get']('services-http-apache-worker_StartServers', '5') %}
+  {% set dft_worker_MinSpareThreads = salt['pillar.get']('services-http-apache-worker_MinSpareThreads', '50') %}
+  {% set dft_worker_MaxSpareThreads = salt['pillar.get']('services-http-apache-worker_MaxSpareThreads', '100') %}
+  {% set dft_worker_ThreadLimit = salt['pillar.get']('services-http-apache-worker_ThreadLimit', '100') %}
+  {% set dft_worker_ThreadsPerChild = salt['pillar.get']('services-http-apache-worker_ThreadsPerChild', '50') %}
+  {% set dft_worker_MaxRequestsPerChild = salt['pillar.get']('services-http-apache-worker_MaxRequestsPerChild', '3000') %}
+  {% set dft_worker_MaxClients = salt['pillar.get']('services-http-apache-worker_MaxClients', '200') %}
+  {% set dft_event_AsyncRequestWorkerFactor = salt['pillar.get']('services-http-apache-event_AsyncRequestWorkerFactor', '4') %}
+{% endif %}
+{% if grains['lsb_distrib_id']=="Ubuntu" and grains['lsb_distrib_release']>=13.10 %}
+  {% set dft_mpm = salt['pillar.get']('services-http-apache-mpm', 'event') %}
+  {% set dft_version = salt['pillar.get']('services-http-apache-version', '2.4') %}
+{% else %}
+  {% set dft_mpm = salt['pillar.get']('services-http-apache-mpm', 'worker') %}
+  {% set dft_version = salt['pillar.get']('services-http-apache-version', '2.2') %}
+{% endif %}
+
+makina-apache-pkgs:
   pkg.installed:
     - names:
       - apache2
       - cronolog
 
-apache-main-conf:
+# Apache Main Configuration ------------------
+# Read states documentation to alter main apache
+# configuration
+makina-apache-main-conf:
   mc_apache.deployed:
-    - version: 2.4
+    - version: {{ dft_version }}
+    - mpm: {{ dft_mpm }}
+    # see also mc_apache.include_module
+    # and mc_apache.exclude_module
+    # to alter theses lists from
+    # other states (examples below)
     - modules_excluded:
       - negotiation
       - autoindex
       - cgid
     - modules_included:
       - rewrite
-      - deflate
-      - status
       - expires
       - headers
-    - log_level: debug
+      - deflate
+      - status
+    - log_level: {{ dft_log_level }}
     - require:
-      - pkg.installed: apache-pkgs
+      - pkg.installed: makina-apache-pkgs
+    # full service restart in case of changes
+    - watch_in:
+       - cmd: makina-apache-conf-syntax-check
+       - service: makina-apache-restart
 
-# Define some basic security restrictions, like forbidden acces to all
-# directories by default, switch off signatures protect .git, etc
-# file is named _security to be read after the default security file
-# in conf.d directory
-apache-security-settings:
+makina-apache-settings:
   file.managed:
-    - require:
-      - pkg.installed: apache-pkgs
-    - name: /etc/apache2/conf.d/_security.local.conf
-    - source:
-      - salt://makina-states/files/etc/apache2/conf.d/security.conf
-    - user: root
-    - group: root
-    - mode: 644
-
-# Define some basic tuning settings, like Timeouts, ports mpm settings,
-# NamevirtualHost listeners, etc
-# file is set in conf.d directory to override previous settings
-# defined in the apache2.conf or ports.conf
-apache-settings:
-  file.managed:
-    - require:
-      - pkg.installed: apache-pkgs
     - name: /etc/apache2/conf.d/settings.local.conf
-    - source:
-      - salt://makina-states/files/etc/apache2/conf.d/settings.conf
+    - source: salt://makina-states/files/etc/apache2/conf.d/settings.conf
     - user: root
     - group: root
     - mode: 644
     - template: jinja
     - defaults:
         mode: "production"
-        Timeout: "{{Timeout}}"
-        KeepAlive: "{{KeepAlive}}"
-        MaxKeepAliveRequests: "{{MaxKeepAliveRequests}}"
-        KeepAliveTimeout: "{{KeepAliveTimeout}}"
-        prefork_StartServers: "{{prefork_StartServers}}"
-        prefork_MinSpareServers: "{{prefork_MinSpareServers}}"
-        prefork_MaxSpareServers: "{{prefork_MaxSpareServers}}"
-        prefork_MaxClients: "{{prefork_MaxClients}}"
-        MaxRequestsPerChild: "{{MaxRequestsPerChild}}"
-        log_level: "{{log_level}}"
-        extra_configuration: "{{extra_configuration}}"
+        Timeout: "{{ dft_Timeout }}"
+        KeepAlive: "{{ dft_KeepAlive }}"
+        MaxKeepAliveRequests: "{{ dft_MaxKeepAliveRequests }}"
+        KeepAliveTimeout: "{{ dft_KeepAliveTimeout }}"
+        prefork_StartServers: "{{ dft_prefork_StartServers }}"
+        prefork_MinSpareServers: "{{ dft_prefork_MinSpareServers }}"
+        prefork_MaxSpareServers: "{{ dft_prefork_MaxSpareServers }}"
+        prefork_MaxClients: "{{ dft_prefork_MaxClients }}"
+        prefork_MaxRequestsPerChild: "{{ dft_prefork_MaxRequestsPerChild }}"
+        worker_StartServers: "{{ dft_worker_StartServers }}"
+        worker_MinSpareThreads: "{{ dft_worker_MinSpareThreads }}"
+        worker_MaxSpareThreads: "{{ dft_worker_MaxSpareThreads }}"
+        worker_ThreadLimit: "{{ dft_worker_ThreadLimit }}"
+        worker_ThreadsPerChild: "{{ dft_worker_ThreadsPerChild }}"
+        worker_MaxRequestsPerChild: "{{ dft_worker_MaxRequestsPerChild }}"
+        worker_MaxClients: "{{ dft_worker_MaxClients }}"
+        event_AsyncRequestWorkerFactor: "{{ dft_event_AsyncRequestWorkerFactor }}"
+        log_level: "{{ dft_log_level }}"
+        extra_configuration: "{{ dft_extra_configuration }}"
 {% if grains['makina.devhost'] %}
     - context:
         mode: "dev"
 {% endif %}
+    - require:
+      - pkg.installed: makina-apache-pkgs
+    # full service restart in case of changes
+    - watch_in:
+       - cmd: makina-apache-conf-syntax-check
+       - service: makina-apache-restart
 
-# Replace defaut Virtualhost by a more minimal default Virtualhost
+makina-apache-main-extra-settings-example:
+  file.accumulated:
+    - name: extra-settings-master-conf
+    - filename: /etc/apache2/conf.d/settings.local.conf
+    - text: |
+        '# this is an example of thing added in master apache configuration'
+        '# <Location />'
+        '# </Location>'
+    - watch_in:
+      - file: makina-apache-settings
+
+# Define some basic security restrictions, like forbidden acces to all
+# directories by default, switch off signatures protect .git, etc
+# file is named _security to be read after the default security file
+# in conf.d directory
+makina-apache-security-settings:
+  file.managed:
+    - require:
+      - pkg.installed: makina-apache-pkgs
+    - name: /etc/apache2/conf.d/_security.local.conf
+    - source:
+      - salt://makina-states/files/etc/apache2/conf.d/security.conf
+    - user: root
+    - group: root
+    - mode: 644
+    - watch_in:
+       - cmd: makina-apache-conf-syntax-check
+       - service: makina-apache-restart
+
+# Exemple of error: using a second mc_apache.deployed would fail
+# as only one main apache configuration can be defined
+# per server
+# Use ``extend`` on makina-apache-main-conf instead
+#makina-apache-main-conf2:
+#  mc_apache.deployed:
+#    - version: 2.2
+#    - log_level: warn
+#    - require:
+#      - pkg.installed: makina-apache-pkgs
+
+
+
+# Extra module additions and removal ----------------
+# Theses (valid) examples show you how
+# to alter the modules_excluded and
+# modules_included lists
+#
+# Exemple: add 3 modules
+#
+#makina-apache-other-module-included:
+#  mc_apache.include_module:
+#    - modules:
+#      - deflate
+#      - status
+#      - cgid
+#    - require_in:
+#      - mc_apache: makina-apache-main-conf
+#
+# Exemple: add negociation in excluded modules
+#
+#makina-apache-other-module-excluded:
+#  mc_apache.exclude_module:
+#    - modules:
+#      - negotiation
+#    - require_in:
+#      - mc_apache: makina-apache-main-conf
+
+
+# Default Virtualhost managment -------------------------------------
+# Replace defaut Virtualhost by a more minimal default Virtualhost [1]
 # this is the directory
-apache-default-vhost-directory:
+makina-apache-default-vhost-directory:
   file.directory:
     - user: root
     - group: www-data
     - mode: "2755"
     - makedirs: True
     - name: /var/www/default/
+    - require_in:
+       - service: makina-apache-restart
 
-# Replace defaut Virtualhost by a more minimal default Virtualhost
+# Replace defaut Virtualhost by a more minimal default Virtualhost [2]
 # this is the index.hml file
-apache-default-vhost-index:
+makina-apache-default-vhost-index:
   file.managed:
     - require:
-      - pkg.installed: apache-pkgs
+      - pkg.installed: makina-apache-pkgs
     - name: /var/www/default/index.html
     - source:
       - salt://makina-states/files/var/www/default/default_vh.index.html
@@ -201,19 +341,30 @@ apache-default-vhost-index:
     - context:
         mode: "dev"
 {% endif %}
+    # full service restart in case of changes
+    - watch_in:
+       - cmd: makina-apache-conf-syntax-check
+       - service: makina-apache-restart
 
-apache-remove-package-default-index:
+# Replace defaut Virtualhost by a more minimal default Virtualhost [3]
+# remove index.html coming from package
+makina-apache-remove-package-default-index:
   file.absent:
-    - name : /var/www/index.hml
+    - name : /var/www/index.html
+
   
-# Replace defaut Virtualhost by a more minimal default Virtualhost
+# Replace defaut Virtualhost by a more minimal default Virtualhost [4]
 # this is the virtualhost definition
-apache-minimal-default-vhost:
+makina-apache-minimal-default-vhost:
   file.managed:
     - require:
-      - pkg.installed: apache-pkgs
-      - file.managed: apache-default-vhost-index
+      - pkg.installed: makina-apache-pkgs
+      - file.managed: makina-apache-default-vhost-index
+{% if grains['lsb_distrib_id']=="Ubuntu" and grains['lsb_distrib_release']>=13.10 %}
+    - name: /etc/apache2/sites-available/000-default.conf
+{% else %}
     - name: /etc/apache2/sites-available/default
+{% endif %}
     - source:
       - salt://makina-states/files/etc/apache2/sites-available/default_vh.conf
     - user: root
@@ -221,106 +372,48 @@ apache-minimal-default-vhost:
     - mode: 644
     - template: jinja
     - defaults:
-        log_level: "{{log_level}}"
-        serveradmin_mail: "{{serveradmin_mail}}"
+        log_level: "{{ dft_log_level }}"
+        serveradmin_mail: "{{ dft_serveradmin_mail }}"
         mode: "production"
 {% if grains['makina.devhost'] %}
     - context:
         mode: "dev"
 {% endif %}
+    - watch_in:
+       - cmd: makina-apache-conf-syntax-check
+       - service: makina-apache-restart
 
-# Enable/Disable Apache modules
-# This is a cmd state. changed status will be assumed if command output is non-empty
-#apache-disable-useless-modules:
-#  cmd.script:
-#    - stateful: True
-#    - source: {{a2dismodwrapper}}
-#    - args: "{{disabled_modules}}"
-#    - require:
-#      - pkg.installed: apache-pkgs
-#apache-enable-required-modules:
-#  cmd.script:
-#    - stateful: True
-#    - source: {{a2enmodwrapper}}
-#    - args: "{{enabled_modules}}"
-#    - require:
-#      - pkg.installed: apache-pkgs
+#--- Configuration Check --------------------------------
 
+# Configuration checker, always run before restart of graceful restart
 makina-apache-conf-syntax-check:
   cmd.script:
     - source: {{apacheConfCheck}}
     - stateful: True
     - require:
-      - pkg.installed: apache-pkgs
+      - pkg.installed: makina-apache-pkgs
+    - require_in:
+       - service: makina-apache-restart
+       - service: makina-apache-reload
 
-#--- VIRTUALHOSTS
+#--- MAIN SERVICE RESTART/RELOAD watchers --------------
 
-#{% set apacheVirtualHosts=[] %}
-#{% for k, data in pillar.items() %}
-#  {% if k.endswith('-apache-virtualhost') %}
-#  {% endif %}
-#{% endfor %}
-# loop to create a dynamic list of states based on pillar content
-#{% for virtualhost in apacheVirtualHosts %}
-# the state name should not contain dots and spaces
-#{{ virtualhost['ServerName'].replace('.', '_') }}-apache-virtualhost:
-#    file.managed:
-#    - require:
-#      - pkg.installed: apache-pkgs
-#    - name: /etc/apache2/sites-available/{{ virtualhost['number'] }}-{{ virtualhost['ServerName'] }}
-#    - source:
-#      - salt://makina-states/files/etc/apache2/sites-available/virtualhost_template.conf
-#    - user: root
-#    - group: root
-#    - mode: 644
-#    - template: jinja
-#    - defaults:
-#        log_level: "{{log_level}}"
-#        serveradmin_mail: "{{serveradmin_mail}}"
-#        ServerName: virtualhost['ServerName']
-#        DocumentRoot: virtualhost['DocumentRoot']
-#        {% if virtualhost.has_key('ServerAlias') %}
-#        ServerAlias: virtualhost['ServerAlias']
-#        {% endif %}
-#        mode: "production"
-#  {% if grains['makina.devhost'] %}
-#    - context:
-#        mode: "dev"
-#  {% endif %}
-#{% endfor %}
-
-#--- MAIN SERVICE RESTART/RELOAD watchers
-
-#@see also makina-apache-service-graceful-reload
-makina-apache-service:
+makina-apache-restart:
   service.running:
     - name: apache2
     - enable: True
-    - require:
-      - pkg.installed: apache-pkgs
-      - file.managed: apache-security-settings
-      - file.managed: apache-minimal-default-vhost
-      - cmd: makina-apache-conf-syntax-check
+    # most watch requisites are linked here with watch_in
     - watch:
       # restart service in case of package install
-      - pkg.installed: apache-pkgs
-      # restart service in case of settings alterations
-      - file.managed: apache-settings
-      - file.managed: apache-security-settings
-      # restart service in case of main configuration changes
-      - mc_apache.deployed: apache-main-conf
+      - pkg.installed: makina-apache-pkgs
 
 # In case of VirtualHosts change graceful reloads should be enough
-makina-apache-service-graceful-reload:
+makina-apache-reload:
   service.running:
     - name: apache2
     - require:
-      - pkg.installed: apache-pkgs
-      - file.managed: apache-security-settings
-      - file.managed: apache-minimal-default-vhost
-      - cmd: makina-apache-conf-syntax-check
+      - pkg.installed: makina-apache-pkgs
     - enable: True
     - reload: True
-    - watch:
-      # reload service in case of default VH alteration
-      - file.managed: apache-minimal-default-vhost
+    # most watch requisites are linked here with watch_in
+

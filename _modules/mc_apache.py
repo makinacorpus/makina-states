@@ -11,7 +11,11 @@ Documentation of this module is available with::
   salt '*' sys.doc mc_apache
 
 Check the mc_apache states for details. If you use this module as a template for a new module
-do not forget to use to get this module included in salt modules.
+do not forget to use salt-modules state in makina-states/servies/salt to get this module
+included in salt modules (first time, this will build the symlinks linking the module
+on /srv/salt/[_modules|_states, etc])::
+
+  salt-call state.sls makina-states.services.salt
 '''
 
 # Import python libs
@@ -54,7 +58,6 @@ def check_version(version):
     ret['result'] = True
     ret['comment'] = 'Apache version {0} verify requested {1}'.format(_version,version)
     return ret
-
 
 def a2enmod(module):
     '''
