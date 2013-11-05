@@ -168,7 +168,7 @@
 
 makina-apache-pkgs:
   pkg.installed:
-    - names:
+    - pkgs:
       - apache2
       - cronolog
 
@@ -308,6 +308,28 @@ makina-apache-security-settings:
 #    - require_in:
 #      - mc_apache: makina-apache-main-conf
 
+# Directories settings -----------------
+
+makina-apache-include-directory:
+  file.directory:
+    - user: root
+    - group: www-data
+    - mode: "2755"
+    - makedirs: True
+    - name: /etc/apache2/includes
+    - require:
+       - pkg.installed: makina-apache-pkgs
+
+# cronolog usage in /var/log/apache requires a group write
+# right which may not be present.
+makina-apache-default-log-directory:
+  file.directory:
+    - user: root
+    - group: www-data
+    - mode: "2770"
+    - name: /var/log/apache2
+    - require:
+       - pkg.installed: makina-apache-pkgs
 
 # Default Virtualhost managment -------------------------------------
 # Replace defaut Virtualhost by a more minimal default Virtualhost [1]
@@ -319,6 +341,8 @@ makina-apache-default-vhost-directory:
     - mode: "2755"
     - makedirs: True
     - name: /var/www/default/
+    - require:
+       - pkg.installed: makina-apache-pkgs
     - require_in:
        - service: makina-apache-restart
 

@@ -168,7 +168,7 @@
 
 makina-apache-pkgs:
   pkg.installed:
-    - names:
+    - pkgs:
       - apache2
       - cronolog
 
@@ -308,6 +308,34 @@ makina-apache-security-settings:
 #    - require_in:
 #      - mc_apache: makina-apache-main-conf
 
+# Directories settings -----------------
+
+makina-apache-include-directory:
+  file.directory:
+    - user: root
+    - group: www-data
+    - mode: "2755"
+    - makedirs: True
+    - name: /etc/apache2/includes
+    - require:
+       - pkg: makina-apache-pkgs
+    - require_in:
+       - service: makina-apache-restart
+       - service: makina-apache-reload
+
+# cronolog usage in /var/log/apache requires a group write
+# right which may not be present.
+makina-apache-default-log-directory:
+  file.directory:
+    - user: root
+    - group: www-data
+    - mode: "2770"
+    - name: /var/log/apache2
+    - require:
+       - pkg: makina-apache-pkgs
+    - require_in:
+       - service: makina-apache-restart
+       - service: makina-apache-reload
 
 # Default Virtualhost managment -------------------------------------
 # Replace defaut Virtualhost by a more minimal default Virtualhost [1]
@@ -319,6 +347,8 @@ makina-apache-default-vhost-directory:
     - mode: "2755"
     - makedirs: True
     - name: /var/www/default/
+    - require:
+       - pkg.installed: makina-apache-pkgs
     - require_in:
        - service: makina-apache-restart
 
@@ -417,3 +447,96 @@ makina-apache-reload:
     - reload: True
     # most watch requisites are linked here with watch_in
 
+
+
+# Virtualhost example: work in progress----------------
+{% set site_enabled = True %}
+makina-apache-virtualhost-example_com:
+  file.managed:
+    - user: root
+    - group: root
+    - mode: 664
+{% if grains['lsb_distrib_id']=="Ubuntu" and grains['lsb_distrib_release']>=13.10 %}
+    - name: /etc/apache2/sites-available/200-example.com.conf
+{% else %}
+    - name: /etc/apache2/sites-available/200-example.com
+{% endif %}
+    - source:
+        - salt://makina-states/files/etc/apache2/sites-available/virtualhost_template.conf
+    - template: 'jinja'
+    - defaults:
+        log_level: "{{ dft_log_level }}"
+        serveradmin_mail: "{{ dft_serveradmin_mail }}"
+        # used in log file name for example
+        site_small_name: "example"
+        DocumentRoot: "/srv/projects/foo/www/example.com"
+        ServerName: "example.com"
+        ServerAlias: 
+          - "www.example.com"
+          - "www1.example.com"
+          - "www2.example.com"
+          - "www3.example.com"
+        redirect_aliases: True
+        interface: "*"
+        port: "80"
+        mode: "production"
+{% if grains['makina.devhost'] %}
+    - context:
+        mode: "dev"
+{% endif %}
+    - require:
+      - pkg.installed: makina-apache-pkgs
+    - watch_in:
+      - cmd: makina-apache-virtualhost-example_com-status
+      - cmd: makina-apache-conf-syntax-check
+      - service: makina-apache-reload
+
+makina-apache-virtualhost-example_com-content:
+  file.managed:
+    - user: root
+    - group: root
+    - mode: 664
+    - name: /etc/apache2/includes/example.com.conf
+    - source:
+        - salt://makina-states/files/etc/apache2/includes/in_virtualhost_template.conf
+    - template: 'jinja'
+    - defaults:
+        DocumentRoot: "/srv/projects/foo/www/example.com"
+        mode: "production"
+        allow_htaccess: False
+{% if grains['makina.devhost'] %}
+    - context:
+        mode: "dev"
+{% endif %}
+    - require:
+      - pkg: makina-apache-pkgs
+      - file: makina-apache-include-directory
+    - require_in:
+      - file: makina-apache-virtualhost-example_com
+    - watch_in:
+      - cmd: makina-apache-conf-syntax-check
+      - service: makina-apache-reload
+
+
+makina-apache-virtualhost-example_com-status:
+  cmd.run:
+{% if site_enabled %}
+    - name: a2ensite 200-example.com
+{% if grains['lsb_distrib_id']=="Ubuntu" and grains['lsb_distrib_release']>=13.10 %}
+    - unless: ls /etc/apache2/sites-enabled/200-example.com.conf
+{% else %}
+    - unless: ls /etc/apache2/sites-enabled/200-example.com
+{% endif %}
+{% else %}
+    - name: a2dissite 200-example.com
+{% if grains['lsb_distrib_id']=="Ubuntu" and grains['lsb_distrib_release']>=13.10 %}
+    - onlyif: ls /etc/apache2/sites-enabled/200-example.com.conf
+{% else %}
+    - onlyif: ls /etc/apache2/sites-enabled/200-example.com
+{% endif %}
+{% endif %}
+    - require:
+      - pkg: makina-apache-pkgs
+    - watch_in:
+      - cmd: makina-apache-conf-syntax-check
+      - service: makina-apache-reload
