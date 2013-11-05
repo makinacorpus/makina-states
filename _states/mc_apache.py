@@ -95,7 +95,10 @@ def _checking_modules( modules_excluded=None, modules_included=None):
             log.info(
                 'a2dismod {0}'.format(module)
             )
-            result = __salt__['mc_apache.a2dismod'](module)
+            if not __opts__['test']:
+                result = __salt__['mc_apache.a2dismod'](module)
+            else:
+                result['result'] = True
             comments.append("Disabling module {0}::{1}".format(module,result['Status']))
             if not result['result']:
                 log.warning(
@@ -115,7 +118,10 @@ def _checking_modules( modules_excluded=None, modules_included=None):
                 log.info(
                     'a2enmod {0}'.format(module)
                 )
-                result = __salt__['mc_apache.a2enmod'](module)
+                if not __opts__['test']:
+                    result = __salt__['mc_apache.a2enmod'](module)
+                else:
+                    result['result'] = True
                 comments.append("Enabling module {0}::{1}".format(module,result['Status']))
                 if not result['result']:
                     log.warning(
@@ -128,7 +134,7 @@ def _checking_modules( modules_excluded=None, modules_included=None):
         #else:
         #    comments.append("Module {0} already enabled".format(module))
     if modifications:
-        if ret['result'] is False:
+        if ret['result'] is False and not __opts__['test']:
             # undo modifications, let's do it next time
             # when the failing module will be fixed
             # so that state modification will be available
@@ -339,9 +345,8 @@ def deployed(name,
     modules = __salt__['apache.modules']()
     ret['comment'] += "\n" + " "*19 + "Shared modules: "+ ",".join(modules['shared'])
 
-
-    # MPM check
-    if not mpm_check_done:
+    # MPM check (2nd time, not in test mode, it would always fail in test mode)
+    if not mpm_check_done and not __opts__['test']:
         infos = __salt__['apache.fullversion']()
         cur_mpm = infos['server_mpm']
         if cur_mpm != mpm:
