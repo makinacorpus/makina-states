@@ -84,8 +84,6 @@
 #services-http-apache-MaxKeepAliveRequests: 5
 # default is 3000 set 0 to disable process recylcing
 #services-http-apache-MaxRequestsPerChild: 3000
-# Put there any configuration directive for the main apache scope, you can use \n.
-#services-http-apache-extra_configuration : 'ServerLimit 1000'
 #
 # do not forget to launch "salt '*' saltutil.refresh_pillar" after changes 
 # ------------------------- END pillar example -------------
@@ -94,18 +92,17 @@
 # consult grains values with "salt '*' grains.items"
 #
 # TODO: alter mod_status conf to allow only localhost,monitoring some user defined IP,  ExtendedStatus Off
-# TODO: Vhost states
-# TODO: SSL, ports, and default-ssl
+# TODO: SSL VH
 
 
 {% set msr='/srv/salt/makina-states' %}
 {% set apacheConfCheck = "file://"+msr+"/_scripts/apacheConfCheck.sh" %}
+
 # Load defaults values -----------------------------------------
 {% set dft_log_level = salt['pillar.get']('services-http-apache-log_level', 'warn') %}
 {% set dft_Timeout = salt['pillar.get']('services-http-apache-Timeout', '120') %}
 {% set dft_KeepAlive = salt['pillar.get']('services-http-apache-KeepAlive', 'On') %}
 {% set dft_KeepAliveTimeout = salt['pillar.get']('services-http-apache-KeepAliveTimeout', '5') %}
-{% set dft_extra_configuration = salt['pillar.get']('services-http-apache-extra_configuration', '#') %}
 {% set dft_serveradmin_mail = salt['pillar.get']('services-http-apache-serveradmin_mail', 'webmaster@localhost') %}
 {% if grains['makina.devhost'] %}
   {% set dft_MaxKeepAliveRequests = salt['pillar.get']('services-http-apache-MaxKeepAliveRequests', '5') %}
@@ -166,10 +163,13 @@
   {% set dft_version = salt['pillar.get']('services-http-apache-version', '2.2') %}
 {% endif %}
 
+{% from 'makina-states/services/http/apache_defaults.jinja' import apacheData with context %}
+{% set old_mode = (grains['lsb_distrib_id']=="Ubuntu" and grains['lsb_distrib_release']<13.10) or (grains['lsb_distrib_id']=="Debian" and grains['lsb_distrib_release']<=7.0) %}
+
 makina-apache-pkgs:
   pkg.installed:
     - pkgs:
-      - apache2
+      - {{ apacheData.package }}
       - cronolog
 
 # Apache Main Configuration ------------------
@@ -177,8 +177,8 @@ makina-apache-pkgs:
 # configuration
 makina-apache-main-conf:
   mc_apache.deployed:
-    - version: {{ dft_version }}
-    - mpm: {{ dft_mpm }}
+    - version: {{ dft_version }}
+    - mpm: {{ dft_mpm }}
     # see also mc_apache.include_module
     # and mc_apache.exclude_module
     # to alter theses lists from
@@ -203,7 +203,7 @@ makina-apache-main-conf:
 
 makina-apache-settings:
   file.managed:
-    - name: /etc/apache2/conf.d/settings.local.conf
+    - name: {{ apacheData.confdir }}/settings.local.conf
     - source: salt://makina-states/files/etc/apache2/conf.d/settings.conf
     - user: root
     - group: root
@@ -229,7 +229,6 @@ makina-apache-settings:
         worker_MaxClients: "{{ dft_worker_MaxClients }}"
         event_AsyncRequestWorkerFactor: "{{ dft_event_AsyncRequestWorkerFactor }}"
         log_level: "{{ dft_log_level }}"
-        extra_configuration: "{{ dft_extra_configuration }}"
 {% if grains['makina.devhost'] %}
     - context:
         mode: "dev"
@@ -244,9 +243,10 @@ makina-apache-settings:
 makina-apache-main-extra-settings-example:
   file.accumulated:
     - name: extra-settings-master-conf
-    - filename: /etc/apache2/conf.d/settings.local.conf
+    - filename: {{ apacheData.confdir }}/settings.local.conf
     - text: |
         '# this is an example of thing added in master apache configuration'
+        '# ServerLimit 1000'
         '# <Location />'
         '# </Location>'
     - watch_in:
@@ -260,7 +260,7 @@ makina-apache-security-settings:
   file.managed:
     - require:
       - pkg.installed: makina-apache-pkgs
-    - name: /etc/apache2/conf.d/_security.local.conf
+    - name: {{ apacheData.confdir }}/_security.local.conf
     - source:
       - salt://makina-states/files/etc/apache2/conf.d/security.conf
     - user: root
@@ -316,9 +316,12 @@ makina-apache-include-directory:
     - group: www-data
     - mode: "2755"
     - makedirs: True
-    - name: /etc/apache2/includes
+    - name: {{ apacheData.basedir }}/includes
     - require:
-       - pkg.installed: makina-apache-pkgs
+       - pkg: makina-apache-pkgs
+    - require_in:
+       - service: makina-apache-restart
+       - service: makina-apache-reload
 
 # cronolog usage in /var/log/apache requires a group write
 # right which may not be present.
@@ -327,9 +330,12 @@ makina-apache-default-log-directory:
     - user: root
     - group: www-data
     - mode: "2770"
-    - name: /var/log/apache2
+    - name: {{ apacheData.logdir }}
     - require:
-       - pkg.installed: makina-apache-pkgs
+       - pkg: makina-apache-pkgs
+    - require_in:
+       - service: makina-apache-restart
+       - service: makina-apache-reload
 
 # Default Virtualhost managment -------------------------------------
 # Replace defaut Virtualhost by a more minimal default Virtualhost [1]
@@ -384,10 +390,10 @@ makina-apache-minimal-default-vhost:
     - require:
       - pkg.installed: makina-apache-pkgs
       - file.managed: makina-apache-default-vhost-index
-{% if grains['lsb_distrib_id']=="Ubuntu" and grains['lsb_distrib_release']>=13.10 %}
-    - name: /etc/apache2/sites-available/000-default.conf
+{% if old_mode %}
+    - name: {{ apacheData.vhostdir }}/default
 {% else %}
-    - name: /etc/apache2/sites-available/default
+    - name: {{ apacheData.vhostdir }}/000-default.conf
 {% endif %}
     - source:
       - salt://makina-states/files/etc/apache2/sites-available/default_vh.conf
@@ -424,7 +430,7 @@ makina-apache-conf-syntax-check:
 
 makina-apache-restart:
   service.running:
-    - name: apache2
+    - name: {{ apacheData.service }}
     - enable: True
     # most watch requisites are linked here with watch_in
     - watch:
@@ -434,10 +440,45 @@ makina-apache-restart:
 # In case of VirtualHosts change graceful reloads should be enough
 makina-apache-reload:
   service.running:
-    - name: apache2
+    - name: {{ apacheData.service }}
     - require:
       - pkg.installed: makina-apache-pkgs
     - enable: True
     - reload: True
     # most watch requisites are linked here with watch_in
+
+
+
+# Virtualhosts, here are the ones defined in pillar, if any ----------------
+#
+# We loop on VH defined in pillar apache/register-site, check the
+# macro definition for the pillar dictionnary keys available. The
+# register-site key is set as the site name, and all keys are then
+# added
+# example:
+#    'register-site': {
+#       'example.com': {
+#          'active': False,
+#          'small_name': 'example',
+#          'number': 200,
+#          'documentRoot': '/srv/foo/bar/www'
+#        },
+#        'example.foo.com': {
+#          'active': False,
+#          'number': 202
+#        },
+#
+# Note that the best way to make a VH is not the pillar, but
+# loading the macro as we do here and use virtualhost()) call
+# in a state.
+# Then use the pillar to alter your default parameters given to this call
+#
+{% from 'makina-states/services/http/apache_macros.jinja' import virtualhost with context %}
+{% if 'register-site' in apacheData %}
+{%   for site,siteDef in apacheData['register-site'].iteritems() %}
+{%     do siteDef.update({'site': site}) %}
+{%     do siteDef.update({'apacheData': apacheData}) %}
+{{     virtualhost(**siteDef) }}
+{%   endfor %}
+{% endif %}
 

@@ -1,0 +1,42 @@
+{% set apacheData = salt['grains.filter_by']({
+    'Debian': {
+        'package': 'apache2',
+        'server': 'apache2',
+        'service': 'apache2',
+        'mod_wsgi': 'libapache2-mod-wsgi',
+        'basedir': '/etc/apache2',
+        'vhostdir': '/etc/apache2/sites-available',
+        'confdir': '/etc/apache2/conf.d',
+        'logdir': '/var/log/apache2',
+        'wwwdir': '/srv',
+        'register-site': {
+          'example.com': {
+            'active': False,
+            'small_name': 'example',
+            'number': 200
+          },
+          'example2.com': {
+            'active': False,
+            'small_name': 'example2',
+            'number': 202
+          },
+          'example.fourth.com': {
+            'number': 204
+          }
+        }
+    },
+    'RedHat': {
+        'package': 'httpd',
+        'server': 'httpd',
+        'service': 'httpd',
+        'mod_wsgi': 'mod_wsgi',
+        'basedir': '/etc/httpd',
+        'vhostdir': '/etc/httpd/conf.d',
+        'confdir': '/etc/httpd/conf.d',
+        'logdir': '/var/log/httpd',
+        'wwwdir': '/var/www'
+    },
+  },
+grain='os_family',
+merge=salt['pillar.get']('apache:lookup')
+) %}

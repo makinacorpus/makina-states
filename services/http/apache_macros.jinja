@@ -1,0 +1,154 @@
+# Apache specific macros
+#
+# Import this macro file with context so that grains will be available in the macros
+#
+# * virtualhost => create all states for a virtualhost (virtualhost file, include file, a2ensite/dissite command
+#
+#   - apacheData: global apache configuration dictionnary, this cannot be given by context import, so please pass it to this macro
+#
+#   - site:  site name (ServerName)
+#
+#   - small_name :  site nickname, used in states and log files, if not given it will be build from site name
+#
+#   - [ssl_]interface : interface of the namevirtualhost (like in '*:80'), default is '*'
+#
+#   - [ssl_]port : port of the namevirtualhost (like in '*:80'), default is '80' and '443' for ssl version
+#
+#   - active: True by default, set to False to disable the Virtualhost
+#
+#   - number: Virtualhost priority number (for apache), without a default VH the first one became the default virtualhost
+#
+#   - log_level: log level
+#
+#   - serveradmin_mail: data that may be used on error page, default is webmaster@<site-name>
+#
+#   - serverAlias: a string or a list of strings, theses are the alternate names of this site
+#
+#   - documentRoot: path to the document root, default is /srv/projects/<site>/www/
+#
+#   - redirect_aliases: True by default, make a special Virtualhost with all serverAlias, all redirecting
+#                       with a 301 to the site name, better for SEO. But you may need real serverAliases
+#                       for static parallel file servers, for example, then set that to True
+#
+#   - allow_htaccess: False by default, if your project use .htaccess files, then prey for your soul,
+#                     eat some shit, kill yourself and set that to True
+#
+#   - vh_template_source: source of the file.managed for the vhirtualhost template
+#
+#   - vh_in_template_source: source of the file.managed for the vhirtualhost included content
+#                            (the most important part when making alterations of vh content)
+#
+{% macro virtualhost(apacheData,
+                     site = 'example.com',
+                     small_name = None,
+                     active = True,
+                     number = '100',
+                     interface = '*',
+                     port='80',
+                     ssl_interface = '*',
+                     ssl_port = '443',
+                     log_level = 'warn',
+                     serveradmin_mail = None,
+                     serverAlias = None,
+                     documentRoot = None,
+                     redirect_aliases = True,
+                     allow_htaccess = False,
+                     vh_template_source = 'salt://makina-states/files/etc/apache2/sites-available/virtualhost_template.conf',
+                     vh_in_template_source = 'salt://makina-states/files/etc/apache2/includes/in_virtualhost_template.conf'
+) -%}
+{% set small_name = small_name or site.replace('.', '_').replace('-', '_') %}
+{% set admin_mail = serveradmin_mail or 'webmaster@'+site %}
+{% set doc_root = documentRoot or '/srv/projects/' + site  + '/www' %}
+{% set old_mode = (grains['lsb_distrib_id']=="Ubuntu" and grains['lsb_distrib_release']<13.10) or (grains['lsb_distrib_id']=="Debian" and grains['lsb_distrib_release']<=7.0) %}
+
+# Virtualhost basic file
+makina-apache-virtualhost-{{ small_name }}:
+  file.managed:
+    - user: root
+    - group: root
+    - mode: 664
+{% if old_mode %}
+    - name: {{ apacheData.vhostdir }}/{{ number }}-{{ site }}
+{% else %}
+    - name: {{ apacheData.vhostdir }}/{{ number }}-{{ site }}.conf
+{% endif %}
+    - source: {{ vh_template_source }}
+    - template: 'jinja'
+    - defaults:
+        log_level: "{{ log_level }}"
+        serveradmin_mail: "{{ admin_mail }}"
+        small_name: "{{ small_name }}"
+        DocumentRoot: "{{ doc_root }}"
+        ServerName: "{{ site }}"
+{% if serverAlias %}
+        ServerAlias: 
+          - "www.example.com"
+          - "www1.example.com"
+          - "www2.example.com"
+          - "www3.example.com"
+{% endif %}
+        redirect_aliases: {{ redirect_aliases }}
+        interface: "{{ interface }}"
+        port: "{{ port }}"
+        mode: "production"
+{% if grains['makina.devhost'] %}
+    - context:
+        mode: "dev"
+{% endif %}
+    - require:
+      - pkg.installed: makina-apache-pkgs
+    - watch_in:
+      - cmd: makina-apache-virtualhost-{{ small_name }}-status
+      - cmd: makina-apache-conf-syntax-check
+      - service: makina-apache-reload
+
+# Virtualhost real content, shared by SSL and non-SSL virtualhosts
+makina-apache-virtualhost-{{ small_name }}-content:
+  file.managed:
+    - user: root
+    - group: root
+    - mode: 664
+    - name: {{ apacheData.basedir }}/includes/{{ site }}.conf
+    - source: {{ vh_in_template_source }}
+    - template: 'jinja'
+    - defaults:
+        mode: "production"
+        DocumentRoot: {{ doc_root }}
+        allow_htaccess: {{ allow_htaccess }}
+{% if grains['makina.devhost'] %}
+    - context:
+        mode: "dev"
+{% endif %}
+    - require:
+      - pkg: makina-apache-pkgs
+      - file: makina-apache-include-directory
+    - require_in:
+      - file: makina-apache-virtualhost-{{ small_name }}
+    - watch_in:
+      - cmd: makina-apache-conf-syntax-check
+      - service: makina-apache-reload
+
+makina-apache-virtualhost-{{ small_name }}-status:
+  cmd.run:
+{%      if active %}
+    - name: a2ensite {{ number }}-{{ site }}
+{% if old_mode %}
+    - unless: ls {{ apacheData.basedir }}/sites-enabled/{{ number }}-{{ site }}
+{%        else %}
+    - unless: ls {{ apacheData.basedir }}/sites-enabled/{{ number }}-{{ site }}.conf
+{%        endif %}
+{%      else %}
+    - name: a2dissite 200-{{ site }}
+{% if old_mode %}
+    - onlyif: ls {{ apacheData.basedir }}/sites-enabled/{{ number }}-{{ site }}
+{%        else %}
+    - onlyif: ls {{ apacheData.basedir }}/sites-enabled/{{ number }}-{{ site }}.conf
+{%        endif %}
+{%      endif %}
+    - require:
+      - pkg: makina-apache-pkgs
+    - watch_in:
+      - cmd: makina-apache-conf-syntax-check
+      - service: makina-apache-reload
+
+{%- endmacro %}
