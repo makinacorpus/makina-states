@@ -198,7 +198,9 @@ makina-apache-main-conf:
       - pkg.installed: makina-apache-pkgs
     # full service restart in case of changes
     - watch_in:
-       - cmd: makina-apache-conf-syntax-check
+       # NO: this would prevent syntax check in case of error here
+       # and errors here may be caused by syntax problems
+       # - cmd: makina-apache-conf-syntax-check
        - service: makina-apache-restart
 
 makina-apache-settings:
@@ -451,22 +453,21 @@ makina-apache-reload:
 
 # Virtualhosts, here are the ones defined in pillar, if any ----------------
 #
-# We loop on VH defined in pillar apache/register-site, check the
+# We loop on VH defined in pillar apache/register-sites, check the
 # macro definition for the pillar dictionnary keys available. The
-# register-site key is set as the site name, and all keys are then
+# register-sites key is set as the site name, and all keys are then
 # added
-# example:
-#    'register-site': {
-#       'example.com': {
-#          'active': False,
-#          'small_name': 'example',
-#          'number': 200,
-#          'documentRoot': '/srv/foo/bar/www'
-#        },
-#        'example.foo.com': {
-#          'active': False,
-#          'number': 202
-#        },
+# pillar example:
+#apache-settings:
+#  register-sites:
+#     example.com:
+#        active: False
+#        small_name: example
+#        number: 200
+#        documentRoot: /srv/foo/bar/www
+#      example.foo.com:
+#        active: False
+#        number: 202
 #
 # Note that the best way to make a VH is not the pillar, but
 # loading the macro as we do here and use virtualhost()) call
@@ -474,8 +475,8 @@ makina-apache-reload:
 # Then use the pillar to alter your default parameters given to this call
 #
 {% from 'makina-states/services/http/apache_macros.jinja' import virtualhost with context %}
-{% if 'register-site' in apacheData %}
-{%   for site,siteDef in apacheData['register-site'].iteritems() %}
+{% if 'register-sites' in apacheData %}
+{%   for site,siteDef in apacheData['register-sites'].iteritems() %}
 {%     do siteDef.update({'site': site}) %}
 {%     do siteDef.update({'apacheData': apacheData}) %}
 {{     virtualhost(**siteDef) }}

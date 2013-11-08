@@ -53,8 +53,8 @@ def _load_modules():
     global _static_modules
     if not _shared_modules and not _static_modules:
         modules = __salt__['apache.modules']()
-        _static_modules = modules['static']
-        _shared_modules = modules['shared']
+        _static_modules = modules.get('static',[])
+        _shared_modules = modules.get('shared',[])
 
 def _checking_modules( modules_excluded=None, modules_included=None):
     global _MODULES_INCLUDED
@@ -306,7 +306,7 @@ def deployed(name,
 
     # MPM check
     infos = __salt__['apache.fullversion']()
-    cur_mpm = infos['server_mpm']
+    cur_mpm = infos.get('server_mpm','unknown')
     mpm_check_done = False
     if cur_mpm != mpm:
         # try to activate the mpm and deactivate the others
@@ -348,7 +348,7 @@ def deployed(name,
     # MPM check (2nd time, not in test mode, it would always fail in test mode)
     if not mpm_check_done and not __opts__['test']:
         infos = __salt__['apache.fullversion']()
-        cur_mpm = infos['server_mpm']
+        cur_mpm = cur_mpm = infos.get('server_mpm','unknown')
         if cur_mpm != mpm:
             ret['result'] = False
             ret['comment'] = 'ERROR: 2nd MPM check: Wrong apache core mpm module activated: (requested) {0}!={1} (current)'.format(mpm,cur_mpm)
