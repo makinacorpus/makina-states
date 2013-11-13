@@ -1,0 +1,43 @@
+# --- APACHE HTTPD SERVER
+#
+# Main server defaults settings alterations ---------------
+# check apache_defaults.jinja for comments and lists of available settings
+# this is just a small subset of available settings
+# be careful, only one apache-settings entry should exists in pillar
+apache-settings:
+  mpm: prefork
+  version: 2.2
+  Timeout: 30
+  log_level: info
+  # overrides default prefork settings (the ones from apache_defaults.jinja)
+  prefork:
+    StartServers: 8
+    MinSpareServers: 8,
+    MaxSpareServers: 8,
+    MaxClients: 16,
+    MaxRequestsPerChild: 30
+  # Note that register site is not the best way to make VH, prefer
+  # using a call to the jinja virtualhost macro like in 
+  # apache_example.sls
+  register-sites:
+     example.com:
+        active: False
+        small_name: example
+        number: 200
+        documentRoot: /srv/foo/bar/www
+      example.foo.com:
+        active: False
+        number: 202
+
+# PROJECT SETTINGS ---------------------
+# This should be the right way of handling project deployment
+# differences (prod/preprod/tests/etc)
+#
+# The pillar can also contains some projects overrides
+# especially when moving from different environments
+# if you made states using theses defaults (as in the state apache_example.sls example)
+project-foo-apache-KeepAliveTimeout: 10
+project-foo-apache-MaxSpareThreads: 15
+project-foo-apache-vh1-name: 'dev.foobar.com'
+
+# do not forget to launch "salt '*' saltutil.refresh_pillar" after changes

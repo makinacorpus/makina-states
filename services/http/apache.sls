@@ -2,168 +2,31 @@
 #
 # Makina Corpus Apache Deployment main state
 #
+# For usage examples please check the file apache_example.sls on this same directory
+#
 # Preferred way of altering default settings is to extend the states
-# makina-apache-main-conf and makina-apache-settings this way:
-#------------ state exemple --------------------------------
-## remember theses 4 rules for extend:
-##1-Always include the SLS being extended with an include declaration
-##2-Requisites (watch and require) are appended to, everything else is overwritten
-##3-extend is a top level declaration, like an ID declaration, cannot be declared twice in a single SLS
-##4-Many IDs can be extended under the extend declaration
-#
-#include:
-#  - makina-states.services.http.apache
-#extend:
-#  makina-apache-main-conf:
-#    mc_apache:
-#      - version: 2.4
-#      - mpm: worker
-#  makina-apache-settings:
-#    file:
-#      - context:
-#        KeepAliveTimeout: 3
-#        worker_StartServers: "5"
-#        worker_MinSpareThreads: "60"
-#        worker_MaxSpareThreads: "120"
-#        worker_ThreadLimit: "120"
-#        worker_ThreadsPerChild: "60"
-#        worker_MaxRequestsPerChild: "1000"
-#        worker_MaxClients: "500"
-#
-## Adding or removing modules
-#my-apache-other-module-included1:
-#  mc_apache.include_module:
-#    - modules:
-#      - proxy_http
-#      - proxy_html
-#    - require_in:
-#      - mc_apache: makina-apache-main-conf
-# Adding or removing modules
-#my-apache-other-module-included2:
-#  mc_apache.include_module:
-#    - modules:
-#      - authn_file
-#    - require_in:
-#      - mc_apache: makina-apache-main-conf
-#my-apache-other-module--other-module-excluded:
-#  mc_apache.exclude_module:
-#    - modules:
-#      - rewrite
-#    - require_in:
-#      - mc_apache: makina-apache-main-conf
-#------------ end of state exemple ------------------------------
+# makina-apache-main-conf and makina-apache-settings (explained in the apache_example state file):
 #
 # But configuration can also be made in the pillar, to alter
-# default values without using states
+# default values without using states, or in complement of theses states (explained in pillar.sample)
 #
-# ------------------------- START pillar example -----------
-#
-# --- APACHE HTTPD SERVER
-#
-# - LOGS ------------------
-# default: warn
-# available: debug, info, notice, warn, error, crit, alert, emerg
-#services-http-apache-log_level: info
-#
-# - SETTINGS ------------------
-# TODO: review
-#services-http-apache-serveradmin_mail : 'webmaster@localhost'
-# timeout for a client sending HTTP request, keep this quite low to avoid DOS
-#services-http-apache-Timeout: 120
-# default is 'On', you can use 'Off', especially in mpm mode
-#services-http-apache-KeepAlive: 'On'
-# Please keep this one under 5s, default is "5"
-#services-http-apache-KeepAliveTimeout: 5
-# default for theses 3 is 5 in dev mode, 25 else.
-#services-http-apache-prefork_StartServers: 5
-#services-http-apache-prefork_MinSpareServers: 5
-#services-http-apache-prefork_MaxSpareServers: 5
-# default is 150 or 10 in dev mode
-#services-http-apache-prefork_MaxClients: 10
-# default is 100 or 5 in dev mode
-#services-http-apache-MaxKeepAliveRequests: 5
-# default is 3000 set 0 to disable process recylcing
-#services-http-apache-MaxRequestsPerChild: 3000
-#
-# do not forget to launch "salt '*' saltutil.refresh_pillar" after changes 
-# ------------------------- END pillar example -------------
 #
 # consult pillar values with "salt '*' pillar.items"
 # consult grains values with "salt '*' grains.items"
 #
 # TODO: alter mod_status conf to allow only localhost,monitoring some user defined IP,  ExtendedStatus Off
 # TODO: SSL VH
-
+# TODO: detect invalid links in sites-enabled and remove them
+# apache 2.4: EnableSendfile On, NameVirtualHost deprecated,  RewriteLog and RewriteLogLevel-> LogLevel rewrite:debug
+# enable and configure mod_reqtimeout
 
 {% set msr='/srv/salt/makina-states' %}
 {% set apacheConfCheck = "file://"+msr+"/_scripts/apacheConfCheck.sh" %}
 
 # Load defaults values -----------------------------------------
-{% set dft_log_level = salt['pillar.get']('services-http-apache-log_level', 'warn') %}
-{% set dft_Timeout = salt['pillar.get']('services-http-apache-Timeout', '120') %}
-{% set dft_KeepAlive = salt['pillar.get']('services-http-apache-KeepAlive', 'On') %}
-{% set dft_KeepAliveTimeout = salt['pillar.get']('services-http-apache-KeepAliveTimeout', '5') %}
-{% set dft_serveradmin_mail = salt['pillar.get']('services-http-apache-serveradmin_mail', 'webmaster@localhost') %}
-{% if grains['makina.devhost'] %}
-  {% set dft_MaxKeepAliveRequests = salt['pillar.get']('services-http-apache-MaxKeepAliveRequests', '5') %}
-  # mpm prefork
-  # StartServers: number of server processes to start
-  {% set dft_prefork_StartServers = salt['pillar.get']('services-http-apache-prefork_StartServers', '5') %}
-  # MinSpareServers: minimum number of server processes which are kept spare
-  {% set dft_prefork_MinSpareServers = salt['pillar.get']('services-http-apache-prefork_MinSpareServers', '5') %}
-  # MaxSpareServers: maximum number of server processes which are kept spare
-  {% set dft_prefork_MaxSpareServers = salt['pillar.get']('services-http-apache-prefork_MaxSpareServers', '5') %}
-  # MaxRequestWorkers (alias MaxClients): maximum number of server processes allowed to start
-  {% set dft_prefork_MaxClients = salt['pillar.get']('services-http-apache-prefork_MaxClients', '10') %}
-  # MaxConnectionsPerChild: maximum number of requests a server process serves
-  {% set dft_prefork_MaxRequestsPerChild = salt['pillar.get']('services-http-apache-prefork_MaxRequestsPerChild', '3000') %}
-  # mpm worker
-  # StartServers: initial number of server processes to start
-  {% set dft_worker_StartServers = salt['pillar.get']('services-http-apache-worker_StartServers', '2') %}
-  # MinSpareThreads: minimum number of worker threads which are kept spare
-  {% set dft_worker_MinSpareThreads = salt['pillar.get']('services-http-apache-worker_MinSpareThreads', '25') %}
-  # MaxSpareThreads: maximum number of worker threads which are kept spare
-  {% set dft_worker_MaxSpareThreads = salt['pillar.get']('services-http-apache-worker_MaxSpareThreads', '75') %}
-  # ThreadLimit: ThreadsPerChild can be changed to this maximum value during a
-  #             graceful restart. ThreadLimit can only be changed by stopping
-  #             and starting Apache.
-  {% set dft_worker_ThreadLimit = salt['pillar.get']('services-http-apache-worker_ThreadLimit', '64') %}
-  # ThreadsPerChild: constant number of worker threads in each server process
-  {% set dft_worker_ThreadsPerChild = salt['pillar.get']('services-http-apache-worker_ThreadsPerChild', '25') %}
-  # MaxRequestsPerChild/MaxConnectionsPerChild: maximum number of requests a server process serves
-  {% set dft_worker_MaxRequestsPerChild = salt['pillar.get']('services-http-apache-worker_MaxRequestsPerChild', '0') %}
-  # MaxRequestWorkers (alias MaxClients): maximum number of threads
-  {% set dft_worker_MaxClients = salt['pillar.get']('services-http-apache-worker_MaxClients', '10') %}
-  # mpm event
-  # all workers settings are used
-  # max of concurrent conn is (AsyncRequestWorkerFactor + 1) * MaxRequestWorkers
-  {% set dft_event_AsyncRequestWorkerFactor = salt['pillar.get']('services-http-apache-event_AsyncRequestWorkerFactor', '1.5') %}
-
-{% else %}
-  {% set dft_MaxKeepAliveRequests = salt['pillar.get']('services-http-apache-MaxKeepAliveRequests', '100') %}
-  {% set dft_prefork_StartServers = salt['pillar.get']('services-http-apache-prefork_StartServers', '25') %}
-  {% set dft_prefork_MinSpareServers = salt['pillar.get']('services-http-apache-prefork_MinSpareServers', '25') %}
-  {% set dft_prefork_MaxSpareServers = salt['pillar.get']('services-http-apache-prefork_MaxSpareServers', '25') %}
-  {% set dft_prefork_MaxClients = salt['pillar.get']('services-http-apache-prefork_MaxClients', '150') %}
-  {% set dft_prefork_MaxRequestsPerChild = salt['pillar.get']('services-http-apache-prefork_MaxRequestsPerChild', '3000') %}
-  {% set dft_worker_StartServers = salt['pillar.get']('services-http-apache-worker_StartServers', '5') %}
-  {% set dft_worker_MinSpareThreads = salt['pillar.get']('services-http-apache-worker_MinSpareThreads', '50') %}
-  {% set dft_worker_MaxSpareThreads = salt['pillar.get']('services-http-apache-worker_MaxSpareThreads', '100') %}
-  {% set dft_worker_ThreadLimit = salt['pillar.get']('services-http-apache-worker_ThreadLimit', '100') %}
-  {% set dft_worker_ThreadsPerChild = salt['pillar.get']('services-http-apache-worker_ThreadsPerChild', '50') %}
-  {% set dft_worker_MaxRequestsPerChild = salt['pillar.get']('services-http-apache-worker_MaxRequestsPerChild', '3000') %}
-  {% set dft_worker_MaxClients = salt['pillar.get']('services-http-apache-worker_MaxClients', '200') %}
-  {% set dft_event_AsyncRequestWorkerFactor = salt['pillar.get']('services-http-apache-event_AsyncRequestWorkerFactor', '4') %}
-{% endif %}
-{% if grains['lsb_distrib_id']=="Ubuntu" and grains['lsb_distrib_release']>=13.10 %}
-  {% set dft_mpm = salt['pillar.get']('services-http-apache-mpm', 'event') %}
-  {% set dft_version = salt['pillar.get']('services-http-apache-version', '2.4') %}
-{% else %}
-  {% set dft_mpm = salt['pillar.get']('services-http-apache-mpm', 'worker') %}
-  {% set dft_version = salt['pillar.get']('services-http-apache-version', '2.2') %}
-{% endif %}
 
 {% from 'makina-states/services/http/apache_defaults.jinja' import apacheData with context %}
+
 {% set old_mode = (grains['lsb_distrib_id']=="Ubuntu" and grains['lsb_distrib_release']<13.10) or (grains['lsb_distrib_id']=="Debian" and grains['lsb_distrib_release']<=7.0) %}
 
 makina-apache-pkgs:
@@ -177,8 +40,8 @@ makina-apache-pkgs:
 # configuration
 makina-apache-main-conf:
   mc_apache.deployed:
-    - version: {{ dft_version }}
-    - mpm: {{ dft_mpm }}
+    - version: {{ apacheData.version }}
+    - mpm: {{ apacheData.mpm }}
     # see also mc_apache.include_module
     # and mc_apache.exclude_module
     # to alter theses lists from
@@ -193,7 +56,7 @@ makina-apache-main-conf:
       - headers
       - deflate
       - status
-    - log_level: {{ dft_log_level }}
+    - log_level: {{ apacheData.log_level }}
     - require:
       - pkg.installed: makina-apache-pkgs
     # full service restart in case of changes
@@ -213,24 +76,24 @@ makina-apache-settings:
     - template: jinja
     - defaults:
         mode: "production"
-        Timeout: "{{ dft_Timeout }}"
-        KeepAlive: "{{ dft_KeepAlive }}"
-        MaxKeepAliveRequests: "{{ dft_MaxKeepAliveRequests }}"
-        KeepAliveTimeout: "{{ dft_KeepAliveTimeout }}"
-        prefork_StartServers: "{{ dft_prefork_StartServers }}"
-        prefork_MinSpareServers: "{{ dft_prefork_MinSpareServers }}"
-        prefork_MaxSpareServers: "{{ dft_prefork_MaxSpareServers }}"
-        prefork_MaxClients: "{{ dft_prefork_MaxClients }}"
-        prefork_MaxRequestsPerChild: "{{ dft_prefork_MaxRequestsPerChild }}"
-        worker_StartServers: "{{ dft_worker_StartServers }}"
-        worker_MinSpareThreads: "{{ dft_worker_MinSpareThreads }}"
-        worker_MaxSpareThreads: "{{ dft_worker_MaxSpareThreads }}"
-        worker_ThreadLimit: "{{ dft_worker_ThreadLimit }}"
-        worker_ThreadsPerChild: "{{ dft_worker_ThreadsPerChild }}"
-        worker_MaxRequestsPerChild: "{{ dft_worker_MaxRequestsPerChild }}"
-        worker_MaxClients: "{{ dft_worker_MaxClients }}"
-        event_AsyncRequestWorkerFactor: "{{ dft_event_AsyncRequestWorkerFactor }}"
-        log_level: "{{ dft_log_level }}"
+        Timeout: "{{ apacheData.Timeout }}"
+        KeepAlive: "{{ apacheData.KeepAlive }}"
+        MaxKeepAliveRequests: "{{ apacheData.MaxKeepAliveRequests }}"
+        KeepAliveTimeout: "{{ apacheData.KeepAliveTimeout }}"
+        prefork_StartServers: "{{ apacheData.prefork.StartServers }}"
+        prefork_MinSpareServers: "{{ apacheData.prefork.MinSpareServers }}"
+        prefork_MaxSpareServers: "{{ apacheData.prefork.MaxSpareServers }}"
+        prefork_MaxClients: "{{ apacheData.prefork.MaxClients }}"
+        prefork_MaxRequestsPerChild: "{{ apacheData.prefork.MaxRequestsPerChild }}"
+        worker_StartServers: "{{ apacheData.worker.StartServers }}"
+        worker_MinSpareThreads: "{{ apacheData.worker.MinSpareThreads }}"
+        worker_MaxSpareThreads: "{{ apacheData.worker.MaxSpareThreads }}"
+        worker_ThreadLimit: "{{ apacheData.worker.ThreadLimit }}"
+        worker_ThreadsPerChild: "{{ apacheData.worker.ThreadsPerChild }}"
+        worker_MaxRequestsPerChild: "{{ apacheData.worker.MaxRequestsPerChild }}"
+        worker_MaxClients: "{{ apacheData.worker.MaxClients }}"
+        event_AsyncRequestWorkerFactor: "{{ apacheData.event.AsyncRequestWorkerFactor }}"
+        log_level: "{{ apacheData.log_level }}"
 {% if grains['makina.devhost'] %}
     - context:
         mode: "dev"
@@ -404,8 +267,8 @@ makina-apache-minimal-default-vhost:
     - mode: 644
     - template: jinja
     - defaults:
-        log_level: "{{ dft_log_level }}"
-        serveradmin_mail: "{{ dft_serveradmin_mail }}"
+        log_level: "{{ apacheData.log_level }}"
+        serveradmin_mail: "{{ apacheData.serveradmin_mail }}"
         mode: "production"
 {% if grains['makina.devhost'] %}
     - context:
