@@ -55,12 +55,12 @@ my-apache-other-module--other-module-excluded:
 {% from 'makina-states/services/http/apache_defaults.jinja' import apacheData with context %}
 {% from 'makina-states/services/http/apache_macros.jinja' import virtualhost with context %}
 {{ virtualhost(apacheData = apacheData,
-            site = "{{ salt['pillar.get']('project-foo-apache-vh1-name', 'www.foobar.com') }},
-            small_name = "{{ salt['pillar.get']('project-foo-apache-vh1-nickname', 'foobar') }},
+            site = salt['pillar.get']('project-foo-apache-vh1-name', 'www.foobar.com'),
+            small_name = salt['pillar.get']('project-foo-apache-vh1-nickname', 'foobar'),
             active = True,
             number = '900',
-            log_level = "{{ salt['pillar.get']('project-foo-apache-vh1-loglevel', 'debug') }},
-            serverAlias = "{{ salt['pillar.get']('project-foo-apache-vh1-alias', 'foobar.com') }}",
-            documentRoot = "{{ salt['pillar.get']('project-foo-apache-vh1-docroot', '/srv/projects/example/foobar/www') }}",
+            log_level = salt['pillar.get']('project-foo-apache-vh1-loglevel', 'debug'),
+            serverAlias = salt['pillar.get']('project-foo-apache-vh1-alias', 'foobar.com'),
+            documentRoot = salt['pillar.get']('project-foo-apache-vh1-docroot', '/srv/projects/example/foobar/www'),
             redirect_aliases = True,
             allow_htaccess = False) }}
