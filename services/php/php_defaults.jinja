@@ -1,0 +1,109 @@
+#
+# PHP Fine Settings ------------------------------------------------
+{% set phpStepOne = salt['grains.filter_by']({
+    'dev': {
+        'mpm': 'worker',
+        'version': '2.2',
+        'Timeout': 120,
+        'KeepAlive': True,
+        'MaxKeepAliveRequests': 5,
+        'KeepAliveTimeout': 5,
+        'log_level': 'warn',
+        'serveradmin_mail': 'webmaster@localhost',
+        'prefork': {
+            'StartServers': 5,
+            'MinSpareServers': 5,
+            'MaxSpareServers': 5,
+            'MaxClients': 20,
+            'MaxRequestsPerChild': 300
+        },
+        'worker': {
+            'StartServers': 2,
+            'MinSpareThreads': 25,
+            'MaxSpareThreads': 75,
+            'ThreadLimit': 64,
+            'ThreadsPerChild': 25,
+            'MaxRequestsPerChild': 300,
+            'MaxClients': 200
+        },
+        'event': {
+            'AsyncRequestWorkerFactor' : "1.5"
+        }
+    },
+    'prod': {
+        'mpm': 'worker',
+        'version': '2.2',
+        'Timeout': 120,
+        'KeepAlive': True,
+        'MaxKeepAliveRequests': 100,
+        'KeepAliveTimeout': 3,
+        'log_level': 'warn',
+        'serveradmin_mail': 'webmaster@localhost',
+        'prefork': {
+            'StartServers': 25,
+            'MinSpareServers': 25,
+            'MaxSpareServers': 25,
+            'MaxClients': 150,
+            'MaxRequestsPerChild': 3000
+        },
+        'worker': {
+            'StartServers': 5,
+            'MinSpareThreads': 50,
+            'MaxSpareThreads': 100,
+            'ThreadLimit': 100,
+            'ThreadsPerChild': 50,
+            'MaxRequestsPerChild': 3000,
+            'MaxClients': 700
+        },
+        'event': {
+            'AsyncRequestWorkerFactor' : "4"
+        }
+    }
+  },
+  grain='default_env',
+  default= 'dev'
+) %}
+# Ubuntu 13.10 is now providing 2.4 with event by default
+{% if grains['lsb_distrib_id']=="Ubuntu" and grains['lsb_distrib_release']>=13.10 %}
+{%   do phpStepOne.update({'mpm': 'event'}) %}
+{%   do phpStepOne.update({'version': '2.4'}) %}
+{% endif %}
+# Default OS-based paths settings added on phpData
+{% set phpStepTwo = salt['grains.filter_by']({
+    'Debian': {
+        'packages': {
+            'main': 'php5',
+            'mod_php': 'libapache2-mod-php5',
+            'php-fpm': 'php5-fpm',
+            'apc': 'php-apc',
+            'cli': 'php-cli',
+            'cas' : 'php-cas',
+            'imagemagick': 'php5-imagick',
+            'memcache': 'php5-memcache',
+            'memcached': 'php5-memcached',
+            'mysql': 'php5-mysql',
+            'postgresql': 'php5-pgsql',
+            'sqlite': 'php5-sqlite',
+            'pear': 'php-pear',
+            'soap': 'php-soap',
+            'dev': 'php5-dev',
+            'snmp': 'php5-snmp',
+            'xmlrpc': 'php5-xmlrpc',
+            'json': 'php5-json',
+            'xdebug': 'php5-xdebug',
+            'curl': 'php5-curl',
+            'gd': 'php5-gd',
+            'ldap': 'php5-ldap',
+            'mcrypt': 'php5-mcrypt'
+        },
+        'service': 'php5-fpm',
+        'etcdir': '/etc/php5',
+        'confdir': '/etc/php5/conf.d',
+        'logdir': '/var/log/php'
+    }
+  },
+  grain='os_family',
+  merge=phpStepOne
+) %}
+# FINAL STEP: merge with data from pillar
+{% set phpData=salt['mc_utils.dictupdate'](phpStepTwo , salt['pillar.get']('php-settings',{})) %}
