@@ -56,7 +56,7 @@ def _load_modules():
         _static_modules = modules.get('static',[])
         _shared_modules = modules.get('shared',[])
 
-def _checking_modules( modules_excluded=None, modules_included=None):
+def _checking_modules( modules_excluded=None, modules_included=None, blind_mode=False):
     global _MODULES_INCLUDED
     global _MODULES_EXCLUDED
     global _shared_modules
@@ -91,7 +91,7 @@ def _checking_modules( modules_excluded=None, modules_included=None):
             ret['result'] = False
             comments.append("ERROR: module {0} cannot be excluded as it is not a shared but a static module.".format(module))
             continue
-        elif module+'_module' in _shared_modules:
+        elif (module+'_module' in _shared_modules) or blind_mode:
             log.info(
                 'a2dismod {0}'.format(module)
             )
@@ -279,6 +279,7 @@ def deployed(name,
            'result': None,
            'comment': ''}
 
+    comments = []
     if not __salt__.has_key('apache.version'):
         log.warning(
             'Use of mc_apache.deployed without apache previously installed via pkg state.'
@@ -302,48 +303,62 @@ def deployed(name,
         # stop right here
         return ret
     else:
-        ret['comment'] = result['comment']
+        comments.append(result['comment'])
 
     # MPM check
     infos = __salt__['apache.fullversion']()
     cur_mpm = infos.get('server_mpm','unknown')
     mpm_check_done = False
-    if cur_mpm != mpm:
+    blind_mode=False
+    if 'unknown' == cur_mpm :
+        # quite certainly a syntax error in current conf
+        mpm_check_done = True
+        # chicken and eggs problem now is that this current error prevents the mpm alteration,
+        # and the mpm is maybe the case of the error...
+        # so try to enforce this mpm alteration
+        blind_mode=True
+        comments.append("WARNING: BLIND MODE: Current apache configuration is maybe broken")
+    if cur_mpm != mpm or blind_mode:
         # try to activate the mpm and deactivate the others
         # if mpm are shared modules
         _load_modules()
         mpm_mods = ['mpm_event','mpm_worker','mpm_prefork']
         mpm_mod = 'mpm_'+cur_mpm
-        if mpm_mod+'_module' in _shared_modules:
+        if blind_mode or (mpm_mod+'_module' in _shared_modules) :
             for mpm_item in mpm_mods:
                 if mpm_item == 'mpm_'+ mpm:
                     modules_included.append(mpm_item)
                 else:
                     modules_excluded.append(mpm_item)
             # we'll redo the check after modules activation/de-activation
-            ret['comment'] = "1st MPM check: Wrong apache mpm module activated: (requested) {0}!={1} (current). we'll try to alter shared modules to fix that".format(mpm,cur_mpm)
+            if blind_mode:
+                comments.append("1st MPM Check in blind mode, we'll try to enforce the mpm shared module, prey that it's a shared one.")
+            else:
+                comments.append("1st MPM check: Wrong apache mpm module activated: (requested) {0}!={1} (current). we'll try to alter shared modules to fix that".format(mpm,cur_mpm))
         else:
             #if module+'_module' in _static_modules:
             ret['result'] = False
-            ret['comment'] = 'ERROR: MPM CHECK: Wrong apache core mpm module activated: (requested) {0}!={1} (current). And mpm are not shared modules on this installation. We need another apache package!'.format(mpm,cur_mpm)
+            comments.append('ERROR: MPM CHECK: Wrong apache core mpm module activated: (requested) {0}!={1} (current). And mpm are not shared modules on this installation. We need another apache package!'.format(mpm,cur_mpm))
             # stop right here
+            ret['comment']=("\n"+" "*19).join(comments)
             return ret
     else:
         mpm_check_done = True
-        ret['comment'] += "\n"+ " "*19 +"MPM check: "+ cur_mpm + ", OK"
+        comments.append("MPM check: "+ cur_mpm + ", OK")
 
     # Modules management
-    result = _checking_modules( modules_excluded, modules_included )
+    result = _checking_modules( modules_excluded, modules_included, blind_mode )
     if result['comment'] is not '' :
-        ret['comment'] += "\n" + " "*19 + result['comment']
+        comments.append(result['comment'])
     if result['changes'] :
         ret['changes']['modules'] = result['changes']
     if not result['result'] :
         ret['result'] = False;
         # no need to go further
+        ret['comment']=("\n"+" "*19).join(comments)
         return ret
     modules = __salt__['apache.modules']()
-    ret['comment'] += "\n" + " "*19 + "Shared modules: "+ ",".join(modules['shared'])
+    comments.append("Shared modules: "+ ",".join(modules['shared']))
 
     # MPM check (2nd time, not in test mode, it would always fail in test mode)
     if not mpm_check_done and not __opts__['test']:
@@ -351,14 +366,16 @@ def deployed(name,
         cur_mpm = cur_mpm = infos.get('server_mpm','unknown')
         if cur_mpm != mpm:
             ret['result'] = False
-            ret['comment'] = 'ERROR: 2nd MPM check: Wrong apache core mpm module activated: (requested) {0}!={1} (current)'.format(mpm,cur_mpm)
+            comments.append('ERROR: 2nd MPM check: Wrong apache core mpm module activated: (requested) {0}!={1} (current)'.format(mpm,cur_mpm))
             # stop right here
+            ret['comment']=("\n"+" "*19).join(comments)
             return ret
         else:
-            ret['comment'] += "\n"+ " "*19 +"2nd MPM check: "+ cur_mpm + ", OK"
+            comments.append("2nd MPM check: "+ cur_mpm + ", OK")
 
     if ret['result'] is None:
         ret['result'] = True
-    ret['comment'] += "\n" + " "*19 + "Apache deployment: All verifications done."
+    comments.append("Apache deployment: All verifications done.")
+    ret['comment']=("\n"+" "*19).join(comments)
     return ret
 
