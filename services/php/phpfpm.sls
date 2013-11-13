@@ -24,7 +24,7 @@ makina-phpfpm-pkgs:
   pkg.installed:
     - pkgs:
       - {{ phpData.packages.main }}
-      - {{ phpData.packages.mod_php }}
+      - {{ phpData.packages.php_fpm }}
 {% if grains['makina.devhost'] %}
       - {{ phpData.packages.xdebug }}
 {% endif %}
@@ -35,3 +35,13 @@ makina-phpfpm-exclude-modphp-pkg:
       - {{ phpData.packages.mod_php }}
     - require_in:
       - pkg: makina-phpfpm-pkgs
+{% if __salt__.has_key('apache.version') %}
+    # mod_php packages alteration needs an apache restart
+    # Problem, this state is maybe not available
+    # nginx instead of apache?
+    # apache state not included as a dependency...
+    # so we use jinja to detect potential apache presence
+    - watch_in:
+       - service: makina-apache-restart
+       - mc_apache: makina-apache-main-conf
+{% endif %}

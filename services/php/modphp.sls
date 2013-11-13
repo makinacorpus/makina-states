@@ -40,6 +40,6 @@ makina-mod_php-pkgs:
 makina-mod_php-exclude-fpm-pkg:
   pkg.removed:
     - pkgs:
-      - {{ phpData.packages.fpm }}
+      - {{ phpData.packages.php_fpm }}
     - require_in:
       - pkg: makina-mod_php-pkgs
