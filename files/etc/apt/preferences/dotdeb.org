@@ -1,0 +1,8 @@
+Package: *
+Pin: origin packages.dotdeb.org
+Pin-Priority: 1
+
+Package: libapache2-mod-php5 libapache2-mod-php5filter php5 php5-cgi php5-cli php5-common php5-curl php5-dev php5-gd php5-imagick php5-mcrypt php5-mysql php5-suhosin php5-pgsql php5-memcached php5-fpm php5-common php5-xcache php5-xdebug php5-sqlite
+Pin: origin packages.dotdeb.org
+Pin-Priority: 999
+

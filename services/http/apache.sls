@@ -312,8 +312,6 @@ makina-apache-reload:
     - reload: True
     # most watch requisites are linked here with watch_in
 
-
-
 # Virtualhosts, here are the ones defined in pillar, if any ----------------
 #
 # We loop on VH defined in pillar apache/register-sites, check the

@@ -4,7 +4,7 @@
 include:
   # IMPORTANT: If you use Apache, include it BEFORE phpfpm, so that
   # we can detect apache is used and trigger the restart in case of mod_php removal
-  - makina-states.services.http.apache
+  - makina-states.services.php.phpfpm_with_apache
   #- makina-states.services.http.nginx
   - makina-states.services.php.phpfpm
 extend:

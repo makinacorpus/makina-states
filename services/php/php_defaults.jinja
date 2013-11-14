@@ -2,78 +2,24 @@
 # PHP Fine Settings ------------------------------------------------
 {% set phpStepOne = salt['grains.filter_by']({
     'dev': {
-        'mpm': 'worker',
-        'version': '2.2',
-        'Timeout': 120,
-        'KeepAlive': True,
-        'MaxKeepAliveRequests': 5,
-        'KeepAliveTimeout': 5,
-        'log_level': 'warn',
-        'serveradmin_mail': 'webmaster@localhost',
-        'prefork': {
-            'StartServers': 5,
-            'MinSpareServers': 5,
-            'MaxSpareServers': 5,
-            'MaxClients': 20,
-            'MaxRequestsPerChild': 300
-        },
-        'worker': {
-            'StartServers': 2,
-            'MinSpareThreads': 25,
-            'MaxSpareThreads': 75,
-            'ThreadLimit': 64,
-            'ThreadsPerChild': 25,
-            'MaxRequestsPerChild': 300,
-            'MaxClients': 200
-        },
-        'event': {
-            'AsyncRequestWorkerFactor' : "1.5"
-        }
+        'foo': 'bar',
     },
     'prod': {
-        'mpm': 'worker',
-        'version': '2.2',
-        'Timeout': 120,
-        'KeepAlive': True,
-        'MaxKeepAliveRequests': 100,
-        'KeepAliveTimeout': 3,
-        'log_level': 'warn',
-        'serveradmin_mail': 'webmaster@localhost',
-        'prefork': {
-            'StartServers': 25,
-            'MinSpareServers': 25,
-            'MaxSpareServers': 25,
-            'MaxClients': 150,
-            'MaxRequestsPerChild': 3000
-        },
-        'worker': {
-            'StartServers': 5,
-            'MinSpareThreads': 50,
-            'MaxSpareThreads': 100,
-            'ThreadLimit': 100,
-            'ThreadsPerChild': 50,
-            'MaxRequestsPerChild': 3000,
-            'MaxClients': 700
-        },
-        'event': {
-            'AsyncRequestWorkerFactor' : "4"
-        }
+        'foo': 'bar',
     }
   },
   grain='default_env',
   default= 'dev'
 ) %}
-# Ubuntu 13.10 is now providing 2.4 with event by default
-{% if grains['lsb_distrib_id']=="Ubuntu" and grains['lsb_distrib_release']>=13.10 %}
-{%   do phpStepOne.update({'mpm': 'event'}) %}
-{%   do phpStepOne.update({'version': '2.4'}) %}
-{% endif %}
 # Default OS-based paths settings added on phpData
+# TODO: php5-suhosin (dotdeb)
 {% set phpStepTwo = salt['grains.filter_by']({
     'Debian': {
         'packages': {
             'main': 'php5',
             'mod_php': 'libapache2-mod-php5',
+            'mod_php_filter': 'libapache2-mod-php5filter',
+            'php5_cgi': 'php5-cgi',
             'php_fpm': 'php5-fpm',
             'apc': 'php-apc',
             'cli': 'php-cli',

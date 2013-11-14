@@ -15,6 +15,12 @@
 # consult grains values with "salt '*' grains.items"
 #
 
+# Include dotdeb repository for Debian
+{% if grains['lsb_distrib_id']=="Debian" %}
+include:
+  - makina-states.services.php.repository_dotdeb
+{% endif %}
+
 # Load defaults values -----------------------------------------
 
 {% from 'makina-states/services/php/php_defaults.jinja' import phpData with context %}
@@ -29,19 +35,4 @@ makina-phpfpm-pkgs:
       - {{ phpData.packages.xdebug }}
 {% endif %}
 
-makina-phpfpm-exclude-modphp-pkg:
-  pkg.removed:
-    - pkgs:
-      - {{ phpData.packages.mod_php }}
-    - require_in:
-      - pkg: makina-phpfpm-pkgs
-{% if __salt__.has_key('apache.version') %}
-    # mod_php packages alteration needs an apache restart
-    # Problem, this state is maybe not available
-    # nginx instead of apache?
-    # apache state not included as a dependency...
-    # so we use jinja to detect potential apache presence
-    - watch_in:
-       - service: makina-apache-restart
-       - mc_apache: makina-apache-main-conf
-{% endif %}
+

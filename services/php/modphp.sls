@@ -17,6 +17,10 @@
 #
 include:
   - makina-states.services.http.apache
+{% if grains['lsb_distrib_id']=="Debian" %}
+   # Include dotdeb repository for Debian
+  - makina-states.services.php.repository_dotdeb
+{% endif %}
 
 # Load defaults values -----------------------------------------
 
@@ -29,7 +33,6 @@ makina-mod_php-pkgs:
       - {{ phpData.packages.mod_php }}
 {% if grains['makina.devhost'] %}
       - {{ phpData.packages.xdebug }}
-      - {{ phpData.packages.imagemagick }}
 {% endif %}
     - require:
         - pkg: makina-apache-pkgs
