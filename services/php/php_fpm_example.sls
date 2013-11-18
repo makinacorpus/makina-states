@@ -28,9 +28,8 @@ my-phpfpm-other-modules:
   pkg.installed:
     - pkgs:
       - {{ phpData.packages.pear }}
-      - {{ phpData.packages.apc }}
     - require_in:
-      - pkg: makina-phpfpm-pkgs
+      - pkg: makina-php-pkgs
 # Ensuring some other are not there
 # Note that you cannot remove a module listed in makina-mod_php-pkgs
 my-phpfpm-removed-modules:
@@ -38,7 +37,19 @@ my-phpfpm-removed-modules:
     - pkgs:
       - {{ phpData.packages.memcached }}
     - require_in:
-      - pkg: makina-phpfpm-pkgs
+      - pkg: makina-php-pkgs
+
+
+{% from 'makina-states/services/php/php_macros.jinja' import pool with context %}
+{{ pool(
+        phpData= phpData,
+        site= 'dev.example.com',
+        pool_name= 'devexample',
+        settings= {
+          'session_auto_start': 1
+        },
+        include_path_additions= ':/tmp/foo:/foo/bar'
+) }}
 
 # Custom Apache Virtualhost
 {% from 'makina-states/services/http/apache_defaults.jinja' import apacheData with context %}

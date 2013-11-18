@@ -6,6 +6,8 @@ include:
 
 {% from 'makina-states/services/php/php_defaults.jinja' import phpData with context %}
 
+# Ensure that using php-fpm with apache we remove mod_php from Apache
+
 makina-phpfpm-http-server-backlink:
   pkg.removed:
     - pkgs:
@@ -15,7 +17,7 @@ makina-phpfpm-http-server-backlink:
     # this must run BEFORE, else apt try to install one of mod_php/mod_phpfilter/php5_cgi
     # every time we remove one of them, except when fpm is already installed
     - require:
-      - pkg: makina-phpfpm-pkgs
+      - pkg: makina-php-pkgs
     # mod_php packages alteration needs an apache restart
     - watch_in:
        - service: makina-apache-restart

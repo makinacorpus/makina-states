@@ -1,0 +1,152 @@
+# PHP specific macros
+#
+# Import this macro file with context so that grains will be available in the macros
+#
+# * pool => create all states for a fpm php pool
+#
+#   - phpData: global apache configuration dictionnary, this cannot be given by context import, so please pass it to this macro
+#
+#   - site:  site name (ServerName)
+#
+#   - pool_name :  site nickname, used in states and log files and of course pool name, if not given it will be build from site name
+#
+#   - [ssl_]interface : interface of the namevirtualhost (like in '*:80'), default is '*'
+#
+#   - [ssl_]port : port of the namevirtualhost (like in '*:80'), default is '80' and '443' for ssl version
+#
+#   - active: True by default, set to False to disable the Virtualhost
+#
+#   - number: Virtualhost priority number (for apache), without a default VH the first one became the default virtualhost
+#
+#   - log_level: log level
+#
+#   - serveradmin_mail: data that may be used on error page, default is webmaster@<site-name>
+#
+#   - serverAlias: a string or a list of strings, theses are the alternate names of this site
+#
+#   - documentRoot: path to the document root, default is /srv/projects/<site>/www/
+#
+#   - redirect_aliases: True by default, make a special Virtualhost with all serverAlias, all redirecting
+#                       with a 301 to the site name, better for SEO. But you may need real serverAliases
+#                       for static parallel file servers, for example, then set that to True
+#
+#   - allow_htaccess: False by default, if your project use .htaccess files, then prey for your soul,
+#                     eat some shit, kill yourself and set that to True
+#
+#   - vh_template_source: source of the file.managed for the vhirtualhost template
+#
+#   - vh_in_template_source: source of the file.managed for the vhirtualhost included content
+#                            (the most important part when making alterations of vh content)
+#
+{% macro pool(
+              phpData,
+              site = 'example.com',
+              pool_name = None,
+              custom_listen = None,
+              project_root= None,
+              pool_template_source = None,
+              settings = None,
+              open_basedir_additions= None,
+              include_path_additions= None,
+              session_cookie_domain= None
+) -%}
+{% set pool_name = pool_name or site.replace('.', '_').replace('-', '_') %}
+{% set project_root = project_root or '/srv/projects/' + site  + '/www' %}
+{% set open_basedir_additions = open_basedir_additions or '' %}
+{% set include_path_additions = include_path_additions or '' %}
+{% if not pool_template_source %}
+{% set pool_template_source = 'salt://makina-states/files'+phpData.etcdir+'/fpm/pool.d/pool.conf' %}
+{% endif %}
+{% if not session_cookie_domain %}
+{% set session_cookie_domain = site %}
+{% endif %}
+{% if settings != None %}
+{# Merge settings with phpData, @seephp_defaults for settings tree #}
+{%   do phpData['settings'].update(salt['mc_utils.dictupdate'](phpData['settings'],settings)) %}
+{% endif %}
+
+# Pool file
+makina-php-pool-{{ pool_name }}:
+  file.managed:
+    - user: root
+    - group: root
+    - mode: 664
+    - name: {{ phpData.etcdir }}/fpm/pool.d/{{ pool_name }}.conf
+    - source: {{ pool_template_source }}
+    - template: 'jinja'
+    - defaults:
+        pool_name: "{{ pool_name }}"
+        project_root: "{{ project_root }}"
+        site: "{{ site }}"
+        chroot: {{ phpData.settings.fpm.chroot }}
+        use_socket: {{ phpData.settings.fpm.use_socket }}
+        custom_listen: "{{ custom_listen }}"
+        listen_backlog: {{ phpData.settings.fpm.listen_backlog }}
+        listen_allowed_clients: "{{ phpData.settings.fpm.listen_allowed_clients }}"
+        phpuser: "{{ phpData.settings.fpm.phpuser }}"
+        phpgroup: "{{ phpData.settings.fpm.phpgroup }}"
+        listen_mod: "{{ phpData.settings.fpm.listen_mod }}"
+        pm_max_children: {{ phpData.settings.fpm.pm.max_children }}
+        pm_start_servers: {{ phpData.settings.fpm.pm.start_servers }}
+        pm_min_spare_servers: {{ phpData.settings.fpm.pm.min_spare_servers }}
+        pm_max_spare_servers: {{ phpData.settings.fpm.pm.max_spare_servers }}
+        statuspath: "{{ phpData.settings.fpm.statuspath }}"
+        ping: "{{ phpData.settings.fpm.ping }}"
+        request_terminate_timeout: "{{ phpData.settings.fpm.request_terminate_timeout }}"
+        request_slowlog_timeout: "{{ phpData.settings.fpm.request_slowlog_timeout }}"
+        session_auto_start: {{ phpData.settings.session_auto_start|int(0) }}
+        session_gc_maxlifetime: {{ phpData.settings.session.gc_maxlifetime }}
+        session_gc_probability: {{ phpData.settings.session.gc_probability }}
+        session_gc_divisor: {{ phpData.settings.session.gc_divisor }}
+        session_cookie_domain: {{ session_cookie_domain }}
+        custom_sessions: {{ phpData.settings.custom_sessions.enabled }}
+        session_save_path: "{{ phpData.settings.custom_sessions.save_path }}"
+        session_save_handler: "{{ phpData.settings.custom_sessions.save_handler }}"
+        open_basedir: {{ phpData.settings.open_basedir|int(1) }}
+        open_basedir_additions: "{{ open_basedir_additions }}"
+        include_path_additions: "{{ include_path_additions }}"
+        file_uploads: {{ phpData.settings.file_uploads|int(1) }}
+        upload_max_filesize: "{{ phpData.settings.upload_max_filesize }}"
+        max_input_vars: {{ phpData.settings.max_input_vars }}
+        max_input_time: {{ phpData.settings.max_input_time }}
+        display_errors: {{ phpData.settings.display_errors|int(0) }}
+        error_reporting: {{ phpData.settings.error_reporting }}
+        memory_limit: "{{ phpData.settings.memory_limit }}"
+        max_execution_time: "{{ phpData.settings.max_execution_time }}"
+        allow_url_fopen: {{ phpData.settings.allow_url_fopen|int(0) }}
+        apc_install: {{ phpData.modules.apc.install }}
+        apc_enabled: {{ phpData.modules.apc.enabled|int(1) }}
+        apc_enable_cli: {{ phpData.modules.apc.enable_cli|int(1) }}
+        apc_rfc1867: {{ phpData.modules.apc.rfc1867|int(0) }}
+        apc_include_once_override: {{ phpData.modules.apc.include_once_override|int(1) }}
+        apc_canonicalize: {{ phpData.modules.apc.canonicalize|int(1) }}
+        apc_stat: {{ phpData.modules.apc.stat|int(1) }}
+        apc_stat_ctime: {{ phpData.modules.apc.stat_ctime|int(0) }}
+        apc_num_files_hint: "{{ phpData.modules.apc.num_files_hint }}"
+        apc_user_entries_hint: "{{ phpData.modules.apc.user_entries_hint }}"
+        apc_ttl: "{{ phpData.modules.apc.ttl }}"
+        apc_user_ttl: "{{ phpData.modules.apc.user_ttl }}"
+        apc_gc_ttl: "{{ phpData.modules.apc.gc_ttl }}"
+        apc_filters: "{{ phpData.modules.apc.filters }}"
+        apc_max_file_size: "{{ phpData.modules.apc.max_file_size }}"
+        apc_write_lock: {{ phpData.modules.apc.write_lock|int(1) }}
+        apc_file_update_protection: "{{ phpData.modules.apc.file_update_protection }}"
+        apc_lazy_functions: "{{ phpData.modules.apc.lazy_functions }}"
+        apc_lazy_classes: "{{ phpData.modules.apc.lazy_classes }}"
+        xdebug_install: {{ phpData.modules.xdebug.install|int(0) }}
+        xdebug_enabled: {{ phpData.modules.xdebug.enabled|int(0) }}
+        xdebug_collect_params: {{ phpData.modules.xdebug.collect_params|int(0) }}
+        xdebug_profiler_enable: {{ phpData.modules.xdebug.profiler_enable|int(0) }}
+        xdebug_profiler_enable_trigger: {{ phpData.modules.xdebug.profiler_enable_trigger|int(0) }}
+        xdebug_profiler_output_name: "{{ phpData.modules.xdebug.profiler_output_name }}"
+        mode: "production"
+{% if grains['makina.devhost'] %}
+    - context:
+        mode: "dev"
+{% endif %}
+    - require:
+      - pkg: makina-php-pkgs
+    - watch_in:
+      - service: makina-php-reload
+
+{%- endmacro %}

@@ -17,22 +17,27 @@
 #
 include:
   - makina-states.services.http.apache
+  - makina-states.services.php.common
 {% if grains['lsb_distrib_id']=="Debian" %}
    # Include dotdeb repository for Debian
   - makina-states.services.php.repository_dotdeb
 {% endif %}
 
 # Load defaults values -----------------------------------------
-
 {% from 'makina-states/services/php/php_defaults.jinja' import phpData with context %}
 
-makina-mod_php-pkgs:
+# Manage mod_php packages
+
+makina-php-pkgs:
   pkg.installed:
     - pkgs:
       - {{ phpData.packages.main }}
       - {{ phpData.packages.mod_php }}
-{% if grains['makina.devhost'] %}
+{% if phpData.modules.xdebug.install %}
       - {{ phpData.packages.xdebug }}
+{% endif %}
+{% if phpData.modules.apc.install %}
+      - {{ phpData.packages.apc }}
 {% endif %}
     - require:
         - pkg: makina-apache-pkgs
@@ -40,9 +45,33 @@ makina-mod_php-pkgs:
     - watch_in:
        - service: makina-apache-restart
 
+# Manage php-fpm packages
+
 makina-mod_php-exclude-fpm-pkg:
   pkg.removed:
     - pkgs:
       - {{ phpData.packages.php_fpm }}
     - require_in:
-      - pkg: makina-mod_php-pkgs
+      - pkg: makina-php-pkgs
+
+#--- MAIN SERVICE RESTART/RELOAD watchers --------------
+# Note that mod_php does not have his own service
+# (as opposed to php-fpm), and should in fact
+# make an apache reload. So we'll fake a change
+# here and tell apache to reload
+makina-php-restart:
+  cmd.run:
+    - name: echo "" && echo 'changed=yes comment="fake php restart for apache restart"'
+    - require:
+      - pkg: makina-php-pkgs
+    - watch_in:
+      - service: makina-apache-restart
+
+# In most cases graceful reloads should be enough
+makina-php-reload:
+  cmd.run:
+    - name: echo "" && echo 'changed=yes comment="fake php reload for apache restart"'
+    - require:
+      - pkg: makina-php-pkgs
+    - watch_in:
+      - service: makina-apache-restart

@@ -31,20 +31,22 @@
 #           stated at each access (needed at True in dev)
 #  * stat_ctime: avoid problems with rsync or svn not modifying mtime but only ctime
 #                so if you're in production set this to False,
-#                like for the previous one
+#                like for the previous one
 #  * num_files_hint: indication on number of files (ZF=1300, nude Drupal 7=1000)
 #  * user_entries_hint: indication on the number of cache variables
 #
 # APC: cache lifetime managmenent ----------------
-# time (s) we can stay on the cache even when the cache is full -- Cache full count --
-# that means Garbage Collector is never inactivating theses datas before this time is over
-# >0 -> old data could stay in the cache while new data want's to come, if no data is deprecated
-# 7200 -> entries older than 2 hours will be thrown to make some place
-# 0 -> emptying full cache when full
-#  * ttl]                       ="${apc_ttl}"
-#  * user_ttl]                  ="${apc_ttl}"
-# this one is the same but you should note this this prevent Garbage collecting after each source change.
-#  * gc_ttl]                    ="${apc_ttl}"
+#  * ttl: time (s) we can stay on the cache even when the cache is full
+#         -- Cache full count -- that means Garbage Collector is never
+#         inactivating theses datas before this time is over
+#         >0 -> old data could stay in the cache while new data wants
+#               to come, if no data is deprecated
+#         7200 -> entries older than 2 hours will be thrown to make
+#                  some place
+#         0 -> emptying full cache when full
+#  * user_ttl: same as above, for user cache
+#  * gc_ttl: this one is the same but you should note this prevents
+#            Garbage collecting after each source change.
 #
 # APC: What to cache ? ----------------------------
 #  * filters: could be used to prevent some caching on specific files
@@ -64,9 +66,61 @@
 #                     and only used things are cached
 #                     NEED TO BE TESTED: DANGEROUS!!
 #  * lazy_classes :  same as above
-
+#
+#
+# XDEBUG -------------------------------------------
+# php_admin_value[xdebug.default_enable]          =   xdebug_default_enable ;
+# ; http://xdebug.org/docs/all_settings#collect_params (0|1|2|3|4)
+# php_admin_value[xdebug.collect_params]          = xdebug_collect_params  0;
+# php_admin_value[xdebug.profiler_enable]         = xdebug_profiler_enable ;
+# php_admin_value[xdebug.profiler_enable_trigger] = xdebug_profiler_enable_trigger  0;
+# php_admin_value[xdebug.profiler_output_name]    =  xdebug_profiler_output_name  /cachegrind.out.%p;
 {% set phpStepOne = salt['grains.filter_by']({
     'dev': {
+        'timezone': 'Europe/Paris',
+        'settings': {
+            'open_basedir' : True,
+            'open_basedir_additions' : '',
+            'file_uploads' : True,
+            'upload_max_filesize' : '5M',
+            'max_input_vars' : 500,
+            'max_input_time' : 120,
+            'display_errors' : False,
+            'error_reporting' : 65535,
+            'memory_limit' : '16M',
+            'max_execution_time': 120,
+            'allow_url_fopen': 0,
+            'session': {
+                'gc_maxlifetime' : 3600,
+                'gc_probability' : 1,
+                'gc_divisor' : 100,
+                'auto_start' : 0,
+            },
+            'custom_sessions': {
+                'enabled': False,
+                'save_handler' : 'redis',
+                'save_path' : 'tcp://127.0.0.1:6379?weight=2&timeout=2.5, tcp://10.0.0.1:6379?weight=2',
+            },
+            'fpm': {
+                'chroot': False,
+                'use_socket' : True,
+                'listen_backlog': -1,
+                'listen_allowed_clients' : '127.0.0.1',
+                'phpuser': 'www-data',
+                'phpgroup': 'www-data',
+                'listen_mod': '0660',
+                'statuspath': '/fpmstatus',
+                'ping': 'pong',
+                'request_terminate_timeout': '120',
+                'request_slowlog_timeout': '5s',
+                'pm': {
+                    'max_children':100,
+                    'start_servers':5,
+                    'min_spare_servers':5,
+                    'max_spare_servers':5
+                 }
+            }
+        },
         'modules': {
             'apc': {
                 'install' : True,
@@ -74,24 +128,31 @@
                 'enable_cli': True,
                 'shm_segments' : 1,
                 'shm_size' : '32M',
-                'mmap_file_mask': '/apc.shm.XXXXXX'
+                'mmap_file_mask': '/apc.shm.XXXXXX',
                 'rfc1867': True,
                 'include_once_override': True,
                 'canonicalize': True,
                 'stat': True,
                 'stat_ctime': True,
-                'num_files_hint': ,
-                'user_entries_hint': ,
-                'ttl': ,
-                'user_ttl': ,
-                'gc_ttl': ,
+                'num_files_hint': 1000,
+                'user_entries_hint': 1000,
+                'ttl': 300,
+                'user_ttl': 300,
+                'gc_ttl': 0,
                 'filters': '-config.php-.ini',
                 'max_file_size': '5M' ,
                 'write_lock': True,
                 'file_update_protection': '2',
-                '': ,
-                '': ,
-                '': ,
+                'lazy_functions': '',
+                'lazy_classes': ''
+            },
+            'xdebug': {
+                'install' : True,
+                'enabled' : True,
+                'collect_params': False,
+                'profiler_enable': False,
+                'profiler_enable_trigger': False,
+                'profiler_output_name': '/cachegrind.out.%%p'
             }
          }
     },
@@ -135,7 +196,7 @@
         },
         'service': 'php5-fpm',
         'etcdir': '/etc/php5',
-        'confdir': '/etc/php5/conf.d',
+        'confdir': '/etc/php5/mods-available',
         'logdir': '/var/log/php'
     }
   },
@@ -143,4 +204,4 @@
   merge=phpStepOne
 ) %}
 # FINAL STEP: merge with data from pillar
-{% set phpData=salt['mc_utils.dictupdate'](phpStepTwo , salt['pillar.get']('php-settings',{})) %}
+{% set phpData=salt['mc_utils.dictupdate'](phpStepTwo , salt['pillar.get']('php-default-settings',{})) %}

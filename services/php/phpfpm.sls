@@ -15,24 +15,57 @@
 # consult grains values with "salt '*' grains.items"
 #
 
-# Include dotdeb repository for Debian
-{% if grains['lsb_distrib_id']=="Debian" %}
 include:
+  - makina-states.services.php.common
+{% if grains['lsb_distrib_id']=="Debian" %}
+   # Include dotdeb repository for Debian
   - makina-states.services.php.repository_dotdeb
 {% endif %}
 
 # Load defaults values -----------------------------------------
-
 {% from 'makina-states/services/php/php_defaults.jinja' import phpData with context %}
 
+# Manage php-fpm packages
 
-makina-phpfpm-pkgs:
+makina-php-pkgs:
   pkg.installed:
     - pkgs:
       - {{ phpData.packages.main }}
       - {{ phpData.packages.php_fpm }}
-{% if grains['makina.devhost'] %}
+{% if phpData.modules.xdebug.install %}
       - {{ phpData.packages.xdebug }}
 {% endif %}
+{% if phpData.modules.apc.install %}
+      - {{ phpData.packages.apc }}
+{% endif %}
 
+# --------- Pillar based php-fpm pools
+{% from 'makina-states/services/php/php_macros.jinja' import pool with context %}
+{% if 'register-pools' in phpData %}
+{%   for site,siteDef in phpData['register-pools'].iteritems() %}
+{%     do siteDef.update({'site': site}) %}
+{%     do siteDef.update({'aphpData': phpData}) %}
+{{     pool(**siteDef) }}
+{%   endfor %}
+{% endif %}
 
+#--- MAIN SERVICE RESTART/RELOAD watchers --------------
+
+makina-php-restart:
+  service.running:
+    - name: {{ phpData.service }}
+    - enable: True
+    # most watch requisites are linked here with watch_in
+    - watch:
+      # restart service in case of package install
+      - pkg: makina-php-pkgs
+
+# In most cases graceful reloads should be enough
+makina-php-reload:
+  service.running:
+    - name: {{ phpData.service }}
+    - require:
+      - pkg: makina-php-pkgs
+    - enable: True
+    - reload: True
+    # most watch requisites are linked here with watch_in
