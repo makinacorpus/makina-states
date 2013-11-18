@@ -125,4 +125,4 @@
   merge=apacheStepOne
 ) %}
 # FINAL STEP: merge with data from pillar
-{% set apacheData=salt['mc_utils.dictupdate'](apacheStepTwo , salt['pillar.get']('apache-settings',{})) %}
+{% set apacheData=salt['mc_utils.dictupdate'](apacheStepTwo , salt['pillar.get']('apache-default-settings',{})) %}

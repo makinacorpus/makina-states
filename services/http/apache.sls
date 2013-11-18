@@ -300,14 +300,14 @@ makina-apache-restart:
     # most watch requisites are linked here with watch_in
     - watch:
       # restart service in case of package install
-      - pkg.installed: makina-apache-pkgs
+      - pkg: makina-apache-pkgs
 
 # In case of VirtualHosts change graceful reloads should be enough
 makina-apache-reload:
   service.running:
     - name: {{ apacheData.service }}
     - require:
-      - pkg.installed: makina-apache-pkgs
+      - pkg: makina-apache-pkgs
     - enable: True
     - reload: True
     # most watch requisites are linked here with watch_in

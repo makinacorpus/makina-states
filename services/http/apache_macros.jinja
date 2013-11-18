@@ -96,7 +96,7 @@ makina-apache-virtualhost-{{ small_name }}:
         mode: "dev"
 {% endif %}
     - require:
-      - pkg.installed: makina-apache-pkgs
+      - pkg: makina-apache-pkgs
     - watch_in:
       - cmd: makina-apache-virtualhost-{{ small_name }}-status
       - cmd: makina-apache-conf-syntax-check
