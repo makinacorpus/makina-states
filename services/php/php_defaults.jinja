@@ -78,48 +78,49 @@
 {% set phpStepOne = salt['grains.filter_by']({
     'dev': {
         'timezone': 'Europe/Paris',
-        'settings': {
-            'open_basedir' : True,
-            'open_basedir_additions' : '',
-            'file_uploads' : True,
-            'upload_max_filesize' : '5M',
-            'max_input_vars' : 500,
-            'max_input_time' : 120,
-            'display_errors' : False,
-            'error_reporting' : 65535,
-            'memory_limit' : '16M',
-            'max_execution_time': 120,
-            'allow_url_fopen': 0,
-            'session': {
-                'gc_maxlifetime' : 3600,
-                'gc_probability' : 1,
-                'gc_divisor' : 100,
-                'auto_start' : 0,
-            },
-            'custom_sessions': {
-                'enabled': False,
-                'save_handler' : 'redis',
-                'save_path' : 'tcp://127.0.0.1:6379?weight=2&timeout=2.5, tcp://10.0.0.1:6379?weight=2',
-            },
-            'fpm': {
-                'chroot': False,
-                'use_socket' : True,
-                'listen_backlog': -1,
-                'listen_allowed_clients' : '127.0.0.1',
-                'phpuser': 'www-data',
-                'phpgroup': 'www-data',
-                'listen_mod': '0660',
-                'statuspath': '/fpmstatus',
-                'ping': 'pong',
-                'request_terminate_timeout': '120',
-                'request_slowlog_timeout': '5s',
-                'pm': {
-                    'max_children':100,
-                    'start_servers':5,
-                    'min_spare_servers':5,
-                    'max_spare_servers':5
-                 }
-            }
+        'open_basedir' : True,
+        'open_basedir_additions' : '',
+        'file_uploads' : True,
+        'upload_max_filesize' : '5M',
+        'max_input_vars' : 500,
+        'max_input_time' : 300,
+        'display_errors' : False,
+        'error_reporting' : 6143,
+        'memory_limit' : '16M',
+        'max_execution_time': 120,
+        'allow_url_fopen': 0,
+        'session': {
+            'gc_maxlifetime' : 3600,
+            'gc_probability' : 1,
+            'gc_divisor' : 100,
+            'auto_start' : 0,
+        },
+        'custom_sessions': {
+            'enabled': False,
+            'save_handler' : 'redis',
+            'save_path' : 'tcp://127.0.0.1:6379?weight=2&timeout=2.5, tcp://10.0.0.1:6379?weight=2',
+        },
+        'fpm': {
+            'chroot': False,
+            'use_socket' : True,
+            'socket_relative_path': 'var/fcgi/fpm.sock',
+            'listen_backlog': 128,
+            'listen_allowed_clients' : '127.0.0.1',
+            'phpuser': 'www-data',
+            'phpgroup': 'www-data',
+            'listen_mod': '0660',
+            'statuspath': '/fpmstatus',
+            'ping': '/ping',
+            'pong': 'pong',
+            'request_terminate_timeout': '300s',
+            'request_slowlog_timeout': '5s',
+            'pm': {
+                'max_requests': 500,
+                'max_children': 10,
+                'start_servers': 3,
+                'min_spare_servers': 3,
+                'max_spare_servers': 8
+             }
         },
         'modules': {
             'apc': {
@@ -152,7 +153,7 @@
                 'collect_params': False,
                 'profiler_enable': False,
                 'profiler_enable_trigger': False,
-                'profiler_output_name': '/cachegrind.out.%%p'
+                'profiler_output_name': '/cachegrind.out.%p'
             }
          }
     },
@@ -197,7 +198,8 @@
         'service': 'php5-fpm',
         'etcdir': '/etc/php5',
         'confdir': '/etc/php5/mods-available',
-        'logdir': '/var/log/php'
+        'logdir': '/var/log/php',
+        'fpm_sockets_dir': '/var/lib/apache2/fastcgi'
     }
   },
   grain='os_family',

@@ -319,7 +319,7 @@ makina-apache-reload:
 # register-sites key is set as the site name, and all keys are then
 # added
 # pillar example:
-#apache-settings:
+#apache-default-settings:
 #  register-sites:
 #     example.com:
 #        active: False

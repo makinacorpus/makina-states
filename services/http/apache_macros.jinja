@@ -54,7 +54,8 @@
                      redirect_aliases = True,
                      allow_htaccess = False,
                      vh_template_source = 'salt://makina-states/files/etc/apache2/sites-available/virtualhost_template.conf',
-                     vh_in_template_source = 'salt://makina-states/files/etc/apache2/includes/in_virtualhost_template.conf'
+                     vh_in_template_source = 'salt://makina-states/files/etc/apache2/includes/in_virtualhost_template.conf',
+                     extra_jinja_apache_variables = None
 ) -%}
 {% set small_name = small_name or site.replace('.', '_').replace('-', '_') %}
 {% set admin_mail = serveradmin_mail or 'webmaster@'+site %}
@@ -90,6 +91,12 @@ makina-apache-virtualhost-{{ small_name }}:
         redirect_aliases: {{ redirect_aliases }}
         interface: "{{ interface }}"
         port: "{{ port }}"
+{% if extra_jinja_apache_variables %}
+{% for variablename,variablevalue in extra_jinja_apache_variables.iteritems() %}
+        {{ variablename }}: "{{ variablevalue }}"
+{% endfor %}
+{% endif %}
+
         mode: "production"
 {% if grains['makina.devhost'] %}
     - context:
@@ -115,6 +122,11 @@ makina-apache-virtualhost-{{ small_name }}-content:
         mode: "production"
         DocumentRoot: {{ doc_root }}
         allow_htaccess: {{ allow_htaccess }}
+{% if extra_jinja_apache_variables %}
+{% for variablename,variablevalue in extra_jinja_apache_variables.iteritems() %}
+        {{ variablename }}: "{{ variablevalue }}"
+{% endfor %}
+{% endif %}
 {% if grains['makina.devhost'] %}
     - context:
         mode: "dev"

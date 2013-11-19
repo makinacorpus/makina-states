@@ -39,6 +39,11 @@ makina-php-pkgs:
       - {{ phpData.packages.apc }}
 {% endif %}
 
+# remove default pool
+makina-php-remove-default-pool:
+  file.absent:
+    - name : {{ phpData.etcdir }}/fpm/pool.d/www.conf
+
 # --------- Pillar based php-fpm pools
 {% from 'makina-states/services/php/php_macros.jinja' import pool with context %}
 {% if 'register-pools' in phpData %}

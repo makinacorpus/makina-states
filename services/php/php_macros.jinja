@@ -10,48 +10,24 @@
 #
 #   - pool_name :  site nickname, used in states and log files and of course pool name, if not given it will be build from site name
 #
-#   - [ssl_]interface : interface of the namevirtualhost (like in '*:80'), default is '*'
-#
-#   - [ssl_]port : port of the namevirtualhost (like in '*:80'), default is '80' and '443' for ssl version
-#
-#   - active: True by default, set to False to disable the Virtualhost
-#
-#   - number: Virtualhost priority number (for apache), without a default VH the first one became the default virtualhost
-#
-#   - log_level: log level
-#
-#   - serveradmin_mail: data that may be used on error page, default is webmaster@<site-name>
-#
-#   - serverAlias: a string or a list of strings, theses are the alternate names of this site
-#
-#   - documentRoot: path to the document root, default is /srv/projects/<site>/www/
-#
-#   - redirect_aliases: True by default, make a special Virtualhost with all serverAlias, all redirecting
-#                       with a 301 to the site name, better for SEO. But you may need real serverAliases
-#                       for static parallel file servers, for example, then set that to True
-#
-#   - allow_htaccess: False by default, if your project use .htaccess files, then prey for your soul,
-#                     eat some shit, kill yourself and set that to True
-#
-#   - vh_template_source: source of the file.managed for the vhirtualhost template
-#
-#   - vh_in_template_source: source of the file.managed for the vhirtualhost included content
-#                            (the most important part when making alterations of vh content)
-#
+#   TODO: document options
 {% macro pool(
               phpData,
               site = 'example.com',
               pool_name = None,
               custom_listen = None,
+              use_shared_socket_path = False,
               project_root= None,
+              relative_document_root= 'www',
               pool_template_source = None,
+              nice_priority = -19,
               settings = None,
               open_basedir_additions= None,
               include_path_additions= None,
               session_cookie_domain= None
 ) -%}
 {% set pool_name = pool_name or site.replace('.', '_').replace('-', '_') %}
-{% set project_root = project_root or '/srv/projects/' + site  + '/www' %}
+{% set project_root = project_root or '/srv/projects/' + site %}
 {% set open_basedir_additions = open_basedir_additions or '' %}
 {% set include_path_additions = include_path_additions or '' %}
 {% if not pool_template_source %}
@@ -62,7 +38,7 @@
 {% endif %}
 {% if settings != None %}
 {# Merge settings with phpData, @seephp_defaults for settings tree #}
-{%   do phpData['settings'].update(salt['mc_utils.dictupdate'](phpData['settings'],settings)) %}
+{%   set phpData = salt['mc_utils.dictupdate'](phpData,settings) %}
 {% endif %}
 
 # Pool file
@@ -77,43 +53,50 @@ makina-php-pool-{{ pool_name }}:
     - defaults:
         pool_name: "{{ pool_name }}"
         project_root: "{{ project_root }}"
+        relative_document_root: "{{ relative_document_root }}"
         site: "{{ site }}"
-        chroot: {{ phpData.settings.fpm.chroot }}
-        use_socket: {{ phpData.settings.fpm.use_socket }}
+        chroot: {{ phpData.fpm.chroot }}
+        use_socket: {{ phpData.fpm.use_socket }}
+        socket_relative_path: "{{ phpData.fpm.socket_relative_path }}"
+        use_shared_socket_path: {{ use_shared_socket_path|int(0) }}
+        fpm_sockets_dir: "{{ phpData.fpm_sockets_dir }}"
         custom_listen: "{{ custom_listen }}"
-        listen_backlog: {{ phpData.settings.fpm.listen_backlog }}
-        listen_allowed_clients: "{{ phpData.settings.fpm.listen_allowed_clients }}"
-        phpuser: "{{ phpData.settings.fpm.phpuser }}"
-        phpgroup: "{{ phpData.settings.fpm.phpgroup }}"
-        listen_mod: "{{ phpData.settings.fpm.listen_mod }}"
-        pm_max_children: {{ phpData.settings.fpm.pm.max_children }}
-        pm_start_servers: {{ phpData.settings.fpm.pm.start_servers }}
-        pm_min_spare_servers: {{ phpData.settings.fpm.pm.min_spare_servers }}
-        pm_max_spare_servers: {{ phpData.settings.fpm.pm.max_spare_servers }}
-        statuspath: "{{ phpData.settings.fpm.statuspath }}"
-        ping: "{{ phpData.settings.fpm.ping }}"
-        request_terminate_timeout: "{{ phpData.settings.fpm.request_terminate_timeout }}"
-        request_slowlog_timeout: "{{ phpData.settings.fpm.request_slowlog_timeout }}"
-        session_auto_start: {{ phpData.settings.session_auto_start|int(0) }}
-        session_gc_maxlifetime: {{ phpData.settings.session.gc_maxlifetime }}
-        session_gc_probability: {{ phpData.settings.session.gc_probability }}
-        session_gc_divisor: {{ phpData.settings.session.gc_divisor }}
+        listen_backlog: {{ phpData.fpm.listen_backlog }}
+        listen_allowed_clients: "{{ phpData.fpm.listen_allowed_clients }}"
+        phpuser: "{{ phpData.fpm.phpuser }}"
+        phpgroup: "{{ phpData.fpm.phpgroup }}"
+        listen_mod: "{{ phpData.fpm.listen_mod }}"
+        pool_nice_priority: {{ nice_priority }}
+        pm_max_requests: {{ phpData.fpm.pm.max_requests }}
+        pm_max_children: {{ phpData.fpm.pm.max_children }}
+        pm_start_servers: {{ phpData.fpm.pm.start_servers }}
+        pm_min_spare_servers: {{ phpData.fpm.pm.min_spare_servers }}
+        pm_max_spare_servers: {{ phpData.fpm.pm.max_spare_servers }}
+        statuspath: "{{ phpData.fpm.statuspath }}"
+        ping: "{{ phpData.fpm.ping }}"
+        pong: "{{ phpData.fpm.pong }}"
+        request_terminate_timeout: "{{ phpData.fpm.request_terminate_timeout }}"
+        request_slowlog_timeout: "{{ phpData.fpm.request_slowlog_timeout }}"
+        session_auto_start: {{ phpData.session_auto_start|int(0) }}
+        session_gc_maxlifetime: {{ phpData.session.gc_maxlifetime }}
+        session_gc_probability: {{ phpData.session.gc_probability }}
+        session_gc_divisor: {{ phpData.session.gc_divisor }}
         session_cookie_domain: {{ session_cookie_domain }}
-        custom_sessions: {{ phpData.settings.custom_sessions.enabled }}
-        session_save_path: "{{ phpData.settings.custom_sessions.save_path }}"
-        session_save_handler: "{{ phpData.settings.custom_sessions.save_handler }}"
-        open_basedir: {{ phpData.settings.open_basedir|int(1) }}
+        custom_sessions: {{ phpData.custom_sessions.enabled }}
+        session_save_path: "{{ phpData.custom_sessions.save_path }}"
+        session_save_handler: "{{ phpData.custom_sessions.save_handler }}"
+        open_basedir: {{ phpData.open_basedir|int(1) }}
         open_basedir_additions: "{{ open_basedir_additions }}"
         include_path_additions: "{{ include_path_additions }}"
-        file_uploads: {{ phpData.settings.file_uploads|int(1) }}
-        upload_max_filesize: "{{ phpData.settings.upload_max_filesize }}"
-        max_input_vars: {{ phpData.settings.max_input_vars }}
-        max_input_time: {{ phpData.settings.max_input_time }}
-        display_errors: {{ phpData.settings.display_errors|int(0) }}
-        error_reporting: {{ phpData.settings.error_reporting }}
-        memory_limit: "{{ phpData.settings.memory_limit }}"
-        max_execution_time: "{{ phpData.settings.max_execution_time }}"
-        allow_url_fopen: {{ phpData.settings.allow_url_fopen|int(0) }}
+        file_uploads: {{ phpData.file_uploads|int(1) }}
+        upload_max_filesize: "{{ phpData.upload_max_filesize }}"
+        max_input_vars: {{ phpData.max_input_vars }}
+        max_input_time: {{ phpData.max_input_time }}
+        display_errors: {{ phpData.display_errors|int(0) }}
+        error_reporting: {{ phpData.error_reporting }}
+        memory_limit: "{{ phpData.memory_limit }}"
+        max_execution_time: "{{ phpData.max_execution_time }}"
+        allow_url_fopen: {{ phpData.allow_url_fopen|int(0) }}
         apc_install: {{ phpData.modules.apc.install }}
         apc_enabled: {{ phpData.modules.apc.enabled|int(1) }}
         apc_enable_cli: {{ phpData.modules.apc.enable_cli|int(1) }}
@@ -148,5 +131,48 @@ makina-php-pool-{{ pool_name }}:
       - pkg: makina-php-pkgs
     - watch_in:
       - service: makina-php-reload
+
+# Ensure directories referenced in the polol exists
+# and have the right users
+makina-php-pool-{{ pool_name }}-webroot-directory:
+  file.directory:
+    - user: {{ phpData.fpm.phpuser }}
+    - group: {{ salt['pillar.get']('salt.filesystem.group','editor') }}
+    - mode: "2775"
+    - makedirs: True
+    - name: {{ project_root }}/{{ relative_document_root }}
+    - require:
+       - pkg: makina-php-pkgs
+    - require_in:
+        - service: makina-php-restart
+        - service: makina-php-reload
+
+makina-php-pool-{{ pool_name }}-log-directory:
+  file.directory:
+    - user: {{ phpData.fpm.phpuser }}
+    - group: {{ salt['pillar.get']('salt.filesystem.group','editor') }}
+    - mode: "2775"
+    - makedirs: True
+    - name: {{ project_root }}/var/log
+    - require:
+       - pkg: makina-php-pkgs
+    - require_in:
+        - service: makina-php-restart
+        - service: makina-php-reload
+
+{% if phpData.fpm.use_socket %}
+makina-php-pool-{{ pool_name }}-socket-directory:
+  file.directory:
+    - user: {{ phpData.fpm.phpuser }}
+    - group: {{ salt['pillar.get']('salt.filesystem.group','editor') }}
+    - mode: "2775"
+    - makedirs: True
+    - name: {{ project_root }}/{{ phpData.fpm.socket_relative_path }}
+    - require:
+       - pkg: makina-php-pkgs
+    - require_in:
+        - service: makina-php-restart
+        - service: makina-php-reload
+{% endif %}
 
 {%- endmacro %}
