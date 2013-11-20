@@ -40,6 +40,53 @@ except:
 fmode = "0%s" % int("{{fmode}}")
 dmode = "0%s" % int("{{dmode}}")
 
+
+def lazy_chmod_path(path, mode):
+    try:
+        st = os.stat(path)
+        if eval(fmode) != stat.S_IMODE(st.st_mode):
+            try:
+                eval('os.chmod(path, %s)' % fmode)
+            except:
+                print traceback.format_exc()
+                print 'reset failed for %s' % path
+    except:
+        print traceback.format_exc()
+        print 'reset failed for %s' % path
+
+
+def lazy_chown_path(path, uid, gid):
+    try:
+        st = os.stat(path)
+        if st.st_uid != uid or st.st_gid != gid:
+            try:
+                os.chown(path, uid, gid)
+            except:
+                print traceback.format_exc()
+                print 'reset failed for %s' % path
+    except:
+        print traceback.format_exc()
+        print 'reset failed for %s' % path
+
+def lazy_chmod_chown(path, mode, uid, gid):
+    lazy_chmod_path(path, dmode)
+    lazy_chown_path(path, uid, gid)
+
+
+def to_skip(i):
+    stop = False
+    if os.path.islink(i):
+        # inner dir and files will be excluded too
+        pexcludes.append(curdir)
+        stop=True
+    else:
+        for p in pexcludes:
+            if p in i:
+                stop = True
+                break
+    return stop
+
+
 def reset(p):
     print "Path: %s" % p
     print "Directories: %s" % dmode
@@ -49,57 +96,19 @@ def reset(p):
         print "\n\nWARNING: %s does not exist\n\n" % p
         return
     for root, dirs, files in os.walk(p):
-        i = root
-        stop = False
-        for p in pexcludes:
-            if p in i:
-                stop = True
-                break
-        if stop:
+        curdir = root
+        if to_skip(curdir):
             continue
         try:
-            st = os.stat(i)
-            if eval(dmode) != stat.S_IMODE(st.st_mode):
-                try:
-                    eval('os.chmod(i, %s)' % dmode)
-                except:
-                    print traceback.format_exc()
-                    print 'reset failed for %s' % i
-            if st.st_uid != uid or st.st_gid != gid:
-                try:
-                    os.chown(i, uid, gid)
-                except:
-                    print traceback.format_exc()
-                    print 'reset failed for %s' % i
+            st = os.stat(curdir)
+            lazy_chmod_chown(curdir, dmode, uid, gid)
             for item in files:
                 i = os.path.join(root, item)
-                stop = False
-                for p in pexcludes:
-                    if p in i:
-                        stop = True
-                        break
-                if stop:
-                    continue
-                try:
-                    st = os.stat(i)
-                    if eval(fmode) != stat.S_IMODE(st.st_mode):
-                        try:
-                            eval('os.chmod(i, %s)' % fmode)
-                        except:
-                            print traceback.format_exc()
-                            print 'reset failed for %s' % i
-                    if st.st_uid != uid or st.st_gid != gid:
-                        try:
-                            os.chown(i, uid, gid)
-                        except:
-                            print traceback.format_exc()
-                            print 'reset failed for %s' % i
-                except:
-                    print traceback.format_exc()
-                    print 'reset failed for %s' % i
+                if to_skip(i): continue
+                lazy_chmod_chown(i, fmode, uid, gid)
         except:
             print traceback.format_exc()
-            print 'reset failed for %s' % i
+            print 'reset failed for %s' % curdir
 
 {% for pt in reset_paths %}
 reset('{{pt}}')
