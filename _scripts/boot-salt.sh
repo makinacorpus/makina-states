@@ -724,4 +724,5 @@ if [[ -n "$PROJECT_URL" ]];then
         fi
     fi
 fi
+exit 0
 ## vim:set et sts=5 ts=4 tw=0:
