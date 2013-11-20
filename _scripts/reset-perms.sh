@@ -77,7 +77,7 @@ def to_skip(i):
     stop = False
     if os.path.islink(i):
         # inner dir and files will be excluded too
-        pexcludes.append(curdir)
+        pexcludes.append(i)
         stop=True
     else:
         for p in pexcludes:
