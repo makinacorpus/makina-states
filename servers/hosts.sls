@@ -58,26 +58,45 @@
 # This state will use an accumulator to build the dynamic block content in /etc/hosts
 # you can reuse this accumulator on other states
 # (@see makina-etc-host-vm-management)
-hosts-accumulator-from-pillar:
+prepend-hosts-accumulator-from-pillar:
   file.accumulated:
     - require_in:
-      - file: makina-etc-hosts-management
+      - file: makina-prepend-etc-hosts-management
     - filename: /etc/hosts
-    - name: hosts-accumulator-makina-hosts-entries
     - text: |
             {{ hosts_list|sort|join(separator) }}
+
+append-hosts-accumulator-from-pillar:
+  file.accumulated:
+    - require_in:
+      - file: makina-append-etc-hosts-management
+    - filename: /etc/hosts
+    - text: |
+            #end
+            {{ hosts_list|sort|join(separator) }}
+
 {% endif %}
 
 # States editing a block in /etc/hosts
 # Accumulators targeted on this file will be used
 # TODO: provide a way to select accumulators and distinct blocks
-makina-etc-hosts-management:
+makina-prepend-etc-hosts-management:
   file.blockreplace:
     - name: /etc/hosts
-    - marker_start: "#-- start salt managed zone -- PLEASE, DO NOT EDIT"
-    - marker_end: "#-- end salt managed zone --"
+    - marker_start: "#-- start salt managed zonestart -- PLEASE, DO NOT EDIT"
+    - marker_end: "#-- end salt managed zonestart --"
     - content: ''
     - prepend_if_not_found: True
+    - backup: '.bak'
+    - show_changes: True
+
+makina-append-etc-hosts-management:
+  file.blockreplace:
+    - name: /etc/hosts
+    - marker_start: "#-- start salt managed zoneend -- PLEASE, DO NOT EDIT"
+    - marker_end: "#-- end salt managed zoneend --"
+    - content: ''
+    - append_if_not_found: True
     - backup: '.bak'
     - show_changes: True
 
@@ -95,11 +114,23 @@ makina-parent-etc-hosts-exists:
   file.exists:
     - name: /mnt/parent_etc/hosts
 
-makina-parent-etc-hosts-management:
+makina-prepend-parent-etc-hosts-management:
   file.blockreplace:
     - name: /mnt/parent_etc/hosts
-    - marker_start: "#-- start salt managed zone :: VM={{ vm_name}} :: DO NOT EDIT --"
-    - marker_end: "#-- end salt managed zone VM {{ vm_name}} --"
+    - marker_start: "#-- start salt managed zonestart :: VM={{ vm_name}} :: DO NOT EDIT --"
+    - marker_end: "#-- end salt managed zonestart VM {{ vm_name}} --"
+    - content: '# Vagrant vm: {{ vm_fqdn }} added this entry via local mount:'
+    - prepend_if_not_found: True
+    - backup: '.bak'
+    - show_changes: True
+    - require:
+      - file: makina-parent-etc-hosts-exists
+
+makina-append-parent-etc-hosts-management:
+  file.blockreplace:
+    - name: /mnt/parent_etc/hosts
+    - marker_start: "#-- start salt managed zoneend :: VM={{ vm_name}} :: DO NOT EDIT --"
+    - marker_end: "#-- end salt managed zoneend VM {{ vm_name}} --"
     - content: '# Vagrant vm: {{ vm_fqdn }} added this entry via local mount:'
     - prepend_if_not_found: True
     - backup: '.bak'
@@ -110,15 +141,25 @@ makina-parent-etc-hosts-management:
 # initialize the accumulator with at least the VM private network socket
 # Use this accumulator to add any IP managed on this vm that the parent
 # host should know about
-makina-parent-etc-hosts-accumulated:
+makina-parent-prepend-etc-hosts-accumulated:
   file.accumulated:
     - filename: /mnt/parent_etc/hosts
-    - name: parent-hosts-accumulator-{{ vm_name }}-entries
+    - name: parent-hosts-prepend-accumulator-{{ vm_name }}-entries
     - text: |
             {{ ip2 }} {{ vm_fqdn }} {{ vm_host }}
             {{ ip1 }} {{ vm_nat_fqdn }} {{ vm_host }}-nat
     - require_in:
-      - file: makina-parent-etc-hosts-management
+      - file: makina-prepend-parent-etc-hosts-management
+
+makina-parent-append-etc-hosts-accumulated:
+  file.accumulated:
+    - filename: /mnt/parent_etc/hosts
+    - name: parent-hosts-aapend-accumulator-{{ vm_name }}-entries
+    - text: |
+            {{ ip2 }} {{ vm_fqdn }} {{ vm_host }}
+            {{ ip1 }} {{ vm_nat_fqdn }} {{ vm_host }}-nat
+    - require_in:
+      - file: makina-append-parent-etc-hosts-management
 
 {% endif %}
 
