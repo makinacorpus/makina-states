@@ -265,7 +265,13 @@ salt-minion-logs:
 # non blocking gitpull
 salt-git-pull:
   cmd.run:
-    - name: git pull;exit 0
+    - name: |
+            branch=$(git symbolic-ref -q --short HEAD);
+            if [[ -z "$branch" ]];then
+                git checkout develop;
+            fi;
+            git pull origin develop;
+            exit 0
     - cwd: {{c.msr}}/src/salt
     - onlyif: ls -d {{c.msr}}/src/salt/.git
 
@@ -280,7 +286,12 @@ salt-logrotate:
 # update makina-state
 salt-buildout-bootstrap:
   cmd.run:
-    - name: python bootstrap.py
+    - name: |
+            py="python";
+            if [ -e "/salt-venv/bin/python" ];then 
+              py="/salt-venv/bin/python";
+            fi;
+            $py bootstrap.py
     - cwd: {{c.msr}}
     - unless: test "$(cat buildout.cfg|md5sum|awk '{print $1}')" = "$(cat .saltcheck)"
     - require_in:
@@ -311,7 +322,6 @@ restart-salt-minion:
             rm -f "{{c.msr}}/.restart_salt_minion"
     - onlyif: ls "{{c.msr}}/.restart_salt_minion"
     - require:
-      - cmd: restart-salt-master
       - cmd: salt-daemon-proxy-requires-before-restart
       - file: salt-minion-cache
       - file: salt-minion-conf
