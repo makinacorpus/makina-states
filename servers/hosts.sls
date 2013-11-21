@@ -42,35 +42,42 @@
 {% endfor %}
 # loop to create a dynamic list of hosts based on pillar content
 {% for host in makinahosts %}
-  {% set dummy=hosts_list.append( host['ip'] + ' ' + host['hosts'] ) %}
+  {% set ip = host['ip'] %}
+  {% for dnsname in host['hosts'].split()  %}
+      {% set dummy=hosts_list.append(ip+ ' ' + dnsname) %}
+  {% endfor %}
+
+#hosts-replace-unmanaged-to-managed-entries:
+#  file.managed:
+
 {% endfor %}
+
 {% if hosts_list %}
 # spaces are used in the join operation to make this text looks like a yaml multiline text
-  {% set separator="\n        "%}
+{% set separator="\n            " %}
 # This state will use an accumulator to build the dynamic block content in /etc/hosts
 # you can reuse this accumulator on other states
 # (@see makina-etc-host-vm-management)
 hosts-accumulator-from-pillar:
   file.accumulated:
+    - require_in:
+      - file: makina-etc-hosts-management
     - filename: /etc/hosts
     - name: hosts-accumulator-makina-hosts-entries
     - text: |
-        {{ hosts_list|sort|join(separator) }}
-    - require_in:
-      - file: makina-etc-host-vm-management
-
+            {{ hosts_list|sort|join(separator) }}
 {% endif %}
 
 # States editing a block in /etc/hosts
 # Accumulators targeted on this file will be used
 # TODO: provide a way to select accumulators and distinct blocks
-makina-etc-host-vm-management:
+makina-etc-hosts-management:
   file.blockreplace:
     - name: /etc/hosts
     - marker_start: "#-- start salt managed zone -- PLEASE, DO NOT EDIT"
     - marker_end: "#-- end salt managed zone --"
     - content: ''
-    - append_if_not_found: True
+    - prepend_if_not_found: True
     - backup: '.bak'
     - show_changes: True
 
@@ -84,34 +91,34 @@ makina-etc-host-vm-management:
 {% set ip1=ips['eth0'][0] %}
 {% set ip2=ips['eth1'][0] %}
 
-makina-parent-etc-host-exists:
+makina-parent-etc-hosts-exists:
   file.exists:
     - name: /mnt/parent_etc/hosts
 
-makina-parent-etc-host-vm-management:
+makina-parent-etc-hosts-management:
   file.blockreplace:
     - name: /mnt/parent_etc/hosts
     - marker_start: "#-- start salt managed zone :: VM={{ vm_name}} :: DO NOT EDIT --"
     - marker_end: "#-- end salt managed zone VM {{ vm_name}} --"
     - content: '# Vagrant vm: {{ vm_fqdn }} added this entry via local mount:'
-    - append_if_not_found: True
+    - prepend_if_not_found: True
     - backup: '.bak'
     - show_changes: True
     - require:
-        - file: makina-parent-etc-host-exists
+      - file: makina-parent-etc-hosts-exists
 
 # initialize the accumulator with at least the VM private network socket
 # Use this accumulator to add any IP managed on this vm that the parent
 # host should know about
-makina-parent-etc-host-accumulated:
+makina-parent-etc-hosts-accumulated:
   file.accumulated:
     - filename: /mnt/parent_etc/hosts
-    - name: parent-hosts-accumulator-{{ vm_name}}-entries
+    - name: parent-hosts-accumulator-{{ vm_name }}-entries
     - text: |
-        {{ ip2 }} {{ vm_fqdn }} {{ vm_host }}
-        {{ ip1 }} {{ vm_nat_fqdn }} {{ vm_host }}-nat
+            {{ ip2 }} {{ vm_fqdn }} {{ vm_host }}
+            {{ ip1 }} {{ vm_nat_fqdn }} {{ vm_host }}-nat
     - require_in:
-        - file: makina-parent-etc-host-vm-management
+      - file: makina-parent-etc-hosts-management
 
 {% endif %}
 
