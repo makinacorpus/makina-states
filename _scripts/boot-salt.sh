@@ -76,6 +76,11 @@ VENV_PATH="/salt-venv"
 CHRONO="$(date "+%F_%H-%M-%S")"
 HOSTNAME="$(hostname)"
 
+# base sls bootstrap
+bootstrap="makina-states.services.bootstrap"
+mastersalt_bootstrap="${bootstrap}_mastersalt"
+
+
 export PATH=$MS/bin:$PATH
 
 # base sls file to run on a mastersalt master
@@ -114,8 +119,11 @@ if [[ -z "$MASTERSALT_MASTER" ]];then
     fi
 
 fi
+
 if [[ -n "$MASTERSALT_MASTER" ]];then
-    MASTERSALT_BOOT="mastersalt_master"
+    MASTERSALT_BOOT="${msatersalt_bootstrap}_master"
+elif [[ -n "$MASTERSALT" ]];then
+    MASTERSALT_BOOT="${mastersalt_bootstrap}"
 fi
 
 # set appropriate ports for mastersalt depening on the host and user input
@@ -131,23 +139,18 @@ PROJECT_URL="${PROJECT_URL:-}"
 PROJECT_BRANCH="${PROJECT_BRANCH:-salt}"
 PROJECT_TOPSTATE="${PROJECT_TOPSTATE:-state.highstate}"
 PROJECT_SETUPSTATE="${PROJECT_SETUPSTATE}"
+if [[ -n $MASTERSALT_DEFAULT ]] && [[ $MASTERSALT_DEFAULT != "localhost" ]];then
+    SALT_BOOT="mastersalt"
+fi
+if [[ -z $MASTERSALT_DEFAULT ]] && [[ -n $MASTERSALT ]];then
+    SALT_BOOT="mastersalt"
+fi
 if [[ -z $SALT_BOOT ]];then
     SALT_BOOT="$1"
 fi
-
-# base sls bootstrap
-bootstrap="makina-states.services.bootstrap"
-mastersalt_bootstrap="$bootstrap"
-
 if [[ -n "$SALT_BOOT" ]];then
     bootstrap="${bootstrap}_${SALT_BOOT}"
 fi
-
-if [[ -n "$MASTERSALT_BOOT" ]];then
-    mastersalt_bootstrap="${bootstrap}_${MASTERSALT_BOOT}"
-fi
-
-
 i_prereq() {
     to_install=""
     if [[ $(dpkg-query -s python-software-properties 2>/dev/null|egrep "^Status:"|grep installed|wc -l)  == "0" ]];then

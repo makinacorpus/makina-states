@@ -38,11 +38,23 @@ If you want to install salt on a vm::
 
 If you want to install salt on a server wired to mastersalt::
 
-    export SALT_BOOT="mastersalt"
+    export MASTERSALT="http://mastersalt" "mastersalt"
+    export MASTERSALT="http://mastersalt.makina-corpus.net"
+
+If you want to test mastersalt system with the mastersalt minion & master on the same box::
+
+    export SALT_BOOT="mastersalt" MASTERSALT="localhost"
 
 To install our base salt installation, just run this script as **ROOT**, please read next paragraphe before running this command::
 
     wget http://raw.github.com/makinacorpus/makina-states/master/_scripts/boot-salt.sh -O - | bash
+    or 
+    wget http://raw.github.com/makinacorpus/makina-states/master/_scripts/boot-salt.sh
+    chmod +x boot-salt.sh
+    ./boot-salt.sh
+
+::
+
     . /etc/profile
 
 This will do install prereq, salt, and accept the key locally for the local master/minion, and maybe isntall a project after
