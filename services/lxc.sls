@@ -64,9 +64,6 @@ lxc-mount:
       - file: lxc-after-maybe-bind-root
 {% endif %}
 
-lxc-root:
-  file.directory:
-    - name: {{lxc_dir}}
 
 lxc-after-maybe-bind-root:
   file.directory:
