@@ -3,7 +3,6 @@
 include:
   - makina-states.services.localservices
   - makina-states.services.nscd
-  - makina-states.services.ntp
   - makina-states.services.ssh
   {%- if ldap_en %}
   - makina-states.services.ldap
