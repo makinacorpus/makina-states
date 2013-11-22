@@ -5,7 +5,7 @@ saltstates makina tree
 
 About
 --------
-- This is a consistent collection of states to deploy our infrastructure from end to end.
+- This is a consistent collection of states to deploy our infrastructure from start to end.
 - We have not got on the formula way to provide this consistency.
 - Most of the configuration should be done using pillar.
 
