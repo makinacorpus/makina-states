@@ -3,6 +3,7 @@ include:
   - makina-states.services.pkgs
 
 {% set lxc_root = '/var/lib/lxc' %}
+{% set lxc_dir = pillar.get('lxc.directory', '') %}
 # define in pillar an entry "*-lxc-server-def
 # as:
 # toto-server-def:
@@ -37,8 +38,6 @@ lxc-services-enabling:
 # set in pillar:
 # lxc.directory: real dest
 
-{% set lxc_dir = pillar.get('lxc.directory', '') %}
-{% set lxc_root = '/var/lib/lxc' %}
 lxc-root:
   file.directory:
     - name: {{lxc_root}}
@@ -117,22 +116,19 @@ lxc-after-maybe-bind-root:
     - group: root
 
 {{ lxc_name }}-lxc-salt:
-  file.recurse:
-    - name: {{ lxc_rootfs }}/srv/salt/makina-states
+  cmd.run:
+    - name: |
+            rsync -a --numeric-ids /srv/salt/makina-states/ {{ lxc_rootfs }}/srv/salt/makina-states/ --exclude '*.pyc';
+            cd {{ lxc_rootfs }}/srv/salt/makina-states/ && rm -rf bin src develop-eggs eggs parts .installed.cfg
+    - unless: ls -d {{ lxc_rootfs }}/srv/salt/makina-states/src/salt
     - require:
       - cmd: {{ lxc_name }}-lxc
-    - source: salt://makina-states
-    - user: root
-    - group: root
-    - file_mode: '0755'
-    - dir_mode: '0755'
-    - recurse: True
-    - exclude_pat: E@^((bin|src|(develop-)*eggs|parts)\/|\.installed.cfg|.*\.pyc)
+      - pkg: sys-pkgs
 
 {{ lxc_name }}-lxc-config:
   file.managed:
     - require:
-      - file: {{ lxc_name }}-lxc-salt
+      - cmd: {{ lxc_name }}-lxc-salt
     - user: root
     - group: root
     - mode: '0644'
@@ -160,12 +156,13 @@ lxc-after-maybe-bind-root:
     - group: root
     - mode: '0644'
     - template: jinja
-    - makina_network:
+    - context:
+      makina_network:
         eth0:
-         address: {{ lxc_ip4 }}
-         netmask: {{ lxc_netmask }}
-         gateway: {{ lxc_gateway }}
-         dnsservers: {{ lxc_dnsservers }}
+          address: {{ lxc_ip4 }}
+          netmask: {{ lxc_netmask }}
+          gateway: {{ lxc_gateway }}
+          dnsservers: {{ lxc_dnsservers }}
 
 # {{ lxc_rootfs }}/etc/hosts block entry mangment, collecting
 # data from accumulated states and pushing that in the hosts file
@@ -229,9 +226,12 @@ start-{{ lxc_name }}-lxc-service:
 # Adding hosts records, similar as the ones explained in servers.hosts state
 # But only recording the one using 127.0.0.1 (the lxc host loopback)
 {% for host in makinahosts %}
-### Manage only refs to localhost
+### For localhost entries, replace with the lxc getway ip
 {% if host['ip'] == '127.0.0.1' -%}
   {% set dummy=hosts_list.append( lxc_gateway + ' ' + host['hosts'] ) %}
+### Else replicate them into the HOSTS of the container
+{% else %}
+  {% set dummy=hosts_list.append( host['ip'] + ' ' + host['hosts'] ) %}
 {% endif %}
 {% endfor %}
 {% if hosts_list %}
@@ -267,7 +267,7 @@ bootstrap-salt-in-{{ lxc_name }}-lxc:
       - file: main-repos-{{lxc_name}}
       {% endif %}
       - file: bootstrap-salt-in-{{ lxc_name }}-lxc
-      - file: {{ lxc_name }}-lxc-salt
+      - cmd: {{ lxc_name }}-lxc-salt
       - cmd: start-{{ lxc_name }}-lxc-service
 {% endif -%}
 {%- endfor %}

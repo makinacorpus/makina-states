@@ -232,6 +232,7 @@ salt-dirs:
   file.directory:
     - names:
       - /srv/salt
+      - /srv/salt/makina-projects
       - /srv/pillar
       - /srv/projects
       - /srv/vagrant
