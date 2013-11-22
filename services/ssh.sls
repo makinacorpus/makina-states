@@ -1,6 +1,7 @@
 # see also users.sls
 include:
   - openssh
+  - makina-states.services.users
 
 # Idea is to grant everyone member of "(.-)*makina-users" access
 # to managed boxes
@@ -68,4 +69,5 @@ extend:
       - name: /etc/ssh/sshd_config
       - source: salt://makina-states/files/etc/ssh/sshd_config
       - template: jinja
+
 
