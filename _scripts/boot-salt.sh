@@ -719,6 +719,9 @@ if [[ -n "$PROJECT_URL" ]];then
     if [[ -n $PROJECT_BRANCH ]];then
         BR="-b $PROJECT_BRANCH"
     fi
+    FORCE_PROJECT_TOP="${FORCE_PROJECT_TOP:-}"
+    FORCE_PROJECT_SETUP="${FORCE_PROJECT_SETUP:-}"
+    # force state rerun if project is not there anymore
     if [[ ! -e $PROJECT_PATH ]];then
         mkdir -pv $PROJECT_PATH
     fi
@@ -740,6 +743,8 @@ if [[ -n "$PROJECT_URL" ]];then
         fi
         ln -sf "$PROJECT_SALT_PATH" "$PROJECT_SALT_LINK"
         checkout="y"
+        FORCE_PROJECT_SETUP="y"
+        FORCE_PROJECT_TOP="y"
     fi
     #if [[ -z $checkout ]];then
     #    bs_log "Update code from branch: $PROJECT_BRANCH"
@@ -754,11 +759,7 @@ if [[ -n "$PROJECT_URL" ]];then
     if [[ -f "$ROOT/${PROJECT_TOPSLS_DEFAULT}"  ]] && [[ -z ${PROJECT_TOPSLS} ]];then
         PROJECT_TOPSLS="$PROJECT_TOPSLS_DEFAULT"
     fi
-    if [[ "$(get_grain $setup_grain)" == *"True"* ]];then 
-        bs_log "Setup: $PROJECT_URL@$PROJECT_BRANCH[$PROJECT_SETUPSTATE] already done (remove grain: $setup_grain to redo)"
-        echo "changed=\"false\" comment=\"$PROJECT_URL@$PROJECT_BRANCH[$PROJECT_SETUPSTATE] already done\""
-    else
-
+    if [[ "$(get_grain $setup_grain)" != *"True"* ]] || [[ -n $FORCE_PROJECT_SETUP ]];then 
         if [[ -n $PROJECT_SETUPSTATE ]];then
             bs_log "Running salt Setup: $PROJECT_URL@$PROJECT_BRANCH[$PROJECT_SETUPSTATE]"
             ret=$(salt_call_wrapper --local state.sls $PROJECT_SETUPSTATE)
@@ -771,11 +772,11 @@ if [[ -n "$PROJECT_URL" ]];then
             fi
             changed="true"
         fi
-    fi
-    if [[ "$(get_grain $project_grain)" == *"True"* ]];then 
-        bs_log "Top state: $PROJECT_URL@$PROJECT_BRANCH[$PROJECT_TOPSLS] already done (remove grain: $project_grain to redo)"
-        echo "changed=\"false\" comment=\"$PROJECT_URL@$PROJECT_BRANCH[$PROJECT_TOPSLS] already done\""
     else
+        bs_log "Setup: $PROJECT_URL@$PROJECT_BRANCH[$PROJECT_SETUPSTATE] already done (remove grain: $setup_grain to redo)"
+        echo "changed=\"false\" comment=\"$PROJECT_URL@$PROJECT_BRANCH[$PROJECT_SETUPSTATE] already done\""
+    fi
+    if [[ "$(get_grain $project_grain)" != *"True"* ]] || [[ -n $FORCE_PROJECT_TOP ]];then 
         if [[ -n $PROJECT_TOPSLS ]];then
             bs_log "Running salt Top state: $PROJECT_URL@$PROJECT_BRANCH[$PROJECT_TOPSLS]"
             ret=$(salt_call_wrapper state.top "$PROJECT_TOPSLS")
@@ -788,8 +789,11 @@ if [[ -n "$PROJECT_URL" ]];then
             fi
             changed="true"
         fi
+    else
+        bs_log "Top state: $PROJECT_URL@$PROJECT_BRANCH[$PROJECT_TOPSLS] already done (remove grain: $project_grain to redo)"
+        echo "changed=\"false\" comment=\"$PROJECT_URL@$PROJECT_BRANCH[$PROJECT_TOPSLS] already done\""
     fi
-    bs_log "Installation finnished, dont forget to install:"
+    bs_log "Installation finished, dont forget to install:"
     bs_log "    - $PROJECT_SETUPSTATE in $ROOT/setup.sls"
     bs_log "    - $PROJECT_TOPSLS in $ROOT/top.sls"
     if [[ "$changed" == "false" ]];then
