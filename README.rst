@@ -3,10 +3,16 @@ saltstates makina tree
 
 .. contents::
 
+About
+--------
+- This is a consistent collection of states to deploy our infrastructure from end to end.
+- We have not got on the formula way to provide this consistency.
+- Most of the configuration should be done using pillar.
+
 What states can be found in makina-states
 -----------------------------------------
 Most states are in ``makina.services``.
-Outstanding features are:
+The most outstanding features are:
 
     - Bootstrapping our saltstack binaries
     - Managing lxc containers
@@ -20,7 +26,7 @@ Outstanding features are:
     - Configuring git to correctly attack our gitorious
     - Configuring bacula file daemon
 
-Follow the instruction and you ll have then a saltmaster/minion waiting for insttructions, up to you to mangle a top.sls to start from
+Follow the instruction and you will have then a salt-master and a salt-minion waiting for instructions.
 
 Install a new salt-managed box din automatic mode
 ------------------------------------------------------------
@@ -62,7 +68,7 @@ This will do install prereq, salt, and accept the key locally for the local mast
 Running project states
 ------------------------------
 - At makina corpus where the states tree resides in a salt branch of our projects, we can use this script to deploy a project from salt to the project itself.
-- For this, pior to execute the script, you can tell which project url, name, and branch to use.
+- For this, prior to execute the script, you can tell which project url, name, and branch to use.
 - You can optionnaly tell which setup sls state and which top sms state to bootstrap.
 - See also https://github.com/makinacorpus/salt-project
 - You can safely use the script multiple times to install projects (even long first after installation)
