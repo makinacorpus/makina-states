@@ -61,10 +61,12 @@ This will do install prereq, salt, and accept the key locally for the local mast
 
 Running project states
 ------------------------------
-At makina corpus where the states tree resides in a salt branch of our projects, we can use this script to deploy a project from salt to the project itself.
-For this, pior to execute the script, you can tell which project url, name, and branch to use.
-You can optionnaly tell which setup sls state and which top sms state to bootstrap.
-See also https://github.com/makinacorpus/salt-project
+- At makina corpus where the states tree resides in a salt branch of our projects, we can use this script to deploy a project from salt to the project itself.
+- For this, pior to execute the script, you can tell which project url, name, and branch to use.
+- You can optionnaly tell which setup sls state and which top sms state to bootstrap.
+- See also https://github.com/makinacorpus/salt-project
+- You can safely use the script multiple times to install projects (even long first after installation)
+
 ::
 
     mkdir /srv/pillar
