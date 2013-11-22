@@ -28,8 +28,8 @@ The most outstanding features are:
 
 Follow the instruction and you will have then a salt-master and a salt-minion waiting for instructions.
 
-Install a new salt-managed box din automatic mode
-------------------------------------------------------------
+Install a new salt-managed box
+-------------------------------
 If you want to install salt directly on your machine::
 
     export SALT_BOOT=""
