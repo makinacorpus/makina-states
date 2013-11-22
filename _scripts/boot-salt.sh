@@ -753,6 +753,8 @@ if [[ -n "$PROJECT_URL" ]];then
     #    git reset --hard "origin/$PROJECT_BRANCH"
     #fi
     changed="false"
+    O_SALT_LOGFILE="$SALT_LOGFILE"
+    O_SALT_OUTFILE="$SALT_OUTFILE"
     if [[ -f "$PROJECT_SALT_PATH/setup.sls"  ]] && [[ -z ${PROJECT_SETUPSTATE} ]];then
         PROJECT_SETUPSTATE="$PROJECT_SETUPSTATE_DEFAULT"
     fi
@@ -761,6 +763,8 @@ if [[ -n "$PROJECT_URL" ]];then
     fi
     if [[ "$(get_grain $setup_grain)" != *"True"* ]] || [[ -n $FORCE_PROJECT_SETUP ]];then 
         if [[ -n $PROJECT_SETUPSTATE ]];then
+            SALT_LOGFILE="$PROJECT_SALT_PATH/.salt_setup_log.log"
+            SALT_OUTFILE="$PROJECT_SALT_PATH/.salt_setup_out.log"
             bs_log "Running salt Setup: $PROJECT_URL@$PROJECT_BRANCH[$PROJECT_SETUPSTATE]"
             ret=$(salt_call_wrapper --local state.sls $PROJECT_SETUPSTATE)
             if [[ -n "$DEBUG" ]];then cat $SALT_OUTFILE;fi
@@ -779,6 +783,8 @@ if [[ -n "$PROJECT_URL" ]];then
     fi
     if [[ "$(get_grain $project_grain)" != *"True"* ]] || [[ -n $FORCE_PROJECT_TOP ]];then 
         if [[ -n $PROJECT_TOPSLS ]];then
+            SALT_LOGFILE="$PROJECT_SALT_PATH/.salt_top_log.log"
+            SALT_OUTFILE="$PROJECT_SALT_PATH/.salt_top_out.log"
             bs_log "Running salt Top state: $PROJECT_URL@$PROJECT_BRANCH[$PROJECT_TOPSLS]"
             ret=$(salt_call_wrapper state.top "$PROJECT_TOPSLS")
             if [[ -n "$DEBUG" ]];then cat $SALT_OUTFILE;fi
@@ -803,6 +809,8 @@ if [[ -n "$PROJECT_URL" ]];then
     else
         echo "changed=\"$changed\" comment=\"installed\""
     fi
+    SALT_LOGFILE="$O_SALT_LOGFILE"
+    SALT_OUTFILE="$O_SALT_OUTFILE"
 fi
 exit 0
 
