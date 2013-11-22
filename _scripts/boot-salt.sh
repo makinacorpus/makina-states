@@ -34,8 +34,6 @@ warn_log() {
     fi
 }
 die() {
-    ret=$1
-    shift
     warn_log
     echo -e "${CYAN}${@}${NORMAL}"
     exit -1
@@ -133,12 +131,27 @@ if [[ "$MASTERSALT" == "$MASTERSALT_MAKINA_DNS" ]];then
 fi
 MASTERSALT_PORT="${MASTERSALT_PORT:-$MASTERSALT_DEFAULT_PORT}"
 
-
+MAKINA_PROJECTS="makina-projects"
 STATES_URL="https://github.com/makinacorpus/makina-states.git"
 PROJECT_URL="${PROJECT_URL:-}"
 PROJECT_BRANCH="${PROJECT_BRANCH:-salt}"
-PROJECT_TOPSTATE="${PROJECT_TOPSTATE:-state.highstate}"
-PROJECT_SETUPSTATE="${PROJECT_SETUPSTATE}"
+PROJECT_NAME="${PROJECT_NAME:-}"
+PROJECT_TOPSLS="${PROJECT_TOPSLS:-}"
+PROJECT_SETUPSTATE="${PROJECT_SETUPSTATE:-}"
+PROJECTS_PATH="/srv/projects"
+PROJECT_PATH="$PROJECTS_PATH/$PROJECT_NAME"
+PROJECTS_SALT_PATH="$ROOT/$MAKINA_PROJECTS"
+PROJECT_SALT_LINK="$ROOT/$MAKINA_PROJECTS/$PROJECT_NAME"
+PROJECT_SALT_PATH="$PROJECT_PATH/salt"
+PROJECT_TOPSLS_DEFAULT="$MAKINA_PROJECTS/$PROJECT_NAME/top.sls"
+PROJECT_SETUPSTATE_DEFAULT="${MAKINA_PROJECTS}.${PROJECT_NAME}.setup"
+
+if [[ -n "$PROJECT_URL" ]];then
+    if [[ -z "$PROJECT_NAME" ]];then
+        die "Please provide a \$PROJECT_NAME"
+    fi
+fi
+
 if [[ -n $MASTERSALT_DEFAULT ]] && [[ $MASTERSALT_DEFAULT != "localhost" ]];then
     SALT_BOOT="mastersalt"
 fi
@@ -233,6 +246,23 @@ salt_call_wrapper() {
 mastersalt_call_wrapper() {
     salt_call_wrapper -c /etc/mastersalt $@
 }
+get_grain() {
+    salt-call --local grains.get $1 --out=raw 2>/dev/null
+}
+set_grain() {
+    grain=$1
+    bs_log " [*] Testing salt grain '$grain'"
+    if [[ "$(get_grain $grain)" != *"True"* ]];then
+        bs_log " [*] Setting salt grain: $grain=true "
+        salt-call --local grains.setval $grain true
+        # sync grains rigth now, do not wait for reboot
+        die_in_error "setting $grain"
+        salt-call --local saltutil.sync_grains &> /dev/null
+    else
+        bs_log " [*] Grain '$grain' already set"
+    fi
+}
+
 
 bs_log "Create base directories"
 for i in "$PILLAR" "$ROOT";do
@@ -645,11 +675,13 @@ else
 fi
 
 # --------- POST-SETUP
-bs_log "Running salt states setup"
-ret="$(salt_call_wrapper --local state.sls makina-states.setup)"
-if [[ "$ret" != "0" ]];then
-    bs_log "Failed post-setup"
-    exit -1
+if [[ -z $BOOTSALT_SKIP_SETUP ]];then
+    bs_log "Running salt states setup"
+    ret="$(salt_call_wrapper --local state.sls makina-states.setup)"
+    if [[ "$ret" != "0" ]];then
+        bs_log "Failed post-setup"
+        exit -1
+    fi
 fi
 if [[ -n "$DEBUG" ]];then cat $SALT_OUTFILE;fi
 warn_log
@@ -681,51 +713,91 @@ fi
 # -------------- MAKINA PROJECTS
 if [[ -n "$PROJECT_URL" ]];then
     bs_log "Projects managment"
-    project_mark="${PROJECT_URL}_${PROJECT_BRANCH}_${PROJECT_TOPSTATE}"
-    project_mark="${project_mark//\//_}"
-    project_tmpdir="$ROOT/.tmp_${project_mark}"
-    project_mark="$ROOT/.${project_mark}"
-    if [[ -f "${project_mark}" ]];then
-        echo "$PROJECT_URL / $PROJECT_BRANCH / $PROJECT_TOPSTATE already done"
-        echo "changed=\"false\" comment=\"$PROJECT_URL / $PROJECT_BRANCH / $PROJECT_TOPSTATE already done\""
-    else
-        BR=""
-    echo "changed=yes comment='salt installed'"
-        if [[ -n $PROJECT_BRANCH ]];then
-            BR="-b $PROJECT_BRANCH"
-        fi
-        if [[ -e "${project_tmpdir}" ]];then
-            rm -rf "${project_tmpdir}"
-        fi
-        bs_log "Cloning  $PROJECT_URL / $PROJECT_BRANCH"
-        git clone $BR "$PROJECT_URL" "${project_tmpdir}"
+    setup_grain="makina.projects.${PROJECT_NAME}.boot.setup"
+    project_grain="makina.projects.${PROJECT_NAME}.boot.top"
+    BR=""
+    if [[ -n $PROJECT_BRANCH ]];then
+        BR="-b $PROJECT_BRANCH"
+    fi
+    if [[ ! -e $PROJECT_PATH ]];then
+        mkdir -pv $PROJECT_PATH
+    fi
+    checkout=""
+    if [[ ! -e "$PROJECT_SALT_PATH/.git/config" ]];then
+        bs_log "Cloning  $PROJECT_URL@$PROJECT_BRANCH in $PROJECT_SALT_PATH"
+        git clone $BR "$PROJECT_URL" "$PROJECT_SALT_PATH"
         ret=$?
         if [[ "$ret" != "0" ]];then
             bs_log "Failed to download project from $PROJECT_URL, or maybe the saltstack branch $PROJECT_BRANCH does not exist"
             exit -1
         fi
-        rsync -az "${project_tmpdir}/" "$ROOT/"
-        cd $ROOT
-        if [[ -f setup.sls  ]] && [[ -z ${PROJECT_SETUPSTATE} ]];then
-            PROJECT_SETUPSTATE=setup
+        if [[ ! -e "$PROJECT_SALT_PATH/.git/config" ]];then
+            bs_log "Incomplete download project from $PROJECT_URL, see $PROJECT_SALT_PATH"
+            exit -1
         fi
+        if [[ -e  "$PROJECT_SALT_LINK" ]];then
+            rm -f "$PROJECT_SALT_LINK"
+        fi
+        ln -sf "$PROJECT_SALT_PATH" "$PROJECT_SALT_LINK"
+        checkout="y"
+    fi
+    #if [[ -z $checkout ]];then
+    #    bs_log "Update code from branch: $PROJECT_BRANCH"
+    #    cd $PROJECT_SALT_PATH
+    #    git fetch origin
+    #    git reset --hard "origin/$PROJECT_BRANCH"
+    #fi
+    changed="false"
+    if [[ -f "$PROJECT_SALT_PATH/setup.sls"  ]] && [[ -z ${PROJECT_SETUPSTATE} ]];then
+        PROJECT_SETUPSTATE="$PROJECT_SETUPSTATE_DEFAULT"
+    fi
+    if [[ -f "$ROOT/${PROJECT_TOPSLS_DEFAULT}"  ]] && [[ -z ${PROJECT_TOPSLS} ]];then
+        PROJECT_TOPSLS="$PROJECT_TOPSLS_DEFAULT"
+    fi
+    if [[ "$(get_grain $setup_grain)" == *"True"* ]];then 
+        bs_log "Setup: $PROJECT_URL@$PROJECT_BRANCH[$PROJECT_SETUPSTATE] already done (remove grain: $setup_grain to redo)"
+        echo "changed=\"false\" comment=\"$PROJECT_URL@$PROJECT_BRANCH[$PROJECT_SETUPSTATE] already done\""
+    else
+
         if [[ -n $PROJECT_SETUPSTATE ]];then
-            bs_log "Launching saltstack setup ($PROJECT_SETUPSTATE) for $PROJECT_URL"
+            bs_log "Running salt Setup: $PROJECT_URL@$PROJECT_BRANCH[$PROJECT_SETUPSTATE]"
             ret=$(salt_call_wrapper --local state.sls $PROJECT_SETUPSTATE)
             if [[ -n "$DEBUG" ]];then cat $SALT_OUTFILE;fi
             if [[ "$ret" != "0" ]];then
-                bs_log "Failed to run setup.sls"
+                bs_log "Failed to run $PROJECT_SETUPSTATE"
                 exit -1
+            else
+                set_grain "$setup_grain"
             fi
+            changed="true"
         fi
-        bs_log "Launching saltstack top state ($PROJECT_TOPSTATE) for $PROJECT_URL"
-        ret=$(salt_call_wrapper --local $PROJECT_TOPSTATE)
-        if [[ "$ret" == "0" ]];then
+    fi
+    if [[ "$(get_grain $project_grain)" == *"True"* ]];then 
+        bs_log "Top state: $PROJECT_URL@$PROJECT_BRANCH[$PROJECT_TOPSLS] already done (remove grain: $project_grain to redo)"
+        echo "changed=\"false\" comment=\"$PROJECT_URL@$PROJECT_BRANCH[$PROJECT_TOPSLS] already done\""
+    else
+        if [[ -n $PROJECT_TOPSLS ]];then
+            bs_log "Running salt Top state: $PROJECT_URL@$PROJECT_BRANCH[$PROJECT_TOPSLS]"
+            ret=$(salt_call_wrapper state.top "$PROJECT_TOPSLS")
             if [[ -n "$DEBUG" ]];then cat $SALT_OUTFILE;fi
-            echo  "changed=\"yes\" comment=\"$PROJECT_URL // $PROJECT_BRANCH // $PROJECT_TOPSTATE Installed\""
-            touch "$project_mark"
+            if [[ "$ret" != "0" ]];then
+                bs_log "Failed to run $PROJECT_TOPSLS"
+                exit -1
+            else
+                set_grain "$project_grain"
+            fi
+            changed="true"
         fi
+    fi
+    bs_log "Installation finnished, dont forget to install:"
+    bs_log "    - $PROJECT_SETUPSTATE in $ROOT/setup.sls"
+    bs_log "    - $PROJECT_TOPSLS in $ROOT/top.sls"
+    if [[ "$changed" == "false" ]];then
+        echo "changed=\"$changed\" comment=\"already installed\""
+    else
+        echo "changed=\"$changed\" comment=\"installed\""
     fi
 fi
 exit 0
+
 ## vim:set et sts=5 ts=4 tw=0:

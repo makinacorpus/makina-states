@@ -62,21 +62,19 @@ This will do install prereq, salt, and accept the key locally for the local mast
 Running project states
 ------------------------------
 At makina corpus where the states tree resides in a salt branch of our projects, we can use this script to deploy a project from salt to the project itself.
-For this, pior to execute the script, you can tell which project, branch and state to bootstrap
+For this, pior to execute the script, you can tell which project url, name, and branch to use.
+You can optionnaly tell which setup sls state and which top sms state to bootstrap.
+See also https://github.com/makinacorpus/salt-project
 ::
 
     mkdir /srv/pillar
     $ED /srv/pillar/top.sls
     $ED /srv/pillar/foo.sls
+    export PROJECT_NAME="foo" (default: no name)
     export PROJECT_URL="GIT_URL" (default: no url)
     export PROJECT_BRANCH="master" (default: salt)
-    export PROJECT_TOPSTATE="deploy.foo" (default: state.highstate")
-    wget http://raw.github.com/makinacorpus/makina-states/master/_scripts/boot-salt.sh -O - | bash
-
-Or the manual way::
-
-    git clone PROJECT_URL -b salt /srv/salt/project
-    rsync -azv /srv/salt/project/ /srv/salt/ && rm -rf /srv/salt/project
+    export PROJECT_SETUPSTATE"deploy.foo" (default: no default but test if setup.sls exists and use it")
+    export PROJECT_TOPSTATE="deploy.foo" (default: no default but test if top.sls exists and use it")
     wget http://raw.github.com/makinacorpus/makina-states/master/_scripts/boot-salt.sh -O - | bash
 
 Optionnaly you can edit your pillar in **/srv/pillar**::
@@ -86,6 +84,19 @@ Optionnaly you can edit your pillar in **/srv/pillar**::
 Then run higtstate or any salt cmd::
 
     salt-call state.highstate
+
+According to makinacorpus projects layouts, your project resides in:
+    
+    - **/srv/projects/$PROJECT_NAME**: root prefix
+    - **/srv/projects/$PROJECT_NAME/salt**: the checkout of the salt branch
+    - **/srv/projects/$PROJECT_NAME/project**:  should contain the main project code source and be initialised by your project setup.sls
+    - **/srv/salt/makina-projects/$PROJECT_NAME**: symlink to the salt branch
+
+Example to install the most simple project::
+
+    PROJECT_URL="https://github.com/makinacorpus/salt-project.git" \
+    PROJECT_BRANCH="sample-salt" PROJECT_NAME="sample" \
+    wget http://raw.github.com/makinacorpus/makina-states/master/_scripts/boot-salt.sh -O - | bash
 
 Mastersalt specific
 -----------------------
@@ -156,15 +167,6 @@ Then ::
     
     
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
 Troubleshooting
 =================
 
@@ -197,6 +199,3 @@ Update your system setuptools install to match latest setuptools (distribute + s
     sudo easy_install -U setuptools
     
     
-    
-    
-
