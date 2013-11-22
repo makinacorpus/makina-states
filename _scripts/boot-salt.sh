@@ -768,6 +768,7 @@ if [[ -n "$PROJECT_URL" ]];then
                 bs_log "Failed to run $PROJECT_SETUPSTATE"
                 exit -1
             else
+                warn_log
                 set_grain "$setup_grain"
             fi
             changed="true"
@@ -785,6 +786,7 @@ if [[ -n "$PROJECT_URL" ]];then
                 bs_log "Failed to run $PROJECT_TOPSLS"
                 exit -1
             else
+                warn_log
                 set_grain "$project_grain"
             fi
             changed="true"
