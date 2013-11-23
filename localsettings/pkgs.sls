@@ -90,37 +90,67 @@ main-repos-updates{{suf}}:
 {% endmacro %}
 {{ set_packages_repos()}}
 
+{% if grains['os'] == 'Ubuntu' -%}
+ubuntu-pkgs:
+  pkg.installed:
+    - names:
+      - language-pack-en
+      - language-pack-fr
+      - debconf-utils
+      - python-software-properties
+      - ubuntu-minimal
+      - ubuntu-standard
+      - rsyslog
+      - dstat
+{% endif %}
+
 sys-pkgs:
   pkg.installed:
     - names:
-      - screen
-      - bzip2
-      - vim
+      - acpid
+      - apport
       - atop
       - bash-completion
+      - bzip2
+      - cron
+      - cronolog
+      - dialog
+      - findutils
+      - htop
+      - links
+      - locales
+      - man-db
+      - libopts25
+      - manpages
+      - manpages-fr
+      - manpages-de
+      - lsof
+      - lvm2
+      - lynx
+      - mc
+      - mlocate
+      - ncdu
+      - psmisc
+      - pwgen
+      - python
+      - python-dev
+      - sudo
+      - screen
+      - smartmontools
+      - tmux
+      - screen
+      - tzdata
+      - tree
+      - unzip
+      - vim
+      - xfsprogs
+      - zerofree
+      - zip
       {% if grains['os_family'] == 'Debian' -%}
       - debconf-utils
       - dstat
       {% endif %}
-      - findutils
-      - htop
-      - links
-      - tree
-      - lsof
-      - lynx
-      - mc
-      - mlocate
-      - psmisc
-      - debconf-utils
-      - pwgen
-      - smartmontools
-      - unzip
-      - zip
-      - cronolog
-      - lvm2
-      - xfsprogs
-      - ncdu
-      - zerofree
+
 
 {% if grains.get('makina.devhost', False) %}
 devhost-pkgs:
@@ -134,8 +164,6 @@ dev-pkgs:
     - names:
       - git
       - git-core
-      - python
-      - python-dev
       {% if grains['os_family'] == 'Debian' -%}
       - build-essential
       - m4
@@ -144,7 +172,6 @@ dev-pkgs:
       - autoconf
       - gettext
       - groff
-      - man-db
       - automake
       - libsigc++-2.0-dev
       - tcl8.5
@@ -159,8 +186,10 @@ net-pkgs:
       - ifenslave-2.6
       - iftop
       - iptraf
+      - net-tools
       - nmap
       - ntp
+      - openssh-server
       - rsync
       - sipcalc
       - tcpdump
