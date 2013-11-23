@@ -15,12 +15,12 @@
 
 include:
   - makina-states.services.bootstrap
-  - makina-states.services.vim
-  - makina-states.services.git
-  - makina-states.services.pkgs
-  - makina-states.services.shell
-  - makina-states.services.sudo
-  - makina-states.services.users
+  - makina-states.localsettings.vim
+  - makina-states.localsettings.git
+  - makina-states.localsettings.pkgs
+  - makina-states.localsettings.shell
+  - makina-states.localsettings.sudo
+  - makina-states.localsettings.users
 
 makina-bootstrap-server-grain:
   grains.present:

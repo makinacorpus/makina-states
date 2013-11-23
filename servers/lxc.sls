@@ -1,4 +1,4 @@
 include:
   - makina-states.servers.base
-  - makina-states.servers.hosts
+  - makina-states.localsettings.hosts
 

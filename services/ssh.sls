@@ -1,7 +1,7 @@
 # see also users.sls
 include:
   - openssh
-  - makina-states.services.users
+  - makina-states.localsettings.users
 
 # Idea is to grant everyone member of "(.-)*makina-users" access
 # to managed boxes

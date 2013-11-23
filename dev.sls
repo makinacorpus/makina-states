@@ -17,7 +17,7 @@ include:
   {% if not grains.get('makina.devhost-docker', false) %}
  - makina-states.services.mail.dovecot
   {% endif %}
- - makina-states.servers.hosts
+ - makina-states.localsettings.hosts
 {% endif %}
 # Please DO NOT PUT ANYTHING outside of this IF
 # As this IF is the thing that make it available only on dev env

@@ -1,6 +1,6 @@
-{% import 'makina-states/services/pkgs.sls'  as pkgs with context %}
+{% import 'makina-states/localsettings/pkgs.sls'  as pkgs with context %}
 include:
-  - makina-states.services.pkgs
+  - makina-states.localsettings.pkgs
 
 {% set lxc_root = '/var/lib/lxc' %}
 {% set lxc_dir = pillar.get('lxc.directory', '') %}
@@ -223,7 +223,7 @@ start-{{ lxc_name }}-lxc-service:
 {% endfor -%}
 
 # loop to create a dynamic list of hosts based on pillar content
-# Adding hosts records, similar as the ones explained in servers.hosts state
+# Adding hosts records, similar as the ones explained in localsettings.hosts state
 # But only recording the one using 127.0.0.1 (the lxc host loopback)
 {% for host in makinahosts %}
 ### For localhost entries, replace with the lxc getway ip

@@ -1,6 +1,6 @@
 include:
   - makina-states.servers.base
   - makina-states.services.ntp
-  - makina-states.servers.hosts
-  - makina-states.servers.network
+  - makina-states.localsettings.hosts
+  - makina-states.localsettings.network
 

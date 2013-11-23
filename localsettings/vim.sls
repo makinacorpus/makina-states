@@ -1,5 +1,5 @@
 include:
-  - makina-states.services.users
+  - makina-states.localsettings.users
 
 {% set vimrc_default_users = ['root', 'sysadmin'] %}
 {% if grains['os'] == 'Ubuntu' %}

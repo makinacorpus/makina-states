@@ -123,7 +123,7 @@
 #         - {action: ACCEPT       , source: lxc, dest: fw , proto: 'tcp,udp', dport: 25}
 
 include:
-  - makina-states.services.localservices
+  - makina-states.localsettings.localrc
 
 {% set settings = {'ishorewallen': 0} %}
 {% for sid in pillar -%}
