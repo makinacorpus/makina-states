@@ -53,6 +53,7 @@ main-repos{{suf}}:
       - file: remove-default-repos{{suf}}
     {% if root=='' %}
     - require_in:
+      - pkg: ubuntu-pkgs
       - pkg: sys-pkgs
       - pkg: dev-pkgs
       - pkg: net-pkgs
@@ -66,6 +67,7 @@ main-src-repos{{suf}}:
       - file: remove-default-repos{{suf}}
     {% if root=='' %}
     - require_in:
+      - pkg: ubuntu-pkgs
       - pkg: sys-pkgs
       - pkg: dev-pkgs
       - pkg: net-pkgs

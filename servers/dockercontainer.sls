@@ -1,5 +1,5 @@
 include:
   - makina-states.servers.base
 
-{% if config.get('makina.docker', False) '%}
+{% if salt['config.get']('makina.docker', False) %}
 {% endif %}
