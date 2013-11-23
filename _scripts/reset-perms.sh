@@ -44,9 +44,9 @@ dmode = "0%s" % int("{{dmode}}")
 def lazy_chmod_path(path, mode):
     try:
         st = os.stat(path)
-        if eval(fmode) != stat.S_IMODE(st.st_mode):
+        if eval(mode) != stat.S_IMODE(st.st_mode):
             try:
-                eval('os.chmod(path, %s)' % fmode)
+                eval('os.chmod(path, %s)' % mode)
             except:
                 print traceback.format_exc()
                 print 'reset failed for %s' % path
