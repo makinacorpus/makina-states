@@ -1,6 +1,10 @@
 #
 # basic shell configuration
 #
+# Make as ubuntu & others do:
+# /etc/profile.d contains a collection of shell scripts sourced 
+# to construct the base shell environment
+#
 
 /etc/profile.d:
   file.directory:
