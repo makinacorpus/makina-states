@@ -129,11 +129,6 @@ salt-modules:
               done;
               exit 0;
 
-salt-reload-grains:
-  cmd.script:
-    - source: salt://makina-states/_scripts/reload_grains.sh
-    - template: jinja
-
 #salt-test-grain:
 #  grains.present:
 #    - name: makina.test
@@ -157,20 +152,6 @@ salt-minion-job:
     - template: jinja
     - source:  salt://makina-states/files/etc/init/salt-minion.conf
 
-salt-minion:
-  service.running:
-    - enable: True
-    - require:
-        - cmd: restart-salt-minion
-
-salt-minion-grain:
-  grains.present:
-    - name: makina.salt-minion
-    - value: True
-    - require_in:
-      - cmd: salt-reload-grains
-    - require:
-      - service: salt-minion
 
 salt-minion-cache:
   file.directory:
@@ -312,6 +293,35 @@ update-salt:
     - cwd: {{c.msr}}
     - unless: test "$(cat buildout.cfg|md5sum|awk '{print $1}')" = "$(cat .saltcheck)"
 
+# salt master state will attach to this for the minion to be configured
+# before being really restarted
+salt-daemon-proxy-requires-before-restart:
+  cmd.run:
+    - name: echo "dummy"
+    - require_in:
+      - cmd: restart-salt-minion
+    - require:
+      - cmd: salt-git-pull
+      - cmd: salt-modules
+      - cmd: update-salt
+      - file: etc-salt-dirs
+      - file: l-openssh-formulae
+      - file: l-salt-formulae
+      - file: salt-dirs-restricted
+      - file: salt-env
+      - file: salt-logrotate
+      - file: salt-minion-cache
+      - file: salt-minion-conf
+      - file: salt-minion-job
+      - file: salt-minion-logs
+      - file: salt-minion-pki
+      - file: salt-minion-sock-dir
+      - git: m2crypto
+      - git: makina-states
+      - git: openssh-formulae
+      - git: openstack-formulae
+      - git: salt-formulae
+
 # done to mitigate authentication errors on restart
 restart-salt-minion:
   cmd.run:
@@ -324,32 +334,24 @@ restart-salt-minion:
     - onlyif: ls "{{c.msr}}/.restart_salt_minion"
     - require:
       - cmd: salt-daemon-proxy-requires-before-restart
-      - file: salt-minion-cache
-      - file: salt-minion-conf
-      - file: salt-minion-job
-      - file: salt-minion-logs
-      - file: salt-minion-pki
-      - file: salt-minion-sock-dir
 
-# salt master state will attach to this for the minion to be configured
-# before being really restarted
-salt-daemon-proxy-requires-before-restart:
-  cmd.run:
-    - name: echo "dummy"
-    - require_in:
-      - cmd: update-salt
+salt-minion:
+  service.running:
+    - enable: True
     - require:
-      - cmd: salt-git-pull
-      - cmd: salt-modules
-      - file: l-openssh-formulae
-      - file: l-salt-formulae
-      - file: salt-env
-      - git: m2crypto
-      - git: makina-states
-      - git: openssh-formulae
-      - git: openstack-formulae
-      - git: salt-formulae
-      - file: etc-salt-dirs
-      - file: salt-dirs-restricted
-      - file: salt-logrotate
+        - cmd: restart-salt-minion
+
+salt-minion-grain:
+  grains.present:
+    - name: makina.salt-minion
+    - value: True
+    - require_in:
+      - cmd: salt-reload-grains
+    - require:
+      - service: salt-minion
+
+salt-reload-grains:
+  cmd.script:
+    - source: salt://makina-states/_scripts/reload_grains.sh
+    - template: jinja
 

@@ -27,21 +27,6 @@ mastersalt-master-job:
     - name: /etc/init/mastersalt-master.conf
     - source: salt://makina-states/files/etc/init/mastersalt.conf
 
-mastersalt-master:
-  service.running:
-    - enable: True
-    - require:
-        - cmd: restart-mastersalt-master
-
-mastersalt-master-grain:
-  grains.present:
-    - name: makina.mastersalt-master
-    - value: True
-    - require_in:
-      - cmd: salt-reload-grains
-    - require:
-      - service: mastersalt-master
-
 mastersalt-master-cache:
   file.directory:
     - name: /var/cache/mastersalt/master
@@ -85,3 +70,20 @@ restart-mastersalt-master:
       - file: mastersalt-master-sock-dir
     - require_in:
       - cmd: restart-mastersalt-minion
+
+mastersalt-master:
+  service.running:
+    - enable: True
+    - require:
+      - cmd: restart-mastersalt-master
+
+mastersalt-master-grain:
+  grains.present:
+    - name: makina.mastersalt-master
+    - value: True
+    - require_in:
+      - cmd: salt-reload-grains
+    - require:
+      - service: mastersalt-master
+
+

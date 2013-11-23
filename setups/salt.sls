@@ -29,8 +29,7 @@ etc-salt-dirs-perms:
       - /etc/salt
     - require:
       - file: etc-salt-dirs
-      - service: salt-master
-      - service: salt-minion
+      - cmd: salt-daemon-proxy-requires-before-restart
 
 # recurse does not seem to work well to reset perms
 salt-dirs-perms:
@@ -49,14 +48,8 @@ salt-dirs-perms:
       - /srv/projects
       - /srv/vagrant
     - require:
-      - service: salt-master
-      - service: salt-minion
-      - cmd: salt-git-pull
-      - git: SaltTesting-git
-      - git: m2crypto
-      - file: salt-dirs
+      - cmd: salt-daemon-proxy-requires-before-restart
       - cmd: etc-salt-dirs-perms
-      - group: {{c.group}}
 # no more virtualenv at the makina-states level
 #    - excludes:
 #      - {{c.msr}}/bin
@@ -82,8 +75,7 @@ salt-dirs-restricted-perms:
       - cmd: salt-dirs-perms
       - cmd: etc-salt-dirs-perms
       - file: salt-dirs-restricted
-      - service: salt-master
-      - service: salt-minion
+      - cmd: salt-daemon-proxy-requires-before-restart
 
 # recurse does not seem to work well to reset perms
 docker-dirs-if-present:
@@ -99,7 +91,7 @@ docker-dirs-if-present:
     - user: "root"
     - group: {{c.group}}
     - require_in:
-      - cmd: update-salt
+      - cmd: salt-daemon-proxy-requires-before-restart
     - excludes:
       - /srv/docker/docker/bundles
       - /srv/docker/cache

@@ -1,4 +1,5 @@
 .installed.cfg
+.salt-lxc-bootstrapped
 .saltcheck
 include
 lib

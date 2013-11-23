@@ -23,15 +23,6 @@ salt-master:
     - require:
       - cmd: restart-salt-master
 
-salt-master-grain:
-  grains.present:
-    - name: makina.salt-master
-    - value: True
-    - require_in:
-      - cmd: salt-reload-grains
-    - require:
-      - service: salt-master
-
 salt-master-cache:
   file.directory:
     - name: /var/cache/salt/master
@@ -74,3 +65,13 @@ restart-salt-master:
       - file: salt-master-sock-dir
     - require_in:
       - cmd: restart-salt-minion
+
+salt-master-grain:
+  grains.present:
+    - name: makina.salt-master
+    - value: True
+    - require_in:
+      - cmd: salt-reload-grains
+    - require:
+      - service: salt-master
+

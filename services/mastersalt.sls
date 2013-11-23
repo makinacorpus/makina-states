@@ -42,21 +42,6 @@ mastersalt-minion-job:
     - template: jinja
     - source:  salt://makina-states/files/etc/init/mastersalt-minion.conf
 
-mastersalt-minion:
-  service.running:
-    - enable: True
-    - require:
-      - cmd: restart-mastersalt-minion
-
-mastersalt-minion-grain:
-  grains.present:
-    - name: makina.mastersalt-minion
-    - value: True
-    - require_in:
-      - cmd: salt-reload-grains
-    - require:
-      - service: mastersalt-minion
-
 mastersalt-minion-cache:
   file.directory:
     - name: /var/cache/mastersalt/minion
@@ -118,6 +103,23 @@ mastersalt-logrotate:
     - source: salt://makina-states/files/etc/logrotate.d/mastersalt.conf
     - rotate: {{ c.rotate }}
 
+# before being really restarted
+mastersalt-daemon-proxy-requires-before-restart:
+  cmd.run:
+    - name: echo "dummy"
+    - require_in:
+      - cmd: update-salt
+      - cmd: salt-daemon-proxy-requires-before-restart
+      - file: etc-mastersalt-dirs
+      - file: mastersalt-dirs-restricted
+      - file: mastersalt-logrotate
+      - file: mastersalt-minion-cache
+      - file: mastersalt-minion-conf
+      - file: mastersalt-minion-job
+      - file: mastersalt-minion-logs
+      - file: mastersalt-minion-pki
+      - file: mastersalt-minion-sock-dir
+
 # done to mitigate authentication errors on restart
 restart-mastersalt-minion:
   cmd.run:
@@ -130,21 +132,20 @@ restart-mastersalt-minion:
     - onlyif: ls "{{c.msr}}/.restart_msalt_minion"
     - require:
       - cmd: mastersalt-daemon-proxy-requires-before-restart
-      - file: mastersalt-minion-cache
-      - file: mastersalt-minion-conf
-      - file: mastersalt-minion-job
-      - file: mastersalt-minion-logs
-      - file: mastersalt-minion-pki
-      - file: mastersalt-minion-sock-dir
 
-# before being really restarted
-mastersalt-daemon-proxy-requires-before-restart:
-  cmd.run:
-    - name: echo "dummy"
-    - require_in:
-      - cmd: update-salt
+mastersalt-minion:
+  service.running:
+    - enable: True
     - require:
-      - cmd: salt-daemon-proxy-requires-before-restart
-      - file: etc-mastersalt-dirs
-      - file: mastersalt-dirs-restricted
-      - file: mastersalt-logrotate
+      - cmd: restart-mastersalt-minion
+
+mastersalt-minion-grain:
+  grains.present:
+    - name: makina.mastersalt-minion
+    - value: True
+    - require_in:
+      - cmd: salt-reload-grains
+    - require:
+      - service: mastersalt-minion
+
+

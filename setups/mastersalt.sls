@@ -20,9 +20,8 @@ etc-mastersalt-dirs-perms:
     - reset_paths:
       - /etc/mastersalt
     - require:
+      - cmd: mastersalt-daemon-proxy-requires-before-restart
       - file: etc-mastersalt-dirs
-      - service: mastersalt-minion
-      {% if c.mmaster %}- service: mastersalt-master{% endif %}
 
 mastersalt-dirs-restricted-perms:
   cmd.script:
@@ -40,6 +39,5 @@ mastersalt-dirs-restricted-perms:
       - /etc/mastersalt/pki
     - require:
       - cmd: etc-mastersalt-dirs-perms
-      - service: mastersalt-minion
-      {% if c.mmaster %}- service: mastersalt-master{% endif %}
+      - cmd: mastersalt-daemon-proxy-requires-before-restart
 {% endif %}
