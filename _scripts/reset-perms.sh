@@ -28,13 +28,13 @@ pexcludes = [
 user = "{{user}}"
 try:
     uid = int(user)
-except:
+except Exception:
     uid = int(pwd.getpwnam('{{user}}').pw_uid)
 
 group = "{{group}}"
 try:
     gid = int(group)
-except:
+except Exception:
     gid = int(grp.getgrnam(group).gr_gid)
 
 fmode = "0%s" % int("{{fmode}}")
@@ -47,10 +47,10 @@ def lazy_chmod_path(path, mode):
         if eval(mode) != stat.S_IMODE(st.st_mode):
             try:
                 eval('os.chmod(path, %s)' % mode)
-            except:
+            except Exception:
                 print traceback.format_exc()
                 print 'reset failed for %s' % path
-    except:
+    except Exception:
         print traceback.format_exc()
         print 'reset failed for %s' % path
 
@@ -64,12 +64,12 @@ def lazy_chown_path(path, uid, gid):
             except:
                 print traceback.format_exc()
                 print 'reset failed for %s' % path
-    except:
+    except Exception:
         print traceback.format_exc()
         print 'reset failed for %s' % path
 
 def lazy_chmod_chown(path, mode, uid, gid):
-    lazy_chmod_path(path, dmode)
+    lazy_chmod_path(path, mode)
     lazy_chown_path(path, uid, gid)
 
 
@@ -106,7 +106,7 @@ def reset(p):
                 i = os.path.join(root, item)
                 if to_skip(i): continue
                 lazy_chmod_chown(i, fmode, uid, gid)
-        except:
+        except Exception:
             print traceback.format_exc()
             print 'reset failed for %s' % curdir
 
