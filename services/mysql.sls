@@ -11,9 +11,9 @@ makina-mysql-service:
   service.running:
     - name: mysql
     - require:
-      - pkg.installed: mysql-pkgs
+      - pkg: mysql-pkgs
     - watch:
-      - pkg.installed: mysql-pkgs
+      - pkg: mysql-pkgs
 
 # change password only if we can connect without
 change-empty-mysql-root-access:
