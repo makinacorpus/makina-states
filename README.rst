@@ -28,6 +28,20 @@ The most outstanding features are:
 
 Follow the instruction and you will have then a salt-master and a salt-minion waiting for instructions.
 
+Worflow in MkC deployments
+-----------------------------
+- Run makina-states bootstrap script
+  This script will provide an up and running salt installation
+- Include things in **/srv/salt/top.sls** & **/srv/salt/minion.sls**:
+  Those file tie to specific minions the configuration to apply to them.
+
+    - All projects must have a pre-configured setup and a top file (in salt TOP format) to include in TOPLEVEL setup & tops.
+
+- Run setup.sls Top file:
+  This file is in charge to setup the code source and what is only related to make salt states work
+- Run top.sls Top file:
+  This file is in charge to setup all what is not installed yet.
+
 Install a new salt-managed box
 -------------------------------
 If you want to install salt directly on your machine::
