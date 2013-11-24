@@ -101,7 +101,7 @@ makina-postgresql-service:
 {% set encrypted = data.get('encrypted', True) %}
 {% set replication = data.get('replication', False) %}
 {% set createdb = data.get('createdb', False) %}
-{{user}}_database_user:
+{{user}}-makina-postgresql-user:
   postgres_user.present:
     - name: {{ user }}
     - password: {{pw}}
