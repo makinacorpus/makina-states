@@ -424,8 +424,9 @@ if [[ ! -f /srv/salt/setup.sls ]];then
 #
 # Include here your various projet setup files
 #
-include:
-  - makina-states.setup
+base:
+  '*':
+    - makina-states.setup
 EOF
 fi
 
