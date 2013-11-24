@@ -429,6 +429,17 @@ base:
     - makina-states.setup
 EOF
 fi
+if [[ "$(egrep  "^(  '\*':)" /srv/salt/setup.sls|wc -l)" == "0" ]];then
+    bs_log "Old installation detected for setup.sls, trying to migrate it"
+    cp /srv/salt/setup.sls /srv/salt/setup.sls.${CHRONO}.bak
+    sed  "/include:/{
+a base:
+a \  '*':
+}" -i /srv/salt/setup.sls
+    sed -re "s/^  -/    -/g"  -i /srv/salt/setup.sls
+    sed -re "/^include:/d"  -i /srv/salt/setup.sls
+fi
+exit -1
 
 # Create a default top.sls in the tree if not present
 if [[ ! -f /srv/salt/top.sls ]];then
@@ -762,7 +773,7 @@ if [[ -n "$PROJECT_URL" ]];then
     if [[ -f "$ROOT/${PROJECT_TOPSLS_DEFAULT}"  ]] && [[ -z ${PROJECT_TOPSLS} ]];then
         PROJECT_TOPSLS="$PROJECT_TOPSLS_DEFAULT"
     fi
-    if [[ "$(get_grain $setup_grain)" != *"True"* ]] || [[ -n $FORCE_PROJECT_SETUP ]];then 
+    if [[ "$(get_grain $setup_grain)" != *"True"* ]] || [[ -n $FORCE_PROJECT_SETUP ]];then
         if [[ -n $PROJECT_SETUPSTATE ]];then
             SALT_LOGFILE="$PROJECT_SALT_PATH/.salt_setup_log.log"
             SALT_OUTFILE="$PROJECT_SALT_PATH/.salt_setup_out.log"
@@ -782,7 +793,7 @@ if [[ -n "$PROJECT_URL" ]];then
         bs_log "Setup: $PROJECT_URL@$PROJECT_BRANCH[$PROJECT_SETUPSTATE] already done (remove grain: $setup_grain to redo)"
         echo "changed=\"false\" comment=\"$PROJECT_URL@$PROJECT_BRANCH[$PROJECT_SETUPSTATE] already done\""
     fi
-    if [[ "$(get_grain $project_grain)" != *"True"* ]] || [[ -n $FORCE_PROJECT_TOP ]];then 
+    if [[ "$(get_grain $project_grain)" != *"True"* ]] || [[ -n $FORCE_PROJECT_TOP ]];then
         if [[ -n $PROJECT_TOPSLS ]];then
             SALT_LOGFILE="$PROJECT_SALT_PATH/.salt_top_log.log"
             SALT_OUTFILE="$PROJECT_SALT_PATH/.salt_top_out.log"
