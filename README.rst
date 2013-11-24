@@ -32,7 +32,7 @@ Worflow in MkC deployments
 -----------------------------
 - Run makina-states bootstrap script
   This script will provide an up and running salt installation
-- Include things in **/srv/salt/top.sls** & **/srv/salt/minion.sls**:
+- Include things in **/srv/salt/top.sls** & **/srv/salt/setup.sls**:
   Those file tie to specific minions the configuration to apply to them.
 
     - All projects must have a pre-configured setup and a top file (in salt TOP format) to include in TOPLEVEL setup & tops.
