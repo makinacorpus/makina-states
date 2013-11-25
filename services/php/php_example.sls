@@ -25,7 +25,6 @@ my-php-other-modules:
   pkg.installed:
     - pkgs:
       - {{ phpData.packages.pear }}
-      - {{ phpData.packages.apc }}
     - require_in:
       - pkg: makina-mod_php-pkgs
 # Ensuring some other are not there

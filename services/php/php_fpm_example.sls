@@ -23,6 +23,7 @@ extend:
       - context:
           shared_mode: False
           project_root: '/srv/projects/php.example.com'
+          socket_directory: '/var/fcgi/'
 
 {% from 'makina-states/services/php/php_defaults.jinja' import phpData with context %}
 
@@ -55,6 +56,9 @@ my-phpfpm-removed-modules:
             'memory_limit': '256M',
             'upload_max_filesize': '100M',
             'max_input_vars': 3000,
+            'fpm': {
+                'socket_name':'myapp.sock'
+            },
             'modules': {
                 'apc': {
                     'user_entries_hint': 100,
@@ -83,6 +87,7 @@ my-phpfpm-removed-modules:
           vh_in_template_source='salt://makina-states/files/etc/apache2/includes/in_virtualhost_drupal_phpfpm_template.conf',
           allow_htaccess = False,
           extra_jinja_apache_variables = {
+              'socketName' : 'myapp.sock',
               'appConnTimeout' : 30,
               'idleTimeout' : 60,
               'allowed_files' : 'update.php|index.php|install.php|xmlrpc.php|cron.php'

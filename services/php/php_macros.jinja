@@ -58,6 +58,7 @@ makina-php-pool-{{ pool_name }}:
         chroot: {{ phpData.fpm.chroot }}
         use_socket: {{ phpData.fpm.use_socket }}
         socket_relative_path: "{{ phpData.fpm.socket_relative_path }}"
+        socket_name: "{{ phpData.fpm.socket_name }}"
         use_shared_socket_path: {{ use_shared_socket_path|int(0) }}
         fpm_sockets_dir: "{{ phpData.fpm_sockets_dir }}"
         custom_listen: "{{ custom_listen }}"
@@ -97,9 +98,30 @@ makina-php-pool-{{ pool_name }}:
         memory_limit: "{{ phpData.memory_limit }}"
         max_execution_time: "{{ phpData.max_execution_time }}"
         allow_url_fopen: {{ phpData.allow_url_fopen|int(0) }}
+        opcache_install: {{ phpData.modules.opcache.install }}
+        opcache_enabled: {{ phpData.modules.opcache.enabled|int(1) }}
+        opcache_enable_cli: {{ phpData.modules.opcache.enable_cli|int(1) }}
+        opcache_memory_consumption: {{ phpData.modules.opcache.memory_consumption|int(64) }}
+        opcache_interned_strings_buffer: {{ phpData.modules.opcache.interned_strings_buffer|int(4) }}
+        opcache_max_accelerated_files: {{ phpData.modules.opcache.max_accelerated_files|int(2000) }}
+        opcache_max_wasted_percentage: {{ phpData.modules.opcache.max_wasted_percentage|int(5) }}
+        opcache_use_cwd: {{ phpData.modules.opcache.use_cwd|int(1) }}
+        opcache_validate_timestamps: {{ phpData.modules.opcache.validate_timestamps|int(1) }}
+        opcache_revalidate_freq: {{ phpData.modules.opcache.revalidate_freq|int(2) }}
+        opcache_revalidate_path: {{ phpData.modules.opcache.revalidate_path|int(0) }}
+        opcache_save_comments: {{ phpData.modules.opcache.save_comments|int(0) }}
+        opcache_load_comments: {{ phpData.modules.opcache.load_comments|int(0) }}
+        opcache_fast_shutdown: {{ phpData.modules.opcache.fast_shutdown|int(0) }}
+        opcache_enable_file_override: {{ phpData.modules.opcache.enable_file_override|int(1) }}
+        opcache_optimization_level: {{ phpData.modules.opcache.optimization_level }}
+        opcache_blacklist_filename: {{ phpData.modules.opcache.blacklist_filename }}
+        opcache_max_file_size: {{ phpData.modules.opcache.max_file_size|int(0) }}
+        opcache_force_restart_timeout: {{ phpData.modules.opcache.force_restart_timeout|int(180) }}
+        opcache_error_log: {{ phpData.modules.opcache.error_log }}
+        opcache_log_verbosity_level: {{ phpData.modules.opcache.log_verbosity_level|int(1) }}
         apc_install: {{ phpData.modules.apc.install }}
-        apc_enabled: {{ phpData.modules.apc.enabled|int(1) }}
-        apc_enable_cli: {{ phpData.modules.apc.enable_cli|int(1) }}
+        apc_enabled: {{ phpData.modules.apc.enabled|int(0) }}
+        apc_enable_cli: {{ phpData.modules.apc.enable_cli|int(0) }}
         apc_rfc1867: {{ phpData.modules.apc.rfc1867|int(0) }}
         apc_include_once_override: {{ phpData.modules.apc.include_once_override|int(1) }}
         apc_canonicalize: {{ phpData.modules.apc.canonicalize|int(1) }}
@@ -132,7 +154,7 @@ makina-php-pool-{{ pool_name }}:
     - watch_in:
       - service: makina-php-reload
 
-# Ensure directories referenced in the polol exists
+# Ensure directories referenced in the pool exists
 # and have the right users
 makina-php-pool-{{ pool_name }}-webroot-directory:
   file.directory:

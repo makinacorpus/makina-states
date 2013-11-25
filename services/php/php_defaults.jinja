@@ -1,7 +1,16 @@
 #
 # PHP Fine Settings ------------------------------------------------
-#
+# -------- MODULE ZEND OPCACHE --------------------------
+# replacement for APC!
+# @see https://raw.github.com/zendtech/ZendOptimizerPlus/master/README for details
+# of options
+# 
 # -------- MODULE APC ---------------------------------
+# WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+# WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+# WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+# WARNING : APC is somewhat deprecated and Zend opcache is the replacment
+# So the default behavior will not be to install it!!!
 #
 # - APC: General shared settings
 #  * shm_segments : seems to perform better with only one shared segment
@@ -68,7 +77,7 @@
 #  * lazy_classes :  same as above
 #
 #
-# XDEBUG -------------------------------------------
+# MODULE XDEBUG ----------------------------------------
 # php_admin_value[xdebug.default_enable]          =   xdebug_default_enable ;
 # ; http://xdebug.org/docs/all_settings#collect_params (0|1|2|3|4)
 # php_admin_value[xdebug.collect_params]          = xdebug_collect_params  0;
@@ -103,7 +112,8 @@
         'fpm': {
             'chroot': False,
             'use_socket' : True,
-            'socket_relative_path': 'var/fcgi/fpm.sock',
+            'socket_relative_path': 'var/fcgi',
+            'socket_name': 'fpm.sock',
             'listen_backlog': 128,
             'listen_allowed_clients' : '127.0.0.1',
             'phpuser': 'www-data',
@@ -123,12 +133,35 @@
              }
         },
         'modules': {
-            'apc': {
+            'opcache': {
                 'install' : True,
                 'enabled' : True,
                 'enable_cli': True,
+                'memory_consumption': 64,
+                'interned_strings_buffer': '4',
+                'max_accelerated_files' : 2000,
+                'max_wasted_percentage' : 5,
+                'use_cwd' : 1,
+                'validate_timestamps': 1,
+                'revalidate_freq': 2,
+                'revalidate_path': 0,
+                'save_comments': 0,
+                'load_comments': 0,
+                'fast_shutdown': 0,
+                'enable_file_override': 1,
+                'optimization_level': '0xffffffff',
+                'blacklist_filename': '',
+                'max_file_size': '0',
+                'force_restart_timeout': '180',
+                'error_log' : '',
+                'log_verbosity_level' : '1'
+            },
+            'apc': {
+                'install' : True,
+                'enabled' : False,
+                'enable_cli': False,
                 'shm_segments' : 1,
-                'shm_size' : '32M',
+                'shm_size' : '16M',
                 'mmap_file_mask': '/apc.shm.XXXXXX',
                 'rfc1867': True,
                 'include_once_override': True,

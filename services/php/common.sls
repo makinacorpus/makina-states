@@ -20,15 +20,15 @@ makina-php-timezone:
     - watch_in:
       - service: makina-php-reload
 
-#--------------------- APC
+#--------------------- APC (mostly deprecated)
 {% if phpData.modules.apc.install %}
 makina-php-apc:
   file.managed:
     - user: root
     - group: root
     - mode: 664
-    - name: {{ phpData.confdir }}/apc.ini
-    - source: salt://makina-states/files{{ phpData.confdir }}/apc.ini
+    - name: {{ phpData.confdir }}/apcu.ini
+    - source: salt://makina-states/files{{ phpData.confdir }}/apcu.ini
     - template: 'jinja'
     - defaults:
         enabled: {{ phpData.modules.apc.enabled }}
@@ -44,8 +44,8 @@ makina-php-apc:
 {%   if phpData.modules.apc.enabled %}
 makina-php-apc-install:
   cmd.run:
-    - name: /usr/sbin/php5enmod -s ALL apc
-    - unless: /usr/sbin/php5query -q -s cli -m apc
+    - name: /usr/sbin/php5enmod -s ALL apcu
+    - unless: /usr/sbin/php5query -q -s cli -m apcu
     - require:
       - pkg: makina-php-pkgs
       - file: makina-php-apc
@@ -54,8 +54,8 @@ makina-php-apc-install:
 {%   else %}
 makina-php-apc-disable:
   cmd.run:
-    - name: /usr/sbin/php5dismod -s ALL apc
-    - onlyif: /usr/sbin/php5query -q -s cli -m apc
+    - name: /usr/sbin/php5dismod -s ALL apcu
+    - onlyif: /usr/sbin/php5query -q -s cli -m apcu
     - require:
       - pkg: makina-php-pkgs
       - file: makina-php-apc

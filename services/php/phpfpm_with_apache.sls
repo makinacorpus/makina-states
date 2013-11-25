@@ -47,6 +47,8 @@ makina-phpfpm-apache-module_connect_phpfpm_mod_fastcgi_module_conf:
     - defaults:
         shared_mode: True
         project_root: ''
+        shared_mode: True
+        socket_directory: '/var/lib/apache2/fastcgi'
     - require:
         - pkg: makina-phpfpm-apache-module_connect_phpfpm_mod_fastcgi_module
     - watch_in:
