@@ -133,18 +133,24 @@ MASTERSALT_PORT="${MASTERSALT_PORT:-$MASTERSALT_DEFAULT_PORT}"
 
 MAKINA_PROJECTS="makina-projects"
 STATES_URL="https://github.com/makinacorpus/makina-states.git"
+PROJECTS_PATH="/srv/projects"
 PROJECT_URL="${PROJECT_URL:-}"
 PROJECT_BRANCH="${PROJECT_BRANCH:-salt}"
 PROJECT_NAME="${PROJECT_NAME:-}"
 PROJECT_TOPSLS="${PROJECT_TOPSLS:-}"
 PROJECT_SETUPSTATE="${PROJECT_SETUPSTATE:-}"
-PROJECTS_PATH="/srv/projects"
 PROJECT_PATH="$PROJECTS_PATH/$PROJECT_NAME"
 PROJECTS_SALT_PATH="$ROOT/$MAKINA_PROJECTS"
+PROJECTS_PILLAR_PATH="$PILLAR/$MAKINA_PROJECTS"
+PROJECT_PILLAR_LINK="$PROJECTS_PILLAR_PATH/$PROJECT_NAME"
+PROJECT_PILLAR_PATH="$PROJECTS_PATH/$PROJECT_NAME/pillar"
+PROJECT_PILLAR_FILE="$PROJECT_PILLAR_PATH/init.sls"
 PROJECT_SALT_LINK="$ROOT/$MAKINA_PROJECTS/$PROJECT_NAME"
 PROJECT_SALT_PATH="$PROJECT_PATH/salt"
 PROJECT_TOPSLS_DEFAULT="$MAKINA_PROJECTS/$PROJECT_NAME/top.sls"
+PROJECT_TOPSTATE_DEFAULT="${MAKINA_PROJECTS}.${PROJECT_NAME}.top"
 PROJECT_SETUPSTATE_DEFAULT="${MAKINA_PROJECTS}.${PROJECT_NAME}.setup"
+PROJECT_PILLAR_STATE="${MAKINA_PROJECTS}.${PROJECT_NAME}"
 
 if [[ -n "$PROJECT_URL" ]];then
     if [[ -z "$PROJECT_NAME" ]];then
@@ -405,9 +411,9 @@ if    [[ ! -e "$MS/bin/buildout" ]]\
 fi
 
 # Create a default top.sls in the pillar if not present
-if [[ ! -f /srv/pillar/top.sls ]];then
+if [[ ! -f $PILLAR/top.sls ]];then
     bs_log "creating default pillar's top.sls"
-    cat > /srv/pillar/top.sls << EOF
+    cat > $PILLAR/top.sls << EOF
 #
 # This is the top pillar configuration file, link here all your
 # environment configurations files to their respective minions
@@ -418,9 +424,9 @@ EOF
 fi
 
 # Create a default setup in the tree if not present
-if [[ ! -f /srv/salt/setup.sls ]];then
+if [[ ! -f $ROOT/setup.sls ]];then
     bs_log "creating default salt's setup.sls"
-    cat > /srv/salt/setup.sls << EOF
+    cat > $ROOT/setup.sls << EOF
 #
 # Include here your various projet setup files
 #
@@ -429,22 +435,21 @@ base:
     - makina-states.setup
 EOF
 fi
-if [[ "$(egrep  "^(  '\*':)" /srv/salt/setup.sls|wc -l)" == "0" ]];then
+if [[ "$(egrep  "^(  '\*':)" $ROOT/setup.sls|wc -l)" == "0" ]];then
     bs_log "Old installation detected for setup.sls, trying to migrate it"
-    cp /srv/salt/setup.sls /srv/salt/setup.sls.${CHRONO}.bak
+    cp $ROOT/setup.sls $ROOT/setup.sls.${CHRONO}.bak
     sed  "/include:/{
 a base:
 a \  '*':
-}" -i /srv/salt/setup.sls
-    sed -re "s/^  -/    -/g"  -i /srv/salt/setup.sls
-    sed -re "/^include:/d"  -i /srv/salt/setup.sls
+}" -i $ROOT/setup.sls
+    sed -re "s/^  -/    -/g"  -i $ROOT/setup.sls
+    sed -re "/^include:/d"  -i $ROOT/setup.sls
 fi
-exit -1
 
 # Create a default top.sls in the tree if not present
-if [[ ! -f /srv/salt/top.sls ]];then
+if [[ ! -f $ROOT/top.sls ]];then
     bs_log "creating default salt's top.sls"
-    cat > /srv/salt/top.sls << EOF
+    cat > $ROOT/top.sls << EOF
 #
 # This is the salt states configuration file, link here all your
 # environment states files to their respective minions
@@ -454,45 +459,25 @@ base:
 EOF
 fi
 
-# add core if not present
-if [[ $(egrep -- "- core\s*$" /srv/salt/top.sls|wc -l) == "0" ]];then
-    bs_log "Adding core to top file"
-    sed -re "/('|\")\*('|\"):/ {
-a\    - core
-}" -i /srv/salt/top.sls
-fi
-if [[ ! -f /srv/salt/core.sls ]];then
-    bs_log "creating default salt's core.sls"
-    cat > /srv/salt/core.sls << EOF
-#
-# Dummy state file example
-#
-test:
-  cmd.run:
-    - name: salt '*' test.ping
-
-EOF
-fi
-
 # add makina-salt.dev if not present
-if [[ $(egrep -- "- makina-states\.dev\s*$" /srv/salt/top.sls|wc -l) == "0" ]];then
+if [[ $(egrep -- "- makina-states\.dev\s*$" $ROOT/top.sls|wc -l) == "0" ]];then
     bs_log "Adding makina-states.dev to top file"
     sed -re "/('|\")\*('|\"):/ {
 a\    - makina-states.dev
-}" -i /srv/salt/top.sls
+}" -i $ROOT/top.sls
 fi
 
 # TODO: comment
-if [[ $(grep -- "- salt" /srv/pillar/top.sls|wc -l) == "0" ]];then
+if [[ $(grep -- "- salt" $PILLAR/top.sls|wc -l) == "0" ]];then
     sed -re "/('|\")\*('|\"):/ {
 a\    - salt
-}" -i /srv/pillar/top.sls
+}" -i $PILLAR/top.sls
 fi
 
 # Create a default salt.sls in the pillar if not present
-if [[ ! -f /srv/pillar/salt.sls ]];then
+if [[ ! -f $PILLAR/salt.sls ]];then
     bs_log "creating default pillar's salt.sls"
-    cat > /srv/pillar/salt.sls << EOF
+    cat > $PILLAR/salt.sls << EOF
 salt:
   minion:
     master: 127.0.0.1
@@ -504,14 +489,14 @@ fi
 
 # --------- MASTERSALT
 # Set default mastersalt  pillar
-if [[ $SALT_BOOT == "mastersalt" ]] && [[ ! -f /srv/pillar/mastersalt.sls ]];then
-    if [[ $(grep -- "- mastersalt" /srv/pillar/top.sls|wc -l) == "0" ]];then
+if [[ $SALT_BOOT == "mastersalt" ]] && [[ ! -f $PILLAR/mastersalt.sls ]];then
+    if [[ $(grep -- "- mastersalt" $PILLAR/top.sls|wc -l) == "0" ]];then
         sed -re "/('|\")\*('|\"):/ {
 a\    - mastersalt
-}" -i /srv/pillar/top.sls
+}" -i $PILLAR/top.sls
     fi
-    if [[ ! -f /srv/pillar/mastersalt.sls ]];then
-    cat > /srv/pillar/mastersalt.sls << EOF
+    if [[ ! -f $PILLAR/mastersalt.sls ]];then
+    cat > $PILLAR/mastersalt.sls << EOF
 mastersalt-minion:
   master: ${MASTERSALT}
   master_port: ${MASTERSALT_PORT}
@@ -773,6 +758,34 @@ if [[ -n "$PROJECT_URL" ]];then
     if [[ -f "$ROOT/${PROJECT_TOPSLS_DEFAULT}"  ]] && [[ -z ${PROJECT_TOPSLS} ]];then
         PROJECT_TOPSLS="$PROJECT_TOPSLS_DEFAULT"
     fi
+    PROJECT_TOPSTATE="$(echo ${PROJECT_TOPSLS}|sed -re 's/\//./g' -e 's/\.sls//g')"
+    if [[ ! -d "$PROJECT_PILLAR_PATH" ]];then
+        mkdir -p "$PROJECT_PILLAR_PATH"
+        bs_log "Creating pillar container in $PROJECT_PILLAR_PATH"
+    fi
+    if [[ ! -d "$PROJECTS_PILLAR_PATH" ]];then
+        mkdir -p "$PROJECTS_PILLAR_PATH"
+        bs_log "Creating $MAKINA_PROJECTS pillar container in $PILLAR"
+    fi
+    if [[ ! -e "$PROJECT_PILLAR_LINK" ]];then
+        bs_log "Linking project $PROJECT_NAME pillar in $PILLAR"
+        echo ln -sf "$PROJECT_PILLAR_PATH" "$PROJECT_PILLAR_LINK"
+        ln -sf "$PROJECT_PILLAR_PATH" "$PROJECT_PILLAR_LINK"
+    fi
+    if [[ ! -e "$PROJECT_PILLAR_FILE" ]];then
+        if [[ ! -e "$PROJECT_SALT_PATH/PILLAR.sample.sls" ]];then
+            bs_log "Creating empty project $PROJECT_NAME pillar in $PROJECT_PILLAR_FILE"
+            touch "$PROJECT_SALT_PATH/PILLAR.sample.sls"
+        fi
+        bs_log "Linking project $PROJECT_NAME pillar in $PROJECT_PILLAR_FILE"
+        ln -sf "$PROJECT_SALT_PATH/PILLAR.sample.sls" "$PROJECT_PILLAR_FILE"
+    fi
+    if [[ $(grep -- "- $PROJECT_PILLAR_STATE" $PILLAR/top.sls|wc -l) == "0" ]];then
+        bs_log "including $PROJECT_NAME pillar in $PILLAR/top.sls"
+        sed -re "/('|\")\*('|\"):/ {
+a\    - $PROJECT_PILLAR_STATE
+}" -i $PILLAR/top.sls
+    fi
     if [[ "$(get_grain $setup_grain)" != *"True"* ]] || [[ -n $FORCE_PROJECT_SETUP ]];then
         if [[ -n $PROJECT_SETUPSTATE ]];then
             SALT_LOGFILE="$PROJECT_SALT_PATH/.salt_setup_log.log"
@@ -813,9 +826,20 @@ if [[ -n "$PROJECT_URL" ]];then
         bs_log "Top state: $PROJECT_URL@$PROJECT_BRANCH[$PROJECT_TOPSLS] already done (remove grain: $project_grain to redo)"
         echo "changed=\"false\" comment=\"$PROJECT_URL@$PROJECT_BRANCH[$PROJECT_TOPSLS] already done\""
     fi
-    bs_log "Installation finished, dont forget to install:"
+    if [[ $(grep -- "- $PROJECT_TOPSTATE" "$ROOT/top.sls"|wc -l) == "0" ]];then
+        sed -re "/('|\")\*('|\"):/ {
+a\    - $PROJECT_TOPSTATE
+}" -i "$ROOT/top.sls"
+    fi
+    if [[ $(grep -- "- $PROJECT_SETUPSTATE" "$ROOT/setup.sls"|wc -l) == "0" ]];then
+        sed -re "/('|\")\*('|\"):/ {
+a\    - $PROJECT_SETUPSTATE
+}" -i "$PILLAR/setup.sls"
+    fi
+    bs_log "Installation finished, dont forget to install/verify:"
     bs_log "    - $PROJECT_SETUPSTATE in $ROOT/setup.sls"
     bs_log "    - $PROJECT_TOPSLS in $ROOT/top.sls"
+    bs_log "    - in $PROJECT_PILLAR_FILE"
     if [[ "$changed" == "false" ]];then
         echo "changed=\"$changed\" comment=\"already installed\""
     else
