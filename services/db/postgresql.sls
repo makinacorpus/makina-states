@@ -1,12 +1,33 @@
-# define in pillar a postgresql pillar entry:
-# goal of this state is:
-#   - to have a working up & running postgresql server
-#   - setup basic db, roles & users
 #
-# By default the owner of the database is a groupwith the same name suffixed witrh owner for the user to be added to
-# We assign then users to this group
-# Define the user to run psql command as:
-# makina.postgresql.user: foo (default: postgres)
+# This states file aims to configure postgresql server
+#
+#  You have
+#   - postgresql_db: a macro to define databases with a default group as owner:
+#   - postgresql_user: a macro to define an user, his privileges and groups
+#
+# You can use them in your own states as follow: {#
+#
+#    {% import "makina-states/services/db/postgresql.sls" as pgsql with context %}
+#    {{ pgsql.postgresql_base() }}
+#    {% set db_name = dbdata['db_name'] %}
+#    {% set db_tablespace = dbdata['db_tablespace'] %}
+#    {% set db_user = dbdata['db_user'] %}
+#    {% set db_password = dbdata['db_password'] %}
+#    {{ pgsql.postgresql_db(db_name, tablespace=db_tablespace) }}
+#    {{ pgsql.postgresql_user(db_user,
+#                             db_password,
+#                             groups=['{0}_owners'.format(db_name)]) }}
+#    {% endfor %} 
+#
+#    #}
+#
+# You can define via pillar the default user to run psql command as:
+#
+#    makina.postgresql.user: foo (default: postgres)
+#
+# You can also define in pillar databases and users respecting naming convention:
+# By default the owner of the database is a group with the same name suffixed
+# with _owner for the user to be added to. We assign then users to this group
 #
 # Define a database and its owner as follow (see salt.states.postgres_database.present)
 # bar-makina-postgresql:
@@ -14,7 +35,7 @@
 #   encoding: foo (opt, default; utf8)
 #   template: foo (opt, default; template0)
 #   tablespace: foo (opt, default; pg_default)
-# This will create a 'bar' database owned by the group 'bar-owners'
+# This will create a 'bar' database owned by the group 'bar_owners'
 #
 # Define a user a follow (see salt.states.postgres_user.present)
 # bar-makina-postgresql-user:
@@ -34,8 +55,13 @@
 #      groups:
 #        - mydb_owners
 #
-{% set psql_user = salt['config.get']('makina.postgresql.user', 'postgres') %}
+#
+#
+#
+#
+{% set default_psql_user = salt['config.get']('makina.postgresql.user', 'postgres') %}
 
+{% macro postgresql_base() %}
 postgresql-pkgs:
   pkg.installed:
     - names:
@@ -51,60 +77,66 @@ makina-postgresql-service:
     - watch:
       - pkg: postgresql-pkgs
 
+{% endmacro %}
 
-{% for dbk, data in pillar.items() %}
-{% if dbk.endswith('-makina-postgresql') %}
-{% set db = data.get('name', dbk.split('-makina-postgresql')[0]) %}
-{% set enc=data.get('encoding', 'utf8') %}
-{% set template=data.get('encoding', 'template0')%}
-{% set tablespace=data.get('tablesplace', 'pg_default')%}
-
-{{db}}_owners-makina-postresql-group:
+{% macro postgresql_db(db,
+                       owner=None,
+                       tablespace='pg_default',
+                       template='template0',
+                       encoding='utf8',
+                       psql_user=default_psql_user
+) -%}
+{% if not owner -%}
+  {% set owner = '%s_owners' % db %}
+{% endif -%}
+{{owner}}-makina-postresql-group:
    postgres_group.present:
-    - name: {{db}}_owners
+    - name: {{owner}}
     - runas: {{psql_user}}
     - require:
       - service: makina-postgresql-service
 
-{{db}}_owners-makina-postgresql-group-login:
+{{owner}}-makina-postgresql-group-login:
   cmd.run:
-    - name: echo "ALTER ROLE {{db}}_owners WITH LOGIN;"|psql
+    - name: echo "ALTER ROLE {{owner}} WITH LOGIN;"|psql
     - user: {{psql_user}}
     - require:
-      - postgres_group: {{db}}_owners-makina-postresql-group
+      - postgres_group: {{owner}}-makina-postresql-group
 
 {{db}}-makina-postgresql-database:
   cmd.run:
-    - name: createdb {{db}} -E {{enc}} -O {{db}}_owners -T {{template }} -D {{tablespace}}
+    - name: createdb {{db}} -E {{encoding}} -O {{owner}} -T {{template }} -D {{tablespace}}
     - unless: test "$(psql -l|awk '{print $1}'|grep -w {{db}}|wc -l)" != "0"
     - user: {{psql_user}}
     - require:
       - service: makina-postgresql-service
-      - postgres_group: {{db}}_owners-makina-postresql-group
+      - postgres_group: {{owner}}-makina-postresql-group
 
 {{db}}-owners-makina-postresql-grant:
   cmd.run:
-    - name: echo "GRANT ALL PRIVILEGES ON DATABASE {{db}} TO {{db}}_owners;"|psql
+    - name: echo "GRANT ALL PRIVILEGES ON DATABASE {{db}} TO {{owner}};"|psql
     - user: {{psql_user}}
     - require:
-      - postgres_group: {{db}}_owners-makina-postresql-group
+      - postgres_group: {{owner}}-makina-postresql-group
       - cmd: {{db}}-makina-postgresql-database
-{% endif %}
-{% endfor %}
+{% endmacro %}
 
-{% for userk, data in pillar.items() %}
-{% if userk.endswith('-makina-postgresql-user') %}
-{% set user = data.get('name', userk.split('-makina-postgresql-user')[0]) %}
-{% set groups = data.get('groups', []) %}
-{% set pw = data['password'] %}
-{% set superuser = data.get('superuser', False) %}
-{% set encrypted = data.get('encrypted', True) %}
-{% set replication = data.get('replication', False) %}
-{% set createdb = data.get('createdb', False) %}
+{% macro postgresql_user(user,
+                         password,
+                         groups=None,
+                         createdb=False,
+                         superuser=False,
+                         replication=False,
+                         encrypted=True,
+                         psql_user=default_psql_user
+) -%}
+{% if not groups %}
+  {% set groups = [] %}
+{% endif %}
 {{user}}-makina-postgresql-user:
   postgres_user.present:
     - name: {{ user }}
-    - password: {{pw}}
+    - password: {{password}}
     - runas: {{psql_user}}
     {% if createdb %}- createdb: True {% endif %}
     {% if superuser %}- superuser: True {% endif %}
@@ -115,10 +147,38 @@ makina-postgresql-service:
       - service: makina-postgresql-service
       {% for g in  groups %}- cmd: {{g}}-makina-postgresql-group-login
       {% endfor %}
-#  cmd.run:
-#    - name: echo "ALTER USER {{ user }} WiTH ENCRYPTED PASSWORD '{{pw}}';"|psql
-#    - user: {{psql_user}}
-#    - require:
-#      - postgres_user: {{user}}_database_user
+{% endmacro %}
+
+{{ postgresql_base() }}
+{% for dbk, data in pillar.items() %}
+{% if dbk.endswith('-makina-postgresql') %}
+{% set db = data.get('name', dbk.split('-makina-postgresql')[0]) %}
+{% set encoding=data.get('encoding', 'utf8') %}
+{% set owner=data.get('owner', None) %}
+{% set template=data.get('encoding', 'template0')%}
+{% set tablespace=data.get('tablesplace', 'pg_default')%}
+{{ postgresql_db(db=db,
+                 owner=owner,
+                 tablesplace=tablesplace,
+                 encoding=encoding,
+                 template=template) }}
+{% endif %}
+{% endfor %}
+{% for userk, data in pillar.items() %}
+{% if userk.endswith('-makina-postgresql-user') %}
+{% set user = data.get('name', userk.split('-makina-postgresql-user')[0]) %}
+{% set groups = data.get('groups', []) %}
+{% set pw = data['password'] %}
+{% set superuser = data.get('superuser', False) %}
+{% set encrypted = data.get('encrypted', True) %}
+{% set replication = data.get('replication', False) %}
+{% set createdb = data.get('createdb', False) %}
+{{ postgresql_user(user=user,
+                   password=pw,
+                   createdb=createdb,
+                   groups=groups,
+                   encrypted=encrypted,
+                   superuser=superuser,
+                   replication=replication) }}
 {% endif %}
 {% endfor %}
