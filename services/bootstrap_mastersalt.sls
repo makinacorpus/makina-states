@@ -9,7 +9,7 @@
 
 include:
   - makina-states.services.bootstrap_server
-  - makina-states.services.mastersalt
+  - makina-states.services.base.mastersalt
 
 makina-bootstrap-mastersalt-grain:
   grains.present:

@@ -6,7 +6,7 @@
 {% set devhost = grains.get('makina.devhost', False) %}
 
 include:
-  - makina-states.services.salt_master
+  - makina-states.services.base.salt_master
   {% if devhost %}- makina-states.services.bootstrap_vm{% endif %}
 
 
