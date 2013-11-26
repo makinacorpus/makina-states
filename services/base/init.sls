@@ -5,7 +5,7 @@ include:
   - makina-states.services.base.nscd
   - makina-states.services.base.ssh
   {%- if ldap_en %}
-  - makina-states.services.ldap
+  - makina-states.services.base.ldap
   {% endif %}
 
 # DONE MINION BY MINION, CANT BE GENERIC
