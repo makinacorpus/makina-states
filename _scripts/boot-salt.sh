@@ -75,14 +75,14 @@ CHRONO="$(date "+%F_%H-%M-%S")"
 HOSTNAME="$(hostname)"
 
 # base sls bootstrap
-bootstrap="makina-states.services.bootstrap"
-mastersalt_bootstrap="${bootstrap}_mastersalt"
+bootstrap_pref="makina-states.bootstrap"
+mastersalt_bootstrap="${bootstrap_pref}.mastersalt"
 
 
 export PATH=$MS/bin:$PATH
 
 # base sls file to run on a mastersalt master
-MASTERSALT_MASTER_ST="makina-states.services.bootstrap_mastersalt_master"
+MASTERSALT_MASTER_ST="${bootstrap_pref}.mastersalt_master"
 
 # boot mode for mastersalt
 # if mastersalt is set, automatic switch on mastersalt mode
@@ -168,7 +168,7 @@ if [[ -z $SALT_BOOT ]];then
     SALT_BOOT="$1"
 fi
 if [[ -n "$SALT_BOOT" ]];then
-    bootstrap="${bootstrap}_${SALT_BOOT}"
+    bootstrap="${bootstrap_pref}.${SALT_BOOT}"
 fi
 i_prereq() {
     to_install=""
