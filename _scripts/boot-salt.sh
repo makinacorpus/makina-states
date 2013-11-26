@@ -834,7 +834,7 @@ a\    - $PROJECT_TOPSTATE
     if [[ $(grep -- "- $PROJECT_SETUPSTATE" "$ROOT/setup.sls"|wc -l) == "0" ]];then
         sed -re "/('|\")\*('|\"):/ {
 a\    - $PROJECT_SETUPSTATE
-}" -i "$PILLAR/setup.sls"
+}" -i "$ROOT/setup.sls"
     fi
     bs_log "Installation finished, dont forget to install/verify:"
     bs_log "    - $PROJECT_SETUPSTATE in $ROOT/setup.sls"
