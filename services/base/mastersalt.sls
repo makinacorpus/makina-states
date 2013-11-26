@@ -7,7 +7,7 @@
 {% import "makina-states/_macros/salt.sls" as c with context %}
 
 include:
-  - makina-states.services.salt
+  - makina-states.services.base.salt
 
 mastersalt-salt-bin:
   file.managed:

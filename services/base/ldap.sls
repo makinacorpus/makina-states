@@ -16,7 +16,7 @@
 
 
 include:
-  - makina-states.services.nscd
+  - makina-states.services.base.nscd
 
 ldap-pkgs:
   pkg.installed:

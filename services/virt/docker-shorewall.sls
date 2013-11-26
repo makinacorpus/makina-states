@@ -7,8 +7,8 @@
 # the container network
 #
 include:
-  - makina-states.services.shorewall
-  - makina-states.services.docker
+  - makina-states.services.firewall.shorewall
+  - makina-states.services.virt.docker
 
 extend:
   docker-post-inst:

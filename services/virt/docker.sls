@@ -5,8 +5,8 @@
 #
 
 include:
-  - makina-states.services.pkgs
-  - makina-states.services.salt
+  - makina-states.localsettings.pkgs
+  - makina-states.services.base.salt
 
 # To configure a global registry use this:
 #

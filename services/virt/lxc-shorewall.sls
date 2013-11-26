@@ -7,8 +7,8 @@
 # the container network
 #
 include:
-  - makina-states.services.shorewall
-  - makina-states.services.lxc
+  - makina-states.services.firewall.shorewall
+  - makina-states.services.virt.lxc
 
 extend:
   {%- for k, lxc_data in pillar.items() %}

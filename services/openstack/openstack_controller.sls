@@ -1,4 +1,4 @@
 include:
   - makina-states.servers.base
-  - makina-states.services.mysql
+  - makina-states.services.db.mysql
   - openstack.standalone_controller_node
