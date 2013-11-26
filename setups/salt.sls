@@ -2,16 +2,16 @@
 
 include:
   {% if c.server %}
-  - makina-states.services.bootstrap_server
+  - makina-states.bootstrap.server
   {% endif %}
   {% if c.sa %}
-  - makina-states.services.bootstrap_standalone
+  - makina-states.bootstrap.standalone
   {% endif %}
   {% if c.vm %}
-  - makina-states.services.bootstrap_vm
+  - makina-states.bootstrap.vm
   {% endif %}
   {% if c.no_bootstrap %}
-  - makina-states.services.bootstrap
+  - makina-states.bootstrap.base
   {% endif %}
 
 # Fix permissions and ownerships

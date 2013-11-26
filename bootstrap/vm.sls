@@ -8,7 +8,7 @@
 #
 
 include:
-  - makina-states.services.bootstrap_server
+  - makina-states.bootstrap.server
 
 makina-bootstrap-vm-grain:
   grains.present:

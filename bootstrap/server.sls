@@ -14,7 +14,7 @@
 #
 
 include:
-  - makina-states.services.bootstrap
+  - makina-states.bootstrap.base
   - makina-states.localsettings.base
 
 makina-bootstrap-server-grain:

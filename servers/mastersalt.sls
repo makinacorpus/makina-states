@@ -3,5 +3,5 @@
 #
 include:
   - makina-states.servers.base
-  - makina-states.services.bootstrap_mastersalt
+  - makina-states.bootstrap.mastersalt
 

@@ -2,9 +2,9 @@
 {% if c.mastersalt %}
 include:
   {% if c.mmaster %}
-  - makina-states.services.bootstrap_mastersalt_master
+  - makina-states.bootstrap.mastersalt_master
   {% else %}
-  - makina-states.services.bootstrap_mastersalt
+  - makina-states.bootstrap.mastersalt
   {% endif %}
 
 # recurse does not seem to work well to reset perms

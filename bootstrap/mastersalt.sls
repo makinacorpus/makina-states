@@ -8,13 +8,13 @@
 #
 
 include:
-  - makina-states.services.bootstrap_mastersalt
-  - makina-states.services.base.mastersalt_master
+  - makina-states.bootstrap.server
+  - makina-states.services.base.mastersalt
 
-makina-bootstrap-mastersalt-master-grain:
+makina-bootstrap-mastersalt-grain:
   grains.present:
-    - name: makina.bootstrap.mastersalt_master
+    - name: makina.bootstrap.mastersalt
     - value: True
     - require:
-      - service: mastersalt-master
+      - service: mastersalt-minion
 

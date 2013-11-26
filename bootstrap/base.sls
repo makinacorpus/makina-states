@@ -7,7 +7,7 @@
 
 include:
   - makina-states.services.base.salt_master
-  {% if devhost %}- makina-states.services.bootstrap_vm{% endif %}
+  {% if devhost %}- makina-states.bootstrap.vm{% endif %}
 
 
 
