@@ -77,6 +77,8 @@ postgresql-pkgs:
       - libpq-dev
       - python-virtualenv
 
+#--- MAIN SERVICE RESTART/RELOAD watchers --------------
+
 makina-postgresql-service:
   service.running:
     - name: postgresql
@@ -84,6 +86,15 @@ makina-postgresql-service:
       - pkg: postgresql-pkgs
     - watch:
       - pkg: postgresql-pkgs
+
+makina-postgresql-service-reload:
+  service.running:
+    - name: postgresql
+    - require:
+      - pkg: postgresql-pkgs
+    - enable: True
+    - reload: True
+    # most watch requisites are linked here with watch_in
 
 {% endmacro %}
 
@@ -94,8 +105,9 @@ makina-postgresql-service:
                        encoding='utf8',
                        psql_user=default_psql_user
 ) -%}
+#--- POSTGRESQL CLUSTER directories, users, database, grants --------------
 {% if not owner -%}
-  {% set owner = '%s_owners' % db %}
+{%   set owner = '%s_owners' % db %}
 {% endif -%}
 {{owner}}-makina-postresql-group:
    postgres_group.present:
@@ -139,7 +151,7 @@ makina-postgresql-service:
                          psql_user=default_psql_user
 ) -%}
 {% if not groups %}
-  {% set groups = [] %}
+{%   set groups = [] %}
 {% endif %}
 {{user}}-makina-postgresql-user:
   postgres_user.present:
@@ -159,34 +171,34 @@ makina-postgresql-service:
 
 {{ postgresql_base() }}
 {% for dbk, data in pillar.items() %}
-{% if dbk.endswith('-makina-postgresql') %}
-{% set db = data.get('name', dbk.split('-makina-postgresql')[0]) %}
-{% set encoding=data.get('encoding', 'utf8') %}
-{% set owner=data.get('owner', None) %}
-{% set template=data.get('encoding', 'template0')%}
-{% set tablespace=data.get('tablesplace', 'pg_default')%}
-{{ postgresql_db(db=db,
-                 owner=owner,
-                 tablesplace=tablesplace,
-                 encoding=encoding,
-                 template=template) }}
-{% endif %}
+{%   if dbk.endswith('-makina-postgresql') %}
+{%     set db = data.get('name', dbk.split('-makina-postgresql')[0]) %}
+{%     set encoding=data.get('encoding', 'utf8') %}
+{%     set owner=data.get('owner', None) %}
+{%     set template=data.get('encoding', 'template0')%}
+{%     set tablespace=data.get('tablesplace', 'pg_default')%}
+{{     postgresql_db(db=db,
+                     owner=owner,
+                     tablesplace=tablesplace,
+                     encoding=encoding,
+                     template=template) }}
+{%     endif %}
 {% endfor %}
 {% for userk, data in pillar.items() %}
-{% if userk.endswith('-makina-postgresql-user') %}
-{% set user = data.get('name', userk.split('-makina-postgresql-user')[0]) %}
-{% set groups = data.get('groups', []) %}
-{% set pw = data['password'] %}
-{% set superuser = data.get('superuser', False) %}
-{% set encrypted = data.get('encrypted', True) %}
-{% set replication = data.get('replication', False) %}
-{% set createdb = data.get('createdb', False) %}
-{{ postgresql_user(user=user,
-                   password=pw,
-                   createdb=createdb,
-                   groups=groups,
-                   encrypted=encrypted,
-                   superuser=superuser,
-                   replication=replication) }}
-{% endif %}
+{%   if userk.endswith('-makina-postgresql-user') %}
+{%     set user = data.get('name', userk.split('-makina-postgresql-user')[0]) %}
+{%     set groups = data.get('groups', []) %}
+{%     set pw = data['password'] %}
+{%     set superuser = data.get('superuser', False) %}
+{%     set encrypted = data.get('encrypted', True) %}
+{%     set replication = data.get('replication', False) %}
+{%     set createdb = data.get('createdb', False) %}
+{{     postgresql_user(user=user,
+                       password=pw,
+                       createdb=createdb,
+                       groups=groups,
+                       encrypted=encrypted,
+                       superuser=superuser,
+                       replication=replication) }}
+{%   endif %}
 {% endfor %}
