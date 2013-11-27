@@ -291,6 +291,25 @@ makina-apache-conf-syntax-check:
        - service: makina-apache-restart
        - service: makina-apache-reload
 
+#--- APACHE STARTUP WAIT DEPENDENCY --------------
+{% if grains['makina.devhost'] %}
+#
+# On a vagrant VM we certainly should wait until NFS mount
+# before starting the web server. Chances are that this NFS mount
+# contains our documentroots and log directories
+# Delay start on vagrant dev host ------------
+include:
+  - makina-states.services.virt.mount_upstart_waits
+
+makina-add-apache-in-waiting-for-nfs-services:
+  file.accumulated:
+    - name: list_of_services
+    - filename: /etc/init/delay_services_for_vagrant_nfs.conf
+    - text: apache2
+    - require_in:
+      - file: makina-file_delay_services_for_srv
+{% endif %}
+
 #--- MAIN SERVICE RESTART/RELOAD watchers --------------
 
 makina-apache-restart:

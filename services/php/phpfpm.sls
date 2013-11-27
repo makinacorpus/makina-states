@@ -54,6 +54,22 @@ makina-php-remove-default-pool:
 {%   endfor %}
 {% endif %}
 
+
+#--- PHP STARTUP WAIT DEPENDENCY --------------
+{% if grains['makina.devhost'] %}
+# Delay start on vagrant dev host ------------
+include:
+  - makina-states.services.virt.mount_upstart_waits
+
+makina-add-php-in-waiting-for-nfs-services:
+  file.accumulated:
+    - name: list_of_services
+    - filename: /etc/init/delay_services_for_vagrant_nfs.conf
+    - text: php5-fpm
+    - require_in:
+      - file: makina-file_delay_services_for_srv
+{% endif %}
+
 #--- MAIN SERVICE RESTART/RELOAD watchers --------------
 
 makina-php-restart:
