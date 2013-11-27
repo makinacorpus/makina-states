@@ -5,6 +5,8 @@
 #   - postgresql_db: a macro to define databases with a default group as owner:
 #   - postgresql_user: a macro to define an user, his privileges and groups
 #
+#--- STATES EXAMPLES --------------------------------
+#
 # You can use them in your own states as follow: {#
 #
 #    {% import "makina-states/services/db/postgresql.sls" as pgsql with context %}
@@ -20,6 +22,12 @@
 #    {% endfor %} 
 #
 #    #}
+#
+# Remember that states should not contain any secret password or user.
+# So here for example dbdata would be coming from a default macro
+# loading pillar data.
+#
+#--- PILLAR EXAMPLE -------------------------------------
 #
 # You can define via pillar the default user to run psql command as:
 #
