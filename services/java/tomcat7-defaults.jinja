@@ -1,0 +1,44 @@
+{% set tomcatStepOne = salt['grains.filter_by']({
+    'dev': {
+      'java_home': '/usr/lib/jvm/java-6-oracle',
+      'java_opts': '-Djava.awt.headless=true -Xmx128m -XX:+UseConcMarkSweepGC',
+      'conf_dir': '/etc/tomcat7',
+      'roles': [],
+      'users': {
+        'admin': {
+          'password': 'admin',
+          'roles': ['admin', 'manager'],
+        },
+      },
+      'shutdown_port': '8005',
+      'port': '8080',
+      'ssl_port': '8443',
+      'ajp_port': '8009',
+      'defaultHost': 'localhost',
+      'welcome_files': ['index.html', 'index.jsp', 'index.htm'],
+      'ver': '7',
+      'loglevel_console': 'FINE',
+      'loglevel_1catalina_org': 'FINE',
+      'loglevel_2localhost_org': 'FINE',
+      'loglevel_Catalina_localhost_level': 'INFO',
+    },
+    'prod': {
+    }
+  },
+  grain='default_env',
+  default= 'dev'
+) %}
+{% set tomcatStepTwo = salt['grains.filter_by']({
+    'Debian': {
+    },
+    'RedHat': {
+    },
+  },
+  grain='os_family',
+  merge=tomcatStepOne
+) %}
+# FINAL STEP: merge with data from pillar
+{% set defaultsData=salt['mc_utils.dictupdate'](
+  tomcatStepTwo ,
+  salt['pillar.get']('tomcat7-default-settings',{})) %}
+
