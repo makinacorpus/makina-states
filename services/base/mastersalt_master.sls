@@ -4,7 +4,7 @@
 # We have the running syndic/master/minion in /etc/salt
 # and on mastersalt, we have another master daemon configured in /etc/mastersalt
 
-{% import "makina-states/_macros/salt.sls" as c with context %}
+{% import "makina-states/_macros/salt.jinja" as c with context %}
 
 include:
   - makina-states.services.base.mastersalt

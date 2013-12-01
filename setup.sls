@@ -14,7 +14,7 @@
 #   - Install salt/mastersalt infrastructure & base pkgs
 #   - Take care of file mode and ownership deployed by salt (see below)
 #
-{% import "makina-states/_macros/salt.sls" as c with context %}
+{% import "makina-states/_macros/salt.jinja" as c with context %}
 include:
   - makina-states.setups.salt
   {% if c.mastersalt %}- makina-states.setups.mastersalt{% endif %}

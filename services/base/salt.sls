@@ -11,7 +11,7 @@
 # We create a group called editor which has rights in /srv/{pillar, salt, projects}
 #
 
-{% import "makina-states/_macros/salt.sls" as c with context %}
+{% import "makina-states/_macros/salt.jinja" as c with context %}
 {% set salt_modules=[
     '_grains',
     '_macros',
@@ -270,7 +270,7 @@ salt-buildout-bootstrap:
   cmd.run:
     - name: |
             py="python";
-            if [ -e "/salt-venv/bin/python" ];then 
+            if [ -e "/salt-venv/bin/python" ];then
               py="/salt-venv/bin/python";
             fi;
             $py bootstrap.py

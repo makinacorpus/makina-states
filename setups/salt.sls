@@ -1,4 +1,4 @@
-{% import "makina-states/_macros/salt.sls" as c with context %}
+{% import "makina-states/_macros/salt.jinja" as c with context %}
 
 include:
   {% if c.server %}
