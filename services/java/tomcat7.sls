@@ -1,15 +1,15 @@
 #
-# Manage a tomcat7 installation via salt
-# You can see in ./tomcat7-defaults.jinja the defaults associated with those states
-# By default with use the java6 oracle jdk jvm
+# MANAGE A TOMCAT7 INSTALLATION VIA SALT.
+# You can see in ./tomcat7-defaults.jinja the defaults associated with those states.
+# By default, we will use the java6 oracle jdk jvm.
 #
-# You can override default settings in pillar via the 'tomcat7-default-settings:' key:
+# You can override default settings in pillar via the 'tomcat7-default-settings' key:
 #
 # For example:
 #   tomcat7-default-settings:
 #     java_home': /usr/lib/jvm/java-6-oracle
 #
-# Default settings:
+# AVAILABLE DEFAULT SETTINGS:
 #   java_opts: java opts to give to tomcat start
 #   java_home: JAVA_HOME of the jdk to use
 #   users: mapping of users, roles & password:
@@ -26,17 +26,20 @@
 #   defaultHost': default hostname (localhost)
 #   welcome_files': list of files to serve as index (index.{htm,html,jsp})
 #
-# Custom configuration block, thx to file.accumulated, you can also add
-# custom configuration blocks to some files:
+# CUSTOM CONFIGURATION BLOCKS:
+# Thanks to file.blockreplace + file.accumulated, you can also add on the fly raw tomcat configuration blocks.
+# Custom configuration blocks have been wired on those files:
 #   - server.xml
 #   - context.xml
 #   - web.xml
 #   - logging.properties
 #   - catalina.properties
 # See at the end of this state file for the appropriate blockreplace to use
-# in your case
+# in your case and where those block are located in the aforementioned files.
+# What you will need is just to make a file.accumulated requirin the appropriate
+# file.blockreplace ID to add your configuration block.
 #
-#
+
 
 {% import "makina-states/services/java/tomcat7-defaults.jinja" as c with context %}
 {% set conf_dir = c.defaultsData['conf_dir'] %}
