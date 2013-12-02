@@ -15,15 +15,28 @@ Most states are in ``makina.services``.
 The most outstanding features are:
 
     - Bootstrapping our saltstack binaries
-    - Managing lxc containers
     - Managing /etc/hosts
     - Managing network (debian-style)
-    - Managing shorewall
-    - Managing ssh & users
     - Integrating system with an ldap server
+    - Managing ssh & users
     - Configuring ntp
-    - Configuring sudo
+    - Configuring shell
+    - Configuring localrc (/etc/rc.local)
+    - Configuring git
     - Configuring git to correctly attack our gitorious
+    - Configuring vim
+    - Configuring sudo    
+    - Managing shorewall    
+    - Managing lxc containers
+    - Managing docker containers
+    - Configuring apache
+    - Configuring php
+    - Configuring dovecot
+    - Configuring postfix
+    - Configuring mysql
+    - Configuring postgresql
+    - Configuring tomcat
+    - Configuring solr
     - Configuring bacula file daemon
 
 Follow the instruction and you will have then a salt-master and a salt-minion waiting for instructions.
