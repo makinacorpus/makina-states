@@ -52,7 +52,6 @@ tomcat-pkgs:
     - require:
       - pkg: jdk-6-pkgs
 
-
 /etc/default/tomcat{{ver}}:
   file.managed:
     - source: salt://makina-states/files/etc/default/tomcat{{ver}}
