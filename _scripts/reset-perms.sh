@@ -7,7 +7,11 @@ import stat
 import pwd
 import traceback
 
+{% if msr is defined %}
 m = '{{msr}}'
+{% else %}
+m = '/srv/salt/makina-states'
+{% endif %}
 excludes = [
     '.git',
     os.path.join(m , 'lib'),
@@ -25,13 +29,21 @@ pexcludes = [
 ]
 
 
+{% if reset_user is defined %}
+user = "{{reset_user}}"
+{% else %}
 user = "{{user}}"
+{% endif %}
 try:
     uid = int(user)
 except Exception:
-    uid = int(pwd.getpwnam('{{user}}').pw_uid)
+    uid = int(pwd.getpwnam(user).pw_uid)
 
+{% if reset_group is defined %}
+group = "{{reset_group}}"
+{% else %}
 group = "{{group}}"
+{% endif %}
 try:
     gid = int(group)
 except Exception:
@@ -48,11 +60,11 @@ def lazy_chmod_path(path, mode):
             try:
                 eval('os.chmod(path, %s)' % mode)
             except Exception:
+                print 'Reset failed for %s (%s)' % (path, mode)
                 print traceback.format_exc()
-                print 'reset failed for %s' % path
     except Exception:
+        print 'Reset(o) failed for %s (%s)' % (path, mode)
         print traceback.format_exc()
-        print 'reset failed for %s' % path
 
 
 def lazy_chown_path(path, uid, gid):
@@ -62,11 +74,11 @@ def lazy_chown_path(path, uid, gid):
             try:
                 os.chown(path, uid, gid)
             except:
+                print 'Reset failed for %s, %s, %s' % (path, uid, gid)
                 print traceback.format_exc()
-                print 'reset failed for %s' % path
     except Exception:
+        print 'Reset(o) failed for %s, %s, %s' % (path, uid, gid)
         print traceback.format_exc()
-        print 'reset failed for %s' % path
 
 def lazy_chmod_chown(path, mode, uid, gid):
     lazy_chmod_path(path, mode)
