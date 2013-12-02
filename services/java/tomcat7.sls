@@ -180,7 +180,7 @@ tomcat-pkgs:
     - backup: '.bak'
     - show_changes: True
 
-{{conf_dir}}/web.xml-block1:
+{{conf_dir}}/web-xml-block1:
   file.blockreplace:
     - name: {{conf_dir}}/web.xml
     - order: 200
@@ -229,7 +229,11 @@ tomcat{{ver}}:
       - file: {{conf_dir}}/server.xml
       - file: {{conf_dir}}/context.xml
       - file: /etc/default/tomcat{{ver}}
+      - file: {{conf_dir}}/server-xml-block1
       - file: {{conf_dir}}/server-xml-block2
       - file: {{conf_dir}}/server-xml-block3
       - file: {{conf_dir}}/context-xml-block
+      - file: {{conf_dir}}/web-xml-block1
+      - file: {{conf_dir}}/catalina-properties-block1
+      - file: {{conf_dir}}/logging-properties-block1
 
