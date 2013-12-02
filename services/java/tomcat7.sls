@@ -33,6 +33,7 @@
 #   - context.xml
 #   - web.xml
 #   - logging.properties
+#   - /etc/default/tomcat7 (practical to add JAVA_OPTS addition from other sls (eg adding solr datadir & home properties)
 #   - catalina.properties
 # See at the end of this state file for the appropriate blockreplace to use
 # in your case and where those block are located in the aforementioned files.
@@ -212,6 +213,16 @@ tomcat-pkgs:
     - backup: '.bak'
     - show_changes: True
 
+/etc/default/tomcat{{ver}}-block:
+ file.blockreplace:
+    - name: /etc/default/tomcat{{ver}}
+    - order: 200
+    - marker_start: '# salt managed zone: custom'
+    - marker_end:  '# end salt managed zone: custom'
+    - content: ''
+    - backup: '.bak'
+    - show_changes: True
+
 tomcat{{ver}}:
   service.running:
     - order: last
@@ -238,4 +249,5 @@ tomcat{{ver}}:
       - file: {{conf_dir}}/web-xml-block1
       - file: {{conf_dir}}/catalina-properties-block1
       - file: {{conf_dir}}/logging-properties-block1
+      - file: /etc/default/tomcat{{ver}}-block
 

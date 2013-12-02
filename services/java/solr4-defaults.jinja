@@ -1,0 +1,40 @@
+{% set ver = '4' %}
+{% set groot = '/srv/solr' %}
+{% set root = groot + '/'  + ver %}
+{% set home_dir =root + '/home' %}
+solr4StepOne = salt['grains.filter_by']({
+{% set solr4StepOne = salt['grains.filter_by']({
+  'dev': {
+    'ver': ver,
+    'full_ver': '4.6.0',
+    'global_root_dir': groot,
+    'root_dir': root,
+    'dl_dir': root + '/download',
+    'webapp_dir': root + '/webapp',
+    'home_dir': home_dir,
+    'conf_dir': home_dir + '/conf',
+    'data_dir': home_dir + '/data',
+    'cores': [
+      {'name': 'default', 'dir': home_dir + '/default'},
+    ],
+  },
+  'prod': {
+  }
+},
+  grain='default_env',
+  default= 'dev'
+) %}
+{% set solr4StepTwo = salt['grains.filter_by']({
+    'Debian': {
+    },
+    'RedHat': {
+    },
+  },
+  grain='os_family',
+  merge=solr4StepOne
+) %}
+# FINAL STEP: merge with data from pillar
+{% set defaultsData=salt['mc_utils.dictupdate'](
+  solr4StepTwo ,
+  salt['pillar.get']('solr4-default-settings',{})) %}
+

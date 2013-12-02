@@ -1,7 +1,7 @@
 {% set tomcatStepOne = salt['grains.filter_by']({
     'dev': {
       'java_home': '/usr/lib/jvm/java-6-oracle',
-      'java_opts': '-Djava.awt.headless=true -Xmx128m -XX:+UseConcMarkSweepGC',
+      'java_opts': '-Djava.awt.headless=true -Xms256M -Xmx2048M -XX:MaxPermSize=256m -XX:+UseConcMarkSweepGC',
       'conf_dir': '/etc/tomcat7',
       'roles': [],
       'users': {
@@ -21,6 +21,8 @@
       'loglevel_1catalina_org': 'FINE',
       'loglevel_2localhost_org': 'FINE',
       'loglevel_Catalina_localhost_level': 'INFO',
+      'tomcat_user': 'tomcat7',
+      'tomcat_group': 'tomcat7',
     },
     'prod': {
     }
