@@ -1,7 +1,8 @@
 {% set ver = '4' %}
 {% set groot = '/srv/solr' %}
 {% set root = groot + '/'  + ver %}
-{% set home_dir =root + '/home' %}
+{% set home_dir = root + '/home' %}
+{% set data_dir = root + '/data' %}
 solr4StepOne = salt['grains.filter_by']({
 {% set solr4StepOne = salt['grains.filter_by']({
   'dev': {
@@ -13,7 +14,7 @@ solr4StepOne = salt['grains.filter_by']({
     'webapp_dir': root + '/webapp',
     'home_dir': home_dir,
     'conf_dir': home_dir + '/conf',
-    'data_dir': home_dir + '/data',
+    'data_dir': data_dir,
     'cores': [
       {'name': 'default', 'dir': home_dir + '/default'},
     ],

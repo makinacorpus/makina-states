@@ -40,10 +40,10 @@ MANAGED VIA SALT DO NOT EDIT
 
 {% for d in cfg['cores'] %}
 {% set n = d['name'] %}
-{% set dir = d['dir'] %}
-{% set data_dir = d.get('data_dir', d['dir']) %}
-<core name="{{n}}" instanceDir="{{dir}}">
-  <property name="dataDir" value="{{data_dir}}" />
+{% set ddir = d['dir'] %}
+{% set ddata_dir = d.get('data_dir', cfg['data_dir'] + '/' + n) %}
+<core name="{{n}}" instanceDir="{{ddir}}">
+  <property name="dataDir" value="{{ddata_dir}}" />
 </core>
 {% endfor %}
 <!-- salt managed zone: custom block -->

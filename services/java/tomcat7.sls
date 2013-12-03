@@ -1,3 +1,4 @@
+# {#
 #
 # MANAGE A TOMCAT7 INSTALLATION VIA SALT.
 # You can see in ./tomcat7-defaults.jinja the defaults associated with those states.
@@ -6,8 +7,12 @@
 # You can override default settings in pillar via the 'tomcat7-default-settings' key:
 #
 # For example:
-#   tomcat7-default-settings:
-#     java_home': /usr/lib/jvm/java-6-oracle
+# tomcat7-default-settings:
+#      java_home': /usr/lib/jvm/java-6-oracle
+#  users:
+#    admin:
+#      password: {{password}}
+#      roles': ['admin', 'manager']
 #
 # AVAILABLE DEFAULT SETTINGS:
 #   java_opts: java opts to give to tomcat start
@@ -20,6 +25,9 @@
 #           }
 #       }
 #   shutdown_port: default shutdown port (8005)
+#   tomcat_user: tomcat system user
+#   tomcat_group: tomcat system group
+#   address: default address to listen on
 #   port: default http port (8080)
 #   ssl_port: default ssl port (8443)
 #   ajp_port: default ajp port (8009)
@@ -40,11 +48,13 @@
 # What you will need is just to make a file.accumulated requirin the appropriate
 # file.blockreplace ID to add your configuration block.
 #
+# #}
 
 
 {% import "makina-states/services/java/tomcat7-defaults.jinja" as c with context %}
 {% set conf_dir = c.defaultsData['conf_dir'] %}
 {% set ver = c.defaultsData['ver'] %}
+{% set data = c.defaultsData %}
 
 include:
   - makina-states.localsettings.jdk

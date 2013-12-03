@@ -72,7 +72,9 @@
          APR (HTTP/AJP) Connector: /docs/apr.html
          Define a non-SSL HTTP/1.1 Connector on port {{port}}
     -->
-    <Connector port="{{port}}" protocol="HTTP/1.1"
+    <Connector port="{{port}}"
+               address="{{address}}"
+               protocol="HTTP/1.1"
                connectionTimeout="20000"
                URIEncoding="UTF-8"
                maxHttpHeaderSize="50000"

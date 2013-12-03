@@ -27,31 +27,6 @@ include:
   - makina-states.localsettings.jdk
   - makina-states.services.java.tomcat7
 
-
-{% macro register_core(core_name, conf_dir, data_dir=None, stateid=None)  %}
-{% if not stateid %} {% set stateid = core_name %} {% endif %}
-{% if not data_dir %} {% set data_dir = conf_dir + '/data' %} {% endif %}
-{{stateid}}-datadir-{{v}}:
-  file.directory:
-    - name: {{data_dir}}
-    - makedirs: True
-
-{{stateid}}-block-solr-{{v}}:
-  file.accumulated:
-    - filename: {{home_dir}}/solr.xml
-    - text: |
-            <core name="{{core_name}}" instanceDir="{{conf_dir}}">
-              <property name="dataDir" value="{{data_dir}}" />
-            </core>
-    - watch_in:
-      - service: tomcat7
-    - require:
-      - file: {{stateid}}-datadir-{{v}}
-    - require_in:
-      - cmd: {{groot}}-reset-perms
-      - file: fill-block-solrxml-{{v}}
-{% endmacro %}
-
 {% set tconf_dir = t.defaultsData['conf_dir'] %}
 {% set tdata = t.defaultsData %}
 {% set data = c.defaultsData %}
@@ -66,12 +41,36 @@ include:
 {% set conf_dir =  data['conf_dir'] %}
 {% set dl_dir =  data['dl_dir'] %}
 
+{% macro register_core(core_name, conf_dir, cdata_dir=None, stateid=None)  %}
+{% if not stateid %} {% set stateid = core_name %} {% endif %}
+{% if not cdata_dir %} {% set cdata_dir = data_dir + '/' + core_name %} {% endif %}
+{{stateid}}-datadir-{{v}}:
+  file.directory:
+    - name: {{cdata_dir}}
+    - makedirs: True
+
+{{stateid}}-block-solr-{{v}}:
+  file.accumulated:
+    - filename: {{home_dir}}/solr.xml
+    - text: |
+            <core name="{{core_name}}" instanceDir="{{conf_dir}}">
+              <property name="dataDir" value="{{cdata_dir}}" />
+            </core>
+    - watch_in:
+      - service: tomcat7
+    - require:
+      - file: {{stateid}}-datadir-{{v}}
+    - require_in:
+      - cmd: {{groot}}-reset-perms
+      - file: fill-block-solrxml-{{v}}
+{% endmacro %}
+
 solr{{v}}-prerequisites:
   pkg.installed:
     - names:
       - rsync
       - unzip
- 
+
 {{root}}-solr-{{v}}:
   file.directory:
     - name: {{root}}
@@ -108,9 +107,7 @@ solr{{v}}-prerequisites:
             cp dist/*jar dist/*/*jar   {{webapp_dir}}/solr/WEB-INF/lib
     - cwd: {{dl_dir}}/solr-{{fv}}
     - unless: |
-              test -d {{webapp_dir}}/solr
-              &&
-              test -e  {{webapp_dir}}/solr/WEB-INF/lib/slf4j-api-*.jar
+              test -d "{{webapp_dir}}/solr" && test -e "{{webapp_dir}}/solr/WEB-INF/lib/slf4j-api-"*.jar
 
 {{data_dir}}-solr-{{v}}:
   file.directory:
