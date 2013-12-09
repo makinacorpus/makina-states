@@ -98,19 +98,17 @@ ubuntu-pkgs:
     - names:
       - language-pack-en
       - language-pack-fr
-      - debconf-utils
       - python-software-properties
       - ubuntu-minimal
       - ubuntu-standard
+      - apport
       - rsyslog
-      - dstat
 {% endif %}
 
 sys-pkgs:
   pkg.installed:
     - names:
       - acpid
-      - apport
       - atop
       - bash-completion
       - bzip2

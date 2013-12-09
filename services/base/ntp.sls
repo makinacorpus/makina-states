@@ -17,7 +17,7 @@ ntpd:
     - enable: True
 {% if grains['os'] == 'Ubuntu' %}
     - name: ntp
-{% endif %}         
+{% endif %}
     - watch:
       - file: /etc/ntp.conf
       - pkg: ntp-pkgs

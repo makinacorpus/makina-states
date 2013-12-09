@@ -12,9 +12,10 @@
 {%- if not ((configname.startswith('syndic')) or (configname in [
 'cachedir', 'log_level_logfile', 'publish_port',
 'ret_port', 'log_file', 'interface', 'autosign_file',
+'pillar_roots', 'file_roots',
 'pidfile', 'sock_dir', 'key_logfile',
-
-'order_masters', 'pki_dir'])) -%}#{%- endif -%}
+'order_masters', 'pki_dir'
+])) -%}#{%- endif -%}
 {{ configname }}: {{ default_value }}
 {%- endif -%}
 {%- endmacro -%}
@@ -73,7 +74,7 @@
 {{ get_config('ret_port', '4606') }}
 
 # Specify the location of the daemon process ID file
-{{ get_config('pidfile', '/var/run/mastersalt-master.pid') }}
+{{ get_config('pidfile', '/var/run/{{saltname}}-master.pid') }}
 
 # The root directory prepended to these options: pki_dir, cachedir,
 # sock_dir, log_file, autosign_file, extension_modules, key_logfile, pidfile.
@@ -81,10 +82,10 @@
 {{ get_config('root_dir', '/') }}
 
 # Directory used to store public key data
-{{ get_config('pki_dir', '/etc/mastersalt/pki/master') }}
+{{ get_config('pki_dir', '/etc/{{saltname}}/pki/master') }}
 
 # Directory to store job and cache data
-{{ get_config('cachedir', '/var/cache/mastersalt/master') }}
+{{ get_config('cachedir', '/var/cache/{{saltname}}/master') }}
 
 # Verify and set permissions on configuration directories at startup
 {{ get_config('verify_env', 'True') }}
@@ -109,7 +110,7 @@
 {{ get_config('color', 'True') }}
 
 # Set the directory used to hold unix sockets
-{{ get_config('sock_dir', '/var/run/salt/mastersalt-master') }}
+{{ get_config('sock_dir', '/var/run/{{mode}}/{{saltname}}-master') }}
 
 # The master maintains a job cache, while this is a great addition it can be
 # a burden on the master for larger deployments (over 5000 minions).
@@ -153,7 +154,7 @@
 # If the autosign_file is specified only incoming keys specified in
 # the autosign_file will be automatically accepted. This is insecure.
 # Regular expressions as well as globing lines are supported.
-{{ get_config('autosign_file', '/etc/mastersalt/autosign.conf') }}
+{{ get_config('autosign_file', '/etc/{{saltname}}/autosign.conf') }}
 
 # Enable permissive access to the salt keys.  This allows you to run the
 # master or minion as root, but have a non-root group be given access to
@@ -318,9 +319,9 @@ file_roots:
     {% endfor -%}
   {% endfor -%}
 {% else -%}
-#file_roots:
-#  base:
-#    - /srv/salt
+file_roots:
+  base:
+    - {{saltprefix}}
 {%- endif %}
 
 # The hash_type is the hash to use when discovering the hash of a file on
@@ -427,9 +428,9 @@ pillar_roots:
     {% endfor -%}
   {% endfor -%}
 {% else %}
-#pillar_roots:
-#  base:
-#    - /srv/pillar
+pillar_roots:
+  base:
+    - {{pillarroot}}
 {%- endif %}
 
 {% if 'ext_pillar' in master -%}
@@ -567,8 +568,8 @@ peer_run:
 #log_file: file:///dev/log
 #log_file: udp://loghost:10514
 
-{{ get_config('log_file', '/var/log/salt/mastersalt-master') }}
-{{ get_config('key_logfile', '/var/log/salt/mastersalt-key') }}
+{{ get_config('log_file', '/var/log/{{saltname}}/mastersalt-master') }}
+{{ get_config('key_logfile', '/var/log/{{saltname}}/mastersalt-key') }}
 
 # The level of messages to send to the console.
 # One of 'garbage', 'trace', 'debug', info', 'warning', 'error', 'critical'.
@@ -641,10 +642,10 @@ nodegroups:
 #####     Windows Software Repo settings #####
 ##############################################
 # Location of the repo on the master
-{{ get_config('win_repo', '/srv/salt/win/repo') }}
+{{ get_config('win_repo', '{{saltprefix}}/win/repo') }}
 
 # Location of the master's repo cache file
-{{ get_config('win_repo_mastercachefile', '/srv/salt/win/repo/winrepo.p') }}
+{{ get_config('win_repo_mastercachefile', '{{saltprefix}}/win/repo/winrepo.p') }}
 
 # List of git repositories to include with the local repo
 {% if 'win_gitrepos' in master %}

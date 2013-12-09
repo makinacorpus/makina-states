@@ -45,31 +45,64 @@ die_in_error() {
     fi
 }
 
-if [[ -f /etc/lsb-release ]];then
-    . /etc/lsb-release
-    if [[ "$DISTRIB_CODENAME" == "lucid" ]]\
-        || [[ "$DISTRIB_CODENAME" == "maverick" ]]\
-        || [[ "$DISTRIB_CODENAME" == "natty" ]]\
-        || [[ "$DISTRIB_CODENAME" == "oneiric" ]]\
-        || [[ "$DISTRIB_CODENAME" == "precise" ]]\
-        || [[ "$DISTRIB_CODENAME" == "quantal" ]]\
-        ;then
-        EARLY_UBUNTU=y
-        BEFORE_RARING=y
+detect_os() {
+    # make as a function to be copy/pasted as-is in multiple scripts
+    IS_UBUNTU=""
+    IS_DEBIAN=""
+    if [[ -e /etc/lsb-release ]];then
+        . /etc/lsb-release
+        if [[ "$DISTRIB_CODENAME" == "lucid" ]]\
+            || [[ "$DISTRIB_CODENAME" == "maverick" ]]\
+            || [[ "$DISTRIB_CODENAME" == "natty" ]]\
+            || [[ "$DISTRIB_CODENAME" == "oneiric" ]]\
+            || [[ "$DISTRIB_CODENAME" == "precise" ]]\
+            || [[ "$DISTRIB_CODENAME" == "quantal" ]]\
+            ;then
+            EARLY_UBUNTU=y
+            BEFORE_RARING=y
+        fi
+        if [[ "$DISTRIB_CODENAME" == "raring" ]] || [[ -n "$EARLY_UBUNTU" ]];then
+            BEFORE_SAUCY=y
+        fi
     fi
-    if [[ "$DISTRIB_CODENAME" == "raring" ]] || [[ -n "$EARLY_UBUNTU" ]];then
-        BEFORE_SAUCY=y
+    if [[ -e /etc/os-release ]];then
+        . /etc/os-release
+        OS_RELEASE_ID=$(egrep ^ID= /etc/os-release|sed -re "s/ID=//g")
+        OS_RELEASE_NAME=$(egrep ^NAME= /etc/os-release|sed -re "s/NAME=//g")
+        OS_RELEASE_VERSION=$(egrep ^VERSION= /etc/os-release|sed -re "s/VERSION=//g")
+        OS_RELEASE_PRETTY_NAME=$(egrep ^VERSION= /etc/os-release|sed -re "s/VERSION=//g")
     fi
-fi
+    if [[ -e /etc/debian_version ]] && [[ "$OS_RELEASE_ID" == "debian" ]] && [[ "$DISTRIB_ID" != "Ubuntu" ]];then
+        IS_DEBIAN="y"
+        DISTRIB_CODENAME="$(echo $OS_RELEASE_PRETTY_NAME |sed -re "s/.*\((.*)\).*/\1/g")"
+    fi
+    if [[ $IS_UBUNTU ]];then
+        DISTRIB_NEXT_RELEASE="saucy"
+        DISTRIB_BACKPORT="$DISTRIB_NEXT_RELEASE"
+    elif [[ $IS_DEBIAN ]];then
+        if [[ "$DISTRIB_CODENAME"  == "wheezy" ]];then
+            DISTRIB_NEXT_RELEASE="jessie"
+        elif [[ "$DISTRIB_CODENAME"  == "squeeze" ]];then
+            DISTRIB_NEXT_RELEASE="wheezy"
+        fi
+        DISTRIB_BACKPORT="wheezy-backports"
+    fi
+}
+detect_os
+
 base_packages=""
 base_packages="$base_packages build-essential m4 libtool pkg-config autoconf gettext bzip2"
 base_packages="$base_packages groff man-db automake libsigc++-2.0-dev tcl8.5 python-dev"
-base_packages="$base_packages swig libssl-dev libyaml-dev debconf-utils python-virtualenv libzmq3-dev"
-base_packages="$base_packages vim git"
-UBUNTU_NEXT_RELEASE="saucy"
+base_packages="$base_packages swig libssl-dev libyaml-dev debconf-utils python-virtualenv"
+base_packages="$base_packages vim git rsync"
+base_packages="$base_packages libzmq3-dev"
+
 PILLAR=${PILLAR:-/srv/pillar}
 ROOT=${ROOT:-/srv/salt}
 MS=$ROOT/makina-states
+MASTERSALT_PILLAR=${MASTERSALT_PILLAR:-/srv/mastersalt-pillar}
+MASTERSALT_ROOT=${MASTERSALT_ROOT:-/srv/mastersalt}
+MASTERSALT_MS=$MASTERSALT_ROOT/makina-states
 VENV_PATH="/salt-venv"
 CHRONO="$(date "+%F_%H-%M-%S")"
 HOSTNAME="$(hostname)"
@@ -117,9 +150,11 @@ if [[ -z "$MASTERSALT_MASTER" ]];then
     fi
 
 fi
-
+if [[ -n "$MASTERSALT_MASTER" ]] && [[ -z $MASTERSALT ]];then
+    MASTERSALT="localhost"
+fi
 if [[ -n "$MASTERSALT_MASTER" ]];then
-    MASTERSALT_BOOT="${msatersalt_bootstrap}_master"
+    MASTERSALT_BOOT="${mastersalt_bootstrap}_master"
 elif [[ -n "$MASTERSALT" ]];then
     MASTERSALT_BOOT="${mastersalt_bootstrap}"
 fi
@@ -170,28 +205,100 @@ fi
 if [[ -n "$SALT_BOOT" ]];then
     bootstrap="${bootstrap_pref}.${SALT_BOOT}"
 fi
+recap(){
+    bs_log "--------------------------------------------"
+    bs_log "recap"
+    bs_log "--------------------------------------------"
+    bs_log "-----"
+    bs_log "SALT variables:"
+    bs_log "-----"
+    bs_log "SALT_BOOT: $SALT_BOOT"
+    bs_log "SALT_PILLAR: $PILLAR"
+    bs_log "SALT_ROOT: $ROOT"
+    if [[ -n $MASTERSALT ]];then
+        bs_log "-----"
+        bs_log "MASTERSALT variables:"
+        bs_log "-----"
+        bs_log "MASTERSALT: $MASTERSALT"
+        bs_log "MASTERSALT_MASTER: $MASTERSALT_MASTER"
+        bs_log "MASTERSALT_BOOT: $MASTERSALT_BOOT"
+        bs_log "MASTERSALT_PORT: $MASTERSALT_PORT"
+        bs_log "MASTERSALT_PILLAR: $MASTERSALT_PILLAR"
+        bs_log "MASTERSALT_ROOT: $MASTERSALT_ROOT"
+    fi
+    if [[ -n $PROJECT_URL ]];then
+        bs_log "-----"
+        bs_log "PROJECT variables:"
+        bs_log "-----"
+        bs_log "PROJECT_URL:  ${PROJECT_UR}"
+        bs_log "PROJECT_BRANCH: ${PROJECT_BRANCH}"
+        bs_log "PROJECT_NAME: ${PROJECT_NAME}"
+    fi
+    bs_log "--------------------------------------------"
+}
+is_apt_installed() {
+    if [[ $(dpkg-query -s $@ 2>/dev/null|egrep "^Status:"|grep installed|wc -l)  == "0" ]];then
+        echo "no"
+    else
+        echo "yes"
+    fi
+}
+
+lazy_apt_get_install() {
+    to_install=""
+    for i in $@;do
+         if [[ $(is_apt_installed $i)  != "yes" ]];then
+             to_install="$to_install $i"
+         fi
+    done
+    if [[ -n "$to_install" ]];then
+        log " [*] Installing $to_install"
+        apt-get install -y --force-yes $to_install
+    fi
+}
+
+setup_backports() {
+    # on ubuntu enable backports release repos, & on debian just backport
+    if [[ -n "$BEFORE_SAUCY" ]] && [[ -n $IS_UBUNTU ]];then
+        bs_log "Activating backport from $DISTRIB_BACKPORT to $DISTRIB_CODENAME"
+        cp  /etc/apt/sources.list /etc/apt/sources.list.$CHRONO.sav
+        sed -re "s/${DISTRIB_CODENAME}/${DISTRIB_BACKPORT}/g" -i /etc/apt/sources.list
+    fi
+    if [[ -n $IS_DEBIAN ]];then
+        bs_log "Activating backport from $DISTRIB_BACKPORT to $DISTRIB_CODENAME"
+        cp  /etc/apt/sources.list /etc/apt/sources.list.$CHRONO.sav
+        echo "#backport added by boot-salt">/tmp/aptsrc
+        egrep "^deb.* $DISTRIB_CODENAME " /etc/apt/sources.list|sed -re "s/$DISTRIB_CODENAME/$DISTRIB_BACKPORT/g" > /tmp/aptsrc
+        cat /tmp/aptsrc >> /etc/apt/sources.list
+        rm -f /tmp/aptsrc
+    fi
+
+}
+teardown_backports() {
+    # on ubuntu disable backports release repos, & on debian just backport
+    if [[ -n "$BEFORE_SAUCY" ]] && [[ -n "$IS_UBUNTU" ]];then
+        bs_log "Removing backport from $DISTRIB_BACKPORT to $DISTRIB_CODENAME"
+        sed -re "s/${DISTRIB_BACKPORT}/${DISTRIB_CODENAME}/g" -i /etc/apt/sources.list
+    fi
+    if [[ -n $IS_DEBIAN ]];then
+        bs_log "Removing backport from $DISTRIB_BACKPORT to $DISTRIB_CODENAME"
+        sed "/^#.*added.*boot-sa/d" -i /etc/apt/sources.list
+        sed "/^deb.*$DISTRIB_BACKPORT/d" -i /etc/apt/sources.list
+    fi
+}
 i_prereq() {
     to_install=""
-    if [[ $(dpkg-query -s python-software-properties 2>/dev/null|egrep "^Status:"|grep installed|wc -l)  == "0" ]];then
-        apt-get install -y --force-yes python-software-properties
-    fi
+    lazy_apt_get_install python-software-properties
     # XXX: only lts package in this ppa
-    if     [[ "$(dpkg-query -s libzmq3     2>/dev/null|egrep "^Status:"|grep installed|wc -l)"  == "0" ]] \
-        || [[ "$(dpkg-query -s libzmq3-dev 2>/dev/null|egrep "^Status:"|grep installed|wc -l)"  == "0" ]];\
+    if     [[ "$(is_apt_installed libzmq3    )"  == "no" ]] \
+        || [[ "$(is_apt_installed libzmq3-dev)"  == "no" ]];\
         then
         bs_log "Installing ZeroMQ3"
-        if [[ -n "$BEFORE_SAUCY" ]];then
-            bs_log "from saucy on earlier ubuntu"
-            cp  /etc/apt/sources.list /etc/apt/sources.list.$CHRONO.sav
-            sed -re "s/${DISTRIB_CODENAME}/${UBUNTU_NEXT_RELEASE}/g" -i /etc/apt/sources.list
-        fi
+        setup_backports
         apt-get remove -y --force-yes libzmq libzmq1 libzmq-dev &> /dev/null
-        apt-get update -qq && apt-get install -y --force-yes libzmq3-dev
+        apt-get update -qq && lazy_apt_get_install libzmq3-dev
         ret=$?
-        if [[ -n "$BEFORE_SAUCY" ]];then
-            sed -re "s/${UBUNTU_NEXT_RELEASE}/${DISTRIB_CODENAME}/g" -i /etc/apt/sources.list
-            apt-get update
-        fi
+        teardown_backports && apt-get update
         if [[ $ret != "0" ]];then
             die $ret "Install of zmq3 failed"
         fi
@@ -204,7 +311,7 @@ i_prereq() {
     if [[ -n "$to_install" ]];then
         bs_log "Installing pre requisites: $to_install"
         echo 'changed="yes" comment="prerequisites installed"'
-        apt-get update && apt-get install -y --force-yes $to_install
+        apt-get update && lazy_apt_get_install $to_install
     fi
 }
 
@@ -216,11 +323,12 @@ i_prereq() {
 #
 SALT_OUTFILE=$ROOT/.boot_salt_out
 SALT_LOGFILE=$ROOT/.boot_salt_log
-salt_call_wrapper() {
+salt_call_wrapper_() {
+    salt_call_prefix=$1;shift
     outf="$SALT_OUTFILE"
     logf="$SALT_LOGFILE"
     rm -rf "$outf" "$logf" 2> /dev/null
-    salt-call --retcode-passthrough --out=yaml --out-file="$outf" --log-file="$logf" -lquiet $@
+    $salt_call_prefix/bin/salt-call --retcode-passthrough --out=yaml --out-file="$outf" --log-file="$logf" -lquiet $@
     ret=$?
     #echo "result: false">>$outf
     if [[ "$ret" != "0" ]] && [[ "$ret" != "2" ]];then
@@ -249,8 +357,11 @@ salt_call_wrapper() {
     #rm -rf "$outf" "$logf" 2> /dev/null
     echo $ret
 }
+salt_call_wrapper() {
+    salt_call_wrapper_ $MS $@
+}
 mastersalt_call_wrapper() {
-    salt_call_wrapper -c /etc/mastersalt $@
+    salt_call_wrapper_ $MASTERSALT_MS -c /etc/mastersalt $@
 }
 get_grain() {
     salt-call --local grains.get $1 --out=raw 2>/dev/null
@@ -276,7 +387,15 @@ for i in "$PILLAR" "$ROOT";do
         mkdir -pv $i
     fi
 done
+if [[ -n $MASTERSALT ]];then
+    for i in "$MASTERSALT_PILLAR" "$MASTERSALT_ROOT";do
+        if [[ ! -d "$i" ]];then
+            mkdir -pv $i
+        fi
+    done
+fi
 
+recap
 bs_log "Check package dependencies"
 i_prereq || die_in_error " [bs] Failed install rerequisites"
 if [[ ! -d "$MS/.git" ]];then
@@ -348,72 +467,89 @@ if [[ -e "$VENV_PATH/bin/activate" ]];then
     . $VENV_PATH/bin/activate
 fi
 
-# Check for buildout things presence
-if    [[ ! -e "$MS/bin/buildout" ]]\
-   || [[ ! -e "$MS/parts" ]] \
-   || [[ -n "$REBOOTSTRAP" ]] \
-   || [[ ! -e "$MS/develop-eggs" ]] \
-    ;then
-    bs_log "Launching buildout bootstrap for salt initialisation"
-    python bootstrap.py
-    ret=$?
-    if [[ "$ret" != "0" ]];then
-        rm -rf "$MS/parts" "$MS/develop-eggs"
-        die $ret " [bs] Failed buildout bootstrap"
+run_ms_buildout() {
+    ms=$1
+    cd $ms
+    # Check for buildout things presence
+    if    [[ ! -e "$ms/bin/buildout" ]]\
+       || [[ ! -e "$ms/parts" ]] \
+       || [[ -n "$REBOOTSTRAP" ]] \
+       || [[ ! -e "$ms/develop-eggs" ]] \
+        ;then
+        bs_log "Launching buildout bootstrap for salt initialisation ($ms)"
+        python bootstrap.py
+        ret=$?
+        if [[ "$ret" != "0" ]];then
+            rm -rf "$ms/parts" "$ms/develop-eggs"
+            die $ret " [bs] Failed buildout bootstrap ($ms)"
+        fi
     fi
-fi
-# remove stale zmq egg (to relink on zmq3)
-test="$(ldd $(find -L "$MS/eggs/pyzmq-"*egg -name *so 2>/dev/null) 2>/dev/null|grep zmq.so.1|wc -l)"
-if [[ "$test" != "0" ]];then
-    find -L "$MS/eggs/pyzmq-"*egg -maxdepth 0 -type d|xargs rm -rfv
+    # remove stale zmq egg (to relink on zmq3)
+    test="$(ldd $(find -L "$ms/eggs/pyzmq-"*egg -name *so 2>/dev/null) 2>/dev/null|grep zmq.so.1|wc -l)"
+    if [[ "$test" != "0" ]];then
+        find -L "$ms/eggs/pyzmq-"*egg -maxdepth 0 -type d|xargs rm -rfv
+    fi
+    # detect incomplete buildout
+    # pyzmq check is for testing upgrade from libzmq to zmq3
+    if    [[ ! -e "$ms/bin/buildout" ]]\
+        || [[ ! -e "$ms/bin/salt-ssh" ]]\
+        || [[ ! -e "$ms/bin/salt" ]]\
+        || [[ ! -e "$ms/bin/mypy" ]]\
+        || [[ ! -e "$ms/.installed.cfg" ]]\
+        || [[ $(find -L "$ms/eggs/pyzmq"* |wc -l) == "0" ]]\
+        || [[ ! -e "$ms/src/salt/setup.py" ]]\
+        || [[ ! -e "$ms/src/salt/setup.py" ]]\
+        || [[ ! -e "$ms/src/docker/setup.py" ]]\
+        || [[ ! -e "$ms/src/m2crypto/setup.py" ]]\
+        || [[ ! -e "$ms/src/SaltTesting/setup.py" ]]\
+        || [[ -n "$REBOOTSTRAP" ]]\
+        ;then
+        sed -re "s/filemode =.*/filemode=false/g" -i src/*/.git/config 2>/dev/null
+        if [[ -e src/bin/develop ]];then
+            bs_log " [bs] pre buildout ugrade ($ms)"
+            bin/develop up -fv
+        else
+            for i in src/m2crypto src/docker src/salt src/SaltTesting;do
+                if [[ -e $ms/$i ]];then
+                    bs_log " [bs] pre buildout manual ugrade: $i ($ms)"
+                    cd $ms/$i
+                    git pull
+                fi
+            done
+        fi
+        cd $ms
+        if [[ -e bin/develop ]];then
+            bs_log " [bs] pre buildout ugrade"
+            bin/develop up -fv
+        fi
+        bs_log "Launching buildout for salt initialisation ($ms)"
+        bin/buildout || die_in_error " [bs] Failed buildout ($ms)"
+        ret=$?
+        if [[ "$ret" != "0" ]];then
+            rm -rf "$ms/.installed.cfg"
+            die $ret " [bs] Failed buildout in $ms"
+        fi
+    fi
+}
+run_ms_buildout $MS
+if [[ -n $MASTERSALT ]];then
+    if [[ ! -e $MASTERSALT_ROOT/makina-states/.installed.cfg ]];then
+        rsync -av $MS/ $MASTERSALT_ROOT/makina-states/
+        cd $MASTERSALT_ROOT/makina-states
+        rm -rf .installed.cfg .mr.developer.cfg parts
+    fi
+    run_ms_buildout $MASTERSALT_ROOT/makina-states/
 fi
 
-# detect incomplete buildout
-# pyzmq check is for testing upgrade from libzmq to zmq3
-if    [[ ! -e "$MS/bin/buildout" ]]\
-    || [[ ! -e "$MS/bin/salt-ssh" ]]\
-    || [[ ! -e "$MS/bin/salt" ]]\
-    || [[ ! -e "$MS/bin/mypy" ]]\
-    || [[ ! -e "$MS/.installed.cfg" ]]\
-    || [[ $(find -L "$MS/eggs/pyzmq"* |wc -l) == "0" ]]\
-    || [[ ! -e "$MS/src/salt/setup.py" ]]\
-    || [[ ! -e "$MS/src/salt/setup.py" ]]\
-    || [[ ! -e "$MS/src/docker/setup.py" ]]\
-    || [[ ! -e "$MS/src/m2crypto/setup.py" ]]\
-    || [[ ! -e "$MS/src/SaltTesting/setup.py" ]]\
-    || [[ -n "$REBOOTSTRAP" ]]\
-    ;then
-    sed -re "s/filemode =.*/filemode=false/g" -i src/*/.git/config 2>/dev/null
-    if [[ -e src/bin/develop ]];then
-        bs_log " [bs] pre buildout ugrade"
-        bin/develop up -fv
-    else
-        for i in src/m2crypto src/docker src/salt src/SaltTesting;do
-            if [[ -e $MS/$i ]];then
-                bs_log " [bs] pre buildout manual ugrade: $i"
-                cd $MS/$i
-                git pull
-            fi
-        done
-    fi
-    cd $MS
-    if [[ -e bin/develop ]];then
-        bs_log " [bs] pre buildout ugrade"
-        bin/develop up -fv
-    fi
-    bs_log "Launching buildout for salt initialisation"
-    bin/buildout || die_in_error " [bs] Failed buildout"
-    ret=$?
-    if [[ "$ret" != "0" ]];then
-        rm -rf "$MS/.installed.cfg"
-        die $ret " [bs] Failed buildout"
-    fi
+PILLAR_ROOTS="$PILLAR"
+if [[ -n $MASTERSALT ]];then
+    PILLAR_ROOTS="$PILLAR_ROOTS $MASTERSALT_PILLAR"
 fi
-
-# Create a default top.sls in the pillar if not present
-if [[ ! -f $PILLAR/top.sls ]];then
-    bs_log "creating default pillar's top.sls"
-    cat > $PILLAR/top.sls << EOF
+for pillar_root in $PILLAR_ROOTS;do
+    # Create a default top.sls in the pillar if not present
+    if [[ ! -f $pillar_root/top.sls ]];then
+        bs_log "creating default $pillar_root/top.sls"
+        cat > $pillar_root/top.sls << EOF
 #
 # This is the top pillar configuration file, link here all your
 # environment configurations files to their respective minions
@@ -421,12 +557,17 @@ if [[ ! -f $PILLAR/top.sls ]];then
 base:
   '*':
 EOF
+    fi
+done
+SETUPS_FILES="$ROOT/setup.sls"
+if [[ -n $MASTERSALT ]];then
+    SETUPS_FILES="$MASTERSALT_ROOT/setup.sls"
 fi
-
-# Create a default setup in the tree if not present
-if [[ ! -f $ROOT/setup.sls ]];then
-    bs_log "creating default salt's setup.sls"
-    cat > $ROOT/setup.sls << EOF
+for stp in $SETUPS_FILES;do
+    # Create a default setup in the tree if not present
+    if [[ ! -f $stp ]];then
+        bs_log "creating default $stp"
+        cat > $stp << EOF
 #
 # Include here your various projet setup files
 #
@@ -434,22 +575,28 @@ base:
   '*':
     - makina-states.setup
 EOF
-fi
-if [[ "$(egrep  "^(  '\*':)" $ROOT/setup.sls|wc -l)" == "0" ]];then
-    bs_log "Old installation detected for setup.sls, trying to migrate it"
-    cp $ROOT/setup.sls $ROOT/setup.sls.${CHRONO}.bak
-    sed  "/include:/{
-a base:
-a \  '*':
-}" -i $ROOT/setup.sls
-    sed -re "s/^  -/    -/g"  -i $ROOT/setup.sls
-    sed -re "/^include:/d"  -i $ROOT/setup.sls
-fi
+    fi
+    if [[ "$(egrep  "^(  '\*':)" $stp|wc -l)" == "0" ]];then
+        bs_log "Old installation detected for $stp, trying to migrate it"
+        cp $ROOT/setup.sls $stp.${CHRONO}.bak
+        sed  "/include:/{
+    a base:
+    a \  '*':
+    }" -i $ROOT/setup.sls
+        sed -re "s/^  -/    -/g"  -i $stp
+        sed -re "/^include:/d"  -i $stp
+    fi
+done
 
 # Create a default top.sls in the tree if not present
-if [[ ! -f $ROOT/top.sls ]];then
-    bs_log "creating default salt's top.sls"
-    cat > $ROOT/top.sls << EOF
+TOPS_FILES="$ROOT/top.sls"
+if [[ -n $MASTERSALT_MASTER ]];then
+    TOPS_FILES="$MASTERSALT_ROOT/top.sls"
+fi
+for topf in $TOPS_FILES;do
+    if [[ ! -f $topf ]];then
+        bs_log "creating default salt's $topf"
+        cat > $topf << EOF
 #
 # This is the salt states configuration file, link here all your
 # environment states files to their respective minions
@@ -457,27 +604,25 @@ if [[ ! -f $ROOT/top.sls ]];then
 base:
   '*':
 EOF
-fi
-
-# add makina-salt.dev if not present
-if [[ $(egrep -- "- makina-states\.dev\s*$" $ROOT/top.sls|wc -l) == "0" ]];then
-    bs_log "Adding makina-states.dev to top file"
-    sed -re "/('|\")\*('|\"):/ {
+    fi
+    # add makina-salt.dev if not present
+    if [[ $(egrep -- "- makina-states\.dev\s*$" $topfs|wc -l) == "0" ]];then
+    bs_log "Adding makina-states.dev to $topf"
+        sed -re "/('|\")\*('|\"):/ {
 a\    - makina-states.dev
-}" -i $ROOT/top.sls
-fi
-
-# TODO: comment
-if [[ $(grep -- "- salt" $PILLAR/top.sls|wc -l) == "0" ]];then
-    sed -re "/('|\")\*('|\"):/ {
+}" -i $topf
+    fi
+done
+for pillar_root in $PILLAR_ROOTS;do
+    if [[ $(grep -- "- salt" $PILLAR/top.sls|wc -l) == "0" ]];then
+        sed -re "/('|\")\*('|\"):/ {
 a\    - salt
-}" -i $PILLAR/top.sls
-fi
-
-# Create a default salt.sls in the pillar if not present
-if [[ ! -f $PILLAR/salt.sls ]];then
-    bs_log "creating default pillar's salt.sls"
-    cat > $PILLAR/salt.sls << EOF
+}" -i $pillar_root/top.sls
+    fi
+    # Create a default salt.sls in the pillar if not present
+    if [[ ! -f $pillar_root/salt.sls ]];then
+        bs_log "creating default pillar's salt.sls"
+        cat > $pillar_root/salt.sls << EOF
 salt:
   minion:
     master: 127.0.0.1
@@ -485,24 +630,25 @@ salt:
   master:
     interface: 127.0.0.1
 EOF
-fi
-
+    fi
+done
 # --------- MASTERSALT
 # Set default mastersalt  pillar
-if [[ $SALT_BOOT == "mastersalt" ]] && [[ ! -f $PILLAR/mastersalt.sls ]];then
-    if [[ $(grep -- "- mastersalt" $PILLAR/top.sls|wc -l) == "0" ]];then
+if [[ $SALT_BOOT == "mastersalt" ]] && [[ ! -f $MASTERSALT_PILLAR/mastersalt.sls ]];then
+    if [[ $(grep -- "- mastersalt" $MASTERSALT_PILLAR/top.sls|wc -l) == "0" ]];then
         sed -re "/('|\")\*('|\"):/ {
 a\    - mastersalt
-}" -i $PILLAR/top.sls
+}" -i $MASTERSALT_PILLAR/top.sls
     fi
-    if [[ ! -f $PILLAR/mastersalt.sls ]];then
-    cat > $PILLAR/mastersalt.sls << EOF
+    if [[ ! -f $MASTERSALT_PILLAR/mastersalt.sls ]];then
+    cat > $MASTERSALT_PILLAR/mastersalt.sls << EOF
 mastersalt-minion:
   master: ${MASTERSALT}
   master_port: ${MASTERSALT_PORT}
 EOF
     fi
 fi
+exit -1
 
 # global installation marker
 NOW_INSTALLED=""

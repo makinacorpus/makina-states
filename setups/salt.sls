@@ -28,8 +28,8 @@ etc-salt-dirs-perms:
     - reset_paths:
       - /etc/salt
     - require:
-      - file: etc-salt-dirs
-      - cmd: salt-daemon-proxy-requires-before-restart
+      - file: salt-etc-salt-dirs
+      - cmd: salt-salt-daemon-proxy-requires-before-restart
 
 # recurse does not seem to work well to reset perms
 salt-dirs-perms:
@@ -48,14 +48,8 @@ salt-dirs-perms:
       - /srv/projects
       - /srv/vagrant
     - require:
-      - cmd: salt-daemon-proxy-requires-before-restart
-      - cmd: etc-salt-dirs-perms
-# no more virtualenv at the makina-states level
-#    - excludes:
-#      - {{c.msr}}/bin
-#      - {{c.msr}}/lib
-#      - {{c.msr}}/include
-#      - {{c.msr}}/local
+      - cmd: salt-salt-daemon-proxy-requires-before-restart
+      - cmd: salt-etc-salt-dirs-perms
 
 salt-dirs-restricted-perms:
   cmd.script:
@@ -72,10 +66,10 @@ salt-dirs-restricted-perms:
       - /var/cache/salt
       - /etc/salt/pki
     - require:
-      - cmd: salt-dirs-perms
-      - cmd: etc-salt-dirs-perms
-      - file: salt-dirs-restricted
-      - cmd: salt-daemon-proxy-requires-before-restart
+      - cmd: salt-salt-dirs-perms
+      - cmd: salt-etc-salt-dirs-perms
+      - file: salt-salt-dirs-restricted
+      - cmd: salt-salt-daemon-proxy-requires-before-restart
 
 # recurse does not seem to work well to reset perms
 docker-dirs-if-present:
@@ -91,7 +85,7 @@ docker-dirs-if-present:
     - user: "root"
     - group: {{c.group}}
     - require_in:
-      - cmd: salt-daemon-proxy-requires-before-restart
+      - cmd: salt-salt-daemon-proxy-requires-before-restart
     - excludes:
       - /srv/docker/docker/bundles
       - /srv/docker/cache

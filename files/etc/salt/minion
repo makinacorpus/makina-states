@@ -12,7 +12,13 @@
 {%- elif configname in salt -%}
 {{ configname }}: {{ salt[configname] }}
 {%- else -%}
-{%- if not ((configname.startswith('syndic')) or (configname in ['log_level_logfile', 'master', 'interface', 'order_masters'])) -%}#{%- endif -%}
+{%- if not ((configname.startswith('syndic')) or (configname in [
+'cachedir', 'log_level_logfile', 'master',
+'master_port', 'log_file', 'interface',
+'file_roots', 'pillar_roots',
+'pidfile', 'sock_dir', 'key_logfile',
+'order_masters', 'pki_dir',
+'log_level_logfile', 'master', 'interface', 'order_masters'])) -%}#{%- endif -%}
 {{ configname }}: {{ default_value }}
 {%- endif -%}
 {%- endmacro -%}
@@ -42,14 +48,14 @@
 {{ get_config('user', 'root') }}
 
 # Specify the location of the daemon process ID file
-{{ get_config('pidfile', '/var/run/salt-minion.pid') }}
+{{ get_config('pidfile', '/var/run/{{saltname}}-minion.pid') }}
 
 # The root directory prepended to these options: pki_dir, cachedir, log_file,
 # sock_dir, pidfile.
 {{ get_config('root_dir', '/') }}
 
 # The directory to store the pki information in
-{{ get_config('pki_dir', '/etc/salt/pki/minion') }}
+{{ get_config('pki_dir', '/etc/{{saltname}}/pki/minion') }}
 
 # Explicitly declare the id for this minion to use, if left commented the id
 # will be the hostname as returned by the python call: socket.getfqdn()
@@ -80,7 +86,7 @@ id: {{ minion['id'] }}
 {{ get_config('grains', '{}') }}
 
 # Where cache data goes
-{{ get_config('cachedir', '/var/cache/salt/minion') }}
+{{ get_config('cachedir', '/var/cache/{{saltname}}/minion') }}
 
 # Verify and set permissions on configuration directories at startup
 {{ get_config('verify_env', 'True') }}
@@ -92,7 +98,7 @@ id: {{ minion['id'] }}
 {{ get_config('cache_jobs', 'False') }}
 
 # set the directory used to hold unix sockets
-{{ get_config('sock_dir', '/var/run/salt/minion') }}
+{{ get_config('sock_dir', '/var/run/{{saltname}}/minion') }}
 
 # Set the default outputter used by the salt-call command. The default is
 # "nested"
@@ -141,10 +147,10 @@ id: {{ minion['id'] }}
 # to reconnect immediately, if the socket is disconnected (for example if
 # the master processes are restarted). In large setups this will have all
 # minions reconnect immediately which might flood the master (the ZeroMQ-default
-# is usually a 100ms delay). To prevent this, these three recon_* settings 
+# is usually a 100ms delay). To prevent this, these three recon_* settings
 # can be used.
 #
-# recon_default: the interval in milliseconds that the socket should wait before 
+# recon_default: the interval in milliseconds that the socket should wait before
 #                trying to reconnect to the master (100ms = 1 second)
 #
 # recon_max: the maximum time a socket should wait. each interval the time to wait
@@ -158,14 +164,14 @@ id: {{ minion['id'] }}
 #            reconnect 5: value from previous interval * 2
 #            reconnect x: if value >= recon_max, it starts again with recon_default
 #
-# recon_randomize: generate a random wait time on minion start. The wait time will 
-#                  be a random value between recon_default and recon_default + 
-#                  recon_max. Having all minions reconnect with the same recon_default 
-#                  and recon_max value kind of defeats the purpose of being able to 
-#                  change these settings. If all minions have the same values and your 
-#                  setup is quite large (several thousand minions), they will still 
+# recon_randomize: generate a random wait time on minion start. The wait time will
+#                  be a random value between recon_default and recon_default +
+#                  recon_max. Having all minions reconnect with the same recon_default
+#                  and recon_max value kind of defeats the purpose of being able to
+#                  change these settings. If all minions have the same values and your
+#                  setup is quite large (several thousand minions), they will still
 #                  flood the master. The desired behaviour is to have timeframe within
-#                  all minions try to reconnect. 
+#                  all minions try to reconnect.
 
 # Example on how to use these settings:
 # The goal: have all minions reconnect within a 60 second timeframe on a disconnect
@@ -177,9 +183,9 @@ id: {{ minion['id'] }}
 #
 # Each minion will have a randomized reconnect value between 'recon_default'
 # and 'recon_default + recon_max', which in this example means between 1000ms
-# 60000ms (or between 1 and 60 seconds). The generated random-value will be 
-# doubled after each attempt to reconnect. Lets say the generated random 
-# value is 11 seconds (or 11000ms). 
+# 60000ms (or between 1 and 60 seconds). The generated random-value will be
+# doubled after each attempt to reconnect. Lets say the generated random
+# value is 11 seconds (or 11000ms).
 #
 # reconnect 1: wait 11 seconds
 # reconnect 2: wait 22 seconds
@@ -381,9 +387,9 @@ file_roots:
     {% endfor -%}
   {% endfor -%}
 {% else -%}
-#file_roots:
-#  base:
-#    - /srv/salt
+file_roots:
+  base:
+    - {{saltprefix}}
 {%- endif %}
 
 # The hash_type is the hash to use when discovering the hash of a file in
@@ -411,9 +417,9 @@ pillar_roots:
     {% endfor -%}
   {% endfor -%}
 {% else %}
-#pillar_roots:
-#  base:
-#    - /srv/pillar
+pillar_roots:
+  base:
+    - {{pillarroot}}
 {%- endif %}
 
 ######        Security settings       #####
@@ -463,8 +469,12 @@ pillar_roots:
 #log_file: file:///dev/log
 #log_file: udp://loghost:10514
 #
-{{ get_config('log_file', '/var/log/salt/minion') }}
-{{ get_config('key_logfile', ' /var/log/salt/key') }}
+{% set pref=saltname+'-'%}
+{% if saltname == 'salt' %}
+{% set pref=''%}
+[% endif %}
+{{ get_config('log_file', '/var/log/salt/{{pref}}minion') }}
+{{ get_config('key_logfile', ' /var/log/salt/{{pref}}key') }}
 #
 # The level of messages to send to the console.
 # One of 'garbage', 'trace', 'debug', info', 'warning', 'error', 'critical'.

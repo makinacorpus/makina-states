@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+export PATH="{{root}}/bin:$PATH"
+salt-call -c {{saltconfig}} $@
+# vim:set ft=bash:

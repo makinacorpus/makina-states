@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+export PATH="{{root}}/bin:$PATH"
+if [[  $1 == "*" ]];then
+    shift
+    salt -c {{saltconfig}} '*' $@
+else
+    salt -c {{saltconfig}} $@
+fi
+# vim:set ft=bash:

@@ -1,9 +1,20 @@
-{% set msr = '/srv/salt/makina-states' %}
+#
+# This file contains three macros to
+# - install makina states
+# - configure a salt master and a salt minion which uses this makina states root
+#
+#
+{% set saltroot = '/srv/salt' %}
+{% set msaltroot = '/srv/mastersalt' %}
+{% set msr =   saltroot + '/makina-states' %}
+{% set mmsr = msaltroot + '/makina-states' %}
 {% set group = pillar.get('salt.filesystem.group', 'editor') %}
 {% set resetperms = "file://"+msr+"/_scripts/reset-perms.sh" %}
+{% set mresetperms = "file://"+mmsr+"/_scripts/reset-perms.sh" %}
 {% set group_id = pillar.get('salt.filesystem.gid', 65753) %}
 {% set rotate = pillar.get('salt.rotate', '31') %}
 {% set saltbinpath = msr+'/bin' %}
+{% set msaltbinpath = mmsr+'/bin' %}
 
 {% set vm = salt['config.get']('makina.bootstrap.vm', False) %}
 {% set server = salt['config.get']('makina.bootstrap.server', False) %}
@@ -19,5 +30,509 @@
 {% set mastersalt = mmaster or mminion or ms %}
 {% set no_bootstrap = not (vm or server or sa or ms) %}
 {% set salt_enabled = vm or server or master or minion or mastersalt %}
+{% set salt_modules=[
+    '_grains',
+    '_macros',
+    '_modules',
+    '_renderers',
+    '_returners',
+    '_scripts',
+    '_states',] %}
+
+# name: shortname for directories
+# mode: either salt or mastersalt
+#
+{% macro install_makina_states(name='salt', mode='salt', prefix='/srv') %}
+{% set repos={
+  'salt-git': {
+    'name': 'http://github.com/makinacorpus/salt.git',
+    'rev': 'remotes/origin/develop',
+    'target': prefix+'/'+name+'/makina-states/src/salt'},
+  'SaltTesting-git': {
+    'name': 'http://github.com/saltstack/salt-testing.git',
+    'target': prefix+'/'+name+'/makina-states/src/SaltTesting'},
+  'm2crypto': {
+    'name': 'https://github.com/makinacorpus/M2Crypto.git',
+    'target': prefix+'/'+name+'/makina-states/src/m2crypto'},
+  'salt-formulae': {
+    'name': 'http://github.com/saltstack-formulas/salt-formula.git',
+    'target': prefix+'/'+name+'/formulas/salt'},
+  'openssh-formulae': {
+    'name': 'http://github.com/saltstack-formulas/openssh-formula.git',
+    'target': prefix+'/'+name+'/formulas/openssh'},
+  'openstack-formulae': {
+    'name': 'https://github.com/kiorky/openstack-salt-states.git',
+    'target': prefix+'/'+name+'/openstack'},
+  'makina-states': {
+    'name': 'https://github.com/makinacorpus/makina-states.git',
+    'target': prefix+'/'+name+'/makina-states'},
+} %}
+{% if name == 'salt' %}
+{% set pillar_root = prefix + '/pillar' %}
+{% else %}
+{% set pillar_root = prefix + '/' + name + '-pillar'%}
+{% endif %}
+
+salt-{{name}}-key-bin:
+  file.managed:
+    - name: /usr/bin/{{name}}-key
+    - source: salt://makina-states/files/usr/bin/salt-key
+    - mode: 755
+    - root: {{prefix}}/{{name}}/makina-states
+    - saltname: {{name}}
+    - saltconfig: /etc/{{name}}
+    - makedirs: True
+
+salt-{{name}}-salt-bin:
+  file.managed:
+    - name: /usr/bin/{{name}}
+    - source: salt://makina-states/files/usr/bin/salt
+    - mode: 755
+    - makedirs: True
+    - root: {{prefix}}/{{name}}/makina-states
+    - saltname: {{name}}
+    - saltconfig: /etc/{{name}}
+    - require:
+      - cmd: update-makinastates-{{name}}
+
+salt-{{name}}-saltcall-bin:
+  file.managed:
+    - name: /usr/bin/{{name}}-call
+    - source: salt://makina-states/files/usr/bin/salt-call
+    - mode: 755
+    - makedirs: True
+    - root: {{prefix}}/{{name}}/makina-states
+    - saltname: {{name}}
+    - saltmode: {{mode}}
+    - saltconfig: /etc/{{name}}
+    - require:
+      - cmd: update-makinastates-{{name}}
+
+#salt-env:
+#  file.managed:
+#    - name: /etc/profile.d/salt.sh
+#    - source: salt://makina-states/files/etc/profile.d/salt.sh
+#    - mode: 755
+#    - template: jinja
+#    - saltbinpath: /srv/salt/makina-states/bin
+
+#{% if grains['os'] == 'Ubuntu' %}
+#salt-{{name}}-makina-env-bin:
+#   file.replace:
+#    - name: /etc/environment
+#    - pattern: '({{prefix}}/{{name}}/makina-states/bin:)*/usr/local/sbin'
+#    - repl: '{{prefix}}/{{name}}/makina-states/bin:/usr/local/sbin'
+#    - flags: ['MULTILINE', 'DOTALL']
+#{% endif %}
+
+salt-{{name}}-{{group}}:
+  group.present:
+    - name: {{group}}
+    - system: True
+    {% if group_id %}- gid: {{group_id}}{% endif %}
+
+# this is really factored
+# idea is to create dirs, then requires daemons to issue the chmod
+# without restarting them, otherwise the watch function will
+# restart them everytime !
+salt-etc-{{name}}-dirs:
+  file.directory:
+    - names:
+      - /etc/{{name}}
+      - /etc/{{name}}/master.d
+      - /etc/{{name}}/minion.d
+    - user: root
+    - group: {{group}}
+    - dir_mode: 2770
+    - makedirs: True
+    - require:
+      - group: salt-{{name}}-{{group}}
+
+etc-{{name}}-dirs:
+  file.directory:
+    - names:
+      - {{prefix}}/{{name}}
+      - {{prefix}}/{{name}}/makina-projects
+      - {{pillar_root}}
+      - {{prefix}}/projects
+      - {{prefix}}/vagrant
+    - user: root
+    - group: {{group}}
+    - file_mode: "0770"
+    - dir_mode: "2770"
+    - makedirs: True
+    - require:
+      - group: salt-{{name}}-{{group}}
 
 
+# only here for orchestration purposes
+dummy-pre-{{name}}-checkouts:
+  cmd.run:
+    - name: /bin/true
+    - unless: /bin/true
+
+# Keep those 3 first following in sync with buildout mr.developer content
+# those repos are the one needed to bootstrap the core daemons
+{% set repos=repos %}
+{% for i, data in repos.items() -%}
+{% set git=data['target']+'/.git'  -%}
+{% set rev=data.get('rev', False) %}
+salt-{{name}}-{{i}}:
+# on next runs as we reset perms on repos, just set filemode=false
+# do not use cwd as if dir does not exist, if will fail the entire state
+  cmd.run:
+    - name: cd "{{data['target']}}" && git config --local core.filemode false
+    - require:
+      - cmd: dummy-pre-{{name}}-checkouts
+    - onlyif: ls -d "{{git}}"
+    - unless: if [[ -d "{{git}}" ]];then cd "{{data['target']}}" && grep -q "filemode = false" .git/config;fi
+# on each run, update the code
+  git.latest:
+    - name: {{data['name']}}
+    - target: {{data['target']}}
+    {% if rev %}
+    - rev: {{rev}}
+    - always_fetch: True
+    {% endif %}
+    - require:
+      - cmd: salt-{{name}}-{{i}}
+{% endfor %}
+
+salt-{{name}}-makina-states-dirs:
+  file.directory:
+    - names:
+      {% for i in salt_modules -%}
+      - {{prefix}}/{{name}}/{{i}}
+      - {{prefix}}/{{name}}/makina-states/{{i}}
+      {% endfor %}
+
+salt-{{name}}-l-openssh-formulae:
+  file.symlink:
+    - target: {{prefix}}/{{name}}/formulas/openssh/openssh
+    - name: {{prefix}}/{{name}}/openssh
+    - require:
+      - git: salt-{{name}}-openssh-formulae
+
+salt-{{name}}-l-salt-formulae:
+  file.symlink:
+    - target: {{prefix}}/{{name}}/formulas/salt/salt
+    - name: {{prefix}}/{{name}}/salt
+    - require:
+      - git: salt-{{name}}-salt-formulae
+
+salt-{{name}}-modules:
+  cmd.run:
+    - name: |
+            for i in _states _grains _modules _renderers _returners;do
+              if [[ ! -d  "{{prefix}}/{{name}}/$i" ]];then mkdir "{{prefix}}/{{name}}/$i";fi;
+              for f in $(find {{prefix}}/{{name}}/makina-states/$i -name "*py" -type f);do
+                  ln -vsf "$f" "{{prefix}}/{{name}}/$i";
+              done;
+            done;
+    - unless: |
+              for i in _states _grains _modules _renderers _returners;do
+                for f in $(find {{prefix}}/{{name}}/makina-states/$i -name "*py" -type f);do
+                  dest="$f";
+                  sym="{{prefix}}/{{name}}/$i/$(basename $f)";
+                  if [[ ! -e  "$sym" ]];then
+                    echo "$sym not present";
+                    exit -1;
+                  fi;
+                  if [[ -h "$sym" ]];then
+                    if [[ "$(readlink $sym)" != "$dest" ]];then
+                      echo "$sym != $dest";
+                      exit -1;
+                    fi;
+                  fi;
+                done;
+              done;
+              exit 0;
+
+# update makina-state
+salt-{{name}}-buildout-bootstrap:
+  cmd.run:
+    - name: |
+            py="python";
+            if [ -e "/salt-venv/bin/python" ];then
+              py="/salt-venv/bin/python";
+            fi;
+            $py bootstrap.py
+    - cwd: {{prefix}}/{{name}}/makina-states
+    - unless: test "$(cat buildout.cfg|md5sum|awk '{print $1}')" = "$(cat .saltchk)"
+    - require_in:
+      - cmd: update-makinastates-{{name}}
+    - require:
+      - git: {{name}}-makina-states
+
+update-makinastates-{{name}}:
+  cmd.run:
+    - name: |
+            bin/buildout &&\
+            cat buildout.cfg|md5sum|awk '{print $1}'>.saltchk &&\
+            touch "{{prefix}}/{{name}}/makina-states/.restart_salt" &&\
+            touch "{{prefix}}/{{name}}/makina-states/.restart_msalt" &&\
+            touch "{{prefix}}/{{name}}/makina-states/.restart_salt_minion" &&\
+            touch "{{prefix}}/{{name}}/makina-states/.restart_msalt_minion"
+    - cwd: {{prefix}}/{{name}}/makina-states
+    - unless: test "$(cat buildout.cfg|md5sum|awk '{print $1}')" = "$(cat .saltchk)"
+
+salt-{{name}}-dirs-restricted:
+  file.directory:
+    - names:
+      - /var/log/{{name}}
+      - /var/run/{{name}}
+      - /var/cache/{{name}}
+      - /etc/{{name}}/pki
+    - msr: {{prefix}}/{{name}}/makina-states
+    - user: root
+    - group: {{group}}
+    - file_mode: 0750
+    - dir_mode: 2750
+    - makedirs: True
+    - require:
+      - file: salt-{{name}}-dirs
+
+# non blocking gitpull
+salt-{{name}}-git-pull:
+  cmd.run:
+    - name: |
+            branch=$(git symbolic-ref -q --short HEAD);
+            if [[ -z "$branch" ]];then
+                git checkout develop;
+            fi;
+            git pull origin develop;
+            exit 0
+    - cwd: {{prefix}}/{{name}}/makina-states/src/salt
+    - onlyif: ls -d {{prefix}}/{{name}}/makina-states/src/salt/.git
+
+# update makina-state
+salt-{{name}}-logrotate:
+  file.managed:
+    - template: jinja
+    - name: /etc/logrotate.d/{{name}}.conf
+    - source: salt://makina-states/files/etc/logrotate.d/salt.conf
+    - rotate: {{ rotate }}
+    - saltname: {{name}}
+
+salt-{{name}}-reload-grains:
+  cmd.script:
+    - source: salt://makina-states/_scripts/reload_grains.sh
+    - template: jinja
+
+# salt master/minion state will attach to this for the minion to be configured
+# before being really restarted
+salt-{{name}}-daemon-proxy-requires-before-restart:
+  cmd.run:
+    - name: echo "dummy"
+    - require:
+      - cmd: salt-{{name}}-git-pull
+      - cmd: salt-{{name}}-modules
+      - cmd: update-makina-states-{{name}}
+      - file: salt-etc-{{name}}-dirs
+      - file: salt-{{name}}-key-bin
+      - file: salt-{{name}}-dirs-restricted
+      - file: salt-{{name}}-logrotate
+      - file: salt-{{name}}-l-openssh-formulae
+      - file: salt-{{name}}-l-salt-formulae
+      - file: salt-{{name}}-salt-bin
+      - file: salt-{{name}}-saltcall-bin
+      - git: salt-{{name}}-m2crypto
+      - git: salt-{{name}}-makina-states
+      - git: salt-{{name}}-openssh-formulae
+      - git: salt-{{name}}-openstack-formulae
+      - git: salt-{{name}}-salt-formulae
+{% end macro %}
+
+{% macro install_makina_states_master(name, mode, prefix) %}
+salt-{{mode}}-{{name}}-master-conf:
+  file.managed:
+    - name: /etc/{{name}}/master
+    - template: jinja
+    - source: salt://makina-states/files/etc/{{mode}}/master
+    - saltmode: {{mode}}
+    - saltname: {{name}}
+    - saltprefix: {{prefix}}
+    - pillarroot: {{pillar_root}}
+    - require:
+      - file: salt-etc-{{name}}-dirs
+
+{% if grains['os'] == 'Debian' %}
+salt-{{name}}-master-job:
+  file.managed:
+    - name: /etc/init.d/{{name}}-master
+    - template: jinja
+    - source: salt://makina-states/files/etc/init.d/salt-master
+    - root: {{prefix}}/{{name}}/makina-states
+    - saltname: {{name}}
+    - saltconfig: /etc/{{name}}
+{% endif %}
+
+{% if grains['os'] == 'Ubuntu' %}
+salt-{{name}}-master-job:
+  file.managed:
+    - name: /etc/init/{{name}}-master.conf
+    - template: jinja
+    - source: salt://makina-states/files/etc/init/salt-master.conf
+    - root: {{prefix}}/{{name}}/makina-states
+    - saltconfig: /etc/{{name}}
+    - saltname: {{name}}
+{% endif %}
+
+salt-{{name}}-master:
+  service.running:
+    - name: {{name}}-master
+    - enable: True
+    - require:
+      - cmd: salt-restart-{{name}}-master
+
+salt-{{name}}-master-cache:
+  file.directory:
+    - name: /var/cache/{{name}}/master
+    - makedirs: True
+
+salt-{{name}}-master-pki:
+  file.directory:
+    - name: /etc/{{name}}/pki/master
+    - makedirs: True
+    - require:
+      - file: salt-etc-{{name}}-dirs
+
+salt-{{mode}}-{{name}}-master-sock-dir:
+  file.directory:
+    - name: /var/run/{{saltname}}/master
+    - makedirs: True
+
+salt-{{name}}-master-logs:
+  file.managed:
+    - names:
+      - /var/log/{{name}}/key
+      - /var/log/{{name}}/master
+      - /var/log/{{name}}/syndic.log
+
+# done to mitigate authentication errors on restart
+salt-restart-{{name}}-master:
+  cmd.run:
+    - name: |
+            service {{name}}-master restart &&\
+            echo "Reloading {{name}}-master" &&\
+            rm -f "{{prefix}}/{{name}}/makina-states/.restart_salt"
+    - onlyif: ls "{{prefix}}/{{name}}/makina-states/.restart_salt"
+    - require:
+      - cmd: salt-{{name}}-daemon-proxy-requires-before-restart
+      - file: salt-{{name}}-master-cache
+      - file: salt-{{name}}-master-conf
+      - file: salt-{{name}}-master-job
+      - file: salt-{{name}}-master-pki
+      - file: salt-{{name}}-master-logs
+      - file: salt-{{mode}}-{{name}}-master-sock-dir
+    - require_in:
+      - cmd: salt-restart-{{name}}-minion
+
+salt-{{name}}-master-grain:
+  grains.present:
+    - name: makina.{{name}}-master
+    - value: True
+    - require_in:
+      - cmd: salt-{{name}}-reload-grains
+    - require:
+      - service: salt-{{name}}-master
+{% end macro %}
+
+# install a salt minion
+{% macro install_makina_states_minion(name, mode, prefix) %}
+salt-{{mode}}-{{name}}-minion-conf:
+  file.managed:
+    - name: /etc/{{name}}/minion
+    - template: jinja
+    - source: salt://makina-states/files/etc/{{mode}}/minion
+    - saltmode: {{mode}}
+    - saltname: {{name}}
+    - saltprefix: {{prefix}}
+    - pillarroot: {{pillar_root}}
+    - require_in:
+      - cmd: salt-{{name}}-daemon-proxy-requires-before-restart
+
+{% if grains['os'] == 'Debian' %}
+salt-{{name}}-minion-job:
+  file.managed:
+    - name: /etc/init/{{name}}-minion
+    - template: jinja
+    - source:  salt://makina-states/files/etc/init.d/{{mode}}-minion
+    - root: {{prefix}}/{{name}}/makina-states
+    - saltname: {{name}}
+    - saltconfig: /etc/{{name}}
+    - require_in:
+      - cmd: salt-{{name}}-daemon-proxy-requires-before-restart
+{% endif %}
+
+{% if grains['os'] == 'Ubuntu' %}
+salt-{{name}}-minion-job:
+  file.managed:
+    - name: /etc/init/{{name}}-minion.conf
+    - template: jinja
+    - source:  salt://makina-states/files/etc/init/{{mode}}-minion.conf
+    - root: {{prefix}}/{{name}}/makina-states
+    - saltname: {{name}}
+    - saltconfig: /etc/{{name}}
+    - require_in:
+      - cmd: salt-{{name}}-daemon-proxy-requires-before-restart
+{% endif %}
+
+salt-{{name}}-minion-cache:
+  file.directory:
+    - name: /var/cache/{{name}}/minion
+    - makedirs: True
+    - require_in:
+      - cmd: salt-{{name}}-daemon-proxy-requires-before-restart
+
+salt-{{mode}}-{{name}}-minion-sock-dir:
+  file.directory:
+    - name: /var/run/{{saltname}}/minion
+    - makedirs: True
+    - require_in:
+      - cmd: salt-{{name}}-daemon-proxy-requires-before-restart
+
+salt-{{name}}-minion-pki:
+  file.directory:
+    - name: /etc/{{name}}/pki/minion
+    - makedirs: True
+    - require:
+      - file: salt-etc-{{name}}-dirs
+    - require_in:
+      - cmd: salt-{{name}}-daemon-proxy-requires-before-restart
+
+salt-{{name}}-minion-logs:
+  file.managed:
+    - names:
+      - /var/log/{{name}}/minion
+    - require_in:
+      - cmd: salt-{{name}}-daemon-proxy-requires-before-restart
+
+# done to mitigate authentication errors on restart
+salt-restart-{{name}}-minion:
+  cmd.run:
+    - name: |
+            service {{name}}-minion stop ;\
+            service {{name}}-minion start &&\
+            echo "Reloading {{name}}-minion" &&\
+            sleep 5 &&\
+            rm -f "{{prefix}}/{{name}}/makina-states/.restart_{{name}}_minion"
+    - onlyif: ls "{{prefix}}/{{name}}/makina-states/.restart_{{name}}_minion"
+    - require:
+      - cmd: salt-{{name}}-daemon-proxy-requires-before-restart
+
+salt-{{name}}-minion:
+  service.running:
+    - enable: True
+    - require:
+      - cmd: salt-restart-{{name}}-minion
+
+salt-{{name}}-minion-grain:
+  grains.present:
+    - name: makina.{{name}}-minion
+    - value: True
+    - require_in:
+      - cmd: salt-{{name}}-reload-grains
+    - require:
+      - service: salt-{{name}}-minion
+{% end macro %}

@@ -8,36 +8,39 @@ include:
   {% endif %}
 
 # recurse does not seem to work well to reset perms
-etc-mastersalt-dirs-perms:
+mastersalt-dirs-perms:
   cmd.script:
     - source:  {{c.resetperms}}
     - template: jinja
-    - msr: {{c.msr}}
+    - msr: {{c.mmsr}}
     - dmode: 2770
     - fmode: 0770
     - user: "root"
     - group: "{{c.group}}"
     - reset_paths:
       - /etc/mastersalt
+      - /srv/mastersalt-pillar
+      - /srv/mastersalt
     - require:
-      - cmd: mastersalt-daemon-proxy-requires-before-restart
-      - file: etc-mastersalt-dirs
+      - cmd: salt-mastersalt-daemon-proxy-requires-before-restart
+      - file: salt-etc-mastersalt-dirs
 
 mastersalt-dirs-restricted-perms:
   cmd.script:
     - source: {{c.resetperms}}
     - template: jinja
     - fmode: 0750
-    - msr: {{c.msr}}
+    - msr: {{c.mmsr}}
     - dmode: 0750
     - user: "root"
     - group: "{{c.group}}"
     - reset_paths:
       - /var/log/salt
+      - /var/run/mastersalt
       - /var/run/salt
       - /var/cache/mastersalt
       - /etc/mastersalt/pki
     - require:
-      - cmd: etc-mastersalt-dirs-perms
-      - cmd: mastersalt-daemon-proxy-requires-before-restart
+      - cmd: salt-etc-mastersalt-dirs-perms
+      - cmd: salt-mastersalt-daemon-proxy-requires-before-restart
 {% endif %}

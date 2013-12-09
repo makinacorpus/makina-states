@@ -12,7 +12,7 @@ include:
 #       keys:
 #         - kiorky.pub
 #   users: (opt: default ['root', 'ubuntu' (if ubuntu)])
-#     root: {}    # {} is important to mark as dict 
+#     root: {}    # {} is important to mark as dict
 #     ubuntu:
 #       password: foo
 #
@@ -59,6 +59,7 @@ ssh_auth-{{ sid }}-{{ user }}-{{ k }}-{{ key }}:
 extend:
   openssh:
     service.running:
+      {% if grains['os'] == 'Debian' %}- name: ssh{% endif %}
       - enable: True
       - watch:
         - file: sshd_config
