@@ -264,7 +264,7 @@ recap(){
         bs_yellow_log "The installation will continue in 60 secondes"
         bs_yellow_log "unless you press enter to continue or C-c to abort"
         bs_yellow_log "To not have this confirmation message, do:"
-        bs_yellow_log "    export \$MAKINA_STATES_NOCONFIRM=1"
+        bs_yellow_log "    export MAKINA_STATES_NOCONFIRM='1'"
         bs_yellow_log "---------------------------------------------------"
         read -t 60
     fi
@@ -449,7 +449,7 @@ base_setup() {
             git checkout master &&\
             bs_log " [bs] Updating $ms" &&\
             git fetch origin &&\
-            git merge -ff-only origin/master
+            git merge --ff-only origin/master
             if [[ "$?" == "0" ]];then
                 bs_log " [bs] Updated $ms"
             else
