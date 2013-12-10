@@ -442,11 +442,20 @@ base_setup() {
         MSS="$MSS $MASTERSALT_MS"
     fi
     for ms in $MSS;do
-    if [[ ! -d "$ms/.git" ]];then
-        git clone "$STATES_URL" "$ms" || die_in_error " [bs] Failed to download makina-states ($ms)"
-    else
-        cd $ms && git checkout master && git pull || die_in_error " [bs] Failed to update makina-states ($ms)"
-    fi
+        if [[ ! -d "$ms/.git" ]];then
+            git clone "$STATES_URL" "$ms" || die_in_error " [bs] Failed to download makina-states ($ms)"
+        else
+            cd $ms &&\
+            git checkout master &&\
+            bs_log " [bs] Updating $ms" &&\
+            git fetch origin &&\
+            git merge -ff-only origin/master
+            if [[ "$?" == "0" ]];then
+                bs_log " [bs] Updated $ms"
+            else
+                die_in_error " [bs] Failed to update makina-states ($ms)"
+            fi
+        fi
     done
 }
 
@@ -561,10 +570,15 @@ run_ms_buildout() {
             bin/develop up -fv
         else
             for i in src/m2crypto src/docker src/salt src/SaltTesting;do
-                if [[ -e "$ms/$i" ]];then
+                if [[ -e "$ms/$i" ]] && [[ "$i" != "src/salt" ]];then
                     bs_log " [bs] pre buildout manual ugrade: $i ($ms)"
                     cd "$ms/$i"
-                    git pull
+                    git fetch origin && git merge --ff-only origin/master
+                fi
+                if [[ -e "$ms/$i" ]] && [[ "$i" == "src/salt" ]];then
+                    bs_log " [bs] pre buildout manual ugrade: $i ($ms)"
+                    cd "$ms/$i"
+                    git fetch origin && git merge --ff-only origin/develop
                 fi
             done
         fi
