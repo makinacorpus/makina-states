@@ -1,4 +1,5 @@
 .installed.cfg
+.saltchk
 .salt-lxc-bootstrapped
 .saltcheck
 include
