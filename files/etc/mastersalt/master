@@ -568,8 +568,8 @@ peer_run:
 #log_file: file:///dev/log
 #log_file: udp://loghost:10514
 
-{{ get_config('log_file', '/var/log/'+saltname+'/mastersalt-master') }}
-{{ get_config('key_logfile', '/var/log/'+saltname+'/mastersalt-key') }}
+{{ get_config('log_file', '/var/log/salt/'+saltname+'-master') }}
+{{ get_config('key_logfile', '/var/log/salt/'+saltname+'-mastersalt-key') }}
 
 # The level of messages to send to the console.
 # One of 'garbage', 'trace', 'debug', info', 'warning', 'error', 'critical'.
