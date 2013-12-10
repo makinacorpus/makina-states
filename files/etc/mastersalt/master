@@ -74,7 +74,7 @@
 {{ get_config('ret_port', '4606') }}
 
 # Specify the location of the daemon process ID file
-{{ get_config('pidfile', '/var/run/{{saltname}}-master.pid') }}
+{{ get_config('pidfile', '/var/run/'+saltname+'-master.pid') }}
 
 # The root directory prepended to these options: pki_dir, cachedir,
 # sock_dir, log_file, autosign_file, extension_modules, key_logfile, pidfile.
@@ -82,10 +82,10 @@
 {{ get_config('root_dir', '/') }}
 
 # Directory used to store public key data
-{{ get_config('pki_dir', '/etc/{{saltname}}/pki/master') }}
+{{ get_config('pki_dir', '/etc/'+saltname+'/pki/master') }}
 
 # Directory to store job and cache data
-{{ get_config('cachedir', '/var/cache/{{saltname}}/master') }}
+{{ get_config('cachedir', '/var/cache/'+saltname+'/master') }}
 
 # Verify and set permissions on configuration directories at startup
 {{ get_config('verify_env', 'True') }}
