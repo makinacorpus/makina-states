@@ -8,7 +8,7 @@
 #
 
 include:
-  - makina-states.bootstrap.mastersalt
+  - makina-states.bootstrap.mastersalt_minion
   - makina-states.services.base.mastersalt_master
 
 makina-bootstrap-mastersalt-master-grain:

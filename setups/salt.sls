@@ -1,7 +1,13 @@
 {% import "makina-states/_macros/salt.jinja" as c with context %}
 
 include:
-  {% if c.server %}
+  {% if c.mmaster %}
+  - makina-states.bootstrap.mastersalt_master
+  {% endif %}
+  {% if c.mminion %}
+  - makina-states.bootstrap.mastersalt_minion
+  {% endif %}
+  {% if c.mmaster %}
   - makina-states.bootstrap.server
   {% endif %}
   {% if c.sa %}

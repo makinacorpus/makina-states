@@ -3,5 +3,5 @@
 #
 include:
   - makina-states.servers.base
-  - makina-states.bootstrap.mastersalt
+  - makina-states.bootstrap.mastersalt_minion
 

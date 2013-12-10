@@ -8,6 +8,6 @@ if [[ ! -d "$LXC_PATH" ]];then
     if [[ $ret != 1 ]];then
         echo "changed=yes comment='$LXC_NAME created'"
     else
-        exit $ret    
+        exit $ret
     fi
 fi

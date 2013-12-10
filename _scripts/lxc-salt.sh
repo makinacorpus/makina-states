@@ -4,9 +4,12 @@ export SALT_BOOT="$2"
 LXC_PATH="/var/lib/lxc/$LXC_NAME/rootfs"
 MASTERSALT_DEFAULT="mastersalt.makina-corpus.net"
 if [[ "$SALT_BOOT" == "mastersalt" ]];then
-    MASTERSALT="${MASTERSALT:-$MASTERSALT_DEFAULT}"
+    export SALT_BOOT=server
+    export MASTERSALT_BOOT=minion
+    export MASTERSALT="${MASTERSALT:-$MASTERSALT_DEFAULT}"
 fi
 export MASTERSALT="$MASTERSALT"
+export MAKINA_STATES_NOCONFIRM="1"
 mark="$LXC_PATH/srv/salt/makina-states/.salt-lxc-bootstrapped"
 if [[ -f $mark ]];then exit 0;fi
 if [[ -d "$LXC_PATH" ]];then

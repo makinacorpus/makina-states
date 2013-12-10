@@ -9,8 +9,8 @@
 
 include:
   - makina-states.localsettings.base
-  - makina-states.services.base.mastersalt
   - makina-states.bootstrap.base
+  - makina-states.services.base.mastersalt
 
 makina-bootstrap-mastersalt-grain:
   grains.present:

@@ -73,14 +73,19 @@ If you want to install salt on a machine flaggued as a devhost (server + dev mod
 
     export SALT_BOOT="devhost"
 
-If you want to install salt on a server wired to mastersalt on another machine::
+If you want to install salt on a server and then wire it to a mastersalt master running on another machine::
 
     export MASTERSALT="http://mastersalt"
-    export MASTERSALT="http://mastersalt.makina-corpus.net"
+    eg : export MASTERSALT="http://mastersalt.makina-corpus.net"
 
-If you want to test mastersalt system and install it::
+If you want to install and test test mastersalt system loclly to your box::
 
-    export MASTERSALT="localhost" MASTERSALT_MASTER="y"
+    export MASTERSALT="localhost" MASTERSALT_BOOT="master"
+
+- **MASTERSALT** is the mastersalt host to link to
+- **MASTERSALT_PORT** overrides the port for the distant mastersalt server
+  which is 4606 usually (read the script)
+- **MASTERSALT_BOOT=minion|master** instructs to install a mastersalt master or minion on  localhost. In master mode, it also add alocal mastersalt minion.
 
 To install our base salt installation, just run this script as **ROOT**, please read next paragraphe before running this command::
 
