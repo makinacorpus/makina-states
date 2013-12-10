@@ -110,7 +110,7 @@
 {{ get_config('color', 'True') }}
 
 # Set the directory used to hold unix sockets
-{{ get_config('sock_dir', '/var/run/{{mode}}/{{saltname}}-master') }}
+{{ get_config('sock_dir', '/var/run/salt/'+saltname+'-master') }}
 
 # The master maintains a job cache, while this is a great addition it can be
 # a burden on the master for larger deployments (over 5000 minions).
@@ -154,7 +154,7 @@
 # If the autosign_file is specified only incoming keys specified in
 # the autosign_file will be automatically accepted. This is insecure.
 # Regular expressions as well as globing lines are supported.
-{{ get_config('autosign_file', '/etc/{{saltname}}/autosign.conf') }}
+{{ get_config('autosign_file', '/etc/'+saltname+'/autosign.conf') }}
 
 # Enable permissive access to the salt keys.  This allows you to run the
 # master or minion as root, but have a non-root group be given access to
@@ -568,8 +568,8 @@ peer_run:
 #log_file: file:///dev/log
 #log_file: udp://loghost:10514
 
-{{ get_config('log_file', '/var/log/{{saltname}}/mastersalt-master') }}
-{{ get_config('key_logfile', '/var/log/{{saltname}}/mastersalt-key') }}
+{{ get_config('log_file', '/var/log/'+saltname+'/mastersalt-master') }}
+{{ get_config('key_logfile', '/var/log/'+saltname+'/mastersalt-key') }}
 
 # The level of messages to send to the console.
 # One of 'garbage', 'trace', 'debug', info', 'warning', 'error', 'critical'.
@@ -642,10 +642,10 @@ nodegroups:
 #####     Windows Software Repo settings #####
 ##############################################
 # Location of the repo on the master
-{{ get_config('win_repo', '{{saltprefix}}/win/repo') }}
+{{ get_config('win_repo', saltprefix+'/win/repo') }}
 
 # Location of the master's repo cache file
-{{ get_config('win_repo_mastercachefile', '{{saltprefix}}/win/repo/winrepo.p') }}
+{{ get_config('win_repo_mastercachefile', saltprefix+'/win/repo/winrepo.p') }}
 
 # List of git repositories to include with the local repo
 {% if 'win_gitrepos' in master %}
