@@ -98,7 +98,6 @@ ubuntu-pkgs:
     - names:
       - language-pack-en
       - language-pack-fr
-      - python-software-properties
       - ubuntu-minimal
       - ubuntu-standard
       - apport
@@ -147,6 +146,7 @@ sys-pkgs:
       - zerofree
       - zip
       {% if grains['os_family'] == 'Debian' -%}
+      - python-software-properties
       - debconf-utils
       - dstat
       {% endif %}

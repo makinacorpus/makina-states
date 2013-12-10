@@ -113,15 +113,16 @@ mastersalt_bootstrap="${bootstrap_pref}.mastersalt"
 
 
 export PATH=$MS/bin:$PATH
+MAKINA_STATES_NOCONFIRM="${MAKINA_STATES_NOCONFIRM:-}"
 
 # base sls file to run on a mastersalt master
 MASTERSALT_MASTER_ST="${bootstrap_pref}.mastersalt_master"
 
 # boot mode for mastersalt
+MASTERSALT_BOOT=""
 # if mastersalt is set, automatic switch on mastersalt mode
 if [[ -n $MASTERSALT ]];then
     bs_log " MasterSalt mode switch"
-    SALT_BOOT="server"
     MASTERSALT_BOOT="mastersalt"
 fi
 
@@ -235,6 +236,11 @@ recap(){
         bs_log "PROJECT_NAME: ${PROJECT_NAME}"
     fi
     bs_log "--------------------------------------------"
+    if [[ -z $MAKINA_STATES_NOCONFIRM ]];then
+        bs_log "--------------------------------------------"
+        bs_log "press any key to continue or C-C to abort"
+        bs_log "--------------------------------------------"
+    fi
 }
 is_apt_installed() {
     if [[ $(dpkg-query -s $@ 2>/dev/null|egrep "^Status:"|grep installed|wc -l)  == "0" ]];then
@@ -280,11 +286,12 @@ teardown_backports() {
         bs_log "Removing backport from $DISTRIB_BACKPORT to $DISTRIB_CODENAME"
         sed -re "s/${DISTRIB_BACKPORT}/${DISTRIB_CODENAME}/g" -i /etc/apt/sources.list
     fi
-    if [[ -n $IS_DEBIAN ]];then
-        bs_log "Removing backport from $DISTRIB_BACKPORT to $DISTRIB_CODENAME"
-        sed "/^#.*added.*boot-sa/d" -i /etc/apt/sources.list
-        sed "/^deb.*$DISTRIB_BACKPORT/d" -i /etc/apt/sources.list
-    fi
+    # leave the backport in placs on debian
+    #if [[ -n $IS_DEBIAN ]];then
+    #    bs_log "Removing backport from $DISTRIB_BACKPORT to $DISTRIB_CODENAME"
+    #    sed "/^#.*added.*boot-sa/d" -i /etc/apt/sources.list
+    #    sed "/^deb.*$DISTRIB_BACKPORT/d" -i /etc/apt/sources.list
+    #fi
 }
 i_prereq() {
     to_install=""
@@ -500,6 +507,7 @@ run_ms_buildout() {
     if    [[ ! -e "$ms/bin/buildout" ]]\
         || [[ ! -e "$ms/bin/salt-ssh" ]]\
         || [[ ! -e "$ms/bin/salt" ]]\
+        || [[ ! -e "$ms/bin/salt-syndic" ]]\
         || [[ ! -e "$ms/bin/mypy" ]]\
         || [[ ! -e "$ms/.installed.cfg" ]]\
         || [[ $(find -L "$ms/eggs/pyzmq"* |wc -l) == "0" ]]\
@@ -567,7 +575,7 @@ EOF
 done
 SETUPS_FILES="$ROOT/setup.sls"
 if [[ -n $MASTERSALT ]];then
-    SETUPS_FILES="$MASTERSALT_ROOT/setup.sls"
+    SETUPS_FILES="$SETUPS_FILES $MASTERSALT_ROOT/setup.sls"
 fi
 for stp in $SETUPS_FILES;do
     # Create a default setup in the tree if not present
@@ -615,11 +623,14 @@ EOF
     if [[ $(egrep -- "- makina-states\.dev\s*$" $topf|wc -l) == "0" ]];then
     bs_log "Adding makina-states.dev to $topf"
         sed -re "/('|\")\*('|\"):/ {
+a\    {% if grains.get('makina.devhost', False) %}
 a\    - makina-states.dev
+a\    {% endif %}
 }" -i $topf
+
     fi
 done
-for pillar_root in $PILLAR_ROOTS;do
+for pillar_root in $PILLAR;do
     if [[ $(grep -- "- salt" $PILLAR/top.sls|wc -l) == "0" ]];then
         sed -re "/('|\")\*('|\"):/ {
 a\    - salt
@@ -666,11 +677,17 @@ minion_processes="$(ps aux|grep salt-minion|grep -v mastersalt|grep -v grep|wc -
 minion_keys="$(find /etc/salt/pki/master/minions -type f 2>/dev/null|wc -l)"
 if     [[ ! -e "/etc/salt" ]]\
     || [[ ! -e "/etc/salt/master" ]]\
+    || [[ ! -e "$MS/.reboostrap" ]]\
     || [[ ! -e "/etc/salt/pki/minion/minion.pem" ]]\
     || [[ ! -e "/etc/salt/pki/master/master.pem" ]]\
     || [[ "$minion_keys" == "0" ]]\
     || [[ "$master_processes" == "0" ]]\
-    || [[ "$minion_processes" == "0" ]];then RUN_SALT_SETUP="1";fi
+    || [[ "$minion_processes" == "0" ]];then
+    if [[ -e "$MS/.reboostrap" ]];then
+        rm -f "$MS/.rebootstrap"
+    fi
+    RUN_SALT_SETUP="1"
+fi
 
 # --------- check if we need to run mastersalt setup's
 RUN_MASTERSALT_SETUP=""
@@ -680,8 +697,14 @@ if [[ -n "$MASTERSALT" ]];then
     mmaster_processes="$(ps aux|grep salt-master|grep mastersalt|grep -v grep|wc -l)"
     if     [[ ! -e "/etc/mastersalt" ]]\
         || [[ ! -e "/etc/mastersalt/pki/minion/minion.pem" ]]\
+        || [[ ! -e "$MASTERSALT_MS/.reboostrap" ]]\
         || [[ "$mminion_processes"  == "0" ]]\
-        ;then RUN_MASTERSALT_SETUP="1";fi
+        ;then
+        if [[ -e "$MS/.reboostrap" ]];then
+            rm -f "$MS/.rebootstrap"
+        fi
+        RUN_MASTERSALT_SETUP="1"
+    fi
     if [[ -n "$MASTERSALT_MASTER" ]];then
         if  [[ ! -e "/etc/mastersalt/pki/master/master.pem" ]]\
             || [[ "$mminion_keys" == "0" ]]\

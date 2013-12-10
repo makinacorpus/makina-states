@@ -25,8 +25,8 @@ The most outstanding features are:
     - Configuring git
     - Configuring git to correctly attack our gitorious
     - Configuring vim
-    - Configuring sudo    
-    - Managing shorewall    
+    - Configuring sudo
+    - Managing shorewall
     - Managing lxc containers
     - Managing docker containers
     - Configuring apache
@@ -69,19 +69,23 @@ If you want to install salt on a vm::
 
     export SALT_BOOT="vm"
 
-If you want to install salt on a server wired to mastersalt::
+If you want to install salt on a machine flaggued as a devhost (server + dev mode)::
 
-    export MASTERSALT="http://mastersalt" "mastersalt"
+    export SALT_BOOT="devhost"
+
+If you want to install salt on a server wired to mastersalt on another machine::
+
+    export MASTERSALT="http://mastersalt"
     export MASTERSALT="http://mastersalt.makina-corpus.net"
 
-If you want to test mastersalt system with the mastersalt minion & master on the same box::
+If you want to test mastersalt system and install it::
 
-    export SALT_BOOT="mastersalt" MASTERSALT="localhost"
+    export MASTERSALT="localhost" MASTERSALT_MASTER="y"
 
 To install our base salt installation, just run this script as **ROOT**, please read next paragraphe before running this command::
 
     wget http://raw.github.com/makinacorpus/makina-states/master/_scripts/boot-salt.sh -O - | bash
-    or 
+    or
     wget http://raw.github.com/makinacorpus/makina-states/master/_scripts/boot-salt.sh
     chmod +x boot-salt.sh
     ./boot-salt.sh
@@ -121,7 +125,7 @@ Then run higtstate or any salt cmd::
     salt-call state.highstate
 
 According to makinacorpus projects layouts, your project resides in:
-    
+
     - **/srv/projects/$PROJECT_NAME**: root prefix
     - **/srv/projects/$PROJECT_NAME/salt**: the checkout of the salt branch
     - **/srv/projects/$PROJECT_NAME/project**:  should contain the main project code source and be initialised by your project setup.sls
@@ -183,7 +187,7 @@ Prerequisite
     -:server: ::
 
         /srv/salt/makina-states/bin/salt-call -lall --local state.sls makina-states.services.bootstrap_server
-    
+
     -:dev VM or docker or virtualbox: ::
 
         /srv/salt/makina-states/bin/salt-call -lall --local state.sls makina-states.services.bootstrap_vm
@@ -199,9 +203,9 @@ Then ::
 - On  ``thelocalbox.domain.net``::
 
     salt-key -A
-    
-    
-    
+
+
+
 Troubleshooting
 =================
 
@@ -232,5 +236,5 @@ Troubleshooting
 Update your system setuptools install to match latest setuptools (distribute + setuptools fork reunion)::
 
     sudo easy_install -U setuptools
-    
-    
+
+

@@ -1,4 +1,6 @@
 # see also ssh.sls
+# to generate a password hash
+# USE ``python -c "import crypt, getpass, pwd; print crypt.crypt('password', '\$6\$SALTsalt\$')"``
 
 # Idea is to create any user/group needed for ssh managment
 

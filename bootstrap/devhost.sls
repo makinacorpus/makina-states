@@ -7,11 +7,11 @@
 #
 
 include:
-  - makina-states.bootstrap.vm
+  - makina-states.bootstrap.server
 
-makina-bootstrap-vm-grain:
+makina-bootstrap-devhost-grain:
   grains.present:
-    - name: makina.bootstrap.vm
+    - name: makina.devhost
     - value: True
     - require:
       - service: salt-minion

@@ -100,7 +100,7 @@ id: {{ minion['id'] }}
 {{ get_config('cache_jobs', 'False') }}
 
 # set the directory used to hold unix sockets
-{{ get_config('sock_dir', '/var/run/'+saltname+'/minion') }}
+{{ get_config('sock_dir', '/var/run/salt/'+saltname+'-minion') }}
 
 # Set the default outputter used by the salt-call command. The default is
 # "nested"

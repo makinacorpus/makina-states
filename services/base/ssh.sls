@@ -43,8 +43,7 @@ include:
       {% for k, keys in keys.items() %}
         {% for key in keys %}
 ssh_auth-{{ sid }}-{{ user }}-{{ k }}-{{ key }}:
-  ssh_auth:
-    - present
+  ssh_auth.present:
     - require:
       - user: {{ user }}
     - comment: key for {{ k }}

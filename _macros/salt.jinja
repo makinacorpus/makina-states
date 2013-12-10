@@ -4,8 +4,11 @@
 # - configure a salt master and a salt minion which uses this makina states root
 #
 #
-{% set saltroot = '/srv/salt' %}
-{% set msaltroot = '/srv/mastersalt' %}
+{% set saltname = 'salt' %}
+{% set msaltname = 'mastersalt' %}
+{% set saltprefix = '/srv' %}
+{% set saltroot = saltprefix + '/'+ saltname %}
+{% set msaltroot = saltprefix + '/'+ msaltname %}
 {% set msr =   saltroot + '/makina-states' %}
 {% set mmsr = msaltroot + '/makina-states' %}
 {% set group = pillar.get('salt.filesystem.group', 'editor') %}
@@ -42,7 +45,7 @@
 # name: shortname for directories
 # mode: either salt or mastersalt
 #
-{% macro install_makina_states(name='salt', mode='salt', prefix='/srv') %}
+{% macro install_makina_states(name=saltname, mode='salt', prefix=saltprefix) %}
 {% set repos={
   'salt-git': {
     'name': 'http://github.com/makinacorpus/salt.git',
@@ -198,6 +201,11 @@ etc-{{name}}-dirs:
 
 # only here for orchestration purposes
 dummy-pre-{{name}}-checkouts:
+  cmd.run:
+    - name: /bin/true
+    - unless: /bin/true
+
+dummy-post-{{name}}-master-restart:
   cmd.run:
     - name: /bin/true
     - unless: /bin/true
@@ -374,7 +382,9 @@ salt-{{name}}-daemon-proxy-requires-before-restart:
       - git: salt-{{name}}-salt-formulae
 {% endmacro %}
 
-{% macro install_makina_states_master(name, mode, prefix='/srv') %}
+
+
+{% macro install_makina_states_master(name=saltname, mode='salt', prefix=saltprefix) %}
 {% if name == 'salt' %}
 {% set pillar_root = prefix + '/pillar' %}
 {% else %}
@@ -462,7 +472,7 @@ salt-restart-{{name}}-master:
       - file: salt-{{name}}-master-logs
       - file: salt-{{mode}}-{{name}}-master-sock-dir
     - require_in:
-      - cmd: salt-restart-{{name}}-minion
+      - cmd: dummy-post-{{name}}-master-restart
 
 salt-{{name}}-master-grain:
   grains.present:
@@ -475,7 +485,7 @@ salt-{{name}}-master-grain:
 {% endmacro %}
 
 # install a salt minion
-{% macro install_makina_states_minion(name, mode, prefix='/srv') %}
+{% macro install_makina_states_minion(name=saltname, mode='salt', prefix=saltprefix) %}
 {% if name == 'salt' %}
 {% set pillar_root = prefix + '/pillar' %}
 {% else %}
@@ -561,6 +571,7 @@ salt-restart-{{name}}-minion:
     - onlyif: ls "{{prefix}}/{{name}}/makina-states/.restart_{{name}}_minion"
     - require:
       - cmd: salt-{{name}}-daemon-proxy-requires-before-restart
+      - cmd: dummy-post-{{name}}-master-restart
 
 salt-{{name}}-minion:
   service.running:

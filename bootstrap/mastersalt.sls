@@ -8,8 +8,9 @@
 #
 
 include:
-  - makina-states.bootstrap.server
+  - makina-states.localsettings.base
   - makina-states.services.base.mastersalt
+  - makina-states.bootstrap.base
 
 makina-bootstrap-mastersalt-grain:
   grains.present:
