@@ -79,6 +79,7 @@ salt-{{name}}-key-bin:
     - source: salt://makina-states/files/usr/bin/salt-key
     - mode: 755
     - root: {{prefix}}/{{name}}/makina-states
+    - template: jinja
     - saltname: {{name}}
     - saltconfig: /etc/{{name}}
     - makedirs: True
@@ -87,6 +88,7 @@ salt-{{name}}-salt-bin:
   file.managed:
     - name: /usr/bin/{{name}}
     - source: salt://makina-states/files/usr/bin/salt
+    - template: jinja
     - mode: 755
     - makedirs: True
     - root: {{prefix}}/{{name}}/makina-states
@@ -99,6 +101,35 @@ salt-{{name}}-saltcall-bin:
   file.managed:
     - name: /usr/bin/{{name}}-call
     - source: salt://makina-states/files/usr/bin/salt-call
+    - mode: 755
+    - makedirs: True
+    - root: {{prefix}}/{{name}}/makina-states
+    - template: jinja
+    - saltname: {{name}}
+    - saltmode: {{mode}}
+    - saltconfig: /etc/{{name}}
+    - require:
+      - cmd: update-makinastates-{{name}}
+
+salt-{{name}}-saltminion-bin:
+  file.managed:
+    - name: /usr/bin/{{name}}-minion
+    - source: salt://makina-states/files/usr/bin/salt-minion
+    - mode: 755
+    - makedirs: True
+    - root: {{prefix}}/{{name}}/makina-states
+    - saltname: {{name}}
+    - template: jinja
+    - saltmode: {{mode}}
+    - saltconfig: /etc/{{name}}
+    - require:
+      - cmd: update-makinastates-{{name}}
+
+salt-{{name}}-saltmaster-bin:
+  file.managed:
+    - name: /usr/bin/{{name}}-master
+    - source: salt://makina-states/files/usr/bin/salt-master
+    - template: jinja
     - mode: 755
     - makedirs: True
     - root: {{prefix}}/{{name}}/makina-states

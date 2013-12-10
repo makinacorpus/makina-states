@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 export PATH="{{root}}/bin:$PATH"
-salt-key -c {{saltconfig}} $@
+{{root}}/bin/salt-key -c {{saltconfig}} $@
 # vim:set ft=bash :

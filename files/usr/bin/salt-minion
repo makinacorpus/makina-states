@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 export PATH="{{root}}/bin:$PATH"
-{{root}}/bin/salt-call -c {{saltconfig}} $@
+{{root}}/bin/salt-minion -c {{saltconfig}} $@
 # vim:set ft=bash:
