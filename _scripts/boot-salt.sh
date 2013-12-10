@@ -1106,9 +1106,16 @@ cleanup_old_installs() {
         fi
         sed -re "/^\s*- salt$/d" -i "$MASTERSALT_PILLAR/top.sls"
         sed -re "/^\s*- mastersalt$/d" -i "$PILLAR/top.sls"
-        sed -re "/mastersalt/d" -i /etc/salt/grains
+
+    fi
+    if [[ "$(egrep "bootstrapped\.salt" /etc/mastersalt/grains|wc -l)" != "0" ]];then
+        bs_log "Cleanup old mastersalt grains"
         sed -re "/bootstrap\.salt/d" -i /etc/mastersalt/grains
         mastersalt_call_wrapper --local saltutil.sync_grains
+    fi
+    if [[ "$(grep mastersalt /etc/salt/grains|wc -l)" != "0" ]];then
+        bs_log "Cleanup old salt grains"
+        sed -re "/mastersalt/d" -i /etc/salt/grains
         salt_call_wrapper --local saltutil.sync_grains
     fi
 }
