@@ -103,6 +103,16 @@ set_vars() {
     detect_os
     HOSTNAME="$(hostname)"
     CHRONO="$(date "+%F_%H-%M-%S")"
+    lxc_ps=$(which lxc-ps &> /dev/null)
+    if [[ "$(egrep "^container=" /proc/1/environ|wc -l)" == "0" ]];then
+        # we are in a container !
+        lxc_ps=""
+    fi
+    if [[ -n $lxc_ps ]];then
+        PS="$lxc_ps --host --"
+    else
+        PS="$(which ps)"
+    fi
     BASE_PACKAGES=""
     BASE_PACKAGES="$BASE_PACKAGES build-essential m4 libtool pkg-config autoconf gettext bzip2"
     BASE_PACKAGES="$BASE_PACKAGES groff man-db automake libsigc++-2.0-dev tcl8.5 python-dev"
@@ -144,6 +154,9 @@ set_vars() {
     # if mastersalt is set, automatic switch on mastersalt mode
     if [[ -n $MASTERSALT_MASTER ]];then
         MASTERSALT_BOOT_DEFAULT="master"
+    fi
+    if [[ "$MASTERSALT_BOOT" == "master"  ]];then
+        MASTERSALT_MASTER="y"
     fi
     if [[ -e /etc/init/mastersalt-master.conf ]] || [[ -e /etc/init.d/mastersalt-master ]];then
         MASTERSALT_PRESENT="y"
@@ -727,8 +740,8 @@ install_salt_envs() {
     # --------- check if we need to run salt setup's
     warn_log
     RUN_SALT_SETUP=""
-    master_processes="$(ps aux|grep salt-master|grep -v mastersalt|grep -v grep|wc -l)"
-    minion_processes="$(ps aux|grep salt-minion|grep -v mastersalt|grep -v grep|wc -l)"
+    master_processes="$($PS aux|grep salt-master|grep -v mastersalt|grep -v grep|wc -l)"
+    minion_processes="$($PS aux|grep salt-minion|grep -v mastersalt|grep -v grep|wc -l)"
     minion_keys="$(find /etc/salt/pki/master/minions -type f 2>/dev/null|wc -l)"
     if     [[ ! -e "/etc/salt" ]]\
         || [[ ! -e "/etc/salt/master" ]]\
@@ -747,9 +760,9 @@ install_salt_envs() {
     # --------- check if we need to run mastersalt setup's
     RUN_MASTERSALT_SETUP=""
     if [[ -n "$USE_MASTERSALT" ]];then
-        mminion_processes="$(ps aux|grep salt-minion|grep mastersalt|grep -v grep|wc -l)"
+        mminion_processes="$($PS aux|grep salt-minion|grep mastersalt|grep -v grep|wc -l)"
         mminion_keys="$(find /etc/mastersalt/pki/master/minions -type f 2>/dev/null|wc -l)"
-        mmaster_processes="$(ps aux|grep salt-master|grep mastersalt|grep -v grep|wc -l)"
+        mmaster_processes="$($PS aux|grep salt-master|grep mastersalt|grep -v grep|wc -l)"
         if     [[ ! -e "/etc/mastersalt" ]]\
             || [[ ! -e "/etc/mastersalt/pki/minion/minion.pem" ]]\
             || [[ ! -e "$MASTERSALT_MS/.reboostrap" ]]\
@@ -783,7 +796,7 @@ install_salt_envs() {
     if [[ -n "$RUN_SALT_SETUP" ]];then
         ds=y
         # kill salt running daemons if any
-        ps aux|egrep "salt-(master|minion|syndic)"|grep -v mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
+        $PS aux|egrep "salt-(master|minion|syndic)"|grep -v mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
 
         bs_log "Boostrapping salt"
         # create etc directory
@@ -800,11 +813,11 @@ install_salt_envs() {
         if [[ -n "$DEBUG" ]];then cat $SALT_OUTFILE;fi
         # restart salt daemons
         bs_log "Forcing salt master restart"
-        ps aux|grep salt-master|grep -v mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
+        $PS aux|grep salt-master|grep -v mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
         service salt-master restart
         sleep 10
         bs_log "Forcing salt minion restart"
-        ps aux|grep salt-minion|grep -v mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
+        $PS aux|grep salt-minion|grep -v mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
         service salt-minion restart
         # only accept key on fresh install (no keys stored)
         if [[ "$(ls -1 /etc/salt/pki/master/minions 2>/dev/null|wc -l)" == "0" ]];then
@@ -836,13 +849,13 @@ install_salt_envs() {
         if [[ ! -e /etc/mastersalt ]];then mkdir /etc/mastersalt;fi
 
         # kill salt running daemons if any
-        ps aux|egrep "salt-(master|minion|syndic)"|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
+        $PS aux|egrep "salt-(master|minion|syndic)"|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
 
         # if we are a mastersalt salt-master
         if [[ -n "$MASTERSALT_MASTER" ]];then
             # run mastersalt master+minion setup
             bs_log "Running mastersalt-master/minion bootstrap ($MASTERSALT_BOOT/$mastersalt_bootstrap)"
-            ret="$(mastersalt_call_wrapper --local state.sls $mastersalt_bootstrap)"
+            ret="$(] Ruastersalt_call_wrapper --local state.sls $mastersalt_bootstrap)"
             if [[ -n "$DEBUG" ]];then cat $SALT_OUTFILE;fi
             if [[ "$ret" != "0" ]];then
                 echo "Mastersalt: Failed bootstrap of mastersalt master"
@@ -861,19 +874,19 @@ install_salt_envs() {
         if [[ -n "$DEBUG" ]];then cat $SALT_OUTFILE;fi
 
         # kill mastersalt running daemons if any
-        ps aux|egrep "salt-(master|minion|syndic)"|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
+        $PS aux|egrep "salt-(master|minion|syndic)"|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
 
         # restart mastersalt salt-master after setup
         if [[ -n "$MASTERSALT_MASTER" ]];then
             bs_log "Forcing mastersalt master restart"
-            ps aux|grep salt-master|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
+            $PS aux|grep salt-master|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
             service mastersalt-master restart
             sleep 10
         fi
 
         # restart mastersalt minion
         bs_log "Forcing mastersalt minion restart"
-        ps aux|grep salt-minion|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
+        $PS aux|grep salt-minion|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
         service mastersalt-minion restart
 
         # in case of a local mastersalt, auto accept the minion key
