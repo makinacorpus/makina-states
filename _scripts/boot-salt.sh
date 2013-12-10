@@ -859,7 +859,7 @@ install_mastersalt_env() {
         if [[ -n "$MASTERSALT_MASTER" ]];then
             # run mastersalt master+minion setup
             bs_log "Running mastersalt-master/minion bootstrap ($MASTERSALT_BOOT/$mastersalt_bootstrap)"
-            ret="$(] Ruastersalt_call_wrapper --local state.sls $mastersalt_bootstrap)"
+            ret="$(mastersalt_call_wrapper --local state.sls $mastersalt_bootstrap)"
             if [[ -n "$DEBUG" ]];then cat $SALT_OUTFILE;fi
             if [[ "$ret" != "0" ]];then
                 echo "Mastersalt: Failed bootstrap of mastersalt master"
