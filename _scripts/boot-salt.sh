@@ -398,11 +398,17 @@ fi
 recap
 bs_log "Check package dependencies"
 i_prereq || die_in_error " [bs] Failed install rerequisites"
-if [[ ! -d "$MS/.git" ]];then
-    git clone "$STATES_URL" "$MS" || die_in_error " [bs] Failed to download makina-states"
-else
-    cd $MS && git checkout master && git pull || die_in_error " [bs] Failed to update makina-states"
+MSS="$MS"
+if [[ -n $MASTERSALT ]];then
+    MSS="$MSS $MASTERSALT_MS"
 fi
+for ms in $MSS;do
+if [[ ! -d "$ms/.git" ]];then
+    git clone "$STATES_URL" "$ms" || die_in_error " [bs] Failed to download makina-states ($ms)"
+else
+    cd $ms && git checkout master && git pull || die_in_error " [bs] Failed to update makina-states ($ms)"
+fi
+done
 # Script is now running in makina-states git location
 # Check for virtualenv presence
 REBOOTSTRAP="${SALT_REBOOTSTRAP}"
