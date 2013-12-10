@@ -736,7 +736,7 @@ EOF
 
 # ------------ SALT INSTALLATION PROCESS
 
-install_salt_envs() {
+install_salt_env() {
     # --------- check if we need to run salt setup's
     warn_log
     RUN_SALT_SETUP=""
@@ -757,38 +757,10 @@ install_salt_envs() {
         RUN_SALT_SETUP="1"
     fi
 
-    # --------- check if we need to run mastersalt setup's
-    RUN_MASTERSALT_SETUP=""
-    if [[ -n "$USE_MASTERSALT" ]];then
-        mminion_processes="$($PS aux|grep salt-minion|grep mastersalt|grep -v grep|wc -l)"
-        mminion_keys="$(find /etc/mastersalt/pki/master/minions -type f 2>/dev/null|wc -l)"
-        mmaster_processes="$($PS aux|grep salt-master|grep mastersalt|grep -v grep|wc -l)"
-        if     [[ ! -e "/etc/mastersalt" ]]\
-            || [[ ! -e "/etc/mastersalt/pki/minion/minion.pem" ]]\
-            || [[ ! -e "$MASTERSALT_MS/.reboostrap" ]]\
-            || [[ "$mminion_processes"  == "0" ]]\
-            ;then
-            if [[ -e "$MASTERSALT_MS/.reboostrap" ]];then
-                rm -f "$MASTERSALT_MS/.rebootstrap"
-            fi
-            RUN_MASTERSALT_SETUP="1"
-        fi
-        if [[ -n "$MASTERSALT_MASTER" ]];then
-            if  [[ ! -e "/etc/mastersalt/pki/master/master.pem" ]]\
-                || [[ "$mminion_keys" == "0" ]]\
-                || [[ "$mmaster_processes" == "0" ]];then RUN_MASTERSALT_SETUP="1";fi
-        fi
-    fi
-
     # --------- Sources updates
     if [[ -n "$RUN_SALT_SETUP" ]];then
         cd $MS
         bs_log "Upgrading salt base code source"
-        bin/develop up -fv
-    fi
-    if [[ -n "$RUN_MASTERSALT_SETUP" ]];then
-        cd $MASTERSALT_MS
-        bs_log "Upgrading mastersalt base code source"
         bin/develop up -fv
     fi
 
@@ -835,6 +807,38 @@ install_salt_envs() {
         NOW_INSTALLED="y"
     else
         bs_log "Skip salt installation, already done"
+    fi
+}
+
+install_mastersalt_env() {
+    # --------- check if we need to run mastersalt setup's
+    RUN_MASTERSALT_SETUP=""
+    if [[ -n "$USE_MASTERSALT" ]];then
+        mminion_processes="$($PS aux|grep salt-minion|grep mastersalt|grep -v grep|wc -l)"
+        mminion_keys="$(find /etc/mastersalt/pki/master/minions -type f 2>/dev/null|wc -l)"
+        mmaster_processes="$($PS aux|grep salt-master|grep mastersalt|grep -v grep|wc -l)"
+        if     [[ ! -e "/etc/mastersalt" ]]\
+            || [[ ! -e "/etc/mastersalt/pki/minion/minion.pem" ]]\
+            || [[ ! -e "$MASTERSALT_MS/.reboostrap" ]]\
+            || [[ "$mminion_processes"  == "0" ]]\
+            ;then
+            if [[ -e "$MASTERSALT_MS/.reboostrap" ]];then
+                rm -f "$MASTERSALT_MS/.rebootstrap"
+            fi
+            RUN_MASTERSALT_SETUP="1"
+        fi
+        if [[ -n "$MASTERSALT_MASTER" ]];then
+            if  [[ ! -e "/etc/mastersalt/pki/master/master.pem" ]]\
+                || [[ "$mminion_keys" == "0" ]]\
+                || [[ "$mmaster_processes" == "0" ]];then RUN_MASTERSALT_SETUP="1";fi
+        fi
+    fi
+
+    # --------- Sources updates
+    if [[ -n "$RUN_MASTERSALT_SETUP" ]];then
+        cd $MASTERSALT_MS
+        bs_log "Upgrading mastersalt base code source"
+        bin/develop up -fv
     fi
 
     # --------- MASTERSALT
@@ -915,21 +919,16 @@ install_salt_envs() {
     fi
 }
 
+install_salt_envs() {
+    # XXX; important mastersalt must be configured before salt to override possible local settings.
+    install_mastersalt_env
+    install_salt_env
+}
+
 # --------- POST-SETUP
 
 setup_salt_envs() {
-    if [[ -z "$BOOTSALT_SKIP_SETUP" ]];then
-        bs_log "Running salt states setup"
-        ret="$(salt_call_wrapper --local state.sls makina-states.setup)"
-        if [[ "$ret" != "0" ]];then
-            bs_log "Failed post-setup"
-            exit -1
-        fi
-    fi
-    if [[ -n "$DEBUG" ]];then cat $SALT_OUTFILE;fi
-    warn_log
-    echo "changed=yes comment='salt post-setup run'"
-
+    # IMPORTANT: MASTERSALT BEFORE SALT !!!
     if [[ -z $BOOTSALT_SKIP_SETUP ]] && [[ -n "$USE_MASTERSALT" ]];then
         bs_log "Running salt states setup for mastersalt"
         ret="$(mastersalt_call_wrapper --local state.sls makina-states.setup)"
@@ -942,6 +941,18 @@ setup_salt_envs() {
         echo "changed=yes comment='mastersalt post-setup run'"
     fi
 
+    if [[ -z "$BOOTSALT_SKIP_SETUP" ]];then
+        bs_log "Running salt states setup"
+        ret="$(salt_call_wrapper --local state.sls makina-states.setup)"
+        if [[ "$ret" != "0" ]];then
+            bs_log "Failed post-setup"
+            exit -1
+        fi
+    fi
+    if [[ -n "$DEBUG" ]];then cat $SALT_OUTFILE;fi
+    warn_log
+    echo "changed=yes comment='salt post-setup run'"
+
     # --------- stateful state return: mark as freshly installed
     if [[ -n "$NOW_INSTALLED" ]];then
         warn_log
@@ -953,7 +964,9 @@ setup_salt_envs() {
         echo 'changed="false" comment="already bootstrapped"'
     fi
 }
+
 # -------------- MAKINA PROJECTS
+
 maybe_install_projects() {
     if [[ -n "$PROJECT_URL" ]];then
         bs_log "Projects managment"
