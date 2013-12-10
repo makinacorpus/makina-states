@@ -135,7 +135,7 @@ set_vars() {
     elif [[ -e /etc/init/salt-minion.conf ]] || [[ -e /etc/init.d/salt-minion ]];then
         SALT_PRESENT="y"
         SALT_BOOT_DEFAULT="server"
-    fi             
+    fi
     SALT_BOOT_DEFAULT="server"
     SALT_BOOT_INPUTED="${SALT_BOOT}"
     SALT_BOOT="${SALT_BOOT:-$SALT_BOOT_DEFAULT}"
@@ -1117,6 +1117,8 @@ cleanup_old_installs
 set_vars
 recap
 recap > "$MS/.boot_salt_top"
+base_setup
+setup_virtualenv
 install_buildouts
 create_salt_skeleton
 install_salt_envs

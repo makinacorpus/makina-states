@@ -339,7 +339,7 @@ salt-{{name}}-git-pull:
             if [[ -z "$branch" ]];then
                 git checkout develop;
             fi;
-            git pull origin develop;
+            git fetch origin;git merge --ff-only origin/develop;
             exit 0
     - cwd: {{prefix}}/{{name}}/makina-states/src/salt
     - onlyif: ls -d {{prefix}}/{{name}}/makina-states/src/salt/.git
