@@ -155,9 +155,6 @@ set_vars() {
     if [[ -n $MASTERSALT_MASTER ]];then
         MASTERSALT_BOOT_DEFAULT="master"
     fi
-    if [[ "$MASTERSALT_BOOT" == "master"  ]];then
-        MASTERSALT_MASTER="y"
-    fi
     if [[ -e /etc/init/mastersalt-master.conf ]] || [[ -e /etc/init.d/mastersalt-master ]];then
         MASTERSALT_PRESENT="y"
         MASTERSALT_BOOT_DEFAULT=master
@@ -167,6 +164,9 @@ set_vars() {
     fi
     MASTERSALT_BOOT_INPUTED="${MASTERSALT_BOOT}"
     MASTERSALT_BOOT="${MASTERSALT_BOOT:-$MASTERSALT_BOOT_DEFAULT}"
+    if [[ "$MASTERSALT_BOOT" == "master"  ]];then
+        MASTERSALT_MASTER="y"
+    fi
     MASTERSALT_INPUTED="${MASTERSALT}"
     # host running the mastersalt salt-master
     # - if we have not defined a mastersalt host,
@@ -892,26 +892,76 @@ install_mastersalt_env() {
         bs_log "Forcing mastersalt minion restart"
         $PS aux|grep salt-minion|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
         service mastersalt-minion restart
-
         # in case of a local mastersalt, auto accept the minion key
-        if [[ "$MASTERSALT" == "localhost" ]];then
-            # only accept key on fresh install (no keys stored)
-            if [[ "$(ls -1 /etc/mastersalt/pki/master/minions 2>/dev/null|wc -l)" == "0" ]];then
-                bs_log "Waiting for mastersalt minion key hand-shake"
-                sleep 5
-                mastersalt-key -A -y
-                ret=$?
-                if [[ "$ret" != "0" ]];then
-                    bs_log "Failed accepting mastersalt keys"
-                    exit -1
-                fi
-            else
-                bs_log "Key already accepted, skipping mastersalt key handshake"
-            fi
+        sleep 5
+        minion_id="$(cat /etc/salt/minion_id &> /dev/null)"
+        if [[ -z "$minion_id" ]];then
+            minion_id="<minionid>"
+        fi
+        if [[ "$(mastersalt_call_wrapper test.ping)" == "0" ]];then
+            bs_log " [bs] Mastersalt minion \"$minion_id\" already registered on $MASTERSALT"
         else
-            bs_log "*****************************************"
-            bs_log "  [*] GO ACCEPT THE KEY ON MASTERSALT !!!"
-            bs_log "*****************************************"
+            # disable the localhost trick to harmonize the challenge workflow
+            #if [[ "$MASTERSALT" == "localhost" ]];then
+            #    # only accept key on fresh install (no keys stored)
+            #    if [[ "$(ls -1 /etc/mastersalt/pki/master/minions 2>/dev/null|wc -l)" == "0" ]];then
+            #        bs_log "Waiting for mastersalt minion key hand-shake"
+            #        sleep 5
+            #        mastersalt-key -A -y
+            #        ret=$?
+            #        if [[ "$ret" != "0" ]];then
+            #            bs_log "Failed accepting mastersalt keys"
+            #            exit -1
+            #        fi
+            #    else
+            #        if [[ "$(mastersalt_call_wrapper test.ping)" != "0" ]];then
+            #            bs_log " [bs] MasterSalt minion already registered on $MASTERSALT"
+            #        else
+            #            bs_log "Failed accepting mastersalt keys"
+            #            exit -1
+            #        fi
+            #    fi
+            #else
+            if [[ -z "$MASTERSALT_NO_CHALLENGE" ]];then
+                bs_log "****************************************************************"
+                bs_log "  [*] GO ACCEPT THE KEY ON MASTERSALT ($MASTERSALT) !!! "
+                bs_log "  [*] You need on this box to run mastersalt-key -a $minion_id -y"
+                bs_log "****************************************************************"
+                bs_log " We are going to wait 10 minutes for you to setup the minion on mastersalt and"
+                bs_log " setup an entry for this specific minion"
+                bs_log " export MASTERSALT_NO_CHALLENGE=1 to remove the temposisation (enter to continue when done)"
+                read -t "$((10*60))"
+                # sleep 15 seconds giving time for the minion to wake up
+            else
+                bs_log "  [*} No temporisation for challenge, trying to spawn the minion"
+            fi
+            for i in `seq 60`;do
+                $PS aux|grep salt-minion|grep mastersalt|awk '{print $3}'|xargs kill -9 &> /dev/null
+                service mastersalt-minion restart
+                resultping="1"
+                for j in `seq 10`;do
+                    resultping="$(mastersalt_call_wrapper test.ping)"
+                    if [[ "$resultping" != "0" ]];then
+                        bs_yellow_log " [*] sub challenge try $j/$i"
+                        sleep 1
+                    else
+                        break
+                    fi
+                done
+                if [[ "$resultping" != "0" ]];then
+                    bs_log "Failed challenge mastersalt keys on $MASTERSALT, retry $i/60"
+                    challenged_ms=""
+                else
+                    challenged_ms="y"
+                    bs_log "Successfull challenge mastersalt keys on $MASTERSALT"
+                    break
+                fi
+            done
+            if [[ -z "$challenged_ms" ]];then
+                bs_log "Failed accepting mastersalt key on $MASTERSALT for $minion_çid"
+                exit -1
+            fi
+            #fi
         fi
         NOW_INSTALLED="y"
     else
@@ -919,19 +969,19 @@ install_mastersalt_env() {
     fi
 }
 
-install_salt_envs() {
-    # XXX; important mastersalt must be configured before salt to override possible local settings.
-    install_mastersalt_env
-    install_salt_env
-}
-
 # --------- POST-SETUP
 
-setup_salt_envs() {
+setup_mastersalt_env() {
     # IMPORTANT: MASTERSALT BEFORE SALT !!!
     if [[ -z $BOOTSALT_SKIP_SETUP ]] && [[ -n "$USE_MASTERSALT" ]];then
         bs_log "Running salt states setup for mastersalt"
-        ret="$(mastersalt_call_wrapper --local state.sls makina-states.setup)"
+        if [[ "$(mastersalt_call_wrapper test.ping)" != "0" ]];then
+            LOCAL="--local"
+            bs_yellow_log " [*] mastersalt setup running offline !"
+        else
+            LOCAL=""
+        fi
+        ret="$(mastersalt_call_wrapper $LOCAL state.sls makina-states.setup)"
         if [[ "$ret" != "0" ]];then
             bs_log "Failed post-setup for mastersalt"
             exit -1
@@ -940,9 +990,18 @@ setup_salt_envs() {
         warn_log
         echo "changed=yes comment='mastersalt post-setup run'"
     fi
+}
 
+
+setup_salt_env() {
     if [[ -z "$BOOTSALT_SKIP_SETUP" ]];then
         bs_log "Running salt states setup"
+        LOCAL="--local"
+        if [[ "$(salt_call_wrapper test.ping)" != "0" ]];then
+            LOCAL=""
+        else
+            bs_yellow_log " [*] salt setup running offline !"
+        fi
         ret="$(salt_call_wrapper --local state.sls makina-states.setup)"
         if [[ "$ret" != "0" ]];then
             bs_log "Failed post-setup"
@@ -956,9 +1015,17 @@ setup_salt_envs() {
     # --------- stateful state return: mark as freshly installed
     if [[ -n "$NOW_INSTALLED" ]];then
         warn_log
-        echo "changed=yes comment='salt installed'"
+        echo "changed=yes comment='salt installed and configured'"
     fi
 
+}
+
+install_salt_envs() {
+    # XXX; important mastersalt must be configured before salt to override possible local settings.
+    install_mastersalt_env
+    setup_mastersalt_env
+    install_salt_env
+    setup_salt_env
     # --------- stateful state return: mark as already installed
     if [[ -z "$ds" ]];then
         echo 'changed="false" comment="already bootstrapped"'
