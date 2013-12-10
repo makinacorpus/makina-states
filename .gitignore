@@ -1,4 +1,5 @@
 .installed.cfg
+.rebootstrap
 boot_salt_out
 boot_salt_log
 boot_salt_top
