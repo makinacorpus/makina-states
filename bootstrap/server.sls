@@ -22,4 +22,4 @@ makina-bootstrap-server-grain:
     - name: makina.bootstrap.server
     - value: True
     - require:
-      - service: salt-minion
+      - service: salt-salt-minion

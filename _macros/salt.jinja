@@ -262,7 +262,7 @@ salt-{{name}}-buildout-bootstrap:
     - require_in:
       - cmd: update-makinastates-{{name}}
     - require:
-      - git: {{name}}-makina-states
+      - git: salt-{{name}}-makina-states
 
 update-makinastates-{{name}}:
   cmd.run:
@@ -290,7 +290,7 @@ salt-{{name}}-dirs-restricted:
     - dir_mode: 2750
     - makedirs: True
     - require:
-      - file: salt-{{name}}-dirs
+      - file: salt-{{name}}-makina-states-dirs
 
 # non blocking gitpull
 salt-{{name}}-git-pull:
@@ -327,7 +327,7 @@ salt-{{name}}-daemon-proxy-requires-before-restart:
     - require:
       - cmd: salt-{{name}}-git-pull
       - cmd: salt-{{name}}-modules
-      - cmd: update-makina-states-{{name}}
+      - cmd: update-makinastates-{{name}}
       - file: salt-etc-{{name}}-dirs
       - file: salt-{{name}}-key-bin
       - file: salt-{{name}}-dirs-restricted
@@ -341,17 +341,22 @@ salt-{{name}}-daemon-proxy-requires-before-restart:
       - git: salt-{{name}}-openssh-formulae
       - git: salt-{{name}}-openstack-formulae
       - git: salt-{{name}}-salt-formulae
-{% end macro %}
+{% endmacro %}
 
-{% macro install_makina_states_master(name, mode, prefix) %}
-salt-{{mode}}-{{name}}-master-conf:
+{% macro install_makina_states_master(name, mode, prefix='/srv') %}
+{% if name == 'salt' %}
+{% set pillar_root = prefix + '/pillar' %}
+{% else %}
+{% set pillar_root = prefix + '/' + name + '-pillar'%}
+{% endif %}
+salt-{{name}}-master-conf:
   file.managed:
     - name: /etc/{{name}}/master
     - template: jinja
     - source: salt://makina-states/files/etc/{{mode}}/master
     - saltmode: {{mode}}
     - saltname: {{name}}
-    - saltprefix: {{prefix}}
+    - saltprefix: {{prefix}}/{{name}}
     - pillarroot: {{pillar_root}}
     - require:
       - file: salt-etc-{{name}}-dirs
@@ -399,7 +404,7 @@ salt-{{name}}-master-pki:
 
 salt-{{mode}}-{{name}}-master-sock-dir:
   file.directory:
-    - name: /var/run/{{saltname}}/master
+    - name: /var/run/{{name}}/master
     - makedirs: True
 
 salt-{{name}}-master-logs:
@@ -436,18 +441,23 @@ salt-{{name}}-master-grain:
       - cmd: salt-{{name}}-reload-grains
     - require:
       - service: salt-{{name}}-master
-{% end macro %}
+{% endmacro %}
 
 # install a salt minion
-{% macro install_makina_states_minion(name, mode, prefix) %}
-salt-{{mode}}-{{name}}-minion-conf:
+{% macro install_makina_states_minion(name, mode, prefix='/srv') %}
+{% if name == 'salt' %}
+{% set pillar_root = prefix + '/pillar' %}
+{% else %}
+{% set pillar_root = prefix + '/' + name + '-pillar'%}
+{% endif %}
+salt-{{name}}-minion-conf:
   file.managed:
     - name: /etc/{{name}}/minion
     - template: jinja
     - source: salt://makina-states/files/etc/{{mode}}/minion
     - saltmode: {{mode}}
     - saltname: {{name}}
-    - saltprefix: {{prefix}}
+    - saltprefix: {{prefix}}/{{name}}
     - pillarroot: {{pillar_root}}
     - require_in:
       - cmd: salt-{{name}}-daemon-proxy-requires-before-restart
@@ -470,7 +480,7 @@ salt-{{name}}-minion-job:
   file.managed:
     - name: /etc/init/{{name}}-minion.conf
     - template: jinja
-    - source:  salt://makina-states/files/etc/init/{{mode}}-minion.conf
+    - source:  salt://makina-states/files/etc/init/salt-minion.conf
     - root: {{prefix}}/{{name}}/makina-states
     - saltname: {{name}}
     - saltconfig: /etc/{{name}}
@@ -487,7 +497,7 @@ salt-{{name}}-minion-cache:
 
 salt-{{mode}}-{{name}}-minion-sock-dir:
   file.directory:
-    - name: /var/run/{{saltname}}/minion
+    - name: /var/run/{{name}}/minion
     - makedirs: True
     - require_in:
       - cmd: salt-{{name}}-daemon-proxy-requires-before-restart
@@ -523,6 +533,7 @@ salt-restart-{{name}}-minion:
 
 salt-{{name}}-minion:
   service.running:
+    - name: {{name}}-minion
     - enable: True
     - require:
       - cmd: salt-restart-{{name}}-minion
@@ -535,4 +546,4 @@ salt-{{name}}-minion-grain:
       - cmd: salt-{{name}}-reload-grains
     - require:
       - service: salt-{{name}}-minion
-{% end macro %}
+{% endmacro %}

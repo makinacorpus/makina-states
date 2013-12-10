@@ -10,6 +10,6 @@ include:
   - makina-states.services.base.mastersalt
 
 
-{{ set name='mastersalt' }}
-{{ set mode='mastersalt' }}
-{{ install_makina_states_master(name, mode)}}
+{% set name='mastersalt' %}
+{% set mode='mastersalt' %}
+{{ c.install_makina_states_master(name, mode)}}

@@ -27,8 +27,7 @@ makina-etc-profile-acc:
                 done;
                 unset i;
             fi
-
-    - required_in:
+    - require_in:
       - file: makina-etc-profile-block
 
 makina-etc-profile-block:

@@ -15,5 +15,5 @@ makina-bootstrap-standalone-grain:
     - name: makina.bootstrap.standalone
     - value: True
     - require:
-      - service: salt-minion
+      - service: salt-salt-minion
 

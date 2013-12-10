@@ -8,7 +8,7 @@
 include:
   - makina-states.services.base.salt
 
-{{ set name='mastersalt' }}
-{{ set mode='mastersalt' }}
-{{ install_makina_states(name, mode)}}
-{{ install_makina_states_minion(name, mode)}}
+{% set name='mastersalt' %}
+{% set mode='mastersalt' %}
+{{ c.install_makina_states(name, mode)}}
+{{ c.install_makina_states_minion(name, mode)}}

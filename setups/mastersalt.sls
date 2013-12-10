@@ -41,6 +41,6 @@ mastersalt-dirs-restricted-perms:
       - /var/cache/mastersalt
       - /etc/mastersalt/pki
     - require:
-      - cmd: salt-etc-mastersalt-dirs-perms
+      - cmd: mastersalt-dirs-perms
       - cmd: salt-mastersalt-daemon-proxy-requires-before-restart
 {% endif %}

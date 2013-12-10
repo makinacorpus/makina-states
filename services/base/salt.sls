@@ -11,7 +11,7 @@
 # We create a group called editor which has rights in /srv/{pillar, salt, projects}
 #
 {% import "makina-states/_macros/salt.jinja" as c with context %}
-{{ set name='salt' }}
-{{ set mode='salt' }}
-{{ install_makina_states(name, mode)}}
-{{ install_makina_states_minion(name, mode)}}
+{% set name='salt' %}
+{% set mode='salt' %}
+{{ c.install_makina_states(name, mode)}}
+{{ c.install_makina_states_minion(name, mode)}}

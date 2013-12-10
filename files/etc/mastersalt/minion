@@ -50,14 +50,14 @@
 {{ get_config('user', 'root') }}
 
 # Specify the location of the daemon process ID file
-{{ get_config('pidfile', '/var/run/{{saltname}}-minion.pid') }}
+{{ get_config('pidfile', '/var/run/'+saltname+'-minion.pid') }}
 
 # The root directory prepended to these options: pki_dir, cachedir, log_file,
 # sock_dir, pidfile.
 {{ get_config('root_dir', '/') }}
 
 # The directory to store the pki information in
-{{ get_config('pki_dir', '/etc/{{saltname}}/pki/minion') }}
+{{ get_config('pki_dir', '/etc/'+saltname+'/pki/minion') }}
 
 # Explicitly declare the id for this minion to use, if left commented the id
 # will be the hostname as returned by the python call: socket.getfqdn()
@@ -88,7 +88,7 @@ id: {{ minion['id'] }}
 {{ get_config('grains', '{}') }}
 
 # Where cache data goes
-{{ get_config('cachedir', '/var/cache/{{saltname}}/minion') }}
+{{ get_config('cachedir', '/var/cache/'+saltname+'/minion') }}
 
 # Verify and set permissions on configuration directories at startup
 {{ get_config('verify_env', 'True') }}
@@ -100,7 +100,7 @@ id: {{ minion['id'] }}
 {{ get_config('cache_jobs', 'False') }}
 
 # set the directory used to hold unix sockets
-{{ get_config('sock_dir', '/var/run/{{saltname}}/minion') }}
+{{ get_config('sock_dir', '/var/run/'+saltname+'/minion') }}
 
 # Set the default outputter used by the salt-call command. The default is
 # "nested"
@@ -391,7 +391,7 @@ file_roots:
 {% else -%}
 file_roots:
   base:
-    - {{prefix}}
+    - {{saltprefix}}
 {%- endif %}
 
 # The hash_type is the hash to use when discovering the hash of a file in
@@ -421,7 +421,7 @@ pillar_roots:
 {% else %}
 pillar_roots:
   base:
-    - {{pillar_root}}
+    - {{pillarroot}}
 {%- endif %}
 
 ######        Security settings       #####
@@ -471,8 +471,8 @@ pillar_roots:
 #log_file: file:///dev/log
 #log_file: udp://loghost:10514
 #
-{{ get_config('log_file', '/var/log/salt/{{saltname}}-minion') }}
-{{ get_config('key_logfile', ' /var/log/salt/{{saltname}}-minion-key') }}
+{{ get_config('log_file', '/var/log/salt/'+saltname+'-minion') }}
+{{ get_config('key_logfile', ' /var/log/salt/'+saltname+'-minion-key') }}
 #
 # The level of messages to send to the console.
 # One of 'garbage', 'trace', 'debug', info', 'warning', 'error', 'critical'.

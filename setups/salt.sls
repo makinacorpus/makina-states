@@ -49,7 +49,7 @@ salt-dirs-perms:
       - /srv/vagrant
     - require:
       - cmd: salt-salt-daemon-proxy-requires-before-restart
-      - cmd: salt-etc-salt-dirs-perms
+      - cmd: etc-salt-dirs-perms
 
 salt-dirs-restricted-perms:
   cmd.script:
@@ -66,8 +66,8 @@ salt-dirs-restricted-perms:
       - /var/cache/salt
       - /etc/salt/pki
     - require:
-      - cmd: salt-salt-dirs-perms
-      - cmd: salt-etc-salt-dirs-perms
+      - cmd: salt-dirs-perms
+      - cmd: etc-salt-dirs-perms
       - file: salt-salt-dirs-restricted
       - cmd: salt-salt-daemon-proxy-requires-before-restart
 

@@ -134,7 +134,7 @@ MASTERSALT_MAKINA_HOST="cloud-admin"
 #    default to localhost
 #    if we are not on makinacorpus mastersalt
 MASTERSALT_DEFAULT=""
-if [[ $SALT_BOOT == "mastersalt" ]];then
+if [[ $MASTERSALT_BOOT == "mastersalt" ]];then
     MASTERSALT_DEFAULT="localhost"
 fi
 if [[ "$HOSTNAME" == "$MASTERSALT_MAKINA_HOSTNAME" ]];then
@@ -194,10 +194,10 @@ if [[ -n "$PROJECT_URL" ]];then
 fi
 
 if [[ -n $MASTERSALT_DEFAULT ]] && [[ $MASTERSALT_DEFAULT != "localhost" ]];then
-    SALT_BOOT="mastersalt"
+    MASTERSALT_BOOT="mastersalt"
 fi
 if [[ -z $MASTERSALT_DEFAULT ]] && [[ -n $MASTERSALT ]];then
-    SALT_BOOT="mastersalt"
+    MASTERSALT_BOOT="mastersalt"
 fi
 if [[ -z $SALT_BOOT ]];then
     SALT_BOOT="$1"
@@ -534,7 +534,7 @@ run_ms_buildout() {
 run_ms_buildout $MS
 if [[ -n $MASTERSALT ]];then
     if [[ ! -e $MASTERSALT_ROOT/makina-states/.installed.cfg ]];then
-        rsync -av $MS/ $MASTERSALT_ROOT/makina-states/
+        rsync -a $MS/ $MASTERSALT_ROOT/makina-states/
         cd $MASTERSALT_ROOT/makina-states
         rm -rf .installed.cfg .mr.developer.cfg parts
     fi
@@ -591,7 +591,7 @@ done
 # Create a default top.sls in the tree if not present
 TOPS_FILES="$ROOT/top.sls"
 if [[ -n $MASTERSALT_MASTER ]];then
-    TOPS_FILES="$MASTERSALT_ROOT/top.sls"
+    TOPS_FILES="$TOPS_FILES $MASTERSALT_ROOT/top.sls"
 fi
 for topf in $TOPS_FILES;do
     if [[ ! -f $topf ]];then
@@ -606,7 +606,7 @@ base:
 EOF
     fi
     # add makina-salt.dev if not present
-    if [[ $(egrep -- "- makina-states\.dev\s*$" $topfs|wc -l) == "0" ]];then
+    if [[ $(egrep -- "- makina-states\.dev\s*$" $topf|wc -l) == "0" ]];then
     bs_log "Adding makina-states.dev to $topf"
         sed -re "/('|\")\*('|\"):/ {
 a\    - makina-states.dev
@@ -648,7 +648,6 @@ mastersalt-minion:
 EOF
     fi
 fi
-exit -1
 
 # global installation marker
 NOW_INSTALLED=""

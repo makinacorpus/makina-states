@@ -16,5 +16,5 @@ makina-bootstrap-mastersalt-master-grain:
     - name: makina.bootstrap.mastersalt_master
     - value: True
     - require:
-      - service: mastersalt-master
+      - service: salt-mastersalt-master
 
