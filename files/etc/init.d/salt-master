@@ -15,7 +15,8 @@ PATH=/sbin:/usr/sbin:/bin:/usr/bin
 DESC="salt {{saltname}} master control daemon"
 NAME=s{{saltname}}-master
 DAEMON=/usr/bin/{{saltname}}-master
-DAEMON_ARGS="-c {{saltconfig}} -d"
+DAEMON_ARGS="-d"
+#DAEMON_ARGS="-c {{saltconfig}} -d"
 PIDFILE=/var/run/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
 

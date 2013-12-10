@@ -15,7 +15,8 @@ PATH=/sbin:/usr/sbin:/bin:/usr/bin
 DESC="{{saltname}} salt minion control daemon"
 NAME={{saltname}}-minion
 DAEMON=/usr/bin/{{saltname}}-minion
-DAEMON_ARGS="-c {{saltconfig}}"
+DAEMON_ARGS=""
+#DAEMON_ARGS="-c {{saltconfig}}"
 PIDFILE=/var/run/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
 
