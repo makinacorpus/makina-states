@@ -106,6 +106,7 @@ makina-postgresql-service-reload:
                        psql_user=default_psql_user
 ) -%}
 #--- POSTGRESQL CLUSTER directories, users, database, grants --------------
+{# owner name is by default the db name #}
 {% if not owner -%}
 {%   set owner = '%s_owners' % db %}
 {% endif -%}

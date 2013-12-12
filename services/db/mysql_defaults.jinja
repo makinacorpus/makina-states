@@ -1,0 +1,52 @@
+
+#
+# MySQL Fine Settings ------------------------------------------------
+# when not in dev you MUST define AT LEAST mysql-default-settings.root_passwd
+# in your PILLAR, else you'll have state failures
+#
+{% set mysqlStepOne = salt['grains.filter_by']({
+    'dev': {
+        'conn_host': 'localhost',
+        'conn_user': 'root',
+        'conn_pass': '',
+        'character_set': 'utf8',
+        'collate': 'utf8_general_ci'
+    },
+    'prod': {
+        'conn_host': 'localhost',
+        'conn_user': 'root',
+        'conn_pass': '',
+        'character_set': 'utf8',
+        'collate': 'utf8_general_ci'
+    }
+  },
+  grain='default_env',
+  default= 'dev'
+) %}
+# Default OS-based paths settings added on mysqlData
+{% set mysqlStepTwo = salt['grains.filter_by']({
+    'Debian': {
+        'packages': {
+            'main': 'mysql-server',
+            'dev': 'libmysqlclient-dev',
+            'python': 'python-mysqldb',
+            'php': 'php-mysql'
+        },
+        'service': 'mysql',
+        'datadir': '/usr/share/mysql',
+        'etcdir': '/etc/mysql/conf.d',
+        'logdir': '/var/log/mysql',
+        'user': 'mysql',
+        'group': 'mysql',
+        'root_passwd': '',
+        'port': '5432',
+        'sockdir': '/var/run/mysql',
+    },
+    'RedHat': {
+    },
+  },
+  grain='os_family',
+  merge=mysqlStepOne
+) %}
+# FINAL STEP: merge with data from pillar
+{% set mysqlData=salt['mc_utils.dictupdate'](mysqlStepTwo , salt['pillar.get']('mysql-default-settings',{})) %}
