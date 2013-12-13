@@ -15,13 +15,18 @@
 
 {# MACRO mysql_base()
 # - install the mysql packages, and python bindings for mysql
+# - install a custom /etc/mysql/conf.d/local.cnf config script
 # - reload salt modules to get the mysql salt modules available
 # - ensure root password is set on prod servers
 # - define the mysql restart/reload states, add watch_in on theses ones
 #    * makina-mysql-service (restart)
 #    * makina-mysql-service-reload (reload)
+#
+# Parameters:
+# * mycnf_file: If you do not like the current template, add yours
+#       the current one is salt://makina-states/files/etc/mysql/conf.d/local.cnf
 #}
-{% macro mysql_base() %}
+{% macro mysql_base(mycnf_file=None) %}
 
 #
 # Note that python-mysqlDb binding is required for salt module to be loaded
@@ -43,14 +48,201 @@ mysql-salt-pythonmysqldb-pip-install:
 
 mysql-salt-pythonmysqldb-pip-install-module-reloader:
   cmd.wait:
-    - name: |
+    - name:
             echo "Reloading Modules as mysql python bindings were installed"
     # WARNING: WE NEED TO REFRESH THE MYSQL MODULE
     - reload_modules: true
     - watch:
       - pip: mysql-salt-pythonmysqldb-pip-install
 
+{% if not mycnf_file %}
+{%   set mycnf_file = "salt://makina-states/files/" + mysqlData.etcdir + "/local.cnf" %}
+{% endif %}
+{# ----------- MAGIC MYSQL AUTO TUNING -----------------
+Some heavy memory usage settings could be used on mysql settings: 
+Below are the rules we use to compute some default magic values for tuning settings.
+Note that you can enforce any of theses settings by putting some value fro them in
+mysqlData (so in the pillar for example).
+The most important setting for this tuning is the amount of the total memory you
+allow for MySQL, given by the % of total memory set in mysqlData.memory_usage_percent
 
+So starting from total memory * given percentage we use (let's call it available memory):
+* innodb_buffer_pool_size: 50% of avail.
+* key_buffer_size:
+* query_cache_size: 20% of avail. limit to 500M as a starting point
+# -- per connections
+* max_connections -> impacts on per conn memory settings (which are big) and number of tables and files opened
+* innodb_log_buffer_size:
+* thread_stack
+* thread_cache_size
+* sort_buffer_size
+# -- others
+ * tmp_table_size == max_heap_table_size : If working data memory for a request
+              gets bigger than that then file backed temproray tables will be used
+              (and it will, by definition, be big ones), the bigger the better
+              but you'll need RAM, again.
+* table_open_cache
+* table_definition_cache
+
+Now let's do the magic:
+#}
+{# first get the Mo of memory, cpu and disks on the system #}
+{% set full_mem = grains['mem_total'] %}
+{% set nb_cpus = grains['num_cpus'] %}
+{# Then extract memory that we could use for this MySQL server #}
+{% set available_mem = full_mem * mysqlData.memory_usage_percent / 100 %}
+
+{# Now for all non set tuning parameters try to fill the gaps #}
+{# ---- NUMBER OF CONNECTIONS       #}
+{% if mysqlData.tuning.nb_connections %}
+{% set nb_connections = mysqlData.tuning.nb_connections %}
+{% else %}
+{%   set nb_connections = 100 %}
+{% endif %}
+
+{# ---- QUERY CACHE SIZE            #}
+{% set query_cache_size_M = (available_mem / 5)|int %}
+{% if query_cache_size_M > 500 %}
+{%   set query_cache_size_M = 500 %}
+{% endif %}
+
+{# ---- INNODB BUFFER                #}
+{# Values cannot be used in default/context as others as we need to compute from previous values #}
+{% if mysqlData.tuning.innodb_buffer_pool_size_M %}
+{%   set innodb_buffer_pool_size_M = mysqlData.tuning.innodb_buffer_pool_size_M %}
+{% else %}
+{%   set innodb_buffer_pool_size_M = (available_mem / 2)|int %}
+{% endif %}
+{# Try to divide this buffer in instances of 1Go #}
+{% if mysqlData.tuning.innodb_buffer_pool_instances %}
+{%   set innodb_buffer_pool_instances = mysqlData.tuning.innodb_buffer_pool_instances %}
+{% else %}
+{%   set innodb_buffer_pool_instances = (innodb_buffer_pool_size_M / 1024)|round(0)|int %}
+{%   if innodb_buffer_pool_instances < 1 %}
+{%     set innodb_buffer_pool_instances = 1 %}
+{%   endif %}
+{% endif %}
+{# Try to set this to 25% of innodb_buffer_pool_size #}
+{% if mysqlData.tuning.innodb_log_buffer_size_M %}
+{%   set innodb_log_buffer_size_M = mysqlData.tuning.innodb_log_buffer_size_M %}
+{% else %}
+{%   set innodb_log_buffer_size_M = (innodb_buffer_pool_size_M / 4)|round(0)|int %}
+{% endif %}
+
+{# ------- INNODB other settings     #}
+{% set innodb_flush_method = 'fdatasync' %}
+{# recommended value is 2*nb cpu + nb of disks, we assume one disk #}
+{% set innodb_thread_concurrency = (nb_cpus + 1) * 2 %}
+{# Should we sync binary logs at each commits or prey for no server outage? #}
+{% set sync_binlog = 0 %}
+{# innodb_flush_log_at_trx_commit
+   1 = Full ACID, but slow, log written at commit + sync disk
+   0 = log written every second + sync disk, BUT nothing at commit (kill of mysql can loose last transactions)
+   2 = log written every second + sync disk, and log written at commit without sync disk (server outage can loose transactions)
+#}
+{% set innodb_flush_log_at_trx_commit = 1 %}
+
+{# --------- Settings related to number of tables #}
+{# This is by default 8M, should store all tables and indexes informations #}
+{% if mysqlData.tuning.number_of_table_indicator < 251 %}
+{%   set innodb_additional_mem_pool_size_M = 8 %}
+{% elif mysqlData.tuning.number_of_table_indicator < 501 %}
+{%   set innodb_additional_mem_pool_size_M = 16 %}
+{% elif mysqlData.tuning.number_of_table_indicator < 1001 %}
+{%   set innodb_additional_mem_pool_size_M = 24 %}
+{% else %}
+{%   set innodb_additional_mem_pool_size_M = 32 %}
+{% endif %}
+{# TABLE CACHE
+  table_open_cache should be max joined tables in queries * nb connections
+  table_cache is the old name now it's table_open_cache and by default 400
+  the system open_file_limit may not be good enough
+  If server crash try to tweak "sysctl fs.file-max" or check mysql ulimit
+  Warning /etc/security/limits.conf is not read by upstart (it's for users)
+  so the increase of file limits must be set in upstart script
+  @http://askubuntu.com/questions/288471/mysql-cant-open-files-after-updating-server-errno-24
+#}
+{% set table_definition_cache = mysqlData.tuning.number_of_table_indicator %}
+{% set table_open_cache = nb_connections * 8 %}
+{# this should be table_open_cache * nb_connections #}
+{% set open_file_limit = nb_connections * table_open_cache %}
+
+{# ------------ OTHERS                           #}
+{# tmp_table_size: On queries using temporary data, ig this data gets bigger than
+ that then the temporary memory things becames real physical temporary tables
+ and things gets very slow, but this must be some free RAM when the request is 
+ running, so if you use something like 1024Mo prey that queries using this amount
+ of temporary data are not running too often...
+#}
+{% set tmp_table_size_M= (available_mem / 10)|int %}
+makina-mysql-settings:
+  file.managed:
+    - name: {{ mysqlData.etcdir }}/local.cnf
+    - source: "{{ mycnf_file }}"
+    - user: root
+    - group: root
+    - mode: 644
+    - template: jinja
+    - show_diff: True
+    - defaults:
+        mode: "production"
+        port: {{ mysqlData.port }}
+        sockdir: "{{ mysqlData.sockdir }}"
+        basedir: "{{ mysqlData.basedir }}"
+        datadir: "{{ mysqlData.datadir }}"
+        tmpdir: "{{ mysqlData.tmpdir }}"
+        sharedir: "{{ mysqlData.sharedir }}"
+        noDNS: "{{ mysqlData.noDNS }}"
+        isPercona: {{ mysqlData.isPercona }}
+        isOracle: {{ mysqlData.isOracle }}
+        isMariaDB: {{ mysqlData.isMariaDB }}
+        nb_connections : {{ nb_connections }}
+        query_cache_size: "{{ query_cache_size_M }}"
+        innodb_buffer_pool_size: {{ innodb_buffer_pool_size_M }}
+        innodb_buffer_pool_instances: {{ innodb_buffer_pool_instances }}
+        innodb_log_buffer_size: {{ innodb_log_buffer_size_M }}
+        innodb_flush_method: {{ innodb_flush_method }}
+        innodb_thread_concurrency: {{ innodb_thread_concurrency }}
+        innodb_flush_log_at_trx_commit: {{ innodb_flush_log_at_trx_commit }}
+        innodb_additional_mem_pool_size: {{ innodb_additional_mem_pool_size_M }}
+        table_definition_cache: {{ table_definition_cache }}
+        table_open_cache: {{ table_open_cache }}
+        open_file_limit: {{ open_file_limit }}
+        tmp_table_size: {{ tmp_table_size_M }}
+        sync_binlog: {{ sync_binlog }}
+    - context:
+{% if grains['makina.devhost'] %}
+        mode: "dev"
+{% endif %}
+{% if mysqlData.tuning.query_cache_size_M %}
+        query_cache_size: {{ mysqlData.tuning.query_cache_size_M }}
+{% endif %}
+{% if mysqlData.tuning.innodb_flush_method %}
+        innodb_flush_method: {{ mysqlData.tuning.innodb_flush_method }}
+{% endif %}
+{% if mysqlData.tuning.innodb_thread_concurrency %}
+        innodb_thread_concurrency: {{ mysqlData.tuning.innodb_thread_concurrency }}
+{% endif %}
+{% if mysqlData.tuning.innodb_flush_log_at_trx_commit %}
+        innodb_flush_log_at_trx_commit: {{ mysqlData.tuning.innodb_flush_log_at_trx_commit }}
+{% endif %}
+{% if mysqlData.tuning.sync_binlog %}
+        sync_binlog: {{ mysqlData.tuning.sync_binlog }}
+{% endif %}
+{% if mysqlData.tuning.innodb_additional_mem_pool_size_M %}
+        innodb_additional_mem_pool_size: {{ mysqlData.tuning.innodb_additional_mem_pool_size_M }}
+{% endif %}
+{% if mysqlData.tuning.tmp_table_size_M %}
+        tmp_table_size: {{ mysqlData.tuning.tmp_table_size_M }}
+{% endif %}
+
+    - require:
+      - pkg: makina-mysql-pkgs
+    # full service restart in case of changes
+    - watch_in:
+       - service: makina-mysql-service
+
+{# --- ROOT ACCESS MANAGMENT --------------- #}
 # Alter root password only if we can connect without
 change-empty-mysql-root-access:
   cmd.run:

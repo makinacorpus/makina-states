@@ -1,23 +1,81 @@
 
 #
 # MySQL Fine Settings ------------------------------------------------
-# when not in dev you MUST define AT LEAST mysql-default-settings.root_passwd
+# TODO: review this comment: when not in dev you MUST define AT LEAST mysql-default-settings.root_passwd
 # in your PILLAR, else you'll have state failures
 #
+# * conn_[host|user|pass]: Connection settings, user/pass/host used by salt
+#                          to manage users, grants and database creations
+# * character_set: default character set on CREATE DATABASE (use utf8' not 'utf-8')
+# * collate: default collate on CREATE DATABASE
+# -- my.cnf settings (or conf.d/local.cnf in fact) ----
+# * noDNS: Avoid name resolution on connections checks, must-have.
+#          This is the skip-name-resolv option
+# * memory_usage_percent: the macro will compute magiccaly the settings to fit
+#          this percentage of full memory on the host. So by default it's 50%
+#          of all RAM on a dev envirronment and 85% for a production one where
+#          the MySQl server should be alone on a server. Then all others settings
+#          parameters in the 'tunning' key could be set to False to let the macro
+#          fill the gaps. If you set somtehing other than False for one of theses
+#          settings it will be used instead of the value computed by the macro,
+#          check the macro for details and comments on all theses parameters.
+#          Note the "_M" means Mo, so for 2Go of innodb_buffer_pool_size use
+#          2024, that is 2024Mo.
+#          Tweak the 'number_of_table_indicator' to adjust some settings automatically
+#          from that, for example several Drupal instances using a lot of fields
+#          could manage several hundreds of tables. <=== IMPORTANT
 {% set mysqlStepOne = salt['grains.filter_by']({
     'dev': {
         'conn_host': 'localhost',
         'conn_user': 'root',
         'conn_pass': '',
         'character_set': 'utf8',
-        'collate': 'utf8_general_ci'
+        'collate': 'utf8_general_ci',
+        'noDNS': True,
+        'isPercona': False,
+        'isOracle': True,
+        'isMariaDB': False,
+        'memory_usage_percent' : 35,
+        'tuning': {
+            'nb_connections': 25000,
+            'innodb_buffer_pool_size_M': False,
+            'query_cache_size_M': False,
+            'innodb_buffer_pool_instances': False,
+            'innodb_log_buffer_size_M': False,
+            'innodb_flush_method': 'O_DSYNC',
+            'innodb_thread_concurrency': False,
+            'sync_binlog': False,
+            'innodb_flush_log_at_trx_commit': 0,
+            'innodb_additional_mem_pool_size_M': False,
+            'tmp_table_size_M': False,
+            'number_of_table_indicator': 500
+         }
     },
     'prod': {
         'conn_host': 'localhost',
         'conn_user': 'root',
         'conn_pass': '',
         'character_set': 'utf8',
-        'collate': 'utf8_general_ci'
+        'collate': 'utf8_general_ci',
+        'noDNS': True,
+        'isPercona': False,
+        'isOracle': True,
+        'isMariaDB': False,
+        'memory_usage_percent' : 85,
+        'tuning': {
+            'nb_connections': 250,
+            'innodb_buffer_pool_size': False,
+            'query_cache_size_M': False,
+            'innodb_buffer_pool_instances': False,
+            'innodb_log_buffer_size_M': False,
+            'innodb_flush_method': 'O_DIRECT',
+            'innodb_thread_concurrency': False,
+            'sync_binlog': False,
+            'innodb_flush_log_at_trx_commit': 2,
+            'innodb_additional_mem_pool_size_M': False,
+            'tmp_table_size_M': tmp_table_size,
+            'number_of_table_indicator': 1000
+         }
     }
   },
   grain='default_env',
@@ -33,14 +91,17 @@
             'php': 'php-mysql'
         },
         'service': 'mysql',
-        'datadir': '/usr/share/mysql',
-        'etcdir': '/etc/mysql/conf.d',
-        'logdir': '/var/log/mysql',
+        'port': '5432',
         'user': 'mysql',
         'group': 'mysql',
         'root_passwd': '',
-        'port': '5432',
-        'sockdir': '/var/run/mysql',
+        'sharedir': '/usr/share/mysql',
+        'datadir': '/var/lib/mysql',
+        'tmpdir': '/tmp',
+        'etcdir': '/etc/mysql/conf.d',
+        'logdir': '/var/log/mysql',
+        'basedir' : '/usr',
+        'sockdir': '/var/run/mysqld'
     },
     'RedHat': {
     },

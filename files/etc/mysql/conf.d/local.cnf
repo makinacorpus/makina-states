@@ -1,0 +1,126 @@
+# Salt managed MySQL settings
+# This file is managed by the mysql_base() salt macro from makina-states.services.db.mysql
+[client]
+port        = {{ port }}
+socket      = {{ sockdir }}/mysqld.sock
+#no-auto-rehash	# faster start of mysql but no tab completition
+
+[mysqld]
+#
+# * Basic Settings
+#
+max_connections = {{ nb_connections }}
+user            = mysql
+pid-file        = {{ sockdir }}/mysqld.pid
+socket          = {{ sockdir }}/mysqld.sock
+port            = {{ port }}
+basedir         = {{ basedir }}
+datadir         = {{ datadir }}
+tmpdir          = {{ tmpdir }}
+language        = {{ sharedir }}/english
+{% if noDNS %}
+# Avoid DNS resolution
+skip-name-resolve
+{% endif %}
+skip-external-locking
+# Instead of skip-networking the default is now to listen only on
+# localhost which is more compatible and is not less secure.
+#bind-address           = 127.0.0.1
+
+#
+# * Innodb Settings
+#
+# Must-have: avoid big ibdata files. This vcouls save your life.
+# When a table gets too big for the filesystem droping the table and rebuilding
+# it will make a shoerter innodb physical file for this table. Without file per
+# table this emergency recreate should be done for ALL the databases, which is
+# really longer.
+innodb-file-per-table
+# Very important setting: This takes a lot of RAM but it will really speed up
+# your database if all the data and indexes, or at least the ones really used
+# could fit in this size of RAM.
+innodb_buffer_pool_size         = {{ innodb_buffer_pool_size }}M
+# best perf with one instance per 1Go of innodb_buffer_pool
+innodb_buffer_pool_instances    = {{ innodb_buffer_pool_instances }}
+# Set the log file size to about 25% of the buffer pool size
+innodb_log_buffer_size          = {{ innodb_log_buffer_size }}M
+innodb_flush_log_at_trx_commit  = {{ innodb_flush_log_at_trx_commit }}
+innodb_thread_concurrency       = {{ innodb_thread_concurrency }}
+innodb_flush_method             = {{ innodb_flush_method }}
+innodb_additional_mem_pool_size = {{ innodb_additional_mem_pool_size }}M
+innodb_write_io_threads         =8
+innodb_read_io_threads          =8
+innodb_io_capacity              =500
+innodb_max_dirty_pages_pct      =90
+
+{% if isPercona %}
+query_response_time_stats = ON
+{% endif %}
+
+#
+# * Fine Tuning
+#
+# key_buffer_size is the new name
+#key_buffer		= 16M
+key_buffer_size = 512M
+max_allowed_packet	= 2048M
+#thread_stack		= 192K
+thread_stack		= 256K
+read_buffer_size =  192K
+read_rnd_buffer_size =  192K
+#thread_cache_size       = 8
+thread_cache_size       = 50
+sort_buffer_size = 2M
+# This replaces the startup script and checks MyISAM tables if needed
+# the first time they are touched
+myisam-recover         = BACKUP
+
+table_open_cache            = {{ table_open_cache }}
+table_definition_cache	    = {{ table_definition_cache }}
+open-files-limit             = {{ open_file_limit }}
+open-files                  = {{ open_file_limit }}
+# tmp_table_size: Au dessus de cette valeur les tables tmp em memoire des requetes deviennent
+# des tables physiques MyISAM. il faut bouger le max_heap_table_size en meme temps
+# defaut 16Mo
+tmp_table_size = {{ tmp_table_size }}M
+max_heap_table_size = {{ tmp_table_size }}M
+# See http://www.mysqlperformanceblog.com/2012/06/04/thread_concurrency-doesnt-do-what-you-expect
+#thread_concurrency     = 10
+#
+# * Query Cache Configuration
+#
+query_cache_limit	= 1M
+query_cache_size    = {{ query_cache_size }}M
+#
+# * Logging and Replication
+#
+# Both location gets rotated by the cronjob.
+# Be aware that this log type is a performance killer.
+# As of 5.1 you can enable the log at runtime!
+#general_log_file        = /var/log/mysql/mysql.log
+#general_log             = 1
+#
+# Error logging goes to syslog due to /etc/mysql/conf.d/mysqld_safe_syslog.cnf.
+#
+# Here you can see queries with especially long duration
+log_slow_queries	= /var/log/mysql/mysql-slow.log
+long_query_time = 3
+log-queries-not-using-indexes
+#
+# The following can be used as easy to replay backup logs or for replication.
+# note: if you are setting up a replication slave, see README.Debian about
+#       other settings you may need to change.
+#server-id		= 1
+#log_bin			= /var/log/mysql/mysql-bin.log
+sync_binlog= {{ sync_binlog }}
+#expire_logs_days	= 10
+#max_binlog_size         = 100M
+#binlog_do_db		= include_database_name
+#binlog_ignore_db	= include_database_name
+#
+
+[mysqldump]
+quick
+quote-names
+max_allowed_packet	= 100M
+
