@@ -58,7 +58,7 @@ makina-apache-main-conf:
       - status
     - log_level: {{ apacheData.log_level }}
     - require:
-      - pkg.installed: makina-apache-pkgs
+      - pkg: makina-apache-pkgs
     # full service restart in case of changes
     - watch_in:
        # NO: this would prevent syntax check in case of error here
@@ -144,7 +144,7 @@ makina-apache-security-settings:
 #    - version: 2.2
 #    - log_level: warn
 #    - require:
-#      - pkg.installed: makina-apache-pkgs
+#      - pkg: makina-apache-pkgs
 
 
 
@@ -213,7 +213,7 @@ makina-apache-default-vhost-directory:
     - makedirs: True
     - name: /var/www/default/
     - require:
-       - pkg.installed: makina-apache-pkgs
+       - pkg: makina-apache-pkgs
     - require_in:
        - service: makina-apache-restart
 
@@ -253,8 +253,8 @@ makina-apache-remove-package-default-index:
 makina-apache-minimal-default-vhost:
   file.managed:
     - require:
-      - pkg.installed: makina-apache-pkgs
-      - file.managed: makina-apache-default-vhost-index
+      - pkg: makina-apache-pkgs
+      - file: makina-apache-default-vhost-index
 {% if old_mode %}
     - name: {{ apacheData.vhostdir }}/default
 {% else %}
@@ -286,7 +286,7 @@ makina-apache-conf-syntax-check:
     - source: {{apacheConfCheck}}
     - stateful: True
     - require:
-      - pkg.installed: makina-apache-pkgs
+      - pkg: makina-apache-pkgs
     - require_in:
        - service: makina-apache-restart
        - service: makina-apache-reload
