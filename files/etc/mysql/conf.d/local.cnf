@@ -79,8 +79,8 @@ table_open_cache            = {{ table_open_cache }}
 table_definition_cache	    = {{ table_definition_cache }}
 open-files-limit             = {{ open_file_limit }}
 open-files                  = {{ open_file_limit }}
-# tmp_table_size: Au dessus de cette valeur les tables tmp em memoire des requetes deviennent
-# des tables physiques MyISAM. il faut bouger le max_heap_table_size en meme temps
+# tmp_table_size & max_heap_table_size should always be the same
+# temp tables for requests bigger than that became physical, slow, temp tables
 # defaut 16Mo
 tmp_table_size = {{ tmp_table_size }}M
 max_heap_table_size = {{ tmp_table_size }}M
