@@ -20,7 +20,7 @@ RED="\\033[31m"
 CYAN="\\033[36m"
 YELLOW="\\033[33m"
 NORMAL="\\033[0m"
-DEBUG="${BOOT_SALT_DEBUG:-}"
+SALT_BOOT_DEBUG="${BOOT_SALT_DEBUG:-}"
 
 bs_log(){
     echo -e "${RED}[bs] ${@}${NORMAL}";
@@ -31,14 +31,17 @@ bs_yellow_log(){
 }
 
 warn_log() {
-    if [[ -e "$SALT_OUTFILE" ]] || [[ -e "$SALT_LOGFILE" ]];then
+    if [[ -e "$SALT_BOOT_OUTFILE" ]] || [[ -e "$SALT_BOOT_LOGFILE" ]];then
         bs_log "logs for salt executions availables in:"
-        if [[ -e "$SALT_OUTFILE" ]];then
-            bs_log "    - $SALT_OUTFILE"
+        if [[ -e "$SALT_BOOT_OUTFILE" ]];then
+            bs_log "    - $SALT_BOOT_OUTFILE"
         fi
-        if [[ -e "$SALT_LOGFILE" ]];then
-            bs_log "    - $SALT_LOGFILE"
+        if [[ -e "$SALT_BOOT_LOGFILE" ]];then
+            bs_log "    - $SALT_BOOT_LOGFILE"
         fi
+        if [[ -e "$SALT_BOOT_CMDFILE" ]];then
+            bs_log "    - $SALT_BOOT_CMDFILE"
+        fi 
     fi
 }
 
@@ -128,10 +131,10 @@ set_vars() {
     STATES_URL="https://github.com/makinacorpus/makina-states.git"
     PREFIX="${PREFIX:-/srv}"
     PILLAR="${PILLAR:-$PREFIX/pillar}"
-    MAKINA_STATES_NOCONFIRM="${MAKINA_STATES_NOCONFIRM:-}"
+    SALT_BOOT_NOCONFIRM="${SALT_BOOT_NOCONFIRM:-}"
     ROOT="${ROOT:-$PREFIX/salt}"
-    SALT_OUTFILE="$MS/.boot_salt_out"
-    SALT_LOGFILE="$MS/.boot_salt_log"
+    SALT_BOOT_OUTFILE="$MS/.boot_salt_out"
+    SALT_BOOT_LOGFILE="$MS/.boot_salt_log"
     MS="$ROOT/makina-states"
     MASTERSALT_PILLAR="${MASTERSALT_PILLAR:-$PREFIX/mastersalt-pillar}"
     MASTERSALT_ROOT="${MASTERSALT_ROOT:-$PREFIX/mastersalt}"
@@ -143,7 +146,7 @@ set_vars() {
     MCONF_PREFIX="${MCONF_PREFIX:-"$CONF_ROOT/mastersalt"}"
     ETC_INIT="${ETC_INIT:-"$CONF_ROOT/init"}"
     # global installation marker
-    NOW_INSTALLED=""
+    SALT_BOOT_NOW_INSTALLED=""
     # the current mastersalt.makinacorpus.net hostname
     MASTERSALT_MAKINA_DNS="mastersalt.makina-corpus.net"
     MASTERSALT_MAKINA_HOST="cloud-admin"
@@ -232,9 +235,9 @@ set_vars() {
     PROJECT_TOPSTATE_DEFAULT="${MAKINA_PROJECTS}.${PROJECT_NAME}.top"
     PROJECT_SETUPSTATE_DEFAULT="${MAKINA_PROJECTS}.${PROJECT_NAME}.setup"
     PROJECT_PILLAR_STATE="${MAKINA_PROJECTS}.${PROJECT_NAME}"
-    export BASE_PACKAGES STATES_URL PREFIX PILLAR MAKINA_STATES_NOCONFIRM MASTERSALT_PILLAR
+    export BASE_PACKAGES STATES_URL PREFIX PILLAR SALT_BOOT_NOCONFIRM MASTERSALT_PILLAR
     export MASTERSALT_ROOT ROOT MASTERSALT_MS MS ETC_INIT MASTERSALT_MAKINA_DNS MASTERSALT_MAKINA_HOST
-    export VENV_PATH CONF_ROOT CONF_PREFIX MASTERSALT_BOOTSALT_BOOT
+    export VENV_PATH CONF_ROOT CONF_PREFIX MASTERSALT_BOOT SALT_BOOT
     export MAKINA_PROJECTS PROJECTS_PATH PROJECT_URL PROJECT_BRANCH PROJECT_NAME PROJECT_TOPSLS
     export PROJECT_SETUPSTATE PROJECT_PATH PROJECTS_SALT_PATH PROJECTS_PILLAR_PATH PROJECT_PILLAR_LINK
     export PROJECT_PILLAR_PATH PROJECT_PILLAR_FILE PROJECT_SALT_LINK PROJECT_SALT_PATH PROJECT_TOPSLS_DEFAULT
@@ -267,8 +270,8 @@ recap_(){
     bs_log "SALT_PILLAR: $PILLAR"
     bs_log "SALT_ROOT: $ROOT"
     bs_log "bootstrap: $bootstrap"
-    if [[ -n $BOOTSALT_SKIP_SETUP ]];then
-        bs_log "BOOTSALT_SKIP_SETUP: $BOOTSALT_SKIP_SETUP"
+    if [[ -n $SALT_BOOT_SKIP_SETUP ]];then
+        bs_log "SALT_BOOT_SKIP_SETUP: $SALT_BOOT_SKIP_SETUP"
     fi
     if [[  -n "$USE_MASTERSALT" ]];then
         bs_yellow_log "---------------------"
@@ -295,11 +298,11 @@ recap_(){
         bs_log "PROJECT_NAME: ${PROJECT_NAME}"
     fi
     bs_yellow_log "---------------------------------------------------"
-    if [[ -z $MAKINA_STATES_NOCONFIRM ]];then
+    if [[ -z $SALT_BOOT_NOCONFIRM ]];then
         bs_yellow_log "The installation will continue in 60 secondes"
         bs_yellow_log "unless you press enter to continue or C-c to abort"
         bs_yellow_log "To not have this confirmation message, do:"
-        bs_yellow_log "    export MAKINA_STATES_NOCONFIRM='1'"
+        bs_yellow_log "    export SALT_BOOT_NOCONFIRM='1'"
         bs_yellow_log "---------------------------------------------------"
         read -t 60
     fi
@@ -308,8 +311,8 @@ recap_(){
     export SALT_BOOT="$SALT_BOOT"
     export SALT_PILLAR="$PILLAR"
     export SALT_ROOT="$ROOT"
-    if [[ -n $BOOTSALT_SKIP_SETUP ]];then
-        export BOOTSALT_SKIP_SETUP="$BOOTSALT_SKIP_SETUP"
+    if [[ -n $SALT_BOOT_SKIP_SETUP ]];then
+        export SALT_BOOT_SKIP_SETUP="$SALT_BOOT_SKIP_SETUP"
     fi
     if [[  -n "$USE_MASTERSALT" ]];then
         if [[ -n $MASTERSALT_MASTER ]];then
@@ -390,7 +393,7 @@ teardown_backports() {
 
 i_prereq() {
     to_install=""
-bs_log "Check package dependencies"
+    bs_log "Check package dependencies"
     lazy_apt_get_install python-software-properties
     # XXX: only lts package in this ppa
     if     [[ "$(is_apt_installed libzmq3    )"  == "no" ]] \
@@ -425,10 +428,18 @@ bs_log "Check package dependencies"
 # - We will check for any false return in output state structure
 salt_call_wrapper_() {
     salt_call_prefix=$1;shift
-    outf="$SALT_OUTFILE"
-    logf="$SALT_LOGFILE"
+    outf="$SALT_BOOT_OUTFILE"
+    logf="$SALT_BOOT_LOGFILE"
+    cmdf="$SALT_BOOT_CMDFILE"
     rm -rf "$outf" "$logf" 2> /dev/null
-    $salt_call_prefix/bin/salt-call --retcode-passthrough --out=yaml --out-file="$outf" --log-file="$logf" -lquiet $@
+    saltargs=" --retcode-passthrough --out=yaml --out-file="$outf" --log-file="$logf""
+    if [[ -n $SALT_BOOT_DEBUG ]];then
+        saltargs="$saltargs -lall"
+    else
+        saltargs="$saltargs -lquiet"
+    fi
+    $salt_call_prefix/bin/salt-call $saltargs $@
+    echo "$(date): $salt_call_prefix/bin/salt-call $saltargs $@" >> "$cmdf"
     ret=$?
     #echo "result: false">>$outf
     if [[ "$ret" != "0" ]] && [[ "$ret" != "2" ]];then
@@ -463,14 +474,16 @@ salt_call_wrapper_() {
 }
 
 salt_call_wrapper() {
-    SALT_OUTFILE="$ROOT/.boot_salt_out"
-    SALT_LOGFILE="$ROOT/.boot_salt_log"
+    SALT_BOOT_OUTFILE="$MS/.boot_salt_out"
+    SALT_BOOT_LOGFILE="$MS/.boot_salt_log"
+    SALT_BOOT_CMDFILE="$MS/.boot_salt_cmd"
     salt_call_wrapper_ $MS $@
 }
 
 mastersalt_call_wrapper() {
-    SALT_OUTFILE="$MASTERSALT_ROOT/.boot_salt_out"
-    SALT_LOGFILE="$MASTERSALT_ROOT/.boot_salt_log"
+    SALT_BOOT_OUTFILE="$MASTERSALT_MS/.boot_salt_out"
+    SALT_BOOT_LOGFILE="$MASTERSALT_MS/.boot_salt_log"
+    SALT_BOOT_CMDFILE="$MASTERSALT_MS/.boot_salt_cmd"
     salt_call_wrapper_ $MASTERSALT_MS -c $MCONF_PREFIX $@
 }
 
@@ -493,14 +506,14 @@ set_grain() {
 }
 
 check_restartmarker_and_maybe_restart() {
-    if [[ -z $BOOTSALT_IN_RESTART ]];then
-        if [[ -n "$BOOTSALT_NEED_RESTART" ]];then
+    if [[ -z $SALT_BOOT_IN_RESTART ]];then
+        if [[ -n "$SALT_BOOT_NEEDS_RESTART" ]];then
             touch "$MS/.bootsalt_need_restart"
         fi
-        if [[ -e "$MS/.bootsalt_need_restart" ]] && [[ -z "$BOOTSALT_NO_RESTART" ]];then
+        if [[ -e "$MS/.bootsalt_need_restart" ]] && [[ -z "$SALT_BOOT_NO_RESTART" ]];then
             chmod +x "$MS/_scripts/boot-salt.sh"
-            export BOOTSALT_NO_RESTART="1"
-            export BOOTSALT_IN_RESTART="1"
+            export SALT_BOOT_NO_RESTART="1"
+            export SALT_BOOT_IN_RESTART="1"
             bootsalt="$MS/_scripts/boot-salt.sh"
             bs_log "Restarting $bootsalt which needs to update itself"
             "$bootsalt" && rm -f "$MS/.bootsalt_need_restart"
@@ -540,13 +553,13 @@ setup_and_maybe_update_code() {
         fi
     fi
     if [[ "$is_offline" == "0" ]]\
-        && [[ -z "$BOOTSALT_IN_RESTART" ]]\
-        && [[ -z "$BOOTSALT_SKIP_CHECKOUTS" ]];then
+        && [[ -z "$SALT_BOOT_IN_RESTART" ]]\
+        && [[ -z "$SALT_BOOT_SKIP_CHECKOUTS" ]];then
         i_prereq || die_in_error " [bs] Failed install rerequisites"
         for ms in $MSS;do
             if [[ ! -d "$ms/.git" ]];then
                 git clone "$STATES_URL" "$ms"
-                BOOTSALT_NEED_RESTART="1"
+                SALT_BOOT_NEEDS_RESTART="1"
                 if [[ "$?" == "0" ]];then
                     die_in_error " [bs] Downloaded makina-states ($ms)"
                 else
@@ -571,7 +584,7 @@ setup_and_maybe_update_code() {
                     git fetch origin &&\
                         git diff origin/$branch --exit-code &> /dev/null
                     if [[ "$?" != "0" ]];then
-                        BOOTSALT_NEED_RESTART=1
+                        SALT_BOOT_NEEDS_RESTART=1
                         bs_log "update is necessary"
                     fi && git merge --ff-only origin/$branch
                     if [[ "$?" == "0" ]];then
@@ -886,9 +899,9 @@ EOF
             bs_log "Failed bootstrap: $bootstrap !"
             exit -1
         fi
-        if [[ -n "$DEBUG" ]];then cat $SALT_OUTFILE;fi
+        if [[ -n "$SALT_BOOT_DEBUG" ]];then cat $SALT_BOOT_OUTFILE;fi
         # restart salt daemons
-        NOW_INSTALLED="y"
+        SALT_BOOT_NOW_INSTALLED="y"
     else
         bs_log "Skip salt installation, already done"
     fi
@@ -1011,13 +1024,14 @@ EOF
 
         # run mastersalt master+minion setup
         bs_log "Running mastersalt bootstrap: $mastersalt_bootstrap"
+        run_state="mastersalt_call_wrapper --local $(get_mastersaltcall_args) state.sls"
         ret="$($run_state $mastersalt_bootstrap)"
-        if [[ -n "$DEBUG" ]];then cat $SALT_OUTFILE;fi
+        if [[ -n "$SALT_BOOT_DEBUG" ]];then cat $SALT_BOOT_OUTFILE;fi
         if [[ "$ret" != "0" ]];then
             echo "Mastersalt: Failed bootstrap: $mastersalt_bootstrap"
             exit -1
         fi
-        if [[ -n "$DEBUG" ]];then cat $SALT_OUTFILE;fi
+        if [[ -n "$SALT_BOOT_DEBUG" ]];then cat $SALT_BOOT_OUTFILE;fi
 
         # kill mastersalt running daemons if any
         $PS aux|egrep "salt-(master|minion|syndic)"|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
@@ -1105,7 +1119,7 @@ EOF
             fi
             #fi
         fi
-        NOW_INSTALLED="y"
+        SALT_BOOT_NOW_INSTALLED="y"
     else
         if [[ -n "$MASTERSALT" ]];then bs_log "Skip MasterSalt installation, already done";fi
     fi
@@ -1114,16 +1128,16 @@ EOF
 get_module_args() {
     arg=""
     for i in $@;do
-        arg="$arg -m \"$i/_modules"
+        arg="$arg -m \"$i/_modules\""
     done
     echo $arg
 }
 
 get_saltcall_args() {
-    get_module_args \"$MASTERSALT_ROOT\" \"$MASTERSALT_MS\"
+    get_module_args "$ROOT" "$MS "
 }
 get_mastersaltcall_args() {
-    get_module_args \"$ROOT\" \"$MS\"
+    get_module_args "$MASTERSALT_ROOT" "$MASTERSALT_MS"
 }
 
 
@@ -1131,7 +1145,7 @@ get_mastersaltcall_args() {
 
 maybe_setup_mastersalt_env() {
     # IMPORTANT: MASTERSALT BEFORE SALT !!!
-    if [[ -z $BOOTSALT_SKIP_SETUP ]] && [[ -n "$USE_MASTERSALT" ]];then
+    if [[ -z $SALT_BOOT_SKIP_SETUP ]] && [[ -n "$USE_MASTERSALT" ]];then
         bs_log "Running makina-states setup for mastersalt"
         LOCAL="$(get_mastersaltcall_args)"
         if [[ "$(mastersalt_call_wrapper test.ping)" != "0" ]];then
@@ -1143,7 +1157,7 @@ maybe_setup_mastersalt_env() {
             bs_log "Failed post-setup for mastersalt"
             exit -1
         fi
-        if [[ -n "$DEBUG" ]];then cat $SALT_OUTFILE;fi
+        if [[ -n "$SALT_BOOT_DEBUG" ]];then cat $SALT_BOOT_OUTFILE;fi
         warn_log
         echo "changed=yes comment='mastersalt post-setup run'"
     fi
@@ -1151,7 +1165,7 @@ maybe_setup_mastersalt_env() {
 
 
 setup_salt_env() {
-    if [[ -z "$BOOTSALT_SKIP_SETUP" ]];then
+    if [[ -z "$SALT_BOOT_SKIP_SETUP" ]];then
         bs_log "Running makina-states setup"
         LOCAL="$(get_saltcall_args)"
         if [[ "$(salt_call_wrapper test.ping)" != "0" ]];then
@@ -1164,12 +1178,12 @@ setup_salt_env() {
             exit -1
         fi
     fi
-    if [[ -n "$DEBUG" ]];then cat $SALT_OUTFILE;fi
+    if [[ -n "$SALT_BOOT_DEBUG" ]];then cat $SALT_BOOT_OUTFILE;fi
     warn_log
     echo "changed=yes comment='salt post-setup run'"
 
     # --------- stateful state return: mark as freshly installed
-    if [[ -n "$NOW_INSTALLED" ]];then
+    if [[ -n "$SALT_BOOT_NOW_INSTALLED" ]];then
         warn_log
         echo "changed=yes comment='salt installed and configured'"
     fi
@@ -1235,8 +1249,8 @@ maybe_install_projects() {
         #    git reset --hard "origin/$PROJECT_BRANCH"
         #fi
         changed="false"
-        O_SALT_LOGFILE="$SALT_LOGFILE"
-        O_SALT_OUTFILE="$SALT_OUTFILE"
+        O_SALT_BOOT_LOGFILE="$SALT_BOOT_LOGFILE"
+        O_SALT_BOOT_OUTFILE="$SALT_BOOT_OUTFILE"
         if [[ -f "$PROJECT_SALT_PATH/setup.sls"  ]] && [[ -z ${PROJECT_SETUPSTATE} ]];then
             PROJECT_SETUPSTATE="$PROJECT_SETUPSTATE_DEFAULT"
         fi
@@ -1273,11 +1287,11 @@ a\    - $PROJECT_PILLAR_STATE
         fi
         if [[ "$(get_grain $setup_grain)" != *"True"* ]] || [[ -n $FORCE_PROJECT_SETUP ]];then
             if [[ -n $PROJECT_SETUPSTATE ]];then
-                SALT_LOGFILE="$PROJECT_SALT_PATH/.salt_setup_log.log"
-                SALT_OUTFILE="$PROJECT_SALT_PATH/.salt_setup_out.log"
+                SALT_BOOT_LOGFILE="$PROJECT_SALT_PATH/.salt_setup_log.log"
+                SALT_BOOT_OUTFILE="$PROJECT_SALT_PATH/.salt_setup_out.log"
                 bs_log "Running salt Setup: $PROJECT_URL@$PROJECT_BRANCH[$PROJECT_SETUPSTATE]"
                 ret=$(salt_call_wrapper state.sls $PROJECT_SETUPSTATE)
-                if [[ -n "$DEBUG" ]];then cat $SALT_OUTFILE;fi
+                if [[ -n "$SALT_BOOT_DEBUG" ]];then cat $SALT_BOOT_OUTFILE;fi
                 if [[ "$ret" != "0" ]];then
                     bs_log "Failed to run $PROJECT_SETUPSTATE"
                     exit -1
@@ -1293,11 +1307,11 @@ a\    - $PROJECT_PILLAR_STATE
         fi
         if [[ "$(get_grain $project_grain)" != *"True"* ]] || [[ -n $FORCE_PROJECT_TOP ]];then
             if [[ -n $PROJECT_TOPSLS ]];then
-                SALT_LOGFILE="$PROJECT_SALT_PATH/.salt_top_log.log"
-                SALT_OUTFILE="$PROJECT_SALT_PATH/.salt_top_out.log"
+                SALT_BOOT_LOGFILE="$PROJECT_SALT_PATH/.salt_top_log.log"
+                SALT_BOOT_OUTFILE="$PROJECT_SALT_PATH/.salt_top_out.log"
                 bs_log "Running salt Top state: $PROJECT_URL@$PROJECT_BRANCH[$PROJECT_TOPSLS]"
                 ret=$(salt_call_wrapper state.top "$PROJECT_TOPSLS")
-                if [[ -n "$DEBUG" ]];then cat $SALT_OUTFILE;fi
+                if [[ -n "$SALT_BOOT_DEBUG" ]];then cat $SALT_BOOT_OUTFILE;fi
                 if [[ "$ret" != "0" ]];then
                     bs_log "Failed to run $PROJECT_TOPSLS"
                     exit -1
@@ -1330,8 +1344,8 @@ a\    - $PROJECT_SETUPSTATE
         else
             echo "changed=\"$changed\" comment=\"installed\""
         fi
-        SALT_LOGFILE="$O_SALT_LOGFILE"
-        SALT_OUTFILE="$O_SALT_OUTFILE"
+        SALT_BOOT_LOGFILE="$O_SALT_BOOT_LOGFILE"
+        SALT_BOOT_OUTFILE="$O_SALT_BOOT_OUTFILE"
     fi
 }
 
