@@ -99,6 +99,14 @@ To install our base salt installation, just run this script as **ROOT**, please 
 
     . /etc/profile
 
+To skip the automatic code update/upgrade::
+
+    export BOOTSALT_SKIP_CHECKOUTS="1"
+
+To skip the automatic setups calls::
+
+    export BOOTSALT_SKIP_SETUP"1"
+
 This will do install prereq, salt, and accept the key locally for the local master/minion, and maybe isntall a project after
 
 Running project states

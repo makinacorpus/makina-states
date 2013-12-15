@@ -19,3 +19,10 @@ makina-bootstrap-mastersalt-grain:
     - require:
       - service: salt-mastersalt-minion
 
+makina-bootstrap-mastersalt-grain:
+  grains.present:
+    - name: makina.bootstrap.mastersalt_minion
+    - value: True
+    - require:
+      - service: salt-mastersalt-minion
+

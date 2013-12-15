@@ -18,9 +18,9 @@ mastersalt-dirs-perms:
     - user: "root"
     - group: "{{c.group}}"
     - reset_paths:
-      - /etc/mastersalt
-      - /srv/mastersalt-pillar
-      - /srv/mastersalt
+      - {{c.mconf_prefix}}
+      - {{c.mpillar_root}}
+      - {{c.msaltroot}}
     - require:
       - cmd: salt-mastersalt-daemon-proxy-requires-before-restart
       - file: salt-etc-mastersalt-dirs
@@ -35,11 +35,11 @@ mastersalt-dirs-restricted-perms:
     - user: "root"
     - group: "{{c.group}}"
     - reset_paths:
-      - /var/log/salt
-      - /var/run/mastersalt
-      - /var/run/salt
-      - /var/cache/mastersalt
-      - /etc/mastersalt/pki
+      - {{c.mlog_prefix}}
+      - {{c.mrun_prefix}}
+      - {{c.mcache_prefix }}
+      - {{c.mcache_prefix}}
+      - {{c.mconf_prefix}}/pki
     - require:
       - cmd: mastersalt-dirs-perms
       - cmd: salt-mastersalt-daemon-proxy-requires-before-restart

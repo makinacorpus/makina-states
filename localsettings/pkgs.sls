@@ -1,96 +1,24 @@
-{% set default_os_mirrors='http://foo.com' %}
-{% set default_dist='' %}
-{% set default_comps='' %}
-{% set default_url='' %}
+#
+# Manage packages to install by default
+#
 
-{% if grains['os'] == 'Ubuntu' %}
-{% set default_os_mirrors='http://archive.ubuntu.com/ubuntu' %}
-{% set default_url='http://fr.archive.ubuntu.com/ubuntu' %}
-{% set default_dist=grains.get('lsb_distrib_codename', 'raring') %}
-{% set default_comps= 'main restricted universe multiverse' %}
-{% endif %}
+include:
+  - makina-states.localsettings.pkgmgr
 
-{% set default_os_mirrors=salt['config.get']('default_os_mirrors', default_os_mirrors) %}
-{% if grains['os'] == 'Ubuntu' %}
-{% set default_os_mirrors='http://archive.ubuntu.com/ubuntu|'+default_os_mirrors %}
-{% endif %}
-{% set comps=salt['config.get']('apt_comps', default_comps) %}
-{% set mirror=salt['config.get']('apt_mirror', default_url) %}
-{% set dist=salt['config.get']('apt_dist', default_dist) %}
-
-{% macro set_packages_repos(root='', suf='', update=True) %}
-# can be adapted to other debian systems, but not the time right now
-# we do not use pkgrepo.managed here to avoid useless apt-get upate
-# and to use it to configure inner vm or containers where what we edit
-# is not the system source.list
-{% if grains['os'] == 'Ubuntu' %}
-{% if update %}
-update-default-repos{{suf}}:
+before-pkg-install-proxy:
   cmd.run:
-    - name: apt-get update
-    - require_in:
-      - file: main-repos{{suf}}
-      - file: main-repos-updates{{suf}}
-{% endif %}
-remove-default-src-repos{{suf}}:
-  file.replace:
-    - name: {{root}}/etc/apt/sources.list
-    - pattern: deb-src\s.*({{default_os_mirrors}}|{{mirror}}).*
-    - repl: ''
-    - flags: ['MULTILINE', 'DOTALL']
-remove-default-repos{{suf}}:
-  file.replace:
-    - name: {{root}}/etc/apt/sources.list
-    - pattern: deb\s.*({{default_os_mirrors}}|{{mirror}}).*
-    - repl: ''
-    - flags: ['MULTILINE', 'DOTALL']
-
-main-repos{{suf}}:
-  file.append:
-    - name: {{root}}/etc/apt/sources.list
-    - text: deb {{mirror}} {{dist}} {{comps}}
+    - unless: /bin/true
     - require:
-      - file: remove-default-repos{{suf}}
-    {% if root=='' %}
+      - file: apt-sources-list
+      - cmd: apt-update-after
     - require_in:
+      {% if grains['os'] == 'Ubuntu' %}
       - pkg: ubuntu-pkgs
+      {% endif %}
       - pkg: sys-pkgs
       - pkg: dev-pkgs
       - pkg: net-pkgs
       - pkg: salt-pkgs
-    {% endif %}
-main-src-repos{{suf}}:
-  file.append:
-    - name: {{root}}/etc/apt/sources.list
-    - text: deb-src {{mirror}} {{dist}} {{comps}}
-    - require:
-      - file: remove-default-repos{{suf}}
-    {% if root=='' %}
-    - require_in:
-      - pkg: ubuntu-pkgs
-      - pkg: sys-pkgs
-      - pkg: dev-pkgs
-      - pkg: net-pkgs
-      - pkg: salt-pkgs
-    {% endif %}
-{% endif %}
-{% if grains['os'] == 'Ubuntu' %}
-main-repos-updates{{suf}}:
-  file.append:
-    - name: {{root}}/etc/apt/sources.list
-    - text: deb {{mirror}} {{dist}}-updates {{comps}}
-    - require:
-      - file: remove-default-repos{{suf}}
-    {% if root=='' %}
-    - require_in:
-      - pkg: sys-pkgs
-      - pkg: dev-pkgs
-      - pkg: net-pkgs
-      - pkg: salt-pkgs
-    {% endif %}
-{% endif %}
-{% endmacro %}
-{{ set_packages_repos()}}
 
 {% if grains['os'] == 'Ubuntu' -%}
 ubuntu-pkgs:

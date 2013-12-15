@@ -23,12 +23,12 @@ gitorious_base_ssh_configs-touch-{{ i }}:
   file.touch:
     - name: {{ home }}/.ssh/config
     - require:
-      - file.directory: gitorious_base_ssh_configs-group-{{ i }}
+      - file: gitorious_base_ssh_configs-group-{{ i }}
 
 gitorious_base_ssh_configs-append-{{ i }}:
   file.append:
     - require:
-      - file.touch: gitorious_base_ssh_configs-touch-{{ i }}
+      - file: gitorious_base_ssh_configs-touch-{{ i }}
     - name : {{ home }}/.ssh/config
     - text: |
             # entry managed via salt !

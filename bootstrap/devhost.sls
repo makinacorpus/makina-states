@@ -9,10 +9,17 @@
 include:
   - makina-states.bootstrap.server
 
-makina-bootstrap-devhost-grain:
+makina-devhost-grain:
   grains.present:
     - name: makina.devhost
     - value: True
     - require:
-      - service: salt-minion
+      - service: salt-salt-minion
+
+makina-bootstrap-devhost-grain:
+  grains.present:
+    - name: makina.bootstrap.devhost
+    - value: True
+    - require:
+      - service: salt-salt-master
 

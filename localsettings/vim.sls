@@ -18,7 +18,7 @@ vimrc_configs-touch-{{ i }}:
 vimrc_configs-append-{{ i }}:
   file.append:
     - require:
-      - file.touch: vimrc_configs-touch-{{ i }}
+      - file: vimrc_configs-touch-{{ i }}
     - name : {{ home }}/.vimrc
     - text: |
             set sts=4 ts=4 sw=4 ai et nu bg=dark nocompatible
@@ -27,7 +27,7 @@ vimrc_configs-append-{{ i }}:
 vimrc_configs-append-{{ i }}-1:
   file.append:
     - require:
-      - file.touch: vimrc_configs-touch-{{ i }}
+      - file: vimrc_configs-touch-{{ i }}
     - name : {{ home }}/.vimrc
     - text: syntax on
 {% endfor %}

@@ -43,5 +43,5 @@
 # FINAL STEP: merge with data from pillar
 {% set defaultsData=salt['mc_utils.dictupdate'](
   tomcatStepTwo ,
-  salt['pillar.get']('tomcat7-default-settings',{})) %}
+  salt['pillar.get']('makina.tomcat7-default-settings',{})) %}
 

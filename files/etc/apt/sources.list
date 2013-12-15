@@ -1,0 +1,17 @@
+#
+# Managed via salt, do not edit
+#
+
+
+{%- for data in pkg_data.get('mirrors', []) %}
+{%- set mirror = data.get('mirror')%}
+{%- for distdata in data.get('dists') %}
+{%- set dist = distdata.get('name') %}
+{%- set comps = distdata.get('comps') %}
+{%- set nosrc = distdata.get('no-src', False) %}
+deb {{mirror}} {{dist}} {{comps}}
+{%- if not nosrc %}
+deb-src {{mirror}} {{dist}} {{comps}}
+{% endif %}
+{%- endfor %}
+{%- endfor %}

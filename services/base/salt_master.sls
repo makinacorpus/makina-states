@@ -6,6 +6,4 @@
 include:
   - makina-states.services.base.salt
 
-{% set name='salt' %}
-{% set mode='salt' %}
 {{ c.install_makina_states_master(c.saltname)}}

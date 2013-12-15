@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
-export PATH="{{root}}/bin:$PATH"
-{{root}}/bin/salt-master -c {{saltconfig}} $@
+export PATH="{{salt_data['salt_root']}}/makina-states/bin:$PATH"
+salt-master -c {{salt_data['conf_prefix']}} $@
 # vim:set ft=bash:

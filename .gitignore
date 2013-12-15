@@ -1,4 +1,7 @@
 .installed.cfg
+.bootsalt_need_restart
+*pyc
+.boot_salt_top
 .rebootstrap
 boot_salt_out
 boot_salt_log

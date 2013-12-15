@@ -7,7 +7,10 @@ include:
   {% if c.mminion %}
   - makina-states.bootstrap.mastersalt_minion
   {% endif %}
-  {% if c.mmaster %}
+  {% if c.devhost %}
+  - makina-states.bootstrap.server
+  {% endif %}
+  {% if c.server %}
   - makina-states.bootstrap.server
   {% endif %}
   {% if c.sa %}
@@ -32,7 +35,7 @@ etc-salt-dirs-perms:
     - user: "root"
     - group: "{{c.group}}"
     - reset_paths:
-      - /etc/salt
+      - {{c.conf_prefix}}
     - require:
       - file: salt-etc-salt-dirs
       - cmd: salt-salt-daemon-proxy-requires-before-restart
@@ -48,11 +51,11 @@ salt-dirs-perms:
     - user: "root"
     - group: "{{c.group}}"
     - reset_paths:
-      - /srv/salt
-      - /srv/.git
-      - /srv/pillar
-      - /srv/projects
-      - /srv/vagrant
+      - {{c.saltroot}}
+      - {{c.prefix}}/.git
+      - {{c.pillar_root}}
+      - {{c.projects_root}}
+      - {{c.vagrant_root}}
     - require:
       - cmd: salt-salt-daemon-proxy-requires-before-restart
       - cmd: etc-salt-dirs-perms
@@ -67,10 +70,10 @@ salt-dirs-restricted-perms:
     - user: "root"
     - group: "{{c.group}}"
     - reset_paths:
-      - /var/log/salt
-      - /var/run/salt
-      - /var/cache/salt
-      - /etc/salt/pki
+      - {{c.log_prefix}}
+      - {{c.run_prefix}}
+      - {{c.cache_prefix}}
+      - {{c.conf_prefix}}/pki
     - require:
       - cmd: salt-dirs-perms
       - cmd: etc-salt-dirs-perms
@@ -93,8 +96,8 @@ docker-dirs-if-present:
     - require_in:
       - cmd: salt-salt-daemon-proxy-requires-before-restart
     - excludes:
-      - /srv/docker/docker/bundles
-      - /srv/docker/cache
-      - /srv/docker/makinacorpus/debian/debootstrap
-      - /srv/docker/makinacorpus/ubuntu_deboostrap/debootstrap
+      - {{c.docker_root}}/docker/bundles
+      - {{c.docker_root}}/cache
+      - {{c.docker_root}}/makinacorpus/debian/debootstrap
+      - {{c.docker_root}}/makinacorpus/ubuntu_deboostrap/debootstrap
 

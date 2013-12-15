@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-export PATH="{{root}}/bin:$PATH"
+export PATH="{{salt_data['salt_root']}}/makina-states/bin:$PATH"
 if [[  $1 == "*" ]];then
     shift
-    {{root}}/bin/salt -c {{saltconfig}} '*' $@
+    salt -c {{salt_data['conf_prefix']}} '*' $@
 else
-    {{root}}/bin/salt -c {{saltconfig}} $@
+    salt -c {{salt_data['conf_prefix']}} $@
 fi
 # vim:set ft=bash:

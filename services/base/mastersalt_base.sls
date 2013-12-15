@@ -21,4 +21,4 @@
 #
 
 {% import "makina-states/_macros/salt.jinja" as c with context %}
-{{ c.install_makina_states(c.msaltname, mode='mastersalt')}}
+{{ c.install_makina_states(c.msaltname)}}

@@ -4,9 +4,9 @@
 #
 
 include:
-  - makina-states.bootstrap.base
   - makina-states.services.base.salt
   - makina-states.services.base.salt_master
+  - makina-states.bootstrap.base
 
 makina-bootstrap-standalone-grain:
   grains.present:

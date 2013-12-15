@@ -6,4 +6,4 @@
 include:
   - makina-states.services.base.mastersalt_base
 
-{{ c.install_makina_states_minion(c.msaltname, mode='mastersalt')}}
+{{ c.install_makina_states_minion(c.msaltname)}}

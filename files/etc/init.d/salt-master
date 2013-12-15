@@ -1,24 +1,24 @@
 #!/bin/sh
 ### BEGIN INIT INFO
-# Provides:          {{saltname}}-master
+# Provides:          {{salt_data['name']}}-{{salt_data['daemon_name']}}
 # Required-Start:    $remote_fs $network
 # Required-Stop:     $remote_fs $network
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: {{saltname}} master control daemon
+# Short-Description: {{salt_data['name']}} master control daemon
 # Description:       This is a daemon that controls the salt minions
 ### END INIT INFO
 
 # Author: Michael Prokop <mika@debian.org>
 
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
-DESC="salt {{saltname}} master control daemon"
-NAME=s{{saltname}}-master
-DAEMON=/usr/bin/{{saltname}}-master
+DESC="{{salt_data['name']}} {{salt_data['daemon_name']}} control daemon"
+NAME={{salt_data['name']}}-{{salt_data['daemon_name']}}
+DAEMON=/usr/bin/{{salt_data['name']}}-{{salt_data['daemon_name']}}
 DAEMON_ARGS="-d"
-#DAEMON_ARGS="-c {{saltconfig}} -d"
-PIDFILE=/var/run/$NAME.pid
-SCRIPTNAME=/etc/init.d/$NAME
+#DAEMON_ARGS="-c {{salt_data['conf_prefix']}} -d"
+PIDFILE={{salt_data['run_prefix']}}/$NAME.pid
+SCRIPTNAME={{salt_data['init_d']}}/$NAME
 
 # Exit if the package is not installed
 [ -x "$DAEMON" ] || exit 0
@@ -37,7 +37,7 @@ do_start() {
         exit 0
     fi
 
-    log_daemon_msg "Starting {{saltname}}-master daemon: "
+    log_daemon_msg "Starting $DESC"
     start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_ARGS
     log_end_msg $?
 }

@@ -1,4 +1,3 @@
-{% from "makina-states/_macros/ldap.jinja" import set_ldap_variables with context %}
 #
 # -  install ldap base packages
 # -  integrate pam with LDAP
@@ -6,15 +5,18 @@
 # Define your ldap settings to integrate with pam
 # inside pillar
 #
-# makina_ldap:
-#   ldap_uri: ldaps://localhost:636/
-#   ldap_base: dc=company,dc=org
-#   ldap_passwd: ou=People,dc=company,dc=org?sub
-#   ldap_shadow: ou=People,dc=company,dc=org?sub
-#   ldap_group: ou=Group,dc=company,dc=org?sub
-#   ldap_cacert: /etc/ssl/cacerts/cacert.pem (opt)
+# {#
+#
+# makina.ldap.ldap_uri: ldaps://localhost:636/
+# makina.ldap.ldap_base: dc=company,dc=org
+# makina.ldap.ldap_passwd: ou=People,dc=company,dc=org?sub
+# makina.ldap.ldap_shadow: ou=People,dc=company,dc=org?sub
+# makina.ldap.ldap_group: ou=Group,dc=company,dc=org?sub
+# makina.ldap.ldap_cacert: /etc/ssl/cacerts/cacert.pem (opt)
+#
+# #}
 
-
+{% import "makina-states/_macros/ldap.jinja" as c with context %}
 include:
   - makina-states.services.base.nscd
 
@@ -40,7 +42,7 @@ nslcd:
       - pkg: nslcd
       - file: nslcd
     - watch_in:
-      - cmd: nscd-restart  
+      - cmd: nscd-restart
   file.managed:
     - name: /etc/nslcd.conf
     - user: nslcd
@@ -51,9 +53,9 @@ nslcd:
     - require:
       - pkg: ldap-pkgs
       - file: ldap-cacerts-cert
-    {{ set_ldap_variables() }}
+    - defaults: {{ c.ldap_variables | yaml }}
     - watch_in:
-      - cmd: nscd-restart 
+      - cmd: nscd-restart
 
 # add ldap tonsswitch
 nslcd-nsswitch-conf:
@@ -82,7 +84,7 @@ nslcd-nsswitch-conf:
     - require:
       - pkg: ldap-pkgs
       - file: ldap-cacerts-cert
-    {{ set_ldap_variables() }}
+    - defaults: {{ c.ldap_variables | yaml }}
 
 /etc/ldap/ldap.conf:
   file.managed:
@@ -94,7 +96,7 @@ nslcd-nsswitch-conf:
     - require:
       - pkg: ldap-pkgs
       - file: ldap-cacerts-cert
-    {{ set_ldap_variables() }}
+    - defaults: {{ c.ldap_variables | yaml }}
 
 makina-certd:
   file.directory:
