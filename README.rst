@@ -76,7 +76,7 @@ Install a new salt-managed box
 
   - If not set, it will default to **SALT_BOOT_ENV**
 
-- You default choice for **SALT_BOOT** is certainly one of **salt_master** or **salt_minionr**.
+- You default choice for **SALT_BOOT** is certainly one of **salt_master** or **salt_minion**.
 
     - The default is **salt_server**.
     - **salt_minion** will only install a minion and you will need to set:
