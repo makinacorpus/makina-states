@@ -15,7 +15,7 @@ dovecot-pkgs:
       - dovecot-imapd
 
 #--- DEV SERVER: ALL EMAILS ARE IN A LOCAL vagrant MAILBOX
-{% if grains['makina.devhost'] %}
+{% if grains['makina.nodetype.devhost'] %}
 makina-dovecot-dev-imap-conf:
   file.managed:
     - name: /etc/dovecot/local.conf
@@ -47,7 +47,7 @@ makina-dovecot-service:
       # restart service in case of package install
       - pkg.installed: dovecot-pkgs
       # restart service in case of settings alterations
-{% if grains['makina.devhost'] %}
+{% if grains['makina.nodetype.devhost'] %}
       - file: makina-dovecot-dev-imap-conf
 {% endif %}
 

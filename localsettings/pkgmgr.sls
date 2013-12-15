@@ -23,6 +23,7 @@
 #       no-src: True #(do not add a deb-src entry; false by default)
 #   use-backports: true|false
 
+{% if grains['os'] in ['Ubuntu', 'Debian'] %}
 {% set bp = salt['config.get']('makina.apt.use-backports', False) %}
 {% set udist = salt['config.get']('lsb_distrib_codename', 'precise') %}
 {% set ddist = salt['config.get']('lsb_distrib_codename', 'wheezy') %}
@@ -70,7 +71,6 @@
     ]}, grain='os'))  %}
 {% endif %}
 
-{% if grains['os'] in ['Ubuntu', 'Debian'] %}
 apt-sources-list:
   file.managed:
     - name: /etc/apt/sources.list
@@ -85,5 +85,4 @@ apt-update-after:
     - watch:
       - file: apt-sources-list
 {% endif %}
-
 # vim:set nofoldenable:

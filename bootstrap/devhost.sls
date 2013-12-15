@@ -1,3 +1,4 @@
+{% import "makina-states/_macros/salt.jinja" as c with context %}
 #
 # Boostrap an host which is also a contained VM and not a physical machine
 #
@@ -8,18 +9,9 @@
 
 include:
   - makina-states.bootstrap.server
-
-makina-devhost-grain:
-  grains.present:
-    - name: makina.devhost
-    - value: True
-    - require:
-      - service: salt-salt-minion
+  - makina-states.setups.devhost
 
 makina-bootstrap-devhost-grain:
   grains.present:
     - name: makina.bootstrap.devhost
     - value: True
-    - require:
-      - service: salt-salt-master
-

@@ -1,4 +1,6 @@
 include:
+  - makina-states.localsettings.hosts
+  - makina-states.localsettings.network
   - makina-states.localsettings.git
   - makina-states.localsettings.localrc
   - makina-states.localsettings.pkgs

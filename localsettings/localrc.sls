@@ -20,4 +20,3 @@ rc-local-d:
     - template: jinja
     - user: root
     - group: root
-

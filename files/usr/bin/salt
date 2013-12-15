@@ -2,8 +2,9 @@
 export PATH="{{salt_data['salt_root']}}/makina-states/bin:$PATH"
 if [[  $1 == "*" ]];then
     shift
-    salt -c {{salt_data['conf_prefix']}} '*' $@
+    exec salt -c {{salt_data['conf_prefix']}} '*' $@
 else
-    salt -c {{salt_data['conf_prefix']}} $@
+    exec salt -c {{salt_data['conf_prefix']}} $@
 fi
+exit $?
 # vim:set ft=bash:

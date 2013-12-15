@@ -1,18 +1,11 @@
 #
-# Basic bootstrap is responsible for the setup of saltstack
+# Basic bootstrap is responsible for the pre-setup of saltstack
 # Be sure to double check any dependant state there to work if there is
-# nothing yet on the VM as it is a "bootstrap stage".
+# nothing yet on the BOX as it is a "bootstrap stage".
 #
-{% set devhost = grains.get('makina.devhost', False) %}
+# We just ensure is consuming states to tag the machine for its usage
+#
 
-{% set includes=[]%}
-{% if devhost %}
-{% set dummy=includes.append('makina-states.bootstrap.vm') %}
-{% endif %}
-
-{% if includes %}
-{% for i in includes %}
 include:
-  - {{i}}
-{% endfor %}
-{% endif %}
+  - makina-states.setups.base
+

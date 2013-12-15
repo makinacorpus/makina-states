@@ -1,5 +1,8 @@
+{% import "makina-states/_macros/salt.jinja" as c with context %}
 #
 # Configure machine physical network based on pillar information
+#
+# This state will only apply if you set to true the config value (grain or pillar): **makina.network_managed**
 #
 # The template is shared with the lxc state, please also look it
 #
@@ -21,6 +24,7 @@
 #     - dnsservers: 8.8.8.8
 #   em1: {} # -> dhcp based interface
 
+{% if c.network_managed %}
 {% if grains['os_family'] in ['Debian'] %}
 network-cfg:
   file.managed:
@@ -43,4 +47,6 @@ network-services:
       - resolvconf
     - watch:
       - file: network-cfg
+
+{% endif %}
 {% endif %}

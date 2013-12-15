@@ -1,4 +1,3 @@
-{% import 'makina-states/localsettings/pkgs.sls'  as pkgs with context %}
 include:
   - makina-states.localsettings.pkgs
 
@@ -17,7 +16,7 @@ include:
 #  rootfs: root directory (opt)
 #  config: config path (opt)
 #  salt_bootstrap: bootstrap state to use in salt default "vm"
-#           - vm | standalone | server | mastersalt
+#  mastersalt_bootstrap: bootstrap state to use in salt default  None
 # and it will create an ubuntu templated lxc host
 
 lxc-pkgs:
@@ -77,6 +76,8 @@ lxc-after-maybe-bind-root:
 {% set lxc_ip4 = lxc_data['ip4'] -%}
 {% set lxc_template = lxc_data.get('template', 'ubuntu') -%}
 {% set salt_bootstrap = lxc_data.get('salt_bootstrap', 'vm') -%}
+{% set mastersalt = lxc_data.get('mastersalt', 'mastersalt.makina-corpus.net') -%}
+{% set mastersalt_bootstrap = lxc_data.get('mastersalt_bootstrap', None) -%}
 {% set lxc_netmask = lxc_data.get('netmask', '255.255.255.0') -%}
 {% set lxc_gateway = lxc_data.get('gateway', '10.0.3.1') -%}
 {% set lxc_dnsservers = lxc_data.get('dnsservers', '10.0.3.1') -%}
@@ -102,8 +103,6 @@ lxc-after-maybe-bind-root:
     - require:
       - file: {{ lxc_name }}-lxc
       - file: lxc-after-maybe-bind-root
-
-{{pkgs.set_packages_repos(lxc_rootfs, '-'+lxc_name, update=False)}}
 
 {{ lxc_name }}-lxc-salt-pillar:
   file.directory:
@@ -259,8 +258,12 @@ bootstrap-salt-in-{{ lxc_name }}-lxc:
     - source: salt://makina-states/_scripts/lxc-salt.sh
     - mode: 750
   cmd.run:
-    - name: {{salt_init}} {{ lxc_name }} {{ salt_bootstrap }}
+    - name: {{salt_init}} {{ lxc_name }} 
     - stateful: True
+    - env:
+      - SALT_BOOT: {{ salt_bootstrap }}
+      - MASTERSALT_BOOT: {{ mastersalt_bootstrap }}
+      - MASTERSALT: {{ mastersalt }}
     - require:
       {% if lxc_template == 'ubuntu' %}
       - file: main-repos-updates-{{lxc_name}}

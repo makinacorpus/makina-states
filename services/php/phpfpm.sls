@@ -56,7 +56,7 @@ makina-php-remove-default-pool:
 
 
 #--- PHP STARTUP WAIT DEPENDENCY --------------
-{% if grains['makina.devhost'] %}
+{% if grains['makina.nodetype.devhost'] %}
 # Delay start on vagrant dev host ------------
 include:
   - makina-states.services.virt.mount_upstart_waits

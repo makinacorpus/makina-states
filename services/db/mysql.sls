@@ -211,7 +211,7 @@ makina-mysql-settings:
         tmp_table_size: {{ tmp_table_size_M }}
         sync_binlog: {{ sync_binlog }}
     - context:
-{% if grains['makina.devhost'] %}
+{% if grains['makina.nodetype.devhost'] %}
         mode: "dev"
 {% endif %}
 {% if mysqlData.tuning.query_cache_size_M %}
@@ -255,7 +255,7 @@ change-empty-mysql-root-access:
       - service: makina-mysql-service-reload
       - service: makina-mysql-service
 
-{% if not(grains['makina.devhost']) %}
+{% if not(grains['makina.nodetype.devhost']) %}
 {# On anything that is not a dev server we should emit a big fail for empty
  password root access to the MySQL Server #}
 security-check-empty-mysql-root-access-socket:

@@ -57,37 +57,69 @@ Worflow in MkC deployments
 
 Install a new salt-managed box
 -------------------------------
-If you want to install salt directly on your machine::
+- To install our base salt installation, just run this script as **ROOT**, please read next paragraphes before running any command.
+- All our installs run 2 instances of salt: **mastersalt** and **salt**
+- You will nearly never have to handle much with the **mastersalt** part
+- The two instances will have to know where they run to first make the system
+  ready for them.
+- All the behavior of the script is controlled via environment variables.
+- That's why you will need to set at least which **SALT_BOOT** and **SALT_ENV** you want, and maybe
+  **MASTERSALT_BOOT** and **MASTERSALT_ENV**.
+- You default choice for **SALT_BOOT_ENV** and **MASTERSALT_BOOT_ENV** is certainly one of **server**, **vm**  or **devhost**.
 
-    export SALT_BOOT=""
+    - The default is **server**.
+    - **vm** matches a VM (not baremetal)
+    - If you choose **devhost**, this mark the machine as a devloppment machine
+      enabling states to act on that, by example installation a test mailer.
+
+- You default choice for **MASTERSALT_BOOT_ENV** is the same that for **SALT_BOOT_ENV**.
+
+  - If not set, it will default to **SALT_BOOT_ENV**
+
+- You default choice for **SALT_BOOT** is certainly one of **salt_master** or **salt_minionr**.
+
+    - The default is **salt_server**.
+    - **salt_minion** will only install a minion and you will need to set:
+
+        - **SALT_MASTER_IP**: DNS or ip of the linked master
+        - **SALT_MASTER_PORT**: port of the linked master
+
+- You default choice for **MASTERSALT_BOOT** is certainly **mastersalt_minion**.
+
+    - The default is **NOT SET** meaning that we do not install anything of mastersalt by default.
+    - **mastersalt_minion** will only install a minion, which will be certainy only what you want
+    - The installation process will challenge you for accepting keys on mastersalt-master.
+    - **MASTERSALT** is the mastersalt host to link to
+    - **MASTERSALT_PORT** overrides the port for the distant mastersalt server which is 4606 usually (read the script)
+
+EXAMPLES
+*********
+If you want to install only a minion::
+
+    export SALT_BOOT="salt_minion" SALT_MASTER="IP.OR.DNS.OF.SALT.MASTER" SALT_MASTER_PORT="PORT OF MASTER  IF NOT 4506"
 
 If you want to install salt on a bare server::
 
-    export SALT_BOOT="server"
+    export SALT_ENV="server"
 
 If you want to install salt on a vm::
 
-    export SALT_BOOT="vm"
+    export SALT_ENV="vm"
 
 If you want to install salt on a machine flaggued as a devhost (server + dev mode)::
 
-    export SALT_BOOT="devhost"
+    export SALT_ENV="devhost"
 
 If you want to install salt on a server and then wire it to a mastersalt master running on another machine::
 
     export MASTERSALT="http://mastersalt"
     eg : export MASTERSALT="http://mastersalt.makina-corpus.net"
 
-If you want to install and test test mastersalt system loclly to your box::
+If you want to install and test test mastersalt system locally to your box::
 
-    export MASTERSALT="localhost" MASTERSALT_BOOT="master"
+    export MASTERSALT="localhost" MASTERSALT_BOOT="mastersalt_master"
 
-- **MASTERSALT** is the mastersalt host to link to
-- **MASTERSALT_PORT** overrides the port for the distant mastersalt server
-  which is 4606 usually (read the script)
-- **MASTERSALT_BOOT=minion|master** instructs to install a mastersalt master or minion on  localhost. In master mode, it also add alocal mastersalt minion.
-
-To install our base salt installation, just run this script as **ROOT**, please read next paragraphe before running this command::
+And finally, **FIRE IN THE HOLE!**::
 
     wget http://raw.github.com/makinacorpus/makina-states/master/_scripts/boot-salt.sh -O - | bash
     or
@@ -107,7 +139,22 @@ To skip the automatic setups calls::
 
     export SALT_BOOT_SKIP_SETUP"1"
 
-This will do install prereq, salt, and accept the key locally for the local master/minion, and maybe isntall a project after
+SUMUP
+*******
+
+    - To install on a server (default env=server, default boot=salt_master)::
+
+        wget http://raw.github.com/makinacorpus/makina-states/master/_scripts/boot-salt.sh -O - | bash
+
+    - To install on a dev machine (env=devhost, default boot=salt_master)::
+
+        export SALT_BOOT_ENV=devhost
+        wget http://raw.github.com/makinacorpus/makina-states/master/_scripts/boot-salt.sh -O - | bash
+
+    - To install on a server and use mastersalt::
+
+        export MASTERSALT=mastersalt.makina-corpus.net
+        wget http://raw.github.com/makinacorpus/makina-states/master/_scripts/boot-salt.sh -O - | bash
 
 Running project states
 ------------------------------
@@ -116,6 +163,8 @@ Running project states
 - You can optionnaly tell which setup sls state and which top sms state to bootstrap.
 - See also https://github.com/makinacorpus/salt-project
 - You can safely use the script multiple times to install projects (even long first after installation)
+- In most case, if the script has run once, you can relaunch it and it may have enought information on the system
+  to guess how to run itself, just verify the variables sum up at the beginning.
 
 ::
 
@@ -251,3 +300,4 @@ Update your system setuptools install to match latest setuptools (distribute + s
     sudo easy_install -U setuptools
 
 
+.. vim: set ft=rst tw=0:

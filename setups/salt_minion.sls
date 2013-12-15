@@ -1,27 +1,14 @@
 {% import "makina-states/_macros/salt.jinja" as c with context %}
 
 include:
-  {% if c.mmaster %}
-  - makina-states.bootstrap.mastersalt_master
-  {% endif %}
-  {% if c.mminion %}
-  - makina-states.bootstrap.mastersalt_minion
-  {% endif %}
-  {% if c.devhost %}
-  - makina-states.bootstrap.server
-  {% endif %}
-  {% if c.server %}
-  - makina-states.bootstrap.server
-  {% endif %}
-  {% if c.sa %}
-  - makina-states.bootstrap.standalone
-  {% endif %}
-  {% if c.vm %}
-  - makina-states.bootstrap.vm
-  {% endif %}
-  {% if c.no_bootstrap %}
-  - makina-states.bootstrap.base
-  {% endif %}
+  - makina-states.services.base.salt
+
+makina-nodetype-salt-grain:
+  grains.present:
+    - name: makina.nodetype.salt
+    - value: True
+    - require:
+      - service: salt-salt-minion
 
 # Fix permissions and ownerships
 # recurse does not seem to work well to reset perms

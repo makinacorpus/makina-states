@@ -5,6 +5,7 @@
 include:
   - makina-states.localsettings.pkgmgr
 
+{% if grains['os'] in ['Ubuntu', 'Debian'] %}
 before-pkg-install-proxy:
   cmd.run:
     - unless: /bin/true
@@ -80,7 +81,7 @@ sys-pkgs:
       {% endif %}
 
 
-{% if grains.get('makina.devhost', False) %}
+{% if grains.get('makina.nodetype.devhost', False) %}
 devhost-pkgs:
   pkg.installed:
     - names:
@@ -133,3 +134,4 @@ salt-pkgs:
   pkg.installed:
     - names:
       - python-apt
+{% endif %}

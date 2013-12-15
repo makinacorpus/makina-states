@@ -1,16 +1,14 @@
-#
-# Boostrap an host which is also a contained VM and not a physical machine
-#
+{% import "makina-states/_macros/salt.jinja" as c with context %}
 # Basic bootstrap is responsible for the setup of saltstack
 # Be sure to double check any dependant state there to work if there is
 # nothing yet on the VM as it is a "bootstrap stage".
-#
+
 
 include:
-  - makina-states.bootstrap.server
-  - makina-states.setups.vm
+  - makina-states.bootstrap.salt_minion
+  - makina-states.setups.salt_master
 
-makina-bootstrap-vm-grain:
+makina-bootstrap-salt-grain:
   grains.present:
-    - name: makina.bootstrap.vm
+    - name: makina.bootstrap.salt
     - value: True

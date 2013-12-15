@@ -12,7 +12,7 @@
 # Author: Michael Prokop <mika@debian.org>
 
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
-DESC="{{salt_data['name']}} {{salt_data['daemon_name']}} control daemon"
+DESC="{{salt_data['daemon_name']}} control daemon"
 NAME={{salt_data['name']}}-{{salt_data['daemon_name']}}
 DAEMON=/usr/bin/{{salt_data['name']}}-{{salt_data['daemon_name']}}
 DAEMON_ARGS="-d"

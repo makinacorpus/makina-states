@@ -8,21 +8,15 @@
 #
 
 include:
-  - makina-states.localsettings.base
   - makina-states.bootstrap.base
-  - makina-states.services.base.mastersalt
+  - makina-states.setups.mastersalt_minion
 
 makina-bootstrap-mastersalt-grain:
   grains.present:
     - name: makina.bootstrap.mastersalt
     - value: True
-    - require:
-      - service: salt-mastersalt-minion
 
 makina-bootstrap-mastersalt-minion-grain:
   grains.present:
     - name: makina.bootstrap.mastersalt_minion
     - value: True
-    - require:
-      - service: salt-mastersalt-minion
-

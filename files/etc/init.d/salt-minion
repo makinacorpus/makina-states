@@ -6,13 +6,13 @@
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: {{salt_data['name']}} salt {{salt_data['daemon_name']}} control daemon
-# Description:       This is a daemon that controls the {{salt_data['name']}} {{salt_data['daemon_name']}}s
+# Description:       This is a daemon that controls the {{salt_data['daemon_name']}}s
 ### END INIT INFO
 
 # Author: Michael Prokop <mika@debian.org>
 
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
-DESC="{{salt_data['name']}} {{salt_data['daemon_name']}} control daemon"
+DESC="{{salt_data['daemon_name']}} control daemon"
 NAME={{salt_data['name']}}-{{salt_data['daemon_name']}}
 DAEMON=/usr/bin/{{salt_data['name']}}-{{salt_data['daemon_name']}}
 DAEMON_ARGS=""

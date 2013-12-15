@@ -1,3 +1,4 @@
+import pdb;pdb.set_trace()  ## Breakpoint ##
 #
 # This file contains three macros to
 # - install makina states
@@ -55,14 +56,15 @@
   'var_prefix': '/var',
   'cache_prefix': '{var_prefix}/cache/{name}',
   'run_prefix': '{var_prefix}/run',
-  'default_include': '{daemon_name}.d/*.conf',
-  'cachedir': '{cache_prefix}/{name}-{daemon_name}',
-  'pki_dir': '{conf_prefix}/pki/{daemon_name}',
-  'pidfile': '{run_prefix}/{name}-{daemon_name}.pid',
-  'sock_dir': '{run_prefix}/{name}/{daemon_name}',
+  'daemon_name': '{name}-{service_name}',
+  'default_include': '{service_name}.d/*.conf',
+  'cachedir': '{cache_prefix}/{daemon_name}',
+  'pki_dir': '{conf_prefix}/pki/{service_name}',
+  'pidfile': '{run_prefix}/{daemon_name}.pid',
+  'sock_dir': '{run_prefix}/{name}/{service_name}',
   'log_prefix': '{var_prefix}/log/salt',
-  'log_file': '{log_prefix}/{name}-{daemon_name}',
-  'key_logfile': '{log_prefix}/{name}-{daemon_name}-key',
+  'log_file': '{log_prefix}/{daemon_name}',
+  'key_logfile': '{log_prefix}/{daemon_name}-key',
   'log_level': 'warning',
   'log_level_logfile': 'info',
   'log_datefmt': "'%H:%M:%S'",
@@ -100,7 +102,7 @@
 
 # default daemon overrides
 {% set salt_minion_data = salt['mc_utils.dictupdate'](salt_common_data.copy(), {
-  'daemon_name': 'minion',
+  'service_name': 'minion',
   'master': '127.0.0.1',
   'master_port': '4506',
   'retry_dns': '30',
@@ -151,7 +153,7 @@
 # default master settings
 {% set salt_master_data = salt['mc_utils.dictupdate'](salt_common_data.copy(), {
   'runner_dirs': '[]',
-  'daemon_name': 'master',
+  'service_name': 'master',
   'interface': '127.0.0.1',
   'publish_port': '4505',
   'ret_port': '4506',
@@ -194,29 +196,22 @@
 }) %}
 
 # mastersalt daemon overrides
-{% set mastersalt_common_data = {
-  'name': 'mastersalt', 'pillar_root': '/srv/{name}-pillar',
-} %}
 {% set mastersalt_common_data = salt['mc_utils.dictupdate'](
-  salt_common_data.copy(), mastersalt_common_data) %}
-
+  salt_common_data, {'name': 'mastersalt', 'pillar_root': '/srv/{name}-pillar'}) %}
 {% set mastersalt_master_data = salt['mc_utils.dictupdate'](
-  salt_master_data.copy(), mastersalt_common_data.copy()) %}
+   salt_master_data.copy(), mastersalt_common_data.copy()) %}
 {% set mastersalt_minion_data = salt['mc_utils.dictupdate'](
-  salt_minion_data.copy(), mastersalt_common_data.copy()) %}
-
-{% set mastersalt_master_data = salt['mc_utils.dictupdate']({
-  'daemon_name': 'mastersalt-master',
-  'publish_port': '4605',
-  'ret_port': '4606',
-}, mastersalt_master_data) %}
-{% set mastersalt_minion_data = salt['mc_utils.dictupdate']({
-  'daemon_name': 'mastersalt-minion',
-  'master': '127.0.0.1',
-  'master_port': '4606',
-  'tcp_pub_port': '4610',
-  'tcp_pull_port': '4611',
-}, mastersalt_minion_data) %}
+   salt_minion_data.copy(), mastersalt_common_data.copy()) %}
+{% set mastersalt_master_data = salt['mc_utils.dictupdate'](
+  mastersalt_master_data, {
+    'publish_port': '4605',
+    'ret_port': '4606'}) %}
+{% set mastersalt_minion_data = salt['mc_utils.dictupdate'](
+  mastersalt_minion_data, {
+    'master': '127.0.0.1',
+    'master_port': '4606',
+    'tcp_pub_port': '4610',
+    'tcp_pull_port': '4611'}) %}
 
 # common pillar overrides
 {% set salt_pillar = pillar.get('salt', {}) %}
@@ -226,7 +221,7 @@
 {% set mastersalt_pillar = pillar.get('mastersalt', {}) %}
 {% set mastersalt_common_pillar = mastersalt_pillar.get('common', {}) %}
 {% set mastersalt_master_pillar = mastersalt_pillar.get('master', {}) %}
-{% set mastersalt_minion_pillar =  mastersalt_pillar.get('minion', {}) %}
+{% set mastersalt_minion_pillar = mastersalt_pillar.get('minion', {}) %}
 
 # per daemon commpon section overrides
 {% set salt_master_data = salt['mc_utils.dictupdate'](
@@ -255,21 +250,41 @@
 ########################################
 
 # GRAINS VARIABLES
-{% set devhost = salt['config.get']('makina.bootstrap.devhost', False) %}
-{% set vm = salt['config.get']('makina.bootstrap.vm', False) %}
-{% set server = salt['config.get']('makina.bootstrap.server', False) %}
-{% set sa = salt['config.get']('makina.bootstrap.standalone', False) %}
+# nodetypes
+{% set minion = salt['config.get']('makina.nodetype.salt_minion', False) %}
+{% set master = salt['config.get']('makina.nodetype.salt_master', False) %}
+{% set salt_minion = minion %}
+{% set salt_master = master %}
+{% set server = salt['config.get']('makina.nodetype.server', False) %}
+{% set vm = salt['config.get']('makina.nodetype.vm', False) %}
+{% set devhost = salt['config.get']('makina.nodetype.devhost', False) %}
+
+# mastersalt nodetypes
+{% set mastersalt_minion = salt['config.get']('makina.nodetype.mastersalt_minion', False) %}
+{% set mastersalt_master = salt['config.get']('makina.nodetype.mastersalt_master', False) %}
+
+# various settings for states
+{% set network_managed = salt['config.get']('makina.network_managed', False) %}
+{% set lxc = salt['config.get']('makina.lxc', False) %}
+{% set docker = salt['config.get']('makina.docker', False) %}
+{% set upstart = salt['config.get']('makina.upstart', False) %}
+
+# bootstraps
+{% set bootstrapped_devhost = salt['config.get']('makina.bootstrap.devhost', False) %}
+{% set bootstrapped_vm = salt['config.get']('makina.bootstrap.vm', False) %}
+{% set bootstrapped_server = salt['config.get']('makina.bootstrap.server', False) %}
+{% set bootstrap_mastersalt_minion = salt['config.get']('makina.bootstrap.mastersalt_minion', False) %}
+{% set bootstrap_mastersalt_master = salt['config.get']('makina.bootstrap.mastersalt_master', False) %}
+{% set bootstrapped_salt_minion = salt['config.get']('makina.bootstrap.salt_minion', False) %}
+{% set bootstrapped_salt_master = salt['config.get']('makina.bootstrap.salt_master', False) %}
 
 {% set ms = salt['config.get']('makina.bootstrap.mastersalt', False) -%}
-{% set mmaster = salt['config.get']('makina.mastersalt-master', False) %}
-{% set mminion = salt['config.get']('makina.mastersalt-minion', False) %}
-
-{% set master = salt['config.get']('makina.salt-master', False) %}
-{% set minion = salt['config.get']('makina.salt-minion', False) %}
+{% set mmaster = mastersalt_master %}
+{% set mminion = mastersalt_minion %}
 
 {% set salt = master or minion or server or vm or sa %}
 {% set mastersalt = mmaster or mminion or ms %}
-{% set no_bootstrap = not (vm or server or sa or ms) %}
+{% set no_bootstrap = not (vm or server or ms) %}
 {% set salt_enabled = vm or server or master or minion or mastersalt %}
 
 # SALT VARIABLES
@@ -678,22 +693,22 @@ salt-{{ data['name'] }}-daemon-proxy-requires-before-restart:
 {% set pillar_root = resolver('{pillar_root}', data) %}
 {% set local_msr = resolver('{salt_root}/makina-states', data) %}
 {% set yamled_data = data | yaml %}
-salt-{{ data['name'] }}-{{ data['daemon_name'] }}-conf:
+salt-{{ data['daemon_name'] }}-conf:
   file.managed:
-    - name: {{ conf_prefix }}/{{ data['daemon_name'] }}
+    - name: {{ conf_prefix }}/{{ data['service_name'] }}
     - template: jinja
-    - source: salt://makina-states/files/etc/salt/{{ data['daemon_name'] }}
+    - source: salt://makina-states/files/etc/salt/{{ data['service_name'] }}
     - salt_data: {{ yamled_data }}
     - require:
       - file: salt-etc-{{ data['name'] }}-dirs
 
 {% if grains['os'] == 'Debian' %}
-salt-{{ data['name'] }}-{{ data['daemon_name'] }}-job:
+salt-{{ data['daemon_name'] }}-job:
   file.managed:
-    - name: /etc/init.d/{{ data['name'] }}-{{ data['daemon_name'] }}
+    - name: /etc/init.d/{{ data['daemon_name'] }}
     - template: jinja
     - mode: 755
-    - source: salt://makina-states/files/etc/init.d/salt-{{ data['daemon_name'] }}
+    - source: salt://makina-states/files/etc/init.d/salt-{{ data['service_name'] }}
     - root: {{local_msr}}
     - saltname: {{ data['name'] }}
     - saltconfig: {{ conf_prefix }}
@@ -701,42 +716,42 @@ salt-{{ data['name'] }}-{{ data['daemon_name'] }}-job:
 {% endif %}
 
 {% if grains['os'] == 'Ubuntu' %}
-salt-{{ data['name'] }}-{{ data['daemon_name'] }}-job:
+salt-{{ data['daemon_name'] }}-job:
   file.managed:
-    - name: /etc/init/{{ data['name'] }}-{{ data['daemon_name'] }}.conf
+    - name: /etc/init/{{ data['daemon_name'] }}.conf
     - template: jinja
-    - source: salt://makina-states/files/etc/init/salt-{{ data['daemon_name'] }}.conf
+    - source: salt://makina-states/files/etc/init/salt-{{ data['service_name'] }}.conf
     - root: {{local_msr}}
     - saltconfig: {{ conf_prefix }}
     - saltname: {{ data['name'] }}
     - salt_data: {{ yamled_data }}
 {% endif %}
 
-salt-{{ data['name'] }}-{{ data['daemon_name'] }}:
+salt-{{ data['daemon_name'] }}:
   service.running:
-    - name: {{ data['name'] }}-{{ data['daemon_name'] }}
+    - name: {{ data['daemon_name'] }}
     - enable: True
     - require:
-      - cmd: salt-restart-{{ data['name'] }}-{{ data['daemon_name'] }}
+      - cmd: salt-restart-{{ data['daemon_name'] }}
 
-salt-{{ data['name'] }}-{{ data['daemon_name'] }}-cache:
+salt-{{ data['daemon_name'] }}-cache:
   file.directory:
     - name: {{ cachedir}}
     - makedirs: True
 
-salt-{{ data['name'] }}-{{ data['daemon_name'] }}-pki:
+salt-{{ data['daemon_name'] }}-pki:
   file.directory:
     - name: {{ conf_prefix }}/pki/{{ data['daemon_name'] }}
     - makedirs: True
     - require:
       - file: salt-etc-{{ data['name'] }}-dirs
 
-salt-{{ data['name'] }}-{{ data['daemon_name'] }}-sock-dir:
+salt-{{ data['daemon_name'] }}-sock-dir:
   file.directory:
-    - name: {{ run_prefix }}/{{ data['name'] }}/{{ data['daemon_name'] }}
+    - name: {{ run_prefix }}/{{ data['daemon_name'] }}
     - makedirs: True
 
-salt-{{ data['name'] }}-{{ data['daemon_name'] }}-logs:
+salt-{{ data['daemon_name'] }}-logs:
   file.managed:
     - salt_data: {{ yamled_data }}
     - names:
@@ -745,25 +760,25 @@ salt-{{ data['name'] }}-{{ data['daemon_name'] }}-logs:
       - {{ log_prefix }}/syndic.log
 
 # done to mitigate authentication errors on restart
-salt-restart-{{ data['name'] }}-{{ data['daemon_name'] }}:
+salt-restart-{{ data['daemon_name'] }}:
   cmd.run:
     - name: |
-            service {{ data['name'] }}-{{ data['daemon_name'] }} restart &&\
-            echo "Reloading {{ data['name'] }}-{{ data['daemon_name'] }}" &&\
+            service {{ data['daemon_name'] }} restart &&\
+            echo "Reloading {{ data['daemon_name'] }}" &&\
             rm -f "{{local_msr}}/.restart_salt"
     - onlyif: ls "{{local_msr}}/.restart_salt"
     - require:
       - cmd: salt-{{ data['name'] }}-daemon-proxy-requires-before-restart
-      - file: salt-{{ data['name'] }}-{{ data['daemon_name'] }}-cache
-      - file: salt-{{ data['name'] }}-{{ data['daemon_name'] }}-conf
+      - file: salt-{{ data['daemon_name'] }}-cache
+      - file: salt-{{ data['daemon_name'] }}-conf
 
   grains.present:
-    - name: makina.{{ data['name'] }}-{{ data['daemon_name'] }}
+    - name: makina.{{ data['daemon_name'] }}
     - value: True
     - require_in:
       - cmd: salt-{{ data['name'] }}-reload-grains
     - require:
-      - service: salt-{{ data['name'] }}-{{ data['daemon_name'] }}
+      - service: salt-{{ data['daemon_name'] }}
 {% endmacro %}
 
 ########################
@@ -789,21 +804,21 @@ salt-restart-{{ data['name'] }}-{{ data['daemon_name'] }}:
 {% set pillar_root = resolver('{pillar_root}', data) %}
 {% set local_msr = resolver('{salt_root}/makina-states', data) %}
 {% set yamled_data = data | yaml %}
-salt-{{ data['name'] }}-{{ data['daemon_name'] }}-conf:
+salt-{{ data['daemon_name'] }}-conf:
   file.managed:
-    - name: {{ conf_prefix }}/{{ data['daemon_name'] }}
+    - name: {{ conf_prefix }}/{{ data['service_name'] }}
     - template: jinja
-    - source: salt://makina-states/files/etc/salt/{{ data['daemon_name'] }}
+    - source: salt://makina-states/files/etc/salt/{{ data['service_name'] }}
     - salt_data: {{ yamled_data }}
     - require_in:
       - cmd: salt-{{ data['name'] }}-daemon-proxy-requires-before-restart
 
 {% if grains['os'] == 'Debian' %}
-salt-{{ data['name'] }}-{{ data['daemon_name'] }}-job:
+salt-{{ data['daemon_name'] }}-job:
   file.managed:
-    - name: /etc/init.d/{{ data['name'] }}-{{ data['daemon_name'] }}
+    - name: /etc/init.d/{{ data['daemon_name'] }}
     - template: jinja
-    - source:  salt://makina-states/files/etc/init.d/salt-{{ data['daemon_name'] }}
+    - source:  salt://makina-states/files/etc/init.d/salt-{{ data['service_name'] }}
     - mode: 755
     - salt_data: {{ yamled_data }}
     - require_in:
@@ -811,40 +826,40 @@ salt-{{ data['name'] }}-{{ data['daemon_name'] }}-job:
 {% endif %}
 
 {% if grains['os'] == 'Ubuntu' %}
-salt-{{ data['name'] }}-{{ data['daemon_name'] }}-job:
+salt-{{ data['daemon_name'] }}-job:
   file.managed:
-    - name: /etc/init/{{ data['name'] }}-{{ data['daemon_name'] }}.conf
+    - name: /etc/init/{{ data['daemon_name'] }}.conf
     - template: jinja
-    - source:  salt://makina-states/files/etc/init/salt-{{ data['daemon_name'] }}.conf
+    - source:  salt://makina-states/files/etc/init/salt-{{ data['service_name'] }}.conf
     - salt_data: {{ yamled_data }}
     - require_in:
       - cmd: salt-{{ data['name'] }}-daemon-proxy-requires-before-restart
 {% endif %}
 
-salt-{{ data['name'] }}-{{ data['daemon_name'] }}-cache:
+salt-{{ data['daemon_name'] }}-cache:
   file.directory:
     - name: {{ cachedir }}
     - makedirs: True
     - require_in:
       - cmd: salt-{{ data['name'] }}-daemon-proxy-requires-before-restart
 
-salt-{{ data['name'] }}-{{ data['daemon_name'] }}-sock-dir:
+salt-{{ data['daemon_name'] }}-sock-dir:
   file.directory:
-    - name: {{ run_prefix }}/{{ data['name'] }}/{{ data['daemon_name'] }}
+    - name: {{ run_prefix }}/{{ data['daemon_name'] }}
     - makedirs: True
     - require_in:
       - cmd: salt-{{ data['name'] }}-daemon-proxy-requires-before-restart
 
-salt-{{ data['name'] }}-{{ data['daemon_name'] }}-pki:
+salt-{{ data['daemon_name'] }}-pki:
   file.directory:
-    - name: {{ conf_prefix }}/pki/{{ data['daemon_name'] }}
+    - name: {{ conf_prefix }}/pki/{{ data['service_name'] }}
     - makedirs: True
     - require:
       - file: salt-etc-{{ data['name'] }}-dirs
     - require_in:
       - cmd: salt-{{ data['name'] }}-daemon-proxy-requires-before-restart
 
-salt-{{ data['name'] }}-{{ data['daemon_name'] }}-logs:
+salt-{{ data['daemon_name'] }}-logs:
   file.managed:
     - salt_data: {{ yamled_data }}
     - names:
@@ -853,33 +868,33 @@ salt-{{ data['name'] }}-{{ data['daemon_name'] }}-logs:
       - cmd: salt-{{ data['name'] }}-daemon-proxy-requires-before-restart
 
 # done to mitigate authentication errors on restart
-salt-restart-{{ data['name'] }}-{{ data['daemon_name'] }}:
+salt-restart-{{ data['daemon_name'] }}:
   cmd.run:
     - name: |
-            service {{ data['name'] }}-{{ data['daemon_name'] }} stop ;\
-            service {{ data['name'] }}-{{ data['daemon_name'] }} start &&\
-            echo "Reloading {{ data['name'] }}-{{ data['daemon_name'] }}" &&\
+            service {{ data['daemon_name'] }} stop ;\
+            service {{ data['daemon_name'] }} start &&\
+            echo "Reloading {{ data['daemon_name'] }}" &&\
             sleep 5 &&\
-            rm -f "{{local_msr}}/.restart_{{ data['name'] }}_{{ data['daemon_name'] }}"
-    - onlyif: ls "{{local_msr}}/.restart_{{ data['name'] }}_{{ data['daemon_name'] }}"
+            rm -f "{{local_msr}}/.restart_{{ data['daemon_name'] }}"
+    - onlyif: ls "{{local_msr}}/.restart_{{ data['daemon_name'] }}"
     - require:
       - cmd: salt-{{ data['name'] }}-daemon-proxy-requires-before-restart
       - cmd: dummy-post-{{ data['name'] }}-master-restart
 
-salt-{{ data['name'] }}-{{ data['daemon_name'] }}:
+salt-{{ data['daemon_name'] }}:
   service.running:
-    - name: {{ data['name'] }}-{{ data['daemon_name'] }}
+    - name: {{ data['daemon_name'] }}
     - enable: True
     - require:
-      - cmd: salt-restart-{{ data['name'] }}-{{ data['daemon_name'] }}
+      - cmd: salt-restart-{{ data['daemon_name'] }}
 
-salt-{{ data['name'] }}-{{ data['daemon_name'] }}-grain:
+salt-{{ data['daemon_name'] }}-grain:
   grains.present:
-    - name: makina.{{ data['name'] }}-{{ data['daemon_name'] }}
+    - name: makina.nodetype.{{ data['daemon_name'] }}
     - value: True
     - require_in:
       - cmd: salt-{{ data['name'] }}-reload-grains
     - require:
-      - service: salt-{{ data['name'] }}-{{ data['daemon_name'] }}
+      - service: salt-{{ data['daemon_name'] }}
 {% endmacro %}
 # vim: set nofoldenable:

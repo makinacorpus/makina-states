@@ -9,12 +9,9 @@
 
 include:
   - makina-states.bootstrap.mastersalt_minion
-  - makina-states.services.base.mastersalt_master
+  - makina-states.setups.mastersalt_master
 
 makina-bootstrap-mastersalt-master-grain:
   grains.present:
     - name: makina.bootstrap.mastersalt_master
     - value: True
-    - require:
-      - service: salt-mastersalt-master
-

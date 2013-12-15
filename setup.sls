@@ -15,11 +15,6 @@
 #   - Take care of file mode and ownership deployed by salt (see below)
 #
 {% import "makina-states/_macros/salt.jinja" as c with context %}
-{% set includes=[] %}
-{% if c.salt %}{% set dummy = includes.append('makina-states.setups.salt') %}{% endif %}
-{% if c.mastersalt %}{% set dummy = includes.append('makina-states.setups.mastersalt') %}{% endif %}
-{%if includes %}
+
 include:
-  {% for i in includes %}- {{i}}
-  {% endfor %}
-{% endif %}
+  - makina.servers.base

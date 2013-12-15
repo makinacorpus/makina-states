@@ -1,4 +1,3 @@
-{% import 'makina-states/services/pkgs.sls'  as pkgs with context %}
 
 #
 # Easy managment of dockers via pillar

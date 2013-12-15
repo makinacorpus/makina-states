@@ -15,7 +15,7 @@ postfix-pkgs:
       - postfix-pcre
 
 #--- DEV SERVER: CATCH ALL EMAILS TO A LOCAL MAILBOX
-{% if grains['makina.devhost'] %}
+{% if grains['makina.nodetype.devhost'] %}
 
   {% set ips=grains['ip_interfaces'] %}
   {% set ip1=ips['eth0'][0] %}
@@ -122,7 +122,7 @@ makina-postfix-configuration-check:
       - cmd: makina-postfix-chroot-localtime-sync
       # ensure conf files are altered before we check conf
       - file.managed: /etc/postfix/main.cf
-{% if grains['makina.devhost'] %}
+{% if grains['makina.nodetype.devhost'] %}
       - file: makina-postfix-aliases-all-to-vagrant-user
       - file: makina-postfix-local-catch-all-delivery-virtual
 {% endif %}
@@ -144,7 +144,7 @@ makina-postfix-service:
       - file.managed: /etc/postfix/main.cf
       # restart service if /etc/hosts were altered?
       - cmd: makina-postfix-chroot-hosts-sync
-{% if grains['makina.devhost'] %}
+{% if grains['makina.nodetype.devhost'] %}
       - cmd: makina-postfix-postmap-virtual-dev
       - cmd: makina-postfix-postalias-dev
 {% endif %}

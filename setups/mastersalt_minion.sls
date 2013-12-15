@@ -1,11 +1,6 @@
 {% import "makina-states/_macros/salt.jinja" as c with context %}
-{% if c.mastersalt %}
 include:
-  {% if c.mmaster %}
-  - makina-states.bootstrap.mastersalt_master
-  {% else %}
-  - makina-states.bootstrap.mastersalt_minion
-  {% endif %}
+  - makina-states.services.base.mastersalt
 
 # recurse does not seem to work well to reset perms
 mastersalt-dirs-perms:
@@ -42,4 +37,18 @@ mastersalt-dirs-restricted-perms:
     - require:
       - cmd: mastersalt-dirs-perms
       - cmd: salt-mastersalt-daemon-proxy-requires-before-restart
-{% endif %}
+
+makina-nodetype-mastersalt-grain:
+  grains.present:
+    - name: makina.nodetype.mastersalt
+    - value: True
+    - require:
+      - service: salt-mastersalt-minion
+
+makina-nodetype-mastersalt-minion-grain:
+  grains.present:
+    - name: makina.nodetype.mastersalt_minion
+    - value: True
+    - require:
+      - service: salt-mastersalt-minion
+

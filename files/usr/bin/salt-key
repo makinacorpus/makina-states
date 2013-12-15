@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
 export PATH="{{salt_data['salt_root']}}/makina-states/bin:$PATH"
-salt-key -c {{salt_data['conf_prefix']}} $@
+exec salt-key -c {{salt_data['conf_prefix']}} $@
+exit $?
 # vim:set ft=bash :

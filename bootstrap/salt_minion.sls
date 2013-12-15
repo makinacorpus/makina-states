@@ -5,6 +5,10 @@
 #
 
 include:
-  - makina-states.services.base.salt
-  - makina-states.services.base.salt_master
   - makina-states.bootstrap.base
+  - makina-states.setups.salt_minion
+
+makina-bootstrap-salt-grain:
+  grains.present:
+    - name: makina.bootstrap.salt
+    - value: True

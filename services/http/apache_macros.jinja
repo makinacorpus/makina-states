@@ -98,7 +98,7 @@ makina-apache-virtualhost-{{ small_name }}:
 {% endif %}
 
         mode: "production"
-{% if grains['makina.devhost'] %}
+{% if grains['makina.nodetype.devhost'] %}
     - context:
         mode: "dev"
 {% endif %}
@@ -127,7 +127,7 @@ makina-apache-virtualhost-{{ small_name }}-content:
         {{ variablename }}: "{{ variablevalue }}"
 {% endfor %}
 {% endif %}
-{% if grains['makina.devhost'] %}
+{% if grains['makina.nodetype.devhost'] %}
     - context:
         mode: "dev"
 {% endif %}

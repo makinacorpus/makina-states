@@ -18,7 +18,7 @@
 # where the text part is the name of the service as shown in upstart
 # You can see an example of that in the phpfpm.sls or the apache.sls
 
-{% if grains['makina.devhost'] %}
+{% if grains['makina.nodetype.devhost'] %}
 
 # Delay start on vagrant dev host by adding to upstart delayers
 makina-file_waiting_for_vagrant:
