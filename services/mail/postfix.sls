@@ -60,7 +60,7 @@ makina-postfix-aliases-all-to-vagrant-user:
 
 # postmap /etc/postfix/virtual when altered
 makina-postfix-postmap-virtual-dev:
-  cmd.wait:
+  cmd.watch:
     - name: postmap /etc/postfix/virtual && echo "" && echo "changed=yes"
     - stateful: True
     - require:
@@ -69,7 +69,7 @@ makina-postfix-postmap-virtual-dev:
       - file: makina-postfix-local-catch-all-delivery-virtual
 # postalias if /etc/aliases is altered
 makina-postfix-postalias-dev:
-  cmd.wait:
+  cmd.watch:
     - stateful: True
     - name: postalias /etc/aliases && echo "" && echo "changed=yes"
     - watch:

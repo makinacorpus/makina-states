@@ -1,5 +1,5 @@
 makina-dotdeb-add-key:
-  cmd.wait:
+  cmd.watch:
     - name: wget -q -O - http://www.dotdeb.org/dotdeb.gpg | sudo apt-key add -
     - unless: apt-key adv --list-keys E9C74FEEA2098A6E
 

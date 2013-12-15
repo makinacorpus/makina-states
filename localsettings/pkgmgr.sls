@@ -80,7 +80,7 @@ apt-sources-list:
     - pkg_data: {{ pkg_data | yaml }}
 
 apt-update-after:
-  cmd.wait:
+  cmd.watch:
     - name: apt-get update
     - watch:
       - file: apt-sources-list

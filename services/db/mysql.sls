@@ -47,7 +47,7 @@ mysql-salt-pythonmysqldb-pip-install:
       - pkg: makina-mysql-pkgs
 
 mysql-salt-pythonmysqldb-pip-install-module-reloader:
-  cmd.wait:
+  cmd.watch:
     - name:
             echo "Reloading Modules as mysql python bindings were installed"
     # WARNING: WE NEED TO REFRESH THE MYSQL MODULE
