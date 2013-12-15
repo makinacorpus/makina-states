@@ -37,7 +37,6 @@ mastersalt-dirs-restricted-perms:
     - reset_paths:
       - {{c.mlog_prefix}}
       - {{c.mrun_prefix}}
-      - {{c.mcache_prefix }}
       - {{c.mcache_prefix}}
       - {{c.mconf_prefix}}/pki
     - require:
