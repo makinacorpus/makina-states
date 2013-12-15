@@ -201,7 +201,7 @@ set_vars() {
     # set appropriate ports for mastersalt depening on the host and user input
     MASTERSALT_DEFAULT_PORT="4606"
     if [[ "$MASTERSALT" == "$MASTERSALT_MAKINA_DNS" ]];then
-        MASTERSALT_DEFAULT_PORT="4506"
+        MASTERSALT_DEFAULT_PORT="4606"
     fi
     MASTERSALT_PORT="${MASTERSALT_PORT:-$MASTERSALT_DEFAULT_PORT}"
     if [[ -n "$SALT_BOOT" ]];then
@@ -830,9 +830,10 @@ a\    - mastersalt
         fi
         if [[ ! -f "$MASTERSALT_PILLAR/mastersalt.sls" ]];then
     cat > "$MASTERSALT_PILLAR/mastersalt.sls" << EOF
-mastersalt-minion:
-  master: ${MASTERSALT}
-  master_port: ${MASTERSALT_PORT}
+mastersalt:
+  minion:
+      master: ${MASTERSALT}
+      master_port: ${MASTERSALT_PORT}
 EOF
         fi
     fi
