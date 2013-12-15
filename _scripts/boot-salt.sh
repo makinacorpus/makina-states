@@ -136,6 +136,7 @@ set_vars() {
     MASTERSALT_PILLAR="${MASTERSALT_PILLAR:-$PREFIX/mastersalt-pillar}"
     MASTERSALT_ROOT="${MASTERSALT_ROOT:-$PREFIX/mastersalt}"
     MASTERSALT_MS="$MASTERSALT_ROOT/makina-states"
+    TMPDIR="${TMPDIR:-"/tmp"}"
     VENV_PATH="${VENV_PATH:-"/salt-venv"}"
     CONF_ROOT="${CONF_ROOT:-"/etc"}"
     CONF_PREFIX="${CONF_PREFIX:-"$CONF_ROOT/salt"}"
@@ -231,6 +232,13 @@ set_vars() {
     PROJECT_TOPSTATE_DEFAULT="${MAKINA_PROJECTS}.${PROJECT_NAME}.top"
     PROJECT_SETUPSTATE_DEFAULT="${MAKINA_PROJECTS}.${PROJECT_NAME}.setup"
     PROJECT_PILLAR_STATE="${MAKINA_PROJECTS}.${PROJECT_NAME}"
+    export BASE_PACKAGES STATES_URL PREFIX PILLAR MAKINA_STATES_NOCONFIRM MASTERSALT_PILLAR
+    export MASTERSALT_ROOT ROOT MASTERSALT_MS MS ETC_INIT MASTERSALT_MAKINA_DNS MASTERSALT_MAKINA_HOST
+    export VENV_PATH CONF_ROOT CONF_PREFIX MASTERSALT_BOOTSALT_BOOT
+    export MAKINA_PROJECTS PROJECTS_PATH PROJECT_URL PROJECT_BRANCH PROJECT_NAME PROJECT_TOPSLS
+    export PROJECT_SETUPSTATE PROJECT_PATH PROJECTS_SALT_PATH PROJECTS_PILLAR_PATH PROJECT_PILLAR_LINK
+    export PROJECT_PILLAR_PATH PROJECT_PILLAR_FILE PROJECT_SALT_LINK PROJECT_SALT_PATH PROJECT_TOPSLS_DEFAULT
+    export PROJECT_TOPSTATE_DEFAULT PROJECT_SETUPSTATE_DEFAULT PROJECT_PILLAR_STATE
     if [[ -n "$PROJECT_URL" ]];then
         if [[ -z "$PROJECT_NAME" ]];then
             die "Please provide a \$PROJECT_NAME"
@@ -245,7 +253,7 @@ recap_(){
     bs_yellow_log " MAKINA-STATES BOOTSTRAPPER"
     bs_yellow_log "   - $0"
     bs_yellow_log " Those informations have been written to:"
-    bs_yellow_log "   - $MS/.boot_salt_top"
+    bs_yellow_log "   - $TMPDIR/boot_salt_top"
     bs_yellow_log "--------------------------------------------------"
     bs_yellow_log "HOST variables:"
     bs_yellow_log "---------------"
@@ -323,7 +331,7 @@ recap_(){
 
 recap() {
     recap_
-    recap_ > "$MS/.boot_salt_top"
+    recap_ > "$TMPDIR/boot_salt_top"
 }
 
 is_apt_installed() {
@@ -545,8 +553,8 @@ setup_and_maybe_update_code() {
                     die_in_error " [bs] Failed to download makina-states ($ms)"
                 fi
             fi
-            chmod +x $MS/_scripts/install_salt_modules.sh
-            "$MS/_scripts/install_salt_modules.sh" "$ROOT"
+            #chmod +x $MS/_scripts/install_salt_modules.sh
+            #"$MS/_scripts/install_salt_modules.sh" "$ROOT"
             cd "$ms"
             if [[ ! -d src ]];then
                 mkdir src
