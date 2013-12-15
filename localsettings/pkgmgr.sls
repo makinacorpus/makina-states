@@ -85,3 +85,5 @@ apt-update-after:
     - watch:
       - file: apt-sources-list
 {% endif %}
+
+# vim:set nofoldenable:

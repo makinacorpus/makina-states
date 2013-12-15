@@ -128,7 +128,7 @@
   'returner_dirs': ['{salt_root}/_returners',
                     '{salt_root}/makina-states/_returners'],
   'states_dirs': ['{salt_root}/_states', '{salt_root}/makina-states/_states'],
-  'render_dirs': ['{salt_root}/_renderers' '{salt_root}/makina-states/_renderers'],
+  'render_dirs': ['{salt_root}/_renderers', '{salt_root}/makina-states/_renderers'],
   'providers': {},
   'autoload_dynamic_modules': True,
   'clean_dynamic_modules': True,
@@ -267,6 +267,7 @@
 {% set master = salt['config.get']('makina.salt-master', False) %}
 {% set minion = salt['config.get']('makina.salt-minion', False) %}
 
+{% set salt = master or minion or server or vm or sa %}
 {% set mastersalt = mmaster or mminion or ms %}
 {% set no_bootstrap = not (vm or server or sa or ms) %}
 {% set salt_enabled = vm or server or master or minion or mastersalt %}
