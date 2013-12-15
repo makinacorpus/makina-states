@@ -13,7 +13,7 @@
 #------------------------------------------------------------------------------
 # For information about entries in this file, type "man shorewall-interfaces"
 ###############################################################################
-FORMAT 2
+?FORMAT 2
 ###############################################################################
 #ZONE	INTERFACE	OPTIONS
 {% for sid, shorewall in pillar.items() -%}
