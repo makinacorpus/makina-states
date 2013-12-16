@@ -133,12 +133,16 @@ interactive_tempo(){
     bs_yellow_log "Continuing..."
 }
 
+get_chrono() {
+    date "+%F_%H-%M-%S"
+}
+
 set_vars() {
     CONF_ROOT="${CONF_ROOT:-"/etc"}"
     ETC_INIT="${ETC_INIT:-"$CONF_ROOT/init"}"
     detect_os
     HOSTNAME="$(hostname)"
-    CHRONO="$(date "+%F_%H-%M-%S")"
+    CHRONO="$get_chrono)"
     lxc_ps=$(which lxc-ps &> /dev/null)
     if [[ "$(egrep "^container=" /proc/1/environ|wc -l)" == "0" ]];then
         # we are in a container !
@@ -161,8 +165,8 @@ set_vars() {
     PILLAR="${PILLAR:-$PREFIX/pillar}"
     SALT_BOOT_NOCONFIRM="${SALT_BOOT_NOCONFIRM:-}"
     ROOT="${ROOT:-$PREFIX/salt}"
-    SALT_BOOT_OUTFILE="$MS/.boot_salt_out"
-    SALT_BOOT_LOGFILE="$MS/.boot_salt_log"
+    SALT_BOOT_OUTFILE="$MS/.boot_salt.$(get_chrono).out"
+    SALT_BOOT_LOGFILE="$MS/.boot_salt.$(get_chrono).log"
     SALT_MASTER_IP="${SALT_MASTER_IP:-"127.0.0.1"}"
     SALT_MASTER_PORT="${SALT_MASTER_PORT:-"4506"}"
     SALT_MASTER_PUBLISH_PORT="$(( ${SALT_MASTER_PORT} - 1 ))"
@@ -484,7 +488,6 @@ salt_call_wrapper_() {
     outf="$SALT_BOOT_OUTFILE"
     logf="$SALT_BOOT_LOGFILE"
     cmdf="$SALT_BOOT_CMDFILE"
-    rm -rf "$outf" "$logf" 2> /dev/null
     saltargs=" --retcode-passthrough --out=yaml --out-file="$outf" --log-file="$logf""
     if [[ -n $SALT_BOOT_DEBUG ]];then
         saltargs="$saltargs -lall"
@@ -523,19 +526,26 @@ salt_call_wrapper_() {
         ret=0
     fi
     #rm -rf "$outf" "$logf" 2> /dev/null
+    for i in "$SALT_BOOT_OUTFILE" "$SALT_BOOT_LOGFILE" "$SALT_BOOT_CMDFILE";do
+        if [[ -e "$i" ]];then
+            chmod 600 "$i" &> /dev/null
+        fi
+    done
     echo $ret
 }
 
 salt_call_wrapper() {
-    SALT_BOOT_OUTFILE="$MS/.boot_salt_out"
-    SALT_BOOT_LOGFILE="$MS/.boot_salt_log"
+    chrono="$(get_chrono)"
+    SALT_BOOT_OUTFILE="$MS/.boot_salt.${chrono}.out"
+    SALT_BOOT_LOGFILE="$MS/.boot_salt.${chrono}.log"
     SALT_BOOT_CMDFILE="$MS/.boot_salt_cmd"
     salt_call_wrapper_ $MS $(get_saltcall_args) $@
 }
 
 mastersalt_call_wrapper() {
-    SALT_BOOT_OUTFILE="$MASTERSALT_MS/.boot_salt_out"
-    SALT_BOOT_LOGFILE="$MASTERSALT_MS/.boot_salt_log"
+    chrono="$(get_chrono)"
+    SALT_BOOT_OUTFILE="$MASTERSALT_MS/.boot_salt.${chrono}.out"
+    SALT_BOOT_LOGFILE="$MASTERSALT_MS/.boot_salt.${chrono}.log"
     SALT_BOOT_CMDFILE="$MASTERSALT_MS/.boot_salt_cmd"
     salt_call_wrapper_ $MASTERSALT_MS $(get_mastersaltcall_args) -c $MCONF_PREFIX $@
 }
