@@ -1,4 +1,7 @@
 .installed.cfg
+.boot_salt_cmd
+.boot_salt_log
+.boot_salt_out
 .bootsalt_need_restart
 *pyc
 .boot_salt_top
