@@ -540,6 +540,7 @@ check_restartmarker_and_maybe_restart() {
             chmod +x "$MS/_scripts/boot-salt.sh"
             export SALT_BOOT_NO_RESTART="1"
             export SALT_BOOT_IN_RESTART="1"
+            export SALT_BOOT_NOCONFIRM='1'
             mbootsalt="$MASTERSALT_MS/_scripts/boot-salt.sh"
             bootsalt="$MS/_scripts/boot-salt.sh"
             if [[ "$LAUNCHER" == "$mbootsalt" ]];then
