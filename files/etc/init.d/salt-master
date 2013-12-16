@@ -13,8 +13,8 @@
 
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
 DESC="{{salt_data['daemon_name']}} control daemon"
-NAME={{salt_data['name']}}-{{salt_data['daemon_name']}}
-DAEMON=/usr/bin/{{salt_data['name']}}-{{salt_data['daemon_name']}}
+NAME={{salt_data['daemon_name']}}
+DAEMON=/usr/bin/{{salt_data['daemon_name']}}
 DAEMON_ARGS="-d"
 #DAEMON_ARGS="-c {{salt_data['conf_prefix']}} -d"
 PIDFILE={{salt_data['run_prefix']}}/$NAME.pid
