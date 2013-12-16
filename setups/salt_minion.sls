@@ -7,8 +7,11 @@ makina-nodetype-salt-grain:
   grains.present:
     - name: makina.nodetype.salt
     - value: True
-    - require:
-      - service: salt-salt-minion
+
+makina-nodetype-salt-minion-grain:
+  grains.present:
+    - name: makina.nodetype.salt_minion
+    - value: True
 
 # Fix permissions and ownerships
 # recurse does not seem to work well to reset perms
