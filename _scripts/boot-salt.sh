@@ -1129,8 +1129,8 @@ minion_challenge() {
 
 mastersalt_minion_challenge() {
     challenged_ms=""
-    global_tries=""
-    inner_tries=""
+    global_tries="60"
+    inner_tries="10"
     for i in `seq $global_tries`;do
         $PS aux|grep salt-minion|grep mastersalt|awk '{print $3}'|xargs kill -9 &> /dev/null
         service mastersalt-minion restart
@@ -1167,12 +1167,21 @@ mastersalt_master_connectivity_check() {
     fi
 }
 
+challenge_message() {
+    minion_id="$(get_minion_id)"
+    bs_log "****************************************************************"
+    bs_log "     GO ACCEPT THE KEY ON SALT_MASTER  ($SALT_MASTER_IP) !!! "
+    bs_log "     You need on this box to run salt-key -y -a $minion_id"
+    bs_log "****************************************************************"
+}
+
 make_association() {
     minion_keys="$(find $CONF_PREFIX/pki/master/minions -type f 2>/dev/null|wc -l)"
     minion_id="$(get_minion_id)"
     registered=""
     bs_log "Entering association routine"
-
+    bs_log "If the bootstrap program seems to block here"
+    challenge_message
     if [[ -z "$minion_id" ]];then
         bs_yellow_log "Minion did not start correctly, the minion_id cache file is empty, trying to restart"
         service salt-minion restart
@@ -1196,10 +1205,7 @@ make_association() {
             sleep 10
         fi
         if [[ "$SALT_MASTER_DNS" != "localhost" ]] &&  [[ -z "$SALT_NO_CHALLENGE" ]];then
-            bs_log "****************************************************************"
-            bs_log "     GO ACCEPT THE KEY ON SALT_MASTER  ($SALT_MASTER_IP) !!! "
-            bs_log "     You need on this box to run salt-key -y -a $minion_id"
-            bs_log "****************************************************************"
+            challenge_message
             bs_log " We are going to wait 10 minutes for you to setup the minion on mastersalt and"
             bs_log " setup an entry for this specific minion"
             bs_log " export SALT_NO_CHALLENGE=1 to remove the temporisation (enter to continue when done)"
@@ -1242,11 +1248,20 @@ make_association() {
         fi
     fi
 }
+challenge_mastersalt_message() {
+    minion_id="$(get_minion_id)"
+    bs_log "****************************************************************"
+    bs_log "    GO ACCEPT THE KEY ON MASTERSALT ($MASTERSALT) !!! "
+    bs_log "    You need on this box to run mastersalt-key -y -a $minion_id"
+    bs_log "****************************************************************"
+}
 
 make_mastersalt_association() {
     minion_id="$(cat $CONF_PREFIX/minion_id &> /dev/null)"
     registered=""
     bs_log "Entering mastersalt association routine"
+    bs_log "If the bootstrap program seems to block here"
+    challenge_mastersalt_message
     if [[ -z "$minion_id" ]];then
         bs_yellow_log "Minion did not start correctly, the minion_id cache file is empty, trying to restart"
         service salt-minion restart
@@ -1266,10 +1281,7 @@ make_mastersalt_association() {
             sleep 10
         fi
         if [[ "$MASTERSALT" != "localhost" ]] && [[ -z "$MASTERSALT_NO_CHALLENGE" ]];then
-            bs_log "****************************************************************"
-            bs_log "    GO ACCEPT THE KEY ON MASTERSALT ($MASTERSALT) !!! "
-            bs_log "    You need on this box to run mastersalt-key -y -a $minion_id"
-            bs_log "****************************************************************"
+            challenge_mastersalt_message
             bs_log " We are going to wait 10 minutes for you to setup the minion on mastersalt and"
             bs_log " setup an entry for this specific minion"
             bs_log " export MASTERSALT_NO_CHALLENGE=1 to remove the temporisation (enter to continue when done)"
