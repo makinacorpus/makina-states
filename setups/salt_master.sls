@@ -1,4 +1,3 @@
-{% import "makina-states/_macros/salt.jinja" as c with context %}
 #
 # setup for a salt server
 #

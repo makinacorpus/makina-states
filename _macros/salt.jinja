@@ -1,4 +1,3 @@
-import pdb;pdb.set_trace()  ## Breakpoint ##
 #
 # This file contains three macros to
 # - install makina states
@@ -35,10 +34,13 @@ import pdb;pdb.set_trace()  ## Breakpoint ##
 #     minion:
 #       - master_port: 4506
 #
+{% import "makina-states/_macros/vars.jinja" as vars with context %}
 
 {% set resolver = salt['mc_utils.format_resolve'] %}
-{% set group = salt['config.get']('salt.filesystem.group', 'editor') %}
-{% set group_id = salt['config.get']('salt.filesystem.group_id', 65753) %}
+
+{% set group = vars.group %}
+{% set group_id = vars.group_id %}
+
 {% set salt_common_data = {
   'name'   : 'salt',
   'projects_root': '{prefix}/projects',
@@ -251,49 +253,41 @@ import pdb;pdb.set_trace()  ## Breakpoint ##
 
 # GRAINS VARIABLES
 # nodetypes
-{% set minion = salt['config.get']('makina.nodetype.salt_minion', False) %}
-{% set master = salt['config.get']('makina.nodetype.salt_master', False) %}
+{% set minion = vars.minion %}
+{% set master = vars.master %}
 {% set salt_minion = minion %}
 {% set salt_master = master %}
-{% set server = salt['config.get']('makina.nodetype.server', False) %}
-{% set vm = salt['config.get']('makina.nodetype.vm', False) %}
-{% set devhost = salt['config.get']('makina.nodetype.devhost', False) %}
+{% set server = vars.server %}
+{% set vm = vars.vm %}
+{% set devhost = vars.devhost %}
 
 # mastersalt nodetypes
-{% set mastersalt_minion = salt['config.get']('makina.nodetype.mastersalt_minion', False) %}
-{% set mastersalt_master = salt['config.get']('makina.nodetype.mastersalt_master', False) %}
-
-# various settings for states
-{% set network_managed = salt['config.get']('makina.network_managed', False) %}
-{% set lxc = salt['config.get']('makina.lxc', False) %}
-{% set docker = salt['config.get']('makina.docker', False) %}
-{% set upstart = salt['config.get']('makina.upstart', False) %}
+{% set mastersalt_minion = vars.mastersalt_minion %}
+{% set mastersalt_master = vars.mastersalt_master %}
 
 # bootstraps
-{% set bootstrapped_devhost = salt['config.get']('makina.bootstrap.devhost', False) %}
-{% set bootstrapped_vm = salt['config.get']('makina.bootstrap.vm', False) %}
-{% set bootstrapped_server = salt['config.get']('makina.bootstrap.server', False) %}
-{% set bootstrap_mastersalt_minion = salt['config.get']('makina.bootstrap.mastersalt_minion', False) %}
-{% set bootstrap_mastersalt_master = salt['config.get']('makina.bootstrap.mastersalt_master', False) %}
-{% set bootstrapped_salt_minion = salt['config.get']('makina.bootstrap.salt_minion', False) %}
-{% set bootstrapped_salt_master = salt['config.get']('makina.bootstrap.salt_master', False) %}
+{% set bootstrapped_devhost = vars.bootstrapped_devhost %}
+{% set bootstrapped_vm = vars.bootstrapped_vm %}
+{% set bootstrapped_server = vars.bootstrapped_server %}
+{% set bootstrap_mastersalt_minion = vars.bootstrap_mastersalt_minion %}
+{% set bootstrap_mastersalt_master = vars.bootstrap_mastersalt_master %}
+{% set bootstrapped_salt_minion = vars.bootstrapped_salt_minion  %}
+{% set bootstrapped_salt_master = vars.bootstrapped_salt_master %}
+{% set ms = vars.ms %}
 
-{% set ms = salt['config.get']('makina.bootstrap.mastersalt', False) -%}
 {% set mmaster = mastersalt_master %}
 {% set mminion = mastersalt_minion %}
 
-{% set salt = master or minion or server or vm or sa %}
-{% set mastersalt = mmaster or mminion or ms %}
-{% set no_bootstrap = not (vm or server or ms) %}
-{% set salt_enabled = vm or server or master or minion or mastersalt %}
+{% set salt = vars.salt %}
+{% set mastersalt = vars.mastersalt %}
+{% set no_bootstrap = vars.no_bootstrap %}
+{% set salt_enabled = vars.salt_enabled %}
 
 # SALT VARIABLES
 {% set salt_common_data = resolver(salt_common_data) %}
 {% set salt_master_data = resolver(salt_master_data) %}
 {% set salt_minion_data = resolver(salt_minion_data) %}
 {% set saltname = salt_common_data['name'] %}
-{% set group = group %}
-{% set group_id = group_id %}
 {% set saltprefix = salt_common_data['prefix']%}
 {% set prefix = saltprefix %}
 {% set projects_root = salt_common_data['projects_root'] %}

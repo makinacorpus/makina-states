@@ -7,16 +7,20 @@
 #
 # {#
 #
-# makina.ldap.ldap_uri: ldaps://localhost:636/
-# makina.ldap.ldap_base: dc=company,dc=org
-# makina.ldap.ldap_passwd: ou=People,dc=company,dc=org?sub
-# makina.ldap.ldap_shadow: ou=People,dc=company,dc=org?sub
-# makina.ldap.ldap_group: ou=Group,dc=company,dc=org?sub
-# makina.ldap.ldap_cacert: /etc/ssl/cacerts/cacert.pem (opt)
+#  ldap-default-settings:
+#    enabled: true|false
+#    ldap_uri: ldaps://localhost:636/
+#    ldap_base: dc=company,dc=org
+#    ldap_passwd: ou=People,dc=company,dc=org?sub
+#    ldap_shadow: ou=People,dc=company,dc=org?sub
+#    ldap_group: ou=Group,dc=company,dc=org?sub
+#    ldap_cacert: /etc/ssl/cacerts/cacert.pem (opt)
 #
 # #}
 
-{% import "makina-states/_macros/ldap.jinja" as c with context %}
+{% import "makina-states/_macros/vars.jinja" as c with context %}
+{% if c.ldap_en %}
+
 include:
   - makina-states.services.base.nscd
 
@@ -39,7 +43,7 @@ nslcd:
   service.running:
     - enable: True
     - watch:
-      - pkg: nslcd
+      - pkg: ldap-pkgs
       - file: nslcd
     - watch_in:
       - cmd: nscd-restart
@@ -114,4 +118,4 @@ ldap-cacerts-cert:
     - mode: '0644'
     - template: jinja
     - source: salt://makina-states/files/etc/ssl/cacerts/cacert.pem
-
+{% endif %}

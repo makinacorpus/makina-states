@@ -13,7 +13,8 @@
 #------------------------------------------------------------------------------
 # For information about entries in this file, type "man shorewall-interfaces"
 ###############################################################################
-?FORMAT 2
+{# on debian, we have an old shorewall 4.5.5 #}
+{% if grains['os'] not in ['Debian']%}?{% endif %}FORMAT 2
 ###############################################################################
 #ZONE	INTERFACE	OPTIONS
 {% for sid, shorewall in pillar.items() -%}

@@ -1,4 +1,4 @@
-{% import "makina-states/_macros/salt.jinja" as c with context %}
+{% import "makina-states/_macros/vars.jinja" as c with context %}
 #
 # Configure machine physical network based on pillar information
 #
@@ -23,7 +23,6 @@
 #     - gateway: 8.1.5.1
 #     - dnsservers: 8.8.8.8
 #   em1: {} # -> dhcp based interface
-
 {% if c.network_managed %}
 {% if grains['os_family'] in ['Debian'] %}
 network-cfg:
@@ -44,9 +43,8 @@ network-services:
     - enable: True
     - names:
       - networking
-      - resolvconf
+      {% if grains['os'] in ['Ubuntu'] %}- resolvconf{% endif %}
     - watch:
       - file: network-cfg
-
 {% endif %}
 {% endif %}

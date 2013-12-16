@@ -1,5 +1,3 @@
-{% import "makina-states/_macros/salt.jinja" as c with context %}
-#
 # Boostrap an host which is also a contained VM and not a physical machine
 #
 # Basic bootstrap is responsible for the setup of saltstack

@@ -1,3 +1,5 @@
+{% import "makina-states/_macros/vars.jinja" as c with context %}
+{% if c.ntp_en %}
 ntp-pkgs:
   pkg.installed:
     - pkgs:
@@ -7,7 +9,7 @@ ntp-pkgs:
 ntpdate:
   pkg:
     - installed
-{% if grains['os'] != 'Ubuntu' %}
+{% if grains['os'] not in ['Debian', 'Ubuntu'] %}
   service:
     - enabled
 {% endif %}
@@ -15,7 +17,7 @@ ntpdate:
 ntpd:
   service.running:
     - enable: True
-{% if grains['os'] == 'Ubuntu' %}
+{% if grains['os'] in ['Debian', 'Ubuntu'] %}
     - name: ntp
 {% endif %}
     - watch:
@@ -41,3 +43,4 @@ ntpd:
     - source: salt://makina-states/files/etc/default/ntpdate
     - require:
       - pkg: ntp-pkgs
+{% endif %}

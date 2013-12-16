@@ -15,7 +15,7 @@ nscd:
     - require:
       - cmd: nscd-restart
     - watch:
-      - pkg: nscd
+      - pkg: nscd-pkgs
       - file: /etc/nsswitch.conf
 
 /etc/nsswitch.conf:

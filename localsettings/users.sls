@@ -1,12 +1,19 @@
-# see also ssh.sls
+# See also makina-states.services.base.ssh.sls
+#
 # to generate a password hash
 # USE ``python -c "import crypt, getpass, pwd; print crypt.crypt('password', '\$6\$SALTsalt\$')"``
+# or python
+# >>> import crypt, getpass, pwd; print crypt.crypt('password', '$6$SALTsalt$')
+#
+#
 
 # Idea is to create any user/group needed for ssh managment
 
 {% set users={'root': {'admin':True},'sysadmin': {'admin':True},} %}
 {%- if grains['os'] == 'Ubuntu' %}
-{% set dummy = users.update({'ubuntu': {'admin':True}}) %}
+{% set dummy = users.update(
+  {'ubuntu': {'admin': True } }
+  ) %}
 {% endif %}
 {% for sid, data in pillar.items() %}
   {% if 'makina-users' in sid %}
@@ -26,6 +33,7 @@
 
 {% for id, udata in users.items() %}
 {% set password=udata.get('password', False) %}
+{% set home=udata.get('home', '/home/'+id) %}
 {{id}}:
   group.present:
     - name: {{ id }}
@@ -38,7 +46,7 @@
     - fullname: {{ id }} user
     - createhome: True
     - shell: /bin/bash
-    - home: /home/{{ id }}
+    - home: {{home}}
     - gid_from_name: True
     - remove_groups: False
     {% if password %}- password:  {{password}} {% endif %}

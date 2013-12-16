@@ -42,13 +42,8 @@ makina-nodetype-mastersalt-grain:
   grains.present:
     - name: makina.nodetype.mastersalt
     - value: True
-    - require:
-      - service: salt-mastersalt-minion
 
 makina-nodetype-mastersalt-minion-grain:
   grains.present:
     - name: makina.nodetype.mastersalt_minion
     - value: True
-    - require:
-      - service: salt-mastersalt-minion
-

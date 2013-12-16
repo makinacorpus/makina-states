@@ -19,7 +19,7 @@
 # The webapp is mounted on tomcat under the /solr4/ path
 # #}
 
-{% import "makina-states/_macros/salt.jinja" as saltmac with context %}
+{% import "makina-states/_macros/vars.jinja" as saltmac with context %}
 {% import "makina-states/services/java/tomcat7-defaults.jinja" as t with context %}
 {% import "makina-states/services/java/solr4-defaults.jinja" as c with context %}
 

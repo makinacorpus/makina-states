@@ -11,12 +11,10 @@
 #  toto:     is equilalent to toto: {a:1}
 #    a: 1
 #
-# Enable shorewall service:
-#   makina-shorewall:
-#    enabled: True | False
-#   EG:
-#     thishost-makina-shorewall:
-#       enabled: True
+# Enable shorewall service::
+# in config (pillar, grain
+#
+#   makina.shorewall.enabled: True | False
 #
 # Defining shorewall interfaces:
 #   interfaces:
@@ -122,19 +120,11 @@
 #         - {action: Invalid(DROP), source: net, dest: all, proto: 'tcp,udp', dport: 25}
 #         - {action: ACCEPT       , source: lxc, dest: fw , proto: 'tcp,udp', dport: 25}
 
+{% import "makina-states/_macros/vars.jinja" as c with context %}
 include:
   - makina-states.localsettings.localrc
 
-{% set settings = {'ishorewallen': 0} %}
-{% for sid in pillar -%}
-  {% if sid.endswith('makina-shorewall') -%}
-    {% set shorewall = pillar[sid] -%}
-    {% set shorewallen = shorewall.get('enabled', None) -%}
-    {% if shorewallen  -%}
-      {% set dummy=settings.update({'ishorewallen': 1}) -%}
-    {% endif -%}
-  {% endif -%}
-{% endfor -%}
+{% set ishorewallen = c.shorewall_enabled %}
 
 shorewall-pkgs:
   pkg.installed:
@@ -171,7 +161,7 @@ toggle-shorewall:
   file.replace:
     - name: /etc/default/shorewall
     - pattern: 'startup\s*=\s*(0|1|True|False)'
-    - repl: 'startup={{ settings['ishorewallen'] }}'
+    - repl: 'startup={{ ishorewallen }}'
     - flags: ['MULTILINE', 'DOTALL']
     - require_in:
       - cmd: shorewall-restart

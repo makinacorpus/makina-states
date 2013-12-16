@@ -1,11 +1,8 @@
-
 #
 # Easy managment of dockers via pillar
+# {# THIS IS AN UNFINISHED WORK IN PROGRESS #}
 #
-
-include:
-  - makina-states.localsettings.pkgs
-  - makina-states.services.base.salt
+#
 
 # To configure a global registry use this:
 #
@@ -81,15 +78,12 @@ docker-repo:
 
 # require dockerpy in salt
 
-
-
 docker-pkgs:
   pkg.installed:
     - require:
       - pkgrepo: docker-repo
       - service: salt-master
-      - service: salt-minion 
-      - cmd: update-salt
+      - service: salt-minion
     - pkgs:
       - lxc-docker
 
@@ -201,7 +195,7 @@ docker-{{id}}{{instancenumstr}}:
     - rev: remotes/origin/{{branch}}
     - target: /srv/salt/dockers-repo-cache/dockers-{{id}}
         {% endif %}
-  makina_docker.installed:
+  dockerio.installed:
     - hostname: {{hostname}}
     - docker_dir: {{docker_dir}}
         {% if volumes_passed or not image %}

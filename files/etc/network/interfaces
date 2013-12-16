@@ -20,6 +20,7 @@ iface lo inet loopback
 {% for ifname, ifc in makinanet.items() %}
 {% set auto = ifc.get('auto', '') -%}
 {% set mode = ifc.get('mode', '') %}
+{% set allow_hotplug = ifc.get('allow-hotplug', False) %}
 {% set address = ifc.get('address', '') -%}
 {% set netmask = ifc.get('netmask', '') -%}
 {% set gateway = ifc.get('gateway', '') -%}
@@ -35,7 +36,10 @@ iface lo inet loopback
 {% if ((mode=='dhcp') or address) -%}
 {% set auto = True -%}
 {% endif -%}
-{% endif -%}      
+{% endif -%}
+{% if allow_hotplug -%}
+allow-hotplug {{ ifname }}
+{% endif -%}
 {% if auto -%}
 auto {{ ifname }}
 {% endif -%}

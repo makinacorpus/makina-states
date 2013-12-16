@@ -1,6 +1,10 @@
-{% import "makina-states/_macros/salt.jinja" as c with context %}
+{% import "makina-states/_macros/vars.jinja" as c with context %}
+{% import "makina-states/_macros/salt.jinja" as s with context %}
 #
-# Idea is for a machine to be managed only to have to do
+# Idea is for a machine to be managed only to have to includes setups which apply:
+# - a set of configuration
+# - a grain to flag the machine as using this configuration to store for
+#   later reconfigurations
 #
 # base:
 #   minionid:
@@ -12,22 +16,38 @@
 # by this inheritance are only limited to the base installation
 # and do not expose too much sensitive data coming from associated pillars
 #
-# To better understand how things are done
+# To better understand how things are done, tis is an non exhaustive graph
+# or our states tree
 #
 # Tree of different configuration flavors inheritance
 #
-#  vm   devhost
-#   |       |        salt master       mastersalt master
-#   |_______|            |             /
-#      |             salt minon       | mastersalt minion
-#      server            |            |/
-#      |_________________|____________|      dockercontainer  lxcontainer
-#             |____________________________________________|__|
-#             |
-#            base
-#             |
-#        services:base
-###########################################################################
+#
+#     vm   devhost
+#      |       |        salt master       mastersalt master
+#      |_______|            |             /
+#         |             salt minon       | mastersalt minion
+#         server            |            |/
+#         |_________________|____________|
+#                |
+#              SERVERBASE
+#                |
+#          ______|______________   tomcat
+#         |                     | /_____ solr
+#         |   base/service:base | |java       dockercontainer  lxcontainer
+#         |_____________________| |       virt /________________/
+#                          \      |           |
+#     ______________________\_____/___________|__________
+#    /   | |    |   |     |       | |  |                |
+#    lxc | ldap | salt/mastersalt | |  |    .-- nginx   |
+#        |  |   |                 | |  |   /__ apache   |
+#        | nscd |                ssh|  http             php____ phpfpm
+#        |      |                   |                      |
+#        |      |                   |                      modphp
+#        db   mail                  |
+#        /\     \                   shorewall
+#       /  \     \____ postfix
+#    pgsql  mysql \
+#                  \__ dovecot
 
 {% set nomatch = False %}
 {% set mastersalt_nomatch = False %}
