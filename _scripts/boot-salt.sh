@@ -1286,7 +1286,6 @@ make_mastersalt_association() {
             bs_log " setup an entry for this specific minion"
             bs_log " export MASTERSALT_NO_CHALLENGE=1 to remove the temporisation (enter to continue when done)"
             interactive_tempo $((10*60))
-            # sleep 15 seconds giving time for the minion to wake up
         else
             bs_log "  [*] No temporisation for challenge, trying to spawn the mastersalt minion"
             # in case of a local mastersalt, auto accept the minion key
