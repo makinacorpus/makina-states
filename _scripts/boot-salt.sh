@@ -452,6 +452,13 @@ i_prereq() {
 # - in case of executions:
 # - We will check for fatal errors in logs
 # - We will check for any false return in output state structure
+get_saltcall_args() {
+    get_module_args "$ROOT" "$MS"
+}
+get_mastersaltcall_args() {
+    get_module_args "$MASTERSALT_ROOT" "$MASTERSALT_MS"
+}
+
 salt_call_wrapper_() {
     salt_call_prefix=$1;shift
     outf="$SALT_BOOT_OUTFILE"
@@ -503,14 +510,14 @@ salt_call_wrapper() {
     SALT_BOOT_OUTFILE="$MS/.boot_salt_out"
     SALT_BOOT_LOGFILE="$MS/.boot_salt_log"
     SALT_BOOT_CMDFILE="$MS/.boot_salt_cmd"
-    salt_call_wrapper_ $MS $@
+    salt_call_wrapper_ $MS $(get_saltcall_args) $@
 }
 
 mastersalt_call_wrapper() {
     SALT_BOOT_OUTFILE="$MASTERSALT_MS/.boot_salt_out"
     SALT_BOOT_LOGFILE="$MASTERSALT_MS/.boot_salt_log"
     SALT_BOOT_CMDFILE="$MASTERSALT_MS/.boot_salt_cmd"
-    salt_call_wrapper_ $MASTERSALT_MS -c $MCONF_PREFIX $@
+    salt_call_wrapper_ $MASTERSALT_MS $(get_mastersaltcall_args) -c $MCONF_PREFIX $@
 }
 
 get_grain() {
@@ -939,7 +946,7 @@ EOF
         fi
         # run salt master+minion boot_env bootstrap
         bs_log "Running salt env bootstrap: $bootstrap_env"
-        run_state="salt_call_wrapper --local $(get_saltcall_args) state.sls"
+        run_state="salt_call_wrapper --local state.sls"
         ret="$($run_state $bootstrap_env)"
         if [[ -n "$SALT_BOOT_DEBUG" ]];then cat $SALT_BOOT_OUTFILE;fi
         if [[ "$ret" != "0" ]];then
@@ -949,7 +956,7 @@ EOF
         # capture output of a call of bootstrap states
         # by default makina-states.services.bootstrap but could be suffixed
         bs_log "Running makina-states bootstrap: $bootstrap"
-        ret="$(salt_call_wrapper --local $(get_saltcall_args) state.sls $bootstrap)"
+        ret="$(salt_call_wrapper --local state.sls $bootstrap)"
         if [[ "$ret" != "0" ]];then
             bs_log "Failed bootstrap: $bootstrap !"
             exit -1
@@ -1012,7 +1019,7 @@ make_association() {
             bs_log " We are going to wait 10 minutes for you to setup the minion on mastersalt and"
             bs_log " setup an entry for this specific minion"
             bs_log " export SALT_NO_CHALLENGE=1 to remove the temporisation (enter to continue when done)"
-            read -t "$((10*60))"
+            read -t $((10*60))
         else
             bs_log "  [*] No temporisation for challenge, trying to spawn the minion"
         fi
@@ -1110,7 +1117,7 @@ EOF
 
         # run mastersalt master+minion boot_env bootstrap
         bs_log "Running mastersalt env bootstrap: $mastersalt_bootstrap_env"
-        run_state="mastersalt_call_wrapper --local $(get_mastersaltcall_args) state.sls"
+        run_state="mastersalt_call_wrapper --local state.sls"
         ret="$($run_state $mastersalt_bootstrap_env)"
         if [[ -n "$SALT_BOOT_DEBUG" ]];then cat $SALT_BOOT_OUTFILE;fi
         if [[ "$ret" != "0" ]];then
@@ -1119,7 +1126,7 @@ EOF
         fi
         # run mastersalt master+minion setup
         bs_log "Running mastersalt bootstrap: $mastersalt_bootstrap"
-        run_state="mastersalt_call_wrapper --local $(get_mastersaltcall_args) state.sls"
+        run_state="mastersalt_call_wrapper --local state.sls"
         ret="$($run_state $mastersalt_bootstrap)"
         if [[ -n "$SALT_BOOT_DEBUG" ]];then cat $SALT_BOOT_OUTFILE;fi
         if [[ "$ret" != "0" ]];then
@@ -1160,7 +1167,7 @@ EOF
                 bs_log " We are going to wait 10 minutes for you to setup the minion on mastersalt and"
                 bs_log " setup an entry for this specific minion"
                 bs_log " export MASTERSALT_NO_CHALLENGE=1 to remove the temporisation (enter to continue when done)"
-                read -t "$((10*60))"
+                read -t $((10*60))
                 # sleep 15 seconds giving time for the minion to wake up
             else
                 bs_log "  [*] No temporisation for challenge, trying to spawn the minion"
@@ -1207,21 +1214,13 @@ get_module_args() {
     echo $arg
 }
 
-get_saltcall_args() {
-    get_module_args "$ROOT" "$MS "
-}
-get_mastersaltcall_args() {
-    get_module_args "$MASTERSALT_ROOT" "$MASTERSALT_MS"
-}
-
-
 # --------- POST-SETUP
 
 maybe_setup_mastersalt_env() {
     # IMPORTANT: MASTERSALT BEFORE SALT !!!
     if [[ -z $SALT_BOOT_SKIP_SETUP ]] && [[ -n "$USE_MASTERSALT" ]];then
         bs_log "Running makina-states setup for mastersalt"
-        LOCAL="$(get_mastersaltcall_args)"
+        LOCAL=""
         if [[ "$(mastersalt_call_wrapper test.ping)" != "0" ]];then
             LOCAL="--local $LOCAL"
             bs_yellow_log " [bs] mastersalt setup running offline !"
@@ -1241,7 +1240,7 @@ maybe_setup_mastersalt_env() {
 setup_salt_env() {
     if [[ -z "$SALT_BOOT_SKIP_SETUP" ]];then
         bs_log "Running makina-states setup"
-        LOCAL="$(get_saltcall_args)"
+        LOCAL=""
         if [[ "$(salt_call_wrapper test.ping)" != "0" ]];then
             bs_yellow_log " [bs] salt setup running offline !"
             LOCAL="--local $LOCAL"
