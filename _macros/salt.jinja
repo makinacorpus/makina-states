@@ -197,7 +197,7 @@ import pdb;pdb.set_trace()  ## Breakpoint ##
 
 # mastersalt daemon overrides
 {% set mastersalt_common_data = salt['mc_utils.dictupdate'](
-  salt_common_data, {'name': 'mastersalt', 'pillar_root': '/srv/{name}-pillar'}) %}
+  salt_common_data.copy(), {'name': 'mastersalt', 'pillar_root': '/srv/{name}-pillar'}) %}
 {% set mastersalt_master_data = salt['mc_utils.dictupdate'](
    salt_master_data.copy(), mastersalt_common_data.copy()) %}
 {% set mastersalt_minion_data = salt['mc_utils.dictupdate'](

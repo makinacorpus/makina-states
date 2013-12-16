@@ -4,6 +4,7 @@
 #
 
 include:
+  - makina-states.services.base.salt_master
   - makina-states.setups.salt_minion
 
 makina-nodetype-salt-master-grain:
