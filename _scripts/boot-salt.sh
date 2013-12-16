@@ -855,7 +855,9 @@ create_salt_skeleton(){
     for pillar_root in $PILLAR_ROOTS;do
         # Create a default top.sls in the pillar if not present
         if [[ ! -f $pillar_root/top.sls ]];then
-            bs_log "creating default $pillar_root/top.sls"
+            if [[ -n "$DEBUG" ]];then
+                bs_log "creating default $pillar_root/top.sls"
+            fi
             cat > $pillar_root/top.sls << EOF
 #
 # This is the top pillar configuration file, link here all your
@@ -873,7 +875,9 @@ EOF
     for stp in $SETUPS_FILES;do
         # Create a default setup in the tree if not present
         if [[ ! -f $stp ]];then
-            bs_log "creating default $stp"
+            if [[ -n "$DEBUG" ]];then
+                bs_log "creating default $stp"
+            fi
             cat > $stp << EOF
 #
 # Include here your various projet setup files
@@ -884,7 +888,9 @@ base:
 EOF
         fi
         if [[ "$(egrep  "^(  '\*':)" $stp|wc -l)" == "0" ]];then
-            bs_log "Old installation detected for $stp, trying to migrate it"
+            if [[ -n "$DEBUG" ]];then
+                bs_log "Old installation detected for $stp, trying to migrate it"
+            fi
             cp $ROOT/setup.sls $stp.${CHRONO}.bak
             sed  "/include:/{
 a base:
@@ -902,7 +908,9 @@ a \  '*':
     fi
     for topf in $TOPS_FILES;do
         if [[ ! -f $topf ]];then
-            bs_log "creating default salt's $topf"
+            if [[ -n "$DEBUG" ]];then
+                bs_log "creating default salt's $topf"
+            fi
             cat > "$topf" << EOF
 #
 # This is the salt states configuration file, link here all your
@@ -914,7 +922,9 @@ EOF
         fi
         # add makina-salt.dev if not present
         if [[ $(egrep -- "- makina-states\.dev\s*$" $topf|wc -l) == "0" ]];then
-        bs_log "Adding makina-states.dev to $topf"
+            if [[ -n "$DEBUG" ]];then
+                bs_log "Adding makina-states.dev to $topf"
+            fi
             sed -re "/('|\")\*('|\"):/ {
 a\    {% if grains.get('makina.nodetype.devhost', False) %}
 a\    - makina-states.dev
@@ -924,18 +934,24 @@ a\    {% endif %}
     done
     for pillar_root in $PILLAR;do
         if [[ $(grep -- "- salt" $PILLAR/top.sls|wc -l) == "0" ]];then
-            bs_log "Adding salt to default top salt pillar"
+            if [[ -n "$DEBUG" ]];then
+                bs_log "Adding salt to default top salt pillar"
+            fi
             sed -re "/('|\")\*('|\"):/ {
 a\    - salt
 }" -i "$pillar_root/top.sls"
         fi
         # Create a default salt.sls in the pillar if not present
         if [[ ! -f "$pillar_root/salt.sls" ]];then
-            bs_log "Creating default pillar's salt.sls"
+            if [[ -n "$DEBUG" ]];then
+                bs_log "Creating default pillar's salt.sls"
+            fi
             echo 'salt:' > "$pillar_root/salt.sls"
         fi
         if [[ $(grep -- "\s+minion:" "$pillar_root/salt.sls"|wc -l) == "0" ]];then
-            bs_log "Adding minion info to pillar"
+            if [[ -n "$DEBUG" ]];then
+                bs_log "Adding minion info to pillar"
+            fi
             sed -re "/^salt:$/ {
 a\  minion:
 a\    master: $SALT_MASTER_DNS
@@ -946,7 +962,9 @@ a\    interface: $SALT_MINION_IP
         # do no setup stuff for master for just a minion
         if [[ "$SALT_MASTER_DNS" == "localhost" ]];then
             if [[ $(grep -- "\s+master:" "$pillar_root/salt.sls"|wc -l) == "0" ]];then
-                bs_log "Adding master info to pillar"
+                if [[ -n "$DEBUG" ]];then
+                    bs_log "Adding master info to pillar"
+                fi
                 sed -re "/^salt:$/ {
 a\  master:
 a\    interface: $SALT_MASTER_IP
@@ -960,17 +978,23 @@ a\    ret_port: $SALT_MASTER_PORT
     # Set default mastersalt  pillar
     if [[ -n "$MASTERSALT" ]] && [[ ! -f "$MASTERSALT_PILLAR/mastersalt.sls" ]];then
         if [[ $(grep -- "- mastersalt" "$MASTERSALT_PILLAR/top.sls"|wc -l) == "0" ]];then
-            bs_log "Adding mastersalt info to top mastersalt pillar"
+            if [[ -n "$DEBUG" ]];then
+                bs_log "Adding mastersalt info to top mastersalt pillar"
+            fi
             sed -re "/('|\")\*('|\"):/ {
 a\    - mastersalt
 }" -i "$MASTERSALT_PILLAR/top.sls"
         fi
         if [[ ! -f "$MASTERSALT_PILLAR/mastersalt.sls" ]];then
-            bs_log "Creating mastersalt configuration file"
+            if [[ -n "$DEBUG" ]];then
+                bs_log "Creating mastersalt configuration file"
+            fi
             echo "mastersalt:" >  "$MASTERSALT_PILLAR/mastersalt.sls"
         fi
         if [[ $(grep -- "\s*minion:" """$MASTERSALT_PILLAR/mastersalt.sls"|wc -l) == "0" ]];then
+            if [[ -n "$DEBUG" ]];then
                 bs_log "Adding mastersalt minion info to mastersalt pillar"
+            fi
             sed -re "/^mastersalt:$/ {
 a\  minion:
 a\    interface: ${MASTERSALT_MINION_IP}
@@ -980,7 +1004,9 @@ a\    master_port: ${MASTERSALT_PORT}
         fi
         if [[ "$MASTERSALT" == "localhost" ]];then
             if [[ $(grep -- "\s+master:" "$MASTERSALT_PILLAR/mastersalt.sls"|wc -l) == "0" ]];then
-                bs_log "Adding mastersalt master info to mastersalt pillar"
+                if [[ -n "$DEBUG" ]];then
+                    bs_log "Adding mastersalt master info to mastersalt pillar"
+                fi
                 sed -re "/^mastersalt:$/ {
 a\  master:
 a\    interface: $MASTERSALT_IP
@@ -1187,7 +1213,9 @@ make_association() {
     minion_keys="$(find $CONF_PREFIX/pki/master/minions -type f 2>/dev/null|wc -l)"
     minion_id="$(get_minion_id)"
     registered=""
-    bs_log "Entering association routine"
+    if [[ -n $DEBUG ]];then
+        bs_log "Entering association routine"
+    fi
     bs_log "If the bootstrap program seems to block here"
     challenge_message
     if [[ -z "$minion_id" ]];then
@@ -1202,12 +1230,16 @@ make_association() {
     # only accept key on fresh install (no keys stored)
     if [[ "$(salt_ping_test)" == "0" ]] && [[ "$minion_keys" != "0" ]];\
     then
-        bs_log "Salt minion \"$minion_id\" already registered on master"
+        if [[ -n "$DEBUG" ]];then
+            bs_log "Salt minion \"$minion_id\" already registered on master"
+        fi
         minion_id="$(get_minion_id)"
         registered="1"
     else
         if [[ "$SALT_MASTER_DNS" == "localhost" ]];then
-            bs_log "Forcing salt master restart"
+            if [[ -n "$DEBUG" ]];then
+                bs_log "Forcing salt master restart"
+            fi
             $PS aux|grep salt-master|grep -v mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
             service salt-master restart
             sleep 10
@@ -1231,7 +1263,9 @@ make_association() {
                 fi
             fi
         fi
-        bs_log "Forcing salt minion restart"
+        if [[ -n "$DEBUG" ]];then
+            bs_log "Forcing salt minion restart"
+        fi
         $PS aux|grep salt-minion|grep -v mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
         service salt-minion restart
         salt_master_connectivity_check
@@ -1267,7 +1301,9 @@ challenge_mastersalt_message() {
 make_mastersalt_association() {
     minion_id="$(cat $CONF_PREFIX/minion_id &> /dev/null)"
     registered=""
-    bs_log "Entering mastersalt association routine"
+    if [[ -n $DEBUG ]];then
+        bs_log "Entering mastersalt association routine"
+    fi
     bs_log "If the bootstrap program seems to block here"
     challenge_mastersalt_message
     if [[ -z "$minion_id" ]];then
@@ -1280,10 +1316,14 @@ make_mastersalt_association() {
         fi
     fi
     if [[ "$(mastersalt_ping_test)" == "0" ]];then
-        bs_log "Mastersalt minion \"$minion_id\" already registered on $MASTERSALT"
+        if [[ -n "$DEBUG" ]];then
+            bs_log "Mastersalt minion \"$minion_id\" already registered on $MASTERSALT"
+        fi
     else
         if [[ $MASTERSALT == "localhost" ]];then
-            bs_log "Forcing mastersalt master restart"
+            if [[ -n "$DEBUG" ]];then
+                bs_log "Forcing mastersalt master restart"
+            fi
             $PS aux|grep salt-master|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
             service mastersalt-master restart
         fi
@@ -1307,7 +1347,9 @@ make_mastersalt_association() {
                 fi
             fi
         fi
-        bs_log "Forcing mastersalt minion restart"
+        if [[ -n "$DEBUG" ]];then
+            bs_log "Forcing mastersalt minion restart"
+        fi
         $PS aux|grep salt-minion|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
         service mastersalt-minion restart
         mastersalt_master_connectivity_check
@@ -1412,13 +1454,17 @@ EOF
         # kill mastersalt running daemons if any
         # restart mastersalt salt-master after setup
         if [[ -n "$MASTERSALT_MASTER" ]];then
-            bs_log "Forcing mastersalt master restart"
+            if [[ -n "$DEBUG" ]];then
+                bs_log "Forcing mastersalt master restart"
+            fi
             $PS aux|egrep "salt-(master|syndic)"|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
             service mastersalt-master restart
             sleep 10
         fi
         # restart mastersalt minion
-        bs_log "Forcing mastersalt minion restart"
+        if [[ -n "$DEBUG" ]];then
+            bs_log "Forcing mastersalt minion restart"
+        fi
         $PS aux|grep salt-minion|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
         service mastersalt-minion restart
         SALT_BOOT_NOW_INSTALLED="y"
@@ -1557,27 +1603,39 @@ maybe_install_projects() {
         PROJECT_TOPSTATE="$(echo ${PROJECT_TOPSLS}|sed -re 's/\//./g' -e 's/\.sls//g')"
         if [[ ! -d "$PROJECT_PILLAR_PATH" ]];then
             mkdir -p "$PROJECT_PILLAR_PATH"
-            bs_log "Creating pillar container in $PROJECT_PILLAR_PATH"
+            if [[ -n "$DEBUG" ]];then
+                bs_log "Creating pillar container in $PROJECT_PILLAR_PATH"
+            fi
         fi
         if [[ ! -d "$PROJECTS_PILLAR_PATH" ]];then
             mkdir -p "$PROJECTS_PILLAR_PATH"
-            bs_log "Creating $MAKINA_PROJECTS pillar container in $PILLAR"
+            if [[ -n "$DEBUG" ]];then
+                bs_log "Creating $MAKINA_PROJECTS pillar container in $PILLAR"
+            fi
         fi
         if [[ ! -e "$PROJECT_PILLAR_LINK" ]];then
-            bs_log "Linking project $PROJECT_NAME pillar in $PILLAR"
+            if [[ -n "$DEBUG" ]];then
+                bs_log "Linking project $PROJECT_NAME pillar in $PILLAR"
+            fi
             echo ln -sf "$PROJECT_PILLAR_PATH" "$PROJECT_PILLAR_LINK"
             ln -sf "$PROJECT_PILLAR_PATH" "$PROJECT_PILLAR_LINK"
         fi
         if [[ ! -e "$PROJECT_PILLAR_FILE" ]];then
             if [[ ! -e "$PROJECT_SALT_PATH/PILLAR.sample.sls" ]];then
-                bs_log "Creating empty project $PROJECT_NAME pillar in $PROJECT_PILLAR_FILE"
+                if [[ -n "$DEBUG" ]];then
+                    bs_log "Creating empty project $PROJECT_NAME pillar in $PROJECT_PILLAR_FILE"
+                fi
                 touch "$PROJECT_SALT_PATH/PILLAR.sample.sls"
             fi
-            bs_log "Linking project $PROJECT_NAME pillar in $PROJECT_PILLAR_FILE"
+            if [[ -n "$DEBUG" ]];then
+                bs_log "Linking project $PROJECT_NAME pillar in $PROJECT_PILLAR_FILE"
+            fi
             ln -sf "$PROJECT_SALT_PATH/PILLAR.sample.sls" "$PROJECT_PILLAR_FILE"
         fi
         if [[ $(grep -- "- $PROJECT_PILLAR_STATE" $PILLAR/top.sls|wc -l) == "0" ]];then
-            bs_log "including $PROJECT_NAME pillar in $PILLAR/top.sls"
+            if [[ -n "$DEBUG" ]];then
+                bs_log "including $PROJECT_NAME pillar in $PILLAR/top.sls"
+            fi
             sed -re "/('|\")\*('|\"):/ {
 a\    - $PROJECT_PILLAR_STATE
 }" -i $PILLAR/top.sls
@@ -1590,7 +1648,9 @@ a\    - $PROJECT_PILLAR_STATE
                 ret=$(salt_call_wrapper state.sls $PROJECT_SETUPSTATE)
                 if [[ -n "$SALT_BOOT_DEBUG" ]];then cat $SALT_BOOT_OUTFILE;fi
                 if [[ "$ret" != "0" ]];then
-                    bs_log "Failed to run $PROJECT_SETUPSTATE"
+                    if [[ -n "$DEBUG" ]];then
+                        bs_log "Failed to run $PROJECT_SETUPSTATE"
+                    fi
                     exit -1
                 else
                     warn_log
