@@ -219,7 +219,7 @@ set_vars() {
     SALT_BOOT_INPUTED="${SALT_BOOT}"
     SALT_BOOT="${SALT_BOOT:-$SALT_BOOT_DEFAULT}"
     # boot mode for mastersalt
-    MASTERSALT_BOOT_DEFAULT="minion"
+    MASTERSALT_BOOT_DEFAULT="mastersalt_minion"
     # if mastersalt is set, automatic switch on mastersalt mode
     if [[ -n $MASTERSALT_MASTER ]];then
         MASTERSALT_BOOT_DEFAULT="mastersalt_master"
