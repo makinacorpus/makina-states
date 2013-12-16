@@ -1342,15 +1342,15 @@ maybe_install_mastersalt_daemons() {
         fi
         if     [[ ! -e "$MCONF_PREFIX" ]]\
             || [[ ! -e "$MCONF_PREFIX/pki/minion/minion.pem" ]]\
-            || [[ ! -e "$MASTERSALT_MS/.reboostrap" ]]\
+            || [[ -e "$MASTERSALT_MS/.reboostrap" ]]\
             || [[ "$mmaster_processes" == "0" ]] \
             || [[ "$mminion_processes"  == "0" ]]\
             || [[ "$mminion_keys" == "0" ]] \
             ;then
+            RUN_MASTERSALT_SETUP="1"
             if [[ -e "$MASTERSALT_MS/.reboostrap" ]];then
                 rm -f "$MASTERSALT_MS/.rebootstrap"
             fi
-            RUN_MASTERSALT_SETUP="1"
         fi
     fi
 
