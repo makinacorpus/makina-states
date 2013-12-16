@@ -544,11 +544,14 @@ salt_call_wrapper_() {
     $salt_call_prefix/bin/salt-call $saltargs $@
     echo "$(date): $salt_call_prefix/bin/salt-call $saltargs $@" >> "$cmdf"
     last_salt_retcode=$?
-    #echo "result: false">>$outf
+    nomatch="y"
     if [[ "$last_salt_retcode" != "0" ]] && [[ "$last_salt_retcode" != "2" ]];then
+        nomatch=""
         bs_log "salt-call ERROR, check $logf and $outf for details" 1>&2
         last_salt_retcode=100
-    elif [[ -e "logf" ]];then
+    fi
+    if [[ -e "$logf" ]];then
+        nomatch=""
         if grep  -q "No matching sls found" "$logf";then
             bs_log "salt-call  ERROR DETECTED : No matching sls found" 1>&2
             last_salt_retcode=101
@@ -563,17 +566,28 @@ salt_call_wrapper_() {
             last_salt_retcode=103
             no_check_output=y
         fi
-    elif [[ -e "outf" ]];then
+    else
+        nomatch="y"
+    fi
+    if [[ -e "$outf" ]];then
+        nomatch=""
         if egrep -q "result: false" "$outf";then
             bs_log "salt-call  ERROR DETECTED"
             bs_log "partial content of $outf, check this file for full output" 1>&2
             egrep -B4 "result: false" "$outf" 1>&2;
             last_salt_retcode=104
             echo
+        elif egrep  -q "Rendering SLS .*failed" "$outf";then
+            bs_log "salt-call  ERROR DETECTED : Rendering failed" 1>&2
+            last_salt_retcode=103
+            no_check_output=y
         else
             last_salt_retcode=0
         fi
     else
+        nomatch=y
+    fi
+    if [[ -z "$nomatch" ]];then
         last_salt_retcode=0
     fi
     #rm -rf "$outf" "$logf" 2> /dev/null
@@ -1118,8 +1132,6 @@ EOF
             bs_log "Failed bootstrap: $bootstrap !"
             exit -1
         fi
-        echo $ret
-        exit -1
         if [[ -n "$SALT_BOOT_DEBUG" ]];then cat $SALT_BOOT_OUTFILE;fi
         # restart salt daemons
         if [[ "$SALT_MASTER_DNS" == "localhost" ]];then
