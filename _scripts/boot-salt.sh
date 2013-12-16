@@ -963,16 +963,14 @@ install_salt_daemons() {
             service salt-master restart
             sleep 2
         fi
+        master_processes="$($PS aux|grep salt-master|grep -v mastersalt|grep -v grep|wc -l)"
+    else
+        master_processes="1"
     fi
     if [[ "$minion_processes" == "0" ]]\
         && [[ -e "$CONF_PREFIX/pki/minion/minion.pem" ]];then
         service salt-minion restart
         sleep 2
-    fi
-    if [[ "$SALT_MASTER_IP" == "127.0.0.1" ]];then
-        master_processes="$($PS aux|grep salt-master|grep -v mastersalt|grep -v grep|wc -l)"
-    else
-        master_processes="1"
     fi
     minion_processes="$($PS aux|grep salt-minion|grep -v mastersalt|grep -v grep|wc -l)"
     RUN_SALT_SETUP=""
