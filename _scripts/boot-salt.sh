@@ -1126,6 +1126,7 @@ EOF
         if [[ -n "$SALT_BOOT_DEBUG" ]];then cat $SALT_BOOT_OUTFILE;fi
         if [[ "$ret" != "0" ]];then
             echo "Mastersalt: Failed bootstrap env: $bootstrap_env"
+            warn_log
             exit -1
         fi
         # capture output of a call of bootstrap states
@@ -1134,6 +1135,7 @@ EOF
         ret="$(salt_call_wrapper --local state.sls $bootstrap)"
         if [[ "$ret" != "0" ]];then
             bs_log "Failed bootstrap: $bootstrap !"
+            warn_log
             exit -1
         fi
         if [[ -n "$SALT_BOOT_DEBUG" ]];then cat $SALT_BOOT_OUTFILE;fi
@@ -1319,6 +1321,7 @@ make_association() {
                 ret="$?"
                 if [[ "$ret" != "0" ]];then
                     bs_log "Failed accepting keys"
+                    warn_log
                     exit -1
                 else
                     bs_log "Accepted key"
@@ -1340,13 +1343,15 @@ make_association() {
             minion_challenge
             if [[ -z "$challenged_ms" ]];then
                 bs_log "Failed accepting salt key on master for $minion_id"
+                warn_log
                 exit -1
             fi
             minion_id="$(get_minion_id)"
             registered="1"
         fi
         if [[ -z "$registered" ]];then
-            bs_log "Failed accepting salt key on $SALT_MASTER_IP for $minion_id"
+                bs_log "Failed accepting salt key on $SALT_MASTER_IP for $minion_id"
+                warn_log
             exit -1
         fi
     fi
@@ -1401,6 +1406,7 @@ make_mastersalt_association() {
                 ret="$?"
                 if [[ "$ret" != "0" ]];then
                     bs_log "Failed accepting mastersalt keys"
+                    warn_log
                     exit -1
                 else
                     bs_log "Accepted mastersalt key"
@@ -1421,6 +1427,7 @@ make_mastersalt_association() {
             mastersalt_minion_challenge
             if [[ -z "$challenged_ms" ]];then
                 bs_log "Failed accepting salt key on master for $minion_id"
+                warn_log
                 exit -1
             fi
             minion_id="$(get_minion_id)"
@@ -1428,6 +1435,7 @@ make_mastersalt_association() {
         fi
         if [[ -z "$registered" ]];then
             bs_log "Failed accepting mastersalt key on $MASTERSALT for $minion_id"
+            warn_log
             exit -1
         fi
     fi
@@ -1498,7 +1506,8 @@ EOF
         if [[ -n "$SALT_BOOT_DEBUG" ]];then cat $SALT_BOOT_OUTFILE;fi
         if [[ "$ret" != "0" ]];then
             echo "Mastersalt: Failed bootstrap env: $mastersalt_bootstrap_env"
-            exit -1
+                warn_log
+                exit -1
         fi
         # run mastersalt master+minion setup
         bs_log "Running mastersalt bootstrap: $mastersalt_bootstrap"
@@ -1507,6 +1516,7 @@ EOF
         if [[ -n "$SALT_BOOT_DEBUG" ]];then cat $SALT_BOOT_OUTFILE;fi
         if [[ "$ret" != "0" ]];then
             echo "Mastersalt: Failed bootstrap: $mastersalt_bootstrap"
+            warn_log
             exit -1
         fi
         if [[ -n "$SALT_BOOT_DEBUG" ]];then cat $SALT_BOOT_OUTFILE;fi
@@ -1576,6 +1586,7 @@ setup_salt_env() {
         ret="$(salt_call_wrapper $LOCAL state.sls makina-states.setup)"
         if [[ "$ret" != "0" ]];then
             bs_log "Failed post-setup"
+            warn_log
             exit -1
         fi
     fi
