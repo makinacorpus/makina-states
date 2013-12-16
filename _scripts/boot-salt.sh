@@ -1104,7 +1104,7 @@ salt_ping_test() {
 }
 
 mastersalt_ping_test() {
-    salt_call_wrapper --master=$MASTERSALT test.ping
+    mastersalt_call_wrapper --master=$MASTERSALT test.ping
 }
 
 minion_challenge() {
