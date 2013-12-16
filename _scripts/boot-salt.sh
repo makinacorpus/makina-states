@@ -198,6 +198,8 @@ set_vars() {
     # the current mastersalt.makinacorpus.net hostname
     MASTERSALT_MAKINA_DNS="mastersalt.makina-corpus.net"
     MASTERSALT_MAKINA_HOST="cloud-admin"
+    BOOT_LOGS=="$MS/.bootlogs"
+    MBOOT_LOGS=="$MASTERSALT_MS/.bootlogs"
     # base sls bootstrap
     bootstrap_pref="makina-states.bootstrap"
     mastersalt_bootstrap_pref="${bootstrap_pref}.mastersalt"
@@ -578,17 +580,23 @@ salt_call_wrapper_() {
 
 salt_call_wrapper() {
     chrono="$(get_chrono)"
-    SALT_BOOT_OUTFILE="$MS/.boot_salt.${chrono}.out"
-    SALT_BOOT_LOGFILE="$MS/.boot_salt.${chrono}.log"
-    SALT_BOOT_CMDFILE="$MS/.boot_salt_cmd"
+    if [[ ! -d $BOOT_LOGS ]];then
+        mkdir -pv $BOOT_LOGS
+    fi
+    SALT_BOOT_OUTFILE="$BOOT_LOGS/.boot_salt.${chrono}.out"
+    SALT_BOOT_LOGFILE="$BOOT_LOGS/.boot_salt.${chrono}.log"
+    SALT_BOOT_CMDFILE="$BOOT_LOGS/.boot_salt_cmd"
     salt_call_wrapper_ $MS $(get_saltcall_args) $@
 }
 
 mastersalt_call_wrapper() {
     chrono="$(get_chrono)"
-    SALT_BOOT_OUTFILE="$MASTERSALT_MS/.boot_salt.${chrono}.out"
-    SALT_BOOT_LOGFILE="$MASTERSALT_MS/.boot_salt.${chrono}.log"
-    SALT_BOOT_CMDFILE="$MASTERSALT_MS/.boot_salt_cmd"
+    if [[ ! -d $MBOOT_LOGS ]];then
+        mkdir -pv $MBOOT_LOGS
+    fi
+    SALT_BOOT_OUTFILE="$MBOOT_LOGS/.boot_salt.${chrono}.out"
+    SALT_BOOT_LOGFILE="$MBOOT_LOGS/.boot_salt.${chrono}.log"
+    SALT_BOOT_CMDFILE="$MBOOT_LOGS/.boot_salt_cmd"
     salt_call_wrapper_ $MASTERSALT_MS $(get_mastersaltcall_args) -c $MCONF_PREFIX $@
 }
 
@@ -1271,14 +1279,16 @@ make_mastersalt_association() {
             die_in_error "Minion did not start correctly, the minion_id cache file is always empty"
         fi
     fi
+    echo there
+    mastersalt_ping_test
+    echo foo
     if [[ "$(mastersalt_ping_test)" == "0" ]];then
         bs_log "Mastersalt minion \"$minion_id\" already registered on $MASTERSALT"
     else
-        if [[ $MASTERSALT_BOOT != "mastersalt_minion" ]];then
+        if [[ $MASTERSALT == "localhost" ]];then
             bs_log "Forcing mastersalt master restart"
             $PS aux|grep salt-master|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
             service mastersalt-master restart
-            sleep 10
         fi
         if [[ "$MASTERSALT" != "localhost" ]] && [[ -z "$MASTERSALT_NO_CHALLENGE" ]];then
             challenge_mastersalt_message

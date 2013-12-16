@@ -1,4 +1,5 @@
 .installed.cfg
+.bootlogs
 .boot_salt.*.log
 .boot_salt.*.out
 .boot_salt.*.log
