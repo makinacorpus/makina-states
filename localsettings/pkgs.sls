@@ -32,10 +32,6 @@ ubuntu-pkgs:
       - apport
       - rsyslog
 {% endif %}
-salt-pkgs:
-  pkg.installed:
-    - pkgs:
-      - libgmp3-dev
 
 sys-pkgs:
   pkg.installed:
@@ -138,4 +134,5 @@ salt-pkgs:
   pkg.installed:
     - pkgs:
       - python-apt
+      - libgmp3-dev
 {% endif %}
