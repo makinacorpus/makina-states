@@ -76,7 +76,7 @@ Install a new salt-managed box
 
   - If not set, it will default to **SALT_BOOT_ENV**
 
-- You default choice for **SALT_BOOT** is certainly one of **salt_master** or **salt_minionr**.
+- You default choice for **SALT_BOOT** is certainly one of **salt_master** or **salt_minion**.
 
     - The default is **salt_server**.
     - **salt_minion** will only install a minion and you will need to set:
@@ -217,7 +217,7 @@ Or from local when admins have configured things::
 fallback: manual mode
 ------------------------
 Prerequisite
-++++++++++++++++++++
+******************
 - Install those packages::
 
     apt-get install -y build-essential m4 libtool pkg-config autoconf gettext bzip2 groff man-db automake libsigc++-2.0-dev tcl8.5
@@ -257,6 +257,7 @@ Prerequisite
     -:server wired to mastersalt: ::
 
         /srv/salt/makina-states/bin/salt-call -lall --local state.sls makina-states.services.bootstrap_mastersalt
+
 Then ::
 
     . /etc/profile
