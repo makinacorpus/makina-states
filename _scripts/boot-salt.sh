@@ -1054,13 +1054,13 @@ install_salt_daemons() {
         if [[ ! -e $CONF_PREFIX/master ]];then
             cat > $CONF_PREFIX/master << EOF
 file_roots: {"base":["$ROOT"]}
-pillar_roots: {"base":["$pillar_root"]}
+pillar_roots: {"base":["$PILLAR"]}
 EOF
         fi
         if [[ ! -e $CONF_PREFIX/minion ]];then
             cat > $CONF_PREFIX/minion << EOF
 file_roots: {"base":["$ROOT"]}
-pillar_roots: {"base":["$pillar_root"]}
+pillar_roots: {"base":["$PILLAR"]}
 EOF
         fi
         # run salt master+minion boot_env bootstrap
@@ -1279,7 +1279,6 @@ make_mastersalt_association() {
             die_in_error "Minion did not start correctly, the minion_id cache file is always empty"
         fi
     fi
-    echo there
     if [[ "$(mastersalt_ping_test)" == "0" ]];then
         bs_log "Mastersalt minion \"$minion_id\" already registered on $MASTERSALT"
     else
