@@ -1280,8 +1280,6 @@ make_mastersalt_association() {
         fi
     fi
     echo there
-    mastersalt_ping_test
-    echo foo
     if [[ "$(mastersalt_ping_test)" == "0" ]];then
         bs_log "Mastersalt minion \"$minion_id\" already registered on $MASTERSALT"
     else
