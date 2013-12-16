@@ -360,6 +360,9 @@ recap_(){
     bs_log "bootstrap: $bootstrap"
     bs_log "bootstrap_env: $bootstrap_env"
     bs_log "SALT_BOOT_INPUTED: $SALT_BOOT_INPUTED"
+    if [[ -n $MASTERSALT_BOOT_SKIP_SETUP ]];then
+        bs_log "MASTERSALT_BOOT_SKIP_SETUP: $MASTERSALT_BOOT_SKIP_SETUP"
+    fi
     if [[ -n $SALT_BOOT_SKIP_SETUP ]];then
         bs_log "SALT_BOOT_SKIP_SETUP: $SALT_BOOT_SKIP_SETUP"
     fi
@@ -403,6 +406,7 @@ recap_(){
     export SALT_BOOT="$SALT_BOOT"
     export SALT_PILLAR="$PILLAR"
     export SALT_ROOT="$ROOT"
+    export MASTERSALT_BOOT_SKIP_SETUP="$MASTERSALT_BOOT_SKIP_SETUP"
     if [[ -n $SALT_BOOT_SKIP_SETUP ]];then
         export SALT_BOOT_SKIP_SETUP="$SALT_BOOT_SKIP_SETUP"
     fi
@@ -587,7 +591,7 @@ salt_call_wrapper_() {
     else
         nomatch=y
     fi
-    if [[ -z "$nomatch" ]];then
+    if [[ "$nomatch" == "y" ]];then
         last_salt_retcode=0
     fi
     #rm -rf "$outf" "$logf" 2> /dev/null
@@ -1541,8 +1545,9 @@ get_module_args() {
 
 maybe_setup_mastersalt_env() {
     # IMPORTANT: MASTERSALT BEFORE SALT !!!
-    if [[ -z $SALT_BOOT_SKIP_SETUP ]] && [[ -n "$USE_MASTERSALT" ]];then
+    if [[ -z $MASTERSALT_BOOT_SKIP_SETUP ]] && [[ -n "$USE_MASTERSALT" ]];then
         bs_log "Running makina-states setup for mastersalt"
+        bs_log "    export MASTERSALT_BOOT_SKIP_SETUP=1 to skip (dangerous))"
         LOCAL=""
         if [[ "$(mastersalt_ping_test)" != "0" ]];then
             LOCAL="--local $LOCAL"
