@@ -198,8 +198,8 @@ set_vars() {
     # the current mastersalt.makinacorpus.net hostname
     MASTERSALT_MAKINA_DNS="mastersalt.makina-corpus.net"
     MASTERSALT_MAKINA_HOST="cloud-admin"
-    BOOT_LOGS=="$MS/.bootlogs"
-    MBOOT_LOGS=="$MASTERSALT_MS/.bootlogs"
+    BOOT_LOGS="$MS/.bootlogs"
+    MBOOT_LOGS="$MASTERSALT_MS/.bootlogs"
     # base sls bootstrap
     bootstrap_pref="makina-states.bootstrap"
     mastersalt_bootstrap_pref="${bootstrap_pref}.mastersalt"
