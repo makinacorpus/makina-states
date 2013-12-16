@@ -8,7 +8,7 @@ include:
   - makina-states.bootstrap.base
   - makina-states.setups.salt_minion
 
-makina-bootstrap-salt-grain:
+makina-bootstrap-salt-minion-grain:
   grains.present:
-    - name: makina.bootstrap.salt
+    - name: makina.bootstrap.salt_minion
     - value: True
