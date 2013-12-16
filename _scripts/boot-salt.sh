@@ -583,9 +583,9 @@ salt_call_wrapper() {
     if [[ ! -d $BOOT_LOGS ]];then
         mkdir -pv $BOOT_LOGS
     fi
-    SALT_BOOT_OUTFILE="$BOOT_LOGS/.boot_salt.${chrono}.out"
-    SALT_BOOT_LOGFILE="$BOOT_LOGS/.boot_salt.${chrono}.log"
-    SALT_BOOT_CMDFILE="$BOOT_LOGS/.boot_salt_cmd"
+    SALT_BOOT_OUTFILE="$BOOT_LOGS/boot_salt.${chrono}.out"
+    SALT_BOOT_LOGFILE="$BOOT_LOGS/boot_salt.${chrono}.log"
+    SALT_BOOT_CMDFILE="$BOOT_LOGS/boot_salt_cmd"
     salt_call_wrapper_ $MS $(get_saltcall_args) $@
 }
 
@@ -594,9 +594,9 @@ mastersalt_call_wrapper() {
     if [[ ! -d $MBOOT_LOGS ]];then
         mkdir -pv $MBOOT_LOGS
     fi
-    SALT_BOOT_OUTFILE="$MBOOT_LOGS/.boot_salt.${chrono}.out"
-    SALT_BOOT_LOGFILE="$MBOOT_LOGS/.boot_salt.${chrono}.log"
-    SALT_BOOT_CMDFILE="$MBOOT_LOGS/.boot_salt_cmd"
+    SALT_BOOT_OUTFILE="$MBOOT_LOGS/boot_salt.${chrono}.out"
+    SALT_BOOT_LOGFILE="$MBOOT_LOGS/boot_salt.${chrono}.log"
+    SALT_BOOT_CMDFILE="$MBOOT_LOGS/boot_salt_cmd"
     salt_call_wrapper_ $MASTERSALT_MS $(get_mastersaltcall_args) -c $MCONF_PREFIX $@
 }
 
