@@ -82,8 +82,6 @@ docker-pkgs:
   pkg.installed:
     - require:
       - pkgrepo: docker-repo
-      - service: salt-master
-      - service: salt-minion
     - pkgs:
       - lxc-docker
 
