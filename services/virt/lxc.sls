@@ -95,11 +95,6 @@ lxc-after-maybe-bind-root:
   cmd.run:
     - name: {{lxc_init}} {{ lxc_name }} {{ lxc_template }}
     - stateful: True
-    {% if lxc_template == 'ubuntu' %}
-    - require_in:
-      - file: main-repos-updates-{{lxc_name}}
-      - file: main-repos-{{lxc_name}}
-    {% endif %}
     - require:
       - file: {{ lxc_name }}-lxc
       - file: lxc-after-maybe-bind-root
@@ -258,17 +253,13 @@ bootstrap-salt-in-{{ lxc_name }}-lxc:
     - source: salt://makina-states/_scripts/lxc-salt.sh
     - mode: 750
   cmd.run:
-    - name: {{salt_init}} {{ lxc_name }} 
+    - name: {{salt_init}} {{ lxc_name }}
     - stateful: True
     - env:
       - SALT_BOOT: {{ salt_bootstrap }}
       - MASTERSALT_BOOT: {{ mastersalt_bootstrap }}
       - MASTERSALT: {{ mastersalt }}
     - require:
-      {% if lxc_template == 'ubuntu' %}
-      - file: main-repos-updates-{{lxc_name}}
-      - file: main-repos-{{lxc_name}}
-      {% endif %}
       - file: bootstrap-salt-in-{{ lxc_name }}-lxc
       - cmd: {{ lxc_name }}-lxc-salt
       - cmd: start-{{ lxc_name }}-lxc-service
