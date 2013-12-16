@@ -765,7 +765,7 @@ salt-{{ data['daemon_name'] }}-cache:
 
 salt-{{ data['daemon_name'] }}-pki:
   file.directory:
-    - name: {{ conf_prefix }}/pki/{{ data['daemon_name'] }}
+    - name: {{ conf_prefix }}/pki/{{ data['service_name'] }}
     - makedirs: True
     - require:
       - file: salt-etc-{{ data['name'] }}-dirs
