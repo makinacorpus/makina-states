@@ -919,8 +919,8 @@ EOF
                 cat >> "$pillar_root/salt.sls" << EOF
   master:
     interface: $SALT_MASTER_IP
-    publish_port: $SALT_MASTER_PORT
-    ret_port: $SALT_MASTER_PUBLISH_PORT
+    publish_port: $SALT_MASTER_PUBLISH_PORT
+    ret_port: $SALT_MASTER_PORT
 EOF
             fi
         fi
@@ -939,6 +939,13 @@ mastersalt:
   minion:
       master: ${MASTERSALT}
       master_port: ${MASTERSALT_PORT}
+EOF
+        fi
+        if [[ "$MASTERSALT" == "127.0.0.1"  ]];then
+            cat >> "$MASTERSALT_PILLAR/mastersalt.sls" << EOF
+  master:
+      ret_port: ${MASTERSALT_PORT}
+      publish_port: $(( ${MASTERSALT_PORT} - 1 ))
 EOF
         fi
     fi
