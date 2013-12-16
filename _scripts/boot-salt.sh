@@ -1283,6 +1283,7 @@ make_association() {
     fi
     bs_log "If the bootstrap program seems to block here"
     challenge_message
+    bs_log "ack"
     if [[ -z "$minion_id" ]];then
         bs_yellow_log "Minion did not start correctly, the minion_id cache file is empty, trying to restart"
         restart_local_minions
@@ -1372,6 +1373,7 @@ make_mastersalt_association() {
     fi
     bs_log "If the bootstrap program seems to block here"
     challenge_mastersalt_message
+    bs_log "ack"
     if [[ -z "$minion_id" ]];then
         bs_yellow_log "Minion did not start correctly, the minion_id cache file is empty, trying to restart"
         restart_local_mastersalt_minions

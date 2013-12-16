@@ -12,7 +12,5 @@ makina-bootstrap-salt-master-grain:
   grains.present:
     - name: makina.bootstrap.salt_master
     - value: True
-makina-bootstrap-salt-master-grain:
-  grains.present:
-    - name: makina.bootstrap.salt_master
-    - value: True
+
+
