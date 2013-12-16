@@ -97,7 +97,7 @@ detect_os() {
         OS_RELEASE_NAME=$(egrep ^NAME= $CONF_ROOT/os-release|sed -re "s/NAME=""//g")
         OS_RELEASE_VERSION=$(egrep ^VERSION= $CONF_ROOT/os-release|sed -re "s/VERSION=/""/g")
         OS_RELEASE_PRETTY_NAME=$(egrep ^PRETTY_NAME= $CONF_ROOT/os-release|sed -re "s/PRETTY_NAME=""//g")
-    
+
     fi
     if [[ -e $CONF_ROOT/debian_version ]] && [[ "$OS_RELEASE_ID" == "debian" ]] && [[ "$DISTRIB_ID" != "Ubuntu" ]];then
         IS_DEBIAN="y"
@@ -996,7 +996,7 @@ minion_challenge() {
         service salt-minion restart
         resultping="1"
         for j in `seq 10`;do
-            resultping="$(salt_call_wrapper test.ping)"
+            resultping="$(salt_ping_test)"
             if [[ "$resultping" != "0" ]];then
                 bs_yellow_log " sub challenge try $j/$i"
                 sleep 1
@@ -1015,11 +1015,19 @@ minion_challenge() {
     done
 }
 
+salt_ping_test() {
+    salt_call_wrapper --master=$SALT_MASTER_IP test.ping
+}
+
+mastersalt_ping_test() {
+    salt_call_wrapper --master=$MASTERSALT test.ping
+}
+
 make_association() {
     minion_keys="$(find $CONF_PREFIX/pki/master/minions -type f 2>/dev/null|wc -l)"
     minion_id="$(get_minion_id)"
     registered=""
-    if [[ "$(salt_call_wrapper test.ping)" == "0" ]] && [[ "$minion_keys" != "0" ]];\
+    if [[ "$(salt_ping_test)" == "0" ]] && [[ "$minion_keys" != "0" ]];\
     then
         bs_log "Salt minion \"$minion_id\" already registered on master"
         minion_id="$(get_minion_id)"
@@ -1033,7 +1041,7 @@ make_association() {
         fi
         if  [[ -z "$SALT_NO_CHALLENGE" ]];then
             bs_log "****************************************************************"
-            bs_log "     GO ACCEPT THE KEY ON SALT_MASTER  ($SALT_MASTER) !!! "
+            bs_log "     GO ACCEPT THE KEY ON SALT_MASTER  ($SALT_MASTER_IP) !!! "
             bs_log "     You need on this box to run salt-key -y -a $minion_id"
             bs_log "****************************************************************"
             bs_log " We are going to wait 10 minutes for you to setup the minion on mastersalt and"
@@ -1049,7 +1057,7 @@ make_association() {
         sleep 10
         bs_log "Waiting for salt minion key hand-shake"
         minion_id="$(get_minion_id)"
-        if [[ "$(salt_call_wrapper test.ping)" == "0" ]] && [[ "$minion_keys" != "0" ]];then
+        if [[ "$(salt_ping_test)" == "0" ]] && [[ "$minion_keys" != "0" ]];then
             # sleep 15 seconds giving time for the minion to wake up
             bs_log "Salt minion \"$minion_id\" registered on master"
             registered="1"
@@ -1176,7 +1184,7 @@ EOF
         if [[ -z "$minion_id" ]];then
             minion_id="<minionid>"
         fi
-        if [[ "$(mastersalt_call_wrapper test.ping)" == "0" ]];then
+        if [[ "$(mastersalt_ping_test)" == "0" ]];then
             bs_log "Mastersalt minion \"$minion_id\" already registered on $MASTERSALT"
         else
             if [[ -z "$MASTERSALT_NO_CHALLENGE" ]];then
@@ -1197,7 +1205,7 @@ EOF
                 service mastersalt-minion restart
                 resultping="1"
                 for j in `seq 10`;do
-                    resultping="$(mastersalt_call_wrapper test.ping)"
+                    resultping="$(mastersalt_ping_test)"
                     if [[ "$resultping" != "0" ]];then
                         bs_yellow_log " sub challenge try $j/$i"
                         sleep 1
@@ -1241,7 +1249,7 @@ maybe_setup_mastersalt_env() {
     if [[ -z $SALT_BOOT_SKIP_SETUP ]] && [[ -n "$USE_MASTERSALT" ]];then
         bs_log "Running makina-states setup for mastersalt"
         LOCAL=""
-        if [[ "$(mastersalt_call_wrapper test.ping)" != "0" ]];then
+        if [[ "$(mastersalt_ping_test)" != "0" ]];then
             LOCAL="--local $LOCAL"
             bs_yellow_log " [bs] mastersalt setup running offline !"
         fi
@@ -1261,7 +1269,7 @@ setup_salt_env() {
     if [[ -z "$SALT_BOOT_SKIP_SETUP" ]];then
         bs_log "Running makina-states setup"
         LOCAL=""
-        if [[ "$(salt_call_wrapper test.ping)" != "0" ]];then
+        if [[ "$(salt_ping_test)" != "0" ]];then
             bs_yellow_log " [bs] salt setup running offline !"
             LOCAL="--local $LOCAL"
         fi
