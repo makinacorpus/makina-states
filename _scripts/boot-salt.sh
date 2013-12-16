@@ -288,7 +288,7 @@ recap_(){
     bs_log "SALT_MASTER_PORT: $SALT_MASTER_PORT"
     bs_log "SALT_MASTER_PUBLISH_PORT: $SALT_MASTER_PUBLISH_PORT"
     bs_log "SALT_ROOT: $ROOT"
-    bs_log "SALT_PILLAR: $PILLAR"           
+    bs_log "SALT_PILLAR: $PILLAR"
     bs_log "bootstrap: $bootstrap"
     bs_log "bootstrap_env: $bootstrap_env"
     bs_log "SALT_BOOT_INPUTED: $SALT_BOOT_INPUTED"
@@ -912,6 +912,7 @@ install_salt_daemons() {
     if     [[ ! -e "$CONF_PREFIX" ]]\
         || [[ ! -e "$CONF_PREFIX/master" ]]\
         || [[ -e "$MS/.reboostrap" ]]\
+        || [[ "$(grep makina.nodetype.salt_ "$CONF_PREFIX/grains" |wc -l)" == "0" ]]\
         || [[ ! -e "$CONF_PREFIX/pki/minion/minion.pem" ]]\
         || [[ ! -e "$CONF_PREFIX/pki/master/master.pem" ]]\
         || [[ "$master_processes" == "0" ]]\
@@ -991,9 +992,8 @@ make_association() {
     minion_keys="$(find $CONF_PREFIX/pki/master/minions -type f 2>/dev/null|wc -l)"
     minion_id="$(get_minion_id)"
     registered=""
-    if [[ "$(salt_call_wrapper test.ping)" == "0" ]]\
-        && [[ "$minion_keys" != "0" ]]\
-        ;then
+    if [[ "$(salt_call_wrapper test.ping)" == "0" ]] && [[ "$minion_keys" != "0" ]];\
+    then
         bs_log "Salt minion \"$minion_id\" already registered on master"
         minion_id="$(get_minion_id)"
         registered="1"
@@ -1004,41 +1004,36 @@ make_association() {
             service salt-master restart
             sleep 10
         fi
-        if [[ $SALT_BOOT == "salt_minion" ]];then
-            minion_id="$(get_minion_id)"
-            if [[ -z "$SALT_NO_CHALLENGE" ]];then
-                bs_log "****************************************************************"
-                bs_log "     GO ACCEPT THE KEY ON SALT_MASTER  ($SALT_MASTER) !!! "
-                bs_log "     You need on this box to run salt-key -y -a $minion_id"
-                bs_log "****************************************************************"
-                bs_log " We are going to wait 10 minutes for you to setup the minion on mastersalt and"
-                bs_log " setup an entry for this specific minion"
-                bs_log " export SALT_NO_CHALLENGE=1 to remove the temporisation (enter to continue when done)"
-                read -t "$((10*60))"
-                # sleep 15 seconds giving time for the minion to wake up
-                if [[ "$(salt_call_wrapper test.ping)" == "0" ]]\
-                    && [[ "$minion_keys" != "0" ]];\
-                then
-                    bs_log "Salt minion \"$minion_id\" registered on master"
-                    challenged_ms
-                    if [[ -z "$challenged_ms" ]];then
-                        bs_log "Failed accepting salt key on master for $minion_id"
-                        exit -1
-                    fi
-                    minion_id="$(get_minion_id)"
-                    registered="1"
-                fi
-            else
-                bs_log "  [*] No temporisation for challenge, trying to spawn the minion"
-            fi
+        if  [[ -z "$SALT_NO_CHALLENGE" ]];then
+            bs_log "****************************************************************"
+            bs_log "     GO ACCEPT THE KEY ON SALT_MASTER  ($SALT_MASTER) !!! "
+            bs_log "     You need on this box to run salt-key -y -a $minion_id"
+            bs_log "****************************************************************"
+            bs_log " We are going to wait 10 minutes for you to setup the minion on mastersalt and"
+            bs_log " setup an entry for this specific minion"
+            bs_log " export SALT_NO_CHALLENGE=1 to remove the temporisation (enter to continue when done)"
+            read -t "$((10*60))"
         else
-            sleep 10
-            bs_log "Forcing salt minion restart"
-            $PS aux|grep salt-minion|grep -v mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
-            service salt-minion restart
-            bs_log "Waiting for salt minion key hand-shake"
-            sleep 2
+            bs_log "  [*] No temporisation for challenge, trying to spawn the minion"
+        fi
+        bs_log "Forcing salt minion restart"
+        $PS aux|grep salt-minion|grep -v mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
+        service salt-minion restart
+        sleep 10
+        bs_log "Waiting for salt minion key hand-shake"
+        minion_id="$(get_minion_id)"
+        if [[ "$(salt_call_wrapper test.ping)" == "0" ]] && [[ "$minion_keys" != "0" ]];then
+            # sleep 15 seconds giving time for the minion to wake up
+            bs_log "Salt minion \"$minion_id\" registered on master"
+            registered="1"
+        else
+            challenged_ms
+            if [[ -z "$challenged_ms" ]];then
+                bs_log "Failed accepting salt key on master for $minion_id"
+                exit -1
+            fi
             minion_id="$(get_minion_id)"
+            registered="1"
         fi
     fi
     # only accept key on fresh install (no keys stored)

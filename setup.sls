@@ -17,4 +17,4 @@
 {% import "makina-states/_macros/salt.jinja" as c with context %}
 
 include:
-  - makina.servers.base
+  - makina-states.servers.base
