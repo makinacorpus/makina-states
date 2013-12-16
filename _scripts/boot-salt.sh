@@ -185,9 +185,6 @@ set_vars() {
     ROOT="${ROOT:-$PREFIX/salt}"
     SALT_BOOT_OUTFILE="$MS/.boot_salt.$(get_chrono).out"
     SALT_BOOT_LOGFILE="$MS/.boot_salt.$(get_chrono).log"
-    SALT_MASTER_IP="${SALT_MASTER_IP:-"127.0.0.1"}"
-    SALT_MASTER_PORT="${SALT_MASTER_PORT:-"4506"}"
-    SALT_MASTER_PUBLISH_PORT="$(( ${SALT_MASTER_PORT} - 1 ))"
     MS="$ROOT/makina-states"
     MASTERSALT_PILLAR="${MASTERSALT_PILLAR:-$PREFIX/mastersalt-pillar}"
     MASTERSALT_ROOT="${MASTERSALT_ROOT:-$PREFIX/mastersalt}"
@@ -251,16 +248,35 @@ set_vars() {
             MASTERSALT="localhost"
         fi
     fi
-    MASTERSALT="${MASTERSALT:-$MASTERSALT_DEFAULT}"
+    SALT_MASTER_IP="${SALT_MASTER_IP:-"127.0.0.1"}"
+    SALT_MINION_IP="${SALT_MINION_IP:-"127.0.0.1"}"
+    SALT_MINION_DNS="${SALT_MINION_DNS:-"$SALT_MINION_IP"}"
+    SALT_MASTER_IP="${SALT_MASTER_IP:-"127.0.0.1"}"
+    SALT_MASTER_DNS="${SALT_MASTER_DNS:-"$SALT_MASTER_IP"}"
+    SALT_MASTER_PORT="${SALT_MASTER_PORT:-"4506"}"
+    SALT_MASTER_PUBLISH_PORT="$(( ${SALT_MASTER_PORT} - 1 ))"
+    MASTERSALT_IP="${MASTERSALT:-"$MASTERSALT_DEFAULT"}"
+    MASTERSALT_DNS="${MASTERSALT_DNS:-"$MASTERSALT_IP"}"
+    MASTERSALT_PORT="${MASTERSALT_PORT:-"4606"}"
+    MASTERSALT_PUBLISH_PORT="$(( ${MASTERSALT_PORT} - 1 ))"
+    MASTERSALT_MINION_IP="${MASTERSALT_MINION_IP:-"127.0.0.1"}"
+    MASTERSALT_MINION_DNS="${MASTERSALT_MINION_DNS:-"$MASTERSALT_MINION_IP"}"
     if [[ "$MASTERSALT" == "127.0.0.1" ]] || [[ "$MASTERSALT" == "localhost" ]];then
-        MASTERSALT="127.0.0.1"
+        MASTERSALT="localhost"
+        MASTERSALT_IP="localhost"
     fi
-    # set appropriate ports for mastersalt depening on the host and user input
-    MASTERSALT_DEFAULT_PORT="4606"
-    if [[ "$MASTERSALT" == "$MASTERSALT_MAKINA_DNS" ]];then
-        MASTERSALT_DEFAULT_PORT="4606"
+    if [[ "$MASTERSALT_MINION_IP" == "127.0.0.1" ]] || [[ "$MASTERSALT_MINION_IP" == "localhost" ]];then
+        MASTERSALT_MINION_IP="127.0.0.1"
+        MASTERSALT_MINION_DNS="localhost"
     fi
-    MASTERSALT_PORT="${MASTERSALT_PORT:-$MASTERSALT_DEFAULT_PORT}"
+    if [[ "$SALT_MINION_IP" == "127.0.0.1" ]] || [[ "$SALT_MINION_IP" == "localhost" ]];then
+        SALT_MINION_IP="127.0.0.1"
+        SALT_MINION_DNS="localhost"
+    fi
+    if [[ "$SALT_MASTER_IP" == "127.0.0.1" ]] || [[ "$SALT_MASTER_IP" == "localhost" ]];then
+        SALT_MASTER_IP="127.0.0.1"
+        SALT_MASTER_DNS="localhost"
+    fi
     if [[ -n "$SALT_BOOT" ]];then
         bootstrap="${bootstrap_pref}.${SALT_BOOT}"
     fi
@@ -302,6 +318,8 @@ set_vars() {
     export PROJECT_PILLAR_PATH PROJECT_PILLAR_FILE PROJECT_SALT_LINK PROJECT_SALT_PATH PROJECT_TOPSLS_DEFAULT
     export PROJECT_TOPSTATE_DEFAULT PROJECT_SETUPSTATE_DEFAULT PROJECT_PILLAR_STATE
     export SALT_BOOT_OS
+    export MASTERSALT_IP MASTERSALT MASTERSALT_MINION_DNS MASTERSALT_MINION_IP MASTERSALT_PORT MASTERSALT_PUBLISH_PORT
+    export SALT_MASTER_IP SALT_MASTER_DNS SALT_MINION_IP SALT_MINION_DNS SALT_MASTER_PORT SALT_MASTER_PUBLISH_PORT
     if [[ -n "$PROJECT_URL" ]];then
         if [[ -z "$PROJECT_NAME" ]];then
             die "Please provide a \$PROJECT_NAME"
@@ -329,11 +347,9 @@ recap_(){
     bs_log "SALT_BOOT: $SALT_BOOT"
     bs_log "SALT_BOOT_ENV: $SALT_BOOT_ENV"
     bs_log "SALT_MASTER_IP: $SALT_MASTER_IP"
-    if [[ "$SALT_MASTER_IP" == "127.0.0.1" ]] || [[ "$SALT_MASTER_IP" == "localhost" ]];then
-        SALT_MASTER_IP="127.0.0.1"
-    fi
     bs_log "SALT_MASTER_PORT: $SALT_MASTER_PORT"
     bs_log "SALT_MASTER_PUBLISH_PORT: $SALT_MASTER_PUBLISH_PORT"
+    bs_log "SALT_MINION_IP: $SALT_MINION_IP"
     bs_log "SALT_ROOT: $ROOT"
     bs_log "SALT_PILLAR: $PILLAR"
     bs_log "bootstrap: $bootstrap"
@@ -353,6 +369,8 @@ recap_(){
         bs_log "MASTERSALT_BOOT_ENV: $MASTERSALT_BOOT_ENV"
         bs_log "MASTERSALT: $MASTERSALT"
         bs_log "MASTERSALT_PORT: $MASTERSALT_PORT"
+        bs_log "MASTERSALT_PUBLISH_PORT $MASTERSALT_PUBLISH_PORT"
+        bs_log "MASTERSALT_MINION_IP: $MASTERSALT_MINION_IP"
         bs_log "MASTERSALT_ROOT: $MASTERSALT_ROOT"
         bs_log "MASTERSALT_PILLAR: $MASTERSALT_PILLAR"
         bs_log "mastersalt_bootstrap: $mastersalt_bootstrap"
@@ -898,58 +916,75 @@ a\    {% endif %}
     done
     for pillar_root in $PILLAR;do
         if [[ $(grep -- "- salt" $PILLAR/top.sls|wc -l) == "0" ]];then
+            bs_log "Adding salt to default top salt pillar"
             sed -re "/('|\")\*('|\"):/ {
 a\    - salt
 }" -i "$pillar_root/top.sls"
         fi
         # Create a default salt.sls in the pillar if not present
         if [[ ! -f "$pillar_root/salt.sls" ]];then
-            bs_log "creating default pillar's salt.sls"
-            cat > "$pillar_root/salt.sls" << EOF
-salt:
-EOF
-            cat >> "$pillar_root/salt.sls" << EOF
-  minion:
-    master: $SALT_MASTER_IP
-    master_port: $SALT_MASTER_PORT
-    interface: 127.0.0.1
-EOF
-            # do no setup stuff for master for just a minion
-            if [[ "$SALT_BOOT" != "salt_minion" ]];then
-                cat >> "$pillar_root/salt.sls" << EOF
-  master:
-    interface: $SALT_MASTER_IP
-    publish_port: $SALT_MASTER_PUBLISH_PORT
-    ret_port: $SALT_MASTER_PORT
-EOF
+            bs_log "Creating default pillar's salt.sls"
+            echo 'salt:' > "$pillar_root/salt.sls"
+        fi
+        if [[ $(grep -- "\s+minion:" "$pillar_root/salt.sls"|wc -l) == "0" ]];then
+            bs_log "Adding minion info to pillar"
+            sed -re "/^salt:$/ {
+a\  minion:
+a\    master: $SALT_MASTER_DNS
+a\    master_port: $SALT_MASTER_PORT
+a\    interface: $SALT_MINION_IP
+}" -i "$pillar_root/salt.sls"
+        fi
+        # do no setup stuff for master for just a minion
+        if [[ "$SALT_MASTER_DNS" == "localhost" ]];then
+            if [[ $(grep -- "\s+master:" "$pillar_root/salt.sls"|wc -l) == "0" ]];then
+                bs_log "Adding master info to pillar"
+                sed -re "/^salt:$/ {
+a\  master:
+a\    interface: $SALT_MASTER_IP
+a\    publish_port: $SALT_MASTER_PUBLISH_PORT
+a\    ret_port: $SALT_MASTER_PORT
+}" -i "$pillar_root/salt.sls"
             fi
         fi
     done
     # --------- MASTERSALT
     # Set default mastersalt  pillar
-    if [[ "$SALT_BOOT" == "mastersalt" ]] && [[ ! -f "$MASTERSALT_PILLAR/mastersalt.sls" ]];then
+    if [[ -n "$MASTERSALT" ]] && [[ ! -f "$MASTERSALT_PILLAR/mastersalt.sls" ]];then
         if [[ $(grep -- "- mastersalt" "$MASTERSALT_PILLAR/top.sls"|wc -l) == "0" ]];then
+            bs_log "Adding mastersalt info to top mastersalt pillar"
             sed -re "/('|\")\*('|\"):/ {
 a\    - mastersalt
 }" -i "$MASTERSALT_PILLAR/top.sls"
         fi
         if [[ ! -f "$MASTERSALT_PILLAR/mastersalt.sls" ]];then
-    cat > "$MASTERSALT_PILLAR/mastersalt.sls" << EOF
-mastersalt:
-  minion:
-      master: ${MASTERSALT}
-      master_port: ${MASTERSALT_PORT}
-EOF
+            bs_log "Creating mastersalt configuration file"
+            echo "mastersalt:" >  "$MASTERSALT_PILLAR/mastersalt.sls"
         fi
-        if [[ "$MASTERSALT" == "127.0.0.1"  ]];then
-            cat >> "$MASTERSALT_PILLAR/mastersalt.sls" << EOF
-  master:
-      ret_port: ${MASTERSALT_PORT}
-      publish_port: $(( ${MASTERSALT_PORT} - 1 ))
-EOF
+        if [[ $(grep -- "\s*minion:" """$MASTERSALT_PILLAR/mastersalt.sls"|wc -l) == "0" ]];then
+                bs_log "Adding mastersalt minion info to mastersalt pillar"
+            sed -re "/^mastersalt:$/ {
+a\  minion:
+a\    interface: ${MASTERSALT_MINION_IP}
+a\    master: ${MASTERSALT}
+a\    master_port: ${MASTERSALT_PORT}
+}" -i "$MASTERSALT_PILLAR/mastersalt.sls"
+        fi
+        if [[ "$MASTERSALT" == "localhost" ]];then
+            if [[ $(grep -- "\s+master:" "$MASTERSALT_PILLAR/mastersalt.sls"|wc -l) == "0" ]];then
+                bs_log "Adding mastersalt master info to mastersalt pillar"
+                sed -re "/^mastersalt:$/ {
+a\  master:
+a\    interface: $MASTERSALT_IP
+a\    ret_port: ${MASTERSALT_PORT}
+a\    publish_port: ${MASTERSALT_PUBLISH_PORT}
+}" -i "$MASTERSALT_PILLAR/mastersalt.sls"
+            fi
         fi
     fi
 }
+
+
 
 # ------------ SALT INSTALLATION PROCESS
 
@@ -964,7 +999,7 @@ install_salt_daemons() {
     minion_processes="$($PS aux|grep salt-minion|grep -v mastersalt|grep -v grep|wc -l)"
     # in case of failed setup, do not do extra reinstall
     # in master/minion restart well
-    if [[ "$SALT_MASTER_IP" == "127.0.0.1" ]];then
+    if [[ "$SALT_MASTER_DNS" == "localhost" ]];then
         if [[ "$master_processes" == "0" ]]\
             && [[ -e "$CONF_PREFIX/pki/minion/master.pem" ]];then
             service salt-master restart
@@ -999,7 +1034,7 @@ install_salt_daemons() {
     if [[ -n "$RUN_SALT_SETUP" ]];then
         ds=y
         # kill salt running daemons if any
-        if [[ "$SALT_MASTER_IP" == "127.0.0.1" ]];then
+        if [[ "$SALT_MASTER_DNS" == "localhost" ]];then
             $PS aux|egrep "salt-(master|syndic)"|grep -v mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
         fi
         $PS aux|egrep "salt-(minion)"|grep -v mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
@@ -1008,9 +1043,16 @@ install_salt_daemons() {
 
         # create etc directory
         if [[ ! -e $CONF_PREFIX ]];then mkdir $CONF_PREFIX;fi
+        if [[ ! -e $CONF_PREFIX/master ]];then
+            cat > $CONF_PREFIX/master << EOF
+file_roots: {"base":["$ROOT"]}
+pillar_roots: {"base":["$pillar_root"]}
+EOF
+        fi
         if [[ ! -e $CONF_PREFIX/minion ]];then
             cat > $CONF_PREFIX/minion << EOF
 file_roots: {"base":["$ROOT"]}
+pillar_roots: {"base":["$pillar_root"]}
 EOF
         fi
         # run salt master+minion boot_env bootstrap
@@ -1032,7 +1074,7 @@ EOF
         fi
         if [[ -n "$SALT_BOOT_DEBUG" ]];then cat $SALT_BOOT_OUTFILE;fi
         # restart salt daemons
-        if [[ "$SALT_MASTER_IP" == "127.0.0.1" ]];then
+        if [[ "$SALT_MASTER_DNS" == "localhost" ]];then
             # restart salt salt-master after setup
             bs_log "Forcing salt master restart"
             $PS aux|egrep "salt-(master|syndic)"|grep salt|awk '{print $2}'|xargs kill -9 &> /dev/null
@@ -1147,13 +1189,13 @@ make_association() {
         minion_id="$(get_minion_id)"
         registered="1"
     else
-        if [[ "$SALT_MASTER_IP" == "127.0.0.1" ]];then
+        if [[ "$SALT_MASTER_DNS" == "localhost" ]];then
             bs_log "Forcing salt master restart"
             $PS aux|grep salt-master|grep -v mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
             service salt-master restart
             sleep 10
         fi
-        if [[ "$SALT_MASTER_IP" != "127.0.0.1" ]] &&  [[ -z "$SALT_NO_CHALLENGE" ]];then
+        if [[ "$SALT_MASTER_DNS" != "localhost" ]] &&  [[ -z "$SALT_NO_CHALLENGE" ]];then
             bs_log "****************************************************************"
             bs_log "     GO ACCEPT THE KEY ON SALT_MASTER  ($SALT_MASTER_IP) !!! "
             bs_log "     You need on this box to run salt-key -y -a $minion_id"
@@ -1164,7 +1206,7 @@ make_association() {
             interactive_tempo $((10 * 60))
         else
             bs_log "  [*] No temporisation for challenge, trying to spawn the minion"
-            if [[ "$SALT_MASTER_IP" == "127.0.0.1" ]];then
+            if [[ "$SALT_MASTER_DNS" == "localhost" ]];then
                 salt-key -y -a "$minion_id"
                 ret="$?"
                 if [[ "$ret" != "0" ]];then
@@ -1223,7 +1265,7 @@ make_mastersalt_association() {
             service mastersalt-master restart
             sleep 10
         fi
-        if [[ "$MASTERSALT" != "127.0.0.1" ]] && [[ -z "$MASTERSALT_NO_CHALLENGE" ]];then
+        if [[ "$MASTERSALT" != "localhost" ]] && [[ -z "$MASTERSALT_NO_CHALLENGE" ]];then
             bs_log "****************************************************************"
             bs_log "    GO ACCEPT THE KEY ON MASTERSALT ($MASTERSALT) !!! "
             bs_log "    You need on this box to run mastersalt-key -y -a $minion_id"
@@ -1236,7 +1278,7 @@ make_mastersalt_association() {
         else
             bs_log "  [*] No temporisation for challenge, trying to spawn the mastersalt minion"
             # in case of a local mastersalt, auto accept the minion key
-            if [[ "$MASTERSALT" == "127.0.0.1" ]];then
+            if [[ "$MASTERSALT" == "localhost" ]];then
                 mastersalt-key -y -a "$minion_id"
                 ret="$?"
                 if [[ "$ret" != "0" ]];then
@@ -1278,7 +1320,7 @@ maybe_install_mastersalt_daemons() {
     if [[ -n "$USE_MASTERSALT" ]];then
         mminion_processes="$($PS aux|grep salt-minion|grep mastersalt|grep -v grep|wc -l)"
         mminion_keys="$(find $MCONF_PREFIX/pki/master/minions -type f 2>/dev/null|wc -l)"
-        if [[ "$MASTERSALT" == "127.0.0.1" ]];then
+        if [[ "$MASTERSALT" == "localhost" ]];then
             mmaster_processes="$($PS aux|grep salt-master|grep mastersalt|grep -v grep|wc -l)"
             if  [[ ! -e "$MCONF_PREFIX/pki/master/master.pem" ]];then
                 RUN_MASTERSALT_SETUP="1"
@@ -1311,15 +1353,22 @@ maybe_install_mastersalt_daemons() {
         ds=y
         # create etc/mastersalt
         if [[ ! -e $MCONF_PREFIX ]];then mkdir $MCONF_PREFIX;fi
-        if [[ ! -e $MCONF_PREFIX/minion ]];then
-            cat > $CONF_PREFIX/minion << EOF
+        if [[ ! -e $MCONF_PREFIX/master ]];then
+            cat > $MCONF_PREFIX/master << EOF
 file_roots: {"base":["$MASTERSALT_ROOT"]}
+pillar_roots: {"base":["$MASTERSALT_PILLAR"]}
+EOF
+        fi
+        if [[ ! -e $MCONF_PREFIX/minion ]];then
+            cat > $MCONF_PREFIX/minion << EOF
+file_roots: {"base":["$MASTERSALT_ROOT"]}
+pillar_roots: {"base":["$MASTERSALT_PILLAR"]}
 EOF
         fi
 
         # kill salt running daemons if any
         $PS aux|egrep "salt-(minion)"|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
-        if [[ "$MASTERSALT" == "127.0.0.1" ]];then
+        if [[ "$MASTERSALT" == "localhost" ]];then
             $PS aux|egrep "salt-(master|syndic)"|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
         fi
 
