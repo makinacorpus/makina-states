@@ -1041,7 +1041,7 @@ install_salt_daemons() {
     if [[ "$SALT_MASTER_DNS" == "localhost" ]];then
         if [[ "$master_processes" == "0" ]]\
             && [[ -e "$CONF_PREFIX/pki/minion/master.pem" ]];then
-            service salt-master restart
+            restart_local_masters
             sleep 2
         fi
         master_processes="$($PS aux|grep salt-master|grep -v mastersalt|grep -v grep|wc -l)"
@@ -1050,7 +1050,7 @@ install_salt_daemons() {
     fi
     if [[ "$minion_processes" == "0" ]]\
         && [[ -e "$CONF_PREFIX/pki/minion/minion.pem" ]];then
-        service salt-minion restart
+        restart_local_minions
         sleep 2
     fi
     minion_processes="$($PS aux|grep salt-minion|grep -v mastersalt|grep -v grep|wc -l)"
@@ -1116,14 +1116,12 @@ EOF
         if [[ "$SALT_MASTER_DNS" == "localhost" ]];then
             # restart salt salt-master after setup
             bs_log "Forcing salt master restart"
-            killall_local_masters
-            service salt-master restart
+            restart_local_masters
             sleep 10
         fi
         # restart salt minion
         bs_log "Forcing salt minion restart"
-        killall_local_minions
-        service salt-minion restart
+        restart_local_minions
         SALT_BOOT_NOW_INSTALLED="y"
     else
         bs_log "Skip salt installation, already done"
@@ -1147,6 +1145,26 @@ killall_local_minions() {
     $PS aux|egrep "salt-(minion)"|grep -v mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
 }
 
+restart_local_mastersalt_masters() {
+    killall_local_mastersalt_masters
+    service salt-master restart
+}
+
+restart_local_mastersalt_minions() {
+    killall_local_mastersalt_minions
+    service salt-minion restart
+}
+
+restart_local_masters() {
+    killall_local_masters
+    service salt-master restart
+}
+
+restart_local_minions() {
+    killall_local_minions
+    service salt-minion restart
+}
+
 salt_ping_test() {
     salt_call_wrapper --master=$SALT_MASTER_IP test.ping
 }
@@ -1160,8 +1178,7 @@ minion_challenge() {
     global_tries="60"
     inner_tries="10"
     for i in `seq $global_tries`;do
-        killall_local_minions
-        service salt-minion restart
+        restart_local_minions
         resultping="1"
         for j in `seq $inner_tries`;do
             resultping="$(salt_ping_test)"
@@ -1188,8 +1205,7 @@ mastersalt_minion_challenge() {
     global_tries="60"
     inner_tries="10"
     for i in `seq $global_tries`;do
-        killall_local_mastersalt_minions
-        service mastersalt-minion restart
+        restart_local_minions
         resultping="1"
         for j in `seq $inner_tries`;do
             resultping="$(mastersalt_ping_test)"
@@ -1242,7 +1258,7 @@ make_association() {
     challenge_message
     if [[ -z "$minion_id" ]];then
         bs_yellow_log "Minion did not start correctly, the minion_id cache file is empty, trying to restart"
-        service salt-minion restart
+        restart_local_minions
         sleep 3
         minion_id="$(get_minion_id)"
         if [[ -z "$minion_id" ]];then
@@ -1262,8 +1278,7 @@ make_association() {
             if [[ -n "$DEBUG" ]];then
                 bs_log "Forcing salt master restart"
             fi
-            killall_local_masters
-            service salt-master restart
+            restart_local_masters
             sleep 10
         fi
         if [[ "$SALT_MASTER_DNS" != "localhost" ]] &&  [[ -z "$SALT_NO_CHALLENGE" ]];then
@@ -1288,8 +1303,7 @@ make_association() {
         if [[ -n "$DEBUG" ]];then
             bs_log "Forcing salt minion restart"
         fi
-        killall_local_minions
-        service salt-minion restart
+        restart_local_minions
         salt_master_connectivity_check
         bs_log "Waiting for salt minion key hand-shake"
         minion_id="$(get_minion_id)"
@@ -1330,7 +1344,7 @@ make_mastersalt_association() {
     challenge_mastersalt_message
     if [[ -z "$minion_id" ]];then
         bs_yellow_log "Minion did not start correctly, the minion_id cache file is empty, trying to restart"
-        service salt-minion restart
+        restart_local_mastersalt_minions
         sleep 3
         minion_id="$(get_minion_id)"
         if [[ -z "$minion_id" ]];then
@@ -1346,8 +1360,7 @@ make_mastersalt_association() {
             if [[ -n "$DEBUG" ]];then
                 bs_log "Forcing mastersalt master restart"
             fi
-            killall_local_mastersalt_masters
-            service mastersalt-master restart
+            restart_local_mastersalt_masters
         fi
         if [[ "$MASTERSALT" != "localhost" ]] && [[ -z "$MASTERSALT_NO_CHALLENGE" ]];then
             challenge_mastersalt_message
@@ -1372,8 +1385,7 @@ make_mastersalt_association() {
         if [[ -n "$DEBUG" ]];then
             bs_log "Forcing mastersalt minion restart"
         fi
-        killall_local_mastersalt_minions
-        service mastersalt-minion restart
+        restart_local_mastersalt_minions
         mastersalt_master_connectivity_check
         bs_log "Waiting for mastersalt minion key hand-shake"
         minion_id="$(get_minion_id)"
@@ -1479,16 +1491,14 @@ EOF
             if [[ -n "$DEBUG" ]];then
                 bs_log "Forcing mastersalt master restart"
             fi
-            killall_local_mastersalt_masters
-            service mastersalt-master restart
+            restart_local_mastersalt_masters
             sleep 10
         fi
         # restart mastersalt minion
         if [[ -n "$DEBUG" ]];then
             bs_log "Forcing mastersalt minion restart"
         fi
-        killall_local_mastersalt_minions
-        service mastersalt-minion restart
+        restart_local_mastersalt_minions
         SALT_BOOT_NOW_INSTALLED="y"
     else
         if [[ -n "$MASTERSALT" ]];then bs_log "Skip MasterSalt installation, already done";fi
