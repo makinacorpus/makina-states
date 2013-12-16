@@ -21,7 +21,7 @@ include:
 
 lxc-pkgs:
   pkg.installed:
-    - names:
+    - pkgs:
       - lxc
       - lxctl
 

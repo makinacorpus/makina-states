@@ -90,7 +90,7 @@ docker-pkgs:
       - service: salt-master
       - service: salt-minion 
       - cmd: update-salt
-    - names:
+    - pkgs:
       - lxc-docker
 
 docker-conf:

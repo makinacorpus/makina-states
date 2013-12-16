@@ -12,7 +12,7 @@ include:
 
 locales-pkg:
   pkg.installed:
-    - names:
+    - pkgs:
       - locales
 
 {% set default_locale = 'fr_FR.UTF-8' %}

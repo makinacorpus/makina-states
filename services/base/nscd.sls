@@ -1,6 +1,6 @@
 nscd-pkgs:
   pkg.installed:
-    - names:
+    - pkgs:
       - nscd
 
 nscd-restart:

@@ -72,7 +72,7 @@
 {% macro postgresql_base() %}
 postgresql-pkgs:
   pkg.installed:
-    - names:
+    - pkgs:
       - postgresql
       - libpq-dev
       - python-virtualenv

@@ -10,7 +10,7 @@
 
 dovecot-pkgs:
   pkg.installed:
-    - names:
+    - pkgs:
       - dovecot-common
       - dovecot-imapd
 

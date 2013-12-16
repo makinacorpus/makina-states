@@ -67,7 +67,7 @@ include:
 
 solr{{v}}-prerequisites:
   pkg.installed:
-    - names:
+    - pkgs:
       - rsync
       - unzip
 

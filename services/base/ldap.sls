@@ -22,7 +22,7 @@ include:
 
 ldap-pkgs:
   pkg.installed:
-    - names:
+    - pkgs:
       - libpam-ldap
       - libnss-ldapd
       - ldap-utils

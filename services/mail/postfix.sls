@@ -10,7 +10,7 @@
 
 postfix-pkgs:
   pkg.installed:
-    - names:
+    - pkgs:
       - postfix
       - postfix-pcre
 
@@ -31,7 +31,7 @@ makina-postfix-local-catch-all-delivery-conf:
     - name: /etc/postfix/main.cf
     - source: salt://makina-states/files/etc/postfix/main.cf.localdeliveryonly
     - require:
-      - pkg.installed: postfix-pkgs
+      - pkg: postfix-pkgs
     - template: jinja
     - user: root
     - group: root
@@ -48,13 +48,13 @@ makina-postfix-local-catch-all-delivery-virtual:
     - group: root
     - mode: 644
     - require: 
-      - pkg.installed: postfix-pkgs
+      - pkg: postfix-pkgs
 
 makina-postfix-aliases-all-to-vagrant-user:
   file.append:
     - name: /etc/aliases
     - require: 
-      - pkg.installed: postfix-pkgs
+      - pkg: postfix-pkgs
     - text: 
       - "root: vagrant"
 
@@ -64,7 +64,7 @@ makina-postfix-postmap-virtual-dev:
     - name: postmap /etc/postfix/virtual && echo "" && echo "changed=yes"
     - stateful: True
     - require:
-      - pkg.installed: postfix-pkgs
+      - pkg: postfix-pkgs
     - watch:
       - file: makina-postfix-local-catch-all-delivery-virtual
 # postalias if /etc/aliases is altered
@@ -85,7 +85,7 @@ makina-postfix-chroot-hosts-sync:
     - stateful: True
     - name: cp -a /etc/hosts /var/spool/postfix/etc/hosts && echo "" && echo "changed=yes"
     - require:
-      - pkg.installed: postfix-pkgs
+      - pkg: postfix-pkgs
 
 makina-postfix-chroot-localtime-sync:
   cmd.run:
@@ -93,7 +93,7 @@ makina-postfix-chroot-localtime-sync:
     - stateful: True
     - name: cp -a /etc/localtime /var/spool/postfix/etc/localtime && echo "" && echo "changed=yes"
     - require:
-      - pkg.installed: postfix-pkgs
+      - pkg: postfix-pkgs
 
 makina-postfix-chroot-nsswitch-sync:
   cmd.run:
@@ -101,21 +101,21 @@ makina-postfix-chroot-nsswitch-sync:
     - stateful: True
     - name: cp -a /etc/nsswitch.conf  /var/spool/postfix/etc/nsswitch.conf  && echo "" && echo "changed=yes"
     - require:
-      - pkg.installed: postfix-pkgs
+      - pkg: postfix-pkgs
 makina-postfix-chroot-resolvconf-sync:
   cmd.run:
     - unless: diff -q /var/spool/postfix/etc/resolv.conf /etc/resolv.conf
     - stateful: True
     - name: cp -a /etc/resolv.conf /var/spool/postfix/etc/resolv.conf && echo "" && echo "changed=yes"
     - require:
-      - pkg.installed: postfix-pkgs
+      - pkg: postfix-pkgs
 
 makina-postfix-configuration-check:
   cmd.run:
     - name: /usr/sbin/postfix check 2>&1  && echo "" && echo "changed=no"
     - stateful: True
     - require:
-      - pkg.installed: postfix-pkgs
+      - pkg: postfix-pkgs
       - cmd: makina-postfix-chroot-hosts-sync
       - cmd: makina-postfix-chroot-resolvconf-sync
       - cmd: makina-postfix-chroot-nsswitch-sync
@@ -135,11 +135,11 @@ makina-postfix-service:
     - name: postfix
     - enable: True
     - require:
-      - pkg.installed: postfix-pkgs
+      - pkg: postfix-pkgs
       - cmd: makina-postfix-configuration-check
     - watch:
       # restart service in case of package install
-      - pkg.installed: postfix-pkgs
+      - pkg: postfix-pkgs
       # restart service in case of settings alterations
       - file.managed: /etc/postfix/main.cf
       # restart service if /etc/hosts were altered?
