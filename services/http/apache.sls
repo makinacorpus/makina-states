@@ -99,7 +99,7 @@ makina-apache-settings:
         mode: "dev"
 {% endif %}
     - require:
-      - pkg.installed: makina-apache-pkgs
+      - pkg: makina-apache-pkgs
     # full service restart in case of changes
     - watch_in:
        - cmd: makina-apache-conf-syntax-check
@@ -124,7 +124,7 @@ makina-apache-main-extra-settings-example:
 makina-apache-security-settings:
   file.managed:
     - require:
-      - pkg.installed: makina-apache-pkgs
+      - pkg: makina-apache-pkgs
     - name: {{ apacheData.confdir }}/_security.local.conf
     - source:
       - salt://makina-states/files/etc/apache2/conf.d/security.conf
@@ -222,7 +222,7 @@ makina-apache-default-vhost-directory:
 makina-apache-default-vhost-index:
   file.managed:
     - require:
-      - pkg.installed: makina-apache-pkgs
+      - pkg: makina-apache-pkgs
     - name: /var/www/default/index.html
     - source:
       - salt://makina-states/files/var/www/default/default_vh.index.html

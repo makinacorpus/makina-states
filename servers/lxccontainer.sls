@@ -18,7 +18,7 @@ makina-lxc-proxy-dep:
 {% if salt['config.get']('makina.lxc', False) %}
 lxc-container-pkgs:
   pkg.installed:
-    - names:
+    - pkgs:
       - apt-utils
     - require_in:
       - cmd: makina-lxc-proxy-dep

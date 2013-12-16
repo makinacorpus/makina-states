@@ -1,6 +1,6 @@
 ntp-pkgs:
   pkg.installed:
-    - names:
+    - pkgs:
       - ntp
       - tzdata
 

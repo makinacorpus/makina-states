@@ -138,7 +138,7 @@ include:
 
 shorewall-pkgs:
   pkg.installed:
-    - names:
+    - pkgs:
       - shorewall6
       - shorewall
 

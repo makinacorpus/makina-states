@@ -27,6 +27,6 @@ jdk-{{ver}}-pkgs:
 
 java-{{default_ver}}-install:
   pkg.installed:
-    - name: oracle-java{{default_ver}}-set-default
+    - pkgs: [oracle-java{{default_ver}}-set-default]
     - require:
       - pkg: jdk-{{default_ver}}-pkgs

@@ -24,7 +24,7 @@ before-pkg-install-proxy:
 {% if grains['os'] == 'Ubuntu' -%}
 ubuntu-pkgs:
   pkg.installed:
-    - names:
+    - pkgs:
       - language-pack-en
       - language-pack-fr
       - ubuntu-minimal
@@ -35,7 +35,7 @@ ubuntu-pkgs:
 
 sys-pkgs:
   pkg.installed:
-    - names:
+    - pkgs:
       - acpid
       - atop
       - bash-completion
@@ -84,13 +84,13 @@ sys-pkgs:
 {% if grains.get('makina.nodetype.devhost', False) %}
 devhost-pkgs:
   pkg.installed:
-    - names:
+    - pkgs:
       - localepurge
 {% endif %}
 
 dev-pkgs:
   pkg.installed:
-    - names:
+    - pkgs:
       - git
       - git-core
       {% if grains['os_family'] == 'Debian' -%}
@@ -109,7 +109,7 @@ dev-pkgs:
 net-pkgs:
   pkg:
     - installed
-    - names:
+    - pkgs:
       - dnsutils
       - ethtool
       - ifenslave-2.6
@@ -132,6 +132,6 @@ net-pkgs:
 
 salt-pkgs:
   pkg.installed:
-    - names:
+    - pkgs:
       - python-apt
 {% endif %}

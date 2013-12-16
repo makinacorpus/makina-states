@@ -61,7 +61,7 @@ include:
 
 tomcat-pkgs:
   pkg.installed:
-    - names:
+    - pkgs:
       - tomcat{{ver}}
     - require:
       - pkg: jdk-6-pkgs
