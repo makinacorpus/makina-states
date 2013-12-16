@@ -1,0 +1,84 @@
+#
+# GENERAL API TO USE IN STATES AS AN IMPORT CONTEXT
+#
+
+#
+# BOOTSTRAPS
+#
+{% set bootstrapped_devhost = salt['config.get']('makina.bootstrap.devhost', False) %}
+{% set bootstrapped_vm = salt['config.get']('makina.bootstrap.vm', False) %}
+{% set bootstrapped_server = salt['config.get']('makina.bootstrap.server', False) %}
+{% set bootstrap_mastersalt_minion = salt['config.get']('makina.bootstrap.mastersalt_minion', False) %}
+{% set bootstrap_mastersalt_master = salt['config.get']('makina.bootstrap.mastersalt_master', False) %}
+{% set bootstrapped_salt_minion = salt['config.get']('makina.bootstrap.salt_minion', False) %}
+{% set bootstrapped_salt_master = salt['config.get']('makina.bootstrap.salt_master', False) %}
+{% set ms = salt['config.get']('makina.bootstrap.mastersalt', False) -%}
+
+#
+# Servers nodetypes
+#
+{% set minion = salt['config.get']('makina.nodetype.salt_minion', False) %}
+{% set master = salt['config.get']('makina.nodetype.salt_master', False) %}
+{% set salt_minion = minion %}
+{% set salt_master = master %}
+{% set server = salt['config.get']('makina.nodetype.server', False) %}
+{% set vm = salt['config.get']('makina.nodetype.vm', False) %}
+{% set devhost = salt['config.get']('makina.nodetype.devhost', False) %}
+
+# mastersalt nodetypes
+{% set mastersalt_minion = salt['config.get']('makina.nodetype.mastersalt_minion', False) %}
+{% set mastersalt_master = salt['config.get']('makina.nodetype.mastersalt_master', False) %}
+
+#
+# LocalSettings
+#
+
+# various settings for states
+{% set network_managed = salt['config.get']('makina.network_managed', False) %}
+
+# editor group
+{% set group = salt['config.get']('salt.filesystem.group', 'editor') %}
+{% set group_id = salt['config.get']('salt.filesystem.group_id', '65753') %}
+{% set group = group %}
+
+#
+# services variables
+#
+
+# init systems
+{% set upstart = salt['config.get']('makina.upstart', False) %}
+
+# virt: hosts
+{% set docker_host = salt['config.get']('makina.virt.host.docker', False) %}
+{% set lxc_host = salt['config.get']('makina.virt.host.lxc', False) %}
+
+# virt: guest/containers
+{% set docker = salt['config.get']('makina.docker', False) %}
+{% set lxc = salt['config.get']('makina.lxc', False) %}
+
+# ntp is not applied to LXC containers !
+# So we will just match when our grain is set and not have a value of lxc
+{% set ntp_en = not lxc or not docker_host%}
+
+# firewall
+{% set shorewall_enabled = salt['config.get']('makina.shorewall.enabled', False) %}
+
+# LDAP integration
+{% set ldap_variables = salt['mc_utils.dictupdate']({
+  'enabled': False,
+  'ldap_uri': 'ldaps://localhost:636/',
+  'ldap_base': 'dc=company,dc=org',
+  'ldap_passwd': 'ou=People,dc=company,dc=org?sub',
+  'ldap_shadow': 'ou=People,dc=company,dc=org?sub',
+  'ldap_group': 'ou=Group,dc=company,dc=org?sub',
+  'ldap_cacert': ''}, salt['pillar.get']('ldap-default-settings',{})) %}
+{% set ldap_en = ldap_variables.get('enabled', False) %}
+
+# XXX: ATTENTION::: BIG WARNING: ::: XXX
+# as we shadow the salt variable here, put it at the end
+# XXX: ATTENTION::: BIG WARNING: ::: XXX
+#
+{% set mastersalt = mastersalt_master or mastersalt_minion or ms %}
+{% set no_bootstrap = not (vm or server or ms) %}
+{% set salt_enabled = vm or server or master or minion or mastersalt %}
+{% set salt = master or minion or server or vm or devhost %}
