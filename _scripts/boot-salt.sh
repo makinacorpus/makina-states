@@ -38,6 +38,24 @@ bs_yellow_log(){
     echo -e "${YELLOW}[bs] ${@}${NORMAL}";
 }
 
+# 1: connection failure
+# 0: connection success
+check_connectivity() {
+    ip=$1
+    port=$2
+    NC=$(which nc 2>/dev/null)
+    NETCAT=$(which netcat 2>/dev/null)
+    if [[ ! -e "$NC" ]];then
+        if [[ -e "$NETCAT" ]];then
+            NC=$NETCAT
+        fi
+    fi
+    if [[ ! -e "$NC" ]];then
+        test "$(nc -w 5 -v -z $ip $port 2>&1|egrep 'open$'|wc -l)" != "0";
+    fi
+    echo $?
+}
+
 warn_log() {
     if [[ -e "$SALT_BOOT_OUTFILE" ]] || [[ -e "$SALT_BOOT_LOGFILE" ]];then
         bs_log "logs for salt executions availables in:"
@@ -1036,8 +1054,8 @@ mastersalt_ping_test() {
 
 minion_challenge() {
     challenged_ms=""
-    global_tries=""
-    inner_tries=""
+    global_tries="60"
+    inner_tries="10"
     for i in `seq $global_tries`;do
         $PS aux|grep salt-minion|grep -v mastersalt|awk '{print $3}'|xargs kill -9 &> /dev/null
         service salt-minion restart
@@ -1090,10 +1108,24 @@ mastersalt_minion_challenge() {
     done
 }
 
+salt_master_connectivity_check() {
+    if [[ $(check_connectivity $SALT_MASTER_IP $SALT_MASTER_PORT) != "0" ]];then
+        die_in_error "SaltMaster is unreachable ($SALT_MASTER_IP/$SALT_MASTER_PORT)"
+    fi
+}
+
+mastersalt_master_connectivity_check() {
+    if [[ $(check_connectivity $MASTERSALT $MASTERSALT_PORT) != "0" ]];then
+        die_in_error "MastersaltMaster is unreachable ($MASTERSALT/$MASTERSALT_PORT)"
+    fi
+}
+
 make_association() {
     minion_keys="$(find $CONF_PREFIX/pki/master/minions -type f 2>/dev/null|wc -l)"
     minion_id="$(get_minion_id)"
     registered=""
+    bs_log "Entering association routine"
+
     if [[ -z "$minion_id" ]];then
         bs_yellow_log "Minion did not start correctly, the minion_id cache file is empty, trying to restart"
         service salt-minion restart
@@ -1141,6 +1173,7 @@ make_association() {
         bs_log "Forcing salt minion restart"
         $PS aux|grep salt-minion|grep -v mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
         service salt-minion restart
+        salt_master_connectivity_check
         bs_log "Waiting for salt minion key hand-shake"
         minion_id="$(get_minion_id)"
         if [[ "$(salt_ping_test)" == "0" ]] && [[ "$minion_keys" != "0" ]];then
@@ -1163,9 +1196,10 @@ make_association() {
     fi
 }
 
-make_mastersalt_assocation() {
+make_mastersalt_association() {
     minion_id="$(cat $CONF_PREFIX/minion_id &> /dev/null)"
     registered=""
+    bs_log "Entering mastersalt association routine"
     if [[ -z "$minion_id" ]];then
         bs_yellow_log "Minion did not start correctly, the minion_id cache file is empty, trying to restart"
         service salt-minion restart
@@ -1211,6 +1245,7 @@ make_mastersalt_assocation() {
         bs_log "Forcing mastersalt minion restart"
         $PS aux|grep salt-minion|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
         service mastersalt-minion restart
+        mastersalt_master_connectivity_check
         bs_log "Waiting for mastersalt minion key hand-shake"
         minion_id="$(get_minion_id)"
         if [[ "$(salt_ping_test)" == "0" ]];then
@@ -1319,7 +1354,7 @@ EOF
         if [[ -n "$MASTERSALT" ]];then bs_log "Skip MasterSalt installation, already done";fi
     fi
     if [[ -n "$MASTERSALT" ]];then
-        make_mastersalt_assocation
+        make_mastersalt_association
     fi
 }
 
