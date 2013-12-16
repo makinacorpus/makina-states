@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+
 #
 # SEE MAKINA-STATES DOCS FOR FURTHER INSTRUCTIONS (or ../README.rst):
 #
@@ -160,7 +160,7 @@ set_vars() {
     ETC_INIT="${ETC_INIT:-"$CONF_ROOT/init"}"
     detect_os
     HOSTNAME="$(hostname)"
-    CHRONO="$get_chrono)"
+    CHRONO="$(get_chrono)"
     lxc_ps=$(which lxc-ps &> /dev/null)
     if [[ "$(egrep "^container=" /proc/1/environ|wc -l)" == "0" ]];then
         # we are in a container !
@@ -921,7 +921,7 @@ base:
 EOF
         fi
         # add makina-salt.dev if not present
-        if [[ $(egrep -- "- makina-states\.dev\s*$" $topf|wc -l) == "0" ]];then
+        if [[ "$(egrep -- "- makina-states\.dev\s*$" $topf|wc -l)" == "0" ]];then
             if [[ -n "$DEBUG" ]];then
                 bs_log "Adding makina-states.dev to $topf"
             fi
@@ -932,52 +932,53 @@ a\    {% endif %}
 }" -i $topf
         fi
     done
-    for pillar_root in $PILLAR;do
-        if [[ $(grep -- "- salt" $PILLAR/top.sls|wc -l) == "0" ]];then
-            if [[ -n "$DEBUG" ]];then
-                bs_log "Adding salt to default top salt pillar"
-            fi
-            sed -re "/('|\")\*('|\"):/ {
+    if [[ "$(grep -- "- salt" $PILLAR/top.sls|wc -l)" == "0" ]];then
+        if [[ -n "$DEBUG" ]];then
+            bs_log "Adding salt to default top salt pillar"
+        fi
+        sed -re "/('|\")\*('|\"):/ {
 a\    - salt
-}" -i "$pillar_root/top.sls"
+}" -i "$PILLAR/top.sls"
+    fi
+    # Create a default salt.sls in the pillar if not present
+    if [[ ! -e "$PILLAR/salt.sls" ]];then
+        if [[ -n "$DEBUG" ]];then
+            bs_log "Creating default pillar's salt.sls"
         fi
-        # Create a default salt.sls in the pillar if not present
-        if [[ ! -f "$pillar_root/salt.sls" ]];then
-            if [[ -n "$DEBUG" ]];then
-                bs_log "Creating default pillar's salt.sls"
-            fi
-            echo 'salt:' > "$pillar_root/salt.sls"
+        echo 'salt:' > "$PILLAR/salt.sls"
+    fi
+    if [[ "$(egrep -- "^salt:" "$PILLAR/salt.sls"|wc -l)" == "0" ]];then
+        echo ''  >> "$PILLAR/salt.sls"
+        echo 'salt:' >> "$PILLAR/salt.sls"
+    fi
+    if [[ "$(egrep -- "\s*minion:\s*$" "$PILLAR/salt.sls"|wc -l)" == "0" ]];then
+        if [[ -n "$DEBUG" ]];then
+            bs_log "Adding minion info to pillar"
         fi
-        if [[ $(grep -- "\s+minion:" "$pillar_root/salt.sls"|wc -l) == "0" ]];then
-            if [[ -n "$DEBUG" ]];then
-                bs_log "Adding minion info to pillar"
-            fi
-            sed -re "/^salt:$/ {
+        sed -re "/^salt:\s*$/ {
 a\  minion:
 a\    master: $SALT_MASTER_DNS
 a\    master_port: $SALT_MASTER_PORT
 a\    interface: $SALT_MINION_IP
-}" -i "$pillar_root/salt.sls"
+}" -i "$PILLAR/salt.sls"
+    fi
+    # do no setup stuff for master for just a minion
+    if [[ "$SALT_MASTER_DNS" == "localhost" ]] \
+       && [[ "$(egrep -- "\s*master:\s*$" "$PILLAR/salt.sls"|wc -l)" == "0" ]];then
+        if [[ -n "$DEBUG" ]];then
+            bs_log "Adding master info to pillar"
         fi
-        # do no setup stuff for master for just a minion
-        if [[ "$SALT_MASTER_DNS" == "localhost" ]];then
-            if [[ $(grep -- "\s+master:" "$pillar_root/salt.sls"|wc -l) == "0" ]];then
-                if [[ -n "$DEBUG" ]];then
-                    bs_log "Adding master info to pillar"
-                fi
-                sed -re "/^salt:$/ {
+        sed -re "/^salt:\s*$/ {
 a\  master:
 a\    interface: $SALT_MASTER_IP
 a\    publish_port: $SALT_MASTER_PUBLISH_PORT
 a\    ret_port: $SALT_MASTER_PORT
-}" -i "$pillar_root/salt.sls"
-            fi
-        fi
-    done
+}" -i "$PILLAR/salt.sls"
+    fi
     # --------- MASTERSALT
     # Set default mastersalt  pillar
-    if [[ -n "$MASTERSALT" ]] && [[ ! -f "$MASTERSALT_PILLAR/mastersalt.sls" ]];then
-        if [[ $(grep -- "- mastersalt" "$MASTERSALT_PILLAR/top.sls"|wc -l) == "0" ]];then
+    if [[ -n "$MASTERSALT" ]];then
+        if [[ "$(grep -- "- mastersalt" "$MASTERSALT_PILLAR/top.sls"|wc -l)" == "0" ]];then
             if [[ -n "$DEBUG" ]];then
                 bs_log "Adding mastersalt info to top mastersalt pillar"
             fi
@@ -991,11 +992,15 @@ a\    - mastersalt
             fi
             echo "mastersalt:" >  "$MASTERSALT_PILLAR/mastersalt.sls"
         fi
-        if [[ $(grep -- "\s*minion:" """$MASTERSALT_PILLAR/mastersalt.sls"|wc -l) == "0" ]];then
+        if [[ "$(egrep -- "^mastersalt:\s*$" "$MASTERSALT_PILLAR/mastersalt.sls"|wc -l)" == "0" ]];then
+            echo ''  >> "$MASTERSALT_PILLAR/mastersalt.sls"
+            echo 'mastersalt:' >> "$MASTERSALT_PILLAR/mastersalt.sls"
+        fi
+        if [[ "$(egrep -- "^\s*minion:" "$MASTERSALT_PILLAR/mastersalt.sls"|wc -l)" == "0" ]];then
             if [[ -n "$DEBUG" ]];then
                 bs_log "Adding mastersalt minion info to mastersalt pillar"
             fi
-            sed -re "/^mastersalt:$/ {
+            sed -re "/^mastersalt:\s*$/ {
 a\  minion:
 a\    interface: ${MASTERSALT_MINION_IP}
 a\    master: ${MASTERSALT}
@@ -1003,11 +1008,11 @@ a\    master_port: ${MASTERSALT_PORT}
 }" -i "$MASTERSALT_PILLAR/mastersalt.sls"
         fi
         if [[ "$MASTERSALT" == "localhost" ]];then
-            if [[ $(grep -- "\s+master:" "$MASTERSALT_PILLAR/mastersalt.sls"|wc -l) == "0" ]];then
+            if [[ "$(egrep -- "\s+master:\s*$" "$MASTERSALT_PILLAR/mastersalt.sls"|wc -l)" == "0" ]];then
                 if [[ -n "$DEBUG" ]];then
                     bs_log "Adding mastersalt master info to mastersalt pillar"
                 fi
-                sed -re "/^mastersalt:$/ {
+                sed -re "/^mastersalt:\s*$/ {
 a\  master:
 a\    interface: $MASTERSALT_IP
 a\    ret_port: ${MASTERSALT_PORT}
