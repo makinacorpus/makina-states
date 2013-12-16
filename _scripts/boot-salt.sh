@@ -16,7 +16,6 @@
 #   and consequently not safe for putting directly in salt states (with a cmd.run).
 #
 
-
 get_abspath() {
     python << EOF
 import os
@@ -93,18 +92,20 @@ detect_os() {
             BEFORE_SAUCY=y
         fi
     fi
-    if [[ -e $CONF_ROOT/os-release ]];then
-        . $CONF_ROOT/os-release
+    if [[ -e "$CONF_ROOT/os-release" ]];then
         OS_RELEASE_ID=$(egrep ^ID= $CONF_ROOT/os-release|sed -re "s/ID=//g")
-        OS_RELEASE_NAME=$(egrep ^NAME= $CONF_ROOT/os-release|sed -re "s/NAME=//g")
-        OS_RELEASE_VERSION=$(egrep ^VERSION= $CONF_ROOT/os-release|sed -re "s/VERSION=//g")
-        OS_RELEASE_PRETTY_NAME=$(egrep ^VERSION= $CONF_ROOT/os-release|sed -re "s/VERSION=//g")
+        OS_RELEASE_NAME=$(egrep ^NAME= $CONF_ROOT/os-release|sed -re "s/NAME=""//g")
+        OS_RELEASE_VERSION=$(egrep ^VERSION= $CONF_ROOT/os-release|sed -re "s/VERSION=/""/g")
+        OS_RELEASE_PRETTY_NAME=$(egrep ^PRETTY_NAME= $CONF_ROOT/os-release|sed -re "s/PRETTY_NAME=""//g")
+    
     fi
     if [[ -e $CONF_ROOT/debian_version ]] && [[ "$OS_RELEASE_ID" == "debian" ]] && [[ "$DISTRIB_ID" != "Ubuntu" ]];then
         IS_DEBIAN="y"
+        SALT_BOOT_OS="debian"
         DISTRIB_CODENAME="$(echo $OS_RELEASE_PRETTY_NAME |sed -re "s/.*\((.*)\).*/\1/g")"
     fi
     if [[ $IS_UBUNTU ]];then
+        SALT_BOOT_OS="ubuntu"
         DISTRIB_NEXT_RELEASE="saucy"
         DISTRIB_BACKPORT="$DISTRIB_NEXT_RELEASE"
     elif [[ $IS_DEBIAN ]];then
@@ -117,7 +118,24 @@ detect_os() {
     fi
 }
 
+interactive_tempo(){
+    tempo="$@"
+    tempo_txt="$tempo"
+    if [[ $tempo_txt -ge 60 ]];then
+        tempo_txt="$(python -c "print $tempo / 60") minute(s)"
+    else
+        tempo_txt="$tempo second(s)"
+    fi
+    bs_yellow_log "The installation will continue in $tempo_txt"
+    bs_yellow_log "unless you press enter to continue or C-c to abort"
+    bs_yellow_log "-------------------  ????  -----------------------"
+    read -t $tempo
+    bs_yellow_log "Continuing..."
+}
+
 set_vars() {
+    CONF_ROOT="${CONF_ROOT:-"/etc"}"
+    ETC_INIT="${ETC_INIT:-"$CONF_ROOT/init"}"
     detect_os
     HOSTNAME="$(hostname)"
     CHRONO="$(date "+%F_%H-%M-%S")"
@@ -137,6 +155,7 @@ set_vars() {
     BASE_PACKAGES="$BASE_PACKAGES swig libssl-dev libyaml-dev debconf-utils python-virtualenv"
     BASE_PACKAGES="$BASE_PACKAGES vim git rsync"
     BASE_PACKAGES="$BASE_PACKAGES libzmq3-dev"
+    BASE_PACKAGES="$BASE_PACKAGES libgmp3-dev"
     STATES_URL="https://github.com/makinacorpus/makina-states.git"
     PREFIX="${PREFIX:-/srv}"
     PILLAR="${PILLAR:-$PREFIX/pillar}"
@@ -153,10 +172,8 @@ set_vars() {
     MASTERSALT_MS="$MASTERSALT_ROOT/makina-states"
     TMPDIR="${TMPDIR:-"/tmp"}"
     VENV_PATH="${VENV_PATH:-"/salt-venv"}"
-    CONF_ROOT="${CONF_ROOT:-"/etc"}"
     CONF_PREFIX="${CONF_PREFIX:-"$CONF_ROOT/salt"}"
     MCONF_PREFIX="${MCONF_PREFIX:-"$CONF_ROOT/mastersalt"}"
-    ETC_INIT="${ETC_INIT:-"$CONF_ROOT/init"}"
     # global installation marker
     SALT_BOOT_NOW_INSTALLED=""
     # the current mastersalt.makinacorpus.net hostname
@@ -259,6 +276,7 @@ set_vars() {
     export PROJECT_SETUPSTATE PROJECT_PATH PROJECTS_SALT_PATH PROJECTS_PILLAR_PATH PROJECT_PILLAR_LINK
     export PROJECT_PILLAR_PATH PROJECT_PILLAR_FILE PROJECT_SALT_LINK PROJECT_SALT_PATH PROJECT_TOPSLS_DEFAULT
     export PROJECT_TOPSTATE_DEFAULT PROJECT_SETUPSTATE_DEFAULT PROJECT_PILLAR_STATE
+    export SALT_BOOT_OS
     if [[ -n "$PROJECT_URL" ]];then
         if [[ -z "$PROJECT_NAME" ]];then
             die "Please provide a \$PROJECT_NAME"
@@ -269,8 +287,9 @@ set_vars() {
 # --------- PROGRAM START
 
 recap_(){
+    need_confirm="${1}"
     bs_yellow_log "--------------------------------------------------"
-    bs_yellow_log " MAKINA-STATES BOOTSTRAPPER"
+    bs_yellow_log " MAKINA-STATES BOOTSTRAPPER FOR $SALT_BOOT_OS"
     bs_yellow_log "   - $0"
     bs_yellow_log " Those informations have been written to:"
     bs_yellow_log "   - $TMPDIR/boot_salt_top"
@@ -322,13 +341,10 @@ recap_(){
         bs_log "PROJECT_NAME: ${PROJECT_NAME}"
     fi
     bs_yellow_log "---------------------------------------------------"
-    if [[ -z $SALT_BOOT_NOCONFIRM ]];then
-        bs_yellow_log "The installation will continue in 60 secondes"
-        bs_yellow_log "unless you press enter to continue or C-c to abort"
+    if [[ "$need_confirm" != "no" ]] && [[ -z "$SALT_BOOT_NOCONFIRM" ]];then
         bs_yellow_log "To not have this confirmation message, do:"
         bs_yellow_log "    export SALT_BOOT_NOCONFIRM='1'"
-        bs_yellow_log "---------------------------------------------------"
-        read -t 60
+        interactive_tempo 60
     fi
     # export variables to support a restart
     export SALT_BOOT_ENV="$SALT_BOOT_ENV"
@@ -360,7 +376,7 @@ recap_(){
 
 recap() {
     recap_
-    recap_ > "$TMPDIR/boot_salt_top"
+    recap_ "no" > "$TMPDIR/boot_salt_top"
 }
 
 is_apt_installed() {
@@ -430,9 +446,13 @@ i_prereq() {
         apt-get remove -y --force-yes libzmq libzmq1 libzmq-dev &> /dev/null
         apt-get update -qq && lazy_apt_get_install libzmq3-dev
         ret="$?"
-        teardown_backports && apt-get update
         if [[ $ret != "0" ]];then
             die $ret "Install of zmq3 failed"
+        fi
+        ret="$?"
+        teardown_backports && apt-get update
+        if [[ $ret != "0" ]];then
+            die $ret "Teardown backports failed"
         fi
     fi
     for i in $BASE_PACKAGES;do
@@ -1019,7 +1039,7 @@ make_association() {
             bs_log " We are going to wait 10 minutes for you to setup the minion on mastersalt and"
             bs_log " setup an entry for this specific minion"
             bs_log " export SALT_NO_CHALLENGE=1 to remove the temporisation (enter to continue when done)"
-            read -t $((10*60))
+            interactive_tempo $((10*60))
         else
             bs_log "  [*] No temporisation for challenge, trying to spawn the minion"
         fi
@@ -1167,7 +1187,7 @@ EOF
                 bs_log " We are going to wait 10 minutes for you to setup the minion on mastersalt and"
                 bs_log " setup an entry for this specific minion"
                 bs_log " export MASTERSALT_NO_CHALLENGE=1 to remove the temporisation (enter to continue when done)"
-                read -t $((10*60))
+                interactive_tempo $((10*60))
                 # sleep 15 seconds giving time for the minion to wake up
             else
                 bs_log "  [*] No temporisation for challenge, trying to spawn the minion"
