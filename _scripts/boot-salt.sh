@@ -1147,12 +1147,12 @@ killall_local_minions() {
 
 restart_local_mastersalt_masters() {
     killall_local_mastersalt_masters
-    service salt-master restart
+    service mastersalt-master restart
 }
 
 restart_local_mastersalt_minions() {
     killall_local_mastersalt_minions
-    service salt-minion restart
+    service mastersalt-minion restart
 }
 
 restart_local_masters() {
