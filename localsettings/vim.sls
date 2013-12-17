@@ -1,16 +1,8 @@
 include:
   - makina-states.localsettings.users
-
-{% set vimrc_default_users = ['root', 'sysadmin'] %}
-{% if grains['os'] == 'Ubuntu' %}
-  {% set dummy = vimrc_default_users.append('ubuntu') %}
-{% endif %}
-{% for i in vimrc_default_users %}
-{% set home = "" %}
-{% if i != "root" %}
-{% set home = "/home" %}
-{% endif %}
-{% set home = home + "/" + i %}
+{% import "makina-states/_macros/vars.jinja" as vars with context %}
+{% for i, data in vars.users %}
+{% set home = data['gome'] %}
 vimrc_configs-touch-{{ i }}:
   file.touch:
     - name: {{ home }}/.vimrc

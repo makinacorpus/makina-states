@@ -30,29 +30,24 @@ include:
 #       bar.pub
 #
 # The keys are searched in /salt_root/files/ssh/
+{% import "makina-states/_macros/vars.jinja" as vars with context %}
 
-{% set ssh_default_users = {'root': '', 'sysadmin': ''} %}
-{% if grains['os'] == 'Ubuntu' %}
-  {% set dummy = ssh_default_users.update({'ubuntu': ''})  %}
-{% endif %}
-{% for sid, sshdata in pillar.items() %}
-  {% if 'makina-users' in sid %}
-    {% set keys = sshdata.get('keys', {}) %}
-    {% set users = sshdata.get('users', ssh_default_users) %}
-    {% for user, udata in users.items() %}
-      {% for k, keys in keys.items() %}
-        {% for key in keys %}
+{% for sid, sshdata in vars.users.items() %}
+  {% set keys = sshdata.get('keys', {}) %}
+  {% set users = sshdata.get('users', {}) %}
+  {% for user, udata in users.items() %}
+    {% for k, keys in keys.items() %}
+      {% for key in keys %}
 ssh_auth-{{ sid }}-{{ user }}-{{ k }}-{{ key }}:
-  ssh_auth.present:
-    - require:
-      - user: {{ user }}
-    - comment: key for {{ k }}
+ssh_auth.present:
+  - require:
     - user: {{ user }}
-    - source: salt://files/ssh/{{ key }}
-        {% endfor %}
+  - comment: key for {{ k }}
+  - user: {{ user }}
+  - source: salt://files/ssh/{{ key }}
       {% endfor %}
     {% endfor %}
-  {% endif %}
+  {% endfor %}
 {% endfor %}
 
 extend:
