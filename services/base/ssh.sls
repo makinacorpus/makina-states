@@ -17,7 +17,6 @@ include:
 #       password: foo
 #
 # USE     ``python -c "import crypt, getpass, pwd; print crypt.crypt('password', '\$6\$SALTsalt\$')"``
-
 #
 # Define any foo-makina-users you want (to make groups, for example)
 #
@@ -32,20 +31,17 @@ include:
 # The keys are searched in /salt_root/files/ssh/
 {% import "makina-states/_macros/vars.jinja" as vars with context %}
 
-{% for sid, sshdata in vars.users.items() %}
-  {% set keys = sshdata.get('keys', {}) %}
-  {% set users = sshdata.get('users', {}) %}
-  {% for user, udata in users.items() %}
-    {% for k, keys in keys.items() %}
-      {% for key in keys %}
-ssh_auth-{{ sid }}-{{ user }}-{{ k }}-{{ key }}:
-ssh_auth.present:
-  - require:
+
+{% for user, keys_info in vars.user_keys.items() %}
+  {% for k, keys in keys_info.items() %}
+    {% for key in keys %}
+ssh_auth-{{ user }}-{{ k }}-{{ key }}:
+  ssh_auth.present:
+    - require:
+      - user: {{ user }}
+    - comment: key for {{ k }}
     - user: {{ user }}
-  - comment: key for {{ k }}
-  - user: {{ user }}
-  - source: salt://files/ssh/{{ key }}
-      {% endfor %}
+    - source: salt://files/ssh/{{ key }}
     {% endfor %}
   {% endfor %}
 {% endfor %}

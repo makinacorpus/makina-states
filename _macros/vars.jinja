@@ -75,23 +75,72 @@
 {% set ldap_en = ldap_variables.get('enabled', False) %}
 
 # Users
-{% set users = {
-  'root': {'admin':True},
-  'sysadmin': {'admin':True},}
-%}
-{%- if grains['os'] == 'Ubuntu' %}
-{% set dummy = users.update(
-  {'ubuntu': {'admin': True } }
-) %}
-{% endif %}
+{#
+
+For system users, we use special pillar entries suffixed by '-makina-users'
+System Users
+-------------
+To define system users, we make a sub mapping of the 'users' pillar entry containing the user info
+See makina-states.localsettings.vim.
+See makina-states.localsettings.users.
+See makina-states.localsettings.git
+
+SSH
+-----
+To allow users to connect as root we define in pillar an entry which tie
+ssh keys with an identifier to a specific or specific users in the users ey
+See makina-states.services.base.ssh.
+
+foo-makina-users:
+  keys:
+    mpa:
+      - kiorky.pub
+  users:
+    root:
+      admin: True
+
+bar-makina-users:
+  toto: {}
+
+====>
+
+{
+'ssh': {'root': {'mpa': ['kiorky.pub']}},
+'users': {'root': {'admin': 'True'}, 'toto': {}}
+}
+
+And allows mpa to connect as root which is a super user with kiorky.pub as sshkey
+This will also create a standard user named 'toto'
+
+#}
+{% set users = {} %}
+{% set user_keys = {} %}
+{% set keys_mappings = {'users': users, 'keys': user_keys} %}
 {% for sid, data in pillar.items() %}
-  {% if 'makina-users' in sid %}
-    {% set susers=data.get('users', {}) %}
+  {% if sid.endswith('-makina-users') %}
+    {% set susers = data.get('users', {}) %}
+    {% set skeys = data.get('keys', {}) %}
     {% for uid, udata in susers.items() %}
+      {# load user keys #}
+      {% if not uid in user_keys %}
+          {% set dummy = user_keys.update({uid: {}}) %}
+      {% endif %}
+      {% set user_key = user_keys[uid] %}
+      {% for keyid, keys in skeys.items()  %}
+        {% if not keyid in user_keys[uid] %}
+          {% set dummy = user_key.update({keyid: []}) %}
+        {% endif %}
+        {% for pubkey in keys %}
+          {% if not pubkey in  user_key[keyid] %}
+            {% set dummy =  user_key[keyid].append(pubkey) %}
+          {% endif %}
+        {% endfor %}
+      {% endfor %}
+      {# load user infos by either adding it or updating the already connected data #}
       {% if uid not in users %}
-        {% set dummy=users.update({uid: udata})%}
+        {% set dummy = users.update({uid: udata})%}
       {% else %}
-        {% set u=users[uid] %}
+        {% set u = users[uid] %}
         {% for k, value in udata.items() %}
           {% set dummy=u.update({k: value}) %}
         {% endfor %}
@@ -99,17 +148,24 @@
     {% endfor%}
   {% endif %}
 {% endfor %}
+{% for i in ['sysadmin', 'root'] %}
+  {% if not i in users %}
+    {% set dummy = users.update({i: {'admin': True}}) %}
+  {% else %}
+    {% set dummy = users[i].update({'admin': True}) %}
+  {% endif %}
+{% endfor %}
 {% for i in users.keys() %}
   {% set data= users[i].copy() %}
-  {% if i != "root" %}
+  {% if i in ['sysadmin'] %}
   {% set home = data.get('home', "/home/"+i) %}
-  {% else %}
+  {% elif i  == 'root' %}
   {% set home = "/root" %}
+  {% else %}
+  {% set home = data.get('home', "/home/"+i) %}
   {% endif %}
   {% set dummy = users[i].update({'home': home}) %}
 {% endfor %}
-
-
 # XXX: ATTENTION::: BIG WARNING: ::: XXX
 # as we shadow the salt variable here, put it at the end
 # XXX: ATTENTION::: BIG WARNING: ::: XXX
