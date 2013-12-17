@@ -298,7 +298,7 @@ set_vars() {
     # --------- PROJECT VARS
     MAKINA_PROJECTS="makina-projects"
     PROJECTS_PATH="/srv/projects"
-    PROJECT_URL="${PROJECT_URL:-}"
+    PROJECT_URL="${PROJECT_URL:-""}"
     PROJECT_BRANCH="${PROJECT_BRANCH:-salt}"
     PROJECT_NAME="${PROJECT_NAME:-}"
     PROJECT_TOPSLS="${PROJECT_TOPSLS:-}"
@@ -325,6 +325,12 @@ set_vars() {
     export SALT_BOOT_OS
     export MASTERSALT_IP MASTERSALT MASTERSALT_MINION_DNS MASTERSALT_MINION_IP MASTERSALT_PORT MASTERSALT_PUBLISH_PORT
     export SALT_MASTER_IP SALT_MASTER_DNS SALT_MINION_IP SALT_MINION_DNS SALT_MASTER_PORT SALT_MASTER_PUBLISH_PORT
+    if [[ -n $PROJECT_URL ]];then
+        if [[ -z $PROJECT_NAME ]];then
+            PROJECT_NAME="$(basename $(echo $PROJECT_URL|sed "s/.git$//"))"
+        fi
+
+    fi
     if [[ -n "$PROJECT_URL" ]];then
         if [[ -z "$PROJECT_NAME" ]];then
             die "Please provide a \$PROJECT_NAME"
@@ -360,6 +366,9 @@ recap_(){
     bs_log "bootstrap: $bootstrap"
     bs_log "bootstrap_env: $bootstrap_env"
     bs_log "SALT_BOOT_INPUTED: $SALT_BOOT_INPUTED"
+    if [[ -n $MASTERSALT_BOOT_SKIP_SETUP ]];then
+        bs_log "MASTERSALT_BOOT_SKIP_SETUP: $MASTERSALT_BOOT_SKIP_SETUP"
+    fi
     if [[ -n $SALT_BOOT_SKIP_SETUP ]];then
         bs_log "SALT_BOOT_SKIP_SETUP: $SALT_BOOT_SKIP_SETUP"
     fi
@@ -387,7 +396,7 @@ recap_(){
         bs_yellow_log "-----"
         bs_yellow_log "PROJECT variables:"
         bs_yellow_log "-----"
-        bs_log "PROJECT_URL:  ${PROJECT_UR}"
+        bs_log "PROJECT_URL:  ${PROJECT_URL}"
         bs_log "PROJECT_BRANCH: ${PROJECT_BRANCH}"
         bs_log "PROJECT_NAME: ${PROJECT_NAME}"
     fi
@@ -403,6 +412,7 @@ recap_(){
     export SALT_BOOT="$SALT_BOOT"
     export SALT_PILLAR="$PILLAR"
     export SALT_ROOT="$ROOT"
+    export MASTERSALT_BOOT_SKIP_SETUP="$MASTERSALT_BOOT_SKIP_SETUP"
     if [[ -n $SALT_BOOT_SKIP_SETUP ]];then
         export SALT_BOOT_SKIP_SETUP="$SALT_BOOT_SKIP_SETUP"
     fi
@@ -587,7 +597,7 @@ salt_call_wrapper_() {
     else
         nomatch=y
     fi
-    if [[ -z "$nomatch" ]];then
+    if [[ "$nomatch" == "y" ]];then
         last_salt_retcode=0
     fi
     #rm -rf "$outf" "$logf" 2> /dev/null
@@ -1122,6 +1132,7 @@ EOF
         if [[ -n "$SALT_BOOT_DEBUG" ]];then cat $SALT_BOOT_OUTFILE;fi
         if [[ "$ret" != "0" ]];then
             echo "Mastersalt: Failed bootstrap env: $bootstrap_env"
+            warn_log
             exit -1
         fi
         # capture output of a call of bootstrap states
@@ -1130,6 +1141,7 @@ EOF
         ret="$(salt_call_wrapper --local state.sls $bootstrap)"
         if [[ "$ret" != "0" ]];then
             bs_log "Failed bootstrap: $bootstrap !"
+            warn_log
             exit -1
         fi
         if [[ -n "$SALT_BOOT_DEBUG" ]];then cat $SALT_BOOT_OUTFILE;fi
@@ -1277,6 +1289,7 @@ make_association() {
     fi
     bs_log "If the bootstrap program seems to block here"
     challenge_message
+    bs_log "ack"
     if [[ -z "$minion_id" ]];then
         bs_yellow_log "Minion did not start correctly, the minion_id cache file is empty, trying to restart"
         restart_local_minions
@@ -1315,6 +1328,7 @@ make_association() {
                 ret="$?"
                 if [[ "$ret" != "0" ]];then
                     bs_log "Failed accepting keys"
+                    warn_log
                     exit -1
                 else
                     bs_log "Accepted key"
@@ -1336,13 +1350,15 @@ make_association() {
             minion_challenge
             if [[ -z "$challenged_ms" ]];then
                 bs_log "Failed accepting salt key on master for $minion_id"
+                warn_log
                 exit -1
             fi
             minion_id="$(get_minion_id)"
             registered="1"
         fi
         if [[ -z "$registered" ]];then
-            bs_log "Failed accepting salt key on $SALT_MASTER_IP for $minion_id"
+                bs_log "Failed accepting salt key on $SALT_MASTER_IP for $minion_id"
+                warn_log
             exit -1
         fi
     fi
@@ -1363,6 +1379,7 @@ make_mastersalt_association() {
     fi
     bs_log "If the bootstrap program seems to block here"
     challenge_mastersalt_message
+    bs_log "ack"
     if [[ -z "$minion_id" ]];then
         bs_yellow_log "Minion did not start correctly, the minion_id cache file is empty, trying to restart"
         restart_local_mastersalt_minions
@@ -1397,6 +1414,7 @@ make_mastersalt_association() {
                 ret="$?"
                 if [[ "$ret" != "0" ]];then
                     bs_log "Failed accepting mastersalt keys"
+                    warn_log
                     exit -1
                 else
                     bs_log "Accepted mastersalt key"
@@ -1417,6 +1435,7 @@ make_mastersalt_association() {
             mastersalt_minion_challenge
             if [[ -z "$challenged_ms" ]];then
                 bs_log "Failed accepting salt key on master for $minion_id"
+                warn_log
                 exit -1
             fi
             minion_id="$(get_minion_id)"
@@ -1424,6 +1443,7 @@ make_mastersalt_association() {
         fi
         if [[ -z "$registered" ]];then
             bs_log "Failed accepting mastersalt key on $MASTERSALT for $minion_id"
+            warn_log
             exit -1
         fi
     fi
@@ -1494,7 +1514,8 @@ EOF
         if [[ -n "$SALT_BOOT_DEBUG" ]];then cat $SALT_BOOT_OUTFILE;fi
         if [[ "$ret" != "0" ]];then
             echo "Mastersalt: Failed bootstrap env: $mastersalt_bootstrap_env"
-            exit -1
+                warn_log
+                exit -1
         fi
         # run mastersalt master+minion setup
         bs_log "Running mastersalt bootstrap: $mastersalt_bootstrap"
@@ -1503,6 +1524,7 @@ EOF
         if [[ -n "$SALT_BOOT_DEBUG" ]];then cat $SALT_BOOT_OUTFILE;fi
         if [[ "$ret" != "0" ]];then
             echo "Mastersalt: Failed bootstrap: $mastersalt_bootstrap"
+            warn_log
             exit -1
         fi
         if [[ -n "$SALT_BOOT_DEBUG" ]];then cat $SALT_BOOT_OUTFILE;fi
@@ -1541,8 +1563,9 @@ get_module_args() {
 
 maybe_setup_mastersalt_env() {
     # IMPORTANT: MASTERSALT BEFORE SALT !!!
-    if [[ -z $SALT_BOOT_SKIP_SETUP ]] && [[ -n "$USE_MASTERSALT" ]];then
+    if [[ -z $MASTERSALT_BOOT_SKIP_SETUP ]] && [[ -n "$USE_MASTERSALT" ]];then
         bs_log "Running makina-states setup for mastersalt"
+        bs_log "    export MASTERSALT_BOOT_SKIP_SETUP=1 to skip (dangerous))"
         LOCAL=""
         if [[ "$(mastersalt_ping_test)" != "0" ]];then
             LOCAL="--local $LOCAL"
@@ -1571,6 +1594,7 @@ setup_salt_env() {
         ret="$(salt_call_wrapper $LOCAL state.sls makina-states.setup)"
         if [[ "$ret" != "0" ]];then
             bs_log "Failed post-setup"
+            warn_log
             exit -1
         fi
     fi

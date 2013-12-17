@@ -11,7 +11,9 @@ About
 
 What states can be found in makina-states
 -----------------------------------------
-Most states are in ``makina.services``.
+The state to read immediatly is `servers.base <https://github.com/makinacorpus/makina-states/blob/master/servers/base.sls>`_.
+Most configuration are in `localsettings <https://github.com/makinacorpus/makina-states/blob/master/localsettings`_.
+Most states are in `services <https://github.com/makinacorpus/makina-states/blob/master/services>`_.
 The most outstanding features are:
 
     - Bootstrapping our saltstack binaries

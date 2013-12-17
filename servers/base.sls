@@ -6,6 +6,11 @@
 # - a grain to flag the machine as using this configuration to store for
 #   later reconfigurations
 #
+# There a a lot of variables that can modify the configurationa applied to a minion.
+# To find what to do, read the states that seem to be tied to your needs.
+# You can alsohave a look to _macros/vars.sls and _macros/_salt.sls which are the two
+# most importants macros of this installation. They expose a lot of those variables
+# for the underlying states to react on that stuff.
 # base:
 #   minionid:
 #     - makina-states.servers.base
@@ -48,6 +53,8 @@
 #       /  \     \____ postfix
 #    pgsql  mysql \
 #                  \__ dovecot
+#
+
 
 {% set nomatch = False %}
 {% set mastersalt_nomatch = False %}
