@@ -109,6 +109,9 @@ detect_os() {
         if [[ "$DISTRIB_CODENAME" == "raring" ]] || [[ -n "$EARLY_UBUNTU" ]];then
             BEFORE_SAUCY=y
         fi
+        if [[ "$DISTRIB_ID" == "Ubuntu" ]];then
+            IS_UBUNTU="y"
+        fi
     fi
     if [[ -e "$CONF_ROOT/os-release" ]];then
         OS_RELEASE_ID=$(egrep ^ID= $CONF_ROOT/os-release|sed -re "s/ID=//g")
@@ -482,6 +485,7 @@ setup_backports() {
 
 teardown_backports() {
     # on ubuntu disable backports release repos, & on debian just backport
+
     if [[ -n "$BEFORE_SAUCY" ]] && [[ -n "$IS_UBUNTU" ]];then
         bs_log "Removing backport from $DISTRIB_BACKPORT to $DISTRIB_CODENAME"
         sed -re "s/${DISTRIB_BACKPORT}/${DISTRIB_CODENAME}/g" -i $CONF_ROOT/apt/sources.list
