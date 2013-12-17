@@ -1123,10 +1123,10 @@ EOF
             cat > $CONF_PREFIX/minion << EOF
 file_roots: {"base":["$ROOT"]}
 pillar_roots: {"base":["$PILLAR"]}
-module_dirs: [$ROOT/_modules, $MS/makina-states/_modules]
-returner_dirs: [$ROOT/_returners, $MS/makina-states/_returners]
-states_dirs: [$ROOT/_statess, $MS/makina-states/_states]
-render_dirs: [$ROOT/_renderers, $MS/makina-states/_renderers]
+module_dirs: [$ROOT/_modules, $MS/_modules]
+returner_dirs: [$ROOT/_returners, $MS/_returners]
+states_dirs: [$ROOT/_states, $MS/_states]
+render_dirs: [$ROOT/_renderers, $MS/_renderers]
 EOF
         fi
         # run salt master+minion boot_env bootstrap
@@ -1502,10 +1502,10 @@ EOF
             cat > $MCONF_PREFIX/minion << EOF
 file_roots: {"base":["$MASTERSALT_ROOT"]}
 pillar_roots: {"base":["$MASTERSALT_PILLAR"]}
-module_dirs: [$MASTERSALT_ROOT/_modules, $MASTERSALT_MS/makina-states/_modules]
-returner_dirs: [$MASTERSALT_ROOT/_returners, $MASTERSALT_MS/makina-states/_returners]
-states_dirs: [$MASTERSALT_ROOT/_statess, $MASTERSALT_MS/makina-states/_states]
-render_dirs: [$MASTERSALT_ROOT/_renderers, $MASTERSALT_MS/makina-states/_renderers]
+module_dirs: [$MASTERSALT_ROOT/_modules, $MASTERSALT_MS/_modules]
+returner_dirs: [$MASTERSALT_ROOT/_returners, $MASTERSALT_MS/_returners]
+states_dirs: [$MASTERSALT_ROOT/_states, $MASTERSALT_MS/_states]
+render_dirs: [$MASTERSALT_ROOT/_renderers, $MASTERSALT_MS/_renderers]
 EOF
         fi
 
