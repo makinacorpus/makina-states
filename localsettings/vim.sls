@@ -1,7 +1,7 @@
 include:
   - makina-states.localsettings.users
 {% import "makina-states/_macros/vars.jinja" as vars with context %}
-{% for i, data in vars.users %}
+{% for i, data in vars.users.items() %}
 {% set home = data['gome'] %}
 vimrc_configs-touch-{{ i }}:
   file.touch:
