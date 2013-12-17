@@ -1,20 +1,15 @@
+{% import "makina-states/_macros/vars.jinja" as vars with context %}
 include:
   - makina-states.localsettings.users
 
-{% set ssh_default_users = ['root', 'sysadmin'] %}
-{% if grains['os'] == 'Ubuntu' %}
-  {% set dummy = ssh_default_users.append('ubuntu') %}
-{% endif %}
-{% for i in ssh_default_users %}
-{% set home = "" %}
-{% if i != "root" %}
-{% set home = "/home" %}
-{% endif %}
-{% set home = home + "/" + i %}
+{% for i, data in vars.users.items() %}
+{% set home = data['home'] %}
+
 gitorious_base_ssh_configs-group-{{ i }}:
   file.directory:
     - name: {{ home }}/.ssh
     - mode: 0700
+    - user: {{i}}
     - makedirs: True
     - require:
       - user: {{ i }}
@@ -30,6 +25,7 @@ gitorious_base_ssh_configs-append-{{ i }}:
     - require:
       - file: gitorious_base_ssh_configs-touch-{{ i }}
     - name : {{ home }}/.ssh/config
+    - user: {{i}}
     - text: |
             # entry managed via salt !
             host=    gitorious.makina-corpus.net
@@ -43,4 +39,3 @@ global-git-config:
     - source: salt://makina-states/files/etc/gitconfig
     - mode: 755
     - template: jinja
-

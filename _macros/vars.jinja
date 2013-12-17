@@ -74,6 +74,42 @@
   'ldap_cacert': ''}, salt['pillar.get']('ldap-default-settings',{})) %}
 {% set ldap_en = ldap_variables.get('enabled', False) %}
 
+# Users
+{% set users = {
+  'root': {'admin':True},
+  'sysadmin': {'admin':True},}
+%}
+{%- if grains['os'] == 'Ubuntu' %}
+{% set dummy = users.update(
+  {'ubuntu': {'admin': True } }
+) %}
+{% endif %}
+{% for sid, data in pillar.items() %}
+  {% if 'makina-users' in sid %}
+    {% set susers=data.get('users', {}) %}
+    {% for uid, udata in susers.items() %}
+      {% if uid not in users %}
+        {% set dummy=users.update({uid: udata})%}
+      {% else %}
+        {% set u=users[uid] %}
+        {% for k, value in udata.items() %}
+          {% set dummy=u.update({k: value}) %}
+        {% endfor %}
+      {% endif %}
+    {% endfor%}
+  {% endif %}
+{% endfor %}
+{% for i in users.keys() %}
+  {% set data= users[i].copy() %}
+  {% if i != "root" %}
+  {% set home = data.get('home', "/home/"+i) %}
+  {% else %}
+  {% set home = "/root" %}
+  {% endif %}
+  {% set dummy = users[i].update({'home': home}) %}
+{% endfor %}
+
+
 # XXX: ATTENTION::: BIG WARNING: ::: XXX
 # as we shadow the salt variable here, put it at the end
 # XXX: ATTENTION::: BIG WARNING: ::: XXX
@@ -82,3 +118,5 @@
 {% set no_bootstrap = not (vm or server or ms) %}
 {% set salt_enabled = vm or server or master or minion or mastersalt %}
 {% set salt = master or minion or server or vm or devhost %}
+
+

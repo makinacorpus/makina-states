@@ -6,34 +6,12 @@
 # >>> import crypt, getpass, pwd; print crypt.crypt('password', '$6$SALTsalt$')
 #
 #
-
 # Idea is to create any user/group needed for ssh managment
 
-{% set users={'root': {'admin':True},'sysadmin': {'admin':True},} %}
-{%- if grains['os'] == 'Ubuntu' %}
-{% set dummy = users.update(
-  {'ubuntu': {'admin': True } }
-  ) %}
-{% endif %}
-{% for sid, data in pillar.items() %}
-  {% if 'makina-users' in sid %}
-    {% set susers=data.get('users', {}) %}
-    {% for uid, udata in susers.items() %}
-      {% if uid not in users %}
-        {% set dummy=users.update({uid: udata})%}
-      {% else %}
-        {% set u=users[uid] %}
-        {% for k, value in udata.items() %}
-          {% set dummy=u.update({k: value}) %}
-        {% endfor %}
-      {% endif %}
-    {% endfor%}
-  {% endif %}
-{% endfor %}
-
-{% for id, udata in users.items() %}
-{% set password=udata.get('password', False) %}
-{% set home=udata.get('home', '/home/'+id) %}
+{% import "makina-states/_macros/vars.jinja" as vars with context %}
+{% for id, udata in vars.users.items() %}
+{% set password = udata.get('password', False) %}
+{% set home = udata['home'] %}
 {{id}}:
   group.present:
     - name: {{ id }}
