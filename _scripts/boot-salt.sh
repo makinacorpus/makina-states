@@ -298,7 +298,7 @@ set_vars() {
     # --------- PROJECT VARS
     MAKINA_PROJECTS="makina-projects"
     PROJECTS_PATH="/srv/projects"
-    PROJECT_URL="${PROJECT_URL:-}"
+    PROJECT_URL="${PROJECT_URL:-""}"
     PROJECT_BRANCH="${PROJECT_BRANCH:-salt}"
     PROJECT_NAME="${PROJECT_NAME:-}"
     PROJECT_TOPSLS="${PROJECT_TOPSLS:-}"
@@ -325,6 +325,12 @@ set_vars() {
     export SALT_BOOT_OS
     export MASTERSALT_IP MASTERSALT MASTERSALT_MINION_DNS MASTERSALT_MINION_IP MASTERSALT_PORT MASTERSALT_PUBLISH_PORT
     export SALT_MASTER_IP SALT_MASTER_DNS SALT_MINION_IP SALT_MINION_DNS SALT_MASTER_PORT SALT_MASTER_PUBLISH_PORT
+    if [[ -n $PROJECT_URL ]];then
+        if [[ -z $PROJECT_NAME ]];then
+            PROJECT_NAME="$(basename $(echo $PROJECT_URL|sed "s/.git$//"))"
+        fi
+
+    fi
     if [[ -n "$PROJECT_URL" ]];then
         if [[ -z "$PROJECT_NAME" ]];then
             die "Please provide a \$PROJECT_NAME"
@@ -390,7 +396,7 @@ recap_(){
         bs_yellow_log "-----"
         bs_yellow_log "PROJECT variables:"
         bs_yellow_log "-----"
-        bs_log "PROJECT_URL:  ${PROJECT_UR}"
+        bs_log "PROJECT_URL:  ${PROJECT_URL}"
         bs_log "PROJECT_BRANCH: ${PROJECT_BRANCH}"
         bs_log "PROJECT_NAME: ${PROJECT_NAME}"
     fi
