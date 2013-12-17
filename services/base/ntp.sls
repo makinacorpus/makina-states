@@ -1,17 +1,20 @@
-{% import "makina-states/_macros/vars.jinja" as c with context %}
-{% if c.ntp_en %}
+{% import "makina-states/_macros/services.jinja" as services with context %}
+{{ services.register('base.ntp') }}
+
+{% set localsettings = services.localsettings %}
+{% set locs = localsettings.locations %}
+
 ntp-pkgs:
   pkg.installed:
     - pkgs:
       - ntp
       - tzdata
+      - ntpdate
 
-ntpdate:
-  pkg:
-    - installed
 {% if grains['os'] not in ['Debian', 'Ubuntu'] %}
-  service:
-    - enabled
+ntpdate-svc:
+  service.enabled:
+    - name: ntpdate
 {% endif %}
 
 ntpd:
@@ -21,20 +24,21 @@ ntpd:
     - name: ntp
 {% endif %}
     - watch:
-      - file: /etc/ntp.conf
+      - file: {{ locs.conf_dir }}/ntp.conf
       - pkg: ntp-pkgs
 
-/etc/ntp.conf:
+{{ locs.conf_dir }}/ntp.conf:
   file.managed:
     - user: root
     - group: root
     - mode: '0440'
     - template: jinja
     - source: salt://makina-states/files/etc/ntp.conf
+    - var_lib: {{ locs.var_lib_dir }}
     - require:
       - pkg: ntp-pkgs
 
-/etc/default/ntpdate:
+{{ locs.conf_dir }}/default/ntpdate:
   file.managed:
     - user: root
     - group: root
@@ -43,4 +47,4 @@ ntpd:
     - source: salt://makina-states/files/etc/default/ntpdate
     - require:
       - pkg: ntp-pkgs
-{% endif %}
+

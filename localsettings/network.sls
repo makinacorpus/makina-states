@@ -1,11 +1,10 @@
-{% import "makina-states/_macros/vars.jinja" as c with context %}
-#
 # Configure machine physical network based on pillar information
 #
-# This state will only apply if you set to true the config value (grain or pillar): **makina.network_managed**
+# This state will only apply if you set to true the config value (grain or pillar): **makina.localsettings.network_managed**
 #
 # The template is shared with the lxc state, please also look it
 #
+# makina.localsettings.network.managed : true
 # *-makina-network:
 #   ifname:
 #   - auto: (opt) (default: True)
@@ -16,6 +15,7 @@
 #   - dnsservers: (opt)
 #
 # EG:
+# makina.localsettings.network.managed : true
 # myhost-makina-network:
 #   etho: # manually configured interface
 #     - address: 8.1.5.4
@@ -23,20 +23,24 @@
 #     - gateway: 8.1.5.1
 #     - dnsservers: 8.8.8.8
 #   em1: {} # -> dhcp based interface
-{% if c.network_managed %}
+
+{% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+
+{{ localsettings.register('network') }}
+{% set locs = localsettings.locations %}
+
+{% if localsettings.networkManaged %}
 {% if grains['os_family'] in ['Debian'] %}
 network-cfg:
   file.managed:
-    - name: /etc/network/interfaces
     - user: root
     - group: root
     - mode: '0644'
     - template: jinja
-    - name: /etc/network/interfaces
+    - name: {{ locs.conf_dir }}/network/interfaces
     - source: salt://makina-states/files/etc/network/interfaces
-    - makina_network: {}
+    - makina_network: {{ localsettings.network_interfaces|yaml }}
 # tradeof to make the lxc state work with us
-
 
 network-services:
   service.running:
@@ -48,3 +52,7 @@ network-services:
       - file: network-cfg
 {% endif %}
 {% endif %}
+
+
+
+

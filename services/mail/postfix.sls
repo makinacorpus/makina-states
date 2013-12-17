@@ -3,10 +3,15 @@
 # ------------------------- START pillar example -----------
 # --- POSTFIX -----------------------------
 #
-# do not forget to launch "salt '*' saltutil.refresh_pillar" after changes 
+# do not forget to launch "salt '*' saltutil.refresh_pillar" after changes
 # consult pillar values with "salt '*' pillar.items"
 # --------------------------- END pillar example ------------
 #
+{% import "makina-states/_macros/services.jinja" as services with context %}
+{{ services.register('mail.postfix') }}
+{% set localsettings = services.localsettings %}
+{% set nodetypes = services.nodetypes %}
+{% set locs = localsettings.locations %}
 
 postfix-pkgs:
   pkg.installed:
@@ -15,8 +20,7 @@ postfix-pkgs:
       - postfix-pcre
 
 #--- DEV SERVER: CATCH ALL EMAILS TO A LOCAL MAILBOX
-{% if grains['makina.nodetype.devhost'] %}
-
+{% if ('devhost' in nodetypes.registry.actives) %}
   {% set ips=grains['ip_interfaces'] %}
   {% set ip1=ips['eth0'][0] %}
   {% set ip2=ips['eth1'][0] %}
@@ -26,54 +30,69 @@ postfix-pkgs:
   {% set netipd='.'.join(ipd.split('.')[:3])+'.0/24' %}
   {% set local_networks = netip1 + ' ' + netip2 + ' ' + netipd %}
 
-makina-postfix-local-catch-all-delivery-conf:
+{{ locs.conf_dir }}-postfix-main.cf:
   file.managed:
-    - name: /etc/postfix/main.cf
+    - name: {{ locs.conf_dir }}/postfix/main.cf
     - source: salt://makina-states/files/etc/postfix/main.cf.localdeliveryonly
-    - require:
-      - pkg: postfix-pkgs
     - template: jinja
     - user: root
     - group: root
     - mode: 644
+    - require:
+      - pkg: postfix-pkgs
+    - require_in:
+      - cmd: makina-postfix-configuration-check
+    - watch_in:
+      # restart service in case of settings alterations
+      - service: makina-postfix-service
     - defaults:
+        conf_dir: {{ locs.conf_dir }}
         mailname: {{ grains['fqdn'] }}
         local_networks: {{ local_networks }}
 
 makina-postfix-local-catch-all-delivery-virtual:
   file.managed:
-    - name: /etc/postfix/virtual
+    - name: {{ locs.conf_dir }}/postfix/virtual
     - source: salt://makina-states/files/etc/postfix/virtual.localdeliveryonly
     - user: root
     - group: root
     - mode: 644
-    - require: 
+    - require:
       - pkg: postfix-pkgs
+    - require_in:
+      - cmd: makina-postfix-configuration-check
 
 makina-postfix-aliases-all-to-vagrant-user:
   file.append:
-    - name: /etc/aliases
-    - require: 
+    - name: {{ locs.conf_dir }}/aliases
+    - require:
       - pkg: postfix-pkgs
-    - text: 
+    - text:
       - "root: vagrant"
+    - require_in:
+      - cmd: makina-postfix-configuration-check
 
 # postmap /etc/postfix/virtual when altered
 makina-postfix-postmap-virtual-dev:
   cmd.watch:
-    - name: postmap /etc/postfix/virtual && echo "" && echo "changed=yes"
+    - name: postmap {{ locs.conf_dir }}/postfix/virtual;echo "changed=yes"
     - stateful: True
     - require:
       - pkg: postfix-pkgs
     - watch:
       - file: makina-postfix-local-catch-all-delivery-virtual
-# postalias if /etc/aliases is altered
+    - require_in:
+      - service: makina-postfix-service
+
+# postalias if {{ locs.conf_dir }}/aliases is altered
 makina-postfix-postalias-dev:
   cmd.watch:
     - stateful: True
-    - name: postalias /etc/aliases && echo "" && echo "changed=yes"
+    - name: postalias {{ locs.conf_dir }}/aliases;echo "changed=yes"
     - watch:
       - file: makina-postfix-aliases-all-to-vagrant-user
+    - require_in:
+      - service: makina-postfix-service
 
 # ------------ dev mode end -----------------------
 {% endif %}
@@ -81,38 +100,38 @@ makina-postfix-postalias-dev:
 
 makina-postfix-chroot-hosts-sync:
   cmd.run:
-    - unless: diff -q /var/spool/postfix/etc/hosts /etc/hosts
+    - unless: diff -q {{ locs.var_spool_dir }}/postfix/etc/hosts {{ locs.conf_dir }}/hosts
     - stateful: True
-    - name: cp -a /etc/hosts /var/spool/postfix/etc/hosts && echo "" && echo "changed=yes"
+    - name: cp -a {{ locs.conf_dir }}/hosts {{ locs.var_spool_dir }}/postfix/etc/hosts && echo "" && echo "changed=yes"
     - require:
       - pkg: postfix-pkgs
 
 makina-postfix-chroot-localtime-sync:
   cmd.run:
-    - unless: diff -q /var/spool/postfix/etc/localtime /etc/localtime
+    - unless: diff -q {{ locs.var_spool_dir }}/postfix/etc/localtime {{ locs.conf_dir }}/localtime
     - stateful: True
-    - name: cp -a /etc/localtime /var/spool/postfix/etc/localtime && echo "" && echo "changed=yes"
+    - name: cp -a {{ locs.conf_dir }}/localtime {{ locs.var_spool_dir }}/postfix/etc/localtime && echo "" && echo "changed=yes"
     - require:
       - pkg: postfix-pkgs
 
 makina-postfix-chroot-nsswitch-sync:
   cmd.run:
-    - unless: diff -q /var/spool/postfix/etc/nsswitch.conf /etc/nsswitch.conf 
+    - unless: diff -q {{ locs.var_spool_dir }}/postfix/etc/nsswitch.conf {{ locs.conf_dir }}/nsswitch.conf
     - stateful: True
-    - name: cp -a /etc/nsswitch.conf  /var/spool/postfix/etc/nsswitch.conf  && echo "" && echo "changed=yes"
+    - name: cp -a {{ locs.conf_dir }}/nsswitch.conf  {{ locs.var_spool_dir }}/postfix/etc/nsswitch.conf  && echo "" && echo "changed=yes"
     - require:
       - pkg: postfix-pkgs
 makina-postfix-chroot-resolvconf-sync:
   cmd.run:
-    - unless: diff -q /var/spool/postfix/etc/resolv.conf /etc/resolv.conf
+    - unless: diff -q {{ locs.var_spool_dir }}/postfix/etc/resolv.conf {{ locs.conf_dir }}/resolv.conf
     - stateful: True
-    - name: cp -a /etc/resolv.conf /var/spool/postfix/etc/resolv.conf && echo "" && echo "changed=yes"
+    - name: cp -a {{ locs.conf_dir }}/resolv.conf {{ locs.var_spool_dir }}/postfix/etc/resolv.conf && echo "" && echo "changed=yes"
     - require:
       - pkg: postfix-pkgs
 
 makina-postfix-configuration-check:
   cmd.run:
-    - name: /usr/sbin/postfix check 2>&1  && echo "" && echo "changed=no"
+    - name: {{ locs.sbin_dir }}/postfix check 2>&1  && echo "" && echo "changed=no"
     - stateful: True
     - require:
       - pkg: postfix-pkgs
@@ -120,16 +139,8 @@ makina-postfix-configuration-check:
       - cmd: makina-postfix-chroot-resolvconf-sync
       - cmd: makina-postfix-chroot-nsswitch-sync
       - cmd: makina-postfix-chroot-localtime-sync
-      # ensure conf files are altered before we check conf
-      - file.managed: /etc/postfix/main.cf
-{% if grains['makina.nodetype.devhost'] %}
-      - file: makina-postfix-aliases-all-to-vagrant-user
-      - file: makina-postfix-local-catch-all-delivery-virtual
-{% endif %}
-
 
 #--- MAIN SERVICE RESTART/RELOAD watchers
-
 makina-postfix-service:
   service.running:
     - name: postfix
@@ -140,12 +151,5 @@ makina-postfix-service:
     - watch:
       # restart service in case of package install
       - pkg: postfix-pkgs
-      # restart service in case of settings alterations
-      - file.managed: /etc/postfix/main.cf
-      # restart service if /etc/hosts were altered?
+      # restart service if {{ locs.conf_dir }}/hosts were altered?
       - cmd: makina-postfix-chroot-hosts-sync
-{% if grains['makina.nodetype.devhost'] %}
-      - cmd: makina-postfix-postmap-virtual-dev
-      - cmd: makina-postfix-postalias-dev
-{% endif %}
-

@@ -11,6 +11,12 @@
 #   - pool_name :  site nickname, used in states and log files and of course pool name, if not given it will be build from site name
 #
 #   TODO: document options
+
+{% import "makina-states/_macros/services.jinja" as services with context %}
+{{ services.register('php.common') }}
+{% set localsettings = services.localsettings %}
+{% set nodetypes = services.nodetypes %}
+{% set locs = localsettings.locations %}
 {% macro pool(
               phpData,
               site = 'example.com',
@@ -27,7 +33,7 @@
               session_cookie_domain= None
 ) -%}
 {% set pool_name = pool_name or site.replace('.', '_').replace('-', '_') %}
-{% set project_root = project_root or '/srv/projects/' + site %}
+{% set project_root = project_root or locs.projects_dir+'/' + site %}
 {% set open_basedir_additions = open_basedir_additions or '' %}
 {% set include_path_additions = include_path_additions or '' %}
 {% if not pool_template_source %}
@@ -51,6 +57,8 @@ makina-php-pool-{{ pool_name }}:
     - source: {{ pool_template_source }}
     - template: 'jinja'
     - defaults:
+        var_tmp: "{{ locs.var_tmp_dir }}"
+        var_log: "{{ locs.var_log_dir }}"
         pool_name: "{{ pool_name }}"
         project_root: "{{ project_root }}"
         relative_document_root: "{{ relative_document_root }}"
@@ -159,7 +167,7 @@ makina-php-pool-{{ pool_name }}:
 makina-php-pool-{{ pool_name }}-webroot-directory:
   file.directory:
     - user: {{ phpData.fpm.phpuser }}
-    - group: {{ salt['pillar.get']('salt.filesystem.group','editor') }}
+    - group: {{localsettings.group }}
     - mode: "2775"
     - makedirs: True
     - name: {{ project_root }}/{{ relative_document_root }}
@@ -172,7 +180,7 @@ makina-php-pool-{{ pool_name }}-webroot-directory:
 makina-php-pool-{{ pool_name }}-log-directory:
   file.directory:
     - user: {{ phpData.fpm.phpuser }}
-    - group: {{ salt['pillar.get']('salt.filesystem.group','editor') }}
+    - group: {{localsettings.group }}
     - mode: "2775"
     - makedirs: True
     - name: {{ project_root }}/var/log
@@ -186,7 +194,7 @@ makina-php-pool-{{ pool_name }}-log-directory:
 makina-php-pool-{{ pool_name }}-socket-directory:
   file.directory:
     - user: {{ phpData.fpm.phpuser }}
-    - group: {{ salt['pillar.get']('salt.filesystem.group','editor') }}
+    - group: {{localsettings.group }}
     - mode: "2775"
     - makedirs: True
     - name: {{ project_root }}/{{ phpData.fpm.socket_relative_path }}

@@ -9,3 +9,4 @@ bin/pep8 --ignore=E501,E12 $s && echo 'Finished PEP-8 Check Cleanly'
 if [[ "$?" != "0" ]];then
      echo 'Finished PEP-8 Check With Errors'
 fi
+

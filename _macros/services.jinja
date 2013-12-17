@@ -1,0 +1,158 @@
+#
+# Services related exported variables
+#
+# most important are:
+#   - ldap_*
+#   - services: a dict name / state to apply of enabled services
+#   - selection: all avalaible services with their detected activation status
+#      - ssh is enabled by default
+#      - ntp can't run in lxc containers
+#      - ldap has to be toggled on
+
+{% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
+
+# expose imported macros
+{% set nodetypes = nodetypes %}
+{% set localsettings = nodetypes.localsettings %}
+{% set funcs = localsettings.funcs %}
+{% set ldap = localsettings.ldap %}
+
+{% set kind = funcs.servicesKind %}
+{% set statesPref = funcs.statesPref + kind + '.' %}
+{% set grainsPref = funcs.grainsPref + kind + '.' %}
+{% set bases = ['localsettings'] %}
+
+# -----------------------------------------------------
+# LDAP integration
+{% set ldapVariables = ldap.ldapVariables %}
+{% set ldapEn = ldap.ldapEn %}
+
+# -----------------------------------------------------
+# init systems flags
+{% set upstart = salt['mc_utils.get']('makina.upstart', False) %}
+
+# -----------------------------------------------------
+# ntp is not applied to LXC containers ! (services.base.ntp)
+# So we will just match when our grain is set and not have a value of lxc
+{% set ntpEn = (
+  not (
+    ('dockercontainer' in nodetypes.registry['actives'])
+    or ('lxccontainer' in nodetypes.registry['actives'])
+  )) %}
+
+# -----------------------------------------------------
+# PostGRESQL:  (services.db.postgresql)
+# default user: makina.services.postgresql.user
+{% set postgresqlUser = salt['mc_utils.get']('makina.services.postgresql.user', 'postgres') %}
+# default postgresql/ grains configured databases (see service doc)
+{% set pgDbs = {} %}
+{% for dbk, data in pillar.items() %}
+{%   if dbk.endswith('-makina-postgresql') %}
+{%     set db = data.get('name', dbk.split('-makina-postgresql')[0]) %}
+{%     do pgDbs.update({db: data}) %}
+{%   endif %}
+{% endfor %}
+# default postgresql/ grains configured users (see service doc)
+{% set postgresqlUsers = {} %}
+{% for userk, data in pillar.items() %}
+{%   if userk.endswith('-makina-services-postgresql-user') %}
+{%     do postgresqlUsers.update({user: data}) %}
+{%   endif %}
+{% endfor %}
+
+# -----------------------------------------------------
+# MySQL default custom configuration (services.db.mysql)
+# To override the default makina-states configuration file,
+# Use the 'makina.services.mysql.cnf pillar/grain
+{% set myCnf = salt['mc_utils.get'](grainsPref+'mysql.cnf', None) %}
+# Set this to true to disable mysql automatic configuration
+# (if you want to call the mysql macros yourself
+# (makina.services.mysql.noautoconf)
+{% set myDisableAutoConf = salt['mc_utils.get'](grainsPref+'mysql.noautoconf', False) %}
+
+# -----------------------------------------------------
+# shorewall pillar parsing
+{% set shw_enabled = (
+   salt['mc_utils.get'](grainsPref+'shorewall.enabled', False)) %}
+{% set ifformat = 'FORMAT 2' %}
+{% if grains['os'] not in ['Debian']%}
+  {% set ifformat = '?' %}
+{% endif %}
+{% set shwInterfaces = {} %}
+{% set shwRules = {} %}
+{% set shwParams = {} %}
+{% set shwPolicies = [] %}
+{% set shwZones = [] %}
+{% set shwMasqs = {} %}
+{% set shwRules= {} -%}
+{% set shwDefaultState = 'new' -%}
+{% set shwData = {
+  'interfaces' : shwInterfaces,
+  'rules'      : shwRules,
+  'params'     : shwParams,
+  'policies'   : shwPolicies,
+  'zones'      : shwZones,
+  'masq'       : shwMasqs,
+  'ifformat'   : shwIfformat,
+} %}
+{% for sid, shorewall in pillar.items() -%}
+{%  if sid.endswith('makina-shorewall') -%}
+{%    set cfg = shorewall.get('rules', {}) -%}
+{%    for i in cfg-%}
+{%      set section=i.get('section', shwDefaultState).upper() -%}
+{%      if section not in rules -%}
+{%        do shwRules.update({section: []}) -%}
+{%      endif -%}
+{%      do shwRules[section].append(i) -%}
+{%    endfor -%}
+{%    do interfaces.update(shorewall.get('interfaces', {})) %}
+{%    do zones.update(shorewall.get('zones', {})) -%}
+{%    do masqs.update(shorewall.get('masq', {})) %}
+{%    do params.update(shorewall.get('params', {})) %}
+{%    do policies.extend(shorewall.get('policy', {})) %}
+{%  endif %}
+{% endfor %}
+
+# -----------------------------------------------------
+# Idea is to map each state file to configure a service to it's particular
+# configuration grain switch (or pillar)
+{% set registryConfiguration = {
+  kind: {
+    'states_pref': statesPref, 'grains_pref': grainsPref,
+    'defaults': {
+      'base.ssh': {'active': True},
+      'base.ntp': {'active': ntpEn},
+      'backup.bacula-fd': {'active': False},
+      'db.mysql': {'active': False},
+      'db.postgresql': {'active': False},
+      'firewall.shorewall': {'active': False},
+      'http.apache': {'active': False},
+      'java.solr4': {'active': False},
+      'java.tomcat7': {'active': False},
+      'mail.dovecot': {'active': False},
+      'mail.postfix': {'active': False},
+      'php.common': {'active': False},
+      'php.modphp': {'active': False},
+      'php.phpfpm': {'active': False},
+      'php.phpfpm_with_apache': {'active': False},
+      'virt.docker': {'active': False},
+      'virt.docker-shorewall': {'active': False},
+      'virt.lxc': {'active': False},
+      'virt.lxc-shorewall': {'active': False},
+    }
+  }
+} %}
+
+{% set registry = funcs.getRegistries(registryConfiguration)[kind] %}
+
+{% macro autoinclude(name) %}
+{{funcs.autoinclude(registry, bases=bases) }}
+{% endmacro %}
+
+{% macro register(name, data=None) %}
+{{ funcs.register(statesPref, grainsPref, name, data=None) }}
+{% endmacro %}
+
+{% macro unregister(name, data=None) %}
+{{ funcs.register(statesPref, grainsPref, name, data=None) }}
+{% endmacro %}

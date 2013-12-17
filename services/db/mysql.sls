@@ -1,8 +1,20 @@
 # -*- coding: utf-8 -*-
 #
-# Including this state will make nothig, all states are encapsulated in macros.
+# All states are encapsulated in macros.
 # So you'll need to run the macros to get something done.
 # Check mysql_example.sls file for examples of usage.
+#
+# MySQL default custom file
+# ------------------------configuration (services.db.mysql)
+# Set this grain/pillar to override the default makina-states configuration
+# file,
+# makina.services.mysql.cnf
+#
+# No autoconf
+# -------------
+# Set this grain/pillar to true to disable mysql automatic configuration:
+# makina.services.mysql.noautoconf
+#
 #
 # BE CAREFUL: mysql_base() macros should only be called once on a server
 # else several states with the same name will be created. There're no
@@ -12,6 +24,11 @@
 # Load defaults values -----------------------------------------
 
 {% from 'makina-states/services/db/mysql_defaults.jinja' import mysqlData with context %}
+{% import "makina-states/_macros/services.jinja" as services with context %}
+{% set localsettings = services.localsettings %}
+{% set nodetypes = services.nodetypes %}
+{% set locs = localsettings.locations %}
+{{ services.register('db.mysql') }}
 
 {# MACRO mysql_base()
 # - install the mysql packages, and python bindings for mysql
@@ -59,7 +76,7 @@ mysql-salt-pythonmysqldb-pip-install-module-reloader:
 {%   set mycnf_file = "salt://makina-states/files/" + mysqlData.etcdir + "/local.cnf" %}
 {% endif %}
 {# ----------- MAGIC MYSQL AUTO TUNING -----------------
-Some heavy memory usage settings could be used on mysql settings: 
+Some heavy memory usage settings could be used on mysql settings:
 Below are the rules we use to compute some default magic values for tuning settings.
 Note that you can enforce any of theses settings by putting some value fro them in
 mysqlData (so in the pillar for example).
@@ -170,7 +187,7 @@ Now let's do the magic:
 {# ------------ OTHERS                           #}
 {# tmp_table_size: On queries using temporary data, ig this data gets bigger than
  that then the temporary memory things becames real physical temporary tables
- and things gets very slow, but this must be some free RAM when the request is 
+ and things gets very slow, but this must be some free RAM when the request is
  running, so if you use something like 1024Mo prey that queries using this amount
  of temporary data are not running too often...
 #}
@@ -185,6 +202,7 @@ makina-mysql-settings:
     - template: jinja
     - show_diff: True
     - defaults:
+        var_log: {{ logs.var_log_dir }}
         mode: "production"
         port: {{ mysqlData.port }}
         sockdir: "{{ mysqlData.sockdir }}"
@@ -211,7 +229,7 @@ makina-mysql-settings:
         tmp_table_size: {{ tmp_table_size_M }}
         sync_binlog: {{ sync_binlog }}
     - context:
-{% if grains['makina.nodetype.devhost'] %}
+{% if ('devhost' in nodetypes.registry.actives) %}
         mode: "dev"
 {% endif %}
 {% if mysqlData.tuning.query_cache_size_M %}
@@ -255,7 +273,7 @@ change-empty-mysql-root-access:
       - service: makina-mysql-service-reload
       - service: makina-mysql-service
 
-{% if not(grains['makina.nodetype.devhost']) %}
+{% if not('devhost' in nodetypes.registry.actives) %}
 {# On anything that is not a dev server we should emit a big fail for empty
  password root access to the MySQL Server #}
 security-check-empty-mysql-root-access-socket:
@@ -406,3 +424,8 @@ makina-mysql-user-grants-{{ state_uid }}-{{ host_simple }}:
 {%   endfor %}
 {% endif -%}
 {% endmacro %}
+
+{% if not localsettings.myDisableAutoConf %}
+{{ mysql_base(localsettings.myCnf) }}
+{% endif %}
+# vim: set nofoldenable:

@@ -2,8 +2,13 @@
 # Manage packages to install by default
 #
 
+{% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+
+{{ localsettings.register('pkgs') }}
+{% set locs = localsettings.locations %}
+
 include:
-  - makina-states.localsettings.pkgmgr
+  - {{ localsettings.statesPref }}pkgmgr
 
 {% if grains['os'] in ['Ubuntu', 'Debian'] %}
 before-pkg-install-proxy:
@@ -25,12 +30,18 @@ before-pkg-install-proxy:
 ubuntu-pkgs:
   pkg.installed:
     - pkgs:
+      - apport
+      - debian-archive-keyring
+      - debian-keyring
       - language-pack-en
       - language-pack-fr
+      - rsyslog
+      - ubuntu-cloudimage-keyring
+      - ubuntu-cloud-keyring
+      - ubuntu-extras-keyring
+      - ubuntu-keyring
       - ubuntu-minimal
       - ubuntu-standard
-      - apport
-      - rsyslog
 {% endif %}
 
 sys-pkgs:

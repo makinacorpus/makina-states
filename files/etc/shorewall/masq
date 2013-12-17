@@ -13,14 +13,8 @@
 # For information about entries in this file, type "man shorewall-masq"
 ##############################################################################
 #INTERFACE		SOURCE		ADDRESS		PROTO	PORT(S)	IPSEC	MARK
-{% for sid, shorewall in pillar.items() -%}
-{% if sid.endswith('makina-shorewall') -%}
-{% set k='masq' -%}
-{% set cfg = shorewall.get(k, {}) -%}
-{% for i, data in cfg.items() -%}
+{% for i, data in shwData.masqs.items() -%}
 # {{ i }} masq
 {{ data['interface'] }} {{ data['source'] }} {{ data.get('address', '') }} {{ data.get('proto', '') }} {{ data.get('ports', '') }} {{ data.get('ipsec', '') }} {{ data.get('mark', '') }}
-{% endfor -%}
-{% endif -%}
 {% endfor -%}
 #LAST LINE -- DO NOT REMOVE

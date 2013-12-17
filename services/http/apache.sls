@@ -19,9 +19,14 @@
 # TODO: detect invalid links in sites-enabled and remove them
 # apache 2.4: EnableSendfile On, NameVirtualHost deprecated,  RewriteLog and RewriteLogLevel-> LogLevel rewrite:debug
 # enable and configure mod_reqtimeout
+{% import "makina-states/_macros/services.jinja" as services with context %}
+{% import "makina-states/_macros/salt.jinja" as saltmac with context %}
+{{ services.register('http.apache') }}
 
-{% set msr='/srv/salt/makina-states' %}
-{% set apacheConfCheck = "file://"+msr+"/_scripts/apacheConfCheck.sh" %}
+{% set localsettings = services.localsettings %}
+{% set locs = localsettings.locations %}
+
+{% set apacheConfCheck = "file://"+saltmac.msr+"/_scripts/apacheConfCheck.sh" %}
 
 # Load defaults values -----------------------------------------
 
@@ -188,7 +193,7 @@ makina-apache-include-directory:
        - service: makina-apache-restart
        - service: makina-apache-reload
 
-# cronolog usage in /var/log/apache requires a group write
+# cronolog usage in {{ locs.var_dir }}/log/apache requires a group write
 # right which may not be present.
 makina-apache-default-log-directory:
   file.directory:
@@ -211,7 +216,7 @@ makina-apache-default-vhost-directory:
     - group: www-data
     - mode: "2755"
     - makedirs: True
-    - name: /var/www/default/
+    - name: {{ locs.var_dir }}/www/default/
     - require:
        - pkg: makina-apache-pkgs
     - require_in:
@@ -223,9 +228,9 @@ makina-apache-default-vhost-index:
   file.managed:
     - require:
       - pkg: makina-apache-pkgs
-    - name: /var/www/default/index.html
+    - name: {{ locs.var_dir }}/www/default/index.html
     - source:
-      - salt://makina-states/files/var/www/default/default_vh.index.html
+      - salt://makina-states/files{{ locs.var_dir }}/www/default/default_vh.index.html
     - user: root
     - group: root
     - mode: 644
@@ -245,9 +250,9 @@ makina-apache-default-vhost-index:
 # remove index.html coming from package
 makina-apache-remove-package-default-index:
   file.absent:
-    - name : /var/www/index.html
+    - name : {{ locs.var_dir }}/www/index.html
 
-  
+
 # Replace defaut Virtualhost by a more minimal default Virtualhost [4]
 # this is the virtualhost definition
 makina-apache-minimal-default-vhost:
@@ -283,7 +288,7 @@ makina-apache-minimal-default-vhost:
 # Configuration checker, always run before restart of graceful restart
 makina-apache-conf-syntax-check:
   cmd.script:
-    - source: {{apacheConfCheck}}
+    - source: {{ apacheConfCheck }}
     - stateful: True
     - require:
       - pkg: makina-apache-pkgs
@@ -363,3 +368,6 @@ makina-apache-reload:
 {%   endfor %}
 {% endif %}
 
+makina.services.http.apache:
+  grains.present:
+    - value: True

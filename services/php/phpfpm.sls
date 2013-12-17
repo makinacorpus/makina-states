@@ -4,7 +4,7 @@
 #
 # For usage examples please check the file php_fpm_example.sls on this same directory
 #
-# Preferred way of altering default settings is to 
+# Preferred way of altering default settings is to
 # create a state with a call to the jinja macro phppool()
 # and to set some project's defaults piullar call on arguments given
 #
@@ -14,18 +14,28 @@
 # consult pillar values with "salt '*' pillar.items"
 # consult grains values with "salt '*' grains.items"
 #
+{% from 'makina-states/services/php/php_defaults.jinja' import phpData with context %}
+{% import "makina-states/_macros/services.jinja" as services with context %}
+{{ services.register('php.phpfpm') }}
+{% set localsettings = services.localsettings %}
+{% set nodetypes = services.nodetypes %}
+{% set locs = localsettings.locations %}
 
 include:
-  - makina-states.services.php.common
-{% if grains['lsb_distrib_id']=="Debian" %}
+# Delay start on vagrant dev host ------------
+  - {{ nodetypes.statesPref }}vagrantvm
+{% endif %}
+  - {{ services.statesPref }}php.common
+{% if grains.get('lsb_distrib_id', '') == "Debian" %}
    # Include dotdeb repository for Debian
-  - makina-states.services.php.repository_dotdeb
+  - {{ localsettings.statesPref }}repository_dotdeb
 {% endif %}
 
 # Load defaults values -----------------------------------------
 {% from 'makina-states/services/php/php_defaults.jinja' import phpData with context %}
 
 # Manage php-fpm packages
+
 
 makina-php-pkgs:
   pkg.installed:
@@ -56,15 +66,13 @@ makina-php-remove-default-pool:
 
 
 #--- PHP STARTUP WAIT DEPENDENCY --------------
-{% if grains['makina.nodetype.devhost'] %}
-# Delay start on vagrant dev host ------------
-include:
-  - makina-states.services.virt.mount_upstart_waits
 
+
+{% if ('devhost' in nodetypes.registry.actives) %}
 makina-add-php-in-waiting-for-nfs-services:
   file.accumulated:
     - name: list_of_services
-    - filename: /etc/init/delay_services_for_vagrant_nfs.conf
+    - filename: {{ locs.upstart_dir }}/delay_services_for_vagrant_nfs.conf
     - text: php5-fpm
     - require_in:
       - file: makina-file_delay_services_for_srv
@@ -90,3 +98,4 @@ makina-php-reload:
     - enable: True
     - reload: True
     # most watch requisites are linked here with watch_in
+

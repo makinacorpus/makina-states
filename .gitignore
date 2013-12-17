@@ -1,4 +1,5 @@
 .installed.cfg
+locfiles
 .bootlogs
 .boot_salt.*.log
 .boot_salt.*.out

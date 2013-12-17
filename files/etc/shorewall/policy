@@ -13,13 +13,7 @@
 # For information about entries in this file, type "man shorewall-policy"
 ###############################################################################
 #SOURCE		DEST		POLICY		LOG LEVEL	LIMIT:BURST
-{% for sid, shorewall in pillar.items() -%}
-{% if sid.endswith('makina-shorewall') -%}
-{% set k='policy' -%}
-{% set cfg = shorewall.get(k, {}) -%}
-{%- for data in cfg-%}
+{%- for data in shwData.policies -%}
 {{ data['source'] }} {{ data['dest'] }} {{ data['policy'] }} {{ data.get('loglevel', ' ') }} {{ data.get('limit', ' ') }}
-{% endfor -%}
-{% endif -%}
 {% endfor -%}
 #LAST LINE -- DO NOT REMOVE

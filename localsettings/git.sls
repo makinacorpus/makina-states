@@ -1,15 +1,19 @@
-{% import "makina-states/_macros/vars.jinja" as vars with context %}
-include:
-  - makina-states.localsettings.users
+{% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 
-{% for i, data in vars.users.items() %}
+{{ localsettings.register('git') }}
+{% set locs = localsettings.locations %}
+
+include:
+  - {{ localsettings.statesPref }}users
+
+{% for i, data in localsettings.users.items() %}
 {% set home = data['home'] %}
 
 gitorious_base_ssh_configs-group-{{ i }}:
   file.directory:
     - name: {{ home }}/.ssh
     - mode: 0700
-    - user: {{i}}
+    - user: {{ i }}
     - makedirs: True
     - require:
       - user: {{ i }}
@@ -25,7 +29,7 @@ gitorious_base_ssh_configs-append-{{ i }}:
     - require:
       - file: gitorious_base_ssh_configs-touch-{{ i }}
     - name : {{ home }}/.ssh/config
-    - user: {{i}}
+    - user: {{ i }}
     - text: |
             # entry managed via salt !
             host=    gitorious.makina-corpus.net
@@ -35,7 +39,7 @@ gitorious_base_ssh_configs-append-{{ i }}:
 
 global-git-config:
   file.managed:
-    - name: /etc/gitconfig
+    - name: {{ locs.conf_dir }}/gitconfig
     - source: salt://makina-states/files/etc/gitconfig
     - mode: 755
     - template: jinja

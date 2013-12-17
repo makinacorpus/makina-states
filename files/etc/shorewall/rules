@@ -14,25 +14,10 @@
 ######################################################################################################################################################################################
 #ACTION		SOURCE		DEST		PROTO	DEST	SOURCE		ORIGINAL	RATE		USER/	MARK	CONNLIMIT	TIME         HEADERS         SWITCH
 #							PORT	PORT(S)		DEST		LIMIT		GROUP
-{% set rules={} -%}
-{% set default_state='new' -%}
-{% for sid, shorewall in pillar.items() -%}
-  {% if sid.endswith('makina-shorewall') -%}
-    {% set k='rules' -%}
-    {% set cfg = shorewall.get(k, {}) -%}
-    {% for i in cfg-%}
-      {% set section=i.get('section', default_state).upper() -%}
-      {% if section not in rules -%}
-        {% set dummy=rules.update({section: []}) -%}
-      {% endif -%}
-      {% set dummy=rules[section].append(i) -%}
-    {% endfor -%}
-  {% endif -%}
-{% endfor -%}
 {% for key in ['all', 'established', 'related', 'new'] -%}
   {% set section=key.upper() -%}
 SECTION {{ section }}
-{% for i in rules.get(section, []) -%}
+{% for i in data.rules.get(section, []) -%}
 {% set comment=i.get('comment', '').strip() -%}
 {% if comment -%}
 {{ '\n# ' + comment }}

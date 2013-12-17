@@ -24,6 +24,9 @@
 #          Tweak the 'number_of_table_indicator' to adjust some settings automatically
 #          from that, for example several Drupal instances using a lot of fields
 #          could manage several hundreds of tables. <=== IMPORTANT
+{% import "makina-states/_macros/services.jinja" as services with context %}
+{% set localsettings = services.localsettings %}
+{% set locs = localsettings.locations %}
 {% set mysqlStepOne = salt['grains.filter_by']({
     'dev': {
         'conn_host': 'localhost',
@@ -95,13 +98,13 @@
         'user': 'mysql',
         'group': 'mysql',
         'root_passwd': '',
-        'sharedir': '/usr/share/mysql',
-        'datadir': '/var/lib/mysql',
-        'tmpdir': '/tmp',
-        'etcdir': '/etc/mysql/conf.d',
-        'logdir': '/var/log/mysql',
-        'basedir' : '/usr',
-        'sockdir': '/var/run/mysqld'
+        'sharedir': locs.share_dir+'/mysql',
+        'datadir': locs.var_lib_dir+'/mysql',
+        'tmpdir': locs.tmp_dir,
+        'etcdir': locs.conf_dir+'/mysql/conf.d',
+        'logdir': locs.var_log_dir+'/mysql',
+        'basedir' : locs.usr_dir,
+        'sockdir': locs.var_run_dir+'/mysqld'
     },
     'RedHat': {
     },

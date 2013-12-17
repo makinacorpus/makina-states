@@ -11,10 +11,10 @@
 
 # Author: Michael Prokop <mika@debian.org>
 
-PATH=/sbin:/usr/sbin:/bin:/usr/bin
+PATH={{salt_data['bin_dir']}}:/sbin:/usr/sbin:/bin
 DESC="{{salt_data['daemon_name']}} control daemon"
 NAME={{salt_data['daemon_name']}}
-DAEMON=/usr/bin/{{salt_data['daemon_name']}}
+DAEMON={{salt_data['bin_dir']}}/{{salt_data['daemon_name']}}
 DAEMON_ARGS=""
 #DAEMON_ARGS="-c {{salt_data['conf_prefix']}}"
 PIDFILE={{salt_data['run_prefix']}}/$NAME.pid

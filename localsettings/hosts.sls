@@ -32,37 +32,22 @@
 #      - text: "here your text"
 #      - require_in:
 #        - file: makina-etc-host-vm-management
+{% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 
-{% set makinahosts=[] %}
-{% set hosts_list=[] %}
-{% for k, data in pillar.items() %}
-  {% if k.endswith('makina-hosts') %}
-    {% set dummy=makinahosts.extend(data) %}
-  {% endif %}
-{% endfor %}
-# loop to create a dynamic list of hosts based on pillar content
-{% for host in makinahosts %}
-  {% set ip = host['ip'] %}
-  {% for dnsname in host['hosts'].split()  %}
-      {% set dummy=hosts_list.append(ip+ ' ' + dnsname) %}
-  {% endfor %}
-
-#hosts-replace-unmanaged-to-managed-entries:
-#  file.managed:
-
-{% endfor %}
-
+{{ localsettings.register('hosts') }}
+{% set locs = localsettings.locations %}
+{% set hosts_list = localsettings.hosts_list %}
 {% if hosts_list %}
 # spaces are used in the join operation to make this text looks like a yaml multiline text
 {% set separator="\n            " %}
-# This state will use an accumulator to build the dynamic block content in /etc/hosts
+# This state will use an accumulator to build the dynamic block content in {{ locs.conf_dir }}/hosts
 # you can reuse this accumulator on other states
 # (@see makina-etc-host-vm-management)
 prepend-hosts-accumulator-from-pillar:
   file.accumulated:
     - require_in:
       - file: makina-prepend-etc-hosts-management
-    - filename: /etc/hosts
+    - filename: {{ locs.conf_dir }}/hosts
     - text: |
             {{ hosts_list|sort|join(separator) }}
 
@@ -70,19 +55,19 @@ append-hosts-accumulator-from-pillar:
   file.accumulated:
     - require_in:
       - file: makina-append-etc-hosts-management
-    - filename: /etc/hosts
+    - filename: {{ locs.conf_dir }}/hosts
     - text: |
             #end
             {{ hosts_list|sort|join(separator) }}
 
 {% endif %}
 
-# States editing a block in /etc/hosts
+# States editing a block in {{ locs.conf_dir }}/hosts
 # Accumulators targeted on this file will be used
 # TODO: provide a way to select accumulators and distinct blocks
 makina-prepend-etc-hosts-management:
   file.blockreplace:
-    - name: /etc/hosts
+    - name: {{ locs.conf_dir }}/hosts
     - marker_start: "#-- start salt managed zonestart -- PLEASE, DO NOT EDIT"
     - marker_end: "#-- end salt managed zonestart --"
     - content: ''
@@ -92,7 +77,7 @@ makina-prepend-etc-hosts-management:
 
 makina-append-etc-hosts-management:
   file.blockreplace:
-    - name: /etc/hosts
+    - name: {{ locs.conf_dir }}/hosts
     - marker_start: "#-- start salt managed zoneend -- PLEASE, DO NOT EDIT"
     - marker_end: "#-- end salt managed zoneend --"
     - content: ''

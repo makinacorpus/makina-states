@@ -1,4 +1,4 @@
-# This file is an example of makina-states.services.php.phpfpm usage 
+# This file is an example of makina-states.services.php.phpfpm usage
 # @see php_example if you work with mod_php and not php-fpm
 # TODO: document
 #
@@ -8,12 +8,16 @@
 # manager and set shared_mode to True. Then fix the default on the php-fpm pools to use this path
 # for sockets by setting the use_shared_socket_path parameter.
 #
+{% import "makina-states/_macros/services.jinja" as services with context %}
+{% set localsettings = services.localsettings %}
+{% set nodetypes = services.nodetypes %}
+{% set locs = localsettings.locations %}
 include:
   # IMPORTANT: If you use Apache, include it BEFORE phpfpm, so that
   # we can detect apache is used and trigger the restart in case of mod_php removal
-  - makina-states.services.php.phpfpm_with_apache
   #- makina-states.services.http.nginx
-  - makina-states.services.php.phpfpm
+  - {{ services.statesPref }}php.phpfpm_with_apache
+  - {{ services.statesPref }}php.phpfpm
 extend:
   makina-apache-main-conf:
     mc_apache:
@@ -22,7 +26,7 @@ extend:
     file.managed:
       - context:
           shared_mode: False
-          project_root: '/srv/projects/php.example.com'
+          project_root: '{{ locs.projects_dir }}/php.example.com'
           socket_directory: '/var/fcgi/'
 
 {% from 'makina-states/services/php/php_defaults.jinja' import phpData with context %}
@@ -83,7 +87,7 @@ my-phpfpm-removed-modules:
           active = True,
           number = '990',
           log_level = salt['pillar.get']('project-foobar-apache-vh1-loglevel', 'info'),
-          documentRoot = salt['pillar.get']('project-foobar-apache-vh1-docroot', '/srv/projects/php.example.com/www'),
+          documentRoot = salt['pillar.get']('project-foobar-apache-vh1-docroot', locs.projects_dir+'/php.example.com/www'),
           vh_in_template_source='salt://makina-states/files/etc/apache2/includes/in_virtualhost_drupal_phpfpm_template.conf',
           allow_htaccess = False,
           extra_jinja_apache_variables = {
@@ -97,7 +101,7 @@ my-phpfpm-removed-modules:
 # very minimal index.php file
 my-phpfpm-example-minimal-index:
   cmd.run:
-    - name: echo "<?php phpinfo(); ?>" >> /srv/projects/php.example.com/www/index.php; echo chown www-data:{{ salt['pillar.get']('salt.filesystem.group','editor') }} /srv/projects/php.example.com/www/index.php
+    - name: echo "<?php phpinfo(); ?>" >> {{ locs.projects_dir }}/php.example.com/www/index.php; echo chown www-data:{{ localsettings.group }} {{ locs.projects_dir }}/php.example.com/www/index.php
     - require:
        - pkg: makina-php-pkgs
     - require_in:

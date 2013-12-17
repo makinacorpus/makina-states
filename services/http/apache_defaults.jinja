@@ -28,6 +28,9 @@
 # mpm event
 #   * all workers settings are used
 #   * AsyncRequestWorkerFactor: max of concurrent conn is (AsyncRequestWorkerFactor + 1) * MaxRequestWorkers
+{% import "makina-states/_macros/services.jinja" as services with context %}
+{% set localsettings = services.localsettings %}
+{% set locs = localsettings.locations %}
 {% set apacheStepOne = salt['grains.filter_by']({
     'dev': {
         'mpm': 'worker',
@@ -99,26 +102,26 @@
 # Default OS-based paths settings added on apacheData
 {% set apacheStepTwo = salt['grains.filter_by']({
     'Debian': {
-        'package': 'apache2',
-        'server': 'apache2',
-        'service': 'apache2',
-        'mod_wsgi': 'libapache2-mod-wsgi',
-        'basedir': '/etc/apache2',
-        'vhostdir': '/etc/apache2/sites-available',
-        'confdir': '/etc/apache2/conf.d',
-        'logdir': '/var/log/apache2',
-        'wwwdir': '/srv'
+        'package'  : 'apache2',
+        'server'   : 'apache2',
+        'service'  : 'apache2',
+        'mod_wsgi' : 'libapache2-mod-wsgi',
+        'basedir'  : locs.conf_dir+'/apache2',
+        'vhostdir' : locs.conf_dir+'/apache2/sites-available',
+        'confdir'  : locs.conf_dir+'/apache2/conf.d',
+        'logdir'   : locs.var_log_dir+'/apache2',
+        'wwwdir'   : locs.srv_dir.
     },
     'RedHat': {
-        'package': 'httpd',
-        'server': 'httpd',
-        'service': 'httpd',
-        'mod_wsgi': 'mod_wsgi',
-        'basedir': '/etc/httpd',
-        'vhostdir': '/etc/httpd/conf.d',
-        'confdir': '/etc/httpd/conf.d',
-        'logdir': '/var/log/httpd',
-        'wwwdir': '/var/www'
+        'package'  : 'httpd',
+        'server'   : 'httpd',
+        'service'  : 'httpd',
+        'mod_wsgi' : 'mod_wsgi',
+        'basedir'  : locs.conf_dir+'/httpd',
+        'vhostdir' : locs.conf_dir+'/httpd/conf.d',
+        'confdir'  : locs.conf_dir+'/httpd/conf.d',
+        'logdir'   : locs.var_log_dir+'/httpd',
+        'wwwdir'   : locs.var_dir+'/www'
     },
   },
   grain='os_family',

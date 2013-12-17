@@ -7,9 +7,16 @@
 #   - fr_FR.utf8
 #
 
-include:
-  - makina-states.localsettings.shell
+{% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 
+{{ localsettings.register('locales') }}
+{% set locs = localsettings.locations %}
+
+include:
+  - {{ localsettings.statesPref }}shell
+
+{% if grains['os_family'] not in ['Debian'] %}FAIL HARD{% endif %}
+{% if grains['os_family'] in ['Debian'] %}
 locales-pkg:
   pkg.installed:
     - pkgs:
@@ -22,31 +29,32 @@ locales-pkg:
   'fr_FR.UTF-8',
   ] %}
 
-{% set locales = salt['config.get']('makina-locales', default_locales) %}
-{% set default_locale = salt['config.get']('makina-locale', default_locale) %}
+{% set locales = salt['mc_utils.get']('makina-locales', default_locales) %}
+{% set default_locale = salt['mc_utils.get']('makina-locale', default_locale) %}
 
 {% for locale in locales %}
 {% set lid=locale.replace('@', '_').replace('.', '_').replace('-', '_') %}
-gen-makina-locales-{{lid}}:
+gen-makina-locales-{{ lid }}:
   cmd.run:
-    - name: /usr/sbin/locale-gen {{locale}}
-    - onlyif: test -e /usr/sbin/locale-gen
-    - unless: locale -a|sed -re "s/utf8/UTF-8/g"|grep -q {{locale}}
+    - name: {{ locs.sbin_dir }}/locale-gen {{ locale }}
+    - onlyif: test -e {{ locs.sbin_dir }}/locale-gen
+    - unless: locale -a|sed -re "s/utf8/UTF-8/g"|grep -q {{ locale }}
     - require_in:
       - cmd: update-makina-locale
 
 {% endfor %}
 update-makina-locale:
   cmd.run:
-    - name: update-locale LANG="{{default_locale}}"
+    - name: update-locale LANG="{{ default_locale }}"
     - onlyif: which update-locale
-    - unless: grep 'LANG={{default_locale}}' /etc/default/locale
+    - unless: grep 'LANG={{ default_locale }}' {{ locs.conf_dir }}/default/locale
 
-/etc/profile.d/0_lang.sh:
+etc-profile.d-0_lang.sh:
   file.managed:
+    - name: {{ locs.conf_dir }}/profile.d/0_lang.sh
     - contents: |
-                export LANG="{{default_locale}}"
+                export LANG="{{ default_locale }}"
     - requires:
-      - file: /etc/profile.d
+      - file: etc-profile.d
 
-
+{% endif %}

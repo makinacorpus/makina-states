@@ -4,7 +4,7 @@
 # replacement for APC!
 # @see https://raw.github.com/zendtech/ZendOptimizerPlus/master/README for details
 # of options
-# 
+#
 # -------- MODULE APC ---------------------------------
 # WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
 # WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
@@ -84,6 +84,11 @@
 # php_admin_value[xdebug.profiler_enable]         = xdebug_profiler_enable ;
 # php_admin_value[xdebug.profiler_enable_trigger] = xdebug_profiler_enable_trigger  0;
 # php_admin_value[xdebug.profiler_output_name]    =  xdebug_profiler_output_name  /cachegrind.out.%p;
+{% import "makina-states/_macros/services.jinja" as services with context %}
+{{ services.register('php.common') }}
+{% set localsettings = services.localsettings %}
+{% set nodetypes = services.nodetypes %}
+{% set locs = localsettings.locations %}
 {% set phpStepOne = salt['grains.filter_by']({
     'dev': {
         'timezone': 'Europe/Paris',
@@ -229,10 +234,10 @@
             'mcrypt': 'php5-mcrypt'
         },
         'service': 'php5-fpm',
-        'etcdir': '/etc/php5',
-        'confdir': '/etc/php5/mods-available',
-        'logdir': '/var/log/php',
-        'fpm_sockets_dir': '/var/lib/apache2/fastcgi'
+        'etcdir': locs.conf_dir + '/php5',
+        'confdir': locs.conf_dir + '/php5/mods-available',
+        'logdir': locs.var_log_dir + '/php',
+        'fpm_sockets_dir': locs.var_lib_dir + '/apache2/fastcgi'
     }
   },
   grain='os_family',

@@ -6,13 +6,20 @@
 # after each docker creation to enable
 # the container network
 #
+{% import "makina-states/_macros/services.jinja" as services with context %}
+{{ services.register('virt.docker-shorewall') }}
+{% set localsettings = services.localsettings %}
+{% set locs = localsettings.locations %}
 include:
-  - makina-states.services.firewall.shorewall
-  - makina-states.services.virt.docker
+  - {{ services.statesPref }}firewall.shorewall
+  - {{ services.statesPref }}virt.docker
 
-extend:
-  docker-post-inst:
-    cmd.run:
-      - watch_in:
-        - cmd: shorewall-restart
+docker-shorewall-post-inst:
+  cmd.run:
+    - name: /bin/true
+    - unless: /bin/true
+    - require:
+      - cmd:  docker-post-inst
+    - watch_in:
+      - cmd: shorewall-restart
 

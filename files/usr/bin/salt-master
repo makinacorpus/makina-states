@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-export PATH="{{salt_data['salt_root']}}/makina-states/bin:$PATH"
-exec salt-master -c {{salt_data['conf_prefix']}} $@
-exit $?
-# vim:set ft=bash:

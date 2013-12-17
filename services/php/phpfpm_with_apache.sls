@@ -4,10 +4,15 @@
 #
 # WARNING, check the php_fpm_example state for detail on fastcgi.conf file
 #
-include:
-  - makina-states.services.http.apache
-
 {% from 'makina-states/services/php/php_defaults.jinja' import phpData with context %}
+{% import "makina-states/_macros/services.jinja" as services with context %}
+{{ services.register('php.phpfpm_with_apache') }}
+{% set localsettings = services.localsettings %}
+{% set nodetypes = services.nodetypes %}
+{% set locs = localsettings.locations %}
+
+include:
+  -{{ services.statesPref }}http.apache
 
 # Ensure that using php-fpm with apache we remove mod_php from Apache
 makina-phpfpm-http-server-backlink:
@@ -41,7 +46,7 @@ makina-phpfpm-apache-module_connect_phpfpm_mod_fastcgi_module_conf:
     - user: root
     - group: root
     - mode: 664
-    - name: /etc/apache2/mods-available/fastcgi.conf
+    - name: {{ locs.conf_dir }}/apache2/mods-available/fastcgi.conf
     - source: salt://makina-states/files/etc/apache2/mods-available/fastcgi.conf
     - template: 'jinja'
     - defaults:
@@ -68,3 +73,4 @@ makina-phpfpm-apache-module_connect_phpfpm:
       - actions
     - require_in:
       - mc_apache: makina-apache-main-conf
+

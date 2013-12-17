@@ -14,15 +14,10 @@
 # For information about entries in this file, type "man shorewall-interfaces"
 ###############################################################################
 {# on debian, we have an old shorewall 4.5.5 #}
-{% if grains['os'] not in ['Debian']%}?{% endif %}FORMAT 2
+
+{% shwData.ifformat %}
 ###############################################################################
 #ZONE	INTERFACE	OPTIONS
-{% for sid, shorewall in pillar.items() -%}
-{% if sid.endswith('makina-shorewall') -%}
-{% set k='interfaces' -%}
-{% set cfg = shorewall.get(k, {}) -%}
-{%- for i, data in cfg.items() -%}
+{%- for i, data in shwData.interfaces.items() %}
 {{ i }} {{ data['interface'] }} {{ data.get('options', '') }}
-{% endfor -%}
-{% endif -%}
 {% endfor -%}

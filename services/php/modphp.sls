@@ -15,12 +15,18 @@
 # consult pillar values with "salt '*' pillar.items"
 # consult grains values with "salt '*' grains.items"
 #
+{% from 'makina-states/services/php/php_defaults.jinja' import phpData with context %}
+{% import "makina-states/_macros/services.jinja" as services with context %}
+{{ services.register('php.modphp') }}
+{% set localsettings = services.localsettings %}
+{% set nodetypes = services.nodetypes %}
+{% set locs = localsettings.locations %}
 include:
-  - makina-states.services.http.apache
-  - makina-states.services.php.common
-{% if grains['lsb_distrib_id']=="Debian" %}
+  - {{ services.statesPref }}http.apache
+  - {{ services.statesPref }}php.common
+{% if grains.get('lsb_distrib_id','') == "Debian" %}
    # Include dotdeb repository for Debian
-  - makina-states.services.php.repository_dotdeb
+  - {{ localsettings.statesPref }}repository_dotdeb
 {% endif %}
 
 # Load defaults values -----------------------------------------

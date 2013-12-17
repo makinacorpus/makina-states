@@ -1,8 +1,12 @@
-include:
-  - makina-states.localsettings.pkgs
+{% import "makina-states/_macros/services.jinja" as services with context %}
+{{ services.register('virt.lxc') }}
+{% set localsettings = services.localsettings %}
+{% set locs = localsettings.locations %}
 
-{% set lxc_root = '/var/lib/lxc' %}
-{% set lxc_dir = pillar.get('lxc.directory', '') %}
+include:
+  - {{ localsettings.statesPref }}pkgs
+
+
 # define in pillar an entry "*-lxc-server-def
 # as:
 # toto-server-def:
@@ -15,8 +19,6 @@ include:
 #  template: ubuntu (opt)
 #  rootfs: root directory (opt)
 #  config: config path (opt)
-#  salt_bootstrap: bootstrap state to use in salt default "vm"
-#  mastersalt_bootstrap: bootstrap state to use in salt default  None
 # and it will create an ubuntu templated lxc host
 
 lxc-pkgs:
@@ -33,25 +35,26 @@ lxc-services-enabling:
       - lxc-net
 
 # as it is often a mount -bind, we must ensure we can attach dependencies there
-# we must can :
 # set in pillar:
-# lxc.directory: real dest
+# makina.localsettings.lxc_root: real dest
+{% set lxc_root = locs.var_lib_dir+'/lxc' %}
+{% set lxc_dir = locs.lxc_root %}
 
 lxc-root:
   file.directory:
-    - name: {{lxc_root}}
+    - name: {{ lxc_root }}
 
 {% if lxc_dir %}
 lxc-dir:
   file.directory:
-    - name: {{lxc_dir}}
+    - name: {{ lxc_dir }}
 
 lxc-mount:
   mount.mounted:
     - require:
       - file: lxc-dir
-    - name: {{lxc_root}}
-    - device: {{lxc_dir}}
+    - name: {{ lxc_root }}
+    - device: {{ lxc_dir }}
     - fstype: none
     - mkmnt: True
     - opts: bind
@@ -65,7 +68,7 @@ lxc-mount:
 
 lxc-after-maybe-bind-root:
   file.directory:
-    - name: /var/lib/lxc
+    - name: {{ locs.var_lib_dir }}/lxc
   require:
     - file: lxc-root
 
@@ -75,54 +78,29 @@ lxc-after-maybe-bind-root:
 {% set lxc_mac = lxc_data['mac'] -%}
 {% set lxc_ip4 = lxc_data['ip4'] -%}
 {% set lxc_template = lxc_data.get('template', 'ubuntu') -%}
-{% set salt_bootstrap = lxc_data.get('salt_bootstrap', 'vm') -%}
-{% set mastersalt = lxc_data.get('mastersalt', 'mastersalt.makina-corpus.net') -%}
-{% set mastersalt_bootstrap = lxc_data.get('mastersalt_bootstrap', None) -%}
 {% set lxc_netmask = lxc_data.get('netmask', '255.255.255.0') -%}
 {% set lxc_gateway = lxc_data.get('gateway', '10.0.3.1') -%}
 {% set lxc_dnsservers = lxc_data.get('dnsservers', '10.0.3.1') -%}
-{% set lxc_root = lxc_data.get('root', '/var/lib/lxc/' + lxc_name) -%}
+{% set lxc_root = lxc_data.get('root', locs.var_lib_dir+'/lxc/' + lxc_name) -%}
 {% set lxc_rootfs = lxc_data.get('rootfs', lxc_root + '/rootfs') -%}
-{% set lxc_s = lxc_rootfs + '/srv/salt' %}
-{% set salt_init = lxc_s + '/.salt-init.sh' %}
-{% set lxc_init = '/srv/salt/.lxc-'+ lxc_name + '.sh' %}
+{% set lxc_init = locs.tmp_dir+'/.lxc-'+ lxc_name + '.sh' %}
 {% set lxc_config = lxc_data.get('config', lxc_root + '/config') -%}
 {{ lxc_name }}-lxc:
   file.managed:
-    - name: {{lxc_init}}
+    - name: {{ lxc_init }}
     - source: salt://makina-states/_scripts/lxc-init.sh
     - mode: 750
   cmd.run:
-    - name: {{lxc_init}} {{ lxc_name }} {{ lxc_template }}
+    - name: {{ lxc_init }} {{ lxc_name }} {{ lxc_template }}
     - stateful: True
     - require:
       - file: {{ lxc_name }}-lxc
       - file: lxc-after-maybe-bind-root
 
-{{ lxc_name }}-lxc-salt-pillar:
-  file.directory:
-    - require:
-      - cmd: {{ lxc_name }}-lxc
-    - name: {{ lxc_rootfs }}/srv/pillar
-    - makedirs: True
-    - mode: '0755'
-    - user: root
-    - group: root
-
-{{ lxc_name }}-lxc-salt:
-  cmd.run:
-    - name: |
-            rsync -a --numeric-ids /srv/salt/makina-states/ {{ lxc_rootfs }}/srv/salt/makina-states/ --exclude '*.pyc';
-            cd {{ lxc_rootfs }}/srv/salt/makina-states/ && rm -rf bin src develop-eggs eggs parts .installed.cfg
-    - unless: ls -d {{ lxc_rootfs }}/srv/salt/makina-states/src/salt
-    - require:
-      - cmd: {{ lxc_name }}-lxc
-      - pkg: sys-pkgs
-
 {{ lxc_name }}-lxc-config:
   file.managed:
     - require:
-      - cmd: {{ lxc_name }}-lxc-salt
+      - cmd: {{ lxc_name }}-lxc:
     - user: root
     - group: root
     - mode: '0644'
@@ -142,7 +120,7 @@ lxc-after-maybe-bind-root:
     - require:
       - cmd: {{ lxc_name }}-lxc
 
-{{lxc_name}}-lxc-network-cfg:
+{{ lxc_name }}-lxc-network-cfg:
   file.managed:
     - name: {{ lxc_rootfs }}/etc/network/interfaces
     - source: salt://makina-states/files/etc/network/interfaces
@@ -151,7 +129,7 @@ lxc-after-maybe-bind-root:
     - mode: '0644'
     - template: jinja
     - context:
-      makina_network:
+      network_interfaces:
         eth0:
           address: {{ lxc_ip4 }}
           netmask: {{ lxc_netmask }}
@@ -205,14 +183,14 @@ start-{{ lxc_name }}-lxc-service:
   cmd.run:
     - require:
       - cmd: {{ lxc_name }}-lxc
-      - file: {{lxc_name}}-lxc-network-cfg
+      - file: {{ lxc_name }}-lxc-network-cfg
     - name: lxc-start -n {{ lxc_name }} -d && echo changed=false
 
 {% set makinahosts=[] -%}
 {% set hosts_list=[] %}
 {% for k, data in pillar.items() -%}
 {% if k.endswith('makina-hosts') -%}
-{% set dummy=makinahosts.extend(data) -%}
+{% do makinahosts.extend(data) -%}
 {% endif -%}
 {% endfor -%}
 
@@ -222,10 +200,10 @@ start-{{ lxc_name }}-lxc-service:
 {% for host in makinahosts %}
 ### For localhost entries, replace with the lxc getway ip
 {% if host['ip'] == '127.0.0.1' -%}
-  {% set dummy=hosts_list.append( lxc_gateway + ' ' + host['hosts'] ) %}
+  {% do hosts_list.append( lxc_gateway + ' ' + host['hosts'] ) %}
 ### Else replicate them into the HOSTS of the container
 {% else %}
-  {% set dummy=hosts_list.append( host['ip'] + ' ' + host['hosts'] ) %}
+  {% do hosts_list.append( host['ip'] + ' ' + host['hosts'] ) %}
 {% endif %}
 {% endfor %}
 {% if hosts_list %}
@@ -246,22 +224,5 @@ lxc-{{ lxc_name }}-pillar-localhost-host:
     - require:
       - cmd: {{ lxc_name }}-lxc
 {% endif %}
-
-bootstrap-salt-in-{{ lxc_name }}-lxc:
-  file.managed:
-    - name: {{salt_init}}
-    - source: salt://makina-states/_scripts/lxc-salt.sh
-    - mode: 750
-  cmd.run:
-    - name: {{salt_init}} {{ lxc_name }}
-    - stateful: True
-    - env:
-      - SALT_BOOT: {{ salt_bootstrap }}
-      - MASTERSALT_BOOT: {{ mastersalt_bootstrap }}
-      - MASTERSALT: {{ mastersalt }}
-    - require:
-      - file: bootstrap-salt-in-{{ lxc_name }}-lxc
-      - cmd: {{ lxc_name }}-lxc-salt
-      - cmd: start-{{ lxc_name }}-lxc-service
 {% endif -%}
 {%- endfor %}

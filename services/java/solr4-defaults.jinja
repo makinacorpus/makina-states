@@ -1,9 +1,13 @@
+{% import "makina-states/_macros/services.jinja" as services with context %}
+{{ services.register('java.tomcat7') }}
+{% set localsettings = services.localsettings %}
+{% set locs = localsettings.locations %}
+
 {% set ver = '4' %}
-{% set groot = '/srv/solr' %}
+{% set groot = locs.srv_dir+'/solr' %}
 {% set root = groot + '/'  + ver %}
 {% set home_dir = root + '/home' %}
 {% set data_dir = root + '/data' %}
-solr4StepOne = salt['grains.filter_by']({
 {% set solr4StepOne = salt['grains.filter_by']({
   'dev': {
     'ver': ver,

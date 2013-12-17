@@ -5,6 +5,12 @@
 # Load defaults values -----------------------------------------
 {% from 'makina-states/services/php/php_defaults.jinja' import phpData with context %}
 
+{% import "makina-states/_macros/services.jinja" as services with context %}
+{{ services.register('php.common') }}
+{% set localsettings = services.localsettings %}
+{% set nodetypes = services.nodetypes %}
+{% set locs = localsettings.locations %}
+
 makina-php-timezone:
   file.managed:
     - user: root
@@ -44,8 +50,8 @@ makina-php-apc:
 {%   if phpData.modules.apc.enabled %}
 makina-php-apc-install:
   cmd.run:
-    - name: /usr/sbin/php5enmod -s ALL apcu
-    - unless: /usr/sbin/php5query -q -s cli -m apcu
+    - name: {{ locs.sbin_dir }}/php5enmod -s ALL apcu
+    - unless: {{ locs.sbin_dir }}/php5query -q -s cli -m apcu
     - require:
       - pkg: makina-php-pkgs
       - file: makina-php-apc
@@ -54,8 +60,8 @@ makina-php-apc-install:
 {%   else %}
 makina-php-apc-disable:
   cmd.run:
-    - name: /usr/sbin/php5dismod -s ALL apcu
-    - onlyif: /usr/sbin/php5query -q -s cli -m apcu
+    - name: {{ locs.sbin_dir }}/php5dismod -s ALL apcu
+    - onlyif: {{ locs.sbin_dir }}/php5query -q -s cli -m apcu
     - require:
       - pkg: makina-php-pkgs
       - file: makina-php-apc
@@ -69,8 +75,8 @@ makina-php-apc-disable:
 {%   if phpData.modules.xdebug.enabled %}
 makina-php-xdebug-install:
   cmd.run:
-    - name: /usr/sbin/php5enmod -s ALL xdebug
-    - unless: /usr/sbin/php5query -q -s cli -m xdebug
+    - name: {{ locs.sbin_dir }}/php5enmod -s ALL xdebug
+    - unless: {{ locs.sbin_dir }}/php5query -q -s cli -m xdebug
     - require:
       - pkg: makina-php-pkgs
     - watch_in:
@@ -78,11 +84,17 @@ makina-php-xdebug-install:
 {%   else %}
 makina-php-xdebug-disable:
   cmd.run:
-    - name: /usr/sbin/php5dismod -s ALL xdebug
-    - onlyif: /usr/sbin/php5query -q -s cli -m xdebug
+    - name: {{ locs.sbin_dir }}/php5dismod -s ALL xdebug
+    - onlyif: {{ locs.sbin_dir }}/php5query -q -s cli -m xdebug
     - require:
       - pkg: makina-php-pkgs
     - watch_in:
       - service: makina-php-restart
 {%   endif %}
 {% endif %}
+
+
+# flag to auto-install as-soon-as-included once
+makina.services.php.common:
+  grains.present:
+    - value: True

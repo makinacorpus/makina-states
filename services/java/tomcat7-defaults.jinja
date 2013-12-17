@@ -1,8 +1,13 @@
+{% import "makina-states/_macros/services.jinja" as services with context %}
+{% set localsettings = services.localsettings %}
+{% set locs = localsettings.locations %}
+
+
 {% set tomcatStepOne = salt['grains.filter_by']({
     'dev': {
-      'java_home': '/usr/lib/jvm/java-6-oracle',
+      'java_home': locs.usr_dir+'/lib/jvm/java-6-oracle',
       'java_opts': '-Djava.awt.headless=true -Xms256M -Xmx2048M -XX:MaxPermSize=256m -XX:+UseConcMarkSweepGC',
-      'conf_dir': '/etc/tomcat7',
+      'conf_dir': locs.conf_dir+'/tomcat7',
       'roles': [],
       'users': {
         'admin': {

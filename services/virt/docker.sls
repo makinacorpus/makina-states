@@ -70,10 +70,15 @@
 #
 # and it will create a docker guest for you
 
+{% import "makina-states/_macros/services.jinja" as services with context %}
+{{ services.register('virt.docker') }}
+{% set localsettings = services.localsettings %}
+{% set locs = localsettings.locations %}
+
 docker-repo:
   pkgrepo.managed:
     - name: deb http://get.docker.io/ubuntu docker main
-    - file: /etc/apt/sources.list.d/docker.list
+    - file: {{ locs.conf_dir }}/apt/sources.list.d/docker.list
     - key_url: https://get.docker.io/gpg
 
 # require dockerpy in salt
@@ -87,7 +92,7 @@ docker-pkgs:
 
 docker-conf:
   file.managed:
-    - name: /etc/init/docker.conf
+    - name: {{ locs.upstart_dir }}/docker.conf
     - source: salt://makina-states/files/etc/init/docker.conf
     - require_in:
       - service: docker-services
@@ -95,7 +100,7 @@ docker-conf:
 # restart on first run with new init script
 docker-restart:
   cmd.run:
-    - name: service docker restart;touch /etc/.docker-installed
+    - name: service docker restart;touch {{ locs.conf_dir }}/.docker-installed
     - unless: ps aux|grep -q -- "docker -d -r"
     - require:
       - service: docker-services
@@ -116,27 +121,25 @@ docker-preload-images:
       - service: docker-services
 
 # as it is often a mount -bind, we must ensure we can attach dependencies there
-# we must can :
 # set in pillar:
-# docker.directory: real dest
-
-{% set docker_dir = pillar.get('docker.directory', '') %}
-{% set docker_root = '/var/lib/docker' %}
+# makina.localsettings.docker_root: real dest
+{% set docker_dir = locs.docker_root %}
+{% set dockerSysRoot = locs.var_lib_dir+'/docker' %}
 docker-root:
   file.directory:
-    - name: {{docker_root}}
+    - name: {{ dockerSysRoot }}
 
 {% if docker_dir %}
 docker-dir:
   file.directory:
-    - name: {{docker_dir}}
+    - name: {{ docker_dir }}
 
 docker-mount:
   mount.mounted:
     - require:
       - file: docker-dir
-    - name: {{docker_root}}
-    - device: {{docker_dir}}
+    - name: {{ dockerRoot }}
+    - device: {{ docker_dir }}
     - fstype: none
     - mkmnt: True
     - opts: bind
@@ -149,7 +152,7 @@ docker-mount:
 
 docker-after-maybe-bind-root:
   file.directory:
-    - name: /var/lib/docker
+    - name: {{locs.var_lib_dir}}/docker
     - require_in:
       - pkg: docker-pkgs
     - require:
@@ -173,11 +176,11 @@ docker-after-maybe-bind-root:
       {% if volumes %}
         {% for mountpoint, volume in volumes %}
           {%- if not mountpoint in volumes_passed %}
-            {% set dummy=volumes_passed.append(mountpoint) %}
+            {% do volumes_passed.append(mountpoint) %}
           {% endif -%}
-docker-volume-{{mountpoint}}:
+docker-volume-{{ mountpoint }}:
   file.directory:
-    - name: {{mountpoint}}
+    - name: {{ mountpoint }}
         {% endfor %}
       {% endif %}
 # donnerait 'project-prod-1 project-dev-1 project-db-dev, ...'
@@ -186,29 +189,29 @@ docker-volume-{{mountpoint}}:
         {% if count > 1 %}
           {% set instancenumstr = '_%s' % instancenum %}
         {% endif %}
-docker-{{id}}{{instancenumstr}}:
+docker-{{ id }}{{ instancenumstr }}:
         {% if not image %}
-  git.latest:
-    - name: {{url}}
-    - rev: remotes/origin/{{branch}}
-    - target: /srv/salt/dockers-repo-cache/dockers-{{id}}
+  mc_git.latest:
+    - name: {{ url }}
+    - rev: remotes/origin/{{ branch }}
+    - target: locs.srv_dir/dockers-repo-cache/dockers-{{ id }}
         {% endif %}
   dockerio.installed:
-    - hostname: {{hostname}}
-    - docker_dir: {{docker_dir}}
+    - hostname: {{ hostname }}
+    - docker_dir: {{ docker_dir }}
         {% if volumes_passed or not image %}
     - require:
           {% for v in volumes_passed %}
-        - file.directory: {{v}}
+        - file.directory: {{ v }}
           {% endfor %}
           {% if not image %}
-        - git: docker-{{id}}
+        - mc_git: docker-{{ id }}
           {% endif %}
         {% endif %}
         {% if image %}
-    - image: {{image}}
+    - image: {{ image }}
           {% else %}
-    - path: /srv/salt/dockers-repo-cache/dockers-{{id}}
+    - path: locs.srv_dir/dockers-repo-cache/dockers-{{ id }}
         {% endif %}
         {% if ports %}
     - ports:
@@ -223,7 +226,7 @@ docker-{{id}}{{instancenumstr}}:
       - cmd: docker-post-inst
     - volumes:
           {% for mountpoint, volume in  volumes %}
-      - {{mountpoint}}: {{volume}}
+      - {{ mountpoint }}: {{ volume }}
           {% endfor %}
         {% endif %}
       {% endfor %}
@@ -235,7 +238,3 @@ docker-post-inst:
   cmd.run:
     - name: echo "dockers installed"
 
-makina-states-services-virt-docker-grain:
-  grains.present:
-    - name: makina.virt.host.docker
-    - value: True

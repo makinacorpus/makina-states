@@ -5,19 +5,8 @@
 # The loopback network interface
 auto lo
 iface lo inet loopback
-{% set makinanet={} -%}
-{# lxc configuration has the network configuration inlined in the state -#}
-{# and not in pillar -#}
-{% set dummy=makinanet.update(makina_network) -%}
-{# it can be also done for other states like this -#}
-{% if not makinanet -%}
-{% for k in pillar -%}
-{% if k.endswith('makina-network') -%}
-{% set dummy=makinanet.update(pillar[k]) -%}
-{% endif -%}
-{% endfor -%}
-{% endif -%}
-{% for ifname, ifc in makinanet.items() %}
+
+{% for ifname, ifc in network_interfaces.items() %}
 {% set auto = ifc.get('auto', '') -%}
 {% set mode = ifc.get('mode', '') %}
 {% set allow_hotplug = ifc.get('allow-hotplug', False) %}

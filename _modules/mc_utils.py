@@ -11,6 +11,7 @@ import salt.utils
 import os
 import salt.utils.dictupdate
 from salt.exceptions import SaltException
+import salt.utils
 
 
 class _CycleError(Exception):
@@ -178,6 +179,39 @@ def is_iter(value):
     )
 
 
+def get(key, default=''):
+    '''
+    .. versionadded: 0.14.0
+    Same as 'config.get' but with different retrieval order:
+
+    This routine traverses these data stores in this order:
+
+    - Local minion config (opts)
+    - Minion's pillar
+    - Minion's grains
+    - Master config
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' mc_utils.get pkg:apache
+    '''
+    ret = salt.utils.traverse_dict(__opts__, key, '_|-')
+    if ret != '_|-':
+        return ret
+    ret = salt.utils.traverse_dict(__pillar__, key, '_|-')
+    if ret != '_|-':
+        return ret
+    ret = salt.utils.traverse_dict(__grains__, key, '_|-')
+    if ret != '_|-':
+        return ret
+    ret = salt.utils.traverse_dict(__pillar__.get('master', {}), key, '_|-')
+    if ret != '_|-':
+        return ret
+    return default
+
+
 class _TestCase(unittest.TestCase):
     def test_format_resolve(self):
         self.maxDiff = None
@@ -227,6 +261,8 @@ class _TestCase(unittest.TestCase):
                 self.assertEquals(format_resolve(test, args), res)
             else:
                 self.assertEquals(format_resolve(test), res)
+
+
 if (
     __name__ == '__main__'
     and os.environ.get('makina_test', None) == 'mc_utils'

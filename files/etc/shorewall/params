@@ -25,13 +25,7 @@
 #		net	eth0		130.252.100.255	routefilter,norfc1918
 #
 ###############################################################################
-{% for sid, shorewall in pillar.items() -%}
-{% if sid.endswith('makina-shorewall') -%}
-{% set k='params' -%}
-{% set cfg = shorewall.get(k, {}) -%}
-{% for i, data in cfg.items() -%}
+{% for i, data in shwData.params.items() -%}
 {{i}}={{data}}
 {% endfor -%}
-{% endif -%}
-{% endfor %}
 #LAST LINE -- DO NOT REMOVE

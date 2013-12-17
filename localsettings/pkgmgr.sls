@@ -22,19 +22,22 @@
 #       comps: uber-non-free2
 #       no-src: True #(do not add a deb-src entry; false by default)
 #   use-backports: true|false
+{% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+
+{{ localsettings.register('pkgmgr') }}
+{% set locs = localsettings.locations %}
 
 {% if grains['os'] in ['Ubuntu', 'Debian'] %}
-{% set bp = salt['config.get']('makina.apt.use-backports', False) %}
-{% set udist = salt['config.get']('lsb_distrib_codename', 'precise') %}
-{% set ddist = salt['config.get']('lsb_distrib_codename', 'wheezy') %}
-{% set ubuntu_mirror = salt['config.get']('makina.apt.ubuntu.mirror',
-                                          'http://ftp.free.fr/mirrors/ftp.ubuntu.com/ubuntu') %}
-{% set debian_mirror = salt['config.get']('makina.apt.ubuntu.mirror',
-                                          'http://ftp.de.debian.org/debian') %}
-{% set dcomps = salt['config.get']('makina.apt.debian.comps',
-                                   'main contrib non-free' ) %}
-{% set ucomps = salt['config.get']('makina.apt.ubuntu.comps',
-                                   'main restricted universe multiverse') %}
+{% set bp = salt['mc_utils.get']('makina.apt.use-backports', False) %}
+{% set ddist = localsettings.ddist %}
+{% set udist = localsettings.udist %}
+
+{% set debian_mirror = localsettings.debian_mirror %}
+{% set ubuntu_mirror = localsettings.ubuntu_mirror %}
+
+{% set dcomps = localsettings.dcomps %}
+{% set ucomps = localsettings.ucomps %}
+
 {% set pkg_data = salt['grains.filter_by']({
   'default': {'mirrors': []},
   'Debian': {'use-backports': True, 'mirrors': [
@@ -60,7 +63,7 @@
 {% set pillar_data = salt['pillar.get']('makina.apt.settings', {}) %}
 {% set pkg_data=salt['mc_utils.dictupdate'](pkg_data, pillar_data) %}
 {% if bp %}
-{% set dummy = pkg_data['mirrors'].extend(
+{% do pkg_data['mirrors'].extend(
   salt['grains.filter_by']({
     'Debian': [
     {'mirror': 'http://ftp.de.debian.org/debian',
@@ -73,7 +76,7 @@
 
 apt-sources-list:
   file.managed:
-    - name: /etc/apt/sources.list
+    - name: {{ locs.conf_dir }}/apt/sources.list
     - source: salt://makina-states/files/etc/apt/sources.list
     - mode: 755
     - template: jinja

@@ -1,7 +1,13 @@
 # see also users.sls
+{% import "makina-states/_macros/services.jinja" as services with context %}
+{{ services.register('base.ssh') }}
+
+{% set localsettings = services.localsettings %}
+{% set locs = localsettings.locations %}
+
 include:
+  - {{ services.localsettings.statesPref }}users
   - openssh
-  - makina-states.localsettings.users
 
 # Idea is to grant everyone member of "(.-)*makina-users" access
 # to managed boxes
@@ -29,17 +35,17 @@ include:
 #       bar.pub
 #
 # The keys are searched in /salt_root/files/ssh/
-{% import "makina-states/_macros/vars.jinja" as vars with context %}
+{% import "makina-states/_macros/localsettings.jinja" as vars with context %}
 
 
 {% for user, keys_info in vars.user_keys.items() %}
-  {% for k, keys in keys_info.items() %}
+  {% for commentid, keys in keys_info.items() %}
     {% for key in keys %}
-ssh_auth-{{ user }}-{{ k }}-{{ key }}:
+ssh_auth-{{ user }}-{{ commentid }}-{{ key }}:
   ssh_auth.present:
     - require:
       - user: {{ user }}
-    - comment: key for {{ k }}
+    - comment: key for {{ commentid }}
     - user: {{ user }}
     - source: salt://files/ssh/{{ key }}
     {% endfor %}
@@ -60,5 +66,3 @@ extend:
       - name: /etc/ssh/sshd_config
       - source: salt://makina-states/files/etc/ssh/sshd_config
       - template: jinja
-
-

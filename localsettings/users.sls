@@ -8,26 +8,30 @@
 #
 # Idea is to create any user/group needed for ssh managment
 
-{% import "makina-states/_macros/vars.jinja" as vars with context %}
-{% for id, udata in vars.users.items() %}
+{% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+
+{{ localsettings.register('users') }}
+{% set locs = localsettings.locations %}
+
+{% for id, udata in localsettings.users.items() %}
 {% set password = udata.get('password', False) %}
 {% set home = udata['home'] %}
-{{id}}:
+{{ id }}:
   group.present:
     - name: {{ id }}
     - system: True
   user.present:
-    - name: {{ id}}
+    - name: {{ id }}
     - require:
         - group: {{ id }}
     {%- if id not in ['root'] %}
     - fullname: {{ id }} user
     - createhome: True
     - shell: /bin/bash
-    - home: {{home}}
+    - home: {{ home }}
     - gid_from_name: True
     - remove_groups: False
-    {% if password %}- password:  {{password}} {% endif %}
+    {% if password %}- password:  {{ password }} {% endif %}
     - optional_groups:
       - {{ id }}
       - cdrom

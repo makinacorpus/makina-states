@@ -1,4 +1,4 @@
-# This file is an example of makina-states.services.php.modphp usage 
+# This file is an example of makina-states.services.php.modphp usage
 # @see php_fpm_example if you work with php-fpm
 # how to enforce apache in mmp prefork (limitation of mod_php)
 # create a basic apache virtualhost, see apache_example.sls for details
@@ -10,9 +10,15 @@
 ##2-Requisites (watch and require) are appended to, everything else is overwritten
 ##3-extend is a top level declaration, like an ID declaration, cannot be declared twice in a single SLS
 ##4-Many IDs can be extended under the extend declaration
+
+{% import "makina-states/_macros/services.jinja" as services with context %}
+{% set localsettings = services.localsettings %}
+{% set nodetypes = services.nodetypes %}
+{% set locs = localsettings.locations %}
+
 include:
-  - makina-states.services.http.apache
-  - makina-states.services.php.modphp
+  - {{ service.statesPref }}http.apache
+  - {{ service.statesPref }}php.modphp
 extend:
   makina-apache-main-conf:
     mc_apache:

@@ -11,7 +11,7 @@
 #      java_home': /usr/lib/jvm/java-6-oracle
 #  users:
 #    admin:
-#      password: {{password}}
+#      password: {{ password }}
 #      roles': ['admin', 'manager']
 #
 # AVAILABLE DEFAULT SETTINGS:
@@ -41,7 +41,7 @@
 #   - context.xml
 #   - web.xml
 #   - logging.properties
-#   - /etc/default/tomcat7 (practical to add JAVA_OPTS addition from other sls (eg adding solr datadir & home properties)
+#   - {{ locs.conf_dir }}/default/tomcat7 (practical to add JAVA_OPTS addition from other sls (eg adding solr datadir & home properties)
 #   - catalina.properties
 # See at the end of this state file for the appropriate blockreplace to use
 # in your case and where those block are located in the aforementioned files.
@@ -50,112 +50,128 @@
 #
 # #}
 
-
-{% import "makina-states/services/java/tomcat7-defaults.jinja" as c with context %}
-{% set conf_dir = c.defaultsData['conf_dir'] %}
-{% set ver = c.defaultsData['ver'] %}
-{% set data = c.defaultsData %}
+{% import "makina-states/services/java/tomcat7-defaults.jinja" as tomcat with context %}
+{% import "makina-states/_macros/services.jinja" as services with context %}
+{{ services.register('java.tomcat7') }}
+{% set localsettings = services.localsettings %}
+{% set locs = localsettings.locations %}
+{% set conf_dir = tomcat.defaultsData['conf_dir'] %}
+{% set ver = tomcat.defaultsData['ver'] %}
+{% set data = tomcat.defaultsData %}
 
 include:
-  - makina-states.localsettings.jdk
+  - {{ localsettings.statesPref }}jdk }}
 
 tomcat-pkgs:
   pkg.installed:
     - pkgs:
-      - tomcat{{ver}}
+      - tomcat{{ ver }}
     - require:
       - pkg: jdk-6-pkgs
 
-/etc/default/tomcat{{ver}}:
+{{ locs.conf_dir }}-default-tomcat{{ ver }}:
   file.managed:
-    - source: salt://makina-states/files/etc/default/tomcat{{ver}}
+    - name: {{ locs.conf_dir }}/default/tomcat{{ ver }}
+    - source: salt://makina-states/files/etc/default/tomcat{{ ver }}
     - template: jinja
-    - defaults: {{ c.defaultsData | yaml }}
+    - defaults: {{ tomcat.defaultsData | yaml }}
 
-{{conf_dir}}/web.xml:
+{{ conf_dir }}-web.xml:
   file.managed:
+    - name: {{ conf_dir }}/web.xml
     - order: 100
-    - source: salt://makina-states/files/{{conf_dir}}/web.xml
+    - source: salt://makina-states/files/{{ conf_dir }}/web.xml
     - template: jinja
-    - defaults: {{ c.defaultsData | yaml }}
+    - defaults: {{ tomcat.defaultsData | yaml }}
 
-{{conf_dir}}/Catalina/localhost:
+{{ conf_dir }}-Catalina-localhost:
   file.directory:
+    - name: {{ conf_dir }}/Catalina/localhost
     - makedirs: true
 
-{{conf_dir}}/tomcat-users.xml:
+{{ conf_dir }}-tomcat-users.xml:
   file.managed:
+    - name: {{ conf_dir }}/tomcat-users.xml
     - order: 100
-    - source: salt://makina-states/files/{{conf_dir}}/tomcat-users.xml
+    - source: salt://makina-states/files/{{ conf_dir }}/tomcat-users.xml
     - template: jinja
-    - defaults: {{ c.defaultsData | yaml }}
+    - defaults: {{ tomcat.defaultsData | yaml }}
 
-{{conf_dir}}/logging.properties:
+{{ conf_dir }}-logging.properties:
   file.managed:
-    - source: salt://makina-states/files/{{conf_dir}}/logging.properties
+    - name: {{ conf_dir }}/logging.properties
+    - source: salt://makina-states/files/{{ conf_dir }}/logging.properties
     - order: 100
     - template: jinja
-    - defaults: {{ c.defaultsData | yaml }}
+    - defaults: {{ tomcat.defaultsData | yaml }}
 
-{{conf_dir}}/policy.d/04webapps.policy:
+{{ conf_dir }}-policy.d-04webapps.policy:
   file.managed:
+    - name: {{ conf_dir }}/policy.d/04webapps.policy
     - order: 100
-    - source: salt://makina-states/files/{{conf_dir}}/policy.d/04webapps.policy
+    - source: salt://makina-states/files/{{ conf_dir }}/policy.d/04webapps.policy
     - template: jinja
-    - defaults: {{ c.defaultsData | yaml }}
+    - defaults: {{ tomcat.defaultsData | yaml }}
 
-{{conf_dir}}/policy.d/02debian.policy:
+{{ conf_dir }}-policy.d-02debian.policy:
   file.managed:
+    - name: {{ conf_dir }}/policy.d/02debian.policy
     - order: 100
-    - source: salt://makina-states/files/{{conf_dir}}/policy.d/02debian.policy
+    - source: salt://makina-states/files/{{ conf_dir }}/policy.d/02debian.policy
     - template: jinja
-    - defaults: {{ c.defaultsData | yaml }}
+    - defaults: {{ tomcat.defaultsData | yaml }}
 
-{{conf_dir}}/policy.d/03catalina.policy:
+{{ conf_dir }}-policy.d-03catalina.policy:
   file.managed:
+    - name: {{ conf_dir }}/policy.d/03catalina.policy:
     - order: 100
-    - source: salt://makina-states/files/{{conf_dir}}/policy.d/03catalina.policy
+    - source: salt://makina-states/files/{{ conf_dir }}/policy.d/03catalina.policy
     - template: jinja
-    - defaults: {{ c.defaultsData | yaml }}
+    - defaults: {{ tomcat.defaultsData | yaml }}
 
-{{conf_dir}}/policy.d/01system.policy:
+{{ conf_dir }}-policy.d-01system.policy:
   file.managed:
+    - name: {{ conf_dir }}/policy.d/01system.policy
     - order: 100
-    - source: salt://makina-states/files/{{conf_dir}}/policy.d/01system.policy
+    - source: salt://makina-states/files/{{ conf_dir }}/policy.d/01system.policy
     - template: jinja
-    - defaults: {{ c.defaultsData | yaml }}
+    - defaults: {{ tomcat.defaultsData | yaml }}
 
-{{conf_dir}}/policy.d/50local.policy:
+{{ conf_dir }}-policy.d-50local.policy:
   file.managed:
+    - name: {{ conf_dir }}/policy.d/50local.policy
     - order: 100
-    - source: salt://makina-states/files/{{conf_dir}}/policy.d/50local.policy
+    - source: salt://makina-states/files/{{ conf_dir }}/policy.d/50local.policy
     - template: jinja
-    - defaults: {{ c.defaultsData | yaml }}
+    - defaults: {{ tomcat.defaultsData | yaml }}
 
-{{conf_dir}}/catalina.properties:
+{{ conf_dir }}-catalina.properties:
   file.managed:
+    - name: {{ conf_dir }}/catalina.properties
     - order: 100
-    - source: salt://makina-states/files/{{conf_dir}}/catalina.properties
+    - source: salt://makina-states/files/{{ conf_dir }}/catalina.properties
     - template: jinja
-    - defaults: {{ c.defaultsData | yaml }}
+    - defaults: {{ tomcat.defaultsData | yaml }}
 
-{{conf_dir}}/server.xml:
+{{ conf_dir }}-server.xml:
   file.managed:
+    - name: {{ conf_dir }}/server.xml
     - order: 100
-    - source: salt://makina-states/files/{{conf_dir}}/server.xml
+    - source: salt://makina-states/files/{{ conf_dir }}/server.xml
     - template: jinja
-    - defaults: {{ c.defaultsData | yaml }}
+    - defaults: {{ tomcat.defaultsData | yaml }}
 
-{{conf_dir}}/context.xml:
+{{ conf_dir }}-context.xml:
   file.managed:
+    - name: {{ conf_dir }}/context.xml
     - order: 100
-    - source: salt://makina-states/files/{{conf_dir}}/context.xml
+    - source: salt://makina-states/files/{{ conf_dir }}/context.xml
     - template: jinja
-    - default: {{ c.defaultsData | yaml }}
+    - default: {{ tomcat.defaultsData | yaml }}
 
-{{conf_dir}}/server-xml-block1:
+{{ conf_dir }}-server-xml-block1:
   file.blockreplace:
-    - name: {{conf_dir}}/server.xml
+    - name: {{ conf_dir }}/server.xml
     - order: 200
     - marker_start: "<!-- salt managed zone: connector block -->"
     - marker_end: "<!-- end salt managed zone: connector block -->"
@@ -163,9 +179,9 @@ tomcat-pkgs:
     - backup: '.bak'
     - show_changes: True
 
-{{conf_dir}}/server-xml-block2:
+{{ conf_dir }}-server-xml-block2:
   file.blockreplace:
-    - name: {{conf_dir}}/server.xml
+    - name: {{ conf_dir }}/server.xml
     - order: 200
     - marker_start: "<!-- salt managed zone: serverend block -->"
     - marker_end: "<!-- end salt managed zone: serverend block -->"
@@ -173,9 +189,9 @@ tomcat-pkgs:
     - backup: '.bak'
     - show_changes: True
 
-{{conf_dir}}/server-xml-block3:
+{{ conf_dir }}-server-xml-block3:
   file.blockreplace:
-    - name: {{conf_dir}}/server.xml
+    - name: {{ conf_dir }}/server.xml
     - order: 200
     - marker_start: "<!-- salt managed zone: host block -->"
     - marker_end: "<!-- end salt managed zone: host block -->"
@@ -183,9 +199,9 @@ tomcat-pkgs:
     - backup: '.bak'
     - show_changes: True
 
-{{conf_dir}}/logging-properties-block1:
+{{ conf_dir }}-logging-properties-block1:
   file.blockreplace:
-    - name: {{conf_dir}}/logging.properties
+    - name: {{ conf_dir }}/logging.properties
     - order: 200
     - marker_start: '# salt managed zone: logging custom'
     - marker_end:  '# end salt managed zone: logging custom'
@@ -193,9 +209,9 @@ tomcat-pkgs:
     - backup: '.bak'
     - show_changes: True
 
-{{conf_dir}}/web-xml-block1:
+{{ conf_dir }}-web-xml-block1:
   file.blockreplace:
-    - name: {{conf_dir}}/web.xml
+    - name: {{ conf_dir }}/web.xml
     - order: 200
     - marker_start: "<!-- salt managed zone: begin block -->"
     - marker_end:  "<!-- salt managed zone: end block -->"
@@ -203,9 +219,9 @@ tomcat-pkgs:
     - backup: '.bak'
     - show_changes: True
 
-{{conf_dir}}/catalina-properties-block1:
+{{ conf_dir }}-catalina-properties-block1:
   file.blockreplace:
-    - name: {{conf_dir}}/catalina.properties
+    - name: {{ conf_dir }}/catalina.properties
     - order: 200
     - marker_start: '# salt managed zone: custom'
     - marker_end:  '# end salt managed zone: custom'
@@ -213,9 +229,9 @@ tomcat-pkgs:
     - backup: '.bak'
     - show_changes: True
 
-{{conf_dir}}/context-xml-block:
+{{ conf_dir }}-context-xml-block:
   file.blockreplace:
-    - name: {{conf_dir}}/context.xml
+    - name: {{ conf_dir }}/context.xml
     - order: 200
     - marker_start: "<!-- salt managed zone: custom block -->"
     - marker_end: "<!-- end salt managed zone: custom block -->"
@@ -223,9 +239,9 @@ tomcat-pkgs:
     - backup: '.bak'
     - show_changes: True
 
-/etc/default/tomcat{{ver}}-block:
+{{ locs.conf_dir }}-default-tomcat{{ ver }}-block:
  file.blockreplace:
-    - name: /etc/default/tomcat{{ver}}
+    - name: {{ locs.conf_dir }}/default/tomcat{{ ver }}
     - order: 200
     - marker_start: '# salt managed zone: custom'
     - marker_end:  '# end salt managed zone: custom'
@@ -233,31 +249,29 @@ tomcat-pkgs:
     - backup: '.bak'
     - show_changes: True
 
-tomcat{{ver}}:
+tomcat{{ ver }}:
   service.running:
     - order: last
     - watch:
       - pkg: tomcat-pkgs
-      - file: /etc/default/tomcat{{ver}}
-      - file: {{conf_dir}}/web.xml
-      - file: {{conf_dir}}/Catalina/localhost
-      - file: {{conf_dir}}/tomcat-users.xml
-      - file: {{conf_dir}}/logging.properties
-      - file: {{conf_dir}}/policy.d/04webapps.policy
-      - file: {{conf_dir}}/policy.d/02debian.policy
-      - file: {{conf_dir}}/policy.d/03catalina.policy
-      - file: {{conf_dir}}/policy.d/01system.policy
-      - file: {{conf_dir}}/policy.d/50local.policy
-      - file: {{conf_dir}}/catalina.properties
-      - file: {{conf_dir}}/server.xml
-      - file: {{conf_dir}}/context.xml
-      - file: /etc/default/tomcat{{ver}}
-      - file: {{conf_dir}}/server-xml-block1
-      - file: {{conf_dir}}/server-xml-block2
-      - file: {{conf_dir}}/server-xml-block3
-      - file: {{conf_dir}}/context-xml-block
-      - file: {{conf_dir}}/web-xml-block1
-      - file: {{conf_dir}}/catalina-properties-block1
-      - file: {{conf_dir}}/logging-properties-block1
-      - file: /etc/default/tomcat{{ver}}-block
-
+      - file: {{ conf_dir }}-Catalina-localhost
+      - file: {{ conf_dir }}-catalina-properties-block1
+      - file: {{ conf_dir }}-catalina.properties
+      - file: {{ conf_dir }}-context-xml-block
+      - file: {{ conf_dir }}-context.xml
+      - file: {{ conf_dir }}-logging-properties-block1
+      - file: {{ conf_dir }}-logging.properties
+      - file: {{ conf_dir }}-policy.d-01system.policy
+      - file: {{ conf_dir }}-policy.d-02debian.policy
+      - file: {{ conf_dir }}-policy.d-03catalina.policy
+      - file: {{ conf_dir }}-policy.d-04webapps.policy
+      - file: {{ conf_dir }}-policy.d-50local.policy
+      - file: {{ conf_dir }}-server-xml-block1
+      - file: {{ conf_dir }}-server-xml-block2
+      - file: {{ conf_dir }}-server-xml-block3
+      - file: {{ conf_dir }}-server.xml
+      - file: {{ conf_dir }}-tomcat-users.xml
+      - file: {{ conf_dir }}-web-xml-block1
+      - file: {{ conf_dir }}-web.xml
+      - file: {{ locs.conf_dir }}-default-tomcat{{ ver }}
+      - file: {{ locs.conf_dir }}-default-tomcat{{ ver }}-block

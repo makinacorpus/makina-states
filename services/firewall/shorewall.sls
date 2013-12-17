@@ -14,7 +14,7 @@
 # Enable shorewall service::
 # in config (pillar, grain
 #
-#   makina.shorewall.enabled: True | False
+#   makina.services.shorewall.enabled: True | False
 #
 # Defining shorewall interfaces:
 #   interfaces:
@@ -120,11 +120,15 @@
 #         - {action: Invalid(DROP), source: net, dest: all, proto: 'tcp,udp', dport: 25}
 #         - {action: ACCEPT       , source: lxc, dest: fw , proto: 'tcp,udp', dport: 25}
 
-{% import "makina-states/_macros/vars.jinja" as c with context %}
+{% import "makina-states/_macros/services.jinja" as services with context %}
+{% set localsettings = services.localsettings %}
+{% set nodetypes = services.nodetypes %}
+{% set locs = localsettings.locations %}
+{{ services.register('firewall.shorewall') }}
 include:
-  - makina-states.localsettings.localrc
+  - {{ localsettings.statesPref }}localrc
 
-{% set ishorewallen = c.shorewall_enabled %}
+{% set ishorewallen = 'firewall.shorewall' in services.services %}
 
 shorewall-pkgs:
   pkg.installed:
@@ -134,11 +138,11 @@ shorewall-pkgs:
 
 shorewall-test-cfg:
   file.exists:
-    - name: /etc/shorewall/shorewall.conf
+    - name: {{ locs.conf_dir }}/shorewall/shorewall.conf
 
 shorewall-restart:
   cmd.run:
-    - name: /etc/rc.local.d/shorewall.sh fromsalt
+    - name: {{ locs.conf_dir }}/rc.local.d/shorewall.sh fromsalt
     - stateful: True
     - require:
       - pkg: shorewall-pkgs
@@ -148,20 +152,22 @@ shorewall-restart:
 
 shorewall-config:
   file.recurse:
-    - name: /etc/shorewall
+    - name: {{ locs.conf_dir }}/shorewall
     - source : salt://makina-states/files/etc/shorewall
     - template: jinja
     - user: root
     - group: root
+    - defaults:
+      - shwData: {{ services.shwData | yaml }}
     - require_in:
       - file: toggle-shorewall
       - cmd: shorewall-restart
 
 toggle-shorewall:
   file.replace:
-    - name: /etc/default/shorewall
+    - name: {{ locs.conf_dir }}/default/shorewall
     - pattern: 'startup\s*=\s*(0|1|True|False)'
-    - repl: 'startup={{ ishorewallen }}'
+    - repl: 'startup={{ services.shw_enabled }}'
     - flags: ['MULTILINE', 'DOTALL']
     - require_in:
       - cmd: shorewall-restart
@@ -188,17 +194,19 @@ shorewall-d:
 # everything to be up before firewall to cut the garden off.
 shorewall-rc-local-d:
   file.managed:
-    - name: /etc/rc.local.d/shorewall.sh
+    - name: {{ locs.conf_dir }}/rc.local.d/shorewall.sh
     - source : salt://makina-states/files/etc/rc.local.d/shorewall.sh
+    - defaults:
+      - shwData: {{ services.shwData | yaml }}
     - mode: 0755
     - template: jinja
     - user: root
     - group: root
 
-# Disabled as we now use /etc/rc.local
+# Disabled as we now use {{ locs.conf_dir }}/rc.local
 # shorewall-upstart:
 #   file.managed:
-#     - name: /etc/init/shorewall-upstart.conf
+#     - name: {{ locs.upsteam }}/shorewall-upstart.conf
 #     - source : salt://makina-states/files/etc/init/shorewall-upstart.conf
 #     - template: jinja
 #     - user: root
@@ -211,4 +219,5 @@ shorewall-rc-local-d:
 #     - enable: True
 #     - watch:
 #       - file: shorewall-test-cfg
+
 

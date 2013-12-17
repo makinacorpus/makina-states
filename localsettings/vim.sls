@@ -1,7 +1,12 @@
+{% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+
+{{ localsettings.register('vim') }}
+{% set locs = localsettings.locations %}
+
 include:
-  - makina-states.localsettings.users
-{% import "makina-states/_macros/vars.jinja" as vars with context %}
-{% for i, data in vars.users.items() %}
+  - {{ localsettings.statesPref }}users
+
+{% for i, data in localsettings.users.items() %}
 {% set home = data['home'] %}
 vimrc_configs-touch-{{ i }}:
   file.touch:

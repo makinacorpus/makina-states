@@ -23,7 +23,7 @@ limitations under the License.
 {%-   set data = users[i] %}
 {%-   for r in data.get('roles', []) %}
 {%-     if not r in sroles %}
-{%-      set dummy = sroles.append(r) %}
+{%-      do sroles.append(r) %}
 {%-     endif %}
 {%-   endfor %}
 {%- endfor %}
