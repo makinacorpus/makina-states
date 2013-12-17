@@ -234,3 +234,8 @@ docker-{{id}}{{instancenumstr}}:
 docker-post-inst:
   cmd.run:
     - name: echo "dockers installed"
+
+makina-states-services-virt-docker-grain:
+  grains.present:
+    - name: makina.virt.host.docker
+    - value: True
