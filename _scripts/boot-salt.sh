@@ -429,7 +429,7 @@ recap_(){
         export MASTERSALT_BOOT="$MASTERSALT_BOOT"
     fi
     if [[ -n $PROJECT_URL ]];then
-        export PROJECT_URL="${PROJECT_UR}"
+        export PROJECT_URL="${PROJECT_URL}"
         export PROJECT_BRANCH="${PROJECT_BRANCH}"
         export PROJECT_NAME="${PROJECT_NAME}"
     fi
