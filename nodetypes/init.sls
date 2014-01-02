@@ -9,11 +9,11 @@
 #
 # We let the user have a word on the final local settings which are activated
 # This can be customized by putting keys either in pillar or in grains
-# in the form: 'makina.nodetypes.<statename>'
+# in the form: 'makina-states.nodetypes.<statename>'
 #
 # EG: to disable the default configuration applied on a vagrantvm
 #
-#  makina.nodetypes.vagrantvm: False
+#  makina-states.nodetypes.vagrantvm: False
 #
 
 {% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}

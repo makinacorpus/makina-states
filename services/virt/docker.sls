@@ -122,7 +122,7 @@ docker-preload-images:
 
 # as it is often a mount -bind, we must ensure we can attach dependencies there
 # set in pillar:
-# makina.localsettings.docker_root: real dest
+# makina-states.localsettings.docker_root: real dest
 {% set docker_dir = locs.docker_root %}
 {% set dockerSysRoot = locs.var_lib_dir+'/docker' %}
 docker-root:

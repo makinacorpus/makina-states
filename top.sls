@@ -29,9 +29,9 @@
 #   - Install directly the state via a salt/salt-call state.sls
 #       - salt-call state.sls makina-states.services.http.apache true
 #   - Appropriate grain configuration slug
-#       - salt-call --local grains.setval makina.services.http.apache true
+#       - salt-call --local grains.setval makina-states.services.http.apache true
 #   - Appropriate pillar configuration slug
-#       - makina.services.http.apache: true in a pillar file
+#       - makina-states.services.http.apache: true in a pillar file
 #   - Run the highstate, and as your machine is taggued, apache
 #     will be installed
 #

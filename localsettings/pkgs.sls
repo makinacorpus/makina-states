@@ -92,7 +92,7 @@ sys-pkgs:
       {% endif %}
 
 
-{% if grains.get('makina.nodetype.devhost', False) %}
+{% if grains.get('makina-states.nodetype.devhost', False) %}
 devhost-pkgs:
   pkg.installed:
     - pkgs:

@@ -368,7 +368,7 @@
 {% for i, data in repos.items() %}
 {%  for k in ['rev', 'target', 'name'] %}
 {%    do data.update({
-          'rev': salt['mc_utils.get']('makina.salt.'+i+'.rev',
+          'rev': salt['mc_utils.get']('makina-states.salt.'+i+'.rev',
                                       data.get('rev', False))}) %}
 {%  endfor %}
 {% endfor %}

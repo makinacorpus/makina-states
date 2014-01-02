@@ -36,7 +36,7 @@ lxc-services-enabling:
 
 # as it is often a mount -bind, we must ensure we can attach dependencies there
 # set in pillar:
-# makina.localsettings.lxc_root: real dest
+# makina-states.localsettings.lxc_root: real dest
 {% set lxc_root = locs.var_lib_dir+'/lxc' %}
 {% set lxc_dir = locs.lxc_root %}
 

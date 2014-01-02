@@ -8,12 +8,12 @@
 # ------------------------configuration (services.db.mysql)
 # Set this grain/pillar to override the default makina-states configuration
 # file,
-# makina.services.mysql.cnf
+# makina-states.services.mysql.cnf
 #
 # No autoconf
 # -------------
 # Set this grain/pillar to true to disable mysql automatic configuration:
-# makina.services.mysql.noautoconf
+# makina-states.services.mysql.noautoconf
 #
 #
 # BE CAREFUL: mysql_base() macros should only be called once on a server

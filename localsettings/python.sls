@@ -2,11 +2,11 @@
 # Install old pythons (ubuntu specific for now)
 #
 # You can use the grain/pillar following setting to select the  versions:
-# makina.localsettings.python_vers: LIST (default: ["2.4", "2.5", "2.6"])
+# makina-states.localsettings.python_vers: LIST (default: ["2.4", "2.5", "2.6"])
 #
 # eg:
 #
-#  salt-call grains.setval makina.localsettings.python_vers '["2.6"]'
+#  salt-call grains.setval makina-states.localsettings.python_vers '["2.6"]'
 #
 
 {% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
@@ -15,7 +15,7 @@
 {% set locs = localsettings.locations %}
 
 {% set pyvers = salt['mc_utils.get'](
-   'makina.localsettings.python_vers',
+   'makina-states.localsettings.python_vers',
    ['2.4', '2.5', '2.6']) %}
 
 {% if grains['os'] in ['Ubuntu'] %}

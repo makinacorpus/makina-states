@@ -9,7 +9,7 @@
 #
 # Exemple, to override the prefix for /etc, put in pillar:
 #
-#   makina.localsettings.conf_dir = /usr/local/etc
+#   makina-states.localsettings.conf_dir = /usr/local/etc
 #
 
 {% import "makina-states/_macros/funcs.jinja" as funcs with context %}
@@ -92,7 +92,7 @@
 # See makina-states.localsettings.network
 # Compat for the first test!
 {% set networkManaged = (
-  salt['mc_utils.get']('makina.network_managed', False)
+  salt['mc_utils.get']('makina-states.network_managed', False)
   or salt['mc_utils.get'](grainsPref+'network.managed', False)) %}
 {% set network_interfaces = {} -%}
 {# lxc configuration has the network configuration inlined in the state -#}
@@ -242,10 +242,10 @@
 
 
 # package manager settings
-{% set debian_mirror = salt['mc_utils.get']('makina.apt.debian.mirror',
+{% set debian_mirror = salt['mc_utils.get']('makina-states.apt.debian.mirror',
                                           'http://ftp.de.debian.org/debian') %}
 
-{% set ubuntu_mirror = salt['mc_utils.get']('makina.apt.ubuntu.mirror',
+{% set ubuntu_mirror = salt['mc_utils.get']('makina-states.apt.ubuntu.mirror',
                                           'http://ftp.free.fr/mirrors/ftp.ubuntu.com/ubuntu') %}
 {% set ubuntu_lts = 'precise' %}
 {% set ubuntu_last = 'saucy' %}
@@ -253,9 +253,9 @@
 {% set debian_stable = 'wheezy' %}
 {% set ddist = salt['mc_utils.get']('lsb_distrib_codename', debian_stable) %}
 
-{% set dcomps = salt['mc_utils.get']('makina.apt.debian.comps',
+{% set dcomps = salt['mc_utils.get']('makina-states.apt.debian.comps',
                                    'main contrib non-free') %}
-{% set ucomps = salt['mc_utils.get']('makina.apt.ubuntu.comps',
+{% set ucomps = salt['mc_utils.get']('makina-states.apt.ubuntu.comps',
                                    'main restricted universe multiverse') %}
 # JDK default version
 {% set jdkDefaultVer = '7' %}

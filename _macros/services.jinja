@@ -29,7 +29,7 @@
 
 # -----------------------------------------------------
 # init systems flags
-{% set upstart = salt['mc_utils.get']('makina.upstart', False) %}
+{% set upstart = salt['mc_utils.get']('makina-states.upstart', False) %}
 
 # -----------------------------------------------------
 # ntp is not applied to LXC containers ! (services.base.ntp)
@@ -42,8 +42,8 @@
 
 # -----------------------------------------------------
 # PostGRESQL:  (services.db.postgresql)
-# default user: makina.services.postgresql.user
-{% set postgresqlUser = salt['mc_utils.get']('makina.services.postgresql.user', 'postgres') %}
+# default user: makina-states.services.postgresql.user
+{% set postgresqlUser = salt['mc_utils.get']('makina-states.services.postgresql.user', 'postgres') %}
 # default postgresql/ grains configured databases (see service doc)
 {% set pgDbs = {} %}
 {% for dbk, data in pillar.items() %}
@@ -63,11 +63,11 @@
 # -----------------------------------------------------
 # MySQL default custom configuration (services.db.mysql)
 # To override the default makina-states configuration file,
-# Use the 'makina.services.mysql.cnf pillar/grain
+# Use the 'makina-states.services.mysql.cnf pillar/grain
 {% set myCnf = salt['mc_utils.get'](grainsPref+'mysql.cnf', None) %}
 # Set this to true to disable mysql automatic configuration
 # (if you want to call the mysql macros yourself
-# (makina.services.mysql.noautoconf)
+# (makina-states.services.mysql.noautoconf)
 {% set myDisableAutoConf = salt['mc_utils.get'](grainsPref+'mysql.noautoconf', False) %}
 
 # -----------------------------------------------------

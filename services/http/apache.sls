@@ -99,7 +99,7 @@ makina-apache-settings:
         worker_MaxClients: "{{ apacheData.worker.MaxClients }}"
         event_AsyncRequestWorkerFactor: "{{ apacheData.event.AsyncRequestWorkerFactor }}"
         log_level: "{{ apacheData.log_level }}"
-{% if grains['makina.nodetype.devhost'] %}
+{% if grains['makina-states.nodetype.devhost'] %}
     - context:
         mode: "dev"
 {% endif %}
@@ -237,7 +237,7 @@ makina-apache-default-vhost-index:
     - template: jinja
     - defaults:
         mode: "production"
-{% if grains['makina.nodetype.devhost'] %}
+{% if grains['makina-states.nodetype.devhost'] %}
     - context:
         mode: "dev"
 {% endif %}
@@ -275,7 +275,7 @@ makina-apache-minimal-default-vhost:
         log_level: "{{ apacheData.log_level }}"
         serveradmin_mail: "{{ apacheData.serveradmin_mail }}"
         mode: "production"
-{% if grains['makina.nodetype.devhost'] %}
+{% if grains['makina-states.nodetype.devhost'] %}
     - context:
         mode: "dev"
 {% endif %}
@@ -297,7 +297,7 @@ makina-apache-conf-syntax-check:
        - service: makina-apache-reload
 
 #--- APACHE STARTUP WAIT DEPENDENCY --------------
-{% if grains['makina.nodetype.devhost'] %}
+{% if grains['makina-states.nodetype.devhost'] %}
 #
 # On a vagrant VM we certainly should wait until NFS mount
 # before starting the web server. Chances are that this NFS mount
@@ -368,6 +368,6 @@ makina-apache-reload:
 {%   endfor %}
 {% endif %}
 
-makina.services.http.apache:
+makina-states.services.http.apache:
   grains.present:
     - value: True

@@ -6,11 +6,11 @@
 #
 # We let the user have a word on the final local settings which are activated
 # This can be customized by putting keys either in pillar or in grains
-# in the form: 'makina.localsettings.<statename>'
+# in the form: 'makina-states.localsettings.<statename>'
 #
 # EG: to disable the default vim configuration, either set a grain or a pillar value:
 #
-#  makina.localsettings.vim: False
+#  makina-states.localsettings.vim: False
 #
 
 {% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}

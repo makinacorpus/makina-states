@@ -1,10 +1,10 @@
 # Configure machine physical network based on pillar information
 #
-# This state will only apply if you set to true the config value (grain or pillar): **makina.localsettings.network_managed**
+# This state will only apply if you set to true the config value (grain or pillar): **makina-states.localsettings.network_managed**
 #
 # The template is shared with the lxc state, please also look it
 #
-# makina.localsettings.network.managed : true
+# makina-states.localsettings.network.managed : true
 # *-makina-network:
 #   ifname:
 #   - auto: (opt) (default: True)
@@ -15,7 +15,7 @@
 #   - dnsservers: (opt)
 #
 # EG:
-# makina.localsettings.network.managed : true
+# makina-states.localsettings.network.managed : true
 # myhost-makina-network:
 #   etho: # manually configured interface
 #     - address: 8.1.5.4

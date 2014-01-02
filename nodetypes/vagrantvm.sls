@@ -61,7 +61,7 @@ vagrantvm-zerofree:
     - group: root
     - mode: 750
     - template: jinja
-    - rootdev: {{salt['mc_utils.get']('makina.zerofree_dev', '/dev/sda1')}}
+    - rootdev: {{salt['mc_utils.get']('makina-states.zerofree_dev', '/dev/sda1')}}
 
 vagrantvm-systemcleanup:
   file.managed:
@@ -71,7 +71,7 @@ vagrantvm-systemcleanup:
     - group: root
     - mode: 750
     - template: jinja
-    - rootdev: {{salt['mc_utils.get']('makina.zerofree_dev', '/dev/sda1')}}
+    - rootdev: {{salt['mc_utils.get']('makina-states.zerofree_dev', '/dev/sda1')}}
 
 
 {% if grains['os'] in ['Ubuntu'] %}

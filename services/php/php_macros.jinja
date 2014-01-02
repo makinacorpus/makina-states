@@ -153,7 +153,7 @@ makina-php-pool-{{ pool_name }}:
         xdebug_profiler_enable_trigger: {{ phpData.modules.xdebug.profiler_enable_trigger|int(0) }}
         xdebug_profiler_output_name: "{{ phpData.modules.xdebug.profiler_output_name }}"
         mode: "production"
-{% if grains['makina.nodetype.devhost'] %}
+{% if grains['makina-states.nodetype.devhost'] %}
     - context:
         mode: "dev"
 {% endif %}

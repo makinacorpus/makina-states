@@ -9,11 +9,11 @@
 #
 # We let the user have a word on the final local settings which are activated
 # This can be customized by putting keys either in pillar or in grains
-# in the form: 'makina.services.<statename>'
+# in the form: 'makina-states.services.<statename>'
 #
 # EG: to disable mysql
 #
-#  makina.services.mysql:  False
+#  makina-states.services.mysql:  False
 # #}
 
 {% import "makina-states/_macros/services.jinja" as services with context %}

@@ -9,10 +9,10 @@
 # To override settings:
 
 # debian like (debian, ubuntu):
-# makina.apt.ubuntu.comps: main (defaults: main restricted universe multiverse)
-# makina.apt.debian.comps: main (defaults: main contrib non-free)
-# makina.apt.use-backports: use back-ports
-# makina.apt.settings:
+# makina-states.apt.ubuntu.comps: main (defaults: main restricted universe multiverse)
+# makina-states.apt.debian.comps: main (defaults: main contrib non-free)
+# makina-states.apt.use-backports: use back-ports
+# makina-states.apt.settings:
 #   mirrors:
 #     - mirror: http://1
 #       dists: wheezy-foo
@@ -28,7 +28,7 @@
 {% set locs = localsettings.locations %}
 
 {% if grains['os'] in ['Ubuntu', 'Debian'] %}
-{% set bp = salt['mc_utils.get']('makina.apt.use-backports', False) %}
+{% set bp = salt['mc_utils.get']('makina-states.apt.use-backports', False) %}
 {% set ddist = localsettings.ddist %}
 {% set udist = localsettings.udist %}
 
@@ -60,7 +60,7 @@
     {'mirror': 'http://extras.ubuntu.com/ubuntu',
      'dists': [{'name': udist, 'comps': 'main'}]},
     ]}}, grain='os') %}
-{% set pillar_data = salt['pillar.get']('makina.apt.settings', {}) %}
+{% set pillar_data = salt['pillar.get']('makina-states.apt.settings', {}) %}
 {% set pkg_data=salt['mc_utils.dictupdate'](pkg_data, pillar_data) %}
 {% if bp %}
 {% do pkg_data['mirrors'].extend(

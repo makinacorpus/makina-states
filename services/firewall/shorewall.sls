@@ -14,7 +14,7 @@
 # Enable shorewall service::
 # in config (pillar, grain
 #
-#   makina.services.shorewall.enabled: True | False
+#   makina-states.services.shorewall.enabled: True | False
 #
 # Defining shorewall interfaces:
 #   interfaces:

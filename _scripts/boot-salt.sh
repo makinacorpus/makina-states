@@ -1682,7 +1682,7 @@ run_highstates() {
 maybe_install_projects() {
     if [[ -n "$PROJECT_URL" ]];then
         bs_log "Projects managment"
-        project_grain="makina.projects.${PROJECT_NAME}.boot.top"
+        project_grain="makina-states.projects.${PROJECT_NAME}.boot.top"
         BR=""
         if [[ -n "$PROJECT_BRANCH" ]];then
             BR="-b $PROJECT_BRANCH"

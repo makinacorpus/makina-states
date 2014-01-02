@@ -31,7 +31,7 @@
 #
 # You can define via pillar the default user to run psql command as:
 #
-#    makina.services.postgresql.user: foo (default: postgres)
+#    makina-states.services.postgresql.user: foo (default: postgres)
 #
 # You can also define in pillar databases and users respecting naming convention:
 # By default the owner of the database is a group with the same name suffixed

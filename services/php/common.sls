@@ -95,6 +95,6 @@ makina-php-xdebug-disable:
 
 
 # flag to auto-install as-soon-as-included once
-makina.services.php.common:
+makina-states.services.php.common:
   grains.present:
     - value: True

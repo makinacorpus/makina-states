@@ -10,11 +10,11 @@
 #
 # We let the user have a word on the final local settings which are activated
 # This can be customized by putting keys either in pillar or in grains
-# in the form: 'makina.controllers.<statename>'
+# in the form: 'makina-states.controllers.<statename>'
 #
 # EG: to disable the mastersalt_master
 #
-#  makina.controllers.mastersalt_master: False
+#  makina-states.controllers.mastersalt_master: False
 #
 
 {% import "makina-states/_macros/controllers.jinja" as controllers with context %}
