@@ -273,25 +273,24 @@ set_vars() {
     MASTERSALT_PUBLISH_PORT="$(( ${MASTERSALT_PORT} - 1 ))"
     MASTERSALT_MINION_IP="${MASTERSALT_MINION_IP:-"127.0.0.1"}"
     MASTERSALT_MINION_DNS="${MASTERSALT_MINION_DNS:-"$MASTERSALT_MINION_IP"}"
+
     if [[ "$MASTERSALT" == "127.0.0.1" ]] || [[ "$MASTERSALT" == "localhost" ]];then
         MASTERSALT="localhost"
         MASTERSALT_IP="127.0.0.1"
         MASTERSALT_CONTROLLER="mastersalt_master"
-    fi
-    if [[ "$MASTERSALT_MINION_IP" == "127.0.0.1" ]] || [[ "$MASTERSALT_MINION_IP" == "localhost" ]];then
+    elif [[ "$MASTERSALT_MINION_IP" == "127.0.0.1" ]] || [[ "$MASTERSALT_MINION_IP" == "localhost" ]];then
         MASTERSALT_MINION_IP="127.0.0.1"
         MASTERSALT_MINION_DNS="localhost"
-        MASTERSALT_CONTROLLER="mastersalt_master"
+        MASTERSALT_CONTROLLER="mastersalt_minon"
     fi
-    if [[ "$SALT_MINION_IP" == "127.0.0.1" ]] || [[ "$SALT_MINION_IP" == "localhost" ]];then
+    if [[ "$SALT_MASTER_IP" == "127.0.0.1" ]] || [[ "$SALT_MASTER_IP" == "localhost" ]];then
         SALT_MINION_IP="127.0.0.1"
         SALT_MINION_DNS="localhost"
         SALT_CONTROLLER="salt_master"
-    fi
-    if [[ "$SALT_MASTER_IP" == "127.0.0.1" ]] || [[ "$SALT_MASTER_IP" == "localhost" ]];then
+    elif [[ "$SALT_MINION_IP" == "127.0.0.1" ]] || [[ "$SALT_MINION_IP" == "localhost" ]];then
         SALT_MASTER_IP="127.0.0.1"
         SALT_MASTER_DNS="localhost"
-        SALT_CONTROLLER="salt_master"
+        SALT_CONTROLLER="salt_minion"
     fi
     if [[ -n "$SALT_CONTROLLER" ]];then
         bootstrap="${bootstrap_controllers_pref}.${SALT_CONTROLLER}"
@@ -735,6 +734,7 @@ setup_and_maybe_update_code() {
                     fi
                     bs_log "Upgrading $i"
                     cd $i
+                    git fetch --tags origin &> /dev/null
                     git fetch origin &&\
                         git diff origin/$branch --exit-code &> /dev/null
                     if [[ "$?" != "0" ]];then
