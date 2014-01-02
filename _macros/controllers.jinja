@@ -12,6 +12,11 @@
 {% set grainsPref = funcs.grainsPref + funcs.controllersKind + '.' %}
 {% set bases=['localsettings'] %}
 
+# -----------------------------------------------------
+# REGISTRY
+# -----------------------------------------------------
+# Idea is to map each state file to configure a service to it's particular
+# configuration grain switch (or pillar)
 {% set registryConfiguration = {
    kind: {
     'states_pref': statesPref, 'grains_pref': grainsPref,
@@ -37,3 +42,6 @@
 {% macro unregister(name, data=None) %}
 {{ funcs.register(statesPref, grainsPref, name, data=None) }}
 {% endmacro %}
+# -----------------------------------------------------
+
+# vim:set nofoldenable:

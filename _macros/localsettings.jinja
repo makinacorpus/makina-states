@@ -47,6 +47,7 @@
   'venv'               : '{root_dir}salt-venv',
   'srv_dir'            : '{root_dir}srv',
   'prefix'             : '{srv_dir}',
+  'vms_docker_root'    : '{srv_dir}/docker',
   'docker_root'        : '',
   'lxc_root'           : '',
   'projects_dir'       : '{srv_dir}/projects',
@@ -94,13 +95,13 @@
 {% set networkManaged = (
   salt['mc_utils.get']('makina-states.network_managed', False)
   or salt['mc_utils.get'](grainsPref+'network.managed', False)) %}
-{% set network_interfaces = {} -%}
+{% set networkInterfaces = {} -%}
 {# lxc configuration has the network configuration inlined in the state -#}
 {# and not in pillar -#}
 {# it can be also done for other states like this -#}
 {% for k in pillar -%}
 {% if k.endswith('makina-network') -%}
-{% do network_interfaces.update(pillar[k]) -%}
+{% do networkInterfaces.update(pillar[k]) -%}
 {% endif -%}
 {% endfor -%}
 
@@ -219,7 +220,7 @@
   {% elif i  == 'root' %}
   {% set home = locations.root_home_dir %}
   {% else %}
-  {% set home = data.get('home', locations.users.home_dir+"/"+i) %}
+  {% set home = data.get('home', locations.users_home_dir+"/"+i) %}
   {% endif %}
   {% do users[i].update({'home': home}) %}
 {% endfor %}
@@ -260,6 +261,11 @@
 # JDK default version
 {% set jdkDefaultVer = '7' %}
 
+# -----------------------------------------------------
+# REGISTRY
+# -----------------------------------------------------
+# Idea is to map each state file to configure a service to it's particular
+# configuration grain switch (or pillar)
 # default toggles for localsettings activation
 {% set registryConfiguration = {
   kind: {
@@ -297,5 +303,6 @@
 {% macro unregister(name, data=None) %}
 {{ funcs.register(statesPref, grainsPref, name, data=None) }}
 {% endmacro %}
+# -----------------------------------------------------
 
 # vim:set nofoldenable:

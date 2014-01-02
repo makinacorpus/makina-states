@@ -15,16 +15,15 @@ include:
   - {{ services.statesPref }}virt.lxc
 
 {%- for pillark, lxc_data in pillar.items() %}
-  {% if pillark.endswith('lxc-server-def')  -%}
-  {% set lxc_name = lxc_data.get('name', pillark.split('-lxc-server-def')[0]) -%}
-
+{% if pillark.endswith('lxc-server-def')  -%}
+{% set lxc_name = lxc_data.get('name', pillark.split('-lxc-server-def')[0]) -%}
 lxcshorewall-start-{{ lxc_name }}-lxc-service:
   cmd.run:
     - name: /bin/true
     - unless: /bin/true
     - require:
-      - cmd: start-{{ lxc_name }}-lxc-service:
+      - cmd: start-{{ lxc_name }}-lxc-service
     - watch_in:
       - cmd: shorewall-restart
-  {% endif %}
+{% endif %}
 {% endfor -%}

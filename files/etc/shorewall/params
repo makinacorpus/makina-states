@@ -25,7 +25,7 @@
 #		net	eth0		130.252.100.255	routefilter,norfc1918
 #
 ###############################################################################
-{% for i, data in shwData.params.items() -%}
+{% for i, data in shwdata['params'].items() -%}
 {{i}}={{data}}
 {% endfor -%}
 #LAST LINE -- DO NOT REMOVE

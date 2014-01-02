@@ -14,13 +14,7 @@
 ###############################################################################
 #ZONE	TYPE	OPTIONS			IN			OUT
 #					OPTIONS			OPTIONS
-{% for sid, shorewall in pillar.items() -%}
-{% if sid.endswith('makina-shorewall') -%}
-{% set k='zones' -%}
-{% set cfg = shorewall.get(k, {}) -%}
-{%- for i, data in cfg.items() -%}
+{% for i, data in shwdata['zones'].items() -%}
 {{ i }} {{ data['type'] }} {{ data.get('options', ' ') }} {{ data.get('in', ' ') }} {{ data.get('out', ' ') }} {{ data.get('in_options', ' ') }}  {{ data.get('out_options', ' ') }}
-{% endfor -%}
-{% endif -%}
 {% endfor -%}
 #LAST LINE -- DO NOT REMOVE

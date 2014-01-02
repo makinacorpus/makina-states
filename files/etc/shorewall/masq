@@ -13,7 +13,8 @@
 # For information about entries in this file, type "man shorewall-masq"
 ##############################################################################
 #INTERFACE		SOURCE		ADDRESS		PROTO	PORT(S)	IPSEC	MARK
-{% for i, data in shwData.masqs.items() -%}
+
+{% for i, data in shwdata['masqs'].items() -%}
 # {{ i }} masq
 {{ data['interface'] }} {{ data['source'] }} {{ data.get('address', '') }} {{ data.get('proto', '') }} {{ data.get('ports', '') }} {{ data.get('ipsec', '') }} {{ data.get('mark', '') }}
 {% endfor -%}

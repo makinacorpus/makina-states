@@ -15,9 +15,10 @@
 ###############################################################################
 {# on debian, we have an old shorewall 4.5.5 #}
 
-{% shwData.ifformat %}
+{{shwdata.ifformat }}FORMAT 2
 ###############################################################################
 #ZONE	INTERFACE	OPTIONS
-{%- for i, data in shwData.interfaces.items() %}
+
+{% for i, data in shwdata['interfaces'].items() -%}
 {{ i }} {{ data['interface'] }} {{ data.get('options', '') }}
 {% endfor -%}

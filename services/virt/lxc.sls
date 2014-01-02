@@ -100,7 +100,7 @@ lxc-after-maybe-bind-root:
 {{ lxc_name }}-lxc-config:
   file.managed:
     - require:
-      - cmd: {{ lxc_name }}-lxc:
+      - cmd: {{ lxc_name }}-lxc
     - user: root
     - group: root
     - mode: '0644'

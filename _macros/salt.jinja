@@ -61,6 +61,7 @@
   'groupId': groupId,
   'projects_root': '{prefix}/projects',
   'vagrant_root': '{prefix}/vagrant',
+  'vms_docker_root': localsettings.locations['vms_docker_root'],
   'docker_root': localsettings.locations['docker_root'],
   'resetperms': 'file://{msr}/_scripts/reset-perms.sh',
   'init_d': '{initd_dir}',
@@ -658,7 +659,7 @@ etc-{{data.name}}-dirs-perms:
     - source: {{ data.resetperms }}
     - template: jinja
     - reset_paths:
-      - {{ data.docker_root }}
+      - {{ data.vms_docker_root }}
     - msr: {{ data.msr }}
     - dmode: 2770
     - fmode: 0770
@@ -667,10 +668,10 @@ etc-{{data.name}}-dirs-perms:
     - require_in:
       - cmd: dummy-pre-{{data.name}}-service-restart
     - excludes:
-      - {{ data.docker_root }}/docker/bundles
-      - {{ data.docker_root }}/cache
-      - {{ data.docker_root }}/makinacorpus/debian/debootstrap
-      - {{ data.docker_root }}/makinacorpus/ubuntu_deboostrap/debootstrap
+      - {{ data.vms_docker_root }}/docker/bundles
+      - {{ data.vms_docker_root }}/cache
+      - {{ data.vms_docker_root }}/makinacorpus/debian/debootstrap
+      - {{ data.vms_docker_root }}/makinacorpus/ubuntu_deboostrap/debootstrap
 
 {% endmacro %}
 

@@ -39,7 +39,8 @@ network-cfg:
     - template: jinja
     - name: {{ locs.conf_dir }}/network/interfaces
     - source: salt://makina-states/files/etc/network/interfaces
-    - makina_network: {{ localsettings.network_interfaces|yaml }}
+    - context:
+      network_interfaces: {{ localsettings.networkInterfaces|yaml }}
 # tradeof to make the lxc state work with us
 
 network-services:

@@ -74,15 +74,14 @@
 # shorewall pillar parsing
 {% set shw_enabled = (
    salt['mc_utils.get'](grainsPref+'shorewall.enabled', False)) %}
-{% set ifformat = 'FORMAT 2' %}
+{% set shwIfformat = 'FORMAT 2' %}
 {% if grains['os'] not in ['Debian']%}
-  {% set ifformat = '?' %}
+  {% set shwIfformat = '?' %}
 {% endif %}
-{% set shwInterfaces = {} %}
-{% set shwRules = {} %}
-{% set shwParams = {} %}
 {% set shwPolicies = [] %}
-{% set shwZones = [] %}
+{% set shwZones = {} %}
+{% set shwInterfaces = {} %}
+{% set shwParams = {} %}
 {% set shwMasqs = {} %}
 {% set shwRules= {} -%}
 {% set shwDefaultState = 'new' -%}
@@ -92,27 +91,29 @@
   'params'     : shwParams,
   'policies'   : shwPolicies,
   'zones'      : shwZones,
-  'masq'       : shwMasqs,
+  'masqs'      : shwMasqs,
   'ifformat'   : shwIfformat,
 } %}
 {% for sid, shorewall in pillar.items() -%}
 {%  if sid.endswith('makina-shorewall') -%}
-{%    set cfg = shorewall.get('rules', {}) -%}
-{%    for i in cfg-%}
-{%      set section=i.get('section', shwDefaultState).upper() -%}
-{%      if section not in rules -%}
+{%    set _shwlocrules = shorewall.get('rules', {}) -%}
+{%    for i in _shwlocrules-%}
+{%      set section = i.get('section', shwDefaultState).upper() -%}
+{%      if section not in shwRules -%}
 {%        do shwRules.update({section: []}) -%}
 {%      endif -%}
 {%      do shwRules[section].append(i) -%}
 {%    endfor -%}
-{%    do interfaces.update(shorewall.get('interfaces', {})) %}
-{%    do zones.update(shorewall.get('zones', {})) -%}
-{%    do masqs.update(shorewall.get('masq', {})) %}
-{%    do params.update(shorewall.get('params', {})) %}
-{%    do policies.extend(shorewall.get('policy', {})) %}
+{%    do shwInterfaces.update(shorewall.get('interfaces', {})) %}
+{%    do shwMasqs.update(shorewall.get('masqs', {})) %}
+{%    do shwParams.update(shorewall.get('params', {})) %}
+{%    do shwZones.update(shorewall.get('zones', {})) -%}
+{%    do shwPolicies.extend(shorewall.get('policies', [])) %}
 {%  endif %}
 {% endfor %}
 
+# -----------------------------------------------------
+# REGISTRY
 # -----------------------------------------------------
 # Idea is to map each state file to configure a service to it's particular
 # configuration grain switch (or pillar)
@@ -156,3 +157,6 @@
 {% macro unregister(name, data=None) %}
 {{ funcs.register(statesPref, grainsPref, name, data=None) }}
 {% endmacro %}
+# -----------------------------------------------------
+
+# vim:set nofoldenable:

@@ -125,10 +125,11 @@
 {% set nodetypes = services.nodetypes %}
 {% set locs = localsettings.locations %}
 {{ services.register('firewall.shorewall') }}
+
 include:
   - {{ localsettings.statesPref }}localrc
 
-{% set ishorewallen = 'firewall.shorewall' in services.services %}
+{% set shwdata = services.shwData | yaml %}
 
 shorewall-pkgs:
   pkg.installed:
@@ -151,17 +152,40 @@ shorewall-restart:
       - pkg: shorewall-pkgs
 
 shorewall-config:
-  file.recurse:
+  file.directory:
     - name: {{ locs.conf_dir }}/shorewall
     - source : salt://makina-states/files/etc/shorewall
     - template: jinja
     - user: root
     - group: root
-    - defaults:
-      - shwData: {{ services.shwData | yaml }}
     - require_in:
       - file: toggle-shorewall
       - cmd: shorewall-restart
+
+{% for config in [
+  'interfaces',
+  'masq',
+  'params',
+  'policy',
+  'rules',
+  'shorewall.conf',
+  'zones',
+] %}
+etc-shorewall-{{config}}:
+  file.managed:
+    - name: {{ locs.conf_dir }}/shorewall/{{config}}
+    - source : salt://makina-states/files/etc/shorewall/{{config}}
+    - template: jinja
+    - user: root
+    - group: root
+    - mode: "0700"
+    - defaults:
+      shwdata: {{ shwdata }}
+    - require_in:
+      - file: toggle-shorewall
+      - file: shorewall-config
+      - cmd: shorewall-restart
+{% endfor %}
 
 toggle-shorewall:
   file.replace:
@@ -197,7 +221,7 @@ shorewall-rc-local-d:
     - name: {{ locs.conf_dir }}/rc.local.d/shorewall.sh
     - source : salt://makina-states/files/etc/rc.local.d/shorewall.sh
     - defaults:
-      - shwData: {{ services.shwData | yaml }}
+      shwData: {{ shwdata }}
     - mode: 0755
     - template: jinja
     - user: root
@@ -206,7 +230,7 @@ shorewall-rc-local-d:
 # Disabled as we now use {{ locs.conf_dir }}/rc.local
 # shorewall-upstart:
 #   file.managed:
-#     - name: {{ locs.upsteam }}/shorewall-upstart.conf
+#     - name: {{ locs.upstart_dir}}/shorewall-upstart.conf
 #     - source : salt://makina-states/files/etc/init/shorewall-upstart.conf
 #     - template: jinja
 #     - user: root

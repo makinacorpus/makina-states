@@ -59,7 +59,7 @@ nslcd:
     - require:
       - pkg: ldap-pkgs
       - file: ldap-cacerts-cert
-    - defaults: {{ services.ldapVariables | yaml }}
+    - defaults: {{ localsettings.ldapVariables | yaml }}
     - watch_in:
       - cmd: nscd-restart
 
@@ -92,7 +92,7 @@ nslcd-nsswitch-conf:
     - require:
       - pkg: ldap-pkgs
       - file: ldap-cacerts-cert
-    - defaults: {{ services.ldapVariables | yaml }}
+    - defaults: {{ localsettings.ldapVariables | yaml }}
 
 {{ locs.conf_dir }}-ldap-ldap.conf:
   file.managed:
@@ -105,7 +105,7 @@ nslcd-nsswitch-conf:
     - require:
       - pkg: ldap-pkgs
       - file: ldap-cacerts-cert
-    - defaults: {{ services.ldapVariables | yaml }}
+    - defaults: {{ localsettings.ldapVariables | yaml }}
 
 makina-certd:
   file.directory:

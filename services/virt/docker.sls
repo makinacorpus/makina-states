@@ -138,7 +138,7 @@ docker-mount:
   mount.mounted:
     - require:
       - file: docker-dir
-    - name: {{ dockerRoot }}
+    - name: {{ dockerSysRoot }}
     - device: {{ docker_dir }}
     - fstype: none
     - mkmnt: True
