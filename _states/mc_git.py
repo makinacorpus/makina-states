@@ -263,6 +263,11 @@ def latest(name,
                             opts=fetch_opts,
                             user=user,
                             identity=identity)
+                        __salt__['git.fetch'](
+                            target,
+                            opts='--tags',
+                            user=user,
+                            identity=identity)
                         __salt__['git.merge'](
                             target,
                             opts='--ff-only',
