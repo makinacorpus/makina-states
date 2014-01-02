@@ -1,9 +1,6 @@
 .installed.cfg
 locfiles
 .bootlogs
-.boot_salt.*.log
-.boot_salt.*.out
-.boot_salt.*.log
 .boot_salt_cmd
 .boot_salt_log
 .boot_salt_out
@@ -27,7 +24,6 @@ downloads/
 eggs/
 parts/
 src/
-*~
 .restart_msalt
 .restart_msalt_minion
 .restart_salt
