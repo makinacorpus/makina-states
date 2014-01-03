@@ -8,6 +8,8 @@ import pwd
 import sys
 import traceback
 
+ACLS = {}
+
 def which(program, environ=None, key='PATH', split=':'):
     if not environ:
         environ = os.environ
@@ -103,7 +105,23 @@ def lazy_acl_path(path, uid, gid, mode, is_dir=False):
     if is_dir:
         acl += u',d:{0}'.format(uacl)
         acl += u',d:{0}'.format(gacl)
-    os.system("{2} -m '{0}' '{1}'".format(*(acl, path, setfacl)))
+    if not acl in ACLS:
+        ACLS[acl] = []
+    if not path in ACLS[acl]:
+        ACLS[acl].append(path)
+
+
+def splitList(L, chunksize=50):
+    return[L[i:i+chunksize] for i in range(0, len(L), chunksize)]
+
+
+def apply_acls():
+    for acl, paths in ACLS.items():
+        for chunk in splitList(paths):
+            paths = ' '.join(["'{0}'".format(p) for p in chunk])
+        cmd = "{2} -m '{0}' {1}".format(*(acl, paths, setfacl))
+        #print cmd
+        os.system(cmd)
 
 
 def lazy_chmod_path(path, mode):
@@ -179,9 +197,11 @@ def reset(p):
         except Exception:
             print traceback.format_exc()
             print 'reset failed for %s' % curdir
+    apply_acls()
 
 {% for pt in reset_paths %}
 reset('{{pt}}')
 {% endfor %}
+print splitList([1,2,3], 2)
 EOF
 exit $?
