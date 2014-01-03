@@ -122,11 +122,12 @@ def splitList(L, chunksize=50):
 
 def apply_acls():
     for acl, paths in ACLS.items():
+        # print acl, paths
         for chunk in splitList(paths):
             paths = ' '.join(["'{0}'".format(p) for p in chunk])
-        cmd = "{2} -m '{0}' {1}".format(*(acl, paths, setfacl))
-        #print cmd
-        os.system(cmd)
+            cmd = "{2} -m '{0}' {1}".format(*(acl, paths, setfacl))
+            # print cmd
+            os.system(cmd)
 
 
 def lazy_chmod_path(path, mode):
