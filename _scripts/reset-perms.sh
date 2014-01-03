@@ -39,6 +39,12 @@ ONLY_ACLS = {{only_acls}}
 ONLY_ACLS =  False
 {% endif %}
 
+{% if no_acls is defined %}
+NO_ACLS = {{no_acls}}
+{% else %}
+NO_ACLS =  False
+{% endif %}
+ 
 {% if msr is defined %}
 m = '{{msr}}'
 {% else %}
@@ -161,7 +167,7 @@ def lazy_chmod_chown(path, mode, uid, gid, is_dir=False):
     if not ONLY_ACLS:
         lazy_chmod_path(path, mode)
         lazy_chown_path(path, uid, gid)
-    if HAS_SETFACL:
+    if HAS_SETFACL and not NO_ACLS:
         try:
             collect_acl(path, uid, gid, mode, is_dir=is_dir)
         except Exception:
@@ -204,7 +210,7 @@ def reset(p):
         except Exception:
             print traceback.format_exc()
             print 'reset failed for %s' % curdir
-    if HAS_SETFACL:
+    if HAS_SETFACL and not NO_ACLS:
         apply_acls()
 
 {% for pt in reset_paths %}
