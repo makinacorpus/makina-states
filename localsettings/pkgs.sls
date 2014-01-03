@@ -50,7 +50,7 @@ sys-pkgs:
       - acpid
       - atop
       - acl
-      - acl-dev
+      - libacl1-dev
       - bash-completion
       - bzip2
       - cron

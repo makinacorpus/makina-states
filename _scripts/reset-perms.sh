@@ -33,6 +33,11 @@ try:
 except IOError:
     HAS_SETFACL = False
 
+{% if only_acls is defined %}
+ONLY_ACLS = {{only_acls}}
+{% else %}
+ONLY_ACLS =  False
+{% endif %}
 
 {% if msr is defined %}
 m = '{{msr}}'
@@ -96,7 +101,7 @@ def permissions_to_unix_name(mode):
     return usertypes
 
 
-def lazy_acl_path(path, uid, gid, mode, is_dir=False):
+def collect_acl(path, uid, gid, mode, is_dir=False):
     perms = permissions_to_unix_name(mode)
     uacl = u'u:{0}:{1}'.format(*(uid, perms['USR']))
     gacl = u'g:{0}:{1}'.format(*(gid, perms['GRP']))
@@ -152,11 +157,12 @@ def lazy_chown_path(path, uid, gid):
         print traceback.format_exc()
 
 def lazy_chmod_chown(path, mode, uid, gid, is_dir=False):
-    lazy_chmod_path(path, mode)
-    lazy_chown_path(path, uid, gid)
+    if not ONLY_ACLS:
+        lazy_chmod_path(path, mode)
+        lazy_chown_path(path, uid, gid)
     if HAS_SETFACL:
         try:
-            lazy_acl_path(path, uid, gid, mode, is_dir=is_dir)
+            collect_acl(path, uid, gid, mode, is_dir=is_dir)
         except Exception:
              print 'Reset(acl) failed for %s (%s)' % (path, mode)
              print traceback.format_exc()
@@ -197,11 +203,11 @@ def reset(p):
         except Exception:
             print traceback.format_exc()
             print 'reset failed for %s' % curdir
-    apply_acls()
+    if HAS_SETFACL:
+        apply_acls()
 
 {% for pt in reset_paths %}
 reset('{{pt}}')
 {% endfor %}
-print splitList([1,2,3], 2)
 EOF
 exit $?

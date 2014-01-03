@@ -79,7 +79,7 @@ def get_metadata(
             'project_dir': '{root}/{name}',
             'salt_root':    '{project_dir}/{salt_subdir}',
             'project_root': '{project_dir}/{project_subdir}',
-            'pillar_root':  '{project_dir}/{salt_subdir}',
+            'pillar_root':  '{project_dir}/{pillar_subdir}',
             'salt_branch': salt_branch,
             'project_branch': project_branch,
             'default_env': default_env,

@@ -613,6 +613,23 @@ etc-{{data.name}}-dirs-perms:
       - cmd: dummy-pre-{{data.name}}-service-restart
 
 # recurse does not seem to work well to reset perms
+{{data.name}}-projects-dirs-perms:
+  cmd.script:
+    - source: {{ data.resetperms }}
+    - template: jinja
+    - dmode: 0770
+    - fmode: 0770
+    - only_acls: True
+    - msr: {{ data.msr }}
+    - user: "root"
+    - group: "{{ localsettings.group }}"
+    - reset_paths:
+      - {{ data.projects_root }}
+      - {{ data.vagrant_root }}
+    - require:
+      - cmd: dummy-pre-{{data.name}}-service-restart
+      - cmd: etc-{{data.name}}-dirs-perms
+
 {{data.name}}-dirs-perms:
   cmd.script:
     - source: {{ data.resetperms }}
@@ -626,11 +643,10 @@ etc-{{data.name}}-dirs-perms:
       - {{ data.salt_root }}
       - {{ data.prefix }}/.git
       - {{ data.pillar_root }}
-      - {{ data.projects_root }}
-      - {{ data.vagrant_root }}
     - require:
       - cmd: dummy-pre-{{data.name}}-service-restart
       - cmd: etc-{{data.name}}-dirs-perms
+      - cmd: {{data.name}}-projects-dirs-perms
 
 {{data.name}}-dirs-restricted-perms:
   cmd.script:
@@ -661,6 +677,7 @@ etc-{{data.name}}-dirs-perms:
     - reset_paths:
       - {{ data.vms_docker_root }}
     - msr: {{ data.msr }}
+    - only_acls: True
     - dmode: 0770
     - fmode: 0770
     - user: "root"
