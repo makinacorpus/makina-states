@@ -222,7 +222,7 @@ fill-block-solrxml-{{ v }}:
     - group: root
     - reset_paths:
       - {{ solr.groot }}
-    - dmode: '2770'
+    - dmode: '0770'
     - fmode: 0770
     - reset_user: {{ tdata['tomcat_user'] }}
     - reset_group: {{ localsettings.group }}

@@ -5,7 +5,32 @@ import os
 import grp
 import stat
 import pwd
+import sys
 import traceback
+
+def which(program, environ=None, key='PATH', split=':'):
+    if not environ:
+        environ = os.environ
+    PATH = environ.get(key, '').split(split)
+    for entry in PATH:
+        fp = os.path.abspath(os.path.join(entry, program))
+        if os.path.exists(fp):
+            return fp
+        if (
+            (sys.platform.startswith('win')
+             or sys.platform.startswith('cyg'))
+            and os.path.exists(fp + '.exe')
+        ):
+            return fp + '.exe'
+    raise IOError('Program not fond: %s in %s ' % (program, PATH))
+
+
+try:
+    setfacl = which('setfacl')
+    HAS_SETFACL = True
+except IOError:
+    HAS_SETFACL = False
+
 
 {% if msr is defined %}
 m = '{{msr}}'
@@ -53,6 +78,34 @@ fmode = "0%s" % int("{{fmode}}")
 dmode = "0%s" % int("{{dmode}}")
 
 
+def permissions_to_unix_name(mode):
+    usertypes = {'USR': '', 'GRP': '', 'OTH': ''}
+    omode = int(mode, 8)
+    for usertype in [a for a in usertypes]:
+        permstr = ''
+        perm_types = ['R', 'W', 'X']
+        for permtype in perm_types:
+            perm = getattr(stat, 'S_I%s%s' % (permtype, usertype))
+            if omode & perm:
+                permstr += permtype.lower()
+            else:
+                permstr += '-'
+            usertypes[usertype] = permstr
+    return usertypes
+
+
+def lazy_acl_path(path, uid, gid, mode, is_dir=False):
+    perms = permissions_to_unix_name(mode)
+    uacl = u'u:{0}:{1}'.format(*(uid, perms['USR']))
+    gacl = u'g:{0}:{1}'.format(*(gid, perms['GRP']))
+    acl = uacl
+    acl += ",{0}".format(gacl)
+    if is_dir:
+        acl += u',d:{0}'.format(uacl)
+        acl += u',d:{0}'.format(gacl)
+    os.system("{2} -m '{0}' '{1}'".format(*(acl, path, setfacl)))
+
+
 def lazy_chmod_path(path, mode):
     try:
         st = os.stat(path)
@@ -80,9 +133,15 @@ def lazy_chown_path(path, uid, gid):
         print 'Reset(o) failed for %s, %s, %s' % (path, uid, gid)
         print traceback.format_exc()
 
-def lazy_chmod_chown(path, mode, uid, gid):
+def lazy_chmod_chown(path, mode, uid, gid, is_dir=False):
     lazy_chmod_path(path, mode)
     lazy_chown_path(path, uid, gid)
+    if HAS_SETFACL:
+        try:
+            lazy_acl_path(path, uid, gid, mode, is_dir=is_dir)
+        except Exception:
+             print 'Reset(acl) failed for %s (%s)' % (path, mode)
+             print traceback.format_exc()
 
 
 def to_skip(i):
@@ -112,8 +171,7 @@ def reset(p):
         if to_skip(curdir):
             continue
         try:
-            st = os.stat(curdir)
-            lazy_chmod_chown(curdir, dmode, uid, gid)
+            lazy_chmod_chown(curdir, dmode, uid, gid, is_dir=True)
             for item in files:
                 i = os.path.join(root, item)
                 if to_skip(i): continue

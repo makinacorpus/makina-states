@@ -49,6 +49,8 @@ sys-pkgs:
     - pkgs:
       - acpid
       - atop
+      - acl
+      - acl-dev
       - bash-completion
       - bzip2
       - cron

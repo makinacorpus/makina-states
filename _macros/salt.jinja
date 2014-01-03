@@ -424,7 +424,7 @@ salt-etc-{{ data.name }}-dirs:
       - {{ confPrefix }}/minion.d
     - user: root
     - group: {{ group }}
-    - dir_mode: 2770
+    - dir_mode: 0770
     - makedirs: True
     - require:
       - group: salt-{{ data.name }}-{{ group }}
@@ -440,7 +440,7 @@ etc-{{ data.name }}-dirs:
     - user: root
     - group: {{ group }}
     - file_mode: "0770"
-    - dir_mode: "2770"
+    - dir_mode: "0770"
     - makedirs: True
     - require:
       - group: salt-{{ data.name }}-{{ group }}
@@ -602,7 +602,7 @@ etc-{{data.name}}-dirs-perms:
     - source:  {{data.resetperms }}
     - template: jinja
     - msr: {{ msr }}
-    - dmode: 2770
+    - dmode: 0770
     - fmode: 0770
     - user: "root"
     - group: "{{ localsettings.group }}"
@@ -617,7 +617,7 @@ etc-{{data.name}}-dirs-perms:
   cmd.script:
     - source: {{ data.resetperms }}
     - template: jinja
-    - dmode: 2770
+    - dmode: 0770
     - fmode: 0770
     - msr: {{ data.msr }}
     - user: "root"
@@ -661,7 +661,7 @@ etc-{{data.name}}-dirs-perms:
     - reset_paths:
       - {{ data.vms_docker_root }}
     - msr: {{ data.msr }}
-    - dmode: 2770
+    - dmode: 0770
     - fmode: 0770
     - user: "root"
     - group: {{ localsettings.group }}
