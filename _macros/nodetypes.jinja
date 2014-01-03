@@ -53,4 +53,7 @@
 {% macro unregister(name, data=None) %}
 {{ funcs.register(statesPref, grainsPref, name, data=None) }}
 {% endmacro %}
+
+{% set isDevhost = 'devhost' in registry['actives'] %}
+
 # -----------------------------------------------------

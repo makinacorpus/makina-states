@@ -23,6 +23,7 @@
 {% import "makina-states/_macros/salt.jinja" as saltmac with context %}
 {{ services.register('http.apache') }}
 
+{% set nodetypes = services.nodetypes %}
 {% set localsettings = services.localsettings %}
 {% set locs = localsettings.locations %}
 
@@ -99,7 +100,7 @@ makina-apache-settings:
         worker_MaxClients: "{{ apacheData.worker.MaxClients }}"
         event_AsyncRequestWorkerFactor: "{{ apacheData.event.AsyncRequestWorkerFactor }}"
         log_level: "{{ apacheData.log_level }}"
-{% if grains['makina-states.nodetype.devhost'] %}
+{% if nodetypes.isDevhost %}
     - context:
         mode: "dev"
 {% endif %}
@@ -237,7 +238,7 @@ makina-apache-default-vhost-index:
     - template: jinja
     - defaults:
         mode: "production"
-{% if grains['makina-states.nodetype.devhost'] %}
+{% if nodetypes.isDevhost %}
     - context:
         mode: "dev"
 {% endif %}
@@ -275,7 +276,7 @@ makina-apache-minimal-default-vhost:
         log_level: "{{ apacheData.log_level }}"
         serveradmin_mail: "{{ apacheData.serveradmin_mail }}"
         mode: "production"
-{% if grains['makina-states.nodetype.devhost'] %}
+{% if nodetypes.isDevhost %}
     - context:
         mode: "dev"
 {% endif %}
@@ -297,7 +298,7 @@ makina-apache-conf-syntax-check:
        - service: makina-apache-reload
 
 #--- APACHE STARTUP WAIT DEPENDENCY --------------
-{% if grains['makina-states.nodetype.devhost'] %}
+{% if nodetypes.isDevhost %}
 #
 # On a vagrant VM we certainly should wait until NFS mount
 # before starting the web server. Chances are that this NFS mount
@@ -367,7 +368,3 @@ makina-apache-reload:
 {{     virtualhost(**siteDef) }}
 {%   endfor %}
 {% endif %}
-
-makina-states.services.http.apache:
-  grains.present:
-    - value: True
