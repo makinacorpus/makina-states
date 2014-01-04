@@ -60,13 +60,16 @@ Install a new salt-managed box
   ready for them.
 - All the behavior of the script is controlled via environment variables.
 - That's why you will need to set at least which **SALT_CONTROLLER** and **SALT_NODETYPE** you want, and maybe
-  **MASTERSALT_CONTROLLER** and **MASTERSALT_NODETYPE**.
-- You default choice for **SALT_NODETYPE** and **MASTERSALT_NODETYPE** is certainly one of **server**, **vm**  or **devhost**.
+  **SALT_MINION_ID**, **MASTERSALT_CONTROLLER** and **MASTERSALT_NODETYPE**.
+- You default choice for **SALT_MINION_ID** is blank but you can force it to set a specific minion id.
+  It defaults to the machine hostname maybe not a FQDN).
+- You default choice for **SALT_NODETYPE** and **MASTERSALT_NODETYPE** is certainly one of **server**, **vm**, **vagrantvm** or **devhost**.
 
     - The default is **server**.
     - **vm** matches a VM (not baremetal)
     - If you choose **devhost**, this mark the machine as a devloppment machine
       enabling states to act on that, by example installation a test mailer.
+    - If you choose **vagrantvmt**, this mark the machine as a vagrant virtualbox.
 
 - You default choice for **MASTERSALT_NODETYPE** is the same that for **SALT_NODETYPE**.
 
@@ -77,7 +80,7 @@ Install a new salt-managed box
     - The default is **salt_server**.
     - **salt_minion** will only install a minion and you will need to set:
 
-        - **SALT_MASTER_IP**: DNS or ip of the linked master
+        - **SALT_MASTER_DNS**: hostname (FQDN) of the linked master
         - **SALT_MASTER_PORT**: port of the linked master
 
 - You default choice for **MASTERSALT_CONTROLLER** is certainly **mastersalt_minion**.
@@ -85,8 +88,8 @@ Install a new salt-managed box
     - The default is **NOT SET** meaning that we do not install anything of mastersalt by default.
     - **mastersalt_minion** will only install a minion, which will be certainy only what you want
     - The installation process will challenge you for accepting keys on mastersalt-master.
-    - **MASTERSALT** is the mastersalt host to link to
-    - **MASTERSALT_PORT** overrides the port for the distant mastersalt server which is 4606 usually (read the script)
+    - **MASTERSALT** is the mastersalt hostname (FQDN) to link to
+    - **MASTERSALT_MASTER_PORT** overrides the port for the distant mastersalt server which is 4606 usually (read the script)
 
 EXAMPLES
 *********
