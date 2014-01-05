@@ -88,9 +88,13 @@ Install a new salt-managed box
 
 Usage
 *********
-::
+Short overview::
 
     ./boot-salt.sh --help
+
+Detailed overview::
+
+    ./boot-salt.sh --long-help
 
 EXAMPLES
 *********
