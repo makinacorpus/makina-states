@@ -135,7 +135,7 @@ SUMUP
 
     - To install on a server (default env=server, default boot=salt_master)::
 
-        ./boot-salt.sh -S
+        ./boot-salt.sh
 
     - To install on a dev machine (env=devhost, default boot=salt_master)::
 
