@@ -16,7 +16,7 @@ Most configuration are in `localsettings <https://github.com/makinacorpus/makina
 Most states are in `services <https://github.com/makinacorpus/makina-states/blob/master/services>`_.
 The most outstanding features are:
 
-    - Bootstrapping our saltstack binaries
+    - Bootstrapping our saltstates binaries
     - Managing /etc/hosts
     - Managing network (debian-style)
     - Integrating system with an ldap server
@@ -50,20 +50,26 @@ Worflow in MkC deployments
 - Include things in **/srv/salt/top.sls** or in **grains** or **pillar** keys to enable specific makina-states to run.
 - Re Run top.sls Top file (**state.highstate**):
   This file is in charge to setup all what is not installed yet.
+- **For mastersalt managed box, we use salt-cloud to bootstrap distant minions and not the bootstrapscript directly**.
 
 Install a new salt-managed box
 -------------------------------
-- To install our base salt installation, just run this script as **ROOT**, please read next paragraphes before running any command.
+- To install our base salt installation, just run this script as **root**, please read next paragraphes before running any command.
 - All our installs run 2 instances of salt: **mastersalt** and **salt**
 - You will nearly never have to handle much with the **mastersalt** part
 - The two instances will have to know where they run to first make the system
   ready for them.
-- All the behavior of the script is controlled via environment variables.
-- That's why you will need to set at least which **SALT_CONTROLLER** and **SALT_NODETYPE** you want, and maybe
-  **SALT_MINION_ID**, **MASTERSALT_CONTROLLER** and **MASTERSALT_NODETYPE**.
-- You default choice for **SALT_MINION_ID** is blank but you can force it to set a specific minion id.
-  It defaults to the machine hostname maybe not a FQDN).
-- You default choice for **SALT_NODETYPE** and **MASTERSALT_NODETYPE** is certainly one of **server**, **vm**, **vagrantvm** or **devhost**.
+- All the behavior of the script is controlled via environment variables or command line arguments.
+- That's why you will need to tell which daemons you want and on what kind of machine you are installing on.
+- Salt flavors are known as **controllers** and machine kinds as **nodetypes**.
+
+    - The default nodetype is **server**.
+    - The default installed **controller** flavor is **salt**, and in other words, we do not install **mastersalt** by default.
+
+- You ll also have to set the daemon id. The default choice for **--minion-id** is the current machine hostname
+  but you can force it to set a specific minion id.
+
+- You choice for **--nodetype** and **--mastersalt-nodetype** is certainly one of **server**, **vm**, **vagrantvm** or **devhost**.
 
     - The default is **server**.
     - **vm** matches a VM (not baremetal)
@@ -71,85 +77,69 @@ Install a new salt-managed box
       enabling states to act on that, by example installation a test mailer.
     - If you choose **vagrantvmt**, this mark the machine as a vagrant virtualbox.
 
-- You default choice for **MASTERSALT_NODETYPE** is the same that for **SALT_NODETYPE**.
-
-  - If not set, it will default to **SALT_NODETYPE**
-
 - You default choice for **SALT_CONTROLLER** is certainly one of **salt_master** or **salt_minion**.
+- For salt, you have some extra parameters (here are the environment variables, but you have also
+  command line switches to set them
 
-    - The default is **salt_server**.
-    - **salt_minion** will only install a minion and you will need to set:
+    - **--salt-master-dns**; hostname (FQDN) of the linked master
+    - **--salt-master-port**: port of the linked master
+    - **--mastersalt**: is the mastersalt hostname (FQDN) to link to
+    - **--mastersalt-master-port**: overrides the port for the distant mastersalt server which is 4606 usually (read the script)
 
-        - **SALT_MASTER_DNS**: hostname (FQDN) of the linked master
-        - **SALT_MASTER_PORT**: port of the linked master
+Usage
+*********
+::
 
-- You default choice for **MASTERSALT_CONTROLLER** is certainly **mastersalt_minion**.
-
-    - The default is **NOT SET** meaning that we do not install anything of mastersalt by default.
-    - **mastersalt_minion** will only install a minion, which will be certainy only what you want
-    - The installation process will challenge you for accepting keys on mastersalt-master.
-    - **MASTERSALT** is the mastersalt hostname (FQDN) to link to
-    - **MASTERSALT_MASTER_PORT** overrides the port for the distant mastersalt server which is 4606 usually (read the script)
+    ./boot-salt.sh --help
 
 EXAMPLES
 *********
+Get the script::
+
+    wget http://raw.github.com/makinacorpus/makina-states/master/_scripts/boot-salt.sh
+
 If you want to install only a minion::
 
-    export SALT_CONTROLLER="salt_minion" SALT_MASTER="IP.OR.DNS.OF.SALT.MASTER" SALT_MASTER_PORT="PORT OF MASTER  IF NOT 4506"
+    ./boot-salt.sh --no-salt-master --salt-master-dns IP.OR.DNS.OF.SALT.MASTER [--salt-master-port "PORT OF MASTER  IF NOT 4506"]
 
 If you want to install salt on a bare server::
 
-    export SALT_ENV="server"
+    ./boot-salt.sh --n server
 
 If you want to install salt on a vm::
 
-    export SALT_ENV="vm"
+    ./boot-salt.sh --n vm
 
 If you want to install salt on a machine flaggued as a devhost (server + dev mode)::
 
-    export SALT_ENV="devhost"
+    ./boot-salt.sh --n devhost
 
 If you want to install salt on a server and then wire it to a mastersalt master running on another machine::
 
-    export MASTERSALT="http://mastersalt"
-    eg : export MASTERSALT="http://mastersalt.makina-corpus.net"
+    ./boot-salt.sh --mastersalt mastersalt.company.net
 
-If you want to install and test test mastersalt system locally to your box::
+If you want to install and test test mastersalt system locally to your box, when it is set, you need to edit the pillar to change it::
 
-    export MASTERSALT="localhost" MASTERSALT_CONTROLLER="mastersalt_master"
-
-And finally, **FIRE IN THE HOLE!**::
-
-    wget http://raw.github.com/makinacorpus/makina-states/master/_scripts/boot-salt.sh -O - | bash
-    or
-    wget http://raw.github.com/makinacorpus/makina-states/master/_scripts/boot-salt.sh
-    chmod +x boot-salt.sh
-    ./boot-salt.sh
-
-::
-
-    . /etc/profile
+    ./boot-salt.sh --mastersalt-master --mastersalt localhost
 
 To skip the automatic code update/upgrade::
 
-    export SALT_CONTROLLER_SKIP_CHECKOUTS="1"
+    ./boot-salt.sh -S
 
 SUMUP
 *******
 
     - To install on a server (default env=server, default boot=salt_master)::
 
-        wget http://raw.github.com/makinacorpus/makina-states/master/_scripts/boot-salt.sh -O - | bash
+        ./boot-salt.sh -S
 
     - To install on a dev machine (env=devhost, default boot=salt_master)::
 
-        export SALT_NODETYPE=devhost
-        wget http://raw.github.com/makinacorpus/makina-states/master/_scripts/boot-salt.sh -O - | bash
+        ./boot-salt.sh -n devhost
 
     - To install on a server and use mastersalt::
 
-        export MASTERSALT=mastersalt.makina-corpus.net
-        wget http://raw.github.com/makinacorpus/makina-states/master/_scripts/boot-salt.sh -O - | bash
+        ./boot-salt.sh --mastersalt mastersalt.makina-corpus.net
 
 Running project states
 ------------------------------
@@ -165,11 +155,11 @@ Running project states
     mkdir /srv/pillar
     $ED /srv/pillar/top.sls
     $ED /srv/pillar/foo.sls
-    export PROJECT_NAME="foo" (default: no name)
-    export PROJECT_URL="GIT_URL" (default: no url)
-    export PROJECT_BRANCH="master" (default: salt)
-    export PROJECT_TOPSTATE="deploy.foo" (default: no default but test if top.sls exists and use it")
-    wget http://raw.github.com/makinacorpus/makina-states/master/_scripts/boot-salt.sh -O - | bash
+    export NAME="foo" (default: no name)
+    export URL"GIT_URL" (default: no url)
+    export BRANCH="master" (default: salt)
+    export TOPSTATE="deploy.foo" (default: no default but test if top.sls exists and use it")
+    boot-salt.sh --project-url $URL --project-branch $BRANCH --project-state $TOPSTATE
 
 Optionnaly you can edit your pillar in **/srv/pillar**::
 
@@ -183,14 +173,13 @@ According to makinacorpus projects layouts, your project resides in:
 
     - **/srv/projects/$PROJECT_NAME**: root prefix
     - **/srv/projects/$PROJECT_NAME/salt**: the checkout of the salt branch
-    - **/srv/projects/$PROJECT_NAME/project**:  should contain the main project code source and be initialised by your project setup.sls
+    - **/srv/projects/$PROJECT_NAME/project**:  should contain the main project code source and be initialised by your project top.sls
     - **/srv/salt/makina-projects/$PROJECT_NAME**: symlink to the salt branch
 
 Example to install the most simple project::
 
-    PROJECT_URL="https://github.com/makinacorpus/salt-project.git" \
-    PROJECT_BRANCH="sample-salt" PROJECT_NAME="sample" \
-    wget http://raw.github.com/makinacorpus/makina-states/master/_scripts/boot-salt.sh -O - | bash
+    URL="https://github.com/makinacorpus/salt-project.git"  BRANCH="sample-salt" NAME="sample"
+    boot-salt.sh --project-url $URL --project-branch $BRANCH
 
 Mastersalt specific
 -----------------------
@@ -219,7 +208,7 @@ Troubleshooting
       File "/srv/salt/makina-states/eggs/zc.buildout-1.7.1-py2.7.egg/zc/buildout/buildout.py", line 40, in <module>
         import zc.buildout.download
       File "/srv/salt/makina-states/eggs/zc.buildout-1.7.1-py2.7.egg/zc/buildout/download.py", line 20, in <module>
-        from zc.buildout.easy_install import realpath
+        from zc..buildout.easy_install import realpath
       File "/srv/salt/makina-states/eggs/zc.buildout-1.7.1-py2.7.egg/zc/buildout/easy_install.py", line 31, in <module>
         import setuptools.package_index
       File "/usr/local/lib/python2.7/dist-packages/distribute-0.6.24-py2.7.egg/setuptools/package_index.py", line 157, in <module>

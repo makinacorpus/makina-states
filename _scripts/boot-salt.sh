@@ -14,6 +14,7 @@
 # - You can safely relaunch it but be ware that it kills the salt daemons upon configure & setup
 #   and consequently not safe for putting directly in salt states (with a cmd.run).
 #
+LAUNCH_ARGS=$@
 get_abspath() {
     python << EOF
 import os
@@ -46,7 +47,7 @@ set_progs() {
         PS="$lxc_ps --host --"
     else
         PS="$(which ps)"
-    fi 
+    fi
 }
 
 bs_log(){
@@ -133,7 +134,7 @@ dns_resolve() {
     elif [[ -n "$PYTHON" ]];then
         res=$($PYTHON -c "import socket;print socket.gethostbyname('$ahost')" 2>/dev/null)
     else
-        die_in_error "$NO_DNS_RESOLVER"
+        die "$NO_DNS_RESOLVER"
     fi
     echo $res
 }
@@ -227,19 +228,7 @@ set_vars() {
     IS_MASTERSALT="${IS_MASTERSALT:-}"
     IS_MASTERSALT_MASTER="${IS_MASTERSALT_MASTER:-}"
     IS_MASTERSALT_MINION="${IS_MASTERSALT_MINION:-}"
-    case $SALT_CONTROLLER in
-        salt_master)
-            IS_SALT_MASTER="y";;
-        *)
-            IS_SALT_MINION="y";;
-    esac
-    case $MASTERSALT_CONTROLLER in
-        mastersalt_master)
-            IS_MASTERSALT_MASTER="y";;
-        *)
-            IS_MASTERSALT_MINION="y";;
-    esac
-    STATES_URL="https://github.com/makinacorpus/makina-states.git"
+    STATES_URL="${STATES_URL:-"https://github.com/makinacorpus/makina-states.git"}"
     PREFIX="${PREFIX:-${ROOT}srv}"
     BIN_DIR="${BIN_DIR:-${ROOT}usr/bin}"
     SALT_PILLAR="${SALT_PILLAR:-$PREFIX/pillar}"
@@ -265,19 +254,8 @@ set_vars() {
     bootstrap_pref="makina-states.bootstraps"
     bootstrap_nodetypes_pref="${bootstrap_pref}.nodetypes"
     bootstrap_controllers_pref="${bootstrap_pref}.controllers"
-    if [[ -e "${ETC_INIT}/salt-master.conf" ]]\
-        || [[ -e "${ETC_INIT}.d/salt-master" ]]\
-        || [[ -n $IS_SALT_MASTER ]];then
-        IS_SALT="y"
-        IS_SALT_MASTER="y"
-        IS_SALT_MINION="y"
-    fi
-    if [[ -e "${ETC_INIT}/salt-minion.conf" ]]\
-        || [[ -e "${ETC_INIT}.d/salt-minion" ]]\
-        || [[ -n $IS_SALT_MINION ]];then
-        IS_SALT="y"
-        IS_SALT_MINION="y"
-    fi
+
+    # nodetypes and controllers sls
     SALT_NODETYPE="${SALT_NODETYPE:-"server"}"
     MASTERSALT_NODETYPE="${MASTERSALT_NODETYPE:-"$SALT_NODETYPE"}"
     SALT_MASTER_CONTROLLER_DEFAULT="salt_master"
@@ -286,78 +264,152 @@ set_vars() {
     SALT_MINION_CONTROLLER_DEFAULT="salt_minion"
     SALT_MINION_CONTROLLER_INPUTED="${SALT_MINION_CONTROLLER}"
     SALT_MINION_CONTROLLER="${SALT_MINION_CONTROLLER:-$SALT_MINION_CONTROLLER_DEFAULT}"
-    # if mastersalt is set, automatic switch on mastersalt mode
-    if [[ -e ${ETC_INIT}/mastersalt-master.conf ]]\
-        || [[ -e ${ETC_INIT}.d/mastersalt-master ]]\
-        || [[ -n $IS_MASTERSALT_MASTER ]];then
+
+    # select the daemons to install but also
+    # detect what is already present on the system
+    case $SALT_CONTROLLER in
+        salt_master)
+            IS_SALT_MASTER="y";;
+        *)
+            IS_SALT_MINION="y";;
+    esac
+    case $MASTERSALT_CONTROLLER in
+        mastersalt_master)
+            IS_MASTERSALT_MASTER="y";;
+        mastersalt_minion)
+            IS_MASTERSALT_MINION="y";;
+    esac
+    if [[ -n "$MASTERSALT" ]];then
+        IS_MASTERSALT_MINION="y"
+    fi
+    if [[ -e "${ETC_INIT}/salt-master.conf" ]]\
+        || [[ -e "${ETC_INIT}.d/salt-master" ]]\
+        || [[ -n "$IS_SALT_MASTER" ]];then
+        IS_SALT="y"
+        IS_SALT_MASTER="y"
+        IS_SALT_MINION="y"
+    fi
+    if [[ -e "${ETC_INIT}/salt-minion.conf" ]]\
+        || [[ -e "${ETC_INIT}.d/salt-minion" ]]\
+        || [[ -n "$IS_SALT_MINION" ]];then
+        IS_SALT="y"
+        IS_SALT_MINION="y"
+    fi
+
+    if [[ -e "${ETC_INIT}/mastersalt-master.conf" ]]\
+        || [[ -e "${ETC_INIT}.d/mastersalt-master" ]]\
+        || [[ -n "$IS_MASTERSALT_MASTER" ]];then
         IS_MASTERSALT="y"
         IS_MASTERSALT_MASTER="y"
         IS_MASTERSALT_MINION="y"
     fi
-    if [[ -e ${ETC_INIT}/mastersalt-minion.conf ]]\
-        || [[ -e ${ETC_INIT}.d/mastersalt-minion ]]\
-        || [[ -n $IS_MASTERSALT_MINION ]];then
+    if [[ -e "${ETC_INIT}/mastersalt-minion.conf" ]]\
+        || [[ -e "${ETC_INIT}.d/mastersalt-minion" ]]\
+        || [[ -n "$IS_MASTERSALT_MINION" ]];then
         IS_MASTERSALT="y"
         IS_MASTERSALT_MINION="y"
     fi
-    MASTERSALT_MASTER_CONTROLLER_DEFAULT="mastersalt_master"
-    MASTERSALT_MASTER_CONTROLLER_INPUTED="${MASTERSALT_MASTER_CONTROLLER}"
-    MASTERSALT_MASTER_CONTROLLER="${MASTERSALT_MASTER_CONTROLLER:-$MASTERSALT_MASTER_CONTROLLER_DEFAULT}"
-    MASTERSALT_MINION_CONTROLLER_DEFAULT="mastersalt_minion"
-    MASTERSALT_MINION_CONTROLLER_INPUTED="${MASTERSALT_MINION_CONTROLLER}"
-    MASTERSALT_MINION_CONTROLLER="${MASTERSALT_MINION_CONTROLLER:-$MASTERSALT_MINION_CONTROLLER_DEFAULT}"
-    MASTERSALT_INPUTED="${MASTERSALT}"
-    # host running the mastersalt salt-master
-    # - if we have not defined a mastersalt host,
-    #    default to mastersalt.makina-corpus.net
+    if [[ "$FORCE_IS_SALT" == "no" ]];then
+        IS_SALT=""
+        IS_SALT_MASTER=""
+        IS_SALT_MINION=""
+    fi
+    if [[ "$FORCE_IS_MASTERSALT" == "no" ]];then
+        IS_MASTERSALT=""
+        IS_MASTERSALT_MASTER=""
+        IS_MASTERSALT_MINION=""
+    fi
+
+    # force mode (via cmdline)
+    if [[ "$FORCE_IS_MASTERSALT" == "no" ]];then IS_SALT_MINION="";fi
+    if [[ "$FORCE_IS_SALT_MINION" == "no" ]];then IS_SALT_MINION="";fi
+    if [[ "$FORCE_IS_SALT_MASTER" == "no" ]];then IS_SALT_MASTER="";fi
+    if [[ "$FORCE_IS_MASTERSALT_MINION" == "no" ]];then IS_MASTERSALT_MINION="";fi
+    if [[ "$FORCE_IS_MASTERSALT_MASTER" == "no" ]];then IS_MASTERSALT_MASTER="";fi
+    if [[ -z "$IS_SALT_MINION" ]] && [[ -z "$IS_SALT_MASTER" ]];then
+        IS_SALT=""
+    fi
+    if [[ -z "$IS_MASTERSALT_MINION" ]] && [[ -z "$IS_MASTERSALT_MASTER" ]];then
+        IS_MASTERSALT=""
+    fi
+
+    # mastersalt variables
     if [[ -n "$IS_MASTERSALT" ]];then
-        if [[ -z $MASTERSALT ]];then
-            MASTERSALT="$MASTERSALT_MAKINA_HOSTNAME"
+        MASTERSALT_MASTER_CONTROLLER_DEFAULT="mastersalt_master"
+        MASTERSALT_MASTER_CONTROLLER_INPUTED="${MASTERSALT_MASTER_CONTROLLER}"
+        MASTERSALT_MASTER_CONTROLLER="${MASTERSALT_MASTER_CONTROLLER:-$MASTERSALT_MASTER_CONTROLLER_DEFAULT}"
+        MASTERSALT_MINION_CONTROLLER_DEFAULT="mastersalt_minion"
+        MASTERSALT_MINION_CONTROLLER_INPUTED="${MASTERSALT_MINION_CONTROLLER}"
+        MASTERSALT_MINION_CONTROLLER="${MASTERSALT_MINION_CONTROLLER:-$MASTERSALT_MINION_CONTROLLER_DEFAULT}"
+        MASTERSALT_INPUTED="${MASTERSALT}"
+        # host running the mastersalt salt-master
+        # - if we have not defined a mastersalt host,
+        #    default to mastersalt.makina-corpus.net
+        if [[ -n "$IS_MASTERSALT" ]];then
+            if [[ -z "$MASTERSALT" ]];then
+                MASTERSALT="$MASTERSALT_MAKINA_HOSTNAME"
+            fi
+            if [[ -e "$MASTERSALT_PILLAR/mastersalt.sls" ]];then
+                MASTERSALT="$(grep "master: " $MASTERSALT_PILLAR/mastersalt.sls |awk '{print $2}'|tail -n 1)"
+            fi
         fi
-        if [[ -e "$MASTERSALT_PILLAR/mastersalt.sls" ]];then
-            MASTERSALT="$(grep "master: " $MASTERSALT_PILLAR/mastersalt.sls |awk '{print $2}'|tail -n 1)"
+
+        MASTERSALT_MASTER_DNS="${MASTERSALT_MASTER_DNS:-${MASTERSALT}}"
+        MASTERSALT_MASTER_IP="$(dns_resolve $MASTERSALT_MASTER_DNS)"
+        MASTERSALT_MASTER_PORT="${MASTERSALT_MASTER_PORT:-"${MASTERSALT_PORT:-"4606"}"}"
+        MASTERSALT_MASTER_PUBLISH_PORT="$(( ${MASTERSALT_MASTER_PORT} - 1 ))"
+
+        MASTERSALT_MINION_DNS="${MASTERSALT_MINION_DNS:-"localhost"}"
+        MASTERSALT_MINION_IP="$(dns_resolve $MASTERSALT_MINION_DNS)"
+
+        if [[ "$MASTERSALT_MASTER_IP" == "127.0.0.1" ]];then
+            MASTERSALT_MASTER_DNS="localhost"
         fi
+        if [[ "$MASTERSALT_MINION_IP" == "127.0.0.1" ]];then
+            MASTERSALT_MINION_DNS="localhost"
+        fi
+
+        if [[ -z "$MASTERSALT_MASTER_IP" ]];then
+            die "MASTERSALT MASTER: invalid dns: $MASTERSALT_MASTER_DNS"
+        fi
+        if [[ -z "$MASTERSALT_MINION_IP" ]];then
+            die "MASTERSALT MINION: invalid dns: $MASTERSALT_MINION_DNS"
+        fi
+
+        mastersalt_bootstrap_nodetype="${bootstrap_nodetypes_pref}.${MASTERSALT_NODETYPE}"
+        mastersalt_bootstrap_master="${bootstrap_controllers_pref}.${MASTERSALT_MASTER_CONTROLLER}"
+        mastersalt_bootstrap_minion="${bootstrap_controllers_pref}.${MASTERSALT_MINION_CONTROLLER}"
     fi
 
-    SALT_MASTER_DNS="${SALT_MASTER_DNS:-"localhost"}"
-    SALT_MASTER_IP="$(dns_resolve $SALT_MASTER_DNS)"
-    SALT_MASTER_PORT="${SALT_MASTER_PORT:-"4506"}"
-    SALT_MASTER_PUBLISH_PORT="$(( ${SALT_MASTER_PORT} - 1 ))"
+    # salt variables
+    if [[ -n "$IS_SALT" ]];then
+        SALT_MASTER_DNS="${SALT_MASTER_DNS:-"localhost"}"
+        SALT_MASTER_IP="$(dns_resolve $SALT_MASTER_DNS)"
+        SALT_MASTER_PORT="${SALT_MASTER_PORT:-"4506"}"
+        SALT_MASTER_PUBLISH_PORT="$(( ${SALT_MASTER_PORT} - 1 ))"
 
-    SALT_MINION_DNS="${SALT_MINION_DNS:-"localhost"}"
-    SALT_MINION_IP="$(dns_resolve $SALT_MINION_DNS)"
-    SALT_MINION_ID="$HOSTNAME"
+        SALT_MINION_DNS="${SALT_MINION_DNS:-"localhost"}"
+        SALT_MINION_IP="$(dns_resolve $SALT_MINION_DNS)"
+        SALT_MINION_ID="${SALT_MINION_ID:-"$HOSTNAME"}"
 
-    MASTERSALT_MASTER_DNS="${MASTERSALT_MASTER_DNS:-${MASTERSALT}}"
-    MASTERSALT_MASTER_IP="$(dns_resolve $MASTERSALT_MASTER_DNS)"
-    MASTERSALT_MASTER_PORT="${MASTERSALT_MASTER_PORT:-"${MASTERSALT_PORT:-"4606"}"}"
-    MASTERSALT_PUBLISH_PORT="$(( ${MASTERSALT_MASTER_PORT} - 1 ))"
+        if [[ "$SALT_MASTER_IP" == "127.0.0.1" ]];then
+            SALT_MASTER_DNS="localhost"
+        fi
+        if [[ "$SALT_MINION_IP" == "127.0.0.1" ]];then
+            SALT_MINION_DNS="localhost"
+        fi
 
-    MASTERSALT_MINION_DNS="${MASTERSALT_MINION_DNS:-"localhost"}"
-    MASTERSALT_MINION_IP="$(dns_resolve $MASTERSALT_MINION_DNS)"
+        if [[ -z "$SALT_MASTER_IP" ]];then
+            die "SALT MASTER: invalid dns: $SALT_MASTER_DNS"
+        fi
+        if [[ -z "$SALT_MINION_IP" ]];then
+            die "SALT MINION: invalid dns: $SALT_MINION_DNS"
+        fi
 
-    if [[ "$MASTERSALT_MASTER_IP" == "127.0.0.1" ]];then
-        MASTERSALT_MASTER_DNS="localhost"
+        bootstrap_nodetype="${bootstrap_nodetypes_pref}.${SALT_NODETYPE}"
+        salt_bootstrap_master="${bootstrap_controllers_pref}.${SALT_MASTER_CONTROLLER}"
+        salt_bootstrap_minion="${bootstrap_controllers_pref}.${SALT_MINION_CONTROLLER}"
     fi
-    if [[ "$MASTERSALT_MINION_IP" == "127.0.0.1" ]];then
-        MASTERSALT_MINION_DNS="localhost"
-    fi
-
-    if [[ "$SALT_MASTER_IP" == "127.0.0.1" ]];then
-        SALT_MINION_DNS="localhost"
-    fi
-    if [[ "$SALT_MINION_IP" == "127.0.0.1" ]];then
-        SALT_MASTER_DNS="localhost"
-    fi
-
-    bootstrap_nodetype="${bootstrap_nodetypes_pref}.${SALT_NODETYPE}"
-    mastersalt_bootstrap_nodetype="${bootstrap_nodetypes_pref}.${MASTERSALT_NODETYPE}"
-
-    salt_bootstrap_master="${bootstrap_controllers_pref}.${SALT_MASTER_CONTROLLER}"
-    salt_bootstrap_minion="${bootstrap_controllers_pref}.${SALT_MINION_CONTROLLER}"
-
-    mastersalt_bootstrap_master="${bootstrap_controllers_pref}.${MASTERSALT_MASTER_CONTROLLER}"
-    mastersalt_bootstrap_minion="${bootstrap_controllers_pref}.${MASTERSALT_MINION_CONTROLLER}"
 
     # --------- PROJECT VARS
     MAKINA_PROJECTS="makina-projects"
@@ -408,7 +460,7 @@ set_vars() {
     export SALT_MASTER_PORT SALT_MASTER_PUBLISH_PORT
     export MASTERSALT
     export MASTERSALT_MASTER_IP MASTERSALT_MASTER_DNS
-    export MASTERSALT_MASTER_PORT MASTERSALT_PUBLISH_PORT
+    export MASTERSALT_MASTER_PORT MASTERSALT_MASTER_PUBLISH_PORT
     export MASTERSALT_MINION_IP MASTERSALT_MINION_DNS
     #
     export MAKINA_PROJECTS PROJECTS_PATH PROJECT_URL
@@ -426,6 +478,7 @@ set_vars() {
 
 recap_(){
     need_confirm="${1}"
+    debug="${2:-$SALT_BOOT_DEBUG}"
     bs_yellow_log "--------------------------------------------------"
     bs_yellow_log " MAKINA-STATES BOOTSTRAPPER FOR $SALT_BOOT_OS"
     bs_yellow_log "   - $0"
@@ -436,63 +489,67 @@ recap_(){
     bs_yellow_log "---------------"
     bs_log "HOSTNAME: $HOSTNAME"
     bs_log "DATE: $CHRONO"
-    bs_log "ROOT: $ROOT"
-    bs_log "PREFIX: $PREFIX"
+    if [[ -n "$debug" ]];then
+        bs_log "ROOT: $ROOT"
+        bs_log "PREFIX: $PREFIX"
+    fi
     if [[ -n "$IS_SALT" ]];then
         bs_yellow_log "---------------"
         bs_yellow_log "SALT variables:"
         bs_yellow_log "---------------"
-        bs_log "SALT_ROOT: $SALT_ROOT"
-        bs_log "SALT_PILLAR: $SALT_PILLAR"
+        bs_log "SALT ROOT | PILLAR: $SALT_ROOT | $SALT_PILLAR"
         bs_log "SALT_NODETYPE: $SALT_NODETYPE"
         if [[ -n "$IS_SALT_MASTER" ]];then
             bs_log "SALT_MASTER_IP: $SALT_MASTER_IP"
-            bs_log "SALT_MASTER_CONTROLLER: $SALT_MASTER_CONTROLLER"
         fi
         if [[ -n "$IS_SALT_MINION" ]];then
-            bs_log "SALT_MINION_CONTROLLER: $SALT_MINION_CONTROLLER"
             bs_log "SALT_MASTER_DNS: $SALT_MASTER_DNS"
             bs_log "SALT_MASTER_PORT: $SALT_MASTER_PORT"
-            bs_log "SALT_MASTER_PUBLISH_PORT: $SALT_MASTER_PUBLISH_PORT"
             bs_log "SALT_MINION_IP: $SALT_MINION_IP"
         fi
-        bs_log "bootstrap_nodetype: $bootstrap_nodetype"
-        if [[ -n "$IS_SALT_MASTER" ]];then
-            bs_log "salt_bootstrap_master: $salt_bootstrap_master"
-            debug_msg "SALT_MASTER_CONTROLLER_INPUTED: $SALT_MASTER_CONTROLLER_INPUTED"
-        fi
-        if [[ -n "$IS_SALT_MINION" ]];then
-            bs_log "salt_bootstrap_minion: $salt_bootstrap_minion"
-            debug_msg "SALT_MINION_CONTROLLER_INPUTED: $SALT_MINION_CONTROLLER_INPUTED"
+        if [[ -n "$debug" ]];then
+            bs_log "SALT_MASTER_PUBLISH_PORT: $SALT_MASTER_PUBLISH_PORT"
+            bs_log "bootstrap_nodetype: $bootstrap_nodetype"
+            if [[ -n "$IS_SALT_MASTER" ]];then
+                bs_log "salt_bootstrap_master: $salt_bootstrap_master"
+                bs_log "SALT_MASTER_CONTROLLER: $SALT_MASTER_CONTROLLER"
+                debug_msg "SALT_MASTER_CONTROLLER_INPUTED: $SALT_MASTER_CONTROLLER_INPUTED"
+            fi
+            if [[ -n "$IS_SALT_MINION" ]];then
+                bs_log "salt_bootstrap_minion: $salt_bootstrap_minion"
+                bs_log "SALT_MINION_CONTROLLER: $SALT_MINION_CONTROLLER"
+                debug_msg "SALT_MINION_CONTROLLER_INPUTED: $SALT_MINION_CONTROLLER_INPUTED"
+            fi
         fi
     fi
     if [[  -n "$IS_MASTERSALT" ]];then
         bs_yellow_log "---------------------"
         bs_yellow_log "MASTERSALT variables:"
         bs_yellow_log "---------------------"
-        bs_log "MASTERSALT_ROOT: $MASTERSALT_ROOT"
-        bs_log "MASTERSALT_PILLAR: $MASTERSALT_PILLAR"
+        bs_log "MASTERSALT ROOT | PILLAR: $MASTERSALT_ROOT | $MASTERSALT_PILLAR"
         bs_log "MASTERSALT_NODETYPE: $MASTERSALT_NODETYPE"
         bs_log "MASTERSALT: $MASTERSALT"
         if [[ -n "$IS_MASTERSALT_MASTER" ]];then
             bs_log "MASTERSALT_MASTER_IP: $MASTERSALT_MASTER_IP"
-            bs_log "MASTERSALT_MASTER_CONTROLLER: $MASTERSALT_MASTER_CONTROLLER"
+            bs_log "MASTERSALT_MASTER_PUBLISH_PORT $MASTERSALT_MASTER_PUBLISH_PORT"
         fi
         if [[ -n "$IS_MASTERSALT_MINION" ]];then
-            bs_log "MASTERSALT_MINION_CONTROLLER: $MASTERSALT_MINION_CONTROLLER"
             bs_log "MASTERSALT_MASTER_PORT: $MASTERSALT_MASTER_PORT"
-            bs_log "MASTERSALT_PUBLISH_PORT $MASTERSALT_PUBLISH_PORT"
             bs_log "MASTERSALT_MINION_IP: $MASTERSALT_MINION_IP"
             debug_msg "MASTERSALT_INPUTED: $MASTERSALT_INPUTED"
         fi
-        bs_log "mastersalt_bootstrap_nodetype: $mastersalt_bootstrap_nodetype"
-        if [[ -n "$IS_MASTERSALT_MASTER" ]];then
-            bs_log "mastersalt_bootstrap_master: $mastersalt_bootstrap_master"
-            debug_msg "MASTERSALT_MASTER_CONTROLLER_INPUTED: $MASTERSALT_MASTER_CONTROLLER_INPUTED"
-        fi
-        if [[ -n "$IS_MASTERSALT_MINION" ]];then
-            bs_log "mastersalt_bootstrap_minion: $mastersalt_bootstrap_minion"
-            debug_msg "MASTERSALT_MINION_CONTROLLER_INPUTED: $MASTERSALT_MINION_CONTROLLER_INPUTED"
+        if [[ -n "$debug" ]];then
+            bs_log "mastersalt_bootstrap_nodetype: $mastersalt_bootstrap_nodetype"
+            if [[ -n "$IS_MASTERSALT_MASTER" ]];then
+                bs_log "mastersalt_bootstrap_master: $mastersalt_bootstrap_master"
+                bs_log "MASTERSALT_MASTER_CONTROLLER: $MASTERSALT_MASTER_CONTROLLER"
+                debug_msg "MASTERSALT_MASTER_CONTROLLER_INPUTED: $MASTERSALT_MASTER_CONTROLLER_INPUTED"
+            fi
+            if [[ -n "$IS_MASTERSALT_MINION" ]];then
+                bs_log "mastersalt_bootstrap_minion: $mastersalt_bootstrap_minion"
+                bs_log "MASTERSALT_MINION_CONTROLLER: $MASTERSALT_MINION_CONTROLLER"
+                debug_msg "MASTERSALT_MINION_CONTROLLER_INPUTED: $MASTERSALT_MINION_CONTROLLER_INPUTED"
+            fi
         fi
     fi
     if [[ -n "$PROJECT_URL" ]];then
@@ -513,7 +570,7 @@ recap_(){
 
 recap() {
     recap_
-    recap_ "no" > "$TMPDIR/boot_salt_top"
+    recap_ "no" "y" > "$TMPDIR/boot_salt_top"
 }
 
 is_apt_installed() {
@@ -744,7 +801,7 @@ check_restartmarker_and_maybe_restart() {
                 bootsalt="$mbootsalt"
             fi
             bs_log "Restarting $bootsalt which needs to update itself"
-            "$bootsalt" && rm -f "${SALT_MS}/.bootsalt_need_restart"
+            "$bootsalt" $LAUNCH_ARGS && rm -f "${SALT_MS}/.bootsalt_need_restart"
             exit $?
         fi
     fi
@@ -752,11 +809,13 @@ check_restartmarker_and_maybe_restart() {
 
 setup_and_maybe_update_code() {
     bs_log "Create base directories"
-    for i in "$SALT_PILLAR" "$SALT_ROOT";do
-        if [[ ! -d "$i" ]];then
-            mkdir -pv "$i"
-        fi
-    done
+    if [[ -n "$IS_SALT" ]];then
+        for i in "$SALT_PILLAR" "$SALT_ROOT";do
+            if [[ ! -d "$i" ]];then
+                mkdir -pv "$i"
+            fi
+        done
+    fi
     if [[  -n "$IS_MASTERSALT" ]];then
         for i in "$MASTERSALT_PILLAR" "$MASTERSALT_ROOT";do
             if [[ ! -d "$i" ]];then
@@ -764,9 +823,12 @@ setup_and_maybe_update_code() {
             fi
         done
     fi
-    MSS="${SALT_MS}"
+    SALT_MSS=""
+    if [[ -n "$IS_SALT" ]];then
+        SALT_MSS="${SALT_MSS} $SALT_MS"
+    fi
     if [[  -n "$IS_MASTERSALT" ]];then
-        MSS="${SALT_MS}S $MASTERSALT_MS"
+        SALT_MSS="${SALT_MSS} $MASTERSALT_MS"
     fi
     is_offline="$(test_online)"
     minion_keys="$(find $CONF_PREFIX/pki/master/{minions_pre,minions} -type f 2>/dev/null|wc -l)"
@@ -787,7 +849,7 @@ setup_and_maybe_update_code() {
         if [[ -z "$SALT_BOOT_SKIP_CHECKOUTS" ]];then
             bs_yellow_log "If you want to skip checkouts, next time do export SALT_BOOT_SKIP_CHECKOUTS=1"
         fi
-        for ms in ${SALT_MS}S;do
+        for ms in ${SALT_MSS};do
             if [[ ! -d "$ms/.git" ]];then
                 git clone "$STATES_URL" "$ms"
                 SALT_BOOT_NEEDS_RESTART="1"
@@ -949,7 +1011,9 @@ run_ms_buildout() {
 }
 
 install_buildouts() {
-    run_ms_buildout ${SALT_MS}
+    if [[  -n "$IS_SALT" ]];then
+        run_ms_buildout ${SALT_MS}
+    fi
     if [[  -n "$IS_MASTERSALT" ]];then
         if [[ ! -e $MASTERSALT_ROOT/makina-states/.installed.cfg ]];then
             bs_log "Copying base tree, this can take a while"
@@ -1127,7 +1191,7 @@ a\    master_port: ${MASTERSALT_MASTER_PORT}
 a\  master:
 a\    interface: $MASTERSALT_MASTER_IP
 a\    ret_port: ${MASTERSALT_MASTER_PORT}
-a\    publish_port: ${MASTERSALT_PUBLISH_PORT}
+a\    publish_port: ${MASTERSALT_MASTER_PUBLISH_PORT}
 }" -i "$MASTERSALT_PILLAR/mastersalt.sls"
             fi
         fi
@@ -1678,6 +1742,7 @@ install_mastersalt_env() {
 }
 
 install_salt_env() {
+    if [[ -z "$IS_SALT" ]];then return;fi
     # XXX: important mastersalt must be configured before salt
     # to override possible local settings.
     install_salt_daemons
@@ -1749,8 +1814,10 @@ highstate_in_salt_env() {
 }
 
 run_highstates() {
-    highstate_in_salt_env
-    if [[ -n $MASTERSALT ]];then
+    if [[ -n "$IS_SALT" ]];then
+        highstate_in_salt_env
+    fi
+    if [[ -n "$IS_MASTERSALT" ]];then
         highstate_in_mastersalt_env
     fi
 }
@@ -1776,7 +1843,7 @@ maybe_install_projects() {
             git clone $BR "$PROJECT_URL" "$PROJECT_SALT_PATH"
             ret="$?"
             if [[ "$ret" != "0" ]];then
-                bs_log "Failed to download project from $PROJECT_URL, or maybe the saltstack branch $PROJECT_BRANCH does not exist"
+                bs_log "Failed to download project from $PROJECT_URL, or maybe the salt states branch $PROJECT_BRANCH does not exist"
                 exit -1
             fi
             if [[ ! -e "$PROJECT_SALT_PATH/.git/config" ]];then
@@ -1911,17 +1978,245 @@ cleanup_old_installs() {
     fi
 }
 
-parse_cli_opts() {
-    bs_yellow_log "not implemented"
+bs_help() {
+    title=$1
+    shift
+    help=$1
+    shift
+    default=$1
+    shift
+    opt=$1
+    shift
+    msg="     ${YELLOW}${title} ${NORMAL}${CYAN}${help}${NORMAL}"
+    if [[ -z $opt ]];then
+        msg="$msg ${YELLOW}(mandatory)${NORMAL}"
+    fi
+    if [[ -n $default ]];then
+        msg="$msg ($default)"
+    fi
+    echo -e "$msg"
 }
 
+exemple() {
+    sname="./$(basename $0)"
+    echo -e "     ${YELLOW}${sname}${1} ${CYAN}${2}${NORMAL}"
+
+}
+
+usage() {
+    bs_log "$0:"
+    echo
+    bs_yellow_log "This script will install salt minion(s) and maybe master(s) on different flavors (salt/mastersalt) on top of makina-states"
+    bs_yellow_log "This script installs by default a salt master/minion pair on localhost"
+    bs_yellow_log "This script can also install a mastersalt minion and maybe a mastersalt master."
+    bs_yellow_log "It will install first what the server needed as requirements and system settings, then the saltstate stuff"
+    if [[ -n $SALT_LONG_HELP ]];then
+        echo
+        bs_yellow_log "You may need to select the nodetype, and the other informations bits neccesary to"
+        bs_yellow_log "desccribe and adapt the behavior to your targeted environment"
+        echo
+        bs_log "Examples:"
+        exemple ":" "install a saltmaster/minion:"
+        exemple " --nodetype=devhost:" "install a saltmaster/minion in 'development' mode"
+        exemple " --mastersalt mastersalt.mycompany.net:" "install a mastersalt minion linked to mastersalt.mycompany.net"
+        exemple " --project-url http://github.com/salt/foo.git:" "install the foo project from the salt branch of https://github.com/salt/foo.git"
+    fi
+    echo;echo
+    bs_log "General settings:"
+    bs_help "-h|--help:" "this help message" "" y
+    bs_help "-l|--long-help:" "this help message + aditionnal help and advanced settings" "" y
+    bs_help "-C|--no-confirm:" "Do not ask for start confirmation" "" y
+    bs_help "-S|--skip-checkouts:" "Skip initial checkouts / updates" "" y
+    bs_help "-d|--debug:" "debug/verbose mode" "NOT SET" y
+    bs_help "--debug-level <level>:" "debug level (quiet|all|info|error)" "NOT SET" y
+
+    echo;echo
+    bs_log "Server settings:"
+    bs_help "-n|--nodetype <nt>:" "Nodetype to install into (devhost | server | dockercontainer | lxcontainer | vm | vagrantvm )" "$SALT_NODETYPE" "y"
+    echo
+    bs_log "Salt settings:"
+    bs_help "--no-salt:" "Do not install salt daemons" "" y
+    bs_help "-no-M|--no-salt-master:" "Do not install a salt master" "$IS_SALT_MASTER" y
+    bs_help "-m|--minion-id:" "Minion id" "$SALT_MINION_ID" y
+    bs_help "--salt-master-dns <hostname>:" "DNS of the salt master" "$SALT_MASTER_DNS" y
+    bs_help "--salt-master-port <port>:"        "Port of the salt master" "$MASTERSALT_MASTER_PORT" y
+    echo
+    bs_log "Mastersalt settings (if any):"
+    echo -e "    ${YELLOW} by default, we only install a minion, unless you add -MM${NORMAL}"
+    bs_help "--mastersalt <dns>:" "DNS of the mastersalt master" "$MASTERSALT_MASTER_DNS" y
+    bs_help "--mastersalt-master-port <port>:"  "Port of the mastersalt master" "$MASTERSALT_MASTER_PORT" y
+    bs_help "--no-mastersalt:" "Do not install mastersalt daemons" "" y
+    bs_help "-NN|--mastersalt-minion:" "install a mastersalt minion" "$IS_MASTERSALT_MINION" y
+    bs_help "-MM|--mastersalt-master:" "install a mastersalt master" "$IS_MASTERSALT_MASTER" y
+    echo
+    bs_log "Project settings (if any):"
+    bs_help "-u|--project-url <url>:" "project url to get to install this project (set to blank to only install makina-states)"
+    bs_help "-B|--project-name <name>:" "Project name" "" "y"
+    bs_help "-b|--project-branch <branch>:" "salt branch to install the project"  "$PROJECT_BRANCH" y
+
+    if [[ -n $SALT_LONG_HELP ]];then
+        echo
+        bs_log "Advanced settings:"
+        bs_help "--salt-minion-dns <dns>:" "DNS of the salt minion" "$SALT_MINION_DNS" "y"
+        bs_help "-g|--makina-states-url <url>:" "makina-states url" "$STATES_URL" y
+        bs_help "-r|--root <path>:" "/ path" "$ROOT"
+        bs_help "--salt-root <path>:" "Salt root installation path" "$SALT_ROOT" y
+        bs_help "--conf-root <path>:" "Salt configuration container path" "$CONF_ROOT" y
+        bs_help "-p|--prefix <path>:" "prefix path" "$PREFIX" y
+        bs_help "-P|--pillar <path>:" "pillar path" "$SALT_PILLAR" y
+        bs_help "-M|--salt-master:" "install a salt master" "$IS_SALT_MASTER" y
+        bs_help "-N|--salt-minion:" "install a salt minion" "$IS_SALT_MINION" y
+        bs_help "-no-N|--no-salt-minion:" "Do not install a salt minion" "$IS_SALT_MINION" y
+        #bs_help "-mac|--master-controller <controller>:" "makina-states controller to use for the master" "$SALT_MASTER_CONTROLLER" y
+        #bs_help "-mic|--minion-controller <controller>:" "makina-states controller to use for the minion" "$SALT_MINION_CONTROLLER" y
+        bs_help "--salt-master-publish-port:" "Salt master publish port" "$SALT_MASTER_PUBLISH_PORT" y
+
+        bs_log "  Mastersalt settings (if any):"
+        bs_help "-nn|--mastersalt-nodetype <nt>:" "Nodetype to install mastersalt into" "$MASTERSALT_NODETYPE" "y"
+        bs_help "--mconf-root <path>:" "Mastersalt configuration container path" "$CONF_ROOT" y
+        bs_help "--mastersalt-root <path>:" "MasterSalt root installation path" "$SALT_ROOT" y
+        bs_help "-PP|--mastersalt-pillar <path>:" "mastersalt pillar path" "$MASTERSALT_PILLAR"  y
+        bs_help "--mastersalt-minion-dns <dns>:"  "DNS of the mastersalt minion" "$MASTERSALT_MINION_DNS" y
+        bs_help "--mastersalt-master-publish-port <port>:" "MasterSalt master publish port" "$MASTERSALT_MASTER_PUBLISH_PORT" y
+        #bs_help "-mmac|--mastersalt-master-controller <controller>:" "makina-states controller to use for the mastersalt master" "$MASTERSALT_MINION_CONTROLLER"   y
+        #bs_help "-mmic|--mastersalt-minion-controller <controller>:" "makina-states controller to use for the mastersalt minion" "$MASTERSALT_MASTER_CONTROLLER"  y
+        bs_help "-no-MM|--no-mastersalt-master:" "do not install a mastersalt master" "$IS_MASTERSALT_MASTER" y
+        bs_help "-no-NN|--no-mastersalt-minion:" "do not install a mastersalt minion" "$IS_MASTERSALT_MINION" y
+
+        bs_log "  Project settings (if any):"
+        bs_help "--projects-path <path>:" "projects root path" "$PROJECTS_PATH" y
+        bs_help "--project-top <sls>:" "project SLS file to execute"  "$PROJECT_TOPSLS" y
+    fi
+}
+
+parse_cli_opts() {
+    set_vars # to collect defaults for the help message
+    args=$@
+    PARAM=""
+    while true
+    do
+        sh=1
+        if [[ "$1" == "$PARAM" ]];then
+            break
+        fi
+        case "$1" in
+            -h|--help) USAGE=1
+                ;;
+            -d|--debug) SALT_BOOT_DEBUG=y
+                ;;
+            --debug-level) SALT_BOOT_DEBUG_LEVEL=$2;sh=2
+                ;;
+            -l|--long-help) SALT_LONG_HELP=1;USAGE=1;
+                ;;
+            -S|--skip-checkouts) SALT_BOOT_SKIP_CHECKOUTS=y
+                ;;
+            -C|--no-confirm) SALT_BOOT_NOCONFIRM=y
+                ;;
+            -M|--salt-master) IS_SALT_MASTER=y
+                ;;
+            -N|--salt-minion) IS_SALT_MINION=y
+                ;;
+            -MM|--mastersalt-master) IS_MASTERSALT_MASTER=y
+                ;;
+            -NN|--mastersalt-minion) IS_MASTERSALT_MINION=y
+                ;;
+            -no-M|--no-salt-master) FORCE_IS_SALT_MASTER="no"
+                ;;
+            -no-N|--no-salt-minion) FORCE_IS_SALT_MINION="no"
+                ;;
+            --no-salt) FORCE_IS_SALT="no"
+                ;;
+            --no-mastersalt) FORCE_IS_MASTERSALT="no"
+                ;;
+            -no-MM|--no-mastersalt-master) FORCE_IS_MASTERSALT_MASTER="no"
+                ;;
+            -no-NN|--no-mastersalt-minion) FORCE_IS_MASTERSALT_MINION="no"
+                ;;
+            -m|--minion-id) SALT_MINION_ID=$2;sh=2
+                ;;
+            -mac|--master-controller) SALT_MASTER_CONTROLLER=$2;sh=2
+                ;;
+            -mmac|--mastersalt-master-controller) MASTERSALT_MASTER_CONTROLLER=$2;sh=2
+                ;;
+            -mic|--minion-controller) SALT_MINION_CONTROLLER=$2;sh=2
+                ;;
+            -mmic|--mastersalt-minion-controller) MASTERSALT_MINION_CONTROLLER=$2;sh=2
+                ;;
+            --salt-master-dns) SALT_MASTER_DNS=$2;sh=2
+                ;;
+            --salt-minion-dns) SALT_MINION_DNS=$2;sh=2
+                ;;
+            --mastersalt-minion-dns) MASTERSALT_MINION_DNS=$2;sh=2
+                ;;
+            --salt-master-port) SALT_MASTER_PORT=$2;sh=2
+                ;;
+            --salt-master-publish-port) SALT_MASTER_PUBLISH_PORT=$2;sh=2
+                ;;
+            --mastersalt-master-port) MASTERSALT_MASTER_PORT=$2;sh=2
+                ;;
+            --mastersalt-master-publish-port) MASTERSALT_MASTER_PUBLISH_PORT=$2;sh=2
+                ;;
+            -n|--nodetype) SALT_NODETYPE=$2;sh=2
+                ;;
+            -nn|--mastersalt-nodetype) MASTERSALT_NODETYPE=$2;sh=2
+                ;;
+            -g|--makina-states-url) STATES_URL="$2";sh=2
+                ;;
+            --mastersalt) MASTERSALT="$2";sh=2
+                ;;
+            -r|--root) ROOT=$2;sh=2
+                ;;
+            --salt-root) SALT_ROOT=$2;sh=2
+                ;;
+            --mastersalt-root) MASTERSALT_ROOT=$2;sh=2
+                ;;
+            --conf-root) CONF_ROOT=$2;sh=2
+                ;;
+            --mconf-root) MCONF_ROOT=$2;sh=2
+                ;;
+            -p|--prefix) PREFIX=$2;sh=2
+                ;;
+            -P|--pillar) SALT_PILLAR=$2;sh=2
+                ;;
+            -PP|--mastersalt-pillar) MASTERSALT_PILLAR=$2;sh=2
+                ;;
+            -u|--project-url) PROJECT_URL=$2;sh=2
+                ;;
+            -B|--project-name) PROJECT_NAME=$2;sh=2
+                ;;
+            -b|--project-branch) PROJECT_BRANCH=$2;sh=2
+                ;;
+            --project-top) PROJECT_TOPSLS=$2;sh=2
+                ;;
+            --projects-path) PROJECTS_PATH=$2;sh=2
+                ;;
+            *) break
+                ;;
+        esac    # --- end of case ---
+        PARAM="$1"
+        OLD_ARG=$1
+        for i in $(seq $sh);do
+            shift
+            if [[ "$1" == "$OLD_ARG" ]];then
+                break
+            fi
+        done
+        if [[ -z "$1" ]];then
+            break
+        fi
+    done
+    if [[ -n $USAGE ]];then
+        usage
+        exit 0
+    fi
+}
 
 if [[ -z $SALT_BOOT_AS_FUNCS ]];then
-    parse_cli_opts
+    parse_cli_opts $LAUNCH_ARGS
     if [[ "$(dns_resolve localhost)" == $NO_DNS_RESOLVER ]];then
         die_in_error "$NO_DNS_RESOLVER"
     fi
-    set_vars
+    set_vars # real variable affectation
     recap
     cleanup_old_installs
     setup_and_maybe_update_code
