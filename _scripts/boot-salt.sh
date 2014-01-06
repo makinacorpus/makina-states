@@ -1984,8 +1984,8 @@ cleanup_old_installs() {
     for i in "${SALT_MS}" "$MASTERSALT_MS";do
         if [[ -e "$i" ]];then
             for j in "$i/bin/"mastersalt*;do
-                bs_log "Cleanup $j"
                 if [[ -e "$j" ]];then
+                    bs_log "Cleanup $j"
                     rm -rvf "$j"
                 fi
             done
