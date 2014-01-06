@@ -414,7 +414,6 @@ set_vars() {
     fi
 
     # salt variables
-    SALT_MINION_ID="$(get_minion_id)"
     if [[ -n "$IS_SALT" ]];then
         SALT_MASTER_DNS="${SALT_MASTER_DNS:-"localhost"}"
         SALT_MASTER_IP="$(dns_resolve $SALT_MASTER_DNS)"
@@ -1071,7 +1070,7 @@ EOF
     fi
     if [[ ! -e $CONF_PREFIX/minion ]];then
         cat > $CONF_PREFIX/minion << EOF
-id: $SALT_MINION_ID
+id: $(get_minion_id)
 master: $SALT_MASTER_DNS
 master_port: $SALT_MASTER_PORT
 file_roots: {"base":["$SALT_ROOT"]}
@@ -1096,7 +1095,7 @@ EOF
         fi
         if [[ ! -e $MCONF_PREFIX/minion ]];then
             cat > $MCONF_PREFIX/minion << EOF
-id: $SALT_MINION_ID
+id: $(get_minion_id)
 master: $MASTERSALT_MASTER_DNS
 master_port: $MASTERSALT_MASTER_PORT
 file_roots: {"base":["$MASTERSALT_ROOT"]}
@@ -1172,7 +1171,7 @@ a\    - salt
         debug_msg "Adding minion info to pillar"
         sed -re "/^salt:\s*$/ {
 a\  minion:
-a\    id: ${SALT_MINION_ID}
+a\    id: $(get_minion_id)
 a\    interface: $SALT_MINION_IP
 a\    master: $SALT_MASTER_DNS
 a\    master_port: $SALT_MASTER_PORT
@@ -1210,7 +1209,7 @@ a\    - mastersalt
             debug_msg "Adding mastersalt minion info to mastersalt pillar"
             sed -re "/^mastersalt:\s*$/ {
 a\  minion:
-a\    id: ${SALT_MINION_ID}
+a\    id: $(get_minion_id)
 a\    interface: ${MASTERSALT_MINION_IP}
 a\    master: ${MASTERSALT_MASTER_DNS}
 a\    master_port: ${MASTERSALT_MASTER_PORT}
@@ -2069,7 +2068,7 @@ usage() {
     bs_log "Salt settings:"
     bs_help "--no-salt:" "Do not install salt daemons" "" y
     bs_help "-no-M|--no-salt-master:" "Do not install a salt master" "$IS_SALT_MASTER" y
-    bs_help "-m|--minion-id:" "Minion id" "$SALT_MINION_ID" y
+    bs_help "-m|--minion-id:" "Minion id" "$(get_minion_id)" y
     bs_help "--salt-master-dns <hostname>:" "DNS of the salt master" "$SALT_MASTER_DNS" y
     bs_help "--salt-master-port <port>:"        "Port of the salt master" "$MASTERSALT_MASTER_PORT" y
     echo
