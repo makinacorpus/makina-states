@@ -471,7 +471,7 @@ set_vars() {
     export PROJECT_SALT_LINK PROJECT_SALT_PATH
     export PROJECT_TOPSLS_DEFAULT PROJECT_TOPSTATE_DEFAULT
     #
-    export MASTERSALT_BOOT_SKIP_HIGHSTATE SALT_BOOT_SKIP_HIGHSTATE
+    export MASTERSALT_BOOT_SKIP_HIGHSTATE SALT_BOOT_SKIP_HIGHSTATE SALT_BOOT_SKIP_HIGHSTATES
 }
 
 # --------- PROGRAM START
@@ -657,7 +657,7 @@ i_prereq() {
     done
     if [[ -n "$to_install" ]];then
         bs_log "Installing pre requisites: $to_install"
-        echo 'changed="yes" comment="prerequisites installed"'
+        echo 'changed=yes comment="prerequisites installed"'
         apt-get update && lazy_apt_get_install $to_install
     fi
 }
@@ -1496,7 +1496,7 @@ make_association() {
             # sleep 15 seconds giving time for the minion to wake up
             bs_log "Salt minion \"$minion_id\" registered on master"
             registered="1"
-            echo "changed=true comment='salt minion already registered'"
+            echo "changed=yes comment='salt minion already registered'"
         else
             minion_challenge
             if [[ -z "$challenged_ms" ]];then
@@ -1506,7 +1506,7 @@ make_association() {
             fi
             minion_id="$(get_minion_id)"
             registered="1"
-            echo "changed=true comment='salt minion already registered'"
+            echo "changed=yes comment='salt minion already registered'"
         fi
         if [[ -z "$registered" ]];then
             bs_log "Failed accepting salt key on $SALT_MASTER_IP for $minion_id"
@@ -1576,10 +1576,10 @@ make_mastersalt_association() {
         bs_log "Waiting for mastersalt minion key hand-shake"
         minion_id="$(get_minion_id)"
         if [[ "$(salt_ping_test)" == "0" ]];then
-            echo "changed=true comment='mastersalt minion registered'"
+            echo "changed=yes comment='mastersalt minion registered'"
             bs_log "Salt minion \"$minion_id\" registered on master"
             registered="1"
-            echo "changed=true comment='salt minion registered'"
+            echo "changed=yes comment='salt minion registered'"
         else
             mastersalt_minion_challenge
             if [[ -z "$challenged_ms" ]];then
@@ -1589,7 +1589,7 @@ make_mastersalt_association() {
             fi
             minion_id="$(get_minion_id)"
             registered="1"
-            echo "changed=true comment='salt minion registered'"
+            echo "changed=yes comment='salt minion registered'"
         fi
         if [[ -z "$registered" ]];then
             bs_log "Failed accepting mastersalt key on $MASTERSALT for $minion_id"
@@ -1750,7 +1750,7 @@ install_salt_env() {
     make_association
     # --------- stateful state return: mark as already installed
     if [[ -z "$ds" ]];then
-        echo 'changed="false" comment="already bootstrapped"'
+        echo 'changed=false comment="already bootstrapped"'
     fi
 }
 
@@ -1766,7 +1766,8 @@ get_module_args() {
 
 highstate_in_mastersalt_env() {
     # IMPORTANT: MASTERSALT BEFORE SALT !!!
-    if [[ -z $MASTERSALT_BOOT_SKIP_HIGHSTATE ]];then
+    if [[ -z "$SALT_BOOT_SKIP_HIGHSTATES" ]]\
+        && [[ -z "$MASTERSALT_BOOT_SKIP_HIGHSTATE" ]];then
         bs_log "Running makina-states highstate for mastersalt"
         bs_log "    export MASTERSALT_BOOT_SKIP_HIGHSTATE=1 to skip (dangerous)"
         LOCAL=""
@@ -1782,11 +1783,14 @@ highstate_in_mastersalt_env() {
             exit -1
         fi
         echo "changed=yes comment='mastersalt highstate run'"
+    else
+        echo "changed=false comment='mastersalt highstate skipped'"
     fi
 }
 
 highstate_in_salt_env() {
-    if [[ -z "$SALT_BOOT_SKIP_HIGHSTATE" ]];then
+    if [[ -z "$SALT_BOOT_SKIP_HIGHSTATES" ]]\
+        && [[ -z "$SALT_BOOT_SKIP_HIGHSTATE" ]];then
         bs_log "Running makina-states highstate"
         bs_log "    export SALT_BOOT_SKIP_HIGHSTATE=1 to skip (dangerous)"
         LOCAL=""
@@ -1800,10 +1804,12 @@ highstate_in_salt_env() {
             warn_log
             exit -1
         fi
+        echo "changed=yes comment='salt highstate run'"
+    else
+        echo "changed=false comment='salt highstate skipped'"
     fi
     if [[ -n "$SALT_BOOT_DEBUG" ]];then cat $SALT_BOOT_OUTFILE;fi
     warn_log
-    echo "changed=yes comment='salt highstate run'"
 
     # --------- stateful state return: mark as freshly installed
     if [[ -n "$SALT_BOOT_NOW_INSTALLED" ]];then
@@ -2109,6 +2115,8 @@ parse_cli_opts() {
             -l|--long-help) SALT_LONG_HELP=1;USAGE=1;
                 ;;
             -S|--skip-checkouts) SALT_BOOT_SKIP_CHECKOUTS=y
+                ;;
+            -s|--skip-highstates) SALT_BOOT_SKIP_HIGHSTATES=y
                 ;;
             -C|--no-confirm) SALT_BOOT_NOCONFIRM=y
                 ;;
