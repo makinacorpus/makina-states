@@ -141,7 +141,6 @@ dns_resolve() {
     fi
     res=""
     for resolver in $resolvers;do
-        echo $resolver
         case $resolver in
             *host)
                 res=$($resolver $ahost 2>/dev/null| awk '/ has address /{ print $4 }')
