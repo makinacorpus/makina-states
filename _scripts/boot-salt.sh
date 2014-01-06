@@ -29,10 +29,11 @@ NORMAL="\\033[0m"
 SALT_BOOT_DEBUG="${SALT_BOOT_DEBUG:-}"
 SALT_BOOT_DEBUG_LEVEL="${SALT_BOOT_DEBUG_LEVEL:-all}"
 LAUNCHER="$(get_abspath $0)"
-NO_DNS_RESOLVER="no dns resolver"
+DNS_RESOLUTION_FAILED="dns resolution failed"
 
 
 set_progs() {
+    GETENT="$(which getent 2>/dev/null)"
     PERL="$(which perl 2>/dev/null)"
     PYTHON="$(which python 2>/dev/null)"
     HOST="$(which host 2>/dev/null)"
@@ -122,19 +123,51 @@ test_online() {
 dns_resolve() {
     ahost="$1"
     set_progs
-    HOST=
-    if [[ -n "$HOST" ]];then
-        res=$($HOST $ahost 2>/dev/null| awk '/ has address /{ print $4 }')a
-    elif [[ -n "$NSLOOKUP" ]];then
-        res=$($NSLOOKUP $ahost 2>/dev/null| awk '/^Address: / { print $2  }')
-    elif [[ -n "$DIG" ]];then
-        res=$($DIG $ahost 2>/dev/null| awk '/^;; ANSWER SECTION:$/ { getline ; print $5 }')c
-    elif [[ -n "$PERL" ]];then
-        res=$($PERL -e "use Socket;\$packed_ip=gethostbyname(\"$ahost\");print inet_ntoa(\$packed_ip)")
-    elif [[ -n "$PYTHON" ]];then
-        res=$($PYTHON -c "import socket;print socket.gethostbyname('$ahost')" 2>/dev/null)
-    else
-        die "$NO_DNS_RESOLVER"
+    resolvers=""
+    for i in\
+        "$GETENT"\
+        "$PERL"\
+        "$PYTHON"\
+        "$HOST"\
+        "$NSLOOKUP"\
+        "$DIG";\
+    do
+        if [[ -n "$i" ]];then
+            resolvers="$resolvers $i"
+        fi
+    done
+    if [[ -z "$resolvers" ]];then
+        die "$DNS_RESOLUTION_FAILED"
+    fi
+    res=""
+    for resolver in $resolvers;do
+        echo $resolver
+        case $resolver in
+            *host)
+                res=$($resolver $ahost 2>/dev/null| awk '/ has address /{ print $4 }')
+                ;;
+            *dig)
+                res=$($resolver $ahost 2>/dev/null| awk '/^;; ANSWER SECTION:$/ { getline ; print $5 }')
+                ;;
+            *nslookup)
+                res=$($resolver $ahost 2>/dev/null| awk '/^Address: / { print $2  }')
+                ;;
+            *python)
+                res=$($resolver -c "import socket;print socket.gethostbyname('$ahost')" 2>/dev/null)
+                ;;
+            *perl)
+                res=$($resolver -e "use Socket;\$packed_ip=gethostbyname(\"$ahost\");print inet_ntoa(\$packed_ip)")
+                ;;
+            *getent)
+                res=$($resolver ahosts $ahost|head -n1 2>/dev/null| awk '{ print $1 }')
+                ;;
+        esac
+        if [[ -n $res ]];then
+            break
+        fi
+    done
+    if [[ -z "$res" ]];then
+        die "$DNS_RESOLUTION_FAILED"
     fi
     echo $res
 }
@@ -2221,8 +2254,8 @@ parse_cli_opts() {
 
 if [[ -z $SALT_BOOT_AS_FUNCS ]];then
     parse_cli_opts $LAUNCH_ARGS
-    if [[ "$(dns_resolve localhost)" == $NO_DNS_RESOLVER ]];then
-        die_in_error "$NO_DNS_RESOLVER"
+    if [[ "$(dns_resolve localhost)" == "$DNS_RESOLUTION_FAILED" ]];then
+        die_in_error "$DNS_RESOLUTION_FAILED"
     fi
     set_vars # real variable affectation
     recap
