@@ -900,9 +900,11 @@ setup_and_maybe_update_code() {
                 if [[ -e "$i/.git" ]];then
                     sed -re "s/filemode =.*/filemode=false/g" -i $i/.git/config 2>/dev/null
                     branch="master"
-                    if [[ "$i" == "$ms/src/salt" ]];then
-                        branch="develop"
-                    fi
+                    case "$i" in
+                        "$ms/src/SaltTesting"|"$ms/src/salt")
+                            branch="develop"
+                            ;;
+                    esac
                     bs_log "Upgrading $i"
                     cd $i
                     git fetch --tags origin &> /dev/null
