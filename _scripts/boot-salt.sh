@@ -1309,7 +1309,6 @@ install_salt_daemons() {
 
         bs_log "Boostrapping salt"
 
-        bs_log "Running salt nodetype bootstrap: $salt_bootstrap_nodetype"
         run_salt_bootstrap $salt_bootstrap_nodetype
 
         # run salt master setup
