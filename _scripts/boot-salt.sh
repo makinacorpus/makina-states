@@ -438,7 +438,7 @@ set_vars() {
             die "SALT MINION: invalid dns: $SALT_MINION_DNS"
         fi
 
-        bootstrap_nodetype="${bootstrap_nodetypes_pref}.${SALT_NODETYPE}"
+        salt_bootstrap_nodetype="${bootstrap_nodetypes_pref}.${SALT_NODETYPE}"
         salt_bootstrap_master="${bootstrap_controllers_pref}.${SALT_MASTER_CONTROLLER}"
         salt_bootstrap_minion="${bootstrap_controllers_pref}.${SALT_MINION_CONTROLLER}"
     fi
@@ -541,7 +541,7 @@ recap_(){
         fi
         if [[ -n "$debug" ]];then
             bs_log "SALT_MASTER_PUBLISH_PORT: $SALT_MASTER_PUBLISH_PORT"
-            bs_log "bootstrap_nodetype: $bootstrap_nodetype"
+            bs_log "salt_bootstrap_nodetype: $salt_bootstrap_nodetype"
             if [[ -n "$IS_SALT_MASTER" ]];then
                 bs_log "salt_bootstrap_master: $salt_bootstrap_master"
                 bs_log "SALT_MASTER_CONTROLLER: $SALT_MASTER_CONTROLLER"
@@ -1304,25 +1304,15 @@ install_salt_daemons() {
 
         bs_log "Boostrapping salt"
 
-        # run salt master+minion boot_nodetype bootstrap
-        bs_log "Running salt nodetype bootstrap: $bootstrap_nodetype"
-        salt_call_wrapper --local state.sls $bootstrap_nodetype
-        if [[ -n "$SALT_BOOT_DEBUG" ]];then cat $SALT_BOOT_OUTFILE;fi
-        warn_log
-        if [[ "$last_salt_retcode" != "0" ]];then
-            bs_log "Failed bootstrap nodetype: $bootstrap_nodetype"
-            exit -1
-        fi
-
-        # run mastersalt master+minion boot_nodetype bootstrap
+        bs_log "Running salt nodetype bootstrap: $salt_bootstrap_nodetype"
         run_salt_bootstrap $salt_bootstrap_nodetype
 
-        # run mastersalt master setup
-        if [[ -n "$IS_MASTERSALT_MASTER" ]];then
+        # run salt master setup
+        if [[ -n "$IS_SALT_MASTER" ]];then
             run_salt_bootstrap $salt_bootstrap_master
         fi
 
-        # run mastersalt minion setup
+        # run salt minion setup
         if [[ -n "$IS_SALT_MINION" ]];then
             run_salt_bootstrap $salt_bootstrap_minion
         fi
