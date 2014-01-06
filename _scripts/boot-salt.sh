@@ -414,6 +414,7 @@ set_vars() {
     fi
 
     # salt variables
+    SALT_MINION_ID="$(get_minion_id)"
     if [[ -n "$IS_SALT" ]];then
         SALT_MASTER_DNS="${SALT_MASTER_DNS:-"localhost"}"
         SALT_MASTER_IP="$(dns_resolve $SALT_MASTER_DNS)"
@@ -422,7 +423,6 @@ set_vars() {
 
         SALT_MINION_DNS="${SALT_MINION_DNS:-"localhost"}"
         SALT_MINION_IP="$(dns_resolve $SALT_MINION_DNS)"
-        SALT_MINION_ID="${SALT_MINION_ID:-"$HOSTNAME"}"
 
         if [[ "$SALT_MASTER_IP" == "127.0.0.1" ]];then
             SALT_MASTER_DNS="localhost"
@@ -1233,7 +1233,11 @@ a\    publish_port: ${MASTERSALT_MASTER_PUBLISH_PORT}
 # ------------ SALT INSTALLATION PROCESS
 
 get_minion_id() {
-    cat $CONF_PREFIX/minion_id 2> /dev/null
+    if [[ -f "$CONF_PREFIX/minion_id" ]];then
+        cat "$CONF_PREFIX/minion_id" 2> /dev/null
+    else
+        echo "${SALT_MINION_ID:-"$HOSTNAME"}"
+    fi
 }
 
 lazy_start_salt_daemons() {
