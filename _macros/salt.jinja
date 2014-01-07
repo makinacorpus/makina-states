@@ -46,6 +46,8 @@
 # That's why you will maybe add to core repositories new formulaes by
 # modyfing the confRepos keys as follow:
 #
+# salt:
+#  common:
 #   confRepos:
 #     <id>:
 #      name: git url of the repo
@@ -53,6 +55,16 @@
 #      link: (optionnal and mainly useful for formulaes)
 #        name: target path name on the fs
 #        target: absolute path of the symlink
+#
+# salt:
+#  common:
+#   confRepos:
+#     docker-formulae:
+#       name: https://github.com/saltstack-formulas/docker-formula.git
+#       target: '{salt_root}/formulas/docker'
+#       link:
+#         name: '{salt_root}/formulas/docker/docker'
+#         target: '{salt_root}/formulas/docker/docker'
 #
 #}
 {% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
