@@ -1116,9 +1116,9 @@ EOF
     fi
 
     # create pillars
-    PILLAR_ROOTS="$SALT_PILLAR"
+    SALT_PILLAR_ROOTS="$SALT_PILLAR"
     if [[  -n "$IS_MASTERSALT" ]];then
-        PILLAR_ROOTS="$SALT_PILLAR_ROOTS $MASTERSALT_PILLAR"
+        SALT_PILLAR_ROOTS="$SALT_PILLAR_ROOTS $MASTERSALT_PILLAR"
     fi
     for pillar_root in $SALT_PILLAR_ROOTS;do
         # Create a default top.sls in the pillar if not present
@@ -1159,7 +1159,7 @@ a\    - makina-states.top
 }" -i $topf
         fi
     done
-    if [[ "$(grep -- "- salt" $SALT_PILLAR/top.sls|wc -l)" == "0" ]];then
+    if [[ "$(grep -- "- salt" $SALT_PILLAR/top.sls 2>/dev/null|wc -l)" == "0" ]];then
         debug_msg "Adding salt to default top salt pillar"
         sed -re "/('|\")\*('|\"):/ {
 a\    - salt
