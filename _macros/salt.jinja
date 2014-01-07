@@ -1,3 +1,4 @@
+{#
 #
 # This file contains three macros to
 # - install makina states
@@ -34,6 +35,26 @@
 #     minion:
 #       - master_port: 4506
 #
+# Formulas & code management:
+#
+#   - We do not like formulas served with gitfs as it may not be resilient
+#     to network problems and also consume more network resources.
+#   - For thus, we do prior checkouts and then we have a local checkout
+#     of the formula repository, and we then must link the inner formula
+#     subfolder inside our salt states tree root.
+#
+# That's why you will maybe add to core repositories new formulaes by
+# modyfing the confRepos keys as follow:
+#
+#   confRepos:
+#     <id>:
+#      name: git url of the repo
+#      target: path on the filesystem
+#      link: (optionnal and mainly useful for formulaes)
+#        name: target path name on the fs
+#        target: absolute path of the symlink
+#
+#}
 {% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
 
 {% set nodetypes = nodetypes %}
@@ -484,7 +505,7 @@ dummy-pre-{{ data.name }}-checkouts:
 # those repos are the one needed to bootstrap the core daemons
 {% for i, rdata in repos.items() -%}
 {% set git = rdata['target']+'/.git'  -%}
-{% set rev = rdata['rev'] %}
+{% set rev = rdata.get('rev', None) %}
 {% set link = rdata.get('link', False) %}
 salt-{{ data.name }}-{{ i }}:
 # on next runs as we reset perms on repos, just set filemode=false
