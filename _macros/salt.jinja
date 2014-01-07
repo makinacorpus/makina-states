@@ -626,7 +626,7 @@ etc-{{data.name}}-dirs-perms:
     - group: "{{ localsettings.group }}"
     - reset_paths:
       - {{ data.projects_root }}
-      - {{ data.vagrant_root }}
+      {# - {{ data.vagrant_root }} #}
     - require:
       - cmd: dummy-pre-{{data.name}}-service-restart
       - cmd: etc-{{data.name}}-dirs-perms
@@ -642,7 +642,6 @@ etc-{{data.name}}-dirs-perms:
     - group: "{{ localsettings.group }}"
     - reset_paths:
       - {{ data.salt_root }}
-      - {{ data.prefix }}/.git
       - {{ data.pillar_root }}
     - require:
       - cmd: dummy-pre-{{data.name}}-service-restart
@@ -669,6 +668,7 @@ etc-{{data.name}}-dirs-perms:
       - file: salt-{{data.name}}-dirs-restricted
       - cmd: dummy-pre-{{data.name}}-service-restart
 
+{#
 # recurse does not seem to work well to reset perms
 {{data.name}}-docker-dirs-if-present:
   cmd.script:
@@ -690,6 +690,7 @@ etc-{{data.name}}-dirs-perms:
       - {{ data.vms_docker_root }}/cache
       - {{ data.vms_docker_root }}/makinacorpus/debian/debootstrap
       - {{ data.vms_docker_root }}/makinacorpus/ubuntu_deboostrap/debootstrap
+#}
 
 {% endmacro %}
 
