@@ -164,7 +164,7 @@ dns_resolve() {
                 res=$($resolver ahosts $ahost|head -n1 2>/dev/null| awk '{ print $1 }')
                 ;;
         esac
-        # do not accet ipv6 resolutions"
+        # do not accet ipv6 resolutions
         if [[ $res == *:* ]];then res="";fi
         if [[ -n $res ]];then
             break
