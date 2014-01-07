@@ -45,7 +45,49 @@
 {% set group = localsettings.group %}
 {% set groupId = localsettings.groupId %}
 
+# You can overrides this dict via the salt pillar entry 'confRepos', see bellow
+# external base repositories to checkout
+# Add also here the formumlas to checkout
+# and if neccesary the symlink to wire on the salt root tree
+{% set confRepos = {
+  'salt-git': {
+    'name': 'http://github.com/makinacorpus/salt.git',
+    'rev': 'develop',
+    'target': '{salt_root}/makina-states/src/salt'},
+  'SaltTesting-git': {
+    'name': 'http://github.com/saltstack/salt-testing.git',
+    'rev': 'develop',
+    'target': '{salt_root}/makina-states/src/SaltTesting'},
+  'm2crypto': {
+    'name': 'https://github.com/makinacorpus/M2Crypto.git',
+    'target': '{salt_root}/makina-states/src/m2crypto'},
+  'salt-formulae': {
+    'name': 'http://github.com/saltstack-formulas/salt-formula.git',
+    'link': {'target': '{salt_root}/formulas/salt/salt',
+             'name': '{salt_root}/salt'},
+    'target': '{salt_root}/formulas/salt'},
+  'openssh-formulae': {
+    'name': 'http://github.com/saltstack-formulas/openssh-formula.git',
+    'link': {'target': '{salt_root}/formulas/openssh/openssh',
+             'name': '{salt_root}/openssh'},
+    'target': '{salt_root}/formulas/openssh'},
+  'openstack-formulae': {
+    'name': 'https://github.com/kiorky/openstack-salt-states.git',
+    'target': '{salt_root}/openstack'},
+  'makina-states': {
+    'name': 'https://github.com/makinacorpus/makina-states.git',
+    'target': '{salt_root}/makina-states'},
+} %}
+{% for i, data in confRepos.items() %}
+{%  for k in ['rev', 'target', 'name'] %}
+{%    do data.update({
+          'rev': salt['mc_utils.get']('makina-states.salt.'+i+'.rev',
+                                      data.get('rev', False))}) %}
+{%  endfor %}
+{% endfor %}
+
 {% set saltCommonData = {
+  'confRepos': confRepos,
   'rotate': localsettings.rotate.days,
   'yaml_utf8': True,
   'root_dir': locs.root_dir,
@@ -306,7 +348,7 @@
 {% set mresetperms = 'file://' + mmsr + '/_scripts/reset-perms.sh' %}
 {% set msaltbinpath = mmsr + '/bin' %}
 
-# mappins
+# mappings
 {% set data_mappings = {
   'master': {
     'salt': saltMasterData,
@@ -317,6 +359,9 @@
     'mastersalt': mastersaltMinionData,
   }
 } %}
+
+
+
 
 ###############################
 # Common installation stuff
@@ -331,7 +376,6 @@
 {% else %}
 {% set data = resolver(adata) %}
 {% endif %}
-
 {% set localRoot = resolver('{salt_root}', data) %}
 {% set prefix = resolver('{prefix}', data) %}
 {% set confPrefix = resolver('{conf_prefix}', data) %}
@@ -342,38 +386,7 @@
 {% set pillarRoot = resolver('{pillar_root}', data) %}
 {% set localMsr = resolver('{salt_root}/makina-states', data) %}
 {% set yamled_data = resolver(data | yaml )%}
-{% set repos = {
-  'salt-git': {
-    'name': 'http://github.com/makinacorpus/salt.git',
-    'rev': 'develop',
-    'target': data.salt_root+'/makina-states/src/salt'},
-  'SaltTesting-git': {
-    'name': 'http://github.com/saltstack/salt-testing.git',
-    'rev': 'develop',
-    'target': data.salt_root+'/makina-states/src/SaltTesting'},
-  'm2crypto': {
-    'name': 'https://github.com/makinacorpus/M2Crypto.git',
-    'target': data.salt_root+'/makina-states/src/m2crypto'},
-  'salt-formulae': {
-    'name': 'http://github.com/saltstack-formulas/salt-formula.git',
-    'target': data.salt_root+'/formulas/salt'},
-  'openssh-formulae': {
-    'name': 'http://github.com/saltstack-formulas/openssh-formula.git',
-    'target': data.salt_root+'/formulas/openssh'},
-  'openstack-formulae': {
-    'name': 'https://github.com/kiorky/openstack-salt-states.git',
-    'target': data.salt_root+'/openstack'},
-  'makina-states': {
-    'name': 'https://github.com/makinacorpus/makina-states.git',
-    'target': data.salt_root+'/makina-states'},
-} %}
-{% for i, data in repos.items() %}
-{%  for k in ['rev', 'target', 'name'] %}
-{%    do data.update({
-          'rev': salt['mc_utils.get']('makina-states.salt.'+i+'.rev',
-                                      data.get('rev', False))}) %}
-{%  endfor %}
-{% endfor %}
+{% set repos = data['confRepos'] %}
 
 {% for cur_name in  [
   'salt',
@@ -456,13 +469,6 @@ dummy-pre-{{ data.name }}-service-restart:
       - file: salt-etc-{{ data.name }}-dirs
       - file: salt-{{ data.name }}-dirs-restricted
       - file: salt-{{ data.name }}-logrotate
-      - file: salt-{{ data.name }}-l-openssh-formulae
-      - file: salt-{{ data.name }}-l-salt-formulae
-      - mc_git: salt-{{ data.name }}-m2crypto
-      - mc_git: salt-{{ data.name }}-makina-states
-      - mc_git: salt-{{ data.name }}-openssh-formulae
-      - mc_git: salt-{{ data.name }}-openstack-formulae
-      - mc_git: salt-{{ data.name }}-salt-formulae
 
 dummy-post-{{ data.name }}-service-restart:
    cmd.run:
@@ -479,9 +485,11 @@ dummy-pre-{{ data.name }}-checkouts:
 {% for i, rdata in repos.items() -%}
 {% set git = rdata['target']+'/.git'  -%}
 {% set rev = rdata['rev'] %}
+{% set link = rdata.get('link', False) %}
 salt-{{ data.name }}-{{ i }}:
 # on next runs as we reset perms on repos, just set filemode=false
 # do not use cwd as if dir does not exist, if will fail the entire state
+# For formulas, also create the symlink if neccesary
   cmd.run:
     - name: cd "{{ rdata['target'] }}" && git config --local core.filemode false
     - require:
@@ -497,6 +505,15 @@ salt-{{ data.name }}-{{ i }}:
     {% endif %}
     - require:
       - cmd: salt-{{ data.name }}-{{ i }}
+  {% if link %}
+  file.symlink:
+    - target:  {{link.target}}
+    - name:  {{link.name}}
+    - require:
+      - mc_git: salt-{{ data.name }}-{{ i }}
+    - require_in:
+      - cmd: dummy-pre-{{ data.name }}-service-restart
+  {% endif %}
 {% endfor %}
 
 salt-{{ data.name }}-makina-states-dirs:
@@ -506,20 +523,6 @@ salt-{{ data.name }}-makina-states-dirs:
       - {{ localRoot }}/{{ i }}
       - {{ data.msr }}/{{ i }}
       {% endfor %}
-
-salt-{{ data.name }}-l-openssh-formulae:
-  file.symlink:
-    - target: {{ localRoot }}/formulas/openssh/openssh
-    - name: {{ localRoot }}/openssh
-    - require:
-      - mc_git: salt-{{ data.name }}-openssh-formulae
-
-salt-{{ data.name }}-l-salt-formulae:
-  file.symlink:
-    - target: {{ localRoot }}/formulas/salt/salt
-    - name: {{ localRoot }}/salt
-    - require:
-      - mc_git: salt-{{ data.name }}-salt-formulae
 
 # update makina-state
 salt-{{ data.name }}-buildout-bootstrap:

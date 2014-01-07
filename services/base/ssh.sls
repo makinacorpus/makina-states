@@ -8,6 +8,8 @@
 include:
   - {{ services.localsettings.statesPref }}users
   - openssh
+  - openssh.config
+  - openssh.banner
 
 # Idea is to grant everyone member of "(.-)*makina-users" access
 # to managed boxes
@@ -35,10 +37,33 @@ include:
 #       bar.pub
 #
 # The keys are searched in /salt_root/files/ssh/
-{% import "makina-states/_macros/localsettings.jinja" as vars with context %}
 
+# By default we generate a dsa+rsa ssh key pair for root
+root-ssh-keys-init:
+  cmd.run:
+    - name: |
+            if [[ ! -e /root/.ssh ]];then mkdir /root/.ssh;fi;
+            cd /root/.ssh;
+            for i in dsa rsa;do
+              key="id_$i";
+              if [[ ! -e /root/.ssh/$key ]];then
+                ssh-keygen -f $key -N '';
+              fi;
+            done;
+    - onlyif: |
+              ret=1;
+              if [[ ! -e /root/.ssh ]];then mkdir /root/.ssh;fi;
+              cd /root/.ssh;
+              for i in dsa rsa;do
+                key="id_$i";
+                if [[ ! -e /root/.ssh/$key ]];then
+                  ret=0;
+                fi;
+              done;
+              exit $ret;
+    - user: root
 
-{% for user, keys_info in vars.user_keys.items() %}
+{% for user, keys_info in localsettings.user_keys.items() %}
   {% for commentid, keys in keys_info.items() %}
     {% for key in keys %}
 ssh_auth-{{ user }}-{{ commentid }}-{{ key }}:
