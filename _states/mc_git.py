@@ -52,7 +52,8 @@ def latest(name,
            always_fetch=False,
            identity=None,
            onlyif=False,
-           unless=False):
+           unless=False,
+           firstrun=True):
     '''
     Make sure the repository is cloned to the given directory and is up to date
     Thin wrapper to git.latest that also makes
@@ -245,33 +246,51 @@ def latest(name,
                 # but also fetch and merge --only-ff in case of errors
                 if 0 == retcode:
                     method = 'git.fetch' if bare else 'git.pull'
-                    try:
+                    def pull():
                         __salt__[method](
                             target,
                             opts=fetch_opts,
                             user=user,
                             identity=identity)
+                    try:
+                        pull()
                     except Exception, ex:
-                        if (
-                            (method == 'git.fetch')
-                            or
-                            (not 'local changes' in ex.message.lower())
+                        ex_msg = ex.message.lower()
+                        # if the pb is the remote branch not being set
+                        # just set it and run pull again
+                        if(
+                            ("--set-upstream" in ex_msg)
+                            and firstrun
+                            and len(branch) > 0
+                            and branch == rev
                         ):
-                            raise
-                        __salt__['git.fetch'](
-                            target,
-                            opts=fetch_opts,
-                            user=user,
-                            identity=identity)
-                        __salt__['git.fetch'](
-                            target,
-                            opts='--tags',
-                            user=user,
-                            identity=identity)
-                        __salt__['git.merge'](
-                            target,
-                            opts='--ff-only',
-                            user=user)
+                            cmd = 'git branch --set-upstream {branch} origin/{rev}'.format(
+                                branch=branch,
+                                rev=rev,
+                            )
+                            __salt__['cmd.run_stdout'](cmd, cwd=target, runas=user)
+                            pull()
+                        else:
+                            if (
+                                (method == 'git.fetch')
+                                or
+                                (not 'local changes' in ex_msg)
+                            ):
+                                raise
+                            __salt__['git.fetch'](
+                                target,
+                                opts=fetch_opts,
+                                user=user,
+                                identity=identity)
+                            __salt__['git.fetch'](
+                                target,
+                                opts='--tags',
+                                user=user,
+                                identity=identity)
+                            __salt__['git.merge'](
+                                target,
+                                opts='--ff-only',
+                                user=user)
                 if submodules:
                     __salt__['git.submodule'](target,
                                               user=user,
