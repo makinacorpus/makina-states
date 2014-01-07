@@ -123,7 +123,7 @@ test_online() {
 dns_resolve() {
     ahost="$1"
     set_progs
-    resolvers=""
+    resolvers="hostsv4 hostsv6"
     for i in\
         "$GETENT"\
         "$PERL"\
@@ -142,8 +142,11 @@ dns_resolve() {
     res=""
     for resolver in $resolvers;do
         case $resolver in
-            *host)
-                res=$($resolver $ahost 2>/dev/null| awk '/ has address /{ print $4 }')
+            *hostsv4)
+                res=$($GETENT ahostsv4 $ahost|head -n1 2>/dev/null| awk '{ print $1 }')
+                ;;
+            *hostsv6)
+                res=$($GETENT ahostsv6 $ahost|head -n1 2>/dev/null| awk '{ print $1 }')
                 ;;
             *dig)
                 res=$($resolver $ahost 2>/dev/null| awk '/^;; ANSWER SECTION:$/ { getline ; print $5 }')
@@ -161,6 +164,8 @@ dns_resolve() {
                 res=$($resolver ahosts $ahost|head -n1 2>/dev/null| awk '{ print $1 }')
                 ;;
         esac
+        # do not accet ipv6 resolutions"
+        if [[ $res == *:* ]];then res="";fi
         if [[ -n $res ]];then
             break
         fi
