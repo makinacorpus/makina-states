@@ -9,6 +9,6 @@
 {{ controllers.register(name) }}
 
 include:
-  - {{ controllers.funcs.statesPref }}{{salt.name}}
+  - {{ controllers.statesPref }}{{salt.name}}
 
 {{ saltmac.install_minion(salt.name) }}
