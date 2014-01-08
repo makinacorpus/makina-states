@@ -66,10 +66,8 @@ lxc-mount-cgroup:
       - defaults
     - require_in:
       - service: lxc-services-enabling
-{% endif %}
 
-lxc-services-enabling:
-  {% if grains['os'] in ['Debian'] %}
+etc-init.d-lxc-net:
   file.managed:
     - name: /etc/init.d/lxc-net
     - source: salt://makina-states/files/etc/init.d/lxc-net.sh
@@ -78,7 +76,10 @@ lxc-services-enabling:
     - group: root
     - require_in:
       - service: lxc-services-enabling
-  {% endif %}
+
+{% endif %}
+
+lxc-services-enabling:
   service.running:
     - enable: True
     - names:
