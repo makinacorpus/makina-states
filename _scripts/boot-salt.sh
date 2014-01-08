@@ -654,7 +654,7 @@ setup_backports() {
     if [[ -n "$BEFORE_SAUCY" ]] && [[ -n "$IS_UBUNTU" ]];then
         bs_log "Activating backport from $DISTRIB_BACKPORT to $DISTRIB_CODENAME"
         cp  $CONF_ROOT/apt/sources.list "$CONF_ROOT/apt/sources.list.$CHRONO.sav"
-        "$SED" -ire "s/${DISTRIB_CODENAME}/${DISTRIB_BACKPORT}/g" $CONF_ROOT/apt/sources.list
+        "$SED" ire "s/${DISTRIB_CODENAME}/${DISTRIB_BACKPORT}/g" -i "$CONF_ROOT/apt/sources.list"
     fi
     if [[ -n "$IS_DEBIAN" ]];then
         bs_log "Activating backport from $DISTRIB_BACKPORT to $DISTRIB_CODENAME"
@@ -673,7 +673,7 @@ teardown_backports() {
 
     if [[ -n "$BEFORE_SAUCY" ]] && [[ -n "$IS_UBUNTU" ]];then
         bs_log "Removing backport from $DISTRIB_BACKPORT to $DISTRIB_CODENAME"
-        "$SED" -ire "s/${DISTRIB_BACKPORT}/${DISTRIB_CODENAME}/g" $CONF_ROOT/apt/sources.list
+        "$SED" -re "s/${DISTRIB_BACKPORT}/${DISTRIB_CODENAME}/g" -i "$CONF_ROOT/apt/sources.list"
     fi
     # leave the backport in placs on debian
     #if [[ -n $IS_DEBIAN ]];then
@@ -922,7 +922,7 @@ setup_and_maybe_update_code() {
             fi
             for i in "$ms" "$ms/src/"*;do
                 if [[ -e "$i/.git" ]];then
-                    "$SED" -ire "s/filemode =.*/filemode=false/g" $i/.git/config 2>/dev/null
+                    "$SED" -re "s/filemode =.*/filemode=false/g" -i "$i/.git/config" 2>/dev/null
                     branch="master"
                     case "$i" in
                         "$ms/src/SaltTesting"|"$ms/src/salt")
@@ -1173,16 +1173,18 @@ EOF
         # add makina-state.top if not present
         if [[ "$(egrep -- "- makina-states\.top\s*$" $topf|wc -l)" == "0" ]];then
             debug_msg "Adding makina-states.top to $topf"
-            "$SED" -ire "/('|\")\*('|\"):/ {
+            "$SED" -re "/('|\")\*('|\"):/ {
 a\    - makina-states.top
-}" $topf
+}" -i "$topf"
         fi
     done
+
     if [[ "$(grep -- "- salt" $SALT_PILLAR/top.sls 2>/dev/null|wc -l)" == "0" ]];then
         debug_msg "Adding salt to default top salt pillar"
-        "$SED" -ire "/('|\")\*('|\"):/ {
+
+        "$SED" -re "/('|\")\*('|\"):/ {
 a\    - salt
-}" "$SALT_PILLAR/top.sls"
+}" -i "$SALT_PILLAR/top.sls"
     fi
     # Create a default salt.sls in the pillar if not present
     if [[ ! -e "$SALT_PILLAR/salt.sls" ]];then
@@ -1195,40 +1197,40 @@ a\    - salt
     fi
     if [[ "$(egrep -- "\s*minion:\s*$" "$SALT_PILLAR/salt.sls"|wc -l)" == "0" ]];then
         debug_msg "Adding minion info to pillar"
-        "$SED" -ire "/^salt:\s*$/ {
+        "$SED" -re "/^salt:\s*$/ {
 a\  minion:
 a\    id: $(get_minion_id)
 a\    interface: $SALT_MINION_IP
 a\    master: $SALT_MASTER_DNS
 a\    master_port: $SALT_MASTER_PORT
-}" "$SALT_PILLAR/salt.sls"
+}" -i "$SALT_PILLAR/salt.sls"
     fi
     if [[ "$(grep -- "id: $(get_minion_id)" "$SALT_PILLAR/salt.sls"|wc -l)" == "0" ]];then
         debug_msg "Adding salt minion id: $(get_minion_id)"
-        "$SED" -ire "/^    id:/ d" "$SALT_PILLAR/salt.sls"
-        "$SED" -ire "/^  minion:/ {
+        "$SED" -re "/^    id:/ d" -i "$SALT_PILLAR/salt.sls"
+        "$SED" -re "/^  minion:/ {
 a\    id: $(get_minion_id)
-}" "$SALT_PILLAR/salt.sls"
+}" -i "$SALT_PILLAR/salt.sls"
     # do no setup stuff for master for just a minion
     fi
     if [[ -n "$IS_SALT_MASTER" ]] \
        && [[ "$(egrep -- "\s*master:\s*$" "$SALT_PILLAR/salt.sls"|wc -l)" == "0" ]];then
         debug_msg "Adding master info to pillar"
-        "$SED" -ire "/^salt:\s*$/ {
+        "$SED" -re "/^salt:\s*$/ {
 a\  master:
 a\    interface: $SALT_MASTER_IP
 a\    publish_port: $SALT_MASTER_PUBLISH_PORT
 a\    ret_port: $SALT_MASTER_PORT
-}" "$SALT_PILLAR/salt.sls"
+}" -i "$SALT_PILLAR/salt.sls"
     fi
     # --------- MASTERSALT
     # Set default mastersalt  pillar
     if [[ -n "$IS_MASTERSALT" ]];then
         if [[ "$(grep -- "- mastersalt" "$MASTERSALT_PILLAR/top.sls"|wc -l)" == "0" ]];then
             debug_msg "Adding mastersalt info to top mastersalt pillar"
-            "$SED" -ire "/('|\")\*('|\"):/ {
+            "$SED" -re "/('|\")\*('|\"):/ {
 a\    - mastersalt
-}" "$MASTERSALT_PILLAR/top.sls"
+}" -i "$MASTERSALT_PILLAR/top.sls"
         fi
         if [[ ! -f "$MASTERSALT_PILLAR/mastersalt.sls" ]];then
             debug_msg "Creating mastersalt configuration file"
@@ -1240,37 +1242,37 @@ a\    - mastersalt
         fi
         if [[ "$(egrep -- "^\s*minion:" "$MASTERSALT_PILLAR/mastersalt.sls"|wc -l)" == "0" ]];then
             debug_msg "Adding mastersalt minion info to mastersalt pillar"
-            "$SED" -ire "/^mastersalt:\s*$/ {
+            "$SED" -re "/^mastersalt:\s*$/ {
 a\  minion:
 a\    id: $(get_minion_id)
 a\    interface: ${MASTERSALT_MINION_IP}
 a\    master: ${MASTERSALT_MASTER_DNS}
 a\    master_port: ${MASTERSALT_MASTER_PORT}
-}" "$MASTERSALT_PILLAR/mastersalt.sls"
+}" -i "$MASTERSALT_PILLAR/mastersalt.sls"
         fi
         if [[ "$(grep -- "id: $(get_minion_id)" "$MASTERSALT_PILLAR/mastersalt.sls"|wc -l)" == "0" ]];then
             debug_msg "Adding mastersalt minion id: $(get_minion_id)"
-            "$SED" -ire "/^    id:/ d"  "$MASTERSALT_PILLAR/mastersalt.sls"
-            "$SED" -ire "/^  minion:/ {
+            "$SED" -re "/^    id:/ d" -i  "$MASTERSALT_PILLAR/mastersalt.sls"
+            "$SED" -re "/^  minion:/ {
 a\    id: $(get_minion_id)
-}" "$MASTERSALT_PILLAR/mastersalt.sls"
+}" -i "$MASTERSALT_PILLAR/mastersalt.sls"
         fi
         if [[ -n "$IS_MASTERSALT_MASTER" ]];then
             if [[ "$(egrep -- "\s+master:\s*$" "$MASTERSALT_PILLAR/mastersalt.sls"|wc -l)" == "0" ]];then
                 debug_msg "Adding mastersalt master info to mastersalt pillar"
-                "$SED" -ire "/^mastersalt:\s*$/ {
+                "$SED" -re "/^mastersalt:\s*$/ {
 a\  master:
 a\    interface: $MASTERSALT_MASTER_IP
 a\    ret_port: ${MASTERSALT_MASTER_PORT}
 a\    publish_port: ${MASTERSALT_MASTER_PUBLISH_PORT}
-}" "$MASTERSALT_PILLAR/mastersalt.sls"
+}" -i "$MASTERSALT_PILLAR/mastersalt.sls"
             fi
         fi
     fi
 
     # reset minion_ids
     for i in $(find /etc/*salt/minion* -type f);do
-        "$SED" -ire "s/^#*id: .*/id: $(get_minion_id)/g" "$i"
+        "$SED" -re "s/^#*id: .*/id: $(get_minion_id)/g" -i "$i"
     done
 }
 
@@ -1970,9 +1972,9 @@ maybe_install_projects() {
         fi
         if [[ $(grep -- "- $PROJECT_PILLAR_STATE" $SALT_PILLAR/top.sls|wc -l) == "0" ]];then
             debug_msg "including $PROJECT_NAME pillar in $SALT_PILLAR/top.sls"
-            "$SED" -ire "/('|\")\*('|\"):/ {
+            "$SED" -re "/('|\")\*('|\"):/ {
 a\    - $PROJECT_PILLAR_STATE
-}" $SALT_PILLAR/top.sls
+}" -i $SALT_PILLAR/top.sls
         fi
         if [[ "$(get_grain $project_grain)" != *"True"* ]] || [[ -n $FORCE_PROJECT_TOP ]];then
             if [[ -n $PROJECT_TOPSLS ]];then
@@ -1997,9 +1999,9 @@ a\    - $PROJECT_PILLAR_STATE
             echo "changed=\"false\" comment=\"$PROJECT_URL@$PROJECT_BRANCH[$PROJECT_TOPSLS] already done\""
         fi
         if [[ $(grep -- "- $PROJECT_TOPSTATE" "$SALT_ROOT/top.sls"|wc -l) == "0" ]];then
-            "$SED" -ire "/('|\")\*('|\"):/ {
+            "$SED" -re "/('|\")\*('|\"):/ {
 a\    - $PROJECT_TOPSTATE
-}" "$SALT_ROOT/top.sls"
+}" -i "$SALT_ROOT/top.sls"
         fi
         bs_log "Installation finished, dont forget to install/verify:"
         bs_log "    - $PROJECT_TOPSLS in $SALT_ROOT/top.sls"
@@ -2039,18 +2041,18 @@ cleanup_old_installs() {
         if [[ -e "$MASTERSALT_PILLAR/salt.sls" ]];then
             rm -vf "$MASTERSALT_PILLAR/salt.sls"
         fi
-        "$SED" -ire "/^\s*- salt$/d" "$MASTERSALT_PILLAR/top.sls"
-        "$SED" -ire "/^\s*- mastersalt$/d" "$SALT_PILLAR/top.sls"
+        "$SED" -re "/^\s*- salt$/d" -i "$MASTERSALT_PILLAR/top.sls"
+        "$SED" -re "/^\s*- mastersalt$/d" -i "$SALT_PILLAR/top.sls"
 
     fi
     if [[ "$(egrep "bootstrapped\.salt" $MCONF_PREFIX/grains &>/dev/null |wc -l)" != "0" ]];then
         bs_log "Cleanup old mastersalt grains"
-        "$SED" -ire "/bootstrap\.salt/d" $MCONF_PREFIX/grains
+        "$SED" -re "/bootstrap\.salt/d" -i "$MCONF_PREFIX/grains"
         mastersalt_call_wrapper --local saltutil.sync_grains
     fi
     if [[ "$(grep mastersalt $CONF_PREFIX/grains &>/dev/null |wc -l)" != "0" ]];then
         bs_log "Cleanup old salt grains"
-        "$SED" -ire "/mastersalt/d" $CONF_PREFIX/grains
+        "$SED" -re "/mastersalt/d" -i "$CONF_PREFIX/grains"
         salt_call_wrapper --local saltutil.sync_grains
     fi
 }
