@@ -1,0 +1,3 @@
+bind-interfaces
+except-interface=lxcbr0
+

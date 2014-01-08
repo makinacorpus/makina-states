@@ -1,0 +1,5 @@
+# /etc/default/lxc
+
+LXC_AUTO="true"
+LXC_DIRECTORY="/var/lib/lxc"
+USE_LXC_BRIDGE="true"

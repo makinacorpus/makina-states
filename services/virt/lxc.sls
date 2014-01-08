@@ -26,13 +26,65 @@ lxc-pkgs:
     - pkgs:
       - lxc
       - lxctl
+      - dnsmasq
+
+{% if grains['os'] in ['Debian'] %}
+lxc-dnsmasq:
+  file.managed:
+    - name: /etc/dnsmasq.d/lxc
+    - source: salt://makina-states/files/etc/dnsmasq.d/lxc
+    - mode: 750
+    - user: root
+    - group: root
+    - require_in:
+      - service: lxc-dnsmasq
+  service.running:
+    - name: dnsmasq
+    - enable: True
+    - enable: True
+    - require_in:
+      - service: lxc-services-enabling
+
+etc-default-lxc:
+  file.managed:
+    - name: /etc/default/lxc
+    - source: salt://makina-states/files/etc/default/lxc
+    - mode: 750
+    - user: root
+    - group: root
+    - require_in:
+      - service: lxc-dnsmasq
+      - service: lxc-services-enabling
+
+lxc-mount-cgroup:
+  mount.mounted:
+    - name: /sys/fs/cgroup
+    - device: none
+    - fstype: cgroup
+    - mkmnt: True
+    - opts:
+      - defaults
+    - require_in:
+      - service: lxc-services-enabling
+{% endif %}
 
 lxc-services-enabling:
+  {% if grains['os'] in ['Debian'] %}
+  file.managed:
+    - name: /etc/init.d/lxc-net
+    - source: salt://makina-states/files/etc/init.d/lxc-net.sh
+    - mode: 750
+    - user: root
+    - group: root
+    - require_in:
+      - service: lxc-services-enabling
+  {% endif %}
   service.running:
     - enable: True
     - names:
       - lxc
       - lxc-net
+
 
 # as it is often a mount -bind, we must ensure we can attach dependencies there
 # set in pillar:
