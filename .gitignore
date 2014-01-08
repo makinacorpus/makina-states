@@ -6,6 +6,7 @@ locfiles
 .boot_salt_out
 .bootsalt_need_restart
 *pyc
+*~
 .boot_salt_top
 .rebootstrap
 boot_salt_out
