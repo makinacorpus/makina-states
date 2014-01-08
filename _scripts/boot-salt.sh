@@ -190,6 +190,7 @@ dns_resolve() {
 detect_os() {
     # make as a function to be copy/pasted as-is in multiple scripts
     UNAME="$(uname | awk '{print tolower($1)}')"
+    set_progs
     IS_UBUNTU=""
     IS_DEBIAN=""
     if [[ -e $CONF_ROOT/lsb-release ]];then
@@ -1220,9 +1221,6 @@ a\    publish_port: $SALT_MASTER_PUBLISH_PORT
 a\    ret_port: $SALT_MASTER_PORT
 }" "$SALT_PILLAR/salt.sls"
     fi
-    for i in $(find /etc/*salt/minion* -type f);do
-        "$SED" -ire "s/^id: .*/id: $(get_minion_id)" "$i"
-    done
     # --------- MASTERSALT
     # Set default mastersalt  pillar
     if [[ -n "$IS_MASTERSALT" ]];then
@@ -1269,6 +1267,11 @@ a\    publish_port: ${MASTERSALT_MASTER_PUBLISH_PORT}
             fi
         fi
     fi
+
+    # reset minion_ids
+    for i in $(find /etc/*salt/minion* -type f);do
+        "$SED" -ire "s/^#*id: .*/id: $(get_minion_id)/g" "$i"
+    done
 }
 
 # ------------ SALT INSTALLATION PROCESS
