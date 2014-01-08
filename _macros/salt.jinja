@@ -453,6 +453,13 @@ salt-{{ data.name }}-{{cur_name}}-bin:
       - cmd: dummy-pre-{{ data.name }}-service-restart
 {% endfor %}
 
+salt-{{ data.name }}-bootsalt-link-bin:
+  file.symlink:
+    - name: /usr/bin/boot-{{data.name}}.sh
+    - target: {{ data.msr }}/_scripts/boot-salt.sh
+    - require_in:
+      - cmd: dummy-pre-{{ data.name }}-service-restart
+
 salt-{{ data.name }}-{{ group }}:
   group.present:
     - name: {{ group }}
