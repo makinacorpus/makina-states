@@ -26,6 +26,7 @@ makina-mysql-example-cleanup-db-foobar:
     - connection_pass: "{{ mysqlData.conn_pass }}"
   mysql_user.absent:
     - name: foouser
+    - host: '%'
     - connection_charset: "{{ mysqlData.character_set }}"
     - connection_host: "{{ mysqlData.conn_host }}"
     - connection_user: "{{ mysqlData.conn_user }}"

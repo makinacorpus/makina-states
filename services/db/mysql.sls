@@ -381,8 +381,6 @@ makina-mysql-db-{{ state_uid }}:
   mysql_database.present:
     - name: "{{ db }}"
     - character_set: "{{ character_set }}"
-    - collate: "{{ collate }}"
-    - connection_charset: "{{ character_set }}"
     - connection_host: "{{ mysql_host }}"
     - connection_user: "{{ mysqlData.conn_user }}"
     - connection_pass: "{{ mysqlData.conn_pass }}"
@@ -397,7 +395,6 @@ makina-mysql-user-{{ state_uid }}-{{ host_simple }}:
     - password: "{{ password }}"
     - allow_passwordless: False
     - host: "{{ currenthost }}"
-    - connection_charset: "{{ character_set }}"
     - connection_host: "{{ mysql_host }}"
     - connection_user: "{{ mysqlData.conn_user }}"
     - connection_pass: "{{ mysqlData.conn_pass }}"
@@ -412,7 +409,6 @@ makina-mysql-user-grants-{{ state_uid }}-{{ host_simple }}:
     - database: "{{ db }}.*"
     - user: "{{ user }}"
     - host: "{{ currenthost }}"
-    - connection_charset: "{{ character_set }}"
     - connection_host: "{{ mysql_host }}"
     - connection_user: "{{ mysqlData.conn_user }}"
     - connection_pass: "{{ mysqlData.conn_pass }}"
