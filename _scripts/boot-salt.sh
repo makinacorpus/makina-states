@@ -14,11 +14,17 @@
 # - You can safely relaunch it but be ware that it kills the salt daemons upon configure & setup
 #   and consequently not safe for putting directly in salt states (with a cmd.run).
 #
+
+THIS="$0"
+if [[ -h "$THIS" ]];then
+    THIS="$(readlink $THIS)"
+fi
+
 LAUNCH_ARGS=$@
 get_abspath() {
     python << EOF
 import os
-print os.path.abspath("$0")
+print os.path.abspath("${THIS}")
 EOF
 }
 
@@ -26,13 +32,18 @@ RED="\\033[31m"
 CYAN="\\033[36m"
 YELLOW="\\033[33m"
 NORMAL="\\033[0m"
+
 SALT_BOOT_DEBUG="${SALT_BOOT_DEBUG:-}"
 SALT_BOOT_DEBUG_LEVEL="${SALT_BOOT_DEBUG_LEVEL:-all}"
-LAUNCHER="$(get_abspath $0)"
+THIS="$(get_abspath ${THIS})"
 DNS_RESOLUTION_FAILED="dns resolution failed"
 
 
 set_progs() {
+    SED=$(which sed)
+    if [[ $UNAME != "linux" ]];then
+        SED=$(which gsed)
+    fi
     GETENT="$(which getent 2>/dev/null)"
     PERL="$(which perl 2>/dev/null)"
     PYTHON="$(which python 2>/dev/null)"
@@ -178,6 +189,7 @@ dns_resolve() {
 
 detect_os() {
     # make as a function to be copy/pasted as-is in multiple scripts
+    UNAME="$(uname | awk '{print tolower($1)}')"
     IS_UBUNTU=""
     IS_DEBIAN=""
     if [[ -e $CONF_ROOT/lsb-release ]];then
@@ -200,16 +212,16 @@ detect_os() {
         fi
     fi
     if [[ -e "$CONF_ROOT/os-release" ]];then
-        OS_RELEASE_ID=$(egrep ^ID= $CONF_ROOT/os-release|sed -re "s/ID=//g")
-        OS_RELEASE_NAME=$(egrep ^NAME= $CONF_ROOT/os-release|sed -re "s/NAME=""//g")
-        OS_RELEASE_VERSION=$(egrep ^VERSION= $CONF_ROOT/os-release|sed -re "s/VERSION=/""/g")
-        OS_RELEASE_PRETTY_NAME=$(egrep ^PRETTY_NAME= $CONF_ROOT/os-release|sed -re "s/PRETTY_NAME=""//g")
+        OS_RELEASE_ID=$(egrep ^ID= $CONF_ROOT/os-release|"$SED" -re "s/ID=//g")
+        OS_RELEASE_NAME=$(egrep ^NAME= $CONF_ROOT/os-release|"$SED" -re "s/NAME=""//g")
+        OS_RELEASE_VERSION=$(egrep ^VERSION= $CONF_ROOT/os-release|"$SED" -re "s/VERSION=/""/g")
+        OS_RELEASE_PRETTY_NAME=$(egrep ^PRETTY_NAME= $CONF_ROOT/os-release|"$SED" -re "s/PRETTY_NAME=""//g")
 
     fi
     if [[ -e $CONF_ROOT/debian_version ]] && [[ "$OS_RELEASE_ID" == "debian" ]] && [[ "$DISTRIB_ID" != "Ubuntu" ]];then
         IS_DEBIAN="y"
         SALT_BOOT_OS="debian"
-        DISTRIB_CODENAME="$(echo $OS_RELEASE_PRETTY_NAME |sed -re "s/.*\((.*)\).*/\1/g")"
+        DISTRIB_CODENAME="$(echo $OS_RELEASE_PRETTY_NAME |"$SED" -re "s/.*\((.*)\).*/\1/g")"
     fi
     if [[ $IS_UBUNTU ]];then
         SALT_BOOT_OS="ubuntu"
@@ -245,6 +257,12 @@ get_chrono() {
 }
 
 set_vars() {
+    if [[ -n $NO_COLOR ]];then
+        YELLOW=""
+        RED=""
+        CYAN=""
+        NORMAL=""
+    fi
     ROOT="${ROOT:-"/"}"
     CONF_ROOT="${CONF_ROOT:-"${ROOT}etc"}"
     ETC_INIT="${ETC_INIT:-"$CONF_ROOT/init"}"
@@ -467,7 +485,7 @@ set_vars() {
     PROJECT_PILLAR_STATE="${MAKINA_PROJECTS}.${PROJECT_NAME}"
 
     if [[ -n $PROJECT_URL ]] && [[ -z $PROJECT_NAME ]];then
-        PROJECT_NAME="$(basename $(echo $PROJECT_URL|sed "s/.git$//"))"
+        PROJECT_NAME="$(basename $(echo $PROJECT_URL|"$SED" "s/.git$//"))"
     fi
     if [[ -n "$PROJECT_URL" ]] && [[ -z "$PROJECT_NAME" ]];then
         die "Please provide a \$PROJECT_NAME"
@@ -517,7 +535,7 @@ recap_(){
     debug="${2:-$SALT_BOOT_DEBUG}"
     bs_yellow_log "--------------------------------------------------"
     bs_yellow_log " MAKINA-STATES BOOTSTRAPPER FOR $SALT_BOOT_OS"
-    bs_yellow_log "   - $0"
+    bs_yellow_log "   - ${THIS} [--help] [--long-help]"
     bs_yellow_log " Those informations have been written to:"
     bs_yellow_log "   - $TMPDIR/boot_salt_top"
     bs_yellow_log "--------------------------------------------------"
@@ -635,14 +653,14 @@ setup_backports() {
     if [[ -n "$BEFORE_SAUCY" ]] && [[ -n "$IS_UBUNTU" ]];then
         bs_log "Activating backport from $DISTRIB_BACKPORT to $DISTRIB_CODENAME"
         cp  $CONF_ROOT/apt/sources.list "$CONF_ROOT/apt/sources.list.$CHRONO.sav"
-        sed -re "s/${DISTRIB_CODENAME}/${DISTRIB_BACKPORT}/g" -i $CONF_ROOT/apt/sources.list
+        "$SED" -ire "s/${DISTRIB_CODENAME}/${DISTRIB_BACKPORT}/g" $CONF_ROOT/apt/sources.list
     fi
     if [[ -n "$IS_DEBIAN" ]];then
         bs_log "Activating backport from $DISTRIB_BACKPORT to $DISTRIB_CODENAME"
         cp  $CONF_ROOT/apt/sources.list "$CONF_ROOT/apt/sources.list.$CHRONO.sav"
-        sed "/^deb.*$DISTRIB_BACKPORT/d" -i $CONF_ROOT/apt/sources.list
+        "$SED" "/^deb.*$DISTRIB_BACKPORT/d" -i $CONF_ROOT/apt/sources.list
         echo "#backport added by boot-salt">/tmp/aptsrc
-        egrep "^deb.* $DISTRIB_CODENAME " $CONF_ROOT/apt/sources.list|sed -re "s/$DISTRIB_CODENAME/$DISTRIB_BACKPORT/g" > /tmp/aptsrc
+        egrep "^deb.* $DISTRIB_CODENAME " $CONF_ROOT/apt/sources.list|"$SED" -re "s/$DISTRIB_CODENAME/$DISTRIB_BACKPORT/g" > /tmp/aptsrc
         cat /tmp/aptsrc >> $CONF_ROOT/apt/sources.list
         rm -f /tmp/aptsrc
     fi
@@ -654,13 +672,13 @@ teardown_backports() {
 
     if [[ -n "$BEFORE_SAUCY" ]] && [[ -n "$IS_UBUNTU" ]];then
         bs_log "Removing backport from $DISTRIB_BACKPORT to $DISTRIB_CODENAME"
-        sed -re "s/${DISTRIB_BACKPORT}/${DISTRIB_CODENAME}/g" -i $CONF_ROOT/apt/sources.list
+        "$SED" -ire "s/${DISTRIB_BACKPORT}/${DISTRIB_CODENAME}/g" $CONF_ROOT/apt/sources.list
     fi
     # leave the backport in placs on debian
     #if [[ -n $IS_DEBIAN ]];then
     #    bs_log "Removing backport from $DISTRIB_BACKPORT to $DISTRIB_CODENAME"
-    #    sed "/^#.*added.*boot-sa/d" -i $CONF_ROOT/apt/sources.list
-    #    sed "/^deb.*$DISTRIB_BACKPORT/d" -i $CONF_ROOT/apt/sources.list
+    #    "$SED" "/^#.*added.*boot-sa/d" -i $CONF_ROOT/apt/sources.list
+    #    "$SED" "/^deb.*$DISTRIB_BACKPORT/d" -i $CONF_ROOT/apt/sources.list
     #fi
 }
 
@@ -833,7 +851,7 @@ check_restartmarker_and_maybe_restart() {
             export SALT_BOOT_NOCONFIRM='1'
             mbootsalt="$MASTERSALT_MS/_scripts/boot-salt.sh"
             bootsalt="${SALT_MS}/_scripts/boot-salt.sh"
-            if [[ "$LAUNCHER" == "$mbootsalt" ]];then
+            if [[ "${THIS}" == "$mbootsalt" ]];then
                 bootsalt="$mbootsalt"
             fi
             bs_log "Restarting $bootsalt which needs to update itself"
@@ -903,7 +921,7 @@ setup_and_maybe_update_code() {
             fi
             for i in "$ms" "$ms/src/"*;do
                 if [[ -e "$i/.git" ]];then
-                    sed -re "s/filemode =.*/filemode=false/g" -i $i/.git/config 2>/dev/null
+                    "$SED" -ire "s/filemode =.*/filemode=false/g" $i/.git/config 2>/dev/null
                     branch="master"
                     case "$i" in
                         "$ms/src/SaltTesting"|"$ms/src/salt")
@@ -1154,16 +1172,16 @@ EOF
         # add makina-state.top if not present
         if [[ "$(egrep -- "- makina-states\.top\s*$" $topf|wc -l)" == "0" ]];then
             debug_msg "Adding makina-states.top to $topf"
-            sed -re "/('|\")\*('|\"):/ {
+            "$SED" -ire "/('|\")\*('|\"):/ {
 a\    - makina-states.top
-}" -i $topf
+}" $topf
         fi
     done
     if [[ "$(grep -- "- salt" $SALT_PILLAR/top.sls 2>/dev/null|wc -l)" == "0" ]];then
         debug_msg "Adding salt to default top salt pillar"
-        sed -re "/('|\")\*('|\"):/ {
+        "$SED" -ire "/('|\")\*('|\"):/ {
 a\    - salt
-}" -i "$SALT_PILLAR/top.sls"
+}" "$SALT_PILLAR/top.sls"
     fi
     # Create a default salt.sls in the pillar if not present
     if [[ ! -e "$SALT_PILLAR/salt.sls" ]];then
@@ -1176,33 +1194,43 @@ a\    - salt
     fi
     if [[ "$(egrep -- "\s*minion:\s*$" "$SALT_PILLAR/salt.sls"|wc -l)" == "0" ]];then
         debug_msg "Adding minion info to pillar"
-        sed -re "/^salt:\s*$/ {
+        "$SED" -ire "/^salt:\s*$/ {
 a\  minion:
 a\    id: $(get_minion_id)
 a\    interface: $SALT_MINION_IP
 a\    master: $SALT_MASTER_DNS
 a\    master_port: $SALT_MASTER_PORT
-}" -i "$SALT_PILLAR/salt.sls"
+}" "$SALT_PILLAR/salt.sls"
     fi
+    if [[ "$(grep -- "id: $(get_minion_id)" "$SALT_PILLAR/salt.sls"|wc -l)" == "0" ]];then
+        debug_msg "Adding salt minion id: $(get_minion_id)"
+        "$SED" -ire "/^    id:/ d" "$SALT_PILLAR/salt.sls"
+        "$SED" -ire "/^  minion:/ {
+a\    id: $(get_minion_id)
+}" "$SALT_PILLAR/salt.sls"
     # do no setup stuff for master for just a minion
-    if [[ "$SALT_MASTER_DNS" == "localhost" ]] \
+    fi
+    if [[ -n "$IS_SALT_MASTER" ]] \
        && [[ "$(egrep -- "\s*master:\s*$" "$SALT_PILLAR/salt.sls"|wc -l)" == "0" ]];then
         debug_msg "Adding master info to pillar"
-        sed -re "/^salt:\s*$/ {
+        "$SED" -ire "/^salt:\s*$/ {
 a\  master:
 a\    interface: $SALT_MASTER_IP
 a\    publish_port: $SALT_MASTER_PUBLISH_PORT
 a\    ret_port: $SALT_MASTER_PORT
-}" -i "$SALT_PILLAR/salt.sls"
+}" "$SALT_PILLAR/salt.sls"
     fi
+    for i in $(find /etc/*salt/minion* -type f);do
+        "$SED" -ire "s/^id: .*/id: $(get_minion_id)" "$i"
+    done
     # --------- MASTERSALT
     # Set default mastersalt  pillar
     if [[ -n "$IS_MASTERSALT" ]];then
         if [[ "$(grep -- "- mastersalt" "$MASTERSALT_PILLAR/top.sls"|wc -l)" == "0" ]];then
             debug_msg "Adding mastersalt info to top mastersalt pillar"
-            sed -re "/('|\")\*('|\"):/ {
+            "$SED" -ire "/('|\")\*('|\"):/ {
 a\    - mastersalt
-}" -i "$MASTERSALT_PILLAR/top.sls"
+}" "$MASTERSALT_PILLAR/top.sls"
         fi
         if [[ ! -f "$MASTERSALT_PILLAR/mastersalt.sls" ]];then
             debug_msg "Creating mastersalt configuration file"
@@ -1214,23 +1242,30 @@ a\    - mastersalt
         fi
         if [[ "$(egrep -- "^\s*minion:" "$MASTERSALT_PILLAR/mastersalt.sls"|wc -l)" == "0" ]];then
             debug_msg "Adding mastersalt minion info to mastersalt pillar"
-            sed -re "/^mastersalt:\s*$/ {
+            "$SED" -ire "/^mastersalt:\s*$/ {
 a\  minion:
 a\    id: $(get_minion_id)
 a\    interface: ${MASTERSALT_MINION_IP}
 a\    master: ${MASTERSALT_MASTER_DNS}
 a\    master_port: ${MASTERSALT_MASTER_PORT}
-}" -i "$MASTERSALT_PILLAR/mastersalt.sls"
+}" "$MASTERSALT_PILLAR/mastersalt.sls"
+        fi
+        if [[ "$(grep -- "id: $(get_minion_id)" "$MASTERSALT_PILLAR/mastersalt.sls"|wc -l)" == "0" ]];then
+            debug_msg "Adding mastersalt minion id: $(get_minion_id)"
+            "$SED" -ire "/^    id:/ d"  "$MASTERSALT_PILLAR/mastersalt.sls"
+            "$SED" -ire "/^  minion:/ {
+a\    id: $(get_minion_id)
+}" "$MASTERSALT_PILLAR/mastersalt.sls"
         fi
         if [[ -n "$IS_MASTERSALT_MASTER" ]];then
             if [[ "$(egrep -- "\s+master:\s*$" "$MASTERSALT_PILLAR/mastersalt.sls"|wc -l)" == "0" ]];then
                 debug_msg "Adding mastersalt master info to mastersalt pillar"
-                sed -re "/^mastersalt:\s*$/ {
+                "$SED" -ire "/^mastersalt:\s*$/ {
 a\  master:
 a\    interface: $MASTERSALT_MASTER_IP
 a\    ret_port: ${MASTERSALT_MASTER_PORT}
 a\    publish_port: ${MASTERSALT_MASTER_PUBLISH_PORT}
-}" -i "$MASTERSALT_PILLAR/mastersalt.sls"
+}" "$MASTERSALT_PILLAR/mastersalt.sls"
             fi
         fi
     fi
@@ -1709,13 +1744,15 @@ install_mastersalt_daemons() {
             RUN_MASTERSALT_BOOTSTRAP="1"
         fi
     fi
-    debug_msg "mastersalt:"
-    debug_msg "RUN_MASTERSALT_BOOTSTRAP: $RUN_MASTERSALT_BOOTSTRAP"
-    debug_msg "grains: $(grep makina-states.controllers.mastersalt_ "$MCONF_PREFIX/grains" |wc -l)"
-    debug_msg $(ls  "$BIN_DIR/mastersalt-master" "$BIN_DIR/mastersalt-key" \
-        "$BIN_DIR/mastersalt-minion" "$BIN_DIR/mastersalt-call" \
-        "$BIN_DIR/mastersalt" "$MCONF_PREFIX" \
-        "$MCONF_PREFIX/pki/minion/minion.pem" 1>/dev/null)
+    if [[ -n "$SALT_BOOT_DEBUG" ]];then
+        debug_msg "mastersalt:"
+        debug_msg "RUN_MASTERSALT_BOOTSTRAP: $RUN_MASTERSALT_BOOTSTRAP"
+        debug_msg "grains: $(grep makina-states.controllers.mastersalt_ "$MCONF_PREFIX/grains" |wc -l)"
+        debug_msg $(ls  "$BIN_DIR/mastersalt-master" "$BIN_DIR/mastersalt-key" \
+            "$BIN_DIR/mastersalt-minion" "$BIN_DIR/mastersalt-call" \
+            "$BIN_DIR/mastersalt" "$MCONF_PREFIX" \
+            "$MCONF_PREFIX/pki/minion/minion.pem" 1>/dev/null)
+    fi
 
     # --------- MASTERSALT
     # in case of redoing a bootstrap for wiring on mastersalt
@@ -1906,7 +1943,7 @@ maybe_install_projects() {
         if [[ -f "$SALT_ROOT/${PROJECT_TOPSLS_DEFAULT}"  ]] && [[ -z ${PROJECT_TOPSLS} ]];then
             PROJECT_TOPSLS="$PROJECT_TOPSLS_DEFAULT"
         fi
-        PROJECT_TOPSTATE="$(echo ${PROJECT_TOPSLS}|sed -re 's/\//./g' -e 's/\.sls//g')"
+        PROJECT_TOPSTATE="$(echo ${PROJECT_TOPSLS}|"$SED" -re 's/\//./g' -e 's/\.sls//g')"
         if [[ ! -d "$PROJECT_PILLAR_PATH" ]];then
             mkdir -p "$PROJECT_PILLAR_PATH"
             debug_msg "Creating pillar container in $PROJECT_PILLAR_PATH"
@@ -1930,9 +1967,9 @@ maybe_install_projects() {
         fi
         if [[ $(grep -- "- $PROJECT_PILLAR_STATE" $SALT_PILLAR/top.sls|wc -l) == "0" ]];then
             debug_msg "including $PROJECT_NAME pillar in $SALT_PILLAR/top.sls"
-            sed -re "/('|\")\*('|\"):/ {
+            "$SED" -ire "/('|\")\*('|\"):/ {
 a\    - $PROJECT_PILLAR_STATE
-}" -i $SALT_PILLAR/top.sls
+}" $SALT_PILLAR/top.sls
         fi
         if [[ "$(get_grain $project_grain)" != *"True"* ]] || [[ -n $FORCE_PROJECT_TOP ]];then
             if [[ -n $PROJECT_TOPSLS ]];then
@@ -1957,9 +1994,9 @@ a\    - $PROJECT_PILLAR_STATE
             echo "changed=\"false\" comment=\"$PROJECT_URL@$PROJECT_BRANCH[$PROJECT_TOPSLS] already done\""
         fi
         if [[ $(grep -- "- $PROJECT_TOPSTATE" "$SALT_ROOT/top.sls"|wc -l) == "0" ]];then
-            sed -re "/('|\")\*('|\"):/ {
+            "$SED" -ire "/('|\")\*('|\"):/ {
 a\    - $PROJECT_TOPSTATE
-}" -i "$SALT_ROOT/top.sls"
+}" "$SALT_ROOT/top.sls"
         fi
         bs_log "Installation finished, dont forget to install/verify:"
         bs_log "    - $PROJECT_TOPSLS in $SALT_ROOT/top.sls"
@@ -1999,18 +2036,18 @@ cleanup_old_installs() {
         if [[ -e "$MASTERSALT_PILLAR/salt.sls" ]];then
             rm -vf "$MASTERSALT_PILLAR/salt.sls"
         fi
-        sed -re "/^\s*- salt$/d" -i "$MASTERSALT_PILLAR/top.sls"
-        sed -re "/^\s*- mastersalt$/d" -i "$SALT_PILLAR/top.sls"
+        "$SED" -ire "/^\s*- salt$/d" "$MASTERSALT_PILLAR/top.sls"
+        "$SED" -ire "/^\s*- mastersalt$/d" "$SALT_PILLAR/top.sls"
 
     fi
     if [[ "$(egrep "bootstrapped\.salt" $MCONF_PREFIX/grains &>/dev/null |wc -l)" != "0" ]];then
         bs_log "Cleanup old mastersalt grains"
-        sed -re "/bootstrap\.salt/d" -i $MCONF_PREFIX/grains
+        "$SED" -ire "/bootstrap\.salt/d" $MCONF_PREFIX/grains
         mastersalt_call_wrapper --local saltutil.sync_grains
     fi
     if [[ "$(grep mastersalt $CONF_PREFIX/grains &>/dev/null |wc -l)" != "0" ]];then
         bs_log "Cleanup old salt grains"
-        sed -re "/mastersalt/d" -i $CONF_PREFIX/grains
+        "$SED" -ire "/mastersalt/d" $CONF_PREFIX/grains
         salt_call_wrapper --local saltutil.sync_grains
     fi
 }
@@ -2035,13 +2072,13 @@ bs_help() {
 }
 
 exemple() {
-    sname="./$(basename $0)"
+    sname="./$(basename ${THIS})"
     echo -e "     ${YELLOW}${sname}${1} ${CYAN}${2}${NORMAL}"
 
 }
 
 usage() {
-    bs_log "$0:"
+    bs_log "${THIS}:"
     echo
     bs_yellow_log "This script will install salt minion(s) and maybe master(s) on different flavors (salt/mastersalt) on top of makina-states"
     bs_yellow_log "This script installs by default a salt master/minion pair on localhost"
