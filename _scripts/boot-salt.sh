@@ -436,7 +436,6 @@ set_vars() {
         mastersalt_bootstrap_master="${bootstrap_controllers_pref}.${MASTERSALT_MASTER_CONTROLLER}"
         mastersalt_bootstrap_minion="${bootstrap_controllers_pref}.${MASTERSALT_MINION_CONTROLLER}"
     fi
-
     # salt variables
     if [[ -n "$IS_SALT" ]];then
         SALT_MASTER_DNS="${SALT_MASTER_DNS:-"localhost"}"
@@ -606,6 +605,26 @@ recap_(){
                 debug_msg "MASTERSALT_MINION_CONTROLLER_INPUTED: $MASTERSALT_MINION_CONTROLLER_INPUTED"
             fi
         fi
+    fi
+    if [[ -n $IS_SALT ]];then
+        for i in \
+            "$SALT_MASTER_IP" "$SALT_MINION_IP";\
+        do
+            if [[ "$DNS_RESOLUTION_FAILED" == *"${i}" ]];then
+                echo $i
+                die "$DNS_RESOLUTION_FAILED"
+            fi
+        done
+    fi
+    if [[ -n $IS_MASTERSALT_MINION ]];then
+        for i in \
+            "$MASTERSALT_MASTER_IP" "$MASTERSALT_MINION_IP";\
+        do
+            if [[ "$DNS_RESOLUTION_FAILED" == *"${i}" ]];then
+                echo $i
+                die "$DNS_RESOLUTION_FAILED"
+            fi
+        done
     fi
     if [[ -n "$PROJECT_URL" ]];then
         bs_yellow_log "--------------------"
@@ -2041,9 +2060,12 @@ cleanup_old_installs() {
         if [[ -e "$MASTERSALT_PILLAR/salt.sls" ]];then
             rm -vf "$MASTERSALT_PILLAR/salt.sls"
         fi
-        "$SED" -re "/^\s*- salt$/d" -i "$MASTERSALT_PILLAR/top.sls"
-        "$SED" -re "/^\s*- mastersalt$/d" -i "$SALT_PILLAR/top.sls"
-
+        if [[ -n $IS_SALT ]];then
+            "$SED" -re "/^\s*- mastersalt$/d" -i "$SALT_PILLAR/top.sls"
+        fi
+        if [[ -n $IS_MASTERSALT ]];then
+            "$SED" -re "/^\s*- salt$/d" -i "$MASTERSALT_PILLAR/top.sls"
+        fi
     fi
     if [[ "$(egrep "bootstrapped\.salt" $MCONF_PREFIX/grains &>/dev/null |wc -l)" != "0" ]];then
         bs_log "Cleanup old mastersalt grains"
