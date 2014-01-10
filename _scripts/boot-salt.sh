@@ -258,7 +258,7 @@ get_chrono() {
 }
 
 set_vars() {
-    if [[ -n $NO_COLOR ]];then
+    if [[ -n $NO_COLORS ]];then
         YELLOW=""
         RED=""
         CYAN=""
