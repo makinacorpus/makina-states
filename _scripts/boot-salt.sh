@@ -621,7 +621,7 @@ recap_(){
             fi
         done
     fi
-    if [[ -n $IS_MASTERSALT_MINION ]];then
+    if [[ -n $IS_MASTERSALT ]];then
         for i in \
             "$MASTERSALT_MASTER_IP" "$MASTERSALT_MINION_IP";\
         do
