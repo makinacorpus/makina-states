@@ -257,13 +257,18 @@ get_chrono() {
     date "+%F_%H-%M-%S"
 }
 
-set_vars() {
+
+set_colors() {
     if [[ -n $NO_COLORS ]];then
         YELLOW=""
         RED=""
         CYAN=""
         NORMAL=""
     fi
+}
+
+set_vars() {
+    set_colors
     ROOT="${ROOT:-"/"}"
     CONF_ROOT="${CONF_ROOT:-"${ROOT}etc"}"
     ETC_INIT="${ETC_INIT:-"$CONF_ROOT/init"}"
@@ -2105,6 +2110,7 @@ exemple() {
 }
 
 usage() {
+    set_colors
     bs_log "${THIS}:"
     echo
     bs_yellow_log "This script will install salt minion(s) and maybe master(s) on different flavors (salt/mastersalt) on top of makina-states"
@@ -2158,6 +2164,7 @@ usage() {
     if [[ -n $SALT_LONG_HELP ]];then
         echo
         bs_log "Advanced settings:"
+        bs_help "--no-colors:" "No terminal colors" "$NO_COLORS" "y"
         bs_help "--salt-minion-dns <dns>:" "DNS of the salt minion" "$SALT_MINION_DNS" "y"
         bs_help "-g|--makina-states-url <url>:" "makina-states url" "$STATES_URL" y
         bs_help "-r|--root <path>:" "/ path" "$ROOT"
@@ -2204,6 +2211,8 @@ parse_cli_opts() {
             -h|--help) USAGE=1
                 ;;
             -d|--debug) SALT_BOOT_DEBUG=y
+                ;;
+            --no-colors) NO_COLORS=1
                 ;;
             --debug-level) SALT_BOOT_DEBUG_LEVEL=$2;sh=2
                 ;;
