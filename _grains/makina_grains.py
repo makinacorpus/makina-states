@@ -3,6 +3,7 @@
 __docformat__ = 'restructuredtext en'
 
 import os
+import subprocess
 
 def get_makina_grains():
     '''
@@ -57,7 +58,11 @@ def get_makina_grains():
         grains['makina.docker'] = True
     if os.path.exists('/var/log/upstart'):
         grains['makina.upstart'] = True
-    num =  __salt__['cmd.run']('if [[ -f /root/vagrant/provision_settings.sh ]];then . /root/vagrant/provision_settings.sh;echo $DEVHOST_NUM;fi')
+    num = subprocess.Popen(
+        'bash -c "if [ -f /root/vagrant/provision_settings.sh ];then . /root/vagrant/provision_settings.sh;echo \$DEVHOST_NUM;fi"',
+        shell=True, stdout=subprocess.PIPE
+    ).stdout.read().strip()
+
     if num:
         grains['makina.devhost_num'] = num
     return grains
