@@ -564,6 +564,30 @@ salt-{{ data.name }}-makina-states-dirs:
       - {{ data.msr }}/{{ i }}
       {% endfor %}
 
+salt-{{ data.name }}-grains:
+  cmd.run:
+    - name: {{localMsr}}/_scripts/install_salt_modules.sh "{{localRoot}}"
+    - require_in:
+      - cmd: dummy-pre-{{ data.name }}-service-restart
+    - unless: |
+              for i in _grains;do
+                for f in $(find {{localMsr}}/$i -name "*py" -type f);do
+                  dest="$f";
+                  sym="{{localRoot}}/$i/$(basename $f)";
+                  if [[ ! -e  "$sym" ]];then
+                    echo "$sym not present";
+                    exit -1;
+                  fi;
+                  if [[ -h "$sym" ]];then
+                    if [[ "$(readlink $sym)" != "$dest" ]];then
+                      echo "$sym != $dest";
+                      exit -1;
+                    fi;
+                  fi;
+                done;
+              done;
+              exit 0;
+
 # update makina-state
 salt-{{ data.name }}-buildout-bootstrap:
   cmd.run:

@@ -13,6 +13,7 @@ def get_makina_grains():
         'makina.upstart': False,
         'makina.lxc': False,
         'makina.docker': False,
+        'makina.devhost_num': '0',
     }
     if os.path.exists('.dockerinit'):
         grains['makina.docker'] = True
@@ -56,6 +57,9 @@ def get_makina_grains():
         grains['makina.docker'] = True
     if os.path.exists('/var/log/upstart'):
         grains['makina.upstart'] = True
+    num =  __salt__['cmd.run']('if [[ -f /root/vagrant/provision_settings.sh ]];then . /root/vagrant/provision_settings.sh;echo $DEVHOST_NUM;fi')
+    if num:
+        grains['makina.devhost_num'] = num
     return grains
 
 

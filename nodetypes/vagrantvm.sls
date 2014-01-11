@@ -30,7 +30,8 @@ include:
   - {{ nodetypes.funcs.statesPref }}services.virt.lxc
   - {{ nodetypes.funcs.statesPref }}services.virt.docker
 
-{% if grains['os'] in ['Ubuntu'] %}
+{# not needed anymore as the core files are not anymore on NFS
+{# if grains['os'] in ['Ubuntu'] %}
 # Delay start on vagrant dev host by adding to upstart delayers
 makina-file_waiting_for_vagrant:
   file.managed:
@@ -52,6 +53,7 @@ makina-file_delay_services_for_srv:
     - mode: 644
     - template: jinja
 {% endif %}
+#}
 
 vagrantvm-zerofree:
   file.managed:
@@ -98,4 +100,26 @@ disable-vagrant-useless-services:
                   fi;
               done;
               exit $exit
+{% endif %}
+
+# -------- DEVELOPMENT VM DNS ZONE --------
+{% set vm_num = grains.get('makina.devhost_num', '') %}
+{% set vm_fqdn = grains.get('fqdn','childhost.local') %}
+{% set vm_host = grains.get('host','childhost') %}
+{% set vm_name = vm_fqdn.replace('.', '_').replace(' ', '_') %}
+{% set vm_nat_fqdn = vm_fqdn.split('.')[:1][0]+'-nat.'+'.'.join(vm_fqdn.split('.')[1:]) %}
+{% set ips=grains['ip_interfaces'] %}
+{% set ip1=ips['eth0'][0] %}
+{% set ip2=ips['eth1'][0] %}
+{% set hostf='/etc/devhosts' %}
+
+{% if vm_num %}
+makina-parent-etc-hosts-exists:
+  file.managed:
+    - name: {{hostf}}
+    - contents: |
+                #-- start devhost {{vm_num }} :: DO NOT EDIT --
+                {{ ip2 }} {{ vm_fqdn }} {{ vm_host }}
+                {{ ip1 }} {{ vm_nat_fqdn }} {{ vm_host }}-natZ
+                #-- end devhost {{vm_num }} :: DO NOT EDIT --
 {% endif %}
