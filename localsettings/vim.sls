@@ -6,6 +6,13 @@
 include:
   - {{ localsettings.statesPref }}users
 
+vim-editor-env-var:
+  file.managed:
+    - name: /etc/profile.d/vim-editor.sh
+    - contents: |
+                export EDITOR="$(which vim)"
+                export ED="$EDITOR"
+
 {% for i, data in localsettings.users.items() %}
 {% set home = data['home'] %}
 vimrc_configs-touch-{{ i }}:
