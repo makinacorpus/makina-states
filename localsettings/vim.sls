@@ -9,6 +9,7 @@ include:
 vim-editor-env-var:
   file.managed:
     - name: /etc/profile.d/vim-editor.sh
+    - mode: 755
     - contents: |
                 export EDITOR="$(which vim)"
                 export ED="$EDITOR"
