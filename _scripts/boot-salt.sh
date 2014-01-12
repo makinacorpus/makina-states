@@ -1416,6 +1416,7 @@ kill_pids(){
         fi
     done
 }
+
 killall_local_mastersalt_masters() {
     kill_pids $($PS aux|egrep "salt-(master|syndic)"|grep mastersalt|awk '{print $2}') &> /dev/null
 }
