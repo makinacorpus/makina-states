@@ -710,6 +710,9 @@ etc-{{data.name}}-dirs-perms:
     - reset_paths:
       - {{ data.salt_root }}
       - {{ data.pillar_root }}
+    - excludes:
+      - {{ data.salt_root }}.*\/files\/.*
+      - {{ data.salt_root }}/_grains
     - require:
       - cmd: dummy-pre-{{data.name}}-service-restart
       - cmd: etc-{{data.name}}-dirs-perms
