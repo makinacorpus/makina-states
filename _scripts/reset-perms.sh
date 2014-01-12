@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
+{% if debug is not defined %}
+{% set debug = false %}
+{% endif %}
 # Reset all directories/files perms in subdirectories
-# cp $0 /srv/salt/makina-states/foo
+{% if debug %}
+# copy debug script for later manual debugging on debug mode
+cp "$0" "/tmp/.resetperms.$(basename $0)"
+{% endif %}
 python <<EOF
 from __future__ import (print_function,
                         division,
@@ -23,13 +29,7 @@ re_f = re.M | re.U | re.S
 ACLS = {}
 SKIPPED = []
 
-
-{% if debug is defined %}
-DEFAULT_DEBUG = {{debug}}
-{% else %}
-DEFAULT_DEBUG = False
-{% endif %}
-DEBUG = os.environ.get('RESETPERMS_DEBUG', DEFAULT_DEBUG)
+DEBUG = os.environ.get('RESETPERMS_DEBUG', {{debug}})
 
 def which(program, environ=None, key='PATH', split=':'):
     if not environ:
