@@ -1409,20 +1409,27 @@ install_salt_daemons() {
     lazy_start_salt_daemons
 }
 
+kill_pids(){
+    for i in $@;do
+        if [[ -n $i ]];then
+            kill -9 $i
+        fi
+    done
+}
 killall_local_mastersalt_masters() {
-    $PS aux|egrep "salt-(master|syndic)"|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
+    kill_pids $($PS aux|egrep "salt-(master|syndic)"|grep mastersalt|awk '{print $2}') &> /dev/null
 }
 
 killall_local_mastersalt_minions() {
-    $PS aux|egrep "salt-(minion)"|grep mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
+    kill_pids $($PS aux|egrep "salt-(minion)"|grep mastersalt|awk '{print $2}') &> /dev/null
 }
 
 killall_local_masters() {
-    $PS aux|egrep "salt-(master|syndic)"|grep -v mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
+    kill_pids $($PS aux|egrep "salt-(master|syndic)"|grep -v mastersalt|awk '{print $2}') &> /dev/null
 }
 
 killall_local_minions() {
-    $PS aux|egrep "salt-(minion)"|grep -v mastersalt|awk '{print $2}'|xargs kill -9 &> /dev/null
+    kill_pids $($PS aux|egrep "salt-(minion)"|grep -v mastersalt|awk '{print $2}') &> /dev/null
 }
 
 restart_local_mastersalt_masters() {
