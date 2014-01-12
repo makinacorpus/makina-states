@@ -62,6 +62,12 @@ makina-{{id}}-bashfiles:
     - group: {{id}}
     - require_in:
       - file: makina-{{id}}-bashprofile-load
+  cmd.run:
+    - name: chmod 755 '{{bashrc}}' '{{bashprofile}}'
+    - require:
+      - file: makina-{{id}}-bashfiles
+    - require_in:
+      - file: makina-{{id}}-bashprofile-load
 
 makina-{{id}}-bashprofile-load-acc:
   file.accumulated:
