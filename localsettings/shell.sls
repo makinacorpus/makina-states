@@ -25,12 +25,15 @@ makina-etc-profile-acc:
     - text: |
 
             if [ -d {{ locs.conf_dir }}/profile.d ]; then
+              # only apply if we have no inclusion yet
+              if [[ $(grep 'profile\.d' {{ locs.conf_dir }}/profile|wc -l) -lt "4" ]];then
                 for i in {{ locs.conf_dir }}/profile.d/*.sh; do
                   if [ -r $i ]; then
                     . $i;
                   fi;
                 done;
                 unset i;
+              fi
             fi
     - require_in:
       - file: makina-etc-profile-block
@@ -38,8 +41,8 @@ makina-etc-profile-acc:
 makina-etc-profile-block:
   file.blockreplace:
     - name: {{ locs.conf_dir }}/profile
-    - marker_start: "# START managed zone profile.d -DO-NOT-EDIT-"
-    - marker_end: "# END managed zone profile.d"
+    - marker_start: "# START managed zone profile__d -DO-NOT-EDIT-"
+    - marker_end: "# END managed zone profile__d"
     - content: ''
     - append_if_not_found: True
     - backup: '.bak'
