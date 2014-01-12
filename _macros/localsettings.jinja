@@ -15,6 +15,7 @@
 {% import "makina-states/_macros/funcs.jinja" as funcs with context %}
 {% import "makina-states/_macros/ldap.jinja" as ldap with context %}
 
+
 # expose imported macros
 {% set funcs = funcs %}
 {% set ldap = ldap %}
@@ -204,7 +205,11 @@
 {% endfor %}
 
 {# default  sysadmins #}
-{% for i in ['sysadmin', 'root'] %}
+{% set defaultSysadmins = ['sysadmin'] %}
+{% if salt['mc_macros.is_item_active']('makina-states.nodetypes.vagrantvm') %}
+  {% do defaultSysadmins.append('vagrant') %}
+{% endif %}
+{% for i in defaultSysadmins + ['root'] %}
   {% if not i in users %}
     {% do users.update({i: {'admin': True} }) %}
   {% else %}
@@ -212,10 +217,11 @@
   {% endif %}
 {% endfor %}
 
+
 {# default  home #}
 {% for i in users.keys() %}
   {% set data= users[i].copy() %}
-  {% if i in ['sysadmin'] %}
+  {% if i in defaultSysadmins %}
   {% set home = data.get('home', locations.sysadmins_home_dir+"/"+i) %}
   {% elif i  == 'root' %}
   {% set home = locations.root_home_dir %}
