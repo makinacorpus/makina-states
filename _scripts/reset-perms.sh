@@ -1,14 +1,35 @@
 #!/usr/bin/env bash
 # Reset all directories/files perms in subdirectories
+# cp $0 /srv/salt/makina-states/foo
 python <<EOF
+from __future__ import (print_function,
+                        division,
+                        absolute_import,
+                        unicode_literals)
 import os
 import grp
+import re
 import stat
 import pwd
 import sys
 import traceback
+import pprint
+
+
+
+
+re_f = re.M | re.U | re.S
 
 ACLS = {}
+SKIPPED = []
+
+
+{% if debug is defined %}
+DEFAULT_DEBUG = {{debug}}
+{% else %}
+DEFAULT_DEBUG = False
+{% endif %}
+DEBUG = os.environ.get('RESETPERMS_DEBUG', DEFAULT_DEBUG)
 
 def which(program, environ=None, key='PATH', split=':'):
     if not environ:
@@ -24,7 +45,8 @@ def which(program, environ=None, key='PATH', split=':'):
             and os.path.exists(fp + '.exe')
         ):
             return fp + '.exe'
-    raise IOError('Program not fond: %s in %s ' % (program, PATH))
+    raise IOError('Program not fond: {0} in {1} '.format (
+        program, PATH))
 
 
 try:
@@ -44,7 +66,7 @@ NO_ACLS = {{no_acls}}
 {% else %}
 NO_ACLS =  False
 {% endif %}
- 
+
 {% if msr is defined %}
 m = '{{msr}}'
 {% else %}
@@ -66,6 +88,8 @@ pexcludes = [
 {% endif %}
 ]
 
+pexcludes = [re.compile(i, re_f)
+             for i in pexcludes]
 
 {% if reset_user is defined %}
 user = "{{reset_user}}"
@@ -87,8 +111,8 @@ try:
 except Exception:
     gid = int(grp.getgrnam(group).gr_gid)
 
-fmode = "0%s" % int("{{fmode}}")
-dmode = "0%s" % int("{{dmode}}")
+fmode = "0{0}".format(int("{{fmode}}"))
+dmode = "0{0}".format(int("{{dmode}}"))
 
 
 def permissions_to_unix_name(mode):
@@ -98,7 +122,7 @@ def permissions_to_unix_name(mode):
         permstr = ''
         perm_types = ['R', 'W', 'X']
         for permtype in perm_types:
-            perm = getattr(stat, 'S_I%s%s' % (permtype, usertype))
+            perm = getattr(stat, 'S_I{0}{1}'.format(permtype, usertype))
             if omode & perm:
                 permstr += permtype.lower()
             else:
@@ -141,13 +165,15 @@ def lazy_chmod_path(path, mode):
         st = os.stat(path)
         if eval(mode) != stat.S_IMODE(st.st_mode):
             try:
-                eval('os.chmod(path, %s)' % mode)
+                eval('os.chmod(path, {0})'.format(mode))
             except Exception:
-                print 'Reset failed for %s (%s)' % (path, mode)
-                print traceback.format_exc()
+                print('Reset failed for {0} ({1})'.format(
+                    path, mode))
+                print(traceback.format_exc())
     except Exception:
-        print 'Reset(o) failed for %s (%s)' % (path, mode)
-        print traceback.format_exc()
+        print('Reset(o) failed for {0} ({1})'.format(
+            path, mode))
+        print(traceback.format_exc())
 
 
 def lazy_chown_path(path, uid, gid):
@@ -157,11 +183,13 @@ def lazy_chown_path(path, uid, gid):
             try:
                 os.chown(path, uid, gid)
             except:
-                print 'Reset failed for %s, %s, %s' % (path, uid, gid)
-                print traceback.format_exc()
+                print('Reset failed for {0}, {1}, {2}'.format(
+                    path, uid, gid))
+                print(traceback.format_exc())
     except Exception:
-        print 'Reset(o) failed for %s, %s, %s' % (path, uid, gid)
-        print traceback.format_exc()
+        print('Reset(o) failed for {0}, {1}, {2}'.format(
+            path, uid, gid))
+        print(traceback.format_exc())
 
 def lazy_chmod_chown(path, mode, uid, gid, is_dir=False):
     if not ONLY_ACLS:
@@ -171,47 +199,58 @@ def lazy_chmod_chown(path, mode, uid, gid, is_dir=False):
         try:
             collect_acl(path, uid, gid, mode, is_dir=is_dir)
         except Exception:
-             print 'Reset(acl) failed for %s (%s)' % (path, mode)
-             print traceback.format_exc()
+             print('Reset(acl) failed for {0} ({1})'.format(
+                 path, mode))
+             print(traceback.format_exc())
 
 
 def to_skip(i):
     stop = False
     if os.path.islink(i):
         # inner dir and files will be excluded too
-        pexcludes.append(i)
+        pexcludes.append(re.compile(i, re_f))
         stop=True
     else:
         for p in pexcludes:
-            if p in i:
+            if p.pattern in i:
+                stop = True
+                break
+            if p.search(i):
                 stop = True
                 break
     return stop
 
 
 def reset(p):
-    print "Path: %s" % p
-    print "Directories: %s" % dmode
-    print "Files: %s" % fmode
-    print "User:Group: %s:%s\n\n" % (user, group)
+    print("Path: {0} ({1}:{2}, dmode: {3}, fmode: {4})".format(
+        p, user, group, dmode, fmode))
     if not os.path.exists(p):
-        print "\n\nWARNING: %s does not exist\n\n" % p
+        print("\n\nWARNING: {0} does not exist\n\n".format(p))
         return
     for root, dirs, files in os.walk(p):
         curdir = root
         if to_skip(curdir):
-            continue
+            if not i in SKIPPED:
+                SKIPPED.append(i)
+                continue
         try:
             lazy_chmod_chown(curdir, dmode, uid, gid, is_dir=True)
             for item in files:
                 i = os.path.join(root, item)
-                if to_skip(i): continue
+                if to_skip(i):
+                    if not i in SKIPPED:
+                        SKIPPED.append(i)
+                        continue
                 lazy_chmod_chown(i, fmode, uid, gid)
         except Exception:
-            print traceback.format_exc()
-            print 'reset failed for %s' % curdir
+            print(traceback.format_exc())
+            print('reset failed for {0}'.format(curdir))
     if HAS_SETFACL and not NO_ACLS:
         apply_acls()
+    if DEBUG and SKIPPED:
+        SKIPPED.sort()
+        print('Skipped content:')
+        pprint.pprint(SKIPPED)
 
 {% for pt in reset_paths %}
 reset('{{pt}}')
