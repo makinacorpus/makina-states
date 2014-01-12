@@ -23,10 +23,9 @@ makina-etc-profile-acc:
   file.accumulated:
     - filename: {{ locs.conf_dir }}/profile
     - text: |
-
             if [ -d {{ locs.conf_dir }}/profile.d ]; then
               # only apply if we have no inclusion yet
-              if [[ $(grep 'profile\.d' {{ locs.conf_dir }}/profile|wc -l) -lt "4" ]];then
+              if [[ "$(grep -h 'profile\.d' {{ locs.conf_dir }}/profile|wc -l)" -lt "4" ]];then
                 for i in {{ locs.conf_dir }}/profile.d/*.sh; do
                   if [ -r $i ]; then
                     . $i;

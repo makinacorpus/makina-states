@@ -16,6 +16,8 @@
 {% for id, udata in localsettings.users.items() %}
 {% set password = udata.get('password', False) %}
 {% set home = udata['home'] %}
+{% set bashrc = home + '/.bashrc' %}
+{% set bashprofile = home + '/.bash_profile' %}
 {{ id }}:
   group.present:
     - name: {{ id }}
@@ -48,6 +50,62 @@
       - admin
       - wheel
       {% endif %}
-{% endif %}
-{% endif %}
+      {% endif %}
+      {% endif %}
+
+makina-{{id}}-bashfiles:
+  file.touch:
+    - names:
+        - {{bashrc}}
+        - {{bashprofile}}
+    - user: {{id}}
+    - group: {{id}}
+    - require_in:
+      - file: makina-{{id}}-bashprofile-load
+
+makina-{{id}}-bashprofile-load-acc:
+  file.accumulated:
+    - filename: {{bashprofile}}
+    - text: |
+            if [[ -f '{{ locs.conf_dir }}/profile' ]];then
+              # only apply if we have no inclusion yet
+              if [[ "$(grep -h '{{ locs.conf_dir }}/profile' '{{bashrc}}' '{{bashprofile}}'|egrep -v "^#"|wc -l)" -lt "4" ]];then
+                . '{{ locs.conf_dir }}/profile'
+              fi
+            fi
+    - require_in:
+      - file: makina-{{id}}-bashprofile-load
+
+makina-{{id}}-bashprofile-load:
+  file.blockreplace:
+    - name: {{bashprofile}}
+    - marker_start: "# START managed zone profile -DO-NOT-EDIT-"
+    - marker_end: "# END managed zone profile"
+    - content: ''
+    - append_if_not_found: True
+    - backup: '.bak'
+    - show_changes: True
+
+makina-{{id}}-bashrc-load-acc:
+  file.accumulated:
+    - filename: {{bashrc}}
+    - text: |
+            if [[ -f '{{bashprofile}}' ]];then
+              # only apply if we have no inclusion yet
+              if [[ "$(grep -h '.bash_profile' '{{bashrc}}'|egrep -v "^#"|wc -l)" -lt "4" ]];then
+                . '{{bashprofile}}'
+              fi
+            fi
+    - require_in:
+      - file: makina-{{id}}-bashrc-load
+
+makina-{{id}}-bashrc-load:
+  file.blockreplace:
+    - name: {{bashrc}}
+    - marker_start: "# START managed zone profile -DO-NOT-EDIT-"
+    - marker_end: "# END managed zone profile"
+    - content: ''
+    - append_if_not_found: True
+    - backup: '.bak'
+    - show_changes: True
 {% endfor %}
