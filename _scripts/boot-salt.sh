@@ -272,7 +272,10 @@ get_minion_id_() {
     local confdir="$1"
     local force="$3"
     if [[ -z "$force" ]];then
-        mmid=$(egrep -r "^id:" $(find "$confdir"/minion* -type f)|awk '{print $2}'|head -n1)
+        fics=$(find "$confdir"/minion* -type f 2>/dev/null)
+        if [[ -n "$fics" ]];then
+            mmid=$(egrep -r "^id:" $(find "$confdir"/minion* -type f 2>/dev/null)|awk '{print $2}'|head -n1)
+        fi
         if [[ -z $mmid ]] && [[ -f "$confdir/minion_id" ]];then
             mmid=$(cat "$confdir/minion_id" 2> /dev/null)
         fi
@@ -286,6 +289,7 @@ get_minion_id_() {
 mastersalt_get_minion_id() {
     get_minion_id_ "$MCONF_PREFIX" "$MASTERSALT_MINION_ID" "$FORCE_MASTERSALT_MINION_ID"
 }
+
 
 get_minion_id() {
     get_minion_id_ "$CONF_PREFIX" "$SALT_MINION_ID" "$FORCE_SALT_MINION_ID"
@@ -1328,10 +1332,10 @@ a\    publish_port: ${MASTERSALT_MASTER_PUBLISH_PORT}
     fi
 
     # reset minion_ids
-    for i in $(find "$CONF_PREFIX"/minion* -type f);do
+    for i in $(find "$CONF_PREFIX"/minion* -type f 2>/dev/null);do
         "$SED" -re "s/^#*id: .*/id: $(get_minion_id)/g" -i "$i"
     done
-    for i in $(find "$MCONF_PREFIX"/minion* -type f);do
+    for i in $(find "$MCONF_PREFIX"/minion* -type f 2>/dev/null);do
         "$SED" -re "s/^#*id: .*/id: $(mastersalt_get_minion_id)/g" -i "$i"
     done
 }
