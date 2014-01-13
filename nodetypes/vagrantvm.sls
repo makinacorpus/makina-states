@@ -114,6 +114,14 @@ disable-vagrant-useless-services:
 {% set hostsf='/etc/devhosts' %}
 
 {% if vm_num %}
+makina-parent-etc-hosts-absent:
+  file.absent:
+    - name: {{hostsf}}
+    - require_in:
+      - file: makina-parent-etc-hosts-exists
+
+# delete old stalled from import /etc/devhosts
+# handle the double zone cases
 makina-parent-etc-hosts-exists:
   file.touch:
     - name: {{hostsf}}
@@ -133,11 +141,10 @@ makina-append-parent-etc-hosts-management:
 # initialize the accumulator with at least the VM private network socket
 # Use this accumulator to add any IP managed on this vm that the parent
 # host should know about
-
 makina-parent-append-etc-hosts-accumulated:
   file.accumulated:
     - filename: {{hostsf}}
-    - name: parent-hosts-aapend-accumulator-{{ vm_name }}-entries
+    - name: parent-hosts-append-accumulator-{{ vm_name }}-entries
     - text: |
             {{ ip2 }} {{ vm_fqdn }} {{ vm_host }}
             {{ ip1 }} {{ vm_nat_fqdn }} {{ vm_host }}-nat
