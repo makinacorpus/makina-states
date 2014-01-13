@@ -196,7 +196,7 @@
   'master': '127.0.0.1',
   'master_port': '4506',
   'retry_dns': '30',
-  'id': None,
+  'id': salt['config.option']('id', None),
   'append_domain': False,
   'grains': {},
   'output': None,

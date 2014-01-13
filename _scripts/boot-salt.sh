@@ -267,6 +267,34 @@ set_colors() {
     fi
 }
 
+get_minion_id_() {
+    local mmid="${2:-${SALT_MINION_ID:-$HOSTNAME}}"
+    local confdir="$1"
+    local force="$3"
+    if [[ -z "$force" ]];then
+        fics=$(find "$confdir"/minion* -type f 2>/dev/null)
+        if [[ -n "$fics" ]];then
+            mmid=$(egrep -r "^id:" $(find "$confdir"/minion* -type f 2>/dev/null)|awk '{print $2}'|head -n1)
+        fi
+        if [[ -z $mmid ]] && [[ -f "$confdir/minion_id" ]];then
+            mmid=$(cat "$confdir/minion_id" 2> /dev/null)
+        fi
+        if [[ -z $mmid ]] && [[ -f "$CONF_PREFIX/minion_id" ]];then
+            mmid=$(cat "$CONF_PREFIX/minion_id" 2> /dev/null)
+        fi
+    fi
+    echo $mmid
+}
+
+mastersalt_get_minion_id() {
+    get_minion_id_ "$MCONF_PREFIX" "$MASTERSALT_MINION_ID" "$FORCE_MASTERSALT_MINION_ID"
+}
+
+
+get_minion_id() {
+    get_minion_id_ "$CONF_PREFIX" "$SALT_MINION_ID" "$FORCE_SALT_MINION_ID"
+}
+
 set_vars() {
     set_colors
     ROOT="${ROOT:-"/"}"
@@ -421,6 +449,7 @@ set_vars() {
         MASTERSALT_MASTER_PUBLISH_PORT="$(( ${MASTERSALT_MASTER_PORT} - 1 ))"
 
         MASTERSALT_MINION_DNS="${MASTERSALT_MINION_DNS:-"localhost"}"
+        MASTERSALT_MINION_ID="$(mastersalt_get_minion_id)"
         MASTERSALT_MINION_IP="$(dns_resolve $MASTERSALT_MINION_DNS)"
 
         if [[ "$MASTERSALT_MASTER_IP" == "127.0.0.1" ]];then
@@ -443,6 +472,7 @@ set_vars() {
     fi
     # salt variables
     if [[ -n "$IS_SALT" ]];then
+        SALT_MINION_ID="$(get_minion_id)"
         SALT_MASTER_DNS="${SALT_MASTER_DNS:-"localhost"}"
         SALT_MASTER_IP="$(dns_resolve $SALT_MASTER_DNS)"
         SALT_MASTER_PORT="${SALT_MASTER_PORT:-"4506"}"
@@ -499,6 +529,9 @@ set_vars() {
     # export variables to support a restart
     export IS_SALT IS_SALT_MASTER IS_SALT_MINION
     export IS_MASTERSALT IS_MASTERSALT_MASTER IS_MASTERSALT_MINION
+    #
+    export SALT_MINION_ID MASTERSALT_MINION_ID
+    export FORCE_SALT_MINION_ID FORCE_MASTERSALT_MINION_ID
     #
     export BASE_PACKAGES STATES_URL SALT_BOOT_NOCONFIRM
     #
@@ -565,6 +598,7 @@ recap_(){
             bs_log "SALT_MASTER_DNS: $SALT_MASTER_DNS"
             bs_log "SALT_MASTER_PORT: $SALT_MASTER_PORT"
             bs_log "SALT_MINION_IP: $SALT_MINION_IP"
+            bs_log "SALT_MINION_ID: $SALT_MINION_ID"
         fi
         if [[ -n "$debug" ]];then
             bs_log "SALT_MASTER_PUBLISH_PORT: $SALT_MASTER_PUBLISH_PORT"
@@ -596,6 +630,9 @@ recap_(){
             bs_log "MASTERSALT_MASTER_PORT: $MASTERSALT_MASTER_PORT"
             bs_log "MASTERSALT_MINION_IP: $MASTERSALT_MINION_IP"
             debug_msg "MASTERSALT_INPUTED: $MASTERSALT_INPUTED"
+            if [[ "$MASTERSALT_MINION_ID" != "$SALT_MINION_ID" ]];then
+                bs_log "MASTERSALT_MINION_ID: $MASTERSALT_MINION_ID"
+            fi
         fi
         if [[ -n "$debug" ]];then
             bs_log "mastersalt_bootstrap_nodetype: $mastersalt_bootstrap_nodetype"
@@ -1145,7 +1182,7 @@ EOF
         fi
         if [[ ! -e $MCONF_PREFIX/minion ]];then
             cat > $MCONF_PREFIX/minion << EOF
-id: $(get_minion_id)
+id: $(mastersalt_get_minion_id)
 master: $MASTERSALT_MASTER_DNS
 master_port: $MASTERSALT_MASTER_PORT
 file_roots: {"base":["$MASTERSALT_ROOT"]}
@@ -1268,17 +1305,17 @@ a\    - mastersalt
             debug_msg "Adding mastersalt minion info to mastersalt pillar"
             "$SED" -re "/^mastersalt:\s*$/ {
 a\  minion:
-a\    id: $(get_minion_id)
+a\    id: $(mastersalt_get_minion_id)
 a\    interface: ${MASTERSALT_MINION_IP}
 a\    master: ${MASTERSALT_MASTER_DNS}
 a\    master_port: ${MASTERSALT_MASTER_PORT}
 }" -i "$MASTERSALT_PILLAR/mastersalt.sls"
         fi
-        if [[ "$(grep -- "id: $(get_minion_id)" "$MASTERSALT_PILLAR/mastersalt.sls"|wc -l)" == "0" ]];then
-            debug_msg "Adding mastersalt minion id: $(get_minion_id)"
+        if [[ "$(grep -- "id: $(mastersalt_get_minion_id)" "$MASTERSALT_PILLAR/mastersalt.sls"|wc -l)" == "0" ]];then
+            debug_msg "Adding mastersalt minion id: $(mastersalt_get_minion_id)"
             "$SED" -re "/^    id:/ d" -i  "$MASTERSALT_PILLAR/mastersalt.sls"
             "$SED" -re "/^  minion:/ {
-a\    id: $(get_minion_id)
+a\    id: $(mastersalt_get_minion_id)
 }" -i "$MASTERSALT_PILLAR/mastersalt.sls"
         fi
         if [[ -n "$IS_MASTERSALT_MASTER" ]];then
@@ -1295,20 +1332,16 @@ a\    publish_port: ${MASTERSALT_MASTER_PUBLISH_PORT}
     fi
 
     # reset minion_ids
-    for i in $(find /etc/*salt/minion* -type f);do
+    for i in $(find "$CONF_PREFIX"/minion* -type f 2>/dev/null);do
         "$SED" -re "s/^#*id: .*/id: $(get_minion_id)/g" -i "$i"
+    done
+    for i in $(find "$MCONF_PREFIX"/minion* -type f 2>/dev/null);do
+        "$SED" -re "s/^#*id: .*/id: $(mastersalt_get_minion_id)/g" -i "$i"
     done
 }
 
 # ------------ SALT INSTALLATION PROCESS
 
-get_minion_id() {
-    if [[ -f "$CONF_PREFIX/minion_id" ]];then
-        cat "$CONF_PREFIX/minion_id" 2> /dev/null
-    else
-        echo "${SALT_MINION_ID:-"$HOSTNAME"}"
-    fi
-}
 
 lazy_start_salt_daemons() {
     if [[ -n "$IS_SALT_MASTER" ]];then
@@ -1620,7 +1653,7 @@ make_association() {
 }
 
 challenge_mastersalt_message() {
-    minion_id="$(get_minion_id)"
+    minion_id="$(mastersalt_get_minion_id)"
     bs_log "****************************************************************"
     bs_log "    GO ACCEPT THE KEY ON MASTERSALT ($MASTERSALT) !!! "
     bs_log "    You need on this box to run mastersalt-key -y -a $minion_id"
@@ -1639,7 +1672,7 @@ make_mastersalt_association() {
         bs_yellow_log "Minion did not start correctly, the minion_id cache file is empty, trying to restart"
         restart_local_mastersalt_minions
         sleep 3
-        minion_id="$(get_minion_id)"
+        minion_id="$(mastersalt_get_minion_id)"
         if [[ -z "$minion_id" ]];then
             die_in_error "Minion did not start correctly, the minion_id cache file is always empty"
         fi
@@ -1677,7 +1710,7 @@ make_mastersalt_association() {
         restart_local_mastersalt_minions
         mastersalt_master_connectivity_check
         bs_log "Waiting for mastersalt minion key hand-shake"
-        minion_id="$(get_minion_id)"
+        minion_id="$(mastersalt_get_minion_id)"
         if [[ "$(salt_ping_test)" == "0" ]];then
             echo "changed=yes comment='mastersalt minion registered'"
             bs_log "Salt minion \"$minion_id\" registered on master"
@@ -1690,7 +1723,7 @@ make_mastersalt_association() {
                 warn_log
                 exit -1
             fi
-            minion_id="$(get_minion_id)"
+            minion_id="$(mastersalt_get_minion_id)"
             registered="1"
             echo "changed=yes comment='salt minion registered'"
         fi
@@ -2153,6 +2186,7 @@ usage() {
     bs_help "--no-salt:" "Do not install salt daemons" "" y
     bs_help "-no-M|--no-salt-master:" "Do not install a salt master" "$IS_SALT_MASTER" y
     bs_help "-m|--minion-id:" "Minion id" "$(get_minion_id)" y
+    bs_help "--mastersalt-minion-id:" "Mastersalt minion id (default to minionid)" "$(mastersalt_get_minion_id)" y
     bs_help "--salt-master-dns <hostname>:" "DNS of the salt master" "$SALT_MASTER_DNS" y
     bs_help "--salt-master-port <port>:"        "Port of the salt master" "$MASTERSALT_MASTER_PORT" y
     echo
@@ -2252,7 +2286,9 @@ parse_cli_opts() {
                 ;;
             -no-NN|--no-mastersalt-minion) FORCE_IS_MASTERSALT_MINION="no"
                 ;;
-            -m|--minion-id) SALT_MINION_ID=$2;sh=2
+            -m|--minion-id) FORCE_SALT_MINION_ID=1;FORCE_MASTERSALT_MINION_ID=1;SALT_MINION_ID=$2;sh=2
+                ;;
+            --mastersalt-minion-id) FORCE_MASTERSALT_MINION_ID=1;MASTERSALT_MINION_ID=$2;sh=2
                 ;;
             -mac|--master-controller) SALT_MASTER_CONTROLLER=$2;sh=2
                 ;;
