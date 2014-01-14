@@ -2175,6 +2175,7 @@ usage() {
     bs_help "-l|--long-help:" "this help message + aditionnal help and advanced settings" "" y
     bs_help "-C|--no-confirm:" "Do not ask for start confirmation" "" y
     bs_help "-S|--skip-checkouts:" "Skip initial checkouts / updates" "" y
+    bs_help "-s|--skip-highstates:" "Skip highstates" "" y
     bs_help "-d|--debug:" "debug/verbose mode" "NOT SET" y
     bs_help "--debug-level <level>:" "debug level (quiet|all|info|error)" "NOT SET" y
 
