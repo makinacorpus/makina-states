@@ -18,8 +18,7 @@
 # An exemple to use one of the project macros it could we to put in your top file only the following:
 #
 #    {% import "makina-states/projects/zope.jinja" as zope with context %}
-#    {% set name = 'foo' %}{% set url = 'ssh://github.com/foo.git %}{% set dns = 'local.me' %}
-#    {{ zope.install_generic_zope_project(name, url=url, dns=dns) }}
+#    {{ zope.install_generic_zope_project('foo', url='ssh://github.com/foo.git', dns='local.me') }}
 #
 # Please also read the end of this file to understand how hooks and common data is loaded
 #
