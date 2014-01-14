@@ -15,7 +15,29 @@ from salt.exceptions import SaltException
 _default_activation_status = object()
 
 
-def get_metadata(
+def _defaultsData(
+    common,
+    defaults=None,
+    env_defaults=None,
+    os_defaults=None
+):
+    if defaults is None:
+        defaults = {}
+    if os_defaults is None:
+        os_defaults = {'Debian': {}}
+    if env_defaults is None:
+        env_defaults = {'dev': {}}
+    dataGetterStepOne = __salt__['grains.filter_by'](
+        env_defaults, grain='default_env', default='dev', merge=defaults)
+    dataGetterStepTwo = __salt__['grains.filter_by'](
+        os_defaults, grain='os_family', merge=dataGetterStepOne)
+    defaultsData = __salt__['mc_utils.dictupdate'](
+        dataGetterStepTwo,
+        __salt__['pillar.get'](common['name'] + '-default-settings', {})
+    )
+    return defaultsData
+
+def get_common_vars(
     services,
     name,
     salt_subdir='salt',
@@ -24,7 +46,14 @@ def get_metadata(
     salt_branch='salt',
     project_branch='master',
     pillar_subdir='pillar',
-    url='https://github.com/makinacorpus/{name}.git'
+    user=None,
+    group=None,
+    url='https://github.com/makinacorpus/{name}.git',
+    dns='localhost',
+    defaults=None,
+    env_defaults=None,
+    os_defaults=None,
+    sls_includes=None
 ):
     """
     Return all needed data for the project API macro:
@@ -39,6 +68,13 @@ def get_metadata(
         - project_branch: the branch of the project
         - salt_branch: the branch of the project salt tree
         - url: the git repository url
+        - dns: dns of the installed application if any
+        - user: system project user
+        - group: system project user group
+        - defaults: data mapping for this project to use in states as common.data
+        - env_defaults: per environment (eg: prod|dev)  specific defaults data
+        - os_defaults: per os (eg: Ubuntu/Debian)  specific defaults data
+        - sls_includes: includes to add to the project top includes statement
 
     You can override default states values by pillar/grain like::
 
@@ -52,29 +88,60 @@ def get_metadata(
         makina-projects.foo.default_env: prod
 
     """
+    default_sls_includes = [
+        'makina-states.controllers.salt_minion',
+        'makina-states.services.base.ssh']
+
+    if not sls_includes:
+        sls_includes = []
+
+    for i in default_sls_includes:
+        if not i in sls_includes:
+            sls_includes.append(i)
+
     localsettings = services.localsettings
     if not default_env:
         d = __salt__['mc_utils.get']('default_env', 'dev')
         default_env = __salt__['mc_utils.get'](
             'makina-projects.{0}.{1}'.format(*(name, 'default_env')), d)
+    if not user:
+        user = '{name}-user'
+    if not group:
+        group = localsettings.group
+
     variables = {
         'services': services,
+        'localsettings': localsettings,
         'default_env': default_env,
         'name': name,
+        'dns': dns,
+        'user': user,
+        'group': group,
         'salt_subdir': salt_subdir,
         'project_subdir': project_subdir,
         'salt_branch': salt_branch,
         'project_branch': project_branch,
         'pillar_subdir': pillar_subdir,
-        'url': url
+        'url': url,
+        'sls_includes': sls_includes,
     }
     # we can override default values via pillar/grains
     for k, d in variables.items():
         variables[k] = __salt__['mc_utils.get'](
             'makina-projects.{0}.{1}'.format(*(name, k)), d)
+
+    defaultsData = _defaultsData(
+        variables,
+        defaults=defaults,
+        env_defaults=env_defaults,
+        os_defaults=os_defaults)
+
     data = __salt__['mc_utils.format_resolve'](
         {
+            'services': services,
+            'localsettings': localsettings,
             'name': name,
+            'dns': dns,
             'root': localsettings.locations['projects_dir'],
             'project_dir': '{root}/{name}',
             'salt_root':    '{project_dir}/{salt_subdir}',
@@ -83,10 +150,15 @@ def get_metadata(
             'salt_branch': salt_branch,
             'project_branch': project_branch,
             'default_env': default_env,
+            'user': user,
+            'group': group,
             'url': url,
+            'data': defaultsData,
+            'sls_includes': sls_includes,
         }, variables)
     data = __salt__['mc_utils.format_resolve'](data)
-    # we can override default values via pillar/grains
+
+    # we can try override default values via pillar/grains a last time
     for k, d in data.items():
         variables[k] = __salt__['mc_utils.get'](
             'makina-projects.{0}.{1}'.format(*(name, k)), d)

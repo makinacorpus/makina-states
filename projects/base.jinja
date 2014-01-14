@@ -1,0 +1,289 @@
+{% import "makina-states/_macros/salt.jinja" as saltmac with context %}
+{% import "makina-states/_macros/services.jinja" as services with context %}
+{% from "makina-states/services/http/apache_defaults.jinja" import apacheData with context %}
+{% from "makina-states/services/http/apache_macros.jinja" import virtualhost with context %}
+{#
+#
+# Install a project from end to end on the behalf of makina states
+# Currently we have support for :
+#   - Base macro to do pre/install/post project install tasks, indeed this is called GLUE, this is this macro file goal
+#   - Plone projects based on generic buildout for plone (http://cgwb-makinacorpus.rhcloud.com/), see ./zope.jinja
+#
+# Of course we gather metadata for thr project including its name, repo url, dns, project branch, salt branch
+# but also all kind of values used in the later states. This will feed a special variable named 'common', and see
+# makina-state._modules.mc_project.py to know how we initialise it.
+#
+# Most of the common variable is editable either via well placed grains or pillar entries.
+#
+# An exemple to use one of the project macros it could we to put in your top file only the following:
+#
+#    {% import "makina-states/projects/zope.jinja" as zope with context %}
+#    {% set name = 'foo' %}{% set url = 'ssh://github.com/foo.git %}{% set dns = 'local.me' %}
+#    {{ zope.install_generic_zope_project(name, url=url, dns=dns) }}
+#
+# Please also read the end of this file to understand how hooks and common data is loaded
+#
+#}
+
+
+# export macro to callees
+{% set services = services %}
+{% set localsettings = services.localsettings %}
+{% set saltmac = saltmac %}
+
+
+{% macro set_accesses(common) %}
+#
+# Create a dedicated system user for our project
+#
+{{common['user']}}:
+  group.present:
+    - name: {{ common['user'] }}
+    - system: True
+  user.present:
+    - name: {{ common['user']}}
+    - require:
+        - group: {{ common['user'] }}
+    - fullname: {{ common['user'] }} user
+    - gid_from_name: True
+    - optional_groups:
+      - {{ common['user'] }}
+      - {{ common.localsettings.group}}
+
+#
+# By default we copy root ssh key creds to the project user
+# if and only if they do not already  exist
+# We will then just have to accept only one key in our gitorious, the root one
+# Choose between dsa or rsa, the one that match your needs.
+#
+{{common['user']}}-ssh-keys-init:
+  cmd.run:
+    {# for the project user, create it's ssh dir and copy the root ssh keys #}
+    - name: |
+            home="$(awk -F: -v v="{{common['user']}}" '{if ($1==v && $6!="") print $6}' /etc/passwd)";
+            cd /root/.ssh;
+            if [[ ! -e $home/.ssh ]];then
+              mkdir $home/.ssh;
+            fi;
+            for i in config id_*;do
+              if [[ ! -e $home/.ssh/$i ]];then
+                cp -fv $i $home/.ssh;
+              fi;
+            done;
+    {# if only the ssh keys are not there #}
+    - onlyif: |
+              res=1;
+              home="$(awk -F: -v v="{{common['user']}}" '{if ($1==v && $6!="") print $6}' /etc/passwd)";
+              cd /root/.ssh;
+              for i in config id_*;do
+                if [[ ! -e $home/.ssh/$i ]];then
+                  res=0;
+                fi;
+              done;
+              exit $res;
+    - user: root
+    - require:
+      {# only where the user exists and when we have installed the root ssh keys #}
+      - cmd: root-ssh-keys-init
+      - group: {{common['user']}}
+      - user: {{common['user']}}
+
+{{common['user']}}-ssh-keys-perms:
+  cmd.run:
+    - require:
+      - cmd: {{common['user']}}-ssh-keys-init
+      {# be sure to have correct permissions on ssh folders #}
+    - name: |
+            home="$(awk -F: -v v="{{common['user']}}" '{if ($1==v && $6!="") print $6}' /etc/passwd)";
+            chmod -Rf 750           $home/.ssh;
+            chmod -Rf 700           $home/.ssh/*;
+            chmod -Rf 770           $home/.ssh/config;
+            chown -Rf {{common['user']}}:{{common['user']}} $home/.ssh;
+{% endmacro %}
+
+
+#
+# Checkout and setup projet directories according to makina-states philosophy:
+#   - /src/projects/projectName
+#             |_ salt -> salt branch of the project
+#             |_ pillar -> project's pillar
+#             |_ project -> project application code
+#
+{% macro checkout_salt_and_code(common) %}
+
+#
+# Checkout the salt branch of the project repository in /srv/projects/project/salt
+#
+{{common.name}}-checkout-salt:
+  mc_git.latest:
+    - rev: {{common.salt_branch}}
+    - name:  {{common.url}}
+    - target: {{common.salt_root}}
+    - user: {{common['user']}}
+    - require:
+      # be sure to run after salt has maybe updated itself
+      # and has our code installation tree
+      - cmd: {{common['user']}}-ssh-keys-perms
+      - service: salt-salt-minion
+      - group: {{common['user']}}
+      - user: {{common['user']}}
+
+#
+# Create:
+#
+#   /srv/projects/project/salt
+#   /srv/projects/project/pillar
+#   /srv/projects/project/project
+#
+{% for i in [
+  common.project_dir,
+  common.salt_root,
+  common.pillar_root] %}
+{{common.name}}-{{i}}-dir:
+  file.directory:
+    - name: {{i}}
+    - makedirs: true
+    - user: {{common['user']}}
+    - group: {{localsettings.group}}
+    - mode: 0770
+    - require_in:
+      - file: {{common.name}}-checkout-code
+    - require:
+      - mc_git: {{common.name}}-checkout-salt
+{% endfor %}
+
+
+#
+# Checkout the project branch in /srv/projects/project/project
+#
+{{common.name}}-checkout-code:
+  file.directory:
+    - name: {{common.project_root}}
+    - makedirs: true
+    - user: {{common['user']}}
+    - group: {{localsettings.group}}
+    - require:
+      - mc_git: {{common.name}}-checkout-salt
+  {# this is an optimisation, to not clone entirely twice the project, copy the salt git folder
+     to the project .git as they are on the same git repository, it's quickier and consume less network #}
+  cmd.run:
+    - name: rsync -az --exclude="refs/heads/*" "{{common.salt_root}}/.git/" "{{common.project_root}}/.git/";touch "{{common.project_root}}/.initial"
+    - unless: test -d "{{common.project_root}}/.git/"
+    - user: {{common['user']}}
+    - require:
+      - file: {{common.name}}-checkout-code
+  mc_git.latest:
+    - rev: {{common.project_branch}}
+    - name:  {{common.url}}
+    - user: {{common['user']}}
+    - target: {{common.project_root}}
+    - require:
+      - cmd: {{common.name}}-checkout-code
+    - user: {{common['user']}}
+
+{% endmacro %}
+
+
+{% macro install_apache(common) %}
+{#
+# Adding or removing modules
+{{common.name}}-apache-included1:
+  mc_apache.include_module:
+    - modules:
+      - proxy_http
+      - proxy_html
+      - proxy
+      - authn_file
+      - include
+      - rewrite
+    - require_in:
+      - mc_apache: makina-apache-main-conf
+
+{{ virtualhost(apacheData = apacheData,
+            site = salt['pillar.get']('project-foo-apache-vh1-name', 'www.foobar.com'),
+            small_name = salt['pillar.get']('project-foo-apache-vh1-nickname', 'foobar'),
+            active = True,
+            number = '900',
+            log_level = salt['pillar.get']('project-foo-apache-vh1-loglevel', 'debug'),
+            serverAlias = salt['pillar.get']('project-foo-apache-vh1-alias', 'foobar.com'),
+            documentRoot = salt['pillar.get']('project-foo-apache-vh1-docroot', '/srv/projects/example/foobar/www'),
+            redirect_aliases = True,
+            allow_htaccess = False) }}
+#}
+
+##
+
+
+{% endmacro %}
+
+
+#
+# PERMISSIONS SETUP, STAY SECURE and reset file permissions, more over never let others this our stuff !
+#
+{% macro fix_permissions(common) %}
+{{common.name}}-restricted-perms:
+  cmd.script:
+    - source: {{saltmac.resetperms}}
+    - template: jinja
+    - dmode: '0770'
+    - fmode: '0770'
+    - reset_user:  root
+    - reset_group: "{{localsettings.group}}"
+    - reset_paths:
+      - {{common.salt_root}}
+      - {{common.pillar_root}}
+    - require:
+      - cmd: {{common.name}}-checkout-code
+
+{{common.name}}-perms:
+  cmd.script:
+    - source: {{saltmac.resetperms}}
+    - template: jinja
+    - dmode: '0770'
+    - fmode: '0770'
+    - reset_user: {{common['user']}}
+    - reset_group: "{{localsettings.group}}"
+    - reset_paths:
+      - {{common.project_root}}
+    - require:
+      - cmd: {{common.name}}-checkout-code
+      - cmd: {{common.name}}-restricted-perms
+{% endmacro %}
+
+#
+# All project need to define at least two macros which will use the following macros
+# - A macro named 'install_project' which call the following macro and will call the next macro
+# - Another macro which is the install_macro argument which really install the project
+# - pre_install and post_install macros will setup system accesses, checkout the base code and finally reset
+#  all filesystem permissions to stay secure.
+#
+
+{% macro pre_install(common) %}
+{{ set_accesses(common) }}
+{{ checkout_salt_and_code(common) }}
+{% endmacro %}
+
+{% macro post_install(common) %}
+{{ fix_permissions(common) }}
+{% endmacro %}
+
+
+{% macro install_project(common, pre=True, post=True, install_macro=None, includes=None) %}
+{% if not includes %}
+{% set includes = common.sls_includes %}
+{% endif %}
+{% if includes %}
+include:
+  {% for i in includes %}- {{i}}
+  {% endfor %}
+{% endif %}
+{% if pre %}
+{{ pre_install(common) }}
+{% endif %}
+{% if install_macro %}
+{{ install_macro(common) }}
+{% endif %}
+{% if post %}
+{{ post_install(common) }}
+{% endif %}
+{% endmacro %}
