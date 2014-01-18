@@ -1,3 +1,4 @@
+{% import "makina-states/nodetypes/vagrantvm.sls" as vagrantvm with context %}
 {% import "makina-states/_macros/salt.jinja" as saltmac with context %}
 {% import "makina-states/_macros/services.jinja" as services with context %}
 {% from "makina-states/services/http/apache_defaults.jinja" import apacheData with context %}
@@ -28,6 +29,7 @@
 
 # export macro to callees
 {% set services = services %}
+{% set nodetypes = services.nodetypes %}
 {% set localsettings = services.localsettings %}
 {% set saltmac = saltmac %}
 
@@ -251,6 +253,39 @@
 {% endmacro %}
 
 #
+# Register all the app dns's in /etc/hosts
+# If we are in devmode (vagrant), also add them to the hosts to the parent box
+#
+
+{{common.name}}-append-hosts-accumulator:
+  file.accumulated:
+    - require_in:
+      - file: makina-append-etc-hosts-management
+    - filename: {{ locs.conf_dir }}/hosts
+    - text: |
+            {% for dns in common.dnses }}
+            {{dnses[dns]}} {{dns}}
+            {% endfor %}
+#
+# if we are on a vagrant box, also register our hosts to be accesible from the host
+{% if 'vagrantvm in nodetypes.registry.actives %}
+{% if vagrantvm.vm_num %}
+makina-parent-append-etc-hosts-accumulated-project-{{name}}:
+  file.accumulated:
+    - filename: {{hostsf}}
+    - name: parent-hosts-append-accumulator-{{ vm_name }}-entries
+    - text: |
+            {% for dns in common.dnses }}
+            {{ ip2 }} {{ dns }}
+            {{ ip1 }} {{ dns}}.nat
+            {% endfor %}
+    - require_in:
+      - file: makina-append-parent-etc-hosts-management
+{% endif %}
+{% endif %}
+{% endmacro %}
+
+#
 # All project need to define at least two macros which will use the following macros
 # - A macro named 'install_project' which call the following macro and will call the next macro
 # - Another macro which is the install_macro argument which really install the project
@@ -259,6 +294,7 @@
 #
 
 {% macro pre_install(common) %}
+{{ configure_dnses(common) }}
 {{ set_accesses(common) }}
 {{ checkout_salt_and_code(common) }}
 {% endmacro %}

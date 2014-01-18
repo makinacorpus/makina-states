@@ -50,6 +50,8 @@ def get_common_vars(
     group=None,
     url='https://github.com/makinacorpus/{name}.git',
     dns='localhost',
+    main_ip='127.0.0.1',
+    dnses=None,
     defaults=None,
     env_defaults=None,
     os_defaults=None,
@@ -68,7 +70,9 @@ def get_common_vars(
         - project_branch: the branch of the project
         - salt_branch: the branch of the project salt tree
         - url: the git repository url
-        - dns: dns of the installed application if any
+        - dns: main dns of the installed application if any
+        - dnses: Additionnal hosts (mapping {host: ip}), the main dns will be inserted
+                 in this list linked to the 'main_ip'.
         - user: system project user
         - group: system project user group
         - defaults: data mapping for this project to use in states as common.data
@@ -90,7 +94,9 @@ def get_common_vars(
     """
     default_sls_includes = [
         'makina-states.controllers.salt_minion',
-        'makina-states.services.base.ssh']
+        'makina-states.services.base.ssh',
+        'makina-states.localsettings.hosts',
+    ]
 
     if not sls_includes:
         sls_includes = []
@@ -98,6 +104,8 @@ def get_common_vars(
     for i in default_sls_includes:
         if not i in sls_includes:
             sls_includes.append(i)
+    if 'vagrantvm' in services.nodetypes.registy['actives']:
+        sls_includes.append('makina-states.nodetypes.vagrantvm')
 
     localsettings = services.localsettings
     if not default_env:
@@ -109,12 +117,20 @@ def get_common_vars(
     if not group:
         group = localsettings.group
 
+    if not dnses:
+        dnses = {}
+
+    if isinstance(dns, basestring):
+        dnses[dns] = main_ip
+
     variables = {
         'services': services,
         'localsettings': localsettings,
         'default_env': default_env,
         'name': name,
+        'dnses': dnses,
         'dns': dns,
+        'main_ip': main_ip,
         'user': user,
         'group': group,
         'salt_subdir': salt_subdir,
@@ -142,6 +158,7 @@ def get_common_vars(
             'localsettings': localsettings,
             'name': name,
             'dns': dns,
+            'dnses': dnses,
             'root': localsettings.locations['projects_dir'],
             'project_dir': '{root}/{name}',
             'salt_root':    '{project_dir}/{salt_subdir}',
