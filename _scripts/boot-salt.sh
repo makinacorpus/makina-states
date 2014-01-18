@@ -506,6 +506,14 @@ set_vars() {
     PROJECT_URL="${PROJECT_URL:-""}"
     PROJECT_BRANCH="${PROJECT_BRANCH:-salt}"
     PROJECT_NAME="${PROJECT_NAME:-}"
+
+    if [[ -n $PROJECT_URL ]] && [[ -z $PROJECT_NAME ]];then
+        PROJECT_NAME="$(basename $(echo $PROJECT_URL|"$SED" "s/.git$//"))"
+    fi
+    if [[ -n "$PROJECT_URL" ]] && [[ -z "$PROJECT_NAME" ]];then
+        die "Please provide a \$PROJECT_NAME"
+    fi
+
     PROJECT_TOPSLS="${PROJECT_TOPSLS:-}"
     PROJECT_PATH="$PROJECTS_PATH/$PROJECT_NAME"
     PROJECTS_SALT_PATH="$SALT_ROOT/$MAKINA_PROJECTS"
@@ -518,13 +526,6 @@ set_vars() {
     PROJECT_TOPSLS_DEFAULT="$MAKINA_PROJECTS/$PROJECT_NAME/top.sls"
     PROJECT_TOPSTATE_DEFAULT="${MAKINA_PROJECTS}.${PROJECT_NAME}.top"
     PROJECT_PILLAR_STATE="${MAKINA_PROJECTS}.${PROJECT_NAME}"
-
-    if [[ -n $PROJECT_URL ]] && [[ -z $PROJECT_NAME ]];then
-        PROJECT_NAME="$(basename $(echo $PROJECT_URL|"$SED" "s/.git$//"))"
-    fi
-    if [[ -n "$PROJECT_URL" ]] && [[ -z "$PROJECT_NAME" ]];then
-        die "Please provide a \$PROJECT_NAME"
-    fi
 
     # export variables to support a restart
     export IS_SALT IS_SALT_MASTER IS_SALT_MINION
@@ -889,9 +890,9 @@ get_grain() {
 
 set_grain() {
     grain=$1
-    bs_log " [bs] Testing salt grain '$grain'"
+    bs_log "Testing salt grain '$grain'"
     if [[ "$(get_grain $grain)" != *"True"* ]];then
-        bs_log " [bs] Setting salt grain: $grain=true "
+        bs_log "Setting salt grain: $grain=true "
         salt-call --local grains.setval $grain true
         # sync grains rigth now, do not wait for reboot
         die_in_error "setting $grain"
@@ -2008,8 +2009,6 @@ maybe_install_projects() {
         #    git reset --hard "origin/$PROJECT_BRANCH"
         #fi
         changed="false"
-        O_SALT_BOOT_LOGFILE="$SALT_BOOT_LOGFILE"
-        O_SALT_BOOT_OUTFILE="$SALT_BOOT_OUTFILE"
         if [[ -f "$SALT_ROOT/${PROJECT_TOPSLS_DEFAULT}"  ]] && [[ -z ${PROJECT_TOPSLS} ]];then
             PROJECT_TOPSLS="$PROJECT_TOPSLS_DEFAULT"
         fi
@@ -2024,8 +2023,7 @@ maybe_install_projects() {
         fi
         if [[ ! -e "$PROJECT_PILLAR_LINK" ]];then
             debug_msg "Linking project $PROJECT_NAME pillar in $SALT_PILLAR"
-            echo ln -sf "$PROJECT_PILLAR_PATH" "$PROJECT_PILLAR_LINK"
-            ln -sf "$PROJECT_PILLAR_PATH" "$PROJECT_PILLAR_LINK"
+            ln -sfv "$PROJECT_PILLAR_PATH" "$PROJECT_PILLAR_LINK"
         fi
         if [[ ! -e "$PROJECT_PILLAR_FILE" ]];then
             if [[ ! -e "$PROJECT_SALT_PATH/PILLAR.sample.sls" ]];then
@@ -2033,14 +2031,16 @@ maybe_install_projects() {
                 touch "$PROJECT_SALT_PATH/PILLAR.sample.sls"
             fi
             debug_msg "Linking project $PROJECT_NAME pillar in $PROJECT_PILLAR_FILE"
-            ln -sf "$PROJECT_SALT_PATH/PILLAR.sample.sls" "$PROJECT_PILLAR_FILE"
+            ln -sfv "$PROJECT_SALT_PATH/PILLAR.sample.sls" "$PROJECT_PILLAR_FILE"
         fi
-        if [[ $(grep -- "- $PROJECT_PILLAR_STATE" $SALT_PILLAR/top.sls|wc -l) == "0" ]];then
+        if [[ $(grep -- "- $PROJECT_PILLAR_STATE" "$SALT_PILLAR/top.sls"|wc -l) == "0" ]];then
             debug_msg "including $PROJECT_NAME pillar in $SALT_PILLAR/top.sls"
             "$SED" -re "/('|\")\*('|\"):/ {
 a\    - $PROJECT_PILLAR_STATE
-}" -i $SALT_PILLAR/top.sls
+}" -i "$SALT_PILLAR/top.sls"
         fi
+        O_SALT_BOOT_LOGFILE="$SALT_BOOT_LOGFILE"
+        O_SALT_BOOT_OUTFILE="$SALT_BOOT_OUTFILE"
         if [[ "$(get_grain $project_grain)" != *"True"* ]] || [[ -n $FORCE_PROJECT_TOP ]];then
             if [[ -n $PROJECT_TOPSLS ]];then
                 SALT_BOOT_LOGFILE="$PROJECT_SALT_PATH/.salt_top_log.log"
@@ -2048,14 +2048,32 @@ a\    - $PROJECT_PILLAR_STATE
                 bs_log "Running salt Top state: $PROJECT_URL@$PROJECT_BRANCH[$PROJECT_TOPSLS]"
                 salt_call_wrapper state.sls "$PROJECT_TOPSTATE"
                 if [[ -n "$SALT_BOOT_DEBUG" ]];then
-                    cat $SALT_BOOT_OUTFILE;
+                    cat "$SALT_BOOT_OUTFILE"
                 fi
                 if [[ "$last_salt_retcode" != "0" ]];then
+                    warn_log
                     bs_log "Failed to run $PROJECT_TOPSLS"
                     exit -1
                 else
                     warn_log
+                    if [[ $(grep -- "- $PROJECT_TOPSTATE" "$SALT_ROOT/top.sls"|wc -l) == "0" ]];then
+                        if [[ $(grep -- " - makina-states.top" "$SALT_ROOT/top.sls"|wc -l) != "0" ]];then
+                            "$SED" -i -re "/ - makina-states.top/ {
+a\    - $PROJECT_TOPSTATE
+}" "$SALT_ROOT/top.sls"
+                        else
+                            debug_msg "including $PROJECT_NAME pillar in $SALT_ROOT/top.sls"
+                            "$SED" -i -re "/('|\")\*('|\"):/ {
+a\    - $PROJECT_TOPSTATE
+}" "$SALT_ROOT/top.sls"
+                        fi
+                    fi
                     set_grain "$project_grain"
+                    if [[ "$last_salt_retcode" != "0" ]];then
+                        warn_log
+                        bs_log "Failed to set project grain: $project_grain"
+                        exit -1
+                    fi
                 fi
                 changed="true"
             fi

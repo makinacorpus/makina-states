@@ -60,6 +60,17 @@
 {%   endif %}
 {% endfor %}
 
+# default activated postgresql versions:
+{% set defaultPgVersion = salt['mc_utils.get'](
+   'makina-states.services.postgresql.version',
+   '9.3') %}
+{% set pgVers = salt['mc_utils.get'](
+   'makina-states.services.postgresql.versions',
+   [defaultPgVersion]) %}
+{% set postgisVers = salt['mc_utils.get'](
+   'makina-states.services.postgis.versions',
+   {'2.1': [defaultPgVersion, '9.2']}) %}
+
 # -----------------------------------------------------
 # MySQL default custom configuration (services.db.mysql)
 # To override the default makina-states configuration file,
@@ -127,6 +138,8 @@
       'db.mysql': {'active': False},
       'db.postgresql': {'active': False},
       'firewall.shorewall': {'active': False},
+      'gis.qgis': {'active': False},
+      'gis.postgis': {'active': False},
       'http.apache': {'active': False},
       'java.solr4': {'active': False},
       'java.tomcat7': {'active': False},

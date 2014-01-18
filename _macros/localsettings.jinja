@@ -254,6 +254,9 @@
 
 {% set ubuntu_mirror = salt['mc_utils.get']('makina-states.apt.ubuntu.mirror',
                                           'http://ftp.free.fr/mirrors/ftp.ubuntu.com/ubuntu') %}
+
+{% set keyserver = 'pgp.mit.edu' %}
+{% set dist = salt['mc_utils.get']('lsb_distrib_codename', '') %}
 {% set ubuntu_lts = 'precise' %}
 {% set ubuntu_last = 'saucy' %}
 {% set udist = salt['mc_utils.get']('lsb_distrib_codename', ubuntu_lts) %}

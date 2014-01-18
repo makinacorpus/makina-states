@@ -64,19 +64,140 @@
 #        - mydb_owners
 
 {% import "makina-states/_macros/services.jinja" as services with context %}
+{% set services = services %}
 {% set localsettings = services.localsettings %}
 {% set nodetypes = services.nodetypes %}
 {% set locs = localsettings.locations %}
 {{ services.register('db.postgresql') }}
-{% set default_psql_user = localsettings.postgresqlUser %}
+{% set default_user = services.postgresqlUser %}
+
+#
+# Hooks to attach to for orchestration purpose
+# - We create in order:
+#   - groups
+#   - databases
+#   - extensions
+#   - users
+#
+
+{% set orchestrate = {} %}
+{% for ver in services.pgVers %}
+{% set preext = ver+'-makina-postgresql-pre-create-ext' %}
+{% set postext = ver+'-makina-postgresql-post-create-ext' %}
+{% set pregroup = ver+'-makina-postgresql-pre-create-group' %}
+{% set postgroup = ver+'-makina-postgresql-post-create-group' %}
+{% set predb = ver+'-makina-postgresql-pre-create-db' %}
+{% set postdb = ver+'-makina-postgresql-post-create-db' %}
+{% set preuser = ver+'-makina-postgresql-pre-create-user' %}
+{% set postuser = ver+'-makina-postgresql-post-create-user' %}
+
+{% do orchestrate.update({ver: {} }) %}
+{% do orchestrate[ver].update({
+  'pregroup': pregroup,
+  'postgroup': postgroup,
+  'predb': predb,
+  'postdb': postdb,
+  'preuser': preuser,
+  'postuser': postuser,
+  'preext': preext,
+  'postext': postext,
+}) %}
+{{services.funcs.dummy(pregroup, '''
+    - require:
+      - service: makina-postgresql-service
+''')}}
+{{services.funcs.dummy(postgroup)}}
+
+{{services.funcs.dummy(predb, '''
+    - require:
+      - cmd: {0}
+      - service: makina-postgresql-service
+'''.format(postgroup))}}
+{{services.funcs.dummy(postdb)}}
+
+{{services.funcs.dummy(preuser, '''
+    - require:
+      - cmd: {0}
+      - service: makina-postgresql-service
+'''.format(postdb))}}
+{{services.funcs.dummy(postuser)}}
+
+{{services.funcs.dummy(preext, '''
+    - require:
+      - pkg: postgresql-pkgs
+      - cmd: {0}
+      - service: makina-postgresql-service
+'''.format(postdb))}}
+{{services.funcs.dummy(postext)}}
+{% endfor %}
+
+{% macro install_pg_exts(exts,
+                         db=None,
+                         dbs=None,
+                         version=None,
+                         versions=None,
+                         user=default_user) %}
+{% if not dbs %}
+{% set dbs = ['template1'] %}
+{% endif %}
+{% if db %}
+{% do dbs.append(db) %}
+{% endif %}
+{% if not versions %}
+{% set versions = [services.defaultPgVersion] %}
+{% endif %}
+{% if version %}
+{% do versions.append(version) %}
+{% endif %}
+
+{% for version in versions %}
+{% for ext in exts %}
+{% for db in dbs %}
+{{version}}-{{db}}-{{ext}}-makina-postgresql:
+  cmd.run:
+    - require_in:
+      - cmd: {{ orchestrate[version]['postext'] }}
+    - require:
+      - cmd: {{ orchestrate[version]['preext'] }}
+    - user: {{ user }}
+    - name: echo "CREATE EXTENSION {{ext}};"|psql {{db}}
+    - unless: test "$(echo "\dx"|psql -q -P tuples_only=on,footer=off,border=0 {{db}}|awk '{print $1}'|grep {{ext}}|wc -l)" != "0"
+{% endfor%}
+{% endfor%}
+{% endfor%}
+{% endmacro %}
+
+{% macro install_pg_ext(ext, db=None,  dbs=None, version=None, versions=None, user=default_user) %}
+{{ install_pg_exts([ext], db=None, dbs=dbs) }}
+{% endmacro %}
 
 {% macro postgresql_base() %}
+{% if grains['os_family'] in ['Debian'] %}
+pgsql-repo:
+  pkgrepo.managed:
+    - name: deb http://apt.postgresql.org/pub/repos/apt/ {{localsettings.dist}}-pgdg main
+    - file: {{ locs.conf_dir }}/apt/sources.list.d/pgsql.list
+    - keyid: 'ACCC4CF8'
+    - keyserver: {{localsettings.keyserver }}
+
+{% endif %}
+
 postgresql-pkgs:
   pkg.installed:
     - pkgs:
-      - postgresql
+      - python-virtualenv {# noop #}
+      {% if grains['os_family'] in ['Debian'] %}
+      {% for pgver in services.pgVers %}
+      - postgresql-{{pgver}}
+      - postgresql-server-dev-{{pgver}}
+      {% endfor %}
       - libpq-dev
-      - python-virtualenv
+      - postgresql-contrib
+      {% endif %}
+    {% if grains['os_family'] in ['Debian'] %}
+    - require:
+      - pkgrepo: pgsql-repo
+    {% endif %}
 
 #--- MAIN SERVICE RESTART/RELOAD watchers --------------
 
@@ -99,80 +220,142 @@ makina-postgresql-service-reload:
 
 {% endmacro %}
 
+#
+#--- POSTGRESQL CLUSTER directories, users, database, grants --------------
+#
+{% macro postgresql_group(group,
+                          user=default_user,
+                          version=services.defaultPgVersion) %}
+{{ version }}-{{ group }}-makina-postresql-group:
+   postgres_group.present:
+    - name: {{ group }}
+    - runas: {{ user }}
+    - require:
+      - cmd: {{orchestrate[version]['pregroup']}}
+
+{{ version }}-{{ group }}-makina-postgresql-group-login:
+  cmd.run:
+    - name: echo "ALTER ROLE {{ group }} WITH LOGIN;"|psql
+    - user: {{ user }}
+    - require:
+      - postgres_group: {{ version }}-{{ group }}-makina-postresql-group
+    - require_in:
+      - cmd: {{orchestrate[version]['postgroup']}}
+{% endmacro %}
+
+#
+# Create a database, and an owner group which owns it
+#
 {% macro postgresql_db(db,
                        owner=None,
                        tablespace='pg_default',
-                       template='template0',
+                       template='template1',
                        encoding='utf8',
-                       psql_user=default_psql_user
+                       user=default_user,
+                       version=services.defaultPgVersion
 ) -%}
-#--- POSTGRESQL CLUSTER directories, users, database, grants --------------
-{# owner name is by default the db name #}
+{# group name is by default the db name #}
 {% if not owner -%}
-{%   set owner = '%s_owners' % db %}
+{%   set owner = '%s_groups' % db %}
 {% endif -%}
-{{ owner }}-makina-postresql-group:
-   postgres_group.present:
-    - name: {{ owner }}
-    - runas: {{ psql_user }}
-    - require:
-      - service: makina-postgresql-service
 
-{{ owner }}-makina-postgresql-group-login:
-  cmd.run:
-    - name: echo "ALTER ROLE {{ owner }} WITH LOGIN;"|psql
-    - user: {{ psql_user }}
-    - require:
-      - postgres_group: {{ owner }}-makina-postresql-group
+{{ postgresql_group(owner, user=user) }}
 
-{{ db }}-makina-postgresql-database:
+{{version}}-{{ db }}-makina-postgresql-database:
   cmd.run:
     - name: createdb {{ db }} -E {{ encoding }} -O {{ owner }} -T {{template }} -D {{ tablespace }}
     - unless: test "$(psql -l|awk '{print $1}'|grep -w {{ db }}|wc -l)" != "0"
-    - user: {{ psql_user }}
+    - user: {{ user }}
     - require:
-      - service: makina-postgresql-service
-      - postgres_group: {{ owner }}-makina-postresql-group
+      - cmd: {{orchestrate[version]['predb']}}
 
-{{ db }}-owners-makina-postresql-grant:
+{{ version }}-{{ owner }}-groups-makina-postresql-grant:
   cmd.run:
     - name: echo "GRANT ALL PRIVILEGES ON DATABASE {{ db }} TO {{ owner }};"|psql
-    - user: {{ psql_user }}
+    - user: {{ user }}
     - require:
-      - postgres_group: {{ owner }}-makina-postresql-group
-      - cmd: {{ db }}-makina-postgresql-database
+      - cmd: {{version}}-{{ db }}-makina-postgresql-database
+    - require_in:
+      - cmd: {{orchestrate[version]['postdb'] }}
+
+{{ install_pg_ext('adminpack', db=db, version=version, user=default_user) }}
 {% endmacro %}
 
-{% macro postgresql_user(user,
+#
+# Create and grant privs to a postgresql user
+#
+{% macro postgresql_user(name,
                          password,
                          groups=None,
                          createdb=False,
                          superuser=False,
                          replication=False,
                          encrypted=True,
-                         psql_user=default_psql_user
+                         user=default_user,
+                         version=services.defaultPgVersion
 ) -%}
 {% if not groups %}
 {%   set groups = [] %}
 {% endif %}
-{{ user }}-makina-services-postgresql-user:
+{{version}}-{{ name }}-makina-services-postgresql-user:
   postgres_user.present:
-    - name: {{ user }}
+    - name: {{ name }}
     - password: {{ password }}
-    - runas: {{ psql_user }}
+    - runas: {{ user }}
     {% if createdb %}- createdb: True {% endif %}
     {% if superuser %}- superuser: True {% endif %}
     {% if replication %}- replication: True {% endif %}
     {% if encrypted %}- encrypted: True {% endif %}
     {% if groups %}- groups: {{ ','.join(groups) }}{% endif %}
+    - require_in:
+      - cmd: {{orchestrate[version]['postuser']}}
     - require:
-      - service: makina-postgresql-service
-      {% for g in  groups %}- cmd: {{ g }}-makina-postgresql-group-login
-      {% endfor %}
+      - cmd: {{orchestrate[version]['preuser']}}
 {% endmacro %}
 
 {{ postgresql_base() }}
-{% for db, data in localsettings.pgDbs %}
+
+{% for version in services.pgVers %}
+pgwrapper-{{version}}-makina-postgresql:
+  file.managed:
+    - name: /usr/bin/pg-wrapper-{{version}}.sh
+    - source: salt://makina-states/files/usr/bin/pg-wrapper.sh
+    - template: jinja
+    - mode: 755
+    - require_in:
+      - cmd: {{orchestrate[version]['predb']}}
+      - cmd: {{orchestrate[version]['pregroup']}}
+      - cmd: {{orchestrate[version]['preuser']}}
+      - cmd: {{orchestrate[version]['preext']}}
+    - context:
+      version: {{version}}
+
+{%  for binary in [
+ 'vacuumdb', 'dropdb', 'clusterdb', 'reindexdb', 'pg_dump', 'pg_basebackup',
+ 'pg_receivexlog', 'psql', 'createdb', 'dropuser', 'pg_dumpall', 'createuser',
+ 'pg_restore', 'pg_isready', 'createlang', 'droplang'
+] %}
+pgwrapper-{{binary}}-{{version}}-makina-postgresql:
+  file.managed:
+    - name: /usr/bin/{{binary}}-{{version}}
+    - source: salt://makina-states/files/usr/bin/pgbin-wrapper.sh
+    - template: jinja
+    - mode: 755
+    - require_in:
+      - cmd: {{orchestrate[version]['predb']}}
+      - cmd: {{orchestrate[version]['pregroup']}}
+      - cmd: {{orchestrate[version]['preuser']}}
+      - cmd: {{orchestrate[version]['preext']}}
+    - require:
+      - file: pgwrapper-{{version}}-makina-postgresql
+    - context:
+      version: {{ version }}
+      binary: {{ binary }}
+{%  endfor %}
+{% endfor %}
+
+{% for version in services.pgVers %}
+{% for db, data in services.pgDbs %}
 {%     set encoding=data.get('encoding', 'utf8') %}
 {%     set owner=data.get('owner', None) %}
 {%     set template=data.get('encoding', 'template0')%}
@@ -181,24 +364,25 @@ makina-postgresql-service-reload:
                      owner=owner,
                      tablesplace=tablesplace,
                      encoding=encoding,
+                     version=version,
                      template=template) }}
-
 {% endfor %}
-
-{% for user, data in localsettings.postgresqlUsers %}
+{% for user, data in services.postgresqlUsers %}
 {%     set groups = data.get('groups', []) %}
 {%     set pw = data['password'] %}
 {%     set superuser = data.get('superuser', False) %}
 {%     set encrypted = data.get('encrypted', True) %}
 {%     set replication = data.get('replication', False) %}
 {%     set createdb = data.get('createdb', False) %}
-{{     postgresql_user(user=user,
+{{     postgresql_user(user=default_user,
                        password=pw,
                        createdb=createdb,
                        groups=groups,
+                       version=version,
                        encrypted=encrypted,
                        superuser=superuser,
                        replication=replication) }}
 
+{% endfor %}
 {% endfor %}
 # vim:set nofoldenable:

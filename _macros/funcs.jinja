@@ -75,4 +75,13 @@ include:
 {{    unregister('auto-'+rstatesPref, rgrainsPref, state, data) }}
 {% endfor %}
 {% endmacro %}
+
+
+{% macro dummy(name, text='') %}
+{{name}}:
+  cmd.run:
+    - name: /bin/true
+    - unless: /bin/true
+{{text}}
+{% endmacro %}
 # vim:set nofoldenable:

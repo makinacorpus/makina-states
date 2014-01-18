@@ -31,6 +31,7 @@
 {% set bp = salt['mc_utils.get']('makina-states.apt.use-backports', False) %}
 {% set ddist = localsettings.ddist %}
 {% set udist = localsettings.udist %}
+{% set dist = grains.get('lsb_distrib_codename', '') %}
 
 {% set debian_mirror = localsettings.debian_mirror %}
 {% set ubuntu_mirror = localsettings.ubuntu_mirror %}
