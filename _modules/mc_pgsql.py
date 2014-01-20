@@ -19,9 +19,9 @@ def wrapper(wrappy):
                       if not k in ['wrapper', 'args', 'kw',
                                    'PORT_RE', 'SOCKET_RE', 'os', 're']])
         pg_version = kw.get('pg_version', None)
-        if pg_version is not None:
-            db_host = kw.get('db_host', None)
-            db_port = kw.get('db_port', None)
+        db_host = kw.get('db_host', None)
+        db_port = kw.get('db_port', None)
+        if pg_version is not None and db_host is None and db_port is None:
             #
             # Try to link a specific postgres version to a running postgresl
             # socket
