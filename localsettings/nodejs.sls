@@ -21,8 +21,8 @@
 nodejs:
   pkgrepo.managed:
     - humanname: Node.js PPA
-    - name: deb http://ppa.launchpad.net/chris-lea/node.js/ubuntu {{udist}} main
-    - dist: {{udist}}
+    - name: deb http://ppa.launchpad.net/chris-lea/node.js/ubuntu {{localsettings.dist}} main
+    - dist: {{localsettings.dist}}
     - file: {{locs.conf_dir}}/apt/sources.list.d/nodejs.list
     - keyid: C7917B12
     - keyserver: keyserver.ubuntu.com
