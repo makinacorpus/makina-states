@@ -36,10 +36,8 @@ nodejs-pkgs:
     - pkgs:
       - nodejs
 
-{% if npm_packages %}
 {% for npm_package in npm_packages %}
 npm-packages{{npm_package}}:
     npm.installed: []
 {% endfor %}
-{% endif %}
 {% endif %}
