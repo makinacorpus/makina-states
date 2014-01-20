@@ -9,6 +9,8 @@
 include:
   - makina-states.services.db.postgresql
 
+{% set dbname = services.postgisDbName %}
+
 {% for postgisVer, pgvers in services.postgisVers.items() %}
 {%  for pgVer in pgvers %}
 {%    if pgVer in services.pgVers %}
@@ -27,14 +29,14 @@ prereq-postgis-{{pgVer}}-{{postgisVer}}:
       - postgresql-{{pgVer}}-postgis-scripts
       {% endif %}
 
-{{ pgsql.postgresql_db('postgis') }}
+{{ pgsql.postgresql_db(dbname) }}
 
-{% for ext in ["postgis",
-               "postgis_topology",
-               "fuzzystrmatch",
-               "postgis_tiger_geocoder"] %}
-{{ pgsql.install_pg_ext(ext, db='postgis') }}
-{%      endfor %}
+{{ pgsql.install_pg_exts(
+    ["postgis",
+     "postgis_topology",
+     "fuzzystrmatch",
+     "postgis_tiger_geocoder"],
+    db=dbname) }}
 {%    endif %}
 {%  endfor %}
 {% endfor %}

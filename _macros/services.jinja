@@ -70,6 +70,8 @@
 {% set postgisVers = salt['mc_utils.get'](
    'makina-states.services.postgis.versions',
    {'2.1': [defaultPgVersion, '9.2']}) %}
+{% set postgisDbName = salt['mc_utils.get'](
+  'makina-states.services.postgis.dbname', 'postgis') %}
 
 # -----------------------------------------------------
 # MySQL default custom configuration (services.db.mysql)
