@@ -18,26 +18,28 @@
 
 {% if grains['os'] in ['Ubuntu'] %}
 # Installing the last version of Node: https://github.com/joyent/node/wiki/Installing-Node.js-via-package-manager#ubuntu-mint-elementary-os
-nodejs:
+nodejs-repo:
   pkgrepo.managed:
+    - name: nodejs
     - humanname: Node.js PPA
     - name: deb http://ppa.launchpad.net/chris-lea/node.js/ubuntu {{localsettings.dist}} main
     - dist: {{localsettings.dist}}
     - file: {{locs.conf_dir}}/apt/sources.list.d/nodejs.list
     - keyid: C7917B12
     - keyserver: keyserver.ubuntu.com
+    
+nodejs-pkgs:
   pkg.installed:
+    - name: nodejs
     - require:
-      - pkgrepo: nodejs
+      - pkgrepo: nodejs-repo
     - pkgs:
       - nodejs
 
 {% if npm_packages %}
-npm-packages:
-  {% for npm_package in npm_packages %}
-  {{npm_package}}:
-    npm:
-      - installed
-  {% endfor %}
+{% for npm_package in npm_packages %}
+npm-packages{{npm_package}}:
+    npm.installed: []
+{% endfor %}
 {% endif %}
 {% endif %}
