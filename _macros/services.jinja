@@ -10,17 +10,23 @@
 #      - ldap has to be toggled on
 
 {% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
+{% import "makina-states/_macros/controllers.jinja" as controllers with context %}
 
 # expose imported macros
 {% set nodetypes = nodetypes %}
 {% set localsettings = nodetypes.localsettings %}
 {% set funcs = localsettings.funcs %}
 {% set ldap = localsettings.ldap %}
+{% set saltmac = controllers.saltmac %}
 
 {% set kind = funcs.servicesKind %}
 {% set statesPref = funcs.statesPref + kind + '.' %}
 {% set grainsPref = funcs.grainsPref + kind + '.' %}
 {% set bases = ['localsettings'] %}
+
+
+# SSL Settings
+{% set SSLSettings = localsettings.SSLSettings %}
 
 # -----------------------------------------------------
 # LDAP integration
@@ -39,6 +45,78 @@
     ('dockercontainer' in nodetypes.registry['actives'])
     or ('lxccontainer' in nodetypes.registry['actives'])
   )) %}
+
+# -----------------------------------------------------
+# Pureftpd:  (services.ftp.pureftpd)
+{% set pureftppref                = 'makina-states.services.ftp.pureftp.' %}
+{% set pureftpdDefaultSettings = {
+  'Virtualchroot'      : salt['mc_utils.get'](pureftppref+'virtualchroot', 'false'),
+  'InetdMode'          : salt['mc_utils.get'](pureftppref+'inetd-mode', 'standalone'),
+  'UploadUid'          : salt['mc_utils.get'](pureftppref+'upload-uid', ''),
+  'UploadGid'          : salt['mc_utils.get'](pureftppref+'upload-gid', ''),
+  'UploadScript'       : salt['mc_utils.get'](pureftppref+'upload-script', ''),
+} %}
+
+{% set pureftpdSettings = {
+  'AllowAnonymousFXP'  : salt['mc_utils.get'](pureftppref+'allowanonymousfxp', 'no'),
+  'AllowDotFiles'      : salt['mc_utils.get'](pureftppref+'allowdotfiles', ''),
+  'AllowUserFXP'       : salt['mc_utils.get'](pureftppref+'allowuserfxp', ''),
+  'AltLog'             : salt['mc_utils.get'](pureftppref+'altlog', 'clf:/var/log/pure-ftpd/transfer.log'),
+  'AnonymousBandwidth' : salt['mc_utils.get'](pureftppref+'anonymouscancreatedirs', ''),
+  'AnonymousCanCreateDirs': salt['mc_utils.get'](pureftppref+'anonymouscancreatedirs', 'no'),
+  'AnonymousCantUpload': salt['mc_utils.get'](pureftppref+'anonymousbandwidth', 'yes'),
+  'AnonymousOnly'      : salt['mc_utils.get'](pureftppref+'anonymouscantupload', ''),
+  'AnonymousRatio'     : salt['mc_utils.get'](pureftppref+'anonymousonly', ''),
+  'AntiWarez'          : salt['mc_utils.get'](pureftppref+'antiwarez', ''),
+  'AutoRename'         : salt['mc_utils.get'](pureftppref+'autorename', ''),
+  'Bind'               : salt['mc_utils.get'](pureftppref+'bind', ''),
+  'BrokenClientsCompatibility': salt['mc_utils.get'](pureftppref+'brokenclientscompatibility', 'yes'),
+  'CallUploadScript'   : salt['mc_utils.get'](pureftppref+'calluploadscript', ''),
+  'ChrootEveryone'     : salt['mc_utils.get'](pureftppref+'chrooteveryone', 'yes'),
+  'ClientCharset'          : salt['mc_utils.get'](pureftppref+'clientcharset', ''),
+  'Daemonize'          : salt['mc_utils.get'](pureftppref+'daemonize', ""),
+  'DisplayDotFiles'    : salt['mc_utils.get'](pureftppref+'displaydotfiles', "yes"),
+  'DontResolve'        : salt['mc_utils.get'](pureftppref+'dontresolve', "yes"),
+  'FSCharset'          : salt['mc_utils.get'](pureftppref+'fscharset', 'utf-8'),
+  'IPV4Only'           : salt['mc_utils.get'](pureftppref+'ipv4only', "yes"),
+  'IPV6Only'           : salt['mc_utils.get'](pureftppref+'ipv6only', ""),
+  'KeepAllFiles'       : salt['mc_utils.get'](pureftppref+'keepallfiles', "no"),
+  'LimitRecursion'     : salt['mc_utils.get'](pureftppref+'limitrecursion', "5000 500"),
+  'LogPID'             : salt['mc_utils.get'](pureftppref+'logpid', ""),
+  'MaxClientsNumber'   : salt['mc_utils.get'](pureftppref+'maxclientsnumber', ""),
+  'MaxClientsPerIP'    : salt['mc_utils.get'](pureftppref+'maxclientsperip', ""),
+  'MaxDiskUsage'       : salt['mc_utils.get'](pureftppref+'maxdiskusage', "90"),
+  'MinUID'             : salt['mc_utils.get'](pureftppref+'minuid', '1000'),
+  'NATmode'            : salt['mc_utils.get'](pureftppref+'natmode', ""),
+  'NoAnonymous'        : salt['mc_utils.get'](pureftppref+'noanonymous', 'yes'),
+  'NoChmod'            : salt['mc_utils.get'](pureftppref+'nochmod', ""),
+  'NoRename'           : salt['mc_utils.get'](pureftppref+'norename', ""),
+  'NoTruncate'         : salt['mc_utils.get'](pureftppref+'notruncate', ""),
+  'Quota'              : salt['mc_utils.get'](pureftppref+'quota', ""),
+  'SyslogFacility'     : salt['mc_utils.get'](pureftppref+'syslogfacility', ""),
+  'TLS'                : salt['mc_utils.get'](pureftppref+'tls', "1"),
+  'TrustedGID'         : salt['mc_utils.get'](pureftppref+'trustedgid', ""),
+  'TrustedIP'          : salt['mc_utils.get'](pureftppref+'trustedip', ""),
+  'Umask'              : salt['mc_utils.get'](pureftppref+'umasq', "133 022"),
+  'UserBandwidth'      : salt['mc_utils.get'](pureftppref+'userbandwidth', ""),
+  'UserRatio'          : salt['mc_utils.get'](pureftppref+'userratio', ""),
+  'VerboseLog'         : salt['mc_utils.get'](pureftppref+'verboselog', "yes"),
+
+  'PassiveIP'          : salt['mc_utils.get'](pureftppref+'passiveip', ""),
+  'PassivePortRange'   : salt['mc_utils.get'](pureftppref+'passiveportrange', ""),
+
+  'PAMAuthentication'  : salt['mc_utils.get'](pureftppref+'pamauthentication', 'yes'),
+  'UnixAuthentication' : salt['mc_utils.get'](pureftppref+'unixauthentication', 'no'),
+  'PureDB'             : salt['mc_utils.get'](pureftppref+'puredb', '/etc/pure-ftpd/pureftpd.pdb'),
+  'MySQLConfigFile'    : salt['mc_utils.get'](pureftppref+'mysqlconfigfile', ""),
+  'ExtAuth'            : salt['mc_utils.get'](pureftppref+'extauth', ""),
+  'LDAPConfigFile'     : salt['mc_utils.get'](pureftppref+'ldapconfigfile', ""),
+  'PGSQLConfigFile'    : salt['mc_utils.get'](pureftppref+'pgsqlconfigfile', ""),
+
+} %}
+{% for setting in pureftpdSettings %}
+{% do pureftpdSettings.update({setting: pureftpdSettings[setting]+'\n'}) %}
+{% endfor %}
 
 # -----------------------------------------------------
 # PostGRESQL:  (services.db.postgresql)
@@ -139,6 +217,7 @@
       'backup.bacula-fd': {'active': False},
       'db.mysql': {'active': False},
       'db.postgresql': {'active': False},
+      'ftp.pureftpd': {'active': False},
       'firewall.shorewall': {'active': False},
       'gis.qgis': {'active': False},
       'gis.postgis': {'active': False},
