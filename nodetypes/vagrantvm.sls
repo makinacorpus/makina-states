@@ -109,11 +109,11 @@ disable-vagrant-useless-services:
 {% set vm_name = vm_fqdn.replace('.', '_').replace(' ', '_') %}
 {% set vm_nat_fqdn = vm_fqdn.split('.')[:1][0]+'-nat.'+'.'.join(vm_fqdn.split('.')[1:]) %}
 {% set ips=grains['ip_interfaces'] %}
-{% set ip1=ips['eth0'][0] %}
-{% set ip2=ips['eth1'][0] %}
+{% set ip1=ips['eth0'] and ips['eth0'] or None %}
+{% set ip2=ips['eth1'] and ips['eth0'] or None %}
 {% set hostsf='/etc/devhosts' %}
 
-{% if vnNum %}
+{% if vnNum and ip1 and ip2 and vm_fqdn and vm_nat_fqdn and vm_host and ips %}
 makina-parent-etc-hosts-absent:
   file.absent:
     - name: {{hostsf}}

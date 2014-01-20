@@ -10,7 +10,7 @@
 #   - Base macro to do pre/install/post project install tasks, indeed this is called GLUE, this is this macro file goal
 #   - Plone projects based on generic buildout for plone (http://cgwb-makinacorpus.rhcloud.com/), see ./zope.jinja
 #
-# Of course we gather metadata for thr project including its name, repo url, dns, project branch, salt branch
+# Of course we gather metadata for thr project including its name, repo url, domain, project branch, salt branch
 # but also all kind of values used in the later states. This will feed a special variable named 'common', and see
 # makina-state._modules.mc_project.py to know how we initialise it.
 #
@@ -19,7 +19,7 @@
 # An exemple to use one of the project macros it could we to put in your top file only the following:
 #
 #    {% import "makina-states/projects/zope.jinja" as zope with context %}
-#    {{ zope.install_generic_zope_project('foo', url='ssh://github.com/foo.git', dns='local.me') }}
+#    {{ zope.install_generic_zope_project('foo', url='ssh://github.com/foo.git', domain='local.me') }}
 #
 # Please also read the end of this file to understand how hooks and common data is loaded
 #
@@ -30,13 +30,14 @@
 {% set services = services %}
 {% set nodetypes = services.nodetypes %}
 {% set localsettings = services.localsettings %}
+{% set locs = services.localsettings.locations %}
 {% set saltmac = saltmac %}
 
 
 {% macro set_accesses(common) %}
-#
+{#
 # Create a dedicated system user for our project
-#
+#}
 {{common['user']}}:
   group.present:
     - name: {{ common['user'] }}
@@ -51,12 +52,12 @@
       - {{ common['user'] }}
       - {{ common.localsettings.group}}
 
-#
+{#
 # By default we copy root ssh key creds to the project user
 # if and only if they do not already  exist
 # We will then just have to accept only one key in our gitorious, the root one
 # Choose between dsa or rsa, the one that match your needs.
-#
+#}
 {{common['user']}}-ssh-keys-init:
   cmd.run:
     {# for the project user, create it's ssh dir and copy the root ssh keys #}
@@ -100,21 +101,20 @@
             chmod -Rf 700           $home/.ssh/*;
             chmod -Rf 770           $home/.ssh/config;
             chown -Rf {{common['user']}}:{{common['user']}} $home/.ssh;
-{% endmacro %}
+{% endmacro %}  {# set_accesses #}
 
 
-#
+{#
 # Checkout and setup projet directories according to makina-states philosophy:
 #   - /src/projects/projectName
 #             |_ salt -> salt branch of the project
 #             |_ pillar -> project's pillar
 #             |_ project -> project application code
-#
+#}
 {% macro checkout_salt_and_code(common) %}
-
-#
+{#
 # Checkout the salt branch of the project repository in /srv/projects/project/salt
-#
+#}
 {{common.name}}-checkout-salt:
   mc_git.latest:
     - rev: {{common.salt_branch}}
@@ -122,24 +122,21 @@
     - target: {{common.salt_root}}
     - user: {{common['user']}}
     - require:
-      # be sure to run after salt has maybe updated itself
-      # and has our code installation tree
+      {# be sure to run after salt has maybe updated itself
+      # and has our code installation treea #}
       - cmd: {{common['user']}}-ssh-keys-perms
       - service: salt-salt-minion
       - group: {{common['user']}}
       - user: {{common['user']}}
 
-#
+{#
 # Create:
 #
 #   /srv/projects/project/salt
 #   /srv/projects/project/pillar
 #   /srv/projects/project/project
-#
-{% for i in [
-  common.project_dir,
-  common.salt_root,
-  common.pillar_root] %}
+#}
+{% for i in [common.project_dir, common.salt_root, common.pillar_root] %}
 {{common.name}}-{{i}}-dir:
   file.directory:
     - name: {{i}}
@@ -153,10 +150,9 @@
       - mc_git: {{common.name}}-checkout-salt
 {% endfor %}
 
-
-#
+{#
 # Checkout the project branch in /srv/projects/project/project
-#
+#}
 {{common.name}}-checkout-code:
   file.directory:
     - name: {{common.project_root}}
@@ -181,8 +177,7 @@
     - require:
       - cmd: {{common.name}}-checkout-code
     - user: {{common['user']}}
-
-{% endmacro %}
+{% endmacro %} {# checkout_salt_and_code #}
 
 
 {% macro install_apache(common) %}
@@ -211,16 +206,12 @@
             redirect_aliases = True,
             allow_htaccess = False) }}
 #}
-
-##
-
-
-{% endmacro %}
+{% endmacro %} {# install_apache #}
 
 
-#
+{#
 # PERMISSIONS SETUP, STAY SECURE and reset file permissions, more over never let others this our stuff !
-#
+#}
 {% macro fix_permissions(common) %}
 {{common.name}}-restricted-perms:
   cmd.script:
@@ -252,73 +243,73 @@
 {% endmacro %}
 
 #
-# Register all the app dns's in /etc/hosts
+# Register all the app domain's in /etc/hosts
 # If we are in devmode (vagrant), also add them to the hosts to the parent box
 #
 
+{% macro configure_domains(common) %}
 {{common.name}}-append-hosts-accumulator:
   file.accumulated:
     - require_in:
       - file: makina-append-etc-hosts-management
     - filename: {{ locs.conf_dir }}/hosts
     - text: |
-            {% for dns in common.dnses }}
-            {{dnses[dns]}} {{dns}}
+            {% for domain in common.domains %}
+            {{domains[domain]}} {{domain}}
             {% endfor %}
 #
 # if we are on a vagrant box, also register our hosts to be accesible from the host
-{% if 'vagrantvm in nodetypes.registry.actives %}
-{% if vagrantvm.vm_num %}
+{%  if 'vagrantvm' in nodetypes.registry.actives %}
+{%    if vagrantvm.vm_num %}
 makina-parent-append-etc-hosts-accumulated-project-{{name}}:
   file.accumulated:
     - filename: {{hostsf}}
     - name: parent-hosts-append-accumulator-{{ vm_name }}-entries
     - text: |
-            {% for dns in common.dnses }}
-            {{ ip2 }} {{ dns }}
-            {{ ip1 }} {{ dns}}.nat
+            {% for domain in common.domains %}
+            {{ ip2 }} {{ domain }}
+            {{ ip1 }} {{ domain}}.nat
             {% endfor %}
     - require_in:
       - file: makina-append-parent-etc-hosts-management
-{% endif %}
-{% endif %}
-{% endmacro %}
+{%    endif %}
+{%   endif %}
+{% endmacro %} {# configure_domains #}
 
-#
+{#
 # All project need to define at least two macros which will use the following macros
 # - A macro named 'install_project' which call the following macro and will call the next macro
 # - Another macro which is the install_macro argument which really install the project
 # - pre_install and post_install macros will setup system accesses, checkout the base code and finally reset
 #  all filesystem permissions to stay secure.
-#
-
+#}
 {% macro pre_install(common) %}
-{{ configure_dnses(common) }}
+{{ configure_domains(common) }}
 {{ set_accesses(common) }}
 {{ checkout_salt_and_code(common) }}
-{% endmacro %}
+{% endmacro %}  {# pre_install #}
 
 {% macro post_install(common) %}
 {{ fix_permissions(common) }}
-{% endmacro %}
+{% endmacro %} {# post_install #}
 
 
 {% macro install_project(common, pre=True, post=True, install_macro=None, includes=None) %}
-{% if not includes %}
-{% set includes = common.sls_includes %}
-{% endif %}
-{% if includes %}
+{%  if not includes %}
+{%    set includes = common.sls_includes %}
+{%  endif %}
+{%  if includes %}
 include:
   {% for i in includes %}- {{i}}
   {% endfor %}
-{% endif %}
-{% if pre %}
-{{ pre_install(common) }}
-{% endif %}
-{% if install_macro %}
-{{ install_macro(common) }}
-{% endif %}
-{% if post %}
-{{ post_install(common) }}
-{% endif %}
-{% endmacro %}
+{%  endif %}
+{%  if pre %}
+{{    pre_install(common) }}
+{%  endif %}
+{%  if install_macro %}
+{{    install_macro(common) }}
+{%  endif %}
+{%  if post %}
+{{     post_install(common) }}
+{%  endif %}
+{% endmacro %} {# install_project #}
