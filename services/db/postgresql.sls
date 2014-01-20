@@ -1,16 +1,25 @@
 #
-# This states file aims to configure postgresql server
+# This states file aims to configure and manage postgresql clusters
+# throught their respective unix sockets.
+#
+# This is common wrappers around postgresql_* states/modules to arrange with
+# how we manage postgresql clusters (multi versions, layout), that's why
+# we, again, created our own custom states.
 #
 #  You have
 #   - postgresql_db: a macro to define databases with a default group as owner:
 #   - postgresql_user: a macro to define an user, his privileges and groups
+#   - postgresql_group: a macro to define a group
+#   - postgresql_ext: a macro to install a single pgsql extension
+#   - postgresql_exts: a macro to install pgsql extensions
 #
 #--- STATES EXAMPLES --------------------------------
 #
 # You can use them in your own states as follow: {#
 #
+#    include:
+#      - makina-states.services.db.postgresql
 #    {% import "makina-states/services/db/postgresql.sls" as pgsql with context %}
-#    {{ pgsql.postgresql_base() }}
 #    {% set db_name = dbdata['db_name'] %}
 #    {% set db_tablespace = dbdata['db_tablespace'] %}
 #    {% set db_user = dbdata['db_user'] %}
@@ -19,8 +28,6 @@
 #    {{ pgsql.postgresql_user(db_user,
 #                             db_password,
 #                             groups=['{0}_owners'.format(db_name)]) }}
-#    {% endfor %}
-#
 #    #}
 #
 # Remember that states should not contain any secret password or user.
@@ -133,12 +140,14 @@
 
 {% macro install_pg_exts(exts,
                          db=None,
+                         db_host=None,
+                         db_port=None,
                          dbs=None,
                          version=None,
                          versions=None,
                          user=default_user) %}
 {% if not dbs %}
-{% set dbs = ['template1'] %}
+{% set dbs = [] %}
 {% endif %}
 {% if db %}
 {% do dbs.append(db) %}
@@ -151,23 +160,30 @@
 {% endif %}
 
 {% for version in versions %}
-{% for ext in exts %}
 {% for db in dbs %}
+{% for ext in exts %}
+{% set extidx = loop.index0 %}
 {{version}}-{{db}}-{{ext}}-makina-postgresql:
-  cmd.run:
+  mc_postgres_extension.present:
     - require_in:
       - cmd: {{ orchestrate[version]['postext'] }}
     - require:
       - cmd: {{ orchestrate[version]['preext'] }}
+      {%- if extidx > 0 %}
+      - mc_postgres_extension: {{version}}-{{db}}-{{exts[extidx-1]}}-makina-postgresql{% endif %}
     - user: {{ user }}
-    - name: echo "CREATE EXTENSION {{ext}};"|psql {{db}}
-    - unless: test "$(echo "\dx"|psql -q -P tuples_only=on,footer=off,border=0 {{db}}|awk '{print $1}'|grep {{ext}}|wc -l)" != "0"
+    - name: {{ext}}
+    - pg_version: {{version}}
+    - maintenance_db: {{db}}
+    - db_host: {{db_host if db_host != None else 'null'}}
+    - db_port: {{db_port if db_port != None else 'null'}}
+
 {% endfor%}
 {% endfor%}
 {% endfor%}
 {% endmacro %}
 
-{% macro install_pg_ext(ext, db=None,  dbs=None, version=None, versions=None, user=default_user) %}
+{% macro install_pg_ext(ext, db=None,  dbs=None, version=None, versions=None, user=default_user, db_host=None, db_port=None) %}
 {{ install_pg_exts([ext], db=None, dbs=dbs) }}
 {% endmacro %}
 
@@ -224,21 +240,36 @@ makina-postgresql-service-reload:
 #--- POSTGRESQL CLUSTER directories, users, database, grants --------------
 #
 {% macro postgresql_group(group,
+                          superuser=None,
+                          createroles=None,
+                          login=True,
+                          inherit=None,
+                          groups=None,
+                          createdb=None,
+                          rolepassword='',
+                          encrypted=None,
+                          replication=None,
                           user=default_user,
+                          db_host=None,
+                          db_port=None,
                           version=services.defaultPgVersion) %}
-{{ version }}-{{ group }}-makina-postresql-group:
-   postgres_group.present:
+{% if not groups %}{% set groups=[] %}{% endif %}
+{{ version }}-{{ group }}-makina-postgresql-group:
+   mc_postgres_group.present:
     - name: {{ group }}
-    - runas: {{ user }}
+    - createdb: {{ createdb if createdb != None else 'null'}}
+    - createroles: {{ createroles if createroles != None else 'null'}}
+    - encrypted: {{ encrypted if encrypted != None else 'null'}}
+    - password: {{ rolepassword if rolepassword != None else 'null'}}
+    - superuser: {{ superuser if superuser != None else 'null'}}
+    - replication: {{ replication if replication != None else 'null'}}
+    - login: {{ login if login != None}}
+    - user: {{ user }}
+    - pg_version: {{version}}
+    - db_host: {{db_host if db_host != None else 'null'}}
+    - db_port: {{db_port if db_port != None else 'null'}}
     - require:
       - cmd: {{orchestrate[version]['pregroup']}}
-
-{{ version }}-{{ group }}-makina-postgresql-group-login:
-  cmd.run:
-    - name: echo "ALTER ROLE {{ group }} WITH LOGIN;"|psql
-    - user: {{ user }}
-    - require:
-      - postgres_group: {{ version }}-{{ group }}-makina-postresql-group
     - require_in:
       - cmd: {{orchestrate[version]['postgroup']}}
 {% endmacro %}
@@ -259,22 +290,26 @@ makina-postgresql-service-reload:
 {%   set owner = '%s_groups' % db %}
 {% endif -%}
 
-{{ postgresql_group(owner, user=user) }}
+{{ postgresql_group(owner, user=user, login=True) }}
 
 {{version}}-{{ db }}-makina-postgresql-database:
-  cmd.run:
-    - name: createdb {{ db }} -E {{ encoding }} -O {{ owner }} -T {{template }} -D {{ tablespace }}
-    - unless: test "$(psql -l|awk '{print $1}'|grep -w {{ db }}|wc -l)" != "0"
+  mc_postgres_database.present:
+    - name: {{ db }}
+    - encoding: {{ encoding }}
+    - owner: {{ owner }}
+    - template: {{template }}
+    - tablespace: {{ tablespace }}
+    - pg_version: {{version}}
     - user: {{ user }}
     - require:
       - cmd: {{orchestrate[version]['predb']}}
 
-{{ version }}-{{ owner }}-groups-makina-postresql-grant:
+{{ version }}-{{ owner }}-groups-makina-postgresql-grant:
   cmd.run:
-    - name: echo "GRANT ALL PRIVILEGES ON DATABASE {{ db }} TO {{ owner }};"|psql
+    - name: echo "GRANT ALL PRIVILEGES ON DATABASE {{ db }} TO {{ owner }};"|psql-{{version}}
     - user: {{ user }}
     - require:
-      - cmd: {{version}}-{{ db }}-makina-postgresql-database
+      - mc_postgres_database: {{version}}-{{ db }}-makina-postgresql-database
     - require_in:
       - cmd: {{orchestrate[version]['postdb'] }}
 
@@ -287,30 +322,48 @@ makina-postgresql-service-reload:
 {% macro postgresql_user(name,
                          password,
                          groups=None,
-                         createdb=False,
-                         superuser=False,
-                         replication=False,
-                         encrypted=True,
+                         createdb=None,
+                         inherit=None,
+                         login=True,
+                         superuser=None,
+                         replication=None,
+                         createroles=None,
+                         encrypted=None,
                          user=default_user,
+                         db_host=None,
+                         db_port=None,
                          version=services.defaultPgVersion
 ) -%}
 {% if not groups %}
 {%   set groups = [] %}
 {% endif %}
+# create groups prior to user
+{% for group in groups %}
+{{ postgresql_group(group, user=user, version=version) }}
+{% endfor %}
+
 {{version}}-{{ name }}-makina-services-postgresql-user:
-  postgres_user.present:
-    - name: {{ name }}
-    - password: {{ password }}
+  mc_postgres_user.present:
+    - name: {{name}}
+    - superuser: {{superuser if superuser != None else 'null'}}
+    - password: {{ password if password != None else 'null'}}
+    - createdb: {{ createdb if createdb != None else 'null'}}
+    - inherit: {{ inherit if inherit != None else 'null'}}
+    - login: {{ login if login != None else 'null'}}
+    - replication: {{ replication if replication != None else 'null'}}
+    - encrypted: {{ encrypted if encrypted != None else 'null'}}
+    - createroles: {{createroles if createroles != None else 'null'}}
+    - groups: {{','.join(groups)}}
+    - pg_version : {{version}}
+    - db_host: {{db_host if db_host != None else 'null'}}
+    - db_port: {{db_port if db_port != None else 'null'}}
     - runas: {{ user }}
-    {% if createdb %}- createdb: True {% endif %}
-    {% if superuser %}- superuser: True {% endif %}
-    {% if replication %}- replication: True {% endif %}
-    {% if encrypted %}- encrypted: True {% endif %}
-    {% if groups %}- groups: {{ ','.join(groups) }}{% endif %}
     - require_in:
       - cmd: {{orchestrate[version]['postuser']}}
     - require:
       - cmd: {{orchestrate[version]['preuser']}}
+    - password: {{ password }}
+
 {% endmacro %}
 
 {{ postgresql_base() }}
