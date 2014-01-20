@@ -12,7 +12,8 @@
 {% set locs = localsettings.locations %}
 {{ localsettings.register('nodejs') }}
 
-{% set npm_packages = localsettings.npm_packages %}
+{% set npmPackages = localsettings.npmPackages %}
+
 {% if grains['os'] in ['Ubuntu'] %}
 # Installing the last version of Node: https://github.com/joyent/node/wiki/Installing-Node.js-via-package-manager#ubuntu-mint-elementary-os
 nodejs-repo:
@@ -24,7 +25,7 @@ nodejs-repo:
     - file: {{locs.conf_dir}}/apt/sources.list.d/nodejs.list
     - keyid: C7917B12
     - keyserver: keyserver.ubuntu.com
-    
+
 nodejs-pkgs:
   pkg.installed:
     - name: nodejs
@@ -35,6 +36,7 @@ nodejs-pkgs:
 
 {% for npm_package in npm_packages %}
 npm-packages{{npm_package}}:
-    npm.installed: []
+  npm.installed:
+    - name: {{npm_package}}
 {% endfor %}
 {% endif %}

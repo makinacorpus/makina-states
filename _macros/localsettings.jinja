@@ -271,7 +271,7 @@
 {% set jdkDefaultVer = '7' %}
 
 # Node.js
-{% set npm_packages = salt['mc_utils.get'](
+{% set npmPackages = salt['mc_utils.get'](
    'makina-states.localsettings.npm_packages',
    []) %}
 
