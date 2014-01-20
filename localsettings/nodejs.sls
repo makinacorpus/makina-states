@@ -12,10 +12,7 @@
 {% set locs = localsettings.locations %}
 {{ localsettings.register('nodejs') }}
 
-{% set npm_packages = salt['mc_utils.get'](
-   'makina-states.localsettings.npm_packages',
-   []) %}
-
+{% set npm_packages = localsettings.npm_packages %}
 {% if grains['os'] in ['Ubuntu'] %}
 # Installing the last version of Node: https://github.com/joyent/node/wiki/Installing-Node.js-via-package-manager#ubuntu-mint-elementary-os
 nodejs-repo:
