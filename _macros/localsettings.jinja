@@ -271,6 +271,18 @@
 {% set jdkDefaultVer = '7' %}
 
 # -----------------------------------------------------
+# SSL settings for reuse in states
+{% set sslpref = 'makina-states.localsettings.ssl.' %}
+{% set SSLSettings = {
+  'country' : salt['mc_utils.get'](sslpref+'country', grains['defaultlanguage'][:2].upper()),
+  'st'      : salt['mc_utils.get'](sslpref+'st',      'Pays de Loire'),
+  'l'       : salt['mc_utils.get'](sslpref+'l',       'NANTES'),
+  'o'       : salt['mc_utils.get'](sslpref+'o',       'NANTES'),
+  'cn'      : salt['mc_utils.get'](sslpref+'dn',      grains['fqdn']),
+  'email'   : salt['mc_utils.get'](sslpref+'email',   'contact@'+grains['fqdn']),
+} %}
+
+# -----------------------------------------------------
 # REGISTRY
 # -----------------------------------------------------
 # Idea is to map each state file to configure a service to it's particular
