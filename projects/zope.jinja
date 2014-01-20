@@ -221,8 +221,8 @@ etc-logrotate.d-{{common.name}}.conf:
         'supervisor-password'         : '${v:admin-password}',
         'reverse-proxy-listen'        : '*',
         'reverse-proxy-scheme'        : 'http',
-        'reverse-proxy-host'          : '{dns}',
-        'reverse-proxy-edit-host'     : 'edit.{dns}',
+        'reverse-proxy-host'          : '{domain}',
+        'reverse-proxy-edit-host'     : 'edit.{domain}',
         'reverse-proxy-port'          : '80',
         'package-min-coverage'        : '80',
         'flake8-ignore'               : 'C901',
@@ -301,13 +301,13 @@ etc-logrotate.d-{{common.name}}.conf:
 {% endmacro %}
 
 {% macro install_generic_zope_project(
-  name, url, dns="plone.local", includes=None,
+  name, url, domain="plone.local", includes=None,
   defaults=generic_defaults, env_defaults=generic_env_defaults) %}
 {% set common = salt['mc_project.get_common_vars'](
   services,
   name,
   url=url,
-  dns=dns,
+  domain=domain,
   user='zope',
   defaults=defaults,
   env_defaults=env_defaults) %}
