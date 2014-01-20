@@ -271,8 +271,9 @@
 {% set jdkDefaultVer = '7' %}
 
 # Node.js
-
-{% set npm_packages = [] %}
+{% set npm_packages = salt['mc_utils.get'](
+   'makina-states.localsettings.npm_packages',
+   []) %}
 
 # -----------------------------------------------------
 # SSL settings for reuse in states
