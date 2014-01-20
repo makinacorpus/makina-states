@@ -31,12 +31,13 @@ nodejs:
       - pkgrepo: nodejs
     - pkgs:
       - nodejs
-      - npm
 
+{% if npm_packages %}
 npm-packages:
   {% for npm_package in npm_packages %}
   {{npm_package}}:
     npm:
       - installed
   {% endfor %}
+{% endif %}
 {% endif %}
