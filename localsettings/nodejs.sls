@@ -41,7 +41,7 @@ nodejs-repo:
     - name: nodejs
     - humanname: Node.js wheezy-backports
     - name: deb http://ftp.us.debian.org/debian wheezy-backports main
-    - dist: {{localsettings.dist}}
+    - dist: wheezy-backports
     - file: {{locs.conf_dir}}/apt/sources.list.d/nodejs.list
 
 nodejs-pkgs:
