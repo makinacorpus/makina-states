@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 export PATH="{{salt_data['msr']}}/bin:$PATH"
-exec {{bin_name}} -c {{salt_data['conf_prefix']}} $@
+exec {{salt_data['msr']}}/bin/{{bin_name}} -c {{salt_data['conf_prefix']}} $@
 exit $?
 # vim:set ft=bash:
