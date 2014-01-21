@@ -33,10 +33,34 @@ nodejs-pkgs:
       - pkgrepo: nodejs-repo
     - pkgs:
       - nodejs
+{% endif %}
+
+{% if grains['os'] in ['Debian'] %}
+nodejs-repo:
+  pkgrepo.managed:
+    - name: nodejs
+    - humanname: Node.js wheezy-backports
+    - name: deb http://ftp.us.debian.org/debian wheezy-backports main
+    - dist: {{localsettings.dist}}
+    - file: {{locs.conf_dir}}/apt/sources.list.d/nodejs.list
+
+nodejs-pkgs:
+  pkg.installed:
+    - name: nodejs
+    - require:
+      - pkgrepo: nodejs-repo
+    - pkgs:
+      - nodejs-legacy
+
+npm-pkgs:
+  cmd.run:
+    - name: curl -s https://npmjs.org/install.sh | sh
+    - require:
+      - pkg: nodejs
+{% endif %}
 
 {% for npmPackage in npmPackages %}
 npm-packages{{npmPackage}}:
   npm.installed:
     - name: {{npmPackage}}
 {% endfor %}
-{% endif %}
