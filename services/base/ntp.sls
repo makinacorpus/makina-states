@@ -1,8 +1,7 @@
-{% import "makina-states/_macros/services.jinja" as services with context %}
-{{ services.register('base.ntp') }}
-
-{% set localsettings = services.localsettings %}
-{% set locs = localsettings.locations %}
+{%- import "makina-states/_macros/services.jinja" as services with context %}
+{{- services.register('base.ntp') }}
+{%- set localsettings = services.localsettings %}
+{%- set locs = localsettings.locations %}
 
 ntp-pkgs:
   pkg.installed:
@@ -11,18 +10,18 @@ ntp-pkgs:
       - tzdata
       - ntpdate
 
-{% if grains['os'] not in ['Debian', 'Ubuntu'] %}
+{%- if grains['os'] not in ['Debian', 'Ubuntu'] %}
 ntpdate-svc:
   service.enabled:
     - name: ntpdate
-{% endif %}
+{%- endif %}
 
 ntpd:
   service.running:
     - enable: True
-{% if grains['os'] in ['Debian', 'Ubuntu'] %}
+    {%- if grains['os'] in ['Debian', 'Ubuntu'] %}
     - name: ntp
-{% endif %}
+    {%- endif %}
     - watch:
       - file: {{ locs.conf_dir }}/ntp.conf
       - pkg: ntp-pkgs

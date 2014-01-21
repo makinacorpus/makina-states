@@ -1,14 +1,12 @@
-{% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-
-{{ localsettings.register('git') }}
-{% set locs = localsettings.locations %}
+{%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+{{- localsettings.register('git') }}
+{%- set locs = localsettings.locations %}
 
 include:
   - {{ localsettings.statesPref }}users
 
-{% for i, data in localsettings.users.items() %}
-{% set home = data['home'] %}
-
+{%- for i, data in localsettings.users.items() %}
+{%- set home = data['home'] %}
 gitorious_base_ssh_configs-group-{{ i }}:
   file.directory:
     - name: {{ home }}/.ssh
@@ -35,8 +33,7 @@ gitorious_base_ssh_configs-append-{{ i }}:
             host=    gitorious.makina-corpus.net
             HostName=gitorious.makina-corpus.net
             Port=2242
-{% endfor %}
-
+{%- endfor %}
 global-git-config:
   file.managed:
     - name: {{ locs.conf_dir }}/gitconfig

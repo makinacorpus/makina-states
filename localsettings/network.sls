@@ -1,3 +1,4 @@
+{#-
 # Configure machine physical network based on pillar information
 #
 # This state will only apply if you set to true the config value (grain or pillar): **makina-states.localsettings.network_managed**
@@ -23,14 +24,12 @@
 #     - gateway: 8.1.5.1
 #     - dnsservers: 8.8.8.8
 #   em1: {} # -> dhcp based interface
-
-{% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-
-{{ localsettings.register('network') }}
-{% set locs = localsettings.locations %}
-
-{% if localsettings.networkManaged %}
-{% if grains['os_family'] in ['Debian'] %}
+#}
+{%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+{{- localsettings.register('network') }}
+{%- set locs = localsettings.locations %}
+{%- if localsettings.networkManaged %}
+{%- if grains['os_family'] in ['Debian'] %}
 network-cfg:
   file.managed:
     - user: root
@@ -40,8 +39,8 @@ network-cfg:
     - name: {{ locs.conf_dir }}/network/interfaces
     - source: salt://makina-states/files/etc/network/interfaces
     - context:
+      {#- tradeof to make the lxc state work with us #}
       network_interfaces: {{ localsettings.networkInterfaces|yaml }}
-# tradeof to make the lxc state work with us
 
 network-services:
   service.running:
@@ -51,9 +50,5 @@ network-services:
       {% if grains['os'] in ['Ubuntu'] %}- resolvconf{% endif %}
     - watch:
       - file: network-cfg
+{%- endif %}
 {% endif %}
-{% endif %}
-
-
-
-

@@ -1,11 +1,10 @@
+{#-
 #
 # -  install ldap base packages
 # -  integrate pam with LDAP
 #
 # Define your ldap settings to integrate with pam
 # inside pillar
-#
-# {#
 #
 #  ldap-default-settings:
 #    enabled: true|false
@@ -16,12 +15,12 @@
 #    ldap_group: ou=Group,dc=company,dc=org?sub
 #    ldap_cacert: /etc/ssl/cacerts/cacert.pem (opt)
 #
-# #}
+#
+#}
 
-{% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-
-{{ localsettings.register('ldap') }}
-{% set locs = localsettings.locations %}
+{%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+{{- localsettings.register('ldap') }}
+{%- set locs = localsettings.locations %}
 
 include:
   - {{ localsettings.statesPref }}nscd
@@ -36,10 +35,10 @@ ldap-pkgs:
       - sasl2-bin
       - python-ldap
       - nslcd
-      {% if grains['os_family'] == 'Debian' -%}
+      {%- if grains['os_family'] == 'Debian' -%}
       - libldap2-dev
       - libsasl2-dev
-      {% endif %}
+      {%- endif %}
 
 nslcd:
   service.running:
@@ -123,5 +122,4 @@ ldap-cacerts-cert:
     - mode: '0644'
     - template: jinja
     - source: salt://makina-states/files{{ locs.conf_dir }}/ssl/cacerts/cacert.pem
-
 # vim: set nofoldenable:

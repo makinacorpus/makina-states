@@ -1,3 +1,4 @@
+{#-
 # Shoreline Firewall (shorewall) configuration
 #
 # Configuration is based on pillar information
@@ -119,18 +120,17 @@
 #         - {comment: 'relay smtp from lxc and drop from net'}
 #         - {action: Invalid(DROP), source: net, dest: all, proto: 'tcp,udp', dport: 25}
 #         - {action: ACCEPT       , source: lxc, dest: fw , proto: 'tcp,udp', dport: 25}
-
-{% import "makina-states/_macros/services.jinja" as services with context %}
-{% set localsettings = services.localsettings %}
-{% set nodetypes = services.nodetypes %}
-{% set locs = localsettings.locations %}
-{{ services.register('firewall.shorewall') }}
+#}
+{%- import "makina-states/_macros/services.jinja" as services with context %}
+{%- set localsettings = services.localsettings %}
+{%- set nodetypes = services.nodetypes %}
+{%- set locs = localsettings.locations %}
+{{- services.register('firewall.shorewall') }}
 
 include:
   - {{ localsettings.statesPref }}localrc
 
-{% set shwdata = services.shwData | yaml %}
-
+{%- set shwdata = services.shwData | yaml %}
 shorewall-pkgs:
   pkg.installed:
     - pkgs:
@@ -162,7 +162,7 @@ shorewall-config:
       - file: toggle-shorewall
       - cmd: shorewall-restart
 
-{% for config in [
+{%- for config in [
   'interfaces',
   'masq',
   'params',
@@ -185,7 +185,7 @@ etc-shorewall-{{config}}:
       - file: toggle-shorewall
       - file: shorewall-config
       - cmd: shorewall-restart
-{% endfor %}
+{%- endfor %}
 
 toggle-shorewall:
   file.replace:
@@ -214,8 +214,10 @@ shorewall-d:
     - require_in:
       - cmd: shorewall-restart
 
+{#-
 # shorewall is not managed via init scripts as we really need
 # everything to be up before firewall to cut the garden off.
+#}
 shorewall-rc-local-d:
   file.managed:
     - name: {{ locs.conf_dir }}/rc.local.d/shorewall.sh
@@ -227,6 +229,7 @@ shorewall-rc-local-d:
     - user: root
     - group: root
 
+{#-
 # Disabled as we now use {{ locs.conf_dir }}/rc.local
 # shorewall-upstart:
 #   file.managed:
@@ -245,3 +248,4 @@ shorewall-rc-local-d:
 #       - file: shorewall-test-cfg
 
 
+#}

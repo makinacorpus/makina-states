@@ -1,8 +1,6 @@
-{% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-
-{{ localsettings.register('vim') }}
-{% set locs = localsettings.locations %}
-
+{%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+{{- localsettings.register('vim') }}
+{%- set locs = localsettings.locations %}
 include:
   - {{ localsettings.statesPref }}users
 
@@ -14,8 +12,8 @@ vim-editor-env-var:
                 export EDITOR="$(which vim)"
                 export ED="$EDITOR"
 
-{% for i, data in localsettings.users.items() %}
-{% set home = data['home'] %}
+{%- for i, data in localsettings.users.items() %}
+{%- set home = data['home'] %}
 vimrc_configs-touch-{{ i }}:
   file.touch:
     - name: {{ home }}/.vimrc

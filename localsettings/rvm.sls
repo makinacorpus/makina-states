@@ -1,13 +1,12 @@
-{% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-{% import "makina-states/_macros/salt.jinja" as saltmac with context %}
-{{ localsettings.register('rvm') }}
-{% set locs = localsettings.locations %}
-
-{% macro rvm_env() %}
+{%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+{%- import "makina-states/_macros/salt.jinja" as saltmac with context %}
+{{- localsettings.register('rvm') }}
+{%- set locs = localsettings.locations %}
+{%- macro rvm_env() %}
     - env:
       - rvm_prefix: {{locs.rvm_prefix}}
       - rvm_path: {{locs.rvm_path}}
-{% endmacro %}
+{%- endmacro %}
 rvm-deps:
   pkg.installed:
     - names:
@@ -73,17 +72,18 @@ rvm-setup:
     - name: curl -s {{localsettings.rvm_url}} | bash -s stable
     - unless: test -e {{locs.rvm_path}}/bin/rvm
     - require:
+      - pkg: rvm-deps
       - file: rvm-dir
       - user:  {{localsettings.rvm_user}}-user
 
-{% for ruby in localsettings.rubies %}
+{%- for ruby in localsettings.rubies %}
 rvm-{{ruby}}:
   cmd.run:
     - name: {{locs.rvm}} install {{ruby}}
     - unless: test -e {{locs.rvm_path}}/rubies/{{ruby}}*/bin
     - require:
       - cmd: rvm-setup
-{% endfor %}
+{%- endfor %}
 
 active-rvm-bundler-hook:
   cmd.script:
@@ -94,4 +94,3 @@ active-rvm-bundler-hook:
     - fmode: 0700
     - reset_paths:
       - {{locs.rvm_path}}/hooks/after_cd_bundler
-

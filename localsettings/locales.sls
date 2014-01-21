@@ -1,39 +1,34 @@
-#
+{#-
 # Manage system locales
 #
 # You can override default locales by adding them in pillar ths way:
 # makina-locale: fr_FR.utf8
 # makina-locales:
 #   - fr_FR.utf8
-#
-
-{% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-
-{{ localsettings.register('locales') }}
-{% set locs = localsettings.locations %}
-
+#}
+{%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+{{- localsettings.register('locales') }}
+{%- set locs = localsettings.locations %}
 include:
   - {{ localsettings.statesPref }}shell
 
-{% if grains['os_family'] not in ['Debian'] %}FAIL HARD{% endif %}
-{% if grains['os_family'] in ['Debian'] %}
+{%- if grains['os_family'] not in ['Debian'] %}FAIL HARD{% endif %}
+{%- if grains['os_family'] in ['Debian'] %}
 locales-pkg:
   pkg.installed:
     - pkgs:
       - locales
 
-{% set default_locale = 'fr_FR.UTF-8' %}
-{% set default_locales = [
+{%- set default_locale = 'fr_FR.UTF-8' %}
+{%- set default_locales = [
   'de_DE.UTF-8',
   'fr_BE.UTF-8',
   'fr_FR.UTF-8',
   ] %}
-
-{% set locales = salt['mc_utils.get']('makina-locales', default_locales) %}
-{% set default_locale = salt['mc_utils.get']('makina-locale', default_locale) %}
-
-{% for locale in locales %}
-{% set lid=locale.replace('@', '_').replace('.', '_').replace('-', '_') %}
+{%- set locales = salt['mc_utils.get']('makina-locales', default_locales) %}
+{%- set default_locale = salt['mc_utils.get']('makina-locale', default_locale) %}
+{%- for locale in locales %}
+{%- set lid=locale.replace('@', '_').replace('.', '_').replace('-', '_') %}
 gen-makina-locales-{{ lid }}:
   cmd.run:
     - name: {{ locs.sbin_dir }}/locale-gen {{ locale }}
@@ -42,19 +37,18 @@ gen-makina-locales-{{ lid }}:
     - require_in:
       - cmd: update-makina-locale
 
-{% endfor %}
+{%- endfor %}
 update-makina-locale:
   cmd.run:
-    - name: update-locale LANG="{{ default_locale }}"
+    - name: 'update-locale LANG="{{ default_locale }}"'
     - onlyif: which update-locale
-    - unless: grep 'LANG={{ default_locale }}' {{ locs.conf_dir }}/default/locale
+    - unless: "grep 'LANG={{ default_locale }}' {{ locs.conf_dir }}/default/locale"
 
 etc-profile.d-0_lang.sh:
   file.managed:
-    - name: {{ locs.conf_dir }}/profile.d/0_lang.sh
-    - contents: |
-                export LANG="{{ default_locale }}"
     - requires:
       - file: etc-profile.d
-
+    - name: {{ locs.conf_dir }}/profile.d/0_lang.sh
+    - contents: |
+                export LANG="{{ default_locale }}
 {% endif %}

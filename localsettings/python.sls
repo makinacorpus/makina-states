@@ -1,4 +1,4 @@
-#
+{#-
 # Install old pythons (ubuntu specific for now)
 #
 # You can use the grain/pillar following setting to select the  versions:
@@ -7,19 +7,15 @@
 # eg:
 #
 #  salt-call grains.setval makina-states.localsettings.python_vers '["2.6"]'
-#
-
-{% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-
-{{ localsettings.register('python') }}
-{% set locs = localsettings.locations %}
-
-{% set pyvers = salt['mc_utils.get'](
+#}
+{%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+{{- localsettings.register('python') }}
+{%- set locs = localsettings.locations %}
+{%- set pyvers = salt['mc_utils.get'](
    'makina-states.localsettings.python_vers',
    ['2.4', '2.5', '2.6']) %}
-
-{% if grains['os'] in ['Ubuntu'] %}
-{% set udist = localsettings.udist %}
+{%- if grains['os'] in ['Ubuntu'] %}
+{%- set udist = localsettings.udist %}
 deadsnakes:
   pkgrepo.managed:
     - humanname: DeadSnakes PPA
@@ -28,15 +24,15 @@ deadsnakes:
     - file: {{locs.conf_dir}}/apt/sources.list.d/deadsnakes.list
     - keyid: DB82666C
     - keyserver: keyserver.ubuntu.com
-  {% if pyvers %}
+  {%- if pyvers %}
   pkg.installed:
     - require:
       - pkgrepo: deadsnakes
     - pkgs:
-      {% for pyver in pyvers %}
+      {%- for pyver in pyvers %}
       - python{{pyver}}-dev
       - python{{pyver}}
-      {% endfor %}
-    {% endif %}
+      {%- endfor %}
+    {%- endif %}
 {% endif %}
 # vim:set nofoldenable:

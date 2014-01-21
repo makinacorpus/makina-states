@@ -1,4 +1,4 @@
-#
+{#-
 # Settings and local configuration to apply to a minion
 # For example; writing something in /etc is a good catch for a localsettings states
 #
@@ -11,7 +11,6 @@
 # EG: to disable the default vim configuration, either set a grain or a pillar value:
 #
 #  makina-states.localsettings.vim: False
-#
-
-{% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+#}
+{%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {{ localsettings.autoinclude() }}

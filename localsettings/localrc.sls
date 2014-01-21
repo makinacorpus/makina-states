@@ -1,15 +1,12 @@
-#
+{#-
 # manage /etc/rc.local via helper scripts in /etc/rc.local.d
 # goal is to launch tricky services on the end of init processes
 #
 # Eg launch the firewall only after lxc interfaces are up and so on
-#
-
-{% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-
-{{ localsettings.register('localrc') }}
-{% set locs = localsettings.locations %}
-
+#}
+{%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+{{- localsettings.register('localrc') }}
+{%- set locs = localsettings.locations %}
 rc-local:
   file.directory:
     - name: {{ locs.conf_dir }}/rc.local.d

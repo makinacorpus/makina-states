@@ -1,18 +1,16 @@
-#
+{#-
 # Pure FTPd service
 # Read the pureftpd section of _macros/services.jinja to know which grain/pillar settings
 # can modulate your pureftpd installation
-#
-{% import "makina-states/_macros/services.jinja" as services with context %}
-{{ services.register('ftp.pureftpd') }}
-{% set localsettings = services.localsettings %}
-{% set nodetypes = services.nodetypes %}
-{% set locs = localsettings.locations %}
-{% set key = locs.conf_dir+'/ssl/private/pure-ftpd.pem' %}
-{% set passive = services.pureftpdSettings['PassiveIP'] or pureftpdSettings['PassivePortRange']%}
-
-
-{% if grains['os_family'] in ['Debian'] %}
+#}
+{%- import "makina-states/_macros/services.jinja" as services with context %}
+{{- services.register('ftp.pureftpd') }}
+{%- set localsettings = services.localsettings %}
+{%- set nodetypes = services.nodetypes %}
+{%- set locs = localsettings.locations %}
+{%- set key = locs.conf_dir+'/ssl/private/pure-ftpd.pem' %}
+{%- set passive = services.pureftpdSettings['PassiveIP'] or pureftpdSettings['PassivePortRange']%}
+{%- if grains['os_family'] in ['Debian'] %}
 {% macro service_watch_in() %}
     - watch_in:
       - service: pure-ftpd-service
@@ -22,9 +20,15 @@ prereq-pureftpd:
   pkg.installed:
     - pkgs:
       - pure-ftpd
-      {% if services.pureftpdSettings.LDAPConfigFile %}- pure-ftpd-ldap      {% endif %}
-      {% if services.pureftpdSettings.MySQLConfigFile %}- pure-ftpd-mysql     {% endif %}
-      {% if services.pureftpdSettings.PGSQLConfigFile %}- pure-ftpd-postgresql{% endif %}
+      {%- if services.pureftpdSettings.LDAPConfigFile %}
+      - pure-ftpd-ldap
+      {%- endif %}
+      {%- if services.pureftpdSettings.MySQLConfigFile %}
+      - pure-ftpd-mysql
+      {%- endif %}
+      {%- if services.pureftpdSettings.PGSQLConfigFile %}
+      - pure-ftpd-postgresql
+      {%- endif %}
 
 {{ locs.conf_dir }}/default/pure-ftpd-common-makina-pure-ftpd:
   file.managed:
@@ -40,9 +44,8 @@ prereq-pureftpd:
     - uploadGid: '{{services.pureftpdDefaultSettings.UploadGid}}'
     - uploadScript: '{{services.pureftpdDefaultSettings.UploadScript}}'
 
-
-{% for setting, value in services.pureftpdSettings.items() %}
-{% if (
+{%- for setting, value in services.pureftpdSettings.items() %}
+{%- if (
     value.strip()
     and (
       not setting.startswith('Passive')
@@ -58,16 +61,15 @@ prereq-pureftpd:
     - contents: |
                 {{value}}
     {{ service_watch_in() }}
-{% else %}
+{%- else %}
 {{ locs.conf_dir }}/pure-ftpd/conf/{{setting}}-makina-pure-ftpd:
   file.absent:
     - name: {{ locs.conf_dir }}/pure-ftpd/conf/{{setting}}
     {{ service_watch_in() }}
-{% endif %}
-{% endfor %}
+{%- endif %}
+{%- endfor %}
 
-
-{% set ssl = services.SSLSettings %}
+{%- set ssl = services.SSLSettings %}
 {{key}}-makina-pureftpd:
   cmd.run:
     - name: |
@@ -112,6 +114,5 @@ makina-pureftpd-shell-block:
 pure-ftpd-service:
   service.running:
     - name: pure-ftpd
+{%- endif %}
 
-
-{% endif %}

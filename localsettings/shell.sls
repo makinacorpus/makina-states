@@ -1,15 +1,13 @@
-#
+{#-
 # basic shell configuration
 #
 # Make as ubuntu & others do:
 # /etc/profile.d contains a collection of shell scripts sourced
 # to construct the base shell environment
-#
-{% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-
-{{ localsettings.register('shell') }}
-{% set locs = localsettings.locations %}
-
+#}
+{%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+{{- localsettings.register('shell') }}
+{%- set locs = localsettings.locations %}
 etc-profile-d:
   file.directory:
     - name: {{ locs.conf_dir }}/profile.d
@@ -46,5 +44,4 @@ makina-etc-profile-block:
     - append_if_not_found: True
     - backup: '.bak'
     - show_changes: True
-
 # vim: set nofoldenable:

@@ -1,18 +1,17 @@
 #
 # Install oracle & other JDKs on a system
 #
-{% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-{% set locs = localsettings.locations %}
-{% if grains['os_family'] in ['Debian'] %}
-{% if grains['os'] != 'Ubuntu' %}
+{%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+{%- set locs = localsettings.locations %}
+{%- if grains['os_family'] in ['Debian'] %}
+{%-   if grains['os'] != 'Ubuntu' %}
 FAILHARD
   - PORT ME
-{% else %}
-{{ localsettings.register('jdk') }}
-{% endif %}
-
-{% set dist = localsettings.udist %}
-{% set default_ver = localsettings.jdkDefaultVer %}
+{%- else %}
+{{-  localsettings.register('jdk') }}
+{%- endif %}
+{%- set dist = localsettings.udist %}
+{%- set default_ver = localsettings.jdkDefaultVer %}
 jdk-repo:
   pkgrepo.managed:
     - name: deb http://ppa.launchpad.net/webupd8team/java/ubuntu {{ dist }} main
@@ -20,7 +19,7 @@ jdk-repo:
     - keyid: EEA14886
     - keyserver: keyserver.ubuntu.com
 
-{% for ver in '6', '7' %}
+{%- for ver in '6', '7' %}
 jdk-{{ ver }}-pkgs:
   cmd.run:
     - name: sudo echo oracle-java{{ ver }}-installer shared/accepted-oracle-license-v1-1 select true | sudo {{ locs.bin_dir }}/debconf-set-selections;
@@ -31,12 +30,11 @@ jdk-{{ ver }}-pkgs:
     - require:
       - pkgrepo: jdk-repo
       - cmd: jdk-{{ ver }}-pkgs
-{% endfor %}
+{%- endfor %}
 
 java-{{ default_ver }}-install:
   pkg.installed:
     - pkgs: [oracle-java{{ default_ver }}-set-default]
     - require:
       - pkg: jdk-{{ default_ver }}-pkgs
-
 {% endif %}

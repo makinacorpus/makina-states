@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+{# -*- coding: utf-8 -*-
 #
 # All states are encapsulated in macros.
 # So you'll need to run the macros to get something done.
@@ -20,15 +20,16 @@
 # else several states with the same name will be created. There're no
 # state_uid prefix on this macro and it's normal, you do not want to install
 # several MySQL services on one server.
+#}
 
-# Load defaults values -----------------------------------------
+{# Load defaults values ----------------------------------------- #}
 
-{% from 'makina-states/services/db/mysql_defaults.jinja' import mysqlData with context %}
-{% import "makina-states/_macros/services.jinja" as services with context %}
-{% set localsettings = services.localsettings %}
-{% set nodetypes = services.nodetypes %}
-{% set locs = localsettings.locations %}
-{{ services.register('db.mysql') }}
+{%- from 'makina-states/services/db/mysql_defaults.jinja' import mysqlData with context %}
+{%- import "makina-states/_macros/services.jinja" as services with context %}
+{%- set localsettings = services.localsettings %}
+{%- set nodetypes = services.nodetypes %}
+{%- set locs = localsettings.locations %}
+{{- services.register('db.mysql') }}
 
 {# MACRO mysql_base()
 # - install the mysql packages, and python bindings for mysql
@@ -43,10 +44,10 @@
 # * mycnf_file: If you do not like the current template, add yours
 #       the current one is salt://makina-states/files/etc/mysql/conf.d/local.cnf
 #}
-{% macro mysql_base(mycnf_file=None) %}
-
-#
+{%- macro mysql_base(mycnf_file=None) %}
+{#-
 # Note that python-mysqlDb binding is required for salt module to be loaded
+#}
 makina-mysql-pkgs:
   pkg.installed:
     - pkgs:
@@ -54,8 +55,10 @@ makina-mysql-pkgs:
       - {{ mysqlData.packages.python }}
       - {{ mysqlData.packages.dev }}
 
-## Ensure mysqlDb python binding is available for the minion
-## as it's needed to execute later mysql modules
+{#-
+# Ensure mysqlDb python binding is available for the minion
+# as it's needed to execute later mysql modules
+#}
 mysql-salt-pythonmysqldb-pip-install:
   pip.installed:
     - name: mysql-python==1.2.4
@@ -67,14 +70,14 @@ mysql-salt-pythonmysqldb-pip-install-module-reloader:
   cmd.watch:
     - name:
             echo "Reloading Modules as mysql python bindings were installed"
-    # WARNING: WE NEED TO REFRESH THE MYSQL MODULE
+    {# WARNING: WE NEED TO REFRESH THE MYSQL MODULE #}
     - reload_modules: true
     - watch:
       - pip: mysql-salt-pythonmysqldb-pip-install
 
-{% if not mycnf_file %}
-{%   set mycnf_file = "salt://makina-states/files/" + mysqlData.etcdir + "/local.cnf" %}
-{% endif %}
+{%- if not mycnf_file %}
+{%-   set mycnf_file = "salt://makina-states/files/" + mysqlData.etcdir + "/local.cnf" %}
+{%- endif %}
 {# ----------- MAGIC MYSQL AUTO TUNING -----------------
 Some heavy memory usage settings could be used on mysql settings:
 Below are the rules we use to compute some default magic values for tuning settings.
@@ -82,7 +85,6 @@ Note that you can enforce any of theses settings by putting some value fro them 
 mysqlData (so in the pillar for example).
 The most important setting for this tuning is the amount of the total memory you
 allow for MySQL, given by the % of total memory set in mysqlData.memory_usage_percent
-
 So starting from total memory * given percentage we use (let's call it available memory):
 * innodb_buffer_pool_size: 50% of avail.
 * key_buffer_size:
@@ -104,54 +106,54 @@ So starting from total memory * given percentage we use (let's call it available
 Now let's do the magic:
 #}
 {# first get the Mo of memory, cpu and disks on the system #}
-{% set full_mem = grains['mem_total'] %}
-{% set nb_cpus = grains['num_cpus'] %}
+{%- set full_mem = grains['mem_total'] %}
+{%- set nb_cpus = grains['num_cpus'] %}
 {# Then extract memory that we could use for this MySQL server #}
-{% set available_mem = full_mem * mysqlData.memory_usage_percent / 100 %}
+{%- set available_mem = full_mem * mysqlData.memory_usage_percent / 100 %}
 
 {# Now for all non set tuning parameters try to fill the gaps #}
 {# ---- NUMBER OF CONNECTIONS       #}
-{% if mysqlData.tuning.nb_connections %}
-{% set nb_connections = mysqlData.tuning.nb_connections %}
-{% else %}
-{%   set nb_connections = 100 %}
-{% endif %}
+{%- if mysqlData.tuning.nb_connections %}
+{%-  set nb_connections = mysqlData.tuning.nb_connections %}
+{%- else %}
+{%-  set nb_connections = 100 %}
+{%- endif %}
 
 {# ---- QUERY CACHE SIZE            #}
-{% set query_cache_size_M = (available_mem / 5)|int %}
-{% if query_cache_size_M > 500 %}
-{%   set query_cache_size_M = 500 %}
-{% endif %}
+{%- set query_cache_size_M = (available_mem / 5)|int %}
+{%- if query_cache_size_M > 500 %}
+{%-   set query_cache_size_M = 500 %}
+{%- endif %}
 
 {# ---- INNODB BUFFER                #}
 {# Values cannot be used in default/context as others as we need to compute from previous values #}
-{% if mysqlData.tuning.innodb_buffer_pool_size_M %}
-{%   set innodb_buffer_pool_size_M = mysqlData.tuning.innodb_buffer_pool_size_M %}
-{% else %}
-{%   set innodb_buffer_pool_size_M = (available_mem / 2)|int %}
-{% endif %}
+{%- if mysqlData.tuning.innodb_buffer_pool_size_M %}
+{%-   set innodb_buffer_pool_size_M = mysqlData.tuning.innodb_buffer_pool_size_M %}
+{%- else %}
+{%-   set innodb_buffer_pool_size_M = (available_mem / 2)|int %}
+{%- endif %}
 {# Try to divide this buffer in instances of 1Go #}
-{% if mysqlData.tuning.innodb_buffer_pool_instances %}
-{%   set innodb_buffer_pool_instances = mysqlData.tuning.innodb_buffer_pool_instances %}
-{% else %}
-{%   set innodb_buffer_pool_instances = (innodb_buffer_pool_size_M / 1024)|round(0)|int %}
-{%   if innodb_buffer_pool_instances < 1 %}
-{%     set innodb_buffer_pool_instances = 1 %}
-{%   endif %}
-{% endif %}
+{%- if mysqlData.tuning.innodb_buffer_pool_instances %}
+{%-   set innodb_buffer_pool_instances = mysqlData.tuning.innodb_buffer_pool_instances %}
+{%- else %}
+{%-   set innodb_buffer_pool_instances = (innodb_buffer_pool_size_M / 1024)|round(0)|int %}
+{%-   if innodb_buffer_pool_instances < 1 %}
+{%-     set innodb_buffer_pool_instances = 1 %}
+{%-   endif %}
+{%- endif %}
 {# Try to set this to 25% of innodb_buffer_pool_size #}
-{% if mysqlData.tuning.innodb_log_buffer_size_M %}
-{%   set innodb_log_buffer_size_M = mysqlData.tuning.innodb_log_buffer_size_M %}
-{% else %}
-{%   set innodb_log_buffer_size_M = (innodb_buffer_pool_size_M / 4)|round(0)|int %}
-{% endif %}
+{%- if mysqlData.tuning.innodb_log_buffer_size_M %}
+{%-   set innodb_log_buffer_size_M = mysqlData.tuning.innodb_log_buffer_size_M %}
+{%- else %}
+{%-   set innodb_log_buffer_size_M = (innodb_buffer_pool_size_M / 4)|round(0)|int %}
+{%- endif %}
 
 {# ------- INNODB other settings     #}
-{% set innodb_flush_method = 'fdatasync' %}
+{%- set innodb_flush_method = 'fdatasync' %}
 {# recommended value is 2*nb cpu + nb of disks, we assume one disk #}
-{% set innodb_thread_concurrency = (nb_cpus + 1) * 2 %}
+{%- set innodb_thread_concurrency = (nb_cpus + 1) * 2 %}
 {# Should we sync binary logs at each commits or prey for no server outage? #}
-{% set sync_binlog = 0 %}
+{%- set sync_binlog = 0 %}
 {# innodb_flush_log_at_trx_commit
    1 = Full ACID, but slow, log written at commit + sync disk
    0 = log written every second + sync disk, BUT nothing at commit (kill of mysql can loose last transactions)
@@ -161,15 +163,15 @@ Now let's do the magic:
 
 {# --------- Settings related to number of tables #}
 {# This is by default 8M, should store all tables and indexes informations #}
-{% if mysqlData.tuning.number_of_table_indicator < 251 %}
-{%   set innodb_additional_mem_pool_size_M = 8 %}
-{% elif mysqlData.tuning.number_of_table_indicator < 501 %}
-{%   set innodb_additional_mem_pool_size_M = 16 %}
-{% elif mysqlData.tuning.number_of_table_indicator < 1001 %}
-{%   set innodb_additional_mem_pool_size_M = 24 %}
-{% else %}
-{%   set innodb_additional_mem_pool_size_M = 32 %}
-{% endif %}
+{%- if mysqlData.tuning.number_of_table_indicator < 251 %}
+{%-   set innodb_additional_mem_pool_size_M = 8 %}
+{%- elif mysqlData.tuning.number_of_table_indicator < 501 %}
+{%-   set innodb_additional_mem_pool_size_M = 16 %}
+{%- elif mysqlData.tuning.number_of_table_indicator < 1001 %}
+{%-   set innodb_additional_mem_pool_size_M = 24 %}
+{%- else %}
+{%-   set innodb_additional_mem_pool_size_M = 32 %}
+{%- endif %}
 {# TABLE CACHE
   table_open_cache should be max joined tables in queries * nb connections
   table_cache is the old name now it's table_open_cache and by default 400
@@ -179,10 +181,10 @@ Now let's do the magic:
   so the increase of file limits must be set in upstart script
   @http://askubuntu.com/questions/288471/mysql-cant-open-files-after-updating-server-errno-24
 #}
-{% set table_definition_cache = mysqlData.tuning.number_of_table_indicator %}
-{% set table_open_cache = nb_connections * 8 %}
+{%- set table_definition_cache = mysqlData.tuning.number_of_table_indicator %}
+{%- set table_open_cache = nb_connections * 8 %}
 {# this should be table_open_cache * nb_connections #}
-{% set open_file_limit = nb_connections * table_open_cache %}
+{%- set open_file_limit = nb_connections * table_open_cache %}
 
 {# ------------ OTHERS                           #}
 {# tmp_table_size: On queries using temporary data, ig this data gets bigger than
@@ -191,7 +193,7 @@ Now let's do the magic:
  running, so if you use something like 1024Mo prey that queries using this amount
  of temporary data are not running too often...
 #}
-{% set tmp_table_size_M= (available_mem / 10)|int %}
+{%- set tmp_table_size_M= (available_mem / 10)|int %}
 makina-mysql-settings:
   file.managed:
     - name: {{ mysqlData.etcdir }}/local.cnf
@@ -229,30 +231,30 @@ makina-mysql-settings:
         tmp_table_size: {{ tmp_table_size_M }}
         sync_binlog: {{ sync_binlog }}
     - context:
-{% if ('devhost' in nodetypes.registry.actives) %}
+        {%- if ('devhost' in nodetypes.registry.actives) %}
         mode: "dev"
-{% endif %}
-{% if mysqlData.tuning.query_cache_size_M %}
+        {%- endif %}
+        {%- if mysqlData.tuning.query_cache_size_M %}
         query_cache_size: {{ mysqlData.tuning.query_cache_size_M }}
-{% endif %}
-{% if mysqlData.tuning.innodb_flush_method %}
+        {%- endif %}
+        {%- if mysqlData.tuning.innodb_flush_method %}
         innodb_flush_method: {{ mysqlData.tuning.innodb_flush_method }}
-{% endif %}
-{% if mysqlData.tuning.innodb_thread_concurrency %}
+        {%- endif %}
+        {%- if mysqlData.tuning.innodb_thread_concurrency %}
         innodb_thread_concurrency: {{ mysqlData.tuning.innodb_thread_concurrency }}
-{% endif %}
-{% if mysqlData.tuning.innodb_flush_log_at_trx_commit %}
+        {%- endif %}
+        {%- if mysqlData.tuning.innodb_flush_log_at_trx_commit %}
         innodb_flush_log_at_trx_commit: {{ mysqlData.tuning.innodb_flush_log_at_trx_commit }}
-{% endif %}
-{% if mysqlData.tuning.sync_binlog %}
+        {%- endif %}
+        {%- if mysqlData.tuning.sync_binlog %}
         sync_binlog: {{ mysqlData.tuning.sync_binlog }}
-{% endif %}
-{% if mysqlData.tuning.innodb_additional_mem_pool_size_M %}
+        {%- endif %}
+        {%- if mysqlData.tuning.innodb_additional_mem_pool_size_M %}
         innodb_additional_mem_pool_size: {{ mysqlData.tuning.innodb_additional_mem_pool_size_M }}
-{% endif %}
-{% if mysqlData.tuning.tmp_table_size_M %}
+        {%- endif %}
+        {%- if mysqlData.tuning.tmp_table_size_M %}
         tmp_table_size: {{ mysqlData.tuning.tmp_table_size_M }}
-{% endif %}
+        {%- endif %}
 
     - require:
       - pkg: makina-mysql-pkgs
@@ -261,7 +263,7 @@ makina-mysql-settings:
        - service: makina-mysql-service
 
 {# --- ROOT ACCESS MANAGMENT --------------- #}
-# Alter root password only if we can connect without
+{# Alter root password only if we can connect without #}
 change-empty-mysql-root-access:
   cmd.run:
     - name: mysqladmin -u root flush-privileges password "{{ mysqlData.root_passwd }}"
@@ -273,18 +275,18 @@ change-empty-mysql-root-access:
       - service: makina-mysql-service-reload
       - service: makina-mysql-service
 
-{% if not('devhost' in nodetypes.registry.actives) %}
+{%- if not('devhost' in nodetypes.registry.actives) %}
 {# On anything that is not a dev server we should emit a big fail for empty
  password root access to the MySQL Server #}
 security-check-empty-mysql-root-access-socket:
   cmd.run:
     - name: echo "PROBLEM MYSQL ROOT ACESS without password is allowed (socket mode)" && exit 1
     - onlyif: echo "select 'connected'"|mysql -u root -h localhost
-    # Run after the password alteration
+    {# Run after the password alteration #}
     - require:
       - pkg: makina-mysql-pkgs
       - cmd: change-empty-mysql-root-access
-    # tested after each mysql reload or restart
+    {# tested after each mysql reload or restart #}
     - watch:
       - service: makina-mysql-service-reload
       - service: makina-mysql-service
@@ -293,18 +295,17 @@ security-check-empty-mysql-root-access-tcpip:
   cmd.run:
     - name: echo "PROBLEM MYSQL ROOT ACCESS without password is allowed (tcp-ip mode)" && exit 1
     - onlyif: echo "select 'connected'"|mysql -u root -h 127.0.0.1
-    # Run after the password alteration
+    {# Run after the password alteration #}
     - require:
       - pkg: makina-mysql-pkgs
       - cmd: change-empty-mysql-root-access
-    # tested after each mysql reload or restart
+    {# tested after each mysql reload or restart #}
     - watch:
       - service: makina-mysql-service-reload
       - service: makina-mysql-service
 {% endif %}
 
-#--- MAIN SERVICE RESTART/RELOAD watchers --------------
-
+{#--- MAIN SERVICE RESTART/RELOAD watchers -------------- #}
 makina-mysql-service:
   service.running:
     - name: {{ mysqlData.service }}
@@ -320,12 +321,10 @@ makina-mysql-service-reload:
       - pkg: makina-mysql-pkgs
     - enable: True
     - reload: True
-    # most watch requisites are linked here with watch_in
+    {# most watch requisites are linked here with watch_in #}
 
 {# End of mysql_base() macro #}
 {% endmacro %}
-
-
 
 {# MACRO mysql_db()
 # Do not forget to use mysql_base() macro before using it
@@ -341,7 +340,7 @@ makina-mysql-service-reload:
 # The mysql_server argument is the mysql connection host, by default
 # we'll use the mysqlData.conn_host value ('localhost' usually)
 #}
-{% macro mysql_db(db,
+{%- macro mysql_db(db,
                   user = None,
                   host=None,
                   password=None,
@@ -350,33 +349,33 @@ makina-mysql-service-reload:
                   user_creation=True,
                   mysql_host=None,
                   state_uid=None) -%}
-#--- MYSQL directories, users, database, grants --------------
-{% if not state_uid %}
-{%   set state_uid=db.replace('.', '_').replace(' ','_') %}
-{% endif %}
-{% if not host %}
-{%   set host=['%'] %}
-{% elif host is string %}
-{%   set host=[host] %}
-{% endif %}
-{% if not character_set %}
-{%   set character_set=mysqlData.character_set %}
-{% endif %}
-{% if not mysql_host %}
-{%   set mysql_host=mysqlData.conn_host %}
-{% endif %}
-{% if not collate %}
-{%   set collate=mysqlData.collate %}
-{% endif %}
-{% if user_creation -%}
-{# user name is by default the db name #}
-{%   if not user -%}
-{%     set user = db %}
-{%   endif -%}
-{%   if not password -%}
-{%     set password = '' %}
-{%   endif -%}
-{% endif -%}
+{#--- MYSQL directories, users, database, grants -------------- #}
+{%- if not state_uid %}
+{%-   set state_uid=db.replace('.', '_').replace(' ','_') %}
+{%- endif %}
+{%- if not host %}
+{%-   set host=['%'] %}
+{%- elif host is string %}
+{%-   set host=[host] %}
+{%- endif %}
+{%- if not character_set %}
+{%-   set character_set=mysqlData.character_set %}
+{%- endif %}
+{%- if not mysql_host %}
+{%-   set mysql_host=mysqlData.conn_host %}
+{%- endif %}
+{%- if not collate %}
+{%-   set collate=mysqlData.collate %}
+{%- endif %}
+{%- if user_creation -%}
+{#- user name is by default the db name #}
+{%-   if not user -%}
+{%-     set user = db %}
+{%-   endif -%}
+{%-   if not password -%}
+{%-     set password = '' %}
+{%-   endif -%}
+{%- endif -%}
 makina-mysql-db-{{ state_uid }}:
   mysql_database.present:
     - name: "{{ db }}"
@@ -386,9 +385,9 @@ makina-mysql-db-{{ state_uid }}:
     - connection_pass: "{{ mysqlData.conn_pass }}"
     - saltenv:
       - LC_ALL: en_US.utf8
-{% if user_creation -%}
-{%   for currenthost in host %}
-{%     set host_simple=currenthost.replace('.', '_').replace(' ','_').replace('%','_') %}
+{%- if user_creation -%}
+{%-   for currenthost in host %}
+{%-     set host_simple=currenthost.replace('.', '_').replace(' ','_').replace('%','_') %}
 makina-mysql-user-{{ state_uid }}-{{ host_simple }}:
   mysql_user.present:
     - name: "{{ user }}"
@@ -417,11 +416,10 @@ makina-mysql-user-grants-{{ state_uid }}-{{ host_simple }}:
     - require:
       - mysql_database: makina-mysql-db-{{ state_uid }}
       - mysql_user: makina-mysql-user-{{ state_uid }}-{{ host_simple }}
-{%   endfor %}
-{% endif -%}
+{%-   endfor %}
+{%- endif -%}
 {% endmacro %}
-
-{% if not localsettings.myDisableAutoConf %}
+{%- if not localsettings.myDisableAutoConf %}
 {{ mysql_base(localsettings.myCnf) }}
 {% endif %}
 # vim: set nofoldenable:

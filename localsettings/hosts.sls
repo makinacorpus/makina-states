@@ -1,4 +1,4 @@
-#
+{#-
 # Configure /etc/hosts entries based on pillar informations
 # eg in pillar:
 #
@@ -32,17 +32,18 @@
 #      - text: "here your text"
 #      - require_in:
 #        - file: makina-etc-host-vm-management
-{% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-
-{{ localsettings.register('hosts') }}
-{% set locs = localsettings.locations %}
-{% set hosts_list = localsettings.hosts_list %}
-{% if hosts_list %}
+#}
+{%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+{{- localsettings.register('hosts') }}
+{%- set locs = localsettings.locations %}
+{%- set hosts_list = localsettings.hosts_list %}
+{%- if hosts_list %}
 # spaces are used in the join operation to make this text looks like a yaml multiline text
-{% set separator="\n            " %}
-# This state will use an accumulator to build the dynamic block content in {{ locs.conf_dir }}/hosts
+{%- set separator="\n            " %}
+{#- This state will use an accumulator to build the dynamic block content in {{ locs.conf_dir }}/hosts
 # you can reuse this accumulator on other states
 # (@see makina-etc-host-vm-management)
+#}
 prepend-hosts-accumulator-from-pillar:
   file.accumulated:
     - require_in:
@@ -62,9 +63,10 @@ append-hosts-accumulator-from-pillar:
 
 {% endif %}
 
-# States editing a block in {{ locs.conf_dir }}/hosts
+{#- States editing a block in {{ locs.conf_dir }}/hosts
 # Accumulators targeted on this file will be used
 # TODO: provide a way to select accumulators and distinct blocks
+#}
 makina-prepend-etc-hosts-management:
   file.blockreplace:
     - name: {{ locs.conf_dir }}/hosts

@@ -1,12 +1,10 @@
-{% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-
-{{ localsettings.register('repository_dotdeb') }}
-{% set locs = localsettings.locations %}
-
+{%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+{{- localsettings.register('repository_dotdeb') }}
+{%- set locs = localsettings.locations %}
 include:
   - {{ localsettings.statesPref }}pkgmgr
 
-{% if grains['os_family'] in ['Debian'] %}
+{%- if grains['os_family'] in ['Debian'] %}
 makina-dotdeb-add-key:
   cmd.watch:
     - name: wget -q -O - http://www.dotdeb.org/dotdeb.gpg | sudo apt-key add -
@@ -38,5 +36,4 @@ makina-dotdeb-pin-php:
     - group: root
     - template: jinja
     - source: salt://makina-states/files/etc/apt/preferences.d/dotdeb.org
-
 {% endif %}

@@ -1,4 +1,4 @@
-# See also makina-states.services.base.ssh.sls
+{#- See also makina-states.services.base.ssh.sls
 #
 # to generate a password hash
 # USE ``python -c "import crypt, getpass, pwd; print crypt.crypt('password', '\$6\$SALTsalt\$')"``
@@ -7,17 +7,15 @@
 #
 #
 # Idea is to create any user/group needed for ssh managment
-
-{% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-
-{{ localsettings.register('users') }}
-{% set locs = localsettings.locations %}
-
-{% for id, udata in localsettings.users.items() %}
-{% set password = udata.get('password', False) %}
-{% set home = udata['home'] %}
-{% set bashrc = home + '/.bashrc' %}
-{% set bashprofile = home + '/.bash_profile' %}
+#}
+{%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+{{- localsettings.register('users') }}
+{%- set locs = localsettings.locations %}
+{%- for id, udata in localsettings.users.items() %}
+{%- set password = udata.get('password', False) %}
+{%- set home = udata['home'] %}
+{%- set bashrc = home + '/.bashrc' %}
+{%- set bashprofile = home + '/.bash_profile' %}
 {{ id }}:
   group.present:
     - name: {{ id }}
@@ -33,7 +31,9 @@
     - home: {{ home }}
     - gid_from_name: True
     - remove_groups: False
-    {% if password %}- password:  {{ password }} {% endif %}
+    {%- if password %}
+    - password:  {{ password }}
+    {%- endif %}
     - optional_groups:
       - {{ id }}
       - cdrom
@@ -49,9 +49,9 @@
       {%- if grains['os_family'] != 'Debian' %}
       - admin
       - wheel
-      {% endif %}
-      {% endif %}
-      {% endif %}
+      {%- endif %}
+      {%- endif %}
+      {%- endif %}
 
 makina-{{id}}-bashfiles:
   file.touch:

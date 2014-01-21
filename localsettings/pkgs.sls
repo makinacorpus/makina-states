@@ -1,16 +1,13 @@
-#
+{#-
 # Manage packages to install by default
-#
-
-{% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-
-{{ localsettings.register('pkgs') }}
-{% set locs = localsettings.locations %}
-
+#}
+{%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+{{- localsettings.register('pkgs') }}
+{%- set locs = localsettings.locations %}
 include:
   - {{ localsettings.statesPref }}pkgmgr
 
-{% if grains['os'] in ['Ubuntu', 'Debian'] %}
+{%- if grains['os'] in ['Ubuntu', 'Debian'] %}
 before-pkg-install-proxy:
   cmd.run:
     - unless: /bin/true
@@ -26,7 +23,7 @@ before-pkg-install-proxy:
       - pkg: net-pkgs
       - pkg: salt-pkgs
 
-{% if grains['os'] == 'Ubuntu' -%}
+{%- if grains['os'] == 'Ubuntu' -%}
 ubuntu-pkgs:
   pkg.installed:
     - pkgs:
@@ -42,7 +39,7 @@ ubuntu-pkgs:
       - ubuntu-keyring
       - ubuntu-minimal
       - ubuntu-standard
-{% endif %}
+{%- endif %}
 
 sys-pkgs:
   pkg.installed:
@@ -87,26 +84,25 @@ sys-pkgs:
       - xfsprogs
       - zerofree
       - zip
-      {% if grains['os_family'] == 'Debian' -%}
+      {%- if grains['os_family'] == 'Debian' -%}
       - python-software-properties
       - debconf-utils
       - dstat
-      {% endif %}
+      {%- endif %}
 
-
-{% if grains.get('makina-states.nodetype.devhost', False) %}
+{%- if grains.get('makina-states.nodetype.devhost', False) %}
 devhost-pkgs:
   pkg.installed:
     - pkgs:
       - localepurge
-{% endif %}
+{%- endif %}
 
 dev-pkgs:
   pkg.installed:
     - pkgs:
       - git
       - git-core
-      {% if grains['os_family'] == 'Debian' -%}
+      {%- if grains['os_family'] == 'Debian' -%}
       - build-essential
       - m4
       - libtool
@@ -117,7 +113,7 @@ dev-pkgs:
       - automake
       - libsigc++-2.0-dev
       - tcl8.5
-      {% endif %}
+      {%- endif %}
 
 net-pkgs:
   pkg:

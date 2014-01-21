@@ -1,8 +1,6 @@
-{% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-
-{{ localsettings.register('nscd') }}
-{% set locs = localsettings.locations %}
-
+{%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+{{- localsettings.register('nscd') }}
+{%- set locs = localsettings.locations %}
 nscd-pkgs:
   pkg.installed:
     - pkgs:
@@ -26,4 +24,3 @@ nscd:
 touch-etc-nsswitch-conf:
   file.touch:
     - name: {{ locs.conf_dir }}/nsswitch.conf
-

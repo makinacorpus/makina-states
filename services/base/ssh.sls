@@ -1,9 +1,8 @@
 # see also users.sls
-{% import "makina-states/_macros/services.jinja" as services with context %}
-{{ services.register('base.ssh') }}
-
-{% set localsettings = services.localsettings %}
-{% set locs = localsettings.locations %}
+{%- import "makina-states/_macros/services.jinja" as services with context %}
+{{- services.register('base.ssh') }}
+{%- set localsettings = services.localsettings %}
+{%- set locs = localsettings.locations %}
 
 include:
   - {{ services.localsettings.statesPref }}users
@@ -11,6 +10,7 @@ include:
   - openssh.config
   - openssh.banner
 
+{#
 # Idea is to grant everyone member of "(.-)*makina-users" access
 # to managed boxes
 # So you need to set a default pillar like that:
@@ -35,10 +35,10 @@ include:
 #   keys:
 #     foo:
 #       bar.pub
-#
 # The keys are searched in /salt_root/files/ssh/
+#}
 
-# By default we generate a dsa+rsa ssh key pair for root
+{# By default we generate a dsa+rsa ssh key pair for root #}
 root-ssh-keys-init:
   cmd.run:
     - name: |
@@ -63,9 +63,9 @@ root-ssh-keys-init:
               exit $ret;
     - user: root
 
-{% for user, keys_info in localsettings.user_keys.items() %}
-  {% for commentid, keys in keys_info.items() %}
-    {% for key in keys %}
+{%- for user, keys_info in localsettings.user_keys.items() %}
+{%-  for commentid, keys in keys_info.items() %}
+{%-    for key in keys %}
 ssh_auth-{{ user }}-{{ commentid }}-{{ key }}:
   ssh_auth.present:
     - require:
@@ -73,18 +73,22 @@ ssh_auth-{{ user }}-{{ commentid }}-{{ key }}:
     - comment: key for {{ commentid }}
     - user: {{ user }}
     - source: salt://files/ssh/{{ key }}
-    {% endfor %}
-  {% endfor %}
-{% endfor %}
+{%-    endfor %}
+{%-  endfor %}
+{%- endfor %}
 
 extend:
   openssh:
     service.running:
-      {% if grains['os'] == 'Debian' %}- name: ssh{% endif %}
+      {%- if grains['os'] == 'Debian' %}
+      - name: ssh
+      {%- endif %}
       - enable: True
       - watch:
         - file: sshd_config
-      {% if grains['os_family'] == 'Debian' %}- name: ssh{% endif %}
+      {%- if grains['os_family'] == 'Debian' %}
+      - name: ssh
+      {%- endif %}
 
   sshd_config:
     file.managed:
