@@ -49,9 +49,9 @@ def get_common_vars(
     user=None,
     group=None,
     url='https://github.com/makinacorpus/{name}.git',
-    dns='localhost',
+    domain='localhost',
     main_ip='127.0.0.1',
-    dnses=None,
+    domains=None,
     defaults=None,
     env_defaults=None,
     os_defaults=None,
@@ -70,8 +70,8 @@ def get_common_vars(
         - project_branch: the branch of the project
         - salt_branch: the branch of the project salt tree
         - url: the git repository url
-        - dns: main dns of the installed application if any
-        - dnses: Additionnal hosts (mapping {host: ip}), the main dns will be inserted
+        - domain: main domain of the installed application if any
+        - domains: Additionnal hosts (mapping {host: ip}), the main domain will be inserted
                  in this list linked to the 'main_ip'.
         - user: system project user
         - group: system project user group
@@ -104,7 +104,7 @@ def get_common_vars(
     for i in default_sls_includes:
         if not i in sls_includes:
             sls_includes.append(i)
-    if 'vagrantvm' in services.nodetypes.registy['actives']:
+    if 'vagrantvm' in services.nodetypes.registry['actives']:
         sls_includes.append('makina-states.nodetypes.vagrantvm')
 
     localsettings = services.localsettings
@@ -117,19 +117,19 @@ def get_common_vars(
     if not group:
         group = localsettings.group
 
-    if not dnses:
-        dnses = {}
+    if not domains:
+        domains = {}
 
-    if isinstance(dns, basestring):
-        dnses[dns] = main_ip
+    if isinstance(domain, basestring):
+        domains[domain] = main_ip
 
     variables = {
         'services': services,
         'localsettings': localsettings,
         'default_env': default_env,
         'name': name,
-        'dnses': dnses,
-        'dns': dns,
+        'domains': domains,
+        'domain': domain,
         'main_ip': main_ip,
         'user': user,
         'group': group,
@@ -157,8 +157,8 @@ def get_common_vars(
             'services': services,
             'localsettings': localsettings,
             'name': name,
-            'dns': dns,
-            'dnses': dnses,
+            'domain': domain,
+            'domains': domains,
             'root': localsettings.locations['projects_dir'],
             'project_dir': '{root}/{name}',
             'salt_root':    '{project_dir}/{salt_subdir}',
