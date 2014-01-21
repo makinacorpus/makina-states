@@ -61,7 +61,8 @@ makina-file_delay_services_for_srv:
 addvagrant-to-editor:
   user.present:
     - name: vagrant
-    - optional_groups: {{localsettings.group}}
+    - optional_groups:
+      - {{localsettings.group}}
     - remove_groups: false
 
 vagrantvm-zerofree:
