@@ -1,0 +1,80 @@
+{%- import "makina-states/projects/base.jinja" as base with context %}
+{%- import "makina-states/services/db/postgresql.sls" as pgsql with context %}
+   -
+{%- set services = base.services %}
+{%- set saltmac = base.saltmac %}
+{%- set localsettings = base.localsettings %}
+
+#
+# Base system prerequisite for Plone
+#
+{%- macro lizmap_db(common) %}
+{{- pgsql.postgresql_db(common.data.db,name, template='postgis') }}
+{{- pgsql.postgresql_user(group=common.db.name+'_owners',
+  password=common.db.password,
+  template='postgis') }}
+{%- endmacro %}
+
+#
+# Cron from generic: pack & backup & restart each day, fullbackup per week (sunday)
+#
+{%- macro generic_crons(common) %}
+{%- set cron_hour   = common.data.get('cron_hour', 1) %}
+{%- set cron_minute = common.data.get('cron_minute', 0) %}
+
+{#
+{{common.name}}-zopepackdaily:
+  cron.present:
+    - comment: "{{common.name}}/project [zopepackdaily]"
+    - user: {{common.user}}
+    - minute:  {{ cron_minute + 0 }}
+    - hour: {{cron_hour}}
+    - name: {{common.project_root}}/bin/zeoserver-zeopack
+    - require:
+      - service: {{common.name}}-service
+#}
+
+{%- endmacro %}
+
+
+#
+# Data dictionnaries that feed the "common.data" dictionnary
+# This is one of the most difficult part to understand, idea is to
+#
+
+{%- set default_defaults = {
+  'cron_hour': 2,
+  'cron_minute': 5,
+  'has_db': True,
+  'db': {'name': 'lizmap',
+         'user': 'lizmap',
+         'password': 'lizmap',},
+} %}
+
+{%- set default_env_defaults = {
+  'dev': {},
+  'prod': {}
+ } %}
+
+
+{#
+# Makina project per project macro couple (install_lizmap/install_project)
+#}
+{%- macro install_lizmap_project_do(common) %}
+# install postgresql only if we have the db role enabled
+{%-   if common.data.has_db %}
+{{-     lizmap_db(common)}}
+{%-   endif %}
+{%- endmacro %}
+
+{# Look available arguments in _modules/mc_project.py:get_common_vars #}
+{%- macro install_lizmap_project(*varargs, **kwargs) %}
+{%-  do kwargs.setdefault('defaults', default_defaults) %}
+{%-  do kwargs.setdefault('env_defaults', default_env_defaults) %}
+{%-  do kwargs.setdefault('user', 'lizmap') %}
+{%-  set common = salt['mc_project.get_common_vars'](services,*varargs, **kwargs) %}
+{%-  if common.data.has_db %}
+{%-    do common.sls_includes.extend(['makina-states.services.gis.qgis',])%}
+{%-  endif %}
+{{-  base.install_project(common, install_macro=install_lizmap_project_do) }}
+{%- endmacro %}

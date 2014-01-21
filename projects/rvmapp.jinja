@@ -1,0 +1,92 @@
+{%- import "makina-states/projects/base.jinja" as base with context %}
+{%- set services = base.services %}
+{%- set saltmac = base.saltmac %}
+{%- set localsettings = base.localsettings %}
+{%- set locs = localsettings.locations %}
+
+{%- macro install_rvm_bundle(common) %}
+{%-  set prefix = common.project_root %}
+{%-  set rvm = common.data.rvm %}
+{%-  set rvm_path = common.data.rvm_path %}
+{%   set rb = common.data.rb %}
+{%-  set rapp = rb+"@"+common.name %}
+{%-  set gpath = "\""+rvm_path+'/gems/'+rb+"\"*\"@"+common.name+"\"" %}
+{%-  set rdo = "\""+rvm+"\" "+rapp+" do" %}
+
+{{common.name}}-app:
+  cmd.run:
+    - name: '"{{rvm}}" {{rb}} do "{{rvm}}" gemset create {{common.name}}'
+    {%- if not common.no_user %}
+    - user: {{common.user}}
+    {%- endif %}
+    - unless: test -e {{gpath}}
+    - require:
+      - cmd: rvm-{{rb}}
+
+{{common.name}}-install-gem:
+  cmd.run:
+    - name: '{{rdo}} gem install rubygems-bundler'
+    {%- if not common.no_user %}
+    - user: {{common.user}}
+    {%- endif %}
+    - unless: test -e {{gpath}}/gems/rubygems-bundler-*
+    - cwd: {{prefix}}
+    - require:
+      - cmd: {{common.name}}-app
+      - mc_git: {{common.name}}-checkout-code
+
+{{common.name}}-install-app:
+  cmd.run:
+    - name: '{{rdo}} bundle install --binstubs=./bundler_stubs'
+    {%- if not common.no_user %}
+    - user: {{common.user}}
+    {%- endif %}
+    - unless: test -e {{gpath}}/gems/net-ssh-*
+    - cwd: {{common.project_root}}
+    - require:
+      - cmd: {{common.name}}-install-gem
+
+{{common.name}}-wrappers-app:
+  cmd.run:
+    - name: '{{rdo}} "{{rvm}}" alias create "{{common.name}}" "{{rapp}}"'
+    {%- if not common.no_user %}
+    - user: {{common.user}}
+    {%- endif %}
+    - unless: test -e "{{rvm_path}}/wrappers/{{common.name}}"
+    - cwd: {{prefix}}
+    - require:
+      - cmd: {{common.name}}-install-app
+{%- endmacro %}
+#
+# Data dictionnaries that feed the "common.data" dictionnary
+# This is one of the most difficult part to understand, idea is to
+#
+
+{%- set default_defaults = {
+  'rvm': localsettings.locations.rvm,
+  'rvm_path': locs.rvm_path,
+  'rb': localsettings.rubies[0],
+} %}
+
+{%- set default_env_defaults = {
+  'dev': {},
+  'prod': {}
+ } %}
+
+{#
+# Makina project per project macro couple (install_zope_project/install_project)
+#}
+{%- macro install_rvm_app_do(common) %}
+{{-      install_rvm_bundle(common) }}
+{%- endmacro %}
+
+{# Look available arguments in _modules/mc_project.py:get_commmon_vars #}
+{%- macro install_rvm_app() %}
+{%-   do kwargs.setdefault('defaults', default_defaults) %}
+{%-   do kwargs.setdefault('env_defaults', default_env_defaults) %}
+{%-   do kwargs.setdefault('user', 'rvmapp') %}
+{%- set common = salt['mc_project.get_common_vars'](services, *varargs, **kwargs) %}
+{%- do common.sls_includes.extend(['makina-states.localsettings.rvm',]) %}
+{%- do common.groups.extend(['rvm',]) %}
+{{- base.install_project(common, install_macro=install_rvm_app_do) }}
+{%- endmacro %}

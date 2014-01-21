@@ -1,13 +1,13 @@
-{% import "makina-states/projects/base.jinja" as base with context %}
+{%- import "makina-states/projects/base.jinja" as base with context %}
 
-{% set services = base.services %}
-{% set saltmac = base.saltmac %}
-{% set localsettings = base.localsettings %}
+{%- set services = base.services %}
+{%- set saltmac = base.saltmac %}
+{%- set localsettings = base.localsettings %}
 
-#
+{#-
 # Base system prerequisite for Plone
-#
-{% macro zope_deps(common) %}
+#}
+{%- macro zope_deps(common) %}
 prepreq-{{common.name}}:
   pkg.installed:
     - pkgs:
@@ -45,43 +45,46 @@ prepreq-{{common.name}}:
       - tk8.5-dev
       - wv
       - zlib1g-dev
-{% endmacro %}
+{%- endmacro %}
 
-
-#
+{#-
 # Install a generic (CGWB: http://cgwb-makinacorpus.rhcloud.com/) based buildout for plone
-#
-{% macro generic_buildout(common) %}
-{% set localsettings = common.localsettings %}
-{% set locs = localsettings.locations %}
-{% if common.default_env == 'prod' %}
-{% set newest= False %}
-{% else %}
-{% set newest= True %}
-{% endif %}
+#}
+{%- macro generic_buildout(common) %}
+{%- set localsettings = common.localsettings %}
+{%- set locs = localsettings.locations %}
+{%- if common.default_env == 'prod' %}
+{%- set newest= False %}
+{%- else %}
+{%- set newest= True %}
+{%- endif %}
 
+{#-
 # Wrap the salt configured setting in a file inputable to buildout
+#}
 {{common.name}}-settings:
   file.managed:
     - template: jinja
     - name: {{common.project_root}}/etc/sys/settings-local.cfg
     - source: salt://makina-states/files/projects/zope/genericsettings.cfg
-    - user: {{common['user']}}
-    - group: {{localsettings.group}}
+    - user: {{common.user}}
+    - group: {{common.group}}
     - mode: 770
     - require_in:
       - buildout: {{common.name}}-buildout-project
     - defaults:
       salt_data: {{ common.data|yaml }}
 
+{#-
 # Run the project buildout but skip the maintainance parts as they are part of salt stuff
+#}
 {{common.name}}-buildout-project:
   file.managed:
     - template: jinja
     - name: {{common.project_root}}/buildout-salt.cfg
     - source: salt://makina-states/files/projects/zope/genericbuildout.cfg
-    - user: {{common['user']}}
-    - group: {{localsettings.group}}
+    - user: {{common.user}}
+    - group: {{common.group}}
     - mode: 770
     - require_in:
       - buildout: {{common.name}}-buildout-project
@@ -91,7 +94,7 @@ prepreq-{{common.name}}:
   buildout.installed:
     - name: {{common.project_root}}
     - config: buildout-salt.cfg
-    - runas: {{common['user']}}
+    - runas: {{common.user}}
     - newest: {{newest}}
     - require:
       - pkg: prepreq-{{common.name}}
@@ -99,9 +102,9 @@ prepreq-{{common.name}}:
       - file: {{common.name}}-buildout-project
       - mc_git: {{common.name}}-checkout-code
 
-#
+{#-
 # init script is marked as started at first, but the daemon is not there!
-#
+#}
 etc-init.d-supervisor.{{common.name}}:
   file.symlink:
     - name: {{locs.initd_dir}}/supervisor.{{common.name}}
@@ -130,18 +133,18 @@ etc-logrotate.d-{{common.name}}.conf:
     - name: {{locs.conf_dir}}/logrotate.d/{{common.name}}.conf
     - target: {{common.project_root}}/etc/logrotate.conf
 
-{% endmacro %}
+{%- endmacro %}
 
-#
+{#-
 # Cron from generic: pack & backup & restart each day, fullbackup per week (sunday)
-#
-{% macro generic_crons(common) %}
-{% set cron_hour   = common.data.get('cron_hour', 1) %}
-{% set cron_minute = common.data.get('cron_minute', 0) %}
+#}
+{%- macro generic_crons(common) %}
+{%- set cron_hour   = common.data.get('cron_hour', 1) %}
+{%- set cron_minute = common.data.get('cron_minute', 0) %}
 {{common.name}}-zopepackdaily:
   cron.present:
     - comment: "{{common.name}}/project [zopepackdaily]"
-    - user: {{common['user']}}
+    - user: {{common.user}}
     - minute:  {{ cron_minute + 0 }}
     - hour: {{cron_hour}}
     - name: {{common.project_root}}/bin/zeoserver-zeopack
@@ -151,21 +154,22 @@ etc-logrotate.d-{{common.name}}.conf:
 {{common.name}}-zoperestartdaily:
   cron.present:
     - comment: "{{common.name}}/project [zoperestartdaily]"
-    - user: {{common['user']}}
+    - user: {{common.user}}
     - minute:  {{ cron_minute + 30 }}
     - hour: {{cron_hour}}
     - name: |
-            {% if common.data['buildout']['v']['autostart_instance1'] == 'true'  %}{{common.project_root}}/bin/supervisorctl restart instance1;{% endif %}
-            {% if common.data['buildout']['v']['autostart_instance2'] == 'true'  %}{{common.project_root}}/bin/supervisorctl restart instance2;{% endif %}
-            {% if common.data['buildout']['v']['autostart_instance3'] == 'true'  %}{{common.project_root}}/bin/supervisorctl restart instance3;{% endif %}
-            {% if common.data['buildout']['v']['autostart_instance4'] == 'true'  %}{{common.project_root}}/bin/supervisorctl restart instance4;{% endif %}
+            {% for nb in range(1, common.data.nbinstances+1) %}
+            {% set iid='instance{0}'.format(nb) %}
+            {% set id='autostart_{0}'.format(iid) %}
+            {% if common.data['buildout']['v'].get(id, 'false') == 'true'  %}{{common.project_root}}/bin/supervisorctl restart {{iid}};{% endif %}
+            {% endor %}
     - require:
       - service: {{common.name}}-service
 
 {{common.name}}-repozodaily:
   cron.present:
     - comment: "{{common.name}}/project [repozodaily]"
-    - user: {{common['user']}}
+    - user: {{common.user}}
     - minute: {{ cron_minute + 15 }}
     - hour: {{cron_hour}}
     - name: {{common.project_root}}/bin/backup
@@ -175,7 +179,7 @@ etc-logrotate.d-{{common.name}}.conf:
 {{common.name}}repozoweekly:
   cron.present:
     - comment: "{{common.name}}/project [repozoweekly]"
-    - user: {{common['user']}}
+    - user: {{common.user}}
     - minute: {{ cron_minute + 45 }}
     - hour: {{cron_hour}}
     - dayweek: 6
@@ -183,17 +187,16 @@ etc-logrotate.d-{{common.name}}.conf:
     - require:
       - service: {{common.name}}-service
 
-{% endmacro %}
+{%- endmacro %}
 
-
-#
+{#
 # Data dictionnaries that feed the "common.data" dictionnary
 # This is one of the most difficult part to understand, idea is to
-#
-
-{% set generic_defaults = {
+#}
+{%- set default_defaults = {
   'cron_hour': 1,
   'cron_minute': 5,
+  'nbinstances': 4,
   'buildout': {
     'v': {
         'admin-user'                  : 'admin',
@@ -275,7 +278,7 @@ etc-logrotate.d-{{common.name}}.conf:
   }
 } %}
 
-{% set generic_env_defaults = {
+{% set default_env_defaults = {
         'dev': {
             'buildout': {
                 'v': {
@@ -290,26 +293,20 @@ etc-logrotate.d-{{common.name}}.conf:
  } %}
 
 
-#
+{#-
 # Makina project per project macro couple (install_zope_project/install_project)
-#
-{% macro install_generic_zope_project_do(
-  common, defaults=generic_defaults, env_defaults= generic_env_defaults) %}
-{{ zope_deps(common) }}
-{{ generic_buildout(common) }}
-{{ generic_crons(common) }}
-{% endmacro %}
+#}
+{%- macro install_generic_zope_project_do(common) %}
+{{-    zope_deps(common) }}
+{{-    generic_buildout(common) }}
+{{-    generic_crons(common) }}
+{%- endmacro %}
 
-{% macro install_generic_zope_project(
-  name, url, domain="plone.local", includes=None,
-  defaults=generic_defaults, env_defaults=generic_env_defaults) %}
-{% set common = salt['mc_project.get_common_vars'](
-  services,
-  name,
-  url=url,
-  domain=domain,
-  user='zope',
-  defaults=defaults,
-  env_defaults=env_defaults) %}
-{{ base.install_project(common, install_macro=install_generic_zope_project_do, includes=includes) }}
+{# Look available arguments in _modules/mc_project.py:get_commmon_vars #}
+{%- macro install_generic_zope_project() %}
+{%- do kwargs.setdefault('defaults', default_defaults) %}
+{%- do kwargs.setdefault('env_defaults', default_env_defaults) %}
+{%- do kwargs.setdefault('user', 'zope') %}
+{%- set common = salt['mc_project.get_common_vars'](services, *varargs, **kwargs) %}
+{{- base.install_project(common, install_macro=install_generic_zope_project_do) }}
 {% endmacro %}

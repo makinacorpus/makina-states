@@ -3,7 +3,7 @@
 {% import "makina-states/_macros/services.jinja" as services with context %}
 {% from "makina-states/services/http/apache_defaults.jinja" import apacheData with context %}
 {% from "makina-states/services/http/apache_macros.jinja" import virtualhost with context %}
-{#
+{#-
 #
 # Install a project from end to end on the behalf of makina states
 # Currently we have support for :
@@ -35,34 +35,44 @@
 
 
 {% macro set_accesses(common) %}
+{% if not common.no_user %}
 {#
 # Create a dedicated system user for our project
 #}
-{{common['user']}}:
+{%- for group in common.groups %}
+{{common.name}}-group-{{group}}:
   group.present:
-    - name: {{ common['user'] }}
+    - name: {{group}}
     - system: True
-  user.present:
-    - name: {{ common['user']}}
-    - require:
-        - group: {{ common['user'] }}
-    - fullname: {{ common['user'] }} user
-    - gid_from_name: True
-    - optional_groups:
-      - {{ common['user'] }}
-      - {{ common.localsettings.group}}
+{% endfor %}
 
-{#
+{{common.name}}-user-{{common.user}}:
+  user.present:
+    - name: {{common.user}}
+    - shell: /bin/bash
+    - require:
+      {%- for group in common.groups %}
+      - group: {{common.name}}-group-{{group}}
+      {%- endfor %}
+    - fullname: {{common.user}} user
+    - gid_from_name: True
+    - remove_groups: False
+    - optional_groups:
+      {%- for group in common.groups %}
+      - {{group}}
+      {%- endfor %}
+
+{#+
 # By default we copy root ssh key creds to the project user
 # if and only if they do not already  exist
 # We will then just have to accept only one key in our gitorious, the root one
 # Choose between dsa or rsa, the one that match your needs.
 #}
-{{common['user']}}-ssh-keys-init:
+{{common.name}}-{{common.user}}-ssh-keys-init:
   cmd.run:
     {# for the project user, create it's ssh dir and copy the root ssh keys #}
     - name: |
-            home="$(awk -F: -v v="{{common['user']}}" '{if ($1==v && $6!="") print $6}' /etc/passwd)";
+            home="$(awk -F: -v v="{{common.user}}" '{if ($1==v && $6!="") print $6}' /etc/passwd)";
             cd /root/.ssh;
             if [[ ! -e $home/.ssh ]];then
               mkdir $home/.ssh;
@@ -75,7 +85,7 @@
     {# if only the ssh keys are not there #}
     - onlyif: |
               res=1;
-              home="$(awk -F: -v v="{{common['user']}}" '{if ($1==v && $6!="") print $6}' /etc/passwd)";
+              home="$(awk -F: -v v="{{common.user}}" '{if ($1==v && $6!="") print $6}' /etc/passwd)";
               cd /root/.ssh;
               for i in config id_*;do
                 if [[ ! -e $home/.ssh/$i ]];then
@@ -87,101 +97,128 @@
     - require:
       {# only where the user exists and when we have installed the root ssh keys #}
       - cmd: root-ssh-keys-init
-      - group: {{common['user']}}
-      - user: {{common['user']}}
+      - user: {{common.name}}-user-{{common.user}}
 
-{{common['user']}}-ssh-keys-perms:
+{{common.name}}-{{common.user}}-ssh-keys-perms:
   cmd.run:
     - require:
-      - cmd: {{common['user']}}-ssh-keys-init
+      - cmd: {{common.name}}-{{common.user}}-ssh-keys-init
       {# be sure to have correct permissions on ssh folders #}
     - name: |
-            home="$(awk -F: -v v="{{common['user']}}" '{if ($1==v && $6!="") print $6}' /etc/passwd)";
+            home="$(awk -F: -v v="{{common.user}}" '{if ($1==v && $6!="") print $6}' /etc/passwd)";
             chmod -Rf 750           $home/.ssh;
             chmod -Rf 700           $home/.ssh/*;
             chmod -Rf 770           $home/.ssh/config;
-            chown -Rf {{common['user']}}:{{common['user']}} $home/.ssh;
-{% endmacro %}  {# set_accesses #}
+            chown -Rf {{common.user}}:{{common.user}} $home/.ssh;
+{%- endif %}
+{%- endmacro %}  {# set_accesses #}
 
-
-{#
+{#-
 # Checkout and setup projet directories according to makina-states philosophy:
 #   - /src/projects/projectName
 #             |_ salt -> salt branch of the project
 #             |_ pillar -> project's pillar
 #             |_ project -> project application code
 #}
-{% macro checkout_salt_and_code(common) %}
+{%- macro checkout_salt_and_code(common) %}
+{%- if not common.no_salt %}
 {#
 # Checkout the salt branch of the project repository in /srv/projects/project/salt
 #}
-{{common.name}}-checkout-salt:
+{{-common.name}}-checkout-salt:
   mc_git.latest:
     - rev: {{common.salt_branch}}
     - name:  {{common.url}}
     - target: {{common.salt_root}}
-    - user: {{common['user']}}
+    {%- if not common.no_user %}
+    - user: {{common.user}}
+    {%- endif %}
     - require:
       {# be sure to run after salt has maybe updated itself
       # and has our code installation treea #}
-      - cmd: {{common['user']}}-ssh-keys-perms
+      {%- if not common.no_user %}
+      - cmd: {{common.user}}-ssh-keys-perms
+      - user: {{common.name}}-user-{{common.user}}
+      {%- endif %}
       - service: salt-salt-minion
-      - group: {{common['user']}}
-      - user: {{common['user']}}
+{% endif %}
 
-{#
+{#-
 # Create:
 #
 #   /srv/projects/project/salt
 #   /srv/projects/project/pillar
 #   /srv/projects/project/project
 #}
-{% for i in [common.project_dir, common.salt_root, common.pillar_root] %}
+{%-    set project_dirs = [common.project_root,] %}
+{%-    if not common.no_salt %}
+{%-      do project_dirs.extend([common.salt_root, common.pillar_root]) %}
+{%-    endif %}
+{%- for i in project_dirs %}
 {{common.name}}-{{i}}-dir:
   file.directory:
     - name: {{i}}
     - makedirs: true
-    - user: {{common['user']}}
-    - group: {{localsettings.group}}
+    {%- if not common.no_user %}
+    - user: {{common.user}}
+    - group: {{common.group}}
+    {%- endif %}
     - mode: 0770
     - require_in:
       - file: {{common.name}}-checkout-code
+    {%- if not common.no_salt %}
     - require:
       - mc_git: {{common.name}}-checkout-salt
-{% endfor %}
+    {%- endif %}
+{%- endfor %}
 
-{#
+{#-
 # Checkout the project branch in /srv/projects/project/project
 #}
 {{common.name}}-checkout-code:
   file.directory:
     - name: {{common.project_root}}
     - makedirs: true
-    - user: {{common['user']}}
-    - group: {{localsettings.group}}
+    {%- if not common.no_user %}
+    - user: {{common.user}}
+    - group: {{common.group}}
+    {%- endif %}
+    {%- if not common.no_salt %}
     - require:
       - mc_git: {{common.name}}-checkout-salt
-  {# this is an optimisation, to not clone entirely twice the project, copy the salt git folder
+      - user: {{common.name}}-user-{{common.user}}
+    {%- endif %}
+  {%- if not common.no_salt %}
+  {#- this is an optimisation, to not clone entirely twice the project, copy the salt git folder
      to the project .git as they are on the same git repository, it's quickier and consume less network #}
   cmd.run:
     - name: rsync -az --exclude="refs/heads/*" "{{common.salt_root}}/.git/" "{{common.project_root}}/.git/";touch "{{common.project_root}}/.initial"
     - unless: test -d "{{common.project_root}}/.git/"
-    - user: {{common['user']}}
+    {%- if not common.no_user %}
+    - user: {{common.user}}
+    {%- endif %}
     - require:
       - file: {{common.name}}-checkout-code
+  {%- endif %}
   mc_git.latest:
     - rev: {{common.project_branch}}
     - name:  {{common.url}}
-    - user: {{common['user']}}
+    {%- if not common.no_user %}
+    - user: {{common.user}}
+    {%- endif %}
     - target: {{common.project_root}}
     - require:
+      - file: {{common.name}}-{{common.project_root}}-dir
+      {%- if not common.no_salt %}
       - cmd: {{common.name}}-checkout-code
-    - user: {{common['user']}}
-{% endmacro %} {# checkout_salt_and_code #}
+      {% endif %}
+      {%- if not common.no_user %}
+      - user: {{common.user}}
+    {%- endif %}
+{%- endmacro %} {# checkout_salt_and_code #}
 
-
-{% macro install_apache(common) %}
-{#
+{%- macro install_apache(common) %}
+{#-
 # Adding or removing modules
 {{common.name}}-apache-included1:
   mc_apache.include_module:
@@ -206,13 +243,15 @@
             redirect_aliases = True,
             allow_htaccess = False) }}
 #}
-{% endmacro %} {# install_apache #}
+{%- endmacro %} {# install_apache #}
 
 
-{#
+{#-
 # PERMISSIONS SETUP, STAY SECURE and reset file permissions, more over never let others this our stuff !
 #}
-{% macro fix_permissions(common) %}
+{%- macro fix_permissions(common) %}
+{%- if not common.no_reset_perms %}
+{%-    if not common.no_salt %}
 {{common.name}}-restricted-perms:
   cmd.script:
     - source: {{saltmac.resetperms}}
@@ -226,6 +265,7 @@
       - {{common.pillar_root}}
     - require:
       - cmd: {{common.name}}-checkout-code
+{%-    endif %}
 
 {{common.name}}-perms:
   cmd.script:
@@ -233,83 +273,89 @@
     - template: jinja
     - dmode: '0770'
     - fmode: '0770'
-    - reset_user: {{common['user']}}
-    - reset_group: "{{localsettings.group}}"
+    {%- if not common.no_user %}
+    - reset_user: {{common.user}}
+    {%- else %}
+    - reset_user: root
+    {%- endif %}
+    - reset_group: {{common.group}}
     - reset_paths:
       - {{common.project_root}}
     - require:
-      - cmd: {{common.name}}-checkout-code
+      - mc_git: {{common.name}}-checkout-code
+      {%- if not common.no_salt %}
       - cmd: {{common.name}}-restricted-perms
-{% endmacro %}
+      {%- endif %}
+{%- endif %}
+{%- endmacro %}
 
-#
+{#-
 # Register all the app domain's in /etc/hosts
 # If we are in devmode (vagrant), also add them to the hosts to the parent box
-#
-
-{% macro configure_domains(common) %}
+#}
+{%- macro configure_domains(common) %}
+{%-  if not common.no_domain %}
 {{common.name}}-append-hosts-accumulator:
   file.accumulated:
     - require_in:
       - file: makina-append-etc-hosts-management
     - filename: {{ locs.conf_dir }}/hosts
     - text: |
-            {% for domain in common.domains %}
+            {%- for domain in common.domains %}
             {{domains[domain]}} {{domain}}
-            {% endfor %}
-#
+            {%- endfor %}
+{#-
 # if we are on a vagrant box, also register our hosts to be accesible from the host
-{%  if 'vagrantvm' in nodetypes.registry.actives %}
-{%    if vagrantvm.vm_num %}
+#}
+{%-  if 'vagrantvm' in nodetypes.registry.actives %}
+{%-    if vagrantvm.vm_num %}
 makina-parent-append-etc-hosts-accumulated-project-{{name}}:
   file.accumulated:
     - filename: {{hostsf}}
     - name: parent-hosts-append-accumulator-{{ vm_name }}-entries
     - text: |
-            {% for domain in common.domains %}
+            {%- for domain in common.domains %}
             {{ ip2 }} {{ domain }}
             {{ ip1 }} {{ domain}}.nat
             {% endfor %}
     - require_in:
       - file: makina-append-parent-etc-hosts-management
-{%    endif %}
-{%   endif %}
-{% endmacro %} {# configure_domains #}
+{%-    endif %}
+{%-   endif %}
+{%-  endif %}
+{%- endmacro %} {# configure_domains #}
 
-{#
+{#-
 # All project need to define at least two macros which will use the following macros
 # - A macro named 'install_project' which call the following macro and will call the next macro
 # - Another macro which is the install_macro argument which really install the project
 # - pre_install and post_install macros will setup system accesses, checkout the base code and finally reset
 #  all filesystem permissions to stay secure.
 #}
-{% macro pre_install(common) %}
-{{ configure_domains(common) }}
-{{ set_accesses(common) }}
-{{ checkout_salt_and_code(common) }}
-{% endmacro %}  {# pre_install #}
+{%- macro pre_install(common) %}
+{{-    configure_domains(common) }}
+{{-    set_accesses(common) }}
+{{-    checkout_salt_and_code(common) }}
+{%- endmacro %}  {# pre_install #}
 
-{% macro post_install(common) %}
-{{ fix_permissions(common) }}
-{% endmacro %} {# post_install #}
+{%- macro post_install(common) %}
+{{-    fix_permissions(common) }}
+{%- endmacro %} {# post_install #}
 
-
-{% macro install_project(common, pre=True, post=True, install_macro=None, includes=None) %}
-{%  if not includes %}
-{%    set includes = common.sls_includes %}
-{%  endif %}
-{%  if includes %}
+{%- macro install_project(common, pre=True, post=True, install_macro=None) %}
+{%-  if common.sls_includes %}
 include:
-  {% for i in includes %}- {{i}}
-  {% endfor %}
-{%  endif %}
-{%  if pre %}
-{{    pre_install(common) }}
-{%  endif %}
-{%  if install_macro %}
-{{    install_macro(common) }}
-{%  endif %}
-{%  if post %}
-{{     post_install(common) }}
-{%  endif %}
-{% endmacro %} {# install_project #}
+{%- for sls in common.sls_includes %}
+  - {{ sls }}
+{%- endfor %}
+{%-  endif %}
+{%-  if pre %}
+{{-    pre_install(common) }}
+{%-  endif %}
+{%-  if install_macro %}
+{{-    install_macro(common) }}
+{%-  endif %}
+{%-  if post %}
+{{-     post_install(common) }}
+{%-  endif %}
+{%- endmacro %} {# install_project #}
