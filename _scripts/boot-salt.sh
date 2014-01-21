@@ -112,18 +112,31 @@ warn_log() {
     fi
 }
 
-die() {
+ERROR_MSG="There were errors"
+
+die_() {
     warn_log
-    echo -e "${CYAN}${@}${NORMAL}"
-    exit -1
+    ret=$1
+    shift
+    echo -e "${CYAN}${@}${NORMAL}" 1>&2
+    exit $ret
+}
+
+die() {
+    die_ 1 $@
+}
+
+die_in_error_() {
+    local ret=$1
+    shift
+    local msg="${@:-"$ERROR_MSG"}"
+    if [[ "$ret" != "0" ]];then
+        die_ "$ret" "$msg"
+    fi
 }
 
 die_in_error() {
-    ret="$?"
-    if [[ "$ret" != "0" ]];then
-        echo -e "${CYAN}${@}${NORMAL}"
-        exit $ret
-    fi
+    die_in_error_ "$?" "$@"
 }
 
 test_online() {
@@ -759,12 +772,12 @@ i_prereq() {
         apt-get update -qq && lazy_apt_get_install libzmq3-dev
         ret="$?"
         if [[ $ret != "0" ]];then
-            die $ret "Install of zmq3 failed"
+            die_ $ret "Install of zmq3 failed"
         fi
         ret="$?"
         teardown_backports && apt-get update
         if [[ $ret != "0" ]];then
-            die $ret "Teardown backports failed"
+            die_ $ret "Teardown backports failed"
         fi
     fi
     for i in $BASE_PACKAGES;do
@@ -1019,7 +1032,7 @@ cleanup_previous_venv() {
         CWD="$PWD"
         for i in ${ROOT} ${ROOT}usr ${ROOT}usr/local;do
             if [[ "$CWD" == "$i" ]];then
-                die 1 "[bs] wrong dir for venv: '$i'"
+                die "[bs] wrong dir for venv: '$i'"
             fi
         done
         for item in $VENV_CONTENT;do
@@ -1092,7 +1105,7 @@ run_ms_buildout() {
         ret=$?
         if [[ "$ret" != "0" ]];then
             rm -rf "$ms/parts" "$ms/develop-eggs"
-            die $ret " [bs] Failed buildout bootstrap ($ms)"
+            die_ $ret " [bs] Failed buildout bootstrap ($ms)"
         fi
     fi
     # remove stale zmq egg (to relink on zmq3)
@@ -1124,7 +1137,7 @@ run_ms_buildout() {
         ret=$?
         if [[ "$ret" != "0" ]];then
             rm -rf "$ms/.installed.cfg"
-            die $ret " [bs] Failed buildout in $ms"
+            die_ $ret " [bs] Failed buildout in $ms"
         fi
     fi
 }
@@ -1921,6 +1934,7 @@ highstate_in_mastersalt_env() {
             bs_log "Failed highstate for mastersalt"
             exit -1
         fi
+        warn_log
         echo "changed=yes comment='mastersalt highstate run'"
     else
         echo "changed=false comment='mastersalt highstate skipped'"
@@ -1943,12 +1957,12 @@ highstate_in_salt_env() {
             warn_log
             exit -1
         fi
+        warn_log
         echo "changed=yes comment='salt highstate run'"
     else
         echo "changed=false comment='salt highstate skipped'"
     fi
     if [[ -n "$SALT_BOOT_DEBUG" ]];then cat $SALT_BOOT_OUTFILE;fi
-    warn_log
 
     # --------- stateful state return: mark as freshly installed
     if [[ -n "$SALT_BOOT_NOW_INSTALLED" ]];then
