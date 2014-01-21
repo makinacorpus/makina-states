@@ -94,7 +94,7 @@ pexcludes = [re.compile(i, re_f)
 {% if reset_user is defined %}
 user = "{{reset_user}}"
 {% else %}
-user = "{{user}}"
+user = "{{user if user else 'root'}}"
 {% endif %}
 try:
     uid = int(user)
@@ -104,7 +104,7 @@ except Exception:
 {% if reset_group is defined %}
 group = "{{reset_group}}"
 {% else %}
-group = "{{group}}"
+group = "{{group if group else 'root'}}"
 {% endif %}
 try:
     gid = int(group)

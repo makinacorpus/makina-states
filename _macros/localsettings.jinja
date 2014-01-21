@@ -48,9 +48,13 @@
   'venv'               : '{root_dir}salt-venv',
   'srv_dir'            : '{root_dir}srv',
   'prefix'             : '{srv_dir}',
+  'rvm_prefix'         : '{usr_dir}/local',
+  'rvm_path'           : '{rvm_prefix}/rvm',
+  'rvm'                : '{rvm_path}/bin/rvm',
   'vms_docker_root'    : '{srv_dir}/docker',
   'docker_root'        : '',
   'lxc_root'           : '',
+  'apps_dir'           : '{srv_dir}/apps',
   'projects_dir'       : '{srv_dir}/projects',
   'conf_dir'           : '{root_dir}etc',
   'initd_dir'          : '{conf_dir}/init.d',
@@ -270,6 +274,14 @@
 # JDK default version
 {% set jdkDefaultVer = '7' %}
 
+# RVM
+{% set rvm_url = salt['mc_utils.get']('makina-states.localsettings.rvm.url',
+ 'https://raw.github.com/wayneeseguin/rvm/master/binscripts/rvm-installer') %}
+{% set rubies = salt['mc_utils.get']('makina-states.localsettings.rvm.rubies',
+                                     ['ruby-1.9.3']) %}
+{% set rvm_user = salt['mc_utils.get']('makina-states.localsettings.rvm.user', 'rvm') %}
+{% set rvm_group = salt['mc_utils.get']('makina-states.localsettings.rvm.group', 'rvm') %}
+
 # -----------------------------------------------------
 # SSL settings for reuse in states
 {% set sslpref = 'makina-states.localsettings.ssl.' %}
@@ -308,6 +320,7 @@
       'sudo'              : {'active': True },
       'users'             : {'active': True },
       'vim'               : {'active': True },
+      'rvm'               : {'active': False },
     }
   }
 } %}
