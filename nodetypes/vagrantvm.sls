@@ -25,6 +25,8 @@
 
 {{ nodetypes.register('vagrantvm') }}
 
+{% set localsettings = nodetypes.localsettings %}
+
 include:
   - {{ nodetypes.statesPref }}devhost
   - {{ nodetypes.funcs.statesPref }}services.virt.lxc
