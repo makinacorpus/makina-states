@@ -55,6 +55,13 @@ makina-file_delay_services_for_srv:
 {% endif %}
 #}
 
+# add vagrant to editor
+addvagrant-to-editor:
+  user.present:
+    - name: vagrant
+    - optional_groups: {{localsettings.group}}
+    - remove_groups: false
+
 vagrantvm-zerofree:
   file.managed:
     - name: /sbin/zerofree.sh
