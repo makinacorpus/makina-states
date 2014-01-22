@@ -37,7 +37,6 @@ include:
 #       bar.pub
 # The keys are searched in /salt_root/files/ssh/
 #}
-
 {# By default we generate a dsa+rsa ssh key pair for root #}
 root-ssh-keys-init:
   cmd.run:
@@ -76,6 +75,15 @@ ssh_auth-{{ user }}-{{ commentid }}-{{ key }}:
 {%-    endfor %}
 {%-  endfor %}
 {%- endfor %}
+ssh_config:
+  file.managed:
+    - name: /etc/ssh/ssh_config
+    - source: salt://makina-states/files/etc/ssh/ssh_config
+    - template: jinja
+    - watch_in:
+      - service: openssh
+    - context:
+      settings: {{services.sshClientSettings|yaml}}
 
 extend:
   openssh:
@@ -95,3 +103,6 @@ extend:
       - name: /etc/ssh/sshd_config
       - source: salt://makina-states/files/etc/ssh/sshd_config
       - template: jinja
+      - context:
+        settings: {{services.sshServerSettings|yaml}}
+

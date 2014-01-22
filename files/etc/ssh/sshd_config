@@ -1,10 +1,16 @@
 #	$OpenBSD: sshd_config,v 1.89 2013/02/06 00:20:42 dtucker Exp $
-
-
 #
 # MANAGED VIA SALT, DO NOT EDIT
 #
-
+{% for key, value in settings.items() -%}
+{{key}} {{value}}
+{% endfor %}
+{% if grains['os_family'] == 'Debian' %}
+# override default of no subsystems
+Subsystem	sftp	/usr/lib/openssh/sftp-server
+{% else %}
+Subsystem	sftp	/usr/lib/ssh/sftp-server
+{% endif%}
 
 # This is the sshd server system-wide configuration file.  See
 # sshd_config(5) for more information.
@@ -51,9 +57,7 @@
 #RSAAuthentication yes
 #PubkeyAuthentication yes
 
-# The default is to check both .ssh/authorized_keys and .ssh/authorized_keys2
-# but this is overridden so installations will only check .ssh/authorized_keys
-AuthorizedKeysFile	.ssh/authorized_keys .ssh/authorized_keys2
+#AuthorizedKeysFile	.ssh/authorized_keys .ssh/authorized_keys2
 
 #AuthorizedPrincipalsFile none
 
@@ -75,7 +79,7 @@ AuthorizedKeysFile	.ssh/authorized_keys .ssh/authorized_keys2
 #PermitEmptyPasswords no
 
 # Change to no to disable s/key passwords
-ChallengeResponseAuthentication no
+# ChallengeResponseAuthentication no
 
 # Kerberos options
 #KerberosAuthentication no
@@ -87,8 +91,8 @@ ChallengeResponseAuthentication no
 #GSSAPIAuthentication no
 #GSSAPICleanupCredentials yes
 
-# Set this to 'yes' to enable PAM authentication, account processing, 
-# and session processing. If this is enabled, PAM authentication will 
+# Set this to 'yes' to enable PAM authentication, account processing,
+# and session processing. If this is enabled, PAM authentication will
 # be allowed through the ChallengeResponseAuthentication and
 # PasswordAuthentication.  Depending on your PAM configuration,
 # PAM authentication via ChallengeResponseAuthentication may bypass
@@ -96,19 +100,19 @@ ChallengeResponseAuthentication no
 # If you just want the PAM account and session checks to run without
 # PAM authentication, then enable this but set PasswordAuthentication
 # and ChallengeResponseAuthentication to 'no'.
-UsePAM yes
+# UsePAM yes
 
 #AllowAgentForwarding yes
 #AllowTcpForwarding yes
 #GatewayPorts no
-X11Forwarding yes
+#X11Forwarding yes
 #X11DisplayOffset 10
 #X11UseLocalhost yes
-PrintMotd no # pam does that
+#PrintMotd no # pam does that
 #PrintLastLog yes
 #TCPKeepAlive yes
 #UseLogin no
-UsePrivilegeSeparation sandbox		# Default for new installations.
+#UsePrivilegeSeparation sandbox		# Default for new installations.
 #PermitUserEnvironment no
 #Compression delayed
 #ClientAliveInterval 0
@@ -121,14 +125,7 @@ UsePrivilegeSeparation sandbox		# Default for new installations.
 #VersionAddendum none
 
 # no default banner path
-Banner /etc/ssh/banner
-
-# override default of no subsystems
-{% if grains['os_family'] == 'Debian' %}
-Subsystem	sftp	/usr/lib/openssh/sftp-server
-{% else %}
-Subsystem	sftp	/usr/lib/ssh/sftp-server
-{% endif%}
+# Banner /etc/ssh/banner
 
 # Example of overriding settings on a per-user basis
 #Match User anoncvs
