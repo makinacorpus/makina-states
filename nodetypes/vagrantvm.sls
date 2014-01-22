@@ -113,7 +113,7 @@ disable-vagrant-useless-services:
 {% endif %}
 
 # -------- DEVELOPMENT VM DNS ZONE --------
-{% set vnNum = grains.get('makina.devhost_num', '') %}
+{% set vmNum = grains.get('makina.devhost_num', '') %}
 {% set vm_fqdn = grains.get('fqdn','childhost.local') %}
 {% set vm_host = grains.get('host','childhost') %}
 {% set vm_name = vm_fqdn.replace('.', '_').replace(' ', '_') %}
@@ -123,7 +123,7 @@ disable-vagrant-useless-services:
 {% set ip2=ips['eth1'] and ips['eth1'][0] or None %}
 {% set hostsf='/etc/devhosts' %}
 
-{% if vnNum and ip1 and ip2 and vm_fqdn and vm_nat_fqdn and vm_host and ips %}
+{% if vmNum and ip1 and ip2 and vm_fqdn and vm_nat_fqdn and vm_host and ips %}
 makina-parent-etc-hosts-absent:
   file.absent:
     - name: {{hostsf}}
@@ -139,8 +139,8 @@ makina-parent-etc-hosts-exists:
 makina-append-parent-etc-hosts-management:
   file.blockreplace:
     - name: {{hostsf}}
-    - marker_start: '#-- start devhost {{vnNum }} :: DO NOT EDIT --'
-    - marker_end: '#-- end devhost {{vnNum }} :: DO NOT EDIT --'
+    - marker_start: '#-- start devhost {{vmNum }} :: DO NOT EDIT --'
+    - marker_end: '#-- end devhost {{vmNum }} :: DO NOT EDIT --'
     - content: '# Vagrant vm: {{ vm_fqdn }} added this entry via local mount:'
     - prepend_if_not_found: True
     - backup: '.bak'

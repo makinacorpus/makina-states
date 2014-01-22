@@ -302,21 +302,21 @@
     - filename: {{ locs.conf_dir }}/hosts
     - text: |
             {%- for domain in common.domains %}
-            {{domains[domain]}} {{domain}}
+            {{common.domains[domain]}} {{domain}}
             {%- endfor %}
 {#-
 # if we are on a vagrant box, also register our hosts to be accesible from the host
 #}
 {%-  if 'vagrantvm' in nodetypes.registry.actives %}
-{%-    if vagrantvm.vm_num %}
-makina-parent-append-etc-hosts-accumulated-project-{{name}}:
+{%-    if vagrantvm.vmNum %}
+makina-parent-append-etc-hosts-accumulated-project-{{common.name}}:
   file.accumulated:
-    - filename: {{hostsf}}
-    - name: parent-hosts-append-accumulator-{{ vm_name }}-entries
+    - filename: {{vagrantvm.hostsf}}
+    - name: parent-hosts-append-accumulator-{{ vagrantvm.vm_name }}-entries
     - text: |
             {%- for domain in common.domains %}
-            {{ ip2 }} {{ domain }}
-            {{ ip1 }} {{ domain}}.nat
+            {{ vagrantvm.ip2 }} {{ domain }}
+            {{ vagrantvm.ip1 }} {{ domain}}.nat
             {% endfor %}
     - require_in:
       - file: makina-append-parent-etc-hosts-management

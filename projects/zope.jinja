@@ -1,5 +1,4 @@
 {%- import "makina-states/projects/base.jinja" as base with context %}
-
 {%- set services = base.services %}
 {%- set saltmac = base.saltmac %}
 {%- set localsettings = base.localsettings %}
@@ -123,11 +122,9 @@ etc-init.d-supervisor.{{common.name}}:
     - user: root
     - require:
       - service: {{common.name}}-service
-
-
-#
+{#-
 # Logrotate
-#
+#}
 etc-logrotate.d-{{common.name}}.conf:
   file.symlink:
     - name: {{locs.conf_dir}}/logrotate.d/{{common.name}}.conf
@@ -157,14 +154,16 @@ etc-logrotate.d-{{common.name}}.conf:
     - user: {{common.user}}
     - minute:  {{ cron_minute + 30 }}
     - hour: {{cron_hour}}
-    - name: |
-            {% for nb in range(1, common.data.nbinstances+1) %}
-            {% set iid='instance{0}'.format(nb) %}
-            {% set id='autostart_{0}'.format(iid) %}
-            {% if common.data['buildout']['v'].get(id, 'false') == 'true'  %}{{common.project_root}}/bin/supervisorctl restart {{iid}};{% endif %}
-            {% endor %}
     - require:
       - service: {{common.name}}-service
+    - name: |
+            {% for nb in range(1, common.data.nbinstances+1) %}
+            {%- set iid='instance{0}'.format(nb) %}
+            {%- set id='autostart_{0}'.format(iid) %}
+            {%- if common.data['buildout']['v'].get(id, 'false') == 'true' %}
+            {{- common.project_root}}/bin/supervisorctl restart {{iid}};
+            {%- endif %}
+            {%- endfor %}
 
 {{common.name}}-repozodaily:
   cron.present:
@@ -302,7 +301,9 @@ etc-logrotate.d-{{common.name}}.conf:
 {{-    generic_crons(common) }}
 {%- endmacro %}
 
-{# Look available arguments in _modules/mc_project.py:get_commmon_vars #}
+{#-
+#  Look available arguments in _modules/mc_project.py:get_commmon_vars
+#}
 {%- macro install_generic_zope_project() %}
 {%- do kwargs.setdefault('defaults', default_defaults) %}
 {%- do kwargs.setdefault('env_defaults', default_env_defaults) %}
