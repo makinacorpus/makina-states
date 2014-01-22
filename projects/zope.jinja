@@ -70,7 +70,7 @@ prepreq-{{common.name}}:
     - group: {{common.group}}
     - mode: 770
     - require:
-      - mc_git {{common.name}}-checkout-code
+      - mc_git: {{common.name}}-checkout-code
     - require_in:
       - buildout: {{common.name}}-buildout-project
     - defaults:
