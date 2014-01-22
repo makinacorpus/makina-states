@@ -1,12 +1,4 @@
-{% import "makina-states/_macros/services.jinja" as services with context %}
-{{ services.register('virt.lxc') }}
-{% set localsettings = services.localsettings %}
-{% set locs = localsettings.locations %}
-
-include:
-  - {{ localsettings.statesPref }}pkgs
-
-
+{#-
 # define in pillar an entry "*-lxc-server-def
 # as:
 # toto-server-def:
@@ -20,6 +12,13 @@ include:
 #  rootfs: root directory (opt)
 #  config: config path (opt)
 # and it will create an ubuntu templated lxc host
+#}
+{%- import "makina-states/_macros/services.jinja" as services with context %}
+{{- services.register('virt.lxc') }}
+{%- set localsettings = services.localsettings %}
+{%- set locs = localsettings.locations %}
+include:
+  - {{ localsettings.statesPref }}pkgs
 
 lxc-pkgs:
   pkg.installed:
@@ -28,7 +27,7 @@ lxc-pkgs:
       - lxctl
       - dnsmasq
 
-{% if grains['os'] in ['Debian'] %}
+{% if grains['os'] in ['Debian'] -%}
 lxc-dnsmasq:
   file.managed:
     - name: /etc/dnsmasq.d/lxc
@@ -86,18 +85,19 @@ lxc-services-enabling:
       - lxc
       - lxc-net
 
-
+{#-
 # as it is often a mount -bind, we must ensure we can attach dependencies there
 # set in pillar:
 # makina-states.localsettings.lxc_root: real dest
-{% set lxc_root = locs.var_lib_dir+'/lxc' %}
-{% set lxc_dir = locs.lxc_root %}
+# #}
+{%- set lxc_root = locs.var_lib_dir+'/lxc' %}
+{%- set lxc_dir = locs.lxc_root %}
 
 lxc-root:
   file.directory:
     - name: {{ lxc_root }}
 
-{% if lxc_dir %}
+{% if lxc_dir -%}
 lxc-dir:
   file.directory:
     - name: {{ lxc_dir }}
@@ -126,18 +126,18 @@ lxc-after-maybe-bind-root:
     - file: lxc-root
 
 {% for k, lxc_data in pillar.items() -%}
-{% if k.endswith('lxc-server-def')  -%}
-{% set lxc_name = lxc_data.get('name', k.split('-lxc-server-def')[0]) -%}
-{% set lxc_mac = lxc_data['mac'] -%}
-{% set lxc_ip4 = lxc_data['ip4'] -%}
-{% set lxc_template = lxc_data.get('template', 'ubuntu') -%}
-{% set lxc_netmask = lxc_data.get('netmask', '255.255.255.0') -%}
-{% set lxc_gateway = lxc_data.get('gateway', '10.0.3.1') -%}
-{% set lxc_dnsservers = lxc_data.get('dnsservers', '10.0.3.1') -%}
-{% set lxc_root = lxc_data.get('root', locs.var_lib_dir+'/lxc/' + lxc_name) -%}
-{% set lxc_rootfs = lxc_data.get('rootfs', lxc_root + '/rootfs') -%}
-{% set lxc_init = locs.tmp_dir+'/.lxc-'+ lxc_name + '.sh' %}
-{% set lxc_config = lxc_data.get('config', lxc_root + '/config') -%}
+{%  if k.endswith('lxc-server-def')  -%}
+{%    set lxc_name = lxc_data.get('name', k.split('-lxc-server-def')[0]) -%}
+{%    set lxc_mac = lxc_data['mac'] -%}
+{%    set lxc_ip4 = lxc_data['ip4'] -%}
+{%    set lxc_template = lxc_data.get('template', 'ubuntu') -%}
+{%    set lxc_netmask = lxc_data.get('netmask', '255.255.255.0') -%}
+{%    set lxc_gateway = lxc_data.get('gateway', '10.0.3.1') -%}
+{%    set lxc_dnsservers = lxc_data.get('dnsservers', '10.0.3.1') -%}
+{%    set lxc_root = lxc_data.get('root', locs.var_lib_dir+'/lxc/' + lxc_name) -%}
+{%    set lxc_rootfs = lxc_data.get('rootfs', lxc_root + '/rootfs') -%}
+{%    set lxc_init = locs.tmp_dir+'/.lxc-'+ lxc_name + '.sh' %}
+{%    set lxc_config = lxc_data.get('config', lxc_root + '/config') -%}
 {{ lxc_name }}-lxc:
   file.managed:
     - name: {{ lxc_init }}
@@ -188,10 +188,10 @@ lxc-after-maybe-bind-root:
           netmask: {{ lxc_netmask }}
           gateway: {{ lxc_gateway }}
           dnsservers: {{ lxc_dnsservers }}
-
+{#-
 # {{ lxc_rootfs }}/etc/hosts block entry mangment, collecting
 # data from accumulated states and pushing that in the hosts file
-#
+#}
 {{ lxc_name }}-lxc-hosts-block:
   file.blockreplace:
     - name: {{ lxc_rootfs }}/etc/hosts
@@ -204,12 +204,14 @@ lxc-after-maybe-bind-root:
     - require_in:
       - cmd: start-{{ lxc_name }}-lxc-service
 
+{#-
 # Add DNS record in lxc guest's /etc/hosts
 # record fqdn names of the lxc host
 # with the gateway IP
 #
 # This states will use an accumulator to build the dynamic block content in {{ lxc_rootfs }}/etc/hosts
 # (@see {{ lxc_name }}-lxc-hosts-block)
+#}
 {{ lxc_name }}-lxc-hosts-host:
   file.accumulated:
     - filename: {{ lxc_rootfs }}/etc/hosts
@@ -217,12 +219,13 @@ lxc-after-maybe-bind-root:
     - text: "{{ lxc_gateway }} {{ grains.get('fqdn') }}"
     - require_in:
       - file: {{ lxc_name }}-lxc-hosts-block
-
+{#-
 # Add entries on lxc guests's /etc/hosts with
 # lxc_name and related IP on the lxc netxwork
 #
 # This states will use an accumulator to build the dynamic block content in {{ lxc_rootfs }}/etc/hosts
 # (@see {{ lxc_name }}-lxc-hosts-block)
+#}
 {{ lxc_name }}-lxc-hosts-guest:
   file.accumulated:
     - filename: {{ lxc_rootfs }}/etc/hosts
@@ -238,34 +241,35 @@ start-{{ lxc_name }}-lxc-service:
       - cmd: {{ lxc_name }}-lxc
       - file: {{ lxc_name }}-lxc-network-cfg
     - name: lxc-start -n {{ lxc_name }} -d && echo changed=false
-
-{% set makinahosts=[] -%}
-{% set hosts_list=[] %}
-{% for k, data in pillar.items() -%}
-{% if k.endswith('makina-hosts') -%}
-{% do makinahosts.extend(data) -%}
-{% endif -%}
-{% endfor -%}
-
+{%    set makinahosts=[] -%}
+{%    set hosts_list=[] %}
+{%    for k, data in pillar.items() -%}
+{%      if k.endswith('makina-hosts') -%}
+{%       do makinahosts.extend(data) -%}
+{%      endif -%}
+{%    endfor -%}
+{#-
 # loop to create a dynamic list of hosts based on pillar content
 # Adding hosts records, similar as the ones explained in localsettings.hosts state
 # But only recording the one using 127.0.0.1 (the lxc host loopback)
+#}
 {% for host in makinahosts %}
-### For localhost entries, replace with the lxc getway ip
+{#- ## For localhost entries, replace with the lxc getway ip #}
 {% if host['ip'] == '127.0.0.1' -%}
   {% do hosts_list.append( lxc_gateway + ' ' + host['hosts'] ) %}
-### Else replicate them into the HOSTS of the container
+{# - ## Else replicate them into the HOSTS of the container #}
 {% else %}
   {% do hosts_list.append( host['ip'] + ' ' + host['hosts'] ) %}
 {% endif %}
 {% endfor %}
 {% if hosts_list %}
-# spaces are used in the join operation to make this text looks like a yaml multiline text
+{#- spaces are used in the join operation to make this text looks like a yaml multiline text #}
 {% set separator="\n        "%}
-# this state use an accumulator to store all pillar names found
+{#- this state use an accumulator to store all pillar names found
 # you can reuse this accumulator on other states
 # if you want to add content to the block handled by
 # {{ lxc_name }}-lxc-hosts-guest
+#}
 lxc-{{ lxc_name }}-pillar-localhost-host:
   file.accumulated:
     - filename: {{ lxc_rootfs }}/etc/hosts
@@ -276,6 +280,6 @@ lxc-{{ lxc_name }}-pillar-localhost-host:
       - file: {{ lxc_name }}-lxc-hosts-block
     - require:
       - cmd: {{ lxc_name }}-lxc
-{% endif %}
-{% endif -%}
+{%      endif %}
+{%    endif -%}
 {%- endfor %}

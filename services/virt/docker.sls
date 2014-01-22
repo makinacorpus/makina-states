@@ -1,9 +1,7 @@
-#
+{#
 # Easy managment of dockers via pillar
-# {# THIS IS AN UNFINISHED WORK IN PROGRESS #}
+#  THIS IS AN UNFINISHED WORK IN PROGRESS
 #
-#
-
 # To configure a global registry use this:
 #
 # docker-settings:
@@ -11,7 +9,6 @@
 #     login: xxx
 #     passwd: xxx
 #     url: https://docker-index.makina-corpus.net
-
 # To create docker guests:
 # define in pillar an entry "*-docker-server-def
 # you need at least to define either image or url
@@ -69,11 +66,12 @@
 #         4224: 22
 #
 # and it will create a docker guest for you
+#}
 
-{% import "makina-states/_macros/services.jinja" as services with context %}
-{{ services.register('virt.docker') }}
-{% set localsettings = services.localsettings %}
-{% set locs = localsettings.locations %}
+{%- import "makina-states/_macros/services.jinja" as services with context %}
+{{- services.register('virt.docker') }}
+{%- set localsettings = services.localsettings %}
+{%- set locs = localsettings.locations %}
 
 docker-repo:
   pkgrepo.managed:
@@ -81,7 +79,7 @@ docker-repo:
     - file: {{ locs.conf_dir }}/apt/sources.list.d/docker.list
     - key_url: https://get.docker.io/gpg
 
-# require dockerpy in salt
+{#- require dockerpy in salt #}
 
 docker-pkgs:
   pkg.installed:
@@ -120,11 +118,11 @@ docker-preload-images:
     - require:
       - service: docker-services
 
-# as it is often a mount -bind, we must ensure we can attach dependencies there
+{#- as it is often a mount -bind, we must ensure we can attach dependencies there
 # set in pillar:
-# makina-states.localsettings.docker_root: real dest
-{% set docker_dir = locs.docker_root %}
-{% set dockerSysRoot = locs.var_lib_dir+'/docker' %}
+# makina-states.localsettings.docker_root: real dest #}
+{%- set docker_dir = locs.docker_root %}
+{%- set dockerSysRoot = locs.var_lib_dir+'/docker' %}
 docker-root:
   file.directory:
     - name: {{ dockerSysRoot }}
@@ -159,24 +157,24 @@ docker-after-maybe-bind-root:
       - file: docker-root
 
 {% set dkey='-docker-servers-def' %}
-{% for did, dockers_data in pillar.items() %}
-  {% if did.endswith(dkey) %}
-    {% for cid, data in dockers_data.get('dockers', {}).items() %}
-      {% set pre=did.split(dkey)[0] %}
-      {% set id = pre+'-'+cid %}
-      {% set image=data.get('image', False) %}
-      {% set hostname=data.get('hostname', id) %}
-      {% set url=data.get('url', False) %}
-      {% set count=data.get('count', '1')|int %}
-      {% set volumes=data.get('volumes', {}).items() %}
-      {% set docker_dir = data.get('docker-dir', '.') %}
-      {% set ports=data.get('ports', {}).items() %}
-      {% set branch=data.get('branch', 'salt')  %}
-      {% set volumes_passed=[] %}
-      {% if volumes %}
-        {% for mountpoint, volume in volumes %}
-          {%- if not mountpoint in volumes_passed %}
-            {% do volumes_passed.append(mountpoint) %}
+{% for did, dockers_data in pillar.items() -%}
+  {% if did.endswith(dkey) -%}
+    {% for cid, data in dockers_data.get('dockers', {}).items() -%}
+      {% set pre=did.split(dkey)[0] -%}
+      {% set id = pre+'-'+cid -%}
+      {% set image=data.get('image', False) -%}
+      {% set hostname=data.get('hostname', id) -%}
+      {% set url=data.get('url', False) -%}
+      {% set count=data.get('count', '1')|int -%}
+      {% set volumes=data.get('volumes', {}).items() -%}
+      {% set docker_dir = data.get('docker-dir', '.') -%}
+      {% set ports=data.get('ports', {}).items() -%}
+      {% set branch=data.get('branch', 'salt')  -%}
+      {% set volumes_passed=[] -%}
+      {% if volumes -%}
+        {% for mountpoint, volume in volumes -%}
+          {%- if not mountpoint in volumes_passed -%}
+            {% do volumes_passed.append(mountpoint) -%}
           {% endif -%}
 docker-volume-{{ mountpoint }}:
   file.directory:
@@ -184,13 +182,13 @@ docker-volume-{{ mountpoint }}:
         {% endfor %}
       {% endif %}
 # donnerait 'project-prod-1 project-dev-1 project-db-dev, ...'
-      {% for instancenum in range(count) %}
-        {% set instancenumstr=''%}
-        {% if count > 1 %}
-          {% set instancenumstr = '_%s' % instancenum %}
-        {% endif %}
+      {% for instancenum in range(count) -%}
+        {% set instancenumstr='' -%}
+        {% if count > 1 -%}
+          {% set instancenumstr = '_%s' % instancenum -%}
+        {% endif -%}
 docker-{{ id }}{{ instancenumstr }}:
-        {% if not image %}
+        {% if not image -%}
   mc_git.latest:
     - name: {{ url }}
     - rev: remotes/origin/{{ branch }}
@@ -199,25 +197,25 @@ docker-{{ id }}{{ instancenumstr }}:
   dockerio.installed:
     - hostname: {{ hostname }}
     - docker_dir: {{ docker_dir }}
-        {% if volumes_passed or not image %}
+        {% if volumes_passed or not image -%}
     - require:
-          {% for v in volumes_passed %}
+          {% for v in volumes_passed -%}
         - file.directory: {{ v }}
           {% endfor %}
-          {% if not image %}
+          {% if not image -%}
         - mc_git: docker-{{ id }}
           {% endif %}
         {% endif %}
-        {% if image %}
+        {% if image -%}
     - image: {{ image }}
           {% else %}
     - path: locs.srv_dir/dockers-repo-cache/dockers-{{ id }}
         {% endif %}
-        {% if ports %}
+        {% if ports -%}
     - ports:
-          {% for host_port, container_port in  ports %}
-      {% set host_port=host_port|int %}
-      {% set host_port=container_port|int %}
+          {% for host_port, container_port in  ports -%}
+      {% set host_port=host_port|int -%}
+      {% set host_port=container_port|int -%}
       - {{host_port + instancenum - 1}}: {{container_port + instancenum - 1}}
           {% endfor %}
         {% endif %}
@@ -225,7 +223,7 @@ docker-{{ id }}{{ instancenumstr }}:
     - require_in:
       - cmd: docker-post-inst
     - volumes:
-          {% for mountpoint, volume in  volumes %}
+          {% for mountpoint, volume in  volumes -%}
       - {{ mountpoint }}: {{ volume }}
           {% endfor %}
         {% endif %}
@@ -236,5 +234,6 @@ docker-{{ id }}{{ instancenumstr }}:
 
 docker-post-inst:
   cmd.run:
-    - name: echo "dockers installed"
+    - name: /bin/true
+    - unless: /bin/true
 
