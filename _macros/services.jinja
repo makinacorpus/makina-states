@@ -1,4 +1,4 @@
-#
+{#-
 # Services related exported variables
 #
 # most important are:
@@ -8,175 +8,189 @@
 #      - ssh is enabled by default
 #      - ntp can't run in lxc containers
 #      - ldap has to be toggled on
+#}
 
-{% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
-{% import "makina-states/_macros/controllers.jinja" as controllers with context %}
-
+{%- import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
+{%- import "makina-states/_macros/controllers.jinja" as controllers with context %}
+{#-
 # expose imported macros
-{% set nodetypes = nodetypes %}
-{% set localsettings = nodetypes.localsettings %}
-{% set funcs = localsettings.funcs %}
-{% set ldap = localsettings.ldap %}
-{% set saltmac = controllers.saltmac %}
-
-{% set kind = funcs.servicesKind %}
-{% set statesPref = funcs.statesPref + kind + '.' %}
-{% set grainsPref = funcs.grainsPref + kind + '.' %}
-{% set bases = ['localsettings'] %}
-
-
+#}
+{%- set nodetypes = nodetypes %}
+{%- set localsettings = nodetypes.localsettings %}
+{%- set funcs = localsettings.funcs %}
+{%- set ldap = localsettings.ldap %}
+{%- set saltmac = controllers.saltmac %}
+{%- set kind = funcs.servicesKind %}
+{%- set statesPref = funcs.statesPref + kind + '.' %}
+{%- set grainsPref = funcs.grainsPref + kind + '.' %}
+{%- set bases = ['localsettings'] %}
+{#-
 # SSL Settings
-{% set SSLSettings = localsettings.SSLSettings %}
+#}
+{%- set SSLSettings = localsettings.SSLSettings %}
 
-# -----------------------------------------------------
+{#- -----------------------------------------------------
 # LDAP integration
-{% set ldapVariables = ldap.ldapVariables %}
-{% set ldapEn = ldap.ldapEn %}
+#}
+{%- set ldapVariables = ldap.ldapVariables %}
+{%- set ldapEn = ldap.ldapEn %}
 
-# -----------------------------------------------------
+{#- -----------------------------------------------------
 # init systems flags
-{% set upstart = salt['mc_utils.get']('makina-states.upstart', False) %}
+#}
+{%- set upstart = salt['mc_utils.get']('makina-states.upstart', False) %}
 
-# -----------------------------------------------------
+{#- -----------------------------------------------------
 # ntp is not applied to LXC containers ! (services.base.ntp)
 # So we will just match when our grain is set and not have a value of lxc
-{% set ntpEn = (
+#}
+{%- set ntpEn = (
   not (
     ('dockercontainer' in nodetypes.registry['actives'])
     or ('lxccontainer' in nodetypes.registry['actives'])
   )) %}
 
-# -----------------------------------------------------
+{#- -----------------------------------------------------
 # Pureftpd:  (services.ftp.pureftpd)
-{% set pureftppref                = 'makina-states.services.ftp.pureftp.' %}
-{% set pureftpdDefaultSettings = {
-  'Virtualchroot'      : salt['mc_utils.get'](pureftppref+'virtualchroot', 'false'),
-  'InetdMode'          : salt['mc_utils.get'](pureftppref+'inetd-mode', 'standalone'),
-  'UploadUid'          : salt['mc_utils.get'](pureftppref+'upload-uid', ''),
-  'UploadGid'          : salt['mc_utils.get'](pureftppref+'upload-gid', ''),
-  'UploadScript'       : salt['mc_utils.get'](pureftppref+'upload-script', ''),
-} %}
+#}
+{%- set pureftpdDefaultSettings = salt['mc_utils.defaults'](
+  'makina-states.services.ftp.pureftpdefaults', {
+    'Virtualchroot'      : 'false',
+    'InetdMode'          : 'standalone',
+    'UploadUid'          : '',
+    'UploadGid'          : '',
+    'UploadScript'       : '',
+  }) %}
+{%- set pureftpdSettings = salt['mc_utils.defaults'](
+  'makina-states.services.ftp.pureftp', {
+    'AllowAnonymousFXP'  : 'no',
+    'AllowDotFiles'      : '',
+    'AllowUserFXP'       : '',
+    'AltLog'             : 'clf:/var/log/pure-ftpd/transfer.log',
+    'AnonymousBandwidth' : '',
+    'AnonymousCanCreateDirs': 'no',
+    'AnonymousCantUpload': 'yes',
+    'AnonymousOnly'      : '',
+    'AnonymousRatio'     : '',
+    'AntiWarez'          : '',
+    'AutoRename'         : '',
+    'Bind'               : '',
+    'BrokenClientsCompatibility': 'yes',
+    'CallUploadScript'   : '',
+    'ChrootEveryone'     : 'yes',
+    'ClientCharset'      : '',
+    'Daemonize'          : "",
+    'DisplayDotFiles'    : "yes",
+    'DontResolve'        : "yes",
+    'FSCharset'          : 'utf-8',
+    'IPV4Only'           : "yes",
+    'IPV6Only'           : "",
+    'KeepAllFiles'       : "no",
+    'LimitRecursion'     : "5000 500",
+    'LogPID'             : "",
+    'MaxClientsNumber'   : "",
+    'MaxClientsPerIP'    : "",
+    'MaxDiskUsage'       : "90",
+    'MinUID'             : '1000',
+    'NATmode'            : "",
+    'NoAnonymous'        : 'yes',
+    'NoChmod'            : "",
+    'NoRename'           : "",
+    'NoTruncate'         : "",
+    'Quota'              : "",
+    'SyslogFacility'     : "",
+    'TLS'                : "1",
+    'TrustedGID'         : "",
+    'TrustedIP'          : "",
+    'Umask'              : "133 022",
+    'UserBandwidth'      : "",
+    'UserRatio'          : "",
+    'VerboseLog'         : "yes",
 
-{% set pureftpdSettings = {
-  'AllowAnonymousFXP'  : salt['mc_utils.get'](pureftppref+'allowanonymousfxp', 'no'),
-  'AllowDotFiles'      : salt['mc_utils.get'](pureftppref+'allowdotfiles', ''),
-  'AllowUserFXP'       : salt['mc_utils.get'](pureftppref+'allowuserfxp', ''),
-  'AltLog'             : salt['mc_utils.get'](pureftppref+'altlog', 'clf:/var/log/pure-ftpd/transfer.log'),
-  'AnonymousBandwidth' : salt['mc_utils.get'](pureftppref+'anonymouscancreatedirs', ''),
-  'AnonymousCanCreateDirs': salt['mc_utils.get'](pureftppref+'anonymouscancreatedirs', 'no'),
-  'AnonymousCantUpload': salt['mc_utils.get'](pureftppref+'anonymousbandwidth', 'yes'),
-  'AnonymousOnly'      : salt['mc_utils.get'](pureftppref+'anonymouscantupload', ''),
-  'AnonymousRatio'     : salt['mc_utils.get'](pureftppref+'anonymousonly', ''),
-  'AntiWarez'          : salt['mc_utils.get'](pureftppref+'antiwarez', ''),
-  'AutoRename'         : salt['mc_utils.get'](pureftppref+'autorename', ''),
-  'Bind'               : salt['mc_utils.get'](pureftppref+'bind', ''),
-  'BrokenClientsCompatibility': salt['mc_utils.get'](pureftppref+'brokenclientscompatibility', 'yes'),
-  'CallUploadScript'   : salt['mc_utils.get'](pureftppref+'calluploadscript', ''),
-  'ChrootEveryone'     : salt['mc_utils.get'](pureftppref+'chrooteveryone', 'yes'),
-  'ClientCharset'          : salt['mc_utils.get'](pureftppref+'clientcharset', ''),
-  'Daemonize'          : salt['mc_utils.get'](pureftppref+'daemonize', ""),
-  'DisplayDotFiles'    : salt['mc_utils.get'](pureftppref+'displaydotfiles', "yes"),
-  'DontResolve'        : salt['mc_utils.get'](pureftppref+'dontresolve', "yes"),
-  'FSCharset'          : salt['mc_utils.get'](pureftppref+'fscharset', 'utf-8'),
-  'IPV4Only'           : salt['mc_utils.get'](pureftppref+'ipv4only', "yes"),
-  'IPV6Only'           : salt['mc_utils.get'](pureftppref+'ipv6only', ""),
-  'KeepAllFiles'       : salt['mc_utils.get'](pureftppref+'keepallfiles', "no"),
-  'LimitRecursion'     : salt['mc_utils.get'](pureftppref+'limitrecursion', "5000 500"),
-  'LogPID'             : salt['mc_utils.get'](pureftppref+'logpid', ""),
-  'MaxClientsNumber'   : salt['mc_utils.get'](pureftppref+'maxclientsnumber', ""),
-  'MaxClientsPerIP'    : salt['mc_utils.get'](pureftppref+'maxclientsperip', ""),
-  'MaxDiskUsage'       : salt['mc_utils.get'](pureftppref+'maxdiskusage', "90"),
-  'MinUID'             : salt['mc_utils.get'](pureftppref+'minuid', '1000'),
-  'NATmode'            : salt['mc_utils.get'](pureftppref+'natmode', ""),
-  'NoAnonymous'        : salt['mc_utils.get'](pureftppref+'noanonymous', 'yes'),
-  'NoChmod'            : salt['mc_utils.get'](pureftppref+'nochmod', ""),
-  'NoRename'           : salt['mc_utils.get'](pureftppref+'norename', ""),
-  'NoTruncate'         : salt['mc_utils.get'](pureftppref+'notruncate', ""),
-  'Quota'              : salt['mc_utils.get'](pureftppref+'quota', ""),
-  'SyslogFacility'     : salt['mc_utils.get'](pureftppref+'syslogfacility', ""),
-  'TLS'                : salt['mc_utils.get'](pureftppref+'tls', "1"),
-  'TrustedGID'         : salt['mc_utils.get'](pureftppref+'trustedgid', ""),
-  'TrustedIP'          : salt['mc_utils.get'](pureftppref+'trustedip', ""),
-  'Umask'              : salt['mc_utils.get'](pureftppref+'umasq', "133 022"),
-  'UserBandwidth'      : salt['mc_utils.get'](pureftppref+'userbandwidth', ""),
-  'UserRatio'          : salt['mc_utils.get'](pureftppref+'userratio', ""),
-  'VerboseLog'         : salt['mc_utils.get'](pureftppref+'verboselog', "yes"),
+    'PassiveIP'          : "",
+    'PassivePortRange'   : "",
 
-  'PassiveIP'          : salt['mc_utils.get'](pureftppref+'passiveip', ""),
-  'PassivePortRange'   : salt['mc_utils.get'](pureftppref+'passiveportrange', ""),
+    'PAMAuthentication'  : 'yes',
+    'UnixAuthentication' : 'no',
+    'PureDB'             : '/etc/pure-ftpd/pureftpd.pdb',
+    'MySQLConfigFile'    : "",
+    'ExtAuth'            : "",
+    'LDAPConfigFile'     : "",
+    'PGSQLConfigFile'    : "",
+    }) %}
+{%- for setting in pureftpdSettings %}
+{%-   do pureftpdSettings.update({setting: pureftpdSettings[setting]+'\n'}) %}
+{%- endfor %}
 
-  'PAMAuthentication'  : salt['mc_utils.get'](pureftppref+'pamauthentication', 'yes'),
-  'UnixAuthentication' : salt['mc_utils.get'](pureftppref+'unixauthentication', 'no'),
-  'PureDB'             : salt['mc_utils.get'](pureftppref+'puredb', '/etc/pure-ftpd/pureftpd.pdb'),
-  'MySQLConfigFile'    : salt['mc_utils.get'](pureftppref+'mysqlconfigfile', ""),
-  'ExtAuth'            : salt['mc_utils.get'](pureftppref+'extauth', ""),
-  'LDAPConfigFile'     : salt['mc_utils.get'](pureftppref+'ldapconfigfile', ""),
-  'PGSQLConfigFile'    : salt['mc_utils.get'](pureftppref+'pgsqlconfigfile', ""),
-
-} %}
-{% for setting in pureftpdSettings %}
-{% do pureftpdSettings.update({setting: pureftpdSettings[setting]+'\n'}) %}
-{% endfor %}
-
-# -----------------------------------------------------
+{#- -----------------------------------------------------
 # PostGRESQL:  (services.db.postgresql)
 # default user: makina-states.services.postgresql.user
-{% set postgresqlUser = salt['mc_utils.get']('makina-states.services.postgresql.user', 'postgres') %}
+#}
+{%- set postgresqlUser = salt['mc_utils.get']('makina-states.services.postgresql.user', 'postgres') %}
+{#-
 # default postgresql/ grains configured databases (see service doc)
-{% set pgDbs = {} %}
-{% for dbk, data in pillar.items() %}
-{%   if dbk.endswith('-makina-postgresql') %}
-{%     set db = data.get('name', dbk.split('-makina-postgresql')[0]) %}
-{%     do pgDbs.update({db: data}) %}
-{%   endif %}
-{% endfor %}
+#}
+{%- set pgDbs = {} %}
+{%- for dbk, data in pillar.items() %}
+{%-   if dbk.endswith('-makina-postgresql') %}
+{%-     set db = data.get('name', dbk.split('-makina-postgresql')[0]) %}
+{%-     do pgDbs.update({db: data}) %}
+{%-   endif %}
+{%- endfor %}
+{#-
 # default postgresql/ grains configured users (see service doc)
-{% set postgresqlUsers = {} %}
-{% for userk, data in pillar.items() %}
-{%   if userk.endswith('-makina-services-postgresql-user') %}
-{%     do postgresqlUsers.update({user: data}) %}
-{%   endif %}
-{% endfor %}
+#}
+{%- set postgresqlUsers = {} %}
+{%- for userk, data in pillar.items() %}
+{%-   if userk.endswith('-makina-services-postgresql-user') %}
+{%-     do postgresqlUsers.update({user: data}) %}
+{%-   endif %}
+{%- endfor %}
 
+{#-
 # default activated postgresql versions:
-{% set defaultPgVersion = salt['mc_utils.get'](
+#}
+{%- set defaultPgVersion = salt['mc_utils.get'](
    'makina-states.services.postgresql.version',
    '9.3') %}
-{% set pgVers = salt['mc_utils.get'](
+{%- set pgVers = salt['mc_utils.get'](
    'makina-states.services.postgresql.versions',
    [defaultPgVersion]) %}
-{% set postgisVers = salt['mc_utils.get'](
+{%- set postgisVers = salt['mc_utils.get'](
    'makina-states.services.postgis.versions',
    {'2.1': [defaultPgVersion, '9.2']}) %}
-{% set postgisDbName = salt['mc_utils.get'](
+{%- set postgisDbName = salt['mc_utils.get'](
   'makina-states.services.postgis.dbname', 'postgis') %}
 
-# -----------------------------------------------------
+{#- -----------------------------------------------------
 # MySQL default custom configuration (services.db.mysql)
 # To override the default makina-states configuration file,
 # Use the 'makina-states.services.mysql.cnf pillar/grain
-{% set myCnf = salt['mc_utils.get'](grainsPref+'mysql.cnf', None) %}
-# Set this to true to disable mysql automatic configuration
+#}
+{%- set myCnf = salt['mc_utils.get'](grainsPref+'mysql.cnf', None) %}
+{#- Set this to true to disable mysql automatic configuration
 # (if you want to call the mysql macros yourself
 # (makina-states.services.mysql.noautoconf)
-{% set myDisableAutoConf = salt['mc_utils.get'](grainsPref+'mysql.noautoconf', False) %}
+#}
+{%- set myDisableAutoConf = salt['mc_utils.get'](grainsPref+'mysql.noautoconf', False) %}
 
-# -----------------------------------------------------
+{#- -----------------------------------------------------
 # shorewall pillar parsing
-{% set shw_enabled = (
+#}
+{%- set shw_enabled = (
    salt['mc_utils.get'](grainsPref+'shorewall.enabled', False)) %}
-{% set shwIfformat = 'FORMAT 2' %}
-{% if grains['os'] not in ['Debian']%}
-  {% set shwIfformat = '?' %}
-{% endif %}
-{% set shwPolicies = [] %}
-{% set shwZones = {} %}
-{% set shwInterfaces = {} %}
-{% set shwParams = {} %}
-{% set shwMasqs = {} %}
-{% set shwRules= {} -%}
-{% set shwDefaultState = 'new' -%}
-{% set shwData = {
+{%- set shwIfformat = 'FORMAT 2' %}
+{%- if grains['os'] not in ['Debian']%}
+{%-  set shwIfformat = '?' %}
+{%- endif %}
+{%- set shwPolicies = [] %}
+{%- set shwZones = {} %}
+{%- set shwInterfaces = {} %}
+{%- set shwParams = {} %}
+{%- set shwMasqs = {} %}
+{%- set shwRules= {} -%}
+{%- set shwDefaultState = 'new' -%}
+{%- set shwData = {
   'interfaces' : shwInterfaces,
   'rules'      : shwRules,
   'params'     : shwParams,
@@ -185,25 +199,54 @@
   'masqs'      : shwMasqs,
   'ifformat'   : shwIfformat,
 } %}
-{% for sid, shorewall in pillar.items() -%}
-{%  if sid.endswith('makina-shorewall') -%}
-{%    set _shwlocrules = shorewall.get('rules', {}) -%}
-{%    for i in _shwlocrules-%}
-{%      set section = i.get('section', shwDefaultState).upper() -%}
-{%      if section not in shwRules -%}
-{%        do shwRules.update({section: []}) -%}
-{%      endif -%}
-{%      do shwRules[section].append(i) -%}
-{%    endfor -%}
-{%    do shwInterfaces.update(shorewall.get('interfaces', {})) %}
-{%    do shwMasqs.update(shorewall.get('masqs', {})) %}
-{%    do shwParams.update(shorewall.get('params', {})) %}
-{%    do shwZones.update(shorewall.get('zones', {})) -%}
-{%    do shwPolicies.extend(shorewall.get('policies', [])) %}
-{%  endif %}
-{% endfor %}
+{%- for sid, shorewall in pillar.items() -%}
+{%-  if sid.endswith('makina-shorewall') -%}
+{%-    set _shwlocrules = shorewall.get('rules', {}) -%}
+{%-    for i in _shwlocrules-%}
+{%-      set section = i.get('section', shwDefaultState).upper() -%}
+{%-      if section not in shwRules -%}
+{%-        do shwRules.update({section: []}) -%}
+{%-      endif -%}
+{%-      do shwRules[section].append(i) -%}
+{%-    endfor -%}
+{%-    do shwInterfaces.update(shorewall.get('interfaces', {})) %}
+{%-    do shwMasqs.update(shorewall.get('masqs', {})) %}
+{%-    do shwParams.update(shorewall.get('params', {})) %}
+{%-    do shwZones.update(shorewall.get('zones', {})) -%}
+{%-    do shwPolicies.extend(shorewall.get('policies', [])) %}
+{%-  endif %}
+{%- endfor %}
 
-{% set autopostgresqlbackupSettings = {
+{#-
+# SSH/SSHD Settings
+#}
+{% set sshServerSettings = salt['mc_utils.defaults'](
+    'makina-states.services.ssh.server', {
+      'AuthorizedKeysFile': '.ssh/authorized_keys .ssh/authorized_keys2',
+      'ChallengeResponseAuthentication': 'no',
+      'X11Forwarding': 'yes',
+      'PrintMotd': 'no',
+      'UsePrivilegeSeparation': 'sandbox',
+      'Banner': '/etc/ssh/banner',
+      'UsePAM': 'yes',
+    }) %}
+{% set sshClientSettings =  salt['mc_utils.defaults'](
+    'makina-states.services.ssh.client', {
+      'StrictHostKeyChecking': 'no',
+      'UserKnownHostsFile': '/dev/null',
+      'AddressFamily': 'any',
+      'ConnectTimeout': 0,
+      'SendEnv': "LANG: LC_*",
+      'HashKnownHosts': 'yes',
+      'GSSAPIAuthentication': 'yes',
+      'GSSAPIDelegateCredentials': 'no',
+    }) %}
+
+{#-
+# AUTOPOSTGRESQL BACKUPS
+#}
+{%- set autopostgresqlbackupSettings = salt['mc_utils.defaults'](
+    'makina-states.services.backup.autopostgresql', {
       "PG_BACKUP_DIR" : "/srv/backups/pgsql",
       "DBNAMES"       : "all",
       "MAILCONTENT"   : "log",
@@ -213,26 +256,20 @@
       "MDBNAMES"      : "",
       "DOWEEKLY"      : "6",
       "OPT"           : "-Fc",
-      } %}
-{% for i, data in autopostgresqlbackupSettings.copy().items() %}
-{% do autopostgresqlbackupSettings.update({
-  i: salt['mc_utils.get'](
-    'makina-states.services.backup.autopostgresql.{0}'.format(i),
-    data)})%}
-{% endfor %}
-
-{% set autopostgresqlbackupGlobalSettings = autopostgresqlbackupSettings.copy() %}
-{% do autopostgresqlbackupSettings.update({
+    }) %}
+{%- set autopostgresqlbackupGlobalSettings = autopostgresqlbackupSettings.copy() %}
+{%- do autopostgresqlbackupSettings.update({
     "OPT"           : "--globals-only",
     "DBNAMES"       : "postgres template0 template1",
 }) %}
 
-# -----------------------------------------------------
+{#- -----------------------------------------------------
 # REGISTRY
 # -----------------------------------------------------
 # Idea is to map each state file to configure a service to it's particular
 # configuration grain switch (or pillar)
-{% set registryConfiguration = {
+#}
+{%- set registryConfiguration = {
   kind: {
     'states_pref': statesPref, 'grains_pref': grainsPref,
     'defaults': {
@@ -262,8 +299,7 @@
     }
   }
 } %}
-
-{% set registry = funcs.getRegistries(registryConfiguration)[kind] %}
+{%- set registry = funcs.getRegistries(registryConfiguration)[kind] %}
 
 {% macro autoinclude(name) %}
 {{funcs.autoinclude(registry, bases=bases) }}
@@ -276,6 +312,4 @@
 {% macro unregister(name, data=None) %}
 {{ funcs.register(statesPref, grainsPref, name, data=None) }}
 {% endmacro %}
-# -----------------------------------------------------
-
 # vim:set nofoldenable:

@@ -179,6 +179,13 @@ def is_iter(value):
     )
 
 
+def defaults(prefix, datadict):
+    for key, default in datadict.copy().items():
+        datadict[key] = __salt__['mc_utils.get']('{0}.{1}'.format(prefix, key),
+                                                 default)
+    return format_resolve(datadict)
+
+
 def get(key, default=''):
     '''
     .. versionadded: 0.14.0
