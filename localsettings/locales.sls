@@ -50,5 +50,5 @@ etc-profile.d-0_lang.sh:
       - file: etc-profile.d
     - name: {{ locs.conf_dir }}/profile.d/0_lang.sh
     - contents: |
-                export LANG="{{ default_locale }}
+                export LANG="{{ default_locale }}"
 {% endif %}
