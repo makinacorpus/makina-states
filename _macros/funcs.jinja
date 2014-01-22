@@ -59,22 +59,22 @@ unactivated-{{ statesPref }}{{ name }}:
 # Include all states defined as active in the registry
 #}
 {% macro autoinclude(reg, bases=None) %}
-{%- set rstatesPref = reg['states_pref'] %}
+{% set rstatesPref = reg['states_pref'] %}
 {%- set rgrainsPref = reg['grains_pref'] %}
 {%- if not bases %}{% set bases = [] %}{% endif %}
 include:
-{%- for base in bases %}
+{% for base in bases -%}
   - {{ statesPref }}{{ base }}
-{%- endfor %}
-{%- for state, data in reg.get('actives' , {}).items() %}
+{% endfor %}
+{% for state, data in reg.get('actives' , {}).items() -%}
   - {{ rstatesPref }}{{ state }}
-{%- endfor %}
-{%- for state, data in reg.get('actives' , {}).items() %}
+{% endfor %}
+{% for state, data in reg.get('actives' , {}).items() -%}
 {{    register('auto-'+rstatesPref, rgrainsPref, state, data) }}
-{%- endfor %}
-{%- for state, data in reg.get('unactivated' , {}).items() %}
+{% endfor %}
+{% for state, data in reg.get('unactivated' , {}).items() -%}
 {{    unregister('auto-'+rstatesPref, rgrainsPref, state, data) }}
-{%- endfor %}
+{% endfor %}
 {% endmacro %}
 
 {% macro dummy(name, text='') %}

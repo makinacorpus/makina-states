@@ -1,4 +1,4 @@
-#
+{#-
 # Salt base installation
 # We set
 #   - file_root: /srv/salt
@@ -23,16 +23,13 @@
 #
 #
 # Base server which acts also as a mastersalt master
-#
-{% import "makina-states/_macros/controllers.jinja" as controllers with context %}
-{% set controllers = controllers %}
-{% set localsettings = controllers.localsettings %}
-{% set saltmac = controllers.saltmac %}
-{% set name = saltmac.saltname %}
+#}
+{%- import "makina-states/_macros/controllers.jinja" as controllers with context %}
+{%- set controllers = controllers %}
+{%- set localsettings = controllers.localsettings %}
+{%- set saltmac = controllers.saltmac %}
+{%- set name = saltmac.saltname %}
 {{ controllers.register(name) }}
-
 include:
   - {{ controllers.funcs.statesPref }}localsettings
-
 {{ saltmac.install_makina_states(name) }}
-

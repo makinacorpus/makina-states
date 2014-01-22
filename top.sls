@@ -1,3 +1,4 @@
+{#
 # Idea is for a machine to be managed only to have to have either to:
 #
 #   - Set tags in pillar or grains or configuration
@@ -118,13 +119,11 @@
 #   - Controllers
 #   - Nodes Types
 #   - Services
-#
-
-
+#}
 # And here is the point where all the things start to work together...
 {% import "makina-states/_macros/funcs.jinja" as funcs with context %}
 # This loop includes all the kind of things that could be installed
 include:
-{%- for kind in funcs.kinds %}
+{% for kind in funcs.kinds -%}
   - {{funcs.statesPref}}{{kind}}
 {% endfor %}

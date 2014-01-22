@@ -1,4 +1,4 @@
-#
+{#-
 # Controllers are responsible for applying and deploying all the configuration
 # and act as a slave for us to control the nodetypes to run our settings & services
 #
@@ -15,7 +15,6 @@
 # EG: to disable the mastersalt_master
 #
 #  makina-states.controllers.mastersalt_master: False
-#
-
+#}
 {% import "makina-states/_macros/controllers.jinja" as controllers with context %}
 {{ controllers.autoinclude() }}

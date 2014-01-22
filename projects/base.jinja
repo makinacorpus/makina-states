@@ -154,7 +154,7 @@
 {%-    if not common.no_salt %}
 {%-      do project_dirs.extend([common.salt_root, common.pillar_root]) %}
 {%-    endif %}
-{%- for i in project_dirs %}
+{% for i in project_dirs -%}
 {{common.name}}-{{i}}-dir:
   file.directory:
     - name: {{i}}
@@ -170,7 +170,7 @@
     - require:
       - mc_git: {{common.name}}-checkout-salt
     {%- endif %}
-{%- endfor %}
+{% endfor %}
 
 {#-
 # Checkout the project branch in /srv/projects/project/project

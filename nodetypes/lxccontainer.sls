@@ -1,10 +1,9 @@
-#
+{#
 # extra setup on a lxc container
-#
+#}
 
 
 {% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
-
 {{ nodetypes.register('lxccontainer') }}
 
 include:
@@ -21,7 +20,7 @@ makina-lxc-proxy-dep:
 # no require_in as in bootstrap time we may not have yet rendered the lxc bits
 
 # lxc container
-{% if salt['mc_utils.get']('makina-states.lxc', False) %}
+{% if salt['mc_utils.get']('makina-states.lxc', False) -%}
 lxc-container-pkgs:
   pkg.installed:
     - pkgs:

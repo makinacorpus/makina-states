@@ -69,6 +69,8 @@ prepreq-{{common.name}}:
     - user: {{common.user}}
     - group: {{common.group}}
     - mode: 770
+    - require:
+      - mc_git {{common.name}}-checkout-code
     - require_in:
       - buildout: {{common.name}}-buildout-project
     - defaults:
@@ -85,6 +87,8 @@ prepreq-{{common.name}}:
     - user: {{common.user}}
     - group: {{common.group}}
     - mode: 770
+    - require:
+      - file: {{common.name}}-settings
     - require_in:
       - buildout: {{common.name}}-buildout-project
     - defaults:

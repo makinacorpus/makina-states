@@ -1,3 +1,4 @@
+{#-
 # As described in wiki each server has a local master
 # This state file only install makina-states
 # base layout
@@ -20,14 +21,13 @@
 #   - /usr/bin/mastersalt-minion
 #
 # We create a group called editor which has rights in /srv/{pillar, salt, projects}
-{% import "makina-states/_macros/controllers.jinja" as controllers with context %}
-{% set controllers = controllers %}
-{% set localsettings = controllers.localsettings %}
-{% set saltmac = controllers.saltmac %}
-{% set name = saltmac.msaltname %}
+#}
+{%- import "makina-states/_macros/controllers.jinja" as controllers with context %}
+{%- set controllers = controllers %}
+{%- set localsettings = controllers.localsettings %}
+{%- set saltmac = controllers.saltmac %}
+{%- set name = saltmac.msaltname %}
 {{ controllers.register(name) }}
-
 include:
   - {{ controllers.funcs.statesPref }}localsettings
-
 {{ saltmac.install_makina_states(name) }}

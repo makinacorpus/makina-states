@@ -1,4 +1,4 @@
-# {#
+{#-
 # Services are the centric and last part of our installations, and the final gold goal
 #
 # This file aims to enable the autoinclusion mecanism to load all the
@@ -14,7 +14,6 @@
 # EG: to disable mysql
 #
 #  makina-states.services.mysql:  False
-# #}
-
+#}
 {% import "makina-states/_macros/services.jinja" as services with context %}
 {{ services.autoinclude() }}

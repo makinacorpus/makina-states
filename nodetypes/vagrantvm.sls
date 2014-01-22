@@ -1,4 +1,4 @@
-#
+{#
 # Setup for makina/vms vagrant development machines
 #
 #  - For VM using external mounts we may need to delay
@@ -20,11 +20,10 @@
 #      - file: makina-file_delay_services_for_srv
 # where the text part is the name of the service as shown in upstart
 # You can see an example of that in the phpfpm.sls or the apache.sls
+#}
 
 {% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
-
 {{ nodetypes.register('vagrantvm') }}
-
 {% set localsettings = nodetypes.localsettings %}
 
 include:
@@ -112,26 +111,27 @@ disable-vagrant-useless-services:
               exit $exit
 {% endif %}
 
-# -------- DEVELOPMENT VM DNS ZONE --------
-{% set vmNum = grains.get('makina.devhost_num', '') %}
-{% set vm_fqdn = grains.get('fqdn','childhost.local') %}
-{% set vm_host = grains.get('host','childhost') %}
-{% set vm_name = vm_fqdn.replace('.', '_').replace(' ', '_') %}
-{% set vm_nat_fqdn = vm_fqdn.split('.')[:1][0]+'-nat.'+'.'.join(vm_fqdn.split('.')[1:]) %}
-{% set ips=grains['ip_interfaces'] %}
-{% set ip1=ips['eth0'] and ips['eth0'][0] or None %}
-{% set ip2=ips['eth1'] and ips['eth1'][0] or None %}
-{% set hostsf='/etc/devhosts' %}
-
-{% if vmNum and ip1 and ip2 and vm_fqdn and vm_nat_fqdn and vm_host and ips %}
+{#- -------- DEVELOPMENT VM DNS ZONE -------- #}
+{%- set vmNum = grains.get('makina.devhost_num', '') %}
+{%- set vm_fqdn = grains.get('fqdn','childhost.local') %}
+{%- set vm_host = grains.get('host','childhost') %}
+{%- set vm_name = vm_fqdn.replace('.', '_').replace(' ', '_') %}
+{%- set vm_nat_fqdn = vm_fqdn.split('.')[:1][0]+'-nat.'+'.'.join(vm_fqdn.split('.')[1:]) %}
+{%- set ips=grains['ip_interfaces'] %}
+{%- set ip1=ips['eth0'] and ips['eth0'][0] or None %}
+{%- set ip2=ips['eth1'] and ips['eth1'][0] or None %}
+{%- set hostsf='/etc/devhosts' %}
+{%- if vmNum and ip1 and ip2 and vm_fqdn and vm_nat_fqdn and vm_host and ips -%}
 makina-parent-etc-hosts-absent:
   file.absent:
     - name: {{hostsf}}
     - require_in:
       - file: makina-parent-etc-hosts-exists
 
+{#-
 # delete old stalled from import /etc/devhosts
 # handle the double zone cases
+#}
 makina-parent-etc-hosts-exists:
   file.touch:
     - name: {{hostsf}}
@@ -148,9 +148,11 @@ makina-append-parent-etc-hosts-management:
     - require:
       - file: makina-parent-etc-hosts-exists
 
+{#-
 # initialize the accumulator with at least the VM private network socket
 # Use this accumulator to add any IP managed on this vm that the parent
 # host should know about
+#}
 makina-parent-append-etc-hosts-accumulated:
   file.accumulated:
     - filename: {{hostsf}}

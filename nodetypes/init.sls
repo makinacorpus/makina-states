@@ -1,4 +1,4 @@
-#
+{#-
 # Nodetypes are the PiceOfHarware or VM we are installing our softwares onto.
 #
 # This file aims to enable the autoinclusion mecanism to load all the
@@ -14,7 +14,6 @@
 # EG: to disable the default configuration applied on a vagrantvm
 #
 #  makina-states.nodetypes.vagrantvm: False
-#
-
+#}
 {% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
 {{ nodetypes.autoinclude() }}
