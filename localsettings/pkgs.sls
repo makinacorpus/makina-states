@@ -84,7 +84,7 @@ sys-pkgs:
       - xfsprogs
       - zerofree
       - zip
-      {%- if grains['os_family'] == 'Debian' -%}
+      {% if grains['os_family'] == 'Debian' -%}
       - python-software-properties
       - debconf-utils
       - dstat
@@ -102,7 +102,7 @@ dev-pkgs:
     - pkgs:
       - git
       - git-core
-      {%- if grains['os_family'] == 'Debian' -%}
+      {%- if grains['os_family'] == 'Debian' %}
       - build-essential
       - m4
       - libtool

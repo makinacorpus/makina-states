@@ -137,7 +137,7 @@
       {# be sure to run after salt has maybe updated itself
       # and has our code installation treea #}
       {%- if not common.no_user %}
-      - cmd: {{common.user}}-ssh-keys-perms
+      - cmd: {{common.name}}-{{common.user}}-ssh-keys-perms
       - user: {{common.name}}-user-{{common.user}}
       {%- endif %}
       - service: salt-salt-minion
