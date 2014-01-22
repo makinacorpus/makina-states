@@ -26,4 +26,5 @@ fi
 export PGHOST="/var/run/postgresql"
 export PGPORT="$socket_port"
 shift
+export PATH=/usr/lib/postgresql/$version/bin:$PATH
 exec $binary $@
