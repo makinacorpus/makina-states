@@ -192,7 +192,11 @@
   {#- this is an optimisation, to not clone entirely twice the project, copy the salt git folder
      to the project .git as they are on the same git repository, it's quickier and consume less network #}
   cmd.run:
-    - name: rsync -az --exclude="refs/heads/*" "{{common.salt_root}}/.git/" "{{common.project_root}}/.git/";touch "{{common.project_root}}/.initial"
+    - name: |
+            rsync -az --exclude="refs/heads/*" "{{common.salt_root}}/.git/" "{{common.project_root}}/.git/";
+            cd "{{common.project_root}}";
+            git reset --hard origin/{{common.project_branch}};
+            touch "{{common.project_root}}/.initial"
     - unless: test -d "{{common.project_root}}/.git/"
     {%- if not common.no_user %}
     - user: {{common.user}}
