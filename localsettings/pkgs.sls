@@ -90,7 +90,7 @@ sys-pkgs:
       - dstat
       {%- endif %}
 
-{% if grains.get('makina-states.nodetype.devhost', False) -%}
+{% if 'devhost' in localsettings.registry['actives'] -%}
 devhost-pkgs:
   pkg.installed:
     - pkgs:
