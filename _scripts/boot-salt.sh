@@ -310,21 +310,39 @@ get_minion_id() {
 }
 
 set_remote_branches() {
-    if [[ -z $VALID_BRANCHES ]];then
+    if [[ -z "$VALID_BRANCHES" ]];then
         VALID_BRANCHES="$(echo "$(git ls-remote "$STATES_URL"|awk -F/ '{print $3}'|grep -v HEAD)")"
-        VALID_BRANCHES="$VALID_BRANCHES $(echo $(git branch| cut -c 3-))"
+        if [[ -e "$SALT_MS" ]];then
+            VALID_BRANCHES="$VALID_BRANCHES $(echo $(cd "$SALT_MS" && git branch| cut -c 3-))"
+        fi
+        if [[ -e "$MASTERSALT_MS" ]];then
+            VALID_BRANCHES="$VALID_BRANCHES $(echo $(cd "$MASTERSALT_MS" && git branch| cut -c 3-))"
+        fi
     fi
 }
 
+get_conf(){
+    key="$1"
+    echo $(cat "$CONF_ROOT/makina-states/$key" 2>/dev/null)
+}
+
+store_conf(){
+    key="$1"
+    val="$2"
+    if [[ ! -d "$CONF_ROOT/makina-states" ]];then
+        mkdir -pv "$CONF_ROOT/makina-states"
+    fi
+    echo "$val">"$CONF_ROOT/makina-states/$key"
+}
+
 get_ms_branch() {
-    local where="${1:-$SALT_MS}"
     local branch="$MS_BRANCH"
     # verify that the requested branch exists
     if [[ " $VALID_BRANCHES " != *"$branch"* ]];then
         branch=""
     fi
     if [[ -z "$FORCE_MS_BRANCH" ]];then
-        savedbranch="$(cat $where/.bootbranch 2>/dev/null)"
+        savedbranch="$(get_conf branch)"
         if [[ -n $savedbranch ]] && [[ " $VALID_BRANCHES " == *"$savedbranch"* ]];then
             branch="$savedbranch"
         fi
@@ -332,6 +350,31 @@ get_ms_branch() {
     echo "$branch"
 }
 
+get_salt_nodetype() {
+    local default_nodetype="server"
+    if [[ -n $FORCE_SALT_NODETYPE ]];then
+        default_nodetype=""
+    fi
+    local nodetype="${SALT_NODETYPE:-${1:-$default_nodetype}}"
+    # verify that the requested branch exists
+    if [[ -z "$FORCE_SALT_NODETYPE" ]];then
+        savednodetype="$(get_conf nodetype)"
+        if [[ -n "$savednodetype" ]];then
+            nodetype="$savednodetype"
+        fi
+    fi
+    if [[ -n "$nodetype" ]];then
+        if [[ -e "$SALT_MS" ]];then
+            if [[ ! -e "$SALT_MS/nodetypes/${nodetype}.sls" ]];then
+                # invalid nodetype
+                nodetype=""
+            else
+                store_conf nodetype "$nodetype"
+            fi
+        fi
+    fi
+    echo "$nodetype"
+}
 
 set_vars() {
     set_colors
@@ -386,9 +429,7 @@ set_vars() {
     bootstrap_nodetypes_pref="${bootstrap_pref}.nodetypes"
     bootstrap_controllers_pref="${bootstrap_pref}.controllers"
 
-    # nodetypes and controllers sls
-    SALT_NODETYPE="${SALT_NODETYPE:-"server"}"
-    MASTERSALT_NODETYPE="${MASTERSALT_NODETYPE:-"$SALT_NODETYPE"}"
+    # nodetypes (calculed now in get_salt_nodetype) and controllers sls
     SALT_MASTER_CONTROLLER_DEFAULT="salt_master"
     SALT_MASTER_CONTROLLER_INPUTED="${SALT_MASTER_CONTROLLER}"
     SALT_MASTER_CONTROLLER="${SALT_MASTER_CONTROLLER:-$SALT_MASTER_CONTROLLER_DEFAULT}"
@@ -508,7 +549,7 @@ set_vars() {
             die "MASTERSALT MINION: invalid dns: $MASTERSALT_MINION_DNS"
         fi
 
-        mastersalt_bootstrap_nodetype="${bootstrap_nodetypes_pref}.${MASTERSALT_NODETYPE}"
+        mastersalt_bootstrap_nodetype="${bootstrap_nodetypes_pref}.$(get_salt_nodetype)"
         mastersalt_bootstrap_master="${bootstrap_controllers_pref}.${MASTERSALT_MASTER_CONTROLLER}"
         mastersalt_bootstrap_minion="${bootstrap_controllers_pref}.${MASTERSALT_MINION_CONTROLLER}"
     fi
@@ -537,7 +578,7 @@ set_vars() {
             die "SALT MINION: invalid dns: $SALT_MINION_DNS"
         fi
 
-        salt_bootstrap_nodetype="${bootstrap_nodetypes_pref}.${SALT_NODETYPE}"
+        salt_bootstrap_nodetype="${bootstrap_nodetypes_pref}.$(get_salt_nodetype)"
         salt_bootstrap_master="${bootstrap_controllers_pref}.${SALT_MASTER_CONTROLLER}"
         salt_bootstrap_minion="${bootstrap_controllers_pref}.${SALT_MINION_CONTROLLER}"
     fi
@@ -558,6 +599,10 @@ set_vars() {
     if [[ -z "$(get_ms_branch)" ]];then
         bs_yellow_log "Valid branches: $(echo $VALID_BRANCHES)"
         die "Please provide a valid \$MS_BRANCH (inputed: "$MS_BRANCH")"
+    fi
+    if [[ -z "$(get_salt_nodetype)" ]];then
+        bs_yellow_log "Valid branches: $(echo $(ls "$SALT_MS/nodetypes"|sed -re "s/.sls//"))"
+        die "Please provide a valid nodetype (inputed: "$SALT_NODETYPE_INPUTED")"
     fi
 
     PROJECT_TOPSLS="${PROJECT_TOPSLS:-}"
@@ -591,7 +636,7 @@ set_vars() {
     export VENV_PATH CONF_ROOT
     export MCONF_PREFIX CONF_PREFIX
     #
-    export MASTERSALT_NODETYPE SALT_NODETYPE
+    export SALT_NODETYPE FORCE_SALT_NODETYPE
     export MASTERSALT_MINION_CONTROLLER MASTERSALT_MASTER_CONTROLLER
     export SALT_MINION_CONTROLLER SALT_MASTER_CONTROLLER
     #
@@ -620,7 +665,7 @@ recap_(){
     need_confirm="${1}"
     debug="${2:-$SALT_BOOT_DEBUG}"
     bs_yellow_log "----------------------------------------------------------"
-    bs_yellow_log " MAKINA-STATES BOOTSTRAPPER (@$(get_ms_branch "$SALT_MS")) FOR $SALT_BOOT_OS"
+    bs_yellow_log " MAKINA-STATES BOOTSTRAPPER (@$(get_ms_branch)) FOR $SALT_BOOT_OS"
     bs_yellow_log "   - ${THIS} [--help] [--long-help]"
     bs_yellow_log " Those informations have been written to:"
     bs_yellow_log "   - $TMPDIR/boot_salt_top"
@@ -629,6 +674,7 @@ recap_(){
     bs_yellow_log "---------------"
     bs_log "HOSTNAME: $HOSTNAME"
     bs_log "DATE: $CHRONO"
+    bs_log "SALT_NODETYPE: $(get_salt_nodetype)"
     if [[ -n "$debug" ]];then
         bs_log "ROOT: $ROOT"
         bs_log "PREFIX: $PREFIX"
@@ -638,7 +684,6 @@ recap_(){
         bs_yellow_log "SALT variables:"
         bs_yellow_log "---------------"
         bs_log "SALT ROOT | PILLAR: $SALT_ROOT | $SALT_PILLAR"
-        bs_log "SALT_NODETYPE: $SALT_NODETYPE"
         if [[ -n "$IS_SALT_MASTER" ]];then
             bs_log "SALT_MASTER_IP: $SALT_MASTER_IP"
         fi
@@ -668,7 +713,6 @@ recap_(){
         bs_yellow_log "MASTERSALT variables:"
         bs_yellow_log "---------------------"
         bs_log "MASTERSALT ROOT | PILLAR: $MASTERSALT_ROOT | $MASTERSALT_PILLAR"
-        bs_log "MASTERSALT_NODETYPE: $MASTERSALT_NODETYPE"
         bs_log "MASTERSALT: $MASTERSALT"
         if [[ -n "$IS_MASTERSALT_MASTER" ]];then
             bs_log "MASTERSALT_MASTER_IP: $MASTERSALT_MASTER_IP"
@@ -1087,7 +1131,7 @@ setup_and_maybe_update_code() {
                         die "Failed to download/update $i"
                     fi
                     if [[ "$i" == "$ms" ]];then
-                        echo "$branch">"$i/.bootbranch"
+                        store_conf branch "$branch"
                     fi
                 fi
             done
@@ -2295,7 +2339,7 @@ usage() {
 
     echo;echo
     bs_log "Server settings:"
-    bs_help "-n|--nodetype <nt>:" "Nodetype to install into (devhost | server | dockercontainer | lxcontainer | vm | vagrantvm )" "$SALT_NODETYPE" "y"
+    bs_help "-n|--nodetype <nt>:" "Nodetype to install into (devhost | server | dockercontainer | lxcontainer | vm | vagrantvm )" "$(get_salt_nodetype)" "y"
     echo
     bs_log "Salt settings:"
     bs_help "--no-salt:" "Do not install salt daemons" "" y
@@ -2337,7 +2381,6 @@ usage() {
         bs_help "--salt-master-publish-port:" "Salt master publish port" "$SALT_MASTER_PUBLISH_PORT" y
 
         bs_log "  Mastersalt settings (if any):"
-        bs_help "-nn|--mastersalt-nodetype <nt>:" "Nodetype to install mastersalt into" "$MASTERSALT_NODETYPE" "y"
         bs_help "--mconf-root <path>:" "Mastersalt configuration container path" "$CONF_ROOT" y
         bs_help "--mastersalt-root <path>:" "MasterSalt root installation path" "$SALT_ROOT" y
         bs_help "-PP|--mastersalt-pillar <path>:" "mastersalt pillar path" "$MASTERSALT_PILLAR"  y
@@ -2427,9 +2470,7 @@ parse_cli_opts() {
                 ;;
             --mastersalt-master-publish-port) MASTERSALT_MASTER_PUBLISH_PORT=$2;sh=2
                 ;;
-            -n|--nodetype) SALT_NODETYPE=$2;sh=2
-                ;;
-            -nn|--mastersalt-nodetype) MASTERSALT_NODETYPE=$2;sh=2
+            -n|--nodetype) FORCE_SALT_NODETYPE=1; SALT_NODETYPE=$2; sh=2
                 ;;
             -g|--makina-states-url) STATES_URL="$2";sh=2
                 ;;
