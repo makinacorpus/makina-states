@@ -116,9 +116,10 @@ dev-pkgs:
       {%- endif %}
 
 net-pkgs:
-  pkg:
-    - installed
+  pkg.installed:
     - pkgs:
+      - wget
+      - curl
       - dnsutils
       - ethtool
       - ifenslave-2.6

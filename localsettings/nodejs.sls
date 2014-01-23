@@ -15,6 +15,7 @@
 {%- set npmPackages = localsettings.npmSettings.packages %}
 include:
   - {{localsettings.statesPref}}pkgmgr
+  - {{localsettings.statesPref}}pkgs
 
 {% if grains['os'] in ['Ubuntu'] -%}
 {#- NODEJS didnt land in LTS, so use the ppa
@@ -40,9 +41,14 @@ nodejs-pkgs:
       - nodejs
 npm-pkgs:
   cmd.run:
-    - name: curl -s https://npmjs.org/install.sh | sh
+    - name: |
+            . /etc/profile &&
+            curl -s https://npmjs.org/install.sh -o /tmp/npminstall &&
+            chmod +x /tmp/npminstall &&
+            /tmp/npminstall && rm -f /tmp/npminstall;
     - require:
       - pkg: nodejs-pkgs
+      - pkg: net-pkgs
 {% for npmPackage in npmPackages -%}
 npm-packages{{npmPackage}}:
   npm.installed:
