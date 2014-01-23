@@ -47,4 +47,6 @@ npm-pkgs:
 npm-packages{{npmPackage}}:
   npm.installed:
     - name: {{npmPackage}}
+    - require:
+      - pkg: nodejs-pkgs
 {%- endfor %}
