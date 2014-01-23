@@ -130,6 +130,10 @@ To skip the automatic code update/upgrade::
 
     ./boot-salt.sh -S
 
+To switch on a makina-states branch, like the **stable** branch in production::
+
+    ./boot-salt.sh -b  stable
+
 SUMUP
 *******
 
@@ -144,6 +148,11 @@ SUMUP
     - To install on a server and use mastersalt::
 
         ./boot-salt.sh --mastersalt mastersalt.makina-corpus.net
+
+boot-salt.sh will try remember to remember how you configured makina-states.
+If it suceeds to find enougth information (nodetype, salt installs, branch), it will automaticly guess the parameters by it self.
+In other words, you will just have to type **boot-salt.sh** and verify settings next time you ll use it.
+
 
 Running project states
 ------------------------------
