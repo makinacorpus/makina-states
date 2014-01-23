@@ -23,7 +23,7 @@ before-pkg-install-proxy:
       - pkg: net-pkgs
       - pkg: salt-pkgs
 
-{%- if grains['os'] == 'Ubuntu' -%}
+{% if grains['os'] == 'Ubuntu' -%}
 ubuntu-pkgs:
   pkg.installed:
     - pkgs:
@@ -90,7 +90,7 @@ sys-pkgs:
       - dstat
       {%- endif %}
 
-{%- if grains.get('makina-states.nodetype.devhost', False) %}
+{% if grains.get('makina-states.nodetype.devhost', False) -%}
 devhost-pkgs:
   pkg.installed:
     - pkgs:
