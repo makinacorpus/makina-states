@@ -64,10 +64,10 @@
   salt['grains.filter_by']({
     'Debian': [
     {'mirror': debian_mirror,
-    'dists': [{'name': 'jessie'+'-backports', 'comps': dcomps}]}],
+    'dists': [{'name': ddist+'-backports', 'comps': dcomps}]}],
     'Ubuntu': [
     {'mirror':  ubuntu_mirror,
-    'dists': [{'name': ddist+'-backports', 'comps': ucomps}]}
+    'dists': [{'name': udist+'-backports', 'comps': ucomps}]}
     ]}, grain='os'))  %}
 {%- endif %}
 apt-sources-list:
