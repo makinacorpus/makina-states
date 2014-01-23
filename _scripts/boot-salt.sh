@@ -16,6 +16,7 @@
 #
 
 THIS="$0"
+VALID_BRANCHES=""
 if [[ -h "$THIS" ]];then
     THIS="$(readlink $THIS)"
 fi
@@ -308,6 +309,30 @@ get_minion_id() {
     get_minion_id_ "$CONF_PREFIX" "$SALT_MINION_ID" "$FORCE_SALT_MINION_ID"
 }
 
+set_remote_branches() {
+    if [[ -z $VALID_BRANCHES ]];then
+        VALID_BRANCHES="$(echo "$(git ls-remote "$STATES_URL"|awk -F/ '{print $3}'|grep -v HEAD)")"
+        VALID_BRANCHES="$VALID_BRANCHES $(echo $(git branch| cut -c 3-))"
+    fi
+}
+
+get_ms_branch() {
+    local where="${1:-$SALT_MS}"
+    local branch="$MS_BRANCH"
+    # verify that the requested branch exists
+    if [[ " $VALID_BRANCHES " != *"$branch"* ]];then
+        branch=""
+    fi
+    if [[ -z "$FORCE_MS_BRANCH" ]];then
+        savedbranch="$(cat $where/.bootbranch 2>/dev/null)"
+        if [[ -n $savedbranch ]] && [[ " $VALID_BRANCHES " == *"$savedbranch"* ]];then
+            branch="$savedbranch"
+        fi
+    fi
+    echo "$branch"
+}
+
+
 set_vars() {
     set_colors
     ROOT="${ROOT:-"/"}"
@@ -324,6 +349,7 @@ set_vars() {
     BASE_PACKAGES="$BASE_PACKAGES vim git rsync"
     BASE_PACKAGES="$BASE_PACKAGES libzmq3-dev"
     BASE_PACKAGES="$BASE_PACKAGES libgmp3-dev"
+    BRANCH_PILLAR_ID="makina-states.salt.makina-states.rev"
     IS_SALT="${IS_SALT:-y}"
     IS_SALT_MASTER="${IS_SALT_MASTER:-y}"
     IS_SALT_MINION="${IS_SALT_MINION:-y}"
@@ -331,6 +357,9 @@ set_vars() {
     IS_MASTERSALT_MASTER="${IS_MASTERSALT_MASTER:-}"
     IS_MASTERSALT_MINION="${IS_MASTERSALT_MINION:-}"
     STATES_URL="${STATES_URL:-"https://github.com/makinacorpus/makina-states.git"}"
+    set_remote_branches
+    MS_BRANCH="${MS_BRANCH:-master}"
+    FORCE_MS_BRANCH="${FORCE_MS_BRANCH-""}"
     PREFIX="${PREFIX:-${ROOT}srv}"
     BIN_DIR="${BIN_DIR:-${ROOT}usr/bin}"
     SALT_PILLAR="${SALT_PILLAR:-$PREFIX/pillar}"
@@ -526,6 +555,10 @@ set_vars() {
     if [[ -n "$PROJECT_URL" ]] && [[ -z "$PROJECT_NAME" ]];then
         die "Please provide a \$PROJECT_NAME"
     fi
+    if [[ -z "$(get_ms_branch)" ]];then
+        bs_yellow_log "Valid branches: $(echo $VALID_BRANCHES)"
+        die "Please provide a valid \$MS_BRANCH (inputed: "$MS_BRANCH")"
+    fi
 
     PROJECT_TOPSLS="${PROJECT_TOPSLS:-}"
     PROJECT_PATH="$PROJECTS_PATH/$PROJECT_NAME"
@@ -541,6 +574,7 @@ set_vars() {
     PROJECT_PILLAR_STATE="${MAKINA_PROJECTS}.${PROJECT_NAME}"
 
     # export variables to support a restart
+    export MS_BRANCH FORCE_MS_BRANCH
     export IS_SALT IS_SALT_MASTER IS_SALT_MINION
     export IS_MASTERSALT IS_MASTERSALT_MASTER IS_MASTERSALT_MINION
     #
@@ -585,12 +619,12 @@ set_vars() {
 recap_(){
     need_confirm="${1}"
     debug="${2:-$SALT_BOOT_DEBUG}"
-    bs_yellow_log "--------------------------------------------------"
-    bs_yellow_log " MAKINA-STATES BOOTSTRAPPER FOR $SALT_BOOT_OS"
+    bs_yellow_log "----------------------------------------------------------"
+    bs_yellow_log " MAKINA-STATES BOOTSTRAPPER (@$(get_ms_branch "$SALT_MS")) FOR $SALT_BOOT_OS"
     bs_yellow_log "   - ${THIS} [--help] [--long-help]"
     bs_yellow_log " Those informations have been written to:"
     bs_yellow_log "   - $TMPDIR/boot_salt_top"
-    bs_yellow_log "--------------------------------------------------"
+    bs_yellow_log "----------------------------------------------------------"
     bs_yellow_log "HOST variables:"
     bs_yellow_log "---------------"
     bs_log "HOSTNAME: $HOSTNAME"
@@ -729,7 +763,7 @@ setup_backports() {
     if [[ -n "$BEFORE_SAUCY" ]] && [[ -n "$IS_UBUNTU" ]];then
         bs_log "Activating backport from $DISTRIB_BACKPORT to $DISTRIB_CODENAME"
         cp  $CONF_ROOT/apt/sources.list "$CONF_ROOT/apt/sources.list.$CHRONO.sav"
-        "$SED" ire "s/${DISTRIB_CODENAME}/${DISTRIB_BACKPORT}/g" -i "$CONF_ROOT/apt/sources.list"
+        "$SED" -re "s/${DISTRIB_CODENAME}/${DISTRIB_BACKPORT}/g" -i "$CONF_ROOT/apt/sources.list"
     fi
     if [[ -n "$IS_DEBIAN" ]];then
         bs_log "Activating backport from $DISTRIB_BACKPORT to $DISTRIB_CODENAME"
@@ -937,6 +971,13 @@ check_restartmarker_and_maybe_restart() {
     fi
 }
 
+get_git_branch() {
+    cd $1 &> /dev/null
+    local br=$(git branch | grep "*"|grep -v grep)
+    echo ${br/* /}
+    cd - &> /dev/null
+}
+
 setup_and_maybe_update_code() {
     bs_log "Create base directories"
     if [[ -n "$IS_SALT" ]];then
@@ -975,18 +1016,21 @@ setup_and_maybe_update_code() {
     if [[ "$is_offline" == "0" ]]\
         && [[ -z "$SALT_BOOT_IN_RESTART" ]]\
         && [[ -z "$SALT_BOOT_SKIP_CHECKOUTS" ]];then
-        i_prereq || die_in_error " [bs] Failed install rerequisites"
+        i_prereq || die " [bs] Failed install rerequisites"
         if [[ -z "$SALT_BOOT_SKIP_CHECKOUTS" ]];then
             bs_yellow_log "If you want to skip checkouts, next time do export SALT_BOOT_SKIP_CHECKOUTS=1"
         fi
         for ms in ${SALT_MSS};do
             if [[ ! -d "$ms/.git" ]];then
-                git clone "$STATES_URL" "$ms"
+                git clone "$STATES_URL" "$ms" &&\
+                    cd "$ms" &&\
+                    git checkout remotes/origin/"$(get_ms_branch)" -b "$(get_ms_branch)" &&\
+                    cd - &> /dev/null
                 SALT_BOOT_NEEDS_RESTART="1"
                 if [[ "$?" == "0" ]];then
-                    die_in_error " [bs] Downloaded makina-states ($ms)"
+                    bs_yellow_log " [bs] Downloaded makina-states ($ms)"
                 else
-                    die_in_error " [bs] Failed to download makina-states ($ms)"
+                    die " [bs] Failed to download makina-states ($ms)"
                 fi
             fi
             #chmod +x ${SALT_MS}/_scripts/install_salt_modules.sh
@@ -1000,6 +1044,9 @@ setup_and_maybe_update_code() {
                     "$SED" -re "s/filemode =.*/filemode=false/g" -i "$i/.git/config" 2>/dev/null
                     branch="master"
                     case "$i" in
+                        "$ms")
+                            branch="$(get_ms_branch "$i")"
+                            ;;
                         "$ms/src/SaltTesting"|"$ms/src/salt")
                             branch="develop"
                             ;;
@@ -1007,16 +1054,40 @@ setup_and_maybe_update_code() {
                     bs_log "Upgrading $i"
                     cd $i
                     git fetch --tags origin &> /dev/null
-                    git fetch origin &&\
-                        git diff origin/$branch --exit-code &> /dev/null
-                    if [[ "$?" != "0" ]];then
-                        SALT_BOOT_NEEDS_RESTART=1
-                        bs_log "update is necessary"
-                    fi && git merge --ff-only origin/$branch
-                    if [[ "$?" == "0" ]];then
-                        die_in_error " [bs] Downloaded/updateded $i"
+                    git fetch origin
+                    local lbranch="$(get_git_branch .)"
+                    if [[ "$lbranch" != "$branch" ]];then
+                        if [[ "$(git branch|egrep " $branch\$" |wc -l)" != 0 ]];then
+                            # branch already exists
+                            bs_log "Switch branch: $lbranch -> $branch"
+                            git checkout $branch
+                            ret=$?
+                        else
+                            # branch  does not exist yet
+                            bs_log "Create & switch on branch: $branch from $lbranch"
+                            git checkout -b remotes/origin/$branch $branch
+                            ret=$?
+                        fi
+                        if [[ "$ret" != "0" ]];then
+                            die "Failed to switch branch: $lbranch -> $branch"
+                        else
+                            bs_log "Update is necessary"
+                            SALT_BOOT_NEEDS_RESTART="1"
+                        fi
                     else
-                        die_in_error " [bs] Failed to download/update $i"
+                        git diff origin/$branch --exit-code &> /dev/null
+                        if [[ "$?" != "0" ]];then
+                            bs_log "Update is necessary"
+                        fi && git merge --ff-only origin/$branch
+                        SALT_BOOT_NEEDS_RESTART=1
+                    fi
+                    if [[ "$?" == "0" ]];then
+                        bs_yellow_log "Downloaded/updated $i"
+                    else
+                        die "Failed to download/update $i"
+                    fi
+                    if [[ "$i" == "$ms" ]];then
+                        echo "$branch">"$i/.bootbranch"
                     fi
                 fi
             done
@@ -1133,7 +1204,7 @@ run_ms_buildout() {
         ;then
         cd $ms
         bs_log "Launching buildout for salt initialisation ($ms)"
-        bin/buildout || die_in_error " [bs] Failed buildout ($ms)"
+        bin/buildout || die " [bs] Failed buildout ($ms)"
         ret=$?
         if [[ "$ret" != "0" ]];then
             rm -rf "$ms/.installed.cfg"
@@ -1266,6 +1337,11 @@ a\    - salt
         debug_msg "Creating default pillar's salt.sls"
         echo 'salt:' > "$SALT_PILLAR/salt.sls"
     fi
+    if [[ "$(grep "$BRANCH_PILLAR_ID" "$SALT_PILLAR/salt.sls"|wc -l)" == "0" ]];then
+        echo "" >> "$SALT_PILLAR/salt.sls"
+        echo "$BRANCH_PILLAR_ID" >> "$SALT_PILLAR/salt.sls"
+    fi
+    sed -re "s/${BRANCH_PILLAR_ID}.*/$BRANCH_PILLAR_ID: $(get_ms_branch)/g" -i "$SALT_PILLAR/salt.sls"
     if [[ "$(egrep -- "^salt:" "$SALT_PILLAR/salt.sls"|wc -l)" == "0" ]];then
         echo ''  >> "$SALT_PILLAR/salt.sls"
         echo 'salt:' >> "$SALT_PILLAR/salt.sls"
@@ -1311,6 +1387,11 @@ a\    - mastersalt
             debug_msg "Creating mastersalt configuration file"
             echo "mastersalt:" >  "$MASTERSALT_PILLAR/mastersalt.sls"
         fi
+        if [[ "$(grep "$BRANCH_PILLAR_ID" "$MASTERSALT_PILLAR/mastersalt.sls"|wc -l)" == "0" ]];then
+            echo "" >> "$MASTERSALT_PILLAR/mastersalt.sls"
+            echo "$BRANCH_PILLAR_ID" >> "$MASTERSALT_PILLAR/mastersalt.sls"
+        fi
+        sed -re "s/${BRANCH_PILLAR_ID}.*/$BRANCH_PILLAR_ID: $(get_ms_branch)/g" -i "$MASTERSALT_PILLAR/mastersalt.sls"
         if [[ "$(egrep -- "^mastersalt:\s*$" "$MASTERSALT_PILLAR/mastersalt.sls"|wc -l)" == "0" ]];then
             echo ''  >> "$MASTERSALT_PILLAR/mastersalt.sls"
             echo 'mastersalt:' >> "$MASTERSALT_PILLAR/mastersalt.sls"
@@ -1366,7 +1447,7 @@ lazy_start_salt_daemons() {
         fi
         master_processes="$($PS aux|grep salt-master|grep -v mastersalt|grep -v grep|wc -l)"
         if [[ "$master_processes" == "0" ]];then
-            die_in_error "Salt Master start failed"
+            die "Salt Master start failed"
         fi
     fi
     if [[ -n "$IS_SALT_MINION" ]];then
@@ -1376,7 +1457,7 @@ lazy_start_salt_daemons() {
             sleep 2
             minion_processes="$($PS aux|grep salt-minion|grep -v mastersalt|grep -v grep|wc -l)"
             if [[ "$master_processes" == "0" ]];then
-                die_in_error "Salt Minion start failed"
+                die "Salt Minion start failed"
             fi
         fi
     fi
@@ -1568,13 +1649,13 @@ mastersalt_minion_challenge() {
 
 salt_master_connectivity_check() {
     if [[ $(check_connectivity $SALT_MASTER_IP $SALT_MASTER_PORT) != "0" ]];then
-        die_in_error "SaltMaster is unreachable ($SALT_MASTER_IP/$SALT_MASTER_PORT)"
+        die "SaltMaster is unreachable ($SALT_MASTER_IP/$SALT_MASTER_PORT)"
     fi
 }
 
 mastersalt_master_connectivity_check() {
     if [[ $(check_connectivity $MASTERSALT $MASTERSALT_MASTER_PORT) != "0" ]];then
-        die_in_error "MastersaltMaster is unreachable ($MASTERSALT/$MASTERSALT_MASTER_PORT)"
+        die "MastersaltMaster is unreachable ($MASTERSALT/$MASTERSALT_MASTER_PORT)"
     fi
 }
 
@@ -1601,7 +1682,7 @@ make_association() {
         sleep 3
         minion_id="$(get_minion_id)"
         if [[ -z "$minion_id" ]];then
-            die_in_error "Minion did not start correctly, the minion_id cache file is always empty"
+            die "Minion did not start correctly, the minion_id cache file is always empty"
         fi
     fi
     # only accept key on fresh install (no keys stored)
@@ -1688,7 +1769,7 @@ make_mastersalt_association() {
         sleep 3
         minion_id="$(mastersalt_get_minion_id)"
         if [[ -z "$minion_id" ]];then
-            die_in_error "Minion did not start correctly, the minion_id cache file is always empty"
+            die "Minion did not start correctly, the minion_id cache file is always empty"
         fi
     fi
     if [[ "$(mastersalt_ping_test)" == "0" ]];then
@@ -1758,7 +1839,7 @@ lazy_start_mastersalt_daemons() {
         fi
         master_processes="$($PS aux|grep salt-master|grep mastersalt|grep -v grep|wc -l)"
         if [[ "$master_processes" == "0" ]];then
-            die_in_error "Masteralt Master start failed"
+            die "Masteralt Master start failed"
         fi
     fi
     if [[ -n "$IS_MASTERSALT_MINION" ]];then
@@ -1768,7 +1849,7 @@ lazy_start_mastersalt_daemons() {
             sleep 2
             minion_processes="$($PS aux|grep salt-minion|grep mastersalt|grep -v grep|wc -l)"
             if [[ "$master_processes" == "0" ]];then
-                die_in_error "Masteralt Minion start failed"
+                die "Masteralt Minion start failed"
             fi
         fi
     fi
@@ -2209,6 +2290,7 @@ usage() {
     bs_help "-S|--skip-checkouts:" "Skip initial checkouts / updates" "" y
     bs_help "-s|--skip-highstates:" "Skip highstates" "" y
     bs_help "-d|--debug:" "debug/verbose mode" "NOT SET" y
+    bs_help "-b|--branch <branch>" "MakinaStates branch to use" "$MS_BRANCH" y
     bs_help "--debug-level <level>:" "debug level (quiet|all|info|error)" "NOT SET" y
 
     echo;echo
@@ -2234,7 +2316,7 @@ usage() {
     bs_log "Project settings (if any):"
     bs_help "-u|--project-url <url>:" "project url to get to install this project (set to blank to only install makina-states)"
     bs_help "-B|--project-name <name>:" "Project name" "" "y"
-    bs_help "-b|--project-branch <branch>:" "salt branch to install the project"  "$PROJECT_BRANCH" y
+    bs_help "--project-branch <branch>:" "salt branch to install the project"  "$PROJECT_BRANCH" y
 
     if [[ -n $SALT_LONG_HELP ]];then
         echo
@@ -2373,7 +2455,9 @@ parse_cli_opts() {
                 ;;
             -B|--project-name) PROJECT_NAME=$2;sh=2
                 ;;
-            -b|--project-branch) PROJECT_BRANCH=$2;sh=2
+            -b|--branch) FORCE_MS_BRANCH=1;MS_BRANCH=$2;sh=2
+                ;;
+            --project-branch) PROJECT_BRANCH=$2;sh=2
                 ;;
             --project-top) PROJECT_TOPSLS=$2;sh=2
                 ;;
@@ -2403,7 +2487,7 @@ parse_cli_opts() {
 if [[ -z $SALT_BOOT_AS_FUNCS ]];then
     parse_cli_opts $LAUNCH_ARGS
     if [[ "$(dns_resolve localhost)" == "$DNS_RESOLUTION_FAILED" ]];then
-        die_in_error "$DNS_RESOLUTION_FAILED"
+        die "$DNS_RESOLUTION_FAILED"
     fi
     set_vars # real variable affectation
     recap
