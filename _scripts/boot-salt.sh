@@ -839,7 +839,7 @@ teardown_backports() {
     #fi
 }
 
-i_prereq() {
+install_prerequisites() {
     to_install=""
     bs_log "Check package dependencies"
     lazy_apt_get_install python-software-properties
@@ -1025,6 +1025,29 @@ get_git_branch() {
     cd - &> /dev/null
 }
 
+get_salt_mss() {
+    SALT_MSS=""
+    if [[ -n "$IS_SALT" ]];then
+        SALT_MSS="${SALT_MSS} $SALT_MS"
+    fi
+    if [[  -n "$IS_MASTERSALT" ]];then
+        SALT_MSS="${SALT_MSS} $MASTERSALT_MS"
+    fi
+    echo $SALT_MSS
+}
+
+is_basedirs_there() {
+    local there="1"
+    for dir in $(get_salt_mss);do
+        for subdir in $dir $dir/src/salt;do
+            if [[ ! -e "$dir" ]];then
+                there=""
+            fi
+        done
+    done
+    echo "$there"
+}
+
 setup_and_maybe_update_code() {
     bs_log "Create base directories"
     if [[ -n "$IS_SALT" ]];then
@@ -1041,13 +1064,7 @@ setup_and_maybe_update_code() {
             fi
         done
     fi
-    SALT_MSS=""
-    if [[ -n "$IS_SALT" ]];then
-        SALT_MSS="${SALT_MSS} $SALT_MS"
-    fi
-    if [[  -n "$IS_MASTERSALT" ]];then
-        SALT_MSS="${SALT_MSS} $MASTERSALT_MS"
-    fi
+    SALT_MSS="$(get_salt_mss)"
     is_offline="$(test_online)"
     minion_keys="$(find $CONF_PREFIX/pki/master/{minions_pre,minions} -type f 2>/dev/null|wc -l)"
     if [[ "$is_offline" != "0" ]];then
@@ -1060,87 +1077,92 @@ setup_and_maybe_update_code() {
             exit -1
         fi
     fi
-    if [[ "$is_offline" == "0" ]]\
-        && [[ -z "$SALT_BOOT_IN_RESTART" ]]\
-        && [[ -z "$SALT_BOOT_SKIP_CHECKOUTS" ]];then
-        i_prereq || die " [bs] Failed install rerequisites"
-        if [[ -z "$SALT_BOOT_SKIP_CHECKOUTS" ]];then
-            bs_yellow_log "If you want to skip checkouts, next time do export SALT_BOOT_SKIP_CHECKOUTS=1"
+    if [[ -z "$SALT_BOOT_IN_RESTART" ]] &&  [[ "$is_offline" == "0" ]];then
+        install_prerequisites || die " [bs] Failed install rerequisites"
+        local skip_co="$SALT_BOOT_SKIP_CHECKOUTS"
+        if [[ -z $(is_basedirs_there) ]];then
+            skip_co=""
         fi
-        for ms in ${SALT_MSS};do
-            if [[ ! -d "$ms/.git" ]];then
-                git clone "$STATES_URL" "$ms" &&\
-                    cd "$ms" &&\
-                    git checkout remotes/origin/"$(get_ms_branch)" -b "$(get_ms_branch)" &&\
-                    cd - &> /dev/null
-                SALT_BOOT_NEEDS_RESTART="1"
-                if [[ "$?" == "0" ]];then
-                    bs_yellow_log " [bs] Downloaded makina-states ($ms)"
-                else
-                    die " [bs] Failed to download makina-states ($ms)"
-                fi
-            fi
-            #chmod +x ${SALT_MS}/_scripts/install_salt_modules.sh
-            #"${SALT_MS}/_scripts/install_salt_modules.sh" "$SALT_ROOT"
-            cd "$ms"
-            if [[ ! -d src ]];then
-                mkdir src
-            fi
-            for i in "$ms" "$ms/src/"*;do
-                if [[ -e "$i/.git" ]];then
-                    "$SED" -re "s/filemode =.*/filemode=false/g" -i "$i/.git/config" 2>/dev/null
-                    branch="master"
-                    case "$i" in
-                        "$ms")
-                            branch="$(get_ms_branch "$i")"
-                            ;;
-                        "$ms/src/SaltTesting"|"$ms/src/salt")
-                            branch="develop"
-                            ;;
-                    esac
-                    bs_log "Upgrading $i"
-                    cd $i
-                    git fetch --tags origin &> /dev/null
-                    git fetch origin
-                    local lbranch="$(get_git_branch .)"
-                    if [[ "$lbranch" != "$branch" ]];then
-                        if [[ "$(git branch|egrep " $branch\$" |wc -l)" != 0 ]];then
-                            # branch already exists
-                            bs_log "Switch branch: $lbranch -> $branch"
-                            git checkout $branch
-                            ret=$?
-                        else
-                            # branch  does not exist yet
-                            bs_log "Create & switch on branch: $branch from $lbranch"
-                            git checkout -b remotes/origin/$branch $branch
-                            ret=$?
-                        fi
-                        if [[ "$ret" != "0" ]];then
-                            die "Failed to switch branch: $lbranch -> $branch"
-                        else
-                            bs_log "Update is necessary"
-                            SALT_BOOT_NEEDS_RESTART="1"
-                        fi
-                    else
-                        git diff origin/$branch --exit-code &> /dev/null
-                        if [[ "$?" != "0" ]];then
-                            bs_log "Update is necessary"
-                        fi && git merge --ff-only origin/$branch
-                        SALT_BOOT_NEEDS_RESTART=1
-                    fi
+        if [[ -z "$skip_co" ]];then
+            bs_yellow_log "If you want to skip checkouts, next time do export SALT_BOOT_SKIP_CHECKOUTS=1"
+            for ms in ${SALT_MSS};do
+                if [[ ! -d "$ms/.git" ]];then
+                    git clone "$STATES_URL" "$ms" &&\
+                        cd "$ms" &&\
+                        git checkout remotes/origin/"$(get_ms_branch)" -b "$(get_ms_branch)" &&\
+                        cd - &> /dev/null
+                    SALT_BOOT_NEEDS_RESTART="1"
                     if [[ "$?" == "0" ]];then
-                        bs_yellow_log "Downloaded/updated $i"
+                        bs_yellow_log " [bs] Downloaded makina-states ($ms)"
                     else
-                        die "Failed to download/update $i"
-                    fi
-                    if [[ "$i" == "$ms" ]];then
-                        store_conf branch "$branch"
+                        die " [bs] Failed to download makina-states ($ms)"
                     fi
                 fi
+                #chmod +x ${SALT_MS}/_scripts/install_salt_modules.sh
+                #"${SALT_MS}/_scripts/install_salt_modules.sh" "$SALT_ROOT"
+                cd "$ms"
+                if [[ ! -d src ]];then
+                    mkdir src
+                fi
+                for i in "$ms" "$ms/src/"*;do
+                    if [[ -e "$i/.git" ]];then
+                        "$SED" -re "s/filemode =.*/filemode=false/g" -i "$i/.git/config" 2>/dev/null
+                        branch="master"
+                        case "$i" in
+                            "$ms")
+                                branch="$(get_ms_branch "$i")"
+                                ;;
+                            "$ms/src/SaltTesting"|"$ms/src/salt")
+                                branch="develop"
+                                ;;
+                        esac
+                        bs_log "Upgrading $i"
+                        cd $i
+                        git fetch --tags origin &> /dev/null
+                        git fetch origin
+                        local lbranch="$(get_git_branch .)"
+                        if [[ "$lbranch" != "$branch" ]];then
+                            if [[ "$(git branch|egrep " $branch\$" |wc -l)" != 0 ]];then
+                                # branch already exists
+                                bs_log "Switch branch: $lbranch -> $branch"
+                                git checkout $branch
+                                ret=$?
+                            else
+                                # branch  does not exist yet
+                                bs_log "Create & switch on branch: $branch from $lbranch"
+                                git checkout -b remotes/origin/$branch $branch
+                                ret=$?
+                            fi
+                            if [[ "$ret" != "0" ]];then
+                                die "Failed to switch branch: $lbranch -> $branch"
+                            else
+                                bs_log "Update is necessary"
+                                SALT_BOOT_NEEDS_RESTART="1"
+                            fi
+                        else
+                            git diff origin/$branch --exit-code &> /dev/null
+                            if [[ "$?" != "0" ]];then
+                                bs_log "Update is necessary"
+                            fi && git merge --ff-only origin/$branch
+                            SALT_BOOT_NEEDS_RESTART=1
+                        fi
+                        if [[ "$?" == "0" ]];then
+                            bs_yellow_log "Downloaded/updated $i"
+                        else
+                            die "Failed to download/update $i"
+                        fi
+                        if [[ "$i" == "$ms" ]];then
+                            store_conf branch "$branch"
+                        fi
+                    fi
+                done
             done
-        done
+        fi
     fi
     check_restartmarker_and_maybe_restart
+    if [[ -z $SALT_BOOT_IN_RESTART ]] && [[ -z $(is_basedirs_there) ]];then
+        die "Base directories are not present"
+    fi
 }
 
 cleanup_previous_venv() {
@@ -1163,6 +1185,7 @@ cleanup_previous_venv() {
         cd "$old_d"
     fi
 }
+
 setup_virtualenv() {
     # Script is now running in makina-states git location
     # Check for virtualenv presence
