@@ -8,13 +8,13 @@
 # makina-states.localsettings.npm_packages: ['grunt@0.6']
 #
 
-{% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-{% set locs = localsettings.locations %}
-{{ localsettings.register('nodejs') }}
+{%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+{%- set locs = localsettings.locations %}
+{{- localsettings.register('nodejs') }}
 
-{% set npmPackages = localsettings.npmSettings.packages %}
+{%- set npmPackages = localsettings.npmSettings.packages %}
 
-{% if grains['os'] in ['Ubuntu'] %}
+{% if grains['os'] in ['Ubuntu'] -%}
 # Installing the last version of Node: https://github.com/joyent/node/wiki/Installing-Node.js-via-package-manager#ubuntu-mint-elementary-os
 nodejs-repo:
   pkgrepo.managed:
@@ -33,9 +33,9 @@ nodejs-pkgs:
       - pkgrepo: nodejs-repo
     - pkgs:
       - nodejs
-{% endif %}
+{% endif -%}
 
-{% if grains['os'] in ['Debian'] %}
+{% if grains['os'] in ['Debian'] -%}
 nodejs-repo:
   pkgrepo.managed:
     - name: nodejs
@@ -57,10 +57,10 @@ npm-pkgs:
     - name: curl -s https://npmjs.org/install.sh | sh
     - require:
       - pkg: nodejs
-{% endif %}
+{%- endif %}
 
-{% for npmPackage in npmPackages %}
+{% for npmPackage in npmPackages -%}
 npm-packages{{npmPackage}}:
   npm.installed:
     - name: {{npmPackage}}
-{% endfor %}
+{%- endfor %}
