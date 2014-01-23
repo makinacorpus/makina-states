@@ -601,7 +601,7 @@ set_vars() {
         die "Please provide a valid \$MS_BRANCH (inputed: "$MS_BRANCH")"
     fi
     if [[ -z "$(get_salt_nodetype)" ]];then
-        bs_yellow_log "Valid branches: $(echo $(ls "$SALT_MS/nodetypes"|sed -re "s/.sls//"))"
+        bs_yellow_log "Valid nodetypes $(echo $(ls "$SALT_MS/nodetypes"|sed -re "s/.sls//"))"
         die "Please provide a valid nodetype (inputed: "$SALT_NODETYPE_INPUTED")"
     fi
 
