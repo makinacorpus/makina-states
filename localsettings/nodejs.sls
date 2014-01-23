@@ -39,7 +39,12 @@ nodejs-pkgs:
     {% endif -%}
     - pkgs:
       - nodejs
+
+{% if grains['os'] in ['Debian'] -%}
 npm-pkgs:
+  file.symlink:
+    - target: {{locs.bin_dir}}/nodejs
+    - name:   {{locs.bin_dir}}/node
   cmd.run:
     - name: |
             . /etc/profile &&
@@ -47,8 +52,11 @@ npm-pkgs:
             chmod +x /tmp/npminstall &&
             /tmp/npminstall && rm -f /tmp/npminstall;
     - require:
+      - file: npm-pkgs
       - pkg: nodejs-pkgs
       - pkg: net-pkgs
+
+{% endif %}
 {% for npmPackage in npmPackages -%}
 npm-packages{{npmPackage}}:
   npm.installed:
