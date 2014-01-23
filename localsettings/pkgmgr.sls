@@ -63,10 +63,10 @@
 {%- do pkg_data['mirrors'].extend(
   salt['grains.filter_by']({
     'Debian': [
-    {'mirror': 'http://ftp.de.debian.org/debian',
+    {'mirror': debian_mirror,
     'dists': [{'name': 'jessie'+'-backports', 'comps': dcomps}]}],
     'Ubuntu': [
-    {'mirror': 'http://ftp.de.debian.org/debian',
+    {'mirror':  ubuntu_mirror,
     'dists': [{'name': ddist+'-backports', 'comps': ucomps}]}
     ]}, grain='os'))  %}
 {%- endif %}
