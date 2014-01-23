@@ -310,6 +310,9 @@ get_minion_id() {
 }
 
 set_remote_branches() {
+    if [[ ! -e "$(which git 2>/dev/null)" ]];then
+        VALID_BRANCHES="master stable"
+    fi
     if [[ -z "$VALID_BRANCHES" ]];then
         VALID_BRANCHES="$(echo "$(git ls-remote "$STATES_URL"|awk -F/ '{print $3}'|grep -v HEAD)")"
         if [[ -e "$SALT_MS" ]];then
