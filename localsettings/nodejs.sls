@@ -61,8 +61,9 @@ npm-pkgs:
 npm-packages-{{npmPackage}}:
   npm.installed:
     - name: {{npmPackage}}
-    {% if grains['os'] in ['Debian'] -%}
     - require:
       - pkg: nodejs-pkgs
-    {%- endif %}
+      {% if grains['os'] in ['Debian'] -%}
+      - cmd: npm-pkgs
+      {%- endif %}
 {%- endfor %}
