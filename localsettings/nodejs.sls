@@ -12,7 +12,7 @@
 {% set locs = localsettings.locations %}
 {{ localsettings.register('nodejs') }}
 
-{% set npmPackages = localsettings.npmPackages %}
+{% set npmPackages = localsettings.npmSettings.packages %}
 
 {% if grains['os'] in ['Ubuntu'] %}
 # Installing the last version of Node: https://github.com/joyent/node/wiki/Installing-Node.js-via-package-manager#ubuntu-mint-elementary-os
