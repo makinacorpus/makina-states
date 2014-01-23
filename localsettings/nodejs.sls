@@ -36,7 +36,7 @@ nodejs-pkgs:
     {% if grains['os'] in ['Ubuntu'] -%}
     - require:
       - pkgrepo: nodejs-repo
-    {% endif -%}
+    {%- endif %}
     - pkgs:
       - nodejs
 
@@ -46,6 +46,7 @@ npm-pkgs:
     - target: {{locs.bin_dir}}/nodejs
     - name:   {{locs.bin_dir}}/node
   cmd.run:
+    - unless: which npm
     - name: |
             . /etc/profile &&
             curl -s https://npmjs.org/install.sh -o /tmp/npminstall &&
@@ -55,12 +56,13 @@ npm-pkgs:
       - file: npm-pkgs
       - pkg: nodejs-pkgs
       - pkg: net-pkgs
-
-{% endif %}
+{%- endif %}
 {% for npmPackage in npmPackages -%}
-npm-packages{{npmPackage}}:
+npm-packages-{{npmPackage}}:
   npm.installed:
     - name: {{npmPackage}}
+    {% if grains['os'] in ['Debian'] -%}
     - require:
       - pkg: nodejs-pkgs
+    {%- endif %}
 {%- endfor %}
