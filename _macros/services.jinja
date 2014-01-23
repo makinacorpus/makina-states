@@ -258,7 +258,7 @@
       "OPT"           : "-Fc",
     }) %}
 {%- set autopostgresqlbackupGlobalSettings = autopostgresqlbackupSettings.copy() %}
-{%- do autopostgresqlbackupSettings.update({
+{%- do autopostgresqlbackupGlobalSettings.update({
     "OPT"           : "--globals-only",
     "DBNAMES"       : "postgres template0 template1",
 }) %}
