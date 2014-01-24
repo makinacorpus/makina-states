@@ -54,7 +54,7 @@ Worflow in MkC deployments
 
 Install a new salt-managed box
 -------------------------------
-- To install our base salt installation, just run this script as **root**, please read next paragraphes before running any command.
+- To install our base salt installation, just run this script as **root**, please read next paragraphs before running any command.
 - All our installs run 2 instances of salt: **mastersalt** and **salt**
 - You will nearly never have to handle much with the **mastersalt** part
 - The two instances will have to know where they run to first make the system
@@ -66,15 +66,15 @@ Install a new salt-managed box
     - The default nodetype is **server**.
     - The default installed **controller** flavor is **salt**, and in other words, we do not install **mastersalt** by default.
 
-- You ll also have to set the daemon id. The default choice for **--minion-id** is the current machine hostname
+- You'll also have to set the daemon id. The default choice for **--minion-id** is the current machine hostname
   but you can force it to set a specific minion id.
 
 - You choice for **--nodetype** and **--mastersalt-nodetype** is certainly one of **server**, **vm**, **vagrantvm** or **devhost**.
 
     - The default is **server**.
     - **vm** matches a VM (not baremetal)
-    - If you choose **devhost**, this mark the machine as a devloppment machine
-      enabling states to act on that, by example installation a test mailer.
+    - If you choose **devhost**, this mark the machine as a development machine
+      enabling states to act on that, by example installation of a test local-loop mailer.
     - If you choose **vagrantvmt**, this mark the machine as a vagrant virtualbox.
 
 - You default choice for **SALT_CONTROLLER** is certainly one of **salt_master** or **salt_minion**.
@@ -166,6 +166,8 @@ Running project states
 ::
 
     mkdir /srv/pillar
+    # $ED is your default editor, rplace with nano, vim or anything
+    # if the default is not the one you want
     $ED /srv/pillar/top.sls
     $ED /srv/pillar/foo.sls
     export NAME="foo" (default: no name)
