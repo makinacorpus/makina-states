@@ -1,0 +1,76 @@
+{% macro virtualhost(
+  nginxData,
+  site = 'example.com',
+  small_name = None,
+  active = True,
+  port = '80',
+  log_level = 'warn',
+  server_aliases = None,
+  document_root = None,
+  redirect_aliases = True,
+  allowed_host = None,
+  vh_template_source = 'salt://makina-states/files/etc/nginx/sites-available/vhost.conf',
+  extra_jinja_nginx_variables = None
+  ) %}
+
+{% set small_name = small_name or site.replace('.', '_').replace('-', '_') %}
+{% set doc_root = documentRoot or '/srv/projects/' + site  + '/www' %}
+{% set vhost_available_file = {{ nginxData.basedir }}/sites-available/{{ number }}-{{ site }}.conf %}
+{% set vhost_enabled_file = {{ nginxData.basedir }}/sites-enabled/{{ number }}-{{ site }}.conf %}
+
+# Virtualhost basic file
+makina-nginx-virtualhost-{{ small_name }}:
+  file.managed:
+    - user: root
+    - group: root
+    - mode: 664
+    - name: {{ vhost_available_file }}
+    - source: {{ vh_template_source }}
+    - template: 'jinja'
+    - defaults:
+        log_level: "{{ log_level }}"
+        small_name: "{{ small_name }}"
+        document_root: "{{ doc_root }}"
+        server_name: "{{ site }}"
+	{% if server_aliases %}
+        server_aliases:
+	  {% for server_alis in server_aliases %}
+          - {{ server_alias }}
+	  {% endfor %}
+	{% endif %}
+        redirect_aliases: {{ redirect_aliases }}
+        port: "{{ port }}"
+{% if extra_jinja_nginx_variables %}
+{% for variablename,variablevalue in extra_jinja_nginx_variables.iteritems() %}
+        {{ variablename }}: "{{ variablevalue }}"
+{% endfor %}
+{% endif %}
+{% if grains['makina-states.nodetype.devhost'] %}
+    - context:
+        mode: "dev"
+{% endif %}
+    - require:
+      - pkg: makina-nginx-pkgs
+    - watch_in:
+      - cmd: makina-nginx-virtualhost-{{ small_name }}-status
+      - cmd: makina-nginx-conf-syntax-check
+      - service: makina-nginx-reload
+
+# Virtualhost status
+
+makina-nginx-virtualhost-{{ small_name }}-status:
+  cmd.run:
+{%      if active %}
+    - name: ln -s {{ vhost_available_file }} {{ vhost_enabled_file }}
+    - unless: ls {{ vhost_enabled_file }}
+{%      else %}
+    - name: rm -f {{ vhost_enabled_file }}
+    - onlyif: ls {{ vhost_enabled_file }}
+{%      endif %}
+    - require:
+      - pkg: makina-nginx-pkgs
+    - watch_in:
+      - cmd: makina-nginx-conf-syntax-check
+      - service: makina-nginx-reload
+
+{% endmacro %}

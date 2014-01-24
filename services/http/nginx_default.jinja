@@ -1,0 +1,29 @@
+{% import "makina-states/_macros/services.jinja" as services with context %}
+{% set localsettings = services.localsettings %}
+{% set locs = localsettings.locations %}
+{% set apacheStepOne = salt['grains.filter_by']({
+    'dev': {
+    },
+    'prod': {
+    }
+  },
+  grain='default_env',
+  default= 'dev'
+) %}
+
+{% set nginxStepTwo = salt['grains.filter_by']({
+    'Debian': {
+        'package'  : 'nginx',
+	'service'  : 'nginx',
+        'basedir'  : locs.conf_dir+'/nginx',
+        'vhostdir' : locs.conf_dir+'/nginx/sites-available',
+        'confdir'  : locs.conf_dir+'/nginx/conf.d',
+        'logdir'   : locs.var_log_dir+'/nginx',
+        'wwwdir'   : locs.srv_dir
+    },
+  },
+  grain='os_family',
+  merge=nginxStepOne
+) %}
+
+{% set nginxData=salt['mc_utils.dictupdate'](nginxStepTwo , salt['pillar.get']('nginx-default-settings',{})) %}
