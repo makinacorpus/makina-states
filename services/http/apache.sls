@@ -338,7 +338,7 @@ makina-apache-reload:
     # most watch requisites are linked here with watch_in
 
 # Virtualhosts, here are the ones defined in pillar, if any ----------------
-#
+{#
 # We loop on VH defined in pillar apache/register-sites, check the
 # macro definition for the pillar dictionnary keys available. The
 # register-sites key is set as the site name, and all keys are then
@@ -359,7 +359,7 @@ makina-apache-reload:
 # loading the macro as we do here and use virtualhost()) call
 # in a state.
 # Then use the pillar to alter your default parameters given to this call
-#
+#}
 {% from 'makina-states/services/http/apache_macros.jinja' import virtualhost with context %}
 {% if 'register-sites' in apacheData %}
 {%   for site,siteDef in apacheData['register-sites'].iteritems() %}

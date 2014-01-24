@@ -428,6 +428,7 @@
 } %}
 {%- set registry = funcs.getRegistries(registryConfiguration)[kind] %}
 
+{# define shortcuts, to use autoinclude directly from this import #}
 {% macro autoinclude(name) %}
 {{funcs.autoinclude(registry, bases=bases) }}
 {% endmacro %}
