@@ -6,13 +6,13 @@
 #
 # As soon as those tags are run, they will set a grain on the machine
 # having the side effect to register that part of our states to be 'auto installed'
-#in the future highstates, they will even run even if we have not included them explicitly.
+# in the future highstates, they will even run even if we have not included them explicitly.
 #
 # TODO:
 #   - We are planning the uninstall part but it is not yet done
 #   - In the meantime, to uninstall a state, you ll have first to remove the grain/pillar/inclusion
 #     Then rerun the highstate and then code a specific cleanup sls file if you want to cleanup
-#     what what left on the server
+#     what is left on the server
 #
 # As you certainly have understood, this is to enable some kind of local auto configuration
 # based on previous runs and on configuration (grains + states inclusions + pillar).
@@ -22,13 +22,13 @@
 # to be totally dynamic. All the things you need to do is to set in pillar or in grains
 # the appropriate values for your machine to be configured.
 #
-# In othe words, you have 4 levels to make salt install you a 'makina state'
-# which will be automaticly included in the next highstate
+# In other words, you have 4 levels to make salt install you a 'makina state'
+# which will be automaticaly included in the next highstate:
 #
 #   - Direct inclusion via the 'include:' statement:
 #       - include makina-states.services.http.apache
 #   - Install directly the state via a salt/salt-call state.sls
-#       - salt-call state.sls makina-states.services.http.apache true
+#       - salt-call state.sls makina-states.services.http.apache
 #   - Appropriate grain configuration slug
 #       - salt-call --local grains.setval makina-states.services.http.apache true
 #   - Appropriate pillar configuration slug
@@ -48,47 +48,52 @@
 # or our states tree:
 #
 # Tree of different configuration flavors inheritance
-#                                                                      C
-#                                                                      O
-#                                                                      N
-# ^-- NODETYPES ---- controlled- ->| salt-minion   - mastersalt-minion T
-# ^                      by        |      ^        -        ^          R
-# ^                    one of      |      ^        -        ^          O
-# ^                      -         |   controlling -    controlling    L
-# ^                      -         |      ^        -        ^          L
-# ^ ------lxc            -         | salt-master   - mastersalt-master E
-# ^ |                    -         |____________________    ^          R
-# ^ |                    -                                  ^          S
-# ^ |---- docker         -------------->>>>>>---------------^
-# ^ |     -container
-# ^ |
-# ^ |  vagrantvm                   ________________
-# ^ |     |                        [               ]
-# ^ vm devhost      installed <----[  server:base  ] <- begin to  << ---
-# ^  \   /              on         [ configuration ]    read here << ---
-# |   \ /              a           [_______________]       ^
-# |-- server <----- NODETYPE            |        |         ^
-#                                       |        |         |
-#                                       |        |         |
-#                running on ----->>>>>>>^        |
-#                   ^                            |
-#                   ^                            |
-#                   ^                            |
-#                   ^                            |-----------------> LOCALSETTINGS
-#         __________^___________   solr                             ldap nscd profile
-#        |                     |      |    lxc                      vim git sudo localrc
-#        |   service:base      | tomcat    |                        pkgs pkgmgr shell
-#        |_____________________|      |    docker                   users
-#                          ^     java |
-#            bacula-fd     ^          |    virt
-#                |   ntp   ^          |    |
-#      __________|___|_____^__________|____|________
-#      | |    |   |     |  ^    | |  |              \
-#      | ldap | salt/mastersalt | |  |    .-- nginx  |
-#      |  |   |                 | |  |   /__ apache  |
-#      | nscd |                ssh|  http            php____ phpfpm
-#      |      |                   |                       |
-#      |      |                   |                       modphp
+#
+#  Controllers +--> salt-minion <------------------+
+#     |        |                                   |
+#     |        +--> salt-master --controlling------+
+#     |        |
+#     |        +--> mastersalt-minion <------------+
+#     |        |                                   |
+#     |        +--> mastersalt-master -controlling-+
+#  controllers                                     _________________
+#  controlling             NODETYPES - INHERITANCE                  |
+#   nodetypes             |       server                            |
+#     |                   |         |                               |
+# +---+ ------+           |         +->vm                           |
+# | NODETYPE  |- - - - - -|         |   |                           |
+# +---+-------+           |         |   +--> lxccontainer           |
+#     |                   |         |   |                           |
+#     |                   |         |   +--> dockercontainer        |
+#  configuration          |         |                               |
+#  installed on           |         +->devhost                      |
+#   a nodetype            |             |                           |
+#     |                   |             +->vagrantvm                |
+#     |                   |_________________________________________|
+#     |
+# +---+-----------+
+# |  server:base  |
+# | configuration |
+# +--+--------+---+
+#    |        |
+#    |        |            +---------------+
+#    |        |            |               |  solr
+#    |     running on <----+ Service:base  |   |
+#    |                     |               |   |      docker
+#  LOCALSETTINGS           +-+-------------+  tomcat   |
+#  =============             |                 |       |
+#  ldap, nscd, profile     service tree        |      lxc
+#  vim git sudo localrc      |                java     |
+#  pkgs pkgmgr shell         |   bacula        |       |
+#  user (...)                |    |            |     virt
+#                            |    |   ntp      |       |
+#     _______________________|____|____|_______|_______|_
+#      | |    |   |     |       | |  |                   \
+#      | ldap | salt/mastersalt | |  |    .-- nginx      |
+#      |  |   |                 | |  |   /__ apache      |
+#      | nscd |                ssh|  http               php____ phpfpm
+#      |      |                   |                         |
+#      |      |                   |                         modphp
 #      db   mail                  |
 #      /\     \                   shorewall
 #     /  \     \____ postfix
@@ -97,7 +102,7 @@
 #
 #
 # You may have already note that there are some main kind of tags
-#   - server nodetypes: which server do i run on
+#   - server nodetypes: which server do I run on?
 #   - 2 kinds of salt controllers (salt/mastersalt)
 #       * salt is a local project salt master
 #       * mastersalt is the salt master of the admin guys
@@ -107,7 +112,7 @@
 #   - Learn and use the [Kind]register mecanism. (its a one liner saving your ass)
 #   - Never ever write an absolute path, use localsettings.locations.PATH_PREFIX
 #   - If your path is not in that mapping and is enoughtly generic, just add it.
-#   - Never ever use short form of states (states without names)
+#   - Never ever use short form of states (states without names, use states unique IDs)
 #   - Please use as much as possible require(_in)/watch(_in) to ensure your configuration
 #     slugs will be correctly scheduled
 #   - Use CamelCase for variables names for them to not been marked as jinja private variables
@@ -121,6 +126,7 @@
 #   - Services
 #}
 # And here is the point where all the things start to work together...
+# Especially when you use hightstates
 {% import "makina-states/_macros/funcs.jinja" as funcs with context %}
 # This loop includes all the kind of things that could be installed
 include:
