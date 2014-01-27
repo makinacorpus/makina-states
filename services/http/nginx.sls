@@ -1,10 +1,10 @@
-{% import "makina-states/_macros/services.jinja" as services with context %}
-{% import "makina-states/_macros/salt.jinja" as saltmac with context %}
-{{ services.register('http.nginx') }}
+{% import "makina-states/_macros/services.jinja" as services with context -%}
+{% import "makina-states/_macros/salt.jinja" as saltmac with context -%}
+{{ services.register('http.nginx') -}}
 
 # Load defaults values -----------------------------------------
 
-{% from 'makina-states/services/http/nginx_defaults.jinja' import nginxData with context %}
+{% from 'makina-states/services/http/nginx_defaults.jinja' import nginxData with context -%}
 
 makina-nginx-pkgs:
   pkg.installed:
@@ -55,37 +55,35 @@ makina-nginx-reload:
     - require:
       - pkg: makina-nginx-pkgs
 
-# Virtualhosts, here are the ones defined in pillar, if any ----------------
+{# Virtualhosts, here are the ones defined in pillar, if any ----------------
 #
 # We loop on VH defined in pillar nginx/register-sites, check the
 # macro definition for the pillar dictionnary keys available. The
 # register-sites key is set as the site name, and all keys are then
 # added.
 # pillar example:
-# nginx-default-settings:
-#   register-sites:
-#     example.com:
-#       active: False
-#       small_name: example
-#       documentRoot: /srv/foo/bar/www
-#     example.foo.com:
-#       active: False
-#       port: 8080
-#       server_aliases:
-#         - bar.foo.com
+# makina-states.services.http.nginx.register-sites:
+#   example.com:
+#     active: False
+#     small_name: example
+#     documentRoot: /srv/foo/bar/www
+#   example.foo.com:
+#     active: False
+#     port: 8080
+#     server_aliases:
+#       - bar.foo.com
 #
 # Note that the best way to make a VH is not the pillar, but
 # loading the macro as we do here and use virtualhost()) call
 # in a state.
 # Then use the pillar to alter your default parameters given to this call
-#
+-#}
 
-
-{% from 'makina-states/services/http/nginx_macros.jinja' import virtualhost with context %}
-{% if 'register-sites' in nginxData %}
-{%   for site,siteDef in nginxData['register-sites'].iteritems() %}
-{%     do siteDef.update({'site': site}) %}
-{%     do siteDef.update({'nginxData': nginxData}) %}
-{{     virtualhost(**siteDef) }}
-{%   endfor %}
-{% endif %}
+{% from 'makina-states/services/http/nginx_macros.jinja' import virtualhost with context -%}
+{% if 'register-sites' in nginxData -%}
+{%   for site,siteDef in nginxData['register-sites'].iteritems() -%}
+{%     do siteDef.update({'site': site}) -%}
+{%     do siteDef.update({'nginxData': nginxData}) -%}
+{{     virtualhost(**siteDef) -}}
+{%   endfor -%}
+{% endif -%}

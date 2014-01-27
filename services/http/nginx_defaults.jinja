@@ -1,29 +1,33 @@
-{% import "makina-states/_macros/services.jinja" as services with context %}
-{% set localsettings = services.localsettings %}
-{% set locs = localsettings.locations %}
-{% set nginxStepOne = salt['grains.filter_by']({
-    'dev': {
-    },
-    'prod': {
-    }
-  },
-  grain='default_env',
-  default= 'dev'
-) %}
+{%- import "makina-states/_macros/services.jinja" as services with context %}
+{%- set localsettings = services.localsettings %}
+{%- set locs = localsettings.locations %}
 
-{% set nginxStepTwo = salt['grains.filter_by']({
+{%- set nginxData = salt['mc_utils.defaults'](
+  'makina-states.services.http.nginx',
+  salt['grains.filter_by']({
     'Debian': {
-        'package'  : 'nginx',
-	'service'  : 'nginx',
-        'basedir'  : locs.conf_dir+'/nginx',
-        'vhostdir' : locs.conf_dir+'/nginx/sites-available',
-        'confdir'  : locs.conf_dir+'/nginx/conf.d',
-        'logdir'   : locs.var_log_dir+'/nginx',
-        'wwwdir'   : locs.srv_dir
+      'package'  : 'nginx',
+      'service'  : 'nginx',
+      'basedir'  : locs.conf_dir + '/nginx',
+      'vhostdir' : locs.conf_dir + '/nginx/sites-available',
+      'confdir'  : locs.conf_dir + '/nginx/conf.d',
+      'logdir'   : locs.var_log_dir + '/nginx',
+      'wwwdir'   : locs.srv_dir + '/www'
+      },
     },
-  },
-  grain='os_family',
-  merge=nginxStepOne
-) %}
-
-{% set nginxData=salt['mc_utils.dictupdate'](nginxStepTwo , salt['pillar.get']('nginx-default-settings',{})) %}
+    merge=salt['grains.filter_by']({
+        'dev': {
+        },
+        'prod': {
+        },
+      },
+      merge={
+        'register-sites' : {}
+      },
+      grain='default_env',
+      default='dev'
+    ),
+    grain='os_family',
+    default='Debian',
+    )
+  ) %}

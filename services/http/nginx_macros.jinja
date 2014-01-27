@@ -1,3 +1,6 @@
+{% import "makina-states/_macros/services.jinja" as services with context %}
+{% set localsettings = services.localsettings %}
+
 {% macro virtualhost(
   nginxData,
   site = 'example.com',
@@ -13,7 +16,7 @@
   ) %}
 
 {% set small_name = small_name or site.replace('.', '_').replace('-', '_') %}
-{% set doc_root = documentRoot or '/srv/projects/' + site  + '/www' %}
+{% set doc_root = documentRoot or localsettings.locations.projects_dir + site  + '/www' %}
 {% set vhost_available_file = nginxData.basedir + "/sites-available/" + site + ".conf" %}
 {% set vhost_enabled_file = nginxData.basedir + "/sites-enabled/" + site + ".conf" %}
 
