@@ -2,6 +2,11 @@
 # This states file aims to configure and manage the base structure for
 # astrailssafe/safe backup system
 # See https://github.com/astrails/safe
+#
+# NOTE:
+#   - This was a try to use this application and is not maintained anymore.
+#   - The only usefulness of this state at the moment is that it is an*
+#     exemple on how to use the rvmapp project macro.
 #}
 {%- import "makina-states/_macros/services.jinja" as services with context %}
 {%- import "makina-states/projects/rvmapp.jinja" as rvmapp with context %}
