@@ -24,11 +24,11 @@
 
 {# Load defaults values ----------------------------------------- #}
 
-{%- from 'makina-states/services/db/mysql_defaults.jinja' import mysqlData with context %}
 {%- import "makina-states/_macros/services.jinja" as services with context %}
 {%- set localsettings = services.localsettings %}
 {%- set nodetypes = services.nodetypes %}
 {%- set locs = localsettings.locations %}
+{%- set mysqlData = services.mysqlSettings %}
 {{- services.register('db.mysql') }}
 
 {# MACRO mysql_base()
@@ -386,7 +386,7 @@ makina-mysql-db-{{ state_uid }}:
     - saltenv:
       - LC_ALL: en_US.utf8
 {%- if user_creation -%}
-{%-   for currenthost in host %}
+{%   for currenthost in host -%}
 {%-     set host_simple=currenthost.replace('.', '_').replace(' ','_').replace('%','_') %}
 makina-mysql-user-{{ state_uid }}-{{ host_simple }}:
   mysql_user.present:
@@ -417,7 +417,7 @@ makina-mysql-user-grants-{{ state_uid }}-{{ host_simple }}:
       - mysql_database: makina-mysql-db-{{ state_uid }}
       - mysql_user: makina-mysql-user-{{ state_uid }}-{{ host_simple }}
 {%-   endfor %}
-{%- endif -%}
+{%- endif %}
 {% endmacro %}
 {%- if not localsettings.myDisableAutoConf %}
 {{ mysql_base(localsettings.myCnf) }}
