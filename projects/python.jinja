@@ -1,0 +1,43 @@
+{#
+# Install a generic Python project.
+#
+# This provides a virtualenv with Python/pip only.
+-#}
+{%- import "makina-states/projects/base.jinja" as base with context %}
+{%- set services = base.services %}
+{%- set saltmac = base.saltmac %}
+{%- set localsettings = base.localsettings %}
+
+{%- macro python_deps(common) %}
+prepreq-{{common.name}}:
+  pkg.installed:
+    - pkgs:
+      - python
+      - python-pip
+{%- endmacro %}
+
+{%- set default_defaults = {
+  'python_version': '2.7'
+}%}
+
+{%- set default_env_defaults = {
+  'dev': {},
+  'prod': {}
+ } %}
+
+{% macro install_generic_python_project_do(common) -%}
+{{ python_deps(common) -}}
+# TODO
+# Pip install -g virtualenv
+# virtualenv create
+# see http://docs.saltstack.com/ref/states/all/salt.states.virtualenv.html
+# ?
+{%- endmacro %}
+
+{% macro install_generic_python_project() -%}
+{% do kwargs.setdefault('default', default_defaults) -%}
+{% do kwargs.setdefault('env_defaults', default_env_defaults) -%}
+{% do kwargs.setdefault('user', 'python') -%}
+{% set common = salt['mc_project.get_common_vars'](services, *varargs, **kwargs) -%}
+{{ base.install_project(common, install_macro=install_generic_python_project_do) -}}
+{%- endmacro %}
