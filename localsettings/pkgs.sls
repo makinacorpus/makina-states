@@ -90,7 +90,7 @@ sys-pkgs:
       - dstat
       {%- endif %}
 
-{% if grains.get('makina-states.nodetype.devhost', False) -%}
+{% if 'devhost' in localsettings.registry['actives'] -%}
 devhost-pkgs:
   pkg.installed:
     - pkgs:
@@ -116,9 +116,10 @@ dev-pkgs:
       {%- endif %}
 
 net-pkgs:
-  pkg:
-    - installed
+  pkg.installed:
     - pkgs:
+      - wget
+      - curl
       - dnsutils
       - ethtool
       - ifenslave-2.6

@@ -279,8 +279,14 @@
 {%- set rvm_user = rvmSettings.user %}
 {%- set rvm_group = rvmSettings.group %}
 
-{#-
-# -----------------------------------------------------
+{#- Node.js #}
+{%- set npmSettings = salt['mc_utils.defaults'](
+   'makina-states.localsettings.npm', {
+    'packages': []
+   }) 
+%}
+
+{#- -----------------------------------------------------
 # SSL settings for reuse in states
 #}
 {%- set SSLSettings = salt['mc_utils.defaults'](
@@ -293,7 +299,7 @@
     'email'   : 'contact@'+grains['fqdn'],
     }) %}
 
-{# -----------------------------------------------------
+{#- -----------------------------------------------------
 # REGISTRY
 # -----------------------------------------------------
 # Idea is to map each state file to configure a service to it's particular
@@ -312,6 +318,7 @@
       'locales'           : {'active': True },
       'localrc'           : {'active': True },
       'network'           : {'active': True },
+      'nodejs'            : {'active': False },
       'pkgmgr'            : {'active': True },
       'python'            : {'active': False },
       'pkgs'              : {'active': True },
