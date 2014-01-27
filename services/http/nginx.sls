@@ -9,13 +9,13 @@
 makina-nginx-pkgs:
   pkg.installed:
     - pkgs:
-        - {{ nginx.package }}
+        - {{ nginxData.package }}
 
 makina-nginx-minimal-default-vhost:
   file.managed:
     - require:
       - pkg: makina-nginx-pkgs
-    - name: {{ nginxData.vhostdir }}/default.conf
+    - name: {{ nginxData.vhostdir }}/default
     - source:
       - salt://makina-states/files/etc/nginx/sites-available/default.conf
     - user: root
@@ -30,7 +30,7 @@ makina-nginx-minimal-default-vhost:
 # Configuration checker, always run before restart of graceful restart
 makina-nginx-conf-syntax-check:
   cmd.script:
-    - source: "file://"+ salmac.msr +"/_scripts/nginxConfCheck.sh"
+    - source: file://{{ saltmac.msr }}/_scripts/nginxConfCheck.sh
     - stateful: True
     - require:
       - pkg: makina-nginx-pkgs
@@ -67,11 +67,12 @@ makina-nginx-reload:
 #     example.com:
 #       active: False
 #       small_name: example
-#       number: 200
 #       documentRoot: /srv/foo/bar/www
 #     example.foo.com:
 #       active: False
-#       number: 202
+#       port: 8080
+#       server_aliases:
+#         - bar.foo.com
 #
 # Note that the best way to make a VH is not the pillar, but
 # loading the macro as we do here and use virtualhost()) call

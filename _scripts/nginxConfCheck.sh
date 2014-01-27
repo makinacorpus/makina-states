@@ -12,7 +12,7 @@ else
   echo '"changed":"true",'
   echo '"comment":"nginx configuration syntax errors detected"'
   OUT=$(/usr/sbin/nginx -t 2>&1)
-  echo ',"command_output":"'${OUT}'"'
+  echo ',"command_output":"'${OUT//\"/\\\"}'"'
   EXIT=1
 fi;
 echo "}"
