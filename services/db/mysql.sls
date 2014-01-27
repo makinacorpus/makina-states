@@ -113,8 +113,8 @@ Now let's do the magic:
 
 {# Now for all non set tuning parameters try to fill the gaps #}
 {# ---- NUMBER OF CONNECTIONS       #}
-{%- if mysqlData.tuning.nb_connections %}
-{%-  set nb_connections = mysqlData.tuning.nb_connections %}
+{%- if mysqlData.nb_connections %}
+{%-  set nb_connections = mysqlData.nb_connections %}
 {%- else %}
 {%-  set nb_connections = 100 %}
 {%- endif %}
@@ -127,14 +127,14 @@ Now let's do the magic:
 
 {# ---- INNODB BUFFER                #}
 {# Values cannot be used in default/context as others as we need to compute from previous values #}
-{%- if mysqlData.tuning.innodb_buffer_pool_size_M %}
-{%-   set innodb_buffer_pool_size_M = mysqlData.tuning.innodb_buffer_pool_size_M %}
+{%- if mysqlData.innodb_buffer_pool_size_M %}
+{%-   set innodb_buffer_pool_size_M = mysqlData.innodb_buffer_pool_size_M %}
 {%- else %}
 {%-   set innodb_buffer_pool_size_M = (available_mem / 2)|int %}
 {%- endif %}
 {# Try to divide this buffer in instances of 1Go #}
-{%- if mysqlData.tuning.innodb_buffer_pool_instances %}
-{%-   set innodb_buffer_pool_instances = mysqlData.tuning.innodb_buffer_pool_instances %}
+{%- if mysqlData.innodb_buffer_pool_instances %}
+{%-   set innodb_buffer_pool_instances = mysqlData.innodb_buffer_pool_instances %}
 {%- else %}
 {%-   set innodb_buffer_pool_instances = (innodb_buffer_pool_size_M / 1024)|round(0)|int %}
 {%-   if innodb_buffer_pool_instances < 1 %}
@@ -142,8 +142,8 @@ Now let's do the magic:
 {%-   endif %}
 {%- endif %}
 {# Try to set this to 25% of innodb_buffer_pool_size #}
-{%- if mysqlData.tuning.innodb_log_buffer_size_M %}
-{%-   set innodb_log_buffer_size_M = mysqlData.tuning.innodb_log_buffer_size_M %}
+{%- if mysqlData.innodb_log_buffer_size_M %}
+{%-   set innodb_log_buffer_size_M = mysqlData.innodb_log_buffer_size_M %}
 {%- else %}
 {%-   set innodb_log_buffer_size_M = (innodb_buffer_pool_size_M / 4)|round(0)|int %}
 {%- endif %}
@@ -163,11 +163,11 @@ Now let's do the magic:
 
 {# --------- Settings related to number of tables #}
 {# This is by default 8M, should store all tables and indexes informations #}
-{%- if mysqlData.tuning.number_of_table_indicator < 251 %}
+{%- if mysqlData.number_of_table_indicator < 251 %}
 {%-   set innodb_additional_mem_pool_size_M = 8 %}
-{%- elif mysqlData.tuning.number_of_table_indicator < 501 %}
+{%- elif mysqlData.number_of_table_indicator < 501 %}
 {%-   set innodb_additional_mem_pool_size_M = 16 %}
-{%- elif mysqlData.tuning.number_of_table_indicator < 1001 %}
+{%- elif mysqlData.number_of_table_indicator < 1001 %}
 {%-   set innodb_additional_mem_pool_size_M = 24 %}
 {%- else %}
 {%-   set innodb_additional_mem_pool_size_M = 32 %}
@@ -181,7 +181,7 @@ Now let's do the magic:
   so the increase of file limits must be set in upstart script
   @http://askubuntu.com/questions/288471/mysql-cant-open-files-after-updating-server-errno-24
 #}
-{%- set table_definition_cache = mysqlData.tuning.number_of_table_indicator %}
+{%- set table_definition_cache = mysqlData.number_of_table_indicator %}
 {%- set table_open_cache = nb_connections * 8 %}
 {# this should be table_open_cache * nb_connections #}
 {%- set open_file_limit = nb_connections * table_open_cache %}
@@ -234,26 +234,26 @@ makina-mysql-settings:
         {%- if ('devhost' in nodetypes.registry.actives) %}
         mode: "dev"
         {%- endif %}
-        {%- if mysqlData.tuning.query_cache_size_M %}
-        query_cache_size: {{ mysqlData.tuning.query_cache_size_M }}
+        {%- if mysqlData.query_cache_size_M %}
+        query_cache_size: {{ mysqlData.query_cache_size_M }}
         {%- endif %}
-        {%- if mysqlData.tuning.innodb_flush_method %}
-        innodb_flush_method: {{ mysqlData.tuning.innodb_flush_method }}
+        {%- if mysqlData.innodb_flush_method %}
+        innodb_flush_method: {{ mysqlData.innodb_flush_method }}
         {%- endif %}
-        {%- if mysqlData.tuning.innodb_thread_concurrency %}
-        innodb_thread_concurrency: {{ mysqlData.tuning.innodb_thread_concurrency }}
+        {%- if mysqlData.innodb_thread_concurrency %}
+        innodb_thread_concurrency: {{ mysqlData.innodb_thread_concurrency }}
         {%- endif %}
-        {%- if mysqlData.tuning.innodb_flush_log_at_trx_commit %}
-        innodb_flush_log_at_trx_commit: {{ mysqlData.tuning.innodb_flush_log_at_trx_commit }}
+        {%- if mysqlData.innodb_flush_log_at_trx_commit %}
+        innodb_flush_log_at_trx_commit: {{ mysqlData.innodb_flush_log_at_trx_commit }}
         {%- endif %}
-        {%- if mysqlData.tuning.sync_binlog %}
-        sync_binlog: {{ mysqlData.tuning.sync_binlog }}
+        {%- if mysqlData.sync_binlog %}
+        sync_binlog: {{ mysqlData.sync_binlog }}
         {%- endif %}
-        {%- if mysqlData.tuning.innodb_additional_mem_pool_size_M %}
-        innodb_additional_mem_pool_size: {{ mysqlData.tuning.innodb_additional_mem_pool_size_M }}
+        {%- if mysqlData.innodb_additional_mem_pool_size_M %}
+        innodb_additional_mem_pool_size: {{ mysqlData.innodb_additional_mem_pool_size_M }}
         {%- endif %}
-        {%- if mysqlData.tuning.tmp_table_size_M %}
-        tmp_table_size: {{ mysqlData.tuning.tmp_table_size_M }}
+        {%- if mysqlData.tmp_table_size_M %}
+        tmp_table_size: {{ mysqlData.tmp_table_size_M }}
         {%- endif %}
 
     - require:

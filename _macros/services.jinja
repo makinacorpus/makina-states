@@ -17,6 +17,7 @@
 #}
 {%- set nodetypes = nodetypes %}
 {%- set localsettings = nodetypes.localsettings %}
+{%- set locs = nodetypes.localsettings.locations %}
 {%- set funcs = localsettings.funcs %}
 {%- set ldap = localsettings.ldap %}
 {%- set saltmac = controllers.saltmac %}
@@ -124,10 +125,6 @@
 
 {#- -----------------------------------------------------
 # PostGRESQL:  (services.db.postgresql)
-# default user: makina-states.services.postgresql.user
-#}
-{%- set postgresqlUser = salt['mc_utils.get']('makina-states.services.postgresql.user', 'postgres') %}
-{#-
 # default postgresql/ grains configured databases (see service doc)
 #}
 {%- set pgDbs = {} %}
@@ -137,6 +134,7 @@
 {%-     do pgDbs.update({db: data}) %}
 {%-   endif %}
 {%- endfor %}
+
 {#-
 # default postgresql/ grains configured users (see service doc)
 #}
@@ -148,31 +146,21 @@
 {%- endfor %}
 
 {#-
-# default activated postgresql versions:
+# default activated postgresql versions & settings:
 #}
-{%- set defaultPgVersion = salt['mc_utils.get'](
-   'makina-states.services.postgresql.version',
-   '9.3') %}
-{%- set pgVers = salt['mc_utils.get'](
-   'makina-states.services.postgresql.versions',
-   [defaultPgVersion]) %}
-{%- set postgisVers = salt['mc_utils.get'](
-   'makina-states.services.postgis.versions',
-   {'2.1': [defaultPgVersion, '9.2']}) %}
-{%- set postgisDbName = salt['mc_utils.get'](
-  'makina-states.services.postgis.dbname', 'postgis') %}
-
-{#- -----------------------------------------------------
-# MySQL default custom configuration (services.db.mysql)
-# To override the default makina-states configuration file,
-# Use the 'makina-states.services.mysql.cnf pillar/grain
-#}
-{%- set myCnf = salt['mc_utils.get'](grainsPref+'mysql.cnf', None) %}
-{#- Set this to true to disable mysql automatic configuration
-# (if you want to call the mysql macros yourself
-# (makina-states.services.mysql.noautoconf)
-#}
-{%- set myDisableAutoConf = salt['mc_utils.get'](grainsPref+'mysql.noautoconf', False) %}
+{% set defaultPgVersion = '9.3' %}
+{%- set pgSettings = salt['mc_utils.defaults'](
+  'makina-states.services.postgresql', {
+     'user': 'postgres',
+     'version': defaultPgVersion,
+     'versions': [defaultPgVersion],
+     'posgis': {'2.1': [defaultPgVersion, '9.2']},
+     'postgis_db': 'postgis',
+}) %}
+{%- set pgVers = pgSettings.versions %}
+{%- set postgisVers = pgSettings.postgis %}
+{%- set postgisDbName = pgSettings.postgis_db %}
+{%- set postgresqlUser = pgSettings.user %}
 
 {#- -----------------------------------------------------
 # shorewall pillar parsing
@@ -217,8 +205,164 @@
 {%-  endif %}
 {%- endfor %}
 
+# MySQL Fine Settings ------------------------------------------------
+# TODO: review this comment: when not in dev you MUST define AT LEAST mysql-default-settings.root_passwd
+# in your PILLAR, else you'll have state failures
+#
+# * conn_[host|user|pass]: Connection settings, user/pass/host used by salt
+#                          to manage users, grants and database creations
+# * character_set: default character set on CREATE DATABASE (use utf8' not 'utf-8')
+# * collate: default collate on CREATE DATABASE
+# -- my.cnf settings (or conf.d/local.cnf in fact) ----
+# * noDNS: Avoid name resolution on connections checks, must-have.
+#          This is the skip-name-resolv option
+# * memory_usage_percent: the macro will compute magiccaly the settings to fit
+#          this percentage of full memory on the host. So by default it's 50%
+#          of all RAM on a dev envirronment and 85% for a production one where
+#          the MySQl server should be alone on a server. Then all others settings
+#          parameters in the 'tunning' key could be set to False to let the macro
+#          fill the gaps. If you set somtehing other than False for one of theses
+#          settings it will be used instead of the value computed by the macro,
+#          check the macro for details and comments on all theses parameters.
+#          Note the "_M" means Mo, so for 2Go of innodb_buffer_pool_size use
+#          2024, that is 2024Mo.
+#          Tweak the 'number_of_table_indicator' to adjust some settings automatically
+#          from that, for example several Drupal instances using a lot of fields
+#          could manage several hundreds of tables. <=== IMPORTANT
+# Default OS-based paths settings added on mysqlData
+{% set mysqlSettings = salt['mc_utils.defaults'](
+    'makina-states.services.db.mysql',
+    salt['grains.filter_by'](
+        {
+            'Debian': {
+                'packages': {
+                    'main': 'mysql-server',
+                    'dev': 'libmysqlclient-dev',
+                    'python': 'python-mysqldb',
+                    'php': 'php-mysql'
+                },
+                'service': 'mysql',
+                'port': '5432',
+                'user': 'mysql',
+                'group': 'mysql',
+                'root_passwd': '',
+                'sharedir': locs.share_dir + '/mysql',
+                'datadir': locs.var_lib_dir + '/mysql',
+                'tmpdir': locs.tmp_dir,
+                'etcdir': locs.conf_dir + '/mysql/conf.d',
+                'logdir': locs.var_log_dir + '/mysql',
+                'basedir': locs.usr_dir,
+                'sockdir': locs.var_run_dir + '/mysqld'
+            },
+            'RedHat': {},
+        },
+        merge=salt['grains.filter_by'](
+            {
+                'dev': {
+                    'conn_host': 'localhost',
+                    'conn_user': 'root',
+                    'conn_pass': '',
+                    'character_set': 'utf8',
+                    'collate': 'utf8_general_ci',
+                    'noDNS': True,
+                    'isPercona': False,
+                    'isOracle': True,
+                    'isMariaDB': False,
+                    'memory_usage_percent': 15,
+                    'nb_connections': 25,
+                    'innodb_buffer_pool_size_M': False,
+                    'query_cache_size_M': False,
+                    'innodb_buffer_pool_instances': False,
+                    'innodb_log_buffer_size_M': False,
+                    'innodb_flush_method': 'O_DSYNC',
+                    'innodb_thread_concurrency': False,
+                    'sync_binlog': False,
+                    'innodb_flush_log_at_trx_commit': 0,
+                    'innodb_additional_mem_pool_size_M': False,
+                    'tmp_table_size_M': False,
+                    'number_of_table_indicator': 500
+                },
+                'prod': {
+                    'conn_host': 'localhost',
+                    'conn_user': 'root',
+                    'conn_pass': '',
+                    'character_set': 'utf8',
+                    'collate': 'utf8_general_ci',
+                    'noDNS': True,
+                    'isPercona': False,
+                    'isOracle': True,
+                    'isMariaDB': False,
+                    'mysql.cnf': None,
+                    'noautoconf': False,
+                    'memory_usage_percent': 85,
+                    'nb_connections': 250,
+                    'innodb_buffer_pool_size': False,
+                    'query_cache_size_M': False,
+                    'innodb_buffer_pool_instances': False,
+                    'innodb_log_buffer_size_M': False,
+                    'innodb_flush_method': 'O_DIRECT',
+                    'innodb_thread_concurrency': False,
+                    'sync_binlog': False,
+                    'innodb_flush_log_at_trx_commit': 2,
+                    'innodb_additional_mem_pool_size_M': False,
+                    'tmp_table_size_M': tmp_table_size,
+                    'number_of_table_indicator': 1000
+                },
+            },
+            grain='default_env',
+            default='dev'
+        ),
+        grain='os_family'
+    )
+) %}
+
+{#- -----------------------------------------------------
+# MySQL default custom configuration (services.db.mysql)
+# To override the default makina-states configuration file,
+# Use the 'makina-states.services.mysql.cnf pillar/grain
+#}
+{%- set myCnf = mysqlSettings.myCnf %}
+{#- Set this to true to disable mysql automatic configuration
+# (if you want to call the mysql macros yourself
+# (makina-states.services.mysql.noautoconf)
+#}
+{%- set myDisableAutoConf = mysqlSettings.noautoconf %}
+
 {#-
-# SSH/SSHD Settings
+# DB_SMART_BACKUP
+#}
+{% set dbsmartbackupSettings = salt['mc_utils.defaults'](
+    'makina-states.services.backup.db_smart_backup', {
+      'cron_minute': '1',
+      'backup_path_prefix': locs.srv_dir+'/backups',
+      'cron_hour': '1',
+      'dbexclude': '',
+      'dbnames': 'all',
+      'disable_mail': '',
+      'global_backup': '1',
+      'group': 'root',
+      'keep_days': '14',
+      'keep_lasts': '24',
+      'keep_logs': '60',
+      'keep_monthes': '12',
+      'keep_weeks': '8',
+      'mail': 'root@localhost',
+      'mysqldump_autocommit': '1',
+      'mysqldump_completeinserts': '1',
+      'mysqldump_debug': '',
+      'mysqldump_locktables': '',
+      'mysqldump_noroutines': '',
+      'mysqldump_no_single_transaction': '',
+      'mysql_password': mysqlSettings['root_passwd'],
+      'mysql_sock_paths': mysqlSettings['sockdir']+'/mysqld.sock',
+      'mysql_use_ssl': '',
+      'owner': 'root',
+      'servername': grains['fqdn'],
+     }
+) %}
+
+{#-
+# SSHD Settings
 #}
 {% set sshServerSettings = salt['mc_utils.defaults'](
     'makina-states.services.ssh.server', {
@@ -230,6 +374,10 @@
       'Banner': '/etc/ssh/banner',
       'UsePAM': 'yes',
     }) %}
+
+{#-
+# SSH
+#}
 {% set sshClientSettings =  salt['mc_utils.defaults'](
     'makina-states.services.ssh.client', {
       'StrictHostKeyChecking': 'no',
@@ -242,27 +390,6 @@
       'GSSAPIDelegateCredentials': 'no',
     }) %}
 
-{#-
-# AUTOPOSTGRESQL BACKUPS
-#}
-{%- set autopostgresqlbackupSettings = salt['mc_utils.defaults'](
-    'makina-states.services.backup.autopostgresql', {
-      "PG_BACKUP_DIR" : "/srv/backups/pgsql",
-      "DBNAMES"       : "all",
-      "MAILCONTENT"   : "log",
-      "MAXATTSIZE"    : 4000,
-      "MAILADDR"      : "root@localhost",
-      "DBEXCLUDES"    : "",
-      "MDBNAMES"      : "",
-      "DOWEEKLY"      : "6",
-      "OPT"           : "-Fc",
-    }) %}
-{%- set autopostgresqlbackupGlobalSettings = autopostgresqlbackupSettings.copy() %}
-{%- do autopostgresqlbackupGlobalSettings.update({
-    "OPT"           : "--globals-only",
-    "DBNAMES"       : "postgres template0 template1",
-}) %}
-
 {#- -----------------------------------------------------
 # REGISTRY
 # -----------------------------------------------------
@@ -273,16 +400,16 @@
   kind: {
     'states_pref': statesPref, 'grains_pref': grainsPref,
     'defaults': {
-      'base.ssh': {'active': True},
-      'base.ntp': {'active': ntpEn},
       'backup.bacula-fd': {'active': False},
-      'backup.astrailssafe': {'active': False},
+      'backup.dbsmartbackup': {'active': False},
+      'base.ntp': {'active': ntpEn},
+      'base.ssh': {'active': True},
       'db.mysql': {'active': False},
       'db.postgresql': {'active': False},
-      'ftp.pureftpd': {'active': False},
       'firewall.shorewall': {'active': False},
-      'gis.qgis': {'active': False},
+      'ftp.pureftpd': {'active': False},
       'gis.postgis': {'active': False},
+      'gis.qgis': {'active': False},
       'http.apache': {'active': False},
       'java.solr4': {'active': False},
       'java.tomcat7': {'active': False},
