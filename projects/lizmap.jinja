@@ -5,8 +5,33 @@
 {%- set saltmac = base.saltmac %}
 {%- set localsettings = base.localsettings %}
 
+{%- macro lizmap_pkgs(common) %}
+{{common.name}}-lizmap-prereq:
+  pkg.installed:
+    - require:
+      - pkg: prereq-qgis
+    - pkgs:
+      - apache2
+      - php5
+      - curl
+      - php5-curl
+      - php5-sqlite
+      - php5-gd
+
+{% endmacro %}
+{%- macro lizmap_app(common) %}
+{{common.name}}-lizmapwebclient:
+  mc_git.latest:
+    - name: https://github.com/makinacorpus/lizmap-web-client.git
+    - target: {{common.project_root}}/webapp
+    - user: {{common.user}}
+    - require:
+      - pkg: {{common.name}}lizmap-prereq
+      - mc_git: {{common.name}}-checkout-code
+{% endmacro %}
+
 #
-# Base system prerequisite for Plone
+# Base system prerequisite
 #
 {%- macro lizmap_db(common) %}
 {{- pgsql.postgresql_db(common.data.db,name, template='postgis') }}
@@ -46,6 +71,7 @@
   'cron_hour': 2,
   'cron_minute': 5,
   'has_db': True,
+  'has_app': True,
   'db': {'name': 'lizmap',
          'user': 'lizmap',
          'password': 'lizmap',},
@@ -56,23 +82,26 @@
   'prod': {}
  } %}
 
-
 {#
 # Makina project per project macro couple (install_lizmap/install_project)
 #}
 {%- macro install_lizmap_project_do(common) %}
 # install postgresql only if we have the db role enabled
+{%-   if common.data.has_app %}
+{{-     lizmap_pkgs(common)}}
+{{-     lizmap_app(common)}}
+{%-   endif %}
 {%-   if common.data.has_db %}
 {{-     lizmap_db(common)}}
 {%-   endif %}
 {%- endmacro %}
 
 {# Look available arguments in _modules/mc_project.py:get_common_vars #}
-{%- macro install_lizmap_project(*varargs, **kwargs) %}
+{%- macro install_lizmap_project() %}
 {%-  do kwargs.setdefault('defaults', default_defaults) %}
 {%-  do kwargs.setdefault('env_defaults', default_env_defaults) %}
 {%-  do kwargs.setdefault('user', 'lizmap') %}
-{%-  set common = salt['mc_project.get_common_vars'](services,*varargs, **kwargs) %}
+{%-  set common = salt['mc_project.get_common_vars'](services, *varargs, **kwargs) %}
 {%-  if common.data.has_db %}
 {%-    do common.sls_includes.extend(['makina-states.services.gis.qgis',])%}
 {%-  endif %}

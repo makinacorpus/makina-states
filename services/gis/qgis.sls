@@ -56,17 +56,4 @@ prereq-qgis:
       - wv
       - zlib1g-dev
       - libapache2-mod-fcgid
-
-lizmap-prereq:
-  pkg.installed:
-    - require:
-      - pkg: prereq-qgis
-    - pkgs:
-      - apache2
-      - php5
-      - curl
-      - php5-curl
-      - php5-sqlite
-      - php5-gd
-
 {% endif %}
