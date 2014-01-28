@@ -52,7 +52,7 @@
 
 {% import "makina-states/services/java/tomcat7-defaults.jinja" as tomcat with context %}
 {% import "makina-states/_macros/services.jinja" as services with context %}
-{{ services.register('java.tomcat7') }}
+{{ salt['mc_macros.register']('services', 'java.tomcat7') }}
 {% set localsettings = services.localsettings %}
 {% set locs = localsettings.locations %}
 {% set conf_dir = tomcat.defaultsData['conf_dir'] %}
@@ -60,7 +60,7 @@
 {% set data = tomcat.defaultsData %}
 
 include:
-  - {{ localsettings.statesPref }}jdk }}
+  - makina-states.localsettings.jdk }}
 
 tomcat-pkgs:
   pkg.installed:

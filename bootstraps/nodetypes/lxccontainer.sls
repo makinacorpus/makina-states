@@ -10,5 +10,5 @@
 {% set nodetypes = bs.nodetypes %}
 
 include:
-  - {{ nodetypes.statesPref }}lxccontainer
+  - makina-states.nodetypes.lxccontainer
 

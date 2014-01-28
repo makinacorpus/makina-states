@@ -4,7 +4,7 @@
 {% set nodetypes = services.nodetypes %}
 {% set locs = localsettings.locations %}
 
-{{ services.register('gis.postgis') }}
+{{ salt['mc_macros.register']('services', 'gis.postgis') }}
 
 include:
   - makina-states.services.db.postgresql

@@ -7,10 +7,10 @@
 #   - fr_FR.utf8
 #}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-{{- localsettings.register('locales') }}
+{{ salt['mc_macros.register']('localsettings', 'locales') }}
 {%- set locs = localsettings.locations %}
 include:
-  - {{ localsettings.statesPref }}shell
+  - makina-states.localsettings.shell
 
 {%- if grains['os_family'] not in ['Debian'] %}FAIL HARD{% endif %}
 {%- if grains['os_family'] in ['Debian'] %}

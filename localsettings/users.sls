@@ -9,7 +9,7 @@
 # Idea is to create any user/group needed for ssh managment
 #}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-{{- localsettings.register('users') }}
+{{ salt['mc_macros.register']('localsettings', 'users') }}
 {%- set locs = localsettings.locations %}
 {%- for id, udata in localsettings.users.items() %}
 {%- set password = udata.get('password', False) %}

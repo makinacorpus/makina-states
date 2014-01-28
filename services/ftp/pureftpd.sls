@@ -4,7 +4,7 @@
 # can modulate your pureftpd installation
 #}
 {%- import "makina-states/_macros/services.jinja" as services with context %}
-{{- services.register('ftp.pureftpd') }}
+{{ salt['mc_macros.register']('services', 'ftp.pureftpd') }}
 {%- set localsettings = services.localsettings %}
 {%- set nodetypes = services.nodetypes %}
 {%- set locs = localsettings.locations %}

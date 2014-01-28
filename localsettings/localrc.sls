@@ -5,7 +5,7 @@
 # Eg launch the firewall only after lxc interfaces are up and so on
 #}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-{{- localsettings.register('localrc') }}
+{{ salt['mc_macros.register']('localsettings', 'localrc') }}
 {%- set locs = localsettings.locations %}
 rc-local:
   file.directory:

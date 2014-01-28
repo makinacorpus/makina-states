@@ -2,7 +2,7 @@
 # extra setup on a docker container
 #}
 {% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
-{{ nodetypes.register('dockercontainer') }}
+{{ salt['mc_macros.register']('nodetypes', 'dockercontainer') }}
 
 include:
-  - {{ nodetypes.statesPref }}lxccontainer
+  - makina-states.nodetypes.lxccontainer

@@ -1,13 +1,6 @@
 {#-
 # Services related exported variables
-#
-# most important are:
-#   - ldap_*
-#   - services: a dict name / state to apply of enabled services
-#   - selection: all avalaible services with their detected activation status
-#      - ssh is enabled by default
-#      - ntp can't run in lxc containers
-#      - ldap has to be toggled on
+# see makina-states.services
 #}
 
 {%- import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
@@ -17,528 +10,67 @@
 #}
 {%- set nodetypes = nodetypes %}
 {%- set localsettings = nodetypes.localsettings %}
-{%- set locs = nodetypes.localsettings.locations %}
 {%- set funcs = localsettings.funcs %}
-{%- set ldap = localsettings.ldap %}
 {%- set saltmac = controllers.saltmac %}
-{%- set kind = funcs.servicesKind %}
-{%- set statesPref = funcs.statesPref + kind + '.' %}
-{%- set grainsPref = funcs.grainsPref + kind + '.' %}
-{%- set bases = ['localsettings'] %}
-{#-
-# SSL Settings
-#}
-{%- set SSLSettings = localsettings.SSLSettings %}
+{%- set locs = nodetypes.localsettings.locations %}
 
-{#- -----------------------------------------------------
-# LDAP integration
-#}
-{%- set ldapVariables = ldap.ldapVariables %}
-{%- set ldapEn = ldap.ldapEn %}
+{#- see _modules/mc_services.py for exposed settings #}
+{%- set settings = salt['mc_services.settings']() %}
+{%- set metadata = salt['mc_services.metadata']() %}
+{%- set registry = salt['mc_services.registry']() %}
 
-{#- -----------------------------------------------------
-# init systems flags
-#}
-{%- set upstart = salt['mc_utils.get']('makina-states.upstart', False) %}
+{# SSL Settings #}
+{%- set SSLSettings  = settings.SSLSettings  %}
 
-{#- -----------------------------------------------------
-# ntp is not applied to LXC containers ! (services.base.ntp)
-# So we will just match when our grain is set and not have a value of lxc
-#}
-{%- set ntpEn = (
-  not (
-    ('dockercontainer' in nodetypes.registry['actives'])
-    or ('lxccontainer' in nodetypes.registry['actives'])
-  )) %}
-{#- -----------------------------------------------------
-# Apache:  (services.http.apache)
-#}
-{% set apacheStepOne = salt['grains.filter_by']({
-    'dev': {
-        'mpm': 'worker',
-        'version': '2.2',
-        'Timeout': 120,
-        'KeepAlive': True,
-        'MaxKeepAliveRequests': 5,
-        'KeepAliveTimeout': 5,
-        'log_level': 'warn',
-        'serveradmin_mail': 'webmaster@localhost',
-        'prefork': {
-            'StartServers': 5,
-            'MinSpareServers': 5,
-            'MaxSpareServers': 5,
-            'MaxClients': 20,
-            'MaxRequestsPerChild': 300
-        },
-        'worker': {
-            'StartServers': 2,
-            'MinSpareThreads': 25,
-            'MaxSpareThreads': 75,
-            'ThreadLimit': 64,
-            'ThreadsPerChild': 25,
-            'MaxRequestsPerChild': 300,
-            'MaxClients': 200
-        },
-        'event': {
-            'AsyncRequestWorkerFactor' : "1.5"
-        },
-        'register-sites' : {}
-    },
-    'prod': {
-        'mpm': 'worker',
-        'version': '2.2',
-        'Timeout': 120,
-        'KeepAlive': True,
-        'MaxKeepAliveRequests': 100,
-        'KeepAliveTimeout': 3,
-        'log_level': 'warn',
-        'serveradmin_mail': 'webmaster@localhost',
-        'prefork': {
-            'StartServers': 25,
-            'MinSpareServers': 25,
-            'MaxSpareServers': 25,
-            'MaxClients': 150,
-            'MaxRequestsPerChild': 3000
-        },
-        'worker': {
-            'StartServers': 5,
-            'MinSpareThreads': 50,
-            'MaxSpareThreads': 100,
-            'ThreadLimit': 100,
-            'ThreadsPerChild': 50,
-            'MaxRequestsPerChild': 3000,
-            'MaxClients': 700
-        },
-        'event': {
-            'AsyncRequestWorkerFactor' : "4"
-        },
-        'register-sites' : {}
-    }
-  },
-  grain='default_env',
-  default= 'dev'
-) %}
-{# Ubuntu 13.10 is now providing 2.4 with event by default #}
-{% if grains['lsb_distrib_id']=="Ubuntu" and grains['lsb_distrib_release']>=13.10 %}
-{%   do apacheStepOne.update({'mpm': 'event'}) %}
-{%   do apacheStepOne.update({'version': '2.4'}) %}
-{% endif %}
-{%- set apacheDefaultSettings = salt['mc_utils.defaults'](
-  'makina-states.services.http.apache', salt['grains.filter_by']({
-    'Debian': {
-        'package'  : 'apache2',
-        'server'   : 'apache2',
-        'service'  : 'apache2',
-        'mod_wsgi' : 'libapache2-mod-wsgi',
-        'basedir'  : localsettings.locations.conf_dir+'/apache2',
-        'vhostdir' : localsettings.locations.conf_dir+'/apache2/sites-available',
-        'confdir'  : localsettings.locations.conf_dir+'/apache2/conf.d',
-        'logdir'   : localsettings.locations.var_log_dir+'/apache2',
-        'wwwdir'   : localsettings.locations.srv_dir
-    },
-    'RedHat': {
-        'package'  : 'httpd',
-        'server'   : 'httpd',
-        'service'  : 'httpd',
-        'mod_wsgi' : 'mod_wsgi',
-        'basedir'  : localsettings.locations.conf_dir+'/httpd',
-        'vhostdir' : localsettings.locations.conf_dir+'/httpd/conf.d',
-        'confdir'  : localsettings.locations.conf_dir+'/httpd/conf.d',
-        'logdir'   : localsettings.locations.var_log_dir+'/httpd',
-        'wwwdir'   : localsettings.locations.var_dir+'/www'
-    },
-  },
-  grain='os_family',
-  default= 'Debian',
-  merge=apacheStepOne
-)) %}
-{#- -----------------------------------------------------
-# Pureftpd:  (services.ftp.pureftpd)
-#}
-{%- set pureftpdDefaultSettings = salt['mc_utils.defaults'](
-  'makina-states.services.ftp.pureftpdefaults', {
-    'Virtualchroot'      : 'false',
-    'InetdMode'          : 'standalone',
-    'UploadUid'          : '',
-    'UploadGid'          : '',
-    'UploadScript'       : '',
-  }) %}
-{%- set pureftpdSettings = salt['mc_utils.defaults'](
-  'makina-states.services.ftp.pureftp', {
-    'AllowAnonymousFXP'  : 'no',
-    'AllowDotFiles'      : '',
-    'AllowUserFXP'       : '',
-    'AltLog'             : 'clf:/var/log/pure-ftpd/transfer.log',
-    'AnonymousBandwidth' : '',
-    'AnonymousCanCreateDirs': 'no',
-    'AnonymousCantUpload': 'yes',
-    'AnonymousOnly'      : '',
-    'AnonymousRatio'     : '',
-    'AntiWarez'          : '',
-    'AutoRename'         : '',
-    'Bind'               : '',
-    'BrokenClientsCompatibility': 'yes',
-    'CallUploadScript'   : '',
-    'ChrootEveryone'     : 'yes',
-    'ClientCharset'      : '',
-    'Daemonize'          : "",
-    'DisplayDotFiles'    : "yes",
-    'DontResolve'        : "yes",
-    'FSCharset'          : 'utf-8',
-    'IPV4Only'           : "yes",
-    'IPV6Only'           : "",
-    'KeepAllFiles'       : "no",
-    'LimitRecursion'     : "5000 500",
-    'LogPID'             : "",
-    'MaxClientsNumber'   : "",
-    'MaxClientsPerIP'    : "",
-    'MaxDiskUsage'       : "90",
-    'MinUID'             : '1000',
-    'NATmode'            : "",
-    'NoAnonymous'        : 'yes',
-    'NoChmod'            : "",
-    'NoRename'           : "",
-    'NoTruncate'         : "",
-    'Quota'              : "",
-    'SyslogFacility'     : "",
-    'TLS'                : "1",
-    'TrustedGID'         : "",
-    'TrustedIP'          : "",
-    'Umask'              : "133 022",
-    'UserBandwidth'      : "",
-    'UserRatio'          : "",
-    'VerboseLog'         : "yes",
+{# LDAP integration #}
+{%- set ldapVariables  = settings.ldapVariables  %}
+{%- set ldapEn  = settings.ldapEn  %}
 
-    'PassiveIP'          : "",
-    'PassivePortRange'   : "",
+{#- init systems flags #}
+{%- set upstart  = settings.upstart  %}
 
-    'PAMAuthentication'  : 'yes',
-    'UnixAuthentication' : 'no',
-    'PureDB'             : '/etc/pure-ftpd/pureftpd.pdb',
-    'MySQLConfigFile'    : "",
-    'ExtAuth'            : "",
-    'LDAPConfigFile'     : "",
-    'PGSQLConfigFile'    : "",
-    }) %}
-{%- for setting in pureftpdSettings %}
-{%-   do pureftpdSettings.update({setting: pureftpdSettings[setting]+'\n'}) %}
-{%- endfor %}
+{#- ntp #}
+{%- set ntpEn  = settings.ntpEn  %}
 
-{#- -----------------------------------------------------
-# PostGRESQL:  (services.db.postgresql)
-# default postgresql/ grains configured databases (see service doc)
-#}
-{%- set pgDbs = {} %}
-{%- for dbk, data in pillar.items() %}
-{%-   if dbk.endswith('-makina-postgresql') %}
-{%-     set db = data.get('name', dbk.split('-makina-postgresql')[0]) %}
-{%-     do pgDbs.update({db: data}) %}
-{%-   endif %}
-{%- endfor %}
+{#- apache #}
+{%- set apacheDefaultSettings  = settings.apacheDefaultSettings  %}
 
-{#-
-# default postgresql/ grains configured users (see service doc)
-#}
-{%- set postgresqlUsers = {} %}
-{%- for userk, data in pillar.items() %}
-{%-   if userk.endswith('-makina-services-postgresql-user') %}
-{%-     do postgresqlUsers.update({user: data}) %}
-{%-   endif %}
-{%- endfor %}
+{#-Pureftpd #}
+{%- set pureftpdDefaultSettings  = settings.pureftpdDefaultSettings  %}
+{%- set pureftpdSettings  = settings.pureftpdSettings  %}
 
-{#-
-# default activated postgresql versions & settings:
-#}
-{% set defaultPgVersion = '9.3' %}
-{%- set pgSettings = salt['mc_utils.defaults'](
-  'makina-states.services.postgresql', {
-     'user': 'postgres',
-     'version': defaultPgVersion,
-     'versions': [defaultPgVersion],
-     'postgis': {'2.1': [defaultPgVersion, '9.2']},
-     'postgis_db': 'postgis',
-}) %}
-{%- set pgVers = pgSettings.versions %}
-{%- set postgisVers = pgSettings.postgis %}
-{%- set postgisDbName = pgSettings.postgis_db %}
-{%- set postgresqlUser = pgSettings.user %}
+{# PostGRESQL #}
+{%- set pgDbs  = settings.pgDbs  %}
+{%- set postgresqlUsers  = settings.postgresqlUsers  %}
+{%- set defaultPgVersion = settings.defaultPgVersion %}
+{%- set pgSettings = settings.pgSettings%}
+{%- set pgVers  = settings.pgVers  %}
+{%- set postgisVers  = settings.postgisVers  %}
+{%- set postgisDbName  = settings.postgisDbName  %}
+{%- set postgresqlUser  = settings.postgresqlUser  %}
 
-{#- -----------------------------------------------------
-# shorewall pillar parsing
-#}
-{%- set shw_enabled = (
-   salt['mc_utils.get'](grainsPref+'shorewall.enabled', False)) %}
-{%- set shwIfformat = 'FORMAT 2' %}
-{%- if grains['os'] not in ['Debian']%}
-{%-  set shwIfformat = '?' %}
-{%- endif %}
-{%- set shwPolicies = [] %}
-{%- set shwZones = {} %}
-{%- set shwInterfaces = {} %}
-{%- set shwParams = {} %}
-{%- set shwMasqs = {} %}
-{%- set shwRules= {} -%}
-{%- set shwDefaultState = 'new' -%}
-{%- set shwData = {
-  'interfaces' : shwInterfaces,
-  'rules'      : shwRules,
-  'params'     : shwParams,
-  'policies'   : shwPolicies,
-  'zones'      : shwZones,
-  'masqs'      : shwMasqs,
-  'ifformat'   : shwIfformat,
-} %}
-{%- for sid, shorewall in pillar.items() -%}
-{%-  if sid.endswith('makina-shorewall') -%}
-{%-    set _shwlocrules = shorewall.get('rules', {}) -%}
-{%-    for i in _shwlocrules-%}
-{%-      set section = i.get('section', shwDefaultState).upper() -%}
-{%-      if section not in shwRules -%}
-{%-        do shwRules.update({section: []}) -%}
-{%-      endif -%}
-{%-      do shwRules[section].append(i) -%}
-{%-    endfor -%}
-{%-    do shwInterfaces.update(shorewall.get('interfaces', {})) %}
-{%-    do shwMasqs.update(shorewall.get('masqs', {})) %}
-{%-    do shwParams.update(shorewall.get('params', {})) %}
-{%-    do shwZones.update(shorewall.get('zones', {})) -%}
-{%-    do shwPolicies.extend(shorewall.get('policies', [])) %}
-{%-  endif %}
-{%- endfor %}
+{# shorewall #}
+{%- set shw_enabled  = settings.shw_enabled  %}
+{%- set shwIfformat  = settings.shwIfformat  %}
+{%- set shwPolicies  = settings.shwPolicies  %}
+{%- set shwZones  = settings.shwZones  %}
+{%- set shwInterfaces  = settings.shwInterfaces  %}
+{%- set shwParams  = settings.shwParams  %}
+{%- set shwMasqs  = settings.shwMasqs  %}
+{%- set shwRules  = settings.shwRules  %}
+{%- set shwDefaultState  = settings.shwDefaultState  %}
+{%- set shwData  = settings.shwData  %}
 
-# MySQL Fine Settings ------------------------------------------------
-# TODO: review this comment: when not in dev you MUST define AT LEAST mysql-default-settings.root_passwd
-# in your PILLAR, else you'll have state failures
-#
-# * conn_[host|user|pass]: Connection settings, user/pass/host used by salt
-#                          to manage users, grants and database creations
-# * character_set: default character set on CREATE DATABASE (use utf8' not 'utf-8')
-# * collate: default collate on CREATE DATABASE
-# -- my.cnf settings (or conf.d/local.cnf in fact) ----
-# * noDNS: Avoid name resolution on connections checks, must-have.
-#          This is the skip-name-resolv option
-# * memory_usage_percent: the macro will compute magiccaly the settings to fit
-#          this percentage of full memory on the host. So by default it's 50%
-#          of all RAM on a dev envirronment and 85% for a production one where
-#          the MySQl server should be alone on a server. Then all others settings
-#          parameters in the 'tunning' key could be set to False to let the macro
-#          fill the gaps. If you set somtehing other than False for one of theses
-#          settings it will be used instead of the value computed by the macro,
-#          check the macro for details and comments on all theses parameters.
-#          Note the "_M" means Mo, so for 2Go of innodb_buffer_pool_size use
-#          2024, that is 2024Mo.
-#          Tweak the 'number_of_table_indicator' to adjust some settings automatically
-#          from that, for example several Drupal instances using a lot of fields
-#          could manage several hundreds of tables. <=== IMPORTANT
-# Default OS-based paths settings added on mysqlData
-{% set mysqlSettings = salt['mc_utils.defaults'](
-    'makina-states.services.db.mysql',
-    salt['grains.filter_by'](
-        {
-            'Debian': {
-                'packages': {
-                    'main': 'mysql-server',
-                    'dev': 'libmysqlclient-dev',
-                    'python': 'python-mysqldb',
-                    'php': 'php-mysql'
-                },
-                'service': 'mysql',
-                'port': '5432',
-                'user': 'mysql',
-                'group': 'mysql',
-                'root_passwd': '',
-                'sharedir': locs.share_dir + '/mysql',
-                'datadir': locs.var_lib_dir + '/mysql',
-                'tmpdir': locs.tmp_dir,
-                'etcdir': locs.conf_dir + '/mysql/conf.d',
-                'logdir': locs.var_log_dir + '/mysql',
-                'basedir': locs.usr_dir,
-                'sockdir': locs.var_run_dir + '/mysqld'
-            },
-            'RedHat': {},
-        },
-        merge=salt['grains.filter_by'](
-            {
-                'dev': {
-                    'conn_host': 'localhost',
-                    'conn_user': 'root',
-                    'conn_pass': '',
-                    'character_set': 'utf8',
-                    'collate': 'utf8_general_ci',
-                    'noDNS': True,
-                    'isPercona': False,
-                    'isOracle': True,
-                    'isMariaDB': False,
-                    'memory_usage_percent': 15,
-                    'nb_connections': 25,
-                    'innodb_buffer_pool_size_M': False,
-                    'query_cache_size_M': False,
-                    'innodb_buffer_pool_instances': False,
-                    'innodb_log_buffer_size_M': False,
-                    'innodb_flush_method': 'O_DSYNC',
-                    'innodb_thread_concurrency': False,
-                    'sync_binlog': False,
-                    'innodb_flush_log_at_trx_commit': 0,
-                    'innodb_additional_mem_pool_size_M': False,
-                    'tmp_table_size_M': False,
-                    'number_of_table_indicator': 500
-                },
-                'prod': {
-                    'conn_host': 'localhost',
-                    'conn_user': 'root',
-                    'conn_pass': '',
-                    'character_set': 'utf8',
-                    'collate': 'utf8_general_ci',
-                    'noDNS': True,
-                    'isPercona': False,
-                    'isOracle': True,
-                    'isMariaDB': False,
-                    'mysql.cnf': None,
-                    'noautoconf': False,
-                    'memory_usage_percent': 85,
-                    'nb_connections': 250,
-                    'innodb_buffer_pool_size': False,
-                    'query_cache_size_M': False,
-                    'innodb_buffer_pool_instances': False,
-                    'innodb_log_buffer_size_M': False,
-                    'innodb_flush_method': 'O_DIRECT',
-                    'innodb_thread_concurrency': False,
-                    'sync_binlog': False,
-                    'innodb_flush_log_at_trx_commit': 2,
-                    'innodb_additional_mem_pool_size_M': False,
-                    'tmp_table_size_M': tmp_table_size,
-                    'number_of_table_indicator': 1000
-                },
-            },
-            grain='default_env',
-            default='dev'
-        ),
-        grain='os_family'
-    )
-) %}
+{#- MySQL Fine Settings #}
+{%- set mysqlSettings  = settings.mysqlSettings  %}
+{%- set myDisableAutoConf  = settings.myDisableAutoConf  %}
 
-{#- -----------------------------------------------------
-# MySQL default custom configuration (services.db.mysql)
-# To override the default makina-states configuration file,
-# Use the 'makina-states.services.mysql.cnf pillar/grain
-#}
-{%- set myCnf = mysqlSettings.myCnf %}
-{#- Set this to true to disable mysql automatic configuration
-# (if you want to call the mysql macros yourself
-# (makina-states.services.mysql.noautoconf)
-#}
-{%- set myDisableAutoConf = mysqlSettings.noautoconf %}
+{#- DB_SMART_BACKUP #}
+{%- set dbsmartbackupSettings  = settings.dbsmartbackupSettings  %}
 
-{#-
-# DB_SMART_BACKUP
-#}
-{% set dbsmartbackupSettings = salt['mc_utils.defaults'](
-    'makina-states.services.backup.db_smart_backup', {
-      'cron_minute': '1',
-      'backup_path_prefix': locs.srv_dir+'/backups',
-      'cron_hour': '1',
-      'dbexclude': '',
-      'dbnames': 'all',
-      'disable_mail': '',
-      'global_backup': '1',
-      'group': 'root',
-      'keep_days': '14',
-      'keep_lasts': '24',
-      'keep_logs': '60',
-      'keep_monthes': '12',
-      'keep_weeks': '8',
-      'mail': 'root@localhost',
-      'mysqldump_autocommit': '1',
-      'mysqldump_completeinserts': '1',
-      'mysqldump_debug': '',
-      'mysqldump_locktables': '',
-      'mysqldump_noroutines': '',
-      'mysqldump_no_single_transaction': '',
-      'mysql_password': mysqlSettings['root_passwd'],
-      'mysql_sock_paths': mysqlSettings['sockdir']+'/mysqld.sock',
-      'mysql_use_ssl': '',
-      'owner': 'root',
-      'servername': grains['fqdn'],
-     }
-) %}
+{#- SSHD Settings #}
+{%- set sshServerSettings  = settings.sshServerSettings  %}
 
-{#-
-# SSHD Settings
-#}
-{% set sshServerSettings = salt['mc_utils.defaults'](
-    'makina-states.services.ssh.server', {
-      'AuthorizedKeysFile': '.ssh/authorized_keys .ssh/authorized_keys2',
-      'ChallengeResponseAuthentication': 'no',
-      'X11Forwarding': 'yes',
-      'PrintMotd': 'no',
-      'UsePrivilegeSeparation': 'sandbox',
-      'Banner': '/etc/ssh/banner',
-      'UsePAM': 'yes',
-    }) %}
-
-{#-
-# SSH
-#}
-{% set sshClientSettings =  salt['mc_utils.defaults'](
-    'makina-states.services.ssh.client', {
-      'StrictHostKeyChecking': 'no',
-      'UserKnownHostsFile': '/dev/null',
-      'AddressFamily': 'any',
-      'ConnectTimeout': 0,
-      'SendEnv': "LANG: LC_*",
-      'HashKnownHosts': 'yes',
-      'GSSAPIAuthentication': 'yes',
-      'GSSAPIDelegateCredentials': 'no',
-    }) %}
-
-{#- -----------------------------------------------------
-# REGISTRY
-# -----------------------------------------------------
-# Idea is to map each state file to configure a service to it's particular
-# configuration grain switch (or pillar)
-#}
-{%- set registryConfiguration = {
-  kind: {
-    'states_pref': statesPref, 'grains_pref': grainsPref,
-    'defaults': {
-      'backup.bacula-fd': {'active': False},
-      'backup.dbsmartbackup': {'active': False},
-      'base.ntp': {'active': ntpEn},
-      'base.ssh': {'active': True},
-      'db.mysql': {'active': False},
-      'db.postgresql': {'active': False},
-      'firewall.shorewall': {'active': False},
-      'ftp.pureftpd': {'active': False},
-      'gis.postgis': {'active': False},
-      'gis.qgis': {'active': False},
-      'http.apache': {'active': False},
-      'java.solr4': {'active': False},
-      'java.tomcat7': {'active': False},
-      'mail.dovecot': {'active': False},
-      'mail.postfix': {'active': False},
-      'php.common': {'active': False},
-      'php.modphp': {'active': False},
-      'php.phpfpm': {'active': False},
-      'php.phpfpm_with_apache': {'active': False},
-      'virt.docker': {'active': False},
-      'virt.docker-shorewall': {'active': False},
-      'virt.lxc': {'active': False},
-      'virt.lxc-shorewall': {'active': False},
-    }
-  }
-} %}
-{%- set registry = funcs.getRegistries(registryConfiguration)[kind] %}
-
-{# define shortcuts, to use autoinclude directly from this import #}
-{% macro autoinclude(name) %}
-{{funcs.autoinclude(registry, bases=bases) }}
-{% endmacro %}
-
-{% macro register(name, data=None) %}
-{{ funcs.register(statesPref, grainsPref, name, data=None) }}
-{% endmacro %}
-
-{% macro unregister(name, data=None) %}
-{{ funcs.register(statesPref, grainsPref, name, data=None) }}
-{% endmacro %}
+{#- SSH #}
+{%- set sshClientSettings  = settings.sshClientSettings  %}
 # vim:set nofoldenable:

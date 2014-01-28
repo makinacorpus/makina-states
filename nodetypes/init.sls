@@ -16,4 +16,4 @@
 #  makina-states.nodetypes.vagrantvm: False
 #}
 {% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
-{{ nodetypes.autoinclude() }}
+{{ salt['mc_macros.autoinclude'](nodetypes.registry) }}

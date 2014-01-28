@@ -6,7 +6,7 @@
 # to construct the base shell environment
 #}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-{{- localsettings.register('shell') }}
+{{ salt['mc_macros.register']('localsettings', 'shell') }}
 {%- set locs = localsettings.locations %}
 etc-profile-d:
   file.directory:

@@ -27,7 +27,7 @@
 {%- set localsettings = controllers.localsettings %}
 {%- set saltmac = controllers.saltmac %}
 {%- set name = saltmac.msaltname %}
-{{ controllers.register(name) }}
+{{ salt['mc_macros.register']('controllers', name) }}
 include:
-  - {{ controllers.funcs.statesPref }}localsettings
+  - makina-states.localsettings
 {{ saltmac.install_makina_states(name) }}

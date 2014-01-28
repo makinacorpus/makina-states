@@ -67,10 +67,15 @@
 #
 #}
 {% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
+
 {%- set nodetypes = nodetypes %}
 {%- set localsettings = nodetypes.localsettings %}
 {%- set locs = localsettings.locations %}
+
 {%- set resolver = salt['mc_utils.format_resolve'] %}
+
+{%- set settings = salt['mc_salt.settings']() %}
+
 {%- set group = localsettings.group %}
 {%- set groupId = localsettings.groupId %}
 
@@ -80,260 +85,26 @@
 # Add also here the formumlas to checkout
 # and if neccesary the symlink to wire on the salt root tree
 #}
-{%- set confRepos = {
-  'salt-git': {
-    'name': 'http://github.com/makinacorpus/salt.git',
-    'rev': 'develop',
-    'target': '{salt_root}/makina-states/src/salt'},
-  'SaltTesting-git': {
-    'name': 'http://github.com/saltstack/salt-testing.git',
-    'rev': 'develop',
-    'target': '{salt_root}/makina-states/src/SaltTesting'},
-  'm2crypto': {
-    'name': 'https://github.com/makinacorpus/M2Crypto.git',
-    'target': '{salt_root}/makina-states/src/m2crypto'},
-  'salt-formulae': {
-    'name': 'http://github.com/saltstack-formulas/salt-formula.git',
-    'link': {'target': '{salt_root}/formulas/salt/salt',
-             'name': '{salt_root}/salt'},
-    'target': '{salt_root}/formulas/salt'},
-  'openssh-formulae': {
-    'name': 'http://github.com/saltstack-formulas/openssh-formula.git',
-    'link': {'target': '{salt_root}/formulas/openssh/openssh',
-             'name': '{salt_root}/openssh'},
-    'target': '{salt_root}/formulas/openssh'},
-  'openstack-formulae': {
-    'name': 'https://github.com/kiorky/openstack-salt-states.git',
-    'target': '{salt_root}/openstack'},
-  'makina-states': {
-    'name': 'https://github.com/makinacorpus/makina-states.git',
-    'target': '{salt_root}/makina-states'},
-} %}
-{%- for i, data in confRepos.items() %}
-{%-  for k in ['rev', 'target', 'name'] %}
-{%-    do data.update({
-          'rev': salt['mc_utils.get']('makina-states.salt.'+i+'.rev',
-                                      data.get('rev', False))}) %}
-{%-  endfor %}
-{%- endfor %}
-{%- set saltCommonData = {
-  'confRepos': confRepos,
-  'rotate': localsettings.rotate.days,
-  'yaml_utf8': True,
-  'root_dir': locs.root_dir,
-  'conf_dir': locs.conf_dir,
-  'bin_dir': locs.bin_dir,
-  'bin_dir': locs.bin_dir,
-  'upstart_dir': locs.upstart_dir,
-  'var_prefix':  locs.var_dir,
-  'initd_dir': locs.initd_dir,
-  'pref_name': '',
-  'name'   : '{pref_name}salt',
-  'group': group,
-  'groupId': groupId,
-  'projects_root': '{prefix}/projects',
-  'vagrant_root': '{prefix}/vagrant',
-  'vms_docker_root': localsettings.locations['vms_docker_root'],
-  'docker_root': localsettings.locations['docker_root'],
-  'resetperms': 'file://{msr}/_scripts/reset-perms.sh',
-  'init_d': '{initd_dir}',
-  'prefix': locs['prefix'],
-  'venv': locs['venv'],
-  'salt_root': '{prefix}/{name}',
-  'msr': '{salt_root}/makina-states',
-  'pillar_root': '{prefix}/pillar',
-  'conf_prefix': '{conf_dir}/{name}',
-  'cache_prefix': '{var_prefix}/cache/{name}',
-  'run_prefix': '{var_prefix}/run',
-  'daemon_name': '{name}-{service_name}',
-  'default_include': '{service_name}.d/*.conf',
-  'cachedir': '{cache_prefix}/{daemon_name}',
-  'pki_dir': '{conf_prefix}/pki/{service_name}',
-  'pidfile': '{run_prefix}/{daemon_name}.pid',
-  'sock_dir': '{run_prefix}/{name}/{service_name}',
-  'log_prefix': '{var_prefix}/log/{name}',
-  'log_file': '{log_prefix}/{daemon_name}',
-  'key_logfile': '{log_prefix}/{daemon_name}-key',
-  'log_level': 'warning',
-  'log_level_logfile': 'info',
-  'log_datefmt': "'%H:%M:%S'",
-  'log_datefmt_logfile': "'%Y-%m-%d %H:%M:%S'",
-  'log_fmt_console': "'[%(levelname)-8s] %(message)s'",
-  'log_fmt_logfile': "'%(asctime)s,%(msecs)03.0f [%(name)-17s][%(levelname)-8s] %(message)s'",
-  'verify_env': True,
-  'loop_interval': '60',
-  'user': 'root',
-  'file_roots': {'base': ['{salt_root}']},
-  'pillar_roots': {'base': ['{pillar_root}']},
-  'include': [],
-  'ipv6': False,
-  'color': True,
-  'open_mode': False,
-  'permissive_pki_access': False,
-  'state_output': 'full',
-  'state_verbose': True,
-  'state_top': 'top.sls',
-  'cython_enable': False,
-  'failhard': False,
-  'log_granular_levels': {},
-  'salt_modules': [
-    '_grains',
-    '_macros',
-    '_modules',
-    '_renderers',
-    '_runners',
-    '_returners',
-    '_scripts',
-    '_states',]
-} %}
+{%- set confRepos = settings.confRepos %}
 
-{#- default daemon overrides #}
-{%- set saltMinionData = salt['mc_utils.dictupdate'](saltCommonData.copy(), {
-  'service_name': 'minion',
-  'master': '127.0.0.1',
-  'master_port': '4506',
-  'retry_dns': '30',
-  'id': salt['config.option']('id', None),
-  'append_domain': False,
-  'grains': {},
-  'output': None,
-  'cache_jobs': False,
-  'disable_modules': [],
-  'disable_returners': [],
-  'minion': None,
-  'backup_mode': '',
-  'acceptance_wait_time': '10',
-  'top_file': '""',
-  'acceptance_wait_time_max': '0',
-  'random_reauth_delay': '60',
-  'recon_default': '100',
-  'recon_max': '5000',
-  'recon_randomize': False,
-  'dns_check': True,
-  'ipc_mode': 'ipc',
-  'tcp_pub_port': '4510',
-  'tcp_pull_port': '4511',
-  'module_dirs': ['{salt_root}/_modules', '{salt_root}/makina-states/_modules'],
-  'returner_dirs': ['{salt_root}/_returners',
-                    '{salt_root}/makina-states/_returners'],
-  'grains_dirs': ['{salt_root}/_grains', '{salt_root}/makina-states/_grains'],
-  'states_dirs': ['{salt_root}/_states', '{salt_root}/makina-states/_states'],
-  'render_dirs': ['{salt_root}/_renderers', '{salt_root}/makina-states/_renderers'],
-  'providers': {},
-  'autoload_dynamic_modules': True,
-  'clean_dynamic_modules': True,
-  'environment': None,
-  'startup_states': "''",
-  'sls_list': '[]',
-  '': "''",
-  'file_client': 'remote',
-  'master_finger': "''",
-  'multiprocessing': True,
-  'update_url': False,
-  'update_restart_services': '[]',
-  'tcp_keepalive': True,
-  'tcp_keepalive_idle': '300',
-  'tcp_keepalive_cnt': '-1',
-  'tcp_keepalive_intvl': '-1',
-  'win_repo_cachefile': 'salt://win/repo/winrepo.p',
-}) %}
-
-{#- default master settings #}
-{%- set saltMasterData = salt['mc_utils.dictupdate'](saltCommonData.copy(), {
-  'runner_dirs': '[]',
-  'service_name': 'master',
-  'interface': '127.0.0.1',
-  'publish_port': '4505',
-  'ret_port': '4506',
-  'max_open_files': '100000',
-  'worker_threads': '5',
-  'dev_worker_threads': '2',
-  'keep_jobs': '744',
-  'timeout': '120',
-  'output': None,
-  'job_cache': True,
-  'minion_data_cache': True,
-  'auto_accept': False,
-  'autosign_file': '{conf_prefix}/autosign.conf',
-  'client_acl_blacklist': {},
-  'external_auth': {},
-  'token_expire': '43200',
-  'file_recv': False,
-  'master_tops': {},
-  'external_nodes': None,
-  'renderer': 'yaml_jinja',
-  'hash_type': 'md5',
-  'file_buffer_size': '1048576',
-  'file_ignore_regex': [],
-  'runner_dirs': ['{salt_root}/_runners', '{salt_root}/makina-states/_runners'],
-  'file_ignore_glob': [],
-  'fileserver_backend':  ['roots', 'git'],
-  'gitfs_remotes': '[]',
-  'ext_pillar': {},
-  'pillar_opts': True,
-  'order_masters': True,
-  'syndic_master': None,
-  'syndic_master_port': '4506',
-  'syndic_pidfile':  '{run_prefix}/{name}-syndic.pid',
-  'syndic_log_file': '{log_prefix}/{name}-syndic',
-  'peer': {},
-  'peer_run': {},
-  'nodegroups': {},
-  'range_server': None,
-  'win_repo': '{salt_root}/win/repo',
-  'win_repo_mastercachefile': '{salt_root}/win/repo/winrepo.p',
-  'win_gitrepos': [],
-}) %}
+{%- set saltCommonData = settings.saltCommonData %}
+{%- set saltMinionData = settings.saltMinionData %}
+{%- set saltMasterData = settings.saltMasterData %}
 
 {#- mastersalt daemon overrides #}
-{%- set mastersaltCommonData = salt['mc_utils.dictupdate'](
-  saltCommonData.copy(), {'pref_name': 'master', 'pillar_root': locs.prefix+'/{name}-pillar'}) %}
-{%- set mastersaltMasterData = salt['mc_utils.dictupdate'](
-   saltMasterData.copy(), mastersaltCommonData.copy()) %}
-{%- set mastersaltMinionData = salt['mc_utils.dictupdate'](
-   saltMinionData.copy(), mastersaltCommonData.copy()) %}
-{%- set mastersaltMasterData = salt['mc_utils.dictupdate'](
-  mastersaltMasterData, {
-    'publish_port': '4605',
-    'ret_port': '4606'}) %}
-{%- set mastersaltMinionData = salt['mc_utils.dictupdate'](
-  mastersaltMinionData, {
-    'master': '127.0.0.1',
-    'master_port': '4606',
-    'tcp_pub_port': '4610',
-    'tcp_pull_port': '4611'}) %}
+{%- set mastersaltCommonData = settings.mastersaltCommonData %}
+{%- set mastersaltMasterData = settings.mastersaltMasterData %}
+{%- set mastersaltMinionData = settings.mastersaltMinionData %}
 
 {#- common pillar overrides #}
-{%- set salt_pillar = pillar.get('salt', {}) %}
-{%- set saltCommonPillar = salt_pillar.get('common', {}) %}
-{%- set saltMasterPillar = salt_pillar.get('master', {}) %}
-{%- set saltMinionPillar = salt_pillar.get('minion', {}) %}
-{%- set mastersalt_pillar = pillar.get('mastersalt', {}) %}
-{%- set mastersaltCommonPillar = mastersalt_pillar.get('common', {}) %}
-{%- set mastersaltMasterPillar = mastersalt_pillar.get('master', {}) %}
-{%- set mastersaltMinionPillar = mastersalt_pillar.get('minion', {}) %}
-
-{#- per daemon commpon section overrides #}
-{% set saltMasterData = salt['mc_utils.dictupdate'](
-  saltMasterData,  saltCommonPillar.copy()) %}
-{% set saltMinionData = salt['mc_utils.dictupdate'](
-  saltMinionData, saltCommonPillar.copy()) %}
-{% set mastersaltMasterData = salt['mc_utils.dictupdate'](
-  mastersaltMasterData, mastersaltCommonPillar.copy()) %}
-{% set mastersaltMinionData = salt['mc_utils.dictupdate'](
-  mastersaltMinionData, mastersaltCommonPillar.copy()) %}
-
-{#- per daemon pillar overrides #}
-{% set saltMasterData = salt['mc_utils.dictupdate'](
-  saltMasterData,  saltMasterPillar.copy()) %}
-{% set saltMinionData = salt['mc_utils.dictupdate'](
-  saltMinionData, saltMinionPillar.copy()) %}
-
-{#- per mastersalt daemon pillar overrides #}
-{% set mastersaltMasterData = salt['mc_utils.dictupdate'](
-  mastersaltMasterData, mastersaltMasterPillar.copy()) %}
-{% set mastersaltMinionData = salt['mc_utils.dictupdate'](
-  mastersaltMinionData, mastersaltMinionPillar.copy()) %}
+{%- set mastersaltCommonPillar = settings.mastersaltCommonPillar %}
+{%- set mastersaltMasterPillar = settings.mastersaltMasterPillar %}
+{%- set mastersaltMinionPillar = settings.mastersaltMinionPillar %}
+{%- set mastersalt_pillar      = settings.mastersalt_pillar      %}
+{%- set saltCommonPillar       = settings.saltCommonPillar       %}
+{%- set saltMasterPillar       = settings.saltMasterPillar       %}
+{%- set saltMinionPillar       = settings.saltMinionPillar       %}
+{%- set salt_pillar            = settings.salt_pillar            %}
 
 {#-
 ########################################
@@ -341,57 +112,42 @@
 ########################################
 # SALT VARIABLES
 #}
-{%- set saltCommonData = resolver(saltCommonData) %}
-{%- set saltMasterData = resolver(saltMasterData) %}
-{%- set saltMinionData = resolver(saltMinionData) %}
-{%- set saltname = saltCommonData['name'] %}
-{%- set saltprefix = saltCommonData['prefix']%}
-{%- set prefix = saltprefix %}
-{%- set projectsRoot = saltCommonData['projects_root'] %}
-{%- set vagrantRoot = saltCommonData['vagrant_root'] %}
-{%- set dockerRoot = saltCommonData['docker_root'] %}
-{%- set saltroot = saltCommonData['salt_root'] %}
-{%- set saltRoot = saltroot %}
-{%- set confPrefix = saltCommonData['conf_prefix'] %}
-{%- set cachePrefix = saltCommonData['cache_prefix'] %}
-{%- set runPrefix = saltCommonData['run_prefix'] %}
-{%- set logPrefix = saltCommonData['log_prefix'] %}
-{%- set pillarRoot =  saltCommonData['pillar_root'] %}
-{%- set msr = saltroot + '/makina-states' %}
-{%- set resetperms = 'file://' + msr + '/_scripts/reset-perms.sh' %}
-{%- set saltbinpath = msr + '/bin' %}
+{%- set saltname       = settings.saltname       %}
+{%- set saltprefix     = settings.saltprefix     %}
+{%- set prefix         = settings.prefix         %}
+{%- set projectsRoot   = settings.projectsRoot   %}
+{%- set vagrantRoot    = settings.vagrantRoot    %}
+{%- set dockerRoot     = settings.dockerRoot     %}
+{%- set saltroot       = settings.saltroot       %}
+{%- set saltRoot       = settings.saltRoot       %}
+{%- set confPrefix     = settings.confPrefix     %}
+{%- set cachePrefix    = settings.cachePrefix    %}
+{%- set runPrefix      = settings.runPrefix      %}
+{%- set logPrefix      = settings.logPrefix      %}
+{%- set pillarRoot     = settings.pillarRoot     %}
+{%- set msr            = settings.msr            %}
+{%- set resetperms     = settings.resetperms     %}
+{%- set saltbinpath    = settings.saltbinpath    %}
 
 {#- MASTERSALT VARIABLES #}
-{%- set mastersaltCommonData = resolver(mastersaltCommonData) %}
-{%- set mastersaltMasterData = resolver(mastersaltMasterData) %}
-{%- set mastersaltMinionData = resolver(mastersaltMinionData) %}
-{%- set msaltname = mastersaltCommonData['name'] %}
-{%- set msaltprefix = mastersaltCommonData['prefix']%}
-{%- set mprefix = msaltprefix %}
-{%- set mprojects_root = mastersaltCommonData['projects_root'] %}
-{%- set mvagrant_root = mastersaltCommonData['vagrant_root'] %}
-{%- set msaltroot = mastersaltCommonData['salt_root'] %}
-{%- set msaltRoot = msaltroot %}
-{%- set mconfPrefix = mastersaltCommonData['conf_prefix'] %}
-{%- set mcachePrefix = mastersaltCommonData['cache_prefix'] %}
-{%- set mrunPrefix = mastersaltCommonData['run_prefix'] %}
-{%- set mlogPrefix = mastersaltCommonData['log_prefix'] %}
-{%- set mpillarRoot =  mastersaltCommonData['pillar_root'] %}
-{%- set mmsr = msaltroot + '/makina-states' %}
-{%- set mresetperms = 'file://' + mmsr + '/_scripts/reset-perms.sh' %}
-{%- set msaltbinpath = mmsr + '/bin' %}
+{%- set msaltname      =  settings.msaltname      %}
+{%- set msaltprefix    =  settings.msaltprefix    %}
+{%- set mprefix        =  settings.mprefix        %}
+{%- set mprojects_root =  settings.mprojects_root %}
+{%- set mvagrant_root  =  settings.mvagrant_root  %}
+{%- set msaltroot      =  settings.msaltroot      %}
+{%- set msaltRoot      =  settings.msaltRoot      %}
+{%- set mconfPrefix    =  settings.mconfPrefix    %}
+{%- set mcachePrefix   =  settings.mcachePrefix   %}
+{%- set mrunPrefix     =  settings.mrunPrefix     %}
+{%- set mlogPrefix     =  settings.mlogPrefix     %}
+{%- set mpillarRoot    =  settings.mpillarRoot    %}
+{%- set mmsr           =  settings.mmsr           %}
+{%- set mresetperms    =  settings.mresetperms    %}
+{%- set msaltbinpath   =  settings.msaltbinpath   %}
 
 {#- mappings #}
-{% set data_mappings = {
-  'master': {
-    'salt': saltMasterData,
-    'mastersalt': mastersaltMasterData,
-  },
-  'minion': {
-    'salt': saltMinionData,
-    'mastersalt': mastersaltMinionData,
-  }
-} %}
+{% set data_mappings = settings.data_mappings %}
 
 {#-
 ###############################

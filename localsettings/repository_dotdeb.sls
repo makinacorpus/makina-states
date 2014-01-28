@@ -1,8 +1,8 @@
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-{{- localsettings.register('repository_dotdeb') }}
+{{ salt['mc_macros.register']('localsettings', 'repository_dotdeb') }}
 {%- set locs = localsettings.locations %}
 include:
-  - {{ localsettings.statesPref }}pkgmgr
+  - makina-states.localsettings.pkgmgr
 
 {%- if grains['os_family'] in ['Debian'] %}
 makina-dotdeb-add-key:

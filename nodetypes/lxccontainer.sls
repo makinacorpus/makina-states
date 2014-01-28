@@ -4,10 +4,10 @@
 
 
 {% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
-{{ nodetypes.register('lxccontainer') }}
+{{ salt['mc_macros.register']('nodetypes', 'lxccontainer') }}
 
 include:
-  - {{ nodetypes.statesPref }}vm
+  - makina-states.nodetypes.vm
 
 # be sure to have all grains
 makina-lxc-proxy-dep:

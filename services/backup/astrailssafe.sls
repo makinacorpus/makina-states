@@ -14,7 +14,7 @@
 {%- set localsettings = services.localsettings %}
 {%- set nodetypes = services.nodetypes %}
 {%- set locs = localsettings.locations %}
-{{- services.register('backup.astrailssafe') }}
+{{ salt['mc_macros.register']('services', 'backup.astrailssafe') }}
 {# add to rvm group #}
 astrailssafe-add-db-backup-to-rvm:
   user.present:

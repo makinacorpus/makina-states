@@ -7,12 +7,12 @@
 # the container network
 #}
 {%- import "makina-states/_macros/services.jinja" as services with context %}
-{{- services.register('virt.lxc-shorewall') }}
+{{ salt['mc_macros.register']('services', 'virt.lxc-shorewall') }}
 {%- set localsettings = services.localsettings %}
 {%- set locs = localsettings.locations %}
 include:
-  - {{ services.statesPref }}firewall.shorewall
-  - {{ services.statesPref }}virt.lxc
+  - makina-states.services.firewall.shorewall
+  - makina-states.services.virt.lxc
 
 {% for pillark, lxc_data in pillar.items() -%}
 {% if pillark.endswith('lxc-server-def')  %}

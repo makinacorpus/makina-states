@@ -9,7 +9,7 @@
 #  salt-call grains.setval makina-states.localsettings.python_vers '["2.6"]'
 #}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-{{- localsettings.register('python') }}
+{{ salt['mc_macros.register']('localsettings', 'python') }}
 {%- set locs = localsettings.locations %}
 {%- set pyvers = salt['mc_utils.get'](
    'makina-states.localsettings.python_vers',

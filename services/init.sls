@@ -16,4 +16,4 @@
 #  makina-states.services.mysql:  False
 #}
 {% import "makina-states/_macros/services.jinja" as services with context %}
-{{ services.autoinclude() }}
+{{ salt['mc_macros.autoinclude'](services.registry) }}

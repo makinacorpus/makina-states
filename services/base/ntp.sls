@@ -1,5 +1,5 @@
 {%- import "makina-states/_macros/services.jinja" as services with context %}
-{{- services.register('base.ntp') }}
+{{ salt['mc_macros.register']('services', 'base.ntp') }}
 {%- set localsettings = services.localsettings %}
 {%- set locs = localsettings.locations %}
 

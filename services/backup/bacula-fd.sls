@@ -1,7 +1,7 @@
 {%- import "makina-states/_macros/services.jinja" as services with context %}
 {%- set localsettings = services.localsettings %}
 {%- set locs = localsettings.locations %}
-{{- services.register('backup.bacula-fd') }}
+{{ salt['mc_macros.register']('services', 'backup.bacula-fd') }}
 
 bacula-fd-pkg:
   pkg.installed:

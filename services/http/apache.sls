@@ -22,7 +22,7 @@
 #}
 {% import "makina-states/_macros/services.jinja" as services with context %}
 {% import "makina-states/_macros/salt.jinja" as saltmac with context %}
-{{ services.register('http.apache') }}
+{{ salt['mc_macros.register']('services', 'http.apache') }}
 
 {% set nodetypes = services.nodetypes %}
 {% set localsettings = services.localsettings %}

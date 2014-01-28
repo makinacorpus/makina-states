@@ -14,11 +14,11 @@
 # and it will create an ubuntu templated lxc host
 #}
 {%- import "makina-states/_macros/services.jinja" as services with context %}
-{{- services.register('virt.lxc') }}
+{{ salt['mc_macros.register']('services', 'virt.lxc') }}
 {%- set localsettings = services.localsettings %}
 {%- set locs = localsettings.locations %}
 include:
-  - {{ localsettings.statesPref }}pkgs
+  - makina-states.localsettings.pkgs
 
 lxc-pkgs:
   pkg.installed:

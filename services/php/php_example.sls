@@ -17,8 +17,8 @@
 {% set locs = localsettings.locations %}
 
 include:
-  - {{ service.statesPref }}http.apache
-  - {{ service.statesPref }}php.modphp
+  - makina-states.services.http.apache
+  - makina-states.services.php.modphp
 extend:
   makina-apache-main-conf:
     mc_apache:

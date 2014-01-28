@@ -10,5 +10,5 @@
 {% set nodetypes = bs.nodetypes %}
 
 include:
-  - {{ bs.controllers.statesPref }}mastersalt_minion
+  - makina-states.controllers.mastersalt_minion
 

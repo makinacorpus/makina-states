@@ -1,16 +1,6 @@
 {#-
-#
-# LocalSettings configuration macro
-# see makina-states.localsettings.base
-#
-# Enabled localsettings
-#
-# As always, you can always override them via grain or pillar
-# values well placed
-#
-# Exemple, to override the prefix for /etc, put in pillar:
-#
-#   makina-states.localsettings.conf_dir = /usr/local/etc
+# LocalSettings exporterd variables
+# see makina-states.localsettings
 #}
 
 {%- import "makina-states/_macros/funcs.jinja" as funcs with context %}
@@ -19,331 +9,66 @@
 {%- set funcs = funcs %}
 {%- set ldap = ldap %}
 
-{#-
-# default paths
-# locationsVariables = {
-#     'prefix': '/srv'
-#      ...
-# }
-#
-# include the macro in your states and use:
-#   {{ localsettings.locations.prefix }}
-#}
+{#- see _modules/mc_localsettings.py for exposed settings #}
+{%- set settings = salt['mc_localsettings.settings']() %}
+{%- set metadata = salt['mc_localsettings.metadata']() %}
+{%- set registry = salt['mc_localsettings.registry']() %}
 
-{%- set kind = funcs.localsettingsKind %}
-{%- set statesPref = funcs.statesPref + kind + '.' %}
-{%- set grainsPref = funcs.grainsPref + kind + '.' %}
-{%- set bases = ['localsettings'] %}
+{# collection of filesystem paths #}
+{%- set locations = settings.locations %}
 
-{%- set locations = salt['mc_utils.defaults'](
-  'makina.localsettings.locations', {
-    'root_dir'           : '/',
-    'home_dir'           : '{root_dir}home',
-    'root_home_dir'      : '{root_dir}root',
-    'sysadmins_home_dir' : '{home_dir}',
-    'users_home_dir'     : '{home_dir}/users',
-    'usr_dir'            : '{root_dir}usr',
-    'share_dir'          : '{usr_dir}/share',
-    'bin_dir'            : '{usr_dir}/bin',
-    'sbin_dir'           : '{usr_dir}/sbin',
-    'venv'               : '{root_dir}salt-venv',
-    'srv_dir'            : '{root_dir}srv',
-    'prefix'             : '{srv_dir}',
-    'rvm_prefix'         : '{usr_dir}/local',
-    'rvm_path'           : '{rvm_prefix}/rvm',
-    'rvm'                : '{rvm_path}/bin/rvm',
-    'vms_docker_root'    : '{srv_dir}/docker',
-    'docker_root'        : '',
-    'lxc_root'           : '',
-    'apps_dir'           : '{srv_dir}/apps',
-    'projects_dir'       : '{srv_dir}/projects',
-    'conf_dir'           : '{root_dir}etc',
-    'initd_dir'          : '{conf_dir}/init.d',
-    'upstart_dir'        : '{conf_dir}/init',
-    'tmp_dir'            : '{root_dir}tmp',
-    'var_dir'            : '{root_dir}var',
-    'var_lib_dir'        : '{var_dir}/lib',
-    'var_spool_dir'      : '{var_dir}/spool',
-    'var_run_dir'        : '{var_dir}/run',
-    'var_log_dir'        : '{var_dir}/log',
-    'var_tmp_dir'        : '{var_dir}/tmp',
-    }) %}
+{#- logrotation settings #}
+{%- set rotate = settings.rotate %}
 
-{#-
-# logrotation settings
-# This will generate a rotate_variables in the form
-# rotate_variables = {
-#     'days': 31,
-# }
-#
-# include the macro in your states and use:
-#   {{ localsettings.rotate.days }}
-#}
-{%- set rotate = salt['mc_utils.defaults'](
-    'makina-states.localsettings.rotate', {
-      'days':  '31',
-    }) %}
+{#- SALT based network managment & settings #}
+{%- set networkManaged = settings.networkManaged %}
+{% set networkInterfaces = settings.networkInterfaces %}
 
-{#-
-# Does the network base config file have to be managed via that
-# See makina-states.localsettings.network
-# Compat for the first test!
-#}
-{%- set networkManaged = (
-  salt['mc_utils.get']('makina-states.network_managed', False)
-  or salt['mc_utils.get'](grainsPref+'network.managed', False)) %}
-{% set networkInterfaces = {} -%}
-{#- lxc configuration has the network configuration inlined in the state -#}
-{#- and not in pillar -#}
-{#- it can be also done for other states like this -#}
-{%- for k in pillar -%}
-{%- if k.endswith('makina-network') -%}
-{%- do networkInterfaces.update(pillar[k]) -%}
-{%- endif -%}
-{%- endfor -%}
+{#- LDAP integration #}
+{%- set ldapVariables = settings.ldapVariables %}
+{%- set ldapEn = settings.ldapEn %}
 
-{#-
-# LDAP integration
-# see makina-states.services.base.ldap
-#}
-{%- set ldapVariables = salt['mc_utils.defaults'](
-  'makina-states.localsettings.ldap', {
-    'enabled': False,
-    'ldap_uri': 'ldaps://localhost:636/',
-    'ldap_base': 'dc=company,dc=org',
-    'ldap_passwd': 'ou=People,dc=company,dc=org?sub',
-    'ldap_shadow': 'ou=People,dc=company,dc=org?sub',
-    'ldap_group': 'ou=Group,dc=company,dc=org?sub',
-    'ldap_cacert': ''
-    })  %}
-{%- set ldapEn = ldapVariables.get('enabled', False) %}
+{#- Editor group #}
+{%- set group = settings.group %}
+{%- set groupId = settings.groupId %}
 
-{#-
-# Editor group to have write permission on salt controlled files
-# but also on project related files
-#}
-{%- set group = salt['mc_utils.get'](   grainsPref+'filesystem.group',    'editor') %}
-{%- set groupId = salt['mc_utils.get'](grainsPref+'filesystem.group_id', '65753') %}
+{#- System Users & SSH accces configuration #}
+{%- set defaultSysadmins = settings.defaultSysadmins %}
+{%- set users = settings.users %}
+{%- set user_keys = settings.user_keys %}
+{%- set keysMappings = settings.keysMappings %}
 
-{#-  System Users & SSH accces configuration
-#  ----------------------------------------
-#  For system users, we use special pillar entries suffixed by '-makina-users'
-#  In those entries, we efine a sub mapping with the key 'users' containing
-#  the users infos
-#  See makina-states.localsettings.vim.
-#  See makina-states.localsettings.users.
-#  See makina-states.localsettings.git
-#
-#  SSH
-#  -----
-#  To allow users to connect as root we define in pillar an entry which tie
-#  ssh keys container in the 'keys' mapping to the near by 'users' mapping.
-#  See makina-states.services.base.ssh.
-#
-#  foo-makina-users:
-#    keys:
-#      mpa:
-#        - kiorky.pub
-#    users:
-#      root:
-#        admin: True
-#
-#  bar-makina-users:
-#    toto: {}
-#
-#  ====>
-#
-#  {
-#  'ssh': {'root': {'mpa': ['kiorky.pub']}},
-#  'users': {'root': {'admin': 'True'}, 'toto': {}}
-#  }
-#
-#  - This allows mpa to connect as root which is a super user
-#  - kiorky.pub will be authorized in root's authorized ssh keys
-#  - This will also create root as an admin if not existing
-#  - This will also create a standard user named 'toto'
-#}
-{%- set users = {} %}
-{%- set user_keys = {} %}
-{%- set keysMappings = {'users': users, 'keys': user_keys} %}
-{#-
- # the following part just feed the above users & user_keys variables
- ###}
-{%- for sid, data in pillar.items() %}
-{%-  if sid.endswith('-makina-users') %}
-{%-    set susers = data.get('users', {}) %}
-{%-    set skeys = data.get('keys', {}) %}
-{%-    for uid, udata in susers.items() %}
-{#-      load user keys #}
-{%-      if not uid in user_keys %}
-{%-        do  user_keys.update({uid: {} }) %}
-{%-      endif %}
-{%-      set user_key = user_keys[uid] %}
-{%-      for keyid, keys in skeys.items()  %}
-{%-        if not keyid in user_keys[uid] %}
-{%-          do  user_key.update({keyid: []}) %}
-{%-        endif %}
-{%-        for pubkey in keys %}
-{%-          if not pubkey in  user_key[keyid] %}
-{%-            do user_key[keyid].append(pubkey) %}
-{%-          endif %}
-{%-        endfor %}
-{%-      endfor %}
-{#-      load user infos by either adding it or updating the already connected data #}
-{%-      if uid not in users %}
-{%-        do users.update({uid: udata})%}
-{%-      else %}
-{%-        set u = users[uid] %}
-{%-        for k, value in udata.items() %}
-{%-          do u.update({k: value}) %}
-{%-        endfor %}
-{%-      endif %}
-{%-    endfor%}
-{%-  endif %}
-{%- endfor %}
-{# default  sysadmins #}
-{%- set defaultSysadmins = ['sysadmin'] %}
-{%- if salt['mc_macros.is_item_active']('makina-states.nodetypes.vagrantvm') %}
-{%-  do defaultSysadmins.append('vagrant') %}
-{%- endif %}
-{%- for i in defaultSysadmins + ['root'] %}
-{%-  if not i in users %}
-{%-    do users.update({i: {'admin': True} }) %}
-{%-  else %}
-{%-    do users[i].update({'admin': True}) %}
-{%-  endif %}
-{%- endfor %}
-{#- default  home #}
-{%- for i in users.keys() %}
-{%-   set data= users[i].copy() %}
-{%-   if i in defaultSysadmins %}
-{%-   set home = data.get('home', locations.sysadmins_home_dir+"/"+i) %}
-{%-   elif i  == 'root' %}
-{%-   set home = locations.root_home_dir %}
-{%-   else %}
-{%-   set home = data.get('home', locations.users_home_dir+"/"+i) %}
-{%-   endif %}
-{%-   do users[i].update({'home': home}) %}
-{%- endfor %}
 
-{#
-# hosts managment via pillar
-#}
-{%- set hosts_list = [] %}
-{%- set makinahosts=[] %}
-{%- for k, data in pillar.items() %}
-{%-   if k.endswith('makina-hosts') %}
-{%-     do makinahosts.extend(data) %}
-{%-   endif %}
-{%- endfor %}
-# -loop to create a dynamic list of hosts based on pillar content
-{%- for host in makinahosts %}
-{%-  set ip = host['ip'] %}
-{%-  for dnsname in host['hosts'].split()  %}
-{%-    do hosts_list.append(ip+ ' ' + dnsname) %}
-{%-  endfor %}
-{%- endfor %}
+{# hosts managment via pillar #}
+{%- set hosts_list = settings.hosts_list %}
+{%- set makinahosts = settings.makinahosts %}
 
 {#- package manager settings #}
-{%- set debian_mirror = salt['mc_utils.get']('makina-states.apt.debian.mirror',
-                                          'http://ftp.de.debian.org/debian') %}
+{%- set debian_mirror = settings.debian_mirror %}
+{%- set ubuntu_mirror = settings.ubuntu_mirror %}
+{%- set keyserver     = settings.keyserver     %}
+{%- set dist          = settings.dist          %}
+{%- set ubuntu_lts    = settings.ubuntu_lts    %}
+{%- set ubuntu_last   = settings.ubuntu_last   %}
+{%- set udist         = settings.udist         %}
+{%- set debian_stable = settings.debian_stable %}
+{%- set ddist         = settings.ddist         %}
+{%- set dcomps        = settings.dcomps        %}
+{%- set ucomps        = settings.ucomps        %}
 
-{%- set ubuntu_mirror = salt['mc_utils.get']('makina-states.apt.ubuntu.mirror',
-                                          'http://ftp.free.fr/mirrors/ftp.ubuntu.com/ubuntu') %}
-
-{%- set keyserver = 'pgp.mit.edu' %}
-{%- set dist = salt['mc_utils.get']('lsb_distrib_codename', '') %}
-{%- set ubuntu_lts = 'precise' %}
-{%- set ubuntu_last = 'saucy' %}
-{%- set udist = salt['mc_utils.get']('lsb_distrib_codename', ubuntu_lts) %}
-{%- set debian_stable = 'wheezy' %}
-{%- set ddist = salt['mc_utils.get']('lsb_distrib_codename', debian_stable) %}
-
-{%- set dcomps = salt['mc_utils.get']('makina-states.apt.debian.comps',
-                                   'main contrib non-free') %}
-{%- set ucomps = salt['mc_utils.get']('makina-states.apt.ubuntu.comps',
-                                   'main restricted universe multiverse') %}
 {#- JDK default version #}
-{%- set jdkDefaultVer = '7' %}
+{%- set jdkDefaultVer = settings.jdkDefaultVer %}
 
 {#- RVM #}
-{%- set rvmSettings = salt['mc_utils.defaults'](
-      'makina-states.localsettings.rvm', {
-      'url': 'https://raw.github.com/wayneeseguin/rvm/master/binscripts/rvm-installer',
-      'rubies': ['1.9.3'],
-      'user': 'rvm',
-      'group': 'rvm'
-      }) %}
-{%- set rvm_url = rvmSettings.url %}
-{%- set rubies = rvmSettings.rubies %}
-{%- set rvm_user = rvmSettings.user %}
-{%- set rvm_group = rvmSettings.group %}
+{%- set rvmSettings = settings.rvmSettings %}
+{%- set rvm_url   = settings.rvm_url   %}
+{%- set rubies    = settings.rubies    %}
+{%- set rvm_user  = settings.rvm_user  %}
+{%- set rvm_group = settings.rvm_group %}
 
 {#- Node.js #}
-{%- set npmSettings = salt['mc_utils.defaults'](
-   'makina-states.localsettings.npm', {
-    'packages': []
-   }) 
-%}
+{%- set npmSettings = settings.npmSettings %}
 
-{#- -----------------------------------------------------
-# SSL settings for reuse in states
-#}
-{%- set SSLSettings = salt['mc_utils.defaults'](
-  'makina-states.localsettings.ssl', {
-    'country' : grains['defaultlanguage'][:2].upper(),
-    'st'      : 'Pays de Loire',
-    'l'       : 'NANTES',
-    'o'       : 'NANTES',
-    'cn'      : grains['fqdn'],
-    'email'   : 'contact@'+grains['fqdn'],
-    }) %}
-
-{#- -----------------------------------------------------
-# REGISTRY
-# -----------------------------------------------------
-# Idea is to map each state file to configure a service to it's particular
-# configuration grain switch (or pillar)
-# default toggles for localsettings activation
-#}
-{%- set registryConfiguration = {
-  kind: {
-    'states_pref': statesPref, 'grains_pref': grainsPref,
-    'defaults': {
-      'nscd'              : {'active': ldapEn},
-      'ldap'              : {'active': ldapEn},
-      'git'               : {'active': True },
-      'hosts'             : {'active': True },
-      'jdk'               : {'active': False},
-      'locales'           : {'active': True },
-      'localrc'           : {'active': True },
-      'network'           : {'active': True },
-      'nodejs'            : {'active': False },
-      'pkgmgr'            : {'active': True },
-      'python'            : {'active': False },
-      'pkgs'              : {'active': True },
-      'repository_dotdeb' : {'active': False},
-      'shell'             : {'active': True },
-      'sudo'              : {'active': True },
-      'users'             : {'active': True },
-      'vim'               : {'active': True },
-      'rvm'               : {'active': False },
-    }
-  }
-} %}
-{%- set registry = funcs.getRegistries(registryConfiguration)[kind] %}
-
-{% macro autoinclude(name) %}
-{{funcs.autoinclude(registry, bases=bases) }}
-{% endmacro %}
-
-{% macro register(name, data=None) %}
-{{ funcs.register(statesPref, grainsPref, name, data=None) }}
-{% endmacro %}
-
-{% macro unregister(name, data=None) %}
-{{ funcs.register(statesPref, grainsPref, name, data=None) }}
-{% endmacro %}
-# -----------------------------------------------------
-
+{# SSL settings for reuse in states #}
+{%- set SSLSettings = settings.SSLSettings %}
 # vim:set nofoldenable:

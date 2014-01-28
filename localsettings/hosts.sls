@@ -34,7 +34,7 @@
 #        - file: makina-etc-host-vm-management
 #}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-{{- localsettings.register('hosts') }}
+{{ salt['mc_macros.register']('localsettings', 'hosts') }}
 {%- set locs = localsettings.locations %}
 {%- set hosts_list = localsettings.hosts_list %}
 {%- if hosts_list %}

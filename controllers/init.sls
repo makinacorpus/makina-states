@@ -17,4 +17,4 @@
 #  makina-states.controllers.mastersalt_master: False
 #}
 {% import "makina-states/_macros/controllers.jinja" as controllers with context %}
-{{ controllers.autoinclude() }}
+{{ salt['mc_macros.autoinclude'](controllers.registry) }}

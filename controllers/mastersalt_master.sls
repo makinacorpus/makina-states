@@ -1,11 +1,11 @@
 {#-
 # Base server which acts also as a mastersalt master
 #}
-{%- import "makina-states/controllers/mastersalt.sls" as salt with context %}
-{%- set controllers = salt.controllers %}
-{%- set saltmac = salt.saltmac %}
-{%- set name = salt.name + '_master' %}
-{{ controllers.register(name) }}
+{%- import "makina-states/controllers/mastersalt.sls" as csalt with context %}
+{%- set controllers = csalt.controllers %}
+{%- set saltmac = csalt.saltmac %}
+{%- set name = csalt.name + '_master' %}
+{{ salt['mc_macros.register']('controllers', name) }}
 include:
-  - {{ controllers.statesPref }}{{salt.name}}
-{{ saltmac.install_master(salt.name) }}
+  - makina-states.controllers.{{csalt.name}}
+{{ saltmac.install_master(csalt.name) }}

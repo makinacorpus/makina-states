@@ -16,19 +16,19 @@
 #
 {% from 'makina-states/services/php/php_defaults.jinja' import phpData with context %}
 {% import "makina-states/_macros/services.jinja" as services with context %}
-{{ services.register('php.phpfpm') }}
+{{ salt['mc_macros.register']('services', 'php.phpfpm') }}
 {% set localsettings = services.localsettings %}
 {% set nodetypes = services.nodetypes %}
 {% set locs = localsettings.locations %}
 
 include:
 # Delay start on vagrant dev host ------------
-  - {{ nodetypes.statesPref }}vagrantvm
+  - makina-states.nodetypes.vagrantvm
 {% endif %}
-  - {{ services.statesPref }}php.common
+  - makina-states.services.php.common
 {% if grains.get('lsb_distrib_id', '') == "Debian" %}
    # Include dotdeb repository for Debian
-  - {{ localsettings.statesPref }}repository_dotdeb
+  - makina-states.localsettings.repository_dotdeb
 {% endif %}
 
 # Load defaults values -----------------------------------------

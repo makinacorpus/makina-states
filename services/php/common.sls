@@ -6,7 +6,7 @@
 {% from 'makina-states/services/php/php_defaults.jinja' import phpData with context %}
 
 {% import "makina-states/_macros/services.jinja" as services with context %}
-{{ services.register('php.common') }}
+{{ salt['mc_macros.register']('services', 'php.common') }}
 {% set localsettings = services.localsettings %}
 {% set nodetypes = services.nodetypes %}
 {% set locs = localsettings.locations %}

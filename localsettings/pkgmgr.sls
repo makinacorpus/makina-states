@@ -24,7 +24,7 @@
 #   use-backports: true|false
 #}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-{{- localsettings.register('pkgmgr') }}
+{{ salt['mc_macros.register']('localsettings', 'pkgmgr') }}
 {%- set locs = localsettings.locations %}
 {%- if grains['os'] in ['Ubuntu', 'Debian'] %}
 {%- set bp = salt['mc_utils.get']('makina-states.apt.use-backports', True) %}

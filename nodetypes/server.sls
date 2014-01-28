@@ -8,6 +8,6 @@
 #     - configure ldap if enabled
 #}
 {% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
-{{ nodetypes.register('server') }}
+{{ salt['mc_macros.register']('nodetypes', 'server') }}
 include:
-  - {{ nodetypes.funcs.statesPref }}localsettings
+  - makina-states.localsettings

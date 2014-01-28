@@ -1,12 +1,13 @@
-{% import "makina-states/_macros/funcs.jinja" as funcs with context %}
-{% import "makina-states/_macros/controllers.jinja" as controllers with context %}
-{% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
-
+{%- import "makina-states/_macros/funcs.jinja" as funcs with context %}
+{%- import "makina-states/_macros/controllers.jinja" as controllers with context %}
+{%- import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
 # expose imported macros to callers
-{% set funcs = funcs %}
-{% set controllers = controllers %}
-{% set nodetypes = nodetypes %}
+{%- set funcs = funcs %}
+{%- set controllers = controllers %}
+{%- set nodetypes = nodetypes %}
 
-{% set kind = 'bootstraps' %}
-{% set statesPref = funcs.statesPref + funcs.controllersKind + '.' %}
-{% set grainsPref = funcs.grainsPref + funcs.controllersKind + '.' %}
+{#- see _modules/mc_bootstraps.py for exposed settings #}
+{%- set metadata = salt['mc_bootstraps.metadata']() %}
+{%- set settings = salt['mc_bootstraps.settings']() %}
+{%- set registry = salt['mc_bootstraps.registry']() %}
+# vim:set nofoldenable:

@@ -1,9 +1,9 @@
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-{{- localsettings.register('git') }}
+{{ salt['mc_macros.register']('localsettings', 'git') }}
 {%- set locs = localsettings.locations %}
 
 include:
-  - {{ localsettings.statesPref }}users
+  - makina-states.localsettings.users
 
 {%- for i, data in localsettings.users.items() %}
 {%- set home = data['home'] %}

@@ -125,10 +125,10 @@
 {%- set localsettings = services.localsettings %}
 {%- set nodetypes = services.nodetypes %}
 {%- set locs = localsettings.locations %}
-{{- services.register('firewall.shorewall') }}
+{{ salt['mc_macros.register']('services', 'firewall.shorewall') }}
 
 include:
-  - {{ localsettings.statesPref }}localrc
+  - makina-states.localsettings.localrc
 
 {%- set shwdata = services.shwData | yaml %}
 shorewall-pkgs:

@@ -19,11 +19,11 @@
 #}
 
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-{{- localsettings.register('ldap') }}
+{{ salt['mc_macros.register']('localsettings', 'ldap') }}
 {%- set locs = localsettings.locations %}
 
 include:
-  - {{ localsettings.statesPref }}nscd
+  - makina-states.localsettings.nscd
 
 ldap-pkgs:
   pkg.installed:

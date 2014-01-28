@@ -1,6 +1,6 @@
 {% import "makina-states/_macros/services.jinja" as services with context -%}
 {% import "makina-states/_macros/salt.jinja" as saltmac with context -%}
-{{ services.register('http.nginx') -}}
+{{ salt['mc_macros.register']('services', 'http.nginx') -}}
 
 # Load defaults values -----------------------------------------
 

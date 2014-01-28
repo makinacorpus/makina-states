@@ -1,61 +1,13 @@
 {#
-# GENERAL API TO USE IN STATES AS AN IMPORT CONTEXT
-# you also need to review those macros:
-#   - makina-states._macros.controllers
-#   - makina-states._macros.nodetypes
-#   - makina-states._macros.localsettings
-#   - makina-states._macros.services
-#   - makina-states._macros.salt
-#   - makina-states._macros.ldap
-
-# Servers nodetypes
+# Servers nodetypes exported variables
 #}
-{% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-
+{%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {# expose imported macros to callers #}
-{% set funcs = localsettings.funcs %}
-{% set localsettings = localsettings %}
+{%- set funcs = localsettings.funcs %}
+{%- set localsettings = localsettings %}
 
-{% set kind = funcs.nodetypesKind %}
-{% set statesPref = funcs.statesPref + funcs.nodetypesKind + '.' %}
-{% set grainsPref = funcs.grainsPref + funcs.nodetypesKind + '.' %}
-{% set bases = ['localsettings', 'services'] %}
-
-{# -----------------------------------------------------
-# REGISTRY
-# -----------------------------------------------------
-# Idea is to map each state file to configure a service to it's particular
-# configuration grain switch (or pillar)
-#}
-{% set registryConfiguration = {
-  kind: {
-    'states_pref': statesPref, 'grains_pref': grainsPref,
-    'defaults': {
-       'server'          : {'active': True},
-       'vm'              : {'active': False},
-       'devhost'         : {'active': False},
-       'vagrantvm'       : {'active': False},
-       'lxccontainer'    : {'active': False},
-       'dockercontainer' : {'active': False},
-      }
-    }
-  }
-%}
-{% set registry = funcs.getRegistries(registryConfiguration)[kind] %}
-
-{# define shortcuts, to use autoinclude directly from this import #}
-{% macro autoinclude(name) %}
-{{funcs.autoinclude(registry, bases=bases) }}
-{% endmacro %}
-
-{% macro register(name, data=None) %}
-{{ funcs.register(statesPref, grainsPref, name, data=None) }}
-{% endmacro %}
-
-{% macro unregister(name, data=None) %}
-{{ funcs.register(statesPref, grainsPref, name, data=None) }}
-{% endmacro %}
-
-{% set isDevhost = 'devhost' in registry['actives'] %}
-
-{# -----------------------------------------------------#}
+{#- see _modules/mc_nodetypes.py for exposed settings #}
+{%- set metadata = salt['mc_nodetypes.metadata']() %}
+{%- set settings = salt['mc_nodetypes.settings']() %}
+{%- set registry = salt['mc_nodetypes.registry']() %}
+{%- set isDevhost = settings.isDevhost %}

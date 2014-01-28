@@ -2,10 +2,10 @@
 # Manage packages to install by default
 #}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-{{- localsettings.register('pkgs') }}
+{{ salt['mc_macros.register']('localsettings', 'pkgs') }}
 {%- set locs = localsettings.locations %}
 include:
-  - {{ localsettings.statesPref }}pkgmgr
+  - makina-states.localsettings.pkgmgr
 
 {%- if grains['os'] in ['Ubuntu', 'Debian'] %}
 before-pkg-install-proxy:

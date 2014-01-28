@@ -75,11 +75,11 @@
 {%- set localsettings = services.localsettings %}
 {%- set nodetypes = services.nodetypes %}
 {%- set locs = localsettings.locations %}
-{{- services.register('db.postgresql') }}
+{{ salt['mc_macros.register']('services', 'db.postgresql') }}
 {%- set default_user = services.postgresqlUser %}
 
 include:
-  - {{services.statesPref}}backup.dbsmartbackup
+  - makina-states.services.backup.dbsmartbackup
 
 {#-
 # Hooks to attach to for orchestration purpose

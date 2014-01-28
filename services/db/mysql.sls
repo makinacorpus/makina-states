@@ -29,10 +29,10 @@
 {%- set nodetypes = services.nodetypes %}
 {%- set locs = localsettings.locations %}
 {%- set mysqlData = services.mysqlSettings %}
-{{- services.register('db.mysql') }}
+{{ salt['mc_macros.register']('services', 'db.mysql') }}
 
 include:
-  - {{services.statesPref}}backup.dbsmartbackup
+  - makina-states.services.backup.dbsmartbackup
 
 {# MACRO mysql_base()
 # - install the mysql packages, and python bindings for mysql
@@ -196,7 +196,7 @@ Now let's do the magic:
  running, so if you use something like 1024Mo prey that queries using this amount
  of temporary data are not running too often...
 #}
-{%- set tmp_table_size_M= (available_mem / 10)|int %}
+{%- set tmp_table_size_M = (available_mem / 10)|int %}
 makina-mysql-settings:
   file.managed:
     - name: {{ mysqlData.etcdir }}/local.cnf

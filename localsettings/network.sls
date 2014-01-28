@@ -26,7 +26,7 @@
 #   em1: {} # -> dhcp based interface
 #}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-{{- localsettings.register('network') }}
+{{ salt['mc_macros.register']('localsettings', 'network') }}
 {%- set locs = localsettings.locations %}
 {%- if localsettings.networkManaged %}
 {%- if grains['os_family'] in ['Debian'] %}

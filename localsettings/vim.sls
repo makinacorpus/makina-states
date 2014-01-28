@@ -1,8 +1,8 @@
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-{{- localsettings.register('vim') }}
+{{ salt['mc_macros.register']('localsettings', 'vim') }}
 {%- set locs = localsettings.locations %}
 include:
-  - {{ localsettings.statesPref }}users
+  - makina-states.localsettings.users
 
 vim-editor-env-var:
   file.managed:

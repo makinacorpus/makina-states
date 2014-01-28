@@ -13,4 +13,4 @@
 #  makina-states.localsettings.vim: False
 #}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-{{ localsettings.autoinclude() }}
+{{ salt['mc_macros.autoinclude'](localsettings.registry) }}

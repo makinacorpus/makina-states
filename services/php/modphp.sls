@@ -17,16 +17,16 @@
 #
 {% from 'makina-states/services/php/php_defaults.jinja' import phpData with context %}
 {% import "makina-states/_macros/services.jinja" as services with context %}
-{{ services.register('php.modphp') }}
+{{ salt['mc_macros.register']('services', 'php.modphp') }}
 {% set localsettings = services.localsettings %}
 {% set nodetypes = services.nodetypes %}
 {% set locs = localsettings.locations %}
 include:
-  - {{ services.statesPref }}http.apache
-  - {{ services.statesPref }}php.common
+  - makina-states.services.http.apache
+  - makina-states.services.php.common
 {% if grains.get('lsb_distrib_id','') == "Debian" %}
    # Include dotdeb repository for Debian
-  - {{ localsettings.statesPref }}repository_dotdeb
+  - makina-states.localsettings.repository_dotdeb
 {% endif %}
 
 # Load defaults values -----------------------------------------

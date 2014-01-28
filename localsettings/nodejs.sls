@@ -11,11 +11,11 @@
 #}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {%- set locs = localsettings.locations %}
-{{- localsettings.register('nodejs') }}
+{{ salt['mc_macros.register']('localsettings', 'nodejs') }}
 {%- set npmPackages = localsettings.npmSettings.packages %}
 include:
-  - {{localsettings.statesPref}}pkgmgr
-  - {{localsettings.statesPref}}pkgs
+  - makina-states.localsettings.pkgmgr
+  - makina-states.localsettings.pkgs
 
 {% if grains['os'] in ['Ubuntu'] -%}
 {#- NODEJS didnt land in LTS, so use the ppa

@@ -9,5 +9,5 @@
 {% set nodetypes = bs.nodetypes %}
 
 include:
-  - {{ nodetypes.statesPref }}devhost
+  - makina-states.nodetypes.devhost
 

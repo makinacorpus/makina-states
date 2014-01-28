@@ -1,5 +1,5 @@
 {% import "makina-states/_macros/services.jinja" as services with context %}
-{{ services.register('gis.qgis') }}
+{{ salt['mc_macros.register']('services', 'gis.qgis') }}
 {% set localsettings = services.localsettings %}
 {% set nodetypes = services.nodetypes %}
 {% set locs = localsettings.locations %}

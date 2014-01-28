@@ -1,50 +1,17 @@
-{% import "makina-states/_macros/funcs.jinja" as funcs with context %}
-{% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-{% import "makina-states/_macros/salt.jinja" as saltmac with context %}
-
+{#-
+# Controllers related exported variables
+# see makina-states.controllers
+#}
+{%- import "makina-states/_macros/funcs.jinja" as funcs with context %}
+{%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+{%- import "makina-states/_macros/salt.jinja" as saltmac with context %}
 # expose imported macros to callers
-{% set saltmac = saltmac %}
-{% set funcs = funcs %}
-{% set localsettings = localsettings %}
+{%- set saltmac = saltmac %}
+{%- set funcs = funcs %}
+{%- set localsettings = localsettings %}
 
-{% set kind = funcs.controllersKind %}
-{% set statesPref = funcs.statesPref + funcs.controllersKind + '.' %}
-{% set grainsPref = funcs.grainsPref + funcs.controllersKind + '.' %}
-{% set bases=['localsettings'] %}
-
-# -----------------------------------------------------
-# REGISTRY
-# -----------------------------------------------------
-# Idea is to map each state file to configure a service to it's particular
-# configuration grain switch (or pillar)
-{% set registryConfiguration = {
-   kind: {
-    'states_pref': statesPref, 'grains_pref': grainsPref,
-    'defaults': {
-       'mastersalt_minion': {'active': False},
-       'mastersalt_master': {'active': False},
-       'mastersalt': {'active': False},
-       'salt_minion': {'active': False},
-       'salt_master': {'active': False},
-       'salt': {'active': False},
-      }
-    }
-  }
-%}
-{% set registry = funcs.getRegistries(registryConfiguration)[kind] %}
-
-{# define shortcuts, to use autoinclude directly from this import #}
-{% macro autoinclude(name) %}
-{{funcs.autoinclude(registry, bases=bases) }}
-{% endmacro %}
-
-{% macro register(name, data=None) %}
-{{ funcs.register(statesPref, grainsPref, name, data=None) }}
-{% endmacro %}
-
-{% macro unregister(name, data=None) %}
-{{ funcs.register(statesPref, grainsPref, name, data=None) }}
-{% endmacro %}
-# -----------------------------------------------------
-
+{#- see _modules/mc_controllers.py for exposed settings #}
+{%- set metadata = salt['mc_controllers.metadata']() %}
+{%- set settings = salt['mc_controllers.settings']() %}
+{%- set registry = salt['mc_controllers.registry']() %}
 # vim:set nofoldenable:

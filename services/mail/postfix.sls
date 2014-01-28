@@ -8,7 +8,7 @@
 # --------------------------- END pillar example ------------
 #
 {% import "makina-states/_macros/services.jinja" as services with context %}
-{{ services.register('mail.postfix') }}
+{{ salt['mc_macros.register']('services', 'mail.postfix') }}
 {% set localsettings = services.localsettings %}
 {% set nodetypes = services.nodetypes %}
 {% set locs = localsettings.locations %}

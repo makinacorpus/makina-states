@@ -2,10 +2,10 @@
 # Flag the machine as a development box
 #}
 {% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
-{{ nodetypes.register('devhost') }}
+{{ salt['mc_macros.register']('nodetypes', 'devhost') }}
 
 include:
- - {{ nodetypes.statesPref }}vm
+ - makina-states.nodetypes.vm
  - makina-states.services.mail.postfix
  {% if not 'dockercontainer' in nodetypes.registry['actives'] -%}
  - makina-states.services.mail.dovecot

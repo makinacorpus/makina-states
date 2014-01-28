@@ -18,5 +18,5 @@
 {% set nodetypes = nodetypes %}
 
 include:
-  - {{ nodetypes.statesPref }}vagrantvm
+  - makina-states.nodetypes.vagrantvm
 

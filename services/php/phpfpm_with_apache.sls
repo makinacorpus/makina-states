@@ -6,13 +6,13 @@
 #
 {% from 'makina-states/services/php/php_defaults.jinja' import phpData with context %}
 {% import "makina-states/_macros/services.jinja" as services with context %}
-{{ services.register('php.phpfpm_with_apache') }}
+{{ salt['mc_macros.register']('services', 'php.phpfpm_with_apache') }}
 {% set localsettings = services.localsettings %}
 {% set nodetypes = services.nodetypes %}
 {% set locs = localsettings.locations %}
 
 include:
-  -{{ services.statesPref }}http.apache
+  -makina-states.services.http.apache
 
 # Ensure that using php-fpm with apache we remove mod_php from Apache
 makina-phpfpm-http-server-backlink:

@@ -7,12 +7,12 @@
 # the container network
 #}
 {%- import "makina-states/_macros/services.jinja" as services with context %}
-{{- services.register('virt.docker-shorewall') }}
+{{ salt['mc_macros.register']('services', 'virt.docker-shorewall') }}
 {%- set localsettings = services.localsettings %}
 {%- set locs = localsettings.locations %}
 include:
-  - {{ services.statesPref }}firewall.shorewall
-  - {{ services.statesPref }}virt.docker
+  - makina-states.services.firewall.shorewall
+  - makina-states.services.virt.docker
 
 docker-shorewall-post-inst:
   cmd.run:

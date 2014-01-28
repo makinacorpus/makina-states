@@ -1,5 +1,5 @@
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-{{- localsettings.register('sudo') }}
+{{ salt['mc_macros.register']('localsettings', 'sudo') }}
 {%- set locs = localsettings.locations %}
 sudo-pkgs:
   pkg.installed:

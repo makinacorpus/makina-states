@@ -10,4 +10,4 @@
 {% set nodetypes = bs.nodetypes %}
 
 include:
-  - {{ bs.controllers.statesPref }}salt_master
+  - makina-states.controllers.salt_master

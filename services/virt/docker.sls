@@ -69,7 +69,7 @@
 #}
 
 {%- import "makina-states/_macros/services.jinja" as services with context %}
-{{- services.register('virt.docker') }}
+{{ salt['mc_macros.register']('services', 'virt.docker') }}
 {%- set localsettings = services.localsettings %}
 {%- set locs = localsettings.locations %}
 

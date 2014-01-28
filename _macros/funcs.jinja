@@ -26,57 +26,6 @@
 #  at bootstrap time, we build first nodetypes then
 #  controllers
 #}
-
-{%- set getRegistries = salt['mc_macros.get_registries'] %}
-{%- set statesPref = 'makina-states.' %}
-{%- set grainsPref = 'makina-states.' %}
-{%- set bootstrapsKind = 'bootstraps' %}
-{%- set controllersKind = 'controllers' %}
-{%- set nodetypesKind = 'nodetypes' %}
-{%- set localsettingsKind = 'localsettings' %}
-{%- set servicesKind = 'services' %}
-{%- set kinds = [
-    localsettingsKind,
-    controllersKind,
-    nodetypesKind,
-    servicesKind] %}
-
-{% macro register(statesPref, grainsPref, name, data=None) %}
-{{ statesPref }}{{ name }}:
-  grains.present:
-    - name: {{ grainsPref }}{{ name }}
-    - value: True
-{% endmacro %}
-{% macro unregister(statesPref, grainsPref, name, data=None) %}
-unactivated-{{ statesPref }}{{ name }}:
-  grains.present:
-    - name: {{ grainsPref }}{{ name }}
-    - value: False
-{% endmacro %}
-
-{#-
-# Include the bootstrap of bases
-# Include all states defined as active in the registry
-#}
-{% macro autoinclude(reg, bases=None) %}
-{% set rstatesPref = reg['states_pref'] %}
-{%- set rgrainsPref = reg['grains_pref'] %}
-{%- if not bases %}{% set bases = [] %}{% endif %}
-include:
-{% for base in bases -%}
-  - {{ statesPref }}{{ base }}
-{% endfor %}
-{% for state, data in reg.get('actives' , {}).items() -%}
-  - {{ rstatesPref }}{{ state }}
-{% endfor %}
-{% for state, data in reg.get('actives' , {}).items() -%}
-{{    register('auto-'+rstatesPref, rgrainsPref, state, data) }}
-{% endfor %}
-{% for state, data in reg.get('unactivated' , {}).items() -%}
-{{    unregister('auto-'+rstatesPref, rgrainsPref, state, data) }}
-{% endfor %}
-{% endmacro %}
-
 {% macro dummy(name, text='') %}
 {{name}}:
   cmd.run:

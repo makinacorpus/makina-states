@@ -23,13 +23,13 @@
 #}
 
 {% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
-{{ nodetypes.register('vagrantvm') }}
+{{ salt['mc_macros.register']('nodetypes', 'vagrantvm') }}
 {% set localsettings = nodetypes.localsettings %}
 
 include:
-  - {{ nodetypes.statesPref }}devhost
-  - {{ nodetypes.funcs.statesPref }}services.virt.lxc
-  - {{ nodetypes.funcs.statesPref }}services.virt.docker
+  - makina-states.nodetypes.devhost
+  - makina-states.services.virt.lxc
+  - makina-states.services.virt.docker
 
 {# not needed anymore as the core files are not anymore on NFS
 {# if grains['os'] in ['Ubuntu'] %}
