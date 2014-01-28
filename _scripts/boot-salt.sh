@@ -1320,6 +1320,7 @@ pillar_roots: {"base":["$SALT_PILLAR"]}
 module_dirs: [$SALT_ROOT/_modules, ${SALT_MS}/_modules]
 returner_dirs: [$SALT_ROOT/_returners, ${SALT_MS}/_returners]
 states_dirs: [$SALT_ROOT/_states, ${SALT_MS}/_states]
+grains_dirs: [$SALT_ROOT/_grains, ${SALT_MS}/_grains]
 render_dirs: [$SALT_ROOT/_renderers, ${SALT_MS}/_renderers]
 EOF
     fi
@@ -1345,6 +1346,7 @@ pillar_roots: {"base":["$MASTERSALT_PILLAR"]}
 module_dirs: [$MASTERSALT_ROOT/_modules, $MASTERSALT_MS/_modules]
 returner_dirs: [$MASTERSALT_ROOT/_returners, $MASTERSALT_MS/_returners]
 states_dirs: [$MASTERSALT_ROOT/_states, $MASTERSALT_MS/_states]
+grains_dirs: [$MASTERSALT_ROOT/_grains, $MASTERSALT_MS/_grains]
 render_dirs: [$MASTERSALT_ROOT/_renderers, $MASTERSALT_MS/_renderers]
 EOF
         fi
