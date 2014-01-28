@@ -1,9 +1,10 @@
-# --- APACHE HTTPD SERVER
+{# --- APACHE HTTPD SERVER
 #
 # Main server defaults settings alterations ---------------
 # check apache_defaults.jinja for comments and lists of available settings
 # this is just a small subset of available settings
 # be careful, only one apache-default-settings entry should exists in pillar
+#}
 apache-default-settings:
   mpm: prefork
   version: 2.2

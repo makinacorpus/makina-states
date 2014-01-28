@@ -175,10 +175,12 @@ def include_module(name,
            'comment': ''}
     comments = []
 
-    if not filter(lambda x: 'mc_apache' in x,
-                  kwargs.get('require_in', []) ):
+    require_in = __low__.get('require_in', [])
+    watch_in = __low__.get('watch_in', [])
+    deps = require_in + watch_in
+    if not filter(lambda x: 'mc_apache' in x, deps):
         ret['result'] = False
-        ret['comment'] = 'Orphaned include_module {0}, use a require_in targeting mc_apache.deployed'.format(name)
+        ret['comment'] = 'Orphaned include_module {0}, please use a require_in targeting mc_apache.deployed'.format(name)
         return ret
 
     if type(modules) is not list:
@@ -215,10 +217,12 @@ def exclude_module(name,
            'comment': ''}
     comments = []
 
-    if not filter(lambda x: 'mc_apache' in x,
-                  kwargs.get('require_in', []) ):
+    require_in = __low__.get('require_in', [])
+    watch_in = __low__.get('watch_in', [])
+    deps = require_in + watch_in
+    if not filter(lambda x: 'mc_apache' in x, deps):
         ret['result'] = False
-        ret['comment'] = 'Orphaned exclude_module {0}, use a require_in targeting mc_apache.deployed'.format(name)
+        ret['comment'] = 'Orphaned exclude_module {0}, please use a require_in targeting mc_apache.deployed'.format(name)
         return ret
 
     if type(modules) is not list:

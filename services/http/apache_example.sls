@@ -1,4 +1,4 @@
-# This file is an example of makina-states.services.http usage 
+{# This file is an example of makina-states.services.http usage 
 # how to extend base states
 # how to add virtualhosts
 # how to add or remove modules
@@ -10,6 +10,7 @@
 ##2-Requisites (watch and require) are appended to, everything else is overwritten
 ##3-extend is a top level declaration, like an ID declaration, cannot be declared twice in a single SLS
 ##4-Many IDs can be extended under the extend declaration
+#}
 include:
   - makina-states.services.http.apache
 extend:
@@ -52,9 +53,9 @@ my-apache-other-module--other-module-excluded:
       - mc_apache: makina-apache-main-conf
 
 # Custom virtualhost
-{% from 'makina-states/services/http/apache_defaults.jinja' import apacheData with context %}
+{% import "makina-states/_macros/services.jinja" as services with context %}
 {% from 'makina-states/services/http/apache_macros.jinja' import virtualhost with context %}
-{{ virtualhost(apacheData = apacheData,
+{{ virtualhost(apacheData = services.apacheDefaultSettings,
             site = salt['pillar.get']('project-foo-apache-vh1-name', 'www.foobar.com'),
             small_name = salt['pillar.get']('project-foo-apache-vh1-nickname', 'foobar'),
             active = True,

@@ -17,7 +17,7 @@ for port in ${PORTS};do
     if [ -e "${socket_path}" ];then
         # search back from which config the port comes from
         for i in  /etc/postgresql/*/*/post*.conf;do
-            if [ x"${port}" == x"$(egrep -h "^port\s=\s" "$i"|awk -F= '{print $2}'|awk '{print $1}')" ];then
+            if [ x"${port}" = x"$(egrep -h "^port\s=\s" "$i"|awk -F= '{print $2}'|awk '{print $1}')" ];then
                 # search the postgres version to export binaries
                 export PGVER="$(basename $(dirname $(dirname ${i})))"
                 export PGVER="${PGVER:-9.3}"

@@ -1,4 +1,4 @@
-# Apache httpd managment
+{# Apache httpd managment
 #
 # Makina Corpus Apache Deployment main state
 #
@@ -19,6 +19,7 @@
 # TODO: detect invalid links in sites-enabled and remove them
 # apache 2.4: EnableSendfile On, NameVirtualHost deprecated,  RewriteLog and RewriteLogLevel-> LogLevel rewrite:debug
 # enable and configure mod_reqtimeout
+#}
 {% import "makina-states/_macros/services.jinja" as services with context %}
 {% import "makina-states/_macros/salt.jinja" as saltmac with context %}
 {{ services.register('http.apache') }}
@@ -29,25 +30,22 @@
 
 {% set apacheConfCheck = "file://"+saltmac.msr+"/_scripts/apacheConfCheck.sh" %}
 
-# Load defaults values -----------------------------------------
-
-{% from 'makina-states/services/http/apache_defaults.jinja' import apacheData with context %}
-
 {% set old_mode = (grains['lsb_distrib_id']=="Ubuntu" and grains['lsb_distrib_release']<13.10) or (grains['lsb_distrib_id']=="Debian" and grains['lsb_distrib_release']<=7.0) %}
 
 makina-apache-pkgs:
   pkg.installed:
     - pkgs:
-      - {{ apacheData.package }}
+      - {{ services.apacheDefaultSettings.package }}
       - cronolog
 
-# Apache Main Configuration ------------------
-# Read states documentation to alter main apache
+## Apache Main Configuration ------------------
+{# Read states documentation to alter main apache
 # configuration
+#}
 makina-apache-main-conf:
   mc_apache.deployed:
-    - version: {{ apacheData.version }}
-    - mpm: {{ apacheData.mpm }}
+    - version: {{ services.apacheDefaultSettings.version }}
+    - mpm: {{ services.apacheDefaultSettings.mpm }}
     # see also mc_apache.include_module
     # and mc_apache.exclude_module
     # to alter theses lists from
@@ -62,7 +60,7 @@ makina-apache-main-conf:
       - headers
       - deflate
       - status
-    - log_level: {{ apacheData.log_level }}
+    - log_level: {{ services.apacheDefaultSettings.log_level }}
     - require:
       - pkg: makina-apache-pkgs
     # full service restart in case of changes
@@ -74,7 +72,7 @@ makina-apache-main-conf:
 
 makina-apache-settings:
   file.managed:
-    - name: {{ apacheData.confdir }}/settings.local.conf
+    - name: {{ services.apacheDefaultSettings.confdir }}/settings.local.conf
     - source: salt://makina-states/files/etc/apache2/conf.d/settings.conf
     - user: root
     - group: root
@@ -82,24 +80,24 @@ makina-apache-settings:
     - template: jinja
     - defaults:
         mode: "production"
-        Timeout: "{{ apacheData.Timeout }}"
-        KeepAlive: "{{ apacheData.KeepAlive }}"
-        MaxKeepAliveRequests: "{{ apacheData.MaxKeepAliveRequests }}"
-        KeepAliveTimeout: "{{ apacheData.KeepAliveTimeout }}"
-        prefork_StartServers: "{{ apacheData.prefork.StartServers }}"
-        prefork_MinSpareServers: "{{ apacheData.prefork.MinSpareServers }}"
-        prefork_MaxSpareServers: "{{ apacheData.prefork.MaxSpareServers }}"
-        prefork_MaxClients: "{{ apacheData.prefork.MaxClients }}"
-        prefork_MaxRequestsPerChild: "{{ apacheData.prefork.MaxRequestsPerChild }}"
-        worker_StartServers: "{{ apacheData.worker.StartServers }}"
-        worker_MinSpareThreads: "{{ apacheData.worker.MinSpareThreads }}"
-        worker_MaxSpareThreads: "{{ apacheData.worker.MaxSpareThreads }}"
-        worker_ThreadLimit: "{{ apacheData.worker.ThreadLimit }}"
-        worker_ThreadsPerChild: "{{ apacheData.worker.ThreadsPerChild }}"
-        worker_MaxRequestsPerChild: "{{ apacheData.worker.MaxRequestsPerChild }}"
-        worker_MaxClients: "{{ apacheData.worker.MaxClients }}"
-        event_AsyncRequestWorkerFactor: "{{ apacheData.event.AsyncRequestWorkerFactor }}"
-        log_level: "{{ apacheData.log_level }}"
+        Timeout: "{{ services.apacheDefaultSettings.Timeout }}"
+        KeepAlive: "{{ services.apacheDefaultSettings.KeepAlive }}"
+        MaxKeepAliveRequests: "{{ services.apacheDefaultSettings.MaxKeepAliveRequests }}"
+        KeepAliveTimeout: "{{ services.apacheDefaultSettings.KeepAliveTimeout }}"
+        prefork_StartServers: "{{ services.apacheDefaultSettings.prefork.StartServers }}"
+        prefork_MinSpareServers: "{{ services.apacheDefaultSettings.prefork.MinSpareServers }}"
+        prefork_MaxSpareServers: "{{ services.apacheDefaultSettings.prefork.MaxSpareServers }}"
+        prefork_MaxClients: "{{ services.apacheDefaultSettings.prefork.MaxClients }}"
+        prefork_MaxRequestsPerChild: "{{ services.apacheDefaultSettings.prefork.MaxRequestsPerChild }}"
+        worker_StartServers: "{{ services.apacheDefaultSettings.worker.StartServers }}"
+        worker_MinSpareThreads: "{{ services.apacheDefaultSettings.worker.MinSpareThreads }}"
+        worker_MaxSpareThreads: "{{ services.apacheDefaultSettings.worker.MaxSpareThreads }}"
+        worker_ThreadLimit: "{{ services.apacheDefaultSettings.worker.ThreadLimit }}"
+        worker_ThreadsPerChild: "{{ services.apacheDefaultSettings.worker.ThreadsPerChild }}"
+        worker_MaxRequestsPerChild: "{{ services.apacheDefaultSettings.worker.MaxRequestsPerChild }}"
+        worker_MaxClients: "{{ services.apacheDefaultSettings.worker.MaxClients }}"
+        event_AsyncRequestWorkerFactor: "{{ services.apacheDefaultSettings.event.AsyncRequestWorkerFactor }}"
+        log_level: "{{ services.apacheDefaultSettings.log_level }}"
 {% if nodetypes.isDevhost %}
     - context:
         mode: "dev"
@@ -114,7 +112,7 @@ makina-apache-settings:
 makina-apache-main-extra-settings-example:
   file.accumulated:
     - name: extra-settings-master-conf
-    - filename: {{ apacheData.confdir }}/settings.local.conf
+    - filename: {{ services.apacheDefaultSettings.confdir }}/settings.local.conf
     - text: |
         '# this is an example of thing added in master apache configuration'
         '# ServerLimit 1000'
@@ -123,15 +121,16 @@ makina-apache-main-extra-settings-example:
     - watch_in:
       - file: makina-apache-settings
 
-# Define some basic security restrictions, like forbidden acces to all
+{# Define some basic security restrictions, like forbidden acces to all
 # directories by default, switch off signatures protect .git, etc
 # file is named _security to be read after the default security file
 # in conf.d directory
+#}
 makina-apache-security-settings:
   file.managed:
     - require:
       - pkg: makina-apache-pkgs
-    - name: {{ apacheData.confdir }}/_security.local.conf
+    - name: {{ services.apacheDefaultSettings.confdir }}/_security.local.conf
     - source:
       - salt://makina-states/files/etc/apache2/conf.d/security.conf
     - user: root
@@ -141,7 +140,7 @@ makina-apache-security-settings:
        - cmd: makina-apache-conf-syntax-check
        - service: makina-apache-restart
 
-# Exemple of error: using a second mc_apache.deployed would fail
+{# Exemple of error: using a second mc_apache.deployed would fail
 # as only one main apache configuration can be defined
 # per server
 # Use ``extend`` on makina-apache-main-conf instead
@@ -151,10 +150,10 @@ makina-apache-security-settings:
 #    - log_level: warn
 #    - require:
 #      - pkg: makina-apache-pkgs
+#}
 
 
-
-# Extra module additions and removal ----------------
+{# Extra module additions and removal ----------------
 # Theses (valid) examples show you how
 # to alter the modules_excluded and
 # modules_included lists
@@ -178,30 +177,31 @@ makina-apache-security-settings:
 #      - negotiation
 #    - require_in:
 #      - mc_apache: makina-apache-main-conf
+#}
 
 # Directories settings -----------------
-
 makina-apache-include-directory:
   file.directory:
     - user: root
     - group: www-data
     - mode: "2755"
     - makedirs: True
-    - name: {{ apacheData.basedir }}/includes
+    - name: {{ services.apacheDefaultSettings.basedir }}/includes
     - require:
        - pkg: makina-apache-pkgs
     - require_in:
        - service: makina-apache-restart
        - service: makina-apache-reload
 
-# cronolog usage in {{ locs.var_dir }}/log/apache requires a group write
+{# cronolog usage in {{ locs.var_dir }}/log/apache requires a group write
 # right which may not be present.
+#}
 makina-apache-default-log-directory:
   file.directory:
     - user: root
     - group: www-data
     - mode: "2770"
-    - name: {{ apacheData.logdir }}
+    - name: {{ services.apacheDefaultSettings.logdir }}
     - require:
        - pkg: makina-apache-pkgs
     - require_in:
@@ -209,8 +209,9 @@ makina-apache-default-log-directory:
        - service: makina-apache-reload
 
 # Default Virtualhost managment -------------------------------------
-# Replace defaut Virtualhost by a more minimal default Virtualhost [1]
+{# Replace defaut Virtualhost by a more minimal default Virtualhost [1]
 # this is the directory
+#}
 makina-apache-default-vhost-directory:
   file.directory:
     - user: root
@@ -223,8 +224,9 @@ makina-apache-default-vhost-directory:
     - require_in:
        - service: makina-apache-restart
 
-# Replace defaut Virtualhost by a more minimal default Virtualhost [2]
+{# Replace defaut Virtualhost by a more minimal default Virtualhost [2]
 # this is the index.hml file
+#}
 makina-apache-default-vhost-index:
   file.managed:
     - require:
@@ -247,24 +249,26 @@ makina-apache-default-vhost-index:
        - cmd: makina-apache-conf-syntax-check
        - service: makina-apache-restart
 
-# Replace defaut Virtualhost by a more minimal default Virtualhost [3]
+{# Replace defaut Virtualhost by a more minimal default Virtualhost [3]
 # remove index.html coming from package
+#}
 makina-apache-remove-package-default-index:
   file.absent:
     - name : {{ locs.var_dir }}/www/index.html
 
 
-# Replace defaut Virtualhost by a more minimal default Virtualhost [4]
+{# Replace defaut Virtualhost by a more minimal default Virtualhost [4]
 # this is the virtualhost definition
+#}
 makina-apache-minimal-default-vhost:
   file.managed:
     - require:
       - pkg: makina-apache-pkgs
       - file: makina-apache-default-vhost-index
 {% if old_mode %}
-    - name: {{ apacheData.vhostdir }}/default
+    - name: {{ services.apacheDefaultSettings.vhostdir }}/default
 {% else %}
-    - name: {{ apacheData.vhostdir }}/000-default.conf
+    - name: {{ services.apacheDefaultSettings.vhostdir }}/000-default.conf
 {% endif %}
     - source:
       - salt://makina-states/files/etc/apache2/sites-available/default_vh.conf
@@ -273,8 +277,8 @@ makina-apache-minimal-default-vhost:
     - mode: 644
     - template: jinja
     - defaults:
-        log_level: "{{ apacheData.log_level }}"
-        serveradmin_mail: "{{ apacheData.serveradmin_mail }}"
+        log_level: "{{ services.apacheDefaultSettings.log_level }}"
+        serveradmin_mail: "{{ services.apacheDefaultSettings.serveradmin_mail }}"
         mode: "production"
 {% if nodetypes.isDevhost %}
     - context:
@@ -286,7 +290,8 @@ makina-apache-minimal-default-vhost:
 
 #--- Configuration Check --------------------------------
 
-# Configuration checker, always run before restart of graceful restart
+{# Configuration checker, always run before restart of graceful restart
+#}
 makina-apache-conf-syntax-check:
   cmd.script:
     - source: {{ apacheConfCheck }}
@@ -297,6 +302,7 @@ makina-apache-conf-syntax-check:
        - service: makina-apache-restart
        - service: makina-apache-reload
 
+{# REMOVED, devhost is not using NFS anymore
 #--- APACHE STARTUP WAIT DEPENDENCY --------------
 {% if nodetypes.isDevhost %}
 #
@@ -315,22 +321,22 @@ makina-add-apache-in-waiting-for-nfs-services:
     - require_in:
       - file: makina-file_delay_services_for_srv
 {% endif %}
-
+#}
 #--- MAIN SERVICE RESTART/RELOAD watchers --------------
-
 makina-apache-restart:
   service.running:
-    - name: {{ apacheData.service }}
+    - name: {{ services.apacheDefaultSettings.service }}
     - enable: True
     # most watch requisites are linked here with watch_in
     - watch:
       # restart service in case of package install
       - pkg: makina-apache-pkgs
 
-# In case of VirtualHosts change graceful reloads should be enough
+{# In case of VirtualHosts change graceful reloads should be enough
+#}
 makina-apache-reload:
   service.running:
-    - name: {{ apacheData.service }}
+    - name: {{ services.apacheDefaultSettings.service }}
     - require:
       - pkg: makina-apache-pkgs
     - enable: True
@@ -338,7 +344,7 @@ makina-apache-reload:
     # most watch requisites are linked here with watch_in
 
 # Virtualhosts, here are the ones defined in pillar, if any ----------------
-#
+{#
 # We loop on VH defined in pillar apache/register-sites, check the
 # macro definition for the pillar dictionnary keys available. The
 # register-sites key is set as the site name, and all keys are then
@@ -359,12 +365,12 @@ makina-apache-reload:
 # loading the macro as we do here and use virtualhost()) call
 # in a state.
 # Then use the pillar to alter your default parameters given to this call
-#
+#}
 {% from 'makina-states/services/http/apache_macros.jinja' import virtualhost with context %}
-{% if 'register-sites' in apacheData %}
-{%   for site,siteDef in apacheData['register-sites'].iteritems() %}
+{% if 'register-sites' in services.apacheDefaultSettings -%}
+{%   for site,siteDef in services.apacheDefaultSettings['register-sites'].iteritems() -%}
 {%     do siteDef.update({'site': site}) %}
-{%     do siteDef.update({'apacheData': apacheData}) %}
+{%     do siteDef.update({'apacheData': services.apacheDefaultSettings}) %}
 {{     virtualhost(**siteDef) }}
-{%   endfor %}
-{% endif %}
+{%-   endfor %}
+{%- endif %}

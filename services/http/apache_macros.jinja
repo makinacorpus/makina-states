@@ -1,8 +1,11 @@
-# Apache specific macros
+{# Apache specific macros
 #
 # Import this macro file with context so that grains will be available in the macros
-#
-# * virtualhost => create all states for a virtualhost (virtualhost file, include file, a2ensite/dissite command
+#}
+{% import "makina-states/_macros/services.jinja" as services with context %}
+{% set nodetypes = services.nodetypes %}
+
+{# * virtualhost => create all states for a virtualhost (virtualhost file, include file, a2ensite/dissite command
 #
 #   - apacheData: global apache configuration dictionnary, this cannot be given by context import, so please pass it to this macro
 #
@@ -37,7 +40,7 @@
 #
 #   - vh_in_template_source: source of the file.managed for the vhirtualhost included content
 #                            (the most important part when making alterations of vh content)
-#
+#}
 {% macro virtualhost(apacheData,
                      site = 'example.com',
                      small_name = None,
@@ -98,7 +101,7 @@ makina-apache-virtualhost-{{ small_name }}:
 {% endif %}
 
         mode: "production"
-{% if grains['makina-states.nodetype.devhost'] %}
+{% if nodetypes.isDevhost %}
     - context:
         mode: "dev"
 {% endif %}
@@ -127,7 +130,7 @@ makina-apache-virtualhost-{{ small_name }}-content:
         {{ variablename }}: "{{ variablevalue }}"
 {% endfor %}
 {% endif %}
-{% if grains['makina-states.nodetype.devhost'] %}
+{% if nodetypes.isDevhost %}
     - context:
         mode: "dev"
 {% endif %}
