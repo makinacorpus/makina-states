@@ -32,6 +32,7 @@ deadsnakes:
       {%- for pyver in pyvers %}
       - python{{pyver}}-dev
       - python{{pyver}}
+      - python-pip
       {%- endfor %}
     {%- endif %}
 {% endif %}
