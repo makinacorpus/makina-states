@@ -31,6 +31,9 @@
 {%- set mysqlData = services.mysqlSettings %}
 {{- services.register('db.mysql') }}
 
+include:
+  - {{services.statesPref}}backup.dbsmartbackup
+
 {# MACRO mysql_base()
 # - install the mysql packages, and python bindings for mysql
 # - install a custom /etc/mysql/conf.d/local.cnf config script

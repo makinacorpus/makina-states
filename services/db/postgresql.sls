@@ -77,6 +77,10 @@
 {%- set locs = localsettings.locations %}
 {{- services.register('db.postgresql') }}
 {%- set default_user = services.postgresqlUser %}
+
+include:
+  - {{services.statesPref}}backup.dbsmartbackup
+
 {#-
 # Hooks to attach to for orchestration purpose
 # - We create in order:
