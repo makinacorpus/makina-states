@@ -121,10 +121,11 @@ makina-apache-main-extra-settings-example:
     - watch_in:
       - file: makina-apache-settings
 
-# Define some basic security restrictions, like forbidden acces to all
+{# Define some basic security restrictions, like forbidden acces to all
 # directories by default, switch off signatures protect .git, etc
 # file is named _security to be read after the default security file
 # in conf.d directory
+#}
 makina-apache-security-settings:
   file.managed:
     - require:
@@ -139,7 +140,7 @@ makina-apache-security-settings:
        - cmd: makina-apache-conf-syntax-check
        - service: makina-apache-restart
 
-# Exemple of error: using a second mc_apache.deployed would fail
+{# Exemple of error: using a second mc_apache.deployed would fail
 # as only one main apache configuration can be defined
 # per server
 # Use ``extend`` on makina-apache-main-conf instead
@@ -149,10 +150,10 @@ makina-apache-security-settings:
 #    - log_level: warn
 #    - require:
 #      - pkg: makina-apache-pkgs
+#}
 
 
-
-# Extra module additions and removal ----------------
+{# Extra module additions and removal ----------------
 # Theses (valid) examples show you how
 # to alter the modules_excluded and
 # modules_included lists
@@ -176,9 +177,9 @@ makina-apache-security-settings:
 #      - negotiation
 #    - require_in:
 #      - mc_apache: makina-apache-main-conf
+#}
 
 # Directories settings -----------------
-
 makina-apache-include-directory:
   file.directory:
     - user: root
@@ -192,8 +193,9 @@ makina-apache-include-directory:
        - service: makina-apache-restart
        - service: makina-apache-reload
 
-# cronolog usage in {{ locs.var_dir }}/log/apache requires a group write
+{# cronolog usage in {{ locs.var_dir }}/log/apache requires a group write
 # right which may not be present.
+#}
 makina-apache-default-log-directory:
   file.directory:
     - user: root
@@ -207,8 +209,9 @@ makina-apache-default-log-directory:
        - service: makina-apache-reload
 
 # Default Virtualhost managment -------------------------------------
-# Replace defaut Virtualhost by a more minimal default Virtualhost [1]
+{# Replace defaut Virtualhost by a more minimal default Virtualhost [1]
 # this is the directory
+#}
 makina-apache-default-vhost-directory:
   file.directory:
     - user: root
@@ -221,8 +224,9 @@ makina-apache-default-vhost-directory:
     - require_in:
        - service: makina-apache-restart
 
-# Replace defaut Virtualhost by a more minimal default Virtualhost [2]
+{# Replace defaut Virtualhost by a more minimal default Virtualhost [2]
 # this is the index.hml file
+#}
 makina-apache-default-vhost-index:
   file.managed:
     - require:
@@ -245,15 +249,17 @@ makina-apache-default-vhost-index:
        - cmd: makina-apache-conf-syntax-check
        - service: makina-apache-restart
 
-# Replace defaut Virtualhost by a more minimal default Virtualhost [3]
+{# Replace defaut Virtualhost by a more minimal default Virtualhost [3]
 # remove index.html coming from package
+#}
 makina-apache-remove-package-default-index:
   file.absent:
     - name : {{ locs.var_dir }}/www/index.html
 
 
-# Replace defaut Virtualhost by a more minimal default Virtualhost [4]
+{# Replace defaut Virtualhost by a more minimal default Virtualhost [4]
 # this is the virtualhost definition
+#}
 makina-apache-minimal-default-vhost:
   file.managed:
     - require:
@@ -284,7 +290,8 @@ makina-apache-minimal-default-vhost:
 
 #--- Configuration Check --------------------------------
 
-# Configuration checker, always run before restart of graceful restart
+{# Configuration checker, always run before restart of graceful restart
+#}
 makina-apache-conf-syntax-check:
   cmd.script:
     - source: {{ apacheConfCheck }}
@@ -295,8 +302,9 @@ makina-apache-conf-syntax-check:
        - service: makina-apache-restart
        - service: makina-apache-reload
 
+{# REMOVED, devhost is not using NFS anymore
 #--- APACHE STARTUP WAIT DEPENDENCY --------------
-{#{% if nodetypes.isDevhost %}
+{% if nodetypes.isDevhost %}
 #
 # On a vagrant VM we certainly should wait until NFS mount
 # before starting the web server. Chances are that this NFS mount
@@ -315,7 +323,6 @@ makina-add-apache-in-waiting-for-nfs-services:
 {% endif %}
 #}
 #--- MAIN SERVICE RESTART/RELOAD watchers --------------
-
 makina-apache-restart:
   service.running:
     - name: {{ services.apacheDefaultSettings.service }}
@@ -325,7 +332,8 @@ makina-apache-restart:
       # restart service in case of package install
       - pkg: makina-apache-pkgs
 
-# In case of VirtualHosts change graceful reloads should be enough
+{# In case of VirtualHosts change graceful reloads should be enough
+#}
 makina-apache-reload:
   service.running:
     - name: {{ services.apacheDefaultSettings.service }}
@@ -359,10 +367,10 @@ makina-apache-reload:
 # Then use the pillar to alter your default parameters given to this call
 #}
 {% from 'makina-states/services/http/apache_macros.jinja' import virtualhost with context %}
-{% if 'register-sites' in services.apacheDefaultSettings %}
-{%   for site,siteDef in services.apacheDefaultSettings['register-sites'].iteritems() %}
+{% if 'register-sites' in services.apacheDefaultSettings -%}
+{%   for site,siteDef in services.apacheDefaultSettings['register-sites'].iteritems() -%}
 {%     do siteDef.update({'site': site}) %}
 {%     do siteDef.update({'apacheData': services.apacheDefaultSettings}) %}
 {{     virtualhost(**siteDef) }}
-{%   endfor %}
-{% endif %}
+{%-   endfor %}
+{%- endif %}
