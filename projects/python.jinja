@@ -7,7 +7,7 @@
 {%- import "makina-states/projects/base.jinja" as base with context %}
 {%- set services = base.services %}
 {%- set saltmac = base.saltmac %}
-{%- set localsettings = base.localsettings %}
+{%- set localsettings = salt['mc_localsettings.settings']() %}
 
 {%- set default_defaults = {
   'python_version': grains['pythonversion'][:3],
@@ -19,25 +19,18 @@
   'prod': {}
  } %}
 
-{% macro python_deps(common) %}
-python-project-{{ common['name'] }}-deps:
-  include:
-    - makina-states.localsettings.python
-{%- endmacro %}
-
-{% macro python_virtualenv(common) -%}
+{% macro python_virtualenv(common) %}
 python-project-{{ common['name'] }}-virtualenv:
   virtualenv.managed:
-    - name: /srv/projects/{{ common['name'] }}
+    - name: {{ common.project_root }}/.virtualenv
     - no_site_packages: True
-    - python: python{{ common.data['python_version'] }}
+    - python: {{ localsettings.locations.bin_dir }}/python{{ common.data['python_version'] }}
     {% if common.data['requirements'] %}
-    - requirements: salt://requirements.txt
+    - requirements: {{ common.salt_root }}/requirements.txt
     {% endif %}
 {% endmacro %}
 
 {% macro install_generic_python_project_do(common) -%}
-{{ python_deps(common) }}
 {{ python_virtualenv(common) }}
 {%- endmacro %}
 
@@ -48,6 +41,7 @@ python-project-{{ common['name'] }}-virtualenv:
 {% do kwargs.setdefault('defaults', default_defaults) -%}
 {% do kwargs.setdefault('env_defaults', default_env_defaults) -%}
 {% do kwargs.setdefault('user', 'python') -%}
+{% do kwargs.setdefault('sls_includes', ['makina-states.localsettings.python']) -%}
 {% set common = salt['mc_project.get_common_vars'](services, *varargs, **kwargs) -%}
 {{ base.install_project(common, install_macro=install_generic_python_project_do) -}}
 {%- endmacro %}
