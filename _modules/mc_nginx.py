@@ -25,6 +25,7 @@ def settings(grains,pillar,locations,nodetypes_registry,REG):
     '''
     This is called from mc_services, loading all Nginx default settings
 
+    Settings are merged with grains and pillar via mc_utils.defaults
     '''
     
     nginxData = __salt__['mc_utils.defaults'](
