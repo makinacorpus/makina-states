@@ -2,7 +2,7 @@
 {% set localsettings = services.localsettings %}
 
 {% macro virtualhost(
-  nginxData,
+  nginxSettings,
   site = 'example.com',
   small_name = None,
   active = True,
@@ -17,8 +17,8 @@
 
 {% set small_name = small_name or site.replace('.', '_').replace('-', '_') %}
 {% set doc_root = documentRoot or localsettings.locations.projects_dir + site  + '/www' %}
-{% set vhost_available_file = nginxData.basedir + "/sites-available/" + site + ".conf" %}
-{% set vhost_enabled_file = nginxData.basedir + "/sites-enabled/" + site + ".conf" %}
+{% set vhost_available_file = nginxSettings.basedir + "/sites-available/" + site + ".conf" %}
+{% set vhost_enabled_file = nginxSettings.basedir + "/sites-enabled/" + site + ".conf" %}
 
 # Virtualhost basic file
 makina-nginx-virtualhost-{{ small_name }}:

@@ -35,7 +35,7 @@
 makina-apache-pkgs:
   pkg.installed:
     - pkgs:
-      - {{ services.apacheDefaultSettings.package }}
+      - {{ services.apacheSettings.package }}
       - cronolog
 
 ## Apache Main Configuration ------------------
@@ -44,8 +44,8 @@ makina-apache-pkgs:
 #}
 makina-apache-main-conf:
   mc_apache.deployed:
-    - version: {{ services.apacheDefaultSettings.version }}
-    - mpm: {{ services.apacheDefaultSettings.mpm }}
+    - version: {{ services.apacheSettings.version }}
+    - mpm: {{ services.apacheSettings.mpm }}
     # see also mc_apache.include_module
     # and mc_apache.exclude_module
     # to alter theses lists from
@@ -60,7 +60,7 @@ makina-apache-main-conf:
       - headers
       - deflate
       - status
-    - log_level: {{ services.apacheDefaultSettings.log_level }}
+    - log_level: {{ services.apacheSettings.log_level }}
     - require:
       - pkg: makina-apache-pkgs
     # full service restart in case of changes
@@ -72,7 +72,7 @@ makina-apache-main-conf:
 
 makina-apache-settings:
   file.managed:
-    - name: {{ services.apacheDefaultSettings.confdir }}/settings.local.conf
+    - name: {{ services.apacheSettings.confdir }}/settings.local.conf
     - source: salt://makina-states/files/etc/apache2/conf.d/settings.conf
     - user: root
     - group: root
@@ -80,24 +80,24 @@ makina-apache-settings:
     - template: jinja
     - defaults:
         mode: "production"
-        Timeout: "{{ services.apacheDefaultSettings.Timeout }}"
-        KeepAlive: "{{ services.apacheDefaultSettings.KeepAlive }}"
-        MaxKeepAliveRequests: "{{ services.apacheDefaultSettings.MaxKeepAliveRequests }}"
-        KeepAliveTimeout: "{{ services.apacheDefaultSettings.KeepAliveTimeout }}"
-        prefork_StartServers: "{{ services.apacheDefaultSettings.prefork.StartServers }}"
-        prefork_MinSpareServers: "{{ services.apacheDefaultSettings.prefork.MinSpareServers }}"
-        prefork_MaxSpareServers: "{{ services.apacheDefaultSettings.prefork.MaxSpareServers }}"
-        prefork_MaxClients: "{{ services.apacheDefaultSettings.prefork.MaxClients }}"
-        prefork_MaxRequestsPerChild: "{{ services.apacheDefaultSettings.prefork.MaxRequestsPerChild }}"
-        worker_StartServers: "{{ services.apacheDefaultSettings.worker.StartServers }}"
-        worker_MinSpareThreads: "{{ services.apacheDefaultSettings.worker.MinSpareThreads }}"
-        worker_MaxSpareThreads: "{{ services.apacheDefaultSettings.worker.MaxSpareThreads }}"
-        worker_ThreadLimit: "{{ services.apacheDefaultSettings.worker.ThreadLimit }}"
-        worker_ThreadsPerChild: "{{ services.apacheDefaultSettings.worker.ThreadsPerChild }}"
-        worker_MaxRequestsPerChild: "{{ services.apacheDefaultSettings.worker.MaxRequestsPerChild }}"
-        worker_MaxClients: "{{ services.apacheDefaultSettings.worker.MaxClients }}"
-        event_AsyncRequestWorkerFactor: "{{ services.apacheDefaultSettings.event.AsyncRequestWorkerFactor }}"
-        log_level: "{{ services.apacheDefaultSettings.log_level }}"
+        Timeout: "{{ services.apacheSettings.Timeout }}"
+        KeepAlive: "{{ services.apacheSettings.KeepAlive }}"
+        MaxKeepAliveRequests: "{{ services.apacheSettings.MaxKeepAliveRequests }}"
+        KeepAliveTimeout: "{{ services.apacheSettings.KeepAliveTimeout }}"
+        prefork_StartServers: "{{ services.apacheSettings.prefork.StartServers }}"
+        prefork_MinSpareServers: "{{ services.apacheSettings.prefork.MinSpareServers }}"
+        prefork_MaxSpareServers: "{{ services.apacheSettings.prefork.MaxSpareServers }}"
+        prefork_MaxClients: "{{ services.apacheSettings.prefork.MaxClients }}"
+        prefork_MaxRequestsPerChild: "{{ services.apacheSettings.prefork.MaxRequestsPerChild }}"
+        worker_StartServers: "{{ services.apacheSettings.worker.StartServers }}"
+        worker_MinSpareThreads: "{{ services.apacheSettings.worker.MinSpareThreads }}"
+        worker_MaxSpareThreads: "{{ services.apacheSettings.worker.MaxSpareThreads }}"
+        worker_ThreadLimit: "{{ services.apacheSettings.worker.ThreadLimit }}"
+        worker_ThreadsPerChild: "{{ services.apacheSettings.worker.ThreadsPerChild }}"
+        worker_MaxRequestsPerChild: "{{ services.apacheSettings.worker.MaxRequestsPerChild }}"
+        worker_MaxClients: "{{ services.apacheSettings.worker.MaxClients }}"
+        event_AsyncRequestWorkerFactor: "{{ services.apacheSettings.event.AsyncRequestWorkerFactor }}"
+        log_level: "{{ services.apacheSettings.log_level }}"
 {% if nodetypes.isDevhost %}
     - context:
         mode: "dev"
@@ -112,7 +112,7 @@ makina-apache-settings:
 makina-apache-main-extra-settings-example:
   file.accumulated:
     - name: extra-settings-master-conf
-    - filename: {{ services.apacheDefaultSettings.confdir }}/settings.local.conf
+    - filename: {{ services.apacheSettings.confdir }}/settings.local.conf
     - text: |
         '# this is an example of thing added in master apache configuration'
         '# ServerLimit 1000'
@@ -130,7 +130,7 @@ makina-apache-security-settings:
   file.managed:
     - require:
       - pkg: makina-apache-pkgs
-    - name: {{ services.apacheDefaultSettings.confdir }}/_security.local.conf
+    - name: {{ services.apacheSettings.confdir }}/_security.local.conf
     - source:
       - salt://makina-states/files/etc/apache2/conf.d/security.conf
     - user: root
@@ -186,7 +186,7 @@ makina-apache-include-directory:
     - group: www-data
     - mode: "2755"
     - makedirs: True
-    - name: {{ services.apacheDefaultSettings.basedir }}/includes
+    - name: {{ services.apacheSettings.basedir }}/includes
     - require:
        - pkg: makina-apache-pkgs
     - require_in:
@@ -201,7 +201,7 @@ makina-apache-default-log-directory:
     - user: root
     - group: www-data
     - mode: "2770"
-    - name: {{ services.apacheDefaultSettings.logdir }}
+    - name: {{ services.apacheSettings.logdir }}
     - require:
        - pkg: makina-apache-pkgs
     - require_in:
@@ -266,9 +266,9 @@ makina-apache-minimal-default-vhost:
       - pkg: makina-apache-pkgs
       - file: makina-apache-default-vhost-index
 {% if old_mode %}
-    - name: {{ services.apacheDefaultSettings.vhostdir }}/default
+    - name: {{ services.apacheSettings.vhostdir }}/default
 {% else %}
-    - name: {{ services.apacheDefaultSettings.vhostdir }}/000-default.conf
+    - name: {{ services.apacheSettings.vhostdir }}/000-default.conf
 {% endif %}
     - source:
       - salt://makina-states/files/etc/apache2/sites-available/default_vh.conf
@@ -277,8 +277,8 @@ makina-apache-minimal-default-vhost:
     - mode: 644
     - template: jinja
     - defaults:
-        log_level: "{{ services.apacheDefaultSettings.log_level }}"
-        serveradmin_mail: "{{ services.apacheDefaultSettings.serveradmin_mail }}"
+        log_level: "{{ services.apacheSettings.log_level }}"
+        serveradmin_mail: "{{ services.apacheSettings.serveradmin_mail }}"
         mode: "production"
 {% if nodetypes.isDevhost %}
     - context:
@@ -325,7 +325,7 @@ makina-add-apache-in-waiting-for-nfs-services:
 #--- MAIN SERVICE RESTART/RELOAD watchers --------------
 makina-apache-restart:
   service.running:
-    - name: {{ services.apacheDefaultSettings.service }}
+    - name: {{ services.apacheSettings.service }}
     - enable: True
     # most watch requisites are linked here with watch_in
     - watch:
@@ -336,7 +336,7 @@ makina-apache-restart:
 #}
 makina-apache-reload:
   service.running:
-    - name: {{ services.apacheDefaultSettings.service }}
+    - name: {{ services.apacheSettings.service }}
     - require:
       - pkg: makina-apache-pkgs
     - enable: True
@@ -367,10 +367,10 @@ makina-apache-reload:
 # Then use the pillar to alter your default parameters given to this call
 #}
 {% from 'makina-states/services/http/apache_macros.jinja' import virtualhost with context %}
-{% if 'virtualhosts' in services.apacheDefaultSettings -%}
-{%   for site,siteDef in services.apacheDefaultSettings['virtualhosts'].iteritems() -%}
+{% if 'virtualhosts' in services.apacheSettings -%}
+{%   for site,siteDef in services.apacheSettings['virtualhosts'].iteritems() -%}
 {%     do siteDef.update({'site': site}) %}
-{%     do siteDef.update({'apacheData': services.apacheDefaultSettings}) %}
+{%     do siteDef.update({'apacheData': services.apacheSettings}) %}
 {{     virtualhost(**siteDef) }}
 {%-   endfor %}
 {%- endif %}

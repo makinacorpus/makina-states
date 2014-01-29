@@ -102,7 +102,18 @@ def _settings(REG):
     #
     # Apache:  (services.http.apache)
     #
-    apacheDefaultSettings = __salt__['mc_apache.settings'](
+    apacheSettings = __salt__['mc_apache.settings'](
+      grains,
+      pillar,
+      locs,
+      nodetypes_registry,
+      REG
+    )
+
+    #
+    # Nginx:  (services.http.nginx)
+    #
+    nginxSettings = __salt__['mc_nginx.settings'](
       grains,
       pillar,
       locs,
