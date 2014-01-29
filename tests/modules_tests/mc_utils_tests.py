@@ -7,15 +7,68 @@ import unittest
 from modules_tests import base
 
 from modules import mc_utils
+from mock import patch, MagicMock, Mock
 
 
-class DefaulstTestCase(base.ModuleCase):
-
-    def test_defaults(self):
-        self.assertTrue(True)
+mc_utils.__salt__ = {}
 
 
 class TestCase(base.ModuleCase):
+
+    @patch.dict(mc_utils.__salt__,
+                {'mc_utils.get': Mock(
+                    side_effect={
+                        'prefix.1': "e",
+                        'prefix.2': "{1}",
+                    }.get)})
+    def test_defaults(self):
+        self.assertEquals(
+            mc_utils.defaults('prefix', {
+                "1": 'a',
+                "2": '{3}',
+                "3": 'b',
+            }
+            ), {
+                '1': 'e',  # 1 take the pillar value
+                '2': 'e',  # 2 is overriden by the pillar value and get
+                           # resolved {1} > data['1'] > e
+                '3': 'b'   # there is not 'prefix3' in pillar, defaults to b
+            }
+        )
+
+
+    @patch.dict(mc_utils.__salt__,
+                {'mc_utils.get': Mock(
+                    side_effect={
+                        'prefix.2.aa': "foo",
+                        'prefix.2.dd': {1: 2},
+                        'prefix.2.cc.ff.gg': "ee",
+                        'prefix.4': 3,
+                        'prefix.5': {1: 2},
+                    }.get)})
+    def test_defaults_rec(self):
+        self.assertEquals(
+            mc_utils.defaults('prefix', {
+                "1": 'a',
+                "2": {"aa": "bb",
+                      "dd": {"dd": "ee",
+                             "ff": {"gg": "hh"}},
+                      "cc": {"dd": "ee",
+                             "ff": {"gg": "hh"}}},
+                "4": {"aaa": "bbb", "ccc": {"ddd": "eee"}},
+                "5": {"aaaa": "bbbb", "cccc": {"dddd": "eeee"}},
+                "3": 'b',
+            }
+            ), {
+                '1': 'a',
+                '2': {'aa': 'foo', 'cc': {'dd': 'ee', 'ff': {'gg': 'ee'}},
+                      'dd': {1: 2}},
+                '3': 'b',
+                '4': 3,
+                '5': {1: 2},
+            }
+        )
+
     def test_format_resolve(self):
         self.maxDiff = None
         tests = [
