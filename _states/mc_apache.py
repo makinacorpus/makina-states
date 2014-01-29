@@ -42,8 +42,10 @@ import salt.utils.odict as odict
 log = logging.getLogger(__name__)
 
 _APACHE_DEPLOYED = False
+# Modules explicitly required by states
 _MODULES_EXCLUDED = []
-_MODULES_INCLUDED = []
+# Module explicitly excluded by states
+_MODULES_REGISTERED = []
 
 _shared_modules = []
 _static_modules = []
@@ -59,12 +61,17 @@ def _load_modules():
 def _checking_modules( modules_excluded=None, modules_included=None, blind_mode=False):
     global _MODULES_INCLUDED
     global _MODULES_EXCLUDED
+    global _MODULES_REGISTERED
     global _shared_modules
     global _static_modules
     ret = {'changes': '',
            'result': None,
            'comment': ''}
+    # Load current shared and static modules
     _load_modules()
+    # Load modules installed from previous run and which have not been excluded
+    # since
+    _modules_registered = _load_registered_modules()
     modifications = []
     comments = []
     # manage junction of _MODULES_[INCLUDED/EXCLUDED] and given parameters

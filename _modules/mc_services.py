@@ -106,7 +106,8 @@ def _settings(REG):
       grains,
       pillar,
       locs,
-      nodetypes_registry
+      nodetypes_registry,
+      REG
     )
 
     #

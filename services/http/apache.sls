@@ -345,13 +345,13 @@ makina-apache-reload:
 
 # Virtualhosts, here are the ones defined in pillar, if any ----------------
 {#
-# We loop on VH defined in pillar apache/register-sites, check the
+# We loop on VH defined in pillar apache/virtualhosts, check the
 # macro definition for the pillar dictionnary keys available. The
-# register-sites key is set as the site name, and all keys are then
+# virtualhosts key is set as the site name, and all keys are then
 # added
 # pillar example:
 #apache-default-settings:
-#  register-sites:
+#  virtualhosts:
 #     example.com:
 #        active: False
 #        small_name: example
@@ -367,8 +367,8 @@ makina-apache-reload:
 # Then use the pillar to alter your default parameters given to this call
 #}
 {% from 'makina-states/services/http/apache_macros.jinja' import virtualhost with context %}
-{% if 'register-sites' in services.apacheDefaultSettings -%}
-{%   for site,siteDef in services.apacheDefaultSettings['register-sites'].iteritems() -%}
+{% if 'virtualhosts' in services.apacheDefaultSettings -%}
+{%   for site,siteDef in services.apacheDefaultSettings['virtualhosts'].iteritems() -%}
 {%     do siteDef.update({'site': site}) %}
 {%     do siteDef.update({'apacheData': services.apacheDefaultSettings}) %}
 {{     virtualhost(**siteDef) }}

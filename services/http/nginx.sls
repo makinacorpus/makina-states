@@ -57,12 +57,12 @@ makina-nginx-reload:
 
 {# Virtualhosts, here are the ones defined in pillar, if any ----------------
 #
-# We loop on VH defined in pillar nginx/register-sites, check the
+# We loop on VH defined in pillar nginx/virtualhosts, check the
 # macro definition for the pillar dictionnary keys available. The
-# register-sites key is set as the site name, and all keys are then
+# virtualhosts key is set as the site name, and all keys are then
 # added.
 # pillar example:
-# makina-states.services.http.nginx.register-sites:
+# makina-states.services.http.nginx.virtualhosts:
 #   example.com:
 #     active: False
 #     small_name: example
@@ -80,8 +80,8 @@ makina-nginx-reload:
 -#}
 
 {% from 'makina-states/services/http/nginx_macros.jinja' import virtualhost with context -%}
-{% if 'register-sites' in nginxData -%}
-{%   for site,siteDef in nginxData['register-sites'].iteritems() -%}
+{% if 'virtualhosts' in nginxData -%}
+{%   for site,siteDef in nginxData['virtualhosts'].iteritems() -%}
 {%     do siteDef.update({'site': site}) -%}
 {%     do siteDef.update({'nginxData': nginxData}) -%}
 {{     virtualhost(**siteDef) -}}

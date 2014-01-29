@@ -20,7 +20,7 @@ apache-default-settings:
   # Note that register site is not the best way to make VH, prefer
   # using a call to the jinja virtualhost macro like in 
   # apache_example.sls
-  register-sites:
+  virtualhosts:
      example.com:
         active: False
         small_name: example
