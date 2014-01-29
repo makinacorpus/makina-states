@@ -102,107 +102,11 @@ def _settings(REG):
     #
     # Apache:  (services.http.apache)
     #
-    apacheStepOne = __salt__['grains.filter_by']({
-        'dev': {
-            'mpm': 'worker',
-            'version': '2.2',
-            'Timeout': 120,
-            'KeepAlive': True,
-            'MaxKeepAliveRequests': 5,
-            'KeepAliveTimeout': 5,
-            'log_level': 'warn',
-            'serveradmin_mail': 'webmaster@localhost',
-            'prefork': {
-                'StartServers': 5,
-                'MinSpareServers': 5,
-                'MaxSpareServers': 5,
-                'MaxClients': 20,
-                'MaxRequestsPerChild': 300
-            },
-            'worker': {
-                'StartServers': 2,
-                'MinSpareThreads': 25,
-                'MaxSpareThreads': 75,
-                'ThreadLimit': 64,
-                'ThreadsPerChild': 25,
-                'MaxRequestsPerChild': 300,
-                'MaxClients': 200
-            },
-            'event': {
-                'AsyncRequestWorkerFactor': "1.5"
-            },
-            'register-sites': {}
-        },
-        'prod': {
-            'mpm': 'worker',
-            'version': '2.2',
-            'Timeout': 120,
-            'KeepAlive': True,
-            'MaxKeepAliveRequests': 100,
-            'KeepAliveTimeout': 3,
-            'log_level': 'warn',
-            'serveradmin_mail': 'webmaster@localhost',
-            'prefork': {
-                'StartServers': 25,
-                'MinSpareServers': 25,
-                'MaxSpareServers': 25,
-                'MaxClients': 150,
-                'MaxRequestsPerChild': 3000
-            },
-            'worker': {
-                'StartServers': 5,
-                'MinSpareThreads': 50,
-                'MaxSpareThreads': 100,
-                'ThreadLimit': 100,
-                'ThreadsPerChild': 50,
-                'MaxRequestsPerChild': 3000,
-                'MaxClients': 700
-            },
-            'event': {
-                'AsyncRequestWorkerFactor': "4"
-            },
-            'register-sites': {}
-        }},
-        grain='default_env',
-        default='dev'
-    )
-    # Ubuntu 13.10 is now providing 2.4 with event by default #
-    if (
-        grains['lsb_distrib_id'] == "Ubuntu"
-        and grains['lsb_distrib_release'] >= 13.10
-    ):
-        apacheStepOne.update({'mpm': 'event'})
-        apacheStepOne.update({'version': '2.4'})
-
-    apacheDefaultSettings = __salt__['mc_utils.defaults'](
-        'makina-states.services.http.apache', __salt__['grains.filter_by']({
-            'Debian': {
-                'package': 'apache2',
-                'server': 'apache2',
-                'service': 'apache2',
-                'mod_wsgi': 'libapache2-mod-wsgi',
-                'basedir': locs['conf_dir'] + '/apache2',
-                'vhostdir': locs['conf_dir'] + '/apache2/sites-available',
-                'confdir': locs['conf_dir'] + '/apache2/conf.d',
-                'logdir': locs['var_log_dir'] + '/apache2',
-                'wwwdir': locs['srv_dir']
-            },
-            'RedHat': {
-                'package': 'httpd',
-                'server': 'httpd',
-                'service': 'httpd',
-                'mod_wsgi': 'mod_wsgi',
-                'basedir': locs['conf_dir'] + '/httpd',
-                'vhostdir': locs['conf_dir'] + '/httpd/conf.d',
-                'confdir': locs['conf_dir'] + '/httpd/conf.d',
-                'logdir': locs['var_log_dir'] + '/httpd',
-                'wwwdir': locs['var_dir'] + '/www'
-            },
-        },
-            grain='os_family',
-            default='Debian',
-            merge=apacheStepOne
-        )
+    apacheDefaultSettings = __salt__['mc_apache.settings'](
+      grains,
+      pillar,
+      locs,
+      nodetypes_registry
     )
 
     #
