@@ -317,9 +317,10 @@ salt-{{ data.name }}-makina-states-dirs:
     - names:
       {% for i in data.salt_modules -%}
       - {{ localRoot }}/{{ i }}
-      - {{ data.msr }}/{{ i }}
+      - {{ data.msr }}/ext_mods/{{ i }}
       {% endfor %}
 
+{# done now in conf
 salt-{{ data.name }}-grains:
   cmd.run:
     - name: {{localMsr}}/_scripts/install_salt_modules.sh "{{localRoot}}"
@@ -343,7 +344,7 @@ salt-{{ data.name }}-grains:
                 done;
               done;
               exit 0;
-
+#}
 {#- update makina-state #}
 salt-{{ data.name }}-buildout-bootstrap:
   cmd.run:
