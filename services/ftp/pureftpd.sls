@@ -9,7 +9,7 @@
 {%- set nodetypes = services.nodetypes %}
 {%- set locs = localsettings.locations %}
 {%- set key = locs.conf_dir+'/ssl/private/pure-ftpd.pem' %}
-{%- set passive = services.pureftpdSettings['PassiveIP'] or pureftpdSettings['PassivePortRange']%}
+{%- set passive = services.pureftpdSettings['PassiveIP'] or services.pureftpdSettings['PassivePortRange']%}
 {%- if grains['os_family'] in ['Debian'] %}
 {% macro service_watch_in() %}
     - watch_in:
@@ -19,15 +19,14 @@
 prereq-pureftpd:
   pkg.installed:
     - pkgs:
-      - pure-ftpd
       {%- if services.pureftpdSettings.LDAPConfigFile %}
       - pure-ftpd-ldap
-      {%- endif %}
-      {%- if services.pureftpdSettings.MySQLConfigFile %}
+      {%- elif services.pureftpdSettings.MySQLConfigFile %}
       - pure-ftpd-mysql
-      {%- endif %}
-      {%- if services.pureftpdSettings.PGSQLConfigFile %}
+      {%- elif services.pureftpdSettings.PGSQLConfigFile %}
       - pure-ftpd-postgresql
+      {%- else %}
+      - pure-ftpd
       {%- endif %}
 
 {{ locs.conf_dir }}/default/pure-ftpd-common-makina-pure-ftpd:

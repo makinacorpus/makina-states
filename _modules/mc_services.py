@@ -276,7 +276,9 @@ def _settings(REG):
         }
     )
     for setting in pureftpdSettings:
-        pureftpdSettings.update({setting: pureftpdSettings[setting] + '\n'})
+        value = pureftpdSettings[setting]
+        if value.strip():
+            pureftpdSettings.update({setting: value + '\n'})
 
     #
     # PostGRESQL:  (services.db.postgresql)
@@ -293,7 +295,7 @@ def _settings(REG):
     postgresqlUsers = {}
     for userk, data in pillar.items():
         if userk.endswith('-makina-services-postgresql-user'):
-            postgresqlUsers.update({user: data})
+            postgresqlUsers.update({userk: data})
 
     #
     # default activated postgresql versions & settings:
@@ -447,7 +449,6 @@ def _settings(REG):
                         'isPercona': False,
                         'isOracle': True,
                         'isMariaDB': False,
-                        'mysql.cnf': None,
                         'memory_usage_percent': 85,
                         'nb_connections': 250,
                         'innodb_buffer_pool_size': False,
