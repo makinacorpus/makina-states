@@ -2283,6 +2283,11 @@ cleanup_old_installs() {
             done
         fi
     done
+    for i in "$MASTERSALT_ROOT" "$SALT_ROOT";do
+        if [ -h "$i/_grains/makina_grains.py" ];then
+            rm -f "$i/_grains/makina_grains.py"
+        fi
+    done
     for conf in "${master_conf}" "${mmaster_conf}";do
         if [ -e "$conf" ];then
             for i in _runners;do
