@@ -273,14 +273,19 @@ def _settings(REG):
         })
 
     # SSL settings for reuse in states
+    country = __salt__['grains.get']('defaultlanguage')
+    if country:
+        country = country[:2].upper()
+    else:
+        country = 'fr'
     SSLSettings = __salt__['mc_utils.defaults'](
         'makina-states.localsettings.ssl', {
-            'country': grains['defaultlanguage'][:2].upper(),
+            'country': country,
             'st': 'Pays de Loire',
             'l': 'NANTES',
             'o': 'NANTES',
             'cn': grains['fqdn'],
-            'email': 'contact@' + grains['fqdn'],
+            'email': grains['fqdn'],
         })
 
     # expose any defined variable to the callees
