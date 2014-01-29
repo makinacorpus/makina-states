@@ -34,11 +34,11 @@ def settings(grains,pillar,locations,nodetypes_registry,REG):
                 'Debian': {
                   'package'  : 'nginx',
                   'service'  : 'nginx',
-                  'basedir'  : locations.conf_dir + '/nginx',
-                  'vhostdir' : locations.conf_dir + '/nginx/sites-available',
-                  'confdir'  : locations.conf_dir + '/nginx/conf.d',
-                  'logdir'   : locations.var_log_dir + '/nginx',
-                  'wwwdir'   : locations.srv_dir + '/www'
+                  'basedir'  : locations['conf_dir'] + '/nginx',
+                  'vhostdir' : locations['conf_dir'] + '/nginx/sites-available',
+                  'confdir'  : locations['conf_dir'] + '/nginx/conf.d',
+                  'logdir'   : locations['var_log_dir'] + '/nginx',
+                  'wwwdir'   : locations['srv_dir'] + '/www'
                 },
             },
             merge=__salt__['grains.filter_by']({
