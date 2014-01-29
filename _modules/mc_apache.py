@@ -174,7 +174,11 @@ def settings(grains,pillar,locations,nodetypes_registry,REG):
             merge=apacheStepOne
         )
     )
-    return apacheDefaultSettings
+
+    # FINAL STEP: merge with data from pillar and grains
+    apacheSettings = __salt__['mc_utils.defaults']('makina-states.services.http.apache', apacheDefaultSettings)
+
+    return apacheSettings
 
 def check_version(version):
     '''

@@ -370,7 +370,6 @@ makina-apache-reload:
 {% if 'virtualhosts' in services.apacheSettings -%}
 {%   for site,siteDef in services.apacheSettings['virtualhosts'].iteritems() -%}
 {%     do siteDef.update({'site': site}) %}
-{%     do siteDef.update({'apacheData': services.apacheSettings}) %}
 {{     virtualhost(**siteDef) }}
 {%-   endfor %}
 {%- endif %}

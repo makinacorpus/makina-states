@@ -122,6 +122,16 @@ def _settings(REG):
     )
 
     #
+    # PHP:  (services.http.nginx)
+    #
+    phpSettings = __salt__['mc_php.settings'](
+      grains,
+      pillar,
+      locs,
+      nodetypes_registry,
+      REG
+    )
+    #
     # Pureftpd:  (services.ftp.pureftpd)
     #
     pureftpdDefaultSettings = __salt__['mc_utils.defaults'](

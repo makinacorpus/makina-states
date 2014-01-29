@@ -1,53 +1,51 @@
 #
-# Common php instalations (mod_php or php-fpm) files
+# Common php installations (mod_php or php-fpm) files
 #
-
-# Load defaults values -----------------------------------------
-{% from 'makina-states/services/php/php_defaults.jinja' import phpData with context %}
 
 {% import "makina-states/_macros/services.jinja" as services with context %}
 {{ salt['mc_macros.register']('services', 'php.common') }}
 {% set localsettings = services.localsettings %}
 {% set nodetypes = services.nodetypes %}
 {% set locs = localsettings.locations %}
+{% set phpSettings = services.phpSettings %}
 
 makina-php-timezone:
   file.managed:
     - user: root
     - group: root
     - mode: 664
-    - name: {{ phpData.confdir }}/timezone.ini
-    - source: salt://makina-states/files{{ phpData.confdir }}/timezone.ini
+    - name: {{ phpSettings.confdir }}/timezone.ini
+    - source: salt://makina-states/files{{ phpSettings.confdir }}/timezone.ini
     - template: 'jinja'
     - defaults:
-        timezone: "{{ phpData.timezone }}"
+        timezone: "{{ phpSettings.timezone }}"
     - require:
       - pkg: makina-php-pkgs
     - watch_in:
       - service: makina-php-reload
 
 #--------------------- APC (mostly deprecated)
-{% if phpData.modules.apc.install %}
+{% if phpSettings.modules.apc.install %}
 makina-php-apc:
   file.managed:
     - user: root
     - group: root
     - mode: 664
-    - name: {{ phpData.confdir }}/apcu.ini
-    - source: salt://makina-states/files{{ phpData.confdir }}/apcu.ini
+    - name: {{ phpSettings.confdir }}/apcu.ini
+    - source: salt://makina-states/files{{ phpSettings.confdir }}/apcu.ini
     - template: 'jinja'
     - defaults:
-        enabled: {{ phpData.modules.apc.enabled }}
-        enable_cli: {{ phpData.modules.apc.enable_cli }}
-        shm_segments: "{{ phpData.modules.apc.shm_segments }}"
-        shm_size: "{{ phpData.modules.apc.shm_size }}"
-        mmap_file_mask: "{{ phpData.modules.apc.mmap_file_mask }}"
+        enabled: {{ phpSettings.modules.apc.enabled }}
+        enable_cli: {{ phpSettings.modules.apc.enable_cli }}
+        shm_segments: "{{ phpSettings.modules.apc.shm_segments }}"
+        shm_size: "{{ phpSettings.modules.apc.shm_size }}"
+        mmap_file_mask: "{{ phpSettings.modules.apc.mmap_file_mask }}"
     - require:
       - pkg: makina-php-pkgs
     - watch_in:
       - service: makina-php-reload
 
-{%   if phpData.modules.apc.enabled %}
+{%   if phpSettings.modules.apc.enabled %}
 makina-php-apc-install:
   cmd.run:
     - name: {{ locs.sbin_dir }}/php5enmod -s ALL apcu
@@ -71,8 +69,8 @@ makina-php-apc-disable:
 {% endif %}
 
 #--------------------- XDEBUG
-{% if phpData.modules.xdebug.install %}
-{%   if phpData.modules.xdebug.enabled %}
+{% if phpSettings.modules.xdebug.install %}
+{%   if phpSettings.modules.xdebug.enabled %}
 makina-php-xdebug-install:
   cmd.run:
     - name: {{ locs.sbin_dir }}/php5enmod -s ALL xdebug
@@ -92,7 +90,6 @@ makina-php-xdebug-disable:
       - service: makina-php-restart
 {%   endif %}
 {% endif %}
-
 
 # flag to auto-install as-soon-as-included once
 makina-states.services.php.common:

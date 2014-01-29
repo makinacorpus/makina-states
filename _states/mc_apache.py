@@ -45,6 +45,8 @@ _APACHE_DEPLOYED = False
 # Modules explicitly required by states
 _MODULES_EXCLUDED = []
 # Module explicitly excluded by states
+_MODULES_INCLUDED = []
+# TODO: registered modules?
 _MODULES_REGISTERED = []
 
 _shared_modules = []
@@ -71,7 +73,7 @@ def _checking_modules( modules_excluded=None, modules_included=None, blind_mode=
     _load_modules()
     # Load modules installed from previous run and which have not been excluded
     # since
-    _modules_registered = _load_registered_modules()
+    #_modules_registered = _load_registered_modules()
     modifications = []
     comments = []
     # manage junction of _MODULES_[INCLUDED/EXCLUDED] and given parameters

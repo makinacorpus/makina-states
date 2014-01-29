@@ -4,7 +4,7 @@
 #}
 {% import "makina-states/_macros/services.jinja" as services with context %}
 {% set nodetypes = services.nodetypes %}
-
+{% set apacheData = services.apacheSettings %}
 {# * virtualhost => create all states for a virtualhost (virtualhost file, include file, a2ensite/dissite command
 #
 #   - apacheData: global apache configuration dictionnary, this cannot be given by context import, so please pass it to this macro
@@ -41,7 +41,7 @@
 #   - vh_in_template_source: source of the file.managed for the vhirtualhost included content
 #                            (the most important part when making alterations of vh content)
 #}
-{% macro virtualhost(apacheData,
+{% macro virtualhost(
                      site = 'example.com',
                      small_name = None,
                      active = True,

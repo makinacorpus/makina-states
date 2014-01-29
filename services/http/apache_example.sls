@@ -53,9 +53,8 @@ my-apache-other-module--other-module-excluded:
       - mc_apache: makina-apache-main-conf
 
 # Custom virtualhost
-{% import "makina-states/_macros/services.jinja" as services with context %}
 {% from 'makina-states/services/http/apache_macros.jinja' import virtualhost with context %}
-{{ virtualhost(apacheData = services.apacheDefaultSettings,
+{{ virtualhost(
             site = salt['pillar.get']('project-foo-apache-vh1-name', 'www.foobar.com'),
             small_name = salt['pillar.get']('project-foo-apache-vh1-nickname', 'foobar'),
             active = True,

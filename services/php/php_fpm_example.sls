@@ -12,6 +12,8 @@
 {% set localsettings = services.localsettings %}
 {% set nodetypes = services.nodetypes %}
 {% set locs = localsettings.locations %}
+{% set phpSettings = services.phpSettings %}
+
 include:
   # IMPORTANT: If you use Apache, include it BEFORE phpfpm, so that
   # we can detect apache is used and trigger the restart in case of mod_php removal
@@ -29,13 +31,11 @@ extend:
           project_root: '{{ locs.projects_dir }}/php.example.com'
           socket_directory: '/var/fcgi/'
 
-{% from 'makina-states/services/php/php_defaults.jinja' import phpData with context %}
-
-# Adding some php packages
+# Adding some php packages 
 my-phpfpm-other-modules:
   pkg.installed:
     - pkgs:
-      - {{ phpData.packages.pear }}
+      - {{ phpSettings.packages.pear }}
     - require_in:
       - pkg: makina-php-pkgs
 # Ensuring some other are not there
@@ -43,14 +43,13 @@ my-phpfpm-other-modules:
 my-phpfpm-removed-modules:
   pkg.removed:
     - pkgs:
-      - {{ phpData.packages.memcached }}
+      - {{ phpSettings.packages.memcached }}
     - require_in:
       - pkg: makina-php-pkgs
 
 
 {% from 'makina-states/services/php/php_macros.jinja' import pool with context %}
 {{ pool(
-        phpData= phpData,
         site= 'php.example.com',
         pool_name= 'devexample',
         settings= {
@@ -78,10 +77,8 @@ my-phpfpm-removed-modules:
 ) }}
 
 # Custom Apache Virtualhost
-{% from 'makina-states/services/http/apache_defaults.jinja' import apacheData with context %}
 {% from 'makina-states/services/http/apache_macros.jinja' import virtualhost with context %}
 {{ virtualhost(
-          apacheData = apacheData,
           site = salt['pillar.get']('project-foobar-apache-vh1-name', 'php.example.com'),
           small_name = salt['pillar.get']('project-foobar-apache-vh1-nickname', 'phpexample'),
           active = True,
