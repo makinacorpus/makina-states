@@ -4,10 +4,8 @@
 #}
 
 {%- import "makina-states/_macros/funcs.jinja" as funcs with context %}
-{%- import "makina-states/_macros/ldap.jinja" as ldap with context %}
 {#- expose imported macros #}
 {%- set funcs = funcs %}
-{%- set ldap = ldap %}
 
 {#- see _modules/mc_localsettings.py for exposed settings #}
 {%- set settings = salt['mc_localsettings.settings']() %}

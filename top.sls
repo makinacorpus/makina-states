@@ -130,6 +130,6 @@
 {% import "makina-states/_macros/funcs.jinja" as funcs with context %}
 # This loop includes all the kind of things that could be installed
 include:
-{% for kind in __salt__['mc_macros.kinds']() -%}
+{% for kind in salt['mc_macros.kinds']() -%}
   - makina-states.{{kind}}
 {% endfor %}

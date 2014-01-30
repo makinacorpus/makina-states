@@ -35,8 +35,8 @@ def metadata():
 
 
 def _settings(REG):
-    resolver = salt['mc_utils.format_resolve']
-    metadata = salt['mc_bootstraps.metadata']()
+    resolver = __salt__['mc_utils.format_resolve']
+    metadata = __salt__['mc_bootstraps.metadata']()
     pillar = __pillar__
     grains = __grains__
     return locals()

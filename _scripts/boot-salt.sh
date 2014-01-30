@@ -1308,7 +1308,7 @@ create_salt_skeleton(){
         cat > $CONF_PREFIX/master << EOF
 file_roots: {"base":["$SALT_ROOT"]}
 pillar_roots: {"base":["$SALT_PILLAR"]}
-runner_dirs: [$SALT_ROOT/runners, $SALT_ROOT/ext_mods/runners, ${SALT_MS}/runners]
+runner_dirs: [$SALT_ROOT/runners, $SALT_MS/ext_mods/runners, ${SALT_MS}/runners]
 EOF
     fi
     if [[ ! -e $CONF_PREFIX/minion ]];then
@@ -1318,11 +1318,11 @@ master: $SALT_MASTER_DNS
 master_port: $SALT_MASTER_PORT
 file_roots: {"base":["$SALT_ROOT"]}
 pillar_roots: {"base":["$SALT_PILLAR"]}
-module_dirs: [$SALT_ROOT/_modules, $SALT_ROOT/ext_mods/modules, ${SALT_MS}/_modules]
-returner_dirs: [$SALT_ROOT/_returners, $SALT_ROOT/ext_mods/returners, ${SALT_MS}/_returners]
-states_dirs: [$SALT_ROOT/_states, $SALT_ROOT/ext_mods/states, ${SALT_MS}/_states]
-grains_dirs: [$SALT_ROOT/_grains, $SALT_ROOT/ext_mods/grains, ${SALT_MS}/_grains]
-render_dirs: [$SALT_ROOT/_renderers, $SALT_ROOT/ext_mods/renderers, ${SALT_MS}/_renderers]
+module_dirs: [$SALT_ROOT/_modules, $SALT_MS/ext_mods/modules, ${SALT_MS}/_modules]
+returner_dirs: [$SALT_ROOT/_returners, $SALT_MS/ext_mods/returners, ${SALT_MS}/_returners]
+states_dirs: [$SALT_ROOT/_states, $SALT_MS/ext_mods/states, ${SALT_MS}/_states]
+grains_dirs: [$SALT_ROOT/_grains, $SALT_MS/ext_mods/grains, ${SALT_MS}/_grains]
+render_dirs: [$SALT_ROOT/_renderers, $SALT_MS/ext_mods/renderers, ${SALT_MS}/_renderers]
 EOF
     fi
 
@@ -1335,7 +1335,7 @@ EOF
             cat > $MCONF_PREFIX/master << EOF
 file_roots: {"base":["$MASTERSALT_ROOT"]}
 pillar_roots: {"base":["$MASTERSALT_PILLAR"]}
-runner_dirs: [$MASTERSALT_ROOT/runners, $MASTERSALT_ROOT/ext_mods/runners, ${MASTERSALT_MS}/runners]
+runner_dirs: [$MASTERSALT_ROOT/runners, $MASTERSALT_MS/ext_mods/runners, ${MASTERSALT_MS}/runners]
 EOF
         fi
         if [[ ! -e $MCONF_PREFIX/minion ]];then
@@ -1345,11 +1345,11 @@ master: $MASTERSALT_MASTER_DNS
 master_port: $MASTERSALT_MASTER_PORT
 file_roots: {"base":["$MASTERSALT_ROOT"]}
 pillar_roots: {"base":["$MASTERSALT_PILLAR"]}
-module_dirs: [$MASTERSALT_ROOT/_modules, $MASTERSALT_ROOT/ext_mods/modules, ${MASTERSALT_MS}/_modules]
-returner_dirs: [$MASTERSALT_ROOT/_returners, $MASTERSALT_ROOT/ext_mods/returners, ${MASTERSALT_MS}/_returners]
-states_dirs: [$MASTERSALT_ROOT/_states, $MASTERSALT_ROOT/ext_mods/states, ${MASTERSALT_MS}/_states]
-grains_dirs: [$MASTERSALT_ROOT/_grains, $MASTERSALT_ROOT/ext_mods/grains, ${MASTERSALT_MS}/_grains]
-render_dirs: [$MASTERSALT_ROOT/_renderers, $MASTERSALT_ROOT/ext_mods/renderers, ${MASTERSALT_MS}/_renderers]
+module_dirs: [$MASTERSALT_ROOT/_modules, $MASTERSALT_MS/ext_mods/modules, ${MASTERSALT_MS}/_modules]
+returner_dirs: [$MASTERSALT_ROOT/_returners, $MASTERSALT_MS/ext_mods/returners, ${MASTERSALT_MS}/_returners]
+states_dirs: [$MASTERSALT_ROOT/_states, $MASTERSALT_MS/ext_mods/states, ${MASTERSALT_MS}/_states]
+grains_dirs: [$MASTERSALT_ROOT/_grains, $MASTERSALT_MS/ext_mods/grains, ${MASTERSALT_MS}/_grains]
+render_dirs: [$MASTERSALT_ROOT/_renderers, $MASTERSALT_MS/ext_mods/renderers, ${MASTERSALT_MS}/_renderers]
 EOF
         fi
     fi
