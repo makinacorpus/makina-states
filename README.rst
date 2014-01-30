@@ -9,6 +9,11 @@ About
 - We have not got on the formula way to provide this consistency.
 - Most of the configuration should be done using pillar.
 
+Travis badge
+=============
+.. image:: https://travis-ci.org/makinacorpus/makina-states.png
+    :target: http://travis-ci.org/makinacorpus/makina-states
+
 What states can be found in makina-states
 -----------------------------------------
 The state to read immediatly is `servers.base <https://github.com/makinacorpus/makina-states/blob/master/servers/base.sls>`_.
