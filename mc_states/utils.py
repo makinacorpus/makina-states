@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 __docformat__ = 'restructuredtext en'
 import copy
-from functools import wraps
 
 AUTO_NAMES = {'_registry': 'registry',
               '_settings': 'setting',
@@ -24,7 +23,6 @@ def lazy_subregistry_get(__salt__, registry):
             return REG[key]
         return _call
     return wrapper
-    return wraps(wrapper)
 
 
 def dump(__salt__, kind, filters=None):
