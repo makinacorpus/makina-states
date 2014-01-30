@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 __docformat__ = 'restructuredtext en'
 
@@ -19,17 +18,85 @@ class TestCase(base.ModuleCase):
         self.assertEquals(mc_macros._REGISTRY, {})
         self.assertRaisesRegexp(
             mc_macros.NoRegistryLoaderFound,
-            'mc_.*.registry is unavailable',
-            mc_macros.load_registries,
-        )
+            'mc_.* is unavailable',
+            mc_macros.load_registries)
+        with patch('mc_states.modules.mc_macros.load_kind_registries',
+                   side_effect=[
+                       {5: 2},
+                       {1: 2},
+                       {3: 2},
+                       {4: 2},
+                   ]):
+            ret = mc_macros.load_registries()
+            self.assertEqual(ret, ['localsettings'])
+            self.assertTrue('localsettings' in mc_macros._REGISTRY)
+
+    def test_get_regitry(self):
         with patch.dict(self._salt, {
-            'mc_localsettings.registry': {},
-            'mc_services.registry': {},
-            'mc_controllers.registry': {},
-            'mc_localsettings.registry': {},
-        }):
-            pass
-        self.assertEquals(mc_macros._REGISTRY, {})
+            'mc_utils.get': Mock(
+                side_effect={
+                    'makina-states.foo.poo': True,
+                    'makina-states.foo.qoo': False
+                }.get
+            )}
+        ):
+            ret = mc_macros.get_registry({
+                'kind': 'foo',
+                'bases': 'bar',
+                'defaults': {
+                    'moo': {'active': True},
+                    'noo': {'active': False},
+                    'poo': {'active': False},
+                    'qoo': {'active': True},
+                }
+            })
+            self.assertEqual(ret['unactivated'],
+                             {'noo': {'active': False},
+                              'qoo': {'active': True}})
+            self.assertEqual(ret['actives'],
+                             {'moo': {'active': True},
+                              'poo': {'active': False}})
+            self.assertTrue(ret['is']['poo'])
+            self.assertTrue(ret['is']['moo'])
+            self.assertFalse(ret['is']['noo'])
+            self.assertFalse(ret['is']['qoo'])
+
+    def test_load_kind_registries(self):
+        patched = {}
+        for i, reg in enumerate(mc_macros._GLOBAL_KINDS):
+            for j, sreg in enumerate(mc_macros._SUB_REGISTRIES):
+                patched['mc_{0}.{1}'.format(reg, sreg)] = Mock(
+                    return_value={i: (1 + int(i)) * (1 + int(j))})
+        results = {}
+        patched['mc_macros.load_registries'] = mc_macros.load_registries
+        with patch.dict('mc_states.modules.mc_macros._REGISTRY', {}):
+            with patch.dict(self._salt, patched):
+                for i in sorted(mc_macros._GLOBAL_KINDS):
+                    results[i] = mc_macros.load_kind_registries(i)
+                self.assertEqual(mc_macros.kinds(),
+                                 ['controllers', 'localsettings',
+                                  'nodetypes', 'services'])
+                self.assertEqual(
+                    results['controllers'],
+                    {'metadata': {2: 3},
+                     'registry': {2: 9},
+                     'settings': {2: 6}})
+                self.assertEqual(
+                    results['localsettings'],
+                    {'metadata': {0: 1},
+                     'registry': {0: 3},
+                     'settings': {0: 2}})
+                self.assertEqual(
+                    results['nodetypes'],
+                    {'metadata': {3: 4},
+                     'registry': {3: 12},
+                     'settings': {3: 8}})
+
+                self.assertEqual(
+                    results['services'],
+                    {'metadata': {1: 2},
+                     'registry': {1: 6},
+                     'settings': {1: 4}})
 
     def test_is_item_active(self):
         with patch.dict(self._salt,

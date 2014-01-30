@@ -18,6 +18,11 @@ _GLOBAL_KINDS = [
     'controllers',
     'nodetypes',
 ]
+_SUB_REGISTRIES = [
+    'metadata',
+    'settings',
+    'registry',
+]
 
 
 class NoRegistryLoaderFound(SaltException):
@@ -40,22 +45,17 @@ def is_item_active(config_entry, default_status=False):
 
 def load_kind_registries(kind):
     # load all registries
-    registries = [
-        'metadata',
-        'settings',
-        'registry',
-    ]
     if not kind in _REGISTRY:
         _REGISTRY[kind] = {}
-    for registry in registries:
+    for registry in _SUB_REGISTRIES:
         if registry in _REGISTRY[kind]:
             continue
         try:
             _REGISTRY[kind][registry] = __salt__[
-                '{0}.{1}'.format(kind, registry)]()
+                'mc_{0}.{1}'.format(kind, registry)]()
         except KeyError:
             raise NoRegistryLoaderFound(
-                '{0} is unavailable'.format(kind, registry))
+                'mc_{0}.{1} is unavailable'.format(kind, registry))
     return _REGISTRY[kind]
 
 
@@ -63,12 +63,12 @@ def load_registries():
     # load all registries
     for kind in _GLOBAL_KINDS:
         load_kind_registries(kind)
-    return _REGISTRY
+    return sorted([a for a in _REGISTRY])
 
 
 def kinds():
     # py3 compatible dict keys()
-    return [a 
+    return [a
             for a in __salt__['mc_macros.load_registries']()
             if a in _GLOBAL_KINDS]
 
@@ -136,14 +136,12 @@ def get_registry(registry_configuration):
 
     """
     registry = registry_configuration.copy()
+    registry.setdefault('is', {})
     registry['grains_pref'] = 'makina-states.{0}'.format(registry['kind'])
     registry['states_pref'] = 'makina-states.{0}'.format(registry['kind'])
-    if not 'actives' in registry:
-        registry['actives'] = {}
-    if not 'unactivated' in registry:
-        registry['unactivated'] = {}
-    if not 'availables' in registry:
-        registry['availables'] = {}
+    registry.setdefault('actives', {})
+    registry.setdefault('unactivated', {})
+    registry.setdefault('availables', {})
     for item, data in registry['defaults'].items():
         activation_status = _default_activation_status
         if isinstance(data, dict):
@@ -153,8 +151,10 @@ def get_registry(registry_configuration):
             if activation_status is not _default_activation_status:
                 if activation_status:
                     registry['actives'][item] = data
+                    registry['is'][item] = True
                 else:
                     registry['unactivated'][item] = data
+                    registry['is'][item] = False
             else:
                 registry['availables'][item] = data
     return registry
