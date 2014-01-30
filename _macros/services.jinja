@@ -20,63 +20,66 @@
 {%- set registry = salt['mc_services.registry']() %}
 
 {# SSL Settings #}
-{%- set SSLSettings  = settings.SSLSettings  %}
+{%- set SSLSettings = settings.SSLSettings  %}
 
 {# LDAP integration #}
-{%- set ldapVariables  = settings.ldapVariables  %}
-{%- set ldapEn  = settings.ldapEn  %}
+{%- set ldapVariables = settings.ldapVariables  %}
+{%- set ldapEn = settings.ldapEn  %}
 
 {#- init systems flags #}
-{%- set upstart  = settings.upstart  %}
+{%- set upstart = settings.upstart  %}
 
 {#- ntp #}
-{%- set ntpEn  = settings.ntpEn  %}
+{%- set ntpEn = settings.ntpEn  %}
 
 {#- Apache #}
-{%- set apacheSettings  = settings.apacheSettings  %}
+{%- set apacheSettings = settings.apacheSettings  %}
 
 {#- Nginx #}
-{%- set nginxSettings  = settings.nginxSettings  %}
+{%- set nginxSettings = settings.nginxSettings  %}
 
 {#- PHP #}
-{%- set phpSettings  = settings.phpSettings  %}
+{%- set phpSettings = settings.phpSettings  %}
 
 {#-Pureftpd #}
-{%- set pureftpdDefaultSettings  = settings.pureftpdDefaultSettings  %}
-{%- set pureftpdSettings  = settings.pureftpdSettings  %}
+{%- set pureftpdDefaultSettings = settings.pureftpdDefaultSettings  %}
+{%- set pureftpdSettings = settings.pureftpdSettings  %}
 
 {# PostGRESQL #}
-{%- set pgDbs  = settings.pgDbs  %}
-{%- set postgresqlUsers  = settings.postgresqlUsers  %}
+{%- set pgDbs = settings.pgDbs  %}
+{%- set postgresqlUsers = settings.postgresqlUsers  %}
 {%- set defaultPgVersion = settings.defaultPgVersion %}
 {%- set pgSettings = settings.pgSettings%}
-{%- set pgVers  = settings.pgVers  %}
-{%- set postgisVers  = settings.postgisVers  %}
-{%- set postgisDbName  = settings.postgisDbName  %}
-{%- set postgresqlUser  = settings.postgresqlUser  %}
+{%- set pgVers = settings.pgVers  %}
+{%- set postgisVers = settings.postgisVers  %}
+{%- set postgisDbName = settings.postgisDbName  %}
+{%- set postgresqlUser = settings.postgresqlUser  %}
 
 {# shorewall #}
-{%- set shw_enabled  = settings.shw_enabled  %}
-{%- set shwIfformat  = settings.shwIfformat  %}
-{%- set shwPolicies  = settings.shwPolicies  %}
-{%- set shwZones  = settings.shwZones  %}
-{%- set shwInterfaces  = settings.shwInterfaces  %}
-{%- set shwParams  = settings.shwParams  %}
-{%- set shwMasqs  = settings.shwMasqs  %}
-{%- set shwRules  = settings.shwRules  %}
-{%- set shwDefaultState  = settings.shwDefaultState  %}
-{%- set shwData  = settings.shwData  %}
+{%- set shw_enabled = settings.shw_enabled  %}
+{%- set shwIfformat = settings.shwIfformat  %}
+{%- set shwPolicies = settings.shwPolicies  %}
+{%- set shwZones = settings.shwZones  %}
+{%- set shwInterfaces = settings.shwInterfaces  %}
+{%- set shwParams = settings.shwParams  %}
+{%- set shwMasqs = settings.shwMasqs  %}
+{%- set shwRules = settings.shwRules  %}
+{%- set shwDefaultState = settings.shwDefaultState  %}
+{%- set shwData = settings.shwData  %}
 
 {#- MySQL Fine Settings #}
-{%- set mysqlSettings  = settings.mysqlSettings  %}
-{%- set myDisableAutoConf  = settings.myDisableAutoConf  %}
+{%- set mysqlSettings = settings.mysqlSettings  %}
+{%- set myDisableAutoConf = settings.myDisableAutoConf  %}
 
 {#- DB_SMART_BACKUP #}
-{%- set dbsmartbackupSettings  = settings.dbsmartbackupSettings  %}
+{%- set dbsmartbackupSettings = settings.dbsmartbackupSettings  %}
+
+{#- RDIFF_BACKUP #}
+{%- set rdiffbackupSettings = settings.rdiffbackupSettings  %}
 
 {#- SSHD Settings #}
-{%- set sshServerSettings  = settings.sshServerSettings  %}
+{%- set sshServerSettings = settings.sshServerSettings  %}
 
 {#- SSH #}
-{%- set sshClientSettings  = settings.sshClientSettings  %}
+{%- set sshClientSettings = settings.sshClientSettings  %}
 # vim:set nofoldenable:

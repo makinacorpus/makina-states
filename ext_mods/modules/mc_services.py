@@ -43,12 +43,21 @@ def _settings(REG):
     pillar = __pillar__
     grains = __grains__
     locs = localsettings['locations']
+
+
+    #
+    # Rdiff backup
+    #
+    rdiffbackupSettings = __salt__['mc_utils.defaults'](
+        'makina-states.services.backup.rdiff-backup', {
+        })
+
     #
     # SSL Settings
     #
     SSLSettings = localsettings['SSLSettings']
 
-    # ----------------------------------------------------
+    #
     # LDAP integration
     #
     ldapVariables = localsettings['ldapVariables']
@@ -457,6 +466,7 @@ def _registry(REG):
         'mc_macros.construct_registry_configuration'
     ](settings, defaults={
         'backup.bacula-fd': {'active': False},
+        'backup.rdiffbackup': {'active': False},
         'backup.dbsmartbackup': {'active': False},
         'base.ntp': {'active': settings['ntpEn']},
         'base.ssh': {'active': True},
