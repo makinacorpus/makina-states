@@ -129,13 +129,11 @@ def _settings():
         'failhard': False,
         'log_granular_levels': {},
         'salt_modules': [
-            '_macros',
             '_grains',
             '_modules',
             '_renderers',
             '_runners',
             '_returners',
-            '_scripts',
             '_states',
         ]
     }
