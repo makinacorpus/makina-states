@@ -1,13 +1,5 @@
 {#-
-# Integration of rdiff-backup to backup postgresql & mysql databases
-# configured through makina-states
-#
-# The whole idea is not to try to install or deactivate a specific cron for
-# each particular database server, but try to run on each version that we
-# can detect
-#
-# For mysql, you certainly need the root password setting in yout pillar:
-#  makina-states.services.db.mysql.root_passwd: <rootpw>
+# Integration of rdiff-backup, a file backup software
 #}
 {%- import "makina-states/_macros/services.jinja" as services with context %}
 {%- set services = services %}
