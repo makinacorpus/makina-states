@@ -5,6 +5,6 @@ python:
 # matrix:
 
 install:
-    - sudo ./_scripts/boot-salt.sh -C
+    - sudo ./_scripts/boot-salt.sh -C -n travis
 
 script: sudo /srv/salt/makina-states/bin/test

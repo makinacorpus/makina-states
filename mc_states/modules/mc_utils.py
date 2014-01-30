@@ -5,10 +5,7 @@ Some usefull small tools
 
 '''
 
-import unittest
 # Import salt libs
-import salt.utils
-import os
 import salt.utils.dictupdate
 from salt.exceptions import SaltException
 import salt.utils

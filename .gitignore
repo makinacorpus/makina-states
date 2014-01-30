@@ -1,4 +1,8 @@
 .installed.cfg
+.py
+tests/mc_states
+tags.env
+tags.python
 locfiles
 .bootlogs
 .boot_salt_cmd

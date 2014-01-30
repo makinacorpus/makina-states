@@ -1309,7 +1309,7 @@ create_salt_skeleton(){
         cat > $CONF_PREFIX/master << EOF
 file_roots: {"base":["$SALT_ROOT"]}
 pillar_roots: {"base":["$SALT_PILLAR"]}
-runner_dirs: [$SALT_ROOT/runners, $SALT_MS/ext_mods/runners, ${SALT_MS}/runners]
+runner_dirs: [$SALT_ROOT/runners, $SALT_MS/mc_states/runners]
 EOF
     fi
     if [[ ! -e $CONF_PREFIX/minion ]];then
@@ -1319,11 +1319,11 @@ master: $SALT_MASTER_DNS
 master_port: $SALT_MASTER_PORT
 file_roots: {"base":["$SALT_ROOT"]}
 pillar_roots: {"base":["$SALT_PILLAR"]}
-module_dirs: [$SALT_ROOT/_modules, $SALT_MS/ext_mods/modules, ${SALT_MS}/_modules]
-returner_dirs: [$SALT_ROOT/_returners, $SALT_MS/ext_mods/returners, ${SALT_MS}/_returners]
-states_dirs: [$SALT_ROOT/_states, $SALT_MS/ext_mods/states, ${SALT_MS}/_states]
-grains_dirs: [$SALT_ROOT/_grains, $SALT_MS/ext_mods/grains, ${SALT_MS}/_grains]
-render_dirs: [$SALT_ROOT/_renderers, $SALT_MS/ext_mods/renderers, ${SALT_MS}/_renderers]
+module_dirs: [$SALT_ROOT/_modules, $SALT_MS/mc_states/modules]
+returner_dirs: [$SALT_ROOT/_returners, $SALT_MS/mc_states/returners]
+states_dirs: [$SALT_ROOT/_states, $SALT_MS/mc_states/states]
+grains_dirs: [$SALT_ROOT/_grains, $SALT_MS/mc_states/grains]
+render_dirs: [$SALT_ROOT/_renderers, $SALT_MS/mc_states/renderers]
 EOF
     fi
 
@@ -1336,7 +1336,7 @@ EOF
             cat > $MCONF_PREFIX/master << EOF
 file_roots: {"base":["$MASTERSALT_ROOT"]}
 pillar_roots: {"base":["$MASTERSALT_PILLAR"]}
-runner_dirs: [$MASTERSALT_ROOT/runners, $MASTERSALT_MS/ext_mods/runners, ${MASTERSALT_MS}/runners]
+runner_dirs: [$MASTERSALT_ROOT/runners, $MASTERSALT_MS/mc_states/runners]
 EOF
         fi
         if [[ ! -e $MCONF_PREFIX/minion ]];then
@@ -1346,11 +1346,11 @@ master: $MASTERSALT_MASTER_DNS
 master_port: $MASTERSALT_MASTER_PORT
 file_roots: {"base":["$MASTERSALT_ROOT"]}
 pillar_roots: {"base":["$MASTERSALT_PILLAR"]}
-module_dirs: [$MASTERSALT_ROOT/_modules, $MASTERSALT_MS/ext_mods/modules, ${MASTERSALT_MS}/_modules]
-returner_dirs: [$MASTERSALT_ROOT/_returners, $MASTERSALT_MS/ext_mods/returners, ${MASTERSALT_MS}/_returners]
-states_dirs: [$MASTERSALT_ROOT/_states, $MASTERSALT_MS/ext_mods/states, ${MASTERSALT_MS}/_states]
-grains_dirs: [$MASTERSALT_ROOT/_grains, $MASTERSALT_MS/ext_mods/grains, ${MASTERSALT_MS}/_grains]
-render_dirs: [$MASTERSALT_ROOT/_renderers, $MASTERSALT_MS/ext_mods/renderers, ${MASTERSALT_MS}/_renderers]
+module_dirs: [$MASTERSALT_ROOT/_modules, $MASTERSALT_MS/mc_states/modules]
+returner_dirs: [$MASTERSALT_ROOT/_returners, $MASTERSALT_MS/mc_states/returners]
+states_dirs: [$MASTERSALT_ROOT/_states, $MASTERSALT_MS/mc_states/states]
+grains_dirs: [$MASTERSALT_ROOT/_grains, $MASTERSALT_MS/mc_states/grains]
+render_dirs: [$MASTERSALT_ROOT/_renderers, $MASTERSALT_MS/mc_states/renderers]
 EOF
         fi
     fi
@@ -2274,6 +2274,7 @@ cleanup_old_installs() {
     minion_conf="$CONF_PREFIX/minion.d/00_global.conf"
     mmaster_conf="$MCONF_PREFIX/master.d/00_global.conf"
     mminion_conf="$MCONF_PREFIX/minion.d/00_global.conf"
+    # _modules to ext_mods/modules
     for conf in "${minion_conf}" "${mminion_conf}";do
         if [ -e "$conf" ];then
             for i in _grains _modules _renderers _returners _states;do
@@ -2284,11 +2285,6 @@ cleanup_old_installs() {
             done
         fi
     done
-    for i in "$MASTERSALT_ROOT" "$SALT_ROOT";do
-        if [ -h "$i/_grains/makina_grains.py" ];then
-            rm -f "$i/_grains/makina_grains.py"
-        fi
-    done
     for conf in "${master_conf}" "${mmaster_conf}";do
         if [ -e "$conf" ];then
             for i in _runners;do
@@ -2297,6 +2293,34 @@ cleanup_old_installs() {
                     sed -re "s:makina-states/_?${i//_}:makina-states/ext_mods/${i//_}:g" -i "$conf"
                 fi
             done
+        fi
+    done
+    # ext_mod/modules to mc_states/modules
+    for conf in "${minion_conf}" "${mminion_conf}";do
+        if [ -e "$conf" ];then
+            for i in grains modules renderers returners states;do
+                if [ x"$(grep "makina-states/mc_states/mc_${i}" "$conf"|wc -l)" = "x0" ];then
+                    bs_log "Patching ext_mods/$i to mc_states/${i} in $conf"
+                    sed -re "s:makina-states/ext_mods/mc_states/${i}:makina-states/mc_states/${i}:g" -i "$conf"
+                    sed -re "s:makina-states/ext_mods/${i}:makina-states/mc_states/${i}:g" -i "$conf"
+                fi
+            done
+        fi
+    done
+    for conf in "${master_conf}" "${mmaster_conf}";do
+        if [ -e "$conf" ];then
+            for i in runners;do
+                if [ x"$(grep "makina-states/mc_states/mc_${i}" "$conf"|wc -l)" = "x0" ];then
+                    bs_log "Patching ext_mods/$i to mc_states/mc_${i} in $conf"
+                    sed -re "s:makina-states/ext_mods/mc_states/${i}:makina-states/mc_states/${i}:g" -i "$conf"
+                    sed -re "s:makina-states/ext_mods/${i}:makina-states/mc_states/${i}:g" -i "$conf"
+                fi
+            done
+        fi
+    done
+    for i in "$MASTERSALT_ROOT" "$SALT_ROOT";do
+        if [ -h "$i/_grains/makina_grains.py" ];then
+            rm -f "$i/_grains/makina_grains.py"
         fi
     done
     for i in "$SALT_ROOT" "$MASTERSALT_ROOT";do

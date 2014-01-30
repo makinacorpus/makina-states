@@ -5,17 +5,23 @@ Some usefull small tools
 
 '''
 
-import unittest
 # Import salt libs
-import salt.utils
-import os
-import salt.utils.dictupdate
 from salt.exceptions import SaltException
 
 _default_activation_status = object()
 
 # cache variable
 _REGISTRY = {}
+_GLOBAL_KINDS = [
+    'localsettings',
+    'services',
+    'controllers',
+    'nodetypes',
+]
+
+
+class NoRegistryLoaderFound(SaltException):
+    """."""
 
 
 def registry_kind_get(kind):
@@ -23,31 +29,48 @@ def registry_kind_get(kind):
         _REGISTRY[kind] = {}
     return _REGISTRY[kind]
 
+
 def registry_kind_set(kind, value):
     _REGISTRY[kind] = value
 
 
 def is_item_active(config_entry, default_status=False):
-    return __salt__['mc_utils.get'](
-        config_entry, default_status)
+    return __salt__['mc_utils.get'](config_entry, default_status)
+
+
+def load_kind_registries(kind):
+    # load all registries
+    registries = [
+        'metadata',
+        'settings',
+        'registry',
+    ]
+    if not kind in _REGISTRY:
+        _REGISTRY[kind] = {}
+    for registry in registries:
+        if registry in _REGISTRY[kind]:
+            continue
+        try:
+            _REGISTRY[kind][registry] = __salt__[
+                '{0}.{1}'.format(kind, registry)]()
+        except KeyError:
+            raise NoRegistryLoaderFound(
+                '{0} is unavailable'.format(kind, registry))
+    return _REGISTRY[kind]
 
 
 def load_registries():
     # load all registries
-    for reg in [
-        'localsettings',
-        'services',
-        'controllers',
-        'nodetypes',
-    ]:
-        # load the registry
-        __salt__['mc_{0}.registry'.format(reg)]()
+    for kind in _GLOBAL_KINDS:
+        load_kind_registries(kind)
     return _REGISTRY
 
 
 def kinds():
     # py3 compatible dict keys()
-    return [a for a in __salt__['mc_macros.load_registries']()]
+    return [a 
+            for a in __salt__['mc_macros.load_registries']()
+            if a in _GLOBAL_KINDS]
 
 
 def metadata(kind, grain=None, state=None, bases=None):
@@ -57,6 +80,13 @@ def metadata(kind, grain=None, state=None, bases=None):
         'kind': kind,
         'bases': bases
     }
+
+
+def is_active(registry, name):
+    try:
+        return name in registry['actives']
+    except:
+        return False
 
 
 def get_registry(registry_configuration):
@@ -141,13 +171,6 @@ def construct_registry_configuration(settings, defaults=None):
     })
 
 
-def is_active(registry, kind, name):
-    try:
-        return name in registry[kind]['actives']
-    except:
-        return False
-
-
 def unregister(kind, name, data=None, suf=''):
     state = '\n'
     data = locals()
@@ -191,5 +214,9 @@ def autoinclude(reg):
             __salt__['mc_macros.unregister'](
                 reg['kind'], state, data, suf='auto'))
     return sls
+
+
+def dump():
+    return _REGISTRY
 
 # vim:set ai:
