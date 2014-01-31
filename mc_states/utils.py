@@ -46,6 +46,13 @@ def dump(__salt__, kind, filters=None):
 
 
 def filter_locals(reg, filter_list=None):
+    '''
+    Filter a dictionnary feeded with all the local
+    variables in a context.
+
+    We select what to remove depending on the original callee
+    function (eg: {services, metadata, registry})
+    '''
     # kind = reg.get('reg_kind', None)
     subreg = reg.get('reg_func_name', None)
     if not filter_list:
