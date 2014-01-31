@@ -10,7 +10,7 @@
 {%- set localsettings = salt['mc_localsettings.settings']() %}
 
 {%- set default_defaults = {
-  'python_version': grains['pythonversion'][:3],
+  'python_version': localsettings.pythonSettings.version,
   'requirements': True,
  } %}
 
