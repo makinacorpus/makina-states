@@ -11,7 +11,7 @@ include:
   - makina-states.localsettings.pkgs
   - makina-states.localsettings.nodejs-standalone
 
-extends:
+extend:
   nodejs-proxy:
     cmd.run:
       - require:
