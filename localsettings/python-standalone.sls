@@ -20,8 +20,6 @@
 {%- if grains['os'] in ['Ubuntu'] %}
 {%- set udist = localsettings.udist %}
 deadsnakes:
-  cmd:
-    - name: /bin
   pkgrepo.managed:
     - humanname: DeadSnakes PPA
     - name: deb http://ppa.launchpad.net/fkrull/deadsnakes/ubuntu {{udist}} main
