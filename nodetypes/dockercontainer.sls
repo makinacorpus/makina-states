@@ -1,8 +1,6 @@
-{#
-# extra setup on a docker container
-#}
-{% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
-{{ salt['mc_macros.register']('nodetypes', 'dockercontainer') }}
+{# # Makina-states autodiscovery integration file #}
 
 include:
   - makina-states.nodetypes.lxccontainer
+  - makina-states.nodetypes.docker-standalone
+
