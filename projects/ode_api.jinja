@@ -8,7 +8,7 @@
 {% endmacro %}
 
 {% macro install_pgsql(common) %}
-{% set db_name = salt['mc_utils.get']('makina-states.projects.ode_api.db_name', 'ode') %}
+<{% set db_name = salt['mc_utils.get']('makina-states.projects.ode_api.db_name', 'ode') %}
 {% set db_user = salt['mc_utils.get']('makina-states.projects.ode_api.db_user', 'ode') %}
 {% set db_password = salt['mc_utils.get']('makina-states.projects.ode_api.db_password', 'ode') %}
 
