@@ -23,7 +23,7 @@ def settings():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings(REG):
         resolver = __salt__['mc_utils.format_resolve']
-        metadata = __salt__['mc_localsettings.metadata']()
+        metadata = __salt__['mc_{0}.metadata'.format(__name)]()
         return locals()
     return _settings()
 
@@ -31,14 +31,14 @@ def settings():
 def registry():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _registry(REG):
-        settings = __salt__['mc_{0}.settings'.format(__name)]()
+        settings_reg = __salt__['mc.{0}.settings'.format(__name)]()
         travis = False
         for i in os.environ:
             if 'travis' in i.lower():
                 travis = True
         reg = __salt__[
             'mc_macros.construct_registry_configuration'
-        ](settings, defaults={
+        ](__name, defaults={
             'server': {'active': True},
             'vm': {'active': False},
             'devhost': {'active': False},

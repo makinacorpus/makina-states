@@ -69,6 +69,7 @@ def get_common_vars(
     sls_includes=None,
     no_user=False,
     no_salt=False,
+    full=True,
     no_domain=False,
     no_reset_perms=False,
     no_default_includes=False
@@ -86,6 +87,7 @@ def get_common_vars(
         - project_root: where to install the project,
         - salt_subdir: the subdirectory of the salt in /srv/salts/foo
         - pillar_subdir: the subdirectory of the pillar in /srv/pillars/foo
+        - full: set to false to only run the sole project states and not a full highstate
         - project_branch: the branch of the project
         - salt_branch: the branch of the project salt tree
         - url: the git repository url
@@ -128,9 +130,10 @@ def get_common_vars(
          'makina-states.localsettings.hosts']
         + sls_includes)
     if not no_default_includes:
-        sls_includes.append(
-            'makina-states.controllers.salt_minion',
-        )
+        if full:
+            sls_includes.append(
+                'makina-states.controllers.salt_minion',
+            )
         if 'vagrantvm' in services.nodetypes.registry['actives']:
             sls_includes.append('makina-states.nodetypes.vagrantvm')
     sls_includes = uniquify(sls_includes)
@@ -151,6 +154,7 @@ def get_common_vars(
     variables = {
         'services': services,
         'localsettings': localsettings,
+        'full': full,
         'default_env': default_env,
         'name': name,
         'domains': domains,
@@ -198,6 +202,7 @@ def get_common_vars(
             'project_branch': project_branch,
             'default_env': default_env,
             'user': user,
+            'full': full,
             'groups': groups,
             'group': groups[0],
             'url': url,

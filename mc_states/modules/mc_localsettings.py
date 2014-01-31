@@ -25,7 +25,7 @@ def settings():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings(REG):
         resolver = __salt__['mc_utils.format_resolve']
-        metadata = __salt__['mc_localsettings.metadata']()
+        metadata = __salt__['mc_{0}.metadata'.format(__name)]()
         pillar = __pillar__
         grains = __grains__
         grainsPref = 'makina-states.localsettings.'
@@ -290,13 +290,12 @@ def settings():
 def registry():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _registry(REG):
-        settings = __salt__['mc_{0}.settings'.format(__name)]()
+        settings_reg = __salt__['mc_{0}.settings'.format(__name)]()
         return __salt__[
             'mc_macros.construct_registry_configuration'
-        ](settings,
-          defaults={
-              'nscd': {'active': settings['ldapEn']},
-              'ldap': {'active': settings['ldapEn']},
+        ](__name, defaults={
+              'nscd': {'active': settings_reg['ldapEn']},
+              'ldap': {'active': settings_reg['ldapEn']},
               'git': {'active': True},
               'hosts': {'active': True},
               'jdk': {'active': False},

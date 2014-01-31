@@ -32,10 +32,10 @@ def settings():
 def registry():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _registry(REG):
-        settings = __salt__['mc_{0}.settings'.format(__name)]()
+        settings_reg = __salt__['mc_{0}.settings'.format(__name)]()
         return  __salt__[
             'mc_macros.construct_registry_configuration'
-        ](settings, defaults={
+        ](__name, defaults={
             'mastersalt_minion': {'active': False},
             'mastersalt_master': {'active': False},
             'mastersalt': {'active': False},

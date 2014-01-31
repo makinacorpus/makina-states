@@ -425,14 +425,14 @@ def settings():
 def registry():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _registry(REG):
-        settings = __salt__['mc_{0}.settings'.format(__name)]()
+        settings_reg = __salt__['mc_{0}.settings'.format(__name)]()
         return __salt__[
             'mc_macros.construct_registry_configuration'
-        ](settings, defaults={
+        ](__name, defaults={
             'backup.bacula-fd': {'active': False},
-            'backup.rdiffbackup': {'active': False},
+            'backup.rdiff-backup': {'active': False},
             'backup.dbsmartbackup': {'active': False},
-            'base.ntp': {'active': settings['ntpEn']},
+            'base.ntp': {'active': settings_reg['ntpEn']},
             'base.ssh': {'active': True},
             'db.mysql': {'active': False},
             'db.postgresql': {'active': False},

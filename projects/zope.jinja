@@ -308,7 +308,8 @@ etc-logrotate.d-{{common.name}}.conf:
 {#-
 #  Look available arguments in _modules/mc_project.py:get_commmon_vars
 #}
-{%- macro install_generic_zope_project() %}
+{%- macro install_generic_zope_project(full=True) %}
+{%- do kwargs.setdefault('full', full) %}
 {%- do kwargs.setdefault('defaults', default_defaults) %}
 {%- do kwargs.setdefault('env_defaults', default_env_defaults) %}
 {%- do kwargs.setdefault('user', 'zope') %}

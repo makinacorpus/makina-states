@@ -160,8 +160,9 @@ def get_registry(registry_configuration):
     return registry
 
 
-def construct_registry_configuration(settings, defaults=None):
-    metadata = settings['metadata']
+def construct_registry_configuration(__name, defaults=None):
+    settings = __salt__['mc_{0}.settings'.format(__name)]()
+    metadata = __salt__['mc_{0}.metadata'.format(__name)]()
     if not defaults:
         defaults = {}
     return __salt__['mc_macros.get_registry']({
