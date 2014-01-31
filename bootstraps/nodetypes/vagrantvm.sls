@@ -1,5 +1,5 @@
 #
-# See makina-states.nodetypes.vagrantvm
+# See makina-states.nodetypes.travis
 #
 
 {% import "makina-states/_macros/bootstraps.jinja" as bs with context %}
