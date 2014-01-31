@@ -2673,6 +2673,9 @@ if [[ -z $SALT_BOOT_AS_FUNCS ]];then
     if [[ "$(dns_resolve localhost)" == "$DNS_RESOLUTION_FAILED" ]];then
         die "$DNS_RESOLUTION_FAILED"
     fi
+    if [[ "${SALT_NODETYPE}" == "travis" ]];then
+        set -x
+    fi
     set_vars # real variable affectation
     recap
     cleanup_old_installs
