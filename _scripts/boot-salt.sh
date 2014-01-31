@@ -402,7 +402,7 @@ set_vars() {
     CHRONO="$(get_chrono)"
     VENV_REBOOTSTRAP="${VENV_REBOOTSTRAP:-}"
     BUILDOUT_REBOOTSTRAP="${BUILDOUT_REBOOTSTRAP:-${VENV_REBOOTSTRAP}}"
-    SALT_REBOOTSTRAP="${SALT_REBOOTSTRAP:-${BUILDOUT_REBOOTSTRAP}}"
+    SALT_REBOOTSTRAP="${SALT_REBOOTSTRAP:-${VENV_REBOOTSTRAP}}"
     BASE_PACKAGES=""
     BASE_PACKAGES="$BASE_PACKAGES build-essential m4 libtool pkg-config autoconf gettext bzip2"
     BASE_PACKAGES="$BASE_PACKAGES groff man-db automake libsigc++-2.0-dev tcl8.5 python-dev"
@@ -1296,7 +1296,6 @@ run_ms_buildout() {
     if    [[ ! -e "$ms/bin/buildout" ]]\
        || [[ ! -e "$ms/parts" ]] \
        || [[ -n "${BUILDOUT_REBOOTSTRAP}" ]] \
-       || [[ -n "${SALT_REBOOTSTRAP}" ]] \
        || [[ ! -e "$ms/develop-eggs" ]] \
         ;then
         bs_log "Launching buildout bootstrap for salt initialisation ($ms)"
@@ -1329,7 +1328,6 @@ run_ms_buildout() {
         || [[ ! -e "$ms/src/m2crypto/setup.py" ]]\
         || [[ ! -e "$ms/src/SaltTesting/setup.py" ]]\
         || [[ -n "${BUILDOUT_REBOOTSTRAP}" ]]\
-        || [[ -n "${SALT_REBOOTSTRAP}" ]]\
         ;then
         cd $ms
         bs_log "Launching buildout for salt initialisation ($ms)"
@@ -1339,7 +1337,6 @@ run_ms_buildout() {
             rm -rf "$ms/.installed.cfg"
             die_ $ret " [bs] Failed buildout in $ms"
         fi
-        SALT_REBOOTSTRAP=1
     fi
 }
 
@@ -1609,7 +1606,7 @@ install_salt_daemons() {
     fi
     if     [[ ! -e "$CONF_PREFIX" ]]\
         || [[ ! -e "$CONF_PREFIX/minion.d/00_global.conf" ]]\
-        || [[ -e "${SALT_MS}/.reboostrap" ]]\
+        || [[ -e "${SALT_MS}/.rebootstrap" ]]\
         || [[ "$(grep makina-states.controllers.salt_ "$CONF_PREFIX/grains" |wc -l)" == "0" ]]\
         || [[ ! -e "$CONF_PREFIX/pki/minion/minion.pem" ]]\
         || [[ ! -e "$BIN_DIR/salt" ]]\
@@ -1621,7 +1618,7 @@ install_salt_daemons() {
         || [[ ! -e "$BIN_DIR/salt-ssh" ]]\
         || [[ ! -e "$BIN_DIR/salt-syndic" ]]\
         || [[ ! -e "$CONF_PREFIX/pki/minion/minion.pem" ]];then
-        if [[ -e "${SALT_MS}/.reboostrap" ]];then
+        if [[ -e "${SALT_MS}/.rebootstrap" ]];then
             rm -f "${SALT_MS}/.rebootstrap"
         fi
         RUN_SALT_BOOTSTRAP="1"
@@ -2035,7 +2032,7 @@ install_mastersalt_daemons() {
         if     [[ ! -e "$MCONF_PREFIX" ]]\
             || [[ ! -e "$MCONF_PREFIX/minion.d/00_global.conf" ]]\
             || [[ ! -e "$MCONF_PREFIX/pki/minion/minion.pem" ]]\
-            || [[ -e "$MASTERSALT_MS/.reboostrap" ]]\
+            || [[ -e "$MASTERSALT_MS/.rebootstrap" ]]\
             || [[ "$(grep makina-states.controllers.mastersalt_ "$MCONF_PREFIX/grains" |wc -l)" == "0" ]]\
             || [[ ! -e "$BIN_DIR/mastersalt" ]]\
             || [[ ! -e "$BIN_DIR/mastersalt-master" ]]\
@@ -2047,7 +2044,7 @@ install_mastersalt_daemons() {
             || [[ ! -e "$BIN_DIR/mastersalt-call" ]]\
             || [[ ! -e "$BIN_DIR/mastersalt" ]]\
             || [[ ! -e "$MCONF_PREFIX/pki/minion/minion.pem" ]];then
-            if [[ -e "$MASTERSALT_MS/.reboostrap" ]];then
+            if [[ -e "$MASTERSALT_MS/.rebootstrap" ]];then
                 rm -f "$MASTERSALT_MS/.rebootstrap"
             fi
             RUN_MASTERSALT_BOOTSTRAP="1"
@@ -2510,7 +2507,7 @@ usage() {
         bs_log "Advanced settings:"
         bs_help "--no-colors:" "No terminal colors" "$NO_COLORS" "y"
         bs_help "--salt-rebootstrap:" "Redo salt bootstrap" "${SALT_REBOOTSTRAP}" "y"
-        bs_help "--buildout-rebootstrap:" "Redo buildout & salt bootstrap" "${BUILDOUT_REBOOTSTRAP}" "y"
+        bs_help "--buildout-rebootstrap:" "Redo buildout bootstrap" "${BUILDOUT_REBOOTSTRAP}" "y"
         bs_help "--venv-rebootstrap:" "Redo venv, buildout & salt bootstrap" "${VENV_REBOOTSTRAP}" "y"
         bs_help "--test:" "run makina-states tests, be caution, this installs everything and is to be installed on a vm which will be trashed afterwards!" "$MAKINASTATES_TEST" "y"
         bs_help "--salt-minion-dns <dns>:" "DNS of the salt minion" "$SALT_MINION_DNS" "y"
