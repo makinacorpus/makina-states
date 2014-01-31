@@ -2525,6 +2525,7 @@ usage() {
 }
 
 maybe_run_tests() {
+    if [[ -z "${MAKINASTATES_TEST}" ]];then return;fi
     bs_log "Running makinastates tests"
     salt_call_wrapper state.sls makina-states.tests
     if [[ -n "$SALT_BOOT_DEBUG" ]];then cat $SALT_BOOT_OUTFILE;fi
