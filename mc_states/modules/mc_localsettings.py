@@ -24,8 +24,9 @@ def metadata():
 def settings():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings(REG):
-        resolver = __salt__['mc_utils.format_resolve']
-        metadata = __salt__['mc_{0}.metadata'.format(__name)]()
+        saltmods = __salt__  # affect to a var to see further pep8 errors
+        resolver = saltmods['mc_utils.format_resolve']
+        metadata = saltmods['mc_{0}.metadata'.format(__name)]()
         pillar = __pillar__
         grains = __grains__
         grainsPref = 'makina-states.localsettings.'
@@ -39,7 +40,7 @@ def settings():
         # include the macro in your states and use:
         #   {{ localsettings.locations.prefix }}
         #
-        locations = __salt__['mc_utils.defaults'](
+        locations = saltmods['mc_utils.defaults'](
             'makina.localsettings.locations', {
                 'root_dir': '/',
                 'home_dir': '{root_dir}home',
@@ -80,7 +81,7 @@ def settings():
         #
         # include the macro in your states and use:
         #   {{ localsettings.rotate.days }}
-        rotate = __salt__['mc_utils.defaults'](
+        rotate = saltmods['mc_utils.defaults'](
             'makina-states.localsettings.rotate', {
                 'days':  '31',
             })
@@ -88,8 +89,8 @@ def settings():
         # See makina-states.localsettings.network
         # Compat for the first test!
         networkManaged = (
-            __salt__['mc_utils.get']('makina-states.network_managed', False)
-            or __salt__['mc_utils.get'](grainsPref + 'network.managed', False))
+            saltmods['mc_utils.get']('makina-states.network_managed', False)
+            or saltmods['mc_utils.get'](grainsPref + 'network.managed', False))
         networkInterfaces = {}
         # lxc configuration has the network configuration inlined in the state
         # and not in pillar
@@ -99,7 +100,7 @@ def settings():
                 networkInterfaces.update(pillar[k])
         # LDAP integration
         # see makina-states.services.base.ldap
-        ldapVariables = __salt__['mc_utils.defaults'](
+        ldapVariables = saltmods['mc_utils.defaults'](
             'makina-states.localsettings.ldap', {
                 'enabled': False,
                 'ldap_uri': 'ldaps://localhost:636/',
@@ -113,14 +114,17 @@ def settings():
 
         # Editor group to have write permission on salt controlled files
         # but also on project related files
-        group = __salt__['mc_utils.get'](grainsPref + 'filesystem.group', 'editor')
-        groupId = __salt__['mc_utils.get'](grainsPref + 'filesystem.group_id', '65753')
+        group = saltmods['mc_utils.get'](
+            grainsPref + 'filesystem.group', 'editor')
+        groupId = saltmods['mc_utils.get'](
+            grainsPref + 'filesystem.group_id', '65753')
 
         #  System Users & SSH accces configuration
         #  ----------------------------------------
         #  For system users, we use special pillar entries
         #  suffixed by '-makina-users'
-        #  In those entries, we efine a sub mapping with the key 'users' containing
+        #  In those entries, we efine a sub mapping with the key 'users'
+        #  containing
         #  the users infos
         #  See makina-states.localsettings.vim.
         #  See makina-states.localsettings.users.
@@ -128,8 +132,9 @@ def settings():
         #
         #  SSH
         #  -----
-        #  To allow users to connect as root we define in pillar an entry which tie
-        #  ssh keys container in the 'keys' mapping to the near by 'users' mapping.
+        #  To allow users to connect as root we define in pillar an entry which
+        #  ties #  ssh keys container in the 'keys' mapping to the near by
+        #  'users' mapping.
         #  See makina-states.services.base.ssh.
         #
         #  foo-makina-users:
@@ -157,9 +162,14 @@ def settings():
         users = {}
         user_keys = {}
         keysMappings = {'users': users, 'keys': user_keys}
-        pythonSettings = __salt__['mc_utils.defaults'](
+        cur_pyver = grains['pythonversion']
+        if isinstance(cur_pyver, list):
+            cur_pyver = '.'.join(['{0}'.format(s) for s in cur_pyver])
+        cur_pyver = cur_pyver[:3]
+        pythonSettings = saltmods['mc_utils.defaults'](
             'makina-states.localsettings.python', {
-                'versions': [grains['pythonversion'][:3]],
+                'versions': [cur_pyver],
+                'version': cur_pyver,
             })
         # the following part just feed the above users & user_keys variables
         ##
@@ -189,7 +199,9 @@ def settings():
 
         #default  sysadmins
         defaultSysadmins = ['sysadmin']
-        if __salt__['mc_macros.is_item_active']('makina-states.nodetypes.vagrantvm'):
+        if saltmods['mc_macros.is_item_active'](
+            'makina-states.nodetypes.vagrantvm'
+        ):
             defaultSysadmins.append('vagrant')
         for i in defaultSysadmins + ['root']:
             if not i in users:
@@ -200,7 +212,8 @@ def settings():
         for i in users.keys():
             data = users[i].copy()
             if i in defaultSysadmins:
-                home = data.get('home', locations['sysadmins_home_dir'] + "/" + i)
+                home = data.get('home',
+                                locations['sysadmins_home_dir'] + "/" + i)
             elif i == 'root':
                 home = locations['root_home_dir']
             else:
@@ -225,20 +238,21 @@ def settings():
         debian_stable = 'wheezy'
         ubuntu_lts = 'precise'
         ubuntu_last = 'saucy'
-        debian_mirror = __salt__['mc_utils.get'](
+        debian_mirror = saltmods['mc_utils.get'](
             'makina-states.apt.debian.mirror',
             'http://ftp.de.debian.org/debian')
 
-        ubuntu_mirror = __salt__['mc_utils.get'](
+        ubuntu_mirror = saltmods['mc_utils.get'](
             'makina-states.apt.ubuntu.mirror',
             'http://ftp.free.fr/mirrors/ftp.ubuntu.com/ubuntu')
-        dist = __salt__['mc_utils.get']('lsb_distrib_codename', '')
-        udist = __salt__['mc_utils.get']('lsb_distrib_codename', ubuntu_lts)
-        ddist = __salt__['mc_utils.get']('lsb_distrib_codename', debian_stable)
-        dcomps = __salt__['mc_utils.get']('makina-states.apt.debian.comps',
+        dist = saltmods['mc_utils.get']('lsb_distrib_codename', '')
+        udist = saltmods['mc_utils.get']('lsb_distrib_codename', ubuntu_lts)
+        ddist = saltmods['mc_utils.get']('lsb_distrib_codename', debian_stable)
+        dcomps = saltmods['mc_utils.get']('makina-states.apt.debian.comps',
                                           'main contrib non-free')
-        ucomps = __salt__['mc_utils.get']('makina-states.apt.ubuntu.comps',
-                                          'main restricted universe multiverse')
+        ucomps = saltmods['mc_utils.get'](
+            'makina-states.apt.ubuntu.comps',
+            'main restricted universe multiverse')
         if grains['os'] in ['Ubuntu']:
             lts_dist = ubuntu_lts
         else:
@@ -248,7 +262,7 @@ def settings():
         jdkDefaultVer = '7'
 
         # RVM
-        rvmSettings = __salt__['mc_utils.defaults'](
+        rvmSettings = saltmods['mc_utils.defaults'](
             'makina-states.localsettings.rvm', {
                 'url': RVM_URL,
                 'rubies': ['1.9.3'],
@@ -261,18 +275,18 @@ def settings():
         rvm_group = rvmSettings['group']
 
         # Node.js
-        npmSettings = __salt__['mc_utils.defaults'](
+        npmSettings = saltmods['mc_utils.defaults'](
             'makina-states.localsettings.npm', {
                 'packages': []
             })
 
         # SSL settings for reuse in states
-        country = __salt__['grains.get']('defaultlanguage')
+        country = saltmods['grains.get']('defaultlanguage')
         if country:
             country = country[:2].upper()
         else:
             country = 'fr'
-        SSLSettings = __salt__['mc_utils.defaults'](
+        SSLSettings = saltmods['mc_utils.defaults'](
             'makina-states.localsettings.ssl', {
                 'country': country,
                 'st': 'Pays de Loire',
@@ -294,25 +308,25 @@ def registry():
         return __salt__[
             'mc_macros.construct_registry_configuration'
         ](__name, defaults={
-              'nscd': {'active': settings_reg['ldapEn']},
-              'ldap': {'active': settings_reg['ldapEn']},
-              'git': {'active': True},
-              'hosts': {'active': True},
-              'jdk': {'active': False},
-              'locales': {'active': True},
-              'localrc': {'active': True},
-              'network': {'active': True},
-              'nodejs': {'active': False},
-              'pkgmgr': {'active': True},
-              'python': {'active': False},
-              'pkgs': {'active': True},
-              'repository_dotdeb': {'active': False},
-              'shell': {'active': True},
-              'sudo': {'active': True},
-              'users': {'active': True},
-              'vim': {'active': True},
-              'rvm': {'active': False},
-          })
+            'nscd': {'active': settings_reg['ldapEn']},
+            'ldap': {'active': settings_reg['ldapEn']},
+            'git': {'active': True},
+            'hosts': {'active': True},
+            'jdk': {'active': False},
+            'locales': {'active': True},
+            'localrc': {'active': True},
+            'network': {'active': True},
+            'nodejs': {'active': False},
+            'pkgmgr': {'active': True},
+            'python': {'active': False},
+            'pkgs': {'active': True},
+            'repository_dotdeb': {'active': False},
+            'shell': {'active': True},
+            'sudo': {'active': True},
+            'users': {'active': True},
+            'vim': {'active': True},
+            'rvm': {'active': False},
+        })
     return _registry()
 
 
