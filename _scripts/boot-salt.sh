@@ -15,6 +15,7 @@
 # - You can safely relaunch it but be ware that it kills the salt daemons upon configure & setup
 #   and consequently not safe for putting directly in salt states (with a cmd.run).
 #
+set -x
 
 THIS="$0"
 VALID_BRANCHES=""
@@ -1047,7 +1048,7 @@ sys_info(){
     set -x
     ps aux
     netstat -pnlt
-    set -x
+    set +x
 }
 
 travis_sys_info() {
