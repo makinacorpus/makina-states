@@ -236,6 +236,11 @@ def settings():
                                           'main contrib non-free')
         ucomps = __salt__['mc_utils.get']('makina-states.apt.ubuntu.comps',
                                           'main restricted universe multiverse')
+        if grains['os'] in ['Ubuntu']:
+            lts_dist = ubuntu_lts
+        else:
+            lts_dist = debian_stable
+
         # JDK default version
         jdkDefaultVer = '7'
 
