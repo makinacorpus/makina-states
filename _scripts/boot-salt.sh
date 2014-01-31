@@ -118,6 +118,11 @@ ERROR_MSG="There were errors"
 
 die_() {
     warn_log
+    if [[ "${SALT_NODETYPE}" == "travis" ]];then
+        cat "${SALT_BOOT_OUTFILE}"
+        cat "${SALT_BOOT_LOGFILE}"
+        cat "${SALT_BOOT_CMDFILE}"
+    fi
     ret=$1
     shift
     echo -e "${CYAN}${@}${NORMAL}" 1>&2
