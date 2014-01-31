@@ -52,8 +52,16 @@ def which(program, environ=None, key='PATH', split=':'):
 try:
     setfacl = which('setfacl')
     HAS_SETFACL = True
+
 except IOError:
     HAS_SETFACL = False
+
+{% if only_acls is defined %}
+ONLY_ACLS = {{only_acls}}
+{% else %}
+ONLY_ACLS =  False
+{% endif %}
+
 
 {% if only_acls is defined %}
 ONLY_ACLS = {{only_acls}}
@@ -66,6 +74,12 @@ NO_ACLS = {{no_acls}}
 {% else %}
 NO_ACLS =  False
 {% endif %}
+
+for i in os.environ:
+    if 'travis' in i.lower():
+        # no acl on travis
+        NO_ACLS = True
+
 
 {% if msr is defined %}
 m = '{{msr}}'
