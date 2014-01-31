@@ -1,8 +1,6 @@
 {% import "makina-states/nodetypes/vagrantvm.sls" as vagrantvm with context %}
 {% import "makina-states/_macros/salt.jinja" as saltmac with context %}
 {% import "makina-states/_macros/services.jinja" as services with context %}
-{% from "makina-states/services/http/apache_defaults.jinja" import apacheData with context %}
-{% from "makina-states/services/http/apache_macros.jinja" import virtualhost with context %}
 {#-
 #
 # Install a project from end to end on the behalf of makina states
@@ -223,6 +221,9 @@
 
 {%- macro install_apache(common) %}
 {#-
+{% from "makina-states/services/http/apache_defaults.jinja" import apacheData with context %}
+{% from "makina-states/services/http/apache_macros.jinja" import virtualhost with context %}
+
 # Adding or removing modules
 {{common.name}}-apache-included1:
   mc_apache.include_module:
