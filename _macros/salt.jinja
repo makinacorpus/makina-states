@@ -318,7 +318,7 @@ salt-{{ data.name }}-makina-states-dirs:
     - names:
       {% for i in data.salt_modules -%}
       - {{ localRoot }}/{{ i }}
-      - {{ data.msr }}/ext_mods/{{ i }}
+      - {{ data.msr }}/mc_states/{{ i }}
       {% endfor %}
 
 {# done now in conf
