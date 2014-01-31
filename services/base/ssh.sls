@@ -88,14 +88,13 @@ ssh_config:
 extend:
   openssh:
     service.running:
-      {%- if grains['os'] == 'Debian' %}
-      - name: ssh
-      {%- endif %}
       - enable: True
       - watch:
         - file: sshd_config
       {%- if grains['os_family'] == 'Debian' %}
       - name: ssh
+      {% else %}
+      - name: sshd
       {%- endif %}
 
   sshd_config:
