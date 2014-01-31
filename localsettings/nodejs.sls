@@ -5,7 +5,6 @@
 #}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {%- set locs = localsettings.locations %}
-{{ salt['mc_macros.register']('localsettings', 'nodejs') }}
 {%- set npmPackages = localsettings.npmSettings.packages %}
 include:
   - makina-states.localsettings.pkgmgr
