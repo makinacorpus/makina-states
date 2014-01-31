@@ -14,7 +14,7 @@
 {{localsettings.funcs.dummy('makina-pythons-proxy')}}
 
 {%- set locs = localsettings.locations %}
-{%- set pyvers = localsettings.pythonSettings.versions %}
+{%- set pyvers = localsettings.pythonSettings.alt_versions %}
 {%- if grains['os'] in ['Ubuntu'] %}
 {%- set udist = localsettings.udist %}
 deadsnakes:

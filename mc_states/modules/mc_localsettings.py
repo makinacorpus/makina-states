@@ -169,8 +169,14 @@ def settings():
         pythonSettings = saltmods['mc_utils.defaults'](
             'makina-states.localsettings.python', {
                 'versions': [cur_pyver],
+                'alt_versions': [cur_pyver],
                 'version': cur_pyver,
-            })
+            }
+        )
+        # filter current version for alt's
+        pythonSettings['alt_versions'] = filter(lambda x: x != cur_pyver,
+                                                pythonSettings['alt_versions'])
+
         # the following part just feed the above users & user_keys variables
         ##
         for sid, data in pillar.items():
