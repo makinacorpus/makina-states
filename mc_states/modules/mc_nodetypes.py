@@ -13,7 +13,7 @@ __name = 'nodetypes'
 
 def metadata():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
-    def _metadata(REG):
+    def _metadata():
         return __salt__['mc_macros.metadata'](
             __name, bases=['localsettings', 'services'])
     return _metadata()
@@ -21,7 +21,7 @@ def metadata():
 
 def settings():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
-    def _settings(REG):
+    def _settings():
         resolver = __salt__['mc_utils.format_resolve']
         metadata = __salt__['mc_{0}.metadata'.format(__name)]()
         return locals()
@@ -30,7 +30,7 @@ def settings():
 
 def registry():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
-    def _registry(REG):
+    def _registry():
         settings_reg = __salt__['mc_{0}.settings'.format(__name)]()
         travis = False
         for i in os.environ:

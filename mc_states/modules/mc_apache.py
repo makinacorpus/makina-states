@@ -29,7 +29,7 @@ log = logging.getLogger(__name__)
 
 def settings():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
-    def _settings(REG):
+    def _settings():
         '''
         This is called from mc_services, loading all Apache default settings
 

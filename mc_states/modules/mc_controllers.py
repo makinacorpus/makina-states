@@ -13,25 +13,24 @@ __name = 'controllers'
 
 def metadata():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
-    def _metadata(REG):
+    def _metadata():
         return __salt__['mc_macros.metadata'](
             __name, bases=['localsettings'])
     return _metadata()
 
 def settings():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
-    def _settings(REG):
-        resolver = __salt__['mc_utils.format_resolve']
-        metadata = __salt__['mc_{0}.metadata'.format(__name)]()
-        pillar = __pillar__
-        grains = __grains__
+    def _settings():
+        saltmods = __salt__
+        resolver = saltmods['mc_utils.format_resolve']
+        metadata = saltmods['mc_{0}.metadata'.format(__name)]()
         return locals()
     return _settings()
 
 
 def registry():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
-    def _registry(REG):
+    def _registry():
         settings_reg = __salt__['mc_{0}.settings'.format(__name)]()
         return  __salt__[
             'mc_macros.construct_registry_configuration'

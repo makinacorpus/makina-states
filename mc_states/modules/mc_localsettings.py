@@ -16,19 +16,19 @@ RVM_URL = (
 
 def metadata():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
-    def _metadata(registry):
+    def _metadata():
         return __salt__['mc_macros.metadata'](__name)
     return _metadata()
 
 
 def settings():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
-    def _settings(REG):
+    def _settings():
         saltmods = __salt__  # affect to a var to see further pep8 errors
-        resolver = saltmods['mc_utils.format_resolve']
-        metadata = saltmods['mc_{0}.metadata'.format(__name)]()
         pillar = __pillar__
         grains = __grains__
+        resolver = saltmods['mc_utils.format_resolve']
+        metadata = saltmods['mc_{0}.metadata'.format(__name)]()
         grainsPref = 'makina-states.localsettings.'
         #-
         # default paths
@@ -309,7 +309,7 @@ def settings():
 
 def registry():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
-    def _registry(REG):
+    def _registry():
         settings_reg = __salt__['mc_{0}.settings'.format(__name)]()
         return __salt__[
             'mc_macros.construct_registry_configuration'
