@@ -33,6 +33,7 @@ def settings():
 def registry():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _registry(REG):
+        settings = __salt__['mc_bootstraps.settings']()
         return __salt__[
             'mc_macros.construct_registry_configuration'
         ](settings, defaults={})
