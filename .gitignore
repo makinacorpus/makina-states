@@ -1,4 +1,13 @@
 .installed.cfg
+.buildout
+pep8.log
+pylint.log
+unittest.log
+.pep8.log
+.lint.log
+.unit.log
+reflog
+versions.cfg
 .py
 tests/mc_states
 tags.env

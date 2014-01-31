@@ -69,6 +69,7 @@
 {% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
 
 {%- set nodetypes = nodetypes %}
+{%- set isTravis = nodetypes.registry.is.travis %}
 {%- set localsettings = nodetypes.localsettings %}
 {%- set locs = localsettings.locations %}
 
@@ -402,6 +403,7 @@ salt-{{ data.name }}-reload-grains:
     - source: salt://makina-states/_scripts/reload_grains.sh
     - template: jinja
 
+{% if not isTravis %}
 salt-{{ data.name }}-net.core.rmem__wmem_max:
   sysctl.present:
     - names:
@@ -419,6 +421,7 @@ salt-{{ data.name }}-net.ipv4.tcp_rmem__wmem:
     - value: 4096 87380 16777216
     - require_in:
       - cmd: dummy-pre-{{ data.name }}-service-restart
+{% endif %}
 
 {#- Fix permissions and ownerships
 # recurse does not seem to work well to reset perms #}

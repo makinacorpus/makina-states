@@ -91,6 +91,23 @@ Install a new salt-managed box
     - **--mastersalt**: is the mastersalt hostname (FQDN) to link to
     - **--mastersalt-master-port**: overrides the port for the distant mastersalt server which is 4606 usually (read the script)
 
+Quality Assurance
+******************
+This will run:
+
+    - unit tests
+    - linters
+    - install all states
+
+For this reason, run those states only a box that you ll trash afterwards
+
+On a provisionned box, run::
+
+    ./boot-salt.sh -C -s -S --tests
+
+It will run all the sls found in ``makina-states.tests``.
+
+
 Usage
 *********
 Short overview::

@@ -19,7 +19,7 @@ makina-dotdeb-apt-update:
       - file: makina-dotdeb-repository
       - file: makina-dotdeb-pin-php
 
-makina-makina-dotdeb-repository:
+makina-dotdeb-repository:
   file.managed:
     - name: {{ locs.conf_dir }}/apt/sources.list.d/dotdeb.org.list
     - mode: 0644

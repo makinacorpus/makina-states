@@ -7,4 +7,4 @@ python:
 install:
     - sudo ./_scripts/boot-salt.sh -C -n travis
 
-script: sudo /srv/salt/makina-states/bin/test
+script: sudo ./_scripts/boot-salt.sh -C -s -S --test

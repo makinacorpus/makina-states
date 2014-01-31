@@ -16,7 +16,7 @@ loglevelfmt = (
 
 def settings():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
-    def _settings():
+    def _settings(REG):
         localsettings = __salt__['mc_localsettings.settings']()
         resolver = __salt__['mc_utils.format_resolve']
         pillar = __pillar__

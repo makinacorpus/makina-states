@@ -397,6 +397,7 @@ set_vars() {
     BASE_PACKAGES="$BASE_PACKAGES libzmq3-dev"
     BASE_PACKAGES="$BASE_PACKAGES libgmp3-dev"
     BRANCH_PILLAR_ID="makina-states.salt.makina-states.rev"
+    MAKINASTATES_TEST=${MAKINASTATES_TEST:-}
     IS_SALT="${IS_SALT:-y}"
     IS_SALT_MASTER="${IS_SALT_MASTER:-y}"
     IS_SALT_MINION="${IS_SALT_MINION:-y}"
@@ -645,6 +646,7 @@ set_vars() {
     export SALT_MINION_CONTROLLER SALT_MASTER_CONTROLLER
     #
     export SALT_MASTER_IP SALT_MASTER_DNS
+    export MAKINASTATES_TEST
     export SALT_MINION_IP SALT_MINION_DNS
     export SALT_MASTER_PORT SALT_MASTER_PUBLISH_PORT
     export MASTERSALT
@@ -679,6 +681,9 @@ recap_(){
     bs_log "HOSTNAME: $HOSTNAME"
     bs_log "DATE: $CHRONO"
     bs_log "SALT_NODETYPE: $(get_salt_nodetype)"
+    if [[ -n "$MAKINASTATES_TEST" ]];then
+        bs_log "Will run tests"
+    fi
     if [[ -n "$debug" ]];then
         bs_log "ROOT: $ROOT"
         bs_log "PREFIX: $PREFIX"
@@ -2274,35 +2279,21 @@ cleanup_old_installs() {
     minion_conf="$CONF_PREFIX/minion.d/00_global.conf"
     mmaster_conf="$MCONF_PREFIX/master.d/00_global.conf"
     mminion_conf="$MCONF_PREFIX/minion.d/00_global.conf"
-    # _modules to ext_mods/modules
-    for conf in "${minion_conf}" "${mminion_conf}";do
-        if [ -e "$conf" ];then
-            for i in _grains _modules _renderers _returners _states;do
-                if [ x"$(grep "makina-states/ext_mods/${i//_}" "$conf"|wc -l)" = "x0" ];then
-                    bs_log "Patching $i to ext_mods/${i//_} in $conf"
-                    sed -re "s:makina-states/_?${i//_}:makina-states/ext_mods/${i//_}:g" -i "$conf"
-                fi
-            done
-        fi
-    done
-    for conf in "${master_conf}" "${mmaster_conf}";do
-        if [ -e "$conf" ];then
-            for i in _runners;do
-                if [ x"$(grep "makina-states/ext_mods/${i//_}" "$conf"|wc -l)" = "x0" ];then
-                    bs_log "Patching $i to ext_mods/${i//_} in $conf"
-                    sed -re "s:makina-states/_?${i//_}:makina-states/ext_mods/${i//_}:g" -i "$conf"
-                fi
-            done
-        fi
-    done
+    # _moduleName/mc_moduleName to mc_states/modules
+    # ext_mod/mc_states/modules to mc_states/modules
     # ext_mod/modules to mc_states/modules
+    # ext_mod/mc_modules to mc_states/mc_modules
     for conf in "${minion_conf}" "${mminion_conf}";do
         if [ -e "$conf" ];then
             for i in grains modules renderers returners states;do
-                if [ x"$(grep "makina-states/mc_states/mc_${i}" "$conf"|wc -l)" = "x0" ];then
+                if [ x"$(grep "makina-states/mc_states/${i}" "$conf"|wc -l)" = "x0" ];then
                     bs_log "Patching ext_mods/$i to mc_states/${i} in $conf"
-                    sed -re "s:makina-states/ext_mods/mc_states/${i}:makina-states/mc_states/${i}:g" -i "$conf"
-                    sed -re "s:makina-states/ext_mods/${i}:makina-states/mc_states/${i}:g" -i "$conf"
+                    new_path="makina-states/mc_states/${i}"
+                    sed -re "s:makina-states/_${i}:${new_path}:g" -i "$conf"
+                    sed -re "s:makina-states/_${i}/mc_${i}:${new_path}:g" -i "$conf"
+                    sed -re "s:makina-states/ext_mods/mc_states/${i}:${new_path}:g" -i "$conf"
+                    sed -re "s:makina-states/ext_mods/${i}:${new_path}:g" -i "$conf"
+                    sed -re "s:makina-states/ext_mods/mc_${i}:${new_path}:g" -i "$conf"
                 fi
             done
         fi
@@ -2310,10 +2301,14 @@ cleanup_old_installs() {
     for conf in "${master_conf}" "${mmaster_conf}";do
         if [ -e "$conf" ];then
             for i in runners;do
-                if [ x"$(grep "makina-states/mc_states/mc_${i}" "$conf"|wc -l)" = "x0" ];then
+                if [ x"$(grep "makina-states/mc_states/${i}" "$conf"|wc -l)" = "x0" ];then
                     bs_log "Patching ext_mods/$i to mc_states/mc_${i} in $conf"
-                    sed -re "s:makina-states/ext_mods/mc_states/${i}:makina-states/mc_states/${i}:g" -i "$conf"
-                    sed -re "s:makina-states/ext_mods/${i}:makina-states/mc_states/${i}:g" -i "$conf"
+                    new_path="makina-states/mc_states/${i}"
+                    sed -re "s:makina-states/_${i}:${new_path}:g" -i "$conf"
+                    sed -re "s:makina-states/_${i}/mc_${i}:${new_path}:g" -i "$conf"
+                    sed -re "s:makina-states/ext_mods/mc_states/${i}:${new_path}:g" -i "$conf"
+                    sed -re "s:makina-states/ext_mods/${i}:${new_path}:g" -i "$conf"
+                    sed -re "s:makina-states/ext_mods/mc_${i}:${new_path}:g" -i "$conf"
                 fi
             done
         fi
@@ -2450,6 +2445,7 @@ usage() {
         echo
         bs_log "Advanced settings:"
         bs_help "--no-colors:" "No terminal colors" "$NO_COLORS" "y"
+        bs_help "--test:" "run makina-states tests, be caution, this installs everything and is to be installed on a vm which will be trashed afterwards!" "$MAKINASTATES_TEST" "y"
         bs_help "--salt-minion-dns <dns>:" "DNS of the salt minion" "$SALT_MINION_DNS" "y"
         bs_help "-g|--makina-states-url <url>:" "makina-states url" "$STATES_URL" y
         bs_help "-r|--root <path>:" "/ path" "$ROOT"
@@ -2479,6 +2475,25 @@ usage() {
         bs_help "--projects-path <path>:" "projects root path" "$PROJECTS_PATH" y
         bs_help "--project-top <sls>:" "project SLS file to execute"  "$PROJECT_TOPSLS" y
     fi
+}
+
+maybe_run_tests() {
+    bs_log "Running makinastates tests"
+    salt_call_wrapper state.sls makina-states.tests
+    if [[ -n "$SALT_BOOT_DEBUG" ]];then cat $SALT_BOOT_OUTFILE;fi
+    warn_log
+    if [[  -e /tmp/testok ]];then
+        bs_log "Marker for test ok is not there"
+        exit -2
+    elif [[ "$last_salt_retcode" != "0" ]];then
+        bs_log "Failed tests for makina states !"
+        exit -1
+    else
+        if [[  -e /tmp/testok ]];then
+            rm -f /tmp/testok
+        fi
+    fi
+
 }
 
 parse_cli_opts() {
@@ -2588,6 +2603,8 @@ parse_cli_opts() {
                 ;;
             --projects-path) PROJECTS_PATH=$2;sh=2
                 ;;
+            --test) MAKINASTATES_TEST=1;
+                ;;
             *) break
                 ;;
         esac    # --- end of case ---
@@ -2625,6 +2642,7 @@ if [[ -z $SALT_BOOT_AS_FUNCS ]];then
     install_salt_env
     run_highstates
     maybe_install_projects
+    maybe_run_tests
     exit 0
 fi
 # vim:set et sts=5 ts=4 tw=0:
