@@ -1047,6 +1047,11 @@ sys_info(){
     set -x
     ps aux
     netstat -pnlt
+    for i in salt-master salt-minion;do
+        if [ -e /var/log/salt/$i ];then
+            cat /var/log/salt/$i
+        fi
+    done
     set +x
 }
 
@@ -2672,9 +2677,6 @@ if [[ -z $SALT_BOOT_AS_FUNCS ]];then
     parse_cli_opts $LAUNCH_ARGS
     if [[ "$(dns_resolve localhost)" == "$DNS_RESOLUTION_FAILED" ]];then
         die "$DNS_RESOLUTION_FAILED"
-    fi
-    if [[ "${SALT_NODETYPE}" == "travis" ]];then
-        set -x
     fi
     set_vars # real variable affectation
     recap
