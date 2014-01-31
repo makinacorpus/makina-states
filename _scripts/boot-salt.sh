@@ -798,6 +798,7 @@ recap_(){
 
 recap() {
     recap_
+    travis_sys_info
     recap_ "no" "y" > "$TMPDIR/boot_salt_top"
 }
 
@@ -1039,6 +1040,19 @@ check_restartmarker_and_maybe_restart() {
             "$bootsalt" $LAUNCH_ARGS && rm -f "${SALT_MS}/.bootsalt_need_restart"
             exit $?
         fi
+    fi
+}
+
+sys_info(){
+    set -x
+    ps aux
+    netstat -pnlt
+    set -x
+}
+
+travis_sys_info() {
+    if [[ "${SALT_NODETYPE}" == "travis" ]];then
+        travis_sys_info
     fi
 }
 
@@ -1765,6 +1779,14 @@ challenge_message() {
     bs_log "****************************************************************"
 }
 
+get_delay_time() {
+    if [[ "${SALT_NODETYPE}" == " travis" ]];then
+        echo 15
+    else
+        echo 3
+    fi
+}
+
 make_association() {
     if [[ -z $IS_SALT_MINION ]];then return;fi
     minion_keys="$(find $CONF_PREFIX/pki/master/minions -type f 2>/dev/null|wc -l)"
@@ -1777,7 +1799,8 @@ make_association() {
     if [[ -z "$minion_id" ]];then
         bs_yellow_log "Minion did not start correctly, the minion_id cache file is empty, trying to restart"
         restart_local_minions
-        sleep 3
+        sleep $(get_delay_time)
+        travis_sys_info
         minion_id="$(get_minion_id)"
         if [[ -z "$minion_id" ]];then
             die "Minion did not start correctly, the minion_id cache file is always empty"
@@ -1864,7 +1887,8 @@ make_mastersalt_association() {
     if [[ -z "$minion_id" ]];then
         bs_yellow_log "Minion did not start correctly, the minion_id cache file is empty, trying to restart"
         restart_local_mastersalt_minions
-        sleep 3
+        sleep $(get_delay_time)
+        travis_sys_info
         minion_id="$(mastersalt_get_minion_id)"
         if [[ -z "$minion_id" ]];then
             die "Minion did not start correctly, the minion_id cache file is always empty"
