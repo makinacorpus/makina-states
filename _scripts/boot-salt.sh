@@ -400,6 +400,9 @@ set_vars() {
     set_progs
     HOSTNAME="$(hostname)"
     CHRONO="$(get_chrono)"
+    VENV_REBOOTSTRAP="${VENV_REBOOTSTRAP:-}"
+    BUILDOUT_REBOOTSTRAP="${BUILDOUT_REBOOTSTRAP:-${VENV_REBOOTSTRAP}}"
+    SALT_REBOOTSTRAP="${SALT_REBOOTSTRAP:-${BUILDOUT_REBOOTSTRAP}}"
     BASE_PACKAGES=""
     BASE_PACKAGES="$BASE_PACKAGES build-essential m4 libtool pkg-config autoconf gettext bzip2"
     BASE_PACKAGES="$BASE_PACKAGES groff man-db automake libsigc++-2.0-dev tcl8.5 python-dev"
@@ -635,6 +638,7 @@ set_vars() {
     PROJECT_PILLAR_STATE="${MAKINA_PROJECTS}.${PROJECT_NAME}"
 
     # export variables to support a restart
+    export SALT_REBOOTSTRAP BUILDOUT_REBOOTSTRAP VENV_REBOOTSTRAP
     export MS_BRANCH FORCE_MS_BRANCH
     export IS_SALT IS_SALT_MASTER IS_SALT_MINION
     export IS_MASTERSALT IS_MASTERSALT_MASTER IS_MASTERSALT_MINION
@@ -698,6 +702,15 @@ recap_(){
     if [[ -n "$debug" ]];then
         bs_log "ROOT: $ROOT"
         bs_log "PREFIX: $PREFIX"
+    fi
+    if [ x"${VENV_REBOOTSTRAP}" != x"" ];then
+        bs_log "Rebootstrap virtualenv"
+    fi
+    if [ x"${BUILDOUT_REBOOTSTRAP}" != x"" ];then
+        bs_log "Rebootstrap buildout"
+    fi
+    if [ x"${SALT_REBOOTSTRAP}" != x"" ];then
+        bs_log "Rebootstrap salt"
     fi
     if [[ -n "$IS_SALT" ]];then
         bs_yellow_log "---------------"
@@ -1222,7 +1235,7 @@ cleanup_previous_venv() {
             for i in $(find $item -maxdepth 0 2>/dev/null);do
                 bs_log "Cleaning $i"
                 rm -rfv "$i"
-                REBOOTSTRAP="y"
+                VENV_REBOOTSTRAP="y"
             done
         done
         cd "$old_d"
@@ -1232,7 +1245,7 @@ cleanup_previous_venv() {
 setup_virtualenv() {
     # Script is now running in makina-states git location
     # Check for virtualenv presence
-    REBOOTSTRAP="${SALT_REBOOTSTRAP}"
+    REBOOTSTRAP="${VENV_REBOOTSTRAP:-${SALT_REBOOTSTRAP}}"
     VENV_CONTENT="
 bin/activate
 bin/activate.csh
@@ -1265,7 +1278,8 @@ local/lib/python*
         . $VENV_PATH/bin/activate &&\
         easy_install -U setuptools &&\
         deactivate
-        REBOOTSTRAP=y
+        BUILDOUT_REBOOTSTRAP=y
+        SALT_REBOOTSTRAP=y
     fi
 
     # virtualenv is present, activate it
@@ -1281,7 +1295,8 @@ run_ms_buildout() {
     # Check for buildout things presence
     if    [[ ! -e "$ms/bin/buildout" ]]\
        || [[ ! -e "$ms/parts" ]] \
-       || [[ -n "$REBOOTSTRAP" ]] \
+       || [[ -n "${BUILDOUT_REBOOTSTRAP}" ]] \
+       || [[ -n "${SALT_REBOOTSTRAP}" ]] \
        || [[ ! -e "$ms/develop-eggs" ]] \
         ;then
         bs_log "Launching buildout bootstrap for salt initialisation ($ms)"
@@ -1313,7 +1328,8 @@ run_ms_buildout() {
         || [[ ! -e "$ms/src/docker/setup.py" ]]\
         || [[ ! -e "$ms/src/m2crypto/setup.py" ]]\
         || [[ ! -e "$ms/src/SaltTesting/setup.py" ]]\
-        || [[ -n "$REBOOTSTRAP" ]]\
+        || [[ -n "${BUILDOUT_REBOOTSTRAP}" ]]\
+        || [[ -n "${SALT_REBOOTSTRAP}" ]]\
         ;then
         cd $ms
         bs_log "Launching buildout for salt initialisation ($ms)"
@@ -1323,6 +1339,7 @@ run_ms_buildout() {
             rm -rf "$ms/.installed.cfg"
             die_ $ret " [bs] Failed buildout in $ms"
         fi
+        SALT_REBOOTSTRAP=1
     fi
 }
 
@@ -1583,11 +1600,11 @@ lazy_start_salt_daemons() {
 
 install_salt_daemons() {
     # --------- check if we need to run salt setup's
-    RUN_SALT_BOOTSTRAP=""
+    RUN_SALT_BOOTSTRAP="${SALT_REBOOTSTRAP}"
     if [[ "$SALT_MASTER_DNS" == "localhost" ]];then
         if  [[ ! -e "$CONF_PREFIX/pki/master/master.pem" ]]\
             || [[ ! -e "$CONF_PREFIX/master.d/00_global.conf" ]];then
-            RUN_MASTERSALT_BOOTSTRAP="1"
+            RUN_SALT_BOOTSTRAP="1"
         fi
     fi
     if     [[ ! -e "$CONF_PREFIX" ]]\
@@ -2007,7 +2024,7 @@ run_mastersalt_bootstrap() {
 
 install_mastersalt_daemons() {
     # --------- check if we need to run mastersalt setup's
-    RUN_MASTERSALT_BOOTSTRAP=""
+    RUN_MASTERSALT_BOOTSTRAP="${SALT_REBOOTSTRAP}"
     if [[ -n "$IS_MASTERSALT" ]];then
         if [[ -n "$IS_MASTERSALT_MASTER" ]];then
             if  [[ ! -e "$MCONF_PREFIX/pki/master/master.pem" ]]\
@@ -2492,6 +2509,9 @@ usage() {
         echo
         bs_log "Advanced settings:"
         bs_help "--no-colors:" "No terminal colors" "$NO_COLORS" "y"
+        bs_help "--salt-rebootstrap:" "Redo salt bootstrap" "${SALT_REBOOTSTRAP}" "y"
+        bs_help "--buildout-rebootstrap:" "Redo buildout & salt bootstrap" "${BUILDOUT_REBOOTSTRAP}" "y"
+        bs_help "--venv-rebootstrap:" "Redo venv, buildout & salt bootstrap" "${VENV_REBOOTSTRAP}" "y"
         bs_help "--test:" "run makina-states tests, be caution, this installs everything and is to be installed on a vm which will be trashed afterwards!" "$MAKINASTATES_TEST" "y"
         bs_help "--salt-minion-dns <dns>:" "DNS of the salt minion" "$SALT_MINION_DNS" "y"
         bs_help "-g|--makina-states-url <url>:" "makina-states url" "$STATES_URL" y
@@ -2564,6 +2584,12 @@ parse_cli_opts() {
             --debug-level) SALT_BOOT_DEBUG_LEVEL=$2;sh=2
                 ;;
             -l|--long-help) SALT_LONG_HELP=1;USAGE=1;
+                ;;
+            --salt-rebootstrap) SALT_REBOOTSTRAP=1;
+                ;;
+            --buildout-rebootstrap) BUILDOUT_REBOOTSTRAP=1;
+                ;;
+            --venv-rebootstrap) VENV_REBOOTSTRAP=1;
                 ;;
             -S|--skip-checkouts) SALT_BOOT_SKIP_CHECKOUTS=y
                 ;;
