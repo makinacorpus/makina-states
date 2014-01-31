@@ -161,15 +161,16 @@ def get_registry(registry_configuration):
 
 
 def construct_registry_configuration(__name, defaults=None):
-    settings = __salt__['mc_{0}.settings'.format(__name)]()
-    metadata = __salt__['mc_{0}.metadata'.format(__name)]()
+    settings_reg = __salt__['mc_{0}.settings'.format(__name)]()
+    metadata_reg = __salt__['mc_{0}.metadata'.format(__name)]()
     if not defaults:
         defaults = {}
     return __salt__['mc_macros.get_registry']({
-        'kind': metadata['kind'],
-        'bases': metadata['bases'],
+                'kind': metadata_reg['kind'],
+        'bases': metadata_reg['bases'],
         'defaults': defaults,
     })
+
 
 
 def unregister(kind, name, data=None, suf=''):

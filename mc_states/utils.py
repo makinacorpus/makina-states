@@ -4,7 +4,7 @@ __docformat__ = 'restructuredtext en'
 import copy
 
 AUTO_NAMES = {'_registry': 'registry',
-              '_settings': 'setting',
+              '_settings': 'settings',
               '_metadata': 'metadata'}
 
 

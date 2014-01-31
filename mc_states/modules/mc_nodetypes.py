@@ -16,7 +16,7 @@ def metadata():
     def _metadata(REG):
         return __salt__['mc_macros.metadata'](
             __name, bases=['localsettings', 'services'])
-    return metadata
+    return _metadata()
 
 
 def settings():
