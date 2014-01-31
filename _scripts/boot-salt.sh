@@ -261,6 +261,7 @@ detect_os() {
         fi
         DISTRIB_BACKPORT="wheezy-backports"
     fi
+
 }
 
 interactive_tempo(){
@@ -914,9 +915,16 @@ salt_call_wrapper_() {
     else
         saltargs="$saltargs -lquiet"
     fi
+    if [[ "${SALT_NODETYPE}" == "travis" ]];then
+        touch /tmp/travisrun
+        ( while [ -f /tmp/travisrun ];do sleep 15;echo "keep me open";sleep 45;done; )&
+    fi
     $salt_call_prefix/bin/salt-call $saltargs $@
     echo "$(date): $salt_call_prefix/bin/salt-call $saltargs $@" >> "$cmdf"
     last_salt_retcode=$?
+    if [[ "${SALT_NODETYPE}" == "travis" ]];then
+        rm -f /tmp/travisrun
+    fi
     STATUS="NOTSET"
     if [[ "$last_salt_retcode" != "0" ]] && [[ "$last_salt_retcode" != "2" ]];then
         STATUS="ERROR"
