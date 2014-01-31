@@ -157,7 +157,10 @@ def settings():
         users = {}
         user_keys = {}
         keysMappings = {'users': users, 'keys': user_keys}
-
+        pythonSettings = __salt__['mc_utils.defaults'](
+            'makina-states.localsettings.python', {
+                'versions': [grains['pythonversion'][:3]],
+            })
         # the following part just feed the above users & user_keys variables
         ##
         for sid, data in pillar.items():

@@ -2,11 +2,11 @@
 # Install several python versions (ubuntu specific for now),see standalone
 #
 # You can use the grain/pillar following setting to select the  versions:
-# makina-states.localsettings.python_vers: LIST (default: ["2.4", "2.5", "2.6"])
+# makina-states.localsettings.python.versions: LIST (default: ["2.4", "2.5", "2.6"])
 #
 # eg:
 #
-#  salt-call grains.setval makina-states.localsettings.python_vers '["2.6"]'
+#  salt-call grains.setval makina-states.localsettings.python.versions '["2.6"]'
 #}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {{ salt['mc_macros.register']('localsettings', 'python') }}
@@ -14,9 +14,7 @@
 {{localsettings.funcs.dummy('makina-pythons-proxy')}}
 
 {%- set locs = localsettings.locations %}
-{%- set pyvers = salt['mc_utils.get'](
-   'makina-states.localsettings.python_vers',
-   ['2.4', '2.5', '2.6']) %}
+{%- set pyvers = localsettings.pythonSettings.versions %}
 {%- if grains['os'] in ['Ubuntu'] %}
 {%- set udist = localsettings.udist %}
 deadsnakes:

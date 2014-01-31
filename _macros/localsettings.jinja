@@ -12,6 +12,10 @@
 {%- set metadata = salt['mc_localsettings.metadata']() %}
 {%- set registry = salt['mc_localsettings.registry']() %}
 
+
+{# pythonSettings #}
+{%- set pythonSettings = settings.pythonSettings %}
+
 {# collection of filesystem paths #}
 {%- set locations = settings.locations %}
 
