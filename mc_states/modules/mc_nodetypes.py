@@ -31,7 +31,7 @@ def settings():
 def registry():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _registry(REG):
-        settings_reg = __salt__['mc.{0}.settings'.format(__name)]()
+        settings_reg = __salt__['mc_{0}.settings'.format(__name)]()
         travis = False
         for i in os.environ:
             if 'travis' in i.lower():
