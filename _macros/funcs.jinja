@@ -28,9 +28,8 @@
 #}
 {% macro dummy(name, text='') %}
 {{name}}:
-  cmd.run:
-    - name: /bin/true
-    - unless: /bin/true
+  mc_dummy.dummy:
+    - name: {{name}}
 {{text}}
 {% endmacro %}
 # vim:set nofoldenable:
