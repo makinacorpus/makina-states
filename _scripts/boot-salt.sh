@@ -1378,7 +1378,7 @@ pillar_roots: {"base":["$SALT_PILLAR"]}
 module_dirs: [$SALT_ROOT/_modules, $SALT_MS/mc_states/modules]
 returner_dirs: [$SALT_ROOT/_returners, $SALT_MS/mc_states/returners]
 states_dirs: [$SALT_ROOT/_states, $SALT_MS/mc_states/states]
-grains_dirs: [$SALT_ROOT/_grains, $SALT_MS/mc_states/grains]
+grain_dirs: [$SALT_ROOT/_grains, $SALT_MS/mc_states/grains]
 render_dirs: [$SALT_ROOT/_renderers, $SALT_MS/mc_states/renderers]
 EOF
     fi
@@ -1405,7 +1405,7 @@ pillar_roots: {"base":["$MASTERSALT_PILLAR"]}
 module_dirs: [$MASTERSALT_ROOT/_modules, $MASTERSALT_MS/mc_states/modules]
 returner_dirs: [$MASTERSALT_ROOT/_returners, $MASTERSALT_MS/mc_states/returners]
 states_dirs: [$MASTERSALT_ROOT/_states, $MASTERSALT_MS/mc_states/states]
-grains_dirs: [$MASTERSALT_ROOT/_grains, $MASTERSALT_MS/mc_states/grains]
+grain_dirs: [$MASTERSALT_ROOT/_grains, $MASTERSALT_MS/mc_states/grains]
 render_dirs: [$MASTERSALT_ROOT/_renderers, $MASTERSALT_MS/mc_states/renderers]
 EOF
         fi
@@ -2346,8 +2346,12 @@ cleanup_old_installs() {
     # ext_mod/mc_modules to mc_states/mc_modules
     for conf in "${minion_conf}" "${mminion_conf}";do
         if [ -e "$conf" ];then
+            if [ x"$(grep "grain_dir" "${conf}"|wc -l)" = "x0" ];then
+                bs_log "Patching grains_dir -> grain_dir in ${conf}"
+                sed -re "s:grains_dirs:grain_dirs:g" -i "${conf}"
+            fi
             for i in grains modules renderers returners states;do
-                if [ x"$(grep "makina-states/mc_states/${i}" "$conf"|wc -l)" = "x0" ];then
+                if [ x"$(grep "makina-states/mc_states/${i}" "${conf}"|wc -l)" = "x0" ];then
                     bs_log "Patching ext_mods/$i to mc_states/${i} in $conf"
                     new_path="makina-states/mc_states/${i}"
                     sed -re "s:makina-states/_${i}:${new_path}:g" -i "$conf"
@@ -2362,8 +2366,8 @@ cleanup_old_installs() {
     for conf in "${master_conf}" "${mmaster_conf}";do
         if [ -e "$conf" ];then
             for i in runners;do
-                if [ x"$(grep "makina-states/mc_states/${i}" "$conf"|wc -l)" = "x0" ];then
-                    bs_log "Patching ext_mods/$i to mc_states/mc_${i} in $conf"
+                if [ x"$(grep "makina-states/mc_states/${i}" "${conf}"|wc -l)" = "x0" ];then
+                    bs_log "Patching ext_mods/$i to mc_states/mc_${i} in ${conf}"
                     new_path="makina-states/mc_states/${i}"
                     sed -re "s:makina-states/_${i}:${new_path}:g" -i "$conf"
                     sed -re "s:makina-states/_${i}/mc_${i}:${new_path}:g" -i "$conf"

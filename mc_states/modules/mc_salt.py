@@ -162,7 +162,7 @@ def settings():
                             '{salt_root}/makina-states/ext_mods/mc_modules'],
             'returner_dirs': ['{salt_root}/_returners',
                               '{salt_root}/makina-states/ext_mods/mc_returners'],
-            'grains_dirs': ['{salt_root}/_grains',
+            'grain_dirs': ['{salt_root}/_grains',
                             '{salt_root}/makina-states/ext_mods/mc_grains'],
             'states_dirs': ['{salt_root}/_states',
                             '{salt_root}/makina-states/ext_mods/mc_states'],
