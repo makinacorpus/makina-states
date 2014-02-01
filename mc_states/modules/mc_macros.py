@@ -157,6 +157,8 @@ def get_registry(registry_configuration):
                     registry['is'][item] = False
             else:
                 registry['availables'][item] = data
+    # synonym has for is
+    registry['has'] = registry['is']
     return registry
 
 
