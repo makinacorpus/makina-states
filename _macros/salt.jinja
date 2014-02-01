@@ -150,12 +150,55 @@
 {#- mappings #}
 {% set data_mappings = settings.data_mappings %}
 
+{% macro salt_dummies(name) %}
+{#- only here for orchestration purposes #}
+dummy-pre-{{ name }}-service-restart:
+  mc_dummy.dummy: []
+dummy-post-{{ name }}-service-restart:
+  mc_dummy.dummy: []
+dummy-pre-{{ name }}-checkouts:
+  mc_dummy.dummy: []
+dummy-{{ name }}-layout:
+  mc_dummy.dummy: []
+{% endmacro %}
+{#-
+# dummies daemon states for orchestration
+#}
+{% macro daemon_dummies(mode) %}
+{% for service_name in data_mappings %}
+{% set data = data_mappings[service_name][mode] %}
+# salt master/minion state will attach to this for the minion to be configured
+# before being really restarted
+dummy-pre-{{ data.service_name }}-service-restart:
+  mc_dummy.dummy:
+    - require:
+      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
+      {# deactivated for now, seems useless with recent salt fixes toward
+         restarts
+      {%- if data.service_name == 'minion' %}
+      - mc_dummy: dummy-post-{{ data.name }}-master-service-restart
+      {%- endif %}
+      #}
+
+dummy-pre-{{ data.daemon_name }}-service-restart:
+  mc_dummy.dummy: []
+dummy-post-{{ data.daemon_name }}-service-restart:
+   mc_dummy.dummy:
+    - require_in:
+      - mc_dummy: dummy-post-{{ data.name }}-service-restart
+dummy-post-{{ data.service_name }}-service-restart:
+   mc_dummy.dummy:
+    - require:
+      - mc_dummy: dummy-post-{{ data.daemon_name }}-service-restart
+{% endfor %}
+{% endmacro %}
+
 {#-
 ###############################
 # Common installation stuff
 ###############################
 #}
-{% macro install_makina_states(mode='salt', adata=None) %}
+{% macro install_makina_states(mode='salt', adata=None, full=True) %}
 {% if not adata %}
 {%-   if mode=='salt'%}
 {%-     set data = resolver(saltCommonData) %}
@@ -205,7 +248,7 @@ salt-{{ data.name }}-{{cur_name}}-bin:
     - require:
       - cmd: update-makinastates-{{ data.name }}
     - require_in:
-      - cmd: dummy-pre-{{ data.name }}-service-restart
+      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
 {% endfor %}
 
 salt-{{ data.name }}-bootsalt-link-bin:
@@ -213,7 +256,7 @@ salt-{{ data.name }}-bootsalt-link-bin:
     - name: /usr/bin/boot-{{data.name}}.sh
     - target: {{ data.msr }}/_scripts/boot-salt.sh
     - require_in:
-      - cmd: dummy-pre-{{ data.name }}-service-restart
+      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
 
 salt-{{ data.name }}-{{ group }}:
   group.present:
@@ -239,6 +282,9 @@ salt-etc-{{ data.name }}-dirs:
     - makedirs: True
     - require:
       - group: salt-{{ data.name }}-{{ group }}
+    - require_in:
+      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
+      - mc_dummy: dummy-{{data.name}}-layout
 
 etc-{{ data.name }}-dirs:
   file.directory:
@@ -256,26 +302,7 @@ etc-{{ data.name }}-dirs:
     - require:
       - group: salt-{{ data.name }}-{{ group }}
 
-{#- only here for orchestration purposes #}
-dummy-pre-{{ data.name }}-service-restart:
-  cmd.run:
-    - name: /bin/true
-    - unless: /bin/true
-    - require:
-      - cmd: update-makinastates-{{ data.name }}
-      - file: salt-etc-{{ data.name }}-dirs
-      - file: salt-{{ data.name }}-dirs-restricted
-      - file: salt-{{ data.name }}-logrotate
 
-dummy-post-{{ data.name }}-service-restart:
-   cmd.run:
-    - name: /bin/true
-    - unless: /bin/true
-
-dummy-pre-{{ data.name }}-checkouts:
-  cmd.run:
-    - name: /bin/true
-    - unless: /bin/true
 
 {#- Keep those 3 first following in sync with buildout mr.developer content
 # those repos are the one needed to bootstrap the core daemons #}
@@ -290,7 +317,7 @@ salt-{{ data.name }}-{{ i }}:
   cmd.run:
     - name: cd "{{ rdata['target'] }}" && git config --local core.filemode false
     - require:
-      - cmd: dummy-pre-{{ data.name }}-checkouts
+      - mc_dummy: dummy-pre-{{ data.name }}-checkouts
     - onlyif: ls -d "{{ git }}"
     - unless: if [[ -d "{{ git }}" ]];then cd "{{ rdata['target'] }}" && grep -q "filemode = false" .git/config;fi
   {# on each run, update the code -#}
@@ -309,7 +336,7 @@ salt-{{ data.name }}-{{ i }}:
     - require:
       - mc_git: salt-{{ data.name }}-{{ i }}
     - require_in:
-      - cmd: dummy-pre-{{ data.name }}-service-restart
+      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
   {% endif %}
 {% endfor %}
 
@@ -325,7 +352,7 @@ salt-{{ data.name }}-grains:
   cmd.run:
     - name: {{localMsr}}/_scripts/install_salt_modules.sh "{{localRoot}}"
     - require_in:
-      - cmd: dummy-pre-{{ data.name }}-service-restart
+      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
     - unless: |
               for i in _grains;do
                 for f in $(find {{localMsr}}/$i -name "*py" -type f);do
@@ -371,6 +398,8 @@ update-makinastates-{{ data.name }}:
             touch "{{ data.msr }}/.restart_salt_minion" &&\
             touch "{{ data.msr }}/.restart_msalt_minion"
     - cwd: {{ data.msr }}
+    - require_in:
+      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
     - unless: test "$(cat buildout.cfg|md5sum|awk '{print $1}')" = "$(cat .saltchk)"
 
 salt-{{ data.name }}-dirs-restricted:
@@ -388,10 +417,14 @@ salt-{{ data.name }}-dirs-restricted:
     - makedirs: True
     - require:
       - file: salt-{{ data.name }}-makina-states-dirs
+    - require_in:
+      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
 
 # update makina-state
 salt-{{ data.name }}-logrotate:
   file.managed:
+    - require_in:
+      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
     - template: jinja
     - name: {{ locs.conf_dir }}/logrotate.d/{{ data.name }}.conf
     - source: salt://makina-states/files/etc/logrotate.d/salt.conf
@@ -410,7 +443,7 @@ salt-{{ data.name }}-net.core.rmem__wmem_max:
       - net.core.wmem_max
     - value: 16777216
     - require_in:
-      - cmd: dummy-pre-{{ data.name }}-service-restart
+      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
 
 salt-{{ data.name }}-net.ipv4.tcp_rmem__wmem:
   sysctl.present:
@@ -419,7 +452,7 @@ salt-{{ data.name }}-net.ipv4.tcp_rmem__wmem:
       - net.ipv4.tcp_wmem
     - value: 4096 87380 16777216
     - require_in:
-      - cmd: dummy-pre-{{ data.name }}-service-restart
+      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
 {% endif %}
 
 {#- Fix permissions and ownerships
@@ -436,8 +469,8 @@ etc-{{data.name}}-dirs-perms:
     - reset_paths:
       - {{ data.conf_prefix }}
     - require:
-      - file: salt-etc-{{data.name}}-dirs
-      - cmd: dummy-pre-{{data.name}}-service-restart
+      - mc_dummy: dummy-{{data.name}}-layout
+      - mc_dummy: dummy-pre-{{data.name}}-service-restart
 
 {#- recurse does not seem to work well to reset perms #}
 {{data.name}}-projects-dirs-perms:
@@ -454,7 +487,7 @@ etc-{{data.name}}-dirs-perms:
       - {{ data.projects_root }}
       {# - {{ data.vagrant_root }} #}
     - require:
-      - cmd: dummy-pre-{{data.name}}-service-restart
+      - mc_dummy: dummy-pre-{{data.name}}-service-restart
       - cmd: etc-{{data.name}}-dirs-perms
 
 {{data.name}}-dirs-perms:
@@ -473,7 +506,7 @@ etc-{{data.name}}-dirs-perms:
       - {{ data.salt_root }}.*\/files\/.*
       - {{ data.salt_root }}/_grains
     - require:
-      - cmd: dummy-pre-{{data.name}}-service-restart
+      - mc_dummy: dummy-pre-{{data.name}}-service-restart
       - cmd: etc-{{data.name}}-dirs-perms
       - cmd: {{data.name}}-projects-dirs-perms
 
@@ -495,7 +528,7 @@ etc-{{data.name}}-dirs-perms:
       - cmd: {{data.name}}-dirs-perms
       - cmd: etc-{{data.name}}-dirs-perms
       - file: salt-{{data.name}}-dirs-restricted
-      - cmd: dummy-pre-{{data.name}}-service-restart
+      - mc_dummy: dummy-pre-{{data.name}}-service-restart
 
 {#-
 # recurse does not seem to work well to reset perms
@@ -513,7 +546,7 @@ etc-{{data.name}}-dirs-perms:
     - user: "root"
     - group: {{ localsettings.group }}
     - require_in:
-      - cmd: dummy-pre-{{data.name}}-service-restart
+      - mc_dummy: dummy-pre-{{data.name}}-service-restart
     - excludes:
       - {{ data.vms_docker_root }}/docker/bundles
       - {{ data.vms_docker_root }}/cache
@@ -525,7 +558,7 @@ etc-{{data.name}}-dirs-perms:
 {#-
 # SALT DAEMON MACRO
 #}
-{% macro install_salt_common_daemon(adata) %}
+{% macro install_salt_common_daemon(adata, full=True) %}
 {% set data = resolver(adata) %}
 {%- set localRoot = resolver('{salt_root}', data) %}
 {%- set prefix = resolver('{prefix}', data) %}
@@ -545,9 +578,9 @@ salt-{{ data.daemon_name }}-conf-global:
     - source: salt://makina-states/files/etc/salt/{{ data.service_name }}.d/00_global.conf
     - salt_data: {{ yamled_data }}
     - require:
-      - file: salt-etc-{{ data.name }}-dirs
+      - mc_dummy: dummy-{{data.name}}-layout
     - require_in:
-      - cmd: dummy-pre-{{ data.name }}-service-restart
+      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
 
 salt-{{ data.daemon_name }}-conf:
   file.managed:
@@ -556,9 +589,10 @@ salt-{{ data.daemon_name }}-conf:
     - source: salt://makina-states/files/etc/salt/{{ data.service_name }}
     - salt_data: {{ yamled_data }}
     - require:
-      - file: salt-etc-{{ data.name }}-dirs
+      - mc_dummy: dummy-{{data.name}}-layout
     - require_in:
-      - cmd: dummy-pre-{{ data.name }}-service-restart
+      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
+      - mc_dummy: dummy-pre-{{ data.daemon_name }}-service-restart
 
 {% if grains['os'] == 'Debian' -%}
 salt-{{ data.daemon_name }}-job:
@@ -572,9 +606,11 @@ salt-{{ data.daemon_name }}-job:
     - saltconfig: {{ confPrefix }}
     - salt_data: {{ yamled_data }}
     - require:
-      - file: salt-etc-{{ data.name }}-dirs
+      - mc_dummy: dummy-{{data.name}}-layout
     - require_in:
-      - cmd: dummy-pre-{{ data.name }}-service-restart
+      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
+
+      - mc_dummy: dummy-pre-{{ data.daemon_name }}-service-restart
 {% endif %}
 
 {% if grains['os'] == 'Ubuntu' -%}
@@ -589,9 +625,10 @@ salt-{{ data.daemon_name }}-job:
     - saltname: {{ data.name }}
     - salt_data: {{ yamled_data }}
     - require:
-      - file: salt-etc-{{ data.name }}-dirs
+      - mc_dummy: dummy-{{data.name}}-layout
     - require_in:
-      - cmd: dummy-pre-{{ data.name }}-service-restart
+      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
+      - mc_dummy: dummy-pre-{{ data.daemon_name }}-service-restart
 {% endif %}
 
 salt-{{ data.daemon_name }}-cache:
@@ -599,23 +636,23 @@ salt-{{ data.daemon_name }}-cache:
     - name: {{ cachedir }}
     - makedirs: True
     - require_in:
-      - cmd: dummy-pre-{{ data.name }}-service-restart
+      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
 
 salt-{{ data.daemon_name }}-pki:
   file.directory:
     - name: {{ confPrefix }}/pki/{{ data.service_name }}
     - makedirs: True
     - require:
-      - file: salt-etc-{{ data.name }}-dirs
+      - mc_dummy: dummy-{{data.name}}-layout
     - require_in:
-      - cmd: dummy-pre-{{ data.name }}-service-restart
+      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
 
 salt-{{ data.daemon_name }}-sock-dir:
   file.directory:
     - name: {{ runPrefix }}/{{data.name}}/{{ data.service_name }}
     - makedirs: True
     - require_in:
-      - cmd: dummy-pre-{{ data.name }}-service-restart
+      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
 
 salt-{{ data.daemon_name }}-logs:
   file.managed:
@@ -625,31 +662,9 @@ salt-{{ data.daemon_name }}-logs:
       - {{ logPrefix }}/{{ data.daemon_name }}
       - {{ logPrefix }}/syndic.log
     - require_in:
-      - cmd: dummy-pre-{{ data.name }}-service-restart
+      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
 
-# salt master/minion state will attach to this for the minion to be configured
-# before being really restarted
-dummy-pre-{{ data.service_name }}-service-restart:
-  cmd.run:
-    - name: /bin/true
-    - unless: /bin/true
-    - require:
-      - cmd: dummy-pre-{{ data.name }}-service-restart
-      {# deactivated for now, seems useless with recent salt fixes toward
-         restarts
-      {%- if data.service_name == 'minion' %}
-      - cmd: dummy-post-{{ data.name }}-master-service-restart
-      {%- endif %}
-      #}
 
-dummy-pre-{{ data.daemon_name }}-service-restart:
-  cmd.run:
-    - name: /bin/true
-    - unless: /bin/true
-    - require:
-      - file: salt-{{ data.daemon_name }}-conf
-      - file: salt-{{ data.daemon_name }}-job
-      - file: salt-{{ data.daemon_name }}-conf
 
 # done to mitigate authentication errors on restart
 salt-restart-{{ data.daemon_name }}:
@@ -662,31 +677,18 @@ salt-restart-{{ data.daemon_name }}:
             rm -f "{{ data.msr }}/.restart_{{ data.daemon_name }}"
     - onlyif: ls "{{ data.msr }}/.restart_{{ data.daemon_name }}"
     - require:
-      - cmd: dummy-pre-{{ data.daemon_name }}-service-restart
+      - mc_dummy: dummy-pre-{{ data.daemon_name }}-service-restart
 
-dummy-post-{{ data.daemon_name }}-service-restart:
-   cmd.run:
-    - name: /bin/true
-    - unless: /bin/true
     - require_in:
-      - cmd: dummy-post-{{ data.name }}-service-restart
-    - require:
-      - cmd: salt-restart-{{ data.daemon_name }}
-
-dummy-post-{{ data.service_name }}-service-restart:
-   cmd.run:
-    - name: /bin/true
-    - unless: /bin/true
-    - require:
-      - cmd: dummy-post-{{ data.daemon_name }}-service-restart
+      - dummy-post-{{ data.daemon_name }}-service-restart
 
 salt-{{ data.daemon_name }}:
   service.running:
     - name: {{ data.daemon_name }}
     - enable: True
     - require:
-      - cmd: dummy-post-{{ data.name }}-service-restart
-      - cmd: dummy-post-{{ data.service_name }}-service-restart
+      - mc_dummy: dummy-post-{{ data.name }}-service-restart
+      - mc_dummy: dummy-post-{{ data.service_name }}-service-restart
 {% endmacro %}
 
 {#-
@@ -694,12 +696,12 @@ salt-{{ data.daemon_name }}:
 # Install a salt master
 ########################
 #}
-{% macro install_master(mode='salt', data=None, service_name='master') %}
+{% macro install_master(mode='salt', data=None, service_name='master', full=True) %}
 {% if not data -%}
 {%- set data = data_mappings[service_name].get(
   mode,  data_mappings[service_name]['salt']) %}
 {%- endif %}
-{{ install_salt_common_daemon(adata=data) }}
+{{ install_salt_common_daemon(adata=data, full=full) }}
 
 # specific vagrant vm settings
 {% if 'devhost' in nodetypes.registry['actives'] -%}
@@ -711,9 +713,9 @@ salt-{{ data.daemon_name }}-conf-devhost-global:
     - source: salt://makina-states/files/etc/salt/{{ data.service_name }}.d/10_devhost.conf
     - salt_data: {{ data | yaml }}
     - require:
-      - file: salt-etc-{{ data.name }}-dirs
+      - mc_dummy: dummy-{{data.name}}-layout
     - require_in:
-      - cmd: dummy-pre-{{ data.name }}-service-restart
+      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
 {% endif %}
 {% endmacro %}
 
@@ -722,11 +724,11 @@ salt-{{ data.daemon_name }}-conf-devhost-global:
 # install a salt minion
 ########################
 #}
-{% macro install_minion(mode='salt', data=None, service_name='minion') %}
+{% macro install_minion(mode='salt', data=None, service_name='minion', full=True) %}
 {% if not data %}
 {%- set data = data_mappings[service_name].get(
   mode,  data_mappings[service_name]['salt']) %}
 {%- endif %}
-{{ install_salt_common_daemon(adata=data) }}
+{{ install_salt_common_daemon(adata=data, full=full) }}
 {% endmacro %}
 # vim: set nofoldenable:

@@ -2348,17 +2348,18 @@ cleanup_old_installs() {
         if [ -e "$conf" ];then
             if [ x"$(grep "grain_dir" "${conf}"|wc -l)" = "x0" ];then
                 bs_log "Patching grains_dir -> grain_dir in ${conf}"
-                sed -re "s:grains_dirs:grain_dirs:g" -i "${conf}"
+                sed -e "s:grains_dirs:grain_dirs:g" -i "${conf}"
             fi
             for i in grains modules renderers returners states;do
                 if [ x"$(grep "makina-states/mc_states/${i}" "${conf}"|wc -l)" = "x0" ];then
                     bs_log "Patching ext_mods/$i to mc_states/${i} in $conf"
                     new_path="makina-states/mc_states/${i}"
-                    sed -re "s:makina-states/_${i}:${new_path}:g" -i "$conf"
-                    sed -re "s:makina-states/_${i}/mc_${i}:${new_path}:g" -i "$conf"
-                    sed -re "s:makina-states/ext_mods/mc_states/${i}:${new_path}:g" -i "$conf"
-                    sed -re "s:makina-states/ext_mods/${i}:${new_path}:g" -i "$conf"
-                    sed -re "s:makina-states/ext_mods/mc_${i}:${new_path}:g" -i "$conf"
+                    sed -e "s:makina-states/_${i}:${new_path}:g" -i "$conf"
+                    sed -e "s:makina-states/_${i}/mc_${i}:${new_path}:g" -i "$conf"
+                    sed -e "s:makina-states/ext_mods/mc_states/${i}:${new_path}:g" -i "$conf"
+                    sed -e "s:makina-states/ext_mods/${i}:${new_path}:g" -i "$conf"
+                    sed -e "s:makina-states/ext_mods/mc_${i}:${new_path}:g" -i "$conf"
+                    sed -e "s:makina-states/mc_salt/mc_${i}:${new_path}:g" -i "$conf"
                 fi
             done
         fi
@@ -2369,11 +2370,12 @@ cleanup_old_installs() {
                 if [ x"$(grep "makina-states/mc_states/${i}" "${conf}"|wc -l)" = "x0" ];then
                     bs_log "Patching ext_mods/$i to mc_states/mc_${i} in ${conf}"
                     new_path="makina-states/mc_states/${i}"
-                    sed -re "s:makina-states/_${i}:${new_path}:g" -i "$conf"
-                    sed -re "s:makina-states/_${i}/mc_${i}:${new_path}:g" -i "$conf"
-                    sed -re "s:makina-states/ext_mods/mc_states/${i}:${new_path}:g" -i "$conf"
-                    sed -re "s:makina-states/ext_mods/${i}:${new_path}:g" -i "$conf"
-                    sed -re "s:makina-states/ext_mods/mc_${i}:${new_path}:g" -i "$conf"
+                    sed -e "s:makina-states/_${i}:${new_path}:g" -i "$conf"
+                    sed -e "s:makina-states/_${i}/mc_${i}:${new_path}:g" -i "$conf"
+                    sed -e "s:makina-states/ext_mods/mc_states/${i}:${new_path}:g" -i "$conf"
+                    sed -e "s:makina-states/ext_mods/${i}:${new_path}:g" -i "$conf"
+                    sed -e "s:makina-states/ext_mods/mc_${i}:${new_path}:g" -i "$conf"
+                    sed -e "s:makina-states/mc_salt/mc_${i}:${new_path}:g" -i "$conf"
                 fi
             done
         fi

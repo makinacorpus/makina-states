@@ -1,11 +1,3 @@
-{#-
-# Base server which acts also as a mastersalt master
-#}
-{%- import "makina-states/controllers/mastersalt.sls" as csalt with context %}
-{%- set controllers = csalt.controllers %}
-{%- set saltmac = csalt.saltmac %}
-{%- set name = csalt.name + '_master' %}
-{{ salt['mc_macros.register']('controllers', name) }}
-include:
-  - makina-states.controllers.{{csalt.name}}
-{{ saltmac.install_master(csalt.name) }}
+{#- Install in full mode, see the standalone file !  #}
+{% import  "makina-states/controllers/mastersalt_master-standalone.sls" as base with context %}
+{{base.do(full=True)}}
