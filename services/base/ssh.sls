@@ -5,10 +5,12 @@
 {%- set locs = localsettings.locations %}
 
 include:
-  - makina-states.localsettings.users
   - openssh
   - openssh.config
   - openssh.banner
+  - makina-states.localsettings.users
+  - makina-states.services.base.ssh-hooks
+  - makina-states.services.base.ssh-users
 
 {#
 # Idea is to grant everyone member of "(.-)*makina-users" access
@@ -61,20 +63,6 @@ root-ssh-keys-init:
               done;
               exit $ret;
     - user: root
-
-{%- for user, keys_info in localsettings.user_keys.items() %}
-{%-  for commentid, keys in keys_info.items() %}
-{%-    for key in keys %}
-ssh_auth-{{ user }}-{{ commentid }}-{{ key }}:
-  ssh_auth.present:
-    - require:
-      - user: {{ user }}
-    - comment: key for {{ commentid }}
-    - user: {{ user }}
-    - source: salt://files/ssh/{{ key }}
-{%-    endfor %}
-{%-  endfor %}
-{%- endfor %}
 ssh_config:
   file.managed:
     - name: /etc/ssh/ssh_config

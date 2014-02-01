@@ -6,6 +6,10 @@ import os
 from salt.utils import context
 from copy import deepcopy
 
+import mc_states.utils
+
+
+__name = 'pgsql'
 
 PORT_RE = re.compile('port\s*=\s*([0-9]+)[^0-9]*$', re.M | re.U | re.S)
 SOCKET_RE = re.compile(
@@ -55,4 +59,87 @@ def wrapper(wrappy):
         return ret
     return wfunc
 
-# vim:set et sts=4 ts=4 tw=80:
+
+def settings():
+    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    def _settings():
+        '''
+        This is called from mc_services, loading all Nginx default settings
+
+        :!Settings are merged with grains and pillar via mc_utils.defaults
+        '''
+        grains = __grains__
+        pillar = __pillar__
+        localsettings = __salt__['mc_localsettings.settings']()
+        nodetypes_registry = __salt__['mc_nodetypes.registry']()
+        locations = localsettings['locations']
+        #
+        # PostGRESQL:  (services.db.postgresql)
+        # default postgresql/ grains configured databases (see service doc)
+        #
+        pgDbs = {}
+        for dbk, data in pillar.items():
+            if dbk.endswith('-makina-postgresql'):
+                db = data.get('name', dbk.split('-makina-postgresql')[0])
+                pgDbs.update({db: data})
+        #
+        # default postgresql/ grains configured users (see service doc)
+        #
+        postgresqlUsers = {}
+        for userk, data in pillar.items():
+            if userk.endswith('-makina-services-sql-user'):
+                userk = data.get(
+                    'name',
+                    userk.replace('-makina-services-postgresql-user', ''))
+                if data.get('groups', None):
+                    if isinstance(data['groups'], basestring):
+                        data['groups'] = data['groups'].split(',')
+                postgresqlUsers.update({userk: data})
+
+        #
+        # default activated postgresql versions & settings:
+        #
+        defaultPgVersion = '9.3'
+        pgSettings = __salt__['mc_utils.defaults'](
+            'makina-states.services.postgresql', {
+                'user': 'postgres',
+                'version': defaultPgVersion,
+                'defaultPgVersion': defaultPgVersion,
+                'versions': [defaultPgVersion],
+                'postgis': {'2.1': [defaultPgVersion, '9.2']},
+                'postgis_db': 'postgis',
+                'pg_hba':  [
+                    {'comment': "# administration "},
+                    {'type': 'local',
+                     'db': 'all',
+                     'user': 'postgres',
+                     'address': '',
+                     'method': 'peer'},
+                    {'comment': "# local is for Unix socket connections only"},
+                    {'type': 'local',
+                     'db': 'all',
+                     'user': 'all',
+                     'address': '',
+                     'method': 'peer'},
+                    {'comment': "# IPv4 local connections:"},
+                    {'type': 'local',
+                     'db': 'all',
+                     'user': 'all',
+                     'address': '127.0.0.1/32',
+                     'method': 'md5'},
+                    {"comment": '# IPv6 local connections:'},
+                    {'type': 'local',
+                     'db': 'all',
+                     'user': 'all',
+                     'address': '::1/128',
+                     'method': 'md5'},
+                ]
+            }
+        )
+        pgSettings['pgDbs'] = pgDbs
+        pgSettings['postgresqlUsers'] = postgresqlUsers
+        return pgSettings
+    return _settings()
+
+
+# vim:set et sts=4 ts=4 tw=0:

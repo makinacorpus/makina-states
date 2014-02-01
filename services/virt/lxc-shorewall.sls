@@ -1,29 +1,8 @@
-{#-
-# LXC and shorewall integration, be sure to add
-# lxc guests to shorewall running state
-# upon creation
-# A big sentence to say, restart shorewall
-# after each lxc creation to enable
-# the container network
+{#- Compat wrapper to shorewall services
+# use now directlyh the 2 states
 #}
+include:
+  - makina-states.services.virt.lxc
+  - makina-states.services.firewall.shorewall
 {%- import "makina-states/_macros/services.jinja" as services with context %}
 {{ salt['mc_macros.register']('services', 'virt.lxc-shorewall') }}
-{%- set localsettings = services.localsettings %}
-{%- set locs = localsettings.locations %}
-include:
-  - makina-states.services.firewall.shorewall
-  - makina-states.services.virt.lxc
-
-{% for pillark, lxc_data in pillar.items() -%}
-{% if pillark.endswith('lxc-server-def')  %}
-{% set lxc_name = lxc_data.get('name', pillark.split('-lxc-server-def')[0]) -%}
-lxcshorewall-start-{{ lxc_name }}-lxc-service:
-  cmd.run:
-    - name: /bin/true
-    - unless: /bin/true
-    - require:
-      - cmd: start-{{ lxc_name }}-lxc-service
-    - watch_in:
-      - cmd: shorewall-restart
-{% endif %}
-{% endfor %}

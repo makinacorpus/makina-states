@@ -2,27 +2,39 @@
 # dotdeb.org packages repository managment
 #}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+{% macro do(full=True) %}
 {{ salt['mc_macros.register']('localsettings', 'repository_dotdeb') }}
-
-{{localsettings.funcs.dummy('makina-dotdeb-proxy')}}
-
+{% if full %}
+include:
+  - makina-states.localsettings.pkgmgr
+{% endif %}
 {%- set locs = localsettings.locations %}
 {%- if grains['os_family'] in ['Debian'] %}
 dotdeb-repo:
   pkgrepo.managed:
     - humanname: DeadSnakes PPA
-    - name: deb http://packages.dotdeb.org dotdeb all
-    - dist: dotdeb
+    - name: deb http://packages.dotdeb.org  {{localsettings.dist}}  all
+    - consolidate: true
+    - dist: {{localsettings.dist}}
     - file: {{locs.conf_dir}}/apt/sources.list.d/dotdeb.org.list
     - keyid: E9C74FEEA2098A6E
     - keyserver: {{localsettings.keyserver }}
+    {% if full %}
+    - require:
+        - file: apt-sources-list
+        - cmd: apt-update-after
+    {% endif %}
 
 makina-dotdeb-pin-php:
   file.managed:
-    - name: {{ locs.conf_dir }}/apt/preferences.d/dotdeb.org
+    - name: {{ locs.conf_dir }}/apt/preferences.d/dotdeb.org.pref
     - mode: 0644
     - user: root
     - group: root
     - template: jinja
     - source: salt://makina-states/files/etc/apt/preferences.d/dotdeb.org
+    - require_in:
+        - pkgrepo: dotdeb-repo
 {% endif %}
+{% endmacro %}
+{{ do(full=False) }}

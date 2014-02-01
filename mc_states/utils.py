@@ -2,10 +2,16 @@
 # -*- coding: utf-8 -*-
 __docformat__ = 'restructuredtext en'
 import copy
+from time import time
+
 
 AUTO_NAMES = {'_registry': 'registry',
               '_settings': 'settings',
               '_metadata': 'metadata'}
+
+
+
+_CACHEKEY = '{0}__CACHEKEY'
 
 
 def lazy_subregistry_get(__salt__, registry):
@@ -19,15 +25,22 @@ def lazy_subregistry_get(__salt__, registry):
         def _call(*a, **kw):
             REG = __salt__['mc_macros.registry_kind_get'](registry)
             # TODO: replace the next line with the two others with a better test
-            REG[key] = func(*a, **kw)
-            REG[key]['reg_kind'] = registry
-            REG[key]['reg_func_name'] = key
-            filter_locals(REG[key])
-            # to enable caching
-            # if not key in REG:
-            #     REG[key] = func(REG, *a, **kw)
-            __salt__['mc_macros.registry_kind_set'](registry, REG)
-            REG = __salt__['mc_macros.registry_kind_get'](registry)
+            # cache each registry 3 minutes, which should be sufficient
+            # to render the whole sls files
+            tkey = "{0}".format(time() // (3 * 60))
+            ckey = _CACHEKEY.format(key)
+            if not ckey in REG:
+                REG[ckey] = ''
+            if tkey != REG[ckey] and key in REG:
+                del REG[key]
+            if not key in REG:
+                REG[key] = func(*a, **kw)
+                REG[key]['reg_kind'] = registry
+                REG[key]['reg_func_name'] = key
+                filter_locals(REG[key])
+                REG[ckey] = tkey
+                __salt__['mc_macros.registry_kind_set'](registry, REG)
+                REG = __salt__['mc_macros.registry_kind_get'](registry)
             return REG[key]
         return _call
     return wrapper

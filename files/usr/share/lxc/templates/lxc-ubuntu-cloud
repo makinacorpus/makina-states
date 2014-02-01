@@ -1,0 +1,394 @@
+#!/bin/bash
+
+# template script for generating ubuntu container for LXC based on released
+# cloud images.
+#
+# Copyright © 2012 Serge Hallyn <serge.hallyn@canonical.com>
+#
+#  This library is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
+#  version 2.1 of the License, or (at your option) any later version.
+
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  Lesser General Public License for more details.
+
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+set -e
+
+STATE_DIR="/var"
+HOOK_DIR="/usr/share/lxc/hooks"
+CLONE_HOOK_FN="$HOOK_DIR/ubuntu-cloud-prep"
+
+if [ -r /etc/default/lxc ]; then
+    . /etc/default/lxc
+fi
+
+am_in_userns() {
+    [ -e /proc/self/uid_map ] || { echo no; return; }
+    [ "$(wc -l /proc/self/uid_map | awk '{ print $1 }')" -eq 1 ] || { echo yes; return; }
+    line=$(awk '{ print $1 " " $2 " " $3 }' /proc/self/uid_map)
+    [ "$line" = "0 0 4294967295" ] && { echo no; return; }
+    echo yes
+}
+
+in_userns=0
+[ $(am_in_userns) = "yes" ] && in_userns=1
+
+copy_configuration()
+{
+    path=$1
+    rootfs=$2
+    name=$3
+    arch=$4
+    release=$5
+
+    if [ $arch = "i386" ]; then
+        arch="i686"
+    fi
+
+    # if there is exactly one veth network entry, make sure it has an
+    # associated hwaddr.
+    nics=`grep -e '^lxc\.network\.type[ \t]*=[ \t]*veth' $path/config | wc -l`
+    if [ $nics -eq 1 ]; then
+        grep -q "^lxc.network.hwaddr" $path/config || sed -i -e "/^lxc\.network\.type[ \t]*=[ \t]*veth/a lxc.network.hwaddr = 00:16:3e:$(openssl rand -hex 3| sed 's/\(..\)/\1:/g; s/.$//')" $path/config
+    fi
+
+    grep -q "^lxc.rootfs" $path/config 2>/dev/null || echo "lxc.rootfs = $rootfs" >> $path/config
+    cat <<EOF >> $path/config
+lxc.mount = $path/fstab
+lxc.pivotdir = lxc_putold
+
+lxc.devttydir =$ttydir
+lxc.tty = 4
+lxc.pts = 1024
+
+lxc.utsname = $name
+lxc.arch = $arch
+lxc.cap.drop = sys_module mac_admin mac_override sys_time
+
+# When using LXC with apparmor, uncomment the next line to run unconfined:
+#lxc.aa_profile = unconfined
+
+# To support container nesting on an Ubuntu host, uncomment next two lines:
+#lxc.aa_profile = lxc-container-default-with-nesting
+#lxc.hook.mount = /usr/share/lxc/hooks/mountcgroups
+
+lxc.hook.clone = ${CLONE_HOOK_FN}
+
+lxc.cgroup.devices.deny = a
+# Allow any mknod (but not using the node)
+lxc.cgroup.devices.allow = c *:* m
+lxc.cgroup.devices.allow = b *:* m
+# /dev/null and zero
+lxc.cgroup.devices.allow = c 1:3 rwm
+lxc.cgroup.devices.allow = c 1:5 rwm
+# consoles
+lxc.cgroup.devices.allow = c 5:1 rwm
+lxc.cgroup.devices.allow = c 5:0 rwm
+# /dev/{,u}random
+lxc.cgroup.devices.allow = c 1:9 rwm
+lxc.cgroup.devices.allow = c 1:8 rwm
+lxc.cgroup.devices.allow = c 136:* rwm
+lxc.cgroup.devices.allow = c 5:2 rwm
+# rtc
+lxc.cgroup.devices.allow = c 254:0 rm
+# fuse
+lxc.cgroup.devices.allow = c 10:229 rwm
+# tun
+lxc.cgroup.devices.allow = c 10:200 rwm
+# full
+lxc.cgroup.devices.allow = c 1:7 rwm
+# hpet
+lxc.cgroup.devices.allow = c 10:228 rwm
+# kvm
+lxc.cgroup.devices.allow = c 10:232 rwm
+EOF
+
+    cat <<EOF > $path/fstab
+proc            proc         proc    nodev,noexec,nosuid 0 0
+sysfs           sys          sysfs defaults  0 0
+/sys/fs/fuse/connections sys/fs/fuse/connections none bind 0 0
+/sys/kernel/debug sys/kernel/debug none bind 0 0
+/sys/kernel/security sys/kernel/security none bind 0 0
+/sys/fs/pstore sys/fs/pstore none bind,optional 0 0
+EOF
+
+    # unprivileged user can't mknod these.  One day we may allow
+    # that in the kernel, but not right now.  So let's just bind
+    # mount the files from the host.
+    if [ $in_userns -eq 1 ]; then
+        for dev in null tty urandom console; do
+            touch $rootfs/dev/$dev
+            echo "/dev/$dev dev/$dev    none bind 0 0" >> $path/fstab
+        done
+    fi
+
+    # rmdir /dev/shm for containers that have /run/shm
+    # I'm afraid of doing rm -rf $rootfs/dev/shm, in case it did
+    # get bind mounted to the host's /run/shm.  So try to rmdir
+    # it, and in case that fails move it out of the way.
+    if [ ! -L $rootfs/dev/shm ] && [ -d $rootfs/run/shm ] && [ -e $rootfs/dev/shm ]; then
+        mv $rootfs/dev/shm $rootfs/dev/shm.bak
+        ln -s /run/shm $rootfs/dev/shm
+    fi
+
+    return 0
+}
+
+usage()
+{
+    cat <<EOF
+LXC Container configuration for Ubuntu Cloud images.
+
+Generic Options
+[ -r | --release <release> ]: Release name of container, defaults to host
+[ --rootfs <path> ]: Path in which rootfs will be placed
+[ -a | --arch ]: Arhcitecture of container, defaults to host architecture
+[ -T | --tarball ]: Location of tarball
+[ -d | --debug ]: Run with 'set -x' to debug errors
+[ -s | --stream]: Use specified stream rather than 'released'
+
+Additionally, clone hooks can be passed through (ie, --userdata).  For those,
+see:
+  $CLONE_HOOK_FN --help
+EOF
+    return 0
+}
+
+options=$(getopt -o a:hp:r:n:Fi:CLS:T:ds:u: -l arch:,help,rootfs:,path:,release:,name:,flush-cache,hostid:,auth-key:,cloud,no_locales,tarball:,debug,stream:,userdata: -- "$@")
+if [ $? -ne 0 ]; then
+    usage $(basename $0)
+    exit 1
+fi
+eval set -- "$options"
+
+# default release is precise, or the systems release if recognized
+release=precise
+if [ -f /etc/lsb-release ]; then
+    . /etc/lsb-release
+    rels=$(ubuntu-distro-info --supported 2>/dev/null) ||
+        rels="lucid natty oneiric precise quantal raring saucy"
+    for r in $rels; do
+        [ "$DISTRIB_CODENAME" = "$r" ] && release="$r"
+    done
+fi
+
+# Code taken from debootstrap
+if [ -x /usr/bin/dpkg ] && /usr/bin/dpkg --print-architecture >/dev/null 2>&1; then
+    arch=`/usr/bin/dpkg --print-architecture`
+elif type udpkg >/dev/null 2>&1 && udpkg --print-architecture >/dev/null 2>&1; then
+    arch=`/usr/bin/udpkg --print-architecture`
+else
+    arch=$(uname -m)
+    if [ "$arch" = "i686" ]; then
+        arch="i386"
+    elif [ "$arch" = "x86_64" ]; then
+        arch="amd64"
+    elif [ "$arch" = "armv7l" ]; then
+        # note: arm images don't exist before oneiric;  are called armhf in
+        # precise and later;  and are not supported by the query, so we don't actually
+        # support them yet (see check later on).  When Query2 is available,
+        # we'll use that to enable arm images.
+        arch="armhf"
+    fi
+fi
+
+debug=0
+hostarch=$arch
+cloud=0
+locales=1
+flushcache=0
+stream="released"
+cloneargs=()
+while true
+do
+    case "$1" in
+    -h|--help)         usage $0 && exit 0;;
+    -p|--path)         path=$2; shift 2;;
+    -n|--name)         name=$2; shift 2;;
+    -F|--flush-cache)  flushcache=1; shift 1;;
+    -r|--release)      release=$2; shift 2;;
+    -a|--arch)         arch=$2; shift 2;;
+    -T|--tarball)      tarball=$2; shift 2;;
+    -d|--debug)        debug=1; shift 1;;
+    -s|--stream)       stream=$2; shift 2;;
+    --rootfs)          rootfs=$2; shift 2;;
+    -L|--no?locales)   cloneargs[${#cloneargs[@]}]="--no-locales"; shift 1;;
+    -i|--hostid)       cloneargs[${#cloneargs[@]}]="--hostid=$2"; shift 2;;
+    -u|--userdata)     cloneargs[${#cloneargs[@]}]="--userdata=$2"; shift 2;;
+    -C|--cloud)        cloneargs[${#cloneargs[@]}]="--cloud"; shift 1;;
+    -S|--auth-key)     cloneargs[${#cloneargs[@]}]="--auth-key=$2"; shift 2;;
+    --)                shift 1; break ;;
+        *)              break ;;
+    esac
+done
+
+cloneargs=( "--name=$name" "${cloneargs[@]}" )
+
+if [ $debug -eq 1 ]; then
+    set -x
+fi
+
+if [ "$arch" == "i686" ]; then
+    arch=i386
+fi
+
+if [ $arch != "i386" -a $arch != "amd64" -a $arch != "armhf" -a $arch != "armel" ]; then
+    echo "Only i386, amd64, armel and armhf are supported by the ubuntu cloud template."
+    exit 1
+fi
+
+if [ $hostarch != "i386" -a $hostarch != "amd64" -a $hostarch != "armhf" -a $hostarch != "armel" ]; then
+    echo "Only i386, amd64, armel and armhf are supported as host."
+    exit 1
+fi
+
+if [ $hostarch = "amd64" -a $arch != "amd64" -a $arch != "i386" ]; then
+    echo "can't create $arch container on $hostarch"
+    exit 1
+fi
+
+if [ $hostarch = "i386" -a $arch != "i386" ]; then
+    echo "can't create $arch container on $hostarch"
+    exit 1
+fi
+
+if [ $hostarch = "armhf" -o $hostarch = "armel" ] && \
+   [ $arch != "armhf" -a $arch != "armel" ]; then
+    echo "can't create $arch container on $hostarch"
+    exit 1
+fi
+
+if [ "$stream" != "daily" -a "$stream" != "released" ]; then
+    echo "Only 'daily' and 'released' streams are supported"
+    exit 1
+fi
+
+if [ -z "$path" ]; then
+    echo "'path' parameter is required"
+    exit 1
+fi
+
+if [ "$(id -u)" != "0" ]; then
+    echo "This script should be run as 'root'"
+    exit 1
+fi
+
+# detect rootfs
+config="$path/config"
+if [ -z "$rootfs" ]; then
+    if grep -q '^lxc.rootfs' $config 2>/dev/null ; then
+        rootfs=`grep 'lxc.rootfs =' $config | awk -F= '{ print $2 }'`
+    else
+        rootfs=$path/rootfs
+    fi
+fi
+
+type ubuntu-cloudimg-query
+type wget
+
+# determine the url, tarball, and directory names
+# download if needed
+cache="$STATE_DIR/cache/lxc/cloud-$release"
+
+mkdir -p $cache
+
+if [ -n "$tarball" ]; then
+    url2="$tarball"
+else
+    url1=`ubuntu-cloudimg-query $release $stream $arch --format "%{url}\n"`
+    url2=`echo $url1 | sed -e 's/.tar.gz/-root\0/'`
+fi
+
+filename=`basename $url2`
+
+wgetcleanup()
+{
+    rm -f $filename
+}
+
+buildcleanup()
+{
+    cd $rootfs
+    umount -l $cache/$xdir || true
+    rm -rf $cache
+}
+
+# if the release doesn't have a *-rootfs.tar.gz, then create one from the
+# cloudimg.tar.gz by extracting the .img, mounting it loopback, and creating
+# a tarball from the mounted image.
+build_root_tgz()
+{
+    url=$1
+    filename=$2
+
+    xdir=`mktemp -d -p .`
+    tarname=`basename $url`
+    imgname="$release-*-cloudimg-$arch.img"
+    trap buildcleanup EXIT SIGHUP SIGINT SIGTERM
+    if [ $flushcache -eq 1 -o ! -f $cache/$tarname ]; then
+        rm -f $tarname
+        echo "Downloading cloud image from $url"
+        wget $url || { echo "Couldn't find cloud image $url."; exit 1; }
+    fi
+    echo "Creating new cached cloud image rootfs"
+    tar --wildcards -zxf "$tarname" "$imgname"
+    mount -o loop $imgname $xdir
+    (cd $xdir; tar --numeric-owner -cpzf "../$filename" .)
+    umount $xdir
+    rm -f $tarname $imgname
+    rmdir $xdir
+    echo "New cloud image cache created"
+    trap EXIT
+    trap SIGHUP
+    trap SIGINT
+    trap SIGTERM
+}
+
+do_extract_rootfs() {
+
+    cd $cache
+    if [ $flushcache -eq 1 ]; then
+        echo "Clearing the cached images"
+        rm -f $filename
+    fi
+
+    trap wgetcleanup EXIT SIGHUP SIGINT SIGTERM
+    if [ ! -f $filename ]; then
+        wget $url2 || build_root_tgz $url1 $filename
+    fi
+    trap EXIT
+    trap SIGHUP
+    trap SIGINT
+    trap SIGTERM
+
+    echo "Extracting container rootfs"
+    mkdir -p $rootfs
+    cd $rootfs
+    tar --numeric-owner -xpzf "$cache/$filename"
+}
+
+if [ -n "$tarball" ]; then
+    do_extract_rootfs
+else
+    mkdir -p "$STATE_DIR/lock/subsys/"
+    (
+        flock -x 200
+        do_extract_rootfs
+    ) 200>"$STATE_DIR/lock/subsys/lxc-ubuntu-cloud"
+fi
+
+copy_configuration $path $rootfs $name $arch $release
+
+"$CLONE_HOOK_FN" "${cloneargs[@]}" "$rootfs"
+
+echo "Container $name created."
+exit 0
+
+# vi: ts=4 expandtab

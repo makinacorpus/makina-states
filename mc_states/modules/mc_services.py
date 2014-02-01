@@ -93,6 +93,10 @@ def settings():
                 ('dockercontainer' in nodetypes_registry['actives'])
                 or ('lxccontainer' in nodetypes_registry['actives'])
             ))
+        #
+        # lxc:  (services.virt.lxc)
+        #
+        lxcSettings = __salt__['mc_lxc.settings']()
 
         #
         # Apache:  (services.http.apache)
@@ -187,32 +191,10 @@ def settings():
         # PostGRESQL:  (services.db.postgresql)
         # default postgresql/ grains configured databases (see service doc)
         #
-        pgDbs = {}
-        for dbk, data in pillar.items():
-            if dbk.endswith('-makina-postgresql'):
-                db = data.get('name', dbk.split('-makina-postgresql')[0])
-                pgDbs.update({db: data})
-        #
-        # default postgresql/ grains configured users (see service doc)
-        #
-        postgresqlUsers = {}
-        for userk, data in pillar.items():
-            if userk.endswith('-makina-services-postgresql-user'):
-                postgresqlUsers.update({userk: data})
-
-        #
-        # default activated postgresql versions & settings:
-        #
-        defaultPgVersion = '9.3'
-        pgSettings = __salt__['mc_utils.defaults'](
-            'makina-states.services.postgresql', {
-                'user': 'postgres',
-                'version': defaultPgVersion,
-                'versions': [defaultPgVersion],
-                'postgis': {'2.1': [defaultPgVersion, '9.2']},
-                'postgis_db': 'postgis',
-            }
-        )
+        pgSettings = __salt__['mc_pgsql.settings']()
+        pgDbs = pgSettings['pgDbs']
+        postgresqlUsers = pgSettings['postgresqlUsers']
+        defaultPgVersion = pgSettings['defaultPgVersion']
         pgVers = pgSettings['versions']
         postgisVers = pgSettings['postgis']
         postgisDbName = pgSettings['postgis_db']

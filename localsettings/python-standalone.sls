@@ -8,14 +8,16 @@
 #
 #  salt-call grains.setval makina-states.localsettings.python.versions '["2.6"]'
 #}
+{% macro do(full=True) %}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {{ salt['mc_macros.register']('localsettings', 'python') }}
-
-{{localsettings.funcs.dummy('makina-pythons-proxy')}}
-
+{% if full %}
+include:
+  - makina-states.localsettings.pkgmgr
+{% endif %}
 {%- set locs = localsettings.locations %}
 {%- set pyvers = localsettings.pythonSettings.alt_versions %}
-{%- if grains['os'] in ['Ubuntu'] %}
+{%- if (grains['os'] in ['Ubuntu']) and pyvers %}
 {%- set udist = localsettings.udist %}
 deadsnakes:
   pkgrepo.managed:
@@ -29,6 +31,10 @@ deadsnakes:
   pkg.installed:
     - require:
       - pkgrepo: deadsnakes
+      {% if full %}
+      - file: apt-sources-list
+      - cmd: apt-update-after
+      {% endif %}
     - pkgs:
       {%- for pyver in pyvers %}
       - python{{pyver}}-dev
@@ -37,5 +43,6 @@ deadsnakes:
       {%- endfor %}
     {%- endif %}
 {% endif %}
+{% endmacro %}
+{{ do(full=False) }}
 # vim:set nofoldenable:
-

@@ -1,42 +1,5 @@
-{% import "makina-states/services/db/postgresql.sls" as pgsql with context %}
-{% set services = pgsql.services %}
-{% set localsettings = services.localsettings %}
-{% set nodetypes = services.nodetypes %}
-{% set locs = localsettings.locations %}
-
-{{ salt['mc_macros.register']('services', 'gis.postgis') }}
-
-include:
-  - makina-states.services.db.postgresql
-
-{% set dbname = services.postgisDbName %}
-
-{% for postgisVer, pgvers in services.postgisVers.items() %}
-{%  for pgVer in pgvers %}
-{%    if pgVer in services.pgVers %}
-prereq-postgis-{{pgVer}}-{{postgisVer}}:
-  pkg.installed:
-    - require_in:
-      - cmd: {{pgsql.orchestrate[pgVer]['pregroup']}}
-      - cmd: {{pgsql.orchestrate[pgVer]['predb']}}
-    - require:
-      - pkg: postgresql-pkgs
-    - pkgs:
-      - python-virtualenv {# noop #}
-      {% if grains['os_family'] in ['Debian'] %}
-      - postgresql-{{pgVer}}-postgis-{{postgisVer}}
-      - liblwgeom-dev
-      - postgresql-{{pgVer}}-postgis-scripts
-      {% endif %}
-
-{{ pgsql.postgresql_db(dbname) }}
-
-{{ pgsql.install_pg_exts(
-    ["postgis",
-     "postgis_topology",
-     "fuzzystrmatch",
-     "postgis_tiger_geocoder"],
-    db=dbname) }}
-{%    endif %}
-{%  endfor %}
-{% endfor %}
+{#-
+# Install in full mode, see the standalone file !
+#}
+{% import "makina-states/services/gis/postgis-standalone.sls" as base with context %}
+{{ base.do(full=True) }}

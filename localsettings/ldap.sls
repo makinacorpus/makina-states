@@ -35,7 +35,7 @@ ldap-pkgs:
       - sasl2-bin
       - python-ldap
       - nslcd
-      {%- if grains['os_family'] == 'Debian' -%}
+      {% if grains['os_family'] == 'Debian' -%}
       - libldap2-dev
       - libsasl2-dev
       {%- endif %}

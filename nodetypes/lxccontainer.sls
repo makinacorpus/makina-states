@@ -1,8 +1,3 @@
-{#-
-# Makina-states autodiscovery integration file, see the -standalone file
-#}
-
-include:
-  - makina-states.nodetypes.vm
-  - makina-states.nodetypes.lxccontainer-standalone
-
+{# Makina-states autodiscovery integration file, see the -standalone file #}
+{% import "makina-states/nodetypes/lxccontainer-standalone.sls" as base with context %}
+{{base.do(full=True)}}

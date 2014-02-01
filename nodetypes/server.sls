@@ -1,6 +1,3 @@
-{#-
-# Makina-states autodiscovery integration file, see the -standalone file
-#}
-include:
-  - makina-states.localsettings
-  - makina-states.nodetypes.server-standalone
+{# Makina-states autodiscovery integration file, see the -standalone file #}
+{% import "makina-states/nodetypes/server-standalone.sls" as base with context %}
+{{base.do(full=True)}}

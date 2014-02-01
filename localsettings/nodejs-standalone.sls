@@ -9,14 +9,19 @@
 # makina-states.localsettings.npm.packages: ['grunt@0.6']
 #
 #}
+{% macro do(full=True) %}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {%- set locs = localsettings.locations %}
 {{ salt['mc_macros.register']('localsettings', 'nodejs') }}
 {%- set npmPackages = localsettings.npmSettings.packages %}
+{% if full %}
+include:
+  - makina-states.localsettings.pkgmgr
+  - makina-states.localsettings.pkgs
+{% endif %}
 
-{{localsettings.funcs.dummy('nodejs-proxy')}}
-
-{% if grains['os'] in ['Ubuntu'] -%}
+{% if full %}
+{%  if grains['os'] in ['Ubuntu'] -%}
 {#- NODEJS didnt land in LTS, so use the ppa
 # https://github.com/joyent/node/wiki/Installing-Node.js-via-package-manager#ubuntu-mint-elementary-os
 #}
@@ -29,7 +34,11 @@ nodejs-repo:
     - file: {{locs.conf_dir}}/apt/sources.list.d/nodejs.list
     - keyid: C7917B12
     - keyserver: keyserver.ubuntu.com
-{% endif %}
+    - require:
+        - file: apt-sources-list
+        - cmd: apt-update-after
+        - pkg: net-pkgs
+{%  endif %}
 nodejs-pkgs:
   pkg.installed:
     {% if grains['os'] in ['Ubuntu'] -%}
@@ -39,7 +48,7 @@ nodejs-pkgs:
     - pkgs:
       - nodejs
 
-{% if grains['os'] in ['Debian'] -%}
+{%  if grains['os'] in ['Debian'] -%}
 npm-pkgs:
   file.symlink:
     - target: {{locs.bin_dir}}/nodejs
@@ -54,14 +63,19 @@ npm-pkgs:
     - require:
       - file: npm-pkgs
       - pkg: nodejs-pkgs
-{%- endif %}
+{%-   endif %}
+{% endif %}
 {% for npmPackage in npmPackages -%}
 npm-packages-{{npmPackage}}:
   npm.installed:
     - name: {{npmPackage}}
+    {% if full %}
     - require:
       - pkg: nodejs-pkgs
       {% if grains['os'] in ['Debian'] -%}
       - cmd: npm-pkgs
       {%- endif %}
+    {%- endif %}
 {%- endfor %}
+{% endmacro %}
+{{ do(full=False)}}

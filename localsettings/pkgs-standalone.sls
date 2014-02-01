@@ -3,16 +3,24 @@
 # if you do not have already added your repositories via makina-states.localsettings.pkgmgr, please use
 # makina-states.localsettings.pkgs instead
 #}
+{% macro do(full=True) %}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {{ salt['mc_macros.register']('localsettings', 'pkgs') }}
 {%- set locs = localsettings.locations %}
 
+{% if full %}
+include:
+  - makina-states.localsettings.pkgmgr
+{% endif %}
 
 {%- if grains['os'] in ['Ubuntu', 'Debian'] %}
 before-pkg-install-proxy:
-  cmd.run:
-    - name: /bin/true
-    - unless: /bin/true
+  mc_dummy.dummy:
+    {% if full %}
+    - require:
+        - file: apt-sources-list
+        - cmd: apt-update-after
+    {% endif %}
     - require_in:
       {% if grains['os'] == 'Ubuntu' %}
       - pkg: ubuntu-pkgs
@@ -145,3 +153,5 @@ salt-pkgs:
       - python-apt
       - libgmp3-dev
 {% endif %}
+{% endmacro %}
+{{ do(full=False)}}

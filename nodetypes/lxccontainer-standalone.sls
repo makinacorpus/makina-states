@@ -1,23 +1,16 @@
-{#
-# separate file to to the vagrant vm setup, to be reused in other states
-# while not reimporting the whole makina-states stack.
-#}
-{#
-# extra setup on a lxc container
-#}
-
+{# extra setup on a lxc container #}
 {% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
+{% macro do(full=True) %}
 {{ salt['mc_macros.register']('nodetypes', 'lxccontainer') }}
 
+{% if full %}
 include:
   - makina-states.localsettings.pkgs
+  - makina-states.nodetypes.vm
+{% endif %}
 
 # be sure to have all grains
-makina-lxc-proxy-dep:
-  cmd.run:
-    - name: /bin/true
-    - requires:
-      - cmd: salt-reload-grains
+{{localsettings.funcs.dummy('makina-lxc-proxy-dep') }}
 # no require_in as in bootstrap time we may not have yet rendered the lxc bits
 
 # lxc container
@@ -27,14 +20,14 @@ lxc-container-pkgs:
     - pkgs:
       - apt-utils
     - require_in:
-      - cmd: makina-lxc-proxy-dep
+      - mc_dummy: makina-lxc-proxy-dep
 
 makina-mark-as-lxc:
   cmd.run:
     - name: echo lxc > /run/container_type
     - unless: grep -q lxc /run/container_type
     - requires:
-      - cmd: makina-lxc-proxy-dep
+      - mc_dummy: makina-lxc-proxy-dep
 
 etc-init-lxc-setup:
   file.managed:
@@ -68,22 +61,27 @@ lxc-install-non-harmful-packages:
   cmd.script:
     - source: salt://makina-states/_scripts/build_lxccorepackages.sh
     - requires:
-      - cmd: makina-lxc-proxy-dep
+      - mc_dummy: makina-lxc-proxy-dep
       - cmd: makina-mark-as-lxc
       - file: lxc-cleanup
+    {% if full %}
     - require_in:
       - pkg: ubuntu-pkgs
       - pkg: sys-pkgs
+    {% endif %}
 
 do-lxc-cleanup:
   cmd.run:
     - name: /sbin/lxc-cleanup.sh
     - requires:
       - file: lxc-cleanup
-      - cmd: makina-lxc-proxy-dep
+      - mc_dummy: makina-lxc-proxy-dep
       - cmd: lxc-install-non-harmful-packages
+      {% if full %}
       - pkg: ubuntu-pkgs
       - pkg: sys-pkgs
       - pkg: net-pkgs
       - pkg: dev-pkgs
-
+      {% endif %}
+{% endmacro %}
+{{do(full=False)}}

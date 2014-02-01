@@ -134,8 +134,9 @@ def get_common_vars(
             sls_includes.append(
                 'makina-states.controllers.salt_minion',
             )
-        if 'vagrantvm' in services.nodetypes.registry['actives']:
-            sls_includes.append('makina-states.nodetypes.vagrantvm')
+        if nodetypes_reg['has']['vagrantvm']:
+            sls_includes.append(
+                'makina-states.nodetypes.vagrantvm-standalone')
     sls_includes = uniquify(sls_includes)
 
     if not default_env:
