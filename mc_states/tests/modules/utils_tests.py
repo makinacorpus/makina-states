@@ -37,34 +37,157 @@ class TestCase(base.ModuleCase):
             )
 
     def test_defaults_rec(self):
-        with patch.dict(mc_utils.__salt__,
-                        {'mc_utils.get': Mock(
-                            side_effect={
-                                'prefix.2.aa': "foo",
-                                'prefix.2.dd': {1: 2},
-                                'prefix.2.cc.ff.gg': "ee",
-                                'prefix.4': 3,
-                                'prefix.5': {1: 2},
-                            }.get)}):
+        with patch.dict(
+            mc_utils.__salt__,
+            {'mc_utils.dictupdate': mc_utils.dictupdate,
+             'mc_utils.get': Mock(
+                 side_effect={
+                     'prefix.2.aa': 'foo',
+                     'prefix.2.dd': {1: 2},
+                     'prefix.2.cc.ff.gg': 'ee',
+                     'prefix.2.kk.ll.mmm.nn': 1,
+                     'prefix.2.kk.ll.mmu.nn.oou.pp.qqu.rr.ssu': 1,
+                     'prefix.2.cc.ff': {'o': 'p'},
+                     'prefix.4': 3,
+                     'prefix.5': {1: 2},
+                 }.get)}):
             self.assertEquals(
                 mc_utils.defaults('prefix', {
-                    "1": 'a',
-                    "2": {"aa": "bb",
-                          "dd": {"dd": "ee",
-                                 "ff": {"gg": "hh"}},
-                          "cc": {"dd": "ee",
-                                 "ff": {"gg": "hh"}}},
-                    "4": {"aaa": "bbb", "ccc": {"ddd": "eee"}},
-                    "5": {"aaaa": "bbbb", "cccc": {"dddd": "eeee"}},
-                    "3": 'b',
+                    '1': 'a',
+                    '2': {
+                        'aa': 'bb',
+                        'kk.ll': {
+                            'mmm.nn': {
+                                'oo.pp': {
+                                    'qq.rr': {'ss': 'tt'},
+                                    'qqq.rrr': {'sss': 'ttt'},
+                                }
+                            },
+                            'mmu.nn': {
+                                'oou.pp': {
+                                    'qqw.rr': {'ssu': 'tt'},
+                                    'qqu.rr': {'ssu': 'tt'},
+                                }
+                            }
+                        },
+                        'dd': {'dd': 'ee',
+                               'ff': {'gg': 'hh'}},
+                        'cc': {'dd': 'ee',
+                               'ff': {'gg': 'hh',
+                                      'o': 'p'}}},
+                    '4': {'aaa': 'bbb', 'ccc': {'ddd': 'eee'}},
+                    '3': 'b',
+                    '5': {'aaaa': 'bbbb', 'cccc': {'dddd': 'eeee'}},
                 }
                 ), {
                     '1': 'a',
-                    '2': {'aa': 'foo', 'cc': {'dd': 'ee', 'ff': {'gg': 'ee'}},
-                          'dd': {1: 2}},
+                    '2': {'aa': 'foo',
+                          'kk.ll': {
+                              'mmm.nn': 1,
+                              'mmu.nn': {
+                                  'oou.pp': {
+                                      'qqw.rr': {'ssu': 'tt'},
+                                      'qqu.rr': {'ssu': 1},
+                                  }
+                              }
+                          },
+                          'cc': {'dd': 'ee', 'ff': {'gg': 'hh',
+                                                    'o': 'p'}},
+                          'dd': {1: 2, 'dd': 'ee', 'ff': {'gg': 'hh'}}},
                     '3': 'b',
                     '4': 3,
-                    '5': {1: 2},
+                    '5': {1: 2, 'aaaa': 'bbbb', 'cccc': {'dddd': 'eeee'}}
+                }
+            )
+
+    def test_defaults_rec_over(self):
+        with patch.dict(
+            mc_utils.__salt__,
+            {'mc_utils.dictupdate': mc_utils.dictupdate,
+             'mc_utils.get': Mock(
+                 side_effect={
+                     'prefix.11': ['foo'],
+                     'prefix.22-overrides': ['foo'],
+                     'prefix.2.aa': 'foo',
+                     'prefix.2.dd': {1: 2},
+                     'prefix.2.cc.ff.gg': 'ee',
+                     'prefix.2.cc.ff-overrides': {'o': 'p'},
+                     'prefix.2.kk.ll.mmm.nn.oo.pp': {1: 2},
+                     'prefix.2.kk.ll.mmu.nn.oou.pp-overrides': {1: 2},
+                     'prefix.6.a.bb-overrides': {1: 2},
+                     'prefix.6.b.bb': {1: 2},
+                     'prefix.4': 3,
+                     'prefix.5': {1: 2},
+                 }.get)}):
+            self.assertEquals(
+                mc_utils.defaults('prefix', {
+                    '11': ['a', 'b', 'c'],
+                    '22': ['a', 'b', 'c'],
+                    '1': 'a',
+                    '6': {
+                        'a': {
+                            'bb': {'ccc': 'ddd',
+                                   'eee': 'fff'}},
+                        'b': {
+                            'bb': {'ccc': 'ddd',
+                                   'eee': 'fff'}}
+                    },
+                    '2': {
+                        'aa': 'bb',
+                        'kk.ll': {
+                            'mmm.nn': {
+                                'oo.pp': {
+                                    'qq.rr': {'ss': 'tt'},
+                                    'qqq.rrr': {'sss': 'ttt'},
+                                }
+                            },
+                            'mmu.nn': {
+                                'oou.pp': {
+                                    'qqu.rr': {'ssu': 'tt'},
+                                    'qqu.rr': {'ssu': 'tt'},
+                                }
+                            }
+                        },
+                        'dd': {'dd': 'ee',
+                               'ff': {'gg': 'hh'}},
+                        'cc': {'dd': 'ee',
+                               'ff': {'o': 'p'}}},
+                    '4': {'aaa': 'bbb', 'ccc': {'ddd': 'eee'}},
+                    '5': {'aaaa': 'bbbb', 'cccc': {'dddd': 'eeee'}},
+                    '3': 'b',
+                }
+                ), {
+                    '11': ['a', 'b', 'c', 'foo'],
+                    '22': ['foo'],
+                    '1': 'a',
+                    '6': {
+                        'a': {'bb': {1: 2}},
+                        'b': {
+                            'bb': {1: 2,
+                                   'ccc': 'ddd',
+                                   'eee': 'fff'}}
+                    },
+                    '2': {
+                        'aa': 'foo',
+                        'kk.ll': {
+                            'mmm.nn': {
+                                'oo.pp': {
+                                    1: 2,
+                                    'qq.rr': {'ss': 'tt'},
+                                    'qqq.rrr': {'sss': 'ttt'},
+                                }
+                            },
+                            'mmu.nn': {
+                                'oou.pp': {
+                                    1: 2,
+                                }
+                            }
+                        },
+                        'cc': {'dd': 'ee', 'ff': {'o': 'p'}},
+                        'dd': {1: 2, 'dd': 'ee', 'ff': {'gg': 'hh'}}},
+                    '3': 'b',
+                    '4': 3,
+                    '5': {1: 2, 'aaaa': 'bbbb', 'cccc': {'dddd': 'eeee'}}
                 }
             )
 

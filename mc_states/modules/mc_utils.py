@@ -10,6 +10,8 @@ import salt.utils.dictupdate
 from salt.exceptions import SaltException
 import salt.utils
 
+_default_marker = object()
+
 
 class _CycleError(Exception):
     """."""
@@ -209,13 +211,52 @@ def get(key, default=''):
     return default
 
 
-def defaults(prefix, datadict):
-    for key, default in datadict.copy().items():
+def defaults(prefix, datadict, overridden=None):
+    '''
+    Get the "prefix" value from the configuration
+    Then overrides it with  "datadict" mapping recursively
+        If the datadict contains a key "{prefix}-overrides
+            AND value is a dict or  a list:
+                Take that as a value for the the value /subtree
+        If the datadict contains a key "{prefix}":
+            If a list: append to the list the default list in conf
+            Elif a dict: update the default dictionnary with the one in conf
+            Else take that as a value if the value is not a mapping or a list
+    '''
+    if overridden is None:
+        overridden = {}
+    if not prefix in overridden:
+        overridden[prefix] = {}
+    for key in [a for a in datadict]:
+        default_value = datadict[key]
         value_key = '{0}.{1}'.format(prefix, key)
-        value =  __salt__['mc_utils.get'](value_key , default)
-        if isinstance(value, dict):
-            value = defaults(value_key, value)
+        # special key to completly overrides the dictionnary
+        value = __salt__['mc_utils.get'](
+            value_key + "-overrides", _default_marker)
+        if value is not _default_marker:
+            overridden[prefix][key] = value
+        else:
+            value = __salt__['mc_utils.get'](value_key, _default_marker)
+        if not isinstance(default_value, list) and value is _default_marker:
+            value = default_value
+        if isinstance(default_value, list):
+            if key in overridden[prefix]:
+                value = overridden[prefix][key]
+            else:
+                nvalue = default_value[:]
+                if value is not _default_marker:
+                    nvalue.extend(value)
+                value = nvalue
+        elif isinstance(value, dict):
+            # recurvive and conservative dictupdate
+            ndefaults = defaults(value_key, value, overridden=overridden)
+            if overridden[value_key]:
+                for k, value in overridden[value_key].items():
+                    default_value[k] = value
+            value = __salt__['mc_utils.dictupdate'](default_value, ndefaults)
         datadict[key] = value
+        for k, value in overridden[prefix].items():
+            datadict[k] = value
     return format_resolve(datadict)
 
 #
