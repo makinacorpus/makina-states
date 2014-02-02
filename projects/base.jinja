@@ -23,7 +23,6 @@
 #
 #}
 
-
 # export macro to callees
 {% set services = services %}
 {% set nodetypes = services.nodetypes %}
@@ -31,35 +30,35 @@
 {% set locs = services.localsettings.locations %}
 {% set saltmac = saltmac %}
 
-
 {% macro set_accesses(common) %}
 {% if not common.no_user %}
 {#
 # Create a dedicated system user for our project
 #}
-{%- for group in common.groups %}
+{% for group in common.groups -%}
 {{common.name}}-group-{{group}}:
   group.present:
     - name: {{group}}
     - system: True
-{% endfor %}
+{%- endfor %}
 
 {{common.name}}-user-{{common.user}}:
   user.present:
     - name: {{common.user}}
     - shell: /bin/bash
     - require:
-      {%- for group in common.groups %}
+      {% for group in common.groups -%}
       - group: {{common.name}}-group-{{group}}
       {%- endfor %}
     - fullname: {{common.user}} user
     - gid_from_name: True
     - remove_groups: False
     - optional_groups:
-      {%- for group in common.groups %}
+      {% for group in common.groups -%}
       - {{group}}
       {%- endfor %}
 
+{% if common.full %}
 {#+
 # By default we copy root ssh key creds to the project user
 # if and only if they do not already  exist
@@ -94,7 +93,7 @@
     - user: root
     - require:
       {# only where the user exists and when we have installed the root ssh keys #}
-      - cmd: root-ssh-keys-init
+      - mc_dummy: ssh-post-user-keys
       - user: {{common.name}}-user-{{common.user}}
 
 {{common.name}}-{{common.user}}-ssh-keys-perms:
@@ -108,8 +107,9 @@
             chmod -Rf 700           $home/.ssh/*;
             chmod -Rf 770           $home/.ssh/config;
             chown -Rf {{common.user}}:{{common.user}} $home/.ssh;
+{%- endif %} {# if common.full #}
 {%- endif %}
-{%- endmacro %}  {# set_accesses #}
+{% endmacro %}  {# set_accesses #}
 
 {#-
 # Checkout and setup projet directories according to makina-states philosophy:
@@ -128,17 +128,17 @@
     - rev: {{common.salt_branch}}
     - name:  {{common.url}}
     - target: {{common.salt_root}}
-    {%- if not common.no_user %}
+    {% if not common.no_user -%}
     - user: {{common.user}}
     {%- endif %}
     - require:
       {# be sure to run after salt has maybe updated itself
       # and has our code installation treea #}
-      {%- if not common.no_user %}
+      {% if common.full -%}
       - cmd: {{common.name}}-{{common.user}}-ssh-keys-perms
-      - user: {{common.name}}-user-{{common.user}}
       {%- endif %}
-      - service: salt-salt-minion
+      - user: {{common.name}}-user-{{common.user}}
+      - mc_dummy: dummy-post-salt-service-restart
 {% endif %}
 
 {#-
@@ -177,15 +177,19 @@
   file.directory:
     - name: {{common.project_root}}
     - makedirs: true
-    {%- if not common.no_user %}
+    {% if not common.no_user -%}
     - user: {{common.user}}
     - group: {{common.group}}
     {%- endif %}
-    {%- if not common.no_salt %}
+    {% if common.no_salt or common.no_user %}
     - require:
+      {% if not common.no_salt %}
       - mc_git: {{common.name}}-checkout-salt
+      {% endif %}
+      {% if not common.no_user %}
       - user: {{common.name}}-user-{{common.user}}
-    {%- endif %}
+      {% endif %}
+    {% endif %}
   {%- if not common.no_salt %}
   {#- this is an optimisation, to not clone entirely twice the project, copy the salt git folder
      to the project .git as they are on the same git repository, it's quickier and consume less network #}
@@ -196,7 +200,7 @@
             git reset --hard origin/{{common.project_branch}};
             touch "{{common.project_root}}/.initial"
     - unless: test -d "{{common.project_root}}/.git/"
-    {%- if not common.no_user %}
+    {% if not common.no_user -%}
     - user: {{common.user}}
     {%- endif %}
     - require:
@@ -205,18 +209,18 @@
   mc_git.latest:
     - rev: {{common.project_branch}}
     - name:  {{common.url}}
-    {%- if not common.no_user %}
+    {% if not common.no_user -%}
     - user: {{common.user}}
     {%- endif %}
     - target: {{common.project_root}}
     - require:
       - file: {{common.name}}-{{common.project_root}}-dir
-      {%- if not common.no_salt %}
+      {% if not common.no_salt -%}
       - cmd: {{common.name}}-checkout-code
-      {% endif %}
-      {%- if not common.no_user %}
+      {%- endif %}
+      {% if not common.no_user -%}
       - user: {{common.user}}
-    {%- endif %}
+      {%- endif %}
 {%- endmacro %} {# checkout_salt_and_code #}
 
 {%- macro install_apache(common) %}
@@ -256,7 +260,7 @@
 #}
 {%- macro fix_permissions(common) %}
 {%- if not common.no_reset_perms %}
-{%-    if not common.no_salt %}
+{%-    if common.full and not common.no_salt %}
 {{common.name}}-restricted-perms:
   cmd.script:
     - source: {{saltmac.resetperms}}
@@ -272,15 +276,16 @@
       - cmd: {{common.name}}-checkout-code
 {%-    endif %}
 
+{% if common.full -%}
 {{common.name}}-perms:
   cmd.script:
     - source: {{saltmac.resetperms}}
     - template: jinja
     - dmode: '0770'
     - fmode: '0770'
-    {%- if not common.no_user %}
+    {% if not common.no_user -%}
     - reset_user: {{common.user}}
-    {%- else %}
+    {% else -%}
     - reset_user: root
     {%- endif %}
     - reset_group: {{common.group}}
@@ -288,9 +293,10 @@
       - {{common.project_root}}
     - require:
       - mc_git: {{common.name}}-checkout-code
-      {%- if not common.no_salt %}
+      {% if not common.no_salt -%}
       - cmd: {{common.name}}-restricted-perms
       {%- endif %}
+{%- endif %}
 {%- endif %}
 {%- endmacro %}
 
@@ -299,30 +305,30 @@
 # If we are in devmode (vagrant), also add them to the hosts to the parent box
 #}
 {%- macro configure_domains(common) %}
-{%-  if not common.no_domain %}
+{%-  if common.full and not common.no_domain %}
 {{common.name}}-append-hosts-accumulator:
   file.accumulated:
     - require_in:
       - file: makina-append-etc-hosts-management
     - filename: {{ locs.conf_dir }}/hosts
     - text: |
-            {%- for domain in common.domains %}
+            {% for domain in common.domains -%}
             {{common.domains[domain]}} {{domain}}
             {%- endfor %}
 {#-
 # if we are on a vagrant box, also register our hosts to be accesible from the host
 #}
-{%-  if 'vagrantvm' in nodetypes.registry.actives %}
+{%-  if nodetypes.registry.is.vagrantvm %}
 {%-    if vagrantvm.vmNum %}
 makina-parent-append-etc-hosts-accumulated-project-{{common.name}}:
   file.accumulated:
     - filename: {{vagrantvm.hostsf}}
     - name: parent-hosts-append-accumulator-{{ vagrantvm.vm_name }}-entries
     - text: |
-            {%- for domain in common.domains %}
+            {% for domain in common.domains -%}
             {{ vagrantvm.ip2 }} {{ domain }}
             {{ vagrantvm.ip1 }} {{ domain}}.nat
-            {% endfor %}
+            {%- endfor %}
     - require_in:
       - file: makina-append-parent-etc-hosts-management
 {%-    endif %}
@@ -338,9 +344,9 @@ makina-parent-append-etc-hosts-accumulated-project-{{common.name}}:
 #  all filesystem permissions to stay secure.
 #}
 {%- macro pre_install(common) %}
-{{-    configure_domains(common) }}
-{{-    set_accesses(common) }}
-{{-    checkout_salt_and_code(common) }}
+{{    configure_domains(common) }}
+{{    set_accesses(common) }}
+{{    checkout_salt_and_code(common) }}
 {%- endmacro %}  {# pre_install #}
 
 {%- macro post_install(common) %}

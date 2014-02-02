@@ -7,7 +7,7 @@
 {%- import "makina-states/projects/base.jinja" as base with context %}
 {%- set services = base.services %}
 {%- set saltmac = base.saltmac %}
-{%- set localsettings = salt['mc_localsettings.settings']() %}
+{%- set localsettings = base.localsettings %}
 
 {%- set default_defaults = {
   'python_version': localsettings.pythonSettings.version,
@@ -42,6 +42,6 @@ python-project-{{ common['name'] }}-virtualenv:
 {% do kwargs.setdefault('env_defaults', default_env_defaults) -%}
 {% do kwargs.setdefault('user', 'python') -%}
 {% do kwargs.setdefault('sls_includes', ['makina-states.localsettings.python']) -%}
-{% set common = salt['mc_project.get_common_vars'](services, *varargs, **kwargs) -%}
+{% set common = salt['mc_project.get_common_vars'](*varargs, **kwargs) -%}
 {{ base.install_project(common, install_macro=install_generic_python_project_do) -}}
 {%- endmacro %}

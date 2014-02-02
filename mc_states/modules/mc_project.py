@@ -5,12 +5,7 @@ Some usefull small tools
 
 '''
 
-import unittest
 # Import salt libs
-import salt.utils
-import os
-import salt.utils.dictupdate
-from salt.exceptions import SaltException
 
 _default_activation_status = object()
 
@@ -24,29 +19,30 @@ def uniquify(seq):
 
 def _defaultsData(
     common,
-    defaults=None,
+    defaultsData=None,
     env_defaults=None,
     os_defaults=None
 ):
-    if defaults is None:
-        defaults = {}
+    salt = __salt__
+    if defaultsData is None:
+        defaultsData = {}
     if os_defaults is None:
         os_defaults = {'Debian': {}}
     if env_defaults is None:
         env_defaults = {'dev': {}}
-    dataGetterStepOne = __salt__['grains.filter_by'](
-        env_defaults, grain='default_env', default='dev', merge=defaults)
-    dataGetterStepTwo = __salt__['grains.filter_by'](
-        os_defaults, grain='os_family', merge=dataGetterStepOne)
-    defaultsData = __salt__['mc_utils.dictupdate'](
-        dataGetterStepTwo,
-        __salt__['pillar.get'](common['name'] + '-default-settings', {})
-    )
+    defaultsData = salt['mc_utils.dictupdate'](
+        defaultsData,
+        salt['grains.filter_by'](
+            env_defaults, grain='default_env', default='dev'))
+    defaultsData = salt['mc_utils.dictupdate'](
+        defaultsData,
+        salt['grains.filter_by'](os_defaults, grain='os_family'))
+    defaultsData = salt['mc_utils.defaults'](
+        common['name'] + '-default-settings', defaultsData)
     return defaultsData
 
 
 def get_common_vars(
-    services,
     name,
     salt_subdir='salt',
     default_env=None,
@@ -118,22 +114,24 @@ def get_common_vars(
         makina-projects.foo.default_env: prod
 
     """
-    localsettings = services.localsettings
+    runmode = not full and '-standalone' or ''
+    nodetypes_reg = __salt__['mc_nodetypes.registry']()
+    localsettings = __salt__['mc_localsettings.settings']()
     if domains is None:
         domains = {}
     if groups is None:
         groups = []
     if not sls_includes:
         sls_includes = []
-    sls_includes = (
-        ['makina-states.services.base.ssh',
-         'makina-states.localsettings.hosts']
-        + sls_includes)
+    if full:
+        sls_includes = (
+            ['makina-states.services.base.ssh-users',
+             'makina-states.localsettings.hosts']
+            + sls_includes)
     if not no_default_includes:
-        if full:
-            sls_includes.append(
-                'makina-states.controllers.salt_minion',
-            )
+        sls_includes.append(
+            'makina-states.controllers.salt-hooks',
+        )
         if nodetypes_reg['has']['vagrantvm']:
             sls_includes.append(
                 'makina-states.nodetypes.vagrantvm-standalone')
@@ -146,15 +144,13 @@ def get_common_vars(
     if not user:
         user = '{name}-user'
     if not groups:
-        groups.append(localsettings.group)
+        groups.append(localsettings['group'])
     groups = uniquify(groups)
 
     if isinstance(domain, basestring):
         domains[domain] = main_ip
 
     variables = {
-        'services': services,
-        'localsettings': localsettings,
         'full': full,
         'default_env': default_env,
         'name': name,
@@ -179,14 +175,11 @@ def get_common_vars(
 
     defaultsData = _defaultsData(
         variables,
-        defaults=defaults,
+        defaultsData=defaults,
         env_defaults=env_defaults,
         os_defaults=os_defaults)
-
     data = __salt__['mc_utils.format_resolve'](
         {
-            'services': services,
-            'localsettings': localsettings,
             'no_user': no_user,
             'no_salt': no_salt,
             'no_domain': no_domain,
@@ -194,7 +187,7 @@ def get_common_vars(
             'name': name,
             'domain': domain,
             'domains': domains,
-            'projects_dir': localsettings.locations['projects_dir'],
+            'projects_dir': localsettings['locations']['projects_dir'],
             'project_dir': '{projects_dir}/{name}',
             'salt_root':    salt_root,
             'project_root': project_root,
@@ -215,6 +208,7 @@ def get_common_vars(
     for k, d in data.items():
         variables[k] = __salt__['mc_utils.get'](
             'makina-projects.{0}.{1}'.format(*(name, k)), d)
+    import pdb;pdb.set_trace()  ## Breakpoint ##
     return data
 
 #

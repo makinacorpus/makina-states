@@ -85,7 +85,7 @@
 {%-   do kwargs.setdefault('defaults', default_defaults) %}
 {%-   do kwargs.setdefault('env_defaults', default_env_defaults) %}
 {%-   do kwargs.setdefault('user', 'rvmapp') %}
-{%- set common = salt['mc_project.get_common_vars'](services, *varargs, **kwargs) %}
+{%- set common = salt['mc_project.get_common_vars'](*varargs, **kwargs) %}
 {%- do common.sls_includes.extend(['makina-states.localsettings.rvm',]) %}
 {%- do common.groups.extend(['rvm',]) %}
 {{- base.install_project(common, install_macro=install_rvm_app_do) }}

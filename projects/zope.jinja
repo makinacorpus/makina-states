@@ -2,11 +2,13 @@
 {%- set services = base.services %}
 {%- set saltmac = base.saltmac %}
 {%- set localsettings = base.localsettings %}
+{%- set locations = base.localsettings.locations %}
 
 {#-
 # Base system prerequisite for Plone
 #}
 {%- macro zope_deps(common) %}
+{% if common.full -%}
 prepreq-{{common.name}}:
   pkg.installed:
     - pkgs:
@@ -44,19 +46,14 @@ prepreq-{{common.name}}:
       - tk8.5-dev
       - wv
       - zlib1g-dev
+{%- endif %}
 {%- endmacro %}
 
 {#-
 # Install a generic (CGWB: http://cgwb-makinacorpus.rhcloud.com/) based buildout for plone
 #}
 {%- macro generic_buildout(common) %}
-{%- set localsettings = common.localsettings %}
-{%- set locs = localsettings.locations %}
-{%- if common.default_env == 'prod' %}
-{%- set newest= False %}
-{%- else %}
-{%- set newest= True %}
-{%- endif %}
+{%- set locs = locations %}
 
 {#-
 # Wrap the salt configured setting in a file inputable to buildout
@@ -92,15 +89,22 @@ prepreq-{{common.name}}:
     - require_in:
       - buildout: {{common.name}}-buildout-project
     - defaults:
+      skippedparts: |
+                    '    ${v:maintainance-parts} {% if not common.full -%}'
+                    '    chmod'
+                    '    chown'
+                    '    {%- endif %}'
       salt_data: {{ common.data|yaml }}
       config: buildout-{{common.default_env}}.cfg
   buildout.installed:
     - name: {{common.project_root}}
     - config: buildout-salt.cfg
     - runas: {{common.user}}
-    - newest: {{newest}}
+    - newest: {{common.data.buildout.newest}}
     - require:
+      {% if common.full -%}
       - pkg: prepreq-{{common.name}}
+      {%- endif %}
       - file: {{common.name}}-settings
       - file: {{common.name}}-buildout-project
       - mc_git: {{common.name}}-checkout-code
@@ -129,10 +133,12 @@ etc-init.d-supervisor.{{common.name}}:
 {#-
 # Logrotate
 #}
+{% if common.full %}
 etc-logrotate.d-{{common.name}}.conf:
   file.symlink:
     - name: {{locs.conf_dir}}/logrotate.d/{{common.name}}.conf
     - target: {{common.project_root}}/etc/logrotate.conf
+{% endif %}
 
 {%- endmacro %}
 
@@ -164,7 +170,7 @@ etc-logrotate.d-{{common.name}}.conf:
             {% for nb in range(1, common.data.nbinstances+1) %}
             {%- set iid='instance{0}'.format(nb) %}
             {%- set id='autostart_{0}'.format(iid) %}
-            {%- if common.data['buildout']['v'].get(id, 'false') == 'true' %}
+            {%- if common.data['buildout']['settings']['v'].get(id, 'false') == 'true' %}
             {{- common.project_root}}/bin/supervisorctl restart {{iid}};
             {%- endif %}
             {%- endfor %}
@@ -201,98 +207,110 @@ etc-logrotate.d-{{common.name}}.conf:
   'cron_minute': 5,
   'nbinstances': 4,
   'buildout': {
-    'v': {
-        'admin-user'                  : 'admin',
-        'admin-password'              : 'secret',
-        'project'                     : 'ploneplone',
-        'proxycache_size'             : '256M',
-        'anon_cache_time'             : '600s',
-        'autostart_instance1'         : 'true',
-        'autostart_instance2'         : 'true',
-        'autostart_instance3'         : 'true',
-        'autostart_instance4'         : 'true',
-        'plonesite'                   : 'Plone',
-        'zeo-pack-days'               : '0',
-        'z2-log-level'                : 'INFO',
-        'event-log-level'             : 'INFO',
-        'debug'                       : 'off',
-        'verbose-security'            : 'off',
-        'zeo-client-cache-size'       : '80MB',
-        'session-timeout-minutes'     : '90',
-        'sys-user'                    : '{user}',
-        'sys-group'                   : '{grpup}',
-        'varnish-debug'               : '${v:debug}',
-        'rewrite-max-age'             : 'false',
-        'supervisor-user'             : '${v:admin-user}',
-        'supervisor-password'         : '${v:admin-password}',
-        'reverse-proxy-listen'        : '*',
-        'reverse-proxy-scheme'        : 'http',
-        'reverse-proxy-host'          : '{domain}',
-        'reverse-proxy-edit-host'     : 'edit.{domain}',
-        'reverse-proxy-port'          : '80',
-        'package-min-coverage'        : '80',
-        'flake8-ignore'               : 'C901',
-        'flake8-max-complexity'       : '1000',
-        'pre-commit-hook'             : 'True',
-    },
-    'ports': {
-        'supervisor'               : '8081',
-        'zeo'                      : '8082',
-        'instance'                 : '8084',
-        'balancer'                 : '8083',
-        'instance1'                : '8085',
-        'instance2'                : '8086',
-        'instance3'                : '8087',
-        'instance4'                : '8088',
-        'varnish'                  : '8094',
-        'varnish-telnet'           : '8095',
-        'zope-front'               : '${ports:balancer}',
-        'cache-backend'            : '${ports:balancer}',
-    },
-    'crons': {
-        'zope-restart'             : '15 1 * * *',
-        'zope-pack'                : '30 1 * * *',
-        'repozo-daily'             : '05 1 * * *',
-        'repozo-weekly'            : '10 1 * * 6',
-        'nb_backups_to_keep'       : '35',
-        'nb_fullbackups_to_keep'   : '5',
-    },
-    'locations': {
-        'locations-tmp'          : '${buildout:directory}/var/tmp',
-        'locations-blob-storage' : '${buildout:directory}/var/blobstorage/storage',
-        'locations-blob-backup'  : '${buildout:directory}/var/blobstorage/backup',
-    },
-    'hosts': {
-        'syslog'                   : '${hosts:ip}',
-        'zeo'                      : '${hosts:ip}',
-        'supervisor'               : '${hosts:ip}',
-        'balancer'                 : '${hosts:ip}',
-        'varnish'                  : '${hosts:ip}',
-        'instance'                 : '${hosts:address}',
-        'instance1'                : '${hosts:address}',
-        'instance2'                : '${hosts:address}',
-        'instance3'                : '${hosts:address}',
-        'instance4'                : '${hosts:address}',
-        'varnish'                  : '${hosts:ip}',
-        'varnish-telnet'           : '${hosts:ip}',
-        'zope-front'               : '${hosts:varnish}',
-        'cache-backend'            : '${hosts:balancer}'
+    'newest': None,
+    'settings': {
+      'v': {
+          'admin-user'                  : 'admin',
+          'admin-password'              : 'secret',
+          'project'                     : 'ploneplone',
+          'proxycache_size'             : '256M',
+          'anon_cache_time'             : '600s',
+          'autostart_instance1'         : 'true',
+          'autostart_instance2'         : 'true',
+          'autostart_instance3'         : 'true',
+          'autostart_instance4'         : 'true',
+          'plonesite'                   : 'Plone',
+          'zeo-pack-days'               : '0',
+          'z2-log-level'                : 'INFO',
+          'event-log-level'             : 'INFO',
+          'debug'                       : 'off',
+          'verbose-security'            : 'off',
+          'zeo-client-cache-size'       : '80MB',
+          'session-timeout-minutes'     : '90',
+          'sys-user'                    : '{user}',
+          'sys-group'                   : '{group}',
+          'varnish-debug'               : '${v:debug}',
+          'rewrite-max-age'             : 'false',
+          'supervisor-user'             : '${v:admin-user}',
+          'supervisor-password'         : '${v:admin-password}',
+          'reverse-proxy-listen'        : '*',
+          'reverse-proxy-scheme'        : 'http',
+          'reverse-proxy-host'          : '{domain}',
+          'reverse-proxy-edit-host'     : 'edit.{domain}',
+          'reverse-proxy-port'          : '80',
+          'package-min-coverage'        : '80',
+          'flake8-ignore'               : 'C901',
+          'flake8-max-complexity'       : '1000',
+          'pre-commit-hook'             : 'True',
+      },
+      'ports': {
+          'supervisor'               : '8081',
+          'zeo'                      : '8082',
+          'instance'                 : '8084',
+          'balancer'                 : '8083',
+          'instance1'                : '8085',
+          'instance2'                : '8086',
+          'instance3'                : '8087',
+          'instance4'                : '8088',
+          'varnish'                  : '8094',
+          'varnish-telnet'           : '8095',
+          'zope-front'               : '${ports:balancer}',
+          'cache-backend'            : '${ports:balancer}',
+      },
+      'crons': {
+          'zope-restart'             : '15 1 * * *',
+          'zope-pack'                : '30 1 * * *',
+          'repozo-daily'             : '05 1 * * *',
+          'repozo-weekly'            : '10 1 * * 6',
+          'nb_backups_to_keep'       : '35',
+          'nb_fullbackups_to_keep'   : '5',
+      },
+      'locations': {
+          'locations-tmp'          : '${buildout:directory}/var/tmp',
+          'locations-blob-storage' : '${buildout:directory}/var/blobstorage/storage',
+          'locations-blob-backup'  : '${buildout:directory}/var/blobstorage/backup',
+      },
+      'hosts': {
+          'syslog'                   : '${hosts:ip}',
+          'zeo'                      : '${hosts:ip}',
+          'supervisor'               : '${hosts:ip}',
+          'balancer'                 : '${hosts:ip}',
+          'varnish'                  : '${hosts:ip}',
+          'instance'                 : '${hosts:address}',
+          'instance1'                : '${hosts:address}',
+          'instance2'                : '${hosts:address}',
+          'instance3'                : '${hosts:address}',
+          'instance4'                : '${hosts:address}',
+          'varnish'                  : '${hosts:ip}',
+          'varnish-telnet'           : '${hosts:ip}',
+          'zope-front'               : '${hosts:varnish}',
+          'cache-backend'            : '${hosts:balancer}'
+      }
     }
   }
 } %}
 
 {% set default_env_defaults = {
         'dev': {
-            'buildout': {
-                'v': {
-                    'autostart_instance1'         : 'false',
-                    'autostart_instance2'         : 'false',
-                    'autostart_instance3'         : 'false',
-                    'autostart_instance4'         : 'false',
-                }
+          'buildout': {
+            'newest': False,
+            'settings': {
+              'v': {
+                  'autostart_instance1'         : 'false',
+                  'autostart_instance2'         : 'false',
+                  'autostart_instance3'         : 'false',
+                  'autostart_instance4'         : 'false',
+              }
             }
+          }
         },
-        'prod': {}
+        'prod': {
+          'buildout': {
+            'newest': False,
+            'settings': {
+            }
+          }
+        }
  } %}
 
 
@@ -308,11 +326,10 @@ etc-logrotate.d-{{common.name}}.conf:
 {#-
 #  Look available arguments in _modules/mc_project.py:get_commmon_vars
 #}
-{%- macro install_generic_zope_project(full=True) %}
-{%- do kwargs.setdefault('full', full) %}
+{%- macro install_generic_zope_project() %}
 {%- do kwargs.setdefault('defaults', default_defaults) %}
 {%- do kwargs.setdefault('env_defaults', default_env_defaults) %}
 {%- do kwargs.setdefault('user', 'zope') %}
-{%- set common = salt['mc_project.get_common_vars'](services, *varargs, **kwargs) %}
+{%- set common = salt['mc_project.get_common_vars'](*varargs, **kwargs) %}
 {{- base.install_project(common, install_macro=install_generic_zope_project_do) }}
 {% endmacro %}

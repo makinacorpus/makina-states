@@ -1,7 +1,7 @@
 {%- import "makina-states/projects/python.jinja" as python with context %}
 {% import "makina-states/services/db/postgresql.sls" as pgsql with context %}
 {%- set services = python.services %}
-{%- set localsettings = salt['mc_localsettings.settings']() %}
+{%- set localsettings = python.localsettings %}
 
 {% macro install_python(common) %}
 {{ python.install_generic_python_project(*varargs, **kwargs) }}
@@ -41,7 +41,7 @@ ode_project_setup:
   'makina-states.localsettings.python'
   ]) -%}
 
-{% set common = salt['mc_project.get_common_vars'](services, *varargs, **kwargs) -%}
+{% set common = salt['mc_project.get_common_vars'](*varargs, **kwargs) -%}
 
 {# also install pgsql through include -#}
 {{ install_python(common, *varargs, **kwargs) }}

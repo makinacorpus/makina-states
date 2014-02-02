@@ -6,6 +6,7 @@
 {%- set localsettings = base.localsettings %}
 
 {%- macro lizmap_pkgs(common) %}
+{% if common.full %}
 {{common.name}}-lizmap-prereq:
   pkg.installed:
     - require:
@@ -17,6 +18,7 @@
       - php5-curl
       - php5-sqlite
       - php5-gd
+{% endif %}
 
 {% endmacro %}
 {%- macro lizmap_app(common) %}
@@ -26,7 +28,9 @@
     - target: {{common.project_root}}/webapp
     - user: {{common.user}}
     - require:
+      {% if common.full %}
       - pkg: {{common.name}}lizmap-prereq
+      {% endif %}
       - mc_git: {{common.name}}-checkout-code
 {% endmacro %}
 
@@ -101,7 +105,7 @@
 {%-  do kwargs.setdefault('defaults', default_defaults) %}
 {%-  do kwargs.setdefault('env_defaults', default_env_defaults) %}
 {%-  do kwargs.setdefault('user', 'lizmap') %}
-{%-  set common = salt['mc_project.get_common_vars'](services, *varargs, **kwargs) %}
+{%-  set common = salt['mc_project.get_common_vars'](*varargs, **kwargs) %}
 {%-  if common.data.has_db %}
 {%-    do common.sls_includes.extend(['makina-states.services.gis.qgis',])%}
 {%-  endif %}
