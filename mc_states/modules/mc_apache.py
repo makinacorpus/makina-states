@@ -10,12 +10,12 @@ Documentation of this module is available with::
 
   salt '*' sys.doc mc_apache
 
-Check the mc_apache states for details. If you use this module as a template for a new module
-do not forget to use salt-modules state in makina-states/servies/salt to get this module
-included in salt modules (first time, this will build the symlinks linking the module
-on /srv/salt/[_modules|_states, etc])::
+Check the mc_apache states for details.
 
-  salt-call state.sls makina-states.services.salt
+Do not forget to sync salt cache::
+
+  salt-call state.sls makina-states.controllers.salt
+
 '''
 
 # Import python libs
@@ -33,44 +33,82 @@ def settings():
         '''
         This is called from mc_services, loading all Apache default settings
 
-        Theses settings are loaded from defaults+grains+pillar.
-        Apache Fine Settings ------------------------------------------------
-         Timeout: The number of seconds before receives and sends time out. default
-                  is 300 (5min), 1 or 2 min should be enough for any client request
-                  (so 60 or 120). beware of DOS!
-         KeepAlive: bool: are KeepAlive requests allowed
-         MaxKeepAliveRequests: maximum number of allowed KeepAlive requests
-                              (compare with MaxClients)
-         KeepAliveTimeout: How many seconds should we keep Keepalive conn open (say
-                           something between 3 and 5 usually, be careful for DOS!)
-         log_level: log level, allowed values are debug, info, notice, warn, error,
-                    crit, alert, emerg
-         serveradmin_mail: default webmaster mail (used on error pages)
+        Theses settings are loaded from defaults + grains + pillar.
+        Apache Fine Settings
+         Timeout:
+             The number of seconds before receives and sends time out.
+             default is 300 (5min), 1 or 2 min should be enough for any
+             client request (so 60 or 120). beware of DOS!
+
+         KeepAlive:
+             bool: are KeepAlive requests allowed
+
+         MaxKeepAliveRequests:
+             maximum number of allowed KeepAlive requests
+             (compare with MaxClients)
+         KeepAliveTimeout:
+             How many seconds should we keep Keepalive conn open (say
+             something between 3 and 5 usually, be careful for DOS!)
+
+         log_level
+            log level, allowed values are debug, info, notice, warn, error,
+                                          crit, alert, emerg
+         serveradmin_mail
+            default webmaster mail (used on error pages)
+
+
          mpm prefork
-           * StartServers: number of server processes to start
-           * MinSpareServers: minimum number of server processes which are kept spare
-           * MaxSpareServers: maximum number of server processes which are kept spare
-           * MaxRequestsPerChild: maximum number of requests a server process serves
-                                  set 0 to disable process recylcing
-           * MaxClients : (alias MaxRequestWorkers): maximum number of server
-                          processes allowed to start
+
+            StartServers
+                number of server processes to start
+
+            MinSpareServers
+                minimum number of server processes which are kept spare
+
+            MaxSpareServers
+                &maximum number of server processes which are kept spare
+
+            MaxRequestsPerChild
+                maximum number of requests a server process serves
+                set 0 to disable process recylcing
+            MaxClients
+                (alias MaxRequestWorkers): maximum number of server
+                processes allowed to start
+
+
          mpm worker
-           * StartServers: initial number of server processes to start
-           * MinSpareThreads: minimum number of worker threads which are kept spare
-           * MaxSpareThreads: maximum number of worker threads which are kept spare
-           * ThreadLimit: ThreadsPerChild can be changed to this maximum value
-                          during a graceful restart. ThreadLimit can only be changed
-                          by stopping and starting Apache.
-           * ThreadsPerChild: constant number of worker threads in each server
-                              process
-           * MaxRequestsPerChild (alias MaxConnectionsPerChild): maximum number of
-                              requests a server process serves set 0 to disable
-                              process recylcing
-           * MaxClients : (alias MaxRequestWorkers): maximum number of threads
+
+            StartServers
+                initial number of server processes to start
+
+            MinSpareThreads
+                minimum number of worker threads which are kept spare
+
+            MaxSpareThreads
+                maximum number of worker threads which are kept spare
+
+            ThreadLimit
+                ThreadsPerChild can be changed to this maximum value
+                during a graceful restart. ThreadLimit can only be changed
+                by stopping and starting Apache.
+
+            ThreadsPerChild
+                constant number of worker threads in each server process
+
+            MaxRequestsPerChild
+                (alias MaxConnectionsPerChild):
+                 maximum number of requests a server process serves
+                 set 0 to disable process recylcing
+
+            MaxClients
+                (alias MaxRequestWorkers): maximum number of threads
+
          mpm event
-           * all workers settings are used
-           * AsyncRequestWorkerFactor: max of concurrent conn is
-                                  (AsyncRequestWorkerFactor + 1) * MaxRequestWorkers
+            all workers settings are used
+
+            AsyncRequestWorkerFactor
+                max of concurrent conn is:
+                (AsyncRequestWorkerFactor + 1) * MaxRequestWorkers
         '''
         grains = __grains__
         pillar = __pillar__
@@ -152,14 +190,16 @@ def settings():
             apacheStepOne.update({'version': '2.4'})
 
         apacheDefaultSettings = __salt__['mc_utils.defaults'](
-            'makina-states.services.http.apache', __salt__['grains.filter_by']({
+            'makina-states.services.http.apache',
+            __salt__['grains.filter_by']({
                 'Debian': {
                     'package': 'apache2',
                     'server': 'apache2',
                     'service': 'apache2',
                     'mod_wsgi': 'libapache2-mod-wsgi',
                     'basedir': locations['conf_dir'] + '/apache2',
-                    'vhostdir': locations['conf_dir'] + '/apache2/sites-available',
+                    'vhostdir': (
+                        locations['conf_dir'] + '/apache2/sites-available'),
                     'confdir': locations['conf_dir'] + '/apache2/conf.d',
                     'logdir': locations['var_log_dir'] + '/apache2',
                     'wwwdir': locations['srv_dir']
@@ -183,10 +223,12 @@ def settings():
         )
 
         # FINAL STEP: merge with data from pillar and grains
-        apacheSettings = __salt__['mc_utils.defaults']('makina-states.services.http.apache', apacheDefaultSettings)
+        apacheSettings = __salt__['mc_utils.defaults'](
+            'makina-states.services.http.apache', apacheDefaultSettings)
 
         return apacheSettings
     return _settings()
+
 
 def check_version(version):
     '''
@@ -208,9 +250,9 @@ def check_version(version):
            'comment': ''}
     full_version = __salt__['apache.version']()
     # Apache/2.4.6 (Ubuntu) -> 2.4.6
-    _version=full_version.split("/")[1].split(" ")[0]
-    op_version_list = str(version).split(".")  # [2][4]
-    current_version_list = str(_version).split(".")  #[2][4][6]
+    _version = full_version.split("/")[1].split(" ")[0]
+    op_version_list = str(version).split(".")   # [2][4]
+    current_version_list = str(_version).split(".")  # [2][4][6]
     for number1, number2 in zip(op_version_list, current_version_list):
         if not number1 is number2:
             ret['result'] = False
@@ -221,7 +263,7 @@ def check_version(version):
             return ret
     ret['result'] = True
     ret['comment'] = 'Apache version {0} verify requested {1}'.format(
-        _version,version)
+        _version, version)
     return ret
 
 
