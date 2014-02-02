@@ -11,7 +11,7 @@ def __virtual__():
     return 'mc_dummy'
 
 
-def dummy(name):
+def dummy(name, changes=None):
     '''
     State that will always return ret, use that for orchestration purpose
 
@@ -19,10 +19,17 @@ def dummy(name):
         name of dummy state
 
     '''
+    if not changes:
+        changes = {}
     ret = {'name': name,
            'result': True,
            'comment': 'Dummy state for {0}'.format(name),
-           'changes': {}}
+           'changes': changes}
     return ret
 
+def mod_watch(name, **kwargs):
+    '''
+    Execute a dummy state in case of watcher changes
+    '''
+    return dummy(name, changes={1: 1})
 #

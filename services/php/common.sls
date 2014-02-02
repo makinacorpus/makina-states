@@ -1,13 +1,49 @@
-#
-# Common php installations (mod_php or php-fpm) files
-#
-
+{#- Common php installations (mod_php or php-fpm) files #}
 {% import "makina-states/_macros/services.jinja" as services with context %}
-{{ salt['mc_macros.register']('services', 'php.common') }}
 {% set localsettings = services.localsettings %}
 {% set nodetypes = services.nodetypes %}
 {% set locs = localsettings.locations %}
 {% set phpSettings = services.phpSettings %}
+
+{% macro apache_includes(full=True) %}
+{% if full %}
+  - makina-states.services.http.apache
+{% else %}
+  - makina-states.services.http.apache-standalone
+{% endif %}
+  - makina-states.services.php.php-apache-hooks
+{% endmacro %}
+
+{% macro includes(full=True) %}
+{% if grains.get('lsb_distrib_id','') == "Debian" %}
+  - makina-states.services.php.php-hooks
+   # Include dotdeb repository for Debian
+  - makina-states.localsettings.repository_dotdeb
+{% endif %}
+{% endmacro %}
+
+{% macro apache_hooks(full=True) %}
+{% if full %}
+{% if grains.get('lsb_distrib_id','') == "Debian" %}
+dotdeb-apache-makina-apache-php-pre-inst:
+  mc_dummy.dummy:
+    - require:
+      - pkgrepo: dotdeb-repo
+    - watch_in:
+      - mc_dummy: makina-apache-php-pre-inst
+{% endif %}
+{% endif %}
+{% endmacro %}
+
+{% macro do(full=True) %}
+{% if grains.get('lsb_distrib_id','') == "Debian" %}
+dotdeb-makina-apache-php-pre-inst:
+  mc_dummy.dummy:
+    - require:
+      - pkgrepo: dotdeb-repo
+    - watch_in:
+      - mc_dummy: makina-php-pre-inst
+{% endif %}
 
 makina-php-timezone:
   file.managed:
@@ -20,9 +56,12 @@ makina-php-timezone:
     - defaults:
         timezone: "{{ phpSettings.timezone }}"
     - require:
-      - pkg: makina-php-pkgs
+      - mc_dummy: makina-php-post-inst
     - watch_in:
-      - service: makina-php-reload
+      - mc_dummy: makina-php-pre-conf
+
+{% set s_ALL = phpSettings.s_ALL %}
+
 
 #--------------------- APC (mostly deprecated)
 {% if phpSettings.modules.apc.install %}
@@ -41,30 +80,34 @@ makina-php-apc:
         shm_size: "{{ phpSettings.modules.apc.shm_size }}"
         mmap_file_mask: "{{ phpSettings.modules.apc.mmap_file_mask }}"
     - require:
-      - pkg: makina-php-pkgs
+      - mc_dummy: makina-php-post-inst
     - watch_in:
-      - service: makina-php-reload
+      - mc_dummy: makina-php-pre-conf
 
 {%   if phpSettings.modules.apc.enabled %}
 makina-php-apc-install:
   cmd.run:
-    - name: {{ locs.sbin_dir }}/php5enmod -s ALL apcu
+    - name: {{ locs.sbin_dir }}/php5enmod {{s_ALL}} apcu
+    {% if grains['os'] in ['Ubuntu'] %}
     - unless: {{ locs.sbin_dir }}/php5query -q -s cli -m apcu
+    {% endif %}
     - require:
-      - pkg: makina-php-pkgs
+      - mc_dummy: makina-php-pre-conf
       - file: makina-php-apc
     - watch_in:
-      - service: makina-php-restart
+      - mc_dummy: makina-php-post-conf
 {%   else %}
 makina-php-apc-disable:
   cmd.run:
-    - name: {{ locs.sbin_dir }}/php5dismod -s ALL apcu
+    - name: {{ locs.sbin_dir }}/php5dismod {{s_ALL}} apcu
+    {% if grains['os'] in ['Ubuntu'] %}
     - onlyif: {{ locs.sbin_dir }}/php5query -q -s cli -m apcu
+    {% endif %}
     - require:
-      - pkg: makina-php-pkgs
+      - mc_dummy: makina-php-pre-conf
       - file: makina-php-apc
     - watch_in:
-      - service: makina-php-restart
+      - mc_dummy: makina-php-post-conf
 {%   endif %}
 {% endif %}
 
@@ -73,25 +116,26 @@ makina-php-apc-disable:
 {%   if phpSettings.modules.xdebug.enabled %}
 makina-php-xdebug-install:
   cmd.run:
-    - name: {{ locs.sbin_dir }}/php5enmod -s ALL xdebug
+    - name: {{ locs.sbin_dir }}/php5enmod {{s_ALL}} xdebug
+    {% if grains['os'] in ['Ubuntu'] %}
     - unless: {{ locs.sbin_dir }}/php5query -q -s cli -m xdebug
+    {% endif %}
     - require:
-      - pkg: makina-php-pkgs
+      - mc_dummy: makina-php-pre-conf
     - watch_in:
-      - service: makina-php-restart
+      - mc_dummy: makina-php-post-conf
 {%   else %}
 makina-php-xdebug-disable:
   cmd.run:
-    - name: {{ locs.sbin_dir }}/php5dismod -s ALL xdebug
+    - name: {{ locs.sbin_dir }}/php5dismod {{s_ALL}} xdebug
+    {% if grains['os'] in ['Ubuntu'] %}
     - onlyif: {{ locs.sbin_dir }}/php5query -q -s cli -m xdebug
+    {% endif %}
     - require:
-      - pkg: makina-php-pkgs
+      - mc_dummy: makina-php-pre-conf
     - watch_in:
-      - service: makina-php-restart
+      - mc_dummy: makina-php-post-conf
 {%   endif %}
 {% endif %}
-
-# flag to auto-install as-soon-as-included once
-makina-states.services.php.common:
-  grains.present:
-    - value: True
+{% endmacro %}
+{{ do(full=False) }}

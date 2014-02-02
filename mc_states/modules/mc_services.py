@@ -427,7 +427,7 @@ def registry():
             'java.tomcat7': {'active': False},
             'mail.dovecot': {'active': False},
             'mail.postfix': {'active': False},
-            'php.common': {'active': False},
+            #'php.common': {'active': False},
             'php.modphp': {'active': False},
             'php.phpfpm': {'active': False},
             'php.phpfpm_with_apache': {'active': False},

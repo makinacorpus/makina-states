@@ -376,6 +376,11 @@ def settings():
         phpData = __salt__['mc_utils.defaults'](
             'makina-states.services.php', phpStepThree)
 
+        if grains['os'] in ['Ubuntu']:
+            phpData['s_ALL'] = '-s ALL'
+        else:
+            phpData['s_ALL'] = ''
+
         return phpData
     return _settings()
 

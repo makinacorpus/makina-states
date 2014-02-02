@@ -288,7 +288,7 @@ def exclude_module(name,
 
 
 def deployed(name,
-             mpm='prefork',
+             mpm='worker',
              version="2.2",
              modules_excluded=None,
              modules_included=None,
@@ -321,7 +321,6 @@ def deployed(name,
            'changes': {},
            'result': None,
            'comment': ''}
-
     comments = []
     if not 'apache.version' in __salt__:
         log.warning(
@@ -358,7 +357,7 @@ def deployed(name,
 
     # MPM check
     infos = __salt__['apache.fullversion']()
-    cur_mpm = infos.get('server_mpm', 'unknown')
+    cur_mpm = infos.get('server_mpm', 'unknown').lower()
     mpm_check_done = False
     blind_mode = False
     if 'unknown' == cur_mpm:

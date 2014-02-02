@@ -115,71 +115,70 @@ def settings():
         localsettings = __salt__['mc_localsettings.settings']()
         nodetypes_registry = __salt__['mc_nodetypes.registry']()
         locations = localsettings['locations']
-        apacheStepOne = __salt__['grains.filter_by']({
-            'dev': {
+        apacheStepOne = __salt__['mc_utils.dictupdate'](
+            {
                 'mpm': 'worker',
                 'version': '2.2',
                 'Timeout': 120,
                 'KeepAlive': True,
-                'MaxKeepAliveRequests': 5,
-                'KeepAliveTimeout': 5,
                 'log_level': 'warn',
                 'serveradmin_mail': 'webmaster@localhost',
                 'registered_modules': {},
-                'prefork': {
-                    'StartServers': 5,
-                    'MinSpareServers': 5,
-                    'MaxSpareServers': 5,
-                    'MaxClients': 20,
-                    'MaxRequestsPerChild': 300
-                },
-                'worker': {
-                    'StartServers': 2,
-                    'MinSpareThreads': 25,
-                    'MaxSpareThreads': 75,
-                    'ThreadLimit': 64,
-                    'ThreadsPerChild': 25,
-                    'MaxRequestsPerChild': 300,
-                    'MaxClients': 200
-                },
-                'event': {
-                    'AsyncRequestWorkerFactor': "1.5"
-                },
-                'virtualhosts': {}
             },
-            'prod': {
-                'mpm': 'worker',
-                'version': '2.2',
-                'Timeout': 120,
-                'KeepAlive': True,
-                'MaxKeepAliveRequests': 100,
-                'KeepAliveTimeout': 3,
-                'log_level': 'warn',
-                'serveradmin_mail': 'webmaster@localhost',
-                'registered_modules': {},
-                'prefork': {
-                    'StartServers': 25,
-                    'MinSpareServers': 25,
-                    'MaxSpareServers': 25,
-                    'MaxClients': 150,
-                    'MaxRequestsPerChild': 3000
+            __salt__['grains.filter_by'](
+                {
+                    'dev': {
+                        'MaxKeepAliveRequests': 5,
+                        'KeepAliveTimeout': 5,
+                        'prefork': {
+                            'StartServers': 5,
+                            'MinSpareServers': 5,
+                            'MaxSpareServers': 5,
+                            'MaxClients': 20,
+                            'MaxRequestsPerChild': 300
+                        },
+                        'worker': {
+                            'StartServers': 2,
+                            'MinSpareThreads': 25,
+                            'MaxSpareThreads': 75,
+                            'ThreadLimit': 64,
+                            'ThreadsPerChild': 25,
+                            'MaxRequestsPerChild': 300,
+                            'MaxClients': 200
+                        },
+                        'event': {
+                            'AsyncRequestWorkerFactor': "1.5"
+                        },
+                        'virtualhosts': {}},
+                    'prod': {
+                        'MaxKeepAliveRequests': 100,
+                        'KeepAliveTimeout': 3,
+                        'prefork': {
+                            'StartServers': 25,
+                            'MinSpareServers': 25,
+                            'MaxSpareServers': 25,
+                            'MaxClients': 150,
+                            'MaxRequestsPerChild': 3000
+                        },
+                        'worker': {
+                            'StartServers': 5,
+                            'MinSpareThreads': 50,
+                            'MaxSpareThreads': 100,
+                            'ThreadLimit': 100,
+                            'ThreadsPerChild': 50,
+                            'MaxRequestsPerChild': 3000,
+                            'MaxClients': 700
+                        },
+                        'event': {
+                            'AsyncRequestWorkerFactor': "4"
+                        },
+                        'virtualhosts': {
+                        }
+                    }
                 },
-                'worker': {
-                    'StartServers': 5,
-                    'MinSpareThreads': 50,
-                    'MaxSpareThreads': 100,
-                    'ThreadLimit': 100,
-                    'ThreadsPerChild': 50,
-                    'MaxRequestsPerChild': 3000,
-                    'MaxClients': 700
-                },
-                'event': {
-                    'AsyncRequestWorkerFactor': "4"
-                },
-                'virtualhosts': {}
-            }},
-            grain='default_env',
-            default='dev'
+                grain='default_env',
+                default='dev'
+            )
         )
         # Ubuntu 13.10 is now providing 2.4 with event by default #
         if (
@@ -193,7 +192,7 @@ def settings():
             'makina-states.services.http.apache',
             __salt__['grains.filter_by']({
                 'Debian': {
-                    'package': 'apache2',
+                    'packages': ['apache2'],
                     'server': 'apache2',
                     'service': 'apache2',
                     'mod_wsgi': 'libapache2-mod-wsgi',
@@ -205,7 +204,7 @@ def settings():
                     'wwwdir': locations['srv_dir']
                 },
                 'RedHat': {
-                    'package': 'httpd',
+                    'packages': ['httpd'],
                     'server': 'httpd',
                     'service': 'httpd',
                     'mod_wsgi': 'mod_wsgi',
@@ -225,7 +224,9 @@ def settings():
         # FINAL STEP: merge with data from pillar and grains
         apacheSettings = __salt__['mc_utils.defaults'](
             'makina-states.services.http.apache', apacheDefaultSettings)
-
+        mpm = apacheSettings.get('mpm', None)
+        if __grains__['os_family'] in ['Debian'] and mpm:
+            apacheSettings['packages'].append('apache2-mpm-{0}'.format(mpm))
         return apacheSettings
     return _settings()
 
