@@ -64,7 +64,7 @@
     - user: {{common.user}}
     - require:
       {% if common.full %}
-      - pkg: {{common.name}}lizmap-prereq
+      {# - pkg: {{common.name}}lizmap-prereq #}
       {% endif %}
       - mc_git: {{common.name}}-checkout-code
       - mc_proxy: {{common.name}}-rootdir-dirs

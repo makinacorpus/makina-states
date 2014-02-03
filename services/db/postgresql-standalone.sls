@@ -127,9 +127,9 @@
 {{version}}-{{db}}-{{ext}}-makina-postgresql:
   mc_postgres_extension.present:
     - require_in:
-      - cmd: {{ orchestrate[version]['postext'] }}
+      - mc_proxy: {{ orchestrate[version]['postext'] }}
     - require:
-      - cmd: {{ orchestrate[version]['preext'] }}
+      - mc_proxy: {{ orchestrate[version]['preext'] }}
       {%- if extidx > 0 %}
       - mc_postgres_extension: {{version}}-{{db}}-{{exts[extidx-1]}}-makina-postgresql{% endif %}
     - user: {{ user }}
