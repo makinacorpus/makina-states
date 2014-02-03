@@ -26,14 +26,9 @@
 {{ salt['mc_macros.register']('services', 'php.phpfpm') }}
 
 include:
-{{common.includes() }}
-{% if full %}
-{% else %}
-{% endif %}
+{{common.common_includes(full=full, apache=False) }}
 
-{{ common.do(full=full) }}
-
-{# Manage php-fpm packages}
+{# Manage php-fpm packages @#}
 makina-php-pkgs:
   pkg.installed:
     - pkgs:

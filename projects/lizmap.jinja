@@ -140,7 +140,6 @@
 {%-  if common.data.has_app %}
 {%-    do common.sls_includes.extend(['makina-states.services.php.fcgid_with_apache'])%}
 {%-    do common.sls_includes.extend(['makina-states.services.gis.qgis',])%}
-{%-    do common.sls_includes.extend(['makina-states.services.gis.qgis',])%}
 {%-  endif %}
 {%-  if common.data.has_db %}
 {%-   do common.sls_includes.extend(['makina-states.services.gis.postgis',])%}

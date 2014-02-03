@@ -430,6 +430,7 @@ def registry():
             #'php.common': {'active': False},
             'php.modphp': {'active': False},
             'php.phpfpm': {'active': False},
+            'php.fcgid_with_apache': {'active': False},
             'php.phpfpm_with_apache': {'active': False},
             'virt.docker': {'active': False},
             'virt.docker-shorewall': {'active': False},

@@ -48,6 +48,7 @@ _MODULES_INCLUDED = []
 # TODO: registered modules?
 _MODULES_REGISTERED = []
 
+_DEFAULT_MPM = 'worker'
 _shared_modules = []
 _static_modules = []
 
@@ -288,7 +289,7 @@ def exclude_module(name,
 
 
 def deployed(name,
-             mpm='worker',
+             mpm=None,
              version="2.2",
              modules_excluded=None,
              modules_included=None,
@@ -360,7 +361,9 @@ def deployed(name,
     cur_mpm = infos.get('server_mpm', 'unknown').lower()
     mpm_check_done = False
     blind_mode = False
-    if 'unknown' == cur_mpm:
+    if not mpm:
+        mpm = 'unknown'
+    if 'unknown' in [cur_mpm, mpm]:
         # quite certainly a syntax error in current conf
         mpm_check_done = True
         # chicken and eggs problem now is that this current error prevents the

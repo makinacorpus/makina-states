@@ -11,9 +11,9 @@ include:
   - makina-states.services.php.fcgid_with_apache-standalone
   {% endif %}
 
-{% if grains['os_family'] in ['Debian'] %}
 {% if full %}
 {% import "makina-states/services/php/common.sls" as phpcommon with context %}
+{% if grains['os_family'] in ['Debian'] %}
 qgis-repo:
   pkgrepo.managed:
     - name: deb http://qgis.org/debian {{localsettings.dist}} main

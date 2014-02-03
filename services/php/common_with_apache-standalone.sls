@@ -3,8 +3,8 @@
 {% set includes = base.includes %}
 {% set common_includes= base.common_includes %}
 {% set do = base.do %}
-{% set full = True %}
-{% set apache = False %}
+{% set full = False %}
+{% set apache = True %}
 {% set services = base.services %}
 {% set localsettings = base.localsettings %}
 {% set nodetypes = base.nodetypes %}

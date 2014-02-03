@@ -26,23 +26,22 @@
 {% macro do(full=False)%}
 {{ salt['mc_macros.register']('services', 'php.modphp') }}
 include:
-{{ common.apache_includes(full=full) }}
-{{ common.includes(full=full) }}
-
-{{ common.apache_hooks(full=full) }}
-{{ common.do(full=full) }}
+{{ common.common_includes(full=full, apache=True) }}
 
 # Manage php-fpm packages
 makina-mod_php-exclude-fpm-pkg:
   pkg.removed:
     - pkgs:
       - {{ phpSettings.packages.php_fpm }}
-      - {{ phpsettings.packages.mod_fcgi }}
-      - {{ phpsettings.packages.php5_cgi }}
+      - {{ phpSettings.packages.mod_fcgid }}
+      - {{ phpSettings.packages.php5_cgi }}
     - watch_in:
       - mc_dummy: makina-php-pre-inst
 
 {# Manage mod_php packages #}
+
+{{ common.installMpm('prefork', full=full) }}
+
 makina-php-pkgs:
   pkg.installed:
     - pkgs:

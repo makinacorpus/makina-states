@@ -4,7 +4,7 @@
 {% set common_includes= base.common_includes %}
 {% set do = base.do %}
 {% set full = True %}
-{% set apache = False %}
+{% set apache = True %}
 {% set services = base.services %}
 {% set localsettings = base.localsettings %}
 {% set nodetypes = base.nodetypes %}
@@ -13,6 +13,6 @@
 {% set installMpm = base.installMpm %}
 
 include:
-{{ base.includes(full=full, apache=apache) }}
+{{ base.includes(full=full, apache=apache )}}
 
 {{ base.do(full=full, apache=apache) }}

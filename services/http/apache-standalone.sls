@@ -35,7 +35,50 @@
 include:
   - makina-states.services.http.apache-hooks
 
+{% macro install_mpm(mpm, full=True) %}
+{% set pkgs = apacheSettings['mpm-packages'].get(mpm, [] ) %}
+{% set opkgs = [] %}
+{% for dmpm, packages in apacheSettings['mpm-packages'] %}
+{%  if mpm != dmpm %}
+{%    for pkg in packages %}
+{%      if pkg not in pkgs %}
+{%        do opkgs.append(pkg) %}
+{%      endif %}
+{%    endfor %}
+{%  endif %}
+{% endfor%}
+
 {% if full %}
+{%  if opkgs %}
+php-common-apache-uninstall-others-mpms-{{mpm}}:
+  pkg.removed:
+    - pkgs:
+      {% for pkg in opkgs %}
+      - {{ pkg }}
+      {% endfor %}
+    - require:
+      - mc_dummy: makina-apache-post-pkgs
+    - watch_in:
+      - mc_dummy: makina-apache-post-inst
+      - pkg: php-common-apache-{{mpm}}
+{%  endif %}
+{%  if pkgs %}
+php-common-apache-{{mpm}}:
+  pkg.installed:
+    - pkgs:
+      {% for pkg in pkgs %}
+      - {{ pkg }}
+      {% endfor %}
+    - require:
+      - mc_dummy: makina-apache-post-pkgs
+    - watch_in:
+      - mc_dummy: makina-apache-post-inst
+{%  endif %}
+{% endif %}
+{% endmacro %}
+{% set installMpm = install_mpm %}
+
+
 makina-apache-pkgs:
   pkg.installed:
     - watch:
@@ -47,7 +90,6 @@ makina-apache-pkgs:
       - {{ package }}
       {% endfor %}
       - cronolog
-{% endif %}
 
 ## Apache Main Configuration ------------------
 {# Read states documentation to alter main apache

@@ -118,6 +118,7 @@ def settings():
         apacheStepOne = __salt__['mc_utils.dictupdate'](
             {
                 'mpm': 'worker',
+                'mpm-packages': {},
                 'version': '2.2',
                 'Timeout': 120,
                 'KeepAlive': True,
@@ -193,6 +194,12 @@ def settings():
             __salt__['grains.filter_by']({
                 'Debian': {
                     'packages': ['apache2'],
+                    'mpm-packages': {
+                        'worker': ['apache2-mpm-worker'],
+                        'prefork': ['apache2-mpm-prefork'],
+                        'itk': ['apache2-mpm-itk'],
+                        'even': ['apache2-mpm-event'],
+                    },
                     'server': 'apache2',
                     'service': 'apache2',
                     'mod_wsgi': 'libapache2-mod-wsgi',
@@ -224,9 +231,12 @@ def settings():
         # FINAL STEP: merge with data from pillar and grains
         apacheSettings = __salt__['mc_utils.defaults'](
             'makina-states.services.http.apache', apacheDefaultSettings)
-        mpm = apacheSettings.get('mpm', None)
-        if __grains__['os_family'] in ['Debian'] and mpm:
-            apacheSettings['packages'].append('apache2-mpm-{0}'.format(mpm))
+        #mpm = apacheSettings.get('mpm', None)
+        #apacheSettings['mpm-packages'] = []
+        #if __grains__['os_family'] in ['Debian'] and mpm:
+        #    apacheSettings['packages'].extend(
+        #        'apache2-mpm-{0}'.format(mpm)
+        #    )
         return apacheSettings
     return _settings()
 
