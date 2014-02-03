@@ -31,5 +31,5 @@ def mod_watch(name, **kwargs):
     '''
     Execute a dummy state in case of watcher changes
     '''
-    return dummy(name, changes={1: 1})
+    return hook(name, changes={1: 1})
 #
