@@ -26,7 +26,7 @@ python-project-{{ common['name'] }}-virtualenv:
     - no_site_packages: True
     - python: {{ localsettings.locations.bin_dir }}/python{{ common.data['python_version'] }}
     {% if common.data['requirements'] %}
-    - requirements: {{ common.salt_root }}/requirements.txt
+    - requirements: {{ common.project_root }}/requirements.txt
     {% endif %}
 {% endmacro %}
 
@@ -42,6 +42,7 @@ python-project-{{ common['name'] }}-virtualenv:
 {% do kwargs.setdefault('env_defaults', default_env_defaults) -%}
 {% do kwargs.setdefault('user', 'python') -%}
 {% do kwargs.setdefault('sls_includes', ['makina-states.localsettings.python']) -%}
+
 {% set common = salt['mc_project.get_common_vars'](*varargs, **kwargs) -%}
 {{ base.install_project(common, install_macro=install_generic_python_project_do) -}}
 {%- endmacro %}

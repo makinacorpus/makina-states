@@ -16,20 +16,27 @@
 {{ pgsql.postgresql_user(db_user, db_password, groups=['{0}_owners'.format(db_name)]) }}
 {% endmacro %}
 
-{% macro install_nodejs(common) %}
-# TODO NODEJS grunt-cli bower + npm install
-{% endmacro %}
-
 {% macro install_setup(common) %}
+ode_project_setup_grunt-cli:
+  npm.installed:
+    - name: grunt-cli
+
+ode_project_setup_npm:
+  npm.bootstrap:
+    - name: {{ common['project_root'] }}
+    - user: {{ common['user'] }}
+
 ode_project_setup:
   cmd.run:
     - name: >
         . .virtualenv/bin/activate
+        && grunt
         && python setup.py install
         && python manage.py syncdb --noinput
         && python manage.py collectstatic --noinput
         && python manage.py compilemessages -l fr
     - cwd: {{ common['project_root'] }}
+    - user: {{ common['user'] }}
 {% endmacro %}
 
 {% macro install_ode_api_project() %}
@@ -38,14 +45,15 @@ ode_project_setup:
 {% do kwargs.setdefault('domain', 'example.com') -%}
 {% do kwargs.setdefault('sls_includes', [
   'makina-states.services.db.postgresql',
+  'makina-states.services.http.nginx',
+  'makina-states.localsettings.nodejs',
   'makina-states.localsettings.python'
   ]) -%}
 
 {% set common = salt['mc_project.get_common_vars'](*varargs, **kwargs) -%}
 
-{# also install pgsql through include -#}
+{# also install pgsql and node.js through include -#}
 {{ install_python(common, *varargs, **kwargs) }}
 {{ install_pgsql(common) }}
-{{ install_nodejs(common) }}
 {{ install_setup(common) }}
 {% endmacro %}
