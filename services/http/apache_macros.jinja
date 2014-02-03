@@ -101,7 +101,7 @@ makina-apache-virtualhost-{{ small_name }}:
 {% endif %}
 
         mode: "production"
-{% if nodetypes.isDevhost %}
+{% if nodetypes.registry.is.devhost %}
     - context:
         mode: "dev"
 {% endif %}
@@ -130,7 +130,7 @@ makina-apache-virtualhost-{{ small_name }}-content:
         {{ variablename }}: "{{ variablevalue }}"
 {% endfor %}
 {% endif %}
-{% if nodetypes.isDevhost %}
+{% if nodetypes.registry.is.devhost %}
     - context:
         mode: "dev"
 {% endif %}
