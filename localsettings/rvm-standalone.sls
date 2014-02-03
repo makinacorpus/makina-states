@@ -93,13 +93,10 @@ rvm-{{ruby}}:
 {% if full %}
 active-rvm-bundler-hook:
   cmd.script:
-    - source: 'file://{{saltmac.msr}}/_scripts/reset-perms.sh'
-    - template: jinja
-    - msr: {{ saltmac.msr }}
-    - dmode: 0700
-    - fmode: 0700
-    - reset_paths:
-      - {{locs.rvm_path}}/hooks/after_cd_bundler
+    - source: 'file://{{saltmac.msr}}/_scripts/reset-perms.py'
+    - args: >
+            --dmode 0700 --fmode 0700
+            --paths "{{locs.rvm_path}}/hooks/after_cd_bundler"
 {% endif %}
 {% endmacro %}
 {{ do(full=False)}}

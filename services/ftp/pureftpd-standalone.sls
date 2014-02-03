@@ -88,15 +88,11 @@ prereq-pureftpd:
 
 {{key}}-makina-pureftpd-perm:
   cmd.script:
-    - source: 'file://{{services.saltmac.msr}}/_scripts/reset-perms.sh'
-    - template: jinja
-    - msr: {{ services.saltmac.msr }}
-    - dmode: 0700
-    - fmode: 0700
-    - user: root
-    - group: root
-    - reset_paths:
-      - {{ key }}
+    - source: 'file://{{services.saltmac.msr}}/_scripts/reset-perms.py'
+    --args: >
+            --dmode 0700 --fmode 0700
+            --user root --group root
+            --paths {{ key }}
     {{ service_watch_in() }}
 
 makina-pureftpd-shell-contents:
