@@ -205,6 +205,14 @@ def settings():
                         #'itk': ['apache2-mpm-itk'],
                         'event': ['apache2-mpm-event'],
                     },
+                    'mod_packages': {
+                        'mod_fcgid': 'libapache2-mod-fcgid',
+                    },
+                    'fastcgi_project_root': '',
+                    'fastcgi_shared_mode': True,
+                    'fastcgi_enabled': True,
+                    'fastcgi_socket_directory': (
+                        locations['var_dir'] + '/lib/apache2/fastcgi'),
                     'server': 'apache2',
                     'service': 'apache2',
                     'mod_wsgi': 'libapache2-mod-wsgi',

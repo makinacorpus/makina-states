@@ -16,7 +16,7 @@
 # consult grains values with "salt '*' grains.items"
 #
 {% import "makina-states/services/php/common.sls" as common with context %}
-{% import "makina-states/services/php/fcgid_common.sls" as fcgid with context %}
+{% import "makina-states/services/http/apache_modfcgid.sls" as fcgid with context %}
 {% set services = common.services %}
 {% set localsettings = common.localsettings %}
 {% set nodetypes = common.nodetypes %}
@@ -115,6 +115,6 @@ makina-phpfpm-apache-module_connect_phpfpm_mod_fastcgi_module:
     - watch_in:
       - pkg: makina-fcgid-http-server-backlink
       - mc_proxy: makina-php-post-inst
-{% endif %} 
+{% endif %}
 {% endmacro %}
 {{ do(full=False) }}

@@ -329,13 +329,14 @@ def settings():
             merge=phpdefaults,
             default='dev'
         )
+        apacheSettings = __salt__['mc_apache.settings']()
 
         # Default OS-based paths settings added on phpData
         phpStepThree = __salt__['grains.filter_by']({
             'Debian': {
                 'packages': {
                     'main': 'php5',
-                    'mod_fcgid': 'libapache2-mod-fcgid',
+                    'mod_fcgid': apacheSettings['mod_packages']['mod_fcgid'],
                     'mod_php': 'libapache2-mod-php5',
                     'mod_php_filter': 'libapache2-mod-php5filter',
                     'php5_cgi': 'php5-cgi',

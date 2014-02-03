@@ -1,15 +1,17 @@
+{% import "makina-states/services/http/apache.sls" as apache with context %}
 {% import "makina-states/services/php/common.sls" as common with context %}
-{% set services = common.services %}
-{% set localsettings = common.localsettings %}
-{% set nodetypes = common.nodetypes %}
-{% set locs = common.locs %}
+{% set services = apache.services %}
+{% set localsettings = apache.localsettings %}
+{% set nodetypes = apache.nodetypes %}
+{% set locs = localsettings.locations %}
 {% set phpSettings = common.phpSettings %}
+{% set apacheSettings = services.apacheSettings %}
 {% macro fcgid_common(
   full=True,
-  shared_mode=True,
-  enabled=True,
-  project_root='',
-  socket_directory = '/var/lib/apache2/fastcgi'
+  shared_mode=apacheSettings.fastcgi_shared_mode,
+  enabled=apacheSettings.fastcgi_enabled,
+  project_root=apacheSettings.fastcgi_project_root,
+  socket_directory = apacheSettings.fastcgi_socket_directory
 ) %}
 
 {% if full %}
@@ -78,21 +80,46 @@ makina-fastcgid-apache-module_connect_fastcgid:
 
 {% macro includes(full=True) %}
 {% if full %}
-  - makina-states.services.php.fcgid_common
+  - makina-states.services.http.apache_modfcgid
 {% else %}
-  - makina-states.services.php.fcgid_common-standalone
+  - makina-states.services.http.apache_modfcgid-standalone
 {% endif %}
 {% endmacro %}
 
 {% macro do(full=False) %}
+{{ salt['mc_macros.register']('services', 'http.apache_modfcgid') }}
+{#
 include:
 {{ common.common_includes(full=full, apache=True) }}
+#}
+
+include:
+  - makina-states.services.php.php-apache-hooks
+{% if full %}
+  - makina-states.services.http.apache
+{% else %}
+  - makina-states.services.http.apache-standalone
+{% endif %}
 
 extend:
-{{ common.apache.extend_switch_mpm(common.apache.apacheSettings.multithreaded_mpm) }}
+{{ apache.extend_switch_mpm(apacheSettings.multithreaded_mpm) }}
 
 {{ fcgid_common(full=full) }}
-
+{% if full %}
+# Adding mod_proxy_fcgi apache module (apache > 2.3)
+# Currently mod_proxy_fcgi which should be the new default
+# is commented, waiting for unix socket support
+# So we keep using the old way
+makina-fcgid-apache-module_connect_fcgid_mod_fastcgi_module:
+  pkg.installed:
+    - pkgs:
+      - {{ apacheSettings.mod_packages.mod_fcgid }}
+    - require:
+      - mc_proxy: makina-php-pre-inst
+    - watch_in:
+      - pkg: makina-fcgid-http-server-backlink
+      - mc_proxy: makina-php-post-inst
+{% endif %}
 {% endmacro %}
 
 {{ do(full=False) }}

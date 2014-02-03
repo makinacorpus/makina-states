@@ -23,6 +23,7 @@
 {% import "makina-states/_macros/services.jinja" as services with context %}
 {% import "makina-states/_macros/salt.jinja" as saltmac with context %}
 
+{% set services = services %}
 {% set nodetypes = services.nodetypes %}
 {% set localsettings = services.localsettings %}
 {% set locs = localsettings.locations %}
