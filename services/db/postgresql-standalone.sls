@@ -301,13 +301,13 @@ makina-postgresql-service-reload:
 # Create a database, and an owner group which owns it
 #}
 {%- macro postgresql_db(db,
-                       owner=None,
-                       tablespace='pg_default',
-                       template='template1',
-                       encoding='utf8',
-                       user=default_user,
-                       version=services.defaultPgVersion,
-                       full=True) -%}
+                        owner=None,
+                        tablespace='pg_default',
+                        template='template1',
+                        encoding='utf8',
+                        user=default_user,
+                        version=services.defaultPgVersion,
+                        full=True) -%}
 {# group name is by default the db name #}
 {%- if not owner -%}
 {%-   set owner = '%s_groups' % db %}

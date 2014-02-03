@@ -6,9 +6,9 @@
 {% macro do(full=True) %}
 include:
   {% if full %}
-  - makina-states.services.php.fcgid_with_apache
+  - makina-states.services.http.apache_modfcgid
   {% else %}
-  - makina-states.services.php.fcgid_with_apache-standalone
+  - makina-states.services.http.apache_modfcgid-standalone
   {% endif %}
 
 {% if full %}

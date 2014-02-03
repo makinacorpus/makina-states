@@ -5,34 +5,25 @@
 {%- set saltmac = base.saltmac %}
 {%- set localsettings = base.localsettings %}
 
+{# Base system prerequisite #}
 {%- macro lizmap_pkgs(common) %}
 {% if common.full %}
 {% endif %}
-
 {% endmacro %}
-{%- macro lizmap_app(common) %}
-{{common.name}}-lizmapwebclient:
-  mc_git.latest:
-    - name: https://github.com/makinacorpus/lizmap-web-client.git
-    - target: {{common.project_root}}/webapp
-    - user: {{common.user}}
-    - require:
-      {% if common.full %}
-      - pkg: {{common.name}}lizmap-prereq
-      {% endif %}
-      - mc_git: {{common.name}}-checkout-code
 
+{% macro lizmap_layout(common) %}
 {%  set basedirs = [
+  common.project_root+'/webapp',
   common.project_root+'/cache',
   common.project_root+'/ftp/template',
   common.project_root+'/ftp/template/qgis',
   ] %}
 {% for user in common.data.users %}
-{%  for n in [1, 2, 3, 4, 5] %}
-{%    do basedirs.append(common.project_root + '/ftp/' + user +'/qgis/rep' + n)
-{%  endor %}
-{%    do basedirs.append(common.project_root + '/cache/' + user )
-{% endor %}
+{%  for n in ['1', '2', '3', '4', '5'] %}
+{%    do basedirs.append(common.project_root + '/ftp/' + user +'/qgis/rep' + n) %}
+{%  endfor %}
+{%    do basedirs.append(common.project_root + '/cache/' + user ) %}
+{% endfor %}
 {% for dir in basedirs %}
 {{common.name}}-rootdir-{{dir}}:
   file.directory:
@@ -64,19 +55,33 @@
 {% endfor %}
 {% endmacro %}
 
-#
-# Base system prerequisite
-#
+{%- macro lizmap_app(common) %}
+{{ lizmap_layout(common) }}
+{{common.name}}-lizmapwebclient:
+  mc_git.latest:
+    - name: https://github.com/makinacorpus/lizmap-web-client.git
+    - target: {{common.project_root}}/webapp
+    - user: {{common.user}}
+    - require:
+      {% if common.full %}
+      - pkg: {{common.name}}lizmap-prereq
+      {% endif %}
+      - mc_git: {{common.name}}-checkout-code
+      - mc_proxy: {{common.name}}-rootdir-dirs
+{% endmacro %}
+
+{# Database #}
 {%- macro lizmap_db(common) %}
+{# 
 {{- pgsql.postgresql_db(common.data.db,name, template='postgis') }}
-{{- pgsql.postgresql_user(group=common.db.name+'_owners',
+{{- pgsql.postgresql_user(
+  group=common.data.db.name+'_owners',
   password=common.db.password,
   template='postgis') }}
+#}
 {%- endmacro %}
 
-#
-# Cron from generic: pack & backup & restart each day, fullbackup per week (sunday)
-#
+{#  Cron from generic: pack & backup & restart each day, fullbackup per week (sunday) #}
 {%- macro generic_crons(common) %}
 {%- set cron_hour   = common.data.get('cron_hour', 1) %}
 {%- set cron_minute = common.data.get('cron_minute', 0) %}
@@ -117,9 +122,7 @@
   'prod': {}
  } %}
 
-{#
-# Makina project per project macro couple (install_lizmap/install_project)
-#}
+{# Makina project per project macro couple (install_lizmap/install_project) #}
 {%- macro install_lizmap_project_do(common) %}
 # install postgresql only if we have the db role enabled
 {%-   if common.data.has_app %}
@@ -138,7 +141,7 @@
 {%-  do kwargs.setdefault('user', 'lizmap') %}
 {%-  set common = salt['mc_project.get_common_vars'](*varargs, **kwargs) %}
 {%-  if common.data.has_app %}
-{%-    do common.sls_includes.extend(['makina-states.services.php.fcgid_with_apache'])%}
+{%-    do common.sls_includes.extend(['makina-states.services.php.phpfpm_with_apache'])%}
 {%-    do common.sls_includes.extend(['makina-states.services.gis.qgis',])%}
 {%-  endif %}
 {%-  if common.data.has_db %}
