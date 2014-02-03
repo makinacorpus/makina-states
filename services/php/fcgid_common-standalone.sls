@@ -60,6 +60,7 @@ makina-fastcgid-apache-module_connect_fastcgid_notproxyfcgi:
     - watch_in:
       - mc_proxy: makina-apache-php-post-conf
       - mc_proxy: makina-php-pre-restart
+      - mc_apache: makina-apache-main-conf
 
 makina-fastcgid-apache-module_connect_fastcgid:
   mc_apache.include_module:
@@ -72,6 +73,7 @@ makina-fastcgid-apache-module_connect_fastcgid:
     - watch_in:
       - mc_proxy: makina-apache-php-post-conf
       - mc_proxy: makina-php-pre-restart
+      - mc_apache: makina-apache-main-conf
 {% endmacro %}
 
 {% macro includes(full=True) %}
