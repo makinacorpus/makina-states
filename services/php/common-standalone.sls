@@ -31,9 +31,9 @@
 {% macro common_includes(full=True, apache=False) %}
 {% if full %}
   {% if apache %}
-   - makina-states.services.php.common_with_apache
+  - makina-states.services.php.common_with_apache
   {% else %}
-   - makina-states.services.php.common
+  - makina-states.services.php.common
   {% endif %}
 {% else %}
   {% if apache %}

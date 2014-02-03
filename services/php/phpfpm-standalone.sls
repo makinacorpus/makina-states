@@ -16,17 +16,22 @@
 # consult grains values with "salt '*' grains.items"
 #
 {% import "makina-states/services/php/common.sls" as common with context %}
+{% import "makina-states/services/php/fcgid_common.sls" as fcgid with context %}
 {% set services = common.services %}
 {% set localsettings = common.localsettings %}
 {% set nodetypes = common.nodetypes %}
 {% set locs = common.locations %}
 {% set phpSettings = common.phpSettings %}
 
-{% macro do(full=False)%}
+{% macro do(full=False, apache=False)%}
 {{ salt['mc_macros.register']('services', 'php.phpfpm') }}
 
 include:
-{{common.common_includes(full=full, apache=False) }}
+{{common.common_includes(full=full, apache=apache) }}
+{% if apache %}
+{{ fcgid.includes(full=full) }}
+{% endif %}
+
 
 {# Manage php-fpm packages @#}
 makina-php-pkgs:
@@ -34,15 +39,15 @@ makina-php-pkgs:
     - pkgs:
       - {{ phpSettings.packages.main }}
       - {{ phpSettings.packages.php_fpm }}
-{% if phpSettings.modules.xdebug.install -%}
+{% if phpSettings.modules.xdebug.install %}
       - {{ phpSettings.packages.xdebug }}
-{%- endif %}
-{% if phpSettings.modules.apc.install -%}
+{% endif %}
+{% if phpSettings.modules.apc.install %}
       - {{ phpSettings.packages.apc }}
-{%- endif %}
+{% endif %}
 
 # remove default pool
-makina-php-remove-default-pool:
+makina-phpfpm-remove-default-pool:
   file.absent:
     - name : {{ phpSettings.etcdir }}/fpm/pool.d/www.conf
 
@@ -95,5 +100,21 @@ fpm-makina-php-reload:
     - enable: True
     - reload: True
     # most watch requisites are linked here with watch_in
+
+{% if full and apache %}
+# Adding mod_proxy_fcgi apache module (apache > 2.3)
+# Currently mod_proxy_fcgi which should be the new default
+# is commented, waiting for unix socket support
+# So we keep using the old way
+makina-phpfpm-apache-module_connect_phpfpm_mod_fastcgi_module:
+  pkg.installed:
+    - pkgs:
+      - {{ phpSettings.packages.php_fpm }}
+    - require:
+      - mc_proxy: makina-php-pre-inst
+    - watch_in:
+      - pkg: makina-fcgid-http-server-backlink
+      - mc_proxy: makina-php-post-inst
+{% endif %} 
 {% endmacro %}
 {{ do(full=False) }}
