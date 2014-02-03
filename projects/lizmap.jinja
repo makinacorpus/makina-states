@@ -7,17 +7,6 @@
 
 {%- macro lizmap_pkgs(common) %}
 {% if common.full %}
-{{common.name}}-lizmap-prereq:
-  pkg.installed:
-    - require:
-      - pkg: prereq-qgis
-    - pkgs:
-      - apache2
-      - php5
-      - curl
-      - php5-curl
-      - php5-sqlite
-      - php5-gd
 {% endif %}
 
 {% endmacro %}
@@ -32,6 +21,26 @@
       - pkg: {{common.name}}lizmap-prereq
       {% endif %}
       - mc_git: {{common.name}}-checkout-code
+
+{%  set basedirs = [
+  common.project_root+'/cache',
+  common.project_root+'/ftp/template',
+  common.project_root+'/ftp/template/qgis',
+  ] %}
+{% for user in common.data.users %}
+{%  for n in [1, 2, 3, 4, 5] %}
+{%    do basedirs.append(common.project_root + '/ftp/' + user +'/qgis/rep' + n)
+{%    do basedirs.append(common.project_root + '/cache/' + user )
+{%  endor %}
+{% endor %}
+{% for dir in basedirs %}
+rootdir-{{dir}}:
+  file.directory:
+    - name: {{dir}}
+    - user: {{common.user}}
+    - group: www-data
+    - mode: 770
+    - makedirs: true
 {% endmacro %}
 
 #
@@ -76,6 +85,7 @@
   'cron_minute': 5,
   'has_db': True,
   'has_app': True,
+  'users': ['user1'],
   'db': {'name': 'lizmap',
          'user': 'lizmap',
          'password': 'lizmap',},
@@ -106,8 +116,12 @@
 {%-  do kwargs.setdefault('env_defaults', default_env_defaults) %}
 {%-  do kwargs.setdefault('user', 'lizmap') %}
 {%-  set common = salt['mc_project.get_common_vars'](*varargs, **kwargs) %}
-{%-  if common.data.has_db %}
+{%-  if common.data.has_app %}
+{%-    do common.sls_includes.extend(['makina-states.services.http.apache',])%}
 {%-    do common.sls_includes.extend(['makina-states.services.gis.qgis',])%}
+{%-  endif %}
+{%-  if common.data.has_db %}
+{%-   do common.sls_includes.extend(['makina-states.services.gis.postgis',])%}
 {%-  endif %}
 {{-  base.install_project(common, install_macro=install_lizmap_project_do) }}
 {%- endmacro %}
