@@ -102,6 +102,35 @@ makina-apache-pkgs:
       - cronolog
 
 ## Apache Main Configuration ------------------
+{# Default lists of included and excluded modules
+extend theses two states if you need others
+modules
+#}
+makina-apache-main-conf-included-modules:
+  mc_apache.include_module:
+    - modules:
+      - rewrite
+      - expires
+      - headers
+      - deflate
+      - status
+    - require_in:
+      - mc_apache: makina-apache-main-conf
+
+makina-apache-main-conf-excluded-modules:
+  mc_apache.exclude_module:
+    - modules:
+{% if not services.apacheSettings.allow_bad_modules.negotiation %}
+      - negotiation
+{% endif %}
+{% if not services.apacheSettings.allow_bad_modules.autoindex %}
+      - autoindex
+{% endif %}
+{% if not services.apacheSettings.allow_bad_modules.cgid %}
+      - cgid
+{% endif %}
+    - require_in:
+      - mc_apache: makina-apache-main-conf
 {# Read states documentation to alter main apache
 # configuration
 #}
@@ -109,20 +138,6 @@ makina-apache-main-conf:
   mc_apache.deployed:
     - version: {{ services.apacheSettings.version }}
     - mpm: {{ services.apacheSettings.mpm }}
-    # see also mc_apache.include_module
-    # and mc_apache.exclude_module
-    # to alter theses lists from
-    # other states (examples below)
-    - modules_excluded:
-      - negotiation
-      - autoindex
-      - cgid
-    - modules_included:
-      - rewrite
-      - expires
-      - headers
-      - deflate
-      - status
     - log_level: {{ services.apacheSettings.log_level }}
     - watch:
       - mc_proxy: makina-apache-pre-conf

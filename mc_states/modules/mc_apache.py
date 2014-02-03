@@ -124,7 +124,11 @@ def settings():
                 'KeepAlive': True,
                 'log_level': 'warn',
                 'serveradmin_mail': 'webmaster@localhost',
-                'registered_modules': {},
+                'allow_bad_modules': {
+                    'negotiation': False,
+                    'autoindex': False,
+                    'cgid': False,
+                },
             },
             __salt__['grains.filter_by'](
                 {
