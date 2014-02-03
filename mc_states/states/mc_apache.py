@@ -45,12 +45,24 @@ _APACHE_DEPLOYED = False
 _MODULES_EXCLUDED = []
 # Module explicitly excluded by states
 _MODULES_INCLUDED = []
-# TODO: registered modules?
-_MODULES_REGISTERED = []
 
 _DEFAULT_MPM = 'worker'
 _shared_modules = []
 _static_modules = []
+
+
+def _check_apache_loaded(ret):
+    if not 'apache.version' in __salt__:
+        log.warning(
+            'Use of mc_apache method without apache previously '
+            'installed via pkg state.'
+        )
+        ret['result'] = False
+        ret['comment'] = (
+            'Apache is not installed (salt apache module not loaded), '
+            'please use a pkg state to ensure apache is installed as a '
+            'dependency of this current state')
+    return ret
 
 
 def _load_modules():
@@ -75,9 +87,6 @@ def _checking_modules(modules_excluded=None,
            'comment': ''}
     # Load current shared and static modules
     _load_modules()
-    # Load modules installed from previous run and which have not been excluded
-    # since
-    #_modules_registered = _load_registered_modules()
     modifications = []
     comments = []
     # manage junction of _MODULES_[INCLUDED/EXCLUDED] and given parameters
@@ -205,6 +214,9 @@ def include_module(name,
            'result': None,
            'comment': ''}
     comments = []
+    ret = _check_apache_loaded(ret)
+    if ret['result'] is False:
+        return ret
 
     require_in = __low__.get('require_in', [])
     watch_in = __low__.get('watch_in', [])
@@ -252,6 +264,10 @@ def exclude_module(name,
            'result': None,
            'comment': ''}
     comments = []
+    ret = _check_apache_loaded(ret)
+    if ret['result'] is False:
+        return ret
+
     require_in = __low__.get('require_in', [])
     watch_in = __low__.get('watch_in', [])
     deps = require_in + watch_in
@@ -287,12 +303,9 @@ def exclude_module(name,
     ret['result'] = True
     return ret
 
-
 def deployed(name,
              mpm='worker',
              version="2.2",
-             modules_excluded=None,
-             modules_included=None,
              serveradmin_mail='webmaster@localhost',
              timeout=120,
              keep_alive=True,
@@ -323,25 +336,21 @@ def deployed(name,
            'result': None,
            'comment': ''}
     comments = []
-    if not 'apache.version' in __salt__:
-        log.warning(
-            'Use of mc_apache.deployed without apache previously '
-            'installed via pkg state.'
-        )
-        ret['result'] = False
-        ret['comment'] = (
-            'Apache is not installed (salt apache module not loaded), '
-            'please use a pkg state to ensure apache is installed as a '
-            'dependency of this current state')
+    ret = _check_apache_loaded(ret)
+    if ret['result'] is False:
         return ret
 
-    # ensure only one apache main configuration is applied on this server
+
+    modules_excluded = []
+    modules_included = []
+    # ensure only ONE apache main configuration is applied on this server
     if _APACHE_DEPLOYED:
         ret['result'] = False
         ret['comment'] = (
             'mc_apache.deployed is called several times. '
             'A previous call was made by state {0}. Please ensure you '
-            'do not try to alter main apache configuration on several states'
+            'do not try to alter main apache configuration on several states.'
+            ' Use extend.'
             '').format(_APACHE_DEPLOYED)
         return ret
     _APACHE_DEPLOYED = name
