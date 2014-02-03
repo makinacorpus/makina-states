@@ -23,11 +23,11 @@ makina-fcgid-http-server-backlink:
     # this must run BEFORE, else apt try to install one of mod_php/mod_phpfilter/php5_cgi
     # every time we remove one of them, except when fpm is already installed
     - require:
-      - mc_dummy: makina-php-pre-inst
+      - mc_proxy: makina-php-pre-inst
     # mod_php packages alteration needs an apache restart
     - watch_in:
-      - mc_dummy: makina-apache-php-pre-conf
-      - mc_dummy: makina-php-post-inst
+      - mc_proxy: makina-apache-php-pre-conf
+      - mc_proxy: makina-php-post-inst
 {% endif %}
 
 makina-fcgid-apache-module_connect_fcgid_mod_fastcgi_module_conf:
@@ -44,22 +44,22 @@ makina-fcgid-apache-module_connect_fcgid_mod_fastcgi_module_conf:
         project_root: '{{project_root}}'
         socket_directory:  '{{socket_directory }}'
     - require:
-      - mc_dummy: makina-php-post-inst
-      - mc_dummy: makina-apache-php-pre-conf
+      - mc_proxy: makina-php-post-inst
+      - mc_proxy: makina-apache-php-pre-conf
     - watch_in:
-      - mc_dummy: makina-apache-php-post-conf
-      - mc_dummy: makina-php-pre-restart
+      - mc_proxy: makina-apache-php-post-conf
+      - mc_proxy: makina-php-pre-restart
 
 makina-fastcgid-apache-module_connect_fastcgid_notproxyfcgi:
   mc_apache.exclude_module:
     - modules:
       - proxy_fcgi
     - require:
-      - mc_dummy: makina-php-post-inst
-      - mc_dummy: makina-apache-php-pre-conf
+      - mc_proxy: makina-php-post-inst
+      - mc_proxy: makina-apache-php-pre-conf
     - watch_in:
-      - mc_dummy: makina-apache-php-post-conf
-      - mc_dummy: makina-php-pre-restart
+      - mc_proxy: makina-apache-php-post-conf
+      - mc_proxy: makina-php-pre-restart
 
 makina-fastcgid-apache-module_connect_fastcgid:
   mc_apache.include_module:
@@ -67,14 +67,14 @@ makina-fastcgid-apache-module_connect_fastcgid:
       - fastcgi
       - actions
     - require:
-      - mc_dummy: makina-php-post-inst
-      - mc_dummy: makina-apache-php-pre-conf
+      - mc_proxy: makina-php-post-inst
+      - mc_proxy: makina-apache-php-pre-conf
     - watch_in:
-      - mc_dummy: makina-apache-php-post-conf
-      - mc_dummy: makina-php-pre-restart
+      - mc_proxy: makina-apache-php-post-conf
+      - mc_proxy: makina-php-pre-restart
 {% endmacro %}
 
-{% fcgid_includes(full=True) %}
+{% macro includes(full=True) %}
 {% if full %}
   - makina-states.services.php.fcgid_common
 {% else %}

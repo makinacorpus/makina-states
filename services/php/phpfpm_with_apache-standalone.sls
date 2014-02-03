@@ -20,10 +20,7 @@
 {{ salt['mc_macros.register']('services', 'php.phpfpm_with_apache') }}
 
 include:
-{{ fcgid_common.includes(full=full, apache=True) }}
-
-extend:
-{{ common.apache.extend_switch_mpm(common.apache.apacheSettings.multithreaded_mpm) }}
+{{ fcgid.includes(full=full, apache=True) }}
 
 {% if full %}
 # Adding mod_proxy_fcgi apache module (apache > 2.3)

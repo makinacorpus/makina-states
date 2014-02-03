@@ -8,7 +8,7 @@
 #}
 
 {% import "makina-states/services/php/common.sls" as common with context %}
-{% import "makina-states/services/php/fcgid-common.sls" as fcgid with context %}
+{% import "makina-states/services/php/fcgid_common.sls" as fcgid with context %}
 
 {% set services = common.services %}
 {% set localsettings = common.localsettings %}
@@ -20,10 +20,7 @@
 {{ salt['mc_macros.register']('services', 'php.fcgid_with_apache') }}
 
 include:
-{{ fcgid_common.includes(full=full) }}
-
-extend:
-{{ common.apache.extend_switch_mpm(common.apache.apacheSettings.multithreaded_mpm) }}
+{{ fcgid.includes(full=full) }}
 
 {% if full %}
 # Adding mod_proxy_fcgi apache module (apache > 2.3)
