@@ -208,7 +208,6 @@ def get_common_vars(
     for k, d in data.items():
         variables[k] = __salt__['mc_utils.get'](
             'makina-projects.{0}.{1}'.format(*(name, k)), d)
-    import pdb;pdb.set_trace()  ## Breakpoint ##
     return data
 
 #

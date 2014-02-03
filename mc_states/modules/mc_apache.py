@@ -198,7 +198,7 @@ def settings():
                         'worker': ['apache2-mpm-worker'],
                         'prefork': ['apache2-mpm-prefork'],
                         'itk': ['apache2-mpm-itk'],
-                        'even': ['apache2-mpm-event'],
+                        'event': ['apache2-mpm-event'],
                     },
                     'server': 'apache2',
                     'service': 'apache2',
