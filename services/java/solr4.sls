@@ -217,15 +217,10 @@ fill-block-solrxml-{{ v }}:
 {{ groot }}-reset-perms:
   cmd.script:
     - source: {{ saltmac.resetperms }}
-    - template: jinja
-    - user: root
-    - group: root
-    - reset_paths:
-      - {{ solr.groot }}
-    - dmode: '0770'
-    - fmode: 0770
-    - reset_user: {{ tdata['tomcat_user'] }}
-    - reset_group: {{ localsettings.group }}
+    - args: >
+            --paths "{{ solr.groot }}"
+            --dmode '0770' --fmode 0770
+            -u {{ tdata['tomcat_user'] }} -g {{ localsettings.group }}
     - require:
       - file: fill-block-solrxml-{{ v }}
       - file: solr-default-core-{{ v }}

@@ -82,7 +82,7 @@ def settings():
             'vagrant_root': '{prefix}/vagrant',
             'vms_docker_root': localsettings['locations']['vms_docker_root'],
             'docker_root': localsettings['locations']['docker_root'],
-            'resetperms': 'file://{msr}/_scripts/reset-perms.sh',
+            'resetperms': 'file://{msr}/_scripts/reset-perms.py',
             'init_d': '{initd_dir}',
             'prefix': locs['prefix'],
             'venv': locs['venv'],
@@ -301,7 +301,7 @@ def settings():
         logPrefix = saltCommonData['log_prefix']
         pillarRoot = saltCommonData['pillar_root']
         msr = saltroot + '/makina-states'
-        resetperms = 'file://' + msr + '/_scripts/reset-perms.sh'
+        resetperms = 'file://' + msr + '/_scripts/reset-perms.py'
         saltbinpath = msr + '/bin'
         #  MASTERSALT VARIABLES
         mastersaltCommonData = resolver(mastersaltCommonData)
@@ -320,7 +320,7 @@ def settings():
         mlogPrefix = mastersaltCommonData['log_prefix']
         mpillarRoot = mastersaltCommonData['pillar_root']
         mmsr = msaltroot + '/makina-states'
-        mresetperms = 'file://' + mmsr + '/_scripts/reset-perms.sh'
+        mresetperms = 'file://' + mmsr + '/_scripts/reset-perms.py'
         msaltbinpath = mmsr + '/bin'
         #  mappings
         data_mappings = {

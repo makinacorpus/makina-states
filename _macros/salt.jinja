@@ -460,14 +460,10 @@ salt-{{ data.name }}-net.ipv4.tcp_rmem__wmem:
 etc-{{data.name}}-dirs-perms:
   cmd.script:
     - source:  {{data.resetperms }}
-    - template: jinja
-    - msr: {{ msr }}
-    - dmode: 0770
-    - fmode: 0770
-    - user: "root"
-    - group: "{{ localsettings.group }}"
-    - reset_paths:
-      - {{ data.conf_prefix }}
+    - args: >
+            --dmode 0770 --fmode 0770
+            --user "root" --group "{{ localsettings.group }}"
+            --paths {{ data.conf_prefix }}
     - require:
       - mc_proxy: dummy-{{data.name}}-layout
       - mc_proxy: dummy-pre-{{data.name}}-service-restart
@@ -476,16 +472,11 @@ etc-{{data.name}}-dirs-perms:
 {{data.name}}-projects-dirs-perms:
   cmd.script:
     - source: {{ data.resetperms }}
-    - template: jinja
-    - dmode: 0770
-    - fmode: 0770
-    - only_acls: True
-    - msr: {{ data.msr }}
-    - user: "root"
-    - group: "{{ localsettings.group }}"
-    - reset_paths:
-      - {{ data.projects_root }}
-      {# - {{ data.vagrant_root }} #}
+    - args: >
+            -u root -g "{{ localsettings.group }}"
+            --dmode 0770 --fmode 0770
+            --only-acls
+            --paths "{{ data.projects_root }}"
     - require:
       - mc_proxy: dummy-pre-{{data.name}}-service-restart
       - cmd: etc-{{data.name}}-dirs-perms
@@ -493,18 +484,13 @@ etc-{{data.name}}-dirs-perms:
 {{data.name}}-dirs-perms:
   cmd.script:
     - source: {{ data.resetperms }}
-    - template: jinja
-    - dmode: 0770
-    - fmode: 0770
-    - msr: {{ data.msr }}
-    - user: "root"
-    - group: "{{ localsettings.group }}"
-    - reset_paths:
-      - {{ data.salt_root }}
-      - {{ data.pillar_root }}
-    - excludes:
-      - {{ data.salt_root }}.*\/files\/.*
-      - {{ data.salt_root }}/_grains
+    - args: >
+            --dmode 0770 --fmode 0770
+            --user "root" --group "{{ localsettings.group }}"
+            --paths "{{ data.salt_root }}"
+            --paths "{{ data.pillar_root }}"
+            --excludes "{{ data.salt_root }}.*\/files\/.*"
+            --excludes "{{ data.salt_root }}/_grains"
     - require:
       - mc_proxy: dummy-pre-{{data.name}}-service-restart
       - cmd: etc-{{data.name}}-dirs-perms
@@ -513,17 +499,13 @@ etc-{{data.name}}-dirs-perms:
 {{data.name}}-dirs-restricted-perms:
   cmd.script:
     - source: {{ resetperms }}
-    - template: jinja
-    - fmode: 0750
-    - msr: {{ msr }}
-    - dmode: 0750
-    - user: "root"
-    - group: "{{ localsettings.group }}"
-    - reset_paths:
-      - {{ data.log_prefix }}
-      - {{ data.run_prefix }}/{{data.name}}
-      - {{ data.cache_prefix }}
-      - {{ data.conf_prefix }}/pki
+    - args: >
+            --fmode 0750 --dmode 0750
+            --user "root" --group "{{ localsettings.group }}"
+            --paths "{{ data.log_prefix }}"
+            --paths "{{ data.run_prefix }}/{{data.name}}"
+            --paths "{{ data.cache_prefix }}"
+            --paths "{{ data.conf_prefix }}/pki"
     - require:
       - cmd: {{data.name}}-dirs-perms
       - cmd: etc-{{data.name}}-dirs-perms
@@ -537,7 +519,7 @@ etc-{{data.name}}-dirs-perms:
     - onlif: ls -d {{data.prefix}}/docker/makinacorpus
     - source: {{ data.resetperms }}
     - template: jinja
-    - reset_paths:
+    - paths:
       - {{ data.vms_docker_root }}
     - msr: {{ data.msr }}
     - only_acls: True

@@ -18,40 +18,66 @@
   common.project_root+'/ftp/template',
   common.project_root+'/ftp/template/qgis',
   ] %}
-{% for user in common.data.users %}
-{%  for n in ['1', '2', '3', '4', '5'] %}
-{%    do basedirs.append(common.project_root + '/ftp/' + user +'/qgis/rep' + n) %}
-{%  endfor %}
 {%    do basedirs.append(common.project_root + '/cache/' + user ) %}
 {% endfor %}
 {% for dir in basedirs %}
 {{common.name}}-rootdir-{{dir}}:
   file.directory:
     - name: {{dir}}
-    - user: {{common.user}}
+    - user: {{common.name}}_{{common.user}}
     - group: www-data
     - mode: 770
     - makedirs: true
     - require_in:
       - mc_proxy: {{common.name}}-rootdir-dirs
 {% endfor %}
+
 {{common.name}}-rootdir-dirs:
   mc_proxy.hook: []
 
-{% for user in common.data.users %}
+{% for usr in common.data.users %}
+{% set user = common.name + '_' + usr %}
+
 {{common.name}}-ftp-group-{{user}}:
   group.present:
     - name: {{user}}
+
 {{common.name}}-ftp-user-{{user}}:
   user.present:
     - shell: /bin/ftponly
     - name: {{user}}
     - group: {{user}}
     - fullname: {{user}} user
+    - home: {{common.project_root}}/ftp/{{user}}
     - gid_from_name: True
     - require:
       - mc_proxy: {{common.name}}-rootdir-dirs
       - group: {{common.name}}-ftp-group-{{user}}
+    - require_in:
+      - file: {{common.name}}-ftp-home-{{user}}
+
+{{common.name}}-ftp-home-{{user}}:
+  file.directory:
+    - home: {{common.project_root}}/ftp/{{user}}
+    - user: {{common.name}}_{{common.user}}
+    - group: www-data
+    - mode: 770
+    - makedirs: true
+    - require_in:
+      - mc_proxy: {{common.name}}-rootdir-dirs
+
+{%    for n in ['1', '2', '3', '4', '5'] %}
+{{common.name}}-ftp-home-{{user}}-{{n}}:
+  file.directory:
+    - home: {{common.project_root}}/ftp/{{user}}/qgis/rep/{{n}}
+    - user: {{common.name}}_{{common.user}}
+    - group: www-data
+    - mode: 770
+    - makedirs: true
+    - require_in:
+      - mc_proxy: {{common.name}}-rootdir-dirs
+{%    endfor %}
+{%  endfor %}
 {% endfor %}
 {% endmacro %}
 
@@ -72,7 +98,7 @@
 
 {# Database #}
 {%- macro lizmap_db(common) %}
-{# 
+{#
 {{- pgsql.postgresql_db(common.data.db,name, template='postgis') }}
 {{- pgsql.postgresql_user(
   group=common.data.db.name+'_owners',
