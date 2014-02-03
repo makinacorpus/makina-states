@@ -20,14 +20,14 @@ lxc-container-pkgs:
     - pkgs:
       - apt-utils
     - require_in:
-      - mc_dummy: makina-lxc-proxy-dep
+      - mc_proxy: makina-lxc-proxy-dep
 
 makina-mark-as-lxc:
   cmd.run:
     - name: echo lxc > /run/container_type
     - unless: grep -q lxc /run/container_type
     - requires:
-      - mc_dummy: makina-lxc-proxy-dep
+      - mc_proxy: makina-lxc-proxy-dep
 
 etc-init-lxc-setup:
   file.managed:
@@ -61,7 +61,7 @@ lxc-install-non-harmful-packages:
   cmd.script:
     - source: salt://makina-states/_scripts/build_lxccorepackages.sh
     - requires:
-      - mc_dummy: makina-lxc-proxy-dep
+      - mc_proxy: makina-lxc-proxy-dep
       - cmd: makina-mark-as-lxc
       - file: lxc-cleanup
     {% if full %}
@@ -75,7 +75,7 @@ do-lxc-cleanup:
     - name: /sbin/lxc-cleanup.sh
     - requires:
       - file: lxc-cleanup
-      - mc_dummy: makina-lxc-proxy-dep
+      - mc_proxy: makina-lxc-proxy-dep
       - cmd: lxc-install-non-harmful-packages
       {% if full %}
       - pkg: ubuntu-pkgs

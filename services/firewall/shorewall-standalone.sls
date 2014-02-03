@@ -171,10 +171,10 @@ shorewall-restart:
       - file: shorewall-rc-local-d
       {% if full %}
       {% if services.registry.has['virt.docker'] %}
-      - mc_dummy: lxc-post-inst
+      - mc_proxy: lxc-post-inst
       {% endif %}
       {% if services.registry.has['virt.docker'] %}
-      - mc_dummy: docker-post-inst
+      - mc_proxy: docker-post-inst
       {% endif %}
       - pkg: shorewall-pkgs
       {% endif %}

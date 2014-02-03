@@ -153,13 +153,13 @@
 {% macro salt_dummies(name) %}
 {#- only here for orchestration purposes #}
 dummy-pre-{{ name }}-service-restart:
-  mc_dummy.dummy: []
+  mc_proxy.hook: []
 dummy-post-{{ name }}-service-restart:
-  mc_dummy.dummy: []
+  mc_proxy.hook: []
 dummy-pre-{{ name }}-checkouts:
-  mc_dummy.dummy: []
+  mc_proxy.hook: []
 dummy-{{ name }}-layout:
-  mc_dummy.dummy: []
+  mc_proxy.hook: []
 {% endmacro %}
 {#-
 # dummies daemon states for orchestration
@@ -170,26 +170,26 @@ dummy-{{ name }}-layout:
 # salt master/minion state will attach to this for the minion to be configured
 # before being really restarted
 dummy-pre-{{ data.service_name }}-service-restart:
-  mc_dummy.dummy:
+  mc_proxy.hook:
     - require:
-      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
       {# deactivated for now, seems useless with recent salt fixes toward
          restarts
       {%- if data.service_name == 'minion' %}
-      - mc_dummy: dummy-post-{{ data.name }}-master-service-restart
+      - mc_proxy: dummy-post-{{ data.name }}-master-service-restart
       {%- endif %}
       #}
 
 dummy-pre-{{ data.daemon_name }}-service-restart:
-  mc_dummy.dummy: []
+  mc_proxy.hook: []
 dummy-post-{{ data.daemon_name }}-service-restart:
-   mc_dummy.dummy:
+   mc_proxy.hook:
     - require_in:
-      - mc_dummy: dummy-post-{{ data.name }}-service-restart
+      - mc_proxy: dummy-post-{{ data.name }}-service-restart
 dummy-post-{{ data.service_name }}-service-restart:
-   mc_dummy.dummy:
+   mc_proxy.hook:
     - require:
-      - mc_dummy: dummy-post-{{ data.daemon_name }}-service-restart
+      - mc_proxy: dummy-post-{{ data.daemon_name }}-service-restart
 {% endfor %}
 {% endmacro %}
 
@@ -248,7 +248,7 @@ salt-{{ data.name }}-{{cur_name}}-bin:
     - require:
       - cmd: update-makinastates-{{ data.name }}
     - require_in:
-      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
 {% endfor %}
 
 salt-{{ data.name }}-bootsalt-link-bin:
@@ -256,7 +256,7 @@ salt-{{ data.name }}-bootsalt-link-bin:
     - name: /usr/bin/boot-{{data.name}}.sh
     - target: {{ data.msr }}/_scripts/boot-salt.sh
     - require_in:
-      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
 
 salt-{{ data.name }}-{{ group }}:
   group.present:
@@ -283,8 +283,8 @@ salt-etc-{{ data.name }}-dirs:
     - require:
       - group: salt-{{ data.name }}-{{ group }}
     - require_in:
-      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
-      - mc_dummy: dummy-{{data.name}}-layout
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
+      - mc_proxy: dummy-{{data.name}}-layout
 
 etc-{{ data.name }}-dirs:
   file.directory:
@@ -317,7 +317,7 @@ salt-{{ data.name }}-{{ i }}:
   cmd.run:
     - name: cd "{{ rdata['target'] }}" && git config --local core.filemode false
     - require:
-      - mc_dummy: dummy-pre-{{ data.name }}-checkouts
+      - mc_proxy: dummy-pre-{{ data.name }}-checkouts
     - onlyif: ls -d "{{ git }}"
     - unless: if [[ -d "{{ git }}" ]];then cd "{{ rdata['target'] }}" && grep -q "filemode = false" .git/config;fi
   {# on each run, update the code -#}
@@ -336,7 +336,7 @@ salt-{{ data.name }}-{{ i }}:
     - require:
       - mc_git: salt-{{ data.name }}-{{ i }}
     - require_in:
-      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
   {% endif %}
 {% endfor %}
 
@@ -352,7 +352,7 @@ salt-{{ data.name }}-grains:
   cmd.run:
     - name: {{localMsr}}/_scripts/install_salt_modules.sh "{{localRoot}}"
     - require_in:
-      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
     - unless: |
               for i in _grains;do
                 for f in $(find {{localMsr}}/$i -name "*py" -type f);do
@@ -399,7 +399,7 @@ update-makinastates-{{ data.name }}:
             touch "{{ data.msr }}/.restart_msalt_minion"
     - cwd: {{ data.msr }}
     - require_in:
-      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
     - unless: test "$(cat buildout.cfg|md5sum|awk '{print $1}')" = "$(cat .saltchk)"
 
 salt-{{ data.name }}-dirs-restricted:
@@ -418,13 +418,13 @@ salt-{{ data.name }}-dirs-restricted:
     - require:
       - file: salt-{{ data.name }}-makina-states-dirs
     - require_in:
-      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
 
 # update makina-state
 salt-{{ data.name }}-logrotate:
   file.managed:
     - require_in:
-      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
     - template: jinja
     - name: {{ locs.conf_dir }}/logrotate.d/{{ data.name }}.conf
     - source: salt://makina-states/files/etc/logrotate.d/salt.conf
@@ -443,7 +443,7 @@ salt-{{ data.name }}-net.core.rmem__wmem_max:
       - net.core.wmem_max
     - value: 16777216
     - require_in:
-      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
 
 salt-{{ data.name }}-net.ipv4.tcp_rmem__wmem:
   sysctl.present:
@@ -452,7 +452,7 @@ salt-{{ data.name }}-net.ipv4.tcp_rmem__wmem:
       - net.ipv4.tcp_wmem
     - value: 4096 87380 16777216
     - require_in:
-      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
 {% endif %}
 
 {#- Fix permissions and ownerships
@@ -469,8 +469,8 @@ etc-{{data.name}}-dirs-perms:
     - reset_paths:
       - {{ data.conf_prefix }}
     - require:
-      - mc_dummy: dummy-{{data.name}}-layout
-      - mc_dummy: dummy-pre-{{data.name}}-service-restart
+      - mc_proxy: dummy-{{data.name}}-layout
+      - mc_proxy: dummy-pre-{{data.name}}-service-restart
 
 {#- recurse does not seem to work well to reset perms #}
 {{data.name}}-projects-dirs-perms:
@@ -487,7 +487,7 @@ etc-{{data.name}}-dirs-perms:
       - {{ data.projects_root }}
       {# - {{ data.vagrant_root }} #}
     - require:
-      - mc_dummy: dummy-pre-{{data.name}}-service-restart
+      - mc_proxy: dummy-pre-{{data.name}}-service-restart
       - cmd: etc-{{data.name}}-dirs-perms
 
 {{data.name}}-dirs-perms:
@@ -506,7 +506,7 @@ etc-{{data.name}}-dirs-perms:
       - {{ data.salt_root }}.*\/files\/.*
       - {{ data.salt_root }}/_grains
     - require:
-      - mc_dummy: dummy-pre-{{data.name}}-service-restart
+      - mc_proxy: dummy-pre-{{data.name}}-service-restart
       - cmd: etc-{{data.name}}-dirs-perms
       - cmd: {{data.name}}-projects-dirs-perms
 
@@ -528,7 +528,7 @@ etc-{{data.name}}-dirs-perms:
       - cmd: {{data.name}}-dirs-perms
       - cmd: etc-{{data.name}}-dirs-perms
       - file: salt-{{data.name}}-dirs-restricted
-      - mc_dummy: dummy-pre-{{data.name}}-service-restart
+      - mc_proxy: dummy-pre-{{data.name}}-service-restart
 
 {#-
 # recurse does not seem to work well to reset perms
@@ -546,7 +546,7 @@ etc-{{data.name}}-dirs-perms:
     - user: "root"
     - group: {{ localsettings.group }}
     - require_in:
-      - mc_dummy: dummy-pre-{{data.name}}-service-restart
+      - mc_proxy: dummy-pre-{{data.name}}-service-restart
     - excludes:
       - {{ data.vms_docker_root }}/docker/bundles
       - {{ data.vms_docker_root }}/cache
@@ -578,9 +578,9 @@ salt-{{ data.daemon_name }}-conf-global:
     - source: salt://makina-states/files/etc/salt/{{ data.service_name }}.d/00_global.conf
     - salt_data: {{ yamled_data }}
     - require:
-      - mc_dummy: dummy-{{data.name}}-layout
+      - mc_proxy: dummy-{{data.name}}-layout
     - require_in:
-      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
 
 salt-{{ data.daemon_name }}-conf:
   file.managed:
@@ -589,10 +589,10 @@ salt-{{ data.daemon_name }}-conf:
     - source: salt://makina-states/files/etc/salt/{{ data.service_name }}
     - salt_data: {{ yamled_data }}
     - require:
-      - mc_dummy: dummy-{{data.name}}-layout
+      - mc_proxy: dummy-{{data.name}}-layout
     - require_in:
-      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
-      - mc_dummy: dummy-pre-{{ data.daemon_name }}-service-restart
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
+      - mc_proxy: dummy-pre-{{ data.daemon_name }}-service-restart
 
 {% if grains['os'] == 'Debian' -%}
 salt-{{ data.daemon_name }}-job:
@@ -606,11 +606,11 @@ salt-{{ data.daemon_name }}-job:
     - saltconfig: {{ confPrefix }}
     - salt_data: {{ yamled_data }}
     - require:
-      - mc_dummy: dummy-{{data.name}}-layout
+      - mc_proxy: dummy-{{data.name}}-layout
     - require_in:
-      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
 
-      - mc_dummy: dummy-pre-{{ data.daemon_name }}-service-restart
+      - mc_proxy: dummy-pre-{{ data.daemon_name }}-service-restart
 {% endif %}
 
 {% if grains['os'] == 'Ubuntu' -%}
@@ -625,10 +625,10 @@ salt-{{ data.daemon_name }}-job:
     - saltname: {{ data.name }}
     - salt_data: {{ yamled_data }}
     - require:
-      - mc_dummy: dummy-{{data.name}}-layout
+      - mc_proxy: dummy-{{data.name}}-layout
     - require_in:
-      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
-      - mc_dummy: dummy-pre-{{ data.daemon_name }}-service-restart
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
+      - mc_proxy: dummy-pre-{{ data.daemon_name }}-service-restart
 {% endif %}
 
 salt-{{ data.daemon_name }}-cache:
@@ -636,23 +636,23 @@ salt-{{ data.daemon_name }}-cache:
     - name: {{ cachedir }}
     - makedirs: True
     - require_in:
-      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
 
 salt-{{ data.daemon_name }}-pki:
   file.directory:
     - name: {{ confPrefix }}/pki/{{ data.service_name }}
     - makedirs: True
     - require:
-      - mc_dummy: dummy-{{data.name}}-layout
+      - mc_proxy: dummy-{{data.name}}-layout
     - require_in:
-      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
 
 salt-{{ data.daemon_name }}-sock-dir:
   file.directory:
     - name: {{ runPrefix }}/{{data.name}}/{{ data.service_name }}
     - makedirs: True
     - require_in:
-      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
 
 salt-{{ data.daemon_name }}-logs:
   file.managed:
@@ -662,7 +662,7 @@ salt-{{ data.daemon_name }}-logs:
       - {{ logPrefix }}/{{ data.daemon_name }}
       - {{ logPrefix }}/syndic.log
     - require_in:
-      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
 
 
 
@@ -677,7 +677,7 @@ salt-restart-{{ data.daemon_name }}:
             rm -f "{{ data.msr }}/.restart_{{ data.daemon_name }}"
     - onlyif: ls "{{ data.msr }}/.restart_{{ data.daemon_name }}"
     - require:
-      - mc_dummy: dummy-pre-{{ data.daemon_name }}-service-restart
+      - mc_proxy: dummy-pre-{{ data.daemon_name }}-service-restart
 
     - require_in:
       - dummy-post-{{ data.daemon_name }}-service-restart
@@ -687,8 +687,8 @@ salt-{{ data.daemon_name }}:
     - name: {{ data.daemon_name }}
     - enable: True
     - require:
-      - mc_dummy: dummy-post-{{ data.name }}-service-restart
-      - mc_dummy: dummy-post-{{ data.service_name }}-service-restart
+      - mc_proxy: dummy-post-{{ data.name }}-service-restart
+      - mc_proxy: dummy-post-{{ data.service_name }}-service-restart
 {% endmacro %}
 
 {#-
@@ -713,9 +713,9 @@ salt-{{ data.daemon_name }}-conf-devhost-global:
     - source: salt://makina-states/files/etc/salt/{{ data.service_name }}.d/10_devhost.conf
     - salt_data: {{ data | yaml }}
     - require:
-      - mc_dummy: dummy-{{data.name}}-layout
+      - mc_proxy: dummy-{{data.name}}-layout
     - require_in:
-      - mc_dummy: dummy-pre-{{ data.name }}-service-restart
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
 {% endif %}
 {% endmacro %}
 

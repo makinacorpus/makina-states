@@ -42,10 +42,10 @@
     - mode: 770
     - makedirs: true
     - require_in:
-      - mc_dummy: {{common.name}}-rootdir-dirs
+      - mc_proxy: {{common.name}}-rootdir-dirs
 {% endfor %}
 {{common.name}}-rootdir-dirs:
-  mc_dummy.dummy: []
+  mc_proxy.hook: []
 
 {% for user in common.data.users %}
 {{common.name}}-ftp-group-{{user}}:
@@ -59,7 +59,7 @@
     - fullname: {{user}} user
     - gid_from_name: True
     - require:
-      - mc_dummy: {{common.name}}-rootdir-dirs
+      - mc_proxy: {{common.name}}-rootdir-dirs
       - group: {{common.name}}-ftp-group-{{user}}
 {% endfor %}
 {% endmacro %}

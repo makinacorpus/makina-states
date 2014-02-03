@@ -21,8 +21,8 @@ include:
 prereq-postgis-{{pgVer}}-{{postgisVer}}:
   pkg.installed:
     - require_in:
-      - mc_dummy: {{pgsql.orchestrate[pgVer]['pregroup']}}
-      - mc_dummy: {{pgsql.orchestrate[pgVer]['predb']}}
+      - mc_proxy: {{pgsql.orchestrate[pgVer]['pregroup']}}
+      - mc_proxy: {{pgsql.orchestrate[pgVer]['predb']}}
     {%  if full -%}
     - require:
       - pkg: postgresql-pkgs

@@ -49,11 +49,11 @@
 {% if apache and full %}
 {%  if grains.get('lsb_distrib_id','') == "Debian" %}
 dotdeb-apache-makina-apache-php-pre-inst:
-  mc_dummy.dummy:
+  mc_proxy.hook:
     - require:
       - pkgrepo: dotdeb-repo
     - watch_in:
-      - mc_dummy: makina-apache-php-pre-inst
+      - mc_proxy: makina-apache-php-pre-inst
 {%  endif %}
 {% endif %}
 
@@ -68,9 +68,9 @@ makina-php-timezone:
     - defaults:
         timezone: "{{ phpSettings.timezone }}"
     - require:
-      - mc_dummy: makina-php-post-inst
+      - mc_proxy: makina-php-post-inst
     - watch_in:
-      - mc_dummy: makina-php-pre-conf
+      - mc_proxy: makina-php-pre-conf
 
 #--------------------- APC (mostly deprecated)
 {% if phpSettings.modules.apc.install %}
@@ -89,9 +89,9 @@ makina-php-apc:
         shm_size: "{{ phpSettings.modules.apc.shm_size }}"
         mmap_file_mask: "{{ phpSettings.modules.apc.mmap_file_mask }}"
     - require:
-      - mc_dummy: makina-php-post-inst
+      - mc_proxy: makina-php-post-inst
     - watch_in:
-      - mc_dummy: makina-php-pre-conf
+      - mc_proxy: makina-php-pre-conf
 
 {%   if phpSettings.modules.apc.enabled %}
 makina-php-apc-install:
@@ -101,10 +101,10 @@ makina-php-apc-install:
     - unless: {{ locs.sbin_dir }}/php5query -q -s cli -m apcu
     {% endif %}
     - require:
-      - mc_dummy: makina-php-pre-conf
+      - mc_proxy: makina-php-pre-conf
       - file: makina-php-apc
     - watch_in:
-      - mc_dummy: makina-php-post-conf
+      - mc_proxy: makina-php-post-conf
 {%   else %}
 makina-php-apc-disable:
   cmd.run:
@@ -113,10 +113,10 @@ makina-php-apc-disable:
     - onlyif: {{ locs.sbin_dir }}/php5query -q -s cli -m apcu
     {% endif %}
     - require:
-      - mc_dummy: makina-php-pre-conf
+      - mc_proxy: makina-php-pre-conf
       - file: makina-php-apc
     - watch_in:
-      - mc_dummy: makina-php-post-conf
+      - mc_proxy: makina-php-post-conf
 {%   endif %}
 {% endif %}
 
@@ -130,9 +130,9 @@ makina-php-xdebug-install:
     - unless: {{ locs.sbin_dir }}/php5query -q -s cli -m xdebug
     {% endif %}
     - require:
-      - mc_dummy: makina-php-pre-conf
+      - mc_proxy: makina-php-pre-conf
     - watch_in:
-      - mc_dummy: makina-php-post-conf
+      - mc_proxy: makina-php-post-conf
 {%   else %}
 makina-php-xdebug-disable:
   cmd.run:
@@ -141,9 +141,9 @@ makina-php-xdebug-disable:
     - onlyif: {{ locs.sbin_dir }}/php5query -q -s cli -m xdebug
     {% endif %}
     - require:
-      - mc_dummy: makina-php-pre-conf
+      - mc_proxy: makina-php-pre-conf
     - watch_in:
-      - mc_dummy: makina-php-post-conf
+      - mc_proxy: makina-php-post-conf
 {%   endif %}
 {% endif %}
 {% endmacro %}

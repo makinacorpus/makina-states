@@ -77,10 +77,10 @@ fpm-makina-php-restart:
     # most watch requisites are linked here with watch_in
     - watch:
       # restart service in case of package install
-      - mc_dummy: makina-php-pre-restart
+      - mc_proxy: makina-php-pre-restart
     - require_in:
       # restart service in case of package install
-      - mc_dummy: makina-php-post-restart
+      - mc_proxy: makina-php-post-restart
 
 # In most cases graceful reloads should be enough
 fpm-makina-php-reload:
@@ -88,10 +88,10 @@ fpm-makina-php-reload:
     - name: {{ phpSettings.service }}
     - watch:
       # reload service in case of package install
-      - mc_dummy: makina-php-pre-restart
+      - mc_proxy: makina-php-pre-restart
     - require_in:
       # reload service in case of package install
-      - mc_dummy: makina-php-post-restart
+      - mc_proxy: makina-php-post-restart
     - enable: True
     - reload: True
     # most watch requisites are linked here with watch_in

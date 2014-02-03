@@ -32,10 +32,10 @@ makina-phpfpm-apache-module_connect_phpfpm_mod_fastcgi_module:
     - pkgs:
       - {{ phpSettings.packages.php_fpm }}
     - require:
-      - mc_dummy: makina-php-pre-inst
+      - mc_proxy: makina-php-pre-inst
     - watch_in:
       - pkg: makina-phpfpm-http-server-backlink
-      - mc_dummy: makina-php-post-inst
+      - mc_proxy: makina-php-post-inst
 {% endif %}
 
 {% endmacro %}

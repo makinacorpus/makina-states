@@ -36,7 +36,7 @@ makina-mod_php-exclude-fpm-pkg:
       - {{ phpSettings.packages.mod_fcgid }}
       - {{ phpSettings.packages.php5_cgi }}
     - watch_in:
-      - mc_dummy: makina-php-pre-inst
+      - mc_proxy: makina-php-pre-inst
 
 {# Manage mod_php packages #}
 
@@ -54,9 +54,9 @@ makina-php-pkgs:
       - {{ phpSettings.packages.apc }}
       {%- endif %}
     - require:
-        - mc_dummy: makina-php-pre-inst
+        - mc_proxy: makina-php-pre-inst
     # mod_php packages alteration needs an apache restart
     - watch_in:
-        - mc_dummy: makina-php-post-inst
+        - mc_proxy: makina-php-post-inst
 {% endmacro %}
 {{ do(full=False)}}

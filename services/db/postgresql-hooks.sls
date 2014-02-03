@@ -43,25 +43,25 @@
 }) %}
 {{services.funcs.dummy(pregroup, '''
     - require:
-      - mc_dummy: {0}
+      - mc_proxy: {0}
 '''.format(postbase))}}
 {{services.funcs.dummy(postgroup)}}
 {{services.funcs.dummy(predb, '''
     - require:
-      - mc_dummy: {0}
-      - mc_dummy: {1}
+      - mc_proxy: {0}
+      - mc_proxy: {1}
 '''.format(postgroup, postbase))}}
 {{services.funcs.dummy(postdb)}}
 {{services.funcs.dummy(preuser, '''
     - require:
-      - mc_dummy: {0}
-      - mc_dummy: {1}
+      - mc_proxy: {0}
+      - mc_proxy: {1}
 '''.format(postdb, postbase))}}
 {{services.funcs.dummy(postuser)}}
 {{services.funcs.dummy(preext, '''
     - require:
-      - mc_dummy: {0}
-      - mc_dummy: {1}
+      - mc_proxy: {0}
+      - mc_proxy: {1}
 '''.format(postdb, postbase))}}
 {{services.funcs.dummy(postext)}}
 {% endfor %}

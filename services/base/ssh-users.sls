@@ -15,7 +15,7 @@ ssh_auth-{{ user }}-{{ commentid }}-{{ key }}:
     - user: {{ user }}
     - source: salt://files/ssh/{{ key }}
     - require_in:
-      - mc_dummy: ssh-post-user-keys
+      - mc_proxy: ssh-post-user-keys
     - require:
       - user: {{ user }}
 {%-    endfor %}

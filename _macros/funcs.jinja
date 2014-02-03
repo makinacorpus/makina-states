@@ -28,7 +28,7 @@
 #}
 {% macro dummy(name, text='') %}
 {{name}}:
-  mc_dummy.dummy:
+  mc_proxy.hook:
     - name: {{name}}
 {{text}}
 {% endmacro %}

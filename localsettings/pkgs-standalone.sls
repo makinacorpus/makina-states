@@ -15,7 +15,7 @@ include:
 
 {%- if grains['os'] in ['Ubuntu', 'Debian'] %}
 before-pkg-install-proxy:
-  mc_dummy.dummy:
+  mc_proxy.hook:
     {% if full %}
     - require:
         - file: apt-sources-list

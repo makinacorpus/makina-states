@@ -165,9 +165,9 @@ pgsql-repo:
     - keyid: 'ACCC4CF8'
     - keyserver: {{localsettings.keyserver }}
     - require:
-      - mc_dummy: {{orchestrate['base']['prebase']}}
+      - mc_proxy: {{orchestrate['base']['prebase']}}
     - require_in:
-      - mc_dummy: {{orchestrate['base']['postbase']}}
+      - mc_proxy: {{orchestrate['base']['postbase']}}
 
 {%- endif %}
 postgresql-pkgs:
@@ -185,9 +185,9 @@ postgresql-pkgs:
     {% if grains['os_family'] in ['Debian'] %}
     - require:
       - pkgrepo: pgsql-repo
-      - mc_dummy: {{orchestrate['base']['prebase']}}
+      - mc_proxy: {{orchestrate['base']['prebase']}}
     - require_in:
-      - mc_dummy: {{orchestrate['base']['postbase']}}
+      - mc_proxy: {{orchestrate['base']['postbase']}}
     {% endif %}
 {% endif %}
 
@@ -238,9 +238,9 @@ makina-postgresql-service:
       {%- if full %}
       - pkg: postgresql-pkgs
       {%- endif %}
-      - mc_dummy: {{orchestrate['base']['prebase']}}
+      - mc_proxy: {{orchestrate['base']['prebase']}}
     - require_in:
-      - mc_dummy: {{orchestrate['base']['postbase']}}
+      - mc_proxy: {{orchestrate['base']['postbase']}}
 
 makina-postgresql-service-reload:
   service.running:
@@ -251,9 +251,9 @@ makina-postgresql-service-reload:
       {%- if full %}
       - pkg: postgresql-pkgs
       {%- endif %}
-      - mc_dummy: {{orchestrate['base']['prebase']}}
+      - mc_proxy: {{orchestrate['base']['prebase']}}
     - require_in:
-      - mc_dummy: {{orchestrate['base']['postbase']}}
+      - mc_proxy: {{orchestrate['base']['postbase']}}
     {# most watch requisites are linked here with watch_in #}
 {% endmacro %}
 
@@ -291,10 +291,10 @@ makina-postgresql-service-reload:
     - db_host: {{db_host if db_host != None else 'null'}}
     - db_port: {{db_port if db_port != None else 'null'}}
     - require:
-      - mc_dummy: {{orchestrate[version]['pregroup']}}
-      - mc_dummy: {{orchestrate['base']['postbase']}}
+      - mc_proxy: {{orchestrate[version]['pregroup']}}
+      - mc_proxy: {{orchestrate['base']['postbase']}}
     - require_in:
-      - mc_dummy: {{orchestrate[version]['postgroup']}}
+      - mc_proxy: {{orchestrate[version]['postgroup']}}
 {% endmacro %}
 
 {#
@@ -323,8 +323,8 @@ makina-postgresql-service-reload:
     - pg_version: {{version}}
     - user: {{ user }}
     - require:
-      - mc_dummy: {{orchestrate[version]['predb']}}
-      - mc_dummy: {{orchestrate['base']['postbase']}}
+      - mc_proxy: {{orchestrate[version]['predb']}}
+      - mc_proxy: {{orchestrate['base']['postbase']}}
 {{ version }}-{{ owner }}-groups-makina-postgresql-grant:
   cmd.run:
     - name: echo "GRANT ALL PRIVILEGES ON DATABASE {{ db }} TO {{ owner }};"|psql-{{version}}
@@ -332,7 +332,7 @@ makina-postgresql-service-reload:
     - require:
       - mc_postgres_database: {{version}}-{{ db }}-makina-postgresql-database
     - require_in:
-      - mc_dummy: {{orchestrate[version]['postdb'] }}
+      - mc_proxy: {{orchestrate[version]['postdb'] }}
 {{ install_pg_ext('adminpack', db=db, version=version, user=default_user) }}
 {% endmacro %}
 {#-
@@ -377,10 +377,10 @@ makina-postgresql-service-reload:
     - db_port: {{db_port if db_port != None else 'null'}}
     - runas: {{ user }}
     - require_in:
-      - mc_dummy: {{orchestrate[version]['postuser']}}
+      - mc_proxy: {{orchestrate[version]['postuser']}}
     - require:
-      - mc_dummy: {{orchestrate[version]['preuser']}}
-      - mc_dummy: {{orchestrate['base']['postbase']}}
+      - mc_proxy: {{orchestrate[version]['preuser']}}
+      - mc_proxy: {{orchestrate['base']['postbase']}}
     - password: {{ password }}
 {% endmacro %}
 {%- macro postgresql_wrappers(full=True) %}
@@ -393,10 +393,10 @@ pgwrapper-{{version}}-makina-postgresql:
     - template: jinja
     - mode: 755
     - require_in:
-      - mc_dummy: {{orchestrate[version]['predb']}}
-      - mc_dummy: {{orchestrate[version]['pregroup']}}
-      - mc_dummy: {{orchestrate[version]['preuser']}}
-      - mc_dummy: {{orchestrate[version]['preext']}}
+      - mc_proxy: {{orchestrate[version]['predb']}}
+      - mc_proxy: {{orchestrate[version]['pregroup']}}
+      - mc_proxy: {{orchestrate[version]['preuser']}}
+      - mc_proxy: {{orchestrate[version]['preext']}}
     - context:
       version: {{version}}
 
@@ -412,10 +412,10 @@ pgwrapper-{{binary}}-{{version}}-makina-postgresql:
     - template: jinja
     - mode: 755
     - require_in:
-      - mc_dummy: {{orchestrate[version]['predb']}}
-      - mc_dummy: {{orchestrate[version]['pregroup']}}
-      - mc_dummy: {{orchestrate[version]['preuser']}}
-      - mc_dummy: {{orchestrate[version]['preext']}}
+      - mc_proxy: {{orchestrate[version]['predb']}}
+      - mc_proxy: {{orchestrate[version]['pregroup']}}
+      - mc_proxy: {{orchestrate[version]['preuser']}}
+      - mc_proxy: {{orchestrate[version]['preext']}}
     - require:
       - file: pgwrapper-{{version}}-makina-postgresql
     - context:

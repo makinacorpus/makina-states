@@ -99,7 +99,7 @@ lxc-services-enabling:
       - lxc
       - lxc-net
     - require_in:
-      - mc_dummy: lxc-post-inst
+      - mc_proxy: lxc-post-inst
     {% if full %}
     - require:
       - pkg: lxc-pkgs
@@ -117,14 +117,14 @@ lxc-root:
   file.directory:
     - name: {{ lxc_root }}
     - require_in:
-      - mc_dummy: lxc-post-inst
+      - mc_proxy: lxc-post-inst
 
 {% if lxc_dir -%}
 lxc-dir:
   file.directory:
     - name: {{ lxc_dir }}
     - require_in:
-      - mc_dummy: lxc-post-inst
+      - mc_proxy: lxc-post-inst
 
 lxc-mount:
   mount.mounted:
@@ -139,7 +139,7 @@ lxc-mount:
       - file: lxc-root
       - file: lxc-dir
     - require_in:
-      - mc_dummy: lxc-post-inst
+      - mc_proxy: lxc-post-inst
       - file: lxc-after-maybe-bind-root
 {% endif %}
 
@@ -148,7 +148,7 @@ lxc-after-maybe-bind-root:
   file.directory:
     - name: {{ locs.var_lib_dir }}/lxc
     - require_in:
-      - mc_dummy: lxc-post-inst
+      - mc_proxy: lxc-post-inst
     - require:
       - file: lxc-root
 
@@ -179,7 +179,7 @@ lxc-after-maybe-bind-root:
       - pkg: lxc-pkgs
       {% endif %}
     - require_in:
-      - mc_dummy: lxc-post-inst
+      - mc_proxy: lxc-post-inst
 
 {{ lxc_name }}-lxc-config:
   file.managed:
@@ -195,7 +195,7 @@ lxc-after-maybe-bind-root:
     - macaddr: {{ lxc_mac }}
     - ip4: {{ lxc_ip4 }}
     - require_in:
-      - mc_dummy: lxc-post-inst
+      - mc_proxy: lxc-post-inst
 
 {{ lxc_name }}-lxc-service:
   file.symlink:
@@ -206,7 +206,7 @@ lxc-after-maybe-bind-root:
     - require:
       - cmd: {{ lxc_name }}-lxc
     - require_in:
-      - mc_dummy: lxc-post-inst
+      - mc_proxy: lxc-post-inst
 
 {{ lxc_name }}-lxc-network-cfg:
   file.managed:
@@ -273,12 +273,12 @@ lxc-after-maybe-bind-root:
     - require_in:
       - file: {{ lxc_name }}-lxc-hosts-block
       - cmd: start-{{ lxc_name }}-lxc-service
-      - mc_dummy: lxc-post-inst
+      - mc_proxy: lxc-post-inst
 
 start-{{ lxc_name }}-lxc-service:
   cmd.run:
     - require_in:
-      - mc_dummy: lxc-post-inst
+      - mc_proxy: lxc-post-inst
     - require:
       {% if full %}
       - pkg: lxc-pkgs
@@ -322,7 +322,7 @@ lxc-{{ lxc_name }}-pillar-localhost-host:
     - text: |
         {{ hosts_list|sort|join(separator) }}
     - require_in:
-      - mc_dummy: lxc-post-inst
+      - mc_proxy: lxc-post-inst
       - file: {{ lxc_name }}-lxc-hosts-block
     - require:
       - cmd: {{ lxc_name }}-lxc

@@ -6,12 +6,12 @@ Dummy state generation
 
 def __virtual__():
     '''
-    Only load if mc_dummy is available
+    Only load if mc_proxy is available
     '''
-    return 'mc_dummy'
+    return 'mc_proxy'
 
 
-def dummy(name, changes=None):
+def hook(name, changes=None):
     '''
     State that will always return ret, use that for orchestration purpose
 

@@ -32,10 +32,10 @@ makina-fcgid-apache-module_connect_fcgid_mod_fastcgi_module:
     - pkgs:
       - {{ phpSettings.packages.mod_fcgid }}
     - require:
-      - mc_dummy: makina-php-pre-inst
+      - mc_proxy: makina-php-pre-inst
     - watch_in:
       - pkg: makina-fcgid-http-server-backlink
-      - mc_dummy: makina-php-post-inst
+      - mc_proxy: makina-php-post-inst
 {% endif %}
 
 {% endmacro %}

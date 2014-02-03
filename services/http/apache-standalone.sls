@@ -57,9 +57,9 @@ php-common-apache-uninstall-others-mpms-{{mpm}}:
       - {{ pkg }}
       {% endfor %}
     - require:
-      - mc_dummy: makina-apache-post-pkgs
+      - mc_proxy: makina-apache-post-pkgs
     - watch_in:
-      - mc_dummy: makina-apache-post-inst
+      - mc_proxy: makina-apache-post-inst
       - pkg: php-common-apache-{{mpm}}
 {%  endif %}
 {%  if pkgs %}
@@ -70,9 +70,9 @@ php-common-apache-{{mpm}}:
       - {{ pkg }}
       {% endfor %}
     - require:
-      - mc_dummy: makina-apache-post-pkgs
+      - mc_proxy: makina-apache-post-pkgs
     - watch_in:
-      - mc_dummy: makina-apache-post-inst
+      - mc_proxy: makina-apache-post-inst
 {%  endif %}
 {% endif %}
 {% endmacro %}
@@ -82,9 +82,9 @@ php-common-apache-{{mpm}}:
 makina-apache-pkgs:
   pkg.installed:
     - watch:
-      - mc_dummy: makina-apache-pre-inst
+      - mc_proxy: makina-apache-pre-inst
     - watch_in:
-      - mc_dummy: makina-apache-post-inst
+      - mc_proxy: makina-apache-post-inst
     - pkgs:
       {% for package in services.apacheSettings.packages %}
       - {{ package }}
@@ -115,13 +115,13 @@ makina-apache-main-conf:
       - status
     - log_level: {{ services.apacheSettings.log_level }}
     - watch:
-      - mc_dummy: makina-apache-pre-conf
+      - mc_proxy: makina-apache-pre-conf
     # full service restart in case of changes
     - watch_in:
       # NO: this would prevent syntax check in case of error here
       # and errors here may be caused by syntax problems
       # - cmd: makina-apache-conf-syntax-check
-      - mc_dummy: makina-apache-post-conf
+      - mc_proxy: makina-apache-post-conf
 
 makina-apache-settings:
   file.managed:
@@ -156,10 +156,10 @@ makina-apache-settings:
         mode: "dev"
 {% endif %}
     - watch:
-      - mc_dummy: makina-apache-post-inst
+      - mc_proxy: makina-apache-post-inst
     # full service restart in case of changes
     - watch_in:
-      - mc_dummy: makina-apache-pre-conf
+      - mc_proxy: makina-apache-pre-conf
 
 
 {# Exemple to add a slug directly in apache configuration #}
@@ -189,7 +189,7 @@ makina-apache-main-extra-settings-example:
 makina-apache-security-settings:
   file.managed:
     - watch:
-      - mc_dummy: makina-apache-post-inst
+      - mc_proxy: makina-apache-post-inst
     - name: {{ services.apacheSettings.confdir }}/_security.local.conf
     - source:
       - salt://makina-states/files/etc/apache2/conf.d/security.conf
@@ -197,9 +197,9 @@ makina-apache-security-settings:
     - group: root
     - mode: 644
     - watch:
-       - mc_dummy: makina-apache-post-inst
+       - mc_proxy: makina-apache-post-inst
     - watch_in:
-       - mc_dummy: makina-apache-pre-conf
+       - mc_proxy: makina-apache-pre-conf
 
 {# Exemple of error: using a second mc_apache.deployed would fail
 # as only one main apache configuration can be defined
@@ -210,7 +210,7 @@ makina-apache-security-settings:
 #    - version: 2.2
 #    - log_level: warn
 #    - watch:
-#      - mc_dummy: makina-apache-post-inst
+#      - mc_proxy: makina-apache-post-inst
 #}
 
 
@@ -249,9 +249,9 @@ makina-apache-include-directory:
     - makedirs: True
     - name: {{ services.apacheSettings.basedir }}/includes
     - watch:
-       - mc_dummy: makina-apache-post-inst
+       - mc_proxy: makina-apache-post-inst
     - watch_in:
-       - mc_dummy: makina-apache-pre-conf
+       - mc_proxy: makina-apache-pre-conf
 
 {# cronolog usage in {{ locs.var_dir }}/log/apache watchs a group write
 # right which may not be present.
@@ -263,9 +263,9 @@ makina-apache-default-log-directory:
     - mode: "2770"
     - name: {{ services.apacheSettings.logdir }}
     - watch:
-       - mc_dummy: makina-apache-post-inst
+       - mc_proxy: makina-apache-post-inst
     - watch_in:
-       - mc_dummy: makina-apache-pre-conf
+       - mc_proxy: makina-apache-pre-conf
 
 {% if full %}
 # Default Virtualhost managment -------------------------------------
@@ -280,9 +280,9 @@ makina-apache-default-vhost-directory:
     - makedirs: True
     - name: {{ locs.var_dir }}/www/default/
     - watch:
-      - mc_dummy: makina-apache-post-inst
+      - mc_proxy: makina-apache-post-inst
     - watch_in:
-      - mc_dummy: makina-apache-pre-conf
+      - mc_proxy: makina-apache-pre-conf
 
 {# Replace defaut Virtualhost by a more minimal default Virtualhost [2]
 # this is the index.hml file
@@ -304,9 +304,9 @@ makina-apache-default-vhost-index:
 {% endif %}
     # full service restart in case of changes
     - watch:
-      - mc_dummy: makina-apache-post-inst
+      - mc_proxy: makina-apache-post-inst
     - watch_in:
-      - mc_dummy: makina-apache-pre-conf
+      - mc_proxy: makina-apache-pre-conf
 
 {# Replace defaut Virtualhost by a more minimal default Virtualhost [3]
 # remove index.html coming from package
@@ -315,9 +315,9 @@ makina-apache-remove-package-default-index:
   file.absent:
     - name : {{ locs.var_dir }}/www/index.html
     - watch:
-      - mc_dummy: makina-apache-post-inst
+      - mc_proxy: makina-apache-post-inst
     - watch_in:
-      - mc_dummy: makina-apache-pre-conf
+      - mc_proxy: makina-apache-pre-conf
 
 {# Replace defaut Virtualhost by a more minimal default Virtualhost [4]
 # this is the virtualhost definition
@@ -345,9 +345,9 @@ makina-apache-minimal-default-vhost:
 {% endif %}
     - watch:
       - file: makina-apache-default-vhost-index
-      - mc_dummy: makina-apache-post-inst
+      - mc_proxy: makina-apache-post-inst
     - watch_in:
-      - mc_dummy: makina-apache-pre-conf
+      - mc_proxy: makina-apache-pre-conf
 
 
 {% endif %}
@@ -360,9 +360,9 @@ makina-apache-conf-syntax-check:
     - source: {{ apacheConfCheck }}
     - stateful: True
     - watch:
-      - mc_dummy: makina-apache-post-conf
+      - mc_proxy: makina-apache-post-conf
     - watch_in:
-      - mc_dummy: makina-apache-pre-restart
+      - mc_proxy: makina-apache-pre-restart
 
 {# REMOVED, devhost is not using NFS anymore
 #--- APACHE STARTUP WAIT DEPENDENCY --------------
@@ -391,13 +391,13 @@ makina-apache-restart:
     - enable: True
     # most watch requisites are linked here with watch_in
     - watch_in:
-      - mc_dummy: makina-apache-post-restart
+      - mc_proxy: makina-apache-post-restart
       # restart service in case of package install
     - watch:
-      - mc_dummy: makina-apache-post-inst
-      - mc_dummy: makina-apache-pre-conf
-      - mc_dummy: makina-apache-post-conf
-      - mc_dummy: makina-apache-pre-restart
+      - mc_proxy: makina-apache-post-inst
+      - mc_proxy: makina-apache-pre-conf
+      - mc_proxy: makina-apache-post-conf
+      - mc_proxy: makina-apache-pre-restart
 
 {# In case of VirtualHosts change graceful reloads should be enough
 #}
@@ -405,12 +405,12 @@ makina-apache-reload:
   service.running:
     - name: {{ services.apacheSettings.service }}
     - watch_in:
-      - mc_dummy: makina-apache-post-restart
+      - mc_proxy: makina-apache-post-restart
     - watch:
-      - mc_dummy: makina-apache-post-inst
-      - mc_dummy: makina-apache-pre-conf
-      - mc_dummy: makina-apache-post-conf
-      - mc_dummy: makina-apache-pre-restart
+      - mc_proxy: makina-apache-post-inst
+      - mc_proxy: makina-apache-pre-conf
+      - mc_proxy: makina-apache-post-conf
+      - mc_proxy: makina-apache-pre-restart
     - enable: True
     - reload: True
     # most watch requisites are linked here with watch_in

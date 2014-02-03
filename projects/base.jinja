@@ -93,7 +93,7 @@
     - user: root
     - require:
       {# only where the user exists and when we have installed the root ssh keys #}
-      - mc_dummy: ssh-post-user-keys
+      - mc_proxy: ssh-post-user-keys
       - user: {{common.name}}-user-{{common.user}}
 
 {{common.name}}-{{common.user}}-ssh-keys-perms:
@@ -138,7 +138,7 @@
       - cmd: {{common.name}}-{{common.user}}-ssh-keys-perms
       {%- endif %}
       - user: {{common.name}}-user-{{common.user}}
-      - mc_dummy: dummy-post-salt-service-restart
+      - mc_proxy: dummy-post-salt-service-restart
 {% endif %}
 
 {#-

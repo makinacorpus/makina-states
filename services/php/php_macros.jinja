@@ -158,9 +158,9 @@ makina-php-pool-{{ pool_name }}:
         mode: "dev"
 {% endif %}
     - require:
-      - mc_dummy: makina-php-post-inst
+      - mc_proxy: makina-php-post-inst
     - watch_in:
-      - mc_dummy: makina-php-pre-restart
+      - mc_proxy: makina-php-pre-restart
 
 # Ensure directories referenced in the pool exists
 # and have the right users
@@ -172,9 +172,9 @@ makina-php-pool-{{ pool_name }}-webroot-directory:
     - makedirs: True
     - name: {{ project_root }}/{{ relative_document_root }}
     - require:
-      - mc_dummy: makina-php-post-inst
+      - mc_proxy: makina-php-post-inst
     - require_in:
-      - mc_dummy: makina-php-pre-restart
+      - mc_proxy: makina-php-pre-restart
 
 makina-php-pool-{{ pool_name }}-log-directory:
   file.directory:
@@ -184,9 +184,9 @@ makina-php-pool-{{ pool_name }}-log-directory:
     - makedirs: True
     - name: {{ project_root }}/var/log
     - require:
-      - mc_dummy: makina-php-post-inst
+      - mc_proxy: makina-php-post-inst
     - require_in:
-      - mc_dummy: makina-php-pre-restart
+      - mc_proxy: makina-php-pre-restart
 
 {% if phpData.fpm.use_socket %}
 makina-php-pool-{{ pool_name }}-socket-directory:
@@ -197,9 +197,9 @@ makina-php-pool-{{ pool_name }}-socket-directory:
     - makedirs: True
     - name: {{ project_root }}/{{ phpData.fpm.socket_relative_path }}
     - require:
-      - mc_dummy: makina-php-post-inst
+      - mc_proxy: makina-php-post-inst
     - require_in:
-      - mc_dummy: makina-php-pre-restart
+      - mc_proxy: makina-php-pre-restart
 {% endif %}
 
 {%- endmacro %}
