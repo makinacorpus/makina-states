@@ -5,10 +5,10 @@
 Exemples:
 
 Set mode to 770 for root:root and set acls from user vagrant & group editor
-reset-perms.py --mode 770 --paths bin/ --users vagrant:r-x --groups editor:r--
+reset-perms.py --fmode 770 --paths bin/ --users vagrant:r-x --groups editor:r--
 
 Set mode to 770 but skip acls sets
-reset-perms.py --mode 770 --paths bin/ --no-acl
+reset-perms.py --fmode 770 --paths bin/ --no-acl
 
 Do only acls (so only set acl for vagrant
 reset-perms.py --paths bin/ --users vagrant:r-x --only-acls
