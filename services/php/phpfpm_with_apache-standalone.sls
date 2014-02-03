@@ -44,6 +44,7 @@ makina-phpfpm-apache-module_connect_phpfpm_mod_fastcgi_module:
 makina-phpfpm-http-server-backlink:
   pkg.removed:
     - pkgs:
+      - {{ phpsettings.packages.mod_fcgi }}
       - {{ phpData.packages.mod_php }}
       - {{ phpData.packages.mod_php_filter }}
       - {{ phpData.packages.php5_cgi }}

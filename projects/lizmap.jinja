@@ -30,17 +30,38 @@
 {% for user in common.data.users %}
 {%  for n in [1, 2, 3, 4, 5] %}
 {%    do basedirs.append(common.project_root + '/ftp/' + user +'/qgis/rep' + n)
-{%    do basedirs.append(common.project_root + '/cache/' + user )
 {%  endor %}
+{%    do basedirs.append(common.project_root + '/cache/' + user )
 {% endor %}
 {% for dir in basedirs %}
-rootdir-{{dir}}:
+{{common.name}}-rootdir-{{dir}}:
   file.directory:
     - name: {{dir}}
     - user: {{common.user}}
     - group: www-data
     - mode: 770
     - makedirs: true
+    - require_in:
+      - mc_dummy: {{common.name}}-rootdir-dirs
+{% endfor %}
+{{common.name}}-rootdir-dirs:
+  mc_dummy.dummy: []
+
+{% for user in common.data.users %}
+{{common.name}}-ftp-group-{{user}}:
+  group.present:
+    - name: {{user}}
+{{common.name}}-ftp-user-{{user}}:
+  user.present:
+    - shell: /bin/ftponly
+    - name: {{user}}
+    - group: {{user}}
+    - fullname: {{user}} user
+    - gid_from_name: True
+    - require:
+      - mc_dummy: {{common.name}}-rootdir-dirs
+      - group: {{common.name}}-ftp-group-{{user}}
+{% endfor %}
 {% endmacro %}
 
 #
@@ -117,7 +138,8 @@ rootdir-{{dir}}:
 {%-  do kwargs.setdefault('user', 'lizmap') %}
 {%-  set common = salt['mc_project.get_common_vars'](*varargs, **kwargs) %}
 {%-  if common.data.has_app %}
-{%-    do common.sls_includes.extend(['makina-states.services.http.apache',])%}
+{%-    do common.sls_includes.extend(['makina-states.services.php.fcgid_with_apache'])%}
+{%-    do common.sls_includes.extend(['makina-states.services.gis.qgis',])%}
 {%-    do common.sls_includes.extend(['makina-states.services.gis.qgis',])%}
 {%-  endif %}
 {%-  if common.data.has_db %}

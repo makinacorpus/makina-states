@@ -7,7 +7,6 @@
 #
 #}
 
-{% from 'makina-states/services/php/php_defaults.jinja' import phpData with context %}
 {% import "makina-states/services/php/common.sls" as common with context %}
 {% set services = common.services %}
 {% set localsettings = common.localsettings %}
@@ -33,7 +32,7 @@ include:
 makina-fcgid-apache-module_connect_fcgid_mod_fastcgi_module:
   pkg.installed:
     - pkgs:
-      - libapache2-mod-fcgid
+      - {{ phpsettings.packages.mod_fcgi }}
     - require:
       - mc_dummy: makina-php-pre-inst
     - watch_in:
@@ -44,9 +43,10 @@ makina-fcgid-apache-module_connect_fcgid_mod_fastcgi_module:
 makina-fcgid-http-server-backlink:
   pkg.removed:
     - pkgs:
-      - {{ phpData.packages.mod_php }}
-      - {{ phpData.packages.mod_php_filter }}
-      - {{ phpData.packages.php5_cgi }}
+      - {{ phpsettings.packages.php_fpm }}
+      - {{ phpsettings.packages.mod_php }}
+      - {{ phpsettings.packages.mod_php_filter }}
+      - {{ phpsettings.packages.php5_cgi }}
     # this must run BEFORE, else apt try to install one of mod_php/mod_phpfilter/php5_cgi
     # every time we remove one of them, except when fpm is already installed
     - require:

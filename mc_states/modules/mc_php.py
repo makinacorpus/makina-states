@@ -335,6 +335,7 @@ def settings():
             'Debian': {
                 'packages': {
                     'main': 'php5',
+                    'mod_fcgi': 'libapache2-mod-fcgid',
                     'mod_php': 'libapache2-mod-php5',
                     'mod_php_filter': 'libapache2-mod-php5filter',
                     'php5_cgi': 'php5-cgi',

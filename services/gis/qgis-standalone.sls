@@ -12,8 +12,8 @@ include:
   {% endif %}
 
 {% if grains['os_family'] in ['Debian'] %}
-
 {% if full %}
+{% import "makina-states/services/php/common.sls" as phpcommon with context %}
 qgis-repo:
   pkgrepo.managed:
     - name: deb http://qgis.org/debian {{localsettings.dist}} main
@@ -28,10 +28,10 @@ prereq-qgis:
     - pkgs:
       - qgis-mapserver
       - curl
-      - php5-curl
-      - php5-sqlite
-      - php5-gd
-      - php5-pgsql
+      - {{phpcommon.phpSettings.packages['curl'] }}
+      - {{phpcommon.phpSettings.packages['sqlite'] }}
+      - {{phpcommon.phpSettings.packages['gd'] }}
+      - {{phpcommon.phpSettings.packages['postgresql'] }}
       {# deps #}
       - autoconf
       - automake

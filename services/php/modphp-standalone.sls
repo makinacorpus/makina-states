@@ -37,6 +37,8 @@ makina-mod_php-exclude-fpm-pkg:
   pkg.removed:
     - pkgs:
       - {{ phpSettings.packages.php_fpm }}
+      - {{ phpsettings.packages.mod_fcgi }}
+      - {{ phpsettings.packages.php5_cgi }}
     - watch_in:
       - mc_dummy: makina-php-pre-inst
 
