@@ -67,8 +67,6 @@
 include:
   - makina-states.services.http.apache-hooks
 
-{% if full %}
-
 apache-uninstall-others-mpms:
   pkg.removed:
     - pkgs:
@@ -87,7 +85,6 @@ apache-mpm:
       - mc_proxy: makina-apache-post-pkgs
     - watch_in:
       - mc_proxy: makina-apache-post-inst
-{%  endif %}
 
 makina-apache-pkgs:
   pkg.installed:
