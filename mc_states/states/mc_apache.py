@@ -62,7 +62,7 @@ def _check_apache_loaded(ret):
             'Apache is not installed (salt apache module not loaded), '
             'please use a pkg state to ensure apache is installed as a '
             'dependency of this current state')
-        return ret
+    return ret
 
 
 def _load_modules():
