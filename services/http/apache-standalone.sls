@@ -22,12 +22,44 @@
 #}
 {% import "makina-states/_macros/services.jinja" as services with context %}
 {% import "makina-states/_macros/salt.jinja" as saltmac with context %}
-{% macro do(full=True) %}
-{{ salt['mc_macros.register']('services', 'http.apache') }}
+
 {% set nodetypes = services.nodetypes %}
 {% set localsettings = services.localsettings %}
 {% set locs = localsettings.locations %}
+{% set apacheSettings = services.apacheSettings %}
 
+{% macro other_mpm_pkgs(mpm, indent='') %}
+{% set opkgs = [] %}
+{% for dmpm, packages in apacheSettings['mpm-packages'].items() %}
+{%  if mpm != dmpm %}
+{%    for pkg in packages %}{{indent}}      - {{pkg}}
+{%    endfor %}
+{%  endif %}
+{% endfor %}
+{% endmacro %}
+
+{% macro mpm_pkgs(mpm, indent='') %}
+{% set pkgs = apacheSettings['mpm-packages'].get(mpm, [] ) %}
+{% for pkg in pkgs -%}{{indent}}      - {{ pkg }}
+{% endfor -%}
+{% endmacro %}
+
+{% macro extend_switch_mpm(mpm) %}
+  apache-uninstall-others-mpms:
+    pkg.removed:
+      - pkgs:
+        {{ other_mpm_pkgs(mpm, indent='  ') }}
+  apache-mpm:
+    pkg.installed:
+      - pkgs:
+        {{ mpm_pkgs(mpm, indent='  ') }}
+  makina-apache-main-conf:
+    mc_apache.deployed:
+      - mpm: {{mpm}}
+{% endmacro %}
+
+{% macro do(full=True) %}
+{{ salt['mc_macros.register']('services', 'http.apache') }}
 {% set apacheConfCheck = "salt://makina-states/_scripts/apacheConfCheck.sh" %}
 
 {% set old_mode = (grains['lsb_distrib_id']=="Ubuntu" and grains['lsb_distrib_release']<13.10) or (grains['lsb_distrib_id']=="Debian" and grains['lsb_distrib_release']<=7.0) %}
@@ -35,49 +67,27 @@
 include:
   - makina-states.services.http.apache-hooks
 
-{% macro install_mpm(mpm, full=True) %}
-{% set pkgs = apacheSettings['mpm-packages'].get(mpm, [] ) %}
-{% set opkgs = [] %}
-{% for dmpm, packages in apacheSettings['mpm-packages'] %}
-{%  if mpm != dmpm %}
-{%    for pkg in packages %}
-{%      if pkg not in pkgs %}
-{%        do opkgs.append(pkg) %}
-{%      endif %}
-{%    endfor %}
-{%  endif %}
-{% endfor%}
-
 {% if full %}
-{%  if opkgs %}
-php-common-apache-uninstall-others-mpms-{{mpm}}:
+
+apache-uninstall-others-mpms:
   pkg.removed:
     - pkgs:
-      {% for pkg in opkgs %}
-      - {{ pkg }}
-      {% endfor %}
+      {{ other_mpm_pkgs(services.apacheSettings.mpm) }}
     - require:
       - mc_proxy: makina-apache-post-pkgs
     - watch_in:
       - mc_proxy: makina-apache-post-inst
-      - pkg: php-common-apache-{{mpm}}
-{%  endif %}
-{%  if pkgs %}
-php-common-apache-{{mpm}}:
+      - pkg: apache-mpm
+
+apache-mpm:
   pkg.installed:
     - pkgs:
-      {% for pkg in pkgs %}
-      - {{ pkg }}
-      {% endfor %}
+      {{ mpm_pkgs(services.apacheSettings.mpm) }}
     - require:
       - mc_proxy: makina-apache-post-pkgs
     - watch_in:
       - mc_proxy: makina-apache-post-inst
 {%  endif %}
-{% endif %}
-{% endmacro %}
-{% set installMpm = install_mpm %}
-
 
 makina-apache-pkgs:
   pkg.installed:

@@ -188,6 +188,7 @@ def settings():
         ):
             apacheStepOne.update({'mpm': 'event'})
             apacheStepOne.update({'version': '2.4'})
+        apacheStepOne['multithreaded_mpm'] = apacheStepOne['mpm']
 
         apacheDefaultSettings = __salt__['mc_utils.defaults'](
             'makina-states.services.http.apache',
@@ -197,7 +198,7 @@ def settings():
                     'mpm-packages': {
                         'worker': ['apache2-mpm-worker'],
                         'prefork': ['apache2-mpm-prefork'],
-                        'itk': ['apache2-mpm-itk'],
+                        #'itk': ['apache2-mpm-itk'],
                         'event': ['apache2-mpm-event'],
                     },
                     'server': 'apache2',
@@ -241,6 +242,34 @@ def settings():
     return _settings()
 
 
+def get_version():
+    '''
+    Ensures the installed apache version matches all the given version number
+
+    For a given 2.2 version 2.2.x current version would return an OK state
+
+    version
+        The apache version
+
+    CLI Examples:
+
+    .. code-block:: bash
+
+        salt '*' mc_apache.get_version
+    '''
+    ret = {}
+    full_version = __salt__['apache.version']()
+    _version = full_version.split("/")[1].split(" ")[0]
+    ret['result'] = {
+        # Apache/2.4.6 (Ubuntu) -> 2.4.6
+        'version': _version,
+        # [2][4]
+        # [2][4][6]
+        'current_version_list': str(_version).split("."),
+    }
+    return ret
+
+
 def check_version(version):
     '''
     Ensures the installed apache version matches all the given version number
@@ -256,22 +285,15 @@ def check_version(version):
 
         salt '*' mc_apache.check_version 2.4
     '''
-
-    ret = {'result': None,
-           'comment': ''}
-    full_version = __salt__['apache.version']()
-    # Apache/2.4.6 (Ubuntu) -> 2.4.6
-    _version = full_version.split("/")[1].split(" ")[0]
-    op_version_list = str(version).split(".")   # [2][4]
-    current_version_list = str(_version).split(".")  # [2][4][6]
-    for number1, number2 in zip(op_version_list, current_version_list):
-        if not number1 is number2:
-            ret['result'] = False
-            ret['comment'] = (
-                'Apache requested version {0} is not verified '
-                'by current version: {1}'.format(
-                    _version, version))
-            return ret
+    ret = get_version()
+    _version = ret['result']['version']
+    if not _version.startswith("{0}".format(version)):
+        ret['result'] = False
+        ret['comment'] = (
+            'Apache requested version {0} is not verified '
+            'by current version: {1}'.format(
+                _version, version))
+        return ret
     ret['result'] = True
     ret['comment'] = 'Apache version {0} verify requested {1}'.format(
         _version, version)

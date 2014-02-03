@@ -38,10 +38,10 @@ makina-mod_php-exclude-fpm-pkg:
     - watch_in:
       - mc_proxy: makina-php-pre-inst
 
+extend:
+{{ common.apache.extend_switch_mpm('prefork') }}
+
 {# Manage mod_php packages #}
-
-{{ common.installMpm('prefork', full=full) }}
-
 makina-php-pkgs:
   pkg.installed:
     - pkgs:

@@ -22,6 +22,9 @@
 include:
 {{ fcgid_common.includes(full=full) }}
 
+extend:
+{{ common.apache.extend_switch_mpm(common.apache.apacheSettings.multithreaded_mpm) }}
+
 {% if full %}
 # Adding mod_proxy_fcgi apache module (apache > 2.3)
 # Currently mod_proxy_fcgi which should be the new default

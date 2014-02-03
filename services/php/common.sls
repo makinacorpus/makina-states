@@ -10,7 +10,7 @@
 {% set nodetypes = base.nodetypes %}
 {% set locs = base.locs %}
 {% set phpSettings = base.phpSettings %}
-{% set installMpm = base.installMpm %}
+{% set apache = base.apache %}
 
 include:
 {{ base.includes(full=full, apache=apache) }}

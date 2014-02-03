@@ -289,7 +289,7 @@ def exclude_module(name,
 
 
 def deployed(name,
-             mpm=None,
+             mpm='worker',
              version="2.2",
              modules_excluded=None,
              modules_included=None,
@@ -358,12 +358,11 @@ def deployed(name,
 
     # MPM check
     infos = __salt__['apache.fullversion']()
+    versions = __salt__['mc_apache.get_version']()['result']
     cur_mpm = infos.get('server_mpm', 'unknown').lower()
     mpm_check_done = False
     blind_mode = False
-    if not mpm:
-        mpm = 'unknown'
-    if 'unknown' in [cur_mpm, mpm]:
+    if 'unknown' == cur_mpm:
         # quite certainly a syntax error in current conf
         mpm_check_done = True
         # chicken and eggs problem now is that this current error prevents the
@@ -372,7 +371,10 @@ def deployed(name,
         blind_mode = True
         comments.append("WARNING: BLIND MODE: Current apache configuration "
                         "is maybe broken")
-    if cur_mpm != mpm or blind_mode:
+    if (
+        (versions['version'] and versions['version'] > "2.2")
+        and (cur_mpm != mpm or blind_mode)
+    ):
         # try to activate the mpm and deactivate the others
         # if mpm are shared modules
         _load_modules()
@@ -427,7 +429,7 @@ def deployed(name,
     # MPM check (2nd time, not in test mode, it would always fail in test mode)
     if not mpm_check_done and not __opts__['test']:
         infos = __salt__['apache.fullversion']()
-        cur_mpm = cur_mpm = infos.get('server_mpm', 'unknown')
+        cur_mpm = cur_mpm = infos.get('server_mpm', 'unknown').lower()
         if cur_mpm != mpm:
             ret['result'] = False
             comments.append(

@@ -9,7 +9,6 @@
 {% set s_ALL = phpSettings.s_ALL %}
 {% set apacheSettings = services.apacheSettings %}
 {% set apache = apache %}
-{% set installMpm = apache.installMpm %}
 
 {% macro includes(full=True, apache=False) %}
   {% if full -%}
