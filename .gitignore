@@ -1,4 +1,6 @@
 .*installed.cfg
+*.sav
+salt-project
 .buildout
 pep8.log
 pylint.log

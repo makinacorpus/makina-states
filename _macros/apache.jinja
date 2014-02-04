@@ -1,72 +1,105 @@
 {# Apache specific macros
-#
 # Import this macro file with context so that grains will be available in the macros
 #}
 {% import "makina-states/_macros/services.jinja" as services with context %}
+{% set services = services %}
 {% set nodetypes = services.nodetypes %}
 {% set apacheData = services.apacheSettings %}
 {# * virtualhost => create all states for a virtualhost (virtualhost file, include file, a2ensite/dissite command
 #
-#   - apacheData: global apache configuration dictionnary, this cannot be given by context import, so please pass it to this macro
+#   Idea is that we have a template for the virtualhost global directives and one another for the corpse
 #
-#   - site:  site name (ServerName)
+#   - domain
+#       domain name (ServerName)
+#   - number
+#       Virtualhost priority number (for apache), without a default VH the first one became the default virtualhost
+#   - serveradmin_mail
+#       data that may be used on error page, default is webmaster@<site-name>
+#   - server_aliases
+#       a string or a list of strings, theses are the alternate names of this site
+#   - doc_root
+#       path to the document root, default is /srv/projects/<site>/www/
+#   - redirect_aliases
+#       True by default, make a special Virtualhost with all server_aliases, all redirecting
+#       with a 301 to the site name, better for SEO. But you may need real server_aliases
+#       for static parallel file servers, for example, then set that to True.
+#   - allow_htaccess
+#       False by default, if your project use .htaccess files, then prey for your soul,
+#       eat some shit, kill yourself and set that to True
+#   - vh_template_source
+#       source (jinja) of the file.managed for the vhirtualhost template
+#       default http://goo.gl/RFgkHE (github)
+#   - vh_in_template_source
+#       source (jinja) of the file.managed for the vhirtualhost included content
+#       (the most important part when making alterations of vh content); default:
+#       default http://goo.gl/jB6Ext (github)
+#   - extra_jinja_apache_variables
+#       extra variables to load for virtualvhost templates rendering
+#   - log_level
+#       log level
+#   - [ssl_]interface
+#       interface of the namevirtualhost (like in '*:80'), default is '*'
+#   - [ssl_]port
+#       port of the namevirtualhost (like in '*:80'), default is '80' and '443' for ssl version
+#   - active
+#       True by default, set to False to disable the Virtualhost
+#   - project
+#       site nickname, used in states and log files, if not given it will be build from site name
+#   - includes:
+#     - automaticly add the apache states
 #
-#   - small_name :  site nickname, used in states and log files, if not given it will be build from site name
-#
-#   - [ssl_]interface : interface of the namevirtualhost (like in '*:80'), default is '*'
-#
-#   - [ssl_]port : port of the namevirtualhost (like in '*:80'), default is '80' and '443' for ssl version
-#
-#   - active: True by default, set to False to disable the Virtualhost
-#
-#   - number: Virtualhost priority number (for apache), without a default VH the first one became the default virtualhost
-#
-#   - log_level: log level
-#
-#   - serveradmin_mail: data that may be used on error page, default is webmaster@<site-name>
-#
-#   - serverAlias: a string or a list of strings, theses are the alternate names of this site
-#
-#   - documentRoot: path to the document root, default is /srv/projects/<site>/www/
-#
-#   - redirect_aliases: True by default, make a special Virtualhost with all serverAlias, all redirecting
-#                       with a 301 to the site name, better for SEO. But you may need real serverAliases
-#                       for static parallel file servers, for example, then set that to True
-#
-#   - allow_htaccess: False by default, if your project use .htaccess files, then prey for your soul,
-#                     eat some shit, kill yourself and set that to True
-#
-#   - vh_template_source: source of the file.managed for the vhirtualhost template
-#
-#   - vh_in_template_source: source of the file.managed for the vhirtualhost included content
-#                            (the most important part when making alterations of vh content)
 #}
-{% macro virtualhost(
-                     site = 'example.com',
-                     small_name = None,
-                     active = True,
-                     number = '100',
-                     interface = '*',
-                     port='80',
-                     ssl_interface = '*',
-                     ssl_port = '443',
-                     log_level = 'warn',
-                     serveradmin_mail = None,
-                     serverAlias = None,
-                     documentRoot = None,
-                     redirect_aliases = True,
-                     allow_htaccess = False,
-                     vh_template_source = 'salt://makina-states/files/etc/apache2/sites-available/virtualhost_template.conf',
-                     vh_in_template_source = 'salt://makina-states/files/etc/apache2/includes/in_virtualhost_template.conf',
-                     extra_jinja_apache_variables = None
-) -%}
-{% set small_name = small_name or site.replace('.', '_').replace('-', '_') %}
-{% set admin_mail = serveradmin_mail or 'webmaster@'+site %}
-{% set doc_root = documentRoot or '/srv/projects/' + site  + '/www' %}
-{% set old_mode = (grains['lsb_distrib_id']=="Ubuntu" and grains['lsb_distrib_release']<13.10) or (grains['lsb_distrib_id']=="Debian" and grains['lsb_distrib_release']<=7.0) %}
+{% macro includes() %}
+  - makina-states.services.http.apache
+{% endmacro %}
+{% macro virtualhost(domain='example.com',
+                         number='100',
+                         serveradmin_mail=None,
+                         server_aliases=None,
+                         extra_jinja_apache_variables=None
+                         vh_template_source='salt://makina-states/files/etc/apache2/sites-available/virtualhost_template.conf',
+                         vh_in_template_source='salt://makina-states/files/etc/apache2/includes/in_virtualhost_template.conf',
+                         log_level='warn',
+                         interface = '*',
+                         ssl_interface = '*',
+                         port='80',
+                         ssl_port='443',
+                         redirect_aliases=True,
+                         allow_htaccess=False,
+                         active=True,
+                         includes=False,
+                         project_root=None,
+                         doc_root=None) -%}
+{% set project = salt['mc_project.gen_id'](project or domain) %}
+{% set doc_root = salt['mc_project.doc_root(doc_root=doc_root,
+                                            domain=domain,
+                                            project_root=project_root,
+                                            project=project) %}
+{% set admin_mail = serveradmin_mail or 'webmaster@{0}'.format(domain) %}
+{% if not extra_jinja_apache_variables %}
+{%  set extra_jinja_apache_variables = {} %}
+{% endif %}
+{% if not server_aliases %}
+{%  set server_aliases = [] %}
+{% endif %}
+{% set server_aliases = salt['mc_project.server_aliases(server_aliases) %}
+{% set old_mode = (grains['lsb_distrib_id'] == "Ubuntu"
+                   and grains['lsb_distrib_release'] < 13.10)
+                   or (grains['lsb_distrib_id'] == "Debian"
+                       and grains['lsb_distrib_release'] <= 7.0) %}
+
+{% set mode='production' %}
+{% if nodetypes.registry.is.devhost %}
+{%  set mode='dev' %}
+{% endif %}
+
+{% if includes %}
+include:
+{{ includes() }}
+{% endmacro %}
 
 # Virtualhost basic file
-makina-apache-virtualhost-{{ small_name }}:
+makina-apache-virtualhost-{{ project }}:
   file.managed:
     - user: root
     - group: root
@@ -81,39 +114,26 @@ makina-apache-virtualhost-{{ small_name }}:
     - defaults:
         log_level: "{{ log_level }}"
         serveradmin_mail: "{{ admin_mail }}"
-        small_name: "{{ small_name }}"
+        project: "{{ project }}"
         DocumentRoot: "{{ doc_root }}"
         ServerName: "{{ site }}"
-{% if serverAlias %}
-        ServerAlias: 
-          - "www.example.com"
-          - "www1.example.com"
-          - "www2.example.com"
-          - "www3.example.com"
-{% endif %}
+        ServerAlias: {{server_aliases|yaml}}
         redirect_aliases: {{ redirect_aliases }}
         interface: "{{ interface }}"
         port: "{{ port }}"
-{% if extra_jinja_apache_variables %}
-{% for variablename,variablevalue in extra_jinja_apache_variables.iteritems() %}
-        {{ variablename }}: "{{ variablevalue }}"
-{% endfor %}
-{% endif %}
-
-        mode: "production"
-{% if nodetypes.registry.is.devhost %}
-    - context:
-        mode: "dev"
-{% endif %}
+        {% for variablename, variablevalue in extra_jinja_apache_variables.iteritems() %}
+        {{ variablename }}: {{ variablevalue|yaml }}
+        {% endfor %}
+        mode: {{mode}}
     - require:
-      - pkg: makina-apache-pkgs
+      - mc_proxy: makina-apache-post-inst
     - watch_in:
-      - cmd: makina-apache-virtualhost-{{ small_name }}-status
-      - cmd: makina-apache-conf-syntax-check
-      - service: makina-apache-reload
+      - cmd: {{project}}-makina-apache-virtualhost-status
+      - mc_proxy: makina-apache-pre-conf
+      - mc_proxy: makina-apache-pre-restart
 
-# Virtualhost real content, shared by SSL and non-SSL virtualhosts
-makina-apache-virtualhost-{{ small_name }}-content:
+{# Virtualhost real content, shared by SSL and non-SSL virtualhosts #}
+makina-apache-virtualhost-{{ project }}-content:
   file.managed:
     - user: root
     - group: root
@@ -122,28 +142,20 @@ makina-apache-virtualhost-{{ small_name }}-content:
     - source: {{ vh_in_template_source }}
     - template: 'jinja'
     - defaults:
-        mode: "production"
+        mode: {{mode}}
         DocumentRoot: {{ doc_root }}
         allow_htaccess: {{ allow_htaccess }}
-{% if extra_jinja_apache_variables %}
-{% for variablename,variablevalue in extra_jinja_apache_variables.iteritems() %}
-        {{ variablename }}: "{{ variablevalue }}"
-{% endfor %}
-{% endif %}
-{% if nodetypes.registry.is.devhost %}
-    - context:
-        mode: "dev"
-{% endif %}
+        {% for variablename, variablevalue in extra_jinja_apache_variables.iteritems() %}
+        {{ variablename }}: {{ variablevalue|yaml }}
+        {% endfor %}
     - require:
-      - pkg: makina-apache-pkgs
-      - file: makina-apache-include-directory
-    - require_in:
-      - file: makina-apache-virtualhost-{{ small_name }}
+      - mc_proxy: makina-apache-post-inst
     - watch_in:
-      - cmd: makina-apache-conf-syntax-check
-      - service: makina-apache-reload
+      - mc_proxy: makina-apache-pre-conf
+      - file: {{project}}-makina-apache-virtualhost
+      - mc_proxy: makina-apache-pre-restart
 
-makina-apache-virtualhost-{{ small_name }}-status:
+{{project}}-makina-apache-virtualhost-status
   cmd.run:
 {%      if active %}
     - name: a2ensite {{ number }}-{{ site }}
@@ -161,9 +173,30 @@ makina-apache-virtualhost-{{ small_name }}-status:
 {%        endif %}
 {%      endif %}
     - require:
-      - pkg: makina-apache-pkgs
+      - mc_proxy: makina-apache-post-inst
     - watch_in:
-      - cmd: makina-apache-conf-syntax-check
-      - service: makina-apache-reload
+      - mc_proxy: makina-apache-pre-conf
+{% endmacro %}
 
-{%- endmacro %}
+{% macro minimal_index(doc_root, domain='no domain', mode='unkown mode') %}
+{{ doc_root }}-minimal-index:
+  file.managed:
+    - name: {{ doc_root }}/index.html
+    - unless: test -e "{{ doc_root }}/index.html"
+    - source:
+    - contents: >
+                <html>
+                <body>
+                It works from {{doc_root.split('/')[-1]}}/{{domain}}/{{mode}}
+                </body>
+                </html>
+    - makedirs: true
+    - user: {{apacheData.httpd_user}}
+    - group: {{ localsettings.group }}
+    - require:
+      - mc_proxy: makina-apache-post-inst
+    - require_in:
+      - mc_proxy: makina-apache-pre-conf
+{% endmacro %} 
+
+{# vim: set nofoldenable :#}

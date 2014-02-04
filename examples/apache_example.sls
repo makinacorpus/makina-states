@@ -1,22 +1,21 @@
-{# This file is an example of makina-states.services.http usage
-# how to extend base states
-# how to add virtualhosts
-# how to add or remove modules
-# how to define your pillar based project custom values, default values, and overrides main defaults
+{# This file is an example of makina-states.services.http.apache usage
+# how to:
+#   - extend base states
+#   - manage virtualhosts
+#   - add or remove modules
+#   - define your pillar based project custom values, default values, and overrides main defaults
+#
 # @see also the pillar.sample file
 #
-## remember theses 4 rules for extend:
-##1-Always include the SLS being extended with an include declaration
-##2-Requisites (watch and require) are appended to, everything else is overwritten
-##3-extend is a top level declaration, like an ID declaration, cannot be declared twice in a single SLS
-##4-Many IDs can be extended under the extend declaration
+# Remember theses 4 rules for extend:
+#  - 1: Always include the SLS being extended with an include declaration
+#  - 2: Requisites (watch and require) are appended to, everything else is overwritten
+#       Anyway, you can repeat require/watch parts, explicit is better than implicit
+#  - 3: include & extend directives can be used only once per SLS file
+#  - 4: You can override any ID you want inside the  extend declaration
 #}
-{% from 'makina-states/_macros/services.jinja' import virtualhost with context %}
+{% import 'makina-states/_macros/services.jinja' as services with context %}
 {% set apache = services.apache %}
-
-include:
-  - makina-states.services.http.apache
-
 extend:
   makina-apache-main-conf:
     mc_apache:
@@ -34,36 +33,31 @@ extend:
         worker_MaxRequestsPerChild: "{{ salt['pillar.get']('project-foo-apache-MaxRequestsPerChild', '1000') }}"
         worker_MaxClients: "{{ salt['pillar.get']('project-foo-apache-MaxClients', '500') }}"
 
-# Adding or removing modules
-my-apache-other-module-included1:
-  mc_apache.include_module:
+{# Adding modules #}
+my-apache-other-module--other-module-excluded:
+  mc_apache.exclude_module:
     - modules:
       - proxy_http
       - proxy_html
+      - rewrite
     - require_in:
       - mc_apache: makina-apache-main-conf
-# Adding or removing modules
+
+{# Removing modules #}
 my-apache-other-module-included2:
   mc_apache.include_module:
     - modules:
       - authn_file
     - require_in:
       - mc_apache: makina-apache-main-conf
-my-apache-other-module--other-module-excluded:
-  mc_apache.exclude_module:
-    - modules:
-      - rewrite
-    - require_in:
-      - mc_apache: makina-apache-main-conf
 
-# Custom virtualhost
+{# Custom virtualhost #}
 {{ apache.virtualhost(
-            site = salt['pillar.get']('project-foo-apache-vh1-name', 'www.foobar.com'),
-            small_name = salt['pillar.get']('project-foo-apache-vh1-nickname', 'foobar'),
-            active = True,
-            number = '900',
-            log_level = salt['pillar.get']('project-foo-apache-vh1-loglevel', 'debug'),
-            serverAlias = salt['pillar.get']('project-foo-apache-vh1-alias', 'foobar.com'),
-            documentRoot = salt['pillar.get']('project-foo-apache-vh1-docroot', '/srv/projects/example/foobar/www'),
-            redirect_aliases = True,
-            allow_htaccess = False) }}
+    domain = 'www.foobar.com',
+    number = '900',
+    log_level = 'debug',
+    serverAlias = ['barfoo.com'],
+    redirect_aliases = True,
+    allow_htaccess = False) }}
+
+{{ php.minimal_index() }}

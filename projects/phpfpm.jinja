@@ -1,0 +1,18 @@
+{# Generate in one step the apache virtualhost,
+                        the apache configuration
+                        and the fpm pool #}
+{% macro apache_fpm_virtualhost(domain,
+                                project=None,
+                                project_root=None,
+                                doc_root=None,
+                                fpm_pool_opts=None,
+                                apache_opts=None) %}
+{{ php_vhost(domain,
+             project=project,
+             project_root=project_root,
+             doc_root=doc_root,
+             additionnal_macro=fpm_pool,
+             additionnal_opts=fpm_pool_opts
+             apache_opts=apache_opts,
+             includes=includes) }}
+{% endmacro %}

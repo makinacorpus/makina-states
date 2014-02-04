@@ -1,0 +1,95 @@
+{%- import "makina-states/_macros/apache.jinja" as apache with context %}
+{%- import "makina-states/projects/base.jinja" as base with context %}
+{%- set base = base %}
+{%- set apache = apache %}
+{%- set services = base.services %}
+{%- set apacheData = services.apacheSettings.copy() %}
+{%- set saltmac = base.saltmac %}
+{%- set localsettings = base.localsettings %}
+{%- set locations = base.localsettings.locations %}
+
+{#
+# This is not really a real project but more stubs usable from other projects
+# to serve to generate a robust virtualhost apache based installation
+# both as usage exemple and macro re-use
+# See:
+# - https://github.com/makinacorpus/salt-project/tree/apache-project
+# - https://github.com/makinacorpus/salt-project/tree/apache-salt
+#}
+{% macro virtualhost(domain,
+                     project=None,
+                     project_root=None,
+                     doc_root=None,
+                     apache_opts=None,
+                     additionnal_macro=None,
+                     additionnal_opts=None,
+                     includes=False) %}
+{% set args = {
+   'domain': domain,
+   'project_root': project_root,
+   'doc_root': doc_root,
+   'project': project
+} %}
+{% if not apache_opts %}
+{%     set apache_opts = {}
+{% endif %}
+{% if not additionnal_opts %}
+{%    set additionnal_opts = {}
+{% endif %}
+{% for opts in [additionnal_opts, apache_opts] %}
+{%    do opts.update(args)  %}
+{% endfor %}
+
+{# execute nested macro if any (used by php #}
+{% if additionnal_macro %}
+{{    additionnal_macro(**additionnal_macro) }}
+{% endif %}
+
+{# Custom Apache Virtualhost #}
+{{ apache.virtualhost(**apache_opts) }}
+
+{# very minimal index.php file #}
+{% if minimal_index %}
+{{    minimal_index(doc_root, domain=domain, mode=mode)}}
+{% endif %}
+{% endmacro %}
+
+{#
+# Data dictionnaries that feed the "common.data" dictionnary
+# This is one of the most difficult part to understand, idea is to
+#}
+{%- set default_defaults = {
+  'apache_opts': {},
+} %}
+
+{% set default_env_defaults = {
+   'dev': {},
+   'prod': {}
+} %}
+
+{#-
+#  Makina project per project macro couple (install_apache_project/install_project)
+#  This will install an apache virtualhost serving in project_root/www for the
+#  configured domain(s)
+#}
+{% macro install_generic_apache_project_do(common) %}
+{{ virtualhost(domain=common.domain,
+               project_root=common.project_root,
+               apache_opts=defaults.apache_opts,
+               minimal_index=apache.minimal_index) }}
+{%- endmacro %}
+
+{#- Look available arguments in _modules/mc_project.py:get_commmon_vars #}
+{%- macro install_generic_apache_project() %}
+{%- do kwargs.setdefault('defaults', default_defaults) %}
+{%- do kwargs.setdefault('env_defaults', default_env_defaults) %}
+{%- do kwargs.setdefault('user', 'apache') %}
+{%- set common = salt['mc_project.get_common_vars'](*varargs, **kwargs) %}
+{% if common.full %}
+{%-   do common.sls_includes.append('makina-states.services.http.apache')%}
+{%- else  %}
+{%-   do common.sls_includes.append('makina-states.services.http.apache-hooks')%}
+{% endif %}
+{{- base.install_project(common, install_macro=install_generic_apache_project_do) }}
+{% endmacro %}
+{# vim: set nofoldenable :#}

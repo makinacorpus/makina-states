@@ -36,6 +36,25 @@ class TestCase(base.ModuleCase):
                 }
             )
 
+    def test_defaults_mutable(self):
+        '''
+        Test that the passed dictionnary is well updated
+        and not copied over'''
+        data = {
+            '1': 'foo',
+            '2': {'aa': 2}
+        }
+        with patch.dict(
+            mc_utils.__salt__,
+            {'mc_utils.dictupdate': mc_utils.dictupdate,
+             'mc_utils.get': Mock(
+                 side_effect={
+                     'prefix.2.aa': 'foo',
+                 }.get)}):
+            mc_utils.defaults('prefix', data)
+            data['1'] = 'bar'
+            self.assertEquals(data, {'1': 'bar', '2': {'aa': 'foo'}})
+
     def test_defaults_rec(self):
         with patch.dict(
             mc_utils.__salt__,

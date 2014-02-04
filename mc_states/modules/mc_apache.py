@@ -117,6 +117,7 @@ def settings():
         locations = localsettings['locations']
         apacheStepOne = __salt__['mc_utils.dictupdate'](
             {
+                'httpd_user': 'www-data',
                 'mpm': 'worker',
                 'mpm-packages': {},
                 'version': '2.2',

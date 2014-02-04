@@ -267,7 +267,7 @@ makina-apache-security-settings:
 makina-apache-include-directory:
   file.directory:
     - user: root
-    - group: www-data
+    - group: {{services.apacheSettings.httpd_user}}
     - mode: "2755"
     - makedirs: True
     - name: {{ services.apacheSettings.basedir }}/includes
@@ -282,7 +282,7 @@ makina-apache-include-directory:
 makina-apache-default-log-directory:
   file.directory:
     - user: root
-    - group: www-data
+    - group: {{services.apacheSettings.httpd_user}}
     - mode: "2770"
     - name: {{ services.apacheSettings.logdir }}
     - watch:
@@ -298,7 +298,7 @@ makina-apache-default-log-directory:
 makina-apache-default-vhost-directory:
   file.directory:
     - user: root
-    - group: www-data
+    - group: {{services.apacheSettings.httpd_user}}
     - mode: "2755"
     - makedirs: True
     - name: {{ locs.var_dir }}/www/default/

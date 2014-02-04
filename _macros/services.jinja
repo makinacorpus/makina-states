@@ -3,15 +3,11 @@
 # see makina-states.services
 #}
 
-{%- import "makina-states/_macros/apache.jinja" as apache with context %}
-{%- import "makina-states/_macros/php.jinja" as php with context %}
 {%- import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
 {%- import "makina-states/_macros/controllers.jinja" as controllers with context %}
 {#-
 # expose imported macros
 #}
-{%- set php = php %}
-{%- set apache = apache %}
 {%- set nodetypes = nodetypes %}
 {%- set localsettings = nodetypes.localsettings %}
 {%- set funcs = localsettings.funcs %}

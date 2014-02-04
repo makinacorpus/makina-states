@@ -333,3 +333,4 @@ etc-logrotate.d-{{common.name}}.conf:
 {%- set common = salt['mc_project.get_common_vars'](*varargs, **kwargs) %}
 {{- base.install_project(common, install_macro=install_generic_zope_project_do) }}
 {% endmacro %}
+{# vim: set nofoldenable :#}

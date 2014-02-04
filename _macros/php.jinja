@@ -1,50 +1,138 @@
-# PHP specific macros
-#
-# Import this macro file with context so that grains will be available in the macros
+{# PHP specific macros
 #
 # * pool => create all states for a fpm php pool
 #
-#   - phpData: global apache configuration dictionnary, this cannot be given by context import, so please pass it to this macro
+#   - domain
+#       domain name (main project domain name aka ServerName or site name)
+#   - pool_name
+#       domain nickname, used in states and log files and of course pool name,
+#       if not given it will be build from domain name
+#   - pool_template_sourcel:
+#       defaults to makina-states's one, jinja template to construct the fpm pool configuration from
+#   - settings
+#       default data dictionnary to be merge with mc_php.settings one if you
+#       want to customize php parameters
+#   - open_basedir_additions:
+#       directories to add to openbasedirs
+#   - include_path_additions
+#       directories to add to include directories
+#   - custom_listen
+#       Custom listen string for php fpm listen directive
+#   - chroot
+#       Do we run in a fpm chrooted env. (certainly defaults to true in current layout)
+#   - extra_jinja_pool_variables
+#       extra variables to load for fpmpool templates rendering
+#   - nice_priority
+#       Nice value for the fpm pool
+#   - use_shared_socket_path
+#       Do we use the fpm shared socket path (multiple projects share the same pool)
+#   - session_cookie_domain
+#       Special cookie domain string for cookies (totally optionnal)
+#   - pool_template_source
+#       default pool_template_source jinja file to generate the fpm pool from
+#   - pool_name
+#       force the fpm pool name (useful for multiple projects to use the same pool)
+#   - project_root
+#       top level project directory
+#       (totally optionnal if you use the predefined layout)
+#   - doc_root
+#        absolute path to a custom directory
+#        (totally optionnal if you use the predefined layout)
+#   - relative_document_root
+#       name of the document root subdirectory
+#       (totally optionnal if you use the predefined layout)
 #
-#   - site:  site name (ServerName)
+#  In most case:
+#     - Only the "domain" parameter will be sufficient if you follow the makina-states layout:
+#     - We use a fpm pool per project
 #
-#   - pool_name :  site nickname, used in states and log files and of course pool name, if not given it will be build from site name
+#   /var/log <- fpm logs dir
+#   /var/tmp <- fpm tmp dir
+#   /src/projects/myproject-com/project
+#                                 \_ www          <- doc_root
+#                                 \_ var/tmp      <- tmp files
+#                                 \_ var/private  <- private dir
+#                                 \_ var/log      <- logs (fpm ppol)
+#                                 \_ var/fcgi     <- socket(s) path
 #
-#   TODO: document options
+#}
 
-{% import "makina-states/_macros/services.jinja" as services with context %}
-{{ salt['mc_macros.register']('services', 'php.common') }}
+{% import "makina-states/_macros/apache.jinja" as apache with context %}
+{% set apache = apache %}
+{% set services = apache.services %}
 {% set localsettings = services.localsettings %}
 {% set nodetypes = services.nodetypes %}
 {% set locs = localsettings.locations %}
 {% set phpData = services.phpSettings %}
-{% macro fpm_pool(
-              site = 'example.com',
-              pool_name = None,
-              custom_listen = None,
-              use_shared_socket_path = False,
-              project_root= None,
-              relative_document_root= 'www',
-              pool_template_source = None,
-              nice_priority = -19,
-              settings = None,
-              open_basedir_additions= None,
-              include_path_additions= None,
-              session_cookie_domain= None
-) -%}
-{% set pool_name = pool_name or site.replace('.', '_').replace('-', '_') %}
-{% set project_root = project_root or locs.projects_dir+'/' + site %}
-{% set open_basedir_additions = open_basedir_additions or '' %}
-{% set include_path_additions = include_path_additions or '' %}
-{% if not pool_template_source %}
-{% set pool_template_source = 'salt://makina-states/files'+phpData.etcdir+'/fpm/pool.d/pool.conf' %}
+{% set default_pool_template_source = 'salt://makina-states/files/etc/fpm/pool.d/pool.conf' %}
+
+{% macro includes() %}
+  - makina-states.services.php.phpfpm_with_apache
+{% endmacro %}
+
+{% macro fpm_pool(domain,
+                  settings = None,
+                  open_basedir_additions = '',
+                  include_path_additions = '',
+                  custom_listen = None,
+                  chroot = None,
+                  nice_priority = -19,
+                  use_shared_socket_path = False,
+                  session_cookie_domain = None,
+                  pool_template_source = default_pool_template_source,
+                  pool_name = None,
+                  project_root = None,
+                  doc_root = None,
+                  extra_jinja_pool_variables=None,
+                  minimal_index = True,
+                  relative_document_root = 'www',
+                  project = None,
+                  includes=False,
+                  ) -%}
+{% if not extra_jinja_pool_variables %}
+{%  set extra_jinja_pool_variables = {} %}
 {% endif %}
+{% set doc_root = salt['mc_project.doc_root(doc_root=doc_root,
+                                            domain=domain,
+                                            project_root=project_root,
+                                            project=project) %}
+{% set project = salt['mc_project.gen_id'](project or domain) %}
+{% set pool_name = pool_name or project %}
+{% set project_root = project_root or '{0}/{1}/project'.format(locs.projects_dir, project) %}
+
+{% if chroot %}
+{% if not doc_root.startswith(project_root) %}
+{% set chroot = False %}
+{% endif %}
+
 {% if not session_cookie_domain %}
-{% set session_cookie_domain = site %}
+{% set session_cookie_domain = domain %}
 {% endif %}
+
 {% if settings != None %}
-{# Merge settings with phpData, @seephp_defaults for settings tree #}
-{%   set phpData = salt['mc_utils.dictupdate'](phpData,settings) %}
+{# Merge settings with phpData, @see mc_states.mc_php.settings for settings tree #}
+{%   set phpData = salt['mc_utils.dictupdate'](phpData.copy(), settings) %}
+{% endif %}
+
+{% if chroot %}
+{% set project_root = '' %}
+{% endif %}
+
+{% set mode='production' %}
+{% if nodetypes.registry.is.devhost %}
+{%  set mode='dev' %}
+{% endif %}
+
+{% set doc_root    = '{0}/{1}'.format(project_root, phpData.fpm.relative_document_root) %}
+{% set tmp_dir     = '{0}/{1}'.format(project_root, phpData.fpm.tmp_relative_path) %}
+{% set log_dir     = '{0}/{1}'.format(project_root, phpData.fpm.log_relative_path) %}
+{# {% set sock_dir    = '{0}/{1}'.format(project_root, phpData.fpm.socket_relative_path) %} #}
+{% set sock_dir    = apacheData.fastcgi_socket_directory %}
+{% set private_dir = '{0}/{1}'.format(project_root, phpData.fpm.private_dir) %}
+
+{% if includes%}
+includes:
+{{includes()}}
 {% endif %}
 
 # Pool file
@@ -57,16 +145,19 @@ makina-php-pool-{{ pool_name }}:
     - source: {{ pool_template_source }}
     - template: 'jinja'
     - defaults:
+        domain: "{{ domain }}"
+        pool_name: "{{ pool_name }}"
+        pool_root: "{{ project_root }}"
+        pool_doc_root: "{{ doc_root }}"
+        pool_tmp_dir: "{{ tmp_dir }}"
+        pool_log_dir: "{{ log_dir }}"
+        pool_sock_dir: "{{ sock_dir }}"
+        pool_private_dir: "{{ private_dir }}"
         var_tmp: "{{ locs.var_tmp_dir }}"
         var_log: "{{ locs.var_log_dir }}"
-        pool_name: "{{ pool_name }}"
-        project_root: "{{ project_root }}"
-        relative_document_root: "{{ relative_document_root }}"
-        site: "{{ site }}"
         chroot: {{ phpData.fpm.chroot }}
         use_socket: {{ phpData.fpm.use_socket }}
-        socket_relative_path: "{{ phpData.fpm.socket_relative_path }}"
-        socket_name: "{{ phpData.fpm.socket_name }}"
+        socket_name: "{{ project  }}.{{ phpData.fpm.socket_name }}"
         use_shared_socket_path: {{ use_shared_socket_path|int(0) }}
         fpm_sockets_dir: "{{ phpData.fpm_sockets_dir }}"
         custom_listen: "{{ custom_listen }}"
@@ -152,54 +243,56 @@ makina-php-pool-{{ pool_name }}:
         xdebug_profiler_enable: {{ phpData.modules.xdebug.profiler_enable|int(0) }}
         xdebug_profiler_enable_trigger: {{ phpData.modules.xdebug.profiler_enable_trigger|int(0) }}
         xdebug_profiler_output_name: "{{ phpData.modules.xdebug.profiler_output_name }}"
-        mode: "production"
-{% if grains['makina-states.nodetype.devhost'] %}
-    - context:
-        mode: "dev"
-{% endif %}
+        mode: {{mode}}
+        {% for variablename, variablevalue in extra_jinja_pool_variables.iteritems() %}
+        {{ variablename }}: {{ variablevalue|yaml }}
+        {% endfor %}
     - require:
       - mc_proxy: makina-php-post-inst
     - watch_in:
       - mc_proxy: makina-php-pre-restart
 
-# Ensure directories referenced in the pool exists
-# and have the right users
-makina-php-pool-{{ pool_name }}-webroot-directory:
+makina-php-pool-{{ pool_name }}-directories:
   file.directory:
     - user: {{ phpData.fpm.phpuser }}
     - group: {{localsettings.group }}
     - mode: "2775"
     - makedirs: True
-    - name: {{ project_root }}/{{ relative_document_root }}
+    - names:
+      - {{ private_dir }}
+      - {{ tmp_dir }}
+      - {{ log_dir }}
+      - {{ doc_root }}
+      {% if phpData.fpm.use_socket %}
+      - {{ sock_dir }}
+      {% endif %}
     - require:
       - mc_proxy: makina-php-post-inst
     - require_in:
       - mc_proxy: makina-php-pre-restart
 
-makina-php-pool-{{ pool_name }}-log-directory:
-  file.directory:
-    - user: {{ phpData.fpm.phpuser }}
-    - group: {{localsettings.group }}
-    - mode: "2775"
-    - makedirs: True
-    - name: {{ project_root }}/var/log
-    - require:
-      - mc_proxy: makina-php-post-inst
-    - require_in:
-      - mc_proxy: makina-php-pre-restart
-
-{% if phpData.fpm.use_socket %}
-makina-php-pool-{{ pool_name }}-socket-directory:
-  file.directory:
-    - user: {{ phpData.fpm.phpuser }}
-    - group: {{localsettings.group }}
-    - mode: "2775"
-    - makedirs: True
-    - name: {{ project_root }}/{{ phpData.fpm.socket_relative_path }}
-    - require:
-      - mc_proxy: makina-php-post-inst
-    - require_in:
-      - mc_proxy: makina-php-pre-restart
+{# very minimal index.php file #}
+{% if minimal_index %}
+{{ minimal_index(doc_root, project, domain=domain, mode=mode)}}
 {% endif %}
 
+{%- endmacro %}
+
+{% macro minimal_index(doc_root,
+                       project,
+                       domain='no domain',
+                       mode='unkown mode') %}
+{{ project }}-minimal-index:
+  file.managed:
+    - name: {{ doc_root }}/index.php
+    - unless: test -e "{{ doc_root }}/index.php"
+    - makedirs: true
+    - source:
+    - contents: '<?php phpinfo(); ?>'
+    - user: {{apacheData.httpd_user }}
+    - group: {{ localsettings.group }}
+    - require:
+      - mc_proxy: makina-php-pre-restart
+    - require_in:
+      - mc_proxy: makina-php-pre-restart
 {%- endmacro %}

@@ -210,4 +210,32 @@ def get_common_vars(
             'makina-projects.{0}.{1}'.format(*(name, k)), d)
     return data
 
+
+def gen_id(id):
+    return id.replace('.', '-')
+
+
+def doc_root(doc_root=None,
+             domain=None,
+             project_root=None,
+             project=None,
+             relative_document_root='www'):
+    localsettings = __salt__['mc_localsettings.settings']()
+    if not doc_root:
+        if not domain and not project:
+            raise Exception('Need at least one of domain or project')
+        if not project:
+            project = gen_id(domain)
+        if not project_root:
+            project_root = '{0}/{1}/project'.format(
+                localsettings['locations'['projects_dir']], project)
+        doc_root = '{0}/{1}'.format(project_root,
+                                    relative_document_root)
+    return doc_root
+
+
+def server_aliases(value):
+    if not isinstance(value, list):
+        value = value.split()
+    return value
 #

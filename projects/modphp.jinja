@@ -1,0 +1,20 @@
+{# Generate in one step the apache virtualhost,
+                        the apache configuration
+                        and the modphp conf #}
+{% macro apache_modphp_virtualhost(domain,
+                                    project=None,
+                                    project_root=None,
+                                    doc_root=None,
+                                    php_opts=None,
+                                    apache_opts=None,
+                                    includes=True) %}
+{{ php_vhost(domain,
+             php_macro=minimal_index,
+             project=project,
+             project_root=project_root,
+             doc_root=doc_root,
+             php_opts=php_opts,
+             apache_opts=apache_opts,
+             includes=includes) }}
+{% endmacro %}
+{# vim: set nofoldenable :#}

@@ -42,9 +42,11 @@ makina-fastcgi-apache-module_connect_fastcgi_mod_fastcgi_module_conf:
     - template: 'jinja'
     - defaults:
         enabled: {{ enabled }}
-        shared_mode: {{ shared_mode }}
         project_root: '{{project_root}}'
+        {#  not used anymore
         socket_directory:  '{{socket_directory }}'
+        shared_mode: {{ shared_mode }}
+        #}
     - require:
       - mc_proxy: makina-php-post-inst
       - mc_proxy: makina-apache-php-pre-conf
