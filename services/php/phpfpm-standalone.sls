@@ -52,12 +52,11 @@ makina-phpfpm-remove-default-pool:
     - name : {{ phpSettings.etcdir }}/fpm/pool.d/www.conf
 
 # --------- Pillar based php-fpm pools
-{% from 'makina-states/services/php/php_macros.jinja' import pool with context %}
 {% if 'register-pools' in phpSettings %}
 {%   for site,siteDef in phpSettings['register-pools'].iteritems() %}
 {%     do siteDef.update({'site': site}) %}
 {%     do siteDef.update({'phpSettings': phpSettings}) %}
-{{     pool(**siteDef) }}
+{{     services.php.fpm_pool(**siteDef) }}
 {%   endfor %}
 {% endif %}
 

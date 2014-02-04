@@ -18,7 +18,7 @@
 {% set nodetypes = services.nodetypes %}
 {% set locs = localsettings.locations %}
 {% set phpData = services.phpSettings %}
-{% macro pool(
+{% macro fpm_pool(
               site = 'example.com',
               pool_name = None,
               custom_listen = None,

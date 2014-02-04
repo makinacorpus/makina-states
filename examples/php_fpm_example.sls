@@ -10,16 +10,14 @@
 #
 {% import "makina-states/_macros/services.jinja" as services with context %}
 {% set localsettings = services.localsettings %}
-{% set nodetypes = services.nodetypes %}
 {% set locs = localsettings.locations %}
-{% set phpSettings = services.phpSettings %}
+{% set php = services.pĥp %}
+{% set apache = services.apache %}
 
 include:
-  # IMPORTANT: If you use Apache, include it BEFORE phpfpm, so that
-  # we can detect apache is used and trigger the restart in case of mod_php removal
   #- makina-states.services.http.nginx
   - makina-states.services.php.phpfpm_with_apache
-  - makina-states.services.php.phpfpm
+
 extend:
   makina-apache-main-conf:
     mc_apache:
@@ -28,16 +26,17 @@ extend:
     file.managed:
       - context:
           shared_mode: False
-          project_root: '{{ locs.projects_dir }}/php.example.com'
+          project_root: '{{ locs.projects_dir }}/php-example-com/project/www'
           socket_directory: '/var/fcgi/'
 
-# Adding some php packages 
+# Adding some php packages
 my-phpfpm-other-modules:
   pkg.installed:
     - pkgs:
       - {{ phpSettings.packages.pear }}
     - require_in:
-      - pkg: makina-php-pkgs
+      - mc_proxy: makina-apache-php-post-inst
+
 # Ensuring some other are not there
 # Note that you cannot remove a module listed in makina-mod_php-pkgs
 my-phpfpm-removed-modules:
@@ -45,11 +44,10 @@ my-phpfpm-removed-modules:
     - pkgs:
       - {{ phpSettings.packages.memcached }}
     - require_in:
-      - pkg: makina-php-pkgs
+      - mc_proxy: makina-apache-php-post-inst
 
 
-{% from 'makina-states/services/php/php_macros.jinja' import pool with context %}
-{{ pool(
+{{ php.fpm_pool(
         site= 'php.example.com',
         pool_name= 'devexample',
         settings= {
@@ -77,14 +75,13 @@ my-phpfpm-removed-modules:
 ) }}
 
 # Custom Apache Virtualhost
-{% from 'makina-states/services/http/apache_macros.jinja' import virtualhost with context %}
-{{ virtualhost(
+{{ apache.virtualhost(
           site = salt['pillar.get']('project-foobar-apache-vh1-name', 'php.example.com'),
           small_name = salt['pillar.get']('project-foobar-apache-vh1-nickname', 'phpexample'),
           active = True,
           number = '990',
           log_level = salt['pillar.get']('project-foobar-apache-vh1-loglevel', 'info'),
-          documentRoot = salt['pillar.get']('project-foobar-apache-vh1-docroot', locs.projects_dir+'/php.example.com/www'),
+          documentRoot = salt['pillar.get']('project-foobar-apache-vh1-docroot', locs.projects_dir+'/php-example-com/project/www'),
           vh_in_template_source='salt://makina-states/files/etc/apache2/includes/in_virtualhost_drupal_phpfpm_template.conf',
           allow_htaccess = False,
           extra_jinja_apache_variables = {
@@ -98,8 +95,10 @@ my-phpfpm-removed-modules:
 # very minimal index.php file
 my-phpfpm-example-minimal-index:
   cmd.run:
-    - name: echo "<?php phpinfo(); ?>" >> {{ locs.projects_dir }}/php.example.com/www/index.php; echo chown www-data:{{ localsettings.group }} {{ locs.projects_dir }}/php.example.com/www/index.php
+    - name: >
+            echo "<?php phpinfo(); ?>" >> {{ locs.projects_dir }}/php-example-com/www/index.php;
+            echo chown www-data:{{ localsettings.group }} {{ locs.projects_dir }}/php-example-com/www/index.php
     - require:
-       - pkg: makina-php-pkgs
+      - mc_proxy: makina-apache-php-post-inst
     - require_in:
         - file: makina-php-pool-devexample
