@@ -4,6 +4,10 @@
 {%- set services = base.services %}
 {%- set saltmac = base.saltmac %}
 {%- set localsettings = base.localsettings %}
+{%- set locs = base.localsettings.locations %}
+
+{% set rftproot = locs.srv_dir + '/ftp' %}
+{% set ftproot = rftproot + '/lizmap' %}
 
 {# Base system prerequisite #}
 {%- macro lizmap_pkgs(common) %}
@@ -12,77 +16,97 @@
 {% endmacro %}
 
 {% macro lizmap_layout(common) %}
-{%  set basedirs = [
-  common.project_root+'/webapp',
-  common.project_root+'/cache',
-  common.project_root+'/ftp/template',
-  common.project_root+'/ftp/template/qgis',
-  ] %}
-{%    do basedirs.append(common.project_root + '/cache/' + user ) %}
-{% endfor %}
+{# FTP group for QGIS and user file & maps  manegement #}
+{{common.name}}-www-data-in-editor:
+  user.present:
+    - name: www-data
+    - remove_groups: False
+    - groups:
+      - {{localsettings.group}}
+    - watch_in:
+      - mc_proxy: makina-apache-pre-restart
+{%  set basedirs = [common.project_root+'/webapp',
+                    common.project_root+'/cache',
+                    ftproot + '/' + common.name + '/template',
+                    ftproot + '/' + common.name + '/template/qgis'] %}
+
 {% for dir in basedirs %}
 {{common.name}}-rootdir-{{dir}}:
   file.directory:
     - name: {{dir}}
-    - user: {{common.name}}_{{common.user}}
+    - user: {{common.user}}
     - group: www-data
     - mode: 770
     - makedirs: true
     - require_in:
       - mc_proxy: {{common.name}}-rootdir-dirs
+      - mc_proxy: {{common.name}}-lizmap-users
 {% endfor %}
 
-{{common.name}}-rootdir-dirs:
-  mc_proxy.hook: []
-
-{% for usr in common.data.users %}
-{% set user = common.name + '_' + usr %}
-
-{{common.name}}-ftp-group-{{user}}:
+{# create each user, his home and base layout #}
+{% for user, data in common.data.users.items() %}
+{{common.name}}-ftp-user-{{user}}:
   group.present:
     - name: {{user}}
-
-{{common.name}}-ftp-user-{{user}}:
   user.present:
     - shell: /bin/ftponly
     - name: {{user}}
+    - password: {{data.password}}
     - group: {{user}}
     - fullname: {{user}} user
-    - home: {{common.project_root}}/ftp/{{user}}
+    - home: {{ftproot}}/{{common.name}}/{{user}}
+    - remove_groups: False
     - gid_from_name: True
     - require:
-      - mc_proxy: {{common.name}}-rootdir-dirs
-      - group: {{common.name}}-ftp-group-{{user}}
+      - mc_proxy: {{common.name}}-lizmap-users
+      - group: {{common.name}}-ftp-user-{{user}}
     - require_in:
       - file: {{common.name}}-ftp-home-{{user}}
+      - mc_proxy: {{common.name}}-rootdir-dirs
+
+{{common.name}}-www-data-in-ftpgroup-{{user}}:
+  user.present:
+    - name: www-data
+    - remove_groups: False
+    - groups:
+      - {{user}}
+    - watch_in:
+      - mc_proxy: makina-apache-pre-restart
 
 {{common.name}}-ftp-home-{{user}}:
   file.directory:
-    - home: {{common.project_root}}/ftp/{{user}}
-    - user: {{common.name}}_{{common.user}}
+    - names:
+      - {{ftproot}}/{{common.name}}/{{user}}
+      {%  for n in ['1', '2', '3', '4', '5'] %}
+      - {{ftproot}}/{{common.name}}/{{user}}/qgis/rep/{{n}}
+      {% endfor %}
+      - {{ftproot}}/{{common.name}}/{{user}}/cache
+    - user: {{common.user}}
     - group: www-data
     - mode: 770
     - makedirs: true
     - require_in:
       - mc_proxy: {{common.name}}-rootdir-dirs
-
-{%    for n in ['1', '2', '3', '4', '5'] %}
-{{common.name}}-ftp-home-{{user}}-{{n}}:
-  file.directory:
-    - home: {{common.project_root}}/ftp/{{user}}/qgis/rep/{{n}}
-    - user: {{common.name}}_{{common.user}}
-    - group: www-data
-    - mode: 770
-    - makedirs: true
-    - require_in:
-      - mc_proxy: {{common.name}}-rootdir-dirs
-{%    endfor %}
-{%  endfor %}
 {% endfor %}
+
+# Custom virtualhost
+{% from 'makina-states/services/http/apache_macros.jinja' import virtualhost with context %}
+{{ virtualhost(
+            site = salt['pillar.get'](common.domain),
+            small_name = salt['pillar.get']('lizmap-vh-'+common.name'),
+            active = True,
+            number = '900',
+            log_level = common.vhost_log,
+            serverAlias = salt['pillar.get']('project-foo-apache-vh1-alias', 'foobar.com'),
+            documentRoot = common.project_root+'/webapp/lizmap/www',
+            redirect_aliases = True,
+            allow_htaccess = False) }}
+
 {% endmacro %}
 
 {%- macro lizmap_app(common) %}
 {{ lizmap_layout(common) }}
+{# install the app. #}
 {{common.name}}-lizmapwebclient:
   mc_git.latest:
     - name: https://github.com/makinacorpus/lizmap-web-client.git
@@ -94,6 +118,9 @@
       {% endif %}
       - mc_git: {{common.name}}-checkout-code
       - mc_proxy: {{common.name}}-rootdir-dirs
+    - watch_in:
+      - mc_proxy: {{common.name}}-post-app
+      - mc_proxy: makina-apache-pre-restart
 {% endmacro %}
 
 {# Database #}
@@ -106,6 +133,62 @@
   template='postgis') }}
 #}
 {%- endmacro %}
+
+{% macro fix_perms(common) %}
+{# create a script to be sure that everyone gets its own respective perms
+# www-data & the ftp user need special love
+#}
+{{common.name}}-reset-perms:
+  file.managed:
+    - name: {{common.project_root}}/reset-perms.sh
+    - source:
+    - contents: >
+                #!/usr/bin/env bash
+
+                {{saltmac.msr}}/_scripts/reset-perms.py
+                -u {{common.user}} -g {{common.group}}
+                --path "{{ftproot}}/{{common.name}}"
+                --fmode 770 --dmode 770
+                --groups www-data:rwx;
+
+                {% for usr in common.data.users %}
+                {{saltmac.msr}}/_scripts/reset-perms.py
+                -u {{common.user}} -g {{common.group}}
+                --path "{{ftproot}}/{{common.name}}/{{usr}}"
+                --fmode 770 --dmode 770
+                --groups www-data:rwx
+                --users {{usr}}:rwx
+                {% endfor %}
+
+                {{saltmac.msr}}/_scripts/reset-perms.py
+                -u {{common.user}} -g lizmap
+                --path "{{common.project_root}}/webapp"
+                --fmode 770 --dmode 770
+                --groups www-data:r-x;
+
+                chmod o+x "{{ftproot}}/{{common.name}}" "{{ftproot}}" "{{rftproot}}"
+
+                {{saltmac.msr}}/_scripts/reset-perms.py
+                -u {{common.user}} -g {{common.group}}
+                --path "{{common.project_root}}/webapp"
+                --fmode 770 --dmode 770
+                --groups www-data:r-x;
+
+    - mode: 755
+    - user: {{common.user}}
+    - require:
+      - mc_proxy: {{common.name}}-post-app
+
+{# TODO
+  cmd.run:
+    - name: {{common.project_root}}/reset-perms.sh
+    - user: root
+    - group: root
+    - cwd: {{common.project_root}}
+    - require:
+      - file: {{common.name=}}-reset-perms
+      #}
+{% endmacro %}
 
 {#  Cron from generic: pack & backup & restart each day, fullbackup per week (sunday) #}
 {%- macro generic_crons(common) %}
@@ -127,17 +210,24 @@
 {%- endmacro %}
 
 
-#
+{#
 # Data dictionnaries that feed the "common.data" dictionnary
 # This is one of the most difficult part to understand, idea is to
-#
+#}
 
+# to encode a password
+# python
+# >>> import crypt;print crypt.crypt('password', '$6$SALTsalt')
+# current hash is s3cret
 {%- set default_defaults = {
+  'vhost_log': 'debug',
   'cron_hour': 2,
   'cron_minute': 5,
   'has_db': True,
   'has_app': True,
-  'users': ['user1'],
+  'users': {
+    'user1': {'password': '$6$SALTsalt$tWpL2jAD/nHiEHI09r96ie7iyN5enXazMNAGfZI/X9TTpAzTy.8JQi465e6V.aXFS8RGc0sEXDXpzI5p.V8ZB.'},
+  },
   'db': {'name': 'lizmap',
          'user': 'lizmap',
          'password': 'lizmap',},
@@ -145,11 +235,19 @@
 
 {%- set default_env_defaults = {
   'dev': {},
-  'prod': {}
+  'prod': {
+    'vhost_log': 'error',
+  }
  } %}
 
 {# Makina project per project macro couple (install_lizmap/install_project) #}
 {%- macro install_lizmap_project_do(common) %}
+{{common.name}}-rootdir-dirs:
+  mc_proxy.hook: []
+{{common.name}}-lizmap-users:
+  mc_proxy.hook: []
+{{common.name}}-post-app:
+  mc_proxy.hook: []
 # install postgresql only if we have the db role enabled
 {%-   if common.data.has_app %}
 {{-     lizmap_pkgs(common)}}
@@ -158,6 +256,7 @@
 {%-   if common.data.has_db %}
 {{-     lizmap_db(common)}}
 {%-   endif %}
+{{    fix_perms(common) }}
 {%- endmacro %}
 
 {# Look available arguments in _modules/mc_project.py:get_common_vars #}
@@ -166,6 +265,7 @@
 {%-  do kwargs.setdefault('env_defaults', default_env_defaults) %}
 {%-  do kwargs.setdefault('user', 'lizmap') %}
 {%-  set common = salt['mc_project.get_common_vars'](*varargs, **kwargs) %}
+{% if common.full %}
 {%-  if common.data.has_app %}
 {%-    do common.sls_includes.extend(['makina-states.services.php.phpfpm_with_apache'])%}
 {%-    do common.sls_includes.extend(['makina-states.services.gis.qgis',])%}
@@ -173,5 +273,8 @@
 {%-  if common.data.has_db %}
 {%-   do common.sls_includes.extend(['makina-states.services.gis.postgis',])%}
 {%-  endif %}
+{%- else  %}
+{%-   do common.sls_includes.extend(['makina-states.services.http.apache-hooks',])%}
+{% endif %}
 {{-  base.install_project(common, install_macro=install_lizmap_project_do) }}
 {%- endmacro %}
