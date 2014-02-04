@@ -42,6 +42,7 @@
     - system: True
 {%- endfor %}
 
+
 {{common.name}}-user-{{common.user}}:
   user.present:
     - name: {{common.user}}
@@ -254,7 +255,6 @@
 #}
 {%- endmacro %} {# install_apache #}
 
-
 {#-
 # PERMISSIONS SETUP, STAY SECURE and reset file permissions, more over never let others this our stuff !
 #}
@@ -264,14 +264,11 @@
 {{common.name}}-restricted-perms:
   cmd.script:
     - source: {{saltmac.resetperms}}
-    - template: jinja
-    - dmode: '0770'
-    - fmode: '0770'
-    - reset_user:  root
-    - reset_group: "{{localsettings.group}}"
-    - reset_paths:
-      - {{common.salt_root}}
-      - {{common.pillar_root}}
+    - args: >
+            --dmode '0770' --fmode '0770'
+            --user  root --group "{{localsettings.group}}"
+            --paths "{{common.salt_root}}"
+            --paths "{{common.pillar_root}}"
     - require:
       - cmd: {{common.name}}-checkout-code
 {%-    endif %}
@@ -280,17 +277,11 @@
 {{common.name}}-perms:
   cmd.script:
     - source: {{saltmac.resetperms}}
-    - template: jinja
-    - dmode: '0770'
-    - fmode: '0770'
-    {% if not common.no_user -%}
-    - reset_user: {{common.user}}
-    {% else -%}
-    - reset_user: root
-    {%- endif %}
-    - reset_group: {{common.group}}
-    - reset_paths:
-      - {{common.project_root}}
+    - args: >
+            --dmode '0770' --fmode '0770'
+            --paths "{{common.project_root}}"
+            --user {% if not common.no_user%}{{common.user}}{% else -%}root{% endif %}
+            --group {{common.group}}
     - require:
       - mc_git: {{common.name}}-checkout-code
       {% if not common.no_salt -%}
@@ -299,7 +290,6 @@
 {%- endif %}
 {%- endif %}
 {%- endmacro %}
-
 {#-
 # Register all the app domain's in /etc/hosts
 # If we are in devmode (vagrant), also add them to the hosts to the parent box
@@ -326,8 +316,8 @@ makina-parent-append-etc-hosts-accumulated-project-{{common.name}}:
     - name: parent-hosts-append-accumulator-{{ vagrantvm.vm_name }}-entries
     - text: |
             {% for domain in common.domains -%}
-            {{ vagrantvm.ip2 }} {{ domain }}
-            {{ vagrantvm.ip1 }} {{ domain}}.nat
+            {{ vagrantvm.ip2 }} {{domain}}
+            {{ vagrantvm.ip1 }} {{domain}}
             {%- endfor %}
     - require_in:
       - file: makina-append-parent-etc-hosts-management
