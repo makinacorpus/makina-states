@@ -337,6 +337,8 @@ def settings():
                 'packages': {
                     'main': 'php5',
                     'mod_fcgid': apacheSettings['mod_packages']['mod_fcgid'],
+                    'mod_fastcgi': (
+                        apacheSettings['mod_packages']['mod_fastcgi']),
                     'mod_php': 'libapache2-mod-php5',
                     'mod_php_filter': 'libapache2-mod-php5filter',
                     'php5_cgi': 'php5-cgi',

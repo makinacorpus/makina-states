@@ -6,7 +6,7 @@
 {% set locs = localsettings.locations %}
 {% set phpSettings = common.phpSettings %}
 {% set apacheSettings = services.apacheSettings %}
-{% macro fcgid_common(
+{% macro fastcgi_common(
   full=True,
   shared_mode=apacheSettings.fastcgi_shared_mode,
   enabled=apacheSettings.fastcgi_enabled,
@@ -16,7 +16,7 @@
 
 {% if full %}
 # Ensure that using php-fpm with apache we remove mod_php from Apache
-makina-fcgid-http-server-backlink:
+makina-fastcgi-http-server-backlink:
   pkg.removed:
     - pkgs:
       - {{ phpSettings.packages.mod_php }}
@@ -32,13 +32,13 @@ makina-fcgid-http-server-backlink:
       - mc_proxy: makina-php-post-inst
 {% endif %}
 
-makina-fcgid-apache-module_connect_fcgid_mod_fcgid_module_conf:
+makina-fastcgi-apache-module_connect_fastcgi_mod_fastcgi_module_conf:
   file.managed:
     - user: root
     - group: root
     - mode: 664
-    - name: {{ locs.conf_dir }}/apache2/mods-available/fcgid.conf
-    - source: salt://makina-states/files/etc/apache2/mods-available/fcgid.conf
+    - name: {{ locs.conf_dir }}/apache2/mods-available/fastcgi.conf
+    - source: salt://makina-states/files/etc/apache2/mods-available/fastcgi.conf
     - template: 'jinja'
     - defaults:
         enabled: {{ enabled }}
@@ -52,7 +52,7 @@ makina-fcgid-apache-module_connect_fcgid_mod_fcgid_module_conf:
       - mc_proxy: makina-apache-php-post-conf
       - mc_proxy: makina-php-pre-restart
 
-makina-fcgid-apache-module_connect_fcgid_notproxyfcgi:
+makina-fastcgi-apache-module_connect_fastcgi_notproxyfcgi:
   mc_apache.exclude_module:
     - modules:
       - proxy_fcgi
@@ -64,10 +64,10 @@ makina-fcgid-apache-module_connect_fcgid_notproxyfcgi:
       - mc_proxy: makina-php-pre-restart
       - mc_apache: makina-apache-main-conf
 
-makina-fcgid-apache-module_connect_fcgid:
+makina-fastcgi-apache-module_connect_fastcgi:
   mc_apache.include_module:
     - modules:
-      - fcgid
+      - fastcgi
       - actions
     - require:
       - mc_proxy: makina-php-post-inst
@@ -80,14 +80,14 @@ makina-fcgid-apache-module_connect_fcgid:
 
 {% macro includes(full=True) %}
 {% if full %}
-  - makina-states.services.http.apache_modfcgid
+  - makina-states.services.http.apache_modfastcgi
 {% else %}
-  - makina-states.services.http.apache_modfcgid-standalone
+  - makina-states.services.http.apache_modfastcgi-standalone
 {% endif %}
 {% endmacro %}
 
 {% macro do(full=False) %}
-{{ salt['mc_macros.register']('services', 'http.apache_modfcgid') }}
+{{ salt['mc_macros.register']('services', 'http.apache_modfastcgi') }}
 {#
 include:
 {{ common.common_includes(full=full, apache=True) }}
@@ -104,20 +104,20 @@ include:
 extend:
 {{ apache.extend_switch_mpm(apacheSettings.multithreaded_mpm) }}
 
-{{ fcgid_common(full=full) }}
+{{ fastcgi_common(full=full) }}
 {% if full %}
 # Adding mod_proxy_fcgi apache module (apache > 2.3)
 # Currently mod_proxy_fcgi which should be the new default
 # is commented, waiting for unix socket support
 # So we keep using the old way
-makina-fcgid-apache-module_connect_fcgid_mod_fcgid_module:
+makina-fastcgi-apache-module_connect_fastcgi_mod_fastcgi_module:
   pkg.installed:
     - pkgs:
-      - {{ apacheSettings.mod_packages.mod_fcgid }}
+      - {{ apacheSettings.mod_packages.mod_fastcgi }}
     - require:
       - mc_proxy: makina-php-pre-inst
     - watch_in:
-      - pkg: makina-fcgid-http-server-backlink
+      - pkg: makina-fastcgi-http-server-backlink
       - mc_proxy: makina-php-post-inst
 {% endif %}
 {% endmacro %}

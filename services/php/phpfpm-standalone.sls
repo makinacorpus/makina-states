@@ -16,7 +16,7 @@
 # consult grains values with "salt '*' grains.items"
 #
 {% import "makina-states/services/php/common.sls" as common with context %}
-{% import "makina-states/services/http/apache_modfcgid.sls" as fcgid with context %}
+{% import "makina-states/services/http/apache_modfastcgi.sls" as fastcgi with context %}
 {% set services = common.services %}
 {% set localsettings = common.localsettings %}
 {% set nodetypes = common.nodetypes %}
@@ -29,7 +29,7 @@
 include:
 {{common.common_includes(full=full, apache=apache) }}
 {% if apache %}
-{{ fcgid.includes(full=full) }}
+{{ fastcgi.includes(full=full) }}
 {% endif %}
 
 
@@ -113,7 +113,7 @@ makina-phpfpm-apache-module_connect_phpfpm_mod_fastcgi_module:
     - require:
       - mc_proxy: makina-php-pre-inst
     - watch_in:
-      - pkg: makina-fcgid-http-server-backlink
+      - pkg: makina-fastcgi-http-server-backlink
       - mc_proxy: makina-php-post-inst
 {% endif %}
 {% endmacro %}

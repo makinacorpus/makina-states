@@ -207,6 +207,7 @@ def settings():
                     },
                     'mod_packages': {
                         'mod_fcgid': 'libapache2-mod-fcgid',
+                        'mod_fastcgi': 'libapache2-mod-fastcgi',
                     },
                     'fastcgi_project_root': '',
                     'fastcgi_shared_mode': True,

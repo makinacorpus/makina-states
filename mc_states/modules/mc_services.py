@@ -431,6 +431,7 @@ def registry():
             'php.modphp': {'active': False},
             'php.phpfpm': {'active': False},
             'http.apache_modfcgid': {'active': False},
+            'http.apache_modfastcgi': {'active': False},
             'php.phpfpm_with_apache': {'active': False},
             'virt.docker': {'active': False},
             'virt.docker-shorewall': {'active': False},
