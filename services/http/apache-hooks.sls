@@ -43,8 +43,8 @@ makina-apache-vhostconf:
 makina-apache-post-conf:
   mc_proxy.hook:
     - watch_in:
-      - mc_proxy: makina-apache-pre-restart
-      - mc_proxy: makina-apache-post-restart
+      - mc_proxy: makina-apache-pre-reload
+      - mc_proxy: makina-apache-post-reload
 
 makina-apache-pre-restart:
   mc_proxy.hook:
@@ -52,4 +52,12 @@ makina-apache-pre-restart:
       - mc_proxy: makina-apache-post-restart
 
 makina-apache-post-restart:
+  mc_proxy.hook: []
+
+makina-apache-pre-reload:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: makina-apache-post-reload
+
+makina-apache-post-reload:
   mc_proxy.hook: []

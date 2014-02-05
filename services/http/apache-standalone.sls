@@ -390,6 +390,7 @@ makina-apache-conf-syntax-check:
       - mc_proxy: makina-apache-post-conf
     - watch_in:
       - mc_proxy: makina-apache-pre-restart
+      - mc_proxy: makina-apache-pre-reload
 
 {# REMOVED, devhost is not using NFS anymore
 #--- APACHE STARTUP WAIT DEPENDENCY --------------
@@ -422,8 +423,6 @@ makina-apache-restart:
       # restart service in case of package install
     - watch:
       - mc_proxy: makina-apache-post-inst
-      - mc_proxy: makina-apache-pre-conf
-      - mc_proxy: makina-apache-post-conf
       - mc_proxy: makina-apache-pre-restart
 
 {# In case of VirtualHosts change graceful reloads should be enough
@@ -432,12 +431,11 @@ makina-apache-reload:
   service.running:
     - name: {{ services.apacheSettings.service }}
     - watch_in:
-      - mc_proxy: makina-apache-post-restart
+      - mc_proxy: makina-apache-post-reload
     - watch:
-      - mc_proxy: makina-apache-post-inst
       - mc_proxy: makina-apache-pre-conf
       - mc_proxy: makina-apache-post-conf
-      - mc_proxy: makina-apache-pre-restart
+      - mc_proxy: makina-apache-pre-reload
     - enable: True
     - reload: True
     # most watch requisites are linked here with watch_in
