@@ -27,8 +27,12 @@
 {{ salt['mc_macros.register']('services', 'php.modphp') }}
 include:
 {{ common.common_includes(full=full, apache=True) }}
+ 
+extend:
+{{ common.apache.extend_switch_mpm('prefork') }}
 
-# Manage php-fpm packages
+{% if full %}
+{# Manage php-fpm packages #}
 makina-mod_php-exclude-fpm-pkg:
   pkg.removed:
     - pkgs:
@@ -37,9 +41,6 @@ makina-mod_php-exclude-fpm-pkg:
       - {{ phpSettings.packages.php5_cgi }}
     - watch_in:
       - mc_proxy: makina-php-pre-inst
-
-extend:
-{{ common.apache.extend_switch_mpm('prefork') }}
 
 {# Manage mod_php packages #}
 makina-php-pkgs:
@@ -54,9 +55,10 @@ makina-php-pkgs:
       - {{ phpSettings.packages.apc }}
       {%- endif %}
     - require:
-        - mc_proxy: makina-php-pre-inst
-    # mod_php packages alteration needs an apache restart
+      - mc_proxy: makina-php-pre-inst
+    {# mod_php packages alteration needs an apache restart #}
     - watch_in:
-        - mc_proxy: makina-php-post-inst
+      - mc_proxy: makina-php-post-inst
+{% endif %}
 {% endmacro %}
 {{ do(full=False)}}

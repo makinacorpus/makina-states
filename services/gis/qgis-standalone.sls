@@ -4,12 +4,14 @@
 {% set nodetypes = services.nodetypes %}
 {% set locs = localsettings.locations %}
 {% macro do(full=True) %}
+{# its up to the project to decide the fcgi implementation afterall
 include:
   {% if full %}
-  - makina-states.services.http.apache_modfcgid
+  - makina-states.services.http.apache_modfastcgi
   {% else %}
-  - makina-states.services.http.apache_modfcgid-standalone
+  - makina-states.services.http.apache_modfastcgi-standalone
   {% endif %}
+#}
 
 {% if full %}
 {% import "makina-states/services/php/common.sls" as phpcommon with context %}

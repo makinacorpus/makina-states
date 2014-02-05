@@ -179,6 +179,7 @@ def settings():
         locations = localsettings['locations']
 
         phpdefaults = {
+            'rotate': 365,
             'register-pools': {},
             'timezone': 'Europe/Paris',
             'open_basedir': True,

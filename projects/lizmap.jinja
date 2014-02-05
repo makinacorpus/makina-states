@@ -1,4 +1,5 @@
 {%- import "makina-states/projects/base.jinja" as base with context %}
+{%- import "makina-states/projects/phpfpm.jinja" as phpfpm with context %}
 {%- import "makina-states/services/db/postgresql.sls" as pgsql with context %}
    -
 {%- set services = base.services %}
@@ -6,8 +7,8 @@
 {%- set localsettings = base.localsettings %}
 {%- set locs = base.localsettings.locations %}
 
-{% set rftproot = locs.srv_dir + '/ftp' %}
-{% set ftproot = rftproot + '/lizmap' %}
+{% set rftproot = locs.srv_dir + "/ftp" %}
+{% set ftproot = rftproot + "/lizmap" %}
 
 {# Base system prerequisite #}
 {%- macro lizmap_pkgs(common) %}
@@ -17,37 +18,41 @@
 
 {% macro lizmap_layout(common) %}
 {# FTP group for QGIS and user file & maps  manegement #}
-{{common.name}}-www-data-in-editor:
-  user.present:
-    - name: www-data
-    - remove_groups: False
-    - groups:
-      - {{localsettings.group}}
-    - watch_in:
-      - mc_proxy: makina-apache-pre-restart
-      - mc_proxy: {{common.name}}-postinstall-project
-    - watch:
-      - mc_proxy: {{common.name}}-preinstall-project
-
-{%  set basedirs = [common.project_root+'/webapp',
-                    common.project_root+'/cache',
-                    ftproot + '/' + common.name + '/template',
-                    ftproot + '/' + common.name + '/template/qgis'] %}
+{%  set basedirs = [common.project_root+"/webapp",
+                    common.project_root+"/cache",
+                    ftproot + "/" + common.name + "/template",
+                    ftproot + "/" + common.name + "/template/qgis"] %}
 {% for dir in basedirs %}
 {{common.name}}-rootdir-{{dir}}:
   file.directory:
     - name: {{dir}}
     - user: {{common.user}}
-    - group: www-data
+    - group: {{services.apacheSettings.httpd_user}}
     - mode: 770
     - makedirs: true
     - watch:
-      - mc_proxy: {{common.name}}-preinstall-project
+      - mc_proxy: {{common.name}}-preinstall-project-hook
     - watch_in:
-      - mc_proxy: {{common.name}}-postinstall-project
+      - mc_proxy: {{common.name}}-postinstall-project-hook
       - mc_proxy: {{common.name}}-rootdir-dirs
       - mc_proxy: {{common.name}}-lizmap-users
+
 {% endfor %}
+
+{{common.name}}-bindmounted-ftp:
+  file.directory:
+    - name: {{common.project_root}}/ftp
+    - user: {{services.apacheSettings.httpd_user}}
+    - group: {{services.apacheSettings.httpd_user}}
+    - mode:  775
+  mount.present:
+    - device: {{ftproot}}/{{common.name}}
+    - name: {{common.project_root}}/ftp
+    - type: none
+    - opts: bind,exec,rw
+    - watch:
+      - file: {{common.name}}-bindmounted-ftp
+      - mc_proxy: {{common.name}}-rootdir-dirs
 
 {# create each user, his home and base layout #}
 {% for user, data in common.data.users.items() %}
@@ -66,56 +71,44 @@
     - watch:
       - mc_proxy: {{common.name}}-lizmap-users
       - group: {{common.name}}-ftp-user-{{user}}
-      - mc_proxy: {{common.name}}-preinstall-project
+      - mc_proxy: {{common.name}}-preinstall-project-hook
     - watch_in:
       - file: {{common.name}}-ftp-home-{{user}}
       - mc_proxy: {{common.name}}-rootdir-dirs
-      - mc_proxy: {{common.name}}-postinstall-project
+      - mc_proxy: {{common.name}}-postinstall-project-hook
 
-{{common.name}}-www-data-in-ftpgroup-{{user}}:
+{{common.name}}-{{services.apacheSettings.httpd_user}}-in-ftpgroup-{{user}}:
   user.present:
-    - name: www-data
+    - name: {{services.apacheSettings.httpd_user}}
     - remove_groups: False
     - groups:
       - {{user}}
     - watch_in:
       - mc_proxy: makina-apache-pre-restart
-      - mc_proxy: {{common.name}}-postinstall-project
+      - mc_proxy: {{common.name}}-postinstall-project-hook
 
 {{common.name}}-ftp-home-{{user}}:
   file.directory:
     - names:
       - {{ftproot}}/{{common.name}}/{{user}}
-      {%  for n in ['1', '2', '3', '4', '5'] %}
+      {%  for n in ["1", "2", "3", "4", "5"] %}
       - {{ftproot}}/{{common.name}}/{{user}}/qgis/rep/{{n}}
       {% endfor %}
       - {{ftproot}}/{{common.name}}/{{user}}/cache
     - user: {{common.user}}
-    - group: www-data
+    - group: {{services.apacheSettings.httpd_user}}
     - mode: 770
     - makedirs: true
     - watch_in:
       - mc_proxy: {{common.name}}-rootdir-dirs
-      - mc_proxy: {{common.name}}-postinstall-project
+      - mc_proxy: {{common.name}}-postinstall-project-hook
 {% endfor %}
-
-# Custom virtualhost
-{% from 'makina-states/services/http/apache_macros.jinja' import virtualhost with context %}
-{{ virtualhost(
-            site = salt['pillar.get'](common.domain),
-            small_name = salt['pillar.get']('lizmap-vh-'+common.name'),
-            active = True,
-            number = '900',
-            log_level = common.vhost_log,
-            serverAlias = salt['pillar.get']('project-foo-apache-vh1-alias', 'foobar.com'),
-            documentRoot = common.project_root+'/webapp/lizmap/www',
-            redirect_aliases = True,
-            allow_htaccess = False) }}
-
 {% endmacro %}
 
 {%- macro lizmap_app(common) %}
+{% if True or common.full %}
 {{ lizmap_layout(common) }}
+{% endif %}
 {# install the app. #}
 {{common.name}}-lizmapwebclient:
   mc_git.latest:
@@ -129,24 +122,66 @@
       - mc_git: {{common.name}}-checkout-code
       - mc_proxy: {{common.name}}-rootdir-dirs
     - watch_in:
-      - mc_proxy: {{common.name}}-post-app
+      - mc_proxy: {{common.name}}-postinstall-project-hook
       - mc_proxy: makina-apache-pre-restart
+
+{{common.name}}-lizmapwebclient-docroot:
+  file.symlink:
+    - target: {{common.project_root}}/webapp/lizmap/www
+    - name: {{common.project_root}}/www
+    - watch:
+      - mc_git: {{common.name}}-lizmapwebclient
+    - watch_in:
+      - mc_proxy: makina-apache-vhostconf
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+{{common.name}}-lizmapwebclient-docroot-mapserv:
+  file.directory:
+    - name: {{common.project_root}}/www/cgi-bin
+    - watch:
+      - file: {{common.name}}-lizmapwebclient-docroot
+{{common.name}}-lizmapwebclient-docroot-fcgi:
+  file.copy:
+    - name: {{common.project_root}}/www/cgi-bin/qgis_mapserv.fcgi
+    - source: /usr/lib/cgi-bin/qgis_mapserv.fcgi
+    - force: true
+    - makedirs: true
+    - watch:
+      - file: {{common.name}}-lizmapwebclient-docroot-mapserv
+{% for file in ['admin.sld', 'wms_metadata.xml']  %}
+{{common.name}}-lizmapwebclient-docroot-fcgi-{{file}}:
+  file.managed:
+    - source: salt://makina-states/files/projects/lizmap/{{file}}
+    - name: {{common.project_root}}/www/cgi-bin/{{file}}
+    - template: jinja
+    - defaults:
+      data: {{common.data.WMS|yaml}}
+    - watch:
+      - file: {{common.name}}-lizmapwebclient-docroot-mapserv
+{% endfor %}
+{# Custom virtualhost #}
+{{ phpfpm.vhost(common) }}
+
 {% endmacro %}
 
 {# Database #}
 {%- macro lizmap_db(common) %}
-{#
-{{- pgsql.postgresql_db(common.data.db,name, template='postgis') }}
-{{- pgsql.postgresql_user(
-  group=common.data.db.name+'_owners',
-  password=common.db.password,
-  template='postgis') }}
-#}
+{{common.name}}-orchestrate-1:
+  mc_proxy.hook:
+    - watch:
+      - mc_proxy: {{ pgsql.orchestrate['base']['postinst'] }}
+    - watch_in:
+      - mc_proxy: {{common.name}}-preinstall-project-hook
+{% if common.full %}
+{{- pgsql.postgresql_db(common.data.db.name, template="postgis") }}
+{{- pgsql.postgresql_user(common.data['db']['user'],
+                          password=common.data['db']['password'],
+                          db=common.data['db']['name'],) }}
+{% endif %}
 {%- endmacro %}
 
 {% macro fix_perms(common) %}
 {# create a script to be sure that everyone gets its own respective perms
-# www-data & the ftp user need special love
+# {{services.apacheSettings.httpd_user}} & the ftp user need special love
 #}
 {{common.name}}-reset-perms:
   file.managed:
@@ -159,14 +194,14 @@
                 -u {{common.user}} -g {{common.group}}
                 --path "{{ftproot}}/{{common.name}}"
                 --fmode 770 --dmode 770
-                --groups www-data:rwx;
+                --groups {{services.apacheSettings.httpd_user}}:rwx;
 
                 {% for usr in common.data.users %}
                 {{saltmac.msr}}/_scripts/reset-perms.py
                 -u {{common.user}} -g {{common.group}}
                 --path "{{ftproot}}/{{common.name}}/{{usr}}"
                 --fmode 770 --dmode 770
-                --groups www-data:rwx
+                --groups {{services.apacheSettings.httpd_user}}:rwx
                 --users {{usr}}:rwx
                 {% endfor %}
 
@@ -174,7 +209,7 @@
                 -u {{common.user}} -g lizmap
                 --path "{{common.project_root}}/webapp"
                 --fmode 770 --dmode 770
-                --groups www-data:r-x;
+                --groups {{services.apacheSettings.httpd_user}}:r-x;
 
                 chmod o+x "{{ftproot}}/{{common.name}}" "{{ftproot}}" "{{rftproot}}"
 
@@ -182,40 +217,38 @@
                 -u {{common.user}} -g {{common.group}}
                 --path "{{common.project_root}}/webapp"
                 --fmode 770 --dmode 770
-                --groups www-data:r-x;
+                --groups {{services.apacheSettings.httpd_user}}:r-x;
 
     - mode: 755
     - user: {{common.user}}
     - watch:
-      - mc_proxy: {{common.name}}-post-app
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+{% if common.full %}
   cmd.run:
     - name: {{common.project_root}}/reset-perms.sh
     - user: root
     - group: root
     - cwd: {{common.project_root}}
     - watch:
-      - file: {{common.name=}}-reset-perms
-    - watch_in:
-      - mc_proxy: {{common.name}}-postinstall-project
+      - file: {{common.name}}-reset-perms
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+{% endif %}
 {% endmacro %}
 
-{#  Cron from generic: pack & backup & restart each day, fullbackup per week (sunday) #}
-{%- macro generic_crons(common) %}
-{%- set cron_hour   = common.data.get('cron_hour', 1) %}
-{%- set cron_minute = common.data.get('cron_minute', 0) %}
-
 {#
-{{common.name}}-zopepackdaily:
+ # reset all permission each 10 minutes to be sure to have ftp data avalaible
+ ##}
+{%- macro generic_crons(common) %}
+{%- set cron_hour   = common.data.get("cron_hour", 1) %}
+{%- set cron_minute = common.data.get("cron_minute", 0) %}
+{{common.name}}-fixperms:
   cron.present:
-    - comment: "{{common.name}}/project [zopepackdaily]"
-    - user: {{common.user}}
-    - minute:  {{ cron_minute + 0 }}
-    - hour: {{cron_hour}}
-    - name: {{common.project_root}}/bin/zeoserver-zeopack
+    - comment: "{{common.name}}/project [fixperms]"
+    - user: root
+    - minute:  "*/10"
+    - name: {{common.project_root}}/reset-perms.sh
     - watch:
-      - service: {{common.name}}-service
-#}
-
+      - mc_proxy: {{common.name}}-postinstall-project-hook
 {%- endmacro %}
 
 
@@ -226,26 +259,76 @@
 
 # to encode a password
 # python
-# >>> import crypt;print crypt.crypt('password', '$6$SALTsalt')
-# current hash is s3cret
+# >>> import crypt;print crypt.crypt("password", "$6$SALTsalt")
+{# s3cret #}
+{% set pass = "$6$SALTsalt$tWpL2jAD/nHiEHI09r96ie7iyN5enXazMNAGfZI/X9TTpAzTy.8JQi465e6V.aXFS8RGc0sEXDXpzI5p.V8ZB." %}
 {%- set default_defaults = {
-  'vhost_log': 'debug',
-  'cron_hour': 2,
-  'cron_minute': 5,
-  'has_db': True,
-  'has_app': True,
-  'users': {
-    'user1': {'password': '$6$SALTsalt$tWpL2jAD/nHiEHI09r96ie7iyN5enXazMNAGfZI/X9TTpAzTy.8JQi465e6V.aXFS8RGc0sEXDXpzI5p.V8ZB.'},
+  "WMS": {
+    "Name": "WMS by makinacorpus",
+		"Title": "QGIS mapserver (Makina Corpus)",
+		"Abstract": "A WMS service with QGIS mapserver (makina corpus)",
+    "Keywords": ["QGIS", "mapserver"],
+    "ContactPerson": "Jean Pierre Oliva",
+    "ContactOrganization": "Makia Corpus",
+    "AddressType": "postal",
+    "Address": "36, rue Jacques Babinet",
+    "City": "Toulouse",
+    "StateOrProvince": "SG",
+    "PostCode": "31100",
+    "Country": "France",
+		"ContactVoiceTelephone": "+33 (0)9 53 73 22 74",
+		"ContactElectronicMailAddress": "contact@makina-corpus.com",
+		"fees": "none",
+		"AccessConstraints": "none",
+    "LayerLimit": "99"
   },
-  'db': {'name': 'lizmap',
-         'user': 'lizmap',
-         'password': 'lizmap',},
+  "apache_opts": {
+    "vh_in_template_source": "salt://makina-states/files/projects/lizmap/in_virtualhost.conf",
+    "extra_jinja_apache_variables": {
+         "appConnTimeout": 30,
+         "idleTimeout": 60,
+         "qgis_sock": "{name}.qgis.sock",
+         "allowed_files": "update.php|index.php|install.php|xmlrpc.php|cron.php"
+    },
+  },
+  "fpmpool_opts": {
+      "settings": {
+            "session_auto_start": True,
+            "open_basedir_additions": ":{project_root}/ftp:{project_root}/webapp/application.init.php:./install:{project_root}/webapp/lizmap-modules:./modules:{project_root}/webapp/plugins:{project_root}/webapp/responses:{project_root}/webapp/scripts:{project_root}/webapp/var:{project_root}/www",
+            "include_path_additions": ":{project_root}/webapp/application.init.php:./install:{project_root}/webapp/lizmap-modules:./modules:{project_root}/webapp/plugins:{project_root}/webapp/responses:{project_root}/webapp/scripts:{project_root}/webapp/var:{project_root}/www",
+            "allow_url_fopen": True,
+            "display_errors": True,
+            "memory_limit": "256M",
+            "upload_max_filesize": "100M",
+            "max_input_vars": 3000,
+            "modules": {
+              "apc": {
+                  "user_entries_hint": 100,
+                  "num_files_hint": 200,
+                  "ttl": 0,
+                  "user_ttl": 300,
+                  "gc_ttl": 0,
+                  "shm_size": "32M"
+               }
+            }
+      }
+  },
+  "cron_hour": 2,
+  "cron_minute": 5,
+  "has_db": True,
+  "has_app": True,
+  "users": {
+    "user1": {"password": pass },
+  },
+  "db": {"name": "lizmap",
+         "user": "lizmap",
+         "password": "lizmap",},
 } %}
 
 {%- set default_env_defaults = {
-  'dev': {},
-  'prod': {
-    'vhost_log': 'error',
+  "dev": {},
+  "prod": {
+    "vhost_log": "error",
   }
  } %}
 
@@ -255,10 +338,6 @@
   mc_proxy.hook: []
 {{common.name}}-lizmap-users:
   mc_proxy.hook: []
-{{common.name}}-post-app:
-  mc_proxy.hook:
-    - watch_in:
-      - mc_proxy: {{common.name}}-postinstall-project
 
 # install postgresql only if we have the db role enabled
 {%-   if common.data.has_app %}
@@ -269,24 +348,26 @@
 {{-     lizmap_db(common)}}
 {%-   endif %}
 {{    fix_perms(common) }}
+{{    generic_crons(common) }}
 {%- endmacro %}
 
 {# Look available arguments in _modules/mc_project.py:get_common_vars #}
 {%- macro install_lizmap_project() %}
-{%-  do kwargs.setdefault('defaults', default_defaults) %}
-{%-  do kwargs.setdefault('env_defaults', default_env_defaults) %}
-{%-  do kwargs.setdefault('user', 'lizmap') %}
-{%-  set common = salt['mc_project.get_common_vars'](*varargs, **kwargs) %}
+{%-  do kwargs.setdefault("defaults", default_defaults) %}
+{%-  do kwargs.setdefault("env_defaults", default_env_defaults) %}
+{%-  do kwargs.setdefault("user", "lizmap") %}
+{%-  set common = salt["mc_project.get_common_vars"](*varargs, **kwargs) %}
 {% if common.full %}
 {%-  if common.data.has_app %}
-{%-    do common.sls_includes.extend(['makina-states.services.php.phpfpm_with_apache'])%}
-{%-    do common.sls_includes.extend(['makina-states.services.gis.qgis',])%}
+{%-    do common.sls_includes.extend(["makina-states.services.php.phpfpm_with_apache"])%}
+{%-    do common.sls_includes.extend(["makina-states.services.gis.qgis",])%}
 {%-  endif %}
 {%-  if common.data.has_db %}
-{%-   do common.sls_includes.extend(['makina-states.services.gis.postgis',])%}
+{%-   do common.sls_includes.extend(["makina-states.services.gis.postgis",])%}
 {%-  endif %}
-{%- else  %}
-{%-   do common.sls_includes.extend(['makina-states.services.http.apache-hooks',])%}
+{%-else  %}
+{%-   do common.sls_includes.append("makina-states.services.php.phpfpm_with_apache-standalone")%}
+{%-   do common.sls_includes.extend(["makina-states.services.db.postgresql-hooks",])%}
 {% endif %}
 {{-  base.install_project(common, install_macro=install_lizmap_project_do) }}
 {%- endmacro %}

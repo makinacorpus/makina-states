@@ -58,20 +58,25 @@
    'prod': {}
 } %}
 
+{% macro vhost(common, minimal_index=None) %}
+{% set sock = {'socket_name':  salt['mc_php.get_fpm_socket_name'](common.name)} %}
+{% do common.data.fpmpool_opts.update(sock) %}
+{% do common.data.apache_opts.extra_jinja_apache_variables.update(sock) %}
+{{ pbase.vhost_from_common_data(
+        common,
+        minimal_index=minimal_index,
+        additionnal_macro=php.fpm_pool,
+        additionnal_opts=common.data.fpmpool_opts) }}
+{% endmacro %}
+
+
 {#-
 #  Makina project per project macro couple (install_apache_project/install_project)
 #  This will install an apache virtualhost serving in project_root/www for the
 #  configured domain(s)
 #}
 {% macro install_phpfpm_project_do(common) %}
-{% set sock = {'socket_name':  salt['mc_php.get_fpm_socket_name'](common.name)} %}
-{% do common.data.fpmpool_opts.update(sock) %}
-{% do common.data.apache_opts.extra_jinja_apache_variables.update(sock) %}
-{{ pbase.vhost_from_common_data(
-        common,
-        additionnal_macro=php.fpm_pool,
-        additionnal_opts=common.data.fpmpool_opts,
-        minimal_index=php.minimal_index) }}
+{{ vhost(common, minimal_index=php.minimal_index) }}
 {%- endmacro %}
 
 {#- Look available arguments in _modules/mc_project.py:get_commmon_vars #}

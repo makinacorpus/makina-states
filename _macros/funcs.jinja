@@ -26,10 +26,13 @@
 #  at bootstrap time, we build first nodetypes then
 #  controllers
 #}
-{% macro dummy(name, text='') %}
+{% macro proxy(name, text='') %}
 {{name}}:
   mc_proxy.hook:
     - name: {{name}}
 {{text}}
 {% endmacro %}
+
+{# retro compat #}
+{% set dummy = proxy %}
 # vim:set nofoldenable:

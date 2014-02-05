@@ -92,6 +92,7 @@ makina-php-apc:
     - watch_in:
       - mc_proxy: makina-php-pre-conf
 
+{% if full %}
 {%   if phpSettings.modules.apc.enabled %}
 makina-php-apc-install:
   cmd.run:
@@ -144,6 +145,7 @@ makina-php-xdebug-disable:
     - watch_in:
       - mc_proxy: makina-php-post-conf
 {%   endif %}
+{% endif %}
 {% endif %}
 {% endmacro %}
 

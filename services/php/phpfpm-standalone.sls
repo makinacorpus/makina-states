@@ -32,7 +32,7 @@ include:
 {{ fastcgi.includes(full=full) }}
 {% endif %}
 
-
+{% if full %}
 {# Manage php-fpm packages @#}
 makina-php-pkgs:
   pkg.installed:
@@ -51,6 +51,7 @@ makina-phpfpm-remove-default-pool:
   file.absent:
     - name : {{ phpSettings.etcdir }}/fpm/pool.d/www.conf
 
+{% endif %}
 # --------- Pillar based php-fpm pools
 {% if 'register-pools' in phpSettings %}
 {%   for site,siteDef in phpSettings['register-pools'].iteritems() %}
@@ -112,7 +113,9 @@ makina-phpfpm-apache-module_connect_phpfpm_mod_fastcgi_module:
     - require:
       - mc_proxy: makina-php-pre-inst
     - watch_in:
+      {% if full %}
       - pkg: makina-fastcgi-http-server-backlink
+      {% endif %}
       - mc_proxy: makina-php-post-inst
 {% endif %}
 {% endmacro %}

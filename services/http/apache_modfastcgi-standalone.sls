@@ -32,6 +32,7 @@ makina-fastcgi-http-server-backlink:
       - mc_proxy: makina-php-post-inst
 {% endif %}
 
+
 makina-fastcgi-apache-module_connect_fastcgi_mod_fastcgi_module_conf:
   file.managed:
     - user: root
@@ -44,6 +45,7 @@ makina-fastcgi-apache-module_connect_fastcgi_mod_fastcgi_module_conf:
         enabled: {{ enabled }}
         project_root: '{{project_root}}'
         socket_directory:  '{{ socket_directory }}'
+        extra: {{apacheSettings.fastcgi_params|yaml}}
         {#  not used anymore
         shared_mode: {{ shared_mode }}
         #}

@@ -257,6 +257,23 @@ makina-php-pool-{{ pool_name }}:
     - watch_in:
       - mc_proxy: makina-php-pre-restart
 
+makina-php-pool-{{ pool_name }}-logrotate:
+  file.managed:
+    - name: "{{localsettings.locations.conf_dir}}/logrotate.d/fpm.{{pool_name}}.conf"
+    - source: salt://makina-states/files/etc/logrotate.d/fpmpool.conf
+    - template: jinja
+    - defaults:
+        name: {{pool_name}}
+        logdir: {{log_dir}}
+        rotate: {{phpData.rotate}}
+    - mode: 750
+    - user: root
+    - group: root
+    - require:
+      - mc_proxy: makina-php-post-inst
+    - require_in:
+      - mc_proxy: makina-php-pre-restart
+
 makina-php-pool-{{ pool_name }}-directories:
   file.directory:
     - user: {{ phpData.fpm.phpuser }}

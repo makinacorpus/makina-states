@@ -35,12 +35,14 @@
 {#
 # Create a dedicated system user for our project
 #}
+{% if common.full %}
 {% for group in common.groups -%}
 {{common.name}}-group-{{group}}:
   group.present:
     - name: {{group}}
     - system: True
-{%- endfor %}
+    {%- endfor %}
+{% endif %}
 
 
 {{common.name}}-user-{{common.user}}:
@@ -49,17 +51,21 @@
     - shell: /bin/bash
     - watch_in:
       - mc_proxy: {{common.name}}-prerequisites-hook
+    {% if common.full %}
     - require:
       {% for group in common.groups -%}
       - group: {{common.name}}-group-{{group}}
       {%- endfor %}
+    {% endif %}
     - fullname: {{common.user}} user
     - gid_from_name: True
     - remove_groups: False
+    {% if common.full %}
     - optional_groups:
       {% for group in common.groups -%}
       - {{group}}
       {%- endfor %}
+    {% endif %}
 
 {% if common.full %}
 {#+
@@ -179,6 +185,7 @@
 # Checkout the project branch in /srv/projects/project/project
 #}
 {{common.name}}-checkout-code:
+  {% if common.full %}
   file.directory:
     - name: {{common.project_root}}
     - makedirs: true
@@ -187,6 +194,8 @@
     - group: {{common.group}}
     {%- endif %}
     {% if common.no_salt or common.no_user %}
+    - watch_in:
+      - mc_git: {{common.name}}-checkout-code
     - watch:
       - mc_proxy: {{common.name}}-postcheckout-salt-hook
       - mc_proxy: {{common.name}}-precheckout-project-hook
@@ -211,6 +220,7 @@
     - require:
       - file: {{common.name}}-checkout-code
   {%- endif %}
+  {%- endif %}
   mc_git.latest:
     - rev: {{common.project_branch}}
     - name:  {{common.url}}
@@ -220,13 +230,10 @@
     - target: {{common.project_root}}
     - watch_in:
       - mc_proxy: {{common.name}}-postcheckout-project-hook
+    {% if not common.no_user and common.full-%}
     - watch:
-      {% if not common.no_salt -%}
-      - cmd: {{common.name}}-checkout-code
-      {%- endif %}
-      {% if not common.no_user -%}
       - user: {{common.user}}
-      {%- endif %}
+    {%- endif %}
 {%- endmacro %} {# checkout_salt_and_code #}
 
 {#-
@@ -235,6 +242,7 @@
 {%- macro fix_permissions(common) %}
 {%- if not common.no_reset_perms %}
 {%-    if common.full and not common.no_salt %}
+{% if common.full -%}
 {{common.name}}-restricted-perms:
   cmd.script:
     - source: {{saltmac.resetperms}}
@@ -249,7 +257,6 @@
       - mc_proxy: {{common.name}}-postinstall-project-hook
 {%-    endif %}
 
-{% if common.full -%}
 {{common.name}}-perms:
   cmd.script:
     - source: {{saltmac.resetperms}}
@@ -456,6 +463,8 @@ makina-parent-append-etc-hosts-accumulated-project-{{common.name}}:
       - mc_proxy: preinstall-project-hook
 
 {% endmacro %}
+
+
 {#-
 # All project need to define at least two macros which will use the following macros
 # - A macro named 'install_project' which call the following macro and will call the next macro
@@ -480,7 +489,9 @@ include:
   - {{ sls }}
 {%- endfor %}
 {%-  endif %}
-{{      hooks(common) }}
+
+{{    hooks(common) }}
+
 {%-  if pre %}
 {{-    pre_install(common) }}
 {%-  endif %}
