@@ -63,7 +63,8 @@ makina-{{id}}-bashfiles:
     - require_in:
       - file: makina-{{id}}-bashprofile-load
   cmd.run:
-    - name: chmod 755 '{{bashrc}}' '{{bashprofile}}'
+    - name: chmod 755 '{{bashrc}}' '{{bashprofile}}';echo
+    - stateful: True
     - require:
       - file: makina-{{id}}-bashfiles
     - require_in:

@@ -34,7 +34,6 @@
 #       source (jinja) of the file.managed for the vhirtualhost included content
 #       (the most important part when making alterations of vh content); default:
 #       default http://goo.gl/jB6Ext (github)
-import pdb;pdb.set_trace()  ## Breakpoint ##
 #   - extra_jinja_apache_variables
 #       extra variables to load for virtualvhost templates rendering
 #   - log_level
@@ -79,6 +78,7 @@ import pdb;pdb.set_trace()  ## Breakpoint ##
                      active=True,
                      includes=False,
                      project=None,
+                     mode='production',
                      project_root=None,
                      doc_root=None) %}
 {% set project = salt['mc_project.gen_id'](project or domain) %}
@@ -99,7 +99,6 @@ import pdb;pdb.set_trace()  ## Breakpoint ##
                    or (grains['lsb_distrib_id'] == "Debian"
                        and grains['lsb_distrib_release'] <= 7.0) %}
 
-{% set mode='production' %}
 {% if nodetypes.registry.is.devhost %}
 {%  set mode='dev' %}
 {% endif %}
@@ -134,12 +133,10 @@ include:
         port: "{{ port }}"
         extra: {{extra_jinja_apache_variables|yaml}}
         mode: {{mode}}
-    - require:
-      - mc_proxy: makina-apache-post-inst
+    - watch:
+      - mc_proxy: makina-apache-vhostconf
     - watch_in:
-      - cmd: {{project}}-makina-apache-virtualhost-status
-      - mc_proxy: makina-apache-pre-conf
-      - mc_proxy: makina-apache-pre-restart
+      - mc_proxy: makina-apache-post-conf
 
 {# Virtualhost real content, shared by SSL and non-SSL virtualhosts #}
 {{ project }}-makina-apache-virtualhost-content:
@@ -155,12 +152,10 @@ include:
         document_root: {{ doc_root }}
         allow_htaccess: {{ allow_htaccess }}
         extra: {{extra_jinja_apache_variables|yaml}}
-    - require:
-      - mc_proxy: makina-apache-post-inst
+    - watch:
+      - mc_proxy: makina-apache-vhostconf
     - watch_in:
-      - mc_proxy: makina-apache-pre-conf
-      - file: {{project}}-makina-apache-virtualhost
-      - mc_proxy: makina-apache-pre-restart
+      - mc_proxy: makina-apache-post-conf
 
 {{project}}-makina-apache-virtualhost-status:
   cmd.run:
@@ -174,10 +169,9 @@ include:
               || [ -e "{{ apacheData.basedir }}/sites-enabled/{{ number }}-{{ domain }}.conf" ];then
                 exit 1;
               fi;exit 0
-    - require:
-      - mc_proxy: makina-apache-post-inst
     - watch_in:
-      - mc_proxy: makina-apache-pre-conf
+      - file: {{ project }}-makina-apache-virtualhost
+      - mc_proxy: makina-apache-post-conf
 {% endmacro %}
 
 {% macro minimal_index(doc_root, domain='no domain', mode='unkown mode') %}
@@ -197,9 +191,9 @@ include:
     - group: {{ localsettings.group }}
     - watch:
       - mc_proxy: postcheckout-project-hook
-      - mc_proxy: makina-apache-post-inst
-    - watch_in:
       - mc_proxy: makina-apache-pre-conf
+    - watch_in:
+      - mc_proxy: makina-apache-post-conf
 {% endmacro %}
 
 {# vim: set nofoldenable :#}

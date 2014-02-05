@@ -60,7 +60,6 @@ append-hosts-accumulator-from-pillar:
     - text: |
             #end
             {{ hosts_list|sort|join(separator) }}
-
 {% endif %}
 
 {#- States editing a block in {{ locs.conf_dir }}/hosts

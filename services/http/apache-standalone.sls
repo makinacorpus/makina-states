@@ -20,6 +20,7 @@
 # apache 2.4: EnableSendfile On, NameVirtualHost deprecated,  RewriteLog and RewriteLogLevel-> LogLevel rewrite:debug
 # enable and configure mod_reqtimeout
 #}
+{% import "makina-states/_macros/apache.jinja" as apache with context %}
 {% import "makina-states/_macros/services.jinja" as services with context %}
 {% import "makina-states/_macros/salt.jinja" as saltmac with context %}
 
@@ -290,7 +291,6 @@ makina-apache-default-log-directory:
     - watch_in:
        - mc_proxy: makina-apache-pre-conf
 
-{% if full %}
 # Default Virtualhost managment -------------------------------------
 {# Replace defaut Virtualhost by a more minimal default Virtualhost [1]
 # this is the directory
@@ -345,38 +345,18 @@ makina-apache-remove-package-default-index:
 {# Replace defaut Virtualhost by a more minimal default Virtualhost [4]
 # this is the virtualhost definition
 #}
-makina-apache-minimal-default-vhost:
-  file.managed:
-{% if old_mode %}
-    - name: {{ services.apacheSettings.vhostdir }}/default
-{% else %}
-    - name: {{ services.apacheSettings.vhostdir }}/000-default.conf
-{% endif %}
-    - source:
-      - salt://makina-states/files/etc/apache2/sites-available/default_vh.conf
-    - user: root
-    - group: root
-    - mode: 644
-    - template: jinja
-    - defaults:
-        log_level: "{{ services.apacheSettings.log_level }}"
-        serveradmin_mail: "{{ services.apacheSettings.serveradmin_mail }}"
-        mode: "production"
-{% if nodetypes.registry.is.devhost %}
-    - context:
-        mode: "dev"
-{% endif %}
-    - watch:
-      - file: makina-apache-default-vhost-index
+makina-apache-minimal-default-vhost-remove-olds:
+  file.absent:
+    - names:
+      - {{ services.apacheSettings.vhostdir }}/default
+      - {{ services.apacheSettings.vhostdir }}/default-ssl
+    - watch_in:
       - mc_proxy: makina-apache-post-inst
     - watch_in:
       - mc_proxy: makina-apache-pre-conf
 
-
-{% endif %}
-#--- Configuration Check --------------------------------
-
-{# Configuration checker, always run before restart of graceful restart
+{#--- Configuration Check --------------------------------
+# Configuration checker, always run before restart of graceful restart
 #}
 makina-apache-conf-syntax-check:
   cmd.script:
@@ -461,13 +441,11 @@ makina-apache-reload:
 # in a state.
 # Then use the pillar to alter your default parameters given to this call
 #}
-{% from 'makina-states/services/http/apache_macros.jinja' import virtualhost with context %}
 {% if 'virtualhosts' in services.apacheSettings -%}
-{%   for site,siteDef in services.apacheSettings['virtualhosts'].iteritems() -%}
-{%     do siteDef.update({'site': site}) %}
-{{     virtualhost(**siteDef) }}
+{%   for site, siteDef in services.apacheSettings['virtualhosts'].iteritems() -%}
+{%     do siteDef.update({'domain': site}) %}
+{{     apache.virtualhost(**siteDef) }}
 {%-   endfor %}
 {%- endif %}
-
 {% endmacro %}
 {{ do(full=False) }}

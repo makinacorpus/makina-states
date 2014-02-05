@@ -82,6 +82,8 @@
                 cp -fv $i $home/.ssh;
               fi;
             done;
+            echo
+    - stateful: True
     {# if only the ssh keys are not there #}
     - onlyif: |
               res=1;
@@ -271,12 +273,52 @@
 # If we are in devmode (vagrant), also add them to the hosts to the parent box
 #}
 {%- macro configure_domains(common) %}
+{{common.name}}-append-etc-hosts-management:
+  file.blockreplace:
+    - name: {{ locs.conf_dir }}/hosts
+    - marker_start: "#-- start project:{{common.name}} managed zoneend -- PLEASE, DO NOT EDIT"
+    - marker_end: "#-- end project:{{common.name}} managed zoneend --"
+    - content: ''
+    - append_if_not_found: True
+    - backup: '.bak'
+    - show_changes: True
+    - watch_in:
+      - mc_proxy: {{common.name}}-prerequisites-hook
+
+{{common.name}}-parent-etc-hosts-absent:
+  file.absent:
+    - name: {{vagrantvm.hostsf}}.{{common.name}}
+    - require_in:
+      - file: {{common.name}}-parent-etc-hosts-exists
+
+{#-
+# delete old stalled from import /etc/devhosts
+# handle the double zone cases
+#}
+{{common.name}}-parent-etc-hosts-exists:
+  file.touch:
+    - name: {{vagrantvm.hostsf}}.{{common.name}}
+
+{{common.name}}-append-parent-etc-hosts-management:
+  file.blockreplace:
+    - name: {{vagrantvm.hostsf}}.{{common.name}}
+    - marker_start: '#-- start devhost {{vagrantvm.vmNum }} project:{{common.name}}:: DO NOT EDIT --'
+    - marker_end: '#-- end devhost {{vagrantvm.vmNum }} project:{{common.name}}:: DO NOT EDIT --'
+    - content: '# Vagrant vm: {{ vagrantvm.vm_fqdn }} added this entry via local mount:'
+    - prepend_if_not_found: True
+    - backup: '.bak'
+    - show_changes: True
+    - require:
+      - file: {{common.name}}-parent-etc-hosts-exists
+    - watch_in:
+      - mc_proxy: {{common.name}}-prerequisites-hook
+
 {%-  if common.full and not common.no_domain %}
 {{common.name}}-append-hosts-accumulator:
   file.accumulated:
     - name: hosts-append-accumulator-{{ common.name }}-entries
     - require_in:
-      - file: makina-append-etc-hosts-management
+      - file: {{common.name}}-append-etc-hosts-management
     - filename: {{ locs.conf_dir }}/hosts
     - text: |
             {% for domain in common.domains %}
@@ -289,7 +331,7 @@
 {%-    if vagrantvm.vmNum %}
 makina-parent-append-etc-hosts-accumulated-project-{{common.name}}:
   file.accumulated:
-    - filename: {{vagrantvm.hostsf}}
+    - filename: {{vagrantvm.hostsf}}.{{common.name}}
     - name: parent-hosts-append-accumulator-{{ vagrantvm.vm_name }}-{{common.name}}-entries
     - text: |
             {% for domain in common.domains %}
@@ -299,7 +341,7 @@ makina-parent-append-etc-hosts-accumulated-project-{{common.name}}:
     - watch_in:
       - mc_proxy: {{common.name}}-prerequisites-hook
     - require_in:
-      - file: makina-append-parent-etc-hosts-management
+      - file: {{common.name}}-append-parent-etc-hosts-management
 {%-    endif %}
 {%-   endif %}
 {%-  endif %}

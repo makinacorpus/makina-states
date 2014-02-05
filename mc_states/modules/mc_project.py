@@ -249,7 +249,7 @@ def doc_root(doc_root=None,
             project = gen_id(domain)
         if not project_root:
             project_root = '{0}/{1}/project'.format(
-                localsettings['locations'['projects_dir']], project)
+                localsettings['locations']['projects_dir'], project)
         doc_root = '{0}/{1}'.format(project_root,
                                     relative_document_root)
     return doc_root

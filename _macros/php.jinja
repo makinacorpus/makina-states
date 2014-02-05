@@ -288,9 +288,9 @@ makina-php-pool-{{ pool_name }}-directories:
     - group: {{ localsettings.group }}
     - watch:
       - mc_proxy: postcheckout-project-hook
-      - mc_proxy: makina-php-pre-restart
       - mc_proxy: makina-apache-post-inst
     - watch_in:
       - mc_proxy: makina-apache-pre-conf
+      - mc_proxy: makina-php-pre-restart
       - mc_proxy: makina-php-pre-restart
 {% endmacro %}

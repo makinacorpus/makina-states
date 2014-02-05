@@ -25,7 +25,7 @@ import mc_states.utils
 __name = 'apache'
 
 log = logging.getLogger(__name__)
-
+def_vh = 'salt://makina-states/files/etc/apache2/sites-available/default_vh.conf'
 
 def settings():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
@@ -178,8 +178,6 @@ def settings():
                         'event': {
                             'AsyncRequestWorkerFactor': "4"
                         },
-                        'virtualhosts': {
-                        }
                     }
                 },
                 grain='default_env',
@@ -199,6 +197,16 @@ def settings():
             'makina-states.services.http.apache',
             __salt__['grains.filter_by']({
                 'Debian': {
+                    'virtualhosts': {
+                        'default': {
+                            'domain': 'default',
+                            'vh_template_source': def_vh,
+                            'doc_root': '/var/www/default',
+                            'log_level': "{log_level}",
+                            'serveradmin_mail': '{serveradmin_mail}',
+                            'mode': 'production',
+                        },
+                    },
                     'packages': ['apache2'],
                     'mpm-packages': {
                         'worker': ['apache2-mpm-worker'],
