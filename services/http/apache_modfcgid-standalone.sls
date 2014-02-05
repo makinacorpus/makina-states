@@ -42,7 +42,7 @@ makina-fcgid-apache-module_connect_fcgid_mod_fcgid_module_conf:
     - template: 'jinja'
     - defaults:
         enabled: {{ enabled }}
-        socket_directory:  '{{socket_directory }}'
+        socket_directory:  '{{ socket_directory }}'
         {#  not used anymore
         shared_mode: {{ shared_mode }}
         project_root: '{{project_root}}'

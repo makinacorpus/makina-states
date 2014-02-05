@@ -43,8 +43,8 @@ makina-fastcgi-apache-module_connect_fastcgi_mod_fastcgi_module_conf:
     - defaults:
         enabled: {{ enabled }}
         project_root: '{{project_root}}'
+        socket_directory:  '{{ socket_directory }}'
         {#  not used anymore
-        socket_directory:  '{{socket_directory }}'
         shared_mode: {{ shared_mode }}
         #}
     - require:

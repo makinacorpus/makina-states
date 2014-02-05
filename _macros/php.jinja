@@ -63,9 +63,11 @@
 {% set services = apache.services %}
 {% set localsettings = services.localsettings %}
 {% set nodetypes = services.nodetypes %}
-{% set locs = localsettings.locations %}
 {% set phpData = services.phpSettings %}
-{% set default_pool_template_source = 'salt://makina-states/files/etc/fpm/pool.d/pool.conf' %}
+{% set locs = localsettings.locations %}
+{% set default_pool_template_source = (
+    'salt://makina-states/files/etc/php5/fpm/pool.d/pool.conf'
+   ) %}
 
 {% macro includes() %}
   - makina-states.services.php.phpfpm_with_apache
@@ -85,10 +87,11 @@
                   project_root=None,
                   doc_root=None,
                   extra_jinja_pool_variables=None,
-                  minimal_index=True,
+                  socket_name=None,
                   relative_document_root='www',
                   project=None,
                   includes=False) -%}
+{% set phpData = services.phpSettings %}
 {% if not extra_jinja_pool_variables %}
 {%  set extra_jinja_pool_variables = {} %}
 {% endif %}
@@ -129,7 +132,10 @@
 {% set log_dir     = '{0}/{1}'.format(project_root, phpData.fpm.log_relative_path) %}
 {# {% set sock_dir    = '{0}/{1}'.format(project_root, phpData.fpm.socket_relative_path) %} #}
 {% set sock_dir    = apacheData.fastcgi_socket_directory %}
-{% set private_dir = '{0}/{1}'.format(project_root, phpData.fpm.private_dir) %}
+{% if not socket_name %}
+{% set socket_name   = salt['mc_php.get_fpm_socket_name'](project) %}
+{% endif %}
+{% set private_dir = '{0}/{1}'.format(project_root, phpData.fpm.private_relative_path) %}
 
 {% if includes %}
 includes:
@@ -158,7 +164,7 @@ makina-php-pool-{{ pool_name }}:
         var_log: "{{ locs.var_log_dir }}"
         chroot: {{ phpData.fpm.chroot }}
         use_socket: {{ phpData.fpm.use_socket }}
-        socket_name: "{{ project  }}.{{ phpData.fpm.socket_name }}"
+        socket_name: "{{ socket_name }}"
         use_shared_socket_path: {{ use_shared_socket_path|int(0) }}
         fpm_sockets_dir: "{{ phpData.fpm_sockets_dir }}"
         custom_listen: "{{ custom_listen }}"
@@ -269,22 +275,17 @@ makina-php-pool-{{ pool_name }}-directories:
       - mc_proxy: makina-php-post-inst
     - require_in:
       - mc_proxy: makina-php-pre-restart
-
-{# very minimal index.php file #}
-{% if minimal_index %}
-{{ minimal_index(doc_root, domain=domain, mode=mode)}}
-{% endif %}
 {%- endmacro %}
 
 {% macro minimal_index(doc_root, domain='no domain', mode='unkown mode') %}
 {{ doc_root }}-minimal-index:
   file.managed:
-    - name: {{ doc_root }}/index.html
+    - name: {{ doc_root }}/index.php
     - unless: test -e "{{ doc_root }}/index.php"
     - source:
     - contents: '<?php phpinfo(); ?>'
     - makedirs: true
-    - user: {{apacheData.httpd_user}}
+    - user: {{ apacheData.httpd_user }}
     - group: {{ localsettings.group }}
     - watch:
       - mc_proxy: postcheckout-project-hook

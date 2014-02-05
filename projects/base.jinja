@@ -82,7 +82,7 @@
                 cp -fv $i $home/.ssh;
               fi;
             done;
-            echo
+            echo;echo "changed=false comment='do no trigger changes'"
     - stateful: True
     {# if only the ssh keys are not there #}
     - onlyif: |
@@ -117,7 +117,7 @@
             chmod -Rf 700           $home/.ssh/*;
             chmod -Rf 770           $home/.ssh/config;
             chown -Rf {{common.user}}:{{common.user}} $home/.ssh;
-            echo
+            echo;echo "changed=false comment='do no trigger changes'"
 {%- endif %} {# if common.full #}
 {%- endif %}
 {% endmacro %}  {# set_accesses #}

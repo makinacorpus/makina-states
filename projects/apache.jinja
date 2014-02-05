@@ -50,7 +50,7 @@
 
 {# execute nested macro if any (used by php #}
 {% if additionnal_macro %}
-{{    additionnal_macro(**additionnal_macro) }}
+{{    additionnal_macro(**additionnal_opts) }}
 {% endif %}
 
 {# Custom Apache Virtualhost #}

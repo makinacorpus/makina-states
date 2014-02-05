@@ -212,6 +212,7 @@ def settings():
                 'socket_relative_path': 'var/fcgi',
                 'log_relative_path': 'var/log',
                 'tmp_relative_path': 'var/tmp',
+                'relative_document_root': 'www',
                 'private_relative_path': 'var/private',
                 'socket_name': 'fpm.sock',
                 'listen_backlog': 128,
@@ -390,6 +391,12 @@ def settings():
 
         return phpData
     return _settings()
+
+
+def get_fpm_socket_name(project):
+    settings = __salt__['mc_php.settings']()
+    project = __salt__['mc_project.gen_id'](project)
+    return '{0}.{1}'.format(project, settings['fpm']['socket_name'])
 
 
 def dump():
