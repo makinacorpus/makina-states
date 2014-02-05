@@ -155,6 +155,10 @@ def settings():
                         'event': {
                             'AsyncRequestWorkerFactor': "1.5"
                         },
+                        'monitoring': {
+                            'allowed_servers': '127.0.0.1 ::1',
+                            'extended_status': False
+                        },
                         'virtualhosts': {}},
                     'prod': {
                         'MaxKeepAliveRequests': 100,
@@ -178,6 +182,12 @@ def settings():
                         'event': {
                             'AsyncRequestWorkerFactor': "4"
                         },
+                        'monitoring': {
+                            'allowed_servers': '127.0.0.1 ::1',
+                            'extended_status': False
+                        },
+                        'virtualhosts': {
+                        }
                     }
                 },
                 grain='default_env',

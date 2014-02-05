@@ -14,7 +14,6 @@
 # consult pillar values with "salt '*' pillar.items"
 # consult grains values with "salt '*' grains.items"
 #
-# TODO: alter mod_status conf to allow only localhost,monitoring some user defined IP,  ExtendedStatus Off
 # TODO: SSL VH
 # TODO: detect invalid links in sites-enabled and remove them
 # apache 2.4: EnableSendfile On, NameVirtualHost deprecated,  RewriteLog and RewriteLogLevel-> LogLevel rewrite:debug
@@ -185,6 +184,29 @@ makina-apache-settings:
     - watch_in:
       - mc_proxy: makina-apache-pre-conf
 
+
+makina-apache-mod-status-settings:
+  file.managed:
+    - name: {{ services.apacheSettings.confdir }}/mods-available/status.conf
+    - source: salt://makina-states/files/etc/apache2/mods-available/status.conf
+    - user: root
+    - group: root
+    - mode: 644
+    - template: jinja
+    - defaults:
+        mode: "production"
+        MonitoringServers: "{{ services.apacheSettings.monitoring.allowed_servers }}"
+        ExtendedStatus: "{{ services.apacheSettings.monitoring.extended_status }}"
+{% if nodetypes.registry.is.devhost %}
+    - context:
+        mode: "dev"
+{% endif %}
+    - watch:
+      - mc_proxy: makina-apache-post-inst
+    # gracefull reload in case of changes
+    - watch_in:
+      - cmd: makina-apache-conf-syntax-check
+      - service: makina-apache-reload
 
 {# Exemple to add a slug directly in apache configuration #}
 makina-apache-main-extra-settings-example:
