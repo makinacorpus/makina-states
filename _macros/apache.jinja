@@ -34,6 +34,7 @@
 #       source (jinja) of the file.managed for the vhirtualhost included content
 #       (the most important part when making alterations of vh content); default:
 #       default http://goo.gl/jB6Ext (github)
+import pdb;pdb.set_trace()  ## Breakpoint ##
 #   - extra_jinja_apache_variables
 #       extra variables to load for virtualvhost templates rendering
 #   - log_level
@@ -131,9 +132,7 @@ include:
         redirect_aliases: {{ redirect_aliases }}
         interface: "{{ interface }}"
         port: "{{ port }}"
-        {% for variablename, variablevalue in extra_jinja_apache_variables.iteritems() %}
-        {{ variablename }}: {{ variablevalue|yaml }}
-        {% endfor %}
+        extra: {{extra_jinja_apache_variables|yaml}}
         mode: {{mode}}
     - require:
       - mc_proxy: makina-apache-post-inst
@@ -155,9 +154,7 @@ include:
         mode: {{mode}}
         document_root: {{ doc_root }}
         allow_htaccess: {{ allow_htaccess }}
-        {% for variablename, variablevalue in extra_jinja_apache_variables.iteritems() %}
-        {{ variablename }}: {{ variablevalue|yaml }}
-        {% endfor %}
+        extra: {{extra_jinja_apache_variables|yaml}}
     - require:
       - mc_proxy: makina-apache-post-inst
     - watch_in:

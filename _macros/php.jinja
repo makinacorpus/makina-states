@@ -59,6 +59,7 @@
 
 {% import "makina-states/_macros/apache.jinja" as apache with context %}
 {% set apache = apache %}
+{% set apacheData = apache.apacheData %}
 {% set services = apache.services %}
 {% set localsettings = services.localsettings %}
 {% set nodetypes = services.nodetypes %}
@@ -71,51 +72,51 @@
 {% endmacro %}
 
 {% macro fpm_pool(domain,
-                  settings = None,
-                  open_basedir_additions = '',
-                  include_path_additions = '',
-                  custom_listen = None,
-                  chroot = None,
-                  nice_priority = -19,
-                  use_shared_socket_path = False,
-                  session_cookie_domain = None,
-                  pool_template_source = default_pool_template_source,
-                  pool_name = None,
-                  project_root = None,
-                  doc_root = None,
+                  settings=None,
+                  open_basedir_additions='',
+                  include_path_additions='',
+                  custom_listen=None,
+                  chroot=None,
+                  nice_priority=-19,
+                  use_shared_socket_path=False,
+                  session_cookie_domain=None,
+                  pool_template_source=default_pool_template_source,
+                  pool_name=None,
+                  project_root=None,
+                  doc_root=None,
                   extra_jinja_pool_variables=None,
-                  minimal_index = True,
-                  relative_document_root = 'www',
-                  project = None,
-                  includes=False,
-                  ) -%}
+                  minimal_index=True,
+                  relative_document_root='www',
+                  project=None,
+                  includes=False) -%}
 {% if not extra_jinja_pool_variables %}
 {%  set extra_jinja_pool_variables = {} %}
 {% endif %}
-{% set doc_root = salt['mc_project.doc_root(doc_root=doc_root,
-                                            domain=domain,
-                                            project_root=project_root,
-                                            project=project) %}
+{% set doc_root = salt['mc_project.doc_root'](doc_root=doc_root,
+                                              domain=domain,
+                                              project_root=project_root,
+                                              project=project) %}
 {% set project = salt['mc_project.gen_id'](project or domain) %}
 {% set pool_name = pool_name or project %}
 {% set project_root = project_root or '{0}/{1}/project'.format(locs.projects_dir, project) %}
 
 {% if chroot %}
-{% if not doc_root.startswith(project_root) %}
-{% set chroot = False %}
+{%   if not doc_root.startswith(project_root) %}
+{%      set chroot = False %}
+{%    endif %}
 {% endif %}
 
 {% if not session_cookie_domain %}
-{% set session_cookie_domain = domain %}
+{%    set session_cookie_domain = domain %}
 {% endif %}
 
-{% if settings != None %}
 {# Merge settings with phpData, @see mc_states.mc_php.settings for settings tree #}
+{% if settings != None %}
 {%   set phpData = salt['mc_utils.dictupdate'](phpData.copy(), settings) %}
 {% endif %}
 
 {% if chroot %}
-{% set project_root = '' %}
+{%   set project_root = '' %}
 {% endif %}
 
 {% set mode='production' %}
@@ -130,7 +131,7 @@
 {% set sock_dir    = apacheData.fastcgi_socket_directory %}
 {% set private_dir = '{0}/{1}'.format(project_root, phpData.fpm.private_dir) %}
 
-{% if includes%}
+{% if includes %}
 includes:
 {{includes()}}
 {% endif %}
@@ -244,9 +245,7 @@ makina-php-pool-{{ pool_name }}:
         xdebug_profiler_enable_trigger: {{ phpData.modules.xdebug.profiler_enable_trigger|int(0) }}
         xdebug_profiler_output_name: "{{ phpData.modules.xdebug.profiler_output_name }}"
         mode: {{mode}}
-        {% for variablename, variablevalue in extra_jinja_pool_variables.iteritems() %}
-        {{ variablename }}: {{ variablevalue|yaml }}
-        {% endfor %}
+        extra: {{ extra_jinja_pool_variables|yaml }}
     - require:
       - mc_proxy: makina-php-post-inst
     - watch_in:
@@ -273,26 +272,25 @@ makina-php-pool-{{ pool_name }}-directories:
 
 {# very minimal index.php file #}
 {% if minimal_index %}
-{{ minimal_index(doc_root, project, domain=domain, mode=mode)}}
+{{ minimal_index(doc_root, domain=domain, mode=mode)}}
 {% endif %}
-
 {%- endmacro %}
 
-{% macro minimal_index(doc_root,
-                       project,
-                       domain='no domain',
-                       mode='unkown mode') %}
-{{ project }}-minimal-index:
+{% macro minimal_index(doc_root, domain='no domain', mode='unkown mode') %}
+{{ doc_root }}-minimal-index:
   file.managed:
-    - name: {{ doc_root }}/index.php
+    - name: {{ doc_root }}/index.html
     - unless: test -e "{{ doc_root }}/index.php"
-    - makedirs: true
     - source:
     - contents: '<?php phpinfo(); ?>'
-    - user: {{apacheData.httpd_user }}
+    - makedirs: true
+    - user: {{apacheData.httpd_user}}
     - group: {{ localsettings.group }}
-    - require:
+    - watch:
+      - mc_proxy: postcheckout-project-hook
       - mc_proxy: makina-php-pre-restart
-    - require_in:
+      - mc_proxy: makina-apache-post-inst
+    - watch_in:
+      - mc_proxy: makina-apache-pre-conf
       - mc_proxy: makina-php-pre-restart
-{%- endmacro %}
+{% endmacro %}

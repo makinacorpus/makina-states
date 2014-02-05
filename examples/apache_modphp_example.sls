@@ -11,28 +11,6 @@
 # - 3: extend is a top level declaration, like an ID declaration, cannot be declared twice in a single SLS
 # - 4: Many IDs can be extended under the extend declaration
 
-{% import "makina-states/_macros/php.jinja" as php with context %}
-{% set apache = php.apache %}
-{% set services = php.services %}
-{% set localsettings = services.localsettings %}
-{% set nodetypes = services.nodetypes %}
-{% set locs = localsettings.locations %}
-
-{% set project = 'php-example-com' %}
-{% set domain = 'php.example.com' %}
-{% set root = '{0}/{1}/project'.format(locs.projects_dir, project) %}
-{% set docroot = '{0}/www'.format(root) %}
-{% set data = {
-  'log_level': 'info',
-  'root': root,
-  'docroot': loglevel,
-  'domain': domain,
-  'project': project,
-} %}
-
-{# override any setting from config #}
-{% do salt['mc_utils.defaults']('makina-projects.{0}'.format(project), data) %}
-
 include:
   - makina-states.services.php.modphp
 
@@ -52,14 +30,5 @@ my-php-removed-modules:
       - {{ php.phpData.packages.memcached }}
     - require_in:
       - mc_proxy: makina-apache-php-post-inst
-
-# Custom Apache Virtualhost
-{{ apache.virtualhost(
-    site = data.domain,
-    small_name = data.project,
-    number = '990',
-    log_level = data.log_level,
-    documentRoot = data.docroot,
-    allow_htaccess = False) }}
 
 # Custom php.ini settings set in the included apache virtualhost content file

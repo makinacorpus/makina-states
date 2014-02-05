@@ -79,14 +79,25 @@
 #  Makina project per project macro couple (install_apache_project/install_project)
 #  This will install an apache virtualhost serving in project_root/www for the
 #  configured domain(s)
+#
+#  The next macro is waiting at least for the "apache_opts" dict to be feeded with 
+#  parameters to give to the _macros/apache.jinja macros
+#
+#
 #}
-{% macro install_apache_project_do(common) %}
-{% do common.data.apache_opts.setdefault('server_aliases', common.alternate_domains) %}
+
+
+{% macro vhost_from_common_data(common) %}
+{% do common.data.apache_opts.setdefault('server_aliases',
+                                         common.alternate_domains) %}
 {{ virtualhost(domain=common.domain,
                project_root=common.project_root,
                apache_opts=common.data.apache_opts,
-               minimal_index=apache.minimal_index,
-               mode=common.default_env,) }}
+               mode=common.default_env, **kwargs) }}
+{%- endmacro %}
+
+{% macro install_apache_project_do(common) %}
+{{ vhost_from_common_data(common, minimal_index=apache.minimal_index) }}
 {%- endmacro %}
 
 {#- Look available arguments in _modules/mc_project.py:get_commmon_vars #}
