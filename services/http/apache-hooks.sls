@@ -35,9 +35,9 @@ makina-apache-pre-conf:
 
 makina-apache-vhostconf:
   mc_proxy.hook:
-    - watch_in:
-      - mc_proxy: makina-apache-pre-conf
     - watch:
+      - mc_proxy: makina-apache-pre-conf
+    - watch_in:
       - mc_proxy: makina-apache-post-conf
 
 makina-apache-post-conf:
