@@ -39,9 +39,9 @@
 #   - log_level
 #       log level
 #   - [ssl_]interface
-#       interface of the namevirtualhost (like in '*:80'), default is '*'
+#       interface of the namevirtualhost (like in "*:80"), default is "*"
 #   - [ssl_]port
-#       port of the namevirtualhost (like in '*:80'), default is '80' and '443' for ssl version
+#       port of the namevirtualhost (like in "*:80"), default is "80" and "443" for ssl version
 #   - active
 #       True by default, set to False to disable the Virtualhost
 #   - project
@@ -53,37 +53,37 @@
 
 
 {% set default_vh_template_source = (
-    'salt://makina-states/files/etc/'
-    'apache2/sites-available/virtualhost_template.conf') %}
+    "salt://makina-states/files/etc/"
+    "apache2/sites-available/virtualhost_template.conf") %}
 {% set default_vh_in_template_source = (
-    'salt://makina-states/files/etc/'
-    'apache2/includes/in_virtualhost_template.conf')  %}
+    "salt://makina-states/files/etc/"
+    "apache2/includes/in_virtualhost_template.conf")  %}
 {% macro includes() %}
   - makina-states.services.http.apache
 {% endmacro %}
-{% macro virtualhost(domain='example.com',
-                     number='100',
+{% macro virtualhost(domain="example.com",
+                     number="100",
                      serveradmin_mail=None,
                      server_aliases=None,
                      extra_jinja_apache_variables=None,
                      vh_template_source=default_vh_template_source,
                      vh_in_template_source=default_vh_in_template_source,
-                     log_level='warn',
-                     interface='*',
-                     ssl_interface='*',
-                     port='80',
-                     ssl_port='443',
+                     log_level="warn",
+                     interface="*",
+                     ssl_interface="*",
+                     port="80",
+                     ssl_port="443",
                      redirect_aliases=True,
                      allow_htaccess=False,
                      active=True,
                      includes=False,
                      project=None,
-                     mode='production',
+                     mode="production",
                      project_root=None,
                      doc_root=None) %}
-{% set project = salt['mc_project.gen_id'](project or domain) %}
-{% set admin_mail = serveradmin_mail or 'webmaster@{0}'.format(domain) %}
-{% set doc_root = salt['mc_project.doc_root'](doc_root=doc_root,
+{% set project = salt["mc_project.gen_id"](project or domain) %}
+{% set admin_mail = serveradmin_mail or "webmaster@{0}".format(domain) %}
+{% set doc_root = salt["mc_project.doc_root"](doc_root=doc_root,
                                               domain=domain,
                                               project_root=project_root,
                                               project=project) %}
@@ -93,14 +93,14 @@
 {% if not server_aliases %}
 {%  set server_aliases = [] %}
 {% endif %}
-{% set server_aliases = salt['mc_project.server_aliases'](server_aliases) %}
-{% set old_mode = (grains['lsb_distrib_id'] == "Ubuntu"
-                   and grains['lsb_distrib_release'] < 13.10)
-                   or (grains['lsb_distrib_id'] == "Debian"
-                       and grains['lsb_distrib_release'] <= 7.0) %}
+{% set server_aliases = salt["mc_project.server_aliases"](server_aliases) %}
+{% set old_mode = (grains["lsb_distrib_id"] == "Ubuntu"
+                   and grains["lsb_distrib_release"] < 13.10)
+                   or (grains["lsb_distrib_id"] == "Debian"
+                       and grains["lsb_distrib_release"] <= 7.0) %}
 
 {% if nodetypes.registry.is.devhost %}
-{%  set mode='dev' %}
+{%  set mode="dev" %}
 {% endif %}
 
 {% if includes %}
@@ -108,19 +108,20 @@ include:
 {{ includes() }}
 {% endif %}
 
-# Virtualhost basic file
+{% set evhost = "{basedir}/{number}-{domain}".format(**dict(
+  number=number, basedir=apacheData.evhostdir, domain=domain)) %}
+{% set avhost = "{basedir}/{number}-{domain}".format(**dict(
+  number=number, basedir=apacheData.vhostdir, domain=domain)) %}
+
+{#- Virtualhost basic file #}
 {{ project }}-makina-apache-virtualhost:
   file.managed:
     - user: root
     - group: root
     - mode: 664
-{% if old_mode %}
-    - name: {{ apacheData.vhostdir }}/{{ number }}-{{ domain }}
-{% else %}
     - name: {{ apacheData.vhostdir }}/{{ number }}-{{ domain }}.conf
-{% endif %}
     - source: {{ vh_template_source }}
-    - template: 'jinja'
+    - template: "jinja"
     - defaults:
         log_level: "{{ log_level }}"
         serveradmin_mail: "{{ admin_mail }}"
@@ -146,7 +147,7 @@ include:
     - mode: 664
     - name: {{ apacheData.basedir }}/includes/{{ domain }}.conf
     - source: {{ vh_in_template_source }}
-    - template: 'jinja'
+    - template: "jinja"
     - defaults:
         mode: {{mode}}
         document_root: {{ doc_root }}
@@ -157,24 +158,29 @@ include:
     - watch_in:
       - mc_proxy: makina-apache-post-conf
 
-{{project}}-makina-apache-virtualhost-status:
-  cmd.run:
-    - name: a2{% if active %}ensite{% else%}dissite{% endif %} {{ number }}-{{ domain }}
-    - {% if active %}
-    - unless: >
-      {% else %}
-    - onlyif: >
-      {% endif %}
-              if [ -e "{{ apacheData.basedir }}/sites-enabled/{{ number }}-{{ domain }}" ]
-              || [ -e "{{ apacheData.basedir }}/sites-enabled/{{ number }}-{{ domain }}.conf" ];then
-                exit 1;
-              fi;exit 0
+{{project}}-makina-apache-virtualhost-remove-short-and-non-active:
+  file.absent:
+    - names:
+      - {{evhost}}
+      {% if not active %}
+      - {{evhost}}.conf
+      {% endif%}
     - watch_in:
-      - file: {{ project }}-makina-apache-virtualhost
       - mc_proxy: makina-apache-post-conf
+
+{% if active %}
+{{project}}-makina-apache-virtualhost-status:
+  file.symlink:
+    - target: {{avhost}}.conf
+    - name: {{evhost}}.conf
+    - watch:
+      - file: {{ project }}-makina-apache-virtualhost
+    - watch_in:
+      - mc_proxy: makina-apache-post-conf
+{% endif %}
 {% endmacro %}
 
-{% macro minimal_index(doc_root, domain='no domain', mode='unkown mode') %}
+{% macro minimal_index(doc_root, domain="no domain", mode="unkown mode") %}
 {{ doc_root }}-minimal-index:
   file.managed:
     - name: {{ doc_root }}/index.html
@@ -183,7 +189,7 @@ include:
     - contents: >
                 <html>
                 <body>
-                It works from {{doc_root.split('/')[-1]}}/{{domain}}/{{mode}}
+                It works from {{doc_root.split("/")[-1]}}/{{domain}}/{{mode}}
                 </body>
                 </html>
     - makedirs: true

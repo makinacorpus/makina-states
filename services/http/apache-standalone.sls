@@ -370,6 +370,8 @@ makina-apache-remove-package-default-index:
 makina-apache-minimal-default-vhost-remove-olds:
   file.absent:
     - names:
+      - {{ services.apacheSettings.evhostdir }}/default
+      - {{ services.apacheSettings.evhostdir }}/default-ssl
       - {{ services.apacheSettings.vhostdir }}/default
       - {{ services.apacheSettings.vhostdir }}/default-ssl
     - watch_in:

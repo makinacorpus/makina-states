@@ -209,6 +209,8 @@ def settings():
                 'Debian': {
                     'virtualhosts': {
                         'default': {
+                            'number': '000',
+                            'active': True,
                             'domain': 'default',
                             'vh_template_source': def_vh,
                             'doc_root': '/var/www/default',
@@ -239,6 +241,8 @@ def settings():
                     'basedir': locations['conf_dir'] + '/apache2',
                     'vhostdir': (
                         locations['conf_dir'] + '/apache2/sites-available'),
+                    'evhostdir': (
+                        locations['conf_dir'] + '/apache2/sites-enabled'),
                     'confdir': locations['conf_dir'] + '/apache2/conf.d',
                     'logdir': locations['var_log_dir'] + '/apache2',
                     'wwwdir': locations['srv_dir']
