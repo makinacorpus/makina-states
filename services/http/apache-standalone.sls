@@ -114,6 +114,9 @@ makina-apache-main-conf-included-modules:
       - status
     - require_in:
       - mc_apache: makina-apache-main-conf
+    - watch_in:
+      - mc_proxy: makina-apache-pre-conf
+      - mc_proxy: makina-apache-pre-restart
 
 makina-apache-main-conf-excluded-modules:
   mc_apache.exclude_module:
@@ -129,6 +132,9 @@ makina-apache-main-conf-excluded-modules:
 {% endif %}
     - require_in:
       - mc_apache: makina-apache-main-conf
+    - watch_in:
+      - mc_proxy: makina-apache-pre-conf
+      - mc_proxy: makina-apache-pre-restart
 {# Read states documentation to alter main apache
 # configuration
 #}
@@ -145,6 +151,7 @@ makina-apache-main-conf:
       # and errors here may be caused by syntax problems
       # - cmd: makina-apache-conf-syntax-check
       - mc_proxy: makina-apache-post-conf
+      - mc_proxy: makina-apache-pre-restart
 
 makina-apache-settings:
   file.managed:
@@ -183,6 +190,7 @@ makina-apache-settings:
     # full service restart in case of changes
     - watch_in:
       - mc_proxy: makina-apache-pre-conf
+      - mc_proxy: makina-apache-pre-restart
 
 
 makina-apache-mod-status-settings:
@@ -205,8 +213,8 @@ makina-apache-mod-status-settings:
       - mc_proxy: makina-apache-post-inst
     # gracefull reload in case of changes
     - watch_in:
-      - cmd: makina-apache-conf-syntax-check
-      - service: makina-apache-reload
+      - mc_proxy: makina-apache-pre-conf
+      - mc_proxy: makina-apache-pre-reload
 
 {# Exemple to add a slug directly in apache configuration #}
 makina-apache-main-extra-settings-example:
@@ -258,8 +266,6 @@ makina-apache-security-settings:
 #    - watch:
 #      - mc_proxy: makina-apache-post-inst
 #}
-
-
 {# Extra module additions and removal ----------------
 # Theses (valid) examples show you how
 # to alter the modules_excluded and
@@ -274,16 +280,19 @@ makina-apache-security-settings:
 #      - status
 #      - cgid
 #    - watch_in:
-#      - mc_apache: makina-apache-main-conf
+#       - mc_proxy: makina-apache-pre-restart
 #
 # Exemple: add negociation in excluded modules
-#
+# WARNING: removing modules listed in makina-apache-main-conf-excluded-modules
+# should be done on the defaults dictionnary
 #makina-apache-other-module-excluded:
 #  mc_apache.exclude_module:
 #    - modules:
 #      - negotiation
 #    - watch_in:
 #      - mc_apache: makina-apache-main-conf
+#
+#
 #}
 
 # Directories settings -----------------
@@ -298,9 +307,11 @@ makina-apache-include-directory:
        - mc_proxy: makina-apache-post-inst
     - watch_in:
        - mc_proxy: makina-apache-pre-conf
+       - mc_proxy: makina-apache-pre-restart
 
 {# cronolog usage in {{ locs.var_dir }}/log/apache watchs a group write
 # right which may not be present.
+# we connect to restart as a reload wont be enough
 #}
 makina-apache-default-log-directory:
   file.directory:
@@ -312,6 +323,7 @@ makina-apache-default-log-directory:
        - mc_proxy: makina-apache-post-inst
     - watch_in:
        - mc_proxy: makina-apache-pre-conf
+       - mc_proxy: makina-apache-pre-restart
 
 # Default Virtualhost managment -------------------------------------
 {# Replace defaut Virtualhost by a more minimal default Virtualhost [1]
