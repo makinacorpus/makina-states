@@ -3,6 +3,7 @@
 #}
 {% import "makina-states/_macros/services.jinja" as services with context %}
 {% set services = services %}
+{% set localsettings = services.localsettings %}
 {% set nodetypes = services.nodetypes %}
 {% set apacheData = services.apacheSettings %}
 {# * virtualhost => create all states for a virtualhost (virtualhost file, include file, a2ensite/dissite command
@@ -49,40 +50,49 @@
 #     - automaticly add the apache states
 #
 #}
+
+
+{% set default_vh_template_source = (
+    'salt://makina-states/files/etc/'
+    'apache2/sites-available/virtualhost_template.conf') %}
+{% set default_vh_in_template_source = (
+    'salt://makina-states/files/etc/'
+    'apache2/includes/in_virtualhost_template.conf')  %}
 {% macro includes() %}
   - makina-states.services.http.apache
 {% endmacro %}
 {% macro virtualhost(domain='example.com',
-                         number='100',
-                         serveradmin_mail=None,
-                         server_aliases=None,
-                         extra_jinja_apache_variables=None
-                         vh_template_source='salt://makina-states/files/etc/apache2/sites-available/virtualhost_template.conf',
-                         vh_in_template_source='salt://makina-states/files/etc/apache2/includes/in_virtualhost_template.conf',
-                         log_level='warn',
-                         interface = '*',
-                         ssl_interface = '*',
-                         port='80',
-                         ssl_port='443',
-                         redirect_aliases=True,
-                         allow_htaccess=False,
-                         active=True,
-                         includes=False,
-                         project_root=None,
-                         doc_root=None) -%}
+                     number='100',
+                     serveradmin_mail=None,
+                     server_aliases=None,
+                     extra_jinja_apache_variables=None,
+                     vh_template_source=default_vh_template_source,
+                     vh_in_template_source=default_vh_in_template_source,
+                     log_level='warn',
+                     interface='*',
+                     ssl_interface='*',
+                     port='80',
+                     ssl_port='443',
+                     redirect_aliases=True,
+                     allow_htaccess=False,
+                     active=True,
+                     includes=False,
+                     project=None,
+                     project_root=None,
+                     doc_root=None) %}
 {% set project = salt['mc_project.gen_id'](project or domain) %}
-{% set doc_root = salt['mc_project.doc_root(doc_root=doc_root,
-                                            domain=domain,
-                                            project_root=project_root,
-                                            project=project) %}
 {% set admin_mail = serveradmin_mail or 'webmaster@{0}'.format(domain) %}
+{% set doc_root = salt['mc_project.doc_root'](doc_root=doc_root,
+                                              domain=domain,
+                                              project_root=project_root,
+                                              project=project) %}
 {% if not extra_jinja_apache_variables %}
 {%  set extra_jinja_apache_variables = {} %}
 {% endif %}
 {% if not server_aliases %}
 {%  set server_aliases = [] %}
 {% endif %}
-{% set server_aliases = salt['mc_project.server_aliases(server_aliases) %}
+{% set server_aliases = salt['mc_project.server_aliases'](server_aliases) %}
 {% set old_mode = (grains['lsb_distrib_id'] == "Ubuntu"
                    and grains['lsb_distrib_release'] < 13.10)
                    or (grains['lsb_distrib_id'] == "Debian"
@@ -96,18 +106,18 @@
 {% if includes %}
 include:
 {{ includes() }}
-{% endmacro %}
+{% endif %}
 
 # Virtualhost basic file
-makina-apache-virtualhost-{{ project }}:
+{{ project }}-makina-apache-virtualhost:
   file.managed:
     - user: root
     - group: root
     - mode: 664
 {% if old_mode %}
-    - name: {{ apacheData.vhostdir }}/{{ number }}-{{ site }}
+    - name: {{ apacheData.vhostdir }}/{{ number }}-{{ domain }}
 {% else %}
-    - name: {{ apacheData.vhostdir }}/{{ number }}-{{ site }}.conf
+    - name: {{ apacheData.vhostdir }}/{{ number }}-{{ domain }}.conf
 {% endif %}
     - source: {{ vh_template_source }}
     - template: 'jinja'
@@ -115,9 +125,9 @@ makina-apache-virtualhost-{{ project }}:
         log_level: "{{ log_level }}"
         serveradmin_mail: "{{ admin_mail }}"
         project: "{{ project }}"
-        DocumentRoot: "{{ doc_root }}"
-        ServerName: "{{ site }}"
-        ServerAlias: {{server_aliases|yaml}}
+        document_root: "{{ doc_root }}"
+        server_name: "{{ domain }}"
+        server_aliases: {{server_aliases|yaml}}
         redirect_aliases: {{ redirect_aliases }}
         interface: "{{ interface }}"
         port: "{{ port }}"
@@ -133,17 +143,17 @@ makina-apache-virtualhost-{{ project }}:
       - mc_proxy: makina-apache-pre-restart
 
 {# Virtualhost real content, shared by SSL and non-SSL virtualhosts #}
-makina-apache-virtualhost-{{ project }}-content:
+{{ project }}-makina-apache-virtualhost-content:
   file.managed:
     - user: root
     - group: root
     - mode: 664
-    - name: {{ apacheData.basedir }}/includes/{{ site }}.conf
+    - name: {{ apacheData.basedir }}/includes/{{ domain }}.conf
     - source: {{ vh_in_template_source }}
     - template: 'jinja'
     - defaults:
         mode: {{mode}}
-        DocumentRoot: {{ doc_root }}
+        document_root: {{ doc_root }}
         allow_htaccess: {{ allow_htaccess }}
         {% for variablename, variablevalue in extra_jinja_apache_variables.iteritems() %}
         {{ variablename }}: {{ variablevalue|yaml }}
@@ -155,23 +165,18 @@ makina-apache-virtualhost-{{ project }}-content:
       - file: {{project}}-makina-apache-virtualhost
       - mc_proxy: makina-apache-pre-restart
 
-{{project}}-makina-apache-virtualhost-status
+{{project}}-makina-apache-virtualhost-status:
   cmd.run:
-{%      if active %}
-    - name: a2ensite {{ number }}-{{ site }}
-{% if old_mode %}
-    - unless: ls {{ apacheData.basedir }}/sites-enabled/{{ number }}-{{ site }}
-{%        else %}
-    - unless: ls {{ apacheData.basedir }}/sites-enabled/{{ number }}-{{ site }}.conf
-{%        endif %}
-{%      else %}
-    - name: a2dissite 200-{{ site }}
-{% if old_mode %}
-    - onlyif: ls {{ apacheData.basedir }}/sites-enabled/{{ number }}-{{ site }}
-{%        else %}
-    - onlyif: ls {{ apacheData.basedir }}/sites-enabled/{{ number }}-{{ site }}.conf
-{%        endif %}
-{%      endif %}
+    - name: a2{% if active %}ensite{% else%}dissite{% endif %} {{ number }}-{{ domain }}
+    - {% if active %}
+    - unless: >
+      {% else %}
+    - onlyif: >
+      {% endif %}
+              if [ -e "{{ apacheData.basedir }}/sites-enabled/{{ number }}-{{ domain }}" ]
+              || [ -e "{{ apacheData.basedir }}/sites-enabled/{{ number }}-{{ domain }}.conf" ];then
+                exit 1;
+              fi;exit 0
     - require:
       - mc_proxy: makina-apache-post-inst
     - watch_in:
@@ -193,10 +198,11 @@ makina-apache-virtualhost-{{ project }}-content:
     - makedirs: true
     - user: {{apacheData.httpd_user}}
     - group: {{ localsettings.group }}
-    - require:
+    - watch:
+      - mc_proxy: postcheckout-project-hook
       - mc_proxy: makina-apache-post-inst
-    - require_in:
+    - watch_in:
       - mc_proxy: makina-apache-pre-conf
-{% endmacro %} 
+{% endmacro %}
 
 {# vim: set nofoldenable :#}

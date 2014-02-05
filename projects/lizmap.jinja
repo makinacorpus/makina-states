@@ -25,11 +25,14 @@
       - {{localsettings.group}}
     - watch_in:
       - mc_proxy: makina-apache-pre-restart
+      - mc_proxy: {{common.name}}-postinstall-project
+    - watch:
+      - mc_proxy: {{common.name}}-preinstall-project
+
 {%  set basedirs = [common.project_root+'/webapp',
                     common.project_root+'/cache',
                     ftproot + '/' + common.name + '/template',
                     ftproot + '/' + common.name + '/template/qgis'] %}
-
 {% for dir in basedirs %}
 {{common.name}}-rootdir-{{dir}}:
   file.directory:
@@ -38,7 +41,10 @@
     - group: www-data
     - mode: 770
     - makedirs: true
-    - require_in:
+    - watch:
+      - mc_proxy: {{common.name}}-preinstall-project
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project
       - mc_proxy: {{common.name}}-rootdir-dirs
       - mc_proxy: {{common.name}}-lizmap-users
 {% endfor %}
@@ -57,12 +63,14 @@
     - home: {{ftproot}}/{{common.name}}/{{user}}
     - remove_groups: False
     - gid_from_name: True
-    - require:
+    - watch:
       - mc_proxy: {{common.name}}-lizmap-users
       - group: {{common.name}}-ftp-user-{{user}}
-    - require_in:
+      - mc_proxy: {{common.name}}-preinstall-project
+    - watch_in:
       - file: {{common.name}}-ftp-home-{{user}}
       - mc_proxy: {{common.name}}-rootdir-dirs
+      - mc_proxy: {{common.name}}-postinstall-project
 
 {{common.name}}-www-data-in-ftpgroup-{{user}}:
   user.present:
@@ -72,6 +80,7 @@
       - {{user}}
     - watch_in:
       - mc_proxy: makina-apache-pre-restart
+      - mc_proxy: {{common.name}}-postinstall-project
 
 {{common.name}}-ftp-home-{{user}}:
   file.directory:
@@ -85,8 +94,9 @@
     - group: www-data
     - mode: 770
     - makedirs: true
-    - require_in:
+    - watch_in:
       - mc_proxy: {{common.name}}-rootdir-dirs
+      - mc_proxy: {{common.name}}-postinstall-project
 {% endfor %}
 
 # Custom virtualhost
@@ -112,7 +122,7 @@
     - name: https://github.com/makinacorpus/lizmap-web-client.git
     - target: {{common.project_root}}/webapp
     - user: {{common.user}}
-    - require:
+    - watch:
       {% if common.full %}
       {# - pkg: {{common.name}}lizmap-prereq #}
       {% endif %}
@@ -176,18 +186,17 @@
 
     - mode: 755
     - user: {{common.user}}
-    - require:
+    - watch:
       - mc_proxy: {{common.name}}-post-app
-
-{# TODO
   cmd.run:
     - name: {{common.project_root}}/reset-perms.sh
     - user: root
     - group: root
     - cwd: {{common.project_root}}
-    - require:
+    - watch:
       - file: {{common.name=}}-reset-perms
-      #}
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project
 {% endmacro %}
 
 {#  Cron from generic: pack & backup & restart each day, fullbackup per week (sunday) #}
@@ -203,7 +212,7 @@
     - minute:  {{ cron_minute + 0 }}
     - hour: {{cron_hour}}
     - name: {{common.project_root}}/bin/zeoserver-zeopack
-    - require:
+    - watch:
       - service: {{common.name}}-service
 #}
 
@@ -247,7 +256,10 @@
 {{common.name}}-lizmap-users:
   mc_proxy.hook: []
 {{common.name}}-post-app:
-  mc_proxy.hook: []
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project
+
 # install postgresql only if we have the db role enabled
 {%-   if common.data.has_app %}
 {{-     lizmap_pkgs(common)}}
@@ -278,3 +290,4 @@
 {% endif %}
 {{-  base.install_project(common, install_macro=install_lizmap_project_do) }}
 {%- endmacro %}
+{# vim: set nofoldenable :#}

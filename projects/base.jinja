@@ -47,6 +47,8 @@
   user.present:
     - name: {{common.user}}
     - shell: /bin/bash
+    - watch_in:
+      - mc_proxy: {{common.name}}-prerequisites-hook
     - require:
       {% for group in common.groups -%}
       - group: {{common.name}}-group-{{group}}
@@ -96,18 +98,24 @@
       {# only where the user exists and when we have installed the root ssh keys #}
       - mc_proxy: ssh-post-user-keys
       - user: {{common.name}}-user-{{common.user}}
+    - watch_in:
+      - mc_proxy: {{common.name}}-prerequisites-hook
 
 {{common.name}}-{{common.user}}-ssh-keys-perms:
   cmd.run:
+    - watch_in:
+      - mc_proxy: {{common.name}}-prerequisites-hook
     - require:
       - cmd: {{common.name}}-{{common.user}}-ssh-keys-init
-      {# be sure to have correct permissions on ssh folders #}
+    - stateful: True
+    {# be sure to have correct permissions on ssh folders but do not trigger any restart or such #}
     - name: |
             home="$(awk -F: -v v="{{common.user}}" '{if ($1==v && $6!="") print $6}' /etc/passwd)";
             chmod -Rf 750           $home/.ssh;
             chmod -Rf 700           $home/.ssh/*;
             chmod -Rf 770           $home/.ssh/config;
             chown -Rf {{common.user}}:{{common.user}} $home/.ssh;
+            echo
 {%- endif %} {# if common.full #}
 {%- endif %}
 {% endmacro %}  {# set_accesses #}
@@ -132,14 +140,11 @@
     {% if not common.no_user -%}
     - user: {{common.user}}
     {%- endif %}
-    - require:
-      {# be sure to run after salt has maybe updated itself
-      # and has our code installation treea #}
-      {% if common.full -%}
-      - cmd: {{common.name}}-{{common.user}}-ssh-keys-perms
-      {%- endif %}
-      - user: {{common.name}}-user-{{common.user}}
+    - watch:
       - mc_proxy: dummy-post-salt-service-restart
+      - mc_proxy: {{common.name}}-precheckout-salt-hook
+    - watch_in:
+      - mc_proxy: {{common.name}}-postcheckout-salt-hook
 {% endif %}
 
 {#-
@@ -163,12 +168,9 @@
     - group: {{common.group}}
     {%- endif %}
     - mode: 0770
-    - require_in:
-      - file: {{common.name}}-checkout-code
-    {%- if not common.no_salt %}
-    - require:
-      - mc_git: {{common.name}}-checkout-salt
-    {%- endif %}
+    - watch_in:
+      - mc_proxy: {{common.name}}-precheckout-salt-hook
+      - mc_proxy: {{common.name}}-precheckout-project-hook
 {% endfor %}
 
 {#-
@@ -183,10 +185,9 @@
     - group: {{common.group}}
     {%- endif %}
     {% if common.no_salt or common.no_user %}
-    - require:
-      {% if not common.no_salt %}
-      - mc_git: {{common.name}}-checkout-salt
-      {% endif %}
+    - watch:
+      - mc_proxy: {{common.name}}-postcheckout-salt-hook
+      - mc_proxy: {{common.name}}-precheckout-project-hook
       {% if not common.no_user %}
       - user: {{common.name}}-user-{{common.user}}
       {% endif %}
@@ -196,11 +197,12 @@
      to the project .git as they are on the same git repository, it's quickier and consume less network #}
   cmd.run:
     - name: |
-            rsync -az --exclude="refs/heads/*" "{{common.salt_root}}/.git/" "{{common.project_root}}/.git/";
+            rsync -az "{{common.salt_root}}/.git/" "{{common.project_root}}/.git/";
             cd "{{common.project_root}}";
-            git reset --hard origin/{{common.project_branch}};
-            touch "{{common.project_root}}/.initial"
-    - unless: test -d "{{common.project_root}}/.git/"
+            git reset --hard remotes/origin/{{common.project_branch}} && touch "{{common.project_root}}/.initial"
+    - unless: if [ -e "{{common.project_root}}/.initial" ] || [ -e "{{common.project_root}}/.git" ];then
+                exit 0;
+              fi;exit 1
     {% if not common.no_user -%}
     - user: {{common.user}}
     {%- endif %}
@@ -214,8 +216,9 @@
     - user: {{common.user}}
     {%- endif %}
     - target: {{common.project_root}}
-    - require:
-      - file: {{common.name}}-{{common.project_root}}-dir
+    - watch_in:
+      - mc_proxy: {{common.name}}-postcheckout-project-hook
+    - watch:
       {% if not common.no_salt -%}
       - cmd: {{common.name}}-checkout-code
       {%- endif %}
@@ -223,37 +226,6 @@
       - user: {{common.user}}
       {%- endif %}
 {%- endmacro %} {# checkout_salt_and_code #}
-
-{%- macro install_apache(common) %}
-{#-
-{% from "makina-states/services/http/apache_defaults.jinja" import apacheData with context %}
-{% from "makina-states/services/http/apache_macros.jinja" import virtualhost with context %}
-
-# Adding or removing modules
-{{common.name}}-apache-included1:
-  mc_apache.include_module:
-    - modules:
-      - proxy_http
-      - proxy_html
-      - proxy
-      - authn_file
-      - include
-      - rewrite
-    - require_in:
-      - mc_apache: makina-apache-main-conf
-
-{{ virtualhost(apacheData = apacheData,
-            site = salt['pillar.get']('project-foo-apache-vh1-name', 'www.foobar.com'),
-            small_name = salt['pillar.get']('project-foo-apache-vh1-nickname', 'foobar'),
-            active = True,
-            number = '900',
-            log_level = salt['pillar.get']('project-foo-apache-vh1-loglevel', 'debug'),
-            serverAlias = salt['pillar.get']('project-foo-apache-vh1-alias', 'foobar.com'),
-            documentRoot = salt['pillar.get']('project-foo-apache-vh1-docroot', '/srv/projects/example/foobar/www'),
-            redirect_aliases = True,
-            allow_htaccess = False) }}
-#}
-{%- endmacro %} {# install_apache #}
 
 {#-
 # PERMISSIONS SETUP, STAY SECURE and reset file permissions, more over never let others this our stuff !
@@ -269,8 +241,10 @@
             --user  root --group "{{localsettings.group}}"
             --paths "{{common.salt_root}}"
             --paths "{{common.pillar_root}}"
-    - require:
-      - cmd: {{common.name}}-checkout-code
+    - watch:
+      - mc_proxy: {{common.name}}-postcheckout-salt-hook
+      - mc_proxy: {{common.name}}-postcheckout-project-hook
+      - mc_proxy: {{common.name}}-postinstall-project-hook
 {%-    endif %}
 
 {% if common.full -%}
@@ -282,8 +256,10 @@
             --paths "{{common.project_root}}"
             --user {% if not common.no_user%}{{common.user}}{% else -%}root{% endif %}
             --group {{common.group}}
-    - require:
-      - mc_git: {{common.name}}-checkout-code
+    - watch:
+      - mc_proxy: {{common.name}}-postcheckout-salt-hook
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+      - mc_proxy: {{common.name}}-postcheckout-project-hook
       {% if not common.no_salt -%}
       - cmd: {{common.name}}-restricted-perms
       {%- endif %}
@@ -298,13 +274,14 @@
 {%-  if common.full and not common.no_domain %}
 {{common.name}}-append-hosts-accumulator:
   file.accumulated:
+    - name: hosts-append-accumulator-{{ common.name }}-entries
     - require_in:
       - file: makina-append-etc-hosts-management
     - filename: {{ locs.conf_dir }}/hosts
     - text: |
-            {% for domain in common.domains -%}
+            {% for domain in common.domains %}
             {{common.domains[domain]}} {{domain}}
-            {%- endfor %}
+            {% endfor %}
 {#-
 # if we are on a vagrant box, also register our hosts to be accesible from the host
 #}
@@ -313,12 +290,14 @@
 makina-parent-append-etc-hosts-accumulated-project-{{common.name}}:
   file.accumulated:
     - filename: {{vagrantvm.hostsf}}
-    - name: parent-hosts-append-accumulator-{{ vagrantvm.vm_name }}-entries
+    - name: parent-hosts-append-accumulator-{{ vagrantvm.vm_name }}-{{common.name}}-entries
     - text: |
-            {% for domain in common.domains -%}
+            {% for domain in common.domains %}
             {{ vagrantvm.ip2 }} {{domain}}
             {{ vagrantvm.ip1 }} {{domain}}
-            {%- endfor %}
+            {% endfor %}
+    - watch_in:
+      - mc_proxy: {{common.name}}-prerequisites-hook
     - require_in:
       - file: makina-append-parent-etc-hosts-management
 {%-    endif %}
@@ -326,6 +305,115 @@ makina-parent-append-etc-hosts-accumulated-project-{{common.name}}:
 {%-  endif %}
 {%- endmacro %} {# configure_domains #}
 
+
+{#
+# Installation lifecycle hooks to attach to
+# for orchestration purpose
+#}
+{% macro hooks(common) %}
+{{common.name}}-prerequisites-hook:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: {{common.name}}-precheckout-hook
+      - mc_proxy: {{common.name}}-precheckout-salt-hook
+      - mc_proxy: {{common.name}}-postcheckout-salt-hook
+      - mc_proxy: {{common.name}}-precheckout-project-hook
+      - mc_proxy: {{common.name}}-postcheckout-project-hook
+      - mc_proxy: {{common.name}}-preinstall-project-hook
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+      - mc_proxy: precheckout-hook
+      - mc_proxy: precheckout-salt-hook
+      - mc_proxy: postcheckout-salt-hook
+      - mc_proxy: precheckout-project-hook
+      - mc_proxy: postcheckout-project-hook
+      - mc_proxy: preinstall-project-hook
+      - mc_proxy: postinstall-project-hook
+
+{{common.name}}-precheckout-hook:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: {{common.name}}-precheckout-salt-hook
+      - mc_proxy: {{common.name}}-postcheckout-salt-hook
+      - mc_proxy: {{common.name}}-precheckout-project-hook
+      - mc_proxy: {{common.name}}-postcheckout-project-hook
+      - mc_proxy: {{common.name}}-preinstall-project-hook
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+      - mc_proxy: precheckout-salt-hook
+      - mc_proxy: postcheckout-salt-hook
+      - mc_proxy: precheckout-project-hook
+      - mc_proxy: postcheckout-project-hook
+      - mc_proxy: preinstall-project-hook
+      - mc_proxy: postinstall-project-hook
+
+{{common.name}}-precheckout-salt-hook:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: {{common.name}}-postcheckout-salt-hook
+      - mc_proxy: {{common.name}}-precheckout-project-hook
+      - mc_proxy: {{common.name}}-postcheckout-project-hook
+      - mc_proxy: {{common.name}}-preinstall-project-hook
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+      - mc_proxy: postcheckout-salt-hook
+      - mc_proxy: precheckout-project-hook
+      - mc_proxy: postcheckout-project-hook
+      - mc_proxy: preinstall-project-hook
+      - mc_proxy: postinstall-project-hook
+
+{{common.name}}-postcheckout-salt-hook:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: {{common.name}}-precheckout-project-hook
+      - mc_proxy: {{common.name}}-postcheckout-project-hook
+      - mc_proxy: {{common.name}}-preinstall-project-hook
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+      - mc_proxy: precheckout-project-hook
+      - mc_proxy: postcheckout-project-hook
+      - mc_proxy: preinstall-project-hook
+      - mc_proxy: postinstall-project-hook
+
+{{common.name}}-precheckout-project-hook:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: {{common.name}}-postcheckout-project-hook
+      - mc_proxy: {{common.name}}-preinstall-project-hook
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+      - mc_proxy: postcheckout-project-hook
+      - mc_proxy: preinstall-project-hook
+      - mc_proxy: postinstall-project-hook
+
+{{common.name}}-postcheckout-project-hook:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: {{common.name}}-preinstall-project-hook
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+      - mc_proxy: preinstall-project-hook
+      - mc_proxy: postinstall-project-hook
+
+{{common.name}}-preinstall-project-hook:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+      - mc_proxy: postinstall-project-hook
+
+{{common.name}}-postinstall-project-hook:
+  mc_proxy.hook:
+    - watch:
+      - mc_proxy: {{common.name}}-prerequisites-hook
+      - mc_proxy: {{common.name}}-precheckout-hook
+      - mc_proxy: {{common.name}}-precheckout-salt-hook
+      - mc_proxy: {{common.name}}-postcheckout-salt-hook
+      - mc_proxy: {{common.name}}-precheckout-project-hook
+      - mc_proxy: {{common.name}}-postcheckout-project-hook
+      - mc_proxy: {{common.name}}-preinstall-project-hook
+      - mc_proxy: prerequisites-hook
+      - mc_proxy: precheckout-hook
+      - mc_proxy: precheckout-salt-hook
+      - mc_proxy: postcheckout-salt-hook
+      - mc_proxy: precheckout-project-hook
+      - mc_proxy: postcheckout-project-hook
+      - mc_proxy: preinstall-project-hook
+
+{% endmacro %}
 {#-
 # All project need to define at least two macros which will use the following macros
 # - A macro named 'install_project' which call the following macro and will call the next macro
@@ -350,6 +438,7 @@ include:
   - {{ sls }}
 {%- endfor %}
 {%-  endif %}
+{{      hooks(common) }}
 {%-  if pre %}
 {{-    pre_install(common) }}
 {%-  endif %}
@@ -360,3 +449,4 @@ include:
 {{-     post_install(common) }}
 {%-  endif %}
 {%- endmacro %} {# install_project #}
+{# vim: set nofoldenable :#}

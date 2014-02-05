@@ -23,18 +23,26 @@
                      apache_opts=None,
                      additionnal_macro=None,
                      additionnal_opts=None,
+                     minimal_index=None,
+                     mode='unkown',
                      includes=False) %}
+{% set doc_root = salt['mc_project.doc_root'](doc_root=doc_root,
+                                              domain=domain,
+                                              project_root=project_root,
+                                              project=project) %}
 {% set args = {
    'domain': domain,
    'project_root': project_root,
    'doc_root': doc_root,
    'project': project
 } %}
+
+
 {% if not apache_opts %}
-{%     set apache_opts = {}
+{%     set apache_opts = {} %}
 {% endif %}
 {% if not additionnal_opts %}
-{%    set additionnal_opts = {}
+{%    set additionnal_opts = {} %}
 {% endif %}
 {% for opts in [additionnal_opts, apache_opts] %}
 {%    do opts.update(args)  %}
@@ -50,7 +58,7 @@
 
 {# very minimal index.php file #}
 {% if minimal_index %}
-{{    minimal_index(doc_root, domain=domain, mode=mode)}}
+{{    minimal_index(doc_root, domain=domain, mode=mode) }}
 {% endif %}
 {% endmacro %}
 
@@ -72,15 +80,17 @@
 #  This will install an apache virtualhost serving in project_root/www for the
 #  configured domain(s)
 #}
-{% macro install_generic_apache_project_do(common) %}
+{% macro install_apache_project_do(common) %}
+{% do common.data.apache_opts.setdefault('server_aliases', common.alternate_domains) %}
 {{ virtualhost(domain=common.domain,
                project_root=common.project_root,
-               apache_opts=defaults.apache_opts,
-               minimal_index=apache.minimal_index) }}
+               apache_opts=common.data.apache_opts,
+               minimal_index=apache.minimal_index,
+               mode=common.default_env,) }}
 {%- endmacro %}
 
 {#- Look available arguments in _modules/mc_project.py:get_commmon_vars #}
-{%- macro install_generic_apache_project() %}
+{%- macro install_apache_project() %}
 {%- do kwargs.setdefault('defaults', default_defaults) %}
 {%- do kwargs.setdefault('env_defaults', default_env_defaults) %}
 {%- do kwargs.setdefault('user', 'apache') %}
@@ -90,6 +100,6 @@
 {%- else  %}
 {%-   do common.sls_includes.append('makina-states.services.http.apache-hooks')%}
 {% endif %}
-{{- base.install_project(common, install_macro=install_generic_apache_project_do) }}
+{{- base.install_project(common, install_macro=install_apache_project_do) }}
 {% endmacro %}
 {# vim: set nofoldenable :#}

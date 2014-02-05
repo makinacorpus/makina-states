@@ -8,6 +8,8 @@ Some usefull small tools
 # Import salt libs
 
 _default_activation_status = object()
+from mc_states.utils import is_valid_ip
+import socket
 
 
 def uniquify(seq):
@@ -129,9 +131,10 @@ def get_common_vars(
              'makina-states.localsettings.hosts']
             + sls_includes)
     if not no_default_includes:
-        sls_includes.append(
+        sls_includes.extend([
             'makina-states.controllers.salt-hooks',
-        )
+            'makina-states.projects.hooks',
+        ])
         if nodetypes_reg['has']['vagrantvm']:
             sls_includes.append(
                 'makina-states.nodetypes.vagrantvm-standalone')
@@ -146,15 +149,32 @@ def get_common_vars(
     if not groups:
         groups.append(localsettings['group'])
     groups = uniquify(groups)
-
+    if isinstance(domains, basestring):
+        domains = domains.split()
+    if isinstance(domains, list):
+        domains = dict([(a, a) for a in domains])
+    for adomain in list(domains):
+        tied_ip = domains[adomain]
+        # check if it is an hostname and then try to resolve it or
+        # let it as an ip
+        if not is_valid_ip(tied_ip):
+            try:
+                hostname, alias, ipaddrlist = socket.gethostbyaddr(tied_ip)
+                if ipaddrlist:
+                    domains[adomain] = ipaddrlist[0]
+                else:
+                    domains[adomain] = main_ip
+            except Exception:
+                # mark this domain as localhost
+                domains[adomain] = main_ip
     if isinstance(domain, basestring):
         domains[domain] = main_ip
-
     variables = {
         'full': full,
         'default_env': default_env,
         'name': name,
         'domains': domains,
+        'alternate_domains': [a for a in domains if not a == domain],
         'domain': domain,
         'main_ip': main_ip,
         'user': user,
@@ -187,6 +207,7 @@ def get_common_vars(
             'name': name,
             'domain': domain,
             'domains': domains,
+            'alternate_domains': [a for a in domains if not a == domain],
             'projects_dir': localsettings['locations']['projects_dir'],
             'project_dir': '{projects_dir}/{name}',
             'salt_root':    salt_root,

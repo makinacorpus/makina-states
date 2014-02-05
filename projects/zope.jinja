@@ -11,6 +11,8 @@
 {% if common.full -%}
 prepreq-{{common.name}}:
   pkg.installed:
+    - watch_in:
+      - mc_proxy: {{common.name}}-prerequisites-hook
     - pkgs:
       - autoconf
       - automake
@@ -66,10 +68,12 @@ prepreq-{{common.name}}:
     - user: {{common.user}}
     - group: {{common.group}}
     - mode: 770
-    - require:
+    - watch:
+      - mc_proxy: {{common.name}}-preinstall-project
       - mc_git: {{common.name}}-checkout-code
-    - require_in:
+    - watch_in:
       - buildout: {{common.name}}-buildout-project
+      - mc_proxy: {{common.name}}-postinstall-project
     - defaults:
       salt_data: {{ common.data|yaml }}
 
@@ -84,10 +88,11 @@ prepreq-{{common.name}}:
     - user: {{common.user}}
     - group: {{common.group}}
     - mode: 770
-    - require:
+    - watch:
       - file: {{common.name}}-settings
-    - require_in:
+    - watch_in:
       - buildout: {{common.name}}-buildout-project
+      - mc_proxy: {{common.name}}-postinstall-project
     - defaults:
       skippedparts: |
                     '    ${v:maintainance-parts} {% if not common.full -%}'
@@ -101,13 +106,11 @@ prepreq-{{common.name}}:
     - config: buildout-salt.cfg
     - runas: {{common.user}}
     - newest: {{common.data.buildout.newest}}
-    - require:
-      {% if common.full -%}
-      - pkg: prepreq-{{common.name}}
-      {%- endif %}
+    - watch:
       - file: {{common.name}}-settings
       - file: {{common.name}}-buildout-project
-      - mc_git: {{common.name}}-checkout-code
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project
 
 {#-
 # init script is marked as started at first, but the daemon is not there!
@@ -116,20 +119,25 @@ etc-init.d-supervisor.{{common.name}}:
   file.symlink:
     - name: {{locs.initd_dir}}/supervisor.{{common.name}}
     - target: {{common.project_root}}/etc/init.d/supervisor.initd
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project
+
 
 {{common.name}}-service:
   service.running:
     - name: supervisor.{{common.name}}
     - enable: True
-    - require:
+    - watch:
       - file: etc-init.d-supervisor.{{common.name}}
       - buildout: {{common.name}}-buildout-project
   cmd.run:
     - name: {{locs.initd_dir}}/supervisor.{{common.name}} restart
     - onlyif: test "$({{common.project_root}}/bin/supervisorctl status 2>&1 |grep "refused connection"|wc -l)" != 0
     - user: root
-    - require:
+    - watch:
       - service: {{common.name}}-service
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project
 {#-
 # Logrotate
 #}
@@ -138,6 +146,8 @@ etc-logrotate.d-{{common.name}}.conf:
   file.symlink:
     - name: {{locs.conf_dir}}/logrotate.d/{{common.name}}.conf
     - target: {{common.project_root}}/etc/logrotate.conf
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project
 {% endif %}
 
 {%- endmacro %}
@@ -155,8 +165,10 @@ etc-logrotate.d-{{common.name}}.conf:
     - minute:  {{ cron_minute + 0 }}
     - hour: {{cron_hour}}
     - name: {{common.project_root}}/bin/zeoserver-zeopack
-    - require:
+    - watch:
       - service: {{common.name}}-service
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project
 
 {{common.name}}-zoperestartdaily:
   cron.present:
@@ -164,8 +176,10 @@ etc-logrotate.d-{{common.name}}.conf:
     - user: {{common.user}}
     - minute:  {{ cron_minute + 30 }}
     - hour: {{cron_hour}}
-    - require:
+    - watch:
       - service: {{common.name}}-service
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project
     - name: |
             {% for nb in range(1, common.data.nbinstances+1) %}
             {%- set iid='instance{0}'.format(nb) %}
@@ -182,8 +196,10 @@ etc-logrotate.d-{{common.name}}.conf:
     - minute: {{ cron_minute + 15 }}
     - hour: {{cron_hour}}
     - name: {{common.project_root}}/bin/backup
-    - require:
+    - watch:
       - service: {{common.name}}-service
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project
 
 {{common.name}}repozoweekly:
   cron.present:
@@ -193,8 +209,10 @@ etc-logrotate.d-{{common.name}}.conf:
     - hour: {{cron_hour}}
     - dayweek: 6
     - name: {{common.project_root}}/bin/snapshotbackup
-    - require:
+    - watch:
       - service: {{common.name}}-service
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project
 
 {%- endmacro %}
 

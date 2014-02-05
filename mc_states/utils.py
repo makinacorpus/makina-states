@@ -3,6 +3,7 @@
 __docformat__ = 'restructuredtext en'
 import copy
 from time import time
+import socket
 
 
 AUTO_NAMES = {'_registry': 'registry',
@@ -84,5 +85,16 @@ def filter_locals(reg, filter_list=None):
             del reg[item]
     return reg
 
+
+def is_valid_ip(ip_or_name):
+    valid = False
+    for familly in socket.AF_INET, socket.AF_INET6:
+        if not valid:
+            try:
+                if socket.inet_pton(familly, ip_or_name):
+                    valid = True
+            except:
+                pass
+    return valid
 
 # vim:set et sts=4 ts=4 tw=80:
