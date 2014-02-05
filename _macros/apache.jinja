@@ -184,7 +184,7 @@ include:
 {{ doc_root }}-minimal-index:
   file.managed:
     - name: {{ doc_root }}/index.html
-    - unless: test -e "{{ doc_root }}/index.html"
+    - unless: test -e "{{ doc_root }}/index.php"
     - source:
     - contents: >
                 <html>
