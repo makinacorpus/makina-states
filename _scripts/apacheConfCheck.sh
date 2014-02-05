@@ -15,7 +15,7 @@ else
   echo '"changed":"true",'
   echo '"comment":"Apache2 configuration syntax errors detected"'
   OUT=$(/usr/sbin/apache2 -t 2>&1)
-  echo ',"command_output":"'${OUT}'"'
+  echo ',"command_output":"'${OUT//\"/\\\"}'"'
   EXIT=1
 fi;
 echo "}"
