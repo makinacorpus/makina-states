@@ -15,10 +15,20 @@
 {%- set orchestrate = {} %}
 {%- set prebase = 'makina-postgresql-pre-base' %}
 {%- set postbase = 'makina-postgresql-post-base' %}
-{{services.funcs.dummy(prebase)}}
-{{services.funcs.dummy(postbase)}}
+{%- set postinst = 'makina-postgresql-post-inst' %}
+{{services.funcs.proxy(prebase)}}
+{{services.funcs.proxy(postbase, '''
+    - watch:
+      - mc_proxy: {0}
+'''.format(prebase))}}
+{{services.funcs.proxy(postinst, '''
+    - watch:
+      - mc_proxy: {0}
+      - mc_proxy: {1}
+'''.format(postbase, prebase))}}
 {%- set orchestrate = {
   'base': {'prebase': prebase,
+           'postinst': postinst,
            'postbase': postbase}
   } %}
 {%- for ver in services.pgVers %}
@@ -41,28 +51,35 @@
   'preext': preext,
   'postext': postext,
 }) %}
-{{services.funcs.dummy(pregroup, '''
-    - require:
+{{services.funcs.proxy(pregroup, '''
+    - watch:
       - mc_proxy: {0}
-'''.format(postbase))}}
-{{services.funcs.dummy(postgroup)}}
-{{services.funcs.dummy(predb, '''
-    - require:
+    - watch_in:
+      - mc_proxy: {1}
+'''.format(postbase, postinst))}}
+{{services.funcs.proxy(postgroup)}}
+{{services.funcs.proxy(predb, '''
+    - watch:
       - mc_proxy: {0}
       - mc_proxy: {1}
-'''.format(postgroup, postbase))}}
-{{services.funcs.dummy(postdb)}}
-{{services.funcs.dummy(preuser, '''
-    - require:
+    - watch_in:
+      - mc_proxy: {2}
+'''.format(postgroup, postbase, postinst))}}
+{{services.funcs.proxy(postdb)}}
+{{services.funcs.proxy(preuser, '''
+    - watch:
       - mc_proxy: {0}
       - mc_proxy: {1}
-'''.format(postdb, postbase))}}
-{{services.funcs.dummy(postuser)}}
-{{services.funcs.dummy(preext, '''
-    - require:
+    - watch_in:
+      - mc_proxy: {2}
+'''.format(postdb, postbase, postinst))}}
+{{services.funcs.proxy(postuser)}}
+{{services.funcs.proxy(preext, '''
+    - watch:
       - mc_proxy: {0}
       - mc_proxy: {1}
-'''.format(postdb, postbase))}}
-{{services.funcs.dummy(postext)}}
+    - watch_in:
+      - mc_proxy: {2}
+'''.format(postdb, postbase, postinst))}}
+{{services.funcs.proxy(postext)}}
 {% endfor %}
-

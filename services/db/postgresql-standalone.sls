@@ -341,6 +341,7 @@ makina-postgresql-service-reload:
 {%- macro postgresql_user(name,
                          password,
                          groups=None,
+                         db=None,
                          createdb=None,
                          inherit=None,
                          login=True,
@@ -356,6 +357,10 @@ makina-postgresql-service-reload:
 {%- if not groups %}
 {%-   set groups = [] %}
 {%- endif %}
+{# if db is providen, add user to db owners #}
+{%- if db %}
+{% do groups.append('{0}_owners'.format(db)) %}
+{% endif %}
 {#- create groups prior to user #}
 {%- for group in groups %}
 {{ postgresql_group(group, user=user, version=version) }}
