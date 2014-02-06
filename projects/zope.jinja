@@ -2,6 +2,7 @@
 {%- set services = base.services %}
 {%- set saltmac = base.saltmac %}
 {%- set localsettings = base.localsettings %}
+{%- set apacheSettings = services.apacheSettings %}
 {%- set locations = base.localsettings.locations %}
 
 {#-
@@ -69,17 +70,18 @@ prepreq-{{common.name}}:
     - group: {{common.group}}
     - mode: 770
     - watch:
-      - mc_proxy: {{common.name}}-preinstall-project
+      - mc_proxy: {{common.name}}-preinstall-project-hook
       - mc_git: {{common.name}}-checkout-code
     - watch_in:
       - buildout: {{common.name}}-buildout-project
-      - mc_proxy: {{common.name}}-postinstall-project
+      - mc_proxy: {{common.name}}-postinstall-project-hook
     - defaults:
       salt_data: {{ common.data|yaml }}
 
 {#-
 # Run the project buildout but skip the maintainance parts as they are part of salt stuff
 #}
+
 {{common.name}}-buildout-project:
   file.managed:
     - template: jinja
@@ -92,7 +94,7 @@ prepreq-{{common.name}}:
       - file: {{common.name}}-settings
     - watch_in:
       - buildout: {{common.name}}-buildout-project
-      - mc_proxy: {{common.name}}-postinstall-project
+      - mc_proxy: {{common.name}}-postinstall-project-hook
     - defaults:
       skippedparts: |
                     '    ${v:maintainance-parts} {% if not common.full -%}'
@@ -110,7 +112,7 @@ prepreq-{{common.name}}:
       - file: {{common.name}}-settings
       - file: {{common.name}}-buildout-project
     - watch_in:
-      - mc_proxy: {{common.name}}-postinstall-project
+      - mc_proxy: {{common.name}}-postinstall-project-hook
 
 {#-
 # init script is marked as started at first, but the daemon is not there!
@@ -120,7 +122,7 @@ etc-init.d-supervisor.{{common.name}}:
     - name: {{locs.initd_dir}}/supervisor.{{common.name}}
     - target: {{common.project_root}}/etc/init.d/supervisor.initd
     - watch_in:
-      - mc_proxy: {{common.name}}-postinstall-project
+      - mc_proxy: {{common.name}}-postinstall-project-hook
 
 
 {{common.name}}-service:
@@ -137,7 +139,43 @@ etc-init.d-supervisor.{{common.name}}:
     - watch:
       - service: {{common.name}}-service
     - watch_in:
-      - mc_proxy: {{common.name}}-postinstall-project
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+
+{#
+# VHOST
+#}
+
+{{common.name}}-buildout-vhost:
+  file.symlink:
+    - target: {{common.project_root}}/etc/www/apache.reverseproxy.conf
+    - name: {{apacheSettings.vhostdir}}/100-{{common.domain}}.conf
+    - makedirs: true
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+
+{{common.name}}-buildout-vhost-active:
+  file.symlink:
+    - target: {{apacheSettings.vhostdir}}/100-{{common.domain}}.conf
+    - name: {{apacheSettings.evhostdir}}/100-{{common.domain}}.conf
+    - makedirs: true
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+
+{{common.name}}-buildout-nginx-vhost:
+  file.symlink:
+    - target: {{common.project_root}}/etc/www/nginx.reverseproxy.conf
+    - name: {{apacheSettings.vhostdir}}/100-{{common.domain}}.conf
+    - makedirs: true
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+
+{{common.name}}-buildout-nginx-vhost-active:
+  file.symlink:
+    - target: /etc/nginx/sites.available/100-{{common.domain}}.conf
+    - name: /etc/nginx/sites.enabled/100-{{common.domain}}.conf
+    - makedirs: true
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project-hook
 {#-
 # Logrotate
 #}
@@ -147,7 +185,7 @@ etc-logrotate.d-{{common.name}}.conf:
     - name: {{locs.conf_dir}}/logrotate.d/{{common.name}}.conf
     - target: {{common.project_root}}/etc/logrotate.conf
     - watch_in:
-      - mc_proxy: {{common.name}}-postinstall-project
+      - mc_proxy: {{common.name}}-postinstall-project-hook
 {% endif %}
 
 {%- endmacro %}
@@ -168,7 +206,7 @@ etc-logrotate.d-{{common.name}}.conf:
     - watch:
       - service: {{common.name}}-service
     - watch_in:
-      - mc_proxy: {{common.name}}-postinstall-project
+      - mc_proxy: {{common.name}}-postinstall-project-hook
 
 {{common.name}}-zoperestartdaily:
   cron.present:
@@ -179,7 +217,7 @@ etc-logrotate.d-{{common.name}}.conf:
     - watch:
       - service: {{common.name}}-service
     - watch_in:
-      - mc_proxy: {{common.name}}-postinstall-project
+      - mc_proxy: {{common.name}}-postinstall-project-hook
     - name: |
             {% for nb in range(1, common.data.nbinstances+1) %}
             {%- set iid='instance{0}'.format(nb) %}
@@ -199,7 +237,7 @@ etc-logrotate.d-{{common.name}}.conf:
     - watch:
       - service: {{common.name}}-service
     - watch_in:
-      - mc_proxy: {{common.name}}-postinstall-project
+      - mc_proxy: {{common.name}}-postinstall-project-hook
 
 {{common.name}}repozoweekly:
   cron.present:
@@ -212,7 +250,7 @@ etc-logrotate.d-{{common.name}}.conf:
     - watch:
       - service: {{common.name}}-service
     - watch_in:
-      - mc_proxy: {{common.name}}-postinstall-project
+      - mc_proxy: {{common.name}}-postinstall-project-hook
 
 {%- endmacro %}
 
