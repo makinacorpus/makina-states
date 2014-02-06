@@ -25,12 +25,21 @@ import os
 import grp
 import re
 import stat
+import subprocess
 import pwd
 import shutil
 import sys
 import traceback
 import pprint
 from optparse import OptionParser
+
+try:
+    from collections import OrderedDict
+except ImportError:
+    try:
+        from orderreddict import OrderedDict
+    except ImportError:
+        OrderedDict = dict
 
 parser = OptionParser()
 parser.add_option(
@@ -47,10 +56,10 @@ parser.add_option(
     dest="groups",
     help="set acl for another group (GROUP[:UNIX_PERM(]) eg: root:r-x ("
     "can be called multiple times; perm default to fmode)")
-parser.add_option("-r", "--reset",
+parser.add_option("-k", "--reset-acls",
                   action="store_true",
                   dest="reset",
-                  help="reset acl prior to set it again")
+                  help="reset ALL acls prior to set it again")
 parser.add_option("--fmode",
                   default="770",
                   action="store",
@@ -70,6 +79,12 @@ parser.add_option("-o",
                   "--only-acls",
                   action="store_true",
                   dest="only_acl")
+parser.add_option("-R",
+                  "--no-recursive",
+                  default=True,
+                  action="store_false",
+                  help="Do not run recursivly (default)",
+                  dest="recursive")
 parser.add_option("-p",
                   "--paths",
                   default=[],
@@ -92,9 +107,23 @@ if options.debug:
 
 re_f = re.M | re.U | re.S
 
+DEBUG = os.environ.get('RESETPERMS_DEBUG', options.debug)
 ACLS = {}
 SKIPPED = []
-DEBUG = os.environ.get('RESETPERMS_DEBUG', options.debug)
+FILES = []
+DIRECTORIES = []
+ALL_PATHS = []
+# OWNERSHIPS: files & directories to apply ownership grouped by ownership (uid/gid)
+# UNIX_PERMS: files & directories to apply ownership grouped by perm
+# DIRECTORIES: directories to apply perms
+# FILES: files to apply perms
+# SKIPPED: skipped paths
+# ACLS: all couples ACL type, [paths to apply]
+# ALL_PATHS:  all paths to apply perms, combined
+# ALL_APPLIED_PATHS: all paths, combined
+OWNERSHIPS = OrderedDict()
+UNIX_PERMS = OrderedDict()
+ALL_APPLIED_PATHS = []
 
 
 def which(program, environ=None, key='PATH', split=':'):
@@ -116,13 +145,15 @@ def which(program, environ=None, key='PATH', split=':'):
 
 
 try:
-    setfacl = which('setfacl')
+    SETFACL = unicode(which('setfacl'))
     HAS_SETFACL = True
 except IOError:
     HAS_SETFACL = False
 
 ONLY_ACLS = options.only_acl
 NO_ACLS = options.no_acl
+CHOWN = which('chown')
+CHMOD = which('chmod')
 
 for i in os.environ:
     if 'travis' in i.lower():
@@ -135,30 +166,30 @@ pexcludes = options.excludes
 pexcludes = [re.compile(i, re_f)
              for i in pexcludes]
 if options.user:
-    user = options.user
+    USER = options.user
 else:
-    user = 'root'
+    USER = 'root'
 try:
-    uid = int(user)
+    UID = int(USER)
 except Exception:
-    uid = int(pwd.getpwnam(user).pw_uid)
+    UID = int(pwd.getpwnam(USER).pw_uid)
 
 if options.group:
-    group = options.group
+    GROUP = options.group
 else:
-    group = 'root'
+    GROUP = 'root'
 try:
-    gid = int(group)
+    GID = int(GROUP)
 except Exception:
-    gid = int(grp.getgrnam(group).gr_gid)
+    GID = int(grp.getgrnam(GROUP).gr_gid)
 
 
-fmode = "0{0}".format(int(options.fmode))
-dmode = "0{0}".format(int(options.dmode))
+FMODE = u"0{0}".format(int(options.fmode))
+DMODE = u"0{0}".format(int(options.dmode))
 
 
 def permissions_to_unix_name(mode):
-    usertypes = {'USR': '', 'GRP': '', 'OTH': ''}
+    usertypes = OrderedDict((('USR', ''), ('GRP', ''), ('OTH', '')))
     omode = int(mode, 8)
     for usertype in [a for a in usertypes]:
         permstr = ''
@@ -173,15 +204,59 @@ def permissions_to_unix_name(mode):
     return usertypes
 
 
-def collect_acl(path, uid, gid, mode, is_dir=False):
+def splitList(L, chunksize=50):
+    return[L[i:i + chunksize] for i in range(0, len(L), chunksize)]
+
+
+def uniquify(seq):
+    seen = set()
+    return [x for x in seq if x not in seen and not seen.add(x)]
+
+
+def usplitList(seq):
+    seq.sort()
+    return splitList(uniquify(seq))
+
+
+def encode_str(p):
+    if isinstance(p, unicode):
+        p = p.encode('utf-8')
+    return p
+
+
+def quote_paths(paths):
+    return ["'{0}'".format(encode_str(p)) for p in paths]
+
+
+def shell_exec(cmd, shell=False):
+    scmd = ' '.join([encode_str(a) for a in cmd])
+    try:
+        if options.debug:
+            print('Executing {0}'.format(scmd))
+        ret = subprocess.check_output(
+            cmd, stderr=sys.stdout, shell=shell)
+        if ret:
+            print(ret)
+    except Exception:
+        print(u'Reset failed for {0}'.format(scmd))
+        print(traceback.format_exc())
+
+
+def collect_acl(path, mode, uid=UID, gid=GID, is_dir=False):
+    '''
+    Idea is to regroup all the files/dirs with
+    the same acl to reduce the number of setfacl calls
+    '''
     perms = permissions_to_unix_name(mode)
-    uacl = u'u:{0}:{1}'.format(*(uid, perms['USR']))
-    gacl = u'g:{0}:{1}'.format(*(gid, perms['GRP']))
+    #mask = permissions_to_unix_name(mode[-2])['OTH']
+    mask = 'rwx'
+    uacl = 'mask:{2},u:{0}:{1}'.format(*(uid, perms['USR'], mask))
+    gacl = 'mask:{2},g:{0}:{1}'.format(*(gid, perms['GRP'], mask))
     acl = uacl
     acl += ",{0}".format(gacl)
     if is_dir:
-        acl += u',d:{0}'.format(uacl)
-        acl += u',d:{0}'.format(gacl)
+        acl += ',d:{0}'.format(uacl)
+        acl += ',d:{0}'.format(gacl)
     for user in options.users:
         aclmode = perms['USR']
         if ':' in user:
@@ -202,126 +277,128 @@ def collect_acl(path, uid, gid, mode, is_dir=False):
         ACLS[acl].append(path)
 
 
-def splitList(L, chunksize=50):
-    return[L[i:i + chunksize] for i in range(0, len(L), chunksize)]
-
-
-def uniquify(seq):
-    seen = set()
-    return [x for x in seq if x not in seen and not seen.add(x)]
-
-
 def apply_acls():
+    if NO_ACLS or not HAS_SETFACL:
+        return
     if options.reset:
         resets = []
         for acl, paths in ACLS.items():
             resets.extend(paths)
-        resets = uniquify(resets)
-        for chunk in splitList(resets):
-            paths = ' '.join(["'{0}'".format(p) for p in chunk])
-            cmd = "{1} -b {0}".format(*(paths, setfacl))
-            os.system(cmd)
+        for chunk in usplitList(resets):
+            cmd = [SETFACL, "-b"] + chunk
+            shell_exec(cmd)
     for acl, paths in ACLS.items():
         # print acl, paths
-        for chunk in splitList(paths):
-            paths = ' '.join(["'{0}'".format(p) for p in chunk])
-            cmd = "{2} -m '{0}' {1}".format(*(acl, paths, setfacl))
-            # print cmd
-            os.system(cmd)
+        for chunk in usplitList(paths):
+            cmd = [SETFACL, "--mask", "-n", "-m", acl] + chunk
+            cmd = [SETFACL, "-m", acl] + chunk
+            shell_exec(cmd)
 
 
-def lazy_chmod_path(path, mode):
-    try:
-        st = os.stat(path)
-        if eval(mode) != stat.S_IMODE(st.st_mode):
-            try:
-                eval('os.chmod(path, {0})'.format(mode))
-            except Exception:
-                print('Reset failed for {0} ({1})'.format(
-                    path, mode))
-                print(traceback.format_exc())
-    except Exception:
-        print('Reset(o) failed for {0} ({1})'.format(
-            path, mode))
-        print(traceback.format_exc())
+def chmod_paths(paths, mode):
+    if not isinstance(paths, list):
+        paths = [paths]
+    for chunk in usplitList(paths):
+        mode = int(mode)
+        pref = ''
+        if mode < 1000:
+            pref = '0'
+        cmd = [CHMOD, '{0}{1}'.format(pref, mode)] + chunk
+        if options.debug:
+            cmd.insert(1, '-v')
+        shell_exec(cmd)
 
 
-def lazy_chown_path(path, uid, gid):
-    try:
-        st = os.stat(path)
-        if st.st_uid != uid or st.st_gid != gid:
-            try:
-                os.chown(path, uid, gid)
-            except:
-                print('Reset failed for {0}, {1}, {2}'.format(
-                    path, uid, gid))
-                print(traceback.format_exc())
-    except Exception:
-        print('Reset(o) failed for {0}, {1}, {2}'.format(
-            path, uid, gid))
-        print(traceback.format_exc())
+def chown_paths(paths, uid=UID, gid=GID):
+    if not isinstance(paths, list):
+        paths = [paths]
+    for chunk in usplitList(paths):
+        cmd = [CHOWN, '{0}:{1}'.format(uid, gid)] + chunk
+        if options.debug:
+            cmd.insert(1, '-v')
+        shell_exec(cmd)
 
 
-def lazy_chmod_chown(path, mode, uid, gid, is_dir=False):
-    if not ONLY_ACLS:
-        lazy_chmod_path(path, mode)
-        lazy_chown_path(path, uid, gid)
-    if HAS_SETFACL and not NO_ACLS:
-        try:
-            collect_acl(path, uid, gid, mode, is_dir=is_dir)
-        except Exception:
-            print('Reset(acl) failed for {0} ({1})'.format(
-                path, mode))
-            print(traceback.format_exc())
-
-
-def to_skip(i):
+def to_skip(path):
     stop = False
-    if os.path.islink(i):
+    if path in SKIPPED:
+        stop = True
+    elif os.path.islink(path):
         # inner dir and files will be excluded too
-        pexcludes.append(re.compile(i, re_f))
+        pexcludes.append(re.compile(path, re_f))
         stop = True
     else:
         for p in pexcludes:
-            if p.pattern in i:
+            if p.pattern in path:
                 stop = True
                 break
-            if p.search(i):
+            if p.search(path):
                 stop = True
                 break
+    if stop and not path in SKIPPED:
+        SKIPPED.append(path)
     return stop
 
 
-def reset(p):
+def reset_permissions():
+    if not ONLY_ACLS:
+        for mode, paths in UNIX_PERMS.items():
+            chmod_paths(paths, mode)
+        for ownership, paths in OWNERSHIPS.items():
+            chown_paths(paths, uid=ownership[0], gid=ownership[1])
+    apply_acls()
+
+
+def collect_paths(path, uid=UID, gid=GID, dmode=DMODE, fmode=FMODE):
+    if not path in ALL_PATHS:
+        ALL_PATHS.append(path)
+        if not path in ALL_APPLIED_PATHS:
+            is_file, is_dir, skipped = (
+                os.path.isfile(path),
+                os.path.isdir(path),
+                to_skip(path))
+        if skipped or not (is_dir or is_file):
+            return
+        ALL_APPLIED_PATHS.append(path)
+        mode = is_dir and dmode or fmode
+        if HAS_SETFACL and not NO_ACLS:
+            collect_acl(path,
+                        mode=(is_dir and dmode or fmode),
+                        is_dir=is_dir)
+        st = os.stat(path)
+        if st.st_uid != uid or st.st_gid != gid:
+            if not (uid, gid) in OWNERSHIPS:
+                OWNERSHIPS[(uid, gid)] = []
+            OWNERSHIPS[(uid, gid)].append(path)
+        if eval(mode) != stat.S_IMODE(st.st_mode):
+            if not mode in UNIX_PERMS:
+                UNIX_PERMS[mode] = []
+            UNIX_PERMS[mode].append(path)
+        if is_file:
+            FILES.append(path)
+        elif is_dir:
+            DIRECTORIES.append(path)
+            if options.recursive:
+                for root, dirs, files in os.walk(path):
+                    for subpaths in [files, dirs]:
+                        for subpath in subpaths:
+                            collect_paths(
+                                os.path.join(root, subpath))
+
+
+def reset(path):
     print("Path: {0} ({1}:{2}, dmode: {3}, fmode: {4})".format(
-        p, user, group, dmode, fmode))
-    if not os.path.exists(p):
-        print("\n\nWARNING: {0} does not exist\n\n".format(p))
+        path, USER, GROUP, DMODE, FMODE))
+    if not os.path.exists(path):
+        print("\n\nWARNING: {0} does not exist\n\n".format(path))
         return
-    for root, dirs, files in os.walk(p):
-        curdir = root
-        if to_skip(curdir):
-            if not curdir in SKIPPED:
-                SKIPPED.append(curdir)
-                continue
-        try:
-            lazy_chmod_chown(curdir, dmode, uid, gid, is_dir=True)
-            for item in files:
-                i = os.path.join(root, item)
-                if to_skip(i):
-                    if not i in SKIPPED:
-                        SKIPPED.append(i)
-                        continue
-                lazy_chmod_chown(i, fmode, uid, gid)
-        except Exception:
-            print(traceback.format_exc())
-            print('reset failed for {0}'.format(curdir))
-    if HAS_SETFACL and not NO_ACLS:
-        apply_acls()
+    collect_paths(path)
+    reset_permissions()
     if DEBUG and SKIPPED:
-        SKIPPED.sort()
+        skipped = list(SKIPPED)
+        skipped.sort()
         print('Skipped content:')
-        pprint.pprint(SKIPPED)
+        pprint.pprint(skipped)
 
 for pt in options.paths:
     reset(pt)
