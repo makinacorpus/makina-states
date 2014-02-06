@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 Exemples:
 
@@ -15,7 +14,9 @@ reset-perms.py --paths bin/ --users vagrant:r-x --only-acls
 
 Remove any setted acls else than vagrant
 reset-perms.py --paths bin/ --reset --only-acls --users vagrant:r-x
+
 """
+
 
 from __future__ import (print_function,
                         division,
@@ -109,21 +110,15 @@ re_f = re.M | re.U | re.S
 
 DEBUG = os.environ.get('RESETPERMS_DEBUG', options.debug)
 ACLS = {}
-SKIPPED = []
-FILES = []
-DIRECTORIES = []
-ALL_PATHS = []
+SKIPPED = {}
+ALL_PATHS = {}
 # OWNERSHIPS: files & directories to apply ownership grouped by ownership (uid/gid)
 # UNIX_PERMS: files & directories to apply ownership grouped by perm
-# DIRECTORIES: directories to apply perms
-# FILES: files to apply perms
 # SKIPPED: skipped paths
 # ACLS: all couples ACL type, [paths to apply]
 # ALL_PATHS:  all paths to apply perms, combined
-# ALL_APPLIED_PATHS: all paths, combined
-OWNERSHIPS = OrderedDict()
-UNIX_PERMS = OrderedDict()
-ALL_APPLIED_PATHS = []
+OWNERSHIPS = {}
+UNIX_PERMS = {}
 
 
 def which(program, environ=None, key='PATH', split=':'):
@@ -189,7 +184,7 @@ DMODE = u"0{0}".format(int(options.dmode))
 
 
 def permissions_to_unix_name(mode):
-    usertypes = OrderedDict((('USR', ''), ('GRP', ''), ('OTH', '')))
+    usertypes = {'USR': '', 'GRP': '', 'OTH': ''}
     omode = int(mode, 8)
     for usertype in [a for a in usertypes]:
         permstr = ''
@@ -298,31 +293,46 @@ def apply_acls():
 def chmod_paths(paths, mode):
     if not isinstance(paths, list):
         paths = [paths]
-    for chunk in usplitList(paths):
-        mode = int(mode)
+    for path in paths:
         pref = ''
         if mode < 1000:
             pref = '0'
-        cmd = [CHMOD, '{0}{1}'.format(pref, mode)] + chunk
-        if options.debug:
-            cmd.insert(1, '-v')
-        shell_exec(cmd)
+        try:
+            eval('os.chmod(path, 0{1}{0})'.format(mode, pref))
+        except:
+            continue
+    # in fact, the python impl. wasnt the bottleneck
+    #for chunk in usplitList(paths):
+    #    mode = int(mode)
+    #    pref = ''
+    #    if mode < 1000:
+    #        pref = '0'
+    #    cmd = [CHMOD, '{0}{1}'.format(pref, mode)] + chunk
+    #    if options.debug:
+    #        cmd.insert(1, '-v')
+    #    shell_exec(cmd)
 
 
 def chown_paths(paths, uid=UID, gid=GID):
     if not isinstance(paths, list):
         paths = [paths]
-    for chunk in usplitList(paths):
-        cmd = [CHOWN, '{0}:{1}'.format(uid, gid)] + chunk
-        if options.debug:
-            cmd.insert(1, '-v')
-        shell_exec(cmd)
+    for path in paths:
+        try:
+            os.chown(path, uid, gid)
+        except:
+            continue
+    # in fact python impl wasnt the bottleneck
+    #for chunk in usplitList(paths):
+    #    cmd = [CHOWN, '{0}:{1}'.format(uid, gid)] + chunk
+    #    if options.debug:
+    #        cmd.insert(1, '-v')
+    #    shell_exec(cmd)
 
 
 def to_skip(path):
     stop = False
     if path in SKIPPED:
-        stop = True
+        return True
     elif os.path.islink(path):
         # inner dir and files will be excluded too
         pexcludes.append(re.compile(path, re_f))
@@ -332,11 +342,13 @@ def to_skip(path):
             if p.pattern in path:
                 stop = True
                 break
-            if p.search(path):
-                stop = True
-                break
-    if stop and not path in SKIPPED:
-        SKIPPED.append(path)
+            if not stop:
+                # do only if no stop, optimization.
+                if p.search(path):
+                    stop = True
+                    break
+    if stop:
+        SKIPPED[path] = path
     return stop
 
 
@@ -349,17 +361,20 @@ def reset_permissions():
     apply_acls()
 
 
-def collect_paths(path, uid=UID, gid=GID, dmode=DMODE, fmode=FMODE):
+def collect_paths(path,
+                  uid=UID,
+                  gid=GID,
+                  dmode=DMODE,
+                  fmode=FMODE,
+                  recursive=options.recursive):
     if not path in ALL_PATHS:
-        ALL_PATHS.append(path)
-        if not path in ALL_APPLIED_PATHS:
-            is_file, is_dir, skipped = (
-                os.path.isfile(path),
-                os.path.isdir(path),
-                to_skip(path))
+        ALL_PATHS[path] = path
+        is_file, is_dir, skipped = (
+            os.path.isfile(path),
+            os.path.isdir(path),
+            to_skip(path))
         if skipped or not (is_dir or is_file):
             return
-        ALL_APPLIED_PATHS.append(path)
         mode = is_dir and dmode or fmode
         if HAS_SETFACL and not NO_ACLS:
             collect_acl(path,
@@ -374,16 +389,15 @@ def collect_paths(path, uid=UID, gid=GID, dmode=DMODE, fmode=FMODE):
             if not mode in UNIX_PERMS:
                 UNIX_PERMS[mode] = []
             UNIX_PERMS[mode].append(path)
-        if is_file:
-            FILES.append(path)
-        elif is_dir:
-            DIRECTORIES.append(path)
-            if options.recursive:
-                for root, dirs, files in os.walk(path):
-                    for subpaths in [files, dirs]:
-                        for subpath in subpaths:
-                            collect_paths(
-                                os.path.join(root, subpath))
+        if is_dir and recursive:
+            for root, dirs, files in os.walk(path):
+                for subpaths in [files, dirs]:
+                    for subpath in subpaths:
+                        if DEBUG:
+                            print(os.path.join(root, subpath))
+                        collect_paths(
+                            os.path.join(root, subpath),
+                            recursive=False)
 
 
 def reset(path):
@@ -402,3 +416,23 @@ def reset(path):
 
 for pt in options.paths:
     reset(pt)
+
+"""
+Profiled optimization was done with zope example::
+
+    python -m cProfile -o output_file1\
+            /srv/salt/makina-states/_scripts/reset-perms.py\
+            --dmode '0770' --fmode '0770'\
+            --paths "/srv/projects/guadeloupe-eau/project"\
+            --user zope --group editor
+    pyprof2calltree -i output_file1 -o output_file1.pstat
+    kcachegrind output_file1.pstat&
+
+    real    4m5.527s
+Phase2
+    real    2m25.547s
+Phase3
+    real    1m56.581s
+Phase4
+    real    1m49.341s
+"""
