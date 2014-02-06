@@ -104,6 +104,26 @@ def settings():
         apacheSettings = __salt__['mc_apache.settings']()
 
         #
+        # Etherpad:  (services.collab.etherpad)
+        #
+        etherpadSettings = __salt__['mc_utils.defaults'](
+            'makina-states.services.collab.etherpad', {
+                'version': '1.3.0',
+                'location': '/home/etherpad/',
+                'apikey': 'SECRET-API-KEY-PLS-CHANGE-ME',
+                'title': 'Etherpad',
+                'ip': '0.0.0.0',
+                'port': '9001',
+                'dbType': 'dirty',
+                'dbSettings': '{"filename": "var/dirty.db"}',
+                'requireSession': 'true',
+                'editOnly': 'false',
+                'admin': False,
+                'adminPassword': 'admin',
+                }
+            )
+
+        #
         # Nginx:  (services.http.nginx)
         #
         nginxSettings = __salt__['mc_nginx.settings']()
