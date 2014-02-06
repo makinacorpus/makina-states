@@ -45,14 +45,16 @@
     - user: {{services.apacheSettings.httpd_user}}
     - group: {{services.apacheSettings.httpd_user}}
     - mode:  775
-  mount.present:
+  mount.mounted:
     - device: {{ftproot}}/{{common.name}}
     - name: {{common.project_root}}/ftp
-    - type: none
+    - fstype: none
     - opts: bind,exec,rw
     - watch:
       - file: {{common.name}}-bindmounted-ftp
       - mc_proxy: {{common.name}}-rootdir-dirs
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project-hook
 
 {# create each user, his home and base layout #}
 {% for user, data in common.data.users.items() %}
@@ -292,10 +294,28 @@
     },
   },
   "fpmpool_opts": {
+      "open_basedir_additions": (
+          ":../cmd.php"
+          ":../application.init.php"
+          ":{project_root}/cache"
+          ":{project_root}/ftp"
+          ":{project_root}/webapp/lizmap/www"
+          ":{project_root}/webapp/lizmap"
+          ":{project_root}/webapp/lib"
+          ":{project_root}/webapp/"
+          ),
+      "include_path_additions": (
+          ":../cmd.php"
+          ":../application.init.php"
+          ":{project_root}/cache"
+          ":{project_root}/ftp"
+          ":{project_root}/webapp/lizmap/www"
+          ":{project_root}/webapp/lizmap"
+          ":{project_root}/webapp/lib"
+          ":{project_root}/webapp/"
+      ),
       "settings": {
             "session_auto_start": True,
-            "open_basedir_additions": ":{project_root}/ftp:{project_root}/webapp/application.init.php:./install:{project_root}/webapp/lizmap-modules:./modules:{project_root}/webapp/plugins:{project_root}/webapp/responses:{project_root}/webapp/scripts:{project_root}/webapp/var:{project_root}/www",
-            "include_path_additions": ":{project_root}/webapp/application.init.php:./install:{project_root}/webapp/lizmap-modules:./modules:{project_root}/webapp/plugins:{project_root}/webapp/responses:{project_root}/webapp/scripts:{project_root}/webapp/var:{project_root}/www",
             "allow_url_fopen": True,
             "display_errors": True,
             "memory_limit": "256M",
