@@ -387,6 +387,12 @@ etc-logrotate.d-{{common.name}}.conf:
 {%- do kwargs.setdefault('env_defaults', default_env_defaults) %}
 {%- do kwargs.setdefault('user', 'zope') %}
 {%- set common = salt['mc_project.get_common_vars'](*varargs, **kwargs) %}
+{% if common.full %}
+{%-    do common.sls_includes.extend(["makina-states.services.http.apache"])%}
+{%-else  %}
+{%-    do common.sls_includes.extend(["makina-states.services.http.apache-standalone"])%}
+{% endif %}
+{%-    do common.sls_includes.extend(["makina-states.services.http.apache_proxy"])%}
 {{- base.install_project(common, install_macro=install_generic_zope_project_do) }}
 {% endmacro %}
 {# vim: set nofoldenable :#}
