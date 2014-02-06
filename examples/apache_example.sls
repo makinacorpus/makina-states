@@ -41,7 +41,7 @@ my-apache-other-module--other-module-excluded:
       - proxy_html
       - rewrite
     - require_in:
-      - mc_apache: makina-apache-main-conf
+      - mc_proxy: makina-apache-pre-conf
 
 {# Removing modules #}
 my-apache-other-module-included2:
@@ -49,4 +49,4 @@ my-apache-other-module-included2:
     - modules:
       - authn_file
     - require_in:
-      - mc_apache: makina-apache-main-conf
+      - mc_proxy: makina-apache-pre-conf
