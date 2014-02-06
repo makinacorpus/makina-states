@@ -51,6 +51,21 @@ _shared_modules = []
 _static_modules = []
 
 
+
+def _tied_to_apacheconf(deps):
+    tied = False
+    for dep in deps:
+        for module, stateid in dep.items():
+            if module == 'mc_apache':
+                tied = True
+            if module == 'mc_proxy':
+                if stateid.startswith('makina-apache-'):
+                    tied = True
+        if tied:
+            break
+    return tied
+
+
 def _check_apache_loaded(ret):
     if not 'apache.version' in __salt__:
         log.warning(
@@ -221,7 +236,7 @@ def include_module(name,
     require_in = __low__.get('require_in', [])
     watch_in = __low__.get('watch_in', [])
     deps = require_in + watch_in
-    if not filter(lambda x: 'mc_apache' in x, deps):
+    if not _tied_to_apacheconf(deps):
         ret['result'] = False
         ret['comment'] = (
             'Orphaned include_module {0}, please use a require_in '
@@ -271,7 +286,7 @@ def exclude_module(name,
     require_in = __low__.get('require_in', [])
     watch_in = __low__.get('watch_in', [])
     deps = require_in + watch_in
-    if not filter(lambda x: 'mc_apache' in x, deps):
+    if not _tied_to_apacheconf(deps):
         ret['result'] = False
         ret['comment'] = (
             'Orphaned exclude_module {0}, please use a require_in '
