@@ -13,6 +13,15 @@
 {# Base system prerequisite #}
 {%- macro lizmap_pkgs(common) %}
 {% if common.full %}
+{{common.name}}-pkgs:
+  pkg.installed:
+    - pkgs:
+      - libspatialite-dev
+      - libspatialite3
+      - libsqlite3-mod-blobtoxy
+      - libsqlite3-mod-impexp
+    - watch_in:
+        - mc_proxy: prerequisites-hook
 {% endif %}
 {% endmacro %}
 
@@ -41,13 +50,13 @@
 
 {{common.name}}-bindmounted-ftp:
   file.directory:
-    - name: {{common.project_root}}/ftp
+    - name: {{common.project_root}}/webapp/lizmap/ftp
     - user: {{services.apacheSettings.httpd_user}}
     - group: {{services.apacheSettings.httpd_user}}
     - mode:  775
   mount.mounted:
+    - name: {{common.project_root}}/webapp/lizmap/ftp
     - device: {{ftproot}}/{{common.name}}
-    - name: {{common.project_root}}/ftp
     - fstype: none
     - opts: bind,exec,rw
     - watch:
@@ -75,7 +84,6 @@
       - group: {{common.name}}-ftp-user-{{user}}
       - mc_proxy: {{common.name}}-preinstall-project-hook
     - watch_in:
-      - file: {{common.name}}-ftp-home-{{user}}
       - mc_proxy: {{common.name}}-rootdir-dirs
       - mc_proxy: {{common.name}}-postinstall-project-hook
 
@@ -89,26 +97,11 @@
       - mc_proxy: makina-apache-pre-restart
       - mc_proxy: {{common.name}}-postinstall-project-hook
 
-{{common.name}}-ftp-home-{{user}}:
-  file.directory:
-    - names:
-      - {{ftproot}}/{{common.name}}/{{user}}
-      {%  for n in ["1", "2", "3", "4", "5"] %}
-      - {{ftproot}}/{{common.name}}/{{user}}/qgis/rep/{{n}}
-      {% endfor %}
-      - {{ftproot}}/{{common.name}}/{{user}}/cache
-    - user: {{common.user}}
-    - group: {{services.apacheSettings.httpd_user}}
-    - mode: 770
-    - makedirs: true
-    - watch_in:
-      - mc_proxy: {{common.name}}-rootdir-dirs
-      - mc_proxy: {{common.name}}-postinstall-project-hook
 {% endfor %}
 {% endmacro %}
 
 {%- macro lizmap_app(common) %}
-{% if True or common.full %}
+{% if common.full %}
 {{ lizmap_layout(common) }}
 {% endif %}
 {# install the app. #}
@@ -315,7 +308,7 @@
           ":{project_root}/webapp/"
       ),
       "settings": {
-            "session_auto_start": True,
+            "session_auto_start": False,
             "allow_url_fopen": True,
             "display_errors": True,
             "memory_limit": "256M",
