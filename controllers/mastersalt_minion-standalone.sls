@@ -9,7 +9,7 @@
 {{ salt['mc_macros.register']('controllers', name) }}
 include:
   {% if full %}
-  - makina-states.controllers.{{csalt..name}}
+  - makina-states.controllers.{{csalt.name}}
   {% endif %}
   - makina-states.controllers.mastersalt-hooks
 {{ saltmac.install_minion(csalt.name, full=full) }}

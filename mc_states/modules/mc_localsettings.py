@@ -41,7 +41,7 @@ def settings():
         #   {{ localsettings.locations.prefix }}
         #
         locations = saltmods['mc_utils.defaults'](
-            'makina.localsettings.locations', {
+            'makina-states.localsettings.locations', {
                 'root_dir': '/',
                 'home_dir': '{root_dir}home',
                 'root_home_dir': '{root_dir}root',

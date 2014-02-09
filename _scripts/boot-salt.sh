@@ -2344,10 +2344,42 @@ cleanup_old_installs() {
     # ext_mod/mc_states/modules to mc_states/modules
     # ext_mod/modules to mc_states/modules
     # ext_mod/mc_modules to mc_states/mc_modules
+    minion_cfg="$CONF_PREFIX/minion"
+    if [ -e "$CONF_PREFIX/minion.d/00_global.conf" ];then
+        minion_cfg="$CONF_PREFIX/minion.d/00_global.conf"
+    fi
+    for i in module returner renderer state grain;do
+        key="$i"
+        if [ "$i" = "state" ];then
+            key="${i}s"
+        fi
+        if [ "$i" = "renderer" ];then
+            key="render"
+        fi
+        if [ x"$(egrep "^${key}_dirs:" "${minion_cfg}"|wc -l)" = "x0" ];then
+            echo "${key}_dirs: [$SALT_ROOT/_${i}s, $SALT_MS/mc_states/${i}s]" >> "${minion_cfg}"
+        fi
+    done
+    minion_cfg="${MCONF_PREFIX}/minion"
+    if [ -e "${MCONF_PREFIX}/minion.d/00_global.conf" ];then
+        minion_cfg="${MCONF_PREFIX}/minion.d/00_global.conf"
+    fi
+    for i in module returner renderer state grain;do
+        key="$i"
+        if [ "$i" = "state" ];then
+            key="${i}s"
+        fi
+        if [ "$i" = "renderer" ];then
+            key="render"
+        fi
+        if [ x"$(egrep "^${key}_dirs:" "${minion_cfg}"|wc -l)" = "x0" ];then
+            echo "${key}_dirs: [${MASTERSALT_ROOT}/_${i}s, ${MASTERSALT_MS}/mc_states/${i}s]" >> "${minion_cfg}"
+        fi
+    done
     for conf in "${minion_conf}" "${mminion_conf}";do
         if [ -e "$conf" ];then
-            if [ x"$(grep "grain_dir" "${conf}"|wc -l)" = "x0" ];then
-                bs_log "Patching grains_dir -> grain_dir in ${conf}"
+            if [ x"$(egrep "^grain_dirs:" "${conf}"|wc -l)" = "x0" ];then
+                bs_log "Patching grains_dirs -> grain_dirs in ${conf}"
                 sed -e "s:grains_dirs:grain_dirs:g" -i "${conf}"
             fi
             for i in grains modules renderers returners states;do
@@ -2416,6 +2448,40 @@ cleanup_old_installs() {
             "$SED" -re "/^\s*- salt$/d" -i "$MASTERSALT_PILLAR/top.sls"
         fi
     fi
+    ls \
+        "${MASTERSALT_ROOT}/_modules/mc_apache.py"*\
+        "${MASTERSALT_ROOT}/_modules/mc_utils.py"*\
+        "${MASTERSALT_ROOT}/_states/bacula.py"*\
+        "${MASTERSALT_ROOT}/_states/mc_apache.py"*\
+        "${SALT_ROOT}/_modules/mc_apache.py"*\
+        "${SALT_ROOT}/_modules/mc_utils.py"*\
+        "${SALT_ROOT}/_states/bacula.py"*\
+        "${SALT_ROOT}/_states/mc_apache.py"* \
+        "${MASTERSALT_MS}/_modules/mc_apache.py"*\
+        "${MASTERSALT_MS}/_modules/mc_utils.py"*\
+        "${MASTERSALT_MS}/_states/bacula.py"*\
+        "${MASTERSALT_MS}/_states/mc_apache.py"*\
+        "${SALT_MS}/_modules/mc_apache.py"*\
+        "${SALT_MS}/_modules/mc_utils.py"*\
+        "${SALT_MS}/_states/bacula.py"*\
+        "${SALT_MS}/_states/mc_apache.py"* \
+        2>/dev/null|while read oldmode;do
+        rm -fv "${oldmode}"
+    done
+    ls -d \
+        "${MASTERSALT_MS}/_modules/"    \
+        "${MASTERSALT_MS}/_states/"     \
+        "${MASTERSALT_MS}/_runners/"    \
+        "${MASTERSALT_MS}/_returners/"  \
+        "${MASTERSALT_MS}/_renderers/"  \
+        "${SALT_MS}/_modules/"    \
+        "${SALT_MS}/_states/"     \
+        "${SALT_MS}/_runners/"    \
+        "${SALT_MS}/_returners/"  \
+        "${SALT_MS}/_renderers/"  \
+        2>/dev/null|while read oldmode;do
+        rm -frv "${oldmode}"
+    done
     if [[ "$(egrep "bootstrapped\.salt" $MCONF_PREFIX/grains &>/dev/null |wc -l)" != "0" ]];then
         bs_log "Cleanup old mastersalt grains"
         "$SED" -re "/bootstrap\.salt/d" -i "$MCONF_PREFIX/grains"
@@ -2426,6 +2492,9 @@ cleanup_old_installs() {
         "$SED" -re "/mastersalt/d" -i "$CONF_PREFIX/grains"
         salt_call_wrapper --local saltutil.sync_grains
     fi
+
+
+
 }
 
 bs_help() {
