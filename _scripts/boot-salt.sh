@@ -1186,7 +1186,7 @@ setup_and_maybe_update_code() {
                             else
                                 # branch  does not exist yet
                                 bs_log "Create & switch on branch: $branch from $lbranch"
-                                git checkout -b remotes/origin/$branch $branch
+                                git checkout remotes/origin/$branch -b $branch
                                 ret=$?
                             fi
                             if [[ "$ret" != "0" ]];then
