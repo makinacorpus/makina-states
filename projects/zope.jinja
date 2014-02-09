@@ -164,7 +164,7 @@ etc-init.d-supervisor.{{common.name}}:
 {{common.name}}-buildout-nginx-vhost:
   file.symlink:
     - target: {{common.project_root}}/etc/www/nginx.reverseproxy.conf
-    - name: {{apacheSettings.vhostdir}}/100-{{common.domain}}.conf
+    - name: /etc/nginx/sites.available/100-{{common.domain}}.conf
     - makedirs: true
     - watch_in:
       - mc_proxy: {{common.name}}-postinstall-project-hook
