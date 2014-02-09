@@ -211,7 +211,7 @@ def get(key, default=''):
     return default
 
 
-def defaults(prefix, datadict, overridden=None):
+def defaults(prefix, datadict, overridden=None, firstcall=True):
     '''
     Get the "prefix" value from the configuration
     Then overrides it with  "datadict" mapping recursively
@@ -223,6 +223,11 @@ def defaults(prefix, datadict, overridden=None):
             Elif a dict: update the default dictionnary with the one in conf
             Else take that as a value if the value is not a mapping or a list
     '''
+    if firstcall:
+        global_pillar =  __salt__['mc_utils.get'](prefix)
+        if isinstance(global_pillar, dict):
+            datadict = __salt__['mc_utils.dictupdate'](datadict, global_pillar)
+
     if overridden is None:
         overridden = {}
     if not prefix in overridden:
@@ -249,7 +254,7 @@ def defaults(prefix, datadict, overridden=None):
                 value = nvalue
         elif isinstance(value, dict):
             # recurvive and conservative dictupdate
-            ndefaults = defaults(value_key, value, overridden=overridden)
+            ndefaults = defaults(value_key, value, overridden=overridden, firstcall=firstcall)
             if overridden[value_key]:
                 for k, value in overridden[value_key].items():
                     default_value[k] = value
