@@ -209,7 +209,7 @@
                 {% for usr in common.data.users %}
                 {{saltmac.msr}}/_scripts/reset-perms.py
                 -u {{common.user}} -g {{common.group}}
-                --path "{{ftproot}}/{{common.name}}/{{usr}}"
+                --path "{{ftproot}}/{{common.name}}"
                 --fmode 770 --dmode 770
                 --groups {{services.apacheSettings.httpd_user}}:rwx
                 --users {{usr}}:rwx
