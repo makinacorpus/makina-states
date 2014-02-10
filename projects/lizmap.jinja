@@ -76,7 +76,8 @@
     - password: {{data.password}}
     - group: {{user}}
     - fullname: {{user}} user
-    - home: {{ftproot}}/{{common.name}}/{{user}}
+    - home: {{ftproot}}/{{common.name}}
+{#    - home: {{ftproot}}/{{common.name}}/{{user}} #}
     - remove_groups: False
     - gid_from_name: True
     - watch:
@@ -191,28 +192,28 @@
                 --fmode 770 --dmode 770
                 --groups {{services.apacheSettings.httpd_user}}:rwx;
 
-                {% for usr in common.data.users %}
-                {{saltmac.msr}}/_scripts/reset-perms.py
-                -u {{common.user}} -g {{common.group}}
-                --path "{{ftproot}}/{{common.name}}/{{usr}}"
-                --fmode 770 --dmode 770
-                --groups {{services.apacheSettings.httpd_user}}:rwx
-                --users {{usr}}:rwx
-                {% endfor %}
-
                 {{saltmac.msr}}/_scripts/reset-perms.py
                 -u {{common.user}} -g lizmap
                 --path "{{common.project_root}}/webapp"
                 --fmode 770 --dmode 770
                 --groups {{services.apacheSettings.httpd_user}}:r-x;
 
-                chmod o+x "{{ftproot}}/{{common.name}}" "{{ftproot}}" "{{rftproot}}"
-
                 {{saltmac.msr}}/_scripts/reset-perms.py
                 -u {{common.user}} -g {{common.group}}
                 --path "{{common.project_root}}/webapp"
                 --fmode 770 --dmode 770
                 --groups {{services.apacheSettings.httpd_user}}:r-x;
+
+                chmod o+x "{{ftproot}}/{{common.name}}" "{{ftproot}}" "{{rftproot}}"
+
+                {% for usr in common.data.users %}
+                {{saltmac.msr}}/_scripts/reset-perms.py
+                -u {{common.user}} -g {{common.group}}
+                --path "{{ftproot}}/{{common.name}}"
+                --fmode 770 --dmode 770
+                --groups {{services.apacheSettings.httpd_user}}:rwx
+                --users {{usr}}:rwx
+                {% endfor %}
 
     - mode: 755
     - user: {{common.user}}
@@ -371,6 +372,7 @@
 {%-  do kwargs.setdefault("user", "lizmap") %}
 {%-  set common = salt["mc_project.get_common_vars"](*varargs, **kwargs) %}
 {% if common.full %}
+{%-    do common.sls_includes.extend(["makina-states.services.ftp.pureftpd"])%}
 {%-  if common.data.has_app %}
 {%-    do common.sls_includes.extend(["makina-states.services.php.phpfpm_with_apache"])%}
 {%-    do common.sls_includes.extend(["makina-states.services.gis.qgis",])%}
@@ -379,6 +381,7 @@
 {%-   do common.sls_includes.extend(["makina-states.services.gis.postgis",])%}
 {%-  endif %}
 {%-else  %}
+{%-    do common.sls_includes.extend(["makina-states.services.ftp.pureftpd-standalone"])%}
 {%-   do common.sls_includes.append("makina-states.services.php.phpfpm_with_apache-standalone")%}
 {%-   do common.sls_includes.extend(["makina-states.services.db.postgresql-hooks",])%}
 {% endif %}
