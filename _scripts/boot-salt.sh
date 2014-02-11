@@ -412,6 +412,7 @@ set_vars() {
     BASE_PACKAGES="$BASE_PACKAGES libgmp3-dev"
     BRANCH_PILLAR_ID="makina-states.salt.makina-states.rev"
     MAKINASTATES_TEST=${MAKINASTATES_TEST:-}
+    IS_SALT_UPGRADING="${IS_SALT_UPGRADING:-}"
     IS_SALT="${IS_SALT:-y}"
     IS_SALT_MASTER="${IS_SALT_MASTER:-y}"
     IS_SALT_MINION="${IS_SALT_MINION:-y}"
@@ -637,7 +638,16 @@ set_vars() {
     PROJECT_TOPSTATE_DEFAULT="${MAKINA_PROJECTS}.${PROJECT_NAME}.top"
     PROJECT_PILLAR_STATE="${MAKINA_PROJECTS}.${PROJECT_NAME}"
 
+    # just tell to bootstrap and run highstates
+    if [ -n $IS_SALT_UPGRADING ];then
+        SALT_BOOT_SKIP_HIGHSTATES=""
+        MASTERSALT_BOOT_SKIP_HIGHSTATE=""
+        SALT_BOOT_SKIP_CHECKOUTS=""
+        SALT_REBOOTSTRAP="y"
+        BUILDOUT_REBOOTSTRAP="y"
+    fi
     # export variables to support a restart
+    export IS_SALT_UPGRADING
     export SALT_REBOOTSTRAP BUILDOUT_REBOOTSTRAP VENV_REBOOTSTRAP
     export MS_BRANCH FORCE_MS_BRANCH
     export IS_SALT IS_SALT_MASTER IS_SALT_MINION
@@ -697,7 +707,10 @@ recap_(){
     bs_log "DATE: $CHRONO"
     bs_log "SALT_NODETYPE: $(get_salt_nodetype)"
     if [[ -n "$MAKINASTATES_TEST" ]];then
-        bs_log "Will run tests"
+        bs_log "-> Will run tests"
+    fi
+    if [ -n $IS_SALT_UPGRADING ];then
+        bs_log "-> Will upgrade makina-states"
     fi
     if [[ -n "$debug" ]];then
         bs_log "ROOT: $ROOT"
@@ -1219,6 +1232,11 @@ setup_and_maybe_update_code() {
     if [[ -z $SALT_BOOT_IN_RESTART ]] && [[ -z $(is_basedirs_there) ]];then
         die "Base directories are not present"
     fi
+}
+
+handle_upgrades() {
+    /bin/true
+    # stub for now
 }
 
 cleanup_previous_venv() {
@@ -2363,19 +2381,19 @@ cleanup_old_installs() {
     minion_cfg="${MCONF_PREFIX}/minion"
     if [ -e "${MCONF_PREFIX}/minion.d/00_global.conf" ];then
         minion_cfg="${MCONF_PREFIX}/minion.d/00_global.conf"
+        for i in module returner renderer state grain;do
+            key="$i"
+            if [ "$i" = "state" ];then
+                key="${i}s"
+            fi
+            if [ "$i" = "renderer" ];then
+                key="render"
+            fi
+            if [ x"$(egrep "^${key}_dirs:" "${minion_cfg}" 2/dev/null|wc -l)" = "x0" ];then
+                echo "${key}_dirs: [${MASTERSALT_ROOT}/_${i}s, ${MASTERSALT_MS}/mc_states/${i}s]" >> "${minion_cfg}"
+            fi
+        done
     fi
-    for i in module returner renderer state grain;do
-        key="$i"
-        if [ "$i" = "state" ];then
-            key="${i}s"
-        fi
-        if [ "$i" = "renderer" ];then
-            key="render"
-        fi
-        if [ x"$(egrep "^${key}_dirs:" "${minion_cfg}"|wc -l)" = "x0" ];then
-            echo "${key}_dirs: [${MASTERSALT_ROOT}/_${i}s, ${MASTERSALT_MS}/mc_states/${i}s]" >> "${minion_cfg}"
-        fi
-    done
     for conf in "${minion_conf}" "${mminion_conf}";do
         if [ -e "$conf" ];then
             if [ x"$(egrep "^grain_dirs:" "${conf}"|wc -l)" = "x0" ];then
@@ -2548,6 +2566,7 @@ usage() {
     bs_help "-C|--no-confirm:" "Do not ask for start confirmation" "" y
     bs_help "-S|--skip-checkouts:" "Skip initial checkouts / updates" "" y
     bs_help "-s|--skip-highstates:" "Skip highstates" "" y
+    bs_help "--upgrade" "Run bootsalt upgrade code (primarely destinated to run as the highstate wrapper to use in crons)" "" "${IS_SALT_UPGRADING}"
     bs_help "-d|--debug:" "debug/verbose mode" "NOT SET" y
     bs_help "-b|--branch <branch>" "MakinaStates branch to use" "$MS_BRANCH" y
     bs_help "--debug-level <level>:" "debug level (quiet|all|info|error)" "NOT SET" y
@@ -2652,6 +2671,8 @@ parse_cli_opts() {
             -d|--debug) SALT_BOOT_DEBUG=y
                 ;;
             --no-colors) NO_COLORS=1
+                ;;
+            --upgrade) IS_SALT_UPGRADING="1"
                 ;;
             --debug-level) SALT_BOOT_DEBUG_LEVEL=$2;sh=2
                 ;;
@@ -2781,6 +2802,7 @@ if [[ -z $SALT_BOOT_AS_FUNCS ]];then
     recap
     cleanup_old_installs
     setup_and_maybe_update_code
+    handle_upgrades
     setup_virtualenv
     install_buildouts
     create_salt_skeleton
