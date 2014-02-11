@@ -109,7 +109,7 @@ def settings():
         etherpadSettings = __salt__['mc_utils.defaults'](
             'makina-states.services.collab.etherpad', {
                 'version': '1.3.0',
-                'location': '/home/etherpad/',
+                'location': locs['apps_dir'] + '/etherpad',
                 'apikey': 'SECRET-API-KEY-PLS-CHANGE-ME',
                 'title': 'Etherpad',
                 'ip': '0.0.0.0',
