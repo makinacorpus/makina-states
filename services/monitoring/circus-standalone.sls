@@ -29,26 +29,30 @@ circus-setup-conf:
     - template: jinja
     - defaults:
         conf_dir: {{ locs['conf_dir'] }}
+
+circus-setup-conf-include-directory:
   file.directory:
     - name: {{ locs['conf_dir'] }}/circus.conf.d
 
 {#- Run #}
-circus-run:
+circus-start:
   cmd.run:
-    - name: . {{ locs['venv'] }}/bin/activate && {{ locs['venv'] }}/bin/circus {{ locs['conf_dir'] }}/circus.ini
+    - name: . {{ locs['venv'] }}/bin/activate && {{ locs['venv'] }}/bin/circusd --daemon {{ locs['conf_dir'] }}/circus.ini
+
 {% endmacro %}
 {{ do(full=False) }}
 
-{% macro circusAddWatcher(name, cmd, args, extras) %}
+{% macro circusAddWatcher(name, cmd, args="", extras="") %}
 circus-add-watcher-{{ name }}:
   file.managed:
     - name: {{ locs['conf_dir'] }}/circus.conf.d/watcher-{{ name }}.ini
     - source: salt://makina-states/files/etc/circus.conf.d/watcher.ini
+    - template: jinja
     - defaults:
         name: {{ name }}
         cmd: {{ cmd }}
         args: {{ args }}
         extras: {{ extras }}
     - require_in:
-        cmd: circus-run
+        - cmd: circus-start
 {% endmacro %}

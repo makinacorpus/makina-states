@@ -40,6 +40,7 @@ etherpad-settings:
   file.managed:
     - name: {{ etherpadLocation }}/settings.json
     - source: salt://makina-states/files/home/etherpad/settings.json
+    - template: jinja
     - mode: 600
     - defaults: {{ etherpadSettings|yaml }}
 
