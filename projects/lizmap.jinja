@@ -381,7 +381,7 @@
 {%-   do common.sls_includes.extend(["makina-states.services.gis.postgis",])%}
 {%-  endif %}
 {%-else  %}
-{%-    do common.sls_includes.extend(["makina-states.services.ftp.pureftpd-standalone"])%}
+{%-   do common.sls_includes.extend(["makina-states.services.ftp.ftpd-hooks"])%}
 {%-   do common.sls_includes.append("makina-states.services.php.phpfpm_with_apache-standalone")%}
 {%-   do common.sls_includes.extend(["makina-states.services.db.postgresql-hooks",])%}
 {% endif %}

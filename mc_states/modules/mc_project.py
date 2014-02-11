@@ -70,7 +70,8 @@ def get_common_vars(
     full=True,
     no_domain=False,
     no_reset_perms=False,
-    no_default_includes=False
+    no_default_includes=False,
+    *args, **kwargs
 ):
 
     """

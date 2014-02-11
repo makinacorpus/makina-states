@@ -8,6 +8,9 @@
 #}
 {%- import "makina-states/_macros/services.jinja" as services with context %}
 {% macro do(full=True) %}
+include:
+  - makina-states.services.ftp.ftpd-hooks
+
 {{ salt['mc_macros.register']('services', 'ftp.pureftpd') }}
 {%- set localsettings = services.localsettings %}
 {%- set nodetypes = services.nodetypes %}
@@ -16,14 +19,16 @@
 {%- set passive = services.pureftpdSettings['PassiveIP'] or services.pureftpdSettings['PassivePortRange']%}
 {%- if grains['os_family'] in ['Debian'] %}
 {% macro service_watch_in() %}
-    - watch_in:
       - service: pure-ftpd-service
 {% endmacro %}
 
 {% if full %}
 prereq-pureftpd:
   pkg.installed:
-    {{ service_watch_in() }}
+    - watch:
+      - mc_proxy: ftpd-pre-installation-hook
+    - watch_in:
+      - mc_proxy: ftpd-post-installation-hook
     - pkgs:
       {%- if services.pureftpdSettings.LDAPConfigFile %}
       - pure-ftpd-ldap
@@ -49,6 +54,10 @@ prereq-pureftpd:
     - uploadUid: '{{services.pureftpdDefaultSettings.UploadUid}}'
     - uploadGid: '{{services.pureftpdDefaultSettings.UploadGid}}'
     - uploadScript: '{{services.pureftpdDefaultSettings.UploadScript}}'
+    - watch:
+      - mc_proxy: ftpd-pre-configuration-hook
+    - watch_in:
+      - mc_proxy: ftpd-post-configuration-hook
 
 {%- for setting, value in services.pureftpdSettings.items() %}
 {%- if (
@@ -66,12 +75,18 @@ prereq-pureftpd:
     - mode: 700
     - contents: |
                 {{value}}
-    {{ service_watch_in() }}
+    - watch:
+      - mc_proxy: ftpd-pre-configuration-hook
+    - watch_in:
+      - mc_proxy: ftpd-post-configuration-hook
 {%- else %}
 {{ locs.conf_dir }}/pure-ftpd/conf/{{setting}}-makina-pure-ftpd:
   file.absent:
     - name: {{ locs.conf_dir }}/pure-ftpd/conf/{{setting}}
-    {{ service_watch_in() }}
+    - watch:
+      - mc_proxy: ftpd-pre-configuration-hook
+    - watch_in:
+      - mc_proxy: ftpd-post-configuration-hook
 {%- endif %}
 {%- endfor %}
 
@@ -83,7 +98,10 @@ prereq-pureftpd:
             -keyout "{{key}}" -out "{{key}}" \
             -subj "/C={{ssl.country}}/ST={{ssl.st}}/L={{ssl.l}}/O={{ssl.o}}/CN={{ssl.cn}}/EMAIL={{ssl.email}}"
     - unless: test -e {{key}}
-    {{ service_watch_in() }}
+    - watch:
+      - mc_proxy: ftpd-pre-configuration-hook
+    - watch_in:
+      - mc_proxy: ftpd-post-configuration-hook
       - cmd: {{key}}-makina-pureftpd-perm
 
 {{key}}-makina-pureftpd-perm:
@@ -93,7 +111,10 @@ prereq-pureftpd:
             --dmode 0700 --fmode 0700
             --user root --group root
             --paths {{ key }}
-    {{ service_watch_in() }}
+    - watch:
+      - mc_proxy: ftpd-pre-configuration-hook
+    - watch_in:
+      - mc_proxy: ftpd-post-configuration-hook
 
 makina-pureftpd-shell-contents:
   file.accumulated:
@@ -101,6 +122,11 @@ makina-pureftpd-shell-contents:
       - file: makina-pureftpd-shell-block
     - filename: {{ locs.conf_dir }}/shells
     - text: /bin/ftponly
+    - watch:
+      - mc_proxy: ftpd-pre-configuration-hook
+    - watch_in:
+      - mc_proxy: ftpd-post-configuration-hook
+      - cmd: {{key}}-makina-pureftpd-perm
 
 makina-pureftpd-shell-block:
   file.blockreplace:
@@ -111,11 +137,18 @@ makina-pureftpd-shell-block:
     - prepend_if_not_found: True
     - backup: '.bak'
     - show_changes: True
-    {{ service_watch_in() }}
+    - watch:
+      - mc_proxy: ftpd-pre-configuration-hook
+    - watch_in:
+      - mc_proxy: ftpd-post-configuration-hook
 
 pure-ftpd-service:
   service.running:
     - name: pure-ftpd
+    - watch:
+      - mc_proxy: ftpd-pre-restart-hook
+    - watch_in:
+      - mc_proxy: ftpd-post-restart-hook
 {%- endif %}
 
 {% endmacro %}
