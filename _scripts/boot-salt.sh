@@ -2378,9 +2378,11 @@ cleanup_old_installs() {
             echo "${key}_dirs: [$SALT_ROOT/_${i}s, $SALT_MS/mc_states/${i}s]" >> "${minion_cfg}"
         fi
     done
-    minion_cfg="${MCONF_PREFIX}/minion"
+    mminion_cfg="${MCONF_PREFIX}/minion"
     if [ -e "${MCONF_PREFIX}/minion.d/00_global.conf" ];then
-        minion_cfg="${MCONF_PREFIX}/minion.d/00_global.conf"
+        mminion_cfg="${MCONF_PREFIX}/minion.d/00_global.conf"
+    fi
+    if [ -e "${mminion_cfg}" ];then
         for i in module returner renderer state grain;do
             key="$i"
             if [ "$i" = "state" ];then
@@ -2389,11 +2391,17 @@ cleanup_old_installs() {
             if [ "$i" = "renderer" ];then
                 key="render"
             fi
-            if [ x"$(egrep "^${key}_dirs:" "${minion_cfg}" 2/dev/null|wc -l)" = "x0" ];then
-                echo "${key}_dirs: [${MASTERSALT_ROOT}/_${i}s, ${MASTERSALT_MS}/mc_states/${i}s]" >> "${minion_cfg}"
+            if [ x"$(egrep "^${key}_dirs:" "${mminion_cfg}" 2/dev/null|wc -l)" = "x0" ];then
+                echo "${key}_dirs: [${MASTERSALT_ROOT}/_${i}s, ${MASTERSALT_MS}/mc_states/${i}s]" >> "${mminion_cfg}"
             fi
         done
     fi
+    #ls \
+    #    "${MASTERSALT_PILLAR}/mastersalt.sls"\
+    #    "${SALT_PILLAR}/salt.sls"\
+    #    2>/dev/null|while read sls;do
+    #    sed -i -re "s//" "${sls}"
+    #done
     for conf in "${minion_conf}" "${mminion_conf}";do
         if [ -e "$conf" ];then
             if [ x"$(egrep "^grain_dirs:" "${conf}"|wc -l)" = "x0" ];then
@@ -2510,9 +2518,6 @@ cleanup_old_installs() {
         "$SED" -re "/mastersalt/d" -i "$CONF_PREFIX/grains"
         salt_call_wrapper --local saltutil.sync_grains
     fi
-
-
-
 }
 
 bs_help() {
