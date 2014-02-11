@@ -12,6 +12,7 @@
 {%- set locs = localsettings.locations %}
 {%- set etherpadSettings = services.etherpadSettings %}
 
+{%- set etherpadLocation = etherpadSettings['location'] + "/etherpad-lite-" + etherpadSettings['version'] %}
 
 {%- if full %}
 {#- Remove directory if exists, else archive won't extract #}
@@ -31,19 +32,21 @@ etherpad-install-pkg:
 {# Configuration -#}
 etherpad-apikey:
   file.managed:
-    - name: {{ etherpadSettings['location'] }}/APIKEY.txt
+    - name: {{ etherpadLocation }}/APIKEY.txt
     - contents: {{ etherpadSettings['apikey'] }}
     - mode: 600
 
 etherpad-settings:
   file.managed:
-    - name: {{ etherpadSettings['location'] }}/settings.json
+    - name: {{ etherpadLocation }}/settings.json
     - source: salt://makina-states/files/home/etherpad/settings.json
     - mode: 600
     - defaults: {{ etherpadSettings|yaml }}
 
 {#- Run #}
-{# Use {{ etherpadSettings['location'] }}/etherpad-lite-{{ etherpadSettings['version'] }}/bin/run.sh #}
+{% import "makina-states/services/monitoring/circus-standalone.sls" as circus with context %}
+{{ circus.do(full=True) }}
+{{ circus.circusAddWatcher("etherpad", etherpadLocation +"/bin/run.sh") }}
 
 {% endmacro %}
 {{ do(full=False) }}

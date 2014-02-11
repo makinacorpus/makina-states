@@ -2,14 +2,19 @@
 {%- set services = zope.services %}
 {%- set localsettings = zope.localsettings %}
 
+{% macro install_dependancies(common) %}
+beecollab_install_dependancies:
+  pkg.installed:
+    - pkgs:
+      - ffmepg
+      - ffmpeg2theora
+{% endmacro %}
+
 {% macro install_zope(common) %}
 {{ zope.install_generic_zope_project(*varargs, **kwargs) }}
 {% endmacro %}
 
 {% macro install_etherpad(common) %}
-{% endmacro %}
-
-{% macro install_transcode_daemon(common) %}
 {% endmacro %}
 
 {% macro install_setup(common) %}
@@ -41,8 +46,8 @@ beecollab_project_setup:
 
 {% set common = salt['mc_project.get_common_vars'](*varargs, **kwargs) -%}
 
+{{ install_dependancies(common) }}
 {{ install_zope(common, *varargs, **kwargs) }}
 {{ install_etherpad(common) }}
-{{ install_transcode_daemon(common) }}
 {{ install_setup(common) }}
 {% endmacro %}
