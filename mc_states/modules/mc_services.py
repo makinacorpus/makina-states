@@ -104,6 +104,15 @@ def settings():
         apacheSettings = __salt__['mc_apache.settings']()
 
         #
+        # Circus:  (services.monitoring.circus)
+        #
+        circusSettings = __salt__['mc_utils.defaults'](
+            'makina-states.services.monitoring.circus', {
+                'location': locs['apps_dir'] + '/circus',
+                }
+            )
+
+        #
         # Etherpad:  (services.collab.etherpad)
         #
         etherpadSettings = __salt__['mc_utils.defaults'](

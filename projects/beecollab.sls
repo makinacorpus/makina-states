@@ -3,11 +3,13 @@
 {%- set localsettings = zope.localsettings %}
 
 {% macro install_dependancies(common) %}
+{% if common.full %}
 beecollab_install_dependancies:
   pkg.installed:
     - pkgs:
       - ffmepg
       - ffmpeg2theora
+{% endif %}
 {% endmacro %}
 
 {% macro install_zope(common) %}
@@ -19,6 +21,7 @@ beecollab_install_dependancies:
 
 {% macro install_setup(common) %}
 {# Install npm + npm install in resources/dev + grunt #}
+{% if common.full %}
 beecollab_project_setup_grunt-cli:
   npm.installed:
     - name: grunt-cli
@@ -27,6 +30,7 @@ beecollab_project_setup_npm:
   npm.bootstrap:
     - name: {{ common['project_root'] }}/src/collective.rcse/collective/rcse/resources/dev/
     - user: {{ common['user'] }}
+{% endif %}
 
 beecollab_project_setup:
   cmd.run:
