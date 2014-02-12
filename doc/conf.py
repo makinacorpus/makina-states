@@ -231,7 +231,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
   ('index', 'MakinaStates', u'Makina States Documentation',
-   u'Mathieu Le Marec Pasquet, Régis Leroy & Makina Corpus folks', 'MakinaStates', 'One line description of project.',
+   u'Mathieu Le Marec - Pasquet, Régis Leroy & Makina Corpus folks', 'MakinaStates', 'One line description of project.',
    'Miscellaneous'),
 ]
 
