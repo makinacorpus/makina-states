@@ -1,0 +1,14 @@
+devhost
+devhost-standalone
+dockercontainer
+dockercontainer-standalone
+lxccontainer
+lxccontainer-standalone
+server
+server-standalone
+travis
+travis-standalone
+vagrantvm
+vagrantvm-standalone
+vm
+vm-standalone

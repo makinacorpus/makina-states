@@ -1,4 +1,5 @@
 .*installed.cfg
+doc/build
 *.sav
 salt-project
 .buildout

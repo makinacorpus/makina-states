@@ -63,6 +63,7 @@ def settings():
                     'rev': __salt__['mc_utils.get']
                     ('makina-states.salt.' + i + '.rev',
                      data.get('rev', False))})
+        data = {}
         saltCommonData = {
             'confRepos': confRepos,
             'rotate': localsettings['rotate']['days'],
@@ -187,51 +188,53 @@ def settings():
             'win_repo_cachefile': 'salt://win/repo/winrepo.p',
         })
         #  default master settings
-        saltMasterData = __salt__['mc_utils.dictupdate'](saltCommonData.copy(), {
-            'service_name': 'master',
-            'interface': '127.0.0.1',
-            'publish_port': '4505',
-            'ret_port': '4506',
-            'max_open_files': '100000',
-            'worker_threads': '5',
-            'dev_worker_threads': '2',
-            'keep_jobs': '744',
-            'timeout': '120',
-            'output': None,
-            'job_cache': True,
-            'minion_data_cache': True,
-            'auto_accept': False,
-            'autosign_file': '{conf_prefix}/autosign.conf',
-            'client_acl_blacklist': {},
-            'external_auth': {},
-            'token_expire': '43200',
-            'file_recv': False,
-            'master_tops': {},
-            'external_nodes': None,
-            'renderer': 'yaml_jinja',
-            'hash_type': 'md5',
-            'file_buffer_size': '1048576',
-            'file_ignore_regex': [],
-            'runner_dirs': ['{salt_root}/_runners',
-                            '{salt_root}/makina-states/mc_states/runners'],
-            'file_ignore_glob': [],
-            'fileserver_backend':  ['roots', 'git'],
-            'gitfs_remotes': '[]',
-            'ext_pillar': {},
-            'pillar_opts': True,
-            'order_masters': True,
-            'syndic_master': None,
-            'syndic_master_port': '4506',
-            'syndic_pidfile':  '{run_prefix}/{name}-syndic.pid',
-            'syndic_log_file': '{log_prefix}/{name}-syndic',
-            'peer': {},
-            'peer_run': {},
-            'nodegroups': {},
-            'range_server': None,
-            'win_repo': '{salt_root}/win/repo',
-            'win_repo_mastercachefile': '{salt_root}/win/repo/winrepo.p',
-            'win_gitrepos': [],
-        })
+        saltMasterData = __salt__['mc_utils.dictupdate'](
+            saltCommonData.copy(), {
+                'service_name': 'master',
+                'interface': '127.0.0.1',
+                'publish_port': '4505',
+                'ret_port': '4506',
+                'max_open_files': '100000',
+                'worker_threads': '5',
+                'dev_worker_threads': '2',
+                'keep_jobs': '744',
+                'timeout': '120',
+                'output': None,
+                'job_cache': True,
+                'minion_data_cache': True,
+                'auto_accept': False,
+                'autosign_file': '{conf_prefix}/autosign.conf',
+                'client_acl_blacklist': {},
+                'external_auth': {},
+                'token_expire': '43200',
+                'file_recv': False,
+                'master_tops': {},
+                'external_nodes': None,
+                'renderer': 'yaml_jinja',
+                'hash_type': 'md5',
+                'file_buffer_size': '1048576',
+                'file_ignore_regex': [],
+                'runner_dirs': ['{salt_root}/_runners',
+                                '{salt_root}/makina-states/mc_states/runners'],
+                'file_ignore_glob': [],
+                'fileserver_backend':  ['roots', 'git'],
+                'gitfs_remotes': '[]',
+                'ext_pillar': {},
+                'pillar_opts': True,
+                'order_masters': True,
+                'syndic_master': None,
+                'syndic_master_port': '4506',
+                'syndic_pidfile':  '{run_prefix}/{name}-syndic.pid',
+                'syndic_log_file': '{log_prefix}/{name}-syndic',
+                'peer': {},
+                'peer_run': {},
+                'nodegroups': {},
+                'range_server': None,
+                'win_repo': '{salt_root}/win/repo',
+                'win_repo_mastercachefile': '{salt_root}/win/repo/winrepo.p',
+                'win_gitrepos': [],
+            }
+        )
         #  mastersalt daemon overrides
         mastersaltCommonData = __salt__['mc_utils.dictupdate'](
             saltCommonData.copy(), {'pref_name': 'master',
@@ -284,46 +287,49 @@ def settings():
         ########################################
         # SALT VARIABLES
 
-        saltCommonData = resolver(saltCommonData)
-        saltMasterData = resolver(saltMasterData)
-        saltMinionData = resolver(saltMinionData)
-        saltname = saltCommonData['name']
-        saltprefix = saltCommonData['prefix']
-        prefix = saltprefix
-        projectsRoot = saltCommonData['projects_root']
-        vagrantRoot = saltCommonData['vagrant_root']
-        dockerRoot = saltCommonData['docker_root']
-        saltroot = saltCommonData['salt_root']
-        saltRoot = saltroot
-        confPrefix = saltCommonData['conf_prefix']
-        cachePrefix = saltCommonData['cache_prefix']
-        runPrefix = saltCommonData['run_prefix']
-        logPrefix = saltCommonData['log_prefix']
-        pillarRoot = saltCommonData['pillar_root']
-        msr = saltroot + '/makina-states'
-        resetperms = 'file://' + msr + '/_scripts/reset-perms.py'
-        saltbinpath = msr + '/bin'
+        data['saltCommonData'] = saltCommonData = resolver(saltCommonData)
+        data['saltMasterData'] = saltMasterData = resolver(saltMasterData)
+        data['saltMinionData'] = saltMinionData = resolver(saltMinionData)
+        data['saltname'] = saltCommonData['name']
+        saltprefix = data['saltprefix'] = saltCommonData['prefix']
+        data['prefix'] = saltprefix
+        data['projectsRoot'] = saltCommonData['projects_root']
+        data['vagrantRoot'] = saltCommonData['vagrant_root']
+        data['dockerRoot'] = saltCommonData['docker_root']
+        saltroot = data['saltroot'] = saltCommonData['salt_root']
+        data['saltRoot'] = saltroot
+        data['confPrefix'] = saltCommonData['conf_prefix']
+        data['cachePrefix'] = saltCommonData['cache_prefix']
+        data['runPrefix'] = saltCommonData['run_prefix']
+        data['logPrefix'] = saltCommonData['log_prefix']
+        data['pillarRoot'] = saltCommonData['pillar_root']
+        msr = data['msr'] = saltroot + '/makina-states'
+        data['resetperms'] = 'file://' + msr + '/_scripts/reset-perms.py'
+        data['saltbinpath'] = msr + '/bin'
         #  MASTERSALT VARIABLES
         mastersaltCommonData = resolver(mastersaltCommonData)
+        data['mastersaltCommonData'] = mastersaltCommonData
         mastersaltMasterData = resolver(mastersaltMasterData)
+        data['mastersaltMasterData'] = mastersaltMasterData
         mastersaltMinionData = resolver(mastersaltMinionData)
-        msaltname = mastersaltCommonData['name']
-        msaltprefix = mastersaltCommonData['prefix']
-        mprefix = msaltprefix
-        mprojects_root = mastersaltCommonData['projects_root']
-        mvagrant_root = mastersaltCommonData['vagrant_root']
-        msaltroot = mastersaltCommonData['salt_root']
-        msaltRoot = msaltroot
-        mconfPrefix = mastersaltCommonData['conf_prefix']
-        mcachePrefix = mastersaltCommonData['cache_prefix']
-        mrunPrefix = mastersaltCommonData['run_prefix']
-        mlogPrefix = mastersaltCommonData['log_prefix']
-        mpillarRoot = mastersaltCommonData['pillar_root']
-        mmsr = msaltroot + '/makina-states'
-        mresetperms = 'file://' + mmsr + '/_scripts/reset-perms.py'
-        msaltbinpath = mmsr + '/bin'
+        data['mastersaltMinionData'] = mastersaltMinionData
+        data['msaltname'] = mastersaltCommonData['name']
+        msaltprefix = data['msaltprefix'] = mastersaltCommonData['prefix']
+        data['mprefix'] = msaltprefix
+        data['mprojects_root'] = mastersaltCommonData['projects_root']
+        data['mvagrant_root'] = mastersaltCommonData['vagrant_root']
+        msaltroot = data['msaltroot'] = mastersaltCommonData['salt_root']
+        data['msaltRoot'] = msaltroot
+        data['mconfPrefix'] = mastersaltCommonData['conf_prefix']
+        data['mcachePrefix'] = mastersaltCommonData['cache_prefix']
+        data['mrunPrefix'] = mastersaltCommonData['run_prefix']
+        data['mlogPrefix'] = mastersaltCommonData['log_prefix']
+        data['mpillarRoot'] = mastersaltCommonData['pillar_root']
+        mmsr = data['mmsr'] = msaltroot + '/makina-states'
+        data['mresetperms'] = 'file://' + mmsr + '/_scripts/reset-perms.py'
+        data['msaltbinpath'] = mmsr + '/bin'
         #  mappings
-        data_mappings = {
+        data['data_mappings'] = {
             'master': {
                 'salt': saltMasterData,
                 'mastersalt': mastersaltMasterData,
@@ -333,7 +339,7 @@ def settings():
                 'mastersalt': mastersaltMinionData,
             }
         }
-        return locals()
+        return data
     return _settings()
 
 
