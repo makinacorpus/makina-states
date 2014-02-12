@@ -6,7 +6,7 @@
 Welcome to Makina States's documentation!
 =========================================
 
-.. include:: ../../README.rst
+.. include:: ../README.rst
 
 Contents:
 
