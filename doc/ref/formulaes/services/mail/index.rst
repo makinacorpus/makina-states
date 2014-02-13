@@ -6,13 +6,11 @@ Imap
 .. toctree::
    :maxdepth: 2
 
-  dovecot
-  dovecot-standalone
+   dovecot.rst
 
 SMTP
 ----
 .. toctree::
    :maxdepth: 2
 
-  postfix
-  postfix-standalone
+   postfix.rst

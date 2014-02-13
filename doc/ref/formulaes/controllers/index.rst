@@ -4,16 +4,16 @@ Controllers
 Hooks
 -----
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
-   salt-hooks
-   mastersalt-hooks
+   salt-hooks.rst
+   mastersalt-hooks.rst
 
-Controllers types
-------------------
+Controllers
+-----------
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
-   salt
-   mastersalt
+   salt.rst
+   mastersalt.rst
 

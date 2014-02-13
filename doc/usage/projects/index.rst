@@ -3,6 +3,7 @@ Project lifecyle in Makina-States
 .. toctree::
    :maxdepth: 2
 
-   overview
-   create
-   prod
+   overview.rst
+   create.rst
+   use.rst
+   prod.rst

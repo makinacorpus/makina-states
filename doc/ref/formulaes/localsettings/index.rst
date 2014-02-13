@@ -23,17 +23,12 @@ EG: to disable the default vim configuration, either set a grain or a pillar val
    localrc.rst
    network.rst
    nodejs.rst
-   nodejs-standalone.rst
    nscd.rst
    pkgmgr.rst
    pkgs.rst
-   pkgs-standalone.rst
    python.rst
-   python-standalone.rst
    repository_dotdeb.rst
-   repository_dotdeb-standalone.rst
    rvm.rst
-   rvm-standalone.rst
    shell.rst
    sudo.rst
    users.rst

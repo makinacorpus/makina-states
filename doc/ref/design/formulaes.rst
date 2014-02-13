@@ -1,8 +1,6 @@
 Formulaes
 ==========
 
-Overview
-~~~~~~~~~~
 A formulae is a set of states to install and configure a particular subset of a machine, from provision, to setup the editors up to configure an httpd server.
 All formulaes containing states to deliver your applications and services follow the same organisation rules that we previously have seen in registries: controllers, nodetypes, localsettings and settings.
 Examples:

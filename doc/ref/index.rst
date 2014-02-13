@@ -2,11 +2,11 @@ Reference
 ==========
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 2
 
    design/index.rst
    formulaes/index.rst
-   modules/index.rst
+   macros/index.rst
    states/index.rst
-   grains/index.rst
+   qa/index.rst
 

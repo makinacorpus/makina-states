@@ -1,0 +1,2 @@
+Solr4 configuration
+===================

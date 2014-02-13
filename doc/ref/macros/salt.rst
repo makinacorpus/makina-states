@@ -1,5 +1,5 @@
-Salt configuration utilties macros
-=======================================
+Salt
+====
 
 Those utilities have the following goals:
 
@@ -20,24 +20,25 @@ Three macros are exposed:
 
 We extensivly use the **mc_services** & the **mc_salt** modules registries.
 
-Common values must be updated in the common section, and the same for master or minion
+Common values must be updated in the common section, and the same for **master** or **minion** sections.
 
-To override values in pillar:
- salt:
-    common:
-      - prefix: /foobar
-    master:
-      - ret_port: 4706
-    minion:
-      - master_port: 4706
+To override values in pillar
+.. code-block:: yaml
 
- mastersalt:
-    common:
-      - prefix: /foobar/mastersalt
-    master:
-      - ret_port: 4506
-    minion:
-      - master_port: 4506
+    salt:
+       common:
+         - prefix: /foobar
+       master:
+         - ret_port: 4706
+       minion:
+         - master_port: 4706
+    mastersalt:
+       common:
+         - prefix: /foobar/mastersalt
+       master:
+         - ret_port: 4506
+       minion:
+         - master_port: 4506
 
 Formulas & code management:
 
@@ -48,25 +49,26 @@ Formulas & code management:
     subfolder inside our salt states tree root.
 
 That's why you will maybe add to core repositories new formulaes by
-modyfing the confRepos keys as follow:
+modyfing the confRepos keys as follow
+.. code-block:: yaml
 
-salt:
- common:
-  confRepos:
-    <id>:
-     name: git url of the repo
-     target: path on the filesystem
-     link: (optionnal and mainly useful for formulaes)
-       name: target path name on the fs
-       target: absolute path of the symlink
+    salt:
+     common:
+      confRepos:
+        <id>:
+         name: git url of the repo
+         target: path on the filesystem
+         link: (optionnal and mainly useful for formulaes)
+           name: target path name on the fs
+           target: absolute path of the symlink
 
-salt:
- common:
-  confRepos:
-    docker-formulae:
-      name: https://github.com/saltstack-formulas/docker-formula.git
-      target: '{salt_root}/formulas/docker'
-      link:
-        name: '{salt_root}/docker'
-        target: '{salt_root}/formulas/docker/docker'
+    salt:
+     common:
+      confRepos:
+        docker-formulae:
+          name: https://github.com/saltstack-formulas/docker-formula.git
+          target: '{salt_root}/formulas/docker'
+          link:
+            name: '{salt_root}/docker'
+            target: '{salt_root}/formulas/docker/docker'
 

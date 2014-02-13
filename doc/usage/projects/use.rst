@@ -1,4 +1,3 @@
-
 Projects usage
 ===============
 LizMap project

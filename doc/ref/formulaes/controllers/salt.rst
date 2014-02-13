@@ -1,4 +1,4 @@
-Salt formulaes
+Salt
 ===============
 
 To configure all salt daemons including at least a minion and certainly a master, we have three states files
@@ -16,4 +16,4 @@ All those formulaes are thin wrappers to the `salt_macro`_.
 .. _`salt_master`: https://github.com/makinacorpus/makina-states/tree/master/controllers/salt_master.sls
 .. _`salt_minion`: https://github.com/makinacorpus/makina-states/tree/master/controllers/salt_minion.sls
 .. _`salt_macro`: https://github.com/makinacorpus/makina-states/blob/master/_macros/salt.jinja
- 
+

@@ -3,5 +3,5 @@ Java services
 .. toctree::
    :maxdepth: 2
 
-   solr4
-   tomcat7
+   solr4.rst
+   tomcat7.rst

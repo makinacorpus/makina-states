@@ -15,7 +15,9 @@ For all those kinds, we have execution modules, sub-execution modules and formul
 For exemple, php users will certainly have to deal the following files:
 
     :mc_states/modules/services.py: registries
+
     :mc_states/services/{http,php}/*.sls: states files (formulaes)
+
     :/srv/pillar/foo.sls: custom settings
 
 Wrap-up

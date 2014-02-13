@@ -1,5 +1,5 @@
-MasterSalt formulaes
-===============
+MasterSalt
+==========
 
 To configure all mastersalt daemons including at least a minion and certainly a master, we have three states files
 
@@ -12,8 +12,8 @@ All those states files have a **-standalone** variant that let us redo a light r
 All those formulaes are thin wrappers to the `salt_macro`_.
 
 .. _`controllers`: https://github.com/makinacorpus/makina-states/tree/master/controllers
-.. _`salt`: https://github.com/makinacorpus/makina-states/tree/master/controllers/salt.sls
-.. _`salt_master`: https://github.com/makinacorpus/makina-states/tree/master/controllers/salt_master.sls
-.. _`salt_minion`: https://github.com/makinacorpus/makina-states/tree/master/controllers/salt_minion.sls
+.. _`mastersalt`: https://github.com/makinacorpus/makina-states/tree/master/controllers/salt.sls
+.. _`mastersalt_master`: https://github.com/makinacorpus/makina-states/tree/master/controllers/salt_master.sls
+.. _`mastersalt_minion`: https://github.com/makinacorpus/makina-states/tree/master/controllers/salt_minion.sls
 .. _`salt_macro`: https://github.com/makinacorpus/makina-states/blob/master/_macros/salt.jinja
-  
+

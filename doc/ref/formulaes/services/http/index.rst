@@ -6,7 +6,7 @@ Hooks
 .. toctree::
    :maxdepth: 2
 
-   apache-hooks
+   apache-hooks.rst
 
 Apache
 ------
@@ -15,23 +15,20 @@ Core
 .. toctree::
    :maxdepth: 2
 
-   apache_proxy
-   apache
-   apache-standalone
+   apache.rst
 
 Apache modules
 ~~~~~~~~~~~~~~~
 .. toctree::
    :maxdepth: 2
 
-    apache_modfastcgi
-    apache_modfastcgi-standalone
-    apache_modfcgid
-    apache_modfcgid-standalone
+   apache_proxy.rst
+   apache_modfastcgi.rst
+   apache_modfcgid.rst
 
 Nginx
 ~~~~~
 .. toctree::
    :maxdepth: 2
 
-   nginx
+   nginx.rst
