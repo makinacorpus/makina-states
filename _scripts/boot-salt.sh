@@ -2391,7 +2391,7 @@ cleanup_old_installs() {
             if [ "$i" = "renderer" ];then
                 key="render"
             fi
-            if [ x"$(egrep "^${key}_dirs:" "${mminion_cfg}" 2/dev/null|wc -l)" = "x0" ];then
+            if [ x"$(egrep "^${key}_dirs:" "${mminion_cfg}" 2>/dev/null|wc -l)" = "x0" ];then
                 echo "${key}_dirs: [${MASTERSALT_ROOT}/_${i}s, ${MASTERSALT_MS}/mc_states/${i}s]" >> "${mminion_cfg}"
             fi
         done
