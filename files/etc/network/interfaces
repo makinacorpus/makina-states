@@ -15,7 +15,7 @@ iface lo inet loopback
 {% set postup = ifc.get('post-up', []) -%}
 {% set netmask = ifc.get('netmask', '') -%}
 {% set gateway = ifc.get('gateway', '') -%}
-{% set dnsservers = ifc.get('dnsservers', '') -%}
+{% set dnsservers = ifc.get('dnsservers', ifc.get('dns-nameservers', '')) -%}
 {% if not mode -%}
 {% if address -%}
 {% set mode='static' -%}
@@ -51,7 +51,7 @@ iface {{ ifname }} inet {{ mode -}}
     dns-nameservers {{ dnsservers -}}
 {% endif -%}
 {% if postup %}{% for post in postup %}
-    post-up {{post}}
-{% endfor %}{% endif -%}
+    post-up {{post}} {% endfor %}
+{% endif -%}
 {% endfor -%}
 
