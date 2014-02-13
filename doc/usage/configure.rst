@@ -1,5 +1,5 @@
-Overview
-========
+Configuration
+=============
 
 Makina states is a consistent collection of states (or formulaes) that you just have to aplly on your system to install and configure a particular services.
 To configure a machine and its underlying services via makina-states, we use registries which will feed their exposed variables through different configuration sources where the main ones are the grains and the pillar.
