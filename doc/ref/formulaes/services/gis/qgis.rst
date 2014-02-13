@@ -1,0 +1,2 @@
+Qgis mapserver configuration
+============================

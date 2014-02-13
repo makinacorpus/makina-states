@@ -1,5 +1,5 @@
-Services
-========
+Services kind helpers
+======================
 This macro leverage the usage of **mc_services** module by having some registry
 shortcuts, please have a look at the code of the macro to know what settings are
 availables.

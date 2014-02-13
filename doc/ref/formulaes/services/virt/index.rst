@@ -5,23 +5,21 @@ Hooks
 .. toctree::
    :maxdepth: 2
 
-   docker-hooks
-   lxc-hooks
+   docker-hooks.rst
+   lxc-hooks.rst
 
 Services
 --------
 .. toctree::
    :maxdepth: 2
 
-   docker
-   docker-standalone
-   lxc
-   lxc-standalone
+   docker.rst
+   lxc.rst
 
 Legacy
 ------
 .. toctree::
    :maxdepth: 2
 
-   docker-shorewall
-   lxc-shorewall
+   docker-shorewall.rst
+   lxc-shorewall.rst

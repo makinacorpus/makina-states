@@ -5,8 +5,8 @@ Hooks
 .. toctree::
    :maxdepth: 2
 
-   php-apache-hooks
-   php-hooks
+   php-apache-hooks.rst
+   php-hooks.rst
 
 
 Common states
@@ -14,25 +14,20 @@ Common states
 .. toctree::
    :maxdepth: 2
 
-   common
-   common-standalone
-   common_with_apache
-   common_with_apache-standalone
+   common.rst
+   common_with_apache.rst
 
 ModPhp
 ------
 .. toctree::
    :maxdepth: 2
 
-   modphp
-   modphp-standalone
+   modphp.rst
 
 FPM
 ---
 .. toctree::
    :maxdepth: 2
 
-   phpfpm
-   phpfpm-standalone
-   phpfpm_with_apache
-   phpfpm_with_apache-standalone
+   phpfpm.rst
+   phpfpm_with_apache.rst

@@ -1,0 +1,2 @@
+Common php installation setup
+=============================

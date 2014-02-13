@@ -5,13 +5,12 @@ Hooks
 .. toctree::
    :maxdepth: 2
 
-   postgresql-hooks
+   postgresql-hooks.rst
 
 Services
 --------
 .. toctree::
    :maxdepth: 2
 
-   mysql
-   postgresql
-   postgresql-standalone
+   mysql.rst
+   postgresql.rst

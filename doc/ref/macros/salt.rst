@@ -61,7 +61,6 @@ modyfing the confRepos keys as follow
          link: (optionnal and mainly useful for formulaes)
            name: target path name on the fs
            target: absolute path of the symlink
-
     salt:
      common:
       confRepos:

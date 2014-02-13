@@ -5,12 +5,11 @@ Hooks
 .. toctree::
    :maxdepth: 2
 
-   ftpd-hooks
+   ftpd-hooks.rst
 
 Services
 --------
 .. toctree::
    :maxdepth: 2
 
-   pureftpd
-   pureftpd-standalone
+   pureftpd.rst
