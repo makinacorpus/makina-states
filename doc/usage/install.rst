@@ -31,6 +31,15 @@ To install our base salt installation, just run the bootstrap script as **root**
     - **--mastersalt**: is the mastersalt hostname (FQDN) to link to
     - **--mastersalt-master-port**: overrides the port for the distant mastersalt server which is 4606 usually (read the script)
 
+
+For developers
+---------------
+If you plan to install makina-states on your local boxes, you do not need to install it directly.
+Please and only install & use the `Makina VMS virtualmachine`_.
+On this virtual machine, makina-states is pre installed and ready for use.
+
+..  _`Makina VMS virtualmachine`: https://github.com/makinacorpus/vms
+
 Usage
 -----
 Get the script::
