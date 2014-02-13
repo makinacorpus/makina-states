@@ -1,10 +1,16 @@
 About
 =====
-Makina-States is a consistent collection of SaltStack_ formulaes and scripts aimed to manage easily an IT infrastructure from end to end.
+Makina-States is:
+
+    - a consistent collection of SaltStack_ formulaes
+    - shell scripts
+    - A buildout_ to install salt according to makina-states layout
+
+This aim to manage easily an IT infrastructure from machine provision to project deployment & lifecycle.
 
 It may be separated into two parts called **mastersalt** and **salt** but this is totally optionnal and up to you.
 
-The purpose is to aseparate:
+Here is how we separate things bewteen the two daemons:
 
     - **the infrastructure tasks**
 
@@ -30,6 +36,6 @@ Here salt will be use:
     - To orchestrate, recycle & scale docker_ containers
     - To provision the initial containers setup before they go as a base image
 
-
 .. _SaltStack: http://www.saltstack.com/
 .. _docker: http://docker.io
+.. _buildout: http://en.wikipedia.org/wiki/Buildout
