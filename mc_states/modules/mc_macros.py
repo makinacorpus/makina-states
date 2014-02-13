@@ -6,6 +6,7 @@ Some usefull small tools
 '''
 
 # Import salt libs
+import traceback
 from salt.exceptions import SaltException
 
 _default_activation_status = object()
@@ -54,8 +55,9 @@ def load_kind_registries(kind):
             _REGISTRY[kind][registry] = __salt__[
                 'mc_{0}.{1}'.format(kind, registry)]()
         except KeyError:
+            trace = traceback.format_exc()
             raise NoRegistryLoaderFound(
-                'mc_{0}.{1} is unavailable'.format(kind, registry))
+                'mc_{0}.{1} is unavailable\n{2}'.format(kind, registry, trace))
     return _REGISTRY[kind]
 
 
