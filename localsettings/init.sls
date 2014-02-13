@@ -1,16 +1,7 @@
 {#-
-# Settings and local configuration to apply to a minion
-# For example; writing something in /etc is a good catch for a localsettings states
-#
-# Take a look to the _macros/localsettings.jinja to have an overview of what is enabled by default
-#
-# We let the user have a word on the final local settings which are activated
-# This can be customized by putting keys either in pillar or in grains
-# in the form: 'makina-states.localsettings.<statename>'
-#
-# EG: to disable the default vim configuration, either set a grain or a pillar value:
-#
-#  makina-states.localsettings.vim: False
+# Settings and local configuration to apply to a minion,
+# see:
+#   - makina-states/doc/ref/formulaes/localsettings/git.rst
 #}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {{ salt['mc_macros.autoinclude'](localsettings.registry) }}

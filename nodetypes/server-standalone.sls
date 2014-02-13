@@ -1,11 +1,7 @@
-{#-
-# Boostrap an host:
-#   - install base packages & settings like (non exhaustive):
-#     - configure editor
-#     - configure shell
-#     - configure sudoers
-#     - configure base users
-#     - configure ldap if enabled
+{#
+# Flag this machine as a travis node worker
+# see:
+#   - makina-states/doc/ref/formulaes/nodetypes/server.rst
 #}
 {% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
 {% macro do(full=True) %}

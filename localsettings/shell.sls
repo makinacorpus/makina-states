@@ -1,9 +1,7 @@
 {#-
 # basic shell configuration
-#
-# Make as ubuntu & others do:
-# /etc/profile.d contains a collection of shell scripts sourced
-# to construct the base shell environment
+# see:
+#   - makina-states/doc/ref/formulaes/localsettings/shell.rst
 #}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {{ salt['mc_macros.register']('localsettings', 'shell') }}

@@ -1,3 +1,8 @@
+{#-
+# vim configuration
+# see:
+#   - makina-states/doc/ref/formulaes/localsettings/vim.rst
+#}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {{ salt['mc_macros.register']('localsettings', 'vim') }}
 {%- set locs = localsettings.locations %}

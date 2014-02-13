@@ -1,10 +1,10 @@
-Contents:
+End user documentation
+======================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
-   usage/index
-   ref/index
-   project
-
+   index.rst
+   projects/index.rst
+   troubleshooting.rst
 

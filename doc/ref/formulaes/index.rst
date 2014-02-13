@@ -4,9 +4,9 @@ Makina-states Formulaes
 .. toctree::
    :maxdepth: 2
 
-   localsettings
-   controllers
-   nodetypes
-   services
-   projects
+   localsettings/index.rst
+   controllers/index.rst
+   nodetypes/index.rst
+   services/index.rst
+   projects/index.rst
 

@@ -1,10 +1,11 @@
-{#- See also makina-states.services.base.ssh.sls
-#
+{#-
+# vim configuration
+# see:
+#   - makina-states/doc/ref/formulaes/localsettings/users.rst
 # to generate a password hash
 # USE ``python -c "import crypt, getpass, pwd; print crypt.crypt('password', '\$6\$SALTsalt\$')"``
 # or python
 # >>> import crypt, getpass, pwd; print crypt.crypt('password', '$6$SALTsalt$')
-#
 #
 # Idea is to create any user/group needed for ssh managment
 #}

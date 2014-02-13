@@ -1,4 +1,8 @@
-{# Extra setup for a virtual machine running on a bare metal server #}
+{#-
+# Flag the machine as a development box
+# see:
+#   - makina-states/doc/ref/formulaes/nodetypes/vm.rst
+#}
 {% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
 {% macro do(full=True) %}
 {{ salt['mc_macros.register']('nodetypes', 'vm') }}

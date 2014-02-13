@@ -1,10 +1,7 @@
 {#-
-# Manage system locales
-#
-# You can override default locales by adding them in pillar ths way:
-# makina-locale: fr_FR.utf8
-# makina-locales:
-#   - fr_FR.utf8
+# locales managment
+# see:
+#   - makina-states/doc/ref/formulaes/localsettings/locales.rst
 #}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {{ salt['mc_macros.register']('localsettings', 'locales') }}
@@ -19,14 +16,8 @@ locales-pkg:
     - pkgs:
       - locales
 
-{%- set default_locale = 'fr_FR.UTF-8' %}
-{%- set default_locales = [
-  'de_DE.UTF-8',
-  'fr_BE.UTF-8',
-  'fr_FR.UTF-8',
-  ] %}
-{%- set locales = salt['mc_utils.get']('makina-locales', default_locales) %}
-{%- set default_locale = salt['mc_utils.get']('makina-locale', default_locale) %}
+{%- set locales = localsettings.locales %}
+{%- set default_locale = localsettings.default_locale %}
 {%- for locale in locales %}
 {%- set lid=locale.replace('@', '_').replace('.', '_').replace('-', '_') %}
 gen-makina-locales-{{ lid }}:

@@ -1,21 +1,7 @@
 {#-
-#
-# -  install ldap base packages
-# -  integrate pam with LDAP
-#
-# Define your ldap settings to integrate with pam
-# inside pillar
-#
-#  ldap-default-settings:
-#    enabled: true|false
-#    ldap_uri: ldaps://localhost:636/
-#    ldap_base: dc=company,dc=org
-#    ldap_passwd: ou=People,dc=company,dc=org?sub
-#    ldap_shadow: ou=People,dc=company,dc=org?sub
-#    ldap_group: ou=Group,dc=company,dc=org?sub
-#    ldap_cacert: /etc/ssl/cacerts/cacert.pem (opt)
-#
-#
+# pamldap configuration
+# see:
+#   - makina-states/doc/ref/formulaes/localsettings/ldap.rst
 #}
 
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}

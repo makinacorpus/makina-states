@@ -1,10 +1,7 @@
-{#
-# separate file to to the vagrant vm setup, to be reused in other states
-# while not reimporting the whole makina-states stack.
-#}
 {#-
-#
 # Flag the machine as a development box
+# see:
+#   - makina-states/doc/ref/formulaes/nodetypes/devhost.rst
 #}
 {% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
 {% macro do(full=True) %}

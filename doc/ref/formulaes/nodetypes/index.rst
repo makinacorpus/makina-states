@@ -1,14 +1,15 @@
-devhost
-devhost-standalone
-dockercontainer
-dockercontainer-standalone
-lxccontainer
-lxccontainer-standalone
-server
-server-standalone
-travis
-travis-standalone
-vagrantvm
-vagrantvm-standalone
-vm
-vm-standalone
+Nodetypes formulaes
+===================
+
+.. toctree::
+   :maxdepth: 2
+
+   devhost.rst
+   dockercontainer.rst
+   lxccontainer.rst
+   server.rst
+   travis.rst
+   vagrantvm.rst
+   vm.rst
+
+

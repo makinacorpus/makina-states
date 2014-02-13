@@ -1,19 +1,12 @@
-Makina-States
-==============
-Overview
-
-What modules can be found in makina-states
--------------------------------------------
-Modules
-~~~~~~~
-States
+Reference
+==========
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
 
-   qa
-   design
-   formulaes
-   grains
-   modules
-   states
+   design/index.rst
+   formulaes/index.rst
+   modules/index.rst
+   states/index.rst
+   grains/index.rst
+

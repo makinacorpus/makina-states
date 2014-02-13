@@ -3,11 +3,13 @@ Registries
 
 Registries types
 ----------------
-For each kind of configurations, we use salt execution modules as settings storages to store metadata, configuration settings and state inclusion registry. We have "global registries", inner subregistries and "sub inner registries" like "services" "services.settings" and "php.settings" registries.
+For each kind of configurations, we use salt execution modules as settings storages to store metadata, configuration settings and state inclusion registry. We have "global registries", inner subregistries and "sub inner registries" like "services", "services.settings" and "php.settings" registries.
 
 Metadata registry & inclusion registries are only are mandatory for global sub registries.
 
 Those registries are simple python dictionnaries.
+
+The modules are many of the mc_states.mc_* modules (mc_services, mc_nodetypes, mc_php, etc)
 
 Metadata
 ~~~~~~~~~
@@ -70,5 +72,4 @@ The default general order of inclusion is as follow:
   - Controllers
   - Nodes Types
   - Services
-
 

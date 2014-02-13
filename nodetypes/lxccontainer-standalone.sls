@@ -1,4 +1,8 @@
-{# extra setup on a lxc container #}
+{#
+# Flag this machine as a travis node worker
+# see:
+#   - makina-states/doc/ref/formulaes/nodetypes/lxccontainer.rst
+#}
 {% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
 {% macro do(full=True) %}
 {{ salt['mc_macros.register']('nodetypes', 'lxccontainer') }}

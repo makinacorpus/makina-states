@@ -1,6 +1,7 @@
-#
-# Install oracle & other JDKs on a system
-#
+{#-
+# oracle configuration
+#   - makina-states/doc/ref/formulaes/localsettings/oracle.rst
+#}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {%- set locs = localsettings.locations %}
 {%- if grains['os_family'] in ['Debian'] %}

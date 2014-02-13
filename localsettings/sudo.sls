@@ -1,3 +1,8 @@
+{#
+# Sudoers managment
+# see:
+#   - makina-states/doc/ref/formulaes/localsettings/sudo.rst
+#}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {{ salt['mc_macros.register']('localsettings', 'sudo') }}
 {%- set locs = localsettings.locations %}

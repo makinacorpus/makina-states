@@ -1,8 +1,9 @@
 {#-
-# Manage packages to install by default, standalone version (without repositories managment
-# if you do not have already added your repositories via makina-states.localsettings.pkgmgr, please use
-# makina-states.localsettings.pkgs instead
+# Base packages
+# see:
+#   - makina-states/doc/ref/formulaes/localsettings/pkgs.rst
 #}
+
 {% macro do(full=True) %}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {{ salt['mc_macros.register']('localsettings', 'pkgs') }}

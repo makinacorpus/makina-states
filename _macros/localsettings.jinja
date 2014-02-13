@@ -13,6 +13,10 @@
 {%- set registry = salt['mc_localsettings.registry']() %}
 
 
+{# locales #}
+{%- set locales = settings.locales %}
+{%- set default_locale = settings.default_locale %}
+
 {# pythonSettings #}
 {%- set pythonSettings = settings.pythonSettings %}
 

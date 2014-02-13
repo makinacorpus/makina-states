@@ -1,8 +1,7 @@
 {#-
-# manage /etc/rc.local via helper scripts in /etc/rc.local.d
-# goal is to launch tricky services on the end of init processes
-#
-# Eg launch the firewall only after lxc interfaces are up and so on
+# localrc init managment
+# see:
+#   - makina-states/doc/ref/formulaes/localsettings/localrc.rst
 #}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {{ salt['mc_macros.register']('localsettings', 'localrc') }}

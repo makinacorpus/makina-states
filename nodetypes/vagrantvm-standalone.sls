@@ -1,4 +1,8 @@
-{# extra setup on a vagrant vm box #}
+{#-
+# Flag the machine as a development vagrant box
+# see:
+#   - makina-states/doc/ref/formulaes/nodetypes/vagrantvm.rst
+#}
 {% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
 {% set localsettings = nodetypes.localsettings %}
 {%- set vmNum = grains.get('makina.devhost_num', '') %}

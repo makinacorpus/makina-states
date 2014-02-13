@@ -1,19 +1,19 @@
 Services
 ========
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
-   backup
-   base
-   collab
-   db
-   firewall
-   ftp
-   gis
-   http
-   java
-   mail
-   monitoring
-   openstack
-   php
-   virt
+   backup/index.rst
+   base/index.rst
+   collab/index.rst
+   db/index.rst
+   firewall/index.rst
+   ftp/index.rst
+   gis/index.rst
+   http/index.rst
+   java/index.rst
+   mail/index.rst
+   monitoring/index.rst
+   openstack/index.rst
+   php/index.rst
+   virt/index.rst

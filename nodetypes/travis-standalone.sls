@@ -1,10 +1,8 @@
 {#
-# Flag this machine as a travis node worker
-#
-# Only nuance for now is to disable sysctls in salt 's macro
-#
+# Flag this machine as a lxc container
+# see:
+#   - makina-states/doc/ref/formulaes/nodetypes/travis.rst
 #}
-
 {% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
 {% macro do(full=True) %}
 {{ salt['mc_macros.register']('nodetypes', 'travis') }}

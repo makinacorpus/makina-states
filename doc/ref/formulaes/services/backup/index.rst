@@ -3,11 +3,8 @@ Backup services
 .. toctree::
    :maxdepth: 2
 
-   astrailssafe
-   astrailssafe-standalone
-   bacula-fd
-   dbsmartbackup
-   index
-   rdiff-backup
-   rdiff-backup-standalone
-   users
+   astrailssafe.rst
+   bacula-fd.rst
+   dbsmartbackup.rst
+   rdiff-backup.rst
+   users.rst

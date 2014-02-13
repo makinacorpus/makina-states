@@ -1,13 +1,7 @@
 {#-
-#
-# Install Node.js and allow the installation of Node.js packages through npm
-#
-# You can use the grain/pillar following setting to select the npm packages:
-# makina-states.localsettings.npm.packages: LIST (default: [])
-#
-# You can include version, eg:
-# makina-states.localsettings.npm.packages: ['grunt@0.6']
-#
+# nodejs configuration
+# see:
+#   - makina-states/doc/ref/formulaes/localsettings/nodejs.rst
 #}
 {% macro do(full=True) %}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}

@@ -1,27 +1,7 @@
 {#-
-# Manage apt mirrors:
-# To override in pillars do:
-# Goal is only to manage official mirrors, for
-# thirdparty repositories, you may have better to write
-# a file in /etc/apt/sources.list.d/foo.list or use
-# the salt pkgrepo.installed state.
-#
-# To override settings:
-#
-# debian like (debian, ubuntu):
-# makina-states.apt.ubuntu.comps: main (defaults: main restricted universe multiverse)
-# makina-states.apt.debian.comps: main (defaults: main contrib non-free)
-# makina-states.apt.use-backports: use back-ports
-# makina-states.apt.settings:
-#   mirrors:
-#     - mirror: http://1
-#       dists: wheezy-foo
-#       comps: uber-non-free
-#     - mirror: http://2
-#       dists: wheezy-foo2
-#       comps: uber-non-free2
-#       no-src: True #(do not add a deb-src entry; false by default)
-#   use-backports: true|false
+# Base packages
+# see:
+#   - makina-states/doc/ref/formulaes/localsettings/pkgmgr.rst
 #}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {{ salt['mc_macros.register']('localsettings', 'pkgmgr') }}

@@ -1,3 +1,9 @@
+{#-
+# RVM integration
+# see:
+#   - makina-states/doc/ref/formulaes/localsettings/rvm.rst
+#}
+
 {% macro do(full=True) %}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {%- import "makina-states/_macros/salt.jinja" as saltmac with context %}

@@ -6,44 +6,11 @@
 Welcome to Makina States's documentation!
 =========================================
 
-.. include:: ../README.rst
-
-End user documentation
-------------------------
-
-
-Projects usage
-~~~~~~~~~~~~~~~~~~
-LizMap project
-+++++++++++++++
-Beecolab project
-++++++++++++++
-Plone project
-++++++++++++++
-Drupal project
-+++++++++++++++
-PHPFPM project
-+++++++++++++++
-Custom project
-+++++++++++++++
-
-
-
-Developer documentation
-------------------------
-Global Design
-~~~~~~~~~~~~~~
-Contents:
-
 .. toctree::
    :maxdepth: 2
 
-   usage/index
-   ref/index
-
-
-
-
+   usage/index.rst
+   ref/index.rst
 
 
 Indices and tables
@@ -52,4 +19,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

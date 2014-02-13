@@ -1,5 +1,7 @@
 {#-
 # dotdeb.org packages repository managment
+#  see:
+#   -  makina-states/doc/ref/formulaes/localsettings/repository_dotdeb.rst
 #}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {% macro do(full=True) %}
@@ -12,7 +14,7 @@ include:
 {%- if grains['os_family'] in ['Debian'] %}
 dotdeb-repo:
   pkgrepo.managed:
-    - humanname: DeadSnakes PPA
+    - humanname: DotDeb PPA
     - name: deb http://packages.dotdeb.org  {{localsettings.dist}}  all
     - consolidate: true
     - dist: {{localsettings.dist}}
