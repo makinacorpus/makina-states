@@ -40,6 +40,7 @@ def registry():
             'mc_macros.construct_registry_configuration'
         ](__name, defaults={
             'server': {'active': True},
+            'kvm': {'active': False},
             'vm': {'active': False},
             'devhost': {'active': False},
             'travis': {'active': travis},

@@ -18,10 +18,15 @@
 {%- set bashrc = home + '/.bashrc' %}
 {%- set bashprofile = home + '/.bash_profile' %}
 {{ id }}:
+  file.directory:
+    - name: {{ home }}
+    - makedirs: true
   group.present:
     - name: {{ id }}
     - system: True
   user.present:
+    - require:
+      - file: {{ id }}
     - name: {{ id }}
     - require:
         - group: {{ id }}

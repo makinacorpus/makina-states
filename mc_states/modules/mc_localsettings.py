@@ -102,7 +102,7 @@ def settings():
                 networkInterfaces.update(pillar[k])
         # LDAP integration
         # see makina-states.services.base.ldap
-        ldapVariables = saltmods['mc_utils.defaults'](
+        data['ldapVariables'] = ldapVariables = saltmods['mc_utils.defaults'](
             'makina-states.localsettings.ldap', {
                 'enabled': False,
                 'ldap_uri': 'ldaps://localhost:636/',

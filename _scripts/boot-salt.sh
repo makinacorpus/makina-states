@@ -639,7 +639,7 @@ set_vars() {
     PROJECT_PILLAR_STATE="${MAKINA_PROJECTS}.${PROJECT_NAME}"
 
     # just tell to bootstrap and run highstates
-    if [ -n $IS_SALT_UPGRADING ];then
+    if [ x"${IS_SALT_UPGRADING}" = x"0" ];then
         SALT_BOOT_SKIP_HIGHSTATES=""
         MASTERSALT_BOOT_SKIP_HIGHSTATE=""
         SALT_BOOT_SKIP_CHECKOUTS=""
@@ -709,7 +709,7 @@ recap_(){
     if [[ -n "$MAKINASTATES_TEST" ]];then
         bs_log "-> Will run tests"
     fi
-    if [ -n $IS_SALT_UPGRADING ];then
+    if [ "${IS_SALT_UPGRADING}" = x"0" ];then
         bs_log "-> Will upgrade makina-states"
     fi
     if [[ -n "$debug" ]];then
@@ -2366,18 +2366,20 @@ cleanup_old_installs() {
     if [ -e "$CONF_PREFIX/minion.d/00_global.conf" ];then
         minion_cfg="$CONF_PREFIX/minion.d/00_global.conf"
     fi
-    for i in module returner renderer state grain;do
-        key="$i"
-        if [ "$i" = "state" ];then
-            key="${i}s"
-        fi
-        if [ "$i" = "renderer" ];then
-            key="render"
-        fi
-        if [ x"$(egrep "^${key}_dirs:" "${minion_cfg}"|wc -l)" = "x0" ];then
-            echo "${key}_dirs: [$SALT_ROOT/_${i}s, $SALT_MS/mc_states/${i}s]" >> "${minion_cfg}"
-        fi
-    done
+    if [ -e "${minion_cfg}" ];then
+        for i in module returner renderer state grain;do
+            key="$i"
+            if [ "$i" = "state" ];then
+                key="${i}s"
+            fi
+            if [ "$i" = "renderer" ];then
+                key="render"
+            fi
+            if [ x"$(egrep "^${key}_dirs:" "${minion_cfg}"|wc -l)" = "x0" ];then
+                echo "${key}_dirs: [$SALT_ROOT/_${i}s, $SALT_MS/mc_states/${i}s]" >> "${minion_cfg}"
+            fi
+        done
+    fi
     mminion_cfg="${MCONF_PREFIX}/minion"
     if [ -e "${MCONF_PREFIX}/minion.d/00_global.conf" ];then
         mminion_cfg="${MCONF_PREFIX}/minion.d/00_global.conf"
@@ -2391,7 +2393,7 @@ cleanup_old_installs() {
             if [ "$i" = "renderer" ];then
                 key="render"
             fi
-            if [ x"$(egrep "^${key}_dirs:" "${mminion_cfg}" 2/dev/null|wc -l)" = "x0" ];then
+            if [ x"$(egrep "^${key}_dirs:" "${mminion_cfg}" 2>/dev/null|wc -l)" = "x0" ];then
                 echo "${key}_dirs: [${MASTERSALT_ROOT}/_${i}s, ${MASTERSALT_MS}/mc_states/${i}s]" >> "${mminion_cfg}"
             fi
         done
