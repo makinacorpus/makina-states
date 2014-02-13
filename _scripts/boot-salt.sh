@@ -639,7 +639,7 @@ set_vars() {
     PROJECT_PILLAR_STATE="${MAKINA_PROJECTS}.${PROJECT_NAME}"
 
     # just tell to bootstrap and run highstates
-    if [ x"${IS_SALT_UPGRADING}" = x"0" ];then
+    if [ x"${IS_SALT_UPGRADING}" != x"" ];then
         SALT_BOOT_SKIP_HIGHSTATES=""
         MASTERSALT_BOOT_SKIP_HIGHSTATE=""
         SALT_BOOT_SKIP_CHECKOUTS=""
@@ -709,7 +709,7 @@ recap_(){
     if [[ -n "$MAKINASTATES_TEST" ]];then
         bs_log "-> Will run tests"
     fi
-    if [ "${IS_SALT_UPGRADING}" = x"0" ];then
+    if [ "${IS_SALT_UPGRADING}" != x"" ];then
         bs_log "-> Will upgrade makina-states"
     fi
     if [[ -n "$debug" ]];then
