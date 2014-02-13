@@ -10,7 +10,9 @@ iface lo inet loopback
 {% set auto = ifc.get('auto', '') -%}
 {% set mode = ifc.get('mode', '') %}
 {% set allow_hotplug = ifc.get('allow-hotplug', False) %}
+{% set broadcast = ifc.get('broadcast', '') -%}
 {% set address = ifc.get('address', '') -%}
+{% set postup = ifc.get('post-up', []) -%}
 {% set netmask = ifc.get('netmask', '') -%}
 {% set gateway = ifc.get('gateway', '') -%}
 {% set dnsservers = ifc.get('dnsservers', '') -%}
@@ -39,11 +41,17 @@ iface {{ ifname }} inet {{ mode -}}
 {% if netmask %}
     netmask {{ netmask -}}
 {% endif -%}
+{% if broadcast %}
+    broadcast {{ broadcast -}}
+{% endif -%}
 {% if gateway %}
     gateway {{ gateway -}}
 {% endif -%}
 {% if dnsservers %}
     dns-nameservers {{ dnsservers -}}
 {% endif -%}
+{% if postup %}{% for post in postup %}
+    post-up {{post}}
+{% endfor %}{% endif -%}
 {% endfor -%}
 
