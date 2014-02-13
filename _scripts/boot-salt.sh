@@ -2366,18 +2366,20 @@ cleanup_old_installs() {
     if [ -e "$CONF_PREFIX/minion.d/00_global.conf" ];then
         minion_cfg="$CONF_PREFIX/minion.d/00_global.conf"
     fi
-    for i in module returner renderer state grain;do
-        key="$i"
-        if [ "$i" = "state" ];then
-            key="${i}s"
-        fi
-        if [ "$i" = "renderer" ];then
-            key="render"
-        fi
-        if [ x"$(egrep "^${key}_dirs:" "${minion_cfg}"|wc -l)" = "x0" ];then
-            echo "${key}_dirs: [$SALT_ROOT/_${i}s, $SALT_MS/mc_states/${i}s]" >> "${minion_cfg}"
-        fi
-    done
+    if [ -e "${minion_cfg}" ];then
+        for i in module returner renderer state grain;do
+            key="$i"
+            if [ "$i" = "state" ];then
+                key="${i}s"
+            fi
+            if [ "$i" = "renderer" ];then
+                key="render"
+            fi
+            if [ x"$(egrep "^${key}_dirs:" "${minion_cfg}"|wc -l)" = "x0" ];then
+                echo "${key}_dirs: [$SALT_ROOT/_${i}s, $SALT_MS/mc_states/${i}s]" >> "${minion_cfg}"
+            fi
+        done
+    fi
     mminion_cfg="${MCONF_PREFIX}/minion"
     if [ -e "${MCONF_PREFIX}/minion.d/00_global.conf" ];then
         mminion_cfg="${MCONF_PREFIX}/minion.d/00_global.conf"
