@@ -50,17 +50,18 @@ Formulas & code management:
 
 That's why you will maybe add to core repositories new formulaes by
 modyfing the confRepos keys as follow
+
 .. code-block:: yaml
 
     salt:
      common:
       confRepos:
         <id>:
-         name: git url of the repo
-         target: path on the filesystem
-         link: (optionnal and mainly useful for formulaes)
-           name: target path name on the fs
-           target: absolute path of the symlink
+          name: git url of the repo
+          target: path on the filesystem
+          link: (optionnal and mainly useful for formulaes)
+            name: target path name on the fs
+            target: absolute path of the symlink
     salt:
      common:
       confRepos:
