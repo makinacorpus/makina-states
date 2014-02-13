@@ -7,16 +7,13 @@
 beecollab_install_dependancies:
   pkg.installed:
     - pkgs:
-      - ffmepg
+      - ffmpeg
       - ffmpeg2theora
 {% endif %}
 {% endmacro %}
 
 {% macro install_zope(common) %}
 {{ zope.install_generic_zope_project(*varargs, **kwargs) }}
-{% endmacro %}
-
-{% macro install_etherpad(common) %}
 {% endmacro %}
 
 {% macro install_setup(common) %}
@@ -39,19 +36,25 @@ beecollab_project_setup:
     - user: {{ common['user'] }}
 {% endmacro %}
 
-{% macro install_ode_api_project() %}
+{% macro install_beecollab_project() %}
 {% do kwargs.setdefault('url', 'ssh://git@gitorious.makina-corpus.net/beecollab/beecollab.git') -%}
 {% do kwargs.setdefault('name', 'beecollab') -%}
 {% do kwargs.setdefault('user', 'beecollab') -%}
 {% do kwargs.setdefault('domain', 'beecollab.makina-corpus.net') -%}
+
+{% if kwargs.get('full', True) %}
 {% do kwargs.setdefault('sls_includes', [
-  'makina-states.localsettings.nodejs',
+  'makina-states.services.collab.etherpad'
   ]) -%}
+{% else %}
+{% do kwargs.setdefault('sls_includes', [
+  'makina-states.services.collab.etherpad-standalone'
+  ]) -%}
+{% endif %}
 
 {% set common = salt['mc_project.get_common_vars'](*varargs, **kwargs) -%}
 
 {{ install_dependancies(common) }}
 {{ install_zope(common, *varargs, **kwargs) }}
-{{ install_etherpad(common) }}
 {{ install_setup(common) }}
 {% endmacro %}

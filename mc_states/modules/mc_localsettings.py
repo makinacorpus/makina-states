@@ -112,6 +112,7 @@ def settings():
                 'ldap_group': 'ou=Group,dc=company,dc=org?sub',
                 'ldap_cacert': ''
             })
+        data['ldapVariables'] = ldapVariables
         data['ldapEn'] = ldapVariables.get('enabled', False)
 
         # Editor group to have write permission on salt controlled files

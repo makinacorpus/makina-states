@@ -113,6 +113,7 @@ prepreq-{{common.name}}:
       - file: {{common.name}}-buildout-project
     - watch_in:
       - mc_proxy: {{common.name}}-postinstall-project-hook
+      - mc_proxy: makina-apache-pre-conf
 
 {#-
 # init script is marked as started at first, but the daemon is not there!
@@ -145,6 +146,23 @@ etc-init.d-supervisor.{{common.name}}:
 # VHOST
 #}
 
+{{common.name}}-buildout-vhost-directory:
+  file.directory:
+    - name: {{common.project_root}}/etc/www
+    - user: {{common.user}}
+    - group: {{common.user}}
+    - mode: 755
+  cmd.run:
+    - name: >
+          ln -s {{common.project_root}}/www/apache.reverseproxy.conf {{common.project_root}}/etc/www/apache.reverseproxy.conf
+          && ln -s {{common.project_root}}/www/nginx.reverseproxy.conf {{common.project_root}}/etc/www/nginx.reverseproxy.conf
+    - user: {{common.user}}
+    - unless: ls {{common.project_root}}/etc/www/apache.reverseproxy.conf {{common.project_root}}/etc/www/nginx.reverseproxy.conf
+    - onlyif: ls {{common.project_root}}/www/apache.reverseproxy.conf {{common.project_root}}/www/nginx.reverseproxy.conf
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+      - mc_proxy: makina-apache-pre-conf
+
 {{common.name}}-buildout-vhost:
   file.symlink:
     - target: {{common.project_root}}/etc/www/apache.reverseproxy.conf
@@ -152,6 +170,7 @@ etc-init.d-supervisor.{{common.name}}:
     - makedirs: true
     - watch_in:
       - mc_proxy: {{common.name}}-postinstall-project-hook
+      - mc_proxy: makina-apache-pre-conf
 
 {{common.name}}-buildout-vhost-active:
   file.symlink:
@@ -160,6 +179,7 @@ etc-init.d-supervisor.{{common.name}}:
     - makedirs: true
     - watch_in:
       - mc_proxy: {{common.name}}-postinstall-project-hook
+      - mc_proxy: makina-apache-pre-conf
 
 {{common.name}}-buildout-nginx-vhost:
   file.symlink:

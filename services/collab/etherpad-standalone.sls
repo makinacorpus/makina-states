@@ -45,8 +45,8 @@ etherpad-install-pkg:
   cmd.run:
     - name: >
           wget https://github.com/ether/etherpad-lite/archive/{{ etherpadSettings['version'] }}.zip
-          && unzip {{ etherpadSettings['version'] }}.zip
-          && rm {{ etherpadSettings['version'] }}.zip
+          && unzip -f {{ etherpadSettings['version'] }}.zip
+          && rm -f {{ etherpadSettings['version'] }}.zip
     - cwd: {{ etherpadSettings['location'] }}
     - user: etherpad
     - group: etherpad
