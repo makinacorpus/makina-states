@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
-Salt related variables
-============================================
+mc_salt / salt related helpers
+================================
 
 '''
 # Import salt libs
@@ -15,6 +15,12 @@ loglevelfmt = (
 
 
 def settings():
+    '''Registry of settings decriving salt installation
+
+    Please read the code to be sure to understand it before changing parameters
+    as it can brick your installation.
+    That's why most of this stuff will be underdocumented at first sight.
+    '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
         localsettings = __salt__['mc_localsettings.settings']()

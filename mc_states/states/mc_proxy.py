@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
-Dummy state generation
-=======================
+mc_proxy / Dummy state generation
+==================================
 '''
 
 def __virtual__():

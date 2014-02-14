@@ -8,8 +8,16 @@ Implementation design & details
    :maxdepth: 2
 
    design/index.rst
-   states/index.rst
    qa/index.rst
+
+
+States & modules reference
+-------------------------------
+.. toctree::
+   :maxdepth: 3
+
+   states/index.rst
+
 
 Formulaes & macros helpers reference
 -------------------------------------

@@ -1,8 +1,10 @@
+# -*- coding: utf-8 -*-
 '''
-Management of Apache, Makina Corpus version
+mc_apache / apache httpd functions
 ============================================
 
-If you alter this module and want to test it, do not forget to deploy it on minion using::
+If you alter this module and want to test it, do not forget to
+deploy it on minion using::
 
   salt '*' saltutil.sync_modules
 
@@ -18,6 +20,7 @@ Do not forget to sync salt cache::
 
 '''
 
+__docformat__ = 'restructuredtext en'
 # Import python libs
 import logging
 import mc_states.utils
@@ -28,88 +31,122 @@ log = logging.getLogger(__name__)
 def_vh = 'salt://makina-states/files/etc/apache2/sites-available/default_vh.conf'
 
 def settings():
+    '''
+    Registry for apache related settings
+
+    heses settings are loaded from defaults + grains + pillar.
+    pache Fine Settings
+
+    httpd_user
+        apache system user
+    mpm
+        mpm to use
+
+    mpm-packages
+        system related packaged to install the desired mpm
+
+    version
+        targeted apache version to switch the configuration for
+
+    log_level
+        httpd log level
+
+    fastcgi_params
+        mappings of specific params for mod_fastcgi
+        Please look the module code and the apache documentation
+        if you are not happy with defaults
+
+    fastcgi_project_root
+        internal setting
+
+    fastcgi_shared_mode
+        internal setting
+
+    fastcgi_enabled
+        internal setting
+
+    fastcgi_socket_directory
+        internal setting
+
+    serveradmin_mail
+        default server admin email
+
+    Timeout
+        The number of seconds before receives and sends time out.
+        default is 300 (5min), 1 or 2 min should be enough for any
+        client request (so 60 or 120). beware of DOS!
+
+    KeepAlive
+        bool: are KeepAlive requests allowed
+
+    MaxKeepAliveRequests:
+        maximum number of allowed KeepAlive requests
+        (compare with MaxClients)
+
+    KeepAliveTimeout:
+        How many seconds should we keep Keepalive conn open (say
+        something between 3 and 5 usually, be careful for DOS!)
+
+    log_level
+       log level, allowed values are debug, info, notice, warn, error,
+                                     crit, alert, emerg
+    serveradmin_mail
+       default webmaster mail (used on error pages)
+
+    mpm prefork
+
+       StartServers
+           number of server processes to start
+
+       MinSpareServers
+           minimum number of server processes which are kept spare
+
+       MaxSpareServers
+           &maximum number of server processes which are kept spare
+
+       MaxRequestsPerChild
+           maximum number of requests a server process serves
+           set 0 to disable process recylcing
+       MaxClients
+           (alias MaxRequestWorkers): maximum number of server
+           processes allowed to start
+
+    mpm worker
+
+       StartServers
+           initial number of server processes to start
+
+       MinSpareThreads
+           minimum number of worker threads which are kept spare
+
+       MaxSpareThreads
+           maximum number of worker threads which are kept spare
+
+       ThreadLimit
+           ThreadsPerChild can be changed to this maximum value
+           during a graceful restart. ThreadLimit can only be changed
+           by stopping and starting Apache.
+
+       ThreadsPerChild
+           constant number of worker threads in each server process
+
+       MaxRequestsPerChild
+           (alias MaxConnectionsPerChild):
+            maximum number of requests a server process serves
+            set 0 to disable process recylcing
+
+       MaxClients
+           (alias MaxRequestWorkers): maximum number of threads
+
+    mpm event
+       all workers settings are used
+
+       AsyncRequestWorkerFactor
+           max of concurrent conn is:
+           (AsyncRequestWorkerFactor + 1) * MaxRequestWorkers
+    '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        '''
-        This is called from mc_services, loading all Apache default settings
-
-        Theses settings are loaded from defaults + grains + pillar.
-        Apache Fine Settings
-         Timeout:
-             The number of seconds before receives and sends time out.
-             default is 300 (5min), 1 or 2 min should be enough for any
-             client request (so 60 or 120). beware of DOS!
-
-         KeepAlive:
-             bool: are KeepAlive requests allowed
-
-         MaxKeepAliveRequests:
-             maximum number of allowed KeepAlive requests
-             (compare with MaxClients)
-         KeepAliveTimeout:
-             How many seconds should we keep Keepalive conn open (say
-             something between 3 and 5 usually, be careful for DOS!)
-
-         log_level
-            log level, allowed values are debug, info, notice, warn, error,
-                                          crit, alert, emerg
-         serveradmin_mail
-            default webmaster mail (used on error pages)
-
-
-         mpm prefork
-
-            StartServers
-                number of server processes to start
-
-            MinSpareServers
-                minimum number of server processes which are kept spare
-
-            MaxSpareServers
-                &maximum number of server processes which are kept spare
-
-            MaxRequestsPerChild
-                maximum number of requests a server process serves
-                set 0 to disable process recylcing
-            MaxClients
-                (alias MaxRequestWorkers): maximum number of server
-                processes allowed to start
-
-
-         mpm worker
-
-            StartServers
-                initial number of server processes to start
-
-            MinSpareThreads
-                minimum number of worker threads which are kept spare
-
-            MaxSpareThreads
-                maximum number of worker threads which are kept spare
-
-            ThreadLimit
-                ThreadsPerChild can be changed to this maximum value
-                during a graceful restart. ThreadLimit can only be changed
-                by stopping and starting Apache.
-
-            ThreadsPerChild
-                constant number of worker threads in each server process
-
-            MaxRequestsPerChild
-                (alias MaxConnectionsPerChild):
-                 maximum number of requests a server process serves
-                 set 0 to disable process recylcing
-
-            MaxClients
-                (alias MaxRequestWorkers): maximum number of threads
-
-         mpm event
-            all workers settings are used
-
-            AsyncRequestWorkerFactor
-                max of concurrent conn is:
-                (AsyncRequestWorkerFactor + 1) * MaxRequestWorkers
-        '''
         grains = __grains__
         pillar = __pillar__
         localsettings = __salt__['mc_localsettings.settings']()

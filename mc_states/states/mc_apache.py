@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''
-Management of Apache, Makina Corpus version
+mc_apache / apache states
 ============================================
 
 If you alter this module and want to test it, do not forget to deploy it on

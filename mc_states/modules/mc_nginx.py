@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''
-Management of Nginx, Makina Corpus version
+mc_nginx / nginx registry
 ============================================
 
 If you alter this module and want to test it, do not forget to deploy it on minion using::
@@ -24,13 +24,28 @@ log = logging.getLogger(__name__)
 
 
 def settings():
+    '''
+    NGINX registry
+
+    package
+        TBD
+    service
+        TBD
+    basedir
+        TBD
+    vhostdir
+        TBD
+    confdir
+        TBD
+    logdir
+        TBD
+    wwwdir
+        TBD
+    virtualhosts
+        TDB
+    '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        '''
-        This is called from mc_services, loading all Nginx default settings
-
-        :!Settings are merged with grains and pillar via mc_utils.defaults
-        '''
         grains = __grains__
         pillar = __pillar__
         localsettings = __salt__['mc_localsettings.settings']()

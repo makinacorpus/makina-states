@@ -1,0 +1,13 @@
+salt
+PyYAML
+setuptools
+Jinja2
+sphinx
+pygments
+docker-py
+#apache-libcloud
+#SaltTesting
+#pyzmq
+#GitPython
+#mock
+#logilab-astng

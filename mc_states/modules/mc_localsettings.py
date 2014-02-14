@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''
-Salt related variables
+mc_localsettings / localsettings variables
 ============================================
 
 '''
@@ -15,6 +15,7 @@ RVM_URL = (
 
 
 def metadata():
+    '''metadata registry for localsettings'''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _metadata():
         return __salt__['mc_macros.metadata'](__name)
@@ -22,6 +23,84 @@ def metadata():
 
 
 def settings():
+    '''settings registry for localsettings
+
+    locations
+        TDB
+    rotate
+        TDB
+    networkManaged
+        TDB
+    networkInterfaces
+        TDB
+    ldapVariables
+        TDB
+    ldapEn
+        TDB
+    group
+        TDB
+    groupId
+        TDB
+    users
+        TDB
+    user_keys
+        TDB
+    keysMappings
+        TDB
+    cur_pyver
+        TDB
+    pythonSettings
+        TDB
+    defaultSysadmins
+        TDB
+    hosts_list
+        TDB
+    makinahosts
+        TDB
+    keyserver
+        TDB
+    debian_stable
+        TDB
+    ubuntu_lts
+        TDB
+    ubuntu_last
+        TDB
+    debian_mirror
+        TDB
+    ubuntu_mirror
+        TDB
+    dist
+        TDB
+    udist
+        TDB
+    ddist
+        TDB
+    dcomps
+        TDB
+    ucomps
+        TDB
+    jdkDefaultVer
+        TDB
+    rvmSettings
+        TDB
+    rvm_url
+        TDB
+    rubies
+        TDB
+    rvm_user
+        TDB
+    rvm_group
+        TDB
+    npmSettings
+        TDB
+    SSLSettings
+        TDB
+    locales
+        TDB
+    default_locale
+        TDB
+    
+    '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
         data = {}
@@ -283,6 +362,7 @@ def settings():
 
 
 def registry():
+    '''registry registry for localsettings'''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _registry():
         settings_reg = __salt__['mc_{0}.settings'.format(__name)]()
