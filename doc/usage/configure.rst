@@ -7,7 +7,8 @@ To configure a machine and its underlying services via makina-states, we use reg
 To install something, you can either:
 
   - set a key/value in pillar or grains (eg: **makina-states.services.http.apache: true**)
-  - Include directly a specific state: **salt-call state.sls makina-states.services.http.apache**
+  - Call directly a specific state: **salt-call state.sls makina-states.services.http.apache**
+  - Include directly a specific state in a **include:** sls statement
 
 As soon as those tags are run, they will set a grain on the machine having the side effect to register that set of states to be 'auto installed' and 'reconfigured' on next highstates, implicitly.
 In other word, in the future highstates, they will even run even if we have not included them explicitly.
