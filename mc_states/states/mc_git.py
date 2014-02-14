@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
-Interaction with Git repositories
-=================================
+mc_git / Interaction with Git repositories
+===========================================
 
 The difference or to be more precise, the only addition of using
 git.latest is that we do a merge --ff-only when pulling in case
