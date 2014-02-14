@@ -52,8 +52,8 @@ def settings():
             __salt__['mc_utils.get'](
                 'makina-states.services.shorewall.enabled', False))
         data['shwIfformat'] = 'FORMAT 2'
-        if grains['os'] not in ['Debian']:
-            data['shwIfformat'] = '?'
+        if grains['os'] not in ['Deban']:
+            data['shwIfformat'] = '?{0}'.format(data['shwIfformat'])
         data['shwPolicies'] = shwPolicies = []
         data['shwZones'] = shwZones = {}
         data['shwInterfaces'] = shwInterfaces = {}
