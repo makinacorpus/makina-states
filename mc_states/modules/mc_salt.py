@@ -6,6 +6,7 @@ mc_salt / salt related helpers
 '''
 # Import salt libs
 import mc_states.utils
+import os
 
 __name = 'salt'
 
@@ -70,7 +71,15 @@ def settings():
                     ('makina-states.salt.' + i + '.rev',
                      data.get('rev', False))})
         data = {}
+        has_filelimit = True
+        init_debug = False
+        if 'TRAVIS' in os.environ:
+            init_debug = True
+        if __salt__['mc_lxc.is_lxc']():
+            has_filelimit = False
         saltCommonData = {
+            'init_debug': init_debug,
+            'has_filelimit': has_filelimit,
             'confRepos': confRepos,
             'rotate': localsettings['rotate']['days'],
             'yaml_utf8': True,

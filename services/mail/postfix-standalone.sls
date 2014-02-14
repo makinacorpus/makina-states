@@ -24,7 +24,7 @@ postfix-pkgs:
 {% endif %}
 
 #--- DEV SERVER: CATCH ALL EMAILS TO A LOCAL MAILBOX
-{% if nodetypes.registry.is.devhost %}
+{% if nodetypes.registry.is.devhost and not nodetypes.registry.is.travis %}
   {% set ips=grains['ip_interfaces'] %}
   {% set ip1=ips['eth0'][0] %}
   {% set ip2=ips['eth1'][0] %}
