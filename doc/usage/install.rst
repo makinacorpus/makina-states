@@ -42,6 +42,8 @@ On this virtual machine, makina-states is pre installed and ready for use.
 
 Usage
 -----
+Download
+~~~~~~~~~
 Get the script::
 
     wget http://raw.github.com/makinacorpus/makina-states/master/_scripts/boot-salt.sh
@@ -54,6 +56,8 @@ Detailed overview::
 
     ./boot-salt.sh --long-help
 
+Install
+~~~~~~~~~~
 
 If you want to install only a minion::
 
@@ -85,10 +89,12 @@ To skip the automatic code update/upgrade::
 
 To switch on a makina-states branch, like the **stable** branch in production::
 
-    ./boot-salt.sh -b  stable
+    ./boot-salt.sh -b stable
+
+
 
 SUMUP
-*******
+~~~~~~~~
 
     - To install on a server (default env=server, default boot=salt_master)::
 
@@ -100,8 +106,26 @@ SUMUP
 
     - To install on a server and use mastersalt::
 
-        ./boot-salt.sh --mastersalt mastersalt.makina-corpus.net
+        ./boot-salt.sh -b stable --mastersalt mastersalt.makina-corpus.net
 
 boot-salt.sh will try remember to remember how you configured makina-states.
 If it suceeds to find enougth information (nodetype, salt installs, branch), it will automaticly guess the parameters by it self.
 In other words, you will just have to type **boot-salt.sh** and verify settings next time you ll use it.
+
+
+Upgrade
+~~~~~~~~
+Upgrade will:
+
+    - run predefined & scheduled upgrade code
+    - update makina-states repository in /srv/salt & /srv/makina-states
+    - update core repositories (like salt code source in /srv/makina-states/src/salt)
+    - redo the daemon configuration if necessary
+    - redo the daemon association if necessary
+    - do the highstates (salt and masterone if any)
+
+::
+
+    boot-salt.sh -C --upgrade
+
+
