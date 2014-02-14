@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-__docformat__ = 'restructuredtext en'
 '''
 Makina custom grains
 =====================
@@ -15,6 +14,7 @@ makina.devhost_num
     devhost num if any
 '''
 
+__docformat__ = 'restructuredtext en'
 import os
 import subprocess
 
