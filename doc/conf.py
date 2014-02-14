@@ -36,7 +36,12 @@ class Mock(object):
             return Mock()
 
 
-MOCK_MODULES = ['salt']
+MOCK_MODULES = [
+    'salt',
+     'salt.states',
+    'salt.modules',
+    'salt.utils',
+    'salt.loaders']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()
 
