@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''
-Management of PHP, Makina Corpus version
+mc_php / php registry
 ============================================
 
 If you alter this module and want to test it, do not forget to deploy it on minion using::
@@ -24,18 +24,20 @@ log = logging.getLogger(__name__)
 
 
 def settings():
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
-    def _settings():
-        '''
-        This is called from mc_services, loading all PHP default settings
+    '''
+    This is called from mc_services, loading all PHP default settings
 
-        Settings are merged with grains and pillar via mc_utils.defaults
+    Settings are merged with grains and pillar via mc_utils.defaults
 
-        PHP Fine Settings ------------------------------------------------
+    ::
+
+        ------------------------------------------------
         -------- MODULE ZEND OPCACHE --------------------------
         replacement for APC!
         @see for details of options:
         https://raw.github.com/zendtech/ZendOptimizerPlus/master/README
+
+    ::
 
         -------- MODULE APC ---------------------------------
         WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
@@ -44,123 +46,104 @@ def settings():
         WARNING : APC is somewhat deprecated and Zend opcache is the replacment
         So the default behavior will not be to install it!!!
 
-        APC: General shared settings
+    APC General shared settings
 
-            shm_segments
-              seems to perform better with only one shared segment
-              but if you cannot upgrade this segment size, then create several
-              setting ignored in mmap mode
-              (so chances are this will always be 1)
+        shm_segments
+          seems to perform better with only one shared segment
+          but if you cannot upgrade this segment size, then create several
+          setting ignored in mmap mode
+          (so chances are this will always be 1)
 
-        shm_size
-            so here the segment size, but you may need to allow it in your OS
-            for 128M Put in /etc/sysctl.conf::
+    shm_size
+        so here the segment size, but you may need to allow it in your OS
+        for 128M Put in /etc/sysctl.conf
 
-                * kernel.shmmax=134217728
-                * kernel.shmall=2097152
+            * kernel.shmmax=134217728
+            * kernel.shmall=2097152
 
-            default in most OS is 32M
+        default in most OS is 32M
+    mmap_file_mask
+        If compiled with MMAP support by using --enable-mmap this is the
+        mktemp-style file_mask to pass to the mmap module
+        for determining whether your mmap'ed memory region is going to be
+        file-backed or shared memory backed
+    APC
+        Per virtualhost/php-fpm pool:
+            enabled
+                enabling apc
+            rfc1867
+                allow progress upload bars
+    APC
+        include_once_override
+            Optimisation of include/require_once calls
+        canonicalize
+            transform paths in absolute ones (no effect
+            if apc.stat is not 0), files from stream wrappers (extended
+            includes) won't be cached if this is activated as they cannot
+            be used with php's realpath()
+        stat
+            In production set it to False, then file changes won't be
+            observed before apache or php-fpm is restarted, significant
+            boost, else file time is stated at each access
+            (needed at True in dev)
+        stat_ctime
+            avoid problems with rsync or svn not modifying mtime but only
+            ctime so if you're in production set this to False,
+            like for the previous one
+        num_files_hint
+            indication on number of files (ZF=1300, nude Drupal 7=1000)
+        user_entries_hint
+            indication on the number of cache variables
 
-        mmap_file_mask
-            If compiled with MMAP support by using --enable-mmap this is the
-            mktemp-style file_mask to pass to the mmap module
-            for determining whether your mmap'ed memory region is going to be
-            file-backed or shared memory backed
+    APC: cache lifetime managmenent
+        ttl
+            time (s) we can stay on the cache even when the cache is full
 
-        APC:
-            Per virtualhost/php-fpm pool:
-                enabled
-                    enabling apc
+            Cache full count
+                that means Garbage Collector is never
+                inactivating theses datas before this time is over
+            >0
+                old data could stay in the cache while new data wants
+                to come, if no data is deprecated
+            7200
+                entries older than 2 hours will be thrown to make
+                some place
+            0
+                emptying full cache when full
+        user_ttl
+            same as above, for user cache
+        gc_ttl
+            this one is the same but you should note this prevents
+            Garbage collecting after each source change.
 
-                rfc1867
-                    allow progress upload bars
+    APC
+        filters
+            could be used to prevent some caching on specific files
+            but it's better to cache often used files, isn't it?
+            At least in production
+        max_file_size
+            factory default to 1M, files bigger than that won't be cached
 
-        APC
-            want to gain speed? ------------------
-
-            include_once_override
-                Optimisation of include/require_once calls
-
-            canonicalize
-                transform paths in absolute ones (no effect
-                if apc.stat is not 0), files from stream wrappers (extended
-                includes) won't be cached if this is activated as they cannot
-                be used with php's realpath()
-
-            stat
-                In production set it to False, then file changes won't be
-                observed before apache or php-fpm is restarted, significant
-                boost, else file time is stated at each access
-                (needed at True in dev)
-
-            stat_ctime
-                avoid problems with rsync or svn not modifying mtime but only
-                ctime so if you're in production set this to False,
-                like for the previous one
-
-            num_files_hint
-                indication on number of files (ZF=1300, nude Drupal 7=1000)
-
-            user_entries_hint
-                indication on the number of cache variables
-
-        APC: cache lifetime managmenent ----------------
-            ttl
-                time (s) we can stay on the cache even when the cache is full
-                -- Cache full count -- that means Garbage Collector is never
-                 inactivating theses datas before this time is over
-
-                >0
-                    old data could stay in the cache while new data wants
-                    to come, if no data is deprecated
-
-                7200
-                    entries older than 2 hours will be thrown to make
-                    some place
-
-                0
-                    emptying full cache when full
-
-            user_ttl
-                same as above, for user cache
-
-            gc_ttl
-                this one is the same but you should note this prevents
-                Garbage collecting after each source change.
-
-        APC: What to cache ? ----------------------------
-
-            filters
-                could be used to prevent some caching on specific files
-                but it's better to cache often used files, isn't it?
-                At least in production
-
-            max_file_size
-                factory default to 1M, files bigger than that won't be cached
-
-        APC: various things -------------------------------
-
-            write_lock
-                if True only one process caching a same file
-                (better than apc.slam_defense)
-
-            file_update_protection
-                "2" prevents caching half written files (by cp for example)
-                by waiting x seconds for new files caching.
-                set it to 0 if using only rsync or mv
-
-            lazy_functions
-                early versions of APC only
-                optimisations from Facebook,
-                adding a lazy loding capabilities, so you can parse a lot of
-                files and only used things are cached
-                NEED TO BE TESTED: DANGEROUS!!
-
-            lazy_classes
-                same as above
+    APC: various things
+        write_lock
+            if True only one process caching a same file
+            (better than apc.slam_defense)
+        file_update_protection
+            "2" prevents caching half written files (by cp for example)
+            by waiting x seconds for new files caching.
+            set it to 0 if using only rsync or mv
+        lazy_functions
+            early versions of APC only
+            optimisations from Facebook,
+            adding a lazy loding capabilities, so you can parse a lot of
+            files and only used things are cached
+            NEED TO BE TESTED: DANGEROUS!!
+        lazy_classes
+            same as above
 
 
-        MODULE XDEBUG ----------------------------------------
+    MODULE XDEBUG::
+
         php_admin_value[xdebug.default_enable] =   xdebug_default_enable ;
         ; http://xdebug.org/docs/all_settings#collect_params (0|1|2|3|4)
         php_admin_value[xdebug.collect_params] = xdebug_collect_params  0;
@@ -171,7 +154,10 @@ def settings():
         php_admin_value[
             xdebug.profiler_output_name
         ] = xdebug_profiler_output_name  /cachegrind.out.%p;
-        '''
+    '''
+    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    def _settings():
+
         grains = __grains__
         pillar = __pillar__
         localsettings = __salt__['mc_localsettings.settings']()

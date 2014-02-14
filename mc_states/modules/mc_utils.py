@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
-Some usefull small tools
-============================================
-
+mc_utils / Some usefull small tools
+====================================
 '''
 
 # Import salt libs
@@ -19,26 +18,26 @@ class _CycleError(Exception):
 
 def dictupdate(dict1, dict2):
     '''
-      Merge two dictionnaries recursively
+    Merge two dictionnaries recursively
 
-      test::
+    test::
 
-        salt '*' mc_utils.dictupdate '{foobar:
-                    {toto: tata, toto2: tata2},titi: tutu}'
-                    '{bar: toto, foobar: {toto2: arg, toto3: arg2}}'
-        ----------
-        bar:
-            toto
-        foobar:
-            ----------
-            toto:
-                tata
-            toto2:
-                arg
-            toto3:
-                arg2
-        titi:
-            tutu
+      salt '*' mc_utils.dictupdate '{foobar:
+                  {toto: tata, toto2: tata2},titi: tutu}'
+                  '{bar: toto, foobar: {toto2: arg, toto3: arg2}}'
+      ----------
+      bar:
+          toto
+      foobar:
+          ----------
+          toto:
+              tata
+          toto2:
+              arg
+          toto3:
+              arg2
+      titi:
+          tutu
     '''
     if not isinstance(dict1, dict):
             raise SaltException(
@@ -58,7 +57,8 @@ def format_resolve(value,
                    global_tries=50,
                    this_call=0):
     """Resolve a dict of formatted strings, mappings & list to a valued dict
-       Please also read the associated test
+    Please also read the associated test::
+
         {"a": ["{b}", "{c}", "{e}"],
          "b": 1,
          "c": "{d}",
@@ -179,16 +179,14 @@ def is_iter(value):
 
 
 def get(key, default=''):
-    '''
-    .. versionadded: 0.14.0
-    Same as 'config.get' but with different retrieval order:
+    '''Same as 'config.get' but with different retrieval order.
 
     This routine traverses these data stores in this order:
 
-    - Local minion config (opts)
-    - Minion's pillar
-    - Minion's grains
-    - Master config
+        - Local minion config (opts)
+        - Minion's pillar
+        - Minion's grains
+        - Master config
 
     CLI Example:
 
@@ -213,15 +211,20 @@ def get(key, default=''):
 
 def defaults(prefix, datadict, overridden=None, firstcall=True):
     '''
-    Get the "prefix" value from the configuration
-    Then overrides it with  "datadict" mapping recursively
-        If the datadict contains a key "{prefix}-overrides
-            AND value is a dict or  a list:
+    Magic defaults settings configuration getter
+
+    - Get the "prefix" value from the configuration (pillar/grain)
+    - Then overrides it with  "datadict" mapping recursively
+        - If
+            - the datadict contains a key "{prefix}-overrides
+            - AND value is a dict or  a list:
+
                 Take that as a value for the the value /subtree
-        If the datadict contains a key "{prefix}":
-            If a list: append to the list the default list in conf
-            Elif a dict: update the default dictionnary with the one in conf
-            Else take that as a value if the value is not a mapping or a list
+
+        - If the datadict contains a key "{prefix}":
+            - If a list: append to the list the default list in conf
+            - Elif a dict: update the default dictionnary with the one in conf
+            - Else take that as a value if the value is not a mapping or a list
     '''
     if firstcall:
         global_pillar =  __salt__['mc_utils.get'](prefix)

@@ -26,10 +26,10 @@ To install our base salt installation, just run the bootstrap script as **root**
 - For salt, you have some extra parameters (here are the environment variables, but you have also
   command line switches to set them
 
-    - **--salt-master-dns**; hostname (FQDN) of the linked master
-    - **--salt-master-port**: port of the linked master
-    - **--mastersalt**: is the mastersalt hostname (FQDN) to link to
-    - **--mastersalt-master-port**: overrides the port for the distant mastersalt server which is 4606 usually (read the script)
+    - **\-\-salt-master-dns**; hostname (FQDN) of the linked master
+    - **\-\-salt-master-port**: port of the linked master
+    - **\-\-mastersalt**: is the mastersalt hostname (FQDN) to link to
+    - **\-\-mastersalt-master-port**: overrides the port for the distant mastersalt server which is 4606 usually (read the script)
 
 
 For developers

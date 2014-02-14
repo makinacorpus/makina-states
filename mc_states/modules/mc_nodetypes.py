@@ -1,5 +1,5 @@
 '''
-Salt related variables
+mc_nodetypes / nodetypes registry
 ============================================
 
 '''
@@ -12,6 +12,7 @@ __name = 'nodetypes'
 
 
 def metadata():
+    '''nodetypes metadata registry'''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _metadata():
         return __salt__['mc_macros.metadata'](
@@ -20,6 +21,7 @@ def metadata():
 
 
 def settings():
+    '''nodetypes settings registry'''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
         resolver = __salt__['mc_utils.format_resolve']
@@ -29,6 +31,7 @@ def settings():
 
 
 def registry():
+    '''nodetypes registry registry'''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _registry():
         settings_reg = __salt__['mc_{0}.settings'.format(__name)]()
