@@ -1,4 +1,5 @@
 {#- Common php installations (mod_php or php-fpm) files #}
+{# TODO: install suhoshin on Debian #}
 {% import "makina-states/services/http/apache.sls" as apache with context %}
 {% import "makina-states/_macros/services.jinja" as services with context %}
 {% set services = services  %}
