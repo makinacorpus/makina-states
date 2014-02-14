@@ -369,7 +369,7 @@ $conf['blocked_ips'] = array();
 //// Default cache class
 //$conf['cache_class_cache_page'] = 'DrupalDatabaseCache';
 //$conf['error_level'] = 0; // 1 means errors get to the end user.
-//$conf['site_mail'] = 'webmaster@laborange.com';
+//$conf['site_mail'] = 'webmaster@example.com';
 // -------------------------------------
 $overridefile = DRUPAL_ROOT . '/sites/default/overrides.settings.php';
 if (file_exists($overridefile)) {
