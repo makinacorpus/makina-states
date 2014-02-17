@@ -12,9 +12,16 @@
 {%- set settings=services.rdiffbackupSettings|yaml %}
 
 {% if full %}
+remove-rdiff-backup-pkgs:
+  pkg.removed:
+    - pkgs:
+      - rdiff-backup
 rdiff-backup-pkgs:
   pkg.installed:
+    - require:
+      - pkg: remove-rdiff-backup-pkgs
     - pkgs:
+      - rdiff-backup-fs
       - librsync-dev
       - librsync1
       - python-dev

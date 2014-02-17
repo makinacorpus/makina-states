@@ -15,6 +15,8 @@ EG: to disable the default vim configuration, either set a grain or a pillar val
 .. toctree::
    :maxdepth: 1
 
+   timezone.rst
+   etckeeper.rst
    git.rst
    hosts.rst
    jdk.rst

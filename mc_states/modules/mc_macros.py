@@ -189,6 +189,7 @@ def unregister(kind, name, data=None, suf=''):
     state += '  grains.present:\n'
     state += '    - name: makina-states.{kind}.{name}\n'.format(**data)
     state += '    - value: False\n'.format(**data)
+    state += '    - order: 9999\n'
     state += '\n'
     return state
 
@@ -201,23 +202,42 @@ def register(kind, name, data=None, suf=''):
     state += '  grains.present:\n'
     state += '    - name: makina-states.{kind}.{name}\n'.format(**data)
     state += '    - value: True\n'.format(**data)
+    state += '    - order: 9999\n'
     state += '\n'
     return state
 
 
-def autoinclude(reg):
+def autoinclude(reg, additional_includes=None):
     '''Helper to autoload & (un)register services in a top file'''
     sls = ''
+    if not additional_includes:
+        additional_includes = []
     bases = reg.get('bases', [])
-    includes= []
+    includes = []
+    slses = []
     for base in bases:
         includes.append('  - makina-states.{base}\n'.format(base=base))
+        slses.append('makina-states.{base}\n'.format(base=base))
     for state, data in reg.get('actives', {}).items():
         includes.append('  - {rstatesPref}.{state}\n'.format(
             rstatesPref=reg['states_pref'], state=state))
+        slses.append('{rstatesPref}.{state}\n'.format(
+            rstatesPref=reg['states_pref'], state=state))
+    includes.extend(['  - {0}\n'.format(a)
+                     for a in additional_includes])
+    slses.extend(['{0}\n'.format(a) for a in additional_includes])
     if includes:
         includes.insert(0, 'include:\n')
         sls += ''.join(includes)
+    # more harm than good, cycle errors are too easilly triggered
+    # between kinds
+    #sls += '''
+#{kind}-postinstall-hook:
+#  mc_proxy.hook:
+#    - watch:
+#{requires}
+#'''.format(kind=reg['kind'], requires='\n'.join(
+#                    ['      - sls: {0}'.format(s) for s in slses]))
     for state, data in reg.get('actives', {}).items():
         sls += '\n{0}\n'.format(
             __salt__['mc_macros.register'](

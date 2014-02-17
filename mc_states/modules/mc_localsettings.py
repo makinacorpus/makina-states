@@ -99,7 +99,7 @@ def settings():
         TDB
     default_locale
         TDB
-    
+
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
@@ -109,7 +109,23 @@ def settings():
         grains = __grains__
         resolver = saltmods['mc_utils.format_resolve']
         data['resolver'] = resolver
-        metadata = saltmods['mc_{0}.metadata'.format(__name)]()
+
+        data['etckeeper'] = saltmods['mc_utils.defaults'](
+            'makina.localsettings.etckeeper', {
+                'pm': 'apt',
+                'installer': 'dpkg',
+                'specialfilewarning': False,
+                'autocommit': True,
+                'vcs': 'git',
+                'commitbeforeinstall': True,
+            }
+        )
+
+        data['timezoneSettings'] = saltmods['mc_utils.defaults'](
+            'makina.localsettings.timezone', {
+                'tz': 'Europe/Paris',
+            }
+        )
         data['grainsPref'] = grainsPref = 'makina-states.localsettings.'
         #-
         # default paths
@@ -153,6 +169,9 @@ def settings():
                 'var_run_dir': '{var_dir}/run',
                 'var_log_dir': '{var_dir}/log',
                 'var_tmp_dir': '{var_dir}/tmp',
+                'resetperms': (
+                    '{prefix}/salt/makina-states/_scripts/reset-perms.py'
+                ),
             })
         # logrotation settings
         # This will generate a rotate_variables in the form
@@ -310,7 +329,11 @@ def settings():
             data['lts_dist'] = debian_stable
 
         # JDK default version
-        data['jdkDefaultVer'] = jdkDefaultVer = '7'
+        data['jdkSettings'] = saltmods['mc_utils.defaults'](
+            'makina-states.localsettings.jdk', {
+                'default_jdk_ver': 7,
+            })
+        data['jdkDefaultVer'] = data['jdkSettings']['default_jdk_ver']
 
         # RVM
         data['rvmSettings'] = rvmSettings = saltmods['mc_utils.defaults'](
@@ -331,7 +354,6 @@ def settings():
                 'packages': [],
                 'versions': []
             })
-
         # SSL settings for reuse in states
         country = saltmods['grains.get']('defaultlanguage')
         if country:
@@ -355,8 +377,14 @@ def settings():
             'fr_BE.UTF-8',
             'fr_FR.UTF-8',
         ]
-        data['locales'] = locales = __salt__['mc_utils.get']('makina-states.localsettings.locales.locales', default_locales)
-        data['default_locale'] = default_locale = __salt__['mc_utils.get']('makina-states.localsettings.locales.locale', default_locale)
+        localesdef = __salt__['mc_utils.defaults'](
+            'makina-states.localsettings.locales', {
+                'locales': default_locales,
+                'locale': default_locale,
+            }
+        )
+        data['locales'] = localesdef['locales']
+        data['default_locale'] = localesdef['locale']
         # expose any defined variable to the callees
         return data
     return _settings()
@@ -375,8 +403,10 @@ def registry():
             'git': {'active': True},
             'hosts': {'active': True},
             'jdk': {'active': False},
+            'etckeeper': {'active': True},
             'locales': {'active': True},
             'localrc': {'active': True},
+            'timezone': {'active': True},
             'network': {'active': True},
             'nodejs': {'active': False},
             'pkgmgr': {'active': True},

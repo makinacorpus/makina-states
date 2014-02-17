@@ -1,0 +1,2 @@
+etckeeper configuration
+=========================

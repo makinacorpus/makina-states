@@ -38,6 +38,10 @@ deadsnakes:
       {%- endfor %}
     {%- endif %}
 {% endif %}
+{# be sure to have at least one state #}
+python-last-hook:
+  mc_proxy.hook:
+    - order: last
 {% endmacro %}
 {{ do(full=False) }}
 # vim:set nofoldenable:
