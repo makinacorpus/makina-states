@@ -31,6 +31,15 @@ addvagrant-to-editor:
       - {{localsettings.group}}
     - remove_groups: false
 
+sudo-vagrant:
+  file.managed:
+    - name: /etc/sudoers.d/vagrant
+    - source: ''
+    - contents: 'vagrant ALL=NOPASSWD: ALL'
+    - mode: 0440
+    - user: root
+    - group: root
+
 vagrantvm-zerofree:
   file.managed:
     - name: /sbin/zerofree.sh
