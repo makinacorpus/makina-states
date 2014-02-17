@@ -56,7 +56,6 @@ prepreq-{{common.name}}:
 # Install a generic (CGWB: http://cgwb-makinacorpus.rhcloud.com/) based buildout for plone
 #}
 {%- macro generic_buildout(common) %}
-{%- set locs = locations %}
 
 {#-
 # Wrap the salt configured setting in a file inputable to buildout
@@ -82,6 +81,19 @@ prepreq-{{common.name}}:
 # Run the project buildout but skip the maintainance parts as they are part of salt stuff
 #}
 
+{{common.name}}-buildout-caches:
+  file.directory:
+    - names:
+        - {{common.data.buildout.settings.buildout['eggs-directory']}}
+        - {{common.data.buildout.settings.buildout['download-cache']}}
+        - {{common.data.buildout.settings.buildout['download-directory']}}
+    - user: {{common.user}}
+    - group: {{common.group}}
+    - mode: 770
+    - makedirs: true
+    - watch:
+      - file: {{common.name}}-settings
+
 {{common.name}}-buildout-project:
   file.managed:
     - template: jinja
@@ -91,6 +103,7 @@ prepreq-{{common.name}}:
     - group: {{common.group}}
     - mode: 770
     - watch:
+      - file: {{common.name}}-buildout-caches
       - file: {{common.name}}-settings
     - watch_in:
       - buildout: {{common.name}}-buildout-project
@@ -120,7 +133,7 @@ prepreq-{{common.name}}:
 #}
 etc-init.d-supervisor.{{common.name}}:
   file.symlink:
-    - name: {{locs.initd_dir}}/supervisor.{{common.name}}
+    - name: {{locations.initd_dir}}/supervisor.{{common.name}}
     - target: {{common.project_root}}/etc/init.d/supervisor.initd
     - watch_in:
       - mc_proxy: {{common.name}}-postinstall-project-hook
@@ -134,7 +147,7 @@ etc-init.d-supervisor.{{common.name}}:
       - file: etc-init.d-supervisor.{{common.name}}
       - buildout: {{common.name}}-buildout-project
   cmd.run:
-    - name: {{locs.initd_dir}}/supervisor.{{common.name}} restart
+    - name: {{locations.initd_dir}}/supervisor.{{common.name}} restart
     - onlyif: test "$({{common.project_root}}/bin/supervisorctl status 2>&1 |grep "refused connection"|wc -l)" != 0
     - user: root
     - watch:
@@ -210,7 +223,7 @@ etc-init.d-supervisor.{{common.name}}:
 {% if common.full %}
 etc-logrotate.d-{{common.name}}.conf:
   file.symlink:
-    - name: {{locs.conf_dir}}/logrotate.d/{{common.name}}.conf
+    - name: {{locations.conf_dir}}/logrotate.d/{{common.name}}.conf
     - target: {{common.project_root}}/etc/logrotate.conf
     - watch_in:
       - mc_proxy: {{common.name}}-postinstall-project-hook
@@ -293,6 +306,12 @@ etc-logrotate.d-{{common.name}}.conf:
   'buildout': {
     'newest': None,
     'settings': {
+      'buildout': {
+        'cache-directory': locations.apps_dir+'/buildout/cache',
+        'download-cache': '{cache-directory}/downloads',
+        'download-directory': '{cache-directory}/downloads',
+        'eggs-directory': '{cache-directory}/eggs',
+      },
       'v': {
           'admin-user'                  : 'admin',
           'admin-password'              : 'secret',
