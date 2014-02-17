@@ -4,12 +4,14 @@
 {%- set localsettings = services.localsettings %}
 {%- set locs = localsettings.locations %}
 
+include:
+  - makina-states.localsettings.timezone
+
 {% if full %}
 ntp-pkgs:
   pkg.installed:
     - pkgs:
       - ntp
-      - tzdata
       - ntpdate
 {% endif %}
 

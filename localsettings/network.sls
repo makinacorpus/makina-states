@@ -30,3 +30,7 @@ network-services:
       - file: network-cfg
 {%- endif %}
 {% endif %}
+{# be sure to have at least one state #}
+network-last-hook:
+  mc_proxy.hook:
+    - order: last
