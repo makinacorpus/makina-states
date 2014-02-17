@@ -19,29 +19,29 @@ def settings():
     Etherpad settings
 
     version
-        TBD
+        Change which version of etherpad is installed.
     location
-        TBD
+        Change the directory in which circus is installed.
     apikey
-        TBD
+        The secret used to encrypt transmissions.
     title
-        TBD
+        The title of the server.
     ip
-        TBD
+        Ip on which the server will bind.
     port
-        TBD
+        Port the server will listen for.
     dbType
-        TBD
+        Type of the database.
     dbSettings
-        TBD
+        Settings of the database.
     requireSession
-        TBD
+        Require session setting.
     editOnly
-        TBD
+        Edit only setting.
     admin
-        TBD
+        Create an admin or not.
     adminPassword
-        TBD
+        Admin's password.
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():

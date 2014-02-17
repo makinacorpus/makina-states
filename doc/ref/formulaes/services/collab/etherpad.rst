@@ -18,8 +18,8 @@ Value           Description                                       Default
 ==============  ================================================  ==============================
 version         Change which version of etherpad is installed.    '1.3.0'
 location        Edit the directory in which circus is installed.  locs['apps_dir'] + '/etherpad'
-apikey          The secret use to encrypt transmissions.          'SECRET-API-KEY-PLS-CHANGE-ME'
-title           Title of the server.                              'Etherpad'
+apikey          The secret used to encrypt transmissions.         'SECRET-API-KEY-PLS-CHANGE-ME'
+title           The title of the server.                          'Etherpad'
 ip              Ip on which the server will bind.                 '0.0.0.0'
 port            Port the server will listen for.                  '9001'
 dbType          Type of the database.                             'dirty'
