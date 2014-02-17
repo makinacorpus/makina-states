@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
-Some usefull small tools
-=========================
+mc_project / project settings regitry
+======================================
 
 '''
 
@@ -77,33 +77,57 @@ def get_common_vars(
     """
     Return all needed data for the project API macro:
 
-        - services: the loaded services jinja macro
-        - name: name of the project
-        - default_env: environnemt to run into (may be dev|prod, better
-          to set a grain, see bellow)
-        - project_subdir: the subdirectory of the project in /srv/projects/foo
-        - salt_root: where to install the salt branch
-        - project_root: where to install the project,
-        - salt_subdir: the subdirectory of the salt in /srv/salts/foo
-        - pillar_subdir: the subdirectory of the pillar in /srv/pillars/foo
-        - full: set to false to only run the sole project states and not a full highstate
-        - project_branch: the branch of the project
-        - salt_branch: the branch of the project salt tree
-        - url: the git repository url
-        - domain: main domain of the installed application if any
-        - domains: Additionnal hosts (mapping {host: ip}), the main domain will be inserted
-                 in this list linked to the 'main_ip'.
-        - user: system project user
-        - groups: system project user groups, first group is main
-        - defaults: data mapping for this project to use in states as common.data
-        - env_defaults: per environment (eg: prod|dev)  specific defaults data
-        - os_defaults: per os (eg: Ubuntu/Debian)  specific defaults data
-        - sls_includes: includes to add to the project top includes statement
-        - no_salt: Do not manage the salt branch
-        - no_domain: Do not manage the domains in /etc/hosts
-        - no_reset_perms: Do not run fixpermissions
-        - no_default_includes Do not add salt_minon & other bases sls
-                              like ssh to default includes
+    services
+        the loaded services jinja macro
+    name
+        name of the project
+    default_env
+        environnemt to run into (may be dev|prod, better
+        to set a grain see bellow)
+    project_subdir
+        the subdirectory of the project in /srv/projects/foo
+    salt_root
+        where to install the salt branch
+    project_root
+        where to install the project,
+    salt_subdir
+        the subdirectory of the salt in /srv/salts/foo
+    pillar_subdir
+        the subdirectory of the pillar in /srv/pillars/foo
+    full
+        set to false to only run the sole project states and not a full highstate
+    project_branch
+        the branch of the project
+    salt_branch
+        the branch of the project salt tree
+    url
+        the git repository url
+    domain
+        main domain of the installed application if any
+    domains
+        Additionnal hosts (mapping {host: ip}), the main domain will be inserted
+        in this list linked to the 'main_ip'.
+    user
+        system project user
+    groups
+        system project user groups, first group is main
+    defaults
+        data mapping for this project to use in states as common.data
+    env_defaults
+        per environment (eg: prod|dev)  specific defaults data
+    os_defaults
+        per os (eg: Ubuntu/Debian)  specific defaults data
+    sls_includes
+        includes to add to the project top includes statement
+    no_salt
+        Do not manage the salt branch
+    no_domain
+        Do not manage the domains in /etc/hosts
+    no_reset_perms
+        Do not run fixpermissions
+    no_default_includes
+        Do not add salt_minon & other bases sls
+        like ssh to default includes
 
     You can override default states values by pillar/grain like::
 

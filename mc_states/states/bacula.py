@@ -1,6 +1,6 @@
 '''
-Management of bacula File Daemon Configuration
-==============================================
+bacula / Management of bacula File Daemon Configuration
+==========================================================
 
 Configure Bacula file daemon to allow connections from a
 particular Bacula director, set password credentials, as well as

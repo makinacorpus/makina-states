@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''
-Salt related variables
+mc_bootstraps / bootstraps related registry
 ============================================
 
 '''
@@ -12,6 +12,7 @@ __name = 'bootstraps'
 
 
 def metadata():
+    '''metadata registry for bootstraps'''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _metadata():
         return __salt__['mc_macros.metadata']('bootstraps')
@@ -19,6 +20,7 @@ def metadata():
 
 
 def settings():
+    '''settings registry for bootstraps'''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
         saltmods = __salt__
@@ -29,6 +31,7 @@ def settings():
 
 
 def registry():
+    '''registry registry for bootstraps'''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _registry():
         settings_reg = __salt__['mc_{0}.settings'.format(__name)]()

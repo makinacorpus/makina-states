@@ -1,14 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-__docformat__ = 'restructuredtext en'
+'''
+Makina custom grains
+=====================
 
+makina.upstart
+    true if using upstart
+makina.lxc
+    true if inside an lxc container
+makina.docker
+    true if inside a docker container
+makina.devhost_num
+    devhost num if any
+'''
+
+__docformat__ = 'restructuredtext en'
 import os
 import subprocess
 
 def get_makina_grains():
     '''
-    Provides an integer based on the FQDN of a machine.
-    Useful as server-id in MySQL replication or anywhere else you'll need an ID like this.
     '''
     grains = {
         'makina.upstart': False,

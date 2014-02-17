@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+
+'''
+mc_pgsql / Postgresql related functions
+=======================================
+'''
 # -*- coding: utf-8 -*-
 __docformat__ = 'restructuredtext en'
 import re
@@ -18,6 +23,8 @@ SOCKET_RE = re.compile(
 
 
 def wrapper(wrappy):
+    '''Wrap a postgresql salt module function to set automaticly the socket or port to use.
+    This is debian specific for now'''
     def wfunc(name, *args, **kw):
         globs = dict([(k, v) for k, v in globals().items()
                       if not k in ['wrapper', 'args', 'kw',
@@ -61,13 +68,30 @@ def wrapper(wrappy):
 
 
 def settings():
+    '''
+    Postgresql settings registry
+
+    pgDbs
+        mapping of postgresql databases with their settings
+    postgresqlUsers
+        mapping of postgresql users with their settings
+    user
+        system user
+    version
+        default postgres version
+    defaultPgVersion
+        default postgres version
+    versions
+        activated postgresql version
+    postgis
+        mapping of supported postgres per postgis version
+    postgis_db
+        name of the postis template
+    pg_hba
+        List of pg_hba entries
+    '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        '''
-        This is called from mc_services, loading all Nginx default settings
-
-        :!Settings are merged with grains and pillar via mc_utils.defaults
-        '''
         grains = __grains__
         pillar = __pillar__
         localsettings = __salt__['mc_localsettings.settings']()

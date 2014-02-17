@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''
-Some usefull small tools
+mc_macros / macros helpers
 ============================================
 
 '''
@@ -85,6 +85,7 @@ def metadata(kind, grain=None, state=None, bases=None):
 
 
 def is_active(registry, name):
+    '''Is the queried service active in the registry'''
     try:
         return name in registry['actives']
     except:
@@ -96,17 +97,19 @@ def get_registry(registry_configuration):
     Mangle a registry of activated/unactived states to be run
     as part of the automatic highstate inclusion.
 
-    {
-        'kind': 'foo',
-        'bases': ['localsettings'],
-        'defaults': {
-           'mastersalt_minion': {'active': False},
-           'mastersalt_master': {'active': False},
-           'salt_minion': {'active': False},
-           'salt_master': {'active': True}
-          }
+    ::
+
+        {
+            'kind': 'foo',
+            'bases': ['localsettings'],
+            'defaults': {
+               'mastersalt_minion': {'active': False},
+               'mastersalt_master': {'active': False},
+               'salt_minion': {'active': False},
+               'salt_master': {'active': True}
+              }
+            }
         }
-    }
 
     Will activate the 'makina-states.controllers.salt_master' and
     deactivate all other states to be automaticly run
@@ -116,25 +119,25 @@ def get_registry(registry_configuration):
 
     We return here a registry in the form::
 
-    {
-        'kind': 'foo',
-        'bases': ['localsettings'],
-        'states_pref': 'makina-states.foo',
-        'grains_pref': 'makina-states.foo',
-        'activated': {'salt_master': {'active': True}},
-        'unactivated': {
-           'mastersalt_minion': {'active': False},
-           'mastersalt_master': {'active': False},
-           'salt_minion': {'active': False},
-        },
-        'defaults': {
-           'mastersalt_minion': {'active': False},
-           'mastersalt_master': {'active': False},
-           'salt_minion': {'active': False},
-           'salt_master': {'active': True}
-          }
+        {
+            'kind': 'foo',
+            'bases': ['localsettings'],
+            'states_pref': 'makina-states.foo',
+            'grains_pref': 'makina-states.foo',
+            'activated': {'salt_master': {'active': True}},
+            'unactivated': {
+               'mastersalt_minion': {'active': False},
+               'mastersalt_master': {'active': False},
+               'salt_minion': {'active': False},
+            },
+            'defaults': {
+               'mastersalt_minion': {'active': False},
+               'mastersalt_master': {'active': False},
+               'salt_minion': {'active': False},
+               'salt_master': {'active': True}
+              }
+            }
         }
-    }
 
     """
     registry = registry_configuration.copy()
@@ -165,6 +168,7 @@ def get_registry(registry_configuration):
 
 
 def construct_registry_configuration(__name, defaults=None):
+    '''Helper to factorise registry mappings'''
     settings_reg = __salt__['mc_{0}.settings'.format(__name)]()
     metadata_reg = __salt__['mc_{0}.metadata'.format(__name)]()
     if not defaults:
@@ -178,6 +182,7 @@ def construct_registry_configuration(__name, defaults=None):
 
 
 def unregister(kind, name, data=None, suf=''):
+    '''Unregister a service via a grain'''
     state = '\n'
     data = locals()
     state += 'makina-states-register.{kind}.{name}{suf}:\n'.format(**data)
@@ -189,6 +194,7 @@ def unregister(kind, name, data=None, suf=''):
 
 
 def register(kind, name, data=None, suf=''):
+    '''Register a service via a grain'''
     state = '\n'
     data = locals()
     state += 'makina-states-register.{kind}.{name}{suf}:\n'.format(**data)
@@ -200,6 +206,7 @@ def register(kind, name, data=None, suf=''):
 
 
 def autoinclude(reg):
+    '''Helper to autoload & (un)register services in a top file'''
     sls = ''
     bases = reg.get('bases', [])
     includes= []

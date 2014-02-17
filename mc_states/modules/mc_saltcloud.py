@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 '''
-Salt related variables
+mc_saltcloud / saltcloud related variables
 ============================================
-
+NOT IMPLEMENTED YET
 '''
 # Import salt libs
 import mc_states.utils
