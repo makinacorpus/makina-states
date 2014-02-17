@@ -12,3 +12,13 @@ Exposed settings:
 You can include version for packages, eg::
 
     makina-states.localsettings.npm.packages: ['grunt@0.6']
+
+There is a macro available to specify the version of node.js you want to use.
+Be sure to have them installed first::
+
+    makina-states.localsettings.npm.versions: ['0.8.26']
+
+You can then use the macro::
+
+    {% import "makina-states/localsettings/nodejs-standalone.sls" as nodejs with context %}
+    {{ nodejs.npmInstall('less', '0.8.26') }}
