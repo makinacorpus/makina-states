@@ -1225,7 +1225,7 @@ setup_and_maybe_update_code() {
                         fi
                         if  [ "x${i}" = "x${ms}/src/SaltTesting" ]\
                          || [ "x${i}" = "x${ms}/src/salt" ];then
-                            branch="develop"
+                            co_branch="develop"
                         fi
                         bs_log "Upgrading ${i}"
                         cd "${i}"
@@ -1255,7 +1255,13 @@ setup_and_maybe_update_code() {
                                 git diff origin/${co_branch} --exit-code 1>/dev/null 2>/dev/null
                                 if [ "x${?}" != "x0" ];then
                                     bs_log "Update is necessary"
-                                fi && git merge --ff-only origin/${co_branch}
+                                fi && if \
+                                    [ "x${i}" = "x${ms}/src/SaltTesting" ]\
+                                ;then
+                                    git reset --hard origin/${co_branch}
+                                else
+                                    git merge --ff-only origin/${co_branch}
+                                fi
                                 SALT_BOOT_NEEDS_RESTART=1
                             fi
                         fi
