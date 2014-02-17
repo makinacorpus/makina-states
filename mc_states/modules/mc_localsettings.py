@@ -328,7 +328,8 @@ def settings():
         # Node.js
         data['npmSettings'] = npmSettings = saltmods['mc_utils.defaults'](
             'makina-states.localsettings.npm', {
-                'packages': []
+                'packages': [],
+                'versions': []
             })
 
         # SSL settings for reuse in states

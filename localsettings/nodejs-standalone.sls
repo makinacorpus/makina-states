@@ -3,9 +3,25 @@
 # see:
 #   - makina-states/doc/ref/formulaes/localsettings/nodejs.rst
 #}
-{% macro do(full=True) %}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {%- set locs = localsettings.locations %}
+
+{% macro npmInstall(npmPackage, npmVersion="system") %}
+npm-packages-{{npmPackage}}:
+  cmd.run:
+    {% if npmVersion == "system" %}
+    - name: npm install -g {{npmPackage}}
+    {% else %}
+    - name: |
+            export PATH={{ locs['apps_dir'] }}/nodejs/{{ npmVersion }}/bin:$PATH;
+            if [ ! -e {{ locs['apps_dir'] }}/nodejs/{{ npmVersion }}/bin/npm ];
+            then exit 1;
+            else npm install -g {{npmPackage}};
+            fi
+    {% endif %}
+{% endmacro %}
+
+{% macro do(full=True) %}
 {{ salt['mc_macros.register']('localsettings', 'nodejs') }}
 {%- set npmPackages = localsettings.npmSettings.packages %}
 {% if full %}
@@ -58,18 +74,32 @@ npm-pkgs:
       - file: npm-pkgs
       - pkg: nodejs-pkgs
 {%-   endif %}
+
+{#- Install specific versions of npm  #}
+{% if grains['cpuarch'] == "x86_64" %}
+{% set arch = "x64" %}
+{% else %}
+{% set arch = "x86" %}
 {% endif %}
+
+{% for version in localsettings.npmSettings.versions %}
+{% set archive = "node-v"+ version +"-linux-"+ arch  %}
+npm-version-{{ version }}:
+  file.directory:
+    - name: {{ locs['apps_dir'] }}/nodejs
+  cmd.run:
+    - unless: ls -d {{ locs['apps_dir'] }}/nodejs/{{ version }}
+    - cwd: {{ locs['apps_dir'] }}/nodejs
+    - name: |
+            wget http://nodejs.org/dist/v{{ version }}/{{ archive }}.tar.gz &&
+            tar xzvf {{ archive }}.tar.gz &&
+            mv {{ archive }} {{ version }}
+{% endfor %}
+{% endif %}
+
 {% for npmPackage in npmPackages -%}
-npm-packages-{{npmPackage}}:
-  npm.installed:
-    - name: {{npmPackage}}
-    {% if full %}
-    - require:
-      - pkg: nodejs-pkgs
-      {% if grains['os'] in ['Debian'] -%}
-      - cmd: npm-pkgs
-      {%- endif %}
-    {%- endif %}
+{{ npmInstall(npmPackage) }}
 {%- endfor %}
+
 {% endmacro %}
 {{ do(full=False)}}

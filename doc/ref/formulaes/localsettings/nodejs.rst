@@ -7,9 +7,8 @@ You can use the grain/pillar following setting to select the npm packages:
 Exposed settings:
 
     :makina-states.localsettings.npm.packages: LIST (default: [])
+    :makina-states.localsettings.npm.versions: LIST (default: [])
 
-You can include version, eg::
+You can include version for packages, eg::
 
     makina-states.localsettings.npm.packages: ['grunt@0.6']
-
-
