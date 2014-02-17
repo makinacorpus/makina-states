@@ -58,8 +58,8 @@ rdiff-backup-venv:
 
 rdiff-backup-install:
   cmd.run:
-    - name: {{locs.apps_dir}}/rdiff-backup/venv/bin/python dist/setup.py develop
-    - cmd: {{locs.apps_dir}}
+    - name: pwd;{{locs.apps_dir}}/rdiff-backup/venv/bin/python dist/setup.py develop
+    - cwd: {{locs.apps_dir}}/rdiff-backup
     - user: root
     - unless: test -e {{locs.apps_dir}}/rdiff-backup/venv/bin/rdiff-backup
     - require:
