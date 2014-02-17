@@ -14,8 +14,15 @@
 
 {%- set etherpadLocation = etherpadSettings['location'] + "/etherpad-lite-" + etherpadSettings['version'] %}
 
-{% import "makina-states/localsettings/nodejs-standalone.sls" as nodejs with context %}
-{{ nodejs.do(full=full) }}
+{% if full %}
+include:
+  - makina-states.localsettings.nodejs
+  - makina-states.services.monitoring.circus
+{% else %}
+include:
+  - makina-states.localsettings.nodejs-standalone
+  - makina-states.services.monitoring.circus-standalone
+{% endif %}
 
 {%- if full %}
 etherpad-create-user:
@@ -83,7 +90,6 @@ etherpad-settings:
 
 {#- Run #}
 {% import "makina-states/services/monitoring/circus-standalone.sls" as circus with context %}
-{{ circus.do(full=full) }}
 {{ circus.circusAddWatcher("etherpad", etherpadLocation +"/bin/run.sh") }}
 
 {% endmacro %}
