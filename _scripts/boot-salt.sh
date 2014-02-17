@@ -1581,7 +1581,7 @@ a\    ret_port: ${SALT_MASTER_PORT}
 a\    - mastersalt
 }" "${MASTERSALT_PILLAR}/top.sls"
         fi
-        if [ ! -f "${MASTERSALT_PILLAR}/mastersalt.sls"];then
+        if [ ! -f "${MASTERSALT_PILLAR}/mastersalt.sls" ];then
             debug_msg "Creating mastersalt configuration file"
             echo "mastersalt:" >  "${MASTERSALT_PILLAR}/mastersalt.sls"
         fi
@@ -2134,7 +2134,7 @@ install_mastersalt_daemons() {
             RUN_MASTERSALT_BOOTSTRAP="1"
         fi
     fi
-    if [ -n "${SALT_BOOT_DEBUG}" != "x" ];then
+    if [  "${SALT_BOOT_DEBUG}" != "x" ];then
         debug_msg "mastersalt:"
         debug_msg "RUN_MASTERSALT_BOOTSTRAP: $RUN_MASTERSALT_BOOTSTRAP"
         debug_msg "grains: $(grep makina-states.controllers.mastersalt_ "${MCONF_PREFIX}/grains" |wc -l)"
