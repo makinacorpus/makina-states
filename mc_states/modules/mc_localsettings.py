@@ -329,7 +329,11 @@ def settings():
             data['lts_dist'] = debian_stable
 
         # JDK default version
-        data['jdkDefaultVer'] = jdkDefaultVer = '7'
+        data['jdkSettings'] = saltmods['mc_utils.defaults'](
+            'makina-states.localsettings.jdk', {
+                'default_jdk_ver': 7,
+            })
+        data['jdkDefaultVer'] = data['jdkSettings']['default_jdk_ver']
 
         # RVM
         data['rvmSettings'] = rvmSettings = saltmods['mc_utils.defaults'](
@@ -350,7 +354,6 @@ def settings():
                 'packages': [],
                 'versions': []
             })
-
         # SSL settings for reuse in states
         country = saltmods['grains.get']('defaultlanguage')
         if country:
@@ -374,8 +377,14 @@ def settings():
             'fr_BE.UTF-8',
             'fr_FR.UTF-8',
         ]
-        data['locales'] = locales = __salt__['mc_utils.get']('makina-states.localsettings.locales.locales', default_locales)
-        data['default_locale'] = default_locale = __salt__['mc_utils.get']('makina-states.localsettings.locales.locale', default_locale)
+        localesdef = __salt__['mc_utils.defaults'](
+            'makina-states.localsettings.locales', {
+                'locales': default_locales,
+                'locale': default_locale,
+            }
+        )
+        data['locales'] = localesdef['locales']
+        data['default_locale'] = localesdef['locale']
         # expose any defined variable to the callees
         return data
     return _settings()
