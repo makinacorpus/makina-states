@@ -151,7 +151,13 @@ etc-init.d-supervisor.{{common.name}}:
     - name: {{common.project_root}}/etc/www
     - user: {{common.user}}
     - group: {{common.user}}
-    - mode: 755
+    - dir_mode: 755
+    - watch:
+      - buildout: {{common.name}}-buildout-project
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+      - mc_proxy: makina-apache-pre-conf
+{#      - cmd: makina-apache-conf-syntax-check #}
   cmd.run:
     - name: >
           ln -s {{common.project_root}}/www/apache.reverseproxy.conf {{common.project_root}}/etc/www/apache.reverseproxy.conf
@@ -159,6 +165,8 @@ etc-init.d-supervisor.{{common.name}}:
     - user: {{common.user}}
     - unless: ls {{common.project_root}}/etc/www/apache.reverseproxy.conf {{common.project_root}}/etc/www/nginx.reverseproxy.conf
     - onlyif: ls {{common.project_root}}/www/apache.reverseproxy.conf {{common.project_root}}/www/nginx.reverseproxy.conf
+    - watch:
+      - buildout: {{common.name}}-buildout-project
     - watch_in:
       - mc_proxy: {{common.name}}-postinstall-project-hook
       - mc_proxy: makina-apache-pre-conf
