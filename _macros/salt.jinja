@@ -265,11 +265,8 @@ open-{{ data.name }}-dirs:
     - user: root
     - group: {{ group }}
   cmd.run:
-    - name: |
-            chmod 0775
-               {{ locs.apps_dir }}
+    - name: chmod 0775 {{ locs.apps_dir }}
     - user: root
-    - group: {{ group }}
     - require:
       - file: open-{{ data.name }}-dirs
       - group: salt-{{ data.name }}-{{ group }}
