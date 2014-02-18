@@ -221,6 +221,27 @@ salt-{{ data.name }}-{{ group }}:
     - system: True
     {% if groupId %}- gid: {{ groupId }}{% endif %}
 
+{{data.name}}-checkalive-job:
+  {% if not data.cron_check_alive %}
+  cron.absent:
+  {% else %}
+  cron.present:
+    - comment: "{{data.name}} checkalive job"
+    - minute: "*/1"
+  {% endif %}
+    - name: {{msr}}/_scripts/boot-salt.sh --check-alive
+
+{{data.name}}-upgrade-job:
+  {% if not data.cron_auto_upgrade %}
+  cron.absent:
+  {% else %}
+  cron.present:
+    - comment: "{{data.name}} upgrade job"
+    - hour: {{data.cron_upgrade_hour}}
+    - minute: {{data.cron_upgrade_minute}}
+  {% endif %}
+    - name: {{msr}}/_scripts/boot-salt.sh --upgrade -C
+
 {#-
 # this is really factored
 # idea is to create dirs, then requires daemons to issue the chmod
@@ -530,6 +551,17 @@ salt-{{ data.daemon_name }}-conf-global:
       - mc_proxy: dummy-{{data.name}}-layout
     - require_in:
       - mc_proxy: dummy-pre-{{ data.name }}-service-restart
+
+{{data.name}}-restart-job:
+  {% if not data.cron_auto_restart %}
+  cron.absent:
+  {% else %}
+  cron.present:
+    - comment: "salt auto restart job"
+    - hour: {{data['cron_{0}_restart_hour'.format(data['service_name'])]}}
+    - minute: {{data['cron_{0}_restart_minute'.format(data['service_name'])]}}
+  {% endif %}
+    - name: {{msr}}/_scripts/boot-salt.sh --restart-{{data.service_name}}s
 
 salt-{{ data.daemon_name }}-conf:
   file.managed:

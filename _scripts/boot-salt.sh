@@ -1760,23 +1760,35 @@ killall_local_minions() {
 }
 
 restart_local_mastersalt_masters() {
-    killall_local_mastersalt_masters
-    service mastersalt-master restart
+    if [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
+        service mastersalt-master stop
+        killall_local_mastersalt_masters
+        service mastersalt-master restart
+    fi
 }
 
 restart_local_mastersalt_minions() {
-    killall_local_mastersalt_minions
-    service mastersalt-minion restart
+    if [ "x${IS_MASTERSALT_MINION}" != "x" ];then
+        service mastersalt-minion stop
+        killall_local_mastersalt_minions
+        service mastersalt-minion restart
+    fi
 }
 
 restart_local_masters() {
-    killall_local_masters
-    service salt-master restart
+    if [ "x${IS_SALT_MASTER}" != "x" ];then
+        service salt-master stop
+        killall_local_masters
+        service salt-master restart
+    fi
 }
 
 restart_local_minions() {
-    killall_local_minions
-    service salt-minion restart
+    if [ "x${IS_SALT_MINION}" != "x" ];then
+        service salt-minion stop
+        killall_local_minions
+        service salt-minion restart
+    fi
 }
 
 salt_ping_test() {
@@ -2659,6 +2671,10 @@ usage() {
     if [ "x${SALT_LONG_HELP}" != "x" ];then
         echo
         bs_log "Advanced settings:"
+        bs_help "--check-alive" "restart daemons if they are down" "" "y"
+        bs_help "--restart-daemons" "restart master & minions daemons" "" "y"
+        bs_help "--restart-masters" "restart master daemons" "" "y"
+        bs_help "--restart-minions" "restart minion daemons" "" "y"
         bs_help "--no-colors:" "No terminal colors" "${NO_COLORS}" "y"
         bs_help "--salt-rebootstrap:" "Redo salt bootstrap" "${SALT_REBOOTSTRAP}" "y"
         bs_help "--buildout-rebootstrap:" "Redo buildout bootstrap" "${BUILDOUT_REBOOTSTRAP}" "y"
@@ -2764,6 +2780,30 @@ parse_cli_opts() {
         fi
         if [ "x${1}" = "x-N" ] || [ "x${1}" = "x--salt-minion" ];then
             IS_SALT_MINION="y";argmatch="1"
+        fi
+        if [ "x${1}" = "x--check-alive" ];then
+            SALT_BOOT_SKIP_HIGHSTATES=1
+            SALT_BOOT_SKIP_CHECKOUTS=1
+            SALT_BOOT_CHECK_ALIVE="y"
+            argmatch="1"
+        fi
+        if [ "x${1}" = "x--restart-masters" ];then
+            SALT_BOOT_SKIP_HIGHSTATES=1
+            SALT_BOOT_SKIP_CHECKOUTS=1
+            SALT_BOOT_CHECK_ALIVE="y"
+            SALT_BOOT_RESTART_MASTERS="y";argmatch="1"
+        fi
+        if [ "x${1}" = "x--restart-minions" ];then
+            SALT_BOOT_SKIP_HIGHSTATES=1
+            SALT_BOOT_SKIP_CHECKOUTS=1
+            SALT_BOOT_CHECK_ALIVE="y"
+            SALT_BOOT_RESTART_MINIONS="y";argmatch="1"
+        fi
+        if [ "x${1}" = "x--restart-daemons" ];then
+            SALT_BOOT_SKIP_HIGHSTATES=1
+            SALT_BOOT_SKIP_CHECKOUTS=1
+            SALT_BOOT_CHECK_ALIVE="y"
+            SALT_BOOT_RESTART_DAEMONS="y";argmatch="1"
         fi
         if [ "x${1}" = "x-MM" ] || [ "x${1}" = "x--mastersalt-master" ];then
             IS_MASTERSALT_MASTER="y";argmatch="1"
@@ -2903,6 +2943,26 @@ parse_cli_opts() {
     fi
 }
 
+restart_daemons() {
+    if [ "x${IS_SALT_MINION}" != "x" ];then
+        restart_local_minions
+    fi
+    if [ "x${IS_SALT_MASTER}" != "x" ];then
+        restart_local_masters
+    fi
+    if [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
+        restart_local_mastersalt_masters
+    fi
+    if [ "x${IS_MASTERSALT_MINION}" != "x" ];then
+        restart_local_mastersalt_minions
+    fi
+}
+
+check_alive() {
+    lazy_start_mastersalt_daemons
+    lazy_start_salt_daemons
+}
+
 if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
     parse_cli_opts $LAUNCH_ARGS
     if [ "x$(dns_resolve localhost)" = "x${DNS_RESOLUTION_FAILED}" ];then
@@ -2918,9 +2978,30 @@ if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
     create_salt_skeleton
     install_mastersalt_env
     install_salt_env
-    run_highstates
-    maybe_install_projects
-    maybe_run_tests
+    abort=""
+    if [ "x${SALT_BOOT_RESTART_MINIONS}" != "x" ];then
+        restart_local_minions
+        restart_local_mastersalt_minions
+        abort="1"
+    fi
+    if [ "x${SALT_BOOT_RESTART_MASTERS}" != "x" ];then
+        restart_local_masters
+        restart_local_mastersalt_masters
+        abort="1"
+    fi
+    if [ "x${SALT_BOOT_RESTART_DAEMONS}" != "x" ];then
+        restart_daemons
+        abort="1"
+    fi
+    if [ "x${SALT_BOOT_CHECK_ALIVE}" != "x" ];then
+        check_alive
+        abort="1"
+    fi
+    if [ "x${abort}" = "x" ];then
+        run_highstates
+        maybe_install_projects
+        maybe_run_tests
+    fi
     exit 0
 fi
 # vim:set et sts=5 ts=4 tw=0:

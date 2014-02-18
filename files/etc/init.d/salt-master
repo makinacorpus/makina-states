@@ -38,6 +38,8 @@ do_start() {
     fi
 
     log_daemon_msg "Starting $DESC"
+    # remove stale sockets
+    rm -f {{salt_data['sock_dir']}}/minion_event*ipc
     start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_ARGS
     log_end_msg $?
 }
@@ -45,6 +47,7 @@ do_start() {
 do_stop() {
     log_begin_msg "Stopping $DESC ..."
     start-stop-daemon --stop --retry TERM/5 --quiet --oknodo --pidfile $PIDFILE
+    rm -f {{salt_data['sock_dir']}}/minion_event*ipc
     RC=$?
     [ $RC -eq 0 ] && rm -f $PIDFILE
     log_end_msg $RC
