@@ -49,17 +49,19 @@ etherpad-install-pkg:
     - recurse:
         - user
         - group
-  cmd.run:
-    - name: >
-          wget https://github.com/ether/etherpad-lite/archive/{{ etherpadSettings['version'] }}.zip
-          && unzip -f {{ etherpadSettings['version'] }}.zip
-          && rm -f {{ etherpadSettings['version'] }}.zip
-    - cwd: {{ etherpadSettings['location'] }}
-    - user: etherpad
-    - group: etherpad
+  archive.extracted:
+    - name: {{ etherpadSettings['location'] }}
+    - archive_format: zip
+    - if_missing: {{ etherpadSettings['location']}}/etherpad-lite-{{etherpadSettings['version']}}/var
+    - source: https://github.com/ether/etherpad-lite/archive/{{ etherpadSettings['version'] }}.zip
+    - source_hash: md5=af569ee46c7e14c84002aa7a8d6d29bd
     - require:
       - user: etherpad
       - file: etherpad-create-directory
+  cmd.run:
+    - name: chown -Rf etherpad:etherpad {{ etherpadSettings['location'] }}
+    - require:
+      - archive: etherpad-install-pkg
     - require_in:
       - file: etherpad-apikey
       - file: etherpad-settings
