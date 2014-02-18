@@ -1,6 +1,7 @@
 {%- import "makina-states/projects/zope.jinja" as zope with context %}
 {%- set services = zope.services %}
 {%- set localsettings = zope.localsettings %}
+{%- import "makina-states/_macros/circus.jinja" as circus with context %}
 
 {% macro install_dependancies(common) %}
 {% if common.full %}
@@ -14,6 +15,15 @@ beecollab_install_dependancies:
 
 {% macro install_zope(common) %}
 {{ zope.install_generic_zope_project(*varargs, **kwargs) }}
+{#
+{{ circus.circusAddWatcher(common.name + "-trancode",
+                           common.project_root+"/bin/transcodedeamon",
+                           uid=common.user,
+                           gid=common.group,
+                           shell=True,
+                           working_dir=common.project_root) }}
+
+#}
 {% endmacro %}
 
 {% macro install_setup(common) %}
@@ -33,7 +43,9 @@ beecollab_project_setup:
   cmd.run:
     - name: grunt
     - cwd: {{ common['project_root'] }}/src/collective.rcse/collective/rcse/resources/dev/
+    - unless: test -e  {{ common['project_root'] }}/src/collective.rcse/collective/rcse/resources/desktop/font/FontAwesome.otf
     - user: {{ common['user'] }}
+
 {% endmacro %}
 
 {% macro install_beecollab_project() %}

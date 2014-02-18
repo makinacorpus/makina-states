@@ -21,6 +21,7 @@ def uniquify(seq):
 
 def _defaultsData(
     common,
+    default_env,
     defaultsData=None,
     env_defaults=None,
     os_defaults=None
@@ -31,11 +32,12 @@ def _defaultsData(
     if os_defaults is None:
         os_defaults = {'Debian': {}}
     if env_defaults is None:
-        env_defaults = {'dev': {}}
+        env_defaults = {'dev': {}, 'prod': {}}
+        env_defaults.setdefault(default_env, {})
     defaultsData = salt['mc_utils.dictupdate'](
         defaultsData,
         salt['grains.filter_by'](
-            env_defaults, grain='default_env', default='dev'))
+            env_defaults, grain='non_exising_ever_not', default=default_env))
     defaultsData = salt['mc_utils.dictupdate'](
         defaultsData,
         salt['grains.filter_by'](os_defaults, grain='os_family'))
@@ -166,9 +168,14 @@ def get_common_vars(
     sls_includes = uniquify(sls_includes)
 
     if not default_env:
-        d = __salt__['mc_utils.get']('default_env', 'dev')
+        # one of:
+        # - makina-projects.fooproject.default_env
+        # - fooproject.default_env
+        # - default_env
         default_env = __salt__['mc_utils.get'](
-            'makina-projects.{0}.{1}'.format(*(name, 'default_env')), d)
+            'makina-projects.{0}.{1}'.format(name, 'default_env'), 
+            __salt__['mc_utils.get']('{0}.{1}'.format(name, 'default_env'), 
+            __salt__['mc_utils.get']('default_env', 'dev')))
     if not user:
         user = '{name}-user'
     if not groups:
@@ -217,9 +224,9 @@ def get_common_vars(
     for k, d in variables.items():
         variables[k] = __salt__['mc_utils.get'](
             'makina-projects.{0}.{1}'.format(*(name, k)), d)
-
     defaultsData = _defaultsData(
         variables,
+        default_env,
         defaultsData=defaults,
         env_defaults=env_defaults,
         os_defaults=os_defaults)

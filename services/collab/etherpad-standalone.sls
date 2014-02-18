@@ -44,14 +44,12 @@ etherpad-create-directory:
 
 {%- endif %}
 etherpad-install-pkg:
-  {% if full %}
   file.directory:
     - name: {{ etherpadSettings['location'] }}
     - user: etherpad
     - group: etherpad
-    - recurse:
-        - user
-        - group
+    - mode: 775
+  {% if full %}
   archive.extracted:
     - name: {{ etherpadSettings['location'] }}
     - archive_format: zip

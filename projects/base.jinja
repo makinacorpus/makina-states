@@ -242,7 +242,6 @@
 {%- macro fix_permissions(common) %}
 {%- if not common.no_reset_perms %}
 {%-    if common.full and not common.no_salt %}
-{% if common.full -%}
 {{common.name}}-restricted-perms:
   cmd.script:
     - source: {{saltmac.resetperms}}
@@ -255,7 +254,6 @@
       - mc_proxy: {{common.name}}-postcheckout-salt-hook
       - mc_proxy: {{common.name}}-postcheckout-project-hook
       - mc_proxy: {{common.name}}-postinstall-project-hook
-{%-    endif %}
 
 {{common.name}}-perms:
   cmd.script:
