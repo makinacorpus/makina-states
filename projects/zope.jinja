@@ -89,10 +89,26 @@ prepreq-{{common.name}}:
         - {{common.data.buildout.settings.buildout['download-directory']}}
     - user: {{common.user}}
     - group: {{common.group}}
-    - mode: 770
+    - mode: 775
     - makedirs: true
     - watch:
       - file: {{common.name}}-settings
+
+{% if common.full -%}
+{{common.name}}-cache restricted-perms:
+  cmd.script:
+    - source: {{saltmac.resetperms}}
+    - args: >
+            --dmode '0775' --fmode '0775'
+            --user  {{common.user}} --group "{{common.group}}"
+            --paths {{common.data.buildout.settings.buildout['eggs-directory']}}
+            --paths {{common.data.buildout.settings.buildout['download-cache']}}
+            --paths {{common.data.buildout.settings.buildout['download-directory']}}
+    - watch:
+      - file: {{common.name}}-buildout-caches
+    - watch_in:
+      - {{common.name}}-buildout-project
+{%-    endif %}
 
 {{common.name}}-buildout-project:
   file.managed:
