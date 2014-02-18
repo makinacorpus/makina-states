@@ -415,6 +415,7 @@ get_salt_nodetype() {
 
 set_vars() {
     set_colors
+    QUIET=${QUIET:-}
     ROOT="${ROOT:-"/"}"
     CONF_ROOT="${CONF_ROOT:-"${ROOT}etc"}"
     ETC_INIT="${ETC_INIT:-"${CONF_ROOT}/init"}"
@@ -849,8 +850,16 @@ recap_(){
 }
 
 recap() {
-    recap_
-    travis_sys_info
+    will_do_recap="x"
+    if [ "x${QUIET}" != "x" ];then
+        if [ "x${SALT_BOOT_CHECK_ALIVE}" != "x"  ];then
+            will_do_recap=""
+        fi
+    fi
+    if [ "x${will_do_recap}" != "x" ];then
+        recap_
+        travis_sys_info
+    fi
     recap_ "no" "y" > "${TMPDIR}/boot_salt_top"
 }
 
@@ -906,7 +915,9 @@ teardown_backports() {
 
 install_prerequisites() {
     to_install=""
-    bs_log "Check package dependencies"
+    if [ "x${QUIET}" = "x" ];then
+        bs_log "Check package dependencies"
+    fi
     lazy_apt_get_install python-software-properties
     # XXX: only lts package in this ppa
     if     [ "x$(is_apt_installed libzmq3    )" = "xno" ] \
@@ -1140,7 +1151,9 @@ is_basedirs_there() {
 }
 
 setup_and_maybe_update_code() {
-    bs_log "Create base directories"
+    if [ "x${QUIET}" = "x" ];then
+        bs_log "Create base directories"
+    fi
     if [ "x${IS_SALT}" != "x" ];then
         for i in "${SALT_PILLAR}" "${SALT_ROOT}";do
             if [ ! -d "${i}" ];then
@@ -1352,7 +1365,9 @@ local/lib/python*
 
     # virtualenv is present, activate it
     if [ -e "${VENV_PATH}/bin/activate" ];then
-        bs_log "Activating virtualenv in ${VENV_PATH}"
+        if [ "x${QUIET}" = "x" ];then
+            bs_log "Activating virtualenv in ${VENV_PATH}"
+        fi
         . "${VENV_PATH}/bin/activate"
     fi
 }
@@ -1730,7 +1745,9 @@ install_salt_daemons() {
         fi
         SALT_BOOT_NOW_INSTALLED="y"
     else
-        bs_log "Skip salt installation, already done"
+        if [ "x${QUIET}" = "x" ];then
+            bs_log "Skip salt installation, already done"
+        fi
     fi
     lazy_start_salt_daemons
 }
@@ -1871,10 +1888,12 @@ mastersalt_master_connectivity_check() {
 
 challenge_message() {
     minion_id="$(get_minion_id)"
-    bs_log "****************************************************************"
-    bs_log "     GO ACCEPT THE KEY ON SALT_MASTER  (${SALT_MASTER_IP}) !!! "
-    bs_log "     You need on this box to run salt-key -y -a ${minion_id}"
-    bs_log "****************************************************************"
+    if [ "x${QUIET}" = "x" ]; then
+        bs_log "****************************************************************"
+        bs_log "     GO ACCEPT THE KEY ON SALT_MASTER  (${SALT_MASTER_IP}) !!! "
+        bs_log "     You need on this box to run salt-key -y -a ${minion_id}"
+        bs_log "****************************************************************"
+    fi
 }
 
 get_delay_time() {
@@ -1891,8 +1910,11 @@ make_association() {
     minion_id="$(get_minion_id)"
     registered=""
     debug_msg "Entering association routine"
-    bs_log "If the bootstrap program seems to block here"
-    challenge_message
+    minion_id="$(get_minion_id)"
+    if [ "x${QUIET}" = "x" ];then
+        bs_log "If the bootstrap program seems to block here"
+        challenge_message
+    fi
     debug_msg "ack"
     if [ "x${SALT_NODETYPE}" = "xtravis" ];then
         set -x
@@ -1927,7 +1949,7 @@ make_association() {
         debug_msg "Salt minion \"${minion_id}\" already registered on master"
         minion_id="$(get_minion_id)"
         registered="1"
-        echo "changed=false comment='salt minion already registered'"
+        salt_echo "changed=false comment='salt minion already registered'"
     else
         if [ "x${SALT_MASTER_DNS}" = "xlocalhost" ];then
             debug_msg "Forcing salt master restart"
@@ -1963,7 +1985,7 @@ make_association() {
             # sleep 15 seconds giving time for the minion to wake up
             bs_log "Salt minion \"${minion_id}\" registered on master"
             registered="1"
-            echo "changed=yes comment='salt minion already registered'"
+            salt_echo "changed=yes comment='salt minion already registered'"
         else
             minion_challenge
             if [ "x${challenged_ms}" = "x" ];then
@@ -1973,7 +1995,7 @@ make_association() {
             fi
             minion_id="$(get_minion_id)"
             registered="1"
-            echo "changed=yes comment='salt minion already registered'"
+            salt_echo "changed=yes comment='salt minion already registered'"
         fi
         if [ "x${registered}" = "x" ];then
             bs_log "Failed accepting salt key on ${SALT_MASTER_IP} for ${minion_id}"
@@ -1985,19 +2007,29 @@ make_association() {
 
 challenge_mastersalt_message() {
     minion_id="$(mastersalt_get_minion_id)"
-    bs_log "****************************************************************"
-    bs_log "    GO ACCEPT THE KEY ON MASTERSALT (${MASTERSALT}) !!! "
-    bs_log "    You need on this box to run mastersalt-key -y -a ${minion_id}"
-    bs_log "****************************************************************"
+    if [ "x${QUIET}" = "x" ]; then
+        bs_log "****************************************************************"
+        bs_log "    GO ACCEPT THE KEY ON MASTERSALT (${MASTERSALT}) !!! "
+        bs_log "    You need on this box to run mastersalt-key -y -a ${minion_id}"
+        bs_log "****************************************************************"
+    fi
 }
 
+salt_echo() {
+    if [ "x${QUIET}" = "x" ];then
+        echo "${@}"
+    fi
+}
 make_mastersalt_association() {
     if [ "x${IS_MASTERSALT_MINION}" = "x" ];then return;fi
     minion_id="$(cat "${CONF_PREFIX}/minion_id" 1>/dev/null 2>/dev/null)"
     registered=""
     debug_msg "Entering mastersalt association routine"
-    bs_log "If the bootstrap program seems to block here"
-    challenge_mastersalt_message
+    minion_id="$(mastersalt_get_minion_id)"
+    if [ "x${QUIET}" = "x" ];then
+        bs_log "If the bootstrap program seems to block here"
+        challenge_mastersalt_message
+    fi
     debug_msg "ack"
     if [ "x${minion_id}" = "x" ];then
         bs_yellow_log "Minion did not start correctly, the minion_id cache file is empty, trying to restart"
@@ -2011,7 +2043,7 @@ make_mastersalt_association() {
     fi
     if [ "x$(mastersalt_ping_test)" = "x0" ];then
         debug_msg "Mastersalt minion \"${minion_id}\" already registered on ${MASTERSALT}"
-        echo "changed=false comment='mastersalt minion already registered'"
+        salt_echo "changed=false comment='mastersalt minion already registered'"
     else
         if [ "x${MASTERSALT_MASTER_IP}" = "x127.0.0.0.1" ];then
             debug_msg "Forcing mastersalt master restart"
@@ -2044,10 +2076,10 @@ make_mastersalt_association() {
         bs_log "Waiting for mastersalt minion key hand-shake"
         minion_id="$(mastersalt_get_minion_id)"
         if [ "x$(salt_ping_test)" = "x0" ];then
-            echo "changed=yes comment='mastersalt minion registered'"
+            salt_echo "changed=yes comment='mastersalt minion registered'"
             bs_log "Salt minion \"${minion_id}\" registered on master"
             registered="1"
-            echo "changed=yes comment='salt minion registered'"
+            salt_echo "changed=yes comment='salt minion registered'"
         else
             mastersalt_minion_challenge
             if [ "x${challenged_ms}" = "x" ];then
@@ -2057,7 +2089,7 @@ make_mastersalt_association() {
             fi
             minion_id="$(mastersalt_get_minion_id)"
             registered="1"
-            echo "changed=yes comment='salt minion registered'"
+            salt_echo "changed=yes comment='salt minion registered'"
         fi
         if [ "x${registered}" = "x" ];then
             bs_log "Failed accepting mastersalt key on ${MASTERSALT} for ${minion_id}"
@@ -2199,7 +2231,11 @@ install_mastersalt_daemons() {
         fi
         SALT_BOOT_NOW_INSTALLED="y"
     else
-        if [ "x${IS_MASTERSALT}" != "x" ];then bs_log "Skip MasterSalt installation, already done";fi
+        if [ "x${QUIET}" = "x" ];then
+            if [ "x${IS_MASTERSALT}" != "x" ];then 
+                bs_log "Skip MasterSalt installation, already done"
+            fi
+        fi
     fi
 }
 
@@ -2219,7 +2255,7 @@ install_salt_env() {
     make_association
     # --------- stateful state return: mark as already installed
     if [ "x${ds}" = "x" ];then
-        echo 'changed=false comment="already bootstrapped"'
+        salt_echo 'changed=false comment="already bootstrapped"'
     fi
 }
 
@@ -2252,9 +2288,9 @@ highstate_in_mastersalt_env() {
             exit 1
         fi
         warn_log
-        echo "changed=yes comment='mastersalt highstate run'"
+        salt_echo "changed=yes comment='mastersalt highstate run'"
     else
-        echo "changed=false comment='mastersalt highstate skipped'"
+        salt_echo "changed=false comment='mastersalt highstate skipped'"
     fi
 }
 
@@ -2275,16 +2311,16 @@ highstate_in_salt_env() {
             exit 1
         fi
         warn_log
-        echo "changed=yes comment='salt highstate run'"
+        salt_echo "changed=yes comment='salt highstate run'"
     else
-        echo "changed=false comment='salt highstate skipped'"
+        salt_echo "changed=false comment='salt highstate skipped'"
     fi
     if [ "x${SALT_BOOT_DEBUG}" != "x" ];then cat "$SALT_BOOT_OUTFILE";fi
 
     # --------- stateful state return: mark as freshly installed
     if [ "x${SALT_BOOT_NOW_INSTALLED}" != "x" ];then
         warn_log
-        echo "changed=yes comment='salt installed and configured'"
+        salt_echo "changed=yes comment='salt installed and configured'"
     fi
 
 }
@@ -2404,7 +2440,7 @@ a\    - ${PROJECT_TOPSTATE}
             fi
         else
             bs_log "Top state: ${PROJECT_URL}@$PROJECT_BRANCH[${PROJECT_TOPSLS}] already done (remove grain: $project_grain to redo)"
-            echo "changed=\"false\" comment=\"${PROJECT_URL}@$PROJECT_BRANCH[${PROJECT_TOPSLS}] already done\""
+            salt_echo "changed=\"false\" comment=\"${PROJECT_URL}@$PROJECT_BRANCH[${PROJECT_TOPSLS}] already done\""
         fi
         if [ "x$(grep -- "- ${PROJECT_TOPSTATE}" "${SALT_ROOT}/top.sls"|wc -l)" = "x0" ];then
             "${SED}" -i -e "/['\"]\*['\"]:/ {
@@ -2415,9 +2451,9 @@ a\    - ${PROJECT_TOPSTATE}
         bs_log "    - ${PROJECT_TOPSLS} in ${SALT_ROOT}/top.sls"
         bs_log "    - in ${PROJECT_PILLAR_FILE}"
         if [ "x${changed}" = "xfalse" ];then
-            echo "changed=\"${changed}\" comment=\"already installed\""
+            salt_echo "changed=\"${changed}\" comment=\"already installed\""
         else
-            echo "changed=\"${changed}\" comment=\"installed\""
+            salt_echo "changed=\"${changed}\" comment=\"installed\""
         fi
         SALT_BOOT_LOGFILE="${O_SALT_BOOT_LOGFILE}"
         SALT_BOOT_OUTFILE="${O_SALT_BOOT_OUTFILE}"
@@ -2741,6 +2777,9 @@ parse_cli_opts() {
         argmatch=""
         if [ "x${1}" = "x${PARAM}" ];then
             break
+        fi
+        if [ "x${1}" = "x-q" ] || [ "x${1}" = "x--quiet" ];then
+            QUIET="1";argmatch="1"
         fi
         if [ "x${1}" = "x-h" ] || [ "x${1}" = "x--help" ];then
             USAGE="1";argmatch="1"
