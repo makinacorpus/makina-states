@@ -95,7 +95,7 @@ prepreq-{{common.name}}:
       - file: {{common.name}}-settings
 
 {% if common.full -%}
-{{common.name}}-cache restricted-perms:
+{{common.name}}-caches-restricted-perms:
   cmd.script:
     - source: {{saltmac.resetperms}}
     - args: >
