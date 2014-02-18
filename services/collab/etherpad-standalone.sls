@@ -4,6 +4,7 @@
 # can modulate your etherpad installation
 #}
 {%- import "makina-states/_macros/services.jinja" as services with context %}
+{%- import "makina-states/_macros/circus.jinja" as circus with context %}
 
 {%- macro do(full=True) %}
 {{- salt['mc_macros.register']('services', 'collab.etherpad') }}
@@ -60,6 +61,7 @@ etherpad-install-pkg:
       - file: etherpad-create-directory
   cmd.run:
     - name: chown -Rf etherpad:etherpad {{ etherpadSettings['location'] }}
+    - unless: test -e {{ etherpadSettings['location']}}/etherpad-lite-{{etherpadSettings['version']}}/var
     - require:
       - archive: etherpad-install-pkg
     - require_in:
@@ -91,8 +93,12 @@ etherpad-settings:
         - file: circus-add-watcher-etherpad
 
 {#- Run #}
-{% import "makina-states/services/monitoring/circus-standalone.sls" as circus with context %}
-{{ circus.circusAddWatcher("etherpad", etherpadLocation +"/bin/run.sh") }}
+{{ circus.circusAddWatcher("etherpad",
+                           etherpadLocation +"/bin/run.sh",
+                           uid='etherpad',
+                           gid='etherpad',
+                           shell=True,
+                           working_dir=etherpadLocation) }}
 
 {% endmacro %}
 {{ do(full=False) }}
