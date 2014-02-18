@@ -229,7 +229,7 @@ salt-{{ data.name }}-{{ group }}:
     - comment: "{{data.name}} checkalive job"
     - minute: "*/1"
   {% endif %}
-    - name: {{msr}}/_scripts/boot-salt.sh --check-alive
+    - name: {{msr}}/_scripts/boot-salt.sh --check-alive --quiet
 
 {{data.name}}-upgrade-job:
   {% if not data.cron_auto_upgrade %}
