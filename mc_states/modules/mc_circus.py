@@ -32,6 +32,29 @@ def settings():
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.monitoring.circus', {
                 'location': locs['apps_dir'] + '/circus',
+                'rotate': 30,
+                'requirements': [
+                  'circus==0.10.0',
+                  'circus-web==0.4.1',
+                ],
+                # parameters to set in circus configuration section
+                'circusd': {
+                  'warmup_delay': "0",
+                  'umask': "002",
+                  'httpd': True,
+                  'stream_backend': 'thread',
+                  'loglevel': 'info',
+                  'debug': False,
+                  'statsd': True,
+                  'statsd_close_outputs': False,
+                  'httpd_close_outputs': False, 
+                  'check_delay': "5",
+                  'httpd_host': "localhost",
+                  'httpd_port': "5554",
+                  'endpoint': "tcp://127.0.0.1:5555",
+                  'pubsub_endpoint': "tcp://127.0.0.1:5556",
+                  'stats_endpoint': 'tcp://127.0.0.1:5557',
+                }
             }
         )
         return data

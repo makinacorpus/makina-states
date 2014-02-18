@@ -7,6 +7,7 @@ Base macros
    :maxdepth: 2
 
    bootstraps.rst
+   circus.rst
    controllers.rst
    funcs.rst
    localsettings.rst
