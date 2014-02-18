@@ -18,6 +18,6 @@
 
 {% macro do(full=False)%}
 {{ salt['mc_macros.register']('services', 'php.phpfpm_with_apache') }}
-{{ phpfpm.do(full=full, apache=True) }}
+{{ phpfpm.do(full=full, apache=True, noregister=True) }}
 {% endmacro %}
 {{ do(full=False) }}

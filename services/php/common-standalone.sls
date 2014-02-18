@@ -8,7 +8,7 @@
 {% set phpSettings = services.phpSettings %}
 {% set s_ALL = phpSettings.s_ALL %}
 {% set apacheSettings = services.apacheSettings %}
-{% set apache = apache %}
+{% set apache = False %}
 
 {% macro includes(full=True, apache=False) %}
   {% if full -%}
@@ -17,6 +17,11 @@
   - makina-states.localsettings.repository_dotdeb
   {%-  endif %}
   {%- endif %}
+  {%  if full %}
+  - makina-states.services.php.real-common
+  {%  else %}
+  - makina-states.services.php.real-common-standalone
+  {%-  endif %}
   - makina-states.services.php.php-hooks
   {% if apache -%}
   - makina-states.services.php.php-apache-hooks
@@ -55,101 +60,8 @@ dotdeb-apache-makina-apache-php-pre-inst:
       - mc_proxy: makina-apache-php-pre-inst
 {%  endif %}
 {% endif %}
-
-makina-php-timezone:
-  file.managed:
-    - user: root
-    - group: root
-    - mode: 664
-    - name: {{ phpSettings.confdir }}/timezone.ini
-    - source: salt://makina-states/files{{ phpSettings.confdir }}/timezone.ini
-    - template: 'jinja'
-    - defaults:
-        timezone: "{{ phpSettings.timezone }}"
-    - require:
-      - mc_proxy: makina-php-post-inst
-    - watch_in:
-      - mc_proxy: makina-php-pre-conf
-
-#--------------------- APC (mostly deprecated)
-{% if phpSettings.modules.apc.install %}
-makina-php-apc:
-  file.managed:
-    - user: root
-    - group: root
-    - mode: 664
-    - name: {{ phpSettings.confdir }}/apcu.ini
-    - source: salt://makina-states/files{{ phpSettings.confdir }}/apcu.ini
-    - template: 'jinja'
-    - defaults:
-        enabled: {{ phpSettings.modules.apc.enabled }}
-        enable_cli: {{ phpSettings.modules.apc.enable_cli }}
-        shm_segments: "{{ phpSettings.modules.apc.shm_segments }}"
-        shm_size: "{{ phpSettings.modules.apc.shm_size }}"
-        mmap_file_mask: "{{ phpSettings.modules.apc.mmap_file_mask }}"
-    - require:
-      - mc_proxy: makina-php-post-inst
-    - watch_in:
-      - mc_proxy: makina-php-pre-conf
-
-{% if full %}
-{%   if phpSettings.modules.apc.enabled %}
-makina-php-apc-install:
-  cmd.run:
-    - name: {{ locs.sbin_dir }}/php5enmod {{s_ALL}} apcu
-    {% if grains['os'] in ['Ubuntu'] %}
-    - unless: {{ locs.sbin_dir }}/php5query -q -s cli -m apcu
-    {% endif %}
-    - require:
-      - mc_proxy: makina-php-pre-conf
-      - file: makina-php-apc
-    - watch_in:
-      - mc_proxy: makina-php-post-conf
-{%   else %}
-makina-php-apc-disable:
-  cmd.run:
-    - name: {{ locs.sbin_dir }}/php5dismod {{s_ALL}} apcu
-    {% if grains['os'] in ['Ubuntu'] %}
-    - onlyif: {{ locs.sbin_dir }}/php5query -q -s cli -m apcu
-    {% endif %}
-    - require:
-      - mc_proxy: makina-php-pre-conf
-      - file: makina-php-apc
-    - watch_in:
-      - mc_proxy: makina-php-post-conf
-{%   endif %}
-{% endif %}
-
-#--------------------- XDEBUG
-{% if phpSettings.modules.xdebug.install %}
-{%   if phpSettings.modules.xdebug.enabled %}
-makina-php-xdebug-install:
-  cmd.run:
-    - name: {{ locs.sbin_dir }}/php5enmod {{s_ALL}} xdebug
-    {% if grains['os'] in ['Ubuntu'] %}
-    - unless: {{ locs.sbin_dir }}/php5query -q -s cli -m xdebug
-    {% endif %}
-    - require:
-      - mc_proxy: makina-php-pre-conf
-    - watch_in:
-      - mc_proxy: makina-php-post-conf
-{%   else %}
-makina-php-xdebug-disable:
-  cmd.run:
-    - name: {{ locs.sbin_dir }}/php5dismod {{s_ALL}} xdebug
-    {% if grains['os'] in ['Ubuntu'] %}
-    - onlyif: {{ locs.sbin_dir }}/php5query -q -s cli -m xdebug
-    {% endif %}
-    - require:
-      - mc_proxy: makina-php-pre-conf
-    - watch_in:
-      - mc_proxy: makina-php-post-conf
-{%   endif %}
-{% endif %}
-{% endif %}
 {% endmacro %}
 
 include:
 {{ includes(full=False, apache=false) }}
-
 {{ do(full=False, apache=false) }}

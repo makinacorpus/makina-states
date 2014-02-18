@@ -11,8 +11,8 @@
 {%- set vm_name = vm_fqdn.replace('.', '_').replace(' ', '_') %}
 {%- set vm_nat_fqdn = vm_fqdn.split('.')[:1][0]+'-nat.'+'.'.join(vm_fqdn.split('.')[1:]) %}
 {%- set ips=grains['ip_interfaces'] %}
-{%- set ip1 = ('eth0' in ips) and ips['eth0'][0] or None %}
-{%- set ip2 = ('eth1' in ips) and ips['eth1'][0] or None %}
+{%- set ip1 = (ips.get('eth0', [])) and ips['eth0'][0] or None %}
+{%- set ip2 = (ips.get('eth1', [])) and ips['eth1'][0] or None %}
 {%- set hostsf='/etc/devhosts' %}
 
 {% macro do(full=True) %}

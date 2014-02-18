@@ -552,12 +552,12 @@ salt-{{ data.daemon_name }}-conf-global:
     - require_in:
       - mc_proxy: dummy-pre-{{ data.name }}-service-restart
 
-{{data.name}}-restart-job:
+{{data.name}}-{{data.daemon_name}}-restart-job:
   {% if not data.cron_auto_restart %}
   cron.absent:
   {% else %}
   cron.present:
-    - comment: "salt auto restart job"
+    - comment: "salt {{data.daemon_name}} auto restart job"
     - hour: {{data['cron_{0}_restart_hour'.format(data['service_name'])]}}
     - minute: {{data['cron_{0}_restart_minute'.format(data['service_name'])]}}
   {% endif %}

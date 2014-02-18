@@ -4,15 +4,13 @@
 {% set common_includes= base.common_includes %}
 {% set do = base.do %}
 {% set full = True %}
-{% set apache = False %}
 {% set services = base.services %}
 {% set localsettings = base.localsettings %}
 {% set nodetypes = base.nodetypes %}
 {% set locs = base.locs %}
 {% set phpSettings = base.phpSettings %}
-{% set apache = base.apache %}
+{% set apache = False %}
 
 include:
 {{ base.includes(full=full, apache=apache) }}
-
 {{ base.do(full=full, apache=apache) }}
