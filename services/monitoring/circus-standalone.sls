@@ -21,7 +21,7 @@
   'log': locs.var_log_dir+'/circus.log',
   'locs': locs,
   'venv': venv,
-  'pidf': locs.var_run_dir+'/circus.pid',
+  'pidf': locs.var_run_dir+'/circusd.pid',
   } %}
 
 include:
@@ -99,11 +99,11 @@ circus-logrotate:
     - defaults: {{defaults|yaml}}
 
 {#- Run #}
-{% if grains['os_family'] in ['Ubuntu'] %}
+{% if grains['os'] in ['Ubuntu'] %}
 circus-upstart-conf:
   file.managed:
-    - name: {{ locs['conf_dir'] }}/init/circus.conf
-    - source: salt://makina-states/files/etc/init/circus.conf
+    - name: {{ locs['conf_dir'] }}/init/circusd.conf
+    - source: salt://makina-states/files/etc/init/circusd.conf
     - template: jinja
     - user: root
     - group: root
@@ -111,9 +111,7 @@ circus-upstart-conf:
     - watch_in: 
       - mc_proxy: circus-pre-restart
     - defaults: {{defaults|yaml}}
-
 {% else %}
-{% endif %}
 circus-init-conf:
   file.managed:
     - name: {{ locs['conf_dir'] }}/init.d/circusd
@@ -125,6 +123,8 @@ circus-init-conf:
     - watch_in: 
       - mc_proxy: circus-pre-restart
     - defaults: {{defaults|yaml}}
+{% endif %}
+
 
 circus-initdef-conf:
   file.managed:
@@ -140,8 +140,8 @@ circus-initdef-conf:
 
 circus-start:
   service.running:
-    - name: circus
-    - enabled: True
+    - name: circusd
+    - enable: True
     - watch: 
       - mc_proxy: circus-pre-restart
     - watch_in: 

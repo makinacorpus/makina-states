@@ -41,7 +41,7 @@ do_start() {
     fi
 
     log_daemon_msg "Starting circusd daemon: "
-    start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_ARGS
+    start-stop-daemon --start --quiet --exec $DAEMON -- $DAEMON_ARGS --pidfile $PIDFILE 
     log_end_msg $?
 }
 

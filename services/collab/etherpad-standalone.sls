@@ -42,7 +42,9 @@ etherpad-create-directory:
     - dir_mode: 755
     - makedirs: True
 
+{%- endif %}
 etherpad-install-pkg:
+  {% if full %}
   file.directory:
     - name: {{ etherpadSettings['location'] }}
     - user: etherpad
@@ -56,18 +58,33 @@ etherpad-install-pkg:
     - if_missing: {{ etherpadSettings['location']}}/etherpad-lite-{{etherpadSettings['version']}}/var
     - source: https://github.com/ether/etherpad-lite/archive/{{ etherpadSettings['version'] }}.zip
     - source_hash: md5=af569ee46c7e14c84002aa7a8d6d29bd
+    - require_in:
+      - pkg: etherpad-npms
+      - cmd: etherpad-install-perms
     - require:
       - user: etherpad
       - file: etherpad-create-directory
+  {% endif %}
+etherpad-install-perms:
+  file.managed:
+    - name: {{etherpadLocation}}/reset-perms.sh
+    - source:
+    - user: root
+    - group: root
+    - mode: 755
+    - contents: >
+                #!/usr/bin/env bash
+
+                {{locs.resetperms}}
+                -u etherpad -g etherpad
+                --path "{{etherpadLocation}}"
+                --fmode 775 --dmode 775
+                --groups {{localsettings.group}}
   cmd.run:
-    - name: chown -Rf etherpad:etherpad {{ etherpadSettings['location'] }}
-    - unless: test -e {{ etherpadSettings['location']}}/etherpad-lite-{{etherpadSettings['version']}}/var
-    - require:
-      - archive: etherpad-install-pkg
+    - name: {{etherpadLocation}}/reset-perms.sh
     - require_in:
       - file: etherpad-apikey
       - file: etherpad-settings
-{%- endif %}
 
 {# Configuration -#}
 etherpad-apikey:
@@ -78,7 +95,7 @@ etherpad-apikey:
     - user: etherpad
     - group: etherpad
     - require_in:
-        - file: circus-add-watcher-etherpad
+      - file: circus-add-watcher-etherpad
 
 etherpad-settings:
   file.managed:
@@ -90,7 +107,24 @@ etherpad-settings:
     - user: etherpad
     - group: etherpad
     - require_in:
-        - file: circus-add-watcher-etherpad
+      - file: circus-add-watcher-etherpad
+
+{% if full %}
+etherpad-npms:
+  pkg.installed:
+    - pkgs:
+      - sqlite3
+      - libsqlite3-dev
+  npm.installed:
+    - names:
+      - node-sqlite3
+      - sqlite3
+    - dir: {{etherpadLocation}}
+    - require:
+      - pkg: etherpad-npms
+    - watch_in:
+      - cmd: etherpad-install-perms
+{% endif %}
 
 {#- Run #}
 {{ circus.circusAddWatcher("etherpad",
