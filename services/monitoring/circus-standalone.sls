@@ -15,7 +15,7 @@
 {%- set locs = localsettings.locations %}
 {%- set circusSettings = services.circusSettings %}
 
-{%- set venv = circusSettings['location'] + "/.virtualenv" %}
+{%- set venv = circusSettings['location'] + "/venv" %}
 
 {%- if full %}
 {#- Install circus #}

@@ -38,7 +38,9 @@ beecollab_project_setup:
 
 {% macro install_beecollab_project() %}
 {% do kwargs.setdefault('url', 'ssh://git@gitorious.makina-corpus.net/beecollab/beecollab.git') -%}
+{% if varargs|length < 1 %}
 {% do kwargs.setdefault('name', 'beecollab') -%}
+{% endif %}
 {% do kwargs.setdefault('user', 'beecollab') -%}
 {% do kwargs.setdefault('domain', 'beecollab.makina-corpus.net') -%}
 

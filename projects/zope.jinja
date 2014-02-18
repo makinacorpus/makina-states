@@ -300,6 +300,7 @@ etc-logrotate.d-{{common.name}}.conf:
 # This is one of the most difficult part to understand, idea is to
 #}
 {%- set default_defaults = {
+  'cache-directory': locations.apps_dir+'/buildout/cache',
   'cron_hour': 1,
   'cron_minute': 5,
   'nbinstances': 4,
@@ -307,7 +308,7 @@ etc-logrotate.d-{{common.name}}.conf:
     'newest': None,
     'settings': {
       'buildout': {
-        'cache-directory': locations.apps_dir+'/buildout/cache',
+        'cache-directory': '{cache-directory}/downloads',
         'download-cache': '{cache-directory}/downloads',
         'download-directory': '{cache-directory}/downloads',
         'eggs-directory': '{cache-directory}/eggs',
