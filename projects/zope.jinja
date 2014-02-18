@@ -122,6 +122,7 @@ prepreq-{{common.name}}:
     - runas: {{common.user}}
     - newest: {{common.data.buildout.newest}}
     - watch:
+      - file: {{common.name}}-buildout-caches
       - file: {{common.name}}-settings
       - file: {{common.name}}-buildout-project
     - watch_in:
