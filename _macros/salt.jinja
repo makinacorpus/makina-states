@@ -260,6 +260,10 @@ etc-{{ data.name }}-dirs:
       - group: salt-{{ data.name }}-{{ group }}
 
 open-{{ data.name }}-dirs:
+  file.directory:
+    - name: {{ locs.apps_dir }}
+    - user: root
+    - group: {{ group }}
   cmd.run:
     - name: |
             chmod 0775
@@ -267,6 +271,7 @@ open-{{ data.name }}-dirs:
     - user: root
     - group: {{ group }}
     - require:
+      - file: open-{{ data.name }}-dirs
       - group: salt-{{ data.name }}-{{ group }}
 
 {#- Keep those 3 first following in sync with buildout mr.developer content
