@@ -1531,7 +1531,7 @@ base:
 EOF
         fi
         # add makina-state.top if not present
-        if [ "x$(egrep -- "- makina-states\.top\s*$" ${topf}|wc -l|sed -e "s/ //g")" = "x0" ];then
+        if [ "x$(egrep -- "- makina-states\.top( |\t)*$" ${topf}|wc -l|sed -e "s/ //g")" = "x0" ];then
             debug_msg "Adding makina-states.top to ${topf}"
             "${SED}" -i -e "/['\"]\*['\"]:/ {
 a\    - makina-states.top
@@ -1559,9 +1559,9 @@ a\    - salt
         echo ''  >> "${SALT_PILLAR}/salt.sls"
         echo 'salt:' >> "${SALT_PILLAR}/salt.sls"
     fi
-    if [ "x$(egrep -- "\s*minion:\s*$" "${SALT_PILLAR}/salt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
+    if [ "x$(egrep -- "\( |\t\)*minion:( |\t)*$" "${SALT_PILLAR}/salt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
         debug_msg "Adding minion info to pillar"
-        "${SED}" -i -e "/^salt:\s*$/ {
+        "${SED}" -i -e "/^salt:\( \|\t\)*$/ {
 a\  minion:
 a\    id: $(get_minion_id)
 a\    interface: $SALT_MINION_IP
@@ -1578,9 +1578,9 @@ a\    id: $(get_minion_id)
     # do no setup stuff for master for just a minion
     fi
     if [ "x${IS_SALT_MASTER}" != "x" ] \
-       && [ "x$(egrep -- "\s*master:\s*$" "${SALT_PILLAR}/salt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
+       && [ "x$(egrep -- "\( |\t\)*master:( |\t)*$" "${SALT_PILLAR}/salt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
         debug_msg "Adding master info to pillar"
-        "${SED}" -i -e "/^salt:\s*$/ {
+        "${SED}" -i -e "/^salt:\( \|\t\)*$/ {
 a\  master:
 a\    interface: ${SALT_MASTER_IP}
 a\    publish_port: $SALT_MASTER_PUBLISH_PORT
@@ -1605,13 +1605,13 @@ a\    - mastersalt
             echo "$BRANCH_PILLAR_ID" >> "${MASTERSALT_PILLAR}/mastersalt.sls"
         fi
         "${SED}" -i -e "s/${BRANCH_PILLAR_ID}.*/$BRANCH_PILLAR_ID: ${branch_id}/g" "${MASTERSALT_PILLAR}/mastersalt.sls"
-        if [ "x$(egrep -- "^mastersalt:\s*$" "${MASTERSALT_PILLAR}/mastersalt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
+        if [ "x$(egrep -- "^mastersalt:( |\t)*$" "${MASTERSALT_PILLAR}/mastersalt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
             echo ''  >> "${MASTERSALT_PILLAR}/mastersalt.sls"
             echo 'mastersalt:' >> "${MASTERSALT_PILLAR}/mastersalt.sls"
         fi
-        if [ "x$(egrep -- "^\s*minion:" "${MASTERSALT_PILLAR}/mastersalt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
+        if [ "x$(egrep -- "^( |\t)*minion:" "${MASTERSALT_PILLAR}/mastersalt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
             debug_msg "Adding mastersalt minion info to mastersalt pillar"
-            "${SED}" -i -e "/^mastersalt:\s*$/ {
+            "${SED}" -i -e "/^mastersalt:\( \|\t\)*$/ {
 a\  minion:
 a\    id: $(mastersalt_get_minion_id)
 a\    interface: ${MASTERSALT_MINION_IP}
@@ -1627,9 +1627,9 @@ a\    id: $(mastersalt_get_minion_id)
 }" "${MASTERSALT_PILLAR}/mastersalt.sls"
         fi
         if [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
-            if [ "x$(egrep -- "\s+master:\s*$" "${MASTERSALT_PILLAR}/mastersalt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
+            if [ "x$(egrep -- "( |\t)+master:( |\t)*$" "${MASTERSALT_PILLAR}/mastersalt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
                 debug_msg "Adding mastersalt master info to mastersalt pillar"
-                "${SED}" -i -e "/^mastersalt:\s*$/ {
+                "${SED}" -i -e "/^mastersalt:\( \|\t\)*$/ {
 a\  master:
 a\    interface: ${MASTERSALT_MASTER_IP}
 a\    ret_port: ${MASTERSALT_MASTER_PORT}
@@ -2571,10 +2571,10 @@ cleanup_old_installs() {
             rm -vf "${MASTERSALT_PILLAR}/salt.sls"
         fi
         if [ "x${IS_SALT}" != "x" ];then
-            "${SED}" -i -e "/^\s*- mastersalt$/d" "${SALT_PILLAR}/top.sls"
+            "${SED}" -i -e "/^\( \|\t\)*- mastersalt$/d" "${SALT_PILLAR}/top.sls"
         fi
         if [ "x${IS_MASTERSALT}" != "x" ];then
-            "${SED}" -i -e "/^\s*- salt$/d" "${MASTERSALT_PILLAR}/top.sls"
+            "${SED}" -i -e "/^\( \|\t\)*- salt$/d" "${MASTERSALT_PILLAR}/top.sls"
         fi
     fi
     ls \
