@@ -229,7 +229,7 @@ salt-{{ data.name }}-{{ group }}:
     - comment: "{{data.name}} checkalive job"
     - minute: "*/1"
   {% endif %}
-    - name: {{msr}}/_scripts/boot-salt.sh --check-alive --quiet -C
+    - name: {{msr}}/_scripts/boot-salt.sh --check-alive --quiet -C --no-colors
 
 {{data.name}}-upgrade-job:
   {% if not data.cron_auto_upgrade %}
@@ -240,7 +240,7 @@ salt-{{ data.name }}-{{ group }}:
     - hour: {{data.cron_upgrade_hour}}
     - minute: {{data.cron_upgrade_minute}}
   {% endif %}
-    - name: {{msr}}/_scripts/boot-salt.sh --upgrade -C
+    - name: {{msr}}/_scripts/boot-salt.sh --upgrade -C --no-colors
 
 {#-
 # this is really factored
@@ -561,7 +561,7 @@ salt-{{ data.daemon_name }}-conf-global:
     - hour: {{data['cron_{0}_restart_hour'.format(data['service_name'])]}}
     - minute: {{data['cron_{0}_restart_minute'.format(data['service_name'])]}}
   {% endif %}
-    - name: {{msr}}/_scripts/boot-salt.sh --restart-{{data.service_name}}s -C
+    - name: {{msr}}/_scripts/boot-salt.sh --restart-{{data.service_name}}s -C --no-colors
 
 salt-{{ data.daemon_name }}-conf:
   file.managed:
