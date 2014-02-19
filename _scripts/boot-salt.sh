@@ -1559,7 +1559,7 @@ a\    - salt
         echo ''  >> "${SALT_PILLAR}/salt.sls"
         echo 'salt:' >> "${SALT_PILLAR}/salt.sls"
     fi
-    if [ "x$(egrep -- "\( |\t\)*minion:( |\t)*$" "${SALT_PILLAR}/salt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
+    if [ "x$(egrep -- "( |\t)*minion:( |\t)*$" "${SALT_PILLAR}/salt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
         debug_msg "Adding minion info to pillar"
         "${SED}" -i -e "/^salt:\( \|\t\)*$/ {
 a\  minion:
@@ -1578,7 +1578,7 @@ a\    id: $(get_minion_id)
     # do no setup stuff for master for just a minion
     fi
     if [ "x${IS_SALT_MASTER}" != "x" ] \
-       && [ "x$(egrep -- "\( |\t\)*master:( |\t)*$" "${SALT_PILLAR}/salt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
+       && [ "x$(egrep -- "( |\t)*master:( |\t)*$" "${SALT_PILLAR}/salt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
         debug_msg "Adding master info to pillar"
         "${SED}" -i -e "/^salt:\( \|\t\)*$/ {
 a\  master:
