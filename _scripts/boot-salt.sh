@@ -2998,8 +2998,11 @@ restart_daemons() {
 }
 
 check_alive() {
-    lazy_start_mastersalt_daemons
-    lazy_start_salt_daemons
+    # only check start if bootsalt is not running in another mode
+    if [ "x$(ps aux|grep boot-salt|grep -v grep|grep -v check-alive|wc -l)" != "x0" ];then
+        lazy_start_mastersalt_daemons
+        lazy_start_salt_daemons
+    fi
 }
 
 if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
