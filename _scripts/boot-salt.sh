@@ -16,6 +16,10 @@
 #   and consequently not safe for putting directly in salt states (with a cmd.run).
 #
 
+# be sure to have a populated base path
+PATH="${PATH}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
+export PATH
+
 THIS="${0}"
 VALID_BRANCHES=""
 if [ -h "${THIS}" ];then
