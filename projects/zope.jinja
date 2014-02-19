@@ -256,7 +256,7 @@ etc-logrotate.d-{{common.name}}.conf:
 {%- set cron_minute = common.data.get('cron_minute', 0) %}
 {{common.name}}-zopepackdaily:
   cron.present:
-    - comment: "{{common.name}}/project [zopepackdaily]"
+    - identifier: "{{common.name}}/project [zopepackdaily]"
     - user: {{common.user}}
     - minute:  {{ cron_minute + 0 }}
     - hour: {{cron_hour}}
@@ -268,7 +268,7 @@ etc-logrotate.d-{{common.name}}.conf:
 
 {{common.name}}-zoperestartdaily:
   cron.present:
-    - comment: "{{common.name}}/project [zoperestartdaily]"
+    - identifier: "{{common.name}}/project [zoperestartdaily]"
     - user: {{common.user}}
     - minute:  {{ cron_minute + 30 }}
     - hour: {{cron_hour}}
@@ -287,7 +287,7 @@ etc-logrotate.d-{{common.name}}.conf:
 
 {{common.name}}-repozodaily:
   cron.present:
-    - comment: "{{common.name}}/project [repozodaily]"
+    - identifier: "{{common.name}}/project [repozodaily]"
     - user: {{common.user}}
     - minute: {{ cron_minute + 15 }}
     - hour: {{cron_hour}}
@@ -299,7 +299,7 @@ etc-logrotate.d-{{common.name}}.conf:
 
 {{common.name}}repozoweekly:
   cron.present:
-    - comment: "{{common.name}}/project [repozoweekly]"
+    - identifier: "{{common.name}}/project [repozoweekly]"
     - user: {{common.user}}
     - minute: {{ cron_minute + 45 }}
     - hour: {{cron_hour}}

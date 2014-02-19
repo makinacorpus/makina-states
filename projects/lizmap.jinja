@@ -238,7 +238,7 @@
 {%- set cron_minute = common.data.get("cron_minute", 0) %}
 {{common.name}}-fixperms:
   cron.present:
-    - comment: "{{common.name}}/project [fixperms]"
+    - identifier: "{{common.name}}/project [fixperms]"
     - user: root
     - minute:  "*/10"
     - name: {{common.project_root}}/reset-perms.sh

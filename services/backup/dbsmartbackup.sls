@@ -49,6 +49,7 @@ run_dbsmartbackups:
     - context:
       settings: {{settings}}
   cron.present:
+    - identifier: db_smart_backup cron
     - name: {{locs.bin_dir}}/run_dbsmartbackups.sh
     - user: root
     - hour: {{data.cron_hour}}
