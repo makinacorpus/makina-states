@@ -241,35 +241,54 @@
 #}
 {%- macro fix_permissions(common) %}
 {%- if not common.no_reset_perms %}
-{%-    if common.full and not common.no_salt %}
+{%-    if not common.no_salt %}
 {{common.name}}-restricted-perms:
-  cmd.script:
-    - source: {{saltmac.resetperms}}
-    - args: >
-            --dmode '0770' --fmode '0770'
-            --user  root --group "{{localsettings.group}}"
-            --paths "{{common.salt_root}}"
-            --paths "{{common.pillar_root}}"
-    - watch:
-      - mc_proxy: {{common.name}}-postcheckout-salt-hook
-      - mc_proxy: {{common.name}}-postcheckout-project-hook
-      - mc_proxy: {{common.name}}-postinstall-project-hook
+  file.managed:
+    - name: {{common.project_dir}}/global-reset-perms.sh
+    - mode: 750
+    - user: {% if not common.no_user%}{{common.user}}{% else -%}root{% endif %}
+    - group: {{common.group}}
+    - contents: >
+            #!/usr/bin/env bash
 
-{{common.name}}-perms:
-  cmd.script:
-    - source: {{saltmac.resetperms}}
-    - args: >
+            if [ -e "{{common.pillar_root}}" ];then 
+            "{{locs.resetperms}}" "${@}"
+            --dmode '0770' --fmode '0770'
+            --user root --group "{{localsettings.group}}"
+            --users root
+            --groups "{{localsettings.group}}"
+            --paths "{{common.pillar_root}}";fi
+
+            if [ -e "{{common.salt_root}}" ];then 
+            "{{locs.resetperms}}" "${@}"
+            --dmode '0770' --fmode '0770'
+            --user root --group "{{localsettings.group}}"
+            --users root
+            --groups "{{localsettings.group}}"
+            --paths "{{common.salt_root}}";fi
+
+            if [ -e "{{common.project_root}}" ];then
+            "{{locs.resetperms}}" "${@}"
             --dmode '0770' --fmode '0770'
             --paths "{{common.project_root}}"
+            --users {% if not common.no_user%}{{common.user}}{% else -%}root{% endif %}
+            --groups {{common.group}}
             --user {% if not common.no_user%}{{common.user}}{% else -%}root{% endif %}
-            --group {{common.group}}
+            --group {{common.group}};fi
     - watch:
-      - mc_proxy: {{common.name}}-postcheckout-salt-hook
-      - mc_proxy: {{common.name}}-postinstall-project-hook
-      - mc_proxy: {{common.name}}-postcheckout-project-hook
-      {% if not common.no_salt -%}
-      - cmd: {{common.name}}-restricted-perms
-      {%- endif %}
+      - mc_proxy: before-perms-project-hook
+    - watch_in:
+      - mc_proxy: after-perms-project-hook
+
+{{common.name}}-perms:
+  cmd.run:
+    - name: {{common.project_dir}}/global-reset-perms.sh
+    - cwd: {{common.project_root}}
+    - user: root
+    - watch:
+      - file: {{common.name}}-restricted-perms
+    - watch_in:
+      - mc_proxy: after-perms-project-hook
 {%- endif %}
 {%- endif %}
 {%- endmacro %}
@@ -459,7 +478,6 @@ makina-parent-append-etc-hosts-accumulated-project-{{common.name}}:
       - mc_proxy: precheckout-project-hook
       - mc_proxy: postcheckout-project-hook
       - mc_proxy: preinstall-project-hook
-
 {% endmacro %}
 
 

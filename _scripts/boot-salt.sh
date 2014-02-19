@@ -53,7 +53,7 @@ set_progs() {
     DIG="$(which dig 2>/dev/null)"
     NSLOOKUP="$(which nslookup 2>/dev/null)"
     lxc_ps=$(which lxc-ps 1>/dev/null 2>/dev/null)
-    if [ "x$(egrep "^container=" /proc/1/environ|wc -l)" = "x0" ];then
+    if [ "x$(egrep "^container=" /proc/1/environ|wc -l|sed -e "s/ //g")" = "x0" ];then
         # we are in a container !
         lxc_ps=""
     fi
@@ -98,7 +98,7 @@ check_connectivity() {
             # one of
             # Connection to 127.0.0.1 4506 port [tcp/*] succeeded!
             # devhost4.local [127.0.0.1] 4506 (?) open
-            test "$(${NC} -w 5 -v -z ${ip} ${port} 2>&1|egrep "open$|Connection.*succeeded"|wc -l)" != "0";
+            test "$(${NC} -w 5 -v -z ${ip} ${port} 2>&1|egrep "open$|Connection.*succeeded"|wc -l|sed -e "s/ //g")" != "0";
             ret="${?}"
             if [ "x${ret}" = "x0" ];then
                 break
@@ -307,7 +307,7 @@ get_minion_id_() {
     if [ "x${force}" = "x" ];then
         fics=$(find "${confdir}"/minion* -type f 2>/dev/null)
         if [ "x${fics}" != "x" ];then
-            mmid=$(egrep -r "^id:" $(find "${confdir}"/minion* -type f 2>/dev/null)|awk '{print $2}'|head -n1)
+            mmid=$(egrep -r "^id:" $(find "${confdir}"/minion* -type f 2>/dev/null) 2>/dev/null|awk '{print $2}'|head -n1)
         fi
         if [ "x${mmid}" = "x" ] && [ -f "${confdir}/minion_id" ];then
             mmid=$(cat "${confdir}/minion_id" 2> /dev/null)
@@ -347,7 +347,7 @@ set_valid_upstreams() {
         thistest="$(echo "${msb}" | grep -q "changeset:";echo "${?}")"
         if [ "x${thistest}" = "x0" ];then
             ch="$(echo "${msb}"|${SED} -e "s/changeset://g")"
-            if [ "x$(git log "$ch" | wc -l)"  != "x0" ];then
+            if [ "x$(git log "$ch" | wc -l|sed -e "s/ //g")"  != "x0" ];then
                 VALID_BRANCHES="${VALID_BRANCHES} ${ch} changeset:$ch"
             fi
         fi
@@ -864,7 +864,7 @@ recap() {
 }
 
 is_apt_installed() {
-    if [ "x$(dpkg-query -s ${@} 2>/dev/null|egrep "^Status:"|grep installed|wc -l)"  = "x0" ];then
+    if [ "x$(dpkg-query -s ${@} 2>/dev/null|egrep "^Status:"|grep installed|wc -l|sed -e "s/ //g")"  = "x0" ];then
         echo "no"
     else
         echo "yes"
@@ -938,7 +938,7 @@ install_prerequisites() {
         fi
     fi
     for i in ${BASE_PACKAGES};do
-        if [ "x$(dpkg-query -s ${i} 2>/dev/null|egrep "^Status:"|grep installed|wc -l)" = "x0" ];then
+        if [ "x$(dpkg-query -s ${i} 2>/dev/null|egrep "^Status:"|grep installed|wc -l|sed -e "s/ //g")" = "x0" ];then
             to_install="${to_install} ${i}"
         fi
     done
@@ -1170,7 +1170,7 @@ setup_and_maybe_update_code() {
     fi
     SALT_MSS="$(get_salt_mss)"
     is_offline="$(test_online)"
-    minion_keys="$(find "${CONF_PREFIX}/pki/master/"{minions_pre,minions} -type f 2>/dev/null|wc -l)"
+    minion_keys="$(find "${CONF_PREFIX}/pki/master/"{minions_pre,minions} -type f 2>/dev/null|wc -l|sed -e "s/ //g")"
     if [ "x${is_offline}" != "x0" ];then
         if [ ! -e "${CONF_PREFIX}" ]\
             || [ "x${minion_keys}" = "x0" ]\
@@ -1246,7 +1246,7 @@ setup_and_maybe_update_code() {
                         git fetch origin
                         lbranch="$(get_git_branch .)"
                         if [ "x${lbranch}" != "x${branch_pref}${co_branch}" ];then
-                            if [ "x$(git branch|egrep " ${co_branch}\$" |wc -l)" != "x0" ];then
+                            if [ "x$(git branch|egrep " ${co_branch}\$" |wc -l|sed -e "s/ //g")" != "x0" ];then
                                 # branch already exists
                                 bs_log "Switch branch: ${lbranch} -> ${branch_pref}${co_branch}"
                                 git checkout "${branch_pref}""${co_branch}"
@@ -1390,7 +1390,7 @@ run_ms_buildout() {
         fi
     fi
     # remove stale zmq egg (to relink on zmq3)
-    test="$(ldd $(find -L "${ms}/eggs/pyzmq-"*egg -name *so 2>/dev/null) 2>/dev/null|grep zmq.so.1|wc -l)"
+    test="$(ldd $(find -L "${ms}/eggs/pyzmq-"*egg -name *so 2>/dev/null) 2>/dev/null|grep zmq.so.1|wc -l|sed -e "s/ //g")"
     if [ "x${test}" != "x0" ];then
         find -L "${ms}/eggs/pyzmq-"*egg -maxdepth 0 -type d|xargs rm -rfv
     fi
@@ -1404,7 +1404,7 @@ run_ms_buildout() {
         || [ ! -e "${ms}/bin/salt-syndic" ]\
         || [ ! -e "${ms}/bin/mypy" ]\
         || [ ! -e "${ms}/.installed.cfg" ]\
-        || [ "x$(find -L "${ms}/eggs/pyzmq"* |wc -l)" = "x0" ]\
+        || [ "x$(find -L "${ms}/eggs/pyzmq"* |wc -l|sed -e "s/ //g")" = "x0" ]\
         || [ ! -e "${ms}/src/salt/setup.py" ]\
         || [ ! -e "${ms}/src/docker/setup.py" ]\
         || [ ! -e "${ms}/src/m2crypto/setup.py" ]\
@@ -1531,7 +1531,7 @@ base:
 EOF
         fi
         # add makina-state.top if not present
-        if [ "x$(egrep -- "- makina-states\.top\s*$" ${topf}|wc -l)" = "x0" ];then
+        if [ "x$(egrep -- "- makina-states\.top( |\t)*$" ${topf}|wc -l|sed -e "s/ //g")" = "x0" ];then
             debug_msg "Adding makina-states.top to ${topf}"
             "${SED}" -i -e "/['\"]\*['\"]:/ {
 a\    - makina-states.top
@@ -1539,7 +1539,7 @@ a\    - makina-states.top
         fi
     done
 
-    if [ "x$(grep -- "- salt" ${SALT_PILLAR}/top.sls 2>/dev/null|wc -l)" = "x0" ];then
+    if [ "x$(grep -- "- salt" ${SALT_PILLAR}/top.sls 2>/dev/null|wc -l|sed -e "s/ //g")" = "x0" ];then
         debug_msg "Adding salt to default top salt pillar"
         "${SED}" -i -e "/['\"]\*['\"]:/ {
 a\    - salt
@@ -1550,18 +1550,18 @@ a\    - salt
         debug_msg "Creating default pillar's salt.sls"
         echo 'salt:' > "${SALT_PILLAR}/salt.sls"
     fi
-    if [ "x$(grep "$BRANCH_PILLAR_ID" "${SALT_PILLAR}/salt.sls"|wc -l)" = "x0" ];then
+    if [ "x$(grep "$BRANCH_PILLAR_ID" "${SALT_PILLAR}/salt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
         echo "" >> "${SALT_PILLAR}/salt.sls"
         echo "${BRANCH_PILLAR_ID}" >> "${SALT_PILLAR}/salt.sls"
     fi
     "${SED}" -e "s/${BRANCH_PILLAR_ID}.*/$BRANCH_PILLAR_ID: ${branch_id}/g" -i "${SALT_PILLAR}/salt.sls"
-    if [ "x$(egrep -- "^salt:" "${SALT_PILLAR}/salt.sls"|wc -l)" = "x0" ];then
+    if [ "x$(egrep -- "^salt:" "${SALT_PILLAR}/salt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
         echo ''  >> "${SALT_PILLAR}/salt.sls"
         echo 'salt:' >> "${SALT_PILLAR}/salt.sls"
     fi
-    if [ "x$(egrep -- "\s*minion:\s*$" "${SALT_PILLAR}/salt.sls"|wc -l)" = "x0" ];then
+    if [ "x$(egrep -- "\( |\t\)*minion:( |\t)*$" "${SALT_PILLAR}/salt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
         debug_msg "Adding minion info to pillar"
-        "${SED}" -i -e "/^salt:\s*$/ {
+        "${SED}" -i -e "/^salt:\( \|\t\)*$/ {
 a\  minion:
 a\    id: $(get_minion_id)
 a\    interface: $SALT_MINION_IP
@@ -1569,7 +1569,7 @@ a\    master: $SALT_MASTER_DNS
 a\    master_port: ${SALT_MASTER_PORT}
 }" "${SALT_PILLAR}/salt.sls"
     fi
-    if [ "x$(grep -- "id: $(get_minion_id)" "${SALT_PILLAR}/salt.sls"|wc -l)" = "x0" ];then
+    if [ "x$(grep -- "id: $(get_minion_id)" "${SALT_PILLAR}/salt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
         debug_msg "Adding salt minion id: $(get_minion_id)"
         "${SED}" -i -e "/^    id:/ d" "${SALT_PILLAR}/salt.sls"
         "${SED}" -i -e "/^  minion:/ {
@@ -1578,9 +1578,9 @@ a\    id: $(get_minion_id)
     # do no setup stuff for master for just a minion
     fi
     if [ "x${IS_SALT_MASTER}" != "x" ] \
-       && [ "x$(egrep -- "\s*master:\s*$" "${SALT_PILLAR}/salt.sls"|wc -l)" = "x0" ];then
+       && [ "x$(egrep -- "\( |\t\)*master:( |\t)*$" "${SALT_PILLAR}/salt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
         debug_msg "Adding master info to pillar"
-        "${SED}" -i -e "/^salt:\s*$/ {
+        "${SED}" -i -e "/^salt:\( \|\t\)*$/ {
 a\  master:
 a\    interface: ${SALT_MASTER_IP}
 a\    publish_port: $SALT_MASTER_PUBLISH_PORT
@@ -1590,7 +1590,7 @@ a\    ret_port: ${SALT_MASTER_PORT}
     # --------- MASTERSALT
     # Set default mastersalt  pillar
     if [ "x${IS_MASTERSALT}" != "x" ];then
-        if [ "x$(grep -- "- mastersalt" "${MASTERSALT_PILLAR}/top.sls"|wc -l)" = "x0" ];then
+        if [ "x$(grep -- "- mastersalt" "${MASTERSALT_PILLAR}/top.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
             debug_msg "Adding mastersalt info to top mastersalt pillar"
             "${SED}" -i -e "/['\"]\*['\"]:/ {
 a\    - mastersalt
@@ -1600,18 +1600,18 @@ a\    - mastersalt
             debug_msg "Creating mastersalt configuration file"
             echo "mastersalt:" >  "${MASTERSALT_PILLAR}/mastersalt.sls"
         fi
-        if [ "x$(grep "${BRANCH_PILLAR_ID}" "${MASTERSALT_PILLAR}/mastersalt.sls"|wc -l)" = "x0" ];then
+        if [ "x$(grep "${BRANCH_PILLAR_ID}" "${MASTERSALT_PILLAR}/mastersalt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
             echo "" >> "${MASTERSALT_PILLAR}/mastersalt.sls"
             echo "$BRANCH_PILLAR_ID" >> "${MASTERSALT_PILLAR}/mastersalt.sls"
         fi
         "${SED}" -i -e "s/${BRANCH_PILLAR_ID}.*/$BRANCH_PILLAR_ID: ${branch_id}/g" "${MASTERSALT_PILLAR}/mastersalt.sls"
-        if [ "x$(egrep -- "^mastersalt:\s*$" "${MASTERSALT_PILLAR}/mastersalt.sls"|wc -l)" = "x0" ];then
+        if [ "x$(egrep -- "^mastersalt:( |\t)*$" "${MASTERSALT_PILLAR}/mastersalt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
             echo ''  >> "${MASTERSALT_PILLAR}/mastersalt.sls"
             echo 'mastersalt:' >> "${MASTERSALT_PILLAR}/mastersalt.sls"
         fi
-        if [ "x$(egrep -- "^\s*minion:" "${MASTERSALT_PILLAR}/mastersalt.sls"|wc -l)" = "x0" ];then
+        if [ "x$(egrep -- "^( |\t)*minion:" "${MASTERSALT_PILLAR}/mastersalt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
             debug_msg "Adding mastersalt minion info to mastersalt pillar"
-            "${SED}" -i -e "/^mastersalt:\s*$/ {
+            "${SED}" -i -e "/^mastersalt:\( \|\t\)*$/ {
 a\  minion:
 a\    id: $(mastersalt_get_minion_id)
 a\    interface: ${MASTERSALT_MINION_IP}
@@ -1619,7 +1619,7 @@ a\    master: ${MASTERSALT_MASTER_DNS}
 a\    master_port: ${MASTERSALT_MASTER_PORT}
 }" "${MASTERSALT_PILLAR}/mastersalt.sls"
         fi
-        if [ "x$(grep -- "id: $(mastersalt_get_minion_id)" "${MASTERSALT_PILLAR}/mastersalt.sls"|wc -l)" = "x0" ];then
+        if [ "x$(grep -- "id: $(mastersalt_get_minion_id)" "${MASTERSALT_PILLAR}/mastersalt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
             debug_msg "Adding mastersalt minion id: $(mastersalt_get_minion_id)"
             "${SED}" -i -e "/^    id:/ d" "${MASTERSALT_PILLAR}/mastersalt.sls"
             "${SED}" -i -e "/^  minion:/ {
@@ -1627,9 +1627,9 @@ a\    id: $(mastersalt_get_minion_id)
 }" "${MASTERSALT_PILLAR}/mastersalt.sls"
         fi
         if [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
-            if [ "x$(egrep -- "\s+master:\s*$" "${MASTERSALT_PILLAR}/mastersalt.sls"|wc -l)" = "x0" ];then
+            if [ "x$(egrep -- "( |\t)+master:( |\t)*$" "${MASTERSALT_PILLAR}/mastersalt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
                 debug_msg "Adding mastersalt master info to mastersalt pillar"
-                "${SED}" -i -e "/^mastersalt:\s*$/ {
+                "${SED}" -i -e "/^mastersalt:\( \|\t\)*$/ {
 a\  master:
 a\    interface: ${MASTERSALT_MASTER_IP}
 a\    ret_port: ${MASTERSALT_MASTER_PORT}
@@ -1653,22 +1653,22 @@ a\    publish_port: ${MASTERSALT_MASTER_PUBLISH_PORT}
 
 lazy_start_salt_daemons() {
     if [ "x${IS_SALT_MASTER}" != "x" ];then
-        master_processes="$(${PS} aux|grep salt-master|grep -v mastersalt|grep -v grep|wc -l)"
+        master_processes="$(${PS} aux|grep salt-master|grep -v mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
         if [ "x${master_processes}" = "x0" ];then
             restart_local_masters
             sleep 2
         fi
-        master_processes="$(${PS} aux|grep salt-master|grep -v mastersalt|grep -v grep|wc -l)"
+        master_processes="$(${PS} aux|grep salt-master|grep -v mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
         if [ "x${master_processes}" = "x0" ];then
             die "Salt Master start failed"
         fi
     fi
     if [ "x${IS_SALT_MINION}" != "x" ];then
-        minion_processes="$(${PS} aux|grep salt-minion|grep -v mastersalt|grep -v grep|wc -l)"
+        minion_processes="$(${PS} aux|grep salt-minion|grep -v mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
         if [ "x${minion_processes}" = "x0" ];then
             restart_local_minions
             sleep 2
-            minion_processes="$(${PS} aux|grep salt-minion|grep -v mastersalt|grep -v grep|wc -l)"
+            minion_processes="$(${PS} aux|grep salt-minion|grep -v mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
             if [ "x${master_processes}" = "x0" ];then
                 die "Salt Minion start failed"
             fi
@@ -1689,7 +1689,7 @@ install_salt_daemons() {
     if     [ ! -e "$CONF_PREFIX" ]\
         || [ ! -e "${CONF_PREFIX}/minion.d/00_global.conf" ]\
         || [ -e "${SALT_MS}/.rebootstrap" ]\
-        || [ "x$(grep makina-states.controllers.salt_ "${CONF_PREFIX}/grains" 2>/dev/null |wc -l)" = "x0" ]\
+        || [ "x$(grep makina-states.controllers.salt_ "${CONF_PREFIX}/grains" 2>/dev/null |wc -l|sed -e "s/ //g")" = "x0" ]\
         || [ ! -e "${CONF_PREFIX}/pki/minion/minion.pem" ]\
         || [ ! -e "${BIN_DIR}/salt" ]\
         || [ ! -e "${BIN_DIR}/salt-call" ]\
@@ -1906,7 +1906,7 @@ get_delay_time() {
 
 make_association() {
     if [ "x${IS_SALT_MINION}" = "x" ];then return;fi
-    minion_keys="$(find ${CONF_PREFIX}/pki/master/minions -type f 2>/dev/null|wc -l)"
+    minion_keys="$(find ${CONF_PREFIX}/pki/master/minions -type f 2>/dev/null|wc -l|sed -e "s/ //g")"
     minion_id="$(get_minion_id)"
     registered=""
     debug_msg "Entering association routine"
@@ -2101,22 +2101,22 @@ make_mastersalt_association() {
 
 lazy_start_mastersalt_daemons() {
     if [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
-        master_processes="$(${PS} aux|grep salt-master|grep mastersalt|grep -v grep|wc -l)"
+        master_processes="$(${PS} aux|grep salt-master|grep mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
         if [ "x${master_processes}" = "x0" ];then
             restart_local_mastersalt_masters
             sleep 2
         fi
-        master_processes="$(${PS} aux|grep salt-master|grep mastersalt|grep -v grep|wc -l)"
+        master_processes="$(${PS} aux|grep salt-master|grep mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
         if [ "x${master_processes}" = "x0" ];then
             die "Masteralt Master start failed"
         fi
     fi
     if [ "x${IS_MASTERSALT_MINION}" != "x" ];then
-        minion_processes="$(${PS} aux|grep salt-minion|grep mastersalt|grep -v grep|wc -l)"
+        minion_processes="$(${PS} aux|grep salt-minion|grep mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
         if [ "x${minion_processes}" = "x0" ];then
             restart_local_mastersalt_minions
             sleep 2
-            minion_processes="$(${PS} aux|grep salt-minion|grep mastersalt|grep -v grep|wc -l)"
+            minion_processes="$(${PS} aux|grep salt-minion|grep mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
             if [ "x${master_processes}" = "x0" ];then
                 die "Masteralt Minion start failed"
             fi
@@ -2161,7 +2161,7 @@ install_mastersalt_daemons() {
             || [ ! -e "${MCONF_PREFIX}/minion.d/00_global.conf" ]\
             || [ ! -e "${MCONF_PREFIX}/pki/minion/minion.pem" ]\
             || [ -e "${MASTERSALT_MS}/.rebootstrap" ]\
-            || [ "x$(grep makina-states.controllers.mastersalt_ "${MCONF_PREFIX}/grains" 2>/dev/null |wc -l)" = "x0" ]\
+            || [ "x$(grep makina-states.controllers.mastersalt_ "${MCONF_PREFIX}/grains" 2>/dev/null |wc -l|sed -e "s/ //g")" = "x0" ]\
             || [ ! -e "${BIN_DIR}/mastersalt" ]\
             || [ ! -e "${BIN_DIR}/mastersalt-master" ]\
             || [ ! -e "${BIN_DIR}/mastersalt-key" ]\
@@ -2181,7 +2181,7 @@ install_mastersalt_daemons() {
     if [  "${SALT_BOOT_DEBUG}" != "x" ];then
         debug_msg "mastersalt:"
         debug_msg "RUN_MASTERSALT_BOOTSTRAP: $RUN_MASTERSALT_BOOTSTRAP"
-        debug_msg "grains: $(grep makina-states.controllers.mastersalt_ "${MCONF_PREFIX}/grains" |wc -l)"
+        debug_msg "grains: $(grep makina-states.controllers.mastersalt_ "${MCONF_PREFIX}/grains" |wc -l|sed -e "s/ //g")"
         debug_msg $(ls  "${BIN_DIR}/mastersalt-master" "${BIN_DIR}/mastersalt-key" \
             "${BIN_DIR}/mastersalt-minion" "${BIN_DIR}/mastersalt-call" \
             "${BIN_DIR}/mastersalt" "${MCONF_PREFIX}" \
@@ -2394,7 +2394,7 @@ maybe_install_projects() {
             debug_msg "Linking project ${PROJECT_NAME} pillar in ${PROJECT_PILLAR_FILE}"
             ln -sfv "${PROJECT_SALT_PATH}/PILLAR.sample.sls" "${PROJECT_PILLAR_FILE}"
         fi
-        if [ "x$(grep -- "- ${PROJECT_PILLAR_STATE}" "${SALT_PILLAR}/top.sls"|wc -l)" = "x0" ];then
+        if [ "x$(grep -- "- ${PROJECT_PILLAR_STATE}" "${SALT_PILLAR}/top.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
             debug_msg "including ${PROJECT_NAME} pillar in ${SALT_PILLAR}/top.sls"
             "${SED}" -e "/['\"]\*['\"]:/ {
 a\    - ${PROJECT_PILLAR_STATE}
@@ -2402,7 +2402,7 @@ a\    - ${PROJECT_PILLAR_STATE}
         fi
         O_SALT_BOOT_LOGFILE="${SALT_BOOT_LOGFILE}"
         O_SALT_BOOT_OUTFILE="${SALT_BOOT_OUTFILE}"
-        if [ "x$(get_grain ${project_grain}|grep True|wc -l)" != "x0" ] || [ "x${FORCE_PROJECT_TOP}" != "x" ];then
+        if [ "x$(get_grain ${project_grain}|grep True|wc -l|sed -e "s/ //g")" != "x0" ] || [ "x${FORCE_PROJECT_TOP}" != "x" ];then
             if [ "x${PROJECT_TOPSLS}" != "x" ];then
                 SALT_BOOT_LOGFILE="${PROJECT_SALT_PATH}/.salt_top_log.log"
                 SALT_BOOT_OUTFILE="${PROJECT_SALT_PATH}/.salt_top_out.log"
@@ -2417,8 +2417,8 @@ a\    - ${PROJECT_PILLAR_STATE}
                     exit 1
                 else
                     warn_log
-                    if [ "x$(grep -- "- ${PROJECT_TOPSTATE}" "${SALT_ROOT}/top.sls"|wc -l)" = "x0" ];then
-                        if [ "x$(grep -- " - makina-states.top" "${SALT_ROOT}/top.sls"|wc -l)" != "x0" ];then
+                    if [ "x$(grep -- "- ${PROJECT_TOPSTATE}" "${SALT_ROOT}/top.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
+                        if [ "x$(grep -- " - makina-states.top" "${SALT_ROOT}/top.sls"|wc -l|sed -e "s/ //g")" != "x0" ];then
                             "${SED}" -i -e "/ - makina-states.top/ {
 a\    - ${PROJECT_TOPSTATE}
 }" "${SALT_ROOT}/top.sls"
@@ -2442,7 +2442,7 @@ a\    - ${PROJECT_TOPSTATE}
             bs_log "Top state: ${PROJECT_URL}@$PROJECT_BRANCH[${PROJECT_TOPSLS}] already done (remove grain: $project_grain to redo)"
             salt_echo "changed=\"false\" comment=\"${PROJECT_URL}@$PROJECT_BRANCH[${PROJECT_TOPSLS}] already done\""
         fi
-        if [ "x$(grep -- "- ${PROJECT_TOPSTATE}" "${SALT_ROOT}/top.sls"|wc -l)" = "x0" ];then
+        if [ "x$(grep -- "- ${PROJECT_TOPSTATE}" "${SALT_ROOT}/top.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
             "${SED}" -i -e "/['\"]\*['\"]:/ {
 a\    - ${PROJECT_TOPSTATE}
 }" "${SALT_ROOT}/top.sls"
@@ -2482,7 +2482,7 @@ cleanup_old_installs() {
             if [ "x${i}" = "xrenderer" ];then
                 key="render"
             fi
-            if [ "x$(egrep "^${key}_dirs:" "${minion_cfg}"|wc -l)" = "x0" ];then
+            if [ "x$(egrep "^${key}_dirs:" "${minion_cfg}"|wc -l|sed -e "s/ //g")" = "x0" ];then
                 echo "${key}_dirs: [${SALT_ROOT}/_${i}s, ${SALT_MS}/mc_states/${i}s]" >> "${minion_cfg}"
             fi
         done
@@ -2500,19 +2500,19 @@ cleanup_old_installs() {
             if [ "x${i}" = "xrenderer" ];then
                 key="render"
             fi
-            if [ "x$(egrep "^${key}_dirs:" "${mminion_cfg}" 2>/dev/null|wc -l)" = "x0" ];then
+            if [ "x$(egrep "^${key}_dirs:" "${mminion_cfg}" 2>/dev/null|wc -l|sed -e "s/ //g")" = "x0" ];then
                 echo "${key}_dirs: [${MASTERSALT_ROOT}/_${i}s, ${MASTERSALT_MS}/mc_states/${i}s]" >> "${mminion_cfg}"
             fi
         done
     fi
     for conf in "${minion_conf}" "${mminion_conf}";do
         if [ -e "$conf" ];then
-            if [ "x$(egrep "^grain_dirs:" "${conf}"|wc -l)" = "x0" ];then
+            if [ "x$(egrep "^grain_dirs:" "${conf}"|wc -l|sed -e "s/ //g")" = "x0" ];then
                 bs_log "Patching grains_dirs -> grain_dirs in ${conf}"
                 "${SED}" -i -e "s:grains_dirs:grain_dirs:g" "${conf}"
             fi
             for i in grains modules renderers returners states;do
-                if [ "x$(grep "makina-states/mc_states/${i}" "${conf}"|wc -l)" = "x0" ];then
+                if [ "x$(grep "makina-states/mc_states/${i}" "${conf}"|wc -l|sed -e "s/ //g")" = "x0" ];then
                     bs_log "Patching ext_mods/${i} to mc_states/${i} in $conf"
                     new_path="makina-states/mc_states/${i}"
                     "${SED}" -i -e "s:makina-states/_${i}:${new_path}:g" "$conf"
@@ -2528,7 +2528,7 @@ cleanup_old_installs() {
     for conf in "${master_conf}" "${mmaster_conf}";do
         if [ -e "$conf" ];then
             for i in runners;do
-                if [ "x$(grep "makina-states/mc_states/${i}" "${conf}"|wc -l)" = "x0" ];then
+                if [ "x$(grep "makina-states/mc_states/${i}" "${conf}"|wc -l|sed -e "s/ //g")" = "x0" ];then
                     bs_log "Patching ext_mods/${i} to mc_states/mc_${i} in ${conf}"
                     new_path="makina-states/mc_states/${i}"
                     "${SED}" -i -e "s:makina-states/_${i}:${new_path}:g" "$conf"
@@ -2547,7 +2547,7 @@ cleanup_old_installs() {
         fi
     done
     for i in "${SALT_ROOT}" "${MASTERSALT_ROOT}";do
-        if [ "x$(grep "makina-states.setup" "${i}/setup.sls" 2> /dev/null|wc -l)" != "x0" ];then
+        if [ "x$(grep "makina-states.setup" "${i}/setup.sls" 2> /dev/null|wc -l|sed -e "s/ //g")" != "x0" ];then
             rm -rfv "${i}/setup.sls"
         fi
     done
@@ -2571,10 +2571,10 @@ cleanup_old_installs() {
             rm -vf "${MASTERSALT_PILLAR}/salt.sls"
         fi
         if [ "x${IS_SALT}" != "x" ];then
-            "${SED}" -i -e "/^\s*- mastersalt$/d" "${SALT_PILLAR}/top.sls"
+            "${SED}" -i -e "/^\( \|\t\)*- mastersalt$/d" "${SALT_PILLAR}/top.sls"
         fi
         if [ "x${IS_MASTERSALT}" != "x" ];then
-            "${SED}" -i -e "/^\s*- salt$/d" "${MASTERSALT_PILLAR}/top.sls"
+            "${SED}" -i -e "/^\( \|\t\)*- salt$/d" "${MASTERSALT_PILLAR}/top.sls"
         fi
     fi
     ls \
@@ -2611,12 +2611,12 @@ cleanup_old_installs() {
         2>/dev/null|while read oldmode;do
         rm -frv "${oldmode}"
     done
-    if [ "x$(egrep "bootstrapped\.salt" ${MCONF_PREFIX}/grains 2>/dev/null |wc -l)" != "x0" ];then
+    if [ "x$(egrep "bootstrapped\.salt" ${MCONF_PREFIX}/grains 2>/dev/null |wc -l|sed -e "s/ //g")" != "x0" ];then
         bs_log "Cleanup old mastersalt grains"
         "${SED}" -i -e "/bootstrap\.salt/d" "${MCONF_PREFIX}/grains"
         mastersalt_call_wrapper --local saltutil.sync_grains
     fi
-    if [ "x$(grep mastersalt ${CONF_PREFIX}/grains 2>/dev/null |wc -l)" != "x0" ];then
+    if [ "x$(grep mastersalt ${CONF_PREFIX}/grains 2>/dev/null |wc -l|sed -e "s/ //g")" != "x0" ];then
         bs_log "Cleanup old salt grains"
         "${SED}" -i -e "/mastersalt/d" "${CONF_PREFIX}/grains"
         salt_call_wrapper --local saltutil.sync_grains
@@ -2998,8 +2998,11 @@ restart_daemons() {
 }
 
 check_alive() {
-    lazy_start_mastersalt_daemons
-    lazy_start_salt_daemons
+    # only check start if bootsalt is not running in another mode
+    if [ "x$(ps aux|grep boot-salt|grep -v grep|grep -v check-alive|wc -l|sed -e "s/ //g")" != "x0" ];then
+        lazy_start_mastersalt_daemons
+        lazy_start_salt_daemons
+    fi
 }
 
 if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then

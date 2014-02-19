@@ -185,19 +185,19 @@
     - contents: >
                 #!/usr/bin/env bash
 
-                {{saltmac.msr}}/_scripts/reset-perms.py
+                {{locs.resetperms}} -q
                 -u {{common.user}} -g {{common.group}}
                 --path "{{ftproot}}/{{common.name}}"
                 --fmode 770 --dmode 770
                 --groups {{services.apacheSettings.httpd_user}}:rwx;
 
-                {{saltmac.msr}}/_scripts/reset-perms.py
+                {{locs.resetperms}} -q
                 -u {{common.user}} -g lizmap
                 --path "{{common.project_root}}/webapp"
                 --fmode 770 --dmode 770
                 --groups {{services.apacheSettings.httpd_user}}:r-x;
 
-                {{saltmac.msr}}/_scripts/reset-perms.py
+                {{locs.resetperms}} -q
                 -u {{common.user}} -g {{common.group}}
                 --path "{{common.project_root}}/webapp"
                 --fmode 770 --dmode 770
@@ -206,7 +206,7 @@
                 chmod o+x "{{ftproot}}/{{common.name}}" "{{ftproot}}" "{{rftproot}}"
 
                 {% for usr in common.data.users %}
-                {{saltmac.msr}}/_scripts/reset-perms.py
+                {{locs.resetperms}} -q
                 -u {{common.user}} -g {{common.group}}
                 --path "{{ftproot}}/{{common.name}}"
                 --fmode 770 --dmode 770
@@ -217,7 +217,7 @@
     - mode: 755
     - user: {{common.user}}
     - watch:
-      - mc_proxy: {{common.name}}-postinstall-project-hook
+      - mc_proxy: after-perms-project-hook
 {% if common.full %}
   cmd.run:
     - name: {{common.project_root}}/reset-perms.sh
@@ -225,8 +225,8 @@
     - group: root
     - cwd: {{common.project_root}}
     - watch:
-      - file: {{common.name}}-reset-perms
-      - mc_proxy: {{common.name}}-postinstall-project-hook
+      - cmd: {{common.name}}-reset-perms
+      - mc_proxy: after-perms-project-hook
 {% endif %}
 {% endmacro %}
 
