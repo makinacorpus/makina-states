@@ -86,6 +86,12 @@ parser.add_option("-R",
                   action="store_false",
                   help="Do not run recursivly (default)",
                   dest="recursive")
+parser.add_option("-q",
+                  "--quiet",
+                  default=False,
+                  action="store_true",
+                  dest="quiet")
+
 parser.add_option("-p",
                   "--paths",
                   default=[],
@@ -231,7 +237,7 @@ def shell_exec(cmd, shell=False):
         ret = subprocess.check_output(
             cmd, stderr=sys.stdout, shell=shell)
         if ret:
-            print(ret)
+            if not options.quiet: print(ret)
     except Exception:
         print(u'Reset failed for {0}'.format(scmd))
         print(traceback.format_exc())
@@ -401,17 +407,17 @@ def collect_paths(path,
 
 
 def reset(path):
-    print("Path: {0} ({1}:{2}, dmode: {3}, fmode: {4})".format(
+    if not options.quiet: print("Path: {0} ({1}:{2}, dmode: {3}, fmode: {4})".format(
         path, USER, GROUP, DMODE, FMODE))
     if not os.path.exists(path):
-        print("\n\nWARNING: {0} does not exist\n\n".format(path))
+        if not options.quiet: print("\n\nWARNING: {0} does not exist\n\n".format(path))
         return
     collect_paths(path)
     reset_permissions()
     if DEBUG and SKIPPED:
         skipped = list(SKIPPED)
         skipped.sort()
-        print('Skipped content:')
+        if not options.quiet: print('Skipped content:')
         pprint.pprint(skipped)
 
 for pt in options.paths:
