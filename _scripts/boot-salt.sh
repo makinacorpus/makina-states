@@ -307,7 +307,7 @@ get_minion_id_() {
     if [ "x${force}" = "x" ];then
         fics=$(find "${confdir}"/minion* -type f 2>/dev/null)
         if [ "x${fics}" != "x" ];then
-            mmid=$(egrep -r "^id:" $(find "${confdir}"/minion* -type f 2>/dev/null)|awk '{print $2}'|head -n1)
+            mmid=$(egrep -r "^id:" $(find "${confdir}"/minion* -type f 2>/dev/null) 2>/dev/null|awk '{print $2}'|head -n1)
         fi
         if [ "x${mmid}" = "x" ] && [ -f "${confdir}/minion_id" ];then
             mmid=$(cat "${confdir}/minion_id" 2> /dev/null)
