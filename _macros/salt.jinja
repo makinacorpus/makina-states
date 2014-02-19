@@ -226,7 +226,7 @@ salt-{{ data.name }}-{{ group }}:
   cron.absent:
   {% else %}
   cron.present:
-    - identifier: "{{data.name}} checkalive job"
+    - identifier: "salt checkalive job"
     - minute: "*/1"
   {% endif %}
     - name: {{msr}}/_scripts/boot-salt.sh --check-alive --quiet -C --no-colors
@@ -236,7 +236,7 @@ salt-{{ data.name }}-{{ group }}:
   cron.absent:
   {% else %}
   cron.present:
-    - identifier: "{{data.name}} upgrade job"
+    - identifier: "salt upgrade job"
     - hour: {{data.cron_upgrade_hour}}
     - minute: {{data.cron_upgrade_minute}}
   {% endif %}
