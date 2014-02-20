@@ -4,12 +4,6 @@ mc_proxy / Dummy state generation
 ==================================
 '''
 
-def __virtual__():
-    '''
-    Only load if mc_proxy is available
-    '''
-    return 'mc_proxy'
-
 
 def hook(name, changes=None):
     '''
@@ -26,6 +20,7 @@ def hook(name, changes=None):
            'comment': 'Dummy state for {0}'.format(name),
            'changes': changes}
     return ret
+
 
 def mod_watch(name, **kwargs):
     '''
