@@ -311,7 +311,7 @@ get_minion_id_() {
     if [ "x${force}" = "x" ];then
         fics=$(find "${confdir}"/minion* -type f 2>/dev/null)
         if [ "x${fics}" != "x" ];then
-            mmid=$(egrep -r "^id:" $(find "${confdir}"/minion* -type f 2>/dev/null) 2>/dev/null|awk '{print $2}'|head -n1)
+            mmid=$(egrep -r "^id:" $(find "${confdir}"/minion* -type f 2>/dev/null|grep -v sed) 2>/dev/null|awk '{print $2}'|head -n1)
         fi
         if [ "x${mmid}" = "x" ] && [ -f "${confdir}/minion_id" ];then
             mmid=$(cat "${confdir}/minion_id" 2> /dev/null)
@@ -1644,10 +1644,10 @@ a\    publish_port: ${MASTERSALT_MASTER_PUBLISH_PORT}
     fi
 
     # reset minion_ids
-    for i in $(find "${CONF_PREFIX}"/minion* -type f 2>/dev/null);do
+    for i in $(find "${CONF_PREFIX}"/minion* -type f 2>/dev/null|grep -v sed);do
         "${SED}" -i -e "s/^#*id: .*/id: $(get_minion_id)/g" "${i}"
     done
-    for i in $(find "${MCONF_PREFIX}"/minion* -type f 2>/dev/null);do
+    for i in $(find "${MCONF_PREFIX}"/minion* -type f 2>/dev/null|grep -v sed);do
         "${SED}" -i -e "s/^#*id: .*/id: $(mastersalt_get_minion_id)/g" "${i}"
     done
 }
@@ -1910,7 +1910,7 @@ get_delay_time() {
 
 make_association() {
     if [ "x${IS_SALT_MINION}" = "x" ];then return;fi
-    minion_keys="$(find ${CONF_PREFIX}/pki/master/minions -type f 2>/dev/null|wc -l|sed -e "s/ //g")"
+    minion_keys="$(find ${CONF_PREFIX}/pki/master/minions -type f 2>/dev/null|wc -l|grep -v sed|sed -e "s/ //g")"
     minion_id="$(get_minion_id)"
     registered=""
     debug_msg "Entering association routine"
