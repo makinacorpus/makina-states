@@ -274,9 +274,9 @@ makina-postgresql-service-reload:
                           db_host=None,
                           db_port=None,
                           version=services.defaultPgVersion,
-                          full=True) %}
+                          full=True, suf='') %}
 {%- if not groups %}{% set groups=[] %}{% endif %}
-{{ version }}-{{ group }}-makina-postgresql-group:
+{{ version }}-{{ group }}-makina-postgresql-group{{suf}}:
    mc_postgres_group.present:
     - name: {{ group }}
     - createdb: {{ createdb if createdb != None else 'null'}}
@@ -304,13 +304,14 @@ makina-postgresql-service-reload:
                         owner=None,
                         tablespace='pg_default',
                         template='template1',
+                        wait_for_template=True,
                         encoding='utf8',
                         user=default_user,
                         version=services.defaultPgVersion,
                         full=True) -%}
 {# group name is by default the db name #}
 {%- if not owner -%}
-{%-   set owner = '%s_groups' % db %}
+{%-   set owner = '%s_owners' % db %}
 {%- endif -%}
 {{ postgresql_group(owner, user=user, login=True) }}
 {{version}}-{{ db }}-makina-postgresql-database:
@@ -325,6 +326,7 @@ makina-postgresql-service-reload:
     - require:
       - mc_proxy: {{orchestrate[version]['predb']}}
       - mc_proxy: {{orchestrate['base']['postbase']}}
+      {% if template != 'template1' and wait_for_template %}- mc_postgres_database: {{version}}-{{ template }}-makina-postgresql-database{% endif %}
 {{ version }}-{{ owner }}-groups-makina-postgresql-grant:
   cmd.run:
     - name: echo "GRANT ALL PRIVILEGES ON DATABASE {{ db }} TO {{ owner }};"|psql-{{version}}
@@ -363,7 +365,7 @@ makina-postgresql-service-reload:
 {% endif %}
 {#- create groups prior to user #}
 {%- for group in groups %}
-{{ postgresql_group(group, user=user, version=version) }}
+{{ postgresql_group(group, user=user, version=version, suf='-user') }}
 {%- endfor %}
 {{version}}-{{ name }}-makina-services-postgresql-user:
   mc_postgres_user.present:

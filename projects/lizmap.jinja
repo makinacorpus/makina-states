@@ -178,7 +178,7 @@
 {# create a script to be sure that everyone gets its own respective perms
 # {{services.apacheSettings.httpd_user}} & the ftp user need special love
 #}
-{{common.name}}-reset-perms:
+{{common.name}}-reset-webapp-perms:
   file.managed:
     - name: {{common.project_root}}/reset-perms.sh
     - source:
