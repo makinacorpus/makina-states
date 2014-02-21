@@ -2954,7 +2954,7 @@ parse_cli_opts() {
             FORCE_MS_BRANCH=1;MS_BRANCH="${2}";sh="2";argmatch="1"
         fi
         if [ "x${1}" = "x--project-branch" ];then
-            PROJECT_BRANCH="${2}"sh2;argmatch="1"
+            PROJECT_BRANCH="${2}";sh="2";argmatch="1"
         fi
         if [ "x${1}" = "x--project-top" ];then
             PROJECT_TOPSLS="${2}";sh="2";argmatch="1"

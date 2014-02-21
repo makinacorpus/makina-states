@@ -1,10 +1,7 @@
-#!/usr/bin/env bash
-export PATH="{{salt_data['salt_root']}}/makina-states/bin:$PATH"
-if [[  $1 == "*" ]];then
-    shift
-    exec {{bin_name}} -c {{salt_data['conf_prefix']}} '*' $@
-else
-    exec {{bin_name}} -c {{salt_data['conf_prefix']}} $@
-fi
+#!/bin/sh
+export PATH="{{salt_data['salt_root']}}/makina-states/bin:${PATH}"
+target="$1"
+shift
+exec {{bin_name}} -c {{salt_data['conf_prefix']}} "${target}" "${@}"
 exit $?
 # vim:set ft=bash:
