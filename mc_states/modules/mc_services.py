@@ -53,6 +53,8 @@ def settings():
         TDB
     upstart
         TDB
+    tomcatSettings
+        sub regitry for tomcat specific settings
 
     Pure ffpd:
         pureftpdRreg
@@ -152,6 +154,9 @@ def settings():
 
         # PHP:  (services.http.nginx)
         data['phpSettings'] = __salt__['mc_php.settings']()
+
+        # PHP:  (services.http.nginx)
+        data['tomcatSettings'] = __salt__['mc_tomcat.settings']()
 
         # Pureftpd:  (services.ftp.pureftpd)
         data['pureftpdRreg'] = pureftpd = __salt__['mc_pureftpd.settings']()
