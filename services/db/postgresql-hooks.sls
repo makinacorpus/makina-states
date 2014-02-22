@@ -3,7 +3,6 @@
 # - We create in order:
 #   - groups
 #   - databases
-#   - extensions
 #   - users
 #}
 {%- import "makina-states/_macros/services.jinja" as services with context %}
@@ -32,8 +31,6 @@
            'postbase': postbase}
   } %}
 {%- for ver in services.pgVers %}
-{%- set preext = ver+'-makina-postgresql-pre-create-ext' %}
-{%- set postext = ver+'-makina-postgresql-post-create-ext' %}
 {%- set pregroup = ver+'-makina-postgresql-pre-create-group' %}
 {%- set postgroup = ver+'-makina-postgresql-post-create-group' %}
 {%- set predb = ver+'-makina-postgresql-pre-create-db' %}
@@ -48,8 +45,6 @@
   'postdb': postdb,
   'preuser': preuser,
   'postuser': postuser,
-  'preext': preext,
-  'postext': postext,
 }) %}
 {{services.funcs.proxy(pregroup, '''
     - watch:
@@ -64,22 +59,13 @@
       - mc_proxy: {1}
     - watch_in:
       - mc_proxy: {2}
-'''.format(postgroup, postbase, postinst))}}
+'''.format(postbase, postgroup, postinst))}}
 {{services.funcs.proxy(postdb)}}
 {{services.funcs.proxy(preuser, '''
     - watch:
       - mc_proxy: {0}
-      - mc_proxy: {1}
     - watch_in:
-      - mc_proxy: {2}
-'''.format(postdb, postbase, postinst))}}
+      - mc_proxy: {1}
+'''.format(postbase, postinst))}}
 {{services.funcs.proxy(postuser)}}
-{{services.funcs.proxy(preext, '''
-    - watch:
-      - mc_proxy: {0}
-      - mc_proxy: {1}
-    - watch_in:
-      - mc_proxy: {2}
-'''.format(postdb, postbase, postinst))}}
-{{services.funcs.proxy(postext)}}
 {% endfor %}

@@ -1,11 +1,5 @@
 Databases services
 ===================
-Hooks
------
-.. toctree::
-   :maxdepth: 2
-
-   postgresql-hooks.rst
 
 Services
 --------
