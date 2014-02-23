@@ -31,21 +31,6 @@ def settings():
         shorewall = __salt__['mc_shorewall.settings']()
         nodetypes_registry = __salt__['mc_nodetypes.registry']()
         services_registry = __salt__['mc_services.registry']()
-        banaction = 'iptables'
-        if (
-            (
-                services_registry['has']['firewall.shorewall']
-                and shorewall['shw_enabled']
-            ) and (
-                os.path.exists('/usr/bin/shorewall')
-                or os.path.exists('/sbin/shorewall')
-                or os.path.exists('/usr/sbin/shorewall')
-                or os.path.exists('/usr/bin/shorewall')
-                or os.path.exists('/usr/local/sbin/shorewall')
-                or os.path.exists('/usr/local/bin/shorewall')
-            )
-        ):
-            banaction = 'shorewall'
         locs = localsettings['locations']
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.firewall.psad', {
