@@ -355,18 +355,26 @@ def settings():
                                           'source': '$SALT_RESTRICTED_SSH',
                                           'dest': 'all'})
 
+            # data['default_rules'].append({'comment': 'ping'})
+            # restricting ping is really a awkard bad idea
             # for ping, we drop and only accept from restricted (default: all)
-            data['default_rules'].append({'comment': 'ping'})
+            # data['default_rules'].append({
+            #     'action': 'Ping(DROP)'.format(action),
+            #     'source': 'net', 'dest': '$FW'})
+            # if data['no_ping']:
+            #     action = 'DROP'
+            # else:
+            #     action = 'ACCEPT'
+            # data['default_rules'].append({'action': 'Ping({0})'.format(action),
+            #                               'source': '$SALT_RESTRICTED_PING',
+            #                               'dest': '$FW'})
+            # limiting ping
+            # for ping, we drop and only accept from restricted (default: all)
             data['default_rules'].append({
-                'action': 'Ping(DROP)'.format(action),
-                'source': 'net', 'dest': '$FW'})
-            if data['no_ping']:
-                action = 'DROP'
-            else:
-                action = 'ACCEPT'
-            data['default_rules'].append({'action': 'Ping({0})'.format(action),
-                                          'source': '$SALT_RESTRICTED_PING',
-                                          'dest': '$FW'})
+                'action': 'Ping(ACCEPT)'.format(action),
+                'source': 'net',
+                'dest': '$FW',
+                'rate': 's:10/min:10'})
 
             data['default_rules'].append({'comment': 'smtp'})
             if data['no_smtp']:

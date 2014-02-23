@@ -19,6 +19,9 @@
 {%- set metadata = salt['mc_services.metadata']() %}
 {%- set registry = salt['mc_services.registry']() %}
 
+{# psad Settings #}
+{%- set psadSettings = settings.psadSettings  %}
+
 {# Fail2ban Settings #}
 {%- set fail2banSettings = settings.fail2banSettings  %}
 

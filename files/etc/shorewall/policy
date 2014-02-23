@@ -14,6 +14,6 @@
 ###############################################################################
 #SOURCE		DEST		POLICY		LOG LEVEL	LIMIT:BURST
 {% for data in shwdata.policies -%}
-{{ data['source'] }} {{ data['dest'] }} {{ data['policy'] }} {{ data.get('loglevel', ' ') }} {{ data.get('limit', ' ') }}
+{{ data['source'] }} {{ data['dest'] }} {{ data['policy'] }} {{ data.get('loglevel', ' - ') }} {{ data.get('limit', ' - ') }}
 {% endfor -%}
 #LAST LINE -- DO NOT REMOVE

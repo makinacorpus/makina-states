@@ -26,6 +26,7 @@ Subregistries
    mc_nginx.rst
    mc_pgsql.rst
    mc_php.rst
+   mc_psad.rst
    mc_postfix.rst
    mc_pureftpd.rst
    mc_saltcloud.rst

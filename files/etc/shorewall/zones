@@ -13,8 +13,8 @@
 # For information about entries in this file, type "man shorewall-zones"
 ###############################################################################
 #ZONE	TYPE	OPTIONS			IN			OUT
-#					OPTIONS			OPTIONS
+#              		    		OPTIONS			OPTIONS
 {% for i, data in shwdata['zones'].items() -%}
-{{ i }} {{ data['type'] }} {{ data.get('options', ' ') }} {{ data.get('in', ' ') }} {{ data.get('out', ' ') }} {{ data.get('in_options', ' ') }}  {{ data.get('out_options', ' ') }}
+{{ i }} {{ data['type'] }} {{ data.get('options', ' - ') }} {{ data.get('in', ' - ') }} {{ data.get('out', ' - ') }}
 {% endfor -%}
 #LAST LINE -- DO NOT REMOVE

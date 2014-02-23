@@ -110,6 +110,9 @@ def settings():
         # Circus:  (services.monitoring.circus)
         data['circusSettings'] =  __salt__['mc_circus.settings']()
 
+        # psad:  (services.firewall.psdad)
+        data['psadSettings'] =  __salt__['mc_psad.settings']()
+
         # Etherpad:  (services.collab.etherpad)
         data['etherpadSettings'] = __salt__['mc_etherpad.settings']()
         # fail2ban:  (services.firewall.fail2ban)
@@ -182,6 +185,7 @@ def registry():
             'db.postgresql': {'active': False},
             'firewall.fail2ban': {'active': False},
             'firewall.shorewall': {'active': False},
+            'firewall.psad': {'active': False},
             'ftp.pureftpd': {'active': False},
             'gis.postgis': {'active': False},
             'gis.qgis': {'active': False},

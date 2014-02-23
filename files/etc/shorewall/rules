@@ -22,7 +22,7 @@ SECTION {{ section }}
 {% if comment -%}
 {{ '\n# ' + comment }}
 {% else -%}
-{{ i['action'] }} {{ i['source'] }} {{ i['dest'] }} {{ i.get('proto', ' ') }} {{ i.get('dport', ' ') }} {{ i.get('sport', ' ') }} {{ i.get('odest', ' ') }} {{ i.get('rate', ' ') }} {{ i.get('user', ' ') }} {{ i.get('mark', ' ') }} {{ i.get('connlimit', ' ') }} {{ i.get('time', ' ') }} {{ i.get('headers', ' ') }} {{ i.get('switch', ' ') }}
+{{ i['action'] }} {{ i['source'] }} {{ i['dest'] }} {{ i.get('proto', ' - ') }} {{ i.get('dport', ' - ') }} {{ i.get('sport', ' - ') }} {{ i.get('odest', ' - ') }} {{ i.get('rate', ' - ') }} {{ i.get('user', ' - ') }} {{ i.get('mark', ' - ') }} {{ i.get('connlimit', ' - ') }} {{ i.get('time', ' - ') }} {{ i.get('headers', ' - ') }} {{ i.get('switch', ' - ') }}
 {% endif -%}
 {% endfor -%}
 {% endfor -%}

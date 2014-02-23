@@ -21,6 +21,21 @@ postfix-pkgs:
       - mc_proxy: postfix-post-install-hook
 {% endif %}
 
+ 
+{{ locs.conf_dir }}-postfix-mailname:
+  file.managed:
+    - name: {{ locs.conf_dir }}/mailname
+    - source: ''
+    - contents: {{ postfixSettings.mailname }}
+    - template: jinja
+    - user: root
+    - group: root
+    - mode: 644
+    - watch:
+      - mc_proxy: postfix-post-install-hook
+    - watch_in:
+      - mc_proxy: postfix-pre-conf-hook
+
 {{ locs.conf_dir }}-postfix-main.cf:
   file.managed:
     - name: {{ locs.conf_dir }}/postfix/main.cf
@@ -81,7 +96,7 @@ makina-postfix-chroot-resolvconf-sync:
       - mc_proxy: postfix-pre-restart-hook
 
 {# postalias if {{ locs.conf_dir }}/aliases is altered #}
-makina-postfix-postaliasdev:
+makina-postfix-postalias:
   cmd.watch:
     - stateful: True
     - name: postalias {{ locs.conf_dir }}/aliases;echo "changed=yes"
@@ -106,7 +121,7 @@ makina-postfix-virtual:
       - mc_proxy: postfix-post-conf-hook
 
 {# postmap /etc/postfix/virtual when altered #}
-makina-postfix-postmap-virtual-dev:
+makina-postfix-postmap-virtual:
   cmd.watch:
     - name: |
             postmap {{ locs.conf_dir }}/postfix/virtual;
@@ -129,7 +144,7 @@ fill-/etc/postfix/sasl_passwd:
     - source: ''
     - contents: '[{{postfixSettings.relay_host}}]:{{postfixSettings.relay_port}} {{postfixSettings.auth_user}}:{{postfixSettings.auth_password}}'
 
-makina-postfix-postmap-sasl-dev:
+makina-postfix-postmap-sasl:
   cmd.watch:
     - name: |
             postmap {{ locs.conf_dir }}/postfix/sasl_passwd;
