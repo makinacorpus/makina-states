@@ -8,18 +8,22 @@ Exposed settings:
 
     :makina-states.localsettings.network.managed: default: False
 
-It will look for extra pillar entries suffixed in **-makina-network** as follow::
+It will look for extra pillar entries suffixed in **-makina-network** as follow
+
+.. code-block:: yaml
 
     *-makina-network:
       ifname:
-      - auto: (opt) (default: True)
-      - mode: (opt) (default: dhcp or static if address)
-      - address: (opt)
-      - netmask: (opt)
-      - gateway: (opt)
-      - dnsservers: (opt)
+      - auto: opt (default: True)
+      - mode: opt (default: dhcp or static if address)
+      - address: opt
+      - netmask: opt
+      - gateway: opt
+      - dnsservers: opt
 
-EG::
+EG
+
+.. code-block:: yaml
 
     makina-states.localsettings.network.managed : true
     myhost-makina-network:

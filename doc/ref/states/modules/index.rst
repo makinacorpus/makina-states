@@ -10,6 +10,7 @@ Execution modules
    mc_dbsmartbackup.rst
    mc_etherpad.rst
    mc_localsettings.rst
+   mc_postfix.rst
    mc_lxc.rst
    mc_macros.rst
    mc_mysql.rst

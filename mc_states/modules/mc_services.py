@@ -37,6 +37,8 @@ def settings():
         TDB
     apacheSettings
         TDB
+    postfixSettings
+        TDB
     circusSettings
         TDB
     etherpadSettings
@@ -148,6 +150,9 @@ def settings():
 
         # Etherpad:  (services.collab.etherpad)
         data['etherpadSettings'] = __salt__['mc_etherpad.settings']()
+
+        # Postfix:  (services.mail.postfix)
+        data['postfixSettings'] = __salt__['mc_postfix.settings']()
 
         # Nginx:  (services.http.nginx)
         data['nginxSettings'] = __salt__['mc_nginx.settings']()

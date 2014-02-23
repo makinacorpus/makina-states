@@ -1,183 +1,164 @@
-{#-
-# Postfix SMTP Server managment
-#
-# ------------------------- START pillar example -----------
-# --- POSTFIX -----------------------------
-#
-# do not forget to launch "salt '*' saltutil.refresh_pillar" after changes
-# consult pillar values with "salt '*' pillar.items"
-# --------------------------- END pillar example ------------
-#
-#}
+{#- Postfix SMTP Server managment #}
 {% macro do(full=True) %}
 {% import "makina-states/_macros/services.jinja" as services with context %}
 {{ salt['mc_macros.register']('services', 'mail.postfix') }}
 {% set localsettings = services.localsettings %}
 {% set nodetypes = services.nodetypes %}
+{% set postfixSettings = services.postfixSettings %}
 {% set locs = localsettings.locations %}
+include:
+  - makina-states.services.mail.postfix-hooks
+
 {% if full %}
 postfix-pkgs:
   pkg.installed:
     - pkgs:
       - postfix
       - postfix-pcre
+    - watch:
+      - mc_proxy: postfix-pre-install-hook
+    - watch_in:
+      - mc_proxy: postfix-post-install-hook
 {% endif %}
-
-#--- DEV SERVER: CATCH ALL EMAILS TO A LOCAL MAILBOX
-{% if nodetypes.registry.is.devhost and not nodetypes.registry.is.travis %}
-  {% set ips=grains['ip_interfaces'] %}
-  {% set ip1=ips['eth0'][0] %}
-  {% set ip2=ips['eth1'][0] %}
-  {% set ipd=ips['docker0'][0] %}
-  {% set netip1='.'.join(ip1.split('.')[:3])+'.0/24' %}
-  {% set netip2='.'.join(ip2.split('.')[:3])+'.0/24' %}
-  {% set netipd='.'.join(ipd.split('.')[:3])+'.0/24' %}
-  {% set local_networks = netip1 + ' ' + netip2 + ' ' + netipd %}
 
 {{ locs.conf_dir }}-postfix-main.cf:
   file.managed:
     - name: {{ locs.conf_dir }}/postfix/main.cf
-    - source: salt://makina-states/files/etc/postfix/main.cf.localdeliveryonly
+    - source: salt://makina-states/files/etc/postfix/main.cf
     - template: jinja
     - user: root
     - group: root
     - mode: 644
-    {% if full%}
-    - require:
-      - pkg: postfix-pkgs
-    {% endif %}
-    - require_in:
-      - cmd: makina-postfix-configuration-check
+    - watch:
+      - mc_proxy: postfix-pre-conf-hook
     - watch_in:
-      # restart service in case of settings alterations
-      - service: makina-postfix-service
-    - defaults:
-        conf_dir: {{ locs.conf_dir }}
-        mailname: {{ grains['fqdn'] }}
-        local_networks: {{ local_networks }}
-
-makina-postfix-local-catch-all-delivery-virtual:
-  file.managed:
-    - name: {{ locs.conf_dir }}/postfix/virtual
-    - source: salt://makina-states/files/etc/postfix/virtual.localdeliveryonly
-    - user: root
-    - group: root
-    - mode: 644
-    {% if full %}
-    - require:
-      - pkg: postfix-pkgs
-    {% endif %}
-    - require_in:
-      - cmd: makina-postfix-configuration-check
-
-makina-postfix-aliases-all-to-vagrant-user:
-  file.append:
-    - name: {{ locs.conf_dir }}/aliases
-    {% if full %}
-    - require:
-      - pkg: postfix-pkgs
-    {% endif %}
-    - text:
-      - "root: vagrant"
-    - require_in:
-      - cmd: makina-postfix-configuration-check
-
-# postmap /etc/postfix/virtual when altered
-makina-postfix-postmap-virtual-dev:
-  cmd.watch:
-    - name: postmap {{ locs.conf_dir }}/postfix/virtual;echo "changed=yes"
-    - stateful: True
-    {% if full %}
-    - require:
-      - pkg: postfix-pkgs
-    {% endif %}
-    - watch:
-      - file: makina-postfix-local-catch-all-delivery-virtual
-    - require_in:
-      - service: makina-postfix-service
-
-# postalias if {{ locs.conf_dir }}/aliases is altered
-makina-postfix-postalias-dev:
-  cmd.watch:
-    - stateful: True
-    - name: postalias {{ locs.conf_dir }}/aliases;echo "changed=yes"
-    - watch:
-      - file: makina-postfix-aliases-all-to-vagrant-user
-    - require_in:
-      - service: makina-postfix-service
-
-# ------------ dev mode end -----------------------
-{% endif %}
-
+      - mc_proxy: postfix-post-conf-hook
+      - mc_proxy: postfix-pre-restart-hook
+    - defaults: {{postfixSettings|yaml}}
 
 makina-postfix-chroot-hosts-sync:
   cmd.run:
     - unless: diff -q {{ locs.var_spool_dir }}/postfix/etc/hosts {{ locs.conf_dir }}/hosts
     - stateful: True
     - name: cp -a {{ locs.conf_dir }}/hosts {{ locs.var_spool_dir }}/postfix/etc/hosts && echo "" && echo "changed=yes"
-    {% if full %}
-    - require:
-      - pkg: postfix-pkgs
-    {% endif %}
+    - watch:
+      - mc_proxy: postfix-pre-conf-hook
+    - watch_in:
+      - mc_proxy: postfix-post-conf-hook
+      - mc_proxy: postfix-pre-restart-hook
 
 makina-postfix-chroot-localtime-sync:
   cmd.run:
     - unless: diff -q {{ locs.var_spool_dir }}/postfix/etc/localtime {{ locs.conf_dir }}/localtime
     - stateful: True
     - name: cp -a {{ locs.conf_dir }}/localtime {{ locs.var_spool_dir }}/postfix/etc/localtime && echo "" && echo "changed=yes"
-    {% if full %}
-    - require:
-      - pkg: postfix-pkgs
-    {% endif %}
+    - watch:
+      - mc_proxy: postfix-pre-conf-hook
+    - watch_in:
+      - mc_proxy: postfix-post-conf-hook
+      - mc_proxy: postfix-pre-restart-hook
 
 makina-postfix-chroot-nsswitch-sync:
   cmd.run:
     - unless: diff -q {{ locs.var_spool_dir }}/postfix/etc/nsswitch.conf {{ locs.conf_dir }}/nsswitch.conf
     - stateful: True
     - name: cp -a {{ locs.conf_dir }}/nsswitch.conf  {{ locs.var_spool_dir }}/postfix/etc/nsswitch.conf  && echo "" && echo "changed=yes"
-    {% if full %}
-    - require:
-      - pkg: postfix-pkgs
-    {% endif %}
+    - watch:
+      - mc_proxy: postfix-pre-conf-hook
+    - watch_in:
+      - mc_proxy: postfix-post-conf-hook
+      - mc_proxy: postfix-pre-restart-hook
+
 makina-postfix-chroot-resolvconf-sync:
   cmd.run:
     - unless: diff -q {{ locs.var_spool_dir }}/postfix/etc/resolv.conf {{ locs.conf_dir }}/resolv.conf
     - stateful: True
     - name: cp -a {{ locs.conf_dir }}/resolv.conf {{ locs.var_spool_dir }}/postfix/etc/resolv.conf && echo "" && echo "changed=yes"
-    {% if full %}
-    - require:
-      - pkg: postfix-pkgs
-    {% endif %}
+    - watch:
+      - mc_proxy: postfix-pre-conf-hook
+    - watch_in:
+      - mc_proxy: postfix-post-conf-hook
+      - mc_proxy: postfix-pre-restart-hook
+
+{# postalias if {{ locs.conf_dir }}/aliases is altered #}
+makina-postfix-postaliasdev:
+  cmd.watch:
+    - stateful: True
+    - name: postalias {{ locs.conf_dir }}/aliases;echo "changed=yes"
+    - watch:
+      - mc_proxy: postfix-pre-conf-hook
+    - watch_in:
+      - mc_proxy: postfix-post-conf-hook
+      - mc_proxy: postfix-pre-restart-hook
+
+makina-postfix-virtual:
+  file.managed:
+    - name: {{ locs.conf_dir }}/postfix/virtual
+    - source: salt://makina-states/files/etc/postfix/virtual
+    - user: root
+    - template: jinja
+    - defaults: {{postfixSettings|yaml}}
+    - group: root
+    - mode: 644
+    - watch:
+      - mc_proxy: postfix-pre-conf-hook
+    - watch_in:
+      - mc_proxy: postfix-post-conf-hook
+
+{# postmap /etc/postfix/virtual when altered #}
+makina-postfix-postmap-virtual-dev:
+  cmd.watch:
+    - name: |
+            postmap {{ locs.conf_dir }}/postfix/virtual;
+            echo "changed=yes"
+    - stateful: true
+    - watch:
+      - file: makina-postfix-virtual
+      - mc_proxy: postfix-pre-conf-hook
+    - watch_in:
+      - mc_proxy: postfix-post-conf-hook
+      - mc_proxy: postfix-pre-restart-hook
+
+{% if postfixSettings.auth %}
+fill-/etc/postfix/sasl_passwd:
+  file.managed:
+    - name: {{locs.conf_dir}}/postfix/sasl_passwd
+    - mode: 700
+    - user: root
+    - group: root
+    - source: ''
+    - contents: '[{{postfixSettings.relay_host}}]:{{postfixSettings.relay_port}} {{postfixSettings.auth_user}}:{{postfixSettings.auth_password}}'
+
+makina-postfix-postmap-sasl-dev:
+  cmd.watch:
+    - name: |
+            postmap {{ locs.conf_dir }}/postfix/sasl_passwd;
+            echo "changed=yes"
+    - stateful: True
+    - watch:
+      - file: fill-/etc/postfix/sasl_passwd
+      - mc_proxy: postfix-pre-conf-hook
+    - watch_in:
+      - mc_proxy: postfix-post-conf-hook
+      - mc_proxy: postfix-pre-restart-hook
+{% endif %}
 
 makina-postfix-configuration-check:
   cmd.run:
     - name: {{ locs.sbin_dir }}/postfix check 2>&1  && echo "" && echo "changed=no"
     - stateful: True
-    - require:
-      {%  if full %}
-      - pkg: postfix-pkgs
-      {% endif %}
-      - cmd: makina-postfix-chroot-hosts-sync
-      - cmd: makina-postfix-chroot-resolvconf-sync
-      - cmd: makina-postfix-chroot-nsswitch-sync
-      - cmd: makina-postfix-chroot-localtime-sync
+    - watch:
+      - mc_proxy: postfix-post-conf-hook
+    - watch_in:
+      - mc_proxy: postfix-pre-restart-hook
 
-#--- MAIN SERVICE RESTART/RELOAD watchers
 makina-postfix-service:
   service.running:
     - name: postfix
     - enable: True
-    - require:
-      {% if full %}
-      - pkg: postfix-pkgs
-      {% endif %}
-      - cmd: makina-postfix-configuration-check
+    - watch_in:
+      - mc_proxy: postfix-post-restart-hook
     - watch:
-      # restart service in case of package install
-      {% if full %}
-      - pkg: postfix-pkgs
-      {% endif %}
-      # restart service if {{ locs.conf_dir }}/hosts were altered?
-      - cmd: makina-postfix-chroot-hosts-sync
+      - mc_proxy: postfix-pre-restart-hook
 {% endmacro %}
 {{ do(full=False) }}

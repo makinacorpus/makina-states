@@ -25,9 +25,10 @@ PG_HBA configuration
 You can override the pg_hba.conf by either:
   - attaching to the accumulator (see below)
   - editing or overriding the 'pg_hba' setting in the pgsql settings
-   (list of dicts), see the mc_states.modules.mc_pgsql module)
+    a (list of dicts), see the mc_states.modules.mc_pgsql module)
 
 Example from pillar
+
 .. code-block:: yaml
 
    makina.services.postgresql.pg_hba  [ {'type': 'local',
@@ -37,6 +38,7 @@ Example from pillar
    makina.services.postgresql.pg_hba-overrides: [ {...} ]
 
 Example to use the pg_hba block
+
 .. code-block:: yaml
 
     append-to-pg-hba-{-accumulator:
@@ -52,6 +54,7 @@ Configuration via pillar example
 ----------------------------------
 
 You can define via pillar the default user to run psql command as:
+
 .. code-block:: yaml
 
    makina-states.services.postgresql.user: foo (default: postgres)
@@ -61,6 +64,7 @@ By default the owner of the database is a group with the same name suffixed
 with _owner for the user to be added to. We assign then users to this group
 
 Define a database and its owner as follow (see salt.states.postgres_database.present)
+
 .. code-block:: yaml
 
     bar-makina-postgresql:
@@ -72,6 +76,7 @@ Define a database and its owner as follow (see salt.states.postgres_database.pre
 This will create a 'bar' database owned by the group **bar_owners**
 
 Define a user a follow (see salt.states.postgres_user.present)
+
 .. code-block:: yaml
 
    bar-makina-services-postgresql-user:
@@ -85,6 +90,7 @@ Define a user a follow (see salt.states.postgres_user.present)
 This will create a bar user with 'h4x' password and in group 'bar-owners' (the one of the precedent database)
 
 eg:
+
 .. code-block:: yaml
 
    mydb-makina-postgresql: {}
@@ -96,8 +102,9 @@ eg:
 
 Macro usage examples
 --------------------
-You can use them in your own states as follow::
-.. code-block:: yaml
+You can use them in your own states as follow
+
+::
 
    include:
      - makina-states.services.db.postgresql
