@@ -10,6 +10,7 @@ mc_utils / Some usefull small tools
 import salt.utils.dictupdate
 from salt.exceptions import SaltException
 import salt.utils
+from salt.utils.odict import OrderedDict
 
 _default_marker = object()
 
@@ -78,13 +79,13 @@ def format_resolve(value,
 
     """
     if not original_dict:
-        original_dict = {}
+        original_dict = OrderedDict()
     if this_call == 0 and not original_dict and isinstance(value, dict):
         original_dict = value
     left = False
     cycle = True
     if isinstance(value, dict):
-        new = {}
+        new = OrderedDict()
         for key, val in value.items():
             val = format_resolve(val, original_dict, this_call=this_call + 1)
             new[key] = val
@@ -205,10 +206,43 @@ def get(key, default=''):
     ret = salt.utils.traverse_dict(__grains__, key, '_|-')
     if ret != '_|-':
         return ret
-    ret = salt.utils.traverse_dict(__pillar__.get('master', {}), key, '_|-')
+    ret = salt.utils.traverse_dict(__pillar__.get('master', OrderedDict()), key, '_|-')
     if ret != '_|-':
         return ret
     return default
+
+
+def get_uniq_keys_for(prefix):
+    """Return keys for prefix:
+        - if prefix is in conf
+        - All other keys of depth + 1
+
+
+        With makina.foo prefix:
+
+        - returns makina.foo
+        - returns makina.foo.1
+        - dont returns makina.foo.1.1
+        - dont returns makina
+        - dont returns makina.other
+    """
+
+    keys = OrderedDict()
+    for mapping in (__pillar__,
+                    __grains__):
+        skeys = []
+        for k in mapping:
+            if k.startswith(prefix):
+                testn = k[len(prefix):]
+                try:
+                    if testn.index('.') < 2:
+                        skeys.append(k)
+                except:
+                    continue
+        skeys.sort()
+        for k in skeys:
+            keys[k] = mapping[k]
+    return keys
 
 
 def defaults(prefix, datadict, overridden=None, firstcall=True):
@@ -234,9 +268,9 @@ def defaults(prefix, datadict, overridden=None, firstcall=True):
             datadict = __salt__['mc_utils.dictupdate'](datadict, global_pillar)
 
     if overridden is None:
-        overridden = {}
+        overridden = OrderedDict()
     if not prefix in overridden:
-        overridden[prefix] = {}
+        overridden[prefix] = OrderedDict()
     for key in [a for a in datadict]:
         default_value = datadict[key]
         value_key = '{0}.{1}'.format(prefix, key)
@@ -259,11 +293,21 @@ def defaults(prefix, datadict, overridden=None, firstcall=True):
                 value = nvalue
         elif isinstance(value, dict):
             # recurvive and conservative dictupdate
-            ndefaults = defaults(value_key, value, overridden=overridden, firstcall=firstcall)
+            ndefaults = defaults(value_key,
+                                 value,
+                                 overridden=overridden,
+                                 firstcall=firstcall)
             if overridden[value_key]:
                 for k, value in overridden[value_key].items():
                     default_value[k] = value
+            # override speific keys values handle:
+            # eg: makina-states.services.firewall.params.RESTRICTED_SSH = foo
+            # eg: makina-states.services.firewall.params:
+            #        foo: var
+            for k, subvalue in get_uniq_keys_for(value_key).items():
+                ndefaults[k.split('{0}.'.format(value_key))[1]] = subvalue
             value = __salt__['mc_utils.dictupdate'](default_value, ndefaults)
+
         datadict[key] = value
         for k, value in overridden[prefix].items():
             datadict[k] = value

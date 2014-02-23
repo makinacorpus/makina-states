@@ -352,7 +352,7 @@ def settings():
             else:
                 action = 'ACCEPT'
             data['default_rules'].append({'action': 'SSH({0})'.format(action),
-                                          'source': '$RESTRICTED_SSH',
+                                          'source': '$SALT_RESTRICTED_SSH',
                                           'dest': 'all'})
 
             # for ping, we drop and only accept from restricted (default: all)
@@ -365,7 +365,7 @@ def settings():
             else:
                 action = 'ACCEPT'
             data['default_rules'].append({'action': 'Ping({0})'.format(action),
-                                          'source': '$RESTRICTED_PING',
+                                          'source': '$SALT_RESTRICTED_PING',
                                           'dest': '$FW'})
 
             data['default_rules'].append({'comment': 'smtp'})
@@ -383,7 +383,7 @@ def settings():
                 action = 'ACCEPT'
             data['default_rules'].append(
                 {'action': 'SNMP({0})'.format(action),
-                 'source': '$RESTRICTED_SNMP', 'dest': 'all'})
+                 'source': '$SALT_RESTRICTED_SNMP', 'dest': 'all'})
 
             data['default_rules'].append({'comment': 'ftp'})
             if data['no_ftp']:
@@ -392,7 +392,7 @@ def settings():
                 action = 'ACCEPT'
             data['default_rules'].append(
                 {'action': 'FTP({0})'.format(action),
-                 'source': '$RESTRICTED_FTP', 'dest': 'all'})
+                 'source': '$SALT_RESTRICTED_FTP', 'dest': 'all'})
 
             data['default_rules'].append({'comment': 'postgresql'})
             if data['no_postgresql']:
@@ -401,7 +401,7 @@ def settings():
                 action = 'ACCEPT'
             data['default_rules'].append({
                 'action': 'PostgreSQL({0})'.format(action),
-                'source': '$RESTRICTED_POSTGRESQL', 'dest': 'all'})
+                'source': '$SALT_RESTRICTED_POSTGRESQL', 'dest': 'all'})
 
             data['default_rules'].append({'comment': 'mysql'})
             if data['no_mysql']:
@@ -410,7 +410,7 @@ def settings():
                 action = 'ACCEPT'
             data['default_rules'].append({
                 'action': 'MySQL({0})'.format(action),
-                'source': '$RESTRICTED_MYSQL', 'dest': 'all'})
+                'source': '$SALT_RESTRICTED_MYSQL', 'dest': 'all'})
         # ATTENTION WE MERGE, so reverse order to append at begin
         data['default_rules'].reverse()
         for rdata in data['default_rules']:
@@ -422,7 +422,11 @@ def settings():
             if section not in data['_rules']:
                 data['_rules'].update({section: []})
             data['_rules'][section].append(i)
-
+        # prefix params with salt as it is shell
+        params = data['params'].copy()
+        data['params'] = OrderedDict()
+        for p, value in params.items():
+            data['params']['{0}_{1}'.format('SALT', p)] = value
         return data
     return _settings()
 
