@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 '''
-
 .. _module_mc_fail2ban:
 
 mc_fail2ban / fail2ban functions
-============================================
+==================================
 '''
 
 __docformat__ = 'restructuredtext en'
@@ -23,8 +22,73 @@ def settings():
     fail2ban settings
 
     location
-        installation directory
-
+        conf dir
+    destemail:
+        destination mail for alerts(root@fqdn})
+    loglevel
+        (3)
+    logtarget
+        (/var/log/fail2ban.log)
+    mail_from
+        (fail2ban@makina-corpus.com)
+    mail_to
+        (root)
+    mail_enabled
+        (false)
+    mail_host
+        (localhost)
+    mail_port
+        (25)
+    mail_user
+        (foo)
+    mail_password
+        (bar)
+    mail_localtime
+        (true)
+    mail_subject
+        ([Fail2Ban] <section>: Banned <ip>)
+    mail_message
+       (Hi,<br> The IP <ip> has just been banned by Fail2Ban'
+        after <failures> attempts against <section>.<br>'
+        Regards,<br> Fail2Ban)
+    socket
+        (/var/run/fail2ban/fail2ban.sock)
+    backend
+        (polling)
+    bantime
+       (86400)
+    maxretry
+       (10)
+    ssh_maxretry
+       ({maxretry})
+    protocol
+       (tcp)
+    mta
+       (sendmail)
+    banaction
+        (iptables or shorewall if activated)
+    ignoreip
+        ([127.0.0.1])
+    postfix_enabled
+       (false)
+    wuftpd_enabled
+       (false)
+    vsftpd_enabled
+       (false)
+    proftpd_enabled
+       (false)
+    pureftpd_enabled
+       (false)
+    ssh_enabled
+       (true)
+    recidive_enabled
+       (false)
+    asterisk_tcp_enabled
+       (false)
+    asterisk_udp_enabled
+       (false)
+    named_refused_tcp_enabled
+       (false)
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
