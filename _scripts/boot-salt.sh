@@ -458,6 +458,7 @@ set_vars() {
     PREFIX="${PREFIX:-${ROOT}srv}"
     BIN_DIR="${BIN_DIR:-${ROOT}usr/bin}"
     SALT_PILLAR="${SALT_PILLAR:-$PREFIX/pillar}"
+    SALT_BOOT_SYNC_CODE="${SALT_BOOT_SYNC_CODE:-}"
     SALT_BOOT_NOCONFIRM="${SALT_BOOT_NOCONFIRM:-}"
     SALT_ROOT="${SALT_ROOT:-$PREFIX/salt}"
     SALT_BOOT_OUTFILE="${SALT_MS}/.boot_salt.$(get_chrono).out"
@@ -678,7 +679,7 @@ set_vars() {
     fi
     # export variables to support a restart
     export TRAVIS_DEBUG
-    export IS_SALT_UPGRADING
+    export IS_SALT_UPGRADING SALT_BOOT_SYNC_CODE
     export SALT_REBOOTSTRAP BUILDOUT_REBOOTSTRAP VENV_REBOOTSTRAP
     export MS_BRANCH FORCE_MS_BRANCH
     export IS_SALT IS_SALT_MASTER IS_SALT_MINION
@@ -2825,28 +2826,35 @@ parse_cli_opts() {
             IS_SALT_MINION="y";argmatch="1"
         fi
         if [ "x${1}" = "x--check-alive" ];then
-            SALT_BOOT_SKIP_HIGHSTATES=1
-            SALT_BOOT_SKIP_CHECKOUTS=1
+            SALT_BOOT_SKIP_HIGHSTATES="1"
+            SALT_BOOT_SKIP_CHECKOUTS="1"
             SALT_BOOT_CHECK_ALIVE="y"
             argmatch="1"
         fi
         if [ "x${1}" = "x--restart-masters" ];then
-            SALT_BOOT_SKIP_HIGHSTATES=1
-            SALT_BOOT_SKIP_CHECKOUTS=1
+            SALT_BOOT_SKIP_HIGHSTATES="1"
+            SALT_BOOT_SKIP_CHECKOUTS="1"
             SALT_BOOT_CHECK_ALIVE="y"
             SALT_BOOT_RESTART_MASTERS="y";argmatch="1"
         fi
         if [ "x${1}" = "x--restart-minions" ];then
-            SALT_BOOT_SKIP_HIGHSTATES=1
-            SALT_BOOT_SKIP_CHECKOUTS=1
+            SALT_BOOT_SKIP_HIGHSTATES="1"
+            SALT_BOOT_SKIP_CHECKOUTS="1"
             SALT_BOOT_CHECK_ALIVE="y"
             SALT_BOOT_RESTART_MINIONS="y";argmatch="1"
         fi
+        if [ "x${1}" = "x--synchronize-code" ];then
+            SALT_BOOT_SYNC_CODE="1"
+            SALT_BOOT_SKIP_HIGHSTATES="1"
+            SALT_BOOT_SKIP_CHECKOUTS=""
+            argmatch="1"
+        fi
         if [ "x${1}" = "x--restart-daemons" ];then
-            SALT_BOOT_SKIP_HIGHSTATES=1
-            SALT_BOOT_SKIP_CHECKOUTS=1
+            SALT_BOOT_SKIP_HIGHSTATES="1"
+            SALT_BOOT_SKIP_CHECKOUTS="1"
             SALT_BOOT_CHECK_ALIVE="y"
-            SALT_BOOT_RESTART_DAEMONS="y";argmatch="1"
+            SALT_BOOT_RESTART_DAEMONS="y"
+            argmatch="1"
         fi
         if [ "x${1}" = "x-MM" ] || [ "x${1}" = "x--mastersalt-master" ];then
             IS_MASTERSALT_MASTER="y";argmatch="1"
@@ -3018,13 +3026,17 @@ if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
     recap
     cleanup_old_installs
     setup_and_maybe_update_code
-    handle_upgrades
-    setup_virtualenv
-    install_buildouts
-    create_salt_skeleton
-    install_mastersalt_env
-    install_salt_env
     abort=""
+    if [ x${SALT_BOOT_SYNC_CODE} != "x" ];then
+        bs_log "Code updated"
+        exit 0
+    fi
+        handle_upgrades
+        setup_virtualenv
+        install_buildouts
+        create_salt_skeleton
+        install_mastersalt_env
+        install_salt_env
     if [ "x${SALT_BOOT_RESTART_MINIONS}" != "x" ];then
         restart_local_minions
         restart_local_mastersalt_minions
