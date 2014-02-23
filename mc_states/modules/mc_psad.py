@@ -21,6 +21,10 @@ def settings():
     '''
     psad settings
 
+        alertdest
+            (root@fqdn)
+        hostname
+            (fqdn)
 
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
