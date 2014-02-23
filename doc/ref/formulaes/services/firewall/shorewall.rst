@@ -170,6 +170,14 @@ EG:
 
 Params configuration
 ------------------------
+
+Please note:
+
+    - All paramsare automaticly prefixed with **SALT_**
+    - All params are **sorted** lexicographically after the loading
+    - You needif you reference params to use the **SALT_** prefix, we
+      wont replace params automatically.
+
 .. code-block:: yaml
 
   makina-states.services.firewall.shorewall.params:
@@ -181,6 +189,19 @@ EG:
 
     makina-states.services.firewall.shorewall.params:
       thishostguest: 10.0.3.2
+      00_cd: 10.0.3.2
+      00_ab: 10.0.3.2
+      a: 1
+
+mapping afterloading:
+
+.. code-block:: yaml
+
+    makina-states.services.firewall.shorewall.params:
+      SALT_00_ab: 10.0.3.2
+      SALT_00_cd: 10.0.3.2
+      SALT_a: 1
+      SALT_thishostguest: 10.0.3.2
 
 Zones configuration
 --------------------
