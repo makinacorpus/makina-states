@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
+.. _module_mc_dbsmartbackup:
+
 mc_dbsmartbackup / db_smart_backup functions
 ============================================
 

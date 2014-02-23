@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
+.. _module_mc_saltcloud:
+
 mc_saltcloud / saltcloud related variables
 ============================================
 NOT IMPLEMENTED YET

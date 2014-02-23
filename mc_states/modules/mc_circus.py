@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
+.. _module_mc_circus:
+
 mc_circus / circus functions
 ============================================
 '''
@@ -47,7 +49,7 @@ def settings():
                   'debug': False,
                   'statsd': True,
                   'statsd_close_outputs': False,
-                  'httpd_close_outputs': False, 
+                  'httpd_close_outputs': False,
                   'check_delay': "5",
                   'httpd_host': "localhost",
                   'httpd_port': "5554",

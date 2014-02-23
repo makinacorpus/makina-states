@@ -19,6 +19,8 @@
 ###############################################################################
 #ZONE	INTERFACE	OPTIONS
 
-{% for i, data in shwdata['interfaces'].items() -%}
-{{ i }} {{ data['interface'] }} {{ data.get('options', '') }}
-{% endfor -%}
+{% for zone, interfaces in shwdata['interfaces'].items() %}
+{% for data in interfaces %}
+{{ zone }} {{ data['interface'] }} {{ data.get('options', '') }}
+{% endfor %}
+{% endfor %}

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''
-.. _state_mc_postfix:
+.. _module_mc_postfix:
 
 mc_postfix / postfix functions
 ============================================

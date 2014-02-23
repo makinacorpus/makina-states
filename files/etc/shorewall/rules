@@ -17,7 +17,7 @@
 {% for key in ['all', 'established', 'related', 'new'] -%}
 {% set section=key.upper() -%}
 SECTION {{ section }}
-{% for i in shwdata.rules.get(section, []) -%}
+{% for i in shwdata._rules.get(section, []) -%}
 {% set comment=i.get('comment', '').strip() -%}
 {% if comment -%}
 {{ '\n# ' + comment }}

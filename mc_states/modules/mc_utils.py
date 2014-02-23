@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
+.. _module_mc_utils:
+
 mc_utils / Some usefull small tools
 ====================================
 '''

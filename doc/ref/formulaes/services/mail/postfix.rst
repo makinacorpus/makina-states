@@ -1,6 +1,6 @@
 Postfix
 ========
-Configure postfix, see the salt :ref:`state_mc_postfix` module to know which option to configure in pillar.
+Configure postfix, see the salt :ref:`module_mc_postfix` module to know which option to configure in pillar.
 There are shortcut modes to ease the configuration, please see bellow
 
 Relay mode

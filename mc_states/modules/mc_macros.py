@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
+.. _module_mc_macros:
+
 mc_macros / macros helpers
 ============================================
 
@@ -169,7 +171,6 @@ def get_registry(registry_configuration):
 
 def construct_registry_configuration(__name, defaults=None):
     '''Helper to factorise registry mappings'''
-    settings_reg = __salt__['mc_{0}.settings'.format(__name)]()
     metadata_reg = __salt__['mc_{0}.metadata'.format(__name)]()
     if not defaults:
         defaults = {}

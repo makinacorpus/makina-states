@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 '''
+
+.. _module_mc_localsettings:
+
 mc_localsettings / localsettings variables
 ============================================
-
 '''
 
 # Import salt libs
@@ -22,83 +24,99 @@ def metadata():
     return _metadata()
 
 
+def _get_ldapVariables(saltmods):
+    # see makina-states.services.base.ldap
+    return saltmods['mc_utils.defaults'](
+        'makina-states.localsettings.ldap', {
+            'enabled': False,
+            'ldap_uri': 'ldaps://localhost:636/',
+            'ldap_base': 'dc=company,dc=org',
+            'ldap_passwd': 'ou=People,dc=company,dc=org?sub',
+            'ldap_shadow': 'ou=People,dc=company,dc=org?sub',
+            'ldap_group': 'ou=Group,dc=company,dc=org?sub',
+            'ldap_cacert': ''
+        })
+
+
+def _ldapEn(__salt__):
+    return _get_ldapVariables(__salt__).get('enabled', False)
+
+
 def settings():
     '''settings registry for localsettings
 
     locations
-        TDB
+        Well known locations on the filesystem
     rotate
-        TDB
+        Default rotation days for logs
     networkManaged
-        TDB
+        Do we manage the network configuration
     networkInterfaces
-        TDB
+        Dict of configuration for network interfaces
     ldapVariables
-        TDB
+        Ldap variables
     ldapEn
-        TDB
+        Is pam ldap to be activated
     group
-        TDB
+        Group of the special editor group
     groupId
-        TDB
+        Gid of the special editor group
     users
-        TDB
+        System configured users
     user_keys
-        TDB
+        SSH keys tied to users
     keysMappings
-        TDB
+        SSH keys tied to users
     cur_pyver
-        TDB
+        Current python version
     pythonSettings
-        TDB
+        Settings for the python formula
     defaultSysadmins
-        TDB
+        Default sysadmin users
     hosts_list
-        TDB
+        Hosts managment lisrt
     makinahosts
-        TDB
+        hosts grabbed in pillar
     keyserver
-        TDB
+        default GPG server
     debian_stable
-        TDB
+        Name of the current debian stable
     ubuntu_lts
-        TDB
+        Name of the current ubuntu LTS release
     ubuntu_last
-        TDB
+        Name of the last ubuntu release
     debian_mirror
-        TDB
+        Default debian mirror
     ubuntu_mirror
-        TDB
+        Default ubuntu mirror
     dist
-        TDB
+        current system dist
     udist
-        TDB
+        current ubuntu dist
     ddist
-        TDB
-    dcomps
-        TDB
+        current debian dist
     ucomps
-        TDB
+        activated comps for ubuntu
     jdkDefaultVer
-        TDB
+        default JDK version
     rvmSettings
-        TDB
+        RVM related settings
     rvm_url
-        TDB
+        rvm download url
     rubies
-        TDB
+        Activated rubies
     rvm_user
-        TDB
+        RVM user
     rvm_group
-        TDB
+        RVM group
     npmSettings
-        TDB
+        npm related settings
     SSLSettings
-        TDB
+        SSL settings
     locales
-        TDB
+        locales to use
     default_locale
-        TDB
+        Default locale
 
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
@@ -183,7 +201,7 @@ def settings():
         #   {{ localsettings.rotate.days }}
         data['rotate'] = saltmods['mc_utils.defaults'](
             'makina-states.localsettings.rotate', {
-                'days':  '31',
+                'days':  '365',
             })
         # Does the network base config file have to be managed via that
         # See makina-states.localsettings.network
@@ -199,19 +217,8 @@ def settings():
             if k.endswith('makina-network'):
                 networkInterfaces.update(pillar[k])
         # LDAP integration
-        # see makina-states.services.base.ldap
-        data['ldapVariables'] = ldapVariables = saltmods['mc_utils.defaults'](
-            'makina-states.localsettings.ldap', {
-                'enabled': False,
-                'ldap_uri': 'ldaps://localhost:636/',
-                'ldap_base': 'dc=company,dc=org',
-                'ldap_passwd': 'ou=People,dc=company,dc=org?sub',
-                'ldap_shadow': 'ou=People,dc=company,dc=org?sub',
-                'ldap_group': 'ou=Group,dc=company,dc=org?sub',
-                'ldap_cacert': ''
-            })
-        data['ldapVariables'] = ldapVariables
-        data['ldapEn'] = ldapVariables.get('enabled', False)
+        data['ldapVariables'] = _get_ldapVariables(saltmods)
+        data['ldapEn'] = _ldapEn(saltmods)
 
         # Editor group to have write permission on salt controlled files
         # but also on project related files
@@ -394,12 +401,11 @@ def registry():
     '''registry registry for localsettings'''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _registry():
-        settings_reg = __salt__['mc_{0}.settings'.format(__name)]()
         return __salt__[
             'mc_macros.construct_registry_configuration'
         ](__name, defaults={
-            'nscd': {'active': settings_reg['ldapEn']},
-            'ldap': {'active': settings_reg['ldapEn']},
+            'nscd': {'active': _ldapEn(__salt__)},
+            'ldap': {'active': _ldapEn(__salt__)},
             'git': {'active': True},
             'hosts': {'active': True},
             'jdk': {'active': False},

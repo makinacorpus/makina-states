@@ -29,6 +29,8 @@ def get_makina_grains():
         'makina.lxc': False,
         'makina.docker': False,
         'makina.devhost_num': '0',
+        'makina.default_route': {},
+        'makina.routes': [],
     }
     if os.path.exists('.dockerinit'):
         grains['makina.docker'] = True
@@ -38,10 +40,32 @@ def get_makina_grains():
     if os.path.exists('/var/log/upstart'):
         grains['makina.upstart'] = True
     num = subprocess.Popen(
-        'bash -c "if [ -f /root/vagrant/provision_settings.sh ];then . /root/vagrant/provision_settings.sh;echo \$DEVHOST_NUM;fi"',
+        'bash -c "if [ -f /root/vagrant/provision_settings.sh ];'
+        'then . /root/vagrant/provision_settings.sh;'
+        'echo \$DEVHOST_NUM;fi"',
         shell=True, stdout=subprocess.PIPE
     ).stdout.read().strip()
-
+    routes = subprocess.Popen(
+        'bash -c "netstat -nr"',
+        shell=True, stdout=subprocess.PIPE
+    ).stdout.read().strip()
+    for route in routes.splitlines()[1:]:
+        try:
+            parts = route.split()
+            if 'dest' in parts[0].lower():
+                continue
+            droute = {'iface': parts[-1],
+                      'gateway': parts[1],
+                      'genmask': parts[2],
+                      'flags': parts[3],
+                      'mss': parts[4],
+                      'window': parts[5],
+                      'irtt': parts[6]}
+            if parts[0] == '0.0.0.0':
+                grains.update({'makina.default_route': droute})
+            grains['makina.routes'].append(droute)
+        except Exception:
+            continue
     if num:
         grains['makina.devhost_num'] = num
     return grains

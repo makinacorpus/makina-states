@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 '''
+
+.. _module_mc_tomcat:
+
 mc_tomcat / tomcat functions
 ============================================
 '''

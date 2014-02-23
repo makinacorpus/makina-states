@@ -1,4 +1,6 @@
 '''
+.. _module_mc_nodetypes:
+
 mc_nodetypes / nodetypes registry
 ============================================
 
@@ -34,7 +36,6 @@ def registry():
     '''nodetypes registry registry'''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _registry():
-        settings_reg = __salt__['mc_{0}.settings'.format(__name)]()
         travis = False
         for i in os.environ:
             if 'travis' in i.lower():
@@ -52,7 +53,6 @@ def registry():
             'dockercontainer': {'active': False},
         })
         return reg
-
     return _registry()
 
 def dump():

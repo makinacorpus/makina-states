@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
+.. _module_mc_pureftpd:
+
 mc_pureftpd / pureftpd functions
 ============================================
 '''

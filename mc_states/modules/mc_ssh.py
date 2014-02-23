@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 '''
+
+.. _module_mc_ssh:
+
 mc_ssh / OpenSSH  related functions
 ============================================
 

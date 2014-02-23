@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 '''
+
+.. _module_mc_mysql:
+
 mc_mysql / mysql functions
 ============================================
 '''

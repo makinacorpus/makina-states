@@ -19,6 +19,9 @@
 {%- set metadata = salt['mc_services.metadata']() %}
 {%- set registry = salt['mc_services.registry']() %}
 
+{# Fail2ban Settings #}
+{%- set fail2banSettings = settings.fail2banSettings  %}
+
 {# SSL Settings #}
 {%- set SSLSettings = settings.SSLSettings  %}
 
@@ -68,16 +71,17 @@
 {%- set postgresqlUser = settings.postgresqlUser  %}
 
 {# shorewall #}
-{%- set shw_enabled = settings.shw_enabled  %}
-{%- set shwIfformat = settings.shwIfformat  %}
-{%- set shwPolicies = settings.shwPolicies  %}
-{%- set shwZones = settings.shwZones  %}
-{%- set shwInterfaces = settings.shwInterfaces  %}
-{%- set shwParams = settings.shwParams  %}
-{%- set shwMasqs = settings.shwMasqs  %}
-{%- set shwRules = settings.shwRules  %}
-{%- set shwDefaultState = settings.shwDefaultState  %}
-{%- set shwData = settings.shwData  %}
+{%- set shw_enabled = settings.shorewall.shw_enabled  %}
+{%- set shwIfformat = settings.shorewall.shwIfformat  %}
+{%- set shwPolicies = settings.shorewall.shwPolicies  %}
+{%- set shwZones = settings.shorewall.shwZones  %}
+{%- set shwInterfaces = settings.shorewall.shwInterfaces  %}
+{%- set shwParams = settings.shorewall.shwParams  %}
+{%- set shwMasqs = settings.shorewall.shwMasqs  %}
+{%- set shwRules = settings.shorewall.shwRules  %}
+{%- set shwDefaultState = settings.shorewall.shwDefaultState  %}
+{%- set shwData = settings.shorewall %}
+{%- set shorewall = settings.shorewall %}
 
 {#- LXC Settings #}
 {%- set lxcSettings = settings.lxcSettings %}

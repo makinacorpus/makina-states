@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
+.. _module_mc_controllers:
+
 mc_controllers / controllers related variables
 ================================================
 
@@ -34,7 +36,6 @@ def registry():
     '''controllers registry registry'''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _registry():
-        settings_reg = __salt__['mc_{0}.settings'.format(__name)]()
         return  __salt__[
             'mc_macros.construct_registry_configuration'
         ](__name, defaults={

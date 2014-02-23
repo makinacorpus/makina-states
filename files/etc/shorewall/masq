@@ -14,8 +14,7 @@
 ##############################################################################
 #INTERFACE		SOURCE		ADDRESS		PROTO	PORT(S)	IPSEC	MARK
 
-{% for i, data in shwdata['masqs'].items() -%}
-# {{ i }} masq
+{% for data in shwdata['masqs'] %}
 {{ data['interface'] }} {{ data['source'] }} {{ data.get('address', '') }} {{ data.get('proto', '') }} {{ data.get('ports', '') }} {{ data.get('ipsec', '') }} {{ data.get('mark', '') }}
-{% endfor -%}
+{% endfor %}
 #LAST LINE -- DO NOT REMOVE

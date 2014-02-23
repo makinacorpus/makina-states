@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
 '''
+
+.. _module_mc_pgsql:
+
 mc_pgsql / Postgresql related functions
 =======================================
 '''

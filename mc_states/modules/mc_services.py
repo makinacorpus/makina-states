@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 '''
+.. _module_mc_services:
+
 mc_services / servives registries & functions
 ==============================================
 
@@ -11,6 +13,13 @@ import mc_states.utils
 
 __name = 'services'
 
+
+def _ntpEn(__salt__):
+    nodetypes_registry = __salt__['mc_nodetypes.registry']()
+    return not (
+        ('dockercontainer' in nodetypes_registry['actives'])
+        or ('lxccontainer' in nodetypes_registry['actives'])
+    )
 
 
 def metadata():
@@ -25,96 +34,49 @@ def settings():
     '''
     Global services registry
 
-    resolver
-        TDB
     locs
-        TDB
+        See :ref:`module_mc_localsettings`
+    resolver
+        See :ref:`module_mc_utils`
     sshServerSettings
-        TDB
+        See :ref:`module_mc_ssh`
     sshClientSettings
-        TDB
+        See :ref:`module_mc_ssh`
     lxcSettings
-        TDB
+        See :ref:`module_mc_lxc`
     apacheSettings
-        TDB
+        See :ref:`module_mc_apache`
     postfixSettings
-        TDB
+        See :ref:`module_mc_postfix`
     circusSettings
-        TDB
+        See :ref:`module_mc_lxc`
     etherpadSettings
-        TDB
+        See :ref:`module_mc_etherpad`
     nginxSettings
-        TDB
+        See :ref:`module_mc_nginx`
     phpSettings
-        TDB
+        See :ref:`module_mc_php`
     rdiffbackupSettings
-        TDB
+        See :ref:`module_mc_rdiffbackup`
     dbsmartbackupSettings
-        TDB
+        See :ref:`module_mc_dbsmartbackup`
     ntpEn
-        TDB
-    upstart
-        TDB
-    tomcatSettings
-        sub regitry for tomcat specific settings
-
-    Pure ffpd:
-        pureftpdRreg
-            TDB
-        pureftpdSettings
-            TDB
-        pureftpdDefaultSettings
-            TDB
-
-    Postgresql:
-        pgSettings
-            TDB
-        pgDbs
-            TDB
-        postgresqlUsers
-            TDB
-        defaultPgVersion
-            TDB
-        pgVers
-            TDB
-        postgisVers
-            TDB
-        postgisDbName
-            TDB
-        postgresqlUser
-            TDB
-
-    Shorewall:
-        shorewall
-            All the shorewall registry
-        shw_enabled
-            TDB
-        shwIfformat
-            TDB
-        shwPolicies
-            TDB
-        shwZones
-            TDB
-        shwInterfaces
-            TDB
-        shwParams
-            TDB
-        shwMasqs
-            TDB
-        shwRules
-            TDB
-        shwDefaultState
-            TDB
-        shwData
-            TDB
-
+        is ntp active
+    fail2ban
+        See :ref:`module_mc_fail2ban`
     mysql:
-        mysqlSettings
-            TDB
-        myCnf
-            TDB
-        myDisableAutoConf
-            TDB
+        See :ref:`module_mc_mysql`
+    upstart
+        See are we using upstart
+    tomcatSettings
+        See :ref:`module_mc_tomcat`
+    Pure ffpd:
+        See :ref:`module_mc_pureftpd`
+    Postgresql:
+        See :ref:`module_mc_pgsql`
+    Shorewall:
+        See :ref:`module_mc_shorewall`
+
 
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
@@ -150,6 +112,8 @@ def settings():
 
         # Etherpad:  (services.collab.etherpad)
         data['etherpadSettings'] = __salt__['mc_etherpad.settings']()
+        # fail2ban:  (services.firewall.fail2ban)
+        data['fail2banSettings'] = __salt__['mc_fail2ban.settings']()
 
         # Postfix:  (services.mail.postfix)
         data['postfixSettings'] = __salt__['mc_postfix.settings']()
@@ -181,10 +145,6 @@ def settings():
 
         # shorewall pillar parsing
         data['shorewall'] = __salt__['mc_shorewall.settings']()
-        for i in ['shw_enabled', 'shwIfformat', 'shwPolicies', 'shwZones',
-                  'shwInterfaces', 'shwParams', 'shwMasqs', 'shwRules',
-                  'shwDefaultState', 'shwData']:
-            data[i] = data['shorewall'][i]
 
         # mysql
         data['mysqlSettings'] = mysqlSettings = __salt__['mc_mysql.settings']()
@@ -192,20 +152,17 @@ def settings():
         data['myDisableAutoConf'] = mysqlSettings['noautoconf']
 
         # Rdiff backup
-        data['rdiffbackupSettings'] = __salt__['mc_utils.defaults'](
-            'makina-states.services.backup.rdiff-backup', {})
-        #
+        data['rdiffbackupSettings'] = __salt__['mc_rdiffbackup.settings']()
+
+        # db_smart_backup
         data['dbsmartbackupSettings'] = __salt__['mc_dbsmartbackup.settings']()
 
         # ntp is not applied to LXC containers ! (services.base.ntp)
         # So we just match when our grain is set and not have a value of lxc
-        data['ntpEn'] = (
-            not (
-                ('dockercontainer' in nodetypes_registry['actives'])
-                or ('lxccontainer' in nodetypes_registry['actives'])
-            ))
+        data['ntpEn'] = _ntpEn(__salt__)
         # init systems flags
-        data['upstart'] = __salt__['mc_utils.get']('makina-states.upstart', False)
+        data['upstart'] = __salt__['mc_utils.get'](
+            'makina-states.upstart', False)
         return data
     return _settings()
 
@@ -213,17 +170,17 @@ def settings():
 def registry():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _registry():
-        settings_reg = __salt__['mc_{0}.settings'.format(__name)]()
         return __salt__[
             'mc_macros.construct_registry_configuration'
         ](__name, defaults={
             'backup.bacula-fd': {'active': False},
             'backup.rdiff-backup': {'active': False},
             'backup.dbsmartbackup': {'active': False},
-            'base.ntp': {'active': settings_reg['ntpEn']},
+            'base.ntp': {'active': _ntpEn(__salt__)},
             'base.ssh': {'active': True},
             'db.mysql': {'active': False},
             'db.postgresql': {'active': False},
+            'firewall.fail2ban': {'active': False},
             'firewall.shorewall': {'active': False},
             'ftp.pureftpd': {'active': False},
             'gis.postgis': {'active': False},

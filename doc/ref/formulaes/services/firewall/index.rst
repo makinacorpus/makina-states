@@ -4,3 +4,4 @@ Firewall services
    :maxdepth: 2
 
    shorewall.rst
+   fail2ban.rst
