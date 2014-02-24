@@ -3037,7 +3037,19 @@ check_alive() {
         seconds="$(echo "$psline"|awk '{print $2}')"
         pid="$(echo $psline|awk '{print $1}')"
         if [ "${seconds}" -gt "$((60*60*12))" ];then
-            bs_log "something was wrong with last restart, killing old salt call process: $pid"
+            bs_log "Something went wrong with last restart, killing old salt call process: $pid"
+            bs_log "$psline"
+            kill -9 "${pid}"
+            touch /tmp/bootsaltmode
+        fi
+    done
+    # kill all old (master)salt ping call (> 120 sec)
+    ps -eo pid,etimes,cmd|sort -n -k2|egrep "salt-call"|grep test.ping|grep -v grep|while read psline;
+    do
+        seconds="$(echo "$psline"|awk '{print $2}')"
+        pid="$(echo $psline|awk '{print $1}')"
+        if [ "${seconds}" -gt "$((60*2))" ];then
+            bs_log "Salt PING stalled, killing old salt call process: $pid"
             bs_log "$psline"
             kill -9 "${pid}"
             touch /tmp/bootsaltmode
