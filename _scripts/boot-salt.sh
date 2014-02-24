@@ -680,6 +680,11 @@ set_vars() {
         SALT_REBOOTSTRAP="y"
         BUILDOUT_REBOOTSTRAP="y"
     fi
+    if [ "x${QUIET}" = "x" ];then
+        QUIET_GIT=""
+    else
+        QUIET_GIT="-q"
+    fi
     # export variables to support a restart
     export TRAVIS_DEBUG SALT_BOOT_LIGHT_VARS
     export IS_SALT_UPGRADING SALT_BOOT_SYNC_CODE
@@ -859,10 +864,11 @@ recap_(){
 
 recap() {
     will_do_recap="x"
+    if [ "x${SALT_BOOT_CHECK_ALIVE}" != "x" ];then
+        will_do_recap=""
+    fi
     if [ "x${QUIET}" != "x" ];then
-        if [ "x${SALT_BOOT_CHECK_ALIVE}" != "x"  ];then
-            will_do_recap=""
-        fi
+        will_do_recap=""
     fi
     if [ "x${will_do_recap}" != "x" ];then
         recap_
@@ -1102,7 +1108,9 @@ check_restartmarker_and_maybe_restart() {
             if [ "x${THIS}" = "x${mbootsalt}" ];then
                 bootsalt="${mbootsalt}"
             fi
-            bs_log "Restarting ${bootsalt} which needs to update itself"
+            if [ "x${QUIET}" = "x" ];then
+                bs_log "Restarting ${bootsalt} which needs to update itself"
+            fi
             "${bootsalt}" ${LAUNCH_ARGS} && rm -f "${SALT_MS}/.bootsalt_need_restart"
             exit ${?}
         fi
@@ -1196,7 +1204,9 @@ setup_and_maybe_update_code() {
             skip_co=""
         fi
         if [ "x${skip_co}" = "x" ];then
-            bs_yellow_log "If you want to skip checkouts, next time do export SALT_BOOT_SKIP_CHECKOUTS=1"
+            if [ "x${QUIET}" = "x" ];then
+                bs_yellow_log "If you want to skip checkouts, next time do export SALT_BOOT_SKIP_CHECKOUTS=1"
+            fi
             for ms in ${SALT_MSS};do
                 if [ ! -d "${ms}/.git" ];then
                         remote="remotes/origin/"
@@ -1208,13 +1218,15 @@ setup_and_maybe_update_code() {
                             remote=""
                             branch_pref="changeset_"
                         fi
-                        git clone "${STATES_URL}" "${ms}" &&\
+                        git clone ${QUIET_GIT} "${STATES_URL}" "${ms}" &&\
                         cd "${ms}" &&\
-                        git checkout "${remote}""${ms_branch}" -b "${branch_pref}""${ms_branch}" &&\
+                        git checkout ${QUIET_GIT} "${remote}""${ms_branch}" -b "${branch_pref}""${ms_branch}}" &&\
                         cd - 1>/dev/null 2>/dev/null
                     SALT_BOOT_NEEDS_RESTART="1"
                     if [ "x${?}" = "x0" ];then
-                        bs_yellow_log "Downloaded makina-states (${ms})"
+                        if [ "x${QUIET}" = "x" ];then
+                            bs_yellow_log "Downloaded makina-states (${ms})"
+                        fi
                     else
                         die " [bs] Failed to download makina-states (${ms})"
                     fi
@@ -1248,46 +1260,58 @@ setup_and_maybe_update_code() {
                          || [ "x${i}" = "x${ms}/src/salt" ];then
                             co_branch="develop"
                         fi
-                        bs_log "Upgrading ${i}"
+                        if [ "x${QUIET}" = "x" ];then
+                            bs_log "Upgrading ${i}"
+                        fi
                         cd "${i}"
                         git fetch --tags origin 1>/dev/null 2>/dev/null
-                        git fetch origin
+                        git fetch ${QUIET_GIT} origin
                         lbranch="$(get_git_branch .)"
                         if [ "x${lbranch}" != "x${branch_pref}${co_branch}" ];then
                             if [ "x$(git branch|egrep " ${co_branch}\$" |wc -l|sed -e "s/ //g")" != "x0" ];then
                                 # branch already exists
-                                bs_log "Switch branch: ${lbranch} -> ${branch_pref}${co_branch}"
-                                git checkout "${branch_pref}""${co_branch}"
+                                if [ "x${QUIET}" = "x" ];then
+                                    bs_log "Switch branch: ${lbranch} -> ${branch_pref}${co_branch}"
+                                fi
+                                git checkout ${QUIET_GIT} "${branch_pref}""${co_branch}"
                                 ret="${?}"
                             else
                                 # branch  does not exist yet
-                                bs_log "Create & switch on branch: ${branch_pref}${co_branch} from ${lbranch}"
-                                git checkout "${remote}""${co_branch}" -b "${branch_pref}""${co_branch}"
+                                if [ "x${QUIET}" = "x" ];then
+                                    bs_log "Create & switch on branch: ${branch_pref}${co_branch} from ${lbranch}"
+                                fi
+                                git checkout ${QUIET_GIT} "${remote}""${co_branch}" -b "${branch_pref}""${co_branch}"
                                 ret="${?}"
                             fi
                             if [ "x${ret}" != "x0" ];then
                                 die "Failed to switch branch: ${lbranch} -> ${branch_pref}${co_branch}"
                             else
-                                bs_log "Update is necessary"
+                                if [ "x${QUIET}" = "x" ];then
+                                    bs_log "Update is necessary"
+                                fi
                                 SALT_BOOT_NEEDS_RESTART="1"
                             fi
                         else
                             if [ "x${is_changeset}" != "x1" ];then
-                                git diff origin/${co_branch} --exit-code 1>/dev/null 2>/dev/null
+                                git diff ${QUIET_GIT} origin/${co_branch} --exit-code 1>/dev/null 2>/dev/null
                                 if [ "x${?}" != "x0" ];then
-                                    bs_log "Update is necessary"
+                                    if [ "x${QUIET}" = "x" ];then
+                                        bs_log "Update is necessary"
+                                    fi
                                 fi && if \
                                     [ "x${i}" = "x${ms}/src/SaltTesting" ]\
                                 ;then
-                                    git reset --hard origin/${co_branch}
+                                    git reset ${QUIET_GIT} --hard origin/${co_branch}
                                 else
-                                    git merge --ff-only origin/${co_branch}
+                                    git merge ${QUIET_GIT} --ff-only origin/${co_branch}
                                 fi
                                 SALT_BOOT_NEEDS_RESTART=1
                             fi
                         fi
                         if [ "x${?}" = "x0" ];then
-                            bs_yellow_log "Downloaded/updated ${i}"
+                            if [ "x${QUIET}" = "x" ];then
+                                bs_yellow_log "Downloaded/updated ${i}"
+                            fi
                         else
                             die "Failed to download/update ${i}"
                         fi
@@ -2715,6 +2739,7 @@ usage() {
     if [ "x${SALT_LONG_HELP}" != "x" ];then
         echo
         bs_log "Advanced settings:"
+        bs_help "--synchronize-code:" "Only sync sourcecode" "${SALT_BOOT_SYNC_CODE}" y
         bs_help "--check-alive" "restart daemons if they are down" "" "y"
         bs_help "--restart-daemons" "restart master & minions daemons" "" "y"
         bs_help "--restart-masters" "restart master daemons" "" "y"
@@ -2982,7 +3007,7 @@ parse_cli_opts() {
             SALT_BOOT_DEBUG_LEVEL="${2}";sh="2";argmatch="1"
         fi
         if [ "x${argmatch}" != "x1" ];then
-            USAGE=1
+            USAGE="1"
             break
         fi
         PARAM="${1}"
@@ -3129,7 +3154,9 @@ if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
         cleanup_old_installs
         setup_and_maybe_update_code
         if [ x${SALT_BOOT_SYNC_CODE} != "x" ];then
-            bs_log "Code updated"
+            if [ "x${QUIET}" = "x" ];then
+                bs_log "Code updated"
+            fi
             exit 0
         fi
         handle_upgrades
