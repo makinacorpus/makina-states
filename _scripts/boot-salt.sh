@@ -3124,6 +3124,26 @@ check_alive() {
     fi
 }
 
+synchronize_code() {
+    restart_modes=""
+    # kill all stale synchronnise code jobs
+    ps -eo pid,etimes,cmd|sort -n -k2|egrep "boot-salt.*synchronize-code"|grep -v grep|while read psline;
+    do
+        seconds="$(echo "$psline"|awk '{print $2}')"
+        pid="$(echo $psline|awk '{print $1}')"
+        if [ "${seconds}" -gt "200" ];then
+            bs_log "something was wrong with last sync, killing old sync processes: $pid"
+            bs_log "${psline}"
+            kill -9 "${pid}"
+        fi
+    done
+    setup_and_maybe_update_code
+    if [ "x${QUIET}" = "x" ];then
+        bs_log "Code updated"
+    fi
+    exit 0
+}
+
 if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
     parse_cli_opts $LAUNCH_ARGS
     if [ "x$(dns_resolve localhost)" = "x${DNS_RESOLUTION_FAILED}" ];then
@@ -3134,6 +3154,9 @@ if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
     if [ "x${SALT_BOOT_CHECK_ALIVE}" != "x" ];then
         check_alive
         abort="1"
+    fi
+    if [ x${SALT_BOOT_SYNC_CODE} != "x" ];then
+        synchronize_code
     fi
     if [ "x${SALT_BOOT_RESTART_MINIONS}" != "x" ];then
         restart_local_minions
@@ -3153,12 +3176,6 @@ if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
         recap
         cleanup_old_installs
         setup_and_maybe_update_code
-        if [ x${SALT_BOOT_SYNC_CODE} != "x" ];then
-            if [ "x${QUIET}" = "x" ];then
-                bs_log "Code updated"
-            fi
-            exit 0
-        fi
         handle_upgrades
         setup_virtualenv
         install_buildouts

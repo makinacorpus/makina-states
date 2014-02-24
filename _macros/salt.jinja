@@ -232,12 +232,13 @@ salt-{{ data.name }}-{{ group }}:
     - name: {{msr}}/_scripts/boot-salt.sh --check-alive --quiet -C --no-colors
 
 {{data.name}}-sync-job:
-  {% if not data.cron_check_alive %}
+  {% if not data.cron_auto_sync %}
   cron.absent:
   {% else %}
   cron.present:
     - identifier: "salt code synchronization job"
-    - minute: "*/15"
+    - minute: "{{data.cron_sync_minute}}"
+    - hour: "{{data.cron_sync_hour}}"
   {% endif %}
     - name: {{msr}}/_scripts/boot-salt.sh --synchronize-code --quiet -C --no-colors
 
