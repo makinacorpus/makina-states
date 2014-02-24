@@ -337,7 +337,9 @@ set_valid_upstreams() {
         VALID_BRANCHES="master stable"
     fi
     if [ "x${VALID_BRANCHES}" = "x" ];then
-        VALID_BRANCHES="$(echo "$(git ls-remote "${STATES_URL}"|grep "refs/heads"|awk -F/ '{print $3}'|grep -v HEAD)")"
+        if [ "x${SALT_BOOT_LIGHT_VARS}" = "x" ];then
+            VALID_BRANCHES="$(echo "$(git ls-remote "${STATES_URL}"|grep "refs/heads"|awk -F/ '{print $3}'|grep -v HEAD)")"
+        fi
         if [ -e "${SALT_MS}" ];then
             VALID_BRANCHES="${VALID_BRANCHES} $(echo $(cd "${SALT_MS}" && git branch| cut -c 3-))"
         fi
@@ -647,7 +649,8 @@ set_vars() {
     if [ "x${PROJECT_URL}" != "x" ] && [ "x${PROJECT_NAME}" = "x" ];then
         die "Please provide a \${PROJECT_NAME}"
     fi
-    if [ "x$(get_ms_branch)" = "x" ] && [ "x${SALT_NODETYPE}" != "xtravis" ];then
+    if [ "x$(get_ms_branch)" = "x" ] \
+        && [ "x${SALT_NODETYPE}" != "xtravis" ];then
         bs_yellow_log "Valid branches: $(echo ${VALID_BRANCHES})"
         die "Please provide a valid \$MS_BRANCH (inputed: "${MS_BRANCH}")"
     fi
@@ -678,7 +681,7 @@ set_vars() {
         BUILDOUT_REBOOTSTRAP="y"
     fi
     # export variables to support a restart
-    export TRAVIS_DEBUG
+    export TRAVIS_DEBUG SALT_BOOT_LIGHT_VARS
     export IS_SALT_UPGRADING SALT_BOOT_SYNC_CODE
     export SALT_REBOOTSTRAP BUILDOUT_REBOOTSTRAP VENV_REBOOTSTRAP
     export MS_BRANCH FORCE_MS_BRANCH
@@ -2237,7 +2240,7 @@ install_mastersalt_daemons() {
         SALT_BOOT_NOW_INSTALLED="y"
     else
         if [ "x${QUIET}" = "x" ];then
-            if [ "x${IS_MASTERSALT}" != "x" ];then 
+            if [ "x${IS_MASTERSALT}" != "x" ];then
                 bs_log "Skip MasterSalt installation, already done"
             fi
         fi
@@ -2826,30 +2829,35 @@ parse_cli_opts() {
             IS_SALT_MINION="y";argmatch="1"
         fi
         if [ "x${1}" = "x--check-alive" ];then
+            SALT_BOOT_LIGHT_VARS="1"
             SALT_BOOT_SKIP_HIGHSTATES="1"
             SALT_BOOT_SKIP_CHECKOUTS="1"
             SALT_BOOT_CHECK_ALIVE="y"
             argmatch="1"
         fi
         if [ "x${1}" = "x--restart-masters" ];then
+            SALT_BOOT_LIGHT_VARS="1"
             SALT_BOOT_SKIP_HIGHSTATES="1"
             SALT_BOOT_SKIP_CHECKOUTS="1"
             SALT_BOOT_CHECK_ALIVE="y"
             SALT_BOOT_RESTART_MASTERS="y";argmatch="1"
         fi
         if [ "x${1}" = "x--restart-minions" ];then
+            SALT_BOOT_LIGHT_VARS="1"
             SALT_BOOT_SKIP_HIGHSTATES="1"
             SALT_BOOT_SKIP_CHECKOUTS="1"
             SALT_BOOT_CHECK_ALIVE="y"
             SALT_BOOT_RESTART_MINIONS="y";argmatch="1"
         fi
         if [ "x${1}" = "x--synchronize-code" ];then
+            SALT_BOOT_LIGHT_VARS="1"
             SALT_BOOT_SYNC_CODE="1"
             SALT_BOOT_SKIP_HIGHSTATES="1"
             SALT_BOOT_SKIP_CHECKOUTS=""
             argmatch="1"
         fi
         if [ "x${1}" = "x--restart-daemons" ];then
+            SALT_BOOT_LIGHT_VARS="1"
             SALT_BOOT_SKIP_HIGHSTATES="1"
             SALT_BOOT_SKIP_CHECKOUTS="1"
             SALT_BOOT_CHECK_ALIVE="y"
@@ -3010,8 +3018,69 @@ restart_daemons() {
 }
 
 check_alive() {
-    # only check start if bootsalt is not running in another mode
-    if [ "x$(ps aux|grep boot-salt|grep -v grep|grep -v check-alive|wc -l|sed -e "s/ //g")" != "x0" ];then
+    restart_modes=""
+    # kill all check alive
+    ps -eo pid,etimes,cmd|sort -n -k2|egrep "boot-salt.*alive"|grep -v grep|while read psline;
+    do
+        seconds="$(echo "$psline"|awk '{print $2}')"
+        pid="$(echo $psline|awk '{print $1}')"
+        if [ "${seconds}" -gt "300" ];then
+            bs_log "something was wrong with last restart, killing old check alive process: $pid"
+            bs_log "${psline}"
+            kill -9 "${pid}"
+            touch /tmp/bootsaltmode
+        fi
+    done
+    # kill all old (master)salt call (> 12 hours)
+    ps -eo pid,etimes,cmd|sort -n -k2|egrep "salt-call"|grep -v grep|while read psline;
+    do
+        seconds="$(echo "$psline"|awk '{print $2}')"
+        pid="$(echo $psline|awk '{print $1}')"
+        if [ "${seconds}" -gt "$((60*60*12))" ];then
+            bs_log "something was wrong with last restart, killing old salt call process: $pid"
+            bs_log "$psline"
+            kill -9 "${pid}"
+            touch /tmp/bootsaltmode
+        fi
+    done
+    if [ -f /tmp/bootsaltmode ];then
+        restart_modes="${restart_modes} full"
+        rm -f /tmp/bootsaltmode
+    fi
+    # ping masters if we are not already forcing restart
+    if [ "x${alive_mode}" != "xrestart" ];then
+        if [ "x${IS_SALT}" != "x" ];then
+            resultping="$(salt_ping_test)"
+            if [ "x${resultping}" != "x0" ];then
+                restart_modes="${restart_modes} salt"
+            fi
+        fi
+        if [ "x${IS_MASTERSALT}" != "x" ];then
+            resultping="$(mastersalt_ping_test)"
+            if [ "x${resultping}" != "x0" ];then
+                restart_modes="${restart_modes} mastersalt"
+            fi
+        fi
+    fi
+    if [ "x$(echo "${restart_modes}"|grep -q full;echo ${?})" = "x0" ];then
+        bs_log "Something went wrong with last restart, restarting old salt daemons"
+        restart_daemons
+    else
+        for restart_mode in ${restart_modes};do
+            if [ "x$(echo "${restart_mode}"|grep -v mastersalt|grep -q salt;echo ${?})" = "x0" ];then
+                bs_log "Something went wrong with last restart, restarting old local salt daemons"
+                restart_local_minions
+                restart_local_masters
+            fi
+            if [ "x$(echo "${restart_mode}"|grep mastersalt|grep -q mastersalt;echo ${?})" = "x0" ];then
+                bs_log "Something went wrong with last restart, restarting old master salt daemons"
+                restart_local_mastersalt_masters
+                restart_local_mastersalt_minions
+            fi
+        done
+    fi
+    # and finally, last try to start daemon if they are not present
+    if [ "$(ps aux|grep boot-salt|grep -v grep|wc -l|sed -e "s/ //g")" -lt "4" ];then
         lazy_start_mastersalt_daemons
         lazy_start_salt_daemons
     fi
@@ -3023,20 +3092,11 @@ if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
         die "${DNS_RESOLUTION_FAILED}"
     fi
     set_vars # real variable affectation
-    recap
-    cleanup_old_installs
-    setup_and_maybe_update_code
     abort=""
-    if [ x${SALT_BOOT_SYNC_CODE} != "x" ];then
-        bs_log "Code updated"
-        exit 0
+    if [ "x${SALT_BOOT_CHECK_ALIVE}" != "x" ];then
+        check_alive
+        abort="1"
     fi
-        handle_upgrades
-        setup_virtualenv
-        install_buildouts
-        create_salt_skeleton
-        install_mastersalt_env
-        install_salt_env
     if [ "x${SALT_BOOT_RESTART_MINIONS}" != "x" ];then
         restart_local_minions
         restart_local_mastersalt_minions
@@ -3051,11 +3111,20 @@ if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
         restart_daemons
         abort="1"
     fi
-    if [ "x${SALT_BOOT_CHECK_ALIVE}" != "x" ];then
-        check_alive
-        abort="1"
-    fi
     if [ "x${abort}" = "x" ];then
+        recap
+        cleanup_old_installs
+        setup_and_maybe_update_code
+        if [ x${SALT_BOOT_SYNC_CODE} != "x" ];then
+            bs_log "Code updated"
+            exit 0
+        fi
+        handle_upgrades
+        setup_virtualenv
+        install_buildouts
+        create_salt_skeleton
+        install_mastersalt_env
+        install_salt_env
         run_highstates
         maybe_install_projects
         maybe_run_tests
