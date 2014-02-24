@@ -2982,6 +2982,7 @@ parse_cli_opts() {
             SALT_BOOT_DEBUG_LEVEL="${2}";sh="2";argmatch="1"
         fi
         if [ "x${argmatch}" != "x1" ];then
+            USAGE=1
             break
         fi
         PARAM="${1}"
