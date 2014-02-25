@@ -544,7 +544,9 @@ def install_composer(path=None,
                 ret['status'] = None
                 return ret
             else:
-                ret = composer_command(command='self-update', composer=path)
+                ret = composer_command(command='self-update',
+                                   composer=path,
+                                   cwd="/tmp")
                 return ret
 
     if dry_run:
