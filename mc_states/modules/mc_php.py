@@ -397,7 +397,7 @@ def dump():
 
 def _composer_infos(composer='/usr/local/bin/composer'):
     '''
-    Extract informations from installed composer component
+    Extract informations from installed composer
     '''
     ret = {'status': False, 'msg': ''}
     if not os.path.exists(composer):
@@ -459,6 +459,12 @@ def composer_command(command=None,
     if not cwd:
         ret['status'] = False
         ret['msg'] = 'Composer command needs a working directory (cwd).'
+        return ret
+
+    if not os.path.exists(cwd):
+        ret['status'] = False
+        ret['msg'] = 'Given working directory ({0}) does not exists.'.format(
+            cwd)
         return ret
 
     infos = _composer_infos(composer)
