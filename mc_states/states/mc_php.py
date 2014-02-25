@@ -70,3 +70,37 @@ def composer(name,
     ret['comment'] = modres['msg']
 
     return ret
+
+def composercommand(name,
+           args=None,
+           composer=None):
+    '''
+    Run a composer command.
+
+    name
+        Command name (as reported by composer list --raw
+
+    args
+        string of optionnal arguments for this command
+
+    composer
+        full path to composer, default is /usr/local/bin/composer
+    '''
+    ret = {'name': name, 'result': True, 'comment': '', 'changes': {}}
+
+    if not composer:
+        composer = '/usr/local/bin/composer'
+
+    if __opts__['test']:
+        ret['result'] = False
+        ret['comment'] = 'Test mode is not supported by this state.'
+        return ret
+
+    modres = __salt__['mc_php.composer_command'](name,
+                                       args=args,
+                                       composer=composer)
+
+    ret['result'] = modres['status']
+    ret['comment'] = modres['msg']
+
+    return ret

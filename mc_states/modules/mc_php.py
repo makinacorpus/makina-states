@@ -434,8 +434,8 @@ def _composer_infos(composer='/usr/local/bin/composer'):
 
 
 def composer_command(command=None,
-               composer=None,
-               args=None):
+               args=None,
+               composer=None):
     '''
     Run a composer command.
     Result of the command is in the 'msg' key of the returnded dictionnary
@@ -453,6 +453,8 @@ def composer_command(command=None,
 
     if not composer:
         composer = '/usr/local/bin/composer'
+    if not args:
+        args = ''
 
     infos = _composer_infos(composer)
     if not infos['status']:
@@ -466,17 +468,16 @@ def composer_command(command=None,
         ret['msg'] =  '"{0}": unknown command for composer'.format(command)
         return ret
 
-    if not args:
-        args = ''
     cmd = '"{0}" {1} {2}'.format(composer, command, args)
     result = __salt__['cmd.run_all'](cmd,
                              runas='root')
-    retcode = result['retcode']
 
+    retcode = result['retcode']
+    ret['msg'] =  result['stdout']
     if retcode == 0:
-        ret['msg'] =  result['stdout']
-    else:
-        raise exceptions.CommandExecutionError(result['stderr'])
+        ret['status'] = True
+
+    return ret
 
 def install_composer(path=None,
         installer=None,
