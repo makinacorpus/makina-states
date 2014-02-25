@@ -1,0 +1,16 @@
+#!/bin/bash
+# CONFIGURATION FILE for drush install
+SITES_SUBDIR="{{ data.site_subdir }}"
+DB_PREFIX="{{ db_prefix }}"
+ACCOUNT_NAME="{{ data.account_name }}"
+ACCOUNT_PASS="{{ data.account_pass }}"
+ACCOUNT_MAIL="{{ data.account_mail }}"
+LOCALE="{{ data.locale }}"
+CLEAN_URL={{ data.clean_url }}
+SITE_NAME="{{ site_name }}"
+SITE_MAIL=${ACCOUNT_MAIL}
+PROFILE="{{ profile }}"
+DRUPAL_SITE_FOLDER="{{ data.db_conf }}"
+DATABASE_CONF_FILE="{{ db_conf }}"
+
+
