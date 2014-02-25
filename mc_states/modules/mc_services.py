@@ -181,6 +181,7 @@ def registry():
             'backup.dbsmartbackup': {'active': False},
             'base.ntp': {'active': _ntpEn(__salt__)},
             'base.ssh': {'active': True},
+            'cloud.salt_cloud': {'active': False},
             'db.mysql': {'active': False},
             'db.postgresql': {'active': False},
             'firewall.fail2ban': {'active': False},

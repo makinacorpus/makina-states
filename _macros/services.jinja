@@ -35,6 +35,9 @@
 {#- init systems flags #}
 {%- set upstart = settings.upstart  %}
 
+{# salt cloud  #}
+{% set cloudSettings = salt['mc_saltcloud.settings']() %}
+
 {#- init systems flags #}
 {%- set tomcatSettings = settings.tomcatSettings  %}
 
