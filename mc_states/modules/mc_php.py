@@ -432,7 +432,7 @@ def _composer_infos(composer='/usr/local/bin/composer'):
     return ret
 
 
-def composer_command(composer='/usr/local/bin/composer',
+def composer_command(composer=None,
                command=None,
                args=None):
     '''
@@ -449,6 +449,9 @@ def composer_command(composer='/usr/local/bin/composer',
        string of command arguments, optionnal
     '''
     ret = {'status': False, 'msg': ''}
+
+    if not composer:
+        composer = '/usr/local/bin/composer'
 
     infos = _composer_infos(composer)
     commands = infos['commands']
@@ -468,8 +471,8 @@ def composer_command(composer='/usr/local/bin/composer',
     else:
         raise exceptions.CommandExecutionError(result['stderr'])
 
-def install_composer(path='/usr/local/bin/composer',
-        installer='https://getcomposer.org/installer',
+def install_composer(path=None,
+        installer=None,
         update=False,
         dry_run=False):
     '''
@@ -492,6 +495,11 @@ def install_composer(path='/usr/local/bin/composer',
         Boolean, if True we do not do anything really.
     '''
     ret = {'status': False, 'msg': ''}
+
+    if not installer:
+        installer = 'https://getcomposer.org/installer'
+    if not path:
+        path = '/usr/local/bin/composer'
 
     if not __salt__['cmd.has_exec']('php'):
         ret['msg'] = 'PHP dependency error: ' + \
