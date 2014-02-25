@@ -32,9 +32,7 @@ def _error(ret, err_msg):
 
 def composer(name,
            installer=None,
-           update=False,
-           
-           ):
+           update=False):
     '''
     Download composer.phar from the given url and install it on the given name.
     A check is done on the given name, if it's already available nothing is 

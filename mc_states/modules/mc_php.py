@@ -428,6 +428,7 @@ def _composer_infos(composer='/usr/local/bin/composer'):
         if len(parts)>0:
             commands.append({parts[0]: ' '.join(parts[1:])})
     ret['commands'] = commands
+    ret['status'] = True
 
     return ret
 
@@ -454,6 +455,13 @@ def composer_command(composer=None,
         composer = '/usr/local/bin/composer'
 
     infos = _composer_infos(composer)
+    if not _infos['status']:
+        ret['msg'] =  '"{0}": Composer infos are not available. {1}'.format(
+            _infos['status'],
+            _infos['msg']
+            )
+        return ret
+
     commands = infos['commands']
     if not command or not command in commands.keys():
         ret['msg'] =  '"{0}": unknown command for composer'.format(command)
