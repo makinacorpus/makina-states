@@ -124,10 +124,10 @@ def settings():
         # Nginx:  (services.http.nginx)
         data['nginxSettings'] = __salt__['mc_nginx.settings']()
 
-        # PHP:  (services.http.nginx)
+        # PHP:  (services.php)
         data['phpSettings'] = __salt__['mc_php.settings']()
 
-        # PHP:  (services.http.nginx)
+        # Tomcat:  (services.tomcat)
         data['tomcatSettings'] = __salt__['mc_tomcat.settings']()
 
         # Pureftpd:  (services.ftp.pureftpd)
