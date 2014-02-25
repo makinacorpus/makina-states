@@ -433,8 +433,8 @@ def _composer_infos(composer='/usr/local/bin/composer'):
     return ret
 
 
-def composer_command(composer=None,
-               command=None,
+def composer_command(command=None,
+               composer=None,
                args=None):
     '''
     Run a composer command.
@@ -455,11 +455,10 @@ def composer_command(composer=None,
         composer = '/usr/local/bin/composer'
 
     infos = _composer_infos(composer)
-    if not _infos['status']:
+    if not infos['status']:
         ret['msg'] =  '"{0}": Composer infos are not available. {1}'.format(
-            _infos['status'],
-            _infos['msg']
-            )
+            infos['status'],
+            infos['msg'])
         return ret
 
     commands = infos['commands']
@@ -532,7 +531,7 @@ def install_composer(path=None,
                 ret['status'] = None
                 return ret
             else:
-                ret = composer_command(path,'self-update')
+                ret = composer_command(command='self-update', composer=path)
                 return ret
 
     if dry_run:
