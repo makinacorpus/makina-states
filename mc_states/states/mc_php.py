@@ -72,6 +72,7 @@ def composer(name,
     return ret
 
 def composercommand(name,
+           cwd=None,
            args=None,
            composer=None):
     '''
@@ -79,6 +80,9 @@ def composercommand(name,
 
     name
         Command name (as reported by composer list --raw
+
+    cwd
+        Working directory, so also the directory of the composer.json file.
 
     args
         string of optionnal arguments for this command
@@ -90,6 +94,10 @@ def composercommand(name,
 
     if not composer:
         composer = '/usr/local/bin/composer'
+    if not cwd:
+        ret['result'] = False
+        ret['comment'] = 'Composer state needs a working directory (cwd).'
+        return ret
 
     if __opts__['test']:
         ret['result'] = False
@@ -97,6 +105,7 @@ def composercommand(name,
         return ret
 
     modres = __salt__['mc_php.composer_command'](name,
+                                       cwd=cwd,
                                        args=args,
                                        composer=composer)
 

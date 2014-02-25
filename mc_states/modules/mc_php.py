@@ -434,6 +434,7 @@ def _composer_infos(composer='/usr/local/bin/composer'):
 
 
 def composer_command(command=None,
+               cwd=None,
                args=None,
                composer=None):
     '''
@@ -455,6 +456,10 @@ def composer_command(command=None,
         composer = '/usr/local/bin/composer'
     if not args:
         args = ''
+    if not cwd:
+        ret['status'] = False
+        ret['msg'] = 'Composer command needs a working directory (cwd).'
+        return ret
 
     infos = _composer_infos(composer)
     if not infos['status']:
@@ -470,6 +475,7 @@ def composer_command(command=None,
 
     cmd = '"{0}" {1} {2}'.format(composer, command, args)
     result = __salt__['cmd.run_all'](cmd,
+                             cwd=cwd,
                              runas='root')
 
     retcode = result['retcode']
