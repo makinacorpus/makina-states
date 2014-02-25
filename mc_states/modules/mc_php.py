@@ -535,8 +535,8 @@ def install_composer(path=None,
 
     cwd = '/tmp'
     cmd = 'rm -f /tmp/composer.phar;' +\
-          ' curl -sS "{0}" | php -- --install-dir=/tmp;' + \
-          ' mv /tmp/composer.phar "{1}"'.format(installer, path)
+          ' curl -sS "{0}" | php -- --install-dir=/tmp;'.format(installer) + \
+          ' mv /tmp/composer.phar "{0}"'.format(path)
     result = __salt__['cmd.run_all'](cmd,
                                      cwd=cwd,
                                      runas='root')
