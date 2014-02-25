@@ -6,7 +6,8 @@
 mc_php / php registry
 ============================================
 
-If you alter this module and want to test it, do not forget to deploy it on minion using::
+If you alter this module and want to test it, do not forget to deploy it on 
+minion using::
 
   salt '*' saltutil.sync_modules
 
@@ -19,7 +20,10 @@ Documentation of this module is available with::
 # Import python libs
 import logging
 import mc_states.utils
+import os
 
+# Import salt libs
+from salt import utils, exceptions
 
 __name = 'php'
 
@@ -229,7 +233,7 @@ def settings():
                     'enabled': True,
                     'enable_cli': True,
                     'memory_consumption': 64,
-                    'interned_strings_buffer': '4',
+                    'interned_strings_buffer': '8',
                     'max_accelerated_files': 2000,
                     'max_wasted_percentage': 5,
                     'use_cwd': 1,
@@ -246,7 +250,6 @@ def settings():
                     'force_restart_timeout': '180',
                     'error_log': '',
                     'log_verbosity_level': '1',
-                    'interned_strings_buffer': '8'
                 },
                 'apc': {
                     'install': True,
@@ -392,4 +395,149 @@ def get_fpm_socket_name(project):
 def dump():
     return mc_states.utils.dump(__salt__, __name)
 
+def _composer_infos(composer='/usr/local/bin/composer'):
+    '''
+    Extract informations from installed composer component
+    '''
+    ret = {'status': False, 'msg': ''}
+    if not os.path.exists(composer):
+        ret['msg'] = '{0}: File not Found.'.format(composer)
+        return ret
+
+    cmd = '"{0}" --version'.format(composer)
+    result = __salt__['cmd.run_all'](cmd,
+                                 runas='root')
+    retcode = result['retcode']
+    if retcode == 0:
+        ret['version'] = result['stdout']
+    else:
+        raise exceptions.CommandExecutionError(result['stderr'])
+
+    cmd = '"{0}" list --raw'.format(composer)
+    result = __salt__['cmd.run_all'](cmd,
+                                 runas='root')
+    retcode = result['retcode']
+    commandlines = []
+    commands = []
+    if retcode == 0:
+        commandlines = result['stdout'].split("\n")
+    else:
+        raise exceptions.CommandExecutionError(result['stderr'])
+    for line in commandlines:
+        parts = line.split()
+        if len(parts)>0:
+            commands.append({parts[0]: ' '.join(parts[1:])})
+    ret['commands'] = commands
+
+    return ret
+
+
+def composer_command(composer='/usr/local/bin/composer',
+               command=None,
+               args=None):
+    '''
+    Run a composer command.
+    Result of the command is in the 'msg' key of the returnded dictionnary
+
+    composer
+        full path to composer, defaulting to '/usr/local/bin/composer'
+
+    command
+        the command you want in composer.
+
+    args
+       string of command arguments, optionnal
+    '''
+    ret = {'status': False, 'msg': ''}
+
+    infos = _composer_infos(composer)
+    commands = infos['commands']
+    if not command or not command in commands.keys():
+        ret['msg'] =  '"{0}": unknown command for composer'.format(command)
+        return ret
+
+    if not args:
+        args = ''
+    cmd = '"{0}" {1} {2}'.format(composer, command, args)
+    result = __salt__['cmd.run_all'](cmd,
+                             runas='root')
+    retcode = result['retcode']
+
+    if retcode == 0:
+        ret['msg'] =  result['stdout']
+    else:
+        raise exceptions.CommandExecutionError(result['stderr'])
+
+def install_composer(path='/usr/local/bin/composer',
+        installer='https://getcomposer.org/installer',
+        update=False,
+        dry_run=False):
+    '''
+    Download composer.phar from the given url and install it on the given name.
+    A check is done on the given name, if it's already available nothing is 
+    done, except if update is set to True
+
+    path
+        Local file name of composer (like /usr/local/bin/composer)
+
+    installer
+        Distant name of composer phar installer source
+        like https://getcomposer.org/installer which is the default
+
+    update
+        Boolean, whether to redo the install even if the program is already
+        there or not.
+
+    dry_run
+        Boolean, if True we do not do anything really.
+    '''
+    ret = {'status': False, 'msg': ''}
+
+    if not __salt__['cmd.has_exec']('php'):
+        ret['msg'] = 'PHP dependency error: ' + \
+            'you need a php-cli to install composer.'
+        return ret
+
+    if not __salt__['cmd.has_exec']('curl'):
+        ret['msg'] = 'CURL dependency error: ' + \
+            'you need curl to install composer.'
+        return ret
+
+
+    if os.path.exists(path):
+        if not update:
+            ret['msg'] = '{0}: already installed. nothing to do'.format(path)
+            ret['status'] = True
+            return ret
+        else:
+            if dry_run:
+                ret['msg'] = 'We would run {0} with command self-update'.format(
+                    path)
+                ret['status'] = None
+                return ret
+            else:
+                ret = composer_command(path,'self-update')
+                return ret
+
+    if dry_run:
+        ret['msg'] = 'We would install composer by downloading {0} to {1}' \
+            .format(installer, path)
+        ret['status'] = None
+        return ret
+
+    cwd = '/tmp'
+    cmd = 'rm -f /tmp/composer.phar;' +\
+          ' curl -sS "{0}" | php -- --install-dir=/tmp;' + \
+          ' mv /tmp/composer.phar "{1}"'.format(installer, path)
+    result = __salt__['cmd.run_all'](cmd,
+                                     cwd=cwd,
+                                     runas='root')
+    retcode = result['retcode']
+
+    if retcode == 0:
+        ret['msg'] = result['stdout']
+        ret['status'] = True
+        return ret
+    else:
+        raise exceptions.CommandExecutionError(result['stderr'])
 #
