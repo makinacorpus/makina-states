@@ -418,7 +418,7 @@ def _composer_infos(composer='/usr/local/bin/composer'):
                                  runas='root')
     retcode = result['retcode']
     commandlines = []
-    commands = []
+    commands = {}
     if retcode == 0:
         commandlines = result['stdout'].split("\n")
     else:
@@ -426,7 +426,7 @@ def _composer_infos(composer='/usr/local/bin/composer'):
     for line in commandlines:
         parts = line.split()
         if len(parts)>0:
-            commands.append({parts[0]: ' '.join(parts[1:])})
+            commands[parts[0]] = ' '.join(parts[1:])
     ret['commands'] = commands
     ret['status'] = True
 
