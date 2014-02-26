@@ -2,7 +2,7 @@
                         the apache configuration
                         and the fpm pool #}
 {%- import "makina-states/_macros/php.jinja" as php with context %}
-{%- import "makina-states/projects/apache.jinja" as pbase with context %}
+{%- import "makina-states/projects/apache.jinja" as httpbase with context %}
 {%- import "makina-states/projects/base.jinja" as base with context %}
 {%- set apache = php.apache %}
 {%- set base = base %}
@@ -62,7 +62,7 @@
 {% set sock = {'socket_name':  salt['mc_php.get_fpm_socket_name'](common.name)} %}
 {% do common.data.fpmpool_opts.update(sock) %}
 {% do common.data.apache_opts.extra_jinja_apache_variables.update(sock) %}
-{{ pbase.vhost_from_common_data(
+{{ httpbase.vhost_from_common_data(
         common,
         minimal_index=minimal_index,
         additionnal_macro=php.fpm_pool,

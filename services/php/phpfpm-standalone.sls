@@ -37,7 +37,6 @@ include:
 {% endif %}
 {% if apache %}
 {{ fastcgi.includes(full=full) }}
-
 {% endif %}
 {% if full and apache %}
 # Adding mod_proxy_fcgi apache module (apache > 2.3)
