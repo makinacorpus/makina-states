@@ -1,4 +1,5 @@
 {%- import "makina-states/projects/base.jinja" as base with context %}
+{# this one is in fact phpfpm+apache #}
 {%- import "makina-states/projects/phpfpm.jinja" as php with context %}
 {%- import "makina-states/services/db/mysql.sls" as mysql with context %}
 {%- set services = base.services %}
@@ -250,22 +251,29 @@ TODO: local checker if prod need passwords <> defaults!
       - file: {{common.name}}-drupal-settings-include-local
 {% endmacro %}
 
+{# drupal_http_php --------------------------------------------#}
+{%- macro drupal_http_php(common) %}
+{# Install require HTTP server and PHP things #}
+{{ phpfpm.vhost(common) }}
+{% endmacro %}
+
 {# drupal_app --------------------------------------------#}
 {%- macro drupal_app(common) %}
 {# in full mode re-run the tree layout checks #}
 {%   if common.full %}
 {{     drupal_layout(common) }}
 {{     drupal_drush(common) }}
+{{     drupal_http_php(common) }}
 {%   endif %}
 {%   if common.init %}
 {#     Run drush make/install!. #}
-{%     if common.make %}
-{{       drupal_drush_make(common) }}
-{%     endif %}
-{{       drupal_drush_install(common) }}
-{%   endif %}
+{#%     if common.make %#}
+{#{       drupal_drush_make(common) }#}
+{#%     endif %#}
+{#{       drupal_drush_install(common) }#}
+{#%   endif %#}
 {# Now finish installing the app with settings. #}
-{{   drupal_settings(common) }}
+{#{   drupal_settings(common) }#}
 {% endmacro %}
 
 
@@ -277,28 +285,30 @@ TODO: local checker if prod need passwords <> defaults!
 {%- set cron_hour   = common.data.get("drupal_opts.cron_hour", 1) %}
 {%- set cron_minute = common.data.get("drupal_opts.cron_minute", 0) %}
 {%- set has_elysia_cron = common.data.get("drupal_opts.has_elysia_cron", False) %}
-{{common.name}}-drush-cron:
-  file.managed:
-    - source: salt://makina-states/files/projects/drupal/cronfile
-    - name: /etc/cron.d/drupal_cron_{{ common.name }}
-    - template: jinja
-    - defaults:
-      cron_hour: {{ cron_hour }}
-      cron_minute: {{ cron_minute }}
-      common.project_root: {{common.project_root}}
-      has_elysia_cron: {{ has_elysia_cron }}
-    - watch:
-      - mc_proxy: {{common.name}}-postinstall-project-hook
+{% if has_elysia_cron %}
+{# {{common.name}}-drush-cron:
+#  file.managed:
+#    - source: salt://makina-states/files/projects/drupal/cronfile
+#    - name: /etc/cron.d/drupal_cron_{{ common.name }}
+#    - template: jinja
+#    - defaults:
+#      cron_hour: {{ cron_hour }}
+#      cron_minute: {{ cron_minute }}
+#      common.project_root: {{common.project_root}}
+#      has_elysia_cron: {{ has_elysia_cron }}
+#    - watch:
+#      - mc_proxy: {{common.name}}-postinstall-project-hook
+#}
 {% endif %}
 {# TODO: use that for drupal also
-{{common.name}}-fixperms:
-  cron.present:
-    - comment: "{{common.name}}/project Drupal Async services"
-    - user: {{common.user}}
-    - minute:  "*/10"
-    - name: {{common.project_root}}/bin/drush
-    - watch:
-      - mc_proxy: {{common.name}}-postinstall-project-hook
+{#{{common.name}}-fixperms:
+ # cron.present:
+ #   - comment: "{{common.name}}/project Drupal Async services"
+ #   - user: {{common.user}}
+ #   - minute:  "*/10"
+ #   - name: {{common.project_root}}/bin/drush
+ #   - watch:
+ #     - mc_proxy: {{common.name}}-postinstall-project-hook
 #}
 {%- endmacro %}
 
@@ -569,5 +579,4 @@ TODO: local checker if prod need passwords <> defaults!
 {%   endif %}
 {{-  base.install_project(common, install_macro=install_drupal_project_do) }}
 {%- endmacro %}
-{# vim: set nofoldenable :#}
 {# vim: set nofoldenable :#}
