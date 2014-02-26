@@ -2403,7 +2403,7 @@ maybe_install_projects() {
         ln -sf "${PROJECT_SALT_PATH}" "${PROJECT_SALT_LINK}"
         changed="false"
         if [ -f "${SALT_ROOT}/${PROJECT_TOPSLS_DEFAULT}"  ] && [ "x${PROJECT_TOPSLS}" = "x" ];then
-            PROJECT_TOPSLS="${PROJECT_TOPSLS}_DEFAULT"
+            PROJECT_TOPSLS="${PROJECT_TOPSLS_DEFAULT}"
         fi
         PROJECT_TOPSTATE="$(echo ${PROJECT_TOPSLS}|"${SED}" -e 's/\//./g'|"${SED}" -e 's/\.sls//g')"
         if [ ! -d "${PROJECT_PILLAR_PATH}" ];then
