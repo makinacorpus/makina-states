@@ -33,7 +33,7 @@ before-pkg-install-proxy:
 
 {% if grains['os'] == 'Ubuntu' -%}
 ubuntu-pkgs:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - pkgs:
       - apport
       - debian-archive-keyring
@@ -50,7 +50,7 @@ ubuntu-pkgs:
 {%- endif %}
 
 sys-pkgs:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - pkgs:
       - acpid
       - atop
@@ -100,13 +100,13 @@ sys-pkgs:
 
 {% if 'devhost' in localsettings.registry['actives'] -%}
 devhost-pkgs:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - pkgs:
       - localepurge
 {%- endif %}
 
 dev-pkgs:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - pkgs:
       - git
       - git-core
@@ -124,7 +124,7 @@ dev-pkgs:
       {%- endif %}
 
 net-pkgs:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - pkgs:
       - wget
       - curl
@@ -149,7 +149,7 @@ net-pkgs:
       - whois
 
 salt-pkgs:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - pkgs:
       - python-apt
       - libgmp3-dev

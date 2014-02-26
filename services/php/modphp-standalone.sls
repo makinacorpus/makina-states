@@ -44,7 +44,7 @@ makina-mod_php-exclude-fpm-pkg:
 
 {# Manage mod_php packages #}
 makina-php-pkgs:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - pkgs:
       - {{ phpSettings.packages.main }}
       - {{ phpSettings.packages.mod_php }}

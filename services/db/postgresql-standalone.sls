@@ -123,7 +123,7 @@ pgsql-repo:
 
 {%- endif %}
 postgresql-pkgs:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - pkgs:
       - python-virtualenv {# noop #}
       {% if grains['os_family'] in ['Debian'] %}

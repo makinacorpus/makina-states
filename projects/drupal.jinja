@@ -11,7 +11,7 @@
 {%- macro drupal_pkgs(common) %}
 {% if common.full %}
 {{common.name}}-pkgs:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - pkgs:
       - bzip2
       - unzip

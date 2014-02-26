@@ -32,7 +32,7 @@ include:
 
 {% if full %}
 shorewall-pkgs:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - pkgs:
       - shorewall6
       - shorewall

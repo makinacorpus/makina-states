@@ -32,7 +32,7 @@ include:
 
 {% if full %}
 tomcat-{{ver}}-pkgs:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - pkgs:
       - tomcat{{ ver }}
     - watch_in:

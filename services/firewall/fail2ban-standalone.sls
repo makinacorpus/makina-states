@@ -12,7 +12,7 @@
 {% macro do(full=True) %}
 {% if full %}
 fail2ban-pkgs:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - pkgs:
       - fail2ban
     - watch_in:

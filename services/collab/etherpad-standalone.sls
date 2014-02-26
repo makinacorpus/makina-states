@@ -109,7 +109,7 @@ etherpad-settings:
 
 {% if full %}
 etherpad-npms:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - pkgs:
       - sqlite3
       - libsqlite3-dev

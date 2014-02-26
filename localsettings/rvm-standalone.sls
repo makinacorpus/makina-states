@@ -16,7 +16,7 @@
 {%- endmacro %}
 {% if full %}
 rvm-deps:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - names:
 {# rvm deps #}
       - bash

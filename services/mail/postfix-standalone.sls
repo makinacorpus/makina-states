@@ -11,7 +11,7 @@ include:
 
 {% if full %}
 postfix-pkgs:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - pkgs:
       - postfix
       - postfix-pcre

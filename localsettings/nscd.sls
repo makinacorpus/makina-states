@@ -7,7 +7,7 @@
 {{ salt['mc_macros.register']('localsettings', 'nscd') }}
 {%- set locs = localsettings.locations %}
 nscd-pkgs:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - pkgs:
       - nscd
 

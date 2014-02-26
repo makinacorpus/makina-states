@@ -11,7 +11,7 @@
 {%- macro zope_deps(common) %}
 {% if common.full -%}
 prepreq-{{common.name}}:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - watch_in:
       - mc_proxy: {{common.name}}-prerequisites-hook
     - pkgs:

@@ -9,7 +9,7 @@ include:
 
 {% if full %}
 ntp-pkgs:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - pkgs:
       - ntp
       - ntpdate

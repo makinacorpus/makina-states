@@ -7,7 +7,7 @@
 {{ salt['mc_macros.register']('localsettings', 'sudo') }}
 {%- set locs = localsettings.locations %}
 sudo-pkgs:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - pkgs: [sudo]
 
 sudoers:

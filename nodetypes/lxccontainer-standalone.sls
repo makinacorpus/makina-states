@@ -20,7 +20,7 @@ include:
 # lxc container
 {% if salt['mc_utils.get']('makina-states.lxc', False) -%}
 lxc-container-pkgs:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - pkgs:
       - apt-utils
     - require_in:

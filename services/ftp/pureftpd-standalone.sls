@@ -24,7 +24,7 @@ include:
 
 {% if full %}
 prereq-pureftpd:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - watch:
       - mc_proxy: ftpd-pre-installation-hook
     - watch_in:

@@ -311,6 +311,10 @@ def settings():
                 hosts_list.append(ip + ' ' + dnsname)
 
         # package manager settings
+        data['installmode'] = 'latest'
+        if __grains__.get('default_env', '') in ['prod']:
+            data['installmode'] = 'installed'
+
         data['keyserver'] = keyserver = 'pgp.mit.edu'
         data['debian_stable'] = debian_stable = 'wheezy'
         data['ubuntu_lts'] = ubuntu_lts = 'precise'

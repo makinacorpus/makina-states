@@ -115,7 +115,7 @@ extend:
 # is commented, waiting for unix socket support
 # So we keep using the old way
 makina-fastcgi-apache-module_connect_fastcgi_mod_fastcgi_module:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - pkgs:
       - {{ apacheSettings.mod_packages.mod_fastcgi }}
     - require:

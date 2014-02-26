@@ -17,7 +17,7 @@ remove-rdiff-backup-pkgs:
     - pkgs:
       - rdiff-backup
 rdiff-backup-pkgs:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - require:
       - pkg: remove-rdiff-backup-pkgs
     - pkgs:

@@ -19,7 +19,7 @@ include:
 {%    if pgVer in services.pgVers -%}
 {%      if full -%}
 prereq-postgis-{{pgVer}}-{{postgisVer}}:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - require_in:
       - mc_proxy: {{pgsql.orchestrate[pgVer]['pregroup']}}
       - mc_proxy: {{pgsql.orchestrate[pgVer]['predb']}}

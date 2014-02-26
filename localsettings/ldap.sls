@@ -12,7 +12,7 @@ include:
   - makina-states.localsettings.nscd
 
 ldap-pkgs:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - pkgs:
       - libpam-ldap
       - libnss-ldapd

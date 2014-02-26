@@ -14,7 +14,7 @@ include:
 
 {% if full %}
 etckeeper-pkgs:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - pkgs:
       - git
       - etckeeper

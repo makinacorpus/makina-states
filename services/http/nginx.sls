@@ -4,7 +4,7 @@
 
 
 makina-nginx-pkgs:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - pkgs:
         - {{ services.nginxSettings.package }}
 

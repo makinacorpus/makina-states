@@ -16,7 +16,7 @@
 {% set locs = localsettings.locations %}
 {% if full %}
 dovecot-pkgs:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - pkgs:
       - dovecot-common
       - dovecot-imapd

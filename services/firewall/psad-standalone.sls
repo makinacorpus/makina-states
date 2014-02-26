@@ -12,7 +12,7 @@
 {% macro do(full=True) %}
 {% if full %}
 psad-pkgs:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - pkgs:
       - psad
     - watch_in:

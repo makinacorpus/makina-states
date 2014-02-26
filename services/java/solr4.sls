@@ -69,7 +69,7 @@ include:
 {% endmacro %}
 
 solr{{ v }}-prerequisites:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - pkgs:
       - rsync
       - unzip

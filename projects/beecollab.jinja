@@ -6,7 +6,7 @@
 {% macro install_dependancies(common) %}
 {% if common.full %}
 beecollab_install_dependancies:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - pkgs:
       - ffmpeg
       - ffmpeg2theora

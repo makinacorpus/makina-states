@@ -11,7 +11,7 @@
 {% if full %}
 {# Manage php-fpm packages @#}
 makina-php-pkgs:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
     - pkgs:
       - {{ phpSettings.packages.main }}
       - {{ phpSettings.packages.php_fpm }}
