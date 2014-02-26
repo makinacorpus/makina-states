@@ -24,7 +24,12 @@ include:
 
 {% if full %}
 lxc-pkgs:
-  pkg.installed:
+  pkg.{{localsettings.installmode}}:
+{% if grains['os'] in ['Ubuntu'] -%}
+{% if localsettings.udist in ['precise'] %}
+    - fromrepo: {{localsettings.udist}}-backports
+{% endif %}
+{% endif %}
     - pkgs:
       - lxc
       - lxctl
