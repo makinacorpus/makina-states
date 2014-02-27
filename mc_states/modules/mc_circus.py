@@ -34,7 +34,7 @@ def settings():
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.monitoring.circus', {
                 'location': locs['apps_dir'] + '/circus',
-                'rotate': 30,
+                'rotate': localsettings['rotate'],
                 'requirements': [
                   'circus==0.10.0',
                   'circus-web==0.4.1',
