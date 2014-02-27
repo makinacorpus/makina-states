@@ -9,6 +9,7 @@ mc_localsettings / localsettings variables
 
 # Import salt libs
 import mc_states.utils
+import re
 
 __name = 'localsettings'
 
@@ -42,9 +43,29 @@ def _ldapEn(__salt__):
     return _get_ldapVariables(__salt__).get('enabled', False)
 
 
+def sort_ifaces(infos):
+    a = infos[0]
+    key = a
+    if re.match('^(eth0)', key):
+        key = '100___' + a
+    if re.match('^(eth[123456789][0123456789]+\|em|wlan)', key):
+        key = '200___' + a
+    if re.match('^(lxc\|docker)', key):
+        key = '300___' + a
+    if re.match('^(veth\|lo)', key):
+        key = '900___' + a
+    return key
+
+
 def settings():
     '''settings registry for localsettings
 
+    main_ip
+      main server ip
+    hostname
+      main hostname
+    domain
+      main domain
     locations
         Well known locations on the filesystem
     rotate
@@ -313,9 +334,34 @@ def settings():
                 home = udata.get('home', locations['users_home_dir'] + "/" + i)
             users[i].update({'home': home})
 
+        default_ip = '127.0.0.1'
+        ifaces = grains['ip_interfaces'].items()
+        ifaces.sort(key=sort_ifaces)
+        for iface, ips in ifaces:
+            if ips:
+                default_ip = ips[0]
+                break
+
+
         # hosts managment via pillar
-        data['hosts_list'] = hosts_list = []
         data['makinahosts'] = makinahosts = []
+        # main hostname
+        domain_parts = __grains__['id'].split('.')
+        data['main_ip'] = saltmods['mc_utils.get'](
+            grainsPref + 'main_ip', default_ip)
+        data['hostname'] = saltmods['mc_utils.get'](
+            grainsPref + 'hostname', domain_parts[0])
+        default_domain = ''
+        if len(domain_parts) > 1:
+            default_domain = '.'.join(domain_parts[1:])
+        data['domain'] = saltmods['mc_utils.get'](
+            grainsPref + 'domain', default_domain)
+        if data['domain']:
+            data['makinahosts'].append({
+            'ip': '{main_ip}'.format(**data),
+            'hosts': '{hostname} {hostname}.{domain}'.format(**data)
+            })
+        data['hosts_list'] = hosts_list = []
         for k, edata in pillar.items():
             if k.endswith('makina-hosts'):
                 makinahosts.extend(edata)

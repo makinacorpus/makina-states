@@ -55,3 +55,14 @@ makina-append-etc-hosts-management:
     - append_if_not_found: True
     - backup: '.bak'
     - show_changes: True
+
+/etc/hostname-set:
+  cmd.run:
+    - name: |
+            echo {{localsettings.hostname}} > /etc/hostname;
+            chown root:root /etc/hostname;
+            chmod 644 /etc/hostname;
+            hostname {{localsettings.hostname}}
+    - user: root
+    - unless: test "x$(cat /etc/hostname)" = "x{{localsettings.hostname}}"
+
