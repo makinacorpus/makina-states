@@ -153,7 +153,7 @@ dummy-post-{{ data.service_name }}-service-restart:
 {%- set logPrefix = resolver('{log_prefix}', data) %}
 {%- set pillarRoot = resolver('{pillar_root}', data) %}
 {%- set localMsr = resolver('{salt_root}/makina-states', data) %}
-{%- set yamled_data = resolver(data | yaml )%}
+{%- set yamled_data = resolver(data) | yaml %}
 {%- set repos = data['confRepos'] %}
 {% for cur_name in  [
   'salt',
