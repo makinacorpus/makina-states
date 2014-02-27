@@ -354,6 +354,7 @@ etc-logrotate.d-{{common.name}}.conf:
           'rewrite-max-age'             : 'false',
           'supervisor-user'             : '${v:admin-user}',
           'supervisor-password'         : '${v:admin-password}',
+          'reverse-proxy-admin'         : 'postmaster@localhost',
           'reverse-proxy-listen'        : '*',
           'reverse-proxy-scheme'        : 'http',
           'reverse-proxy-host'          : '{domain}',
