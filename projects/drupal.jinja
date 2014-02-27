@@ -271,7 +271,7 @@ TODO: local checker if prod need passwords <> defaults!
 {#{       drupal_drush_make(common) }#}
 {#%     endif %#}
 {#{       drupal_drush_install(common) }#}
-{#%   endif %#}
+{%  endif %}
 {# Now finish installing the app with settings. #}
 {#{   drupal_settings(common) }#}
 {% endmacro %}
@@ -346,7 +346,7 @@ TODO: local checker if prod need passwords <> defaults!
 #}
 {%- set default_defaults = {
   "has_db": True,
-  "has_app": True
+  "has_app": True,
   "drupal_opts": {
       "cron_hour": "*",
       "cron_minute": "*",
@@ -354,13 +354,13 @@ TODO: local checker if prod need passwords <> defaults!
       'databases': {
           'default' : { 
               'default' : {
-                  'database' => None,
-                  'username' => None,
-                  'password' => None,
-                  'host' => '127.0.0.1',
-                  'port' => '3306',
-                  'driver' => 'mysql',
-                  'prefix' => false
+                  'database': None,
+                  'username': None,
+                  'password': None,
+                  'host': '127.0.0.1',
+                  'port': '3306',
+                  'driver': 'mysql',
+                  'prefix': false
               }
           }
       },
@@ -491,7 +491,7 @@ TODO: local checker if prod need passwords <> defaults!
     },
     "prod": {
         "drupal_opts": {
-            local_settings": {
+            "local_settings": {
             }
         },
         "vhost_log": "info",
@@ -534,7 +534,6 @@ TODO: local checker if prod need passwords <> defaults!
 {%-  do kwargs.setdefault("env_defaults", default_env_defaults) %}
 {%-  do kwargs.setdefault("user", "drupal") %}
 {%-  set common = salt["mc_project.get_common_vars"](*varargs, **kwargs) %}
-{%-  endif %}
 {%-  if common.full %}
 {%-    if common.data.use_nginx %}
 {%-     set php_sls_path = "makina-states.services.php.phpfpm_with_nginx" %}
