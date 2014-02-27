@@ -227,6 +227,22 @@ def settings():
         data['groupId'] = saltmods['mc_utils.get'](
             grainsPref + 'filesystem.group_id', '65753')
 
+        # nodejs
+        cur_nodejsver = '10.0.26'
+        url = 'http://nodejs.org/dist/v{ver}/node-v{ver}-linux-{arch}.tar.gz'
+        data['nodejsSettings'] = saltmods['mc_utils.defaults'](
+            'makina-states.localsettings.nodejs', {
+                'url': url,
+                'shas': {
+                    'node-v0.10.26-linux-x86.tar.gz': 'b3bebee7f256644266fccce04f54e2825eccbfc0',
+                    'node-v0.10.26-linux-x64.tar.gz': 'd15d39e119bdcf75c6fc222f51ff0630b2611160',
+                },
+                'versions': [cur_nodejsver],
+                'version': cur_nodejsver,
+                'arch': __grains__['cpuarch'].replace('x86_64', 'x64'),
+                'location': locations['apps_dir']+'/node',
+            }
+        )
         # users data
         data['users'] = users = {}
         data['user_keys'] = user_keys = {}
