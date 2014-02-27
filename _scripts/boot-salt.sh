@@ -1560,7 +1560,7 @@ EOF
     done
     # Create a default top.sls in the tree if not present
     TOPS_FILES="${SALT_ROOT}/top.sls"
-    if [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
+    if [ "x${IS_MASTERSALT}" != "x" ];then
         TOPS_FILES="$TOPS_FILES ${MASTERSALT_ROOT}/top.sls"
     fi
     for topf in $TOPS_FILES;do
