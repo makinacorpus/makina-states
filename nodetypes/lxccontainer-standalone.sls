@@ -4,25 +4,30 @@
 #   - makina-states/doc/ref/formulaes/nodetypes/lxccontainer.rst
 #}
 {% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
+
+{% set localsettings = nodetypes.localsettings %}
 {% macro do(full=True) %}
 {{ salt['mc_macros.register']('nodetypes', 'lxccontainer') }}
 
-{% if full %}
 include:
+  {% if full %}
   - makina-states.localsettings.pkgs
+  {% endif %}
+  - makina-states.localsettings.pkgs-hooks
   - makina-states.nodetypes.vm
-{% endif %}
+
+makina-lxc-proxy-dep:
+  mc_proxy.hook: []
 
 # be sure to have all grains
-{{localsettings.funcs.dummy('makina-lxc-proxy-dep') }}
 # no require_in as in bootstrap time we may not have yet rendered the lxc bits
 
 # lxc container
-{% if salt['mc_utils.get']('makina-states.lxc', False) -%}
 lxc-container-pkgs:
   pkg.{{localsettings.installmode}}:
     - pkgs:
       - apt-utils
+      - libfuse2
     - require_in:
       - mc_proxy: makina-lxc-proxy-dep
 
@@ -30,7 +35,7 @@ makina-mark-as-lxc:
   cmd.run:
     - name: echo lxc > /run/container_type
     - unless: grep -q lxc /run/container_type
-    - requires:
+    - require:
       - mc_proxy: makina-lxc-proxy-dep
 
 etc-init-lxc-setup:
@@ -40,7 +45,7 @@ etc-init-lxc-setup:
     - user: root
     - group: root
     - mode: 0755
-    - requires:
+    - require:
       - cmd: makina-mark-as-lxc
 
 etc-init-lxc-stop:
@@ -50,7 +55,7 @@ etc-init-lxc-stop:
     - user: root
     - group: root
     - mode: 0755
-    - requires:
+    - require:
       - cmd: makina-mark-as-lxc
 
 lxc-cleanup:
@@ -62,30 +67,36 @@ lxc-cleanup:
     - mode: 0755
 
 lxc-install-non-harmful-packages:
-  cmd.script:
+  file.managed:
     - source: salt://makina-states/_scripts/build_lxccorepackages.sh
-    - requires:
+    - name: /sbin/build_lxccorepackages.sh
+    - user: root
+    - group: root
+    - mode: 750
+    - require:
       - mc_proxy: makina-lxc-proxy-dep
       - cmd: makina-mark-as-lxc
       - file: lxc-cleanup
-    {% if full %}
     - require_in:
-      - pkg: ubuntu-pkgs
-      - pkg: sys-pkgs
-    {% endif %}
+      - mc_proxy: before-pkg-install-proxy
+  cmd.run:
+    - name: /sbin/build_lxccorepackages.sh
+    - require:
+      - mc_proxy: makina-lxc-proxy-dep
+      - cmd: makina-mark-as-lxc
+      - file: lxc-cleanup
+      - file: lxc-install-non-harmful-packages
+    - require_in:
+      - mc_proxy: before-pkg-install-proxy
 
 do-lxc-cleanup:
   cmd.run:
     - name: /sbin/lxc-cleanup.sh
-    - requires:
+    - require:
       - file: lxc-cleanup
-      - mc_proxy: makina-lxc-proxy-dep
       - cmd: lxc-install-non-harmful-packages
-      {% if full %}
-      - pkg: ubuntu-pkgs
-      - pkg: sys-pkgs
-      - pkg: net-pkgs
-      - pkg: dev-pkgs
-      {% endif %}
+      - mc_proxy: makina-lxc-proxy-dep
+      - mc_proxy: after-pkg-install-proxy
+
 {% endmacro %}
 {{do(full=False)}}

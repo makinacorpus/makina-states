@@ -28,10 +28,17 @@ fi
 
 LAUNCH_ARGS=${@}
 get_abspath() {
-    python << EOF
+    PYTHON="$(which python 2>/dev/null)"
+    if [ ! -f "${PYTHON}" ];then
+        cd "$(dirname ${THIS})"
+        echo "${PWD}"
+        cd - > /dev/null
+    else
+        "${PYTHON}" << EOF
 import os
 print os.path.abspath("${THIS}")
 EOF
+    fi
 }
 
 RED="\\e[0;31m"
@@ -44,6 +51,9 @@ SALT_BOOT_DEBUG_LEVEL="${SALT_BOOT_DEBUG_LEVEL:-all}"
 THIS="$(get_abspath ${THIS})"
 DNS_RESOLUTION_FAILED="dns resolution failed"
 
+is_lxc() {
+    echo  "$(cat -e /proc/1/environ |grep container=lxc|wc -l|sed -e "s/ //g")"
+}
 
 set_progs() {
     SED=$(which sed)
@@ -278,7 +288,7 @@ detect_os() {
 interactive_tempo(){
     tempo="${@}"
     tempo_txt="$tempo"
-    if [ $tempo_txt -ge 60 ];then
+    if [ -f "${PYTHON}" ] && [ $tempo_txt -ge 60 ];then
         tempo_txt="$(python -c "print $tempo / 60") minute(s)"
     else
         tempo_txt="$tempo second(s)"
@@ -395,6 +405,9 @@ get_ms_branch() {
 
 get_salt_nodetype() {
     default_nodetype="server"
+    if [ "x$(is_lxc)" != "x0" ];then
+        default_nodetype="lxccontainer"
+    fi
     if [ "x${FORCE_SALT_NODETYPE}" != "x" ];then
         default_nodetype=""
     fi

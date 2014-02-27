@@ -12,17 +12,19 @@
 {% if full %}
 include:
   - makina-states.localsettings.pkgmgr
+  - makina-states.localsettings.pkgs-hooks
 {% endif %}
 
 {%- if grains['os'] in ['Ubuntu', 'Debian'] %}
-before-pkg-install-proxy:
+before-ubuntu-pkg-install-proxy:
   mc_proxy.hook:
     {% if full %}
-    - require:
+    - watch:
         - file: apt-sources-list
+        - mc_proxy: before-pkg-install-proxy
         - cmd: apt-update-after
     {% endif %}
-    - require_in:
+    - watch_in:
       {% if grains['os'] == 'Ubuntu' %}
       - pkg: ubuntu-pkgs
       {% endif %}
@@ -31,6 +33,18 @@ before-pkg-install-proxy:
       - pkg: net-pkgs
       - pkg: salt-pkgs
 
+after-ubuntu-pkg-install-proxy:
+  mc_proxy.hook:
+    - watch_in:
+        - mc_proxy: after-pkg-install-proxy
+    - watch:
+      {% if grains['os'] == 'Ubuntu' %}
+      - pkg: ubuntu-pkgs
+      {% endif %}
+      - pkg: sys-pkgs
+      - pkg: dev-pkgs
+      - pkg: net-pkgs
+      - pkg: salt-pkgs
 {% if grains['os'] == 'Ubuntu' -%}
 ubuntu-pkgs:
   pkg.{{localsettings.installmode}}:
