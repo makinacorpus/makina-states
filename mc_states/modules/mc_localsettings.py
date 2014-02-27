@@ -356,6 +356,7 @@ def settings():
             default_domain = '.'.join(domain_parts[1:])
         data['domain'] = saltmods['mc_utils.get'](
             grainsPref + 'domain', default_domain)
+        data['fqdn'] = saltmods['mc_utils.get']('nickname', __grains__['id'])
         if data['domain']:
             data['makinahosts'].append({
             'ip': '{main_ip}'.format(**data),

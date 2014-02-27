@@ -89,7 +89,7 @@ def settings():
                 'check_policy_service': None,
                 'inet_interfaces': '127.0.0.1',
                 'conf_dir': locs['conf_dir'],
-                'mailname': grains['fqdn'],
+                'mailname': localsettings['fqdn'],
                 'cert_file': '{conf_dir}/ssl/certs/ssl-cert-snakeoil.pem',
                 'cert_key': '{conf_dir}/ssl/private/ssl-cert-snakeoil.key',
                 'inet_interfaces': 'all',
