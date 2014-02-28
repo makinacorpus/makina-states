@@ -1,4 +1,4 @@
-End user documentation
+Writing new states
 ======================
 
 .. toctree::
