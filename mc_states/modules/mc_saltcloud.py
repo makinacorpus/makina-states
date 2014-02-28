@@ -11,10 +11,6 @@ import mc_states.utils
 
 __name = 'saltcloud'
 
-loglevelfmt = (
-    "'%(asctime)s,%(msecs)03.0f "
-    "[%(name)-17s][%(levelname)-8s] %(message)s'")
-
 
 def settings():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)

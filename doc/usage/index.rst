@@ -9,4 +9,5 @@ End user documentation
    configure.rst
    projects/index.rst
    troubleshooting.rst
+   write/index.rst
 
