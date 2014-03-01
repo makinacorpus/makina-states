@@ -593,7 +593,7 @@ set_vars() {
         fi
 
         MASTERSALT_MASTER_DNS="${MASTERSALT_MASTER_DNS:-${MASTERSALT}}"
-        MASTERSALT_MASTER_IP="$(dns_resolve ${MASTERSALT_MASTER_DNS})"
+        MASTERSALT_MASTER_IP="${MASTERSALT_MASTER_IP:-$(dns_resolve ${MASTERSALT_MASTER_DNS})}"
         MASTERSALT_MASTER_PORT="${MASTERSALT_MASTER_PORT:-"${MASTERSALT_PORT:-"4606"}"}"
         MASTERSALT_MASTER_PUBLISH_PORT="$(( ${MASTERSALT_MASTER_PORT} - 1 ))"
 
@@ -623,7 +623,7 @@ set_vars() {
     if [ "x${IS_SALT}" != "x" ];then
         SALT_MINION_ID="$(get_minion_id)"
         SALT_MASTER_DNS="${SALT_MASTER_DNS:-"localhost"}"
-        SALT_MASTER_IP="$(dns_resolve ${SALT_MASTER_DNS})"
+        SALT_MASTER_IP="${SALT_MASTER_IP:-$(dns_resolve ${SALT_MASTER_DNS})}"
         SALT_MASTER_PORT="${SALT_MASTER_PORT:-"4506"}"
         SALT_MASTER_PUBLISH_PORT="$(( ${SALT_MASTER_PORT} - 1 ))"
 
@@ -2781,6 +2781,8 @@ usage() {
         bs_help "--mastersalt-root <path>:" "MasterSalt root installation path" "${SALT_ROOT}" y
         bs_help "-PP|--mastersalt-pillar <path>:" "mastersalt pillar path" "${MASTERSALT_PILLAR}"  y
         bs_help "--mastersalt-minion-dns <dns>:"  "DNS of the mastersalt minion" "${MASTERSALT_MINION_DNS}" y
+        bs_help "--salt-master-ip <ip>:"  "IP of the salt master" "${SALT_MASTER_IP}" y
+        bs_help "--mastersalt-master-ip <ip>:"  "IP of the mastersalt master" "${MASTERSALT_MASTER_IP}" y
         bs_help "--mastersalt-master-publish-port <port>:" "MasterSalt master publish port" "${MASTERSALT_MASTER_PUBLISH_PORT}" y
         #bs_help "-mmac|--mastersalt-master-controller <controller>:" "makina-states controller to use for the mastersalt master" "${MASTERSALT}_MINION_CONTROLLER"   y
         #bs_help "-mmic|--mastersalt-minion-controller <controller>:" "makina-states controller to use for the mastersalt minion" "${MASTERSALT}_MASTER_CONTROLLER"  y
@@ -2946,6 +2948,12 @@ parse_cli_opts() {
         fi
         if [ "x${1}" = "x--salt-master-dns" ];then
             SALT_MASTER_DNS="${2}";sh="2";argmatch="1"
+        fi
+        if [ "x${1}" = "x--salt-master-ip" ];then
+            SALT_MASTER_IP="${2}";sh="2";argmatch="1"
+        fi
+        if [ "x${1}" = "x--mastersalt-master-ip" ];then
+            MASTERSALT_MASTER_IP="${2}";sh="2";argmatch="1"
         fi
         if [ "x${1}" = "x--salt-minion-dns" ];then
             SALT_MINION_DNS="${2}";sh="2";argmatch="1"
