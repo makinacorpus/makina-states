@@ -3,23 +3,24 @@
 {% import "makina-states/_macros/salt.jinja" as saltmac with context %}
 {% set cloudSettings= services.cloudSettings %}
 {% set localsettings = services.localsettings %}
-
+{% set pvdir = cloudSettings.pvdir %}
+{% set pfdir = cloudSettings.pfdir %}
 {% macro do(full=False) %}
-{{- salt['mc_macros.register']('services', 'cloud.salt_cloud') }}
-{% if full %}
+{{- salt["mc_macros.register"]("services", "cloud.salt_cloud") }}
 include:
-  makina-states.services.controllers
+{% if full %}
+  - makina-states.controllers
 {% endif %}
+  - makina-states.services.cloud.salt_cloud-hooks
 
-{% if controllers.registry.is.mastersalt_master %}
-{% set prefix = saltmac.mconfPrefix %}
-{% else %}
-{% set prefix = saltmac.confPrefix %}
+{% if full %}
+saltcloud-pkgs:
+  pkg.{{localsettings.installmode}}:
+    - pkgs:
+      - sshpass
+    - require:
+      - mc_proxy: salt-cloud-preinstall
 {% endif %}
-
-
-{% set pvdir = prefix+'/cloud.providers.d' %}
-{% set pfdir = prefix+'/cloud.profiles.d' %}
 salt_cloud-dirs:
   file.directory:
     - names:
@@ -29,20 +30,9 @@ salt_cloud-dirs:
     - user: root
     - group: {{localsettings.group }}
     - mode: 2770
-
-lxc_salt_ssh:
-  file.managed:
-    - source: ''
-    - name: {{pvdir}}/makinastates_minion.conf
-    - user: root
-    - group: root
+    - require_in:
+      - mc_proxy: salt-cloud-postinstall
     - require:
-      - file: salt_cloud-dirs
-    - contents: |
-                providers:
-                  - id: lxc-{{opts['id']}}:
-                    minion: {{opts['id']}}
-                    provider: lxc
-
+      - mc_proxy: salt-cloud-preinstall
 {% endmacro %}
 {{do(full=False)}}

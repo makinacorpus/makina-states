@@ -182,6 +182,7 @@ def registry():
             'base.ntp': {'active': _ntpEn(__salt__)},
             'base.ssh': {'active': True},
             'cloud.salt_cloud': {'active': False},
+            'cloud.lxc': {'active': False},
             'db.mysql': {'active': False},
             'db.postgresql': {'active': False},
             'firewall.fail2ban': {'active': False},

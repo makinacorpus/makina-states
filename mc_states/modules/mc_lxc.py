@@ -19,6 +19,7 @@ Documentation of this module is available with::
 # Import python libs
 import logging
 import mc_states.utils
+import random
 
 from salt.utils.odict import OrderedDict
 
@@ -26,6 +27,12 @@ __name = 'lxc'
 
 log = logging.getLogger(__name__)
 
+
+def gen_mac():
+    return ':'.join(map(lambda x: "%02x" % x, [0x00, 0x16, 0x3E,
+                                               random.randint(0x00, 0x7F),
+                                               random.randint(0x00, 0xFF),
+                                               random.randint(0x00, 0xFF)]))
 
 def is_lxc():
     """
@@ -79,193 +86,138 @@ def settings():
         localsettings = __salt__['mc_localsettings.settings']()
         locations = localsettings['locations']
         lxcSettings = __salt__['mc_utils.defaults'](
-            'makina-states.services.http.lxc', {
+            'makina-states.services.virt.lxc', {
                 'is_lxc': is_lxc(),
+                'size': None,  # via profile
+                'gateway': '10.5.0.1',
+                'network': '10.5.0.0',
+                'netmask': '16',
+                'netmask_full': '255.255.0.0',
+                'dnsservers': ['8.8.8.8', '4.4.4.4'],
+                'default_template': 'ubuntu',
+                'bridge': 'lxcbr1',
+                'use_bridge': True,
+                'backing': 'lvm',
+                'users': ['root', 'sysadmin'],
+                'vgname': 'data',
+                'lvname': 'data',
+                'lxc_conf': [],
+                'lxc_conf_unset': [],
+                'containers': {
+                    __grains__['id']: {},
+                    #'target': {
+                    #  'containerid': {
+                    #  'name': 'foo'
+                    #  'backing': 'lvm'
+                    #}
+                },
+                'lxc_cloud_profiles': {
+                    'xxxtrem': {
+                        'size': '2000g',
+                    },
+                    'xxtrem': {
+                        'size': '1000g',
+                    },
+                    'xtrem': {
+                        'size': '500g',
+
+                    },
+                    'xxxlarge': {
+                        'size': '100g',
+
+                    },
+                    'xxlarge': {
+                        'size': '50g',
+                    },
+                    'large': {
+                        'size': '20g',
+
+                    },
+                    'medium': {
+                        'size': '10g',
+                    },
+                    'small': {
+                        'size': '3g',
+                    },
+                    'xsmall': {
+                        'size': '2g',
+                    },
+                    'xxsmall': {
+                        'size': '1g',
+                    },
+                    'xxxsmall': {
+                        'size': '500m',
+                    },
+                },
             }
         )
-        lxcSettings['containers'] = OrderedDict()
-        # server-def is retro compat
-        sufs = ['-lxc-server-def', '-lxc-container-def']
-
-        for suf in sufs:
-            for k, lxc_data in pillar.items():
-                if k.endswith(suf):
-                    lxc_data = lxc_data.copy()
-                    lxc_name = lxc_data.get('name', k.split(suf)[0])
-                    lxcSettings['containers'][lxc_name] = lxc_data
-                    lxc_data.setdefault('template', 'ubuntu')
-                    lxc_data.setdefault('netmask', '255.255.255.0')
-                    lxc_data.setdefault('gateway', '10.0.3.1')
-                    lxc_data.setdefault('dnsservers', '10.0.3.1')
-                    lxc_root = lxc_data.setdefault(
-                        'root',
-                        locations['var_lib_dir'] + '/lxc/' + lxc_name)
-                    lxc_data.setdefault('rootfs', lxc_root + '/rootfs')
-                    lxc_data.setdefault('config', lxc_root + '/config')
-                     # raise key error if undefined
-                    lxc_data.setdefault('mac', lxc_data['mac'])
-                    lxc_data.setdefault('ip4', lxc_data['ip4'])
+        for target in [t for t in lxcSettings['containers']]:
+            for container in lxcSettings['containers'][t]:
+                lxc_data = lxcSettings['containers'][container]
+                # mandatory = ['ip4', 'profile']
+                # for opt in mandatory:
+                #     if not mandatory:
+                #         import pdb;pdb.set_trace()  ## Breakpoint ##
+                import pdb;pdb.set_trace()  ## Breakpoint ##
+                lxc_data['mac'] = __salt__['mc_lxc.find_mac_for_container'](
+                    target, container, lxc_data)
+                lxc_data['ip4'] = __salt__['mc_lxc.find_ip_for_container'](
+                    target, container, lxc_data)
+                lxc_data.setdefault('name', container)
+                lxc_data.setdefault('size', None)
+                lxc_data.setdefault('from_container', None)
+                lxc_data.setdefault('snapshot', None)
+                for i in [
+                    'size', 'image', 'bridge', 'netmask', 'gateway',
+                    'dnsservers', 'backing', 'vgname', 'lvname',
+                    'vgname', 'ssh_password', 'ssh_username', 'users',
+                    'lxc_conf_unset', 'lxc_conf'
+                ]:
+                    lxc_data.setdefault(i, lxcSettings[i])
         return lxcSettings
     return _settings()
 
 
+def find_mac_for_container(target, container, lxc_data=None):
+    if not lxc_data:
+        lxc_data = {}
+    mac = lxc_data.get('mac', None)
+    gid = 'makina-states.services.virt.lxc.containers.{0}.{1}.mac'.format(
+        target, container)
+    if not mac:
+        __salt__['grain.setval'](gid, gen_mac())
+        __salt__['saltuitil.sync_grainl'](gid, gen_mac())
+        mac = __salt__['mc_utils.get'](gid)
+        if not mac:
+            raise Exception(
+                'Error while setting grainmac for {0}/{1}'.format(target,
+                                                                  container))
+    return mac
+
+
+def find_ip_for_container(target, container, lxc_data=None):
+    '''Search for:
+        - an ip in lxc.conf
+        - an ip already allocated
+        - an random available ip in the range
+    '''
+    if not lxc_data:
+        lxc_data = {}
+    ip4 = lxc_data.get('ip4', None)
+    gid = 'makina-states.services.virt.lxc.containers.{0}.{1}.ip4'.format(
+        target, container)
+    if not ip4:
+        __salt__['grain.setval'](gid, gen_ip4())
+        __salt__['saltuitil.sync_grainl'](gid, gen_ip4())
+        ip4 = __salt__['mc_utils.get'](gid)
+        if not ip4:
+            raise Exception(
+                'Error while setting grainip4 for {0}/{1}'.format(target,
+                                                              container))
+    return ip4
+
+
 def dump():
     return mc_states.utils.dump(__salt__,__name)
-
-def create(vm_):
-    if config.get_cloud_config_value('deploy', vm_, __opts__) is False:
-        return {
-            'Error': {
-                'No Deploy': '\'deploy\' is not enabled. Not deploying.'
-            }
-        }
-    key_filename = config.get_cloud_config_value(
-        'key_filename', vm_, __opts__, search_global=False, default=None
-    )
-    if key_filename is not None and not os.path.isfile(key_filename):
-        raise SaltCloudConfigError(
-            'The defined ssh_keyfile {0!r} does not exist'.format(
-                key_filename
-            )
-        )
-
-    if key_filename is None and salt.utils.which('sshpass') is None:
-        raise SaltCloudSystemExit(
-            'Cannot deploy salt in a VM if the \'ssh_keyfile\' setting '
-            'is not set and \'sshpass\' binary is not present on the '
-            'system for the password.'
-        )
-
-    ret = {}
-
-    log.info('Provisioning existing machine {0}'.format(vm_['name']))
-
-    ssh_username = config.get_cloud_config_value('ssh_username', vm_, __opts__)
-    deploy_script = script(vm_)
-    deploy_kwargs = {
-        'host': vm_['ssh_host'],
-        'username': ssh_username,
-        'script': deploy_script,
-        'name': vm_['name'],
-        'tmp_dir': config.get_cloud_config_value(
-            'tmp_dir', vm_, __opts__, default='/tmp/.saltcloud'
-        ),
-        'deploy_command': config.get_cloud_config_value(
-            'deploy_command', vm_, __opts__,
-            default='/tmp/.saltcloud/deploy.sh',
-        ),
-        'start_action': __opts__['start_action'],
-        'parallel': __opts__['parallel'],
-        'sock_dir': __opts__['sock_dir'],
-        'conf_file': __opts__['conf_file'],
-        'minion_pem': vm_['priv_key'],
-        'minion_pub': vm_['pub_key'],
-        'keep_tmp': __opts__['keep_tmp'],
-        'sudo': config.get_cloud_config_value(
-            'sudo', vm_, __opts__, default=(ssh_username != 'root')
-        ),
-        'sudo_password': config.get_cloud_config_value(
-            'sudo_password', vm_, __opts__, default=None
-        ),
-        'tty': config.get_cloud_config_value(
-            'tty', vm_, __opts__, default=True
-        ),
-        'password': config.get_cloud_config_value(
-            'password', vm_, __opts__, search_global=False
-        ),
-        'key_filename': key_filename,
-        'script_args': config.get_cloud_config_value('script_args', vm_, __opts__),
-        'script_env': config.get_cloud_config_value('script_env', vm_, __opts__),
-        'minion_conf': salt.utils.cloud.minion_config(__opts__, vm_),
-        'preseed_minion_keys': vm_.get('preseed_minion_keys', None),
-        'display_ssh_output': config.get_cloud_config_value(
-            'display_ssh_output', vm_, __opts__, default=True
-        )
-    }
-
-    # Deploy salt-master files, if necessary
-    if config.get_cloud_config_value('make_master', vm_, __opts__) is True:
-        deploy_kwargs['make_master'] = True
-        deploy_kwargs['master_pub'] = vm_['master_pub']
-        deploy_kwargs['master_pem'] = vm_['master_pem']
-        master_conf = salt.utils.cloud.master_config(__opts__, vm_)
-        deploy_kwargs['master_conf'] = master_conf
-
-        if master_conf.get('syndic_master', None):
-            deploy_kwargs['make_syndic'] = True
-
-    deploy_kwargs['make_minion'] = config.get_cloud_config_value(
-        'make_minion', vm_, __opts__, default=True
-    )
-
-    win_installer = config.get_cloud_config_value('win_installer', vm_, __opts__)
-    if win_installer:
-        deploy_kwargs['win_installer'] = win_installer
-        minion = salt.utils.cloud.minion_config(__opts__, vm_)
-        deploy_kwargs['master'] = minion['master']
-        deploy_kwargs['username'] = config.get_cloud_config_value(
-            'win_username', vm_, __opts__, default='Administrator'
-        )
-        deploy_kwargs['password'] = config.get_cloud_config_value(
-            'win_password', vm_, __opts__, default=''
-        )
-
-    # Store what was used to the deploy the VM
-    event_kwargs = copy.deepcopy(deploy_kwargs)
-    del event_kwargs['minion_pem']
-    del event_kwargs['minion_pub']
-    del event_kwargs['sudo_password']
-    if 'password' in event_kwargs:
-        del event_kwargs['password']
-    ret['deploy_kwargs'] = event_kwargs
-
-    salt.utils.cloud.fire_event(
-        'event',
-        'executing deploy script',
-        'salt/cloud/{0}/deploying'.format(vm_['name']),
-        {'kwargs': event_kwargs},
-    )
-
-    deployed = False
-    if win_installer:
-        deployed = salt.utils.cloud.deploy_windows(**deploy_kwargs)
-    else:
-        deployed = salt.utils.cloud.deploy_script(**deploy_kwargs)
-
-    if deployed:
-        ret['deployed'] = deployed
-        log.info('Salt installed on {0}'.format(vm_['name']))
-        return ret
-
-    log.error('Failed to start Salt on host {0}'.format(vm_['name']))
-    return {
-        'Error': {
-            'Not Deployed': 'Failed to start Salt on host {0}'.format(
-                vm_['name']
-            )
-        }
-    }
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #
