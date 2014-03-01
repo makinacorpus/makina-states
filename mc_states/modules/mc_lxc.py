@@ -85,11 +85,14 @@ def settings():
         pillar = __pillar__
         localsettings = __salt__['mc_localsettings.settings']()
         locations = localsettings['locations']
+
         lxcSettings = __salt__['mc_utils.defaults'](
             'makina-states.services.virt.lxc', {
                 'is_lxc': is_lxc(),
                 'size': None,  # via profile
                 'gateway': '10.5.0.1',
+                'master': None,
+                'master_port': '4506',
                 'network': '10.5.0.0',
                 'netmask': '16',
                 'netmask_full': '255.255.0.0',
@@ -151,14 +154,11 @@ def settings():
                 },
             }
         )
+        if not lxcSettings['master']:
+            lxcSettings['master'] = lxcSettings['gateway']
         for target in [t for t in lxcSettings['containers']]:
             for container in lxcSettings['containers'][t]:
                 lxc_data = lxcSettings['containers'][container]
-                # mandatory = ['ip4', 'profile']
-                # for opt in mandatory:
-                #     if not mandatory:
-                #         import pdb;pdb.set_trace()  ## Breakpoint ##
-                import pdb;pdb.set_trace()  ## Breakpoint ##
                 lxc_data['mac'] = __salt__['mc_lxc.find_mac_for_container'](
                     target, container, lxc_data)
                 lxc_data['ip4'] = __salt__['mc_lxc.find_ip_for_container'](
