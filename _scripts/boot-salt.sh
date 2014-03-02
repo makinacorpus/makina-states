@@ -3231,7 +3231,7 @@ synchronize_code() {
 set_dns() {
     hostname="$(get_minion_id)"
     host="$(echo "${hostname}"|awk -F'.' '{print $1}')"
-    if [ "x$(echo "${hostname}"|grep -q \.;echo ${?})" != "x0" ];then
+    if [ "x$(echo "${hostname}"|grep -q \.;echo ${?})" = "x0" ];then
         domainname="$(echo "${hostname}"|sed -e "s/^[^.]*\.//g")"
     else
         domainname="local"
