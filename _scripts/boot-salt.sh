@@ -1749,22 +1749,22 @@ a\    publish_port: ${MASTERSALT_MASTER_PUBLISH_PORT}
 
 lazy_start_salt_daemons() {
     if [ "x${IS_SALT_MASTER}" != "x" ];then
-        master_processes="$(${PS} aux|grep salt-master|grep -v mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
+        master_processes="$(${PS} aux|grep salt-master|grep -v boot-salt|grep -v mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
         if [ "x${master_processes}" = "x0" ];then
             restart_local_masters
             sleep 2
         fi
-        master_processes="$(${PS} aux|grep salt-master|grep -v mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
+        master_processes="$(${PS} aux|grep salt-master|grep -v boot-salt|grep -v mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
         if [ "x${master_processes}" = "x0" ];then
             die "Salt Master start failed"
         fi
     fi
     if [ "x${IS_SALT_MINION}" != "x" ];then
-        minion_processes="$(${PS} aux|grep salt-minion|grep -v mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
+        minion_processes="$(${PS} aux|grep salt-minion|grep -v boot-salt|grep -v mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
         if [ "x${minion_processes}" = "x0" ];then
             restart_local_minions
             sleep 2
-            minion_processes="$(${PS} aux|grep salt-minion|grep -v mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
+            minion_processes="$(${PS} aux|grep salt-minion|grep -v boot-salt|grep -v mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
             if [ "x${master_processes}" = "x0" ];then
                 die "Salt Minion start failed"
             fi
@@ -1857,19 +1857,19 @@ kill_pids(){
 }
 
 killall_local_mastersalt_masters() {
-    kill_pids $(${PS} aux|egrep "salt-(master|syndic)"|grep mastersalt|awk '{print $2}') 1>/dev/null 2>/dev/null
+    kill_pids $(${PS} aux|egrep "salt-(master|syndic)"|grep -v boot-salt|grep mastersalt|awk '{print $2}') 1>/dev/null 2>/dev/null
 }
 
 killall_local_mastersalt_minions() {
-    kill_pids $(${PS} aux|egrep "salt-(minion)"|grep mastersalt|awk '{print $2}') 1>/dev/null 2>/dev/null
+    kill_pids $(${PS} aux|egrep "salt-(minion)"|grep -v boot-salt|grep mastersalt|awk '{print $2}') 1>/dev/null 2>/dev/null
 }
 
 killall_local_masters() {
-    kill_pids $(${PS} aux|egrep "salt-(master|syndic)"|grep -v mastersalt|awk '{print $2}') 1>/dev/null 2>/dev/null
+    kill_pids $(${PS} aux|egrep "salt-(master|syndic)"|grep -v boot-salt|grep -v mastersalt|awk '{print $2}') 1>/dev/null 2>/dev/null
 }
 
 killall_local_minions() {
-    kill_pids $(${PS} aux|egrep "salt-(minion)"|grep -v mastersalt|awk '{print $2}') 1>/dev/null 2>/dev/null
+    kill_pids $(${PS} aux|egrep "salt-(minion)"|grep -v boot-salt|grep -v mastersalt|awk '{print $2}') 1>/dev/null 2>/dev/null
 }
 
 restart_local_mastersalt_masters() {
@@ -2197,22 +2197,22 @@ make_mastersalt_association() {
 
 lazy_start_mastersalt_daemons() {
     if [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
-        master_processes="$(${PS} aux|grep salt-master|grep mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
+        master_processes="$(${PS} aux|grep salt-master|grep -v boot-salt|grep mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
         if [ "x${master_processes}" = "x0" ];then
             restart_local_mastersalt_masters
             sleep 2
         fi
-        master_processes="$(${PS} aux|grep salt-master|grep mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
+        master_processes="$(${PS} aux|grep salt-master|grep -v boot-salt|grep mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
         if [ "x${master_processes}" = "x0" ];then
             die "Masteralt Master start failed"
         fi
     fi
     if [ "x${IS_MASTERSALT_MINION}" != "x" ];then
-        minion_processes="$(${PS} aux|grep salt-minion|grep mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
+        minion_processes="$(${PS} aux|grep salt-minion|grep -v boot-salt|grep mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
         if [ "x${minion_processes}" = "x0" ];then
             restart_local_mastersalt_minions
             sleep 2
-            minion_processes="$(${PS} aux|grep salt-minion|grep mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
+            minion_processes="$(${PS} aux|grep salt-minion|grep -v boot-salt|grep mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
             if [ "x${master_processes}" = "x0" ];then
                 die "Masteralt Minion start failed"
             fi
