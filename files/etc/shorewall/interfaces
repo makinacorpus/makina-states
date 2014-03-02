@@ -21,6 +21,6 @@
 
 {% for zone, interfaces in shwdata['interfaces'].items() %}
 {% for data in interfaces %}
-{{ zone }} {{ data['interface'] }} {{ data.get('options', '') }}
+{{ zone }} {{ data['interface'] }} {{ data.get('broadcast', '-') }} {{ data.get('options', '-') }}
 {% endfor %}
 {% endfor %}

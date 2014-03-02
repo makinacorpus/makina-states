@@ -36,6 +36,8 @@ shorewall-pkgs:
     - pkgs:
       - shorewall6
       - shorewall
+    - require_in:
+      - file: toggle-shorewall
 {% endif %}
 
 shorewall-test-cfg:

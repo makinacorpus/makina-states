@@ -53,8 +53,12 @@ def settings():
         nodetypes_registry = __salt__['mc_nodetypes.registry']()
         locs = localsettings['locations']
         shwIfformat = 'FORMAT 2'
-        if grains['os'] not in ['Debian']:
+        #if ((grains['os'] not in ['Debian']) 
+        #   and (grains.get('lsb_distrib_codename') not in ['precise'])):
+        if (grains['os'] not in ['Debian']):
             shwIfformat = '?{0}'.format(shwIfformat)
+        if grains.get('lsb_distrib_codename') in ['precise']:
+            shwIfformat = '#?{0}'.format(shwIfformat)
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.firewall.shorewall', {
                 # mapping of list of mappings
@@ -305,6 +309,18 @@ def settings():
                 {'comment': '(Master)Salt on localhost'})
             data['default_rules'].append({'action': 'ACCEPT',
                                           'source': "$FW", 'dest': "$FW",
+                                          'proto': 'tcp,udp',
+                                          'dport': '4505,4506,4605,4606'})
+            data['default_rules'].append(
+                {'comment': '(Master)Salt on lxc'})
+            data['default_rules'].append({'action': 'ACCEPT',
+                                          'source': "lxc", 'dest': "$FW",
+                                          'proto': 'tcp,udp',
+                                          'dport': '4505,4506,4605,4606'})
+            data['default_rules'].append(
+                {'comment': '(Master)Salt on dockers'})
+            data['default_rules'].append({'action': 'ACCEPT',
+                                          'source': "dck", 'dest': "$FW",
                                           'proto': 'tcp,udp',
                                           'dport': '4505,4506,4605,4606'})
 
