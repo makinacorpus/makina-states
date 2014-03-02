@@ -3230,10 +3230,21 @@ synchronize_code() {
 
 set_dns() {
     hostname="$(get_minion_id)"
+    host="$(echo "${hostname}"|awk -F'.' '{print $1}')"
+    if [ "x$(echo "${hostname}"|grep -q \.;echo ${?})" != "x0" ];then
+        domainname="$(echo "${hostname}"|sed -e "s/^[^.]*\.//g")"
+    else
+        domainname="local"
+        hostname="${hostname}.${domainname}"
+    fi
     if [ "${hostname}" != "x" ];then
-        if [ "x$(cat /etc/hostname 2>/dev/null|sed -e "s/ //")" != "x$(echo "${hostname}"|sed -e "s/ //g")" ];then
-            bs_log "Resetting hostname file to ${hostname}"
-            echo "${hostname}" > /etc/hostname
+        if [ "x$(cat /etc/hostname 2>/dev/null|sed -e "s/ //")" != "x$(echo "${host}"|sed -e "s/ //g")" ];then
+            bs_log "Resetting hostname file to ${host}"
+            echo "${host}" > /etc/hostname
+        fi
+        if [ "x$(domainname)" != "x$(echo "${domainname}"|sed -e "s/ //g")" ];then
+            bs_log "Resetting domainname to ${domainname}"
+            domainname "${domainname}"
         fi
         if [ "x$(hostname)" != "x$(echo "${hostname}"|sed -e "s/ //g")" ];then
             bs_log "Resetting hostname to ${hostname}"
