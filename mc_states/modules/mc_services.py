@@ -183,6 +183,7 @@ def registry():
             'base.ssh': {'active': True},
             'cloud.salt_cloud': {'active': False},
             'cloud.lxc': {'active': False},
+            'cloud.saltify': {'active': False},
             'db.mysql': {'active': False},
             'db.postgresql': {'active': False},
             'firewall.fail2ban': {'active': False},
