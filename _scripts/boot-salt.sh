@@ -3267,6 +3267,14 @@ set_dns() {
     fi
 }
 
+cleanup_execlogs() {
+    cd /srv/salt/makina-states/.bootlogs
+    # keep 20 local logs only
+    if [ "$(ls -1|wc -l|sed -e "s/ //")" -gt "21" ];then
+        ls -1rt|head -n $((-1*(20-$(ls -rt1|wc -l)))) 
+    fi
+}
+
 if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
     parse_cli_opts $LAUNCH_ARGS
     if [ "x$(dns_resolve localhost)" = "x${DNS_RESOLUTION_FAILED}" ];then

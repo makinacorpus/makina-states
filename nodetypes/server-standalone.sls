@@ -1,5 +1,4 @@
 {#
-# Flag this machine as a travis node worker
 # see:
 #   - makina-states/doc/ref/formulaes/nodetypes/server.rst
 #}
