@@ -3229,7 +3229,7 @@ synchronize_code() {
 }
 
 set_dns() {
-    hostname="$(get_minion_id)" 
+    hostname="$(get_minion_id)"
     if [ "${hostname}" != "x" ];then
         if [ "x$(cat /etc/hostname 2>/dev/null|sed -e "s/ //")" != "x$(echo "${hostname}"|sed -e "s/ //g")" ];then
             bs_log "Resetting hostname file to ${hostname}"
