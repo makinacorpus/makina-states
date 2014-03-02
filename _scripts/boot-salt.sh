@@ -315,19 +315,28 @@ set_colors() {
 }
 
 get_minion_id_() {
-    mmid="${2:-${SALT_MINION_ID:-${HOSTNAME}}}"
     confdir="${1}"
     force="${3}"
-    if [ "x${force}" = "x" ];then
-        fics=$(find "${confdir}"/minion* -type f 2>/dev/null)
-        if [ "x${fics}" != "x" ];then
-            mmid=$(egrep -r "^id:" $(find "${confdir}"/minion* -type f 2>/dev/null|grep -v sed) 2>/dev/null|awk '{print $2}'|head -n1)
-        fi
-        if [ "x${mmid}" = "x" ] && [ -f "${confdir}/minion_id" ];then
-            mmid=$(cat "${confdir}/minion_id" 2> /dev/null)
-        fi
-        if [ "x${mmid}" = "x" ] && [ -f "${CONF_PREFIX}/minion_id" ];then
-            mmid=$(cat "${CONF_PREFIX}/minion_id" 2> /dev/null)
+    notfound=""
+    if [ "x$(egrep -q "^id: [^ ]+" /etc/hosts $(find "${confdir}/minion"* -type f 2>/dev/null) 2>/dev/null;echo ${?})" != "x0" ]\
+       || [ "$(find ${confdir}/minion* -type f 2>/dev/null|wc -l|sed -e "s/ //g")" ];then
+       notfound="y"
+    fi
+    if [ "x${notfound}" != "x" ] && [ "x${SALT_CLOUD}" != "x" ] && [ -e "${SALT_CLOUD_DIR}/minion" ];then
+        mmid="$(egrep "^id:" "${SALT_CLOUD_DIR}/minion"|awk '{print $2}'|sed -e "s/ //")"
+    else
+        mmid="${2:-${HOSTNAME}}"
+        if [ "x${force}" = "x" ];then
+            fics=$(find "${confdir}"/minion* -type f 2>/dev/null)
+            if [ "x${fics}" != "x" ];then
+                mmid=$(egrep -r "^id:" $(find "${confdir}"/minion* -type f 2>/dev/null|grep -v sed) 2>/dev/null|awk '{print $2}'|head -n1)
+            fi
+            if [ "x${mmid}" = "x" ] && [ -f "${confdir}/minion_id" ];then
+                mmid=$(cat "${confdir}/minion_id" 2> /dev/null)
+            fi
+            if [ "x${mmid}" = "x" ] && [ -f "${CONF_PREFIX}/minion_id" ];then
+                mmid=$(cat "${CONF_PREFIX}/minion_id" 2> /dev/null)
+            fi
         fi
     fi
     echo $mmid
@@ -626,8 +635,8 @@ set_vars() {
         mastersalt_bootstrap_minion="${bootstrap_controllers_pref}.${MASTERSALT_MINION_CONTROLLER}"
     fi
     # salt variables
+    SALT_MINION_ID="$(get_minion_id)"
     if [ "x${IS_SALT}" != "x" ];then
-        SALT_MINION_ID="$(get_minion_id)"
         SALT_MASTER_DNS_DEFAULT="localhost"
         SALT_MASTER_PORT_DEFAULT="4506"
         if [ "x${IS_MASTERSALT}" = "x" ] && [ "x${SALT_CLOUD}" != "x" ] && [ -e "${SALT_CLOUD_DIR}/minion" ];then
@@ -3219,6 +3228,29 @@ synchronize_code() {
     exit 0
 }
 
+set_dns() {
+    hostname="$(get_minion_id)" 
+    if [ "${hostname}" != "x" ];then
+        if [ "x$(cat /etc/hostname 2>/dev/null|sed -e "s/ //")" != "x$(echo "${hostname}"|sed -e "s/ //g")" ];then
+            bs_log "Resetting hostname file to ${hostname}"
+            echo "${hostname}" > /etc/hostname
+        fi
+        if [ "x$(hostname)" != "x$(echo "${hostname}"|sed -e "s/ //g")" ];then
+            bs_log "Resetting hostname to ${hostname}"
+            hostname "${hostname}"
+        fi
+        if [ "x$(egrep -q "127.*${hostname}" /etc/hosts;echo ${?})" != "x0" ];then
+            bs_log "Adding new core hostname alias to localhost"
+            echo "127.0.0.1 ${hostname}">/tmp/hosts
+            cat /etc/hosts>>/tmp/hosts
+            echo "127.0.0.1 ${hostname}">>/tmp/hosts
+            if [ -f /tmp/hosts ];then
+                cp -f /tmp/hosts /etc/hosts
+            fi
+        fi
+    fi
+}
+
 if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
     parse_cli_opts $LAUNCH_ARGS
     if [ "x$(dns_resolve localhost)" = "x${DNS_RESOLUTION_FAILED}" ];then
@@ -3249,6 +3281,7 @@ if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
     fi
     if [ "x${abort}" = "x" ];then
         recap
+        set_dns
         cleanup_old_installs
         setup_and_maybe_update_code
         handle_upgrades
