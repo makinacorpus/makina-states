@@ -434,6 +434,8 @@ get_salt_nodetype() {
 
 set_vars() {
     set_colors
+    SALT_CLOUD="${SALT_CLOUD:-}"
+    SALT_CLOUD_DIR="${SALT_CLOUD_DIR:-"/tmp/.saltcloud"}"
     QUIET=${QUIET:-}
     ROOT="${ROOT:-"/"}"
     CONF_ROOT="${CONF_ROOT:-"${ROOT}etc"}"
@@ -507,14 +509,14 @@ set_vars() {
 
     # select the daemons to install but also
     # detect what is already present on the system
-    if [ "x${SALT_CONTROLLER}" = "salt_master" ];then
+    if [ "x${SALT_CONTROLLER}" = "xsalt_master" ];then
         IS_SALT_MASTER="y"
     else
         IS_SALT_MINION="y"
     fi
-    if [ "x${MASTERSALT_CONTROLLER}" = "mastersalt_master" ];then
+    if [ "x${MASTERSALT_CONTROLLER}" = "xmastersalt_master" ];then
         IS_MASTERSALT_MASTER="y"
-    elif [ "x${MASTERSALT_CONTROLLER}" = "mastersalt_minion" ];then
+    elif [ "x${MASTERSALT_CONTROLLER}" = "xmastersalt_minion" ];then
         IS_MASTERSALT_MINION="y"
     fi
     if [ "x${MASTERSALT}" != "x" ];then
@@ -584,6 +586,10 @@ set_vars() {
         # - if we have not defined a mastersalt host,
         #    default to mastersalt.makina-corpus.net
         if [ "x${IS_MASTERSALT}" != "x" ];then
+            if [ "x${SALT_CLOUD}" != "x" ] && [ -e "${SALT_CLOUD_DIR}/minion" ];then
+                MASTERSALT="$(egrep "^master:" "${SALT_CLOUD_DIR}"/minion|awk '{print $2}'|sed -e "s/ //")"
+                MASTERSALT_MASTER_PORT="$(egrep "^master_port:" "${SALT_CLOUD_DIR}"/minion|awk '{print $2}'|sed -e "s/ //")"
+            fi
             if [ "x${MASTERSALT}" = "x" ];then
                 MASTERSALT="${MASTERSALT_MAKINA_HOSTNAME}"
             fi
@@ -622,9 +628,15 @@ set_vars() {
     # salt variables
     if [ "x${IS_SALT}" != "x" ];then
         SALT_MINION_ID="$(get_minion_id)"
-        SALT_MASTER_DNS="${SALT_MASTER_DNS:-"localhost"}"
+        SALT_MASTER_DNS_DEFAULT="localhost"
+        SALT_MASTER_PORT_DEFAULT="4506"
+        if [ "x${IS_MASTERSALT}" = "x" ] && [ "x${SALT_CLOUD}" != "x" ] && [ -e "${SALT_CLOUD_DIR}/minion" ];then
+            SALT_MASTER_DNS_DEFAULT="$(egrep "^master:" "${SALT_CLOUD_DIR}"/minion|awk '{print $2}'|sed -e "s/ //")"
+            SALT_MASTER_PORT_DEFAULT="$(egrep "^master_port:" "${SALT_CLOUD_DIR}"/minion|awk '{print $2}'|sed -e "s/ //")"
+        fi
+        SALT_MASTER_DNS="${SALT_MASTER_DNS:-"${SALT_MASTER_DNS_DEFAULT}"}"
         SALT_MASTER_IP="${SALT_MASTER_IP:-$(dns_resolve ${SALT_MASTER_DNS})}"
-        SALT_MASTER_PORT="${SALT_MASTER_PORT:-"4506"}"
+        SALT_MASTER_PORT="${SALT_MASTER_PORT:-"${SALT_MASTER_PORT_DEFAULT}"}"
         SALT_MASTER_PUBLISH_PORT="$(( ${SALT_MASTER_PORT} - 1 ))"
 
         SALT_MINION_DNS="${SALT_MINION_DNS:-"localhost"}"
@@ -741,6 +753,8 @@ set_vars() {
     export PROJECT_TOPSLS_DEFAULT PROJECT_TOPSTATE_DEFAULT
     #
     export MASTERSALT_BOOT_SKIP_HIGHSTATE SALT_BOOT_SKIP_HIGHSTATE SALT_BOOT_SKIP_HIGHSTATES
+    #
+    export SALT_CLOUD SALT_CLOUD_DIR
 }
 
 # --------- PROGRAM START
@@ -759,6 +773,9 @@ recap_(){
     bs_log "HOSTNAME: ${HOSTNAME}"
     bs_log "DATE: ${CHRONO}"
     bs_log "SALT_NODETYPE: $(get_salt_nodetype)"
+    if [ "x${SALT_CLOUD}" != "x" ];then
+        bs_log "-> SaltCloud mode"
+    fi
     if [ "x${MAKINASTATES_TEST}" != "x" ];then
         bs_log "-> Will run tests"
     fi
@@ -1483,12 +1500,22 @@ install_buildouts() {
     fi
 }
 
+
+install_key() {
+    if [ ! -e "${dest}" ] && [ -e "${origin}" ];then
+        cp -vf "${origin}" "${dest}"
+    fi
+}
+
+
 create_salt_skeleton(){
     branch_id="$(get_ms_branch|"${SED}" -e "s/changeset://g")"
     # create etc directory
     if [ ! -e "${CONF_PREFIX}" ];then mkdir "${CONF_PREFIX}";fi
     if [ ! -e "${CONF_PREFIX}/master.d" ];then mkdir "${CONF_PREFIX}/master.d";fi
     if [ ! -e "${CONF_PREFIX}/minion.d" ];then mkdir "${CONF_PREFIX}/minion.d";fi
+    if [ ! -e "${CONF_PREFIX}/pki/master" ];then mkdir -p "${CONF_PREFIX}/pki/master";fi
+    if [ ! -e "${CONF_PREFIX}/pki/minion" ];then mkdir -p "${CONF_PREFIX}/pki/minion";fi
     if [ ! -e "${CONF_PREFIX}/master" ];then
         cat > "${CONF_PREFIX}/master" << EOF
 file_roots: {"base":["${SALT_ROOT}"]}
@@ -1516,6 +1543,8 @@ EOF
         if [ ! -e "${MCONF_PREFIX}" ];then mkdir "${MCONF_PREFIX}";fi
         if [ ! -e "${MCONF_PREFIX}/master.d" ];then mkdir "${MCONF_PREFIX}/master.d";fi
         if [ ! -e "${MCONF_PREFIX}/minion.d" ];then mkdir "${MCONF_PREFIX}/minion.d";fi
+        if [ ! -e "${MCONF_PREFIX}/pki/master" ];then mkdir -p "${MCONF_PREFIX}/pki/master";fi
+        if [ ! -e "${MCONF_PREFIX}/pki/minion" ];then mkdir -p "${MCONF_PREFIX}/pki/minion";fi
         if [ ! -e "${MCONF_PREFIX}/master" ];then
             cat > "${MCONF_PREFIX}/master" << EOF
 file_roots: {"base":["${MASTERSALT_ROOT}"]}
@@ -1537,6 +1566,28 @@ grain_dirs: [${MASTERSALT_ROOT}/_grains, ${MASTERSALT_MS}/mc_states/grains]
 render_dirs: [${MASTERSALT_ROOT}/_renderers, ${MASTERSALT_MS}/mc_states/renderers]
 EOF
         fi
+    fi
+    # install salt cloud keys
+    if [ "x${SALT_CLOUD}" != "x" ];then
+        if [ "x${IS_MASTERSALT}" != "x" ];then
+            minion_dest="${MCONF_PREFIX}/pki/minion"
+            master_dest="${MCONF_PREFIX}/pki/master"
+        else
+            minion_dest="${CONF_PREFIX}/pki/minion"
+            master_dest="${CONF_PREFIX}/pki/master"
+        fi
+        origin="${SALT_CLOUD_DIR}/minion.pem"
+        dest="${minion_dest}/minion.pem"
+        install_key
+        origin="${SALT_CLOUD_DIR}/minion.pub"
+        dest="${minion_dest}/minion.pub"
+        install_key
+        origin="${SALT_CLOUD_DIR}/master.pem"
+        dest="${master_dest}/master.pem"
+        install_key
+        origin="${SALT_CLOUD_DIR}/master.pub"
+        dest="${master_dest}/master.pub"
+        install_key
     fi
 
     # create pillars
@@ -2825,6 +2876,9 @@ parse_cli_opts() {
         argmatch=""
         if [ "x${1}" = "x${PARAM}" ];then
             break
+        fi
+        if [ "x${1}" = "x--from-salt-cloud" ];then
+            SALT_CLOUD="1";argmatch="1"
         fi
         if [ "x${1}" = "x-q" ] || [ "x${1}" = "x--quiet" ];then
             QUIET="1";argmatch="1"
