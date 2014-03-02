@@ -10,7 +10,7 @@
 {{- salt["mc_macros.register"]("services", "cloud.saltify") }}
 include:
   {# lxc may not be installed directly on the cloud controller ! #}
-  - makina-states.services.virt.saltify-hooks
+  - makina-states.services.cloud.saltify-hooks
 {% if full %}
   - makina-states.services.cloud.salt_cloud
 {% else %}
@@ -67,7 +67,7 @@ profiles_saltify_salt:
 {%    for var in ["ssh_username",
                   "password",
                   "sudo_password",
-                  "sudo" %}
+                  "sudo"] %}
 {%      if data.get(var) %}
     - {{var}}: {{lxc_data[var]}}
 {%      endif%}
