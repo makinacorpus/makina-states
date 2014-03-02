@@ -595,20 +595,25 @@ set_vars() {
         # - if we have not defined a mastersalt host,
         #    default to mastersalt.makina-corpus.net
         if [ "x${IS_MASTERSALT}" != "x" ];then
-            if [ "x${SALT_CLOUD}" != "x" ] && [ -e "${SALT_CLOUD_DIR}/minion" ];then
-                MASTERSALT="$(egrep "^master:" "${SALT_CLOUD_DIR}"/minion|awk '{print $2}'|sed -e "s/ //")"
-                MASTERSALT_MASTER_PORT="$(egrep "^master_port:" "${SALT_CLOUD_DIR}"/minion|awk '{print $2}'|sed -e "s/ //")"
-            fi
             if [ "x${MASTERSALT}" = "x" ];then
                 MASTERSALT="${MASTERSALT_MAKINA_HOSTNAME}"
             fi
-            if [ -e "${MASTERSALT_PILLAR}/mastersalt.sls" ];then
-                MASTERSALT="$(grep "master: " ${MASTERSALT_PILLAR}/mastersalt.sls |awk '{print $2}'|tail -n 1)"
-            fi
+        fi
+        if [ "x${SALT_CLOUD}" != "x" ] && [ -e "${SALT_CLOUD_DIR}/minion" ];then
+             MASTERSALT="$(egrep "^master:" "${SALT_CLOUD_DIR}"/minion|awk '{print $2}'|sed -e "s/ //")"
+             MASTERSALT_MASTER_DNS="${MASTERSALT}"
+             MASTERSALT_MASTER_PORT="$(egrep "^master_port:" "${SALT_CLOUD_DIR}"/minion|awk '{print $2}'|sed -e "s/ //")"
+        fi
+        if [ -e "${MASTERSALT_PILLAR}/mastersalt.sls" ];then
+            MASTERSALT="$(grep "master: " ${MASTERSALT_PILLAR}/mastersalt.sls |awk '{print $2}'|tail -n 1)"
         fi
 
         MASTERSALT_MASTER_DNS="${MASTERSALT_MASTER_DNS:-${MASTERSALT}}"
-        MASTERSALT_MASTER_IP="${MASTERSALT_MASTER_IP:-$(dns_resolve ${MASTERSALT_MASTER_DNS})}"
+        if [ "x${SALT_CLOUD}" = "x" ];then
+            MASTERSALT_MASTER_IP="${MASTERSALT_MASTER_IP:-$(dns_resolve ${MASTERSALT_MASTER_DNS})}"
+        else
+            MASTERSALT_MASTER_IP="unresolvable"
+        fi
         MASTERSALT_MASTER_PORT="${MASTERSALT_MASTER_PORT:-"${MASTERSALT_PORT:-"4606"}"}"
         MASTERSALT_MASTER_PUBLISH_PORT="$(( ${MASTERSALT_MASTER_PORT} - 1 ))"
 
