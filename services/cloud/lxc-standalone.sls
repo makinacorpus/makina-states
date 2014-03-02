@@ -4,7 +4,7 @@
 {% set cloudSettings= services.cloudSettings %}
 {% set lxcSettings = services.lxcSettings %}
 {% set pvdir = cloudSettings.pvdir %}
-{% set pfdir = cloudSettings.pfdir %} 
+{% set pfdir = cloudSettings.pfdir %}
 {% set localsettings = services.localsettings %}
 {% macro do(full=False) %}
 {{- salt["mc_macros.register"]("services", "cloud.lxc") }}
@@ -29,7 +29,10 @@ providers_lxc_salt:
     - user: root
     - template: jinja
     - group: root
-    - defaults: {{lxcSettings|yaml}}
+    - defaults:
+        data: {{lxcSettings|yaml}}
+        cdata: {{cloudSettings|yaml}}
+        msr: {{saltmac.msr}}
 
 profiles_lxc_salt:
   file.managed:
@@ -38,7 +41,10 @@ profiles_lxc_salt:
     - name: {{pfdir}}/makinastates_lxc.conf
     - user: root
     - group: root
-    - defaults: {{lxcSettings|yaml}}
+    - defaults:
+        cdata: {{cloudSettings|yaml}}
+        data: {{lxcSettings|yaml}}
+        msr: {{saltmac.msr}}
     - require:
       - mc_proxy: salt-cloud-postinstall
     - require_in:

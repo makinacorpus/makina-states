@@ -13,6 +13,29 @@ __name = 'saltcloud'
 
 
 def settings():
+    """
+          master
+            TDB
+          master_port
+            TDB
+          pvdir
+            TDB
+          pfdir
+            TDB
+          targets
+            TDB
+
+            ::
+
+                'targets': {
+                    #'id': {
+                    #    'name': 'dns',
+                    #    'ssh_username': 'foo',
+                    #    'password': 'password',
+                    #    'sudo_password': 'sudo_password',
+                    #    'sudo': 'foo',
+                    #}
+    """
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
         localsettings = __salt__['mc_localsettings.settings']()
@@ -27,11 +50,22 @@ def settings():
             prefix = salt_settings['confPrefix']
         data = __salt__['mc_utils.defaults'](
             'makina-states.controllers.salt_cloud', {
-                'master': False,
+                'master': __grains__['fqdn'],
+                'master_port': '4506',
                 'pvdir': prefix + "/cloud.providers.d",
                 'pfdir': prefix + "/cloud.profiles.d",
+                'targets': {
+                    #'id': {
+                    #    'name': 'dns',
+                    #    'ssh_username': 'foo',
+                    #    'password': 'password',
+                    #    'sudo_password': 'sudo_password',
+                    #    'sudo': 'foo',
+                    #}
+                }
             }
         )
+        import pdb;pdb.set_trace()  ## Breakpoint ##
         return data
     return _settings()
 

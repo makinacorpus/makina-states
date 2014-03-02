@@ -4,13 +4,13 @@
 {% set cloudSettings= services.cloudSettings %}
 {% set lxcSettings = services.lxcSettings %}
 {% set pvdir = cloudSettings.pvdir %}
-{% set pfdir = cloudSettings.pfdir %} 
+{% set pfdir = cloudSettings.pfdir %}
 {% set localsettings = services.localsettings %}
 {% macro do(full=False) %}
-{{- salt["mc_macros.register"]("services", "cloud.lxc") }}
+{{- salt["mc_macros.register"]("services", "cloud.saltify") }}
 include:
   {# lxc may not be installed directly on the cloud controller ! #}
-  - makina-states.services.virt.lxc-hooks
+  - makina-states.services.virt.saltify-hooks
 {% if full %}
   - makina-states.services.cloud.salt_cloud
 {% else %}
@@ -18,64 +18,56 @@ include:
   - makina-states.services.cloud.salt_cloud-standalone
 {% endif %}
 
-providers_lxc_salt:
+providers_saltify_salt:
   file.managed:
     - require:
       - mc_proxy: salt-cloud-postinstall
     - require_in:
       - mc_proxy: salt-cloud-predeploy
-    - source: salt://makina-states/files/etc/salt/cloud.providers.d/makinastates_lxc.conf
-    - name: {{pvdir}}/makinastates_lxc.conf
+      - mc_proxy: saltify-pre-install
+    - source: salt://makina-states/files/etc/salt/cloud.providers.d/makinastates_saltify.conf
+    - name: {{pvdir}}/makinastates_saltify.conf
     - user: root
     - template: jinja
     - group: root
-    - defaults: {{lxcSettings|yaml}}
+    - defaults:
+      - data: {{cloudSettings|yaml}}
+      - msr: {{saltmac.msr}}
 
-profiles_lxc_salt:
+profiles_saltify_salt:
   file.managed:
     - template: jinja
-    - source: salt://makina-states/files/etc/salt/cloud.profiles.d/makinastates_lxc.conf
-    - name: {{pfdir}}/makinastates_lxc.conf
+    - source: salt://makina-states/files/etc/salt/cloud.profiles.d/makinastates_saltify.conf
+    - name: {{pfdir}}/makinastates_saltify.conf
     - user: root
     - group: root
-    - defaults: {{lxcSettings|yaml}}
+    - defaults:
+      - data: {{cloudSettings|yaml}}
+      - msr: {{saltmac.msr}}
     - require:
       - mc_proxy: salt-cloud-postinstall
     - require_in:
       - mc_proxy: salt-cloud-predeploy
+      - mc_proxy: saltify-pre-install
 
-
-{% for target, containers in services.lxcSettings.containers.items() %}
+{% for target, containers in services.cloudSettings.targets.items() %}
 {%  for k, data in containers.items() -%}
 {%    set name = k %}
-{%    set dnsservers = lxc_data.get("dnsservers") -%}
-{{target}}-{{k}}-lxc-deploy:
+{{target}}-{{k}}-saltify-deploy:
   cloud.profile:
     - require:
       - mc_proxy: lxc-post-inst
       - mc_proxy: salt-cloud-predeploy
     - require_in:
+      - mc_proxy: saltify-post-install
       - mc_proxy: salt-cloud-postdeploy
     - name: {{name}}
     - cloud_provider: {{target}}
     - profile: {{data.profile}}
-{%    for var in ["from_container",
-                   "snapshot",
-                   "image",
-                   "gateway",
-                   "bridge",
-                   "mac",
-                   "ip4",
-                   "netmask",
-                   "size",
-                   "backing",
-                   "vgname",
-                   "lvname",
-                   "dnsserver",
-                   "ssh_username",
-                   "ssh_password",
-                   "lxc_conf",
-                   "lxc_conf_unset"] %}
+{%    for var in ["ssh_username",
+                  "password",
+                  "sudo_password",
+                  "sudo" %}
 {%      if data.get(var) %}
     - {{var}}: {{lxc_data[var]}}
 {%      endif%}
