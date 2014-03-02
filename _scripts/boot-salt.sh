@@ -612,7 +612,7 @@ set_vars() {
         if [ "x${SALT_CLOUD}" = "x" ];then
             MASTERSALT_MASTER_IP="${MASTERSALT_MASTER_IP:-$(dns_resolve ${MASTERSALT_MASTER_DNS})}"
         else
-            MASTERSALT_MASTER_IP="unresolvable"
+            MASTERSALT_MASTER_IP="${MASTERSALT_MASTER_DNS}"
         fi
         MASTERSALT_MASTER_PORT="${MASTERSALT_MASTER_PORT:-"${MASTERSALT_PORT:-"4606"}"}"
         MASTERSALT_MASTER_PUBLISH_PORT="$(( ${MASTERSALT_MASTER_PORT} - 1 ))"
@@ -655,7 +655,7 @@ set_vars() {
         if [ "x${SALT_CLOUD}" = "x" ];then
             SALT_MASTER_IP="${SALT_MASTER_IP:-$(dns_resolve ${SALT_MASTER_DNS})}"
         else
-            SALT_MASTER_IP="unresolvable"
+            SALT_MASTER_IP="${SALT_MASTER_DNS}"
         fi
         SALT_MASTER_IP="${SALT_MASTER_IP:-$(dns_resolve ${SALT_MASTER_DNS})}"
         SALT_MASTER_PORT="${SALT_MASTER_PORT:-"${SALT_MASTER_PORT_DEFAULT}"}"
@@ -1598,7 +1598,7 @@ EOF
             minion_dest="${CONF_PREFIX}/pki/minion"
             master_dest="${CONF_PREFIX}/pki/master"
         fi
-        origin="${SALT_CLOUD_DIR}/minion.pem"
+        origin="${SALT_CLOUD_DIR}/minionpem"
         dest="${minion_dest}/minion.pem"
         install_key
         origin="${SALT_CLOUD_DIR}/minion.pub"
