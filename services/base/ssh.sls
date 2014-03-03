@@ -10,7 +10,6 @@ include:
   - openssh.banner
   - makina-states.localsettings.users
   - makina-states.services.base.ssh-hooks
-  - makina-states.services.base.ssh-users
 
 {#
 # Idea is to grant everyone member of "(.-)*makina-users" access
