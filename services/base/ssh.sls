@@ -11,6 +11,11 @@ include:
   - makina-states.localsettings.users
   - makina-states.services.base.ssh-hooks
 
+sshgroup:
+  group.present:
+    - name: {{services.sshServerSettings.group}}
+
+
 {#
 # Idea is to grant everyone member of "(.-)*makina-users" access
 # to managed boxes
@@ -90,5 +95,5 @@ extend:
       - source: salt://makina-states/files/etc/ssh/sshd_config
       - template: jinja
       - context:
-        settings: {{services.sshServerSettings|yaml}}
+        settings: {{services.sshServerSettings.settings|yaml}}
 

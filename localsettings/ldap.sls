@@ -15,7 +15,7 @@ include:
 ldap-pkgs:
   pkg.{{localsettings.installmode}}:
     - pkgs:
-      - libpam-ldap
+      - libpam-ldapd
       - libnss-ldapd
       - ldap-utils
       - libsasl2-modules

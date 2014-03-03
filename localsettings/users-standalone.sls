@@ -18,17 +18,23 @@
 {%- set home = udata['home'] %}
 {%- set bashrc = home + '/.bashrc' %}
 {%- set bashprofile = home + '/.bash_profile' %}
-{{ id }}:
-  file.directory:
-    - name: {{ home }}
+{{id}}-homes:
+ file.directory:
+    - name: {{locs.users_home_dir}}
     - makedirs: true
+    - user: root
+    - group: root
+    - mode: 755
+
+{{ id }}:
   group.present:
     - name: {{ id }}
     - system: True
   user.present:
     - require:
-      - file: {{ id }}
       - group: {{ id }}
+    - require_in:
+      - mc_proxy: users-ready-hook
     - name: {{ id }}
     {%- if id not in ['root'] %}
     - fullname: {{ id }} user
@@ -40,8 +46,6 @@
     {%- if password %}
     - password:  {{ password }}
     {%- endif %}
-    - require_in:
-      - mc_proxy: users-ready-hook
     - optional_groups:
       - {{ id }}
       - cdrom
@@ -57,9 +61,18 @@
       {%- if grains['os_family'] != 'Debian' %}
       - admin
       - wheel
-      {%- endif %}
-      {%- endif %}
-      {%- endif %}
+      {% endif %}
+      {% endif %}
+      {% endif %}
+  file.directory:
+    - require:
+      - user: {{ id }}
+      - file: {{ id }}-homes
+    - name: {{ home }}
+    - mode: 751
+    - makedirs: true
+    - user: {{id}}
+    - group: {{id}}
 
 {% for key in udata.get('ssh_keys', []) %}
 ssh_auth-key-{{id}}-{{key}}:
@@ -68,6 +81,7 @@ ssh_auth-key-{{id}}-{{key}}:
     - source: salt://files/ssh/{{ key }}
     - require:
       - user: {{id}}
+      - file: {{id}}
 {%    endfor %}
 
 makina-{{id}}-bashfiles:
