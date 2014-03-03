@@ -110,6 +110,9 @@ def settings():
         # Circus:  (services.monitoring.circus)
         data['circusSettings'] =  __salt__['mc_circus.settings']()
 
+        # Snmpd: (services.monitoring.snmpd)
+        data['snmpdSettings'] = __salt__['mc_snmpd.settings']()
+
         # psad:  (services.firewall.psdad)
         data['psadSettings'] =  __salt__['mc_psad.settings']()
 
@@ -198,6 +201,7 @@ def registry():
             'mail.dovecot': {'active': False},
             'mail.postfix': {'active': False},
             'monitoring.circus': {'active': False},
+            'monitoring.snmpd': {'active': False},
             #'php.common': {'active': False},
             'php.modphp': {'active': False},
             'php.phpfpm': {'active': False},

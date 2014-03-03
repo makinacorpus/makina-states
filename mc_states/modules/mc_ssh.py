@@ -19,25 +19,35 @@ def settings():
     prefixes:
         - makina-states.services.ssh.server
 
-            AuthorizedKeysFile
+            settings.AuthorizedKeysFile
                 List of authorized key filepaths
 
-            ChallengeResponseAuthentication
+            settings.ChallengeResponseAuthentication
                 do we authorize ChallengeResponseAuthentication
 
-            X11Forwarding
+            settings.X11Forwarding
                 do we authorize X11Forwarding
 
-            PrintMotd
+            settings.PrintMotd
                 do we print motd
 
-            UsePrivilegeSeparation
+            settings.UsePrivilegeSeparation
                 UsePrivilegeSeparation mode
-            Banner
+            settings.Banner
                 path to the banner
 
-            UsePAM
+            settings.UsePAM
                 do we use pam authentication
+
+            sshgroup
+                named of the allowed group or users allowed
+                to connect via ssh
+
+             AllowUsers
+                List of users allowed to connect via ssh
+
+             AllowGroups
+                List of users allowed to connect via ssh
 
         - makina-states.services.ssh.client
 
@@ -69,17 +79,30 @@ def settings():
     def _settings():
         pillar = __pillar__
         data = {}
+        g = 'sshusers'
         data['server'] = __salt__['mc_utils.defaults'](
             'makina-states.services.ssh.server', {
-                'AuthorizedKeysFile': (
-                    '.ssh/authorized_keys .ssh/authorized_keys2'),
-                'ChallengeResponseAuthentication': 'no',
-                'X11Forwarding': 'yes',
-                'PrintMotd': 'no',
-                'UsePrivilegeSeparation': 'sandbox',
-                'Banner': '/etc/ssh/banner',
-                'UsePAM': 'yes',
+                'allowusers': [],
+                'group': g,
+                'allowgroups': ['sudo', 'wheel', 'admin', 'ubuntu', g],
+                'allowusers': ['root', 'sysadmin', 'ubuntu'],
+                'settings': {
+                    'AuthorizedKeysFile': (
+                        '.ssh/authorized_keys .ssh/authorized_keys2'),
+                    'ChallengeResponseAuthentication': 'no',
+                    'X11Forwarding': 'yes',
+                    'PrintMotd': 'no',
+                    'UsePrivilegeSeparation': 'sandbox',
+                    'Banner': '/etc/ssh/banner',
+                    'UsePAM': 'yes',
+                    'PermitRootLogin': 'without-password',
+                }
             })
+        if data['server']['allowgroups']:
+            data['server']['settings']['AllowGroups'] = ' '.join(data['server']['allowgroups'])
+        if data['server']['allowusers']:
+            data['server']['settings']['AllowUsers'] = ' '.join(data['server']['allowusers'])
+
         data['client'] = __salt__['mc_utils.defaults'](
             'makina-states.services.ssh.client', {
                 'StrictHostKeyChecking': 'no',

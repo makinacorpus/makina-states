@@ -84,16 +84,10 @@ def settings():
         Gid of the special editor group
     users
         System configured users
-    user_keys
-        SSH keys tied to users
-    keysMappings
-        SSH keys tied to users
     cur_pyver
         Current python version
     pythonSettings
         Settings for the python formula
-    defaultSysadmins
-        Default sysadmin users
     hosts_list
         Hosts managment lisrt
     makinahosts
@@ -140,6 +134,16 @@ def settings():
         Default locale
     default_env
         Environment defaults (one of: dev/prod/preprod)
+    sudoers
+        sudoers (project members)
+    defaultSysadmins
+        Priviliegied local users accounts (sysadmin, ubuntu, vagrant)
+    sysadmins_keys
+        sysadmins's ssh key to drop inside privilegied accounts
+    sysadmin_password
+        sysadmin password
+    root_password
+        root password
 
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
@@ -149,6 +153,8 @@ def settings():
         pillar = __pillar__
         grains = __grains__
         resolver = saltmods['mc_utils.format_resolve']
+        data['sudoers'] = []
+        data['sysadmins'] = []
         data['resolver'] = resolver
 
         data['default_env'] = saltmods['mc_utils.get']('default_env', 'dev')
@@ -267,11 +273,6 @@ def settings():
                 'location': locations['apps_dir']+'/node',
             }
         )
-        # users data
-        data['users'] = users = {}
-        data['user_keys'] = user_keys = {}
-        data['keysMappings'] = keysMappings = {
-            'users': users, 'keys': user_keys}
         cur_pyver = grains['pythonversion']
         if isinstance(cur_pyver, list):
             cur_pyver = '.'.join(['{0}'.format(s) for s in cur_pyver])
@@ -289,54 +290,75 @@ def settings():
                                                 pythonSettings['alt_versions'])
 
         # the following part just feed the above users & user_keys variables
-        ##
-        for sid, cdata in pillar.items():
-            if sid.endswith('-makina-users'):
-                susers = cdata.get('users', {})
-                skeys = cdata.get('keys', {})
-                for uid, udata in susers.items():
-                    # load user keys
-                    if not uid in user_keys:
-                        user_keys.update({uid: {}})
-                    user_key = user_keys[uid]
-                    for keyid, keys in skeys.items():
-                        if not keyid in user_keys[uid]:
-                            user_key.update({keyid: []})
-                        for pubkey in keys:
-                            if not pubkey in user_key[keyid]:
-                                user_key[keyid].append(pubkey)
-                    # load user infos by either adding it or updating the
-                    # already connected data
-                    if uid not in users:
-                        users.update({uid: udata})
-                    else:
-                        u = users[uid]
-                        for k, value in udata.items():
-                            u.update({k: value})
+        #default  sysadmin settings
+        data['admin'] = saltmods['mc_utils.defaults'](
+            'makina-states.localsettings.admin', {
+                'sudoers': [],
+                'sysadmin_password': None,
+                'root_password': None,
+                'sysadmins_keys': []
+            }
+        )
 
-        #default  sysadmins
-        data['defaultSysadmins'] = defaultSysadmins = ['sysadmin']
+        if (
+            data['admin']['root_password']
+            and not data['admin']['sysadmin_keys']
+        ):
+            data['admin']['sysadmin_password'] = data['admin']['root_password']
+
+        if (
+            data['admin']['sysadmin_password']
+            and not data['admin']['root_password']
+        ):
+            data['admin']['root_password'] = data['admin']['sysadmin_password']
+
+        data['defaultSysadmins'] = defaultSysadmins = ['root', 'sysadmin']
+        if grains['os'] in ['Ubuntu']:
+            data['defaultSysadmins'].append('ubuntu')
         if saltmods['mc_macros.is_item_active'](
             'makina-states.nodetypes.vagrantvm'
         ):
             defaultSysadmins.append('vagrant')
-        for i in defaultSysadmins + ['root']:
-            if not i in users:
-                users.update({i: {'admin': True}})
-            else:
-                users[i].update({'admin': True})
+
+        # users data
+        root_data = {
+            'admin': True,
+            'password': data['admin']['root_password'],
+            'ssh_keys': data['admin']['sysadmins_keys']
+        }
+        admin_data = {
+            'admin': True,
+            'password': data['admin']['sysadmin_password'],
+            'ssh_keys': data['admin']['sysadmins_keys'],
+        }
+        users = data['users'] = saltmods['mc_utils.defaults'](
+            'makina-states.localsettings.users', {})
         # default  home
-        for i in users.keys():
+        for i in [a for a in users]:
             udata = users[i].copy()
-            if i in defaultSysadmins:
-                home = udata.get('home',
-                                locations['sysadmins_home_dir'] + "/" + i)
-            elif i == 'root':
-                home = locations['root_home_dir']
-            else:
+            if i != 'root' and not i in defaultSysadmins:
                 home = udata.get('home', locations['users_home_dir'] + "/" + i)
             users[i].update({'home': home})
-
+        for j in root_data:
+            if not 'root' in users:
+                users['root'] = {}
+            users['root'][j] = root_data[j]
+        for i in defaultSysadmins:
+            if not i in users:
+                users.update({i: admin_data.copy()})
+            else:
+                for j in admin_data:
+                    users[i][j] = admin_data.copy()[j]
+        # default  home
+        for i in [a for a in users]:
+            udata = users[i].copy()
+            if i == 'root':
+                home = locations['root_home_dir']
+            elif i in defaultSysadmins:
+                home = udata.get('home',
+                                 locations['sysadmins_home_dir'] + "/" + i)
+            users[i].update({'home': home})
+        # ip managment
         default_ip = '127.0.0.1'
         ifaces = grains['ip_interfaces'].items()
         ifaces.sort(key=sort_ifaces)
@@ -344,7 +366,6 @@ def settings():
             if ips:
                 default_ip = ips[0]
                 break
-
 
         # hosts managment via pillar
         data['makinahosts'] = makinahosts = []
