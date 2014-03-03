@@ -92,8 +92,6 @@ def settings():
         Current python version
     pythonSettings
         Settings for the python formula
-    defaultSysadmins
-        Default sysadmin users
     hosts_list
         Hosts managment lisrt
     makinahosts
@@ -139,9 +137,15 @@ def settings():
     default_locale
         Default locale
     sudoers
-        sudoers
-    sysadmins
-        sysadmins of the box
+        sudoers (project members)
+    defaultSysadmins
+        Priviliegied local users accounts (sysadmin, ubuntu, vagrant)
+    sysadmins_keys
+        sysadmins's ssh key to drop inside privilegied accounts
+    sysadmin_password
+        sysadmin password
+    root_password
+        root password
 
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
@@ -318,7 +322,30 @@ def settings():
                             u.update({k: value})
 
         #default  sysadmins
+        data['admin'] = saltmods['mc_utils.defaults'](
+            'makina-states.localsettings.admin', {
+                'sudoers': [],
+                'sysadmin_password': None,
+                'root_password': None,
+                'sysadmins_keys': []
+            }
+        )
+        if (
+            data['admin']['root_password']
+            and not data['admin']['sysadmin_keys']
+        ):
+            data['admin']['sysadmin_password'] = data['admin']['root_password']
+
+        if (
+            data['admin']['sysadmin_password']
+            and not data['admin']['root_password']
+        ):
+            data['admin']['root_password'] = data['admin']['sysadmin_password']
+
+
         data['defaultSysadmins'] = defaultSysadmins = ['sysadmin']
+        if grains['os'] in ['Ubuntu']:
+            data['defaultSysadmins'].append('ubuntu')
         if saltmods['mc_macros.is_item_active'](
             'makina-states.nodetypes.vagrantvm'
         ):
@@ -347,7 +374,6 @@ def settings():
             if ips:
                 default_ip = ips[0]
                 break
-
 
         # hosts managment via pillar
         data['makinahosts'] = makinahosts = []
@@ -497,6 +523,7 @@ def registry():
             'users': {'active': True},
             'vim': {'active': True},
             'rvm': {'active': False},
+            'admin': {'active': True},
         })
     return _registry()
 
