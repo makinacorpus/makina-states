@@ -9,7 +9,7 @@
 #
 # Idea is to create any user/group needed for ssh managment
 #}
-p
+
 
 {% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {% set locs = localsettings.locations %}
