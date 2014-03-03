@@ -75,6 +75,7 @@ makina-{{id}}-bashfiles:
     - require_in:
       - mc_proxy: users-ready-hook
       - file: makina-{{id}}-bashprofile-load
+    - require:
       - file: {{id}}
   cmd.run:
     - name: >
