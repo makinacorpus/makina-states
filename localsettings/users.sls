@@ -109,6 +109,8 @@ makina-{{id}}-bashprofile-load:
     - append_if_not_found: True
     - backup: '.bak'
     - show_changes: True
+    - require:
+      - file: makina-{{id}}-bashfiles
 
 makina-{{id}}-bashrc-load-acc:
   file.accumulated:
@@ -133,6 +135,8 @@ makina-{{id}}-bashrc-load:
     - append_if_not_found: True
     - backup: '.bak'
     - show_changes: True
+    - require:
+      - file: makina-{{id}}-bashfiles
     - require_in:
       - mc_proxy: users-ready-hook
 {% endfor %}
