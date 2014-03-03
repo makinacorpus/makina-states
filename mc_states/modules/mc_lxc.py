@@ -186,7 +186,7 @@ def find_mac_for_container(target, container, lxc_data=None):
         target, container)
     if not mac:
         __salt__['grain.setval'](gid, gen_mac())
-        __salt__['saltuitil.sync_grainl'](gid, gen_mac())
+        __salt__['saltuitil.sync_grains']()
         mac = __salt__['mc_utils.get'](gid)
         if not mac:
             raise Exception(
@@ -208,7 +208,7 @@ def find_ip_for_container(target, container, lxc_data=None):
         target, container)
     if not ip4:
         __salt__['grain.setval'](gid, gen_ip4())
-        __salt__['saltuitil.sync_grainl'](gid, gen_ip4())
+        __salt__['saltuitil.sync_grains']()
         ip4 = __salt__['mc_utils.get'](gid)
         if not ip4:
             raise Exception(

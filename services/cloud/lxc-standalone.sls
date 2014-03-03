@@ -79,7 +79,7 @@ profiles_lxc_salt:
                    "lvname",
                    "dnsserver",
                    "ssh_username",
-                   "ssh_password",
+                   "password",
                    "lxc_conf",
                    "lxc_conf_unset"] %}
 {%      if data.get(var) %}

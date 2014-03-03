@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -x
 #
 # SEE MAKINA-STATES DOCS FOR FURTHER INSTRUCTIONS (or ../README.rst):
 #
@@ -47,7 +46,7 @@ CYAN="\\e[0;36m"
 YELLOW="\\e[0;33m"
 NORMAL="\\e[0;0m"
 
-SALT_BOOT_DEBUG="${SALT_BOOT_DEBUG:-1}"
+SALT_BOOT_DEBUG="${SALT_BOOT_DEBUG:-}"
 SALT_BOOT_DEBUG_LEVEL="${SALT_BOOT_DEBUG_LEVEL:-all}"
 THIS="$(get_abspath ${THIS})"
 DNS_RESOLUTION_FAILED="dns resolution failed"
