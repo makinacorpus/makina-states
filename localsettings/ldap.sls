@@ -10,6 +10,7 @@
 
 include:
   - makina-states.localsettings.nscd
+  - makina-states.localsettings.users-hooks
 
 ldap-pkgs:
   pkg.{{localsettings.installmode}}:
@@ -47,10 +48,14 @@ nslcd:
     - defaults: {{ localsettings.ldapVariables | yaml }}
     - watch_in:
       - cmd: nscd-restart
+    - require_in:
+      - mc_proxy: users-pre-hook
 
 # add ldap tonsswitch
 nslcd-nsswitch-conf:
   file.replace:
+    - require_in:
+      - mc_proxy: users-pre-hook
     - name: {{ locs.conf_dir }}/nsswitch.conf
     - search_only: ''
     - pattern: '^(passwd|group|shadow):\s*compat( ldap)*'
@@ -78,6 +83,8 @@ nslcd-nsswitch-conf:
       - pkg: ldap-pkgs
       - file: ldap-cacerts-cert
     - defaults: {{ localsettings.ldapVariables | yaml }}
+    - require_in:
+      - mc_proxy: users-pre-hook
 
 {{ locs.conf_dir }}-ldap-ldap.conf:
   file.managed:
@@ -91,6 +98,8 @@ nslcd-nsswitch-conf:
       - pkg: ldap-pkgs
       - file: ldap-cacerts-cert
     - defaults: {{ localsettings.ldapVariables | yaml }}
+    - require_in:
+      - mc_proxy: users-pre-hook
 
 makina-certd:
   file.directory:
@@ -99,9 +108,13 @@ makina-certd:
     - group: root
     - mode: '0755'
     - makedirs: True
+    - require_in:
+      - mc_proxy: users-pre-hook
 
 ldap-cacerts-cert:
   file.managed:
+    - require_in:
+      - mc_proxy: users-pre-hook
     - name: {{ locs.conf_dir }}/ssl/cacerts/cacert.pem
     - user: root
     - group: root

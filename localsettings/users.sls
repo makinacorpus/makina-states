@@ -9,6 +9,11 @@
 #
 # Idea is to create any user/group needed for ssh managment
 #}
+
+include:
+  - makina-states.localsettings.users-hooks
+
+
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {{ salt['mc_macros.register']('localsettings', 'users') }}
 {%- set locs = localsettings.locations %}
@@ -27,9 +32,8 @@
   user.present:
     - require:
       - file: {{ id }}
+      - group: {{ id }}
     - name: {{ id }}
-    - require:
-        - group: {{ id }}
     {%- if id not in ['root'] %}
     - fullname: {{ id }} user
     - createhome: True
@@ -40,6 +44,8 @@
     {%- if password %}
     - password:  {{ password }}
     {%- endif %}
+    - require_in:
+      - mc_proxy: users-ready-hook
     - optional_groups:
       - {{ id }}
       - cdrom
@@ -67,6 +73,7 @@ makina-{{id}}-bashfiles:
     - user: {{id}}
     - group: {{id}}
     - require_in:
+      - mc_proxy: users-ready-hook
       - file: makina-{{id}}-bashprofile-load
   cmd.run:
     - name: >
@@ -89,6 +96,7 @@ makina-{{id}}-bashprofile-load-acc:
               fi
             fi
     - require_in:
+      - mc_proxy: users-ready-hook
       - file: makina-{{id}}-bashprofile-load
 
 makina-{{id}}-bashprofile-load:
@@ -113,6 +121,7 @@ makina-{{id}}-bashrc-load-acc:
             fi
     - require_in:
       - file: makina-{{id}}-bashrc-load
+      - mc_proxy: users-ready-hook
 
 makina-{{id}}-bashrc-load:
   file.blockreplace:
@@ -123,4 +132,6 @@ makina-{{id}}-bashrc-load:
     - append_if_not_found: True
     - backup: '.bak'
     - show_changes: True
+    - require_in:
+      - mc_proxy: users-ready-hook
 {% endfor %}

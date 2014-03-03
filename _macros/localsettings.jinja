@@ -16,7 +16,12 @@
 {# dns #}
 {%- set hostname = settings.hostname %}
 {%- set domain = settings.domain %}
-{%- set sudoers = settings.sudoers %}
+
+{# core users #}
+{%- set sudoers = settings.admin.sudoers %}
+{%- set sysadmin_password = settings.admin.sysadmin_password %}
+{%- set root_password = settings.admin.root_password %}
+{%- set sysadmins_keys = settings.admin.sysadmins_keys %}
 
 {# locales #}
 {%- set locales = settings.locales %}

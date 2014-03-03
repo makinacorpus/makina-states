@@ -3,12 +3,18 @@
 # see:
 #   - makina-states/doc/ref/formulaes/localsettings/sudo.rst
 #}
+
+include:
+  - makina-states.localsettings.users-hooks
+
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {{ salt['mc_macros.register']('localsettings', 'sudo') }}
 {%- set locs = localsettings.locations %}
 sudo-pkgs:
   pkg.{{localsettings.installmode}}:
     - pkgs: [sudo]
+    - require_in:
+      - mc_proxy: users-ready-hook
 
 sudoers:
    file.managed:
@@ -16,12 +22,7 @@ sudoers:
     - source: salt://makina-states/files/etc/sudoers
     - mode: 440
     - template: jinja
+    - require_in:
+      - mc_proxy: users-ready-hook
 
-{% for i in localsettings.sudoers %}
-add-user-sudoers:
-  user.present
-    - name: {{i}}
-    - remove_groups: False
-    - optional_groups:
-      - sudo
-{% endfor %}
+
