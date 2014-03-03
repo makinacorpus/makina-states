@@ -2,14 +2,12 @@
 {% import "makina-states/_macros/services.jinja" as services with context %}
 {% import "makina-states/_macros/salt.jinja" as saltmac with context %}
 {% set cloudSettings= services.cloudSettings %}
-{% set lxcSettings = services.lxcSettings %}
 {% set pvdir = cloudSettings.pvdir %}
 {% set pfdir = cloudSettings.pfdir %}
 {% set localsettings = services.localsettings %}
 {% macro do(full=False) %}
 {{- salt["mc_macros.register"]("services", "cloud.saltify") }}
 include:
-  {# lxc may not be installed directly on the cloud controller ! #}
   - makina-states.services.cloud.saltify-hooks
 {% if full %}
   - makina-states.services.cloud.salt_cloud
@@ -31,8 +29,8 @@ providers_saltify_salt:
     - template: jinja
     - group: root
     - defaults:
-      - data: {{cloudSettings|yaml}}
-      - msr: {{saltmac.msr}}
+      data: {{cloudSettings|yaml}}
+      msr: {{saltmac.msr}}
 
 profiles_saltify_salt:
   file.managed:
@@ -42,21 +40,19 @@ profiles_saltify_salt:
     - user: root
     - group: root
     - defaults:
-      - data: {{cloudSettings|yaml}}
-      - msr: {{saltmac.msr}}
+      data: {{cloudSettings|yaml}}
+      msr: {{saltmac.msr}}
     - require:
       - mc_proxy: salt-cloud-postinstall
     - require_in:
       - mc_proxy: salt-cloud-predeploy
       - mc_proxy: saltify-pre-install
 
-{% for target, containers in services.cloudSettings.targets.items() %}
-{%  for k, data in containers.items() -%}
+{% for target, data in cloudSettings.targets.items() %}
 {%    set name = k %}
 {{target}}-{{k}}-saltify-deploy:
   cloud.profile:
     - require:
-      - mc_proxy: lxc-post-inst
       - mc_proxy: salt-cloud-predeploy
     - require_in:
       - mc_proxy: saltify-post-install
@@ -69,10 +65,9 @@ profiles_saltify_salt:
                   "sudo_password",
                   "sudo"] %}
 {%      if data.get(var) %}
-    - {{var}}: {{lxc_data[var]}}
+    - {{var}}: {{data[var]}}
 {%      endif%}
 {%    endfor%}
-{%  endfor %}
 {% endfor %}
 {% endmacro %}
 {{do(full=False)}}

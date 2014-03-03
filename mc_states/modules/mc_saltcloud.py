@@ -12,6 +12,10 @@ import mc_states.utils
 __name = 'saltcloud'
 
 
+def gen_id(name):
+    return name.replace('.', '-')
+
+
 def settings():
     """
           master
