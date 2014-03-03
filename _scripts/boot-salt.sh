@@ -325,7 +325,7 @@ get_minion_id_() {
     if [ "x${notfound}" != "x" ] && [ "x${SALT_CLOUD}" != "x" ] && [ -e "${SALT_CLOUD_DIR}/minion" ];then
         mmid="$(egrep "^id:" "${SALT_CLOUD_DIR}/minion"|awk '{print $2}'|sed -e "s/ //")"
     else
-        mmid="${2:-${HOSTNAME}}"
+        mmid="${2:-$(hostname)}"
         if [ "x${force}" = "x" ];then
             fics=$(find "${confdir}"/minion* -type f 2>/dev/null)
             if [ "x${fics}" != "x" ];then
@@ -451,7 +451,6 @@ set_vars() {
     ETC_INIT="${ETC_INIT:-"${CONF_ROOT}/init"}"
     detect_os
     set_progs
-    HOSTNAME="$(hostname)"
     CHRONO="$(get_chrono)"
     TRAVIS_DEBUG="${TRAVIS_DEBUG:-}"
     VENV_REBOOTSTRAP="${VENV_REBOOTSTRAP:-}"
@@ -515,6 +514,15 @@ set_vars() {
     SALT_MINION_CONTROLLER_DEFAULT="salt_minion"
     SALT_MINION_CONTROLLER_INPUTED="${SALT_MINION_CONTROLLER}"
     SALT_MINION_CONTROLLER="${SALT_MINION_CONTROLLER:-$SALT_MINION_CONTROLLER_DEFAULT}"
+    FQDN="$(get_minion_id)"
+    HOST="$(echo "${FQDN}"|awk -F'.' '{print $1}')"
+    if [ "x$(echo "${FQDN}"|grep -q \.;echo ${?})" = "x0" ];then
+        DOMAINNAME="$(echo "${FQDN}"|sed -e "s/^[^.]*\.//g")"
+    else
+        DOMAINNAME="local"
+        FQDN="${HOST}.${DOMAINNAME}"
+    fi
+
 
     # select the daemons to install but also
     # detect what is already present on the system
@@ -792,7 +800,7 @@ recap_(){
     bs_yellow_log "----------------------------------------------------------"
     bs_yellow_log "HOST variables:"
     bs_yellow_log "---------------"
-    bs_log "HOSTNAME: ${HOSTNAME}"
+    bs_log "FQDN/HOST/DOMAIN: ${FQDN}/${HOST}/${DOMAINNAME}"
     bs_log "DATE: ${CHRONO}"
     bs_log "SALT_NODETYPE: $(get_salt_nodetype)"
     if [ "x${SALT_CLOUD}" != "x" ];then
@@ -2825,6 +2833,7 @@ usage() {
     if [ "x${SALT_LONG_HELP}" != "x" ];then
         echo
         bs_log "Advanced settings:"
+        bs_help "--cleanup:" "Cleanup old execution logfiles" "${SALT_BOOT_CLEANUP}" y
         bs_help "--synchronize-code:" "Only sync sourcecode" "${SALT_BOOT_SYNC_CODE}" y
         bs_help "--check-alive" "restart daemons if they are down" "" "y"
         bs_help "--restart-daemons" "restart master & minions daemons" "" "y"
@@ -2898,6 +2907,9 @@ parse_cli_opts() {
         argmatch=""
         if [ "x${1}" = "x${PARAM}" ];then
             break
+        fi
+        if [ "x${1}" = "x--cleanup" ];then
+            SALT_BOOT_CLEANUP="1";argmatch="1"
         fi
         if [ "x${1}" = "x--from-salt-cloud" ];then
             SALT_CLOUD="1";argmatch="1"
@@ -3242,32 +3254,24 @@ synchronize_code() {
 }
 
 set_dns() {
-    hostname="$(get_minion_id)"
-    host="$(echo "${hostname}"|awk -F'.' '{print $1}')"
-    if [ "x$(echo "${hostname}"|grep -q \.;echo ${?})" = "x0" ];then
-        domainname="$(echo "${hostname}"|sed -e "s/^[^.]*\.//g")"
-    else
-        domainname="local"
-        hostname="${hostname}.${domainname}"
-    fi
-    if [ "${hostname}" != "x" ];then
-        if [ "x$(cat /etc/hostname 2>/dev/null|sed -e "s/ //")" != "x$(echo "${host}"|sed -e "s/ //g")" ];then
-            bs_log "Resetting hostname file to ${host}"
-            echo "${host}" > /etc/hostname
+    if [ "${FQDN}" != "x" ];then
+        if [ "x$(cat /etc/hostname 2>/dev/null|sed -e "s/ //")" != "x$(echo "${HOST}"|sed -e "s/ //g")" ];then
+            bs_log "Resetting hostname file to ${HOST}"
+            echo "${HOST}" > /etc/hostname
         fi
-        if [ "x$(domainname)" != "x$(echo "${domainname}"|sed -e "s/ //g")" ];then
-            bs_log "Resetting domainname to ${domainname}"
-            domainname "${domainname}"
+        if [ "x$(domainname)" != "x$(echo "${DOMAINNAME}"|sed -e "s/ //g")" ];then
+            bs_log "Resetting domainname to ${DOMAINNAME}"
+            domainname "${DOMAINNAME}"
         fi
-        if [ "x$(hostname)" != "x$(echo "${hostname}"|sed -e "s/ //g")" ];then
-            bs_log "Resetting hostname to ${hostname}"
-            hostname "${hostname}"
+        if [ "x$(hostname)" != "x$(echo "${FQDN}"|sed -e "s/ //g")" ];then
+            bs_log "Resetting hostname to ${FQDN}"
+            hostname "${FQDN}"
         fi
-        if [ "x$(egrep -q "127.*${hostname}" /etc/hosts;echo ${?})" != "x0" ];then
+        if [ "x$(egrep -q "127.*${FQDN}" /etc/hosts;echo ${?})" != "x0" ];then
             bs_log "Adding new core hostname alias to localhost"
-            echo "127.0.0.1 ${hostname}">/tmp/hosts
+            echo "127.0.0.1 ${FQDN}">/tmp/hosts
             cat /etc/hosts>>/tmp/hosts
-            echo "127.0.0.1 ${hostname}">>/tmp/hosts
+            echo "127.0.0.1 ${FQDN}">>/tmp/hosts
             if [ -f /tmp/hosts ];then
                 cp -f /tmp/hosts /etc/hosts
             fi
@@ -3276,11 +3280,23 @@ set_dns() {
 }
 
 cleanup_execlogs() {
-    cd /srv/salt/makina-states/.bootlogs
-    # keep 20 local logs only
-    if [ "$(ls -1|wc -l|sed -e "s/ //")" -gt "21" ];then
-        ls -1rt|head -n $((-1*(20-$(ls -rt1|wc -l)))) 
-    fi
+    LOG_LIMIT="${LOG_LIMIT:-20}"
+    # keep 20 local exec logs only
+    for dir in "${SALT_MS}/.bootlogs" "${MASTERSALT_MS}/.bootlogs";do
+        if [ -e "${dir}" ];then
+            cd "${dir}"
+            if [ "$(ls -1|wc -l|sed -e "s/ //")" -gt "${LOG_LIMIT}" ];then
+                ls -1rt|head -n $((-1*(${LOG_LIMIT}-$(ls -rt1|wc -l))))|while read fic;\
+                do
+                    opts="-f"
+                    if [ "x${QUIET}" = "x" ];then
+                        opts="${opts} -v"
+                    fi
+                    rm ${opts} "${fic}"
+                done
+            fi
+        fi
+    done
 }
 
 if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
@@ -3290,6 +3306,10 @@ if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
     fi
     set_vars # real variable affectation
     abort=""
+    if [ "x${SALT_BOOT_CLEANUP}" != "x" ];then
+        cleanup_execlogs
+        abort="1"
+    fi
     if [ "x${SALT_BOOT_CHECK_ALIVE}" != "x" ];then
         check_alive
         abort="1"

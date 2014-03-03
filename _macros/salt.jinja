@@ -242,6 +242,17 @@ salt-{{ data.name }}-{{ group }}:
   {% endif %}
     - name: {{msr}}/_scripts/boot-salt.sh --synchronize-code --quiet -C --no-colors
 
+{{data.name}}-clean-job:
+  {% if not data.cron_auto_clean %}
+  cron.absent:
+  {% else %}
+  cron.present:
+    - identifier: "salt code cleanup job"
+    - minute: "{{data.cron_clean_minute}}"
+    - hour: "{{data.cron_clean_hour}}"
+  {% endif %}
+    - name: {{msr}}/_scripts/boot-salt.sh --cleanup --quiet -C --no-colors
+
 {{data.name}}-upgrade-job:
   {% if not data.cron_auto_upgrade %}
   cron.absent:

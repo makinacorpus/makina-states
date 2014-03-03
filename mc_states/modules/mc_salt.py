@@ -80,10 +80,13 @@ def settings():
         if __salt__['mc_lxc.is_lxc']():
             has_filelimit = False
         saltCommonData = {
+            'cron_auto_clean': True,
             'cron_auto_sync': True,
             'cron_auto_restart': True,
             'cron_check_alive': True,
             'cron_auto_upgrade': True,
+            'cron_clean_minute': 'random',
+            'cron_clean_hour': '0,6,12,18',
             'cron_sync_minute': '*/10',
             'cron_sync_hour': '*',
             'cron_upgrade_minute': 3,
