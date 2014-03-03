@@ -286,18 +286,20 @@ detect_os() {
 }
 
 interactive_tempo(){
-    tempo="${@}"
-    tempo_txt="$tempo"
-    if [ -f "${PYTHON}" ] && [ $tempo_txt -ge 60 ];then
-        tempo_txt="$(python -c "print $tempo / 60") minute(s)"
-    else
-        tempo_txt="$tempo second(s)"
+    if [ "x${SALT_CLOUD}" = "x" ];then
+        tempo="${@}"
+        tempo_txt="$tempo"
+        if [ -f "${PYTHON}" ] && [ $tempo_txt -ge 60 ];then
+            tempo_txt="$(python -c "print $tempo / 60") minute(s)"
+        else
+            tempo_txt="$tempo second(s)"
+        fi
+        bs_yellow_log "The installation will continue in $tempo_txt"
+        bs_yellow_log "unless you press enter to continue or C-c to abort"
+        bs_yellow_log "-------------------  ????  -----------------------"
+        read -t $tempo
+        bs_yellow_log "Continuing..."
     fi
-    bs_yellow_log "The installation will continue in $tempo_txt"
-    bs_yellow_log "unless you press enter to continue or C-c to abort"
-    bs_yellow_log "-------------------  ????  -----------------------"
-    read -t $tempo
-    bs_yellow_log "Continuing..."
 }
 
 get_chrono() {
