@@ -16,3 +16,12 @@ sudoers:
     - source: salt://makina-states/files/etc/sudoers
     - mode: 440
     - template: jinja
+
+{% for i in localsettings.sudoers %}
+add-user-sudoers:
+  user.present
+    - name: {{i}}
+    - remove_groups: False
+    - optional_groups:
+      - sudo
+{% endfor %}

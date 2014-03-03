@@ -138,6 +138,10 @@ def settings():
         locales to use
     default_locale
         Default locale
+    sudoers
+        sudoers
+    sysadmins
+        sysadmins of the box
 
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
@@ -147,6 +151,8 @@ def settings():
         pillar = __pillar__
         grains = __grains__
         resolver = saltmods['mc_utils.format_resolve']
+        data['sudoers'] = []
+        data['sysadmins'] = []
         data['resolver'] = resolver
 
         data['etckeeper'] = saltmods['mc_utils.defaults'](

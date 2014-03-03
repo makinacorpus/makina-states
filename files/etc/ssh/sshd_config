@@ -50,6 +50,7 @@ Subsystem	sftp	/usr/lib/ssh/sftp-server
 
 #LoginGraceTime 2m
 #PermitRootLogin yes
+PermitRootLogin without-password
 #StrictModes yes
 #MaxAuthTries 6
 #MaxSessions 10
