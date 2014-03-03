@@ -654,7 +654,6 @@ set_vars() {
     if [ "x${IS_SALT}" != "x" ];then
         SALT_MASTER_DNS_DEFAULT="localhost"
         SALT_MASTER_PORT_DEFAULT="4506"
-        echo "x${IS_MASTERSALT}""x${SALT_CLOUD}""${SALT_CLOUD_DIR}/minion"
         if [ "x${IS_MASTERSALT}" = "x" ] && [ "x${SALT_CLOUD}" != "x" ] && [ -e "${SALT_CLOUD_DIR}/minion" ];then
             SALT_MASTER_DNS_DEFAULT="$(egrep "^master:" "${SALT_CLOUD_DIR}"/minion|awk '{print $2}'|sed -e "s/ //")"
             SALT_MASTER_PORT_DEFAULT="$(egrep "^master_port:" "${SALT_CLOUD_DIR}"/minion|awk '{print $2}'|sed -e "s/ //")"
