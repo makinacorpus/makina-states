@@ -138,6 +138,8 @@ def settings():
         locales to use
     default_locale
         Default locale
+    default_env
+        Environment defaults (one of: dev/prod/preprod)
 
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
@@ -149,6 +151,7 @@ def settings():
         resolver = saltmods['mc_utils.format_resolve']
         data['resolver'] = resolver
 
+        data['default_env'] = saltmods['mc_utils.get']('default_env', 'dev')
         data['etckeeper'] = saltmods['mc_utils.defaults'](
             'makina.localsettings.etckeeper', {
                 'pm': 'apt',
@@ -375,7 +378,7 @@ def settings():
 
         # package manager settings
         data['installmode'] = 'latest'
-        if __grains__.get('default_env', '') in ['prod']:
+        if data['default_env'] in ['prod']:
             data['installmode'] = 'installed'
 
         data['keyserver'] = keyserver = 'pgp.mit.edu'

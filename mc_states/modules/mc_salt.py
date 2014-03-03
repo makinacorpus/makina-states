@@ -26,6 +26,7 @@ def settings():
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
+        nodetypes_reg = __salt__['mc_nodetypes.registry']()
         localsettings = __salt__['mc_localsettings.settings']()
         resolver = __salt__['mc_utils.format_resolve']
         pillar = __pillar__
@@ -79,12 +80,19 @@ def settings():
             init_debug = True
         if __salt__['mc_lxc.is_lxc']():
             has_filelimit = False
+        crons = True
+        if (
+            nodetypes_reg['is']['devhost']
+            or localsettings['default_env'] in ['dev']
+        ):
+            crons = False
+
         saltCommonData = {
-            'cron_auto_clean': True,
-            'cron_auto_sync': True,
-            'cron_auto_restart': True,
-            'cron_check_alive': True,
-            'cron_auto_upgrade': True,
+            'cron_auto_clean': crons,
+            'cron_auto_sync': crons,
+            'cron_auto_restart': crons,
+            'cron_check_alive': crons,
+            'cron_auto_upgrade': crons,
             'cron_clean_minute': 'random',
             'cron_clean_hour': '0,6,12,18',
             'cron_sync_minute': '*/10',
