@@ -514,13 +514,13 @@ set_vars() {
     SALT_MINION_CONTROLLER_DEFAULT="salt_minion"
     SALT_MINION_CONTROLLER_INPUTED="${SALT_MINION_CONTROLLER}"
     SALT_MINION_CONTROLLER="${SALT_MINION_CONTROLLER:-$SALT_MINION_CONTROLLER_DEFAULT}"
-    FQDN="$(get_minion_id)"
-    HOST="$(echo "${FQDN}"|awk -F'.' '{print $1}')"
-    if [ "x$(echo "${FQDN}"|grep -q \.;echo ${?})" = "x0" ];then
-        DOMAINNAME="$(echo "${FQDN}"|sed -e "s/^[^.]*\.//g")"
+    NICKNAME_FQDN="$(get_minion_id)"
+    HOST="$(echo "${NICKNAME_FQDN}"|awk -F'.' '{print $1}')"
+    if [ "x$(echo "${NICKNAME_FQDN}"|grep -q \.;echo ${?})" = "x0" ];then
+        DOMAINNAME="$(echo "${NICKNAME_FQDN}"|sed -e "s/^[^.]*\.//g")"
     else
         DOMAINNAME="local"
-        FQDN="${HOST}.${DOMAINNAME}"
+        NICKNAME_FQDN="${HOST}.${DOMAINNAME}"
     fi
 
 
@@ -800,7 +800,7 @@ recap_(){
     bs_yellow_log "----------------------------------------------------------"
     bs_yellow_log "HOST variables:"
     bs_yellow_log "---------------"
-    bs_log "FQDN/HOST/DOMAIN: ${FQDN}/${HOST}/${DOMAINNAME}"
+    bs_log "NICKNAME_FQDN/HOST/DOMAIN: ${NICKNAME_FQDN}/${HOST}/${DOMAINNAME}"
     bs_log "DATE: ${CHRONO}"
     bs_log "SALT_NODETYPE: $(get_salt_nodetype)"
     if [ "x${SALT_CLOUD}" != "x" ];then
@@ -3254,7 +3254,7 @@ synchronize_code() {
 }
 
 set_dns() {
-    if [ "${FQDN}" != "x" ];then
+    if [ "${NICKNAME_FQDN}" != "x" ];then
         if [ "x$(cat /etc/hostname 2>/dev/null|sed -e "s/ //")" != "x$(echo "${HOST}"|sed -e "s/ //g")" ];then
             bs_log "Resetting hostname file to ${HOST}"
             echo "${HOST}" > /etc/hostname
@@ -3263,15 +3263,15 @@ set_dns() {
             bs_log "Resetting domainname to ${DOMAINNAME}"
             domainname "${DOMAINNAME}"
         fi
-        if [ "x$(hostname)" != "x$(echo "${FQDN}"|sed -e "s/ //g")" ];then
-            bs_log "Resetting hostname to ${FQDN}"
-            hostname "${FQDN}"
+        if [ "x$(hostname)" != "x$(echo "${NICKNAME_FQDN}"|sed -e "s/ //g")" ];then
+            bs_log "Resetting hostname to ${NICKNAME_FQDN}"
+            hostname "${NICKNAME_FQDN}"
         fi
-        if [ "x$(egrep -q "127.*${FQDN}" /etc/hosts;echo ${?})" != "x0" ];then
+        if [ "x$(egrep -q "127.*${NICKNAME_FQDN}" /etc/hosts;echo ${?})" != "x0" ];then
             bs_log "Adding new core hostname alias to localhost"
-            echo "127.0.0.1 ${FQDN}">/tmp/hosts
+            echo "127.0.0.1 ${NICKNAME_FQDN}">/tmp/hosts
             cat /etc/hosts>>/tmp/hosts
-            echo "127.0.0.1 ${FQDN}">>/tmp/hosts
+            echo "127.0.0.1 ${NICKNAME_FQDN}">>/tmp/hosts
             if [ -f /tmp/hosts ];then
                 cp -f /tmp/hosts /etc/hosts
             fi
