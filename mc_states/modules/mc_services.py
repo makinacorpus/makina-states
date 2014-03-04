@@ -64,7 +64,7 @@ def settings():
         is ntp active
     fail2ban
         See :ref:`module_mc_fail2ban`
-    mysql:
+    mysqlSettings:
         See :ref:`module_mc_mysql`
     upstart
         See are we using upstart
