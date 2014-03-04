@@ -1,11 +1,10 @@
 {%- import "makina-states/projects/base.jinja" as base with context %}
-{# this one is in fact phpfpm+apache #}
-{%- import "makina-states/projects/phpfpm.jinja" as php with context %}
 {%- import "makina-states/services/db/mysql.sls" as mysql with context %}
 {%- set services = base.services %}
 {%- set saltmac = base.saltmac %}
 {%- set localsettings = base.localsettings %}
 {%- set locs = base.localsettings.locations %}
+{%- set php = services.phpSettings %}
 
 {# Base system prerequisite --------------------------------------------------#}
 {%- macro drupal_pkgs(common) %}
@@ -254,7 +253,12 @@ TODO: local checker if prod need passwords <> defaults!
 {# drupal_http_php --------------------------------------------#}
 {%- macro drupal_http_php(common) %}
 {# Install require HTTP server and PHP things #}
-{{ phpfpm.vhost(common) }}
+{%-   if common.data.use_phpfpm %}
+{%-     if common.data.use_apache %}
+{%-       import "makina-states/projects/apache-phpfpm.jinja" as phpfpm with context %}
+{{        phpfpm.vhost(common) }}
+{%      endif %}
+{%   endif %}
 {% endmacro %}
 
 {# drupal_app --------------------------------------------#}
@@ -265,9 +269,9 @@ TODO: local checker if prod need passwords <> defaults!
 {{     drupal_drush(common) }}
 {{     drupal_http_php(common) }}
 {%   endif %}
-{%   if common.init %}
+{%   if common.data.init %}
 {#     Run drush make/install!. #}
-{#%     if common.make %#}
+{#%     if common.data.make %#}
 {#{       drupal_drush_make(common) }#}
 {#%     endif %#}
 {#{       drupal_drush_install(common) }#}
@@ -508,15 +512,15 @@ TODO: local checker if prod need passwords <> defaults!
 {#    install mysql only if we have the db role enabled #}
 {#    warn: db should be created with grants before the install in drupal_app #}
 {%-   if common.data.has_db %}
-{{-     drupal.drupal_db(common)}}
+{{-     drupal_db(common)}}
 {%-   endif %}
 {# install http/php only if we have the app role enabled #}
 {%-   if common.data.has_app %}
-{{-     drupal.drupal_pkgs(common)}}
-{{-     drupal.drupal_app(common)}}
-{{-     drupal.drupal_crons(common) }}
+{{-     drupal_pkgs(common)}}
+{{-     drupal_app(common)}}
+{{-     drupal_crons(common) }}
 {%-   endif %}
-{{    drupal.fix_perms(common) }}
+{{    fix_perms(common) }}
 {%- endmacro %}
 
 {# TODO: manage group depending on ngin/Apache and maybe others #}
@@ -530,6 +534,17 @@ TODO: local checker if prod need passwords <> defaults!
   - APP: apache + mod_php (old classical way)
   - DB: mysql or postgresql .#}
 {%- macro install_drupal_project() %}
+{#- Add our specific project variables: Theses are not shared projects variables #}
+{# and are not managed by mc_project.get_common_vars, so we add it on the default dict #}
+{%- do default_defaults.update({'use_nginx': kwargs.use_nginx,
+  'use_apache': kwargs.use_apache,
+  'use_htaccess': kwargs.use_htaccess,
+  'use_phpfpm': kwargs.use_phpfpm,
+  'use_mysql': kwargs.use_mysql,
+  'use_postgresql': kwargs.use_postgresql,
+  'init': kwargs.init,
+  'make': kwargs.make
+  }) %}
 {%-  do kwargs.setdefault("defaults", default_defaults) %}
 {%-  do kwargs.setdefault("env_defaults", default_env_defaults) %}
 {%-  do kwargs.setdefault("user", "drupal") %}
