@@ -100,7 +100,8 @@ def settings():
             })
         if data['server']['allowgroups']:
             data['server']['settings']['AllowGroups'] = ' '.join(data['server']['allowgroups'])
-        if data['server']['allowusers']:
+        # those are mutually exclusive !
+        elif data['server']['allowusers']:
             data['server']['settings']['AllowUsers'] = ' '.join(data['server']['allowusers'])
 
         data['client'] = __salt__['mc_utils.defaults'](
