@@ -207,7 +207,7 @@ makina-mysql-settings:
     - template: jinja
     - show_diff: True
     - defaults:
-        var_log: {{ logs.var_log_dir }}
+        var_log: {{ locs.var_log_dir }}
         mode: "production"
         port: {{ mysqlData.port }}
         sockdir: "{{ mysqlData.sockdir }}"
@@ -422,7 +422,7 @@ makina-mysql-user-grants-{{ state_uid }}-{{ host_simple }}:
 {%-   endfor %}
 {%- endif %}
 {% endmacro %}
-{%- if not localsettings.myDisableAutoConf %}
-{{ mysql_base(localsettings.myCnf) }}
+{%- if not services.myDisableAutoConf %}
+{{ mysql_base(services.myCnf) }}
 {% endif %}
 # vim: set nofoldenable:
