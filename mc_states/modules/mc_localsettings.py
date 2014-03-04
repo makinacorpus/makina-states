@@ -299,6 +299,7 @@ def settings():
                 'sysadmins_keys': []
             }
         )
+        data['admin']['sudoers'] = __salt__['mc_project.uniquify'](data['admin']['sudoers'])
 
         if (
             data['admin']['root_password']
