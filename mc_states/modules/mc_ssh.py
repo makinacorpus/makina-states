@@ -84,7 +84,7 @@ def settings():
             'makina-states.services.ssh.server', {
                 'allowusers': [],
                 'group': g,
-                'allowgroups': ['sudo', 'wheel', 'admin', 'ubuntu', g],
+                'allowgroups': ['root', 'sudo', 'wheel', 'admin', 'ubuntu', g],
                 'allowusers': ['root', 'sysadmin', 'ubuntu'],
                 'settings': {
                     'AuthorizedKeysFile': (
