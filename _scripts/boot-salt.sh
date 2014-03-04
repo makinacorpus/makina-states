@@ -2914,6 +2914,7 @@ parse_cli_opts() {
         fi
         if [ "x${1}" = "x--from-salt-cloud" ];then
             SALT_CLOUD="1";argmatch="1"
+            SALT_BOOT_SKIP_HIGHSTATES="1"
         fi
         if [ "x${1}" = "x-q" ] || [ "x${1}" = "x--quiet" ];then
             QUIET="1";argmatch="1"
