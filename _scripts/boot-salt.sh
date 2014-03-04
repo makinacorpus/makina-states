@@ -16,6 +16,7 @@
 #   and consequently not safe for putting directly in salt states (with a cmd.run).
 #
 
+
 # be sure to have a populated base path
 PATH="${PATH}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
 export PATH
@@ -285,6 +286,14 @@ detect_os() {
 
 }
 
+get_module_args() {
+    arg=""
+    for i in ${@};do
+        arg="${arg} -m \"${i}/_modules\""
+    done
+    echo ${arg}
+}
+
 interactive_tempo(){
     if [ "x${SALT_CLOUD}" = "x" ];then
         tempo="${@}"
@@ -397,6 +406,10 @@ store_conf(){
     echo "${val}">"${CONF_ROOT}/makina-states/${key}"
 }
 
+set_conf() {
+    store_conf "${@}"
+}
+
 get_ms_branch() {
     get_ms_branch_branch="${MS_BRANCH}"
     # verify that the requested branch OR changeset exists
@@ -447,6 +460,8 @@ set_vars() {
     set_colors
     SALT_CLOUD="${SALT_CLOUD:-}"
     SALT_CLOUD_DIR="${SALT_CLOUD_DIR:-"/tmp/.saltcloud"}"
+    SALT_BOOT_LOCK_FILE="/tmp/boot_salt_sleep"
+    LAST_RETCODE_FILE="/tmp/boot_salt_rc"
     QUIET=${QUIET:-}
     ROOT="${ROOT:-"/"}"
     CONF_ROOT="${CONF_ROOT:-"${ROOT}etc"}"
@@ -1053,8 +1068,8 @@ salt_call_wrapper_() {
         touch /tmp/travisrun
         ( while [ -f /tmp/travisrun ];do sleep 15;echo "keep me open";sleep 45;done; )&
     fi
-    ${salt_call_prefix}/bin/salt-call $saltargs ${@}
     echo "$(date): ${salt_call_prefix}/bin/salt-call $saltargs ${@}" >> "$cmdf"
+    ${salt_call_prefix}/bin/salt-call ${saltargs} ${@}
     last_salt_retcode=${?}
     if [ "x${SALT_NODETYPE}" = "xtravis" ];then
         rm -f /tmp/travisrun
@@ -1072,7 +1087,7 @@ salt_call_wrapper_() {
             bs_log "salt-call  ERROR DETECTED : No matching sls found" 1>&2
             last_salt_retcode=101
             no_output_log="y"
-        elif egrep -q "\[salt.(state|crypt)       \]\[ERROR   \]" "$logf";then
+        elif egrep -q "\[salt.(state|crypt)[ ]*\]\[(ERROR|CRITICAL)[ ]*\]" "$logf";then
             STATUS="ERROR"
             bs_log "salt-call  ERROR DETECTED, check ${logf} for details" 1>&2
             egrep "\[salt.state       \]\[ERROR   \]" "${logf}" 1>&2;
@@ -1607,7 +1622,7 @@ EOF
             minion_dest="${CONF_PREFIX}/pki/minion"
             master_dest="${CONF_PREFIX}/pki/master"
         fi
-        origin="${SALT_CLOUD_DIR}/minionpem"
+        origin="${SALT_CLOUD_DIR}/minion.pem"
         dest="${minion_dest}/minion.pem"
         install_key
         origin="${SALT_CLOUD_DIR}/minion.pub"
@@ -1777,26 +1792,41 @@ a\    publish_port: ${MASTERSALT_MASTER_PUBLISH_PORT}
 
 # ------------ SALT INSTALLATION PROCESS
 
+mastersalt_master_processes() {
+    ${PS} aux|grep salt-master|grep -v boot-salt|grep mastersalt|grep -v grep|wc -l|sed -e "s/ //g"
+}
+
+
+mastersalt_minion_processes() {
+    ${PS} aux|grep salt-minion|grep -v boot-salt|grep mastersalt|grep -v grep|wc -l|sed -e "s/ //g"
+}
+
+master_processes() {
+    ${PS} aux|grep salt-master|grep -v boot-salt|grep -v mastersalt|grep -v grep|wc -l|sed -e "s/ //g"
+}
+
+
+minion_processes() {
+    ${PS} aux|grep salt-minion|grep -v boot-salt|grep -v mastersalt|grep -v grep|wc -l|sed -e "s/ //g"
+}
+
 
 lazy_start_salt_daemons() {
     if [ "x${IS_SALT_MASTER}" != "x" ];then
-        master_processes="$(${PS} aux|grep salt-master|grep -v boot-salt|grep -v mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
-        if [ "x${master_processes}" = "x0" ];then
+        if [ "x$(master_processes)" = "x0" ];then
             restart_local_masters
             sleep 2
         fi
-        master_processes="$(${PS} aux|grep salt-master|grep -v boot-salt|grep -v mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
-        if [ "x${master_processes}" = "x0" ];then
+        if [ "x$(master_processes)" = "x0" ];then
             die "Salt Master start failed"
         fi
+
     fi
     if [ "x${IS_SALT_MINION}" != "x" ];then
-        minion_processes="$(${PS} aux|grep salt-minion|grep -v boot-salt|grep -v mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
-        if [ "x${minion_processes}" = "x0" ];then
+        if [ "x$(minion_processes)" = "x0" ];then
             restart_local_minions
             sleep 2
-            minion_processes="$(${PS} aux|grep salt-minion|grep -v boot-salt|grep -v mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
-            if [ "x${master_processes}" = "x0" ];then
+            if [ "x$(minion_processes)" = "x0" ];then
                 die "Salt Minion start failed"
             fi
         fi
@@ -1936,20 +1966,64 @@ restart_local_minions() {
 }
 
 salt_ping_test() {
-    salt_call_wrapper test.ping 1>/dev/null 2>/dev/null
+    # test in a subshell as this can be bloquant
+    # salt cloud would then fail badly on this
+    rm -f "${SALT_BOOT_LOCK_FILE}" "${LAST_RETCODE_FILE}"
+    (
+        touch "${SALT_BOOT_LOCK_FILE}";
+        salt_call_wrapper test.ping 1>/dev/null 2>/dev/null;
+        echo "${last_salt_retcode}" > "${LAST_RETCODE_FILE}"
+    )&
+    testpid=$!
+    # wait for one minute for the test to be ok
+    for i in `seq 60`;do
+        if [ ! -e "${LAST_RETCODE_FILE}" ];then
+            sleep 1
+        else
+          last_salt_retcode="$(cat ${LAST_RETCODE_FILE})"
+          rm -f "${SALT_BOOT_LOCK_FILE}"
+        fi
+    done
+    if [ -e "${SALT_BOOT_LOCK_FILE}" ];then
+        kill -9 ${testpid}
+        echo 256
+    fi
+    rm -f "${SALT_BOOT_LOCK_FILE}" "${LAST_RETCODE_FILE}"
     echo "${last_salt_retcode}"
 }
 
 mastersalt_ping_test() {
-    mastersalt_call_wrapper test.ping 1>/dev/null 2>/dev/null
+    # test in a subshell as this can be bloquant
+    # salt cloud would then fail badly on this
+    rm -f "${SALT_BOOT_LOCK_FILE}" "${LAST_RETCODE_FILE}"
+    (
+        touch "${SALT_BOOT_LOCK_FILE}";
+        mastersalt_call_wrapper test.ping 1>/dev/null 2>/dev/null;
+        echo "${last_salt_retcode}" > "${LAST_RETCODE_FILE}"
+    )&
+    testpid=$!
+    # wait for one minute for the test to be ok
+    for i in `seq 60`;do
+        if [ ! -e "${LAST_RETCODE_FILE}" ];then
+            sleep 1
+        else
+          last_salt_retcode="$(cat ${LAST_RETCODE_FILE})"
+          rm -f "${SALT_BOOT_LOCK_FILE}"
+        fi
+    done
+    if [ -e "${SALT_BOOT_LOCK_FILE}" ];then
+        kill -9 ${testpid}
+        echo 256
+    fi
+    rm -f "${SALT_BOOT_LOCK_FILE}" "${LAST_RETCODE_FILE}"
     echo "${last_salt_retcode}"
 }
 
 minion_challenge() {
     if [ "x${IS_SALT_MINION}" = "x" ];then return;fi
     challenged_ms=""
-    global_tries="60"
-    inner_tries="10"
+    global_tries="30"
+    inner_tries="5"
     for i in `seq ${global_tries}`;do
         restart_local_minions
         resultping="1"
@@ -1976,8 +2050,8 @@ minion_challenge() {
 mastersalt_minion_challenge() {
     if [ "x${IS_MASTERSALT_MINION}" = "x" ];then return;fi
     challenged_ms=""
-    global_tries="60"
-    inner_tries="10"
+    global_tries="30"
+    inner_tries="5"
     for i in `seq ${global_tries}`;do
         restart_local_minions
         resultping="1"
@@ -2060,8 +2134,7 @@ make_association() {
     #    cat /var/log/salt/salt-minion
          set +x
     fi
-    if [ "x${minion_id}" = "x" ];then
-        bs_yellow_log "Minion did not start correctly, the minion_id cache file is empty, trying to restart"
+    if [ "x$(minion_processes)" = "x0" ];then
         restart_local_minions
         sleep $(get_delay_time)
         travis_sys_info
@@ -2228,23 +2301,19 @@ make_mastersalt_association() {
 
 lazy_start_mastersalt_daemons() {
     if [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
-        master_processes="$(${PS} aux|grep salt-master|grep -v boot-salt|grep mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
-        if [ "x${master_processes}" = "x0" ];then
+        if [ "x$(mastersalt_master_processes)" = "x0" ];then
             restart_local_mastersalt_masters
             sleep 2
-        fi
-        master_processes="$(${PS} aux|grep salt-master|grep -v boot-salt|grep mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
-        if [ "x${master_processes}" = "x0" ];then
-            die "Masteralt Master start failed"
+            if [ "x$(mastersalt_master_processes)" = "x0" ];then
+                die "Masteralt Master start failed"
+            fi
         fi
     fi
     if [ "x${IS_MASTERSALT_MINION}" != "x" ];then
-        minion_processes="$(${PS} aux|grep salt-minion|grep -v boot-salt|grep mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
-        if [ "x${minion_processes}" = "x0" ];then
+        if [ "x$(mastersalt_minion_processes)" = "x0" ];then
             restart_local_mastersalt_minions
             sleep 2
-            minion_processes="$(${PS} aux|grep salt-minion|grep -v boot-salt|grep mastersalt|grep -v grep|wc -l|sed -e "s/ //g")"
-            if [ "x${master_processes}" = "x0" ];then
+            if [ "x$(mastersalt_minion_processes)" = "x0" ];then
                 die "Masteralt Minion start failed"
             fi
         fi
@@ -2384,14 +2453,6 @@ install_salt_env() {
     if [ "x${ds}" = "x" ];then
         salt_echo 'changed=false comment="already bootstrapped"'
     fi
-}
-
-get_module_args() {
-    arg=""
-    for i in ${@};do
-        arg="${arg} -m \"${i}/_modules\""
-    done
-    echo ${arg}
 }
 
 # --------- HIGH-STATES
