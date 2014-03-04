@@ -84,7 +84,7 @@ def settings():
             'makina-states.services.ssh.server', {
                 'allowusers': [],
                 'group': g,
-                'allowgroups': ['sudo', 'wheel', 'admin', 'ubuntu', g],
+                'allowgroups': ['root', 'sudo', 'wheel', 'admin', 'ubuntu', g],
                 'allowusers': ['root', 'sysadmin', 'ubuntu'],
                 'settings': {
                     'AuthorizedKeysFile': (
@@ -100,7 +100,8 @@ def settings():
             })
         if data['server']['allowgroups']:
             data['server']['settings']['AllowGroups'] = ' '.join(data['server']['allowgroups'])
-        if data['server']['allowusers']:
+        # those are mutually exclusive !
+        elif data['server']['allowusers']:
             data['server']['settings']['AllowUsers'] = ' '.join(data['server']['allowusers'])
 
         data['client'] = __salt__['mc_utils.defaults'](
