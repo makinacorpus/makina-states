@@ -371,7 +371,7 @@ def settings():
                                           'source': '$SALT_RESTRICTED_SSH',
                                           'dest': 'all'})
 
-            # data['default_rules'].append({'comment': 'ping'})
+            data['default_rules'].append({'comment': 'ping'})
             # restricting ping is really a awkard bad idea
             # for ping, we drop and only accept from restricted (default: all)
             # data['default_rules'].append({
@@ -391,6 +391,11 @@ def settings():
                 'source': 'net',
                 'dest': '$FW',
                 'rate': 's:10/min:10'})
+            for z in [a for a in data['zones'] if not a in ['net']]:
+                data['default_rules'].append({
+                    'action': 'Ping(ACCEPT)'.format(action),
+                    'source': z,
+                    'dest': '$FW'})
 
             data['default_rules'].append({'comment': 'smtp'})
             if data['no_smtp']:
