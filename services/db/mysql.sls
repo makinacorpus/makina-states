@@ -379,6 +379,8 @@ makina-mysql-service-reload:
 {%-     set password = '' %}
 {%-   endif -%}
 {%- endif -%}
+{#Important, do not remove this space, needed if the macro is call with "-" #}
+
 makina-mysql-db-{{ state_uid }}:
   mysql_database.present:
     - name: "{{ db }}"

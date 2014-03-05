@@ -320,14 +320,14 @@ TODO: local checker if prod need passwords <> defaults!
 {%- macro drupal_db(common) %}
 {# This is running on host with db role, creating access for drupal's #}
 {# host/user/passwd on a new database #}
-{% if common.full %}
-{% set db_type = common.data.get("drupal_opts.databases.default.default.username", common.name) %}
-{% set db_user = common.data.get("drupal_opts.databases.default.default.username", common.name) %}
-{% set db_pass = common.data.get("drupal_opts.databases.default.default.password", common.name) %}
-{% set db_port = common.data.get("drupal_opts.databases.default.default.port", 3306) %}
-{% set db_host = common.data.get("drupal_opts.databases.default.default.host", '127.0.0.1') %}
-{% set db_name = common.data.get("drupal_opts.databases.default.default.database", common.name) %}
-[# Call MySQL macros to create the database 
+{%- if common.full %}
+{%- set db_type = common.data.get("drupal_opts.databases.default.default.username", common.name) %}
+{%- set db_user = common.data.get("drupal_opts.databases.default.default.username", common.name) %}
+{%- set db_pass = common.data.get("drupal_opts.databases.default.default.password", common.name) %}
+{%- set db_port = common.data.get("drupal_opts.databases.default.default.port", 3306) %}
+{%- set db_host = common.data.get("drupal_opts.databases.default.default.host", '127.0.0.1') %}
+{%- set db_name = common.data.get("drupal_opts.databases.default.default.database", common.name) %}
+{# Call MySQL macros to create the database #}
 {{- mysql.mysql_db(db=db_name,
                 user = db_user,
                 host=db_host,
