@@ -156,7 +156,7 @@ def get_common_vars(
         sls_includes = []
     if full:
         sls_includes = (
-            ['makina-states.services.base.ssh-users',
+            ['makina-states.services.base.ssh',
              'makina-states.localsettings.hosts']
             + sls_includes)
     if not no_default_includes:
