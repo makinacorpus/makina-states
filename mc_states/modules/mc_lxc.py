@@ -20,6 +20,7 @@ Documentation of this module is available with::
 import logging
 import mc_states.utils
 import random
+import copy
 
 from salt.utils.odict import OrderedDict
 
@@ -89,23 +90,28 @@ def settings():
         lxcSettings = __salt__['mc_utils.defaults'](
             'makina-states.services.virt.lxc', {
                 'is_lxc': is_lxc(),
-                'size': None,  # via profile
-                'gateway': '10.5.0.1',
-                'master': None,
-                'master_port': '4506',
-                'network': '10.5.0.0',
-                'netmask': '16',
-                'netmask_full': '255.255.0.0',
                 'dnsservers': ['8.8.8.8', '4.4.4.4'],
-                'default_template': 'ubuntu',
-                'bridge': 'lxcbr1',
-                'use_bridge': True,
-                'backing': 'lvm',
-                'users': ['root', 'sysadmin'],
-                'vgname': 'data',
-                'lvname': 'data',
-                'lxc_conf': [],
-                'lxc_conf_unset': [],
+                'defaults' : {
+                    'size': None,  # via profile
+                    'gateway': '10.5.0.1',
+                    'master': None,
+                    'master_port': '4506',
+                    'image': 'ubuntu',
+                    'network': '10.5.0.0',
+                    'netmask': '16',
+                    'netmask_full': '255.255.0.0',
+                    'default_template': 'ubuntu',
+                    'bridge': 'lxcbr1',
+                    'sudo': True,
+                    'use_bridge': True,
+                    'backing': 'lvm',
+                    'users': ['root', 'sysadmin'],
+                    'ssh_username': 'ubuntu',
+                    'vgname': 'data',
+                    'lvname': 'data',
+                    'lxc_conf': [],
+                    'lxc_conf_unset': [],
+                },
                 'containers': {
                     __grains__['id']: {},
                     #'target': {
@@ -140,10 +146,10 @@ def settings():
                         'size': '10g',
                     },
                     'small': {
-                        'size': '3g',
+                        'size': '5g',
                     },
                     'xsmall': {
-                        'size': '2g',
+                        'size': '3g',
                     },
                     'xxsmall': {
                         'size': '1g',
@@ -154,26 +160,39 @@ def settings():
                 },
             }
         )
-        if not lxcSettings['master']:
-            lxcSettings['master'] = lxcSettings['gateway']
+        if not lxcSettings['defaults']['master']:
+            lxcSettings['defaults']['master'] = lxcSettings['defaults']['gateway']
         for target in [t for t in lxcSettings['containers']]:
-            for container in lxcSettings['containers'][t]:
-                lxc_data = lxcSettings['containers'][container]
+            # filter dicts and overiddes
+            for container in lxcSettings['containers'][target]:
+                lxc_data = lxcSettings['containers'][target][container]
                 lxc_data['mac'] = __salt__['mc_lxc.find_mac_for_container'](
                     target, container, lxc_data)
-                lxc_data['ip4'] = __salt__['mc_lxc.find_ip_for_container'](
-                    target, container, lxc_data)
+                for i in ['ip', 'password']:
+                    if not i in lxc_data:
+                        raise Exception('Missing data {1}\n:{0}'.format(i, lxc_data))
+                    # shortcut name for profiles
+                    # small -> ms-target-small
+                    profile = lxc_data.get('profile', 'medium')
+                    if profile in lxcSettings['lxc_cloud_profiles']:
+                        del lxc_data['profile']
+                    lxc_data.setdefault(
+                        'profile',
+                        __salt__['mc_saltcloud.gen_id'](
+                            'ms-{0}-{1}-lxc'.format(target, profile)))
                 lxc_data.setdefault('name', container)
                 lxc_data.setdefault('size', None)
                 lxc_data.setdefault('from_container', None)
                 lxc_data.setdefault('snapshot', None)
-                for i in [
-                    'size', 'image', 'bridge', 'netmask', 'gateway',
-                    'dnsservers', 'backing', 'vgname', 'lvname',
-                    'vgname', 'ssh_password', 'ssh_username', 'users',
-                    'lxc_conf_unset', 'lxc_conf'
-                ]:
-                    lxc_data.setdefault(i, lxcSettings[i])
+                for i in ["from_container",
+                          'size', 'image', 'bridge', 'netmask', 'gateway',
+                          'dnsservers', 'backing', 'vgname', 'lvname',
+                          'vgname', 'ssh_username', 'users', 'sudo',
+                          'lxc_conf_unset', 'lxc_conf']:
+                    lxc_data.setdefault(
+                        i,
+                        lxcSettings['defaults'].get(i,
+                                                    lxcSettings.get(i, None)))
         return lxcSettings
     return _settings()
 
@@ -181,12 +200,12 @@ def settings():
 def find_mac_for_container(target, container, lxc_data=None):
     if not lxc_data:
         lxc_data = {}
-    mac = lxc_data.get('mac', None)
-    gid = 'makina-states.services.virt.lxc.containers.{0}.{1}.mac'.format(
+    gid = 'makina-states.services.virt.lxc.containerssettings.{1}.{1}.mac'.format(
         target, container)
+    mac = lxc_data.get('mac', __salt__['mc_utils.get'](gid, None))
     if not mac:
-        __salt__['grain.setval'](gid, gen_mac())
-        __salt__['saltuitil.sync_grains']()
+        __salt__['grains.setval'](gid, gen_mac())
+        __salt__['saltutil.sync_grains']()
         mac = __salt__['mc_utils.get'](gid)
         if not mac:
             raise Exception(
@@ -201,13 +220,14 @@ def find_ip_for_container(target, container, lxc_data=None):
         - an ip already allocated
         - an random available ip in the range
     '''
+    raise Exception('Not implemented')
     if not lxc_data:
         lxc_data = {}
     ip4 = lxc_data.get('ip4', None)
     gid = 'makina-states.services.virt.lxc.containers.{0}.{1}.ip4'.format(
         target, container)
     if not ip4:
-        __salt__['grain.setval'](gid, gen_ip4())
+        __salt__['grains.setval'](gid, gen_ip4())
         __salt__['saltuitil.sync_grains']()
         ip4 = __salt__['mc_utils.get'](gid)
         if not ip4:

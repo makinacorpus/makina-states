@@ -30,8 +30,9 @@ providers_lxc_salt:
     - template: jinja
     - group: root
     - defaults:
-        data: {{lxcSettings|yaml}}
+        data: {{lxcSettings.defaults|yaml}}
         cdata: {{cloudSettings|yaml}}
+        containers: {{lxcSettings.containers.keys()|yaml }}
         msr: {{saltmac.msr}}
 
 profiles_lxc_salt:
@@ -42,8 +43,10 @@ profiles_lxc_salt:
     - user: root
     - group: root
     - defaults:
+        data: {{lxcSettings.defaults|yaml}}
         cdata: {{cloudSettings|yaml}}
-        data: {{lxcSettings|yaml}}
+        profiles: {{lxcSettings.lxc_cloud_profiles|yaml }}
+        containers: {{lxcSettings.containers.keys()|yaml }}
         msr: {{saltmac.msr}}
     - require:
       - mc_proxy: salt-cloud-postinstall
@@ -53,25 +56,27 @@ profiles_lxc_salt:
 
 {% for target, containers in services.lxcSettings.containers.items() %}
 {%  for k, data in containers.items() -%}
-{%    set name = k %}
-{%    set dnsservers = lxc_data.get("dnsservers") -%}
+{%    set name = data['name'] %}
+{%    set dnsservers = data.get("dnsservers", ["8.8.8.8", "4.4.4.4"]) -%}
 {{target}}-{{k}}-lxc-deploy:
   cloud.profile:
+    - name: {{name}}
+    - profile: {{data.profile}}
+    - unless: test -e {{cloudSettings.prefix}}/pki/master/minions/{{name}}.pub
     - require:
       - mc_proxy: lxc-post-inst
       - mc_proxy: salt-cloud-predeploy
     - require_in:
       - mc_proxy: salt-cloud-postdeploy
-    - name: {{name}}
-    - cloud_provider: {{target}}
-    - profile: {{data.profile}}
+    - vm_opts:
+      dnsservers: {{dnsservers|yaml}}
 {%    for var in ["from_container",
                    "snapshot",
                    "image",
                    "gateway",
                    "bridge",
                    "mac",
-                   "ip4",
+                   "ip",
                    "netmask",
                    "size",
                    "backing",
@@ -83,7 +88,7 @@ profiles_lxc_salt:
                    "lxc_conf",
                    "lxc_conf_unset"] %}
 {%      if data.get(var) %}
-    - {{var}}: {{lxc_data[var]}}
+      {{var}}: {{data[var]}}
 {%      endif%}
 {%    endfor%}
 {%  endfor %}

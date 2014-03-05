@@ -54,6 +54,7 @@ def settings():
             prefix = salt_settings['confPrefix']
         data = __salt__['mc_utils.defaults'](
             'makina-states.controllers.salt_cloud', {
+                'prefix': prefix,
                 'master': __grains__['fqdn'],
                 'master_port': '4506',
                 'pvdir': prefix + "/cloud.providers.d",
