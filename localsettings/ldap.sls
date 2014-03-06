@@ -72,6 +72,10 @@ nslcd-nsswitch-conf:
               session required pam_mkhomedir.so skel={{ locs.conf_dir }}/skel umask=0022
 
 {{ locs.conf_dir }}-ldap.conf:
+  file.absent:
+    - name: {{ locs.conf_dir }}/ldap.conf
+{# needed for old pam ldap, but not with libpam-ldapd and nslcd
+{{ locs.conf_dir }}-ldap.conf:
   file.managed:
     - name: {{ locs.conf_dir }}/ldap.conf
     - user: root
@@ -85,7 +89,7 @@ nslcd-nsswitch-conf:
     - defaults: {{ localsettings.ldapVariables | yaml }}
     - require_in:
       - mc_proxy: users-pre-hook
-
+#}
 {{ locs.conf_dir }}-ldap-ldap.conf:
   file.managed:
     - name: {{ locs.conf_dir }}/ldap/ldap.conf

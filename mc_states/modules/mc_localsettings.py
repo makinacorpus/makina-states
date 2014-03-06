@@ -27,9 +27,57 @@ def metadata():
 
 def _get_ldapVariables(saltmods):
     # see makina-states.services.base.ldap
-    return saltmods['mc_utils.defaults'](
+    lsettings = saltmods['mc_utils.defaults'](
         'makina-states.localsettings.ldap', {
             'enabled': False,
+            'nslcd': {
+                'ldap_ver': None,  # '3',
+                'scope': 'sub',
+                'user': 'nslcd',
+                'group': 'nslcd',
+                'ssl': 'off',  # ssl, off, start_tls
+                'tls_reqcert': 'never',
+                'tls_cacert': None,
+                'bind_dn': None,
+                'bind_pw': None,
+                'rootpwmoddn': None,
+                'rootpwmodpw': None,
+                # for setting the connection time out.
+                # The default bind_timelimit is 10 seconds.
+                # Specifies  the  time  limit (in seconds) to use when
+                # connecting to the directory server.  This is distinct
+                # from the time limit specified in timelimit and affects
+                # the set-up of the connection only.
+                # Note that not all LDAP client libraries have support
+                'bind_timelimit': '30',
+                # Specifies the time limit (in seconds) to wait for a
+                # response from the LDAP server.  A value of zero (0),
+                # which is the default, is to wait indefinitely for
+                # searches to be completed.
+                'timelimit': '30',
+                # Specifies the period if inactivity (in seconds) after which
+                # the connection to the LDAP server will be closed.
+                # The default is not to time out connections.
+                'idle_timelimit': '3600',
+                #Specifies the number of seconds to sleep when connecting
+                # to all LDAP servers fails.  By default 1 second is
+                # waited between the first failure and the first retry.
+                'reconnect_sleeptime': '1',
+                # Specifies the time after which the LDAP server is considered
+                # be permanently unavailable.  Once this time is reached retrie
+                # will be done only once per this time period.
+                # The default value is 10 seconds.
+                # Note that the reconnect logic as described above is the
+                # mechanism that is used between nslcd and the LDAP server.
+                # The mechanism between the NSS and PAM client libraries on
+                # one end and nslcd on the other is simpler with a fixed
+                # compiled-in time out of  a  10
+                # seconds for writing to nslcd and a time out of 60 seconds
+                # for reading answers.  nslcd itself has a read time out
+                # of 0.5 seconds and a write time out of 60 seconds.
+                'reconnect_retrytime': '10',
+
+            },
             'ldap_uri': 'ldaps://localhost:636/',
             'ldap_base': 'dc=company,dc=org',
             'ldap_passwd': 'ou=People,dc=company,dc=org?sub',
@@ -37,6 +85,9 @@ def _get_ldapVariables(saltmods):
             'ldap_group': 'ou=Group,dc=company,dc=org?sub',
             'ldap_cacert': ''
         })
+    if lsettings['ldap_cacert'] and not lsettings['nslcd']['tls_cacert']:
+        lsettings['nslcd']['tls_cacert'] = lsettings['ldap_cacert']
+    return lsettings
 
 
 def _ldapEn(__salt__):
