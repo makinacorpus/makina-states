@@ -341,7 +341,7 @@ def settings():
                     'php5_cgi': 'php5-cgi',
                     'php_fpm': 'php5-fpm',
                     'apc': 'php-apc',
-                    'cli': 'php-cli',
+                    'cli': 'php5-cli',
                     'cas': 'php-cas',
                     'imagemagick': 'php5-imagick',
                     'memcache': 'php5-memcache',
