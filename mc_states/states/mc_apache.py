@@ -235,7 +235,11 @@ def include_module(name,
 
     require_in = __low__.get('require_in', [])
     watch_in = __low__.get('watch_in', [])
-    deps = require_in + watch_in
+    deps = []
+    for x in require_in:
+        deps.append(x)
+    for x in watch_in:
+        deps.append(x)
     if not _tied_to_apacheconf(deps):
         ret['result'] = False
         ret['comment'] = (
