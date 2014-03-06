@@ -137,6 +137,7 @@ circus-initdef-conf:
       - mc_proxy: circus-pre-restart
     - defaults: {{defaults|yaml}}
 
+circus-start:
   service.running:
     - name: circusd
     - enable: True
