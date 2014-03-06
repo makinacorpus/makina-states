@@ -165,12 +165,13 @@ makina-{{id}}-bashrc-load:
 include:
   - makina-states.localsettings.users-hooks
   - makina-states.localsettings.sudo
-
 {{ salt['mc_macros.register']('localsettings', 'users') }}
 {% for id, udata in localsettings.users.items() %}
 {{ create_user(id, udata) }}
 {% endfor %}
 
+{#
+#}
 {# manage sudoers #}
 {% for i in localsettings.sudoers %}
 ms-add-user-{{i}}-to-sudoers:

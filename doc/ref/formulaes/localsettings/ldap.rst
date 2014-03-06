@@ -2,7 +2,22 @@ PamLdap configuration
 =====================
 
 - install ldap base packages
-- integrate pam with LDAP via nslcd (nss-ldapd & pam-ldapd)
+- integrate pam with LDAP via nslcd, nss-ldapd pam-ldapd.
+
+Pillar sample:
+
+.. code-block:: yaml
+
+    makina-states.localsettings.ldap:
+      ldap_uri: ldap://ldap.foo.net/
+      ldap_base: dc=company,dc=org
+      ldap_passwd: ou=People,dc=company,dc=org?sub
+      ldap_shadow: ou=People,dc=company,dc=org?sub
+      ldap_group: ou=Group,dc=company,dc=org?sub
+      ldap_cacert: /etc/ssl/cacerts/cacert.pem
+      enabled: True
+      nslcd:
+        ssl: start_tls
 
 Exposed settings:
 

@@ -6,13 +6,7 @@
 mc_lxc / lxc registry
 ============================================
 
-If you alter this module and want to test it, do not forget to deploy it on minion using::
-
-  salt '*' saltutil.sync_modules
-
-Documentation of this module is available with::
-
-  salt '*' sys.doc mc_lxc
+This module contains settings for lxc and helper functions
 
 '''
 
@@ -77,13 +71,64 @@ def is_lxc():
 def settings():
     '''Lxc registry
 
+    defaults
+        defaults settings to provision lxc containers
+        Those are all redefinable at each container level
+
+        size
+            default filesystem size for container on lvm
+            None
+        gateway
+            '10.5.0.1'
+        master
+            master to uplink the container to
+            None
+        master_port
+            '4506'
+        image
+            LXC template to use
+            'ubuntu'
+        bootsalt_branch
+            branch of makina-states to use (prod in prod, dev in dev by default (default_env grain))
+        network
+            '10.5.0.0'
+        netmask
+            '16'
+        netmask_full
+            '255.255.0.0'
+        profile
+            default profile size type to use (medium)
+        profile_type
+            default profile type to use (lvm)
+        bridge
+            we install via states a bridge in 10.5/16 lxcbr1)
+            'lxcbr1'
+        sudo
+            True
+        use_bridge
+            True
+        backing
+            (lvm, overlayfs, dir, brtfs) 'lvm'
+        users
+            ['root', 'sysadmin']
+        ssh_username
+            'ubuntu'
+        vgname
+            'data'
+        lvname
+            'data'
+        lxc_conf
+            []
+        lxc_conf_unset'
+            []
     containers
-        Mapping of containers defintions
+        Mapping of containers defintions classified by host
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
         grains = __grains__
         pillar = __pillar__
+        cloudSettings = __salt__['mc_saltcloud.settings']()
         localsettings = __salt__['mc_localsettings.settings']()
         locations = localsettings['locations']
 
@@ -93,14 +138,17 @@ def settings():
                 'dnsservers': ['8.8.8.8', '4.4.4.4'],
                 'defaults' : {
                     'size': None,  # via profile
+                    'profile': 'medium',
+                    'profile_type': 'lvm',
                     'gateway': '10.5.0.1',
+                    'mastersalt': False,
                     'master': None,
                     'master_port': '4506',
                     'image': 'ubuntu',
                     'network': '10.5.0.0',
                     'netmask': '16',
+                    'bootsalt_branch': cloudSettings['bootsalt_branch'],
                     'netmask_full': '255.255.0.0',
-                    'default_template': 'ubuntu',
                     'bridge': 'lxcbr1',
                     'sudo': True,
                     'use_bridge': True,
@@ -173,18 +221,39 @@ def settings():
                         raise Exception('Missing data {1}\n:{0}'.format(i, lxc_data))
                     # shortcut name for profiles
                     # small -> ms-target-small
-                    profile = lxc_data.get('profile', 'medium')
+                    ms = lxc_data.get('mastersalt',
+                                      lxcSettings['defaults']['mastersalt'])
+                    profile_type = lxc_data.get(
+                        'profile_type',
+                        lxcSettings['defaults']['profile_type'])
+                    profile = lxc_data.get('profile',
+                                           lxcSettings['defaults']['profile'])
                     if profile in lxcSettings['lxc_cloud_profiles']:
                         del lxc_data['profile']
                     lxc_data.setdefault(
                         'profile',
                         __salt__['mc_saltcloud.gen_id'](
-                            'ms-{0}-{1}-lxc'.format(target, profile)))
+                            'ms-{0}-{1}-{2}'.format(target,
+                                                    profile,
+                                                    profile_type)))
                 lxc_data.setdefault('name', container)
                 lxc_data.setdefault('size', None)
                 lxc_data.setdefault('from_container', None)
                 lxc_data.setdefault('snapshot', None)
-                for i in ["from_container",
+                if 'mastersalt' in lxc_data.get('mode', 'salt'):
+                    default_args = cloudSettings['bootsalt_args']
+                else:
+                    default_args = cloudSettings['bootsalt_mastersalt_args']
+                lxc_data['script_args'] = lxc_data.get('script_args',
+                                                       default_args)
+                branch = lxc_data.get('bootsalt_branch',
+                                      cloudSettings['bootsalt_branch'])
+                if (
+                    not '-b' in lxc_data['script_args']
+                    or not '--branch' in lxc_data['script_args']
+                ):
+                    lxc_data['script_args'] += '-b {0}'.format(branch)
+                for i in ["from_container", 'bootsalt_branch',
                           'size', 'image', 'bridge', 'netmask', 'gateway',
                           'dnsservers', 'backing', 'vgname', 'lvname',
                           'vgname', 'ssh_username', 'users', 'sudo',
@@ -198,6 +267,8 @@ def settings():
 
 
 def find_mac_for_container(target, container, lxc_data=None):
+    '''Generate and assign a mac addess to a specific
+    container on a speific host'''
     if not lxc_data:
         lxc_data = {}
     gid = 'makina-states.services.virt.lxc.containerssettings.{1}.{1}.mac'.format(
@@ -216,9 +287,12 @@ def find_mac_for_container(target, container, lxc_data=None):
 
 def find_ip_for_container(target, container, lxc_data=None):
     '''Search for:
+
         - an ip in lxc.conf
         - an ip already allocated
         - an random available ip in the range
+
+    THIS IS NOT IMPLEMENTED YET
     '''
     raise Exception('Not implemented')
     if not lxc_data:

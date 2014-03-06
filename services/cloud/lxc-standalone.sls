@@ -62,7 +62,7 @@ profiles_lxc_salt:
   cloud.profile:
     - name: {{name}}
     - profile: {{data.profile}}
-    - unless: test -e {{cloudSettings.prefix}}/pki/master/minions/{{name}}.pub
+    - unless: test -e {{cloudSettings.prefix}}/pki/master/minions/{{name}}
     - require:
       - mc_proxy: lxc-post-inst
       - mc_proxy: salt-cloud-predeploy
@@ -82,6 +82,7 @@ profiles_lxc_salt:
                    "backing",
                    "vgname",
                    "lvname",
+                   "script_args",
                    "dnsserver",
                    "ssh_username",
                    "password",

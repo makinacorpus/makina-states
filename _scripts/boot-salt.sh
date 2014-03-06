@@ -1296,7 +1296,7 @@ setup_and_maybe_update_code() {
                         fi
                         git clone ${QUIET_GIT} "${STATES_URL}" "${ms}" &&\
                         cd "${ms}" &&\
-                        git checkout ${QUIET_GIT} "${remote}""${ms_branch}" -b "${branch_pref}""${ms_branch}}" &&\
+                        git checkout ${QUIET_GIT} "${remote}""${ms_branch}" -b "${branch_pref}""${ms_branch}" &&\
                         cd - 1>/dev/null 2>/dev/null
                     SALT_BOOT_NEEDS_RESTART="1"
                     if [ "x${?}" = "x0" ];then
