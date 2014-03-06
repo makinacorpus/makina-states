@@ -17,12 +17,11 @@
 {%- set venv = circusSettings['location'] + "/venv" %}
 {% set defaults = {
   'extra': circusSettings,
-  'rotate': circusSettings.rotate,
   'log': locs.var_log_dir+'/circus.log',
   'locs': locs,
   'venv': venv,
   'pidf': locs.var_run_dir+'/circusd.pid',
-  } %}
+} %}
 
 include:
   - makina-states.services.monitoring.circus-hooks
@@ -63,7 +62,7 @@ circus-setup-conf:
     - user: root
     - group: root
     - mode: 755
-    - watch_in: 
+    - watch_in:
       - mc_proxy: circus-pre-restart
     - defaults:
         conf_dir: {{ locs['conf_dir'] }}
@@ -76,14 +75,14 @@ circus-globalconf:
     - user: root
     - group: root
     - mode: 755
-    - watch_in: 
+    - watch_in:
       - mc_proxy: circus-pre-restart
-    - defaults: {{defaults}}
+    - defaults: {{defaults|yaml}}
 
 circus-setup-conf-include-directory:
   file.directory:
     - name: {{ locs['conf_dir'] }}/circus/circusd.conf.d
-    - watch_in: 
+    - watch_in:
       - mc_proxy: circus-pre-restart
 
 circus-logrotate:
@@ -94,9 +93,9 @@ circus-logrotate:
     - user: root
     - group: root
     - mode: 755
-    - watch_in: 
+    - watch_in:
       - mc_proxy: circus-pre-restart
-    - defaults: {{defaults}}
+    - defaults: {{defaults|yaml}}
 
 {#- Run #}
 {% if grains['os'] in ['Ubuntu'] %}
@@ -108,9 +107,9 @@ circus-upstart-conf:
     - user: root
     - group: root
     - mode: 755
-    - watch_in: 
+    - watch_in:
       - mc_proxy: circus-pre-restart
-    - defaults: {{defaults}}
+    - defaults: {{defaults|yaml}}
 {% else %}
 circus-init-conf:
   file.managed:
@@ -120,9 +119,9 @@ circus-init-conf:
     - user: root
     - group: root
     - mode: 755
-    - watch_in: 
+    - watch_in:
       - mc_proxy: circus-pre-restart
-    - defaults: {{defaults}}
+    - defaults: {{defaults|yaml}}
 {% endif %}
 
 
@@ -134,17 +133,16 @@ circus-initdef-conf:
     - user: root
     - group: root
     - mode: 755
-    - watch_in: 
+    - watch_in:
       - mc_proxy: circus-pre-restart
-    - defaults: {{defaults}}
+    - defaults: {{defaults|yaml}}
 
-circus-start:
   service.running:
     - name: circusd
     - enable: True
-    - watch: 
+    - watch:
       - mc_proxy: circus-pre-restart
-    - watch_in: 
+    - watch_in:
       - mc_proxy: circus-post-restart
 
 {% endmacro %}
