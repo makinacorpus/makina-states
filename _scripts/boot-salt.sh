@@ -1548,8 +1548,8 @@ install_buildouts() {
 
 
 install_key() {
-    if [ ! -e "${dest}" ] && [ -e "${origin}" ];then
-        cp -vf "${origin}" "${dest}"
+    if [ -e "${origin}" ];then
+        cp -f "${origin}" "${dest}"
     fi
 }
 
@@ -1615,13 +1615,35 @@ EOF
     fi
     # install salt cloud keys
     if [ "x${SALT_CLOUD}" != "x" ];then
+        killall_local_mastersalt_masters
+        killall_local_mastersalt_minions
+        killall_local_minions
+        killall_local_masters
         if [ "x${IS_MASTERSALT}" != "x" ];then
             minion_dest="${MCONF_PREFIX}/pki/minion"
             master_dest="${MCONF_PREFIX}/pki/master"
-        else
-            minion_dest="${CONF_PREFIX}/pki/minion"
-            master_dest="${CONF_PREFIX}/pki/master"
+            origin="${SALT_CLOUD_DIR}/minion.pem"
+            dest="${minion_dest}/minion.pem"
+            install_key
+            origin="${SALT_CLOUD_DIR}/minion.pub"
+            dest="${minion_dest}/minion.pub"
+            install_key
+            find "${MCONF_PREFIX}"/minion* -type f 2>/dev/null|while read mfic;do
+                sed -e "s/^master:.*$/master: ${MASTERSALT}/g" -i "${mfic}"
+                sed -e "s/^master_port:.*$/master_port: ${MASTERSALT_PORT}/g" -i "${mfic}"
+            done
         fi
+        find "${CONF_PREFIX}"/minion* -type f 2>/dev/null|while read mfic;do
+            sed -e "s/^master:.*/master: ${SALT_MASTER_IP}/g" -i "${mfic}"
+            sed -e "s/^master_port:.*/master_port: ${SALT_MASTER_PORT}/g" -i "${mfic}"
+        done
+        #if [ ! -d  "${CONF_PREFIX}/pki/master/minions" ];then
+        #    mkdir "${CONF_PREFIX}/pki/master/minions"
+        #fi
+        #cp -f "${minion_dest}/minion.pub" "${CONF_PREFIX}/pki/master/minions/$(get_minion_id)"
+        # duplicate key for mastersalt, uniq keypair for the 2 minions
+        minion_dest="${CONF_PREFIX}/pki/minion"
+        master_dest="${CONF_PREFIX}/pki/master"
         origin="${SALT_CLOUD_DIR}/minion.pem"
         dest="${minion_dest}/minion.pem"
         install_key
@@ -1918,19 +1940,19 @@ kill_pids(){
 }
 
 killall_local_mastersalt_masters() {
-    kill_pids $(${PS} aux|egrep "salt-(master|syndic)"|grep -v boot-salt|grep mastersalt|awk '{print $2}') 1>/dev/null 2>/dev/null
+    kill_pids $(${PS} aux|egrep "salt-(master|syndic)"|grep -v deploy.sh|grep -v boot-salt|grep mastersalt|awk '{print $2}') 1>/dev/null 2>/dev/null
 }
 
 killall_local_mastersalt_minions() {
-    kill_pids $(${PS} aux|egrep "salt-(minion)"|grep -v boot-salt|grep mastersalt|awk '{print $2}') 1>/dev/null 2>/dev/null
+    kill_pids $(${PS} aux|egrep "salt-(minion)"|grep -v deploy.sh|grep -v boot-salt|grep mastersalt|awk '{print $2}') 1>/dev/null 2>/dev/null
 }
 
 killall_local_masters() {
-    kill_pids $(${PS} aux|egrep "salt-(master|syndic)"|grep -v boot-salt|grep -v mastersalt|awk '{print $2}') 1>/dev/null 2>/dev/null
+    kill_pids $(${PS} aux|egrep "salt-(master|syndic)"|grep -v deploy.sh|grep -v boot-salt|grep -v mastersalt|awk '{print $2}') 1>/dev/null 2>/dev/null
 }
 
 killall_local_minions() {
-    kill_pids $(${PS} aux|egrep "salt-(minion)"|grep -v boot-salt|grep -v mastersalt|awk '{print $2}') 1>/dev/null 2>/dev/null
+    kill_pids $(${PS} aux|egrep "salt-(minion)"|grep -v deploy.sh|grep -v boot-salt|grep -v mastersalt|awk '{print $2}') 1>/dev/null 2>/dev/null
 }
 
 restart_local_mastersalt_masters() {
