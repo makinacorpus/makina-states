@@ -83,9 +83,9 @@
 {% macro drupal_drush(common) %}
 global-composer-install:
   mc_php.composer:
-    name: "/usr/local/bin/composer"
-    installer: "https://getcomposer.org/installer"
-    update: False
+    - name: "/usr/local/bin/composer"
+    - installer: "https://getcomposer.org/installer"
+    - update: False
 
 {# TODO: drush version variable support #}
 {{common.name}}-drush-install:
