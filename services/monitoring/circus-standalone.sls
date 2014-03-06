@@ -78,7 +78,7 @@ circus-globalconf:
     - mode: 755
     - watch_in: 
       - mc_proxy: circus-pre-restart
-    - defaults: {{defaults|yaml}}
+    - defaults: {{defaults}}
 
 circus-setup-conf-include-directory:
   file.directory:
@@ -96,7 +96,7 @@ circus-logrotate:
     - mode: 755
     - watch_in: 
       - mc_proxy: circus-pre-restart
-    - defaults: {{defaults|yaml}}
+    - defaults: {{defaults}}
 
 {#- Run #}
 {% if grains['os'] in ['Ubuntu'] %}
@@ -110,7 +110,7 @@ circus-upstart-conf:
     - mode: 755
     - watch_in: 
       - mc_proxy: circus-pre-restart
-    - defaults: {{defaults|yaml}}
+    - defaults: {{defaults}}
 {% else %}
 circus-init-conf:
   file.managed:
@@ -122,7 +122,7 @@ circus-init-conf:
     - mode: 755
     - watch_in: 
       - mc_proxy: circus-pre-restart
-    - defaults: {{defaults|yaml}}
+    - defaults: {{defaults}}
 {% endif %}
 
 
@@ -136,7 +136,7 @@ circus-initdef-conf:
     - mode: 755
     - watch_in: 
       - mc_proxy: circus-pre-restart
-    - defaults: {{defaults|yaml}}
+    - defaults: {{defaults}}
 
 circus-start:
   service.running:
