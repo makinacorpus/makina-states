@@ -1656,6 +1656,11 @@ EOF
         origin="${SALT_CLOUD_DIR}/master.pub"
         dest="${master_dest}/master.pub"
         install_key
+        for i in "${MASTERSALT_PILLAR}/mastersalt.sls" "${SALT_PILLAR}/salt.sls";do
+            if [ -e "$i" ];then
+                rm -f "${i}"
+            fi
+        done
     fi
 
     # create pillars
