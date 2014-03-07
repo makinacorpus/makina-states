@@ -65,6 +65,14 @@ lxc-cleanup:
     - group: root
     - mode: 0755
 
+lxc-snap.sh:
+  file.managed:
+    - name: /sbin/lxc-snap.sh
+    - source: salt://makina-states/files/sbin/lxc-snap.sh
+    - user: root
+    - group: root
+    - mode: 0755
+
 lxc-install-non-harmful-packages:
   file.managed:
     - source: salt://makina-states/_scripts/build_lxccorepackages.sh
