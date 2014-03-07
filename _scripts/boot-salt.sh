@@ -1768,12 +1768,12 @@ EOF
             fi
         done
         if [ "x${IS_SALT_MINION}" != "x" ];then
-            if [ -e ${ETC_INIT}.d/salt-minion ] || [ -e ${ETC_INIT}/salt-minion ];then
+            if [ -e ${ETC_INIT}/salt-minion.conf ] || [ -e ${ETC_INIT}.d/salt-minion ];then
                 lazy_start_salt_daemons
             fi
         fi
         if [ "x${IS_MASTERSALT_MINION}" != "x" ];then
-            if [ -e ${ETC_INIT}*/mastersalt-minion ] || [ -e ${ETC_INIT}.d/mastersalt-minion ];then
+            if [ -e ${ETC_INIT}/mastersalt-minion.conf ] || [ -e ${ETC_INIT}.d/mastersalt-minion ];then
                 lazy_start_mastersalt_daemons
             fi
         fi
