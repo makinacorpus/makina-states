@@ -570,18 +570,20 @@ set_vars() {
         IS_SALT_MINION="y"
     fi
 
-    if [ "x${SALT_CLOUD}" = "x"] && [ -e "${ETC_INIT}/mastersalt-master.conf" ]\
-        || [ -e "${ETC_INIT}.d/mastersalt-master" ]\
-        || [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
-        IS_MASTERSALT="y"
-        IS_MASTERSALT_MASTER="y"
-        IS_MASTERSALT_MINION="y"
-    fi
-    if [ "x${SALT_CLOUD}" = "x"] &&  [ -e "${ETC_INIT}/mastersalt-minion.conf" ]\
-        || [ -e "${ETC_INIT}.d/mastersalt-minion" ]\
-        || [ "x${IS_MASTERSALT_MINION}" != "x" ];then
-        IS_MASTERSALT="y"
-        IS_MASTERSALT_MINION="y"
+    if [ "x${SALT_CLOUD}" = "x"];then 
+        if [ -e "${ETC_INIT}/mastersalt-master.conf" ]\
+            || [ -e "${ETC_INIT}.d/mastersalt-master" ]\
+            || [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
+            IS_MASTERSALT="y"
+            IS_MASTERSALT_MASTER="y"
+            IS_MASTERSALT_MINION="y"
+        fi
+        if [ -e "${ETC_INIT}/mastersalt-minion.conf" ]\
+            || [ -e "${ETC_INIT}.d/mastersalt-minion" ]\
+            || [ "x${IS_MASTERSALT_MINION}" != "x" ];then
+            IS_MASTERSALT="y"
+            IS_MASTERSALT_MINION="y"
+        fi
     fi
     if [ "x${FORCE_IS_SALT}" = "xno" ];then
         IS_SALT=""
