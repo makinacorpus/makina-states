@@ -1718,8 +1718,9 @@ EOF
             rm -fv /etc/init/*salt*.override
         fi
         find "${CONF_PREFIX}"/minion* -type f 2>/dev/null|while read mfic;do
-            bs_log "SaltCloud mode: Resetting salt minion conf (${SALT_MASTER_IP}/${SALT_MASTER_PORT}): ${mfic}"
+            bs_log "SaltCloud mode: Resetting salt minion conf ($(get_minion_id)/${SALT_MASTER_IP}/${SALT_MASTER_PORT}): ${mfic}"
             sed -i -e "s/^master:.*/master: ${SALT_MASTER_IP}/g" "${mfic}"
+            sed -i -e "s/^id:.*$/id: $(get_minion_id)/g" "${mfic}"
             sed -i -e "s/^master_port:.*/master_port: ${SALT_MASTER_PORT}/g" "${mfic}"
         done
         find "${CONF_PREFIX}"/master* -type f 2>/dev/null|while read mfic;do
@@ -1739,7 +1740,8 @@ EOF
             __install "${SALT_CLOUD_DIR}/minion.pem" "${minion_dest}/minion.pem"
             __install "${SALT_CLOUD_DIR}/minion.pub" "${minion_dest}/minion.pub"
             find "${MCONF_PREFIX}"/minion* -type f 2>/dev/null|while read mfic;do
-                bs_log "SaltCloud mode: Resetting mastersalt minion conf (${MASTERSALT}/${MASTERSALT_MASTER_PORT}): ${mfic}"
+                bs_log "SaltCloud mode: Resetting mastersalt minion conf ($(get_minion_id)/${MASTERSALT}/${MASTERSALT_MASTER_PORT}): ${mfic}"
+                sed -i -e "s/^id:.*$/id: $(get_minion_id)/g" "${mfic}"
                 sed -i -e "s/^master:.*$/master: ${MASTERSALT}/g" "${mfic}"
                 sed -i -e "s/^master_port:.*$/master_port: ${MASTERSALT_MASTER_PORT}/g" "${mfic}"
             done
