@@ -3242,6 +3242,13 @@ parse_cli_opts() {
             SALT_BOOT_KILL="1"
             argmatch="1"
         fi
+        if [ "x${1}" = "x--check-alive" ];then
+            SALT_BOOT_LIGHT_VARS="1"
+            SALT_BOOT_SKIP_HIGHSTATES="1"
+            SALT_BOOT_SKIP_CHECKOUTS="1"
+            SALT_BOOT_CHECK_ALIVE="y"
+            argmatch="1"
+        fi
         if [ "x${1}" = "x--restart-masters" ];then
             SALT_BOOT_LIGHT_VARS="1"
             SALT_BOOT_SKIP_HIGHSTATES="1"
