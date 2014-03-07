@@ -9,7 +9,7 @@ find /etc/*salt/pki/master/minions*/*\
   | while read fic;do rm -fv "${fic}";done
 sed -i -e "s/master:.*/master: 0.0.0.1/g" $(find /etc/*salt/minion* -type f)
 find / -name .bash_history | while read fic;do echo >"${fic}";done
-find /etc/init/*salt*\
+find /etc/init/*salt* |grep -v override\
   | while read fic;do 
     echo manual > ${fic//.conf}.override
 done
