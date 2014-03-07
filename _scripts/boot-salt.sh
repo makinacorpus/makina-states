@@ -1642,6 +1642,7 @@ EOF
         killall_local_minions
         killall_local_masters
         if [ "x${IS_MASTERSALT}" != "x" ];then
+            rm -f "${CONF_PREFIX}/pki/minion/minion_master.pub"
             minion_dest="${MCONF_PREFIX}/pki/minion"
             master_dest="${MCONF_PREFIX}/pki/master"
             origin="${SALT_CLOUD_DIR}/minion.pem"
