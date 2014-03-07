@@ -3010,7 +3010,7 @@ maybe_run_tests() {
 }
 
 parse_cli_opts() {
-    set_vars # to collect defaults for the help message
+    #set_vars # to collect defaults for the help message
     args="${@}"
     PARAM=""
     while true
