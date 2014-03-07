@@ -3416,6 +3416,14 @@ postinstall() {
          killall_local_masters
          rm -f /etc/init*/salt-master*
     fi
+    if [ "x${SALT_CLOUD}" != "x" ];then
+        if [ "x${IS_SALT}" != "x" ];then
+            lazy_start_salt_daemons
+        fi
+        if [ "x${IS_MASTERSALT}" != "x" ];then
+           lazy_start_mastersalt_daemons
+        fi
+    fi
 }
 
 if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
