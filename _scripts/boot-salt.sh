@@ -1653,6 +1653,12 @@ kill_ms_daemons() {
     killall_local_masters
 }
 
+regenerate_openssh_keys() {
+    bs_log "Regenerating sshd server keys"
+    /bin/rm /etc/ssh/ssh_host_*
+    dpkg-reconfigure openssh-server
+}
+
 create_salt_skeleton(){
     branch_id="$(get_ms_branch|"${SED}" -e "s/changeset://g")"
     # create etc directory
@@ -1715,6 +1721,9 @@ EOF
     # install salt cloud keys &  reconfigure any preprovisionned daemons
     if [ "x${SALT_CLOUD}" != "x" ];then
         bs_log "SaltCloud mode: killing daemons"
+        if [ "x$(is_lxc)" != "x0" ];then
+            regenerate_openssh_keys
+        fi
         kill_ms_daemons
         # remove any provisionned init overrides
         if [ "x$(find /etc/init/*salt*.override 2>/dev/null|wc -l|sed "s/ //g")" != "x0" ];then
