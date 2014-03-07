@@ -1940,21 +1940,21 @@ a\    publish_port: ${MASTERSALT_MASTER_PUBLISH_PORT}
 # ------------ SALT INSTALLATION PROCESS
 
 mastersalt_master_processes() {
-    ${PS} aux|grep salt-master|grep -v boot-salt|grep mastersalt|grep -v grep|wc -l|sed -e "s/ //g"
+    ${PS} aux|grep salt-master|grep -v deploy.sh|grep -v boot-salt|grep mastersalt|grep -v grep|wc -l|sed -e "s/ //g"
 }
 
 
 mastersalt_minion_processes() {
-    ${PS} aux|grep salt-minion|grep -v boot-salt|grep mastersalt|grep -v grep|wc -l|sed -e "s/ //g"
+    ${PS} aux|grep salt-minion|grep -v deploy.sh|grep -v boot-salt|grep mastersalt|grep -v grep|wc -l|sed -e "s/ //g"
 }
 
 master_processes() {
-    ${PS} aux|grep salt-master|grep -v boot-salt|grep -v mastersalt|grep -v grep|wc -l|sed -e "s/ //g"
+    ${PS} aux|grep salt-master|grep -v deploy.sh|grep -v boot-salt|grep -v mastersalt|grep -v grep|wc -l|sed -e "s/ //g"
 }
 
 
 minion_processes() {
-    ${PS} aux|grep salt-minion|grep -v boot-salt|grep -v mastersalt|grep -v grep|wc -l|sed -e "s/ //g"
+    ${PS} aux|grep salt-minion|grep -v deploy.sh|grep -v boot-salt|grep -v mastersalt|grep -v grep|wc -l|sed -e "s/ //g"
 }
 
 
