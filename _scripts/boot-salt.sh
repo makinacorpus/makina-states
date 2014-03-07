@@ -652,7 +652,7 @@ set_vars() {
         if [ "x${SALT_CLOUD}" = "x" ];then
             MASTERSALT_MASTER_IP="${MASTERSALT_MASTER_IP:-$(dns_resolve ${MASTERSALT_MASTER_DNS})}"
         else
-            MASTERSALT_MASTER_IP="${MASTERSALT_MASTER_DNS}"
+            MASTERSALT_MASTER_IP="127.0.0.1"
         fi
         MASTERSALT_MASTER_PORT="${MASTERSALT_MASTER_PORT:-"${MASTERSALT_PORT:-"4606"}"}"
         MASTERSALT_MASTER_PUBLISH_PORT="$(( ${MASTERSALT_MASTER_PORT} - 1 ))"
@@ -699,7 +699,7 @@ set_vars() {
         if [ "x${SALT_CLOUD}" = "x" ];then
             SALT_MASTER_IP="${SALT_MASTER_IP:-$(dns_resolve ${SALT_MASTER_DNS})}"
         else
-            SALT_MASTER_IP="${SALT_MASTER_DNS}"
+            SALT_MASTER_IP="127.0.0.1"
         fi
         SALT_MASTER_IP="${SALT_MASTER_IP:-$(dns_resolve ${SALT_MASTER_DNS})}"
         SALT_MASTER_PORT="${SALT_MASTER_PORT:-"${SALT_MASTER_PORT_DEFAULT}"}"
@@ -2299,7 +2299,7 @@ make_mastersalt_association() {
         debug_msg "Mastersalt minion \"${minion_id}\" already registered on ${MASTERSALT}"
         salt_echo "changed=false comment='mastersalt minion already registered'"
     else
-        if [ "x${MASTERSALT_MASTER_IP}" = "x127.0.0.0.1" ];then
+        if [ "x${MASTERSALT_MASTER_IP}" = "x127.0.0.1" ];then
             debug_msg "Forcing mastersalt master restart"
             restart_local_mastersalt_masters
         fi
