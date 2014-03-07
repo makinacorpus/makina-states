@@ -3595,7 +3595,7 @@ cleanup_execlogs() {
 }
 
 postinstall() {
-    bs_log "postinstall":mastersalt_processes
+    bs_log "postinstall"mastersalt_processes
    if [ x${FORCE_IS_MASTERSALT_MASTER} = "no" ];then
          killall_local_mastersalt_masters
          rm -f /etc/init*/mastersalt-master*
@@ -3658,15 +3658,15 @@ if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
         handle_upgrades
         setup_virtualenv
         install_buildouts
-        bs_log "skel":mastersalt_processes
+        bs_log "skel";mastersalt_processes
         create_salt_skeleton
-        bs_log "before env":mastersalt_processes
+        bs_log "before env";mastersalt_processes
         install_mastersalt_env
-        bs_log "after env":mastersalt_processes
+        bs_log "after env";mastersalt_processes
         install_salt_env
         run_highstates
         maybe_install_projects
-        bs_log "after HS":mastersalt_processes
+        bs_log "after HS";mastersalt_processes
         maybe_run_tests
         postinstall
     fi
