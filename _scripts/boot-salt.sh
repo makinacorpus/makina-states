@@ -2145,13 +2145,11 @@ restart_local_mastersalt_masters() {
 }
 
 restart_local_mastersalt_minions() {
-set -x
     if [ "x${IS_MASTERSALT_MINION}" != "x" ];then
         service mastersalt-minion stop
         killall_local_mastersalt_minions
         service mastersalt-minion restart
     fi
-set +x
 }
 
 restart_local_masters() {
@@ -2505,6 +2503,7 @@ make_mastersalt_association() {
 }
 
 lazy_start_mastersalt_daemons() {
+set -x
     if [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
         if [ "x$(mastersalt_master_processes)" = "x0" ];then
             restart_local_mastersalt_masters
@@ -2523,6 +2522,7 @@ lazy_start_mastersalt_daemons() {
             fi
         fi
     fi
+set +x
 
 }
 
