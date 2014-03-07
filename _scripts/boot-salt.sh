@@ -1639,6 +1639,10 @@ EOF
         killall_local_mastersalt_minions
         killall_local_minions
         killall_local_masters
+        # remove any provisionned init overrides
+        if [ -f /etc/init ];then
+            rm -f /etc/init/*salt*.override
+        fi
         if [ "x${IS_MASTERSALT}" != "x" ];then
             rm -f "${CONF_PREFIX}/pki/minion/minion_master.pub"
             minion_dest="${MCONF_PREFIX}/pki/minion"
