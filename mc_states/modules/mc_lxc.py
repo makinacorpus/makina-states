@@ -252,7 +252,7 @@ def settings():
                     not '-b' in lxc_data['script_args']
                     or not '--branch' in lxc_data['script_args']
                 ):
-                    lxc_data['script_args'] += '-b {0}'.format(branch)
+                    lxc_data['script_args'] += ' -b {0}'.format(branch)
                 for i in ["from_container", 'bootsalt_branch',
                           'size', 'image', 'bridge', 'netmask', 'gateway',
                           'dnsservers', 'backing', 'vgname', 'lvname',
