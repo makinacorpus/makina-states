@@ -3,7 +3,7 @@
 # freeze hostile packages
 FROZEN_PACKAGES="udev whoopsie ntp fuse grub-common grub-pc grub-pc-bin grub2-common"
 # specific to docker
-if [[ -f /.dockerinit ]];then
+if [ -f /.dockerinit ];then
     FROZEN_PACKAGES="$FROZEN_PACKAGES resolvconf"
 fi
 for i in $FROZEN;do
@@ -16,7 +16,7 @@ done
 #pruning old logs & pids
 rm -rf /var/run/network/* || /bin/true
 # comment out the ntpdate ifup plugin inside a container
-if [[ -f /etc/network/if-up.d/ntpdate ]];then
+if [ -f /etc/network/if-up.d/ntpdate ];then
     sed -re "s/^(([^#].*)|)$/#\\1/g" -i /etc/network/if-up.d/ntpdate
 fi
 for i in /var/run/*.pid /var/run/dbus/pid /etc/nologin;do
@@ -46,7 +46,7 @@ for f in\
     $(find /etc/init -name module*.conf)\
     ;do SERVICES_DISABLED="$SERVICES_DISABLED $f";done
 # services only harmfull in a docker
-if [[ -f /.dockerinit ]];then
+if [ -f /.dockerinit ];then
     for f in\
         $(find /etc/init -name resolvconf.conf)\
         $(find /etc/init -name cloud-init-container.conf)\
@@ -81,26 +81,26 @@ done
 # uid accouting is broken in lxc, breaking in turn pam_ssh login
 sed -re "s/^(session.*\spam_loginuid\.so.*)/#\\1/g" -i /etc/pam.d/* || /bin/true
 # specific to docker
-if [[ -f /.dockerinit ]];then
+if [ -f /.dockerinit ];then
     # redirecting console to docker log
     for i in console tty0 tty1 tty2 tty3 tty4 tty5 tty6 tty7;do
         rm -f /dev/$i || /bin/true
         ln -s /dev/tty /dev/$i || /bin/true
     done
     en="/etc/network"
-    if [[ -f $en/if-up.d/000resolvconf ]];then
+    if [ -f $en/if-up.d/000resolvconf ];then
         mv -f $en/if-up.d/000resolvconf $en/if-up.d_000resolvconf.bak || /bin/true
     fi
-    if [[ -f $en/if-down.d/resolvconf ]];then
+    if [ -f $en/if-down.d/resolvconf ];then
         mv -f $en/if-down.d/resolvconf $en/if-down.d_resolvconf.bak || /bin/true
     fi
 fi
-if [[ -f /etc/lsb-release ]];then
+if [ -f /etc/lsb-release ];then
     . /etc/lsb-release
 fi
 # if this isn't lucid, then we need to twiddle the network upstart bits :(
-if [[ -f /etc/network/if-up.d/upstart ]] &&\
-   [[ $DISTRIB_CODENAME != "lucid" ]];then
+if [ -f /etc/network/if-up.d/upstart ] &&\
+   [ $DISTRIB_CODENAME != "lucid" ];then
         sed -i 's/^.*emission handled.*$/echo Emitting lo/' /etc/network/if-up.d/upstart
 fi
 exit 0
