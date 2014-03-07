@@ -511,7 +511,6 @@ set_vars() {
         DEFAULT_MS_BRANCH="changeset:$(git log|head -n1|awk '{print $2}')"
     fi
     MS_BRANCH="${MS_BRANCH:-${DEFAULT_MS_BRANCH}}"
-    set_valid_upstreams
     FORCE_MS_BRANCH="${FORCE_MS_BRANCH:-""}"
     PREFIX="${PREFIX:-${ROOT}srv}"
     BIN_DIR="${BIN_DIR:-${ROOT}usr/bin}"
@@ -539,6 +538,7 @@ set_vars() {
     bootstrap_pref="makina-states.bootstraps"
     bootstrap_nodetypes_pref="${bootstrap_pref}.nodetypes"
     bootstrap_controllers_pref="${bootstrap_pref}.controllers"
+    set_valid_upstreams
 
     # nodetypes (calculed now in get_salt_nodetype) and controllers sls
     SALT_MASTER_CONTROLLER_DEFAULT="salt_master"
