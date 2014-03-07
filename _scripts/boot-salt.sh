@@ -692,6 +692,11 @@ set_vars() {
             SALT_MASTER_DNS="${SALT_MASTER_DNS_DEFAULT}"
             SALT_MASTER_PORT="${SALT_MASTER_PORT_DEFAULT}"
         fi
+        # on second round we may reset defaults
+        if [ "x${SALT_CLOUD}" != "x" ] && [ "x${IS_MASTERSALT}" != "x" ];then
+            SALT_MASTER_DNS="localhost"
+            SALT_MASTER_PORT="4506"
+        fi
         SALT_MASTER_DNS="${SALT_MASTER_DNS:-"${SALT_MASTER_DNS_DEFAULT}"}"
         if [ "x${SALT_CLOUD}" = "x" ];then
             SALT_MASTER_IP="${SALT_MASTER_IP:-$(dns_resolve ${SALT_MASTER_DNS})}"
