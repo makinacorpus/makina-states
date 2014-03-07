@@ -26,6 +26,8 @@ def settings():
             The default master to link to into salt cloud profile
           master_port
             The default master port to link to into salt cloud profile
+          mode
+            (salt (default) or mastersalt)
           pvdir
             salt cloud providers directory
           pfdir
@@ -34,6 +36,10 @@ def settings():
             bootsalt branch to use (default: master or prod if prod)
           salty_targets
             Target where to bootstrap salt using the saltify saltcloud driver
+          bootsalt_args
+            makina-states bootsalt args in salt mode
+          bootsalt_mastersalt_args
+            makina-states bootsalt args in mastersalt mode
 
             ::
 

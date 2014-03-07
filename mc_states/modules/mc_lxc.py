@@ -96,6 +96,8 @@ def settings():
             '16'
         netmask_full
             '255.255.0.0'
+        mode
+            (salt (default) or mastersalt)
         profile
             default profile size type to use (medium)
         profile_type
