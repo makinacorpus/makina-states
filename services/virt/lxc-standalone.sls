@@ -99,7 +99,7 @@ etc-init.d-lxc-net-makina:
   file.managed:
     - name: /etc/init.d/lxc-net-makina
     - template: jinja
-    - defaults: {{lxcSettings|yaml}}
+    - defaults: {{lxcSettings.defaults|yaml}}
     - source: salt://makina-states/files/etc/init.d/lxc-net-makina.sh
     - mode: 750
     - user: root
@@ -116,7 +116,7 @@ etc-init-lxc-net-makina:
     - source: salt://makina-states/files/etc/init/lxc-net-makina.conf
     - mode: 750
     - user: root
-    - defaults: {{lxcSettings|yaml}}
+    - defaults: {{lxcSettings.defaults|yaml}}
     - group: root
     - require_in:
       - service: lxc-services-enabling
