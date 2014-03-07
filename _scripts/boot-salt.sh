@@ -459,7 +459,6 @@ get_salt_nodetype() {
 set_vars() {
     set_colors
     if [ "x$(echo "${LAUNCH_ARGS}" | grep -q from-salt-cloud;echo ${?})" = "x0" ];then
-        bs_yellow_log "SaltCloud mode"
         SALT_CLOUD="1"
     else
         SALT_CLOUD="${SALT_CLOUD:-}"
@@ -1635,15 +1634,18 @@ EOF
     fi
     # install salt cloud keys &  reconfigure any preprovisionned daemons
     if [ "x${SALT_CLOUD}" != "x" ];then
+        bs_log "SaltCloud mode: killing daemons"
         killall_local_mastersalt_masters
         killall_local_mastersalt_minions
         killall_local_minions
         killall_local_masters
         # remove any provisionned init overrides
-        if [ -f /etc/init ];then
-            rm -f /etc/init/*salt*.override
+        if [ "x$(find /etc/init/*salt*.override|wc -l|sed "s/ //g")" != "x0" ];then
+            bs_log "SaltCloud mode: removing init stoppers"
+            rm -fv /etc/init/*salt*.override
         fi
         if [ "x${IS_MASTERSALT}" != "x" ];then
+            bs_log "SaltCloud mode: Resetting mastersalt minion keys"
             rm -f "${CONF_PREFIX}/pki/minion/minion_master.pub"
             minion_dest="${MCONF_PREFIX}/pki/minion"
             master_dest="${MCONF_PREFIX}/pki/master"
@@ -1654,16 +1656,18 @@ EOF
             dest="${minion_dest}/minion.pub"
             install_key
             find "${MCONF_PREFIX}"/minion* -type f 2>/dev/null|while read mfic;do
+                bs_log "SaltCloud mode: Resetting mastersalt minion conf (${MASTERSALT}/${MASTERSALT_MASTER_PORT}): ${mfic}"
                 sed -i -e "s/^master:.*$/master: ${MASTERSALT}/g" "${mfic}"
                 sed -i -e "s/^master_port:.*$/master_port: ${MASTERSALT_MASTER_PORT}/g" "${mfic}"
             done
-
         fi
         find "${CONF_PREFIX}"/minion* -type f 2>/dev/null|while read mfic;do
+            bs_log "SaltCloud mode: Resetting salt minion conf (${SALT_MASTER_IP}/${SALT_MASTER_PORT}): ${mfic}"
             sed -i -e "s/^master:.*/master: ${SALT_MASTER_IP}/g" "${mfic}"
             sed -i -e "s/^master_port:.*/master_port: ${SALT_MASTER_PORT}/g" "${mfic}"
         done
         find "${CONF_PREFIX}"/master* -type f 2>/dev/null|while read mfic;do
+            bs_log "SaltCloud mode: Resetting salt master conf (${SALT_MASTER_IP}/${SALT_MASTER_PORT}/${SALT_MASTER_PUBLISH_PORT}): ${mfic}"
             sed -i -e "s/^interface:.*/interface: ${SALT_MASTER_IP}/g" "${mfic}"
             sed -i -e "s/^ret_port:.*/ret_port: ${SALT_MASTER_PORT}/g" "${mfic}"
             sed -i -e "s/^publish_port:.*/publish_port: ${SALT_MASTER_PUBLISH_PORT}/g" "${mfic}"
@@ -1673,6 +1677,7 @@ EOF
         #fi
         #cp -f "${minion_dest}/minion.pub" "${CONF_PREFIX}/pki/master/minions/$(get_minion_id)"
         # duplicate key for mastersalt, uniq keypair for the 2 minions
+        bs_log "SaltCloud mode: Installing keys"
         minion_dest="${CONF_PREFIX}/pki/minion"
         master_dest="${CONF_PREFIX}/pki/master"
         origin="${SALT_CLOUD_DIR}/minion.pem"
@@ -1689,6 +1694,7 @@ EOF
         install_key
         for i in "${MASTERSALT_PILLAR}/mastersalt.sls" "${SALT_PILLAR}/salt.sls";do
             if [ -e "$i" ];then
+                bs_log "SaltCloud mode: removing ${i} default conf for it to be resetted"
                 rm -f "${i}"
             fi
         done
