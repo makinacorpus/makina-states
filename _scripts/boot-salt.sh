@@ -458,7 +458,12 @@ get_salt_nodetype() {
 
 set_vars() {
     set_colors
-    SALT_CLOUD="${SALT_CLOUD:-}"
+    if [ "x$(echo "${LAUNCH_ARGS}" | grep -q from-salt-cloud;echo ${?})" = "x0" ];then
+        bs_yellow_log "SaltCloud mode"
+        SALT_CLOUD="1"
+    else
+        SALT_CLOUD="${SALT_CLOUD:-}"
+    fi
     SALT_CLOUD_DIR="${SALT_CLOUD_DIR:-"/tmp/.saltcloud"}"
     SALT_BOOT_LOCK_FILE="/tmp/boot_salt_sleep"
     LAST_RETCODE_FILE="/tmp/boot_salt_rc"
@@ -585,6 +590,7 @@ set_vars() {
             IS_MASTERSALT_MINION="y"
         fi
     fi
+
     if [ "x${FORCE_IS_SALT}" = "xno" ];then
         IS_SALT=""
         IS_SALT_MASTER=""
@@ -3003,7 +3009,8 @@ parse_cli_opts() {
             SALT_BOOT_CLEANUP="1";argmatch="1"
         fi
         if [ "x${1}" = "x--from-salt-cloud" ];then
-            SALT_CLOUD="1";argmatch="1"
+            SALT_CLOUD="1"
+            argmatch="1"
             SALT_BOOT_SKIP_HIGHSTATES="1"
         fi
         if [ "x${1}" = "x-q" ] || [ "x${1}" = "x--quiet" ];then
