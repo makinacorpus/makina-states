@@ -63,6 +63,7 @@ def settings():
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.cloud', {
                 'prefix': prefix,
+                'mode': 'salt',
                 'bootsalt_args': '-C --from-salt-cloud -no-M',
                 'bootsalt_mastersalt_args': '-C --from-salt-cloud --mastersalt-minion',
                 'bootsalt_branch': {
@@ -85,7 +86,7 @@ def settings():
             c_data['name'] = c_data.get('name', t)
             c_data['ssh_host'] = c_data.get('ssh_host', c_data['name'])
             c_data['profile'] = 'ms-salt-minion'
-            if 'mastersalt' in c_data.get('mode', 'salt'):
+            if 'mastersalt' in c_data.get('mode', data['mode']):
                 default_args = data['bootsalt_args']
             else:
                 default_args = data['bootsalt_mastersalt_args']

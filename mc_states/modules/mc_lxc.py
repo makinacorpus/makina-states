@@ -141,7 +141,7 @@ def settings():
                     'profile': 'medium',
                     'profile_type': 'lvm',
                     'gateway': '10.5.0.1',
-                    'mastersalt': False,
+                    'mode': cloudSettings['mode'],
                     'master': None,
                     'master_port': '4506',
                     'image': 'ubuntu',
@@ -221,8 +221,6 @@ def settings():
                         raise Exception('Missing data {1}\n:{0}'.format(i, lxc_data))
                     # shortcut name for profiles
                     # small -> ms-target-small
-                    ms = lxc_data.get('mastersalt',
-                                      lxcSettings['defaults']['mastersalt'])
                     profile_type = lxc_data.get(
                         'profile_type',
                         lxcSettings['defaults']['profile_type'])
@@ -241,9 +239,9 @@ def settings():
                 lxc_data.setdefault('from_container', None)
                 lxc_data.setdefault('snapshot', None)
                 if 'mastersalt' in lxc_data.get('mode', 'salt'):
-                    default_args = cloudSettings['bootsalt_args']
-                else:
                     default_args = cloudSettings['bootsalt_mastersalt_args']
+                else:
+                    default_args = cloudSettings['bootsalt_args']
                 lxc_data['script_args'] = lxc_data.get('script_args',
                                                        default_args)
                 branch = lxc_data.get('bootsalt_branch',
@@ -254,6 +252,7 @@ def settings():
                 ):
                     lxc_data['script_args'] += ' -b {0}'.format(branch)
                 for i in ["from_container", 'bootsalt_branch',
+                          "master", "master_port",
                           'size', 'image', 'bridge', 'netmask', 'gateway',
                           'dnsservers', 'backing', 'vgname', 'lvname',
                           'vgname', 'ssh_username', 'users', 'sudo',

@@ -68,8 +68,9 @@ profiles_lxc_salt:
       - mc_proxy: salt-cloud-predeploy
     - require_in:
       - mc_proxy: salt-cloud-postdeploy
-    - vm_opts:
-      dnsservers: {{dnsservers|yaml}}
+    - minion: {master: "{{data.master}}",
+               master_port: {{data.master_port}}}
+    - dnsservers: {{dnsservers|yaml}}
 {%    for var in ["from_container",
                    "snapshot",
                    "image",
@@ -89,7 +90,7 @@ profiles_lxc_salt:
                    "lxc_conf",
                    "lxc_conf_unset"] %}
 {%      if data.get(var) %}
-      {{var}}: {{data[var]}}
+    - {{var}}: {{data[var]}}
 {%      endif%}
 {%    endfor%}
 {%  endfor %}
