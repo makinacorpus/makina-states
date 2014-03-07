@@ -681,26 +681,29 @@ set_vars() {
     # salt variables
     SALT_MINION_ID="$(get_minion_id)"
     if [ "x${IS_SALT}" != "x" ];then
+        SALT_MASTER_IP_DEFAULT="127.0.0.1"
         SALT_MASTER_DNS_DEFAULT="localhost"
         SALT_MASTER_PORT_DEFAULT="4506"
-        if [ "x${IS_MASTERSALT}" = "x" ] && [ "x${SALT_CLOUD}" != "x" ] && [ -e "${SALT_CLOUD_DIR}/minion" ];then
-            SALT_MASTER_DNS_DEFAULT="$(egrep "^master:" "${SALT_CLOUD_DIR}"/minion|awk '{print $2}'|sed -e "s/ //")"
-            SALT_MASTER_PORT_DEFAULT="$(egrep "^master_port:" "${SALT_CLOUD_DIR}"/minion|awk '{print $2}'|sed -e "s/ //")"
+        set_default_vars=""
+        if [ "x${SALT_CLOUD}" != "x" ];then
+            if [ "x${IS_MASTERSALT}" = "x" ] && [ -e "${SALT_CLOUD_DIR}/minion" ];then
+                SALT_MASTER_DNS_DEFAULT="$(egrep "^master:" "${SALT_CLOUD_DIR}"/minion|awk '{print $2}'|sed -e "s/ //")"
+                SALT_MASTER_IP_DEFAULT="${SALT_MASTER_DNS_DEFAULT}"
+                SALT_MASTER_PORT_DEFAULT="$(egrep "^master_port:" "${SALT_CLOUD_DIR}"/minion|awk '{print $2}'|sed -e "s/ //")"
+                set_default_vars="x"
+            fi
+            if [ "x${IS_MASTERSALT}" != "x" ];then
+                set_default_vars="x"
+            fi
+        fi
+        if [ "x${set_default_vars}" != "x" ];then
             SALT_MASTER_DNS="${SALT_MASTER_DNS_DEFAULT}"
+            SALT_MASTER_IP="${SALT_MASTER_IP_DEFAULT}"
             SALT_MASTER_PORT="${SALT_MASTER_PORT_DEFAULT}"
         fi
-        # on second round we may reset defaults
-        if [ "x${SALT_CLOUD}" != "x" ] && [ "x${IS_MASTERSALT}" != "x" ];then
-            SALT_MASTER_DNS="localhost"
-            SALT_MASTER_PORT="4506"
-        fi
         SALT_MASTER_DNS="${SALT_MASTER_DNS:-"${SALT_MASTER_DNS_DEFAULT}"}"
-        if [ "x${SALT_CLOUD}" = "x" ];then
-            SALT_MASTER_IP="${SALT_MASTER_IP:-$(dns_resolve ${SALT_MASTER_DNS})}"
-        else
-            SALT_MASTER_IP="127.0.0.1"
-        fi
         SALT_MASTER_IP="${SALT_MASTER_IP:-$(dns_resolve ${SALT_MASTER_DNS})}"
+
         SALT_MASTER_PORT="${SALT_MASTER_PORT:-"${SALT_MASTER_PORT_DEFAULT}"}"
         SALT_MASTER_PUBLISH_PORT="$(( ${SALT_MASTER_PORT} - 1 ))"
 
@@ -1565,13 +1568,11 @@ install_buildouts() {
     fi
 }
 
-
 install_key() {
     if [ -e "${origin}" ];then
         cp -f "${origin}" "${dest}"
     fi
 }
-
 
 create_salt_skeleton(){
     branch_id="$(get_ms_branch|"${SED}" -e "s/changeset://g")"
@@ -1640,7 +1641,7 @@ EOF
         killall_local_minions
         killall_local_masters
         # remove any provisionned init overrides
-        if [ "x$(find /etc/init/*salt*.override|wc -l|sed "s/ //g")" != "x0" ];then
+        if [ "x$(find /etc/init/*salt*.override 2>/dev/null|wc -l|sed "s/ //g")" != "x0" ];then
             bs_log "SaltCloud mode: removing init stoppers"
             rm -fv /etc/init/*salt*.override
         fi
