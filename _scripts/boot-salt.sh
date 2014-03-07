@@ -3398,6 +3398,17 @@ cleanup_execlogs() {
     done
 }
 
+postinstall() {
+   if [ x${FORCE_IS_MASTERSALT_MASTER} = "no" ];then
+         killall_local_mastersalt_masters
+         rm -f /etc/init*/mastersalt-master*
+    fi
+    if [ x${FORCE_IS_SALT_MASTER} = "no" ];then
+         killall_local_masters
+         rm -f /etc/init*/salt-master*
+    fi
+}
+
 if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
     parse_cli_opts $LAUNCH_ARGS
     if [ "x$(dns_resolve localhost)" = "x${DNS_RESOLUTION_FAILED}" ];then
@@ -3444,6 +3455,7 @@ if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
         run_highstates
         maybe_install_projects
         maybe_run_tests
+        postinstall
     fi
     exit 0
 fi
