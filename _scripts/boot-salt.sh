@@ -1630,7 +1630,7 @@ EOF
             install_key
             find "${MCONF_PREFIX}"/minion* -type f 2>/dev/null|while read mfic;do
                 sed -e "s/^master:.*$/master: ${MASTERSALT}/g" -i "${mfic}"
-                sed -e "s/^master_port:.*$/master_port: ${MASTERSALT_PORT}/g" -i "${mfic}"
+                sed -e "s/^master_port:.*$/master_port: ${MASTERSALT_MASTER_PORT}/g" -i "${mfic}"
             done
         fi
         find "${CONF_PREFIX}"/minion* -type f 2>/dev/null|while read mfic;do
