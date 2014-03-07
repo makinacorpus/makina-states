@@ -16,7 +16,7 @@ To provision a new lxc provider, you need to:
 * We use **LVM** as the default backing store, and the **data** volume group.
 * Salt cloud profiles are just collections of default for your next provision.
 
- * The naming scheme is ms-**{encoded minion id}**-**{size profile}**-**{profile type}**, eg profiles::
+ * The naming scheme of raw salt-cloud is ms-**{encoded minion id}**-**{size profile}**-**{profile type}**, eg profiles::
 
     ms-devhost-10-local-small-dir
     ms-devhost-10-local-small-lvm
@@ -41,7 +41,7 @@ To provision a new lxc provider, you need to:
         :xxsmall: 1g
         :xxxsmall: 500m
 
-* Those are the types available in profiles
+* Those are the types available in salt-cloud profiles
 
     :lvm-sratch: starting a lxc container from scratch (lvm backing)
     :dir-scratch:  starting a lxc container from scratch (directory backing)
@@ -49,7 +49,8 @@ To provision a new lxc provider, you need to:
     :dir: cloning from existing container (directory backing)
 
 
-The idea is to add to your specific minion pillar some lxc entries as follow:
+But you can more easily use pillar entries to define each of your coantaners as
+follow:
 
 .. code-block:: yaml
 
@@ -63,6 +64,14 @@ The idea is to add to your specific minion pillar some lxc entries as follow:
     mysupertest4:
       name: gfoobar2.test.com
       ip: 10.5.10.15
+      profile: small
+      mode: mastersalt
+      profile_type: lvm
+      password: foobar
+    mysupertest6:
+      name: gfoobar2.test.com
+      ip: 10.5.10.17
+      from_container: makina-states
       profile: small
       mode: mastersalt
       profile_type: lvm
