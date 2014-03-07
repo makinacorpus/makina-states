@@ -2145,11 +2145,13 @@ restart_local_mastersalt_masters() {
 }
 
 restart_local_mastersalt_minions() {
+set -x
     if [ "x${IS_MASTERSALT_MINION}" != "x" ];then
         service mastersalt-minion stop
         killall_local_mastersalt_minions
         service mastersalt-minion restart
     fi
+set +x
 }
 
 restart_local_masters() {
