@@ -574,32 +574,31 @@ set_vars() {
         IS_SALT="y"
         IS_SALT_MINION="y"
     fi
-    if [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
+    MASTERSALT_INIT_PRESENT=""
+    SALT_INIT_PRESENT=""
+    # when we come from salt cloud, will never have to
+    # test for mastersalt, it is explictly set
+    if [ "x${SALT_CLOUD}" = "x" ];then
+        if [ -e "${ETC_INIT}.d/mastersalt-master" ]\
+            || [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
+            MASTERSALT_INIT_PRESENT="y"
+        fi
+        if [ -e "${ETC_INIT}.d/mastersalt-minion" ]\
+            || [ "x${IS_MASTERSALT_MINION}" != "x" ];then
+            SALT_INIT_PRESENT="y"
+        fi
+    fi
+    if [ "x${MASTERSALT_INIT_PRESENT}" != "x" ]\
+        || [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
         IS_MASTERSALT="y"
         IS_MASTERSALT_MASTER="y"
         IS_MASTERSALT_MINION="y"
     fi
-    if [ "x${IS_MASTERSALT_MINION}" != "x" ];then
+    if  [ "x${SALT_INIT_PRESENT}" != "x" ]\
+        ||  [ "x${IS_MASTERSALT_MINION}" != "x" ];then
         IS_MASTERSALT="y"
         IS_MASTERSALT_MINION="y"
     fi
-
-    if [ "x${SALT_CLOUD}" = "x" ];then
-        if [ -e "${ETC_INIT}/mastersalt-master.conf" ]\
-            || [ -e "${ETC_INIT}.d/mastersalt-master" ]\
-            || [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
-            IS_MASTERSALT="y"
-            IS_MASTERSALT_MASTER="y"
-            IS_MASTERSALT_MINION="y"
-        fi
-        if [ -e "${ETC_INIT}/mastersalt-minion.conf" ]\
-            || [ -e "${ETC_INIT}.d/mastersalt-minion" ]\
-            || [ "x${IS_MASTERSALT_MINION}" != "x" ];then
-            IS_MASTERSALT="y"
-            IS_MASTERSALT_MINION="y"
-        fi
-    fi
-
     if [ "x${FORCE_IS_SALT}" = "xno" ];then
         IS_SALT=""
         IS_SALT_MASTER=""
@@ -610,7 +609,6 @@ set_vars() {
         IS_MASTERSALT_MASTER=""
         IS_MASTERSALT_MINION=""
     fi
-
     # force mode (via cmdline)
     if [ "x${FORCE_IS_MASTERSALT}" = "xno" ];then IS_SALT_MINION="";fi
     if [ "x${FORCE_IS_SALT_MINION}" = "xno" ];then IS_SALT_MINION="";fi
@@ -1635,7 +1633,7 @@ render_dirs: [${MASTERSALT_ROOT}/_renderers, ${MASTERSALT_MS}/mc_states/renderer
 EOF
         fi
     fi
-    # install salt cloud keys
+    # install salt cloud keys &  reconfigure any preprovisionned daemons
     if [ "x${SALT_CLOUD}" != "x" ];then
         killall_local_mastersalt_masters
         killall_local_mastersalt_minions
@@ -1655,10 +1653,16 @@ EOF
                 sed -i -e "s/^master:.*$/master: ${MASTERSALT}/g" "${mfic}"
                 sed -i -e "s/^master_port:.*$/master_port: ${MASTERSALT_MASTER_PORT}/g" "${mfic}"
             done
+
         fi
         find "${CONF_PREFIX}"/minion* -type f 2>/dev/null|while read mfic;do
             sed -i -e "s/^master:.*/master: ${SALT_MASTER_IP}/g" "${mfic}"
             sed -i -e "s/^master_port:.*/master_port: ${SALT_MASTER_PORT}/g" "${mfic}"
+        done
+        find "${CONF_PREFIX}"/master* -type f 2>/dev/null|while read mfic;do
+            sed -i -e "s/^interface:.*/interface: ${SALT_MASTER_IP}/g" "${mfic}"
+            sed -i -e "s/^ret_port:.*/ret_port: ${SALT_MASTER_PORT}/g" "${mfic}"
+            sed -i -e "s/^publish_port:.*/publish_port: ${SALT_MASTER_PUBLISH_PORT}/g" "${mfic}"
         done
         #if [ ! -d  "${CONF_PREFIX}/pki/master/minions" ];then
         #    mkdir "${CONF_PREFIX}/pki/master/minions"
@@ -3434,10 +3438,10 @@ postinstall() {
 
 if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
     parse_cli_opts $LAUNCH_ARGS
+    set_vars # real variable affectation
     if [ "x$(dns_resolve localhost)" = "x${DNS_RESOLUTION_FAILED}" ];then
         die "${DNS_RESOLUTION_FAILED}"
     fi
-    set_vars # real variable affectation
     abort=""
     if [ "x${SALT_BOOT_CLEANUP}" != "x" ];then
         cleanup_execlogs
