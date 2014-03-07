@@ -570,7 +570,7 @@ set_vars() {
         IS_SALT_MINION="y"
     fi
 
-    if [ "x${SALT_CLOUD}" = "x"];then 
+    if [ "x${SALT_CLOUD}" = "x" ];then
         if [ -e "${ETC_INIT}/mastersalt-master.conf" ]\
             || [ -e "${ETC_INIT}.d/mastersalt-master" ]\
             || [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
