@@ -3,7 +3,7 @@ for i in salt-master salt-minion mastersalt-master mastersalt-minion;do
     service $i stop
 done
 find /etc/*salt/pki/master/minions*/*\
-     /etc/*salt/pki/minion/*pki\
+     /etc/*salt/pki/minion/*\
      /var/log/upstart/*\
      /var/log/*.log\
   | while read fic;do rm -fv "${fic}";done
