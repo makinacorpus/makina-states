@@ -13,14 +13,23 @@ This module contains settings for lxc and helper functions
 # Import python libs
 import logging
 import mc_states.utils
+from pprint import pformat
+import os
 import random
 import copy
 
+from mc_states import saltapi
 from salt.utils.odict import OrderedDict
 
+_errmsg = saltapi._errmsg
 __name = 'lxc'
 
 log = logging.getLogger(__name__)
+
+
+PROJECT_PATH = 'project/makinacorpus/makina-states'
+SFTP_URL = 'frs.sourceforge.net:/home/frs/{0}'.format(PROJECT_PATH)
+TARGET = '/var/lib/lxc/makina-states'
 
 
 def gen_mac():
@@ -366,4 +375,67 @@ def find_ip_for_container(target, container, lxc_data=None):
 def dump():
     return mc_states.utils.dump(__salt__,__name)
 
+
+def sf_release():
+    '''Upload the makina-states container lxc tarball to sourceforge;
+    this is used in makina-states.services.cloud.lxc as a base
+    for other containers.
+
+    pillar/grain parameters:
+
+        makina-states.sf user
+    '''
+    _cli = __salt__.get
+    ret = {
+        'result': True,
+        'comment': '',
+        'trace': '',
+    }
+    root = _cli('mc_utils.get')('file_roots')['base'][0]
+    ver_file = os.path.join(root, 'makina-states/versions/lxc_verion.txt')
+    try:
+        cur_ver = int(open(ver_file).read().strip())
+    except:
+        cur_ver = 0
+    next_ver = cur_ver + 1
+    user = _cli('mc_utils.get')('makina-states.sf_user', 'kiorky')
+    dest = 'makina-states-lxc-{0}.tar.xz'.format(next_ver)
+    if not os.path.exists(TARGET):
+        _errmsg(ret, 'makina-states container does not exists')
+    if not os.path.exists(dest):
+        cmd = 'getfacl -R . > acls.txt'
+        cret = _cli('cmd.run_all')(cmd, cwd=TARGET, salt_timeout=60 * 60)
+        if cret['retcode']:
+            _errmsg('error with acl')
+        cmd = 'tar cJf {0} .'.format(dest)
+        cret = _cli('cmd.run_all')(
+            cmd,
+            cwd=TARGET,
+            env={'XZ_OPT': '-7e'},
+            salt_timeout=60 * 60)
+        if cret['retcode']:
+            _errmsg(ret, 'error with compressing')
+    cmd = 'rsync -avP {0} {1}@{2}/{0}.tmp'.format(dest, user, SFTP_URL)
+    cret = _cli('cmd.run_all')(cmd, cwd=TARGET, salt_timeout=8 * 60 * 60)
+    if cret['retcode']:
+        return _errmsg(ret, 'error with uploading')
+    cmd = 'echo "rename {0}.tmp {0}" | sftp {1}@{2}'.format(dest,
+                                                            user,
+                                                            SFTP_URL)
+    cret = _cli('cmd.run_all')(cmd, cwd=TARGET, salt_timeout=60)
+    if cret['retcode']:
+        _errmsg(ret, 'error with renaming')
+    with open(ver_file, 'w') as f:
+        f.write("{0}".format(next_ver))
+    cmd = (
+        'git commit versions -m "new lxc release {0}";'
+        'git push'.format(next_ver))
+    cret = _cli('cmd.run_all')(
+        cmd,
+        cwd=root + '/makina-states',
+        salt_timeout=60)
+    if cret['retcode']:
+        _errmsg(ret, 'error with commiting new version')
+    ret['comment'] = 'release {0} done'.format(next_ver)
+    return ret
 #

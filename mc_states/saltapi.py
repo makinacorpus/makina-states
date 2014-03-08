@@ -216,4 +216,23 @@ def client(fun, *args, **kw):
     elif cache and cache_key in __CACHED_CALLS:
         ret = __CACHED_CALLS[cache_key]
     return ret
+
+def splitstrip(string):
+    return '\n'.join(
+        [a for a in string.splitlines() if a.strip()])
+
+
+def msplitstrip(mapping):
+    for k in ['trace', 'comment']:
+        if k in mapping:
+            mapping[k] = splitstrip(mapping[k])
+
+
+def _errmsg(ret, msg):
+    err = '\n{0}\n'.format(msg)
+    for k in ['comment', 'trace']:
+        if ret[k]:
+            err += '\n{0}:\n{1}\n'.format(k, ret[k])
+    raise SaltExit(err)
+
 # vim:set et sts=4 ts=4 tw=80:

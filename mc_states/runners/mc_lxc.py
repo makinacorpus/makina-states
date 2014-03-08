@@ -154,7 +154,7 @@ def sync_images(output=True):
                 '\nWe failed to sync image for {0}:\n{1}'.format(
                     target, ex))
     for target, subret in ret['targets'].items():
-        msplitstrip(subret)
+        saltapi.msplitstrip(subret)
         if not subret['result']:
             ret['result'] = False
     ret['result'] = False
@@ -162,21 +162,9 @@ def sync_images(output=True):
         ret['comment'] = 'We have sucessfully sync all targets'
     else:
         ret['comment'] = 'We have missed some target, see logs'
-    msplitstrip(ret)
+    saltapi.msplitstrip(ret)
     # return mail error only on error
     if output and not ret['result']:
         salt.output.display_output(ret, 'yaml', __opts__)
     return ret
-
-
-def splitstrip(string):
-    return '\n'.join(
-        [a for a in string.splitlines() if a.strip()])
-
-
-def msplitstrip(mapping):
-    for k in ['trace', 'comment']:
-        if k in mapping:
-            mapping[k] = splitstrip(mapping[k])
-
 #
