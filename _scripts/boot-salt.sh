@@ -2192,7 +2192,10 @@ salt_ping_test() {
         if [ ! -e "${LAST_RETCODE_FILE}" ];then
             sleep 1
         else
-          last_salt_retcode="$(cat ${LAST_RETCODE_FILE})"
+          last_salt_retcode="$(cat ${LAST_RETCODE_FILE} 2>/dev/null)"
+          if [ "x${last_salt_retcode}" = "x" ];then
+              last_salt_retcode="0"
+          fi
           rm -f "${SALT_BOOT_LOCK_FILE}"
         fi
     done
