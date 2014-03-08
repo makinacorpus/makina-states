@@ -67,6 +67,10 @@ def sync_images(output=True):
     lxcSettings = _cli('mc_lxc.settings')
     if not lxcSettings:
         lxcSettings = {}
+    rsync_cmd = (
+        'rsync -aAv --delete-excluded --exclude="makina-states-lxc-*xz"'
+        ' --numeric-ids'
+    )
     for target in lxcSettings.get('containers', {}):
         # skip local minion :)
         if this_ == target:
@@ -111,8 +115,18 @@ def sync_images(output=True):
                         _errmsg(
                             'Transfer already in progress')
                     cmd = (
-                        'rsync -aAzv --delete --numeric-ids {0}/ root@{1}:{0}.tmp/'
-                    ).format(imgroot, host)
+                        'if [ -d {0} ];then '
+                        '{1} {0}/ {0}.tmp/;'
+                        'fi').format(imgroot, rsync_cmd)
+                    cret = _cli('cmd.run_all', cmd, salt_target=target)
+                    if not cret['retcode']:
+                        subret['comment'] += '\nRSYNC(local pre sync) complete'
+                        subret['trace'] += (
+                            '\nRSYNC:\n{0}\n'.format(cret['stdout']))
+                    cmd = (
+                        '{2} -z'
+                        '{0}/ root@{1}:{0}.tmp/'
+                    ).format(imgroot, host, rsync_cmd)
                     cret = _cli('cmd.run_all', cmd, salt_timeout=timeout)
                     if not cret['retcode']:
                         subret['comment'] += '\nRSYNC(net) complete'
@@ -121,8 +135,8 @@ def sync_images(output=True):
                         # if transfert success sync tmp / img
                         # img to tmp location
                         cmd = (
-                            'rsync -aAzv --delete --numeric-ids {0}.tmp/ {0}/'
-                        ).format(imgroot)
+                            '{1} {0}.tmp/ {0}/'
+                        ).format(imgroot, rsync_cmd)
                         cret = _cli('cmd.run_all', cmd, salt_target=target)
                         if not cret['retcode']:
                             subret['comment'] += '\nRSYNC(local sync) complete'
