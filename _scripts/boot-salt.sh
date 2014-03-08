@@ -315,6 +315,9 @@ get_chrono() {
     date "+%F_%H-%M-%S"
 }
 
+get_full_chrono() {
+    date "+%F_%H-%M-%S-%N"
+}
 
 set_colors() {
     if [ "x${NO_COLORS}" != "x" ];then
@@ -476,8 +479,8 @@ set_vars() {
         SALT_CLOUD="${SALT_CLOUD:-}"
     fi
     SALT_CLOUD_DIR="${SALT_CLOUD_DIR:-"/tmp/.saltcloud"}"
-    SALT_BOOT_LOCK_FILE="/tmp/boot_salt_sleep"
-    LAST_RETCODE_FILE="/tmp/boot_salt_rc"
+    SALT_BOOT_LOCK_FILE="/tmp/boot_salt_sleep-$(get_full_chrono)"
+    LAST_RETCODE_FILE="/tmp/boot_salt_rc-$(get_full_chrono)"
     QUIET=${QUIET:-}
     ROOT="${ROOT:-"/"}"
     CONF_ROOT="${CONF_ROOT:-"${ROOT}etc"}"
@@ -1218,7 +1221,7 @@ salt_call_wrapper_() {
 }
 
 salt_call_wrapper() {
-    chrono="$(get_chrono)"
+    chrono="$(get_full_chrono)"
     if [ ! -d "${BOOT_LOGS}" ];then
         mkdir -pv "${BOOT_LOGS}"
     fi
@@ -1229,7 +1232,7 @@ salt_call_wrapper() {
 }
 
 mastersalt_call_wrapper() {
-    chrono="$(get_chrono)"
+    chrono="$(get_full_chrono)"
     if [ ! -d "${MBOOT_LOGS}" ];then
         mkdir -pv ${MBOOT_LOGS}
     fi
