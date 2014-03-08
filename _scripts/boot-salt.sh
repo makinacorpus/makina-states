@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -x
 #
 # SEE MAKINA-STATES DOCS FOR FURTHER INSTRUCTIONS (or ../README.rst):
 #
@@ -1880,9 +1881,12 @@ a\    id: $(get_minion_id)
     if [ "x${IS_SALT_MASTER}" != "x" ] \
        && [ "x$(egrep -- "( |\t)*master:( |\t)*$" "${SALT_PILLAR}/salt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
         debug_msg "Adding master info to pillar"
+        # think to firewall the interfaces, but restricting only to localhost cause
+        # mpre harm than good
+        # any way the keys for attackers need to be accepted.
         "${SED}" -i -e "/^salt:\( \|\t\)*$/ {
 a\  master:
-a\    interface: ${SALT_MASTER_IP}
+a\    interface: 0.0.0.0
 a\    publish_port: $SALT_MASTER_PUBLISH_PORT
 a\    ret_port: ${SALT_MASTER_PORT}
 }" "${SALT_PILLAR}/salt.sls"
@@ -1931,7 +1935,7 @@ a\    id: $(mastersalt_get_minion_id)
                 debug_msg "Adding mastersalt master info to mastersalt pillar"
                 "${SED}" -i -e "/^mastersalt:\( \|\t\)*$/ {
 a\  master:
-a\    interface: ${MASTERSALT_MASTER_IP}
+a\    interface: 0.0.0.0
 a\    ret_port: ${MASTERSALT_MASTER_PORT}
 a\    publish_port: ${MASTERSALT_MASTER_PUBLISH_PORT}
 }" "${MASTERSALT_PILLAR}/mastersalt.sls"
