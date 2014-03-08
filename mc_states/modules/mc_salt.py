@@ -95,6 +95,7 @@ def settings():
             'cron_auto_upgrade': crons,
             'cron_clean_minute': 'random',
             'cron_clean_hour': '0,6,12,18',
+            'cron_minion_checkalive': '*/10',
             'cron_sync_minute': '*/10',
             'cron_sync_hour': '*',
             'cron_upgrade_minute': 3,

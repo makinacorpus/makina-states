@@ -227,7 +227,7 @@ salt-{{ data.name }}-{{ group }}:
   {% else %}
   cron.present:
     - identifier: "salt checkalive job"
-    - minute: "*/1"
+    - minute: "{{data.cron_minion_checkalive}}"
   {% endif %}
     - name: {{msr}}/_scripts/boot-salt.sh --check-alive --quiet -C --no-colors
 
