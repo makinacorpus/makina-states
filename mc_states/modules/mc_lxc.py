@@ -325,11 +325,7 @@ def find_mac_for_container(target, container, lxc_data=None):
         lxc_data = {}
     gid = 'makina-states.services.virt.lxc.containerssettings.{1}.{1}.mac'.format(
         target, container)
-    try:
-        mac = lxc_data.get('mac', __salt__['mc_utils.get'](gid, None))
-    except:
-        import pdb;pdb.set_trace()  ## Breakpoint ##
-
+    mac = lxc_data.get('mac', __salt__['mc_utils.get'](gid, None))
     if not mac:
         __salt__['grains.setval'](gid, gen_mac())
         __salt__['saltutil.sync_grains']()
