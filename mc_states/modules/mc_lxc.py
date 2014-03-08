@@ -154,12 +154,32 @@ def settings():
         cloudSettings = __salt__['mc_saltcloud.settings']()
         localsettings = __salt__['mc_localsettings.settings']()
         locations = localsettings['locations']
-
+        if 'mastersalt' in cloudSettings['prefix']:
+            prefix = '/srv/mastersalt'
+        else:
+            prefix = '/srv/salt'
+        with open(
+            os.path.join(
+                prefix,
+                'makina-states/versions/lxc_version.txt')) as fic:
+            lxc_tarball_ver = fic.read().strip()
+        with open(
+            os.path.join(
+                prefix,
+                'makina-states/versions/lxc_version.txt.md5')) as fic:
+            lxc_tarball_md5 = fic.read().strip()
+        lxc_tarball = (
+            'https://downloads.sourceforge.net/makinacorpus'
+            '/makina-states/'
+            'makina-states-lxc-{0}.tar.xz').format(lxc_tarball_ver)
         lxcSettings = __salt__['mc_utils.defaults'](
             'makina-states.services.virt.lxc', {
                 'is_lxc': is_lxc(),
                 'images_root': '/var/lib/lxc',
                 'images': ['makina-states'],
+                'lxc_tarball': lxc_tarball,
+                'lxc_tarball_ver': lxc_tarball_ver,
+                'lxc_tarball_md5': lxc_tarball_md5,
                 'dnsservers': ['8.8.8.8', '4.4.4.4'],
                 'defaults': {
                     'default_container': 'makina-states',
@@ -384,6 +404,10 @@ def sf_release():
     pillar/grain parameters:
 
         makina-states.sf user
+
+    Do a release::
+
+        salt-call -all mc_lxc.sf_release
     '''
     _cli = __salt__.get
     ret = {
@@ -392,7 +416,7 @@ def sf_release():
         'trace': '',
     }
     root = _cli('mc_utils.get')('file_roots')['base'][0]
-    ver_file = os.path.join(root, 'makina-states/versions/lxc_verion.txt')
+    ver_file = os.path.join(root, 'makina-states/versions/lxc_version.txt')
     try:
         cur_ver = int(open(ver_file).read().strip())
     except:
@@ -407,7 +431,7 @@ def sf_release():
         cret = _cli('cmd.run_all')(cmd, cwd=TARGET, salt_timeout=60 * 60)
         if cret['retcode']:
             _errmsg('error with acl')
-        cmd = 'tar cJf {0} .'.format(dest)
+        cmd = 'tar cJfp {0} . --numeric-owner'.format(dest)
         cret = _cli('cmd.run_all')(
             cmd,
             cwd=TARGET,
@@ -425,8 +449,14 @@ def sf_release():
     cret = _cli('cmd.run_all')(cmd, cwd=TARGET, salt_timeout=60)
     if cret['retcode']:
         _errmsg(ret, 'error with renaming')
+    cmd = "md5sum {0} |awk '{{print $1}}'".format(dest)
+    cret = _cli('cmd.run_all')(cmd, cwd=TARGET, salt_timeout=60 * 60)
+    if cret['retcode']:
+        _errmsg(ret, 'error with md5')
     with open(ver_file, 'w') as f:
         f.write("{0}".format(next_ver))
+    with open(ver_file + ".md5", 'w') as f:
+        f.write("{0}".format(cret['stdout']))
     cmd = (
         'git commit versions -m "new lxc release {0}";'
         'git push'.format(next_ver))
