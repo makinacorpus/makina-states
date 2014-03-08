@@ -78,6 +78,8 @@ def settings():
         size
             default filesystem size for container on lvm
             None
+        default_container
+            default image
         gateway
             '10.5.0.1'
         master
@@ -99,9 +101,19 @@ def settings():
         mode
             (salt (default) or mastersalt)
         profile
-            default profile size type to use (medium)
+            default size profile to use (medium) (apply only to lvm)
         profile_type
             default profile type to use (lvm)
+
+                lvm
+                    lvm backend from default container
+                lvm-scratch
+                    lvm backend from default lxc template
+                dir
+                    dir backend from default container
+                dir-scratch
+                    dir backend from default lxc template
+
         bridge
             we install via states a bridge in 10.5/16 lxcbr1)
             'lxcbr1'
@@ -137,8 +149,11 @@ def settings():
         lxcSettings = __salt__['mc_utils.defaults'](
             'makina-states.services.virt.lxc', {
                 'is_lxc': is_lxc(),
+                'images_root': '/var/lib/lxc',
+                'images': ['makina-states'],
                 'dnsservers': ['8.8.8.8', '4.4.4.4'],
-                'defaults' : {
+                'defaults': {
+                    'default_container': 'makina-states',
                     'size': None,  # via profile
                     'profile': 'medium',
                     'profile_type': 'lvm',
@@ -163,7 +178,16 @@ def settings():
                     'lxc_conf_unset': [],
                 },
                 'containers': {
-                    __grains__['id']: {},
+                    __grains__['id']: {
+                        'makina-states': {
+                            'name': 'makina-states',
+                            'profile_type': 'dir-scratch',
+                            'ip': '0.0.0.0', # set later
+                            'mode': 'mastersalt',
+                            'image': 'ubuntu',
+                            'password': 'ubuntu',
+                        }
+                    }
                     #'target': {
                     #  'containerid': {
                     #  'name': 'foo'
@@ -210,8 +234,17 @@ def settings():
                 },
             }
         )
+        if (
+            '0.0.0.0' ==
+            lxcSettings['containers'][grains['id']]['makina-states']['ip']
+        ):
+            lxcSettings['containers'][grains['id']]['makina-states']['ip'] = (
+                '.'.join(
+                    lxcSettings['defaults']['network'].split(
+                        '.')[:3] + ['2']))
         if not lxcSettings['defaults']['master']:
-            lxcSettings['defaults']['master'] = lxcSettings['defaults']['gateway']
+            lxcSettings['defaults']['master'] = (
+                lxcSettings['defaults']['gateway'])
         for target in [t for t in lxcSettings['containers']]:
             # filter dicts and overiddes
             for container in lxcSettings['containers'][target]:
@@ -220,7 +253,8 @@ def settings():
                     target, container, lxc_data)
                 for i in ['ip', 'password']:
                     if not i in lxc_data:
-                        raise Exception('Missing data {1}\n:{0}'.format(i, lxc_data))
+                        raise Exception(
+                            'Missing data {1}\n:{0}'.format(i, lxc_data))
                     # shortcut name for profiles
                     # small -> ms-target-small
                     profile_type = lxc_data.get(
@@ -228,14 +262,22 @@ def settings():
                         lxcSettings['defaults']['profile_type'])
                     profile = lxc_data.get('profile',
                                            lxcSettings['defaults']['profile'])
-                    if profile in lxcSettings['lxc_cloud_profiles']:
+                    if (
+                        profile in lxcSettings['lxc_cloud_profiles']
+                        and profile in lxc_data
+                    ):
                         del lxc_data['profile']
+                    if 'dir' in profile_type:
+                        sprofile = ''
+                        lxc_data['backing'] = 'dir'
+                    else:
+                        sprofile = '-{0}'.format(profile)
                     lxc_data.setdefault(
                         'profile',
                         __salt__['mc_saltcloud.gen_id'](
-                            'ms-{0}-{1}-{2}'.format(target,
-                                                    profile,
-                                                    profile_type)))
+                            'ms-{0}{1}-{2}'.format(target,
+                                                   sprofile,
+                                                   profile_type)))
                 lxc_data.setdefault('name', container)
                 lxc_data.setdefault('size', None)
                 lxc_data.setdefault('from_container', None)
@@ -253,6 +295,11 @@ def settings():
                     or not '--branch' in lxc_data['script_args']
                 ):
                     lxc_data['script_args'] += ' -b {0}'.format(branch)
+
+                if not 'scratch' in profile_type:
+                    lxc_data.setdefault(
+                        'from_container',
+                        lxcSettings['defaults']['default_container'])
                 for i in ["from_container", 'bootsalt_branch',
                           "master", "master_port",
                           'size', 'image', 'bridge', 'netmask', 'gateway',
@@ -263,6 +310,10 @@ def settings():
                         i,
                         lxcSettings['defaults'].get(i,
                                                     lxcSettings.get(i, None)))
+                if 'dir' in profile_type:
+                    for k in ['lvname', 'vgname', 'size']:
+                        if k in lxc_data:
+                            del lxc_data[k]
         return lxcSettings
     return _settings()
 
@@ -274,7 +325,11 @@ def find_mac_for_container(target, container, lxc_data=None):
         lxc_data = {}
     gid = 'makina-states.services.virt.lxc.containerssettings.{1}.{1}.mac'.format(
         target, container)
-    mac = lxc_data.get('mac', __salt__['mc_utils.get'](gid, None))
+    try:
+        mac = lxc_data.get('mac', __salt__['mc_utils.get'](gid, None))
+    except:
+        import pdb;pdb.set_trace()  ## Breakpoint ##
+
     if not mac:
         __salt__['grains.setval'](gid, gen_mac())
         __salt__['saltutil.sync_grains']()

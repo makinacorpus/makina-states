@@ -12,3 +12,4 @@ salt-cloud-predeploy:
       - mc_proxy: salt-cloud-postdeploy
 salt-cloud-postdeploy:
   mc_proxy.hook: []
+

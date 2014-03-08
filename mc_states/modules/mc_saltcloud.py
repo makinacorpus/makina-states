@@ -27,7 +27,7 @@ def settings():
           master_port
             The default master port to link to into salt cloud profile
           mode
-            (salt (default) or mastersalt)
+            (salt or mastersal (default)t)
           pvdir
             salt cloud providers directory
           pfdir
@@ -69,7 +69,7 @@ def settings():
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.cloud', {
                 'prefix': prefix,
-                'mode': 'salt',
+                'mode': 'mastersalt',
                 'bootsalt_args': '-C --from-salt-cloud -no-M',
                 'bootsalt_mastersalt_args': '-C --from-salt-cloud --mastersalt-minion',
                 'bootsalt_branch': {
