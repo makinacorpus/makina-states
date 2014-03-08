@@ -158,31 +158,42 @@ def settings():
             prefix = '/srv/mastersalt'
         else:
             prefix = '/srv/salt'
-        with open(
-            os.path.join(
+
+        # attention first image here is the default !
+        images = OrderedDict()
+        images['makina-states-precise'] = {}
+        for img in images:
+            md5_file = os.path.join(
                 prefix,
-                'makina-states/versions/lxc_version.txt')) as fic:
-            lxc_tarball_ver = fic.read().strip()
-        with open(
-            os.path.join(
+                'makina-states/versions/'
+                '{0}-lxc_version.txt.md5'.format(img))
+            ver_file = os.path.join(
                 prefix,
-                'makina-states/versions/lxc_version.txt.md5')) as fic:
-            lxc_tarball_md5 = fic.read().strip()
-        lxc_tarball = (
-            'https://downloads.sourceforge.net/makinacorpus'
-            '/makina-states/'
-            'makina-states-lxc-{0}.tar.xz').format(lxc_tarball_ver)
+                'makina-states/versions/'
+                '{0}-lxc_version.txt'.format(img))
+            if (
+                not os.path.exists(ver_file)
+                and not os.path.exists(md5_file)
+            ):
+                continue
+            with open(ver_file) as fic:
+                images[img]['lxc_tarball_ver'] = fic.read().strip()
+            with open(md5_file) as fic:
+                images[img]['lxc_tarball_md5'] = fic.read().strip()
+            images[img]['lxc_tarball'] = (
+                'https://downloads.sourceforge.net/makinacorpus'
+                '/makina-states/'
+                '{1}-lxc-{0}.tar.xz'
+            ).format(images[img]['lxc_tarball_ver'], img)
+        default_container = [a for a in images][0]
         lxcSettings = __salt__['mc_utils.defaults'](
             'makina-states.services.virt.lxc', {
                 'is_lxc': is_lxc(),
                 'images_root': '/var/lib/lxc',
-                'images': ['makina-states'],
-                'lxc_tarball': lxc_tarball,
-                'lxc_tarball_ver': lxc_tarball_ver,
-                'lxc_tarball_md5': lxc_tarball_md5,
+                'images': images,
                 'dnsservers': ['8.8.8.8', '4.4.4.4'],
                 'defaults': {
-                    'default_container': 'makina-states',
+                    'default_container': default_container,
                     'size': None,  # via profile
                     'profile': 'medium',
                     'profile_type': 'lvm',
@@ -208,10 +219,10 @@ def settings():
                 },
                 'containers': {
                     __grains__['id']: {
-                        'makina-states': {
-                            'name': 'makina-states',
+                        default_container: {
+                            'name': default_container,
                             'profile_type': 'dir-scratch',
-                            'ip': '0.0.0.0', # set later
+                            'ip': '0.0.0.0',  # set later
                             'mode': 'mastersalt',
                             'image': 'ubuntu',
                             'password': 'ubuntu',
@@ -265,9 +276,11 @@ def settings():
         )
         if (
             '0.0.0.0' ==
-            lxcSettings['containers'][grains['id']]['makina-states']['ip']
+            lxcSettings['containers'][
+                grains['id']][default_container]['ip']
         ):
-            lxcSettings['containers'][grains['id']]['makina-states']['ip'] = (
+            lxcSettings['containers'][
+                grains['id']][default_container]['ip'] = (
                 '.'.join(
                     lxcSettings['defaults']['network'].split(
                         '.')[:3] + ['2']))
@@ -396,7 +409,7 @@ def dump():
     return mc_states.utils.dump(__salt__,__name)
 
 
-def sf_release():
+def sf_release(img='makina-states-precise'):
     '''Upload the makina-states container lxc tarball to sourceforge;
     this is used in makina-states.services.cloud.lxc as a base
     for other containers.
@@ -416,41 +429,44 @@ def sf_release():
         'trace': '',
     }
     root = _cli('mc_utils.get')('file_roots')['base'][0]
-    ver_file = os.path.join(root, 'makina-states/versions/lxc_version.txt')
+    ver_file = os.path.join(
+        root,
+        'makina-states/versions/{0}-lxc_version.txt'.format(img))
     try:
         cur_ver = int(open(ver_file).read().strip())
     except:
         cur_ver = 0
     next_ver = cur_ver + 1
     user = _cli('mc_utils.get')('makina-states.sf_user', 'kiorky')
-    dest = 'makina-states-lxc-{0}.tar.xz'.format(next_ver)
-    if not os.path.exists(TARGET):
-        _errmsg(ret, 'makina-states container does not exists')
+    dest = '{1}-lxc-{0}.tar.xz'.format(next_ver, img)
+    container_p = '/var/lib/lxc/{0}'.format(img)
+    if not os.path.exists(container_p):
+        _errmsg(ret, '{0} container does not exists'.format(img))
     if not os.path.exists(dest):
         cmd = 'getfacl -R . > acls.txt'
-        cret = _cli('cmd.run_all')(cmd, cwd=TARGET, salt_timeout=60 * 60)
+        cret = _cli('cmd.run_all')(cmd, cwd=container_p, salt_timeout=60 * 60)
         if cret['retcode']:
             _errmsg('error with acl')
         cmd = 'tar cJfp {0} . --numeric-owner'.format(dest)
         cret = _cli('cmd.run_all')(
             cmd,
-            cwd=TARGET,
+            cwd=container_p,
             env={'XZ_OPT': '-7e'},
             salt_timeout=60 * 60)
         if cret['retcode']:
             _errmsg(ret, 'error with compressing')
     cmd = 'rsync -avP {0} {1}@{2}/{0}.tmp'.format(dest, user, SFTP_URL)
-    cret = _cli('cmd.run_all')(cmd, cwd=TARGET, salt_timeout=8 * 60 * 60)
+    cret = _cli('cmd.run_all')(cmd, cwd=container_p, salt_timeout=8 * 60 * 60)
     if cret['retcode']:
         return _errmsg(ret, 'error with uploading')
     cmd = 'echo "rename {0}.tmp {0}" | sftp {1}@{2}'.format(dest,
                                                             user,
                                                             SFTP_URL)
-    cret = _cli('cmd.run_all')(cmd, cwd=TARGET, salt_timeout=60)
+    cret = _cli('cmd.run_all')(cmd, cwd=container_p, salt_timeout=60)
     if cret['retcode']:
         _errmsg(ret, 'error with renaming')
     cmd = "md5sum {0} |awk '{{print $1}}'".format(dest)
-    cret = _cli('cmd.run_all')(cmd, cwd=TARGET, salt_timeout=60 * 60)
+    cret = _cli('cmd.run_all')(cmd, cwd=container_p, salt_timeout=60 * 60)
     if cret['retcode']:
         _errmsg(ret, 'error with md5')
     with open(ver_file, 'w') as f:
