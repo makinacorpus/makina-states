@@ -1744,14 +1744,16 @@ EOF
         done
         rm -f "${CONF_PREFIX}/pki/minion/minion_master.pub"
         if [ "x${IS_MASTERSALT}" != "x" ];then
-            # regenerate keys for the local master
-            salt-key --gen-keys=master --gen-keys-dir=${CONF_PREFIX}/pki/master
             bs_log "SaltCloud mode: Resetting mastersalt minion keys"
-            rm -f "${MCONF_PREFIX}/pki/minion/minion_master.pub"
             minion_dest="${MCONF_PREFIX}/pki/minion"
             master_dest="${MCONF_PREFIX}/pki/master"
+            # regenerate keys for the local master
+            if [ "x$(which salt-key 2>/dev/null)" != "x" ];then
+                salt-key --gen-keys=master --gen-keys-dir=${CONF_PREFIX}/pki/master
+            fi
             __install "${SALT_CLOUD_DIR}/minion.pem" "${minion_dest}/minion.pem"
             __install "${SALT_CLOUD_DIR}/minion.pub" "${minion_dest}/minion.pub"
+            rm -f "${MCONF_PREFIX}/pki/minion/minion_master.pub"
             find "${MCONF_PREFIX}"/minion* -type f 2>/dev/null|while read mfic;do
                 bs_log "SaltCloud mode: Resetting mastersalt minion conf ($(get_minion_id)/${MASTERSALT}/${MASTERSALT_MASTER_PORT}): ${mfic}"
                 sed -i -e "s/^id:.*$/id: $(get_minion_id)/g" "${mfic}"
@@ -2010,8 +2012,8 @@ gen_mastersalt_keys() {
     if [ "x${IS_MASTERSALT_MINION}" != "x" ]\
         && [ "x${IS_MASTERSALT_MASTER}" != "x" ]\
         && [ -e "${MCONF_PREFIX}/pki/minion/minion.pub" ];then
-        __install "${MCONF_PREFIX}/pki/minion/minion.pub" "${MCONF_PREFIX}/pki/master/minions/$(get_minion_id)" 
-        __install "${MCONF_PREFIX}/pki/master/master.pub" "${MCONF_PREFIX}/pki/minion/minion_master.pub" 
+        __install "${MCONF_PREFIX}/pki/minion/minion.pub" "${MCONF_PREFIX}/pki/master/minions/$(get_minion_id)"
+        __install "${MCONF_PREFIX}/pki/master/master.pub" "${MCONF_PREFIX}/pki/minion/minion_master.pub"
     fi
 }
 
@@ -2023,7 +2025,7 @@ gen_salt_keys() {
         fi
     fi
     # in saltcloude mode, keys are already providen
-    if [ "x${SALT_CLOUD}" = "x" ];then 
+    if [ "x${SALT_CLOUD}" = "x" ];then
         if [ "x${IS_SALT_MINION}" != "x" ];then
             if [ ! -e "${CONF_PREFIX}/pki/minion/minion.pub" ];then
                 bs_log "Generating salt minion key"
@@ -2034,8 +2036,8 @@ gen_salt_keys() {
     if [ "x${IS_SALT_MINION}" != "x" ]\
        && [ "x${IS_SALT_MASTER}" != "x" ]\
        && [ -e "${CONF_PREFIX}/pki/minion/minion.pub" ];then
-        __install "${CONF_PREFIX}/pki/minion/minion.pub" "${CONF_PREFIX}/pki/master/minions/$(get_minion_id)" 
-        __install "${CONF_PREFIX}/pki/master/master.pub" "${CONF_PREFIX}/pki/minion/minion_master.pub" 
+        __install "${CONF_PREFIX}/pki/minion/minion.pub" "${CONF_PREFIX}/pki/master/minions/$(get_minion_id)"
+        __install "${CONF_PREFIX}/pki/master/master.pub" "${CONF_PREFIX}/pki/minion/minion_master.pub"
     fi
 }
 
