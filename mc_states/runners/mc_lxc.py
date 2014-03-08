@@ -78,7 +78,6 @@ def sync_images(output=True):
         subret = saltapi.result()
         ret['targets'][target] = subret
         try:
-            img = 'makina-states'
             host = _cli('grains.item', 'fqdn', salt_target=target)
             if not host:
                 host = target
