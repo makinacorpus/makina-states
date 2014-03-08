@@ -154,13 +154,13 @@ def client(fun, *args, **kw):
     if not cache or (cache and (not cache_key in __CACHED_CALLS)):
         conn = _client(cfgdir=cfgdir, cfg=cfg)
         runner = _runner(cfgdir=cfgdir, cfg=cfg)
-        kwargs['timeout'] = timeout
+        rkwargs = kwargs.copy()
+        rkwargs['timeout'] = timeout
         jid = conn.cmd_async(tgt=target,
                              fun=fun,
                              arg=args,
                              kwarg=kw,
-                             timeout=timeout,
-                             **kwargs)
+                             **rkwargs)
         cret = conn.cmd(tgt=target,
                         fun='saltutil.find_job',
                         arg=[jid],
