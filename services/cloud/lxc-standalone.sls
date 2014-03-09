@@ -23,14 +23,9 @@
     - require:
       - mc_proxy: lxc-post-inst
       - mc_proxy: salt-cloud-predeploy
-      {% if not (name in ['makina-states']) %}
       - mc_proxy: salt-cloud-lxc-default-template
-      {% endif %}
     - require_in:
       - mc_proxy: salt-cloud-postdeploy
-      {% if name in ['makina-states'] %}
-      - mc_proxy: salt-cloud-lxc-default-template
-      {% endif %}
     - minion: {master: "{{data.master}}",
                master_port: {{data.master_port}}}
     - dnsservers: {{dnsservers|yaml}}
@@ -74,9 +69,9 @@ include:
 providers_lxc_salt:
   file.managed:
     - require:
-      - mc_proxy: salt-cloud-postinstall
+      - mc_proxy: salt-cloud-preinstall
     - require_in:
-      - mc_proxy: salt-cloud-predeploy
+      - mc_proxy: salt-cloud-postinstall
     - source: salt://makina-states/files/etc/salt/cloud.providers.d/makinastates_lxc.conf
     - name: {{pvdir}}/makinastates_lxc.conf
     - user: root
@@ -102,25 +97,79 @@ profiles_lxc_salt:
         containers: {{lxcSettings.containers.keys()|yaml }}
         msr: {{saltmac.msr}}
     - require:
-      - mc_proxy: salt-cloud-postinstall
+      - mc_proxy: salt-cloud-preinstall
     - require_in:
-      - mc_proxy: salt-cloud-predeploy
+      - mc_proxy: salt-cloud-postinstall
 
-{% for name in ['makina-states'] %}
+{% for name, imgdata in lxcSettings.images.items() %}
+{% set cwd = '/var/lib/lxc/{0}'.format(name) %}
+{% set arc = '{0}/{1}'.format(name, imgdata['lxc_tarball_name']) %}
+{{grains.id}}-download-{{name}}:
+  file.directory:
+    - name: {{cwd}}
+    - user: root
+    - makedirs: true
+    - group: root
+    - mode: 755
+  archive.extracted:
+    - keep: true
+    - name: {{cwd}}
+    - source: {{imgdata.lxc_tarball}}
+    - source_hash: md5={{imgdata.lxc_tarball_md5}}
+    - archive_format: tar
+    - if_missing: {{cwd}}/rootfs/etc/salt
+    - tar_options: -xJf
+    - require:
+      - file: {{grains.id}}-download-{{name}}
+    - require_in:
+      - mc_proxy: salt-cloud-lxc-default-template
+
+{{grains.id}}-restore-specialfiles-{{name}}:
+  cmd.run:
+    - name: cp -a /dev/log {{cwd}}/rootfs/dev/log
+    - unless: test -e {{cwd}}/rootfs/dev/log
+    - cwd: {{cwd}}
+    - user: root
+    - require:
+      - archive: {{grains.id}}-download-{{name}}
+    - require_in:
+      - mc_proxy: salt-cloud-lxc-default-template
+
+{{grains.id}}-restore-acls-{{name}}:
+  cmd.run:
+    - name: setfacl --restore=acls.txt && touch acls_done
+    - cwd: {{cwd}}
+    - unless: test -e {{cwd}}/acls_done
+    - user: root
+    - require:
+      - cmd: {{grains.id}}-restore-specialfiles-{{name}}
+    - require_in:
+      - mc_proxy: salt-cloud-lxc-default-template
+
 {{grains.id}}-{{name}}-stop-default-lxc-container:
   lxc.stopped:
+    - name: {{name}}
     - require:
-      - cloud: lxc-{{grains.id}}-makina-states-lxc-deploy
+      - cmd: {{grains.id}}-restore-specialfiles-{{name}}
+    - require_in:
+      - mc_proxy: salt-cloud-lxc-default-template
+
 {{grains.id}}-{{name}}-lxc-snap:
   cmd.run:
-    - name: chroot /var/lib/lxc/{{name}}/roots/ /sbin/lxc-snap.sh
+    - name: chroot /var/lib/lxc/{{name}}/rootfs/ /sbin/lxc-snap.sh
+    - onlyif: test -e /var/lib/lxc/{{name}}/rootfs/etc/salt/pki/minion/minion.pub
     - require:
       - lxc: {{grains.id}}-{{name}}-stop-default-lxc-container
+    - require_in:
+      - mc_proxy: salt-cloud-lxc-default-template
+
 {{grains.id}}-{{name}}-lxc-removeminion:
   file.absent:
     - name: {{cloudSettings.prefix}}/pki/master/minions/{{name}}
     - require:
-      - cloud: {{grains.id}}-{{name}}-lxc-deploy
+      - cmd: {{grains.id}}-{{name}}-lxc-snap
+    - require_in:
+      - mc_proxy: salt-cloud-lxc-default-template
 {% endfor %}
 
 {% for target, containers in services.lxcSettings.containers.items() %}

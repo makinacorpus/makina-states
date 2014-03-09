@@ -13,7 +13,7 @@ To provision a new lxc provider, you need to:
     - add an entry to your lxc container in pillar reflecting those choices plus
       the other vm parameters.
 
-* We create a default container in mastersalt node named **makina-states**. In
+* We create a default container in mastersalt node named **makina-states-precise**. In
   cloning mode, this is the default origin container. Its oip is **10.5.0.2**.
 * You can either start an lxc from scratch or begin with a template like a barebone ubuntu which will be cloned at a start.
 * By default, we use the **10.5/16** network for all containers
@@ -77,7 +77,7 @@ follow:
     mysupertest6:
       name: gfoobar2.test.com
       ip: 10.5.10.17
-      # from_container: makina-states -> default
+      # from_container: makina-states-precise -> default
       profile_type: dir
       mode: mastersalt
       password: foobar

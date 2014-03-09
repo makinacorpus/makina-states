@@ -185,7 +185,23 @@ def settings():
                 '/makina-states/'
                 '{1}-lxc-{0}.tar.xz'
             ).format(images[img]['lxc_tarball_ver'], img)
+            images[img]['lxc_tarball_name'] = os.path.basename(
+                images[img]['lxc_tarball'])
         default_container = [a for a in images][0]
+        default_containers = OrderedDict()
+        # reactivate to provision
+        # when you do maintenance
+        # default_container:
+        maintenance = False
+        if maintenance:
+            default_containers[grains['id']] = {
+                'name': default_container,
+                'profile_type': 'dir-scratch',
+                'ip': '0.0.0.0',  # set later
+                'mode': 'mastersalt',
+                'image': 'ubuntu',
+                'password': 'ubuntu',
+            }
         lxcSettings = __salt__['mc_utils.defaults'](
             'makina-states.services.virt.lxc', {
                 'is_lxc': is_lxc(),
@@ -217,23 +233,7 @@ def settings():
                     'lxc_conf': [],
                     'lxc_conf_unset': [],
                 },
-                'containers': {
-                    __grains__['id']: {
-                        default_container: {
-                            'name': default_container,
-                            'profile_type': 'dir-scratch',
-                            'ip': '0.0.0.0',  # set later
-                            'mode': 'mastersalt',
-                            'image': 'ubuntu',
-                            'password': 'ubuntu',
-                        }
-                    }
-                    #'target': {
-                    #  'containerid': {
-                    #  'name': 'foo'
-                    #  'backing': 'lvm'
-                    #}
-                },
+                'containers': default_containers,
                 'lxc_cloud_profiles': {
                     'xxxtrem': {
                         'size': '2000g',
@@ -274,7 +274,7 @@ def settings():
                 },
             }
         )
-        if (
+        if maintenance and (
             '0.0.0.0' ==
             lxcSettings['containers'][
                 grains['id']][default_container]['ip']
@@ -306,7 +306,7 @@ def settings():
                                            lxcSettings['defaults']['profile'])
                     if (
                         profile in lxcSettings['lxc_cloud_profiles']
-                        and profile in lxc_data
+                        and 'profile' in lxc_data
                     ):
                         del lxc_data['profile']
                     if 'dir' in profile_type:
@@ -440,14 +440,33 @@ def sf_release(img='makina-states-precise'):
     user = _cli('mc_utils.get')('makina-states.sf_user', 'kiorky')
     dest = '{1}-lxc-{0}.tar.xz'.format(next_ver, img)
     container_p = '/var/lib/lxc/{0}'.format(img)
+    fdest = '/var/lib/lxc/{0}'.format(dest)
     if not os.path.exists(container_p):
         _errmsg(ret, '{0} container does not exists'.format(img))
-    if not os.path.exists(dest):
+    aclf = os.path.join(container_p, 'acls.txt')
+    if not os.path.exists(fdest):
         cmd = 'getfacl -R . > acls.txt'
         cret = _cli('cmd.run_all')(cmd, cwd=container_p, salt_timeout=60 * 60)
         if cret['retcode']:
             _errmsg('error with acl')
-        cmd = 'tar cJfp {0} . --numeric-owner'.format(dest)
+        # ignore some paths in the acl file
+        # (we have no more special cases, but leave this code in case)
+        ignored = []
+        acls = []
+        with open(aclf) as f:
+            skip = False
+            for i in f.readlines():
+                for path in ignored:
+                    if path in i:
+                        skip = True
+                if not i.strip():
+                    skip = False
+                if not skip:
+                    acls.append(i)
+        with open(aclf, 'w') as w:
+            w.write(''.join(acls))
+        cmd = ('tar cJfp {0} . '
+               '--ignore-failed-read --numeric-owner').format(fdest)
         cret = _cli('cmd.run_all')(
             cmd,
             cwd=container_p,
@@ -455,7 +474,7 @@ def sf_release(img='makina-states-precise'):
             salt_timeout=60 * 60)
         if cret['retcode']:
             _errmsg(ret, 'error with compressing')
-    cmd = 'rsync -avP {0} {1}@{2}/{0}.tmp'.format(dest, user, SFTP_URL)
+    cmd = 'rsync -avP {0} {1}@{2}/{0}.tmp'.format(fdest, user, SFTP_URL)
     cret = _cli('cmd.run_all')(cmd, cwd=container_p, salt_timeout=8 * 60 * 60)
     if cret['retcode']:
         return _errmsg(ret, 'error with uploading')
@@ -465,17 +484,18 @@ def sf_release(img='makina-states-precise'):
     cret = _cli('cmd.run_all')(cmd, cwd=container_p, salt_timeout=60)
     if cret['retcode']:
         _errmsg(ret, 'error with renaming')
-    cmd = "md5sum {0} |awk '{{print $1}}'".format(dest)
+    cmd = "md5sum {0} |awk '{{print $1}}'".format(fdest)
     cret = _cli('cmd.run_all')(cmd, cwd=container_p, salt_timeout=60 * 60)
     if cret['retcode']:
         _errmsg(ret, 'error with md5')
-    with open(ver_file, 'w') as f:
-        f.write("{0}".format(next_ver))
     with open(ver_file + ".md5", 'w') as f:
         f.write("{0}".format(cret['stdout']))
+    with open(ver_file, 'w') as f:
+        f.write("{0}".format(next_ver))
     cmd = (
-        'git commit versions -m "new lxc release {0}";'
-        'git push'.format(next_ver))
+        ('git add *-lxc*version*txt*;'
+         'git commit versions -m "new lxc release {0}";'
+         'git push').format(next_ver))
     cret = _cli('cmd.run_all')(
         cmd,
         cwd=root + '/makina-states',
