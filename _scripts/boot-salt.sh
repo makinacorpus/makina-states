@@ -1674,6 +1674,7 @@ pillar_roots: {"base":["${SALT_PILLAR}"]}
 runner_dirs: [${SALT_ROOT}/runners, ${SALT_MS}/mc_states/runners]
 EOF
     fi
+    touch "${CONF_PREFIX}/grains"
     if [ ! -e "${CONF_PREFIX}/minion" ];then
         cat > "${CONF_PREFIX}/minion" << EOF
 id: $(get_minion_id)
@@ -1696,6 +1697,7 @@ EOF
         if [ ! -e "${MCONF_PREFIX}/minion.d" ];then mkdir "${MCONF_PREFIX}/minion.d";fi
         if [ ! -e "${MCONF_PREFIX}/pki/master" ];then mkdir -p "${MCONF_PREFIX}/pki/master";fi
         if [ ! -e "${MCONF_PREFIX}/pki/minion" ];then mkdir -p "${MCONF_PREFIX}/pki/minion";fi
+        touch "${MCONF_PREFIX}/grains"
         if [ ! -e "${MCONF_PREFIX}/master" ];then
             cat > "${MCONF_PREFIX}/master" << EOF
 file_roots: {"base":["${MASTERSALT_ROOT}"]}
@@ -2091,6 +2093,8 @@ install_salt_daemons() {
 
         bs_log "Boostrapping salt"
 
+        sed -i -e "/makina-states.nodetypes.$(get_salt_nodetype):/ d"  "${CONF_PREFIX}/grains"
+        echo "makina-states.nodetypes.$(get_salt_nodetype): true" >> "${CONF_PREFIX}/grains"
         run_salt_bootstrap "${salt_bootstrap_nodetype}"
 
         # run salt master setup
@@ -2621,6 +2625,8 @@ install_mastersalt_daemons() {
         fi
 
         # run mastersalt master+minion boot_nodetype bootstrap
+        sed -i -e "/makina-states.nodetypes.$(get_salt_nodetype):/ d"  "${MCONF_PREFIX}/grains"
+        echo "makina-states.nodetypes.$(get_salt_nodetype): true" >> "${MCONF_PREFIX}/grains"
         run_mastersalt_bootstrap ${mastersalt_bootstrap_nodetype}
 
         # run mastersalt master setup

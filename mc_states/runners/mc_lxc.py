@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 
 '''
-Jobs around lxc managment
-======================================
+.. _runner_mc_lxc:
+
+Jobs for lxc managment
+==========================
 '''
 # -*- coding: utf-8 -*-
 __docformat__ = 'restructuredtext en'
@@ -49,14 +51,14 @@ def _errmsg(msg):
 def sync_images(output=True):
     '''
     Sync the 'makina-states' image to all configured LXC hosts minions
+
     Configuration:
 
-        mc_lxc settings:
+        :ref:`module_mc_lxc` settings:
 
-            images_root: master filesystem root to lxc containers
-            images: list of image to sync to lxc minions
-
-            containers: all minion targets will be synced with that list of images
+            :images_root: master filesystem root to lxc containers
+            :images: list of image to sync to lxc minions
+            :containers: all minion targets will be synced with that list of images
     '''
     root = master_opts()['file_roots']['base'][0]
     ret = saltapi.result()

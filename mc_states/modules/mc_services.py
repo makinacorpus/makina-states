@@ -13,6 +13,13 @@ import mc_states.utils
 
 __name = 'services'
 
+def _bindEn(__salt__):
+    nodetypes_registry = __salt__['mc_nodetypes.registry']()
+    return not (
+        ('dockercontainer' in nodetypes_registry['actives'])
+        or ('lxccontainer' in nodetypes_registry['actives'])
+    )
+
 
 def _ntpEn(__salt__):
     nodetypes_registry = __salt__['mc_nodetypes.registry']()
@@ -38,6 +45,8 @@ def settings():
         See :ref:`module_mc_localsettings`
     resolver
         See :ref:`module_mc_utils`
+    bindSettings
+        See :ref:`module_mc_bind`
     sshServerSettings
         See :ref:`module_mc_ssh`
     sshClientSettings
@@ -106,6 +115,9 @@ def settings():
 
         # Apache:  (services.http.apache)
         data['apacheSettings'] = __salt__['mc_apache.settings']()
+
+        # bind:  (services.dns.bind)
+        data['bindSettings'] = __salt__['mc_bind.settings']()
 
         # Circus:  (services.monitoring.circus)
         data['circusSettings'] =  __salt__['mc_circus.settings']()
@@ -187,6 +199,7 @@ def registry():
             'cloud.salt_cloud': {'active': False},
             'cloud.lxc': {'active': False},
             'cloud.saltify': {'active': False},
+            'dns.bind': {'active': _bindEn(__salt__)},
             'db.mysql': {'active': False},
             'db.postgresql': {'active': False},
             'firewall.fail2ban': {'active': False},

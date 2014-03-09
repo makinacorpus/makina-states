@@ -1,0 +1,22 @@
+// *******************************
+// MANAGED VIA SALT DO NOT EDIT
+// *******************************
+
+//
+// Do any local configuration here
+//
+
+// Consider adding the 1918 zones here, if they are not used in your
+// organization
+//include "/etc/bind/zones.rfc1918";
+
+
+{% for tp in ['logging',
+              'acl',
+              'key',
+              'servers',
+              'views'] -%}
+include "{{data['{0}_config'.format(tp)]}}";
+{% endfor %}
+
+// vim: set ft=named:

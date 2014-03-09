@@ -9,5 +9,6 @@
 {% set nodetypes = bs.nodetypes %}
 
 include:
+  - makina-states.services.dns.bind
   - makina-states.nodetypes.devhost
 

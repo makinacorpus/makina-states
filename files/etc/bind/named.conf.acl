@@ -1,0 +1,15 @@
+// *******************************
+// MANAGED VIA SALT DO NOT EDIT
+// *******************************
+
+//
+// ACLS
+//
+{% for a, adata in data.acls.iteritems() %}
+acl "{{a}}" {
+  {% for m in adata.get('clients') -%}
+  {{m}};
+  {%- endfor %}
+};
+{% endfor %}
+// vim: set ft=named:

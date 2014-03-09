@@ -17,6 +17,7 @@ Subregistries
    :maxdepth: 2
 
    mc_apache.rst
+   mc_bind.rst
    mc_circus.rst
    mc_dbsmartbackup.rst
    mc_etherpad.rst
