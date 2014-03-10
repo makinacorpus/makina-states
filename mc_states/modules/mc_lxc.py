@@ -474,7 +474,7 @@ def sf_release(img='makina-states-precise'):
             salt_timeout=60 * 60)
         if cret['retcode']:
             _errmsg(ret, 'error with compressing')
-    cmd = 'rsync -avP {0} {1}@{2}/{0}.tmp'.format(fdest, user, SFTP_URL)
+    cmd = 'rsync -avzP {0} {1}@{2}/{3}.tmp'.format(fdest, user, SFTP_URL, dest)
     cret = _cli('cmd.run_all')(cmd, cwd=container_p, salt_timeout=8 * 60 * 60)
     if cret['retcode']:
         return _errmsg(ret, 'error with uploading')
