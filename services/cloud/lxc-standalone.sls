@@ -112,7 +112,6 @@ profiles_lxc_salt:
     - group: root
     - mode: 755
   archive.extracted:
-    - keep: true
     - name: {{cwd}}
     - source: {{imgdata.lxc_tarball}}
     - source_hash: md5={{imgdata.lxc_tarball_md5}}
