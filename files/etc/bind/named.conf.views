@@ -13,30 +13,32 @@ view "{{v}}" {
         additional-from-auth    {{vdata.additonal_from_auth}};
         additional-from-cache   {{vdata.additonal_from_cache}};
 {%      for zonekind, kmetadata in data.zone_kinds.iteritems() %}
-{%          for zone, zdata in vdata[zonekind] %}
-{%              set file = zdata.fpath %}
-{%              set masters = zdata.masters %}
+{%          for zone, zdata in data[zonekind] %}
+{%              if view in zdata['views'] %}
+{%                set file = zdata.fpath %}
+{%                set masters = zdata.masters %}
 zone "{{ zdata.name }}" {
   type {{ zdata.server_type }};
   file "{{zdata.fpath}}";
-{%              if zdata.server_type  == "primary" %}
-{%                  if zdata.secondaries %}
+{%                if zdata.server_type  == "primary" %}
+{%                    if zdata.secondaries %}
   allow-transfer { {% for m in zdata.secondaries %}{{m}};{% endfor %} };
 {%                  endif %}
-{%                  if zdata['notify'] %}
+{%                    if zdata['notify'] %}
   notify yes;
-{%                  else %}
+{%                    else %}
   notify no;
-{%                  endif %}
-{%              else %}
+{%                    endif %}
+{%                else %}
   notify no;
   masters { {% for m in zdata.masters %}{{m}};{% endfor %} };
+{%                endif %}
 {%              endif %}
 };
 {%          endfor %}
 {%       endfor %}
 }
 {%  endif %}
-{% endfor %} 
+{% endfor %}
 
 // vim: set ft=named:

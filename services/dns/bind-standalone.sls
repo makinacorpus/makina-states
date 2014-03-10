@@ -106,6 +106,7 @@ bind-set-defaultdns-{{suf}}-2:
 {% endmacro %}
 
 {% macro install_zone(zone, data) %}
+{% if salt['mc_bind.is_valid_zone'](data) %}
 dns-rzones-{{zone}}-{{data.fpath}}:
   file.managed:
     {% if data.template %}
@@ -135,6 +136,7 @@ bind-checkconf-{{zone}}-{{data.fpath}}:
       - mc_proxy: bind-post-conf
     - watch_in:
       - mc_proxy: bind-check-conf
+{% endif %}
 
 {#
 {% if data.dnssec %}
@@ -260,7 +262,9 @@ bind_config_rndc:
 
 {% for typ in settings.zone_kinds %}
 {% for zone, data in settings[typ].iteritems() %}
+{# deactivated in favor of powerdns
 {{ install_zone(zone, data) }}
+#}
 {% endfor %}
 {% endfor %}
 

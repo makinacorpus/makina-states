@@ -22,7 +22,11 @@ log = logging.getLogger(__name__)
 
 def settings():
     '''
-    Nmaed settings
+    Named settings
+
+    WARNING: THIS FOR NOW JUST TAKE IN ACCOUNT SETTINGS ABOUT
+    A CACHING DNS SERVER, THE ZONE MANAGMENT HAS BEEN
+    ABANDONNED IN FAVOR OF POWERDNS
 
     For the documentation on usage, please look :ref:`bind_documentation`.
 
@@ -258,42 +262,56 @@ def settings():
         }
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.dns.bind', defaults)
-        zone_kinds = data['zone_kinds']
-        for k in [a for a in data['servers']]:
-            adata = data['servers'][k]
-            adata.setdefault('keys', [])
-        for k in [a for a in data['acls']]:
-            adata = data['acls'][k]
-            adata.setdefault('clients', 'any')
-        for k in [a for a in data['keys']]:
-            kdata = data['keys'][k]
-            kdata.setdefault('algorithm', 'hmac-md5')
-            if not 'secret' in kdata:
-                raise ValueError(
-                    'no secret for {0}'.format(k))
-        for zonekind, metadatas in zone_kinds.iteritems():
-            for zone in [a for a in data[zonekind]]:
-                zdata = data[zonekind][zone]
-                _update_default_data(zone,
-                                     zdata,
-                                     metadatas,
-                                     data)
-                for view in zdata['views']:
-                    if not view in data['views']:
-                        data['views'][view] = OrderedDict()
-        for view in [a for a in data['views']]:
-            vdata = data['views'][view]
-            for k, v in data['view_defaults'].items():
-                vdata.setdefault(k, deepcopy(v))
-            for zonekind in zone_kinds:
-                vdata['has_zones'] = False
-                vdata.setdefault(zonekind, OrderedDict())
-                for z, zdata in vdata[zonekind]:
-                    if zdata:
-                        vdata['has_zones'] = True
-                        break
+        #zone_kinds = data['zone_kinds']
+        #for k in [a for a in data['servers']]:
+        #    adata = data['servers'][k]
+        #    adata.setdefault('keys', [])
+        #for k in [a for a in data['acls']]:
+        #    adata = data['acls'][k]
+        #    adata.setdefault('clients', 'any')
+        #for k in [a for a in data['keys']]:
+        #    kdata = data['keys'][k]
+        #    kdata.setdefault('algorithm', 'hmac-md5')
+        #    if not 'secret' in kdata:
+        #        raise ValueError(
+        #            'no secret for {0}'.format(k))
+        #for zonekind, metadatas in zone_kinds.iteritems():
+        #    for zone in [a for a in data[zonekind]]:
+        #        zdata = data[zonekind][zone]
+        #        _update_default_data(zone,
+        #                             zdata,
+        #                             metadatas,
+        #                             data)
+        #        if not is_valid_zone(zdata):
+        #            log.error(
+        #                '{0} is an invalid zone'.format(
+        #                    zone))
+        #            del data[zonekind][zdata]
+        #            continue
+        #        for view in zdata['views']:
+        #            if not view in data['views']:
+        #                data['views'][view] = OrderedDict()
+        #            vdata = data['views'][view]
+        #            vdata['has_zones'] = True
+        #for view in [a for a in data['views']]:
+        #    vdata = data['views'][view]
+        #    for k, v in data['view_defaults'].items():
+        #        vdata.setdefault(k, deepcopy(v))
         return data
     return _settings()
+
+
+def is_valid_zone(data):
+    '''A valid zone has:
+
+        - multiples RRs
+        - At least one NS and one RR record
+    '''
+
+    ret = False
+    if data:
+        ret = True
+    return ret
 
 
 def _generate_rndc():
@@ -314,6 +332,7 @@ def _update_default_data(zone,
         and not single_view in zdata['views']
     ):
         zdata['views'].append(single_view)
+    zdata.setdefault('rrs', [])
     zdata.setdefault('name', deepcopy(zone))
     zdata.setdefault('template', True)
     for i in [
