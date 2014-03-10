@@ -159,7 +159,7 @@ Exemple:
 
 .. code-block:: yaml
 
-    makina-states.services.dns.bind.serers.sec1:
+    makina-states.services.dns.bind.servers.sec1:
         clients: ['!1.2.4.3']
 
 
