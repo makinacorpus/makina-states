@@ -32,9 +32,7 @@
 
 {% macro set_accesses(common) %}
 {% if not common.no_user %}
-{#
-# Create a dedicated system user for our project
-#}
+{# Create a dedicated system user for our project #}
 {% if common.full %}
 {% for group in common.groups -%}
 {{common.name}}-group-{{group}}:
@@ -43,7 +41,6 @@
     - system: True
     {%- endfor %}
 {% endif %}
-
 
 {{common.name}}-user-{{common.user}}:
   user.present:
@@ -68,7 +65,7 @@
     {% endif %}
 
 {% if common.full %}
-{#+
+{#
 # By default we copy root ssh key creds to the project user
 # if and only if they do not already  exist
 # We will then just have to accept only one key in our gitorious, the root one
@@ -251,7 +248,7 @@
     - contents: >
             #!/usr/bin/env bash
 
-            if [ -e "{{common.pillar_root}}" ];then 
+            if [ -e "{{common.pillar_root}}" ];then
             "{{locs.resetperms}}" "${@}"
             --dmode '0770' --fmode '0770'
             --user root --group "{{localsettings.group}}"
@@ -259,7 +256,7 @@
             --groups "{{localsettings.group}}"
             --paths "{{common.pillar_root}}";fi
 
-            if [ -e "{{common.salt_root}}" ];then 
+            if [ -e "{{common.salt_root}}" ];then
             "{{locs.resetperms}}" "${@}"
             --dmode '0770' --fmode '0770'
             --user root --group "{{localsettings.group}}"
@@ -488,34 +485,63 @@ makina-parent-append-etc-hosts-accumulated-project-{{common.name}}:
 # - pre_install and post_install macros will setup system accesses, checkout the base code and finally reset
 #  all filesystem permissions to stay secure.
 #}
-{%- macro pre_install(common) %}
+{% macro gather_variables(common) %}
+{% endmacro %}
+
+{% macro pre_install(common) %}
 {{    configure_domains(common) }}
 {{    set_accesses(common) }}
 {{    checkout_salt_and_code(common) }}
-{%- endmacro %}  {# pre_install #}
+{% endmacro %}  {# pre_install #}
 
-{%- macro post_install(common) %}
-{{-    fix_permissions(common) }}
-{%- endmacro %} {# post_install #}
+{% macro configure(common) %}
+{% if common.get('deploy_step_no_configure') %}
+{% endif %}
+{% endmacro %}
 
-{%- macro install_project(common, pre=True, post=True, install_macro=None) %}
-{%-  if common.sls_includes %}
-include:
-{%- for sls in common.sls_includes %}
-  - {{ sls }}
-{%- endfor %}
-{%-  endif %}
+{% macro build(common) %}
+{% if common.get('deploy_step_no_build') %}
+{% endif %}
+{% endmacro %}
 
-{{    hooks(common) }}
+{% macro post_build(common) %}
+{% if common.get('deploy_step_no_configure') %}
+{% endmacro %}
 
-{%-  if pre %}
-{{-    pre_install(common) }}
-{%-  endif %}
-{%-  if install_macro %}
+{% macro bundle(common) %}
+{{  fix_permissions(common) }}
+{% endmacro %}
+
+{% macro deploy(common) %}
+{% if not common.defaultenv in ['prod'] %}
+{% else %}
 {{-    install_macro(common) }}
-{%-  endif %}
-{%-  if post %}
-{{-     post_install(common) }}
-{%-  endif %}
-{%- endmacro %} {# install_project #}
+{% end if %}
+{% endmacro %}
+
+{% macro post_deploy(common) %}
+{% endmacro %}
+
+{% macro post_install(common) %}
+{% endmacro %} {# post_install #}
+
+{% macro install_project(common,
+                          install_macro=None) %}
+{%  if common.sls_includes %}
+include:
+{% for sls in common.sls_includes %}
+  - {{ sls }}
+{% endfor %}
+{% endif %}
+{{    hooks(common) }}
+{% do common.update('install_macro', install_macro) %}
+{{ gather_variables(common) }}
+{{ pre_install(common) }}
+{{ configure(common) }}
+{{ build(common) }}
+{{ post_build(common) }}
+{{ bundle(common) }}
+{{ deploy(common) }}
+{{ post_deploy(common) }}
+{% endmacro %}
 {# vim: set nofoldenable :#}

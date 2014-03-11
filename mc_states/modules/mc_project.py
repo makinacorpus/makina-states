@@ -125,13 +125,24 @@ def get_common_vars(
         includes to add to the project top includes statement
     no_salt
         Do not manage the salt branch
-    no_domain
-        Do not manage the domains in /etc/hosts
-    no_reset_perms
-        Do not run fixpermissions
-    no_default_includes
-        Do not add salt_minon & other bases sls
-        like ssh to default includes
+
+    Licefycle functions and activation  bypass
+    see ref:`project_lifecycle`
+
+    All the projects will have the same global procedure.
+    From star
+
+        no_default_includes
+            Do not add salt_minon & other bases sls
+            like ssh to default includes
+
+
+        no_domain
+            Do not manage the domains in /etc/hosts
+        no_reset_perms
+            Do not run fixpermissions
+
+
 
     You can override default states values by pillar/grain like::
 
@@ -175,8 +186,8 @@ def get_common_vars(
         # - fooproject.default_env
         # - default_env
         default_env = __salt__['mc_utils.get'](
-            'makina-projects.{0}.{1}'.format(name, 'default_env'), 
-            __salt__['mc_utils.get']('{0}.{1}'.format(name, 'default_env'), 
+            'makina-projects.{0}.{1}'.format(name, 'default_env'),
+            __salt__['mc_utils.get']('{0}.{1}'.format(name, 'default_env'),
             __salt__['mc_utils.get']('default_env', 'dev')))
     if not user:
         user = '{name}-user'

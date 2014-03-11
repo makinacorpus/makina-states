@@ -439,15 +439,22 @@ etc-logrotate.d-{{common.name}}.conf:
         }
  } %}
 
-
-{#-
-# Makina project per project macro couple (install_zope_project/install_project)
-#}
-{%- macro install_generic_zope_project_do(common) %}
-{{-    zope_deps(common) }}
-{{-    generic_buildout(common) }}
-{{-    generic_crons(common) }}
-{%- endmacro %}
+{% macro gather_variables(common) %}
+{% endmacro %}
+{% macro init_download_sync(common) %}
+{% endmacro %}
+{% macro pre_configure(common) %}
+{% endmacro %}
+{% macro build(common) %}
+{% endmacro %}
+{% macro post_configure(common) %}
+{% endmacro %}
+{% macro bundle(common) %}
+{% endmacro %}
+{% macro deploy(common) %}
+{% endmacro %}
+{% macro post_deploy(common) %}
+{% endmacro %}
 
 {#-
 #  Look available arguments in _modules/mc_project.py:get_commmon_vars
@@ -465,4 +472,12 @@ etc-logrotate.d-{{common.name}}.conf:
 {%-    do common.sls_includes.extend(["makina-states.services.http.apache_proxy"])%}
 {{- base.install_project(common, install_macro=install_generic_zope_project_do) }}
 {% endmacro %}
+
+{# retrocompat #}
+{# Makina project per project macro couple (install_zope_project/install_project) #}
+{%- macro install_generic_zope_project_do(common) %}
+{{-    zope_deps(common) }}
+{{-    generic_buildout(common) }}
+{{-    generic_crons(common) }}
+{%- endmacro %}
 {# vim: set nofoldenable :#}
