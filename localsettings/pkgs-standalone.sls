@@ -95,6 +95,7 @@ sys-pkgs:
       - python
       - python-dev
       - sudo
+      - bsdtar
       - screen
       - smartmontools
       - tmux

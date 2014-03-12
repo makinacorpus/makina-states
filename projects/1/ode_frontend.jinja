@@ -1,0 +1,59 @@
+{%- import "makina-states/projects/1/python.jinja" as python with context %}
+{% import "makina-states/services/db/postgresql.sls" as pgsql with context %}
+{%- set services = python.services %}
+{%- set localsettings = python.localsettings %}
+
+{% macro install_python(common) %}
+{{ python.install_generic_python_project(*varargs, **kwargs) }}
+{% endmacro %}
+
+{% macro install_pgsql(common) %}
+{% set db_name = salt['mc_utils.get']('makina-states.projects.ode_frontend.db_name', 'ode') %}
+{% set db_user = salt['mc_utils.get']('makina-states.projects.ode_frontend.db_user', 'ode') %}
+{% set db_password = salt['mc_utils.get']('makina-states.projects.ode_frontend.db_password', 'ode') %}
+
+{{ pgsql.postgresql_db(db_name) }}
+{{ pgsql.postgresql_user(db_user, db_password, groups=['{0}_owners'.format(db_name)]) }}
+{% endmacro %}
+
+{% macro install_setup(common) %}
+ode_project_setup_grunt-cli:
+  npm.installed:
+    - name: grunt-cli
+
+ode_project_setup_npm:
+  npm.bootstrap:
+    - name: {{ common['project_root'] }}
+    - user: {{ common['user'] }}
+
+ode_project_setup:
+  cmd.run:
+    - name: >
+        . .virtualenv/bin/activate
+        && grunt
+        && python setup.py install
+        && python manage.py syncdb --noinput
+        && python manage.py collectstatic --noinput
+        && python manage.py compilemessages -l fr
+    - cwd: {{ common['project_root'] }}
+    - user: {{ common['user'] }}
+{% endmacro %}
+
+{% macro install_ode_api_project() %}
+{% do kwargs.setdefault('url', 'https://github.com/makinacorpus/django-ode.git') -%}
+{% do kwargs.setdefault('name', 'ode_frontend') -%}
+{% do kwargs.setdefault('domain', 'example.com') -%}
+{% do kwargs.setdefault('sls_includes', [
+  'makina-states.services.db.postgresql',
+  'makina-states.services.http.nginx',
+  'makina-states.localsettings.nodejs',
+  'makina-states.localsettings.python'
+  ]) -%}
+
+{% set common = salt['mc_project.get_common_vars'](*varargs, **kwargs) -%}
+
+{# also install pgsql and node.js through include -#}
+{{ install_python(common, *varargs, **kwargs) }}
+{{ install_pgsql(common) }}
+{{ install_setup(common) }}
+{% endmacro %}

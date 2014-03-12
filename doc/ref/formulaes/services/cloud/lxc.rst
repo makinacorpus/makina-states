@@ -5,10 +5,16 @@ As always, the configuration is done via a registry: :ref:`module_mc_lxc`.
 
 To provision a new lxc provider, you need to:
 
-    - Select a size profile and a type profile
+    - Select a profile type (combination of backing mode (lvm/dir) and install
+      mode(clone/create)
+    - Select a size profile if you are using lvm
+    - Select a mode: mastersalt (localmaster+minion and a minion linked to
+      mastersalt) or salt (only a minion linked to master)
     - add an entry to your lxc container in pillar reflecting those choices plus
       the other vm parameters.
 
+* We create a default container in mastersalt node named **makina-states-precise**. In
+  cloning mode, this is the default origin container. Its oip is **10.5.0.2**.
 * You can either start an lxc from scratch or begin with a template like a barebone ubuntu which will be cloned at a start.
 * By default, we use the **10.5/16** network for all containers
 * This use the **lxcbr1** bridge.
@@ -16,11 +22,11 @@ To provision a new lxc provider, you need to:
 * We use **LVM** as the default backing store, and the **data** volume group.
 * Salt cloud profiles are just collections of default for your next provision.
 
- * The naming scheme of raw salt-cloud is ms-**{encoded minion id}**-**{size profile}**-**{profile type}**, eg profiles::
+ * The naming scheme of raw salt-cloud is ms-**{encoded minion id}**[-**{size profile}**]-**{profile type}**, eg profiles::
 
-    ms-devhost-10-local-small-dir
-    ms-devhost-10-local-small-lvm
-    ms-devhost-10-local-medium-dir
+    ms-devhost-10-local-dir-scratch
+    ms-devhost-10-local-dir
+    ms-devhost-10-local-small-lvm-scratch
     ms-devhost-10-local-medium-lvm
 
 * Those are the availables modes:
@@ -71,10 +77,16 @@ follow:
     mysupertest6:
       name: gfoobar2.test.com
       ip: 10.5.10.17
-      from_container: makina-states
-      profile: small
+      # from_container: makina-states-precise -> default
+      profile_type: dir
       mode: mastersalt
-      profile_type: lvm
+      password: foobar
+    mysupertest6:
+      name: gfoobar2.test.com
+      ip: 10.5.10.17
+      # image: ubuntu -> default
+      profile_type: dir-scratch
+      mode: mastersalt
       password: foobar
 
 * The first line ends (after **containers.**) with your targeted minion id, where the lxc containers will be installed.

@@ -1,12 +1,21 @@
 About
 =====
-Makina-States is:
+
+
+Makina-states is in the early stages but its final goal is tyo be a serious PAAS competitor.
+Idea is to have all the provision and orchestration done with saltstack and the projects
+will live in containers, probable docker containers, but for now only in lxc containers.
+
+
+For now Makina-States is:
 
     - a consistent collection of SaltStack_ formulaes
+    - a consistent way to deploy numerous projects with salt
     - shell scripts
     - A buildout_ to install salt according to makina-states layout
 
 This aim to manage easily an IT infrastructure from machine provision to project deployment & lifecycle.
+The other aim is to make this infrastructure available as a PAAS platform.
 
 It may be separated into two parts called **mastersalt** and **salt** but this is totally optionnal and up to you.
 

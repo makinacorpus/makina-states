@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+'''
+Utilities functions
+===================
+'''
+
 # -*- coding: utf-8 -*-
 __docformat__ = 'restructuredtext en'
 import copy

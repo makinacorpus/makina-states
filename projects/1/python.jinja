@@ -1,0 +1,48 @@
+t{#
+# Install a generic Python project.
+#
+# This provides a virtualenv with Python/pip only.
+# It also install the requirement from the requirement.txt file.
+-#}
+{%- import "makina-states/projects/1/base.jinja" as base with context %}
+{%- set services = base.services %}
+{%- set saltmac = base.saltmac %}
+{%- set localsettings = base.localsettings %}
+
+{%- set default_defaults = {
+  'python_version': localsettings.pythonSettings.version,
+  'requirements': True,
+ } %}
+
+{%- set default_env_defaults = {
+  'dev': {},
+  'prod': {}
+ } %}
+
+{% macro python_virtualenv(common) %}
+python-project-{{ common['name'] }}-virtualenv:
+  virtualenv.managed:
+    - name: {{ common.project_root }}/.virtualenv
+    - no_site_packages: True
+    - python: {{ localsettings.locations.bin_dir }}/python{{ common.data['python_version'] }}
+    {% if common.data['requirements'] %}
+    - requirements: {{ common.project_root }}/requirements.txt
+    {% endif %}
+{% endmacro %}
+
+{% macro install_generic_python_project_do(common) -%}
+{{ python_virtualenv(common) }}
+{%- endmacro %}
+
+{#-
+#  Look available arguments in _modules/mc_project.py:get_commmon_vars
+#}
+{% macro install_generic_python_project() -%}
+{% do kwargs.setdefault('defaults', default_defaults) -%}
+{% do kwargs.setdefault('env_defaults', default_env_defaults) -%}
+{% do kwargs.setdefault('user', 'python') -%}
+{% do kwargs.setdefault('sls_includes', ['makina-states.localsettings.python']) -%}
+
+{% set common = salt['mc_project.get_common_vars'](*varargs, **kwargs) -%}
+{{ base.install_project(common, install_macro=install_generic_python_project_do) -}}
+{%- endmacro %}

@@ -1677,6 +1677,7 @@ pillar_roots: {"base":["${SALT_PILLAR}"]}
 runner_dirs: [${SALT_ROOT}/runners, ${SALT_MS}/mc_states/runners]
 EOF
     fi
+    touch "${CONF_PREFIX}/grains"
     if [ ! -e "${CONF_PREFIX}/minion" ];then
         cat > "${CONF_PREFIX}/minion" << EOF
 id: $(get_minion_id)
@@ -1699,6 +1700,7 @@ EOF
         if [ ! -e "${MCONF_PREFIX}/minion.d" ];then mkdir "${MCONF_PREFIX}/minion.d";fi
         if [ ! -e "${MCONF_PREFIX}/pki/master" ];then mkdir -p "${MCONF_PREFIX}/pki/master";fi
         if [ ! -e "${MCONF_PREFIX}/pki/minion" ];then mkdir -p "${MCONF_PREFIX}/pki/minion";fi
+        touch "${MCONF_PREFIX}/grains"
         if [ ! -e "${MCONF_PREFIX}/master" ];then
             cat > "${MCONF_PREFIX}/master" << EOF
 file_roots: {"base":["${MASTERSALT_ROOT}"]}
@@ -1747,14 +1749,16 @@ EOF
         done
         rm -f "${CONF_PREFIX}/pki/minion/minion_master.pub"
         if [ "x${IS_MASTERSALT}" != "x" ];then
-            # regenerate keys for the local master
-            salt-key --gen-keys=master --gen-keys-dir=${CONF_PREFIX}/pki/master
             bs_log "SaltCloud mode: Resetting mastersalt minion keys"
-            rm -f "${MCONF_PREFIX}/pki/minion/minion_master.pub"
             minion_dest="${MCONF_PREFIX}/pki/minion"
             master_dest="${MCONF_PREFIX}/pki/master"
+            # regenerate keys for the local master
+            if [ "x$(which salt-key 2>/dev/null)" != "x" ];then
+                salt-key --gen-keys=master --gen-keys-dir=${CONF_PREFIX}/pki/master
+            fi
             __install "${SALT_CLOUD_DIR}/minion.pem" "${minion_dest}/minion.pem"
             __install "${SALT_CLOUD_DIR}/minion.pub" "${minion_dest}/minion.pub"
+            rm -f "${MCONF_PREFIX}/pki/minion/minion_master.pub"
             find "${MCONF_PREFIX}"/minion* -type f 2>/dev/null|while read mfic;do
                 bs_log "SaltCloud mode: Resetting mastersalt minion conf ($(get_minion_id)/${MASTERSALT}/${MASTERSALT_MASTER_PORT}): ${mfic}"
                 sed -i -e "s/^id:.*$/id: $(get_minion_id)/g" "${mfic}"
@@ -1881,9 +1885,12 @@ a\    id: $(get_minion_id)
     if [ "x${IS_SALT_MASTER}" != "x" ] \
        && [ "x$(egrep -- "( |\t)*master:( |\t)*$" "${SALT_PILLAR}/salt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
         debug_msg "Adding master info to pillar"
+        # think to firewall the interfaces, but restricting only to localhost cause
+        # mpre harm than good
+        # any way the keys for attackers need to be accepted.
         "${SED}" -i -e "/^salt:\( \|\t\)*$/ {
 a\  master:
-a\    interface: ${SALT_MASTER_IP}
+a\    interface: 0.0.0.0
 a\    publish_port: $SALT_MASTER_PUBLISH_PORT
 a\    ret_port: ${SALT_MASTER_PORT}
 }" "${SALT_PILLAR}/salt.sls"
@@ -1932,7 +1939,7 @@ a\    id: $(mastersalt_get_minion_id)
                 debug_msg "Adding mastersalt master info to mastersalt pillar"
                 "${SED}" -i -e "/^mastersalt:\( \|\t\)*$/ {
 a\  master:
-a\    interface: ${MASTERSALT_MASTER_IP}
+a\    interface: 0.0.0.0
 a\    ret_port: ${MASTERSALT_MASTER_PORT}
 a\    publish_port: ${MASTERSALT_MASTER_PUBLISH_PORT}
 }" "${MASTERSALT_PILLAR}/mastersalt.sls"
@@ -2013,8 +2020,8 @@ gen_mastersalt_keys() {
     if [ "x${IS_MASTERSALT_MINION}" != "x" ]\
         && [ "x${IS_MASTERSALT_MASTER}" != "x" ]\
         && [ -e "${MCONF_PREFIX}/pki/minion/minion.pub" ];then
-        __install "${MCONF_PREFIX}/pki/minion/minion.pub" "${MCONF_PREFIX}/pki/master/minions/$(get_minion_id)" 
-        __install "${MCONF_PREFIX}/pki/master/master.pub" "${MCONF_PREFIX}/pki/minion/minion_master.pub" 
+        __install "${MCONF_PREFIX}/pki/minion/minion.pub" "${MCONF_PREFIX}/pki/master/minions/$(get_minion_id)"
+        __install "${MCONF_PREFIX}/pki/master/master.pub" "${MCONF_PREFIX}/pki/minion/minion_master.pub"
     fi
 }
 
@@ -2026,7 +2033,7 @@ gen_salt_keys() {
         fi
     fi
     # in saltcloude mode, keys are already providen
-    if [ "x${SALT_CLOUD}" = "x" ];then 
+    if [ "x${SALT_CLOUD}" = "x" ];then
         if [ "x${IS_SALT_MINION}" != "x" ];then
             if [ ! -e "${CONF_PREFIX}/pki/minion/minion.pub" ];then
                 bs_log "Generating salt minion key"
@@ -2037,8 +2044,8 @@ gen_salt_keys() {
     if [ "x${IS_SALT_MINION}" != "x" ]\
        && [ "x${IS_SALT_MASTER}" != "x" ]\
        && [ -e "${CONF_PREFIX}/pki/minion/minion.pub" ];then
-        __install "${CONF_PREFIX}/pki/minion/minion.pub" "${CONF_PREFIX}/pki/master/minions/$(get_minion_id)" 
-        __install "${CONF_PREFIX}/pki/master/master.pub" "${CONF_PREFIX}/pki/minion/minion_master.pub" 
+        __install "${CONF_PREFIX}/pki/minion/minion.pub" "${CONF_PREFIX}/pki/master/minions/$(get_minion_id)"
+        __install "${CONF_PREFIX}/pki/master/master.pub" "${CONF_PREFIX}/pki/minion/minion_master.pub"
     fi
 }
 
@@ -2089,6 +2096,8 @@ install_salt_daemons() {
 
         bs_log "Boostrapping salt"
 
+        sed -i -e "/makina-states.nodetypes.$(get_salt_nodetype):/ d"  "${CONF_PREFIX}/grains"
+        echo "makina-states.nodetypes.$(get_salt_nodetype): true" >> "${CONF_PREFIX}/grains"
         run_salt_bootstrap "${salt_bootstrap_nodetype}"
 
         # run salt master setup
@@ -2622,6 +2631,8 @@ install_mastersalt_daemons() {
         fi
 
         # run mastersalt master+minion boot_nodetype bootstrap
+        sed -i -e "/makina-states.nodetypes.$(get_salt_nodetype):/ d"  "${MCONF_PREFIX}/grains"
+        echo "makina-states.nodetypes.$(get_salt_nodetype): true" >> "${MCONF_PREFIX}/grains"
         run_mastersalt_bootstrap ${mastersalt_bootstrap_nodetype}
 
         # run mastersalt master setup

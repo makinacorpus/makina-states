@@ -1,0 +1,521 @@
+{% import "makina-states/nodetypes/vagrantvm.sls" as vagrantvm with context %}
+{% import "makina-states/_macros/salt.jinja" as saltmac with context %}
+{% import "makina-states/_macros/services.jinja" as services with context %}
+{#-
+#
+# Install a project from end to end on the behalf of makina states
+# Currently we have support for :
+#   - Base macro to do pre/install/post project install tasks, indeed this is called GLUE, this is this macro file goal
+#   - Plone projects based on generic buildout for plone (http://cgwb-makinacorpus.rhcloud.com/), see ./zope.jinja
+#
+# Of course we gather metadata for thr project including its name, repo url, domain, project branch, salt branch
+# but also all kind of values used in the later states. This will feed a special variable named 'common', and see
+# makina-state._modules.mc_project.py to know how we initialise it.
+#
+# Most of the common variable is editable either via well placed grains or pillar entries.
+#
+# An exemple to use one of the project macros it could we to put in your top file only the following:
+#
+#    {% import "makina-states/projects/zope.jinja" as zope with context %}
+#    {{ zope.install_generic_zope_project('foo', url='ssh://github.com/foo.git', domain='local.me') }}
+#
+# Please also read the end of this file to understand how hooks and common data is loaded
+#
+#}
+
+# export macro to callees
+{% set services = services %}
+{% set nodetypes = services.nodetypes %}
+{% set localsettings = services.localsettings %}
+{% set locs = services.localsettings.locations %}
+{% set saltmac = saltmac %}
+
+{% macro set_accesses(common) %}
+{% if not common.no_user %}
+{#
+# Create a dedicated system user for our project
+#}
+{% if common.full %}
+{% for group in common.groups -%}
+{{common.name}}-group-{{group}}:
+  group.present:
+    - name: {{group}}
+    - system: True
+    {%- endfor %}
+{% endif %}
+
+
+{{common.name}}-user-{{common.user}}:
+  user.present:
+    - name: {{common.user}}
+    - shell: /bin/bash
+    - watch_in:
+      - mc_proxy: {{common.name}}-prerequisites-hook
+    {% if common.full %}
+    - require:
+      {% for group in common.groups -%}
+      - group: {{common.name}}-group-{{group}}
+      {%- endfor %}
+    {% endif %}
+    - fullname: {{common.user}} user
+    - gid_from_name: True
+    - remove_groups: False
+    {% if common.full %}
+    - optional_groups:
+      {% for group in common.groups -%}
+      - {{group}}
+      {%- endfor %}
+    {% endif %}
+
+{% if common.full %}
+{#+
+# By default we copy root ssh key creds to the project user
+# if and only if they do not already  exist
+# We will then just have to accept only one key in our gitorious, the root one
+# Choose between dsa or rsa, the one that match your needs.
+#}
+{{common.name}}-{{common.user}}-ssh-keys-init:
+  cmd.run:
+    {# for the project user, create it's ssh dir and copy the root ssh keys #}
+    - name: |
+            home="$(awk -F: -v v="{{common.user}}" '{if ($1==v && $6!="") print $6}' /etc/passwd)";
+            cd /root/.ssh;
+            if [[ ! -e $home/.ssh ]];then
+              mkdir $home/.ssh;
+            fi;
+            for i in config id_*;do
+              if [[ ! -e $home/.ssh/$i ]];then
+                cp -fv $i $home/.ssh;
+              fi;
+            done;
+            echo;echo "changed=false comment='do no trigger changes'"
+    - stateful: True
+    {# if only the ssh keys are not there #}
+    - onlyif: |
+              res=1;
+              home="$(awk -F: -v v="{{common.user}}" '{if ($1==v && $6!="") print $6}' /etc/passwd)";
+              cd /root/.ssh;
+              for i in config id_*;do
+                if [[ ! -e $home/.ssh/$i ]];then
+                  res=0;
+                fi;
+              done;
+              exit $res;
+    - user: root
+    - require:
+      {# only where the user exists and when we have installed the root ssh keys #}
+      - mc_proxy: ssh-post-user-keys
+      - user: {{common.name}}-user-{{common.user}}
+    - watch_in:
+      - mc_proxy: {{common.name}}-prerequisites-hook
+
+{{common.name}}-{{common.user}}-ssh-keys-perms:
+  cmd.run:
+    - watch_in:
+      - mc_proxy: {{common.name}}-prerequisites-hook
+    - require:
+      - cmd: {{common.name}}-{{common.user}}-ssh-keys-init
+    - stateful: True
+    {# be sure to have correct permissions on ssh folders but do not trigger any restart or such #}
+    - name: |
+            home="$(awk -F: -v v="{{common.user}}" '{if ($1==v && $6!="") print $6}' /etc/passwd)";
+            chmod -Rf 750           $home/.ssh;
+            chmod -Rf 700           $home/.ssh/*;
+            chmod -Rf 770           $home/.ssh/config;
+            chown -Rf {{common.user}}:{{common.user}} $home/.ssh;
+            echo;echo "changed=false comment='do no trigger changes'"
+{%- endif %} {# if common.full #}
+{%- endif %}
+{% endmacro %}  {# set_accesses #}
+
+{#-
+# Checkout and setup projet directories according to makina-states philosophy:
+#   - /src/projects/projectName
+#             |_ salt -> salt branch of the project
+#             |_ pillar -> project's pillar
+#             |_ project -> project application code
+#}
+{%- macro checkout_salt_and_code(common) %}
+{%- if not common.no_salt %}
+{#
+# Checkout the salt branch of the project repository in /srv/projects/project/salt
+#}
+{{-common.name}}-checkout-salt:
+  mc_git.latest:
+    - rev: {{common.salt_branch}}
+    - name:  {{common.url}}
+    - target: {{common.salt_root}}
+    {% if not common.no_user -%}
+    - user: {{common.user}}
+    {%- endif %}
+    - watch:
+      - mc_proxy: dummy-post-salt-service-restart
+      - mc_proxy: {{common.name}}-precheckout-salt-hook
+    - watch_in:
+      - mc_proxy: {{common.name}}-postcheckout-salt-hook
+{% endif %}
+
+{#-
+# Create:
+#
+#   /srv/projects/project/salt
+#   /srv/projects/project/pillar
+#   /srv/projects/project/project
+#}
+{%-    set project_dirs = [common.project_root,] %}
+{%-    if not common.no_salt %}
+{%-      do project_dirs.extend([common.salt_root, common.pillar_root]) %}
+{%-    endif %}
+{% for i in project_dirs -%}
+{{common.name}}-{{i}}-dir:
+  file.directory:
+    - name: {{i}}
+    - makedirs: true
+    {%- if not common.no_user %}
+    - user: {{common.user}}
+    - group: {{common.group}}
+    {%- endif %}
+    - mode: 0770
+    - watch_in:
+      - mc_proxy: {{common.name}}-precheckout-salt-hook
+      - mc_proxy: {{common.name}}-precheckout-project-hook
+{% endfor %}
+
+{#-
+# Checkout the project branch in /srv/projects/project/project
+#}
+{{common.name}}-checkout-code:
+  {% if common.full %}
+  file.directory:
+    - name: {{common.project_root}}
+    - makedirs: true
+    {% if not common.no_user -%}
+    - user: {{common.user}}
+    - group: {{common.group}}
+    {%- endif %}
+    {% if common.no_salt or common.no_user %}
+    - watch_in:
+      - mc_git: {{common.name}}-checkout-code
+    - watch:
+      - mc_proxy: {{common.name}}-postcheckout-salt-hook
+      - mc_proxy: {{common.name}}-precheckout-project-hook
+      {% if not common.no_user %}
+      - user: {{common.name}}-user-{{common.user}}
+      {% endif %}
+    {% endif %}
+  {%- if not common.no_salt %}
+  {#- this is an optimisation, to not clone entirely twice the project, copy the salt git folder
+     to the project .git as they are on the same git repository, it's quickier and consume less network #}
+  cmd.run:
+    - name: |
+            rsync -az "{{common.salt_root}}/.git/" "{{common.project_root}}/.git/";
+            cd "{{common.project_root}}";
+            git reset --hard remotes/origin/{{common.project_branch}} && touch "{{common.project_root}}/.initial"
+    - unless: if [ -e "{{common.project_root}}/.initial" ] || [ -e "{{common.project_root}}/.git" ];then
+                exit 0;
+              fi;exit 1
+    {% if not common.no_user -%}
+    - user: {{common.user}}
+    {%- endif %}
+    - require:
+      - file: {{common.name}}-checkout-code
+  {%- endif %}
+  {%- endif %}
+  mc_git.latest:
+    - rev: {{common.project_branch}}
+    - name:  {{common.url}}
+    {% if not common.no_user -%}
+    - user: {{common.user}}
+    {%- endif %}
+    - target: {{common.project_root}}
+    - watch_in:
+      - mc_proxy: {{common.name}}-postcheckout-project-hook
+    {% if not common.no_user and common.full-%}
+    - watch:
+      - user: {{common.user}}
+    {%- endif %}
+{%- endmacro %} {# checkout_salt_and_code #}
+
+{#-
+# PERMISSIONS SETUP, STAY SECURE and reset file permissions, more over never let others this our stuff !
+#}
+{%- macro fix_permissions(common) %}
+{%- if not common.no_reset_perms %}
+{%-    if not common.no_salt %}
+{{common.name}}-restricted-perms:
+  file.managed:
+    - name: {{common.project_dir}}/global-reset-perms.sh
+    - mode: 750
+    - user: {% if not common.no_user%}{{common.user}}{% else -%}root{% endif %}
+    - group: {{common.group}}
+    - contents: >
+            #!/usr/bin/env bash
+
+            if [ -e "{{common.pillar_root}}" ];then 
+            "{{locs.resetperms}}" "${@}"
+            --dmode '0770' --fmode '0770'
+            --user root --group "{{localsettings.group}}"
+            --users root
+            --groups "{{localsettings.group}}"
+            --paths "{{common.pillar_root}}";fi
+
+            if [ -e "{{common.salt_root}}" ];then 
+            "{{locs.resetperms}}" "${@}"
+            --dmode '0770' --fmode '0770'
+            --user root --group "{{localsettings.group}}"
+            --users root
+            --groups "{{localsettings.group}}"
+            --paths "{{common.salt_root}}";fi
+
+            if [ -e "{{common.project_root}}" ];then
+            "{{locs.resetperms}}" "${@}"
+            --dmode '0770' --fmode '0770'
+            --paths "{{common.project_root}}"
+            --users {% if not common.no_user%}{{common.user}}{% else -%}root{% endif %}
+            --groups {{common.group}}
+            --user {% if not common.no_user%}{{common.user}}{% else -%}root{% endif %}
+            --group {{common.group}};fi
+    - watch:
+      - mc_proxy: before-perms-project-hook
+    - watch_in:
+      - mc_proxy: after-perms-project-hook
+
+{{common.name}}-perms:
+  cmd.run:
+    - name: {{common.project_dir}}/global-reset-perms.sh
+    - cwd: {{common.project_root}}
+    - user: root
+    - watch:
+      - file: {{common.name}}-restricted-perms
+    - watch_in:
+      - mc_proxy: after-perms-project-hook
+{%- endif %}
+{%- endif %}
+{%- endmacro %}
+{#-
+# Register all the app domain's in /etc/hosts
+# If we are in devmode (vagrant), also add them to the hosts to the parent box
+#}
+{%- macro configure_domains(common) %}
+{{common.name}}-append-etc-hosts-management:
+  file.blockreplace:
+    - name: {{ locs.conf_dir }}/hosts
+    - marker_start: "#-- start project:{{common.name}} managed zoneend -- PLEASE, DO NOT EDIT"
+    - marker_end: "#-- end project:{{common.name}} managed zoneend --"
+    - content: ''
+    - append_if_not_found: True
+    - backup: '.bak'
+    - show_changes: True
+    - watch_in:
+      - mc_proxy: {{common.name}}-prerequisites-hook
+
+{{common.name}}-parent-etc-hosts-absent:
+  file.absent:
+    - name: {{vagrantvm.hostsf}}.{{common.name}}
+    - require_in:
+      - file: {{common.name}}-parent-etc-hosts-exists
+
+{#-
+# delete old stalled from import /etc/devhosts
+# handle the double zone cases
+#}
+{{common.name}}-parent-etc-hosts-exists:
+  file.touch:
+    - name: {{vagrantvm.hostsf}}.{{common.name}}
+
+{{common.name}}-append-parent-etc-hosts-management:
+  file.blockreplace:
+    - name: {{vagrantvm.hostsf}}.{{common.name}}
+    - marker_start: '#-- start devhost {{vagrantvm.vmNum }} project:{{common.name}}:: DO NOT EDIT --'
+    - marker_end: '#-- end devhost {{vagrantvm.vmNum }} project:{{common.name}}:: DO NOT EDIT --'
+    - content: '# Vagrant vm: {{ vagrantvm.vm_fqdn }} added this entry via local mount:'
+    - prepend_if_not_found: True
+    - backup: '.bak'
+    - show_changes: True
+    - require:
+      - file: {{common.name}}-parent-etc-hosts-exists
+    - watch_in:
+      - mc_proxy: {{common.name}}-prerequisites-hook
+
+{%-  if common.full and not common.no_domain %}
+{{common.name}}-append-hosts-accumulator:
+  file.accumulated:
+    - name: hosts-append-accumulator-{{ common.name }}-entries
+    - require_in:
+      - file: {{common.name}}-append-etc-hosts-management
+    - filename: {{ locs.conf_dir }}/hosts
+    - text: |
+            {% for domain in common.domains %}
+            {{common.domains[domain]}} {{domain}}
+            {% endfor %}
+{#-
+# if we are on a vagrant box, also register our hosts to be accesible from the host
+#}
+{%-  if nodetypes.registry.is.vagrantvm %}
+{%-    if vagrantvm.vmNum %}
+makina-parent-append-etc-hosts-accumulated-project-{{common.name}}:
+  file.accumulated:
+    - filename: {{vagrantvm.hostsf}}.{{common.name}}
+    - name: parent-hosts-append-accumulator-{{ vagrantvm.vm_name }}-{{common.name}}-entries
+    - text: |
+            {% for domain in common.domains %}
+            {{ vagrantvm.ip2 }} {{domain}}
+            {{ vagrantvm.ip1 }} {{domain}}
+            {% endfor %}
+    - watch_in:
+      - mc_proxy: {{common.name}}-prerequisites-hook
+    - require_in:
+      - file: {{common.name}}-append-parent-etc-hosts-management
+{%-    endif %}
+{%-   endif %}
+{%-  endif %}
+{%- endmacro %} {# configure_domains #}
+
+
+{#
+# Installation lifecycle hooks to attach to
+# for orchestration purpose
+#}
+{% macro hooks(common) %}
+{{common.name}}-prerequisites-hook:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: {{common.name}}-precheckout-hook
+      - mc_proxy: {{common.name}}-precheckout-salt-hook
+      - mc_proxy: {{common.name}}-postcheckout-salt-hook
+      - mc_proxy: {{common.name}}-precheckout-project-hook
+      - mc_proxy: {{common.name}}-postcheckout-project-hook
+      - mc_proxy: {{common.name}}-preinstall-project-hook
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+      - mc_proxy: precheckout-hook
+      - mc_proxy: precheckout-salt-hook
+      - mc_proxy: postcheckout-salt-hook
+      - mc_proxy: precheckout-project-hook
+      - mc_proxy: postcheckout-project-hook
+      - mc_proxy: preinstall-project-hook
+      - mc_proxy: postinstall-project-hook
+
+{{common.name}}-precheckout-hook:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: {{common.name}}-precheckout-salt-hook
+      - mc_proxy: {{common.name}}-postcheckout-salt-hook
+      - mc_proxy: {{common.name}}-precheckout-project-hook
+      - mc_proxy: {{common.name}}-postcheckout-project-hook
+      - mc_proxy: {{common.name}}-preinstall-project-hook
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+      - mc_proxy: precheckout-salt-hook
+      - mc_proxy: postcheckout-salt-hook
+      - mc_proxy: precheckout-project-hook
+      - mc_proxy: postcheckout-project-hook
+      - mc_proxy: preinstall-project-hook
+      - mc_proxy: postinstall-project-hook
+
+{{common.name}}-precheckout-salt-hook:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: {{common.name}}-postcheckout-salt-hook
+      - mc_proxy: {{common.name}}-precheckout-project-hook
+      - mc_proxy: {{common.name}}-postcheckout-project-hook
+      - mc_proxy: {{common.name}}-preinstall-project-hook
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+      - mc_proxy: postcheckout-salt-hook
+      - mc_proxy: precheckout-project-hook
+      - mc_proxy: postcheckout-project-hook
+      - mc_proxy: preinstall-project-hook
+      - mc_proxy: postinstall-project-hook
+
+{{common.name}}-postcheckout-salt-hook:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: {{common.name}}-precheckout-project-hook
+      - mc_proxy: {{common.name}}-postcheckout-project-hook
+      - mc_proxy: {{common.name}}-preinstall-project-hook
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+      - mc_proxy: precheckout-project-hook
+      - mc_proxy: postcheckout-project-hook
+      - mc_proxy: preinstall-project-hook
+      - mc_proxy: postinstall-project-hook
+
+{{common.name}}-precheckout-project-hook:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: {{common.name}}-postcheckout-project-hook
+      - mc_proxy: {{common.name}}-preinstall-project-hook
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+      - mc_proxy: postcheckout-project-hook
+      - mc_proxy: preinstall-project-hook
+      - mc_proxy: postinstall-project-hook
+
+{{common.name}}-postcheckout-project-hook:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: {{common.name}}-preinstall-project-hook
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+      - mc_proxy: preinstall-project-hook
+      - mc_proxy: postinstall-project-hook
+
+{{common.name}}-preinstall-project-hook:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+      - mc_proxy: postinstall-project-hook
+
+{{common.name}}-postinstall-project-hook:
+  mc_proxy.hook:
+    - watch:
+      - mc_proxy: {{common.name}}-prerequisites-hook
+      - mc_proxy: {{common.name}}-precheckout-hook
+      - mc_proxy: {{common.name}}-precheckout-salt-hook
+      - mc_proxy: {{common.name}}-postcheckout-salt-hook
+      - mc_proxy: {{common.name}}-precheckout-project-hook
+      - mc_proxy: {{common.name}}-postcheckout-project-hook
+      - mc_proxy: {{common.name}}-preinstall-project-hook
+      - mc_proxy: prerequisites-hook
+      - mc_proxy: precheckout-hook
+      - mc_proxy: precheckout-salt-hook
+      - mc_proxy: postcheckout-salt-hook
+      - mc_proxy: precheckout-project-hook
+      - mc_proxy: postcheckout-project-hook
+      - mc_proxy: preinstall-project-hook
+{% endmacro %}
+
+
+{#-
+# All project need to define at least two macros which will use the following macros
+# - A macro named 'install_project' which call the following macro and will call the next macro
+# - Another macro which is the install_macro argument which really install the project
+# - pre_install and post_install macros will setup system accesses, checkout the base code and finally reset
+#  all filesystem permissions to stay secure.
+#}
+{%- macro pre_install(common) %}
+{{    configure_domains(common) }}
+{{    set_accesses(common) }}
+{{    checkout_salt_and_code(common) }}
+{%- endmacro %}  {# pre_install #}
+
+{%- macro post_install(common) %}
+{{-    fix_permissions(common) }}
+{%- endmacro %} {# post_install #}
+
+{%- macro install_project(common, pre=True, post=True, install_macro=None) %}
+{%-  if common.sls_includes %}
+include:
+{%- for sls in common.sls_includes %}
+  - {{ sls }}
+{%- endfor %}
+{%-  endif %}
+
+{{    hooks(common) }}
+
+{%-  if pre %}
+{{-    pre_install(common) }}
+{%-  endif %}
+{%-  if install_macro %}
+{{-    install_macro(common) }}
+{%-  endif %}
+{%-  if post %}
+{{-     post_install(common) }}
+{%-  endif %}
+{%- endmacro %} {# install_project #}
+{# vim: set nofoldenable :#}

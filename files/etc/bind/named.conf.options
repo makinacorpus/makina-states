@@ -1,0 +1,12 @@
+// *******************************
+// MANAGED VIA SALT DO NOT EDIT
+// *******************************
+options {
+        directory "{{data.cache_directory}}";
+        statistics-file "{{data.cache_directory}}/named.stats";
+        dump-file "{{data.cache_directory}}/named.db";
+        auth-nxdomain no;  # conform to RFC1035
+        listen-on-v6 { {{data.ipv6}}; };
+        listen-on { {{data.ipv4}}; };
+};
+// vim: set ft=named:

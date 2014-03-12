@@ -1,0 +1,468 @@
+{%- import "makina-states/projects/base.jinja" as base with context %}
+{%- set services = base.services %}
+{%- set saltmac = base.saltmac %}
+{%- set localsettings = base.localsettings %}
+{%- set apacheSettings = services.apacheSettings %}
+{%- set locations = base.localsettings.locations %}
+
+{#-
+# Base system prerequisite for Plone
+#}
+{%- macro zope_deps(common) %}
+{% if common.full -%}
+prepreq-{{common.name}}:
+  pkg.{{localsettings.installmode}}:
+    - watch_in:
+      - mc_proxy: {{common.name}}-prerequisites-hook
+    - pkgs:
+      - autoconf
+      - automake
+      - build-essential
+      - bzip2
+      - gettext
+      - git
+      - groff
+      - libbz2-dev
+      - libcurl4-openssl-dev
+      - libdb-dev
+      - libgdbm-dev
+      - libjpeg62-dev
+      - libreadline-dev
+      - libsigc++-2.0-dev
+      - libsqlite0-dev
+      - libsqlite3-dev
+      - libssl-dev
+      - libtool
+      - libxml2-dev
+      - libxslt1-dev
+      - m4
+      - man-db
+      - pkg-config
+      - poppler-utils
+      - python-dev
+      - python-imaging
+      - python-setuptools
+      - tcl8.4
+      - tcl8.4-dev
+      - tcl8.5
+      - tcl8.5-dev
+      - tk8.5-dev
+      - wv
+      - zlib1g-dev
+{%- endif %}
+{%- endmacro %}
+
+{#-
+# Install a generic (CGWB: http://cgwb-makinacorpus.rhcloud.com/) based buildout for plone
+#}
+{%- macro generic_buildout(common) %}
+
+{#-
+# Wrap the salt configured setting in a file inputable to buildout
+#}
+{{common.name}}-settings:
+  file.managed:
+    - template: jinja
+    - name: {{common.project_root}}/etc/sys/settings-local.cfg
+    - source: salt://makina-states/files/projects/zope/genericsettings.cfg
+    - user: {{common.user}}
+    - group: {{common.group}}
+    - mode: 770
+    - watch:
+      - mc_proxy: {{common.name}}-preinstall-project-hook
+      - mc_git: {{common.name}}-checkout-code
+    - watch_in:
+      - buildout: {{common.name}}-buildout-project
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+    - defaults:
+      salt_data: {{ common.data|yaml }}
+
+{#-
+# Run the project buildout but skip the maintainance parts as they are part of salt stuff
+#}
+
+{{common.name}}-buildout-caches:
+  file.directory:
+    - names:
+        - {{common.data.buildout.settings.buildout['eggs-directory']}}
+        - {{common.data.buildout.settings.buildout['download-cache']}}
+        - {{common.data.buildout.settings.buildout['download-directory']}}
+    - user: {{common.user}}
+    - group: {{common.group}}
+    - mode: 775
+    - makedirs: true
+    - watch:
+      - file: {{common.name}}-settings
+
+{% if common.full -%}
+{{common.name}}-caches-restricted-perms:
+  cmd.script:
+    - source: {{saltmac.resetperms}}
+    - args: >
+            --dmode '0775' --fmode '0775'
+            --user  {{common.user}} --group "{{common.group}}"
+            --paths {{common.data.buildout.settings.buildout['eggs-directory']}}
+            --paths {{common.data.buildout.settings.buildout['download-cache']}}
+            --paths {{common.data.buildout.settings.buildout['download-directory']}}
+    - watch:
+      - file: {{common.name}}-buildout-caches
+    - watch_in:
+      - {{common.name}}-buildout-project
+{%-    endif %}
+
+{{common.name}}-buildout-project:
+  file.managed:
+    - template: jinja
+    - name: {{common.project_root}}/buildout-salt.cfg
+    - source: salt://makina-states/files/projects/zope/genericbuildout.cfg
+    - user: {{common.user}}
+    - group: {{common.group}}
+    - mode: 770
+    - watch:
+      - file: {{common.name}}-buildout-caches
+      - file: {{common.name}}-settings
+    - watch_in:
+      - buildout: {{common.name}}-buildout-project
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+    - defaults:
+      skippedparts: |
+                    '    ${v:maintainance-parts} {% if not common.full -%}'
+                    '    chmod'
+                    '    chown'
+                    '    {%- endif %}'
+      salt_data: {{ common.data|yaml }}
+      config: buildout-{{common.default_env}}.cfg
+  buildout.installed:
+    - name: {{common.project_root}}
+    - config: buildout-salt.cfg
+    - runas: {{common.user}}
+    - newest: {{common.data.buildout.newest}}
+    - watch:
+      - file: {{common.name}}-buildout-caches
+      - file: {{common.name}}-settings
+      - file: {{common.name}}-buildout-project
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+      - mc_proxy: makina-apache-pre-conf
+
+{#-
+# init script is marked as started at first, but the daemon is not there!
+#}
+etc-init.d-supervisor.{{common.name}}:
+  file.symlink:
+    - name: {{locations.initd_dir}}/supervisor.{{common.name}}
+    - target: {{common.project_root}}/etc/init.d/supervisor.initd
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+
+
+{{common.name}}-service:
+  service.running:
+    - name: supervisor.{{common.name}}
+    - enable: True
+    - watch:
+      - file: etc-init.d-supervisor.{{common.name}}
+      - buildout: {{common.name}}-buildout-project
+  cmd.run:
+    - name: {{locations.initd_dir}}/supervisor.{{common.name}} restart
+    - onlyif: test "$({{common.project_root}}/bin/supervisorctl status 2>&1 |grep "refused connection"|wc -l)" != 0
+    - user: root
+    - watch:
+      - service: {{common.name}}-service
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+
+{#
+# VHOST
+#}
+
+{{common.name}}-buildout-vhost-directory:
+  file.directory:
+    - name: {{common.project_root}}/etc/www
+    - user: {{common.user}}
+    - group: {{common.user}}
+    - dir_mode: 755
+    - watch:
+      - buildout: {{common.name}}-buildout-project
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+      - mc_proxy: makina-apache-pre-conf
+{#      - cmd: makina-apache-conf-syntax-check #}
+  cmd.run:
+    - name: >
+          ln -s {{common.project_root}}/www/apache.reverseproxy.conf {{common.project_root}}/etc/www/apache.reverseproxy.conf
+          && ln -s {{common.project_root}}/www/nginx.reverseproxy.conf {{common.project_root}}/etc/www/nginx.reverseproxy.conf
+    - user: {{common.user}}
+    - unless: ls {{common.project_root}}/etc/www/apache.reverseproxy.conf {{common.project_root}}/etc/www/nginx.reverseproxy.conf
+    - onlyif: ls {{common.project_root}}/www/apache.reverseproxy.conf {{common.project_root}}/www/nginx.reverseproxy.conf
+    - watch:
+      - buildout: {{common.name}}-buildout-project
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+      - mc_proxy: makina-apache-pre-conf
+
+{{common.name}}-buildout-vhost:
+  file.symlink:
+    - target: {{common.project_root}}/etc/www/apache.reverseproxy.conf
+    - name: {{apacheSettings.vhostdir}}/100-{{common.domain}}.conf
+    - makedirs: true
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+      - mc_proxy: makina-apache-pre-conf
+
+{{common.name}}-buildout-vhost-active:
+  file.symlink:
+    - target: {{apacheSettings.vhostdir}}/100-{{common.domain}}.conf
+    - name: {{apacheSettings.evhostdir}}/100-{{common.domain}}.conf
+    - makedirs: true
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+      - mc_proxy: makina-apache-pre-conf
+
+{{common.name}}-buildout-nginx-vhost:
+  file.symlink:
+    - target: {{common.project_root}}/etc/www/nginx.reverseproxy.conf
+    - name: /etc/nginx/sites.available/100-{{common.domain}}.conf
+    - makedirs: true
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+
+{{common.name}}-buildout-nginx-vhost-active:
+  file.symlink:
+    - target: /etc/nginx/sites.available/100-{{common.domain}}.conf
+    - name: /etc/nginx/sites.enabled/100-{{common.domain}}.conf
+    - makedirs: true
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+{#-
+# Logrotate
+#}
+{% if common.full %}
+etc-logrotate.d-{{common.name}}.conf:
+  file.symlink:
+    - name: {{locations.conf_dir}}/logrotate.d/{{common.name}}.conf
+    - target: {{common.project_root}}/etc/logrotate.conf
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+{% endif %}
+
+{%- endmacro %}
+
+{#-
+# Cron from generic: pack & backup & restart each day, fullbackup per week (sunday)
+#}
+{%- macro generic_crons(common) %}
+{%- set cron_hour   = common.data.get('cron_hour', 1) %}
+{%- set cron_minute = common.data.get('cron_minute', 0) %}
+{{common.name}}-zopepackdaily:
+  cron.present:
+    - identifier: "{{common.name}}/project [zopepackdaily]"
+    - user: {{common.user}}
+    - minute:  {{ cron_minute + 0 }}
+    - hour: {{cron_hour}}
+    - name: {{common.project_root}}/bin/zeoserver-zeopack
+    - watch:
+      - service: {{common.name}}-service
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+
+{{common.name}}-zoperestartdaily:
+  cron.present:
+    - identifier: "{{common.name}}/project [zoperestartdaily]"
+    - user: {{common.user}}
+    - minute:  {{ cron_minute + 30 }}
+    - hour: {{cron_hour}}
+    - watch:
+      - service: {{common.name}}-service
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+    - name: |
+            {% for nb in range(1, common.data.nbinstances+1) %}
+            {%- set iid='instance{0}'.format(nb) %}
+            {%- set id='autostart_{0}'.format(iid) %}
+            {%- if common.data['buildout']['settings']['v'].get(id, 'false') == 'true' %}
+            {{- common.project_root}}/bin/supervisorctl restart {{iid}};
+            {%- endif %}
+            {%- endfor %}
+
+{{common.name}}-repozodaily:
+  cron.present:
+    - identifier: "{{common.name}}/project [repozodaily]"
+    - user: {{common.user}}
+    - minute: {{ cron_minute + 15 }}
+    - hour: {{cron_hour}}
+    - name: {{common.project_root}}/bin/backup
+    - watch:
+      - service: {{common.name}}-service
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+
+{{common.name}}repozoweekly:
+  cron.present:
+    - identifier: "{{common.name}}/project [repozoweekly]"
+    - user: {{common.user}}
+    - minute: {{ cron_minute + 45 }}
+    - hour: {{cron_hour}}
+    - dayweek: 6
+    - name: {{common.project_root}}/bin/snapshotbackup
+    - watch:
+      - service: {{common.name}}-service
+    - watch_in:
+      - mc_proxy: {{common.name}}-postinstall-project-hook
+
+{%- endmacro %}
+
+{#
+# Data dictionnaries that feed the "common.data" dictionnary
+# This is one of the most difficult part to understand, idea is to
+#}
+{%- set default_defaults = {
+  'cache-directory': locations.apps_dir+'/buildout/cache',
+  'cron_hour': 1,
+  'cron_minute': 5,
+  'nbinstances': 4,
+  'buildout': {
+    'newest': None,
+    'settings': {
+      'buildout': {
+        'cache-directory': '{cache-directory}/downloads',
+        'download-cache': '{cache-directory}/downloads',
+        'download-directory': '{cache-directory}/downloads',
+        'eggs-directory': '{cache-directory}/eggs',
+      },
+      'v': {
+          'logrotate'                   : localsettings.rotate.days,
+          'admin-user'                  : 'admin',
+          'admin-password'              : 'secret',
+          'project'                     : 'ploneplone',
+          'proxycache_size'             : '256M',
+          'anon_cache_time'             : '600s',
+          'autostart_instance1'         : 'true',
+          'autostart_instance2'         : 'true',
+          'autostart_instance3'         : 'true',
+          'autostart_instance4'         : 'true',
+          'plonesite'                   : 'Plone',
+          'zeo-pack-days'               : '0',
+          'z2-log-level'                : 'INFO',
+          'event-log-level'             : 'INFO',
+          'debug'                       : 'off',
+          'verbose-security'            : 'off',
+          'zeo-client-cache-size'       : '80MB',
+          'session-timeout-minutes'     : '90',
+          'sys-user'                    : '{user}',
+          'sys-group'                   : '{group}',
+          'varnish-debug'               : '${v:debug}',
+          'rewrite-max-age'             : 'false',
+          'supervisor-user'             : '${v:admin-user}',
+          'supervisor-password'         : '${v:admin-password}',
+          'reverse-proxy-admin'         : 'postmaster@localhost',
+          'reverse-proxy-listen'        : '*',
+          'reverse-proxy-scheme'        : 'http',
+          'reverse-proxy-host'          : '{domain}',
+          'reverse-proxy-edit-host'     : 'edit.{domain}',
+          'reverse-proxy-port'          : '80',
+          'package-min-coverage'        : '80',
+          'flake8-ignore'               : 'C901',
+          'flake8-max-complexity'       : '1000',
+          'pre-commit-hook'             : 'True',
+      },
+      'ports': {
+          'supervisor'               : '8081',
+          'zeo'                      : '8082',
+          'instance'                 : '8084',
+          'balancer'                 : '8083',
+          'instance1'                : '8085',
+          'instance2'                : '8086',
+          'instance3'                : '8087',
+          'instance4'                : '8088',
+          'varnish'                  : '8094',
+          'varnish-telnet'           : '8095',
+          'zope-front'               : '${ports:balancer}',
+          'cache-backend'            : '${ports:balancer}',
+      },
+      'crons': {
+          'zope-restart'             : '15 1 * * *',
+          'zope-pack'                : '30 1 * * *',
+          'repozo-daily'             : '05 1 * * *',
+          'repozo-weekly'            : '10 1 * * 6',
+          'nb_backups_to_keep'       : '35',
+          'nb_fullbackups_to_keep'   : '5',
+      },
+      'locations': {
+          'locations-tmp'          : '${buildout:directory}/var/tmp',
+          'locations-blob-storage' : '${buildout:directory}/var/blobstorage/storage',
+          'locations-blob-backup'  : '${buildout:directory}/var/blobstorage/backup',
+      },
+      'hosts': {
+          'syslog'                   : '${hosts:ip}',
+          'zeo'                      : '${hosts:ip}',
+          'supervisor'               : '${hosts:ip}',
+          'balancer'                 : '${hosts:ip}',
+          'varnish'                  : '${hosts:ip}',
+          'instance'                 : '${hosts:address}',
+          'instance1'                : '${hosts:address}',
+          'instance2'                : '${hosts:address}',
+          'instance3'                : '${hosts:address}',
+          'instance4'                : '${hosts:address}',
+          'varnish'                  : '${hosts:ip}',
+          'varnish-telnet'           : '${hosts:ip}',
+          'zope-front'               : '${hosts:varnish}',
+          'cache-backend'            : '${hosts:balancer}'
+      }
+    }
+  }
+} %}
+
+{% set default_env_defaults = {
+        'dev': {
+          'buildout': {
+            'newest': False,
+            'settings': {
+              'v': {
+                  'autostart_instance1'         : 'false',
+                  'autostart_instance2'         : 'false',
+                  'autostart_instance3'         : 'false',
+                  'autostart_instance4'         : 'false',
+              }
+            }
+          }
+        },
+        'prod': {
+          'buildout': {
+            'newest': False,
+            'settings': {
+                'v': {
+                  'autostart_instance1'         : 'true',
+                }
+            }
+          }
+        }
+ } %}
+
+
+{#-
+# Makina project per project macro couple (install_zope_project/install_project)
+#}
+{%- macro install_generic_zope_project_do(common) %}
+{{-    zope_deps(common) }}
+{{-    generic_buildout(common) }}
+{{-    generic_crons(common) }}
+{%- endmacro %}
+
+{#-
+#  Look available arguments in _modules/mc_project.py:get_commmon_vars
+#}
+{%- macro install_generic_zope_project() %}
+{%- do kwargs.setdefault('defaults', default_defaults) %}
+{%- do kwargs.setdefault('env_defaults', default_env_defaults) %}
+{%- do kwargs.setdefault('user', 'zope') %}
+{%- set common = salt['mc_project.get_common_vars'](*varargs, **kwargs) %}
+{% if common.full %}
+{%-    do common.sls_includes.extend(["makina-states.services.http.apache"])%}
+{%-else  %}
+{%-    do common.sls_includes.extend(["makina-states.services.http.apache-standalone"])%}
+{% endif %}
+{%-    do common.sls_includes.extend(["makina-states.services.http.apache_proxy"])%}
+{{- base.install_project(common, install_macro=install_generic_zope_project_do) }}
+{% endmacro %}
+{# vim: set nofoldenable :#}

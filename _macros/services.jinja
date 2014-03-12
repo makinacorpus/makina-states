@@ -19,6 +19,9 @@
 {%- set metadata = salt['mc_services.metadata']() %}
 {%- set registry = salt['mc_services.registry']() %}
 
+{# named/bind Settings #}
+{%- set bindSettings = settings.bindSettings  %}
+
 {# psad Settings #}
 {%- set psadSettings = settings.psadSettings  %}
 

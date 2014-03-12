@@ -1,0 +1,20 @@
+// *******************************
+// MANAGED VIA SALT DO NOT EDIT
+// *******************************
+//
+// SERVERS
+//
+
+{% for server, sdata in data['servers'].iteritems() %}
+{% if sdata['keys'] %}
+server {{server}} {
+  keys {
+{% for k in sdata['keys'] %}
+    {{k}};
+{% endfor %}
+  };
+};
+{% endif %}
+{% endfor %}
+
+// vim: set ft=named:

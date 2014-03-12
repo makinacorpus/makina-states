@@ -6,4 +6,6 @@ Custom states modules
    modules/index.rst
    states/index.rst
    grains/index.rst
+   runners/index.rst
+   api/index.rst
 

@@ -1,0 +1,95 @@
+{# Generate in one step the apache virtualhost,
+                        the apache configuration
+                        and the fpm pool #}
+{%- import "makina-states/_macros/php.jinja" as php with context %}
+{%- import "makina-states/projects/1/apache.jinja" as httpbase with context %}
+{%- import "makina-states/projects/1/base.jinja" as base with context %}
+{%- set apache = php.apache %}
+{%- set base = base %}
+{%- set apache = apache %}
+{%- set services = base.services %}
+{%- set apacheData = services.apacheSettings.copy() %}
+{%- set saltmac = base.saltmac %}
+{%- set localsettings = base.localsettings %}
+{%- set locations = base.localsettings.locations %}
+
+{#
+# This will install a basic PHP virtualhost served by apache and
+# backed by phpfpm
+#}
+
+{#
+# Data dictionnaries that feed the "common.data" dictionnary
+# This is one of the most difficult part to understand, idea is to
+#}
+{%- set default_defaults = {
+  'apache_opts': {
+    'vh_in_template_source': 'salt://makina-states/files/projects/phpfpm/in_virtualhost.conf',
+    'extra_jinja_apache_variables': {
+         'appConnTimeout': 30,
+         'idleTimeout': 60,
+         'allowed_files': 'update.php|index.php|install.php|xmlrpc.php|cron.php'
+    },
+  },
+  'fpmpool_opts': {
+      'settings': {
+            'session_auto_start': True,
+            'allow_url_fopen': True,
+            'display_errors': True,
+            'memory_limit': '256M',
+            'upload_max_filesize': '100M',
+            'max_input_vars': 3000,
+            'modules': {
+              'apc': {
+                  'user_entries_hint': 100,
+                  'num_files_hint': 200,
+                  'ttl': 0,
+                  'user_ttl': 300,
+                  'gc_ttl': 0,
+                  'shm_size': '32M'
+               }
+            }
+      }
+  }
+} %}
+
+{% set default_env_defaults = {
+   'dev': {},
+   'prod': {}
+} %}
+
+{% macro vhost(common, minimal_index=None) %}
+{% set sock = {'socket_name':  salt['mc_php.get_fpm_socket_name'](common.name)} %}
+{% do common.data.fpmpool_opts.update(sock) %}
+{% do common.data.apache_opts.extra_jinja_apache_variables.update(sock) %}
+{{ httpbase.vhost_from_common_data(
+        common,
+        minimal_index=minimal_index,
+        additionnal_macro=php.fpm_pool,
+        additionnal_opts=common.data.fpmpool_opts) }}
+{% endmacro %}
+
+
+{#-
+#  Makina project per project macro couple (install_apache_project/install_project)
+#  This will install an apache virtualhost serving in project_root/www for the
+#  configured domain(s)
+#}
+{% macro install_apache_phpfpm_project_do(common) %}
+{{ vhost(common, minimal_index=php.minimal_index) }}
+{%- endmacro %}
+
+{#- Look available arguments in _modules/mc_project.py:get_commmon_vars #}
+{%- macro install_apache_phpfpm_project() %}
+{%- do kwargs.setdefault('defaults', default_defaults) %}
+{%- do kwargs.setdefault('env_defaults', default_env_defaults) %}
+{%- do kwargs.setdefault('user', 'phpfpm') %}
+{%- set common = salt['mc_project.get_common_vars'](*varargs, **kwargs) %}
+{% if common.full %}
+{%-   do common.sls_includes.append('makina-states.services.php.phpfpm_with_apache')%}
+{%- else  %}
+{%-   do common.sls_includes.append('makina-states.services.php.phpfpm_with_apache-standalone')%}
+{% endif %}
+{{- base.install_project(common, install_macro=install_phpfpm_project_do) }}
+{% endmacro %}
+{# vim: set nofoldenable :#}
