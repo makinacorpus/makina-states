@@ -33,9 +33,9 @@ bind-set-defaultdns-{{suf}}-1:
   cmd.run:
     - unless: |
               rm /etc/resolv.conf;echo > /etc/resolv.conf;
-              {% for i in dnsservers  %}
+              {%- for i in dnsservers  %}
               echo "nameserver {{i}}" >> /etc/resolv.conf;
-              {% endfor %}
+              {% endfor -%}
               /bin/true
     - user: root
     {# only if dnsmask/resolvconf is there #}
@@ -72,9 +72,9 @@ bind-set-defaultdns-{{suf}}-2:
     - unless: |
             rm /etc/resolvconf/resolv.conf.d/head;
             echo > /etc/resolvconf/resolv.conf.d/head;
-            {% for i in dnsservers  %}
-            echo "nameserver {{i}}" >> /etc/resolv.conf;
-            {% endfor %}
+            {%- for i in dnsservers  %}
+            echo "nameserver {{i}}" >> /etc/resolvconf/resolv.conf.d/head;
+            {% endfor -%}
             service resolvconf restart;
             /bin/true
     - user: root
