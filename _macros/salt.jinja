@@ -253,6 +253,7 @@ salt-{{ data.name }}-{{ group }}:
   {% endif %}
     - name: {{msr}}/_scripts/boot-salt.sh --cleanup --quiet -C --no-colors
 
+{#
 {{data.name}}-upgrade-job:
   {% if not data.cron_auto_upgrade %}
   cron.absent:
@@ -262,6 +263,15 @@ salt-{{ data.name }}-{{ group }}:
     - hour: {{data.cron_upgrade_hour}}
     - minute: {{data.cron_upgrade_minute}}
   {% endif %}
+    - name: {{msr}}/_scripts/boot-salt.sh --upgrade -C --no-colors
+#}
+
+{# deactivated in favor of paas platform and manual work on mastersalt node... #}
+{{data.name}}-upgrade-job:
+  cron.absent:
+    - identifier: "salt upgrade job"
+    - hour: {{data.cron_upgrade_hour}}
+    - minute: {{data.cron_upgrade_minute}}
     - name: {{msr}}/_scripts/boot-salt.sh --upgrade -C --no-colors
 
 {#-
