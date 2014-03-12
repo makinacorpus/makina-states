@@ -1,4 +1,4 @@
-{%- import "makina-states/projects/base.jinja" as base with context %}
+{%- import "makina-states/projects/1/base.jinja" as base with context %}
 {%- import "makina-states/services/db/mysql.sls" as mysql with context %}
 {%- set services = base.services %}
 {%- set saltmac = base.saltmac %}
@@ -255,7 +255,7 @@ TODO: local checker if prod need passwords <> defaults!
 {# Install require HTTP server and PHP things #}
 {%-   if common.data.use_phpfpm %}
 {%-     if common.data.use_apache %}
-{%-       import "makina-states/projects/apache-phpfpm.jinja" as phpfpm with context %}
+{%-       import "makina-states/projects/1/apache-phpfpm.jinja" as phpfpm with context %}
 {{        phpfpm.vhost(common) }}
 {%      endif %}
 {%   endif %}

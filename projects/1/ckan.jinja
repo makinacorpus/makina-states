@@ -1,14 +1,34 @@
-{%- import "makina-states/projects/base.jinja" as base with context %}
+{% import "makina-states/_macros/salt.jinja" as saltmac with context %}
+{% import "makina-states/projects/1/base.jinja" as base with context %}
+{% import "makina-states/services/db/postgresql.sls" as pgsql with context %}
+{% import "makina-states/services/java/solr4.sls" as solr with context %}
+{% import "makina-states/services/java/tomcat7.sls" as tomcat with context %}
+
 {%- set services = base.services %}
 {%- set saltmac = base.saltmac %}
 {%- set localsettings = base.localsettings %}
 {%- set apacheSettings = services.apacheSettings %}
 {%- set locations = base.localsettings.locations %}
 
+{%- macro ckan_db(common) %}
+{{ pgsql.postgresql_base() }}
+{% for name, dbdata in c.data['dbs'].items() %}
+{% set db_name = dbdata['db_name'] %}
+{% set db_tablespace = dbdata['db_tablespace'] %}
+{% set db_user = dbdata['db_user'] %}
+{% set db_password = dbdata['db_password'] %}
+{{ pgsql.postgresql_db(db_name, tablespace=db_tablespace) }}
+{{ pgsql.postgresql_user(db_user,
+                         db_password,
+                         groups=['{0}_owners'.format(db_name)]) }}
+{% endfor %}
+{% endmacro %}
+
+
 {#-
-# Base system prerequisite for Plone
+# Base system prerequisite for ckan
 #}
-{%- macro zope_deps(common) %}
+{%- macro ckan_deps(common) %}
 {% if common.full -%}
 prepreq-{{common.name}}:
   pkg.{{localsettings.installmode}}:
@@ -55,7 +75,7 @@ prepreq-{{common.name}}:
 {#-
 # Install a generic (CGWB: http://cgwb-makinacorpus.rhcloud.com/) based buildout for plone
 #}
-{%- macro generic_buildout(common) %}
+{%- macro ckan_buildout(common) %}
 
 {#-
 # Wrap the salt configured setting in a file inputable to buildout
@@ -64,7 +84,7 @@ prepreq-{{common.name}}:
   file.managed:
     - template: jinja
     - name: {{common.project_root}}/etc/sys/settings-local.cfg
-    - source: salt://makina-states/files/projects/zope/genericsettings.cfg
+    - source: salt://makina-states/files/projects/ckan/genericsettings.cfg
     - user: {{common.user}}
     - group: {{common.group}}
     - mode: 770
@@ -76,6 +96,25 @@ prepreq-{{common.name}}:
       - mc_proxy: {{common.name}}-postinstall-project-hook
     - defaults:
       salt_data: {{ common.data|yaml }}
+
+
+ckan-settings:
+  file.managed:
+    - source: salt://makina-states/files/projects/ckan/settings.cfg
+    - name: {{c.project_root}}/etc/settings-local.cfg
+    - user: {{common.user}}
+    - group: {{common.group}}
+    - defaults: {{data|yaml}}
+      {% endfor %}
+      - sqlalchemy_url: {{data.sqlalchemy_url % data['dbs']['default']}}
+
+ckan-buildout:
+  buildout.installed:
+    - name: {{c.project_root}}
+    - config: buildout-{{c.default_env}}.cfg
+    - runas: {{user}}
+
+
 
 {#-
 # Run the project buildout but skip the maintainance parts as they are part of salt stuff
@@ -114,7 +153,7 @@ prepreq-{{common.name}}:
   file.managed:
     - template: jinja
     - name: {{common.project_root}}/buildout-salt.cfg
-    - source: salt://makina-states/files/projects/zope/genericbuildout.cfg
+    - source: salt://makina-states/files/projects/ckan/genericbuildout.cfg
     - user: {{common.user}}
     - group: {{common.group}}
     - mode: 770
@@ -144,6 +183,10 @@ prepreq-{{common.name}}:
     - watch_in:
       - mc_proxy: {{common.name}}-postinstall-project-hook
       - mc_proxy: makina-apache-pre-conf
+
+
+
+
 
 {#-
 # init script is marked as started at first, but the daemon is not there!
@@ -176,31 +219,6 @@ etc-init.d-supervisor.{{common.name}}:
 # VHOST
 #}
 
-{{common.name}}-buildout-vhost-directory:
-  file.directory:
-    - name: {{common.project_root}}/etc/www
-    - user: {{common.user}}
-    - group: {{common.user}}
-    - dir_mode: 755
-    - watch:
-      - buildout: {{common.name}}-buildout-project
-    - watch_in:
-      - mc_proxy: {{common.name}}-postinstall-project-hook
-      - mc_proxy: makina-apache-pre-conf
-{#      - cmd: makina-apache-conf-syntax-check #}
-  cmd.run:
-    - name: >
-          ln -s {{common.project_root}}/www/apache.reverseproxy.conf {{common.project_root}}/etc/www/apache.reverseproxy.conf
-          && ln -s {{common.project_root}}/www/nginx.reverseproxy.conf {{common.project_root}}/etc/www/nginx.reverseproxy.conf
-    - user: {{common.user}}
-    - unless: ls {{common.project_root}}/etc/www/apache.reverseproxy.conf {{common.project_root}}/etc/www/nginx.reverseproxy.conf
-    - onlyif: ls {{common.project_root}}/www/apache.reverseproxy.conf {{common.project_root}}/www/nginx.reverseproxy.conf
-    - watch:
-      - buildout: {{common.name}}-buildout-project
-    - watch_in:
-      - mc_proxy: {{common.name}}-postinstall-project-hook
-      - mc_proxy: makina-apache-pre-conf
-
 {{common.name}}-buildout-vhost:
   file.symlink:
     - target: {{common.project_root}}/etc/www/apache.reverseproxy.conf
@@ -210,30 +228,6 @@ etc-init.d-supervisor.{{common.name}}:
       - mc_proxy: {{common.name}}-postinstall-project-hook
       - mc_proxy: makina-apache-pre-conf
 
-{{common.name}}-buildout-vhost-active:
-  file.symlink:
-    - target: {{apacheSettings.vhostdir}}/100-{{common.domain}}.conf
-    - name: {{apacheSettings.evhostdir}}/100-{{common.domain}}.conf
-    - makedirs: true
-    - watch_in:
-      - mc_proxy: {{common.name}}-postinstall-project-hook
-      - mc_proxy: makina-apache-pre-conf
-
-{{common.name}}-buildout-nginx-vhost:
-  file.symlink:
-    - target: {{common.project_root}}/etc/www/nginx.reverseproxy.conf
-    - name: /etc/nginx/sites.available/100-{{common.domain}}.conf
-    - makedirs: true
-    - watch_in:
-      - mc_proxy: {{common.name}}-postinstall-project-hook
-
-{{common.name}}-buildout-nginx-vhost-active:
-  file.symlink:
-    - target: /etc/nginx/sites.available/100-{{common.domain}}.conf
-    - name: /etc/nginx/sites.enabled/100-{{common.domain}}.conf
-    - makedirs: true
-    - watch_in:
-      - mc_proxy: {{common.name}}-postinstall-project-hook
 {#-
 # Logrotate
 #}
@@ -251,12 +245,12 @@ etc-logrotate.d-{{common.name}}.conf:
 {#-
 # Cron from generic: pack & backup & restart each day, fullbackup per week (sunday)
 #}
-{%- macro generic_crons(common) %}
+{%- macro ckan_crons(common) %}
 {%- set cron_hour   = common.data.get('cron_hour', 1) %}
 {%- set cron_minute = common.data.get('cron_minute', 0) %}
-{{common.name}}-zopepackdaily:
+{{common.name}}-ckanpackdaily:
   cron.present:
-    - identifier: "{{common.name}}/project [zopepackdaily]"
+    - identifier: "{{common.name}}/project [ckanpackdaily]"
     - user: {{common.user}}
     - minute:  {{ cron_minute + 0 }}
     - hour: {{cron_hour}}
@@ -266,9 +260,9 @@ etc-logrotate.d-{{common.name}}.conf:
     - watch_in:
       - mc_proxy: {{common.name}}-postinstall-project-hook
 
-{{common.name}}-zoperestartdaily:
+{{common.name}}-ckanrestartdaily:
   cron.present:
-    - identifier: "{{common.name}}/project [zoperestartdaily]"
+    - identifier: "{{common.name}}/project [ckanrestartdaily]"
     - user: {{common.user}}
     - minute:  {{ cron_minute + 30 }}
     - hour: {{cron_hour}}
@@ -317,6 +311,98 @@ etc-logrotate.d-{{common.name}}.conf:
 # This is one of the most difficult part to understand, idea is to
 #}
 {%- set default_defaults = {
+  'has_app': True,
+  'has_db': True,
+  'dbs' : {
+    'default': {
+        'db_host': 'localhost',
+        'db_port': '5432',
+        'db_name': 'ckan',
+        'db_user': 'ckan',
+        'db_tablespace': 'pg_default',
+        'db_password': 'superS3CR3T',
+      },
+  },
+  'sites': [
+      {'name': 'ckan_default',},
+  ],
+  'buildout': {
+    'newest': False,
+    'settings': {
+     'instance' {
+      'data_dir': metadata.project_root + '/data',
+      'user': 'ckan',
+      'host': '0.0.0.0',
+      'port': '5000',
+      'debug': 'true',
+      'instance1_host': '5001',
+      'instance2_host': '5002',
+      'instance3_host': '5003',
+      'instance4_host': '5004',
+      'beaker_secret': 'cRVs3knGuKnSVkgJjXJU8utb0LzfqkwXLgzvhjN',
+      'uuid': '96f97f93-edd7-4819-a5b2-c87be33c8644',
+      'solr_url': 'http://127.0.0.1:8080/solr/ckan_default',
+      'sqlalchemy_url': 'postgresql://%{db_user}s:${db_password}s@%{db_host}s:%{db_port}s',
+      'feeds_authority_name: None,
+      'feeds_date: None,
+      'feeds_author_name: None,
+      'feeds_author_link: None,
+      'who_log_level': 'warning',
+      'root_log_level': 'WARNING',
+      'ckan_log_level': 'INFO',
+      'ckanext_log_level': 'DEBUG',
+      'plugins': 'stats text_preview recline_preview',
+      'site_url': 'http://ckan.local',
+      'site_title' : 'CKAN (saas)',
+      'site_logo' : '/base/images/ckan-logo.png',
+      'favicon' : '/images/icons/ckan.ico',
+      'site_description' : '',
+      'gravatar_default' : 'identicon',
+      'preview.direct' : 'png jpg gif',
+      'preview.loadable' : 'html htm rdf+xml owl+xml xml n3 n-triples turtle plain atom csv tsv rss txt json',
+      'locale_default'       : 'fr',
+      'locale_order'         : 'en pt_BR ja it cs_CZ ca es fr el sv sr sr@latin no sk fi ru de pl nl bg ko_KR hu sa sl lv',
+      'locales_offered'      : '',
+      'locales_filtered_out' : '',
+      'anon_create_dataset'                   : False,
+      'create_unowned_dataset'                : True,
+      'create_dataset_if_not_in_organization' : True,
+      'user_create_groups'                    : True,
+      'user_create_organizations'             : True,
+      'user_delete_groups'                    : True,
+      'user_delete_organizations'             : True,
+      'create_user_via_api'                   : False,
+      'create_user_via_web'                   : True,
+      'cache_enabled'                   : False,
+      'cache_expires': None,
+      'cache_static_max_age': None,
+      'instance1': {
+        'port': 5001,
+        'root_log_level': 'WARNING',
+        'ckan_log_level': 'WARNING',
+        'ckanext_log_level': 'DEBUG',
+      },
+      'instance2': {
+        'port': 5002,
+        'root_log_level': 'WARNING',
+        'ckan_log_level': 'WARNING',
+        'ckanext_log_level': 'DEBUG',
+      },
+      'instance3': {
+        'port': 5003,
+         'root_log_level': 'WARNING',
+        'ckan_log_level': 'WARNING',
+        'ckanext_log_level': 'DEBUG',
+      }
+      'instance4': {
+        'port':5004
+        'root_log_level': 'WARNING',
+        'ckan_log_level': 'WARNING',
+        'ckanext_log_level': 'DEBUG',
+      }
+     }
+    }
+  }
   'cache-directory': locations.apps_dir+'/buildout/cache',
   'cron_hour': 1,
   'cron_minute': 5,
@@ -324,160 +410,102 @@ etc-logrotate.d-{{common.name}}.conf:
   'buildout': {
     'newest': None,
     'settings': {
-      'buildout': {
+     'buildout': {
         'cache-directory': '{cache-directory}/downloads',
         'download-cache': '{cache-directory}/downloads',
         'download-directory': '{cache-directory}/downloads',
         'eggs-directory': '{cache-directory}/eggs',
       },
-      'v': {
-          'logrotate'                   : localsettings.rotate.days,
-          'admin-user'                  : 'admin',
-          'admin-password'              : 'secret',
-          'project'                     : 'ploneplone',
-          'proxycache_size'             : '256M',
-          'anon_cache_time'             : '600s',
-          'autostart_instance1'         : 'true',
-          'autostart_instance2'         : 'true',
-          'autostart_instance3'         : 'true',
-          'autostart_instance4'         : 'true',
-          'plonesite'                   : 'Plone',
-          'zeo-pack-days'               : '0',
-          'z2-log-level'                : 'INFO',
-          'event-log-level'             : 'INFO',
-          'debug'                       : 'off',
-          'verbose-security'            : 'off',
-          'zeo-client-cache-size'       : '80MB',
-          'session-timeout-minutes'     : '90',
-          'sys-user'                    : '{user}',
-          'sys-group'                   : '{group}',
-          'varnish-debug'               : '${v:debug}',
-          'rewrite-max-age'             : 'false',
-          'supervisor-user'             : '${v:admin-user}',
-          'supervisor-password'         : '${v:admin-password}',
-          'reverse-proxy-admin'         : 'postmaster@localhost',
-          'reverse-proxy-listen'        : '*',
-          'reverse-proxy-scheme'        : 'http',
-          'reverse-proxy-host'          : '{domain}',
-          'reverse-proxy-edit-host'     : 'edit.{domain}',
-          'reverse-proxy-port'          : '80',
-          'package-min-coverage'        : '80',
-          'flake8-ignore'               : 'C901',
-          'flake8-max-complexity'       : '1000',
-          'pre-commit-hook'             : 'True',
-      },
-      'ports': {
-          'supervisor'               : '8081',
-          'zeo'                      : '8082',
-          'instance'                 : '8084',
-          'balancer'                 : '8083',
-          'instance1'                : '8085',
-          'instance2'                : '8086',
-          'instance3'                : '8087',
-          'instance4'                : '8088',
-          'varnish'                  : '8094',
-          'varnish-telnet'           : '8095',
-          'zope-front'               : '${ports:balancer}',
-          'cache-backend'            : '${ports:balancer}',
-      },
-      'crons': {
-          'zope-restart'             : '15 1 * * *',
-          'zope-pack'                : '30 1 * * *',
-          'repozo-daily'             : '05 1 * * *',
-          'repozo-weekly'            : '10 1 * * 6',
-          'nb_backups_to_keep'       : '35',
-          'nb_fullbackups_to_keep'   : '5',
-      },
-      'locations': {
-          'locations-tmp'          : '${buildout:directory}/var/tmp',
-          'locations-blob-storage' : '${buildout:directory}/var/blobstorage/storage',
-          'locations-blob-backup'  : '${buildout:directory}/var/blobstorage/backup',
-      },
-      'hosts': {
-          'syslog'                   : '${hosts:ip}',
-          'zeo'                      : '${hosts:ip}',
-          'supervisor'               : '${hosts:ip}',
-          'balancer'                 : '${hosts:ip}',
-          'varnish'                  : '${hosts:ip}',
-          'instance'                 : '${hosts:address}',
-          'instance1'                : '${hosts:address}',
-          'instance2'                : '${hosts:address}',
-          'instance3'                : '${hosts:address}',
-          'instance4'                : '${hosts:address}',
-          'varnish'                  : '${hosts:ip}',
-          'varnish-telnet'           : '${hosts:ip}',
-          'zope-front'               : '${hosts:varnish}',
-          'cache-backend'            : '${hosts:balancer}'
-      }
+     }
     }
-  }
-} %}
+   }
+  }  %}
 
 {% set default_env_defaults = {
-        'dev': {
-          'buildout': {
-            'newest': False,
-            'settings': {
-              'v': {
-                  'autostart_instance1'         : 'false',
-                  'autostart_instance2'         : 'false',
-                  'autostart_instance3'         : 'false',
-                  'autostart_instance4'         : 'false',
-              }
-            }
-          }
+       'dev': {
+
         },
         'prod': {
           'buildout': {
             'newest': False,
             'settings': {
-                'v': {
-                  'autostart_instance1'         : 'true',
-                }
+              'debug': 'false',
+              'cache_enabled': True,
+              'cache_expires': 86400,
+              'cache_static_max_age': 86400,
             }
           }
         }
  } %}
 
-{% macro gather_variables(common) %}
+
+{% macro ckan_register_solr(siteid) %}
+# {# How did i made the core sole configuration:
+# cp /srv/solr/4/home/default/conf/
+# cp -rf /srv/solr/4/home/default/ /srv/projects/ckan/salt/files/ckan_default
+# cp -rf /srv/projects/ckan/project/src/ckan/ckan/config/solr/schema-2.0.xml files/ckan_default/conf/schema.xml
+# #}
+{{siteid}}-solr-core:
+  file.recurse:
+    - order: 100
+    - source: salt://makina-projects/ckan/files/solr/ckan_default/
+    - template: jinja
+    - name: {{solr.home_dir}}/{{siteid}}
+    - user: {{tomcat.data['tomcat_user']}}
+    - group: {{saltmac.group}}
+    - core_name: {{siteid}}
+    - require:
+      - file: solr-default-core-{{solr.v}}
 {% endmacro %}
-{% macro init_download_sync(common) %}
+
+{% macro ckan_solr(common %}
+{{    solr.register_core(siteid, solr.home_dir + "/" + siteid) }}
+{%    for site in c.data['sites'] %}
+{{      ckan_register_solr(site['name']) }}
+{%    endfor %}
 {% endmacro %}
-{% macro pre_configure(common) %}
-{% endmacro %}
-{% macro build(common) %}
-{% endmacro %}
-{% macro post_configure(common) %}
-{% endmacro %}
-{% macro bundle(common) %}
-{% endmacro %}
-{% macro deploy(common) %}
-{% endmacro %}
-{% macro post_deploy(common) %}
-{% endmacro %}
+
+{#-
+# Makina project per project macro couple (install_ckan_project/install_project)
+#}
+{%- macro install_ckan_project_do(common) %}
+{{    ckan_deps(common) }}
+{%    if has_solr() %}
+{{      ckan_solr(common) }}
+{%    endif %}
+{%    if has_db() %}
+{{      ckan_db(common) }}
+{%    endif %}
+{%    if has_app() %}
+{{      ckan_app(common) }}
+{{      ckan_buildout(common) }}
+{%    endif %}
+{{    ckan_crons(common) }}
+{%- endmacro %}
 
 {#-
 #  Look available arguments in _modules/mc_project.py:get_commmon_vars
 #}
-{%- macro install_generic_zope_project() %}
+{%- macro install_ckan_project() %}
 {%- do kwargs.setdefault('defaults', default_defaults) %}
 {%- do kwargs.setdefault('env_defaults', default_env_defaults) %}
-{%- do kwargs.setdefault('user', 'zope') %}
+{%- do kwargs.setdefault('user', 'ckan') %}
 {%- set common = salt['mc_project.get_common_vars'](*varargs, **kwargs) %}
 {% if common.full %}
+{%-  if common.data.has_solr %}
+{%-   do common.sls_includes.extend(["makina-states.services.java.solr4",])%}
+{%-  endif %}
+{%-  if common.data.has_db %}
+{%-   do common.sls_includes.extend(["makina-states.services.gis.postgis",])%}
+{%-  endif %}
+{%-  if common.data.has_app %}
 {%-    do common.sls_includes.extend(["makina-states.services.http.apache"])%}
+{%-  endif %}
 {%-else  %}
-{%-    do common.sls_includes.extend(["makina-states.services.http.apache-standalone"])%}
+{%-   do common.sls_includes.append("makina-states.services.java.solr4-hooks")%}
+{%-   do common.sls_includes.append("makina-states.services.http.apache-standalone")%}
+{%-   do common.sls_includes.extend(["makina-states.services.db.postgresql-hooks",])%}
 {% endif %}
-{%-    do common.sls_includes.extend(["makina-states.services.http.apache_proxy"])%}
-{{- base.install_project(common, install_macro=install_generic_zope_project_do) }}
+{{- base.install_project(common, install_macro=install_ckan_project_do) }}
 {% endmacro %}
-
-{# retrocompat #}
-{# Makina project per project macro couple (install_zope_project/install_project) #}
-{%- macro install_generic_zope_project_do(common) %}
-{{-    zope_deps(common) }}
-{{-    generic_buildout(common) }}
-{{-    generic_crons(common) }}
-{%- endmacro %}
 {# vim: set nofoldenable :#}

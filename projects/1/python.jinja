@@ -1,10 +1,10 @@
-{#
+t{#
 # Install a generic Python project.
 #
 # This provides a virtualenv with Python/pip only.
 # It also install the requirement from the requirement.txt file.
 -#}
-{%- import "makina-states/projects/base.jinja" as base with context %}
+{%- import "makina-states/projects/1/base.jinja" as base with context %}
 {%- set services = base.services %}
 {%- set saltmac = base.saltmac %}
 {%- set localsettings = base.localsettings %}
