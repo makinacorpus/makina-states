@@ -20,6 +20,7 @@
 {% if full %}
 include:
   - makina-states.nodetypes.devhost
+  - makina-states.nodetypes.vagrantvm-ssh-keys
   - makina-states.services.virt.lxc
   - makina-states.services.virt.docker
 {% endif %}
@@ -154,3 +155,4 @@ makina-file_delay_services_for_srv:
     - template: jinja
 {% endif %}
 #}
+

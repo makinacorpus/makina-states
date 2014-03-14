@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# output last commit before sync to restore it in post receive
+git log|grep commit|head -n1|awk '{print $2}'>hooks/curcom
+# vim:set et sts=4 ts=4 tw=80:

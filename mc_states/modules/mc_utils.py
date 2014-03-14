@@ -100,7 +100,10 @@ def format_resolve(value,
         # where we may have yet keyerrors
         if isinstance(original_dict, dict):
             for k in original_dict:
-                subst = '{' + k + '}'
+                reprk = k
+                if not isinstance(reprk, basestring):
+                    reprk = '{0}'.format(k)
+                subst = '{' + reprk + '}'
                 subst_val = original_dict[k]
                 if subst in new:
                     if isinstance(subst_val, (list, dict)):
@@ -245,7 +248,11 @@ def get_uniq_keys_for(prefix):
     return keys
 
 
-def defaults(prefix, datadict, overridden=None, firstcall=True):
+def defaults(prefix,
+             datadict,
+             ignored_keys=None,
+             overridden=None,
+             firstcall=True):
     '''
     Magic defaults settings configuration getter
 
@@ -262,16 +269,19 @@ def defaults(prefix, datadict, overridden=None, firstcall=True):
             - Elif a dict: update the default dictionnary with the one in conf
             - Else take that as a value if the value is not a mapping or a list
     '''
+    if not ignored_keys:
+        ignored_keys = []
     if firstcall:
         global_pillar =  __salt__['mc_utils.get'](prefix)
         if isinstance(global_pillar, dict):
+            for k in [a for a in ignored_keys if a in global_pillar]:
+                del global_pillar[k]
             datadict = __salt__['mc_utils.dictupdate'](datadict, global_pillar)
-
     if overridden is None:
         overridden = OrderedDict()
     if not prefix in overridden:
         overridden[prefix] = OrderedDict()
-    for key in [a for a in datadict]:
+    for key in [a for a in datadict if not a in ignored_keys]:
         default_value = datadict[key]
         value_key = '{0}.{1}'.format(prefix, key)
         # special key to completly overrides the dictionnary

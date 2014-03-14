@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+MSR="/srv/salt/makina-states"
+API_VERSION="{{api_version}}"
+HERE="${PWD}"
+PROJECT_NAME="{{name}}"
+unset GIT_DIR
+unset GIT_PREFIX
+. /etc/profile
+while read OLDREV NEWREV REF
+do
+BRANCH="$(echo ${REF}|awk -F"/" '{print $3}')"
+echo "GOT: ${OLDREV} ${NEWREV} ${REF} / ${BRANCH}"
+PY="${VENV}/bin/python"
+LOGLEVEL="${LOGLEVEL:-info}"
+EXTRA_ARGS=""
+if [ "x${BRANCH}"  = "xmaster" ];then
+    if [ "x${TIMEOUT}" != "x" ];then
+        EXTRA_ARGS="${EXTRA_ARGS} --timeout $TIMEOUT"
+    fi
+    python\
+        "${HERE}/hooks/deploy_hook.py"\
+        -p ${PROJECT_NAME}\
+        -l "${LOGLEVEL}"\
+        ${EXTRA_ARGS}
+    ret="${?}"
+    if [ "x${ret}" != "x0" ];then
+        if [ -f hooks/curcom ];then
+            cid="$(cat hooks/curcom)"
+            echo "Reverting to ${cid}"
+            echo "${cid}">refs/heads/master 
+        else
+            echo "Undetermined old rev!"
+        fi
+    fi
+fi
+done
+# vim:set et sts=4 ts=4 tw=80:

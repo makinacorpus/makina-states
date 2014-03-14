@@ -165,6 +165,8 @@ def settings():
     def _settings():
         grains = __grains__
         pillar = __pillar__
+        nt_registry = __salt__['mc_nodetypes.registry']()
+        ntSettings = __salt__['mc_nodetypes.settings']()
         cloudSettings = __salt__['mc_saltcloud.settings']()
         localsettings = __salt__['mc_localsettings.settings']()
         locations = localsettings['locations']
@@ -299,6 +301,9 @@ def settings():
         lxcSettings['images'] = __salt__['mc_utils.defaults'](
             'makina-states.services.virt.lxc.images',
             lxcSettings['images'])
+        # no lvm on devhost
+        if nt_registry['is']['devhost']:
+            lxcSettings['defaults'].update({'profile': 'dir'})
         if maintenance and (
             '0.0.0.0' ==
             lxcSettings['containers'][
@@ -341,7 +346,7 @@ def settings():
                         and 'profile' in lxc_data
                     ):
                         del lxc_data['profile']
-                    if 'dir' in profile_type:
+                    if 'dir' in profile_type or 'scratch' in profile_type:
                         sprofile = ''
                         lxc_data['backing'] = 'dir'
                     else:

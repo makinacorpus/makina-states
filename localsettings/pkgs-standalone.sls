@@ -84,6 +84,7 @@ sys-pkgs:
       - manpages
       - manpages-fr
       - manpages-de
+      - jq
       - lsof
       - lvm2
       - lynx

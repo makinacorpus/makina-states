@@ -1,4 +1,5 @@
 {% import "makina-states/_macros/controllers.jinja" as controllers with context %}
+{% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
 {% import "makina-states/_macros/services.jinja" as services with context %}
 {% import "makina-states/_macros/salt.jinja" as saltmac with context %}
 {% set cloudSettings= services.cloudSettings %}
@@ -6,6 +7,7 @@
 {% set pvdir = cloudSettings.pvdir %}
 {% set pfdir = cloudSettings.pfdir %}
 {% set localsettings = services.localsettings %}
+
 
 {% macro lxc_container(data) %}
 {% set sname = data.get('state_name', data['name']) %}
@@ -26,6 +28,7 @@
       - mc_proxy: salt-cloud-lxc-default-template
     - require_in:
       - mc_proxy: salt-cloud-postdeploy
+      - mc_proxy: salt-cloud-lxc-devhost-hooks
     - minion: {master: "{{data.master}}",
                master_port: {{data.master_port}}}
     - dnsservers: {{dnsservers|yaml}}
@@ -69,6 +72,10 @@ include:
 {% else %}
   - makina-states.services.cloud.salt_cloud-standalone
 {% endif %}
+{% if nodetypes.registry.is.devhost %}
+  - makina-states.services.cloud.lxc-devhost-sshkeys
+{% endif %}
+
 
 providers_lxc_salt:
   file.managed:
@@ -183,7 +190,6 @@ syncron-lxc-ms:
     - name: /usr/bin/mastersalt-run -linfo mc_lxc.sync_images > /dev/null
     - identifier: ms lxc image synchronniser
 {% endif %}
-
 
 {% for target, containers in services.lxcSettings.containers.items() %}
 {%  for k, data in containers.items() -%}

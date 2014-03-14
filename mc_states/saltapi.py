@@ -12,6 +12,7 @@ import salt.syspaths
 import os
 import copy
 import time
+
 from salt.client import LocalClient
 from salt.exceptions import SaltException
 from salt.runner import RunnerClient
@@ -216,16 +217,6 @@ def client(fun, *args, **kw):
     elif cache and cache_key in __CACHED_CALLS:
         ret = __CACHED_CALLS[cache_key]
     return ret
-
-def splitstrip(string):
-    return '\n'.join(
-        [a for a in string.splitlines() if a.strip()])
-
-
-def msplitstrip(mapping):
-    for k in ['trace', 'comment']:
-        if k in mapping:
-            mapping[k] = splitstrip(mapping[k])
 
 
 def _errmsg(ret, msg):

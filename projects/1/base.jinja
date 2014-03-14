@@ -30,11 +30,11 @@
 {% set locs = services.localsettings.locations %}
 {% set saltmac = saltmac %}
 
-{% macro set_accesses(common) %}
-{% if not common.no_user %}
 {#
 # Create a dedicated system user for our project
 #}
+{% macro set_accesses(common) %}
+{% if not common.no_user %}
 {% if common.full %}
 {% for group in common.groups -%}
 {{common.name}}-group-{{group}}:
@@ -214,9 +214,9 @@
     - unless: if [ -e "{{common.project_root}}/.initial" ] || [ -e "{{common.project_root}}/.git" ];then
                 exit 0;
               fi;exit 1
-    {% if not common.no_user -%}
+    {% if not common.no_user %}
     - user: {{common.user}}
-    {%- endif %}
+    {% endif %}
     - require:
       - file: {{common.name}}-checkout-code
   {%- endif %}
@@ -224,9 +224,9 @@
   mc_git.latest:
     - rev: {{common.project_branch}}
     - name:  {{common.url}}
-    {% if not common.no_user -%}
+    {% if not common.no_user %}
     - user: {{common.user}}
-    {%- endif %}
+    {% endif %}
     - target: {{common.project_root}}
     - watch_in:
       - mc_proxy: {{common.name}}-postcheckout-project-hook

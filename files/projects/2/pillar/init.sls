@@ -1,0 +1,2 @@
+# pillar for {{name}}
+{{cfg}}
