@@ -7,12 +7,17 @@ auto lo
 iface lo inet loopback
 
 {% for ifname, ifc in network_interfaces.items() %}
+{% set real_ifname = ifc.get('ifname', ifname) -%}
+{% set inet = ifc.get('inet', 'inet') -%}
 {% set auto = ifc.get('auto', '') -%}
 {% set mode = ifc.get('mode', '') %}
 {% set allow_hotplug = ifc.get('allow-hotplug', False) %}
 {% set broadcast = ifc.get('broadcast', '') -%}
 {% set address = ifc.get('address', '') -%}
+{% set preup = ifc.get('pre-up', []) -%}
+{% set predown = ifc.get('pre-down', []) -%}
 {% set postup = ifc.get('post-up', []) -%}
+{% set postdown = ifc.get('post-down', []) -%}
 {% set netmask = ifc.get('netmask', '') -%}
 {% set gateway = ifc.get('gateway', '') -%}
 {% set dnsservers = ifc.get('dnsservers', ifc.get('dns-nameservers', '')) -%}
@@ -34,7 +39,7 @@ allow-hotplug {{ ifname }}
 {% if auto -%}
 auto {{ ifname }}
 {% endif -%}
-iface {{ ifname }} inet {{ mode -}}
+iface {{ real_ifname }} {{inet}} {{ mode -}}
 {% if address %}
     address {{ address -}}
 {% endif -%}
@@ -50,8 +55,17 @@ iface {{ ifname }} inet {{ mode -}}
 {% if dnsservers %}
     dns-nameservers {{ dnsservers -}}
 {% endif -%}
-{% if postup %}{% for post in postup %}
-    post-up {{post}} {% endfor %}
+{% if preup %}{% for rule in preup %}
+    pre-up {{rule}} {% endfor %}
+{% endif -%}
+{% if postup %}{% for rule in postup %}
+    post-up {{rule}} {% endfor %}
+{% endif -%}
+{% if predown %}{% for rule in predown %}
+    pre-down {{rule}} {% endfor %}
+{% endif -%}
+{% if postdown %}{% for rule in postdown %}
+    post-down {{rule}} {% endfor %}
 {% endif -%}
 {% endfor -%}
 

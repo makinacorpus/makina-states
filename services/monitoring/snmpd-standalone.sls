@@ -1,7 +1,6 @@
 {#- snmpd configuration
 #
 #}
-
 {%- import "makina-states/_macros/services.jinja" as services with context %}
 {%- set localsettings = services.localsettings %}
 {%- set nodetypes = services.nodetypes %}
@@ -19,6 +18,7 @@ snmpd-pkgs:
       - libsnmp-base
       - libsnmp15
       - libsnmp-perl
+      - nagios-plugins-basic
       - snmpd
 {%- endif %}
 

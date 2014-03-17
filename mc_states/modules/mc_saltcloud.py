@@ -40,6 +40,8 @@ def settings():
             makina-states bootsalt args in salt mode
           bootsalt_mastersalt_args
             makina-states bootsalt args in mastersalt mode
+          keep_tmp
+            keep tmp files
 
             ::
 
@@ -93,9 +95,10 @@ def settings():
             c_data['ssh_host'] = c_data.get('ssh_host', c_data['name'])
             c_data['profile'] = 'ms-salt-minion'
             if 'mastersalt' in c_data.get('mode', data['mode']):
-                default_args = data['bootsalt_args']
-            else:
                 default_args = data['bootsalt_mastersalt_args']
+            else:
+                default_args = data['bootsalt_args']
+            c_data['keep_tmp'] = c_data.get('keep_tmp', False)
             c_data['script_args'] = c_data.get('script_args', default_args)
             branch = c_data.get('bootsalt_branch', data['bootsalt_branch'])
             if (

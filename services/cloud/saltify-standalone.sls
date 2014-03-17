@@ -63,6 +63,7 @@ profiles_saltify_salt:
                master_port: {{data.master_port}}}
     - profile: {{data.profile}}
 {%    for var in ["ssh_username",
+                  "keep_tmp",
                   "password",
                   "script_args",
                   "ssh_host",
