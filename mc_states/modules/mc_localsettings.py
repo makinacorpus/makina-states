@@ -354,7 +354,7 @@ def settings():
 
         if (
             data['admin']['root_password']
-            and not data['admin']['sysadmin_keys']
+            and not data['admin']['sysadmins_keys']
         ):
             data['admin']['sysadmin_password'] = data['admin']['root_password']
 
