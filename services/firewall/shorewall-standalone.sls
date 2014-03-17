@@ -9,6 +9,7 @@
 {% set shwdata = {'shwdata': services.shorewall} %}
 {{ salt['mc_macros.register']('services', 'firewall.shorewall') }}
 
+
 {% macro do(full=True) %}
 {% if full %}
 extend:
@@ -18,16 +19,9 @@ extend:
         - cmd: shorewall-restart
         - file: rc-local
 {% endif %}
-{% if full %}
 include:
-  - makina-states.localsettings.localrc
-  {%  if services.registry.has['virt.lxc'] %}
   - makina-states.services.virt.lxc-hooks
-  {%  endif %}
-  {%  if services.registry.has['virt.docker'] %}
   - makina-states.services.virt.docker-hooks
-  {%  endif %}
-{% endif %}
 
 
 {% if full %}
@@ -53,7 +47,7 @@ shorewall-restart:
     - require:
       - file: shorewall-rc-local-d
       {% if full %}
-      {% if services.registry.has['virt.docker'] %}
+      {% if services.registry.has['virt.lxc'] %}
       - mc_proxy: lxc-post-inst
       {% endif %}
       {% if services.registry.has['virt.docker'] %}
