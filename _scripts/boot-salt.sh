@@ -158,7 +158,8 @@ die_() {
     warn_log
     ret=${1}
     shift
-    printf "${CYAN}${@}${NORMAL}\n" 1>&2
+    printf "${CYAN}PROBLEM DETECTED, BOOTSALT FAILED${NORMAL}\n" 1>&2
+    echo "${@}" 1>&2
     exit $ret
 }
 
@@ -1788,12 +1789,32 @@ EOF
             fi
         done
         if [ "x${IS_SALT_MINION}" != "x" ];then
+            minion_test=""
             if [ -e ${ETC_INIT}/salt-minion.conf ] || [ -e ${ETC_INIT}.d/salt-minion ];then
+                minion_test="x"
+            fi
+            # if we have the minion but not yet the master, we can not start
+            if [ "x${IS_SALT_MASTER}" != "x" ];then
+                if [ ! -e ${ETC_INIT}/salt-master.conf ] && [ ! -e ${ETC_INIT}.d/salt-master ];then
+                    minion_test=""
+                fi
+            fi
+            if [ "x${minion_test}" != "x" ];then
                 lazy_start_salt_daemons
             fi
         fi
         if [ "x${IS_MASTERSALT_MINION}" != "x" ];then
+            minion_test=""
             if [ -e ${ETC_INIT}/mastersalt-minion.conf ] || [ -e ${ETC_INIT}.d/mastersalt-minion ];then
+                minion_test="x"
+            fi
+            # if we have the minion but not yet the master, we can not start
+            if [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
+                if [ ! -e ${ETC_INIT}/mastersalt-master.conf ] && [ ! -e ${ETC_INIT}.d/mastersalt-master ];then
+                    minion_test=""
+                fi
+            fi
+            if [ "x${minion_test}" != "x" ];then
                 lazy_start_mastersalt_daemons
             fi
         fi
