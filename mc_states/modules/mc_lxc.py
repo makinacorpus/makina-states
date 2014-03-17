@@ -229,7 +229,7 @@ def settings():
                     'users': ['root', 'sysadmin'],
                     'ssh_username': 'ubuntu',
                     'vgname': 'data',
-                    'lvname': 'data',
+                    'lvname': None,
                     'lxc_conf': [],
                     'lxc_conf_unset': [],
                 },

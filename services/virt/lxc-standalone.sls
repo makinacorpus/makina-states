@@ -120,7 +120,31 @@ etc-init-lxc-net-makina:
     - group: root
     - require_in:
       - service: lxc-services-enabling
+
+c-/etc/apparmor.d/lxc/lxc-default:
+  file.managed:
+    - name: /etc/apparmor.d/lxc/lxc-default
+    - source: salt://makina-states/files/etc/apparmor.d/lxc/lxc-default
+    - makedirs: true
+    - mode: 644
+    - user: root
+    - group: root
+    - require_in:
+      - service: lxc-services-enabling
+      - service: lxc-apparmor
+
+lxc-apparmor:
+  service.running:
+    - name: apparmor
+    - reload: true
+    - enable: true
+    - watch:
+      - file: c-/etc/apparmor.d/lxc/lxc-default
+    - require_in:
+      - service: lxc-services-enabling
+
 {% endif %}
+
 
 lxc-services-enabling:
   service.running:
