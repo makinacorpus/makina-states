@@ -55,6 +55,10 @@ To provision a new lxc provider, you need to:
     :dir: cloning from existing container (directory backing)
 
 
+* Attention, we need also that root can connect via ssh to the box as root user.
+  Please not that the mc_lxc.sync_images will do that setup for you and is
+  needed to be runned prior installing containers on a specific hosts.
+
 But you can more easily use pillar entries to define each of your coantaners as
 follow:
 

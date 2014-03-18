@@ -35,6 +35,10 @@
                    "gateway",
                    "bridge",
                    "mac",
+                   "ssh_gateway",
+                   "ssh_gateway_user",
+                   "ssh_gateway_port",
+                   "ssh_gateway_key",
                    "ip",
                    "netmask",
                    "size",
@@ -170,6 +174,16 @@ profiles_lxc_salt:
     - require_in:
       - mc_proxy: salt-cloud-lxc-default-template
 {% endfor %}
+
+{% if lxcSettings['cron_sync'] %}
+syncron-lxc-ms:
+  cron.present:
+    - minute: {{lxcSettings.cron_minute}}
+    - hour: {{lxcSettings.cron_hour}}
+    - cmd: mastersalt-run -lall  mc_lxc.sync_images > /dev/null
+    - identifier: ms lxc image synchronniser
+{% endif %}
+
 
 {% for target, containers in services.lxcSettings.containers.items() %}
 {%  for k, data in containers.items() -%}

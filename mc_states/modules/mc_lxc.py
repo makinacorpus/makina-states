@@ -16,6 +16,7 @@ import mc_states.utils
 from pprint import pformat
 import os
 import random
+import socket
 import copy
 
 from mc_states import saltapi
@@ -83,12 +84,25 @@ def settings():
     defaults
         defaults settings to provision lxc containers
         Those are all redefinable at each container level
-
+        ssh_gateway
+            ssh gateway info
+        ssh_gateway_port
+            ssh gateway info
+        ssh_gateway_user
+            ssh gateway info
+        ssh_gateway_key
+            ssh gateway info
         size
             default filesystem size for container on lvm
             None
         default_container
             default image
+        cron_sync
+            activate the img synchronnizer
+        cron_hour
+            hour for the img synchronnizer
+        cron_minute
+            minute for the img synchronnizer
         gateway
             '10.5.0.1'
         master
@@ -163,6 +177,7 @@ def settings():
         images = OrderedDict()
         images['makina-states-precise'] = {}
         for img in images:
+            images[img]['builder_ref'] = '{0}-lxc-ref.foo.net'.format(img)
             md5_file = os.path.join(
                 prefix,
                 'makina-states/versions/'
@@ -206,6 +221,9 @@ def settings():
             'makina-states.services.virt.lxc', {
                 'is_lxc': is_lxc(),
                 'images_root': '/var/lib/lxc',
+                'cron_sync': True,
+                'cron_hour': '3',
+                'cron_minute': '3',
                 'images': images,
                 'dnsservers': ['8.8.8.8', '4.4.4.4'],
                 'defaults': {
@@ -215,6 +233,10 @@ def settings():
                     'profile_type': 'lvm',
                     'gateway': '10.5.0.1',
                     'mode': cloudSettings['mode'],
+                    'ssh_gateway': None,
+                    'ssh_gateway_user': 'root',
+                    'ssh_gateway_key': '/root/.ssh/id_dsa',
+                    'ssh_gateway_port': None,
                     'master': None,
                     'master_port': '4506',
                     'image': 'ubuntu',
@@ -228,7 +250,7 @@ def settings():
                     'backing': 'lvm',
                     'users': ['root', 'sysadmin'],
                     'ssh_username': 'ubuntu',
-                    'vgname': 'data',
+                    'vgname': 'lxc',
                     'lvname': None,
                     'lxc_conf': [],
                     'lxc_conf_unset': [],
@@ -274,6 +296,9 @@ def settings():
                 },
             }
         )
+        lxcSettings['images'] = __salt__['mc_utils.defaults'](
+            'makina-states.services.virt.lxc.images',
+            lxcSettings['images'])
         if maintenance and (
             '0.0.0.0' ==
             lxcSettings['containers'][
@@ -293,6 +318,12 @@ def settings():
                 lxc_data = lxcSettings['containers'][target][container]
                 lxc_data['mac'] = __salt__['mc_lxc.find_mac_for_container'](
                     target, container, lxc_data)
+                try:
+                    socket.gethostbyname(target)
+                    # if possible, use the minion id as ssh gateway
+                    lxc_data['ssh_gateway'] = target
+                except Exception:
+                    pass
                 for i in ['ip', 'password']:
                     if not i in lxc_data:
                         raise Exception(
@@ -321,6 +352,7 @@ def settings():
                                                    sprofile,
                                                    profile_type)))
                 lxc_data.setdefault('name', container)
+                lxc_data.setdefault('mode', lxcSettings['defaults']['mode'])
                 lxc_data.setdefault('size', None)
                 lxc_data.setdefault('from_container', None)
                 lxc_data.setdefault('snapshot', None)
@@ -344,6 +376,8 @@ def settings():
                         lxcSettings['defaults']['default_container'])
                 for i in ["from_container", 'bootsalt_branch',
                           "master", "master_port",
+                          "ssh_gateway", "ssh_gateway_port",
+                          "ssh_gateway_user", "ssh_gateway_key",
                           'size', 'image', 'bridge', 'netmask', 'gateway',
                           'dnsservers', 'backing', 'vgname', 'lvname',
                           'vgname', 'ssh_username', 'users', 'sudo',

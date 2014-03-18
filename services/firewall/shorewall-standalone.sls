@@ -20,6 +20,7 @@ extend:
         - file: rc-local
 {% endif %}
 include:
+  - makina-states.localsettings.localrc
   - makina-states.services.virt.lxc-hooks
   - makina-states.services.virt.docker-hooks
 

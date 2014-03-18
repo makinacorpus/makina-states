@@ -60,23 +60,46 @@ def sync_images(output=True):
             :images: list of image to sync to lxc minions
             :containers: all minion targets will be synced with that list of images
     '''
-    root = master_opts()['file_roots']['base'][0]
     ret = saltapi.result()
     ret['targets'] = OrderedDict()
     dest = '/root/.ssh/.lxc.pub'
     this_ = saltapi.get_local_target()
     orig = 'salt://.lxcsshkey.pub'
     lxcSettings = _cli('mc_lxc.settings')
-    if not lxcSettings:
-        lxcSettings = {}
     rsync_cmd = (
-        'rsync -aAv --delete-excluded --exclude="makina-states-lxc-*xz"'
-        ' --numeric-ids'
+        'rsync -aA --delete-excluded --exclude="makina-states-lxc-*xz"'
+        ' --numeric-ids '
     )
+    if not lxcSettings:
+        lxcSettings = {'images': []}
+    for img in lxcSettings['images']:
+        bref = lxcSettings['images'][img]['builder_ref']
+        # try to find the local img reference building counterpart
+        # and sync it back to the reference lxc
+        reforig = '/var/lib/lxc/{0}/rootfs'.format(bref)
+        refdest = '/var/lib/lxc/{0}/rootfs'.format(img)
+        reftorig = '/var/lib/lxc/{0}/rootfs/root'.format(bref)
+        reftdest = '/var/lib/lxc/{0}/rootfs/root'.format(img)
+        if os.path.exists(reftorig) and os.path.exists(reftdest):
+            cmd = 'rsync -aA --delete {0}/ {1}/'.format(reforig, refdest)
+            cret = _cli('cmd.run_all', cmd,)
+            if cret['retcode']:
+                ret['comment'] += (
+                    '\nRSYNC(local builder) failed {0} {1}'.format(
+                        reforig, refdest))
+                return ret
+            cmd = 'chroot {0} /sbin/lxc-snap.sh'.format(refdest)
+            cret = _cli('cmd.run_all', cmd)
+            if cret['retcode']:
+                ret['comment'] += (
+                    '\nRSYNC(local builder) reset failed {0} {1}'.format(
+                        refdest, reforig))
+                return ret
+    root = master_opts()['file_roots']['base'][0]
     for target in lxcSettings.get('containers', {}):
-        # skip local minion :)
-        if this_ == target:
-            continue
+        # skip local minion :) (in fact no)
+        #if this_ == target:
+        #    continue
         subret = saltapi.result()
         ret['targets'][target] = subret
         try:
@@ -89,6 +112,7 @@ def sync_images(output=True):
             cret = _cli('ssh.set_known_host', 'root', host, salt_target=target)
             # ssh key
             pubkey = os.path.join(root, '.lxcsshkey.pub')
+
             with open('/root/.ssh/id_dsa.pub') as fic:
                 with open(pubkey, 'w') as sshkey:
                     sshkey.write(fic.read())
@@ -97,8 +121,19 @@ def sync_images(output=True):
                 cret = _cli('cp.get_file', orig, dest)
                 cret = _cli('ssh.set_auth_key_from_file',
                             'root', 'file://{0}'.format(dest))
-                if not ret in ['new', 'no changes']:
-                    _errmsg('Problem while accepting key')
+                if cret not in ['new', 'no changes']:
+                    _errmsg(
+                        'Problem while accepting key {0}'.format(cret))
+                cret = _cli('ssh.check_key_file',
+                            'root', orig, salt_target=target)
+            if not cret[[a for a in cret][0]] in ['exists']:
+                cret = _cli('cp.get_file', orig, dest, salt_target=target)
+                cret = _cli('ssh.set_auth_key_from_file',
+                            'root', 'file://{0}'.format(dest),
+                            salt_target=target)
+                if cret not in ['new', 'no changes']:
+                    _errmsg(
+                        'Problem while accepting key - dist {0}'.format(cret))
             # sync img to temp location
             for img in lxcSettings['images']:
                 # transfert: 3h max
@@ -125,7 +160,7 @@ def sync_images(output=True):
                         subret['trace'] += (
                             '\nRSYNC:\n{0}\n'.format(cret['stdout']))
                     cmd = (
-                        '{2} -z'
+                        '{2} -z '
                         '{0}/ root@{1}:{0}.tmp/'
                     ).format(imgroot, host, rsync_cmd)
                     cret = _cli('cmd.run_all', cmd, salt_timeout=timeout)

@@ -21,6 +21,11 @@
 
 {% for zone, interfaces in shwdata['interfaces'].items() %}
 {% for data in interfaces %}
-{{ zone }} {{ data['interface'] }} {{ data.get('broadcast', '-') }} {{ data.get('options', '-') }}
+{% if shwdata.ifformat in ['?FORMAT 2'] %}
+{% set br = '' %}
+{% else %}
+{% set br = data.get('broadcast', '-') %}
+{% endif %}
+{{ zone }} {{ data['interface'] }} {{ br }} {{ data.get('options', '-') }}
 {% endfor %}
 {% endfor %}
