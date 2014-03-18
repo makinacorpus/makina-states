@@ -180,7 +180,7 @@ syncron-lxc-ms:
   cron.present:
     - minute: {{lxcSettings.cron_minute}}
     - hour: {{lxcSettings.cron_hour}}
-    - cmd: mastersalt-run -lall  mc_lxc.sync_images > /dev/null
+    - name: /usr/bin/mastersalt-run -linfo mc_lxc.sync_images > /dev/null
     - identifier: ms lxc image synchronniser
 {% endif %}
 
