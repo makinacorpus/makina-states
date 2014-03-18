@@ -320,8 +320,9 @@ def settings():
                     target, container, lxc_data)
                 try:
                     socket.gethostbyname(target)
-                    # if possible, use the minion id as ssh gateway
-                    lxc_data['ssh_gateway'] = target
+                    # if it is a distant minion
+                    if __grains__['id'] != target:
+                        lxc_data['ssh_gateway'] = target
                 except Exception:
                     pass
                 for i in ['ip', 'password']:
