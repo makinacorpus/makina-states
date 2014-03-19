@@ -121,6 +121,8 @@ def settings():
             '16'
         netmask_full
             '255.255.0.0'
+        autostart
+            lxc is autostarted
         mode
             (salt (default) or mastersalt)
         profile
@@ -219,20 +221,30 @@ def settings():
                 'image': 'ubuntu',
                 'password': 'ubuntu',
             }
+        # no lvm on devhost
+        # nor cron sync
+        dptype = 'lvm'
+        backing = 'lvm'
+        cron_sync = True
+        if nt_registry['is']['devhost']:
+            cron_sync = False
+            dptype = 'dir'
+            backing = 'dir'
         lxcSettings = __salt__['mc_utils.defaults'](
             'makina-states.services.virt.lxc', {
                 'is_lxc': is_lxc(),
                 'images_root': '/var/lib/lxc',
-                'cron_sync': True,
+                'cron_sync': cron_sync,
                 'cron_hour': '3',
                 'cron_minute': '3',
                 'images': images,
                 'dnsservers': ['8.8.8.8', '4.4.4.4'],
                 'defaults': {
                     'default_container': default_container,
+                    'autostart': True,
                     'size': None,  # via profile
                     'profile': 'medium',
-                    'profile_type': 'lvm',
+                    'profile_type': dptype,
                     'gateway': '10.5.0.1',
                     'mode': cloudSettings['mode'],
                     'ssh_gateway': None,
@@ -240,7 +252,7 @@ def settings():
                     'ssh_gateway_key': '/root/.ssh/id_dsa',
                     'ssh_gateway_port': None,
                     'master': None,
-                    'master_port': '4506',
+                    'master_port': cloudSettings['master_port'],
                     'image': 'ubuntu',
                     'network': '10.5.0.0',
                     'netmask': '16',
@@ -249,7 +261,7 @@ def settings():
                     'bridge': 'lxcbr1',
                     'sudo': True,
                     'use_bridge': True,
-                    'backing': 'lvm',
+                    'backing': backing,
                     'users': ['root', 'sysadmin'],
                     'ssh_username': 'ubuntu',
                     'vgname': 'lxc',
@@ -301,10 +313,6 @@ def settings():
         lxcSettings['images'] = __salt__['mc_utils.defaults'](
             'makina-states.services.virt.lxc.images',
             lxcSettings['images'])
-        # no lvm on devhost
-        if nt_registry['is']['devhost']:
-            lxcSettings['defaults'].update({'profile': 'dir'})
-            lxcSettings['cron_sync'] = False
         if maintenance and (
             '0.0.0.0' ==
             lxcSettings['containers'][
@@ -335,29 +343,29 @@ def settings():
                     if not i in lxc_data:
                         raise Exception(
                             'Missing data {1}\n:{0}'.format(i, lxc_data))
-                    # shortcut name for profiles
-                    # small -> ms-target-small
-                    profile_type = lxc_data.get(
-                        'profile_type',
-                        lxcSettings['defaults']['profile_type'])
-                    profile = lxc_data.get('profile',
-                                           lxcSettings['defaults']['profile'])
-                    if (
-                        profile in lxcSettings['lxc_cloud_profiles']
-                        and 'profile' in lxc_data
-                    ):
-                        del lxc_data['profile']
-                    if 'dir' in profile_type or 'scratch' in profile_type:
-                        sprofile = ''
-                        lxc_data['backing'] = 'dir'
-                    else:
-                        sprofile = '-{0}'.format(profile)
-                    lxc_data.setdefault(
-                        'profile',
-                        __salt__['mc_saltcloud.gen_id'](
-                            'ms-{0}{1}-{2}'.format(target,
-                                                   sprofile,
-                                                   profile_type)))
+                # shortcut name for profiles
+                # small -> ms-target-small
+                profile_type = lxc_data.get(
+                    'profile_type',
+                    lxcSettings['defaults']['profile_type'])
+                profile = lxc_data.get('profile',
+                                       lxcSettings['defaults']['profile'])
+                if (
+                    profile in lxcSettings['lxc_cloud_profiles']
+                    and 'profile' in lxc_data
+                ):
+                    del lxc_data['profile']
+                if 'dir' in profile_type or 'scratch' in profile_type:
+                    sprofile = ''
+                    lxc_data['backing'] = 'dir'
+                else:
+                    sprofile = '-{0}'.format(profile)
+                lxc_data.setdefault(
+                    'profile',
+                    __salt__['mc_saltcloud.gen_id'](
+                        'ms-{0}{1}-{2}'.format(target,
+                                               sprofile,
+                                               profile_type)))
                 lxc_data.setdefault('name', container)
                 lxc_data.setdefault('mode', lxcSettings['defaults']['mode'])
                 lxc_data.setdefault('size', None)
@@ -382,7 +390,7 @@ def settings():
                         'from_container',
                         lxcSettings['defaults']['default_container'])
                 for i in ["from_container", 'bootsalt_branch',
-                          "master", "master_port",
+                          "master", "master_port", "autostart",
                           "ssh_gateway", "ssh_gateway_port",
                           "ssh_gateway_user", "ssh_gateway_key",
                           'size', 'image', 'bridge', 'netmask', 'gateway',

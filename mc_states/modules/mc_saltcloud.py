@@ -79,10 +79,9 @@ def settings():
                     'preprod': 'stable',
                     'dev': 'master',
                 }.get(localsettings['default_env'], 'dev'),
-                 'master_port': '4506',
+                'master_port': __salt__['config.get']('master_port'),
                 'master': __grains__['fqdn'],
                 'saltify_profile': 'salt',
-                'master_port': '4506',
                 'pvdir': prefix + "/cloud.providers.d",
                 'pfdir': prefix + "/cloud.profiles.d",
                 'salty_targets': {
