@@ -34,6 +34,10 @@ To provision a new lxc provider, you need to:
     :salt: cf saltity modes
     :mastersalt: cf saltity modes
 
+* You can specify the makina-states branch to use with:
+
+   :bootsalt_branch: branch name
+
 * Those are the sizes available in profiles
 
         :xxxtrem: 2000g
@@ -85,6 +89,7 @@ follow:
       profile_type: dir
       mode: mastersalt
       password: foobar
+      bootsalt_branch: stable
     mysupertest6:
       name: gfoobar2.test.com
       ip: 10.5.10.17

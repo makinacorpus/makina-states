@@ -20,6 +20,11 @@ For this, we need to:
   :mastersalt: Attach the linked box as a masteralt minion.
                This will also install on it a saltmaster/minion couple.
 
+* You can specify the makina-states branch to use with:
+
+   :bootsalt_branch: branch name
+
+
 The idea is to add to your specific minion pillar some salty entries as follow:
 
 .. code-block:: yaml
