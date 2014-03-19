@@ -195,6 +195,7 @@ def registry():
             'base.ssh': {'active': True},
             'cloud.salt_cloud': {'active': False},
             'cloud.lxc': {'active': False},
+            'cloud.lxc-node': {'active': False},
             'cloud.saltify': {'active': False},
             'dns.bind': {'active': _bindEn(__salt__)},
             'db.mysql': {'active': False},

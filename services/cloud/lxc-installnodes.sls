@@ -1,11 +1,8 @@
 {% import "makina-states/_macros/services.jinja" as services with context %}
 {% set cloudSettings= services.cloudSettings %}
 {% set lxcSettings = services.lxcSettings %}
-{% set pvdir = cloudSettings.pvdir %}
-{% set pfdir = cloudSettings.pfdir %}
-{% set localsettings = services.localsettings %}
 include:
-  {# lxc may not be installed directly on the cloud controller ! #}
+   {# lxc may not be installed directly on the cloud controller ! #}
   - makina-states.services.virt.lxc-hooks
   - makina-states.services.cloud.salt_cloud-hooks
   - makina-states.services.cloud.lxc-hooks
@@ -27,6 +24,7 @@ include:
       - mc_proxy: salt-cloud-predeploy
       - mc_proxy: salt-cloud-lxc-default-template
     - require_in:
+      - salt: {{data.target}}-lxc-client-install
       - mc_proxy: salt-cloud-postdeploy
       - mc_proxy: salt-cloud-lxc-devhost-hooks
     - minion: {master: "{{data.master}}",
@@ -58,14 +56,19 @@ include:
     - {{var}}: {{data[var]}}
 {%      endif%}
 {%    endfor%}
-{{sname}}-lxc-autostart:
-  file.symlink:
-    - name: /etc/lxc/auto/{{name}}.conf
-    - target: /var/lib/lxc/{{name}}/config
-    - makedirs: true
+{{sname}}-lxc-client-restart:
+  salt.function:
+    - tgt: [{{data.target}}]
+    - expr_form: list
+    - name: cmd.run
+    - arg: [{{"'{0}'".format(
+"if [ ! -e /etc/lxc/auto ];then mkdir -p /etc/lxc/auto;fi;"
+"ln -sf /var/lib/lxc/{sname}/config /etc/lxc/auto/{sname}.conf".format(
+            sname=sname))}}]
     - require:
       - cloud: {{sname}}-lxc-deploy
 {% endmacro %}
+
 {% for target, containers in services.lxcSettings.containers.items() %}
 {%  for k, data in containers.items() -%}
 {%    set data = data.copy() %}
@@ -73,4 +76,11 @@ include:
 {%    do data.update({'target': target})%}
 {{ lxc_container(data) }}
 {%  endfor %}
+{{target}}-lxc-client-install:
+  salt.state:
+    - tgt: [{{target}}]
+    - expr_form: list
+    - sls: makina-states.services.cloud.lxc-node
+    - concurrent: True
+
 {% endfor %}

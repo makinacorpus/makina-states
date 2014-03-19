@@ -1,15 +1,13 @@
 {% import "makina-states/_macros/services.jinja" as services with context %}
 {% set cloudSettings= services.cloudSettings %}
 {% set lxcSettings = services.lxcSettings %}
-{% set pvdir = cloudSettings.pvdir %}
-{% set pfdir = cloudSettings.pfdir %}
-{% set localsettings = services.localsettings %}
 
 include:
   {# lxc may not be installed directly on the cloud controller ! #}
   - makina-states.services.virt.lxc-hooks
   - makina-states.services.cloud.salt_cloud-hooks
   - makina-states.services.cloud.lxc-hooks
+
 {% for name, imgdata in lxcSettings.images.items() %}
 {% set cwd = '/var/lib/lxc/{0}'.format(name) %}
 {% set arc = '{0}/{1}'.format(name, imgdata['lxc_tarball_name']) %}
