@@ -21,8 +21,8 @@
 include:
   - makina-states.nodetypes.devhost
   - makina-states.nodetypes.vagrantvm-ssh-keys
-  - makina-states.services.virt.lxc
-  - makina-states.services.virt.docker
+  - makina-states.services.cloud.saltify
+  - makina-states.services.cloud.lxc
 {% endif %}
 # add vagrant to editor
 addvagrant-to-editor:
