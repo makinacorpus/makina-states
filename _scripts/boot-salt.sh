@@ -1837,6 +1837,17 @@ EOF
         SALT_PILLAR_ROOTS="${SALT_PILLAR_ROOTS} ${MASTERSALT_PILLAR}"
     fi
     for pillar_root in ${SALT_PILLAR_ROOTS};do
+        # Create a default custom.sls in the pillar if not present
+        if [ ! -f "${pillar_root}/custom.sls" ];then
+            debug_msg "creating default ${pillar_root}/custom.sls"
+            cat > "${pillar_root}/custom.sls" << EOF
+#
+# This is a file to drop pillar configuration in
+#
+
+EOF
+        fi
+
         # Create a default top.sls in the pillar if not present
         if [ ! -f "${pillar_root}/top.sls" ];then
             debug_msg "creating default ${pillar_root}/top.sls"
@@ -1876,6 +1887,12 @@ a\    - makina-states.top
         fi
     done
 
+    if [ "x$(grep -- "- salt" ${SALT_PILLAR}/top.sls 2>/dev/null|wc -l|sed -e "s/ //g")" = "x0" ];then
+        debug_msg "Adding custom to default top salt pillar"
+        "${SED}" -i -e "/['\"]\*['\"]:/ {
+a\    - custom
+}" "${SALT_PILLAR}/top.sls"
+    fi
     if [ "x$(grep -- "- salt" ${SALT_PILLAR}/top.sls 2>/dev/null|wc -l|sed -e "s/ //g")" = "x0" ];then
         debug_msg "Adding salt to default top salt pillar"
         "${SED}" -i -e "/['\"]\*['\"]:/ {
@@ -1930,6 +1947,12 @@ a\    ret_port: ${SALT_MASTER_PORT}
     # --------- MASTERSALT
     # Set default mastersalt  pillar
     if [ "x${IS_MASTERSALT}" != "x" ];then
+        if [ "x$(grep -- "- custom" "${MASTERSALT_PILLAR}/top.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
+            debug_msg "Adding custom sls top mastersalt pillar"
+            "${SED}" -i -e "/['\"]\*['\"]:/ {
+a\    - custom
+}" "${MASTERSALT_PILLAR}/top.sls"
+        fi
         if [ "x$(grep -- "- mastersalt" "${MASTERSALT_PILLAR}/top.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
             debug_msg "Adding mastersalt info to top mastersalt pillar"
             "${SED}" -i -e "/['\"]\*['\"]:/ {
