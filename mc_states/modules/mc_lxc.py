@@ -304,6 +304,7 @@ def settings():
         # no lvm on devhost
         if nt_registry['is']['devhost']:
             lxcSettings['defaults'].update({'profile': 'dir'})
+            lxcSettings['cron_sync'] = False
         if maintenance and (
             '0.0.0.0' ==
             lxcSettings['containers'][
