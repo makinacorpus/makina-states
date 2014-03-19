@@ -7,6 +7,11 @@ To configure all salt daemons including at least a minion and certainly a master
     :`salt_master`_: configure a salt master daemon
     :`salt_minion`_: configure a salt minion daemon
 
+Many of the makina-states components can select a branch (see mc_salt.settings module)
+Eg for makina-states::
+
+    makina-states.salt.makina-states.rev: apiv2
+
 All those states files have a **-standalone** variant that let us redo a light reconfiguration upon highstates to take less time but with enought configuration to let us assume that the installation is sufficiently correct.
 
 All those formulaes are thin wrappers to the `salt_macro`_.
