@@ -595,18 +595,23 @@ set_vars() {
         if [ -e "${ETC_INIT}.d/mastersalt-master" ]\
             || [ -e "${ETC_INIT}/mastersalt-master.conf" ]\
             || [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
+            MASTERSALT_INIT_MASTER_PRESENT="y"
             MASTERSALT_INIT_PRESENT="y"
         fi
         if [ -e "${ETC_INIT}.d/mastersalt-minion" ]\
             || [ -e "${ETC_INIT}/mastersalt-minion.conf" ]\
             || [ "x${IS_MASTERSALT_MINION}" != "x" ];then
+            MASTERSALT_INIT_MINION_PRESENT="y"
             MASTERSALT_INIT_PRESENT="y"
         fi
     fi
-    if [ "x${MASTERSALT_INIT_PRESENT}" != "x" ]\
-        || [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
+    if [ "x${MASTERSALT_INIT_PRESENT}" != "x" ];then
         IS_MASTERSALT="y"
+    fi
+    if [ "x${MASTERSALT_INIT_MASTER_PRESENT}" != "x" ];then
         IS_MASTERSALT_MASTER="y"
+    fi
+    if [ "x${MASTERSALT_INIT_MINION_PRESENT}" != "x" ];then
         IS_MASTERSALT_MINION="y"
     fi
     if [ "x${SALT_CLOUD}" != "x" ];then
