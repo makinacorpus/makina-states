@@ -154,7 +154,7 @@ include:
     - expr_form: list
     - name: cmd.run
     - timeout: 120
-    - arg: ['if [ ! -e /.initialspass ];then echo "sysadmin:a{{data.password}}" | chpasswd && touch /.initialspass;fi']
+    - arg: ['if [ ! -e /.initialspass ];then echo "sysadmin:{{data.password}}" | chpasswd && touch /.initialspass;fi']
 
 {% endmacro %}
 
