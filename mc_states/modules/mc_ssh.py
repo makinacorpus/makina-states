@@ -78,13 +78,36 @@ def settings():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
         pillar = __pillar__
-        data = {}
         g = 'sshusers'
-        data['server'] = __salt__['mc_utils.defaults'](
-            'makina-states.services.ssh.server', {
+        data = __salt__['grains.filter_by']({
+            'Debian': {
+                'pkg_server': 'openssh-server',
+                'pkg_client': 'openssh-client',
+                'service': 'ssh',
+                'sshd_config': '/etc/ssh/sshd_config',
+                'banner': '/etc/ssh/banner',
+            },
+            'RedHat': {
+                'server': 'openssh-server',
+                'client': 'openssh',
+                'service': 'sshd',
+                'sshd_config': '/etc/ssh/sshd_config',
+                'banner': '/etc/ssh/banner',
+            },
+        })
+        data.update({
+            'sshd_config_src': (
+                'salt://makina-states/files/'
+                'etc/ssh/sshd_config'),
+            'banner_src': (
+                'salt://makina-states/files/etc/'
+                'ssh/banner'),
+            'server': {
                 'allowusers': [],
+
                 'group': g,
-                'allowgroups': ['root', 'sudo', 'wheel', 'admin', 'ubuntu', g],
+                'allowgroups': [
+                    'root', 'sudo', 'wheel', 'admin', 'ubuntu', g],
                 'allowusers': ['root', 'sysadmin', 'ubuntu'],
                 'settings': {
                     'AuthorizedKeysFile': (
@@ -97,15 +120,8 @@ def settings():
                     'UsePAM': 'yes',
                     'PermitRootLogin': 'without-password',
                 }
-            })
-        if data['server']['allowgroups']:
-            data['server']['settings']['AllowGroups'] = ' '.join(data['server']['allowgroups'])
-        # those are mutually exclusive !
-        elif data['server']['allowusers']:
-            data['server']['settings']['AllowUsers'] = ' '.join(data['server']['allowusers'])
-
-        data['client'] = __salt__['mc_utils.defaults'](
-            'makina-states.services.ssh.client', {
+            },
+            'client': {
                 'StrictHostKeyChecking': 'no',
                 'UserKnownHostsFile': '/dev/null',
                 'AddressFamily': 'any',
@@ -114,7 +130,15 @@ def settings():
                 'HashKnownHosts': 'yes',
                 'GSSAPIAuthentication': 'yes',
                 'GSSAPIDelegateCredentials': 'no',
-            })
+            }
+        })
+        data = __salt__['mc_utils.defaults'](
+                'makina-states.services.base.ssh', data)
+        if data['server']['allowgroups']:
+            data['server']['settings']['AllowGroups'] = ' '.join(data['server']['allowgroups'])
+        # those are mutually exclusive !
+        elif data['server']['allowusers']:
+            data['server']['settings']['AllowUsers'] = ' '.join(data['server']['allowusers'])
         return data
     return _settings()
 

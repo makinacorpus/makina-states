@@ -104,11 +104,8 @@ def settings():
         for i in ['SSLSettings', 'ldapVariables', 'ldapEn']:
             data[i] = localsettings[i]
 
-        # SSHD Settings
-        data['sshServerSettings'] = __salt__['mc_ssh.settings']()['server']
-
-        # SSH
-        data['sshClientSettings'] = __salt__['mc_ssh.settings']()['client']
+        # SSH Settings
+        data['sshSettings'] = __salt__['mc_ssh.settings']()
 
         # lxc:  (services.virt.lxc)
         data['lxcSettings'] = __salt__['mc_lxc.settings']()

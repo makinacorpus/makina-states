@@ -50,16 +50,16 @@ def settings():
             'm2crypto': {
                 'name': 'https://github.com/makinacorpus/M2Crypto.git',
                 'target': '{salt_root}/makina-states/src/m2crypto'},
-            'salt-formulae': {
-                'name': 'http://github.com/saltstack-formulas/salt-formula.git',
-                'link': {'target': '{salt_root}/formulas/salt/salt',
-                         'name': '{salt_root}/salt'},
-                'target': '{salt_root}/formulas/salt'},
-            'openssh-formulae': {
-                'name': 'http://github.com/saltstack-formulas/openssh-formula.git',
-                'link': {'target': '{salt_root}/formulas/openssh/openssh',
-                         'name': '{salt_root}/openssh'},
-                'target': '{salt_root}/formulas/openssh'},
+            #'salt-formulae': {
+            #    'name': 'http://github.com/saltstack-formulas/salt-formula.git',
+            #    'link': {'target': '{salt_root}/formulas/salt/salt',
+            #             'name': '{salt_root}/salt'},
+            #    'target': '{salt_root}/formulas/salt'},
+            #'openssh-formulae': {
+            #    'name': 'http://github.com/saltstack-formulas/openssh-formula.git',
+            #    'link': {'target': '{salt_root}/formulas/openssh/openssh',
+            #             'name': '{salt_root}/openssh'},
+            #    'target': '{salt_root}/formulas/openssh'},
             'openstack-formulae': {
                 'name': 'https://github.com/kiorky/openstack-salt-states.git',
                 'target': '{salt_root}/openstack'},

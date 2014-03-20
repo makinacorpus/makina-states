@@ -1,21 +1,4 @@
-# see also users.sls
 {%- import "makina-states/_macros/services.jinja" as services with context %}
-{{ salt['mc_macros.register']('services', 'base.ssh') }}
-{%- set localsettings = services.localsettings %}
-{%- set locs = localsettings.locations %}
-
-include:
-  - openssh
-  - openssh.config
-  - openssh.banner
-  - makina-states.localsettings.users
-  - makina-states.services.base.ssh-hooks
-
-sshgroup:
-  group.present:
-    - name: {{services.sshServerSettings.group}}
-
-
 {#
 # Idea is to grant everyone member of "(.-)*makina-users" access
 # to managed boxes
@@ -44,6 +27,11 @@ sshgroup:
 # The keys are searched in /salt_root/files/ssh/
 #}
 {# By default we generate a dsa+rsa ssh key pair for root #}
+
+sshgroup:
+  group.present:
+    - name: {{services.sshSettings.server.group}}
+
 root-ssh-keys-init:
   cmd.run:
     - name: |
@@ -67,33 +55,3 @@ root-ssh-keys-init:
               done;
               exit $ret;
     - user: root
-ssh_config:
-  file.managed:
-    - name: /etc/ssh/ssh_config
-    - source: salt://makina-states/files/etc/ssh/ssh_config
-    - template: jinja
-    - watch_in:
-      - service: openssh
-    - context:
-      settings: {{services.sshClientSettings|yaml}}
-
-extend:
-  openssh:
-    service.running:
-      - enable: True
-      - watch:
-        - file: sshd_config
-      {%- if grains['os_family'] == 'Debian' %}
-      - name: ssh
-      {% else %}
-      - name: sshd
-      {%- endif %}
-
-  sshd_config:
-    file.managed:
-      - name: /etc/ssh/sshd_config
-      - source: salt://makina-states/files/etc/ssh/sshd_config
-      - template: jinja
-      - context:
-        settings: {{services.sshServerSettings.settings|yaml}}
-
