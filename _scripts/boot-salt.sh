@@ -854,7 +854,7 @@ set_vars() {
     fi
 
     # export variables to support a restart
-    export TRAVIS_DEBUG SALT_BOOT_LIGHT_VARS
+    export TRAVIS_DEBUG SALT_BOOT_LIGHT_VARS DO_REFRESH_MODULES
     export IS_SALT_UPGRADING SALT_BOOT_SYNC_CODE
     export SALT_REBOOTSTRAP BUILDOUT_REBOOTSTRAP VENV_REBOOTSTRAP
     export MS_BRANCH FORCE_MS_BRANCH
@@ -3165,6 +3165,7 @@ usage() {
         bs_help "--cleanup:" "Cleanup old execution logfiles" "${SALT_BOOT_CLEANUP}" y
         bs_help "--synchronize-code:" "Only sync sourcecode" "${SALT_BOOT_SYNC_CODE}" y
         bs_help "--check-alive" "restart daemons if they are down" "" "y"
+        bs_help "--refresh-modules" "refresh salt & mastersalt modules, grains & pillar (refresh all)" "" "y"
         bs_help "--restart-daemons" "restart master & minions daemons" "" "y"
         bs_help "--restart-masters" "restart master daemons" "" "y"
         bs_help "--restart-minions" "restart minion daemons" "" "y"
@@ -3311,6 +3312,13 @@ parse_cli_opts() {
             SALT_BOOT_SKIP_CHECKOUTS="1"
             SALT_BOOT_CHECK_ALIVE="y"
             SALT_BOOT_RESTART_MINIONS="y";argmatch="1"
+        fi
+        if [ "x${1}" = "x--refresh-modules" ];then
+            SALT_BOOT_LIGHT_VARS="1"
+            DO_REFRESH_MODULES=1
+            SALT_BOOT_SKIP_HIGHSTATES="1"
+            SALT_BOOT_SKIP_CHECKOUTS=""
+            argmatch="1"
         fi
         if [ "x${1}" = "x--synchronize-code" ];then
             SALT_BOOT_LIGHT_VARS="1"
@@ -3596,10 +3604,9 @@ check_alive() {
     fi
 }
 
-synchronize_code() {
-    restart_modes=""
+kill_old_syncs() {
     # kill all stale synchronnise code jobs
-    ps_etime|sort -n -k2|egrep "boot-salt.*synchronize-code"|grep -v grep|while read psline;
+    ps_etime|sort -n -k2|egrep "boot-salt.*(synchronize-code|refresh-modules)"|grep -v grep|while read psline;
     do
         seconds="$(echo "$psline"|awk '{print $2}')"
         pid="$(echo $psline|awk '{print $1}')"
@@ -3609,11 +3616,41 @@ synchronize_code() {
             kill -9 "${pid}"
         fi
     done
+}
+
+synchronize_code() {
+    restart_modes=""
+    kill_old_syncs
     setup_and_maybe_update_code
+    exit_status=0
     if [ "x${QUIET}" = "x" ];then
         bs_log "Code updated"
     fi
-    exit 0
+    if [ "x${1}" != "xno_refresh" ];then
+        if [ "x${IS_SALT_MINION}" != "x" ];then
+            salt_call_wrapper saltutil.sync_all
+            if [ "x${last_salt_retcode}" != "x0" ];then
+                bs_log "refreshed salt modules but there was a problem"
+                exit_status=1
+            else
+                if [ "x${QUIET}" = "x" ];then
+                    bs_log "refreshed salt modules"
+                fi
+            fi
+        fi
+        if [ "x${IS_MASTERSALT}" != "x" ];then
+            mastersalt_call_wrapper saltutil.sync_all
+            if [ "x${last_salt_retcode}" != "x0" ];then
+                bs_log "refreshed mastersalt modules but there was a problem"
+                exit_status=1
+            else
+                if [ "x${QUIET}" = "x" ];then
+                    bs_log "refreshed mastersalt modules"
+                fi
+            fi
+        fi
+    fi
+    exit ${exit_status}
 }
 
 set_dns() {
@@ -3700,7 +3737,10 @@ if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
         check_alive
         abort="1"
     fi
-    if [ x${SALT_BOOT_SYNC_CODE} != "x" ];then
+    if [ "x${SALT_BOOT_SYNC_CODE}" != "x" ];then
+        synchronize_code no_refresh
+    fi
+    if [ "x${DO_REFRESH_MODULES}" != "x" ];then
         synchronize_code
     fi
     if [ "x${SALT_BOOT_RESTART_MINIONS}" != "x" ];then

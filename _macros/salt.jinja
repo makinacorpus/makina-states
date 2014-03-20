@@ -240,7 +240,7 @@ salt-{{ data.name }}-{{ group }}:
     - minute: "{{data.cron_sync_minute}}"
     - hour: "{{data.cron_sync_hour}}"
   {% endif %}
-    - name: {{msr}}/_scripts/boot-salt.sh --synchronize-code --quiet -C --no-colors
+    - name: {{msr}}/_scripts/boot-salt.sh --refresh-modules --quiet -C --no-colors
 
 {{data.name}}-clean-job:
   {% if not data.cron_auto_clean %}
