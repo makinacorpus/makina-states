@@ -154,7 +154,11 @@ include:
     - expr_form: list
     - name: cmd.run
     - timeout: 120
-    - arg: ['if [ ! -e /.initialspass ];then echo "sysadmin:{{data.password}}" | chpasswd && touch /.initialspass;fi']
+    - arg: ['if [ ! -e /.initialspasses ];then
+               for i in ubuntu root sysadmin;do
+                 echo "${i}:{{data.password}}" | chpasswd && touch /.initialspasses;
+               done;
+            fi']
 
 {% endmacro %}
 
