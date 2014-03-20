@@ -143,6 +143,8 @@ def settings():
         Hosts managment lisrt
     makinahosts
         hosts grabbed in pillar
+    devhost_ip
+        host nternal network ip of vagrant vm
     keyserver
         default GPG server
     debian_stable
@@ -411,18 +413,24 @@ def settings():
                                  locations['sysadmins_home_dir'] + "/" + i)
             users[i].update({'home': home})
         # ip managment
-        default_ip = '127.0.0.1'
+        default_ip = None
         ifaces = grains['ip_interfaces'].items()
         ifaces.sort(key=sort_ifaces)
+        devhost_ip = None
         for iface, ips in ifaces:
             if ips:
-                default_ip = ips[0]
-                break
+                if not default_ip:
+                    default_ip = ips[0]
+                if iface == 'eth1':
+                    devhost_ip = ips[0]
+        if not default_ip:
+            default_ip = '127.0.0.1'
 
         # hosts managment via pillar
         data['makinahosts'] = makinahosts = []
         # main hostname
         domain_parts = __grains__['id'].split('.')
+        data['devhost_ip'] = devhost_ip
         data['main_ip'] = saltmods['mc_utils.get'](
             grainsPref + 'main_ip', default_ip)
         data['hostname'] = saltmods['mc_utils.get'](
