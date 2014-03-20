@@ -3500,10 +3500,14 @@ restart_daemons() {
     fi
 }
 
+ps_etime() {
+    ps -eo pid,comm,etime | perl -ane '@t=reverse split(/[:-]/,$F[2]); $s=$t[0]+$t[1]*60+$t[2]*3600+$t[3]*86400; print "$F[0]\t$s\t$F[1]\t$F[2]\n"'
+}
+
 check_alive() {
     restart_modes=""
     # kill all check alive
-    ps -eo pid,etimes,cmd|sort -n -k2|egrep "boot-salt.*alive"|grep -v grep|while read psline;
+    ps_etime|sort -n -k2|egrep "boot-salt.*alive"|grep -v grep|while read psline;
     do
         seconds="$(echo "$psline"|awk '{print $2}')"
         pid="$(echo $psline|awk '{print $1}')"
@@ -3515,7 +3519,7 @@ check_alive() {
         fi
     done
     # kill all old (master)salt call (> 12 hours)
-    ps -eo pid,etimes,cmd|sort -n -k2|egrep "salt-call"|grep -v grep|while read psline;
+    ps_etime|sort -n -k2|egrep "salt-call"|grep -v grep|while read psline;
     do
         seconds="$(echo "$psline"|awk '{print $2}')"
         pid="$(echo $psline|awk '{print $1}')"
@@ -3527,7 +3531,7 @@ check_alive() {
         fi
     done
     # kill all old (master)salt ping call (> 120 sec)
-    ps -eo pid,etimes,cmd|sort -n -k2|egrep "salt-call"|grep test.ping|grep -v grep|while read psline;
+    ps_etime|sort -n -k2|egrep "salt-call"|grep test.ping|grep -v grep|while read psline;
     do
         seconds="$(echo "$psline"|awk '{print $2}')"
         pid="$(echo $psline|awk '{print $1}')"
@@ -3584,7 +3588,7 @@ check_alive() {
 synchronize_code() {
     restart_modes=""
     # kill all stale synchronnise code jobs
-    ps -eo pid,etimes,cmd|sort -n -k2|egrep "boot-salt.*synchronize-code"|grep -v grep|while read psline;
+    ps_etime|sort -n -k2|egrep "boot-salt.*synchronize-code"|grep -v grep|while read psline;
     do
         seconds="$(echo "$psline"|awk '{print $2}')"
         pid="$(echo $psline|awk '{print $1}')"
