@@ -593,7 +593,13 @@ set_vars() {
     # test for mastersalt, it is explictly set
     if [ "x${SALT_CLOUD}" = "x" ];then
         if [ -e "${ETC_INIT}.d/mastersalt-master" ]\
+            || [ -e "${ETC_INIT}/mastersalt-master.conf" ]\
             || [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
+            MASTERSALT_INIT_PRESENT="y"
+        fi
+        if [ -e "${ETC_INIT}.d/mastersalt-minion" ]\
+            || [ -e "${ETC_INIT}/mastersalt-minion.conf" ]\
+            || [ "x${IS_MASTERSALT_MINION}" != "x" ];then
             MASTERSALT_INIT_PRESENT="y"
         fi
     fi
@@ -836,7 +842,7 @@ set_vars() {
     else
         QUIET_GIT="-q"
     fi
-    if [ "x${IS_MASTERSALT}" = "x" ];then
+    if [ "x${IS_MASTERSALT}" != "x" ];then
         store_conf bootsalt_mode mastersalt
     else
         store_conf bootsalt_mode salt
