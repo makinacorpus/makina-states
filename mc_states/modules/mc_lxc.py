@@ -84,6 +84,7 @@ def settings():
     defaults
         defaults settings to provision lxc containers
         Those are all redefinable at each container level
+
         ssh_gateway
             ssh gateway info
         ssh_gateway_port

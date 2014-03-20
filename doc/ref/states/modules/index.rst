@@ -24,6 +24,7 @@ Subregistries
    mc_fail2ban.rst
    mc_lxc.rst
    mc_mysql.rst
+   mc_haproxy.rst
    mc_nginx.rst
    mc_pgsql.rst
    mc_php.rst
@@ -45,4 +46,5 @@ Other modules
    mc_macros.rst
    mc_utils.rst
    mc_project.rst
+
 

@@ -6,20 +6,14 @@
 {% set lxcSettings = services.lxcSettings %}
 {% set pvdir = cloudSettings.pvdir %}
 {% set pfdir = cloudSettings.pfdir %}
-
 include:
-  {# lxc may not be installed directly on the cloud controller ! #}
-  - makina-states.services.virt.lxc-hooks
-  - makina-states.services.cloud.salt_cloud-hooks
-  - makina-states.services.cloud.lxc-hooks
-
+  - makina-states.services.cloud.lxc.hooks
 providers_lxc_salt:
   file.managed:
-    - require:
+    - watch:
       - mc_proxy: salt-cloud-preinstall
-    - require_in:
+    - watch_in:
       - mc_proxy: salt-cloud-predeploy
-      - mc_proxy: salt-cloud-postinstall
     - source: salt://makina-states/files/etc/salt/cloud.providers.d/makinastates_lxc.conf
     - name: {{pvdir}}/makinastates_lxc.conf
     - user: root
@@ -43,8 +37,7 @@ profiles_lxc_salt:
         profiles: {{lxcSettings.lxc_cloud_profiles|yaml }}
         containers: {{lxcSettings.containers.keys()|yaml }}
         msr: {{saltmac.msr}}
-    - require:
+    - watch:
       - mc_proxy: salt-cloud-preinstall
-    - require_in:
+    - watch_in:
       - mc_proxy: salt-cloud-predeploy
-      - mc_proxy: salt-cloud-postinstall

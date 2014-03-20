@@ -51,3 +51,13 @@ Example pillar use
 
     makina-states.services.mail.postfix: true
     makina-states.services.mail.postfix.mode: custom
+
+
+Exposed hooks
+-----------------
+- postfix-pre-install-hook
+- postfix-post-install-hook
+- postfix-pre-conf-hook
+- postfix-post-conf-hook
+- postfix-pre-restart-hook
+- postfix-post-restart-hook

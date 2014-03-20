@@ -127,8 +127,12 @@ def settings():
 
         # Etherpad:  (services.collab.etherpad)
         data['etherpadSettings'] = __salt__['mc_etherpad.settings']()
+
         # fail2ban:  (services.firewall.fail2ban)
         data['fail2banSettings'] = __salt__['mc_fail2ban.settings']()
+
+        # haproxy:  (services.proxy.haproxy)
+        data['haproxySettings'] = __salt__['mc_haproxy.settings']()
 
         # Postfix:  (services.mail.postfix)
         data['postfixSettings'] = __salt__['mc_postfix.settings']()
@@ -193,9 +197,8 @@ def registry():
             'backup.dbsmartbackup': {'active': False},
             'base.ntp': {'active': _ntpEn(__salt__)},
             'base.ssh': {'active': True},
-            'cloud.salt_cloud': {'active': False},
             'cloud.lxc': {'active': False},
-            'cloud.lxc-node': {'active': False},
+            'cloud.cloudcontroller': {'active': False},
             'cloud.saltify': {'active': False},
             'dns.bind': {'active': _bindEn(__salt__)},
             'db.mysql': {'active': False},
@@ -214,6 +217,7 @@ def registry():
             'monitoring.circus': {'active': False},
             'monitoring.snmpd': {'active': False},
             #'php.common': {'active': False},
+            'proxy.haproxy': {'active': False},
             'php.modphp': {'active': False},
             'php.phpfpm': {'active': False},
             'http.apache_modfcgid': {'active': False},

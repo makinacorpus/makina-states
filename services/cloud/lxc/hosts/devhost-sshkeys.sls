@@ -1,7 +1,7 @@
 {# specific install rules on devhost for lxc managment #}
 include:
   {# lxc may not be installed directly on the cloud controller ! #}
-  - makina-states.services.cloud.lxc-hooks
+  - makina-states.services.cloud.lxc.hooks
   - makina-states.nodetypes.vagrantvm-ssh-keys
 
 {# copy user ssh keys for pull/push inside containers #}
@@ -17,6 +17,6 @@ cloud-lxc-devhost-sync-sshs:
                 fi
             done
     - user: root
-    - require:
+    - watch:
       - mc_proxy: salt-cloud-lxc-devhost-hooks
       - cmd: vagrantvm-install-ssh-keys

@@ -502,6 +502,7 @@ set_vars() {
     BASE_PACKAGES="$BASE_PACKAGES libgmp3-dev"
     BRANCH_PILLAR_ID="makina-states.salt.makina-states.rev"
     MAKINASTATES_TEST=${MAKINASTATES_TEST:-}
+    SALT_BOOT_INITIAL_HIGHSTATE="${SALT_BOOT_INITIAL_HIGHSTATE:-}"
     IS_SALT_UPGRADING="${IS_SALT_UPGRADING:-}"
     IS_SALT="${IS_SALT:-y}"
     IS_SALT_MASTER="${IS_SALT_MASTER:-y}"
@@ -852,10 +853,12 @@ set_vars() {
     else
         store_conf bootsalt_mode salt
     fi
+    SALT_BOOT_INITIAL_HIGHSTATE_MARKER="${SALT_MS}/.initial_hs"
 
     # export variables to support a restart
+    export SALT_BOOT_INITIAL_HIGHSTATE_MARKER
     export TRAVIS_DEBUG SALT_BOOT_LIGHT_VARS DO_REFRESH_MODULES
-    export IS_SALT_UPGRADING SALT_BOOT_SYNC_CODE
+    export IS_SALT_UPGRADING SALT_BOOT_SYNC_CODE SALT_BOOT_INITIAL_HIGHSTATE
     export SALT_REBOOTSTRAP BUILDOUT_REBOOTSTRAP VENV_REBOOTSTRAP
     export MS_BRANCH FORCE_MS_BRANCH
     export IS_SALT IS_SALT_MASTER IS_SALT_MINION
@@ -1860,6 +1863,11 @@ base:
   '*':
 EOF
         fi
+        if [ "x$(grep -- "$(get_minion_id)" "${pillar_root}/top.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
+            debug_msg "Adding local info to top mastersalt pillar"
+            echo >> "${pillar_root}/top.sls"
+            echo "  '$(get_minion_id)':">> "${pillar_root}/top.sls"
+        fi
     done
     # Create a default top.sls in the tree if not present
     TOPS_FILES="${SALT_ROOT}/top.sls"
@@ -1949,7 +1957,7 @@ a\    ret_port: ${SALT_MASTER_PORT}
     if [ "x${IS_MASTERSALT}" != "x" ];then
         if [ "x$(grep -- "- custom" "${MASTERSALT_PILLAR}/top.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
             debug_msg "Adding custom sls top mastersalt pillar"
-            "${SED}" -i -e "/['\"]\*['\"]:/ {
+            "${SED}" -i -e "/['\"]$(get_minion_id)['\"]:/ {
 a\    - custom
 }" "${MASTERSALT_PILLAR}/top.sls"
         fi
@@ -3343,6 +3351,13 @@ parse_cli_opts() {
             SALT_BOOT_SKIP_CHECKOUTS=""
             argmatch="1"
         fi
+        if [ "x${1}" = "x--initial-highstate" ];then
+            SALT_BOOT_LIGHT_VARS="1"
+            SALT_BOOT_INITIAL_HIGHSTATE="1"
+            SALT_BOOT_SKIP_HIGHSTATES=""
+            SALT_BOOT_SKIP_CHECKOUTS="1"
+            argmatch="1"
+        fi   
         if [ "x${1}" = "x--synchronize-code" ];then
             SALT_BOOT_LIGHT_VARS="1"
             SALT_BOOT_SYNC_CODE="1"
@@ -3702,6 +3717,13 @@ set_dns() {
     fi
 }
 
+initial_highstates() {
+    if [ ! -e "${SALT_BOOT_INITIAL_HIGHSTATE_MARKER}" ];then
+        run_highstates && touch "${SALT_BOOT_INITIAL_HIGHSTATE_MARKER}"
+    fi
+    exit $?
+}
+
 cleanup_execlogs() {
     LOG_LIMIT="${LOG_LIMIT:-20}"
     # keep 20 local exec logs only
@@ -3760,6 +3782,10 @@ if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
         check_alive
         abort="1"
     fi
+    if [ "x${SALT_BOOT_INITIAL_HIGHSTATE}" != "x" ] \
+        && [ -e "${SALT_BOOT_INITIAL_HIGHSTATE_MARKER}" ];then
+        exit 0
+    fi
     if [ "x${SALT_BOOT_SYNC_CODE}" != "x" ];then
         synchronize_code no_refresh
     fi
@@ -3791,7 +3817,11 @@ if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
         create_salt_skeleton
         install_mastersalt_env
         install_salt_env
-        run_highstates
+        if [ "x${SALT_BOOT_INITIAL_HIGHSTATE}" != "x" ];then
+            initial_highstates
+        else
+            run_highstates
+        fi
         maybe_install_projects
         maybe_run_tests
         postinstall

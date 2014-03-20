@@ -15,6 +15,7 @@ Services
    java/index.rst
    mail/index.rst
    dns/index.rst
+   proxy/index.rst
    monitoring/index.rst
    openstack/index.rst
    php/index.rst
