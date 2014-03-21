@@ -34,6 +34,10 @@ def settings():
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.firewall.haproxy', {
                 'location': locs['conf_dir'] + '/haproxy',
+                'defaults': {
+                    'extra_opts': '',
+                    'enabled': '1',
+                }
             }
         )
         return data
