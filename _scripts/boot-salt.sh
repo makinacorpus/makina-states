@@ -1894,51 +1894,67 @@ a\    - makina-states.top
 }" "${topf}"
         fi
     done
-
-    if [ "x$(grep -- "- salt" ${SALT_PILLAR}/top.sls 2>/dev/null|wc -l|sed -e "s/ //g")" = "x0" ];then
-        debug_msg "Adding custom to default top salt pillar"
-        "${SED}" -i -e "/['\"]\*['\"]:/ {
+    if [ "x$(grep -- "- custom" "${SALT_PILLAR}/top.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
+        debug_msg "Adding custom sls top salt pillar"
+        "${SED}" -i -e "/['\"]$(get_minion_id)['\"]:/ {
 a\    - custom
 }" "${SALT_PILLAR}/top.sls"
     fi
-    if [ "x$(grep -- "- salt" ${SALT_PILLAR}/top.sls 2>/dev/null|wc -l|sed -e "s/ //g")" = "x0" ];then
+    if [ "x$(grep -- "- salt_minion" ${SALT_PILLAR}/top.sls 2>/dev/null|wc -l|sed -e "s/ //g")" = "x0" ];then
         debug_msg "Adding salt to default top salt pillar"
         "${SED}" -i -e "/['\"]\*['\"]:/ {
+a\    - salt_minion
+}" "${SALT_PILLAR}/top.sls"
+        "${SED}" -i -e "/    - salt$/ d" "${SALT_PILLAR}/top.sls"
+    fi
+    if [ "x$(grep -- "- salt" ${SALT_PILLAR}/top.sls 2>/dev/null|grep -v salt_minion|grep -v minion|wc -l|sed -e "s/ //g")" = "x0" ];then
+        debug_msg "Adding salt to default top salt pillar"
+        "${SED}" -i -e "/['\"]$(get_minion_id)['\"]:/ {
 a\    - salt
 }" "${SALT_PILLAR}/top.sls"
     fi
     # Create a default salt.sls in the pillar if not present
-    if [ ! -e "${SALT_PILLAR}/salt.sls" ];then
-        debug_msg "Creating default pillar's salt.sls"
-        echo 'salt:' > "${SALT_PILLAR}/salt.sls"
-    fi
-    if [ "x$(grep "$BRANCH_PILLAR_ID" "${SALT_PILLAR}/salt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
-        echo "" >> "${SALT_PILLAR}/salt.sls"
-        echo "${BRANCH_PILLAR_ID}" >> "${SALT_PILLAR}/salt.sls"
-    fi
-    "${SED}" -e "s/${BRANCH_PILLAR_ID}.*/$BRANCH_PILLAR_ID: ${branch_id}/g" -i "${SALT_PILLAR}/salt.sls"
-    if [ "x$(egrep -- "^salt:" "${SALT_PILLAR}/salt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
-        echo ''  >> "${SALT_PILLAR}/salt.sls"
-        echo 'salt:' >> "${SALT_PILLAR}/salt.sls"
-    fi
+    for salt_sls in "${SALT_PILLAR}/salt.sls" "${SALT_PILLAR}/salt_minion.sls";do
+        if [ ! -e "${salt_sls}" ];then
+            debug_msg "Creating default pillar's salt.sls"
+            echo 'salt:' > "${salt_sls}"
+        fi
+        if [ "x$(grep "$BRANCH_PILLAR_ID" "${salt_sls}"|wc -l|sed -e "s/ //g")" = "x0" ];then
+            echo "" >> "${salt_sls}"
+            echo "${BRANCH_PILLAR_ID}" >> "${salt_sls}"
+        fi
+        "${SED}" -e "s/${BRANCH_PILLAR_ID}.*/$BRANCH_PILLAR_ID: ${branch_id}/g" -i "${salt_sls}"
+        if [ "x$(egrep -- "^salt:" "${salt_sls}"|wc -l|sed -e "s/ //g")" = "x0" ];then
+            echo ''  >> "${salt_sls}"
+            echo 'salt:' >> "${salt_sls}"
+        fi
+    done
     if [ "x$(egrep -- "( |\t)*minion:( |\t)*$" "${SALT_PILLAR}/salt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
         debug_msg "Adding minion info to pillar"
         "${SED}" -i -e "/^salt:\( \|\t\)*$/ {
 a\  minion:
-a\    id: $(get_minion_id)
 a\    interface: $SALT_MINION_IP
 a\    master: $SALT_MASTER_DNS
 a\    master_port: ${SALT_MASTER_PORT}
 }" "${SALT_PILLAR}/salt.sls"
     fi
-    if [ "x$(grep -- "id: $(get_minion_id)" "${SALT_PILLAR}/salt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
-        debug_msg "Adding salt minion id: $(get_minion_id)"
-        "${SED}" -i -e "/^    id:/ d" "${SALT_PILLAR}/salt.sls"
-        "${SED}" -i -e "/^  minion:/ {
-a\    id: $(get_minion_id)
-}" "${SALT_PILLAR}/salt.sls"
-    # do no setup stuff for master for just a minion
+    if [ "x$(egrep -- "( |\t)*minion:( |\t)*$" "${SALT_PILLAR}/salt_minion.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
+        debug_msg "Adding minion info to salt_minion pillar"
+        "${SED}" -i -e "/^salt:\( \|\t\)*$/ {
+a\  minion:
+a\    master: $(get_minion_id)
+a\    master_port: ${SALT_MASTER_PORT}
+}" "${SALT_PILLAR}/salt_minion.sls"
     fi
+    "${SED}" -i -e "/^    id:/ d" "${SALT_PILLAR}/salt.sls"
+    "${SED}" -i -e "/makina-states.minion_id:/ d" "${SALT_PILLAR}/salt.sls"
+    echo "makina-states.minion_id: $(get_minion_id)">>"${SALT_PILLAR}/salt.sls"
+    "${SED}" -i -e "s/master:.*/master: $(get_minion_id)/g" "${SALT_PILLAR}/salt_minion.sls"
+    touch "${MCONF_PREFIX}/grains" 
+    "${SED}" -i -e "/^    id:/ d" "${CONF_PREFIX}/grains"
+    "${SED}" -i -e "/makina-states.minion_id:/ d" "${CONF_PREFIX}/grains"
+    echo "makina-states.minion_id: $(get_minion_id)">>"${CONF_PREFIX}/grains"
+    # do no setup stuff for master for just a minion
     if [ "x${IS_SALT_MASTER}" != "x" ] \
        && [ "x$(egrep -- "( |\t)*master:( |\t)*$" "${SALT_PILLAR}/salt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
         debug_msg "Adding master info to pillar"
@@ -1961,40 +1977,51 @@ a\    ret_port: ${SALT_MASTER_PORT}
 a\    - custom
 }" "${MASTERSALT_PILLAR}/top.sls"
         fi
-        if [ "x$(grep -- "- mastersalt" "${MASTERSALT_PILLAR}/top.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
+        if [ "x$(grep -- "- mastersalt_minion" "${MASTERSALT_PILLAR}/top.sls" 2>/dev/null|wc -l|sed -e "s/ //g")" = "x0" ];then
             debug_msg "Adding mastersalt info to top mastersalt pillar"
             "${SED}" -i -e "/['\"]\*['\"]:/ {
+a\    - mastersalt_minion
+}" "${MASTERSALT_PILLAR}/top.sls"
+        "${SED}" -i -e "/    - mastersalt$/ d" "${MASTERSALT_PILLAR}/top.sls"
+        fi
+        if [ "x$(grep -- "- mastersalt$" "${MASTERSALT_PILLAR}/top.sls" 2>/dev/null|wc -l|grep -v mastersalt_minion|sed -e "s/ //g")" = "x0" ];then
+            debug_msg "Adding mastersalt info to top mastersalt pillar"
+            "${SED}" -i -e "/['\"]$(get_minion_id)['\"]:/ {
 a\    - mastersalt
 }" "${MASTERSALT_PILLAR}/top.sls"
         fi
-        if [ ! -f "${MASTERSALT_PILLAR}/mastersalt.sls" ];then
-            debug_msg "Creating mastersalt configuration file"
-            echo "mastersalt:" >  "${MASTERSALT_PILLAR}/mastersalt.sls"
-        fi
-        if [ "x$(grep "${BRANCH_PILLAR_ID}" "${MASTERSALT_PILLAR}/mastersalt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
-            echo "" >> "${MASTERSALT_PILLAR}/mastersalt.sls"
-            echo "$BRANCH_PILLAR_ID" >> "${MASTERSALT_PILLAR}/mastersalt.sls"
-        fi
-        "${SED}" -i -e "s/${BRANCH_PILLAR_ID}.*/$BRANCH_PILLAR_ID: ${branch_id}/g" "${MASTERSALT_PILLAR}/mastersalt.sls"
-        if [ "x$(egrep -- "^mastersalt:( |\t)*$" "${MASTERSALT_PILLAR}/mastersalt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
-            echo ''  >> "${MASTERSALT_PILLAR}/mastersalt.sls"
-            echo 'mastersalt:' >> "${MASTERSALT_PILLAR}/mastersalt.sls"
+        for mastersalt_sls in \
+            "${MASTERSALT_PILLAR}/mastersalt.sls" \
+            "${MASTERSALT_PILLAR}/mastersalt_minion.sls";do
+            if [ ! -f "${mastersalt_sls}" ];then
+                debug_msg "Creating mastersalt configuration file in ${mastersalt_sls}"
+                echo "mastersalt:" >  "${mastersalt_sls}"
+            fi
+            if [ "x$(grep "${BRANCH_PILLAR_ID}" "${mastersalt_sls}"|wc -l|sed -e "s/ //g")" = "x0" ];then
+                echo "" >> "${mastersalt_sls}"
+                echo "$BRANCH_PILLAR_ID" >> "${mastersalt_sls}"
+            fi
+            "${SED}" -i -e "s/${BRANCH_PILLAR_ID}.*/$BRANCH_PILLAR_ID: ${branch_id}/g" "${mastersalt_sls}"
+            if [ "x$(egrep -- "^mastersalt:( |\t)*$" "${mastersalt_sls}"|wc -l|sed -e "s/ //g")" = "x0" ];then
+                echo ''  >> "${mastersalt_sls}"
+                echo 'mastersalt:' >> "${mastersalt_sls}"
+            fi
+        done
+        if [ "x$(egrep -- "^( |\t)*minion:" "${MASTERSALT_PILLAR}/mastersalt_minion.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
+            debug_msg "Adding mastersalt minion info to mastersalt minion pillar"
+            "${SED}" -i -e "/^mastersalt:\( \|\t\)*$/ {
+a\  minion:
+a\    master: ${MASTERSALT_MASTER_DNS}
+a\    master_port: ${MASTERSALT_MASTER_PORT}
+}" "${MASTERSALT_PILLAR}/mastersalt_minion.sls"
         fi
         if [ "x$(egrep -- "^( |\t)*minion:" "${MASTERSALT_PILLAR}/mastersalt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
             debug_msg "Adding mastersalt minion info to mastersalt pillar"
             "${SED}" -i -e "/^mastersalt:\( \|\t\)*$/ {
 a\  minion:
-a\    id: $(mastersalt_get_minion_id)
 a\    interface: ${MASTERSALT_MINION_IP}
 a\    master: ${MASTERSALT_MASTER_DNS}
 a\    master_port: ${MASTERSALT_MASTER_PORT}
-}" "${MASTERSALT_PILLAR}/mastersalt.sls"
-        fi
-        if [ "x$(grep -- "id: $(mastersalt_get_minion_id)" "${MASTERSALT_PILLAR}/mastersalt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
-            debug_msg "Adding mastersalt minion id: $(mastersalt_get_minion_id)"
-            "${SED}" -i -e "/^    id:/ d" "${MASTERSALT_PILLAR}/mastersalt.sls"
-            "${SED}" -i -e "/^  minion:/ {
-a\    id: $(mastersalt_get_minion_id)
 }" "${MASTERSALT_PILLAR}/mastersalt.sls"
         fi
         if [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
@@ -2008,8 +2035,14 @@ a\    publish_port: ${MASTERSALT_MASTER_PUBLISH_PORT}
 }" "${MASTERSALT_PILLAR}/mastersalt.sls"
             fi
         fi
+        "${SED}" -i -e "/^    id:/ d" "${MASTERSALT_PILLAR}/mastersalt.sls"
+        "${SED}" -i -e "/makina-states.minion_id:/ d" "${MASTERSALT_PILLAR}/mastersalt.sls"
+        echo "makina-states.minion_id: $(mastersalt_get_minion_id)">>"${MASTERSALT_PILLAR}/mastersalt.sls"
+        touch "${MCONF_PREFIX}/grains" 
+        "${SED}" -i -e "/^    id:/ d" "${MCONF_PREFIX}/grains"
+        "${SED}" -i -e "/makina-states.minion_id:/ d" "${MCONF_PREFIX}/grains"
+        echo "makina-states.minion_id: $(mastersalt_get_minion_id)">>"${MCONF_PREFIX}/grains"
     fi
-
     # reset minion_ids
     for i in $(find "${CONF_PREFIX}"/minion* -type f 2>/dev/null|grep -v sed);do
         "${SED}" -i -e "s/^#*id: .*/id: $(get_minion_id)/g" "${i}"
@@ -2017,6 +2050,7 @@ a\    publish_port: ${MASTERSALT_MASTER_PUBLISH_PORT}
     for i in $(find "${MCONF_PREFIX}"/minion* -type f 2>/dev/null|grep -v sed);do
         "${SED}" -i -e "s/^#*id: .*/id: $(mastersalt_get_minion_id)/g" "${i}"
     done
+
 }
 
 # ------------ SALT INSTALLATION PROCESS
@@ -3357,7 +3391,7 @@ parse_cli_opts() {
             SALT_BOOT_SKIP_HIGHSTATES=""
             SALT_BOOT_SKIP_CHECKOUTS="1"
             argmatch="1"
-        fi   
+        fi
         if [ "x${1}" = "x--synchronize-code" ];then
             SALT_BOOT_LIGHT_VARS="1"
             SALT_BOOT_SYNC_CODE="1"
