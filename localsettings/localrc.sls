@@ -5,7 +5,7 @@
 #}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {{ salt['mc_macros.register']('localsettings', 'localrc') }}
-{%- set locs = salt['mc_localsettings']()['locations'] %}
+{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 rc-local:
   file.directory:
     - name: {{ locs.conf_dir }}/rc.local.d

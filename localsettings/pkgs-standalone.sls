@@ -7,7 +7,7 @@
 {% macro do(full=True) %}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {{ salt['mc_macros.register']('localsettings', 'pkgs') }}
-{%- set locs = salt['mc_localsettings']()['locations'] %}
+{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 
 {% if full %}
 include:

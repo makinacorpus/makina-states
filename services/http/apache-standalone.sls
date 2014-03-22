@@ -26,7 +26,7 @@
 {% set services = services %}
 {% set nodetypes = services.nodetypes %}
 {% set localsettings = services.localsettings %}
-{% set locs = salt['mc_localsettings']()['locations'] %}
+{% set locs = salt['mc_localsettings.settings']()['locations'] %}
 {% set apacheSettings = services.apacheSettings %}
 
 {% macro other_mpm_pkgs(mpm, indent='') %}

@@ -9,7 +9,7 @@ include:
 
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {{ salt['mc_macros.register']('localsettings', 'sudo') }}
-{%- set locs = salt['mc_localsettings']()['locations'] %}
+{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 sudo-pkgs:
   pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs: [sudo]

@@ -7,7 +7,7 @@
 {%- set nodetypes = nodetypes %}
 {%- set isTravis = nodetypes.registry.is.travis %}
 {%- set localsettings = nodetypes.localsettings %}
-{%- set locs = salt['mc_localsettings']()['locations'] %}
+{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 
 {%- set resolver = salt['mc_utils.format_resolve'] %}
 

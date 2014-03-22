@@ -24,7 +24,7 @@ python-project-{{ common['name'] }}-virtualenv:
   virtualenv.managed:
     - name: {{ common.project_root }}/.virtualenv
     - no_site_packages: True
-    - python: {{ salt['mc_localsettings']()['locations'].bin_dir }}/python{{ common.data['python_version'] }}
+    - python: {{ salt['mc_localsettings.settings']()['locations'].bin_dir }}/python{{ common.data['python_version'] }}
     {% if common.data['requirements'] %}
     - requirements: {{ common.project_root }}/requirements.txt
     {% endif %}

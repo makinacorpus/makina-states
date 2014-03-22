@@ -5,7 +5,7 @@
 {% set services = services %}
 {% set nodetypes = services.nodetypes %}
 {% set localsettings = services.localsettings %}
-{% set locs = salt['mc_localsettings']()['locations'] %}
+{% set locs = salt['mc_localsettings.settings']()['locations'] %}
 {% set saltmac = saltmac %}
 {% set cfg = opts['ms_project'] %}
  {#-

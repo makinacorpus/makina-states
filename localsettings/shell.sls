@@ -5,7 +5,7 @@
 #}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {{ salt['mc_macros.register']('localsettings', 'shell') }}
-{%- set locs = salt['mc_localsettings']()['locations'] %}
+{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 etc-profile-d:
   file.directory:
     - name: {{ locs.conf_dir }}/profile.d

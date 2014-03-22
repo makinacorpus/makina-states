@@ -10,7 +10,7 @@
 include:
   - makina-states.localsettings.pkgmgr
 {% endif %}
-{%- set locs = salt['mc_localsettings']()['locations'] %}
+{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 {%- if grains['os_family'] in ['Debian'] %}
 dotdeb-repo:
   pkgrepo.managed:

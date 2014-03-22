@@ -6,7 +6,7 @@
 {%- set services = services %}
 {%- set localsettings = services.localsettings %}
 {%- set nodetypes = services.nodetypes %}
-{%- set locs = salt['mc_localsettings']()['locations'] %}
+{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 {{ salt['mc_macros.register']('services', 'backup.rdiff-backup') }}
 {%- set data=salt['mc_rdiffbackup.settings']() %}
 {%- set settings=salt['mc_rdiffbackup.settings']()|yaml %}

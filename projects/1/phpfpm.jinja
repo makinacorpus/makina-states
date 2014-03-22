@@ -11,7 +11,7 @@
 {%- set apacheData = services.apacheSettings.copy() %}
 {%- set saltmac = base.saltmac %}
 {%- set localsettings = base.localsettings %}
-{%- set locations = base.salt['mc_localsettings']()['locations'] %}
+{%- set locations = base.salt['mc_localsettings.settings']()['locations'] %}
 
 {#
 # This will install a basic PHP virtualhost served by apache and

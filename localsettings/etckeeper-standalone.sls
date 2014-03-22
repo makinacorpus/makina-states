@@ -5,7 +5,7 @@
 #}
 
 {% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-{% set locs=salt['mc_localsettings']()['locations'] %}
+{% set locs=salt['mc_localsettings.settings']()['locations'] %}
 {% macro do(full=False ) %}
 {{ salt['mc_macros.register']('localsettings', 'etckeeper') }}
 include:

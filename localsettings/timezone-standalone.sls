@@ -7,7 +7,7 @@
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {{ salt['mc_macros.register']('localsettings', 'timezone') }}
 {% macro do(full=True) %}
-{%- set locs = salt['mc_localsettings']()['locations'] %}
+{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 {%- set defaults = localsettings.timezoneSettings %}
 {% if full %}
 tz-pkgs:

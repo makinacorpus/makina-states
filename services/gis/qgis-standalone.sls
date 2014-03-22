@@ -2,7 +2,7 @@
 {{ salt['mc_macros.register']('services', 'gis.qgis') }}
 {% set localsettings = services.localsettings %}
 {% set nodetypes = services.nodetypes %}
-{% set locs = salt['mc_localsettings']()['locations'] %}
+{% set locs = salt['mc_localsettings.settings']()['locations'] %}
 {% macro do(full=True) %}
 {# its up to the project to decide the fcgi implementation afterall
 include:

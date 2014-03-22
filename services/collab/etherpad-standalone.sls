@@ -10,7 +10,7 @@
 {{- salt['mc_macros.register']('services', 'collab.etherpad') }}
 {%- set localsettings = services.localsettings %}
 {%- set nodetypes = services.nodetypes %}
-{%- set locs = salt['mc_localsettings']()['locations'] %}
+{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 {%- set etherpadSettings = salt['mc_etherpad.settings']() %}
 
 {%- set etherpadLocation = etherpadSettings['location'] + "/etherpad-lite-" + etherpadSettings['version'] %}

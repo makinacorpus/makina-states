@@ -4,7 +4,7 @@
 {%- set services = base.services %}
 {%- set saltmac = base.saltmac %}
 {%- set localsettings = base.localsettings %}
-{%- set locs = salt['mc_localsettings']()['locations'] %}
+{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 
 {% set rftproot = locs.srv_dir + "/ftp" %}
 {% set ftproot = rftproot + "/lizmap" %}

@@ -12,7 +12,7 @@
 {{- salt['mc_macros.register']('services', 'monitoring.circus') }}
 {%- set localsettings = services.localsettings %}
 {%- set nodetypes = services.nodetypes %}
-{%- set locs = salt['mc_localsettings']()['locations'] %}
+{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 {%- set circusSettings = salt['mc_circus.settings']() %}
 {%- set venv = circusSettings['location'] + "/venv" %}
 {% set defaults = {

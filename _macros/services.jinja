@@ -12,7 +12,7 @@
 {%- set localsettings = nodetypes.localsettings %}
 {%- set funcs = localsettings.funcs %}
 {%- set saltmac = controllers.saltmac %}
-{%- set locs = salt['mc_localsettings']()['locations'] %}
+{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 
 {#- see _modules/mc_services.py for exposed settings #}
 {%- set settings = salt['mc_services.settings']() %}

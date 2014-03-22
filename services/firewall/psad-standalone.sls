@@ -5,7 +5,7 @@
 {%- import "makina-states/_macros/services.jinja" as services with context %}
 {%- set localsettings = services.localsettings %}
 {%- set nodetypes = services.nodetypes %}
-{%- set locs = salt['mc_localsettings']()['locations'] %}
+{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 {%- set data = salt['mc_psad.settings']() %}
 {{ salt['mc_macros.register']('services', 'firewall.psad') }}
 

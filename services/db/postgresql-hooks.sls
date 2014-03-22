@@ -9,7 +9,7 @@
 {%- set services = services %}
 {%- set localsettings = services.localsettings %}
 {%- set nodetypes = services.nodetypes %}
-{%- set locs = salt['mc_localsettings']()['locations'] %}
+{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 {%- set default_user = services.postgresqlUser %}
 {%- set orchestrate = {} %}
 {%- set prebase = 'makina-postgresql-pre-base' %}

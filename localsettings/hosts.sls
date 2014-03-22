@@ -5,7 +5,7 @@
 #}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {{ salt['mc_macros.register']('localsettings', 'hosts') }}
-{%- set locs = salt['mc_localsettings']()['locations'] %}
+{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 {%- set hosts_list = localsettings.hosts_list %}
 {%- if hosts_list %}
 # spaces are used in the join operation to make this text looks like a yaml multiline text
