@@ -1,5 +1,3 @@
-{%- import "makina-states/_macros/services.jinja" as services with context %}
-{%- set localsettings = services.localsettings %}
 {%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 {{ salt['mc_macros.register']('services', 'backup.bacula-fd') }}
 

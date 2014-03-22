@@ -2,10 +2,6 @@
 # Integration of rdiff-backup, a file backup software
 #}
 {% macro do(full=True) %}
-{%- import "makina-states/_macros/services.jinja" as services with context %}
-{%- set services = services %}
-{%- set localsettings = services.localsettings %}
-{%- set nodetypes = services.nodetypes %}
 {%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 {{ salt['mc_macros.register']('services', 'backup.rdiff-backup') }}
 {%- set data=salt['mc_rdiffbackup.settings']() %}
