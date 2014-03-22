@@ -18,15 +18,6 @@
 {%- set metadata = salt['mc_services.metadata']() %}
 {%- set registry = salt['mc_services.registry']() %}
 
-{%- set pgDbs = settings.pgDbs  %}
-{%- set postgresqlUsers = settings.postgresqlUsers  %}
-{%- set defaultPgVersion = settings.defaultPgVersion %}
-{%- set pgSettings = settings.pgSettings%}
-{%- set pgVers = settings.pgVers  %}
-{%- set postgisVers = settings.postgisVers  %}
-{%- set postgisDbName = settings.postgisDbName  %}
-{%- set postgresqlUser = settings.postgresqlUser  %}
-
 {%- set mysqlSettings = settings.mysqlSettings  %}
 {%- set myDisableAutoConf = settings.myDisableAutoConf  %}
 {%- set myCnf = settings.myCnf %}

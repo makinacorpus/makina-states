@@ -1,5 +1,5 @@
 {%- import "makina-states/projects/1/python.jinja" as python with context %}
-{% import "makina-states/services/db/postgresql.sls" as pgsql with context %}
+{% import "makina-states/services/db/postgresql/init.sls" as pgsql with context %}
 {%- set services = python.services %}
 {%- set localsettings = python.localsettings %}
 

@@ -88,26 +88,12 @@ def settings():
         pillar = __pillar__
         grains = __grains__
         data = {}
-        # localsettings shortcuts
-        for i in ['ldapVariables', 'ldapEn']:
-            data[i] = localsettings[i]
 
         # Apache:  (services.http.apache)
         data['apacheSettings'] = __salt__['mc_apache.settings']()
 
         # PHP:  (services.php)
         data['phpSettings'] = __salt__['mc_php.settings']()
-
-        # PostGRESQL:  (services.db.postgresql)
-        # default postgresql/ grains configured databases (see service doc)
-        data['pgSettings'] = pgSettings = __salt__['mc_pgsql.settings']()
-        data['pgDbs'] = pgSettings['pgDbs']
-        data['postgresqlUsers'] = pgSettings['postgresqlUsers']
-        data['defaultPgVersion'] = pgSettings['defaultPgVersion']
-        data['pgVers'] = pgSettings['versions']
-        data['postgisVers'] = pgSettings['postgis']
-        data['postgisDbName'] = pgSettings['postgis_db']
-        data['postgresqlUser'] = pgSettings['user']
 
         # mysql
         data['mysqlSettings'] = mysqlSettings = __salt__['mc_mysql.settings']()

@@ -5,32 +5,60 @@
 #   - databases
 #   - users
 #}
-{%- import "makina-states/_macros/services.jinja" as services with context %}
-{%- set services = services %}
-{%- set localsettings = services.localsettings %}
-{%- set nodetypes = services.nodetypes %}
+{% macro proxy(name, text='') %}
+{{name}}:
+  mc_proxy.hook:
+    - name: {{name}}
+{{text}}
+{% endmacro %}
+{%- set services = salt['mc_pgsql.settings']() %}
 {%- set locs = salt['mc_localsettings.settings']()['locations'] %}
-{%- set default_user = services.postgresqlUser %}
+{%- set default_user = services.user %}
 {%- set orchestrate = {} %}
 {%- set prebase = 'makina-postgresql-pre-base' %}
 {%- set postbase = 'makina-postgresql-post-base' %}
+{%- set prepkg = 'makina-postgresql-pre-pkg' %}
+{%- set postpkg = 'makina-postgresql-post-pkg' %}
+{%- set presetup = 'makina-postgresql-presetup' %}
 {%- set postinst = 'makina-postgresql-post-inst' %}
-{{services.funcs.proxy(prebase)}}
-{{services.funcs.proxy(postbase, '''
+{{proxy(prebase)}}
+{{proxy(postbase, '''
     - watch:
       - mc_proxy: {0}
 '''.format(prebase))}}
-{{services.funcs.proxy(postinst, '''
+{{proxy(prepkg, '''
+    - watch:
+      - mc_proxy: {0}
+    - watch_in:
+      - mc_proxy: {1}
+'''.format(prebase, presetup))}}
+{{proxy(postpkg, '''
+    - watch:
+      - mc_proxy: {0}
+    - watch_in:
+      - mc_proxy: {1}
+'''.format(prepkg, presetup))}}
+{{proxy(presetup, '''
+    - watch:
+      - mc_proxy: {0}
+    - watch_in:
+      - mc_proxy: {1}
+'''.format(postpkg, postbase))}}
+{{proxy(postinst, '''
     - watch:
       - mc_proxy: {0}
       - mc_proxy: {1}
 '''.format(postbase, prebase))}}
 {%- set orchestrate = {
   'base': {'prebase': prebase,
+           'prepkg': prepkg,
+           'postpkg': postpkg,
+           'presetup': presetup,
+           'postsetup': postsetup, 
            'postinst': postinst,
            'postbase': postbase}
   } %}
-{%- for ver in services.pgVers %}
+{%- for ver in services.versions %}
 {%- set pregroup = ver+'-makina-postgresql-pre-create-group' %}
 {%- set postgroup = ver+'-makina-postgresql-post-create-group' %}
 {%- set predb = ver+'-makina-postgresql-pre-create-db' %}
@@ -46,26 +74,26 @@
   'preuser': preuser,
   'postuser': postuser,
 }) %}
-{{services.funcs.proxy(pregroup, '''
+{{proxy(pregroup, '''
     - watch:
       - mc_proxy: {0}
     - watch_in:
       - mc_proxy: {1}
 '''.format(postbase, postinst))}}
-{{services.funcs.proxy(postgroup)}}
-{{services.funcs.proxy(predb, '''
+{{proxy(postgroup)}}
+{{proxy(predb, '''
     - watch:
       - mc_proxy: {0}
       - mc_proxy: {1}
     - watch_in:
       - mc_proxy: {2}
 '''.format(postbase, postgroup, postinst))}}
-{{services.funcs.proxy(postdb)}}
-{{services.funcs.proxy(preuser, '''
+{{proxy(postdb)}}
+{{proxy(preuser, '''
     - watch:
       - mc_proxy: {0}
     - watch_in:
       - mc_proxy: {1}
 '''.format(postbase, postinst))}}
-{{services.funcs.proxy(postuser)}}
+{{proxy(postuser)}}
 {% endfor %}

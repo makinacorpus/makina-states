@@ -108,7 +108,7 @@ You can use them in your own states as follow
 
    include:
      - makina-states.services.db.postgresql
-   {% import "makina-states/services/db/postgresql.sls" as pgsql with context %}
+   {% import "makina-states/services/db/postgresql/init.sls" as pgsql with context %}
    {% set db_name = dbdata['db_name'] %}
    {% set db_tablespace = dbdata['db_tablespace'] %}
    {% set db_user = dbdata['db_user'] %}

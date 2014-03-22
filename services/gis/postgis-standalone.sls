@@ -1,18 +1,18 @@
 {#!
 # Install a postgis enabled database usable as a teamplate for postgis projects
 #}
-{% import "makina-states/services/db/postgresql.sls" as pgsql with context %}
+{% import "makina-states/services/db/postgresql/init.sls" as pgsql with context %}
 {%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 {{ salt['mc_macros.register']('services', 'gis.postgis') }}
 {% macro do(full=True) %}
-{%- set dbname = services.postgisDbName %}
+{% set pgSettings = salt['mc_pgsql.settings']() %}
+{%- set dbname = pgSettings.postgis_db %}
 include:
-  - makina-states.services.db.postgresql-hooks
+  - makina-states.services.db.postgresql.hooks
   {% if full -%}
   - makina-states.services.db.postgresql
   {%- endif %}
 
-{% set pgSettings = salt['mc_pgsql.settings']() %}
 {% for postgisVer, pgvers in pgSettings.postgis.items() -%}
 {%  for pgVer in pgvers -%}
 {%    if pgVer in pgSettings.versions -%}
