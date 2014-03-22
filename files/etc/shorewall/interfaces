@@ -14,6 +14,7 @@
 # For information about entries in this file, type "man shorewall-interfaces"
 ###############################################################################
 {# on debian, we have an old shorewall 4.5.5 #}
+{% set shwdata = shwdata| load_yaml %}
 
 {{shwdata.ifformat }}
 ###############################################################################

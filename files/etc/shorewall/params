@@ -25,6 +25,7 @@
 #		net	eth0		130.252.100.255	routefilter,norfc1918
 #
 ###############################################################################
+{% set shwdata = shwdata| load_yaml %}
 {% for i, data in shwdata['params'].items() -%}
 {{i}}={{data}}
 {% endfor -%}

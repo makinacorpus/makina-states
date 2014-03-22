@@ -2,9 +2,6 @@
 # Documentation
 # - doc/ref/formulaes/services/firewall/fail2ban.rst
 #}
-{%- import "makina-states/_macros/services.jinja" as services with context %}
-{%- set localsettings = services.localsettings %}
-{%- set nodetypes = services.nodetypes %}
 {%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 {%- set data = salt['mc_fail2ban.settings']() %}
 {{ salt['mc_macros.register']('services', 'firewall.fail2ban') }}
