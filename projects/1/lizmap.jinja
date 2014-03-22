@@ -35,7 +35,7 @@
   file.directory:
     - name: {{dir}}
     - user: {{common.user}}
-    - group: {{services.apacheSettings.httpd_user}}
+    - group: {{salt['mc_apache.settings']().httpd_user}}
     - mode: 770
     - makedirs: true
     - watch:
@@ -50,8 +50,8 @@
 {{common.name}}-bindmounted-ftp:
   file.directory:
     - name: {{common.project_root}}/webapp/lizmap/ftp
-    - user: {{services.apacheSettings.httpd_user}}
-    - group: {{services.apacheSettings.httpd_user}}
+    - user: {{salt['mc_apache.settings']().httpd_user}}
+    - group: {{salt['mc_apache.settings']().httpd_user}}
     - mode:  775
   mount.mounted:
     - name: {{common.project_root}}/webapp/lizmap/ftp
@@ -87,9 +87,9 @@
       - mc_proxy: {{common.name}}-rootdir-dirs
       - mc_proxy: {{common.name}}-postinstall-project-hook
 
-{{common.name}}-{{services.apacheSettings.httpd_user}}-in-ftpgroup-{{user}}:
+{{common.name}}-{{salt['mc_apache.settings']().httpd_user}}-in-ftpgroup-{{user}}:
   user.present:
-    - name: {{services.apacheSettings.httpd_user}}
+    - name: {{salt['mc_apache.settings']().httpd_user}}
     - remove_groups: False
     - groups:
       - {{user}}
@@ -176,7 +176,7 @@
 
 {% macro fix_perms(common) %}
 {# create a script to be sure that everyone gets its own respective perms
-# {{services.apacheSettings.httpd_user}} & the ftp user need special love
+# {{salt['mc_apache.settings']().httpd_user}} & the ftp user need special love
 #}
 {{common.name}}-reset-webapp-perms:
   file.managed:
@@ -189,19 +189,19 @@
                 -u {{common.user}} -g {{common.group}}
                 --path "{{ftproot}}/{{common.name}}"
                 --fmode 770 --dmode 770
-                --groups {{services.apacheSettings.httpd_user}}:rwx;
+                --groups {{salt['mc_apache.settings']().httpd_user}}:rwx;
 
                 {{locs.resetperms}} -q
                 -u {{common.user}} -g lizmap
                 --path "{{common.project_root}}/webapp"
                 --fmode 770 --dmode 770
-                --groups {{services.apacheSettings.httpd_user}}:r-x;
+                --groups {{salt['mc_apache.settings']().httpd_user}}:r-x;
 
                 {{locs.resetperms}} -q
                 -u {{common.user}} -g {{common.group}}
                 --path "{{common.project_root}}/webapp"
                 --fmode 770 --dmode 770
-                --groups {{services.apacheSettings.httpd_user}}:r-x;
+                --groups {{salt['mc_apache.settings']().httpd_user}}:r-x;
 
                 chmod o+x "{{ftproot}}/{{common.name}}" "{{ftproot}}" "{{rftproot}}"
 
@@ -210,7 +210,7 @@
                 -u {{common.user}} -g {{common.group}}
                 --path "{{ftproot}}/{{common.name}}"
                 --fmode 770 --dmode 770
-                --groups {{services.apacheSettings.httpd_user}}:rwx
+                --groups {{salt['mc_apache.settings']().httpd_user}}:rwx
                 --users {{usr}}:rwx
                 {% endfor %}
 

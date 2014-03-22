@@ -9,7 +9,7 @@
 {% set localsettings = base.localsettings %}
 {% set nodetypes = base.nodetypes %}
 {% set locs = base.locs %}
-{% set phpSettings = base.phpSettings %}
+{% set phpSettings = salt['mc_php.settings']() %} %}
 
 include:
 {{ base.includes(full=full, apache=apache )}}

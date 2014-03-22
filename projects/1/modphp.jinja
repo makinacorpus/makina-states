@@ -5,7 +5,7 @@
 {%- set base = base %}
 {%- set apache = apache %}
 {%- set services = base.services %}
-{%- set apacheData = services.apacheSettings.copy() %}
+{%- set apacheData = salt['mc_apache.settings']().copy() %}
 {%- set saltmac = base.saltmac %}
 {%- set localsettings = base.localsettings %}
 {%- set locations = base.salt['mc_localsettings.settings']()['locations'] %}

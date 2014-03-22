@@ -16,7 +16,7 @@ include:
  # eg ip: 10.5.0.2 will have its ssh port mapped to 40002 on host
  # eg ip: 10.5.1.2 will have its ssh port mapped to 40258 on host
  #}
-{% set localsettings = services.localsettings %}
+{% set localsettings = salt['mc_localsettings.settings']() %} %}
 {% set nodetypes = services.nodetypes %}
 {% for target, data in services.cloudcontrollerSettings['targets'].iteritems() %}
 {% set cptslsname = 'cpt-nodes/{0}-reverseproxy'.format(target.replace('.', '')) %}

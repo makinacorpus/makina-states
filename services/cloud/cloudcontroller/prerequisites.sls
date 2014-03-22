@@ -1,5 +1,5 @@
 {% import "makina-states/_macros/services.jinja" as services with context %}
-{% set localsettings = services.localsettings %}
+{% set localsettings = salt['mc_localsettings.settings']() %} %}
 include:
   - makina-states.services.cloud.cloudcontroller.hooks
 

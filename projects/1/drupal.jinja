@@ -4,7 +4,7 @@
 {%- set saltmac = base.saltmac %}
 {%- set localsettings = base.localsettings %}
 {%- set locs = salt['mc_localsettings.settings']()['locations'] %}
-{%- set php = services.phpSettings %}
+{%- set php = salt['mc_php.settings']() %}
 
 {# Base system prerequisite --------------------------------------------------#}
 {%- macro drupal_pkgs(common) %}
@@ -53,7 +53,7 @@
   file.directory:
     - name: {{dir}}
     - user: {{common.user}}
-    - group: {{services.apacheSettings.httpd_user}}
+    - group: {{salt['mc_apache.settings']().httpd_user}}
     - mode: "2750"
     - makedirs: true
     - watch:
@@ -67,7 +67,7 @@
   file.directory:
     - name: {{dir}}
     - user: {{common.user}}
-    - group: {{services.apacheSettings.httpd_user}}
+    - group: {{salt['mc_apache.settings']().httpd_user}}
     - mode: "2770"
     - makedirs: true
     - watch:
@@ -175,7 +175,7 @@ TODO: local checker if prod need passwords <> defaults!
     - name: "{{common.project_root}}/bin/install.conf"
     - source: salt://makina-states/files/projects/drupal/installer_conf
     - user:  {{common.user}}
-    - group: {{services.apacheSettings.httpd_user}}
+    - group: {{salt['mc_apache.settings']().httpd_user}}
     - mode: "0640"
     - template: jinja
     - defaults:
@@ -241,7 +241,7 @@ TODO: local checker if prod need passwords <> defaults!
     - source: salt://makina-states/files/projects/drupal/local.settings.php
     - name: {{common.project_root}}/www/sites/default/local.settings.php
     - user:  {{common.user}}
-    - group: {{services.apacheSettings.httpd_user}}
+    - group: {{salt['mc_apache.settings']().httpd_user}}
     - mode: "0640"
     - template: jinja
     - defaults:
@@ -340,7 +340,7 @@ TODO: local checker if prod need passwords <> defaults!
 {# Permissions fixer script---------------------------------------------------#}
 {% macro fix_perms(common) %}
 {# TODO:  create a script to be sure that everyone gets its own respective perms
-# {{services.apacheSettings.httpd_user}} & the php fpm user needs special love
+# {{salt['mc_apache.settings']().httpd_user}} & the php fpm user needs special love
 #}
 {%- endmacro %}
 

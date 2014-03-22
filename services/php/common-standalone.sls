@@ -1,14 +1,10 @@
 {#- Common php installations (mod_php or php-fpm) files #}
 {# TODO: install suhoshin on Debian #}
-{% import "makina-states/services/http/apache.sls" as apache with context %}
-{% import "makina-states/_macros/services.jinja" as services with context %}
-{% set services = services  %}
-{% set localsettings = services.localsettings %}
-{% set nodetypes = services.nodetypes %}
 {% set locs = salt['mc_localsettings.settings']()['locations'] %}
-{% set phpSettings = services.phpSettings %}
+{% set nodetypes_registry = salt['mc_nodetypes.registry']() %}
+{% set phpSettings = salt['mc_php.settings']() %}
 {% set s_ALL = phpSettings.s_ALL %}
-{% set apacheSettings = services.apacheSettings %}
+{% set apacheSettings = salt['mc_apache.settings']() %}
 {% set apache = False %}
 
 {% macro includes(full=True, apache=False) %}

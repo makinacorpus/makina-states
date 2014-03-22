@@ -25,7 +25,7 @@
 {# Load defaults values ----------------------------------------- #}
 
 {%- import "makina-states/_macros/services.jinja" as services with context %}
-{%- set localsettings = services.localsettings %}
+{%- set localsettings = salt['mc_localsettings.settings']() %} %}
 {%- set nodetypes = services.nodetypes %}
 {%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 {%- set mysqlData = services.mysqlSettings %}

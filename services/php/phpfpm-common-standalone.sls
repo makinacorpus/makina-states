@@ -1,10 +1,10 @@
+{% import "makina-states/_macros/php.jinja" as php with context %}
 {% import "makina-states/services/php/common.sls" as common with context %}
 {% import "makina-states/services/http/apache_modfastcgi.sls" as fastcgi with context %}
-{% set services = common.services %}
-{% set localsettings = common.localsettings %}
-{% set nodetypes = common.nodetypes %}
-{% set locs = common.locations %}
-{% set phpSettings = common.phpSettings %}
+{% set localsettings = salt['mc_localsettings.settings']() %}
+{% set nodetypes_registry = salt['mc_nodetypes.registry']() %}
+{% set locs = localsettings.locations %}
+{% set phpSettings = salt['mc_php.settings']() %}
 
 {% macro do(full=True) %}
 
@@ -34,7 +34,7 @@ makina-phpfpm-remove-default-pool:
 {%   for site,siteDef in phpSettings['register-pools'].iteritems() %}
 {%     do siteDef.update({'site': site}) %}
 {%     do siteDef.update({'phpSettings': phpSettings}) %}
-{{     services.php.fpm_pool(**siteDef) }}
+{{     php.fpm_pool(**siteDef) }}
 {%   endfor %}
 {% endif %}
 

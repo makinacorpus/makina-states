@@ -17,11 +17,10 @@
 #
 {% import "makina-states/services/php/common.sls" as common with context %}
 {% import "makina-states/services/http/apache_modfastcgi.sls" as fastcgi with context %}
-{% set services = common.services %}
-{% set localsettings = common.localsettings %}
-{% set nodetypes = common.nodetypes %}
-{% set locs = common.locations %}
-{% set phpSettings = common.phpSettings %}
+{% set localsettings = salt['mc_localsettings.settings']() %}
+{% set nodetypes_registry = salt['mc_nodetypes.registry']() %}
+{% set locs = localsettings.locations %}
+{% set phpSettings = salt['mc_php.settings']() %}
 
 {% macro do(full=False, apache=False, noregister=False)%}
 {% if not noregister %}

@@ -40,60 +40,12 @@ def metadata():
 def settings():
     '''
     Global services registry
-
-    locs
-        See :ref:`module_mc_localsettings`
-    resolver
-        See :ref:`module_mc_utils`
-    bindSettings
-        See :ref:`module_mc_bind`
-    lxcSettings
-        See :ref:`module_mc_lxc`
-    apacheSettings
-        See :ref:`module_mc_apache`
-    postfixSettings
-        See :ref:`module_mc_postfix`
-    circusSettings
-        See :ref:`module_mc_lxc`
-    etherpadSettings
-        See :ref:`module_mc_etherpad`
-    nginxSettings
-        See :ref:`module_mc_nginx`
-    phpSettings
-        See :ref:`module_mc_php`
-    rdiffbackupSettings
-        See :ref:`module_mc_rdiffbackup`
-    ntpEn
-        is ntp active
-    fail2ban
-        See :ref:`module_mc_fail2ban`
-    mysqlSettings:
-        See :ref:`module_mc_mysql`
-    upstart
-        See are we using upstart
-    tomcatSettings
-        See :ref:`module_mc_tomcat`
-    Pure ffpd:
-        See :ref:`module_mc_pureftpd`
-    Postgresql:
-        See :ref:`module_mc_pgsql`
-    Shorewall:
-        See :ref:`module_mc_shorewall`
-
-
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        localsettings = __salt__['mc_localsettings.settings']()
         pillar = __pillar__
         grains = __grains__
         data = {}
-        # Apache:  (services.http.apache)
-        data['apacheSettings'] = __salt__['mc_apache.settings']()
-
-        # PHP:  (services.php)
-        data['phpSettings'] = __salt__['mc_php.settings']()
-
         # mysql
         data['mysqlSettings'] = mysqlSettings = __salt__['mc_mysql.settings']()
         data['myCnf'] = mysqlSettings['myCnf']

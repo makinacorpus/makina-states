@@ -18,16 +18,15 @@
 # consult grains values with "salt '*' grains.items"
 #}
 {% import "makina-states/services/php/common.sls" as common with context %}
-{% set services = common.services %}
-{% set localsettings = common.localsettings %}
-{% set nodetypes = common.nodetypes %}
-{% set locs = common.locations %}
-{% set phpSettings = common.phpSettings %}
+{% set localsettings = salt['mc_localsettings.settings']() %}
+{% set nodetypes_registry = salt['mc_nodetypes.registry']() %}
+{% set locs = localsettings.locations %}
+{% set phpSettings = salt['mc_php.settings']() %}
 {% macro do(full=False)%}
 {{ salt['mc_macros.register']('services', 'php.modphp') }}
 include:
 {{ common.common_includes(full=full, apache=True) }}
- 
+
 extend:
 {{ common.apache.extend_switch_mpm('prefork') }}
 

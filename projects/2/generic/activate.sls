@@ -2,7 +2,7 @@
 {# export macro to callees #}
 {% set services = services %}
 {% set nodetypes = services.nodetypes %}
-{% set localsettings = services.localsettings %}
+{% set localsettings = salt['mc_localsettings.settings']() %} %}
 {% set locs = salt['mc_localsettings.settings']()['locations'] %}
 
 {% set cfg = opts['ms_project'] %}

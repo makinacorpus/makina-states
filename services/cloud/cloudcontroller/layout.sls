@@ -1,7 +1,7 @@
 {% import "makina-states/_macros/controllers.jinja" as controllers with context %}
 {% import "makina-states/_macros/services.jinja" as services with context %}
 {% set cloudSettings= services.cloudSettings %}
-{% set localsettings = services.localsettings %}
+{% set localsettings = salt['mc_localsettings.settings']() %} %}
 {% set pvdir = cloudSettings.pvdir %}
 {% set pfdir = cloudSettings.pfdir %}
 {{- salt["mc_macros.register"]("services", "cloudcontroller") }}

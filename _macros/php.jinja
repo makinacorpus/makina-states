@@ -57,13 +57,10 @@
 #
 #}
 
-{% import "makina-states/_macros/apache.jinja" as apache with context %}
-{% set apache = apache %}
-{% set apacheData = apache.apacheData %}
-{% set services = apache.services %}
-{% set localsettings = services.localsettings %}
-{% set nodetypes = services.nodetypes %}
-{% set phpData = services.phpSettings %}
+{% set apacheData = salt['mc_apache.settings']() %}
+{% set localsettings = salt['mc_localsettings.settings']() %}
+{% set nodetypes = salt['mc_nodetypes.registry']() %}
+{% set phpData = salt['mc_php.settings']() %}
 {% set locs = salt['mc_localsettings.settings']()['locations'] %}
 {% set default_pool_template_source = (
     'salt://makina-states/files/etc/php5/fpm/pool.d/pool.conf'
@@ -91,7 +88,7 @@
                   relative_document_root='www',
                   project=None,
                   includes=False) -%}
-{% set phpData = services.phpSettings %}
+{% set phpData = salt['mc_php.settings']() %}
 {% if not extra_jinja_pool_variables %}
 {%  set extra_jinja_pool_variables = {} %}
 {% endif %}
@@ -123,7 +120,7 @@
 {% endif %}
 
 {% set mode='production' %}
-{% if nodetypes.registry.is.devhost %}
+{% if nodetypes_registry.is.devhost %}
 {%  set mode='dev' %}
 {% endif %}
 

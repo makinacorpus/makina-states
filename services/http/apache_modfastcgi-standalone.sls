@@ -1,11 +1,9 @@
 {% import "makina-states/services/http/apache.sls" as apache with context %}
-{% import "makina-states/services/php/common.sls" as common with context %}
-{% set services = apache.services %}
-{% set localsettings = apache.localsettings %}
+{% set localsettings = salt['mc_localsettings.settings']() %}
 {% set nodetypes = apache.nodetypes %}
 {% set locs = salt['mc_localsettings.settings']()['locations'] %}
-{% set phpSettings = common.phpSettings %}
-{% set apacheSettings = services.apacheSettings %}
+{% set phpSettings = salt['mc_php.settings']() %}
+{% set apacheSettings = salt['mc_apache.settings']() %}
 {% macro fastcgi_common(
   full=True,
   shared_mode=apacheSettings.fastcgi_shared_mode,

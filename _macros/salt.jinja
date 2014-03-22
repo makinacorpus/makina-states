@@ -2,7 +2,7 @@
 # see for doc:
 # - doc/ref/formulaes/_macros/salt.rst
 #}
-{%- set nodetypes_registry = salt['nodetypes.registry']() %}
+{%- set nodetypes_registry = salt['mc_nodetypes.registry']() %}
 {%- set isTravis = nodetypes_registry.is.travis %}
 {%- set localsettings = salt['mc_localsettings.settings']() %}
 {%- set locs = salt['mc_localsettings.settings']()['locations'] %}

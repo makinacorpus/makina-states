@@ -20,14 +20,11 @@
 # enable and configure mod_reqtimeout
 #}
 {% import "makina-states/_macros/apache.jinja" as apache with context %}
-{% import "makina-states/_macros/services.jinja" as services with context %}
-{% import "makina-states/_macros/salt.jinja" as saltmac with context %}
 
-{% set services = services %}
-{% set nodetypes = services.nodetypes %}
-{% set localsettings = services.localsettings %}
+{% set nodetypes_registry = salt['mc_nodetypes.registry']() %}
+{% set localsettings = salt['mc_localsettings.settings']() %} %}
 {% set locs = salt['mc_localsettings.settings']()['locations'] %}
-{% set apacheSettings = services.apacheSettings %}
+{% set apacheSettings = salt['mc_apache.settings']() %}
 
 {% macro other_mpm_pkgs(mpm, indent='') %}
 {% set opkgs = [] %}
@@ -71,7 +68,7 @@ include:
 apache-uninstall-others-mpms:
   pkg.removed:
     - pkgs:
-      {{ other_mpm_pkgs(services.apacheSettings.mpm) }}
+      {{ other_mpm_pkgs(salt['mc_apache.settings']().mpm) }}
     - require:
       - mc_proxy: makina-apache-post-pkgs
     - watch_in:
@@ -81,7 +78,7 @@ apache-uninstall-others-mpms:
 apache-mpm:
   pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs:
-      {{ mpm_pkgs(services.apacheSettings.mpm) }}
+      {{ mpm_pkgs(salt['mc_apache.settings']().mpm) }}
     - require:
       - mc_proxy: makina-apache-post-pkgs
     - watch_in:
@@ -94,7 +91,7 @@ makina-apache-pkgs:
     - watch_in:
       - mc_proxy: makina-apache-post-inst
     - pkgs:
-      {% for package in services.apacheSettings.packages %}
+      {% for package in salt['mc_apache.settings']().packages %}
       - {{ package }}
       {% endfor %}
       - cronolog
@@ -121,13 +118,13 @@ makina-apache-main-conf-included-modules:
 makina-apache-main-conf-excluded-modules:
   mc_apache.exclude_module:
     - modules:
-{% if not services.apacheSettings.allow_bad_modules.negotiation %}
+{% if not salt['mc_apache.settings']().allow_bad_modules.negotiation %}
       - negotiation
 {% endif %}
-{% if not services.apacheSettings.allow_bad_modules.autoindex %}
+{% if not salt['mc_apache.settings']().allow_bad_modules.autoindex %}
       - autoindex
 {% endif %}
-{% if not services.apacheSettings.allow_bad_modules.cgid %}
+{% if not salt['mc_apache.settings']().allow_bad_modules.cgid %}
       - cgid
 {% endif %}
     - require_in:
@@ -140,9 +137,9 @@ makina-apache-main-conf-excluded-modules:
 #}
 makina-apache-main-conf:
   mc_apache.deployed:
-    - version: {{ services.apacheSettings.version }}
-    - mpm: {{ services.apacheSettings.mpm }}
-    - log_level: {{ services.apacheSettings.log_level }}
+    - version: {{ salt['mc_apache.settings']().version }}
+    - mpm: {{ salt['mc_apache.settings']().mpm }}
+    - log_level: {{ salt['mc_apache.settings']().log_level }}
     - watch:
       - mc_proxy: makina-apache-pre-conf
     # full service restart in case of changes
@@ -155,7 +152,7 @@ makina-apache-main-conf:
 
 makina-apache-settings:
   file.managed:
-    - name: {{ services.apacheSettings.confdir }}/settings.local.conf
+    - name: {{ salt['mc_apache.settings']().confdir }}/settings.local.conf
     - source: salt://makina-states/files/etc/apache2/conf.d/settings.conf
     - user: root
     - group: root
@@ -163,25 +160,25 @@ makina-apache-settings:
     - template: jinja
     - defaults:
         mode: "production"
-        Timeout: "{{ services.apacheSettings.Timeout }}"
-        KeepAlive: "{{ services.apacheSettings.KeepAlive }}"
-        MaxKeepAliveRequests: "{{ services.apacheSettings.MaxKeepAliveRequests }}"
-        KeepAliveTimeout: "{{ services.apacheSettings.KeepAliveTimeout }}"
-        prefork_StartServers: "{{ services.apacheSettings.prefork.StartServers }}"
-        prefork_MinSpareServers: "{{ services.apacheSettings.prefork.MinSpareServers }}"
-        prefork_MaxSpareServers: "{{ services.apacheSettings.prefork.MaxSpareServers }}"
-        prefork_MaxClients: "{{ services.apacheSettings.prefork.MaxClients }}"
-        prefork_MaxRequestsPerChild: "{{ services.apacheSettings.prefork.MaxRequestsPerChild }}"
-        worker_StartServers: "{{ services.apacheSettings.worker.StartServers }}"
-        worker_MinSpareThreads: "{{ services.apacheSettings.worker.MinSpareThreads }}"
-        worker_MaxSpareThreads: "{{ services.apacheSettings.worker.MaxSpareThreads }}"
-        worker_ThreadLimit: "{{ services.apacheSettings.worker.ThreadLimit }}"
-        worker_ThreadsPerChild: "{{ services.apacheSettings.worker.ThreadsPerChild }}"
-        worker_MaxRequestsPerChild: "{{ services.apacheSettings.worker.MaxRequestsPerChild }}"
-        worker_MaxClients: "{{ services.apacheSettings.worker.MaxClients }}"
-        event_AsyncRequestWorkerFactor: "{{ services.apacheSettings.event.AsyncRequestWorkerFactor }}"
-        log_level: "{{ services.apacheSettings.log_level }}"
-{% if nodetypes.registry.is.devhost %}
+        Timeout: "{{ salt['mc_apache.settings']().Timeout }}"
+        KeepAlive: "{{ salt['mc_apache.settings']().KeepAlive }}"
+        MaxKeepAliveRequests: "{{ salt['mc_apache.settings']().MaxKeepAliveRequests }}"
+        KeepAliveTimeout: "{{ salt['mc_apache.settings']().KeepAliveTimeout }}"
+        prefork_StartServers: "{{ salt['mc_apache.settings']().prefork.StartServers }}"
+        prefork_MinSpareServers: "{{ salt['mc_apache.settings']().prefork.MinSpareServers }}"
+        prefork_MaxSpareServers: "{{ salt['mc_apache.settings']().prefork.MaxSpareServers }}"
+        prefork_MaxClients: "{{ salt['mc_apache.settings']().prefork.MaxClients }}"
+        prefork_MaxRequestsPerChild: "{{ salt['mc_apache.settings']().prefork.MaxRequestsPerChild }}"
+        worker_StartServers: "{{ salt['mc_apache.settings']().worker.StartServers }}"
+        worker_MinSpareThreads: "{{ salt['mc_apache.settings']().worker.MinSpareThreads }}"
+        worker_MaxSpareThreads: "{{ salt['mc_apache.settings']().worker.MaxSpareThreads }}"
+        worker_ThreadLimit: "{{ salt['mc_apache.settings']().worker.ThreadLimit }}"
+        worker_ThreadsPerChild: "{{ salt['mc_apache.settings']().worker.ThreadsPerChild }}"
+        worker_MaxRequestsPerChild: "{{ salt['mc_apache.settings']().worker.MaxRequestsPerChild }}"
+        worker_MaxClients: "{{ salt['mc_apache.settings']().worker.MaxClients }}"
+        event_AsyncRequestWorkerFactor: "{{ salt['mc_apache.settings']().event.AsyncRequestWorkerFactor }}"
+        log_level: "{{ salt['mc_apache.settings']().log_level }}"
+{% if nodetypes_registry.is.devhost %}
     - context:
         mode: "dev"
 {% endif %}
@@ -195,7 +192,7 @@ makina-apache-settings:
 
 makina-apache-mod-status-settings:
   file.managed:
-    - name: {{ services.apacheSettings.confdir }}/mods-available/status.conf
+    - name: {{ salt['mc_apache.settings']().confdir }}/mods-available/status.conf
     - source: salt://makina-states/files/etc/apache2/mods-available/status.conf
     - user: root
     - group: root
@@ -203,9 +200,9 @@ makina-apache-mod-status-settings:
     - template: jinja
     - defaults:
         mode: "production"
-        MonitoringServers: "{{ services.apacheSettings.monitoring.allowed_servers }}"
-        ExtendedStatus: "{{ services.apacheSettings.monitoring.extended_status }}"
-{% if nodetypes.registry.is.devhost %}
+        MonitoringServers: "{{ salt['mc_apache.settings']().monitoring.allowed_servers }}"
+        ExtendedStatus: "{{ salt['mc_apache.settings']().monitoring.extended_status }}"
+{% if nodetypes_registry.is.devhost %}
     - context:
         mode: "dev"
 {% endif %}
@@ -220,7 +217,7 @@ makina-apache-mod-status-settings:
 makina-apache-main-extra-settings-example:
   file.accumulated:
     - name: extra-settings-master-conf
-    - filename: {{ services.apacheSettings.confdir }}/settings.local.conf
+    - filename: {{ salt['mc_apache.settings']().confdir }}/settings.local.conf
     {# warning: keep the first line separated, multiline
      # folded yaml trick:
      # http://yaml.org/spec/1.2/spec.html#id2779048 #}
@@ -244,7 +241,7 @@ makina-apache-security-settings:
   file.managed:
     - watch:
       - mc_proxy: makina-apache-post-inst
-    - name: {{ services.apacheSettings.confdir }}/_security.local.conf
+    - name: {{ salt['mc_apache.settings']().confdir }}/_security.local.conf
     - source:
       - salt://makina-states/files/etc/apache2/conf.d/security.conf
     - user: root
@@ -300,10 +297,10 @@ makina-apache-security-settings:
 makina-apache-include-directory:
   file.directory:
     - user: root
-    - group: {{services.apacheSettings.httpd_user}}
+    - group: {{salt['mc_apache.settings']().httpd_user}}
     - mode: "2755"
     - makedirs: True
-    - name: {{ services.apacheSettings.basedir }}/includes
+    - name: {{ salt['mc_apache.settings']().basedir }}/includes
     - watch:
        - mc_proxy: makina-apache-post-inst
     - watch_in:
@@ -317,9 +314,9 @@ makina-apache-include-directory:
 makina-apache-default-log-directory:
   file.directory:
     - user: root
-    - group: {{services.apacheSettings.httpd_user}}
+    - group: {{salt['mc_apache.settings']().httpd_user}}
     - mode: "2770"
-    - name: {{ services.apacheSettings.logdir }}
+    - name: {{ salt['mc_apache.settings']().logdir }}
     - watch:
        - mc_proxy: makina-apache-post-inst
     - watch_in:
@@ -333,7 +330,7 @@ makina-apache-default-log-directory:
 makina-apache-default-vhost-directory:
   file.directory:
     - user: root
-    - group: {{services.apacheSettings.httpd_user}}
+    - group: {{salt['mc_apache.settings']().httpd_user}}
     - mode: "2755"
     - makedirs: True
     - name: {{ locs.var_dir }}/www/default/
@@ -385,10 +382,10 @@ makina-apache-remove-package-default-index:
 makina-apache-minimal-default-vhost-remove-olds:
   file.absent:
     - names:
-      - {{ services.apacheSettings.evhostdir }}/default
-      - {{ services.apacheSettings.evhostdir }}/default-ssl
-      - {{ services.apacheSettings.vhostdir }}/default
-      - {{ services.apacheSettings.vhostdir }}/default-ssl
+      - {{ salt['mc_apache.settings']().evhostdir }}/default
+      - {{ salt['mc_apache.settings']().evhostdir }}/default-ssl
+      - {{ salt['mc_apache.settings']().vhostdir }}/default
+      - {{ salt['mc_apache.settings']().vhostdir }}/default-ssl
     - watch_in:
       - mc_proxy: makina-apache-post-inst
     - watch_in:
@@ -396,7 +393,7 @@ makina-apache-minimal-default-vhost-remove-olds:
 
 {{apacheSettings.httpd_user}}-in-editor-group:
   user.present:
-    - name: {{services.apacheSettings.httpd_user}}
+    - name: {{salt['mc_apache.settings']().httpd_user}}
     - remove_groups: False
     - groups:
       - {{localsettings.group}}
@@ -419,7 +416,7 @@ makina-apache-conf-syntax-check:
 {#--- MAIN SERVICE RESTART/RELOAD watchers -------------- #}
 makina-apache-restart:
   service.running:
-    - name: {{ services.apacheSettings.service }}
+    - name: {{ salt['mc_apache.settings']().service }}
     - enable: True
     # most watch requisites are linked here with watch_in
     - watch_in:
@@ -433,7 +430,7 @@ makina-apache-restart:
 #}
 makina-apache-reload:
   service.running:
-    - name: {{ services.apacheSettings.service }}
+    - name: {{ salt['mc_apache.settings']().service }}
     - watch_in:
       - mc_proxy: makina-apache-post-reload
     - watch:
@@ -467,8 +464,8 @@ makina-apache-reload:
 # in a state.
 # Then use the pillar to alter your default parameters given to this call
 #}
-{% if 'virtualhosts' in services.apacheSettings -%}
-{%   for site, siteDef in services.apacheSettings['virtualhosts'].iteritems() -%}
+{% if 'virtualhosts' in salt['mc_apache.settings']() -%}
+{%   for site, siteDef in salt['mc_apache.settings']()['virtualhosts'].iteritems() -%}
 {%     do siteDef.update({'domain': site}) %}
 {{     apache.virtualhost(**siteDef) }}
 {%-   endfor %}

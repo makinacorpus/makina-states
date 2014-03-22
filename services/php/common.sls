@@ -6,9 +6,9 @@
 {% set full = True %}
 {% set services = base.services %}
 {% set localsettings = base.localsettings %}
-{% set nodetypes = base.nodetypes %}
+{% set nodetypes_registry = salt['mc_nodetypes.registry']() %}
 {% set locs = base.locs %}
-{% set phpSettings = base.phpSettings %}
+{% set phpSettings = salt['mc_php.settings']() %} %}
 {% set apache = False %}
 
 include:
