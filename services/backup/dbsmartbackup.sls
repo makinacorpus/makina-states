@@ -15,8 +15,8 @@
 {%- set nodetypes = services.nodetypes %}
 {%- set locs = localsettings.locations %}
 {{ salt['mc_macros.register']('services', 'backup.dbsmartbackup') }}
-{% set data=services.dbsmartbackupSettings %}
-{% set settings=services.dbsmartbackupSettings|yaml %}
+{% set data=salt['mc_dbsmartbackup.settings']() %}
+{% set settings=salt['mc_dbsmartbackup.settings']()|yaml %}
 
 db_smart_backup:
   file.directory:

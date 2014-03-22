@@ -47,10 +47,6 @@ def settings():
         See :ref:`module_mc_utils`
     bindSettings
         See :ref:`module_mc_bind`
-    sshServerSettings
-        See :ref:`module_mc_ssh`
-    sshClientSettings
-        See :ref:`module_mc_ssh`
     lxcSettings
         See :ref:`module_mc_lxc`
     apacheSettings
@@ -67,8 +63,6 @@ def settings():
         See :ref:`module_mc_php`
     rdiffbackupSettings
         See :ref:`module_mc_rdiffbackup`
-    dbsmartbackupSettings
-        See :ref:`module_mc_dbsmartbackup`
     ntpEn
         is ntp active
     fail2ban
@@ -103,9 +97,6 @@ def settings():
         # localsettings shortcuts
         for i in ['SSLSettings', 'ldapVariables', 'ldapEn']:
             data[i] = localsettings[i]
-
-        # SSH Settings
-        data['sshSettings'] = __salt__['mc_ssh.settings']()
 
         # lxc:  (services.virt.lxc)
         data['lxcSettings'] = __salt__['mc_lxc.settings']()
@@ -172,9 +163,6 @@ def settings():
 
         # Rdiff backup
         data['rdiffbackupSettings'] = __salt__['mc_rdiffbackup.settings']()
-
-        # db_smart_backup
-        data['dbsmartbackupSettings'] = __salt__['mc_dbsmartbackup.settings']()
 
         # ntp is not applied to LXC containers ! (services.base.ntp)
         # So we just match when our grain is set and not have a value of lxc
