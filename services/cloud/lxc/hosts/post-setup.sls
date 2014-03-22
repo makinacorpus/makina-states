@@ -1,2 +1,2 @@
-empty-at-the-moment:
-  mc_proxy.hook: []
+include:
+  - makina-states.services.cloud.computenode

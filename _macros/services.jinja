@@ -19,63 +19,29 @@
 {%- set metadata = salt['mc_services.metadata']() %}
 {%- set registry = salt['mc_services.registry']() %}
 
-{# named/bind Settings #}
 {%- set bindSettings = settings.bindSettings  %}
-
-{# haproxy Settings #}
 {%- set haproxySettings = settings.haproxySettings  %}
-
-{# psad Settings #}
 {%- set psadSettings = settings.psadSettings  %}
-
-{# Fail2ban Settings #}
 {%- set fail2banSettings = settings.fail2banSettings  %}
-
-{# SSL Settings #}
 {%- set SSLSettings = settings.SSLSettings  %}
-
-{# LDAP integration #}
 {%- set ldapVariables = settings.ldapVariables  %}
 {%- set ldapEn = settings.ldapEn  %}
-
-{#- init systems flags #}
 {%- set upstart = settings.upstart  %}
-
-{# salt cloud  #}
-{% set cloudSettings = salt['mc_saltcloud.settings']() %}
-
-{#- init systems flags #}
+{%- set lxcSettings = settings.lxcSettings %}
+{%- set cloudcontrollerSettings = salt['mc_cloudcontroller.settings']() %}
+{%- set cloudSettings = salt['mc_saltcloud.settings']() %}
 {%- set tomcatSettings = settings.tomcatSettings  %}
-
-{#- ntp #}
 {%- set ntpEn = settings.ntpEn  %}
-
-{#- Apache #}
 {%- set apacheSettings = settings.apacheSettings  %}
-
-{#- Circus #}
 {%- set circusSettings = settings.circusSettings %}
-
-{#- SNMPD #}
 {%- set snmpdSettings = settings.snmpdSettings %}
-
-{#- Etherpad #}
 {%- set etherpadSettings = settings.etherpadSettings %}
-
-{#- Postfix #}
 {%- set postfixSettings = settings.postfixSettings %}
-
-{#- Nginx #}
 {%- set nginxSettings = settings.nginxSettings  %}
-
-{#- PHP #}
 {%- set phpSettings = settings.phpSettings  %}
-
-{#-Pureftpd #}
 {%- set pureftpdDefaultSettings = settings.pureftpdDefaultSettings  %}
 {%- set pureftpdSettings = settings.pureftpdSettings  %}
 
-{# PostGRESQL #}
 {%- set pgDbs = settings.pgDbs  %}
 {%- set postgresqlUsers = settings.postgresqlUsers  %}
 {%- set defaultPgVersion = settings.defaultPgVersion %}
@@ -85,7 +51,6 @@
 {%- set postgisDbName = settings.postgisDbName  %}
 {%- set postgresqlUser = settings.postgresqlUser  %}
 
-{# shorewall #}
 {%- set shw_enabled = settings.shorewall.shw_enabled  %}
 {%- set shwIfformat = settings.shorewall.shwIfformat  %}
 {%- set shwPolicies = settings.shorewall.shwPolicies  %}
@@ -98,21 +63,12 @@
 {%- set shwData = settings.shorewall %}
 {%- set shorewall = settings.shorewall %}
 
-{#- LXC Settings #}
-{%- set lxcSettings = settings.lxcSettings %}
 
-{#- MySQL Fine Settings #}
 {%- set mysqlSettings = settings.mysqlSettings  %}
 {%- set myDisableAutoConf = settings.myDisableAutoConf  %}
 {%- set myCnf = settings.myCnf %}
-
-{#- DB_SMART_BACKUP #}
 {%- set dbsmartbackupSettings = settings.dbsmartbackupSettings  %}
-
-{#- RDIFF_BACKUP #}
 {%- set rdiffbackupSettings = settings.rdiffbackupSettings  %}
-
-{#- SSH Settings #}
 {%- set sshSettings = settings.sshSettings  %}
 
 # vim:set nofoldenable:

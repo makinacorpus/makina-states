@@ -18,7 +18,7 @@ include:
 {%    if data['mode'] == 'mastersalt' %}
 {%        set lxcsls = '{1}/{0}.sls'.format(lxcslsname, saltmac.msaltRoot) %}
 {%    else %}
-{%        set clxcsls = '{1}/{0}.sls'.format(lxcslsname, saltmac.saltRoot) %}
+{%        set lxcsls = '{1}/{0}.sls'.format(lxcslsname, saltmac.saltRoot) %}
 {%    endif %}
 {{sname}}-lxc-host-postsetup:
   file.managed:

@@ -198,6 +198,7 @@ def registry():
             'base.ntp': {'active': _ntpEn(__salt__)},
             'base.ssh': {'active': True},
             'cloud.lxc': {'active': False},
+            'cloud.computenode': {'active': False},
             'cloud.cloudcontroller': {'active': False},
             'cloud.saltify': {'active': False},
             'dns.bind': {'active': _bindEn(__salt__)},

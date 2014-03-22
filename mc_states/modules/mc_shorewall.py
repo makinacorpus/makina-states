@@ -49,11 +49,12 @@ def settings():
         grains = __grains__
         pillar = __pillar__
         localsettings = __salt__['mc_localsettings.settings']()
+        services_registry = __salt__['mc_services.registry']()
         controllers_registry = __salt__['mc_controllers.registry']()
         nodetypes_registry = __salt__['mc_nodetypes.registry']()
         locs = localsettings['locations']
         shwIfformat = 'FORMAT 2'
-        #if ((grains['os'] not in ['Debian']) 
+        #if ((grains['os'] not in ['Debian'])
         #   and (grains.get('lsb_distrib_codename') not in ['precise'])):
         if (grains['os'] not in ['Debian']):
             shwIfformat = '?{0}'.format(shwIfformat)
@@ -85,20 +86,21 @@ def settings():
                 # dict of section/rule mappings parsed from rules
                 '_rules': OrderedDict(),
                 'no_invalid': True,
+                'no_snmp': True,
+                'no_mysql': True,
+                'no_salt': True,
+                'no_mastersalt': False,
+                'no_postgresql': True,
+                'no_ftp': True,
                 'have_docker': None,
                 'have_rpn': None,
                 'have_lxc': None,
-                'no_mysql': True,
-                'no_postgresql': True,
-                'no_ftp': True,
-                'no_snmp': True,
                 'no_dns': False,
                 'no_ping': False,
                 'no_smtp': False,
-                'no_salt': True,
-                'no_mastersalt': False,
                 'no_ssh': False,
                 'no_web': False,
+                'no_computenode': False,
                 'defaultstate': 'new',
                 'ifformat': shwIfformat,
                 # retro compat
@@ -311,19 +313,33 @@ def settings():
                                           'source': "$FW", 'dest': "$FW",
                                           'proto': 'tcp,udp',
                                           'dport': '4505,4506,4605,4606'})
-            data['default_rules'].append(
-                {'comment': '(Master)Salt on lxc'})
-            data['default_rules'].append({'action': 'ACCEPT',
-                                          'source': "lxc", 'dest': "$FW",
-                                          'proto': 'tcp,udp',
-                                          'dport': '4505,4506,4605,4606'})
-            data['default_rules'].append(
-                {'comment': '(Master)Salt on dockers'})
-            data['default_rules'].append({'action': 'ACCEPT',
-                                          'source': "dck", 'dest': "$FW",
-                                          'proto': 'tcp,udp',
-                                          'dport': '4505,4506,4605,4606'})
+            if data['have_lxc']:
+                data['default_rules'].append(
+                    {'comment': '(Master)Salt on lxc'})
+                data['default_rules'].append({'action': 'ACCEPT',
+                                              'source': "lxc", 'dest': "$FW",
+                                              'proto': 'tcp,udp',
+                                              'dport': '4505,4506,4605,4606'})
+            if data['have_docker']:
+                data['default_rules'].append(
+                    {'comment': '(Master)Salt on dockers'})
+                data['default_rules'].append({'action': 'ACCEPT',
+                                              'source': "dck", 'dest': "$FW",
+                                              'proto': 'tcp,udp',
+                                              'dport': '4505,4506,4605,4606'})
 
+            # enable mastersalt traffic if any
+            if (
+                (services_registry['is']['cloud.computenode']
+                 or services_registry['is']['cloud.lxc'])
+                and not data['no_computenode']
+            ):
+                data['default_rules'].append(
+                    {'comment': 'corpus computenode'})
+                data['default_rules'].append({'action': 'ACCEPT',
+                                              'source': 'all', 'dest': 'fw',
+                                              'proto': 'tcp,udp',
+                                              'dport': '40000:48000'})
             # enable mastersalt traffic if any
             if (
                 controllers_registry['is']['mastersalt_master']

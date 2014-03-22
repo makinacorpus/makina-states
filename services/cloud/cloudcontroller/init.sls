@@ -4,4 +4,3 @@ include:
   - makina-states.services.cloud.cloudcontroller.hooks
   - makina-states.services.cloud.cloudcontroller.prerequisites
   - makina-states.services.cloud.cloudcontroller.layout
-
