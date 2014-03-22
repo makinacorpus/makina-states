@@ -2,7 +2,7 @@
 {{ salt['mc_macros.register']('services', 'dns.bind') }}
 {% set localsettings = services.localsettings %}
 {% set locs = salt['mc_localsettings']()['locations'] %}
-{% set settings = services.bindSettings %}
+{% set settings = salt['mc_bind.settings']() %}
 {% set yameld_data = settings|yaml %}
 
 {% macro switch_dns(suf='tmp',

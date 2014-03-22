@@ -13,7 +13,7 @@
 {%- set localsettings = services.localsettings %}
 {%- set nodetypes = services.nodetypes %}
 {%- set locs = salt['mc_localsettings']()['locations'] %}
-{%- set circusSettings = services.circusSettings %}
+{%- set circusSettings = salt['mc_circus.settings']() %}
 {%- set venv = circusSettings['location'] + "/venv" %}
 {% set defaults = {
   'extra': circusSettings,

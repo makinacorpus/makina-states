@@ -5,7 +5,7 @@
 {%- set localsettings = services.localsettings %}
 {%- set nodetypes = services.nodetypes %}
 {%- set locs = salt['mc_localsettings']()['locations'] %}
-{%- set data = services.snmpdSettings %}
+{%- set data = salt['mc_snmpd.settings']() %}
 {{ salt['mc_macros.register']('services', 'monitoring.snmpd') }}
 
 {% macro do(full=True) %}

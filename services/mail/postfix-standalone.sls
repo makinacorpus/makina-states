@@ -4,7 +4,7 @@
 {{ salt['mc_macros.register']('services', 'mail.postfix') }}
 {% set localsettings = services.localsettings %}
 {% set nodetypes = services.nodetypes %}
-{% set postfixSettings = services.postfixSettings %}
+{% set postfixSettings = salt['mc_postfix.settings']() %}
 {% set locs = salt['mc_localsettings']()['locations'] %}
 include:
   - makina-states.services.mail.postfix-hooks

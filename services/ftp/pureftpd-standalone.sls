@@ -16,11 +16,15 @@ include:
 {%- set nodetypes = services.nodetypes %}
 {%- set locs = salt['mc_localsettings']()['locations'] %}
 {%- set key = locs.conf_dir+'/ssl/private/pure-ftpd.pem' %}
-{%- set passive = services.pureftpdSettings['PassiveIP'] or services.pureftpdSettings['PassivePortRange']%}
+{%- set passive = pureftpdSettings['PassiveIP'] or pureftpdSettings['PassivePortRange']%}
 {%- if grains['os_family'] in ['Debian'] %}
 {% macro service_watch_in() %}
       - service: pure-ftpd-service
 {% endmacro %}
+
+{% set settings = salt['mc_pureftpd.settings']() %}
+{% set pureftpdSettings = settings.conf %}
+{% set pureftpdDefaultSettings = settings.defaults %}
 
 {% if full %}
 prereq-pureftpd:
@@ -30,11 +34,11 @@ prereq-pureftpd:
     - watch_in:
       - mc_proxy: ftpd-post-installation-hook
     - pkgs:
-      {%- if services.pureftpdSettings.LDAPConfigFile %}
+      {%- if pureftpdSettings.LDAPConfigFile %}
       - pure-ftpd-ldap
-      {%- elif services.pureftpdSettings.MySQLConfigFile %}
+      {%- elif pureftpdSettings.MySQLConfigFile %}
       - pure-ftpd-mysql
-      {%- elif services.pureftpdSettings.PGSQLConfigFile %}
+      {%- elif pureftpdSettings.PGSQLConfigFile %}
       - pure-ftpd-postgresql
       {%- else %}
       - pure-ftpd
@@ -49,17 +53,17 @@ prereq-pureftpd:
     - group: root
     - mode: 700
     - template: jinja
-    - virtualchroot: '{{services.pureftpdDefaultSettings.Virtualchroot}}'
-    - inetdMode: '{{services.pureftpdDefaultSettings.InetdMode}}'
-    - uploadUid: '{{services.pureftpdDefaultSettings.UploadUid}}'
-    - uploadGid: '{{services.pureftpdDefaultSettings.UploadGid}}'
-    - uploadScript: '{{services.pureftpdDefaultSettings.UploadScript}}'
+    - virtualchroot: '{{pureftpdDefaultSettings.Virtualchroot}}'
+    - inetdMode: '{{pureftpdDefaultSettings.InetdMode}}'
+    - uploadUid: '{{pureftpdDefaultSettings.UploadUid}}'
+    - uploadGid: '{{pureftpdDefaultSettings.UploadGid}}'
+    - uploadScript: '{{pureftpdDefaultSettings.UploadScript}}'
     - watch:
       - mc_proxy: ftpd-pre-configuration-hook
     - watch_in:
       - mc_proxy: ftpd-post-configuration-hook
 
-{%- for setting, value in services.pureftpdSettings.items() %}
+{%- for setting, value in pureftpdSettings.items() %}
 {%- if (
     value.strip()
     and (

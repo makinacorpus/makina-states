@@ -6,13 +6,13 @@
 makina-nginx-pkgs:
   pkg.{{localsettings.installmode}}:
     - pkgs:
-        - {{ services.nginxSettings.package }}
+        - {{ salt['mc_nginx.settings']().package }}
 
 makina-nginx-minimal-default-vhost:
   file.managed:
     - require:
       - pkg: makina-nginx-pkgs
-    - name: {{ services.nginxSettings.vhostdir }}/default
+    - name: {{ salt['mc_nginx.settings']().vhostdir }}/default
     - source:
       - salt://makina-states/files/etc/nginx/sites-available/default.conf
     - user: root
@@ -39,14 +39,14 @@ makina-nginx-conf-syntax-check:
 
 makina-nginx-restart:
   service.running:
-    - name: {{ services.nginxSettings.service }}
+    - name: {{ salt['mc_nginx.settings']().service }}
     - enable: True
     - watch:
       - pkg: makina-nginx-pkgs
 
 makina-nginx-reload:
   service.running:
-    - name: {{ services.nginxSettings.service }}
+    - name: {{ salt['mc_nginx.settings']().service }}
     - enable: True
     - reload: True
     - require:
@@ -77,10 +77,10 @@ makina-nginx-reload:
 -#}
 
 {% from 'makina-states/services/http/nginx_macros.jinja' import virtualhost with context -%}
-{% if 'virtualhosts' in services.nginxSettings -%}
-{%   for site,siteDef in services.nginxSettings['virtualhosts'].iteritems() -%}
+{% if 'virtualhosts' in salt['mc_nginx.settings']() -%}
+{%   for site,siteDef in salt['mc_nginx.settings']()['virtualhosts'].iteritems() -%}
 {%     do siteDef.update({'site': site}) -%}
-{%     do siteDef.update({'nginxSettings': services.nginxSettings}) -%}
+{%     do siteDef.update({'nginxSettings': salt['mc_nginx.settings']()}) -%}
 {{     virtualhost(**siteDef) -}}
 {%   endfor -%}
 {% endif -%}

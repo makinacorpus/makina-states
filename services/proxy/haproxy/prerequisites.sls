@@ -1,6 +1,6 @@
 {% import "makina-states/_macros/services.jinja" as services with context %}
 {% set localsettings = services.localsettings %}
-{% set haproxySettings = services.haproxySettings %}
+{% set haproxySettings = salt['mc_haproxy.settings']() %}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 include:
   - makina-states.services.proxy.haproxy.hooks

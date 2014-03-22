@@ -6,7 +6,7 @@
 {%- set localsettings = services.localsettings %}
 {%- set nodetypes = services.nodetypes %}
 {%- set locs = salt['mc_localsettings']()['locations'] %}
-{%- set data = services.fail2banSettings %}
+{%- set data = salt['mc_fail2ban.settings']() %}
 {{ salt['mc_macros.register']('services', 'firewall.fail2ban') }}
 
 {% macro do(full=True) %}

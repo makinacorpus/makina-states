@@ -37,7 +37,7 @@ include:
                 - makina-states.services.firewall.shorewall
               cpt-cloud-target{{target}}-haproxy-cfg:
                 file.managed:
-                  - name: {{services.haproxySettings.config_dir}}/extra/cloudcontroller.cfg
+                  - name: {{salt['mc_haproxy.settings']().config_dir}}/extra/cloudcontroller.cfg
                   - source: salt://makina-states/files/etc/haproxy/cloudcontroller.cfg
                   - user: root
                   - group: root

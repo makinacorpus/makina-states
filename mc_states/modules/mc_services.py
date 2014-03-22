@@ -98,49 +98,14 @@ def settings():
         for i in ['SSLSettings', 'ldapVariables', 'ldapEn']:
             data[i] = localsettings[i]
 
-        # lxc:  (services.virt.lxc)
-        data['lxcSettings'] = __salt__['mc_lxc.settings']()
-
         # Apache:  (services.http.apache)
         data['apacheSettings'] = __salt__['mc_apache.settings']()
-
-        # bind:  (services.dns.bind)
-        data['bindSettings'] = __salt__['mc_bind.settings']()
-
-        # Circus:  (services.monitoring.circus)
-        data['circusSettings'] =  __salt__['mc_circus.settings']()
-
-        # Snmpd: (services.monitoring.snmpd)
-        data['snmpdSettings'] = __salt__['mc_snmpd.settings']()
-
-        # psad:  (services.firewall.psdad)
-        data['psadSettings'] =  __salt__['mc_psad.settings']()
-
-        # Etherpad:  (services.collab.etherpad)
-        data['etherpadSettings'] = __salt__['mc_etherpad.settings']()
-
-        # fail2ban:  (services.firewall.fail2ban)
-        data['fail2banSettings'] = __salt__['mc_fail2ban.settings']()
-
-        # haproxy:  (services.proxy.haproxy)
-        data['haproxySettings'] = __salt__['mc_haproxy.settings']()
-
-        # Postfix:  (services.mail.postfix)
-        data['postfixSettings'] = __salt__['mc_postfix.settings']()
-
-        # Nginx:  (services.http.nginx)
-        data['nginxSettings'] = __salt__['mc_nginx.settings']()
 
         # PHP:  (services.php)
         data['phpSettings'] = __salt__['mc_php.settings']()
 
         # Tomcat:  (services.tomcat)
         data['tomcatSettings'] = __salt__['mc_tomcat.settings']()
-
-        # Pureftpd:  (services.ftp.pureftpd)
-        data['pureftpdRreg'] = pureftpd = __salt__['mc_pureftpd.settings']()
-        data['pureftpdSettings'] = pureftpd['conf']
-        data['pureftpdDefaultSettings'] = pureftpd['defaults']
 
         # PostGRESQL:  (services.db.postgresql)
         # default postgresql/ grains configured databases (see service doc)
@@ -160,10 +125,6 @@ def settings():
         data['mysqlSettings'] = mysqlSettings = __salt__['mc_mysql.settings']()
         data['myCnf'] = mysqlSettings['myCnf']
         data['myDisableAutoConf'] = mysqlSettings['noautoconf']
-
-        # Rdiff backup
-        data['rdiffbackupSettings'] = __salt__['mc_rdiffbackup.settings']()
-
         # ntp is not applied to LXC containers ! (services.base.ntp)
         # So we just match when our grain is set and not have a value of lxc
         data['ntpEn'] = _ntpEn(__salt__)

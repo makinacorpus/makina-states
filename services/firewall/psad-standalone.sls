@@ -6,7 +6,7 @@
 {%- set localsettings = services.localsettings %}
 {%- set nodetypes = services.nodetypes %}
 {%- set locs = salt['mc_localsettings']()['locations'] %}
-{%- set data = services.psadSettings %}
+{%- set data = salt['mc_psad.settings']() %}
 {{ salt['mc_macros.register']('services', 'firewall.psad') }}
 
 {% macro do(full=True) %}
