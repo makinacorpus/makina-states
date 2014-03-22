@@ -6,14 +6,14 @@
 # Read the pureftpd section of _macros/services.jinja to know which grain/pillar settings
 # can modulate your pureftpd installation
 #}
-{%- import "makina-states/_macros/services.jinja" as services with context %}
 {% macro do(full=True) %}
 include:
   - makina-states.services.ftp.ftpd-hooks
 
+{% set settings = salt['mc_pureftpd.settings']() %}
+{% set pureftpdSettings = settings.conf %}
+{% set pureftpdDefaultSettings = settings.defaults %}
 {{ salt['mc_macros.register']('services', 'ftp.pureftpd') }}
-{%- set localsettings = services.localsettings %}
-{%- set nodetypes = services.nodetypes %}
 {%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 {%- set key = locs.conf_dir+'/ssl/private/pure-ftpd.pem' %}
 {%- set passive = pureftpdSettings['PassiveIP'] or pureftpdSettings['PassivePortRange']%}
@@ -22,9 +22,6 @@ include:
       - service: pure-ftpd-service
 {% endmacro %}
 
-{% set settings = salt['mc_pureftpd.settings']() %}
-{% set pureftpdSettings = settings.conf %}
-{% set pureftpdDefaultSettings = settings.defaults %}
 
 {% if full %}
 prereq-pureftpd:
@@ -94,7 +91,7 @@ prereq-pureftpd:
 {%- endif %}
 {%- endfor %}
 
-{%- set ssl = services.SSLSettings %}
+{%- set ssl = salt['mc_localsettings.settings']()['SSLSettings'] %}
 {{key}}-makina-pureftpd:
   cmd.run:
     - name: |
@@ -110,7 +107,7 @@ prereq-pureftpd:
 
 {{key}}-makina-pureftpd-perm:
   cmd.script:
-    - source: 'file://{{services.saltmac.msr}}/_scripts/reset-perms.py'
+    - source: 'file://{{salt['mc_salt.settings']()['msr']}}/_scripts/reset-perms.py'
     - args: >
             --dmode 0700 --fmode 0700
             --user root --group root
