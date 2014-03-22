@@ -22,8 +22,6 @@
 {%- set myDisableAutoConf = settings.myDisableAutoConf  %}
 {%- set myCnf = settings.myCnf %}
 
-{%- set tomcatSettings          = salt['mc_tomcat.settings']()  %}
 {%- set apacheSettings          = salt['mc_apache.settings']()  %}
-{%- set nginxSettings           = salt['mc_nginx.settings']()   %}
 {%- set phpSettings             = salt['mc_php.settings']()     %}
 # vim:set nofoldenable:

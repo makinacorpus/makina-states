@@ -1,45 +1,31 @@
-{#-
-# oracle jdk configuration
-#   - makina-states/doc/ref/formulaes/services/java/tomcat7.rst
-#}
-{% import "makina-states/localsettings/jdk.sls" as jdk with context %}
-{% import "makina-states/_macros/services.jinja" as services with context %}
-{% set localsettings = services.localsettings %}
-{% set locs = salt['mc_localsettings.settings']()['locations'] %}
-{% set data = services.tomcatSettings %}
-{% set conf_dir = data.conf_dir %}
+include:
+  - makina-states.services.java.tomcat.hooks
+
+{% set data = salt['mc_tomcat.settings']() %}
 {% set ver = data.ver %}
+{% set localsettings = salt['mc_localsettings.settings']() %}
+{% set locs = salt['mc_localsettings.settings']()['locations'] %}
+{% set conf_dir = data.conf_dir %}
 {% set ydata = data|yaml %}
-{% macro tomcat_watch() %}
-      - mc_proxy: tomcat-post-install-hook
+
+
+
+{% macro tomcatc_watch() %}
+      - mc_proxy: tomcat-pre-conf-hook
+{% endmacro %}
+{% macro tomcatc_watch_in() %}
+      - mc_proxy: tomcat-post-conf-hook
 {% endmacro %}
 
-{% macro tomcat_watch_in() %}
-      - mc_proxy: tomcat-pre-restart-hook
-{% endmacro %}
-{% macro tomcat_block_watch_in() %}
-      - mc_proxy: tomcat-pre-restart-hook
+
+
+{% macro tomcat_watch() %}
       - mc_proxy: tomcat-pre-blocks-hook
 {% endmacro %}
-{% macro do(full=False) %}
-{{ salt['mc_macros.register']('services', 'java.tomcat7') }}
-include:
-{% if full %}
-  - makina-states.localsettings.jdk
-{% endif %}
-  - makina-states.localsettings.jdk-hooks
-  - makina-states.services.java.tomcat-hooks
+{% macro tomcat_watch_in() %}
+      - mc_proxy: tomcat-post-blocks-hook
+{% endmacro %}
 
-{% if full %}
-tomcat-{{ver}}-pkgs:
-  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
-    - pkgs:
-      - tomcat{{ ver }}
-    - watch_in:
-      - service: tomcat-{{ ver }}
-    - require:
-      - mc_proxy: makina-states-jdk_last
-{% endif %}
 
 {{ locs.conf_dir }}-default-tomcat{{ ver }}:
   file.managed:
@@ -47,8 +33,8 @@ tomcat-{{ver}}-pkgs:
     - source: salt://makina-states/files/etc/default/tomcat{{ ver }}
     - template: jinja
     - defaults: {{ ydata }}
-    - watch: {{ tomcat_watch() }}
-    - watch_in: {{ tomcat_block_watch_in() }}
+    - watch: {{ tomcatc_watch() }}
+    - watch_in: {{ tomcatc_watch_in() }}
 
 {{ conf_dir }}-web.xml-{{ver}}:
   file.managed:
@@ -56,15 +42,15 @@ tomcat-{{ver}}-pkgs:
     - source: salt://makina-states/files/etc/tomcat{{ ver }}/web.xml
     - template: jinja
     - defaults: {{ ydata }}
-    - watch: {{ tomcat_watch() }}
-    - watch_in: {{ tomcat_block_watch_in() }}
+    - watch: {{ tomcatc_watch() }}
+    - watch_in: {{ tomcatc_watch_in() }}
 
 {{ conf_dir }}-Catalina-localhost-{{ver}}:
   file.directory:
     - name: {{ conf_dir }}/Catalina/localhost
     - makedirs: true
-    - watch: {{ tomcat_watch() }}
-    - watch_in: {{ tomcat_block_watch_in() }}
+    - watch: {{ tomcatc_watch() }}
+    - watch_in: {{ tomcatc_watch_in() }}
 
 {{ conf_dir }}-tomcat-users.xml-{{ver}}:
   file.managed:
@@ -72,8 +58,8 @@ tomcat-{{ver}}-pkgs:
     - source: salt://makina-states/files/etc/tomcat{{ ver }}/tomcat-users.xml
     - template: jinja
     - defaults: {{ ydata }}
-    - watch: {{ tomcat_watch() }}
-    - watch_in: {{ tomcat_block_watch_in() }}
+    - watch: {{ tomcatc_watch() }}
+    - watch_in: {{ tomcatc_watch_in() }}
 
 {{ conf_dir }}-logging.properties-{{ver}}:
   file.managed:
@@ -81,8 +67,8 @@ tomcat-{{ver}}-pkgs:
     - source: salt://makina-states/files/etc/tomcat{{ ver }}/logging.properties
     - template: jinja
     - defaults: {{ ydata }}
-    - watch: {{ tomcat_watch() }}
-    - watch_in: {{ tomcat_block_watch_in() }}
+    - watch: {{ tomcatc_watch() }}
+    - watch_in: {{ tomcatc_watch_in() }}
 
 {{ conf_dir }}-policy.d-04webapps.policy-{{ver}}:
   file.managed:
@@ -90,8 +76,8 @@ tomcat-{{ver}}-pkgs:
     - source: salt://makina-states/files/etc/tomcat{{ ver }}/policy.d/04webapps.policy
     - template: jinja
     - defaults: {{ ydata }}
-    - watch: {{ tomcat_watch() }}
-    - watch_in: {{ tomcat_block_watch_in() }}
+    - watch: {{ tomcatc_watch() }}
+    - watch_in: {{ tomcatc_watch_in() }}
 
 {{ conf_dir }}-policy.d-02debian.policy-{{ver}}:
   file.managed:
@@ -99,8 +85,8 @@ tomcat-{{ver}}-pkgs:
     - source: salt://makina-states/files/etc/tomcat{{ ver }}/policy.d/02debian.policy
     - template: jinja
     - defaults: {{ ydata }}
-    - watch: {{ tomcat_watch() }}
-    - watch_in: {{ tomcat_block_watch_in() }}
+    - watch: {{ tomcatc_watch() }}
+    - watch_in: {{ tomcatc_watch_in() }}
 
 {{ conf_dir }}-policy.d-03catalina.policy-{{ver}}:
   file.managed:
@@ -108,8 +94,8 @@ tomcat-{{ver}}-pkgs:
     - source: salt://makina-states/files/etc/tomcat{{ ver }}/policy.d/03catalina.policy
     - template: jinja
     - defaults: {{ ydata }}
-    - watch: {{ tomcat_watch() }}
-    - watch_in: {{ tomcat_block_watch_in() }}
+    - watch: {{ tomcatc_watch() }}
+    - watch_in: {{ tomcatc_watch_in() }}
 
 {{ conf_dir }}-policy.d-01system.policy-{{ver}}:
   file.managed:
@@ -117,8 +103,8 @@ tomcat-{{ver}}-pkgs:
     - source: salt://makina-states/files/etc/tomcat{{ ver }}/policy.d/01system.policy
     - template: jinja
     - defaults: {{ ydata }}
-    - watch: {{ tomcat_watch() }}
-    - watch_in: {{ tomcat_block_watch_in() }}
+    - watch: {{ tomcatc_watch() }}
+    - watch_in: {{ tomcatc_watch_in() }}
 
 {{ conf_dir }}-policy.d-50local.policy-{{ver}}:
   file.managed:
@@ -126,8 +112,8 @@ tomcat-{{ver}}-pkgs:
     - source: salt://makina-states/files/etc/tomcat{{ ver }}/policy.d/50local.policy
     - template: jinja
     - defaults: {{ ydata }}
-    - watch: {{ tomcat_watch() }}
-    - watch_in: {{ tomcat_block_watch_in() }}
+    - watch: {{ tomcatc_watch() }}
+    - watch_in: {{ tomcatc_watch_in() }}
 
 {{ conf_dir }}-catalina.properties-{{ver}}:
   file.managed:
@@ -135,8 +121,8 @@ tomcat-{{ver}}-pkgs:
     - source: salt://makina-states/files/etc/tomcat{{ ver }}/catalina.properties
     - template: jinja
     - defaults: {{ ydata }}
-    - watch: {{ tomcat_watch() }}
-    - watch_in: {{ tomcat_block_watch_in() }}
+    - watch: {{ tomcatc_watch() }}
+    - watch_in: {{ tomcatc_watch_in() }}
 
 {{ conf_dir }}-server.xml-{{ver}}:
   file.managed:
@@ -144,8 +130,8 @@ tomcat-{{ver}}-pkgs:
     - source: salt://makina-states/files/etc/tomcat{{ ver }}/server.xml
     - template: jinja
     - defaults: {{ ydata }}
-    - watch: {{ tomcat_watch() }}
-    - watch_in: {{ tomcat_block_watch_in() }}
+    - watch: {{ tomcatc_watch() }}
+    - watch_in: {{ tomcatc_watch_in() }}
 
 {{ conf_dir }}-context.xml-{{ver}}:
   file.managed:
@@ -153,8 +139,8 @@ tomcat-{{ver}}-pkgs:
     - source: salt://makina-states/files/etc/tomcat{{ ver }}/context.xml
     - template: jinja
     - default: {{ ydata }}
-    - watch: {{ tomcat_watch() }}
-    - watch_in: {{ tomcat_block_watch_in() }}
+    - watch: {{ tomcatc_watch() }}
+    - watch_in: {{ tomcatc_watch_in() }}
 
 {{ conf_dir }}-server-xml-block1-{{ver}}:
   file.blockreplace:
@@ -244,13 +230,3 @@ tomcat-{{ver}}-pkgs:
     - watch: {{ tomcat_watch() }}
     - watch_in: {{ tomcat_watch_in() }}
 
-tomcat-{{ ver }}:
-  service.running:
-    - name: tomcat{{ ver }}
-    - enable: true
-    - watch_in:
-      - mc_proxy: tomcat-pre-restart-hook
-    - watch_in:
-      - mc_proxy: tomcat-post-restart-hook
-{% endmacro %}
-{{do(full=False)}}

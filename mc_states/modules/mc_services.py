@@ -88,7 +88,6 @@ def settings():
         pillar = __pillar__
         grains = __grains__
         data = {}
-
         # Apache:  (services.http.apache)
         data['apacheSettings'] = __salt__['mc_apache.settings']()
 
@@ -99,12 +98,6 @@ def settings():
         data['mysqlSettings'] = mysqlSettings = __salt__['mc_mysql.settings']()
         data['myCnf'] = mysqlSettings['myCnf']
         data['myDisableAutoConf'] = mysqlSettings['noautoconf']
-        # ntp is not applied to LXC containers ! (services.base.ntp)
-        # So we just match when our grain is set and not have a value of lxc
-        data['ntpEn'] = _ntpEn(__salt__)
-        # init systems flags
-        data['upstart'] = __salt__['mc_utils.get'](
-            'makina-states.upstart', False)
         return data
     return _settings()
 
