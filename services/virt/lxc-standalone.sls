@@ -13,12 +13,10 @@
 #  config: config path (opt)
 # and it will create an ubuntu templated lxc host
 #}
-{%- import "makina-states/_macros/services.jinja" as services with context %}
 {{ salt['mc_macros.register']('services', 'virt.lxc') }}
-{%- set localsettings = services.localsettings %}
-{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
+{%- set localsettings = salt['mc_localsettings.settings']() %}
+{%- set locs = localsettings['locations'] %}
 {% macro do(full=True) %}
-{% set lxcSettings = services.lxcSettings %}
 include:
   - makina-states.services.virt.lxc-hooks
 
@@ -35,7 +33,6 @@ lxc-pkgs:
       - lxctl
       - dnsmasq
 {% endif %}
-
 {% if grains['os'] in ['Debian'] -%}
 lxc-ubuntu-template:
   file.managed:
@@ -95,32 +92,6 @@ etc-init.d-lxc-net:
     - require_in:
       - service: lxc-services-enabling
 
-etc-init.d-lxc-net-makina:
-  file.managed:
-    - name: /etc/init.d/lxc-net-makina
-    - template: jinja
-    - defaults: {{lxcSettings.defaults|yaml}}
-    - source: salt://makina-states/files/etc/init.d/lxc-net-makina.sh
-    - mode: 750
-    - user: root
-    - group: root
-    - require_in:
-      - service: lxc-services-enabling
-{% endif %}
-
-{% if grains['os'] in ['Ubuntu'] %}
-etc-init-lxc-net-makina:
-  file.managed:
-    - name: /etc/init/lxc-net-makina.conf
-    - template: jinja
-    - source: salt://makina-states/files/etc/init/lxc-net-makina.conf
-    - mode: 750
-    - user: root
-    - defaults: {{lxcSettings.defaults|yaml}}
-    - group: root
-    - require_in:
-      - service: lxc-services-enabling
-
 c-/etc/apparmor.d/lxc/lxc-default:
   file.managed:
     - name: /etc/apparmor.d/lxc/lxc-default
@@ -142,9 +113,7 @@ lxc-apparmor:
       - file: c-/etc/apparmor.d/lxc/lxc-default
     - require_in:
       - service: lxc-services-enabling
-
 {% endif %}
-
 
 lxc-services-enabling:
   service.running:

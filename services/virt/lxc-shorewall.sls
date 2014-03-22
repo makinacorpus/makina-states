@@ -4,5 +4,4 @@
 include:
   - makina-states.services.virt.lxc
   - makina-states.services.firewall.shorewall
-{%- import "makina-states/_macros/services.jinja" as services with context %}
 {{ salt['mc_macros.register']('services', 'virt.lxc-shorewall') }}

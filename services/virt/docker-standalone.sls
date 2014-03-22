@@ -68,9 +68,7 @@
 # and it will create a docker guest for you
 #}
 
-{%- import "makina-states/_macros/services.jinja" as services with context %}
 {{ salt['mc_macros.register']('services', 'virt.docker') }}
-{%- set localsettings = services.localsettings %}
 {%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 {% macro do(full=True) %}
 
