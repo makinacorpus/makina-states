@@ -30,7 +30,7 @@
 
 sshgroup:
   group.present:
-    - name: {{services.sshSettings.server.group}}
+    - name: {{salt['mc_ssh.settings']().server.group}}
 
 root-ssh-keys-init:
   cmd.run:

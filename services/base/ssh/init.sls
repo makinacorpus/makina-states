@@ -2,7 +2,7 @@
 {%- import "makina-states/_macros/services.jinja" as services with context %}
 {%- set localsettings = services.localsettings %}
 {%- set locs = localsettings.locations %}
-{% set openssh = services.sshSettings %}
+{% set openssh = salt['mc_ssh.settings']() %}
 
 {{ salt['mc_macros.register']('services', 'base.ssh') }}
 include:

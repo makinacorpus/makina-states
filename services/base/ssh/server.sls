@@ -1,7 +1,7 @@
 {%- import "makina-states/_macros/services.jinja" as services with context %}
 {%- set localsettings = services.localsettings %}
 {%- set locs = localsettings.locations %}
-{% set openssh = services.sshSettings %}
+{% set openssh = salt['mc_ssh.settings']() %}
 opensshd-pkgs:
   pkg.{{localsettings.installmode}}:
     - pkgs:
@@ -21,7 +21,7 @@ sshd_config:
     - source: salt://makina-states/files/etc/ssh/sshd_config
     - template: jinja
     - context:
-      settings: {{services.sshSettings.server.settings|yaml}}
+      settings: {{salt['mc_ssh.settings']().server.settings|yaml}}
     - watch_in:
       - service: openssh-svc
 
