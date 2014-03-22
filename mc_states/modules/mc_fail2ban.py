@@ -96,7 +96,6 @@ def settings():
         pillar = __pillar__
         localsettings = __salt__['mc_localsettings.settings']()
         shorewall = __salt__['mc_shorewall.settings']()
-        nodetypes_registry = __salt__['mc_nodetypes.registry']()
         services_registry = __salt__['mc_services.registry']()
         banaction = 'iptables'
         if (

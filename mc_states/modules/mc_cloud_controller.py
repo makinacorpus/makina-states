@@ -59,9 +59,7 @@ def settings():
         localsettings = __salt__['mc_localsettings.settings']()
         salt_registry = __salt__['mc_controllers.registry']()
         salt_settings = __salt__['mc_salt.settings']()
-        resolver = __salt__['mc_utils.format_resolve']
         pillar = __pillar__
-        locs = localsettings['locations']
         if salt_registry['is']['mastersalt_master']:
             prefix = salt_settings['mconfPrefix']
         else:

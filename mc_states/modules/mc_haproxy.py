@@ -27,9 +27,6 @@ def settings():
         grains = __grains__
         pillar = __pillar__
         localsettings = __salt__['mc_localsettings.settings']()
-        shorewall = __salt__['mc_shorewall.settings']()
-        nodetypes_registry = __salt__['mc_nodetypes.registry']()
-        services_registry = __salt__['mc_services.registry']()
         locs = localsettings['locations']
         #'capture cookie vgnvisitor= len 32',
         #'option    httpchk /index.html',

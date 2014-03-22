@@ -91,11 +91,6 @@ def settings():
     def _settings():
         grains = __grains__
         pillar = __pillar__
-        nt_registry = __salt__['mc_nodetypes.registry']()
-        ntSettings = __salt__['mc_nodetypes.settings']()
-        cloudSettings = __salt__['mc_saltcloud.settings']()
-        localsettings = __salt__['mc_localsettings.settings']()
-        locations = localsettings['locations']
         lxcSettings = __salt__['mc_utils.defaults'](
             'makina-states.services.virt.lxc', {
                 'is_lxc': is_lxc(),

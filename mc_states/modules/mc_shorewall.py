@@ -307,6 +307,7 @@ def settings():
                      'source': 'fw', 'dest': 'dck',
                      'proto': 'udp', 'dport': '67:68'})
 
+            # salt/master traffic if any
             data['default_rules'].append(
                 {'comment': '(Master)Salt on localhost'})
             data['default_rules'].append({'action': 'ACCEPT',
@@ -328,7 +329,7 @@ def settings():
                                               'proto': 'tcp,udp',
                                               'dport': '4505,4506,4605,4606'})
 
-            # enable mastersalt traffic if any
+            # enable compute node redirection port ange if any
             if (
                 (services_registry['is']['cloud.computenode']
                  or services_registry['is']['cloud.lxc'])

@@ -29,7 +29,6 @@ def settings():
         grains = __grains__
         pillar = __pillar__
         localsettings = __salt__['mc_localsettings.settings']()
-        nodetypes_registry = __salt__['mc_nodetypes.registry']()
         locs = localsettings['locations']
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.monitoring.circus', {

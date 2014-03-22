@@ -44,12 +44,8 @@ def settings():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
         localsettings = __salt__['mc_localsettings.settings']()
-        salt_registry = __salt__['mc_controllers.registry']()
-        salt_settings = __salt__['mc_salt.settings']()
-        resolver = __salt__['mc_utils.format_resolve']
         pillar = __pillar__
         cloudSettings = __salt__['mc_saltcloud.settings']()
-        locs = localsettings['locations']
         sdata = __salt__['mc_utils.defaults'](
             'makina-states.services.cloud.saltify', {
                 'mode': cloudSettings['mode'],

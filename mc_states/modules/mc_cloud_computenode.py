@@ -122,9 +122,6 @@ def settings():
     def _settings():
         grains = __grains__
         pillar = __pillar__
-        localsettings = __salt__['mc_localsettings.settings']()
-        nodetypes_registry = __salt__['mc_nodetypes.registry']()
-        services_registry = __salt__['mc_services.registry']()
         targets, reverse_proxies = {}, {}
         targets = get_lxc_containers_settings(targets)
         reverse_proxies = get_reverse_proxies(reverse_proxies, targets)

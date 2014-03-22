@@ -168,7 +168,6 @@ def settings():
         grains = __grains__
         pillar = __pillar__
         localsettings = __salt__['mc_localsettings.settings']()
-        nodetypes_registry = __salt__['mc_nodetypes.registry']()
         locations = localsettings['locations']
 
         phpdefaults = {

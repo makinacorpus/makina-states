@@ -84,18 +84,12 @@ def settings():
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        resolver = __salt__['mc_utils.format_resolve']
-        metadata = __salt__['mc_{0}.metadata'.format(__name)]()
-        nodetypes_registry = __salt__['mc_nodetypes.registry']()
         localsettings = __salt__['mc_localsettings.settings']()
         pillar = __pillar__
         grains = __grains__
-        locs = localsettings['locations']
         data = {}
-        data['resolver'] = resolver
-        data['locs'] = locs
         # localsettings shortcuts
-        for i in ['SSLSettings', 'ldapVariables', 'ldapEn']:
+        for i in ['ldapVariables', 'ldapEn']:
             data[i] = localsettings[i]
 
         # Apache:  (services.http.apache)
@@ -103,9 +97,6 @@ def settings():
 
         # PHP:  (services.php)
         data['phpSettings'] = __salt__['mc_php.settings']()
-
-        # Tomcat:  (services.tomcat)
-        data['tomcatSettings'] = __salt__['mc_tomcat.settings']()
 
         # PostGRESQL:  (services.db.postgresql)
         # default postgresql/ grains configured databases (see service doc)
@@ -117,9 +108,6 @@ def settings():
         data['postgisVers'] = pgSettings['postgis']
         data['postgisDbName'] = pgSettings['postgis_db']
         data['postgresqlUser'] = pgSettings['user']
-
-        # shorewall pillar parsing
-        data['shorewall'] = __salt__['mc_shorewall.settings']()
 
         # mysql
         data['mysqlSettings'] = mysqlSettings = __salt__['mc_mysql.settings']()

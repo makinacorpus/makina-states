@@ -31,11 +31,6 @@ def settings():
     def _settings():
         grains = __grains__
         pillar = __pillar__
-        localsettings = __salt__['mc_localsettings.settings']()
-        shorewall = __salt__['mc_shorewall.settings']()
-        nodetypes_registry = __salt__['mc_nodetypes.registry']()
-        services_registry = __salt__['mc_services.registry']()
-        locs = localsettings['locations']
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.firewall.psad', {
                 'alertdest': 'root@{0}'.format(__grains__['fqdn']),

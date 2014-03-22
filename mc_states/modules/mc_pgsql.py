@@ -97,9 +97,6 @@ def settings():
     def _settings():
         grains = __grains__
         pillar = __pillar__
-        localsettings = __salt__['mc_localsettings.settings']()
-        nodetypes_registry = __salt__['mc_nodetypes.registry']()
-        locations = localsettings['locations']
         #
         # PostGRESQL:  (services.db.postgresql)
         # default postgresql/ grains configured databases (see service doc)

@@ -103,9 +103,6 @@ def settings():
     def _settings():
         grains = __grains__
         pillar = __pillar__
-        localsettings = __salt__['mc_localsettings.settings']()
-        nodetypes_registry = __salt__['mc_nodetypes.registry']()
-        locs = localsettings['locations']
         os_defaults = __salt__['grains.filter_by']({
             'Debian': {
                 'pkgs': ['bind9',
