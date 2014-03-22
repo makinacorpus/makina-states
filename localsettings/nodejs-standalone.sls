@@ -50,7 +50,7 @@ nodejs-repo:
         - pkg: net-pkgs
 {%  endif %}
 nodejs-pkgs:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     {% if grains['os'] in ['Ubuntu'] -%}
     - require:
       - pkgrepo: nodejs-repo

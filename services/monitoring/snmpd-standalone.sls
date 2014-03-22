@@ -11,7 +11,7 @@
 {% macro do(full=True) %}
 {% if full %}
 snmpd-pkgs:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs:
       - snmp
       - libsensors4

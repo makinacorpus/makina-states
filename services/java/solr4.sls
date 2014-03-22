@@ -69,7 +69,7 @@ include:
 {% endmacro %}
 
 solr{{ v }}-prerequisites:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs:
       - rsync
       - unzip

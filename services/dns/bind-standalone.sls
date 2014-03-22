@@ -157,7 +157,7 @@ include:
 
 {% if full %}
 bind-pkgs:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs: {{settings.pkgs}}
     - watch:
       - mc_proxy: bind-pre-install

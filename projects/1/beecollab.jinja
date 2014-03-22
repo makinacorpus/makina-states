@@ -6,7 +6,7 @@
 {% macro install_dependancies(common) %}
 {% if common.full %}
 beecollab_install_dependancies:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs:
       - ffmpeg
       - ffmpeg2theora

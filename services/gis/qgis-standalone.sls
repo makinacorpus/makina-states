@@ -24,7 +24,7 @@ qgis-repo:
     - keyserver: {{localsettings.keyserver }}
 
 prereq-qgis:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - require:
       - pkgrepo: qgis-repo
     - pkgs:

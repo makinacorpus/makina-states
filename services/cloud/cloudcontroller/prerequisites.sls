@@ -4,7 +4,7 @@ include:
   - makina-states.services.cloud.cloudcontroller.hooks
 
 saltcloud-pkgs:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs:
       - sshpass
     - require:

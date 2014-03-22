@@ -12,7 +12,7 @@ include:
 {%- if grains['os_family'] not in ['Debian'] %}FAIL HARD{% endif %}
 {%- if grains['os_family'] in ['Debian'] %}
 locales-pkg:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs:
       - locales
 

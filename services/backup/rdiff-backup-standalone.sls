@@ -17,7 +17,7 @@ remove-rdiff-backup-pkgs:
     - pkgs:
       - rdiff-backup
 rdiff-backup-pkgs:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - require:
       - pkg: remove-rdiff-backup-pkgs
     - pkgs:

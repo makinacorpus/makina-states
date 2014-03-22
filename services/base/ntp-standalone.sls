@@ -9,7 +9,7 @@ include:
 
 {% if full %}
 ntp-pkgs:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs:
       - ntp
       - ntpdate

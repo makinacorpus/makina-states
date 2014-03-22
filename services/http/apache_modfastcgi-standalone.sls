@@ -115,7 +115,7 @@ extend:
 # is commented, waiting for unix socket support
 # So we keep using the old way
 makina-fastcgi-apache-module_connect_fastcgi_mod_fastcgi_module:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs:
       - {{ apacheSettings.mod_packages.mod_fastcgi }}
     - require:

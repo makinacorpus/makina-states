@@ -87,7 +87,7 @@ docker-repo:
 {#- require dockerpy in salt #}
 
 docker-pkgs:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - require:
       - pkgrepo: docker-repo
     - pkgs:

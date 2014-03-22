@@ -47,7 +47,7 @@ after-ubuntu-pkg-install-proxy:
       - pkg: salt-pkgs
 {% if grains['os'] == 'Ubuntu' -%}
 ubuntu-pkgs:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs:
       - apport
       - debian-archive-keyring
@@ -64,7 +64,7 @@ ubuntu-pkgs:
 {%- endif %}
 
 sys-pkgs:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs:
       - acpid
       - atop
@@ -117,13 +117,13 @@ sys-pkgs:
 
 {% if 'devhost' in localsettings.registry['actives'] -%}
 devhost-pkgs:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs:
       - localepurge
 {%- endif %}
 
 dev-pkgs:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs:
       - git
       - git-core
@@ -141,7 +141,7 @@ dev-pkgs:
       {%- endif %}
 
 net-pkgs:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs:
       - wget
       - curl
@@ -166,7 +166,7 @@ net-pkgs:
       - whois
 
 salt-pkgs:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs:
       - python-apt
       - libgmp3-dev

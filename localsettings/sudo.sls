@@ -11,7 +11,7 @@ include:
 {{ salt['mc_macros.register']('localsettings', 'sudo') }}
 {%- set locs = salt['mc_localsettings']()['locations'] %}
 sudo-pkgs:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs: [sudo]
     - require_in:
       - mc_proxy: users-ready-hook

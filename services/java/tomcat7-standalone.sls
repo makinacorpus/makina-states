@@ -32,7 +32,7 @@ include:
 
 {% if full %}
 tomcat-{{ver}}-pkgs:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs:
       - tomcat{{ ver }}
     - watch_in:

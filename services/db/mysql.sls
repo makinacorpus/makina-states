@@ -52,7 +52,7 @@ include:
 # Note that python-mysqlDb binding is required for salt module to be loaded
 #}
 makina-mysql-pkgs:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs:
       - {{ mysqlData.packages.main }}
       - {{ mysqlData.packages.python }}

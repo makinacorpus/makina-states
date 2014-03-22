@@ -16,7 +16,7 @@
 {%- endmacro %}
 {% if full %}
 rvm-deps:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - names:
 {# rvm deps #}
       - bash

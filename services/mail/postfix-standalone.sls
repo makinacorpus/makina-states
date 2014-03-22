@@ -11,7 +11,7 @@ include:
 
 {% if full %}
 postfix-pkgs:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs:
       - postfix
       - postfix-pcre

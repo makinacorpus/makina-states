@@ -23,7 +23,7 @@ makina-lxc-proxy-dep:
 
 # lxc container
 lxc-container-pkgs:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs:
       - apt-utils
       - libfuse2

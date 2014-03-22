@@ -27,7 +27,7 @@ include:
 
 {% if full %}
 shorewall-pkgs:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs:
       - shorewall6
       - shorewall

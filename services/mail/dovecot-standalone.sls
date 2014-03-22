@@ -16,7 +16,7 @@
 {% set locs = salt['mc_localsettings']()['locations'] %}
 {% if full %}
 dovecot-pkgs:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs:
       - dovecot-common
       - dovecot-imapd

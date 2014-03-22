@@ -24,7 +24,7 @@ include:
 
 {% if full %}
 lxc-pkgs:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
 {% if grains['os'] in ['Ubuntu'] -%}
 {% if localsettings.udist in ['precise'] %}
     - fromrepo: {{localsettings.udist}}-backports

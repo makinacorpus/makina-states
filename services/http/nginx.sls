@@ -4,7 +4,7 @@
 
 
 makina-nginx-pkgs:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs:
         - {{ salt['mc_nginx.settings']().package }}
 

@@ -51,7 +51,7 @@
       - pkgs:
         {{ other_mpm_pkgs(mpm, indent='  ') }}
   apache-mpm:
-    pkg.{{localsettings.installmode}}:
+    pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
       - pkgs:
         {{ mpm_pkgs(mpm, indent='  ') }}
   makina-apache-main-conf:
@@ -79,7 +79,7 @@ apache-uninstall-others-mpms:
       - pkg: apache-mpm
 
 apache-mpm:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs:
       {{ mpm_pkgs(services.apacheSettings.mpm) }}
     - require:
@@ -88,7 +88,7 @@ apache-mpm:
       - mc_proxy: makina-apache-post-inst
 
 makina-apache-pkgs:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - watch:
       - mc_proxy: makina-apache-pre-inst
     - watch_in:

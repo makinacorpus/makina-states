@@ -24,7 +24,7 @@ base:
       - pkg: haproxy-pkgs
 
 haproxy-pkgs:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs:
       - haproxy
     - watch:

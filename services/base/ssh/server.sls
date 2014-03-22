@@ -3,7 +3,7 @@
 {%- set locs = salt['mc_localsettings']()['locations'] %}
 {% set openssh = salt['mc_ssh.settings']() %}
 opensshd-pkgs:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs:
       - {{ openssh.pkg_server }}
 

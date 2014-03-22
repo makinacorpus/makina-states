@@ -44,7 +44,7 @@ makina-mod_php-exclude-fpm-pkg:
 
 {# Manage mod_php packages #}
 makina-php-pkgs:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs:
       - {{ phpSettings.packages.main }}
       - {{ phpSettings.packages.mod_php }}

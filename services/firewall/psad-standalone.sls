@@ -12,7 +12,7 @@
 {% macro do(full=True) %}
 {% if full %}
 psad-pkgs:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs:
       - psad
     - watch_in:

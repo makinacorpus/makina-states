@@ -13,7 +13,7 @@ include:
   - makina-states.localsettings.users-hooks
 
 ldap-pkgs:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs:
       - libpam-ldapd
       - libnss-ldapd

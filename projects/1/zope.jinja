@@ -11,7 +11,7 @@
 {%- macro zope_deps(common) %}
 {% if common.full -%}
 prepreq-{{common.name}}:
-  pkg.{{localsettings.installmode}}:
+  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - watch_in:
       - mc_proxy: {{common.name}}-prerequisites-hook
     - pkgs:
