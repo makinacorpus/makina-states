@@ -54,7 +54,6 @@
            'prepkg': prepkg,
            'postpkg': postpkg,
            'presetup': presetup,
-           'postsetup': postsetup, 
            'postinst': postinst,
            'postbase': postbase}
   } %}
