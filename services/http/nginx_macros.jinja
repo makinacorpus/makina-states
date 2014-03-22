@@ -1,8 +1,8 @@
 {% import "makina-states/_macros/services.jinja" as services with context %}
 {% set localsettings = services.localsettings %}
 
+{% set nginxSettings = salt['mc_nginx.settings']() %}
 {% macro virtualhost(
-  nginxSettings,
   site = 'example.com',
   small_name = None,
   active = True,

@@ -80,7 +80,6 @@ makina-nginx-reload:
 {% if 'virtualhosts' in salt['mc_nginx.settings']() -%}
 {%   for site,siteDef in salt['mc_nginx.settings']()['virtualhosts'].iteritems() -%}
 {%     do siteDef.update({'site': site}) -%}
-{%     do siteDef.update({'nginxSettings': salt['mc_nginx.settings']()}) -%}
 {{     virtualhost(**siteDef) -}}
 {%   endfor -%}
 {% endif -%}
