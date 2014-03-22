@@ -1,11 +1,9 @@
 {# Apache specific macros
 # Import this macro file with context so that grains will be available in the macros
 #}
-{% import "makina-states/_macros/services.jinja" as services with context %}
-{% set services = services %}
-{% set localsettings = services.localsettings %}
-{% set nodetypes = services.nodetypes %}
-{% set apacheData = services.apacheSettings %}
+{% set localsettings = salt['localsettings.group']() %}
+{% set nodetypes_reg = salt['mc_nodetypes.registry']() %}
+{% set apacheData = salt['mc_apache.settings']() %}
 {# * virtualhost => create all states for a virtualhost (virtualhost file, include file, a2ensite/dissite command
 #
 #   Idea is that we have a template for the virtualhost global directives and one another for the corpse
@@ -99,7 +97,7 @@
                    or (grains["lsb_distrib_id"] == "Debian"
                        and grains["lsb_distrib_release"] <= 7.0) %}
 
-{% if nodetypes.registry.is.devhost %}
+{% if nodetypes_reg.is.devhost %}
 {%  set mode="dev" %}
 {% endif %}
 

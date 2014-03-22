@@ -1,7 +1,9 @@
 {#-
 # Services related exported variables
 # see makina-states.services
+# this macro is deprecated and will be phased out
 #}
+{# DEPRECATED #}
 
 {%- import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
 {%- import "makina-states/_macros/controllers.jinja" as controllers with context %}
@@ -11,41 +13,10 @@
 {%- set nodetypes = nodetypes %}
 {%- set localsettings = nodetypes.localsettings %}
 {%- set funcs = localsettings.funcs %}
-{%- set saltmac = controllers.saltmac %}
-{%- set locs = nodetypes.localsettings.locations %}
 
-{#- see _modules/mc_services.py for exposed settings #}
 {%- set settings = salt['mc_services.settings']() %}
 {%- set metadata = salt['mc_services.metadata']() %}
 {%- set registry = salt['mc_services.registry']() %}
-
-{%- set bindSettings = settings.bindSettings  %}
-{%- set haproxySettings = settings.haproxySettings  %}
-{%- set psadSettings = settings.psadSettings  %}
-{%- set fail2banSettings = settings.fail2banSettings  %}
-{%- set SSLSettings = settings.SSLSettings  %}
-{%- set ldapVariables = settings.ldapVariables  %}
-{%- set ldapEn = settings.ldapEn  %}
-{%- set upstart = settings.upstart  %}
-
-{%- set virtlxcSettings = settings.lxcSettings %}
-
-{%- set cloudcomputenodeSettings = salt['mc_cloud_computenode.settings']() %}
-{%- set cloudcontrollerSettings = salt['mc_cloud_controller.settings']() %}
-{%- set cloudlxcSettings = salt['mc_cloud_lxc.settings']() %}
-{%- set cloudsaltifySettings = salt['mc_cloud_lxc.settings']() %}
-
-{%- set tomcatSettings = settings.tomcatSettings  %}
-{%- set ntpEn = settings.ntpEn  %}
-{%- set apacheSettings = settings.apacheSettings  %}
-{%- set circusSettings = settings.circusSettings %}
-{%- set snmpdSettings = settings.snmpdSettings %}
-{%- set etherpadSettings = settings.etherpadSettings %}
-{%- set postfixSettings = settings.postfixSettings %}
-{%- set nginxSettings = settings.nginxSettings  %}
-{%- set phpSettings = settings.phpSettings  %}
-{%- set pureftpdDefaultSettings = settings.pureftpdDefaultSettings  %}
-{%- set pureftpdSettings = settings.pureftpdSettings  %}
 
 {%- set pgDbs = settings.pgDbs  %}
 {%- set postgresqlUsers = settings.postgresqlUsers  %}
@@ -56,22 +27,12 @@
 {%- set postgisDbName = settings.postgisDbName  %}
 {%- set postgresqlUser = settings.postgresqlUser  %}
 
-{%- set shw_enabled = settings.shorewall.shw_enabled  %}
-{%- set shwIfformat = settings.shorewall.shwIfformat  %}
-{%- set shwPolicies = settings.shorewall.shwPolicies  %}
-{%- set shwZones = settings.shorewall.shwZones  %}
-{%- set shwInterfaces = settings.shorewall.shwInterfaces  %}
-{%- set shwParams = settings.shorewall.shwParams  %}
-{%- set shwMasqs = settings.shorewall.shwMasqs  %}
-{%- set shwRules = settings.shorewall.shwRules  %}
-{%- set shwDefaultState = settings.shorewall.shwDefaultState  %}
-{%- set shwData = settings.shorewall %}
-{%- set shorewall = settings.shorewall %}
-
 {%- set mysqlSettings = settings.mysqlSettings  %}
 {%- set myDisableAutoConf = settings.myDisableAutoConf  %}
 {%- set myCnf = settings.myCnf %}
-{%- set dbsmartbackupSettings = settings.dbsmartbackupSettings  %}
-{%- set rdiffbackupSettings = settings.rdiffbackupSettings  %}
-{%- set sshSettings = settings.sshSettings  %}
+
+{%- set tomcatSettings          = salt['mc_tomcat.settings']()  %}
+{%- set apacheSettings          = salt['mc_apache.settings']()  %}
+{%- set nginxSettings           = salt['mc_nginx.settings']()   %}
+{%- set phpSettings             = salt['mc_php.settings']()     %}
 # vim:set nofoldenable:

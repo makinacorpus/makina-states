@@ -1,11 +1,7 @@
 {#
 # Servers nodetypes exported variables
 #}
-{%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-{# expose imported macros to callers #}
-{%- set funcs = localsettings.funcs %}
-{%- set localsettings = localsettings %}
-
+{# DREPECATED #}
 {#- see _modules/mc_nodetypes.py for exposed settings #}
 {%- set metadata = salt['mc_nodetypes.metadata']() %}
 {%- set settings = salt['mc_nodetypes.settings']() %}

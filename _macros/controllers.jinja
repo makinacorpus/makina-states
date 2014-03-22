@@ -1,14 +1,13 @@
+{# DREPECATED #}
 {#-
 # Controllers related exported variables
 # see makina-states.controllers
 #}
 {%- import "makina-states/_macros/funcs.jinja" as funcs with context %}
-{%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {%- import "makina-states/_macros/salt.jinja" as saltmac with context %}
 # expose imported macros to callers
 {%- set saltmac = saltmac %}
 {%- set funcs = funcs %}
-{%- set localsettings = localsettings %}
 
 {#- see _modules/mc_controllers.py for exposed settings #}
 {%- set metadata = salt['mc_controllers.metadata']() %}

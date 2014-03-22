@@ -2,11 +2,9 @@
 # see for doc:
 # - doc/ref/formulaes/_macros/salt.rst
 #}
-{% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
-
-{%- set nodetypes = nodetypes %}
-{%- set isTravis = nodetypes.registry.is.travis %}
-{%- set localsettings = nodetypes.localsettings %}
+{%- set nodetypes_registry = salt['nodetypes.registry']() %}
+{%- set isTravis = nodetypes_registry.is.travis %}
+{%- set localsettings = salt['mc_localsettings.settings']() %}
 {%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 
 {%- set resolver = salt['mc_utils.format_resolve'] %}
