@@ -1,17 +1,17 @@
 {# Generate in one step the apache virtualhost,
                         the apache configuration
                         and the fpm pool #}
+{%- import "makina-states/_macros/apache.jinja" as apache with context %}
 {%- import "makina-states/_macros/php.jinja" as php with context %}
 {%- import "makina-states/projects/1/apache.jinja" as httpbase with context %}
 {%- import "makina-states/projects/1/base.jinja" as base with context %}
-{%- set apache = php.apache %}
 {%- set base = base %}
 {%- set apache = apache %}
 {%- set services = base.services %}
 {%- set apacheData = salt['mc_apache.settings']().copy() %}
 {%- set saltmac = base.saltmac %}
-{%- set localsettings = base.localsettings %}
-{%- set locations = base.salt['mc_localsettings.settings']()['locations'] %}
+{%- set localsettings = salt['mc_localsettings.settings']() %}
+{%- set locations = salt['mc_localsettings.settings']()['locations'] %}
 
 {#
 # This will install a basic PHP virtualhost served by apache and

@@ -1,15 +1,11 @@
 {#-
 # Etherpad server: https://github.com/ether/etherpad-lite
-# Read the etherpad section of _macros/services.jinja to know which grain/pillar settings
-# can modulate your etherpad installation
 #}
-{%- import "makina-states/_macros/services.jinja" as services with context %}
 {%- import "makina-states/_macros/circus.jinja" as circus with context %}
 
 {%- macro do(full=True) %}
 {{- salt['mc_macros.register']('services', 'collab.etherpad') }}
-{%- set localsettings = salt['mc_localsettings.settings']() %} %}
-{%- set nodetypes = services.nodetypes %}
+{%- set localsettings = salt['mc_localsettings.settings']() %}
 {%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 {%- set etherpadSettings = salt['mc_etherpad.settings']() %}
 

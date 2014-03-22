@@ -2,10 +2,10 @@
 {%- import "makina-states/services/db/postgresql/hooks.sls" as hooks with context %}
 
 include:
-  - makina-states.services.db.postgresql.hooks
+  - makina-states.settings.db.postgresql.hooks
 
-{% set services = salt['mc_pgsql.settings']() %}
-{%- set default_user = services.user %}
+{% set settings = salt['mc_pgsql.settings']() %}
+{%- set default_user = settings.user %}
 {% set orchestrate = hooks.orchestrate %}
 {#-POSTGRESQL CLUSTER directories, users, database, grants #}
 {%- macro postgresql_group(group,
@@ -21,7 +21,7 @@ include:
                           user=default_user,
                           db_host=None,
                           db_port=None,
-                          version=services.defaultPgVersion,
+                          version=settings.defaultPgVersion,
                           full=True, suf='') %}
 {%- if not groups %}{% set groups=[] %}{% endif %}
 {{ version }}-{{ group }}-makina-postgresql-group{{suf}}:

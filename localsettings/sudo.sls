@@ -7,7 +7,7 @@
 include:
   - makina-states.localsettings.users-hooks
 
-{%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+{% set localsettings = salt['mc_localsettings.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'sudo') }}
 {%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 sudo-pkgs:

@@ -17,6 +17,7 @@
 # consult pillar values with "salt '*' pillar.items"
 # consult grains values with "salt '*' grains.items"
 #}
+{% import "makina-states/services/http/apache.sls" as apache with context %}
 {% import "makina-states/services/php/common.sls" as common with context %}
 {% set localsettings = salt['mc_localsettings.settings']() %}
 {% set nodetypes_registry = salt['mc_nodetypes.registry']() %}
@@ -28,7 +29,7 @@ include:
 {{ common.common_includes(full=full, apache=True) }}
 
 extend:
-{{ common.apache.extend_switch_mpm('prefork') }}
+{{apache.extend_switch_mpm('prefork') }}
 
 {% if full %}
 {# Manage php-fpm packages #}

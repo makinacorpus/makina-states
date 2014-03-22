@@ -11,9 +11,9 @@
     - name: {{name}}
 {{text}}
 {% endmacro %}
-{%- set services = salt['mc_pgsql.settings']() %}
+{%- set settings = salt['mc_pgsql.settings']() %}
 {%- set locs = salt['mc_localsettings.settings']()['locations'] %}
-{%- set default_user = services.user %}
+{%- set default_user = settings.user %}
 {%- set orchestrate = {} %}
 {%- set prebase = 'makina-postgresql-pre-base' %}
 {%- set postbase = 'makina-postgresql-post-base' %}
@@ -57,7 +57,7 @@
            'postinst': postinst,
            'postbase': postbase}
   } %}
-{%- for ver in services.versions %}
+{%- for ver in settings.versions %}
 {%- set pregroup = ver+'-makina-postgresql-pre-create-group' %}
 {%- set postgroup = ver+'-makina-postgresql-post-create-group' %}
 {%- set predb = ver+'-makina-postgresql-pre-create-db' %}

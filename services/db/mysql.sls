@@ -24,11 +24,9 @@
 
 {# Load defaults values ----------------------------------------- #}
 
-{%- import "makina-states/_macros/services.jinja" as services with context %}
-{%- set localsettings = salt['mc_localsettings.settings']() %} %}
-{%- set nodetypes = services.nodetypes %}
+{% set nodetypes_registry = salt['mc_nodetypes.registry']() %}
 {%- set locs = salt['mc_localsettings.settings']()['locations'] %}
-{%- set mysqlData = services.mysqlSettings %}
+{%- set mysqlData = salt['mc_mysql.settings']() %}
 {{ salt['mc_macros.register']('services', 'db.mysql') }}
 
 include:
@@ -234,7 +232,7 @@ makina-mysql-settings:
         tmp_table_size: {{ tmp_table_size_M }}
         sync_binlog: {{ sync_binlog }}
     - context:
-        {%- if ('devhost' in nodetypes.registry.actives) %}
+        {%- if ('devhost' in nodetypes_registry.actives) %}
         mode: "dev"
         {%- endif %}
         {%- if mysqlData.query_cache_size_M %}
@@ -278,7 +276,7 @@ change-empty-mysql-root-access:
       - service: makina-mysql-service-reload
       - service: makina-mysql-service
 
-{%- if not('devhost' in nodetypes.registry.actives) %}
+{%- if not('devhost' in nodetypes_registry.actives) %}
 {# On anything that is not a dev server we should emit a big fail for empty
  password root access to the MySQL Server #}
 security-check-empty-mysql-root-access-socket:
@@ -424,7 +422,7 @@ makina-mysql-user-grants-{{ state_uid }}-{{ host_simple }}:
 {%-   endfor %}
 {%- endif %}
 {% endmacro %}
-{%- if not services.myDisableAutoConf %}
-{{ mysql_base(services.myCnf) }}
+{%- if not salt['mc_mysql.settings']()['noautoconf'] %}
+{{ mysql_base(salt['mc_mysql.settings']()['myCnf']) }}
 {% endif %}
 # vim: set nofoldenable:

@@ -713,7 +713,7 @@ salt-{{ data.daemon_name }}:
 {{ install_salt_common_daemon(adata=data, full=full) }}
 
 # specific vagrant vm settings
-{% if 'devhost' in nodetypes.registry['actives'] -%}
+{% if 'devhost' in nodetypes_registry['actives'] -%}
 salt-{{ data.daemon_name }}-conf-devhost-global:
   file.managed:
     - name: {{ data.conf_prefix }}/{{ data.service_name }}.d/10_devhost.conf

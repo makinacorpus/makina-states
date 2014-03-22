@@ -3,8 +3,7 @@
 # see:
 #   - makina-states/doc/ref/formulaes/nodetypes/vagrantvm.rst
 #}
-{% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
-{% set localsettings = nodetypes.localsettings %}
+{% set localsettings = salt['mc_localsettings.settings']() %}
 {%- set vmNum = grains.get('makina.devhost_num', '') %}
 {%- set vm_fqdn = grains.get('fqdn','childhost.local') %}
 {%- set vm_host = grains.get('host','childhost') %}

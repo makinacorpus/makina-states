@@ -11,7 +11,7 @@
 #}
 
 
-{% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+{% set localsettings = salt['mc_localsettings.settings']() %}
 {% set locs = salt['mc_localsettings.settings']()['locations'] %}
 {% macro create_user(id, udata) %}
 {%- set password = udata.get('password', False) %}

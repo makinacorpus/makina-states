@@ -7,7 +7,7 @@ t{#
 {%- import "makina-states/projects/1/base.jinja" as base with context %}
 {%- set services = base.services %}
 {%- set saltmac = base.saltmac %}
-{%- set localsettings = base.localsettings %}
+{%- set localsettings = salt['mc_localsettings.settings']() %}
 
 {%- set default_defaults = {
   'python_version': localsettings.pythonSettings.version,

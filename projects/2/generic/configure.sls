@@ -1,12 +1,8 @@
 {% import "makina-states/nodetypes/vagrantvm.sls" as vagrantvm with context %}
-{% import "makina-states/_macros/salt.jinja" as saltmac with context %}
-{% import "makina-states/_macros/services.jinja" as services with context %}
 # export macro to callees
-{% set services = services %}
-{% set nodetypes = services.nodetypes %}
-{% set localsettings = salt['mc_localsettings.settings']() %} %}
+{% set nodetypes_registry = salt['mc_nodetypes.reqistry']() %}
+{% set localsettings = salt['mc_localsettings.settings']() %}
 {% set locs = salt['mc_localsettings.settings']()['locations'] %}
-{% set saltmac = saltmac %}
 {% set cfg = opts['ms_project'] %}
  {#-
 # Register all the app domain's in /etc/hosts
@@ -63,7 +59,7 @@
 
 {# if we are on a vagrant box, also register our hosts
 #  to be accesible from the host #}
-{%-  if nodetypes.registry.is.vagrantvm %}
+{%-  if nodetypes_registry.is.vagrantvm %}
 {%-    if vagrantvm.vmNum %}
 makina-parent-append-etc-hosts-accumulated-project-{{cfg.name}}:
   file.accumulated:

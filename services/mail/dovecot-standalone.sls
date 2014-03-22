@@ -20,7 +20,7 @@ dovecot-pkgs:
 {% endif %}
 
 #--- DEV SERVER: ALL EMAILS ARE IN A LOCAL vagrant MAILBOX
-{% if salt['mc_nodetypes.registry]()['is']['devhost'] %}
+{% if salt['mc_nodetypes.registry']()['is']['devhost'] %}
 makina-dovecot-dev-imap-conf:
   file.managed:
     - name: {{ locs.conf_dir }}/dovecot/local.conf

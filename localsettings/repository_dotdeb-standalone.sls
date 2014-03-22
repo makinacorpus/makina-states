@@ -3,7 +3,7 @@
 #  see:
 #   -  makina-states/doc/ref/formulaes/localsettings/repository_dotdeb.rst
 #}
-{%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+{% set localsettings = salt['mc_localsettings.settings']() %}
 {% macro do(full=True) %}
 {{ salt['mc_macros.register']('localsettings', 'repository_dotdeb') }}
 {% if full %}

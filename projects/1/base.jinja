@@ -1,6 +1,7 @@
 {% import "makina-states/nodetypes/vagrantvm.sls" as vagrantvm with context %}
 {% import "makina-states/_macros/salt.jinja" as saltmac with context %}
 {% import "makina-states/_macros/services.jinja" as services with context %}
+{% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
 {#-
 #
 # Install a project from end to end on the behalf of makina states
@@ -25,8 +26,8 @@
 
 # export macro to callees
 {% set services = services %}
-{% set nodetypes = services.nodetypes %}
-{% set localsettings = salt['mc_localsettings.settings']() %} %}
+{% set nodetypes = nodetypes %}
+{% set localsettings = salt['mc_localsettings.settings']() %}
 {% set locs = salt['mc_localsettings.settings']()['locations'] %}
 {% set saltmac = saltmac %}
 

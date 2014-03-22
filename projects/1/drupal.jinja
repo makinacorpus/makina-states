@@ -2,7 +2,7 @@
 {%- import "makina-states/services/db/mysql.sls" as mysql with context %}
 {%- set services = base.services %}
 {%- set saltmac = base.saltmac %}
-{%- set localsettings = base.localsettings %}
+{%- set localsettings = salt['mc_localsettings.settings']() %}
 {%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 {%- set php = salt['mc_php.settings']() %}
 

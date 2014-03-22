@@ -1,12 +1,12 @@
 {%- import "makina-states/services/db/postgresql/hooks.sls" as hooks with context %}
 
 include:
-  - makina-states.services.db.postgresql.hooks
+  - makina-states.settings.db.postgresql.hooks
 
 {%- set orchestrate = hooks.orchestrate %}
 {%- set localsettings = salt['mc_localsettings.settings']() %}
 {%- set locs = localsettings.locations %}
-{% set services = salt['mc_pgsql.settings']() %}
+{% set settings = salt['mc_pgsql.settings']() %}
 {%- if grains['os_family'] in ['Debian'] %}
 pgsql-repo:
   pkgrepo.managed:
@@ -24,7 +24,7 @@ postgresql-pkgs:
     - pkgs:
       - python-virtualenv {# noop #}
       {% if grains['os_family'] in ['Debian'] %}
-      {% for pgver in services.versions %}
+      {% for pgver in settings.versions %}
       - postgresql-{{pgver}}
       - postgresql-server-dev-{{pgver}}
       {% endfor %}

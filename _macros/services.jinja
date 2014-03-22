@@ -4,21 +4,13 @@
 # this macro is deprecated and will be phased out
 #}
 {# DEPRECATED but never ever remove this file to not break api v1#}
-
-{%- import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
-{%- import "makina-states/_macros/controllers.jinja" as controllers with context %}
 {#-
 # expose imported macros
 #}
-{%- set nodetypes = nodetypes %}
-{%- set localsettings = nodetypes.localsettings %}
-{%- set funcs = localsettings.funcs %}
-
+{% import "makina-states/_macros/salt.jinja" as saltmac with context %}
+{% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
 {%- set settings = salt['mc_services.settings']() %}
 {%- set metadata = salt['mc_services.metadata']() %}
 {%- set registry = salt['mc_services.registry']() %}
-
-{%- set mysqlSettings = settings.mysqlSettings  %}
-{%- set myDisableAutoConf = settings.myDisableAutoConf  %}
-{%- set myCnf = settings.myCnf %}
-# vim:set nofoldenable:
+{%- set nodetypes = nodetypes %}
+{%- set saltmac = saltmac %}

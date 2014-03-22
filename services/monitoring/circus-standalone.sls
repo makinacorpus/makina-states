@@ -1,7 +1,5 @@
 {#-
 # Circus
-# Read the circus section of _macros/services.jinja to know which grain/pillar settings
-# can modulate your circus installation
 #
 # You only need to drop a configuration file in the include dir to add a watcher.
 # Please see the circusAddWatcher macro at the end of this file.

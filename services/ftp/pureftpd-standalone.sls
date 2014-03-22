@@ -3,8 +3,6 @@
 #}
 {#-
 # Pure FTPd service
-# Read the pureftpd section of _macros/services.jinja to know which grain/pillar settings
-# can modulate your pureftpd installation
 #}
 {% macro do(full=True) %}
 include:

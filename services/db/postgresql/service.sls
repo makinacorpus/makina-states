@@ -1,10 +1,10 @@
 {%- import "makina-states/services/db/postgresql/hooks.sls" as hooks with context %}
 
 include:
-  - makina-states.services.db.postgresql.hooks
+  - makina-states.settings.db.postgresql.hooks
 
-{% set services = salt['mc_pgsql.settings']() %}
-{%- set default_user = services.user %}
+{% set settings = salt['mc_pgsql.settings']() %}
+{%- set default_user = settings.user %}
 {% set orchestrate = hooks.orchestrate %}
 {#-MAIN SERVICE RESTART/RELOAD watchers #}
 makina-postgresql-service:

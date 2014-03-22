@@ -1,13 +1,13 @@
 {%- import "makina-states/services/db/postgresql/hooks.sls" as hooks with context %}
 {#- see doc/ref/formulaes/services/db/postgresql.rst #}
-{% set services = salt['mc_pgsql.settings']() %}
+{% set settings = salt['mc_pgsql.settings']() %}
 {% set orchestrate = hooks.orchestrate %}
 
 include:
-  - makina-states.services.db.postgresql.hooks
+  - makina-states.settings.db.postgresql.hooks
 
 
-{%- for version in services.versions %}
+{%- for version in settings.versions %}
 pgwrapper-{{version}}-makina-postgresql:
   file.managed:
     - name: /usr/bin/pg-wrapper-{{version}}.sh

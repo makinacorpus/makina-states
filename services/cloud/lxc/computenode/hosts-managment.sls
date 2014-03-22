@@ -1,4 +1,4 @@
-{% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+{% set localsettings = salt['mc_localsettings.settings']() %}
 {% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
 {% import "makina-states/_macros/salt.jinja" as saltmac with context %}
 {% import "makina-states/_macros/services.jinja" as services with context %}
@@ -63,7 +63,7 @@ include:
                     - name: parent-hosts-prepend-accumulator-lxc-{{ sname }}-entries
                     - text: |
                             {{ data.ip }} {{ name }}
-                {% if nodetypes.registry.is.devhost %}
+                {% if salt['mc_nodetypes.registry']()['is']['devhost'] %}
                 alxc-{{sname}}-makina-append-parent-etc.computenode.management-devhost-touch:
                   file.touch:
                     - name: /etc/devhosts.{{name}}

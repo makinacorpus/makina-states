@@ -3,10 +3,9 @@
 # see:
 #   - makina-states/doc/ref/formulaes/nodetypes/travis.rst
 #}
-{% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
 {% macro do(full=True) %}
 {{ salt['mc_macros.register']('nodetypes', 'travis') }}
-{% set localsettings = nodetypes.localsettings %}
+{% set localsettings = salt['mc_localsettings.settings']() %}
 {% if full %}
 include:
   - makina-states.nodetypes.devhost

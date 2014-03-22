@@ -5,7 +5,7 @@
 #}
 
 {% macro do(full=True) %}
-{%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+{% set localsettings = salt['mc_localsettings.settings']() %}
 {%- import "makina-states/_macros/salt.jinja" as saltmac with context %}
 {{ salt['mc_macros.register']('localsettings', 'rvm') }}
 {%- set locs = salt['mc_localsettings.settings']()['locations'] %}

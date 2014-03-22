@@ -1,7 +1,7 @@
 {# Apache specific macros
 # Import this macro file with context so that grains will be available in the macros
 #}
-{% set localsettings = salt['localsettings.group']() %}
+{% set localsettings = salt['mc_localsettings.settings']() %}
 {% set nodetypes_reg = salt['mc_nodetypes.registry']() %}
 {% set apacheData = salt['mc_apache.settings']() %}
 {# * virtualhost => create all states for a virtualhost (virtualhost file, include file, a2ensite/dissite command

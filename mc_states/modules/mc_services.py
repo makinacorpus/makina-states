@@ -46,10 +46,6 @@ def settings():
         pillar = __pillar__
         grains = __grains__
         data = {}
-        # mysql
-        data['mysqlSettings'] = mysqlSettings = __salt__['mc_mysql.settings']()
-        data['myCnf'] = mysqlSettings['myCnf']
-        data['myDisableAutoConf'] = mysqlSettings['noautoconf']
         return data
     return _settings()
 

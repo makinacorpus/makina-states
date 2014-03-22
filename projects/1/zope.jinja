@@ -1,9 +1,9 @@
 {%- import "makina-states/projects/base.jinja" as base with context %}
 {%- set services = base.services %}
 {%- set saltmac = base.saltmac %}
-{%- set localsettings = base.localsettings %}
+{%- set localsettings = salt['mc_localsettings.settings']() %}
 {%- set apacheSettings = salt['mc_apache.settings']() %}
-{%- set locations = base.salt['mc_localsettings.settings']()['locations'] %}
+{%- set locations = salt['mc_localsettings.settings']()['locations'] %}
 
 {#-
 # Base system prerequisite for Plone

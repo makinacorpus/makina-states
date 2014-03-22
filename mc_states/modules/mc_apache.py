@@ -254,7 +254,7 @@ def settings():
         # Ubuntu 13.10 is now providing 2.4 with event by default #
         if (
             grains['lsb_distrib_id'] == "Ubuntu"
-            and grains['lsb_distrib_release'] >= 13.10
+            and "{0}".format(grains['lsb_distrib_release']) >= "13.10"
         ):
             apacheStepOne.update({'mpm': 'event'})
             apacheStepOne.update({'version': '2.4'})

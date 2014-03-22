@@ -2,13 +2,13 @@
 {%- import "makina-states/services/db/postgresql/extensions.sls" as ext with context %}
 {%- import "makina-states/services/db/postgresql/hooks.sls" as hooks with context %}
 
-{% set services = salt['mc_pgsql.settings']() %}
+{% set settings = salt['mc_pgsql.settings']() %}
 {%- set localsettings = salt['mc_localsettings.settings']() %}
 {%- set locs = localsettings.locations %}
-{%- set default_user = services.user %}
+{%- set default_user = settings.user %}
 {% set orchestrate = hooks.orchestrate %}
 include:
-  - makina-states.services.db.postgresql.hooks
+  - makina-states.settings.db.postgresql.hooks
 {#
 # many database installers create the template1
 # with latin1 encoding making then difficult to handle
@@ -46,6 +46,6 @@ makina-postgresql-{{version}}-fix-template1-cleanup:
     - require:
       - cmd: makina-postgresql-{{version}}-fix-template1
 {% endmacro %}
-{%- for version in services.versions %}
+{%- for version in settings.versions %}
 {{ fix(version) }}
 {%- endfor %}

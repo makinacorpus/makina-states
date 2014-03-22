@@ -1,9 +1,9 @@
 {#- Create and grant privs to a postgresql user #}
 {%- import "makina-states/services/db/postgresql/groups.sls" as groups with context %}
 {%- import "makina-states/services/db/postgresql/hooks.sls" as hooks with context %}
-{% set services = salt['mc_pgsql.settings']() %}
+{% set settings = salt['mc_pgsql.settings']() %}
 {% set orchestrate = hooks.orchestrate %}
-{%- set default_user = services.user %}
+{%- set default_user = settings.user %}
 {%- macro postgresql_user(name,
                          password,
                          groups=None,
@@ -18,7 +18,7 @@
                          user=default_user,
                          db_host=None,
                          db_port=None,
-                         version=services.defaultPgVersion,
+                         version=settings.defaultPgVersion,
                          full=True) %}
 {%- if not groups %}
 {%-   set groups = [] %}
@@ -55,7 +55,7 @@
     - password: {{ password }}
 {% endmacro %}
 
-{%- for user, data in services.postgresqlUsers.items() %}
+{%- for user, data in settings.postgresqlUsers.items() %}
 {%-    set groups = data.get('groups', []) %}
 {%-    set pw = data['password'] %}
 {%-    set superuser = data.get('superuser', False) %}

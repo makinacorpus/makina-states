@@ -2,9 +2,8 @@
 # see:
 #   - makina-states/doc/ref/formulaes/nodetypes/lxccontainer.rst
 #}
-{% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
 
-{% set localsettings = nodetypes.localsettings %}
+{% set localsettings = salt['mc_localsettings.settings']() %}
 {% macro do(full=True) %}
 {{ salt['mc_macros.register']('nodetypes', 'lxccontainer') }}
 

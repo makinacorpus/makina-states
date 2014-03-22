@@ -3,7 +3,7 @@
 # see:
 #   - makina-states/doc/ref/formulaes/localsettings/pkgmgr.rst
 #}
-{%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+{% set localsettings = salt['mc_localsettings.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'pkgmgr') }}
 {%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 {%- if grains['os'] in ['Ubuntu', 'Debian'] %}

@@ -120,7 +120,7 @@
 {% endif %}
 
 {% set mode='production' %}
-{% if nodetypes_registry.is.devhost %}
+{% if salt['mc_nodetypes.registry']()['is']['devhost'] %}
 {%  set mode='dev' %}
 {% endif %}
 

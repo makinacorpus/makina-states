@@ -4,7 +4,7 @@
 #   - makina-states/doc/ref/formulaes/localsettings/etckeeper.rst
 #}
 
-{% import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+{% set localsettings = salt['mc_localsettings.settings']() %}
 {% set locs=salt['mc_localsettings.settings']()['locations'] %}
 {% macro do(full=False ) %}
 {{ salt['mc_macros.register']('localsettings', 'etckeeper') }}

@@ -22,7 +22,7 @@
 {% import "makina-states/_macros/apache.jinja" as apache with context %}
 
 {% set nodetypes_registry = salt['mc_nodetypes.registry']() %}
-{% set localsettings = salt['mc_localsettings.settings']() %} %}
+{% set localsettings = salt['mc_localsettings.settings']() %}
 {% set locs = salt['mc_localsettings.settings']()['locations'] %}
 {% set apacheSettings = salt['mc_apache.settings']() %}
 
@@ -104,6 +104,7 @@ modules
 makina-apache-main-conf-included-modules:
   mc_apache.include_module:
     - modules:
+      - version
       - rewrite
       - expires
       - headers
@@ -178,7 +179,7 @@ makina-apache-settings:
         worker_MaxClients: "{{ salt['mc_apache.settings']().worker.MaxClients }}"
         event_AsyncRequestWorkerFactor: "{{ salt['mc_apache.settings']().event.AsyncRequestWorkerFactor }}"
         log_level: "{{ salt['mc_apache.settings']().log_level }}"
-{% if nodetypes_registry.is.devhost %}
+{% if salt['mc_nodetypes.registry']()['is']['devhost'] %}
     - context:
         mode: "dev"
 {% endif %}
@@ -202,7 +203,7 @@ makina-apache-mod-status-settings:
         mode: "production"
         MonitoringServers: "{{ salt['mc_apache.settings']().monitoring.allowed_servers }}"
         ExtendedStatus: "{{ salt['mc_apache.settings']().monitoring.extended_status }}"
-{% if nodetypes_registry.is.devhost %}
+{% if salt['mc_nodetypes.registry']()['is']['devhost'] %}
     - context:
         mode: "dev"
 {% endif %}
@@ -353,7 +354,7 @@ makina-apache-default-vhost-index:
     - template: jinja
     - defaults:
         mode: "production"
-{% if nodetypes.registry.is.devhost %}
+{% if salt['mc_nodetypes.registry']()['is']['devhost'] %}
     - context:
         mode: "dev"
 {% endif %}
@@ -475,7 +476,7 @@ makina-apache-reload:
 
 {# REMOVED, devhost is not using NFS anymore
 #--- APACHE STARTUP WAIT DEPENDENCY --------------
-{% if nodetypes.registry.is.devhost %}
+{% if salt['mc_nodetypes.registry']()['is']['devhost'] %}
 #
 # On a vagrant VM we certainly should wait until NFS mount
 # before starting the web server. Chances are that this NFS mount

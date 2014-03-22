@@ -4,7 +4,7 @@
 #   -  makina-states/doc/ref/formulaes/localsettings/python.rst
 #}
 {% macro do(full=True) %}
-{%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+{% set localsettings = salt['mc_localsettings.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'python') }}
 {% if full %}
 include:

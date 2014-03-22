@@ -3,7 +3,7 @@
 # see:
 #   - makina-states/doc/ref/formulaes/localsettings/hosts.rst
 #}
-{%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+{% set localsettings = salt['mc_localsettings.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'hosts') }}
 {%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 {%- set hosts_list = localsettings.hosts_list %}

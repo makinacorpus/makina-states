@@ -3,5 +3,4 @@
 # see:
 #   - makina-states/doc/ref/formulaes/localsettings/git.rst
 #}
-{%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-{{ salt['mc_macros.autoinclude'](localsettings.registry) }}
+{{ salt['mc_macros.autoinclude'](salt['mc_localsettings.registry']()) }}

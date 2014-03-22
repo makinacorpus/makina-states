@@ -5,7 +5,7 @@
 #}
 
 {% macro do(full=True) %}
-{%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+{% set localsettings = salt['mc_localsettings.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'pkgs') }}
 {%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 
@@ -115,7 +115,7 @@ sys-pkgs:
       - dstat
       {%- endif %}
 
-{% if 'devhost' in localsettings.registry['actives'] -%}
+{% if 'devhost' in salt['mc_localsettings.registry']()['actives'] -%}
 devhost-pkgs:
   pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs:

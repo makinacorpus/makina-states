@@ -1,11 +1,11 @@
 {#- see doc/ref/formulaes/services/db/resql.rst #}
 {%- import "makina-states/services/db/postgresql/hooks.sls" as hooks with context %}
-{% set services = salt['mc_pgsql.settings']() %}
-{%- set default_user = services.user %}
+{% set settings = salt['mc_pgsql.settings']() %}
+{%- set default_user = settings.user %}
 {% set orchestrate = hooks.orchestrate %}
 
 include:
-  - makina-states.services.db.postgresql.hooks
+  - makina-states.settings.db.postgresql.hooks
 
 {% macro install_pg_exts(exts,
                          db=None,
@@ -35,7 +35,7 @@ include:
 {%- do dbs.append(db) %}
 {%- endif %}
 {%- if not versions %}
-{%- set versions = [services.defaultPgVersion] %}
+{%- set versions = [settings.defaultPgVersion] %}
 {%- endif %}
 {%- if version and not version in versions%}
 {%- do versions.append(version) %}

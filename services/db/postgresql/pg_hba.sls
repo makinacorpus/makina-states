@@ -1,13 +1,13 @@
 {%- import "makina-states/services/db/postgresql/hooks.sls" as hooks with context %}
 {#- see doc/ref/formulaes/services/db/postgresql.rst #}
-{% set services = salt['mc_pgsql.settings']() %}
-{%- set default_user = services.user %}
+{% set settings = salt['mc_pgsql.settings']() %}
+{%- set default_user = settings.user %}
 {%- set orchestrate = hooks.orchestrate %}
 
 include:
-  - makina-states.services.db.postgresql.hooks
+  - makina-states.settings.db.postgresql.hooks
 
-{% for pgver in services.versions %}
+{% for pgver in settings.versions %}
 postgresql-pg_hba-conf-{{pgver}}:
   file.managed:
     - name: /etc/postgresql/{{pgver}}/main/pg_hba.conf
@@ -17,7 +17,7 @@ postgresql-pg_hba-conf-{{pgver}}:
     - group: root
     - template: jinja
     - defaults:
-      data: {{services.pg_hba|yaml}}
+      data: {{settings.pg_hba|yaml}}
     - require:
       - mc_proxy: {{orchestrate['base']['postpkg']}}
     - watch_in:

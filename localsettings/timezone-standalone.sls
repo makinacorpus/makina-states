@@ -4,7 +4,7 @@
 #   - makina-states/doc/ref/formulaes/localsettings/timezone.rst
 #}
 
-{%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
+{% set localsettings = salt['mc_localsettings.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'timezone') }}
 {% macro do(full=True) %}
 {%- set locs = salt['mc_localsettings.settings']()['locations'] %}

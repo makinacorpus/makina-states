@@ -1,6 +1,6 @@
 {% import "makina-states/_macros/services.jinja" as services with context %}
 {% set nodetypes = services.nodetypes %}
-{% if nodetypes.registry.is.devhost %}
+{% if salt['mc_nodetypes.registry']()['is']['devhost'] %}
 {% for target, containers in services.lxcSettings.containers.items() %}
 {{target}}-containers-post-setup-devhost:
   salt.state:

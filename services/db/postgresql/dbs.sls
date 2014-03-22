@@ -3,14 +3,14 @@
 {%- import "makina-states/services/db/postgresql/extensions.sls" as ext with context %}
 {%- import "makina-states/services/db/postgresql/hooks.sls" as hooks with context %}
 
-{% set services = salt['mc_pgsql.settings']() %}
+{% set settings = salt['mc_pgsql.settings']() %}
 {%- set localsettings = salt['mc_localsettings.settings']() %}
 {%- set locs = localsettings.locations %}
-{%- set default_user = services.user %}
+{%- set default_user = settings.user %}
 {% set orchestrate = hooks.orchestrate %}
 
 include:
-  - makina-states.services.db.postgresql.hooks
+  - makina-states.settings.db.postgresql.hooks
 
 {# Create a database, and an owner group which owns it #}
 {%- macro postgresql_db(db,
@@ -22,7 +22,7 @@ include:
                         lc_collate = None,
                         lc_ctype = None,
                         user=default_user,
-                        version=services.defaultPgVersion,
+                        version=settings.defaultPgVersion,
                         extensions=None,
                         full=True) -%}
 {# group name is by default the db name #}
@@ -84,8 +84,8 @@ include:
       - mc_proxy: {{orchestrate['base']['postinst'] }}
 
 {% endmacro %}
-{%- for version in services.versions %}
-{%- for db, data in services.pgDbs.items() %}
+{%- for version in settings.versions %}
+{%- for db, data in settings.pgDbs.items() %}
 {%-     set encoding=data.get('encoding', 'utf8') %}
 {%-     set owner=data.get('owner', None) %}
 {%-     set template=data.get('encoding', 'template0')%}

@@ -3,7 +3,7 @@
 {% set cloudSettings= services.cloudSettings %}
 {% set pvdir = cloudSettings.pvdir %}
 {% set pfdir = cloudSettings.pfdir %}
-{% set localsettings = salt['mc_localsettings.settings']() %} %}
+{% set localsettings = salt['mc_localsettings.settings']() %}
 
 include:
 - makina-states.services.cloud.saltify.hooks

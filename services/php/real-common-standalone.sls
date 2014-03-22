@@ -45,12 +45,16 @@ makina-php-apc:
     - watch_in:
       - mc_proxy: makina-php-pre-conf
 
-{% if full %}
+{% if full and not (
+    (grains['os'] in 'Ubuntu')
+    and (localsettings.udist not in ['precise'])
+) %}
 {%   if phpSettings.modules.apc.enabled %}
 makina-php-apc-install:
   cmd.run:
     - name: {{ locs.sbin_dir }}/php5enmod {{s_ALL}} apcu
     {% if grains['os'] in ['Ubuntu'] %}
+    - onlyif: test -e {{ locs.sbin_dir }}/php5enmod
     - unless: {{ locs.sbin_dir }}/php5query -q -s cli -m apcu
     {% endif %}
     - require:
@@ -65,6 +69,7 @@ makina-php-apc-disable:
     {% if grains['os'] in ['Ubuntu'] %}
     - onlyif: {{ locs.sbin_dir }}/php5query -q -s cli -m apcu
     {% endif %}
+    - unless: test ! -e {{ locs.sbin_dir }}/php5enmod
     - require:
       - mc_proxy: makina-php-pre-conf
       - file: makina-php-apc
@@ -82,6 +87,7 @@ makina-php-xdebug-install:
     {% if grains['os'] in ['Ubuntu'] %}
     - unless: {{ locs.sbin_dir }}/php5query -q -s cli -m xdebug
     {% endif %}
+    - onlyif: test -e {{ locs.sbin_dir }}/php5enmod
     - require:
       - mc_proxy: makina-php-pre-conf
     - watch_in:
@@ -93,6 +99,7 @@ makina-php-xdebug-disable:
     {% if grains['os'] in ['Ubuntu'] %}
     - onlyif: {{ locs.sbin_dir }}/php5query -q -s cli -m xdebug
     {% endif %}
+    - unless: test ! -e {{ locs.sbin_dir }}/php5enmod
     - require:
       - mc_proxy: makina-php-pre-conf
     - watch_in:
