@@ -1,4 +1,3 @@
-{%- import "makina-states/_macros/services.jinja" as services with context %}
 {#
 # Idea is to grant everyone member of "(.-)*makina-users" access
 # to managed boxes

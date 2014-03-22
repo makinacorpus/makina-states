@@ -1,7 +1,5 @@
 {% macro do(full=True) %}
-{%- import "makina-states/_macros/services.jinja" as services with context %}
 {{ salt['mc_macros.register']('services', 'base.ntp') }}
-{%- set localsettings = services.localsettings %}
 {%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 
 include:

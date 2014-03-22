@@ -1,9 +1,4 @@
 # see also users.sls
-{%- import "makina-states/_macros/services.jinja" as services with context %}
-{%- set localsettings = services.localsettings %}
-{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
-{% set openssh = salt['mc_ssh.settings']() %}
-
 {{ salt['mc_macros.register']('services', 'base.ssh') }}
 include:
   - makina-states.localsettings.users
