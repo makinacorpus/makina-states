@@ -5,7 +5,7 @@
 {% import "makina-states/localsettings/jdk.sls" as jdk with context %}
 {% import "makina-states/_macros/services.jinja" as services with context %}
 {% set localsettings = services.localsettings %}
-{% set locs = localsettings.locations %}
+{% set locs = salt['mc_localsettings']()['locations'] %}
 {% set data = services.tomcatSettings %}
 {% set conf_dir = data.conf_dir %}
 {% set ver = data.ver %}

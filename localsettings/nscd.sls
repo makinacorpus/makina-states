@@ -5,7 +5,7 @@
 #}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {{ salt['mc_macros.register']('localsettings', 'nscd') }}
-{%- set locs = localsettings.locations %}
+{%- set locs = salt['mc_localsettings']()['locations'] %}
 nscd-pkgs:
   pkg.{{localsettings.installmode}}:
     - pkgs:

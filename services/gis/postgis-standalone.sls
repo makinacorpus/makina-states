@@ -5,7 +5,7 @@
 {%- set services = pgsql.services %}
 {%- set localsettings = services.localsettings %}
 {%- set nodetypes = services.nodetypes %}
-{%- set locs = localsettings.locations %}
+{%- set locs = salt['mc_localsettings']()['locations'] %}
 {{ salt['mc_macros.register']('services', 'gis.postgis') }}
 {% macro do(full=True) %}
 {%- set dbname = services.postgisDbName %}

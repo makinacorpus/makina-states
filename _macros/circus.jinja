@@ -2,7 +2,7 @@
   - see doc/ref/macros/circus.rst
 #}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-{% set locs = localsettings.locations %}
+{% set locs = salt['mc_localsettings']()['locations'] %}
 {% macro circusAddWatcher(name, cmd) %}
 {% set args = kwargs.pop('args', []) %}
 {% set conf_priority = kwargs.pop('conf_priority', '100') %}

@@ -3,7 +3,7 @@
 {% set services = apache.services %}
 {% set localsettings = apache.localsettings %}
 {% set nodetypes = apache.nodetypes %}
-{% set locs = localsettings.locations %}
+{% set locs = salt['mc_localsettings']()['locations'] %}
 {% set phpSettings = common.phpSettings %}
 {% set apacheSettings = services.apacheSettings %}
 {% macro fastcgi_common(

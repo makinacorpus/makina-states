@@ -2,7 +2,7 @@
 {%- import "makina-states/_macros/services.jinja" as services with context %}
 {{ salt['mc_macros.register']('services', 'base.ntp') }}
 {%- set localsettings = services.localsettings %}
-{%- set locs = localsettings.locations %}
+{%- set locs = salt['mc_localsettings']()['locations'] %}
 
 include:
   - makina-states.localsettings.timezone

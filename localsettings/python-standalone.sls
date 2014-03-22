@@ -10,7 +10,7 @@
 include:
   - makina-states.localsettings.pkgmgr
 {% endif %}
-{%- set locs = localsettings.locations %}
+{%- set locs = salt['mc_localsettings']()['locations'] %}
 {%- set pyvers = localsettings.pythonSettings.alt_versions %}
 {%- if (grains['os'] in ['Ubuntu']) and pyvers %}
 {%- set udist = localsettings.udist %}

@@ -4,7 +4,7 @@
 {%- import "makina-states/_macros/services.jinja" as services with context %}
 {%- set localsettings = services.localsettings %}
 {%- set nodetypes = services.nodetypes %}
-{%- set locs = localsettings.locations %}
+{%- set locs = salt['mc_localsettings']()['locations'] %}
 {%- set data = services.snmpdSettings %}
 {{ salt['mc_macros.register']('services', 'monitoring.snmpd') }}
 

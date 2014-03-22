@@ -16,7 +16,7 @@
 {%- import "makina-states/_macros/services.jinja" as services with context %}
 {{ salt['mc_macros.register']('services', 'virt.lxc') }}
 {%- set localsettings = services.localsettings %}
-{%- set locs = localsettings.locations %}
+{%- set locs = salt['mc_localsettings']()['locations'] %}
 {% macro do(full=True) %}
 {% set lxcSettings = services.lxcSettings %}
 include:

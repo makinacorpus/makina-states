@@ -8,7 +8,7 @@
 {%- set saltmac = base.saltmac %}
 {%- set localsettings = base.localsettings %}
 {%- set apacheSettings = services.apacheSettings %}
-{%- set locations = base.localsettings.locations %}
+{%- set locations = base.salt['mc_localsettings']()['locations'] %}
 
 {%- macro ckan_db(common) %}
 {{ pgsql.postgresql_base() }}

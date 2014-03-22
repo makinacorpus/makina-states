@@ -236,7 +236,7 @@ def settings():
         # }
         #
         # include the macro in your states and use:
-        #   {{ localsettings.locations.prefix }}
+        #   {{ salt['mc_localsettings']()['locations'].prefix }}
         #
         data['locations'] = locations = saltmods['mc_utils.defaults'](
             'makina-states.localsettings.locations', {

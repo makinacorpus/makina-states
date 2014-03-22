@@ -3,7 +3,7 @@
 {% set services = services %}
 {% set nodetypes = services.nodetypes %}
 {% set localsettings = services.localsettings %}
-{% set locs = services.localsettings.locations %}
+{% set locs = salt['mc_localsettings']()['locations'] %}
 
 {% set cfg = opts['ms_project'] %}
 {% macro do() %}

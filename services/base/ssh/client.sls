@@ -1,6 +1,6 @@
 {%- import "makina-states/_macros/services.jinja" as services with context %}
 {%- set localsettings = services.localsettings %}
-{%- set locs = localsettings.locations %}
+{%- set locs = salt['mc_localsettings']()['locations'] %}
 {% set openssh = salt['mc_ssh.settings']() %}
 openssh-pkgs:
   pkg.{{localsettings.installmode}}:

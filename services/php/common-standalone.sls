@@ -5,7 +5,7 @@
 {% set services = services  %}
 {% set localsettings = services.localsettings %}
 {% set nodetypes = services.nodetypes %}
-{% set locs = localsettings.locations %}
+{% set locs = salt['mc_localsettings']()['locations'] %}
 {% set phpSettings = services.phpSettings %}
 {% set s_ALL = phpSettings.s_ALL %}
 {% set apacheSettings = services.apacheSettings %}

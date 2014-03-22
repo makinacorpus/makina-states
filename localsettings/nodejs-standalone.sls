@@ -4,7 +4,7 @@
 #   - makina-states/doc/ref/formulaes/localsettings/nodejs.rst
 #}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
-{%- set locs = localsettings.locations %}
+{%- set locs = salt['mc_localsettings']()['locations'] %}
 
 {% macro npmInstall(npmPackage, npmVersion="system") %}
 npm-packages-{{npmPackage}}:

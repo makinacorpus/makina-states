@@ -5,7 +5,7 @@
 #}
 {%- import "makina-states/_macros/localsettings.jinja" as localsettings with context %}
 {{ salt['mc_macros.register']('localsettings', 'network') }}
-{%- set locs = localsettings.locations %}
+{%- set locs = salt['mc_localsettings']()['locations'] %}
 {%- if localsettings.networkManaged %}
 {%- if grains['os_family'] in ['Debian'] %}
 network-cfg:

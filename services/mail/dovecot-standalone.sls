@@ -13,7 +13,7 @@
 {{ salt['mc_macros.register']('services', 'mail.dovecot') }}
 {% set localsettings = services.localsettings %}
 {% set nodetypes = services.nodetypes %}
-{% set locs = localsettings.locations %}
+{% set locs = salt['mc_localsettings']()['locations'] %}
 {% if full %}
 dovecot-pkgs:
   pkg.{{localsettings.installmode}}:
