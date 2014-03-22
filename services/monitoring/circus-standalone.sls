@@ -6,12 +6,8 @@
 # You only need to drop a configuration file in the include dir to add a watcher.
 # Please see the circusAddWatcher macro at the end of this file.
 #}
-{%- import "makina-states/_macros/services.jinja" as services with context %}
-
 {%- macro do(full=True) %}
 {{- salt['mc_macros.register']('services', 'monitoring.circus') }}
-{%- set localsettings = services.localsettings %}
-{%- set nodetypes = services.nodetypes %}
 {%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 {%- set circusSettings = salt['mc_circus.settings']() %}
 {%- set venv = circusSettings['location'] + "/venv" %}

@@ -1,9 +1,6 @@
 {#- Postfix SMTP Server managment #}
 {% macro do(full=True) %}
-{% import "makina-states/_macros/services.jinja" as services with context %}
 {{ salt['mc_macros.register']('services', 'mail.postfix') }}
-{% set localsettings = services.localsettings %}
-{% set nodetypes = services.nodetypes %}
 {% set postfixSettings = salt['mc_postfix.settings']() %}
 {% set locs = salt['mc_localsettings.settings']()['locations'] %}
 include:

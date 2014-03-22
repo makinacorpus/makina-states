@@ -1,6 +1,3 @@
-{% import "makina-states/_macros/services.jinja" as services with context %}
-{% set localsettings = services.localsettings %}
-{% set nodetypes = services.nodetypes %}
 {% set data = salt['mc_haproxy.settings']() %}
 {% macro dispatcher(ldata, id=None) %}
 {% do ldata.setdefault('name', id) %}

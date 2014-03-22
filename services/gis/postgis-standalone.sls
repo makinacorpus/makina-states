@@ -2,9 +2,6 @@
 # Install a postgis enabled database usable as a teamplate for postgis projects
 #}
 {% import "makina-states/services/db/postgresql.sls" as pgsql with context %}
-{%- set services = pgsql.services %}
-{%- set localsettings = services.localsettings %}
-{%- set nodetypes = services.nodetypes %}
 {%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 {{ salt['mc_macros.register']('services', 'gis.postgis') }}
 {% macro do(full=True) %}
@@ -14,9 +11,11 @@ include:
   {% if full -%}
   - makina-states.services.db.postgresql
   {%- endif %}
-{% for postgisVer, pgvers in services.postgisVers.items() -%}
+
+{% set pgSettings = salt['mc_pgsql.settings']() %}
+{% for postgisVer, pgvers in pgSettings.postgis.items() -%}
 {%  for pgVer in pgvers -%}
-{%    if pgVer in services.pgVers -%}
+{%    if pgVer in pgSettings.versions -%}
 {%      if full -%}
 prereq-postgis-{{pgVer}}-{{postgisVer}}:
   pkg.{{salt['mc_localsettings.settings']()['installmode']}}:

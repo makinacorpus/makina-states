@@ -9,10 +9,7 @@
 # --------------------------- END pillar example ------------
 #}
 {% macro do(full=True) %}
-{% import "makina-states/_macros/services.jinja" as services with context %}
 {{ salt['mc_macros.register']('services', 'mail.dovecot') }}
-{% set localsettings = services.localsettings %}
-{% set nodetypes = services.nodetypes %}
 {% set locs = salt['mc_localsettings.settings']()['locations'] %}
 {% if full %}
 dovecot-pkgs:
@@ -23,7 +20,7 @@ dovecot-pkgs:
 {% endif %}
 
 #--- DEV SERVER: ALL EMAILS ARE IN A LOCAL vagrant MAILBOX
-{% if nodetypes.registry.is.devhost %}
+{% if salt['mc_nodetypes.registry]()['is']['devhost'] %}
 makina-dovecot-dev-imap-conf:
   file.managed:
     - name: {{ locs.conf_dir }}/dovecot/local.conf
