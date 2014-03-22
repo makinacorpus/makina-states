@@ -127,7 +127,6 @@
 #}
 # And here is the point where all the things start to work together...
 # Especially when you use hightstates
-{% import "makina-states/_macros/funcs.jinja" as funcs with context %}
 # This loop includes all the kind of things that could be installed
 include:
 {% for kind in salt['mc_macros.kinds']() -%}
