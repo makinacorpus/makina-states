@@ -16,20 +16,20 @@ include:
 {% set sname = data.get('state_name', data['name']) %}
 {% set name = data['name'] %}
 {% if nodetypes.registry.is.devhost %}
-{% set clxcslsname = 'lxc-hosts/{0}-container'.format(sname.replace('.', '')) %}
+{% set clxcslsname = 'lxc.computenode.{0}-container'.format(sname.replace('.', '')) %}
 {% if data['mode'] == 'mastersalt' %}
 {% set clxcsls = '{1}/{0}.sls'.format(clxcslsname, saltmac.msaltRoot) %}
 {% else %}
 {% set clxcsls = '{1}/{0}.sls'.format(clxcslsname, saltmac.saltRoot) %}
 {% endif %}
-c{{sname}}-lxc-hosts-sls-generator-for-hostnode:
+c{{sname}}-lxc.computenode.sls-generator-for-hostnode:
   file.managed:
     - name: {{clxcsls}}
     - user: root
     - mode: 750
     - makedirs: true
     - contents: |
-                alxc-{{sname}}-makina-append-parent-etc-hosts-management:
+                alxc-{{sname}}-makina-append-parent-etc.computenode.management:
                   file.blockreplace:
                     - name: /etc/hosts
                     - marker_start: '#-- start lxc dns {{sname}}:: DO NOT EDIT --'
@@ -38,15 +38,15 @@ c{{sname}}-lxc-hosts-sls-generator-for-hostnode:
                     - append_if_not_found: True
                     - backup: '.bak'
                     - show_changes: True
-                amakina-parent-append-etc-hosts-accumulated-lxc-{{sname}}:
+                amakina-parent-append-etc.computenode.accumulated-lxc-{{sname}}:
                   file.accumulated:
                     - watch_in:
-                       - file: alxc-{{sname}}-makina-append-parent-etc-hosts-management
+                       - file: alxc-{{sname}}-makina-append-parent-etc.computenode.management
                     - filename: /etc/hosts
                     - name: parent-hosts-append-accumulator-lxc-{{ sname }}-entries
                     - text: |
                             {{ data.gateway }} {{ grains['id'] }}
-                lxc-{{sname}}-makina-prepend-parent-etc-hosts-management:
+                lxc-{{sname}}-makina-prepend-parent-etc.computenode.management:
                   file.blockreplace:
                     - name: /etc/hosts
                     - marker_start: '#-- bstart lxc dns {{sname}}:: DO NOT EDIT --'
@@ -55,10 +55,10 @@ c{{sname}}-lxc-hosts-sls-generator-for-hostnode:
                     - prepend_if_not_found: True
                     - backup: '.bak'
                     - show_changes: True
-                makina-parent-prepend-etc-hosts-accumulated-lxc-{{sname}}:
+                makina-parent-prepend-etc.computenode.accumulated-lxc-{{sname}}:
                   file.accumulated:
                     - watch_in:
-                       - file: lxc-{{sname}}-makina-prepend-parent-etc-hosts-management
+                       - file: lxc-{{sname}}-makina-prepend-parent-etc.computenode.management
                     - filename: /etc/hosts
                     - name: parent-hosts-prepend-accumulator-lxc-{{ sname }}-entries
                     - text: |
@@ -69,12 +69,12 @@ c{{sname}}-lxc-hosts-sls-generator-for-hostnode:
     - sls: {{clxcslsname.replace('/', '.')}}
     - concurrent: True
     - watch:
-      - file: c{{sname}}-lxc-hosts-sls-generator-for-hostnode
+      - file: c{{sname}}-lxc.computenode.sls-generator-for-hostnode
       - mc_proxy: {{sname}}-lxc-deploy-end-hook
     - watch_in:
       - mc_proxy: {{sname}}-lxc-deploy-pre-initial-highstate
 {% else %}
-c{{sname}}-lxc-hosts-sls-generator-for-hostnode:
+c{{sname}}-lxc.computenode.sls-generator-for-hostnode:
   mc_proxy.hook: []
 {% endif %}
 {% endfor %}

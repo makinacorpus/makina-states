@@ -14,7 +14,7 @@ include:
 {%    do data.update({'target': target})%}
 {%    set sname = data.get('state_name', data['name']) %}
 {%    set name = data['name'] %}
-{%    set lxcslsname = 'lxc-hosts/{0}'.format(sname.replace('.', '')) %}
+{%    set lxcslsname = 'lxc.computenode.{0}'.format(sname.replace('.', '')) %}
 {%    if data['mode'] == 'mastersalt' %}
 {%        set lxcsls = '{1}/{0}.sls'.format(lxcslsname, saltmac.msaltRoot) %}
 {%    else %}
@@ -29,7 +29,7 @@ include:
     - makedirs: true
     - mode: 750
     - contents: |
-                alxc-{{sname}}-makina-append-parent-etc-hosts-management:
+                alxc-{{sname}}-makina-append-parent-etc.computenode.management:
                   file.blockreplace:
                     - name: /etc/hosts
                     - marker_start: '#-- start lxc dns {{sname}}:: DO NOT EDIT --'
@@ -38,15 +38,15 @@ include:
                     - append_if_not_found: True
                     - backup: '.bak'
                     - show_changes: True
-                amakina-parent-append-etc-hosts-accumulated-lxc-{{sname}}:
+                amakina-parent-append-etc.computenode.accumulated-lxc-{{sname}}:
                   file.accumulated:
                     - watch_in:
-                       - file: alxc-{{sname}}-makina-append-parent-etc-hosts-management
+                       - file: alxc-{{sname}}-makina-append-parent-etc.computenode.management
                     - filename: /etc/hosts
                     - name: parent-hosts-append-accumulator-lxc-{{ sname }}-entries
                     - text: |
                             {{ data.ip }} {{ name }}
-                lxc-{{sname}}-makina-prepend-parent-etc-hosts-management:
+                lxc-{{sname}}-makina-prepend-parent-etc.computenode.management:
                   file.blockreplace:
                     - name: /etc/hosts
                     - marker_start: '#-- bstart lxc dns {{sname}}:: DO NOT EDIT --'
@@ -55,19 +55,19 @@ include:
                     - prepend_if_not_found: True
                     - backup: '.bak'
                     - show_changes: True
-                makina-parent-prepend-etc-hosts-accumulated-lxc-{{sname}}:
+                makina-parent-prepend-etc.computenode.accumulated-lxc-{{sname}}:
                   file.accumulated:
                     - watch_in:
-                       - file: lxc-{{sname}}-makina-prepend-parent-etc-hosts-management
+                       - file: lxc-{{sname}}-makina-prepend-parent-etc.computenode.management
                     - filename: /etc/hosts
                     - name: parent-hosts-prepend-accumulator-lxc-{{ sname }}-entries
                     - text: |
                             {{ data.ip }} {{ name }}
                 {% if nodetypes.registry.is.devhost %}
-                alxc-{{sname}}-makina-append-parent-etc-hosts-management-devhost-touch:
+                alxc-{{sname}}-makina-append-parent-etc.computenode.management-devhost-touch:
                   file.touch:
                     - name: /etc/devhosts.{{name}}
-                lxc-{{sname}}-makina-prepend-parent-etc-hosts-management-devhost:
+                lxc-{{sname}}-makina-prepend-parent-etc.computenode.management-devhost:
                   file.blockreplace:
                     - name: /etc/devhosts.{{name}}
                     - marker_start: '#-- start devhost -- bstart lxc dns {{sname}}:: DO NOT EDIT --'
@@ -77,11 +77,11 @@ include:
                     - backup: '.bak'
                     - show_changes: True
                     - watch:
-                      - file: alxc-{{sname}}-makina-append-parent-etc-hosts-management-devhost-touch
-                makina-parent-prepend-etc-hosts-accumulated-lxc-{{sname}}-devhost:
+                      - file: alxc-{{sname}}-makina-append-parent-etc.computenode.management-devhost-touch
+                makina-parent-prepend-etc.computenode.accumulated-lxc-{{sname}}-devhost:
                   file.accumulated:
                     - watch_in:
-                       - file: lxc-{{sname}}-makina-prepend-parent-etc-hosts-management-devhost
+                       - file: lxc-{{sname}}-makina-prepend-parent-etc.computenode.management-devhost
                     - filename: /etc/devhosts.{{name}}
                     - name: parent-hosts-prepend-accumulator-lxc-{{ sname }}-entries
                     - text: |

@@ -7,8 +7,12 @@ At the moment:
     - LXC container are provisionned via the lxc driver.
     - Bare metal servers are provisionned via the saltify driver
 
+
 .. toctree::
    :maxdepth: 2
 
+   cloudcontroller.rst
+   computenode.rst
+   images.rst
    lxc.rst
    saltify.rst

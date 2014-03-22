@@ -6,8 +6,14 @@ include:
 {% set cloudSettings= services.cloudSettings %}
 {% set lxcSettings = services.lxcSettings %}
 {% for target, containers in services.lxcSettings.containers.items() %}
+{% for k, data in containers.iteritems() %}
 {# authorize root from cloudcontroller to connect via ssh on targets #}
-{% set slsname = 'lxc-hosts/install-{0}-ssh-key'.format(
+{% set name = data.name %}
+{%    set data = data.copy() %}
+{%    do data.update({'state_name': '{0}-{1}'.format(target, k)})%}
+{%    do data.update({'target': target})%}
+{%    set sname = data.get('state_name', data['name']) %}
+{% set slsname = .lxc.container.install-{0}-ssh-key'.format(
             target.replace('.', '_')) %}
 {% if controllers.registry.is.mastersalt %}
 {% set saltr = saltmac.msaltRoot %}
@@ -15,7 +21,7 @@ include:
 {% set saltr = saltmac.saltRoot %}
 {%endif %}
 {% set slspath = '{0}/{1}.sls'.format(saltr, slsname) %}
-{{target}}-lxc-root-keygen:
+{{sname}}-lxc-root-keygen:
   cmd.run:
     - name: ssh-keygen -t dsa
     - user: root
@@ -25,13 +31,13 @@ include:
     - source: /root/.ssh/id_dsa.pub
     - user: root
     - watch:
-      - cmd: {{target}}-lxc-root-keygen
+      - cmd: {{sname}}-lxc-root-keygen
 
-{{target}}-lxc-host-install-ssh-key:
+{{sname}}-lxc-container-install-ssh-key:
   file.managed:
     - name: {{slspath}}
     - watch:
-      - file: {{target}}-lxc-root-keygen
+      - file: {{sname}}-lxc-root-keygen
     - user: root
     - mode: 750
     - makedirs: true
@@ -41,17 +47,18 @@ include:
                     - source: salt://lxc.pub
                     - user: root
   salt.state:
-    - tgt: [{{target}}]
+    - tgt: [{{name}}]
     - expr_form: list
     - sls: {{slsname.replace('/', '.')}}
     - concurrent: True
     - watch:
-      - file: {{target}}-lxc-host-install-ssh-key
+      - file: {{sname}}-lxc-container-install-ssh-key
     - watch_in:
-      - mc_proxy: salt-cloud-lxc-{{target}}-ssh-key
-{{target}}-lxc-root-keygen-clean:
+      - mc_proxy: {{sname}}-lxc-ssh-key
+{{sname}}-lxc-root-keygen-clean:
   file.absent:
     - name: {{saltr}}/lxc.pub
     - watch:
-      - salt: {{target}}-lxc-host-install-ssh-key
+      - salt: {{sname}}-lxc-container-install-ssh-key
+{% endfor %}
 {% endfor %}

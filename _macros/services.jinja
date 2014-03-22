@@ -27,9 +27,14 @@
 {%- set ldapVariables = settings.ldapVariables  %}
 {%- set ldapEn = settings.ldapEn  %}
 {%- set upstart = settings.upstart  %}
-{%- set lxcSettings = settings.lxcSettings %}
-{%- set cloudcontrollerSettings = salt['mc_cloudcontroller.settings']() %}
-{%- set cloudSettings = salt['mc_saltcloud.settings']() %}
+
+{%- set virtlxcSettings = settings.lxcSettings %}
+
+{%- set cloudcomputenodeSettings = salt['mc_cloud_computenode.settings']() %}
+{%- set cloudcontrollerSettings = salt['mc_cloud_controller.settings']() %}
+{%- set cloudlxcSettings = salt['mc_cloud_lxc.settings']() %}
+{%- set cloudsaltifySettings = salt['mc_cloud_lxc.settings']() %}
+
 {%- set tomcatSettings = settings.tomcatSettings  %}
 {%- set ntpEn = settings.ntpEn  %}
 {%- set apacheSettings = settings.apacheSettings  %}
@@ -63,12 +68,10 @@
 {%- set shwData = settings.shorewall %}
 {%- set shorewall = settings.shorewall %}
 
-
 {%- set mysqlSettings = settings.mysqlSettings  %}
 {%- set myDisableAutoConf = settings.myDisableAutoConf  %}
 {%- set myCnf = settings.myCnf %}
 {%- set dbsmartbackupSettings = settings.dbsmartbackupSettings  %}
 {%- set rdiffbackupSettings = settings.rdiffbackupSettings  %}
 {%- set sshSettings = settings.sshSettings  %}
-
 # vim:set nofoldenable:

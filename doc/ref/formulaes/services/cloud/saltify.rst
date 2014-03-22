@@ -29,7 +29,7 @@ The idea is to add to your specific minion pillar some salty entries as follow:
 
 .. code-block:: yaml
 
-  makina-states.services.cloud.salty_targets:
+  makina-states.services.cloud.saltify.targets:
     # minion id to set and also nick fqdn
     gfoobar.test.com:
       ssh_username: ubuntu
@@ -38,7 +38,7 @@ The idea is to add to your specific minion pillar some salty entries as follow:
       ssh_host: 10.5.10.16
       sudo: True
       master: 10.5.0.1 (default to grains['fqdn'])
-      master_port: 4506 (default to 4506)
+      master_port: 4506 (default to 4506 or 4606 in mastersalt mode)
     gfoobar2.test.com:
       ssh_host: 10.5.10.15
       mode: mastersalt

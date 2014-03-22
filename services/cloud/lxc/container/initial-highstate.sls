@@ -15,7 +15,7 @@ include:
 {%    do data.update({'target': target})%}
 {% set sname = data.get('state_name', data['name']) %}
 {% set name = data['name'] %}
-{% set clxcslsname = 'lxc-hosts/{0}-container-initial-hs'.format(sname.replace('.', '')) %}
+{% set clxcslsname = 'lxc.computenode.{0}-container-initial-hs'.format(sname.replace('.', '')) %}
 {% if data['mode'] == 'mastersalt' %}
 {% set salts = saltmac.msaltRoot %}
 {% set msr = saltmac.msr %}
