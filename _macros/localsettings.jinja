@@ -39,6 +39,9 @@
 {# pythonSettings #}
 {%- set pythonSettings = settings.pythonSettings %}
 
+{# collection of filesystem paths #}
+{%- set locations = settings.locations %}
+
 {#- logrotation settings #}
 {%- set rotate = settings.rotate %}
 
@@ -78,6 +81,7 @@
 {%- set ddist         = settings.ddist         %}
 {%- set dcomps        = settings.dcomps        %}
 {%- set ucomps        = settings.ucomps        %}
+{%- set installmode   = settings.installmode   %}
 
 {#- JDK Settings #}
 {%- set jdkSettings = settings.jdkSettings %}

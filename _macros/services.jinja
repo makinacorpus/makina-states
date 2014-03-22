@@ -12,7 +12,7 @@
 {%- set localsettings = nodetypes.localsettings %}
 {%- set funcs = localsettings.funcs %}
 {%- set saltmac = controllers.saltmac %}
-{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
+{%- set locs = nodetypes.localsettings.locations %}
 
 {#- see _modules/mc_services.py for exposed settings #}
 {%- set settings = salt['mc_services.settings']() %}
@@ -22,6 +22,7 @@
 {%- set bindSettings = settings.bindSettings  %}
 {%- set haproxySettings = settings.haproxySettings  %}
 {%- set psadSettings = settings.psadSettings  %}
+{%- set fail2banSettings = settings.fail2banSettings  %}
 {%- set SSLSettings = settings.SSLSettings  %}
 {%- set ldapVariables = settings.ldapVariables  %}
 {%- set ldapEn = settings.ldapEn  %}
@@ -37,6 +38,7 @@
 {%- set tomcatSettings = settings.tomcatSettings  %}
 {%- set ntpEn = settings.ntpEn  %}
 {%- set apacheSettings = settings.apacheSettings  %}
+{%- set circusSettings = settings.circusSettings %}
 {%- set snmpdSettings = settings.snmpdSettings %}
 {%- set etherpadSettings = settings.etherpadSettings %}
 {%- set postfixSettings = settings.postfixSettings %}
@@ -69,4 +71,7 @@
 {%- set mysqlSettings = settings.mysqlSettings  %}
 {%- set myDisableAutoConf = settings.myDisableAutoConf  %}
 {%- set myCnf = settings.myCnf %}
+{%- set dbsmartbackupSettings = settings.dbsmartbackupSettings  %}
+{%- set rdiffbackupSettings = settings.rdiffbackupSettings  %}
+{%- set sshSettings = settings.sshSettings  %}
 # vim:set nofoldenable:
