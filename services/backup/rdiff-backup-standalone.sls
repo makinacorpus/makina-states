@@ -8,8 +8,8 @@
 {%- set nodetypes = services.nodetypes %}
 {%- set locs = localsettings.locations %}
 {{ salt['mc_macros.register']('services', 'backup.rdiff-backup') }}
-{%- set data=services.rdiffbackupSettings %}
-{%- set settings=services.rdiffbackupSettings|yaml %}
+{%- set data=salt['mc_rdiffbackup.settings']() %}
+{%- set settings=salt['mc_rdiffbackup.settings']()|yaml %}
 
 {% if full %}
 remove-rdiff-backup-pkgs:
