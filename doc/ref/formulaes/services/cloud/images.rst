@@ -1,3 +1,0 @@
-Cloud OS images managment
-===========================
-

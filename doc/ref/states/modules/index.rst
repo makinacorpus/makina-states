@@ -19,9 +19,10 @@ Subregistries
    mc_apache.rst
    mc_bind.rst
    mc_circus.rst
+   mc_cloud.rst
    mc_cloud_saltify.rst
-   mc_cloud_cloudcontroller.rst
-   mc_cloud_computenode.rst
+   mc_cloud_cloud_controller.rst
+   mc_cloud_compute_node.rst
    mc_cloud_lxc.rst
    mc_dbsmartbackup.rst
    mc_etherpad.rst

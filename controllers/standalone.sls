@@ -6,8 +6,6 @@
 # already registered services and those one which are configured to be runned
 # via then pillar or via grains (see ../top.sls)
 #
-# Take a look to the _macros/controllers.jinja to have an overview of what is enabled by default
-#
 # We let the user have a word on the final local settings which are activated
 # This can be customized by putting keys either in pillar or in grains
 # in the form: 'makina-states.controllers.<statename>'

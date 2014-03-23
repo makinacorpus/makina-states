@@ -20,6 +20,7 @@ _GLOBAL_KINDS = [
     'services',
     'controllers',
     'nodetypes',
+    'cloud',
 ]
 _SUB_REGISTRIES = [
     'metadata',

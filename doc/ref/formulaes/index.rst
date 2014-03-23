@@ -17,3 +17,10 @@ Makina-states Formulaes
 
    projects/index.rst
 
+
+
+.. toctree::
+   :maxdepth: 3
+
+   cloud/index.rst
+

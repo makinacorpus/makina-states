@@ -42,6 +42,14 @@ def settings():
             makina-states bootsalt args in mastersalt mode
           keep_tmp
             keep tmp files
+          ssh_gateway (all the gw params are opt.)
+               ssh gateway info
+          ssh_gateway_port
+               ssh gateway info
+          ssh_gateway_user
+               ssh gateway info
+          ssh_gateway_key
+               ssh gateway info
 
     """
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
@@ -67,18 +75,30 @@ def settings():
                 'bootsalt_args': '-C --from-salt-cloud -no-M',
                 'bootsalt_mastersalt_args': (
                     '-C --from-salt-cloud --mastersalt-minion'),
-                'bootsalt_branch': {
-                    'prod': 'stable',
-                    'preprod': 'stable',
-                    'dev': 'master',
-                }.get(localsettings['default_env'], 'dev'),
+                'bootsalt_branch': None ,
                 'master_port': __salt__['config.get']('master_port'),
                 'master': __grains__['fqdn'],
                 'saltify_profile': 'salt',
                 'pvdir': prefix + "/cloud.providers.d",
                 'pfdir': prefix + "/cloud.profiles.d",
+                'ssh_gateway': None,
+                'ssh_gateway_user': 'root',
+                'ssh_gateway_key': '/root/.ssh/id_dsa',
+                'ssh_gateway_port': 22,
             }
         )
+        if not data['bootsalt_branch']:
+            data['bootsalt_branch'] = {
+                'prod': 'stable',
+                'preprod': 'stable',
+            }.get(localsettings['default_env'], None)
+        if not data['bootsalt_branch']:
+            k = data['mode'] == 'mastersalt' and 'mastersaltCommonData' or 'saltCommonData'
+            data['bootsalt_branch'] = salt_settings[k][
+                'confRepos']['makina-states']['rev']
+        if not data['bootsalt_branch']:
+            data['bootsalt_branch'] = 'master'
+
         return data
     return _settings()
 
