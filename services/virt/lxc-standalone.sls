@@ -128,7 +128,6 @@ lxc-services-enabling:
     - require:
       - pkg: lxc-pkgs
     {% endif %}
-
 {#-
 # as it is often a mount -bind, we must ensure we can attach dependencies there
 # set in pillar:

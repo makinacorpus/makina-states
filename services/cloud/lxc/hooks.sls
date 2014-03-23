@@ -1,19 +1,20 @@
 {% set localsettings = salt['mc_localsettings.settings']() %}
-{% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
-{% import "makina-states/_macros/salt.jinja" as saltmac with context %}
-{% import "makina-states/_macros/services.jinja" as services with context %}
-{% set cloudSettings= services.cloudSettings %}
-{% set lxcSettings = services.lxcSettings %}
+{% set cloudSettings= salt['mc_cloud_settings.settings']() %}
+{% set lxcSettings = salt['mc_cloud_lxc.settings']() %}
 
 include:
   - makina-states.services.virt.lxc-hooks
   - makina-states.services.cloud.cloudcontroller.hooks
 
-{% for target, containers in services.lxcSettings.containers.items() %}
+{% for target, vm in lxcSettings.vm.items() %}
+salt-cloud-lxc-{{target}}-pre-setup:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: salt-cloud-lxc-{{target}}-ssh-key
 salt-cloud-lxc-{{target}}-ssh-key:
   mc_proxy.hook: []
 
-{%  for k, data in containers.items() -%}
+{%  for k, data in vm.items() -%}
 {%    set data = data.copy() %}
 {%    do data.update({'state_name': '{0}-{1}'.format(target, k)})%}
 {%    do data.update({'target': target})%}

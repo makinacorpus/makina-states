@@ -24,26 +24,36 @@ def gen_id(name):
 
 def settings():
     """
-          targets
-            Target where to bootstrap salt using the saltify cloud_saltify driver
+    Except targets, we take all the default from
+    :ref:`module_mc_cloud_controller`
 
+    mode
+        salt mode (salt/mastersalt)
+    master
+        salt master fqdn to rattach to
+    master_port
+        salt master port to rattach to
+    bootsalt_branch
+        default bootsalt_branch to use
+    targets
+        Targets where to bootstrap salt using the saltcloud saltify
+        driver (something accessible via ssh)
 
-            ::
+        ::
 
-                'salty_targets': {
-                    #'id': {
-                    #    'name': 'germaine.tld',
-                    #    'ssh_host': 'ip_or_dns',
-                    #    'profile': 'salt-minion',
-                    #    'ssh_username': 'foo',
-                    #    'password': 'password',
-                    #    'sudo_password': 'sudo_password',
-                    #    'sudo': True,
+            'salty_targets': {
+                #'id': {
+                #    'name': 'germaine.tld',
+                #    'ssh_host': 'ip_or_dns',
+                #    'profile': 'salt-minion',
+                #    'ssh_username': 'foo',
+                #    'password': 'password',
+                #    'sudo_password': 'sudo_password',
+                #    'sudo': True,
                     #}
     """
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        localsettings = __salt__['mc_localsettings.settings']()
         pillar = __pillar__
         cloudSettings = __salt__['mc_saltcloud.settings']()
         sdata = __salt__['mc_utils.defaults'](
@@ -73,9 +83,7 @@ def settings():
                 or not '--branch' in c_data['script_args']
             ):
                 c_data['script_args'] += ' -b {0}'.format(branch)
-            for k in ['master',
-                      'bootsalt_branch',
-                      'master_port']:
+            for k in ['master', 'bootsalt_branch', 'master_port']:
                 c_data[k] = c_data.get(k, sdata[k])
                 c_data.setdefault(k, sdata.get(k, None))
         return sdata
@@ -84,7 +92,5 @@ def settings():
 
 def dump():
     return mc_states.utils.dump(__salt__, __name)
-
-# 
 
 # vim:set et sts=4 ts=4 tw=80:

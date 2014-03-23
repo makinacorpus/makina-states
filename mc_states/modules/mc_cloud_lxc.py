@@ -3,11 +3,10 @@
 __docformat__ = 'restructuredtext en'
 '''
 
-.. _module_mc_lxc:
+.. _module_mc_cloud_lxc:
 
 mc_cloud_lxc / lxc registry for compute nodes
 ===============================================
-
 
 '''
 
@@ -20,18 +19,15 @@ import random
 import socket
 import copy
 
+
 from mc_states import saltapi
 from salt.utils.odict import OrderedDict
+from salt.utils.pycrypto import secure_password
 
 _errmsg = saltapi._errmsg
-__name = 'lxc'
+__name = 'mc_cloud_lxc'
 
 log = logging.getLogger(__name__)
-
-
-PROJECT_PATH = 'project/makinacorpus/makina-states'
-SFTP_URL = 'frs.sourceforge.net:/home/frs/{0}'.format(PROJECT_PATH)
-TARGET = '/var/lib/lxc/makina-states'
 
 
 def gen_mac():
@@ -103,12 +99,7 @@ def settings():
             None
         default_container
             default image
-        cron_sync
-            activate the img synchronnizer
-        cron_hour
-            hour for the img synchronnizer
-        cron_minute
-            minute for the img synchronnizer
+
         gateway
             '10.5.0.1'
         master
@@ -166,7 +157,7 @@ def settings():
             []
         lxc_conf_unset'
             []
-    containers
+    vm
         Mapping of containers defintions classified by host
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
@@ -175,48 +166,15 @@ def settings():
         pillar = __pillar__
         nt_registry = __salt__['mc_nodetypes.registry']()
         cloudSettings = __salt__['mc_cloud_controller.settings']()
-        if 'mastersalt' in cloudSettings['prefix']:
-            prefix = '/srv/mastersalt'
-        else:
-            prefix = '/srv/salt'
-
-        # attention first image here is the default !
-        images = OrderedDict()
-        images['makina-states-precise'] = {}
-        for img in images:
-            images[img]['builder_ref'] = '{0}-lxc-ref.foo.net'.format(img)
-            md5_file = os.path.join(
-                prefix,
-                'makina-states/versions/'
-                '{0}-lxc_version.txt.md5'.format(img))
-            ver_file = os.path.join(
-                prefix,
-                'makina-states/versions/'
-                '{0}-lxc_version.txt'.format(img))
-            if (
-                not os.path.exists(ver_file)
-                and not os.path.exists(md5_file)
-            ):
-                continue
-            with open(ver_file) as fic:
-                images[img]['lxc_tarball_ver'] = fic.read().strip()
-            with open(md5_file) as fic:
-                images[img]['lxc_tarball_md5'] = fic.read().strip()
-            images[img]['lxc_tarball'] = (
-                'https://downloads.sourceforge.net/makinacorpus'
-                '/makina-states/'
-                '{1}-lxc-{0}.tar.xz'
-            ).format(images[img]['lxc_tarball_ver'], img)
-            images[img]['lxc_tarball_name'] = os.path.basename(
-                images[img]['lxc_tarball'])
-        default_container = [a for a in images][0]
-        default_containers = OrderedDict()
+        imgSettings = __salt__['mc_cloud_images.settings']()
+        default_container = [a for a in imgSettings['lxc']][0]
+        default_vm = OrderedDict()
         # reactivate to provision
         # when you do maintenance
         # default_container:
         maintenance = False
         if maintenance:
-            default_containers[grains['id']] = {
+            default_vm[grains['id']] = {
                 'name': default_container,
                 'profile_type': 'dir-scratch',
                 'ip': '0.0.0.0',  # set later
@@ -228,18 +186,11 @@ def settings():
         # nor cron sync
         dptype = 'lvm'
         backing = 'lvm'
-        cron_sync = True
         if nt_registry['is']['devhost']:
-            cron_sync = False
             dptype = 'dir'
             backing = 'dir'
         lxcSettings = __salt__['mc_utils.defaults'](
             'makina-states.services.cloud.lxc', {
-                'images_root': '/var/lib/lxc',
-                'cron_sync': cron_sync,
-                'cron_hour': '3',
-                'cron_minute': '3',
-                'images': images,
                 'dnsservers': ['8.8.8.8', '4.4.4.4'],
                 'defaults': {
                     'default_container': default_container,
@@ -253,7 +204,7 @@ def settings():
                     'ssh_gateway_user': 'root',
                     'ssh_gateway_key': '/root/.ssh/id_dsa',
                     'ssh_gateway_port': None,
-                    'master': None,
+                    'master': cloudSettings['master'],
                     'master_port': cloudSettings['master_port'],
                     'image': 'ubuntu',
                     'network': '10.5.0.0',
@@ -271,7 +222,7 @@ def settings():
                     'lxc_conf': [],
                     'lxc_conf_unset': [],
                 },
-                'containers': default_containers,
+                'vms': default_vm,
                 'lxc_cloud_profiles': {
                     'xxxtrem': {'size': '2000g', },
                     'xxtrem': {'size': '1000g', },
@@ -287,36 +238,29 @@ def settings():
                 }
             }
         )
-        lxcSettings['images'] = __salt__['mc_utils.defaults'](
-            'makina-states.services.virt.lxc.images',
-            lxcSettings['images'])
         if maintenance and (
             '0.0.0.0' ==
-            lxcSettings['containers'][
+            lxcSettings['vms'][
                 grains['id']][default_container]['ip']
         ):
-            lxcSettings['containers'][
+            lxcSettings['vms'][
                 grains['id']][default_container]['ip'] = (
                 '.'.join(
                     lxcSettings['defaults']['network'].split(
                         '.')[:3] + ['2']))
-        if not lxcSettings['defaults']['master']:
-            lxcSettings['defaults']['master'] = (
-                lxcSettings['defaults']['gateway'])
-        for target in [t for t in lxcSettings['containers']]:
+        for target in [t for t in lxcSettings['vms']]:
+            master = lxcSettings['defaults']['master']
+            # if it is not a distant minion, use private gateway ip
+            if __grains__['id'] == target:
+                master = lxcSettings['defaults']['gateway']
             # filter dicts and overiddes
-            for container in lxcSettings['containers'][target]:
-                lxc_data = lxcSettings['containers'][target][container]
-                lxc_data['mac'] = __salt__['mc_lxc.find_mac_for_container'](
+            for container in lxcSettings['vms'][target]:
+                lxc_data = lxcSettings['vms'][target][container]
+                lxc_data.setdefault('master', master)
+                lxc_data.setdefault('ssh_gateway', target)
+                lxc_data['mac'] = find_mac_for_container(
                     target, container, lxc_data)
-                try:
-                    socket.gethostbyname(target)
-                    # if it is a distant minion
-                    if __grains__['id'] != target:
-                        lxc_data['ssh_gateway'] = target
-                except Exception:
-                    pass
-                for i in ['ip', 'password']:
+                for i in ['ip']:
                     if not i in lxc_data:
                         raise Exception(
                             'Missing data {1}\n:{0}'.format(i, lxc_data))
@@ -338,11 +282,9 @@ def settings():
                 else:
                     sprofile = '-{0}'.format(profile)
                 lxc_data.setdefault(
-                    'profile',
-                    __salt__['mc_saltcloud.gen_id'](
-                        'ms-{0}{1}-{2}'.format(target,
-                                               sprofile,
-                                               profile_type)))
+                    'profile', __salt__['mc_saltcloud.gen_id'](
+                        'ms-{0}{1}-{2}'.format(
+                            target, sprofile, profile_type)))
                 lxc_data.setdefault('name', container)
                 lxc_data.setdefault('mode', lxcSettings['defaults']['mode'])
                 lxc_data.setdefault('size', None)
@@ -391,7 +333,7 @@ def find_mac_for_container(target, container, lxc_data=None):
     container on a speific host'''
     if not lxc_data:
         lxc_data = {}
-    gid = 'makina-states.services.virt.lxc.containerssettings.{1}.{1}.mac'.format(
+    gid = 'makina-states.services.cloud.lxc.vmsettings.{1}.{1}.mac'.format(
         target, container)
     mac = lxc_data.get('mac', __salt__['mc_utils.get'](gid, None))
     if not mac:
@@ -403,6 +345,32 @@ def find_mac_for_container(target, container, lxc_data=None):
                 'Error while setting grainmac for {0}/{1}'.format(target,
                                                                   container))
     return mac
+
+
+def find_password_for_container(target,
+                                container,
+                                lxc_data=None,
+                                pwlen=32):
+    '''Return the container password after creating it 
+    the first time
+    THIS IS NOT IMPLEMENTED YET
+    '''
+    raise Exception('Not implemented')
+    if not lxc_data:
+        lxc_data = {}
+    password = lxc_data.get('password', None)
+    gid = ('makina-states.services.cloud.'
+           'lxc.vmsettings.'
+           '{1}.{1}.password').format(target, container)
+    if not password:
+        __salt__['grains.setval'](gid, secure_password(pwlen))
+        __salt__['saltuitil.sync_grains']()
+        password = __salt__['mc_utils.get'](gid)
+        if not password:
+            raise Exception(
+                'Error while setting password grain for {0}/{1}'.format(
+                    target, container))
+    return password
 
 
 def find_ip_for_container(target, container, lxc_data=None):
@@ -418,7 +386,7 @@ def find_ip_for_container(target, container, lxc_data=None):
     if not lxc_data:
         lxc_data = {}
     ip4 = lxc_data.get('ip4', None)
-    gid = 'makina-states.services.virt.lxc.containers.{0}.{1}.ip4'.format(
+    gid = 'makina-states.services.virt.lxc.vm.{0}.{1}.ip4'.format(
         target, container)
     if not ip4:
         __salt__['grains.setval'](gid, gen_ip4())
@@ -435,100 +403,5 @@ def dump():
     return mc_states.utils.dump(__salt__,__name)
 
 
-def sf_release(img='makina-states-precise'):
-    '''Upload the makina-states container lxc tarball to sourceforge;
-    this is used in makina-states.services.cloud.lxc as a base
-    for other containers.
-
-    pillar/grain parameters:
-
-        makina-states.sf user
-
-    Do a release::
-
-        salt-call -all mc_lxc.sf_release
-    '''
-    _cli = __salt__.get
-    ret = {
-        'result': True,
-        'comment': '',
-        'trace': '',
-    }
-    root = _cli('mc_utils.get')('file_roots')['base'][0]
-    ver_file = os.path.join(
-        root,
-        'makina-states/versions/{0}-lxc_version.txt'.format(img))
-    try:
-        cur_ver = int(open(ver_file).read().strip())
-    except:
-        cur_ver = 0
-    next_ver = cur_ver + 1
-    user = _cli('mc_utils.get')('makina-states.sf_user', 'kiorky')
-    dest = '{1}-lxc-{0}.tar.xz'.format(next_ver, img)
-    container_p = '/var/lib/lxc/{0}'.format(img)
-    fdest = '/var/lib/lxc/{0}'.format(dest)
-    if not os.path.exists(container_p):
-        _errmsg(ret, '{0} container does not exists'.format(img))
-    aclf = os.path.join(container_p, 'acls.txt')
-    if not os.path.exists(fdest):
-        cmd = 'getfacl -R . > acls.txt'
-        cret = _cli('cmd.run_all')(cmd, cwd=container_p, salt_timeout=60 * 60)
-        if cret['retcode']:
-            _errmsg('error with acl')
-        # ignore some paths in the acl file
-        # (we have no more special cases, but leave this code in case)
-        ignored = []
-        acls = []
-        with open(aclf) as f:
-            skip = False
-            for i in f.readlines():
-                for path in ignored:
-                    if path in i:
-                        skip = True
-                if not i.strip():
-                    skip = False
-                if not skip:
-                    acls.append(i)
-        with open(aclf, 'w') as w:
-            w.write(''.join(acls))
-        cmd = ('tar cJfp {0} . '
-               '--ignore-failed-read --numeric-owner').format(fdest)
-        cret = _cli('cmd.run_all')(
-            cmd,
-            cwd=container_p,
-            env={'XZ_OPT': '-7e'},
-            salt_timeout=60 * 60)
-        if cret['retcode']:
-            _errmsg(ret, 'error with compressing')
-    cmd = 'rsync -avzP {0} {1}@{2}/{3}.tmp'.format(fdest, user, SFTP_URL, dest)
-    cret = _cli('cmd.run_all')(cmd, cwd=container_p, salt_timeout=8 * 60 * 60)
-    if cret['retcode']:
-        return _errmsg(ret, 'error with uploading')
-    cmd = 'echo "rename {0}.tmp {0}" | sftp {1}@{2}'.format(dest,
-                                                            user,
-                                                            SFTP_URL)
-    cret = _cli('cmd.run_all')(cmd, cwd=container_p, salt_timeout=60)
-    if cret['retcode']:
-        _errmsg(ret, 'error with renaming')
-    cmd = "md5sum {0} |awk '{{print $1}}'".format(fdest)
-    cret = _cli('cmd.run_all')(cmd, cwd=container_p, salt_timeout=60 * 60)
-    if cret['retcode']:
-        _errmsg(ret, 'error with md5')
-    with open(ver_file + ".md5", 'w') as f:
-        f.write("{0}".format(cret['stdout']))
-    with open(ver_file, 'w') as f:
-        f.write("{0}".format(next_ver))
-    cmd = (
-        ('git add *-lxc*version*txt*;'
-         'git commit versions -m "new lxc release {0}";'
-         'git push').format(next_ver))
-    cret = _cli('cmd.run_all')(
-        cmd,
-        cwd=root + '/makina-states',
-        salt_timeout=60)
-    if cret['retcode']:
-        _errmsg(ret, 'error with commiting new version')
-    ret['comment'] = 'release {0} done'.format(next_ver)
-    return ret
 
 # vim:set et sts=4 ts=4 tw=80:

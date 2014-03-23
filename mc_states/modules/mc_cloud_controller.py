@@ -7,13 +7,13 @@ mc_cloud_controller / cloud related variables
 
 - This contains generate settings around salt_cloud
 - This contains also all targets to be driven using the saltify driver
-- LXC driver profile and containers settings are in :ref:`module_mc_lxc`.
+- LXC driver profile and containers settings are in :ref:`module_mc_cloud_lxc`.
 
 '''
 # Import salt libs
 import mc_states.utils
 
-__name = 'cloud_controller'
+__name = 'mc_cloud_controller'
 
 
 def gen_id(name):
@@ -22,6 +22,8 @@ def gen_id(name):
 
 def settings():
     """
+    makina-states cloud controller common options
+
           master
             The default master to link to into salt cloud profile
           master_port
@@ -41,31 +43,25 @@ def settings():
           keep_tmp
             keep tmp files
 
-            ::
-
-                'salty_targets': {
-                    #'id': {
-                    #    'name': 'germaine.tld',
-                    #    'ssh_host': 'ip_or_dns',
-                    #    'profile': 'salt-minion',
-                    #    'ssh_username': 'foo',
-                    #    'password': 'password',
-                    #    'sudo_password': 'sudo_password',
-                    #    'sudo': True,
-                    #}
     """
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
         localsettings = __salt__['mc_localsettings.settings']()
-        salt_registry = __salt__['mc_controllers.registry']()
+        ct_registry = __salt__['mc_controllers.registry']()
         salt_settings = __salt__['mc_salt.settings']()
         pillar = __pillar__
-        if salt_registry['is']['mastersalt_master']:
+        if (
+            ct_registry['is']['mastersalt']
+            or ct_registry['is']['mastersalt_master']
+        ):
+            root = salt_settings['msaltRoot']
             prefix = salt_settings['mconfPrefix']
         else:
+            root = salt_settings['saltRoot']
             prefix = salt_settings['confPrefix']
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.cloud', {
+                'root': root,
                 'prefix': prefix,
                 'mode': 'mastersalt',
                 'bootsalt_args': '-C --from-salt-cloud -no-M',

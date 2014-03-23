@@ -229,9 +229,9 @@ def autoinclude(reg, additional_includes=None):
     if includes:
         includes.insert(0, 'include:\n')
         sls += ''.join(includes)
-    # more harm than good, cycle errors are too easilly triggered
-    # between kinds
-    #sls += '''
+# more harm than good, cycle errors are too easilly triggered
+# between kinds
+#sls += '''
 #{kind}-postinstall-hook:
 #  mc_proxy.hook:
 #    - watch:

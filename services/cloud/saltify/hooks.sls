@@ -1,5 +1,5 @@
 include:
-  - makina-states.services.cloud.cloudcontroller.hooks
+  - makina-states.services.cloud.cloud_controller.hooks
 saltify-pre-install:
   mc_proxy.hook:
     - watch:
