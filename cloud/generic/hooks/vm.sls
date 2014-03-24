@@ -3,17 +3,6 @@ cloud-generic-vm-pre-pre-deploy:
     - watch_in:
       - mc_proxy: cloud-generic-vm-post-pre-deploy
 
-cloud-generic-vm-pre-images-deploy:
-  mc_proxy.hook:
-    - watch:
-      - mc_proxy: cloud-generic-vm-pre-pre-deploy
-    - watch_in:
-      - mc_proxy: cloud-generic-vm-post-images-deploy
-
-cloud-generic-vm-post-images-deploy:
-  mc_proxy.hook:
-    - watch_in:
-      - mc_proxy: cloud-generic-vm-post-pre-deploy
 
 cloud-generic-vm-post-pre-deploy:
   mc_proxy.hook:

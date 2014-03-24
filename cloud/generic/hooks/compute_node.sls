@@ -50,6 +50,30 @@ cloud-generic-compute_node-post-reverseproxy-deploy:
     - watch_in:
       - mc_proxy: cloud-generic-compute_node-post-deploy
 
+cloud-generic-compute_node-pre-virt-type-deploy:
+  mc_proxy.hook:
+    - watch:
+      - mc_proxy: cloud-generic-compute_node-post-reverseproxy-deploy
+    - watch_in:
+      - mc_proxy: cloud-generic-compute_node-post-virt-type-deploy
+
+cloud-generic-compute_node-post-virt-type-deploy:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: cloud-generic-compute_node-post-deploy
+
+cloud-generic-compute_node-pre-images-deploy:
+  mc_proxy.hook:
+    - watch:
+      - mc_proxy: cloud-generic-compute_node-post-virt-type-deploy
+    - watch_in:
+      - mc_proxy: cloud-generic-compute_node-post-images-deploy
+
+cloud-generic-compute_node-post-images-deploy:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: cloud-generic-compute_node-post-deploy
+
 cloud-generic-compute_node-post-deploy:
   mc_proxy.hook:
     - watch_in:

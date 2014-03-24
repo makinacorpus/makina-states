@@ -1,0 +1,70 @@
+include:
+  - makina-states.cloud.generic.hooks.compute_node
+{% set csettings = salt['mc_cloud.settings']() %}
+{% set settings = salt['mc_cloud_compute_node.settings']() %}
+{% for target, data in settings['targets'].iteritems() %}
+{% if data.has.lxc %}
+{% set cptslsname = '{1}/{0}/lxc-installation'.format(target.replace('.', ''),
+                                                 csettings.compute_node_sls_dir) %}
+{% set cptsls = '{1}/{0}.sls'.format(cptslsname, csettings.root) %}
+# get an haproxy proxying all request on 80+43 + alternate ports for ssh traffic
+{% set sdata = data|yaml %}
+{% set sdata = sdata.replace('\n', ' ') %}
+{{target}}-gen-lxc-images-templates:
+  file.managed:
+    - name: {{cptsls}}
+    - makedirs: true
+    - mode: 750
+    - user: root
+    - group: editor
+    - watch:
+      - mc_proxy: cloud-generic-compute_node-post-reverseproxy-deploy
+    - watch_in:
+      - mc_proxy: cloud-generic-compute_node-pre-virt-type-deploy
+    - contents: |
+      {% raw %}
+      {% set lxcSettings = salt['mc_lxc.settings']() %}
+      include:
+          - makina-states.cloud.lxc.hooks
+          - makina-states.services.firewall.shorewall
+          - makina-states.services.virt.lxc
+        {% if grains['os'] not in ['Ubuntu'] %}
+        etc-init.d-lxc-net-makina:
+          file.managed:
+            - name: /etc/init.d/lxc-net-makina
+            - template: jinja
+            - defaults: {{lxcSettings.defaults|yaml}}
+            - source: salt://makina-states/files/etc/init.d/lxc-net-makina.sh
+            - mode: 750
+            - user: root
+            - group: root
+            - require_in:
+              - service: lxc-services-enabling
+        {% else %}
+        etc-init-lxc-net-makina:
+          file.managed:
+            - name: /etc/init/lxc-net-makina.conf
+            - template: jinja
+            - source: salt://makina-states/files/etc/init/lxc-net-makina.conf
+            - mode: 750
+            - user: root
+            - defaults: {{lxcSettings.defaults|yaml}}
+            - group: root
+            - require_in:
+              - service: lxc-services-enabling
+        {% endif %}
+        lxc-makina-services-enabling:
+          service.running:
+            - enable: True
+            - names:
+              - lxc
+              - lxc-net
+              - lxc-net-makina
+            - require_in:
+              - mc_proxy: lxc-post-inst
+        {% endraw %}
+{% endif %}
+{% endfor %}
+maybe-only-one-gen-lxc:
+  mc_proxy.hook : []
+
