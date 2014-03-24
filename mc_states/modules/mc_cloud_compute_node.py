@@ -70,6 +70,7 @@ def feed_settings_from_virt_modules(targets):
                 targets.setdefault(target['vms'], OrderedDict())
                 targets[target]['vms'][data['name']] = {
                     'ip':  data['ip'],
+                    'domains':  data['domains'],
                     'dns':  data['name']}
     return targets
 
@@ -98,30 +99,32 @@ def feed_reverse_proxies_settings(targets):
         for vm, tdata in cdata.get('vms', {}).iteritems():
             for dns, data in tdata.iteritems():
                 ip = data['ip']
-                dns = data['dns']
-                http_proxy['raw_opts'].insert(
-                    0, 'acl host_{0} hdr(host) -i {0}'.format(dns))
-                http_proxy['raw_opts'].append(
-                    'use_backend bck_{0} if host_{0}'.format(dns))
-                http_backends.append({
-                    'name': 'bck_{0}'.format(dns),
-                    'servers': [
-                        {'name': 'bck_{0}1'.format(dns),
-                         'bind': '{0}:80'.format(ip),
-                         'opts': 'check'}]})
-                https_proxy['raw_opts'].insert(
-                    0, 'acl host_{0} hdr(host) -i {0}'.format(dns))
-                https_proxy['raw_opts'].append(
-                    'use_backend securebck_{0} if host_{0}'.format(dns))
-                https_backends.append({
-                    'name': 'securebck_{0}'.format(dns),
-                    'servers': [
-                        {'name': 'bck_{0}1'.format(dns),
-                         'bind': '{0}:443'.format(ip),
-                         'opts': 'check'}]})
+                main_domain = data['domains'][0]
+                domains = data['domains']
+                for domain in domains:
+                    http_proxy['raw_opts'].insert(
+                        0, 'acl host_{0} hdr(host) -i {0}'.format(domain))
+                    http_proxy['raw_opts'].append(
+                        'use_backend bck_{0} if host_{0}'.format(domain))
+                    http_backends.append({
+                        'name': 'bck_{0}'.format(domain),
+                        'servers': [
+                            {'name': 'bck_{0}1'.format(domain),
+                             'bind': '{0}:80'.format(ip),
+                             'opts': 'check'}]})
+                    https_proxy['raw_opts'].insert(
+                        0, 'acl host_{0} hdr(host) -i {0}'.format(domain))
+                    https_proxy['raw_opts'].append(
+                        'use_backend securebck_{0} if host_{0}'.format(domain))
+                    https_backends.append({
+                        'name': 'securebck_{0}'.format(domain),
+                        'servers': [
+                            {'name': 'bck_{0}1'.format(domain),
+                             'bind': '{0}:443'.format(ip),
+                             'opts': 'check'}]})
                 ssh_port = find_avalaible_port(targets, target, data)
                 ssh_proxies.extend([{
-                    'name': 'lst_{0}'.format(dns),
+                    'name': 'lst_{0}'.format(main_domain),
                     'bind': ':{0}'.format(ssh_port),
                     'mode': 'tcp',
                     'raw_opts': [],

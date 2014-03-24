@@ -86,6 +86,9 @@ def settings():
         defaults settings to provision lxc containers
         Those are all redefinable at each container level
 
+        domains
+            list of domains tied with this host (first is minion id
+            and main domain name, it is automaticly added)
         ssh_gateway
             ssh gateway info
         ssh_gateway_port
@@ -287,6 +290,9 @@ def settings():
                         'ms-{0}{1}-{2}'.format(
                             target, sprofile, profile_type)))
                 lxc_data.setdefault('name', container)
+                lxc_data.setdefault('domains', [])
+                if not container in lxc_data['domains']:
+                    lxc_data['domains'].append(container)
                 lxc_data.setdefault('mode', lxcSettings['defaults']['mode'])
                 lxc_data.setdefault('size', None)
                 lxc_data.setdefault('from_container', None)
@@ -353,7 +359,7 @@ def find_password_for_container(target,
                                 container,
                                 lxc_data=None,
                                 pwlen=32):
-    '''Return the container password after creating it 
+    '''Return the container password after creating it
     the first time
     THIS IS NOT IMPLEMENTED YET
     '''

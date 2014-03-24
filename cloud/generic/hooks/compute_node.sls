@@ -20,6 +20,18 @@ cloud-generic-compute_node-post-grains-deploy:
     - watch_in:
       - mc_proxy: cloud-generic-compute_node-pre-deploy
 
+cloud-generic-compute_node-pre-host-ssh-key-deploy:
+  mc_proxy.hook:
+    - watch:
+      - mc_proxy: cloud-generic-compute_node-post-pre-deploy
+    - watch_in:
+      - mc_proxy: cloud-generic-compute_node-post-host-ssh-key-deploy
+
+cloud-generic-compute_node-post-host-ssh-key-deploy:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: cloud-generic-compute_node-pre-deploy
+
 cloud-generic-compute_node-pre-deploy:
   mc_proxy.hook:
     - watch_in:
@@ -85,6 +97,18 @@ cloud-generic-compute_node-pre-post-deploy:
       - mc_proxy: cloud-generic-compute_node-final
 
 cloud-generic-compute_node-post-post-deploy:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: cloud-generic-compute_node-final
+
+cloud-generic-compute_node-pre-grains-deploy:
+  mc_proxy.hook:
+    - watch:
+      - mc_proxy: cloud-generic-compute_node-post-post-deploy
+    - watch_in:
+      - mc_proxy: cloud-generic-compute_node-post-grains-deploy
+
+cloud-generic-compute_node-post-grains-deploy:
   mc_proxy.hook:
     - watch_in:
       - mc_proxy: cloud-generic-compute_node-final

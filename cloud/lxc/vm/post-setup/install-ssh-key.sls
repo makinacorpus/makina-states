@@ -1,5 +1,6 @@
 {% set saltreg = mc_salt['mc_controllers.settings']() %}
 include:
+  - makina-states.cloud.generic.genssh
   - makina-states.services.cloud.lxc.hooks
 {% set cloudSettings = salt['mc_cloud.settings']() %}
 {% set lxcSettings= salt['mc_cloud_lxc.settings']() %}
@@ -14,18 +15,6 @@ include:
 {% set slsname = 'lxc.vm.install-{0}-ssh-key'.format(
                           target.replace('.', '_')) %}
 {% set saltr = cloudSettings.root %}
-{{sname}}-lxc-root-keygen:
-  cmd.run:
-    - name: ssh-keygen -t dsa
-    - user: root
-    - unless: test -e /root/.ssh/id_dsa
-  file.copy:
-    - name: {{saltr}}/lxc.pub
-    - source: /root/.ssh/id_dsa.pub
-    - user: root
-    - watch:
-      - cmd: {{sname}}-lxc-root-keygen
-
 {{sname}}-lxc.vm-install-ssh-key:
   file.managed:
     - name: {{slspath}}

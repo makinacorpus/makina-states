@@ -1,7 +1,7 @@
 {# specific install rules on devhost for lxc managment #}
 include:
   {# lxc may not be installed directly on the cloud controller ! #}
-  - makina-states.services.cloud.lxc.hooks
+  - makina-states.cloud.generic.hooks.compute_node
 
 cloud-lxc-devhost-symdir:
   file.directory:
