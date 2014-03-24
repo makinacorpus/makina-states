@@ -1,4 +1,4 @@
 include:
-  - makina-states.services.cloud.lxc.compute_node.pre-setup.install
-  - makina-states.services.cloud.lxc.compute_node.setup.install
-  - makina-states.services.cloud.lxc.compute_node.post-setup.install
+  - makina-states.services.cloud.lxc.compute_node.pre-deploy.install
+  - makina-states.services.cloud.lxc.compute_node.deploy.install
+  - makina-states.services.cloud.lxc.compute_node.post-deploy.install
