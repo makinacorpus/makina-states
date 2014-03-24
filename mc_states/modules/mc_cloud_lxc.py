@@ -190,7 +190,7 @@ def settings():
             dptype = 'dir'
             backing = 'dir'
         lxcSettings = __salt__['mc_utils.defaults'](
-            'makina-states.services.cloud.lxc', {
+            'makina-states.cloud.lxc', {
                 'dnsservers': ['8.8.8.8', '4.4.4.4'],
                 'defaults': {
                     'default_container': default_container,
@@ -201,6 +201,7 @@ def settings():
                     'gateway': '10.5.0.1',
                     'mode': cloudSettings['mode'],
                     'ssh_gateway': cloudSettings['ssh_gateway'],
+                    'ssh_gateway_password': cloudSettings['ssh_gateway_password'],
                     'ssh_gateway_user': cloudSettings['ssh_gateway_user'],
                     'ssh_gateway_key': cloudSettings['ssh_gateway_key'],
                     'ssh_gateway_port': cloudSettings['ssh_gateway_port'],
@@ -282,7 +283,7 @@ def settings():
                 else:
                     sprofile = '-{0}'.format(profile)
                 lxc_data.setdefault(
-                    'profile', __salt__['mc_saltcloud.gen_id'](
+                    'profile', __salt__['mc_cloud_controller.gen_id'](
                         'ms-{0}{1}-{2}'.format(
                             target, sprofile, profile_type)))
                 lxc_data.setdefault('name', container)
@@ -308,12 +309,13 @@ def settings():
                     lxc_data.setdefault(
                         'from_container',
                         lxcSettings['defaults']['default_container'])
+                lxc_data = saltapi.get_gateway(
+                    lxc_data, lxcSettings)
                 for i in ["from_container", 'bootsalt_branch',
                           "master", "master_port", "autostart",
-                          "ssh_gateway", "ssh_gateway_port",
-                          "ssh_gateway_user", "ssh_gateway_key",
                           'size', 'image', 'bridge', 'netmask', 'gateway',
                           'dnsservers', 'backing', 'vgname', 'lvname',
+                          "gateway",
                           'vgname', 'ssh_username', 'users', 'sudo',
                           'lxc_conf_unset', 'lxc_conf']:
                     lxc_data.setdefault(

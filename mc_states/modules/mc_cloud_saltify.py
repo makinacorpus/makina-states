@@ -14,6 +14,7 @@ mc_cloud_controller / cloud related variables
 '''
 # Import salt libs
 import mc_states.utils
+from mc_states import saltapi
 
 __name = 'cloud_saltify'
 
@@ -62,10 +63,13 @@ def settings():
                 ssh gateway info
             ssh_gateway_key
                 ssh gateway info
+            ssh_gateway_password
+                ssh gateway password
             name
                 name of the host if it does not match id
                 (do not use...)
-            ssh_host 'ip_or_dns', (
+            ip
+                eventual ip if dns is not yet accessible
             mode
                 'mastersalt',
             ssh_username
@@ -88,6 +92,7 @@ def settings():
                 'bootsalt_mastersalt_args': (
                     cloudSettings['bootsalt_mastersalt_args']),
                 'ssh_gateway': cloudSettings['ssh_gateway'],
+                'ssh_gateway_password': cloudSettings['ssh_gateway_password'],
                 'ssh_gateway_user': cloudSettings['ssh_gateway_user'],
                 'ssh_gateway_key': cloudSettings['ssh_gateway_key'],
                 'ssh_gateway_port': cloudSettings['ssh_gateway_port'],
@@ -101,7 +106,7 @@ def settings():
         for t in [a for a in sdata['targets']]:
             c_data = sdata['targets'][t]
             c_data['name'] = c_data.get('name', t)
-            c_data['ssh_host'] = c_data['name']
+            c_data['ssh_host'] = c_data.get('ip', c_data['name'])
             c_data['profile'] = 'ms-salt-minion'
             c_data.setdefault('mode', sdata['mode'])
             default_args = {
@@ -110,21 +115,16 @@ def settings():
             c_data['keep_tmp'] = c_data.get('keep_tmp', False)
             c_data['script_args'] = c_data.get('script_args', default_args)
             branch = c_data.get('bootsalt_branch', sdata['bootsalt_branch'])
-            c_data.setdefault('gateway', {})
-            gw = c_data.get('ssh_gateway', sdata['ssh_gateway'])
-            if gw:
-                for k in [
-                    'ssh_gateway', 'ssh_gateway_user',
-                    'ssh_gateway_key', 'ssh_gateway_port',
-                ]:
-                    c_data['gateway'].setdefault(
-                        k, c_data.get(k, sdata.get(k, None)))
+
+            c_data = saltapi.get_gateway(c_data, sdata)
+
             if (
                 not '-b' in c_data['script_args']
                 or not '--branch' in c_data['script_args']
             ):
                 c_data['script_args'] += ' -b {0}'.format(branch)
             for k in ['master',
+                      "gateway",
                       'bootsalt_branch',
                       'master_port']:
                 c_data.setdefault(k, sdata.get(k, None))

@@ -1,7 +1,7 @@
 include:
   - makina-states.cloud.generic.hooks
 
-cloud-generic-not-applicable-controller-post-deploy:
+cloud-generic-not-applicable-vm-post-deploy:
   mc_proxy.hook:
     - watch:
       - mc_proxy: cloud-generic-pre-post-deploy

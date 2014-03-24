@@ -226,4 +226,21 @@ def _errmsg(ret, msg):
             err += '\n{0}:\n{1}\n'.format(k, ret[k])
     raise SaltExit(err)
 
+
+def get_gateway(target_data, default_data):
+    target_data.setdefault('gateway', {})
+    gw = target_data.get('ssh_gateway', default_data.get('ssh_gateway', None))
+    if gw:
+        for k in [
+            'ssh_gateway', 'ssh_gateway_user',
+            "ssh_gateway_password",
+            'ssh_gateway_key', 'ssh_gateway_port',
+        ]:
+            target_data['gateway'].setdefault(
+                k, target_data.get(k, default_data.get(k, None)))
+        if target_data['gateway']['ssh_gateway_password']:
+            del target_data['gateway']['ssh_gateway_key']
+    return target_data
+
+
 # vim:set et sts=4 ts=4 tw=80:

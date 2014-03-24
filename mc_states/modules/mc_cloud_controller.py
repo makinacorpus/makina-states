@@ -23,33 +23,40 @@ def gen_id(name):
 def settings():
     """
     makina-states cloud controller common options
+        is
+          various tests
 
-          master
-            The default master to link to into salt cloud profile
-          master_port
-            The default master port to link to into salt cloud profile
-          mode
-            (salt or mastersal (default)t)
-          pvdir
-            salt cloud providers directory
-          pfdir
-            salt cloud profile directory
-          bootsalt_branch
-            bootsalt branch to use (default: master or prod if prod)
-          bootsalt_args
-            makina-states bootsalt args in salt mode
-          bootsalt_mastersalt_args
-            makina-states bootsalt args in mastersalt mode
-          keep_tmp
-            keep tmp files
-          ssh_gateway (all the gw params are opt.)
-               ssh gateway info
-          ssh_gateway_port
-               ssh gateway info
-          ssh_gateway_user
-               ssh gateway info
-          ssh_gateway_key
-               ssh gateway info
+        compute_nodes
+          information about current nodes
+
+        master
+          The default master to link to into salt cloud profile
+        master_port
+          The default master port to link to into salt cloud profile
+        mode
+          (salt or mastersal (default)t)
+        pvdir
+          salt cloud providers directory
+        pfdir
+          salt cloud profile directory
+        bootsalt_branch
+          bootsalt branch to use (default: master or prod if prod)
+        bootsalt_args
+          makina-states bootsalt args in salt mode
+        bootsalt_mastersalt_args
+          makina-states bootsalt args in mastersalt mode
+        keep_tmp
+          keep tmp files
+        ssh_gateway (all the gw params are opt.)
+             ssh gateway info
+        ssh_gateway_port
+             ssh gateway info
+        ssh_gateway_user
+             ssh gateway info
+        ssh_gateway_key
+             ssh gateway info
+        ssh_gateway_password
+             ssh gateway info
 
     """
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
@@ -68,8 +75,14 @@ def settings():
             root = salt_settings['saltRoot']
             prefix = salt_settings['confPrefix']
         data = __salt__['mc_utils.defaults'](
-            'makina-states.services.cloud', {
+            'makina-states.cloud', {
                 'root': root,
+                'vms_sls_dir': (
+                    'cloud-controller/vms'
+                ),
+                'compute_node_sls_dir': (
+                    'cloud-controller/compute_node'
+                ),
                 'prefix': prefix,
                 'mode': 'mastersalt',
                 'bootsalt_args': '-C --from-salt-cloud -no-M',
@@ -81,6 +94,12 @@ def settings():
                 'saltify_profile': 'salt',
                 'pvdir': prefix + "/cloud.providers.d",
                 'pfdir': prefix + "/cloud.profiles.d",
+                'is': {
+                    'cloud_controller': False,
+                    'compute_node': False,
+                    'vm': False,
+                },
+                'ssh_gateway_password': None,
                 'ssh_gateway': None,
                 'ssh_gateway_user': 'root',
                 'ssh_gateway_key': '/root/.ssh/id_dsa',
@@ -93,7 +112,10 @@ def settings():
                 'preprod': 'stable',
             }.get(localsettings['default_env'], None)
         if not data['bootsalt_branch']:
-            k = data['mode'] == 'mastersalt' and 'mastersaltCommonData' or 'saltCommonData'
+            if data['mode'] == 'mastersalt':
+                k = 'mastersaltCommonData'
+            else:
+                k = 'saltCommonData'
             data['bootsalt_branch'] = salt_settings[k][
                 'confRepos']['makina-states']['rev']
         if not data['bootsalt_branch']:

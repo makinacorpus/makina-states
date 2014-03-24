@@ -31,13 +31,14 @@ def lazy_subregistry_get(__salt__, registry):
         def _call(*a, **kw):
             REG = __salt__['mc_macros.registry_kind_get'](registry)
             # TODO: replace the next line with the two others with a better test
-            # cache each registry 3 minutes, which should be sufficient
+            # cache each registry 10 seconds. which should be sufficient
             # to render the whole sls files
-            tkey = "{0}".format(time() // (3 * 60))
+            tkey = "{0}".format(time() // (10 * 1))
             ckey = _CACHEKEY.format(key)
             if not ckey in REG:
                 REG[ckey] = ''
             if tkey != REG[ckey] and key in REG:
+                import pdb;pdb.set_trace()  ## Breakpoint ##
                 del REG[key]
             if not key in REG:
                 REG[key] = func(*a, **kw)

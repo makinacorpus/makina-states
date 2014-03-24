@@ -42,4 +42,6 @@ cloud-saltify-post-post-deploy:
   mc_proxy.hook:
     - watch_in:
       - mc_proxy: cloud-generic-pre-deploy
+      - mc_proxy: cloud-generic-pre-reverseproxy-deploy
+      - mc_proxy: cloud-generic-pre-grains-deploy
 

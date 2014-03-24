@@ -1,3 +1,4 @@
 include:
-  - makina-states.cloud.genereic.compute_node.pre-setup.install-reverse.proxy
+  - makina-states.cloud.generic.compute_node.pre-deploy.install-grains
+  - makina-states.cloud.generic.compute_node.pre-deploy.install-reverseproxy
 

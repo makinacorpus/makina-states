@@ -49,7 +49,7 @@ def settings():
         pillar = __pillar__
         # attention first image here is the default !
         images = OrderedDict()
-        cloud_settings = __salt__['mc_cloud_controller.registry']()
+        cloud_settings = __salt__['mc_cloud_controller.settings']()
         nt_registry = __salt__['mc_nodetypes.registry']()
         sv_registry = __salt__['mc_services.registry']()
         images['makina-states-precise'] = {}
@@ -88,7 +88,7 @@ def settings():
         ):
             cron_sync = False
         data = __salt__['mc_utils.defaults'](
-            'makina-states.services.cloud.images', {
+            'makina-states.cloud.images', {
                 'lxc': {
                     'images_root': '/var/lib/lxc',
                     'images': images,

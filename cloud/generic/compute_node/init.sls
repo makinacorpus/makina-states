@@ -1,4 +1,4 @@
 include:
-  - makina-states.cloud.compute_node.pre-setup
-  - makina-states.cloud.compute_node.setup
-  - makina-states.cloud.compute_node.post-setup
+  - makina-states.cloud.generic.compute_node.pre-deploy
+  - makina-states.cloud.generic.compute_node.deploy
+  - makina-states.cloud.generic.compute_node.post-deploy
