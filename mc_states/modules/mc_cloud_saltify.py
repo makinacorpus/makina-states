@@ -4,7 +4,7 @@ __docformat__ = 'restructuredtext en'
 '''
 .. _module_mc_cloud_saltify:
 
-mc_cloud_controller / cloud related variables
+mc_cloud_saltify / cloud related variables
 ==============================================
 
 - This contains generate settings around cloud_saltify
@@ -26,7 +26,7 @@ def gen_id(name):
 def settings():
     """
     Except targets, we take all the default from
-    :ref:`module_mc_cloud_controller`
+    :ref:`module_mc_cloud`
 
     bootsalt_args
         args to give to bootsalt
@@ -85,7 +85,7 @@ def settings():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
         pillar = __pillar__
-        cloudSettings = __salt__['mc_cloud_controller.settings']()
+        cloudSettings = __salt__['mc_cloud.settings']()
         sdata = __salt__['mc_utils.defaults'](
             'makina-states.cloud.saltify', {
                 'bootsalt_args': cloudSettings['bootsalt_args'],

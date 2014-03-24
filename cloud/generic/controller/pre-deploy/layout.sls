@@ -3,7 +3,7 @@
 {% set pvdir = cloudSettings.pvdir %}
 {% set pfdir = cloudSettings.pfdir %}
 include:
-  - makina-states.cloud.generic.hooks
+  - makina-states.cloud.generic.hooks.controller
 salt_cloud-dirs:
   file.directory:
     - names:
@@ -14,6 +14,6 @@ salt_cloud-dirs:
     - group: {{localsettings.group }}
     - mode: 2770
     - require:
-      - mc_proxy: cloud-generic-pre-pre-deploy
+      - mc_proxy: cloud-generic-controller-pre-pre-deploy
     - require_in:
-      - mc_proxy: cloud-generic-pre-post-deploy
+      - mc_proxy: cloud-generic-controller-pre-post-deploy

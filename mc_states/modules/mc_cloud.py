@@ -81,6 +81,9 @@ def settings():
         data = __salt__['mc_utils.defaults'](
             'makina-states.cloud', {
                 'root': root,
+                'all_sls_dir': (
+                    'cloud-controller/all'
+                ),
                 'vms_sls_dir': (
                     'cloud-controller/vms'
                 ),

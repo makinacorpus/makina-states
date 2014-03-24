@@ -1,5 +1,5 @@
 include:
-  - makina-states.cloud.generic.hooks
+  - makina-states.cloud.generic.hooks.compute_node
 {# to reverse proxy a host, by default we redirect only and only:
  #  - http
  #  - https
@@ -16,14 +16,14 @@ include:
 {% set csettings = salt['mc_cloud.settings']() %}
 {% set settings = salt['mc_cloud_compute_node.settings']() %}
 {% set localsettings = salt['mc_localsettings.settings']() %}
-{% for target, data in settings['reverse_proxies'].iteritems() %}
-{% set cptslsname = '{1}/{0}/reverseproxy'.format(target.replace('.', ''),
+{% for target, data in settings['targets'].iteritems() %}
+{% set cptslsname = '{1}/{0}/firewall'.format(target.replace('.', ''),
                                                   csettings.compute_node_sls_dir) %}
 {% set cptsls = '{1}/{0}.sls'.format(cptslsname, csettings.root) %}
 # get an haproxy proxying all request on 80+43 + alternate ports for ssh traffic
 {% set sdata = data|yaml %}
 {% set sdata = sdata.replace('\n', ' ') %}
-{{target}}-run-haproxy-installation:
+{{target}}-gen-firewall-installation:
   file.managed:
     - name: {{cptsls}}
     - makedirs: true
@@ -32,31 +32,9 @@ include:
     - group: editor
     - contents: |
               include:
-                - makina-states.services.proxy.haproxy
                 - makina-states.services.firewall.shorewall
-              cpt-cloud-target{{target}}-haproxy-cfg:
-                file.managed:
-                  - name: {{salt['mc_haproxy.settings']().config_dir}}/extra/cloudcontroller.cfg
-                  - source: salt://makina-states/files/etc/haproxy/cloudcontroller.cfg
-                  - user: root
-                  - group: root
-                  - mode: 644
-                  - makedirs: true
-                  - template: jinja
-                  - defaults:
-                    cdata: {{sdata}}
-                  - watch:
-                    - mc_proxy: haproxy-pre-conf-hook
-                  - watch_in:
-                    - mc_proxy: haproxy-post-conf-hook
-  salt.state:
-    - tgt: [{{target}}]
-    - expr_form: list
-    - sls: {{cptslsname.replace('/', '.')}}
-    - concurrent: True
     - watch:
-      - file: {{target}}-run-haproxy-installation
-      - mc_proxy: cloud-generic-pre-reverseproxy-deploy
+      - mc_proxy: cloud-generic-compute_node-pre-firewall-deploy
     - watch_in:
-      - mc_proxy: cloud-generic-post-reverseproxy-deploy
+      - mc_proxy: cloud-generic-compute_node-post-firewall-deploy
 {% endfor %}

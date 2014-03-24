@@ -38,7 +38,6 @@ def lazy_subregistry_get(__salt__, registry):
             if not ckey in REG:
                 REG[ckey] = ''
             if tkey != REG[ckey] and key in REG:
-                import pdb;pdb.set_trace()  ## Breakpoint ##
                 del REG[key]
             if not key in REG:
                 REG[key] = func(*a, **kw)

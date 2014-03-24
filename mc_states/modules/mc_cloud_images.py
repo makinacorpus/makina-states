@@ -49,7 +49,7 @@ def settings():
         pillar = __pillar__
         # attention first image here is the default !
         images = OrderedDict()
-        cloud_settings = __salt__['mc_cloud_controller.settings']()
+        cloud_settings = __salt__['mc_cloud.settings']()
         nt_registry = __salt__['mc_nodetypes.registry']()
         sv_registry = __salt__['mc_services.registry']()
         images['makina-states-precise'] = {}

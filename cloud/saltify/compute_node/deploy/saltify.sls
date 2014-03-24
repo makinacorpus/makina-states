@@ -1,9 +1,12 @@
 {% set cloudSettings = salt['mc_cloud.settings']() %}
+{% set cloudcsettings = salt['mc_cloud_controller.settings']() %}
 {% set cloudsaltSettings = salt['mc_cloud_saltify.settings']() %}
 include:
   - makina-states.cloud.saltify.hooks
 
 {% for target, data in cloudsaltSettings.targets.items() %}
+{%  set mtdata = cloudcsettings.compute_nodes[target] %}
+{%  if mtdata.activated.get('saltify') %}
 {%    set name = data['name'] %}
 {{target}}-{{name}}-saltify-deploy:
   cloud.profile:
@@ -28,4 +31,5 @@ include:
     - {{var}}: {{data[var]}}
 {%      endif%}
 {%    endfor%}
+{%  endif%}
 {% endfor %}

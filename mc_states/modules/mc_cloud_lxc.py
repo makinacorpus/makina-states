@@ -165,7 +165,7 @@ def settings():
         grains = __grains__
         pillar = __pillar__
         nt_registry = __salt__['mc_nodetypes.registry']()
-        cloudSettings = __salt__['mc_cloud_controller.settings']()
+        cloudSettings = __salt__['mc_cloud.settings']()
         imgSettings = __salt__['mc_cloud_images.settings']()
         default_container = [a for a in imgSettings['lxc']][0]
         default_vm = OrderedDict()
