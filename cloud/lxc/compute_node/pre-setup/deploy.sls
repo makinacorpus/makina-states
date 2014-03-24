@@ -1,4 +1,4 @@
-{% set cloudSettings = salt['mc_cloud_controller.settings']() %}
+{% set cloudSettings = salt['mc_cloud.settings']() %}
 {% set imgSettings = salt['mc_cloud_images.settings']() %}
 
 include:

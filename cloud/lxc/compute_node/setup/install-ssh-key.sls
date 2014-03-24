@@ -1,6 +1,6 @@
 {% import "makina-states/_macros/controllers.jinja" as controllers with context %}
 {% import "makina-states/_macros/salt.jinja" as saltmac with context %}
-{% set cloudSettings = salt['mc_cloud_controller.settings']() %}
+{% set cloudSettings = salt['mc_cloud.settings']() %}
 {% set lxcSettings = salt['mc_cloud_lxc.settings']() %}
 include:
   - makina-states.services.cloud.lxc.hooks

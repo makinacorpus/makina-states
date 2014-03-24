@@ -13,7 +13,7 @@ include:
  # eg ip: 10.5.0.2 will have its ssh port mapped to 40002 on host
  # eg ip: 10.5.1.2 will have its ssh port mapped to 40258 on host
  #}
-{% set csettings = salt['mc_cloud_controller.settings']() %}
+{% set csettings = salt['mc_cloud.settings']() %}
 {% set settings = salt['mc_cloud_compute_node.settings']() %}
 {% set localsettings = salt['mc_localsettings.settings']() %}
 {% for target, data in settings['reverse_proxies'].iteritems() %}

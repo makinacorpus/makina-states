@@ -1,6 +1,6 @@
 include:
   - makina-states.services.cloud.lxc.hooks
-{% set cloudSettings    = salt['mc_cloud_controller.settings']()%}
+{% set cloudSettings = salt['mc_cloud.settings']()%}
 {% set pvdir = cloudSettings.pvdir %}
 {% set pfdir = cloudSettings.pfdir %}
 providers_lxc_salt:

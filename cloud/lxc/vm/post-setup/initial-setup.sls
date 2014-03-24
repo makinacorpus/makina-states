@@ -1,5 +1,4 @@
 {% set lxcSettings= salt['mc_cloud_lxc.settings']() %}
-{% set cloudSettings= salt['mc_cloud_controller.settings']() %}
 
 include:
   - makina-states.services.cloud.lxc.hooks

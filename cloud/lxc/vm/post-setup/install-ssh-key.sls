@@ -1,7 +1,7 @@
 {% set saltreg = mc_salt['mc_controllers.settings']() %}
 include:
   - makina-states.services.cloud.lxc.hooks
-{% set cloudSettings= salt['mc_cloud_controller.settings']() %}
+{% set cloudSettings = salt['mc_cloud.settings']() %}
 {% set lxcSettings= salt['mc_cloud_lxc.settings']() %}
 {% for target, vms in lxcSettings.vms.items() %}
 {% for k, data in vms.iteritems() %}
