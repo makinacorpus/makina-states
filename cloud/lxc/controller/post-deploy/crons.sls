@@ -1,5 +1,5 @@
 include:
-  - makina-states.services.cloud.lxc.hooks
+  - makina-states.cloud.generic.hooks.controller
 {% set settings = salt['mc_cloud_images.settings']() %}
 {% if settings.lxc.cron_sync %}
 syncron-lxc-ms:
@@ -8,6 +8,8 @@ syncron-lxc-ms:
     - hour: {{settings.lxc.cron_hour}}
     - name: /usr/bin/mastersalt-run -linfo mc_lxc.sync_images > /dev/null
     - identifier: ms lxc image synchronniser
+    - watch:
+      - mc_proxy: cloud-generic-controller-pre-post-deploy
     - watch_in:
-      - mc_proxy: salt-cloud-lxc-default-template
+      - mc_proxy: cloud-generic-controller-post-post-deploy
 {% endif %}

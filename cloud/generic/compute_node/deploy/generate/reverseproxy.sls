@@ -21,8 +21,6 @@ include:
                                                   csettings.compute_node_sls_dir) %}
 {% set cptsls = '{1}/{0}.sls'.format(cptslsname, csettings.root) %}
 # get an haproxy proxying all request on 80+43 + alternate ports for ssh traffic
-{% set sdata = data|yaml %}
-{% set sdata = sdata.replace('\n', ' ') %}
 {{target}}-gen-haproxy-installation:
   file.managed:
     - name: {{cptsls}}
@@ -31,6 +29,7 @@ include:
     - user: root
     - group: editor
     - contents: |
+              {% raw %}{%set sdata = "{% endraw %}{{sdata.replace('\n', ' ')}}{% raw %}" %}{% endraw %}
               include:
                 - makina-states.services.proxy.haproxy
               cpt-cloud-target{{target}}-haproxy-cfg:
