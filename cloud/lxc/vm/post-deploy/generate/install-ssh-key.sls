@@ -1,6 +1,7 @@
 {% set compute_node_settings= salt['mc_cloud_controller.settings']() %}
 {% set cloudSettings= salt['mc_cloud.settings']() %}
 include:
+  - makina-states.cloud.generic.genssh
   - makina-states.cloud.generic.hooks.vm
 {% set cloudSettings = salt['mc_cloud.settings']() %}
 {% set lxcSettings= salt['mc_cloud_lxc.settings']() %}
@@ -23,9 +24,14 @@ include:
     - watch_in:
       - mc_proxy: cloud-{{vmname}}-generic-vm-pre-install-ssh-key
     - contents: |
+                insdsakey:
+                  ssh_auth.present:
+                    - source: salt://{{cloudSettings.all_sls_dir}}/rootkey-dsa.pub
+                    - user: root
                 inskey:
                   ssh_auth.present:
-                    - source: salt://rootkey.pub
+                    - source: salt://{{cloudSettings.all_sls_dir}}/rootkey-rsa.pub
                     - user: root
+
 {% endfor %}
 {% endfor %}

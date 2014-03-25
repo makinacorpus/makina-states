@@ -1,5 +1,4 @@
-{{- salt["mc_macros.register"]("services", "cloud.generic") }}
+{{-salt["mc_macros.register"]("cloud", "generic") }}
 include:
-  - makina-states.cloud.generic.controller
-  - makina-states.cloud.generic.compute_node
-  - makina-states.cloud.generic.vm
+  - makina-states.cloud.generic.generate
+  - makina-states.cloud.generic.install

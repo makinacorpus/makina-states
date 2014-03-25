@@ -15,10 +15,11 @@ import yaml
 import mc_states.utils
 from salt.utils.odict import OrderedDict
 
+from mc_states import api
+
 __name = 'mc_cloud_compute_node'
 
 log = logging.getLogger(__name__)
-
 
 VIRT_TYPES = {
     'lxc': {}
@@ -42,7 +43,7 @@ def get_ssh_port_start():
         'makina-states.cloud.compute_node.ssh_start_port', 40000)
 
 
-def _find_avalaible_port(targets, target, data):
+def _find_available_port(targets, target, data):
     ip = data['ip']
     ip_parts = ip.split('.')
     ssh_start_port = int(get_ssh_port_start())
@@ -121,6 +122,7 @@ def _configure_http_reverse(main_domain,
 
 
 def _feed_reverse_proxies_settings(targets):
+    _s = __salt__.get
     for target, cdata in targets.items():
         http_proxy = cdata.setdefault('http_proxy',
                                       {'name': target,
@@ -132,27 +134,58 @@ def _feed_reverse_proxies_settings(targets):
                                         'mode': 'http',
                                         'bind': '*:443',
                                         'raw_opts': []})
-        ssh_proxies = cdata.setdefault('ssh_proxies', [])
         https_backends = cdata.setdefault('https_backends', [])
         http_backends = cdata.setdefault('http_backends', [])
-        for vm, data in cdata.get('vms', {}).items():
+        vms_infos = cdata.get('vms', {}).items()
+        for vm, data in vms_infos:
             ip = data['ip']
             main_domain = data['domains'][0]
             domains = data['domains']
-            ssh_port = _find_avalaible_port(targets, target, data)
-            ssh_proxies.extend([{
-                'name': 'lst_{0}'.format(main_domain),
-                'bind': ':{0}'.format(ssh_port),
-                'mode': 'tcp',
-                'raw_opts': [],
-                'servers': [{
-                    'name': 'sshserver',
-                    'bind': '{0}:22'.format(ip),
-                    'opts': 'check'}]}])
             for domain in domains:
                 _configure_http_reverse(
                     main_domain, ip, http_proxy, https_proxy,
                     http_backends, https_backends, domain=domain)
+
+
+def _get_next_available_port(ports, start, stop):
+    for i in range(start, stop + 1):
+        if not i in ports:
+            return i
+    raise ValueError('mc_compute_node: No more available ssh port')
+
+
+def _feed_ssh_reverse_proxy(targets, start, end):
+    _s = __salt__.get
+    mkey = 'makina-states.cloud.ssh-mappings'
+    ssh_maps = _s('mc_utils.get')(mkey, {})
+    for target, cdata in targets.items():
+        vms_infos = cdata.get('vms', {})
+        ssh_proxies = cdata.setdefault('ssh_proxies', [])
+        for a in [a for a in ssh_maps]:
+            ssh_maps[a] = int(ssh_maps[a])
+        # filter old vms grains
+        for avm in [a for a in ssh_maps]:
+            if not avm in vms_infos:
+                del ssh_maps[avm]
+        for vm, data in vms_infos.items():
+            port = ssh_maps.get(vm, None)
+            if not port:
+                port = _get_next_available_port(ssh_maps.values(), start, end)
+                ssh_maps[vm] = port
+            ssh_proxy = {
+                'name': 'lst_{0}'.format(data['domains'][0]),
+                'bind': ':{0}'.format(data['ip']),
+                'mode': 'tcp',
+                'raw_opts': [],
+                'servers': [{
+                    'name': 'sshserver',
+                    'bind': '{0}:22'.format(data['ip']),
+                    'opts': 'check'}]}
+            if not ssh_proxy in ssh_proxies:
+                ssh_proxies.append(ssh_proxy)
+    _s('grains.setval')(mkey, ssh_maps)
+    _s('saltutil.sync_grains')()
+    return ssh_maps
 
 
 def settings():
@@ -167,9 +200,12 @@ def settings():
         firewall
             global firewall toggle
 
-    ssh_start_port
-
+    ssh_port_range_start
         from where we start to enable ssh NAT ports
+
+    ssh_port_range_end
+
+        from where we end to enable ssh NAT ports
 
     Basically the compute node needs to:
 
@@ -196,13 +232,23 @@ def settings():
         data = __salt__['mc_utils.defaults'](
             'makina-states.cloud.compute_node', {
                 'has': {
-                    'firewall': get_ssh_port_start(),
+                    'firewall': True,
                 },
-                'ssh_start_port': get_ssh_port_start(),
+                'ssh_port_range_start': '40000',
+                'ssh_port_range_end': '48000',
                 'targets': targets,
             })
+        data['ssh_map'] = _feed_ssh_reverse_proxy(
+            targets,
+            int(data['ssh_port_range_start']),
+            int(data['ssh_port_range_end']))
         return data
     return _settings()
+
+
+def is_compute_node():
+    _settings = settings()
+    return __salt__['mc_utils.get']('id') in _settings['targets']
 
 
 def dump():

@@ -1,7 +1,7 @@
 {% set localsettings = salt['mc_localsettings.settings']() %}
 include:
   - makina-states.cloud.generic.hooks.vm
-{% set compute_node_settings = salt['mc_cloud_controller.settings']() %}
+{% set compute_node_settings = salt['mc_cloud_compute_node.settings']() %}
 {% set lxcSettings = salt['mc_cloud_lxc.settings']() %}
 {% set cloudSettings = salt['mc_cloud.settings']() %}
 {% macro lxc_container(data) %}
@@ -54,6 +54,6 @@ include:
 {%    do data.update({'state_name': '{0}-{1}'.format(target, vmname)})%}
 {%    do data.update({'target': target})%}
 {{ lxc_container(data) }}
-{%  endif %}
 {%  endfor %}
+{%  endif %}
 {% endfor %}

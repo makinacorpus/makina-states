@@ -36,10 +36,6 @@ include:
             - source: salt://makina-states/_scripts/reload_grains.sh
             - template: jinja
             - watch:
-              - cmd: {{target}}-run-grains
-                inskey:
-                  ssh_auth.present:
-                    - source: salt://rootkey.pub
-                    - user: root
+              - grains: {{target}}-run-grains
 {% endfor %}
 {% endfor %}

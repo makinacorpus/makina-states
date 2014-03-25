@@ -1,7 +1,7 @@
-{{- salt["mc_macros.register"]("services", "cloud.lxc") }}
+{{- salt["mc_macros.register"]("cloud", "lxc") }}
 include:
-  - makina-states.services.cloud.generic
-  - makina-states.services.cloud.lxc.controller
-  - makina-states.services.cloud.lxc.compute_node
-  - makina-states.services.cloud.lxc.vm
+  - makina-states.cloud.generic
+  - makina-states.cloud.lxc.controller
+  - makina-states.cloud.lxc.compute_node
+  - makina-states.cloud.lxc.vm
 

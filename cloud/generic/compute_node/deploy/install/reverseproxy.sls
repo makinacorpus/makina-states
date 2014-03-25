@@ -14,7 +14,7 @@ include:
  #}
 {% set cloudSettings = salt['mc_cloud.settings']() %}
 {% set compute_node_settings = salt['mc_cloud_compute_node.settings']() %}
-{% for target, data in compute_node_settings['reverse_proxies'].items() %}
+{% for target, tdata in compute_node_settings['targets'].items() %}
 {% set cptslsname = '{1}/{0}/compute_node_reverseproxy'.format(target.replace('.', ''),
                                                   cloudSettings.compute_node_sls_dir) %}
 {% set cptsls = '{1}/{0}.sls'.format(cptslsname, cloudSettings.root) %}

@@ -330,17 +330,23 @@ def settings():
                                               'dport': '4505,4506,4605,4606'})
 
             # enable compute node redirection port ange if any
-            if (
-                (services_registry['is']['cloud.computenode']
-                 or services_registry['is']['cloud.lxc'])
-                and not data['no_computenode']
-            ):
+            # XXX: this is far from perfect, now we open a port range which
+            # will be avalaible for connection and the controller will use that
+            cloud_c_settings = __salt__['mc_cloud_compute_node.settings']()
+            is_compute_node = __salt__['mc_cloud_compute_node.is_compute_node']()
+            if is_compute_node and not data['no_computenode']:
+                cstart, cend = (
+                    cloud_c_settings['ssh_port_range_start'],
+                    cloud_c_settings['ssh_port_range_end'],
+                )
                 data['default_rules'].append(
                     {'comment': 'corpus computenode'})
                 data['default_rules'].append({'action': 'ACCEPT',
                                               'source': 'all', 'dest': 'fw',
                                               'proto': 'tcp,udp',
-                                              'dport': '40000:48000'})
+                                              'dport': (
+                                                  '{0}:{1}'
+                                              ).format(cstart, cend)})
             # enable mastersalt traffic if any
             if (
                 controllers_registry['is']['mastersalt_master']

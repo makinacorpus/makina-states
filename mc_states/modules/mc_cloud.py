@@ -31,9 +31,6 @@ def settings():
         """
         makina-states cloud global configuration options
 
-        compute_nodes
-          information about current nodes
-
         master
           The default master to link to into salt cloud profile
         master_port
@@ -62,6 +59,19 @@ def settings():
              ssh gateway info
         ssh_gateway_password
              ssh gateway info
+
+        is
+            mapping with various informations
+
+            controller
+                is this minion a cloud controller
+
+            compute_node
+                is this minion a cloud compute node
+
+            vm
+                is this minion a cloud operating vm
+
         """
         pillar = __pillar__
         grains = __grains__
@@ -104,6 +114,7 @@ def settings():
                 'ssh_gateway_key': '/root/.ssh/id_dsa',
                 'ssh_gateway_port': 22,
             }
+
         )
         if not data['bootsalt_branch']:
             data['bootsalt_branch'] = {

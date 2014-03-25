@@ -1,4 +1,4 @@
-anclude:
+include:
   - makina-states.cloud.generic.hooks
 
 cloud-generic-not-applicable-vm-post-deploy:

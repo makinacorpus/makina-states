@@ -17,9 +17,13 @@ include:
     - mode: 750
     - makedirs: true
     - contents: |
+                insdsakey:
+                  ssh_auth.present:
+                    - source: salt://{{cloudSettings.all_sls_dir}}/rootkey-dsa.pub
+                    - user: root
                 inskey:
                   ssh_auth.present:
-                    - source: salt://rootpubkey.pub
+                    - source: salt://{{cloudSettings.all_sls_dir}}/rootkey-rsa.pub
                     - user: root
     - watch:
       - mc_proxy: cloud-generic-compute_node-pre-host-ssh-key-deploy

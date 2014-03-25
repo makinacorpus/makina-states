@@ -7,7 +7,7 @@ include:
 {% set cptslsname = '{1}/{0}/compute_node_hostfile'.format(target.replace('.', ''),
                                                            cloudSettings.compute_node_sls_dir) %}
 {% set cptsls = '{1}/{0}.sls'.format(cptslsname, cloudSettings.root) %}
-cloud-generic-inst-host-postsetup-gen:
+{{target}}-cloud-generic-inst-host-postsetup-gen:
   file.managed:
     - name: {{cptsls}}
     - watch:

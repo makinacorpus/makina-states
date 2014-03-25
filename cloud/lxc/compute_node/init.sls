@@ -1,3 +1,3 @@
 include:
-  - makina-states.services.cloud.lxc.compute_node.generate
-  - makina-states.services.cloud.lxc.compute_node.install
+  - makina-states.cloud.lxc.compute_node.generate
+  - makina-states.cloud.lxc.compute_node.install
