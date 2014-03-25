@@ -159,19 +159,20 @@ def _feed_ssh_reverse_proxy(targets, start, end):
     mkey = 'makina-states.cloud.ssh-mappings'
     ssh_maps = _s('mc_utils.get')(mkey, {})
     for target, cdata in targets.items():
+        ssh_map = ssh_maps.setdefault(target, {})
         vms_infos = cdata.get('vms', {})
         ssh_proxies = cdata.setdefault('ssh_proxies', [])
-        for a in [a for a in ssh_maps]:
-            ssh_maps[a] = int(ssh_maps[a])
+        for a in [a for a in ssh_map]:
+            ssh_map[a] = int(ssh_map[a])
         # filter old vms grains
-        for avm in [a for a in ssh_maps]:
+        for avm in [a for a in ssh_map]:
             if not avm in vms_infos:
-                del ssh_maps[avm]
+                del ssh_map[avm]
         for vm, data in vms_infos.items():
-            port = ssh_maps.get(vm, None)
+            port = ssh_map.get(vm, None)
             if not port:
-                port = _get_next_available_port(ssh_maps.values(), start, end)
-                ssh_maps[vm] = port
+                port = _get_next_available_port(ssh_map.values(), start, end)
+                ssh_map[vm] = port
             ssh_proxy = {
                 'name': 'lst_{0}'.format(data['domains'][0]),
                 'bind': ':{0}'.format(data['ip']),
