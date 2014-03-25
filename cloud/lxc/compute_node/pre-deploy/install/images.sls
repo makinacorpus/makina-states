@@ -14,9 +14,9 @@ include:
     - sls: {{cptslsname.replace('/', '.')}}
     - concurrent: True
     - watch:
-      - mc_proxy: cloud-generic-compute_node-pre-images-deploy
+      - mc_proxy: cloud-{{name}}-generic-compute_node-pre-images-deploy
     - watch_in:
-      - mc_proxy: cloud-generic-compute_node-post-images-deploy
+      - mc_proxy: cloud-{{name}}-generic-compute_node-post-images-deploy
 {% endif %}
 {% endfor %}
 maybe-only-one-inst-lxc-images:

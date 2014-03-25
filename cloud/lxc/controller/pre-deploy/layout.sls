@@ -1,5 +1,5 @@
 include:
-  - makina-states.cloud.lxc.hooks
+  - makina-states.cloud.generic.hooks.controller
 {% set cloudSettings = salt['mc_cloud.settings']()%}
 {% set lxcSettings = salt['mc_cloud_lxc.settings']()%}
 {% set pvdir = cloudSettings.pvdir %}
@@ -7,9 +7,9 @@ include:
 providers_lxc_salt:
   file.managed:
     - watch:
-      - mc_proxy: salt-cloud-preinstall
+      - mc_proxy: cloud-generic-controller-pre-pre-deploy
     - watch_in:
-      - mc_proxy: salt-cloud-predeploy
+      - mc_proxy: cloud-generic-controller-post-post-deploy
     - source: salt://makina-states/files/etc/salt/cloud.providers.d/makinastates_lxc.conf
     - name: {{pvdir}}/makinastates_lxc.conf
     - user: root
@@ -34,7 +34,7 @@ profiles_lxc_salt:
         containers: {{lxcSettings.containers.keys()|yaml }}
         msr: {{cloudSettings.root}}/makina-states
     - watch:
-      - mc_proxy:  cloud-generic-controller-pre-pre-deploy
+      - mc_proxy: cloud-generic-controller-pre-pre-deploy
     - watch_in:
       - mc_proxy: cloud-generic-controller-post-post-deploy
 

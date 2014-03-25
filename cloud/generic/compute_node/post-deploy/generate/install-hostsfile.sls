@@ -7,9 +7,9 @@ include:
 {% set cptslsname = '{1}/{0}/compute_node_hostfile'.format(target.replace('.', ''),
                                                            csettings.compute_node_sls_dir) %}
 {% set cptsls = '{1}/{0}.sls'.format(cptslsname, csettings.root) %}
-{{sname}}-gen-lxc-host-postsetup:
+{{sname}}-gen-host-postsetup:
   file.managed:
-    - name: {{clxcsls}}
+    - name: {{cptsls}}
     - watch_in:
       - mc_proxy: cloud-generic-compute_node-pre-grains-deploy
     - watch:

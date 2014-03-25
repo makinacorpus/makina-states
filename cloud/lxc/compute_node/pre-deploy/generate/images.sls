@@ -8,9 +8,6 @@ include:
 {% set cptslsname = '{1}/{0}/lxc-images-templates'.format(target.replace('.', ''),
                                                  csettings.compute_node_sls_dir) %}
 {% set cptsls = '{1}/{0}.sls'.format(cptslsname, csettings.root) %}
-# get an haproxy proxying all request on 80+43 + alternate ports for ssh traffic
-{% set sdata = data|yaml %}
-{% set sdata = sdata.replace('\n', ' ') %}
 {{target}}-gen-lxc-images-templates:
   file.managed:
     - name: {{cptsls}}
@@ -19,9 +16,9 @@ include:
     - user: root
     - group: editor
     - watch:
-      - mc_proxy.hook: cloud-generic-compute_node-post-reverseproxy-deploy
-    - watch_in:
       - mc_proxy.hook: cloud-generic-compute_node-pre-images-deploy
+    - watch_in:
+      - mc_proxy.hook: cloud-{{target}}-generic-compute_node-pre-images-deploy
     - contents: |
             {% for name, imgdata in imgSettings.lxc.images.items() %}
             {% set cwd = '/var/lib/lxc/{0}'.format(name) %}

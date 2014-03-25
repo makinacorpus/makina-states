@@ -1,7 +1,7 @@
 {# specific install rules on devhost for lxc managment #}
 include:
   {# lxc may not be installed directly on the cloud controller ! #}
-  - makina-states.cloud.generic.hooks.compute_node
+  - makina-states.cloud.generic.hooks.common
 
 cloud-lxc-devhost-symdir:
   file.directory:
@@ -16,5 +16,5 @@ cloud-lxc-devhost-refresh-symlinks:
             done
     - watch:
       - file: cloud-lxc-devhost-symdir
-      - mc_proxy: salt-cloud-lxc-devhost-hooks
+      - mc_proxy: cloud-generic-final
 

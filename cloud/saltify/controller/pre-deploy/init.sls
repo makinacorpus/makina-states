@@ -36,4 +36,4 @@ profiles_saltify_salt:
       - mc_proxy: cloud-saltify-pre-pre-deploy
     - require_in:
       - mc_proxy: cloud-saltify-post-pre-deploy
- 
+

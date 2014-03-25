@@ -1,36 +1,31 @@
 {% set lxcSettings= salt['mc_cloud_lxc.settings']() %}
-
 include:
-  - makina-states.services.cloud.lxc.hooks
+  - makina-states.cloud.generic.hooks.vm
 
 {% for target, vms in lxcSettings.vms.items() %}
-{%  for k, data in vms.items() -%}
-{%    set data = data.copy() %}
-{%    do data.update({'state_name': '{0}-{1}'.format(target, k)})%}
-{%    do data.update({'target': target})%}
-{%    set sname = data.get('state_name', data['name']) %}
+{%  for vmname, data in vms.items() -%}
+{%    set sname = '{0}-{1}'.format(target, vmname) %}
 {{sname}}-lxc-client-autostart-at-boot:
   salt.function:
-    - tgt: [{{data.target}}]
+    - tgt: [{{target}}]
     - expr_form: list
     - name: cmd.run
     - arg: [{{"'{0}'".format(
 "if [ ! -e /etc/lxc/auto ];then mkdir -p /etc/lxc/auto;fi;"
-"ln -sf /var/lib/lxc/{sname}/config /etc/lxc/auto/{sname}.conf".format(
-            sname=sname))}}]
+"ln -sf /var/lib/lxc/{vmname}/config /etc/lxc/auto/{vmname}.conf".format(vmname=vmname))}}]
     - watch:
-      - mc_proxy: {{sname}}-lxc-deploy-end-hook
+      - mc_proxy: cloud-{{vmname}}-generic-vm-pre-initial-setup-deploy
     - watch_in:
-      - mc_proxy: {{sname}}-lxc-deploy-pre-initial-highstate
+      - mc_proxy: cloud-{{vmname}}-generic-vm-post-initial-setup-deploy
 {{sname}}-lxc-sysadmin-user-initial-password:
   salt.function:
-    - tgt: [{{data.name}}]
+    - tgt: [{{vmname}}]
     - expr_form: list
     - name: cmd.run
     - watch:
-      - mc_proxy: {{sname}}-lxc-deploy-end-hook
+      - mc_proxy: cloud-{{vmname}}-generic-vm-pre-initial-setup-deploy
     - watch_in:
-      - mc_proxy: {{sname}}-lxc-deploy-pre-initial-highstate
+      - mc_proxy: cloud-{{vmname}}-generic-vm-post-initial-setup-deploy
     - arg: ['if [ ! -e /.initialspasses ];then
                for i in ubuntu root sysadmin;do
                  echo "${i}:{{data.password}}" | chpasswd && touch /.initialspasses;

@@ -1,25 +1,26 @@
 {% set cloudSettings= salt['mc_cloud.settings']() %}
 {% set lxcSettings= salt['mc_cloud_lxc.settings']() %}
-
 include:
-  - makina-states.services.cloud.lxc.hooks
-
+  - makina-states.hooks.generic.hooks.vm
 {% for target, vms in lxcSettings.vms.items() %}
-{%  for k, data in vms.items() -%}
-{%    set data = data.copy() %}
-{%    do data.update({'state_name': '{0}-{1}'.format(target, k)})%}
-{%    do data.update({'target': target})%}
-{% set sname = data.get('state_name', data['name']) %}
-{% set name = data['name'] %}
+{%  for vmname, data in vms.items() -%}
+{% set sname = '{0}-{1}'.format(target, vmname) %}
 {% if salt['mc_nodetypes.registry']()['is']['devhost'] %}
-{% set clxcslsname = 'lxc.computenode.{0}-vm'.format(sname.replace('.', '')) %}
-{% set clxcsls = '{1}/{0}.sls'.format(clxcslsname, cloudSettings.root) %}
-c{{sname}}-lxc.computenode.sls-generator-for-hostnode:
+{% set cptslsname = '{1}/{0}/{2}/compute_node_hostfile'.format(
+        target.replace('.', ''),
+        csettings.vms_sls_dir,
+        vmname.replace('.', '')) %}
+{% set cptsls = '{1}/{0}.sls'.format(cptslsname, csettings.root) %}
+c{{sname}}-lxc.computenode.sls-generator-for-hostnode-gen:
   file.managed:
-    - name: {{clxcsls}}
+    - name: {{cptsls}}
     - user: root
     - mode: 750
     - makedirs: true
+    - watch:
+      - mc_proxy: cloud-generic-vm-pre-vm-hostsfiles-deploy
+    - watch_in:
+      - mc_proxy: cloud-{{vmname}}-generic-vm-pre-vm-hostsfiles-deploy
     - contents: |
                 alxc-{{sname}}-makina-append-parent-etc.computenode.management:
                   file.blockreplace:
@@ -37,7 +38,7 @@ c{{sname}}-lxc.computenode.sls-generator-for-hostnode:
                     - filename: /etc/hosts
                     - name: parent-hosts-append-accumulator-lxc-{{ sname }}-entries
                     - text: |
-                            {{ data.gateway }} {{ grains['id'] }}
+                            {{ data.gateway }} {{ target }} {{grains['id'] }}
                 lxc-{{sname}}-makina-prepend-parent-etc.computenode.management:
                   file.blockreplace:
                     - name: /etc/hosts
@@ -54,17 +55,7 @@ c{{sname}}-lxc.computenode.sls-generator-for-hostnode:
                     - filename: /etc/hosts
                     - name: parent-hosts-prepend-accumulator-lxc-{{ sname }}-entries
                     - text: |
-                            {{ data.gateway }} {{ grains['id'] }}
-  salt.state:
-    - tgt: [{{data.name}}]
-    - expr_form: list
-    - sls: {{clxcslsname.replace('/', '.')}}
-    - concurrent: True
-    - watch:
-      - file: c{{sname}}-lxc.computenode.sls-generator-for-hostnode
-      - mc_proxy: {{sname}}-lxc-deploy-end-hook
-    - watch_in:
-      - mc_proxy: {{sname}}-lxc-deploy-pre-initial-highstate
+                            {{ data.gateway }} {{ target }} {{grains['id'] }}
 {% else %}
 c{{sname}}-lxc.computenode.sls-generator-for-hostnode:
   mc_proxy.hook: []

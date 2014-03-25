@@ -20,6 +20,8 @@ include:
 {% set cptslsname = '{1}/{0}/reverseproxy'.format(target.replace('.', ''),
                                                   csettings.compute_node_sls_dir) %}
 {% set cptsls = '{1}/{0}.sls'.format(cptslsname, csettings.root) %}
+{% set sdata = data|yaml %}
+{% set sdata = sdata.replace('\n', ' ') %}
 # get an haproxy proxying all request on 80+43 + alternate ports for ssh traffic
 {{target}}-gen-haproxy-installation:
   file.managed:
@@ -34,7 +36,7 @@ include:
                 - makina-states.services.proxy.haproxy
               cpt-cloud-target{{target}}-haproxy-cfg:
                 file.managed:
-                  - name: {{salt['mc_haproxy.settings']().config_dir}}/extra/cloudcontroller.cfg
+                  - name: {%raw%}{{salt['mc_haproxy.settings']().config_dir}}{%endraw%}/extra/cloudcontroller.cfg
                   - source: salt://makina-states/files/etc/haproxy/cloudcontroller.cfg
                   - user: root
                   - group: root
@@ -42,7 +44,7 @@ include:
                   - makedirs: true
                   - template: jinja
                   - defaults:
-                    cdata: {{sdata}}
+                    cdata: {%raw%}{{sdata}}{%endraw%}
                   - watch_in:
                     - mc_proxy.hook: haproxy-post-conf-hook
     - watch:

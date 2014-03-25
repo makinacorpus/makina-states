@@ -1,2 +1,2 @@
 include:
-  - makina-states.services.cloud.lxc.controller.layout
+  - makina-states.cloud.lxc.controller.pre-deploy.layout
