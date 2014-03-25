@@ -42,7 +42,7 @@ def get_ssh_port_start():
         'makina-states.cloud.compute_node.ssh_start_port', 40000)
 
 
-def find_avalaible_port(targets, target, data):
+def _find_avalaible_port(targets, target, data):
     ip = data['ip']
     ip_parts = ip.split('.')
     ssh_start_port = int(get_ssh_port_start())
@@ -51,36 +51,73 @@ def find_avalaible_port(targets, target, data):
             int(ip_parts[3]))
 
 
-def add_vt_to_target(target, vt):
+def _add_vt_to_target(target, vt):
     vts = target.setdefault('virt_types', OrderedDict())
     default_has(vts, **{vt: True})
 
 
-def feed_settings_from_virt_modules(targets):
+def _feed_settings_from_virt_modules(targets):
     # iterate over all supported vts
     for virt_type, mtdata in VIRT_TYPES.iteritems():
         vt = __salt__['mc_cloud_{0}.settings'.format(virt_type)]()
         for target, tdata in vt['vms'].iteritems():
             # implicitly create host target
             targets.setdefault(target, OrderedDict())
-            add_vt_to_target(targets[target], 'lxc')
+            _add_vt_to_target(targets[target], 'lxc')
             # link onto the host the vm infos
             for dns, data in tdata.iteritems():
                 dns = data.get('name', dns)
-                targets.setdefault(target['vms'], OrderedDict())
+                targets[target].setdefault('vms', OrderedDict())
                 targets[target]['vms'][data['name']] = {
+                    'virt_type':  virt_type,
                     'ip':  data['ip'],
                     'domains':  data['domains'],
                     'dns':  data['name']}
     return targets
 
 
-def feed_firewall_settings(targets):
+def _feed_firewall_settings(targets):
     for target, cdata in targets.iteritems():
         cdata['firewall'] = get_firewall_toggle()
 
 
-def feed_reverse_proxies_settings(targets):
+def _configure_http_reverse(main_domain,
+                            ip,
+                            http_proxy,
+                            https_proxy,
+                            http_backends,
+                            https_backends,
+                            domain=None):
+    if not domain:
+        domain = main_domain
+    rule = 'acl host_{0} hdr(host) -i {0}'.format(domain)
+    if not rule in http_proxy['raw_opts']:
+        http_proxy['raw_opts'].insert(0, rule)
+        https_proxy['raw_opts'].insert(0, rule)
+    rule = 'use_backend bck_{1} if host_{0}'.format(domain, main_domain)
+    if not rule in http_proxy['raw_opts']:
+        http_proxy['raw_opts'].append(rule)
+    rule = 'use_backend securebck_{1} if host_{0}'.format(domain, main_domain)
+    if not rule in https_proxy['raw_opts']:
+        https_proxy['raw_opts'].append(rule)
+    bck = {
+        'name': 'bck_{0}'.format(main_domain),
+        'servers': [
+            {'name': 'bck_{0}1'.format(main_domain),
+             'bind': '{0}:80'.format(ip),
+             'opts': 'check'}]}
+    if not bck in http_backends:
+        http_backends.append(bck)
+    bck = {'name': 'securebck_{0}'.format(main_domain),
+           'servers': [
+               {'name': 'bck_{0}1'.format(main_domain),
+                'bind': '{0}:443'.format(ip),
+                'opts': 'check'}]}
+    if not bck in https_backends:
+        https_backends.append(bck)
+
+
+def _feed_reverse_proxies_settings(targets):
     for target, cdata in targets.iteritems():
         http_proxy = cdata.setdefault('http_proxy',
                                       {'name': target,
@@ -92,46 +129,27 @@ def feed_reverse_proxies_settings(targets):
                                         'mode': 'http',
                                         'bind': '*:443',
                                         'raw_opts': []})
-        ssh_proxies = cdata.setdefault('ssh_proxies',
-                                       'ssh_proxies', [])
+        ssh_proxies = cdata.setdefault('ssh_proxies', [])
         https_backends = cdata.setdefault('https_backends', [])
         http_backends = cdata.setdefault('http_backends', [])
-        for vm, tdata in cdata.get('vms', {}).iteritems():
-            for dns, data in tdata.iteritems():
-                ip = data['ip']
-                main_domain = data['domains'][0]
-                domains = data['domains']
-                for domain in domains:
-                    http_proxy['raw_opts'].insert(
-                        0, 'acl host_{0} hdr(host) -i {0}'.format(domain))
-                    http_proxy['raw_opts'].append(
-                        'use_backend bck_{0} if host_{0}'.format(domain))
-                    http_backends.append({
-                        'name': 'bck_{0}'.format(domain),
-                        'servers': [
-                            {'name': 'bck_{0}1'.format(domain),
-                             'bind': '{0}:80'.format(ip),
-                             'opts': 'check'}]})
-                    https_proxy['raw_opts'].insert(
-                        0, 'acl host_{0} hdr(host) -i {0}'.format(domain))
-                    https_proxy['raw_opts'].append(
-                        'use_backend securebck_{0} if host_{0}'.format(domain))
-                    https_backends.append({
-                        'name': 'securebck_{0}'.format(domain),
-                        'servers': [
-                            {'name': 'bck_{0}1'.format(domain),
-                             'bind': '{0}:443'.format(ip),
-                             'opts': 'check'}]})
-                ssh_port = find_avalaible_port(targets, target, data)
-                ssh_proxies.extend([{
-                    'name': 'lst_{0}'.format(main_domain),
-                    'bind': ':{0}'.format(ssh_port),
-                    'mode': 'tcp',
-                    'raw_opts': [],
-                    'servers': [{
-                        'name': 'sshserver',
-                        'bind': '{0}:22'.format(ip),
-                        'opts': 'check'}]}])
+        for vm, data in cdata.get('vms', {}).iteritems():
+            ip = data['ip']
+            main_domain = data['domains'][0]
+            domains = data['domains']
+            ssh_port = _find_avalaible_port(targets, target, data)
+            ssh_proxies.extend([{
+                'name': 'lst_{0}'.format(main_domain),
+                'bind': ':{0}'.format(ssh_port),
+                'mode': 'tcp',
+                'raw_opts': [],
+                'servers': [{
+                    'name': 'sshserver',
+                    'bind': '{0}:22'.format(ip),
+                    'opts': 'check'}]}])
+            for domain in domains:
+                _configure_http_reverse(
+                    main_domain, ip, http_proxy, https_proxy,
+                    http_backends, https_backends, domain=domain)
 
 
 def settings():
@@ -169,9 +187,9 @@ def settings():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
         targets = OrderedDict()
-        feed_settings_from_virt_modules(targets)
-        feed_reverse_proxies_settings(targets)
-        feed_firewall_settings(targets)
+        _feed_settings_from_virt_modules(targets)
+        _feed_reverse_proxies_settings(targets)
+        _feed_firewall_settings(targets)
         data = __salt__['mc_utils.defaults'](
             'makina-states.cloud.compute_node', {
                 'has': {

@@ -3,7 +3,7 @@
 {% set computenode_settings = salt['mc_cloud_compute_node.settings']() %}
 include:
   - makina-states.cloud.generic.hooks.compute_node
-{% for target, vm in computenode_settings.vm.items() %}
+{% for target, vm in computenode_settings.vms.items() %}
 {% set cptslsname = '{1}/{0}/compute_node_hostfile'.format(target.replace('.', ''),
                                                            csettings.compute_node_sls_dir) %}
 {% set cptsls = '{1}/{0}.sls'.format(cptslsname, csettings.root) %}

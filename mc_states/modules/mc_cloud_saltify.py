@@ -14,6 +14,7 @@ mc_cloud_saltify / cloud related variables
 '''
 # Import salt libs
 import mc_states.utils
+from pprint import pformat
 from mc_states import saltapi
 
 __name = 'cloud_saltify'
@@ -71,16 +72,23 @@ def settings():
             ip
                 eventual ip if dns is not yet accessible
             mode
-                'mastersalt',
+                mastersalt or salt, keep at any price mastersalt
+                or your are on your own
             ssh_username
-                foo',
+                user name to connect as to provision the box
             password
-                password',
+                password to use (leave empty for key)
+            no_sudo_password
+                disable sudo password handling (default: False).
+                If the guest system disable sudo password asking, set this
+                parameter to true
             sudo_password
-                sudo_password', (
+                sudo_password (leave empty to default to password)
             sudo
                 do we use sudo (bool)
-          }
+            ssh_keyfile
+                use the ssh key (private) instead of using password base
+                authentication
     """
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
@@ -94,10 +102,13 @@ def settings():
                 'ssh_gateway': cloudSettings['ssh_gateway'],
                 'ssh_gateway_password': cloudSettings['ssh_gateway_password'],
                 'ssh_gateway_user': cloudSettings['ssh_gateway_user'],
+                'ssh_username': 'root',
+                'ssh_keyfile': None,
                 'ssh_gateway_key': cloudSettings['ssh_gateway_key'],
                 'ssh_gateway_port': cloudSettings['ssh_gateway_port'],
                 'mode': cloudSettings['mode'],
                 'master': cloudSettings['master'],
+                'no_sudo_password': False,
                 'master_port': cloudSettings['master_port'],
                 'bootsalt_branch': cloudSettings['bootsalt_branch'],
                 'targets': {}
@@ -117,17 +128,31 @@ def settings():
             branch = c_data.get('bootsalt_branch', sdata['bootsalt_branch'])
 
             c_data = saltapi.get_gateway(c_data, sdata)
-
             if (
                 not '-b' in c_data['script_args']
                 or not '--branch' in c_data['script_args']
             ):
                 c_data['script_args'] += ' -b {0}'.format(branch)
             for k in ['master',
-                      "gateway",
+                      'gateway',
+                      'ssh_keyfile',
+                      'password',
+                      'ssh_username',
                       'bootsalt_branch',
                       'master_port']:
                 c_data.setdefault(k, sdata.get(k, None))
+            if not c_data['ssh_keyfile'] and not c_data['password']:
+                raise ValueError('We should have one of have sshkey + '
+                                 'password for \n{0}'.format(pformat(c_data)))
+            if c_data['ssh_keyfile'] and c_data['password']:
+                raise ValueError('Not possible to have sshkey + password '
+                                 'for \n{0}'.format(pformat(c_data)))
+            sudo_password = c_data.get('sudo_password', '')
+            if not sudo_password:
+                sudo_password = c_data['password']
+            if c_data.get('no_sudo_password', sdata['no_sudo_password']):
+                sudo_password = None
+            c_data['sudo_password'] = sudo_password
         return sdata
     return _settings()
 

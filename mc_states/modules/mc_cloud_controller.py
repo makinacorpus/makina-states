@@ -38,10 +38,12 @@ __name = 'mc_cloud_controller'
 # }
 #
 #
-# def gen_id(name):
-#     return name.replace('.', '-')
-#
-#
+
+
+def gen_id(name):
+    return name.replace('.', '-')
+
+
 # def _register_compute_node(compute_datas, data):
 #     pass
 #

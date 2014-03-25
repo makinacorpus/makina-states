@@ -5,9 +5,7 @@ include:
   - makina-states.cloud.saltify.hooks
 
 {% for target, data in cloudsaltSettings.targets.items() %}
-{%  set mtdata = cloudcsettings.compute_nodes[target] %}
-{%  if mtdata.activated.get('saltify') %}
-{%    set name = data['name'] %}
+{% set name = data['name'] %}
 {{target}}-{{name}}-saltify-deploy:
   cloud.profile:
     - require:
@@ -20,6 +18,7 @@ include:
                master_port: {{data.master_port}}}
     - profile: {{data.profile}}
 {%    for var in ["ssh_username",
+                  "ssh_keyfile",
                   "keep_tmp",
                   "gateway",
                   "password",
@@ -31,5 +30,4 @@ include:
     - {{var}}: {{data[var]}}
 {%      endif%}
 {%    endfor%}
-{%  endif%}
 {% endfor %}

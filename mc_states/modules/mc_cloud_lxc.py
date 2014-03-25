@@ -292,7 +292,14 @@ def settings():
                 lxc_data.setdefault('name', container)
                 lxc_data.setdefault('domains', [])
                 if not container in lxc_data['domains']:
-                    lxc_data['domains'].append(container)
+                    lxc_data['domains'].insert(0, container)
+
+                def _sort_domains(dom):
+                    if dom == container:
+                        return '0{0}'.format(dom)
+                    else:
+                        return '1{0}'.format(dom)
+                lxc_data['domains'].sort(key=_sort_domains)
                 lxc_data.setdefault('mode', lxcSettings['defaults']['mode'])
                 lxc_data.setdefault('size', None)
                 lxc_data.setdefault('from_container', None)

@@ -4,7 +4,7 @@
 include:
   - makina-states.cloud.generic.hooks.compute_node
   - makina-states.cloud.generic.genssh
-{% for target, vm in lxcSettings.vm.items() %}
+{% for target, vm in lxcSettings.vms.items() %}
 {# authorize root from cloudcontroller to connect via ssh on targets #}
 {% set cptslsname = '{1}/{0}/install-hosts-ssh-key'.format(target.replace('.', ''),
                                                   csettings.compute_node_sls_dir) %}

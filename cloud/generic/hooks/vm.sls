@@ -6,7 +6,7 @@ cloud-generic-vm-pre-pre-deploy:
     - watch_in:
       - mc_proxy: cloud-generic-vm-post-pre-deploy
 
-{% for target, vm in computenode_settings.vm.items() %}
+{% for target, vm in computenode_settings.vms.items() %}
 {% for vmname, vmdata in vm.items() %}
 cloud-{{vmname}}-generic-vm-pre-pre-deploy:
   mc_proxy.hook:
@@ -44,7 +44,7 @@ cloud-generic-vm-pre-deploy:
     - watch_in:
       - mc_proxy: cloud-generic-vm-post-deploy
 
-{% for target, vm in computenode_settings.vm.items() %}
+{% for target, vm in computenode_settings.vms.items() %}
 {% for vmname, vmdata in vm.items() %}
 cloud-{{vmname}}-generic-vm-pre-deploy:
   mc_proxy.hook:
@@ -72,7 +72,7 @@ cloud-generic-vm-pre-install-ssh-key:
     - watch_in:
       - mc_proxy: cloud-generic-vm-post-install-ssh-key
 
-{% for target, vm in computenode_settings.vm.items() %}
+{% for target, vm in computenode_settings.vms.items() %}
 {% for vmname, vmdata in vm.items() %}
 cloud-{{vmname}}-generic-vm-pre-install-ssh-key:
   mc_proxy.hook:
@@ -100,7 +100,7 @@ cloud-generic-vm-pre-vm-hostsfiles-deploy:
     - watch_in:
       - mc_proxy: cloud-generic-vm-post-vm-hostsfiles-deploy
 
-{% for target, vm in computenode_settings.vm.items() %}
+{% for target, vm in computenode_settings.vms.items() %}
 {% for vmname, vmdata in vm.items() %}
 cloud-{{vmname}}-generic-vm-pre-hostsfiles-deploy:
   mc_proxy.hook:
@@ -126,7 +126,7 @@ cloud-generic-vm-pre-initial-setup-deploy:
     - watch_in:
       - mc_proxy: cloud-generic-vm-post-initial-setup-deploy
 
-{% for target, vm in computenode_settings.vm.items() %}
+{% for target, vm in computenode_settings.vms.items() %}
 {% for vmname, vmdata in vm.items() %}
 cloud-{{vmname}}-generic-vm-pre-initial-setup-deploy:
   mc_proxy.hook:
@@ -153,7 +153,7 @@ cloud-generic-vm-pre-initial-highstate-deploy:
     - watch_in:
       - mc_proxy: cloud-generic-vm-post-initial-highstate-deploy
 
-{% for target, vm in computenode_settings.vm.items() %}
+{% for target, vm in computenode_settings.vms.items() %}
 {% for vmname, vmdata in vm.items() %}
 cloud-{{vmname}}-generic-vm-pre-initial-highstate-deploy:
   mc_proxy.hook:
@@ -179,7 +179,7 @@ cloud-generic-vm-pre-post-deploy:
     - watch_in:
       - mc_proxy: cloud-generic-vm-post-post-deploy
 
-{% for target, vm in computenode_settings.vm.items() %}
+{% for target, vm in computenode_settings.vms.items() %}
 {% for vmname, vmdata in vm.items() %}
 cloud-{{vmname}}-generic-vm-pre-post-deploy:
   mc_proxy.hook:
