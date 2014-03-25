@@ -466,7 +466,7 @@ makina-apache-reload:
 # Then use the pillar to alter your default parameters given to this call
 #}
 {% if 'virtualhosts' in salt['mc_apache.settings']() -%}
-{%   for site, siteDef in salt['mc_apache.settings']()['virtualhosts'].iteritems() -%}
+{%   for site, siteDef in salt['mc_apache.settings']()['virtualhosts'].items() -%}
 {%     do siteDef.update({'domain': site}) %}
 {{     apache.virtualhost(**siteDef) }}
 {%-   endfor %}

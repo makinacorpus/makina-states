@@ -2,7 +2,7 @@ include:
   - makina-states.cloud.generic.hooks.compute_node
 {% set csettings = salt['mc_cloud.settings']() %}
 {% set settings = salt['mc_cloud_compute_node.settings']() %}
-{% for target, data in settings['targets'].iteritems() %}
+{% for target, data in settings['targets'].items() %}
 {% if data.has.lxc %}
 {% set cptslsname = '{1}/{0}/lxc-installation'.format(target.replace('.', ''),
                                                  csettings.compute_node_sls_dir) %}

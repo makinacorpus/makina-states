@@ -48,7 +48,7 @@ makina-nginx-virtualhost-{{ small_name }}:
         redirect_aliases: {{ redirect_aliases }}
         port: "{{ port }}"
 {% if extra_jinja_nginx_variables %}
-{% for variablename,variablevalue in extra_jinja_nginx_variables.iteritems() %}
+{% for variablename,variablevalue in extra_jinja_nginx_variables.items() %}
         {{ variablename }}: "{{ variablevalue }}"
 {% endfor %}
 {% endif %}

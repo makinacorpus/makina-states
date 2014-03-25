@@ -201,7 +201,7 @@ def _sls_exec(name, cfg, sls):
                             'Warning sls:\'{1}\' for project:\'{0}\' '
                             'did not execute any state!'.format(name, sls))
 
-        for lowid, state in cret.iteritems():
+        for lowid, state in cret.items():
             failed = False
             if not isinstance(state, dict):
                 # invalid data structure
@@ -552,7 +552,7 @@ def get_configuration(name, *args, **kwargs):
     cfg = get_default_configuration()
     cfg['name'] = name
     cfg.update(dict([a
-                     for a in kwargs.iteritems()
+                     for a in kwargs.items()
                      if a[0] in cfg]))
     # we must also ignore keys setted on the call to the function
     # which are explictly setting a value
@@ -621,7 +621,7 @@ def get_configuration(name, *args, **kwargs):
     # to let them maybe be overriden in pillar
     for val, skips in DEFAULTS_SKIPS.get(
         cfg['operation_mode'], DEFAULTS_SKIPS[EDITABLE_MODE]
-    ).iteritems():
+    ).items():
         for skip in skips:
             dval = cfg.get(skip, None)
             if dval is None:

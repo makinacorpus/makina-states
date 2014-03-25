@@ -4,7 +4,7 @@ include:
 {% set cloudSettings = salt['mc_cloud.settings']() %}
 {% set lxcSettings= salt['mc_cloud_lxc.settings']() %}
 {% for target, vms in lxcSettings.vms.items() %}
-{% for vmname, data in vms.iteritems() %}
+{% for vmname, data in vms.items() %}
 {% set sname = data.get('state_name', '{0}-{1}'.format(target, k) %}
 {% set cptslsname = '{1}/{0}/{2}/container_ssh_key'.format(
         target.replace('.', ''),

@@ -31,7 +31,7 @@ makina-phpfpm-remove-default-pool:
 
 # --------- Pillar based php-fpm pools
 {% if 'register-pools' in phpSettings %}
-{%   for site,siteDef in phpSettings['register-pools'].iteritems() %}
+{%   for site,siteDef in phpSettings['register-pools'].items() %}
 {%     do siteDef.update({'site': site}) %}
 {%     do siteDef.update({'phpSettings': phpSettings}) %}
 {{     php.fpm_pool(**siteDef) }}

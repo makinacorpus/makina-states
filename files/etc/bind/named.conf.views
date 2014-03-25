@@ -5,14 +5,14 @@
 //
 // VIEWS, net is the default view
 //
-{% for v, vdata in data['views'].iteritems() %}
+{% for v, vdata in data['views'].items() %}
 {%  if vdata.has_zones %}
 view "{{v}}" {
   match-clients { {% for m in vdata.match_clients %}{{m}};{% endfor %} };
         recursion               {{vdata.recursion}};
         additional-from-auth    {{vdata.additonal_from_auth}};
         additional-from-cache   {{vdata.additonal_from_cache}};
-{%      for zonekind, kmetadata in data.zone_kinds.iteritems() %}
+{%      for zonekind, kmetadata in data.zone_kinds.items() %}
 {%          for zone, zdata in data[zonekind] %}
 {%              if view in zdata['views'] %}
 {%                set file = zdata.fpath %}

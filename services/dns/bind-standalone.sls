@@ -258,7 +258,7 @@ bind_config_rndc:
       - mc_proxy: bind-post-conf
 
 {% for typ in settings.zone_kinds %}
-{% for zone, data in settings[typ].iteritems() %}
+{% for zone, data in settings[typ].items() %}
 {# deactivated in favor of powerdns
 {{ install_zone(zone, data) }}
 #}

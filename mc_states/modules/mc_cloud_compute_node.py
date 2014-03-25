@@ -58,14 +58,14 @@ def _add_vt_to_target(target, vt):
 
 def _feed_settings_from_virt_modules(targets):
     # iterate over all supported vts
-    for virt_type, mtdata in VIRT_TYPES.iteritems():
+    for virt_type, mtdata in VIRT_TYPES.items():
         vt = __salt__['mc_cloud_{0}.settings'.format(virt_type)]()
-        for target, tdata in vt['vms'].iteritems():
+        for target, tdata in vt['vms'].items():
             # implicitly create host target
             targets.setdefault(target, OrderedDict())
             _add_vt_to_target(targets[target], 'lxc')
             # link onto the host the vm infos
-            for dns, data in tdata.iteritems():
+            for dns, data in tdata.items():
                 dns = data.get('name', dns)
                 targets[target].setdefault('vms', OrderedDict())
                 targets[target]['vms'][data['name']] = {
@@ -77,7 +77,7 @@ def _feed_settings_from_virt_modules(targets):
 
 
 def _feed_firewall_settings(targets):
-    for target, cdata in targets.iteritems():
+    for target, cdata in targets.items():
         cdata['firewall'] = get_firewall_toggle()
 
 
@@ -118,7 +118,7 @@ def _configure_http_reverse(main_domain,
 
 
 def _feed_reverse_proxies_settings(targets):
-    for target, cdata in targets.iteritems():
+    for target, cdata in targets.items():
         http_proxy = cdata.setdefault('http_proxy',
                                       {'name': target,
                                        'mode': 'http',
@@ -132,7 +132,7 @@ def _feed_reverse_proxies_settings(targets):
         ssh_proxies = cdata.setdefault('ssh_proxies', [])
         https_backends = cdata.setdefault('https_backends', [])
         http_backends = cdata.setdefault('http_backends', [])
-        for vm, data in cdata.get('vms', {}).iteritems():
+        for vm, data in cdata.get('vms', {}).items():
             ip = data['ip']
             main_domain = data['domains'][0]
             domains = data['domains']

@@ -71,18 +71,18 @@ backend-{{ldata.name}}-makina-haproxy-cfg:
       - mc_proxy: haproxy-post-conf-hook
 {% endmacro %}
 
-{% for id, ldata in data.dispatchers.iteritems() %}
+{% for id, ldata in data.dispatchers.items() %}
 {{ dispatcher(ldata, id=id)}}
 {%endfor %}
 
-{% for id, ldata in data.listeners.iteritems() %}
+{% for id, ldata in data.listeners.items() %}
 {{ listener(ldata, id=id)}}
 {%endfor %}
 
-{% for id, ldata in data.backends.iteritems() %}
+{% for id, ldata in data.backends.items() %}
 {{ backend(ldata, id=id)}}
 {%endfor %}
 
-{% for id, ldata in data.frontends.iteritems() %}
+{% for id, ldata in data.frontends.items() %}
 {{ frontend(ldata, id=id)}}
 {%endfor %}

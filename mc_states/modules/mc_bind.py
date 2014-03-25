@@ -272,7 +272,7 @@ def settings():
         #    if not 'secret' in kdata:
         #        raise ValueError(
         #            'no secret for {0}'.format(k))
-        #for zonekind, metadatas in zone_kinds.iteritems():
+        #for zonekind, metadatas in zone_kinds.items():
         #    for zone in [a for a in data[zonekind]]:
         #        zdata = data[zonekind][zone]
         #        _update_default_data(zone,

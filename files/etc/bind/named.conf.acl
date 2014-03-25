@@ -5,7 +5,7 @@
 //
 // ACLS
 //
-{% for a, adata in data.acls.iteritems() %}
+{% for a, adata in data.acls.items() %}
 acl "{{a}}" {
   {% for m in adata.get('clients') -%}
   {{m}};

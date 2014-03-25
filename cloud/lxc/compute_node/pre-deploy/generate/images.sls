@@ -3,7 +3,7 @@ include:
 {% set csettings = salt['mc_cloud.settings']() %}
 {% set imgSettings = salt['mc_cloud_images.settings']() %}
 {% set settings = salt['mc_cloud_compute_node.settings']() %}
-{% for target, data in settings['targets'].iteritems() %}
+{% for target, data in settings['targets'].items() %}
 {% if data.has.lxc %}
 {% set cptslsname = '{1}/{0}/lxc-images-templates'.format(target.replace('.', ''),
                                                  csettings.compute_node_sls_dir) %}

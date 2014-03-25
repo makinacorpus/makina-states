@@ -57,20 +57,20 @@ def gen_id(name):
 #
 #
 # def _register_default_settings_for(compute_datas):
-#     for typ_, typ_data in _TYPES.iteritems():
+#     for typ_, typ_data in _TYPES.items():
 #         vsettings = __salt__['mc_cloud_{0}.settings'.format(typ_data['type'])]()
 #         compute_data = compute_datas
 #         compute_data.setdefault(target, deepcopy(_DEFAULT_METADATA))
-#         for target, target_data in vsettings[vdata['conf_key'].iteritems():
+#         for target, target_data in vsettings[vdata['conf_key'].items():
 #             mdata = compute_data[target]
 #             mdata['name'] = target
 #             if vt_data['conf_key'] == 'targets':
 #                 mdata['reverse_proxy'] = True
 #                 mdata['firewall'] = True
-#     for vttype, vt_data in _VT_TYPES.iteritems():
+#     for vttype, vt_data in _VT_TYPES.items():
 #         for target, hosts in virtSettings[
 #             vt_data['conf_key']
-#         ].iteritems():
+#         ].items():
 #             if not vttype in mdata['vt_types']:
 #                 mdata['vt_types'].append(vttype)
 #

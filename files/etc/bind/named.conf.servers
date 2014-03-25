@@ -5,7 +5,7 @@
 // SERVERS
 //
 
-{% for server, sdata in data['servers'].iteritems() %}
+{% for server, sdata in data['servers'].items() %}
 {% if sdata['keys'] %}
 server {{server}} {
   keys {

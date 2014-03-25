@@ -78,7 +78,7 @@ makina-nginx-reload:
 
 {% from 'makina-states/services/http/nginx_macros.jinja' import virtualhost with context -%}
 {% if 'virtualhosts' in salt['mc_nginx.settings']() -%}
-{%   for site,siteDef in salt['mc_nginx.settings']()['virtualhosts'].iteritems() -%}
+{%   for site,siteDef in salt['mc_nginx.settings']()['virtualhosts'].items() -%}
 {%     do siteDef.update({'site': site}) -%}
 {{     virtualhost(**siteDef) -}}
 {%   endfor -%}
