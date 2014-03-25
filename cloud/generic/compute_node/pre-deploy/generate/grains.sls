@@ -29,7 +29,7 @@ include:
             - watch:
               - cmd: {{target}}-run-grains
     - watch:
-      - mc_proxy: cloud-generic-compute_node-post-pre-deploy
-    - watch_in:
       - mc_proxy: cloud-generic-compute_node-pre-grains-deploy
+    - watch_in:
+      - mc_proxy: cloud-{{target}}-generic-compute_node-pre-grains-deploy
 {% endfor %}

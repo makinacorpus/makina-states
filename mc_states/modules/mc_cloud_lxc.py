@@ -104,7 +104,7 @@ def settings():
             default image
 
         gateway
-            '10.5.0.1'
+            10.5.0.1
         master
             master to uplink the container to
             None
@@ -322,8 +322,8 @@ def settings():
                     lxc_data.setdefault(
                         'from_container',
                         lxcSettings['defaults']['default_container'])
-                lxc_data = saltapi.get_gateway(
-                    lxc_data, lxcSettings)
+                lxc_data.setdefault('ssh_gateway', None)
+                lxc_data = saltapi.complete_gateway(lxc_data, lxcSettings)
                 for i in ["from_container", 'bootsalt_branch',
                           "master", "master_port", "autostart",
                           'size', 'image', 'bridge', 'netmask', 'gateway',

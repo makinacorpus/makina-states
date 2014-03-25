@@ -10,10 +10,10 @@ include:
 cloud-generic-inst-host-postsetup-gen:
   file.managed:
     - name: {{cptsls}}
-    - watch_in:
-      - mc_proxy: cloud-generic-compute_node-pre-grains-deploy
     - watch:
-      - mc_proxy: cloud-generic-compute_node-post-post-deploy
+      - mc_proxy: cloud-generic-compute_node-pre-hostsfiles-deploy
+    - watch_in:
+      - mc_proxy: cloud-{{target}}-generic-compute_node-pre-hostsfiles-deploy
     - user: root
     - makedirs: true
     - mode: 750

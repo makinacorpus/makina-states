@@ -82,20 +82,17 @@ def settings():
             'makina-states.cloud', {
                 'root': root,
                 'all_sls_dir': (
-                    'cloud-controller/all'
-                ),
-                'vms_sls_dir': (
-                    'cloud-controller/vms'
+                    'cloud-controller'
                 ),
                 'compute_node_sls_dir': (
-                    'cloud-controller/compute_node'
+                    '{all_sls_dir}/compute_node'
                 ),
                 'prefix': prefix,
                 'mode': 'mastersalt',
                 'bootsalt_args': '-C --from-salt-cloud -no-M',
                 'bootsalt_mastersalt_args': (
                     '-C --from-salt-cloud --mastersalt-minion'),
-                'bootsalt_branch': None ,
+                'bootsalt_branch': None,
                 'master_port': __salt__['config.get']('master_port'),
                 'master': __grains__['fqdn'],
                 'saltify_profile': 'salt',

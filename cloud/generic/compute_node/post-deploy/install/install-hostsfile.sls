@@ -14,5 +14,7 @@ cloud-generic-inst-host-postsetup-inst:
     - sls: {{slsname.replace('/', '.')}}
     - concurrent: True
     - watch:
-      - mc_proxy: cloud-generic-compute_node-post-grains-deploy
+      - mc_proxy: cloud-{{target}}-generic-compute_node-pre-hostsfiles-deploy
+    - watch_in:
+      - mc_proxy: cloud-{{target}}-generic-compute_node-post-hostsfiles-deploy
 {%  endfor %}

@@ -5,7 +5,7 @@ include:
   - makina-states.cloud.generic.genssh
 {% for target, vm in compute_node_settings.targets.items() %}
 {# authorize root from cloudcontroller to connect via ssh on targets #}
-{% set cptslsname = '{1}/{0}/compute_node_sshkeyinstall'.format(target.replace('.', ''),
+{% set cptslsname = '{1}/{0}/compute_node_ssh_key'.format(target.replace('.', ''),
                                                            cloudSettings.compute_node_sls_dir) %}
 {% set cptsls = '{1}/{0}.sls'.format(cptslsname, cloudSettings.root) %}
 {{target}}-inst-lxc-host-install-ssh-key:
@@ -24,5 +24,5 @@ include:
     - watch:
       - mc_proxy: cloud-generic-compute_node-pre-host-ssh-key-deploy
     - watch_in:
-      - mc_proxy: cloud-generic-compute_node-post-host-ssh-key-deploy
+      - mc_proxy: cloud-{{target}}-generic-compute_node-pre-host-ssh-key-deploy
 {% endfor %}

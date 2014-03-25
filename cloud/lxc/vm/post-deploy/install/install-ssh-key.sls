@@ -12,11 +12,10 @@ include:
 {% set sname = data.get('state_name', '{0}-{1}'.format(target, k) %}
 {% set cptslsname = '{1}/{0}/lxc/{2}/container_ssh_key'.format(
         target.replace('.', ''),
-        cloudSettings.vms_sls_dir,
-        vmname,
+        cloudSettings.compute_node_sls_dir,
         vmname.replace('.', '')) %}
 {% set cptsls = '{1}/{0}.sls'.format(cptslsname, cloudSettings.root) %}
-{{sname}}-lxc.vm-install-ssh-key:
+{{sname}}-lxc.vm-install-ssh-key-inst:
   salt.state:
     - tgt: [{{vmname}}]
     - expr_form: list

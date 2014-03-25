@@ -2,7 +2,7 @@
 {% set lxcSettings = salt['mc_cloud_lxc.settings']() %}
 {% set cloudSettings = salt['mc_cloud.settings']() %}
 include:
-  - makina-states.hooks.generic.hooks.vm
+  - makina-states.cloud.generic.hooks.vm
 {% for target, vms in lxcSettings.vms.items() %}
 {%  for vmname, data in vms.items() -%}
 {% if compute_node_settings.targets[target].virt_types.lxc %}

@@ -227,19 +227,25 @@ def _errmsg(ret, msg):
     raise SaltExit(err)
 
 
-def get_gateway(target_data, default_data):
-    target_data.setdefault('gateway', {})
-    gw = target_data.get('ssh_gateway', default_data.get('ssh_gateway', None))
-    if gw:
-        for k in [
-            'ssh_gateway', 'ssh_gateway_user',
-            "ssh_gateway_password",
-            'ssh_gateway_key', 'ssh_gateway_port',
-        ]:
-            target_data['gateway'].setdefault(
-                k, target_data.get(k, default_data.get(k, None)))
-        if target_data['gateway']['ssh_gateway_password']:
-            del target_data['gateway']['ssh_gateway_key']
+def complete_gateway(target_data, default_data):
+    if 'ssh_gateway' in target_data:
+        gwk = target_data
+    else:
+        target_data.setdefault('gateway', {})
+        gwk = target_data['gateway']
+    if gwk:
+        gw = target_data.get('ssh_gateway',
+                             default_data.get('ssh_gateway', None))
+        if gw:
+            for k in [
+                'ssh_gateway', 'ssh_gateway_user', "ssh_gateway_password",
+                'ssh_gateway_key', 'ssh_gateway_port',
+            ]:
+                gwk.setdefault(k,
+                               target_data.get(k,
+                                               default_data.get(k, None)))
+            if gwk['ssh_gateway_password'] and ('ssh_gateway_key' in gwk):
+                del gwk['ssh_gateway_key']
     return target_data
 
 
