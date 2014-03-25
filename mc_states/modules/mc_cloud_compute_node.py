@@ -53,7 +53,7 @@ def _find_avalaible_port(targets, target, data):
 
 def _add_vt_to_target(target, vt):
     vts = target.setdefault('virt_types', OrderedDict())
-    default_has(vts, **{vt: True})
+    default_has(vts, **{vt: False})
 
 
 def _feed_settings_from_virt_modules(targets):
@@ -63,7 +63,8 @@ def _feed_settings_from_virt_modules(targets):
         for target, tdata in vt['vms'].items():
             # implicitly create host target
             targets.setdefault(target, OrderedDict())
-            _add_vt_to_target(targets[target], 'lxc')
+            #targets[targets].setdefault('has', OrderedDict())
+            _add_vt_to_target(targets[target], virt_type)
             # link onto the host the vm infos
             for dns, data in tdata.items():
                 dns = data.get('name', dns)
@@ -73,6 +74,8 @@ def _feed_settings_from_virt_modules(targets):
                     'ip':  data['ip'],
                     'domains':  data['domains'],
                     'dns':  data['name']}
+                if data.get('virt_type', '') in ['lxc', 'docker']:
+                    targets[targets]['virt_types']['lxc'] = True
     return targets
 
 

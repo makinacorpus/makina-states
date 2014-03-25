@@ -1,5 +1,4 @@
 {% set cloudSettings = salt['mc_cloud.settings']() %}
-{% set cloudcsettings = salt['mc_cloud_controller.settings']() %}
 {% set cloudsaltSettings = salt['mc_cloud_saltify.settings']() %}
 include:
   - makina-states.cloud.saltify.hooks

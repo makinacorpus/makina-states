@@ -13,13 +13,13 @@ include:
  # eg ip: 10.5.0.2 will have its ssh port mapped to 40002 on host
  # eg ip: 10.5.1.2 will have its ssh port mapped to 40258 on host
  #}
-{% set csettings = salt['mc_cloud.settings']() %}
-{% set settings = salt['mc_cloud_compute_node.settings']() %}
+{% set cloudSettings = salt['mc_cloud.settings']() %}
+{% set csettings = salt['mc_cloud_compute_node.settings']() %}
 {% set localsettings = salt['mc_localsettings.settings']() %}
-{% for target, data in settings['targets'].items() %}
+{% for target, data in csettings['targets'].items() %}
 {% set cptslsname = '{1}/{0}/reverseproxy'.format(target.replace('.', ''),
-                                                  csettings.compute_node_sls_dir) %}
-{% set cptsls = '{1}/{0}.sls'.format(cptslsname, csettings.root) %}
+                                                  cloudSettings.compute_node_sls_dir) %}
+{% set cptsls = '{1}/{0}.sls'.format(cptslsname, cloudSettings.root) %}
 {% set sdata = data|yaml %}
 {% set sdata = sdata.replace('\n', ' ') %}
 # get an haproxy proxying all request on 80+43 + alternate ports for ssh traffic
@@ -44,7 +44,7 @@ include:
                   - makedirs: true
                   - template: jinja
                   - defaults:
-                    cdata: {%raw%}{{sdata}}{%endraw%}
+                    cdata: {%raw%}"{{sdata}}"{%endraw%}
                   - watch_in:
                     - mc_proxy.hook: haproxy-post-conf-hook
     - watch:

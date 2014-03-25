@@ -1,3 +1,5 @@
+{% set csettings= salt['mc_cloud_controller.settings']() %}
+{% set cloudSettings= salt['mc_cloud.settings']() %}
 {% set saltreg = mc_salt['mc_controllers.settings']() %}
 include:
   - makina-states.cloud.generic.hooks.vm
@@ -6,11 +8,12 @@ include:
 {% for target, vms in lxcSettings.vms.items() %}
 {% for vmname, data in vms.items() %}
 {% set sname = data.get('state_name', '{0}-{1}'.format(target, k) %}
-{% set cptslsname = '{1}/{0}/{2}/container_ssh_key'.format(
+{% set cptslsname = '{1}/{0}/lxc/{2}/container_ssh_key'.format(
         target.replace('.', ''),
-        csettings.vms_sls_dir,
+        cloudSettings.vms_sls_dir,
+        vmname,
         vmname.replace('.', '')) %}
-{% set cptsls = '{1}/{0}.sls'.format(cptslsname, csettings.root) %}
+{% set cptsls = '{1}/{0}.sls'.format(cptslsname, cloudSettings.root) %}
 {{sname}}-lxc.vm-install-ssh-key:
   file.managed:
     - name: {{cptsls}}

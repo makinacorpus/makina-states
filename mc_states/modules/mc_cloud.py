@@ -133,9 +133,9 @@ def registry():
         return __salt__[
             'mc_macros.construct_registry_configuration'
         ](__name, defaults={
-            'cloud.generic': {'active': False},
-            'cloud.lxc': {'active': False},
-            'cloud.saltify': {'active': False},
+            'generic': {'active': False},
+            'lxc': {'active': False},
+            'saltify': {'active': False},
         })
     return _registry()
 

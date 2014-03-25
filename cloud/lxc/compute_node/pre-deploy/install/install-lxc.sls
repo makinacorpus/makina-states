@@ -1,12 +1,12 @@
 include:
   - makina-states.cloud.generic.hooks.compute_node
-{% set csettings = salt['mc_cloud.settings']() %}
-{% set settings = salt['mc_cloud_compute_node.settings']() %}
-{% for target, data in settings['targets'].items() %}
-{% if data.has.lxc %}
-{% set cptslsname = '{1}/{0}/lxc-installation'.format(target.replace('.', ''),
-                                                 csettings.compute_node_sls_dir) %}
-{% set cptsls = '{1}/{0}.sls'.format(cptslsname, csettings.root) %}
+{% set cloudSettings = salt['mc_cloud.settings']() %}
+{% set csettings = salt['mc_cloud_compute_node.settings']() %}
+{% for target, data in csettings['targets'].items() %}
+{% if data.virt_types.lxc %}
+{% set cptslsname = '{1}/{0}/lxc/installation'.format(target.replace('.', ''),
+                                                 cloudSettings.compute_node_sls_dir) %}
+{% set cptsls = '{1}/{0}.sls'.format(cptslsname, cloudSettings.root) %}
 {{target}}-inst-lxc-images-templates:
   salt.state:
     - tgt: [{{target}}]

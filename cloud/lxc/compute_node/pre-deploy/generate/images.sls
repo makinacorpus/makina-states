@@ -1,13 +1,13 @@
 include:
   - makina-states.cloud.generic.hooks.compute_node
-{% set csettings = salt['mc_cloud.settings']() %}
+{% set cloudSettings = salt['mc_cloud.settings']() %}
 {% set imgSettings = salt['mc_cloud_images.settings']() %}
-{% set settings = salt['mc_cloud_compute_node.settings']() %}
-{% for target, data in settings['targets'].items() %}
-{% if data.has.lxc %}
-{% set cptslsname = '{1}/{0}/lxc-images-templates'.format(target.replace('.', ''),
-                                                 csettings.compute_node_sls_dir) %}
-{% set cptsls = '{1}/{0}.sls'.format(cptslsname, csettings.root) %}
+{% set csettings = salt['mc_cloud_compute_node.settings']() %}
+{% for target, data in csettings['targets'].items() %}
+{% if data.virt_types.lxc %}
+{% set cptslsname = '{1}/{0}/lxc/images-templates'.format(target.replace('.', ''),
+                                                 cloudSettings.compute_node_sls_dir) %}
+{% set cptsls = '{1}/{0}.sls'.format(cptslsname, cloudSettings.root) %}
 {{target}}-gen-lxc-images-templates:
   file.managed:
     - name: {{cptsls}}
@@ -71,7 +71,7 @@ include:
                   - lxc: {{target}}-{{name}}-stop-default-lxc-container
             {{target}}-{{name}}-lxc-removeminion:
               file.absent:
-                - name: {{csettings.prefix}}/pki/master/minions/{{name}}
+                - name: {{cloudSettings.prefix}}/pki/master/minions/{{name}}
                 - watch:
                   - cmd: {{target}}-{{name}}-lxc-snap
             {% endfor %}

@@ -1,13 +1,13 @@
 {% set cloudSettings = salt['mc_cloud.settings']() %}
-{% set computenodeSettings = salt['mc_cloud_compute_node.settings']() %}
+{% set csettings = salt['mc_cloud_compute_node.settings']() %}
 include:
   - makina-states.cloud.generic.hooks.compute_node
   - makina-states.cloud.generic.genssh
-{% for target, vm in computenodeSettings.targets.items() %}
+{% for target, vm in csettings.targets.items() %}
 {# authorize root from cloudcontroller to connect via ssh on targets #}
 {% set cptslsname = '{1}/{0}/compute_node_sshkeyinstall'.format(target.replace('.', ''),
-                                                           csettings.compute_node_sls_dir) %}
-{% set cptsls = '{1}/{0}.sls'.format(cptslsname, csettings.root) %}
+                                                           cloudSettings.compute_node_sls_dir) %}
+{% set cptsls = '{1}/{0}.sls'.format(cptslsname, cloudSettings.root) %}
 {{target}}-inst-lxc-host-install-ssh-key:
   file.managed:
     - name: {{cptsls}}

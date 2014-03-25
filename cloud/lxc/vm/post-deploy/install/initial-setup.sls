@@ -1,3 +1,4 @@
+{% set csettings = salt['mc_cloud_controller.settings']() %}
 {% set lxcSettings= salt['mc_cloud_lxc.settings']() %}
 include:
   - makina-states.cloud.generic.hooks.vm
@@ -5,6 +6,7 @@ include:
 {% for target, vms in lxcSettings.vms.items() %}
 {%  for vmname, data in vms.items() -%}
 {%    set sname = '{0}-{1}'.format(target, vmname) %}
+{% if csettings[target].virt_types.lxc %}
 {{sname}}-lxc-client-autostart-at-boot:
   salt.function:
     - tgt: [{{target}}]
@@ -31,5 +33,6 @@ include:
                  echo "${i}:{{data.password}}" | chpasswd && touch /.initialspasses;
                done;
             fi']
+{%   endif %}
 {%   endfor %}
 {% endfor %}
