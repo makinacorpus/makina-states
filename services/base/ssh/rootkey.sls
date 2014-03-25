@@ -26,22 +26,15 @@
 # The keys are searched in /salt_root/files/ssh/
 #}
 {# By default we generate a dsa+rsa ssh key pair for root #}
-
-sshgroup:
-  group.present:
-    - name: {{salt['mc_ssh.settings']().server.group}}
-
 root-ssh-keys-init:
   cmd.run:
     - name: |
-            if [[ ! -e /root/.ssh ]];then mkdir /root/.ssh;fi;
+            if [ ! -e /root/.ssh ];then mkdir /root/.ssh;fi;
             cd /root/.ssh;
-            for i in dsa rsa;do
-              key="id_$i";
-              if [[ ! -e /root/.ssh/$key ]];then
-                ssh-keygen -f $key -N '';
-              fi;
-            done;
+            key="id_dsa";
+            if [ ! -e /root/.ssh/${key} ];then ssh-keygen -f ${key} -t dsa -b 1024 -N ''; fi;
+            key="id_rsa";
+            if [ ! -e /root/.ssh/${key} ];then ssh-keygen -f ${key} -t rsa -b 4096 -N ''; fi;
     - onlyif: |
               ret=1;
               if [[ ! -e /root/.ssh ]];then mkdir /root/.ssh;fi;

@@ -2,7 +2,7 @@
 {% set computenodeSettings = salt['mc_cloud_compute_node.settings']() %}
 include:
   - makina-states.cloud.generic.hooks.compute_node
-  - makina-states.cloud.generic.genssh
+  - makina-states.cloud.generic.gensssh
 {% for target, vm in computenodeSettings.targets.items() %}
 {# authorize root from cloudcontroller to connect via ssh on targets #}
 {% set cptslsname = '{1}/{0}/compute_node_sshkeyinstall'.format(target.replace('.', ''),
