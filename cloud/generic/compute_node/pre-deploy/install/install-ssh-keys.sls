@@ -3,7 +3,7 @@
 {% set lxcSettings = salt['mc_cloud_lxc.settings']() %}
 include:
   - makina-states.cloud.generic.hooks.compute_node
-  - makina-states.cloud.generic.gensssh
+  - makina-states.cloud.generic.genssh
 {% for target, vm in lxcSettings.vm.items() %}
 {# authorize root from cloudcontroller to connect via ssh on targets #}
 {% set cptslsname = '{1}/{0}/install-hosts-ssh-key'.format(target.replace('.', ''),

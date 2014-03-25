@@ -1,7 +1,7 @@
 {% set saltreg = mc_salt['mc_controllers.settings']() %}
 include:
   - makina-states.cloud.generic.hooks.vm
-  - makina-states.cloud.generic.gensssh
+  - makina-states.cloud.generic.genssh
 {% set cloudSettings = salt['mc_cloud.settings']() %}
 {% set lxcSettings= salt['mc_cloud_lxc.settings']() %}
 {% for target, vms in lxcSettings.vms.items() %}
