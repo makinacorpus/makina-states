@@ -13,8 +13,8 @@ include:
  # eg ip: 10.5.1.2 will have its ssh port mapped to 40258 on host
  #}
 {% set cloudSettings = salt['mc_cloud.settings']() %}
-{% set csettings = salt['mc_cloud_compute_node.settings']() %}
-{% for target, data in csettings['targets'].items() %}
+{% set compute_node_settings = salt['mc_cloud_compute_node.settings']() %}
+{% for target, data in compute_node_settings['targets'].items() %}
 {% set cptslsname = '{1}/{0}/firewall'.format(target.replace('.', ''),
                                                   cloudSettings.compute_node_sls_dir) %}
 {% set cptsls = '{1}/{0}.sls'.format(cptslsname, cloudSettings.root) %}

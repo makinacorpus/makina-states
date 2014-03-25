@@ -1,4 +1,4 @@
-{% set csettings= salt['mc_cloud_controller.settings']() %}
+{% set compute_node_settings= salt['mc_cloud_controller.settings']() %}
 {% set cloudSettings= salt['mc_cloud.settings']() %}
 {% set saltreg = mc_salt['mc_controllers.settings']() %}
 include:

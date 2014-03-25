@@ -1,5 +1,5 @@
 {% set cloudSettings = salt['mc_cloud.settings']() %}
-{% set csettings = salt['mc_cloud_compute_node.settings']() %}
+{% set compute_node_settings = salt['mc_cloud_compute_node.settings']() %}
 {% set lxcSettings = salt['mc_cloud_lxc.settings']() %}
 include:
   - makina-states.cloud.generic.hooks.compute_node

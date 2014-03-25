@@ -2,8 +2,8 @@ include:
   - makina-states.cloud.generic.hooks.compute_node
 {% set cloudSettings = salt['mc_cloud.settings']() %}
 {% set imgSettings = salt['mc_cloud_images.settings']() %}
-{% set csettings = salt['mc_cloud_compute_node.settings']() %}
-{% for target, data in csettings['targets'].items() %}
+{% set compute_node_settings = salt['mc_cloud_compute_node.settings']() %}
+{% for target, data in compute_node_settings['targets'].items() %}
 {% if data.virt_types.lxc %}
 {% set cptslsname = '{1}/{0}/lxc/images-templates'.format(target.replace('.', ''),
                                                  cloudSettings.compute_node_sls_dir) %}

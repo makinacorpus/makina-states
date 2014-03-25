@@ -1,11 +1,11 @@
-{% set csettings = salt['mc_cloud_controller.settings']() %}
+{% set compute_node_settings = salt['mc_cloud_controller.settings']() %}
 {% set lxcSettings = salt['mc_cloud_lxc.settings']() %}
 {% set cloudSettings = salt['mc_cloud.settings']() %}
 include:
   - makina-states.hooks.generic.hooks.vm
 {% for target, vms in lxcSettings.vms.items() %}
 {%  for vmname, data in vms.items() -%}
-{% if csettings[target].virt_types.lxc %}
+{% if compute_node_settings.targets[target].virt_types.lxc %}
 {% set sname = '{0}-{1}'.format(target, vmname) %}
 {% set salts = cloudSettings.root %}
 {% set msr = '{0}/makina-states'.format(salts) %}

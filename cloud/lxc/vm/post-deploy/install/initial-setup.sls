@@ -1,4 +1,4 @@
-{% set csettings = salt['mc_cloud_controller.settings']() %}
+{% set compute_node_settings = salt['mc_cloud_controller.settings']() %}
 {% set lxcSettings= salt['mc_cloud_lxc.settings']() %}
 include:
   - makina-states.cloud.generic.hooks.vm
@@ -6,7 +6,7 @@ include:
 {% for target, vms in lxcSettings.vms.items() %}
 {%  for vmname, data in vms.items() -%}
 {%    set sname = '{0}-{1}'.format(target, vmname) %}
-{% if csettings[target].virt_types.lxc %}
+{% if compute_node_settings.targets[target].virt_types.lxc %}
 {{sname}}-lxc-client-autostart-at-boot:
   salt.function:
     - tgt: [{{target}}]
