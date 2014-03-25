@@ -18,7 +18,7 @@ def metadata():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _metadata():
         return __salt__['mc_macros.metadata'](
-            __name, bases=['localsettings'])
+            __name, bases=['services'])
     return _metadata()
 
 

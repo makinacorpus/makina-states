@@ -1,2 +1,2 @@
-lxc-pre-setup-is-empty-for-now:
-  mc_proxy.hook: []
+include:
+  - makina-states.cloud.lxc.vm.pre-deploy.install
