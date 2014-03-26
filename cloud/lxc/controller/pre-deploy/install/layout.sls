@@ -18,7 +18,7 @@ providers_lxc_salt:
     - defaults:
         data: {{lxcSettings.defaults|yaml}}
         cdata: {{cloudSettings|yaml}}
-        containers: {{lxcSettings.containers.keys()|yaml }}
+        vms: {{lxcSettings.vms.keys()|yaml }}
         msr: {{cloudSettings.root}}/makina-states
 profiles_lxc_salt:
   file.managed:
@@ -31,7 +31,7 @@ profiles_lxc_salt:
         pdata: {{lxcSettings.defaults|yaml}}
         cdata: {{cloudSettings|yaml}}
         profiles: {{lxcSettings.lxc_cloud_profiles|yaml }}
-        containers: {{lxcSettings.containers.keys()|yaml }}
+        vms: {{lxcSettings.vms.keys()|yaml }}
         msr: {{cloudSettings.root}}/makina-states
     - watch:
       - mc_proxy: cloud-generic-controller-pre-pre-deploy

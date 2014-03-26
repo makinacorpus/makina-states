@@ -47,9 +47,8 @@ include:
       - mc_proxy: cloud-{{target}}-generic-compute_node-pre-virt-type-deploy
     - contents: |
                 {% raw %}
-                {% set lxcSettings = salt['mc_lxc.settings']() %}
+                {% set lxcSettings = salt['mc_cloud_lxc.settings']() %}
                 include:
-                  - makina-states.cloud.lxc.hooks
                   - makina-states.services.firewall.shorewall
                   - makina-states.services.virt.lxc
                 {% if grains['os'] not in ['Ubuntu'] %}
