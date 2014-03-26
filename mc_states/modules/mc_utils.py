@@ -9,6 +9,7 @@ mc_utils / Some usefull small tools
 # Import salt libs
 import salt.utils.dictupdate
 from salt.exceptions import SaltException
+import re
 import salt.utils
 from salt.utils.odict import OrderedDict
 
@@ -322,5 +323,12 @@ def defaults(prefix,
         for k, value in overridden[prefix].items():
             datadict[k] = value
     return format_resolve(datadict)
+
+
+def yencode(string):
+    if isinstance(string, basestring):
+        re_y = re.compile(' \.\.\.$', re.M)
+        string = re_y.sub('', string)
+    return string
 
 #

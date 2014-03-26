@@ -1,4 +1,5 @@
 include:
+  - makina-states.cloud.generic.hooks.compute_node
   - makina-states.cloud.generic.hooks.vm
 {% set compute_node_settings = salt['mc_cloud_compute_node.settings']() %}
 {% set lxcSettings = salt['mc_cloud_lxc.settings']() %}
@@ -15,9 +16,9 @@ include:
     - makedirs: true
     - mode: 750
     - watch:
-      - mc_proxy: cloud-generic-vm-pre-deploy
+      - mc_proxy: cloud-generic-compute_node-post-pre-deploy
     - watch_in:
-      - mc_proxy: cloud-{{vmname}}-generic-vm-pre-deploy
+      - mc_proxy: cloud-generic-compute_node-post-post-deploy
     - user: root
     - group: editor
     - contents: |
@@ -41,7 +42,9 @@ include:
     - makedirs: true
     - mode: 750
     - watch:
-      - mc_proxy: cloud-generic-vm-pre-deploy
+      - mc_proxy: cloud-generic-compute_node-post-pre-deploy
+    - watch_in:
+      - mc_proxy: cloud-generic-compute_node-post-post-deploy
     - user: root
     - group: editor
     - contents: |

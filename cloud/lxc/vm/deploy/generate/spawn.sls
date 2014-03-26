@@ -51,34 +51,18 @@ c{{sname}}-lxc.computenode.sls-generator-for-spawn:
               - mc_proxy: cloud-{{vmname}}-generic-vm-pre-deploy
             - minion: {%raw%} {{ minion | yaml }} {%endraw%}
             - dnsservers: {%raw%}{{dnsservers|yaml}}{%endraw%}
-            {% raw %}
-            {% for var in ["from_container",
-                           "snapshot",
-                           "image",
-                           "gateway",
-                           "bridge",
-                           "mac",
-                           "ssh_gateway",
-                           "ssh_gateway_user",
-                           "ssh_gateway_port",
-                           "ssh_gateway_key",
-                           "ip",
-                           "netmask",
-                           "size",
-                           "backing",
-                           "vgname",
-                           "lvname",
-                           "script_args",
-                           "dnsserver",
-                           "ssh_username",
-                           "password",
-                           "lxc_conf",
-                           "lxc_conf_unset"] %}
-            {%      if data.get(var) %}
-                - {{var}}: {{data[var]|yaml}}
+            {% for var in ["from_container", "snapshot", "image",
+                           "gateway", "bridge", "mac", "lxc_conf_unset",
+                           "ssh_gateway", "ssh_gateway_user", "ssh_gateway_port",
+                           "ssh_gateway_key", "ip", "netmask",
+                           "size", "backing", "vgname",
+                           "lvname", "script_args", "dnsserver",
+                           "ssh_username", "password", "lxc_conf"] %}
+            {% if data.get(var) %}{% set svar = data[var]|yaml %}{% set svar = svar.replace('\n', ' ') %}
+            {# workaround for bizarious rendering bug with ' ...' at each variable end #} 
+            - {{var}}: {%raw%}{{"{% endraw %}{{salt['mc_utils.yencode'](svar)}}{% raw %}"|load_yaml}}{%endraw%}
             {%      endif%}
-            {%    endfor%}
-            {% endraw %}
+            {% endfor%}
 {%  endfor %}
 {%  endif %}
 {% endfor %}
