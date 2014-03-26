@@ -193,7 +193,7 @@ def settings():
         nt_registry = __salt__['mc_nodetypes.registry']()
         cloudSettings = __salt__['mc_cloud.settings']()
         imgSettings = __salt__['mc_cloud_images.settings']()
-        default_container = [a for a in imgSettings['lxc']][0]
+        default_container = [a for a in imgSettings['lxc']['images']][0]
         default_vm = OrderedDict()
         # reactivate to provision
         # when you do maintenance
@@ -340,7 +340,6 @@ def settings():
                 lxc_data['load_balancer_domains'].sort(key=_sort_domains)
                 lxc_data.setdefault('mode', lxcSettings['defaults']['mode'])
                 lxc_data.setdefault('size', None)
-                lxc_data.setdefault('from_container', None)
                 lxc_data.setdefault('snapshot', None)
                 if 'mastersalt' in lxc_data.get('mode', 'salt'):
                     default_args = cloudSettings['bootsalt_mastersalt_args']
@@ -355,14 +354,13 @@ def settings():
                     or not '--branch' in lxc_data['script_args']
                 ):
                     lxc_data['script_args'] += ' -b {0}'.format(branch)
-
+                d_ct = None
                 if not 'scratch' in profile_type:
-                    lxc_data.setdefault(
-                        'from_container',
-                        lxcSettings['defaults']['default_container'])
+                    d_ct = lxcSettings['defaults']['default_container']
+                lxc_data.setdefault('from_container', d_ct)
                 lxc_data.setdefault('ssh_gateway', None)
                 lxc_data = saltapi.complete_gateway(lxc_data, lxcSettings)
-                for i in ["from_container", 'bootsalt_branch',
+                for i in ['bootsalt_branch',
                           "master", "master_port", "autostart",
                           'size', 'image', 'bridge', 'netmask', 'gateway',
                           'dnsservers', 'backing', 'vgname', 'lvname',
