@@ -33,6 +33,9 @@ _errmsg = saltapi._errmsg
 __name = 'mc_cloud_lxc'
 
 log = logging.getLogger(__name__)
+MAC_GID = 'makina-states.cloud.lxc.vmsettings.{0}.{1}.mac'
+PW_GID = 'makina-states.cloud.lxc.vmsettings.{0}.{1}.password'
+IP_GID = 'makina-states.cloud.lxc.vmsettings.{0}.{1}.ip'
 
 
 def gen_mac():
@@ -212,9 +215,14 @@ def settings():
         # nor cron sync
         dptype = 'lvm'
         backing = 'lvm'
+        #if nt_registry['is']['devhost']:
+        #    dptype = 'dir'
+        #    backing = 'dir'
+        default_snapshot = None
         if nt_registry['is']['devhost']:
-            dptype = 'dir'
-            backing = 'dir'
+            default_snapshot = True
+            dptype = 'overlayfs'
+            backing = 'overlayfs'
         need_sync = False
         lxcSettings = __salt__['mc_utils.defaults'](
             'makina-states.cloud.lxc', {
@@ -299,7 +307,10 @@ def settings():
                 if _need_sync:
                     need_sync = True
                 # at this stage, only get already allocated ips
-                ip = lxc_data.get('ip', None)
+                ip = lxc_data.get(
+                    'ip',
+                    __salt__['mc_utils.get'](
+                        IP_GID.format(target, container), None))
                 if ip and not ip in ips[target]:
                     ips[target].append(ip)
                 # shortcut name for profiles
@@ -314,7 +325,10 @@ def settings():
                     and 'profile' in lxc_data
                 ):
                     del lxc_data['profile']
-                if 'dir' in profile_type or 'scratch' in profile_type:
+                if 'overlayfs' in profile_type or 'scratch' in profile_type:
+                    sprofile = ''
+                    lxc_data['backing'] = 'overlayfs'
+                elif 'dir' in profile_type or 'scratch' in profile_type:
                     sprofile = ''
                     lxc_data['backing'] = 'dir'
                 else:
@@ -340,7 +354,7 @@ def settings():
                 lxc_data['load_balancer_domains'].sort(key=_sort_domains)
                 lxc_data.setdefault('mode', lxcSettings['defaults']['mode'])
                 lxc_data.setdefault('size', None)
-                lxc_data.setdefault('snapshot', None)
+                lxc_data.setdefault('snapshot', default_snapshot)
                 if 'mastersalt' in lxc_data.get('mode', 'salt'):
                     default_args = cloudSettings['bootsalt_mastersalt_args']
                 else:
@@ -376,7 +390,10 @@ def settings():
                         i,
                         lxcSettings['defaults'].get(
                             i, lxcSettings.get(i, None)))
-                if 'dir' in profile_type:
+                if (
+                    ('overlayfs' in profile_type)
+                    or ('dir' in profile_type)
+                ):
                     for k in ['lvname', 'vgname', 'size']:
                         if k in lxc_data:
                             del lxc_data[k]
@@ -406,8 +423,7 @@ def find_mac_for_container(target, container, lxc_data=None):
     if not lxc_data:
         lxc_data = {}
     need_sync = False
-    gid = 'makina-states.cloud.lxc.vmsettings.{0}.{1}.mac'.format(
-        target, container)
+    gid = MAC_GID.format(target, container)
     mac = lxc_data.get('mac', None)
     if not mac:
         mac = __salt__['mc_utils.get'](gid, None)
@@ -434,9 +450,7 @@ def find_password_for_container(target,
         lxc_data = {}
     need_sync = False
     password = lxc_data.get('password', None)
-    gid = ('makina-states.cloud.'
-           'lxc.vmsettings.'
-           '{0}.{1}.password').format(target, container)
+    gid = PW_GID.format(target, container)
     if not password:
         password = __salt__['mc_utils.get'](gid, None)
     if not password:
@@ -468,8 +482,7 @@ def find_ip_for_container(allocated_ips,
         lxcSettings = settings()
     if not lxc_data:
         lxc_data = {}
-    gid = 'makina-states.cloud.lxc.vmsettings.{0}.{1}.ip'.format(
-        target, container)
+    gid = IP_GID.format(target, container)
     ip4 = lxc_data.get('ip', None)
     if not ip4:
         ip4 = __salt__['mc_utils.get'](gid)

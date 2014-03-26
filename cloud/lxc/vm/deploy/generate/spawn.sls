@@ -29,6 +29,7 @@ c{{sname}}-lxc.computenode.sls-generator-for-spawn:
     - contents: |
         include:
           - makina-states.cloud.generic.hooks.vm
+          - makina-states.cloud.lxc.controller.install
         {{sname}}-lxc-deploy:
           cloud.profile:
             - name: {{vmname}}
@@ -57,12 +58,11 @@ c{{sname}}-lxc.computenode.sls-generator-for-spawn:
                            "ssh_gateway_key", "ip", "netmask",
                            "size", "backing", "vgname",
                            "lvname", "script_args", "dnsserver",
-                           "ssh_username", "password", "lxc_conf"] %}
-            {% if data.get(var) %}{% set svar = data[var]|yaml %}{% set svar = svar.replace('\n', ' ') %}
-            {# workaround for bizarious rendering bug with ' ...' at each variable end #} 
+                           "ssh_username", "password", "lxc_conf"] -%}
+            {%- if data.get(var) %}{% set svar = data[var]|yaml %}{% set svar = svar.replace('\n', ' ') %}
+            {# workaround for bizarious rendering bug with ' ...' at each variable end #}
             - {{var}}: {%raw%}{{"{% endraw %}{{salt['mc_utils.yencode'](svar)}}{% raw %}"|load_yaml}}{%endraw%}
-            {%      endif%}
-            {% endfor%}
+            {%      endif -%}{% endfor %}
 {%  endfor %}
 {%  endif %}
 {% endfor %}
