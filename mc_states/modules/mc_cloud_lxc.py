@@ -433,7 +433,7 @@ def find_password_for_container(target,
         lxc_data = {}
     need_sync = False
     password = lxc_data.get('password', None)
-    gid = ('makina-astates.cloud.'
+    gid = ('makina-states.cloud.'
            'lxc.vmsettings.'
            '{0}.{1}.password').format(target, container)
     if not password:
