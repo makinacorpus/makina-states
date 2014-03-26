@@ -20,6 +20,10 @@ include:
 {% set cptslsname = '{1}/{0}/compute_node_reverseproxy'.format(target.replace('.', ''),
                                                   cloudSettings.compute_node_sls_dir) %}
 {% set cptsls = '{1}/{0}.sls'.format(cptslsname, cloudSettings.root) %}
+{% set rcptslsname = '{1}/{0}/run-compute_node_reverseproxy'.format(target.replace('.', ''),
+                                                  cloudSettings.compute_node_sls_dir) %}
+{% set rcptsls = '{1}/{0}.sls'.format(rcptslsname, cloudSettings.root) %}
+{% set sdata = data.reverse_proxies|yaml %}
 {% set sdata = data.reverse_proxies|yaml %}
 {% set sdata = sdata.replace('\n', ' ') %}
 # get an haproxy proxying all request on 80+43 + alternate ports for ssh traffic
@@ -31,7 +35,7 @@ include:
     - user: root
     - group: editor
     - contents: |
-              {% raw %}{%set sdata = "{% endraw %}{{sdata.replace('\n', ' ')}}{% raw %}" %}{% endraw %}
+              {% raw %}{%set sdata = "{% endraw %}{{sdata}}{% raw %}" %}{% endraw %}
               include:
                 - makina-states.services.proxy.haproxy
               cpt-cloud-target{{target}}-haproxy-cfg:
@@ -50,5 +54,29 @@ include:
     - watch:
       - mc_proxy: cloud-generic-compute_node-pre-reverseproxy-deploy
     - watch_in:
-      - mc_proxy: cloud-generic-compute_node-post-reverseproxy-deploy
+      - mc_proxy: cloud-{{target}}-generic-compute_node-pre-reverseproxy-deploy
+{{target}}-gen-haproxy-installation-run:
+  file.managed:
+    - name: {{rcptsls}}
+    - makedirs: true
+    - mode: 750
+    - user: root
+    - group: editor
+    - watch:
+      - mc_proxy: cloud-generic-compute_node-pre-reverseproxy-deploy
+    - watch_in:
+      - mc_proxy: cloud-{{target}}-generic-compute_node-pre-reverseproxy-deploy
+    - contents: |
+            include:
+              - makina-states.cloud.generic.hooks.compute_node
+            {{target}}-run-haproxy-installation:
+              salt.state:
+                - tgt: [{{target}}]
+                - expr_form: list
+                - sls: {{cptslsname.replace('/', '.')}}
+                - concurrent: True
+                - watch:
+                  - mc_proxy: cloud-{{target}}-generic-compute_node-pre-reverseproxy-deploy
+                - watch_in:
+                  - mc_proxy: cloud-{{target}}-generic-compute_node-post-reverseproxy-deploy
 {% endfor %}

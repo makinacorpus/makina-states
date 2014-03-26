@@ -15,18 +15,9 @@ include:
 {% set cloudSettings = salt['mc_cloud.settings']() %}
 {% set compute_node_settings = salt['mc_cloud_compute_node.settings']() %}
 {% for target, tdata in compute_node_settings['targets'].items() %}
-{% set cptslsname = '{1}/{0}/compute_node_reverseproxy'.format(target.replace('.', ''),
+{% set cptslsname = '{1}/{0}/run-compute_node_reverseproxy'.format(target.replace('.', ''),
                                                   cloudSettings.compute_node_sls_dir) %}
 {% set cptsls = '{1}/{0}.sls'.format(cptslsname, cloudSettings.root) %}
 # get an haproxy proxying all request on 80+43 + alternate ports for ssh traffic
-{{target}}-run-haproxy-installation:
-  salt.state:
-    - tgt: [{{target}}]
-    - expr_form: list
-    - sls: {{cptslsname.replace('/', '.')}}
-    - concurrent: True
-    - watch:
-      - mc_proxy: cloud-generic-compute_node-pre-deploy
-    - watch_in:
-      - mc_proxy: cloud-generic-compute_node-pre-reverseproxy-deploy
+  - {{cptslsname}}
 {% endfor %}

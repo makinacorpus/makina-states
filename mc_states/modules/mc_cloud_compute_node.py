@@ -65,10 +65,12 @@ def _feed_settings_from_virt_modules(targets):
         for target, tdata in vt['vms'].items():
             # implicitly create host target
             targets.setdefault(target, OrderedDict())
-            #targets[targets].setdefault('has', OrderedDict())
             _add_vt_to_target(targets[target], virt_type)
+            #targets[targets].setdefault('has', OrderedDict())
             # link onto the host the vm infos
             for dns, data in tdata.items():
+                # if at least one vm is defined, the virtual type is activated
+                targets[target]['virt_types'][virt_type] = True
                 dns = data.get('name', dns)
                 targets[target].setdefault('vms', OrderedDict())
                 targets[target]['vms'][data['name']] = {

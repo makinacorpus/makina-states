@@ -82,6 +82,11 @@ def gen_id(name):
 def settings():
     """
     controller node settings
+
+        controllers
+            list of controllers
+                for now, just one, the current minion
+                which is certainly the mastersalt master
     """
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
@@ -89,6 +94,10 @@ def settings():
         #compute_data = _register_default_settings_for(compute_data)
         data = __salt__['mc_utils.defaults'](
             'makina-states.cloud.controller', {
+                'controllers': {
+                    __grains__['id']: {
+                    }
+                }
             })
         return data
     return _settings()

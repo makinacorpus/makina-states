@@ -1,10 +1,10 @@
-{% set compute_node_settings= salt['mc_cloud_controller.settings']() %}
+{% set compute_node_settings= salt['mc_cloud_compute_node.settings']() %}
 {% set cloudSettings= salt['mc_cloud.settings']() %}
 {% set lxcSettings= salt['mc_cloud_lxc.settings']() %}
 include:
   - makina-states.cloud.generic.hooks.vm
 {% for target, vms in lxcSettings.vms.items() %}
-{%  for vmname, data in vms.items() -%}
+{% for vmname, data in vms.items() -%}
 {% set sname = '{0}-{1}'.format(target, vmname) %}
 {% if salt['mc_nodetypes.registry']()['is']['devhost'] %}
 {% set cptslsname = '{1}/{0}/lxc/{2}/container_hostfile'.format(
@@ -12,6 +12,11 @@ include:
         cloudSettings.compute_node_sls_dir,
         vmname.replace('.', '')) %}
 {% set cptsls = '{1}/{0}.sls'.format(cptslsname, cloudSettings.root) %}
+{% set rcptslsname = '{1}/{0}/lxc/{2}/run-hosts-managment'.format(
+        target.replace('.', ''),
+        cloudSettings.compute_node_sls_dir,
+        vmname.replace('.', '')) %}
+{% set rcptsls = '{1}/{0}.sls'.format(rcptslsname, cloudSettings.root) %}
 c{{sname}}-lxc.computenode.sls-generator-for-hostnode-gen:
   file.managed:
     - name: {{cptsls}}
@@ -57,6 +62,27 @@ c{{sname}}-lxc.computenode.sls-generator-for-hostnode-gen:
                     - name: parent-hosts-prepend-accumulator-lxc-{{ sname }}-entries
                     - text: |
                             {{ data.gateway }} {{ target }} {{grains['id'] }}
+{{sname}}-run-lxc.vm-host-management-gen:
+  file.managed:
+    - name: {{rcptsls}}
+    - user: root
+    - mode: 750
+    - MAKEDIRS: true
+    - watch:
+      - mc_proxy: cloud-generic-vm-pre-hostsfiles-deploy
+    - watch_in:
+      - mc_proxy: cloud-{{vmname}}-generic-vm-pre-hostsfiles-deploy
+    - contents: |
+            c{{sname}}-lxc.computenode.sls-generator-for-hostnode-inst:
+              salt.state:
+                - tgt: [{{vmname}}]
+                - expr_form: list
+                - sls: {{cptslsname.replace('/', '.')}}
+                - concurrent: True
+                - watch:
+                  - mc_proxy: cloud-{{vmname}}-generic-vm-pre-hostsfiles-deploy
+                - watch_in:
+                  - mc_proxy: cloud-{{vmname}}-generic-vm-post-hostsfiles-deploy
 {% else %}
 c{{sname}}-lxc.computenode.sls-generator-for-hostnode:
   mc_proxy.hook: []

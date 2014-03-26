@@ -95,6 +95,9 @@ def settings():
                     'cloud-controller'
                 ),
                 'compute_node_sls_dir': (
+                    '{all_sls_dir}/controller'
+                ),
+                'compute_node_sls_dir': (
                     '{all_sls_dir}/compute_node'
                 ),
                 'prefix': prefix,

@@ -7,6 +7,32 @@ include:
 {% set cptslsname = '{1}/{0}/compute_node_hostfile'.format(target.replace('.', ''),
                                                            cloudSettings.compute_node_sls_dir) %}
 {% set cptsls = '{1}/{0}.sls'.format(cptslsname, cloudSettings.root) %}
+{% set rcptslsname = '{1}/{0}/run-compute_node_hostfile'.format(target.replace('.', ''),
+                                                           cloudSettings.compute_node_sls_dir) %}
+{% set rcptsls = '{1}/{0}.sls'.format(rcptslsname, cloudSettings.root) %}
+{{target}}-cloud-generic-inst-host-postsetup-gen-run:
+  file.managed:
+    - name: {{rcptsls}}
+    - watch:
+      - mc_proxy: cloud-generic-compute_node-pre-hostsfiles-deploy
+    - watch_in:
+      - mc_proxy: cloud-{{target}}-generic-compute_node-pre-hostsfiles-deploy
+    - user: root
+    - makedirs: true
+    - mode: 750
+    - contents: |
+                include:
+                  - makina-states.cloud.generic.hooks.compute_node
+                {{target}}-cloud-generic-inst-host-postsetup-inst:
+                  salt.state:
+                    - tgt: [{{target}}]
+                    - expr_form: list
+                    - sls: {{cptslsname.replace('/', '.')}}
+                    - concurrent: True
+                    - watch:
+                      - mc_proxy: cloud-{{target}}-generic-compute_node-pre-hostsfiles-deploy
+                    - watch_in:
+                      - mc_proxy: cloud-{{target}}-generic-compute_node-post-hostsfiles-deploy
 {{target}}-cloud-generic-inst-host-postsetup-gen:
   file.managed:
     - name: {{cptsls}}

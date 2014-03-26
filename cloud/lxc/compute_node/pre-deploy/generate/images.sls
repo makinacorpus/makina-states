@@ -8,6 +8,32 @@ include:
 {% set cptslsname = '{1}/{0}/lxc/images-templates'.format(target.replace('.', ''),
                                                  cloudSettings.compute_node_sls_dir) %}
 {% set cptsls = '{1}/{0}.sls'.format(cptslsname, cloudSettings.root) %}
+{% set rcptslsname = '{1}/{0}/lxc/run-images-templates'.format(target.replace('.', ''),
+                                                 cloudSettings.compute_node_sls_dir) %}
+{% set rcptsls = '{1}/{0}.sls'.format(rcptslsname, cloudSettings.root) %}
+{{target}}-install-lxc-images-templates-gen-inst:
+  file.managed:
+    - name: {{rcptsls}}
+    - makedirs: true
+    - mode: 750
+    - user: root
+    - group: editor
+    - watch:
+      - mc_proxy: cloud-generic-compute_node-pre-images-deploy
+    - watch_in:
+      - mc_proxy: cloud-{{target}}-generic-compute_node-pre-images-deploy
+    - contents: |
+              include:
+                - makina-states.cloud.generic.hooks.compute_node
+              salt.state:
+                - tgt: [{{target}}]
+                - expr_form: list
+                - sls: {{cptslsname.replace('/', '.')}}
+                - concurrent: True
+                - watch:
+                  - mc_proxy: cloud-{{target}}-generic-compute_node-pre-images-deploy
+                - watch_in:
+                  - mc_proxy: cloud-{{target}}-generic-compute_node-post-images-deploy
 {{target}}-gen-lxc-images-templates:
   file.managed:
     - name: {{cptsls}}
@@ -16,9 +42,9 @@ include:
     - user: root
     - group: editor
     - watch:
-      - mc_proxy.hook: cloud-generic-compute_node-pre-images-deploy
+      - mc_proxy: cloud-generic-compute_node-pre-images-deploy
     - watch_in:
-      - mc_proxy.hook: cloud-{{target}}-generic-compute_node-pre-images-deploy
+      - mc_proxy: cloud-{{target}}-generic-compute_node-pre-images-deploy
     - contents: |
             {% for name, imgdata in imgSettings.lxc.images.items() %}
             {% set cwd = '/var/lib/lxc/{0}'.format(name) %}
@@ -40,8 +66,6 @@ include:
                 - tar_options: -xJf
                 - watch:
                   - file: {{target}}-download-{{name}}-{{tversion}}
-                - watch_in:
-                  - mc_proxy: salt-cloud-lxc-images-download
             {{target}}-restore-specialfiles-{{name}}:
               cmd.run:
                 - name: cp -a /dev/log {{cwd}}/rootfs/dev/log
