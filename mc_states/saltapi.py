@@ -241,9 +241,14 @@ def complete_gateway(target_data, default_data):
                 'ssh_gateway', 'ssh_gateway_user', "ssh_gateway_password",
                 'ssh_gateway_key', 'ssh_gateway_port',
             ]:
+
+                if 'defaults' in default_data:
+                    default = default_data['defaults'].get(
+                        k, default_data.get(k, None))
+                else:
+                    default = default_data.get(k, None)
                 gwk.setdefault(k,
-                               target_data.get(k,
-                                               default_data.get(k, None)))
+                               target_data.get(k, default))
             if gwk['ssh_gateway_password'] and ('ssh_gateway_key' in gwk):
                 del gwk['ssh_gateway_key']
     return target_data

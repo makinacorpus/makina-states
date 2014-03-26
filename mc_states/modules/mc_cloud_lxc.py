@@ -365,18 +365,21 @@ def settings():
                           'size', 'image', 'bridge', 'netmask', 'gateway',
                           'dnsservers', 'backing', 'vgname', 'lvname',
                           'load_balancer_domains',
+                          'ssh_gateway_password',
+                          'ssh_gateway_user',
+                          'ssh_gateway_key',
+                          'ssh_gateway_port',
                           "gateway",
                           'vgname', 'ssh_username', 'users', 'sudo',
                           'lxc_conf_unset', 'lxc_conf']:
                     lxc_data.setdefault(
                         i,
-                        lxcSettings['defaults'].get(i,
-                                                    lxcSettings.get(i, None)))
+                        lxcSettings['defaults'].get(
+                            i, lxcSettings.get(i, None)))
                 if 'dir' in profile_type:
                     for k in ['lvname', 'vgname', 'size']:
                         if k in lxc_data:
                             del lxc_data[k]
-
         # search and fill ip settings
         for target in [t for t in lxcSettings['vms']]:
             for container, lxc_data in lxcSettings['vms'][target].items():
