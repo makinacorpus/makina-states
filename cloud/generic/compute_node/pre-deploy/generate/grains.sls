@@ -27,7 +27,7 @@ include:
             - source: salt://makina-states/_scripts/reload_grains.sh
             - template: jinja
             - watch:
-              - cmd: {{target}}-run-grains
+              - grains: {{target}}-run-grains
     - watch:
       - mc_proxy: cloud-generic-compute_node-pre-grains-deploy
     - watch_in:

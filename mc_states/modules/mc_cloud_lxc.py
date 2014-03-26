@@ -91,9 +91,29 @@ def settings():
         defaults settings to provision lxc containers
         Those are all redefinable at each container level
 
+        Corpus API
+
+        bootsalt_branch
+            branch of makina-states to use (prod in prod,
+            dev in dev by default (default_env grain))
+        ip
+            do not set it, or use at ure own risk, prefer just to read the
+            value.
         domains
             list of domains tied with this host (first is minion id
             and main domain name, it is automaticly added)
+        load_balancer_domains
+            The load_balancer domains to be registered for this host.
+            This default to configured domains (at least minion_id
+            which must be setted to your main dns).
+            This can be used to registred your vm on another domain
+            as a horizontally scaled instance.
+            Default to domains.
+        mode
+            (salt (default) or mastersalt)
+
+        LXC API:
+
         ssh_gateway
             ssh gateway info
         ssh_gateway_port
@@ -107,7 +127,6 @@ def settings():
             None
         default_container
             default image
-
         gateway
             10.5.0.1
         master
@@ -118,11 +137,7 @@ def settings():
         image
             LXC template to use
             'ubuntu'
-        bootsalt_branch
-            branch of makina-states to use (prod in prod, dev in dev by default (default_env grain))
-        ip
-            do not set it, or use at ure own risk, prefer just to read the
-            value.
+
         network
             '10.5.0.0'
         netmask
@@ -131,8 +146,6 @@ def settings():
             '255.255.0.0'
         autostart
             lxc is autostarted
-        mode
-            (salt (default) or mastersalt)
         profile
             default size profile to use (medium) (apply only to lvm)
         profile_type
@@ -314,13 +327,17 @@ def settings():
                 lxc_data.setdefault('domains', [])
                 if not container in lxc_data['domains']:
                     lxc_data['domains'].insert(0, container)
-
                 def _sort_domains(dom):
                     if dom == container:
                         return '0{0}'.format(dom)
                     else:
                         return '1{0}'.format(dom)
                 lxc_data['domains'].sort(key=_sort_domains)
+                if lxc_data.get('load_balancer_domains', None) is None:
+                    lxc_data['load_balancer_domains'] = lxc_data['domains'][:]
+                if not container in lxc_data['load_balancer_domains']:
+                    lxc_data['load_balancer_domains'].insert(0, container)
+                lxc_data['load_balancer_domains'].sort(key=_sort_domains)
                 lxc_data.setdefault('mode', lxcSettings['defaults']['mode'])
                 lxc_data.setdefault('size', None)
                 lxc_data.setdefault('from_container', None)
@@ -349,6 +366,7 @@ def settings():
                           "master", "master_port", "autostart",
                           'size', 'image', 'bridge', 'netmask', 'gateway',
                           'dnsservers', 'backing', 'vgname', 'lvname',
+                          'load_balancer_domains',
                           "gateway",
                           'vgname', 'ssh_username', 'users', 'sudo',
                           'lxc_conf_unset', 'lxc_conf']:
@@ -360,6 +378,7 @@ def settings():
                     for k in ['lvname', 'vgname', 'size']:
                         if k in lxc_data:
                             del lxc_data[k]
+
         # search and fill ip settings
         for target in [t for t in lxcSettings['vms']]:
             for container, lxc_data in lxcSettings['vms'][target].items():
@@ -373,8 +392,6 @@ def settings():
                     lxc_data['ip'] = ip
                     if not ip in ips[target]:
                         ips[target].append(ip)
-                else:
-                    import pdb;pdb.set_trace()  ## Breakpoint ##
         # deactivated, way too slow
         if False and need_sync:
             __salt__['saltutil.sync_grains']()
@@ -384,7 +401,7 @@ def settings():
 
 def find_mac_for_container(target, container, lxc_data=None):
     '''Generate and assign a mac addess to a specific
-    container on a speific host'''
+    container on a specific host'''
     if not lxc_data:
         lxc_data = {}
     need_sync = False
@@ -416,7 +433,7 @@ def find_password_for_container(target,
         lxc_data = {}
     need_sync = False
     password = lxc_data.get('password', None)
-    gid = ('makina-cloud.'
+    gid = ('makina-astates.cloud.'
            'lxc.vmsettings.'
            '{0}.{1}.password').format(target, container)
     if not password:

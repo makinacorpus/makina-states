@@ -24,6 +24,7 @@ log = logging.getLogger(__name__)
 VIRT_TYPES = {
     'lxc': {}
 }
+_RP = 'reverse_proxies'
 
 def default_has(vts=None, **kwargs):
     if vts is None:
@@ -73,6 +74,8 @@ def _feed_settings_from_virt_modules(targets):
                 targets[target]['vms'][data['name']] = {
                     'virt_type':  virt_type,
                     'ip':  data['ip'],
+                    'load_balancer_domains':  data.get('load_balancer_domains',
+                                                       data['domains']),
                     'domains':  data['domains'],
                     'dns':  data['name']}
                 if data.get('virt_type', '') in ['lxc', 'docker']:
@@ -85,66 +88,65 @@ def _feed_firewall_settings(targets):
         cdata['firewall'] = get_firewall_toggle()
 
 
-def _configure_http_reverse(main_domain,
-                            ip,
-                            http_proxy,
-                            https_proxy,
-                            http_backends,
-                            https_backends,
-                            domain=None):
-    if not domain:
-        domain = main_domain
+def _add_server_to_backend(reversep, backend_name, domain, ip, kind='http'):
+    """The domain is ppurely informative here"""
+    _backends = reversep.setdefault('{0}_backends'.format(kind), {})
+    bck = _backends.setdefault(backend_name,
+                               {'name': backend_name,
+                                'raw_opts': [
+                                    'option http-server-close',
+                                    'option forwardfor',
+                                    'source 0.0.0.0 usesrc clientip',
+                                    'balance roundrobin',
+                                ],
+                                'servers': []})
+    srv = {'name': 'srv_{0}{1}'.format(domain, len(bck['servers']) + 1),
+           'bind': '{0}:80'.format(ip),
+           'opts': 'check'}
+
+    if not srv['bind'] in [a.get('bind') for a in bck['servers']]:
+        bck['servers'].append(srv)
+
+
+def _configure_http_reverses(reversep, domain, ip):
+    http_proxy = reversep.setdefault(
+        'http_proxy',
+        {'name': reversep['target'],
+         'mode': 'http',
+         'bind': '*:80',
+         'raw_opts': []})
+    https_proxy = reversep.setdefault(
+        'https_proxy',
+        {'name': "secure-" + reversep['target'],
+         'mode': 'http',
+         'bind': '*:443',
+         'raw_opts': []})
+    backend_name = 'bck_{0}'.format(domain)
+    sbackend_name = 'securebck_{0}'.format(domain)
     rule = 'acl host_{0} hdr(host) -i {0}'.format(domain)
     if not rule in http_proxy['raw_opts']:
         http_proxy['raw_opts'].insert(0, rule)
         https_proxy['raw_opts'].insert(0, rule)
-    rule = 'use_backend bck_{1} if host_{0}'.format(domain, main_domain)
+    rule = 'use_backend {1} if host_{0}'.format(domain, backend_name)
     if not rule in http_proxy['raw_opts']:
         http_proxy['raw_opts'].append(rule)
-    rule = 'use_backend securebck_{1} if host_{0}'.format(domain, main_domain)
+    rule = 'use_backend {1} if host_{0}'.format(domain, sbackend_name)
     if not rule in https_proxy['raw_opts']:
         https_proxy['raw_opts'].append(rule)
-    bck = {
-        'name': 'bck_{0}'.format(main_domain),
-        'servers': [
-            {'name': 'bck_{0}1'.format(main_domain),
-             'bind': '{0}:80'.format(ip),
-             'opts': 'check'}]}
-    if not bck in http_backends:
-        http_backends.append(bck)
-    bck = {'name': 'securebck_{0}'.format(main_domain),
-           'servers': [
-               {'name': 'bck_{0}1'.format(main_domain),
-                'bind': '{0}:443'.format(ip),
-                'opts': 'check'}]}
-    if not bck in https_backends:
-        https_backends.append(bck)
+    _add_server_to_backend(reversep, backend_name, domain, ip)
+    _add_server_to_backend(reversep, sbackend_name, domain, ip, kind='https')
 
 
 def _feed_reverse_proxies_settings(targets):
     _s = __salt__.get
     for target, cdata in targets.items():
-        http_proxy = cdata.setdefault('http_proxy',
-                                      {'name': target,
-                                       'mode': 'http',
-                                       'bind': '*:80',
-                                       'raw_opts': []})
-        https_proxy = cdata.setdefault('https_proxy',
-                                       {'name': "secure-" + target,
-                                        'mode': 'http',
-                                        'bind': '*:443',
-                                        'raw_opts': []})
-        https_backends = cdata.setdefault('https_backends', [])
-        http_backends = cdata.setdefault('http_backends', [])
+        reversep = cdata.setdefault(_RP, {'target': target})
         vms_infos = cdata.get('vms', {}).items()
         for vm, data in vms_infos:
             ip = data['ip']
-            main_domain = data['domains'][0]
-            domains = data['domains']
+            domains = data.get('load_balancer_domains', [])
             for domain in domains:
-                _configure_http_reverse(
-                    main_domain, ip, http_proxy, https_proxy,
-                    http_backends, https_backends, domain=domain)
+                _configure_http_reverses(reversep, domain, ip)
 
 
 def _get_next_available_port(ports, start, stop):
@@ -162,7 +164,8 @@ def _feed_ssh_reverse_proxy(targets, start, end):
     for target, cdata in targets.items():
         ssh_map = ssh_maps.setdefault(target, {})
         vms_infos = cdata.get('vms', {})
-        ssh_proxies = cdata.setdefault('ssh_proxies', [])
+        reversep = cdata.setdefault(_RP, {})
+        ssh_proxies = reversep.setdefault('ssh_proxies', [])
         for a in [a for a in ssh_map]:
             ssh_map[a] = int(ssh_map[a])
         # filter old vms grains
@@ -189,6 +192,7 @@ def _feed_ssh_reverse_proxy(targets, start, end):
     if need_sync:
         _s('grains.setval')(mkey, ssh_maps)
     __grains__[mkey] = ssh_maps
+    # TOO slow !
     #_s('saltutil.sync_grains')()
     return ssh_maps
 
@@ -245,8 +249,9 @@ def settings():
                 'ssh_port_range_end': '48000',
                 'targets': targets,
             })
+        # can only be done after having defaults filled
         data['ssh_map'] = _feed_ssh_reverse_proxy(
-            targets,
+            data['targets'],
             int(data['ssh_port_range_start']),
             int(data['ssh_port_range_end']))
         return data

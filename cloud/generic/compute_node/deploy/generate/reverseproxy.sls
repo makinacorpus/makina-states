@@ -20,7 +20,7 @@ include:
 {% set cptslsname = '{1}/{0}/compute_node_reverseproxy'.format(target.replace('.', ''),
                                                   cloudSettings.compute_node_sls_dir) %}
 {% set cptsls = '{1}/{0}.sls'.format(cptslsname, cloudSettings.root) %}
-{% set sdata = data|yaml %}
+{% set sdata = data.reverse_proxies|yaml %}
 {% set sdata = sdata.replace('\n', ' ') %}
 # get an haproxy proxying all request on 80+43 + alternate ports for ssh traffic
 {{target}}-gen-haproxy-installation:
@@ -46,9 +46,9 @@ include:
                   - defaults:
                     cdata: {%raw%}"{{sdata}}"{%endraw%}
                   - watch_in:
-                    - mc_proxy.hook: haproxy-post-conf-hook
+                    - mc_proxy: haproxy-post-conf-hook
     - watch:
       - mc_proxy: cloud-generic-compute_node-pre-reverseproxy-deploy
     - watch_in:
       - mc_proxy: cloud-generic-compute_node-post-reverseproxy-deploy
-{% endfor %} 
+{% endfor %}
