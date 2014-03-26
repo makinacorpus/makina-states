@@ -20,6 +20,11 @@ import socket
 import copy
 
 
+try:
+    import netaddr
+    HAS_NETADDR = True
+except ImportError:
+    HAS_NETADDR = False
 from mc_states import saltapi
 from salt.utils.odict import OrderedDict
 from salt.utils.pycrypto import secure_password
@@ -115,6 +120,9 @@ def settings():
             'ubuntu'
         bootsalt_branch
             branch of makina-states to use (prod in prod, dev in dev by default (default_env grain))
+        ip
+            do not set it, or use at ure own risk, prefer just to read the
+            value.
         network
             '10.5.0.0'
         netmask
@@ -165,6 +173,8 @@ def settings():
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
+        if not HAS_NETADDR:
+            raise Exception('netaddr required for ip generation')
         grains = __grains__
         pillar = __pillar__
         nt_registry = __salt__['mc_nodetypes.registry']()
@@ -192,6 +202,7 @@ def settings():
         if nt_registry['is']['devhost']:
             dptype = 'dir'
             backing = 'dir'
+        need_sync = False
         lxcSettings = __salt__['mc_utils.defaults'](
             'makina-states.cloud.lxc', {
                 'dnsservers': ['8.8.8.8', '4.4.4.4'],
@@ -252,22 +263,32 @@ def settings():
                 '.'.join(
                     lxcSettings['defaults']['network'].split(
                         '.')[:3] + ['2']))
+        ips = {}
         for target in [t for t in lxcSettings['vms']]:
+            ips.setdefault(target, [])
             master = lxcSettings['defaults']['master']
             # if it is not a distant minion, use private gateway ip
             if __grains__['id'] == target:
                 master = lxcSettings['defaults']['gateway']
             # filter dicts and overiddes
             for container in lxcSettings['vms'][target]:
+
                 lxc_data = lxcSettings['vms'][target][container]
                 lxc_data.setdefault('master', master)
-                lxc_data.setdefault('ssh_gateway', target)
-                lxc_data['mac'] = find_mac_for_container(
+                lxc_data['password'], _need_sync = find_password_for_container(
                     target, container, lxc_data)
-                for i in ['ip']:
-                    if not i in lxc_data:
-                        raise Exception(
-                            'Missing data {1}\n:{0}'.format(i, lxc_data))
+                if _need_sync:
+                    need_sync = True
+                lxc_data.setdefault('master', master)
+                lxc_data.setdefault('ssh_gateway', target)
+                lxc_data['mac'], _need_sync = find_mac_for_container(
+                    target, container, lxc_data)
+                if _need_sync:
+                    need_sync = True
+                # at this stage, only get already allocated ips
+                ip = lxc_data.get('ip', None)
+                if ip and not ip in ips[target]:
+                    ips[target].append(ip)
                 # shortcut name for profiles
                 # small -> ms-target-small
                 profile_type = lxc_data.get(
@@ -339,6 +360,24 @@ def settings():
                     for k in ['lvname', 'vgname', 'size']:
                         if k in lxc_data:
                             del lxc_data[k]
+        # search and fill ip settings
+        for target in [t for t in lxcSettings['vms']]:
+            for container, lxc_data in lxcSettings['vms'][target].items():
+                ip, _need_sync = find_ip_for_container(
+                    ips[target], target, container,
+                    lxcSettings=lxcSettings,
+                    lxc_data=lxc_data)
+                if _need_sync:
+                    need_sync = True
+                if ip:
+                    lxc_data['ip'] = ip
+                    if not ip in ips[target]:
+                        ips[target].append(ip)
+                else:
+                    import pdb;pdb.set_trace()  ## Breakpoint ##
+        # deactivated, way too slow
+        if False and need_sync:
+            __salt__['saltutil.sync_grains']()
         return lxcSettings
     return _settings()
 
@@ -348,18 +387,22 @@ def find_mac_for_container(target, container, lxc_data=None):
     container on a speific host'''
     if not lxc_data:
         lxc_data = {}
-    gid = 'makina-states.services.cloud.lxc.vmsettings.{1}.{1}.mac'.format(
+    need_sync = False
+    gid = 'makina-states.cloud.lxc.vmsettings.{0}.{1}.mac'.format(
         target, container)
-    mac = lxc_data.get('mac', __salt__['mc_utils.get'](gid, None))
+    mac = lxc_data.get('mac', None)
     if not mac:
-        __salt__['grains.setval'](gid, gen_mac())
-        __salt__['saltutil.sync_grains']()
-        mac = __salt__['mc_utils.get'](gid)
+        mac = __salt__['mc_utils.get'](gid, None)
+    if not mac:
+        mac = gen_mac()
         if not mac:
             raise Exception(
                 'Error while setting grainmac for {0}/{1}'.format(target,
                                                                   container))
-    return mac
+        __salt__['grains.setval'](gid, mac)
+        mac = __salt__['mc_utils.get'](gid)
+        __grains__[gid] = mac
+    return mac, need_sync
 
 
 def find_password_for_container(target,
@@ -368,50 +411,82 @@ def find_password_for_container(target,
                                 pwlen=32):
     '''Return the container password after creating it
     the first time
-    THIS IS NOT IMPLEMENTED YET
     '''
-    raise Exception('Not implemented')
     if not lxc_data:
         lxc_data = {}
+    need_sync = False
     password = lxc_data.get('password', None)
-    gid = ('makina-states.services.cloud.'
+    gid = ('makina-cloud.'
            'lxc.vmsettings.'
-           '{1}.{1}.password').format(target, container)
+           '{0}.{1}.password').format(target, container)
     if not password:
-        __salt__['grains.setval'](gid, secure_password(pwlen))
-        __salt__['saltuitil.sync_grains']()
-        password = __salt__['mc_utils.get'](gid)
+        password = __salt__['mc_utils.get'](gid, None)
+    if not password:
+        password = secure_password(pwlen)
         if not password:
             raise Exception(
                 'Error while setting password grain for {0}/{1}'.format(
                     target, container))
-    return password
+        __salt__['grains.setval'](gid, password)
+        password = __salt__['mc_utils.get'](gid, None)
+        __grains__[gid] = password
+    return password, need_sync
 
 
-def find_ip_for_container(target, container, lxc_data=None):
+def find_ip_for_container(allocated_ips,
+                          target,
+                          container,
+                          lxcSettings=None,
+                          lxc_data=None):
     '''Search for:
 
-        - an ip in lxc.conf
         - an ip already allocated
         - an random available ip in the range
 
-    THIS IS NOT IMPLEMENTED YET
     '''
-    raise Exception('Not implemented')
+    if not HAS_NETADDR:
+        raise Exception('netaddr required for ip generation')
+    if not lxcSettings:
+        lxcSettings = settings()
     if not lxc_data:
         lxc_data = {}
-    ip4 = lxc_data.get('ip4', None)
-    gid = 'makina-states.services.virt.lxc.vm.{0}.{1}.ip4'.format(
+    gid = 'makina-states.cloud.lxc.vmsettings.{0}.{1}.ip'.format(
         target, container)
+    ip4 = lxc_data.get('ip', None)
     if not ip4:
-        __salt__['grains.setval'](gid, gen_ip4())
-        __salt__['saltuitil.sync_grains']()
         ip4 = __salt__['mc_utils.get'](gid)
+    need_sync = False
+    if not ip4:
+        # get network bounds
+        network = netaddr.IPNetwork(
+            '{0}/{1}'.format(lxcSettings['defaults']['network'],
+                             lxcSettings['defaults']['netmask']))
+        # converts stringued ips to IPAddress objects
+        allocated_ips_ips = [netaddr.IPAddress(a)
+                             for a in allocated_ips
+                             if a]
+        for try_ip in network[2:-2]:  # skip the firsts and last for gateways,
+                                      # etc
+            parts = try_ip.bits().split('.')
+            if (
+                try_ip in allocated_ips_ips  # already allocated
+            ) or (
+                parts[-1] in ['00000000', '11111111']  # 10.*.*.0 or 10.*.*.255
+            ):
+                continue
+            ip4 = "{0}".format(try_ip)
+            break
         if not ip4:
             raise Exception(
-                'Error while setting grainip4 for {0}/{1}'.format(target,
-                                                              container))
-    return ip4
+                'Did not get an available ip in the lxc '
+                'network for {0}/{1}'.format(
+                    target, container)
+            )
+        __salt__['grains.setval'](gid, ip4)
+        ip4 = __salt__['mc_utils.get'](gid)
+        __grains__[gid] = ip4
+    allocated_ips.append(ip4)
+    return ip4, need_sync
 
 
 def dump():

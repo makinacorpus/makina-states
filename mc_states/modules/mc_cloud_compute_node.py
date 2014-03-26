@@ -158,6 +158,7 @@ def _feed_ssh_reverse_proxy(targets, start, end):
     _s = __salt__.get
     mkey = 'makina-states.cloud.ssh-mappings'
     ssh_maps = _s('mc_utils.get')(mkey, {})
+    need_sync = False
     for target, cdata in targets.items():
         ssh_map = ssh_maps.setdefault(target, {})
         vms_infos = cdata.get('vms', {})
@@ -173,6 +174,7 @@ def _feed_ssh_reverse_proxy(targets, start, end):
             if not port:
                 port = _get_next_available_port(ssh_map.values(), start, end)
                 ssh_map[vm] = port
+                need_sync = True
             ssh_proxy = {
                 'name': 'lst_{0}'.format(data['domains'][0]),
                 'bind': ':{0}'.format(data['ip']),
@@ -184,8 +186,10 @@ def _feed_ssh_reverse_proxy(targets, start, end):
                     'opts': 'check'}]}
             if not ssh_proxy in ssh_proxies:
                 ssh_proxies.append(ssh_proxy)
-    _s('grains.setval')(mkey, ssh_maps)
-    _s('saltutil.sync_grains')()
+    if need_sync:
+        _s('grains.setval')(mkey, ssh_maps)
+    __grains__[mkey] = ssh_maps
+    #_s('saltutil.sync_grains')()
     return ssh_maps
 
 
@@ -202,11 +206,13 @@ def settings():
             global firewall toggle
 
     ssh_port_range_start
-        from where we start to enable ssh NAT ports
+        from where we start to enable ssh NAT ports.
+        Default to 40000.
 
     ssh_port_range_end
 
-        from where we end to enable ssh NAT ports
+        from where we end to enable ssh NAT ports.
+        Default to 48000.
 
     Basically the compute node needs to:
 
