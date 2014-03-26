@@ -47,7 +47,7 @@ include:
                 - sls: {{cptslsname.replace('/', '.')}}
                 - concurrent: True
                 - watch:
-                  - mc_proxy: cloud-{{target}}-generic-compute_pre-node-firewall-deploy
+                  - mc_proxy: cloud-{{target}}-generic-compute_node-pre-firewall-deploy
                 - watch_in:
                   - mc_proxy: cloud-{{target}}-generic-compute_node-post-firewall-deploy
-{% endfor %}
+G{% endfor %}

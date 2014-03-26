@@ -31,7 +31,7 @@ include:
                                            cloudSettings.compute_node_sls_dir, virt_type) %}
                 {% set vtcptslsname = '{1}/{0}/{2}'.format(target.replace('.', ''),
                                            cloudSettings.compute_node_sls_dir, virt_type) %}
-                {%raw%}{% if salt['mc_cloud.registry']().is['{%endraw%}'{{virt_type}}'{%raw%}] %}{%endraw%}
+                {%raw%}{% if salt['mc_cloud.registry']().is['{%endraw%}{{virt_type}}{%raw%}'] %}{%endraw%}
                 - makina-states.cloud.{{virt_type}}.controller.install
                 - {{cvtcptslsname.replace('/', '.')}}
                 - {{vtcptslsname.replace('/', '.')}}
