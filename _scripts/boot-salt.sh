@@ -2409,7 +2409,7 @@ mastersalt_minion_challenge() {
     global_tries="30"
     inner_tries="5"
     for i in `seq ${global_tries}`;do
-        restart_local_minions
+        restart_local_mastersalt_minions
         resultping="1"
         for j in `seq ${inner_tries}`;do
             resultping="$(mastersalt_ping_test)"
