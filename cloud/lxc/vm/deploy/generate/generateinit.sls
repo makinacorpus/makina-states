@@ -1,6 +1,7 @@
 include:
   - makina-states.cloud.generic.hooks.compute_node
   - makina-states.cloud.generic.hooks.vm
+{% set localsettings = salt['mc_localsettings.settings']() %}
 {% set compute_node_settings = salt['mc_cloud_compute_node.settings']() %}
 {% set lxcSettings = salt['mc_cloud_lxc.settings']() %}
 {% set cloudSettings = salt['mc_cloud.settings']() %}
@@ -20,7 +21,7 @@ include:
     - watch_in:
       - mc_proxy: cloud-generic-compute_node-post-post-deploy
     - user: root
-    - group: editor
+    - group: {{localsettings.group}}
     - contents: |
               include:
                 - makina-states.cloud.lxc.controller.install
@@ -46,7 +47,7 @@ include:
     - watch_in:
       - mc_proxy: cloud-generic-compute_node-post-post-deploy
     - user: root
-    - group: editor
+    - group: {{localsettings.group}}
     - contents: |
               include:
                 - makina-states.cloud.lxc.controller.install

@@ -1,5 +1,6 @@
 include:
   - makina-states.cloud.generic.hooks.compute_node
+{% set localsettings = salt['mc_localsettings.settings']() %}
 {# generate an init file callable on a per compute node basis #}
 {% set cloudSettings = salt['mc_cloud.settings']() %}
 {% set compute_node_settings = salt['mc_cloud_compute_node.settings']() %}
@@ -14,7 +15,7 @@ include:
     - makedirs: true
     - mode: 750
     - user: root
-    - group: editor
+    - group: {{localsettings.group}}
     - contents: |
               include:
                 {# generic compute node part #}

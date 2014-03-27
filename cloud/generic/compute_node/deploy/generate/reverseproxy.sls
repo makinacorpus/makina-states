@@ -33,7 +33,7 @@ include:
     - makedirs: true
     - mode: 750
     - user: root
-    - group: editor
+    - group: {{localsettings.group}}
     - contents: |
               {% raw %}{%set sdata = "{% endraw %}{{sdata}}{% raw %}" %}{% endraw %}
               include:
@@ -61,7 +61,7 @@ include:
     - makedirs: true
     - mode: 750
     - user: root
-    - group: editor
+    - group: {{localsettings.group}}
     - watch:
       - mc_proxy: cloud-generic-compute_node-pre-reverseproxy-deploy
     - watch_in:

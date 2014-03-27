@@ -1,5 +1,6 @@
 include:
   - makina-states.cloud.generic.hooks.compute_node
+{% set localsettings = salt['mc_localsettings.settings']() %}
 {% set cloudSettings = salt['mc_cloud.settings']() %}
 {% set imgSettings = salt['mc_cloud_images.settings']() %}
 {% set compute_node_settings = salt['mc_cloud_compute_node.settings']() %}
@@ -17,7 +18,7 @@ include:
     - makedirs: true
     - mode: 750
     - user: root
-    - group: editor
+    - group: {{localsettings.group}}
     - watch:
       - mc_proxy: cloud-generic-compute_node-pre-images-deploy
     - watch_in:
@@ -41,7 +42,7 @@ include:
     - makedirs: true
     - mode: 750
     - user: root
-    - group: editor
+    - group: {{localsettings.group}}
     - watch:
       - mc_proxy: cloud-generic-compute_node-pre-images-deploy
     - watch_in:
