@@ -11,6 +11,7 @@ cloud-root-keygen:
     - watch:
       - cmd: root-ssh-keys-init
       - file: salt_cloud-dirs
+      - group: {{localsettings.group}}
 cloud-root-keygen-rsa:
   file.copy:
     - name: {{cloudSettings.root}}/{{cloudSettings.all_sls_dir}}/rootkey-rsa.pub
@@ -19,3 +20,4 @@ cloud-root-keygen-rsa:
     - watch:
       - cmd: root-ssh-keys-init
       - file: salt_cloud-dirs
+      - group: {{localsettings.group}}
