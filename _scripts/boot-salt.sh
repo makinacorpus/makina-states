@@ -1623,7 +1623,7 @@ run_ms_buildout() {
         || [ ! -e "${ms}/src/docker/setup.py" ]\
         || [ ! -e "${ms}/src/m2crypto/setup.py" ]\
         || [ ! -e "${ms}/src/SaltTesting/setup.py" ]\
-        || [ -n "${BUILDOUT_REBOOTSTRAP}" ]\
+        || [ "x${BUILDOUT_REBOOTSTRAP}" != "x" ] \
         ;then
         cd "${ms}"
         bs_log "Launching buildout for salt initialisation (${ms})"
