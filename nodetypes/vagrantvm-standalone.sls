@@ -20,8 +20,8 @@
 include:
   - makina-states.nodetypes.devhost
   - makina-states.nodetypes.vagrantvm-ssh-keys
-  - makina-states.services.cloud.saltify
-  - makina-states.services.cloud.lxc
+  - makina-states.cloud.saltify
+  - makina-states.cloud.lxc
 {% endif %}
 # add vagrant to editor
 addvagrant-to-editor:
