@@ -18,4 +18,4 @@ salt_cloud-dirs:
     - require:
       - mc_proxy: cloud-generic-controller-pre-pre-deploy
     - require_in:
-      - mc_proxy: cloud-generic-controller-pre-post-deploy
+      - mc_proxy: cloud-generic-controller-post-pre-deploy
