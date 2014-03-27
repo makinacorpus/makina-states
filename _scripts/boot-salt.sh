@@ -564,16 +564,17 @@ set_vars() {
     # select the daemons to install but also
     # detect what is already present on the system
     if [ "x${SALT_CONTROLLER}" = "xsalt_master" ]\
-     || [ "x$(grep -q "makina-states.controllers.salt_master: true" "${CONF_PREFIX}/grains" 2>/dev/null;echo "${?}")" != "x0" ];then
+     || [ "x$(grep -q "makina-states.controllers.salt_master: true" "${CONF_PREFIX}/grains" 2>/dev/null;echo "${?}")" = "x0" ];then
         IS_SALT_MASTER="y"
     else
         IS_SALT_MINION="y"
     fi
     if [ "x${MASTERSALT_CONTROLLER}" = "xmastersalt_master" ]\
-     || [ "x$(grep -q "makina-states.controllers.mastersalt_master: true" "${MCONF_PREFIX}/grains" 2>/dev/null;echo "${?}")" != "x0" ];then
+     || [ "x$(grep -q "makina-states.controllers.mastersalt_master: true" "${MCONF_PREFIX}/grains" 2>/dev/null;echo "${?}")" = "x0" ];then
         IS_MASTERSALT_MASTER="y"
-    elif [ "x${MASTERSALT_CONTROLLER}" = "xmastersalt_minion" ]\
-     || [ "x$(grep -q "makina-states.controllers.mastersalt_minion: true" "${MCONF_PREFIX}/grains" 2>/dev/null;echo "${?}")" != "x0" ];then
+    fi
+    if [ "x${MASTERSALT_CONTROLLER}" = "xmastersalt_minion" ]\
+     || [ "x$(grep -q "makina-states.controllers.mastersalt_minion: true" "${MCONF_PREFIX}/grains" 2>/dev/null;echo "${?}")" = "x0" ];then
         IS_MASTERSALT_MINION="y"
     fi
     if [ "x${MASTERSALT}" != "x" ];then
