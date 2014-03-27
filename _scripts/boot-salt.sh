@@ -563,14 +563,17 @@ set_vars() {
 
     # select the daemons to install but also
     # detect what is already present on the system
-    if [ "x${SALT_CONTROLLER}" = "xsalt_master" ];then
+    if [ "x${SALT_CONTROLLER}" = "xsalt_master" ]\
+     || [ "x$(grep -q "makina-states.controllers.salt_master: true" "${CONF_PREFIX}/grains" 2>/dev/null;echo "${?}")" != "x0" ];then
         IS_SALT_MASTER="y"
     else
         IS_SALT_MINION="y"
     fi
-    if [ "x${MASTERSALT_CONTROLLER}" = "xmastersalt_master" ];then
+    if [ "x${MASTERSALT_CONTROLLER}" = "xmastersalt_master" ]\
+     || [ "x$(grep -q "makina-states.controllers.mastersalt_master: true" "${MCONF_PREFIX}/grains" 2>/dev/null;echo "${?}")" != "x0" ];then
         IS_MASTERSALT_MASTER="y"
-    elif [ "x${MASTERSALT_CONTROLLER}" = "xmastersalt_minion" ];then
+    elif [ "x${MASTERSALT_CONTROLLER}" = "xmastersalt_minion" ]\
+     || [ "x$(grep -q "makina-states.controllers.mastersalt_minion: true" "${MCONF_PREFIX}/grains" 2>/dev/null;echo "${?}")" != "x0" ];then
         IS_MASTERSALT_MINION="y"
     fi
     if [ "x${MASTERSALT}" != "x" ];then
@@ -1954,6 +1957,14 @@ a\    master_port: ${SALT_MASTER_PORT}
     "${SED}" -i -e "/^    id:/ d" "${CONF_PREFIX}/grains"
     "${SED}" -i -e "/makina-states.minion_id:/ d" "${CONF_PREFIX}/grains"
     echo "makina-states.minion_id: $(get_minion_id)">>"${CONF_PREFIX}/grains"
+    if [ "x${IS_SALT_MINION}" != "x" ];then
+        "${SED}" -i -e "/makina-states.controllers.salt_minion: / d" "${CONF_PREFIX}/grains"
+        echo "makina-states.controllers.salt_minion: true">>"${CONF_PREFIX}/grains"
+    fi
+    if [ "x${IS_SALT_MASTER}" != "x" ];then
+        "${SED}" -i -e "/makina-states.controllers.salt_master: / d" "${CONF_PREFIX}/grains"
+        echo "makina-states.controllers.salt_master: true">>"${CONF_PREFIX}/grains"
+    fi
     # do no setup stuff for master for just a minion
     if [ "x${IS_SALT_MASTER}" != "x" ] \
        && [ "x$(egrep -- "( |\t)*master:( |\t)*$" "${SALT_PILLAR}/salt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
@@ -2042,6 +2053,14 @@ a\    publish_port: ${MASTERSALT_MASTER_PUBLISH_PORT}
         "${SED}" -i -e "/^    id:/ d" "${MCONF_PREFIX}/grains"
         "${SED}" -i -e "/makina-states.minion_id:/ d" "${MCONF_PREFIX}/grains"
         echo "makina-states.minion_id: $(mastersalt_get_minion_id)">>"${MCONF_PREFIX}/grains"
+        if [ "x${IS_MASTERSALT_MINION}" != "x" ];then
+            "${SED}" -i -e "/makina-states.controllers.mastersalt_minion: / d" "${MCONF_PREFIX}/grains"
+            echo "makina-states.controllers.mastersalt_minion: true">>"${MCONF_PREFIX}/grains"
+        fi
+        if [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
+            "${SED}" -i -e "/makina-states.controllers.mastersalt_master: / d" "${MCONF_PREFIX}/grains"
+            echo "makina-states.controllers.mastersalt_master: true">>"${MCONF_PREFIX}/grains"
+        fi
     fi
     # reset minion_ids
     for i in $(find "${CONF_PREFIX}"/minion* -type f 2>/dev/null|grep -v sed);do
@@ -2178,6 +2197,18 @@ install_salt_daemons() {
             rm -f "${SALT_MS}/.rebootstrap"
         fi
         RUN_SALT_BOOTSTRAP="1"
+    fi
+    if [ "x${IS_SALT_MASTER}" != "x" ];then
+        if [ ! -e "${ETC_INIT}/salt-master.conf" ]\
+            && [ ! -e "${ETC_INIT}.d/salt-master" ];then
+            RUN_SALT_BOOTSTRAP="1"
+        fi
+    fi
+    if [ "x${IS_SALT_MINION}" != "x" ];then
+        if [ ! -e "${ETC_INIT}/salt-minion.conf" ]\
+            && [ ! -e "${ETC_INIT}.d/salt-minion" ];then
+            RUN_SALT_BOOTSTRAP="1"
+        fi
     fi
 
     # --------- SALT install
@@ -2700,6 +2731,18 @@ install_mastersalt_daemons() {
             if [ -e "${MASTERSALT_MS}/.rebootstrap" ];then
                 rm -f "${MASTERSALT_MS}/.rebootstrap"
             fi
+            RUN_MASTERSALT_BOOTSTRAP="1"
+        fi
+    fi
+    if [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
+        if [ ! -e "${ETC_INIT}.d/mastersalt-master" ]\
+            &&  [ ! -e "${ETC_INIT}/mastersalt-master.conf" ];then
+            RUN_MASTERSALT_BOOTSTRAP="1"
+        fi
+    fi
+    if  [ "x${IS_MASTERSALT_MINION}" != "x" ];then
+        if [ ! -e "${ETC_INIT}.d/mastersalt-minion" ]\
+            && [ ! -e "${ETC_INIT}/mastersalt-minion.conf" ];then
             RUN_MASTERSALT_BOOTSTRAP="1"
         fi
     fi
