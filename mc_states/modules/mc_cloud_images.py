@@ -82,9 +82,9 @@ def settings():
                 images[img]['lxc_tarball'])
         cron_sync = True
         if (
-            nt_registry['is']['devhost']
-            or not sv_registry['is']['cloud.cloud_controller']
-            or not sv_registry['is']['cloud.lxc']
+                nt_registry['is']['devhost']
+                or nt_registry['is']['lxccontainer']
+                or __salt__['mc_config.get')('makina-states.cloud.is.vm', False)
         ):
             cron_sync = False
         data = __salt__['mc_utils.defaults'](

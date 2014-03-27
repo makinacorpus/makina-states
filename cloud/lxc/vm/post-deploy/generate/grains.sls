@@ -52,7 +52,7 @@ include:
         {{sname}}-run-grains:
           grains.present:
             - names:
-              - makina-states.cloud.is.compute_node
+              - makina-states.cloud.is.vm
               - makina-states.services.proxy.haproxy
               - makina-states.services.firewall.shorewall
               - makina-states.cloud.compute_node.has.firewall
