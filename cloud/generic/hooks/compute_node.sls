@@ -7,7 +7,6 @@ cloud-generic-compute_node-pre-pre-deploy:
     - watch:
       - mc_proxy: cloud-generic-pre
     - watch_in:
-      - mc_proxy: cloud-generic-pre
       - mc_proxy: cloud-generic-compute_node-post-pre-deploy
 
 cloud-generic-compute_node-post-pre-deploy:
