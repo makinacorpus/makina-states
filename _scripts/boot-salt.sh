@@ -2458,6 +2458,9 @@ make_association() {
     #    cat /var/log/salt/salt-minion
          set +x
     fi
+    if [ "x$(master_processes)" = "x0" ] && [ "x$(IS_SALT_MASTER)" != "x" ];then
+        restart_local_master
+    fi
     if [ "x$(minion_processes)" = "x0" ];then
         restart_local_minions
         sleep $(get_delay_time)
@@ -2569,8 +2572,7 @@ make_mastersalt_association() {
         debug_msg "Mastersalt minion \"${minion_id}\" already registered on ${MASTERSALT}"
         salt_echo "changed=false comment='mastersalt minion already registered'"
     else
-        if [ "x${MASTERSALT_MASTER_IP}" = "x127.0.0.1" ];then
-            debug_msg "Forcing mastersalt master restart"
+        if [ "x$(mastersalt_master_processes)" = "x0" ] && [ "x$(IS_MASTERSALT_MASTER)" != "x" ];then
             restart_local_mastersalt_masters
         fi
         if [ "x${MASTERSALT_MASTER_DNS}" != "xlocalhost" ] && [ "x${MASTERSALT_NO_CHALLENGE}" != "x" ];then
