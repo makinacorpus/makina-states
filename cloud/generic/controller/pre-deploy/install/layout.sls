@@ -9,6 +9,7 @@ salt_cloud-dirs:
     - names:
       - {{pvdir}}
       - {{pfdir}}
+      - {{cloudSettings.root}}/{{cloudSettings.all_sls_dir}}
     - makedirs: true
     - user: root
     - group: {{localsettings.group }}
