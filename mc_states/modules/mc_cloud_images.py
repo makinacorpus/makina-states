@@ -84,7 +84,7 @@ def settings():
         if (
                 nt_registry['is']['devhost']
                 or nt_registry['is']['lxccontainer']
-                or __salt__['mc_config.get'](
+                or __salt__['mc_utils.get'](
                     'makina-states.cloud.is.vm', False)
         ):
             cron_sync = False
