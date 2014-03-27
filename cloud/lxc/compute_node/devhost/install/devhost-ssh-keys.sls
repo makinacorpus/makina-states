@@ -2,6 +2,7 @@
 include:
   {# lxc may not be installed directly on the cloud controller ! #}
   - makina-states.cloud.generic.hooks.common
+  - makina-states.cloud.lxc.compute_node.devhost.install.devhost-lxc-symlinks
   - makina-states.nodetypes.vagrantvm-ssh-keys
 
 {# copy user ssh keys for pull/push inside containers #}
