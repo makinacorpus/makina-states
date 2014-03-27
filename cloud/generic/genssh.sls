@@ -9,6 +9,7 @@ cloud-root-keygen:
     - user: root
     - watch:
       - cmd: root-ssh-keys-init
+      - file: salt_cloud-dirs
 cloud-root-keygen-rsa:
   file.copy:
     - name: {{cloudSettings.root}}/{{cloudSettings.all_sls_dir}}/rootkey-rsa.pub
