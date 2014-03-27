@@ -18,6 +18,7 @@ include:
     - group: {{localsettings.group}}
     - contents: |
               include:
+                - {{cptslsnamepref.replace('/', '.')}}lxc.run-computenodelxc_grains
                 - {{cptslsnamepref.replace('/', '.')}}lxc.run-images-templates
                 - {{cptslsnamepref.replace('/', '.')}}lxc.run-installation
                 {% if salt['mc_nodetypes.registry']().is.devhost %}- makina-states.cloud.lxc.compute_node.devhost.install{% endif %}
