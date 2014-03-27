@@ -1,7 +1,13 @@
 {% set computenode_settings = salt['mc_cloud_compute_node.settings']() %}
+include:
+  - makina-states.cloud.generic.hooks.common
+
 cloud-generic-compute_node-pre-pre-deploy:
   mc_proxy.hook:
+    - watch:
+      - mc_proxy: cloud-generic-pre
     - watch_in:
+      - mc_proxy: cloud-generic-pre
       - mc_proxy: cloud-generic-compute_node-post-pre-deploy
 
 cloud-generic-compute_node-post-pre-deploy:
@@ -198,5 +204,7 @@ cloud-generic-compute_node-post-post-deploy:
       - mc_proxy: cloud-generic-compute_node-final
 
 cloud-generic-compute_node-final:
-  mc_proxy.hook: []
+  mc_proxy.hook:
+   - watch_in:
+      - mc_proxy: cloud-generic-final
 
