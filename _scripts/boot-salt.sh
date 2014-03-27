@@ -1769,7 +1769,7 @@ EOF
             master_dest="${MCONF_PREFIX}/pki/master"
             # regenerate keys for the local master
             if [ "x$(which salt-key 2>/dev/null)" != "x" ];then
-                salt-key --gen-keys=master --gen-keys-dir=${CONF_PREFIX}/pki/master
+                "${SALT_MS}"/bin/salt-key -c /etc/salt --gen-keys=master --gen-keys-dir=${CONF_PREFIX}/pki/master
             fi
             __install "${SALT_CLOUD_DIR}/minion.pem" "${minion_dest}/minion.pem"
             __install "${SALT_CLOUD_DIR}/minion.pub" "${minion_dest}/minion.pub"
@@ -2105,13 +2105,13 @@ gen_mastersalt_keys() {
     if [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
         if [ ! -e "${MCONF_PREFIX}/pki/master/master.pub" ];then
             bs_log "Generating mastersalt master key"
-            salt-key --gen-keys=master --gen-keys-dir=${MCONF_PREFIX}/pki/master
+            "${MASTERSALT_MS}/bin/salt-key" -c "${MCONF_PREFIX}" --gen-keys=master --gen-keys-dir=${MCONF_PREFIX}/pki/master
         fi
     fi
     if [ "x${IS_MASTERSALT_MINION}" != "x" ];then
         if [ ! -e "${MCONF_PREFIX}/pki/minion/minion.pub" ];then
             bs_log "Generating mastersalt minion key"
-            salt-key --gen-keys=minion --gen-keys-dir=${MCONF_PREFIX}/pki/minion
+            "${MASTERSALT_MS}/bin/salt-key" -c "${MCONF_PREFIX}" --gen-keys=minion --gen-keys-dir=${MCONF_PREFIX}/pki/minion
         fi
     fi
     if [ "x${IS_MASTERSALT_MINION}" != "x" ]\
@@ -2126,7 +2126,7 @@ gen_salt_keys() {
     if [ "x${IS_SALT_MASTER}" != "x" ];then
         if [ ! -e "${CONF_PREFIX}/pki/master/master.pub" ];then
             bs_log "Generating salt minion key"
-            salt-key --gen-keys=master --gen-keys-dir=${CONF_PREFIX}/pki/master
+            "${SALT_MS}/bin/salt-key" -c "${CONF_PREFIX}" --gen-keys=master --gen-keys-dir=${CONF_PREFIX}/pki/master
         fi
     fi
     # in saltcloude mode, keys are already providen
@@ -2134,7 +2134,7 @@ gen_salt_keys() {
         if [ "x${IS_SALT_MINION}" != "x" ];then
             if [ ! -e "${CONF_PREFIX}/pki/minion/minion.pub" ];then
                 bs_log "Generating salt minion key"
-                salt-key --gen-keys=minion --gen-keys-dir=${CONF_PREFIX}/pki/minion
+                "${SALT_MS}/bin/salt-key" -c "${CONF_PREFIX}" --gen-keys=minion --gen-keys-dir=${CONF_PREFIX}/pki/minion
             fi
         fi
     fi
@@ -2489,7 +2489,7 @@ make_association() {
         else
             bs_log "  [*] No temporisation for challenge, trying to spawn the minion"
             if [ "x${SALT_MASTER_DNS}" = "xlocalhost" ];then
-                salt-key -y -a "${minion_id}"
+                "${SALT_MS}/bin/salt-key" -c "${CONF_PREFIX}" -y -a "${minion_id}"
                 ret="${?}"
                 if [ "x${ret}" != "x0" ];then
                     bs_log "Failed accepting keys"
