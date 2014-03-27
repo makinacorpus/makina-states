@@ -3,6 +3,7 @@
 {% set pvdir = cloudSettings.pvdir %}
 {% set pfdir = cloudSettings.pfdir %}
 include:
+  - makina-states.localsettings.users
   - makina-states.cloud.generic.hooks.controller
 salt_cloud-dirs:
   file.directory:
