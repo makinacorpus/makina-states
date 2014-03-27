@@ -2537,6 +2537,7 @@ make_association() {
         fi
         debug_msg "Forcing salt minion restart"
         restart_local_minions
+        gen_salt_keys
         salt_master_connectivity_check 20
         bs_log "Waiting for salt minion key hand-shake"
         minion_id="$(get_minion_id)"
@@ -2630,6 +2631,7 @@ make_mastersalt_association() {
         fi
         debug_msg "Forcing mastersalt minion restart"
         restart_local_mastersalt_minions
+        gen_mastersalt_keys
         mastersalt_master_connectivity_check
         bs_log "Waiting for mastersalt minion key hand-shake"
         minion_id="$(mastersalt_get_minion_id)"
