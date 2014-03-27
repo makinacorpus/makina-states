@@ -17,3 +17,4 @@ cloud-root-keygen-rsa:
     - user: root
     - watch:
       - cmd: root-ssh-keys-init
+      - file: salt_cloud-dirs
