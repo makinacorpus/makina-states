@@ -572,6 +572,7 @@ def registry():
             'repository_dotdeb': {'active': False},
             'shell': {'active': True},
             'sudo': {'active': True},
+            'groups': {'active': True},
             'users': {'active': True},
             'vim': {'active': True},
             'rvm': {'active': False},

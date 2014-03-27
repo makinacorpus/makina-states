@@ -164,6 +164,7 @@ makina-{{id}}-bashrc-load:
 {% macro do(full=False) %}
 include:
   - makina-states.localsettings.users-hooks
+  - makina-states.localsettings.groups
   - makina-states.localsettings.sudo
 {{ salt['mc_macros.register']('localsettings', 'users') }}
 {% for id, udata in localsettings.users.items() %}
