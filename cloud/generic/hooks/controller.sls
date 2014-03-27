@@ -6,18 +6,15 @@ cloud-generic-controller-pre-pre-deploy:
     - watch:
       - mc_proxy: cloud-generic-pre
     - watch_in:
-
       - mc_proxy: cloud-generic-controller-post-pre-deploy
 
 cloud-generic-controller-post-pre-deploy:
   mc_proxy.hook:
     - watch_in:
-      - mc_proxy: cloud-generic-controller-pre-deploy
+      - mc_proxy: cloud-generic-controller-pre-grains-deploy
 
 cloud-generic-controller-pre-grains-deploy:
   mc_proxy.hook:
-    - watch:
-      - mc_proxy: cloud-generic-controller-post-pre-deploy
     - watch_in:
       - mc_proxy: cloud-generic-controller-post-grains-deploy
 
