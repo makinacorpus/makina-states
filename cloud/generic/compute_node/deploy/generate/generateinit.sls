@@ -24,19 +24,19 @@ include:
                 - {{cptslsnamepref.replace('/', '.')}}run-compute_node_firewall
                 - {{cptslsnamepref.replace('/', '.')}}run-compute_node_reverseproxy
                 - {{cptslsnamepref.replace('/', '.')}}run-compute_node_hostfile
-                {% for virt_type in data.virt_types %}
-                {% set cvtcptslsname = '{1}/{0}/{2}-controller'.format(target.replace('.', ''),
+                {% for virt_type in data.virt_types -%}
+                {%- set cvtcptslsname = '{1}/{0}/{2}-controller'.format(target.replace('.', ''),
                                            cloudSettings.compute_node_sls_dir, virt_type) %}
-                {% set cvtcptslsname = '{1}/{0}/{2}-compute_node'.format(target.replace('.', ''),
+                {%- set cvtcptslsname = '{1}/{0}/{2}-compute_node'.format(target.replace('.', ''),
                                            cloudSettings.compute_node_sls_dir, virt_type) %}
-                {% set vtcptslsname = '{1}/{0}/{2}'.format(target.replace('.', ''),
+                {%- set vtcptslsname = '{1}/{0}/{2}'.format(target.replace('.', ''),
                                            cloudSettings.compute_node_sls_dir, virt_type) %}
                 {%raw%}{% if salt['mc_cloud.registry']().is['{%endraw%}{{virt_type}}{%raw%}'] %}{%endraw%}
                 - makina-states.cloud.{{virt_type}}.controller.install
                 - {{cvtcptslsname.replace('/', '.')}}
                 - {{vtcptslsname.replace('/', '.')}}
                 {%raw%}{%endif %}{%endraw%}
-                {% endfor %}
+                {%- endfor %}
     - watch:
       - mc_proxy: cloud-generic-compute_node-pre-deploy
     - watch_in:

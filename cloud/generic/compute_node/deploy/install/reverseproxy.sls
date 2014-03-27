@@ -19,5 +19,5 @@ include:
                                                   cloudSettings.compute_node_sls_dir) %}
 {% set cptsls = '{1}/{0}.sls'.format(cptslsname, cloudSettings.root) %}
 # get an haproxy proxying all request on 80+43 + alternate ports for ssh traffic
-  - {{cptslsname}}
+  - {{cptslsname.replace('/', '.')}}
 {% endfor %}

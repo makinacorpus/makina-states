@@ -25,15 +25,16 @@ include:
     - contents: |
               include:
                 - makina-states.cloud.generic.hooks.compute_node
-              salt.state:
-                - tgt: [{{target}}]
-                - expr_form: list
-                - sls: {{cptslsname.replace('/', '.')}}
-                - concurrent: True
-                - watch:
-                  - mc_proxy: cloud-{{target}}-generic-compute_node-pre-images-deploy
-                - watch_in:
-                  - mc_proxy: cloud-{{target}}-generic-compute_node-post-images-deploy
+              {{target}}-lxc-install-base-imgs:
+                salt.state:
+                  - tgt: [{{target}}]
+                  - expr_form: list
+                  - sls: {{cptslsname.replace('/', '.')}}
+                  - concurrent: True
+                  - watch:
+                    - mc_proxy: cloud-{{target}}-generic-compute_node-pre-images-deploy
+                  - watch_in:
+                    - mc_proxy: cloud-{{target}}-generic-compute_node-post-images-deploy
 {{target}}-gen-lxc-images-templates:
   file.managed:
     - name: {{cptsls}}

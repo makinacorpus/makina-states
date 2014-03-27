@@ -47,9 +47,9 @@ c{{sname}}-lxc.computenode.sls-generator-for-spawn:
             - profile: {{data.get('profile', 'ms-{0}-dir-sratch'.format(data['target']))}}
             - unless: test -e {{cloudSettings.prefix}}/pki/master/minions/{{vmname}}
             - watch:
-              - mc_proxy: cloud-generic-vm-pre-deploy
-            - watch_in:
               - mc_proxy: cloud-{{vmname}}-generic-vm-pre-deploy
+            - watch_in:
+              - mc_proxy: cloud-{{vmname}}-generic-vm-post-deploy
             - minion: {%raw%} {{ minion | yaml }} {%endraw%}
             - dnsservers: {%raw%}{{dnsservers|yaml}}{%endraw%}
             {% for var in ["from_container", "snapshot", "image",

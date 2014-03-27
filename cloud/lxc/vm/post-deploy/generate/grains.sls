@@ -28,7 +28,7 @@ include:
     - watch_in:
       - mc_proxy: cloud-{{vmname}}-generic-vm-pre-grains-deploy
     - contents: |
-              c{{sname}}-lxc.computenode.sls-generator-for-hostnode-inst:
+              c{{sname}}-lxcgrains.computenode.sls-generator-for-hostnode-inst:
                 salt.state:
                   - tgt: [{{vmname}}]
                   - expr_form: list
@@ -62,6 +62,6 @@ include:
             - source: salt://makina-states/_scripts/reload_grains.sh
             - template: jinja
             - watch:
-              - grains: {{target}}-run-grains
+              - grains: {{sname}}-run-grains
 {% endfor %}
 {% endfor %}

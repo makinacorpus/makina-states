@@ -13,7 +13,6 @@ include:
         vmname.replace('.', '')) %}
 {% set cptsls = '{1}/{0}.sls'.format(cptslsname, cloudSettings.root) %}
   - {{cptslsname}}
-{% endif %}
 {% else %}
 c{{sname}}-lxc.computenode.sls-generator-for-hostnode-inst:
   mc_proxy.hook: []

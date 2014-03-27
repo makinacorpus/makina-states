@@ -30,7 +30,7 @@ c{{sname}}-lxc.computenode.sls-generator-for-highstate:
             {% endraw%}
             {{sname}}-lxc-initial-highstate:
               cmd.run:
-                - name: ssh {{vmname}} "{%raw%}{{msr}}{%endraw%}/_scripts/boot-salt.sh --initial-highstate"
+                - name: ssh {{vmname}} {{cloudSettings.root}}/makina-states/_scripts/boot-salt.sh --initial-highstate
                 - user: root
                 - watch:
                   - mc_proxy: cloud-{{vmname}}-generic-vm-pre-initial-highstate-deploy

@@ -28,7 +28,7 @@ include:
                   salt.state:
                     - tgt: [{{target}}]
                     - expr_form: list
-                    - sls: {{rcptslsname.replace('/', '.')}}
+                    - sls: {{cptslsname.replace('/', '.')}}
                     - concurrent: True
                     - watch:
                       - mc_proxy: cloud-{{target}}-generic-compute_node-pre-virt-type-deploy

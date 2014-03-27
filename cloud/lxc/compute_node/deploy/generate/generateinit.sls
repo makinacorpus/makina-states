@@ -17,11 +17,9 @@ include:
     - group: editor
     - contents: |
               include:
-                {% if salt['mc_nodetypes.registry']().is.devhost %}
-                - makina-states.cloud.lxc.compute_node.devhost.install
-                {% endif %}
                 - {{cptslsnamepref.replace('/', '.')}}lxc.run-images-templates
                 - {{cptslsnamepref.replace('/', '.')}}lxc.run-installation
+                {% if salt['mc_nodetypes.registry']().is.devhost %}- makina-states.cloud.lxc.compute_node.devhost.install{% endif %}
     - watch:
       - mc_proxy: cloud-generic-compute_node-pre-deploy
     - watch_in:

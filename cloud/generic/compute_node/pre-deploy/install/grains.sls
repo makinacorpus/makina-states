@@ -7,5 +7,5 @@ include:
 {% set cptslsname = '{1}/{0}/run-compute_node_grains'.format(target.replace('.', ''),
                                                   cloudSettings.compute_node_sls_dir) %}
 {% set cptsls = '{1}/{0}.sls'.format(cptslsname, cloudSettings.root) %}
-  - {{cptslsname}}
+  - {{cptslsname.replace('/', '.')}}
 {% endfor %}

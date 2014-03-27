@@ -3387,6 +3387,7 @@ parse_cli_opts() {
         fi
         if [ "x${1}" = "x--initial-highstate" ];then
             SALT_BOOT_LIGHT_VARS="1"
+            BUILDOUT_REBOOTSTRAP="1"
             SALT_BOOT_INITIAL_HIGHSTATE="1"
             SALT_BOOT_SKIP_HIGHSTATES=""
             SALT_BOOT_SKIP_CHECKOUTS="1"

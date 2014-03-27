@@ -13,7 +13,7 @@ include:
         cloudSettings.compute_node_sls_dir,
         vmname.replace('.', '')) %}
 {% set cptsls = '{1}/{0}.sls'.format(cptslsname, cloudSettings.root) %}
-  - {{cptslsname}}
+  - {{cptslsname.replace('/', '.')}}
 {% endif %}
 {% endfor %}
 {% endfor %}

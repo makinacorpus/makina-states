@@ -7,7 +7,7 @@ include:
 {% set cptslsname = '{1}/{0}/lxc/run-installation'.format(target.replace('.', ''),
                                                  cloudSettings.compute_node_sls_dir) %}
 {% set cptsls = '{1}/{0}.sls'.format(cptslsname, cloudSettings.root) %}
-
+  - {{cptslsname.replace('/', '.')}}
 {% endif %}
 {% endfor %}
 maybe-only-one-inst-lxc:
