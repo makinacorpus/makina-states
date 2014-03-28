@@ -13,7 +13,7 @@ include:
         cloudSettings.compute_node_sls_dir,
         vmname.replace('.', '')) %}
 {% set cptsls = '{1}/{0}.sls'.format(cptslsname, cloudSettings.root) %}
-{% set rcptslsname = '{1}/{0}/lxc/{2}/run-hosts-managment'.format(
+{% set rcptslsname = '{1}/{0}/lxc/{2}/run-container_hosts-managment'.format(
         target.replace('.', ''),
         cloudSettings.compute_node_sls_dir,
         vmname.replace('.', '')) %}
@@ -29,6 +29,7 @@ c{{sname}}-lxc.computenode.sls-generator-for-hostnode-gen:
     - watch_in:
       - mc_proxy: cloud-generic-generate-end
     - contents: |
+                {%raw%}{# WARNING THIS STATE FILE IS GENERATED #}{%endraw%}
                 alxc-{{sname}}-makina-append-parent-etc.computenode.management:
                   file.blockreplace:
                     - name: /etc/hosts
@@ -74,16 +75,17 @@ c{{sname}}-lxc.computenode.sls-generator-for-hostnode-gen:
     - watch_in:
       - mc_proxy: cloud-generic-generate-end
     - contents: |
-            c{{sname}}-lxc.computenode.sls-generator-for-hostnode-inst:
-              salt.state:
-                - tgt: [{{vmname}}]
-                - expr_form: list
-                - sls: {{cptslsname.replace('/', '.')}}
-                - concurrent: True
-                - watch:
-                  - mc_proxy: cloud-generic-vm-pre-hostsfiles-deploy
-                - watch_in:
-                  - mc_proxy: cloud-generic-vm-post-hostsfiles-deploy
+                {%raw%}{# WARNING THIS STATE FILE IS GENERATED #}{%endraw%}
+                c{{sname}}-lxc.computenode.sls-generator-for-hostnode-inst:
+                  salt.state:
+                    - tgt: [{{vmname}}]
+                    - expr_form: list
+                    - sls: {{cptslsname.replace('/', '.')}}
+                    - concurrent: True
+                    - watch:
+                      - mc_proxy: cloud-generic-vm-pre-hostsfiles-deploy
+                    - watch_in:
+                      - mc_proxy: cloud-generic-vm-post-hostsfiles-deploy
 {% else %}
 c{{sname}}-lxc.computenode.sls-generator-for-hostnode:
   mc_proxy.hook: []

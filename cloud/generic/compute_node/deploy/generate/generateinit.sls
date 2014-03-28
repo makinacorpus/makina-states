@@ -45,7 +45,7 @@ include:
                   - {{cptslsnamepref.replace('/', '.')}}run-compute_node_reverseproxy
                   - {{cptslsnamepref.replace('/', '.')}}run-compute_node_hostfile
                   {% for virt_type in data.virt_types %}
-                  {% set cvtcptslsname = '{1}/{0}/{2}-compute_node'.format(
+                  {% set cvtcptslsname = '{1}/{0}/{2}/compute_node'.format(
                         target.replace('.', ''), cloudSettings.compute_node_sls_dir, virt_type) %}
                   - {{cvtcptslsname.replace('/', '.')}}
                   {% endfor %}

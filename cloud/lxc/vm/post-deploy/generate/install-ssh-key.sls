@@ -13,7 +13,7 @@ include:
         cloudSettings.compute_node_sls_dir,
         vmname.replace('.', '')) %}
 {% set cptsls = '{1}/{0}.sls'.format(cptslsname, cloudSettings.root) %}
-{% set rcptslsname = '{1}/{0}/lxc/{2}/run-install-ssh-key'.format(
+{% set rcptslsname = '{1}/{0}/lxc/{2}/run-container_install-ssh-key'.format(
         target.replace('.', ''),
         cloudSettings.compute_node_sls_dir,
         vmname.replace('.', '')) %}

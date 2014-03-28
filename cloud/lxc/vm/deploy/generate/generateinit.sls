@@ -10,6 +10,15 @@ include:
 {% set cptslsnamepref = '{1}/{0}/lxc/{2}'.format(target.replace('.', ''),
                                            cloudSettings.compute_node_sls_dir,
                                            vmname.replace('.', '')) %}
+{% set slspref = cptslsnamepref.replace('/', '.')%}
+{% set slss = ['run-container_spawn',
+               'run-container_grains',
+               'run-container_initial-highstate',
+               'run-container_initial-setup',
+               'run-container_install-ssh-key', ] %}
+{% if salt['mc_nodetypes.registry']()['is']['devhost'] %}
+{% do slss.append('run-hosts-managment') %}
+{% endif %}
 {{target}}-{{vmname}}-gen-lxc-init:
   file.managed:
     - name: {{cloudSettings.root}}/{{cptslsnamepref}}/init.sls
@@ -22,36 +31,11 @@ include:
     - user: root
     - group: {{localsettings.group}}
     - contents: |
-              include:
-                - makina-states.cloud.lxc.controller.install
-                - makina-states.cloud.lxc.compute_node.install
-                - {{cptslsnamepref.replace('/', '.')}}.run-grains
-                - {{cptslsnamepref.replace('/', '.')}}.run-spawn
-                - {{cptslsnamepref.replace('/', '.')}}.run-initial-highstate
-                - {{cptslsnamepref.replace('/', '.')}}.run-initial-setup
-                - {{cptslsnamepref.replace('/', '.')}}.run-hosts-managment
-                - {{cptslsnamepref.replace('/', '.')}}.run-install-ssh-key
+                {%raw%}{# WARNING THIS STATE FILE IS GENERATED #}{%endraw%}
+                include:
+                {% for sls in slss  %}
+                  - {{slspref}}.{{sls}}
+                {% endfor %}
 {%  endfor %}
 {%  endif %}
-{% set gcptslsnamepref = '{1}/{0}/lxc'.format(target.replace('.', ''),
-                                           cloudSettings.compute_node_sls_dir,
-                                           vmname) %}
-{{target}}-gen-lxc-vms-init:
-  file.managed:
-    - name: {{cloudSettings.root}}/{{gcptslsnamepref}}/init.sls
-    - makedirs: true
-    - mode: 750
-    - watch:
-      - mc_proxy: cloud-generic-generate
-    - watch_in:
-      - mc_proxy: cloud-generic-generate-end
-    - user: root
-    - group: {{localsettings.group}}
-    - contents: |
-              include:
-                - makina-states.cloud.lxc.controller.install
-                - makina-states.cloud.lxc.compute_node.install
-                {%  for vmname in vmnames -%}
-                - {{gcptslsnamepref.replace('/', '.')}}.{{vmname.replace('.', '')}}
-                {% endfor %}
 {% endfor %}

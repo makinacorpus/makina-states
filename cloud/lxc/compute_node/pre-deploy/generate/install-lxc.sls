@@ -5,10 +5,10 @@ include:
 {% set compute_node_settings = salt['mc_cloud_compute_node.settings']() %}
 {% for target, data in compute_node_settings['targets'].items() %}
 {% if 'lxc' in data.virt_types %}
-{% set cptslsname = '{1}/{0}/lxc/installation'.format(target.replace('.', ''),
+{% set cptslsname = '{1}/{0}/lxc/compute_node_lxc-installation'.format(target.replace('.', ''),
                                                  cloudSettings.compute_node_sls_dir) %}
 {% set cptsls = '{1}/{0}.sls'.format(cptslsname, cloudSettings.root) %}
-{% set rcptslsname = '{1}/{0}/lxc/run-installation'.format(target.replace('.', ''),
+{% set rcptslsname = '{1}/{0}/lxc/run-compute_node_lxc-installation'.format(target.replace('.', ''),
                                                  cloudSettings.compute_node_sls_dir) %}
 {% set rcptsls = '{1}/{0}.sls'.format(rcptslsname, cloudSettings.root) %}
 {{target}}-gen-lxc-images-templates-run:
@@ -23,6 +23,7 @@ include:
     - watch_in:
       - mc_proxy: cloud-generic-generate-end
     - contents: |
+                {%raw%}{# WARNING THIS STATE FILE IS GENERATED #}{%endraw%}
                 include:
                   - makina-states.cloud.generic.hooks.compute_node
                 {{target}}-inst-lxc-images-templates:
@@ -47,6 +48,7 @@ include:
     - watch_in:
       - mc_proxy: cloud-generic-generate-end
     - contents: |
+                {%raw%}{# WARNING THIS STATE FILE IS GENERATED #}{%endraw%}
                 {% raw %}
                 {% set lxcSettings = salt['mc_cloud_lxc.settings']() %}
                 include:

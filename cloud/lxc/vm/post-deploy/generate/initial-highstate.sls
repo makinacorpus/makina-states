@@ -7,7 +7,7 @@ include:
 {%  for vmname in vmnames -%}
 {% if 'lxc' in compute_node_settings.targets[target].virt_types %}
 {% set sname = '{0}-{1}'.format(target, vmname) %}
-{% set cptslsname = '{1}/{0}/lxc/{2}/run-initial-highstate'.format(
+{% set cptslsname = '{1}/{0}/lxc/{2}/run-container_initial-highstate'.format(
         target.replace('.', ''),
         cloudSettings.compute_node_sls_dir,
         vmname.replace('.', '')) %}
@@ -23,19 +23,20 @@ c{{sname}}-lxc.computenode.sls-generator-for-highstate:
     - watch_in:
       - mc_proxy: cloud-generic-generate-end
     - contents: |
-            include:
-              - makina-states.cloud.generic.hooks.vm
-            {% raw %}
-            {% set msr = salt['mc_localsettings.settings']()['locations']['msr'] %}
-            {% endraw%}
-            {{sname}}-lxc-initial-highstate:
-              cmd.run:
-                - name: ssh {{vmname}} {{cloudSettings.root}}/makina-states/_scripts/boot-salt.sh --initial-highstate
-                - user: root
-                - watch:
-                  - mc_proxy: cloud-generic-vm-pre-initial-highstate-deploy
-                - watch_in:
-                  - mc_proxy: cloud-generic-vm-post-initial-highstate-deploy
+                {%raw%}{# WARNING THIS STATE FILE IS GENERATED #}{%endraw%}
+                include:
+                  - makina-states.cloud.generic.hooks.vm
+                {% raw %}
+                {% set msr = salt['mc_localsettings.settings']()['locations']['msr'] %}
+                {% endraw%}
+                {{sname}}-lxc-initial-highstate:
+                  cmd.run:
+                    - name: ssh {{vmname}} {{cloudSettings.root}}/makina-states/_scripts/boot-salt.sh --initial-highstate
+                    - user: root
+                    - watch:
+                      - mc_proxy: cloud-generic-vm-pre-initial-highstate-deploy
+                    - watch_in:
+                      - mc_proxy: cloud-generic-vm-post-initial-highstate-deploy
 {%  endif %}
 {% endfor %}
 {% endfor %}
