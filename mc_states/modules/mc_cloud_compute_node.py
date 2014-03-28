@@ -9,9 +9,8 @@ mc_cloud_compute_node / cloudcontroller functions
 __docformat__ = 'restructuredtext en'
 # Import python libs
 import logging
-import socket
 import os
-import yaml
+import msgpack
 import mc_states.utils
 from salt.utils.odict import OrderedDict
 
@@ -25,6 +24,92 @@ VIRT_TYPES = {
     'lxc': {}
 }
 _RP = 'reverse_proxies'
+
+
+def _encode(value):
+    return msgpack.packb({'value': value})
+
+
+def _decode(value):
+    return msgpack.unpackb(value)['value']
+
+
+def set_conf_for_target(target, setting, value):
+    target = target.replace('.', '')
+    cloudSettings = __salt__['mc_cloud.settings']()
+    filep = os.path.join(
+        cloudSettings['root'],
+        cloudSettings['compute_node_sls_dir'],
+        target, 'settings',
+        setting + '.pack'
+    )
+    dfilep = os.path.dirname(filep)
+    if not os.path.exists(dfilep):
+        os.makedirs(dfilep)
+    with open(filep, 'w') as fic:
+        fic.write(_encode(value))
+    try:
+        os.chmod(filep, 0700)
+    except:
+        pass
+    return value
+
+
+def get_conf_for_target(target, setting, default=None):
+    target = target.replace('.', '')
+    cloudSettings = __salt__['mc_cloud.settings']()
+    filep = os.path.join(
+        cloudSettings['root'],
+        cloudSettings['compute_node_sls_dir'],
+        target, 'settings', setting + '.pack'
+    )
+    value = default
+    if os.path.exists(filep):
+        with open(filep) as fic:
+            value = _decode(fic.read())
+    return value
+
+
+def set_conf_for_container(target, container, setting, value):
+    target = target.replace('.', '')
+    container = container.replace('.', '')
+    cloudSettings = __salt__['mc_cloud.settings']()
+    filep = os.path.join(
+        cloudSettings['root'],
+        cloudSettings['compute_node_sls_dir'],
+        target, container, 'settings',
+        setting + '.pack'
+    )
+    dfilep = os.path.dirname(filep)
+    if not os.path.exists(dfilep):
+        os.makedirs(dfilep)
+    with open(filep, 'w') as fic:
+        fic.write(_encode(value))
+    try:
+        os.chmod(filep, 0700)
+    except:
+        pass
+    return value
+
+
+def get_conf_for_container(target,
+                           container,
+                           setting,
+                           default=None):
+    target = target.replace('.', '')
+    container = container.replace('.', '')
+    cloudSettings = __salt__['mc_cloud.settings']()
+    filep = os.path.join(
+        cloudSettings['root'],
+        cloudSettings['compute_node_sls_dir'],
+        target, container, 'settings', setting + '.pack'
+    )
+    value = default
+    if os.path.exists(filep):
+        with open(filep) as fic:
+            value = _decode(fic.read())
+    return value
+
 
 def default_has(vts=None, **kwargs):
     if vts is None:
@@ -160,11 +245,11 @@ def _get_next_available_port(ports, start, stop):
 
 def _feed_ssh_reverse_proxy(targets, start, end):
     _s = __salt__.get
-    mkey = 'makina-states.cloud.ssh-mappings'
-    ssh_maps = _s('mc_utils.get')(mkey, {})
+    ssh_maps = OrderedDict()
     need_sync = False
     for target, cdata in targets.items():
-        ssh_map = ssh_maps.setdefault(target, {})
+        ssh_map = get_conf_for_target(target, 'ssh_map', {})
+        ssh_maps[target] = ssh_map
         vms_infos = cdata.get('vms', {})
         reversep = cdata.setdefault(_RP, {})
         ssh_proxies = reversep.setdefault('ssh_proxies', [])
@@ -191,11 +276,7 @@ def _feed_ssh_reverse_proxy(targets, start, end):
                     'opts': 'check'}]}
             if not ssh_proxy in ssh_proxies:
                 ssh_proxies.append(ssh_proxy)
-    if need_sync:
-        _s('grains.setval')(mkey, ssh_maps)
-    __grains__[mkey] = ssh_maps
-    # TOO slow !
-    #_s('saltutil.sync_grains')()
+        set_conf_for_target(target, 'ssh_map', ssh_map)
     return ssh_maps
 
 

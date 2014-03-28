@@ -86,6 +86,11 @@ def is_lxc():
 def settings():
     '''Lxc registry
 
+    TODO:
+    This may be needed to be database backended in the future.
+    As well, we may need iterator loops inside jinja templates
+    to not eat that much memory loading large datasets.
+
     makina-states.services.cloud.lxc
         The settings of lxc containers that are meaningful on the
         cloud controller
@@ -296,16 +301,12 @@ def settings():
 
                 lxc_data = lxcSettings['vms'][target][container]
                 lxc_data.setdefault('master', master)
-                lxc_data['password'], _need_sync = find_password_for_container(
+                lxc_data['password'] = find_password_for_container(
                     target, container, lxc_data)
-                if _need_sync:
-                    need_sync = True
                 lxc_data.setdefault('master', master)
                 lxc_data.setdefault('ssh_gateway', target)
-                lxc_data['mac'], _need_sync = find_mac_for_container(
+                lxc_data['mac'] = find_mac_for_container(
                     target, container, lxc_data)
-                if _need_sync:
-                    need_sync = True
                 # at this stage, only get already allocated ips
                 ip = lxc_data.get(
                     'ip',
@@ -400,19 +401,15 @@ def settings():
         # search and fill ip settings
         for target in [t for t in lxcSettings['vms']]:
             for container, lxc_data in lxcSettings['vms'][target].items():
-                ip, _need_sync = find_ip_for_container(
+                ip = find_ip_for_container(
                     ips[target], target, container,
                     lxcSettings=lxcSettings,
                     lxc_data=lxc_data)
-                if _need_sync:
-                    need_sync = True
                 if ip:
                     lxc_data['ip'] = ip
                     if not ip in ips[target]:
                         ips[target].append(ip)
         # deactivated, way too slow
-        if False and need_sync:
-            __salt__['saltutil.sync_grains']()
         return lxcSettings
     return _settings()
 
@@ -422,21 +419,17 @@ def find_mac_for_container(target, container, lxc_data=None):
     container on a specific host'''
     if not lxc_data:
         lxc_data = {}
-    need_sync = False
-    gid = MAC_GID.format(target, container)
     mac = lxc_data.get('mac', None)
     if not mac:
-        mac = __salt__['mc_utils.get'](gid, None)
+        mac = get_conf_for_container(target, container, 'mac')
     if not mac:
         mac = gen_mac()
         if not mac:
             raise Exception(
                 'Error while setting grainmac for {0}/{1}'.format(target,
                                                                   container))
-        __salt__['grains.setval'](gid, mac)
-        mac = __salt__['mc_utils.get'](gid)
-        __grains__[gid] = mac
-    return mac, need_sync
+        set_conf_for_container(target, container, 'mac', mac)
+    return mac
 
 
 def find_password_for_container(target,
@@ -448,21 +441,22 @@ def find_password_for_container(target,
     '''
     if not lxc_data:
         lxc_data = {}
-    need_sync = False
     password = lxc_data.get('password', None)
-    gid = PW_GID.format(target, container)
     if not password:
-        password = __salt__['mc_utils.get'](gid, None)
+        password = get_conf_for_container(target,
+                                          container,
+                                          'password')
     if not password:
         password = secure_password(pwlen)
         if not password:
             raise Exception(
                 'Error while setting password grain for {0}/{1}'.format(
                     target, container))
-        __salt__['grains.setval'](gid, password)
-        password = __salt__['mc_utils.get'](gid, None)
-        __grains__[gid] = password
-    return password, need_sync
+        set_conf_for_container(target,
+                               container,
+                               'password',
+                               password)
+    return password
 
 
 def find_ip_for_container(allocated_ips,
@@ -482,11 +476,9 @@ def find_ip_for_container(allocated_ips,
         lxcSettings = settings()
     if not lxc_data:
         lxc_data = {}
-    gid = IP_GID.format(target, container)
     ip4 = lxc_data.get('ip', None)
     if not ip4:
-        ip4 = __salt__['mc_utils.get'](gid)
-    need_sync = False
+        ip4 = get_conf_for_container(target, container, 'ip4')
     if not ip4:
         # get network bounds
         network = netaddr.IPNetwork(
@@ -513,16 +505,23 @@ def find_ip_for_container(allocated_ips,
                 'network for {0}/{1}'.format(
                     target, container)
             )
-        __salt__['grains.setval'](gid, ip4)
-        ip4 = __salt__['mc_utils.get'](gid)
-        __grains__[gid] = ip4
+        set_conf_for_container(target, container, 'ip4', ip4)
     allocated_ips.append(ip4)
-    return ip4, need_sync
+    return ip4
+
+
+def set_conf_for_container(*args, **kw):
+    return __salt__[
+        'mc_cloud_compute_node.set_conf_for_container'](*args, **kw)
+
+
+def get_conf_for_container(*args, **kw):
+    return __salt__[
+        'mc_cloud_compute_node.get_conf_for_container'](*args, **kw)
 
 
 def dump():
     return mc_states.utils.dump(__salt__,__name)
-
 
 
 # vim:set et sts=4 ts=4 tw=80:
