@@ -80,9 +80,9 @@ c{{sname}}-lxc.computenode.sls-generator-for-hostnode-gen:
                 - sls: {{cptslsname.replace('/', '.')}}
                 - concurrent: True
                 - watch:
-                  - mc_proxy: cloud-{{vmname}}-generic-vm-pre-hostsfiles-deploy
+                  - mc_proxy: cloud-generic-vm-pre-hostsfiles-deploy
                 - watch_in:
-                  - mc_proxy: cloud-{{vmname}}-generic-vm-post-hostsfiles-deploy
+                  - mc_proxy: cloud-generic-vm-post-hostsfiles-deploy
 {% else %}
 c{{sname}}-lxc.computenode.sls-generator-for-hostnode:
   mc_proxy.hook: []

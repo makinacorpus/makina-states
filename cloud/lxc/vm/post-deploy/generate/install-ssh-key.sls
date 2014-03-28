@@ -58,9 +58,9 @@ include:
               - sls: {{cptslsname.replace('/', '.')}}
               - concurrent: True
               - watch_in:
-                - mc_proxy: cloud-{{vmname}}-generic-vm-pre-install-ssh-key
+                - mc_proxy: cloud-generic-vm-pre-install-ssh-key
               - watch_in:
-                - mc_proxy: cloud-{{vmname}}-generic-vm-post-install-ssh-key
+                - mc_proxy: cloud-generic-vm-post-install-ssh-key
 {% endif %}
 {% endfor %}
 {% endfor %}

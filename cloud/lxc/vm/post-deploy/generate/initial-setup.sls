@@ -34,18 +34,18 @@ c{{sname}}-lxc.computenode.sls-generator-for-setup:
               "if [ ! -e /etc/lxc/auto ];then mkdir -p /etc/lxc/auto;fi;"
               "ln -sf /var/lib/lxc/{vmname}/config /etc/lxc/auto/{vmname}.conf".format(vmname=vmname))}}]
                   - watch:
-                    - mc_proxy: cloud-{{vmname}}-generic-vm-pre-initial-setup-deploy
+                    - mc_proxy: cloud-generic-vm-pre-initial-setup-deploy
                   - watch_in:
-                    - mc_proxy: cloud-{{vmname}}-generic-vm-post-initial-setup-deploy
+                    - mc_proxy: cloud-generic-vm-post-initial-setup-deploy
               {{sname}}-lxc-sysadmin-user-initial-password:
                 salt.function:
                   - tgt: [{{vmname}}]
                   - expr_form: list
                   - name: cmd.run
                   - watch:
-                    - mc_proxy: cloud-{{vmname}}-generic-vm-pre-initial-setup-deploy
+                    - mc_proxy: cloud-generic-vm-pre-initial-setup-deploy
                   - watch_in:
-                    - mc_proxy: cloud-{{vmname}}-generic-vm-post-initial-setup-deploy
+                    - mc_proxy: cloud-generic-vm-post-initial-setup-deploy
                   - arg: ['if [ ! -e /.initialspasses ];then
                              for i in ubuntu root sysadmin;do
                                echo "${i}:{{data.password}}" | chpasswd && touch /.initialspasses;

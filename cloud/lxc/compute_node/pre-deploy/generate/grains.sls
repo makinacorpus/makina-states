@@ -33,9 +33,9 @@ include:
                   - sls: {{cptslsname.replace('/', '.')}}
                   - concurrent: True
                   - watch:
-                    - mc_proxy: cloud-{{target}}-generic-computenode-pre-grains-deploy
+                    - mc_proxy: cloud-generic-computenode-pre-grains-deploy
                   - watch_in:
-                    - mc_proxy: cloud-{{target}}-generic-computenode-post-grains-deploy
+                    - mc_proxy: cloud-generic-computenode-post-grains-deploy
 {{sname}}-lxc.vm-install-grains-gen:
   file.managed:
     - name: {{cptsls}}

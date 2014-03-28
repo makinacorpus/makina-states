@@ -19,6 +19,7 @@ cloud-generic-compute_node-pre-grains-deploy:
     - watch_in:
       - mc_proxy: cloud-generic-compute_node-post-grains-deploy
 
+{#
 {% for target, vm in computenode_settings.targets.items() %}
 cloud-{{target}}-generic-compute_node-pre-grains-deploy:
   mc_proxy.hook:
@@ -32,6 +33,7 @@ cloud-{{target}}-generic-compute_node-post-grains-deploy:
     - watch_in:
       - mc_proxy: cloud-generic-compute_node-post-grains-deploy
 {% endfor %}
+#}
 
 cloud-generic-compute_node-post-grains-deploy:
   mc_proxy.hook:
@@ -43,6 +45,7 @@ cloud-generic-compute_node-pre-hostsfiles-deploy:
     - watch_in:
       - mc_proxy: cloud-generic-compute_node-post-hostsfiles-deploy
 
+{#
 {% for target, vm in computenode_settings.targets.items() %}
 cloud-{{target}}-generic-compute_node-pre-hostsfiles-deploy:
   mc_proxy.hook:
@@ -56,6 +59,7 @@ cloud-{{target}}-generic-compute_node-post-hostsfiles-deploy:
     - watch_in:
       - mc_proxy: cloud-generic-compute_node-post-hostsfiles-deploy
 {% endfor %}
+#}
 
 cloud-generic-compute_node-post-hostsfiles-deploy:
   mc_proxy.hook:
@@ -67,6 +71,7 @@ cloud-generic-compute_node-pre-host-ssh-key-deploy:
     - watch_in:
       - mc_proxy: cloud-generic-compute_node-post-host-ssh-key-deploy
 
+{#
 {% for target, vm in computenode_settings.targets.items() %}
 cloud-{{target}}-generic-compute_node-pre-host-ssh-key-deploy:
   mc_proxy.hook:
@@ -80,6 +85,7 @@ cloud-{{target}}-generic-compute_node-post-host-ssh-key-deploy:
     - watch_in:
       - mc_proxy: cloud-generic-compute_node-post-host-ssh-key-deploy
 {% endfor %}
+#}
 
 cloud-generic-compute_node-post-host-ssh-key-deploy:
   mc_proxy.hook:
@@ -96,6 +102,7 @@ cloud-generic-compute_node-pre-firewall-deploy:
     - watch_in:
       - mc_proxy: cloud-generic-compute_node-post-firewall-deploy
 
+{#
 {% for target, vm in computenode_settings.targets.items() %}
 cloud-{{target}}-generic-compute_node-pre-firewall-deploy:
   mc_proxy.hook:
@@ -109,6 +116,7 @@ cloud-{{target}}-generic-compute_node-post-firewall-deploy:
     - watch_in:
       - mc_proxy: cloud-generic-compute_node-post-firewall-deploy
 {% endfor %}
+#}
 
 cloud-generic-compute_node-post-firewall-deploy:
   mc_proxy.hook:
@@ -120,6 +128,7 @@ cloud-generic-compute_node-pre-reverseproxy-deploy:
     - watch_in:
       - mc_proxy: cloud-generic-compute_node-post-reverseproxy-deploy
 
+{#
 {% for target, vm in computenode_settings.targets.items() %}
 cloud-{{target}}-generic-compute_node-pre-reverseproxy-deploy:
   mc_proxy.hook:
@@ -133,6 +142,7 @@ cloud-{{target}}-generic-compute_node-post-reverseproxy-deploy:
     - watch_in:
       - mc_proxy: cloud-generic-compute_node-post-reverseproxy-deploy
 {% endfor %}
+#}
 
 cloud-generic-compute_node-post-reverseproxy-deploy:
   mc_proxy.hook:
@@ -144,6 +154,7 @@ cloud-generic-compute_node-pre-virt-type-deploy:
     - watch_in:
       - mc_proxy: cloud-generic-compute_node-post-virt-type-deploy
 
+{#
 {% for target, vm in computenode_settings.targets.items() %}
 cloud-{{target}}-generic-compute_node-pre-virt-type-deploy:
   mc_proxy.hook:
@@ -157,6 +168,7 @@ cloud-{{target}}-generic-compute_node-post-virt-type-deploy:
     - watch_in:
       - mc_proxy: cloud-generic-compute_node-post-virt-type-deploy
 {% endfor %}
+#}
 
 cloud-generic-compute_node-post-virt-type-deploy:
   mc_proxy.hook:
@@ -168,6 +180,7 @@ cloud-generic-compute_node-pre-images-deploy:
     - watch_in:
       - mc_proxy: cloud-generic-compute_node-post-images-deploy
 
+{#
 {% for target, vm in computenode_settings.targets.items() %}
 cloud-{{target}}-generic-compute_node-pre-images-deploy:
   mc_proxy.hook:
@@ -181,6 +194,7 @@ cloud-{{target}}-generic-compute_node-post-images-deploy:
     - watch_in:
       - mc_proxy: cloud-generic-compute_node-post-images-deploy
 {% endfor %}
+#}
 
 cloud-generic-compute_node-post-images-deploy:
   mc_proxy.hook:
