@@ -6,7 +6,7 @@ include:
 {% set lxcSettings= salt['mc_cloud_lxc.settings']() %}
 {% for target, vms in lxcSettings.vms.items() %}
 {% set sname = '{0}'.format(target)%}
-{% set cptslsname = '{1}/{0}/lxc/run-computenodelxc_grains'.format(
+{% set cptslsname = '{1}/{0}/lxc/run-computenode_lxc_grains'.format(
         target.replace('.', ''),
         cloudSettings.compute_node_sls_dir,
         target.replace('.', '')) %}
