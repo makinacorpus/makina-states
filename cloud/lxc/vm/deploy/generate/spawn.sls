@@ -1,6 +1,6 @@
  {% set localsettings = salt['mc_localsettings.settings']() %}
 include:
-  - makina-states.cloud.generic.hooks.vm
+  - makina-states.cloud.generic.hooks.generate
 {% set compute_node_settings = salt['mc_cloud_compute_node.settings']() %}
 {% set lxcSettings = salt['mc_cloud_lxc.settings']() %}
 {% set cloudSettings = salt['mc_cloud.settings']() %}
@@ -21,9 +21,9 @@ c{{sname}}-lxc.computenode.sls-generator-for-spawn:
     - name: {{cloudSettings.root}}/{{cptslsnamepref}}/run-spawn.sls
     - user: root
     - watch:
-      - mc_proxy: cloud-generic-vm-pre-deploy
+      - mc_proxy: cloud-generic-generate
     - watch_in:
-      - mc_proxy: cloud-{{vmname}}-generic-vm-pre-deploy
+      - mc_proxy: cloud-generic-generate-end
     - mode: 750
     - makedirs: true
     - contents: |

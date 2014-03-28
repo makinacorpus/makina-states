@@ -1,8 +1,7 @@
 {% set compute_node_settings= salt['mc_cloud_compute_node.settings']() %}
 {% set cloudSettings= salt['mc_cloud.settings']() %}
 include:
-  - makina-states.cloud.generic.genssh
-  - makina-states.cloud.generic.hooks.vm
+  - makina-states.cloud.generic.generate
 {% set cloudSettings = salt['mc_cloud.settings']() %}
 {% set lxcSettings= salt['mc_cloud_lxc.settings']() %}
 {% for target, vms in lxcSettings.vms.items() %}
@@ -26,9 +25,9 @@ include:
     - mode: 750
     - makedirs: true
     - watch:
-      - mc_proxy: cloud-generic-vm-pre-install-ssh-key
+      - mc_proxy: cloud-generic-generate
     - watch_in:
-      - mc_proxy: cloud-{{vmname}}-generic-vm-pre-install-ssh-key
+      - mc_proxy: cloud-generic-generate-end
     - contents: |
                 insdsakey:
                   ssh_auth.present:
@@ -45,9 +44,9 @@ include:
     - mode: 750
     - makedirs: true
     - watch:
-      - mc_proxy: cloud-generic-vm-pre-install-ssh-key
+      - mc_proxy: cloud-generic-generate
     - watch_in:
-      - mc_proxy: cloud-{{vmname}}-generic-vm-pre-install-ssh-key
+      - mc_proxy: cloud-generic-generate-end
     - contents: |
           include:
             - makina-states.cloud.generic.hooks.vm

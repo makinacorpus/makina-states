@@ -1,6 +1,5 @@
 include:
-  - makina-states.cloud.generic.hooks.compute_node
-  - makina-states.cloud.generic.hooks.vm
+  - makina-states.cloud.generic.hooks.generate
 {% set localsettings = salt['mc_localsettings.settings']() %}
 {% set compute_node_settings = salt['mc_cloud_compute_node.settings']() %}
 {% set lxcSettings = salt['mc_cloud_lxc.settings']() %}
@@ -17,9 +16,9 @@ include:
     - makedirs: true
     - mode: 750
     - watch:
-      - mc_proxy: cloud-generic-compute_node-post-pre-deploy
+      - mc_proxy: cloud-generic-generate
     - watch_in:
-      - mc_proxy: cloud-generic-compute_node-post-post-deploy
+      - mc_proxy: cloud-generic-generate-end
     - user: root
     - group: {{localsettings.group}}
     - contents: |
@@ -43,9 +42,9 @@ include:
     - makedirs: true
     - mode: 750
     - watch:
-      - mc_proxy: cloud-generic-compute_node-post-pre-deploy
+      - mc_proxy: cloud-generic-generate
     - watch_in:
-      - mc_proxy: cloud-generic-compute_node-post-post-deploy
+      - mc_proxy: cloud-generic-generate-end
     - user: root
     - group: {{localsettings.group}}
     - contents: |

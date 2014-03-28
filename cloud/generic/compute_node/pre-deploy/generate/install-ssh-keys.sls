@@ -1,8 +1,7 @@
 {% set cloudSettings = salt['mc_cloud.settings']() %}
 {% set compute_node_settings = salt['mc_cloud_compute_node.settings']() %}
 include:
-  - makina-states.cloud.generic.hooks.compute_node
-  - makina-states.cloud.generic.genssh
+  - makina-states.cloud.generic.hooks.generate
 {% for target, vm in compute_node_settings.targets.items() %}
 {# authorize root from cloudcontroller to connect via ssh on targets #}
 {% set cptslsname = '{1}/{0}/compute_node_ssh_key'.format(target.replace('.', ''),
@@ -20,9 +19,9 @@ include:
     - mode: 750
     - makedirs: true
     - watch:
-      - mc_proxy: cloud-generic-compute_node-pre-host-ssh-key-deploy
+      - mc_proxy: cloud-generic-generate
     - watch_in:
-      - mc_proxy: cloud-{{target}}-generic-compute_node-pre-host-ssh-key-deploy
+      - mc_proxy: cloud-generic-generate-end
     - contents: |
                 insdsakey:
                   ssh_auth.present:
@@ -41,9 +40,9 @@ include:
     - mode: 750
     - makedirs: true
     - watch:
-      - mc_proxy: cloud-generic-compute_node-pre-host-ssh-key-deploy
+      - mc_proxy: cloud-generic-generate
     - watch_in:
-      - mc_proxy: cloud-{{target}}-generic-compute_node-pre-host-ssh-key-deploy
+      - mc_proxy: cloud-generic-generate-end
     - contents : |
                  include:
                    - makina-states.cloud.generic.hooks.compute_node

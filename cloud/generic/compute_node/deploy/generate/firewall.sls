@@ -1,5 +1,5 @@
 include:
-  - makina-states.cloud.generic.hooks.compute_node
+  - makina-states.cloud.generic.hooks.generate
 {% set cloudSettings = salt['mc_cloud.settings']() %}
 {% set localsettings = salt['mc_localsettings.settings']() %}
 {% set compute_node_settings = salt['mc_cloud_compute_node.settings']() %}
@@ -24,9 +24,9 @@ include:
               cloud-{{target}}-hook:
                 mc_proxy.hook: []
     - watch:
-      - mc_proxy: cloud-generic-compute_node-pre-firewall-deploy
-    - watch_in:
-      - mc_proxy: cloud-{{target}}-generic-compute_node-pre-firewall-deploy
+      - mc_proxy: cloud-generic-generate
+    - watch:
+      - mc_proxy: cloud-generic-generate-end
 {{target}}-gen-firewall-installation-run:
   file.managed:
     - name: {{rcptsls}}
@@ -35,9 +35,9 @@ include:
     - user: root
     - group: {{localsettings.group}}
     - watch:
-      - mc_proxy: cloud-generic-compute_node-pre-firewall-deploy
+      - mc_proxy: cloud-generic-generate
     - watch_in:
-      - mc_proxy: cloud-{{target}}-generic-compute_node-pre-firewall-deploy
+      - mc_proxy: cloud-generic-generate-end
     - contents: |
             include:
               - makina-states.cloud.generic.hooks.compute_node

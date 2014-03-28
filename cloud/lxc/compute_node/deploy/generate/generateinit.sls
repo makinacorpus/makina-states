@@ -1,5 +1,5 @@
 include:
-  - makina-states.cloud.generic.hooks.compute_node
+  - makina-states.cloud.generic.hooks.generate
 {# generate an init file callable on a per compute node basis #}
 {% set localsettings = salt['mc_localsettings.settings']() %}
 {% set cloudSettings = salt['mc_cloud.settings']() %}
@@ -23,7 +23,7 @@ include:
                 - {{cptslsnamepref.replace('/', '.')}}lxc.run-installation
                 {% if salt['mc_nodetypes.registry']().is.devhost %}- makina-states.cloud.lxc.compute_node.devhost.install{% endif %}
     - watch:
-      - mc_proxy: cloud-generic-compute_node-pre-deploy
+      - mc_proxy: cloud-generic-generate
     - watch_in:
-      - mc_proxy: cloud-generic-compute_node-post-deploy
+      - mc_proxy: cloud-generic-generate-end
 {% endfor %}

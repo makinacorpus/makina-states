@@ -1,5 +1,5 @@
 include:
-  - makina-states.cloud.generic.hooks.compute_node
+  - makina-states.cloud.generic.hooks.generate
 {% set localsettings = salt['mc_localsettings.settings']() %}
 {% set cloudSettings = salt['mc_cloud.settings']() %}
 {% set imgSettings = salt['mc_cloud_images.settings']() %}
@@ -20,9 +20,9 @@ include:
     - user: root
     - group: {{localsettings.group}}
     - watch:
-      - mc_proxy: cloud-generic-compute_node-pre-images-deploy
+      - mc_proxy: cloud-generic-generate
     - watch_in:
-      - mc_proxy: cloud-{{target}}-generic-compute_node-pre-images-deploy
+      - mc_proxy: cloud-generic-generate-end
     - contents: |
               include:
                 - makina-states.cloud.generic.hooks.compute_node
@@ -44,9 +44,9 @@ include:
     - user: root
     - group: {{localsettings.group}}
     - watch:
-      - mc_proxy: cloud-generic-compute_node-pre-images-deploy
+      - mc_proxy: cloud-generic-generate
     - watch_in:
-      - mc_proxy: cloud-{{target}}-generic-compute_node-pre-images-deploy
+      - mc_proxy: cloud-generic-generate-end
     - contents: |
             {% for name, imgdata in imgSettings.lxc.images.items() %}
             {% set cwd = '/var/lib/lxc/{0}'.format(name) %}

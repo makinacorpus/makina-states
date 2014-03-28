@@ -2,7 +2,7 @@
 {% set cloudSettings= salt['mc_cloud.settings']() %}
 {% set lxcSettings= salt['mc_cloud_lxc.settings']() %}
 include:
-  - makina-states.cloud.generic.hooks.vm
+  - makina-states.cloud.generic.hooks.generate
 {% for target, vms in lxcSettings.vms.items() %}
 {%  for vmname, data in vms.items() -%}
 {% if compute_node_settings.targets[target].virt_types.lxc %}
@@ -19,9 +19,9 @@ c{{sname}}-lxc.computenode.sls-generator-for-highstate:
     - mode: 750
     - makedirs: true
     - watch:
-      - mc_proxy: cloud-generic-vm-pre-initial-highstate-deploy
+      - mc_proxy: cloud-generic-generate
     - watch_in:
-      - mc_proxy: cloud-{{vmname}}-generic-vm-pre-initial-highstate-deploy
+      - mc_proxy: cloud-generic-generate-end
     - contents: |
             include:
               - makina-states.cloud.generic.hooks.vm

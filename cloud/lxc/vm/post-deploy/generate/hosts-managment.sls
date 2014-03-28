@@ -2,7 +2,7 @@
 {% set cloudSettings= salt['mc_cloud.settings']() %}
 {% set lxcSettings= salt['mc_cloud_lxc.settings']() %}
 include:
-  - makina-states.cloud.generic.hooks.vm
+  - makina-states.cloud.generic.hooks.generate
 {% for target, vms in lxcSettings.vms.items() %}
 {% for vmname, data in vms.items() -%}
 {% set sname = '{0}-{1}'.format(target, vmname) %}
@@ -24,9 +24,9 @@ c{{sname}}-lxc.computenode.sls-generator-for-hostnode-gen:
     - mode: 750
     - makedirs: true
     - watch:
-      - mc_proxy: cloud-generic-vm-pre-hostsfiles-deploy
+      - mc_proxy: cloud-generic-generate
     - watch_in:
-      - mc_proxy: cloud-{{vmname}}-generic-vm-pre-hostsfiles-deploy
+      - mc_proxy: cloud-generic-generate-end
     - contents: |
                 alxc-{{sname}}-makina-append-parent-etc.computenode.management:
                   file.blockreplace:
@@ -67,11 +67,11 @@ c{{sname}}-lxc.computenode.sls-generator-for-hostnode-gen:
     - name: {{rcptsls}}
     - user: root
     - mode: 750
-    - MAKEDIRS: true
+    - makedirs: true
     - watch:
-      - mc_proxy: cloud-generic-vm-pre-hostsfiles-deploy
+      - mc_proxy: cloud-generic-generate
     - watch_in:
-      - mc_proxy: cloud-{{vmname}}-generic-vm-pre-hostsfiles-deploy
+      - mc_proxy: cloud-generic-generate-end
     - contents: |
             c{{sname}}-lxc.computenode.sls-generator-for-hostnode-inst:
               salt.state:

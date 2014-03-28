@@ -2,7 +2,7 @@
 {% set cloudSettings = salt['mc_cloud.settings']() %}
 {% set compute_node_settings = salt['mc_cloud_compute_node.settings']() %}
 include:
-  - makina-states.cloud.generic.hooks.compute_node
+  - makina-states.cloud.generic.hooks.generate
 {% for target, tdata in compute_node_settings.targets.items() %}
 {% set cptslsname = '{1}/{0}/compute_node_hostfile'.format(target.replace('.', ''),
                                                            cloudSettings.compute_node_sls_dir) %}
@@ -14,9 +14,9 @@ include:
   file.managed:
     - name: {{rcptsls}}
     - watch:
-      - mc_proxy: cloud-generic-compute_node-pre-hostsfiles-deploy
+      - mc_proxy: cloud-generic-generate
     - watch_in:
-      - mc_proxy: cloud-{{target}}-generic-compute_node-pre-hostsfiles-deploy
+      - mc_proxy: cloud-generic-generate-end
     - user: root
     - makedirs: true
     - mode: 750
@@ -37,9 +37,9 @@ include:
   file.managed:
     - name: {{cptsls}}
     - watch:
-      - mc_proxy: cloud-generic-compute_node-pre-hostsfiles-deploy
+      - mc_proxy: cloud-generic-generate
     - watch_in:
-      - mc_proxy: cloud-{{target}}-generic-compute_node-pre-hostsfiles-deploy
+      - mc_proxy: cloud-generic-generate-end
     - user: root
     - makedirs: true
     - mode: 750

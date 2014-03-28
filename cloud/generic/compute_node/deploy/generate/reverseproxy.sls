@@ -1,5 +1,5 @@
 include:
-  - makina-states.cloud.generic.hooks.compute_node
+  - makina-states.cloud.generic.hooks.generate
 {# to reverse proxy a host, by default we redirect only and only:
  #  - http
  #  - https
@@ -52,9 +52,9 @@ include:
                   - watch_in:
                     - mc_proxy: haproxy-post-conf-hook
     - watch:
-      - mc_proxy: cloud-generic-compute_node-pre-reverseproxy-deploy
+      - mc_proxy: cloud-generic-generate
     - watch_in:
-      - mc_proxy: cloud-{{target}}-generic-compute_node-pre-reverseproxy-deploy
+      - mc_proxy: cloud-generic-generate-end
 {{target}}-gen-haproxy-installation-run:
   file.managed:
     - name: {{rcptsls}}
@@ -63,9 +63,9 @@ include:
     - user: root
     - group: {{localsettings.group}}
     - watch:
-      - mc_proxy: cloud-generic-compute_node-pre-reverseproxy-deploy
+      - mc_proxy: cloud-generic-generate
     - watch_in:
-      - mc_proxy: cloud-{{target}}-generic-compute_node-pre-reverseproxy-deploy
+      - mc_proxy: cloud-generic-generate-end
     - contents: |
             include:
               - makina-states.cloud.generic.hooks.compute_node
