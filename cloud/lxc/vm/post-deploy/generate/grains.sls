@@ -4,8 +4,8 @@ include:
   - makina-states.cloud.generic.hooks.generate
 {% set cloudSettings = salt['mc_cloud.settings']() %}
 {% set lxcSettings= salt['mc_cloud_lxc.settings']() %}
-{% for target, vms in lxcSettings.vms.items() %}
-{% for vmname, data in vms.items() %}
+{% for target, vmnames in lxcSettings.vms.items() %}
+{% for vmname in vmnames %}
 {% set sname = '{0}-{1}'.format(target, vmname)%}
 {% set cptslsname = '{1}/{0}/lxc/{2}/container_grains'.format(
         target.replace('.', ''),

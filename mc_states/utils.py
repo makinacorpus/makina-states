@@ -31,9 +31,11 @@ def lazy_subregistry_get(__salt__, registry):
         def _call(*a, **kw):
             REG = __salt__['mc_macros.registry_kind_get'](registry)
             # TODO: replace the next line with the two others with a better test
-            # cache each registry 10 seconds. which should be sufficient
+            # cache each registry 5 minutes. which should be sufficient
             # to render the whole sls files
-            tkey = "{0}".format(time() // (10 * 1))
+            # remember that the registry is a reference and even cached
+            # it will be editable
+            tkey = "{0}".format(time() // (60 * 5))
             ckey = _CACHEKEY.format(key)
             if not ckey in REG:
                 REG[ckey] = ''

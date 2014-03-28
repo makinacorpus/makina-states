@@ -5,8 +5,9 @@ include:
 {% set lxcSettings = salt['mc_cloud_lxc.settings']() %}
 {% set cloudSettings = salt['mc_cloud.settings']() %}
 {% for target, vms in lxcSettings.vms.items() %}
-{% if compute_node_settings.targets[target].virt_types.lxc %}
-{%  for vmname, data in vms.items() -%}
+{% if 'lxc' in compute_node_settings.targets[target].virt_types %}
+{%  for vmname in vms -%}
+{% set data = salt['mc_cloud_lxc.get_settings_for_vm'](target, vmname) %}
 {% set cptslsnamepref = '{1}/{0}/lxc/{2}'.format(target.replace('.', ''),
                                            cloudSettings.compute_node_sls_dir,
                                            vmname.replace('.', '')) %}

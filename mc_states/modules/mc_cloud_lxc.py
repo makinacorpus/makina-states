@@ -13,21 +13,9 @@ mc_cloud_lxc / lxc registry for compute nodes
 # Import python libs
 import logging
 import mc_states.utils
-from pprint import pformat
-import os
-import random
-import socket
-import copy
 
-
-try:
-    import netaddr
-    HAS_NETADDR = True
-except ImportError:
-    HAS_NETADDR = False
 from mc_states import saltapi
 from salt.utils.odict import OrderedDict
-from salt.utils.pycrypto import secure_password
 
 _errmsg = saltapi._errmsg
 __name = 'mc_cloud_lxc'
@@ -37,12 +25,6 @@ MAC_GID = 'makina-states.cloud.lxc.vmsettings.{0}.{1}.mac'
 PW_GID = 'makina-states.cloud.lxc.vmsettings.{0}.{1}.password'
 IP_GID = 'makina-states.cloud.lxc.vmsettings.{0}.{1}.ip'
 
-
-def gen_mac():
-    return ':'.join(map(lambda x: "%02x" % x, [0x00, 0x16, 0x3E,
-                                               random.randint(0x00, 0x7F),
-                                               random.randint(0x00, 0xFF),
-                                               random.randint(0x00, 0xFF)]))
 
 def is_lxc():
     """
@@ -99,28 +81,10 @@ def settings():
         defaults settings to provision lxc containers
         Those are all redefinable at each container level
 
-        Corpus API
+        LXC API:
 
-        bootsalt_branch
-            branch of makina-states to use (prod in prod,
-            dev in dev by default (default_env grain))
-        ip
-            do not set it, or use at ure own risk, prefer just to read the
-            value.
-        domains
-            list of domains tied with this host (first is minion id
-            and main domain name, it is automaticly added)
-        load_balancer_domains
-            The load_balancer domains to be registered for this host.
-            This default to configured domains (at least minion_id
-            which must be setted to your main dns).
-            This can be used to registred your vm on another domain
-            as a horizontally scaled instance.
-            Default to domains.
         mode
             (salt (default) or mastersalt)
-
-        LXC API:
 
         ssh_gateway
             ssh gateway info
@@ -145,7 +109,6 @@ def settings():
         image
             LXC template to use
             'ubuntu'
-
         network
             '10.5.0.0'
         netmask
@@ -189,59 +152,48 @@ def settings():
             []
         lxc_conf_unset'
             []
-    vm
-        Mapping of containers defintions classified by host
+    vms
+        List of containers ids classified by host ids::
+
+            (Mapping of {hostid: [vmid]})
+
+        The settings are not stored here for obvious performance reasons
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        if not HAS_NETADDR:
-            raise Exception('netaddr required for ip generation')
         grains = __grains__
         pillar = __pillar__
-        nt_registry = __salt__['mc_nodetypes.registry']()
-        cloudSettings = __salt__['mc_cloud.settings']()
-        imgSettings = __salt__['mc_cloud_images.settings']()
+        _s = __salt__
+        cloudSettings = _s['mc_cloud.settings']()
+        imgSettings = _s['mc_cloud_images.settings']()
+        nt_registry = _s['mc_nodetypes.registry']()
         default_container = [a for a in imgSettings['lxc']['images']][0]
         default_vm = OrderedDict()
-        # reactivate to provision
-        # when you do maintenance
-        # default_container:
-        maintenance = False
-        if maintenance:
-            default_vm[grains['id']] = {
-                'name': default_container,
-                'profile_type': 'dir-scratch',
-                'ip': '0.0.0.0',  # set later
-                'mode': 'mastersalt',
-                'image': 'ubuntu',
-                'password': 'ubuntu',
-            }
         # no lvm on devhost
         # nor cron sync
         dptype = 'lvm'
         backing = 'lvm'
-        #if nt_registry['is']['devhost']:
-        #    dptype = 'dir'
-        #    backing = 'dir'
-        default_snapshot = None
+        if nt_registry['is']['devhost']:
+            backing = dptype = 'overlayfs'
+            # backing = dptype = 'dir'
+        default_snapshot = False
         if nt_registry['is']['devhost']:
             default_snapshot = True
-            dptype = 'overlayfs'
-            backing = 'overlayfs'
-        need_sync = False
-        lxcSettings = __salt__['mc_utils.defaults'](
+        lxcSettings = _s['mc_utils.defaults'](
             'makina-states.cloud.lxc', {
                 'dnsservers': ['8.8.8.8', '4.4.4.4'],
                 'defaults': {
                     'default_container': default_container,
                     'autostart': True,
+                    'snapshot': default_snapshot,
                     'size': None,  # via profile
                     'profile': 'medium',
                     'profile_type': dptype,
                     'gateway': '10.5.0.1',
                     'mode': cloudSettings['mode'],
                     'ssh_gateway': cloudSettings['ssh_gateway'],
-                    'ssh_gateway_password': cloudSettings['ssh_gateway_password'],
+                    'ssh_gateway_password': cloudSettings[
+                        'ssh_gateway_password'],
                     'ssh_gateway_user': cloudSettings['ssh_gateway_user'],
                     'ssh_gateway_key': cloudSettings['ssh_gateway_key'],
                     'ssh_gateway_port': cloudSettings['ssh_gateway_port'],
@@ -279,245 +231,140 @@ def settings():
                 }
             }
         )
-        if maintenance and (
-            '0.0.0.0' ==
-            lxcSettings['vms'][
-                grains['id']][default_container]['ip']
-        ):
-            lxcSettings['vms'][
-                grains['id']][default_container]['ip'] = (
-                '.'.join(
-                    lxcSettings['defaults']['network'].split(
-                        '.')[:3] + ['2']))
-        ips = {}
-        for target in [t for t in lxcSettings['vms']]:
-            ips.setdefault(target, [])
-            master = lxcSettings['defaults']['master']
-            # if it is not a distant minion, use private gateway ip
-            if __grains__['id'] == target:
-                master = lxcSettings['defaults']['gateway']
-            # filter dicts and overiddes
-            for container in lxcSettings['vms'][target]:
-
-                lxc_data = lxcSettings['vms'][target][container]
-                lxc_data.setdefault('master', master)
-                lxc_data['password'] = find_password_for_container(
-                    target, container, lxc_data)
-                lxc_data.setdefault('master', master)
-                lxc_data.setdefault('ssh_gateway', target)
-                lxc_data['mac'] = find_mac_for_container(
-                    target, container, lxc_data)
-                # at this stage, only get already allocated ips
-                ip = lxc_data.get(
-                    'ip',
-                    __salt__['mc_utils.get'](
-                        IP_GID.format(target, container), None))
-                if ip and not ip in ips[target]:
-                    ips[target].append(ip)
-                # shortcut name for profiles
-                # small -> ms-target-small
-                profile_type = lxc_data.get(
-                    'profile_type',
-                    lxcSettings['defaults']['profile_type'])
-                profile = lxc_data.get('profile',
-                                       lxcSettings['defaults']['profile'])
-                if (
-                    profile in lxcSettings['lxc_cloud_profiles']
-                    and 'profile' in lxc_data
-                ):
-                    del lxc_data['profile']
-                if 'overlayfs' in profile_type or 'scratch' in profile_type:
-                    sprofile = ''
-                    lxc_data['backing'] = 'overlayfs'
-                elif 'dir' in profile_type or 'scratch' in profile_type:
-                    sprofile = ''
-                    lxc_data['backing'] = 'dir'
-                else:
-                    sprofile = '-{0}'.format(profile)
-                lxc_data.setdefault(
-                    'profile', __salt__['mc_cloud_controller.gen_id'](
-                        'ms-{0}{1}-{2}'.format(
-                            target, sprofile, profile_type)))
-                lxc_data.setdefault('name', container)
-                lxc_data.setdefault('domains', [])
-                if not container in lxc_data['domains']:
-                    lxc_data['domains'].insert(0, container)
-                def _sort_domains(dom):
-                    if dom == container:
-                        return '0{0}'.format(dom)
-                    else:
-                        return '1{0}'.format(dom)
-                lxc_data['domains'].sort(key=_sort_domains)
-                if lxc_data.get('load_balancer_domains', None) is None:
-                    lxc_data['load_balancer_domains'] = lxc_data['domains'][:]
-                if not container in lxc_data['load_balancer_domains']:
-                    lxc_data['load_balancer_domains'].insert(0, container)
-                lxc_data['load_balancer_domains'].sort(key=_sort_domains)
-                lxc_data.setdefault('mode', lxcSettings['defaults']['mode'])
-                lxc_data.setdefault('size', None)
-                lxc_data.setdefault('snapshot', default_snapshot)
-                if 'mastersalt' in lxc_data.get('mode', 'salt'):
-                    default_args = cloudSettings['bootsalt_mastersalt_args']
-                else:
-                    default_args = cloudSettings['bootsalt_args']
-                lxc_data['script_args'] = lxc_data.get('script_args',
-                                                       default_args)
-                branch = lxc_data.get('bootsalt_branch',
-                                      cloudSettings['bootsalt_branch'])
-                if (
-                    not '-b' in lxc_data['script_args']
-                    or not '--branch' in lxc_data['script_args']
-                ):
-                    lxc_data['script_args'] += ' -b {0}'.format(branch)
-                d_ct = None
-                if not 'scratch' in profile_type:
-                    d_ct = lxcSettings['defaults']['default_container']
-                lxc_data.setdefault('from_container', d_ct)
-                lxc_data.setdefault('ssh_gateway', None)
-                lxc_data = saltapi.complete_gateway(lxc_data, lxcSettings)
-                for i in ['bootsalt_branch',
-                          "master", "master_port", "autostart",
-                          'size', 'image', 'bridge', 'netmask', 'gateway',
-                          'dnsservers', 'backing', 'vgname', 'lvname',
-                          'load_balancer_domains',
-                          'ssh_gateway_password',
-                          'ssh_gateway_user',
-                          'ssh_gateway_key',
-                          'ssh_gateway_port',
-                          "gateway",
-                          'vgname', 'ssh_username', 'users', 'sudo',
-                          'lxc_conf_unset', 'lxc_conf']:
-                    lxc_data.setdefault(
-                        i,
-                        lxcSettings['defaults'].get(
-                            i, lxcSettings.get(i, None)))
-                if (
-                    ('overlayfs' in profile_type)
-                    or ('dir' in profile_type)
-                ):
-                    for k in ['lvname', 'vgname', 'size']:
-                        if k in lxc_data:
-                            del lxc_data[k]
-        # search and fill ip settings
-        for target in [t for t in lxcSettings['vms']]:
-            for container, lxc_data in lxcSettings['vms'][target].items():
-                ip = find_ip_for_container(
-                    ips[target], target, container,
-                    lxcSettings=lxcSettings,
-                    lxc_data=lxc_data)
-                if ip:
-                    lxc_data['ip'] = ip
-                    if not ip in ips[target]:
-                        ips[target].append(ip)
-        # deactivated, way too slow
+        # do not store in cached
+        # registry the whole conf, memory would explode
+        try:
+            vms = lxcSettings.pop('vms')
+        except:
+            vms = OrderedDict()
+        lxcSettings['vms'] = vm_ids = OrderedDict()
+        for target in vms:
+            vm_ids.setdefault(target, [])
+            data = vms[target]
+            for vmname in data:
+                vm_ids[target].append(vmname)
         return lxcSettings
     return _settings()
 
 
-def find_mac_for_container(target, container, lxc_data=None):
-    '''Generate and assign a mac addess to a specific
-    container on a specific host'''
-    if not lxc_data:
-        lxc_data = {}
-    mac = lxc_data.get('mac', None)
-    if not mac:
-        mac = get_conf_for_container(target, container, 'mac')
-    if not mac:
-        mac = gen_mac()
-        if not mac:
-            raise Exception(
-                'Error while setting grainmac for {0}/{1}'.format(target,
-                                                                  container))
-        set_conf_for_container(target, container, 'mac', mac)
-    return mac
+def get_settings_for_vm(target, vm):
+    '''get per container specific settings
 
+    All the defaults defaults registry settings are redinable here +
 
-def find_password_for_container(target,
-                                container,
-                                lxc_data=None,
-                                pwlen=32):
-    '''Return the container password after creating it
-    the first time
+        Corpus API
+
+        ip
+            do not set it, or use at ure own risk, prefer just to read the
+            value.
+        domains
+            list of domains tied with this host (first is minion id
+            and main domain name, it is automaticly added)
     '''
-    if not lxc_data:
-        lxc_data = {}
-    password = lxc_data.get('password', None)
-    if not password:
-        password = get_conf_for_container(target,
-                                          container,
-                                          'password')
-    if not password:
-        password = secure_password(pwlen)
-        if not password:
-            raise Exception(
-                'Error while setting password grain for {0}/{1}'.format(
-                    target, container))
-        set_conf_for_container(target,
-                               container,
-                               'password',
-                               password)
-    return password
+    cloudSettings = __salt__['mc_cloud.settings']()
+    _s = __salt__
+    lxcSettings = settings()
+    lxc_defaults = lxcSettings['defaults']
+    master = lxc_defaults['master']
+    # if it is not a distant minion, use private gateway ip
+    if __grains__['id'] == target:
+        master = lxc_defaults['gateway']
+    # filter dicts and overiddes
+    lxc_data = _s['mc_utils.defaults'](
+        'makina-states.cloud.lxc.vms.{0}.{1}'.format(target, vm),
+        {})
+    lxc_data.setdefault('master', master)
+    lxc_data['password'] = _s[
+        'mc_cloud_compute_node.find_password_for_vm'
+    ](target, 'lxc', vm, default=lxc_data.get('password', None))
+    lxc_data.setdefault('master', master)
+    lxc_data.setdefault('ssh_gateway', target)
+    lxc_data['mac'] = _s[
+        'mc_cloud_compute_node.find_mac_for_vm'
+    ](target, 'lxc', vm, default=lxc_data.get('mac', None))
+    # shortcut name for profiles
+    # small -> ms-target-small
+    profile_type = lxc_data.get(
+        'profile_type',
+        lxc_defaults['profile_type'])
+    profile = lxc_data.get('profile',
+                           lxc_defaults['profile'])
+    if (
+        profile in lxcSettings['lxc_cloud_profiles']
+        and 'profile' in lxc_data
+    ):
+        del lxc_data['profile']
+    if 'overlayfs' in profile_type or 'scratch' in profile_type:
+        sprofile = ''
+        lxc_data['backing'] = 'overlayfs'
+    elif 'dir' in profile_type or 'scratch' in profile_type:
+        sprofile = ''
+        lxc_data['backing'] = 'dir'
+    else:
+        sprofile = '-{0}'.format(profile)
+    lxc_data.setdefault(
+        'profile', _s['mc_cloud_controller.gen_id'](
+            'ms-{0}{1}-{2}'.format(
+                target, sprofile, profile_type)))
+    lxc_data.setdefault('name', vm)
+    lxc_data.setdefault('domains', [])
+    if not vm in lxc_data['domains']:
+        lxc_data['domains'].insert(0, vm)
 
-
-def find_ip_for_container(allocated_ips,
-                          target,
-                          container,
-                          lxcSettings=None,
-                          lxc_data=None):
-    '''Search for:
-
-        - an ip already allocated
-        - an random available ip in the range
-
-    '''
-    if not HAS_NETADDR:
-        raise Exception('netaddr required for ip generation')
-    if not lxcSettings:
-        lxcSettings = settings()
-    if not lxc_data:
-        lxc_data = {}
-    ip4 = lxc_data.get('ip', None)
-    if not ip4:
-        ip4 = get_conf_for_container(target, container, 'ip4')
-    if not ip4:
-        # get network bounds
-        network = netaddr.IPNetwork(
-            '{0}/{1}'.format(lxcSettings['defaults']['network'],
-                             lxcSettings['defaults']['netmask']))
-        # converts stringued ips to IPAddress objects
-        allocated_ips_ips = [netaddr.IPAddress(a)
-                             for a in allocated_ips
-                             if a]
-        for try_ip in network[2:-2]:  # skip the firsts and last for gateways,
-                                      # etc
-            parts = try_ip.bits().split('.')
-            if (
-                try_ip in allocated_ips_ips  # already allocated
-            ) or (
-                parts[-1] in ['00000000', '11111111']  # 10.*.*.0 or 10.*.*.255
-            ):
-                continue
-            ip4 = "{0}".format(try_ip)
-            break
-        if not ip4:
-            raise Exception(
-                'Did not get an available ip in the lxc '
-                'network for {0}/{1}'.format(
-                    target, container)
-            )
-        set_conf_for_container(target, container, 'ip4', ip4)
-    allocated_ips.append(ip4)
-    return ip4
-
-
-def set_conf_for_container(*args, **kw):
-    return __salt__[
-        'mc_cloud_compute_node.set_conf_for_container'](*args, **kw)
-
-
-def get_conf_for_container(*args, **kw):
-    return __salt__[
-        'mc_cloud_compute_node.get_conf_for_container'](*args, **kw)
+    def _sort_domains(dom):
+        if dom == vm:
+            return '0{0}'.format(dom)
+        else:
+            return '1{0}'.format(dom)
+    lxc_data['domains'].sort(key=_sort_domains)
+    lxc_data.setdefault('mode', lxc_defaults['mode'])
+    lxc_data.setdefault('size', None)
+    lxc_data.setdefault('snapshot', lxc_defaults['snapshot'])
+    if 'mastersalt' in lxc_data.get('mode', 'salt'):
+        default_args = cloudSettings['bootsalt_mastersalt_args']
+    else:
+        default_args = cloudSettings['bootsalt_args']
+    lxc_data['script_args'] = lxc_data.get('script_args',
+                                           default_args)
+    branch = lxc_data.get('bootsalt_branch',
+                          cloudSettings['bootsalt_branch'])
+    if (
+        not '-b' in lxc_data['script_args']
+        or not '--branch' in lxc_data['script_args']
+    ):
+        lxc_data['script_args'] += ' -b {0}'.format(branch)
+    d_ct = None
+    if not 'scratch' in profile_type:
+        d_ct = lxc_defaults['default_container']
+    lxc_data.setdefault('from_container', d_ct)
+    lxc_data.setdefault('ssh_gateway', None)
+    lxc_data = saltapi.complete_gateway(lxc_data, lxcSettings)
+    for i in ['bootsalt_branch',
+              "master", "master_port", "autostart",
+              'size', 'image', 'bridge',
+              'network', 'netmask', 'gateway',
+              'dnsservers', 'backing', 'vgname', 'lvname',
+              'ssh_gateway_password',
+              'ssh_gateway_user',
+              'ssh_gateway_key',
+              'ssh_gateway_port',
+              "gateway",
+              'vgname', 'ssh_username', 'users', 'sudo',
+              'lxc_conf_unset', 'lxc_conf']:
+        lxc_data.setdefault(
+            i, lxc_defaults.get(i,
+                                lxcSettings.get(i, None)))
+    if ('overlayfs' in profile_type) or ('dir' in profile_type):
+        for k in ['lvname', 'vgname', 'size']:
+            if k in lxc_data:
+                del lxc_data[k]
+    # at this stage, only get already allocated ips
+    lxc_data['ip'] = _s['mc_cloud_compute_node.find_ip_for_vm'](
+        target, 'lxc', vm,
+        network=lxc_data['network'],
+        netmask=lxc_data['netmask'],
+        default=lxc_data.get('ip'))
+    return lxc_data
 
 
 def dump():

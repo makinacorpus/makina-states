@@ -3,7 +3,7 @@
 {% set compute_node_settings = salt['mc_cloud_compute_node.settings']() %}
 include:
   - makina-states.cloud.generic.hooks.generate
-{% for target, tdata in compute_node_settings.targets.items() %}
+{% for target in compute_node_settings.targets %}
 {% set cptslsname = '{1}/{0}/compute_node_hostfile'.format(target.replace('.', ''),
                                                            cloudSettings.compute_node_sls_dir) %}
 {% set cptsls = '{1}/{0}.sls'.format(cptslsname, cloudSettings.root) %}
@@ -45,6 +45,7 @@ include:
     - mode: 750
     - contents: |
                 {% set domains = [] %}
+                {% set tdata = salt['mc_cloud_compute_node.get_settings_for_target'](target) %}
                 {% for vmidname, data in tdata.vms.items() -%}
                 {% for vmname in data['domains'] %}
                 {% set sname = '{0}-{1}'.format(target, vmname) %}

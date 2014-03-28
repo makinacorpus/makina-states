@@ -6,8 +6,8 @@ include:
 {% for target, vms in lxcSettings.vms.items() %}
 {% set cptslsnamepref = '{1}/{0}/lxc'.format(target.replace('.', ''),
                                          cloudSettings.compute_node_sls_dir) %}
-{% for vmname, data in vms.items() -%}
-{% if compute_node_settings.targets[target].virt_types.lxc %}
+{% for vmname in vms %}
+{% if 'lxc' in compute_node_settings.targets[target].virt_types %}
 {% set cptslsname = '{1}/{0}/lxc/{2}/run-initial-highstate'.format(
         target.replace('.', ''),
         cloudSettings.compute_node_sls_dir,

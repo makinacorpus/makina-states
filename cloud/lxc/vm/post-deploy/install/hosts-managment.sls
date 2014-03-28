@@ -4,7 +4,7 @@
 include:
   - makina-states.cloud.generic.hooks.vm
 {% for target, vms in lxcSettings.vms.items() %}
-{%  for vmname, data in vms.items() -%}
+{%  for vmname in vms %}
 {% set sname = '{0}-{1}'.format(target, vmname) %}
 {% if salt['mc_nodetypes.registry']()['is']['devhost'] %}
 {% set cptslsname = '{1}/{0}/lxc/{2}/run-hosts-managment'.format(

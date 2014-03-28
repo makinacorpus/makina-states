@@ -3,9 +3,10 @@
 {% set lxcSettings= salt['mc_cloud_lxc.settings']() %}
 include:
   - makina-states.cloud.generic.hooks.generate
-{% for target, vms in lxcSettings.vms.items() %}
-{%  for vmname, data in vms.items() -%}
-{% if compute_node_settings.targets[target].virt_types.lxc %}
+{% for target, vmnames in lxcSettings.vms.items() %}
+{%  for vmname in vmnames %}
+{% set data = salt['mc_cloud_lxc.get_settings_for_vm'](target, vmname) %}
+{% if 'lxc' in compute_node_settings.targets[target].virt_types %}
 {% set sname = '{0}-{1}'.format(target, vmname) %}
 {% set cptslsname = '{1}/{0}/lxc/{2}/run-initial-setup'.format(
         target.replace('.', ''),

@@ -5,9 +5,9 @@ include:
   - makina-states.cloud.generic.hooks.vm
 
 {% for target, vms in lxcSettings.vms.items() %}
-{%  for vmname, data in vms.items() -%}
+{%  for vmname in vms %}
 {%    set sname = '{0}-{1}'.format(target, vmname) %}
-{% if compute_node_settings.targets[target].virt_types.lxc %}
+{% if 'lxc' in compute_node_settings.targets[target].virt_types %}
 {% set cptslsname = '{1}/{0}/lxc/{2}/run-initial-setup'.format(
         target.replace('.', ''),
         cloudSettings.compute_node_sls_dir,
