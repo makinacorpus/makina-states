@@ -17,7 +17,7 @@ include:
                'run-container_initial-setup',
                'run-container_install-ssh-key', ] %}
 {% if salt['mc_nodetypes.registry']()['is']['devhost'] %}
-{% do slss.append('run-hosts-managment') %}
+{% do slss.append('run-container_hosts-managment') %}
 {% endif %}
 {{target}}-{{vmname}}-gen-lxc-init:
   file.managed:
