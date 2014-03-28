@@ -5,6 +5,7 @@
 include:
   - makina-states.localsettings.users
   - makina-states.cloud.generic.hooks.controller
+  - makina-states.cloud.generic.genssh
 salt_cloud-dirs:
   file.directory:
     - names:

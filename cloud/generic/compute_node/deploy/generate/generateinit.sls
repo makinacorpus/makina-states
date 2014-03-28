@@ -22,9 +22,8 @@ include:
                 include:
                   - makina-states.cloud.generic.controller.install
                   {% for virt_type in data.virt_types %}
-                  {%raw%}{% if salt['mc_cloud.registry']().is["{%endraw%}{{virt_type}}{%raw%}"] %}{%endraw%}
                   - makina-states.cloud.{{virt_type}}.controller.install
-                  {%raw%}{%endif %}{%endraw%}{% endfor %}
+                  {% endfor %}
     - watch:
       - mc_proxy: cloud-generic-generate
     - watch_in:
@@ -48,9 +47,8 @@ include:
                   {% for virt_type in data.virt_types %}
                   {% set cvtcptslsname = '{1}/{0}/{2}-compute_node'.format(
                         target.replace('.', ''), cloudSettings.compute_node_sls_dir, virt_type) %}
-                  {%raw%}{% if salt['mc_cloud.registry']().is["{%endraw%}{{virt_type}}{%raw%}"] %}{%endraw%}
                   - {{cvtcptslsname.replace('/', '.')}}
-                  {%raw%}{%endif %}{%endraw%}{% endfor %}
+                  {% endfor %}
     - watch:
       - mc_proxy: cloud-generic-generate
     - watch_in:
@@ -71,9 +69,8 @@ include:
                   {% for virt_type in data.virt_types %}
                   {% set vtcptslsname = '{1}/{0}/{2}'.format(
                         target.replace('.', ''), cloudSettings.compute_node_sls_dir, virt_type) %}
-                  {%raw%}{% if salt['mc_cloud.registry']().is["{%endraw%}{{virt_type}}{%raw%}"] %}{%endraw%}
                   - {{cptslsnamepref.replace('/', '.')}}{{virt_type}}
-                  {%raw%}{%endif %}{%endraw%}{% endfor %}
+                  {% endfor %}
     - watch:
       - mc_proxy: cloud-generic-generate
     - watch_in:
