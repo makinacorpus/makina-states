@@ -3,7 +3,6 @@
 #   - makina-states/doc/ref/formulaes/nodetypes/lxccontainer.rst
 #}
 
-{% set localsettings = salt['mc_localsettings.settings']() %}
 {% macro do(full=True) %}
 {{ salt['mc_macros.register']('nodetypes', 'lxccontainer') }}
 
