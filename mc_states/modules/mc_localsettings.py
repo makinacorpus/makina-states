@@ -458,33 +458,54 @@ def settings():
                 hosts_list.append(ip + ' ' + dnsname)
 
         # package manager settings
-        data['installmode'] = 'latest'
+        # instlall mode latest is really too slow
+        # default_install_mode = 'latest'
+        default_install_mode = 'installed'
         if data['default_env'] in ['prod']:
-            data['installmode'] = 'installed'
+            default_install_mode = 'installed'
 
-        data['keyserver'] = keyserver = 'pgp.mit.edu'
-        data['debian_stable'] = debian_stable = 'wheezy'
-        data['ubuntu_lts'] = ubuntu_lts = 'precise'
-        data['ubuntu_last'] = ubuntu_last = 'saucy'
-        data['debian_mirror'] = debian_mirror = saltmods['mc_utils.get'](
-            'makina-states.apt.debian.mirror',
-            'http://ftp.de.debian.org/debian')
-
-        data['ubuntu_mirror'] = ubuntu_mirror = saltmods['mc_utils.get'](
-            'makina-states.apt.ubuntu.mirror',
-            'http://ftp.free.fr/mirrors/ftp.ubuntu.com/ubuntu')
-        data['dist'] = dist = saltmods['mc_utils.get']('lsb_distrib_codename', '')
-        data['udist'] = udist = saltmods['mc_utils.get']('lsb_distrib_codename', ubuntu_lts)
-        data['ddist'] = ddist = saltmods['mc_utils.get']('lsb_distrib_codename', debian_stable)
-        data['dcomps'] = dcomps = saltmods['mc_utils.get']('makina-states.apt.debian.comps',
-                                          'main contrib non-free')
-        data['ucomps'] = ucomps = saltmods['mc_utils.get'](
-            'makina-states.apt.ubuntu.comps',
-            'main restricted universe multiverse')
+        debian_stable = "wheezy"
+        ubuntu_lts = "precise"
+        ubuntu_last = "saucy"
+        lts_dist = debian_stable
         if grains['os'] in ['Ubuntu']:
-            data['lts_dist'] = ubuntu_lts
-        else:
-            data['lts_dist'] = debian_stable
+            lts_dist = ubuntu_lts
+        data['pkgSettings'] = saltmods['mc_utils.defaults'](
+            'makina-states.localsettings.pkgs', {
+              'installmode': default_install_mode,
+              'keyserver': 'pgp.mit.edu',
+              'dist': saltmods['mc_utils.get']('lsb_distrib_codename', ''),
+              'lts_dist': lts_dist,
+              'apt': {
+                  'ubuntu': {
+                      'dist': saltmods['mc_utils.get']('lsb_distrib_codename', ubuntu_lts),
+                      'comps':'main restricted universe multiverse',
+                      'mirror': 'http://ftp.free.fr/mirrors/ftp.ubuntu.com/ubuntu',
+                      'last': ubuntu_last,
+                      'lts': ubuntu_lts,
+                  },
+                  'debian': {
+                      'stable': debian_stable,
+                      'dist': saltmods['mc_utils.get']('lsb_distrib_codename', debian_stable),
+                      'comps':'main contrib non-free',
+                      'mirror': 'http://ftp.de.debian.org/debian',
+                  },
+            }
+        })
+        # retro compat wrappers
+        data['installmode'] = data['pkgSettings']['installmode']
+        data['keyserver'] = data['pkgSettings']['keyserver']
+        data['dist'] = data['pkgSettings']['dist']
+        data['dcomps'] = data['pkgSettings']['apt']['debian']['comps']
+        data['ddist'] = data['pkgSettings']['apt']['debian']['dist']
+        data['debian_mirror'] = data['pkgSettings']['apt']['debian']['mirror']
+        data['debian_stable'] = data['pkgSettings']['apt']['debian']['stable']
+        data['ubuntu_last'] = data['pkgSettings']['apt']['ubuntu']['last']
+        data['ubuntu_lts'] = data['pkgSettings']['apt']['ubuntu']['lts']
+        data['ubuntu_mirror'] = data['pkgSettings']['apt']['ubuntu']['mirror']
+        data['ucomps'] = data['pkgSettings']['apt']['ubuntu']['comps']
+        data['udist'] = data['pkgSettings']['apt']['ubuntu']['dist']
+        data['lts_dist'] = data['pkgSettings']['lts_dist']
 
         # JDK default version
         data['jdkSettings'] = saltmods['mc_utils.defaults'](
