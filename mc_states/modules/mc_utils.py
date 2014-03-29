@@ -9,6 +9,9 @@ mc_utils / Some usefull small tools
 # Import salt libs
 import salt.utils.dictupdate
 from salt.exceptions import SaltException
+import crypt
+import getpass
+import pwd
 import re
 import salt.utils
 from salt.utils.odict import OrderedDict
@@ -336,5 +339,9 @@ def yencode(string):
         re_y = re.compile(' \.\.\.$', re.M)
         string = re_y.sub('', string)
     return string
+
+
+def unix_crypt(passwd):
+    return crypt.crypt(passwd, '$6$SALTsalt$')
 
 #
