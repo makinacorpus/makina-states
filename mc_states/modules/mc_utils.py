@@ -185,13 +185,14 @@ def is_iter(value):
     )
 
 
-def get(key, default=''):
+def get(key, default='', local_registry=None):
     '''Same as 'config.get' but with different retrieval order.
 
     This routine traverses these data stores in this order:
 
         - Local minion config (opts)
         - Minion's pillar
+        - Dict passed in local_registry argument
         - Minion's grains
         - Master config
 
@@ -207,10 +208,15 @@ def get(key, default=''):
     ret = salt.utils.traverse_dict(__pillar__, key, '_|-')
     if ret != '_|-':
         return ret
+    if local_registry is not None:
+        ret = salt.utils.traverse_dict(local_registry, key, '_|-')
+        if ret != '_|-':
+            return ret
     ret = salt.utils.traverse_dict(__grains__, key, '_|-')
     if ret != '_|-':
         return ret
-    ret = salt.utils.traverse_dict(__pillar__.get('master', OrderedDict()), key, '_|-')
+    ret = salt.utils.traverse_dict(__pillar__.get('master', OrderedDict()),
+                                   key, '_|-')
     if ret != '_|-':
         return ret
     return default

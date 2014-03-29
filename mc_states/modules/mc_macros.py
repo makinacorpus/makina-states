@@ -8,8 +8,10 @@ mc_macros / macros helpers
 '''
 
 # Import salt libs
+import os
 import traceback
 from salt.exceptions import SaltException
+from salt.utils.odict import OrderedDict
 
 _default_activation_status = object()
 
@@ -27,6 +29,9 @@ _SUB_REGISTRIES = [
     'settings',
     'registry',
 ]
+import yaml
+from salt.utils import yamldumper
+from salt.renderers.yaml import get_yaml_loader
 
 
 class NoRegistryLoaderFound(SaltException):
@@ -43,8 +48,20 @@ def registry_kind_set(kind, value):
     _REGISTRY[kind] = value
 
 
-def is_item_active(config_entry, default_status=False):
-    return __salt__['mc_utils.get'](config_entry, default_status)
+def is_item_active(registry_name,
+                   item,
+                   default_status=False,
+                   grains_pref=None):
+    '''Look in pillar/grains/localconfig for registry
+    activation status
+    '''
+    if not grains_pref:
+        grains_pref = 'makina-states.{0}'.format(registry_name)
+    local_reg = get_local_registry(registry_name)
+    config_entry = grains_pref + "." + item
+    return __salt__['mc_utils.get'](config_entry,
+                                    default_status,
+                                    local_registry=local_reg)
 
 
 def load_kind_registries(kind):
@@ -93,6 +110,60 @@ def is_active(registry, name):
         return name in registry['actives']
     except:
         return False
+
+
+def encode_local_registry(name, registry):
+    registryf = os.path.join(
+        __opts__['config_dir'], 'makina-states/{0}.yaml'.format(name))
+    dregistry = os.path.dirname(registryf)
+    if not os.path.exists(dregistry):
+        os.makedirs(dregistry)
+    content = yaml.dump(
+        registry,
+        default_flow_style=False,
+        Dumper=yamldumper.SafeOrderedDumper)
+    sync = False
+    if os.path.exists(registryf):
+        with open(registryf) as fic:
+            old_content = fic.read()
+            if old_content != content:
+                sync = True
+    else:
+        sync = True
+    if sync:
+        with open(registryf, 'w') as fic:
+            fic.write(content)
+
+
+def get_local_registry(name):
+    registryf = os.path.join(
+        __opts__['config_dir'], 'makina-states/{0}.yaml'.format(name))
+    dregistry = os.path.dirname(registryf)
+    if not os.path.exists(dregistry):
+        os.makedirs(dregistry)
+    registry = OrderedDict()
+    if os.path.exists(registryf):
+        with open(registryf, 'r') as fic:
+            registry = yaml.load(fic, Loader=get_yaml_loader(''))
+    return registry
+
+
+_default = object()
+
+
+def update_registry_params(registry_name, params):
+    registry = get_local_registry(registry_name)
+    changes = {}
+    registry_obj = __salt__['mc_{0}.registry'.format(registry_name)]()
+    for param, value in params.items():
+        gparam = '{0}.{1}'.format(registry_obj['grains_pref'],
+                                  param)
+        if registry.get(gparam, _default) != value:
+            for data in changes, registry:
+                data.update({gparam: value})
+    if changes:
+        encode_local_registry(registry_name, registry)
+    return changes
 
 
 def get_registry(registry_configuration):
@@ -154,8 +225,8 @@ def get_registry(registry_configuration):
         activation_status = _default_activation_status
         if isinstance(data, dict):
             activation_status = is_item_active(
-                registry['grains_pref'] + "." + item,
-                data.get('active', activation_status))
+                registry['kind'], item,
+                default_status=data.get('active', activation_status))
             if activation_status is not _default_activation_status:
                 if activation_status:
                     registry['actives'][item] = data
@@ -170,9 +241,9 @@ def get_registry(registry_configuration):
     return registry
 
 
-def construct_registry_configuration(__name, defaults=None):
+def construct_registry_configuration(name, defaults=None):
     '''Helper to factorise registry mappings'''
-    metadata_reg = __salt__['mc_{0}.metadata'.format(__name)]()
+    metadata_reg = __salt__['mc_{0}.metadata'.format(name)]()
     if not defaults:
         defaults = {}
     return __salt__['mc_macros.get_registry']({
@@ -182,29 +253,45 @@ def construct_registry_configuration(__name, defaults=None):
     })
 
 
-def unregister(kind, name, data=None, suf=''):
-    '''Unregister a service via a grain'''
+def unregister(kind, slss, data=None, suf=''):
+    '''Unregister a/some service(s) in the local registry'''
     state = '\n'
+    if isinstance(slss, basestring):
+        slss = [slss]
+    if slss is None:
+        slss = []
     data = locals()
-    state += 'makina-states-register.{kind}.{name}{suf}:\n'.format(**data)
-    state += '  grains.present:\n'
-    state += '    - name: makina-states.{kind}.{name}\n'.format(**data)
-    state += '    - value: False\n'.format(**data)
-    state += '    - order: 9999\n'
-    state += '\n'
+    if slss:
+        data['name'] = '-'.join(slss)
+        state += 'makina-states-unregister.{kind}.{name}{suf}:\n'.format(**data)
+        state += '  mc_registry.absent:\n'
+        state += '    - name: {kind}\n'.format(**data)
+        state += '    - slss:\n'
+        for sls in slss:
+            state += '      - {0}\n'.format(sls)
+        state += '    - order: 9999\n'
+        state += '\n'
     return state
 
 
-def register(kind, name, data=None, suf=''):
-    '''Register a service via a grain'''
+def register(kind, slss, data=None, suf=''):
+    '''Register a/some service(s) in the local registry'''
     state = '\n'
+    if isinstance(slss, basestring):
+        slss = [slss]
+    if slss is None:
+        slss = []
     data = locals()
-    state += 'makina-states-register.{kind}.{name}{suf}:\n'.format(**data)
-    state += '  grains.present:\n'
-    state += '    - name: makina-states.{kind}.{name}\n'.format(**data)
-    state += '    - value: True\n'.format(**data)
-    state += '    - order: 9999\n'
-    state += '\n'
+    if slss:
+        data['name'] = '-'.join(slss)
+        state += 'makina-states-register.{kind}.{name}{suf}:\n'.format(**data)
+        state += '  mc_registry.present:\n'
+        state += '    - name: {kind}\n'.format(**data)
+        state += '    - slss:\n'
+        for sls in slss:
+            state += '      - {0}\n'.format(sls)
+        state += '    - order: 9999\n'
+        state += '\n'
     return state
 
 
@@ -230,6 +317,7 @@ def autoinclude(reg, additional_includes=None):
     if includes:
         includes.insert(0, 'include:\n')
         sls += ''.join(includes)
+
 # more harm than good, cycle errors are too easilly triggered
 # between kinds
 #sls += '''
@@ -239,14 +327,18 @@ def autoinclude(reg, additional_includes=None):
 #{requires}
 #'''.format(kind=reg['kind'], requires='\n'.join(
 #                    ['      - sls: {0}'.format(s) for s in slses]))
+    slss = []
     for state, data in reg.get('actives', {}).items():
-        sls += '\n{0}\n'.format(
-            __salt__['mc_macros.register'](
-                reg['kind'], state, data, suf='auto'))
+        slss.append(state)
+    sls += '\n{0}\n'.format(
+        __salt__['mc_macros.register'](
+            reg['kind'], slss, data=data, suf='auto'))
+    slss = []
     for state, data in reg.get('unactivated', {}).items():
-        sls += '\n{0}\n'.format(
-            __salt__['mc_macros.unregister'](
-                reg['kind'], state, data, suf='auto'))
+        slss.append(state)
+    sls += '\n{0}\n'.format(
+        __salt__['mc_macros.unregister'](
+            reg['kind'], slss, data=data, suf='auto'))
     return sls
 
 

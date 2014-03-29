@@ -370,7 +370,7 @@ def settings():
         if grains['os'] in ['Ubuntu']:
             data['defaultSysadmins'].append('ubuntu')
         if saltmods['mc_macros.is_item_active'](
-            'makina-states.nodetypes.vagrantvm'
+            'nodetypes', 'vagrantvm'
         ):
             defaultSysadmins.append('vagrant')
 
