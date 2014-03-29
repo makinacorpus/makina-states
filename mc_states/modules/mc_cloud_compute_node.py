@@ -16,6 +16,7 @@ import mc_states.utils
 from salt.utils.odict import OrderedDict
 import msgpack.exceptions
 from salt.utils.pycrypto import secure_password
+import msgpack.exceptions
 try:
     import netaddr
     HAS_NETADDR = True
@@ -46,8 +47,30 @@ def _encode(value):
     return msgpack.packb({'value': value})
 
 
-def _decode(value):
-    return msgpack.unpackb(value)['value']
+def _fencode(filep, value):
+    dfilep = os.path.dirname(filep)
+    if not os.path.exists(dfilep):
+        os.makedirs(dfilep)
+    with open(filep, 'w') as fic:
+        fic.write(_encode(value))
+    try:
+        os.chmod(filep, 0700)
+    except:
+        pass
+
+
+def _decode(filep):
+    value = None
+    try:
+        if os.path.exists(filep):
+            with open(filep) as fic:
+                rvalue = fic.read()
+                value = msgpack.unpackb(rvalue)['value']
+    except msgpack.exceptions.UnpackValueError:
+        log.error('decoding error, removing stale {0}'.format(filep))
+        os.unlink(filep)
+        value = None
+    return value
 
 
 def set_conf_for_target(target, setting, value):
@@ -59,15 +82,7 @@ def set_conf_for_target(target, setting, value):
         target, 'settings',
         setting + '.pack'
     )
-    dfilep = os.path.dirname(filep)
-    if not os.path.exists(dfilep):
-        os.makedirs(dfilep)
-    with open(filep, 'w') as fic:
-        fic.write(_encode(value))
-    try:
-        os.chmod(filep, 0700)
-    except:
-        pass
+    _fencode(filep, value)
     return value
 
 
@@ -81,8 +96,7 @@ def get_conf_for_target(target, setting, default=None):
     )
     value = default
     if os.path.exists(filep):
-        with open(filep) as fic:
-            value = _decode(fic.read())
+        value = _decode(filep)
     return value
 
 
@@ -96,15 +110,7 @@ def set_conf_for_vm(target, virt_type, vm, setting, value):
         target, virt_type, vm, 'settings',
         setting + '.pack'
     )
-    dfilep = os.path.dirname(filep)
-    if not os.path.exists(dfilep):
-        os.makedirs(dfilep)
-    with open(filep, 'w') as fic:
-        fic.write(_encode(value))
-    try:
-        os.chmod(filep, 0700)
-    except:
-        pass
+    _fencode(filep, value)
     return value
 
 
@@ -241,8 +247,7 @@ def get_conf_for_vm(target,
         target, virt_type, vm, 'settings', setting + '.pack')
     value = default
     if os.path.exists(filep):
-        with open(filep) as fic:
-            value = _decode(fic.read())
+        value = _decode(filep)
     return value
 
 

@@ -2,6 +2,7 @@
 for i in salt-master salt-minion mastersalt-master mastersalt-minion;do
     service $i stop
 done
+rm -rfv /tmp/.saltcloud
 find /etc/*salt/pki/master/minions*/*\
      /etc/*salt/pki/minion/*\
      /var/log/upstart/*\
