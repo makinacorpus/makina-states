@@ -88,6 +88,16 @@ def settings():
             crons = False
 
         saltCommonData = {
+            'module_dirs': ['{salt_root}/_modules',
+                            '{salt_root}/makina-states/mc_states/modules'],
+            'returner_dirs': ['{salt_root}/_returners',
+                              '{salt_root}/makina-states/mc_states/returners'],
+            'grain_dirs': ['{salt_root}/_grains',
+                           '{salt_root}/makina-states/mc_states/grains'],
+            'states_dirs': ['{salt_root}/_states',
+                            '{salt_root}/makina-states/mc_states/states'],
+            'render_dirs': ['{salt_root}/_renderers',
+                            '{salt_root}/makina-states/mc_states/renderers'],
             'cron_auto_clean': crons,
             'cron_auto_sync': crons,
             'cron_auto_restart': crons,
