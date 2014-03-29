@@ -1,7 +1,6 @@
 LXC provision
 ======================
-
-As always, the configuration is done via a registry: :ref:`module_mc_lxc`.
+As always, the configuration is done via a registry: :ref:`module_mc_cloud_lxc`.
 
 To provision a new lxc provider, you need to:
 

@@ -21,8 +21,9 @@ Subregistries
    mc_circus.rst
    mc_cloud.rst
    mc_cloud_saltify.rst
-   mc_cloud_cloud_controller.rst
+   mc_cloud_controller.rst
    mc_cloud_compute_node.rst
+   mc_cloud_images.rst
    mc_cloud_lxc.rst
    mc_dbsmartbackup.rst
    mc_etherpad.rst
@@ -37,7 +38,6 @@ Subregistries
    mc_psad.rst
    mc_pureftpd.rst
    mc_rdiffbackup.rst
-   mc_saltcloud.rst
    mc_salt.rst
    mc_shorewall.rst
    mc_ssh.rst

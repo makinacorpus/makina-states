@@ -10,4 +10,5 @@ States modules
    mc_postgres_group.rst
    mc_postgres_user.rst
    mc_proxy.rst
+   mc_registry.rst
    bacula.rst

@@ -2,8 +2,8 @@
 '''
 .. _module_mc_cloud_compute_node:
 
-mc_cloud_compute_node / cloudcontroller functions
-=================================================
+mc_cloud_compute_node / cloud compute ndoe related functions
+==============================================================
 '''
 
 __docformat__ = 'restructuredtext en'
@@ -44,10 +44,12 @@ def gen_mac():
 
 
 def _encode(value):
+    '''encode using msgpack backend'''
     return msgpack.packb({'value': value})
 
 
 def _fencode(filep, value):
+    '''encode in a file using msgpack backend'''
     dfilep = os.path.dirname(filep)
     if not os.path.exists(dfilep):
         os.makedirs(dfilep)
@@ -60,6 +62,7 @@ def _fencode(filep, value):
 
 
 def _decode(filep):
+    '''decode in a file using msgpack backend'''
     value = None
     try:
         if os.path.exists(filep):
@@ -74,6 +77,7 @@ def _decode(filep):
 
 
 def set_conf_for_target(target, setting, value):
+    '''Register a specific setting for a specific target'''
     target = target.replace('.', '')
     cloudSettings = __salt__['mc_cloud.settings']()
     filep = os.path.join(
@@ -87,6 +91,7 @@ def set_conf_for_target(target, setting, value):
 
 
 def get_conf_for_target(target, setting, default=None):
+    '''get the stored specific setting for a specific target'''
     target = target.replace('.', '')
     cloudSettings = __salt__['mc_cloud.settings']()
     filep = os.path.join(

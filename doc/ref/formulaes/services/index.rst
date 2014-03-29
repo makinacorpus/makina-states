@@ -1,11 +1,11 @@
 Services
 ========
+
 .. toctree::
    :maxdepth: 3
 
    backup/index.rst
    base/index.rst
-   cloud/index.rst
    collab/index.rst
    db/index.rst
    firewall/index.rst

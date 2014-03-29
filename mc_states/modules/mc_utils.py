@@ -342,6 +342,7 @@ def yencode(string):
 
 
 def unix_crypt(passwd):
+    '''Encrypt the stringed password in the unix crypt format (/etc/shadow)'''
     return crypt.crypt(passwd, '$6$SALTsalt$')
 
 #

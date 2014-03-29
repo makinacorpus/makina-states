@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 '''
-.. _module_mc_services:
+.. _module_mc_cloud:
 
 mc_cloud / cloud registries & functions
 ==============================================

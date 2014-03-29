@@ -1,6 +1,4 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-__docformat__ = 'restructuredtext en'
 '''
 
 .. _module_mc_cloud_lxc:
@@ -9,6 +7,7 @@ mc_cloud_lxc / lxc registry for compute nodes
 ===============================================
 
 '''
+__docformat__ = 'restructuredtext en'
 
 # Import python libs
 import logging

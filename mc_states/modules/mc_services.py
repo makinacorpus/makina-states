@@ -4,7 +4,7 @@
 .. _module_mc_services:
 
 mc_services / servives registries & functions
-==============================================
+=============================================
 
 '''
 

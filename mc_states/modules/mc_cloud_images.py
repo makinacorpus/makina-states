@@ -2,8 +2,9 @@
 '''
 .. _module_mc_cloud_images:
 
-mc_cloud_images / cloudcontroller functions
-==============================================
+mc_cloud_images / cloud images related functions
+================================================
+Please also have a look at the runner.
 '''
 
 __docformat__ = 'restructuredtext en'
