@@ -540,7 +540,7 @@ def settings():
 
 def is_compute_node():
     _settings = settings()
-    return __salt__['mc_utils.get']('id') in _settings['targets']
+    return __salt__['mc_utils.get']('makina-states.cloud.is.compute_node')
 
 
 def get_targets_and_vms_for_virt_type(virt_type):
