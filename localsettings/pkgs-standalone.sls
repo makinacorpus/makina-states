@@ -84,7 +84,9 @@ sys-pkgs:
       - manpages
       - manpages-fr
       - manpages-de
+      {% if not grains.get('lsb_distrib_codename') in ['wheezy'] %}
       - jq
+      {% endif %}
       - lsof
       - lvm2
       - lynx
