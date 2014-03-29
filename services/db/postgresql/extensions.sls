@@ -5,7 +5,7 @@
 {% set orchestrate = hooks.orchestrate %}
 
 include:
-  - makina-states.settings.db.postgresql.hooks
+  - makina-states.services.db.postgresql.hooks
 
 {% macro install_pg_exts(exts,
                          db=None,

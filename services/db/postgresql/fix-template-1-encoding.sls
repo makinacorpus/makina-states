@@ -3,12 +3,14 @@
 {%- import "makina-states/services/db/postgresql/hooks.sls" as hooks with context %}
 
 {% set settings = salt['mc_pgsql.settings']() %}
+{% set encoding = settings['encoding'] %}
+{% set locale = settings['locale'] %}
 {%- set localsettings = salt['mc_localsettings.settings']() %}
 {%- set locs = localsettings.locations %}
 {%- set default_user = settings.user %}
 {% set orchestrate = hooks.orchestrate %}
 include:
-  - makina-states.settings.db.postgresql.hooks
+  - makina-states.services.db.postgresql.hooks
 {#
 # many database installers create the template1
 # with latin1 encoding making then difficult to handle
@@ -27,7 +29,7 @@ makina-postgresql-{{version}}-fix-template1:
                 \c template0
                 update pg_database set datistemplate = FALSE where datname = 'template1';
                 drop database template1;
-                create database template1 with template = template0 encoding = 'UTF8' LC_CTYPE = 'en_US.utf8' LC_COLLATE = 'en_US.utf8';
+                create database template1 with template = template0 encoding = '{{encoding}}' LC_CTYPE = '{{locale}}' LC_COLLATE = '{{locale}}';
                 update pg_database set datistemplate = TRUE where datname = 'template1';
                 \c template1
                 update pg_database set datallowconn = FALSE where datname = 'template0';

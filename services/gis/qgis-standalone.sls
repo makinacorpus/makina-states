@@ -28,10 +28,10 @@ prereq-qgis:
     - pkgs:
       - qgis-mapserver
       - curl
-      - {{phpsalt['mc_php.settings']().packages['curl'] }}
-      - {{phpsalt['mc_php.settings']().packages['sqlite'] }}
-      - {{phpsalt['mc_php.settings']().packages['gd'] }}
-      - {{phpsalt['mc_php.settings']().packages['postgresql'] }}
+      - {{salt['mc_php.settings']().packages['curl'] }}
+      - {{salt['mc_php.settings']().packages['sqlite'] }}
+      - {{salt['mc_php.settings']().packages['gd'] }}
+      - {{salt['mc_php.settings']().packages['postgresql'] }}
       {# deps #}
       - autoconf
       - automake

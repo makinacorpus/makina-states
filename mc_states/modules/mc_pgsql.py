@@ -125,11 +125,13 @@ def settings():
         #
         defaultPgVersion = '9.3'
         pgSettings = __salt__['mc_utils.defaults'](
-            'makina-states.services.postgresql', {
+            'makina-states.services.db.postgresql', {
                 'user': 'postgres',
                 'version': defaultPgVersion,
                 'defaultPgVersion': defaultPgVersion,
                 'versions': [defaultPgVersion],
+                'encoding': 'utf8',
+                'locale': 'en_US.UTF-8',
                 'postgis': {'2.1': [defaultPgVersion, '9.2']},
                 'postgis_db': 'postgis',
                 'pg_hba':  [

@@ -1,5 +1,5 @@
 {#- Create and grant privs to a postgresql user #}
-{%- import "makina-states/services/db/postgresql/groups.sls" as groups with context %}
+{%- import "makina-states/services/db/postgresql/groups.sls" as groupsmac with context %}
 {%- import "makina-states/services/db/postgresql/hooks.sls" as hooks with context %}
 {% set settings = salt['mc_pgsql.settings']() %}
 {% set orchestrate = hooks.orchestrate %}
@@ -29,7 +29,7 @@
 {% endif %}
 {#- create groups prior to user #}
 {%- for group in groups %}
-{{ groups.postgresql_group(group, user=user, version=version, suf='-user') }}
+{{ groupsmac.postgresql_group(group, user=user, version=version, suf='-user') }}
 {%- endfor %}
 {{version}}-{{ name }}-makina-services-postgresql-user:
   mc_postgres_user.present:

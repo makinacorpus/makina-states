@@ -1,7 +1,7 @@
 {%- import "makina-states/services/db/postgresql/hooks.sls" as hooks with context %}
 
 include:
-  - makina-states.settings.db.postgresql.hooks
+  - makina-states.services.db.postgresql.hooks
 
 {%- set orchestrate = hooks.orchestrate %}
 {%- set localsettings = salt['mc_localsettings.settings']() %}

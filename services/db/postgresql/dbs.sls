@@ -10,7 +10,9 @@
 {% set orchestrate = hooks.orchestrate %}
 
 include:
-  - makina-states.settings.db.postgresql.hooks
+  - makina-states.services.db.postgresql.hooks
+{% set dencoding = settings['encoding'] %}
+{% set dlocale = settings['locale'] %}
 
 {# Create a database, and an owner group which owns it #}
 {%- macro postgresql_db(db,
@@ -18,9 +20,9 @@ include:
                         tablespace='pg_default',
                         template='template1',
                         wait_for_template=True,
-                        encoding='utf8',
-                        lc_collate = None,
-                        lc_ctype = None,
+                        encoding=dencoding,
+                        lc_collate = dlocale,
+                        lc_ctype = dlocale,
                         user=default_user,
                         version=settings.defaultPgVersion,
                         extensions=None,
@@ -33,12 +35,6 @@ include:
 {%-   set owner = '%s_owners' % db %}
 {%- endif -%}
 {{ groups.postgresql_group(owner, user=user, login=True) }}
-{% if not lc_collate %}
-{% set lc_collate = {'utf8': 'en_US.utf8'}.get(encoding, 'fr_FR') %}
-{% endif%}
-{% if not lc_ctype %}
-{% set lc_ctype = {'utf8': 'en_US.utf8'}.get(encoding, 'fr_FR') %}
-{% endif%}
 {{version}}-{{ db }}-makina-postgresql-database:
   mc_postgres_database.present:
     - name: {{ db }}
