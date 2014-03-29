@@ -27,6 +27,8 @@ include:
       - mc_proxy: cloud-generic-generate-end
     - contents: |
                 {%raw%}{# WARNING THIS STATE FILE IS GENERATED #}{%endraw%}
+                include:
+                  - makina-states.cloud.generic.hooks.compute_node
                 c{{sname}}-lxcgrains.computenode.sls-generator-for-hostnode-inst:
                   salt.state:
                     - tgt: [{{target}}]
@@ -34,9 +36,9 @@ include:
                     - sls: {{cptslsname.replace('/', '.')}}
                     - concurrent: True
                     - watch:
-                      - mc_proxy: cloud-generic-computenode-pre-grains-deploy
+                      - mc_proxy: cloud-generic-compute_node-pre-grains-deploy
                     - watch_in:
-                      - mc_proxy: cloud-generic-computenode-post-grains-deploy
+                      - mc_proxy: cloud-generic-compute_node-post-grains-deploy
 {{sname}}-lxc.vm-install-grains-gen:
   file.managed:
     - name: {{cptsls}}
@@ -52,7 +54,6 @@ include:
                 {{sname}}-run-grains:
                   grains.present:
                     - names:
-                      - makina-states.services.virt.docker
                       - makina-states.services.virt.lxc
                     - value: true
                 {{ sname }}-reload-grains:
