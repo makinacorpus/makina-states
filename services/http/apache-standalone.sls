@@ -395,6 +395,7 @@ makina-apache-minimal-default-vhost-remove-olds:
 {{apacheSettings.httpd_user}}-in-editor-group:
   user.present:
     - name: {{salt['mc_apache.settings']().httpd_user}}
+    - system: true
     - remove_groups: False
     - groups:
       - {{localsettings.group}}
