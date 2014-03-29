@@ -9,7 +9,7 @@ include:
 {% set cptslsnamepref = '{1}/{0}/'.format(target.replace('.', ''),
                                          cloudSettings.compute_node_sls_dir) %}
 {% set cptsls = '{1}/{0}/init.sls'.format(cptslsnamepref, cloudSettings.root) %}
-{% set ccptsls = '{1}/{0}/compute_node.sls'.format(cptslsnamepref, cloudSettings.root) %}
+{% set ccptsls = '{1}/{0}/run-compute_node.sls'.format(cptslsnamepref, cloudSettings.root) %}
 {% set contcptsls = '{1}/{0}/controller.sls'.format(cptslsnamepref, cloudSettings.root) %}
 {{target}}-gen-controller_init:
   file.managed:
@@ -45,7 +45,7 @@ include:
                   - {{cptslsnamepref.replace('/', '.')}}run-compute_node_reverseproxy
                   - {{cptslsnamepref.replace('/', '.')}}run-compute_node_hostfile
                   {% for virt_type in data.virt_types %}
-                  {% set cvtcptslsname = '{1}/{0}/{2}/compute_node'.format(
+                  {% set cvtcptslsname = '{1}/{0}/{2}/run-compute_node'.format(
                         target.replace('.', ''), cloudSettings.compute_node_sls_dir, virt_type) %}
                   - {{cvtcptslsname.replace('/', '.')}}
                   {% endfor %}
@@ -65,7 +65,7 @@ include:
     - contents: |
                 include:
                   - {{cptslsnamepref.replace('/', '.')}}controller
-                  - {{cptslsnamepref.replace('/', '.')}}compute_node
+                  - {{cptslsnamepref.replace('/', '.')}}run-compute_node
                   {% for virt_type in data.virt_types %}
                   {% set vtcptslsname = '{1}/{0}/{2}'.format(
                         target.replace('.', ''), cloudSettings.compute_node_sls_dir, virt_type) %}
