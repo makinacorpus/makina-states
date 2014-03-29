@@ -37,9 +37,8 @@ def registry():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _registry():
         travis = False
-        for i in os.environ:
-            if 'travis' in i.lower():
-                travis = True
+        if os.environ.get('TRAVIS', 'false') == 'true':
+            travis = True
         reg = __salt__[
             'mc_macros.construct_registry_configuration'
         ](__name, defaults={
