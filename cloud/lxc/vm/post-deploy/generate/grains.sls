@@ -55,9 +55,7 @@ include:
                   grains.present:
                     - names:
                       - makina-states.cloud.is.vm
-                      - makina-states.services.proxy.haproxy
-                      - makina-states.services.firewall.shorewall
-                      - makina-states.cloud.compute_node.has.firewall
+                      - makina-states.nodetypes.lxccontainer
                     - value: true
                 {{ sname }}-reload-grains:
                   cmd.script:

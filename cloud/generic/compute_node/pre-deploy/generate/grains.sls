@@ -18,20 +18,21 @@ include:
     - user: root
     - group: {{localsettings.group}}
     - contents: |
-        {{target}}-run-grains:
-          grains.present:
-            - names:
-              - makina-states.cloud.is.compute_node
-              - makina-states.services.proxy.haproxy
-              - makina-states.services.firewall.shorewall
-              - makina-states.cloud.compute_node.has.firewall
-            - value: true
-        {{ target }}-reload-grains:
-          cmd.script:
-            - source: salt://makina-states/_scripts/reload_grains.sh
-            - template: jinja
-            - watch:
-              - grains: {{target}}-run-grains
+                {%raw%}{# WARNING THIS STATE FILE IS GENERATED #}{%endraw%}
+                {{target}}-run-grains:
+                  grains.present:
+                    - names:
+                      - makina-states.cloud.is.compute_node
+                      - makina-states.services.proxy.haproxy
+                      - makina-states.services.firewall.shorewall
+                      - makina-states.cloud.compute_node.has.firewall
+                    - value: true
+                {{ target }}-reload-grains:
+                  cmd.script:
+                    - source: salt://makina-states/_scripts/reload_grains.sh
+                    - template: jinja
+                    - watch:
+                      - grains: {{target}}-run-grains
     - watch:
       - mc_proxy: cloud-generic-generate
     - watch_in:
@@ -48,16 +49,17 @@ include:
     - watch_in:
       - mc_proxy: cloud-generic-generate-end
     - contents: |
-        include:
-          - makina-states.cloud.generic.hooks.compute_node
-        {{target}}-run-grains-installation:
-          salt.state:
-            - tgt: [{{target}}]
-            - expr_form: list
-            - sls: {{cptslsname.replace('/', '.')}}
-            - concurrent: True
-            - watch:
-              - mc_proxy: cloud-generic-compute_node-pre-grains-deploy
-            - watch_in:
-              - mc_proxy: cloud-generic-compute_node-post-grains-deploy
+                {%raw%}{# WARNING THIS STATE FILE IS GENERATED #}{%endraw%}
+                include:
+                  - makina-states.cloud.generic.hooks.compute_node
+                {{target}}-run-grains-installation:
+                  salt.state:
+                    - tgt: [{{target}}]
+                    - expr_form: list
+                    - sls: {{cptslsname.replace('/', '.')}}
+                    - concurrent: True
+                    - watch:
+                      - mc_proxy: cloud-generic-compute_node-pre-grains-deploy
+                    - watch_in:
+                      - mc_proxy: cloud-generic-compute_node-post-grains-deploy
 {% endfor %}
