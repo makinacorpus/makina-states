@@ -60,9 +60,9 @@ def settings():
             #    'link': {'target': '{salt_root}/formulas/openssh/openssh',
             #             'name': '{salt_root}/openssh'},
             #    'target': '{salt_root}/formulas/openssh'},
-            'openstack-formulae': {
-                'name': 'https://github.com/kiorky/openstack-salt-states.git',
-                'target': '{salt_root}/openstack'},
+            #'openstack-formulae': {
+            #    'name': 'https://github.com/kiorky/openstack-salt-states.git',
+            #    'target': '{salt_root}/openstack'},
             'makina-states': {
                 'name': 'https://github.com/makinacorpus/makina-states.git',
                 'target': '{salt_root}/makina-states'},

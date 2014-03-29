@@ -448,10 +448,12 @@ salt-{{ data.name }}-logrotate:
     - source: salt://makina-states/files/etc/logrotate.d/salt.conf
     - salt_data: {{ yamled_data }}
 
+{#
 salt-{{ data.name }}-reload-grains:
   cmd.script:
     - source: salt://makina-states/_scripts/reload_grains.sh
     - template: jinja
+#}
 
 {% if not isTravis %}
 salt-{{ data.name }}-net.core.rmem__wmem_max:

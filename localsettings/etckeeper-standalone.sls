@@ -69,6 +69,11 @@ etckeeper-perms:
     - user: root
     - group: root
     - mode: 750
+    - watch:
+      - mc_proxy: etckeeper-run-hook
+      - cmd: etckeeper-initial
+    - watch_in:
+      - mc_proxy: etckeeper-post-run-hook
     - contents: >
                 #!/bin/sh
 
@@ -77,6 +82,8 @@ etckeeper-perms:
                 --user "root" --group "root"
                 --paths {{locs.conf_dir}}/.git
 
+{# deactivated as soon or later it will be autocommited from
+   makina-states.commin.autocommit
 etckeeper-run:
   cmd.run:
     - name: {{locs.conf_dir}}/cron.daily/etckeeper "commit from salt"
@@ -86,5 +93,6 @@ etckeeper-run:
       - file: etckeeper-perms
     - watch_in:
       - mc_proxy: etckeeper-post-run-hook
+#}
 {% endmacro %}
 {{ do(full=False) }}
