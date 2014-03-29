@@ -331,14 +331,12 @@ def autoinclude(reg, additional_includes=None):
     for state, data in reg.get('actives', {}).items():
         slss.append(state)
     sls += '\n{0}\n'.format(
-        __salt__['mc_macros.register'](
-            reg['kind'], slss, data=data, suf='auto'))
+        __salt__['mc_macros.register'](reg['kind'], slss,  suf='auto'))
     slss = []
     for state, data in reg.get('unactivated', {}).items():
         slss.append(state)
     sls += '\n{0}\n'.format(
-        __salt__['mc_macros.unregister'](
-            reg['kind'], slss, data=data, suf='auto'))
+        __salt__['mc_macros.unregister'](reg['kind'], slss, suf='auto'))
     return sls
 
 
