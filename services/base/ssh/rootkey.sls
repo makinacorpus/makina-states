@@ -26,24 +26,31 @@
 # The keys are searched in /salt_root/files/ssh/
 #}
 {# By default we generate a dsa+rsa ssh key pair for root #}
-root-ssh-keys-init:
+
+{% macro user_keys(user='root') %}
+{{user}}-ssh-keys-init:
   cmd.run:
     - name: |
-            if [ ! -e /root/.ssh ];then mkdir /root/.ssh;fi;
-            cd /root/.ssh;
+            home=$(awk -F: -v v="{{user}}" '{if ($1==v && $6!="") print $6}' /etc/passwd)
+            if [ ! -e ${home}/.ssh ];then mkdir ${home}/.ssh;fi;
+            cd ${home}/.ssh;
             key="id_dsa";
-            if [ ! -e /root/.ssh/${key} ];then ssh-keygen -f ${key} -t dsa -b 1024 -N ''; fi;
+            if [ ! -e ${home}/.ssh/${key} ];then ssh-keygen -f ${key} -t dsa -b 1024 -N ''; fi;
             key="id_rsa";
-            if [ ! -e /root/.ssh/${key} ];then ssh-keygen -f ${key} -t rsa -b 4096 -N ''; fi;
+            if [ ! -e ${home}/.ssh/${key} ];then ssh-keygen -f ${key} -t rsa -b 4096 -N ''; fi;
     - onlyif: |
+              home=$(awk -F: -v v="{{user}}" '{if ($1==v && $6!="") print $6}' /etc/passwd)
               ret=1;
-              if [[ ! -e /root/.ssh ]];then mkdir /root/.ssh;fi;
-              cd /root/.ssh;
+              if [ ! -e ${home}/.ssh ];then mkdir ${home}/.ssh;fi;
+              cd ${home}/.ssh;
               for i in dsa rsa;do
                 key="id_$i";
-                if [[ ! -e /root/.ssh/$key ]];then
+                if [ ! -e ${home}/.ssh/$key ];then
                   ret=0;
                 fi;
               done;
               exit $ret;
-    - user: root
+    - user: {{user}}
+{% endmacro %}
+
+{{ user_keys('root') }}
