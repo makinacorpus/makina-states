@@ -2,7 +2,7 @@
 
 include:
   - makina-states.localsettings.localrc
-  - makina-states.services.virt.lxc-hooks
+  - makina-states.services.virt.lxc.hooks
   - makina-states.services.virt.docker-hooks
   - makina-states.services.firewall.shorewall.hooks
   - makina-states.services.firewall.shorewall.prerequisites
