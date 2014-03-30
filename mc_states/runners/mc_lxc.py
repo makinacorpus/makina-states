@@ -21,6 +21,7 @@ import salt.output
 import salt.minion
 from salt.utils.odict import OrderedDict
 
+from mc_states import api
 from mc_states import saltapi
 
 
@@ -65,15 +66,14 @@ def sync_images(output=True):
     dest = '/root/.ssh/.lxc.pub'
     this_ = saltapi.get_local_target()
     orig = 'salt://.lxcsshkey.pub'
-    lxcSettings = _cli('mc_lxc.settings')
+    imgSettings = _cli('mc_cloud_images.settings')
+    lxcSettings = _cli('mc_cloud_lxc.settings')
     rsync_cmd = (
         'rsync -aA --delete-excluded --exclude="makina-states-lxc-*xz"'
         ' --numeric-ids '
     )
-    if not lxcSettings:
-        lxcSettings = {'images': []}
-    for img in lxcSettings['images']:
-        bref = lxcSettings['images'][img]['builder_ref']
+    for img in imgSettings['lxc']['images']:
+        bref = imgSettings['lxc']['images'][img]['builder_ref']
         # try to find the local img reference building counterpart
         # and sync it back to the reference lxc
         reforig = '/var/lib/lxc/{0}/rootfs'.format(bref)
@@ -96,7 +96,7 @@ def sync_images(output=True):
                         refdest, reforig))
                 return ret
     root = master_opts()['file_roots']['base'][0]
-    for target in lxcSettings.get('containers', {}):
+    for target in lxcSettings.get('vms', {}):
         # skip local minion :) (in fact no)
         #if this_ == target:
         #    continue
@@ -135,10 +135,10 @@ def sync_images(output=True):
                     _errmsg(
                         'Problem while accepting key - dist {0}'.format(cret))
             # sync img to temp location
-            for img in lxcSettings['images']:
+            for img in imgSettings['lxc']['images']:
                 # transfert: 3h max
                 timeout = 3 * 60 * 60
-                imgroot = os.path.join(lxcSettings['images_root'], img)
+                imgroot = os.path.join(imgSettings['lxc']['images_root'], img)
                 try:
                     if not os.path.exists(imgroot):
                         _errmsg(
@@ -204,7 +204,7 @@ def sync_images(output=True):
                 '\nWe failed to sync image for {0}:\n{1}'.format(
                     target, ex))
     for target, subret in ret['targets'].items():
-        saltapi.msplitstrip(subret)
+        api.msplitstrip(subret)
         if not subret['result']:
             ret['result'] = False
     ret['result'] = False
@@ -212,7 +212,7 @@ def sync_images(output=True):
         ret['comment'] = 'We have sucessfully sync all targets'
     else:
         ret['comment'] = 'We have missed some target, see logs'
-    saltapi.msplitstrip(ret)
+    api.msplitstrip(ret)
     # return mail error only on error
     if output and not ret['result']:
         salt.output.display_output(ret, 'yaml', __opts__)
