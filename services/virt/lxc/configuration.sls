@@ -13,24 +13,10 @@
 #  config: config path (opt)
 # and it will create an ubuntu templated lxc host
 #}
-{%- set nt_reg = salt['mc_nodetypes.registry']() %}
 {%- set localsettings = salt['mc_localsettings.settings']() %}
 include:
   - makina-states.services.virt.lxc.hooks
 
-{% if nt_reg['is']['devhost'] %}
-lxcdevhostmount:
-  file.managed:
-    - name: /sbin/lxc-devhostmount.sh
-    - source: salt://makina-states/files/sbin/lxc-devhostmount.sh
-    - mode: 750
-    - user: root
-    - group: root
-    - watch:
-      - mc_proxy: lxc-pre-conf
-    - watch_in:
-      - mc_proxy: lxc-post-conf
-{% endif %}
 {% if grains['os'] in ['Ubuntu'] -%}
 etc-init-lxcconf:
   file.managed:
