@@ -46,6 +46,26 @@ etc-shorewall-{{config}}:
     - watch_in:
       - mc_proxy: shorewall-postconf
 {%- endfor %}
+{% set shareds = [] %}
+{% if grains.get('lsb_distrib_codename') in ['wheezy'] %}
+{% do shareds.extend(['macro.PostgreSQL'])%}
+{% endif %}
+{% for shared in shareds %}
+shorewall-shared-{{shared}}:
+  file.managed:
+    - name: /usr/share/shorewall/{{shared}}
+    - source : salt://makina-states/files/usr/share/shorewall/{{shared}}
+    - template: jinja
+    - user: root
+    - group: root
+    - mode: "0700"
+    - defaults: {shwdata: "{{ yamled_shwdata }}"}
+    - watch_in:
+      - mc_proxy: shorewall-preconf
+    - watch_in:
+      - mc_proxy: shorewall-postconf
+{%- endfor %}
+
 
 {#-
 # shorewall is not managed via init scripts as we really need

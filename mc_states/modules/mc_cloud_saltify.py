@@ -126,7 +126,7 @@ def settings():
             c_data['script_args'] = c_data.get('script_args', default_args)
             branch = c_data.get('bootsalt_branch', sdata['bootsalt_branch'])
 
-            c_data = saltapi.get_gateway(c_data, sdata)
+            c_data = saltapi.complete_gateway(c_data, sdata)
             if (
                 not '-b' in c_data['script_args']
                 or not '--branch' in c_data['script_args']
