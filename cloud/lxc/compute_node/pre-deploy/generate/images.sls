@@ -93,7 +93,7 @@ include:
                       - cmd: {{target}}-restore-specialfiles-{{name}}
                 {{target}}-{{name}}-lxc-snap:
                   cmd.run:
-                    - name: chroot /var/lib/lxc/{{name}}/rootfs/sbin/lxc-snap.sh
+                    - name: chroot /var/lib/lxc/{{name}}/rootfs /sbin/lxc-snap.sh
                     - onlyif: test -e /var/lib/lxc/{{name}}/rootfs/etc/salt/pki/minion/minion.pub
                     - watch:
                       - lxc: {{target}}-{{name}}-stop-default-lxc-container
