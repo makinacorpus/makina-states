@@ -228,6 +228,23 @@ def settings():
             }
         )
         data['grainsPref'] = grainsPref = 'makina-states.localsettings.'
+        data['kernel'] = saltmods['mc_utils.defaults'](
+            'makina-states.localsettings.kernel', {
+                'tcp_wmem': '4096 65536 16777216',
+                'tcp_rmem': '4096 87380 16777216',
+                'rwmemmax': '16716777216 77216',
+                'ip_local_port_range': '1025 65535',
+                'tcp_max_sync_backlog': '30000',
+                'net_core_somaxconn': '30000',
+                'netdev_max_backlog': '50000',
+                'no_metrics_save': '1',
+                'ulimit': '64000',
+                'tcp_congestion_control': 'cubic',
+                'tcp_max_tw_buckets': '2000000',
+                'tcp_tw_recycle': '0',
+                'tcp_tw_reuse': '1',
+                'tcp_timestamps': '0',
+            })
         #-
         # default paths
         # locationsVariables = {
@@ -562,6 +579,7 @@ def settings():
                 'locale': default_locale,
             }
         )
+
         data['locales'] = localesdef['locales']
         data['default_locale'] = localesdef['locale']
         # expose any defined variable to the callees
@@ -594,6 +612,7 @@ def registry():
             'shell': {'active': True},
             'sudo': {'active': True},
             'groups': {'active': True},
+            'sysctl': {'active': True},
             'users': {'active': True},
             'vim': {'active': True},
             'rvm': {'active': False},
