@@ -3,21 +3,33 @@ include:
   - makina-states.services.base.ssh.rootkey
 {{base.user_keys('vagrant')}}
 vagrantvm-install-ssh-keys:
-  cmd.run:
-    - name: |
-            users="vagrant root"
-            for user in $users;do
-                home=$(awk -F: -v v="$user" '{if ($1==v && $6!="") print $6}' /etc/passwd)
-                if [ -e "$home" ];then
-                    rsync\
-                        -av\
-                        --exclude=authorized_keys* \
-                        /mnt/parent_ssh/ "$home/.ssh/"
-                    chmod -Rf 700 "$home/.ssh"
-                    chown -Rf $user "$home/.ssh"
-                fi
-            done
+  file.managed:
+    - name: /sbin/devhost-installkeys.sh
+    - source : ""
+    - contents: |
+                #!/usr/bin/env bash
+                cd /
+                users="vagrant root"
+                for user in $users;do
+                    home=$(awk -F: -v v="$user" '{if ($1==v && $6!="") print $6}' /etc/passwd)
+                    if [ -e "$home" ];then
+                        rsync\
+                            -av\
+                            --exclude=authorized_keys* \
+                            /mnt/parent_ssh/ "$home/.ssh/"
+                        chmod -Rf 700 "$home/.ssh"
+                        chown -Rf $user "$home/.ssh"
+                    fi
+                done
     - user: root
+    - mode: 755
+    - require_in:
+      - cmd: root-ssh-keys-init
+  cmd.run:
+    - name: /sbin/devhost-installkeys.sh
+    - user: root
+    - require:
+      - file: vagrantvm-install-ssh-keys
     - require_in:
       - cmd: root-ssh-keys-init
 

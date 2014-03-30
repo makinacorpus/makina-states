@@ -64,8 +64,8 @@ include:
                     - mode: 750
                     - user: root
                     - group: root
-                    - require_in:
-                      - service: lxc-services-enabling
+                    - watch_in:
+                      - mc_proxy: lxc-post-conf
                 {% else %}
                 etc-init-lxc-net-makina:
                   file.managed:
@@ -76,8 +76,8 @@ include:
                     - user: root
                     - defaults: {{lxcSettings.defaults|yaml}}
                     - group: root
-                    - require_in:
-                      - service: lxc-services-enabling
+                    - watch_in:
+                      - mc_proxy: lxc-post-conf
                 {% endif %}
                 lxc-makina-services-enabling:
                   service.running:
