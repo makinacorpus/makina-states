@@ -57,7 +57,7 @@ def settings():
         if 'linux' in __grains__.get('kernel', '').lower:
             epoll = True
 
-        ulimit = "200000"
+        ulimit = "65536"
         nginxData = __salt__['mc_utils.defaults'](
             'makina-states.services.http.nginx',
             __salt__['grains.filter_by']({

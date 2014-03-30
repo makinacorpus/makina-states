@@ -94,6 +94,27 @@ sysctl-net.ipv4.tcp_tw_recycle:
     - require_in:
       - mc_proxy: sysctl-post-hook
 
+sysctl-net.ipv4.vm.min_free_kbytes:
+  syscl.present:
+    - name: net.ipv4.tcp_tw_reuse
+    - value: {{localsettings.kernel.vm_min_free_kbytes}}
+    - require_in:
+      - mc_proxy: sysctl-post-hook
+
+sysctl-net.ipv4.tcp_syn_retries:
+  syscl.present:
+    - name: net.ipv4.tcp_tw_reuse
+    - value: {{localsettings.kernel.tcp_syn_retries}}
+    - require_in:
+      - mc_proxy: sysctl-post-hook
+
+sysctl-net.ipv4.tcp_fin_timeout:
+  syscl.present:
+    - name: net.ipv4.tcp_tw_reuse
+    - value: {{localsettings.kernel.tcp_fin_timeout}}
+    - require_in:
+      - mc_proxy: sysctl-post-hook
+
 sysctl-net.ipv4.tcp_tw_reuse:
   syscl.present:
     - name: net.ipv4.tcp_tw_reuse

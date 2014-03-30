@@ -227,6 +227,17 @@ def settings():
                 'tz': 'Europe/Paris',
             }
         )
+        #
+        # KERNEL OPTIMIZATIONS
+        #
+        try:
+            # try to get an uppper value for hight memory servers
+            vmfree = int(((grains['mem_total']/64)*1024*1024)/1000)
+            if vmfree < 30000:
+                raise Exception('too low, use default')
+        except:
+            # sane default for at least 1gb hardware
+            vmfree = '65536'
         data['grainsPref'] = grainsPref = 'makina-states.localsettings.'
         data['kernel'] = saltmods['mc_utils.defaults'](
             'makina-states.localsettings.kernel', {
@@ -234,18 +245,21 @@ def settings():
                 'tcp_rmem': '4096 87380 16777216',
                 'rwmemmax': '16716777216 77216',
                 'ip_local_port_range': '1025 65535',
-                'tcp_max_sync_backlog': '30000',
-                'net_core_somaxconn': '30000',
-                'netdev_max_backlog': '50000',
+                'tcp_max_sync_backlog': '20480',
+                'tcp_fin_timeout': '15',
+                'net_core_somaxconn': '4096',
+                'netdev_max_backlog': '4096',
                 'no_metrics_save': '1',
                 'ulimit': '64000',
                 'tcp_congestion_control': 'cubic',
                 'tcp_max_tw_buckets': '2000000',
                 'tcp_tw_recycle': '0',
+                'vm_min_free_kbytes': vmfree,
+                'tcp_syn_retries': '2',
                 'tcp_tw_reuse': '1',
                 'tcp_timestamps': '0',
-            })
-        #-
+            }
+        )
         # default paths
         # locationsVariables = {
         #     'prefix': '/srv'
