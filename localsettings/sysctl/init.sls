@@ -4,11 +4,11 @@
 #  https://publib.boulder.ibm.com/infocenter/clresctr/vxrx/index.jsp?topic=%2Fcom.ibm.cluster.pe.v1r3.pe200.doc%2Fam101_tysfbpjp.htm
 #}
 include:
-  - makina-states.localsettings.system.hooks
+  - makina-states.localsettings.sysctl.hooks
 
-{% set localsettings = salt['mc_localsettings.settings']() %}
+{% set kernel = salt['mc_kernel.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'sysctl') }}
-{% set locs = salt['mc_localsettings.settings']()['locations'] %}
+{% set nodetypes_registry = salt['mc_nodetypes.registry']()%}
 {% set isLxc = nodetypes_registry.is.lxccontainer %}
 {% set isTravis = nodetypes_registry.is.travis %}
 {% if not (isTravis or isLxc) %}
@@ -18,128 +18,132 @@ sysctl-net.core.rmem__wmem_max:
     - names:
       - net.core.rmem_max
       - net.core.wmem_max
-    - value: {{localsettings.kernel.rwmemmax}}
+    - value: {{kernel.rwmemmax}}
     - require_in:
       - mc_proxy: sysctl-post-hook
 
 {# increase Linux autotuning TCP buffer limit #}
 sysctl-net.ipv4.tcp_rmem:
-  syscl.present:
+  sysctl.present:
     - names:
       - net.ipv4.tcp_rmem
-    - value: {{localsettings.kernel.tcp_rmem}}
+    - value: {{kernel.tcp_rmem}}
     - require_in:
       - mc_proxy: sysctl-post-hook
 sysctl-net.ipv4.tcp_wmem:
-  syscl.present:
+  sysctl.present:
     - names:
       - net.ipv4.tcp_wmem
-    - value:  {{localsettings.kernel.tcp_wmem}}
+    - value:  {{kernel.tcp_wmem}}
     - require_in:
       - mc_proxy: sysctl-post-hook
 
 sysctl-net-ip_local_port_range:
-  syscl.present:
-    - name: net.ipv4.tcp_congestion_control
-    - value: {{localsettings.kernel.ip_local_port_range}}
+  sysctl.present:
+    - name: net.ipv4.ip_local_port_range
+    - value: {{kernel.ip_local_port_range}}
     - require_in:
       - mc_proxy: sysctl-post-hook
 
 sysctl-net-congestionprotocol:
-  syscl.present:
+  sysctl.present:
     - name: net.ipv4.tcp_congestion_control
-    - value: {{localsettings.kernel.tcp_congestion_control}}
+    - value: {{kernel.tcp_congestion_control}}
     - require_in:
       - mc_proxy: sysctl-post-hook
 
 {# increase the length of the processor input queue #}
 sysctl-tcp_max_sync_backlog:
-  syscl.present:
+  sysctl.present:
     - name: net.ipv4.tcp_max_syn_backlog
-    - value: {{localsettings.kernel.tcp_max_syn_backlog}}
+    - value: {{kernel.tcp_max_syn_backlog}}
     - require_in:
       - mc_proxy: sysctl-post-hook
 
 sysctl-net-backlog:
-  syscl.present:
+  sysctl.present:
     - name: net.core.netdev_max_backlog
-    - value: {{localsettings.kernel.netdev_max_backlog}}
+    - value: {{kernel.netdev_max_backlog}}
     - require_in:
       - mc_proxy: sysctl-post-hook
 
 sysctl-net-tcp_no_metrics_save:
-  syscl.present:
-    - name: net.ipv4.no_metrics_save
-    - value: {{localsettings.kernel.no_metrics_save}}
+  sysctl.present:
+    - name: net.ipv4.tcp_no_metrics_save
+    - value: {{kernel.no_metrics_save}}
     - require_in:
       - mc_proxy: sysctl-post-hook
+
 sysctl-net-tcp_max_tw_buckets:
-  syscl.present:
+  sysctl.present:
     - name: net.ipv4.tcp_max_tw_buckets
-    - value: {{localsettings.kernel.tcp_max_tw_buckets}}
+    - value: {{kernel.tcp_max_tw_buckets}}
     - require_in:
       - mc_proxy: sysctl-post-hook
 
 sysctl-net.core.somaxconn:
-  syscl.present:
+  sysctl.present:
     - name: net.core.somaxconn
-    - value: {{localsettings.kernel.net_core_somaxconn}}
+    - value: {{kernel.net_core_somaxconn}}
     - require_in:
       - mc_proxy: sysctl-post-hook
 
 sysctl-net.ipv4.tcp_tw_recycle:
-  syscl.present:
+  sysctl.present:
     - name: net.ipv4.tcp_tw_recycle
-    - value: {{localsettings.kernel.tcp_tw_recycle}}
+    - value: {{kernel.tcp_tw_recycle}}
     - require_in:
       - mc_proxy: sysctl-post-hook
 
 sysctl-net.ipv4.vm.min_free_kbytes:
-  syscl.present:
-    - name: net.ipv4.tcp_tw_reuse
-    - value: {{localsettings.kernel.vm_min_free_kbytes}}
+  sysctl.present:
+    - name: vm.min_free_kbytes
+    - value: {{kernel.vm_min_free_kbytes}}
     - require_in:
       - mc_proxy: sysctl-post-hook
 
 sysctl-net.ipv4.tcp_syn_retries:
-  syscl.present:
-    - name: net.ipv4.tcp_tw_reuse
-    - value: {{localsettings.kernel.tcp_syn_retries}}
+  sysctl.present:
+    - name: net.ipv4.tcp_syn_retries
+    - value: {{kernel.tcp_syn_retries}}
     - require_in:
       - mc_proxy: sysctl-post-hook
 
 sysctl-net.ipv4.tcp_fin_timeout:
-  syscl.present:
-    - name: net.ipv4.tcp_tw_reuse
-    - value: {{localsettings.kernel.tcp_fin_timeout}}
+  sysctl.present:
+    - name: net.ipv4.tcp_fin_timeout
+    - value: {{kernel.tcp_fin_timeout}}
     - require_in:
       - mc_proxy: sysctl-post-hook
 
 sysctl-net.ipv4.tcp_tw_reuse:
-  syscl.present:
+  sysctl.present:
     - name: net.ipv4.tcp_tw_reuse
-    - value: {{localsettings.kernel.tcp_tw_reuse}}
+    - value: {{kernel.tcp_tw_reuse}}
     - require_in:
       - mc_proxy: sysctl-post-hook
 
+{# Enable timestamps as defined in RFC1323: #}
 sysctl-net.ipv4.tcp_timestamps:
-  syscl.present:
+  sysctl.present:
     - name: net.ipv4.tcp_timestamps
-    - value: {{localsettings.kernel.tcp_timestamps}}
+    - value: {{kernel.tcp_timestamps}}
     - require_in:
       - mc_proxy: sysctl-post-hook
 
 sysctl-net-various:
-  syscl.present:
+  sysctl.present:
     - names:
-      {# Enable timestamps as defined in RFC1323: #}
-      - net.ipv4.tcp_timestamps
       {# Enable select acknowledgments #}
       - net.ipv4.tcp_sack
+      - net.ipv4.tcp_fack
+      {# to take advantage of net.ipv4.tcp_max_syn_backlog= tuning #}
+      - net.ipv4.tcp_syncookies
       {# Turn on window scaling which can be an option to enlarge the transfer window: #}
       - net.ipv4.tcp_window_scaling
+      - net.ipv4.tcp_moderate_rcvbuf
     - value: 1
     - require_in:
       - mc_proxy: sysctl-post-hook
 {% endif %}
-# vim: set nofoldENABLE:
+# vim: set nofoldenable:

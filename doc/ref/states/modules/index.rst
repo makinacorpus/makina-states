@@ -29,6 +29,7 @@ Subregistries
    mc_etherpad.rst
    mc_fail2ban.rst
    mc_haproxy.rst
+   mc_kernel.rst
    mc_lxc.rst
    mc_mysql.rst
    mc_nginx.rst
