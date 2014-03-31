@@ -2,28 +2,6 @@ include:
   - makina-states.services.http.nginx.hooks
   - makina-states.services.http.nginx.services
 
-{#
-# Virtualhosts, here are the ones defined in pillar, if any
-# We loop on VH defined in pillar nginx/virtualhosts, check the
-# macro definition for the pillar dictionnary keys available. The
-# virtualhosts key is set as the site name, and all keys are then
-# added.
-# pillar example:
-# makina-states.services.http.nginx.virtualhosts.example.com:
-#     active: False
-#     small_name: example
-#     documentRoot: /srv/foo/bar/www
-# makina-states.services.http.nginx.virtualhosts.example.foo.com:
-#     active: False
-#     port: 8080
-#     server_aliases:
-#       - bar.foo.com
-#
-# Note that the best way to make a VH is not the pillar, but
-# loading the macro as we do here and use virtualhost()) call
-# in a state.
-# Then use the pillar to alter your default parameters given to this call
-#}
 {% set nginxSettings = salt['mc_nginx.settings']() %}
 
 {% macro toggle_vhost(site, active=True) %}
@@ -53,13 +31,48 @@ makina-nginx-virtualhost-{{ site }}-status:
                      server_aliases = None,
                      redirect_aliases = nginxSettings.redirect_aliases,
                      allowed_hosts = nginxSettings.allowed_hosts,
+                     vh_top_source = nginxSettings.vhost_top_template,
                      vh_template_source = nginxSettings.vhost_wrapper_template,
+                     vh_content_source = nginxSettings.vhost_content_template,
+                     default_server=False,
                      extra_jinja_nginx_variables = None) %}
 {% set small_name = small_name or site.replace('.', '_').replace('-', '_') %}
 {% set doc_root = documentRoot or salt['mc_localsettings.settings']()['locations'].projects_dir + site  + '/www' %}
 {% set vhost_available_file = nginxSettings.basedir + "/sites-available/" + site + ".conf" %}
+{% set vhost_available_content_file = nginxSettings.basedir + "/sites-available/" + site + ".content.conf" %}
+{% set vhost_available_top_file = nginxSettings.basedir + "/sites-available/" + site + ".content.conf" %}
+{% set vhost_data = {
+ 'data': nginxSettings,
+ 'small_name': small_name,
+ 'port': port,
+ 'site': site,
+ 'small_name': small_name,
+ 'doc_root': doc_root,
+ 'server_name': site,
+ 'server_aliases': server_aliases,
+ 'allowed_hosts': 'allowed_hosts',
+ 'default_server': False,
+ 'redirect_aliases': 'redirect_aliases',
+} %}
+{% do vhost_data.update(extra_jinja_nginx_variables) %}
+{% set svhost_data = salt['mc_utils.yaml_dump'](vhost_data) %}
 
 # Virtualhost basic file
+makina-nginx-virtualhost-{{ small_name }}:
+  file.managed:
+    - user: root
+    - group: root
+    - mode: 755
+    - name: {{ vhost_available_top_file }}
+    - source: {{ vh_top_source }}
+    - template: 'jinja'
+    - makedirs: true
+    - defaults: "{{svhost_data}}"
+    - watch_in:
+      - mc_proxy: nginx-pre-conf-hook
+    - watch_in:
+      - mc_proxy: nginx-post-conf-hook
+
 makina-nginx-virtualhost-{{ small_name }}:
   file.managed:
     - user: root
@@ -69,35 +82,34 @@ makina-nginx-virtualhost-{{ small_name }}:
     - source: {{ vh_template_source }}
     - template: 'jinja'
     - makedirs: true
-    - defaults:
-        small_name: "{{ small_name }}"
-        document_root: "{{ doc_root }}"
-        server_name: "{{ site }}"
-        {% if server_aliases %}
-        server_aliases:
-          {% for server_alias in server_ali
-        allowed_hosts:
-          {% for allowed_host in allowed_hosts %}
-          - {{ allowed_host }}
-          {% endfor %}
-        {% endif %}
-        redirect_aliases: {{ redirect_aliases }}
-        port: "{{ port }}"
-{% if extra_jinja_nginx_variables %}
-{% for variablename,variablevalue in extra_jinja_nginx_variables.items() %}
-        {{ variablename }}: "{{ variablevalue }}"
-{% endfor %}
-{% endif %}
+    - defaults: "{{svhost_data}}"
+    - watch_in:
+      - mc_proxy: nginx-pre-conf-hook
+    - watch_in:
+      - mc_proxy: nginx-post-conf-hook
+
+makina-nginx-virtualhost-{{ small_name }}-content:
+  file.managed:
+    - user: root
+    - group: root
+    - mode: 755
+    - name: {{ vhost_available_content_file}}
+    - source: {{ vh__content_source }}
+    - template: 'jinja'
+    - makedirs: true
+    - defaults: "{{svhost_data}}"
     - watch_in:
       - mc_proxy: nginx-pre-conf-hook
     - watch_in:
       - mc_proxy: nginx-post-conf-hook
 
 {{ toggle_vhost(site, active=active) }}
-
 {% endmacro %}
+{{ virtualhost(
+    'default', default', default_domains=data.default_domains,, default_server=True,
+    vh_content_source=data.vhost_default_content)}}
 
-{% for site,siteDef in salt['mc_nginx.settings']().get('virtualhosts', {}).items() -%}
-{%   do siteDef.update({'site': site}) -%}
-{{   virtualhost(**siteDef) -}}
-{% endfor -%}
+{% for site,siteDef in salt['mc_nginx.settings']().get('virtualhosts', {}).items() %}
+{%   do siteDef.update({'site': site}) %}
+{{   virtualhost(**siteDef) }}
+{% endfor %}

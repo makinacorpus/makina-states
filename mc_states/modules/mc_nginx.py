@@ -112,11 +112,22 @@ def settings():
                         'basedir': locations['conf_dir'] + '/nginx',
                         'confdir': locations['conf_dir'] + '/nginx/conf.d',
                         'logdir': locations['var_log_dir'] + '/nginx',
-                        'wwwdir': locations['srv_dir'] + '/www'
+                        'wwwdir': locations['srv_dir'] + '/www',
+                        'vhost_default_template': (
+                            'salt://makina-states/files/'
+                            'etc/nginx/sites-available/vhost.conf'),
                         'vhost_wrapper_template': (
                             'salt://makina-states/files/'
                             'etc/nginx/sites-available/vhost.conf'),
-                        'vhost_body_template': '',
+                        'vhost_default_content': (
+                            'salt://makina-states/files/'
+                            'etc/nginx/sites-available/default.conf'),
+                        'vhost_top_template': (
+                            'salt://makina-states/files/'
+                            'etc/nginx/sites-available/vhost.top.conf'),
+                        'vhost_content_template': (
+                            'salt://makina-states/files/'
+                            'etc/nginx/sites-available/vhost.content.conf'),
                         'allowed_host': ['localhost', '127.0.0.1', '::1'],
                     },
                     grain='default_env',

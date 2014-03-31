@@ -19,24 +19,20 @@ nginx-vhost-dirs:
     - watch_in:
       - mc_proxy: nginx-post-conf-hook
 
-{% set data = {
-  'settings': settings
-} %}
-{% set sdata = data| yaml %}
-{% set sdata.replace('\n', ' ') %}
+{% set data = {'settings': settings } %}
+{% set sdata = salt['mc_utils.yaml_dump'](data) %}
 {% for f in [
-    settings['basedir'] + 'fastcgi_params',
-    settings['basedir'] + 'koi-utf',
-    settings['basedir'] + 'koi-win',
-    settings['basedir'] + 'mime.types',
-    settings['basedir'] + 'naxsi.rules',
-    settings['basedir'] + 'naxsi_core.rules',
-    settings['basedir'] + 'nginx.conf',
-    settings['basedir'] + 'proxy_params',
-    settings['basedir'] + 'scgi_params',
-    settings['basedir'] + 'uwsgi_params',
-    settings['basedir'] + 'win-utf',
-    settings['basedir'] + 'sites-available/default.conf',
+    settings['basedir'] + '/fastcgi_params',
+    settings['basedir'] + '/koi-utf',
+    settings['basedir'] + '/koi-win',
+    settings['basedir'] + '/mime.types',
+    settings['basedir'] + '/naxsi.rules',
+    settings['basedir'] + '/naxsi_core.rules',
+    settings['basedir'] + '/nginx.conf',
+    settings['basedir'] + '/proxy_params',
+    settings['basedir'] + '/scgi_params',
+    settings['basedir'] + '/uwsgi_params',
+    settings['basedir'] + '/win-utf',
     '/etc/default/nginx',
 ] %}
 makina-nginx-minimal-{{f}}:
