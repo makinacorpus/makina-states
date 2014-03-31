@@ -1,0 +1,12 @@
+{% set data = data|load_json %}
+/var/log/haproxy.log {
+    daily
+    rotate {{data.rotate}}
+    missingok
+    notifempty
+    compress
+    delaycompress
+    postrotate
+        invoke-rc.d rsyslog rotate >/dev/null 2>&1 || true
+    endscript
+}

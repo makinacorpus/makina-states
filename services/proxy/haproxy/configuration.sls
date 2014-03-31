@@ -47,6 +47,26 @@ makina-haproxy-default-cfg:
     - watch_in:
       - mc_proxy: haproxy-post-conf-hook
 
+{%set jdata = data|json %}
+{% for f in ['/etc/logrotate.d/haproxy']%}
+
+makina-haproxy-{{f}}:
+  file.managed:
+    - name: {{f}}
+    - source: salt://makina-states/files/{{f}}
+    - user: root
+    - makedirs: true
+    - group: root
+    - mode: 755
+    - template: jinja
+    - defaults:
+      data: |
+            {{jdata}}
+    - watch:
+      - mc_proxy: haproxy-pre-conf-hook
+    - watch_in:
+      - mc_proxy: haproxy-post-conf-hook
+{% endfor %}
 makina-haproxy-default:
   file.managed:
     - name: /etc/default/haproxy

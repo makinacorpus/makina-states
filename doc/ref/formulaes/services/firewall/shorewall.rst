@@ -45,6 +45,11 @@ Allowed by default:
     makina-states.services.firewall.shorewall.no_mastersalt
         true/false (false)
 
+Restricted to localhost by default:
+
+    makina-states.services.firewall.shorewall.no_syslog
+        true/false (false)
+
 Blocked by default:
 
     makina-states.services.firewall.shorewall.no_salt
@@ -71,6 +76,7 @@ Supported params are:
     - **RESTRICTED_FTP**: for restricting ftp access
     - **RESTRICTED_POSTGRESQL**: for restricting postgres access
     - **RESTRICTED_MYSQL**: for restricting mysql access
+    - **RESTRICTED_SYSLOG** for restricting syslog access
 
 .. code-block:: yaml
 

@@ -173,7 +173,7 @@ def get_allocated_ips(target):
     if (allocated_ips is None) or (not isinstance(allocated_ips, dict)):
         allocated_ips = {}
     for k in ['api', 'ips']:
-        if not k in allocated_ips:
+        if k not in allocated_ips:
             sync = True
     allocated_ips.setdefault('api', _CUR_API)
     cur_ips = allocated_ips.setdefault('ips', {})
@@ -181,7 +181,7 @@ def get_allocated_ips(target):
     # recycle old ips for unexisting vms
     sync = False
     for name in [n for n in cur_ips]:
-        if not name in existing_vms:
+        if name not in existing_vms:
             sync = True
             del cur_ips[name]
     if sync:
@@ -294,16 +294,22 @@ def _add_server_to_backend(reversep, backend_name, domain, ip, kind='http'):
     bck = _backends.setdefault(backend_name,
                                {'name': backend_name,
                                 'raw_opts': [
-                                    'option http-server-close',
-                                    'option forwardfor',
-                                    'source 0.0.0.0 usesrc clientip',
                                     'balance roundrobin',
                                 ],
                                 'servers': []})
+    # for now rely on settings xforwardedfor header
+    if reversep['{0}_proxy'.format(kind)].get(
+        'http_proxy_mode', 'xforwardedfor'
+    ) == 'xforwardedfor':
+        bck['raw_opts'].append('option http-server-close')
+        bck['raw_opts'].append('option forwardfor')
+    else:
+        # in not much time we ll switch to the haproxy proxy protocol which
+        # leverage the xforwardedfor hack
+        bck['raw_opts'].append('source 0.0.0.0 usesrc clientip')
     srv = {'name': 'srv_{0}{1}'.format(domain, len(bck['servers']) + 1),
            'bind': '{0}:80'.format(ip),
            'opts': 'check'}
-
     if not srv['bind'] in [a.get('bind') for a in bck['servers']]:
         bck['servers'].append(srv)
 
@@ -315,30 +321,34 @@ def _get_rp(target):
     return target.setdefault(_RP, _default_rp)
 
 
-def _configure_http_reverses(reversep, domain, ip):
+def _configure_http_reverses(reversep, domain, ip, http_proxy_mode=None):
+    if not http_proxy_mode:
+        http_proxy_mode = 'xforwardedfor'
     http_proxy = reversep.setdefault(
         'http_proxy',
         {'name': reversep['target'],
          'mode': 'http',
+         'http_proxy_mode': http_proxy_mode,
          'bind': '*:80',
          'raw_opts': []})
     https_proxy = reversep.setdefault(
         'https_proxy',
         {'name': "secure-" + reversep['target'],
          'mode': 'http',
+         'http_proxy_mode': http_proxy_mode,
          'bind': '*:443',
          'raw_opts': []})
     backend_name = 'bck_{0}'.format(domain)
     sbackend_name = 'securebck_{0}'.format(domain)
     rule = 'acl host_{0} hdr(host) -i {0}'.format(domain)
-    if not rule in http_proxy['raw_opts']:
+    if rule not in http_proxy['raw_opts']:
         http_proxy['raw_opts'].insert(0, rule)
         https_proxy['raw_opts'].insert(0, rule)
     rule = 'use_backend {1} if host_{0}'.format(domain, backend_name)
-    if not rule in http_proxy['raw_opts']:
+    if rule not in http_proxy['raw_opts']:
         http_proxy['raw_opts'].append(rule)
     rule = 'use_backend {1} if host_{0}'.format(domain, sbackend_name)
-    if not rule in https_proxy['raw_opts']:
+    if rule not in https_proxy['raw_opts']:
         https_proxy['raw_opts'].append(rule)
     _add_server_to_backend(reversep, backend_name, domain, ip)
     _add_server_to_backend(reversep, sbackend_name, domain, ip, kind='https')
@@ -356,15 +366,27 @@ def feed_http_reverse_proxy_for_target(target, target_data=None):
     for vmname in target_data['vms']:
         vm = target_data['vms'][vmname]
         for domain in vm['domains']:
-            _configure_http_reverses(reversep, domain, vm['ip'])
+            _configure_http_reverses(reversep, domain, vm['ip'],
+                                     http_proxy_mode=vm.get('http_proxy_mode',
+                                                            None))
     return reversep
 
 
 def _get_next_available_port(ports, start, stop):
     for i in range(start, stop + 1):
-        if not i in ports:
+        if i not in ports:
             return i
     raise ValueError('mc_compute_node: No more available ssh port')
+
+
+def get_ssh_mapping_for_target(target, target_data=None):
+    feed_http_reverse_proxy_for_target(target, target_data=target_data)
+    return get_conf_for_target(target, 'ssh_map',  {})
+
+
+def get_ssh_port(target, vm, target_data=None):
+    feed_http_reverse_proxy_for_target(target, target_data=target_data)
+    return get_conf_for_target(target, 'ssh_map',  {}).get(vm, None)
 
 
 def feed_ssh_reverse_proxies_for_target(target, target_data=None):
@@ -383,7 +405,7 @@ def feed_ssh_reverse_proxies_for_target(target, target_data=None):
         ssh_map[a] = int(ssh_map[a])
     # filter old vms grains
     for avm in [a for a in ssh_map]:
-        if not avm in vms_infos:
+        if avm not in vms_infos:
             del ssh_map[avm]
             need_sync = True
     for vm, data in vms_infos.items():
@@ -392,15 +414,15 @@ def feed_ssh_reverse_proxies_for_target(target, target_data=None):
             port = _get_next_available_port(ssh_map.values(), start, end)
             ssh_map[vm] = port
             need_sync = True
-        ssh_proxy = {'name': 'lst_{0}'.format(data['domains'][0]),
-                     'bind': ':{0}'.format(data['ip']),
+        ssh_proxy = {'name': 'lst_{0}'.format(vm),
+                     'bind': ':{0}'.format(port),
                      'mode': 'tcp',
                      'raw_opts': [],
                      'servers': [{
                          'name': 'sshserver',
                          'bind': '{0}:22'.format(data['ip']),
                          'opts': 'check'}]}
-        if not ssh_proxy in ssh_proxies:
+        if ssh_proxy not in ssh_proxies:
             ssh_proxies.append(ssh_proxy)
     if need_sync:
         set_conf_for_target(target, 'ssh_map', ssh_map)
@@ -448,7 +470,7 @@ def get_settings_for_target(target, target_data=None):
         for vmname in vm_ids:
             vm_settings = _s[
                 'mc_cloud_{0}.get_settings_for_vm'.format(virt_type)
-            ](target, vmname)
+            ](target, vmname, full=False)
             ip = vm_settings['ip']
             # reload allocated_ips each time in case settings were updated
             allocated_ips = get_allocated_ips(target)
@@ -457,12 +479,14 @@ def get_settings_for_target(target, target_data=None):
             assert ip in allocated_ips['ips'].values()
             target_data.setdefault('domains', [])
             for domain in vm_settings['domains']:
-                if not domain in target_data['domains']:
+                if domain not in target_data['domains']:
                     target_data['domains'].append(domain)
             # link onto the host the vm infos
             target_data['vms'][vmname] = {
                 'virt_type':  virt_type,
                 'ip': ip,
+                'http_proxy_mode': vm_settings.get('http_proxy_mode',
+                                                   'xforwardedfor'),
                 'domains': vm_settings['domains'],
                 'vmname':  vm_settings['name']}
             if target_data.get('virt_type', '') in ['lxc', 'docker']:

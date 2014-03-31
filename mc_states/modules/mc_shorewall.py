@@ -100,6 +100,7 @@ def settings():
                 'no_smtp': False,
                 'no_ssh': False,
                 'no_web': False,
+                'no_syslog': False,
                 'no_computenode': False,
                 'defaultstate': 'new',
                 'ifformat': shwIfformat,
@@ -152,9 +153,13 @@ def settings():
         # enable all by default, but can by overriden easily in config
         # this will act at shorewall parameters in later rules
         if not data['no_default_params']:
-            for p in ['SSH', 'SNMP', 'PING', 'MYSQL', 'POSTGRESQL', 'FTP']:
+            for p in ['SYSLOG', 'SSH', 'SNMP', 'PING',
+                      'MYSQL', 'POSTGRESQL', 'FTP']:
+                default = 'all'
+                if p in ['SYSLOG']:
+                    default = 'fw:127.0.0.1'
                 data['default_params'].setdefault(
-                    'RESTRICTED_{0}'.format(p), 'all')
+                    'RESTRICTED_{0}'.format(p), default)
             for r, rdata in data['default_params'].items():
                 data['params'].setdefault(r, rdata)
 
@@ -392,6 +397,14 @@ def settings():
                 action = 'ACCEPT'
             data['default_rules'].append({'action': 'SSH({0})'.format(action),
                                           'source': '$SALT_RESTRICTED_SSH',
+                                          'dest': 'all'})
+            data['default_rules'].append({'comment': 'syslog'})
+            if data['no_syslog']:
+                action = 'DROP'
+            else:
+                action = 'ACCEPT'
+            data['default_rules'].append({'action': 'Syslog({0})'.format(action),
+                                          'source': '$SALT_RESTRICTED_SYSLOG',
                                           'dest': 'all'})
 
             data['default_rules'].append({'comment': 'ping'})

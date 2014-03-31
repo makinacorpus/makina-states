@@ -58,9 +58,10 @@ def settings():
             #},
         }
         data = __salt__['mc_utils.defaults'](
-            'makina-states.services.firewall.haproxy', {
+            'makina-states.services.proxy.haproxy', {
                 'location': locs['conf_dir'] + '/haproxy',
                 'config_dir': '/etc/haproxy',
+                'rotate': localsettings['rotate']['days'],
                 'config': 'haproxy.cfg',
                 'user': 'haproxy',
                 'group': 'haproxy',
@@ -68,6 +69,8 @@ def settings():
                              'enabled': '1'},
                 'config': {
                     'global': {
+                        'logfacility': 'local0',
+                        'loglevel': 'notice',
                         'loghost': '127.0.0.1',
                         'nbproc': '',
                         'node': __grains__['id'],
@@ -88,7 +91,6 @@ def settings():
                                     'redispatch',
                                     'dontlognull'],
                         'retries': '3',
-                        'option': 'redispatch',
                         'maxconn': '2000',
                         'timeout': {
                             'connect': '7s',

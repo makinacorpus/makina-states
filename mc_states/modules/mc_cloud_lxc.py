@@ -246,7 +246,7 @@ def settings():
     return _settings()
 
 
-def get_settings_for_vm(target, vm):
+def get_settings_for_vm(target, vm, full=True):
     '''get per container specific settings
 
     All the defaults defaults registry settings are redinable here +
@@ -259,6 +259,9 @@ def get_settings_for_vm(target, vm):
         domains
             list of domains tied with this host (first is minion id
             and main domain name, it is automaticly added)
+        full
+            internal boolean to not retrieve some informations to
+            avoid cycles, do not use unless you know what you do.
     '''
     cloudSettings = __salt__['mc_cloud.settings']()
     _s = __salt__
@@ -363,6 +366,9 @@ def get_settings_for_vm(target, vm):
         network=lxc_data['network'],
         netmask=lxc_data['netmask'],
         default=lxc_data.get('ip'))
+    if full:
+        lxc_data['ssh_reverse_proxy_port'] = __salt__[
+            'mc_cloud_compute_node.get_ssh_port'](target, vm)
     return lxc_data
 
 

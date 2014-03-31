@@ -16,6 +16,7 @@ Subregistries
 .. toctree::
    :maxdepth: 2
 
+   mc_rsyslog.rst
    mc_apache.rst
    mc_bind.rst
    mc_circus.rst
@@ -40,6 +41,7 @@ Subregistries
    mc_pureftpd.rst
    mc_rdiffbackup.rst
    mc_salt.rst
+   mc_sysctl.rst
    mc_shorewall.rst
    mc_ssh.rst
    mc_tomcat.rst
