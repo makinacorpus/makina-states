@@ -5,6 +5,8 @@ done
 rm -rfv /tmp/.saltcloud
 find /etc/*salt/pki/master/minions*/*\
      /etc/*salt/pki/minion/*\
+     /srv/pillar/top.sls\
+     /srv/mastersalt-pillar/top.sls\
      /srv/*salt/makina-states/.bootlogs/*\
      /var/log/upstart/*\
      /var/log/*.log\
