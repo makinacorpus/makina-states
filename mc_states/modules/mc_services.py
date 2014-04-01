@@ -21,6 +21,10 @@ def _bindEn(__salt__):
     )
 
 
+def _rsyslogEn(__grains__):
+    return __grains__.get('os', '').lower() in ['ubuntu']
+
+
 def _ntpEn(__salt__):
     nodetypes_registry = __salt__['mc_nodetypes.registry']()
     return not (
@@ -59,6 +63,7 @@ def registry():
             'backup.bacula-fd': {'active': False},
             'backup.rdiff-backup': {'active': False},
             'backup.dbsmartbackup': {'active': False},
+            'log.rsyslog': {'active': _rsyslogEn(__grains__)},
             'base.ntp': {'active': _ntpEn(__salt__)},
             'base.ssh': {'active': True},
             'dns.bind': {'active': _bindEn(__salt__)},

@@ -2,10 +2,11 @@ Installation & basic usage
 ==========================
 Briefing
 ----------
-To install our base salt installation, just run the bootstrap script as **root**, please read next paragraphs before running any command.
+To install our base salt installation, just run the boot-salt.sh script as **root**,
+please read next paragraphs before running any command.
 
 - All our production installs run 2 instances of salt: **mastersalt** and **salt**
-- You will nearly never have to handle much with the **mastersalt** part
+- You will nearly never have to handle much with the **mastersalt** part uness you also use the **cloudcontroller** part as an admin.
 - The two instances will have to know where they run to first make the system ready for them.
 - All the behavior of the script is controlled via environment variables or command line arguments switches.
 - That's why you will need to tell which daemons you want (minion/master) and on what kind of machine you are installing on (vm/vagrant/baremetal).
@@ -91,10 +92,8 @@ To switch on a makina-states branch, like the **stable** branch in production::
 
     ./boot-salt.sh -b stable
 
-
-
-SUMUP
-~~~~~~~~
+SUMUP Examples
+~~~~~~~~~~~~~~~
 
     - To install on a server (default env=server, default boot=salt_master)::
 
@@ -112,7 +111,6 @@ boot-salt.sh will try remember to remember how you configured makina-states.
 If it suceeds to find enougth information (nodetype, salt installs, branch), it will automaticly guess the parameters by it self.
 In other words, you will just have to type **boot-salt.sh** and verify settings next time you ll use it.
 
-
 Upgrade
 ~~~~~~~~
 Upgrade will:
@@ -127,5 +125,4 @@ Upgrade will:
 ::
 
     boot-salt.sh -C --upgrade
-
 

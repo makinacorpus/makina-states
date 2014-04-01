@@ -6,6 +6,11 @@
 Welcome to Makina States's documentation!
 =========================================
 
+
+Makina-States is a consistent collection of saltstack states and a cloud controller.
+Please note that the documentation is far from complete, more over on the usage front.
+Please have more a look on the reference chapters.
+
 .. toctree::
    :maxdepth: 2
 

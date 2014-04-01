@@ -15,6 +15,10 @@ import pwd
 import re
 import salt.utils
 from salt.utils.odict import OrderedDict
+import yaml
+from salt.utils import yamldumper
+
+import json
 
 _default_marker = object()
 
@@ -332,6 +336,21 @@ def defaults(prefix,
         for k, value in overridden[prefix].items():
             datadict[k] = value
     return format_resolve(datadict)
+
+
+def yaml_dump(data):
+    content = yaml.dump(
+        data,
+        default_flow_style=False,
+        Dumper=yamldumper.SafeOrderedDumper)
+    content = content.replace('\n', ' ')
+    return yencode(content)
+
+
+def json_dump(data):
+    content = json.dumps(data)
+    content = content.replace('\n', ' ')
+    return yencode(content)
 
 
 def yencode(string):

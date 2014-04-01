@@ -209,7 +209,7 @@ def settings():
         data['sudoers'] = []
         data['sysadmins'] = []
         data['resolver'] = resolver
-
+        data['grainsPref'] = grainsPref = 'makina-states.localsettings.'
         data['default_env'] = saltmods['mc_utils.get']('default_env', 'dev')
         data['etckeeper'] = saltmods['mc_utils.defaults'](
             'makina.localsettings.etckeeper', {
@@ -227,8 +227,7 @@ def settings():
                 'tz': 'Europe/Paris',
             }
         )
-        data['grainsPref'] = grainsPref = 'makina-states.localsettings.'
-        #-
+
         # default paths
         # locationsVariables = {
         #     'prefix': '/srv'
@@ -562,6 +561,7 @@ def settings():
                 'locale': default_locale,
             }
         )
+
         data['locales'] = localesdef['locales']
         data['default_locale'] = localesdef['locale']
         # expose any defined variable to the callees
@@ -594,6 +594,7 @@ def registry():
             'shell': {'active': True},
             'sudo': {'active': True},
             'groups': {'active': True},
+            'sysctl': {'active': True},
             'users': {'active': True},
             'vim': {'active': True},
             'rvm': {'active': False},
