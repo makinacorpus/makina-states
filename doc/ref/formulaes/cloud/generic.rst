@@ -78,7 +78,7 @@ makina-states.cloud.compute_node.conf.<computenode_name>.http_proxy.raw_opts_pre
 makina-states.cloud.compute_node.conf.<computenode_name>.http_proxy.raw_opts_post
     insert after generated rules
 
-Exemple::
+Exemple
 
 .. code-block:: yaml
 
@@ -116,7 +116,7 @@ makina-states.cloud.compute_node.conf.<computenode_name>.https_proxy.raw_opts_pr
 makina-states.cloud.compute_node.conf.<computenode_name>.https_proxy.raw_opts_post
     insert after generated rules
 
-Exemple::
+Exemple
 
 .. code-block:: yaml
 
