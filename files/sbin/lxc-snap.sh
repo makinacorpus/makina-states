@@ -5,6 +5,7 @@ done
 rm -rfv /tmp/.saltcloud
 find /etc/*salt/pki/master/minions*/*\
      /etc/*salt/pki/minion/*\
+     /srv/*salt/makina-states/.bootlogs/*\
      /var/log/upstart/*\
      /var/log/*.log\
   | while read fic;do rm -fv "${fic}";done
