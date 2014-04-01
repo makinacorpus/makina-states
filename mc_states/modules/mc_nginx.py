@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 '''
+
 .. _module_mc_nginx:
 
 mc_nginx / nginx registry
