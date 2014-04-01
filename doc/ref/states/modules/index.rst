@@ -41,7 +41,6 @@ Subregistries
    mc_pureftpd.rst
    mc_rdiffbackup.rst
    mc_salt.rst
-   mc_sysctl.rst
    mc_shorewall.rst
    mc_ssh.rst
    mc_tomcat.rst

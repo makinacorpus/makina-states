@@ -1,6 +1,6 @@
 sysctl managment
 =====================
-See :ref:`mc_kernel`
+See :ref:`module_mc_kernel`
 
 This configures various settings to tune the linux kernel for maximum
 performance.

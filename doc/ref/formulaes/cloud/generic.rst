@@ -1,7 +1,7 @@
 Generic Installation part of makina-states cloud controller
 ============================================================
 
-Please have a look to the :ref:`mc_cloud_compute_node` module which is where most of this stuff is implemented.
+Please have a look to the :ref:`module_mc_cloud_compute_node` module which is where most of this stuff is implemented.
 
 Haproxy
 ----------
@@ -47,6 +47,14 @@ Global settings
     - know the detailed vm settings::
 
         mastersalt-call mc_cloud_compute_node.get_settings_for_target <compute_node>
+
+SSL & reverse proxy
++++++++++++++++++++
+- We do the SSL termination on the haproxy node.
+- For this, you will need to setup here the mapping between
+  you client certificates and the underlying domains.
+- For each node we generate a self signed certificate to assure https connection without the need to have a valid certificate under the hood, but, hay, prefer a valid one.
+
 
 SSH & reverse proxy
 +++++++++++++++++++

@@ -96,7 +96,9 @@ Global part for minions
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 You can make your pillar management far more easier by making an automatic 'per kind machine picking' pillar::
 
-/srv/{mastersalt-}salt/top.sls::
+/srv/{mastersalt-}salt/top.sls
+
+::
 
     {%- set mastersalt = 'hosting-idmachine.company.net' %}
     {%- set pillar_root = opts['pillar_roots']['base'][0] %}

@@ -33,5 +33,6 @@ EG: to disable the default vim configuration, either set a grain or a pillar val
    rvm.rst
    shell.rst
    sudo.rst
+   sysctl.rst
    users.rst
    vim.rst

@@ -109,12 +109,14 @@ def settings():
         do we redirect server aliases to /
     port
         http port (80)
-    sshl_port': '443',
+    sshl_port
         https port (443)
     default_domains
-        default domains to server ['localhost'],
-    docdir': '/usr/share/doc/nginx',
-    doc_root': '/usr/share/nginx/www',
+        default domains to server ['localhost']
+    docdir
+        /usr/share/doc/nginx
+    doc_root
+        /usr/share/nginx/www
     vhost_default_template
        salt://makina-states/files/etc/nginx/sites-available/vhost.conf
     vhost_wrapper_template
@@ -127,7 +129,7 @@ def settings():
        default template to include in vhost top
        salt://makina-states/files/etc/nginx/sites-available/vhost.top.conf,
     vhost_content_template
-        default template for vhost content
+       default template for vhost content
        salt://makina-states/files/etc/nginx/sites-available/vhost.content.conf
     virtualhosts
         Mapping containing all defined virtualhosts

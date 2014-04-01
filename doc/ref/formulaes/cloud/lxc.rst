@@ -19,7 +19,7 @@ To provision a new lxc provider, you need to:
 * We use **LVM** as the default backing store in production, and the **lxc** volume group.
 * We use **overlayfs** with snapshot in development mode.
 
-To create new VMS, just configure your pillar and add some entries as follow::
+To create new VMS, just configure your pillar and add some entries as follow
 
 .. code-block:: yaml
 

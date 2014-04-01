@@ -2,7 +2,7 @@ Nginx
 =====
 
 - This integrates configure and tune the fast http nginx server.
-- Please have a loop to :ref:`mc_nginx` to know all configuration options.
+- Please have a loop to :ref:`mc_module_nginx` to know all configuration options.
 - We have take a spetial care to try to tune it some a good production usage
   start and you should really have a look to the generated configuration files
   to kow if it fits with your setup.
