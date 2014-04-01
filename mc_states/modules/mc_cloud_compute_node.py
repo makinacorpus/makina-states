@@ -321,25 +321,43 @@ def _get_rp(target):
     return target.setdefault(_RP, _default_rp)
 
 
-def _configure_http_reverses(reversep, domain, ip, http_proxy_mode=None):
+def _configure_http_reverses(reversep,
+                             domain,
+                             ip,
+                             http_proxy_mode=None):
     if not http_proxy_mode:
         http_proxy_mode = 'xforwardedfor'
-    http_proxy = reversep.setdefault(
-        'http_proxy',
-        {'name': reversep['target'],
-         'mode': 'http',
-         'http_proxy_mode': http_proxy_mode,
-         'bind': '*:80',
-         'raw_opts': []})
-    https_proxy = reversep.setdefault(
-        'https_proxy',
-        {'name': "secure-" + reversep['target'],
-         'mode': 'http',
-         'http_proxy_mode': http_proxy_mode,
-         'bind': '*:443',
-         'raw_opts': []})
+    http_proxy = reversep['http_proxy'] = {
+        'name': reversep['target'],
+        'mode': 'http',
+        'http_proxy_mode': http_proxy_mode,
+        'bind': '*:80',
+        'raw_opts_pre': __salt__['mc_utils.get'](
+            'makina-states.cloud.compute_node.conf.'
+            '{0}.http_proxy.raw_opts_pre'.format(
+                reversep['target'])),
+        'raw_opts_post': __salt__['mc_utils.get'](
+            'makina-states.cloud.compute_node.conf.'
+            '{0}.http_proxy.raw_opts_post'.format(
+                reversep['target'])),
+        'raw_opts': []}
+    https_proxy = reversep['https_proxy'] = {
+        'name': "secure-" + reversep['target'],
+        'mode': 'http',
+        'http_proxy_mode': http_proxy_mode,
+        'raw_opts_pre': __salt__['mc_utils.get'](
+            'makina-states.cloud.compute_node.conf.'
+            '{0}.https_proxy.raw_opts_pre'.format(
+                reversep['target'])),
+        'raw_opts_post': __salt__['mc_utils.get'](
+            'makina-states.cloud.compute_node.conf.'
+            '{0}.https_proxy.raw_opts_post'.format(
+                reversep['target'])),
+        'bind': '*:443',
+        'raw_opts': []}
     backend_name = 'bck_{0}'.format(domain)
     sbackend_name = 'securebck_{0}'.format(domain)
+    # http
     rule = 'acl host_{0} hdr(host) -i {0}'.format(domain)
     if rule not in http_proxy['raw_opts']:
         http_proxy['raw_opts'].insert(0, rule)
@@ -347,9 +365,19 @@ def _configure_http_reverses(reversep, domain, ip, http_proxy_mode=None):
     rule = 'use_backend {1} if host_{0}'.format(domain, backend_name)
     if rule not in http_proxy['raw_opts']:
         http_proxy['raw_opts'].append(rule)
+    # https
     rule = 'use_backend {1} if host_{0}'.format(domain, sbackend_name)
     if rule not in https_proxy['raw_opts']:
         https_proxy['raw_opts'].append(rule)
+    # http/https raw rules
+    for rule in reversed(https_proxy['raw_opts_pre']):
+        https_proxy['raw_opts'].insert(0, rule)
+    for rule in reversed(http_proxy['raw_opts_pre']):
+        http_proxy['raw_opts'].insert(0, rule)
+    for rule in https_proxy['raw_opts_post']:
+        https_proxy['raw_opts'].append(rule)
+    for rule in http_proxy['raw_opts_post']:
+        http_proxy['raw_opts'].append(rule)
     _add_server_to_backend(reversep, backend_name, domain, ip)
     _add_server_to_backend(reversep, sbackend_name, domain, ip, kind='https')
 
@@ -366,9 +394,9 @@ def feed_http_reverse_proxy_for_target(target, target_data=None):
     for vmname in target_data['vms']:
         vm = target_data['vms'][vmname]
         for domain in vm['domains']:
-            _configure_http_reverses(reversep, domain, vm['ip'],
-                                     http_proxy_mode=vm.get('http_proxy_mode',
-                                                            None))
+            _configure_http_reverses(
+                reversep, domain, vm['ip'],
+                http_proxy_mode=vm.get('http_proxy_mode', None))
     return reversep
 
 
