@@ -8,7 +8,6 @@ cloud-root-keygen:
   file.copy:
     - name: {{cloudSettings.root}}/{{cloudSettings.all_sls_dir}}/rootkey-dsa.pub
     - source: /root/.ssh/id_dsa.pub
-    - user: root
     - watch:
       - cmd: root-ssh-keys-init
       - mc_proxy: cloud-generic-controller-post-pre-deploy
@@ -18,7 +17,6 @@ cloud-root-keygen-rsa:
   file.copy:
     - name: {{cloudSettings.root}}/{{cloudSettings.all_sls_dir}}/rootkey-rsa.pub
     - source: /root/.ssh/id_dsa.pub
-    - user: root
     - watch:
       - cmd: root-ssh-keys-init
       - mc_proxy: cloud-generic-controller-post-pre-deploy

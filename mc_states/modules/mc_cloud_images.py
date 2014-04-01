@@ -16,6 +16,8 @@ import mc_states.utils
 
 from mc_states import saltapi
 
+from mc_states.runners import mc_lxc
+
 from salt.utils.odict import OrderedDict
 __name = 'mc_cloud_images'
 
@@ -107,9 +109,13 @@ def dump():
     return mc_states.utils.dump(__salt__,__name)
 
 
-def sf_release(img='makina-states-precise'):
+def _run(cmd):
+    __salt__['cmd.run_all'](cmd)
+
+
+def sf_release():
     '''Upload the makina-states container lxc tarball to sourceforge;
-    this is used in makina-states.services.cloud.lxc as a base
+    this is used in makina-states.cloud.lxc as a base
     for other containers.
 
     pillar/grain parameters:
@@ -121,87 +127,95 @@ def sf_release(img='makina-states-precise'):
         salt-call -all mc_lxc.sf_release
     '''
     _cli = __salt__.get
-    ret = {
-        'result': True,
-        'comment': '',
-        'trace': '',
-    }
-    root = _cli('mc_utils.get')('file_roots')['base'][0]
-    ver_file = os.path.join(
-        root,
-        'makina-states/versions/{0}-lxc_version.txt'.format(img))
-    try:
-        cur_ver = int(open(ver_file).read().strip())
-    except:
-        cur_ver = 0
-    next_ver = cur_ver + 1
-    user = _cli('mc_utils.get')('makina-states.sf_user', 'kiorky')
-    dest = '{1}-lxc-{0}.tar.xz'.format(next_ver, img)
-    container_p = '/var/lib/lxc/{0}'.format(img)
-    fdest = '/var/lib/lxc/{0}'.format(dest)
-    if not os.path.exists(container_p):
-        _errmsg(ret, '{0} container does not exists'.format(img))
-    aclf = os.path.join(container_p, 'acls.txt')
-    if not os.path.exists(fdest):
-        cmd = 'getfacl -R . > acls.txt'
+    imgSettings = __salt__['mc_cloud_images.settings']()
+    gret = {'rets': [], 'result': True, 'comment': 'sucess', 'changes': {}}
+    mc_lxc.sync_containers(imgSettings, gret, _cmd_runner=_run)
+    if not gret['result']:
+        return gret
+    for img, imgdata in imgSettings['lxc']['images'].items():
+        ret = {'result': True, 'comment': '', 'trace': ''}
+        root = _cli('mc_utils.get')('file_roots')['base'][0]
+        ver_file = os.path.join(
+            root,
+            'makina-states/versions/{0}-lxc_version.txt'.format(img))
+        try:
+            cur_ver = int(open(ver_file).read().strip())
+        except:
+            cur_ver = 0
+        next_ver = cur_ver + 1
+        user = _cli('mc_utils.get')('makina-states.sf_user', 'kiorky')
+        dest = '{1}-lxc-{0}.tar.xz'.format(next_ver, img)
+        container_p = '/var/lib/lxc/{0}'.format(img)
+        fdest = '/var/lib/lxc/{0}'.format(dest)
+        if not os.path.exists(container_p):
+            _errmsg(ret, '{0} container does not exists'.format(img))
+        aclf = os.path.join(container_p, 'acls.txt')
+        if not os.path.exists(fdest):
+            cmd = 'getfacl -R . > acls.txt'
+            cret = _cli('cmd.run_all')(
+                cmd, cwd=container_p, salt_timeout=60 * 60)
+            if cret['retcode']:
+                _errmsg('error with acl')
+            # ignore some paths in the acl file
+            # (we have no more special cases, but leave this code in case)
+            ignored = []
+            acls = []
+            with open(aclf) as f:
+                skip = False
+                for i in f.readlines():
+                    for path in ignored:
+                        if path in i:
+                            skip = True
+                    if not i.strip():
+                        skip = False
+                    if not skip:
+                        acls.append(i)
+            with open(aclf, 'w') as w:
+                w.write(''.join(acls))
+            cmd = ('tar cJfp {0} . '
+                   '--ignore-failed-read --numeric-owner').format(fdest)
+            cret = _cli('cmd.run_all')(
+                cmd,
+                cwd=container_p,
+                env={'XZ_OPT': '-7e'},
+                salt_timeout=60 * 60)
+            if cret['retcode']:
+                _errmsg(ret, 'error with compressing')
+        cmd = 'rsync -avzP {0} {1}@{2}/{3}.tmp'.format(
+            fdest, user, SFTP_URL, dest)
+        cret = _cli('cmd.run_all')(
+            cmd, cwd=container_p, salt_timeout=8 * 60 * 60)
+        if cret['retcode']:
+            return _errmsg(ret, 'error with uploading')
+        cmd = 'echo "rename {0}.tmp {0}" | sftp {1}@{2}'.format(dest,
+                                                                user,
+                                                                SFTP_URL)
+        cret = _cli('cmd.run_all')(cmd, cwd=container_p, salt_timeout=60)
+        if cret['retcode']:
+            _errmsg(ret, 'error with renaming')
+        cmd = "md5sum {0} |awk '{{print $1}}'".format(fdest)
         cret = _cli('cmd.run_all')(cmd, cwd=container_p, salt_timeout=60 * 60)
         if cret['retcode']:
-            _errmsg('error with acl')
-        # ignore some paths in the acl file
-        # (we have no more special cases, but leave this code in case)
-        ignored = []
-        acls = []
-        with open(aclf) as f:
-            skip = False
-            for i in f.readlines():
-                for path in ignored:
-                    if path in i:
-                        skip = True
-                if not i.strip():
-                    skip = False
-                if not skip:
-                    acls.append(i)
-        with open(aclf, 'w') as w:
-            w.write(''.join(acls))
-        cmd = ('tar cJfp {0} . '
-               '--ignore-failed-read --numeric-owner').format(fdest)
-        cret = _cli('cmd.run_all')(
-            cmd,
-            cwd=container_p,
-            env={'XZ_OPT': '-7e'},
-            salt_timeout=60 * 60)
+            _errmsg(ret, 'error with md5')
+        with open(ver_file + ".md5", 'w') as f:
+            f.write("{0}".format(cret['stdout']))
+        with open(ver_file, 'w') as f:
+            f.write("{0}".format(next_ver))
+        cmd = (
+            ('git add *-lxc*version*txt*;'
+             'git commit versions -m "new lxc release {0}";'
+             'git push').format(next_ver))
+        cret = _cli('cmd.run_all')(cmd,
+                                   cwd=root + '/makina-states',
+                                   salt_timeout=60)
         if cret['retcode']:
-            _errmsg(ret, 'error with compressing')
-    cmd = 'rsync -avzP {0} {1}@{2}/{3}.tmp'.format(fdest, user, SFTP_URL, dest)
-    cret = _cli('cmd.run_all')(cmd, cwd=container_p, salt_timeout=8 * 60 * 60)
-    if cret['retcode']:
-        return _errmsg(ret, 'error with uploading')
-    cmd = 'echo "rename {0}.tmp {0}" | sftp {1}@{2}'.format(dest,
-                                                            user,
-                                                            SFTP_URL)
-    cret = _cli('cmd.run_all')(cmd, cwd=container_p, salt_timeout=60)
-    if cret['retcode']:
-        _errmsg(ret, 'error with renaming')
-    cmd = "md5sum {0} |awk '{{print $1}}'".format(fdest)
-    cret = _cli('cmd.run_all')(cmd, cwd=container_p, salt_timeout=60 * 60)
-    if cret['retcode']:
-        _errmsg(ret, 'error with md5')
-    with open(ver_file + ".md5", 'w') as f:
-        f.write("{0}".format(cret['stdout']))
-    with open(ver_file, 'w') as f:
-        f.write("{0}".format(next_ver))
-    cmd = (
-        ('git add *-lxc*version*txt*;'
-         'git commit versions -m "new lxc release {0}";'
-         'git push').format(next_ver))
-    cret = _cli('cmd.run_all')(
-        cmd,
-        cwd=root + '/makina-states',
-        salt_timeout=60)
-    if cret['retcode']:
-        _errmsg(ret, 'error with commiting new version')
-    ret['comment'] = 'release {0} done'.format(next_ver)
-    return ret
+            _errmsg(ret, 'error with commiting new version')
+        ret['comment'] = 'release {0} done'.format(next_ver)
+        if not ret['result']:
+            gret['result'] = False
+            gret['comment'] = 'failure'
+        gret['rets'].append(ret)
+    return gret
 
 
 # vim:set et sts=4 ts=4 tw=80:

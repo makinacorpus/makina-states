@@ -39,7 +39,8 @@ user-haproxy:
   user.present:
     - name: {{haproxySettings.user}}
     - system: true
-    - group: {{haproxySettings.group}}
+    - optional_groups: {{haproxySettings.group}}
+    - remove_groups: false
     - watch:
       - mc_proxy: haproxy-pre-install-hook
     - watch_in:
