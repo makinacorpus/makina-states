@@ -2,7 +2,7 @@
 '''
 .. _module_mc_cloud_compute_node:
 
-mc_cloud_compute_node / cloud compute ndoe related functions
+mc_cloud_compute_node / cloud compute node related functions
 ==============================================================
 '''
 

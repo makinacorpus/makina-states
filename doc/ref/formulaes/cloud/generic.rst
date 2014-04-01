@@ -1,16 +1,44 @@
-Generic Installation part of makina-states cloud controller
+Makina-states cloud controller & compute node documentation
 ============================================================
 
-Please have a look to the :ref:`module_mc_cloud_compute_node` module which is where most of this stuff is implemented.
+Please have a look which some places  most of this stuff is implemented:
 
+    - :ref:`module_mc_cloud`
+    - :ref:`module_mc_cloud_controller`
+    - :ref:`module_mc_cloud_compute_node`
+
+Controller
+~~~~~~~~~~~~
+On this node, we mainly do:
+
+    - cloud configuration generation
+    - compute node & VMs deployment orchestration
+    - SSL managment
+    - Maintenance
+
+The cloud configuration generation
+-----------------------------------
+The SSL certificates managment and centralization
+------------------------------------------------------
+- The idea is that each controller is tied to a subset of SSL certificates.
+- The cloud controller will also act as the signin certifates authority
+  for self signed certificates.
+- Each of those certificates will also be tied to one ore more running vms.
+- We will at least have one valid certicate per node.
+- We distribute those certificates using regular salt file.managed salt://
+  prior to reverse proxy configuration.
+
+Compute nodes
+~~~~~~~~~~~~~~
 Haproxy
 ----------
 Some notes:
 
 - We use haproxy to load balance the http/https traffics to the vm.
 - The ssl termination is on the HAPROXY node !
-- We load balance http/https traffic by taking care of using either the `haproxy proxy protocol <http://haproxy.1wt.eu/download/1.5/doc/proxy-protocol.txt>`_ or using regular
-  X-Forwarded-For http header (forwardfor haproxy option).
+- We load balance http/https traffic by taking care of using either the
+  `haproxy proxy protocol <http://haproxy.1wt.eu/download/1.5/doc/proxy-protocol.txt>`_
+  or using regular X-Forwarded-For http header (forwardfor haproxy option).
 
 - For now as the proxy protocol is a bit young, we default to use the
   xforwardedfor method. This is managable as a per vm basis.
@@ -53,7 +81,9 @@ SSL & reverse proxy
 - We do the SSL termination on the haproxy node.
 - For this, you will need to setup here the mapping between
   you client certificates and the underlying domains.
-- For each node we generate a self signed certificate to assure https connection without the need to have a valid certificate under the hood, but, hay, prefer a valid one.
+- For each node we generate a self signed certificate to assure
+  https connection without the need to have a valid certificate
+  under the hood, but, hay, prefer a valid one.
 
 
 SSH & reverse proxy
