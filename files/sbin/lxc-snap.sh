@@ -4,7 +4,11 @@ for i in salt-master salt-minion mastersalt-master mastersalt-minion;do
 done
 rm -rfv /tmp/.saltcloud
 find /etc/*salt/pki/master/minions*/*\
+     /etc/*salt/pki/master/master.{pem,pub}\
      /etc/*salt/pki/minion/*\
+     /srv/pillar/top.sls\
+     /srv/mastersalt-pillar/top.sls\
+     /srv/*salt/makina-states/.bootlogs/*\
      /var/log/upstart/*\
      /var/log/*.log\
   | while read fic;do rm -fv "${fic}";done
