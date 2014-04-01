@@ -70,7 +70,6 @@ def sync_container(cmd_runner, ret, origin, destination):
 
 
 def sync_image_reference_containers(imgSettings, ret, _cmd_runner=None):
-    imgSettings = _cli('mc_cloud_images.settings')
     if _cmd_runner is None:
         def _cmd_runner(cmd):
             return _cli('cmd.run_all', cmd)

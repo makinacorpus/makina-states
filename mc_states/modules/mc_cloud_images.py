@@ -110,7 +110,7 @@ def dump():
 
 
 def _run(cmd):
-    __salt__['cmd.run_all'](cmd)
+    return __salt__['cmd.run_all'](cmd)
 
 
 def sf_release():
@@ -129,7 +129,7 @@ def sf_release():
     _cli = __salt__.get
     imgSettings = __salt__['mc_cloud_images.settings']()
     gret = {'rets': [], 'result': True, 'comment': 'sucess', 'changes': {}}
-    mc_lxc.sync_containers(imgSettings, gret, _cmd_runner=_run)
+    mc_lxc.sync_image_reference_containers(imgSettings, gret, _cmd_runner=_run)
     if not gret['result']:
         return gret
     for img, imgdata in imgSettings['lxc']['images'].items():
