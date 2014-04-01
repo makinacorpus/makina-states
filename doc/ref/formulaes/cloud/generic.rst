@@ -68,6 +68,7 @@ Automatic grains
 -------------------
 We enable some grains for the compute not to install itself:
 
+    - makina-states.cloud.is.compute_node
     - makina-states.services.proxy.haproxy
     - makina-states.services.firewall.shorewall
 
