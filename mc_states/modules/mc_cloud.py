@@ -10,8 +10,22 @@ mc_cloud / cloud registries & functions
 
 # Import salt libs
 import mc_states.utils
+import yaml
 
 __name = 'cloud'
+
+
+def is_vm():
+    is_proxied = False
+    gr = 'makina-states.cloud.is.vm'
+    try:
+        with open('/etc/mastersalt/grains') as fic:
+            is_proxied = bool(yaml.load(fic).get(gr))
+    except Exception:
+        pass
+    if not is_proxied:
+        is_proxied = __salt__['mc_utils.get'](gr)
+    return is_proxied
 
 
 def metadata():

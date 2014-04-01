@@ -18,6 +18,8 @@ from salt.utils.odict import OrderedDict
 import yaml
 from salt.utils import yamldumper
 
+import json
+
 _default_marker = object()
 
 
@@ -341,6 +343,12 @@ def yaml_dump(data):
         data,
         default_flow_style=False,
         Dumper=yamldumper.SafeOrderedDumper)
+    content = content.replace('\n', ' ')
+    return yencode(content)
+
+
+def json_dump(data):
+    content = json.dumps(data)
     content = content.replace('\n', ' ')
     return yencode(content)
 

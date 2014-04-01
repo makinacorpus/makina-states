@@ -2,9 +2,7 @@ include:
   - makina-states.services.http.nginx.hooks
   - makina-states.services.http.nginx.services
   - makina-states.services.http.nginx.vhosts
-
 {% set settings = salt['mc_nginx.settings']() %}
-
 nginx-vhost-dirs:
   file.directory:
     - names:
@@ -19,9 +17,9 @@ nginx-vhost-dirs:
     - watch_in:
       - mc_proxy: nginx-post-conf-hook
 
-{% set data = {'settings': settings } %}
-{% set sdata = salt['mc_utils.yaml_dump'](data) %}
+{% set sdata = settings|json  %}
 {% for f in [
+    '/etc/logrotate.d/nginx',
     settings['basedir'] + '/fastcgi_params',
     settings['basedir'] + '/koi-utf',
     settings['basedir'] + '/koi-win',
@@ -37,13 +35,12 @@ nginx-vhost-dirs:
 ] %}
 makina-nginx-minimal-{{f}}:
   file.managed:
-    - watch:
-      - pkg: makina-nginx-pkgs
     - name: {{f}}
     - source: salt://makina-states/files/{{f}}
     - template: jinja
     - defaults:
-      - sdata: "{{sdata}}"
+      data: |
+            {{sdata}}
     - user: root
     - group: root
     - makedirs: true
