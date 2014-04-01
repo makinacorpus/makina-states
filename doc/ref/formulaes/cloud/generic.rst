@@ -2,6 +2,7 @@ Generic Installation part of makina-states cloud controller
 ============================================================
 
 Please have a look to the :ref:`mc_cloud_compute_node` module which is where most of this stuff is implemented.
+
 Haproxy
 ----------
 Some notes:
