@@ -18,20 +18,50 @@ On this node, we mainly do:
 
 The cloud configuration generation
 -----------------------------------
+
+The generation generate use and waitfor such a layout::
+
+  |- <salt-root>/cloud-controller
+  | |- compute_node/<computenodename_without_dot>
+  |  |- sls to apply to compute node
+  |  |- compute_node/<computenodename_without_dot>/<vt>
+  |   |- sls to apply to compute node specific to vt
+  |   |- compute_node/<computenodename_without_dot>/<vt>/<vm_name>
+  |    |- sls to apply on container
+  |
+  |- <salt-root>/cloud-controller/ssl
+  |    |-<salt-root>/certs/<certname>.pub
+  |    |-<salt-root>/certs/wildcards/<certname>.pub
+  |
+  |- <pillar-root>/cloud-controller/ssl
+  |    |-<salt-root>/certs/wildcards/<certname>.pem
+  |    |-<salt-root>/certs/<certname>.pem
+
+**Please note that <saltroot>/<cloud-controller may contain sensible and sentivite information.**
+This is not safe to commit that directory in public or mid-privates repos for example. Keep only
+restricted access on those files and version history.**
+
 The SSL certificates managment and centralization
 ------------------------------------------------------
 - The idea is that each controller is tied to a subset of SSL certificates.
-- The cloud controller will also act as the signin certifates authority
-  for self signed certificates.
+  Each domain tied to a controller will need to have a corresponding SSL
+  certificate even self signed.
+- Crrolary, the cloud controller will also act as the signin certifates authority
+  for self signed certificates in this default case of not having a registered
+  certificate for a particular domain.
 - Each of those certificates will also be tied to one ore more running vms.
-- We will at least have one valid certicate per node.
+- For each domain tied to a compute node, we check for a matching ssl certificate
+  existence and generate a self signed one if not existing.
 - We distribute those certificates using regular salt file.managed salt://
-  prior to reverse proxy configuration.
+  prior to reverse proxy configuration for the certicates, and pillar access key
+  for private keys.
+- The ssl mapping is only be done at generation time and graved inside
+  generated sls files for compute nodes.
 
 Compute nodes
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
 Haproxy
-----------
+-------
 Some notes:
 
 - We use haproxy to load balance the http/https traffics to the vm.
@@ -40,9 +70,12 @@ Some notes:
 - We load balance http/https traffic by taking care of using either the
   `proxy protocol <http://haproxy.1wt.eu/download/1.5/doc/proxy-protocol.txt>`_
   or using regular X-Forwarded-For http header (forwardfor haproxy option).
-
 - For now as the proxy protocol is a bit young, we default to use the
   xforwardedfor method. This is managable as a per vm basis.
+- The cloud controller as part of the generation process will have registered
+  all SSL certificates to load for the https reverse proxy. We use the new
+  haproxy-1.5+ SSL features to load the directory of certificates which we will
+  grab from the master.
 
 Settings:
 
@@ -78,7 +111,7 @@ makina-states.cloud.compute_node.conf.<computenode_name>.http_proxy.raw_opts_pre
 makina-states.cloud.compute_node.conf.<computenode_name>.http_proxy.raw_opts_post
     insert after generated rules
 
-Exemple
+Exemple::
 
 .. code-block:: yaml
 
@@ -116,7 +149,7 @@ makina-states.cloud.compute_node.conf.<computenode_name>.https_proxy.raw_opts_pr
 makina-states.cloud.compute_node.conf.<computenode_name>.https_proxy.raw_opts_post
     insert after generated rules
 
-Exemple
+Exemple::
 
 .. code-block:: yaml
 

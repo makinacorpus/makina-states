@@ -341,6 +341,8 @@ def _configure_http_reverses(reversep,
             '{0}.http_proxy.raw_opts_post'.format(
                 reversep['target'])),
         'raw_opts': []}
+    base_path = 'salt://cloud-controller/compute_node/{0}'.format(
+        reversep['target'].replace('.', ''))
     https_proxy = reversep['https_proxy'] = {
         'name': "secure-" + reversep['target'],
         'mode': 'http',
@@ -348,11 +350,19 @@ def _configure_http_reverses(reversep,
         'raw_opts_pre': __salt__['mc_utils.get'](
             'makina-states.cloud.compute_node.conf.'
             '{0}.https_proxy.raw_opts_pre'.format(
-                reversep['target'])),
+                reversep['target']), []),
+        'ssl_certs': __salt__['mc_utils.get'](
+            'makina-states.cloud.compute_node.conf.'
+            '{0}.https_proxy.ssl_certs'.format( reversep['target']), {
+                'self': {
+                    'cert': '{0}/certs/self.pub'.format(base_path),
+                    'key': '{0}/certs/self.pem'.format(base_path),
+                }
+            }),
         'raw_opts_post': __salt__['mc_utils.get'](
             'makina-states.cloud.compute_node.conf.'
             '{0}.https_proxy.raw_opts_post'.format(
-                reversep['target'])),
+                reversep['target']), []),
         'bind': '*:443',
         'raw_opts': []}
     backend_name = 'bck_{0}'.format(domain)
@@ -465,9 +475,11 @@ def _add_vt_to_target(target, vt):
 def get_settings_for_target(target, target_data=None):
     '''Return specific compute node related settings for a specific target
 
+        target
+            target name
         reverse_proxies
             mapping of reverse proxies info
-        domain
+        domains
             list of domains served by host
         virt_types
             virt types supported by the box.
@@ -490,6 +502,7 @@ def get_settings_for_target(target, target_data=None):
     if target_data is None:
         target_data = {}
     target_data['target'] = target
+    target_domains = target_data.setdefault('domains', [])
     vms = get_vms_per_type(target)
     for virt_type, vm_ids in vms.items():
         _add_vt_to_target(target_data, virt_type)
@@ -505,10 +518,9 @@ def get_settings_for_target(target, target_data=None):
             # assert that the allocated_ips configuration has
             # been updated
             assert ip in allocated_ips['ips'].values()
-            target_data.setdefault('domains', [])
             for domain in vm_settings['domains']:
-                if domain not in target_data['domains']:
-                    target_data['domains'].append(domain)
+                if domain not in target_domains:
+                    target_domains.append(domain)
             # link onto the host the vm infos
             target_data['vms'][vmname] = {
                 'virt_type':  virt_type,

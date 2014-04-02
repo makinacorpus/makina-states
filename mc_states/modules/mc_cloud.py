@@ -9,6 +9,7 @@ mc_cloud / cloud registries & functions
 '''
 
 # Import salt libs
+import os
 import mc_states.utils
 import yaml
 
@@ -105,6 +106,27 @@ def settings():
         data = __salt__['mc_utils.defaults'](
             'makina-states.cloud', {
                 'root': root,
+                'all_pillar_dir': (
+                    os.path.join(
+                        __opts__['pillar_roots']['base'][0],
+                        'cloud-controller'
+                    )
+                ),
+                'ssl': {
+                    'cert_days': 365*1000,
+                    'ca': {
+                        'ca_name': __grains__['id'],
+                        'bits': 2048,
+                        'days': 365*1000,
+                        'CN': 'makina-states-cloud-controller',
+                        'C': 'FR',
+                        'ST': 'PdL',
+                        'L': 'Nantes',
+                        'O': 'Makina Corpus',
+                        'OU': None,
+                        'emailAddress': 'contact@makina-corpus.com',
+                    }
+                },
                 'all_sls_dir': (
                     'cloud-controller'
                 ),
@@ -113,6 +135,24 @@ def settings():
                 ),
                 'compute_node_sls_dir': (
                     '{all_sls_dir}/compute_node'
+                ),
+                'certs_dir': (
+                    '{all_sls_dir}/certs/certs'
+                ),
+                'wildcard_certs_dir': (
+                    '{all_sls_dir}/certs/wildcard_certs'
+                ),
+                'certs_dir': (
+                    '{all_sls_dir}/certs/certs'
+                ),
+                'wildcard_certs_dir': (
+                    '{all_sls_dir}/certs/wildcard_certs'
+                ),
+                'certs_key_dir': (
+                    '{all_pillar_dir}/certs/certs'
+                ),
+                'wildcard_certs_key_dir': (
+                    '{all_pillar_dir}/certs/wildcard_certs'
                 ),
                 'prefix': prefix,
                 'mode': 'mastersalt',
