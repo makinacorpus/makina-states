@@ -1,0 +1,11 @@
+#
+# Shorewall version 4 - PostgreSQL Macro
+#
+# /usr/share/shorewall/macro.PostgreSQL
+#
+#	This macro handles connections to the PostgreSQL server.
+#
+###############################################################################
+#ACTION	SOURCE	DEST	PROTO	DEST	SOURCE	RATE	USER/
+#				PORT(S)	PORT(S)	LIMIT	GROUP
+PARAM	-	-	tcp	5432

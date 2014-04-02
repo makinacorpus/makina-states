@@ -49,6 +49,40 @@ def _errmsg(msg):
     raise saltapi.MessageError(msg)
 
 
+def sync_container(cmd_runner, ret, origin, destination):
+    if os.path.exists(origin) and os.path.exists(destination):
+        cmd = 'rsync -aA --delete {0}/ {1}/'.format(origin, destination)
+        cret = cmd_runner(cmd)
+        if cret['retcode']:
+            ret['comment'] += (
+                '\nRSYNC(local builder) failed {0} {1}'.format(
+                    origin, destination))
+            ret['result'] = False
+            return ret
+        cmd = 'chroot {0} /sbin/lxc-snap.sh'.format(destination)
+        cret = cmd_runner(cmd)
+        if cret['retcode']:
+            ret['comment'] += (
+                '\nRSYNC(local builder) reset failed {0}'.format(
+                    destination))
+            ret['result'] = False
+    return ret
+
+
+def sync_image_reference_containers(imgSettings, ret, _cmd_runner=None):
+    if _cmd_runner is None:
+        def _cmd_runner(cmd):
+            return _cli('cmd.run_all', cmd)
+
+    for img in imgSettings['lxc']['images']:
+        bref = imgSettings['lxc']['images'][img]['builder_ref']
+        # try to find the local img reference building counterpart
+        # and sync it back to the reference lxc
+        sync_container(_cmd_runner, ret,
+                       '/var/lib/lxc/{0}/rootfs'.format(bref),
+                       '/var/lib/lxc/{0}/rootfs'.format(img))
+
+
 def sync_images(output=True):
     '''
     Sync the 'makina-states' image to all configured LXC hosts minions
@@ -72,33 +106,12 @@ def sync_images(output=True):
         'rsync -aA --delete-excluded --exclude="makina-states-lxc-*xz"'
         ' --numeric-ids '
     )
-    for img in imgSettings['lxc']['images']:
-        bref = imgSettings['lxc']['images'][img]['builder_ref']
-        # try to find the local img reference building counterpart
-        # and sync it back to the reference lxc
-        reforig = '/var/lib/lxc/{0}/rootfs'.format(bref)
-        refdest = '/var/lib/lxc/{0}/rootfs'.format(img)
-        reftorig = '/var/lib/lxc/{0}/rootfs/root'.format(bref)
-        reftdest = '/var/lib/lxc/{0}/rootfs/root'.format(img)
-        if os.path.exists(reftorig) and os.path.exists(reftdest):
-            cmd = 'rsync -aA --delete {0}/ {1}/'.format(reforig, refdest)
-            cret = _cli('cmd.run_all', cmd,)
-            if cret['retcode']:
-                ret['comment'] += (
-                    '\nRSYNC(local builder) failed {0} {1}'.format(
-                        reforig, refdest))
-                return ret
-            cmd = 'chroot {0} /sbin/lxc-snap.sh'.format(refdest)
-            cret = _cli('cmd.run_all', cmd)
-            if cret['retcode']:
-                ret['comment'] += (
-                    '\nRSYNC(local builder) reset failed {0} {1}'.format(
-                        refdest, reforig))
-                return ret
+
+    sync_image_reference_containers(imgSettings, ret)
     root = master_opts()['file_roots']['base'][0]
     for target in lxcSettings.get('vms', {}):
         # skip local minion :) (in fact no)
-        #if this_ == target:
+        # if this_ == target:
         #    continue
         subret = saltapi.result()
         ret['targets'][target] = subret

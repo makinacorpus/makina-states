@@ -491,6 +491,7 @@ set_vars() {
     CHRONO="$(get_chrono)"
     TRAVIS_DEBUG="${TRAVIS_DEBUG:-}"
     VENV_REBOOTSTRAP="${VENV_REBOOTSTRAP:-}"
+    ONLY_BUILDOUT_REBOOTSTRAP="${ONLY_BUILDOUT_REBOOTSTRAP:-}"
     BUILDOUT_REBOOTSTRAP="${BUILDOUT_REBOOTSTRAP:-${VENV_REBOOTSTRAP}}"
     SALT_REBOOTSTRAP="${SALT_REBOOTSTRAP:-${VENV_REBOOTSTRAP}}"
     BASE_PACKAGES=""
@@ -500,6 +501,7 @@ set_vars() {
     BASE_PACKAGES="$BASE_PACKAGES vim git rsync"
     BASE_PACKAGES="$BASE_PACKAGES libzmq3-dev"
     BASE_PACKAGES="$BASE_PACKAGES libgmp3-dev"
+    BASE_PACKAGES="$BASE_PACKAGES libffi-dev"
     BRANCH_PILLAR_ID="makina-states.salt.makina-states.rev"
     MAKINASTATES_TEST=${MAKINASTATES_TEST:-}
     SALT_BOOT_INITIAL_HIGHSTATE="${SALT_BOOT_INITIAL_HIGHSTATE:-}"
@@ -860,6 +862,7 @@ set_vars() {
     SALT_BOOT_INITIAL_HIGHSTATE_MARKER="${SALT_MS}/.initial_hs"
 
     # export variables to support a restart
+    export ONLY_BUILDOUT_REBOOTSTRAP
     export SALT_BOOT_INITIAL_HIGHSTATE_MARKER
     export TRAVIS_DEBUG SALT_BOOT_LIGHT_VARS DO_REFRESH_MODULES
     export IS_SALT_UPGRADING SALT_BOOT_SYNC_CODE SALT_BOOT_INITIAL_HIGHSTATE
@@ -1353,6 +1356,12 @@ is_basedirs_there() {
 }
 
 setup_and_maybe_update_code() {
+    onlysync=""
+    for arg in ${@};do
+        if [ "x${arg}" = "xonlysync" ];then
+            onlysync="y"
+        fi
+    done
     if [ "x${QUIET}" = "x" ];then
         bs_log "Create base directories"
     fi
@@ -1426,7 +1435,16 @@ setup_and_maybe_update_code() {
                 for i in "${ms}" "${ms}/src/"*;do
                     is_changeset=""
                     branch_pref=""
-                    if [ -e "${i}/.git" ];then
+                    do_update="y"
+                    if [ "x${onlysync}" != "x" ];then
+                        if [ "x$(echo "${i}"|sed -re "s/.*salt$/match/g")" != "xmatch" ];then
+                            do_update=""
+                            if [ "x${QUIET}" = "x" ];then
+                                bs_log "Skipping ${i} update as it is only a base salt sync"
+                            fi
+                        fi
+                    fi
+                    if [ -e "${i}/.git" ] && [ "x${do_update}" != "x" ];then
                         "${SED}" -i -e "s/filemode =.*/filemode=false/g" "${i}/.git/config" 2>/dev/null
                         remote="remotes/origin/"
                         co_branch="master"
@@ -3284,7 +3302,8 @@ usage() {
         bs_help "--restart-minions" "restart minion daemons" "" "y"
         bs_help "--no-colors:" "No terminal colors" "${NO_COLORS}" "y"
         bs_help "--salt-rebootstrap:" "Redo salt bootstrap" "${SALT_REBOOTSTRAP}" "y"
-        bs_help "--buildout-rebootstrap:" "Redo buildout bootstrap" "${BUILDOUT_REBOOTSTRAP}" "y"
+        bs_help "--buildout-rebootstrap:" "Redo buildout" "${BUILDOUT_REBOOTSTRAP}" "y"
+        bs_help "--only-buildout-rebootstrap:" "Redo buildout and stop after buildout has run" "${ONLY_BUILDOUT_REBOOTSTRAP}" "y"
         bs_help "--venv-rebootstrap:" "Redo venv, buildout & salt bootstrap" "${VENV_REBOOTSTRAP}" "y"
         bs_help "--test:" "run makina-states tests, be caution, this installs everything and is to be installed on a vm which will be trashed afterwards!" "${MAKINASTATES_TEST}" "y"
         bs_help "--salt-minion-dns <dns>:" "DNS of the salt minion" "${SALT_MINION_DNS}" "y"
@@ -3384,8 +3403,15 @@ parse_cli_opts() {
             SALT_REBOOTSTRAP="1";argmatch="1"
         fi
         if [ "x${1}" = "x--buildout-rebootstrap" ];then
-            BUILDOUT_REBOOTSTRAP=1;argmatch="1"
+            BUILDOUT_REBOOTSTRAP="1"
+            argmatch="1"
         fi
+        if [ "x${1}" = "x--only-buildout-rebootstrap" ];then
+            BUILDOUT_REBOOTSTRAP="1"
+            ONLY_BUILDOUT_REBOOTSTRAP="1"
+            argmatch="1"
+        fi
+
         if [ "x${1}" = "x-S" ] || [ "x${1}" = "x--skip-checkouts" ];then
             SALT_BOOT_SKIP_CHECKOUTS="y";argmatch="1"
         fi
@@ -3742,7 +3768,7 @@ kill_old_syncs() {
 synchronize_code() {
     restart_modes=""
     kill_old_syncs
-    setup_and_maybe_update_code
+    setup_and_maybe_update_code onlysync
     exit_status=0
     if [ "x${QUIET}" = "x" ];then
         bs_log "Code updated"
@@ -3897,6 +3923,9 @@ if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
         handle_upgrades
         setup_virtualenv
         install_buildouts
+        if [ "x${ONLY_BUILDOUT_REBOOTSTRAP}" != "x" ];then
+            exit ${?}
+        fi
         create_salt_skeleton
         install_mastersalt_env
         install_salt_env

@@ -89,14 +89,13 @@ makina-{{id}}-bashfiles:
     - names:
         - {{bashrc}}
         - {{bashprofile}}
-    - user: {{id}}
-    - group: {{id}}
     - require_in:
       - file: makina-{{id}}-bashprofile-load
     - require:
       - file: {{id}}
   cmd.run:
     - name: >
+            chown {{id}}:{{id}} '{{bashrc}}' '{{bashprofile}}';
             chmod 755 '{{bashrc}}' '{{bashprofile}}';
             echo;echo "changed=false comment='do no trigger changes'"
     - stateful: True

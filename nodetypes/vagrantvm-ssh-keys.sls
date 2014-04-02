@@ -38,7 +38,6 @@ cvagrant-root-keygen:
     - name: /srv/salt/rootkey-dsa.pub
     - makedirs: true
     - source: /root/.ssh/id_dsa.pub
-    - user: root
     - watch:
       - cmd: vagrantvm-install-ssh-keys
 cvagrant-root-keygen-rsa:
@@ -46,7 +45,6 @@ cvagrant-root-keygen-rsa:
     - name: /srv/salt/rootkey-rsa.pub
     - makedirs: true
     - source: /root/.ssh/id_rsa.pub
-    - user: root
     - watch:
       - cmd: vagrantvm-install-ssh-keys
 
@@ -55,7 +53,6 @@ mcvagrant-root-keygen:
     - name: /srv/mastersalt/rootkey-dsa.pub
     - makedirs: true
     - source: /root/.ssh/id_dsa.pub
-    - user: root
     - watch:
       - cmd: vagrantvm-install-ssh-keys
 mcvagrant-root-keygen-rsa:
@@ -63,7 +60,6 @@ mcvagrant-root-keygen-rsa:
     - name: /srv/mastersalt/rootkey-rsa.pub
     - makedirs: true
     - source: /root/.ssh/id_rsa.pub
-    - user: root
     - watch:
       - cmd: vagrantvm-install-ssh-keys
 
