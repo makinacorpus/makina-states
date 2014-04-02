@@ -3404,11 +3404,12 @@ parse_cli_opts() {
         fi
         if [ "x${1}" = "x--buildout-rebootstrap" ];then
             BUILDOUT_REBOOTSTRAP="1"
-            BUILDOUT_REBOOTSTRAP="1"
             argmatch="1"
         fi
         if [ "x${1}" = "x--only-buildout-rebootstrap" ];then
-            ONLY_BUILDOUT_REBOOTSTRAP=1;argmatch="1"
+            BUILDOUT_REBOOTSTRAP="1"
+            ONLY_BUILDOUT_REBOOTSTRAP="1"
+            argmatch="1"
         fi
 
         if [ "x${1}" = "x-S" ] || [ "x${1}" = "x--skip-checkouts" ];then
