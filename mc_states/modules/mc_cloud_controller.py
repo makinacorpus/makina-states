@@ -328,6 +328,7 @@ def settings():
                     }
                 },
                 'computes_nodes': [],
+                'vts': ['lxc'],
             })
         return data
     return _settings()

@@ -13,13 +13,22 @@ import os
 import copy
 import time
 
+import salt.utils
 from salt.client import LocalClient
-from salt.exceptions import SaltException
+from salt.exceptions import (
+    SaltException,
+    SaltRunnerError
+)
 from salt.runner import RunnerClient
+from mc_states import api
 
 
 class SaltExit(SaltException):
     '''.'''
+
+
+class FailedStepError(SaltRunnerError):
+    pass
 
 
 class MessageError(SaltException):
@@ -28,11 +37,16 @@ class MessageError(SaltException):
 
 __RESULT = {'comment': '',
             'changes': {},
+            'output': '',
             'trace': '',
             'result': True}
 
 
 def result(**kwargs):
+    try:
+        ret = kwargs.pop('ret', {})
+    except IndexError:
+        ret = {}
     ret = copy.deepcopy(__RESULT)
     ret.update(kwargs)
     return ret
@@ -73,8 +87,15 @@ def _master_opts(cfgdir=None, cfg=None):
     return opts
 
 
-def _client(cfgdir=None, cfg=None):
-    return LocalClient(mopts=_master_opts(cfgdir=cfgdir, cfg=cfg))
+
+def master_opts(*args, **kwargs):
+    if not kwargs:
+        kwargs = {}
+    kwargs.update({
+        'cfgdir': __opts__.get('config_dir', None),
+        'cfg': __opts__.get('conf_file', None),
+    })
+    return _master_opts(*args, **kwargs)
 
 
 def _runner(cfgdir=None, cfg=None):
@@ -86,6 +107,10 @@ def _runner(cfgdir=None, cfg=None):
 def get_local_target(cfgdir=None):
     target = _minion_opts(cfgdir=cfgdir).get('id', None)
     return target
+
+
+def _client(cfgdir=None, cfg=None):
+    return LocalClient(mopts=_master_opts(cfgdir=cfgdir, cfg=cfg))
 
 
 def client(fun, *args, **kw):
@@ -227,6 +252,10 @@ def _errmsg(ret, msg):
     raise SaltExit(err)
 
 
+def errmsg(msg):
+    raise MessageError(msg)
+
+
 def complete_gateway(target_data, default_data):
     if 'ssh_gateway' in target_data:
         gwk = target_data
@@ -253,5 +282,31 @@ def complete_gateway(target_data, default_data):
                 del gwk['ssh_gateway_key']
     return target_data
 
+
+def check_point(ret):
+    if not ret['result']:
+        raise FailedStepError(
+            'Execution of the runner has been stopped due to'
+            ' error')
+    api.msplitstrip(ret)
+
+
+def _colors(color=None, colorize=True):
+    colors = salt.utils.get_colors(colorize)
+    if color:
+        return colors[color]
+    return colors
+
+
+def yellow(string):
+    return '\n{0}{2}{1}\n'.format(_colors('YELLOW'), _colors('ENDC'), string)
+
+
+def green(string):
+    return '\n{0}{2}{1}\n'.format(_colors('GREEN'), _colors('ENDC'), string)
+
+
+def red(string):
+    return '\n{0}{2}{1}\n'.format(_colors('RED'), _colors('ENDC'), string)
 
 # vim:set et sts=4 ts=4 tw=80:
