@@ -38,6 +38,10 @@ class FailedStepError(SaltRudeError):
     pass
 
 
+class SaltyfificationError(SaltRudeError):
+    pass
+
+
 class MessageError(SaltException):
     pass
 
@@ -263,6 +267,12 @@ def errmsg(msg):
     raise MessageError(msg)
 
 
+def salt_output(ret, __opts__, output=True):
+    if output:
+        api.msplitstrip(ret)
+        salt.output.display_output(ret, '', __opts__)
+
+
 def complete_gateway(target_data, default_data):
     if 'ssh_gateway' in target_data:
         gwk = target_data
@@ -315,5 +325,39 @@ def green(string):
 
 def red(string):
     return '\n{0}{2}{1}\n'.format(_colors('RED'), _colors('ENDC'), string)
+
+
+def process_cloud_return(name, info, driver='saltify', ret=None):
+    if ret is None:
+        ret = result()
+    # get either {Error: ''} or {namestring: {Error: ''}}
+    # which is what we can get from providers returns
+    main_error = info.get('Error', '')
+    name_error = ''
+    if isinstance(info, dict):
+        subinfo = info.get(name, {})
+        if isinstance(subinfo, dict):
+            name_error = subinfo.get('Error', None)
+    error = main_error or name_error
+    if info and not error:
+        node_info = info.get(name)
+        default_msg = '\nSaltified {0}'.format(name)
+        # some providers support changes
+        if 'changes' in node_info:
+            ret['changes'] = node_info['changes']
+            cmt = node_info.get('comment', default_msg)
+            ret['comment'] = '\n{0}'.format(cmt)
+        else:
+            ret['changes'] = info
+            ret['comment'] = default_msg
+    elif error:
+        ret['result'] = False
+        ret['comment'] += ('\nFailed to install with {2} {0}: {1}').format(
+            name,
+            '{0}\n{1}\n'.format(main_error, name_error).strip(), driver)
+    else:
+        ret['result'] = False
+        ret['comment'] += '\nFailed to saltify {0}'.format(name)
+    return ret
 
 # vim:set et sts=4 ts=4 tw=80:

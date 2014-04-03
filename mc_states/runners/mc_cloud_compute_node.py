@@ -24,6 +24,7 @@ from salt.utils.odict import OrderedDict
 
 from mc_states import api
 from mc_states.saltapi import (
+    salt_output,
     result,
     green, red, yellow,
     check_point,

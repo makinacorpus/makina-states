@@ -28,6 +28,7 @@ from salt.utils.odict import OrderedDict
 
 from mc_states import api
 from mc_states.saltapi import (
+    salt_output,
     result,
     green, red, yellow,
     check_point,
@@ -113,11 +114,9 @@ def pre_deploy(output=True):
         check_point(ret)
         run_vt_hook(ret, 'post_configure_controller')
     except FailedStepError:
-        if output:
-            salt.output.display_output(ret, '', __opts__)
+        salt_output(ret, __opts__, output=output)
         raise
-    if output:
-        salt.output.display_output(ret, '', __opts__)
+    salt_output(ret, __opts__, output=output)
     return ret
 
 
@@ -135,35 +134,50 @@ def post_deploy():
     return ret
 
 
-def orchestrate(output=True):
+def orchestrate(output=True, refresh=True):
     ret = result()
+    if refresh:
+        cli('saltutil.refresh_pillar')
     rets = []
-    settings = cli('mc_cloud_controller.settings')
-    computes_nodes = {}
     try:
         ret = pre_deploy()
         check_point(ret)
         ret = deploy()
         check_point(ret)
-        __salt__['mc_cloud_saltify.orchestrate']()
+        cret = __salt__['mc_cloud_saltify.orchestrate'](output=False,
+                                                        refresh=False)
+        if cret['result']:
+            ret['comment'] += cret['comment']
+        check_point(rets, ret)
+        saltified_errors = cret['changes'].get('saltified_errors', [])
+        cret = __salt__['mc_cloud_compute_node.orchestrate'](skip=saltified_errors)
+        # check_point(rets, ret)
         ret = post_deploy()
-        check_point(ret)
-        #for compute node in compute_nodes():
-        #    try:
-        #       ret =  orchestrate(compute_node)
-        #       checkpoint(rets, ret, failhard=True)
-        #    except:
-        #        continue
-        #    checkpoint(rets, ret)
-        cret = post_configure()
         check_point(cret)
         ret['comment'] += cret['comment']
     except FailedStepError:
-        if output:
-            salt.output.display_output(ret, '', __opts__)
+        salt_output(ret, __opts__, output=output)
         raise
-    if output:
-        salt.output.display_output(ret, '', __opts__)
+    salt_output(ret, __opts__, output=output)
     return ret
+
+
+def exists(name):
+    cloudSettings = cli('mc_cloud.settings')
+    key = '{prefix}/pki/master/minions/{name}'.format(
+        prefix=cloudSettings['prefix'], name=name)
+    already_exists = os.path.exists(key)
+    if not already_exists:
+        try:
+            instance = __salt__['cloud.action'](
+                fun='show_instance', names=[name])
+            prov = str(instance.keys()[0])
+            if instance and 'Not Actioned' not in prov:
+                already_exists = True
+        except:
+            trace = traceback.format_exc()
+            log.warn(trace)
+    return already_exists
+
 
 #
