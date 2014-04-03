@@ -1,16 +1,18 @@
 #!/usr/bin/env python
-
 '''
-.. _runner_mc_lxc:
 
-Jobs for lxc managment
+.. _runner_mc_cloud_controller:
+
+mc_cloud_controller runner
 ==========================
+
 '''
 # -*- coding: utf-8 -*-
 __docformat__ = 'restructuredtext en'
 
 # Import python libs
 import os
+import logging
 import traceback
 
 from pprint import pformat
@@ -36,6 +38,8 @@ from mc_states.saltapi import (
 
 import salt.output
 
+log = logging.getLogger(__name__)
+
 
 def cli(*args, **kwargs):
     if not kwargs:
@@ -51,40 +55,63 @@ def post_configure(output=True):
     return result()
 
 
-def configure(output=True):
+def run_vt_hook(ret, hook_name):
+    settings = cli('mc_cloud_controller.settings')
+    for vt in settings['vts']:
+        vid_ = 'mc_cloud_{0}.{1}'.format(vt, hook_name)
+        if vid_ in __salt__:
+            cret = __salt__[vid_](output=False)
+            if not cret['result']:
+                ret['result'] = False
+            if cret['output']:
+                ret['output'] += cret['output']
+            if cret['result']:
+                ret['comment'] += ret['comment']
+            else:
+                ret['comment'] += red(
+                    'Cloud controller failed to configure:\n')
+            check_point(ret)
+
+
+def _sls_exec(sls,
+              success='Sucess',
+              error='Error',
+              id_='local',
+              ret=None):
+    if ret is None:
+        ret = result()
+    cret = cli('state.sls', sls)
+    ret['result'] = check_state_result(cret)
+    ret['output'] = salt.output.get_printout(
+        'highstate', __opts__)({id_: cret})
+    if ret['result']:
+        ret['comment'] += green(success)
+    else:
+        ret['comment'] += red(error)
+    return ret
+
+
+def pre_deploy(output=True):
     '''Prepare cloud controller configuration
     can also apply per virtualization type configuration'''
     ret = result()
     try:
+        run_vt_hook(ret, 'pre_configure_controller')
         id_ = cli('config.get', 'id')
-        cret = cli('state.sls',
-                   'makina-states.cloud.generic.controller.pre-deploy')
-        ret['result'] = check_state_result(cret)
-        ret['output'] = salt.output.get_printout(
-            'highstate', __opts__)({id_: cret})
-        import pdb;pdb.set_trace()  ## Breakpoint ##
-        if ret['result']:
-            ret['comment'] += green(
-                'Global cloud controller configuration is applied')
-        else:
-            ret['comment'] += red(
-                'Cloud controller failed to configure:\n')
-        settings = cli('mc_cloud_controller.settings')
+        _sls_exec(
+            'makina-states.cloud.generic.controller.pre-deploy',
+            success='Global cloud controller configuration is applied',
+            error='Cloud controller failed to configure',
+            id_=id_,
+            ret=ret)
+        _sls_exec(
+            'makina-states.cloud.saltify',
+            success='Cloud controller saltify configuration is applied',
+            error='Cloud controller saltify configuration failed to configure',
+            id_=id_,
+            ret=ret)
         check_point(ret)
-        for vt in settings['vts']:
-            vid_ = 'mc_cloud_{0}.configure_controller'.format(vt)
-            if id_ in __salt__:
-                import pdb;pdb.set_trace()  ## Breakpoint ##
-                cret = __salt__(vid_, output=False)
-                cret['result'] = False
-                if cret[' output']:
-                    ret['output'] += cret['output']
-                if cret['result']:
-                    ret['comment'] += ret['comment']
-                else:
-                    ret['comment'] += red(
-                        'Cloud controller failed to configure:\n')
-                check_point(ret)
+        run_vt_hook(ret, 'post_configure_controller')
     except FailedStepError:
         if output:
             salt.output.display_output(ret, '', __opts__)
@@ -94,8 +121,17 @@ def configure(output=True):
     return ret
 
 
-def postconfigure():
+def deploy():
     ret = result()
+    run_vt_hook(ret, 'pre_deploy_controller')
+    run_vt_hook(ret, 'post_deploy_controller')
+    return ret
+
+
+def post_deploy():
+    ret = result()
+    run_vt_hook(ret, 'pre_post_deploy_controller')
+    run_vt_hook(ret, 'post_post_deploy_controller')
     return ret
 
 
@@ -105,11 +141,13 @@ def orchestrate(output=True):
     settings = cli('mc_cloud_controller.settings')
     computes_nodes = {}
     try:
-        ret = configure()
+        ret = pre_deploy()
         check_point(ret)
-        ret['comment'] += cret['comment']
-        #for compute node in compute_nodes():
-        #    __salt__['mc_cloud_controller.saltify'](compute_nodes)
+        ret = deploy()
+        check_point(ret)
+        __salt__['mc_cloud_saltify.orchestrate']()
+        ret = post_deploy()
+        check_point(ret)
         #for compute node in compute_nodes():
         #    try:
         #       ret =  orchestrate(compute_node)
@@ -118,7 +156,7 @@ def orchestrate(output=True):
         #        continue
         #    checkpoint(rets, ret)
         cret = post_configure()
-        checkpointcret)
+        check_point(cret)
         ret['comment'] += cret['comment']
     except FailedStepError:
         if output:

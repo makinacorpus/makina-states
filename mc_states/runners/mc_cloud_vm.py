@@ -1,10 +1,19 @@
 #!/usr/bin/env python
+'''
+
+.. _runner_mc_cloud_vm:
+
+mc_cloud_vm runner
+==========================
+
+'''
 # -*- coding: utf-8 -*-
 __docformat__ = 'restructuredtext en'
 
 # Import python libs
 import os
 import traceback
+import logging
 
 # Import salt libs
 import salt.client
@@ -24,6 +33,8 @@ from mc_states.saltapi import (
     FailedStepError,
     MessageError,
 )
+
+log = logging.getLogger(__name__)
 
 
 def postdeploy(target, vm):

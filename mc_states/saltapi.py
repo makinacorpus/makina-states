@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 '''
+
+.. _mc_saltapi:
+
 Convenient functions to use a salt infra as an api
 ==================================================
 '''
@@ -24,15 +27,19 @@ from mc_states import api
 
 
 class SaltExit(SaltException):
-    '''.'''
+    pass
 
 
-class FailedStepError(SaltRunnerError):
+class SaltRudeError(SystemExit):
+    pass
+
+
+class FailedStepError(SaltRudeError):
     pass
 
 
 class MessageError(SaltException):
-    '''.'''
+    pass
 
 
 __RESULT = {'comment': '',
@@ -285,9 +292,9 @@ def complete_gateway(target_data, default_data):
 
 def check_point(ret):
     if not ret['result']:
-        raise FailedStepError(
+        raise FailedStepError(red(
             'Execution of the runner has been stopped due to'
-            ' error')
+            ' error'))
     api.msplitstrip(ret)
 
 

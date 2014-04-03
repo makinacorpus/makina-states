@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 '''
-.. _runner_mc_cloud_compute_node:
 
-mc_cloud_compute_node runner
-============================
+.. _runner_mc_cloud_vm:
+
+mc_cloud_lxc runner
+==========================
+
 '''
 # -*- coding: utf-8 -*-
 __docformat__ = 'restructuredtext en'
@@ -94,31 +96,44 @@ def configure(target, vm):
         pass
 
 
-def orchestrate(target, rets=None):
-    if rets is None:
-        rets = []
-    return rets
-    settings = cli('mc_cloud_compute_node.settings')
-    t_settings = cli('mc_cloud_compute_node.get_settings_for_target', target)
-
+def saltify(name, data):
     ret = result()
-    rets = []
-    ret = configure_cloud()
+    cloudSettings = salt['mc_cloud.settings']()
+    settings = salt['mc_cloud_saltify.settings']()
+    key = '{prefix}/pki/master/minions/{name}'.format(
+        prefix=cloudSettings.prefix, name=name)
+    if os.path.exists(key):
+        success = '{0} is already saltified'
+    else:
+        success = '{0} is saltified'
+        kwargs = {'minion': {
+            'master': data['master'],
+            'master_port': data['master_port']}}
+        for var in [
+            "ssh_username", "ssh_keyfile", "keep_tmp", "gateway", "sudo",
+            "password", "script_args", "ssh_host", "sudo_password",
+        ]:
+            if data.get(var):
+                kwargs[var] = data[var]
+        cret = __salt__['cloud.profile'](data['profile'], [name], **kwargs)
     return ret
-    checkpoint(rets, ret)
-    vms = {}
-    configure()
-    for vm in vms:
+
+
+def orchestrate(target, rets=None):
+    ret = result()
+    t_settings = cli('mc_cloud_compute_node.get_settings_for_target', target)
+    settings = salt['mc_cloud_saltify.settings']()
+    saltified = ret.setdefault('saltified', [])
+    for compute_node, data in settings['targets'].items():
         try:
-            ret = __salt__[
-                'mc_cloud_{0}.orchestrate'.format(
-                    vt)]()
-            configure_vm(target, vm)
-            ret = __salt__['mc_cloud_controller.post_configure'](compute_nodes)
-        except:
+            cret = saltify(target, data)
+            if cret['result']:
+            saltified.append(compute_node)
+        except Exception:
+            trace = traceback.format_exc()
+            log.error(trace)
             continue
-    post_configure()
-    checkpoint(rets, ret)
-    return rets
+    checkpoint(ret)
+    return ret
 
 #

@@ -1,9 +1,18 @@
 #!/usr/bin/env python
+'''
+
+.. _runner_mc_cloud_lxc:
+
+mc_cloud_lxc runner
+==========================
+
+'''
 # -*- coding: utf-8 -*-
 __docformat__ = 'restructuredtext en'
 
 # Import python libs
 import os
+import logging
 import traceback
 
 # Import salt libs
@@ -25,6 +34,8 @@ from mc_states.saltapi import (
     MessageError,
 )
 
+log = logging.getLogger(__name__)
+
 
 def cli(*args, **kwargs):
     if not kwargs:
@@ -36,8 +47,7 @@ def cli(*args, **kwargs):
     return client(*args, **kwargs)
 
 
-
-def configure_controller(output=True):
+def post_configure_controller(output=True):
     '''Prepare cloud controller configuration
     can also apply per virtualization type configuration'''
     ret = result()
@@ -67,7 +77,7 @@ def configure_controller(output=True):
     return ret
 
 
-def postdeploy_controller(ret=None):
+def post_deploy_controller(output=False):
     '''Prepare cloud controller configuration
     can also apply per virtualization type configuration'''
     ret = result()
@@ -95,8 +105,6 @@ def postdeploy_controller(ret=None):
     if output:
         salt.output.display_output(ret, '', __opts__)
     return ret
-
-
 
 
 def deploy_pre(target, vm, rets=None):
