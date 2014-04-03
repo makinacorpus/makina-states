@@ -28,6 +28,8 @@ from salt.utils.odict import OrderedDict
 
 from mc_states import api
 from mc_states.saltapi import (
+    ComputeNodeProvisionError,
+    merge_results,
     salt_output,
     result,
     green, red, yellow,
@@ -56,22 +58,23 @@ def post_configure(output=True):
     return result()
 
 
-def run_vt_hook(ret, hook_name):
-    settings = cli('mc_cloud_controller.settings')
-    for vt in settings['vts']:
+def run_vt_hook(hook_name, ret=None, vts=None, *args, **kwargs):
+    if ret is None:
+        ret = result()
+    if not vts:
+        settings = cli('mc_cloud_controller.settings')
+        vts = settings['vts']
+    if isinstance(vts, basestring):
+        vts = [vts]
+    for vt in vts:
         vid_ = 'mc_cloud_{0}.{1}'.format(vt, hook_name)
         if vid_ in __salt__:
-            cret = __salt__[vid_](output=False)
-            if not cret['result']:
-                ret['result'] = False
-            if cret['output']:
-                ret['output'] += cret['output']
-            if cret['result']:
-                ret['comment'] += ret['comment']
-            else:
-                ret['comment'] += red(
-                    'Cloud controller failed to configure:\n')
+            ret['comment'] += green('\nExecuting {0} hook'.format(vid_))
+            kwargs['output'] = False
+            cret = __salt__[vid_](*args, **kwargs)
+            merge_results(ret, cret)
             check_point(ret)
+    return ret
 
 
 def _sls_exec(sls,
@@ -97,7 +100,7 @@ def pre_deploy(output=True):
     can also apply per virtualization type configuration'''
     ret = result()
     try:
-        run_vt_hook(ret, 'pre_configure_controller')
+        run_vt_hook('pre_configure_controller', ret=ret)
         id_ = cli('config.get', 'id')
         _sls_exec(
             'makina-states.cloud.generic.controller.pre-deploy',
@@ -112,7 +115,7 @@ def pre_deploy(output=True):
             id_=id_,
             ret=ret)
         check_point(ret)
-        run_vt_hook(ret, 'post_configure_controller')
+        run_vt_hook('post_configure_controller', ret=ret)
     except FailedStepError:
         salt_output(ret, __opts__, output=output)
         raise
@@ -122,43 +125,15 @@ def pre_deploy(output=True):
 
 def deploy():
     ret = result()
-    run_vt_hook(ret, 'pre_deploy_controller')
-    run_vt_hook(ret, 'post_deploy_controller')
+    run_vt_hook('pre_deploy_controller', ret=ret)
+    run_vt_hook('post_deploy_controller', ret=ret)
     return ret
 
 
 def post_deploy():
     ret = result()
-    run_vt_hook(ret, 'pre_post_deploy_controller')
-    run_vt_hook(ret, 'post_post_deploy_controller')
-    return ret
-
-
-def orchestrate(output=True, refresh=True):
-    ret = result()
-    if refresh:
-        cli('saltutil.refresh_pillar')
-    rets = []
-    try:
-        ret = pre_deploy()
-        check_point(ret)
-        ret = deploy()
-        check_point(ret)
-        cret = __salt__['mc_cloud_saltify.orchestrate'](output=False,
-                                                        refresh=False)
-        if cret['result']:
-            ret['comment'] += cret['comment']
-        check_point(rets, ret)
-        saltified_errors = cret['changes'].get('saltified_errors', [])
-        cret = __salt__['mc_cloud_compute_node.orchestrate'](skip=saltified_errors)
-        # check_point(rets, ret)
-        ret = post_deploy()
-        check_point(cret)
-        ret['comment'] += cret['comment']
-    except FailedStepError:
-        salt_output(ret, __opts__, output=output)
-        raise
-    salt_output(ret, __opts__, output=output)
+    run_vt_hook('pre_post_deploy_controller', ret=ret)
+    run_vt_hook('post_post_deploy_controller', ret=ret)
     return ret
 
 
@@ -179,5 +154,32 @@ def exists(name):
             log.warn(trace)
     return already_exists
 
+
+def orchestrate(output=True, refresh=True):
+    ret = result()
+    if refresh:
+        cli('saltutil.refresh_pillar')
+    try:
+        ret = pre_deploy()
+        check_point(ret)
+        ret = deploy()
+        check_point(ret)
+        cret = __salt__['mc_cloud_saltify.orchestrate'](
+            output=False, refresh=False)
+        if cret['result']:
+            ret['comment'] += cret['comment']
+            ret['trace'] += cret['trace']
+        cn_in_error = cret['changes'].get('saltified_errors', [])
+        c_ret = __salt__['mc_cloud_compute_node.orchestrate'](
+            skip=cn_in_error, output=False)
+        if cret['result']:
+            ret['comment'] += cret['comment']
+            ret['trace'] += cret['trace']
+        cn_in_error = cret['changes'].get('provision_error', [])
+    except FailedStepError:
+        salt_output(ret, __opts__, output=output)
+        raise
+    salt_output(ret, __opts__, output=output)
+    return ret
 
 #

@@ -8,6 +8,8 @@ mc_states_api / general API functions
 '''
 # -*- coding: utf-8 -*-
 __docformat__ = 'restructuredtext en'
+import json
+import re
 
 
 def uniquify(seq):
@@ -43,4 +45,16 @@ def indent(string_or_list, indent='    ', sep='\n'):
             indent, sep).join(string_or_list)
     return string_or_list
 
+
+def yencode(string):
+    if isinstance(string, basestring):
+        re_y = re.compile(' \.\.\.$', re.M)
+        string = re_y.sub('', string)
+    return string
+
+
+def json_dump(data):
+    content = json.dumps(data)
+    content = content.replace('\n', ' ')
+    return yencode(content)
 # vim:set et sts=4 ts=4 tw=80:

@@ -17,8 +17,8 @@ import salt.utils
 from salt.utils.odict import OrderedDict
 import yaml
 from salt.utils import yamldumper
+from mc_states import api
 
-import json
 
 _default_marker = object()
 
@@ -57,7 +57,6 @@ def dictupdate(dict1, dict2):
             raise SaltException(
                 'mc_utils.dictupdate 2nd argument is not a dictionnary!')
     return salt.utils.dictupdate.update(dict1, dict2)
-
 
 
 _marker = object()
@@ -348,16 +347,11 @@ def yaml_dump(data):
 
 
 def json_dump(data):
-    content = json.dumps(data)
-    content = content.replace('\n', ' ')
-    return yencode(content)
+    return api.json_dump(data)
 
 
 def yencode(string):
-    if isinstance(string, basestring):
-        re_y = re.compile(' \.\.\.$', re.M)
-        string = re_y.sub('', string)
-    return string
+    return api.yencode(string)
 
 
 def unix_crypt(passwd):

@@ -13,6 +13,7 @@ __docformat__ = 'restructuredtext en'
 # Import python libs
 import os
 import logging
+from pprint import pformat
 import traceback
 
 # Import salt libs
@@ -26,10 +27,13 @@ from salt.utils.odict import OrderedDict
 
 from mc_states import api
 from mc_states.saltapi import (
+    apply_sls,
     result,
     salt_output,
     check_point,
+    SaltExit,
     green, red, yellow,
+    SaltCopyError,
     client,
     FailedStepError,
     MessageError,
@@ -102,7 +106,6 @@ def post_deploy_controller(output=False):
     except FailedStepError:
         if output:
             salt.output.display_output(ret, '', __opts__)
-        raise
     if output:
         salt.output.display_output(ret, '', __opts__)
     return ret
@@ -124,5 +127,59 @@ def postdeploy_pre(target, vm, rets=None):
     checkpoint(rets, ret)
     ret = __salt__['mc_cloud_vm.install_deploy'](vm)
     checkpoint(rets, ret)
+
+
+def install_vt(target, output=False):
+    ret = result()
+    pre_slss = [
+        'pre-deploy/grains.sls',
+        'pre-deploy/install-lxc.sls',
+        'pre-deploy/images.sls',
+    ]
+    cdir = '/srv/cloud-controller'
+    imgSettings = cli('mc_cloud_images.settings')
+    lxcSettings = cli('mc_cloud_lxc.settings')
+    imgSettingsData = {}
+    lxcSettingsData = {}
+    for name, imageData in imgSettings['lxc']['images'].items():
+        imgSettingsData[name] = {
+            'lxc_tarball_name': imageData['lxc_tarball_name'],
+            'lxc_tarball_ver': imageData['lxc_tarball_ver']}
+    for name, imageData in lxcSettings['defaults'].items():
+        data = lxcSettingsData.setdefault(name, {})
+        for v in ['use_bridge', 'bridge',
+                  'gateway', 'netmask_full',
+                  'network', 'netmask']:
+            data[v] = lxcSettings['defaults'][v]
+    imgSettingsData = api.json_dump(imgSettingsData)
+    lxcSettingsData = api.json_dump(lxcSettingsData)
+    slsfs = []
+    try:
+        for sls in pre_slss:
+            dst = '{0}/lxc/{1}'.format(cdir, sls)
+            ret = cli('cp.get_template',
+                      'salt://makina-states/cloud/lxc/compute_node/{0}'.format(sls),
+                      dst,
+                      simgSettings=imgSettingsData,
+                      slxcSettings=lxcSettingsData,
+                      makedirs=True, salt_target=target)
+            if ret != dst:
+                raise SaltCopyError('Cant copy {0} to {1}'.format(dst, target))
+            ret = cli('cmd.run', 'chmod 700 "{0}"'.format(dst))
+            slsfs.append(dst)
+            apply_sls(cli, slsfs, target=target)
+    except FailedStepError:
+        salt_output(ret, __opts__, output=output)
+        raise
+    except SaltCopyError, ex:
+        ret['comment'] += '{0}'.format(ex)
+        ret['result'] = False
+        salt_output(ret, __opts__, output=output)
+        raise
+    salt_output(ret, __opts__, output=output)
+    return ret
+
+
+
 
 # vim:set et sts=4 ts=4 tw=80:

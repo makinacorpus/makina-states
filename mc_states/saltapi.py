@@ -34,11 +34,31 @@ class SaltRudeError(SystemExit):
     pass
 
 
+class SaltExecutionError(SaltExit):
+    pass
+
+
 class FailedStepError(SaltRudeError):
     pass
 
 
-class SaltyfificationError(SaltRudeError):
+class ProvisionError(SaltRudeError):
+    pass
+
+
+class SaltyfificationError(ProvisionError):
+    pass
+
+
+class ComputeNodeProvisionError(ProvisionError):
+    pass
+
+
+class VMProvisionError(ProvisionError):
+    pass
+
+
+class SaltCopyError(SaltRudeError):
     pass
 
 
@@ -241,6 +261,9 @@ def client(fun, *args, **kw):
                 }.get(fun, False)
             time.sleep(poll)
         try:
+            if 'The minion function caused an exception:' in ret:
+                raise SaltExecutionError(
+                    'module/function {0} failed:\n {1}'.format(fun, ret))
             if 'is not available.' in ret:
                 raise SaltExit(
                     'module/function {0} is not available'.format(fun))
@@ -255,6 +278,36 @@ def client(fun, *args, **kw):
     return ret
 
 
+def apply_sls(cli, slsfs, target=None):
+    ret = result()
+    kwargs = {}
+    if target:
+        kwargs['salt_target'] = target
+    if isinstance(slsfs, basestring):
+        slsfs = [slsfs]
+    failed = []
+    for sls in slsfs:
+        cret = None
+        try:
+            cret = cli(
+                'state.template', sls, **kwargs)
+            if not check_state_result(cret):
+                raise SaltExit('Execution failed for sls: {0}'.format(sls))
+        except SaltExit, exc:
+            ret['result'] = False
+            ret['comment'] += '\n{0}'.format(exc)
+            trace = traceback.format_exc()
+            failed.append(sls)
+            ret['trace'] += '\n{0}'.format(trace)
+            if cret:
+                ret['trace'] += '\n{0}'.format(pformat(cret))
+    if failed:
+        ret['comment'] += ret(
+            'Some sls for installation failed '
+            'to apply:\n    {0}'.format('\n    '.join(failed)))
+    return ret
+
+
 def _errmsg(ret, msg):
     err = '\n{0}\n'.format(msg)
     for k in ['comment', 'trace']:
@@ -262,7 +315,7 @@ def _errmsg(ret, msg):
             err += '\n{0}:\n{1}\n'.format(k, ret[k])
     raise SaltExit(err)
 
-
+it
 def errmsg(msg):
     raise MessageError(msg)
 
@@ -358,6 +411,18 @@ def process_cloud_return(name, info, driver='saltify', ret=None):
     else:
         ret['result'] = False
         ret['comment'] += '\nFailed to saltify {0}'.format(name)
+    return ret
+
+
+def merge_results(ret, cret):
+    if not cret['result']:
+        ret['result'] = False
+    if cret['output']:
+        ret['output'] += "\n{0}\n".format(cret['output'])
+    if cret['comment']:
+        ret['comment'] += "\n{0}\n".format(cret['comment'])
+    if cret['trace']:
+        ret['trace'] += "\n{0}\n".format(cret['trace'])
     return ret
 
 # vim:set et sts=4 ts=4 tw=80:

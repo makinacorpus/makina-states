@@ -18,12 +18,12 @@
 # Taken from ubuntu's lxc-net upstart config and adopted to init script
 # original author: Serge Hallyn <serge.hallyn@canonical.com>
 
-USE_LXC_BRIDGE="{{use_bridge}}"
-USE_LXC_BRIDGE="{{use_bridge}}"
-LXC_MAKINA_BRIDGE="{{bridge}}"
-LXC_MAKINA_ADDR="{{gateway}}"
-LXC_MAKINA_NETMASK="{{netmask_full}}"
-LXC_MAKINA_NETWORK="{{network}}/{{netmask}}"
+USE_LXC_BRIDGE="{{data.use_bridge}}"
+USE_LXC_BRIDGE="{{data.use_bridge}}"
+LXC_MAKINA_BRIDGE="{{data.bridge}}"
+LXC_MAKINA_ADDR="{{data.gateway}}"
+LXC_MAKINA_NETMASK="{{data.netmask_full}}"
+LXC_MAKINA_NETWORK="{{data.network}}/{{data.netmask}}"
 varrun="/var/run/lxc"
 LXC_DOMAIN=""
 LXC_MAKINA_DOMAIN=""

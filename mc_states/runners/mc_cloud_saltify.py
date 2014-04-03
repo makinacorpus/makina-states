@@ -101,7 +101,7 @@ def saltify(name, output=True):
     return ret
 
 
-def orchestrate(output=True, refresh=True):
+def orchestrate(output=True, refresh=False):
     '''Parse saltify settings to saltify all targets'''
     ret = result()
     if refresh:

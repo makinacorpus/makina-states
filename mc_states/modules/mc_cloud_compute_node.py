@@ -81,8 +81,7 @@ def set_conf_for_target(target, setting, value):
     target = target.replace('.', '')
     cloudSettings = __salt__['mc_cloud.settings']()
     filep = os.path.join(
-        cloudSettings['root'],
-        cloudSettings['compute_node_sls_dir'],
+        cloudSettings['compute_node_pillar_dir'],
         target, 'settings',
         setting + '.pack'
     )
@@ -95,8 +94,7 @@ def get_conf_for_target(target, setting, default=None):
     target = target.replace('.', '')
     cloudSettings = __salt__['mc_cloud.settings']()
     filep = os.path.join(
-        cloudSettings['root'],
-        cloudSettings['compute_node_sls_dir'],
+        cloudSettings['compute_node_pillar_dir'],
         target, 'settings', setting + '.pack'
     )
     value = default
@@ -110,8 +108,7 @@ def set_conf_for_vm(target, virt_type, vm, setting, value):
     vm = vm.replace('.', '')
     cloudSettings = __salt__['mc_cloud.settings']()
     filep = os.path.join(
-        cloudSettings['root'],
-        cloudSettings['compute_node_sls_dir'],
+        cloudSettings['compute_node_pillar_dir'],
         target, virt_type, vm, 'settings',
         setting + '.pack'
     )
@@ -247,8 +244,7 @@ def get_conf_for_vm(target,
     vm = vm.replace('.', '')
     cloudSettings = __salt__['mc_cloud.settings']()
     filep = os.path.join(
-        cloudSettings['root'],
-        cloudSettings['compute_node_sls_dir'],
+        cloudSettings['compute_node_pillar_dir'],
         target, virt_type, vm, 'settings', setting + '.pack')
     value = default
     if os.path.exists(filep):

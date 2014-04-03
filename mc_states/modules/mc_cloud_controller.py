@@ -107,8 +107,7 @@ def gen_id(name):
 
 def ensure_ca_present():
     cloudSettings = __salt__['mc_cloud.settings']()
-    ssl_gen_d = os.path.join(
-        cloudSettings['all_pillar_dir'], 'ssl')
+    ssl_gen_d = cloudSettings['ssl_pillar_dir']
     old_d = __opts__.get('ca.cert_base_path', '')
     try:
         __opts__['ca.cert_base_path'] = ssl_gen_d
@@ -130,8 +129,7 @@ def get_cert_for(domain, gen=False, domain_csr_data=None):
     if domain_csr_data is None:
         domain_csr_data = {}
     cloudSettings = __salt__['mc_cloud.settings']()
-    ssl_gen_d = os.path.join(
-        cloudSettings['all_pillar_dir'], 'ssl')
+    ssl_gen_d = cloudSettings['ssl_pillar_dir']
     ca = cloudSettings['ssl']['ca']['ca_name']
     certp = os.path.join(ssl_gen_d, ca, 'certs', '{0}.crt'.format(domain))
     certk = os.path.join(ssl_gen_d, ca, 'certs', '{0}.key'.format(domain))
@@ -246,7 +244,7 @@ def load_certs(path):
 def get_certs_dir():
     cloudSettings = __salt__['mc_cloud.settings']()
     ca = cloudSettings['ssl']['ca']['ca_name']
-    ssl_gen_d = os.path.join(cloudSettings['all_pillar_dir'], 'ssl')
+    ssl_gen_d = cloudSettings['ssl_pillar_dir']
     certs_dir = os.path.join(ssl_gen_d, ca, 'certs')
     return certs_dir
 
@@ -320,7 +318,6 @@ def settings():
     def _settings():
         #compute_data = OrderedDict()
         #compute_data = _register_default_settings_for(compute_data)
-
         data = __salt__['mc_utils.defaults'](
             'makina-states.cloud.controller', {
                 'controllers': {

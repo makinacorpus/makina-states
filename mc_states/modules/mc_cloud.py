@@ -136,23 +136,14 @@ def settings():
                 'compute_node_sls_dir': (
                     '{all_sls_dir}/compute_node'
                 ),
-                'certs_dir': (
-                    '{all_sls_dir}/certs/certs'
+                'compute_node_pillar_dir': (
+                    '{all_pillar_dir}/compute_node'
                 ),
-                'wildcard_certs_dir': (
-                    '{all_sls_dir}/certs/wildcard_certs'
+                'ssl_dir': (
+                    '{all_sls_dir}/cloud-controller/ssl'
                 ),
-                'certs_dir': (
-                    '{all_sls_dir}/certs/certs'
-                ),
-                'wildcard_certs_dir': (
-                    '{all_sls_dir}/certs/wildcard_certs'
-                ),
-                'certs_key_dir': (
-                    '{all_pillar_dir}/certs/certs'
-                ),
-                'wildcard_certs_key_dir': (
-                    '{all_pillar_dir}/certs/wildcard_certs'
+                'ssl_pillar_dir': (
+                    '{all_pillar_dir}/cloud-controller/ssl'
                 ),
                 'prefix': prefix,
                 'mode': 'mastersalt',
