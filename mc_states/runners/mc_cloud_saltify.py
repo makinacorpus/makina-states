@@ -94,7 +94,7 @@ def saltify(name, output=True):
                 ret['comment'] = success
             if not output:
                 ret['changes'] = {}
-            check_point(ret)
+            check_point(ret, __opts__)
     except FailedStepError:
         ret['result'] = False
         salt_output(ret, __opts__, output=output)

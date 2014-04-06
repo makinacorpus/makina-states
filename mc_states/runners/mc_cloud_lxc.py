@@ -88,7 +88,7 @@ def post_configure_controller(output=True):
             ret['comment'] += red(
                 'LXC cloud controller configuration '
                 'failed to configure:\n')
-        check_point(ret)
+        check_point(ret, __opts__)
     except FailedStepError:
         if output:
             salt.output.display_output(ret, '', __opts__)
@@ -115,7 +115,7 @@ def post_deploy_controller(output=False):
             ret['comment'] += red(
                 'LXC cloud controller '
                 'post-configuration failed to configure:\n')
-        check_point(ret)
+        check_point(ret, __opts__)
     except FailedStepError:
         if output:
             salt.output.display_output(ret, '', __opts__)

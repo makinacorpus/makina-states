@@ -74,7 +74,7 @@ def run_vt_hook(hook_name, ret=None, target=None, vts=None, *args, **kwargs):
             import pdb;pdb.set_trace()  ## Breakpoint ##
             cret = __salt__[vid_](*args, **kwargs)
             merge_results(ret, cret)
-            check_point(ret)
+            check_point(ret, __opts__)
     return ret
 
 
@@ -87,7 +87,7 @@ def pre_deploy(output=True):
         __salt__['mc_api.apply_sls'](
             ['makina-states.cloud.generic.controller.pre-deploy',
              'makina-states.cloud.saltify'], **kw)
-        check_point(ret)
+        check_point(ret, __opts__)
         run_vt_hook('post_configure_controller', ret=kw['ret'])
     except FailedStepError:
         salt_output(kw['ret'], __opts__, output=output)
@@ -134,9 +134,9 @@ def orchestrate(output=True, refresh=True):
         cli('saltutil.refresh_pillar')
     try:
         ret = pre_deploy()
-        check_point(ret)
+        check_point(ret, __opts__)
         ret = deploy()
-        check_point(ret)
+        check_point(ret, __opts__)
         cret = __salt__['mc_cloud_saltify.orchestrate'](
             output=False, refresh=False)
         if cret['result']:

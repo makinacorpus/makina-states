@@ -54,7 +54,7 @@ def pre_deploy(target, output=True):
     ret, opt = result(), __opts__
     try:
         run_vt_hook('pre_configure_compute_node', ret=ret, target=target)
-        check_point(ret)
+        check_point(ret, __opts__)
         for step in [configure_ssh,
                      configure_grains,
                      configure_hosts,
@@ -62,7 +62,7 @@ def pre_deploy(target, output=True):
                      configure_firewall,
                      configure_reverse_proxy,]:
             cret = step(target)
-            check_point(ret)
+            check_point(ret, __opts__)
             ret['result'] = check_state_result(cret)
             ret['output'] = salt.output.get_printout(
                 'highstate', opt)({target: cret})
@@ -72,7 +72,7 @@ def pre_deploy(target, output=True):
             else:
                 ret['comment'] += red(
                     'Cloud controller failed to configure:\n')
-            check_point(ret)
+            check_point(ret, __opts__)
         run_vt_hook('post_configure_compute_node', ret=ret, target=target)
     except FailedStepError:
         if output:
