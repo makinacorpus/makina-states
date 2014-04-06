@@ -36,8 +36,12 @@ def uniquify(seq):
 
 def splitstrip(string):
     '''Strip empty lines'''
-    return '\n'.join(
+    endl = string.endswith('\n')
+    ret = '\n'.join(
         [a for a in string.splitlines() if a.strip()])
+    if endl and not ret.endswith('\n'):
+        ret += '\n'
+    return ret
 
 
 def msplitstrip(mapping, keys=None):

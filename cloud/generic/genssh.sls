@@ -3,7 +3,7 @@ include:
   - makina-states.cloud.generic.hooks.controller
   - makina-states.localsettings.users
   - makina-states.services.base.ssh.rootkey
-  - makina-states.cloud.generic.controller.pre-deploy.install.layout
+  - makina-states.cloud.generic.controller.layout
 cloud-root-keygen:
   file.copy:
     - name: {{cloudSettings.root}}/{{cloudSettings.all_sls_dir}}/rootkey-dsa.pub

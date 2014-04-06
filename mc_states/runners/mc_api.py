@@ -16,9 +16,12 @@ import traceback
 from mc_states.saltapi import (
     result,
     client,
+    SaltInvalidReturnError,
     check_state_result,
     green,
     FailedStepError,
+    blue,
+    SaltEmptyDictError,
     yellow,
     SaltExit,
     red,
@@ -41,6 +44,42 @@ def cli(*args, **kwargs):
     return client(*args, **kwargs)
 
 
+def valid_state_return(cret, sls=None):
+    if not isinstance(cret, dict):
+        msg = 'Execution failed(return is not a dict)'
+        if sls:
+            msg += 'for {0}:\n{{0}}'.format(sls)
+        raise SaltEmptyDictError(msg.format(pformat(cret)))
+    if not check_state_result(cret):
+        msg = 'Execution failed(return is not valid)'
+        if sls:
+            msg += 'for {0}:\n{{0}}'.format(sls)
+        raise SaltEmptyDictError(msg.format(pformat(cret)))
+    return cret
+
+
+def filter_state_return(cret, target='local', output='nested'):
+    if not isinstance(cret, dict):
+        # for list of strings, output the concatenation
+        # for better error inspection
+        if isinstance(cret, list):
+            onlystrings = True
+            for i in cret:
+                if not isinstance(i, basestring):
+                    onlystrings = False
+                    break
+            if onlystrings:
+                cret = '\n'.join(cret)
+    else:
+        try:
+            cret = salt.output.get_printout(
+                output, __opts__)({target: cret}).rstrip()
+        except:
+            cret = salt.output.get_printout(
+                output, __opts__)(cret).rstrip()
+    return cret
+
+
 def apply_sls_(func, slss,
                salt_output_t='highstate',
                status_msg=None,
@@ -61,16 +100,11 @@ def apply_sls_(func, slss,
     for sls in slss:
         cret = None
         try:
-            cret = cli(func, sls, *a, **sls_kw)
-            if not isinstance(cret, dict):
-                raise SaltExit(
-                    'Execution failed(return) for sls: {0}: '
-                    '\n{1}'.format(sls, cret))
-            if not check_state_result(cret):
-                raise SaltExit('Execution failed for sls: {0}'.format(sls))
-            ret['output'] += '{0}\n'.format(
-                salt.output.get_printout(
-                    salt_output_t, __opts__)({target: cret}).rstrip())
+            cliret = cli(func, sls, *a, **sls_kw)
+            cret = filter_state_return(cliret, target=target,
+                                       output=salt_output_t)
+            valid_state_return(cliret, sls=sls)
+            ret['output'] += cret
             statuses.append((salt_ok, sls))
         except SaltExit, exc:
             trace = traceback.format_exc()
@@ -79,22 +113,22 @@ def apply_sls_(func, slss,
             ret['trace'] += '{0}\n'.format(trace)
             statuses.append((salt_ko, sls))
             if cret:
-                ret['trace'] += '\n{0}'.format(pformat(cret))
+                ret['trace'] += '{0}\n'.format(pformat(cret))
+                ret['output'] += '{0}\n'.format(cret)
     clr = ret['result'] and green or red
     status = ret['result'] and salt_ok or salt_ko
     if not status_msg:
-        status_msg = yellow('  Installation on {0}: ') + red('{1}\n')
-    if not sls_status_msg:
-        sls_status_msg = yellow('   - {0}: ') + red('{2}\n')
-    ret['comment'] += clr(status_msg.format(target, red(status)))
+        status_msg = yellow('  Installation on {0}: ') + clr('{1}\n')
+    ret['comment'] += status_msg.format(target, status)
+    sls_status_msg = yellow('   - {0}:') + ' {2}\n'
     if len(statuses) > 1:
         for status, sls in statuses:
             if status == salt_ko:
-                clr = red
+                sclr = red
             else:
-                clr = yellow
-            ret['comment'] += clr(
-                sls_status_msg.format(sls, target, status))
+                sclr = green
+            status = sclr(status)
+            ret['comment'] += sls_status_msg.format(sls, target, status)
     return ret
 
 

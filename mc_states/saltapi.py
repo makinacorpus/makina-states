@@ -48,6 +48,14 @@ class ProvisionError(SaltRudeError):
     pass
 
 
+class SaltInvalidReturnError(SaltExit):
+    pass
+
+
+class SaltEmptyDictError(SaltInvalidReturnError):
+    pass
+
+
 class SaltyfificationError(ProvisionError):
     pass
 
@@ -86,6 +94,14 @@ def result(**kwargs):
 
 
 __FUN_TIMEOUT = {
+    'mc_cloud_lxc.get_settings_for_vm': 120,
+    'mc_cloud_compute_node.get_settings_for_target': 300,
+    'mc_cloud_compute_node.get_reverse_proxies_for_target': 300,
+    'mc_cloud_compute_node.settings': 300,
+    'mc_cloud_controller.settings': 300,
+    'mc_cloud_images.settings': 120,
+    'mc_cloud.settings': 120,
+    'mc_cloud_lxc.settings': 120,
     'cmd.run': 60 * 60,
     'test.ping': 10,
     'lxc.info': 40,
@@ -96,8 +112,64 @@ __FUN_TIMEOUT = {
 __CACHED_CALLS = {}
 __CACHED_FUNS = {
     'test.ping': 3 * 60,  # cache ping for 3 minutes
-    'lxc.list':  2  # cache lxc.list for 2 seconds
+    'lxc.list':  2,  # cache lxc.list for 2 seconds,
+    'grains.items': 100,
+
+    'mc_cloud_lxc.get_settings_for_vm': 900,
+    'mc_cloud_compute_node.get_settings_for_target': 900,
+    'mc_cloud_compute_node.get_reverse_proxies_for_target': 900,
+    'mc_cloud_compute_node.settings': 600,
+    'mc_cloud_controller.settings': 600,
+    'mc_cloud_images.settings': 900,
+    'mc_cloud_lxc.settings': 900,
+
+    'mc_nodetypes.registry': 900,
+    'mc_cloud.registry': 900,
+    'mc_services.registry': 900,
+    'mc_controllers.registry': 900,
+    'mc_localsettings.registry': 900,
+
+    'mc_cloud.settings': 900,
+    'mc_nodetypes.settings': 900,
+    'mc_controllers.settings': 900,
+    'mc_services.settings': 600,
+    'mc_localsettings.settings': 600,
 }
+
+
+def invalidate(laps=None,
+               target=None,
+               fun=None,
+               sargs=None,
+               skw=None,
+               skwargs=None):
+    '''Invalidate something in the api cached calls
+    by matching on any of the parameters'''
+    if (
+        laps is None
+        and target is None
+        and fun is None
+        and sargs is None
+        and skw is None
+        and skwargs is None
+    ):
+        return
+    args = [laps, target, fun, sargs, skw, skwargs]
+    popping = []
+    for key in __CACHED_CALLS:
+        match = None
+        for j, arg in enumerate(args):
+            if arg is None:
+                continue
+            if match is not False:
+                if arg == key[j]:
+                    match = True
+                else:
+                    match = False
+        if match:
+            popping.append(key)
+    for pop in popping:
+        __CACHED_CALLS.pop(pop)
 
 
 def _minion_opts(cfgdir=None, cfg=None):
@@ -165,7 +237,7 @@ def client(fun, *args, **kw):
     try:
         poll = kw.pop('salt_job_poll')
     except KeyError:
-        poll = 0.1
+        poll = 0.4
     try:
         cfgdir = kw.pop('salt_cfgdir')
     except KeyError:
@@ -297,10 +369,17 @@ def errmsg(msg):
 
 
 def salt_output(ret, __opts__, output=True):
-    import pdb;pdb.set_trace()  ## Breakpoint ##
     if output:
         api.msplitstrip(ret)
+        # copy the result to zresult key for bare out to really
+        # display the summary at the end of the console stream
+        ret['z_500_output'] = ret['output']
+        ret['z_700_comment'] = ret['comment']
+        ret['z_900_result'] = ret['result']
         salt.output.display_output(ret, '', __opts__)
+        del ret['z_500_output']
+        del ret['z_700_comment']
+        del ret['z_900_result']
 
 def complete_gateway(target_data, default_data):
     if 'ssh_gateway' in target_data:
@@ -329,13 +408,13 @@ def complete_gateway(target_data, default_data):
     return target_data
 
 
-def check_point(ret, __opts__):
+def check_point(ret, __opts__, output=True):
     api.msplitstrip(ret)
     if not ret['result']:
-        salt_output(ret, __opts__, output=True)
-        raise FailedStepError(red(
-            'Execution of the runner has been stopped due to'
-            ' error'))
+        salt_output(ret, __opts__, output=output)
+        raise FailedStepError(
+            red('Execution of the runner has been stopped due to'
+                ' error'))
 
 
 def _colors(color=None, colorize=True):
@@ -355,6 +434,14 @@ def green(string):
 
 def red(string):
     return '{0}{2}{1}'.format(_colors('RED'), _colors('ENDC'), string)
+
+
+def blue(string):
+    return '{0}{2}{1}'.format(_colors('LIGHT_CYAN'), _colors('ENDC'), string)
+
+
+def blue_line(string):
+    return "\n{0}\n".format(blue(string))
 
 
 def yellow_line(string):
@@ -404,14 +491,14 @@ def process_cloud_return(name, info, driver='saltify', ret=None):
 
 
 def merge_results(ret, cret):
-    if not cret['result']:
-        ret['result'] = False
-    if cret['output']:
-        ret['output'] += "\n{0}".format(cret['output'])
-    if cret['comment']:
-        ret['comment'] += "\n{0}".format(cret['comment'])
-    if cret['trace']:
-        ret['trace'] += "\n{0}".format(cret['trace'])
+    # sometime we delete some stuff from the to be merged  results
+    # dict to only keep some infos
+    if 'result' in cret:
+        if not cret['result']:
+            ret['result'] = False
+    for k in ['output', 'comment', 'trace']:
+        if cret.get(k, None) is not None:
+            ret[k] += "\n{0}".format(cret[k])
     return ret
 
 # vim:set et sts=4 ts=4 tw=80:

@@ -1,6 +1,7 @@
 {# WARNING THIS STATE FILE IS GENERATED #}
-{%load_json as sprefix%}{{pillar.sprefix}}{%endload%}
-{% set sprefix = pillar['sprefix'] %}
+{% load_json as imgSettings%}{{pillar.simgSettings}}{%endload%}
+{% load_json as cloudSettings%}{{pillar.scloudSettings}}{%endload%}
+{% set sprefix = cloudSettings.prefix %}
 include:
   - makina-states.cloud.generic.hooks.generate
 {% for name, imgdata in imgSettings.items() %}

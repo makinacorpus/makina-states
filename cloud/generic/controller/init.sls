@@ -1,2 +1,3 @@
 include:
-  - makina-states.cloud.generic.controller.install
+  - makina-states.cloud.generic.controller.layout
+  - makina-states.cloud.generic.controller.prerequisites

@@ -32,7 +32,7 @@ from mc_states.saltapi import (
     merge_results,
     salt_output,
     result,
-    green, red, yellow,
+    green, red, yellow, blue,
     check_point,
     client,
     FailedStepError,
@@ -52,7 +52,12 @@ def post_configure(output=True):
     return result()
 
 
-def run_vt_hook(hook_name, ret=None, target=None, vts=None, *args, **kwargs):
+def run_vt_hook(hook_name,
+                ret=None,
+                target=None,
+                vts=None,
+                output=True,
+                *args, **kwargs):
     if target:
         kwargs['target'] = target
     if ret is None:
@@ -69,45 +74,30 @@ def run_vt_hook(hook_name, ret=None, target=None, vts=None, *args, **kwargs):
     for vt in vts:
         vid_ = 'mc_cloud_{0}.{1}'.format(vt, hook_name)
         if vid_ in __salt__:
-            ret['comment'] += green('Executing {0} hook\n'.format(vid_))
+            ret['comment'] += (
+                green('\n --> ') + blue(vid_) + green(' hook\n')
+            )
             kwargs['output'] = False
-            import pdb;pdb.set_trace()  ## Breakpoint ##
             cret = __salt__[vid_](*args, **kwargs)
             merge_results(ret, cret)
-            check_point(ret, __opts__)
+            check_point(ret, __opts__, output=output)
     return ret
 
 
-def pre_deploy(output=True):
+def deploy(output=True):
     '''Prepare cloud controller configuration
     can also apply per virtualization type configuration'''
     kw = {'ret': result(), 'output': output}
-    try:
-        run_vt_hook('pre_configure_controller', ret=kw['ret'])
-        __salt__['mc_api.apply_sls'](
-            ['makina-states.cloud.generic.controller.pre-deploy',
-             'makina-states.cloud.saltify'], **kw)
-        check_point(ret, __opts__)
-        run_vt_hook('post_configure_controller', ret=kw['ret'])
-    except FailedStepError:
-        salt_output(kw['ret'], __opts__, output=output)
-        raise
+    kw['ret']['comment'] += green(
+        'Installing cloud controller configuration files\n')
+    run_vt_hook('pre_deploy_controller', ret=kw['ret'], output=output)
+    __salt__['mc_api.apply_sls'](
+        ['makina-states.cloud.generic.controller',
+         'makina-states.cloud.saltify'], **kw)
+    check_point(kw['ret'], __opts__, output=output)
+    run_vt_hook('post_deploy_controller', ret=kw['ret'], output=output)
     salt_output(kw['ret'], __opts__, output=output)
     return kw['ret']
-
-
-def deploy():
-    ret = result()
-    run_vt_hook('pre_deploy_controller', ret=ret)
-    run_vt_hook('post_deploy_controller', ret=ret)
-    return ret
-
-
-def post_deploy():
-    ret = result()
-    run_vt_hook('pre_post_deploy_controller', ret=ret)
-    run_vt_hook('post_post_deploy_controller', ret=ret)
-    return ret
 
 
 def exists(name):
@@ -133,21 +123,17 @@ def orchestrate(output=True, refresh=True):
     if refresh:
         cli('saltutil.refresh_pillar')
     try:
-        ret = pre_deploy()
-        check_point(ret, __opts__)
-        ret = deploy()
-        check_point(ret, __opts__)
+        ret = deploy(output=False)
+        check_point(ret, __opts__, output=output)
         cret = __salt__['mc_cloud_saltify.orchestrate'](
             output=False, refresh=False)
-        if cret['result']:
-            ret['comment'] += cret['comment']
-            ret['trace'] += cret['trace']
+        del cret['result']
+        merge_results(ret, cret)
         cn_in_error = cret['changes'].get('saltified_errors', [])
-        c_ret = __salt__['mc_cloud_compute_node.orchestrate'](
+        cret = __salt__['mc_cloud_compute_node.orchestrate'](
             skip=cn_in_error, output=False)
-        if cret['result']:
-            ret['comment'] += cret['comment']
-            ret['trace'] += cret['trace']
+        del cret['result']
+        merge_results(ret, cret)
         cn_in_error = cret['changes'].get('provision_error', [])
     except FailedStepError:
         salt_output(ret, __opts__, output=output)
