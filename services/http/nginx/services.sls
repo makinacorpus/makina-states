@@ -3,8 +3,8 @@ include:
 #--- MAIN SERVICE RESTART/RELOAD watchers --------------
 # Configuration checker, always run before restart of graceful restart
 makina-nginx-conf-syntax-check:
-  cmd.script:
-    - source: file://{{ salt['mc_salt.settings']().msr }}/_scripts/nginxConfCheck.sh
+  cmd.run:
+    - name: {{ salt['mc_salt.settings']().msr }}/_scripts/nginxConfCheck.sh
     - stateful: True
     - watch:
        - mc_proxy: nginx-pre-restart-hook

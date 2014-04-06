@@ -96,9 +96,9 @@ prepreq-{{common.name}}:
 
 {% if common.full -%}
 {{common.name}}-caches-restricted-perms:
-  cmd.script:
-    - source: {{saltmac.resetperms}}
-    - args: >
+  cmd.run:
+    - name: >
+            {{saltmac.resetperms}}
             --dmode '0775' --fmode '0775'
             --user  {{common.user}} --group "{{common.group}}"
             --paths {{common.data.buildout.settings.buildout['eggs-directory']}}

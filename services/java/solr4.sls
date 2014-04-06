@@ -87,7 +87,7 @@ solr{{ v }}-prerequisites:
     - name: {{ dl_dir }}
     - makedirs: true
   cmd.run:
-    - name: |
+    - name: >
             wget -c http://apache.mirrors.multidist.eu/lucene/solr/{{ fv }}/solr-{{ fv }}.tgz &&
             tar xzf solr-{{ fv }}.tgz &&
             touch {{ dl_dir }}/solr-{{ fv }}/.download
@@ -105,7 +105,7 @@ solr{{ v }}-prerequisites:
   cmd.run:
     - require:
       - file: {{ home_dir }}-solr-{{ v }}
-    - name: |
+    - name: >
             unzip -qq -o dist/*solr*war -d {{ webapp_dir }}/solr &&
             cp dist/*jar dist/*/*jar   {{ webapp_dir }}/solr/WEB-INF/lib
     - cwd: {{ dl_dir }}/solr-{{ fv }}
@@ -215,9 +215,9 @@ fill-block-solrxml-{{ v }}:
 
 # fix perms
 {{ groot }}-reset-perms:
-  cmd.script:
-    - source: {{ saltmac.resetperms }}
-    - args: >
+  cmd.run:
+    - name: >
+            {{ saltmac.resetperms }}
             --paths "{{ solr.groot }}"
             --dmode '0770' --fmode 0770
             -u {{ tdata['tomcat_user'] }} -g {{ localsettings.group }}

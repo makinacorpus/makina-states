@@ -366,31 +366,6 @@ salt-{{ data.name }}-makina-states-dirs:
       - {{ localRoot }}/{{ i }}
       {% endfor %}
 
-{# done now in conf
-salt-{{ data.name }}-grains:
-  cmd.run:
-    - name: {{localMsr}}/_scripts/install_salt_modules.sh "{{localRoot}}"
-    - require_in:
-      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
-    - unless: |
-              for i in _grains;do
-                for f in $(find {{localMsr}}/$i -name "*py" -type f);do
-                  dest="$f";
-                  sym="{{localRoot}}/$i/$(basename $f)";
-                  if [[ ! -e  "$sym" ]];then
-                    echo "$sym not present";
-                    exit -1;
-                  fi;
-                  if [[ -h "$sym" ]];then
-                    if [[ "$(readlink $sym)" != "$dest" ]];then
-                      echo "$sym != $dest";
-                      exit -1;
-                    fi;
-                  fi;
-                done;
-              done;
-              exit 0;
-#}
 {#- update makina-state #}
 salt-{{ data.name }}-buildout-bootstrap:
   cmd.run:
@@ -449,19 +424,12 @@ salt-{{ data.name }}-logrotate:
     - source: salt://makina-states/files/etc/logrotate.d/salt.conf
     - salt_data: {{ yamled_data }}
 
-{#
-salt-{{ data.name }}-reload-grains:
-  cmd.script:
-    - source: salt://makina-states/_scripts/reload_grains.sh
-    - template: jinja
-#}
-
 {#- Fix permissions and ownerships
 # recurse does not seem to work well to reset perms #}
 etc-{{data.name}}-dirs-perms:
-  cmd.script:
-    - source:  {{data.resetperms }}
-    - args: >
+  cmd.run:
+    - name: >
+            {{data.resetperms }}
             --dmode 0770 --fmode 0770
             --user "root" --group "{{ localsettings.group }}"
             --paths {{ data.conf_prefix }}
@@ -471,9 +439,9 @@ etc-{{data.name}}-dirs-perms:
 
 {#- recurse does not seem to work well to reset perms #}
 {{data.name}}-projects-dirs-perms:
-  cmd.script:
-    - source: {{ data.resetperms }}
-    - args: >
+  cmd.run:
+    - name: >
+            {{ data.resetperms }}
             -u root -g "{{ localsettings.group }}"
             --dmode 0770 --fmode 0770
             --only-acls
@@ -483,9 +451,9 @@ etc-{{data.name}}-dirs-perms:
       - cmd: etc-{{data.name}}-dirs-perms
 
 {{data.name}}-dirs-perms:
-  cmd.script:
-    - source: {{ data.resetperms }}
-    - args: >
+  cmd.run:
+    - name: >
+            {{ data.resetperms }}
             --dmode 0770 --fmode 0770
             --user "root" --group "{{ localsettings.group }}"
             --paths "{{ data.salt_root }}"
@@ -498,9 +466,9 @@ etc-{{data.name}}-dirs-perms:
       - cmd: {{data.name}}-projects-dirs-perms
 
 {{data.name}}-dirs-restricted-perms:
-  cmd.script:
-    - source: {{ resetperms }}
-    - args: >
+  cmd.run:
+    - name: >
+            {{ resetperms }}
             --fmode 0750 --dmode 0750
             --user "root" --group "{{ localsettings.group }}"
             --paths "{{ data.log_prefix }}"
@@ -513,29 +481,6 @@ etc-{{data.name}}-dirs-perms:
       - file: salt-{{data.name}}-dirs-restricted
       - mc_proxy: dummy-pre-{{data.name}}-service-restart
 
-{#-
-# recurse does not seem to work well to reset perms
-{{data.name}}-docker-dirs-if-present:
-  cmd.script:
-    - onlif: ls -d {{data.prefix}}/docker/makinacorpus
-    - source: {{ data.resetperms }}
-    - template: jinja
-    - paths:
-      - {{ data.vms_docker_root }}
-    - msr: {{ data.msr }}
-    - only_acls: True
-    - dmode: 0770
-    - fmode: 0770
-    - user: "root"
-    - group: {{ localsettings.group }}
-    - require_in:
-      - mc_proxy: dummy-pre-{{data.name}}-service-restart
-    - excludes:
-      - {{ data.vms_docker_root }}/docker/bundles
-      - {{ data.vms_docker_root }}/cache
-      - {{ data.vms_docker_root }}/makinacorpus/debian/debootstrap
-      - {{ data.vms_docker_root }}/makinacorpus/ubuntu_deboostrap/debootstrap
-#}
 {% endmacro %}
 
 {#-
@@ -661,7 +606,7 @@ salt-{{ data.daemon_name }}-logs:
 # done to mitigate authentication errors on restart
 salt-restart-{{ data.daemon_name }}:
   cmd.run:
-    - name: |
+    - name: >
             service {{ data.daemon_name }} stop ;\
             service {{ data.daemon_name }} start &&\
             echo "Reloading {{ data.daemon_name }}" &&\

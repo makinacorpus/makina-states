@@ -92,9 +92,9 @@ prereq-pureftpd:
 {%- set ssl = salt['mc_localsettings.settings']()['SSLSettings'] %}
 {{key}}-makina-pureftpd:
   cmd.run:
-    - name: |
-            openssl req -batch -x509 -nodes -days 36500 -newkey rsa:2048 \
-            -keyout "{{key}}" -out "{{key}}" \
+    - name: >
+            openssl req -batch -x509 -nodes -days 36500 -newkey rsa:2048 
+            -keyout "{{key}}" -out "{{key}}" 
             -subj "/C={{ssl.country}}/ST={{ssl.st}}/L={{ssl.l}}/O={{ssl.o}}/CN={{ssl.cn}}/EMAIL={{ssl.email}}"
     - unless: test -e {{key}}
     - watch:
@@ -104,9 +104,9 @@ prereq-pureftpd:
       - cmd: {{key}}-makina-pureftpd-perm
 
 {{key}}-makina-pureftpd-perm:
-  cmd.script:
-    - source: 'file://{{salt['mc_salt.settings']()['msr']}}/_scripts/reset-perms.py'
-    - args: >
+  cmd.run:
+    - name: >
+            '{{salt['mc_salt.settings']()['msr']}}/_scripts/reset-perms.py'
             --dmode 0700 --fmode 0700
             --user root --group root
             --paths {{ key }}
