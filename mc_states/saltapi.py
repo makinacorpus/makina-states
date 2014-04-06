@@ -330,12 +330,12 @@ def complete_gateway(target_data, default_data):
 
 
 def check_point(ret, __opts__):
+    api.msplitstrip(ret)
     if not ret['result']:
         salt_output(ret, __opts__, output=True)
         raise FailedStepError(red(
             'Execution of the runner has been stopped due to'
             ' error'))
-    api.msplitstrip(ret)
 
 
 def _colors(color=None, colorize=True):
