@@ -1,5 +1,5 @@
-{%raw%}{%set lxcSettings = "{%endraw%}{{slxcSettings}}{%raw%}"|load_json%}
-{% set sdata = salt['mc_utils.json_dump(lxcSettings) %}
+{%load_json as lxcSettings%}{{pillar.slxcSettings}}{%endload%}
+{% set sdata = salt['mc_utils.json_dump'](lxcSettings) %}
 include:
   - makina-states.services.firewall.shorewall
   - makina-states.services.virt.lxc
@@ -41,4 +41,3 @@ lxc-makina-services-enabling:
       - lxc-net-makina
     - require_in:
       - mc_proxy: lxc-post-inst
-{% endraw %}

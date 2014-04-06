@@ -198,7 +198,9 @@ def get(key, default='', local_registry=None):
 
         - Local minion config (opts)
         - Minion's pillar
-        - Dict passed in local_registry argument
+        - Dict:
+            - passed in local_registry argument
+            - or automaticly loaded global registries
         - Minion's grains
         - Master config
 
@@ -208,6 +210,15 @@ def get(key, default='', local_registry=None):
 
         salt '*' mc_utils.get pkg:apache
     '''
+    if local_registry is None:
+        local_prefs = [(a, 'makina-states.{0}.'.format(a))
+                       for a in api._GLOBAL_KINDS]
+        for reg, pref in local_prefs:
+            if key.startswith(pref):
+                local_registry = reg
+                break
+    if isinstance(local_registry, basestring):
+        local_registry = __salt__['mc_macros.get_local_registry'](local_registry)
     ret = salt.utils.traverse_dict(__opts__, key, '_|-')
     if ret != '_|-':
         return ret
@@ -352,6 +363,13 @@ def json_dump(data):
 
 def yencode(string):
     return api.yencode(string)
+
+
+def file_read(fic):
+    data = ''
+    with open(fic, 'r') as f:
+        data = f.read()
+    return data
 
 
 def unix_crypt(passwd):

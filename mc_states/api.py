@@ -12,6 +12,20 @@ import json
 import re
 
 
+_GLOBAL_KINDS = [
+    'localsettings',
+    'services',
+    'controllers',
+    'nodetypes',
+    'cloud',
+]
+_SUB_REGISTRIES = [
+    'metadata',
+    'settings',
+    'registry',
+]
+
+
 def uniquify(seq):
     '''uniquify a list'''
     seen = set()
@@ -57,4 +71,10 @@ def json_dump(data):
     content = json.dumps(data)
     content = content.replace('\n', ' ')
     return yencode(content)
+
+
+def b64json_dump(data):
+    return json_dump(data).encode('base64')
+
+
 # vim:set et sts=4 ts=4 tw=80:

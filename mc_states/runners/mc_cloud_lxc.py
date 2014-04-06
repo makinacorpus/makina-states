@@ -27,14 +27,13 @@ from salt.utils.odict import OrderedDict
 
 from mc_states import api
 from mc_states.saltapi import (
-    apply_sls,
+    merge_results,
     result,
     salt_output,
     check_point,
     SaltExit,
     green, red, yellow,
     SaltCopyError,
-    client,
     FailedStepError,
     MessageError,
 )
@@ -43,13 +42,33 @@ log = logging.getLogger(__name__)
 
 
 def cli(*args, **kwargs):
-    if not kwargs:
-        kwargs = {}
-    kwargs.update({
-        'salt_cfgdir': __opts__.get('config_dir', None),
-        'salt_cfg': __opts__.get('conf_file', None),
-    })
-    return client(*args, **kwargs)
+    return __salt__['mc_api.cli'](*args, **kwargs)
+
+
+def compute_node_pillar(target):
+    cloudSettings = cli('mc_cloud.settings')
+    imgSettings = cli('mc_cloud_images.settings')
+    lxcSettings = cli('mc_cloud_lxc.settings')
+    imgSettingsData = {}
+    lxcSettingsData = {}
+    for name, imageData in imgSettings['lxc']['images'].items():
+        imgSettingsData[name] = {
+            'lxc_tarball': imageData['lxc_tarball'],
+            'lxc_tarball_md5': imageData['lxc_tarball_md5'],
+            'lxc_tarball_name': imageData['lxc_tarball_name'],
+            'lxc_tarball_ver': imageData['lxc_tarball_ver']}
+    for name, imageData in lxcSettings['defaults'].items():
+        data = lxcSettingsData.setdefault(name, {})
+        for v in ['use_bridge', 'bridge',
+                  'gateway', 'netmask_full',
+                  'network', 'netmask']:
+            data[v] = lxcSettings['defaults'][v]
+    imgSettingsData = api.json_dump(imgSettingsData)
+    lxcSettingsData = api.json_dump(lxcSettingsData)
+    pillar = {'slxcSettings': lxcSettingsData,
+              'simgSettings': imgSettingsData,
+              'sprefix': cloudSettings['prefix']}
+    return pillar
 
 
 def post_configure_controller(output=True):
@@ -58,16 +77,13 @@ def post_configure_controller(output=True):
     ret = result()
     try:
         id_ = cli('config.get', 'id')
-        cret = cli('state.sls',
-                   'makina-states.cloud.lxc.controller.pre-deploy')
-        ret['result'] = check_state_result(cret)
-        soutput = salt.output.get_printout(
-            'highstate', __opts__)({id_: cret})
-        ret['output'] = soutput
+        cret = __salt__['mc_api.apply_sls'](
+            'makina-states.cloud.lxc.controller.pre-deploy')
+        merge_results(ret, cret)
         if ret['result']:
             ret['comment'] += green(
                 'LXC cloud controller configuration '
-                'is applied')
+                'is applied\n')
         else:
             ret['comment'] += red(
                 'LXC cloud controller configuration '
@@ -88,16 +104,13 @@ def post_deploy_controller(output=False):
     ret = result()
     try:
         id_ = cli('config.get', 'id')
-        cret = cli('state.sls',
-                   'makina-states.cloud.lxc.controller.post-deploy')
-        ret['result'] = check_state_result(cret)
-        soutput = salt.output.get_printout(
-            'highstate', __opts__)({id_: cret})
-        ret['output'] = soutput
+        cret = __salt__['mc_salt.apply_sls'](
+            'makina-states.cloud.lxc.controller.post-deploy')
+        merge_results(ret, cret)
         if ret['result']:
             ret['comment'] += green(
                 'LXC cloud controller '
-                'post-configuration is applied')
+                'post-configuration is applied\n')
         else:
             ret['comment'] += red(
                 'LXC cloud controller '
@@ -129,57 +142,17 @@ def postdeploy_pre(target, vm, rets=None):
     checkpoint(rets, ret)
 
 
-def install_vt(target, output=False):
+def install_vt(target, output=True):
     ret = result()
-    pre_slss = [
-        'pre-deploy/grains.sls',
-        'pre-deploy/install-lxc.sls',
-        'pre-deploy/images.sls',
-    ]
-    cdir = '/srv/cloud-controller'
-    imgSettings = cli('mc_cloud_images.settings')
-    lxcSettings = cli('mc_cloud_lxc.settings')
-    imgSettingsData = {}
-    lxcSettingsData = {}
-    for name, imageData in imgSettings['lxc']['images'].items():
-        imgSettingsData[name] = {
-            'lxc_tarball_name': imageData['lxc_tarball_name'],
-            'lxc_tarball_ver': imageData['lxc_tarball_ver']}
-    for name, imageData in lxcSettings['defaults'].items():
-        data = lxcSettingsData.setdefault(name, {})
-        for v in ['use_bridge', 'bridge',
-                  'gateway', 'netmask_full',
-                  'network', 'netmask']:
-            data[v] = lxcSettings['defaults'][v]
-    imgSettingsData = api.json_dump(imgSettingsData)
-    lxcSettingsData = api.json_dump(lxcSettingsData)
-    slsfs = []
-    try:
-        for sls in pre_slss:
-            dst = '{0}/lxc/{1}'.format(cdir, sls)
-            ret = cli('cp.get_template',
-                      'salt://makina-states/cloud/lxc/compute_node/{0}'.format(sls),
-                      dst,
-                      simgSettings=imgSettingsData,
-                      slxcSettings=lxcSettingsData,
-                      makedirs=True, salt_target=target)
-            if ret != dst:
-                raise SaltCopyError('Cant copy {0} to {1}'.format(dst, target))
-            ret = cli('cmd.run', 'chmod 700 "{0}"'.format(dst))
-            slsfs.append(dst)
-            apply_sls(cli, slsfs, target=target)
-    except FailedStepError:
-        salt_output(ret, __opts__, output=output)
-        raise
-    except SaltCopyError, ex:
-        ret['comment'] += '{0}'.format(ex)
-        ret['result'] = False
-        salt_output(ret, __opts__, output=output)
-        raise
+    ret['comment'] = yellow('Installing lxc on {0}\n'.format(target))
+    pref = 'makina-states.cloud.lxc.compute_node'
+    ret =  __salt__['mc_api.apply_sls'](
+        ['{0}.pre-deploy.grains'.format(pref),
+         '{0}.pre-deploy.install-lxc'.format(pref),
+         '{0}.pre-deploy.images'.format(pref)],
+        **{'salt_target': target,
+           'ret': ret,
+           'sls_kw': {'pillar': compute_node_pillar(target)}})
     salt_output(ret, __opts__, output=output)
     return ret
-
-
-
-
 # vim:set et sts=4 ts=4 tw=80:

@@ -1,5 +1,6 @@
-{%raw%}{# WARNING THIS STATE FILE IS GENERATED #}{%endraw%}
-{%raw%}{% set imgSettings = "{%endraw%}{{simgSettings}}{%raw%}"|load_json %}
+{# WARNING THIS STATE FILE IS GENERATED #}
+{%load_json as sprefix%}{{pillar.sprefix}}{%endload%}
+{% set sprefix = pillar['sprefix'] %}
 include:
   - makina-states.cloud.generic.hooks.generate
 {% for name, imgdata in imgSettings.items() %}
@@ -51,9 +52,9 @@ restore-acls-{{name}}:
       - lxc: {{name}}-stop-default-lxc-container
 {{name}}-lxc-removeminion:
   file.absent:
-    - name: {{cloudSettings.prefix}}/pki/master/minions/{{name}}
+    - name: {{sprefix}}/pki/master/minions/{{name}}
     - watch:
       - cmd: {{name}}-lxc-snap
+{% endfor %}
 maybe-only-one-gen-lxc-images:
   mc_proxy.hook : []
-{% endraw %}

@@ -40,13 +40,7 @@ log = logging.getLogger(__name__)
 
 
 def cli(*args, **kwargs):
-    if not kwargs:
-        kwargs = {}
-    kwargs.update({
-        'salt_cfgdir': __opts__.get('config_dir', None),
-        'salt_cfg': __opts__.get('conf_file', None),
-    })
-    return client(*args, **kwargs)
+    return __salt__['mc_api.cli'](*args, **kwargs)
 
 
 def _checkpoint(ret):
@@ -59,8 +53,7 @@ def pre_deploy(target, output=True):
     can also apply per virtualization type configuration'''
     ret, opt = result(), __opts__
     try:
-        __salt__['mc_cloud_controller.run_vt_hook'](
-            'pre_configure_compute_node', ret)
+        run_vt_hook('pre_configure_compute_node', ret=ret, target=target)
         check_point(ret)
         for step in [configure_ssh,
                      configure_grains,
@@ -75,13 +68,12 @@ def pre_deploy(target, output=True):
                 'highstate', opt)({target: cret})
             if ret['result']:
                 ret['comment'] += green(
-                    'Global cloud controller configuration is applied')
+                    'Global cloud controller configuration is applied\n')
             else:
                 ret['comment'] += red(
                     'Cloud controller failed to configure:\n')
             check_point(ret)
-        __salt__['mc_cloud_controller.run_vt_hook'](
-            'post_configure_compute_node', ret)
+        run_vt_hook('post_configure_compute_node', ret=ret, target=target)
     except FailedStepError:
         if output:
             salt.output.display_output(ret, '', __opts__)
@@ -93,43 +85,47 @@ def pre_deploy(target, output=True):
 
 def configure_grains(target):
     ret = result()
-    ret['comment'] = 'Grains installed for {0}'.format(target)
+    ret['comment'] = 'Grains installed for {0}\n'.format(target)
     return ret
 
 
 def configure_ssh(target):
     ret = result()
-    ret['comment'] = 'SSH key installed for {0}'.format(target)
+    ret['comment'] = 'SSH key installed for {0}\n'.format(target)
     return ret
 
 
-def install_vts(target):
-    ret = result()
-    settings = cli('mc_cloud_compute_node.settings')
-    for vt in settings['targets'][target]['virt_type']:
-        cret = _salt__['mc_cloud_controller.run_vt_hook'](
-            'install_vt', ret, vt)
-        merge_results(ret, cret)
-        if ret['result']:
-            ret['comment'] = '{0} can now host {1} vms'.format(target)
+def run_vt_hook(hook_name, target, ret=None, vts=None, *args, **kwargs):
+    return  __salt__['mc_cloud_controller.run_vt_hook'](hook_name,
+                                                        ret=ret,
+                                                        target=target,
+                                                        vts=vts,
+                                                        *args, **kwargs)
+
+
+def install_vts(target, output=False):
+    ret = run_vt_hook('install_vt', target=target)
+    if ret['result']:
+        ret['comment'] += yellow('{0} can now host {1} vms\n'.format(target))
+    salt_output(ret, __opts__, output=output)
     return ret
 
 
 def configure_firewall(target):
     ret = result()
-    ret['comment'] = 'Firewall configured for {0}'.format(target)
+    ret['comment'] = 'Firewall configured for {0}\n'.format(target)
     return ret
 
 
 def configure_reverse_proxy(target):
     ret = result()
-    ret['comment'] = 'Reverse proxy configured for {0}'.format(target)
+    ret['comment'] = 'Reverse proxy configured for {0}\n'.format(target)
     return ret
 
 
 def configure_hosts(target):
     ret = result()
-    ret['comment'] = '/etc/hosts configured for {0}'.format(target)
+    ret['comment'] = '/etc/hosts configured for {0}\n'.format(target)
     return ret
 
 
@@ -154,7 +150,7 @@ def provision_targets(skip=None, output=True, refresh=False):
             targets.append(a)
         else:
             ret['comment'] += yellow(
-                'compute node {0} provision skipped'.format(a))
+                'compute node {0} provision skipped\n'.format(a))
     targets.sort()
     for compute_node in targets:
         try:
@@ -169,8 +165,8 @@ def provision_targets(skip=None, output=True, refresh=False):
         except Exception, exc:
             trace = traceback.format_exc()
             comment += yellow(
-                '\nCompute node prvision failed for '
-                '{0}: {1}'.format(compute_node, exc))
+                'Compute node prvision failed for '
+                '{0}: {1}\n'.format(compute_node, exc))
             if not isinstance(exc, ComputeNodeProvisionError):
                 ret['trace'] += '\n'.format(trace)
             log.error(trace)
@@ -197,13 +193,13 @@ def provision_vms(skip=None, skip_vms=None, output=True, refresh=False):
             targets.append(a)
         else:
             ret['comment'] += yellow(
-                'compute node {0} provision skipped'.format(a))
+                'compute node {0} provision skipped\n'.format(a))
     for compute_node in targets:
         for vm, vt in settings[compute_node]['vms'].items():
             if vm in skip_vms.get(compute_node, []):
                 ret['comment'] += yellow(
                     'Compute node vms {0}/{2}/{1} '
-                    'provision skipped'.format(a, vm, vt))
+                    'provision skipped\n'.format(a, vm, vt))
                 continue
             try:
                 ret = __salt__['mc_cloud_vm.orchestrate'](target, vt, vm)
@@ -211,7 +207,7 @@ def provision_vms(skip=None, skip_vms=None, output=True, refresh=False):
                 trace = traceback.format_exc()
                 comment += yellow(
                     '\nCompute node vm prvision failed for '
-                    '{0}/{1}: {2}'.format(compute_node, vm, exc))
+                    '{0}/{1}: {2}\n'.format(compute_node, vm, exc))
                 if not isinstance(exc, ComputeNodeProvisionError):
                     ret['trace'] += '\n'.format(trace)
                 log.error(trace)
@@ -236,7 +232,7 @@ def post_configure_targets(skip=None, output=True, refresh=False):
             targets.append(a)
         else:
             ret['comment'] += yellow(
-                'compute node {0} provision skipped'.format(a))
+                'compute node {0} provision skipped\n'.format(a))
     for compute_node in targets:
         try:
             ret = __salt__[
@@ -272,7 +268,7 @@ def orchestrate(skip=None, skip_vms=None, output=True, refresh=False):
             ret['comment'] += cret['comment']
             ret['trace'] += cret['trace']
         else:
-            ret['comment'] += '\nAll computes nodes were provisionned'
+            ret['comment'] += 'All computes nodes were provisionned\n'
 
     vcret = provision_vms(skip=skip, output=output, refresh=refresh, ret=ret)
     vms_in_errors = ret['changes'].setdefault(
@@ -282,7 +278,7 @@ def orchestrate(skip=None, skip_vms=None, output=True, refresh=False):
             ret['comment'] += cret['comment']
             ret['trace'] += cret['trace']
         else:
-            ret['comment'] += '\nAll vms were provisionned'
+            ret['comment'] += 'All vms were provisionned\n'
     skip_vms.update(vms_in_errors)
     pcret = post_configure_targets(skip=skip, skip_vms=skip_vms,
                                    output=output, refresh=refresh, ret=ret)
@@ -294,6 +290,6 @@ def orchestrate(skip=None, skip_vms=None, output=True, refresh=False):
             ret['comment'] += cret['comment']
             ret['trace'] += cret['trace']
         else:
-            ret['comment'] += '\nAll post procedures controller/vm were done'
+            ret['comment'] += 'All post procedures controller/vm were done\n'
     return ret
 #

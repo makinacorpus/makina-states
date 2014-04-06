@@ -22,10 +22,10 @@ include:
                 {{target}}-run-grains:
                   grains.present:
                     - names:
-                      - makina-states.cloud.is.compute_node
                       - makina-states.services.proxy.haproxy
                       - makina-states.services.firewall.shorewall
                       - makina-states.cloud.compute_node.has.firewall
+                      - makina-states.cloud.is.compute_node
                     - value: true
                 {{ target }}-reload-grains:
                   cmd.script:

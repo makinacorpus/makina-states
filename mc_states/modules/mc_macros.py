@@ -12,23 +12,15 @@ import os
 import traceback
 from salt.exceptions import SaltException
 from salt.utils.odict import OrderedDict
+from mc_states.api import(
+    _GLOBAL_KINDS,
+    _SUB_REGISTRIES,
+)
 
 _default_activation_status = object()
 
 # cache variable
 _REGISTRY = {}
-_GLOBAL_KINDS = [
-    'localsettings',
-    'services',
-    'controllers',
-    'nodetypes',
-    'cloud',
-]
-_SUB_REGISTRIES = [
-    'metadata',
-    'settings',
-    'registry',
-]
 import yaml
 from salt.utils import yamldumper
 from salt.renderers.yaml import get_yaml_loader
@@ -90,9 +82,7 @@ def load_registries():
 
 def kinds():
     # py3 compatible dict keys()
-    return [a
-            for a in __salt__['mc_macros.load_registries']()
-            if a in _GLOBAL_KINDS]
+    return [a for a in _GLOBAL_KINDS]
 
 
 def metadata(kind, grain=None, state=None, bases=None):

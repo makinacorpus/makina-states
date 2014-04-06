@@ -45,82 +45,55 @@ log = logging.getLogger(__name__)
 
 
 def cli(*args, **kwargs):
-    if not kwargs:
-        kwargs = {}
-    kwargs.update({
-        'salt_cfgdir': __opts__.get('config_dir', None),
-        'salt_cfg': __opts__.get('conf_file', None),
-    })
-    return client(*args, **kwargs)
+    return __salt__['mc_api.cli'](*args, **kwargs)
 
 
 def post_configure(output=True):
     return result()
 
 
-def run_vt_hook(hook_name, ret=None, vts=None, *args, **kwargs):
+def run_vt_hook(hook_name, ret=None, target=None, vts=None, *args, **kwargs):
+    if target:
+        kwargs['target'] = target
     if ret is None:
         ret = result()
     if not vts:
-        settings = cli('mc_cloud_controller.settings')
-        vts = settings['vts']
+        if not target:
+            settings = cli('mc_cloud_controller.settings')
+            vts = settings['vts']
+        else:
+            settings = cli('mc_cloud_compute_node.settings')
+            vts = settings['targets'][target]['virt_types']
     if isinstance(vts, basestring):
         vts = [vts]
     for vt in vts:
         vid_ = 'mc_cloud_{0}.{1}'.format(vt, hook_name)
         if vid_ in __salt__:
-            ret['comment'] += green('\nExecuting {0} hook'.format(vid_))
+            ret['comment'] += green('Executing {0} hook\n'.format(vid_))
             kwargs['output'] = False
+            import pdb;pdb.set_trace()  ## Breakpoint ##
             cret = __salt__[vid_](*args, **kwargs)
             merge_results(ret, cret)
             check_point(ret)
     return ret
 
 
-def _sls_exec(sls,
-              success='Sucess',
-              error='Error',
-              id_='local',
-              ret=None):
-    if ret is None:
-        ret = result()
-    cret = cli('state.sls', sls)
-    ret['result'] = check_state_result(cret)
-    ret['output'] = salt.output.get_printout(
-        'highstate', __opts__)({id_: cret})
-    if ret['result']:
-        ret['comment'] += green(success)
-    else:
-        ret['comment'] += red(error)
-    return ret
-
-
 def pre_deploy(output=True):
     '''Prepare cloud controller configuration
     can also apply per virtualization type configuration'''
-    ret = result()
+    kw = {'ret': result(), 'output': output}
     try:
-        run_vt_hook('pre_configure_controller', ret=ret)
-        id_ = cli('config.get', 'id')
-        _sls_exec(
-            'makina-states.cloud.generic.controller.pre-deploy',
-            success='Global cloud controller configuration is applied',
-            error='Cloud controller failed to configure',
-            id_=id_,
-            ret=ret)
-        _sls_exec(
-            'makina-states.cloud.saltify',
-            success='Cloud controller saltify configuration is applied',
-            error='Cloud controller saltify configuration failed to configure',
-            id_=id_,
-            ret=ret)
+        run_vt_hook('pre_configure_controller', ret=kw['ret'])
+        __salt__['mc_api.apply_sls'](
+            ['makina-states.cloud.generic.controller.pre-deploy',
+             'makina-states.cloud.saltify'], **kw)
         check_point(ret)
-        run_vt_hook('post_configure_controller', ret=ret)
+        run_vt_hook('post_configure_controller', ret=kw['ret'])
     except FailedStepError:
-        salt_output(ret, __opts__, output=output)
+        salt_output(kw['ret'], __opts__, output=output)
         raise
-    salt_output(ret, __opts__, output=output)
-    return ret
+    salt_output(kw['ret'], __opts__, output=output)
+    return kw['ret']
 
 
 def deploy():

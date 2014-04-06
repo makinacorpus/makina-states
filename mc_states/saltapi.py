@@ -14,6 +14,8 @@ from pprint import pformat
 import salt.syspaths
 import os
 import copy
+import traceback
+from salt.utils import check_state_result
 import time
 
 import salt.utils
@@ -169,6 +171,10 @@ def client(fun, *args, **kw):
     except KeyError:
         cfgdir = None
     try:
+        __opts__ = kw.pop('salt___opts__')
+    except KeyError:
+        __opts__ = {}
+    try:
         cfg = kw.pop('salt_cfg')
     except KeyError:
         cfg = None
@@ -278,36 +284,6 @@ def client(fun, *args, **kw):
     return ret
 
 
-def apply_sls(cli, slsfs, target=None):
-    ret = result()
-    kwargs = {}
-    if target:
-        kwargs['salt_target'] = target
-    if isinstance(slsfs, basestring):
-        slsfs = [slsfs]
-    failed = []
-    for sls in slsfs:
-        cret = None
-        try:
-            cret = cli(
-                'state.template', sls, **kwargs)
-            if not check_state_result(cret):
-                raise SaltExit('Execution failed for sls: {0}'.format(sls))
-        except SaltExit, exc:
-            ret['result'] = False
-            ret['comment'] += '\n{0}'.format(exc)
-            trace = traceback.format_exc()
-            failed.append(sls)
-            ret['trace'] += '\n{0}'.format(trace)
-            if cret:
-                ret['trace'] += '\n{0}'.format(pformat(cret))
-    if failed:
-        ret['comment'] += ret(
-            'Some sls for installation failed '
-            'to apply:\n    {0}'.format('\n    '.join(failed)))
-    return ret
-
-
 def _errmsg(ret, msg):
     err = '\n{0}\n'.format(msg)
     for k in ['comment', 'trace']:
@@ -315,16 +291,16 @@ def _errmsg(ret, msg):
             err += '\n{0}:\n{1}\n'.format(k, ret[k])
     raise SaltExit(err)
 
-it
+
 def errmsg(msg):
     raise MessageError(msg)
 
 
 def salt_output(ret, __opts__, output=True):
+    import pdb;pdb.set_trace()  ## Breakpoint ##
     if output:
         api.msplitstrip(ret)
         salt.output.display_output(ret, '', __opts__)
-
 
 def complete_gateway(target_data, default_data):
     if 'ssh_gateway' in target_data:
@@ -353,8 +329,9 @@ def complete_gateway(target_data, default_data):
     return target_data
 
 
-def check_point(ret):
+def check_point(ret, __opts__):
     if not ret['result']:
+        salt_output(ret, __opts__, output=True)
         raise FailedStepError(red(
             'Execution of the runner has been stopped due to'
             ' error'))
@@ -369,15 +346,27 @@ def _colors(color=None, colorize=True):
 
 
 def yellow(string):
-    return '\n{0}{2}{1}\n'.format(_colors('YELLOW'), _colors('ENDC'), string)
+    return '{0}{2}{1}'.format(_colors('YELLOW'), _colors('ENDC'), string)
 
 
 def green(string):
-    return '\n{0}{2}{1}\n'.format(_colors('GREEN'), _colors('ENDC'), string)
+    return '{0}{2}{1}'.format(_colors('GREEN'), _colors('ENDC'), string)
 
 
 def red(string):
-    return '\n{0}{2}{1}\n'.format(_colors('RED'), _colors('ENDC'), string)
+    return '{0}{2}{1}'.format(_colors('RED'), _colors('ENDC'), string)
+
+
+def yellow_line(string):
+    return "\n{0}\n".format(yellow(string))
+
+
+def green_line(string):
+    return "\n{0}\n".format(green(string))
+
+
+def red_line(string):
+    return "\n{0}\n".format(red(string))
 
 
 def process_cloud_return(name, info, driver='saltify', ret=None):
@@ -418,11 +407,11 @@ def merge_results(ret, cret):
     if not cret['result']:
         ret['result'] = False
     if cret['output']:
-        ret['output'] += "\n{0}\n".format(cret['output'])
+        ret['output'] += "\n{0}".format(cret['output'])
     if cret['comment']:
-        ret['comment'] += "\n{0}\n".format(cret['comment'])
+        ret['comment'] += "\n{0}".format(cret['comment'])
     if cret['trace']:
-        ret['trace'] += "\n{0}\n".format(cret['trace'])
+        ret['trace'] += "\n{0}".format(cret['trace'])
     return ret
 
 # vim:set et sts=4 ts=4 tw=80:

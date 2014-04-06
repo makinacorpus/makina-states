@@ -43,6 +43,7 @@ def cli(*args, **kwargs):
     if not kwargs:
         kwargs = {}
     kwargs.update({
+        '__opts__': __opts__,
         'salt_cfgdir': __opts__.get('config_dir', None),
         'salt_cfg': __opts__.get('conf_file', None),
     })

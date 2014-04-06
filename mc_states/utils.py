@@ -29,7 +29,16 @@ def lazy_subregistry_get(__salt__, registry):
     def wrapper(func):
         key = AUTO_NAMES.get(func.__name__, func.__name__)
         def _call(*a, **kw):
-            REG = __salt__['mc_macros.registry_kind_get'](registry)
+            try:
+                REG = __salt__['mc_macros.registry_kind_get'](registry)
+            except:
+                import traceback
+                trace = traceback.format_exc()
+                import pprint
+                with open('/foo', 'w') as fic:
+                    fic.write(pprint.pformat(__salt__.keys()))
+                with open('/foo', 'w') as fic:
+                    fic.write(trace)
             # TODO: replace the next line with the two others with a better test
             # cache each registry 5 minutes. which should be sufficient
             # to render the whole sls files

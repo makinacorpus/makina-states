@@ -40,6 +40,7 @@ def _cli(*args, **kwargs):
         kwargs = {}
     kwargs.update({
         'salt_cfgdir': __opts__.get('config_dir', None),
+        '__opts__': __opts__,
         'salt_cfg': __opts__.get('conf_file', None),
     })
     return saltapi.client(*args, **kwargs)
