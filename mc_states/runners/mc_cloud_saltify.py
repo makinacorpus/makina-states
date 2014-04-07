@@ -43,14 +43,7 @@ log = logging.getLogger(__name__)
 
 
 def cli(*args, **kwargs):
-    if not kwargs:
-        kwargs = {}
-    kwargs.update({
-        'salt_cfgdir': __opts__.get('config_dir', None),
-        '__opts__': __opts__,
-        'salt_cfg': __opts__.get('conf_file', None),
-    })
-    return client(*args, **kwargs)
+    return __salt__['mc_api.cli'](*args, **kwargs)
 
 
 def saltify(name, output=True):

@@ -122,7 +122,17 @@ def exists(name):
     return already_exists
 
 
-def orchestrate(output=True, refresh=True):
+def orchestrate(skip=None,
+                skip_vms=None,
+                only_compute_nodes=None,
+                only_vms=None,
+                no_provision=False,
+                no_post_provision=False,
+                no_vms_post_provision=False,
+                no_vms=False,
+                output=True,
+                refresh=False,
+                ret=None):
     '''install controller, compute node, vms & run postdeploy'''
     ret = result()
     if refresh:
@@ -135,8 +145,19 @@ def orchestrate(output=True, refresh=True):
         del cret['result']
         merge_results(ret, cret)
         cn_in_error = cret['changes'].get('saltified_errors', [])
+        if not skip:
+            skip = []
+        skip += cn_in_error
         cret = __salt__['mc_cloud_compute_node.orchestrate'](
-            skip=cn_in_error, output=False)
+            skip=skip,
+            skip_vms=skip_vms,
+            only_compute_nodes=only_compute_nodes,
+            only_vms=only_vms,
+            no_provision=no_provision,
+            no_post_provision=no_post_provision,
+            no_vms_post_provision=no_vms_post_provision,
+            no_vms=no_vms,
+            refresh=refresh, output=False)
         del cret['result']
         merge_results(ret, cret)
         cn_in_error = cret['changes'].get('provision_error', [])
