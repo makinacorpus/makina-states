@@ -14,7 +14,7 @@ Implementation design & details
 States & modules reference
 -------------------------------
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 4
 
    states/index.rst
 

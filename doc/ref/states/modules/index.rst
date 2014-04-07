@@ -28,11 +28,13 @@ Subregistries
    mc_cloud_lxc.rst
    mc_dbsmartbackup.rst
    mc_etherpad.rst
+   mc_locations.rst
    mc_fail2ban.rst
    mc_haproxy.rst
    mc_kernel.rst
    mc_lxc.rst
    mc_mysql.rst
+   mc_nodejs.rst
    mc_nginx.rst
    mc_pgsql.rst
    mc_php.rst
