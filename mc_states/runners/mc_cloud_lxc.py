@@ -185,7 +185,6 @@ def vm_spawn(compute_node, vm, ret=None, output=True):
 
 def vm_grains(compute_node, vm, ret=None, output=True):
     '''install marker grains'''
-    import pdb;pdb.set_trace()  ## Breakpoint ##
     return _vm_configure('grains', vm, compute_node, vm, ret, output)
 
 
