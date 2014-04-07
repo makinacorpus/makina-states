@@ -22,7 +22,8 @@ _CACHEKEY = '{0}__CACHEKEY'
 
 def lazy_subregistry_get(__salt__, registry):
     """
-    1. lazy load registries
+    1. lazy load registries by calling them
+       and then use memoize caching on them for 5 minutes.
     2. remove problematic variables from the registries like the salt
        dictionnary
     """
@@ -32,13 +33,14 @@ def lazy_subregistry_get(__salt__, registry):
             try:
                 REG = __salt__['mc_macros.registry_kind_get'](registry)
             except:
-                import traceback
-                trace = traceback.format_exc()
-                import pprint
-                with open('/foo', 'w') as fic:
-                    fic.write(pprint.pformat(__salt__.keys()))
-                with open('/foo', 'w') as fic:
-                    fic.write(trace)
+                pass
+                #import traceback
+                #trace = traceback.format_exc()
+                #import pprint
+                #with open('/foo', 'w') as fic:
+                #    fic.write(pprint.pformat(__salt__.keys()))
+                #with open('/foo', 'w') as fic:
+                #    fic.write(trace)
             # TODO: replace the next line with the two others with a better test
             # cache each registry 5 minutes. which should be sufficient
             # to render the whole sls files
@@ -46,11 +48,11 @@ def lazy_subregistry_get(__salt__, registry):
             # it will be editable
             tkey = "{0}".format(time() // (60 * 5))
             ckey = _CACHEKEY.format(key)
-            if not ckey in REG:
+            if ckey not in REG:
                 REG[ckey] = ''
             if tkey != REG[ckey] and key in REG:
                 del REG[key]
-            if not key in REG:
+            if key not in REG:
                 REG[key] = func(*a, **kw)
                 REG[key]['reg_kind'] = registry
                 REG[key]['reg_func_name'] = key

@@ -211,68 +211,14 @@ def settings():
         data['resolver'] = resolver
         data['grainsPref'] = grainsPref = 'makina-states.localsettings.'
         data['default_env'] = saltmods['mc_utils.get']('default_env', 'dev')
-        data['etckeeper'] = saltmods['mc_utils.defaults'](
-            'makina.localsettings.etckeeper', {
-                'pm': 'apt',
-                'installer': 'dpkg',
-                'specialfilewarning': False,
-                'autocommit': True,
-                'vcs': 'git',
-                'commitbeforeinstall': True,
-            }
-        )
+        data['locations'] = locations = saltmods['mc_locations.settings']()
+        data['etckeeper'] = saltmods['mc_etckeeper.settings']()
 
         data['timezoneSettings'] = saltmods['mc_utils.defaults'](
             'makina.localsettings.timezone', {
                 'tz': 'Europe/Paris',
             }
         )
-
-        # default paths
-        # locationsVariables = {
-        #     'prefix': '/srv'
-        #      ...
-        # }
-        #
-        # include the macro in your states and use:
-        #   {{ salt['mc_localsettings.settings']()['locations'].prefix }}
-        #
-        data['locations'] = locations = saltmods['mc_utils.defaults'](
-            'makina-states.localsettings.locations', {
-                'root_dir': '/',
-                'home_dir': '{root_dir}home',
-                'root_home_dir': '{root_dir}root',
-                'sysadmins_home_dir': '{home_dir}',
-                'users_home_dir': '{home_dir}/users',
-                'usr_dir': '{root_dir}usr',
-                'share_dir': '{usr_dir}/share',
-                'bin_dir': '{usr_dir}/bin',
-                'sbin_dir': '{usr_dir}/sbin',
-                'venv': '{root_dir}salt-venv',
-                'srv_dir': '{root_dir}srv',
-                'prefix': '{srv_dir}',
-                'rvm_prefix': '{usr_dir}/local',
-                'rvm_path': '{rvm_prefix}/rvm',
-                'rvm': '{rvm_path}/bin/rvm',
-                'vms_docker_root': '{srv_dir}/docker',
-                'docker_root': '',
-                'lxc_root': '',
-                'apps_dir': '{srv_dir}/apps',
-                'projects_dir': '{srv_dir}/projects',
-                'conf_dir': '{root_dir}etc',
-                'initd_dir': '{conf_dir}/init.d',
-                'upstart_dir': '{conf_dir}/init',
-                'tmp_dir': '{root_dir}tmp',
-                'var_dir': '{root_dir}var',
-                'var_lib_dir': '{var_dir}/lib',
-                'var_spool_dir': '{var_dir}/spool',
-                'var_run_dir': '{var_dir}/run',
-                'var_log_dir': '{var_dir}/log',
-                'var_tmp_dir': '{var_dir}/tmp',
-                'resetperms': (
-                    '{prefix}/salt/makina-states/_scripts/reset-perms.py'
-                ),
-            })
         # logrotation settings
         # This will generate a rotate_variables in the form
         # rotate_variables = {
@@ -309,22 +255,7 @@ def settings():
         data['groupId'] = saltmods['mc_utils.get'](
             grainsPref + 'filesystem.group_id', '65753')
 
-        # nodejs
-        cur_nodejsver = '10.0.26'
-        url = 'http://nodejs.org/dist/v{ver}/node-v{ver}-linux-{arch}.tar.gz'
-        data['nodejsSettings'] = saltmods['mc_utils.defaults'](
-            'makina-states.localsettings.nodejs', {
-                'url': url,
-                'shas': {
-                    'node-v0.10.26-linux-x86.tar.gz': 'b3bebee7f256644266fccce04f54e2825eccbfc0',
-                    'node-v0.10.26-linux-x64.tar.gz': 'd15d39e119bdcf75c6fc222f51ff0630b2611160',
-                },
-                'versions': [cur_nodejsver],
-                'version': cur_nodejsver,
-                'arch': __grains__['cpuarch'].replace('x86_64', 'x64'),
-                'location': locations['apps_dir']+'/node',
-            }
-        )
+        data['nodejsSettings'] = __salt__['mc_nodejs.settings']()
         cur_pyver = grains['pythonversion']
         if isinstance(cur_pyver, list):
             cur_pyver = '.'.join(['{0}'.format(s) for s in cur_pyver])
@@ -526,12 +457,6 @@ def settings():
         data['rvm_user'] = rvm_user = rvmSettings['user']
         data['rvm_group'] = rvm_group = rvmSettings['group']
 
-        # Node.js
-        data['npmSettings'] = npmSettings = saltmods['mc_utils.defaults'](
-            'makina-states.localsettings.npm', {
-                'packages': [],
-                'versions': []
-            })
         # SSL settings for reuse in states
         country = saltmods['grains.get']('defaultlanguage')
         if country:

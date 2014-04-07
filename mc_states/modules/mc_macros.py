@@ -9,6 +9,7 @@ mc_macros / macros helpers
 
 # Import salt libs
 import os
+import time
 import traceback
 from salt.exceptions import SaltException
 from salt.utils.odict import OrderedDict
@@ -21,6 +22,7 @@ _default_activation_status = object()
 
 # cache variable
 _REGISTRY = {}
+_LOCAL_REG_CACHE = {}
 import yaml
 from salt.utils import yamldumper
 from salt.renderers.yaml import get_yaml_loader
@@ -125,17 +127,35 @@ def encode_local_registry(name, registry):
             fic.write(content)
 
 
-def get_local_registry(name):
+def invalidate_cached_registry(name):
+    popping = []
+    for k in _LOCAL_REG_CACHE:
+        if k.startswith('{0}___'.format(name)):
+            popping.append(k)
+    for k in popping:
+        _LOCAL_REG_CACHE.pop(k, None)
+
+
+def get_local_registry(name, cached=True, cachetime=60):
     registryf = os.path.join(
         __opts__['config_dir'], 'makina-states/{0}.yaml'.format(name))
     dregistry = os.path.dirname(registryf)
     if not os.path.exists(dregistry):
         os.makedirs(dregistry)
     registry = OrderedDict()
-    if os.path.exists(registryf):
-        with open(registryf, 'r') as fic:
-            registry = yaml.load(fic, Loader=get_yaml_loader(''))
+    # cache local registries one minute
+    pkey = '{0}____'.format(name)
+    key = '{0}{1}'.format(pkey, time.time() // cachetime)
+    if (key not in _LOCAL_REG_CACHE) or (not cached):
+        invalidate_cached_registry(name)
+        if os.path.exists(registryf):
+            with open(registryf, 'r') as fic:
+                registry = yaml.load(fic, Loader=get_yaml_loader(''))
+                _LOCAL_REG_CACHE[key] = registry
+    elif cached:
+        registry = _LOCAL_REG_CACHE[key]
     return registry
+
 
 
 _default = object()
@@ -153,6 +173,7 @@ def update_registry_params(registry_name, params):
                 data.update({gparam: value})
     if changes:
         encode_local_registry(registry_name, registry)
+        invalidate_cached_registry(registry_name)
     return changes
 
 
