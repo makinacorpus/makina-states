@@ -228,6 +228,7 @@ def filter_vms(compute_node, vms, skip, only):
 def provision_vms(compute_node,
                   skip=None, only=None, ret=None,
                   output=True, refresh=False):
+    '''provision all vms on a compute node'''
     if ret is None:
         ret = result()
     if only is None:

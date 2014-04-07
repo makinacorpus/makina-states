@@ -138,21 +138,26 @@ def install_vt(target, output=True):
     return ret
 
 
-def post_post_deploy_controller(target, output=True):
+def post_post_deploy_compute_node(target, output=True):
     '''post deployment hook for controller'''
     ret = result()
-    ret['comment'] += yellow(
-        'Installing postconfiguration for lxc on {0}\n'.format(target))
     nodetypes_reg = cli('mc_nodetypes.registry')
     slss, pref = [], 'makina-states.cloud.lxc.compute_node'
     if nodetypes_reg['is']['devhost']:
-        import pdb;pdb.set_trace()  ## Breakpoint ##
         slss.append('{0}.devhost'.format(pref))
     if slss:
         ret =  __salt__['mc_api.apply_sls'](
             slss, **{'salt_target': target,
                      'ret': ret,
-                     'sls_kw': {'pillar': compute_node_pillar(target)}})
+                     'sls_kw': {'pillar': cn_sls_pillar(target)}})
+    msg = 'Post installation: {0}\n'
+    if ret['result']:
+        clr = green
+        status = 'sucess'
+    else:
+        clr = red
+        status = 'failure'
+    ret['comment'] += clr(msg.format(status))
     salt_output(ret, __opts__, output=output)
     return ret
 
