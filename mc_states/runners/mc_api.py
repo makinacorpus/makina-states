@@ -89,7 +89,7 @@ def apply_sls_(func, slss,
                output=False,
                *a, **kwargs):
     local_target = __grains__.get('id', __opts__.get('id', 'local'))
-    target = kwargs.get('salt_target', local_target)
+    target = salt_target = kwargs.pop('salt_target', None)
     if target is None:
         target = local_target
     if ret is None:
@@ -102,7 +102,7 @@ def apply_sls_(func, slss,
     for sls in slss:
         cret = None
         try:
-            cliret = cli(func, sls, *a, **sls_kw)
+            cliret = cli(func, sls, salt_target=salt_target, *a, **sls_kw)
             cret = filter_state_return(cliret, target=target,
                                        output=salt_output_t)
             valid_state_return(cliret, sls=sls)

@@ -238,8 +238,8 @@ def provision_vms(compute_node,
     if refresh:
         cli('saltutil.refresh_pillar')
     settings = cli('mc_cloud_compute_node.settings')
-    gerror = ret['changes'].setdefault('vms_provisionned', {})
-    gprov = ret['changes'].setdefault('vms_in_error', {})
+    gprov = ret['changes'].setdefault('vms_provisionned', {})
+    gerror = ret['changes'].setdefault('vms_in_error', {})
     provisionned = gprov.setdefault(compute_node, [])
     provision_error = gerror.setdefault(compute_node, [])
     vms = settings['targets'].get(compute_node, {'virt_types': [], 'vms': {}})

@@ -255,6 +255,8 @@ def client(fun, *args, **kw):
     try:
         target = kw.pop('salt_target')
     except KeyError:
+        target = None
+    if not target:
         target = get_local_target(cfgdir=cfgdir)
         if not target:
             raise SaltExit('no target')
