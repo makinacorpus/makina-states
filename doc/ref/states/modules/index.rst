@@ -16,6 +16,7 @@ Subregistries
 .. toctree::
    :maxdepth: 2
 
+   mc_etckeeper.rst
    mc_rsyslog.rst
    mc_apache.rst
    mc_bind.rst
