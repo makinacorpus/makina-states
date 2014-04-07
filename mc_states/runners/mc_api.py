@@ -88,9 +88,10 @@ def apply_sls_(func, slss,
                ret=None,
                output=False,
                *a, **kwargs):
-    target = kwargs.get('salt_target',
-                        __grains__.get('id',
-                                       __opts__.get('id', 'local')))
+    local_target = __grains__.get('id', __opts__.get('id', 'local'))
+    target = kwargs.get('salt_target', local_target)
+    if target is None:
+        target = local_target
     if ret is None:
         ret = result()
     if isinstance(slss, basestring):
@@ -119,7 +120,10 @@ def apply_sls_(func, slss,
     clr = ret['result'] and green or red
     status = ret['result'] and salt_ok or salt_ko
     if not status_msg:
-        status_msg = yellow('  Installation on {0}: ') + clr('{1}\n')
+        if target:
+            status_msg = yellow('  Installation on {0}: ') + clr('{1}\n')
+        else:
+            status_msg = yellow('  Installation: ') + clr('{1}\n')
     ret['comment'] += status_msg.format(target, status)
     sls_status_msg = yellow('   - {0}:') + ' {2}\n'
     if len(statuses) > 1:

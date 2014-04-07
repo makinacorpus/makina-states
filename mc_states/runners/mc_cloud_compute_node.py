@@ -349,7 +349,7 @@ def orchestrate(skip=None,
 
         if not no_vms:
             for compute_node in chg['cns_provisionned']:
-                __salt__['mc_cloud.vm.orchestrate'](
+                __salt__['mc_cloud_vm.orchestrate'](
                     compute_node, output=False,
                     skip=skip_vms, only=only_vms,
                     refresh=refresh, ret=ret)
@@ -366,7 +366,7 @@ def orchestrate(skip=None,
 
         if not no_vms and not no_vms_post_provision:
             for compute_node in chg['cns_provisionned']:
-                __salt__['mc_cloud.vm.post_provision_vms'](
+                __salt__['mc_cloud_vm.post_provision_vms'](
                     compute_node, output=False,
                     skip=skip_vms, only=only_vms,
                     refresh=refresh, ret=ret)

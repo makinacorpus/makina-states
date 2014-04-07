@@ -97,7 +97,7 @@ def vm_grains(compute_node, vm, ret=None, output=True):
 def vm_initial_highstate(compute_node, vm, ret=None, output=True):
     '''Run the initial highstate, will run only once'''
     return _vm_configure('initial_highstate',
-                         vm, compute_node, vm, ret, output)
+                         None, compute_node, vm, ret, output)
 
 
 def vm_sshkeys(compute_node, vm, ret=None, output=True):

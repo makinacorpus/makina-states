@@ -9,11 +9,11 @@ Convenient functions to use a salt infra as an api
 # -*- coding: utf-8 -*-
 __docformat__ = 'restructuredtext en'
 import salt.config as config
+import os
 import json
 from pprint import pformat
 import salt.syspaths
 from mc_states.modules.mc_utils import dictupdate
-import os
 import copy
 import traceback
 from salt.utils import check_state_result
@@ -109,6 +109,7 @@ __FUN_TIMEOUT = {
     'lxc.list': 300,
     'lxc.templates': 100,
     'grains.items': 100,
+    'state.sls': 60*60*5,
 }
 __CACHED_CALLS = {}
 __CACHED_FUNS = {
@@ -336,9 +337,11 @@ def client(fun, *args, **kw):
             if fun in ['test.ping'] and not wait_for_res:
                 ret = {'test.ping': False}.get(fun, False)
             if time.time() > wendto:
-                raise SaltExit('Timeout {0}s for {1} is elapsed, return will '
+                raise SaltExit('Timeout {0}s for {2}/{1} '
+                               'is elapsed, return will '
                                'not retun'.format(wait_for_res,
-                                                  pformat(kwargs)))
+                                                  pformat(kwargs),
+                                                  fun))
             time.sleep(poll)
         try:
             if 'The minion function caused an exception:' in ret:
@@ -499,6 +502,8 @@ def merge_results(ret, cret):
         if not cret['result']:
             ret['result'] = False
     for k in ['output', 'comment', 'trace']:
+        if k not in ret:
+            ret[k] = ''
         if cret.get(k, None) is not None:
             ret[k] += "\n{0}".format(cret[k])
     for k in ['changes']:
