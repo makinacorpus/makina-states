@@ -527,7 +527,7 @@ def registry():
             'vim': {'active': True},
             'rvm': {'active': False},
         })
-       return reg
+        return reg
     return _registry()
 
 
