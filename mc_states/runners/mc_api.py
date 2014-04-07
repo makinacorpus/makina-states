@@ -1,14 +1,15 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
-__docformat__ = 'restructuredtext en'
 '''
 
-.. _mc_runners_api:
+.. _mc_runners_mc_api:
 
-Convenient functions to use a salt infra as an api
-===================================================
+mc_api
+======
+Convenient functions to use a salt infra as an api 
 Internal module used as api.
 '''
+# -*- coding: utf-8 -*-
+__docformat__ = 'restructuredtext en'
 import salt.output
 from pprint import pformat
 import traceback
@@ -138,7 +139,7 @@ def apply_sls_template(slss, *a, **kwargs):
 
 def apply_sls(slss, *a, **kwargs):
     '''
-    args:
+    args
 
         slss
             one or list of sls
@@ -149,9 +150,9 @@ def apply_sls(slss, *a, **kwargs):
         salt_target
             target
         sls_kw
-            useful to give pillar.
-            (**{sls_kw: {pillar: {1:2}}})
+            useful to give pillar::
 
+                (**{sls_kw: {pillar: {1:2}}})
 
     '''
     return apply_sls_('state.sls', slss, *a, **kwargs)

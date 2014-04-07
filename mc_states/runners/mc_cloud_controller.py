@@ -49,6 +49,7 @@ def cli(*args, **kwargs):
 
 
 def post_configure(output=True):
+    '''post configuration'''
     return result()
 
 
@@ -58,6 +59,8 @@ def run_vt_hook(hook_name,
                 vts=None,
                 output=True,
                 *args, **kwargs):
+    '''Run an hook for a special vt
+    on a controller, or a compute node or a vm'''
     if target:
         kwargs['target'] = target
     if ret is None:
@@ -101,6 +104,7 @@ def deploy(output=True):
 
 
 def exists(name):
+    '''return true if the 'target' is already provisionned'''
     cloudSettings = cli('mc_cloud.settings')
     key = '{prefix}/pki/master/minions/{name}'.format(
         prefix=cloudSettings['prefix'], name=name)
@@ -119,6 +123,7 @@ def exists(name):
 
 
 def orchestrate(output=True, refresh=True):
+    '''install controller, compute node, vms & run postdeploy'''
     ret = result()
     if refresh:
         cli('saltutil.refresh_pillar')

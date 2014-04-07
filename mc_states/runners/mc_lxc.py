@@ -3,8 +3,9 @@
 '''
 .. _runner_mc_lxc:
 
-Jobs for lxc managment
+mc_lxc
 ==========================
+Jobs for lxc managment
 '''
 # -*- coding: utf-8 -*-
 __docformat__ = 'restructuredtext en'

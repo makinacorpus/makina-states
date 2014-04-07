@@ -1,5 +1,4 @@
-run-grains:
+generic-run-grains:
   mc_registry.update:
     - name: cloud
-    - params:
-      is.vm: true
+    - params: {is.vm: true}

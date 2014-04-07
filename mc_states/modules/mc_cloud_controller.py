@@ -174,20 +174,20 @@ def domain_match(domain, cert_domain):
     the other domain can be a wildcard, and
     this only match top level wildcards as per openssl spec::
 
-    >>> domain_match('a.com', 'a.com')
-    True
-    >>> domain_match('a.com', '*.a.com')
-    False
-    >>> domain_match('a.a.com', '*.a.com')
-    True
-    >>> domain_match('a.a.a.com', '*.a.com')
-    False
-    >>> domain_match('aaa.a.com', '*.a.com')
-    True
-    >>> domain_match('a', '*')
-    False
-    >>> domain_match('a.a', '*.a')
-    False
+        >>> domain_match('a.com', 'a.com')
+        True
+        >>> domain_match('a.com', '*.a.com')
+        False
+        >>> domain_match('a.a.com', '*.a.com')
+        True
+        >>> domain_match('a.a.a.com', '*.a.com')
+        False
+        >>> domain_match('aaa.a.com', '*.a.com')
+        True
+        >>> domain_match('a', '*')
+        False
+        >>> domain_match('a.a', '*.a')
+        False
     '''
     ret = False
     if domain.lower() == cert_domain.lower():

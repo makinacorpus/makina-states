@@ -42,6 +42,7 @@ _GPREF = 'makina-states.cloud.generic.compute_node'
 
 
 def cn_sls_pillar(target):
+    '''limited cloud pillar to expose to a compute node'''
     cloudSettings = cli('mc_cloud.settings')
     cloudSettingsData = {}
     cnSettingsData = {}
@@ -87,6 +88,7 @@ def run_vt_hook(hook_name,
 
 
 def install_vts(target, ret=None, output=True):
+    '''install all virtual types to be ready to host vms'''
     if ret is None:
         ret = result()
     ret = run_vt_hook('install_vt',
@@ -112,22 +114,27 @@ def _configure(what, target, ret, output):
 
 
 def configure_sshkeys(target, ret=None, output=True):
+    '''drop the compute node ssh key'''
     return _configure('sshkeys', target, ret, output)
 
 
 def configure_firewall(target, ret=None, output=True):
+    '''shorewall configuration'''
     return _configure('firewall', target, ret, output)
 
 
 def configure_reverse_proxy(target, ret=None, output=True):
+    '''haproxy configuration'''
     return _configure('reverse_proxy', target, ret, output)
 
 
 def configure_hostsfile(target, ret=None, output=True):
+    '''local dns configuration'''
     return _configure('hostsfile', target, ret, output)
 
 
 def configure_grains(target, ret=None, output=True):
+    '''install marker grains'''
     return _configure('grains', target, ret, output)
 
 
@@ -169,6 +176,7 @@ def post_deploy(target, ret=None, output=True):
 
 
 def filter_compute_nodes(nodes, skip, only):
+    '''filter compute nodes to run on'''
     targets = []
     for a in nodes:
         if a not in skip and a not in targets:
@@ -188,6 +196,7 @@ def provision_compute_nodes(skip=None, only=None,
                             output=True,
                             refresh=False,
                             ret=None):
+    '''provision compute nodes'''
     if only is None:
         only = []
     if skip is None:
@@ -241,47 +250,40 @@ def provision_compute_nodes(skip=None, only=None,
     return ret
 
 
-def post_provision(skip=None, skip_vms=None,
-                   only_compute_nodes=None, only_vms=None,
-                   output=True, refresh=False, ret=None):
-    if only_compute_nodes is None:
-        only_compute_nodes = []
-    if only_vms is None:
-        only_vms = {}
+def post_provision_compute_nodes(skip=None, skip_vms=None,
+                                 only_compute_nodes=None, only_vms=None,
+                                 output=True, refresh=False, ret=None):
+    '''post provision compute nodes'''
+    if only is None:
+        only = []
     if skip is None:
         skip = []
-    if skip_vms is None:
-        skip_vms = {}
     if ret is None:
         ret = result()
     if refresh:
         cli('saltutil.refresh_pillar')
     settings = cli('mc_cloud_compute_node.settings')
-    provision = ret['changes'].setdefault('post_provisionned', [])
-    provision_error = ret['changes'].setdefault('post_in_error', [])
-    targets = []
-    for a in settings['targets']:
-        if a not in skip and a not in targets:
-            targets.append(a)
-        else:
-            ret['comment'] += yellow(
-                'compute node {0} post-provision skipped\n'.format(a))
-    targets.sort()
-    targets += ['foo', 'bar']
+    provision = ret['changes'].setdefault('postp_cns_provisionned', [])
+    provision_error = ret['changes'].setdefault('postp_cns_in_error', [])
+    targets = [a for a in settings['targets']]
+    #targets += ['foo', 'bar']
+    targets = filter_compute_nodes(targets, skip, only)
     for idx, compute_node in enumerate(targets):
         cret = result()
         try:
             post_deploy(compute_node, ret=cret, output=False)
-            if idx  == 1:
-                raise FailedStepError('foo')
-            elif idx > 0:
-                raise Exception('bar')
+            #if idx == 1:
+            #    raise FailedStepError('foo')
+            #elif idx > 0:
+            #    raise Exception('bar')
         except FailedStepError:
             cret['result'] = False
         except Exception, exc:
             trace = traceback.format_exc()
             cret = {'result': False,
-                    'comment': 'unknown error {0}'.format(exc),
+                    'output': 'unknown error on {0}\n{1}'.format(compute_node,
+                                                                 exc),
+                    'comment': 'unknown error on {0}\n'.format(compute_node),
                     'trace': trace}
         if cret['result']:
             if compute_node not in provision:
@@ -296,11 +298,11 @@ def post_provision(skip=None, skip_vms=None,
         cret.pop('result', False)
         merge_results(ret, cret)
     if len(provision_error):
-        ret['comment'] += red('There were errors while post provisionning '
-                              'nodes {0}\n'.format(provision_error))
+        ret['comment'] += red('There were errors while postprovisionning '
+                              'computes nodes {0}\n'.format(provision_error))
     else:
         del ret['trace']
-        ret['comment'] += green('All nodes were post provisionned\n')
+        ret['comment'] += green('All computes nodes were postprovisionned\n')
     salt_output(ret, __opts__, output=output)
     return ret
 
@@ -312,10 +314,22 @@ def orchestrate(skip=None,
                 output=True,
                 refresh=False,
                 ret=None):
+    '''In this order:
+
+        - provision compute nodes minus the skipped one
+          and limiting to the 'only_compute_nodes' if any
+        - provision vms minus the skipped one
+          and limiting to the 'only_compute_vm' if any.
+          If the vms are to be hosted on a failed host, they
+          will be skipped
+        - post provision compute nodes
+        - post provision vms
+    '''
+
     if skip is None:
         skip = []
     if skip_vms is None:
-        skip_vms = {}
+        skip_vms = []
     if only_compute_nodes is None:
         only_compute_nodes = []
     if only_vms is None:
@@ -324,35 +338,34 @@ def orchestrate(skip=None,
         ret = result()
     provision_compute_nodes(skip=skip, only=only_compute_nodes,
                             output=False, refresh=refresh, ret=ret)
-    skip = [a for a in skip + ret['cns_in_error']]
+    for a in ret.setdefault('cns_in_error', []):
+        if not a in skip:
+            skip.append(a)
 
-    vcret = result()
     for compute_node in ret['cns_provisionned']:
         __salt__['mc_cloud.vm.orchestrate'](compute_node, output=False,
                                             skip=skip_vms, only=only_vms,
-                                            refresh=refresh, ret=vcret)
-    vms_in_error = ret['changes']['vms_in_errors'] = vcret[
-        'changes'].get('in_error', [])
-    ret['comment'] += vcret['comment']
-    if len(vms_in_error):
-        ret['trace'] += vcret['trace']
-        ret['comment'] += red('There where errors while provisionning vms\n')
-    else:
-        ret['comment'] += green('All vms were provisionned\n')
-    skip_vms.update(vms_in_error)
+                                            refresh=refresh, ret=ret)
+    vms_in_error = ret['changes'].setdefault('vms_in_errors', {})
+    for node in vms_in_error:
+        skip_vms.extend(vms_in_error[node])
+    _vms.update(vms_in_error)
 
-    pcret = result()
-    post_provision(skip=skip, skip_vms=skip_vms,
-                   output=output, refresh=refresh, ret=pcret)
-    pcn_in_error = ret['changes']['cn_in_post_provisionerrors'] = pcret[
-        'changes'].get('in_error', [])
-    ret['comment'] += pcret['comment']
-    if len(pcn_in_error):
-        ret['comment'] += red(
-            'There were error with post procedures controller/vm\n')
-        ret['trace'] += cret['trace']
-    else:
-        ret['comment'] += green(
-            'All post procedures controller/vm were done\n')
+    post_provision_compute_nodes(skip=skip, skip_vms=skip_vms,
+                                 only_compute_nodes=only_compute_nodes, only_vms=only_vms,
+                                 output=output, refresh=refresh, ret=ret)
+    for a in ret.setdefault('postp_cns_in_error', []):
+        if not a in skip:
+            skip.append(a)
+
+    for compute_node in ret['cns_provisionned']:
+        __salt__['mc_cloud.vm.post_provision_vms'](
+            compute_node, output=False,
+            skip=skip_vms, only=only_vms,
+            refresh=refresh, ret=ret)
+    vms_in_error = ret['changes'].setdefault('postp_vms_in_errors', {})
+    for node in vms_in_error:
+        ms.extend(vms_in_error[node])
+    skip_vms.update(vms_in_error)
     return ret
 #

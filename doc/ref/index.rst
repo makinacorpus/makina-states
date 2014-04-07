@@ -30,3 +30,4 @@ Formulaes & macros helpers reference
    :maxdepth: 2
 
    macros/index.rst
+

@@ -33,7 +33,7 @@ from mc_states.saltapi import (
     check_point,
     client,
     FailedStepError,
-    SaltyfificationError,
+    SaltyficationError,
     MessageError,
     process_cloud_return,
 )
@@ -64,11 +64,11 @@ def saltify(name, output=True):
             try:
                 data = cli('mc_cloud_saltify.settings_for_target', name)
                 if not isinstance(data, dict):
-                    raise SaltyfificationError(red('{0}'.format(data)))
+                    raise SaltyficationError(red('{0}'.format(data)))
             except KeyError:
                 data = None
             if data is None:
-                raise SaltyfificationError(
+                raise SaltyficationError(
                     red('Saltify target {0} is not configured'.format(name)))
 
             else:
@@ -119,20 +119,20 @@ def orchestrate(output=True, refresh=False):
             if cret['result']:
                 saltified.append(compute_node)
             else:
-                raise SaltyfificationError(
+                raise SaltyficationError(
                     'Target {0} failed to saltify:\n{1}'.format(
                         compute_node, cret['comment']))
         except Exception, exc:
             trace = traceback.format_exc()
             comment += yellow(
-                '\nSaltificatioon failed for {0}: {1}'.format(compute_node,
+                '\nSaltyfication failed for {0}: {1}'.format(compute_node,
                                                               exc))
-            if not isinstance(exc, SaltyfificationError):
+            if not isinstance(exc, SaltyficationError):
                 ret['trace'] += '\n'.format(trace)
             log.error(trace)
             saltified_error.append(compute_node)
     if not comment:
-        comment = green('All targets were successfuly saltifified.')
+        comment = green('All targets were successfuly saltified.')
     ret['comment'] += '\n{0}'.format(comment)
     salt_output(ret, __opts__, output=output)
     return ret

@@ -12,6 +12,7 @@ import salt.config as config
 import json
 from pprint import pformat
 import salt.syspaths
+from mc_states.modules.mc_utils import dictupdate
 import os
 import copy
 import traceback
@@ -56,7 +57,7 @@ class SaltEmptyDictError(SaltInvalidReturnError):
     pass
 
 
-class SaltyfificationError(ProvisionError):
+class SaltyficationError(ProvisionError):
     pass
 
 
@@ -322,11 +323,10 @@ def client(fun, *args, **kw):
         wait_for_res = float({
             'test.ping': '5',
         }.get(fun, '120'))
-        while wait_for_res:
-            wait_for_res -= poll
-            cret = runner.cmd(
-                'jobs.lookup_jid',
-                [jid, {'__kwarg__': True, 'output': False}])
+        wendto = time.time() + wait_for_res
+        while True:
+            cret = runner.cmd('jobs.lookup_jid',
+                              [jid, {'__kwarg__': True, 'output': False}])
             if target in cret:
                 ret = cret[target]
                 break
@@ -334,9 +334,11 @@ def client(fun, *args, **kw):
             # to handle the unresponsivness of a specific command
             # which is also meaningfull, eg a minion not yet provisionned
             if fun in ['test.ping'] and not wait_for_res:
-                ret = {
-                    'test.ping': False,
-                }.get(fun, False)
+                ret = {'test.ping': False}.get(fun, False)
+            if time.time() > wendto:
+                raise SaltExit('Timeout {0}s for {1} is elapsed, return will '
+                               'not retun'.format(wait_for_res,
+                                                  pformat(kwargs)))
             time.sleep(poll)
         try:
             if 'The minion function caused an exception:' in ret:
@@ -499,6 +501,9 @@ def merge_results(ret, cret):
     for k in ['output', 'comment', 'trace']:
         if cret.get(k, None) is not None:
             ret[k] += "\n{0}".format(cret[k])
+    for k in ['changes']:
+        if k in cret and k in ret:
+            ret[k] = dictupdate(ret[k], cret[k])
     return ret
 
 # vim:set et sts=4 ts=4 tw=80:

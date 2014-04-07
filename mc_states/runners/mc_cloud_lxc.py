@@ -46,6 +46,7 @@ def cli(*args, **kwargs):
 
 
 def cn_sls_pillar(target):
+    '''limited cloud pillar to expose to a compute node'''
     pillar = __salt__['mc_cloud_compute_node.cn_sls_pillar'](target)
     imgSettings = cli('mc_cloud_images.settings')
     lxcSettings = cli('mc_cloud_lxc.settings')
@@ -72,6 +73,7 @@ def cn_sls_pillar(target):
 
 
 def vm_sls_pillar(compute_node, vm):
+    '''limited cloud pillar to expose to a vm'''
     pillar = __salt__['mc_cloud_vm.vm_sls_pillar'](compute_node, vm)
     lxcVmData = cli('mc_cloud_lxc.get_settings_for_vm', compute_node, vm, full=False)
     lxcVmData = api.json_dump(lxcVmData)
@@ -107,18 +109,22 @@ def _cn_configure(what, target, ret, output):
 
 
 def configure_grains(target, ret=None, output=True):
+    '''install compute node grain markers'''
     return _cn_configure('grains', target, ret, output)
 
 
 def configure_install_lxc(target, ret=None, output=True):
+    '''install lxc'''
     return _cn_configure('install_lxc', target, ret, output)
 
 
 def configure_images(target, ret=None, output=True):
+    '''configure all images templates'''
     return _cn_configure('images', target, ret, output)
 
 
 def install_vt(target, output=True):
+    '''install & configure lxc'''
     ret = result()
     ret['comment'] += yellow('Installing lxc on {0}\n'.format(target))
     for step in [configure_grains,
@@ -133,9 +139,10 @@ def install_vt(target, output=True):
 
 
 def post_post_deploy_controller(target, output=True):
+    '''post deployment hook for controller'''
     ret = result()
     ret['comment'] += yellow(
-        'Installing postconfiguratiuon for lxc on {0}\n'.format(target))
+        'Installing postconfiguration for lxc on {0}\n'.format(target))
     nodetypes_reg = cli('mc_nodetypes.registry')
     slss, pref = [], 'makina-states.cloud.lxc.compute_node'
     if nodetypes_reg['is']['devhost']:
@@ -154,7 +161,7 @@ def _vm_configure(what, target, compute_node, vm, ret, output):
     if ret is None:
         ret = result()
     ret['comment'] += yellow(
-        'LXC: Installing {2} on compute '
+        'LXC: Installing {2} on vm '
         '{0}/{1}\n'.format(compute_node, vm, what))
     pref = 'makina-states.cloud.lxc.vm'
     ret =  __salt__['mc_api.apply_sls'](
@@ -167,14 +174,22 @@ def _vm_configure(what, target, compute_node, vm, ret, output):
 
 
 def vm_spawn(compute_node, vm, ret=None, output=True):
+    '''spawn the vm'''
     return _vm_configure('spawn', None, compute_node, vm, ret, output)
 
 
 def vm_grains(compute_node, vm, ret=None, output=True):
+    '''install marker grains'''
     return _vm_configure('grains', vm, compute_node, vm, ret, output)
 
 
-def vm_hostfiles(compute_node, vm, ret=None, output=True):
-    return _vm_configure('hostfiles', vm, compute_node, vm, ret, output)
+def vm_initial_setup(compute_node, vm, ret=None, output=True):
+    '''set initial password at least'''
+    return _vm_configure('initial_setup', vm, compute_node, vm, ret, output)
+
+
+def vm_hostsfile(compute_node, vm, ret=None, output=True):
+    '''manage vm /etc/hosts to add link to host'''
+    return _vm_configure('hostsfile', vm, compute_node, vm, ret, output)
 
 # vim:set et sts=4 ts=4 tw=80:

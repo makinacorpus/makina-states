@@ -1,10 +1,10 @@
 {% set localsettings = salt['mc_localsettings.settings']() %}
-{% set vmname = pillar.mccloud_svmname %}
-{% set target = pillar.mccloud_stargetname %}
+{% set vmname = pillar.mccloud_vmname %}
+{% set target = pillar.mccloud_targetname %}
 {% set devhost = pillar.sisdevhost %}
-{% load_json as compute_node_settings%}{{scnSettings}}{%endload%}
-{% load_json as data%}{{lxcVmData}}{%endload%}
-{% load_json as cloudSettings%}{{scloudSettings}}{%endload%}
+{% load_json as compute_node_settings%}{{pillar.scnSettings}}{%endload%}
+{% load_json as data%}{{pillar.slxcVmData}}{%endload%}
+{% load_json as cloudSettings%}{{pillar.scloudSettings}}{%endload%}
 {% if devhost %}
 alxc-{{vmname}}-makina-append-parent-etc.computenode.management:
   file.blockreplace:

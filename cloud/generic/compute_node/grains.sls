@@ -8,5 +8,5 @@ run-grains-b:
   mc_registry.update:
     - name: services
     - params:
-        makina-states.services.proxy.haproxy: true
-        makina-states.services.firewall.shorewall: true
+        proxy.haproxy: true
+        firewall.shorewall: true
