@@ -573,7 +573,9 @@ def registry():
     '''registry registry for localsettings'''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _registry():
-        return __salt__[
+        has_nodejs = __salt__['mc_config.get'](
+            'makina-states.localsettings.nodejs', False)
+        reg = __salt__[
             'mc_macros.construct_registry_configuration'
         ](__name, defaults={
             'nscd': {'active': _ldapEn(__salt__)},
@@ -587,6 +589,7 @@ def registry():
             'timezone': {'active': True},
             'network': {'active': True},
             'nodejs': {'active': False},
+            'npm': {'active': has_nodejs},
             'pkgmgr': {'active': True},
             'python': {'active': False},
             'pkgs': {'active': True},
@@ -599,6 +602,7 @@ def registry():
             'vim': {'active': True},
             'rvm': {'active': False},
         })
+       return reg
     return _registry()
 
 
