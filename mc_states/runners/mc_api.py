@@ -141,7 +141,7 @@ def apply_sls_template(slss, *a, **kwargs):
     return apply_sls_('state.template', slss, *a, **kwargs)
 
 
-def apply_sls(slss, *a, **kwargs):
+def apply_sls(slss, concurrent=True, *a, **kwargs):
     '''
     args
 
@@ -159,6 +159,8 @@ def apply_sls(slss, *a, **kwargs):
                 (**{sls_kw: {pillar: {1:2}}})
 
     '''
+    sls_kw = kwargs.setdefault('sls_kw',  {})
+    sls_kw.setdefault('concurrent', concurrent)
     return apply_sls_('state.sls', slss, *a, **kwargs)
 
 

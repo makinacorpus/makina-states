@@ -41,7 +41,13 @@ log = logging.getLogger(__name__)
 
 
 def vm_sls_pillar(compute_node, vm):
-    '''limited cloud pillar to expose to a vm'''
+    '''limited cloud pillar to expose to a vm
+
+        compute_node
+            compute node to gather pillar from
+        vm
+            vm to gather pillar from
+    '''
     cloudSettings = cli('mc_cloud.settings')
     cloudSettingsData = {}
     vmSettingsData = {}
@@ -90,23 +96,50 @@ def _vm_configure(what, target, compute_node, vm, ret, output):
 
 
 def vm_grains(compute_node, vm, ret=None, output=True):
-    '''install marker grains'''
+    '''install marker grains
+
+        compute_node
+            where to act
+        vm
+            vm to install grains into
+    '''
     return _vm_configure('grains', vm, compute_node, vm, ret, output)
 
 
 def vm_initial_highstate(compute_node, vm, ret=None, output=True):
-    '''Run the initial highstate, will run only once'''
+    '''Run the initial highstate, this step will run only once and will
+    further check for the existence of
+    <saltroot>/makina-states/.initial_hs file
+
+        compute_node
+            where to act
+        vm
+            vm to run highstate on
+    '''
     return _vm_configure('initial_highstate',
                          None, compute_node, vm, ret, output)
 
 
 def vm_sshkeys(compute_node, vm, ret=None, output=True):
-    '''drop controller ssh keys'''
+    '''Install controller ssh keys for user too on this specific vm
+
+        compute_node
+            where to act
+        vm
+            vm to install keys into
+    '''
     return _vm_configure('sshkeys', vm, compute_node, vm, ret, output)
 
 
 def vm_ping(compute_node, vm, ret=None, output=True):
-    '''ping a specific vm'''
+    '''ping a specific vm on a specific compute node
+
+        compute_node
+            where to act
+        vm
+            vm to ping
+
+    '''
     if ret is None:
         ret = result()
     try:
@@ -124,20 +157,33 @@ def vm_ping(compute_node, vm, ret=None, output=True):
     return ret
 
 
-def provision(compute_node, vt, vm, ret=None, output=True):
+def provision(compute_node, vt, vm, steps=None, ret=None, output=True):
     '''provision a vm
-
+        compute_node
+            where to act
+        vm
+            vm to spawn
         vt
             virtual type
+        steps
+            list or comma separated list of steps
+            Default::
+
+                 ['spawn', 'hostsfile', 'sshkeys',
+                 'grains', 'initial_setup', 'initial_highstate']
     '''
-    if ret is None:
-        ret = result()
-    for step in ['spawn',
+    if isinstance(steps, basestring):
+        steps = steps.split(',')
+    if steps is None:
+        steps = ['spawn',
                  'hostsfile',
                  'sshkeys',
                  'grains',
                  'initial_setup',
-                 'initial_highstate']:
+                 'initial_highstate']
+    if ret is None:
+        ret = result()
+    for step in steps:
         pre_vid_ = 'mc_cloud_{0}.pre_vm_{1}'.format(vt, step)
         id_ = 'mc_cloud_vm.vm_{1}'.format(vt, step)
         post_vid_ = 'mc_cloud_{0}.vm_{1}'.format(vt, step)
@@ -228,13 +274,18 @@ def filter_vms(compute_node, vms, skip, only):
 def provision_vms(compute_node,
                   skip=None, only=None, ret=None,
                   output=True, refresh=False):
-    '''provision all vms on a compute node'''
+    '''Provision all vms on a compute node
+    '''
     if ret is None:
         ret = result()
+    if isinstance(only, basestring):
+        only = only.split(',')
+    if isinstance(skip, basestring):
+        skip = skip.split(',')
     if only is None:
-        only = {}
+        only = []
     if skip is None:
-        skip = {}
+        skip = []
     if refresh:
         cli('saltutil.refresh_pillar')
     settings = cli('mc_cloud_compute_node.settings')
@@ -293,10 +344,14 @@ def post_provision_vms(compute_node,
     '''post provision all compute node vms'''
     if ret is None:
         ret = result()
+    if isinstance(only, basestring):
+        only = only.split(',')
+    if isinstance(skip, basestring):
+        skip = skip.split(',')
     if only is None:
-        only = {}
+        only = []
     if skip is None:
-        skip = {}
+        skip = []
     if refresh:
         cli('saltutil.refresh_pillar')
     settings = cli('mc_cloud_compute_node.settings')
@@ -312,10 +367,10 @@ def post_provision_vms(compute_node,
         vt = vms[vm]
         cret = result()
         try:
-            if idx == 1:
-                raise FailedStepError('foo')
-            elif idx > 0:
-                raise Exception('bar')
+            #if idx == 1:
+            #    raise FailedStepError('foo')
+            #elif idx > 0:
+            #    raise Exception('bar')
             cret = post_provision(compute_node, vt, vm, ret=cret, output=False)
         except FailedStepError:
             cret['result'] = False
@@ -356,14 +411,8 @@ def orchestrate(compute_node,
                 refresh=False,
                 ret=None):
     '''install all compute node vms'''
-    if skip is None:
-        skip = []
-    if only is None:
-        only = []
-    if ret is None:
-        ret = result()
-    provision_vms(compute_node, skip=skip, only=only,
-                  output=output, refresh=refresh, ret=ret)
+    ret = provision_vms(compute_node, skip=skip, only=only,
+                        output=output, refresh=refresh, ret=ret)
     salt_output(ret, __opts__, output=output)
     return ret
 

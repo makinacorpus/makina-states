@@ -95,8 +95,29 @@ def saltify(name, output=True):
     return ret
 
 
-def orchestrate(output=True, refresh=False):
+def filter_compute_nodes(nodes, skip, only):
+    '''filter compute nodes to run on'''
+    targets = []
+    for a in nodes:
+        if a not in skip and a not in targets:
+            targets.append(a)
+    if only:
+        if isinstance(only, basestring):
+            if ',' not in only:
+                only = [only]
+            else:
+                only = [a for a in only.split(',') if a.strip()]
+        targets = [a for a in targets if a in only]
+    targets.sort()
+    return targets
+
+
+def orchestrate(output=True, only=None, skip=None, refresh=False):
     '''Parse saltify settings to saltify all targets'''
+    if skip is None:
+        skip = []
+    if only is None:
+        only = []
     ret = result()
     if refresh:
         cli('saltutil.refresh_pillar')
@@ -105,6 +126,7 @@ def orchestrate(output=True, refresh=False):
     saltified = ret['changes'].setdefault('saltified', [])
     saltified_error = ret['changes'].setdefault('saltified_errors', [])
     targets = [a for a in settings['targets']]
+    targets = filter_compute_nodes(targets, skip, only)
     targets.sort()
     for idx, compute_node in enumerate(targets):
         try:

@@ -196,7 +196,21 @@ def provision_compute_nodes(skip=None, only=None,
                             output=True,
                             refresh=False,
                             ret=None):
-    '''provision compute nodes'''
+    '''provision compute nodes
+
+        skip
+            list or comma separated string of compute node
+            to skip (will skip contained vms too)
+        only
+            list or comma separated string of compute node
+            If set, it will only provision those compute nodes
+            and contained vms
+
+    '''
+    if isinstance(only, basestring):
+        only = only.split(',')
+    if isinstance(skip, basestring):
+        skip = skip.split(',')
     if only is None:
         only = []
     if skip is None:
@@ -252,7 +266,13 @@ def provision_compute_nodes(skip=None, only=None,
 
 def post_provision_compute_nodes(skip=None, only=None,
                                  output=True, refresh=False, ret=None):
-    '''post provision compute nodes'''
+    '''post provision all compute nodes
+
+    '''
+    if isinstance(only, basestring):
+        only = only.split(',')
+    if isinstance(skip, basestring):
+        skip = skip.split(',')
     if only is None:
         only = []
     if skip is None:
@@ -308,7 +328,7 @@ def post_provision_compute_nodes(skip=None, only=None,
 
 def orchestrate(skip=None,
                 skip_vms=None,
-                only_compute_nodes=None,
+                only=None,
                 only_vms=None,
                 no_provision=False,
                 no_post_provision=False,
@@ -317,31 +337,54 @@ def orchestrate(skip=None,
                 output=True,
                 refresh=False,
                 ret=None):
-    '''In this order:
+    '''Orchestrate the whole cloud deployment.
+    In this order:
 
         - provision compute nodes minus the skipped one
-          and limiting to the 'only_compute_nodes' if any
+          and limiting to the 'only' if any
         - provision vms minus the skipped one
           and limiting to the 'only_compute_vm' if any.
           If the vms are to be hosted on a failed host, they
           will be skipped
         - post provision compute nodes
         - post provision vms
-    '''
 
-    if skip is None:
-        skip = []
-    if skip_vms is None:
-        skip_vms = []
-    if only_compute_nodes is None:
-        only_compute_nodes = []
-    if only_vms is None:
-        only_vms = []
+
+        skip
+            list or comma separated string of compute node
+            to skip (will skip contained vms too)
+        only
+            list or comma separated string of compute node
+            If set, it will only provision those compute nodes
+            and contained vms
+        no_provision
+            do not run the compute nodes provision
+        no_post_provision
+            do not run the compute nodes post provision
+        skip_vms
+            list or comma separated string of vms
+            to skip
+        only_vms
+            list or comma separated string of vms.
+            If set, it will only provision those vms
+        no_vms
+            do not run the vm provision
+        no_vms_post_provision
+            do not run the vms post provision
+    '''
+    if isinstance(only, basestring):
+        only = only.split(',')
+    if isinstance(skip, basestring):
+        skip = skip.split(',')
+    if isinstance(only_vms, basestring):
+        only_vms = only_vms.split(',')
+    if isinstance(skip_vms, basestring):
+        skip_vms = skip_vms.split(',')
     if ret is None:
         ret = result()
     chg = ret['changes']
     if not no_provision:
-        provision_compute_nodes(skip=skip, only=only_compute_nodes,
+        provision_compute_nodes(skip=skip, only=only,
                                 output=False, refresh=refresh, ret=ret)
         for a in ret.setdefault('cns_in_error', []):
             if a not in skip:
@@ -358,7 +401,7 @@ def orchestrate(skip=None,
                 skip_vms.extend(vms_in_error[node])
 
     if not no_post_provision:
-        post_provision_compute_nodes(skip=skip, only=only_compute_nodes,
+        post_provision_compute_nodes(skip=skip, only=only,
                                      output=False, refresh=refresh, ret=ret)
         for a in chg.setdefault('postp_cns_in_error', []):
             if not a in skip:

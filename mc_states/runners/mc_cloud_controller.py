@@ -124,7 +124,7 @@ def exists(name):
 
 def orchestrate(skip=None,
                 skip_vms=None,
-                only_compute_nodes=None,
+                only=None,
                 only_vms=None,
                 no_provision=False,
                 no_post_provision=False,
@@ -141,7 +141,7 @@ def orchestrate(skip=None,
         ret = deploy(output=False)
         check_point(ret, __opts__, output=output)
         cret = __salt__['mc_cloud_saltify.orchestrate'](
-            output=False, refresh=False)
+            only=only, skip=skip, output=False, refresh=False)
         del cret['result']
         merge_results(ret, cret)
         cn_in_error = cret['changes'].get('saltified_errors', [])
@@ -151,7 +151,7 @@ def orchestrate(skip=None,
         cret = __salt__['mc_cloud_compute_node.orchestrate'](
             skip=skip,
             skip_vms=skip_vms,
-            only_compute_nodes=only_compute_nodes,
+            only=only,
             only_vms=only_vms,
             no_provision=no_provision,
             no_post_provision=no_post_provision,
