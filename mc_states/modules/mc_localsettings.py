@@ -498,7 +498,7 @@ def registry():
     '''registry registry for localsettings'''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _registry():
-        has_nodejs = __salt__['mc_config.get'](
+        has_nodejs = __salt__['mc_utils.get'](
             'makina-states.localsettings.nodejs', False)
         reg = __salt__[
             'mc_macros.construct_registry_configuration'
