@@ -1437,7 +1437,7 @@ setup_and_maybe_update_code() {
                     branch_pref=""
                     do_update="y"
                     if [ "x${onlysync}" != "x" ];then
-                        if [ "x$(echo "${i}"|sed -re "s/.*salt$/match/g")" != "xmatch" ];then
+                        if [ "x$(echo "${i}"|sed -e "s/.*\(\(salt\)\|\(makina-states\)\)$/match/g")" != "xmatch" ];then
                             do_update=""
                             if [ "x${QUIET}" = "x" ];then
                                 bs_log "Skipping ${i} update as it is only a base salt sync"
