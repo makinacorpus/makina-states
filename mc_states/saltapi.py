@@ -221,7 +221,9 @@ def _client(cfgdir=None, cfg=None):
 
 
 def client(fun, *args, **kw):
-    '''Execute a salt function on a specific minion
+    '''Execute a salt function on a specific minion using the salt api.
+    This will set automatic timeouts for well known functions.
+    This will also call well known api calls for a specific time.
 
     Special kwargs:
 
@@ -305,15 +307,19 @@ def client(fun, *args, **kw):
                         arg=[jid],
                         timeout=10,
                         **kwargs)
+        try:
+            if 'spawn' in args[0]:
+                import pdb;pdb.set_trace()  ## Breakpoint ##
+        except:
+            pass
+                
         running = bool(cret.get(target, False))
         endto = time.time() + timeout
         while running:
-            rkwargs = {
-                'tgt': target,
-                'fun': 'saltutil.find_job',
-                'arg': [jid],
-                'timeout': 10
-            }
+            rkwargs = {'tgt': target,
+                       'fun': 'saltutil.find_job',
+                       'arg': [jid],
+                       'timeout': 10}
             cret = conn.cmd(**rkwargs)
             running = bool(cret.get(target, False))
             if not running:
@@ -339,11 +345,19 @@ def client(fun, *args, **kw):
             if fun in ['test.ping'] and not wait_for_res:
                 ret = {'test.ping': False}.get(fun, False)
             if time.time() > wendto:
-                raise SaltExit('Timeout {0}s for {2}/{1} '
-                               'is elapsed, return will '
-                               'not retun'.format(wait_for_res,
-                                                  pformat(kwargs),
-                                                  fun))
+                try:
+                    msg = (
+                        'Timeout {0}s for job/fun/kw {1}/{3}/{4} '
+                        'running on {3} is elapsed, '
+                        'return will unlikely retun results now'
+                    ).format(wait_for_res, jid, fun, target, kw)
+                except:
+                    msg = (
+                        'Timeout {0}s for job/fun {1}/{2}'
+                        ' running on {3} is elapsed,'
+                        ' return will unlikely return results now'
+                    ).format(wait_for_res, jid, fun, target, kw)
+                raise SaltExit(msg)
             time.sleep(poll)
         try:
             if 'The minion function caused an exception:' in ret:

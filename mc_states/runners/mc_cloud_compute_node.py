@@ -31,6 +31,7 @@ from mc_states.saltapi import (
     check_point,
     client,
     FailedStepError,
+    result,
     merge_results,
     MessageError,
 )
@@ -383,11 +384,13 @@ def orchestrate(skip=None,
     if ret is None:
         ret = result()
     chg = ret['changes']
+    lresult = True
     if not no_provision:
         provision_compute_nodes(skip=skip, only=only,
                                 output=False, refresh=refresh, ret=ret)
         for a in ret.setdefault('cns_in_error', []):
             if a not in skip:
+                lresult = False
                 skip.append(a)
 
         if not no_vms:
@@ -398,13 +401,17 @@ def orchestrate(skip=None,
                     refresh=refresh, ret=ret)
             vms_in_error = chg.setdefault('vms_in_errors', {})
             for node in vms_in_error:
-                skip_vms.extend(vms_in_error[node])
+                for vm in vms_in_error[node]:
+                    if vm not in skip_vms:
+                        lresult = False
+                        skip_vms.append(vm)
 
     if not no_post_provision:
         post_provision_compute_nodes(skip=skip, only=only,
                                      output=False, refresh=refresh, ret=ret)
         for a in chg.setdefault('postp_cns_in_error', []):
-            if not a in skip:
+            if a not in skip:
+                lresult = False
                 skip.append(a)
 
         if not no_vms and not no_vms_post_provision:
@@ -415,7 +422,11 @@ def orchestrate(skip=None,
                     refresh=refresh, ret=ret)
             vms_in_error = chg.setdefault('postp_vms_in_errors', {})
             for node in vms_in_error:
-                skip_vms.extend(vms_in_error[node])
+                for vm in vms_in_error[node]:
+                    if vm not in skip_vms:
+                        skip_vms.append(vm)
+                        lresult = False
+    ret['result'] = lresult
     salt_output(ret, __opts__, output=output)
     return ret
 #
