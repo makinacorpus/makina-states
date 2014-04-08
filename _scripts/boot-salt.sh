@@ -3667,11 +3667,43 @@ restart_daemons() {
 }
 
 ps_etime() {
-    ps -eo pid,comm,etime | perl -ane '@t=reverse split(/[:-]/,$F[2]); $s=$t[0]+$t[1]*60+$t[2]*3600+$t[3]*86400; print "$F[0]\t$s\t$F[1]\t$F[2]\n"'
+    ps -eo pid,comm,etime,args | perl -ane '@t=reverse(split(/[:-]/, $F[2])); $s=$t[0]+$t[1]*60+$t[2]*3600+$t[3]*86400;$cmd=join(" ", @F[3..$#F]);print "$F[0]\t$s\t$F[1]\t$F[2]\t$cmd\n"'
+}
+
+start_missing_or_dead() {
+    if [ "x${IS_SALT_MASTER}" != "x" ] && [ "x$(master_processes)" = "x0" ];then
+        if [ "x${QUIET}" = "x" ];then
+            bs_log "Zero master, restarting them all"
+        fi
+        killall_local_masters
+        restart_local_masters
+    fi
+    if [ "x${IS_MASTERSALT_MASTER}" != "x" ] && [ "x$(mastersalt_master_processes)" = "x0" ];then
+        if [ "x${QUIET}" = "x" ];then
+            bs_log "Zero mastersalt master, restarting them all"
+        fi
+        killall_local_mastersalt_masters
+        restart_local_mastersalt_masters
+    fi
+    if [ "x${IS_SALT_MINION}" != "x" ] && [ "x$(minion_processes)" != "x1" ];then
+        if [ "x${QUIET}" = "x" ];then
+            bs_log "More than one or zero minion, restarting them all"
+        fi
+        killall_local_minions
+        restart_local_minions
+    fi
+    if [ "x${IS_MASTERSALT_MINION}" != "x" ] && [ "x$(mastersalt_minion_processes)" != "x1" ];then
+        if [ "x${QUIET}" = "x" ];then
+            bs_log "More than one or zero mastersalt minion, restarting them all"
+        fi
+        killall_local_mastersalt_minions
+        restart_local_mastersalt_minions
+    fi
 }
 
 check_alive() {
     restart_modes=""
+    kill_old_syncs
     # kill all check alive
     ps_etime|sort -n -k2|egrep "boot-salt.*alive"|grep -v grep|while read psline;
     do
@@ -3735,6 +3767,7 @@ check_alive() {
             killall_local_minions
         fi
     done
+    start_missing_or_dead
     # ping masters if we are not already forcing restart
     if [ "x${alive_mode}" != "xrestart" ];then
         if [ "x${IS_SALT}" != "x" ];then
@@ -3756,34 +3789,8 @@ check_alive() {
             fi
         fi
     fi
-    if [ "x${IS_SALT_MASTER}" != "x" ] && [ "x$(master_processes)" = "x0" ];then
-        if [ "x${QUIET}" = "x" ];then
-            bs_log "Zero master, restarting them all"
-        fi
-        killall_local_masters
-        restart_local_masters
-    fi
-    if [ "x${IS_MASTERSALT_MASTER}" != "x" ] && [ "x$(mastersalt_master_processes)" = "x0" ];then
-        if [ "x${QUIET}" = "x" ];then
-            bs_log "Zero mastersalt master, restarting them all"
-        fi
-        killall_local_mastersalt_masters
-        restart_local_mastersalt_masters
-    fi
-    if [ "x${IS_SALT_MINION}" != "x" ] && [ "x$(minion_processes)" != "x1" ];then
-        if [ "x${QUIET}" = "x" ];then
-            bs_log "More than one or zero minion, restarting them all"
-        fi
-        killall_local_minions
-        restart_local_minions
-    fi
-    if [ "x${IS_MASTERSALT_MINION}" != "x" ] && [ "x$(mastersalt_minion_processes)" != "x1" ];then
-        if [ "x${QUIET}" = "x" ];then
-            bs_log "More than one or zero mastersalt minion, restarting them all"
-        fi
-        killall_local_mastersalt_minions
-        restart_local_mastersalt_minions
-    fi
+    # last chance
+    start_missing_or_dead
 }
 
 kill_old_syncs() {
@@ -3792,8 +3799,9 @@ kill_old_syncs() {
     do
         seconds="$(echo "$psline"|awk '{print $2}')"
         pid="$(echo $psline|awk '{print $1}')"
-        if [ "${seconds}" -gt "200" ];then
-            bs_log "something was wrong with last sync, killing old sync processes: $pid"
+        # 8 minutes
+        if [ "${seconds}" -gt "480" ];then
+            bs_log "Something was wrong with last sync, killing old sync processes: $pid"
             bs_log "${psline}"
             kill -9 "${pid}"
         fi
