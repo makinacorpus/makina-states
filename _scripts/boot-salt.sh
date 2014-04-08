@@ -3681,23 +3681,49 @@ check_alive() {
             bs_log "something was wrong with last restart, killing old check alive process: $pid"
             bs_log "${psline}"
             kill -9 "${pid}"
-            touch /tmp/bootsaltmode
+            killall_local_masters
+            killall_local_minions
+            killall_local_mastersalt_minions
+            killall_local_mastersalt_minions
         fi
     done
     # kill all old (master)salt call (> 12 hours)
-    ps_etime|sort -n -k2|egrep "salt-call"|grep -v grep|while read psline;
+    ps_etime|sort -n -k2|egrep "salt-call"|grep mastersalt|grep -v grep|while read psline;
     do
         seconds="$(echo "$psline"|awk '{print $2}')"
         pid="$(echo $psline|awk '{print $1}')"
         if [ "${seconds}" -gt "$((60*60*12))" ];then
             bs_log "Something went wrong with last restart, killing old salt call process: $pid"
             bs_log "$psline"
-            kill -9 "${pid}"
-            touch /tmp/bootsaltmode
+            killall_local_mastersalt_masters
+            killall_local_mastersalt_minions
+        fi
+    done
+    ps_etime|sort -n -k2|egrep "salt-call"|grep -v mastersalt|grep -v grep|while read psline;
+    do
+        seconds="$(echo "$psline"|awk '{print $2}')"
+        pid="$(echo $psline|awk '{print $1}')"
+        if [ "${seconds}" -gt "$((60*60*12))" ];then
+            bs_log "Something went wrong with last restart, killing old salt call process: $pid"
+            bs_log "$psline"
+            killall_local_masters
+            killall_local_minions
         fi
     done
     # kill all old (master)salt ping call (> 120 sec)
-    ps_etime|sort -n -k2|egrep "salt-call"|grep test.ping|grep -v grep|while read psline;
+    ps_etime|sort -n -k2|egrep "salt-call"|grep test.ping|grep mastersalt|grep -v grep|while read psline;
+    do
+        seconds="$(echo "$psline"|awk '{print $2}')"
+        pid="$(echo $psline|awk '{print $1}')"
+        if [ "${seconds}" -gt "$((60*2))" ];then
+            bs_log "MasterSalt PING stalled, killing old salt call process: $pid"
+            bs_log "$psline"
+            kill -9 "${pid}"
+            killall_local_mastersalt_masters
+            killall_local_mastersalt_minions
+        fi
+    done
+    ps_etime|sort -n -k2|egrep "salt-call"|grep test.ping|grep -v mastersalt|grep -v grep|while read psline;
     do
         seconds="$(echo "$psline"|awk '{print $2}')"
         pid="$(echo $psline|awk '{print $1}')"
@@ -3705,49 +3731,58 @@ check_alive() {
             bs_log "Salt PING stalled, killing old salt call process: $pid"
             bs_log "$psline"
             kill -9 "${pid}"
-            touch /tmp/bootsaltmode
+            killall_local_masters
+            killall_local_minions
         fi
     done
-    if [ -f /tmp/bootsaltmode ];then
-        restart_modes="${restart_modes} full"
-        rm -f /tmp/bootsaltmode
-    fi
     # ping masters if we are not already forcing restart
     if [ "x${alive_mode}" != "xrestart" ];then
         if [ "x${IS_SALT}" != "x" ];then
             resultping="$(salt_ping_test)"
             if [ "x${resultping}" != "x0" ];then
-                restart_modes="${restart_modes} salt"
+                if [ "x${IS_SALT_MASTER}" != "x" ];then
+                    killall_local_masters
+                fi
+                killall_local_minions
             fi
         fi
         if [ "x${IS_MASTERSALT}" != "x" ];then
             resultping="$(mastersalt_ping_test)"
             if [ "x${resultping}" != "x0" ];then
-                restart_modes="${restart_modes} mastersalt"
+                if [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
+                    killall_local_mastersalt_masters
+                fi
+                killall_local_mastersalt_minions
             fi
         fi
     fi
-    if [ "x$(echo "${restart_modes}"|grep -q full;echo ${?})" = "x0" ];then
-        bs_log "Something went wrong with last restart, restarting old salt daemons"
-        restart_daemons
-    else
-        for restart_mode in ${restart_modes};do
-            if [ "x$(echo "${restart_mode}"|grep -v mastersalt|grep -q salt;echo ${?})" = "x0" ];then
-                bs_log "Something went wrong with last restart, restarting old local salt daemons"
-                restart_local_minions
-                restart_local_masters
-            fi
-            if [ "x$(echo "${restart_mode}"|grep mastersalt|grep -q mastersalt;echo ${?})" = "x0" ];then
-                bs_log "Something went wrong with last restart, restarting old master salt daemons"
-                restart_local_mastersalt_masters
-                restart_local_mastersalt_minions
-            fi
-        done
+    if [ "x${IS_SALT_MASTER}" != "x" ] && [ "x$(master_processes)" = "x0" ];then
+        if [ "x${QUIET}" = "x" ];then
+            bs_log "Zero master, restarting them all"
+        fi
+        killall_local_masters
+        restart_local_masters
     fi
-    # and finally, last try to start daemon if they are not present
-    if [ "$(ps aux|grep boot-salt|grep -v grep|wc -l|sed -e "s/ //g")" -lt "4" ];then
-        lazy_start_mastersalt_daemons
-        lazy_start_salt_daemons
+    if [ "x${IS_MASTERSALT_MASTER}" != "x" ] && [ "x$(mastersalt_master_processes)" = "x0" ];then
+        if [ "x${QUIET}" = "x" ];then
+            bs_log "Zero mastersalt master, restarting them all"
+        fi
+        killall_local_mastersalt_masters
+        restart_local_mastersalt_masters
+    fi
+    if [ "x${IS_SALT_MINION}" != "x" ] && [ "x$(minion_processes)" != "x1" ];then
+        if [ "x${QUIET}" = "x" ];then
+            bs_log "More than one or zero minion, restarting them all"
+        fi
+        killall_local_minions
+        restart_local_minions
+    fi
+    if [ "x${IS_MASTERSALT_MINION}" != "x" ] && [ "x$(mastersalt_minion_processes)" != "x1" ];then
+        if [ "x${QUIET}" = "x" ];then
+            bs_log "More than one or zero mastersalt minion, restarting them all"
+        fi
+        killall_local_mastersalt_minions
+        restart_local_mastersalt_minions
     fi
 }
 
