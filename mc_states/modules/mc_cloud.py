@@ -140,10 +140,10 @@ def settings():
                     '{all_pillar_dir}/compute_node'
                 ),
                 'ssl_dir': (
-                    '{all_sls_dir}/cloud-controller/ssl'
+                    '{all_sls_dir}/ssl'
                 ),
                 'ssl_pillar_dir': (
-                    '{all_pillar_dir}/cloud-controller/ssl'
+                    '{all_pillar_dir}/ssl'
                 ),
                 'prefix': prefix,
                 'mode': 'mastersalt',

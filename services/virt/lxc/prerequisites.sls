@@ -23,7 +23,8 @@ lxc-repo:
 lxc-pkgs:
   {#pkg.{{salt['mc_localsettings.settings']()['installmode']}}: #}
   pkg.latest:
-{% if grains['os'] in ['Ubuntu'] -%}
+{# no need anymore -> ppa #}
+{% if False and grains['os'] in ['Ubuntu'] -%}
 {% if localsettings.udist in ['precise'] %}
     - fromrepo: {{localsettings.udist}}-backports
 {% endif %}

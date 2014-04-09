@@ -40,6 +40,7 @@ for f in\
     $(find /etc/init -name mountall-reboot.conf)\
     $(find /etc/init -name mountall-shell.conf)\
     $(find /etc/init -name setvtrgb.conf)\
+    $(find /etc/init -name systemd-logind.conf)\
     $(find /etc/init -name udev*.conf)\
     $(find /etc/init -name ureadahead*.conf)\
     $(find /etc/init -name plymouth*.conf)\

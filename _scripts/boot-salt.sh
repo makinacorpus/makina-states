@@ -2093,24 +2093,34 @@ a\    publish_port: ${MASTERSALT_MASTER_PUBLISH_PORT}
 
 # ------------ SALT INSTALLATION PROCESS
 
-mastersalt_master_processes() {
-    ${PS} aux|grep salt-master|grep -v deploy.sh|grep -v boot-salt|grep mastersalt|grep -v grep|wc -l|sed -e "s/ //g"
+filter_host_pids() {
+    if [ "x$(is_lxc)" != "x0" ];then
+        echo "${@}"
+    else
+        for pid in ${@};do
+            if [ "x$(grep -q lxc /proc/${pid}/cgroup 2>/dev/null;echo "${?}")" != "x0" ];then
+                 echo ${pid}
+             fi
+         done
+    fi
 }
 
+mastersalt_master_processes() {
+    filter_host_pids $(${PS} aux|grep salt-master|grep -v deploy.sh|grep -v boot-salt|grep mastersalt|grep -v grep|awk '{print $2}')|wc -w|sed -e "s/ //g"
+}
 
 mastersalt_minion_processes() {
-    ${PS} aux|grep salt-minion|grep -v deploy.sh|grep -v boot-salt|grep mastersalt|grep -v grep|wc -l|sed -e "s/ //g"
+    filter_host_pids $(${PS} aux|grep salt-minion|grep -v deploy.sh|grep -v boot-salt|grep mastersalt|grep -v grep|awk '{print $2}')|wc -w|sed -e "s/ //g"
 }
 
 master_processes() {
-    ${PS} aux|grep salt-master|grep -v deploy.sh|grep -v boot-salt|grep -v mastersalt|grep -v grep|wc -l|sed -e "s/ //g"
+    filter_host_pids $(${PS} aux|grep salt-master|grep -v deploy.sh|grep -v boot-salt|grep -v mastersalt|grep -v grep|awk '{print $2}')|wc -w|sed -e "s/ //g"
 }
 
 
 minion_processes() {
-    ${PS} aux|grep salt-minion|grep -v deploy.sh|grep -v boot-salt|grep -v mastersalt|grep -v grep|wc -l|sed -e "s/ //g"
+    filter_host_pids $(${PS} aux|grep salt-minion|grep -v deploy.sh|grep -v boot-salt|grep -v mastersalt|grep -v grep|awk '{print $2}')|wc -w|sed -e "s/ //g"
 }
-
 
 lazy_start_salt_daemons() {
     if [ "x${IS_SALT_MASTER}" != "x" ];then
@@ -2289,19 +2299,19 @@ kill_pids(){
 }
 
 killall_local_mastersalt_masters() {
-    kill_pids $(${PS} aux|egrep "salt-(master|syndic)"|grep -v deploy.sh|grep -v boot-salt|grep mastersalt|awk '{print $2}') 1>/dev/null 2>/dev/null
+    kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(master|syndic)"|grep -v deploy.sh|grep -v boot-salt|grep mastersalt|awk '{print $2}') 1>/dev/null 2>/dev/null)
 }
 
 killall_local_mastersalt_minions() {
-    kill_pids $(${PS} aux|egrep "salt-(minion)"|grep -v deploy.sh|grep -v boot-salt|grep mastersalt|awk '{print $2}') 1>/dev/null 2>/dev/null
+    kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(minion)"|grep -v deploy.sh|grep -v boot-salt|grep mastersalt|awk '{print $2}') 1>/dev/null 2>/dev/null)
 }
 
 killall_local_masters() {
-    kill_pids $(${PS} aux|egrep "salt-(master|syndic)"|grep -v deploy.sh|grep -v boot-salt|grep -v mastersalt|awk '{print $2}') 1>/dev/null 2>/dev/null
+    kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(master|syndic)"|grep -v deploy.sh|grep -v boot-salt|grep -v mastersalt|awk '{print $2}') 1>/dev/null 2>/dev/null)
 }
 
 killall_local_minions() {
-    kill_pids $(${PS} aux|egrep "salt-(minion)"|grep -v deploy.sh|grep -v boot-salt|grep -v mastersalt|awk '{print $2}') 1>/dev/null 2>/dev/null
+    kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(minion)"|grep -v deploy.sh|grep -v boot-salt|grep -v mastersalt|awk '{print $2}') 1>/dev/null 2>/dev/null)
 }
 
 restart_local_mastersalt_masters() {
@@ -3708,8 +3718,8 @@ check_alive() {
     ps_etime|sort -n -k2|egrep "boot-salt.*alive"|grep -v grep|while read psline;
     do
         seconds="$(echo "$psline"|awk '{print $2}')"
-        pid="$(echo $psline|awk '{print $1}')"
-        if [ "${seconds}" -gt "300" ];then
+        pid="$(filter_host_pids $(echo $psline|awk '{print $1}'))"
+        if [ "x${pid}" != "x" ] && [ "${seconds}" -gt "300" ];then
             bs_log "something was wrong with last restart, killing old check alive process: $pid"
             bs_log "${psline}"
             kill -9 "${pid}"
@@ -3723,8 +3733,8 @@ check_alive() {
     ps_etime|sort -n -k2|egrep "salt-call"|grep mastersalt|grep -v grep|while read psline;
     do
         seconds="$(echo "$psline"|awk '{print $2}')"
-        pid="$(echo $psline|awk '{print $1}')"
-        if [ "${seconds}" -gt "$((60*60*12))" ];then
+        pid="$(filter_host_pids $(echo $psline|awk '{print $1}'))"
+        if [ "x${pid}" != "x" ] && [ "${seconds}" -gt "$((60*60*12))" ];then
             bs_log "Something went wrong with last restart, killing old salt call process: $pid"
             bs_log "$psline"
             killall_local_mastersalt_masters
@@ -3734,8 +3744,8 @@ check_alive() {
     ps_etime|sort -n -k2|egrep "salt-call"|grep -v mastersalt|grep -v grep|while read psline;
     do
         seconds="$(echo "$psline"|awk '{print $2}')"
-        pid="$(echo $psline|awk '{print $1}')"
-        if [ "${seconds}" -gt "$((60*60*12))" ];then
+        pid="$(filter_host_pids $(echo $psline|awk '{print $1}'))"
+        if [ "x${pid}" != "x" ] && [ "${seconds}" -gt "$((60*60*12))" ];then
             bs_log "Something went wrong with last restart, killing old salt call process: $pid"
             bs_log "$psline"
             killall_local_masters
@@ -3746,8 +3756,8 @@ check_alive() {
     ps_etime|sort -n -k2|egrep "salt-call"|grep test.ping|grep mastersalt|grep -v grep|while read psline;
     do
         seconds="$(echo "$psline"|awk '{print $2}')"
-        pid="$(echo $psline|awk '{print $1}')"
-        if [ "${seconds}" -gt "$((60*2))" ];then
+        pid="$(filter_host_pids $(echo $psline|awk '{print $1}'))"
+        if [ "x${pid}" != "x" ] && [ "${seconds}" -gt "$((60*2))" ];then
             bs_log "MasterSalt PING stalled, killing old salt call process: $pid"
             bs_log "$psline"
             kill -9 "${pid}"
@@ -3758,8 +3768,8 @@ check_alive() {
     ps_etime|sort -n -k2|egrep "salt-call"|grep test.ping|grep -v mastersalt|grep -v grep|while read psline;
     do
         seconds="$(echo "$psline"|awk '{print $2}')"
-        pid="$(echo $psline|awk '{print $1}')"
-        if [ "${seconds}" -gt "$((60*2))" ];then
+        pid="$(filter_host_pids $(echo $psline|awk '{print $1}'))"
+        if [ "x${pid}" != "x" ] && [ "${seconds}" -gt "$((60*2))" ];then
             bs_log "Salt PING stalled, killing old salt call process: $pid"
             bs_log "$psline"
             kill -9 "${pid}"
@@ -3798,9 +3808,9 @@ kill_old_syncs() {
     ps_etime|sort -n -k2|egrep "boot-salt.*(synchronize-code|refresh-modules)"|grep -v grep|while read psline;
     do
         seconds="$(echo "$psline"|awk '{print $2}')"
-        pid="$(echo $psline|awk '{print $1}')"
+        pid="$(filter_host_pids $(echo $psline|awk '{print $1}'))"
         # 8 minutes
-        if [ "${seconds}" -gt "480" ];then
+        if [ "x${pid}" != "x" ] && [ "${seconds}" -gt "480" ];then
             bs_log "Something was wrong with last sync, killing old sync processes: $pid"
             bs_log "${psline}"
             kill -9 "${pid}"
@@ -3914,6 +3924,7 @@ postinstall() {
         fi
     fi
 }
+
 
 if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
     parse_cli_opts $LAUNCH_ARGS
