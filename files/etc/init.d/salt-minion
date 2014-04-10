@@ -1,4 +1,5 @@
 #!/bin/sh
+{% load_json as salt_data%}{{salt_data}}{% endload%}
 ### BEGIN INIT INFO
 # Provides:          {{salt_data['daemon_name']}}
 # Required-Start:    $remote_fs $network

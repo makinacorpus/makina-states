@@ -1,9 +1,9 @@
-# This file managed by Salt, do not edit by hand!!!
+# This file managed by Salt, do not edit by hand!!
 {% load_json as salt_data%}{{salt_data}}{% endload%}
 #  Based on salt version 0.16.3 default config
 {%- set is_iter = salt['mc_utils.is_iter'] %}
 {%- macro get_config(configname, default_value='', only_if_defined=False) %}
-{%- set ivalue = salt_data.get('dev_'+configname, default_value) %}
+{%- set ivalue = salt_data.get(configname, default_value) %}
 {%- set value = ivalue %}
 {%- if is_iter(value) %}
 {%- set value = value|yaml %}
@@ -15,10 +15,6 @@
 {%- endif %}
 {%- endmacro %}
 
-#
-# vagrant vm specific settings
-#
-
-# lower the number of default threads
-{{ get_config('worker_threads', '5') }}
-
+{% for rosteritem, data in salt_data.ssh.roster.items() %}
+rosteritem: {{data|yaml}}
+{% endfor %}

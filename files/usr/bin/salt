@@ -1,4 +1,5 @@
 #!/bin/sh
+{% load_json as salt_data%}{{salt_data}}{% endload%}
 export PATH="{{salt_data['salt_root']}}/makina-states/bin:${PATH}"
 target="$1"
 shift

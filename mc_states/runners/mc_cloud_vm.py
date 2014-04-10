@@ -43,10 +43,10 @@ log = logging.getLogger(__name__)
 def vm_sls_pillar(compute_node, vm):
     '''limited cloud pillar to expose to a vm
 
-        compute_node
-            compute node to gather pillar from
-        vm
-            vm to gather pillar from
+    compute_node
+        compute node to gather pillar from
+    vm
+        vm to gather pillar from
     '''
     cloudSettings = cli('mc_cloud.settings')
     cloudSettingsData = {}
@@ -159,18 +159,19 @@ def vm_ping(compute_node, vm, ret=None, output=True):
 
 def provision(compute_node, vt, vm, steps=None, ret=None, output=True):
     '''provision a vm
-        compute_node
-            where to act
-        vm
-            vm to spawn
-        vt
-            virtual type
-        steps
-            list or comma separated list of steps
-            Default::
 
-                 ['spawn', 'hostsfile', 'sshkeys',
-                 'grains', 'initial_setup', 'initial_highstate']
+    compute_node
+         where to act
+    vm
+         vm to spawn
+    vt
+         virtual type
+    steps
+         list or comma separated list of steps
+         Default::
+   
+              ['spawn', 'hostsfile', 'sshkeys',
+              'grains', 'initial_setup', 'initial_highstate']
     '''
     if isinstance(steps, basestring):
         steps = steps.split(',')

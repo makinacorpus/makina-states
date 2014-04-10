@@ -152,7 +152,7 @@ dummy-post-{{ data.service_name }}-service-restart:
 {%- set logPrefix = resolver('{log_prefix}', data) %}
 {%- set pillarRoot = resolver('{pillar_root}', data) %}
 {%- set localMsr = resolver('{salt_root}/makina-states', data) %}
-{%- set yamled_data = resolver(data) | yaml %}
+{%- set json_data = salt['mc_utils.json_dump'](resolver(data)) %}
 {%- set repos = data['confRepos'] %}
 {% for cur_name in  [
   'salt',
@@ -178,8 +178,26 @@ salt-{{ data.name }}-{{cur_name}}-bin:
     - mode: 755
     - makedirs: True
     - template: jinja
-    - salt_data: {{ yamled_data }}
+    - salt_data: |
+                 {{ json_data }}
     - bin_name: {{cur_name}}
+    - require:
+      - cmd: update-makinastates-{{ data.name }}
+    - require_in:
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
+{% endfor %}
+{% for cur_name in  [
+  'roster',
+] -%}
+salt-{{ data.name }}-{{cur_name}}-bin:
+  file.managed:
+    - name: {{ data.conf_prefix }}/{{cur_name}}
+    - source: salt://makina-states/files/etc/salt/{{cur_name}}
+    - mode: 700
+    - makedirs: True
+    - template: jinja
+    - salt_data: |
+                 {{ json_data }}
     - require:
       - cmd: update-makinastates-{{ data.name }}
     - require_in:
@@ -422,7 +440,8 @@ salt-{{ data.name }}-logrotate:
     - template: jinja
     - name: {{ locs.conf_dir }}/logrotate.d/{{ data.name }}.conf
     - source: salt://makina-states/files/etc/logrotate.d/salt.conf
-    - salt_data: {{ yamled_data }}
+    - salt_data: |
+                 {{ json_data }}
 
 {#- Fix permissions and ownerships
 # recurse does not seem to work well to reset perms #}
@@ -497,14 +516,15 @@ etc-{{data.name}}-dirs-perms:
 {%- set logPrefix = resolver('{log_prefix}', data) %}
 {%- set pillarRoot = resolver('{pillar_root}', data) %}
 {%- set localMsr = resolver('{salt_root}/makina-states', data) %}
-{%- set yamled_data = data | yaml %}
+{%- set json_data = salt['mc_utils.json_dump'](data) %}
 salt-{{ data.daemon_name }}-conf-global:
   file.managed:
     - name: {{ confPrefix }}/{{ data.service_name }}.d/00_global.conf
     - template: jinja
     - makedirs: true
     - source: salt://makina-states/files/etc/salt/{{ data.service_name }}.d/00_global.conf
-    - salt_data: {{ yamled_data }}
+    - salt_data: |
+                 {{ json_data }}
     - require:
       - mc_proxy: dummy-{{data.name}}-layout
     - require_in:
@@ -526,7 +546,8 @@ salt-{{ data.daemon_name }}-conf:
     - name: {{ confPrefix }}/{{ data.service_name }}
     - template: jinja
     - source: salt://makina-states/files/etc/salt/{{ data.service_name }}
-    - salt_data: {{ yamled_data }}
+    - salt_data: |
+                 {{ json_data }}
     - require:
       - mc_proxy: dummy-{{data.name}}-layout
     - require_in:
@@ -543,7 +564,8 @@ salt-{{ data.daemon_name }}-job:
     - root: {{ data.msr }}
     - saltname: {{ data.name }}
     - saltconfig: {{ confPrefix }}
-    - salt_data: {{ yamled_data }}
+    - salt_data: |
+                 {{ json_data }}
     - require:
       - mc_proxy: dummy-{{data.name}}-layout
     - require_in:
@@ -558,11 +580,11 @@ salt-{{ data.daemon_name }}-job:
     - name: {{ data.upstart_dir }}/{{ data.daemon_name }}.conf
     - template: jinja
     - source:  salt://makina-states/files/etc/init/salt-{{ data.service_name }}.conf
-    - salt_data: {{ yamled_data }}
     - root: {{ data.msr }}
     - saltconfig: {{ confPrefix }}
     - saltname: {{ data.name }}
-    - salt_data: {{ yamled_data }}
+    - salt_data: |
+                 {{ json_data }}
     - require:
       - mc_proxy: dummy-{{data.name}}-layout
     - require_in:
@@ -595,7 +617,8 @@ salt-{{ data.daemon_name }}-sock-dir:
 
 salt-{{ data.daemon_name }}-logs:
   file.managed:
-    - salt_data: {{ yamled_data }}
+    - salt_data: |
+                 {{ json_data }}
     - names:
       - {{ logPrefix }}/key
       - {{ logPrefix }}/{{ data.daemon_name }}
@@ -648,7 +671,8 @@ salt-{{ data.daemon_name }}-conf-devhost-global:
     - template: jinja
     - makedirs: true
     - source: salt://makina-states/files/etc/salt/{{ data.service_name }}.d/10_devhost.conf
-    - salt_data: {{ data | yaml }}
+    - salt_data: |
+                 {{ salt['mc_utils.json_dump'](data) }}
     - require:
       - mc_proxy: dummy-{{data.name}}-layout
     - require_in:

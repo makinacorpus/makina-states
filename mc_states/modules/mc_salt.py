@@ -26,18 +26,24 @@ def settings():
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        nodetypes_reg = __salt__['mc_nodetypes.registry']()
-        localsettings = __salt__['mc_localsettings.settings']()
-        resolver = __salt__['mc_utils.format_resolve']
+        saltmods = __salt__
+        nodetypes_reg = saltmods['mc_nodetypes.registry']()
+        resolver = saltmods['mc_utils.format_resolve']
         pillar = __pillar__
-        locs = localsettings['locations']
-        group = localsettings['group']
-        groupId = localsettings['groupId']
+        locs = saltmods['mc_locations.settings']()
+        usergroup = saltmods['mc_usergroup.settings']()
+        group = usergroup['group']
+        groupId = usergroup['groupId']
         # You can overrides this dict via the salt pillar
         # entry 'confRepos', see bellow
         # external base repositories to checkout
         # Add also here the formumlas to checkout
         # and if neccesary the symlink to wire on the salt root tree
+        salt_ssh_data = saltmods['mc_utils.defaults'](
+            'makina-states.controllers.salt.ssh', {
+                'ssh_priv': '/root/.ssh/id_rsa',
+                'roster': {}
+            })
         confRepos = {
             'salt-git': {
                 'name': 'http://github.com/makinacorpus/salt.git',
@@ -70,7 +76,7 @@ def settings():
         for i, data in confRepos.items():
             for k in ['rev', 'target', 'name']:
                 data.update({
-                    'rev': __salt__['mc_utils.get']
+                    'rev': saltmods['mc_utils.get']
                     ('makina-states.salt.' + i + '.rev',
                      data.get('rev', False))})
         data = {}
@@ -78,12 +84,13 @@ def settings():
         init_debug = False
         if 'TRAVIS' in os.environ:
             init_debug = True
-        if __salt__['mc_lxc.is_lxc']():
+        if saltmods['mc_lxc.is_lxc']():
             has_filelimit = False
         crons = True
+        env = saltmods['mc_env.settings']()['env']
         if (
             nodetypes_reg['is']['devhost']
-            or localsettings['default_env'] in ['dev']
+            or env in ['dev']
         ):
             crons = False
 
@@ -117,7 +124,7 @@ def settings():
             'init_debug': init_debug,
             'has_filelimit': has_filelimit,
             'confRepos': confRepos,
-            'rotate': localsettings['rotate']['days'],
+            'rotate': saltmods['mc_logrotate.settings']()['days'],
             'yaml_utf8': True,
             'root_dir': locs['root_dir'],
             'conf_dir': locs['conf_dir'],
@@ -132,8 +139,8 @@ def settings():
             'groupId': groupId,
             'projects_root': '{prefix}/projects',
             'vagrant_root': '{prefix}/vagrant',
-            'vms_docker_root': localsettings['locations']['vms_docker_root'],
-            'docker_root': localsettings['locations']['docker_root'],
+            'vms_docker_root': locs['vms_docker_root'],
+            'docker_root': locs['docker_root'],
             'resetperms': '{msr}/_scripts/reset-perms.py',
             'init_d': '{initd_dir}',
             'prefix': locs['prefix'],
@@ -185,13 +192,13 @@ def settings():
             ]
         }
         #  default daemon overrides
-        saltMinionData = __salt__['mc_utils.dictupdate'](saltCommonData.copy(), {
+        saltMinionData = saltmods['mc_utils.dictupdate'](saltCommonData.copy(), {
             'service_name': 'minion',
             'master': '127.0.0.1',
             'master_port': '4506',
             'retry_dns': '30',
-            'id': __salt__['config.option']('makina-states.minion_id',
-                                            __salt__['config.option']('id', None)),
+            'id': saltmods['config.option']('makina-states.minion_id',
+                                            saltmods['config.option']('id', None)),
             'append_domain': False,
             'grains': {},
             'output': None,
@@ -240,9 +247,10 @@ def settings():
             'win_repo_cachefile': 'salt://win/repo/winrepo.p',
         })
         #  default master settings
-        saltMasterData = __salt__['mc_utils.dictupdate'](
+        saltMasterData = saltmods['mc_utils.dictupdate'](
             saltCommonData.copy(), {
                 'service_name': 'master',
+                'ssh_data': salt_ssh_data,
                 'interface': '127.0.0.1',
                 'publish_port': '4505',
                 'ret_port': '4506',
@@ -287,19 +295,21 @@ def settings():
                 'win_gitrepos': [],
             }
         )
+
+
         #  mastersalt daemon overrides
-        mastersaltCommonData = __salt__['mc_utils.dictupdate'](
+        mastersaltCommonData = saltmods['mc_utils.dictupdate'](
             saltCommonData.copy(), {'pref_name': 'master',
                                     'pillar_root': locs['prefix'] + '/{name}-pillar'})
-        mastersaltMasterData = __salt__['mc_utils.dictupdate'](
+        mastersaltMasterData = saltmods['mc_utils.dictupdate'](
             saltMasterData.copy(), mastersaltCommonData.copy())
-        mastersaltMinionData = __salt__['mc_utils.dictupdate'](
+        mastersaltMinionData = saltmods['mc_utils.dictupdate'](
             saltMinionData.copy(), mastersaltCommonData.copy())
-        mastersaltMasterData = __salt__['mc_utils.dictupdate'](
+        mastersaltMasterData = saltmods['mc_utils.dictupdate'](
             mastersaltMasterData, {
                 'publish_port': '4605',
                 'ret_port': '4606'})
-        mastersaltMinionData = __salt__['mc_utils.dictupdate'](
+        mastersaltMinionData = saltmods['mc_utils.dictupdate'](
             mastersaltMinionData, {
                 'master': '127.0.0.1',
                 'master_port': '4606',
@@ -315,23 +325,23 @@ def settings():
         mastersaltMasterPillar = mastersalt_pillar.get('master', {})
         mastersaltMinionPillar = mastersalt_pillar.get('minion', {})
         #  per daemon commpon section overrides
-        saltMasterData = __salt__['mc_utils.dictupdate'](
+        saltMasterData = saltmods['mc_utils.dictupdate'](
             saltMasterData,  saltCommonPillar.copy())
-        saltMinionData = __salt__['mc_utils.dictupdate'](
+        saltMinionData = saltmods['mc_utils.dictupdate'](
             saltMinionData, saltCommonPillar.copy())
-        mastersaltMasterData = __salt__['mc_utils.dictupdate'](
+        mastersaltMasterData = saltmods['mc_utils.dictupdate'](
             mastersaltMasterData, mastersaltCommonPillar.copy())
-        mastersaltMinionData = __salt__['mc_utils.dictupdate'](
+        mastersaltMinionData = saltmods['mc_utils.dictupdate'](
             mastersaltMinionData, mastersaltCommonPillar.copy())
         #  per daemon pillar overrides
-        saltMasterData = __salt__['mc_utils.dictupdate'](
+        saltMasterData = saltmods['mc_utils.dictupdate'](
             saltMasterData,  saltMasterPillar.copy())
-        saltMinionData = __salt__['mc_utils.dictupdate'](
+        saltMinionData = saltmods['mc_utils.dictupdate'](
             saltMinionData, saltMinionPillar.copy())
         #  per mastersalt daemon pillar overrides
-        mastersaltMasterData = __salt__['mc_utils.dictupdate'](
+        mastersaltMasterData = saltmods['mc_utils.dictupdate'](
             mastersaltMasterData, mastersaltMasterPillar.copy())
-        mastersaltMinionData = __salt__['mc_utils.dictupdate'](
+        mastersaltMinionData = saltmods['mc_utils.dictupdate'](
             mastersaltMinionData, mastersaltMinionPillar.copy())
         #
         ########################################
