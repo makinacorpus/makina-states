@@ -1,5 +1,5 @@
-{% load_json as compute_node_settings %}{{pillar.scnSettings}}{%endload%}
-{% load_json as cloudSettings %}{{pillar.scloudSettings}}{%endload%}
+{% set compute_node_settings  = salt['mc_utils.json_load'](pillar.scnSettings) %}
+{% set cloudSettings  = salt['mc_utils.json_load'](pillar.scloudSettings) %}
 
 {% set localsettings = salt['mc_localsettings.settings']() %}
 {% set domains = [] %}

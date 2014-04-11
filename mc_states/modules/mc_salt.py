@@ -42,8 +42,7 @@ def settings():
         salt_ssh_data = saltmods['mc_utils.defaults'](
             'makina-states.controllers.salt.ssh', {
                 'ssh_priv': '/root/.ssh/id_rsa',
-                'roster': {}
-            })
+                'roster': {}})
         confRepos = {
             'salt-git': {
                 'name': 'http://github.com/makinacorpus/salt.git',
@@ -250,7 +249,7 @@ def settings():
         saltMasterData = saltmods['mc_utils.dictupdate'](
             saltCommonData.copy(), {
                 'service_name': 'master',
-                'ssh_data': salt_ssh_data,
+                'ssh': salt_ssh_data,
                 'interface': '127.0.0.1',
                 'publish_port': '4505',
                 'ret_port': '4506',

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-{% load_json as salt_data%}{{salt_data}}{% endload%}
+{% set salt_data = salt['mc_utils.json_load'](salt_data) %}
 export PATH="{{salt_data['msr']}}/bin:$PATH"
 exec {{salt_data['msr']}}/bin/{{bin_name}} -c {{salt_data['conf_prefix']}} "$@"
 exit $?

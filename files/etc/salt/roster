@@ -1,20 +1,9 @@
 # This file managed by Salt, do not edit by hand!!
-{% load_json as salt_data%}{{salt_data}}{% endload%}
+{% set salt_data = salt['mc_utils.json_load'](salt_data) %}
 #  Based on salt version 0.16.3 default config
 {%- set is_iter = salt['mc_utils.is_iter'] %}
-{%- macro get_config(configname, default_value='', only_if_defined=False) %}
-{%- set ivalue = salt_data.get(configname, default_value) %}
-{%- set value = ivalue %}
-{%- if is_iter(value) %}
-{%- set value = value|yaml %}
-{%- endif %}
-{%- if ((only_if_defined and ivalue) or (not only_if_defined)) %}
-{{- configname }}: {{ value }}
-{%- else %}
-#{{- configname }}: {{ default_value }}
-{%- endif %}
-{%- endmacro %}
-
 {% for rosteritem, data in salt_data.ssh.roster.items() %}
-rosteritem: {{data|yaml}}
+{{rosteritem}}:
+  {% for item, val in data.items() -%}{{item}}: {{val}}
+  {% endfor %}
 {% endfor %}

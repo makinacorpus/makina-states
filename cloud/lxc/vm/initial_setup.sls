@@ -1,9 +1,9 @@
 {% set localsettings = salt['mc_localsettings.settings']() %}
 {% set vmname = pillar.mccloud_svmname %}
 {% set target = pillar.mccloud_stargetname %}
-{% load_json as compute_node_settings%}{{pillar.scnSettings}}{%endload%}
-{% load_json as data%}{{pillar.slxcVmData}}{%endload%}
-{% load_json as cloudSettings%}{{pillar.scloudSettings}}{%endload%}
+{% set compute_node_settings = salt['mc_utils.json_load'](pillar.scnSettings) %}
+{% set data = salt['mc_utils.json_load'](pillar.slxcVmData) %}
+{% set cloudSettings = salt['mc_utils.json_load'](pillar.scloudSettings) %}
 sysadmin-user-initial-password:
   cmd.run:
     - name: >

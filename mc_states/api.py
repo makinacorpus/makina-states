@@ -71,6 +71,11 @@ def yencode(string):
     return string
 
 
+def json_load(data):
+    content = json.loads(data)
+    return content
+
+
 def json_dump(data):
     content = json.dumps(data)
     content = content.replace('\n', ' ')

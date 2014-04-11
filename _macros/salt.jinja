@@ -186,24 +186,6 @@ salt-{{ data.name }}-{{cur_name}}-bin:
     - require_in:
       - mc_proxy: dummy-pre-{{ data.name }}-service-restart
 {% endfor %}
-{% for cur_name in  [
-  'roster',
-] -%}
-salt-{{ data.name }}-{{cur_name}}-bin:
-  file.managed:
-    - name: {{ data.conf_prefix }}/{{cur_name}}
-    - source: salt://makina-states/files/etc/salt/{{cur_name}}
-    - mode: 700
-    - makedirs: True
-    - template: jinja
-    - salt_data: |
-                 {{ json_data }}
-    - require:
-      - cmd: update-makinastates-{{ data.name }}
-    - require_in:
-      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
-{% endfor %}
-
 {% for manfile in [
         'salt.1',
         'salt-call.1',
@@ -662,6 +644,25 @@ salt-{{ data.daemon_name }}:
   mode,  data_mappings[service_name]['salt']) %}
 {%- endif %}
 {{ install_salt_common_daemon(adata=data, full=full) }}
+{% set json_data = salt['mc_utils.json_dump'](data) %}
+
+{% for cur_name in  [
+  'roster',
+] -%}
+salt-{{ data.name }}-{{cur_name}}-bin:
+  file.managed:
+    - name: {{ data.conf_prefix }}/{{cur_name}}
+    - source: salt://makina-states/files/etc/salt/{{cur_name}}
+    - mode: 700
+    - makedirs: True
+    - template: jinja
+    - salt_data: |
+                 {{ json_data }}
+    - require:
+      - cmd: update-makinastates-{{ data.name }}
+    - require_in:
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
+{% endfor %}
 
 # specific vagrant vm settings
 {% if 'devhost' in nodetypes_registry['actives'] -%}
@@ -672,7 +673,7 @@ salt-{{ data.daemon_name }}-conf-devhost-global:
     - makedirs: true
     - source: salt://makina-states/files/etc/salt/{{ data.service_name }}.d/10_devhost.conf
     - salt_data: |
-                 {{ salt['mc_utils.json_dump'](data) }}
+                 {{ json_data }}
     - require:
       - mc_proxy: dummy-{{data.name}}-layout
     - require_in:

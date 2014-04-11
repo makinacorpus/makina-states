@@ -167,18 +167,22 @@ def format_resolve(value,
 
 
 def is_a_set(value):
+    """."""
     return isinstance(value, set)
 
 
 def is_a_tuple(value):
+    """."""
     return isinstance(value, tuple)
 
 
 def is_a_list(value):
+    """."""
     return isinstance(value, list)
 
 
 def is_a_dict(value):
+    """."""
     return isinstance(value, dict)
 
 
@@ -348,24 +352,38 @@ def defaults(prefix,
     return format_resolve(datadict)
 
 
-def yaml_dump(data):
+def yaml_dump(data, flow=False):
+    """."""
     content = yaml.dump(
         data,
-        default_flow_style=False,
+        default_flow_style=flow,
         Dumper=yamldumper.SafeOrderedDumper)
     content = content.replace('\n', ' ')
     return yencode(content)
 
 
+def iyaml_dump(data):
+    """."""
+    return yaml_dump(data, flow=True)
+
+
 def json_dump(data):
+    """."""
     return api.json_dump(data)
 
 
+def json_load(data):
+    """."""
+    return api.json_load(data)
+
+
 def yencode(string):
+    """."""
     return api.yencode(string)
 
 
 def file_read(fic):
+    """."""
     data = ''
     with open(fic, 'r') as f:
         data = f.read()
