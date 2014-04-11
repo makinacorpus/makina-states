@@ -12,6 +12,7 @@ import mc_states.utils
 
 __name = 'ssh'
 
+
 def settings():
     '''
     Open ssh registry

@@ -20,31 +20,65 @@ Documentation of this module is available with::
 # Import python libs
 import logging
 import mc_states.utils
+from copy import deepcopy
 
 __name = 'usergroup'
 
 log = logging.getLogger(__name__)
 
 
+def get_default_users():
+    return __salt__['mc_utils.defaults'](
+        'makina-states.localsettings.users', {})
+
+
+def get_default_sysadmins():
+    '''get_default_sysadmins'''
+    defaultSysadmins = ['root', 'sysadmin']
+    grains = __grains__
+    saltmods = __salt__
+    if grains['os'] in ['Ubuntu']:
+        defaultSysadmins.append('ubuntu')
+    if saltmods['mc_macros.is_item_active'](
+        'nodetypes', 'vagrantvm'
+    ):
+        defaultSysadmins.append('vagrant')
+    return defaultSysadmins
+
+
+def get_home(user, home=None):
+    '''get_home'''
+    locations = __salt__['mc_locations.settings']()
+    defaultSysadmins = get_default_sysadmins()
+    if user == 'root':
+        home = locations['root_home_dir']
+    elif user in defaultSysadmins:
+        if not home:
+            home = locations['sysadmins_home_dir'] + "/" + user
+    else:
+        home = locations['users_home_dir'] + "/" + user
+    return home
+
+
 def settings():
     '''
     usergroup registry
 
-    group
+    filesystem.group
         Group of the special editor group
-    groupId
+    filesystem.groupId
         Gid of the special editor group
-    users
+    makina-states.localsettings.users
         System configured users
-    sudoers
+    makina-states.localsettings.admin.sudoers
         sudoers (project members)
-    defaultSysadmins
+    makina-states.localsettings.defaultSysadmins
         Priviliegied local users accounts (sysadmin, ubuntu, vagrant)
-    sysadmins_keys
+    makina-states.localsettings.admin.sysadmins_keys
         sysadmins's ssh key to drop inside privilegied accounts
-    sysadmin_password
+    makina-states.localsettings.admin.sysadmin_password
         sysadmin password
-    root_password
+    makina-states.localsettings.admin.root_password
         root password
 
     '''
@@ -58,6 +92,7 @@ def settings():
         data['sudoers'] = []
         data['sysadmins'] = []
 
+        data['defaultSysadmins'] = get_default_sysadmins()
         grainsPref = 'makina-states.localsettings.'
         # Editor group to have write permission on salt controlled files
         # but also on project related files
@@ -81,7 +116,7 @@ def settings():
 
         if (
             data['admin']['root_password']
-            and not data['admin']['sysadmins_keys']
+            and not data['admin']['sysadmin_password']
         ):
             data['admin']['sysadmin_password'] = data['admin']['root_password']
 
@@ -90,60 +125,45 @@ def settings():
             and not data['admin']['root_password']
         ):
             data['admin']['root_password'] = data['admin']['sysadmin_password']
-
-        data['defaultSysadmins'] = defaultSysadmins = ['root', 'sysadmin']
-        if grains['os'] in ['Ubuntu']:
-            data['defaultSysadmins'].append('ubuntu')
-        if saltmods['mc_macros.is_item_active'](
-            'nodetypes', 'vagrantvm'
-        ):
-            defaultSysadmins.append('vagrant')
-        root_data = {
-            'admin': True,
-            'password': data['admin']['root_password'],
-            'ssh_keys': data['admin']['sysadmins_keys']
-        }
-        admin_data = {
-            'admin': True,
-            'password': data['admin']['sysadmin_password'],
-            'ssh_keys': data['admin']['sysadmins_keys'],
-        }
-        users = data['users'] = saltmods['mc_utils.defaults'](
-            'makina-states.localsettings.users', {})
+        root_data = {'admin': True,
+                     'password': data['admin']['root_password']}
+        admin_data = {'admin': True,
+                      'password': data['admin']['sysadmin_password']}
+        default_keys = {'root': data['admin']['sysadmins_keys']}
+        users = data['users'] = get_default_users()
+        data['sshkeys'] = saltmods['mc_utils.defaults'](
+            'makina-states.localsettings.sshkeys', default_keys)
         # default  home
+        root = users.setdefault('root', {})
+        root.update(root_data)
+        for i in get_default_sysadmins():
+            udata = users.setdefault(i, {})
+            sdata = deepcopy(admin_data)
+            udata.update(sdata)
+            keys = data['sshkeys'].setdefault(i, [])
+            for k in data['admin']['sysadmins_keys']:
+                if k not in keys:
+                    keys.append(k)
+        for sudoer in data["sudoers"]:
+            sudata = users.setdefault(sudoer, {})
+            groups = sudata.setdefault('groups', [])
+            for g in ['admin', 'sudo']:
+                if g not in groups:
+                    groups.append(g)
         for i in [a for a in users]:
-            udata = users[i].copy()
-            if i != 'root' and not i in defaultSysadmins:
-                home = udata.get('home', locations['users_home_dir'] + "/" + i)
-            users[i].update({'home': home})
-        for j in root_data:
-            if not 'root' in users:
-                users['root'] = {}
-            users['root'][j] = root_data[j]
-        for i in defaultSysadmins:
-            if not i in users:
-                users.update({i: admin_data.copy()})
-            else:
-                for j in admin_data:
-                    users[i][j] = admin_data.copy()[j]
-        # default  home
-        for i in [a for a in users]:
-            udata = users[i].copy()
-            if i == 'root':
-                home = locations['root_home_dir']
-            elif i in defaultSysadmins:
-                home = udata.get('home',
-                                 locations['sysadmins_home_dir'] + "/" + i)
-            users[i].update({'home': home})
+            udata = users[i]
+            udata.setdefault("groups", [])
+            udata.setdefault("system", False)
+            udata.setdefault('home', get_home(i, udata.get('home', None)))
+            ssh_keys = udata.setdefault('ssh_keys', [])
+            for k in data['sshkeys'].get(i, []):
+                if k not in ssh_keys:
+                    ssh_keys.append(k)
         return data
     return _settings()
 
 
 def dump():
     return mc_states.utils.dump(__salt__,__name)
-
-#
-# -*- coding: utf-8 -*-
-__docformat__ = 'restructuredtext en'
 
 # vim:set et sts=4 ts=4 tw=80:

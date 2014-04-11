@@ -10,9 +10,8 @@
 # Idea is to create any user/group needed for ssh managment
 #}
 
-
-{% set localsettings = salt['mc_localsettings.settings']() %}
-{% set locs = salt['mc_localsettings.settings']()['locations'] %}
+{% set locs = salt['mc_locations.settings']() %}
+{% set usergroup = salt['mc_usergroup.settings']() %}
 {% macro create_user(id, udata) %}
 {%- set password = udata.get('password', False) %}
 {%- set home = udata['home'] %}
@@ -29,8 +28,11 @@
 {{ id }}:
   group.present:
     - name: {{ id }}
-    - system: True
+    - system: {{udata.system}}
   user.present:
+    {% if 'system' in udata %}
+    - system: {{udata.system}}
+    {% endif %}
     - require:
       - group: {{ id }}
     - require_in:
@@ -54,6 +56,9 @@
       - plugdev
       - games
       - sambashare
+      {% for g in udata.groups %}
+      - {{g}}
+      {% endfor %}
       {%- if udata.get('admin', False) %}
       - lpadmin
       - sudo
@@ -74,15 +79,26 @@
     - user: {{id}}
     - group: {{id}}
 
-{% for key in udata.get('ssh_keys', []) %}
-ssh_auth-key-{{id}}-{{key}}:
-  ssh_auth.present:
-    - user: {{id}}
-    - source: salt://files/ssh/{{ key }}
+{% if udata['ssh_keys'] %}
+ssh_{{id}}-auth-key-cleanup-ssh-keys:
+  file.absent:
+    - names:
+      - {{home}}/.ssh/authorized_keys
+      - {{home}}/.ssh/authorized_keys2
     - require:
       - user: {{id}}
       - file: {{id}}
+{% for key in udata['ssh_keys'] %}
+ssh_auth-key-{{id}}-{{key-}}-ssh-keys:
+  ssh_auth.present:
+    - user: {{id}}
+    - source: salt://files/ssh/{{key}}
+    - require:
+      - user: {{id}}
+      - file: ssh_{{id}}-auth-key-cleanup-ssh-keys
+      - file: {{id}}
 {%    endfor %}
+{% endif %}
 
 makina-{{id}}-bashfiles:
   file.touch:
@@ -166,22 +182,22 @@ include:
   - makina-states.localsettings.groups
   - makina-states.localsettings.sudo
 {{ salt['mc_macros.register']('localsettings', 'users') }}
-{% for id, udata in localsettings.users.items() %}
+{% for id, udata in usergroup.users.items() %}
 {{ create_user(id, udata) }}
 {% endfor %}
 
-{#
-#}
-{# manage sudoers #}
-{% for i in localsettings.sudoers %}
+{# manage sudoers
+{% for i in usergroup.sudoers %}
 ms-add-user-{{i}}-to-sudoers:
   user.present:
     - require:
       - mc_proxy: users-ready-hook
     - name: {{i}}
+    - home: salt['mc_usergroup.get_home'].get(user)
     - remove_groups: False
     - optional_groups:
       - sudo
 {% endfor %}
+#}
 {% endmacro %}
 {{ do(full=False) }}
