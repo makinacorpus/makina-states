@@ -13,7 +13,6 @@
 #  config: config path (opt)
 # and it will create an ubuntu templated lxc host
 #}
-{%- set localsettings = salt['mc_localsettings.settings']() %}
 include:
   - makina-states.services.virt.lxc.hooks
 

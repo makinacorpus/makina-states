@@ -1,11 +1,11 @@
-{%- set localsettings = salt['mc_localsettings.settings']() %}
+{%- set pkgSettings = salt['mc_pkgs.settings']() %}
 include:
   - makina-states.services.virt.lxc.hooks
 
 {% if grains['os'] in ['Ubuntu'] %}
-{% set dist = localsettings.pkgSettings.apt.ubuntu.dist %}
+{% set dist = pkgSettings.apt.ubuntu.dist %}
 {% else %}
-{% set dist = localsettings.pkgSettings.apt.ubuntu.lts %}
+{% set dist = pkgSettings.apt.ubuntu.lts %}
 {% endif %}
 {% set locs = salt['mc_locations.settings']() %}
 lxc-repo:
@@ -25,8 +25,8 @@ lxc-pkgs:
   pkg.latest:
 {# no need anymore -> ppa #}
 {% if False and grains['os'] in ['Ubuntu'] -%}
-{% if localsettings.udist in ['precise'] %}
-    - fromrepo: {{localsettings.udist}}-backports
+{% if pkgSettings.udist in ['precise'] %}
+    - fromrepo: {{pkgSettings.udist}}-backports
 {% endif %}
 {% endif %}
     - pkgs:
