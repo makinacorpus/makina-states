@@ -3,10 +3,10 @@
 # see:
 #   - makina-states/doc/ref/formulaes/localsettings/network.rst
 #}
-{% set localsettings = salt['mc_localsettings.settings']() %}
+{% set mcnet = salt['mc_network.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'network') }}
-{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
-{%- if localsettings.networkManaged %}
+{%- set locs = salt['mc_locations.settings']() %}
+{%- if mcnet.networkManaged %}
 {%- if grains['os_family'] in ['Debian'] %}
 network-cfg:
   file.managed:
@@ -19,7 +19,7 @@ network-cfg:
     - context:
       {#- tradeof to make the lxc state work with us #}
       network_interfaces: |
-                          {{salt['mc_utils.json_dump']( localsettings.networkInterfaces)}}
+                          {{salt['mc_utils.json_dump']( mcnet.interfaces)}}
 
 network-services:
   service.running:

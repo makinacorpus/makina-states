@@ -47,7 +47,7 @@ def settings():
 
     networkManaged
         Do we manage the network configuration
-    networkInterfaces
+    interfaces
         Dict of configuration for network interfaces
     main_ip
       main server ip
@@ -61,15 +61,8 @@ def settings():
         saltmods = __salt__
         grains = __grains__
         pillar = __pillar__
-        networkInterfaces = {}
-        data = {'networkInterfaces': networkInterfaces}
+        data = {'interfaces': {}}
         grainsPref = 'makina-states.localsettings.'
-        # lxc configuration has the network configuration inlined in the state
-        # and not in pillar
-        # it can be also done for other states like this
-        for k in pillar:
-            if k.endswith('makina-network'):
-                networkInterfaces.update(pillar[k])
         # Does the network base config file have to be managed via that
         # See makina-states.localsettings.network
         # Compat for the first test!

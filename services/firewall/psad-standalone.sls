@@ -2,7 +2,7 @@
 # Documentation
 # - doc/ref/formulaes/services/firewall/psad.rst
 #}
-{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
+{%- set locs = salt['mc_locations.settings']() %}
 {%- set data = salt['mc_psad.settings']() %}
 {{ salt['mc_macros.register']('services', 'firewall.psad') }}
 
@@ -38,8 +38,9 @@ makina-etc-psad-{{i}}-conf:
     - user: root
     - group: root
     - mode: "0700"
-    - defaults: |
-                {{salt['mc_utils.json_dump']( data)}}
+    - defaults:
+      data: |
+            {{salt['mc_utils.json_dump']( data)}}
     - watch:
       - mc_proxy: makina-psad-pre-conf
     - watch_in:

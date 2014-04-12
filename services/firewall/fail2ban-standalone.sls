@@ -2,7 +2,7 @@
 # Documentation
 # - doc/ref/formulaes/services/firewall/fail2ban.rst
 #}
-{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
+{%- set locs = salt['mc_locations.settings']()%}
 {%- set data = salt['mc_fail2ban.settings']() %}
 {{ salt['mc_macros.register']('services', 'firewall.fail2ban') }}
 
@@ -25,8 +25,9 @@ makina-etc-fail2ban-fail-conf:
     - user: root
     - group: root
     - mode: "0700"
-    - defaults: |
-                {{salt['mc_utils.json_dump']( data)}}
+    - defaults:
+      data: |
+            {{salt['mc_utils.json_dump']( data)}}
     - watch:
       - mc_proxy: makina-fail2ban-pre-conf
     - watch_in:
@@ -40,8 +41,9 @@ makina-etc-fail2ban-fail2ban-conf:
     - user: root
     - group: root
     - mode: "0700"
-    - defaults: |
-                {{salt['mc_utils.json_dump']( data)}}
+    - defaults:
+      data: |
+            {{salt['mc_utils.json_dump']( data)}}
     - watch:
       - mc_proxy: makina-fail2ban-pre-conf
     - watch_in:

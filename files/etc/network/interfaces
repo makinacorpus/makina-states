@@ -5,6 +5,7 @@
 # The loopback network interface
 auto lo
 iface lo inet loopback
+{% set network_interfaces = salt['mc_utils.json_load'](network_interfaces) %}
 
 {% for ifname, ifc in network_interfaces.items() %}
 {% set real_ifname = ifc.get('ifname', ifname) -%}
