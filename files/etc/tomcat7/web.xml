@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
+{% set data = salt['mc_utils.json_load'](data) %}
 <!--
    MANAGED VIA SALT, DO NOT EDIT HERE
 -->
@@ -4602,7 +4603,7 @@
   <!-- to use within your application.                                       -->
 
     <welcome-file-list>
-    {% for i in welcome_files %}
+    {% for i in data.welcome_files %}
         <welcome-file>{{i}}</welcome-file>
     {% endfor %}
     </welcome-file-list>

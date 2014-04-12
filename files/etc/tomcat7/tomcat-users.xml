@@ -1,4 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
+{% set data = salt['mc_utils.json_load'](data) %}
 <!--
 MANAGED VIA SALT, DO NOT EDIT HERE
 -->
@@ -18,10 +19,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -->
-{%- set sroles = roles[:] %}
-{%- for i in users %}
-{%-   set data = users[i] %}
-{%-   for r in data.get('roles', []) %}
+{%- set sroles = data.roles[:] %}
+{%- for i in data.users %}
+{%-   set udata = data.users[i] %}
+{%-   for r in udata.get('roles', []) %}
 {%-     if not r in sroles %}
 {%-      do sroles.append(r) %}
 {%-     endif %}
@@ -48,7 +49,7 @@ limitations under the License.
   {% for r in sroles %}
   <role rolename="{{r}}"/>
   {% endfor %}
-  {% for u in users %}{% set user = users[u] %}
+  {% for u in data.users %}{% set user = data.users[u] %}
   <user username="{{u}}"
     password="{{user['password']}}"
     roles="{{','.join(user['roles'])}}"/>

@@ -1,18 +1,19 @@
 # MANAGED VIA SALT
 # !!!! DO NOT EDIT !!!!
+{% set data = salt['mc_utils.json_load'](data) %}
 
 # Run Tomcat as this user ID. Not setting this or leaving it blank will use the
 # default of tomcat7.
-TOMCAT7_USER="{{tomcat_user}}"
+TOMCAT7_USER="{{data.tomcat_user}}"
 
 # Run Tomcat as this group ID. Not setting this or leaving it blank will use
 # the default of tomcat7.
-TOMCAT7_GROUP="{{tomcat_group}}"
+TOMCAT7_GROUP="{{data.tomcat_group}}"
 
 # The home directory of the Java development kit (JDK). You need at least
 # JDK version 1.5. If JAVA_HOME is not set, some common directories for
 # OpenJDK, the Sun JDK, and various J2SE 1.5 versions are tried.
-JAVA_HOME="{{java_home}}"
+JAVA_HOME="{{data.java_home}}"
 
 # You may pass JVM startup parameters to Java here. If unset, the default
 # options will be: -Djava.awt.headless=true -Xmx128m -XX:+UseConcMarkSweepGC
@@ -21,7 +22,7 @@ JAVA_HOME="{{java_home}}"
 # response time). If you use that option and you run Tomcat on a machine with
 # exactly one CPU chip that contains one or two cores, you should also add
 # the "-XX:+CMSIncrementalMode" option.
-JAVA_OPTS="{{java_opts}}"
+JAVA_OPTS="{{data.java_opts}}"
 
 # To enable remote debugging uncomment the following line.
 # You will then be able to use a java debugger on port 8000.

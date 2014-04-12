@@ -1,4 +1,3 @@
-{% set localsettings = salt['mc_localsettings.settings']() %}
 {% set rsyslogSettings = salt['mc_rsyslog.settings']() %}
 include:
   - makina-states.services.log.rsyslog.hooks

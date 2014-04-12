@@ -1,15 +1,12 @@
 include:
   - makina-states.services.java.tomcat.hooks
+  - makina-states.services.java.tomcat.services
 
 {% set data = salt['mc_tomcat.settings']() %}
 {% set ver = data.ver %}
-{% set localsettings = salt['mc_localsettings.settings']() %}
 {% set locs = salt['mc_locations.settings']() %}
 {% set conf_dir = data.conf_dir %}
 {% set ydata = salt['mc_utils.json_dump'](data) %}
-
-
-
 {% macro tomcatc_watch() %}
       - mc_proxy: tomcat-pre-conf-hook
 {% endmacro %}
@@ -32,8 +29,9 @@ include:
     - name: {{ locs.conf_dir }}/default/tomcat{{ ver }}
     - source: salt://makina-states/files/etc/default/tomcat{{ ver }}
     - template: jinja
-    - defaults: |
-                {{ ydata }}
+    - defaults:
+      data: |
+            {{ ydata }}
     - watch: {{ tomcatc_watch() }}
     - watch_in: {{ tomcatc_watch_in() }}
 
@@ -42,8 +40,9 @@ include:
     - name: {{ conf_dir }}/web.xml
     - source: salt://makina-states/files/etc/tomcat{{ ver }}/web.xml
     - template: jinja
-    - defaults: |
-                {{ ydata }}
+    - defaults:
+      data: |
+            {{ ydata }}
     - watch: {{ tomcatc_watch() }}
     - watch_in: {{ tomcatc_watch_in() }}
 
@@ -59,8 +58,9 @@ include:
     - name: {{ conf_dir }}/tomcat-users.xml
     - source: salt://makina-states/files/etc/tomcat{{ ver }}/tomcat-users.xml
     - template: jinja
-    - defaults: |
-                {{ ydata }}
+    - defaults:
+      data: |
+            {{ ydata }}
     - watch: {{ tomcatc_watch() }}
     - watch_in: {{ tomcatc_watch_in() }}
 
@@ -69,8 +69,9 @@ include:
     - name: {{ conf_dir }}/logging.properties
     - source: salt://makina-states/files/etc/tomcat{{ ver }}/logging.properties
     - template: jinja
-    - defaults: |
-                {{ ydata }}
+    - defaults:
+      data: |
+            {{ ydata }}
     - watch: {{ tomcatc_watch() }}
     - watch_in: {{ tomcatc_watch_in() }}
 
@@ -79,8 +80,9 @@ include:
     - name: {{ conf_dir }}/policy.d/04webapps.policy
     - source: salt://makina-states/files/etc/tomcat{{ ver }}/policy.d/04webapps.policy
     - template: jinja
-    - defaults: |
-                {{ ydata }}
+    - defaults:
+      data: |
+            {{ ydata }}
     - watch: {{ tomcatc_watch() }}
     - watch_in: {{ tomcatc_watch_in() }}
 
@@ -89,8 +91,9 @@ include:
     - name: {{ conf_dir }}/policy.d/02debian.policy
     - source: salt://makina-states/files/etc/tomcat{{ ver }}/policy.d/02debian.policy
     - template: jinja
-    - defaults: |
-                {{ ydata }}
+    - defaults:
+      data: |
+            {{ ydata }}
     - watch: {{ tomcatc_watch() }}
     - watch_in: {{ tomcatc_watch_in() }}
 
@@ -99,8 +102,9 @@ include:
     - name: {{ conf_dir }}/policy.d/03catalina.policy
     - source: salt://makina-states/files/etc/tomcat{{ ver }}/policy.d/03catalina.policy
     - template: jinja
-    - defaults: |
-                {{ ydata }}
+    - defaults:
+      data: |
+            {{ ydata }}
     - watch: {{ tomcatc_watch() }}
     - watch_in: {{ tomcatc_watch_in() }}
 
@@ -109,8 +113,9 @@ include:
     - name: {{ conf_dir }}/policy.d/01system.policy
     - source: salt://makina-states/files/etc/tomcat{{ ver }}/policy.d/01system.policy
     - template: jinja
-    - defaults: |
-                {{ ydata }}
+    - defaults:
+      data: |
+            {{ ydata }}
     - watch: {{ tomcatc_watch() }}
     - watch_in: {{ tomcatc_watch_in() }}
 
@@ -119,8 +124,9 @@ include:
     - name: {{ conf_dir }}/policy.d/50local.policy
     - source: salt://makina-states/files/etc/tomcat{{ ver }}/policy.d/50local.policy
     - template: jinja
-    - defaults: |
-                {{ ydata }}
+    - defaults:
+      data: |
+            {{ ydata }}
     - watch: {{ tomcatc_watch() }}
     - watch_in: {{ tomcatc_watch_in() }}
 
@@ -129,8 +135,9 @@ include:
     - name: {{ conf_dir }}/catalina.properties
     - source: salt://makina-states/files/etc/tomcat{{ ver }}/catalina.properties
     - template: jinja
-    - defaults: |
-                {{ ydata }}
+    - defaults:
+      data: |
+            {{ ydata }}
     - watch: {{ tomcatc_watch() }}
     - watch_in: {{ tomcatc_watch_in() }}
 
@@ -139,8 +146,9 @@ include:
     - name: {{ conf_dir }}/server.xml
     - source: salt://makina-states/files/etc/tomcat{{ ver }}/server.xml
     - template: jinja
-    - defaults: |
-                {{ ydata }}
+    - defaults:
+      data: |
+            {{ ydata }}
     - watch: {{ tomcatc_watch() }}
     - watch_in: {{ tomcatc_watch_in() }}
 
@@ -149,8 +157,9 @@ include:
     - name: {{ conf_dir }}/context.xml
     - source: salt://makina-states/files/etc/tomcat{{ ver }}/context.xml
     - template: jinja
-    - default: |
-               {{ ydata }}
+    - default:
+      data: |
+            {{ ydata }}
     - watch: {{ tomcatc_watch() }}
     - watch_in: {{ tomcatc_watch_in() }}
 

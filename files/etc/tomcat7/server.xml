@@ -1,4 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
+{% set data = salt['mc_utils.json_load'](data) %}
 <!--
    MANAGED VIA SALT, DO NOT EDIT HERE
 -->
@@ -22,7 +23,7 @@
      define subcomponents such as "Valves" at this level.
      Documentation at /docs/config/server.html
  -->
-<Server port="{{shutdown_port}}" shutdown="SHUTDOWN">
+<Server port="{{data.shutdown_port}}" shutdown="SHUTDOWN">
   <!-- Security listener. Documentation at /docs/config/listeners.html
   <Listener className="org.apache.catalina.security.SecurityListener" />
   -->
@@ -70,40 +71,40 @@
          Java HTTP Connector: /docs/config/http.html (blocking & non-blocking)
          Java AJP  Connector: /docs/config/ajp.html
          APR (HTTP/AJP) Connector: /docs/apr.html
-         Define a non-SSL HTTP/1.1 Connector on port {{port}}
+         Define a non-SSL HTTP/1.1 Connector on port {{data.port}}
     -->
-    <Connector port="{{port}}"
-               address="{{address}}"
+    <Connector port="{{data.port}}"
+               address="{{data.address}}"
                protocol="HTTP/1.1"
                connectionTimeout="20000"
                URIEncoding="UTF-8"
                maxHttpHeaderSize="50000"
-               redirectPort="${{ssl_port}}" />
+               redirectPort="${{data.ssl_port}}" />
     <!-- A "Connector" using the shared thread pool-->
     <!--
     <Connector executor="tomcatThreadPool"
-               port="{{port}}" protocol="HTTP/1.1"
+               port="{{data.port}}" protocol="HTTP/1.1"
                connectionTimeout="20000"
-               redirectPort="{{ssl_port}}" />
+               redirectPort="{{data.ssl_port}}" />
     -->
 
 <!-- salt managed zone: connector block -->
 
 <!-- end salt managed zone: connector block -->
 
-    <!-- Define a SSL HTTP/1.1 Connector on port {{ssl_port}}
+    <!-- Define a SSL HTTP/1.1 Connector on port {{data.ssl_port}}
          This connector uses the JSSE configuration, when using APR, the
          connector should be using the OpenSSL style configuration
          described in the APR documentation -->
     <!--
-    <Connector port="{{ssl_port}}" protocol="HTTP/1.1" SSLEnabled="true"
+    <Connector port="{{data.ssl_port}}" protocol="HTTP/1.1" SSLEnabled="true"
                maxThreads="150" scheme="https" secure="true"
                clientAuth="false" sslProtocol="TLS" />
     -->
 
-    <!-- Define an AJP 1.3 Connector on port {{ajp_port}} -->
+    <!-- Define an AJP 1.3 Connector on port {{data.ajp_port}} -->
     <!--
-    <Connector port="{{ajp_port}}" protocol="AJP/1.3" redirectPort="{{ssl_port}}" />
+    <Connector port="{{data.ajp_port}}" protocol="AJP/1.3" redirectPort="{{data.ssl_port}}" />
     -->
 
 
@@ -116,7 +117,7 @@
     <!-- You should set jvmRoute to support load-balancing via AJP ie :
     <Engine name="Catalina" defaultHost="localhost" jvmRoute="jvm1">
     -->
-    <Engine name="Catalina" defaultHost="{{defaultHost}}">
+    <Engine name="Catalina" defaultHost="{{data.defaultHost}}">
 
       <!--For clustering, please take a look at documentation at:
           /docs/cluster-howto.html  (simple how to)
@@ -136,7 +137,7 @@
                resourceName="UserDatabase"/>
       </Realm>
 
-      <Host name="{{defaultHost}}"  appBase="webapps"
+      <Host name="{{data.defaultHost}}"  appBase="webapps"
             unpackWARs="true" autoDeploy="true">
 
         <!-- SingleSignOn valve, share authentication between web applications
