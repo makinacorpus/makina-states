@@ -1,5 +1,5 @@
 {% set localsettings = salt['mc_localsettings.settings']()%}
-{% set locs = localsettings.locations %}
+{% set locs = salt['mc_locations.settings']() %}
 {% macro npmInstall(npmPackage, npmVersion="system") %}
 npm-packages-{{npmPackage}}:
   cmd.run:

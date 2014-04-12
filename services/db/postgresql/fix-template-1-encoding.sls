@@ -6,7 +6,7 @@
 {% set encoding = settings['encoding'] %}
 {% set locale = settings['locale'] %}
 {%- set localsettings = salt['mc_localsettings.settings']() %}
-{%- set locs = localsettings.locations %}
+{%- set locs = salt['mc_locations.settings']() %}
 {%- set default_user = settings.user %}
 {% set orchestrate = hooks.orchestrate %}
 include:

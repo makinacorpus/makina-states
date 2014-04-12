@@ -6,7 +6,7 @@
 {#- see doc/ref/formulaes/services/db/postgresql.rst #}
 {% set settings = salt['mc_pgsql.settings']() %}
 {%- set localsettings = salt['mc_localsettings.settings']() %}
-{%- set locs = localsettings.locations %}
+{%- set locs = salt['mc_locations.settings']() %}
 {{ salt['mc_macros.register']('services', 'db.postgresql') }}
 {%- set default_user = settings.user %}
 {#- MAIN #}

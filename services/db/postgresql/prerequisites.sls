@@ -5,7 +5,7 @@ include:
 
 {%- set orchestrate = hooks.orchestrate %}
 {%- set localsettings = salt['mc_localsettings.settings']() %}
-{%- set locs = localsettings.locations %}
+{%- set locs = salt['mc_locations.settings']() %}
 {% set settings = salt['mc_pgsql.settings']() %}
 {%- if grains['os_family'] in ['Debian'] %}
 pgsql-repo:

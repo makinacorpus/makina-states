@@ -3,7 +3,7 @@
 {% import "makina-states/services/http/apache_modfastcgi.sls" as fastcgi with context %}
 {% set localsettings = salt['mc_localsettings.settings']() %}
 {% set nodetypes_registry = salt['mc_nodetypes.registry']() %}
-{% set locs = localsettings.locations %}
+{% set locs = salt['mc_locations.settings']() %}
 {% set phpSettings = salt['mc_php.settings']() %}
 
 {% macro do(full=True) %}
