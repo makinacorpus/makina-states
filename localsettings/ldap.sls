@@ -6,7 +6,9 @@
 
 {% set localsettings = salt['mc_localsettings.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'ldap') }}
-{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
+{%- set locs = salt['mc_locations.settings']() %}
+
+{% set ydata = sat['mc_utils.json_dump'](salt['mc_ldap.settings']()) %}
 
 include:
   - makina-states.localsettings.nscd
@@ -45,7 +47,8 @@ nslcd:
     - require:
       - pkg: ldap-pkgs
       - file: ldap-cacerts-cert
-    - defaults: {{ localsettings.ldapVariables | yaml }}
+    - defaults: |
+                {{ydata}}
     - watch_in:
       - cmd: nscd-restart
     - require_in:
@@ -86,7 +89,8 @@ nslcd-nsswitch-conf:
     - require:
       - pkg: ldap-pkgs
       - file: ldap-cacerts-cert
-    - defaults: {{ localsettings.ldapVariables | yaml }}
+    - defaults: |
+                {{ydata}}
     - require_in:
       - mc_proxy: users-pre-hook
 #}
@@ -101,7 +105,8 @@ nslcd-nsswitch-conf:
     - require:
       - pkg: ldap-pkgs
       - file: ldap-cacerts-cert
-    - defaults: {{ localsettings.ldapVariables | yaml }}
+    - defaults: |
+                {{ydata}}
     - require_in:
       - mc_proxy: users-pre-hook
 

@@ -56,7 +56,7 @@ apt-sources-list:
     - source: salt://makina-states/files/etc/apt/sources.list
     - mode: 755
     - template: jinja
-    - pkg_data: {{ pkg_data | yaml }}
+    - pkg_data: {{ salt['mc_utils.json_dump'](pkg_data) }}
 
 apt-update-after:
   cmd.watch:

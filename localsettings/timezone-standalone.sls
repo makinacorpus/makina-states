@@ -24,7 +24,8 @@ tz-conf:
     - group: root
     - template: jinja
     - defaults:
-      data: {{ defaults | yaml }}
+      data: |
+            {{ salt['mc_utils.json_dump'](defaults)}}
 
 {% endmacro %}
 {{ do(full=False)}}
