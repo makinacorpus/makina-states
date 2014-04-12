@@ -4,7 +4,6 @@ include:
   - makina-states.services.db.postgresql.hooks
 
 {%- set orchestrate = hooks.orchestrate %}
-{%- set localsettings = salt['mc_localsettings.settings']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 {% set settings = salt['mc_pgsql.settings']() %}
 {%- if grains['os_family'] in ['Debian'] %}
