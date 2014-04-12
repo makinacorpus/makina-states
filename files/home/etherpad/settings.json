@@ -3,17 +3,18 @@
 
   Please edit settings.json, not settings.json.template
 */
+{% set data = salt['mc_utils.json_load'](data) %}
 {
   // Name your instance!
-  "title": "{{ title }}",
+  "title": "{{data.title }}",
 
   // favicon default name
   // alternatively, set up a fully specified Url to your own favicon
   "favicon": "favicon.ico",
 
   //IP and port which etherpad should bind at
-  "ip": "{{ ip }}",
-  "port" : {{ port }},
+  "ip": "{{data.ip }}",
+  "port" : {{data.port }},
 
   /*
   // Node native SSL support
@@ -31,9 +32,9 @@
 
   //The Type of the database. You can choose between dirty, postgres, sqlite and mysql
   //You shouldn't use "dirty" for for anything else than testing or development
-  "dbType" : "{{ dbType }}",
+  "dbType" : "{{data.dbType }}",
   //the database specific settings
-  "dbSettings" : {{ dbSettings }},
+  "dbSettings" : {{data.dbSettings }},
 
   /* An Example of MySQL Configuration
    "dbType" : "mysql",
@@ -56,10 +57,10 @@
   "defaultPadText" : "Welcome to Etherpad Lite!\n\nThis pad text is synchronized as you type, so that everyone viewing this page sees the same text. This allows you to collaborate seamlessly on documents!\n\nGet involved with Etherpad at http:\/\/etherpad.org\n",
 
   /* Users must have a session to access pads. This effectively allows only group pads to be accessed. */
-  "requireSession" : {{ requireSession }},
+  "requireSession" : {{data.requireSession }},
 
   /* Users may edit pads but not create new ones. Pad creation is only via the API. This applies both to group pads and regular pads. */
-  "editOnly" : {{ editOnly }},
+  "editOnly" : {{data.editOnly }},
 
   /* if true, all css & js will be minified before sending to the client. This will improve the loading performance massivly, 
      but makes it impossible to debug the javascript/css */
@@ -83,10 +84,10 @@
   /* Users for basic authentication. is_admin = true gives access to /admin.
      If you do not uncomment this, /admin will not be available! */
 
-  {% if admin %}
+  {% if data.admin %}
   "users": {
     "etherpadadmin": {
-      "password": "{{ adminPassword }}",
+      "password": "{{data.adminPassword }}",
       "is_admin": true
     }
   },

@@ -1,4 +1,5 @@
 #	$OpenBSD: sshd_config,v 1.89 2013/02/06 00:20:42 dtucker Exp $
+{% set settings = salt['mc_utils.json_load'](settings) %}
 #
 # MANAGED VIA SALT, DO NOT EDIT
 #
