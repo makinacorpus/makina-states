@@ -17,6 +17,7 @@
 
 # Taken from ubuntu's lxc-net upstart config and adopted to init script
 # original author: Serge Hallyn <serge.hallyn@canonical.com>
+{% set data = salt['mc_utils.json_load'](data) %}
 
 USE_LXC_BRIDGE="{{data.use_bridge}}"
 USE_LXC_BRIDGE="{{data.use_bridge}}"

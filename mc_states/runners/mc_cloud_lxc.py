@@ -58,12 +58,10 @@ def cn_sls_pillar(target):
             'lxc_tarball_md5': imageData['lxc_tarball_md5'],
             'lxc_tarball_name': imageData['lxc_tarball_name'],
             'lxc_tarball_ver': imageData['lxc_tarball_ver']}
-    for name, imageData in lxcSettings['defaults'].items():
-        data = lxcSettingsData.setdefault(name, {})
-        for v in ['use_bridge', 'bridge',
-                  'gateway', 'netmask_full',
-                  'network', 'netmask']:
-            data[v] = lxcSettings['defaults'][v]
+    for v in ['use_bridge', 'bridge',
+              'gateway', 'netmask_full',
+              'network', 'netmask']:
+        lxcSettingsData[v] = lxcSettings['defaults'][v]
     imgSettingsData = api.json_dump(imgSettingsData)
     lxcSettingsData = api.json_dump(lxcSettingsData)
     pillar.update(

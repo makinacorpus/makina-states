@@ -39,7 +39,7 @@ etc-shorewall-{{config}}:
     - user: root
     - group: root
     - mode: "0700"
-    - defaults
+    - defaults:
       shwdata: |
                {{ yamled_shwdata }}
     - watch_in:
@@ -60,7 +60,7 @@ shorewall-shared-{{shared}}:
     - user: root
     - group: root
     - mode: "0700"
-    - defaults: 
+    - defaults:
       shwdata: |
                {{ yamled_shwdata }}
     - watch_in:
@@ -78,8 +78,9 @@ shorewall-rc-local-d:
   file.managed:
     - name: {{ locs.conf_dir }}/rc.local.d/shorewall.sh
     - source : salt://makina-states/files/etc/rc.local.d/shorewall.sh
-    - defaults: |
-                shwdata: {{ yamled_shwdata }}
+    - defaults:
+        shwdata: |
+                 {{ yamled_shwdata }}
     - mode: 0755
     - makedirs: true
     - template: jinja
