@@ -110,7 +110,7 @@ extend:
 # is commented, waiting for unix socket support
 # So we keep using the old way
 makina-fcgid-apache-module_connect_fcgid_mod_fcgid_module:
-  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
+  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
       - {{ apacheSettings.mod_packages.mod_fcgid }}
     - require:

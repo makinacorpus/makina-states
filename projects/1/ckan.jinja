@@ -31,7 +31,7 @@
 {%- macro ckan_deps(common) %}
 {% if common.full -%}
 prepreq-{{common.name}}:
-  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
+  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - watch_in:
       - mc_proxy: {{common.name}}-prerequisites-hook
     - pkgs:

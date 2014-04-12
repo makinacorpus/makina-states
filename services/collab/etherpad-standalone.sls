@@ -106,7 +106,7 @@ etherpad-settings:
 
 {% if full %}
 etherpad-npms:
-  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
+  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
       - sqlite3
       - libsqlite3-dev

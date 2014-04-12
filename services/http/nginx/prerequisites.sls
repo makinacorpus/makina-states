@@ -1,7 +1,7 @@
 include:
   - makina-states.services.http.nginx.hooks
 makina-nginx-pkgs:
-  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
+  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
       - {{ salt['mc_nginx.settings']().package }}
     - watch:

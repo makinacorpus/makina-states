@@ -18,7 +18,7 @@ include:
 {%    if pgVer in pgSettings.versions -%}
 {%      if full -%}
 prereq-postgis-{{pgVer}}-{{postgisVer}}:
-  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
+  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - require_in:
       - mc_proxy: {{pgsql.orchestrate[pgVer]['pregroup']}}
       - mc_proxy: {{pgsql.orchestrate[pgVer]['predb']}}

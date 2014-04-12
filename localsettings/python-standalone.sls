@@ -23,7 +23,7 @@ deadsnakes:
     - keyid: DB82666C
     - keyserver: keyserver.ubuntu.com
   {%- if pyvers %}
-  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
+  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - require:
       - pkgrepo: deadsnakes
       {% if full %}

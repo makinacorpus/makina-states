@@ -21,7 +21,7 @@ lxc-repo:
       - mc_proxy: lxc-pre-pkg
 
 lxc-pkgs:
-  {#pkg.{{salt['mc_localsettings.settings']()['installmode']}}: #}
+  {#pkg.{{salt['mc_pkgs.settings']()['installmode']}}: #}
   pkg.latest:
 {# no need anymore -> ppa #}
 {% if False and grains['os'] in ['Ubuntu'] -%}

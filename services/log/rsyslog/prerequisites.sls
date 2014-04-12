@@ -4,7 +4,7 @@ include:
   - makina-states.services.log.rsyslog.hooks
 
 rsyslog-pkgs:
-  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
+  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
       - rsyslog
     - watch:

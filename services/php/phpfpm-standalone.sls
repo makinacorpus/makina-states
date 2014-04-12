@@ -43,7 +43,7 @@ include:
 # is commented, waiting for unix socket support
 # So we keep using the old way
 makina-phpfpm-apache-module_connect_phpfpm_mod_fastcgi_module:
-  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
+  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
       - {{ phpSettings.packages.php_fpm }}
     - require:

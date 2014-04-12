@@ -13,7 +13,7 @@
 {%- macro lizmap_pkgs(common) %}
 {% if common.full %}
 {{common.name}}-pkgs:
-  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
+  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
       - libspatialite-dev
       - libspatialite3

@@ -11,7 +11,7 @@
 {%- set defaults = localsettings.timezoneSettings %}
 {% if full %}
 tz-pkgs:
-  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
+  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
       - tzdata
 {% endif %}

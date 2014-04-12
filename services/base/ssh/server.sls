@@ -6,7 +6,7 @@ sshgroup:
 
 
 opensshd-pkgs:
-  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
+  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
       - {{ openssh.pkg_server }}
 

@@ -10,7 +10,7 @@
 {%- macro drupal_pkgs(common) %}
 {% if common.full %}
 {{common.name}}-pkgs:
-  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
+  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
       - bzip2
       - unzip

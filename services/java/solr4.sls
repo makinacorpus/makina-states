@@ -70,7 +70,7 @@ include:
 
 {% set ydata = salt['mc_utils.json_dump'](data) %}
 solr{{ v }}-prerequisites:
-  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
+  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
       - rsync
       - unzip

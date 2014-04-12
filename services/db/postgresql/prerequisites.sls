@@ -20,7 +20,7 @@ pgsql-repo:
       - mc_proxy: {{orchestrate['base']['postpkg']}}
 {%- endif %}
 postgresql-pkgs:
-  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
+  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
       - python-virtualenv {# noop #}
       {% if grains['os_family'] in ['Debian'] %}

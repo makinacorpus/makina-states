@@ -3,7 +3,7 @@ include:
 {% set data = salt['mc_tomcat.settings']() %}
 {% set ver = data.ver %}
 tomcat-{{ver}}-pkgs:
-  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
+  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
       - tomcat{{ ver }}
     - watch_in:

@@ -2,7 +2,7 @@
 {{ salt['mc_macros.register']('services', 'backup.bacula-fd') }}
 
 bacula-fd-pkg:
-  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
+  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
       - bacula-fd
 

@@ -23,7 +23,7 @@ include:
 
 {% if full %}
 prereq-pureftpd:
-  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
+  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - watch:
       - mc_proxy: ftpd-pre-installation-hook
     - watch_in:

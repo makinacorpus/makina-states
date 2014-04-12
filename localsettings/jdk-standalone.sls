@@ -10,7 +10,7 @@ jdk-{{ ver }}-pkgs{{suf}}:
   cmd.run:
     - name: sudo echo oracle-java{{ ver }}-installer shared/accepted-oracle-license-v1-1 select true | sudo {{ locs.bin_dir }}/debconf-set-selections;
     - unless: test "$({{ locs.bin_dir }}/debconf-get-selections |grep shared/accepted-oracle-license-v1-1|grep oracle-java{{ ver }}-installer|grep true|wc -l)" != 0;
-  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
+  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - names:
       - oracle-java{{ ver }}-installer
     - require:
@@ -42,7 +42,7 @@ jdk-repo:
 {{ jdk_pkgs(ver) }}
 {% endfor %}
 java-{{ default_ver }}-install:
-  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
+  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs: [oracle-java{{ default_ver }}-set-default]
     - require:
       - pkg: jdk-{{ default_ver }}-pkgs

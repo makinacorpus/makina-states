@@ -1,7 +1,7 @@
 include:
   - makina-states.services.firewall.shorewall.hooks
 shorewall-pkgs:
-  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
+  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
       - shorewall6
       - shorewall
