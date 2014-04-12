@@ -105,8 +105,16 @@ def settings():
                         'mirror': 'http://ftp.de.debian.org/debian',
                     },
                 }})
-        data['udist'] = data['apt']['ubuntu']['dist']
+        data['dcomps'] = data['apt']['debian']['comps']
         data['ddist'] = data['apt']['debian']['dist']
+        data['debian_mirror'] = data['apt']['debian']['mirror']
+        data['debian_stable'] = data['apt']['debian']['stable']
+        data['lts_dist'] = data['lts_dist']
+        data['ubuntu_last'] = data['apt']['ubuntu']['last']
+        data['ubuntu_lts'] = data['apt']['ubuntu']['lts']
+        data['ubuntu_mirror'] = data['apt']['ubuntu']['mirror']
+        data['ucomps'] = data['apt']['ubuntu']['comps']
+        data['udist'] = data['apt']['ubuntu']['dist']
         return data
     return _settings()
 

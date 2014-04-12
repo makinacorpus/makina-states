@@ -1,4 +1,4 @@
-{% set localsettings = salt['mc_localsettings.settings']() %}
+{% set localsettings = salt['mc_pkgs.settings']() %}
 {% set haproxySettings = salt['mc_haproxy.settings']() %}
 include:
   - makina-states.services.proxy.haproxy.hooks
