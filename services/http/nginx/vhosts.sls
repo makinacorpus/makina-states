@@ -61,7 +61,7 @@ makina-nginx-virtualhost-{{ site }}-status:
  'redirect_aliases': 'redirect_aliases',
 } %}
 {% do vhost_data.update(extra_jinja_nginx_variables or {}) %}
-{% set svhost_data = vhost_data|json %}
+{% set svhost_data =salt['mc_utils.json_dump'](vhost_data) %}
 
 # Virtualhost basic file
 makina-nginx-virtualhost-{{ small_name }}-top:

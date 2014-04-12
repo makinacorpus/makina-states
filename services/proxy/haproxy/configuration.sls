@@ -47,7 +47,7 @@ makina-haproxy-default-cfg:
     - watch_in:
       - mc_proxy: haproxy-post-conf-hook
 
-{%set jdata = data|json %}
+{%set jdata =salt['mc_utils.json_dump'](data) %}
 {% for f in ['/etc/logrotate.d/haproxy']%}
 
 makina-haproxy-{{f}}:

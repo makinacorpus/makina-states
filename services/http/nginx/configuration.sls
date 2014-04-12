@@ -17,7 +17,7 @@ nginx-vhost-dirs:
     - watch_in:
       - mc_proxy: nginx-post-conf-hook
 
-{% set sdata = settings|json  %}
+{% set sdata =salt['mc_utils.json_dump'](settings)  %}
 {% for f in [
     '/etc/logrotate.d/nginx',
     settings['basedir'] + '/fastcgi_params',

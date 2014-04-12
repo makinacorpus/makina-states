@@ -12,7 +12,7 @@ makina-rsyslog-configuration-check:
     - watch_in:
       - mc_proxy: rsyslog-pre-restart-hook
 
-{% set sdata = data|json %}
+{% set sdata =salt['mc_utils.json_dump'](data) %}
 {% for f in [
   '/etc/rsyslog.conf',
   '/etc/rsyslog.d/20-ufw.conf',
