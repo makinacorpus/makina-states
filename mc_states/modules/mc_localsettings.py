@@ -32,6 +32,11 @@ def _ldapEn(__salt__):
 
 def settings():
     '''settings registry for localsettings
+
+    **OBSOLETE, PLEASE USE LOCAL REGISTRIES**
+    **MOST MAKINA STATES CORE IS ALREADY MIGRATED**
+
+    WILL DISAPPEAR IN A NEAR FUTURE
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
