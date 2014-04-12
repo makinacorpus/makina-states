@@ -90,7 +90,6 @@ def settings():
         """
         pillar = __pillar__
         grains = __grains__
-        localsettings = __salt__['mc_localsettings.settings']()
         ct_registry = __salt__['mc_controllers.registry']()
         salt_settings = __salt__['mc_salt.settings']()
         pillar = __pillar__
@@ -168,7 +167,7 @@ def settings():
             data['bootsalt_branch'] = {
                 'prod': 'stable',
                 'preprod': 'stable',
-            }.get(localsettings['default_env'], None)
+            }.get(__salt__['mc_env.settings']()['default_env'], None)
         if not data['bootsalt_branch']:
             if data['mode'] == 'mastersalt':
                 k = 'mastersaltCommonData'

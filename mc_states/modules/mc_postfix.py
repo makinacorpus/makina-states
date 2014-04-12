@@ -71,9 +71,8 @@ def settings():
     def _settings():
         grains = __grains__
         pillar = __pillar__
-        localsettings = __salt__['mc_localsettings.settings']()
         nodetypes_registry = __salt__['mc_nodetypes.registry']()
-        locs = localsettings['locations']
+        locs = __salt__['mc_locations.settings']()
         local_networks = '127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128 {{ local_networks }}'
         for iface, ips in grains['ip_interfaces'].items():
             for ip in ips:
@@ -89,7 +88,7 @@ def settings():
                 'check_policy_service': None,
                 'inet_interfaces': '127.0.0.1',
                 'conf_dir': locs['conf_dir'],
-                'mailname': localsettings['fqdn'],
+                'mailname': __salt__['mc_network.settings']()['fqdn'],
                 'cert_file': '{conf_dir}/ssl/certs/ssl-cert-snakeoil.pem',
                 'cert_key': '{conf_dir}/ssl/private/ssl-cert-snakeoil.key',
                 'inet_interfaces': 'all',

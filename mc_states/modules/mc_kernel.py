@@ -70,8 +70,7 @@ def settings():
         _s = __salt__
         grains = __grains__
         pillar = __pillar__
-        localsettings = __salt__['mc_localsettings.settings']()
-        locations = localsettings['locations']
+        locations = __salt__['mc_locations.settings']()
         nbcpus = __grains__.get('num_cpus', '1')
 
         #

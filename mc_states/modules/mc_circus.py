@@ -28,12 +28,11 @@ def settings():
     def _settings():
         grains = __grains__
         pillar = __pillar__
-        localsettings = __salt__['mc_localsettings.settings']()
-        locs = localsettings['locations']
+        locs = __salt__['mc_locations.settings']()
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.monitoring.circus', {
                 'location': locs['apps_dir'] + '/circus',
-                'rotate': localsettings['rotate'],
+                'rotate': __salt__['mc_logrotate.settings'](),
                 'requirements': [
                     'circus==0.10.0',
                     'circus-web==0.4.1',

@@ -156,7 +156,6 @@ def get_configuration(
     """
     runmode = not full and '-standalone' or ''
     nodetypes_reg = __salt__['mc_nodetypes.registry']()
-    localsettings = __salt__['mc_localsettings.settings']()
     if domains is None:
         domains = {}
     if groups is None:
@@ -190,7 +189,7 @@ def get_configuration(
     if not user:
         user = '{name}-user'
     if not groups:
-        groups.append(localsettings['group'])
+        groups.append(__salt__['mc_usergroup.settings']()['group'])
     groups = uniquify(groups)
     if isinstance(domains, basestring):
         domains = domains.split()
@@ -251,7 +250,7 @@ def get_configuration(
             'domain': domain,
             'domains': domains,
             'alternate_domains': [a for a in domains if not a == domain],
-            'projects_dir': localsettings['locations']['projects_dir'],
+            'projects_dir': __salt__['mc_locations.settings']()['projects_dir'],
             'project_dir': '{projects_dir}/{name}',
             'salt_root':    salt_root,
             'project_root': project_root,

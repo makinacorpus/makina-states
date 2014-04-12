@@ -25,9 +25,8 @@ def settings():
     def _settings():
         grains = __grains__
         pillar = __pillar__
-        localsettings = __salt__['mc_localsettings.settings']()
         nodetypes_registry = __salt__['mc_nodetypes.registry']()
-        locs = localsettings['locations']
+        locs = __salt__['mc_locations.settings']()
         data = __salt__['mc_utils.defaults'](
              'makina-states.services.monitoring.snmpd', {
                 'SNMPDRUN':'yes',

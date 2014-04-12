@@ -48,11 +48,10 @@ def settings():
     def _settings():
         grains = __grains__
         pillar = __pillar__
-        localsettings = __salt__['mc_localsettings.settings']()
         services_registry = __salt__['mc_services.registry']()
         controllers_registry = __salt__['mc_controllers.registry']()
         nodetypes_registry = __salt__['mc_nodetypes.registry']()
-        locs = localsettings['locations']
+        locs = __salt__['mc_locations.settings']()
         shwIfformat = 'FORMAT 2'
         #if ((grains['os'] not in ['Debian'])
         #   and (grains.get('lsb_distrib_codename') not in ['precise'])):

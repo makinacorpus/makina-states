@@ -564,7 +564,6 @@ def get_configuration(name, *args, **kwargs):
         if k in cfg:
             ignored_keys.append(k)
     nodetypes_reg = __salt__['mc_nodetypes.registry']()
-    localsettings = __salt__['mc_localsettings.settings']()
     salt_settings = __salt__['mc_salt.settings']()
     salt_root = salt_settings['saltRoot']
     if cfg['domains'] is None:
@@ -632,7 +631,7 @@ def get_configuration(name, *args, **kwargs):
     if not cfg['user']:
         cfg['user'] = '{name}-user'
     if not cfg['groups']:
-        cfg['groups'].append(localsettings['group'])
+        cfg['groups'].append(__salt__['mc_usergroup.settings']()['group'])
     cfg['groups'] = uniquify(cfg['groups'])
     # those variables are overridable via pillar/grains
     overridable_variables = [
@@ -659,7 +658,7 @@ def get_configuration(name, *args, **kwargs):
                                          os_defaults=cfg['os_defaults'])
     # some vars need to be setted just a that time
     cfg['group'] = cfg['groups'][0]
-    cfg['projects_dir'] = localsettings['locations']['projects_dir']
+    cfg['projects_dir'] = __salt__['mc_locations.settings']()['projects_dir']
 
     # finally resolve the format-variabilized dict key entries in
     # arbitrary conf mapping

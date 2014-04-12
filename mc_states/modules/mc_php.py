@@ -167,11 +167,10 @@ def settings():
 
         grains = __grains__
         pillar = __pillar__
-        localsettings = __salt__['mc_localsettings.settings']()
-        locations = localsettings['locations']
+        locations = __salt__['mc_locations.settings']()
 
         phpdefaults = {
-            'rotate': localsettings['rotate']['days'],
+            'rotate': __salt__['mc_logrotate.settings']()['days'],
             'register-pools': {},
             'timezone': 'Europe/Paris',
             'open_basedir': True,

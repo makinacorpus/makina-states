@@ -49,8 +49,7 @@ def settings():
     def _settings():
         grains = __grains__
         pillar = __pillar__
-        localsettings = __salt__['mc_localsettings.settings']()
-        locs = localsettings['locations']
+        locs = __salt__['mc_locations.settings']()
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.collab.etherpad', {
                 'version': '1.3.0',

@@ -151,8 +151,7 @@ def settings():
     def _settings():
         grains = __grains__
         pillar = __pillar__
-        localsettings = __salt__['mc_localsettings.settings']()
-        locations = localsettings['locations']
+        locations = __salt__['mc_locations.settings']()
         apacheStepOne = __salt__['mc_utils.dictupdate'](
             {
                 'httpd_user': 'www-data',

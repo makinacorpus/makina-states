@@ -49,9 +49,8 @@ def settings():
     def _settings():
         grains = __grains__
         pillar = __pillar__
-        localsettings = __salt__['mc_localsettings.settings']()
         nt_reg = __salt__['mc_nodetypes.registry']()
-        locs = localsettings['locations']
+        locs = __salt__['mc_locations.settings']()
         listen_addr = '0.0.0.0'
         if nt_reg['is']['vm']:
             listen_addr = '127.0.0.1'

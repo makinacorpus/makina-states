@@ -66,8 +66,7 @@ def settings():
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        localsettings = __salt__['mc_localsettings.settings']()
-        locs = localsettings['locations']
+        locs = __salt__['mc_locations.settings']()
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.java.tomcat7', {
                 'jdk_ver': '6',

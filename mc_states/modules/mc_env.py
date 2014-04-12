@@ -50,6 +50,8 @@ def settings():
             'makina-states.localsettings.env', {
                 'env': env,
             })
+        # retro compat
+        data['default_env'] = data['env']
         return data
     return _settings()
 

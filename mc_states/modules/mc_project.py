@@ -135,7 +135,6 @@ def doc_root(doc_root=None,
              project_root=None,
              project=None,
              relative_document_root='www'):
-    localsettings = __salt__['mc_localsettings.settings']()
     if not doc_root:
         if not domain and not project:
             raise Exception('Need at least one of domain or project')
@@ -143,7 +142,7 @@ def doc_root(doc_root=None,
             project = gen_id(domain)
         if not project_root:
             project_root = '{0}/{1}/project'.format(
-                localsettings['locations']['projects_dir'], project)
+                __salt__['mc.locations.settings']()['projects_dir'], project)
         doc_root = '{0}/{1}'.format(project_root,
                                     relative_document_root)
     return doc_root

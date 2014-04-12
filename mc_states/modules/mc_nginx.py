@@ -139,8 +139,7 @@ def settings():
     def _settings():
         grains = __grains__
         pillar = __pillar__
-        localsettings = __salt__['mc_localsettings.settings']()
-        locations = localsettings['locations']
+        locations = __salt__['mc_locations.settings']()
         nbcpus = __grains__.get('num_cpus', '4')
         epoll = False
         if 'linux' in __grains__.get('kernel', '').lower():

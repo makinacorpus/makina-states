@@ -26,8 +26,7 @@ def settings():
     def _settings():
         grains = __grains__
         pillar = __pillar__
-        localsettings = __salt__['mc_localsettings.settings']()
-        locs = localsettings['locations']
+        locs = __salt__['mc_locations.settings']()
         #'capture cookie vgnvisitor= len 32',
         #'option    httpchk /index.html',
         #'cookie SERVERID rewrite',
@@ -61,7 +60,7 @@ def settings():
             'makina-states.services.proxy.haproxy', {
                 'location': locs['conf_dir'] + '/haproxy',
                 'config_dir': '/etc/haproxy',
-                'rotate': localsettings['rotate']['days'],
+                'rotate': __salt__['mc_logrotate.settings']()['days'],
                 'config': 'haproxy.cfg',
                 'user': 'haproxy',
                 'group': 'haproxy',
