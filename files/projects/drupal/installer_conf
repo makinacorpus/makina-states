@@ -1,4 +1,5 @@
 #!/bin/bash
+{% set data = salt['mc_utils.json_load'](data) %}
 # CONFIGURATION FILE for drush install
 SITES_SUBDIR="{{ data.site_subdir }}"
 DB_PREFIX="{{ db_prefix }}"

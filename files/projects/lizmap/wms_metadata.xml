@@ -1,6 +1,7 @@
   <!-- MANAGED VIA SALT -->
 	<!-- Service Metadata -->
 	<Service>               s
+   {% set data = salt['mc_utils.json_load'](data) %}
     <Name>{{data.Name}}</Name>
 		<!-- Human-readable title for pick lists -->
     <Title>{{data.Title}}</Title>
