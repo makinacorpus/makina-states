@@ -3,7 +3,7 @@
 # see:
 #   - makina-states/doc/ref/formulaes/localsettings/nodejs.rst
 #}
-{% set localsettings = salt['mc_localsettings.settings']()%}
+{% set pkgsettings = salt['mc_pkgs.settings']()%}
 {% set locs = salt['mc_locations.settings']()%}
 include:
   - makina-states.localsettings.nodejs.hooks
@@ -16,8 +16,8 @@ nodejs-repo:
   pkgrepo.managed:
     - name: nodejs
     - humanname: Node.js PPA
-    - name: deb http://ppa.launchpad.net/chris-lea/node.js/ubuntu {{localsettings.dist}} main
-    - dist: {{localsettings.dist}}
+    - name: deb http://ppa.launchpad.net/chris-lea/node.js/ubuntu {{pkgsettings.dist}} main
+    - dist: {{pkgsettings.dist}}
     - file: {{locs.conf_dir}}/apt/sources.list.d/nodejs.list
     - keyid: C7917B12
     - keyserver: keyserver.ubuntu.com
@@ -25,7 +25,7 @@ nodejs-repo:
       - mc_proxy: nodejs-pre-system-install
 {% endif %}
 nodejs-pkgs:
-  pkg.{{localsettings['installmode']}}:
+  pkg.{{pkgsettings['installmode']}}:
     - watch:
       - mc_proxy: nodejs-pre-system-install
       {% if grains['os'] in ['Ubuntu'] %}
