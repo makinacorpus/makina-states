@@ -1,13 +1,13 @@
-{% set localsettings = salt['mc_pkgs.settings']() %}
+{% set pkgssettings = salt['mc_pkgs.settings']() %}
 {% set haproxySettings = salt['mc_haproxy.settings']() %}
 include:
   - makina-states.services.proxy.haproxy.hooks
 
 {% if grains['os_family'] in ['Debian'] %}
-{% set dist = localsettings.udist %}
+{% set dist = pkgssettings.udist %}
 {% endif %}
 {% if grains['os'] in ['Debian'] %}
-{% set dist = localsettings.ubuntu_lts %}
+{% set dist = pkgssettings.ubuntu_lts %}
 {% endif %}
 base:
   pkgrepo.managed:
