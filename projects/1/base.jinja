@@ -27,7 +27,7 @@
 # export macro to callees
 {% set services = services %}
 {% set nodetypes = nodetypes %}
-{% set localsettings = salt['mc_localsettings.settings']() %}
+{% set ugs = salt['mc_usergroup.settings']() %}
 {% set locs = salt['mc_locations.settings']() %}
 {% set saltmac = saltmac %}
 
@@ -255,17 +255,17 @@
             if [ -e "{{common.pillar_root}}" ];then 
             "{{locs.resetperms}}" "${@}"
             --dmode '0770' --fmode '0770'
-            --user root --group "{{localsettings.group}}"
+            --user root --group "{{ugs.group}}"
             --users root
-            --groups "{{localsettings.group}}"
+            --groups "{{ugs.group}}"
             --paths "{{common.pillar_root}}";fi
 
             if [ -e "{{common.salt_root}}" ];then 
             "{{locs.resetperms}}" "${@}"
             --dmode '0770' --fmode '0770'
-            --user root --group "{{localsettings.group}}"
+            --user root --group "{{ugs.group}}"
             --users root
-            --groups "{{localsettings.group}}"
+            --groups "{{ugs.group}}"
             --paths "{{common.salt_root}}";fi
 
             if [ -e "{{common.project_root}}" ];then

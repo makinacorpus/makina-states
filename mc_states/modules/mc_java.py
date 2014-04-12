@@ -41,6 +41,8 @@ def settings():
             'makina-states.localsettings.jdk', {
                 'default_jdk_ver': 7,
             })
+        # retrocompat
+        data['jdkDefaultVer'] = data['default_jdk_ver']
         return data
     return _settings()
 

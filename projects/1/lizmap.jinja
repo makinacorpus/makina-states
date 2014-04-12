@@ -3,7 +3,6 @@
 {%- import "makina-states/services/db/postgresql/init.sls" as pgsql with context %}
 {%- set services = base.services %}
 {%- set saltmac = base.saltmac %}
-{%- set localsettings = salt['mc_localsettings.settings']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 
 {% set rftproot = locs.srv_dir + "/ftp" %}

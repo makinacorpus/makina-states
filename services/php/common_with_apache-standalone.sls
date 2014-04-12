@@ -5,7 +5,6 @@
 {% set do = base.do %}
 {% set full = False %}
 {% set apache = True %}
-{% set localsettings = salt['mc_localsettings.settings']() %}
 {% set nodetypes_registry = salt['mc_nodetypes.registry']() %}
 {% set locs = base.locs %}
 {% set phpSettings = salt['mc_php.settings']() %}

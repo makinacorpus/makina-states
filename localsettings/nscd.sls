@@ -3,7 +3,6 @@
 # see:
 #   - makina-states/doc/ref/formulaes/localsettings/nscd.rst
 #}
-{% set localsettings = salt['mc_localsettings.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'nscd') }}
 {%- set locs = salt['mc_locations.settings']() %}
 nscd-pkgs:

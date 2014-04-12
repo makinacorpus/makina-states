@@ -1,5 +1,4 @@
 {% import "makina-states/services/http/apache.sls" as apache with context %}
-{% set localsettings = salt['mc_localsettings.settings']() %}
 {% set nodetypes = apache.nodetypes %}
 {% set locs = salt['mc_locations.settings']() %}
 {% set phpSettings = salt['mc_php.settings']() %}

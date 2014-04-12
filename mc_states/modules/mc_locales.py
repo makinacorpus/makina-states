@@ -57,6 +57,8 @@ def settings():
                 'locale': default_locale,
             }
         )
+        # retro compat
+        data['default_locale'] = data["locale"]
         return data
     return _settings()
 

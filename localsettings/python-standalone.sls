@@ -4,16 +4,15 @@
 #   -  makina-states/doc/ref/formulaes/localsettings/python.rst
 #}
 {% macro do(full=True) %}
-{% set localsettings = salt['mc_localsettings.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'python') }}
 {% if full %}
 include:
   - makina-states.localsettings.pkgmgr
 {% endif %}
 {%- set locs = salt['mc_locations.settings']() %}
-{%- set pyvers = localsettings.pythonSettings.alt_versions %}
+{%- set pyvers = salt['mc_python.settings']().alt_versions %}
 {%- if (grains['os'] in ['Ubuntu']) and pyvers %}
-{%- set udist = localsettings.udist %}
+{%- set udist = salt['mc_pkgs.settings']().udist %}
 deadsnakes:
   pkgrepo.managed:
     - humanname: DeadSnakes PPA

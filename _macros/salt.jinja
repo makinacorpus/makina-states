@@ -5,15 +5,15 @@
 {%- set nodetypes_registry = salt['mc_nodetypes.registry']() %}
 {%- set isLxc = nodetypes_registry.is.lxccontainer %}
 {%- set isTravis = nodetypes_registry.is.travis %}
-{%- set localsettings = salt['mc_localsettings.settings']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 
 {%- set resolver = salt['mc_utils.format_resolve'] %}
 
 {%- set settings = salt['mc_salt.settings']() %}
 
-{%- set group = localsettings.group %}
-{%- set groupId = localsettings.groupId %}
+{%- set ugs = salt['mc_usergroup.settings']() %}
+{%- set group = ugs.group %}
+{%- set groupId = ugs.groupId %}
 
 {#-
 # You can overrides this dict via the salt pillar entry 'confRepos', see bellow
@@ -432,7 +432,7 @@ etc-{{data.name}}-dirs-perms:
     - name: >
             {{data.resetperms }}
             --dmode 0770 --fmode 0770
-            --user "root" --group "{{ localsettings.group }}"
+            --user "root" --group "{{ ugs.group }}"
             --paths {{ data.conf_prefix }}
     - require:
       - mc_proxy: dummy-{{data.name}}-layout
@@ -443,7 +443,7 @@ etc-{{data.name}}-dirs-perms:
   cmd.run:
     - name: >
             {{ data.resetperms }}
-            -u root -g "{{ localsettings.group }}"
+            -u root -g "{{ ugs.group }}"
             --dmode 0770 --fmode 0770
             --only-acls
             --paths "{{ data.projects_root }}"
@@ -456,7 +456,7 @@ etc-{{data.name}}-dirs-perms:
     - name: >
             {{ data.resetperms }}
             --dmode 0770 --fmode 0770
-            --user "root" --group "{{ localsettings.group }}"
+            --user "root" --group "{{ ugs.group }}"
             --paths "{{ data.salt_root }}"
             --paths "{{ data.pillar_root }}"
             --excludes "{{ data.salt_root }}.*\/files\/.*"
@@ -471,7 +471,7 @@ etc-{{data.name}}-dirs-perms:
     - name: >
             {{ resetperms }}
             --fmode 0750 --dmode 0750
-            --user "root" --group "{{ localsettings.group }}"
+            --user "root" --group "{{ ugs.group }}"
             --paths "{{ data.log_prefix }}"
             --paths "{{ data.run_prefix }}/{{data.name}}"
             --paths "{{ data.cache_prefix }}"

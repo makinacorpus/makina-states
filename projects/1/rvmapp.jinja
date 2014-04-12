@@ -1,7 +1,7 @@
 {%- import "makina-states/projects/1/base.jinja" as base with context %}
 {%- set services = base.services %}
 {%- set saltmac = base.saltmac %}
-{%- set localsettings = salt['mc_localsettings.settings']() %}
+{%- set rvms = salt['mc_rvm.settings']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 
 {%- macro install_rvm_bundle(common) %}
@@ -65,7 +65,7 @@
 {%- set default_defaults = {
   'rvm': salt['mc_locations.settings']().rvm,
   'rvm_path': locs.rvm_path,
-  'rb': localsettings.rubies[0],
+  'rb': rvms.rubies[0],
 } %}
 
 {%- set default_env_defaults = {

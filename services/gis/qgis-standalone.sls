@@ -1,5 +1,5 @@
 {{ salt['mc_macros.register']('services', 'gis.qgis') }}
-{% set localsettings = salt['mc_localsettings.settings']() %}
+{% set pkgssettings = salt['mc_pkgs.settings']() %}
 {% set locs = salt['mc_locations.settings']() %}
 {% macro do(full=True) %}
 {# its up to the project to decide the fcgi implementation afterall
@@ -19,7 +19,7 @@ qgis-repo:
     - name: deb http://qgis.org/debian {{localsettings.dist}} main
     - file: {{ locs.conf_dir }}/apt/sources.list.d/qgis.list
     - keyid: '47765B75'
-    - keyserver: {{localsettings.keyserver }}
+    - keyserver: {{pkgssettings.keyserver }}
 
 prereq-qgis:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:

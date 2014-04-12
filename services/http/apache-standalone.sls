@@ -22,7 +22,7 @@
 {% import "makina-states/_macros/apache.jinja" as apache with context %}
 
 {% set nodetypes_registry = salt['mc_nodetypes.registry']() %}
-{% set localsettings = salt['mc_localsettings.settings']() %}
+{% set ugs = salt['mc_usergroup.settings']() %}
 {% set locs = salt['mc_locations.settings']() %}
 {% set apacheSettings = salt['mc_apache.settings']() %}
 
@@ -398,7 +398,7 @@ makina-apache-minimal-default-vhost-remove-olds:
     - system: true
     - remove_groups: False
     - groups:
-      - {{localsettings.group}}
+      - {{ugs.group}}
     - watch_in:
       - mc_proxy: makina-apache-pre-restart
 {% endif %}

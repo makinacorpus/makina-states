@@ -1,7 +1,7 @@
 {# Apache specific macros
 # Import this macro file with context so that grains will be available in the macros
 #}
-{% set localsettings = salt['mc_localsettings.settings']() %}
+{% set ugs = salt['mc_usergroup.settings']() %}
 {% set nodetypes_reg = salt['mc_nodetypes.registry']() %}
 {% set apacheData = salt['mc_apache.settings']() %}
 {# * virtualhost => create all states for a virtualhost (virtualhost file, include file, a2ensite/dissite command
@@ -195,7 +195,7 @@ include:
                 </html>
     - makedirs: true
     - user: {{apacheData.httpd_user}}
-    - group: {{ localsettings.group }}
+    - group: {{ ugs.group }}
     - watch:
       - mc_proxy: postcheckout-project-hook
       - mc_proxy: makina-apache-pre-conf

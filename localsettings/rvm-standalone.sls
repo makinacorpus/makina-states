@@ -5,7 +5,7 @@
 #}
 
 {% macro do(full=True) %}
-{% set localsettings = salt['mc_localsettings.settings']() %}
+{% set rvms = salt['mc_rvm.settings']() %}
 {%- import "makina-states/_macros/salt.jinja" as saltmac with context %}
 {{ salt['mc_macros.register']('localsettings', 'rvm') }}
 {%- set locs = salt['mc_locations.settings']() %}
@@ -54,38 +54,38 @@ rvm-deps:
       - ruby
       - ruby1.9.3
 
-{{localsettings.rvm_group}}-group:
+{{rvms.rvm_group}}-group:
   group.present:
-    - name: {{localsettings.rvm_group}}
+    - name: {{rvms.rvm_group}}
 
-{{localsettings.rvm_user}}-user:
+{{rvms.rvm_user}}-user:
   user.present:
-    - name: {{localsettings.rvm_user}}
-    - gid: {{localsettings.rvm_group}}
+    - name: {{rvms.rvm_user}}
+    - gid: {{rvms.rvm_group}}
     - home: /home/rvm
     - require:
-      - group: {{localsettings.rvm_group}}
+      - group: {{rvms.rvm_group}}
 
 rvm-dir:
  file.directory:
     - name: {{locs.rvm_path}}
-    - group: {{localsettings.rvm_group}}
-    - user: {{localsettings.rvm_user}}
+    - group: {{rvms.rvm_group}}
+    - user: {{rvms.rvm_user}}
     - require:
-      - user: {{localsettings.rvm_user}}
-      - group: {{localsettings.rvm_group}}
+      - user: {{rvms.rvm_user}}
+      - group: {{rvms.rvm_group}}
 
 rvm-setup:
   cmd.run:
-    - name: curl -s {{localsettings.rvm_url}} | bash -s stable
+    - name: curl -s {{rvms.rvm_url}} | bash -s stable
     - unless: test -e {{locs.rvm_path}}/bin/rvm
     - require:
       - pkg: rvm-deps
       - file: rvm-dir
-      - user:  {{localsettings.rvm_user}}-user
+      - user:  {{rvms.rvm_user}}-user
 {% endif %}
 
-{%- for ruby in localsettings.rubies %}
+{%- for ruby in rvms.rubies %}
 rvm-{{ruby}}:
   cmd.run:
     - name: {{locs.rvm}} install {{ruby}}

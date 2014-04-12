@@ -55,6 +55,8 @@ def settings():
       main hostname
     domain
       main domain
+    devhost_ip
+      devhost ip
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():

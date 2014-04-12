@@ -3,7 +3,7 @@
 # see:
 #   - makina-states/doc/ref/formulaes/localsettings/vim.rst
 #}
-{% set localsettings = salt['mc_localsettings.settings']() %}
+{% set ugs = salt['mc_usergroup.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'vim') }}
 {%- set locs = salt['mc_locations.settings']() %}
 include:
@@ -17,7 +17,7 @@ vim-editor-env-var:
                 export EDITOR="$(which vim)"
                 export ED="$EDITOR"
 
-{%- for i, data in localsettings.users.items() %}
+{%- for i, data in ugs.users.items() %}
 {%- set home = data['home'] %}
 vimrc_configs-touch-{{ i }}:
   file.touch:

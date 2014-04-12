@@ -6,7 +6,6 @@
 {% set full = True %}
 {% set apache = True %}
 {% set services = base.services %}
-{% set localsettings = salt['mc_localsettings.settings']() %}
 {% set nodetypes = base.nodetypes %}
 {% set locs = base.locs %}
 {% set phpSettings = salt['mc_php.settings']() %}

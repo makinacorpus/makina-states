@@ -1,4 +1,3 @@
-{% set localsettings = salt['mc_localsettings.settings']() %}
 {% set vmname = pillar.mccloud_vmname %}
 {% set target = pillar.mccloud_targetname %}
 {% set devhost = pillar.sisdevhost %}

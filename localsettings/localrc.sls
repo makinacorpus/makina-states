@@ -3,7 +3,6 @@
 # see:
 #   - makina-states/doc/ref/formulaes/localsettings/localrc.rst
 #}
-{% set localsettings = salt['mc_localsettings.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'localrc') }}
 {%- set locs = salt['mc_locations.settings']() %}
 rc-local:

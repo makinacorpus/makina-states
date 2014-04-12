@@ -3,14 +3,14 @@
 # see:
 #   - makina-states/doc/ref/formulaes/localsettings/git.rst
 #}
-{% set localsettings = salt['mc_localsettings.settings']() %}
+{% set usersettings = salt['mc_usergroup.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'git') }}
 {%- set locs = salt['mc_locations.settings']() %}
 
 include:
   - makina-states.localsettings.users
 
-{%- for i, data in localsettings.users.items() %}
+{%- for i, data in usersettings.users.items() %}
 {%- set home = data['home'] %}
 gitorious_base_ssh_configs-group-{{ i }}:
   file.directory:

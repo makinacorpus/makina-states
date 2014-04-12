@@ -5,7 +5,6 @@
 #}
 {% macro do(full=True) %}
 {{ salt['mc_macros.register']('nodetypes', 'travis') }}
-{% set localsettings = salt['mc_localsettings.settings']() %}
 {% if full %}
 include:
   - makina-states.nodetypes.devhost

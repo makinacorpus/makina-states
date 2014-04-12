@@ -20,15 +20,13 @@
 # #}
 {% import "makina-states/services/java/tomcat7-defaults.jinja" as tomcat with context %}
 {% import "makina-states/services/java/solr4-defaults.jinja" as solr with context %}
-{% import "makina-states/_macros/services.jinja" as services with context %}
-{% import "makina-states/_macros/salt.jinja" as saltmac with context %}
 {{ salt['mc_macros.register']('services', 'java.solr4') }}
-{% set localsettings = salt['mc_localsettings.settings']() %}
 {% set locs = salt['mc_locations.settings']() %}
+{% set ugs = salt['mc_usergroup.settings']() %}
 
 include:
-  - {{ localsettings.state_pref }}jdk
-  - {{ services.state_pref }}java.tomcat7
+  - makina-states.localsettings.jdk
+  - makina-states.services.java.tomcat7
 
 {% set tconf_dir = tomcat.defaultsData['conf_dir'] %}
 {% set tdata = tomcat.defaultsData %}
@@ -140,7 +138,7 @@ zoocfg-{{ v }}:
     - mode: 0770
     - template: jinja
     - user: {{ tdata['tomcat_user'] }}
-    - group: {{ localsettings.group }}
+    - group: {{ ugs.group }}
     - watch_in:
       - service: tomcat7
     - require:
@@ -155,7 +153,7 @@ solrxml-{{ v }}:
     - cfg: |
            {{ydata}}
     - user: {{ tdata['tomcat_user'] }}
-    - group: {{ localsettings.group }}
+    - group: {{ ugs.group }}
     - template: jinja
     - watch_in:
       - service: tomcat7
@@ -168,7 +166,7 @@ solr-default-core-{{ v }}:
     - source: salt://makina-states/files{{ home_dir }}/default
     - name: {{ home_dir }}/default
     - user: {{ tdata['tomcat_user'] }}
-    - group: {{ localsettings.group }}
+    - group: {{ ugs.group }}
     - require:
       - file: {{ home_dir }}-solr-{{ v }}
 
@@ -208,7 +206,7 @@ fill-block-solrxml-{{ v }}:
     - cfg: |
            {{ydata}}
     - user: {{ tdata['tomcat_user'] }}
-    - group: {{ localsettings.group }}
+    - group: {{ ugs.group }}
     - template: jinja
 
 {# handled directly in solr.xml template
@@ -221,10 +219,10 @@ fill-block-solrxml-{{ v }}:
 {{ groot }}-reset-perms:
   cmd.run:
     - name: >
-            {{ saltmac.resetperms }}
+            {{ locs.resetperms }}
             --paths "{{ solr.groot }}"
             --dmode '0770' --fmode 0770
-            -u {{ tdata['tomcat_user'] }} -g {{ localsettings.group }}
+            -u {{ tdata['tomcat_user'] }} -g {{ ugs.group }}
     - require:
       - file: fill-block-solrxml-{{ v }}
       - file: solr-default-core-{{ v }}

@@ -1,5 +1,5 @@
 {# export macro to callees #}
-{% set localsettings = salt['mc_localsettings.settings']() %}
+{% set ugs = salt['mc_usergroup.settings']() %}
 {% set locs = salt['mc_locations.settings']() %}
 
 {% set cfg = opts['ms_project'] %}
@@ -17,9 +17,9 @@
             if [ -e "{{cfg.pillar_root}}" ];then
             "{{locs.resetperms}}" "${@}"
             --dmode '0770' --fmode '0770'
-            --user root --group "{{localsettings.group}}"
+            --user root --group "{{ugs.group}}"
             --users root
-            --groups "{{localsettings.group}}"
+            --groups "{{ugs.group}}"
             --paths "{{cfg.pillar_root}}";fi
 
             if [ -e "{{cfg.project_root}}" ];then

@@ -4,11 +4,11 @@
 #   - makina-states/doc/ref/formulaes/localsettings/timezone.rst
 #}
 
-{% set localsettings = salt['mc_localsettings.settings']() %}
+{% set tzs = salt['mc_timezone.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'timezone') }}
 {% macro do(full=True) %}
 {%- set locs = salt['mc_locations.settings']() %}
-{%- set defaults = localsettings.timezoneSettings %}
+{%- set defaults = tzs %}
 {% if full %}
 tz-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:

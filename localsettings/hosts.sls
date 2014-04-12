@@ -3,10 +3,10 @@
 # see:
 #   - makina-states/doc/ref/formulaes/localsettings/hosts.rst
 #}
-{% set localsettings = salt['mc_localsettings.settings']() %}
+{% set mcn = salt['mc_network.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'hosts') }}
 {%- set locs = salt['mc_locations.settings']() %}
-{%- set hosts_list = localsettings.hosts_list %}
+{%- set hosts_list = mcn.hosts_list %}
 {%- if hosts_list %}
 # spaces are used in the join operation to make this text looks like a yaml multiline text
 {%- set separator="\n            " %}
@@ -59,10 +59,10 @@ makina-append-etc-hosts-management:
 /etc/hostname-set:
   cmd.run:
     - name: |
-            echo {{localsettings.hostname}} > /etc/hostname;
+            echo {{mcn.hostname}} > /etc/hostname;
             chown root:root /etc/hostname;
             chmod 644 /etc/hostname;
-            hostname {{localsettings.hostname}}
+            hostname {{mcn.hostname}}
     - user: root
-    - unless: test "x$(cat /etc/hostname)" = "x{{localsettings.hostname}}"
+    - unless: test "x$(cat /etc/hostname)" = "x{{mcn.hostname}}"
 

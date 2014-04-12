@@ -1,10 +1,10 @@
-{% set localsettings = salt['mc_localsettings.settings']() %}
+{% set ugs = salt['mc_usergroup.settings']() %}
 include:
   - makina-states.localsettings.users-hooks
-group-{{localsettings.group}}:
+group-{{ugs.group}}:
   group.present:
-    - name: {{localsettings.group}}
-    - gid: {{localsettings.groupId}}
+    - name: {{ugs.group}}
+    - gid: {{ugs.groupId}}
     - watch_in:
       - mc_proxy: groups-pre-hook
     - watch_in:

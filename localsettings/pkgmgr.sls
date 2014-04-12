@@ -3,18 +3,18 @@
 # see:
 #   - makina-states/doc/ref/formulaes/localsettings/pkgmgr.rst
 #}
-{% set localsettings = salt['mc_localsettings.settings']() %}
+{% set pkgssettings = salt['mc_pkgs.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'pkgmgr') }}
 {%- set locs = salt['mc_locations.settings']() %}
 {%- if grains['os'] in ['Ubuntu', 'Debian'] %}
 {%- set bp = salt['mc_utils.get']('makina-states.apt.use-backports', True) %}
-{%- set ddist = localsettings.ddist %}
-{%- set udist = localsettings.udist %}
+{%- set ddist = pkgssettings.ddist %}
+{%- set udist = pkgssettings.udist %}
 {%- set dist = grains.get('lsb_distrib_codename', '') %}
-{%- set debian_mirror = localsettings.debian_mirror %}
-{%- set ubuntu_mirror = localsettings.ubuntu_mirror %}
-{%- set dcomps = localsettings.dcomps %}
-{%- set ucomps = localsettings.ucomps %}
+{%- set debian_mirror = pkgssettings.debian_mirror %}
+{%- set ubuntu_mirror = pkgssettings.ubuntu_mirror %}
+{%- set dcomps = pkgssettings.dcomps %}
+{%- set ucomps = pkgssettings.ucomps %}
 {%- set pkg_data = salt['grains.filter_by']({
   'default': {'mirrors': []},
   'Debian': {'use-backports': True, 'mirrors': [
@@ -56,7 +56,8 @@ apt-sources-list:
     - source: salt://makina-states/files/etc/apt/sources.list
     - mode: 755
     - template: jinja
-    - pkg_data: {{ salt['mc_utils.json_dump'](pkg_data) }}
+    - pkg_data: |
+                {{ salt['mc_utils.json_dump'](pkg_data) }}
 
 apt-update-after:
   cmd.watch:

@@ -2,7 +2,7 @@
 # oracle jdk configuration
 #   - makina-states/doc/ref/formulaes/localsettings/jdk.rst
 #}
-{% set localsettings = salt['mc_localsettings.settings']() %}
+{% set javas = salt['mc_java.settings']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 
 {% macro jdk_pkgs(ver, suf='') %}
@@ -20,12 +20,12 @@ jdk-{{ ver }}-pkgs{{suf}}:
 {% macro do(full=False) %}
 {{ salt['mc_macros.register']('localsettings', 'jdk') }}
 {% if grains['os_family'] in ['Debian'] %}
-{% set dist = localsettings.udist %}
+{% set dist = salt['mc_pkgs.settings']().udist %}
 {% endif %}
 {% if grains['os'] in ['Debian'] %}
-{% set dist = localsettings.ubuntu_lts %}
+{% set dist = salt['mc_pkgs.settings']().ubuntu_lts %}
 {% endif %}
-{%- set default_ver = localsettings.jdkDefaultVer %}
+{%- set default_ver = javas.default_jdk_ver %}
 include:
   - makina-states.localsettings.jdk-hooks
 {% if full %}

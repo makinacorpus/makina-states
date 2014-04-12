@@ -1,7 +1,6 @@
 {%- import "makina-states/projects/1/python.jinja" as python with context %}
 {% import "makina-states/services/db/postgresql/init.sls" as pgsql with context %}
 {%- set services = python.services %}
-{%- set localsettings = salt['mc_localsettings.settings']() %}
 
 {%- set dbName = salt['mc_utils.get']('makina-states.projects.ode_api.db_name', 'ode') %}
 {%- set dbUser = salt['mc_utils.get']('makina-states.projects.ode_api.db_user', 'ode') %}

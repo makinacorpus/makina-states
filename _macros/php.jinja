@@ -57,8 +57,8 @@
 #
 #}
 
+{% set ugs = salt['mc_usergroup.settings']() %}
 {% set apacheData = salt['mc_apache.settings']() %}
-{% set localsettings = salt['mc_localsettings.settings']() %}
 {% set nodetypes = salt['mc_nodetypes.registry']() %}
 {% set phpData = salt['mc_php.settings']() %}
 {% set locs = salt['mc_locations.settings']() %}
@@ -275,7 +275,7 @@ makina-php-pool-{{ pool_name }}-logrotate:
 makina-php-pool-{{ pool_name }}-directories:
   file.directory:
     - user: {{ phpData.fpm.phpuser }}
-    - group: {{localsettings.group }}
+    - group: {{ugs.group }}
     - mode: "2775"
     - makedirs: True
     - names:
@@ -301,7 +301,7 @@ makina-php-pool-{{ pool_name }}-directories:
     - contents: '<?php phpinfo(); ?>'
     - makedirs: true
     - user: {{ apacheData.httpd_user }}
-    - group: {{ localsettings.group }}
+    - group: {{ ugs.group }}
     - watch:
       - mc_proxy: postcheckout-project-hook
       - mc_proxy: makina-apache-post-inst

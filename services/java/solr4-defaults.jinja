@@ -1,6 +1,5 @@
 {% import "makina-states/_macros/services.jinja" as services with context %}
 {{ salt['mc_macros.register']('services', 'java.tomcat7') }}
-{% set localsettings = salt['mc_localsettings.settings']() %}
 {% set locs = salt['mc_locations.settings']() %}
 
 {% set ver = '4' %}

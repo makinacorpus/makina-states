@@ -24,7 +24,6 @@
 #}
 {%- import "makina-states/controllers/mastersalt-hooks.sls" as base%}
 {%- set controllers   = base.controllers %}
-{%- set localsettings = salt['mc_localsettings.settings']() %}
 {%- set saltmac       = base.saltmac %}
 {%- set name          = base.name %}
 {% macro do(full=True) %}

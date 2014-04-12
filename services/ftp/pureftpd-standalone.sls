@@ -89,7 +89,7 @@ prereq-pureftpd:
 {%- endif %}
 {%- endfor %}
 
-{%- set ssl = salt['mc_localsettings.settings']()['SSLSettings'] %}
+{%- set ssl = salt['mc_ssl.settings']() %}
 {{key}}-makina-pureftpd:
   cmd.run:
     - name: >

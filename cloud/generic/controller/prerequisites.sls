@@ -1,4 +1,3 @@
-{% set localsettings = salt['mc_localsettings.settings']() %}
 include:
   - makina-states.cloud.generic.hooks.common
   - makina-states.cloud.generic.hooks.controller

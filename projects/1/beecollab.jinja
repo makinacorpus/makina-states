@@ -1,6 +1,5 @@
 {%- import "makina-states/projects/1/zope.jinja" as zope with context %}
 {%- set services = zope.services %}
-{%- set localsettings = salt['mc_localsettings.settings']() %}
 {%- import "makina-states/services/monitoring/circus/macros.jinja" as circus with context %}
 {% macro install_dependancies(common) %}
 {% if common.full %}

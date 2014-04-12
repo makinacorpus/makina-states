@@ -1,6 +1,5 @@
 {#- Common php installations (mod_php or php-fpm) files #}
 {% import "makina-states/services/http/apache.sls" as apache with context %}
-{% set localsettings = salt['mc_localsettings.settings']() %}
 {% set nodetypes_registry = salt['mc_nodetypes.registry']() %}
 {% set locs = salt['mc_locations.settings']() %}
 {% set phpSettings = salt['mc_php.settings']()  %}
@@ -47,7 +46,7 @@ makina-php-apc:
 
 {% if full and not (
     (grains['os'] in 'Ubuntu')
-    and (localsettings.udist not in ['precise'])
+    and (salt['mc_pkgs.settings']().udist not in ['precise'])
 ) %}
 {%   if phpSettings.modules.apc.enabled %}
 makina-php-apc-install:

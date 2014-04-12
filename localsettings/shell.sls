@@ -3,7 +3,6 @@
 # see:
 #   - makina-states/doc/ref/formulaes/localsettings/shell.rst
 #}
-{% set localsettings = salt['mc_localsettings.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'shell') }}
 {%- set locs = salt['mc_locations.settings']() %}
 etc-profile-d:

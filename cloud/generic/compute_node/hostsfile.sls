@@ -1,7 +1,6 @@
 {% set compute_node_settings  = salt['mc_utils.json_load'](pillar.scnSettings) %}
 {% set cloudSettings  = salt['mc_utils.json_load'](pillar.scloudSettings) %}
 
-{% set localsettings = salt['mc_localsettings.settings']() %}
 {% set domains = [] %}
 {% set tdata = compute_node_settings.cn %}
 
@@ -65,7 +64,7 @@ makina-parent-prepend-etc.computenode.accumulated-virt-{{vmname}}-devhost:
     - filename: /etc/devhosts.{{domain}}
     - name: parent-hosts-prepend-accumulator-virt-{{vmname}}-entries
     - text: |
-            {{ localsettings.devhost_ip }} {{domain}}
+            {{ salt['mc_network.settings']().devhost_ip }} {{domain}}
 {%      endif %}
 {%    endif %}
 {%  endfor %}

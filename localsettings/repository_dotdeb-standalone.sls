@@ -3,7 +3,7 @@
 #  see:
 #   -  makina-states/doc/ref/formulaes/localsettings/repository_dotdeb.rst
 #}
-{% set localsettings = salt['mc_localsettings.settings']() %}
+{% set pkgssettings = salt['mc_pkgs.settings']() %}
 {% macro do(full=True) %}
 {{ salt['mc_macros.register']('localsettings', 'repository_dotdeb') }}
 {% if full %}
@@ -15,12 +15,12 @@ include:
 dotdeb-repo:
   pkgrepo.managed:
     - humanname: DotDeb PPA
-    - name: deb http://packages.dotdeb.org  {{localsettings.dist}}  all
+    - name: deb http://packages.dotdeb.org  {{pkgssettings.dist}}  all
     - consolidate: true
-    - dist: {{localsettings.dist}}
+    - dist: {{pkgssettings.dist}}
     - file: {{locs.conf_dir}}/apt/sources.list.d/dotdeb.org.list
     - keyid: E9C74FEEA2098A6E
-    - keyserver: {{localsettings.keyserver }}
+    - keyserver: {{pkgssettings.keyserver }}
     {% if full %}
     - require:
         - file: apt-sources-list

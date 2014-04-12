@@ -4,7 +4,6 @@
 #   - makina-states/doc/ref/formulaes/localsettings/ldap.rst
 #}
 
-{% set localsettings = salt['mc_localsettings.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'ldap') }}
 {%- set locs = salt['mc_locations.settings']() %}
 

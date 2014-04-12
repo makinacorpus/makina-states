@@ -1,5 +1,4 @@
 {% set cloudSettings = salt['mc_cloud.settings']() %}
-{% set localsettings = salt['mc_localsettings.settings']() %}
 {% set pvdir = cloudSettings.pvdir %}
 {% set pfdir = cloudSettings.pfdir %}
 include:
@@ -14,7 +13,7 @@ salt_cloud-dirs:
       - {{cloudSettings.root}}/{{cloudSettings.all_sls_dir}}
     - makedirs: true
     - user: root
-    - group: {{localsettings.group }}
+    - group: {{salt['mc_usergroup.settings']().group }}
     - mode: 2770
     - require:
       - mc_proxy: cloud-generic-controller-pre-pre-deploy

@@ -4,13 +4,12 @@
 #   - makina-states/doc/ref/formulaes/localsettings/etckeeper.rst
 #}
 
-{% set localsettings = salt['mc_localsettings.settings']() %}
 {% set locs=salt['mc_locations.settings']() %}
 {% macro do(full=False ) %}
 {{ salt['mc_macros.register']('localsettings', 'etckeeper') }}
 include:
   - makina-states.localsettings.etckeeper-hooks
-{% set defaults = localsettings.etckeeper %}
+{% set defaults = salt['mc_etckeeper.settings']() %}
 
 {% if full %}
 etckeeper-pkgs:

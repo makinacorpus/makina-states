@@ -1,4 +1,3 @@
-{% set localsettings = salt['mc_localsettings.settings']() %}
 {% set vmname = pillar.mccloud_svmname %}
 {% set target = pillar.mccloud_stargetname %}
 {% set compute_node_settings = salt['mc_utils.json_load'](pillar.scnSettings) %}
