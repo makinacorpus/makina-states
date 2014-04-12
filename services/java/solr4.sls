@@ -68,6 +68,7 @@ include:
       - file: fill-block-solrxml-{{ v }}
 {% endmacro %}
 
+{% set ydata = salt['mc_utils.json_dump'](data) %}
 solr{{ v }}-prerequisites:
   pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
     - pkgs:
@@ -133,7 +134,8 @@ zoocfg-{{ v }}:
   file.managed:
     - order: 100
     - source: salt://makina-states/files{{ home_dir }}/zoo.cfg
-    - cfg: {{ data | yaml }}
+    - cfg: |
+           {{ydata}}
     - name: {{ home_dir }}/zoo.cfg
     - mode: 0770
     - template: jinja
@@ -150,7 +152,8 @@ solrxml-{{ v }}:
     - name: {{ home_dir }}/solr.xml
     - order: 100
     - mode: 0770
-    - cfg: {{ data | yaml }}
+    - cfg: |
+           {{ydata}}
     - user: {{ tdata['tomcat_user'] }}
     - group: {{ localsettings.group }}
     - template: jinja
@@ -202,7 +205,8 @@ fill-block-solrxml-{{ v }}:
       - service: tomcat7
     - order: 100
     - mode: 0770
-    - cfg: {{ data | yaml }}
+    - cfg: |
+           {{ydata}}
     - user: {{ tdata['tomcat_user'] }}
     - group: {{ localsettings.group }}
     - template: jinja
