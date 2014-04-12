@@ -5,7 +5,6 @@
 
 {%- macro do(full=True) %}
 {{- salt['mc_macros.register']('services', 'collab.etherpad') }}
-{%- set localsettings = salt['mc_localsettings.settings']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 {%- set etherpadSettings = salt['mc_etherpad.settings']() %}
 
@@ -73,7 +72,7 @@ etherpad-install-perms:
                 -u etherpad -g etherpad
                 --path "{{etherpadLocation}}"
                 --fmode 775 --dmode 775
-                --groups {{localsettings.group}}
+                --groups {{salt['mc_usergroup.settings']().group}}
   cmd.run:
     - name: {{etherpadLocation}}/reset-perms.sh
     - require_in:
