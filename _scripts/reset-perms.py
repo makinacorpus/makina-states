@@ -392,18 +392,32 @@ def collect_paths(path,
                 OWNERSHIPS[(uid, gid)] = []
             OWNERSHIPS[(uid, gid)].append(path)
         if eval(mode) != stat.S_IMODE(st.st_mode):
-            if not mode in UNIX_PERMS:
+            if mode not in UNIX_PERMS:
                 UNIX_PERMS[mode] = []
             UNIX_PERMS[mode].append(path)
         if is_dir and recursive:
-            for root, dirs, files in os.walk(path):
-                for subpaths in [files, dirs]:
-                    for subpath in subpaths:
-                        if DEBUG:
-                            print(os.path.join(root, subpath))
-                        collect_paths(
-                            os.path.join(root, subpath),
-                            recursive=False)
+            # skip top level cachedirs
+            todo = []
+            for lsp in os.listdir(path):
+                sp = os.path.join(path, lsp)
+                if to_skip(sp):
+                    if DEBUG:
+                        print("SKIPPED {0}".format(sp))
+                        continue
+                todo.append(sp)
+            for spath in todo:
+                for root, dirs, files in os.walk(spath):
+                    for subpaths in [files, dirs]:
+                        for subpath in subpaths:
+                            if DEBUG:
+                                print(os.path.join(root, subpath))
+                            sp = os.path.join(root, subpath)
+                            if to_skip(sp):
+                                if DEBUG:
+                                    print("SKIPPED {0}".format(
+                                        os.path.join(root, subpath)))
+                                continue
+                            collect_paths(sp, recursive=False)
 
 
 def reset(path):

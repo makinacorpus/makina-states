@@ -475,7 +475,10 @@ etc-{{data.name}}-dirs-perms:
             --paths "{{ data.log_prefix }}"
             --paths "{{ data.run_prefix }}/{{data.name}}"
             --paths "{{ data.cache_prefix }}"
+            --paths "{{ data.cache_prefix }}"/{{data.name}}-minion
+            --paths "{{ data.cache_prefix }}"/{{data.name}}-master
             --paths "{{ data.conf_prefix }}/pki"
+            --excludes "mastersalt.*\/jobs\/.*"
     - require:
       - cmd: {{data.name}}-dirs-perms
       - cmd: etc-{{data.name}}-dirs-perms
