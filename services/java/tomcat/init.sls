@@ -3,7 +3,6 @@
 {% set localsettings = salt['mc_localsettings.settings']() %}
 {% set locs = salt['mc_localsettings.settings']()['locations'] %}
 {% set conf_dir = data.conf_dir %}
-{% set ydata = data|yaml %}
 
 {{ salt['mc_macros.register']('services', 'java.tomcat7') }}
 include:

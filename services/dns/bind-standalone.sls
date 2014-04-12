@@ -1,6 +1,6 @@
 {{ salt['mc_macros.register']('services', 'dns.bind') }}
 {% set settings = salt['mc_bind.settings']() %}
-{% set yameld_data = settings|yaml %}
+{% set yameld_data = salt['mc_utils.json_dump'](settings) %}
 
 {% macro switch_dns(suf='tmp',
                     require=None,
@@ -218,7 +218,8 @@ bind_config_{{tp}}:
     - group: {{settings.group}}
     - mode: {{settings.mode}}
     - defaults:
-      data: {{yameld_data}}
+      data: |
+            {{yameld_data}}
     - watch:
       - mc_proxy: bind-pre-conf
     - watch_in:
@@ -254,7 +255,8 @@ bind_config_rndc:
     - user: {{settings.user}}
     - group: {{settings.group}}
     - mode: {{settings.mode}}
-    - defaults: {{yameld_data}}
+    - defaults: |
+                {{yameld_data}}
     - watch:
       - mc_proxy: bind-pre-conf
     - watch_in:

@@ -12,7 +12,7 @@
 {%- set locs = salt['mc_localsettings.settings']()['locations'] %}
 {{ salt['mc_macros.register']('services', 'backup.dbsmartbackup') }}
 {% set data=salt['mc_dbsmartbackup.settings']() %}
-{% set settings=salt['mc_dbsmartbackup.settings']()|yaml %}
+{% set settings=salt['mc_utils.json_dump'](salt['mc_dbsmartbackup.settings']()) %}
 
 db_smart_backup:
   file.directory:
@@ -43,7 +43,8 @@ run_dbsmartbackups:
     - group: root
     - template: jinja
     - context:
-      settings: {{settings}}
+      settings: |
+                {{settings}}
   cron.present:
     - identifier: db_smart_backup cron
     - name: {{locs.bin_dir}}/run_dbsmartbackups.sh
@@ -58,7 +59,8 @@ dbsmartbackup_pg_conf:
     - template: jinja
     - mode: 700
     - context:
-      settings: {{settings}}
+      settings: |
+                {{settings}}
 
 dbsmartbackup_mysql_conf:
   file.managed:
@@ -67,5 +69,6 @@ dbsmartbackup_mysql_conf:
     - template: jinja
     - mode: 700
     - context:
-      settings: {{settings}}
+      settings: |
+                {{settings}}
 
