@@ -149,7 +149,8 @@
     - name: {{common.project_root}}/www/cgi-bin/{{file}}
     - template: jinja
     - defaults:
-      data: {{common.data.WMS|yaml}}
+      data: |
+            {{salt['mc_utils.json_dump'](common.data.WMS)}}
     - watch:
       - file: {{common.name}}-lizmapwebclient-docroot-mapserv
 {% endfor %}

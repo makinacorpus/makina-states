@@ -126,11 +126,13 @@ include:
         project: "{{ project }}"
         document_root: "{{ doc_root }}"
         server_name: "{{ domain }}"
-        server_aliases: {{server_aliases|yaml}}
+        server_aliases: |
+                        {{salt['mc_utils.json_dump'](server_aliases)}}
         redirect_aliases: {{ redirect_aliases }}
         interface: "{{ interface }}"
         port: "{{ port }}"
-        extra: {{extra_jinja_apache_variables|yaml}}
+        extra: |
+               {{salt['mc_utils.json_dump'](extra_jinja_apache_variables)}}
         mode: {{mode}}
     - watch:
       - mc_proxy: makina-apache-vhostconf
@@ -150,7 +152,8 @@ include:
         mode: {{mode}}
         document_root: {{ doc_root }}
         allow_htaccess: {{ allow_htaccess }}
-        extra: {{extra_jinja_apache_variables|yaml}}
+        extra: |
+               {{salt['mc_utils.json_dump'](extra_jinja_apache_variables)}}
     - watch:
       - mc_proxy: makina-apache-vhostconf
     - watch_in:

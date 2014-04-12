@@ -22,7 +22,8 @@ makina-haproxy-init:
     - group: root
     - mode: 755
     - template: jinja
-    - defaults: {data: {{data|yaml}}}
+    - defaults: |
+                {{salt['mc_utils.json_dump']({'data': data})}}
     - watch:
       - mc_proxy: haproxy-pre-conf-hook
     - watch_in:
@@ -76,7 +77,8 @@ makina-haproxy-default:
     - group: root
     - mode: 755
     - template: jinja
-    - defaults: {{data.defaults|yaml}}
+    - defaults: |
+                {{salt['mc_utils.json_dump'](data.defaults)}}
     - watch:
       - mc_proxy: haproxy-pre-conf-hook
     - watch_in:
@@ -88,7 +90,8 @@ makina-haproxy-errors:
     - source: salt://makina-states/files/etc/haproxy/errors
     - dir_mode: 755
     - file_mode: 644
-    - defaults: {{data|yaml}}
+    - defaults: |
+                {{salt['mc_utils.json_dump'](data)}}
     - makedirs: true
     - user: root
     - group: root
@@ -106,7 +109,8 @@ makina-haproxy-cfg:
     - makedirs: true
     - mode: 644
     - template: jinja
-    - defaults: {data: {{data|yaml}}}
+    - defaults: |
+                {{salt['mc_utils.json_dump']({data: data)}}}
     - watch:
       - mc_proxy: haproxy-pre-conf-hook
     - watch_in:

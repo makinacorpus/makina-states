@@ -116,8 +116,10 @@ dns-rzones-{{zone}}-{{data.fpath}}:
     - mode: {{settings.mode}}
     - makedirs: true
     - defaults:
-      view: {{data['views']|yaml}}
-      zdata: {{data|yaml}}
+      view: |
+            {{salt['mc_utils.json_dump'](data['views'])}}
+      zdata: |
+             {{salt['mc_utils.json_dump'](data)}}
     - watch:
       - mc_proxy: bind-pre-conf
     - watch_in:
@@ -164,7 +166,8 @@ bind-pkgs:
 {% endif %}
 bind-dirs:
   file.directory:
-    - names: {{settings.extra_dirs|yaml}}
+    - names: |
+             {{salt['mc_utils.json_dump'](settings.extra_dirs)}}
     - makedirs: true
     - user: root
     - group: bind

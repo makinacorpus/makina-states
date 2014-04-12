@@ -16,8 +16,9 @@ providers_lxc_salt:
     - template: jinja
     - group: root
     - defaults:
-        data: {{lxcSettings.defaults|yaml}}
-        cdata: {{cloudSettings|yaml}}
+        data: |
+              {{salt['mc_utils.json_dump'](lxcSettings.defaults)}}
+        cdata: {{salt['mc_utils.json_dump'](cloudSettings)}}
         vms: {{lxcSettings.vms.keys()|yaml }}
         msr: {{cloudSettings.root}}/makina-states
 profiles_lxc_salt:
@@ -28,8 +29,10 @@ profiles_lxc_salt:
     - user: root
     - group: root
     - defaults:
-        pdata: {{lxcSettings.defaults|yaml}}
-        cdata: {{cloudSettings|yaml}}
+        pdata: |
+               {{salt['mc_utils.json_dump'](lxcSettings.defaults)}}
+        cdata: |
+               {{salt['mc_utils.json_dump'](cloudSettings)}}
         profiles: {{lxcSettings.lxc_cloud_profiles|yaml }}
         vms: {{lxcSettings.vms.keys()|yaml }}
         msr: {{cloudSettings.root}}/makina-states

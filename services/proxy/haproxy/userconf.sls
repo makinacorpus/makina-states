@@ -10,7 +10,8 @@ dispatcher-{{ldata.name}}-makina-haproxy-cfg:
     - mode: 644
     - makedirs: true
     - template: jinja
-    - defaults: {data: {{ldata|yaml}}}
+    - defaults: |
+                {{salt['mc_utils.json_dump']({data: ldata)}}}
     - watch:
       - mc_proxy: haproxy-pre-conf-hook
     - watch_in:
@@ -28,7 +29,8 @@ listener-{{ldata.name}}-makina-haproxy-cfg:
     - mode: 644
     - makedirs: true
     - template: jinja
-    - defaults: {data: {{ldata|yaml}}}
+    - defaults: |
+                {{salt['mc_utils.json_dump']({data: ldata)}}}
     - watch:
       - mc_proxy: haproxy-pre-conf-hook
     - watch_in:
@@ -46,7 +48,8 @@ frontend-{{ldata.name}}-makina-haproxy-cfg:
     - mode: 644
     - makedirs: true
     - template: jinja
-    - defaults: {data: {{ldata|yaml}}}
+    - defaults: |
+                {{salt['mc_utils.json_dump']({data: ldata)}}}
     - watch:
       - mc_proxy: haproxy-pre-conf-hook
     - watch_in:
@@ -64,7 +67,8 @@ backend-{{ldata.name}}-makina-haproxy-cfg:
     - mode: 644
     - makedirs: true
     - template: jinja
-    - defaults: {data: {{ldata|yaml}}}
+    - defaults: |
+                {{salt['mc_utils.json_dump']{data: (ldata)}}}
     - watch:
       - mc_proxy: haproxy-pre-conf-hook
     - watch_in:

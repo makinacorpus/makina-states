@@ -179,7 +179,8 @@ TODO: local checker if prod need passwords <> defaults!
     - mode: "0640"
     - template: jinja
     - defaults:
-      data: {{common.data.drupal_opts.install|yaml}}
+      data: |
+            {{salt['mc_utils.json_dump'](common.data.drupal_opts.install)}}
       profile: "{{common.profile }}"
       db_conf: "bin/db.conf"
       db_prefix: "{{ db_prefix }}"
@@ -245,7 +246,8 @@ TODO: local checker if prod need passwords <> defaults!
     - mode: "0640"
     - template: jinja
     - defaults:
-      data: {{common.data.drupal_opts.local_settings|yaml}}
+      data: |
+            {{salt['mc_utils.json_dump'](common.data.drupal_opts.local_settings)}}
     - watch:
       - file: {{common.name}}-drupal-settings-include-local
 {% endmacro %}

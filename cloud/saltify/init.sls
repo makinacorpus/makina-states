@@ -19,7 +19,8 @@ providers_saltify_salt:
     - makedirs: true
     - group: root
     - defaults:
-      data: {{cloudSettings|yaml}}
+      data: |
+            {{salt['mc_utils.json_dump'](cloudSettings)}}
       msr: {{cloudSettings.root}}/makina-states
 
 profiles_saltify_salt:
@@ -31,7 +32,8 @@ profiles_saltify_salt:
     - group: root
     - makedirs: true
     - defaults:
-      data: {{cloudSettings|yaml}}
+      data: |
+            {{salt['mc_utils.json_dump'](cloudSettings)}}
       msr: {{cloudSettings.root}}/makina-states
     - require:
       - mc_proxy: cloud-saltify-pre-pre-deploy

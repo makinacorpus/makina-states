@@ -104,9 +104,8 @@ ckan-settings:
     - name: {{c.project_root}}/etc/settings-local.cfg
     - user: {{common.user}}
     - group: {{common.group}}
-    - defaults: {{data|yaml}}
-      {% endfor %}
-      - sqlalchemy_url: {{data.sqlalchemy_url % data['dbs']['default']}}
+    - defaults: |
+                {{salt['mc_utils.json_dump'](data)}}
 
 ckan-buildout:
   buildout.installed:

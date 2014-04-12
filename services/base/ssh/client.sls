@@ -13,4 +13,5 @@ ssh_config:
       - pkg: openssh-pkgs
     - template: jinja
     - context:
-      settings: {{salt['mc_ssh.settings']().client|yaml}}
+      settings: |
+                {{salt['mc_utils.json_dump'](salt['mc_ssh.settings']().client)}}

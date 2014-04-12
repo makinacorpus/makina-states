@@ -43,7 +43,8 @@ makina-fastcgi-apache-module_connect_fastcgi_mod_fastcgi_module_conf:
         enabled: {{ enabled }}
         project_root: '{{project_root}}'
         socket_directory:  '{{ socket_directory }}'
-        extra: {{apacheSettings.fastcgi_params|yaml}}
+        extra: |
+               {{salt['mc_utils.json_dump'](apacheSettings.fastcgi_params)}}
         {#  not used anymore
         shared_mode: {{ shared_mode }}
         #}

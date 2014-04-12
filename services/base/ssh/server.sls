@@ -24,7 +24,8 @@ sshd_config:
     - source: salt://makina-states/files/etc/ssh/sshd_config
     - template: jinja
     - context:
-      settings: {{salt['mc_ssh.settings']().server.settings|yaml}}
+      settings: |
+                {{salt['mc_utils.json_dump'](salt['mc_ssh.settings']().server.settings)}}
     - watch_in:
       - service: openssh-svc
 

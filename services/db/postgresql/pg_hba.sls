@@ -17,7 +17,8 @@ postgresql-pg_hba-conf-{{pgver}}:
     - group: root
     - template: jinja
     - defaults:
-      data: {{settings.pg_hba|yaml}}
+      data: |
+            {{salt['mc_utils.json_dump'](settings.pg_hba)}}
     - require:
       - mc_proxy: {{orchestrate['base']['postpkg']}}
     - watch_in:

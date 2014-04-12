@@ -46,7 +46,8 @@ postfix-pkgs:
     - watch_in:
       - mc_proxy: postfix-post-conf-hook
       - mc_proxy: postfix-pre-restart-hook
-    - defaults: {{postfixSettings|yaml}}
+    - defaults: |
+                {{salt['mc_utils.json_dump'](postfixSettings)}}
 
 makina-postfix-chroot-hosts-sync:
   cmd.run:
@@ -109,7 +110,8 @@ makina-postfix-virtual:
     - source: salt://makina-states/files/etc/postfix/virtual
     - user: root
     - template: jinja
-    - defaults: {{postfixSettings|yaml}}
+    - defaults: |
+                {{salt['mc_utils.json_dump'](postfixSettings)}}
     - group: root
     - mode: 644
     - watch:
