@@ -14,7 +14,7 @@
 ######################################################################################################################################################################################
 #ACTION		SOURCE		DEST		PROTO	DEST	SOURCE		ORIGINAL	RATE		USER/	MARK	CONNLIMIT	TIME         HEADERS         SWITCH
 #							PORT	PORT(S)		DEST		LIMIT		GROUP
-{% set shwdata = shwdata| load_yaml %}
+{% set shwdata = salt['mc_utils.json_load'](shwdata) %}
 {% for key in ['all', 'established', 'related', 'new'] -%}
 {% set section=key.upper() -%}
 SECTION {{ section }}
