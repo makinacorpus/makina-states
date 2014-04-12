@@ -1,3 +1,4 @@
 # MANAGED VIA SALT, DO NOT EDIT
-PIDFILE="{{pidf}}"
-DAEMON="{{venv}}/bin/circusd"
+{% set data = salt['mc_utils.json_load'](data) %}
+PIDFILE="{{data.pidf}}"
+DAEMON="{{data.venv}}/bin/circusd"

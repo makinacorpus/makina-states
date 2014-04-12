@@ -12,12 +12,13 @@
 
 # Author: Roman Imankulov <roman.imankulov@gmail.com>
 
+{% set data = salt['mc_utils.json_load'](data) %}
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
 DESC="circus daemon"
 NAME=circusd
 DAEMON=/usr/bin/circusd
 PIDFILE=/var/run/$NAME.pid
-LOG="--log-output {{log}}"
+LOG="--log-output {{data.log}}"
 DAEMON_ARGS="${LOG} --daemon --pidfile $PIDFILE /etc/circus/circusd.ini"
 SCRIPTNAME=/etc/init.d/$NAME
 
@@ -30,7 +31,7 @@ if [ "x${DEBUG}" != "x" ];then set -x;fi
 
 . /lib/init/vars.sh
 . /lib/lsb/init-functions
-. {{venv}}/bin/activate
+. {{data.venv}}/bin/activate
 
 do_start() {
     pid=$(pidofproc -p $PIDFILE $DAEMON)

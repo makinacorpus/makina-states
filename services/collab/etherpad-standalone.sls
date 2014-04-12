@@ -1,7 +1,7 @@
 {#-
 # Etherpad server: https://github.com/ether/etherpad-lite
 #}
-{%- import "makina-states/_macros/circus.jinja" as circus with context %}
+{%- import "makina-states/services/monitoring/circus/macros.jinja" as circus with context %}
 
 {%- macro do(full=True) %}
 {{- salt['mc_macros.register']('services', 'collab.etherpad') }}
@@ -18,7 +18,7 @@ include:
 {% else %}
 include:
   - makina-states.localsettings.nodejs-standalone
-  - makina-states.services.monitoring.circus-standalone
+  - makina-states.services.monitoring.circus
 {% endif %}
 
 {%- if full %}
