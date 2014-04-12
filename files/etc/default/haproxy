@@ -1,9 +1,10 @@
 # MANAGED VIA SALT, DO NOT EDIT
 # Set ENABLED to 1 if you want the init script to start haproxy.
-ENABLED="{{enabled}}"
+{% set data = salt['mc_utils.json_load'](data) %}
+ENABLED="{{data.enabled}}"
 # Add extra flags here.
-{% if extra_opts %}
-EXTRAOPTS="{{extra_opts}}"
+{% if data.extra_opts %}
+EXTRAOPTS="{{data.extra_opts}}"
 {% else %}
 #EXTRAOPTS="-de -m 16"
 {% endif %}

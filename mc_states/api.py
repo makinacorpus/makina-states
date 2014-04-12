@@ -72,14 +72,19 @@ def yencode(string):
 
 
 def json_load(data):
-    content = json.loads(data)
+    content = data.replace(' ---ANTLISLASH_N--- ', '\n')
+    try:
+        content = json.loads(content)
+    except:
+        import pdb;pdb.set_trace()  ## Breakpoint ##
+
     return content
 
 
 def json_dump(data):
     content = json.dumps(data)
-    content = content.replace('\n', ' ')
-    return yencode(content)
+    content = content.replace('\n', ' ---ANTLISLASH_N--- ')
+    return content
 
 
 def b64json_dump(data):
