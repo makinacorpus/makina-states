@@ -166,8 +166,10 @@ bind-pkgs:
 {% endif %}
 bind-dirs:
   file.directory:
-    - names: |
-             {{salt['mc_utils.json_dump'](settings.extra_dirs)}}
+    - names:
+      {% for d in settings.extra_dirs %}
+      - "{{d}}"
+      {% endfor %}
     - makedirs: true
     - user: root
     - group: bind
@@ -255,8 +257,9 @@ bind_config_rndc:
     - user: {{settings.user}}
     - group: {{settings.group}}
     - mode: {{settings.mode}}
-    - defaults: |
-                {{yameld_data}}
+    - defaults:
+      data: |
+            {{yameld_data}}
     - watch:
       - mc_proxy: bind-pre-conf
     - watch_in:
