@@ -2,7 +2,7 @@
 {%- set services = base.services %}
 {%- set saltmac = base.saltmac %}
 {%- set localsettings = salt['mc_localsettings.settings']() %}
-{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
+{%- set locs = salt['mc_locations.settings']() %}
 
 {%- macro install_rvm_bundle(common) %}
 {%-  set prefix = common.project_root %}
@@ -63,7 +63,7 @@
 #
 
 {%- set default_defaults = {
-  'rvm': salt['mc_localsettings.settings']()['locations'].rvm,
+  'rvm': salt['mc_locations.settings']().rvm,
   'rvm_path': locs.rvm_path,
   'rb': localsettings.rubies[0],
 } %}

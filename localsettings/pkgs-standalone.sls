@@ -7,7 +7,7 @@
 {% macro do(full=True) %}
 {% set localsettings = salt['mc_localsettings.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'pkgs') }}
-{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
+{%- set locs = salt['mc_locations.settings']() %}
 
 {% if full %}
 include:

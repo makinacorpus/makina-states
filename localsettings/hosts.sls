@@ -5,7 +5,7 @@
 #}
 {% set localsettings = salt['mc_localsettings.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'hosts') }}
-{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
+{%- set locs = salt['mc_locations.settings']() %}
 {%- set hosts_list = localsettings.hosts_list %}
 {%- if hosts_list %}
 # spaces are used in the join operation to make this text looks like a yaml multiline text

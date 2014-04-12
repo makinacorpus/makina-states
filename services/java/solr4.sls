@@ -24,7 +24,7 @@
 {% import "makina-states/_macros/salt.jinja" as saltmac with context %}
 {{ salt['mc_macros.register']('services', 'java.solr4') }}
 {% set localsettings = salt['mc_localsettings.settings']() %}
-{% set locs = salt['mc_localsettings.settings']()['locations'] %}
+{% set locs = salt['mc_locations.settings']() %}
 
 include:
   - {{ localsettings.state_pref }}jdk

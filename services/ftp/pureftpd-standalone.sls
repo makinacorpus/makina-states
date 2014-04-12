@@ -12,7 +12,7 @@ include:
 {% set pureftpdSettings = settings.conf %}
 {% set pureftpdDefaultSettings = settings.defaults %}
 {{ salt['mc_macros.register']('services', 'ftp.pureftpd') }}
-{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
+{%- set locs = salt['mc_locations.settings']() %}
 {%- set key = locs.conf_dir+'/ssl/private/pure-ftpd.pem' %}
 {%- set passive = pureftpdSettings['PassiveIP'] or pureftpdSettings['PassivePortRange']%}
 {%- if grains['os_family'] in ['Debian'] %}

@@ -2,7 +2,7 @@
 # export macro to callees
 {% set nodetypes_registry = salt['mc_nodetypes.reqistry']() %}
 {% set localsettings = salt['mc_localsettings.settings']() %}
-{% set locs = salt['mc_localsettings.settings']()['locations'] %}
+{% set locs = salt['mc_locations.settings']() %}
 {% set cfg = opts['ms_project'] %}
  {#-
 # Register all the app domain's in /etc/hosts

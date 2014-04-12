@@ -8,7 +8,7 @@
 {% set localsettings = salt['mc_localsettings.settings']() %}
 {%- import "makina-states/_macros/salt.jinja" as saltmac with context %}
 {{ salt['mc_macros.register']('localsettings', 'rvm') }}
-{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
+{%- set locs = salt['mc_locations.settings']() %}
 {%- macro rvm_env() %}
     - env:
       - rvm_prefix: {{locs.rvm_prefix}}

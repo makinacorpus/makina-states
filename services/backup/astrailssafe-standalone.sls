@@ -11,7 +11,7 @@
 
 {% macro do(full=True) %}
 {%- import "makina-states/projects/rvmapp.jinja" as rvmapp with context %}
-{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
+{%- set locs = salt['mc_locations.settings']() %}
 {{ salt['mc_macros.register']('services', 'backup.astrailssafe') }}
 {# add to rvm group #}
 astrailssafe-add-db-backup-to-rvm:

@@ -1,4 +1,4 @@
-{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
+{%- set locs = salt['mc_locations.settings']() %}
 {% set openssh = salt['mc_ssh.settings']() %}
 sshgroup:
   group.present:

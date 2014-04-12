@@ -12,7 +12,7 @@
 {{text}}
 {% endmacro %}
 {%- set settings = salt['mc_pgsql.settings']() %}
-{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
+{%- set locs = salt['mc_locations.settings']() %}
 {%- set default_user = settings.user %}
 {%- set orchestrate = {} %}
 {%- set prebase = 'makina-postgresql-pre-base' %}

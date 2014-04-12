@@ -15,7 +15,7 @@ base:
     - name: deb http://ppa.launchpad.net/vbernat/haproxy-1.5/ubuntu {{dist}} main
 
     - dist: {{dist}}
-    - file: {{ salt['mc_localsettings.settings']()['locations'].conf_dir }}/apt/sources.list.d/haproxy.list
+    - file: {{ salt['mc_locations.settings']().conf_dir }}/apt/sources.list.d/haproxy.list
     - keyid: 1C61B9CD
     - keyserver: keyserver.ubuntu.com
     - require_in:

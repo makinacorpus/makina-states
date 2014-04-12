@@ -25,7 +25,7 @@
 {# Load defaults values ----------------------------------------- #}
 
 {% set nodetypes_registry = salt['mc_nodetypes.registry']() %}
-{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
+{%- set locs = salt['mc_locations.settings']() %}
 {%- set mysqlData = salt['mc_mysql.settings']() %}
 {{ salt['mc_macros.register']('services', 'db.mysql') }}
 

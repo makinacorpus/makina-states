@@ -110,7 +110,7 @@
 #
 # Some rules to write makina-states states:
 #   - Learn and use the [Kind]register mecanism. (its a one liner saving your ass)
-#   - Never ever write an absolute path, use salt['mc_localsettings.settings']()['locations'].PATH_PREFIX
+#   - Never ever write an absolute path, use salt['mc_locations.settings']().PATH_PREFIX
 #   - If your path is not in that mapping and is enoughtly generic, just add it.
 #   - Never ever use short form of states (states without names, use states unique IDs)
 #   - Please use as much as possible require(_in)/watch(_in) to ensure your configuration

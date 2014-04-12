@@ -1,7 +1,7 @@
 {% set data = salt['mc_tomcat.settings']() %}
 {% set ver = data.ver %}
 {% set localsettings = salt['mc_localsettings.settings']() %}
-{% set locs = salt['mc_localsettings.settings']()['locations'] %}
+{% set locs = salt['mc_locations.settings']() %}
 {% set conf_dir = data.conf_dir %}
 
 {{ salt['mc_macros.register']('services', 'java.tomcat7') }}

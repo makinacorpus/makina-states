@@ -23,7 +23,7 @@
 
 {% set nodetypes_registry = salt['mc_nodetypes.registry']() %}
 {% set localsettings = salt['mc_localsettings.settings']() %}
-{% set locs = salt['mc_localsettings.settings']()['locations'] %}
+{% set locs = salt['mc_locations.settings']() %}
 {% set apacheSettings = salt['mc_apache.settings']() %}
 
 {% macro other_mpm_pkgs(mpm, indent='') %}

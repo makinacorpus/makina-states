@@ -1,6 +1,6 @@
 {# export macro to callees #}
 {% set localsettings = salt['mc_localsettings.settings']() %}
-{% set locs = salt['mc_localsettings.settings']()['locations'] %}
+{% set locs = salt['mc_locations.settings']() %}
 
 {% set cfg = opts['ms_project'] %}
 {% macro do() %}

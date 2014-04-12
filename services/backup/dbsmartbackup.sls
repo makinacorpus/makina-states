@@ -9,7 +9,7 @@
 # For mysql, you certainly need the root password setting in yout pillar:
 #  makina-states.services.db.mysql.root_passwd: <rootpw>
 #}
-{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
+{%- set locs = salt['mc_locations.settings']() %}
 {{ salt['mc_macros.register']('services', 'backup.dbsmartbackup') }}
 {% set data=salt['mc_dbsmartbackup.settings']() %}
 {% set settings=salt['mc_utils.json_dump'](salt['mc_dbsmartbackup.settings']()) %}

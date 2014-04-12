@@ -1,6 +1,6 @@
 {% macro do(full=True) %}
 {{ salt['mc_macros.register']('services', 'base.ntp') }}
-{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
+{%- set locs = salt['mc_locations.settings']() %}
 
 include:
   - makina-states.localsettings.timezone

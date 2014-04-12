@@ -2,7 +2,7 @@
 # Documentation
 # - doc/ref/formulaes/services/firewall/shorewall.rst
 #}
-{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
+{%- set locs = salt['mc_locations.settings']() %}
 {% set settings = salt['mc_shorewall.settings']() %}
 {% set yamled_shwdata = salt['mc_utils.json_dump'](settings) %}
 {% set reg = salt['mc_services.registry']() %}

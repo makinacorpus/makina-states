@@ -6,7 +6,7 @@
 {%- macro do(full=True) %}
 {{- salt['mc_macros.register']('services', 'collab.etherpad') }}
 {%- set localsettings = salt['mc_localsettings.settings']() %}
-{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
+{%- set locs = salt['mc_locations.settings']() %}
 {%- set etherpadSettings = salt['mc_etherpad.settings']() %}
 
 {%- set etherpadLocation = etherpadSettings['location'] + "/etherpad-lite-" + etherpadSettings['version'] %}

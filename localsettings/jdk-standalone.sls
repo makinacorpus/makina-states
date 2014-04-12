@@ -3,7 +3,7 @@
 #   - makina-states/doc/ref/formulaes/localsettings/jdk.rst
 #}
 {% set localsettings = salt['mc_localsettings.settings']() %}
-{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
+{%- set locs = salt['mc_locations.settings']() %}
 
 {% macro jdk_pkgs(ver, suf='') %}
 jdk-{{ ver }}-pkgs{{suf}}:

@@ -61,7 +61,7 @@
 {% set localsettings = salt['mc_localsettings.settings']() %}
 {% set nodetypes = salt['mc_nodetypes.registry']() %}
 {% set phpData = salt['mc_php.settings']() %}
-{% set locs = salt['mc_localsettings.settings']()['locations'] %}
+{% set locs = salt['mc_locations.settings']() %}
 {% set default_pool_template_source = (
     'salt://makina-states/files/etc/php5/fpm/pool.d/pool.conf'
    ) %}
@@ -257,7 +257,7 @@ makina-php-pool-{{ pool_name }}:
 
 makina-php-pool-{{ pool_name }}-logrotate:
   file.managed:
-    - name: "{{salt['mc_localsettings.settings']()['locations'].conf_dir}}/logrotate.d/fpm.{{pool_name}}.conf"
+    - name: "{{salt['mc_locations.settings']().conf_dir}}/logrotate.d/fpm.{{pool_name}}.conf"
     - source: salt://makina-states/files/etc/logrotate.d/fpmpool.conf
     - template: jinja
     - defaults:

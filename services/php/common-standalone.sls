@@ -1,6 +1,6 @@
 {#- Common php installations (mod_php or php-fpm) files #}
 {# TODO: install suhoshin on Debian #}
-{% set locs = salt['mc_localsettings.settings']()['locations'] %}
+{% set locs = salt['mc_locations.settings']() %}
 {% set nodetypes_registry = salt['mc_nodetypes.registry']() %}
 {% set phpSettings = salt['mc_php.settings']() %}
 {% set s_ALL = phpSettings.s_ALL %}

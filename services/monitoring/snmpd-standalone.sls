@@ -1,7 +1,7 @@
 {#- snmpd configuration
 #
 #}
-{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
+{%- set locs = salt['mc_locations.settings']() %}
 {%- set data = salt['mc_snmpd.settings']() %}
 {{ salt['mc_macros.register']('services', 'monitoring.snmpd') }}
 

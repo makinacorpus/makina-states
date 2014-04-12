@@ -69,7 +69,7 @@
 #}
 
 {{ salt['mc_macros.register']('services', 'virt.docker') }}
-{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
+{%- set locs = salt['mc_locations.settings']() %}
 {% macro do(full=True) %}
 
 include:

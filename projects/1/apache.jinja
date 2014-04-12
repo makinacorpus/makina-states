@@ -6,7 +6,7 @@
 {%- set apacheData = salt['mc_apache.settings']().copy() %}
 {%- set saltmac = base.saltmac %}
 {%- set localsettings = salt['mc_localsettings.settings']() %}
-{%- set locations = salt['mc_localsettings.settings']()['locations'] %}
+{%- set locations = salt['mc_locations.settings']() %}
 
 {#
 # This is not really a real project but more stubs usable from other projects

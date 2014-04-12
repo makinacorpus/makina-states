@@ -2,7 +2,7 @@
 # Install a postgis enabled database usable as a teamplate for postgis projects
 #}
 {% import "makina-states/services/db/postgresql/init.sls" as pgsql with context %}
-{%- set locs = salt['mc_localsettings.settings']()['locations'] %}
+{%- set locs = salt['mc_locations.settings']() %}
 {{ salt['mc_macros.register']('services', 'gis.postgis') }}
 {% macro do(full=True) %}
 {% set pgSettings = salt['mc_pgsql.settings']() %}
