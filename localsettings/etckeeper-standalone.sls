@@ -31,7 +31,8 @@ etckeeper-cron:
     - source: salt://makina-states/files/etc/cron.daily/etckeeper
     - template: jinja
     - defaults:
-      data: {{defaults|yaml }}
+      data: |
+            {{salt['mc_utils.json_dump'](defaults)}}
     - user: root
     - group: root
     - mode: 750
@@ -45,7 +46,8 @@ etckeeper-conf:
     - source: salt://makina-states/files/etc/etckeeper/etckeeper.conf
     - template: jinja
     - defaults:
-      data: {{defaults|yaml }}
+      data: |
+            {{salt['mc_utils.json_dump'](defaults)}}
     - user: root
     - group: root
     - mode: 644

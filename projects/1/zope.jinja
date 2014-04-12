@@ -75,7 +75,8 @@ prepreq-{{common.name}}:
       - buildout: {{common.name}}-buildout-project
       - mc_proxy: {{common.name}}-postinstall-project-hook
     - defaults:
-      salt_data: {{ common.data|yaml }}
+      salt_data: |
+                 {{salt['mc_utils.json_dump']( common.data)}}
 
 {#-
 # Run the project buildout but skip the maintainance parts as they are part of salt stuff
@@ -130,7 +131,8 @@ prepreq-{{common.name}}:
                     '    chmod'
                     '    chown'
                     '    {%- endif %}'
-      salt_data: {{ common.data|yaml }}
+      salt_data: |
+                 {{salt['mc_utils.json_dump']( common.data)}}
       config: buildout-{{common.default_env}}.cfg
   buildout.installed:
     - name: {{common.project_root}}

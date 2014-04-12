@@ -248,7 +248,8 @@ makina-php-pool-{{ pool_name }}:
         xdebug_profiler_enable_trigger: {{ phpData.modules.xdebug.profiler_enable_trigger|int(0) }}
         xdebug_profiler_output_name: "{{ phpData.modules.xdebug.profiler_output_name }}"
         mode: {{mode}}
-        extra: {{ extra_jinja_pool_variables|yaml }}
+        extra: |
+               {{salt['mc_utils.json_dump']( extra_jinja_pool_variables)}}
     - require:
       - mc_proxy: makina-php-post-inst
     - watch_in:

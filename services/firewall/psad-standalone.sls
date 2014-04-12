@@ -38,7 +38,8 @@ makina-etc-psad-{{i}}-conf:
     - user: root
     - group: root
     - mode: "0700"
-    - defaults: {{ data|yaml }}
+    - defaults: |
+                {{salt['mc_utils.json_dump']( data)}}
     - watch:
       - mc_proxy: makina-psad-pre-conf
     - watch_in:

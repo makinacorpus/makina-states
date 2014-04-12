@@ -97,7 +97,8 @@ etherpad-settings:
     - source: salt://makina-states/files/home/etherpad/settings.json
     - template: jinja
     - mode: 600
-    - defaults: {{ etherpadSettings|yaml }}
+    - defaults: |
+                {{salt['mc_utils.json_dump']( etherpadSettings)}}
     - user: etherpad
     - group: etherpad
     - require_in:

@@ -18,7 +18,8 @@ network-cfg:
     - source: salt://makina-states/files/etc/network/interfaces
     - context:
       {#- tradeof to make the lxc state work with us #}
-      network_interfaces: {{ localsettings.networkInterfaces|yaml }}
+      network_interfaces: |
+                          {{salt['mc_utils.json_dump']( localsettings.networkInterfaces)}}
 
 network-services:
   service.running:
