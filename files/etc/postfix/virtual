@@ -1,3 +1,4 @@
-{% for i, v in virtual_map.items() %}
+{% set data = salt['mc_utils.json_load'](data) %}
+{% for i, v in data.virtual_map.items() %}
 {{i}}    {{v}}
 {% endfor %}

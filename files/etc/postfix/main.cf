@@ -1,41 +1,42 @@
 # MANAGED VIA SALT DO NOT EDIT
+{% set data = salt['mc_utils.json_load'](data) %}
 # Debian specific:  Specifying a file name will cause the first
 # line of that file to be used as the name.  The Debian default
-# is {{conf_dir}}/mailname.
-#myorigin = {{conf_dir}}/mailname
+# is {{data.conf_dir}}/mailname.
+#myorigin = {{data.conf_dir}}/mailname
 
-myhostname = {{ mailname }}
-myorigin = {{conf_dir}}/mailname
+myhostname = {{data.mailname }}
+myorigin = {{data.conf_dir}}/mailname
 {% if mode in ['relay'] %}
 mydestination =
-relayhost = [{{relay_host}}]:{{relay_port}}
+relayhost = [{{data.relay_host}}]:{{data.relay_port}}
 {% else %}
-mydestination = {{ mailname }}, localhost.local, localhost
+mydestination = {{data.mailname }}, localhost.local, localhost
 relayhost =
 {% endif %}
-inet_protocols = {{inet_protocols}}
-inet_interfaces = {{inet_interfaces}}
-mynetworks = {{mynetworks}}
+inet_protocols = {{data.inet_protocols}}
+inet_interfaces = {{data.inet_interfaces}}
+mynetworks = {{data.mynetworks}}
 
 # TLS parameters
-smtp_use_tls={{use_tls}}
-smtpd_use_tls={{use_tls}}
-smtpd_tls_cert_file={{cert_file}}
-smtpd_tls_key_file={{cert_key}}
+smtp_use_tls={{data.use_tls}}
+smtpd_use_tls={{data.use_tls}}
+smtpd_tls_cert_file={{data.cert_file}}
+smtpd_tls_key_file={{data.cert_key}}
 
 # aliases
-alias_maps = hash:{{conf_dir}}/aliases
-alias_database = hash:{{conf_dir}}/aliases
+alias_maps = hash:{{data.conf_dir}}/aliases
+alias_database = hash:{{data.conf_dir}}/aliases
 
 # enforce local delivery by using altered virutal domain maps
-virtual_alias_maps = regexp:{{conf_dir}}/postfix/virtual
+virtual_alias_maps = regexp:{{data.conf_dir}}/postfix/virtual
 virtual_alias_domains =
 
-{% if auth %}
+{% if data.auth %}
 # authentication parameters
 smtp_sasl_auth_enable = yes
 smtp_sasl_security_options =
-smtp_sasl_password_maps = hash:{{conf_dir}}/postfix/sasl_passwd
+smtp_sasl_password_maps = hash:{{data.conf_dir}}/postfix/sasl_passwd
 {% endif %}
 
 
@@ -49,7 +50,7 @@ append_dot_mydomain = no
 # delay_warning_time = 4h
 readme_directory = no
 
-smtp_tls_CAfile = {{conf_dir}}/ssl/certs/ca-certificates.crt
+smtp_tls_CAfile = {{data.conf_dir}}/ssl/certs/ca-certificates.crt
 smtpd_tls_session_cache_database = btree:${data_directory}/smtpd_scache
 smtp_tls_session_cache_database = btree:${data_directory}/smtp_scache
 
@@ -88,7 +89,7 @@ smtpd_client_restrictions =
     reject_non_fqdn_sender,
     reject_unknown_sender_domain,
     reject_non_fqdn_recipient,
-    reject_unknown_recipient_domain, {% if check_policy_service %}check_policy_service: {{ check_policy_service}},{%endif%} permit
+    reject_unknown_recipient_domain, {% if data.check_policy_service %}check_policy_service: {{data.check_policy_service}},{%endif%} permit
 
 smtpd_recipient_restrictions =
     permit_mynetworks,
@@ -99,9 +100,9 @@ smtpd_recipient_restrictions =
     reject_non_fqdn_sender,
     reject_unknown_sender_domain,
     reject_non_fqdn_recipient,
-    reject_unknown_recipient_domain, {% if check_policy_service %}check_policy_service: {{ check_policy_service}},{%endif%} permit
+    reject_unknown_recipient_domain, {% if data.check_policy_service %}check_policy_service: {{data.check_policy_service}},{%endif%} permit
 smtpd_relay_restrictions = permit_mynetworks permit_sasl_authenticated defer_unauth_destination
-mailbox_size_limit = {{mailbox_size_limit}}
+mailbox_size_limit = {{data.mailbox_size_limit}}
 
 # misc
 mailbox_command = procmail -a "$EXTENSION"

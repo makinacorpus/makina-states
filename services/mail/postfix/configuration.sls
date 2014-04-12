@@ -1,24 +1,8 @@
-{#- Postfix SMTP Server managment #}
-{% macro do(full=True) %}
-{{ salt['mc_macros.register']('services', 'mail.postfix') }}
 {% set postfixSettings = salt['mc_postfix.settings']() %}
-{% set locs = salt['mc_localsettings.settings']()['locations'] %}
+{% set locs = salt['mc_locations.settings']()%}
 include:
-  - makina-states.services.mail.postfix-hooks
-
-{% if full %}
-postfix-pkgs:
-  pkg.{{salt['mc_localsettings.settings']()['installmode']}}:
-    - pkgs:
-      - postfix
-      - postfix-pcre
-    - watch:
-      - mc_proxy: postfix-pre-install-hook
-    - watch_in:
-      - mc_proxy: postfix-post-install-hook
-{% endif %}
-
- 
+  - makina-states.services.mail.postfix.hooks
+  - makina-states.services.mail.postfix.services
 {{ locs.conf_dir }}-postfix-mailname:
   file.managed:
     - name: {{ locs.conf_dir }}/mailname
@@ -46,8 +30,9 @@ postfix-pkgs:
     - watch_in:
       - mc_proxy: postfix-post-conf-hook
       - mc_proxy: postfix-pre-restart-hook
-    - defaults: |
-                {{salt['mc_utils.json_dump'](postfixSettings)}}
+    - defaults:
+      data: |
+            {{salt['mc_utils.json_dump'](postfixSettings)}}
 
 makina-postfix-chroot-hosts-sync:
   cmd.run:
@@ -110,8 +95,9 @@ makina-postfix-virtual:
     - source: salt://makina-states/files/etc/postfix/virtual
     - user: root
     - template: jinja
-    - defaults: |
-                {{salt['mc_utils.json_dump'](postfixSettings)}}
+    - defaults:
+      data: |
+            {{salt['mc_utils.json_dump'](postfixSettings)}}
     - group: root
     - mode: 644
     - watch:
@@ -166,13 +152,3 @@ makina-postfix-configuration-check:
     - watch_in:
       - mc_proxy: postfix-pre-restart-hook
 
-makina-postfix-service:
-  service.running:
-    - name: postfix
-    - enable: True
-    - watch_in:
-      - mc_proxy: postfix-post-restart-hook
-    - watch:
-      - mc_proxy: postfix-pre-restart-hook
-{% endmacro %}
-{{ do(full=False) }}
