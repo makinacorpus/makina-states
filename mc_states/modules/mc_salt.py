@@ -41,8 +41,11 @@ def settings():
         # and if neccesary the symlink to wire on the salt root tree
         salt_ssh_data = saltmods['mc_utils.defaults'](
             'makina-states.controllers.salt.ssh', {
-                'ssh_priv': '/root/.ssh/id_rsa',
+                'priv': '/root/.ssh/id_rsa',
                 'roster': {}})
+        for id_ in [a for a in salt_ssh_data['roster']]:
+            data = salt_ssh_data['roster'][id_]
+            data.setdefault('priv', salt_ssh_data['priv'])
         confRepos = {
             'salt-git': {
                 'name': 'http://github.com/makinacorpus/salt.git',
