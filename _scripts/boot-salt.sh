@@ -496,7 +496,7 @@ set_vars() {
     SALT_REBOOTSTRAP="${SALT_REBOOTSTRAP:-${VENV_REBOOTSTRAP}}"
     BASE_PACKAGES=""
     BASE_PACKAGES="$BASE_PACKAGES build-essential m4 libtool pkg-config autoconf gettext bzip2"
-    BASE_PACKAGES="$BASE_PACKAGES groff man-db automake libsigc++-2.0-dev tcl8.5 python-dev"
+    BASE_PACKAGES="$BASE_PACKAGES groff man-db automake libsigc++-2.0-dev tcl8.5 python-dev python2.7 python2.7-dev"
     BASE_PACKAGES="$BASE_PACKAGES swig libssl-dev libyaml-dev debconf-utils python-virtualenv"
     BASE_PACKAGES="$BASE_PACKAGES vim git rsync"
     BASE_PACKAGES="$BASE_PACKAGES libzmq3-dev"
