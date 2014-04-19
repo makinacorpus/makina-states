@@ -103,7 +103,7 @@ def settings_for_target(name):
         ssh_gateway_user
             ssh gateway info
         ssh_gateway_key
-            ssh gateway info
+            ssh gateway info and default hosts key to ssh in
         ssh_gateway_password
             ssh gateway password
         name
@@ -164,12 +164,18 @@ def settings_for_target(name):
               'bootsalt_branch',
               'master_port']:
         c_data.setdefault(k, sdata.get(k, None))
-    if not c_data['ssh_keyfile'] and not c_data['password']:
-        raise ValueError('We should have one of have sshkey + '
-                         'password for \n{0}'.format(pformat(c_data)))
+    if (
+        not c_data['ssh_keyfile']
+        and not c_data['password']
+        and sdata['ssh_gateway_key']
+    ):
+        c_data['ssh_keyfile'] = sdata['ssh_gateway_key']
     if c_data['ssh_keyfile'] and c_data['password']:
         raise ValueError('Not possible to have sshkey + password '
                          'for \n{0}'.format(pformat(c_data)))
+    if not c_data['ssh_keyfile'] and not c_data['password']:
+        raise ValueError('We should have one of have sshkey + '
+                         'password for \n{0}'.format(pformat(c_data)))
     sudo_password = c_data.get('sudo_password', '')
     if not sudo_password:
         sudo_password = c_data['password']
