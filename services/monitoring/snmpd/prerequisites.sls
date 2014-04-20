@@ -16,3 +16,4 @@ snmpd-pkgs:
       - libsnmp-perl
       - nagios-plugins-basic
       - snmpd
+      - libsnmp-dev

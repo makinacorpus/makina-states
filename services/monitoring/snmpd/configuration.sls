@@ -51,7 +51,9 @@ fix-snmpd-user-packaging:
     - name: >
             cp -v
             {{sdata.c.minion.msr}}/files/usr/bin/net-snmp-create-v3-user
-            /usr/bin/net-snmp-create-v3-user
+            /usr/bin/net-snmp-create-v3-user;
+            chmod +x /usr/bin/net-snmp-create-v3-user
+
 snmpd-user:
   cmd.run:
     - watch:

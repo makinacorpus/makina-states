@@ -92,7 +92,8 @@ def settings():
                 'no_postgresql': True,
                 'no_ftp': True,
                 'have_docker': None,
-                'have_rpn': None,
+                # backward compat
+                'have_rpn':  __salt__['mc_provider.settings']()['have_rpn'],
                 'have_lxc': None,
                 'no_dns': False,
                 'no_ping': False,
@@ -132,9 +133,6 @@ def settings():
         if data['have_lxc'] is None:
             if True in ['lxc' in a[0] for a in ifaces]:
                 data['have_lxc'] = True  # must stay none if not found
-        if data['have_rpn'] is None:
-            if True in ['em1' == a[0] for a in ifaces]:
-                data['have_rpn'] = True  # must stay none if not found
         if data['have_docker'] is None:
             if True in ['docker' in a[0] for a in ifaces]:
                 data['have_docker'] = True  # must stay none if not found
