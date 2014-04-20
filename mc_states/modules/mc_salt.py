@@ -350,7 +350,6 @@ def settings():
         # default exposed global variables
         ########################################
         # SALT VARIABLES
-
         data['saltCommonData'] = saltCommonData = resolver(saltCommonData)
         data['saltMasterData'] = saltMasterData = resolver(saltMasterData)
         data['saltMinionData'] = saltMinionData = resolver(saltMinionData)
@@ -370,6 +369,7 @@ def settings():
         msr = data['msr'] = saltroot + '/makina-states'
         data['resetperms'] = msr + '/_scripts/reset-perms.py'
         data['saltbinpath'] = msr + '/bin'
+
         #  MASTERSALT VARIABLES
         mastersaltCommonData = resolver(mastersaltCommonData)
         data['mastersaltCommonData'] = mastersaltCommonData
@@ -392,7 +392,17 @@ def settings():
         mmsr = data['mmsr'] = msaltroot + '/makina-states'
         data['mresetperms'] = mmsr + '/_scripts/reset-perms.py'
         data['msaltbinpath'] = mmsr + '/bin'
+
+        if __salt__['mc_utils.get']('config_dir') == data['mconfPrefix']:
+            csaltMasterData = mastersaltMasterData
+            cmastersaltMinionData = mastersaltMinionData
+        else:
+            csaltMasterData = saltMasterData
+            cmastersaltMinionData = saltMasterData
+
         #  mappings
+        data['c'] = {'master': csaltMasterData,
+                     'minion': cmastersaltMinionData}
         data['data_mappings'] = {
             'master': {
                 'salt': saltMasterData,

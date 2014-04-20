@@ -78,6 +78,18 @@ def settings():
         lts_dist = debian_stable
         if grains['os'] in ['Ubuntu']:
             lts_dist = ubuntu_lts
+        mirrors = {
+            'ovh': 'http://mirror.ovh.net/ubuntu',
+            #'online': 'http://mirror.ovh.net/ubuntu',
+            'online': 'http://ftp.free.fr/mirrors/ftp.ubuntu.com/ubuntu',
+        }
+        umirror = mirrors['online']
+        for provider in ['ovh', 'online']:
+            for test in ['id', 'fqdn', 'domain', 'host', 'nodename']:
+                val = saltmods['mc_utils.get'](test, '')
+                if isinstance(val, basestring):
+                    if provider in val.lower():
+                        umirror = mirrors.get(provider, mirrors['online'])
         data = saltmods['mc_utils.defaults'](
             'makina-states.localsettings.pkgs', {
                 'installmode': default_install_mode,
@@ -86,12 +98,7 @@ def settings():
                 'lts_dist': lts_dist,
                 'apt': {
                     'ubuntu': {
-                        'online_mirror': (
-                            'http://ftp.free.fr/mirrors/ftp.ubuntu.com/ubuntu'
-                        ),
-                        'ovh_mirror': (
-                            'http://mirror.ovh.net/ubuntu'
-                        ),
+                        'mirror': umirror,
                         'dist': saltmods['mc_utils.get'](
                             'lsb_distrib_codename', ubuntu_lts),
                         'comps': (
@@ -108,15 +115,7 @@ def settings():
                         'mirror': 'http://ftp.de.debian.org/debian',
                     },
                 }})
-        umirror = data['apt']['ubuntu']['online_mirror']
-        for provider in ['ovh', 'online']:
-            for test in ['id', 'fqdn', 'domain', 'host', 'nodename']:
-                val = saltmods['mc_utils.get'](test, '')
-                if isinstance(val, basestring):
-                    if provider in val.lower():
-                        umirror = data[
-                            'apt']['ubuntu']['{0}_mirror'.format(provider)]
-        data['apt']['ubuntu']['mirror'] = umirror
+
         data['dcomps'] = data['apt']['debian']['comps']
         data['ddist'] = data['apt']['debian']['dist']
         data['debian_mirror'] = data['apt']['debian']['mirror']
