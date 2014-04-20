@@ -564,6 +564,7 @@ set_vars() {
     else
         DOMAINNAME="local"
         NICKNAME_FQDN="${HOST}.${DOMAINNAME}"
+        set_dns
     fi
 
     # select the daemons to install but also
