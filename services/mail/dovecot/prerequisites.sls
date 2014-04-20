@@ -5,3 +5,7 @@ dovecot-pkgs:
     - pkgs:
       - dovecot-common
       - dovecot-imapd
+    - watch:
+      - mc_proxy: dovecot-pre-install-hook
+    - watch_in:
+      - mc_proxy: dovecot-post-install-hook
