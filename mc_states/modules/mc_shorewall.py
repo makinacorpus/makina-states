@@ -53,6 +53,8 @@ def settings():
         nodetypes_registry = __salt__['mc_nodetypes.registry']()
         locs = __salt__['mc_locations.settings']()
         shwIfformat = 'FORMAT 2'
+        providers = __salt__['mc_provider.settings']()
+        have_rpn = providers['have_rpn']
         #if ((grains['os'] not in ['Debian'])
         #   and (grains.get('lsb_distrib_codename') not in ['precise'])):
         if (grains['os'] not in ['Debian']):
@@ -93,7 +95,7 @@ def settings():
                 'no_ftp': True,
                 'have_docker': None,
                 # backward compat
-                'have_rpn':  __salt__['mc_provider.settings']()['have_rpn'],
+                'have_rpn': have_rpn,
                 'have_lxc': None,
                 'no_dns': False,
                 'no_ping': False,
@@ -182,9 +184,9 @@ def settings():
             z = 'net'
             # TODO: XXX: find better to mach than em1
             if 'em1' == iface:
-                if data['have_rpn']:
+                if have_rpn:
                     z = 'rpn'
-                else:
+                if providers['is']['online']:
                     continue
             if 'docker' in iface:
                 if data['have_docker']:
@@ -199,7 +201,7 @@ def settings():
         for z, ifaces in data['default_interfaces'].items():
             for iface in ifaces:
                 data['interfaces'].setdefault(z, [])
-                if not iface in data['interfaces'][z]:
+                if iface not in data['interfaces'][z]:
                     data['interfaces'][z].append(iface)
 
         default_route = __grains__.get('makina.default_route', OrderedDict())
