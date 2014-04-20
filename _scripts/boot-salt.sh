@@ -353,6 +353,9 @@ get_minion_id_() {
                 mmid=$(cat "${CONF_PREFIX}/minion_id" 2> /dev/null)
             fi
         fi
+        if [ "x${mmid}" = "x" ];then
+            mmid="${2:-$(hostname)}"
+        fi
     fi
     echo $mmid
 }
