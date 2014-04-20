@@ -1,4 +1,5 @@
 .*installed.cfg
+MegaSAS.log
 .initial_hs
 doc/build
 *.sav

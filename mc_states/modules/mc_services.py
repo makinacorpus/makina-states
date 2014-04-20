@@ -82,6 +82,7 @@ def registry():
             'mail.postfix': {'active': False},
             'monitoring.circus': {'active': False},
             'monitoring.snmpd': {'active': False},
+            'monitoring.client': {'active': False},
             #'php.common': {'active': False},
             'proxy.haproxy': {'active': False},
             'php.modphp': {'active': False},
