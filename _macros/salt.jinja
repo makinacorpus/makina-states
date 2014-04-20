@@ -608,6 +608,7 @@ salt-{{ data.daemon_name }}-logs:
       - {{ logPrefix }}/key
       - {{ logPrefix }}/{{ data.daemon_name }}
       - {{ logPrefix }}/syndic.log
+    - makedirs: true
     - require_in:
       - mc_proxy: dummy-pre-{{ data.name }}-service-restart
 
