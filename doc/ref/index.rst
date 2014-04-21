@@ -9,6 +9,7 @@ Implementation design & details
 
    design/index.rst
    qa/index.rst
+   packaging/index.rst
 
 
 States & modules reference
@@ -30,5 +31,9 @@ Formulaes & macros helpers reference
    :maxdepth: 2
 
    macros/index.rst
+
+
+
+
 
 

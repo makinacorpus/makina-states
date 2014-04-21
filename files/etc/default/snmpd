@@ -1,0 +1,7 @@
+# MANAGED VIA SALT, DO NOT EDIT
+{% set data = salt['mc_utils.json_load'](data) %}
+export MIBS="{{data.MIBS}}"
+SNMPDRUN="{{data.SNMPDRUN}}"
+SNMPDOPTS="{{data.SNMPDOPTS}}"
+TRAPDRUN="{{data.TRAPDRUN}}"
+TRAPDOPTS="{{data.TRAPDOPTS}}"

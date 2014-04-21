@@ -15,29 +15,37 @@ __name = 'snmpd'
 
 log = logging.getLogger(__name__)
 
+
 def settings():
     '''
     snmpd settings
 
-
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
+        _salt = __salt__
         grains = __grains__
         pillar = __pillar__
-        nodetypes_registry = __salt__['mc_nodetypes.registry']()
-        locs = __salt__['mc_locations.settings']()
-        data = __salt__['mc_utils.defaults'](
-             'makina-states.services.monitoring.snmpd', {
-                'SNMPDRUN':'yes',
-                'SNMPDOPTS':'-Lsd -Lf /dev/null -p /var/run/snmpd.pid',
-                'TRAPDRUN':'no',
-                'TRAPDOPTS':'-Lsd -p /var/run/snmptrapd.pid',
-                'agentAddress':'udp:161,udp6:[::1]:161'
+        nodetypes_registry = _salt['mc_nodetypes.registry']()
+        locs = _salt['mc_locations.settings']()
+        data = _salt['mc_utils.defaults'](
+            'makina-states.services.monitoring.snmpd', {
+                'SNMPDRUN': 'yes',
+                'MIBS': '/usr/share/mibs',
+                'SNMPDOPTS': '-Lsd -Lf /dev/null -p /var/run/snmpd.pid',
+                'TRAPDRUN': 'no',
+                'TRAPDOPTS': '-Lsd -p /var/run/snmptrapd.pid',
+                'agentAddress': 'udp:161,udp6:[::1]:161',
+                'default_user': 'user',
+                'default_key': 'sup3rs3cret',
+                'default_password': 's3cret',
+                'default_enc_type': 'DES',
+                'default_password_enc_type': 'SHA',
             }
         )
         return data
     return _settings()
+
 
 def dump():
     return mc_states.utils.dump(__salt__,__name)

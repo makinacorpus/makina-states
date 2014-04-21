@@ -25,7 +25,7 @@ network-services:
   service.running:
     - enable: True
     - names:
-      - networking
+      {% if grains.get('oscodename:') not in ['trusty'] %}- networking{% endif %}
       {% if grains['os'] in ['Ubuntu'] %}- resolvconf{% endif %}
     - watch:
       - file: network-cfg

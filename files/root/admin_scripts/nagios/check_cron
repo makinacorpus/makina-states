@@ -1,0 +1,16 @@
+#!/bin/sh
+STATE_OK=0
+STATE_WARNING=1
+STATE_CRITICAL=2
+STATE_UNKNOWN=3
+STATE_DEPENDENT=4
+
+CRONPROC=`ps -ef | grep /usr/sbin/cron| grep -v grep| wc -l`
+case "${CRONPROC}" in
+        0)  echo "Cron is not running"; exit ${STATE_CRITICAL}
+        ;;
+        1)  echo "Cron is running"; exit ${STATE_OK}
+        ;;
+        *)  echo "Cron is running more than once"; exit ${STATE_WARNING}
+        ;;
+esac
