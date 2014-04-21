@@ -357,6 +357,9 @@ get_minion_id_() {
             mmid="${2:-$(hostname)}"
         fi
     fi
+    if [ "x$(echo "${mmid}"|grep -q '\.';echo ${?})" != "x0" ];then
+        mmid="${mmid}.${DEFAULT_DOMAINNAME}"
+    fi
     echo $mmid
 }
 
@@ -482,6 +485,7 @@ set_vars() {
     else
         SALT_CLOUD="${SALT_CLOUD:-}"
     fi
+    DEFAULT_DOMAINNAME="local"
     SALT_CLOUD_DIR="${SALT_CLOUD_DIR:-"/tmp/.saltcloud"}"
     SALT_BOOT_LOCK_FILE="/tmp/boot_salt_sleep-$(get_full_chrono)"
     LAST_RETCODE_FILE="/tmp/boot_salt_rc-$(get_full_chrono)"
@@ -562,8 +566,9 @@ set_vars() {
     if [ "x$(echo "${NICKNAME_FQDN}"|grep -q \.;echo ${?})" = "x0" ];then
         DOMAINNAME="$(echo "${NICKNAME_FQDN}"|sed -e "s/^[^.]*\.//g")"
     else
-        DOMAINNAME="local"
+        DOMAINNAME="${DEFAULT_DOMAINNAME}"
         NICKNAME_FQDN="${HOST}.${DOMAINNAME}"
+        set_dns
     fi
 
     # select the daemons to install but also

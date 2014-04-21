@@ -83,13 +83,13 @@ def settings():
             #'online': 'http://mirror.ovh.net/ubuntu',
             'online': 'http://ftp.free.fr/mirrors/ftp.ubuntu.com/ubuntu',
         }
-        umirror = mirrors['online']
+        umirror = mirrors['ovh']
         for provider in ['ovh', 'online']:
             for test in ['id', 'fqdn', 'domain', 'host', 'nodename']:
                 val = saltmods['mc_utils.get'](test, '')
                 if isinstance(val, basestring):
                     if provider in val.lower():
-                        umirror = mirrors.get(provider, mirrors['online'])
+                        umirror = mirrors.get(provider, umirror)
         data = saltmods['mc_utils.defaults'](
             'makina-states.localsettings.pkgs', {
                 'installmode': default_install_mode,
@@ -103,7 +103,6 @@ def settings():
                             'lsb_distrib_codename', ubuntu_lts),
                         'comps': (
                             'main restricted universe multiverse'),
-                        'mirror': '',
                         'last': ubuntu_last,
                         'lts': ubuntu_lts,
                     },

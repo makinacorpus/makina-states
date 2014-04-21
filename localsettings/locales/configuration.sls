@@ -15,8 +15,8 @@ include:
 {% set locale = locale.replace('-', '').replace('utf8', 'UTF-8').replace('UTF8', 'UTF-8') %}
 gen-makina-locales-{{ lid }}:
   cmd.run:
-    - name: /sbin/locale-gen {{locale}}
-    - onlyif: test -e /sbin/locale-gen
+    - name: export PATH="${PATH}:/usr/sbin:/sbin";locale-gen {{locale}}
+    - onlyif: test -e /sbin/locale-gen || test -e /usr/sbin/locale-gen
     - unless: locale -a|sed -re "s/utf8/UTF-8/g"|grep -q {{ locale }}
     - watch_in:
       - cmd: update-makina-locale
@@ -26,8 +26,8 @@ gen-makina-locales-{{ lid }}:
 {% if localeo != locale %}
 nondash-gen-makina-locales-{{ lid }}:
   cmd.run:
-    - name: /sbin/locale-gen {{localeo}}
-    - onlyif: test -e /sbin/locale-gen
+    - name:  export PATH="${PATH}:/usr/sbin:/sbin";locale-gen {{localeo}}
+    - onlyif: test -e /sbin/locale-gen || test -e /usr/sbin/locale-gen
     - unless: locale -a|sed -re "s/utf8/UTF-8/g"|grep -q {{ locale }}
     - watch_in:
       - cmd: update-makina-locale
