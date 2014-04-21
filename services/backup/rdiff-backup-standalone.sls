@@ -1,12 +1,9 @@
-{#-
-# Integration of rdiff-backup, a file backup software
-#}
+{#- Integration of rdiff-backup, a file backup software #}
 {% macro do(full=True) %}
 {%- set locs = salt['mc_locations.settings']() %}
 {{ salt['mc_macros.register']('services', 'backup.rdiff-backup') }}
 {%- set data=salt['mc_rdiffbackup.settings']() %}
 {%- set settings = salt['mc_utils.json_dump'](salt['mc_rdiffbackup.settings']()) %}
-
 {% if full %}
 remove-rdiff-backup-pkgs:
   pkg.removed:
@@ -17,6 +14,7 @@ rdiff-backup-pkgs:
     - require:
       - pkg: remove-rdiff-backup-pkgs
     - pkgs:
+      - rdiff-backup
       - rdiff-backup-fs
       - librsync-dev
       - librsync1
@@ -26,7 +24,7 @@ rdiff-backup-pkgs:
       - libacl1
       - libacl1-dev
 {% endif %}
-
+{# own rdiff wasnt working that well 
 rdiff-backup:
   file.directory:
     - name: {{locs.apps_dir}}/rdiff-backup
@@ -76,5 +74,6 @@ rdiff-backup-{{bin}}-man:
     - require:
       - cmd: rdiff-backup-install
 {%endfor%}
+#}
 {% endmacro %}
 {{ do(full=False) }}
