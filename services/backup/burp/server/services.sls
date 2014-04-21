@@ -4,6 +4,7 @@ include:
 burp-svc:
   service.enabled:
     - name:  burp-server
+    - reload: True
     - watch:
       - mc_proxy: burp-pre-restart-hook
     - watch_in:
