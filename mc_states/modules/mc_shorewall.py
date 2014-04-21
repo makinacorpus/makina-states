@@ -102,6 +102,7 @@ def settings():
                 'no_smtp': False,
                 'no_ssh': False,
                 'no_web': False,
+                'no_burp': False,
                 'no_syslog': False,
                 'no_computenode': False,
                 'defaultstate': 'new',
@@ -153,7 +154,7 @@ def settings():
         # this will act at shorewall parameters in later rules
         if not data['no_default_params']:
             for p in ['SYSLOG', 'SSH', 'SNMP', 'PING',
-                      'MYSQL', 'POSTGRESQL', 'FTP']:
+                      'BURP', 'MYSQL', 'POSTGRESQL', 'FTP']:
                 default = 'all'
                 if p in ['SYSLOG']:
                     default = 'fw:127.0.0.1'
@@ -475,6 +476,26 @@ def settings():
             data['default_rules'].append({
                 'action': 'MySQL({0})'.format(action),
                 'source': '$SALT_RESTRICTED_MYSQL', 'dest': 'all'})
+
+            data['default_rules'].append({'comment': 'burp'})
+            if data['no_burp']:
+                action = 'DROP'
+            else:
+                action = 'ACCEPT'
+            data['default_rules'].append({'action': action,
+                                          'source': '$SALT_RESTRICTED_BURP',
+                                          'dest': "all",
+                                          'proto': 'tcp,udp',
+                                          'dport': '4971,4972'})
+            # also accept configured hosts
+            burpsettings = __salt__['mc_burp.settings']()
+            clients = 'net:'
+            clients += ','.join(burpsettings['clients'])
+            data['default_rules'].append({'action':action,
+                                          'source': clients,
+                                          'dest': "all",
+                                          'proto': 'tcp,udp',
+                                          'dport': '4971,4972'})
         # ATTENTION WE MERGE, so reverse order to append at begin
         data['default_rules'].reverse()
         for rdata in data['default_rules']:

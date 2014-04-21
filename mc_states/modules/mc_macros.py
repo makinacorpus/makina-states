@@ -151,6 +151,8 @@ def get_local_registry(name, cached=True, cachetime=60):
         if os.path.exists(registryf):
             with open(registryf, 'r') as fic:
                 registry = yaml.load(fic, Loader=get_yaml_loader(''))
+                if not registry:
+                    registry = {}
                 _LOCAL_REG_CACHE[key] = registry
     elif cached:
         registry = _LOCAL_REG_CACHE[key]
@@ -164,10 +166,14 @@ _default = object()
 def update_registry_params(registry_name, params):
     registry = get_local_registry(registry_name)
     changes = {}
-    registry_obj = __salt__['mc_{0}.registry'.format(registry_name)]()
+    topreg_name = 'mc_{0}.registry'.format(registry_name)
+    if topreg_name in __salt__:
+        registry_obj = __salt__[topreg_name]()
+        pref = registry_obj['grains_pref']
+    else:
+        pref = 'makina-states.local.{0}'.format(registry_name)
     for param, value in params.items():
-        gparam = '{0}.{1}'.format(registry_obj['grains_pref'],
-                                  param)
+        gparam = '{0}.{1}'.format(pref, param)
         if registry.get(gparam, _default) != value:
             for data in changes, registry:
                 data.update({gparam: value})
