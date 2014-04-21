@@ -1,0 +1,20 @@
+# MANAGED VIA SALT - DO NOT EDIT
+{% set data=salt['mc_utils.json_load'](data) %}
+{% macro get_config(opt, default='') %}
+{%- set pref=''%}
+{%- set val=data.get(opt, None)%}
+{%- if val is none %}
+{%- set pref='# ' %}
+{%- set val=default %}
+{%- endif %}
+{%- if not val and not val is not none%}
+{%- set val = '' %}
+{%- endif %}
+{%- if not salt['mc_utils.is_a_list'](val) %}
+{%- set val = [val] %}
+{%- endif %}
+{%- for v in val %}
+{{pref}}{{opt}} = {{v}}
+{% endfor -%}
+{%- endmacro %}
+{{get_config('password', 'abcdef')}}
