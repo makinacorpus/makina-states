@@ -24,5 +24,4 @@ burp-svc:
             {%- endfor %}
             ssh {{client}} update-rc.d -f burp-client defaults 99 &&
             ssh {{client}} /etc/init.d/burp-client restart
-#}
 {% endfor %}
