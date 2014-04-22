@@ -76,8 +76,18 @@ burp-copy-server-key:
       - mc_proxy: burp-post-conf-hook
 
 burp-ser-remove-packaging:
+  cmd.run:
+    - onlyif: test -f /etc/burp/burp.conf
+    - name: |
+            rm -f /etc/burp/burp.conf
+            ln -s /etc/burp/burp-server.conf /etc/burp/burp.conf
+    - watch:
+      - mc_proxy: burp-pre-conf-hook
+    - watch_in:
+      - mc_proxy: burp-post-conf-hook
   file.absent:
-    - name: /etc/init.d/burp
+    - names:
+      - /etc/init.d/burp
     - watch:
       - mc_proxy: burp-pre-conf-hook
     - watch_in:
@@ -115,7 +125,7 @@ etc-burp-CA:
   '/etc/burp/burp.conf',
   '/etc/burp/CA.cnf',
 ] %}
-etc-burp-burp-client.conf-{{f}}:
+etc-burp-burp-client.{{client}}-conf-{{f}}:
   file.managed:
     - name: /etc/burp/clients/{{client}}/{{f}}
     - source: salt://makina-states/files/{{f}}

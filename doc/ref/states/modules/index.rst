@@ -18,6 +18,7 @@ Subregistries
 
    mc_apache.rst
    mc_bind.rst
+   mc_burp.rst
    mc_circus.rst
    mc_cloud_compute_node.rst
    mc_cloud_controller.rst
@@ -25,7 +26,6 @@ Subregistries
    mc_cloud_lxc.rst
    mc_cloud.rst
    mc_cloud_saltify.rst
-   mc_burp.rst
    mc_dbsmartbackup.rst
    mc_env.rst
    mc_etckeeper.rst
@@ -40,13 +40,13 @@ Subregistries
    mc_lxc.rst
    mc_mysql.rst
    mc_network.rst
-   mc_provider.rst
    mc_nginx.rst
    mc_nodejs.rst
    mc_pgsql.rst
    mc_php.rst
    mc_pkgs.rst
    mc_postfix.rst
+   mc_provider.rst
    mc_psad.rst
    mc_pureftpd.rst
    mc_python.rst
@@ -59,6 +59,7 @@ Subregistries
    mc_ssl.rst
    mc_timezone.rst
    mc_tomcat.rst
+   mc_updatedb.rst
    mc_usergroup.rst
 
 
