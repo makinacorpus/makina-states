@@ -4,3 +4,6 @@ include:
   - makina-states.services.backup.burp.server.prerequisites
   - makina-states.services.backup.burp.server.configuration
   - makina-states.services.backup.burp.server.services
+{% if salt['mc_services.registry']()['is']['firewall.shorewall'] %}
+  - makina-states.services.firewall.shorewall
+{% endif %}

@@ -12,7 +12,11 @@ snmpd-pkgs:
       - snmp-mibs-downloader
       - libsensors4
       - libsnmp-base
+      {% if grains['os'] in ['Debian'] %}
+      - libsnmp15
+      {% else %}
       - libsnmp30
+      {% endif %}
       - libsnmp-perl
       - nagios-plugins-basic
       - snmpd
