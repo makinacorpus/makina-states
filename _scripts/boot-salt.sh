@@ -2162,17 +2162,21 @@ gen_mastersalt_keys() {
         if [ ! -e "${MCONF_PREFIX}/pki/master/master.pub" ];then
             bs_log "Generating mastersalt master key"
             "${MASTERSALT_MS}/bin/salt-key" -c "${MCONF_PREFIX}" --gen-keys=master --gen-keys-dir=${MCONF_PREFIX}/pki/master
+            BS_MS_ASSOCIATION_RESTART_MASTER="1"
         fi
     fi
     if [ "x${IS_MASTERSALT_MINION}" != "x" ];then
         if [ ! -e "${MCONF_PREFIX}/pki/minion/minion.pub" ];then
             bs_log "Generating mastersalt minion key"
             "${MASTERSALT_MS}/bin/salt-key" -c "${MCONF_PREFIX}" --gen-keys=minion --gen-keys-dir=${MCONF_PREFIX}/pki/minion
+            BS_MS_ASSOCIATION_RESTART_MINION="1"
         fi
     fi
     if [ "x${IS_MASTERSALT_MINION}" != "x" ]\
         && [ "x${IS_MASTERSALT_MASTER}" != "x" ]\
         && [ -e "${MCONF_PREFIX}/pki/minion/minion.pub" ];then
+        BS_MS_ASSOCIATION_RESTART_MINION="1"
+        BS_MS_ASSOCIATION_RESTART_MASTER="1"
         __install "${MCONF_PREFIX}/pki/minion/minion.pub" "${MCONF_PREFIX}/pki/master/minions/$(get_minion_id)"
         __install "${MCONF_PREFIX}/pki/master/master.pub" "${MCONF_PREFIX}/pki/minion/minion_master.pub"
     fi
@@ -2183,6 +2187,7 @@ gen_salt_keys() {
         if [ ! -e "${CONF_PREFIX}/pki/master/master.pub" ];then
             bs_log "Generating salt minion key"
             "${SALT_MS}/bin/salt-key" -c "${CONF_PREFIX}" --gen-keys=master --gen-keys-dir=${CONF_PREFIX}/pki/master
+            BS_ASSOCIATION_RESTART_MASTER="1"
         fi
     fi
     # in saltcloude mode, keys are already providen
@@ -2190,6 +2195,7 @@ gen_salt_keys() {
         if [ "x${IS_SALT_MINION}" != "x" ];then
             if [ ! -e "${CONF_PREFIX}/pki/minion/minion.pub" ];then
                 bs_log "Generating salt minion key"
+                BS_ASSOCIATION_RESTART_MINION="1"
                 "${SALT_MS}/bin/salt-key" -c "${CONF_PREFIX}" --gen-keys=minion --gen-keys-dir=${CONF_PREFIX}/pki/minion
             fi
         fi
@@ -2199,6 +2205,8 @@ gen_salt_keys() {
        && [ -e "${CONF_PREFIX}/pki/minion/minion.pub" ];then
         __install "${CONF_PREFIX}/pki/minion/minion.pub" "${CONF_PREFIX}/pki/master/minions/$(get_minion_id)"
         __install "${CONF_PREFIX}/pki/master/master.pub" "${CONF_PREFIX}/pki/minion/minion_master.pub"
+        BS_ASSOCIATION_RESTART_MASTER="1"
+        BS_ASSOCIATION_RESTART_MINION="1"
     fi
 }
 
@@ -2526,8 +2534,15 @@ make_association() {
     #    cat /var/log/salt/salt-minion
          set +x
     fi
+    if [ "x${BS_ASSOCIATION_RESTART_MASTER}" != "x" ];then
+        restart_local_masters
+        sleep 10
+    fi
+    if [ "x${BS_ASSOCIATION_RESTART_MINION}" != "x" ];then
+        restart_local_minions
+    fi
     if [ "x$(master_processes)" = "x0" ] && [ "x${IS_SALT_MASTER}" != "x" ];then
-        restart_local_master
+        restart_local_masters
     fi
     if [ "x$(minion_processes)" = "x0" ];then
         restart_local_minions
@@ -2665,8 +2680,16 @@ make_mastersalt_association() {
                 fi
             fi
         fi
+
         debug_msg "Forcing mastersalt minion restart"
         restart_local_mastersalt_minions
+        if [ "x${BS_MS_ASSOCIATION_RESTART_MASTER}" != "x" ];then
+            restart_local_mastersalt_masters
+            sleep 10
+        fi
+        if [ "x${BS_MS_ASSOCIATION_RESTART_MINION}" != "x" ];then
+            restart_local_mastersalt_minions
+        fi
         gen_mastersalt_keys
         mastersalt_master_connectivity_check
         bs_log "Waiting for mastersalt minion key hand-shake"
