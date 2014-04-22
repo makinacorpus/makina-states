@@ -12,17 +12,43 @@ burp-svc:
 
 {% for client, cdata in data['clients'].items() %}
 {% set scdata = salt['mc_utils.json_dump'](cdata) %}
-{{client}}-install-configuration:
+
+{{client}}-install-burp-configuration:
+  file.managed:
+    - name: /etc/burp/clients/{{client}}/sync.sh
+    - mode: 0755
+    - user: root
+    - group: root
+    - contents: |
+            {{'#'}}!/usr/bin/env bash
+            {% for dir in ['burp', 'default', 'init.d', 'cron.d'] -%}rsync -azv /etc/burp/clients/{{client}}/etc/{{dir}}/ {{client}}:/etc/{{dir}}/ &&\
+            {% endfor -%}
+            /bin/true
+            {% if not cdata.activated -%}
+            ssh {{client}} rm -f /etc/cron.d/burp
+            {% endif %}
+            {#
+            ssh {{client}} update-rc.d -f burp-client remove &&
+            ssh {{client}} /etc/init.d/burp-client stop
+            {% else -%}
+            ssh {{client}} update-rc.d -f burp-client defaults 99 &&\
+            ssh {{client}} /etc/init.d/burp-client reload
+            {% endif %}#}
   cmd.run:
+    - name: /etc/burp/clients/{{client}}/sync.sh
     - watch:
       - service: burp-svc
+      - file: {{client}}-install-burp-configuration
     - watch_in:
       - mc_proxy: burp-post-restart-hook
-    - name: |
-            {% for dir in ['burp', 'default', 'init.d', 'cron.d'] -%}
-            rsync -azv /etc/burp/clients/{{client}}/etc/{{dir}}/ {{client}}:/etc/{{dir}}/ &&
-            {%- endfor %}
-            ssh {{client}} update-rc.d -f burp-client defaults 99 &&
-            ssh {{client}} /etc/init.d/burp-client restart
-#}
 {% endfor %}
+
+{# this is a cronjob which run burp and not an daemon
+burp-client-svc:
+  service.enabled:
+    - name:
+      - burp-client
+    - reload: True
+    - watch_in:
+      - mc_proxy: burp-post-restart-hook
+#}

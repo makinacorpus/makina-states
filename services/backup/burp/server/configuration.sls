@@ -57,6 +57,17 @@ burp-copy-server-cert:
     - watch_in:
       - mc_proxy: burp-post-conf-hook
 
+{#
+burp-copy-server-client:
+  file.copy:
+    - name: /usr/sbin/burp-client
+    - source: /usr/sbin/burp
+    - watch:
+      - mc_proxy: burp-pre-conf-hook
+    - watch_in:
+      - mc_proxy: burp-post-conf-hook
+#}
+
 burp-copy-ca-crt:
   file.copy:
     - name: {{ssdata.ssl_cert_ca}}
@@ -75,30 +86,30 @@ burp-copy-server-key:
     - watch_in:
       - mc_proxy: burp-post-conf-hook
 
-burp-ser-remove-packaging:
-  cmd.run:
-    - onlyif: test -f /etc/burp/burp.conf
-    - name: |
-            rm -f /etc/burp/burp.conf
-            ln -s /etc/burp/burp-server.conf /etc/burp/burp.conf
-    - watch:
-      - mc_proxy: burp-pre-conf-hook
-    - watch_in:
-      - mc_proxy: burp-post-conf-hook
-  file.absent:
-    - names:
-      - /etc/init.d/burp
-    - watch:
-      - mc_proxy: burp-pre-conf-hook
-    - watch_in:
-      - mc_proxy: burp-post-conf-hook
-  service.dead:
-    - name: burp
-    - watch:
-      - mc_proxy: burp-pre-conf-hook
-    - watch_in:
-      - mc_proxy: burp-post-conf-hook
-
+#burp-ser-remove-packaging:
+#  cmd.run:
+#    - unless: test -h /etc/burp/burp.conf
+#    - name: |
+#            rm -f /etc/burp/burp.conf
+#            ln -s /etc/burp/burp-server.conf /etc/burp/burp.conf
+#    - watch:
+#      - mc_proxy: burp-pre-conf-hook
+#    - watch_in:
+#      - mc_proxy: burp-post-conf-hook
+#  file.absent:
+#    - names:
+#      - /etc/init.d/burp
+#    - watch:
+#      - mc_proxy: burp-pre-conf-hook
+#    - watch_in:
+#      - mc_proxy: burp-post-conf-hook
+#  service.dead:
+#    - name: burp
+#    - watch:
+#      - mc_proxy: burp-pre-conf-hook
+#    - watch_in:
+#      - mc_proxy: burp-post-conf-hook
+#
 etc-burp-CA:
   file.directory:
     - names:
@@ -181,6 +192,7 @@ burp-copy-{{client}}-ca-crt:
     - source: /etc/burp/CA/CA_{{ssdata.ca_name}}.crt
     - watch:
       - mc_proxy: burp-pre-conf-hook
+      - file: etc-burp-burp-client.{{client}}-confdir
     - watch_in:
       - mc_proxy: burp-post-conf-hook
 
@@ -191,6 +203,7 @@ burp-copy-{{client}}-server-cert:
     - watch:
       - mc_proxy: burp-pre-conf-hook
       - cmd: etc-burp-{{client}}-ca-gen
+      - file: etc-burp-burp-client.{{client}}-confdir
     - watch_in:
       - mc_proxy: burp-post-conf-hook
 
@@ -200,6 +213,7 @@ burp-copy-{{client}}-server-key:
     - source: /etc/burp/CA/{{cdata.cname}}.key
     - watch:
       - mc_proxy: burp-pre-conf-hook
+      - file: etc-burp-burp-client.{{client}}-confdir
     - watch_in:
       - mc_proxy: burp-post-conf-hook
 
@@ -215,6 +229,7 @@ burp-{{client}}-cronjob:
     - mode: 755
     - watch:
       - mc_proxy: burp-pre-conf-hook
+      - file: etc-burp-burp-client.{{client}}-confdir
     - watch_in:
       - mc_proxy: burp-post-conf-hook
 {% endfor %}

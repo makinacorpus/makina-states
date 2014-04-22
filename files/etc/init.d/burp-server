@@ -89,19 +89,23 @@ do_stop()
 # Function that sends a SIGHUP to the daemon/service
 #
 do_reload() {
-	#
-	# If the daemon can reload its configuration without
-	# restarting (for example, when it is sent a SIGHUP),
-	# then implement that here.
-	#
-	# signal 1 is SIGHUP
-    if [ "x$(start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --test > /dev/null)" = "x0" ];then
+    #
+    # If the daemon can reload its configuration without
+    # restarting (for example, when it is sent a SIGHUP),
+    # then implement that here.
+    #
+    # signal 1 is SIGHUP
+    oldpid=$(cat $PIDFILE 2>/dev/null | head -n1)
+    if [ "x${oldpid}" != "x" ] && [ -e "/proc/${oldpid}" ] && [ "x$(readlink /proc/${oldpid}/exe 2>/dev/null)" = "x$DAEMON" ];then
+        start-stop-daemon --stop --signal 1 --quiet --pidfile $PIDFILE --name $NAME
+        if [ "x$?" = "x0" ] || [ "$?" = "x1" ];then
+            /bin/true
+        fi
+    else
         do_start
         return $?
-    else
-        start-stop-daemon --stop --signal 1 --quiet --pidfile $PIDFILE --name $NAME
     fi
-	return 0
+    return 0
 }
 
 case "$1" in

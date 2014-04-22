@@ -10,6 +10,7 @@ opensshd-pkgs:
     - pkgs:
       - {{ openssh.pkg_server }}
 
+{% if openssh.get('banner', '') %}
 sshd_banner:
   file.managed:
     - name: {{ openssh.banner }}
@@ -17,6 +18,7 @@ sshd_banner:
     - template: jinja
     - watch_in:
       - service: openssh-svc
+{% endif %}
 
 sshd_config:
   file.managed:

@@ -18,3 +18,5 @@
 {% endfor -%}
 {%- endmacro %}
 {{get_config('password', 'abcdef')}}
+{{get_config('dedup_group', 'xp')}}
+{{get_config('restore_client', grains['id'])}}
