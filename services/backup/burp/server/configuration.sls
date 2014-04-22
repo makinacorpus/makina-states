@@ -46,6 +46,7 @@ etc-burp-burp-server.conf-{{f}}:
       - mc_proxy: burp-pre-conf-hook
     - watch_in:
       - mc_proxy: burp-post-conf-hook
+      - file: burp-copy-server-cert
 {% endfor %}
 
 burp-copy-server-cert:
@@ -152,6 +153,8 @@ etc-burp-burp-client.{{client}}-conf-{{f}}:
       - mc_proxy: burp-pre-conf-hook
     - watch_in:
       - mc_proxy: burp-post-conf-hook
+      - file: burp-copy-{{client}}-server-cert
+      - file: burp-copy-{{client}}-server-key
 {% endfor %}
 
 etc-burp-burp-client.{{client}}-confdir:
@@ -170,6 +173,8 @@ etc-burp-burp-client.{{client}}-confdir:
       - mc_proxy: burp-pre-conf-hook
     - watch_in:
       - mc_proxy: burp-post-conf-hook
+      - file: burp-copy-{{client}}-server-cert
+      - file: burp-copy-{{client}}-server-key
 
 etc-burp-{{client}}-ca-gen:
   cmd.run:
@@ -183,8 +188,8 @@ etc-burp-{{client}}-ca-gen:
       - cmd: etc-burp-ca-gen
     - watch_in:
       - mc_proxy: burp-post-conf-hook
-      - file: burp-copy-server-cert
-      - file: burp-copy-server-key
+      - file: burp-copy-{{client}}-server-cert
+      - file: burp-copy-{{client}}-server-key
 
 burp-copy-{{client}}-ca-crt:
   file.copy:

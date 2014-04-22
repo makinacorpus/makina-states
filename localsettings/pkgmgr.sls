@@ -59,6 +59,41 @@ apt-sources-list:
     - pkg_data: |
                 {{ salt['mc_utils.json_dump'](pkg_data) }}
 
+{% if grains['os'] in ['Debian'] %}
+{% if pkgssettings.ddist not in ['sid'] %}
+apt-sources-pref-sid:
+  file.managed:
+    - watch_in:
+      - service: apt-update-after
+    - name: {{ locs.conf_dir }}/apt/preferences.d/sid.pref
+    - mode: 755
+    - template: jinja
+    - makedirs: true
+    - contents: |
+                Package: *
+                Pin: release a=stable
+                Pin-Priority: 700
+
+                Package: *
+                Pin: release a=testing
+                Pin-Priority: 650
+
+                Package: *
+                Pin: release a=unstable
+                Pin-Priority: 600
+
+apt-sources-list-sid:
+  file.managed:
+    - watch_in:
+      - service: apt-update-after
+    - name: {{ locs.conf_dir }}/apt/sources.list.d/sid.list
+    - mode: 755
+    - template: jinja
+    - makedirs: true
+    - contents: deb {{pkgssettings.debian_mirror}} sid main contrib non-free
+{% endif %}
+{% endif %}
+
 apt-update-after:
   cmd.watch:
     - name: apt-get update
