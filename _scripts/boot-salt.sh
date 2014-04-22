@@ -2953,9 +2953,24 @@ highstate_in_salt_env() {
 
 run_highstates() {
     if [ "x${IS_SALT}" != "x" ];then
+        if [ "x${BS_ASSOCIATION_RESTART_MASTER}" != "x" ];then
+            restart_local_masters
+            sleep 10
+        fi
+        if [ "x${BS_ASSOCIATION_RESTART_MINION}" != "x" ];then
+            restart_local_minions
+        fi
         highstate_in_salt_env
     fi
     if [ "x${IS_MASTERSALT}" != "x" ];then
+        if [ "x${BS_MS_ASSOCIATION_RESTART_MASTER}" != "x" ];then
+            restart_local_mastersalt_masters
+            sleep 10
+        fi
+        if [ "x${BS_MS_ASSOCIATION_RESTART_MINION}" != "x" ];then
+            restart_local_mastersalt_minions
+        fi
+
         highstate_in_mastersalt_env
     fi
 }
