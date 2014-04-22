@@ -95,7 +95,12 @@ do_reload() {
 	# then implement that here.
 	#
 	# signal 1 is SIGHUP
-	start-stop-daemon --stop --signal 1 --quiet --pidfile $PIDFILE --name $NAME
+    if [ "x$(start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --test > /dev/null)" = "x0" ];then
+        do_start
+        return $?
+    else
+        start-stop-daemon --stop --signal 1 --quiet --pidfile $PIDFILE --name $NAME
+    fi
 	return 0
 }
 

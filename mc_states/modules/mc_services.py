@@ -61,7 +61,8 @@ def registry():
             'mc_macros.construct_registry_configuration'
         ](__name, defaults={
             'backup.bacula-fd': {'active': False},
-            'backup.rdiff-backup': {'active': False},
+            'backup.burp.server': {'active': False},
+            'backup.burp.client': {'active': False},
             'backup.dbsmartbackup': {'active': False},
             'log.rsyslog': {'active': _rsyslogEn(__grains__)},
             'base.ntp': {'active': _ntpEn(__salt__)},
