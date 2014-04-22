@@ -2535,14 +2535,14 @@ make_association() {
          set +x
     fi
     if [ "x${BS_ASSOCIATION_RESTART_MASTER}" != "x" ];then
-        restart_local_master
+        restart_local_masters
         sleep 10
     fi
     if [ "x${BS_ASSOCIATION_RESTART_MINION}" != "x" ];then
         restart_local_minions
     fi
     if [ "x$(master_processes)" = "x0" ] && [ "x${IS_SALT_MASTER}" != "x" ];then
-        restart_local_master
+        restart_local_masters
     fi
     if [ "x$(minion_processes)" = "x0" ];then
         restart_local_minions
