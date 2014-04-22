@@ -156,7 +156,7 @@ def settings():
             for p in ['SYSLOG', 'SSH', 'SNMP', 'PING',
                       'BURP', 'MYSQL', 'POSTGRESQL', 'FTP']:
                 default = 'all'
-                if p in ['SYSLOG']:
+                if p in ['SYSLOG', 'BURP']:
                     default = 'fw:127.0.0.1'
                 data['default_params'].setdefault(
                     'RESTRICTED_{0}'.format(p), default)
