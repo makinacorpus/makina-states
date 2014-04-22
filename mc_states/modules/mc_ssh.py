@@ -86,14 +86,14 @@ def settings():
                 'pkg_client': 'openssh-client',
                 'service': 'ssh',
                 'sshd_config': '/etc/ssh/sshd_config',
-                'banner': '/etc/ssh/banner',
+                #'banner': '/etc/ssh/banner',
             },
             'RedHat': {
                 'server': 'openssh-server',
                 'client': 'openssh',
                 'service': 'sshd',
                 'sshd_config': '/etc/ssh/sshd_config',
-                'banner': '/etc/ssh/banner',
+                #'banner': '/etc/ssh/banner',
             },
         })
         data.update({
@@ -117,7 +117,7 @@ def settings():
                     'X11Forwarding': 'yes',
                     'PrintMotd': 'no',
                     'UsePrivilegeSeparation': 'sandbox',
-                    'Banner': '/etc/ssh/banner',
+                    # 'Banner': '/etc/ssh/banner',
                     'UsePAM': 'yes',
                     'PermitRootLogin': 'without-password',
                 }
