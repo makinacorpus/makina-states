@@ -90,6 +90,7 @@ def settings():
         #   and (grains.get('lsb_distrib_codename') not in ['precise'])):
 
         sw_ver = guess_shorewall_ver()
+        shwIfformat = '?FORMAT 2'
         if '4.5' >= sw_ver:
             shwIfformat = '?FORMAT 2'
         if '4.5' > sw_ver > '4.1':
@@ -182,7 +183,7 @@ def settings():
             if True in [a[0].startswith('tun') for a in ifaces]:
                 data['have_vpn'] = True  # must stay none if not found
 
-        opts_45 = ',sourceroute0'
+        opts_45 = ',sourceroute=0'
         bridged_opts = 'routeback,bridge,tcpflags,nosmurfs,logmartians'
         phy_opts = ('tcpflags,dhcp,nosmurfs,routefilter,'
                     'logmartians')

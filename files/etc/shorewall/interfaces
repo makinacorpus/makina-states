@@ -20,10 +20,10 @@
 #ZONE	INTERFACE	OPTIONS
 {% for zone, interfaces in shwdata['interfaces'].items() %}
 {% for data in interfaces %}
-{% if shwdata.sw_ver < '4.5' %}
-{% set br = '' %}
-{% else %}
+{% if '4.1' < shwdata.sw_ver < '4.5' %}
 {% set br = data.get('broadcast', '-') %}
+{% else %}
+{% set br = '' %}
 {% endif %}
 {{ zone }} {{ data['interface'] }} {{ br }} {{ data.get('options', '-') }}
 {% endfor %}
