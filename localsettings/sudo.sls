@@ -27,5 +27,5 @@ sudoers:
 etc-sudoersd-dir:
   file.directory:
     - name: /etc/sudoers.d
-    - mode: 444
+    - mode: 755
 
