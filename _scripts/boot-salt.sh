@@ -1566,6 +1566,16 @@ handle_upgrades() {
     # stub for now
 }
 
+service_() {
+    service="${1}"
+    shift
+    if [ -e "$(which service 2>/dev/null)" ];then
+        service "${service}" "${@}"
+    else
+        /etc/init.d/${service} "${@}"
+    fi
+}
+
 cleanup_previous_venv() {
     if [ -e "${1}" ];then
         old_d="${PWD}"
@@ -2356,33 +2366,33 @@ killall_local_minions() {
 
 restart_local_mastersalt_masters() {
     if [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
-        service mastersalt-master stop
+        service_ mastersalt-master stop
         killall_local_mastersalt_masters
-        service mastersalt-master restart
+        service_ mastersalt-master restart
     fi
 }
 
 restart_local_mastersalt_minions() {
     if [ "x${IS_MASTERSALT_MINION}" != "x" ];then
-        service mastersalt-minion stop
+        service_ mastersalt-minion stop
         killall_local_mastersalt_minions
-        service mastersalt-minion restart
+        service_ mastersalt-minion restart
     fi
 }
 
 restart_local_masters() {
     if [ "x${IS_SALT_MASTER}" != "x" ];then
-        service salt-master stop
+        service_ salt-master stop
         killall_local_masters
-        service salt-master restart
+        service_ salt-master restart
     fi
 }
 
 restart_local_minions() {
     if [ "x${IS_SALT_MINION}" != "x" ];then
-        service salt-minion stop
+        service_ salt-minion stop
         killall_local_minions
-        service salt-minion restart
+        service_ salt-minion restart
     fi
 }
 
@@ -2543,7 +2553,7 @@ make_association() {
     debug_msg "ack"
     if [ "x${SALT_NODETYPE}" = "xtravis" ];then
         set -x
-        service salt-minion restart
+        service_ salt-minion restart
     #   . /etc/profile
     #   for i in `seq 4`;do
     #       #( salt-minion -lall )&
