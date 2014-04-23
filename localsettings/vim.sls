@@ -3,8 +3,10 @@
 # see:
 #   - makina-states/doc/ref/formulaes/localsettings/vim.rst
 #}
-{% set ugs = salt['mc_usergroup.settings']() %}
+
 {{ salt['mc_macros.register']('localsettings', 'vim') }}
+{% if salt['mc_controllers.mastersalt_mode']() %}
+{% set ugs = salt['mc_usergroup.settings']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 include:
   - makina-states.localsettings.users
@@ -39,3 +41,4 @@ vimrc_configs-append-{{ i }}-1:
     - name : {{ home }}/.vimrc
     - text: syntax on
 {% endfor %}
+{% endif %}

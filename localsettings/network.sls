@@ -5,6 +5,8 @@
 #}
 {% set mcnet = salt['mc_network.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'network') }}
+{% if salt['mc_controllers.mastersalt_mode']() %}
+
 {%- set locs = salt['mc_locations.settings']() %}
 {%- if mcnet.networkManaged %}
 {%- if grains['os_family'] in ['Debian'] %}
@@ -35,3 +37,5 @@ network-services:
 network-last-hook:
   mc_proxy.hook:
     - order: last
+
+{% endif %}

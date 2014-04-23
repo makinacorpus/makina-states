@@ -9,6 +9,7 @@ mc_services / servives registries & functions
 '''
 
 # Import salt libs
+import os
 import mc_states.utils
 
 __name = 'services'
@@ -57,17 +58,22 @@ def settings():
 def registry():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _registry():
-        return __salt__[
+        # only some services will be fully done  on mastersalt side if any
+        sshen = True
+        ntpen = _ntpEn(__salt__)
+        binden = _bindEn(__salt__)
+        rsyslogen = _rsyslogEn(__grains__)
+        data = __salt__[
             'mc_macros.construct_registry_configuration'
         ](__name, defaults={
             'backup.bacula-fd': {'active': False},
             'backup.burp.server': {'active': False},
             'backup.burp.client': {'active': False},
             'backup.dbsmartbackup': {'active': False},
-            'log.rsyslog': {'active': _rsyslogEn(__grains__)},
-            'base.ntp': {'active': _ntpEn(__salt__)},
-            'base.ssh': {'active': True},
-            'dns.bind': {'active': _bindEn(__salt__)},
+            'log.rsyslog': {'force': True, 'active': rsyslogen},
+            'base.ntp': {'force': True, 'active': ntpen},
+            'base.ssh': {'force': True, 'active': sshen},
+            'dns.bind': {'force': True, 'active': binden},
             'db.mysql': {'active': False},
             'db.postgresql': {'active': False},
             'firewall.fail2ban': {'active': False},
@@ -102,6 +108,7 @@ def registry():
             'salt_master': {'active': False},
             'salt': {'active': False},
         })
+        return data
     return _registry()
 
 

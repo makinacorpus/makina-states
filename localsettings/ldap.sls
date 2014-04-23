@@ -5,6 +5,7 @@
 #}
 
 {{ salt['mc_macros.register']('localsettings', 'ldap') }}
+{% if salt['mc_controllers.mastersalt_mode']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 
 {% set ydata = salt['mc_utils.json_dump'](salt['mc_ldap.settings']()) %}
@@ -131,4 +132,5 @@ ldap-cacerts-cert:
     - mode: '0644'
     - template: jinja
     - source: salt://makina-states/files{{ locs.conf_dir }}/ssl/cacerts/cacert.pem
+{% endif %}
 # vim: set nofoldenable:

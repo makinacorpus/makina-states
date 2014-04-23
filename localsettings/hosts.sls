@@ -5,6 +5,8 @@
 #}
 {% set mcn = salt['mc_network.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'hosts') }}
+{% if salt['mc_controllers.mastersalt_mode']() %}
+
 {%- set locs = salt['mc_locations.settings']() %}
 {%- set hosts_list = mcn.hosts_list %}
 {%- if hosts_list %}
@@ -66,3 +68,4 @@ makina-append-etc-hosts-management:
     - user: root
     - unless: test "x$(cat /etc/hostname)" = "x{{mcn.hostname}}"
 
+{% endif %}

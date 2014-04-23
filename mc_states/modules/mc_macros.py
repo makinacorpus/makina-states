@@ -45,7 +45,8 @@ def registry_kind_set(kind, value):
 def is_item_active(registry_name,
                    item,
                    default_status=False,
-                   grains_pref=None):
+                   grains_pref=None,
+                   force=False):
     '''Look in pillar/grains/localconfig for registry
     activation status
     '''
@@ -53,9 +54,13 @@ def is_item_active(registry_name,
         grains_pref = 'makina-states.{0}'.format(registry_name)
     local_reg = get_local_registry(registry_name)
     config_entry = grains_pref + "." + item
-    return __salt__['mc_utils.get'](config_entry,
-                                    default_status,
-                                    local_registry=local_reg)
+    if force:
+        val = default_status
+    else:
+        val =  __salt__['mc_utils.get'](config_entry,
+                                        default_status,
+                                        local_registry=local_reg)
+    return val
 
 
 def load_kind_registries(kind):
@@ -243,7 +248,8 @@ def get_registry(registry_configuration):
         if isinstance(data, dict):
             activation_status = is_item_active(
                 registry['kind'], item,
-                default_status=data.get('active', activation_status))
+                default_status=data.get('active', activation_status),
+                force=data.get('force', False))
             if activation_status is not _default_activation_status:
                 if activation_status:
                     registry['actives'][item] = data

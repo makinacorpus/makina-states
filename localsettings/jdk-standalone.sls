@@ -19,6 +19,7 @@ jdk-{{ ver }}-pkgs{{suf}}:
 {% endmacro %}
 {% macro do(full=False) %}
 {{ salt['mc_macros.register']('localsettings', 'jdk') }}
+{% if salt['mc_controllers.mastersalt_mode']() %}
 {% if grains['os_family'] in ['Debian'] %}
 {% set dist = salt['mc_pkgs.settings']().udist %}
 {% endif %}
@@ -48,6 +49,7 @@ java-{{ default_ver }}-install:
       - pkg: jdk-{{ default_ver }}-pkgs
     - watch_in:
       - mc_proxy: makina-states-jdk_last
+{% endif %}
 {% endif %}
 {% endmacro %}
 {{ do(full=False)}}

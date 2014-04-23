@@ -2,7 +2,6 @@
 {% set pkgssettings = salt['mc_pkgs.settings']() %}
 {% set settings = salt['mc_bind.settings']() %}
 {% set yameld_data = salt['mc_utils.json_dump'](settings) %}
-
 {% macro switch_dns(suf='tmp',
                     require=None,
                     require_in=None,
@@ -166,6 +165,7 @@ bind-pkgs:
       - mc_proxy: bind-post-install
 
 {% endif %}
+{% if salt['mc_controllers.mastersalt_mode']() %}
 bind-dirs:
   file.directory:
     - names:
@@ -313,6 +313,7 @@ bind-deactivate-dnsmask:
       - service: bind-service-reload
       - service: bind-service-restart
 {% endif %}
+{% endif %}
 
 bind-service-restart:
   service.running:
@@ -334,11 +335,14 @@ bind-service-reload:
       - mc_proxy: bind-post-reload
 
 {# switch back to our shiny new dns server #}
+{% if salt['mc_controllers.mastersalt_mode']() %}
 {{ switch_dns(
   suf='postbindrestart',
   require_in=['mc_proxy: bind-post-end'],
   require=['mc_proxy: bind-post-restart'],
   dnsservers=['127.0.0.1'] + settings.default_dnses) }}
+{% endif %}
+{% endif %}
 {% endif %}
 {% endmacro %}
 {{ do(full=False) }}

@@ -1,3 +1,4 @@
+{% if salt['mc_controllers.mastersalt_mode']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 {% set openssh = salt['mc_ssh.settings']() %}
 openssh-pkgs:
@@ -16,3 +17,4 @@ ssh_config:
     - context:
       settings: |
                 {{salt['mc_utils.json_dump'](salt['mc_ssh.settings']().client)}}
+{% endif %}

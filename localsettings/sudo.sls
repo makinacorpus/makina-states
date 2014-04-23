@@ -15,6 +15,7 @@ sudo-pkgs:
     - require_in:
       - mc_proxy: users-ready-hook
 
+{% if salt['mc_controllers.mastersalt_mode']() %}
 sudoers:
    file.managed:
     - name: {{ locs.conf_dir }}/sudoers
@@ -23,9 +24,9 @@ sudoers:
     - template: jinja
     - require_in:
       - mc_proxy: users-ready-hook
+{% endif %}
 
 etc-sudoersd-dir:
   file.directory:
     - name: /etc/sudoers.d
     - mode: 755
-
