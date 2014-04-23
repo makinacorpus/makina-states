@@ -15,6 +15,12 @@
 {%- set ubuntu_mirror = pkgssettings.ubuntu_mirror %}
 {%- set dcomps = pkgssettings.dcomps %}
 {%- set ucomps = pkgssettings.ucomps %}
+
+{% if pkgssettings.ddist not in ['sid'] and grains.get('osrelease', '1')[0] <='5' %}
+{% set upt = 'volatile' %}
+{% else %}
+{% set upt = 'updates' %}
+{% endif %}
 {%- set pkg_data = salt['grains.filter_by']({
   'default': {'mirrors': []},
   'Debian': {'use-backports': True, 'mirrors': [
@@ -37,6 +43,8 @@
     {'mirror': 'http://extras.ubuntu.com/ubuntu',
      'dists': [{'name': udist, 'comps': 'main'}]},
     ]} }, grain='os') %}
+
+
 {%- set pillar_data = salt['pillar.get']('makina-states.apt.settings', {}) %}
 {%- set pkg_data=salt['mc_utils.dictupdate'](pkg_data, pillar_data) %}
 {%- if bp %}
@@ -50,6 +58,24 @@
     'dists': [{'name': udist+'-backports', 'comps': ucomps}]}
     ]}, grain='os'))  %}
 {%- endif %}
+
+{% if grains['os'] in ['Debian'] %}
+{% if pkgssettings.ddist not in ['sid'] and grains.get('osrelease', '1')[0] <='5' %}
+{% do pkg_data['mirrors'][0]['dists'].pop(1) %}
+{% do pkg_data['mirrors'].pop(1) %}
+{% do pkg_data['mirrors'].pop(1) %}
+{%- do pkg_data['mirrors'].extend(
+  salt['grains.filter_by']({
+    'Debian': [
+        {'mirror': 'http://archive.debian.org/debian-security',
+        'dists': [{'name': ddist+'/updates', 'comps': dcomps}]},
+        {'mirror': 'http://archive.debian.org/debian-volatile',
+        'dists': [{'name': ddist+'/volatile', 'comps': dcomps}]},
+        {'mirror': 'http://archive.debian.org/backports.org',
+        'dists': [{'name': ddist+'-backports', 'comps': dcomps}]}
+    ]}))  %}
+{% endif%}
+{% endif%}
 apt-sources-list:
   file.managed:
     - name: {{ locs.conf_dir }}/apt/sources.list
@@ -60,7 +86,7 @@ apt-sources-list:
                 {{ salt['mc_utils.json_dump'](pkg_data) }}
 
 {% if grains['os'] in ['Debian'] %}
-{% if pkgssettings.ddist not in ['sid'] %}
+{% if pkgssettings.ddist not in ['sid'] and grains.get('osrelease', '1')[0] > '5' %}
 apt-sources-pref-sid:
   file.managed:
     - watch_in:

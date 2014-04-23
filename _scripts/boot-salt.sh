@@ -63,7 +63,10 @@ set_progs() {
     fi
     GETENT="$(which getent 2>/dev/null)"
     PERL="$(which perl 2>/dev/null)"
-    PYTHON="$(which python 2>/dev/null)"
+    PYTHON="$(which python2.7 2>/dev/null)"
+    if [ "x${PYTHON}" = "x" ];then
+        PYTHON="$(which python 2>/dev/null)"
+    fi
     HOST="$(which host 2>/dev/null)"
     DIG="$(which dig 2>/dev/null)"
     NSLOOKUP="$(which nslookup 2>/dev/null)"
@@ -271,6 +274,18 @@ detect_os() {
         SALT_BOOT_OS="debian"
         # Debian GNU/Linux 7 (wheezy) -> wheezy
         DISTRIB_CODENAME="$(echo ${OS_RELEASE_PRETTY_NAME} | "${SED}" -e "s/.*(\\(.*\\)).*/\1/g")"
+    fi
+    DEBIAN_VERSION=$(cat /etc/debian_version 2>/dev/null)
+    if [ -e "${CONF_ROOT}/debian_version" ];then
+        IS_DEBIAN="y"
+        SALT_BOOT_OS="debian"
+        # Debian GNU/Linux 7 (wheezy) -> wheezy
+        if grep -q lenny /etc/apt/sources.list 2 >/dev/null;then
+            DISTRIB_CODENAME="lenny"
+        fi
+    fi
+    if [ "x${DISTRIB_CODENAME}" = "xlenny" ];then
+        export CFLAGS="-I/usr/local/include" LDFLAGS="-L/usr/local/lib"
     fi
     if [ "x${IS_UBUNTU}" != "x" ];then
         SALT_BOOT_OS="ubuntu"
@@ -503,10 +518,13 @@ set_vars() {
     SALT_REBOOTSTRAP="${SALT_REBOOTSTRAP:-${VENV_REBOOTSTRAP}}"
     BASE_PACKAGES=""
     BASE_PACKAGES="$BASE_PACKAGES build-essential m4 libtool pkg-config autoconf gettext bzip2"
-    BASE_PACKAGES="$BASE_PACKAGES groff man-db automake libsigc++-2.0-dev tcl8.5 python-dev python2.7 python2.7-dev"
-    BASE_PACKAGES="$BASE_PACKAGES swig libssl-dev libyaml-dev debconf-utils python-virtualenv"
+    BASE_PACKAGES="$BASE_PACKAGES groff man-db automake libsigc++-2.0-dev tcl8.5 python-dev"
+    if [ "x${DISTRIB_CODENAME}" != "xlenny" ];then
+        BASE_PACKAGES="$BASE_PACKAGES libyaml-dev python2.7 python2.7-dev"
+        BASE_PACKAGES="$BASE_PACKAGES libzmq3-dev"
+    fi
+    BASE_PACKAGES="$BASE_PACKAGES swig libssl-dev debconf-utils python-virtualenv"
     BASE_PACKAGES="$BASE_PACKAGES vim git rsync"
-    BASE_PACKAGES="$BASE_PACKAGES libzmq3-dev"
     BASE_PACKAGES="$BASE_PACKAGES libgmp3-dev"
     BASE_PACKAGES="$BASE_PACKAGES libffi-dev"
     BRANCH_PILLAR_ID="makina-states.salt.makina-states.rev"
@@ -1131,21 +1149,23 @@ install_prerequisites() {
     fi
     lazy_apt_get_install python-software-properties
     # XXX: only lts package in this ppa
-    if     [ "x$(is_apt_installed libzmq3    )" = "xno" ] \
-        || [ "x$(is_apt_installed libzmq3-dev)" = "xno" ];\
-        then
-        bs_log "Installing ZeroMQ3"
-        setup_backports
-        apt-get remove -y --force-yes libzmq libzmq1 libzmq-dev 1>/dev/null 2>/dev/null
-        apt-get update -qq && lazy_apt_get_install libzmq3-dev
-        ret="${?}"
-        if [ "x${ret}" != "x0" ];then
-            die_ ${ret} "Install of zmq3 failed"
-        fi
-        ret="${?}"
-        teardown_backports && apt-get update
-        if [ "x${ret}" != "x0" ];then
-            die_ ${ret} "Teardown backports failed"
+    if [ "x${DISTRIB_CODENAME}" != "xlenny" ];then
+        if     [ "x$(is_apt_installed libzmq3    )" = "xno" ] \
+            || [ "x$(is_apt_installed libzmq3-dev)" = "xno" ];\
+            then
+            bs_log "Installing ZeroMQ3"
+            setup_backports
+            apt-get remove -y --force-yes libzmq libzmq1 libzmq-dev 1>/dev/null 2>/dev/null
+            apt-get update -qq && lazy_apt_get_install libzmq3-dev
+            ret="${?}"
+            if [ "x${ret}" != "x0" ];then
+                die_ ${ret} "Install of zmq3 failed"
+            fi
+            ret="${?}"
+            teardown_backports && apt-get update
+            if [ "x${ret}" != "x0" ];then
+                die_ ${ret} "Teardown backports failed"
+            fi
         fi
     fi
     for i in ${BASE_PACKAGES};do
@@ -1599,7 +1619,11 @@ local/lib/python*
         || [ ! -e "${VENV_PATH}/include" ] \
         ;then
         bs_log "Creating virtualenv in ${VENV_PATH}"
-        virtualenv --no-site-packages --unzip-setuptools ${VENV_PATH} &&\
+        vargs=""
+        if [ "x${DISTRIB_CODENAME}" = "xlenny" ];then
+            vargs="--python=$(which python2.7)"
+        fi
+        virtualenv $vargs --no-site-packages --unzip-setuptools ${VENV_PATH} &&\
         . ${VENV_PATH}/bin/activate &&\
         easy_install -U setuptools &&\
         deactivate
@@ -1980,7 +2004,7 @@ a\    master_port: ${SALT_MASTER_PORT}
     "${SED}" -i -e "/makina-states.minion_id:/ d" "${SALT_PILLAR}/salt.sls"
     echo "makina-states.minion_id: $(get_minion_id)">>"${SALT_PILLAR}/salt.sls"
     "${SED}" -i -e "s/master:.*/master: $(get_minion_id)/g" "${SALT_PILLAR}/salt_minion.sls"
-    touch "${MCONF_PREFIX}/grains" 
+    touch "${MCONF_PREFIX}/grains"
     "${SED}" -i -e "/^    id:/ d" "${CONF_PREFIX}/grains"
     "${SED}" -i -e "/makina-states.minion_id:/ d" "${CONF_PREFIX}/grains"
     echo "makina-states.minion_id: $(get_minion_id)">>"${CONF_PREFIX}/grains"
@@ -2076,7 +2100,7 @@ a\    publish_port: ${MASTERSALT_MASTER_PUBLISH_PORT}
         "${SED}" -i -e "/^    id:/ d" "${MASTERSALT_PILLAR}/mastersalt.sls"
         "${SED}" -i -e "/makina-states.minion_id:/ d" "${MASTERSALT_PILLAR}/mastersalt.sls"
         echo "makina-states.minion_id: $(mastersalt_get_minion_id)">>"${MASTERSALT_PILLAR}/mastersalt.sls"
-        touch "${MCONF_PREFIX}/grains" 
+        touch "${MCONF_PREFIX}/grains"
         "${SED}" -i -e "/^    id:/ d" "${MCONF_PREFIX}/grains"
         "${SED}" -i -e "/makina-states.minion_id:/ d" "${MCONF_PREFIX}/grains"
         echo "makina-states.minion_id: $(mastersalt_get_minion_id)">>"${MCONF_PREFIX}/grains"
@@ -3905,9 +3929,11 @@ set_dns() {
             bs_log "Resetting hostname file to ${HOST}"
             echo "${HOST}" > /etc/hostname
         fi
-        if [ "x$(domainname)" != "x$(echo "${DOMAINNAME}"|sed -e "s/ //g")" ];then
-            bs_log "Resetting domainname to ${DOMAINNAME}"
-            domainname "${DOMAINNAME}"
+        if [ -e "$(which domainname 2>/dev/null)" ];then
+            if [ "x$(domainname)" != "x$(echo "${DOMAINNAME}"|sed -e "s/ //g")" ];then
+                bs_log "Resetting domainname to ${DOMAINNAME}"
+                domainname "${DOMAINNAME}"
+            fi
         fi
         if [ "x$(hostname)" != "x$(echo "${NICKNAME_FQDN}"|sed -e "s/ //g")" ];then
             bs_log "Resetting hostname to ${NICKNAME_FQDN}"
