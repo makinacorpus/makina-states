@@ -74,6 +74,7 @@ def settings():
             default_install_mode = 'installed'
 
         debian_stable = "wheezy"
+        ddist = debian_stable
         ubuntu_lts = "trusty"
         ubuntu_last = "saucy"
         lts_dist = debian_stable
@@ -81,6 +82,9 @@ def settings():
         if grains['os'] in ['Ubuntu']:
             lts_dist = ubuntu_lts
         if grains['os'] in ['Debian']:
+            ddist = saltmods['mc_utils.get']('lsb_distrib_codename', debian_stable)
+            if not ddist:
+                ddist = debian_stable
             if grains['osrelease'][0] == '4':
                 ddist = debian_stable = "sarge"
                 deb_mirror = 'http://archive.debian.org/debian/'
