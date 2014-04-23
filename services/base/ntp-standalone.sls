@@ -29,8 +29,6 @@ ntpd:
     {%- if grains['os'] in ['Debian', 'Ubuntu'] %}
     - name: ntp
     {%- endif %}
-    - watch:
-      - file: {{ locs.conf_dir }}/ntp.conf
     {% if full %}
       - pkg: ntp-pkgs
     {% endif %}
@@ -43,6 +41,8 @@ ntpd:
     - template: jinja
     - source: salt://makina-states/files/etc/ntp.conf
     - var_lib: {{ locs.var_lib_dir }}
+    - watch_in:
+      - service: ntpd
     {% if full %}
     - require:
       - pkg: ntp-pkgs

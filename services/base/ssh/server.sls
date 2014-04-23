@@ -21,6 +21,8 @@ sshd_banner:
 
 sshd_config:
   file.managed:
+    - watch_in:
+      - service: openssh-svc
     - name: /etc/ssh/sshd_config
     - source: salt://makina-states/files/etc/ssh/sshd_config
     - template: jinja
@@ -34,8 +36,6 @@ sshd_config:
 openssh-svc:
   service.running:
     - enable: True
-    - watch:
-      - file: sshd_config
     {%- if grains['os_family'] == 'Debian' %}
     - name: ssh
     {% else %}
