@@ -280,7 +280,7 @@ detect_os() {
         IS_DEBIAN="y"
         SALT_BOOT_OS="debian"
         # Debian GNU/Linux 7 (wheezy) -> wheezy
-        if grep -q lenny /etc/apt/sources.list 2 >/dev/null;then
+        if grep -q lenny /etc/apt/sources.list 2>/dev/null;then
             DISTRIB_CODENAME="lenny"
         fi
     fi
