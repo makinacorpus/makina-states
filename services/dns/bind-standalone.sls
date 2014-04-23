@@ -162,6 +162,7 @@ include:
 {% set dodns = False %}
 {% endif %}
 
+{% if dodns %}
 {% if full and dodns %}
 bind-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
@@ -344,6 +345,7 @@ bind-service-reload:
   require_in=['mc_proxy: bind-post-end'],
   require=['mc_proxy: bind-post-restart'],
   dnsservers=['127.0.0.1'] + settings.default_dnses) }}
+{% endif %}
 {% endif %}
 {% endmacro %}
 {{ do(full=False) }}
