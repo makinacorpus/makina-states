@@ -91,9 +91,9 @@ def settings():
 
         sw_ver = guess_shorewall_ver()
         shwIfformat = '?FORMAT 2'
-        if '4.5' >= sw_ver:
+        if '4.5.10' >= sw_ver:
             shwIfformat = '?FORMAT 2'
-        if '4.5' > sw_ver > '4.1':
+        if '4.5.10' > sw_ver > '4.1':
             shwIfformat = 'FORMAT 2'
         elif sw_ver <= '4.1':
             shwIfformat = '#?{0}'.format(shwIfformat)
