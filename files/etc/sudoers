@@ -16,7 +16,7 @@ Defaults	secure_path="/srv/salt/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/us
 # Host alias specification
 # User alias specification
 # Cmnd alias specification
-{% if pkgssettings.ddist not in ['sid'] and grains.get('osrelease', '1')[0] <= '5' %}
+{% if grains['os'] in ['Debian'] and pkgssettings.ddist not in ['sid'] and grains.get('osrelease', '1')[0] <= '5' %}
 # User privilege specification
 root	ALL=(ALL) ALL
 
