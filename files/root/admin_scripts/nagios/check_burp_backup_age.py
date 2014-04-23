@@ -4,7 +4,7 @@
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
-#(at your option) any later version.
+# (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -130,7 +130,7 @@ class CheckBurp(object):
         ctime = time.localtime()
         ctime = datetime.datetime(*ctime[:6])
         diff = ctime-btime
-        self.diff_min = diff.seconds/60
+        self.diff_min = int((diff.seconds + (diff.days * 24 * 3600))/60)
         self.diff_human = ('{0} day(s) {1:02d} hour(s) {2:02d} '
                            'minute(s)').format(diff.days,
                                                diff.seconds//3600,
@@ -174,4 +174,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
