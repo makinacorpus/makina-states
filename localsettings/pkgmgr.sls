@@ -3,8 +3,10 @@
 # see:
 #   - makina-states/doc/ref/formulaes/localsettings/pkgmgr.rst
 #}
-{% set pkgssettings = salt['mc_pkgs.settings']() %}
+
 {{ salt['mc_macros.register']('localsettings', 'pkgmgr') }}
+{% if salt['mc_controllers.mastersalt_mode']() %}
+{% set pkgssettings = salt['mc_pkgs.settings']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 {%- if grains['os'] in ['Ubuntu', 'Debian'] %}
 {%- set bp = salt['mc_utils.get']('makina-states.apt.use-backports', True) %}
@@ -125,5 +127,6 @@ apt-update-after:
     - name: apt-get update
     - watch:
       - file: apt-sources-list
+{% endif %}
 {% endif %}
 # vim:set nofoldenable:

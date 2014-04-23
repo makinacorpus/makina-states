@@ -3,6 +3,7 @@
 # see:
 #   - makina-states/doc/ref/formulaes/localsettings/locales.rst
 #}
+{% if salt['mc_controllers.mastersalt_mode']() %}
 {% set locals = salt['mc_locales.settings']() %}
 include:
   - makina-states.localsettings.locales.hooks
@@ -73,3 +74,4 @@ etc-profile.d-0_lang.sh:
                 export LC_MEASUREMENT="{{ default_locale }}"
                 export LC_IDENTIFICATION="{{ default_locale }}"
                 LC_ALL=""
+{% endif %}

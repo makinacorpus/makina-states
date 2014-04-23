@@ -3,6 +3,7 @@
 # see:
 #   - makina-states/doc/ref/formulaes/localsettings/localrc.rst
 #}
+{% if salt['mc_controllers.mastersalt_mode']() %}
 {{ salt['mc_macros.register']('localsettings', 'localrc') }}
 {%- set locs = salt['mc_locations.settings']() %}
 rc-local:
@@ -22,3 +23,4 @@ rc-local-d:
     - group: root
     - defaults:
       conf_dir: {{ locs.conf_dir }}
+{% endif %}

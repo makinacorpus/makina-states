@@ -6,6 +6,7 @@
 
 {% macro do(full=True) %}
 {{ salt['mc_macros.register']('localsettings', 'pkgs') }}
+{% if salt['mc_controllers.mastersalt_mode']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 
 {% if full %}
@@ -171,6 +172,7 @@ salt-pkgs:
     - pkgs:
       - python-apt
       - libgmp3-dev
+{% endif %}
 {% endif %}
 {% endmacro %}
 {{ do(full=False)}}

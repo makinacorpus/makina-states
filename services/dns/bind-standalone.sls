@@ -2,7 +2,6 @@
 {% set pkgssettings = salt['mc_pkgs.settings']() %}
 {% set settings = salt['mc_bind.settings']() %}
 {% set yameld_data = salt['mc_utils.json_dump'](settings) %}
-
 {% macro switch_dns(suf='tmp',
                     require=None,
                     require_in=None,
@@ -152,11 +151,19 @@ signed-{{file}}:
 {% endmacro %}
 
 {% macro do(full=True) %}
-{% if pkgssettings.ddist not in ['sid'] and grains.get('osrelease', '1')[0] > '5' %}
 include:
   - makina-states.services.dns.bind-hooks
 
-{% if full %}
+{% if salt['mc_controllers.mastersalt_mode']() %}
+{% set dodns = True %}
+
+
+{% if grains['os'] in ['Debian'] and pkgssettings.ddist not in ['sid'] and grains.get('osrelease', '1')[0] < '6' %}
+{% set dodns = False %}
+{% endif %}
+
+{% if dodns %}
+{% if full and dodns %}
 bind-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs: {{settings.pkgs}}
@@ -164,8 +171,8 @@ bind-pkgs:
       - mc_proxy: bind-pre-install
     - watch_in:
       - mc_proxy: bind-post-install
-
 {% endif %}
+
 bind-dirs:
   file.directory:
     - names:
@@ -229,7 +236,6 @@ bind_config_{{tp}}:
     - watch_in:
       - mc_proxy: bind-post-conf
 {% endfor %}
-
 
 rndc-key:
   cmd.run:
@@ -339,6 +345,7 @@ bind-service-reload:
   require_in=['mc_proxy: bind-post-end'],
   require=['mc_proxy: bind-post-restart'],
   dnsservers=['127.0.0.1'] + settings.default_dnses) }}
+{% endif %}
 {% endif %}
 {% endmacro %}
 {{ do(full=False) }}

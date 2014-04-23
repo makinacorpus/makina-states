@@ -52,5 +52,6 @@
               exit $ret;
     - user: {{user}}
 {% endmacro %}
-
+{% if salt['mc_controllers.mastersalt_mode']() %}
 {{ user_keys('root') }}
+{% endif %}

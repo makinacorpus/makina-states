@@ -1,3 +1,5 @@
+{% if salt['mc_controllers.mastersalt_mode']() %}
+
 include:
   - makina-states.localsettings.locales.hooks
 
@@ -7,3 +9,4 @@ locales-pkg:
       - locales
     - watch_in:
       - mc_proxy: locales-post-inst
+{% endif %}

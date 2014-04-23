@@ -8,6 +8,7 @@ mc_controllers / controllers related variables
 '''
 
 # Import salt libs
+import os
 import mc_states.utils
 
 __name = 'controllers'
@@ -20,6 +21,29 @@ def metadata():
         return __salt__['mc_macros.metadata'](
             __name, bases=['localsettings'])
     return _metadata()
+
+
+def has_mastersalt():
+    has_mastersalt = False
+    try:
+        with open('/etc/makina-states/mode') as fic:
+            has_mastersalt = 'mastersalt' in fic.read()
+    except Exception:
+        pass
+    if not has_mastersalt:
+        has_mastersalt = os.path.exists('/etc/mastersalt')
+    if not has_mastersalt:
+        has_mastersalt = os.path.exists('/usr/bin/mastersalt')
+    return has_mastersalt
+
+
+def mastersalt_mode():
+    return (
+        (has_mastersalt() 
+         and 'mastersalt' in __salt__['mc_utils.get']('config_dir'))
+        or (not has_mastersalt() 
+            and not 'mastersalt' in __salt__['mc_utils.get']('config_dir')))
+
 
 def settings():
     '''controllers settings registry'''
@@ -36,6 +60,7 @@ def registry():
     '''controllers registry registry'''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _registry():
+        has_m = has_mastersalt()
         return  __salt__[
             'mc_macros.construct_registry_configuration'
         ](__name, defaults={

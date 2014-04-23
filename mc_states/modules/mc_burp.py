@@ -181,8 +181,8 @@ def settings():
                     'notify_failure_script': '/etc/burp/notify_script',
                     'notify_failure_arg': [
                         'sendmail -t',
-                        'To: sysadmin+burp@makinacorpus.com',
-                        'From: burp',
+                        'To: root',
+                        'From: "burp {0}" <root@makina-corpus.com>'.format(grains['id']),
                         'Subject: %b failed: %c %w'],
                     'server_script_pre': None,
                     'server_script_pre_arg': None,

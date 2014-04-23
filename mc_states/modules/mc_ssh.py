@@ -80,6 +80,7 @@ def settings():
     def _settings():
         pillar = __pillar__
         g = 'sshusers'
+        grains = __grains__
         data = __salt__['grains.filter_by']({
             'Debian': {
                 'pkg_server': 'openssh-server',
@@ -96,6 +97,13 @@ def settings():
                 #'banner': '/etc/ssh/banner',
             },
         })
+        UsePrivilegeSeparation = 'sandbox'
+        AuthorizedKeysFile = '.ssh/authorized_keys .ssh/authorized_keys2'
+        if grains['os'] in ['Debian']:
+            if grains['osrelease'][0] < '6':
+                UsePrivilegeSeparation = 'no'
+                AuthorizedKeysFile = '.ssh/authorized_keys'
+
         data.update({
             'sshd_config_src': (
                 'salt://makina-states/files/'
@@ -111,12 +119,11 @@ def settings():
                     'root', 'sudo', 'wheel', 'admin', 'ubuntu', g],
                 'allowusers': ['root', 'sysadmin', 'ubuntu'],
                 'settings': {
-                    'AuthorizedKeysFile': (
-                        '.ssh/authorized_keys .ssh/authorized_keys2'),
+                    'AuthorizedKeysFile': AuthorizedKeysFile,
                     'ChallengeResponseAuthentication': 'no',
                     'X11Forwarding': 'yes',
                     'PrintMotd': 'no',
-                    'UsePrivilegeSeparation': 'sandbox',
+                    'UsePrivilegeSeparation': UsePrivilegeSeparation,
                     # 'Banner': '/etc/ssh/banner',
                     'UsePAM': 'yes',
                     'PermitRootLogin': 'without-password',

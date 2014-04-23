@@ -1,4 +1,5 @@
 {% macro do(full=True) %}
+
 {{ salt['mc_macros.register']('services', 'base.ntp') }}
 {%- set locs = salt['mc_locations.settings']() %}
 
@@ -12,7 +13,6 @@ ntp-pkgs:
       - ntp
       - ntpdate
 {% endif %}
-
 {%- if grains['os'] not in ['Debian', 'Ubuntu'] %}
 ntpdate-svc:
   service.enabled:
@@ -34,7 +34,7 @@ ntpd:
     {% if full %}
       - pkg: ntp-pkgs
     {% endif %}
-
+{% if salt['mc_controllers.mastersalt_mode']() %}
 {{ locs.conf_dir }}/ntp.conf:
   file.managed:
     - user: root
@@ -59,6 +59,6 @@ ntpd:
     - require:
       - pkg: ntp-pkgs
     {% endif %}
-
+{% endif %}
 {% endmacro %}
 {{ do(full=False) }}

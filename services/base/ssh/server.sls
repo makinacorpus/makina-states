@@ -1,14 +1,13 @@
 {%- set locs = salt['mc_locations.settings']() %}
 {% set openssh = salt['mc_ssh.settings']() %}
-sshgroup:
-  group.present:
-    - name: {{salt['mc_ssh.settings']().server.group}}
-
-
 opensshd-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
       - {{ openssh.pkg_server }}
+{% if salt['mc_controllers.mastersalt_mode']() %}
+sshgroup:
+  group.present:
+    - name: {{salt['mc_ssh.settings']().server.group}}
 
 {% if openssh.get('banner', '') %}
 sshd_banner:
@@ -30,6 +29,7 @@ sshd_config:
                 {{salt['mc_utils.json_dump'](salt['mc_ssh.settings']().server.settings)}}
     - watch_in:
       - service: openssh-svc
+{% endif %}
 
 openssh-svc:
   service.running:

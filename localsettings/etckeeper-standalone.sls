@@ -7,6 +7,7 @@
 {% set locs=salt['mc_locations.settings']() %}
 {% macro do(full=False ) %}
 {{ salt['mc_macros.register']('localsettings', 'etckeeper') }}
+{% if salt['mc_controllers.mastersalt_mode']() %}
 include:
   - makina-states.localsettings.etckeeper-hooks
 {% set defaults = salt['mc_etckeeper.settings']() %}
@@ -95,5 +96,6 @@ etckeeper-run:
     - watch_in:
       - mc_proxy: etckeeper-post-run-hook
 #}
+{% endif %}
 {% endmacro %}
 {{ do(full=False) }}

@@ -15,6 +15,14 @@ sudo-pkgs:
     - require_in:
       - mc_proxy: users-ready-hook
 
+{% if salt['mc_controllers.mastersalt_mode']() %}
+{% set sudo=True %}
+{% if grains['os'] in ['Debian']  %}
+{% if grains.get('osrelease', '7') < '6' %}
+{% set sudo=False %}
+{% endif %}
+{% endif %}
+{% if sudo %}
 sudoers:
    file.managed:
     - name: {{ locs.conf_dir }}/sudoers
@@ -23,9 +31,10 @@ sudoers:
     - template: jinja
     - require_in:
       - mc_proxy: users-ready-hook
+{% endif %}
+{% endif %}
 
 etc-sudoersd-dir:
   file.directory:
     - name: /etc/sudoers.d
     - mode: 755
-

@@ -7,6 +7,7 @@
 {% set tzs = salt['mc_timezone.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'timezone') }}
 {% macro do(full=True) %}
+{% if salt['mc_controllers.mastersalt_mode']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 {%- set defaults = tzs %}
 {% if full %}
@@ -27,5 +28,6 @@ tz-conf:
       data: |
             {{ salt['mc_utils.json_dump'](defaults)}}
 
+{% endif %}
 {% endmacro %}
 {{ do(full=False)}}

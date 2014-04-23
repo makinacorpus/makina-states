@@ -18,6 +18,37 @@ __name = 'shorewall'
 log = logging.getLogger(__name__)
 
 
+def guess_shorewall_ver():
+    ver = __salt__['cmd.run']('shorewall version')
+    for i in ['3' '4', '5']:
+        if i in ver:
+            return ver
+    if __grains__['os'] in ['Debian']:
+        if __grains__['osrelease'][0] < '6':
+            osver = 'old_deb'
+        else:
+            osver = 'deb'
+    else:
+        osver = 'ubuntu'
+    if __grains__.get('lsb_distrib_codename') in ['precise']:
+        osver = 'precise'
+    ver = {
+        'old_deb': '4.0.15',
+        'deb': '4.5.0',
+        'precise': '4.4.26',
+        'ubuntu': '4.5.17',
+    }.get(osver, '4.5.17')
+    return ver
+
+
+def get_macro(name, action):
+    if guess_shorewall_ver() < '4.5.10':
+        fmt = '{name}/{action}'
+    else:
+        fmt = '{name}({action})'
+    return fmt.format(name=name, action=action)
+
+
 def settings():
     '''
     shorewall settings
@@ -46,20 +77,23 @@ def settings():
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
+        protos = ['tcp', 'udp']
         grains = __grains__
         pillar = __pillar__
         services_registry = __salt__['mc_services.registry']()
         controllers_registry = __salt__['mc_controllers.registry']()
         nodetypes_registry = __salt__['mc_nodetypes.registry']()
         locs = __salt__['mc_locations.settings']()
-        shwIfformat = 'FORMAT 2'
         providers = __salt__['mc_provider.settings']()
         have_rpn = providers['have_rpn']
         #if ((grains['os'] not in ['Debian'])
         #   and (grains.get('lsb_distrib_codename') not in ['precise'])):
-        if (grains['os'] not in ['Debian']):
-            shwIfformat = '?{0}'.format(shwIfformat)
-        if grains.get('lsb_distrib_codename') in ['precise']:
+
+        sw_ver = guess_shorewall_ver()
+        shwIfformat = 'FORMAT 2'
+        if '4.5' > sw_ver > '4.1':
+            shwIfformat = '#?{0}'.format(shwIfformat)
+        elif sw_ver <= '4.1':
             shwIfformat = '#?{0}'.format(shwIfformat)
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.firewall.shorewall', {
@@ -70,6 +104,7 @@ def settings():
                 'policies': [],
                 'zones': OrderedDict(),
                 'masqs': [],
+                'sw_ver': sw_ver,
                 'default_params': OrderedDict(),
                 'default_masqs': [],
                 'default_interfaces': OrderedDict(),
@@ -94,6 +129,7 @@ def settings():
                 'no_postgresql': True,
                 'no_ftp': True,
                 'have_docker': None,
+                'have_vpn': None,
                 # backward compat
                 'have_rpn': have_rpn,
                 'have_lxc': None,
@@ -101,7 +137,9 @@ def settings():
                 'no_ping': False,
                 'no_smtp': False,
                 'no_ssh': False,
+                'no_ntp': False,
                 'no_web': False,
+                'no_ldap': False,
                 'no_burp': False,
                 'no_syslog': False,
                 'no_computenode': False,
@@ -139,11 +177,18 @@ def settings():
         if data['have_docker'] is None:
             if True in ['docker' in a[0] for a in ifaces]:
                 data['have_docker'] = True  # must stay none if not found
+        if data['have_vpn'] is None:
+            if True in [a[0].startswith('tun') for a in ifaces]:
+                data['have_vpn'] = True  # must stay none if not found
 
+        opts_45 = ',sourceroute0'
         bridged_opts = 'routeback,bridge,tcpflags,nosmurfs,logmartians'
         phy_opts = ('tcpflags,dhcp,nosmurfs,routefilter,'
-                    'logmartians,sourceroute=0')
+                    'logmartians')
+        if sw_ver >= '4.4':
+            phy_opts += opts_45
         iface_opts = {
+            'vpn': '',
             'net': phy_opts,
             'rpn': phy_opts,
             'lxc': bridged_opts,
@@ -152,12 +197,17 @@ def settings():
         # service access restrictions
         # enable all by default, but can by overriden easily in config
         # this will act at shorewall parameters in later rules
+        burpsettings = __salt__['mc_burp.settings']()
         if not data['no_default_params']:
-            for p in ['SYSLOG', 'SSH', 'SNMP', 'PING',
+            for p in ['SYSLOG', 'SSH', 'SNMP', 'PING', 'LDAP',
+                      'NTP',
                       'BURP', 'MYSQL', 'POSTGRESQL', 'FTP']:
                 default = 'all'
                 if p in ['SYSLOG', 'BURP']:
                     default = 'fw:127.0.0.1'
+                    if p == 'BURP':
+                        default = 'net:'
+                        default += ','.join(burpsettings['clients'])
                 data['default_params'].setdefault(
                     'RESTRICTED_{0}'.format(p), default)
             for r, rdata in data['default_params'].items():
@@ -166,6 +216,8 @@ def settings():
         # if we have no enough information, but shorewall is activated,
         # construct a simple firewall allowing ssh icmp, and web traffic
         if not data['no_default_zones']:
+            if data['have_vpn']:
+                data['default_zones']['vpn'] = OrderedDict()
             if data['have_lxc']:
                 data['default_zones']['lxc'] = OrderedDict()
             if data['have_docker']:
@@ -176,7 +228,7 @@ def settings():
                 if not zdata:
                     zdata = {'type': 'ipv4'}
                 data['default_zones'][z] = zdata
-                if not z in data['default_interfaces']:
+                if z not in data['default_interfaces']:
                     data['zones'].setdefault(z, data['default_zones'][z])
 
         for iface, ips in ifaces:
@@ -184,6 +236,9 @@ def settings():
                 continue
             z = 'net'
             # TODO: XXX: find better to mach than em1
+            if iface.startswith('tun'):
+                z = 'vpn'
+                data['have_vpn'] = True
             if 'em1' == iface:
                 if have_rpn:
                     z = 'rpn'
@@ -219,13 +274,13 @@ def settings():
                     for iface in ifaces:
                         mask = {'interface': default_if,
                                 'source': iface['interface']}
-                        if not mask in data['default_masqs']:
+                        if mask not in data['default_masqs']:
                             data['default_masqs'].append(mask)
 
         if not data['no_default_masqs']:
             # fw -> net: auth
             for m in data['default_masqs']:
-                if not m in data['masqs']:
+                if m not in data['masqs']:
                     data['masqs'].append(m)
 
         if not data['no_default_policies']:
@@ -238,6 +293,15 @@ def settings():
             # dck -> dck: auth
             # lxc -> dck: auth
             # dck -> lxc: auth
+            if data['have_vpn']:
+                data['default_policies'].append({
+                    'source': 'vpn', 'dest': '$FW', 'policy': 'ACCEPT'})
+                data['default_policies'].append({
+                    'source': '$FW', 'dest': 'vpn', 'policy': 'ACCEPT'})
+                data['default_policies'].append({
+                    'source': 'vpn', 'dest': 'all', 'policy': 'ACCEPT'})
+                data['default_policies'].append({
+                    'source': 'all', 'dest': 'vpn', 'policy': 'ACCEPT'})
             if data['have_docker']:
                 data['default_policies'].append({
                     'source': 'dck', 'dest': 'net', 'policy': 'ACCEPT'})
@@ -277,18 +341,19 @@ def settings():
         # ATTENTION WE MERGE, so reverse order to append at begin
         data['default_policies'].reverse()
         for rdata in data['default_policies']:
-            if not rdata in data['policies']:
+            if rdata not in data['policies']:
                 data['policies'].insert(0, rdata)
 
         if not data['no_default_rules']:
-            data['default_rules'].append({'comment': 'invalid traffic'})
-            if data['no_invalid']:
-                action = 'DROP'
-            else:
-                action = 'ACCEPT'
-            data['default_rules'].append({
-                'action': 'Invalid({0})'.format(action),
-                'source': 'net', 'dest': 'all'})
+            if sw_ver >= '4.5':
+                data['default_rules'].append({'comment': 'invalid traffic'})
+                if data['no_invalid']:
+                    action = 'DROP'
+                else:
+                    action = 'ACCEPT'
+                data['default_rules'].append({
+                    'action': get_macro('Invalid', action),
+                    'source': 'net', 'dest': 'all'})
 
             data['default_rules'].append({'comment': 'lxc dhcp traffic'})
             if data['have_lxc']:
@@ -315,24 +380,30 @@ def settings():
             # salt/master traffic if any
             data['default_rules'].append(
                 {'comment': '(Master)Salt on localhost'})
-            data['default_rules'].append({'action': 'ACCEPT',
-                                          'source': "$FW", 'dest': "$FW",
-                                          'proto': 'tcp,udp',
-                                          'dport': '4505,4506,4605,4606'})
+            for proto in protos:
+                data['default_rules'].append(
+                    {'action': 'ACCEPT',
+                     'source': "$FW", 'dest': "$FW",
+                     'proto': proto,
+                     'dport': '4505,4506,4605,4606'})
             if data['have_lxc']:
                 data['default_rules'].append(
                     {'comment': '(Master)Salt on lxc'})
-                data['default_rules'].append({'action': 'ACCEPT',
-                                              'source': "lxc", 'dest': "$FW",
-                                              'proto': 'tcp,udp',
-                                              'dport': '4505,4506,4605,4606'})
+                for proto in protos:
+                    data['default_rules'].append(
+                        {'action': 'ACCEPT',
+                         'source': "lxc", 'dest': "$FW",
+                         'proto': proto,
+                         'dport': '4505,4506,4605,4606'})
             if data['have_docker']:
                 data['default_rules'].append(
                     {'comment': '(Master)Salt on dockers'})
-                data['default_rules'].append({'action': 'ACCEPT',
-                                              'source': "dck", 'dest': "$FW",
-                                              'proto': 'tcp,udp',
-                                              'dport': '4505,4506,4605,4606'})
+                for proto in protos:
+                    data['default_rules'].append(
+                        {'action': 'ACCEPT',
+                         'source': "dck", 'dest': "$FW",
+                         'proto': proto,
+                         'dport': '4505,4506,4605,4606'})
 
             # enable compute node redirection port ange if any
             # XXX: this is far from perfect, now we open a port range which
@@ -346,40 +417,45 @@ def settings():
                 )
                 data['default_rules'].append(
                     {'comment': 'corpus computenode'})
-                data['default_rules'].append({'action': 'ACCEPT',
-                                              'source': 'all', 'dest': 'fw',
-                                              'proto': 'tcp,udp',
-                                              'dport': (
-                                                  '{0}:{1}'
-                                              ).format(cstart, cend)})
+                for proto in protos:
+                    data['default_rules'].append({'action': 'ACCEPT',
+                                                  'source': 'all', 'dest': 'fw',
+                                                  'proto': proto,
+                                                  'dport': (
+                                                      '{0}:{1}'
+                                                  ).format(cstart, cend)})
             # enable mastersalt traffic if any
             if (
                 controllers_registry['is']['mastersalt_master']
                 and not data['no_mastersalt']
             ):
                 data['default_rules'].append({'comment': 'mastersalt'})
-                data['default_rules'].append({'action': 'ACCEPT',
-                                              'source': 'all', 'dest': 'fw',
-                                              'proto': 'tcp,udp',
-                                              'dport': '4605,4606'})
+                for proto in protos:
+                    data['default_rules'].append(
+                        {'action': 'ACCEPT',
+                         'source': 'all', 'dest': 'fw',
+                         'proto': proto,
+                         'dport': '4605,4606'})
             # enable salt traffic if any
             if (
                 controllers_registry['is']['salt_master']
                 and not data['no_salt']
             ):
                     data['default_rules'].append({'comment': 'salt'})
-                    data['default_rules'].append({'action': 'ACCEPT',
-                                                  'source': 'all',
-                                                  'dest': 'fw',
-                                                  'proto': 'tcp,udp',
-                                                  'dport': '4505,4506'})
+                    for proto in protos:
+                        data['default_rules'].append(
+                            {'action': 'ACCEPT',
+                             'source': 'all',
+                             'dest': 'fw',
+                             'proto': proto,
+                             'dport': '4505,4506'})
 
             data['default_rules'].append({'comment': 'dns'})
             if data['no_dns']:
                 action = 'DROP'
             else:
                 action = 'ACCEPT'
-            data['default_rules'].append({'action': 'DNS({0})'.format(action),
+            data['default_rules'].append({'action': get_macro('DNS', action),
                                           'source': 'all', 'dest': 'all'})
 
             data['default_rules'].append({'comment': 'web'})
@@ -387,23 +463,34 @@ def settings():
                 action = 'DROP'
             else:
                 action = 'ACCEPT'
-            data['default_rules'].append({'action': 'Web({0})'.format(action),
+            data['default_rules'].append({'action': get_macro('Web', action),
                                           'source': 'all', 'dest': 'all'})
+
+            data['default_rules'].append({'comment': 'ntp'})
+            if data['no_ntp']:
+                action = 'DROP'
+            else:
+                action = 'ACCEPT'
+            data['default_rules'].append({'action': get_macro('NTP', action),
+                                          'source': '$SALT_RESTRICTED_NTP',
+                                          'dest': 'all'})
 
             data['default_rules'].append({'comment': 'ssh'})
             if data['no_ssh']:
                 action = 'DROP'
             else:
                 action = 'ACCEPT'
-            data['default_rules'].append({'action': 'SSH({0})'.format(action),
+            data['default_rules'].append({'action': get_macro('SSH', action),
                                           'source': '$SALT_RESTRICTED_SSH',
                                           'dest': 'all'})
+
             data['default_rules'].append({'comment': 'syslog'})
             if data['no_syslog']:
                 action = 'DROP'
             else:
                 action = 'ACCEPT'
-            data['default_rules'].append({'action': 'Syslog({0})'.format(action),
+            data['default_rules'].append({'action': get_macro('Syslog',
+                                                              action),
                                           'source': '$SALT_RESTRICTED_SYSLOG',
                                           'dest': 'all'})
 
@@ -422,14 +509,20 @@ def settings():
             #                               'dest': '$FW'})
             # limiting ping
             # for ping, we drop and only accept from restricted (default: all)
+            rate = 's:10/min:10'
+            if sw_ver < '4.4':
+                rate = '-'
             data['default_rules'].append({
-                'action': 'Ping(ACCEPT)'.format(action),
+                #'action': get_macro('Ping', action),
+                'action': get_macro('Ping', 'ACCEPT'),
                 'source': 'net',
                 'dest': '$FW',
-                'rate': 's:10/min:10'})
-            for z in [a for a in data['zones'] if not a in ['net']]:
+                'rate': rate})
+
+            for z in [a for a in data['zones'] if a not in ['net']]:
                 data['default_rules'].append({
-                    'action': 'Ping(ACCEPT)'.format(action),
+                    #'action': get_macro('Ping', action),
+                    'action': get_macro('Ping', 'ACCEPT'),
                     'source': z,
                     'dest': '$FW'})
 
@@ -438,7 +531,7 @@ def settings():
                 action = 'DROP'
             else:
                 action = 'ACCEPT'
-            data['default_rules'].append({'action': 'Mail({0})'.format(action),
+            data['default_rules'].append({'action': get_macro('Mail', action),
                                           'source': 'all', 'dest': 'all'})
 
             data['default_rules'].append({'comment': 'snmp'})
@@ -447,7 +540,7 @@ def settings():
             else:
                 action = 'ACCEPT'
             data['default_rules'].append(
-                {'action': 'SNMP({0})'.format(action),
+                {'action': get_macro('SNMP', action),
                  'source': '$SALT_RESTRICTED_SNMP', 'dest': 'all'})
 
             data['default_rules'].append({'comment': 'ftp'})
@@ -456,7 +549,7 @@ def settings():
             else:
                 action = 'ACCEPT'
             data['default_rules'].append(
-                {'action': 'FTP({0})'.format(action),
+                {'action': get_macro('FTP', action),
                  'source': '$SALT_RESTRICTED_FTP', 'dest': 'all'})
 
             data['default_rules'].append({'comment': 'postgresql'})
@@ -465,7 +558,7 @@ def settings():
             else:
                 action = 'ACCEPT'
             data['default_rules'].append({
-                'action': 'PostgreSQL({0})'.format(action),
+                'action': get_macro('PostgreSQL', action),
                 'source': '$SALT_RESTRICTED_POSTGRESQL', 'dest': 'all'})
 
             data['default_rules'].append({'comment': 'mysql'})
@@ -474,32 +567,54 @@ def settings():
             else:
                 action = 'ACCEPT'
             data['default_rules'].append({
-                'action': 'MySQL({0})'.format(action),
+                'action': get_macro('MySQL', action),
                 'source': '$SALT_RESTRICTED_MYSQL', 'dest': 'all'})
+
+            data['default_rules'].append({'comment': 'ldap'})
+            if data['no_ldap']:
+                action = 'DROP'
+            else:
+                action = 'ACCEPT'
+            data['default_rules'].append({
+                'action': get_macro('LDAP', action),
+                'source': '$SALT_RESTRICTED_LDAP', 'dest': 'all'})
+            data['default_rules'].append({
+                'action': get_macro('LDAPS', action),
+                'source': '$SALT_RESTRICTED_LDAP', 'dest': 'all'})
 
             data['default_rules'].append({'comment': 'burp'})
             if data['no_burp']:
                 action = 'DROP'
             else:
                 action = 'ACCEPT'
-            data['default_rules'].append({'action': action,
-                                          'source': '$SALT_RESTRICTED_BURP',
-                                          'dest': "all",
-                                          'proto': 'tcp,udp',
-                                          'dport': '4971,4972'})
+            for proto in protos:
+                data['default_rules'].append(
+                    {'action': action,
+                     'source': 'fw:127.0.0.1',
+                     'dest': "all",
+                     'proto': proto,
+                     'dport': '4971,4972'})
+            for proto in protos:
+                data['default_rules'].append(
+                    {'action': action,
+                     'source': '$SALT_RESTRICTED_BURP',
+                     'dest': "all",
+                     'proto': proto,
+                     'dport': '4971,4972'})
             # also accept configured hosts
             burpsettings = __salt__['mc_burp.settings']()
             clients = 'net:'
             clients += ','.join(burpsettings['clients'])
-            data['default_rules'].append({'action':action,
-                                          'source': clients,
-                                          'dest': "all",
-                                          'proto': 'tcp,udp',
-                                          'dport': '4971,4972'})
+            for proto in protos:
+                data['default_rules'].append({'action': action,
+                                              'source': clients,
+                                              'dest': "all",
+                                              'proto': proto,
+                                              'dport': '4971,4972'})
         # ATTENTION WE MERGE, so reverse order to append at begin
         data['default_rules'].reverse()
         for rdata in data['default_rules']:
-            if not rdata in data['rules']:
+            if rdata not in data['rules']:
                 data['rules'].insert(0, rdata)
 
         for i in data['rules']:
@@ -512,6 +627,8 @@ def settings():
         data['params'] = OrderedDict()
         for p, value in params.items():
             data['params']['{0}_{1}'.format('SALT', p)] = value
+        data['params_keys'] = [a for a in data['params']]
+        data['params_keys'].sort()
         return data
     return _settings()
 

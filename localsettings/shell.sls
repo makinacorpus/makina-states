@@ -4,6 +4,7 @@
 #   - makina-states/doc/ref/formulaes/localsettings/shell.rst
 #}
 {{ salt['mc_macros.register']('localsettings', 'shell') }}
+{% if salt['mc_controllers.mastersalt_mode']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 etc-profile-d:
   file.directory:
@@ -41,4 +42,5 @@ makina-etc-profile-block:
     - append_if_not_found: True
     - backup: '.bak'
     - show_changes: True
+{% endif %}
 # vim: set nofoldenable:
