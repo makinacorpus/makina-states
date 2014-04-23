@@ -30,6 +30,7 @@ ntpd:
     - name: ntp
     {%- endif %}
     {% if full %}
+    - watch:
       - pkg: ntp-pkgs
     {% endif %}
 {% if salt['mc_controllers.mastersalt_mode']() %}
