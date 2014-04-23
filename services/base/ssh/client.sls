@@ -9,6 +9,7 @@ ssh_config:
   file.managed:
     - name: /etc/ssh/ssh_config
     - source: salt://makina-states/files/etc/ssh/ssh_config
+    - mode: 755
     - watch:
       - pkg: openssh-pkgs
     - template: jinja
