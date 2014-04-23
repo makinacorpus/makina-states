@@ -2315,19 +2315,19 @@ kill_pids(){
 }
 
 killall_local_mastersalt_masters() {
-    kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(master|syndic)"|grep -v deploy.sh|grep -v boot-salt|grep mastersalt|awk '{print $2}') 1>/dev/null 2>/dev/null)
+    kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(master|syndic)"|grep -v deploy.sh|grep -v boot-salt|grep mastersalt|awk '{print $2}')) 1>/dev/null 2>/dev/null
 }
 
 killall_local_mastersalt_minions() {
-    kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(minion)"|grep -v deploy.sh|grep -v boot-salt|grep mastersalt|awk '{print $2}') 1>/dev/null 2>/dev/null)
+    kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(minion)"|grep -v deploy.sh|grep -v boot-salt|grep mastersalt|awk '{print $2}')) 1>/dev/null 2>/dev/null
 }
 
 killall_local_masters() {
-    kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(master|syndic)"|grep -v deploy.sh|grep -v boot-salt|grep -v mastersalt|awk '{print $2}') 1>/dev/null 2>/dev/null)
+    kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(master|syndic)"|grep -v deploy.sh|grep -v boot-salt|grep -v mastersalt|awk '{print $2}')) 1>/dev/null 2>/dev/null
 }
 
 killall_local_minions() {
-    kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(minion)"|grep -v deploy.sh|grep -v boot-salt|grep -v mastersalt|awk '{print $2}') 1>/dev/null 2>/dev/null)
+    kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(minion)"|grep -v deploy.sh|grep -v boot-salt|grep -v mastersalt|awk '{print $2}')) 1>/dev/null 2>/dev/null
 }
 
 restart_local_mastersalt_masters() {
@@ -2683,13 +2683,13 @@ make_mastersalt_association() {
 
         debug_msg "Forcing mastersalt minion restart"
         restart_local_mastersalt_minions
-        if [ "x${BS_MS_ASSOCIATION_RESTART_MASTER}" != "x" ];then
-            restart_local_mastersalt_masters
-            sleep 10
-        fi
-        if [ "x${BS_MS_ASSOCIATION_RESTART_MINION}" != "x" ];then
-            restart_local_mastersalt_minions
-        fi
+        #if [ "x${BS_MS_ASSOCIATION_RESTART_MASTER}" != "x" ];then
+        #    restart_local_mastersalt_masters
+        #    sleep 10
+        #fi
+        #if [ "x${BS_MS_ASSOCIATION_RESTART_MINION}" != "x" ];then
+        #    restart_local_mastersalt_minions
+        #fi
         gen_mastersalt_keys
         mastersalt_master_connectivity_check
         bs_log "Waiting for mastersalt minion key hand-shake"
@@ -2953,23 +2953,23 @@ highstate_in_salt_env() {
 
 run_highstates() {
     if [ "x${IS_SALT}" != "x" ];then
-        if [ "x${BS_ASSOCIATION_RESTART_MASTER}" != "x" ];then
-            restart_local_masters
-            sleep 10
-        fi
-        if [ "x${BS_ASSOCIATION_RESTART_MINION}" != "x" ];then
-            restart_local_minions
-        fi
+        #if [ "x${BS_ASSOCIATION_RESTART_MASTER}" != "x" ];then
+        #    restart_local_masters
+        #    sleep 10
+        #fi
+        #if [ "x${BS_ASSOCIATION_RESTART_MINION}" != "x" ];then
+        #    restart_local_minions
+        #fi
         highstate_in_salt_env
     fi
     if [ "x${IS_MASTERSALT}" != "x" ];then
-        if [ "x${BS_MS_ASSOCIATION_RESTART_MASTER}" != "x" ];then
-            restart_local_mastersalt_masters
-            sleep 10
-        fi
-        if [ "x${BS_MS_ASSOCIATION_RESTART_MINION}" != "x" ];then
-            restart_local_mastersalt_minions
-        fi
+        #if [ "x${BS_MS_ASSOCIATION_RESTART_MASTER}" != "x" ];then
+        #    restart_local_mastersalt_masters
+        #    sleep 10
+        #fi
+        #if [ "x${BS_MS_ASSOCIATION_RESTART_MINION}" != "x" ];then
+        #    restart_local_mastersalt_minions
+        #fi
 
         highstate_in_mastersalt_env
     fi
