@@ -90,9 +90,10 @@ def settings():
         #   and (grains.get('lsb_distrib_codename') not in ['precise'])):
 
         sw_ver = guess_shorewall_ver()
-        shwIfformat = 'FORMAT 2'
+        if '4.5' >= sw_ver:
+            shwIfformat = '?FORMAT 2'
         if '4.5' > sw_ver > '4.1':
-            shwIfformat = '#?{0}'.format(shwIfformat)
+            shwIfformat = 'FORMAT 2'
         elif sw_ver <= '4.1':
             shwIfformat = '#?{0}'.format(shwIfformat)
         data = __salt__['mc_utils.defaults'](
