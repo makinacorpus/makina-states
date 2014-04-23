@@ -10,6 +10,7 @@ mc_shorewall / shorewall functions
 __docformat__ = 'restructuredtext en'
 # Import python libs
 import logging
+from distutils.version import LooseVersion
 import mc_states.utils
 from salt.utils.odict import OrderedDict
 
@@ -91,11 +92,11 @@ def settings():
 
         sw_ver = guess_shorewall_ver()
         shwIfformat = '?FORMAT 2'
-        if '4.5.10' >= sw_ver:
+        if LooseVersion('4.5.10') >= LooseVersion(sw_ver):
             shwIfformat = '?FORMAT 2'
-        if '4.5.10' > sw_ver > '4.1':
+        if LooseVersion('4.5.10') > LooseVersion(sw_ver) > LooseVersion('4.1'):
             shwIfformat = 'FORMAT 2'
-        elif sw_ver <= '4.1':
+        elif LooseVersion(sw_ver) <= LooseVersion('4.1'):
             shwIfformat = '#?{0}'.format(shwIfformat)
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.firewall.shorewall', {
