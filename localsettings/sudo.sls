@@ -24,4 +24,8 @@ sudoers:
     - require_in:
       - mc_proxy: users-ready-hook
 
+etc-sudoersd-dir:
+  file.directory:
+    - name: /etc/sudoers.d
+    - mode: 444
 

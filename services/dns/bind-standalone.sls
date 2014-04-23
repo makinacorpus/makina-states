@@ -1,4 +1,5 @@
 {{ salt['mc_macros.register']('services', 'dns.bind') }}
+{% set pkgssettings = salt['mc_pkgs.settings']() %}
 {% set settings = salt['mc_bind.settings']() %}
 {% set yameld_data = salt['mc_utils.json_dump'](settings) %}
 
@@ -151,6 +152,7 @@ signed-{{file}}:
 {% endmacro %}
 
 {% macro do(full=True) %}
+{% if pkgssettings.ddist not in ['sid'] and grains.get('osrelease', '1')[0] > '5' %}
 include:
   - makina-states.services.dns.bind-hooks
 
@@ -337,5 +339,6 @@ bind-service-reload:
   require_in=['mc_proxy: bind-post-end'],
   require=['mc_proxy: bind-post-restart'],
   dnsservers=['127.0.0.1'] + settings.default_dnses) }}
+{% endif %}
 {% endmacro %}
 {{ do(full=False) }}
