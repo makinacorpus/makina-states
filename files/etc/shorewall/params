@@ -26,7 +26,7 @@
 #
 ###############################################################################
 {% set shwdata = salt['mc_utils.json_load'](shwdata) %}
-{% for i, data in shwdata['params'].items() -%}
+{% for i in shwdata['params_keys'] -%}{% set data=shwdata['params'][i] -%}
 {{i}}={{data}}
 {% endfor -%}
 #LAST LINE -- DO NOT REMOVE
