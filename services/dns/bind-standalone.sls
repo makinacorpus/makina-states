@@ -151,11 +151,18 @@ signed-{{file}}:
 {% endmacro %}
 
 {% macro do(full=True) %}
-{% if pkgssettings.ddist not in ['sid'] and grains.get('osrelease', '1')[0] > '5' %}
 include:
   - makina-states.services.dns.bind-hooks
 
-{% if full %}
+{% if salt['mc_controllers.mastersalt_mode']() %}
+{% set dodns = True %}
+
+
+{% if grains['os'] in ['Debian'] and pkgssettings.ddist not in ['sid'] and grains.get('osrelease', '1')[0] < '6' %}
+{% set dodns = False %}
+{% endif %}
+
+{% if full and dodns %}
 bind-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs: {{settings.pkgs}}
@@ -163,9 +170,8 @@ bind-pkgs:
       - mc_proxy: bind-pre-install
     - watch_in:
       - mc_proxy: bind-post-install
-
 {% endif %}
-{% if salt['mc_controllers.mastersalt_mode']() %}
+
 bind-dirs:
   file.directory:
     - names:
@@ -229,7 +235,6 @@ bind_config_{{tp}}:
     - watch_in:
       - mc_proxy: bind-post-conf
 {% endfor %}
-
 
 rndc-key:
   cmd.run:
@@ -313,7 +318,6 @@ bind-deactivate-dnsmask:
       - service: bind-service-reload
       - service: bind-service-restart
 {% endif %}
-{% endif %}
 
 bind-service-restart:
   service.running:
@@ -335,14 +339,11 @@ bind-service-reload:
       - mc_proxy: bind-post-reload
 
 {# switch back to our shiny new dns server #}
-{% if salt['mc_controllers.mastersalt_mode']() %}
 {{ switch_dns(
   suf='postbindrestart',
   require_in=['mc_proxy: bind-post-end'],
   require=['mc_proxy: bind-post-restart'],
   dnsservers=['127.0.0.1'] + settings.default_dnses) }}
-{% endif %}
-{% endif %}
 {% endif %}
 {% endmacro %}
 {{ do(full=False) }}
