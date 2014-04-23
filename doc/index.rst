@@ -17,7 +17,6 @@ Please have more a look on the reference chapters.
    usage/index.rst
    ref/index.rst
 
-
 Indices and tables
 ==================
 
