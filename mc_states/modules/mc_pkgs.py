@@ -69,15 +69,27 @@ def settings():
         # default_install_mode = 'latest'
         default_install_mode = 'installed'
         env = saltmods['mc_env.settings']()['env']
+        deb_mirror = 'http://ftp.de.debian.org/debian'
         if env in ['prod']:
             default_install_mode = 'installed'
 
         debian_stable = "wheezy"
-        ubuntu_lts = "precise"
+        ubuntu_lts = "trusty"
         ubuntu_last = "saucy"
         lts_dist = debian_stable
+        deb_mirror = 'http://ftp.de.debian.org/debian'
         if grains['os'] in ['Ubuntu']:
             lts_dist = ubuntu_lts
+        if grains['os'] in ['Debian']:
+            if grains['osrelease'][0] == '4':
+                ddist = debian_stable = "sarge"
+                deb_mirror = 'http://archive.debian.org/debian/'
+            elif grains['osrelease'][0] == '5':
+                ddist = debian_stable = "lenny"
+                deb_mirror = 'http://archive.debian.org/debian/'
+            else:
+                ddist = saltmods['mc_utils.get'](
+                    'lsb_distrib_codename', debian_stable)
         mirrors = {
             'ovh': 'http://mirror.ovh.net/ubuntu',
             #'online': 'http://mirror.ovh.net/ubuntu',
@@ -90,6 +102,10 @@ def settings():
                 if isinstance(val, basestring):
                     if provider in val.lower():
                         umirror = mirrors.get(provider, umirror)
+
+        udist = saltmods['mc_utils.get']('lsb_distrib_codename', ubuntu_lts)
+        if grains['os'] not in ['Ubuntu']:
+            udist = ubuntu_lts
         data = saltmods['mc_utils.defaults'](
             'makina-states.localsettings.pkgs', {
                 'installmode': default_install_mode,
@@ -99,8 +115,7 @@ def settings():
                 'apt': {
                     'ubuntu': {
                         'mirror': umirror,
-                        'dist': saltmods['mc_utils.get'](
-                            'lsb_distrib_codename', ubuntu_lts),
+                        'dist': udist,
                         'comps': (
                             'main restricted universe multiverse'),
                         'last': ubuntu_last,
@@ -108,12 +123,16 @@ def settings():
                     },
                     'debian': {
                         'stable': debian_stable,
-                        'dist': saltmods['mc_utils.get'](
-                            'lsb_distrib_codename', debian_stable),
+                        'dist': ddist,
                         'comps': 'main contrib non-free',
-                        'mirror': 'http://ftp.de.debian.org/debian',
+                        'mirror': deb_mirror,
                     },
                 }})
+        if grains['os'] in ['Debian']:
+            if grains['osrelease'][0] == '4':
+                data['apt']['debian']['mirror'] = 'http://archive.debian.org/debian/'
+            elif grains['osrelease'][0] == '5':
+                data['apt']['debian']['mirror'] = 'http://archive.debian.org/debian/'
 
         data['dcomps'] = data['apt']['debian']['comps']
         data['ddist'] = data['apt']['debian']['dist']

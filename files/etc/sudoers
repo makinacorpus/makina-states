@@ -1,3 +1,4 @@
+{% set pkgssettings = salt['mc_pkgs.settings']() %}
 # WARNING -- MANAGED BY SALT /  DO NOT EDIT DIRECTLY ---
 #
 # Please consider adding local content in /etc/sudoers.d/ instead of
@@ -7,14 +8,24 @@
 #
 Defaults	env_reset
 Defaults	mail_badpass
+{% if pkgssettings.ddist not in ['sid'] and grains.get('osrelease', '1')[0] <= '5' %}
+# no secure path :-/
+{% else %}
 Defaults	secure_path="/srv/salt/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-
+{% endif %}
 # Host alias specification
-
 # User alias specification
-
 # Cmnd alias specification
+{% if pkgssettings.ddist not in ['sid'] and grains.get('osrelease', '1')[0] <= '5' %}
+# User privilege specification
+root	ALL=(ALL) ALL
 
+# Members of the admin group may gain root privileges
+%admin ALL=(ALL) ALL
+
+# Allow members of group sudo to execute any command
+%sudo	ALL=(ALL) ALL
+{% else %}
 # User privilege specification
 root	ALL=(ALL:ALL) ALL
 
@@ -23,8 +34,6 @@ root	ALL=(ALL:ALL) ALL
 
 # Allow members of group sudo to execute any command
 %sudo	ALL=(ALL:ALL) ALL
-
+{% endif%}
 # See sudoers(5) for more information on "#include" directives:
-
 #includedir /etc/sudoers.d
-
