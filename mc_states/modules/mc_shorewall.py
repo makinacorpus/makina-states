@@ -152,12 +152,16 @@ def settings():
         # service access restrictions
         # enable all by default, but can by overriden easily in config
         # this will act at shorewall parameters in later rules
+        burpsettings = __salt__['mc_burp.settings']()
         if not data['no_default_params']:
             for p in ['SYSLOG', 'SSH', 'SNMP', 'PING',
                       'BURP', 'MYSQL', 'POSTGRESQL', 'FTP']:
                 default = 'all'
                 if p in ['SYSLOG', 'BURP']:
                     default = 'fw:127.0.0.1'
+                    if p == 'BURP':
+                        default = 'net:'
+                        default += ','.join(burpsettings['clients'])
                 data['default_params'].setdefault(
                     'RESTRICTED_{0}'.format(p), default)
             for r, rdata in data['default_params'].items():
@@ -483,16 +487,12 @@ def settings():
             else:
                 action = 'ACCEPT'
             data['default_rules'].append({'action': action,
-                                          'source': '$SALT_RESTRICTED_BURP',
+                                          'source': 'fw:127.0.0.1',
                                           'dest': "all",
                                           'proto': 'tcp,udp',
                                           'dport': '4971,4972'})
-            # also accept configured hosts
-            burpsettings = __salt__['mc_burp.settings']()
-            clients = 'net:'
-            clients += ','.join(burpsettings['clients'])
-            data['default_rules'].append({'action':action,
-                                          'source': clients,
+            data['default_rules'].append({'action': action,
+                                          'source': '$SALT_RESTRICTED_BURP',
                                           'dest': "all",
                                           'proto': 'tcp,udp',
                                           'dport': '4971,4972'})
