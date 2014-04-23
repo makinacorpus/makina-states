@@ -126,7 +126,7 @@ def settings():
                 'mail_user': 'foo',
                 'mail_password': 'bar',
                 'mail_localtime': 'true',
-                'mail_subject': '[Fail2Ban] <section>: Banned <ip>',
+                'mail_subject': '[Fail2Ban {0}] <section>: Banned <ip>'.format(grains['id']),
                 'mail_message': (
                     'Hi,<br> The IP <ip> has just been banned by Fail2Ban'
                     ' after <failures> attempts against <section>.<br>'
