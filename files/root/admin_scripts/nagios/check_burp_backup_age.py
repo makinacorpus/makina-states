@@ -27,37 +27,37 @@ import datetime
 class CheckBurp(object):
 
     def __init__(self):
-        self.program = "check_burp_backup_age"
-        self.version = "0.1"
-        self.author = "Régis Leroy (regilero)"
-        self.nick = "BURP"
-        self.ok = 0
-        self.warning = 1
-        self.critical = 2
-        self.unknown = 3
-        self.pending = 4
+        self._program = "check_burp_backup_age"
+        self._version = "0.1"
+        self._author = "Régis Leroy (regilero)"
+        self._nick = "BURP"
+        self._ok = 0
+        self._warning = 1
+        self._critical = 2
+        self._unknown = 3
+        self._pending = 4
         self.args = None
         self.diff_min = None
 
     def critical(self, msg):
-        print '{0} CRITICAL - {1}'.format(self.nick, msg)
-        sys.exit(self.critical)
+        print '{0} CRITICAL - {1}'.format(self._nick, msg)
+        sys.exit(self._critical)
 
     def warning(self, msg):
-        print '{0} WARNING - {1}'.format(self.nick, msg)
-        sys.exit(self.warning)
+        print '{0} WARNING - {1}'.format(self._nick, msg)
+        sys.exit(self._warning)
 
     def unknown(self, msg):
-        print '{0} UNKNOWN - {1}'.format(self.nick, msg)
-        sys.exit(self.unknown)
+        print '{0} UNKNOWN - {1}'.format(self._nick, msg)
+        sys.exit(self._unknown)
 
     def ok(self, msg):
-        print '{0} OK - {1}'.format(self.nick, msg)
-        sys.exit(self.ok)
+        print '{0} OK - {1}'.format(self._nick, msg)
+        sys.exit(self._ok)
 
     def opt_parser(self):
         parser = argparse.ArgumentParser(
-            prog=self.program,
+            prog=self._program,
             description=("Local check, Check freshness of last backup for a "
                          "given host name.\n\nRunning on the backup server "
                          "this program will check the timestamp file of the "
@@ -68,7 +68,7 @@ class CheckBurp(object):
                     "server.\nSo the hostname argument is not used to perform"
                     " any distant connection.\n"))
         parser.add_argument('-v', '--version',
-                            version='%(prog)s {0}'.format(self.version),
+                            version='%(prog)s {0}'.format(self._version),
                             action='version', help='show program version')
         parser.add_argument('-H', '--hostname', required=True, nargs='?',
                             help=('hostname (directory name for burp) '
