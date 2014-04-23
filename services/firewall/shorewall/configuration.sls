@@ -48,8 +48,8 @@ etc-shorewall-{{config}}:
       - mc_proxy: shorewall-postconf
 {%- endfor %}
 {% set shareds = [] %}
-{% if grains.get('lsb_distrib_codename') in ['wheezy'] %}
-{% do shareds.extend(['macro.PostgreSQL'])%}
+{% if grains['os'] in ['Debian'] %}
+{% do shareds.extend(['macro.PostgreSQL', 'macro.Mail'])%}
 {% endif %}
 {% for shared in shareds %}
 shorewall-shared-{{shared}}:

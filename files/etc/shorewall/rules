@@ -17,7 +17,9 @@
 {% set shwdata = salt['mc_utils.json_load'](shwdata) %}
 {% for key in ['all', 'established', 'related', 'new'] -%}
 {% set section=key.upper() -%}
+{% if shwdata.sw_ver > '4.1'%}
 SECTION {{ section }}
+{% endif %}
 {% for i in shwdata._rules.get(section, []) -%}
 {% set comment=i.get('comment', '').strip() -%}
 {% if comment -%}
