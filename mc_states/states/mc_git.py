@@ -128,19 +128,6 @@ def latest(name,
 
     if not target:
         return _fail(ret, '"target" option is required')
-
-    salt.utils.warn_until(
-        'Hydrogen',
-        'Please remove \'runas\' support at this stage. \'user\' support was '
-        'added in 0.17.0',
-        _dont_call_warnings=True
-    )
-    if runas:
-        # Warn users about the deprecation
-        ret.setdefault('warnings', []).append(
-            'The \'runas\' argument is being deprecated in favor of \'user\', '
-            'please update your state files.'
-        )
     if user is not None and runas is not None:
         # user wins over runas but let warn about the deprecation.
         ret.setdefault('warnings', []).append(
