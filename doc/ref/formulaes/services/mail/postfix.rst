@@ -66,8 +66,7 @@ Example pillar use
     makina-states.services.mail.postfix.mode: redirect
     makina-states.services.mail.postfix.local_dest: kiorky@gmail.com
 
-If you need to identify yourself to the outbound smtp:
-
+If you need to identify yourself to the outbound smtp::
 
     makina-states.services.mail.postfix: true
     makina-states.services.mail.postfix.mode: redirect

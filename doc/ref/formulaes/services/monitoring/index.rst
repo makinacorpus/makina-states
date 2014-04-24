@@ -5,3 +5,4 @@ Monitoring services
 
    circus.rst
    snmpd.rst
+   client.rst

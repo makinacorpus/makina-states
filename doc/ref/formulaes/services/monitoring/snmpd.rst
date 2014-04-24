@@ -4,7 +4,7 @@ SNMPD configuration
 we provide only snmpv3 configuration and totally disable snmpv2 for security
 considerations.
 
-.. _Circus: http://snmpd.readthedocs.org/en/latest/
+See :ref:`mc_module_snmpd` for configuration options.
 
 Exposed Hooks:
     - snmpd-pre-install
@@ -15,5 +15,3 @@ Exposed Hooks:
     - snmpd-post-restart
 
 Pillar value start with **makina-states.services.monitoring.snmpd**.
-
-see :ref:`mc_module_snmpd`_ for configuration options.

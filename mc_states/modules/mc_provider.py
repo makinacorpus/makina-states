@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
-__docformat__ = 'restructuredtext en'
 '''
 
 .. _module_mc_provider:
@@ -11,6 +9,8 @@ Useful functions to locate a particular host
 or setting
 '''
 
+__docformat__ = 'restructuredtext en'
+# -*- coding: utf-8 -*-
 __docformat__ = 'restructuredtext en'
 # Import python libs
 import logging

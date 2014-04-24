@@ -5,6 +5,8 @@
 
 mc_burp / burp functions
 ==================================
+
+burp settings
 '''
 
 __docformat__ = 'restructuredtext en'

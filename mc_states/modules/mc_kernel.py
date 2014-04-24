@@ -14,6 +14,7 @@ Documentation of this module is available with::
 
   salt '*' sys.doc mc_kernel
 
+
 '''
 # Import python libs
 import logging

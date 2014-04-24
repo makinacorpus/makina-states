@@ -3,10 +3,11 @@
 .. _module_mc_snmpd:
 
 mc_snmpd / snmpd functions
-============================================
-'''
+===========================
 
-__docformat__ = 'restructuredtext en'
+snmpd module
+
+'''
 # Import python libs
 import logging
 import mc_states.utils
@@ -20,6 +21,28 @@ def settings():
     '''
     snmpd settings
 
+        SNMPDRUN
+            yes
+        MIBS    
+            /usr/share/mibs
+        SNMPDOPTS
+            -Lsd -Lf /dev/null -p /var/run/snmpd.pid
+        TRAPDRUN
+            no
+        TRAPDOPTS
+            -Lsd -p /var/run/snmptrapd.pid
+        agentAddress
+            udp:161,udp6:[::1]:161
+        default_user
+            user
+        default_key
+            sup3rs3cret
+        default_password
+            s3cret
+        default_enc_type
+            DES
+        default_password_enc_type
+            SHA
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():

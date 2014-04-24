@@ -1,56 +1,21 @@
-{% macro do(full=True) %}
-{%- set locs = salt['mc_locations.settings']() %}
-ntp-pkgs:
-  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
-    - pkgs:
-      - ntp
-      - ntpdate
-{% endif %}
+include:
+  - makina-states.services.base.ntp.hooks
 {%- if grains['os'] not in ['Debian', 'Ubuntu'] %}
 ntpdate-svc:
   service.enabled:
+    - watch_in:
+      - mc_proxy: ntp-post-restart-hook
+    - watch:
+      - mc_proxy: ntp-pre-restart-hook
     - name: ntpdate
-    {% if full %}
-    - require:
-      - pkg: ntp-pkgs
-    {% endif %}
 {%- endif %}
-
 ntpd:
   service.running:
+    - watch_in:
+      - mc_proxy: ntp-post-restart-hook
+    - watch:
+      - mc_proxy: ntp-pre-restart-hook
     - enable: True
     {%- if grains['os'] in ['Debian', 'Ubuntu'] %}
     - name: ntp
     {%- endif %}
-    {% if full %}
-    - watch:
-      - pkg: ntp-pkgs
-    {% endif %}
-{% if salt['mc_controllers.mastersalt_mode']() %}
-{{ locs.conf_dir }}/ntp.conf:
-  file.managed:
-    - user: root
-    - group: root
-    - mode: '0440'
-    - template: jinja
-    - source: salt://makina-states/files/etc/ntp.conf
-    - var_lib: {{ locs.var_lib_dir }}
-    - watch_in:
-      - service: ntpd
-    {% if full %}
-    - require:
-      - pkg: ntp-pkgs
-    {% endif %}
-
-{{ locs.conf_dir }}/default/ntpdate:
-  file.managed:
-    - user: root
-    - group: root
-    - mode: '0440'
-    - template: jinja
-    - source: salt://makina-states/files/etc/default/ntpdate
-    {% if full %}
-    - require:
-      - pkg: ntp-pkgs
-    {% endif %}
-{% endif %}
