@@ -38,7 +38,7 @@ iface lo inet loopback
 allow-hotplug {{ ifname }}
 {% endif -%}
 {% if auto -%}
-auto {{ ifname }}
+auto {{ real_ifname }}
 {% endif -%}
 iface {{ real_ifname }} {{inet}} {{ mode -}}
 {% if address %}
