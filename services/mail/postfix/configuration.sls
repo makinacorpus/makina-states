@@ -78,7 +78,9 @@ makina-postfix-chroot-resolvconf-sync:
     - watch_in:
       - mc_proxy: postfix-post-conf-hook
       - mc_proxy: postfix-pre-restart-hook
-{% set hashtables = ['virtual', 'sasl_passwd',
+
+{% set hashtables = ['virtual_alias_maps',
+                     'sasl_passwd', 'relay_domains',
                      'transport', 'destinations']%}
 
 {% for f in hashtables %}
@@ -86,13 +88,13 @@ makina-postfix-{{f}}:
   file.managed:
     - name: {{ locs.conf_dir }}/postfix/{{f}}
     - source: salt://makina-states/files/etc/postfix/{{f}}
-    - user: root
+    - user: postfix
     - template: jinja
     - defaults:
       data: |
             {{salt['mc_utils.json_dump'](postfixSettings)}}
     - group: root
-    - mode: 644
+    - mode: 640
     - watch:
       - mc_proxy: postfix-pre-conf-hook
     - watch_in:
@@ -101,6 +103,17 @@ makina-postfix-local-{{f}}:
   file.managed:
     - name: {{ locs.conf_dir }}/postfix/{{f}}.local
     - source: ''
+    - user: postfix
+    - group: root
+    - mode: 640
+    - watch:
+      - mc_proxy: postfix-pre-conf-hook
+    - watch_in:
+      - mc_proxy: postfix-post-conf-hook
+{% endfor %}
+postfix-virtualdir:
+  file.directory:
+    - name: {{postfixSettings.virtual_mailbox_base}}
     - user: root
     - group: root
     - mode: 644
@@ -108,13 +121,14 @@ makina-postfix-local-{{f}}:
       - mc_proxy: postfix-pre-conf-hook
     - watch_in:
       - mc_proxy: postfix-post-conf-hook
-{% endfor %}
 
 {# postalias if {{ locs.conf_dir }}/aliases is altered #}
 makina-postfix-postalias:
   cmd.watch:
     - stateful: True
-    - name: postalias {{ locs.conf_dir }}/aliases;echo "changed=yes"
+    - name: |
+            postalias {{ locs.conf_dir }}/aliases;
+            echo "changed=yes"
     - watch:
       - mc_proxy: postfix-post-conf-hook
     - watch_in:
@@ -125,8 +139,8 @@ makina-postfix-postalias:
 makina-postfix-postmap-{{f}}:
   cmd.watch:
     - name: |
-            postmap {{locs.conf_dir}}/postfix/{{f}};
-            postmap {{locs.conf_dir}}/postfix/{{f}}.local;
+            postmap hash:/{{locs.conf_dir}}/postfix/{{f}};
+            postmap hash:/{{locs.conf_dir}}/postfix/{{f}}.local;
             echo "changed=yes"
     - stateful: True
     - watch:

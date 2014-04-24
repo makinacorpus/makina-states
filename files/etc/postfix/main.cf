@@ -19,19 +19,20 @@ smtpd_tls_cert_file={{data.cert_file}}
 smtpd_tls_key_file={{data.cert_key}}
 
 # aliases
-alias_maps     = hash:{{data.conf_dir}}/aliases,hash:{{data.conf_dir}}/aliases.local
-alias_database = hash:{{data.conf_dir}}/aliases,hash:{{data.conf_dir}}/aliases.local
+alias_maps     = hash:{{data.conf_dir}}/aliases
+alias_database = hash:{{data.conf_dir}}/aliases
 
 # enforce local delivery by using altered virutal domain maps
-virtual_alias_maps = regexp:{{data.conf_dir}}/postfix/virtual,regexp:{{data.conf_dir}}/postfix/virtual.local
+virtual_mailbox_base = {{data.virtual_mailbox_base}}
+virtual_alias_maps = regexp:{{data.conf_dir}}/postfix/virtual_alias_maps,regexp:{{data.conf_dir}}/postfix/virtual_alias_maps.local
 virtual_alias_domains =
 
-{% if data.auth %}
 # authentication parameters
-smtp_sasl_auth_enable = yes
+smtp_sasl_auth_enable = {% if data.smtp_auth %}yes{% else %}no{% endif %}
+smtpd_sasl_auth_enable = {% if data.smtpd_auth %}yes{% else %}no{% endif %}
 smtp_sasl_security_options =
-smtp_sasl_password_maps = hash:{{data.conf_dir}}/postfix/sasl_passwd,hash:{{data.conf_dir}}/postfix/sasl_passwd.local
-{% endif %}
+smtp_sasl_password_maps = hash:{{data.conf_dir}}/postfix/sasl_passwd
+#smtp_sasl_password_maps = hash:{{data.conf_dir}}/postfix/sasl_passwd,hash:{{data.conf_dir}}/postfix/sasl_passwd.local
 
 smtpd_banner = $myhostname ESMTP $mail_name (MakinaStates)
 biff = no
@@ -100,3 +101,9 @@ mailbox_size_limit = {{data.mailbox_size_limit}}
 # misc
 mailbox_command = procmail -a "$EXTENSION"
 recipient_delimiter = +
+
+
+
+debug_peer_list=mail.makina-corpus.com
+debug_peer_level=3
+

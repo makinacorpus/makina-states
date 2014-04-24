@@ -1,5 +1,6 @@
 include:
   - makina-states.services.mail.postfix.hooks
+{% set locs = salt['mc_locations.settings']()%}
 
 makina-postfix-configuration-check:
   cmd.run:

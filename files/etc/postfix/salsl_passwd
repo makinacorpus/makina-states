@@ -1,4 +1,0 @@
-{% set data = salt['mc_utils.json_load'](data) %}
-{% for h in data.sasl_passwd %}
-[{{h.host}}]:{{h.get('port', '25')}} {{h.user}}:{{h.password}}
-{% endfor %}

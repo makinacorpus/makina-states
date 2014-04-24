@@ -51,19 +51,16 @@ def settings():
         where to bind('all')
     mailbox_size_limit
         size max of the mailbox(0)
-    mynetworks
-        which network to use (local_networks)
     auth
-        If true, enable SMTPD authentication via
-        virtual map (relay mode) (False)
-    auth_user
-        auth user for smtpd authentication
-    auth_password':
-        auth password for smtpd authentication
-    relay_host
-        relay host if any
-    relay_port
-        relay host port if any
+        enable smtp auth
+    mynetworks
+        list of hosts/nets to add to mynetworks
+    relay_domains
+        Mapping {relaydomain: action}
+    transports
+        list of mappings {transport:'', 'nexthop': ''}
+        default transport is '*'.
+        This can be used to make a satellite
     virtual_map
         dict of key/value pair to feed the virtual table
     '''
@@ -81,28 +78,28 @@ def settings():
             for ip in ips:
                 net = '.'.join(ip.split('.')[:3]) + '.0/24'
                 if not net in local_networks:
+                    local_networks.append(net)
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.mail.postfix', {
                 'use_tls': 'yes',
                 'inet_protocols': 'ipv4',
                 #'check_policy_service': 'inet:127.0.0.1:10023',
                 'check_policy_service': None,
-                'inet_interfaces': '127.0.0.1',
                 'conf_dir': locs['conf_dir'],
                 'mailname': __salt__['mc_network.settings']()['fqdn'],
                 'cert_file': '{conf_dir}/ssl/certs/ssl-cert-snakeoil.pem',
                 'cert_key': '{conf_dir}/ssl/private/ssl-cert-snakeoil.key',
-                'inet_interfaces': 'all',
+                'smtp_auth': True,
+                'smtpd_auth': True,
+                'inet_interfaces': None,
                 'mode': 'localdeliveryonly',
+                'virtual_mailbox_base': '/var/mail/virtual',
                 'mailbox_size_limit': 0,
                 'mynetworks': local_networks,
                 'mydestination': OrderedDict(),
-                'auth': False,
-                'auth_user': 'foo',
-                'auth_password': 'secret',
                 'append_dot_mydomain': 'no',
                 'relay_domains': OrderedDict(),
-                'sasl_passwd ': [],
+                'sasl_passwd': [],
                 'transport': [],
                 'virtual_map': OrderedDict(),
                 'local_dest': 'root@localhost',
@@ -110,21 +107,30 @@ def settings():
         )
         if nodetypes_registry['is']['devhost']:
             data['local_dest'] = 'vagrant@localhost'
-        if data['mode'] in ['localdeliveryonly']:
+        if data['mode'] in ['redirect']:
             data['virtual_map']['/.*/'] = data['local_dest']
+        if data['mode'] in ['localdeliveryonly']:
+            data['virtual_map']['/.*/'] = 'root@localhost'
         for h in [
             'localhost.local',
             'localhost',
-            data['mailname']
+            data['mailname'],
             __grains__['fqdn'],
         ]:
             if data['mode'] == 'relay':
-                data['mydestinations'] = {}
+                data['mydestination'] = {}
                 if h not in data['relay_domains']:
                     data['relay_domains'][h] = 'OK'
             else:
-                if h not in data['mydestinations']:
-                    data['mydestinations'][h] = 'OK'
+                if h not in data['mydestination']:
+                    data['mydestination'][h] = 'OK'
+        if data['inet_interfaces'] is None:
+            if data['mode'] in ['localdeliveryonly',
+                                'redirect',
+                                'relay']:
+                data['inet_interfaces'] = '127.0.0.1'
+            else:
+                data['inet_interfaces'] = 'all'
         return data
     return _settings()
 

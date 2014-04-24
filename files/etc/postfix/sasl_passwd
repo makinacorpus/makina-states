@@ -1,0 +1,4 @@
+{% set data = salt['mc_utils.json_load'](data) %}
+{% for h in data['sasl_passwd'] %}
+{{h.entry}} {{h.user}}:{{h.password}}
+{% endfor %}
