@@ -29,6 +29,7 @@ update-rc.d -f apparmor remove || /bin/true
 # disabling useless and harmfull services
 for f in\
     $(find /etc/init -name console-setup.conf)\
+    $(find /etc/init -name dbus.conf)\
     $(find /etc/init -name acpid.conf)\
     $(find /etc/init -name apport.conf)\
     $(find /etc/init -name control-alt-delete.conf)\
@@ -39,6 +40,12 @@ for f in\
     $(find /etc/init -name mountall-net.conf )\
     $(find /etc/init -name mountall-reboot.conf)\
     $(find /etc/init -name mountall-shell.conf)\
+    $(find /etc/init -name mounted-debugfs.conf )\
+    $(find /etc/init -name mounted-dev.conf)\
+    $(find /etc/init -name mounted-proc.conf)\
+    $(find /etc/init -name mounted-run.conf)\
+    $(find /etc/init -name mounted-tmp.conf)\
+    $(find /etc/init -name mounted-var.conf)\
     $(find /etc/init -name setvtrgb.conf)\
     $(find /etc/init -name systemd-logind.conf)\
     $(find /etc/init -name udev*.conf)\

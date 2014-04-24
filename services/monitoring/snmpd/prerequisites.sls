@@ -1,5 +1,11 @@
 include:
   - makina-states.services.monitoring.snmpd.hooks
+{% set dodl=True %}
+{% if grains['os'] in ['Debian'] %}
+{% if grains["osrelease"][0] < "6" %}
+{% set dodl=False %}
+{% endif %}
+{% endif %}
 
 snmpd-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
@@ -9,7 +15,7 @@ snmpd-pkgs:
       - mc_proxy: snmpd-post-install-hook
     - pkgs:
       - snmp
-      - snmp-mibs-downloader
+      {% if dodl %}- snmp-mibs-downloader{% endif%}
       - libsensors4
       - libsnmp-base
       {% if grains['os'] in ['Debian'] %}
