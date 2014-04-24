@@ -61,6 +61,8 @@ def settings():
                 False
             query
                 False
+            restrict
+                list of restrict entries without the leading restrict
 
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
@@ -80,6 +82,8 @@ def settings():
                 ],
                 'fudge': [
                     '127.127.1.0 stratum 11',
+                ],
+                'restrict': [
                 ],
                 'default_all': True,
                 'block_ext': False,
