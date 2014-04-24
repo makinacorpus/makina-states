@@ -29,6 +29,7 @@ update-rc.d -f apparmor remove || /bin/true
 # disabling useless and harmfull services
 for f in\
     $(find /etc/init -name console-setup.conf)\
+    $(find /etc/init -name dbus.conf)\
     $(find /etc/init -name acpid.conf)\
     $(find /etc/init -name apport.conf)\
     $(find /etc/init -name control-alt-delete.conf)\
