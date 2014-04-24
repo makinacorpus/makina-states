@@ -4,6 +4,17 @@ include:
   - makina-states.services.mail.postfix.hooks
   - makina-states.services.mail.postfix.services
 
+{{ locs.conf_dir }}-postfix-dir:
+  file.directory:
+    - name: {{ locs.conf_dir }}/postfix
+    - user: postfix
+    - group: root
+    - mode: 755
+    - watch:
+      - mc_proxy: postfix-post-install-hook
+    - watch_in:
+      - mc_proxy: postfix-pre-conf-hook
+
 {{ locs.conf_dir }}-postfix-mailname:
   file.managed:
     - name: {{ locs.conf_dir }}/mailname
@@ -25,7 +36,7 @@ include:
     - template: jinja
     - user: root
     - group: root
-    - mode: 644
+    - mode: 744
     - watch:
       - mc_proxy: postfix-pre-conf-hook
     - watch_in:
@@ -79,7 +90,7 @@ makina-postfix-chroot-resolvconf-sync:
       - mc_proxy: postfix-post-conf-hook
       - mc_proxy: postfix-pre-restart-hook
 
-{% set hashtables = ['virtual_alias_maps',
+{% set hashtables = ['virtual_alias_maps', 'networks',
                      'sasl_passwd', 'relay_domains',
                      'transport', 'destinations']%}
 
@@ -94,7 +105,7 @@ makina-postfix-{{f}}:
       data: |
             {{salt['mc_utils.json_dump'](postfixSettings)}}
     - group: root
-    - mode: 640
+    - mode: 740
     - watch:
       - mc_proxy: postfix-pre-conf-hook
     - watch_in:
@@ -116,7 +127,7 @@ postfix-virtualdir:
     - name: {{postfixSettings.virtual_mailbox_base}}
     - user: root
     - group: root
-    - mode: 644
+    - mode: 744
     - watch:
       - mc_proxy: postfix-pre-conf-hook
     - watch_in:
@@ -139,8 +150,8 @@ makina-postfix-postalias:
 makina-postfix-postmap-{{f}}:
   cmd.watch:
     - name: |
-            postmap hash:/{{locs.conf_dir}}/postfix/{{f}};
             postmap hash:/{{locs.conf_dir}}/postfix/{{f}}.local;
+            postmap hash:/{{locs.conf_dir}}/postfix/{{f}};
             echo "changed=yes"
     - stateful: True
     - watch:

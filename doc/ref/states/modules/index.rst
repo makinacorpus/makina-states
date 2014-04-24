@@ -41,6 +41,7 @@ Subregistries
    mc_mysql.rst
    mc_network.rst
    mc_nginx.rst
+   mc_ntp.rst
    mc_nodejs.rst
    mc_pgsql.rst
    mc_php.rst
