@@ -1,12 +1,5 @@
 {% macro do(full=True) %}
-
-{{ salt['mc_macros.register']('services', 'base.ntp') }}
 {%- set locs = salt['mc_locations.settings']() %}
-
-include:
-  - makina-states.localsettings.timezone
-
-{% if full %}
 ntp-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
@@ -61,5 +54,3 @@ ntpd:
       - pkg: ntp-pkgs
     {% endif %}
 {% endif %}
-{% endmacro %}
-{{ do(full=False) }}
