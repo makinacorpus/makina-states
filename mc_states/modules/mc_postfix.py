@@ -73,13 +73,14 @@ def settings():
         pillar = __pillar__
         nodetypes_registry = __salt__['mc_nodetypes.registry']()
         locs = __salt__['mc_locations.settings']()
-        local_networks = '127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128 {{ local_networks }}'
+        local_networks = ['127.0.0.0/8',
+                          '[::ffff:127.0.0.0]/104',
+                          '[::1]/128',
+                          '{{ local_networks }}']
         for iface, ips in grains['ip_interfaces'].items():
             for ip in ips:
-                local_networks = '{0} {1}'.format(
-                    local_networks,
-                    '.'.join(ip.split('.')[:3]) + '.0/24')
-        local_networks = local_networks.strip()
+                net = '.'.join(ip.split('.')[:3]) + '.0/24'
+                if not net in local_networks:
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.mail.postfix', {
                 'use_tls': 'yes',
@@ -95,11 +96,14 @@ def settings():
                 'mode': 'localdeliveryonly',
                 'mailbox_size_limit': 0,
                 'mynetworks': local_networks,
+                'mydestination': OrderedDict(),
                 'auth': False,
                 'auth_user': 'foo',
                 'auth_password': 'secret',
-                'relay_host': 'localhost',
-                'relay_port': '587',
+                'append_dot_mydomain': 'no',
+                'relay_domains': OrderedDict(),
+                'sasl_passwd ': [],
+                'transport': [],
                 'virtual_map': OrderedDict(),
                 'local_dest': 'root@localhost',
             }
@@ -108,8 +112,19 @@ def settings():
             data['local_dest'] = 'vagrant@localhost'
         if data['mode'] in ['localdeliveryonly']:
             data['virtual_map']['/.*/'] = data['local_dest']
-        if data['mode'] in ['relay']:
-            data['inet_interfaces'] = 'loopback-only'
+        for h in [
+            'localhost.local',
+            'localhost',
+            data['mailname']
+            __grains__['fqdn'],
+        ]:
+            if data['mode'] == 'relay':
+                data['mydestinations'] = {}
+                if h not in data['relay_domains']:
+                    data['relay_domains'][h] = 'OK'
+            else:
+                if h not in data['mydestinations']:
+                    data['mydestinations'][h] = 'OK'
         return data
     return _settings()
 

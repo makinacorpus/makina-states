@@ -3,6 +3,7 @@
 include:
   - makina-states.services.mail.postfix.hooks
   - makina-states.services.mail.postfix.services
+
 {{ locs.conf_dir }}-postfix-mailname:
   file.managed:
     - name: {{ locs.conf_dir }}/mailname
@@ -77,22 +78,14 @@ makina-postfix-chroot-resolvconf-sync:
     - watch_in:
       - mc_proxy: postfix-post-conf-hook
       - mc_proxy: postfix-pre-restart-hook
+{% set hashtables = ['virtual', 'sasl_passwd',
+                     'transport', 'destinations']%}
 
-{# postalias if {{ locs.conf_dir }}/aliases is altered #}
-makina-postfix-postalias:
-  cmd.watch:
-    - stateful: True
-    - name: postalias {{ locs.conf_dir }}/aliases;echo "changed=yes"
-    - watch:
-      - mc_proxy: postfix-pre-conf-hook
-    - watch_in:
-      - mc_proxy: postfix-post-conf-hook
-      - mc_proxy: postfix-pre-restart-hook
-
-makina-postfix-virtual:
+{% for f in hashtables %}
+makina-postfix-{{f}}:
   file.managed:
-    - name: {{ locs.conf_dir }}/postfix/virtual
-    - source: salt://makina-states/files/etc/postfix/virtual
+    - name: {{ locs.conf_dir }}/postfix/{{f}}
+    - source: salt://makina-states/files/etc/postfix/{{f}}
     - user: root
     - template: jinja
     - defaults:
@@ -104,51 +97,40 @@ makina-postfix-virtual:
       - mc_proxy: postfix-pre-conf-hook
     - watch_in:
       - mc_proxy: postfix-post-conf-hook
-
-{# postmap /etc/postfix/virtual when altered #}
-makina-postfix-postmap-virtual:
-  cmd.watch:
-    - name: |
-            postmap {{ locs.conf_dir }}/postfix/virtual;
-            echo "changed=yes"
-    - stateful: true
-    - watch:
-      - file: makina-postfix-virtual
-      - mc_proxy: postfix-pre-conf-hook
-    - watch_in:
-      - mc_proxy: postfix-post-conf-hook
-      - mc_proxy: postfix-pre-restart-hook
-
-{% if postfixSettings.auth %}
-fill-/etc/postfix/sasl_passwd:
+makina-postfix-local-{{f}}:
   file.managed:
-    - name: {{locs.conf_dir}}/postfix/sasl_passwd
-    - mode: 700
+    - name: {{ locs.conf_dir }}/postfix/{{f}}.local
+    - source: ''
     - user: root
     - group: root
-    - source: ''
-    - contents: '[{{postfixSettings.relay_host}}]:{{postfixSettings.relay_port}} {{postfixSettings.auth_user}}:{{postfixSettings.auth_password}}'
-
-makina-postfix-postmap-sasl:
-  cmd.watch:
-    - name: |
-            postmap {{ locs.conf_dir }}/postfix/sasl_passwd;
-            echo "changed=yes"
-    - stateful: True
+    - mode: 644
     - watch:
-      - file: fill-/etc/postfix/sasl_passwd
       - mc_proxy: postfix-pre-conf-hook
     - watch_in:
       - mc_proxy: postfix-post-conf-hook
-      - mc_proxy: postfix-pre-restart-hook
-{% endif %}
+{% endfor %}
 
-makina-postfix-configuration-check:
-  cmd.run:
-    - name: {{ locs.sbin_dir }}/postfix check 2>&1  && echo "" && echo "changed=no"
+{# postalias if {{ locs.conf_dir }}/aliases is altered #}
+makina-postfix-postalias:
+  cmd.watch:
+    - stateful: True
+    - name: postalias {{ locs.conf_dir }}/aliases;echo "changed=yes"
+    - watch:
+      - mc_proxy: postfix-post-conf-hook
+    - watch_in:
+      - cmd: makina-postfix-configuration-check
+
+{# postmap when altered #}
+{% for f in hashtables %}
+makina-postfix-postmap-{{f}}:
+  cmd.watch:
+    - name: |
+            postmap {{locs.conf_dir}}/postfix/{{f}};
+            postmap {{locs.conf_dir}}/postfix/{{f}}.local;
+            echo "changed=yes"
     - stateful: True
     - watch:
       - mc_proxy: postfix-post-conf-hook
     - watch_in:
-      - mc_proxy: postfix-pre-restart-hook
-
+      - cmd: makina-postfix-configuration-check
+{%endfor %}

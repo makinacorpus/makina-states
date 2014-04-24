@@ -1,0 +1,4 @@
+{% set data = salt['mc_utils.json_load'](data) %}
+{% for host, action action in data.mydestinations.items() %}
+{{host}} {{action}}
+{% endfor %}

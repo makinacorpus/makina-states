@@ -1,0 +1,4 @@
+{% set data = salt['mc_utils.json_load'](data) %}
+{% for host in data.transport %}
+{{host.transport}} {{host.nexthop}}
+{% endfor %}

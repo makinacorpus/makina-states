@@ -4,20 +4,14 @@
 # line of that file to be used as the name.  The Debian default
 # is {{data.conf_dir}}/mailname.
 #myorigin = {{data.conf_dir}}/mailname
-
 myhostname = {{data.mailname }}
 myorigin = {{data.conf_dir}}/mailname
-{% if mode in ['relay'] %}
-mydestination =
-relayhost = [{{data.relay_host}}]:{{data.relay_port}}
-{% else %}
-mydestination = {{data.mailname }}, localhost.local, localhost
-relayhost =
-{% endif %}
 inet_protocols = {{data.inet_protocols}}
 inet_interfaces = {{data.inet_interfaces}}
-mynetworks = {{data.mynetworks}}
-
+mydestination  = hash:/etc/postfix/destinations,hash:/etc/postfix/destinations.local
+relay_domains  = hash:/etc/postfix/relay_domains,hash:/etc/postfix/relay_domains.local
+mynetworks     = hash:/etc/postfix/mynetworks,hash:/etc/postfix/mynetworks.local
+transport_maps = hash:/etc/postfix/transport,hash:/etc/postfix/transport.local
 # TLS parameters
 smtp_use_tls={{data.use_tls}}
 smtpd_use_tls={{data.use_tls}}
@@ -25,26 +19,25 @@ smtpd_tls_cert_file={{data.cert_file}}
 smtpd_tls_key_file={{data.cert_key}}
 
 # aliases
-alias_maps = hash:{{data.conf_dir}}/aliases
-alias_database = hash:{{data.conf_dir}}/aliases
+alias_maps     = hash:{{data.conf_dir}}/aliases,hash:{{data.conf_dir}}/aliases.local
+alias_database = hash:{{data.conf_dir}}/aliases,hash:{{data.conf_dir}}/aliases.local
 
 # enforce local delivery by using altered virutal domain maps
-virtual_alias_maps = regexp:{{data.conf_dir}}/postfix/virtual
+virtual_alias_maps = regexp:{{data.conf_dir}}/postfix/virtual,regexp:{{data.conf_dir}}/postfix/virtual.local
 virtual_alias_domains =
 
 {% if data.auth %}
 # authentication parameters
 smtp_sasl_auth_enable = yes
 smtp_sasl_security_options =
-smtp_sasl_password_maps = hash:{{data.conf_dir}}/postfix/sasl_passwd
+smtp_sasl_password_maps = hash:{{data.conf_dir}}/postfix/sasl_passwd,hash:{{data.conf_dir}}/postfix/sasl_passwd.local
 {% endif %}
-
 
 smtpd_banner = $myhostname ESMTP $mail_name (MakinaStates)
 biff = no
 
 # appending .domain is the MUA's job.
-append_dot_mydomain = no
+append_dot_mydomain = {{data.append_dot_mydomain}}
 
 # Uncomment the next line to generate "delayed mail" warnings
 # delay_warning_time = 4h

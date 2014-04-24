@@ -1,0 +1,4 @@
+{% set data = salt['mc_utils.json_load'](data) %}
+{% for host, action action in data.relay_domains.items() %}
+{{host}} {{action}}
+{% endfor %}

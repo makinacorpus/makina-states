@@ -1,4 +1,4 @@
 {% set data = salt['mc_utils.json_load'](data) %}
-{% for i, v in data.virtual_map.items() %}
-{{i}} {{v}}
+{% for host in data.mynetworks %}
+{{host}} OK
 {% endfor %}
