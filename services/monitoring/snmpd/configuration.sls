@@ -29,6 +29,14 @@ snmpd-{{f}}:
               {{salt['mc_utils.json_dump'](data)}}
 {% endfor %}
 {% set m = '/usr/share/mibs' %}
+{% set dodl=True %}
+{% if grains['os'] in ['Debian'] %}
+{% if grains["osrelease"][0] < "6" %}
+{% set dodl=False %}
+{% endif %}
+{% endif %}
+
+{% if dodl %}
 snmpd-mibs-download:
   cmd.run:
     - name: download-mibs
@@ -40,6 +48,8 @@ snmpd-mibs-download:
               test -e {{m}}/iana/IANA-ADDRESS-FAMILY-NUMBERS-MIB &&
               test -e {{m}}/ietf/SONET-MIB
 
+{% endif%}
+{% if grains['os'] in ['Ubuntu'] %}
 # fix missing script if any
 fix-snmpd-user-packaging:
   cmd.run:
@@ -53,7 +63,7 @@ fix-snmpd-user-packaging:
             {{sdata.c.minion.msr}}/files/usr/bin/net-snmp-create-v3-user
             /usr/bin/net-snmp-create-v3-user;
             chmod +x /usr/bin/net-snmp-create-v3-user
-
+{% endif %}
 snmpd-user:
   cmd.run:
     - watch:
