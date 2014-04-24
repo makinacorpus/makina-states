@@ -50,6 +50,21 @@ def get_macro(name, action):
     return fmt.format(name=name, action=action)
 
 
+def append_rules_for_zones(default_rules, rules, zones=None):
+    if not isinstance(rules, list):
+        rules = [rules]
+    if not zones:
+        zones = ['all']
+    for rule in rules:
+        if 'comment' in rule:
+            default_rules.append(rule)
+        else:
+            for zone in zones:
+                crule = rule.copy()
+                crule['dest'] = zone
+                default_rules.append(crule)
+
+
 def settings():
     '''
     shorewall settings
@@ -113,6 +128,7 @@ def settings():
                 'default_interfaces': OrderedDict(),
                 'default_policies': [],
                 'default_rules': [],
+                'internal_zones': [],
                 'default_zones': {'net': OrderedDict(),
                                   'fw': {'type': 'firewall'}},
                 'no_default_masqs': False,
@@ -144,6 +160,7 @@ def settings():
                 'no_web': False,
                 'no_ldap': False,
                 'no_burp': False,
+                'no_mumble': False,
                 'no_syslog': False,
                 'no_computenode': False,
                 'defaultstate': 'new',
@@ -203,7 +220,7 @@ def settings():
         burpsettings = __salt__['mc_burp.settings']()
         if not data['no_default_params']:
             for p in ['SYSLOG', 'SSH', 'SNMP', 'PING', 'LDAP',
-                      'NTP',
+                      'NTP', 'MUMBLE',
                       'BURP', 'MYSQL', 'POSTGRESQL', 'FTP']:
                 default = 'all'
                 if p in ['SYSLOG', 'BURP']:
@@ -292,6 +309,10 @@ def settings():
                 data['default_policies'].append({
                     'source': '$FW', 'dest': z, 'policy': 'ACCEPT'})
 
+            for z in ['fw'] + [a for a in data['zones']]:
+                if not z in data['internal_zones'] and not z in ['net']:
+                    data['internal_zones'].append(z)
+
             # dck -> net: auth
             # dck -> dck: auth
             # lxc -> dck: auth
@@ -354,9 +375,10 @@ def settings():
                     action = 'DROP'
                 else:
                     action = 'ACCEPT'
-                data['default_rules'].append({
+                append_rules_for_zones(data['default_rules'], {
                     'action': get_macro('Invalid', action),
-                    'source': 'net', 'dest': 'all'})
+                    'source': 'net', 'dest': 'all'},
+                    zones=data['internal_zones'])
 
             data['default_rules'].append({'comment': 'lxc dhcp traffic'})
             if data['have_lxc']:
@@ -381,7 +403,8 @@ def settings():
                      'proto': 'udp', 'dport': '67:68'})
 
             # salt/master traffic if any
-            data['default_rules'].append(
+            append_rules_for_zones(
+                data['default_rules'],
                 {'comment': '(Master)Salt on localhost'})
             for proto in protos:
                 data['default_rules'].append(
@@ -390,8 +413,8 @@ def settings():
                      'proto': proto,
                      'dport': '4505,4506,4605,4606'})
             if data['have_lxc']:
-                data['default_rules'].append(
-                    {'comment': '(Master)Salt on lxc'})
+                append_rules_for_zones(data['default_rules'],
+                                       {'comment': '(Master)Salt on lxc'})
                 for proto in protos:
                     data['default_rules'].append(
                         {'action': 'ACCEPT',
@@ -399,8 +422,8 @@ def settings():
                          'proto': proto,
                          'dport': '4505,4506,4605,4606'})
             if data['have_docker']:
-                data['default_rules'].append(
-                    {'comment': '(Master)Salt on dockers'})
+                append_rules_for_zones(data['default_rules'],
+                                       {'comment': '(Master)Salt on dockers'})
                 for proto in protos:
                     data['default_rules'].append(
                         {'action': 'ACCEPT',
@@ -418,15 +441,18 @@ def settings():
                     cloud_c_settings['ssh_port_range_start'],
                     cloud_c_settings['ssh_port_range_end'],
                 )
-                data['default_rules'].append(
-                    {'comment': 'corpus computenode'})
+                append_rules_for_zones(data['default_rules'],
+                                       {'comment': 'corpus computenode'})
                 for proto in protos:
-                    data['default_rules'].append({'action': 'ACCEPT',
-                                                  'source': 'all', 'dest': 'fw',
-                                                  'proto': proto,
-                                                  'dport': (
-                                                      '{0}:{1}'
-                                                  ).format(cstart, cend)})
+                    append_rules_for_zones(
+                        data['default_rules'],
+                        {'action': 'ACCEPT',
+                         'source': 'all', 'dest': 'fw',
+                         'proto': proto,
+                         'dport': (
+                             '{0}:{1}'
+                         ).format(cstart, cend)},
+                        zones=data['internal_zones'])
             # enable mastersalt traffic if any
             if (
                 controllers_registry['is']['mastersalt_master']
@@ -434,11 +460,13 @@ def settings():
             ):
                 data['default_rules'].append({'comment': 'mastersalt'})
                 for proto in protos:
-                    data['default_rules'].append(
+                    append_rules_for_zones(
+                        data['default_rules'],
                         {'action': 'ACCEPT',
                          'source': 'all', 'dest': 'fw',
                          'proto': proto,
-                         'dport': '4605,4606'})
+                         'dport': '4605,4606'},
+                        zones=data['internal_zones'])
             # enable salt traffic if any
             if (
                 controllers_registry['is']['salt_master']
@@ -446,68 +474,81 @@ def settings():
             ):
                     data['default_rules'].append({'comment': 'salt'})
                     for proto in protos:
-                        data['default_rules'].append(
+                        append_rules_for_zones(
+                            data['default_rules'],
                             {'action': 'ACCEPT',
                              'source': 'all',
                              'dest': 'fw',
                              'proto': proto,
-                             'dport': '4505,4506'})
+                             'dport': '4505,4506'},
+                            zones=data['internal_zones'])
 
             data['default_rules'].append({'comment': 'dns'})
             if data['no_dns']:
                 action = 'DROP'
             else:
                 action = 'ACCEPT'
-            data['default_rules'].append({'action': get_macro('DNS', action),
-                                          'source': 'all', 'dest': 'all'})
+            append_rules_for_zones(
+                data['default_rules'],
+                {'action': get_macro('DNS', action), 'source': 'all', 'dest': 'all'},
+                zones=data['internal_zones'])
 
             data['default_rules'].append({'comment': 'web'})
             if data['no_web']:
                 action = 'DROP'
             else:
                 action = 'ACCEPT'
-            data['default_rules'].append({'action': get_macro('Web', action),
-                                          'source': 'all', 'dest': 'all'})
+                append_rules_for_zones(
+                    data['default_rules'],
+                    {'action': get_macro('Web', action), 'source': 'all', 'dest': 'all'},
+                    zones=data['internal_zones'])
 
             data['default_rules'].append({'comment': 'ntp'})
             if data['no_ntp']:
                 action = 'DROP'
             else:
                 action = 'ACCEPT'
-            data['default_rules'].append({'action': get_macro('NTP', action),
-                                          'source': '$SALT_RESTRICTED_NTP',
-                                          'dest': 'all'})
+            append_rules_for_zones(
+                data['default_rules'],
+                {'action': get_macro('NTP', action),
+                 'source': '$SALT_RESTRICTED_NTP', 'dest': 'all'},
+                zones=data['internal_zones'])
 
             data['default_rules'].append({'comment': 'ssh'})
             if data['no_ssh']:
                 action = 'DROP'
             else:
                 action = 'ACCEPT'
-            data['default_rules'].append({'action': get_macro('SSH', action),
-                                          'source': '$SALT_RESTRICTED_SSH',
-                                          'dest': 'all'})
+            append_rules_for_zones(
+                data['default_rules'],
+                {'action': get_macro('SSH', action),
+                 'source': '$SALT_RESTRICTED_SSH',
+                 'dest': 'all'},
+                zones=data['internal_zones'])
 
             data['default_rules'].append({'comment': 'syslog'})
             if data['no_syslog']:
                 action = 'DROP'
             else:
                 action = 'ACCEPT'
-            data['default_rules'].append({'action': get_macro('Syslog',
-                                                              action),
-                                          'source': '$SALT_RESTRICTED_SYSLOG',
-                                          'dest': 'all'})
+            append_rules_for_zones(data[
+                'default_rules'],
+                {'action': get_macro('Syslog', action),
+                 'source': '$SALT_RESTRICTED_SYSLOG',
+                 'dest': 'all'},
+                zones=data['internal_zones'])
 
             data['default_rules'].append({'comment': 'ping'})
             # restricting ping is really a awkard bad idea
             # for ping, we drop and only accept from restricted (default: all)
-            # data['default_rules'].append({
+            # append_rules_for_zones(data['default_rules'], {
             #     'action': 'Ping(DROP)'.format(action),
             #     'source': 'net', 'dest': '$FW'})
             # if data['no_ping']:
             #     action = 'DROP'
             # else:
             #     action = 'ACCEPT'
-            # data['default_rules'].append({'action': 'Ping({0})'.format(action),
+            # append_rules_for_zones(data['default_rules'], {'action': 'Ping({0})'.format(action),
             #                               'source': '$SALT_RESTRICTED_PING',
             #                               'dest': '$FW'})
             # limiting ping
@@ -515,75 +556,107 @@ def settings():
             rate = 's:10/min:10'
             if sw_ver < '4.4':
                 rate = '-'
-            data['default_rules'].append({
-                #'action': get_macro('Ping', action),
-                'action': get_macro('Ping', 'ACCEPT'),
-                'source': 'net',
-                'dest': '$FW',
-                'rate': rate})
+            append_rules_for_zones(
+                data['default_rules'],
+                {'action': get_macro('Ping', 'ACCEPT'),
+                 'source': 'net',
+                 'dest': '$FW',
+                 'rate': rate},
+                zones=data['internal_zones'])
 
             for z in [a for a in data['zones'] if a not in ['net']]:
-                data['default_rules'].append({
-                    #'action': get_macro('Ping', action),
-                    'action': get_macro('Ping', 'ACCEPT'),
-                    'source': z,
-                    'dest': '$FW'})
+                append_rules_for_zones(
+                    data['default_rules'],
+                    {'action': get_macro('Ping', 'ACCEPT'),
+                     'source': z,
+                     'dest': '$FW'},
+                    zones=data['internal_zones'])
 
             data['default_rules'].append({'comment': 'smtp'})
             if data['no_smtp']:
                 action = 'DROP'
             else:
                 action = 'ACCEPT'
-            data['default_rules'].append({'action': get_macro('Mail', action),
-                                          'source': 'all', 'dest': 'all'})
+            append_rules_for_zones(
+                data['default_rules'],
+                {'action': get_macro('Mail', action),
+                 'source': 'all', 'dest': 'all'},
+                zones=data['internal_zones'])
 
             data['default_rules'].append({'comment': 'snmp'})
             if data['no_snmp']:
                 action = 'DROP'
             else:
                 action = 'ACCEPT'
-            data['default_rules'].append(
+            append_rules_for_zones(
+                data['default_rules'],
                 {'action': get_macro('SNMP', action),
-                 'source': '$SALT_RESTRICTED_SNMP', 'dest': 'all'})
+                 'source': '$SALT_RESTRICTED_SNMP', 'dest': 'all'},
+                zones=data['internal_zones'])
 
             data['default_rules'].append({'comment': 'ftp'})
             if data['no_ftp']:
                 action = 'DROP'
             else:
                 action = 'ACCEPT'
-            data['default_rules'].append(
+            append_rules_for_zones(
+                data['default_rules'],
                 {'action': get_macro('FTP', action),
-                 'source': '$SALT_RESTRICTED_FTP', 'dest': 'all'})
+                 'source': '$SALT_RESTRICTED_FTP', 'dest': 'all'},
+                zones=data['internal_zones'])
 
             data['default_rules'].append({'comment': 'postgresql'})
             if data['no_postgresql']:
                 action = 'DROP'
             else:
                 action = 'ACCEPT'
-            data['default_rules'].append({
-                'action': get_macro('PostgreSQL', action),
-                'source': '$SALT_RESTRICTED_POSTGRESQL', 'dest': 'all'})
+            append_rules_for_zones(
+                data['default_rules'], 
+                {'action': get_macro('PostgreSQL', action),
+                 'source': '$SALT_RESTRICTED_POSTGRESQL', 'dest': 'all'},
+                zones=data['internal_zones'])
 
             data['default_rules'].append({'comment': 'mysql'})
             if data['no_mysql']:
                 action = 'DROP'
             else:
                 action = 'ACCEPT'
-            data['default_rules'].append({
-                'action': get_macro('MySQL', action),
-                'source': '$SALT_RESTRICTED_MYSQL', 'dest': 'all'})
+            append_rules_for_zones(
+                data['default_rules'],
+                {'action': get_macro('MySQL', action),
+                 'source': '$SALT_RESTRICTED_MYSQL', 'dest': 'all'},
+                zones=data['internal_zones'])
+
+            data['default_rules'].append({'comment': 'mumble'})
+            if data['no_mumble']:
+                action = 'DROP'
+            else:
+                action = 'ACCEPT'
+            for proto in protos:
+                append_rules_for_zones(
+                    data['default_rules'],
+                    {'action': action,
+                     'source': 'all',
+                     'dest': 'fw',
+                     'proto': proto,
+                     'dport': '64738'},
+                    zones=data['internal_zones'])
 
             data['default_rules'].append({'comment': 'ldap'})
             if data['no_ldap']:
                 action = 'DROP'
             else:
                 action = 'ACCEPT'
-            data['default_rules'].append({
-                'action': get_macro('LDAP', action),
-                'source': '$SALT_RESTRICTED_LDAP', 'dest': 'all'})
-            data['default_rules'].append({
-                'action': get_macro('LDAPS', action),
-                'source': '$SALT_RESTRICTED_LDAP', 'dest': 'all'})
+            append_rules_for_zones(
+                data['default_rules'],
+                {'action': get_macro('LDAP', action),
+                 'source': '$SALT_RESTRICTED_LDAP', 'dest': 'all'},
+                zones=data['internal_zones'])
+            append_rules_for_zones(
+                data['default_rules'],
+                {'action': get_macro('LDAPS', action),
+                 'source': '$SALT_RESTRICTED_LDAP', 'dest': 'all'},
+                zones=data['internal_zones'])
 
             data['default_rules'].append({'comment': 'burp'})
             if data['no_burp']:
@@ -591,29 +664,35 @@ def settings():
             else:
                 action = 'ACCEPT'
             for proto in protos:
-                data['default_rules'].append(
+                append_rules_for_zones(
+                    data['default_rules'],
                     {'action': action,
                      'source': 'fw:127.0.0.1',
                      'dest': "all",
                      'proto': proto,
-                     'dport': '4971,4972'})
+                     'dport': '4971,4972'},
+                    zones=data['internal_zones'])
             for proto in protos:
-                data['default_rules'].append(
+                append_rules_for_zones(
+                    data['default_rules'],
                     {'action': action,
                      'source': '$SALT_RESTRICTED_BURP',
                      'dest': "all",
                      'proto': proto,
-                     'dport': '4971,4972'})
+                     'dport': '4971,4972'},
+                    zones=data['internal_zones'])
             # also accept configured hosts
             burpsettings = __salt__['mc_burp.settings']()
             clients = 'net:'
             clients += ','.join(burpsettings['clients'])
             for proto in protos:
-                data['default_rules'].append({'action': action,
-                                              'source': clients,
-                                              'dest': "all",
-                                              'proto': proto,
-                                              'dport': '4971,4972'})
+                append_rules_for_zones(
+                    data['default_rules'], {'action': action,
+                                            'source': clients,
+                                            'dest': "all",
+                                            'proto': proto,
+                                            'dport': '4971,4972'},
+                    zones=data['internal_zones'])
         # ATTENTION WE MERGE, so reverse order to append at begin
         data['default_rules'].reverse()
         for rdata in data['default_rules']:

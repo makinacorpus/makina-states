@@ -44,6 +44,14 @@ Allowed by default:
         true/false (false)
     makina-states.services.firewall.shorewall.no_mastersalt
         true/false (false)
+    makina-states.services.firewall.shorewall.no_ntp
+        true/false (false)
+    makina-states.services.firewall.shorewall.no_burp
+        true/false (false)
+    makina-states.services.firewall.shorewall.no_ldap
+        true/false (false)
+    makina-states.services.firewall.shorewall.no_mumble
+        true/false (false)
 
 Restricted to localhost by default:
 
@@ -77,6 +85,10 @@ Supported params are:
     - **RESTRICTED_POSTGRESQL**: for restricting postgres access
     - **RESTRICTED_MYSQL**: for restricting mysql access
     - **RESTRICTED_SYSLOG** for restricting syslog access
+    - **RESTRICTED_NTP** for restricting syslog access
+    - **RESTRICTED_MUMBLE** for restricting syslog access
+    - **RESTRICTED_LDAP** for restricting syslog access
+    - **RESTRICTED_BURP** for restricting syslog access
 
 .. code-block:: yaml
 
