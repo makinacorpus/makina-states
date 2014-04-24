@@ -38,6 +38,29 @@ def settings():
             allow query from ext (firewalled in ms)
         block_ext
             block all outbound queryies
+        default restrict
+            set to false to generate a no<flag>
+
+            ignore
+                False
+            limited
+                False
+            lowpriotrap
+                False
+            kod
+                False
+            peer
+                True
+            trap
+                False
+            serve
+                True
+            trust
+                True
+            modify
+                False
+            query
+                False
 
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
@@ -45,7 +68,7 @@ def settings():
         grains = __grains__
         pillar = __pillar__
         locations = __salt__['mc_locations.settings']()
-        ntpData = __salt__['mc_utils.defaults'](
+        data = __salt__['mc_utils.defaults'](
             'makina-states.services.base.ntp', {
                 'servers': [
                     '0.ubuntu.pool.ntp.org',
@@ -60,9 +83,28 @@ def settings():
                 ],
                 'default_all': True,
                 'block_ext': False,
+                'ignore': False,
+                'kod': True,
+                'limited': False,
+                'lowpriotrap': False,
+                'peer': False,
+                'trap': False,
+                'serve': True,
+                'trust': True,
+                'modify': False,
+                'query': False,
+                'default_flags': None,
             }
         )
-        return ntpData
+        if data['default_flags'] is None:
+            data['default_flags'] = ''
+            for item in ['kod', 'limited', 'lowpriotrap']:
+                if data[item]:
+                    data['default_flags'] += ' {0}'.format(item)
+            for item in ['trap', 'modify', 'peer', 'query']:
+                if not data[item]:
+                    data['default_flags'] += ' no{0}'.format(item)
+        return data
     return _settings()
 
 
