@@ -1,7 +1,7 @@
 burp configuration
 ========================
 
-see :ref:`mc_module_burp`_
+see :ref:`mc_module_burp`
 
 Configure a burp server.
 

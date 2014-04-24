@@ -41,8 +41,8 @@ Subregistries
    mc_mysql.rst
    mc_network.rst
    mc_nginx.rst
-   mc_ntp.rst
    mc_nodejs.rst
+   mc_ntp.rst
    mc_pgsql.rst
    mc_php.rst
    mc_pkgs.rst
@@ -56,6 +56,7 @@ Subregistries
    mc_rvm.rst
    mc_salt.rst
    mc_shorewall.rst
+   mc_snmpd.rst
    mc_ssh.rst
    mc_ssl.rst
    mc_timezone.rst
@@ -72,5 +73,4 @@ Other modules
    mc_macros.rst
    mc_utils.rst
    mc_project.rst
-
 
