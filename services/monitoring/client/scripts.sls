@@ -4,6 +4,7 @@ ms-scripts-d:
       - /root/admin_scripts/nagios/
     - makedirs: true
     - mode: 700
+{#
 {% for g in [
 'check_3ware_raid',
 'check_3ware_raid_1_1',
@@ -26,22 +27,21 @@ ms-scripts-d:
 'check_swap',
 'MANAGED_VIA_SALT',
 ] %}
-
-nagios-plugins-{{g}}:
-  file.managed:
-    - name: /root/admin_scripts/nagios/{{g}}
-    - source: salt://makina-states/files/root/admin_scripts/nagios/{{g}}
+{% endfor %}
+#}
+nagios-distributed-plugins-rec:
+  file.recurse:
+    - name: /root/admin_scripts/nagios/
+    - source: salt://makina-states/files/root/admin_scripts/nagios/
     - user: root
     - group: root
     - makedirs: true
-    - mode: 700
+    - file_mode: 700
+    - dir_mode: 700
     - template: jinja
     - require:
       - file: ms-scripts-d
-{% endfor %}
-
 # old MC installs, do some symlinks
-
 {% for g in [
 'check_ntp_peer',
 'check_ntp_time',
