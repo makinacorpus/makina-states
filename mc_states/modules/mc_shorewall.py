@@ -636,7 +636,7 @@ def settings():
                 append_rules_for_zones(
                     data['default_rules'],
                     {'action': action,
-                     'source': 'all',
+                     'source': '$SALT_RESTRICTED_MUMBLE',
                      'dest': 'fw',
                      'proto': proto,
                      'dport': '64738'},
