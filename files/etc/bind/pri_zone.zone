@@ -1,0 +1,17 @@
+{% set data=salt['mc_utils.json_load'](data) %}
+{% set data=salt['mc_bind.get_zone'](data.zoneid) %}
+$ORIGIN {{data.fqdn}}.
+$TTL {{data.ttl}}
+@       IN SOA {{data.soa_ns}} {{data.soa_contact}} (
+        {{data.serial}}   ; Serial yyyymmddnn
+        {{data.refresh}}  ; Refresh
+        {{data.retry}}    ; Retry
+        {{data.expire}}   ; Expire
+        {{data.minimum}}) ; Minimum negative caching
+{% if salt['mc_utils.is_a_list'](data.rrs) %}
+{% for rr in data.rrs %}
+{{rr}}
+{% endfor %}
+{% else %}
+{{data.rrs}}
+{% endif %}

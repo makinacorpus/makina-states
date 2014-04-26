@@ -13,7 +13,12 @@ nscd-pkgs:
 
 nscd-restart:
   cmd.run:
-    - name: service nscd restart
+    - name: |
+            if [ -f /usr/sbin/service ];then
+              service nscd restart
+            else
+              /etc/init.d/nscd restart
+            fi
     - require:
       - pkg: nscd-pkgs
 

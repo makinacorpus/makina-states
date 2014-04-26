@@ -142,6 +142,7 @@ def invalidate_cached_registry(name):
 
 
 def get_local_registry(name, cached=True, cachetime=60):
+    '''Get local registry'''
     registryf = os.path.join(
         __opts__['config_dir'], 'makina-states/{0}.yaml'.format(name))
     dregistry = os.path.dirname(registryf)
@@ -164,11 +165,12 @@ def get_local_registry(name, cached=True, cachetime=60):
     return registry
 
 
-
 _default = object()
 
 
 def update_registry_params(registry_name, params):
+    '''Update the desired local registry'''
+    invalidate_cached_registry(registry_name)
     registry = get_local_registry(registry_name)
     changes = {}
     topreg_name = 'mc_{0}.registry'.format(registry_name)
@@ -178,7 +180,12 @@ def update_registry_params(registry_name, params):
     else:
         pref = 'makina-states.local.{0}'.format(registry_name)
     for param, value in params.items():
-        gparam = '{0}.{1}'.format(pref, param)
+        gparam = param
+        if (
+            not param.startswith(pref)
+            and not param.startswith('makina-states.')
+        ):
+            gparam = '{0}.{1}'.format(pref, param)
         if registry.get(gparam, _default) != value:
             for data in changes, registry:
                 data.update({gparam: value})
@@ -186,6 +193,11 @@ def update_registry_params(registry_name, params):
         encode_local_registry(registry_name, registry)
         invalidate_cached_registry(registry_name)
     return changes
+
+
+def update_local_registry(registry_name, params):
+    '''Alias to update_local_registry'''
+    return update_registry_params(registry_name, params)
 
 
 def get_registry(registry_configuration):

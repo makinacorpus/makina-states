@@ -102,8 +102,6 @@ mailbox_size_limit = {{data.mailbox_size_limit}}
 mailbox_command = procmail -a "$EXTENSION"
 recipient_delimiter = +
 
-
-
-debug_peer_list=mail.makina-corpus.com
-debug_peer_level=3
+# debug_peer_list=mail.foo.com
+# debug_peer_level=3
 
