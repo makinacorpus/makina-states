@@ -14,16 +14,26 @@ include:
   - makina-states.localsettings.nscd
   - makina-states.localsettings.users-hooks
 
+{% set olddeb= False %}
+{% set skip = False %}
+{% if grains['os_family'] == 'Debian' -%}
+{% if grains['osrelease'] < '6'  -%}
+{% set skip = True %}
+{% set olddeb = True %}
+{% endif %}
+{% endif %}
 ldap-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
-      - libpam-ldapd
-      - libnss-ldapd
+      - libpam-ldap{%if not olddeb%}d{%endif%}
+      - libnss-ldap
       - ldap-utils
       - libsasl2-modules
       - sasl2-bin
       - python-ldap
+      {% if not skip %}
       - nslcd
+      {%endif%}
       {% if grains['os_family'] == 'Debian' -%}
       - libldap2-dev
       - libsasl2-dev
@@ -75,13 +85,17 @@ nslcd-nsswitch-conf:
               # create homedir
               session required pam_mkhomedir.so skel={{ locs.conf_dir }}/skel umask=0022
 
+{% if not olddeb %}
 {{ locs.conf_dir }}-ldap.conf:
   file.absent:
     - name: {{ locs.conf_dir }}/ldap.conf
-{# needed for old pam ldap, but not with libpam-ldapd and nslcd
+{% else %}
+{# needed for old pam ldap, but not with libpam-ldapd and nslcd #}
 {{ locs.conf_dir }}-ldap.conf:
   file.managed:
-    - name: {{ locs.conf_dir }}/ldap.conf
+    - names:
+      - {{ locs.conf_dir }}/ldap.conf
+      - {{ locs.conf_dir }}/pam_ldap.conf
     - user: root
     - group: root
     - mode: '0644'
@@ -90,11 +104,12 @@ nslcd-nsswitch-conf:
     - require:
       - pkg: ldap-pkgs
       - file: ldap-cacerts-cert
-    - defaults: |
+    - defaults:
+          data: |
                 {{ydata}}
     - require_in:
       - mc_proxy: users-pre-hook
-#}
+{% endif %}
 {{ locs.conf_dir }}-ldap-ldap.conf:
   file.managed:
     - name: {{ locs.conf_dir }}/ldap/ldap.conf
@@ -128,6 +143,7 @@ ldap-cacerts-cert:
       - mc_proxy: users-pre-hook
     - name: {{ locs.conf_dir }}/ssl/cacerts/cacert.pem
     - user: root
+    - makedirs: true
     - group: root
     - mode: '0644'
     - template: jinja
