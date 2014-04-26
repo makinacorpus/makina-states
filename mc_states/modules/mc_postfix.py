@@ -72,8 +72,7 @@ def settings():
         locs = __salt__['mc_locations.settings']()
         local_networks = ['127.0.0.0/8',
                           '[::ffff:127.0.0.0]/104',
-                          '[::1]/128',
-                          '{{ local_networks }}']
+                          '[::1]/128',]
         for iface, ips in grains['ip_interfaces'].items():
             for ip in ips:
                 net = '.'.join(ip.split('.')[:3]) + '.0/24'
