@@ -144,6 +144,7 @@ def settings():
                 'named_directory': '/var/cache/bind/zones',
                 'dnssec': True,
                 'user': 'root',
+                'zuser': 'bind',
                 'group': 'bind',
                 'service_name': 'bind9',
             },

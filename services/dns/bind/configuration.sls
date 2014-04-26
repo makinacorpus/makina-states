@@ -19,7 +19,7 @@ dns-rzones-{{zone}}-{{data.fpath}}:
             {{salt['mc_utils.json_dump'](data)}}
     {% endif %}
     {% endif %}
-    - user: {{settings.user}}
+    - user: {{settings.zuser}}
     - group: {{settings.group}}
     - mode: {{settings.mode}}
     - makedirs: true
