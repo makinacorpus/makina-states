@@ -19,6 +19,8 @@ Generalities
 
 - We separate logs in logical log files
 - Me manage the dns zones inside bind views
+- you must install bind tools prior to run (or run twice) to have all the tool
+  neccessary to genrate tsig infos
 - The default view is named **net**
 - We can manage
 - Idea is
@@ -259,4 +261,40 @@ Manage a slave zone
     makina-states.services.dns.bind.slave_zones.foo.net:
 
 Save for reverse zone except the id would be the ip bits.
+
+An example or a master/slave scenario
+---------------------------------------
+on a shared pillar::
+
+    {% set maserip = '1.2.3.5' %}
+    {% set slave1ip = '1.2.3.4' %}
+    {% set slave1ip_tsig = salt['mc_bind.tsig_for'](slave1ip) %}
+    makina-states.services.dns.bind.keys.{{slave1ip}}:
+      algorithm: HMAC-SHA512
+      secret: "{{slave1ip_tsig}}"
+
+On the pillar targeted to the master::
+
+    makina-states.services.dns.bind.zones.toto.loc:
+      slaves: ["{{slave1ip}}"]
+      allow_transfer: ['key "{{slave1ip}}"']
+      serial: 4
+      rrs:
+        - '@ IN A 1.2.4.4'
+        - 'ns IN A 1.2.4.4'
+        - 'mx IN A 1.2.4.4'
+        - '@ IN MX 10 mx.foo.net.'
+        - '@ IN NS ns.foo.net.'
+    makina-states.services.dns.bind.servers.{{slave1ip}}:
+      keys: ["{{slave1ip}}"]
+
+This will enable the master to sign data sent to slave1
+
+On the slave targeted pillar, now::
+
+    makina-states.services.dns.bind.servers.{{masterip}}:
+      keys: ["{{slave1ip_tsig}}"]
+    makina-states.services.dns.bind.zones.toto.loc:
+      server_type: slave
+      masters: ["{{masterip}}"]
 
