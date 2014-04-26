@@ -9,87 +9,87 @@
 logging {
   channel default_file      {
     file "{{data.log_dir}}/default.log"      versions 3 size 10m;
-    severity dynamic;
+    severity {{data.loglevel.default}};
     print-time yes;
   };
   channel general_file      {
     file "{{data.log_dir}}/general.log"      versions 3 size 10m;
-    severity dynamic;
+    severity {{data.loglevel.general}};
     print-time yes;
   };
   channel database_file     {
     file "{{data.log_dir}}/database.log"     versions 3 size 10m;
-    severity dynamic;
+    severity {{data.loglevel.database}};
     print-time yes;
   };
   channel security_file     {
     file "{{data.log_dir}}/security.log"     versions 3 size 10m;
-    severity dynamic;
+    severity {{data.loglevel.security}};
     print-time yes;
   };
   channel config_file       {
     file "{{data.log_dir}}/config.log"       versions 3 size 10m;
-    severity dynamic;
+    severity {{data.loglevel.config}};
     print-time yes;
   };
   channel resolver_file     {
     file "{{data.log_dir}}/resolver.log"     versions 3 size 10m;
-    severity dynamic;
+    severity {{data.loglevel.resolver}};
     print-time yes;
   };
   channel xfer-in_file      {
     file "{{data.log_dir}}/xfer-in.log"      versions 3 size 10m;
-    severity dynamic;
+    severity {{data.loglevel.xfer_in}};
     print-time yes;
   };
   channel xfer-out_file     {
     file "{{data.log_dir}}/xfer-out.log"     versions 3 size 10m;
-    severity dynamic;
+    severity {{data.loglevel.xfer_out}};
     print-time yes;
   };
   channel notify_file       {
     file "{{data.log_dir}}/notify.log"       versions 3 size 10m;
-    severity dynamic;
+    severity {{data.loglevel.notify}};
     print-time yes;
   };
   channel client_file       {
     file "{{data.log_dir}}/client.log"       versions 3 size 10m;
-    severity dynamic;
+    severity {{data.loglevel.client}};
     print-time yes;
   };
   channel unmatched_file    {
     file "{{data.log_dir}}/unmatched.log"    versions 3 size 10m;
-    severity dynamic;
+    severity {{data.loglevel.unmatched}};
     print-time yes;
   };
   channel queries_file      {
     file "{{data.log_dir}}/queries.log"      versions 3 size 10m;
-    severity dynamic;
+    severity {{data.loglevel.queries}};
     print-time yes;
   };
   channel network_file      {
     file "{{data.log_dir}}/network.log"      versions 3 size 10m;
-    severity dynamic;
+    severity {{data.loglevel.network}};
     print-time yes;
   };
   channel update_file       {
     file "{{data.log_dir}}/update.log"       versions 3 size 10m;
-    severity dynamic;
+    severity {{data.loglevel['update']}};
     print-time yes;
   };
   channel dispatch_file     {
     file "{{data.log_dir}}/dispatch.log"     versions 3 size 10m;
-    severity dynamic;
+    severity {{data.loglevel.dispatch}};
     print-time yes;
   };
   channel dnssec_file       {
     file "{{data.log_dir}}/dnssec.log"       versions 3 size 10m;
-    severity dynamic;
+    severity {{data.loglevel.dnssec}};
     print-time yes;
   };
   channel lame-servers_file {
     file "{{data.log_dir}}/lame-servers.log" versions 3 size 10m;
-    severity dynamic;
+    severity {{data.loglevel.lame_servers}};
     print-time yes;
   };
   category default      { default_file; };

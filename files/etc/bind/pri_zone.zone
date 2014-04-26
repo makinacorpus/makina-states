@@ -1,6 +1,6 @@
 {% set data=salt['mc_utils.json_load'](data) %}
 {% set data=salt['mc_bind.get_zone'](data.zoneid) %}
-$ORIGIN {{data.fqdn}}.
+; $ORIGIN {{data.fqdn}}.
 $TTL {{data.ttl}}
 @       IN SOA {{data.soa_ns}} {{data.soa_contact}} (
         {{data.serial}}   ; Serial yyyymmddnn

@@ -117,6 +117,40 @@ def settings():
            salt://makina-states/files/etc/bind/named.conf.default-zones
         zone_template
            salt://makina-states/files/etc/bind/pri_zone.zone
+        loglevel
+
+           default
+                error
+           general
+                'error
+           database
+                error
+           config
+                error
+           security
+                error
+           resolver
+                error
+           xfer_in
+                nfo
+           xfer_out
+                info
+           notify
+                error
+           client
+                error
+           unmatched
+                error
+           queries
+                error
+           network
+                error
+           update
+                info
+           dispatch
+                error
+           lame_servers
+                error
 
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
@@ -184,6 +218,25 @@ def settings():
                 ]),
                 'ipv4': 'any',
                 'ipv6': 'any',
+                'loglevel': {
+                    'default': 'error',
+                    'general': 'error',
+                    'database': 'error',
+                    'config': 'error',
+                    'security': 'error',
+                    'resolver': 'error',
+                    'xfer_in': 'info',
+                    'xfer_out': 'info',
+                    'notify': 'error',
+                    'client': 'error',
+                    'unmatched': 'error',
+                    'queries': 'error',
+                    'network': 'error',
+                    'dnssec': 'error',
+                    'update': 'info',
+                    'dispatch': 'error',
+                    'lame_servers': 'error',
+                },
                 'mode': '640',
                 'view_defaults': {
                     'match_clients': ['any'],
