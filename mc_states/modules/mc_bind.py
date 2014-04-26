@@ -13,12 +13,38 @@ import logging
 import mc_states.utils
 from copy import deepcopy
 import copy
-
+import string
+from pprint import pformat
+import shutil
+import tempfile
+import os
+from salt.utils.pycrypto import secure_password
 from salt.utils.odict import OrderedDict
 
 __name = 'bind'
 
 log = logging.getLogger(__name__)
+
+
+def generate_tsig(length=128):
+    ret = ''
+    strings = string.ascii_letters + string.digits
+    with open('/dev/urandom', 'r') as fic:
+        while len(ret) < length:
+            char = fic.read(1)
+            if char in strings:
+                ret += char
+    return ret
+
+
+def tsig_for(id_, length=128):
+    kid = 'makina-states.services.dns.bind.tsig.{0}'.format(id_)
+    local_conf = __salt__['mc_macros.get_local_registry']('bind')
+    key = local_conf.get(kid, None)
+    if not key:
+        local_conf[kid] = generate_tsig(length=length)
+        __salt__['mc_macros.update_local_registry']('bind', local_conf)
+    return local_conf[kid]
 
 
 def settings():

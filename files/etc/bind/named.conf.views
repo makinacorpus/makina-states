@@ -39,7 +39,7 @@ zone "{{ zdata.fqdn }}" {
 {%- endif %}
 {% if zdata.allow_transfer %}
   allow-transfer {
-    {%for m in zdata.allow_tranfer %}
+    {%for m in zdata.allow_transfer %}
     {{m}};
     {%-endfor%}
   };
