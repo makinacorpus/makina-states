@@ -34,7 +34,7 @@ def generate_tsig(length=128):
             char = fic.read(1)
             if char in strings:
                 ret += char
-    return ret
+    return ret.encode('base64')
 
 
 def tsig_for(id_, length=128):
@@ -283,6 +283,7 @@ def settings():
         for k in [a for a in data['keys']]:
             kdata = data['keys'][k]
             kdata.setdefault('algorithm', 'hmac-md5')
+            kdata['secret'] = kdata['secret'].strip()
             if 'secret' not in kdata:
                 raise ValueError(
                     'no secret for {0}'.format(k))
@@ -421,8 +422,8 @@ def get_zone(zone):
             'expire': defaults['expire'],
             'minimum': defaults['minimum'],
             'notify': None,
-            'rrs': [],
-            'source': '',
+            'rrs': None,
+            'source': None,
             'allow_query': ['any'],
             'allow_transfer': [],
             'allow_update': [],
@@ -452,8 +453,11 @@ def get_zone(zone):
         and zdata['notify'] is None
     ):
         zdata['notify'] = False
+    if not zdata['rrs']:
+        zdata['rrs'] = ''
     if zdata['server_type'] == 'master':
-        zdata.setdefault('source', defaults['zone_template'])
+        if zdata['source'] is None:
+            zdata['source'] = defaults['zone_template']
     if (
         zdata['server_type'] == 'slave'
         and zdata['template']

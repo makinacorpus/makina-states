@@ -220,7 +220,7 @@ def settings():
         burpsettings = __salt__['mc_burp.settings']()
         if not data['no_default_params']:
             for p in ['SYSLOG', 'SSH', 'SNMP', 'PING', 'LDAP',
-                      'NTP', 'MUMBLE',
+                      'NTP', 'MUMBLE', 'DNS',
                       'BURP', 'MYSQL', 'POSTGRESQL', 'FTP']:
                 default = 'all'
                 if p in ['SYSLOG', 'BURP']:
@@ -500,7 +500,8 @@ def settings():
                 action = 'ACCEPT'
                 append_rules_for_zones(
                     data['default_rules'],
-                    {'action': get_macro('Web', action), 'source': 'all', 'dest': 'all'},
+                    {'action': get_macro('Web', action),
+                     'source': '$SALT_RESTRICTED_DNS', 'dest': 'all'},
                     zones=data['internal_zones'])
 
             data['default_rules'].append({'comment': 'ntp'})

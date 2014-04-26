@@ -165,12 +165,12 @@ def get_local_registry(name, cached=True, cachetime=60):
     return registry
 
 
-
 _default = object()
 
 
 def update_registry_params(registry_name, params):
     '''Update the desired local registry'''
+    invalidate_cached_registry(registry_name)
     registry = get_local_registry(registry_name)
     changes = {}
     topreg_name = 'mc_{0}.registry'.format(registry_name)
@@ -181,7 +181,10 @@ def update_registry_params(registry_name, params):
         pref = 'makina-states.local.{0}'.format(registry_name)
     for param, value in params.items():
         gparam = param
-        if not param.startswith(pref):
+        if (
+            not param.startswith(pref)
+            and not param.startswith('makina-states.')
+        ):
             gparam = '{0}.{1}'.format(pref, param)
         if registry.get(gparam, _default) != value:
             for data in changes, registry:
