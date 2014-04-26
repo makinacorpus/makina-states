@@ -39,6 +39,9 @@
         mpan = config user.email "mpa@makina-corpus.com"
         mpae = config user.name 'Mathieu Le Marec - Pasquet'
         mpa =  !git mpan && git mpae
+        rn = config user.email "regis.leroy@makina-corpus.com"
+        re = config user.name 'Régis Leroy'
+        r =  !git rn && git re
         kn = config user.email "kiorky@cryptelium.net"
         ke = config user.name 'Mathieu Le Marec - Pasquet'
         k =  !git kn && git ke
