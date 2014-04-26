@@ -282,7 +282,7 @@ def settings():
             adata.setdefault('clients', 'any')
         for k in [a for a in data['keys']]:
             kdata = data['keys'][k]
-            kdata.setdefault('algorithm', 'hmac-md5')
+            kdata.setdefault('algorithm', 'HMAC-MD5')
             kdata['secret'] = kdata['secret'].strip()
             if 'secret' not in kdata:
                 raise ValueError(
