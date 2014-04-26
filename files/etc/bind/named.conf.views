@@ -6,40 +6,54 @@
 //
 // VIEWS, net is the default view
 //
-{% for v, vdata in data['views'].items() %}
-{%  if vdata.has_zones %}
+{% for v in data['views']%}
+{% set vdata = salt['mc_bind.get_view'](v) %}
+{%  if vdata.zones or v in ['net', 'internal']%}
 view "{{v}}" {
+  include "/etc/bind/named.conf.default-zones";
   match-clients { {% for m in vdata.match_clients %}{{m}};{% endfor %} };
-        recursion               {{vdata.recursion}};
-        additional-from-auth    {{vdata.additonal_from_auth}};
-        additional-from-cache   {{vdata.additonal_from_cache}};
-{%      for zonekind, kmetadata in data.zone_kinds.items() %}
-{%          for zone, zdata in data[zonekind] %}
-{%              if view in zdata['views'] %}
-{%                set file = zdata.fpath %}
-{%                set masters = zdata.masters %}
-zone "{{ zdata.name }}" {
+  recursion             {{vdata.recursion}};
+  additional-from-auth  {{vdata.additional_from_auth}};
+  additional-from-cache {{vdata.additional_from_cache}};
+{% for zone, zdata in vdata.zones.items() %}
+{% set zdata = salt['mc_bind.get_zone'](zdata.zoneid) %}
+{% set file = zdata.fpath %}
+{% set masters = zdata.masters %}
+zone "{{ zdata.fqdn }}" {
   type {{ zdata.server_type }};
-  file "{{zdata.fpath}}";
-{%                if zdata.server_type  == "primary" %}
-{%                    if zdata.secondaries %}
-  allow-transfer { {% for m in zdata.secondaries %}{{m}};{% endfor %} };
-{%                  endif %}
-{%                    if zdata['notify'] %}
-  notify yes;
-{%                    else %}
-  notify no;
-{%                    endif %}
-{%                else %}
-  notify no;
-  masters { {% for m in zdata.masters %}{{m}};{% endfor %} };
-{%                endif %}
-{%              endif %}
-};
-{%          endfor %}
-{%       endfor %}
-}
+  notify {%if zdata['notify'] %}yes{% else%}no{%endif%};
+  file "{{file}}";
+{%- if zdata.allow_query %}
+  allow-query {
+    {%-for m in zdata.allow_query %}
+    {{m}};
+    {%-endfor%}
+  };
+{% endif %}
+{%- if zdata.allow_update %}
+  allow-update {
+    {%-for m in zdata.allow_update %}
+    {{m}};
+    {%-endfor%}
+  };
+{%- endif %}
+{% if zdata.allow_transfer %}
+  allow-transfer {
+    {%for m in zdata.allow_tranfer %}
+    {{m}};
+    {%-endfor%}
+  };
+{% endif %}
+{%- if zdata.masters %}
+  masters {
+    {%-for m in zdata.masters %}
+    {{m}};
+    {%- endfor %}
+  };
 {%  endif %}
+};
+{%endfor %}
+};
+{% endif %}
 {% endfor %}
-
 // vim: set ft=named:
