@@ -29,6 +29,9 @@ log = logging.getLogger(__name__)
 def settings(saltmods=None):
     '''
     ldap registry
+
+        use nslcd / pamldapd or pamldap (on lenny)
+
                 'enabled': False,
                 'nslcd': {
                     'ldap_ver': None,  # '3',
@@ -82,6 +85,11 @@ def settings(saltmods=None):
                 'ldap_shadow': 'ou=People,dc=company,dc=org?sub',
                 'ldap_group': 'ou=Group,dc=company,dc=org?sub',
                 'ldap_cacert': ''
+                'tlscheckpeer': 'yes',
+                'pamldap_ssl': 'no',
+                'ldap_cacert': ''
+                'tlscheckpeer': 'yes',
+                'pamldap_ssl': 'no',
 
     '''
     if saltmods is not None:
@@ -119,6 +127,8 @@ def settings(saltmods=None):
                 'ldap_passwd': 'ou=People,dc=company,dc=org?sub',
                 'ldap_shadow': 'ou=People,dc=company,dc=org?sub',
                 'ldap_group': 'ou=Group,dc=company,dc=org?sub',
+                'tlscheckpeer': 'yes',
+                'pamldap_ssl': 'no',
                 'ldap_cacert': ''
             })
         if lsettings['ldap_cacert'] and not lsettings['nslcd']['tls_cacert']:
