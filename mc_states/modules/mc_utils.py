@@ -307,11 +307,26 @@ def defaults(prefix,
             datadict = __salt__['mc_utils.dictupdate'](datadict, global_pillar)
     if overridden is None:
         overridden = OrderedDict()
-    if not prefix in overridden:
+    if prefix not in overridden:
         overridden[prefix] = OrderedDict()
-    for key in [a for a in datadict if not a in ignored_keys]:
-        default_value = datadict[key]
-        value_key = '{0}.{1}'.format(prefix, key)
+    pkeys = {}
+    for a in datadict:
+        if a not in ignored_keys:
+            pkeys[a] = ('{0}.{1}'.format(prefix, a),
+                        datadict[a])
+    for dunder in [__pillar__,
+                   __grains__]:
+        for k in dunder:
+            pref = '{0}.'.format(prefix)
+            if (
+                k.startswith(pref)
+                and k not in ignored_keys
+                and k not in pkeys
+            ):
+                key = pref.join(k.split(pref)[1:])
+                pkeys[key] = k, dunder[k]
+    for key, value_data in pkeys.items():
+        value_key, default_value = value_data
         # special key to completly overrides the dictionnary
         value = __salt__['mc_utils.get'](
             value_key + "-overrides", _default_marker)

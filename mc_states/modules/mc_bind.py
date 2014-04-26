@@ -12,6 +12,7 @@ __docformat__ = 'restructuredtext en'
 import logging
 import mc_states.utils
 from copy import deepcopy
+import copy
 
 from salt.utils.odict import OrderedDict
 
@@ -24,19 +25,20 @@ def settings():
     '''
     Named settings
 
-    WARNING: THIS FOR NOW JUST TAKE IN ACCOUNT SETTINGS ABOUT
-    A CACHING DNS SERVER, THE ZONE MANAGMENT HAS BEEN
-    ABANDONNED IN FAVOR OF POWERDNS
+    Without further configuration, this will setup
+    a caching name server.
+    With a little effort, you can easily turn this server
+    in a powerful and flexible nameserver.
 
     For the documentation on usage, please look :ref:`bind_documentation`.
 
         pkgs
             pkg to install for a named install
         config
-            primary config file path
+            master config file path
         local_config
-            local primary config file path
-        options_config'
+            local master config file path
+        options_config
             options config file path
         default_zones_config
             default zone config file path
@@ -52,26 +54,23 @@ def settings():
             service name
         mode
             configuration files mode ('640')
+
+        views
+            List of managed view names
         zones
-            zones
-        rzones
-            reverse zones
-        secondary_zones
-            secondary zones
-        secondary_rzones
-            secondary reverse zones
+            List of managed zones names
         serial
             2014030501
         ttl
-            3600,
-        refresh
-            3600
-        retry
             300
+        refresh
+            300
+        retry
+            60
         expire
             2419200
         minimum
-            3600
+            299
         rndc_conf
             path to rndc configuration
         rndc_key
@@ -92,12 +91,7 @@ def settings():
            salt://makina-states/files/etc/bind/named.conf.default-zones
         zone_template
            salt://makina-states/files/etc/bind/pri_zone.zone
-        sec_reverse_template
-           salt://makina-states/files/etc/bind/sec_reverse.zone
-        sec_zone_template
-           salt://makina-states/files/etc/bind/sec_zone.zone
-        reverse_template
-           salt://makina-states/files/etc/bind/pri_reverse.zone
+
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
@@ -146,7 +140,21 @@ def settings():
                 'log_dir': '/var/log/named',
                 "rndc_conf": "/etc/rndc.conf",
                 "rndc_key": "/etc/bind/rndc.key",
-                'default_view': 'net',
+                'default_views': OrderedDict([
+                    ('internal', {
+                        'match_clients': ['local'],
+                        'recursion': 'yes',
+                        'additional_from_auth': 'yes',
+                        'additional_from_cache': 'yes',
+                    }),
+                    ('net', {
+                        'match_clients': [
+                            '!local;any'],
+                        'recursion': 'no',
+                        'additional_from_auth': 'no',
+                        'additional_from_cache': 'no',
+                    }),
+                ]),
                 'ipv4': 'any',
                 'ipv6': 'any',
                 'mode': '640',
@@ -156,12 +164,11 @@ def settings():
                     'additional_from_auth': 'no',
                     'additional_from_cache': 'no',
                 },
-                'serial': '2014030501',
-                'ttl': '3600',
-                'refresh': '3600',
+                'ttl': '330',
+                'refresh': '300',
                 'retry': '300',
                 'expire': '2419200',
-                'minimum': '3600',
+                'minimum': '299',
                 'bind_config_template': (
                     'salt://makina-states/files/'
                     'etc/bind/named.conf'
@@ -205,110 +212,56 @@ def settings():
                 'zone_template': (
                     'salt://makina-states/files/'
                     'etc/bind/pri_zone.zone'),
-                'sec_reverse_template': (
-                    'salt://makina-states/files/'
-                    'etc/bind/sec_reverse.zone'),
-                'sec_zone_template': (
-                    'salt://makina-states/files/'
-                    'etc/bind/sec_zone.zone'),
-                'reverse_template': (
-                    'salt://makina-states/files/'
-                    'etc/bind/pri_reverse.zone'),
                 #
                 'keys': OrderedDict(),
                 'servers': OrderedDict(),
+                #
                 'views': OrderedDict(),
-                'acls': OrderedDict(),
+                #
+                'acls': OrderedDict([
+                    ('local', {
+                        'clients': ['127.0.0.1', '::1',],
+                        }),
+                ]),
+                #
                 'zones': OrderedDict(),
-                'rzones': OrderedDict(),
-                'secondary_zones': OrderedDict(),
-                'secondary_rzones': OrderedDict(),
             }
         )
         defaults['extra_dirs'] = [
-            '{0}/reverses/primary'.format(
+            '{0}/zones/master'.format(
                 defaults['config_dir']),
-            '{0}/reverses/secondary'.format(
-                defaults['config_dir']),
-            '{0}/zones/primary'.format(
-                defaults['config_dir']),
-            '{0}/zones/secondary'.format(
+            '{0}/zones/slave'.format(
                 defaults['config_dir']),
         ]
-        defaults['zone_kinds'] = {
-            'secondary_zones': {
-                'server_type': 'secondary',
-                'zone_type': 'zone',
-                'source': defaults['sec_zone_template'],
-            },
-            'secondary_rzones': {
-                'server_type': 'secondary',
-                'zone_type': 'reverse',
-                'source': defaults['sec_reverse_template'],
-            },
-            'zones': {
-                'server_type': 'primary',
-                'zone_type': 'zone',
-                'source': defaults['zone_template'],
-            },
-            'rzones': {
-                'server_type': 'primary',
-                'zone_type': 'reverse',
-                'source': defaults['reverse_template'],
-            },
-        }
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.dns.bind', defaults)
-        #zone_kinds = data['zone_kinds']
-        #for k in [a for a in data['servers']]:
-        #    adata = data['servers'][k]
-        #    adata.setdefault('keys', [])
-        #for k in [a for a in data['acls']]:
-        #    adata = data['acls'][k]
-        #    adata.setdefault('clients', 'any')
-        #for k in [a for a in data['keys']]:
-        #    kdata = data['keys'][k]
-        #    kdata.setdefault('algorithm', 'hmac-md5')
-        #    if not 'secret' in kdata:
-        #        raise ValueError(
-        #            'no secret for {0}'.format(k))
-        #for zonekind, metadatas in zone_kinds.items():
-        #    for zone in [a for a in data[zonekind]]:
-        #        zdata = data[zonekind][zone]
-        #        _update_default_data(zone,
-        #                             zdata,
-        #                             metadatas,
-        #                             data)
-        #        if not is_valid_zone(zdata):
-        #            log.error(
-        #                '{0} is an invalid zone'.format(
-        #                    zone))
-        #            del data[zonekind][zdata]
-        #            continue
-        #        for view in zdata['views']:
-        #            if not view in data['views']:
-        #                data['views'][view] = OrderedDict()
-        #            vdata = data['views'][view]
-        #            vdata['has_zones'] = True
-        #for view in [a for a in data['views']]:
-        #    vdata = data['views'][view]
-        #    for k, v in data['view_defaults'].items():
-        #        vdata.setdefault(k, deepcopy(v))
+        # lighten the data dict for memory purpose
+        data['zones'] = [a for a in data['zones']]
+        views = [a for a in data['views']]
+        data['views'] = []
+        for a in views + [b for b in data['default_views']]:
+            if a not in data['views']:
+                data['views'].append(a)
+        for k in data:
+            if (
+                k.startswith('zones.')
+                or k.startswith('views.')
+            ):
+                del data[k]
+        for k in [a for a in data['servers']]:
+            adata = data['servers'][k]
+            adata.setdefault('keys', [])
+        for k in [a for a in data['acls']]:
+            adata = data['acls'][k]
+            adata.setdefault('clients', 'any')
+        for k in [a for a in data['keys']]:
+            kdata = data['keys'][k]
+            kdata.setdefault('algorithm', 'hmac-md5')
+            if 'secret' not in kdata:
+                raise ValueError(
+                    'no secret for {0}'.format(k))
         return data
     return _settings()
-
-
-def is_valid_zone(data):
-    '''A valid zone has:
-
-        - multiples RRs
-        - At least one NS and one RR record
-    '''
-
-    ret = False
-    if data:
-        ret = True
-    return ret
 
 
 def _generate_rndc():
@@ -316,53 +269,178 @@ def _generate_rndc():
     return data
 
 
-def _update_default_data(zone,
-                         zdata,
-                         metadatas,
-                         defaults):
-    zdata.setdefault('views', [])
-    single_view = zdata.get('view',
-                            defaults['default_view'])
-    if (
-        single_view
-        and not zdata['views']
-        and not single_view in zdata['views']
-    ):
-        zdata['views'].append(single_view)
-    zdata.setdefault('rrs', [])
-    zdata.setdefault('name', deepcopy(zone))
+def cached_zone_headers():
+    '''
+    Store a cached but much small memory footprint version
+    of all zones data for quickier access to construct
+    views in main bind configuration.
+    Those keys are enabled:
+
+      - views
+      - server_type
+      - fqdn
+      - masters
+      - slaves
+      - fpath
+      - template
+      - source
+    '''
+    keys = ['views', 'server_type', 'template', 'source',
+            'zoneid', 'fqdn', 'fpath']
+    zpref = 'makina-states.services.dns.bind.zones'
+    @mc_states.utils.lazy_subregistry_get(__salt__, zpref)
+    def _settings():
+        zones = __salt__['mc_utils.defaults'](zpref, {})
+        data = {}
+        for zone in zones:
+            zdata = get_zone(zone)
+            czdata = data.setdefault(zone, {})
+            for a in keys:
+                czdata[a] = zdata[a]
+        return data
+    data = _settings()
+    for k in ['reg_func_name', 'reg_kind']:
+        data.pop(k, '')
+    return data
+
+
+def get_view(view):
+    '''Get the mapping describing a bind view
+
+      zones
+        light mapping containing zone headers to feed the
+        views configuration file.
+        See cached_zone_headers
+      match_clients
+        [any]
+      recursion
+        no
+      additional_from_auth
+        no
+      additional_from_cache
+        no
+
+    '''
+    pref = 'makina-states.services.dns.bind.views.{0}'
+    _defaults = settings()
+    if view in ['net', 'internal']:
+        vdefaults = _defaults['default_views'][view]
+    else:
+        vdefaults = copy.deepcopy(_defaults['view_defaults'])
+    zones = vdefaults.setdefault('zones', {})
+    for z, data in cached_zone_headers().items():
+        if view in data['views']:
+            zones[z] = data
+    vdata = __salt__['mc_utils.get'](
+        pref.format(view), vdefaults)
+    return vdata
+
+
+def get_zone(zone):
+    '''Get the mapping describing a bind zone
+
+      views
+          list of views to enable this zone in
+      serial
+        zone serial
+      server_type
+          one of master/slave
+      ttl
+          TTL of soa
+      fqdn
+          zone FQDN
+      soa_ns
+          zone main nameserver (ns.{fqdn})
+      soa_contact
+          soa contact (sysadmin.{fqdn})
+      refresh
+          refresh(300)
+      retry
+          retry(60)
+      expire
+          expire ()
+      minimum
+          minimum (300)
+      notify
+          notify
+          (true in mastermode and false if slave)
+      rrs
+          records for the zone in mastermode.
+          This list list of records of the zone is in bind
+          syntax
+      slaves
+          list of slaves to allow transfer to in master mode
+      masters
+          list of master to get zones from in slave mode
+      allow_transfer
+          list of transfer items
+      allow_query
+          list of query items
+      allow_update
+          list of update items
+    '''
+    pref = 'makina-states.services.dns.bind.zones.{0}'
+    defaults = settings()
+    zdata = __salt__['mc_utils.defaults'](
+        pref.format(zone), {
+            'views': [],
+            'server_type': 'master',
+            'ttl': defaults['ttl'],
+            'fqdn': zone,
+            'soa_ns': 'ns.{fqdn}.',
+            'soa_contact': 'sysadmin.{fqdn}.',
+            'serial': '0000000001',
+            'refresh': defaults['refresh'],
+            'retry': defaults['retry'],
+            'expire': defaults['expire'],
+            'minimum': defaults['minimum'],
+            'notify': None,
+            'rrs': [],
+            'source': '',
+            'allow_query': ['any'],
+            'allow_transfer': [],
+            'allow_update': [],
+            'slaves': [],
+            'masters': []})
+    zdata['zoneid'] = zone
+    views = zdata['views']
+    if zdata['server_type'] not in ['master', 'slave']:
+        raise ValueError('invalid {0} type for {1}'.format(
+            zdata['server_type', zone]))
+    if not views:
+        for v in defaults['default_views']:
+            if not v in views:
+                views.append(v)
     zdata.setdefault('template', True)
-    for i in [
-        'ttl',
-        'serial',
-        'refresh',
-        'retry',
-        'expire',
-        'minimum'
-    ]:
-        zdata.setdefault(i, deepcopy(defaults[i]))
-    for i in metadatas:
-        zdata.setdefault(i, deepcopy(metadatas[i]))
-    if zdata['server_type'] == 'primary':
-        zdata.setdefault('notify',  True)
-    zdata.setdefault('secondaries', [])
-    if zdata['server_type'] == 'secondary':
-        zdata.setdefault('notify', False)
-        if zdata['template']:
-            if not 'masters' in zdata:
-                raise ValueError(
-                    'no masters for {0}'.format(zone)
-                )
-        zdata.setdefault('masters', [])
-    zdata.setdefault(
-        'fpath',
-        '{3}/{0}s/{1}/{2}.conf'.format(
-            zdata['zone_type'],
-            zdata['server_type'][:3],
-            zdata['name'],
-            defaults['config_dir']
-        )
-    )
+    if (
+        zdata['server_type'] == 'master'
+        and zdata['notify'] is None
+    ):
+        zdata['notify'] = True
+        if zdata['slaves']:
+            for slv in zdata['slaves']:
+                if not slv in zdata["allow_transfer"]:
+                    zdata["allow_transfer"].append(slv)
+    if (
+        zdata['server_type'] == 'slave'
+        and zdata['notify'] is None
+    ):
+        zdata['notify'] = False
+    if zdata['server_type'] == 'master':
+        zdata.setdefault('source', defaults['zone_template'])
+    if (
+        zdata['server_type'] == 'slave'
+        and zdata['template']
+        and 'masters' not in zdata
+    ):
+        raise ValueError('no masters for {0}'.format(zone))
+    zdata.setdefault('fpath',
+                     '{2}/zones/{0}/{1}.conf'.format(
+                         zdata['server_type'],
+                         zdata['fqdn'],
+                         defaults['config_dir']))
+    zdata = __salt__['mc_utils.format_resolve'](zdata)
+    return zdata
 
 
 def dump():
