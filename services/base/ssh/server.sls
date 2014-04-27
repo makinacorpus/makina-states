@@ -1,4 +1,8 @@
 {%- set locs = salt['mc_locations.settings']() %}
+include:
+  - makina-states.services.base.ssh.hooks
+
+{% if salt['mc_controllers.mastersalt_mode']() %}
 {% set openssh = salt['mc_ssh.settings']() %}
 opensshd-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
@@ -41,3 +45,4 @@ openssh-svc:
     {% else %}
     - name: sshd
     {%- endif %}
+{%- endif %}

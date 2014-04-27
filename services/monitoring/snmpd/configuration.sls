@@ -3,6 +3,7 @@
 {% set data = salt['mc_snmpd.settings']() %}
 include:
   - makina-states.services.monitoring.snmpd.hooks
+{% if salt['mc_controllers.mastersalt_mode']() %}
   - makina-states.services.monitoring.snmpd.services
 {#- Configuration #}
 {% for f in [
@@ -79,3 +80,5 @@ snmpd-user:
             net-snmp-config --create-snmpv3-user -A SHA
             -a {{data['default_password']}}
             -X DES -x {{data['default_key']}} {{data['default_user']}}
+
+{% endif %}

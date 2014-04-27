@@ -1,5 +1,6 @@
 include:
   - makina-states.services.monitoring.snmpd.hooks
+{% if salt['mc_controllers.mastersalt_mode']() %}
 {% set dodl=True %}
 {% if grains['os'] in ['Debian'] %}
 {% if grains["osrelease"][0] < "6" %}
@@ -27,3 +28,4 @@ snmpd-pkgs:
       - nagios-plugins-basic
       - snmpd
       - libsnmp-dev
+{% endif %}

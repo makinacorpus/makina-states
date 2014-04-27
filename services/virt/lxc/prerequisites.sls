@@ -1,6 +1,7 @@
 {%- set pkgSettings = salt['mc_pkgs.settings']() %}
 include:
   - makina-states.services.virt.lxc.hooks
+{% if salt['mc_controllers.mastersalt_mode']() %}
 
 {% if grains['os'] in ['Ubuntu'] %}
 {% set dist = pkgSettings.apt.ubuntu.dist %}
@@ -38,3 +39,4 @@ lxc-pkgs:
     - watch:
       - mc_proxy: lxc-pre-pkg
       - pkgrepo: lxc-repo
+{%endif %}

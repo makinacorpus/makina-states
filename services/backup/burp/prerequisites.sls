@@ -1,5 +1,6 @@
 include:
   - makina-states.services.backup.burp.hooks
+{% if salt['mc_controllers.mastersalt_mode']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 {%- set pkgs = salt['mc_pkgs.settings']() %}
 {%- set udist = 'precise' %}
@@ -48,5 +49,6 @@ install-burp-pkg2:
       - mc_proxy: burp-pre-install-hook
     - watch_in:
       - mc_proxy: burp-post-install-hook
+{% endif %}
 {% endif %}
 # vim:set nofoldenable:

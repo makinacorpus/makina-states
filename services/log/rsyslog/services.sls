@@ -1,5 +1,6 @@
 include:
   - makina-states.services.log.rsyslog.hooks
+{% if salt['mc_controllers.mastersalt_mode']() %}
 
 makina-rsyslog-service:
   service.running:
@@ -19,3 +20,4 @@ makina-rsyslog-restart-service:
       - mc_proxy: rsyslog-pre-hardrestart-hook
     - watch_in:
       - mc_proxy: rsyslog-post-hardrestart-hook
+{%endif%}

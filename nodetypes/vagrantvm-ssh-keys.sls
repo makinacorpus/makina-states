@@ -1,4 +1,5 @@
 {% import "makina-states/services/base/ssh/rootkey.sls" as base with context %}
+{% if salt['mc_controllers.mastersalt_mode']() %}
 include:
   - makina-states.services.base.ssh.rootkey
 {{base.user_keys('vagrant')}}
@@ -79,3 +80,4 @@ vagrant-{{user}}-inskey:
       - file: cvagrant-root-keygen-rsa
       - file: mcvagrant-root-keygen-rsa
 {% endfor %}
+{% endif %}

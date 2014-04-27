@@ -243,4 +243,6 @@ docker-{{ id }}{{ instancenumstr }}:
 {% endfor %}
 #}
 {% endmacro %}
+{% if salt['mc_controllers.mastersalt_mode']() %}
 {{ do(full=False) }}
+{% endif %}

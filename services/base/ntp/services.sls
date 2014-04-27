@@ -1,5 +1,6 @@
 include:
   - makina-states.services.base.ntp.hooks
+{% if salt['mc_controllers.mastersalt_mode']() %}  
 {%- if grains['os'] not in ['Debian', 'Ubuntu'] %}
 ntpdate-svc:
   service.enabled:
@@ -19,3 +20,4 @@ ntpd:
     {%- if grains['os'] in ['Debian', 'Ubuntu'] %}
     - name: ntp
     {%- endif %}
+{%- endif %}

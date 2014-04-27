@@ -2,6 +2,7 @@
 {% set locs = salt['mc_locations.settings']()%}
 include:
   - makina-states.services.mail.postfix.hooks
+{% if salt['mc_controllers.mastersalt_mode']() %}
   - makina-states.services.mail.postfix.services
 
 {{ locs.conf_dir }}-postfix-dir:
@@ -159,3 +160,4 @@ makina-postfix-postmap-{{f}}:
     - watch_in:
       - cmd: makina-postfix-configuration-check
 {%endfor %}
+{%endif %}

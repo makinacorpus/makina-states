@@ -15,6 +15,7 @@
 #}
 include:
   - makina-states.services.virt.lxc.hooks
+{% if salt['mc_controllers.mastersalt_mode']() %}
 
 {% if grains['os'] in ['Ubuntu'] -%}
 etc-init-lxcconf:
@@ -102,4 +103,5 @@ c-/etc/apparmor.d/lxc/lxc-default:
       - mc_proxy: lxc-pre-conf
     - watch_in:
       - mc_proxy: lxc-post-conf
+{% endif %}
 {% endif %}
