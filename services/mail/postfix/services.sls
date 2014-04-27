@@ -1,6 +1,7 @@
 include:
   - makina-states.services.mail.postfix.hooks
 {% set locs = salt['mc_locations.settings']()%}
+{% if salt['mc_controllers.mastersalt_mode']() %}
 
 makina-postfix-configuration-check:
   cmd.run:
@@ -19,3 +20,4 @@ makina-postfix-service:
       - mc_proxy: postfix-post-restart-hook
     - watch:
       - mc_proxy: postfix-pre-restart-hook
+{% endif %}

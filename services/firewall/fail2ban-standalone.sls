@@ -54,4 +54,6 @@ fail2ban-service:
     - name: fail2ban
     - enable: True
 {% endmacro %}
+{% if salt['mc_controllers.mastersalt_mode']() %}
 {{ do(full=False) }}
+{% endif %}

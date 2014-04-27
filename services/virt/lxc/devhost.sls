@@ -1,5 +1,6 @@
 include:
   - makina-states.services.virt.lxc.hooks
+{% if salt['mc_controllers.mastersalt_mode']() %}
 lxcdevhostmount:
   file.managed:
     - name: /sbin/lxc-devhostmount.sh
@@ -11,3 +12,4 @@ lxcdevhostmount:
       - mc_proxy: lxc-pre-conf
     - watch_in:
       - mc_proxy: lxc-post-conf
+{%endif%}

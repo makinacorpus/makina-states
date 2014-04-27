@@ -1,5 +1,6 @@
 include:
   - makina-states.services.backup.burp.hooks
+{% if salt['mc_controllers.mastersalt_mode']() %}
 {% set data = salt['mc_burp.settings']() %}
 burp-svc:
   service.enabled:
@@ -52,3 +53,4 @@ burp-client-svc:
     - watch_in:
       - mc_proxy: burp-post-restart-hook
 #}
+{%endif %}

@@ -12,6 +12,7 @@
 #--- DEV SERVER: ALL EMAILS ARE IN A LOCAL vagrant MAILBOX
 include:
   - makina-states.services.mail.dovecot.hooks
+{% if salt['mc_controllers.mastersalt_mode']() %}
 {% if salt['mc_nodetypes.registry']()['is']['devhost'] %}
 makina-dovecot-dev-imap-conf:
   file.managed:
@@ -28,5 +29,6 @@ makina-dovecot-dev-imap-conf:
     - defaults:
       mailname: {{ grains['fqdn'] }}
       spool: {{ locs.var_spool_dir }}
+{% endif %}
 {% endif %}
 # ------------ dev mode end -----------------------
