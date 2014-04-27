@@ -3,8 +3,38 @@ include:
 {% if salt['mc_controllers.mastersalt_mode']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 {%- set pkgs = salt['mc_pkgs.settings']() %}
+{%- set burp = salt['mc_burp.settings']() %}
 {%- set udist = 'precise' %}
+
+{% set mode = '' %}
 {% if grains['os'] in ['Ubuntu'] %}
+{% set mode = 'ppa' %}
+{% endif %}
+{% if grains['os'] in ['Debian'] %}
+{% if grains['osrelease'][0] < '6' %}
+{% set mode = 'debsource' %}
+{% endif %}
+{% endif %}
+
+{% if mode == 'debsource' %}
+installburp:
+  file.managed:
+    - name: /usr/bin/install-burp.sh
+    - source: salt://makina-states/files/usr/bin/install-burp.sh
+    - mode: 750
+    - user: root
+    - watch:
+      - mc_proxy: burp-pre-install-hook
+  cmd.run:
+    - watch:
+      - file: installburp
+    - name: /usr/bin/install-burp.sh "{{burp.ver}}"
+    - stateful: true
+    - mode: 750
+    - user: root
+    - watch_in:
+      - mc_proxy: burp-post-install-hook
+{% elif mode == 'ppa' %}
 burp-repo:
   pkgrepo.managed:
     - humanname: burp {{udist}} stable ppa
@@ -13,7 +43,10 @@ burp-repo:
     - file: {{locs.conf_dir}}/apt/sources.list.d/burp.list
     - keyid: 31287BA1
     - keyserver: keyserver.ubuntu.com
+    - require_in:
+      - pkg: install-burp-pkg
 {% endif %}
+{% if not mode == 'debsource' %}
 install-burp-pkg:
 #  pkg.{{pkgs['installmode']}}:
   pkg.latest:
@@ -32,10 +65,7 @@ install-burp-pkg:
       - libacl1-dev
 {% if grains['os'] in ['Ubuntu'] %}
       - burp
-    - require:
-      - pkgrepo: burp-repo
 {% endif %}
-
 {% if grains['os'] in ['Debian'] %}
 install-burp-pkg2:
 #  pkg.{{pkgs['installmode']}}:
@@ -49,6 +79,7 @@ install-burp-pkg2:
       - mc_proxy: burp-pre-install-hook
     - watch_in:
       - mc_proxy: burp-post-install-hook
+{% endif %}
 {% endif %}
 {% endif %}
 # vim:set nofoldenable:
