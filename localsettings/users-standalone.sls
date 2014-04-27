@@ -85,7 +85,7 @@
 {% for enc in encs %}
 ssh_auth-absent-key-{{id}}-{{key-}}-ssh-keys:
   ssh_auth.absent:
-    - name: '{{data['name']}}'
+    - name: '{{key}}'
     - user: {{id}}
     - enc; {{enc}}
     {% for opt in ['options', 'config'] %}
@@ -111,7 +111,7 @@ ssh_{{id}}-auth-key-cleanup-ssh-keys:
 ssh_auth-key-{{id}}-{{key-}}-ssh-keys:
   ssh_auth.present:
     - user: {{id}}
-    - source: salt://files/ssh/{{key}}
+    - source: {{key}}
     - require:
       - user: {{id}}
       - file: ssh_{{id}}-auth-key-cleanup-ssh-keys

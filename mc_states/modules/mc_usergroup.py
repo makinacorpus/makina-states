@@ -116,16 +116,16 @@ def settings():
         if saltmods['mc_macros.is_item_active'](
             'nodetypes', 'vagrantvm'
         ):
-            sysadmins_keys.append('vagrant.pub')
-            if not os.path.exists(sshd):
-                os.makedirs(sshd)
-            if True or not os.path.exists(vagrant_key_path):
-                ret = __salt__['cmd.run_all'](
-                    'curl -k https://raw.githubusercontent.com/mitchellh'
-                    '/vagrant/master/keys/vagrant.pub >'
-                    '{0}'.format(vagrant_key_path))
-                if ret['retcode']:
-                    raise Exception('Cant install vagrant ssh key!')
+            sysadmins_keys.append('salt://makina-states/files/ssh/vagrant.pub')
+            #if not os.path.exists(sshd):
+            #    os.makedirs(sshd)
+            #if True or not os.path.exists(vagrant_key_path):
+            #    ret = __salt__['cmd.run_all'](
+            #        'cp -f {curl -k https://raw.githubusercontent.com/mitchellh'
+            #        '/vagrant/master/keys/vagrant.pub >'
+            #        '{0}'.format(vagrant_key_path))
+            #    if ret['retcode']:
+            #        raise Exception('Cant install vagrant ssh key!')
         data['defaultSysadmins'] = get_default_sysadmins()
         grainsPref = 'makina-states.localsettings.'
         # the following part just feed the above users & user_keys variables
@@ -158,6 +158,10 @@ def settings():
         admin_data = {'admin': True,
                       'password': data['admin']['sysadmin_password']}
         default_keys = {'root': data['admin']['sysadmins_keys']}
+        if 'sysadmin_keys' in data['admin']:
+            for a in data['admin']['sysadmin_keys'] :
+                if not a in data['admin']['sysadmins_keys']:
+                    data['admin']['sysadmins_keys'].append(a)
         users = data['users'] = get_default_users()
         data['sshkeys'] = saltmods['mc_utils.defaults'](
             'makina-states.localsettings.sshkeys', default_keys)
@@ -191,6 +195,12 @@ def settings():
             for k in data['sshkeys'].get(i, []):
                 if k not in ssh_keys:
                     ssh_keys.append(k)
+            udata['ssh_keys'] = []
+            for k in ssh_keys:
+                if not '://' in k:
+                    k = 'salt://files/ssh/' + k
+                if not k in udata['ssh_keys']:
+                    udata['ssh_keys'].append(k)
         return data
     return _settings()
 
