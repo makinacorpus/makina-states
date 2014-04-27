@@ -383,6 +383,12 @@ def salt_root():
     return salt['c']['o']['saltRoot']
 
 
+def msr():
+    '''get salt root from either pillar or opts (minion or master)'''
+    salt = __salt__['mc_salt.settings']()
+    return salt['c']['o']['msr']
+
+
 def iyaml_dump(data):
     """."""
     return yaml_dump(data, flow=True)
