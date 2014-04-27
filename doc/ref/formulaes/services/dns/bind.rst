@@ -266,17 +266,19 @@ An example or a master/slave scenario
 ---------------------------------------
 on a shared pillar::
 
-    {% set maserip = '1.2.3.5' %}
+    {% set masterip = '1.2.3.5' %}
     {% set slave1ip = '1.2.3.4' %}
     {% set slave1ip_tsig = salt['mc_bind.tsig_for'](slave1ip) %}
     makina-states.services.dns.bind.keys.{{slave1ip}}:
       algorithm: HMAC-SHA512
       secret: "{{slave1ip_tsig}}"
 
-On the pillar targeted to the master::
+On the master pillar::
 
+    makina-states.services.dns.bind: true
+    include:
+        - common
     makina-states.services.dns.bind.zones.toto.loc:
-      slaves: ["{{slave1ip}}"]
       allow_transfer: ['key "{{slave1ip}}"']
       serial: 4
       rrs:
@@ -290,8 +292,11 @@ On the pillar targeted to the master::
 
 This will enable the master to sign data sent to slave1
 
-On the slave targeted pillar, now::
+On the pillar slave targeted pillar, now::
 
+    makina-states.services.dns.bind: true
+    include:
+        - common
     makina-states.services.dns.bind.servers.{{masterip}}:
       keys: ["{{slave1ip_tsig}}"]
     makina-states.services.dns.bind.zones.toto.loc:
