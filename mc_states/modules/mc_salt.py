@@ -31,7 +31,7 @@ def settings():
         resolver = saltmods['mc_utils.format_resolve']
         pillar = __pillar__
         locs = saltmods['mc_locations.settings']()
-        usergroup = saltmods['mc_usergroup.settings']()
+        usergroup = saltmods['mc_usergroup.get_default_groups']()
         group = usergroup['group']
         groupId = usergroup['groupId']
         # You can overrides this dict via the salt pillar
@@ -377,6 +377,7 @@ def settings():
         data['mastersaltMasterData'] = mastersaltMasterData
         mastersaltMinionData = resolver(mastersaltMinionData)
         data['mastersaltMinionData'] = mastersaltMinionData
+
         data['msaltname'] = mastersaltCommonData['name']
         msaltprefix = data['msaltprefix'] = mastersaltCommonData['prefix']
         data['mprefix'] = msaltprefix
@@ -393,16 +394,24 @@ def settings():
         data['mresetperms'] = mmsr + '/_scripts/reset-perms.py'
         data['msaltbinpath'] = mmsr + '/bin'
 
+        keys = ['saltname', 'prefix', 'projects_root', 'vagrant_root',
+                'saltRoot', 'confPrefix', 'cachePrefix', 'runPrefix',
+                'logPrefix', 'pillarRoot', 'msr', 'saltbinpath']
         if __salt__['mc_utils.get']('config_dir') == data['mconfPrefix']:
+            pref = 'm'
             csaltMasterData = mastersaltMasterData
-            cmastersaltMinionData = mastersaltMinionData
+            csaltMinionData = mastersaltMinionData
         else:
+            pref = ''
             csaltMasterData = saltMasterData
-            cmastersaltMinionData = saltMasterData
+            csaltMinionData = saltMinionData
 
         #  mappings
         data['c'] = {'master': csaltMasterData,
-                     'minion': cmastersaltMinionData}
+                     'o': {},
+                     'minion': csaltMinionData}
+        for key in keys:
+            data['c']['o'][key] = data['{0}{1}'.format(pref, key)]
         data['data_mappings'] = {
             'master': {
                 'salt': saltMasterData,

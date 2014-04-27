@@ -18,6 +18,7 @@
 {{ salt['mc_macros.register']('nodetypes', 'vagrantvm') }}
 {% if full %}
 include:
+  - makina-states.localsettings.users
   - makina-states.nodetypes.devhost
   - makina-states.nodetypes.vagrantvm-ssh-keys
   - makina-states.cloud.saltify

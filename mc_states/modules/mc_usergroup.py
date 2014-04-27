@@ -18,6 +18,7 @@ Documentation of this module is available with::
 
 '''
 # Import python libs
+import os
 import logging
 import mc_states.utils
 from copy import deepcopy
@@ -25,6 +26,19 @@ from copy import deepcopy
 __name = 'usergroup'
 
 log = logging.getLogger(__name__)
+
+
+def get_default_groups():
+    saltmods = __salt__
+    data= {}
+    # Editor group to have write permission on salt controlled files
+    # but also on project related files
+    grainsPref = 'makina-states.localsettings.'
+    data['group'] = saltmods['mc_utils.get'](
+        grainsPref + 'filesystem.group', 'editor')
+    data['groupId'] = saltmods['mc_utils.get'](
+        grainsPref + 'filesystem.group_id', '65753')
+    return data
 
 
 def get_default_users():
@@ -80,6 +94,9 @@ def settings():
         sysadmin password
     makina-states.localsettings.admin.root_password
         root password
+    makina-states.localsettings.admin.absent_keys
+        mappings to feed ssh_auth.absent_keys in order
+        to remove ssh keys entries from all managed users
 
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
@@ -89,18 +106,28 @@ def settings():
         locations = __salt__['mc_locations.settings']()
         # users data
         data = {}
+        data.update(get_default_groups())
         data['sudoers'] = []
         data['sysadmins'] = []
-
+        sysadmins_keys = []
+        fr = __salt__['mc_utils.salt_root']()
+        sshd = os.path.join(fr, 'files/ssh')
+        vagrant_key_path = os.path.join(fr, 'files/ssh/vagrant.pub') 
+        if saltmods['mc_macros.is_item_active'](
+            'nodetypes', 'vagrantvm'
+        ):
+            sysadmins_keys.append('vagrant.pub')
+            if not os.path.exists(sshd):
+                os.makedirs(sshd)
+            if True or not os.path.exists(vagrant_key_path):
+                ret = __salt__['cmd.run_all'](
+                    'curl -k https://raw.githubusercontent.com/mitchellh'
+                    '/vagrant/master/keys/vagrant.pub >'
+                    '{0}'.format(vagrant_key_path))
+                if ret['retcode']:
+                    raise Exception('Cant install vagrant ssh key!')
         data['defaultSysadmins'] = get_default_sysadmins()
         grainsPref = 'makina-states.localsettings.'
-        # Editor group to have write permission on salt controlled files
-        # but also on project related files
-        data['group'] = saltmods['mc_utils.get'](
-            grainsPref + 'filesystem.group', 'editor')
-        data['groupId'] = saltmods['mc_utils.get'](
-            grainsPref + 'filesystem.group_id', '65753')
-
         # the following part just feed the above users & user_keys variables
         #default  sysadmin settings
         data['admin'] = saltmods['mc_utils.defaults'](
@@ -108,7 +135,8 @@ def settings():
                 'sudoers': [],
                 'sysadmin_password': None,
                 'root_password': None,
-                'sysadmins_keys': []
+                'sysadmins_keys': sysadmins_keys,
+                'absent_keys': [],
             }
         )
         data['admin']['sudoers'] = __salt__['mc_project.uniquify'](
@@ -156,6 +184,10 @@ def settings():
             udata.setdefault("system", False)
             udata.setdefault('home', get_home(i, udata.get('home', None)))
             ssh_keys = udata.setdefault('ssh_keys', [])
+            ssh_abs_keys = udata.setdefault('ssh_absent_keys', [])
+            for k in data['admin']['absent_keys']:
+                if k not in ssh_abs_keys:
+                    ssh_abs_keys.append(k)
             for k in data['sshkeys'].get(i, []):
                 if k not in ssh_keys:
                     ssh_keys.append(k)

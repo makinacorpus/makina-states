@@ -377,6 +377,12 @@ def yaml_dump(data, flow=False):
     return yencode(content)
 
 
+def salt_root():
+    '''get salt root from either pillar or opts (minion or master)'''
+    salt = __salt__['mc_salt.settings']()
+    return salt['c']['o']['saltRoot']
+
+
 def iyaml_dump(data):
     """."""
     return yaml_dump(data, flow=True)

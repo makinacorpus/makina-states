@@ -79,11 +79,30 @@
     - user: {{id}}
     - group: {{id}}
 
+{% if udata['ssh_absent_keys'] %}
+{% for key, data in udata['ssh_absent_keys'].items() %}
+{% set enc = data.get('encs', ['ed25519, ecdsa', 'ssh-rsa', 'ssh-ds']) %}
+{% for enc in encs %}
+ssh_auth-absent-key-{{id}}-{{key-}}-ssh-keys:
+  ssh_auth.absent:
+    - name: '{{data['name']}}'
+    - user: {{id}}
+    - enc; {{enc}}
+    {% for opt in ['options', 'config'] %}
+    {% if opt in data %}- {{opt}}: {{data[opt]}}{%endif%}
+    {% endfor %}
+    - require:
+      - user: {{id}}
+      - file: {{id}}
+{%    endfor %}
+{%    endfor %}
+{% endif %}
+
 {% if udata['ssh_keys'] %}
 ssh_{{id}}-auth-key-cleanup-ssh-keys:
   file.absent:
     - names:
-      - {{home}}/.ssh/authorized_keys
+      {#- {{home}}/.ssh/authorized_keys#} {# we do not implicitly remove access, harmful #}
       - {{home}}/.ssh/authorized_keys2
     - require:
       - user: {{id}}
