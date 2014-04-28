@@ -1,6 +1,5 @@
 {{ salt['mc_macros.register']('services', 'firewall.shorewall') }}
 
-{% if salt['mc_controllers.mastersalt_mode']() %}
 include:
   - makina-states.services.virt.lxc.hooks
   - makina-states.services.virt.docker-hooks
