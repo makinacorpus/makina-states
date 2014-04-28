@@ -135,6 +135,7 @@ def settings():
         data = {}
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.backup.burp', {
+                'ver': '1.3.48',
                 'user': 'root',
                 'group': 'root',
                 'ssl_cert_ca': '/etc/burp/ssl_cert_ca.pem',
