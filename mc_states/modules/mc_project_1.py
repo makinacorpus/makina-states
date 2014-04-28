@@ -274,7 +274,7 @@ def get_configuration(
     return data
 
 
-def get_common_vars(*args, **kwargs):
+def get_configuration(*args, **kwargs):
     '''Retro compat, wrapper to get_configuration'''
     return get_common_vars(*args, **kwargs)
 
