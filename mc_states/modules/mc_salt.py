@@ -356,8 +356,8 @@ def settings():
         data['saltname'] = saltCommonData['name']
         saltprefix = data['saltprefix'] = saltCommonData['prefix']
         data['prefix'] = saltprefix
-        data['projectsRoot'] = saltCommonData['projects_root']
-        data['vagrantRoot'] = saltCommonData['vagrant_root']
+        data['projects_root'] = data['projectsRoot'] = saltCommonData['projects_root']
+        data['vagrant_root'] = data['vagrantRoot'] = saltCommonData['vagrant_root']
         data['dockerRoot'] = saltCommonData['docker_root']
         saltroot = data['saltroot'] = saltCommonData['salt_root']
         data['saltRoot'] = saltroot
