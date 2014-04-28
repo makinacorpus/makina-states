@@ -274,8 +274,8 @@ def get_configuration(
     return data
 
 
-def get_configuration(*args, **kwargs):
+def get_common_vars(*args, **kwargs):
     '''Retro compat, wrapper to get_configuration'''
-    return get_common_vars(*args, **kwargs)
+    return get_configuration(*args, **kwargs)
 
 # vim:set et sts=4 ts=4 tw=80:
