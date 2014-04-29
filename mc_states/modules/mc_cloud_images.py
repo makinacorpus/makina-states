@@ -56,6 +56,7 @@ def settings():
         nt_registry = __salt__['mc_nodetypes.registry']()
         sv_registry = __salt__['mc_services.registry']()
         images['makina-states-precise'] = {}
+        images['makina-states-trusty'] = {}
         root = cloud_settings['root']
         for img in images:
             images[img]['builder_ref'] = '{0}-lxc-ref.foo.net'.format(img)
@@ -113,7 +114,7 @@ def _run(cmd):
     return __salt__['cmd.run_all'](cmd)
 
 
-def sf_release():
+def sf_release(images=None):
     '''Upload the makina-states container lxc tarball to sourceforge;
     this is used in makina-states.cloud.lxc as a base
     for other containers.
@@ -127,12 +128,17 @@ def sf_release():
         salt-call -all mc_lxc.sf_release
     '''
     _cli = __salt__.get
+    if isinstance(images, basestring):
+        images = [images]
+    if images is None:
+        images = [a for a in imgSettings['lxc']['images']]
     imgSettings = __salt__['mc_cloud_images.settings']()
     gret = {'rets': [], 'result': True, 'comment': 'sucess', 'changes': {}}
     mc_lxc.sync_image_reference_containers(imgSettings, gret, _cmd_runner=_run)
     if not gret['result']:
         return gret
-    for img, imgdata in imgSettings['lxc']['images'].items():
+    for img in images:
+        imgdata = imgSettings['lxc']['images'][img]
         ret = {'result': True, 'comment': '', 'trace': ''}
         root = _cli('mc_utils.get')('file_roots')['base'][0]
         ver_file = os.path.join(

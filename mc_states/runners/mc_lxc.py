@@ -53,7 +53,7 @@ def _errmsg(msg):
 
 def sync_container(cmd_runner, ret, origin, destination):
     if os.path.exists(origin) and os.path.exists(destination):
-        cmd = 'rsync -aA --delete {0}/ {1}/'.format(origin, destination)
+        cmd = 'rsync -aA --exclude=lock --delete {0}/ {1}/'.format(origin, destination)
         cret = cmd_runner(cmd)
         if cret['retcode']:
             ret['comment'] += (
