@@ -314,56 +314,65 @@ def defaults(prefix,
         if a not in ignored_keys:
             pkeys[a] = ('{0}.{1}'.format(prefix, a),
                         datadict[a])
-    for dunder in [__pillar__,
-                   __grains__]:
+    dunder_pkeys = {}
+    for dunder in [__pillar__, __grains__]:
         for k in dunder:
             pref = '{0}.'.format(prefix)
             if (
                 k.startswith(pref)
                 and k not in ignored_keys
-                and k not in pkeys
+                and k not in dunder_pkeys
             ):
                 key = pref.join(k.split(pref)[1:])
-                pkeys[key] = k, dunder[k]
-    for key, value_data in pkeys.items():
-        value_key, default_value = value_data
-        # special key to completly overrides the dictionnary
-        value = __salt__['mc_utils.get'](
-            value_key + "-overrides", _default_marker)
-        if value is not _default_marker:
-            overridden[prefix][key] = value
-        else:
-            value = __salt__['mc_utils.get'](value_key, _default_marker)
-        if not isinstance(default_value, list) and value is _default_marker:
-            value = default_value
-        if isinstance(default_value, list):
-            if key in overridden[prefix]:
-                value = overridden[prefix][key]
+                dunder_pkeys[key] = k, dunder[k]
+
+    def assemble_data(_pkeys):
+        for key, value_data in _pkeys.items():
+            value_key, default_value = value_data
+            # special key to completly overrides the dictionnary
+            value = __salt__['mc_utils.get'](
+                value_key + "-overrides", _default_marker)
+            if value is not _default_marker:
+                overridden[prefix][key] = value
             else:
-                nvalue = default_value[:]
-                if value is not _default_marker:
-                    nvalue.extend(value)
-                value = nvalue
-        elif isinstance(value, dict):
-            # recurvive and conservative dictupdate
-            ndefaults = defaults(value_key,
-                                 value,
-                                 overridden=overridden,
-                                 firstcall=firstcall)
-            if overridden[value_key]:
-                for k, value in overridden[value_key].items():
-                    default_value[k] = value
+                value = __salt__['mc_utils.get'](value_key, _default_marker)
+            if (
+                not isinstance(default_value, list)
+                and value is _default_marker
+            ):
+                value = default_value
+            if isinstance(default_value, list):
+                if key in overridden[prefix]:
+                    value = overridden[prefix][key]
+                else:
+                    nvalue = default_value[:]
+                    if value is not _default_marker:
+                        nvalue.extend(value)
+                    value = nvalue
+            elif isinstance(value, dict):
+                # recurvive and conservative dictupdate
+                ndefaults = defaults(value_key,
+                                     value,
+                                     overridden=overridden,
+                                     firstcall=firstcall)
+                if overridden[value_key]:
+                    for k, value in overridden[value_key].items():
+                        default_value[k] = value
             # override speific keys values handle:
             # eg: makina-states.services.firewall.params.RESTRICTED_SSH = foo
             # eg: makina-states.services.firewall.params:
             #        foo: var
-            for k, subvalue in get_uniq_keys_for(value_key).items():
-                ndefaults[k.split('{0}.'.format(value_key))[1]] = subvalue
-            value = __salt__['mc_utils.dictupdate'](default_value, ndefaults)
-
-        datadict[key] = value
-        for k, value in overridden[prefix].items():
-            datadict[k] = value
+                for k, subvalue in get_uniq_keys_for(value_key).items():
+                    ndefaults[k.split('{0}.'.format(value_key))[1]] = subvalue
+                value = __salt__['mc_utils.dictupdate'](default_value, ndefaults)
+            datadict[key] = value
+            for k, value in overridden[prefix].items():
+                datadict[k] = value
+    # first assemble the inner dicts
+    assemble_data(pkeys)
+    # then try to fetch pillar/grains values which match prefix but are
+    # not in the default dict
+    assemble_data(dunder_pkeys)
     return format_resolve(datadict)
 
 
