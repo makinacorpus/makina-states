@@ -412,8 +412,7 @@ def get_view(view):
     for z, data in cached_zone_headers().items():
         if view in data['views']:
             zones[z] = data
-    vdata = __salt__['mc_utils.get'](
-        pref.format(view), vdefaults)
+    vdata = __salt__['mc_utils.get'](pref.format(view), vdefaults)
     return vdata
 
 
