@@ -51,11 +51,11 @@ def dictupdate(dict1, dict2):
           tutu
     '''
     if not isinstance(dict1, dict):
-            raise SaltException(
-                'mc_utils.dictupdate 1st argument is not a dictionnary!')
+        raise SaltException(
+            'mc_utils.dictupdate 1st argument is not a dictionnary!')
     if not isinstance(dict2, dict):
-            raise SaltException(
-                'mc_utils.dictupdate 2nd argument is not a dictionnary!')
+        raise SaltException(
+            'mc_utils.dictupdate 2nd argument is not a dictionnary!')
     return salt.utils.dictupdate.update(dict1, dict2)
 
 
@@ -305,6 +305,25 @@ def defaults(prefix,
             for k in [a for a in ignored_keys if a in global_pillar]:
                 del global_pillar[k]
             datadict = __salt__['mc_utils.dictupdate'](datadict, global_pillar)
+
+    # if we overrided only keys of a dict
+    # but this dict is an empty dict in the default mapping
+    # be sure to load them inside this dict
+    items = get_uniq_keys_for(prefix)
+    dotedprefix = '{0}.'.format(prefix)
+    for fullkey in items:
+        key = dotedprefix.join(fullkey.split(dotedprefix)[1:])
+        val = items[fullkey]
+        if (
+            isinstance(datadict, (dict, list, set))
+        ):
+            curval = datadict.get(key, None)
+            if isinstance(curval, dict):
+                val = __salt__['mc_utils.dictupdate'](curval, val)
+            elif isinstance(curval, list):
+                curval.extend(val)
+                val = curval
+            datadict[key] = val
     if overridden is None:
         overridden = OrderedDict()
     if prefix not in overridden:
@@ -314,16 +333,6 @@ def defaults(prefix,
         if a not in ignored_keys:
             pkeys[a] = ('{0}.{1}'.format(prefix, a),
                         datadict[a])
-    #for dunder in [__pillar__, __grains__]:
-    #    for k in dunder:
-    #        pref = '{0}.'.format(prefix)
-    #        if (
-    #            k.startswith(pref)
-    #            and k not in ignored_keys
-    #            and k not in pkeys
-    #        ):
-    #            key = pref.join(k.split(pref)[1:])
-    #            pkeys[key] = k, dunder[k]
     for key, value_data in pkeys.items():
         value_key, default_value = value_data
         # special key to completly overrides the dictionnary
