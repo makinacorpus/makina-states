@@ -87,6 +87,8 @@ def settings():
             List of managed zones names
         serial
             2014030501
+        slaves
+            default dns server slaves if any
         ttl
             300
         refresh
@@ -244,6 +246,7 @@ def settings():
                     'additional_from_auth': 'no',
                     'additional_from_cache': 'no',
                 },
+                'slaves': [],
                 'ttl': '330',
                 'refresh': '300',
                 'retry': '300',
@@ -480,7 +483,7 @@ def get_zone(zone):
             'allow_query': ['any'],
             'allow_transfer': [],
             'allow_update': [],
-            'slaves': [],
+            'slaves': defaults['slaves'],
             'masters': []})
     zdata['zoneid'] = zone
     views = zdata['views']
