@@ -170,8 +170,10 @@ def settings():
         default_vm = OrderedDict()
         # no lvm on devhost
         # nor cron sync
-        dptype = 'lvm'
-        backing = 'lvm'
+        # dptype = 'lvm'
+        # backing = 'lvm'
+        dptype = 'dir'
+        backing = 'dir'
         if nt_registry['is']['devhost']:
             backing = dptype = 'overlayfs'
             # backing = dptype = 'dir'

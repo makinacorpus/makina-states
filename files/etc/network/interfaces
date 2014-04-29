@@ -5,68 +5,10 @@
 # The loopback network interface
 auto lo
 iface lo inet loopback
-{% set network_interfaces = salt['mc_utils.json_load'](network_interfaces) %}
-
-{% for ifname, ifc in network_interfaces.items() %}
-{% set real_ifname = ifc.get('ifname', ifname) -%}
-{% set inet = ifc.get('inet', 'inet') -%}
-{% set auto = ifc.get('auto', '') -%}
-{% set mode = ifc.get('mode', '') %}
-{% set allow_hotplug = ifc.get('allow-hotplug', False) %}
-{% set broadcast = ifc.get('broadcast', '') -%}
-{% set address = ifc.get('address', '') -%}
-{% set preup = ifc.get('pre-up', []) -%}
-{% set predown = ifc.get('pre-down', []) -%}
-{% set postup = ifc.get('post-up', []) -%}
-{% set postdown = ifc.get('post-down', []) -%}
-{% set netmask = ifc.get('netmask', '') -%}
-{% set gateway = ifc.get('gateway', '') -%}
-{% set dnsservers = ifc.get('dnsservers', ifc.get('dns-nameservers', '')) -%}
-{% if not mode -%}
-{% if address -%}
-{% set mode='static' -%}
-{% else -%}
-{% set mode='dhcp' -%}
-{% endif -%}
-{% endif -%}
-{% if not 'auto' in ifc -%}
-{% if ((mode=='dhcp') or address) -%}
-{% set auto = True -%}
-{% endif -%}
-{% endif -%}
-{% if allow_hotplug -%}
-allow-hotplug {{ ifname }}
-{% endif -%}
-{% if auto -%}
-auto {{ real_ifname }}
-{% endif -%}
-iface {{ real_ifname }} {{inet}} {{ mode -}}
-{% if address %}
-    address {{ address -}}
-{% endif -%}
-{% if netmask %}
-    netmask {{ netmask -}}
-{% endif -%}
-{% if broadcast %}
-    broadcast {{ broadcast -}}
-{% endif -%}
-{% if gateway %}
-    gateway {{ gateway -}}
-{% endif -%}
-{% if dnsservers %}
-    dns-nameservers {{ dnsservers -}}
-{% endif -%}
-{% if preup %}{% for rule in preup %}
-    pre-up {{rule}} {% endfor %}
-{% endif -%}
-{% if postup %}{% for rule in postup %}
-    post-up {{rule}} {% endfor %}
-{% endif -%}
-{% if predown %}{% for rule in predown %}
-    pre-down {{rule}} {% endfor %}
-{% endif -%}
-{% if postdown %}{% for rule in postdown %}
-    post-down {{rule}} {% endfor %}
-{% endif -%}
+{% set data = salt['mc_utils.json_load'](data) %}
+{% for ifname in data.interfaces_order %}
+source /etc/network/interfaces.d/interface.{{data.interfaces[ifname].ifname}}.cfg
 {% endfor -%}
+
+
 

@@ -21,6 +21,7 @@ Documentation of this module is available with::
 import logging
 import mc_states.utils
 import re
+from salt.utils.odict import OrderedDict
 
 __name = 'network'
 
@@ -63,7 +64,7 @@ def settings():
         saltmods = __salt__
         grains = __grains__
         pillar = __pillar__
-        data = {'interfaces': {}}
+        data = {'interfaces': {}, 'ointerfaces': []}
         grainsPref = 'makina-states.localsettings.'
         # Does the network base config file have to be managed via that
         # See makina-states.localsettings.network
@@ -116,6 +117,16 @@ def settings():
                 hosts_list.append(ip + ' ' + dnsname)
         netdata = saltmods['mc_utils.defaults'](
             'makina-states.localsettings.network', data)
+        # retro compat
+        for imapping in netdata['ointerfaces']:
+            for ikey, idata in imapping.items():
+                ifname = idata.get('ifname', ikey)
+                iconf = data['interfaces'].setdefault(ifname, {})
+                iconf.update(idata)
+        for ifc, data in netdata['interfaces'].items():
+            data.setdefault('ifname', ifc)
+        # get the order configuration
+        netdata['interfaces_order'] = [a for a in netdata['interfaces']]
         return netdata
     return _settings()
 

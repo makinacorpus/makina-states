@@ -1,7 +1,5 @@
 {#-
 # network configuration
-# see:
-#   - makina-states/doc/ref/formulaes/localsettings/network.rst
 #}
 {% set mcnet = salt['mc_network.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'network') }}
@@ -19,23 +17,45 @@ network-cfg:
     - name: {{ locs.conf_dir }}/network/interfaces
     - source: salt://makina-states/files/etc/network/interfaces
     - context:
-      {#- tradeof to make the lxc state work with us #}
-      network_interfaces: |
-                          {{salt['mc_utils.json_dump']( mcnet.interfaces)}}
+      data: |
+            {{salt['mc_utils.json_dump'](mcnet)}}
 
-network-services:
-  service.running:
-    - enable: True
-    - names:
-      {% if grains.get('oscodename:') not in ['trusty'] %}- networking{% endif %}
-      {% if grains['os'] in ['Ubuntu'] %}- resolvconf{% endif %}
+{% for ifc in mcnet.interfaces_order %}
+{% set ifn = mcnet.interfaces[ifc]['ifname'] %}
+network-cfg-{{ifc}}:
+  file.managed:
+    - user: root
+    - group: root
+    - mode: '0644'
+    - template: jinja
+    - name: {{ locs.conf_dir }}/network/interfaces.d/interface.{{ifn}}.cfg
+    - source: salt://makina-states/files/etc/network/interface
+    - context:
+      ifname: {{ifc}}
+      data: |
+            {{salt['mc_utils.json_dump']( mcnet)}}
+
+network-services-{{ifc}}:
+  cmd.watch:
+    - name: ifdown {{ifn}};ifup {{ifn}}
+#    - watch_in:
+#      - service: network-services
     - watch:
       - file: network-cfg
-{%- endif %}
+      - file: network-cfg-{{ifc}}
+{% endfor %}
+
+#network-services:
+#  service.running:
+#    - enable: True
+#    - names:
+#      {% if grains.get('oscodename:') not in ['trusty'] %}- networking{% endif %}
+#      {% if grains['os'] in ['Ubuntu'] %}- resolvconf{% endif %} {% endif %}
+
+{% endif %}
 {% endif %}
 {# be sure to have at least one state #}
 network-last-hook:
   mc_proxy.hook:
     - order: last
 
-{% endif %}

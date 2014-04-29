@@ -53,3 +53,27 @@ EG
         - /sbin/ip -f inet6 route del default via 2002:4120:2:2Fff:ff:ff:ff:ff
         - /sbin/ip -f inet6 route del 2002:4120:2:2Fff:ff:ff:ff:ff dev eth0
 
+
+with explicit order
+
+.. code-block:: yaml
+
+    makina-states.localsettings.network.ointerfaces
+        - em1: {} # -> dhcp based interface
+        - eth0-ipv6:
+              ifname: eth0
+              address: 2002:42D0:8:2202::1
+              netmask: 64
+              gateway:
+              dnsservers: 127.0.0.1 212.126.32.92 8.8.8.8 4.4.4.4
+              post-up:
+                - /sbin/ip -f inet6 route add 2002:4120:2:2Fff:ff:ff:ff:ff dev eth0
+                - /sbin/ip -f inet6 route add default via 2002:4120:2:2Fff:ff:ff:ff:ff
+              pre-down:
+                - /sbin/ip -f inet6 route del default via 2002:4120:2:2Fff:ff:ff:ff:ff
+                - /sbin/ip -f inet6 route del 2002:4120:2:2Fff:ff:ff:ff:ff dev eth0
+        - eth0:
+              address: 8.1.5.4
+              netmask: 255.255.255.0
+              gateway: 8.1.5.1
+              dnsservers: 8.8.8.8

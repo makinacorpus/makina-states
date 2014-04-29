@@ -35,7 +35,8 @@ profiles_lxc_salt:
                {{salt['mc_utils.json_dump'](lxcSettings.defaults)}}
         cdata: |
                {{salt['mc_utils.json_dump'](cloudSettings)}}
-        profiles: {{salt['mc_utils.json_dump'](lxcSettings.lxc_cloud_profiles)}}
+        profiles: |
+                  {{salt['mc_utils.json_dump'](lxcSettings.lxc_cloud_profiles)}}
         vms: |
              {{salt['mc_utils.json_dump'](lxcSettings.vms.keys())}}
         msr: {{cloudSettings.root}}/makina-states
