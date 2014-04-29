@@ -121,7 +121,7 @@ def settings():
         for imapping in netdata['ointerfaces']:
             for ikey, idata in imapping.items():
                 ifname = idata.get('ifname', ikey)
-                iconf = data['interfaces'].setdefault(ifname, {})
+                iconf = netdata['interfaces'].setdefault(ifname, {})
                 iconf.update(idata)
         for ifc, data in netdata['interfaces'].items():
             data.setdefault('ifname', ifc)
