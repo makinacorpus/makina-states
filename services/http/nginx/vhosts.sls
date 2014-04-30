@@ -36,7 +36,7 @@ makina-nginx-virtualhost-{{ site }}-status:
                      vh_template_source=nginxSettings.vhost_wrapper_template,
                      vh_content_source=nginxSettings.vhost_content_template,
                      default_server=False,
-                     extra_jinja_nginx_variables = None,
+                     extra = None,
                      real_ip_header=nginxSettings.real_ip_header,
                      reverse_proxy_addresses=nginxSettings.reverse_proxy_addresses) %}
 {% set small_name = small_name or domain.replace('.', '_').replace('-', '_') %}
@@ -52,6 +52,7 @@ makina-nginx-virtualhost-{{ site }}-status:
  'loglevel': loglevel,
  'real_ip_header': real_ip_header,
  'reverse_proxy_addresses': reverse_proxy_addresses,
+ 'v6': False,
  'small_name': small_name,
  'doc_root': doc_root,
  'server_name': domain,
@@ -60,7 +61,8 @@ makina-nginx-virtualhost-{{ site }}-status:
  'default_server': False,
  'redirect_aliases': 'redirect_aliases',
 } %}
-{% do vhost_data.update(extra_jinja_nginx_variables or {}) %}
+{% set extra= extra or {} %}
+{% do vhost_data.update({'extra':extra}) %}
 {% set svhost_data =salt['mc_utils.json_dump'](vhost_data) %}
 
 # Virtualhost basic file

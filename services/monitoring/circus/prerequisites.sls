@@ -11,6 +11,7 @@ circus-install-virtualenv:
 circus-install-pkg:
   file.managed:
     - name: /etc/circus/requirements.txt
+    - makedirs: true
     - source: ''
     - contents: |
                 {{'\n                 '.join(circusSettings['requirements'])}}

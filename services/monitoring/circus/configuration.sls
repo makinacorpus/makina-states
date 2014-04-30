@@ -28,6 +28,7 @@ circus-upstart-conf:
     - source: salt://makina-states/files/etc/init/circusd.conf
     - template: jinja
     - user: root
+    - makedirs: true
     - group: root
     - mode: 755
     - watch:
@@ -44,6 +45,7 @@ circus-init-conf:
     - source: salt://makina-states/files/etc/init.d/circusd
     - template: jinja
     - user: root
+    - makedirs: true
     - group: root
     - mode: 755
     - watch:
@@ -63,6 +65,7 @@ circus-initdef-conf:
     - user: root
     - group: root
     - mode: 755
+    - makedirs: true
     - watch:
       - mc_proxy: circus-pre-conf
     - watch_in:
@@ -85,6 +88,7 @@ circus-logrotate:
     - source: salt://makina-states/files/etc/logrotate.d/circus.conf
     - template: jinja
     - user: root
+    - makedirs: true
     - group: root
     - mode: 755
     - watch:
@@ -99,6 +103,7 @@ circus-setup-conf:
   file.managed:
     - name: {{ locs['conf_dir'] }}/circus/circusd.ini
     - source: salt://makina-states/files/etc/circus/circusd.ini
+    - makedirs: true
     - template: jinja
     - user: root
     - group: root
@@ -113,6 +118,7 @@ circus-globalconf:
     - name: {{ locs['conf_dir'] }}/circus/circusd.conf.d/010_global.ini
     - source: salt://makina-states/files/etc/circus/circusd.conf.d/010_global.ini
     - template: jinja
+    - makedirs: true
     - user: root
     - group: root
     - mode: 755

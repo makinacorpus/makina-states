@@ -395,6 +395,7 @@ def settings():
         data['msaltbinpath'] = mmsr + '/bin'
 
         keys = ['saltname', 'prefix', 'projects_root', 'vagrant_root',
+                'resetperms',
                 'saltRoot', 'confPrefix', 'cachePrefix', 'runPrefix',
                 'logPrefix', 'pillarRoot', 'msr', 'saltbinpath']
         if __salt__['mc_utils.get']('config_dir') == data['mconfPrefix']:
