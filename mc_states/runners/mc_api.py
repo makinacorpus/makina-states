@@ -76,8 +76,13 @@ def filter_state_return(cret, target='local', output='nested'):
             cret = salt.output.get_printout(
                 output, __opts__)({target: cret}).rstrip()
         except:
-            cret = salt.output.get_printout(
-                output, __opts__)(cret).rstrip()
+            try:
+                cret = salt.output.get_printout(
+                    output, __opts__)(cret).rstrip()
+            except:
+                if output != 'nested':
+                    cret = salt.output.get_printout(
+                        'nested', __opts__)(cret).rstrip()
     return cret
 
 

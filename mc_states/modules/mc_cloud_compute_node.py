@@ -395,7 +395,7 @@ def _init_http_proxies(target_data, reversep):
                     reversep['target'])),
             'raw_opts': []})
 
-    ssl_bind = '*:443'
+    ssl_bind = '*:443 ssl'
     for ssl_cert, content in target_data['ssl_certs']:
         ssl_bind += ' crt /etc/ssl/cloud/certs/{0}.crt'.format(ssl_cert)
     reversep.setdefault(
@@ -426,6 +426,10 @@ def feed_http_reverse_proxy_for_target(target, target_data=None):
         target_data = get_settings_for_target(target)
     reversep = _get_rp(target_data)
     _init_http_proxies(target_data, reversep)
+    for vmname in target_data['vms']:
+        vm = target_data['vms'][vmname]
+        for domain in vm['domains']:
+            _configure_http_reverses(reversep, domain, vm['ip'])
     return reversep
 
 
@@ -624,7 +628,8 @@ def settings():
     To add or modify a value, use the mc_utils.default habitual way of
     modifying the default dict.
     '''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    # TODO: reenable cache
+    #@mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
         _s = __salt__
         data = _s['mc_utils.defaults'](

@@ -24,6 +24,7 @@ cpt-cloud-haproxy-cfg:
     - makedirs: true
     - template: jinja
     - defaults:
-      cdata: '{{salt['mc_utils.json_dump'](data.rp.reverse_proxies)}}'
+      cdata: |
+             {{salt['mc_utils.json_dump'](data.rp.reverse_proxies)}}
     - watch_in:
       - mc_proxy: haproxy-post-conf-hook

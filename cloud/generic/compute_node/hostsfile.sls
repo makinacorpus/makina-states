@@ -8,7 +8,7 @@
 {%  for domain in data['domains'] %}
 {%    if not domain in domains%}
 {%      do domains.append(domain)%}
-avirt-{{vmname}}-makina-append-parent-etc.computenode.management:
+avirt-{{vmname}}{{domain}}-makina-append-parent-etc.computenode.management:
   file.blockreplace:
     - name: /etc/hosts
     - marker_start: '#-- start virt dns {{domain}}:: DO NOT EDIT --'
@@ -17,15 +17,15 @@ avirt-{{vmname}}-makina-append-parent-etc.computenode.management:
     - append_if_not_found: True
     - backup: '.bak'
     - show_changes: True
-amakina-parent-append-etc.computenode.accumulated-virt-{{vmname}}:
+amakina-parent-append-etc.computenode.accumulated-virt-{{vmname}}{{domain}}:
   file.accumulated:
     - watch_in:
-       - file: avirt-{{vmname}}-makina-append-parent-etc.computenode.management
+       - file: avirt-{{vmname}}{{domain}}-makina-append-parent-etc.computenode.management
     - filename: /etc/hosts
     - name: parent-hosts-append-accumulator-virt-{{vmname}}-entries
     - text: |
             {{ data.ip }} {{domain}}
-virt-{{vmname}}-makina-prepend-parent-etc.computenode.management:
+virt-{{vmname}}{{domain}}-makina-prepend-parent-etc.computenode.management:
   file.blockreplace:
     - name: /etc/hosts
     - marker_start: '#-- bstart virt dns {{domain}}:: DO NOT EDIT --'
@@ -34,19 +34,19 @@ virt-{{vmname}}-makina-prepend-parent-etc.computenode.management:
     - prepend_if_not_found: True
     - backup: '.bak'
     - show_changes: True
-makina-parent-prepend-etc.computenode.accumulated-virt-{{vmname}}:
+makina-parent-prepend-etc.computenode.accumulated-virt-{{vmname}}{{domain}}:
   file.accumulated:
     - watch_in:
-       - file: virt-{{vmname}}-makina-prepend-parent-etc.computenode.management
+       - file: virt-{{vmname}}{{domain}}-makina-prepend-parent-etc.computenode.management
     - filename: /etc/hosts
-    - name: parent-hosts-prepend-accumulator-virt-{{vmname}}-entries
+    - name: parent-hosts-prepend-accumulator-virt-{{vmname}}{{domain}}-entries
     - text: |
             {{ data.ip }} {{domain}}
 {%      if salt['mc_nodetypes.registry']()['is']['devhost'] %}
-avirt-{{vmname}}-makina-append-parent-etc.computenode.management-devhost-touch:
+avirt-{{vmname}}{{domain}}-makina-append-parent-etc.computenode.management-devhost-touch:
   file.touch:
     - name: /etc/devhosts.{{domain}}
-virt-{{vmname}}-makina-prepend-parent-etc.computenode.management-devhost:
+virt-{{vmname}}{{domain}}-makina-prepend-parent-etc.computenode.management-devhost:
   file.blockreplace:
     - name: /etc/devhosts.{{domain}}
     - marker_start: '#-- start devhost -- bstart virt dns {{domain}}:: DO NOT EDIT --'
@@ -56,13 +56,13 @@ virt-{{vmname}}-makina-prepend-parent-etc.computenode.management-devhost:
     - backup: '.bak'
     - show_changes: True
     - watch:
-      - file: avirt-{{vmname}}-makina-append-parent-etc.computenode.management-devhost-touch
-makina-parent-prepend-etc.computenode.accumulated-virt-{{vmname}}-devhost:
+      - file: avirt-{{vmname}}{{domain}}-makina-append-parent-etc.computenode.management-devhost-touch
+makina-parent-prepend-etc.computenode.accumulated-virt-{{vmname}}{{domain}}-devhost:
   file.accumulated:
     - watch_in:
-       - file: virt-{{vmname}}-makina-prepend-parent-etc.computenode.management-devhost
+       - file: virt-{{vmname}}{{domain}}-makina-prepend-parent-etc.computenode.management-devhost
     - filename: /etc/devhosts.{{domain}}
-    - name: parent-hosts-prepend-accumulator-virt-{{vmname}}-entries
+    - name: parent-hosts-prepend-accumulator-virt-{{vmname}}{{domain}}-entries
     - text: |
             {{ salt['mc_network.settings']().devhost_ip }} {{domain}}
 {%      endif %}

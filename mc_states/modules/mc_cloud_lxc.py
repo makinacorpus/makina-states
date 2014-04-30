@@ -158,7 +158,8 @@ def settings():
 
         The settings are not stored here for obvious performance reasons
     '''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    # TODO: reenable cache
+    #@mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
         grains = __grains__
         pillar = __pillar__
@@ -280,6 +281,11 @@ def get_settings_for_vm(target, vm, full=True):
     lxc_data = _s['mc_utils.defaults'](
         'makina-states.cloud.lxc.vms.{0}.{1}'.format(target, vm),
         {})
+    if not lxc_data:
+        plxc_data = _s['mc_utils.defaults'](
+            'makina-states.cloud.lxc.vms.{0}'.format(target), {})
+        if plxc_data:
+            lxc_data = plxc_data.get(vm, {})
     lxc_data.setdefault('master', master)
     lxc_data['password'] = _s[
         'mc_cloud_compute_node.find_password_for_vm'
@@ -315,7 +321,7 @@ def get_settings_for_vm(target, vm, full=True):
                 target, sprofile, profile_type)))
     lxc_data.setdefault('name', vm)
     lxc_data.setdefault('domains', [])
-    if not vm in lxc_data['domains']:
+    if vm not in lxc_data['domains']:
         lxc_data['domains'].insert(0, vm)
 
     def _sort_domains(dom):

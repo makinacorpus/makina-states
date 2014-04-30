@@ -172,8 +172,8 @@ def get_cert_for(domain, gen=False, domain_csr_data=None):
                 data += fic.read()
             with open(bcertp, 'w') as fic:
                 fic.write(data)
-    if os.path.exists(bcertp):
-        certp = bcertp
+    #if os.path.exists(bcertp):
+    #    certp = bcertp
     return certp, certk
 
 

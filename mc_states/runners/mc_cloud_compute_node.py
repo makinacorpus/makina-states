@@ -53,8 +53,7 @@ def cn_sls_pillar(target):
     cloudSettingsData['all_sls_dir'] = cloudSettings['all_sls_dir']
     cloudSettingsData[
         'compute_node_sls_dir'] = cloudSettings['compute_node_sls_dir']
-    cloudSettingsData[
-        'prefix'] = cloudSettings['prefix']
+    cloudSettingsData['prefix'] = cloudSettings['prefix']
     cloudSettingsData = api.json_dump(cloudSettingsData)
     cnSettingsData = api.json_dump(cnSettingsData)
     pillar = {'scloudSettings': cloudSettingsData,
@@ -120,7 +119,7 @@ def configure_sshkeys(target, ret=None, output=True):
 
 def configure_sslcerts(target, ret=None, output=True):
     '''shorewall configuration'''
-    return _configure('sshcerts', target, ret, output)
+    return _configure('sslcerts', target, ret, output)
 
 
 def configure_firewall(target, ret=None, output=True):
@@ -143,14 +142,15 @@ def configure_grains(target, ret=None, output=True):
     return _configure('grains', target, ret, output)
 
 
-def deploy(target, output=True, ret=None):
+def deploy(target, output=True, ret=None, hooks=True, pre=True, post=True):
     '''Prepare cloud controller configuration
     can also apply per virtualization type configuration'''
     if ret is None:
         ret = result()
     ret['comment'] += green('Installing compute node configuration\n')
-    run_vt_hook('pre_deploy_compute_node',
-                ret=ret, target=target, output=output)
+    if hooks and pre:
+        run_vt_hook('pre_deploy_compute_node',
+                    ret=ret, target=target, output=output)
     for step in [configure_sshkeys,
                  configure_grains,
                  install_vts,
@@ -160,8 +160,9 @@ def deploy(target, output=True, ret=None):
                  configure_reverse_proxy]:
         step(target, ret=ret, output=False)
         check_point(ret, __opts__, output=output)
-    run_vt_hook('post_deploy_compute_node',
-                ret=ret, target=target, output=output)
+    if hooks and post:
+        run_vt_hook('post_deploy_compute_node',
+                    ret=ret, target=target, output=output)
     salt_output(ret, __opts__, output=output)
     return ret
 
