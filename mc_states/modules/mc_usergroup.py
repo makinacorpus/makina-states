@@ -176,7 +176,11 @@ def settings():
             for k in data['admin']['sysadmins_keys']:
                 if k not in keys:
                     keys.append(k)
-        for sudoer in data["sudoers"]:
+        for sudoer in data['sudoers']:
+            if sudoer not in data['admin']['sudoers']:
+                data['admin']['sudoers'].append(sudoer)
+        data['sudoers'] = data['admin']['sudoers']
+        for sudoer in data['sudoers']:
             sudata = users.setdefault(sudoer, {})
             groups = sudata.setdefault('groups', [])
             for g in ['admin', 'sudo']:
