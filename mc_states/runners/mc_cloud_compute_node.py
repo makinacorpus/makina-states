@@ -118,6 +118,11 @@ def configure_sshkeys(target, ret=None, output=True):
     return _configure('sshkeys', target, ret, output)
 
 
+def configure_sslcerts(target, ret=None, output=True):
+    '''shorewall configuration'''
+    return _configure('sshcerts', target, ret, output)
+
+
 def configure_firewall(target, ret=None, output=True):
     '''shorewall configuration'''
     return _configure('firewall', target, ret, output)
@@ -151,6 +156,7 @@ def deploy(target, output=True, ret=None):
                  install_vts,
                  configure_hostsfile,
                  configure_firewall,
+                 configure_sslcerts,
                  configure_reverse_proxy]:
         step(target, ret=ret, output=False)
         check_point(ret, __opts__, output=output)

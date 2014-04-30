@@ -76,6 +76,19 @@ def _decode(filep):
     return value
 
 
+def del_conf_for_target(target, setting):
+    '''Register a specific setting for a specific target'''
+    target = target.replace('.', '')
+    cloudSettings = __salt__['mc_cloud.settings']()
+    filep = os.path.join(
+        cloudSettings['compute_node_pillar_dir'],
+        target, 'settings',
+        setting + '.pack'
+    )
+    if os.path.exists(filep):
+        os.unlink(filep)
+
+
 def set_conf_for_target(target, setting, value):
     '''Register a specific setting for a specific target'''
     target = target.replace('.', '')
@@ -148,24 +161,25 @@ def find_password_for_vm(target,
         if not password:
             raise Exception('Error while setting password '
                             'grain for {0}/{1}'.format(target, vm))
-        set_conf_for_vm(target, virt_type, vm, 'password', password)
     return password
 
 
-def remove_allocated_ip(target, ip):
+def remove_allocated_ip(target, ip, vm=None):
     sync = False
-    all_ips = get_allocated_ips(target)
+    all_ips = get_allocated_ips(target, norm=True)
     if ip in all_ips['ips'].values():
-        for i in [a for a in all_ips]:
-            if all_ips[i] == ip:
-                del all_ips[i]
+        for i in [a for a in all_ips['ips']]:
+            if all_ips['ips'][i] == ip:
+                if vm is not None and vm == i:
+                    continue
+                del all_ips['ips'][i]
                 sync = True
     if sync:
         set_conf_for_target(target, 'allocated_ips', all_ips)
-    return get_allocated_ips(target)
+    return get_allocated_ips(target, norm=True)
 
 
-def get_allocated_ips(target):
+def get_allocated_ips(target, norm=False):
     allocated_ips = get_conf_for_target(target, 'allocated_ips')
     if (allocated_ips is None) or (not isinstance(allocated_ips, dict)):
         allocated_ips = {}
@@ -177,7 +191,13 @@ def get_allocated_ips(target):
     existing_vms = get_vms_for_target(target)
     # recycle old ips for unexisting vms
     sync = False
+    done = []
     for name in [n for n in cur_ips]:
+        ip = cur_ips[name]
+        if ip in done and not norm:
+            remove_allocated_ip(target, ip, vm=name)
+        else:
+            done.append(ip)
         if name not in existing_vms:
             sync = True
             del cur_ips[name]
@@ -235,11 +255,21 @@ def find_ip_for_vm(target,
     return ip4
 
 
+def set_allocated_ip(target, vm, ip, vt='lxc'):
+    '''.'''
+    allocated_ips = get_allocated_ips(target)
+    allocated_ips['ips'][vm] = ip
+    set_conf_for_vm(target, vt, vm, 'ip4', ip)
+    set_conf_for_target(target, 'allocated_ips', allocated_ips)
+    return get_allocated_ips(target)
+
+
 def get_conf_for_vm(target,
                     virt_type,
                     vm,
                     setting,
                     default=None):
+    '''.'''
     target = target.replace('.', '')
     vm = vm.replace('.', '')
     cloudSettings = __salt__['mc_cloud.settings']()
@@ -317,53 +347,12 @@ def _get_rp(target):
     return target.setdefault(_RP, _default_rp)
 
 
-def _configure_http_reverses(reversep,
-                             domain,
-                             ip,
-                             http_proxy_mode=None):
-    if not http_proxy_mode:
-        http_proxy_mode = 'xforwardedfor'
-    http_proxy = reversep['http_proxy'] = {
-        'name': reversep['target'],
-        'mode': 'http',
-        'http_proxy_mode': http_proxy_mode,
-        'bind': '*:80',
-        'raw_opts_pre': __salt__['mc_utils.get'](
-            'makina-states.cloud.compute_node.conf.'
-            '{0}.http_proxy.raw_opts_pre'.format(
-                reversep['target'])),
-        'raw_opts_post': __salt__['mc_utils.get'](
-            'makina-states.cloud.compute_node.conf.'
-            '{0}.http_proxy.raw_opts_post'.format(
-                reversep['target'])),
-        'raw_opts': []}
-    base_path = 'salt://cloud-controller/compute_node/{0}'.format(
-        reversep['target'].replace('.', ''))
-    https_proxy = reversep['https_proxy'] = {
-        'name': "secure-" + reversep['target'],
-        'mode': 'http',
-        'http_proxy_mode': http_proxy_mode,
-        'raw_opts_pre': __salt__['mc_utils.get'](
-            'makina-states.cloud.compute_node.conf.'
-            '{0}.https_proxy.raw_opts_pre'.format(
-                reversep['target']), []),
-        'ssl_certs': __salt__['mc_utils.get'](
-            'makina-states.cloud.compute_node.conf.'
-            '{0}.https_proxy.ssl_certs'.format( reversep['target']), {
-                'self': {
-                    'cert': '{0}/certs/self.pub'.format(base_path),
-                    'key': '{0}/certs/self.pem'.format(base_path),
-                }
-            }),
-        'raw_opts_post': __salt__['mc_utils.get'](
-            'makina-states.cloud.compute_node.conf.'
-            '{0}.https_proxy.raw_opts_post'.format(
-                reversep['target']), []),
-        'bind': '*:443',
-        'raw_opts': []}
+def _configure_http_reverses(reversep, domain, ip):
     backend_name = 'bck_{0}'.format(domain)
     sbackend_name = 'securebck_{0}'.format(domain)
     # http
+    http_proxy = reversep['http_proxy']
+    https_proxy = reversep['https_proxy']
     rule = 'acl host_{0} hdr(host) -i {0}'.format(domain)
     if rule not in http_proxy['raw_opts']:
         http_proxy['raw_opts'].insert(0, rule)
@@ -388,6 +377,45 @@ def _configure_http_reverses(reversep,
     _add_server_to_backend(reversep, sbackend_name, domain, ip, kind='https')
 
 
+def _init_http_proxies(target_data, reversep):
+    http_proxy_mode = target_data.get('http_proxy_mode', 'xforwardedfor')
+    reversep.setdefault(
+        'http_proxy', {
+            'name': reversep['target'],
+            'mode': 'http',
+            'http_proxy_mode': http_proxy_mode,
+            'bind': '*:80',
+            'raw_opts_pre': __salt__['mc_utils.get'](
+                'makina-states.cloud.compute_node.conf.'
+                '{0}.http_proxy.raw_opts_pre'.format(
+                    reversep['target'])),
+            'raw_opts_post': __salt__['mc_utils.get'](
+                'makina-states.cloud.compute_node.conf.'
+                '{0}.http_proxy.raw_opts_post'.format(
+                    reversep['target'])),
+            'raw_opts': []})
+
+    ssl_bind = '*:443'
+    for ssl_cert, content in target_data['ssl_certs']:
+        ssl_bind += ' crt /etc/ssl/cloud/certs/{0}.crt'.format(ssl_cert)
+    reversep.setdefault(
+        'https_proxy', {
+            'name': "secure-" + reversep['target'],
+            'mode': 'http',
+            'http_proxy_mode': http_proxy_mode,
+            'raw_opts_pre': __salt__['mc_utils.get'](
+                'makina-states.cloud.compute_node.conf.'
+                '{0}.https_proxy.raw_opts_pre'.format(
+                    reversep['target']), []),
+            'raw_opts_post': __salt__['mc_utils.get'](
+                'makina-states.cloud.compute_node.conf.'
+                '{0}.https_proxy.raw_opts_post'.format(
+                    reversep['target']), []),
+            'bind': ssl_bind,
+            'raw_opts': []})
+    return reversep
+
+
 def feed_http_reverse_proxy_for_target(target, target_data=None):
     '''Get reverse proxy information mapping for a specicific target
     This return a useful mappings of infos to reverse proxy http
@@ -397,12 +425,7 @@ def feed_http_reverse_proxy_for_target(target, target_data=None):
     if target_data is None:
         target_data = get_settings_for_target(target)
     reversep = _get_rp(target_data)
-    for vmname in target_data['vms']:
-        vm = target_data['vms'][vmname]
-        for domain in vm['domains']:
-            _configure_http_reverses(
-                reversep, domain, vm['ip'],
-                http_proxy_mode=vm.get('http_proxy_mode', None))
+    _init_http_proxies(target_data, reversep)
     return reversep
 
 
@@ -481,6 +504,8 @@ def get_settings_for_target(target, target_data=None):
             virt types supported by the box.
             This is a mapping and the value is weither the virt type is
             enabled or not
+        ssl_certs
+            (certname, cert+key string) tuples
         vms
             light mappings infos of underlying vms
 
@@ -496,7 +521,9 @@ def get_settings_for_target(target, target_data=None):
     _s = __salt__
     # iterate over all supported vts
     if target_data is None:
-        target_data = {}
+        target_data = {
+            'ssl_certs': [],
+        }
     target_data['target'] = target
     target_domains = target_data.setdefault('domains', [])
     vms = get_vms_per_type(target)
@@ -504,6 +531,8 @@ def get_settings_for_target(target, target_data=None):
         _add_vt_to_target(target_data, virt_type)
         target_data['virt_types'][virt_type] = True
         vms = target_data.setdefault('vms', OrderedDict())
+        # TODO: make this configurable
+        target_data['http_proxy_mode'] = 'xforwardedfor'
         for vmname in vm_ids:
             vm_settings = _s[
                 'mc_cloud_{0}.get_settings_for_vm'.format(virt_type)
@@ -521,12 +550,23 @@ def get_settings_for_target(target, target_data=None):
             target_data['vms'][vmname] = {
                 'virt_type':  virt_type,
                 'ip': ip,
-                'http_proxy_mode': vm_settings.get('http_proxy_mode',
-                                                   'xforwardedfor'),
                 'domains': vm_settings['domains'],
                 'vmname':  vm_settings['name']}
             if target_data.get('virt_type', '') in ['lxc', 'docker']:
                 target_data['virt_types']['lxc'] = True
+    domains = [target] + target_domains
+    for cert, key in __salt__['mc_cloud_controller.ssl_certs'](domains):
+        certname = cert
+        if certname.endswith('.crt'):
+            certname = os.path.basename(certname)[:-4]
+        if certname.endswith('.bundle'):
+            certname = os.path.basename(certname)[:-7]
+        fullcert = ''
+        for f in [cert, key]:
+            with open(f) as fic:
+                fullcert += fic.read()
+        if fullcert not in [a[1] for a in target_data['ssl_certs']]:
+            target_data['ssl_certs'].append((certname, fullcert))
     target_data['firewall'] = get_firewall_toggle()
     feed_http_reverse_proxy_for_target(target, target_data)
     feed_ssh_reverse_proxies_for_target(target, target_data)

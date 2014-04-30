@@ -312,7 +312,7 @@ def client(fun, *args, **kw):
                 import pdb;pdb.set_trace()  ## Breakpoint ##
         except:
             pass
-                
+
         running = bool(cret.get(target, False))
         endto = time.time() + timeout
         while running:

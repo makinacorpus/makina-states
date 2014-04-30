@@ -36,16 +36,9 @@ def master_opts(*args, **kwargs):
     return saltapi._master_opts(*args, **kwargs)
 
 
-def _cli(*args, **kwargs):
-    if not kwargs:
-        kwargs = {}
-    kwargs.update({
-        'salt_cfgdir': __opts__.get('config_dir', None),
-        '__opts__': __opts__,
-        'salt_cfg': __opts__.get('conf_file', None),
-    })
-    return saltapi.client(*args, **kwargs)
-
+def cli(*args, **kwargs):
+    return __salt__['mc_api.cli'](*args, **kwargs)
+ 
 
 def _errmsg(msg):
     raise saltapi.MessageError(msg)
@@ -74,7 +67,7 @@ def sync_container(cmd_runner, ret, origin, destination):
 def sync_image_reference_containers(imgSettings, ret, _cmd_runner=None):
     if _cmd_runner is None:
         def _cmd_runner(cmd):
-            return _cli('cmd.run_all', cmd)
+            return cli('cmd.run_all', cmd)
 
     for img in imgSettings['lxc']['images']:
         bref = imgSettings['lxc']['images'][img]['builder_ref']
@@ -102,8 +95,8 @@ def sync_images(output=True):
     dest = '/root/.ssh/.lxc.pub'
     this_ = saltapi.get_local_target()
     orig = 'salt://.lxcsshkey.pub'
-    imgSettings = _cli('mc_cloud_images.settings')
-    lxcSettings = _cli('mc_cloud_lxc.settings')
+    imgSettings = cli('mc_cloud_images.settings')
+    lxcSettings = cli('mc_cloud_lxc.settings')
     rsync_cmd = (
         'rsync -aA --delete-excluded --exclude="makina-states-lxc-*xz"'
         ' --numeric-ids '
@@ -118,32 +111,32 @@ def sync_images(output=True):
         subret = saltapi.result()
         ret['targets'][target] = subret
         try:
-            host = _cli('grains.item', 'fqdn', salt_target=target)
+            host = cli('grains.item', 'fqdn', salt_target=target)
             if not host:
                 host = target
             else:
                 host = host['fqdn']
             # ssh known hosts
-            cret = _cli('ssh.set_known_host', 'root', host, salt_target=target)
+            cret = cli('ssh.set_known_host', 'root', host, salt_target=target)
             # ssh key
             pubkey = os.path.join(root, '.lxcsshkey.pub')
 
             with open('/root/.ssh/id_dsa.pub') as fic:
                 with open(pubkey, 'w') as sshkey:
                     sshkey.write(fic.read())
-            cret = _cli('ssh.check_key_file', 'root', orig)
+            cret = cli('ssh.check_key_file', 'root', orig)
             if not cret[[a for a in cret][0]] in ['exists']:
-                cret = _cli('cp.get_file', orig, dest)
-                cret = _cli('ssh.set_auth_key_from_file',
+                cret = cli('cp.get_file', orig, dest)
+                cret = cli('ssh.set_auth_key_from_file',
                             'root', 'file://{0}'.format(dest))
                 if cret not in ['new', 'no changes']:
                     _errmsg(
                         'Problem while accepting key {0}'.format(cret))
-                cret = _cli('ssh.check_key_file',
+                cret = cli('ssh.check_key_file',
                             'root', orig, salt_target=target)
             if not cret[[a for a in cret][0]] in ['exists']:
-                cret = _cli('cp.get_file', orig, dest, salt_target=target)
-                cret = _cli('ssh.set_auth_key_from_file',
+                cret = cli('cp.get_file', orig, dest, salt_target=target)
+                cret = cli('ssh.set_auth_key_from_file',
                             'root', 'file://{0}'.format(dest),
                             salt_target=target)
                 if cret not in ['new', 'no changes']:
@@ -161,7 +154,7 @@ def sync_images(output=True):
                     cmd = (
                         'ps aux|egrep "rsync.*{0}"|grep -v grep|wc -l'
                     ).format(imgroot)
-                    cret = _cli('cmd.run_all', cmd, salt_timeout=timeout)
+                    cret = cli('cmd.run_all', cmd, salt_timeout=timeout)
                     if cret['stdout'].strip() > '0':
                         _errmsg(
                             'Transfer already in progress')
@@ -169,7 +162,7 @@ def sync_images(output=True):
                         'if [ -d {0} ];then '
                         '{1} {0}/ {0}.tmp/;'
                         'fi').format(imgroot, rsync_cmd)
-                    cret = _cli('cmd.run_all', cmd, salt_target=target)
+                    cret = cli('cmd.run_all', cmd, salt_target=target)
                     if not cret['retcode']:
                         subret['comment'] += '\nRSYNC(local pre sync) complete'
                         subret['trace'] += (
@@ -178,7 +171,7 @@ def sync_images(output=True):
                         '{2} -z '
                         '{0}/ root@{1}:{0}.tmp/'
                     ).format(imgroot, host, rsync_cmd)
-                    cret = _cli('cmd.run_all', cmd, salt_timeout=timeout)
+                    cret = cli('cmd.run_all', cmd, salt_timeout=timeout)
                     if not cret['retcode']:
                         subret['comment'] += '\nRSYNC(net) complete'
                         subret['trace'] += (
@@ -188,7 +181,7 @@ def sync_images(output=True):
                         cmd = (
                             '{1} {0}.tmp/ {0}/'
                         ).format(imgroot, rsync_cmd)
-                        cret = _cli('cmd.run_all', cmd, salt_target=target)
+                        cret = cli('cmd.run_all', cmd, salt_target=target)
                         if not cret['retcode']:
                             subret['comment'] += '\nRSYNC(local sync) complete'
                             subret['trace'] += (

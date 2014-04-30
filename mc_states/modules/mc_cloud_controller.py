@@ -132,8 +132,12 @@ def get_cert_for(domain, gen=False, domain_csr_data=None):
     ssl_gen_d = cloudSettings['ssl_pillar_dir']
     ca = cloudSettings['ssl']['ca']['ca_name']
     certp = os.path.join(ssl_gen_d, ca, 'certs', '{0}.crt'.format(domain))
+    bcertp = os.path.join(ssl_gen_d, ca, 'certs', '{0}.bundle.crt'.format(domain))
     certk = os.path.join(ssl_gen_d, ca, 'certs', '{0}.key'.format(domain))
+    cacertp = os.path.join(ssl_gen_d, ca, '{0}_ca_cert.crt'.format(ca))
+    selfsigned = False
     if gen and not os.path.exists(certp):
+        selfsigned = True
         old_d = __opts__.get('ca.cert_base_path', '')
         try:
             __opts__['ca.cert_base_path'] = ssl_gen_d
@@ -161,6 +165,15 @@ def get_cert_for(domain, gen=False, domain_csr_data=None):
     if not os.path.exists(certp):
         raise CertificateNotFoundError(
             'Certificate not found for {0}'.format(domain))
+    if selfsigned and not os.path.exists(bcertp) and os.path.exists(cacertp):
+        data = ''
+        for f in [cacertp, certp]:
+            with open(f) as fic:
+                data += fic.read()
+            with open(bcertp, 'w') as fic:
+                fic.write(data)
+    if os.path.exists(bcertp):
+        certp = bcertp
     return certp, certk
 
 
@@ -215,6 +228,8 @@ def load_certs(path):
     exacts = {}
     alts = {}
     certs_dir = get_certs_dir()
+    if certs_dir and not os.path.exists(certs_dir):
+        os.makedirs(certs_dir)
     for cert in os.listdir(path):
         if not cert.endswith('.crt'):
             continue
@@ -289,15 +304,13 @@ def search_matching_certificate(domain):
     return certp, certk
 
 
-def ssl_certs(target):
-    computes_nodes_settings = __salt__[
-        'mc_cloud_compute_node.get_settings_for_target'](target)
+def ssl_certs(domains):
+    '''Maybe Generate and Return SSL certificates paths for domain'''
+    if not domains:
+        raise ValueError('domains must be set')
+    if isinstance(domains, basestring):
+        domains = [domains]
     ssl_certs = []
-    domains = [target]
-    for vm_name, data in computes_nodes_settings['vms'].items():
-        for domain in data['domains']:
-            if domain not in domains:
-                domains.append(domain)
     for domain in domains:
         crt_data = search_matching_certificate(domain)
         if crt_data not in ssl_certs:

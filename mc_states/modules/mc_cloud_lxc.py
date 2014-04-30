@@ -239,6 +239,9 @@ def settings():
         except:
             vms = OrderedDict()
         lxcSettings['vms'] = vm_ids = OrderedDict()
+        for i in lxcSettings:
+            if i.startswith('vms.'):
+                del lxcSettings[i]
         for target in vms:
             vm_ids.setdefault(target, [])
             data = vms[target]
