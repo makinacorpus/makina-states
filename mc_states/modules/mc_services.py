@@ -69,16 +69,13 @@ def settings():
 def registry():
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _registry():
-        # only some services will be fully done  on mastersalt side if any
         # in scratch mode, deactivating all default configuration for services
         true = not __salt__['mc_nodetypes.is_scratch']()
         allow_lowlevel_states = __salt__['mc_controllers.allow_lowlevel_states']()
         is_docker = __salt__['mc_nodetypes.is_docker']()
         is_travis = __salt__['mc_nodetypes.is_travis']()
         ids = __salt__['mc_nodetypes.is_docker_service']()
-        # sshen = true and (ids or (allow_lowlevel_states and not is_docker))
-        core_en = true and ((is_docker and ids) or allow_lowlevel_states)
-        ssh_en = core_en
+        core_en = true or (is_docker and ids)
         ntpen = _ntpEn() and true
         binden = _bindEn() and true and not is_travis
         ulogden = _ulogdEn() and true
@@ -146,13 +143,7 @@ def registry():
                 'virt.kvm': {'active': vagrantvm},
                 'virt.lxc': {'active': vagrantvm},
                 'virt.docker': {'active': vagrantvm},
-                'virt.lxc-shorewall': {'active': False},
-                'mastersalt_minion': {'active': False},
-                'mastersalt_master': {'active': False},
-                'mastersalt': {'active': False},
-                'salt_minion': {'active': False},
-                'salt_master': {'active': False},
-                'salt': {'active': False}}
+                'virt.lxc-shorewall': {'active': False}}
         nodetypes_registry = __salt__['mc_nodetypes.registry']()
         if 'laptop' in nodetypes_registry['actives']:
             data.update({
