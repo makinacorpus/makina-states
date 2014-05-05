@@ -5,4 +5,5 @@ include:
   - makina-states.services.http.nginx.vhosts
   - makina-states.services.http.nginx.hooks
   - makina-states.services.http.nginx.services
-
+{% import "makina-states/services/http/nginx/vhosts.sls"  as vhost %}
+{% set virtualhost = vhost.virtualhost %}
