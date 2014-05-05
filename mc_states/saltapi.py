@@ -307,12 +307,6 @@ def client(fun, *args, **kw):
                         arg=[jid],
                         timeout=10,
                         **kwargs)
-        try:
-            if 'spawn' in args[0]:
-                import pdb;pdb.set_trace()  ## Breakpoint ##
-        except:
-            pass
-
         running = bool(cret.get(target, False))
         endto = time.time() + timeout
         while running:
