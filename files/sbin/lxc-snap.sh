@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
+if [ "x$1" = "xstop" ];then
 for i in salt-master salt-minion mastersalt-master mastersalt-minion;do
     service $i stop
 done
+fi
 rm -rfv /tmp/.saltcloud
 find /etc/*salt/pki/master/minions*/*\
      /etc/*salt/pki/master/master.{pem,pub}\
