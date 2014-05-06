@@ -359,6 +359,7 @@ def to_skip(path):
 
 
 def reset_permissions():
+
     if not ONLY_ACLS:
         for mode, paths in UNIX_PERMS.items():
             chmod_paths(paths, mode)
@@ -373,7 +374,7 @@ def collect_paths(path,
                   dmode=DMODE,
                   fmode=FMODE,
                   recursive=options.recursive):
-    if not path in ALL_PATHS:
+    if path not in ALL_PATHS:
         ALL_PATHS[path] = path
         is_file, is_dir, skipped = (
             os.path.isfile(path),
@@ -406,18 +407,20 @@ def collect_paths(path,
                         continue
                 todo.append(sp)
             for spath in todo:
-                for root, dirs, files in os.walk(spath):
-                    for subpaths in [files, dirs]:
-                        for subpath in subpaths:
-                            if DEBUG:
-                                print(os.path.join(root, subpath))
-                            sp = os.path.join(root, subpath)
-                            if to_skip(sp):
-                                if DEBUG:
-                                    print("SKIPPED {0}".format(
-                                        os.path.join(root, subpath)))
-                                continue
-                            collect_paths(sp, recursive=False)
+                collect_paths(spath, recursive=recursive)
+            # for spath in todo:
+            #     for root, dirs, files in os.walk(spath):
+            #         for subpaths in [files, dirs]:
+            #             for subpath in subpaths:
+            #                 if DEBUG:
+            #                     print(os.path.join(root, subpath))
+            #                 sp = os.path.join(root, subpath)
+            #                 if to_skip(sp):
+            #                     if DEBUG:
+            #                         print("SKIPPED {0}".format(
+            #                             os.path.join(root, subpath)))
+            #                     continue
+            #                collect_paths(sp, recursive=False)
 
 
 def reset(path):
