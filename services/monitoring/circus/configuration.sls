@@ -6,19 +6,11 @@
 #}
 
 {% set locs = salt['mc_locations.settings']() %}
-{% set circusSettings = salt['mc_circus.settings']() %}
-{%- set venv = circusSettings['location'] + "/venv" %}
+{% set defaults = salt['mc_circus.settings']() %}
+{%- set venv = defaults['venv'] %}
 include:
   - makina-states.services.monitoring.circus.hooks
   - makina-states.services.monitoring.circus.services
-{% set defaults = {
-  'extra': circusSettings,
-  'log': locs.var_log_dir+'/circus.log',
-  'locs': locs,
-  'venv': venv,
-  'pidf': locs.var_run_dir+'/circusd.pid',
-} %}
-
 
 {#- Run #}
 {% if grains['os'] in ['Ubuntu'] %}
@@ -74,9 +66,11 @@ circus-initdef-conf:
         data: |
               {{salt['mc_utils.json_dump'](defaults)}}
 
-circus-setup-conf-include-directory:
+circus-setup-conf-directories:
   file.directory:
-    - name: {{ locs['conf_dir'] }}/circus/circusd.conf.d
+    - names:
+      -  {{ locs['conf_dir'] }}/circus/circusd.conf.d
+      -  {{ defaults.logdir }}
     - watch:
       - mc_proxy: circus-pre-conf
     - watch_in:
@@ -98,10 +92,11 @@ circus-logrotate:
     - defaults:
         data: |
               {{salt['mc_utils.json_dump'](defaults)}}
+
 {#- Configuration #}
 circus-setup-conf:
   file.managed:
-    - name: {{ locs['conf_dir'] }}/circus/circusd.ini
+    - name: {{defaults.conf}}
     - source: salt://makina-states/files/etc/circus/circusd.ini
     - makedirs: true
     - template: jinja
@@ -130,7 +125,7 @@ circus-globalconf:
         data: |
               {{salt['mc_utils.json_dump'](defaults)}}
 
-
 {%- import "makina-states/services/monitoring/circus/macros.jinja" as circus with context %}
-
+{#
 {{circus.circusAddWatcher('foo', '/bin/echo', args=[1]) }}
+#}

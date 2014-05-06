@@ -1,24 +1,4 @@
-{# circus macro helpers 
-  - see doc/ref/macros/circus.rst
-#}
-{% set locs = salt['mc_locations.settings']()%}
-{% macro circusAddWatcher(name, cmd) %}
-{% set args = kwargs.pop('args', []) %}
-{% set conf_priority = kwargs.pop('conf_priority', '100') %}
-circus-add-watcher-{{ name }}:
-  file.managed:
-    - name: {{ locs['conf_dir'] }}/circus/circusd.conf.d/{{conf_priority}}_watcher-{{ name }}.ini
-    - source: salt://makina-states/files/etc/circus/circusd.conf.d/watcher.ini
-    - template: jinja
-    - defaults:
-        name: {{ name }}
-        cmd: {{ cmd }}
-        args: {{ args }}
-        extras: |
-                {{salt['mc_utils.json_dump']( kwargs)}}
-    - require:
-        - file: circus-setup-conf
-        - file: circus-setup-conf-include-directory
-    - require_in:
-        - cmd: circus-start
-{% endmacro %}
+{# retro compat #}
+{%- import "makina-states/services/monitoring/circus/macros.jinja" as circus with context %}
+{% set circus = circus %}
+{% set circusAddWatcher = circus.circusAddWatcher %}

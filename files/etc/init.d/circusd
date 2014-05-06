@@ -19,7 +19,7 @@ NAME=circusd
 DAEMON=/usr/bin/circusd
 PIDFILE=/var/run/$NAME.pid
 LOG="--log-output {{data.log}}"
-DAEMON_ARGS="${LOG} --daemon --pidfile $PIDFILE /etc/circus/circusd.ini"
+DAEMON_ARGS="${LOG} --daemon --pidfile $PIDFILE {{data.conf}}"
 SCRIPTNAME=/etc/init.d/$NAME
 
 # Read configuration variable file if it is present
