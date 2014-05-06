@@ -26,12 +26,18 @@ log = logging.getLogger(__name__)
 
 
 def is_reverse_proxied():
-    return __salt__['mc_cloud.is_vm']()
+    is_vm = False
+    try:
+        with open('/etc/mastersalt/makina-states/cloud.yaml') as fic:
+            is_vm = 'is.vm' in fic.read()
+    except Exception:
+        pass
+    return __salt__['mc_cloud.is_vm']() or is_vm
 
 
 def settings():
     '''
-    NGINX registry
+    nginx registry
 
     is_reverse_proxied
         is nginx itself is reverse proxified (true in cloudcontroller mode)
@@ -134,6 +140,8 @@ def settings():
        salt://makina-states/files/etc/nginx/sites-available/vhost.content.conf
     virtualhosts
         Mapping containing all defined virtualhosts
+    rotate
+        days to rotate log
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
@@ -161,6 +169,7 @@ def settings():
 
         nginxData = __salt__['mc_utils.defaults'](
             'makina-states.services.http.nginx', {
+                'rotate': '365',
                 'is_reverse_proxied': is_rp,
                 'reverse_proxy_addresses': reverse_proxy_addresses,
                 'use_real_ip': True,
@@ -169,6 +178,7 @@ def settings():
                 'logformats': logformats,
                 'allowed_hosts': [],
                 'ulimit': ulimit,
+                'client_max_body_size': '1M',
                 'open_file_cache': 'max=200000 inactive=5m',
                 'open_file_cache_valid': '6m',
                 'open_file_cache_min_uses': '2',

@@ -1,8 +1,9 @@
 # MANAGED VIA SALT -- DO NOT EDIT
+{% set data=salt['mc_utils.json_load'](data) %}
 /var/log/nginx/*.log {
 	daily
 	missingok
-	rotate 52
+	rotate {{data.rotate}}
 	compress
 	delaycompress
 	notifempty

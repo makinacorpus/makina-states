@@ -32,7 +32,12 @@ def settings():
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.monitoring.circus', {
                 'location': locs['apps_dir'] + '/circus',
+                'venv': '{location}/venv',
+                'conf': '/etc/circus/circusd.ini',
                 'rotate': __salt__['mc_logrotate.settings'](),
+                'log': '{logdir}/circus.log',
+                'pidf': locs['var_run_dir'] + '/circusd.pid',
+                'logdir': '/var/log/circus',
                 'requirements': [
                     'circus==0.10.0',
                     'circus-web==0.4.1',
