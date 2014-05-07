@@ -5,7 +5,7 @@
 #}
 
 {{ salt['mc_macros.register']('localsettings', 'env') }}
-# the magic is here, calling env in mastersalt env, write the localreg
+# the magic is here, calling env  write the localreg
 {% set settings = salt['mc_env.settings']() %}
 include:
   - makina-states.localsettings.env.hooks

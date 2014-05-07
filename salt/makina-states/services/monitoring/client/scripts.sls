@@ -1,5 +1,5 @@
-{% set data = salt['mc_monitoring.settings']() %}
-
+{%- set data = salt['mc_monitoring.settings']() %}
+{%- set locs = mc_locations.settings']() %}
 {% set dodl=True %}
 {% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% if grains['os'] in ['Debian'] %}
@@ -112,7 +112,7 @@ ms-scripts-d:
 {% for i in ['misc', 'nagios'] %}
 {{i}}-distributed-plugins-rec:
   cmd.run:
-    - name: rsync -a /srv/mastersalt/makina-states/files/usr/local/admin_scripts/{{i}}/ /usr/local/admin_scripts/{{i}}/
+    - name: rsync -a {{locs.msr}}/files/usr/local/admin_scripts/{{i}}/ /usr/local/admin_scripts/{{i}}/
     - user: root
     - require:
       - file: ms-scripts-d
