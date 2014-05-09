@@ -361,6 +361,9 @@ def _configure_http_reverses(reversep, domain, ip):
     if rule not in http_proxy['raw_opts']:
         http_proxy['raw_opts'].append(rule)
     # https
+    sslr = 'http-request set-header X-SSL %[ssl_fc]'
+    if sslr not in https_proxy['raw_opts']:
+        https_proxy['raw_opts'].insert(0, sslr)
     rule = 'use_backend {1} if host_{0}'.format(domain, sbackend_name)
     if rule not in https_proxy['raw_opts']:
         https_proxy['raw_opts'].append(rule)
@@ -403,10 +406,11 @@ def _init_http_proxies(target_data, reversep):
             'name': "secure-" + reversep['target'],
             'mode': 'http',
             'http_proxy_mode': http_proxy_mode,
-            'raw_opts_pre': __salt__['mc_utils.get'](
-                'makina-states.cloud.compute_node.conf.'
-                '{0}.https_proxy.raw_opts_pre'.format(
-                    reversep['target']), []),
+            'raw_opts_pre': (
+                __salt__['mc_utils.get'](
+                    'makina-states.cloud.compute_node.conf.'
+                    '{0}.https_proxy.raw_opts_pre'.format(
+                        reversep['target']), [])),
             'raw_opts_post': __salt__['mc_utils.get'](
                 'makina-states.cloud.compute_node.conf.'
                 '{0}.https_proxy.raw_opts_post'.format(
