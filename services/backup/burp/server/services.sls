@@ -22,11 +22,11 @@ burp-svc:
     - group: root
     - contents: |
             {{'#'}}!/usr/bin/env bash
-            {% for dir in ['burp', 'default', 'init.d', 'cron.d'] -%}rsync -azv /etc/burp/clients/{{client}}/etc/{{dir}}/ {{client}}:/etc/{{dir}}/ &&\
+            {% for dir in ['burp', 'default', 'init.d', 'cron.d'] -%}rsync -azv -e '{{cdata['rsh_cmd']}}' /etc/burp/clients/{{client}}/etc/{{dir}}/ {{cdata['rsh_dst']}}:/etc/{{dir}}/ &&\
             {% endfor -%}
             /bin/true
             {% if not cdata.activated -%}
-            ssh {{client}} rm -f /etc/cron.d/burp
+            {{cdata['ssh_cmd']}} rm -f /etc/cron.d/burp
             {% endif %}
             {#
             ssh {{client}} update-rc.d -f burp-client remove &&
