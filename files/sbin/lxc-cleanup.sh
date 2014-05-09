@@ -24,13 +24,17 @@ for i in /var/run/*.pid /var/run/dbus/pid /etc/nologin;do
         rm -f $i || /bin/true
     fi
 done
+# some services needs to be out
+for i in atop vnstat ondemand  umountfs umountroot smartmontools;do
+    update-rc.d -f $i remove || /bin/true
+done
 # no apparmor in container
 update-rc.d -f apparmor remove || /bin/true
 # disabling useless and harmfull services
+#    $(find /etc/init -name dbus.conf)\
 for f in\
     $(find /etc/init -name console-setup.conf)\
     $(find /etc/init -name procps.conf)\
-    $(find /etc/init -name dbus.conf)\
     $(find /etc/init -name acpid.conf)\
     $(find /etc/init -name apport.conf)\
     $(find /etc/init -name control-alt-delete.conf)\
