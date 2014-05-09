@@ -8,6 +8,7 @@ mc_salt / salt related helpers
 '''
 # Import salt libs
 import mc_states.utils
+import random
 import os
 
 __name = 'salt'
@@ -96,7 +97,18 @@ def settings():
         ):
             crons = False
 
+        tcron = random.randint(0, 9)
+        tcron2 = tcron + 5
+        if tcron2 > 10:
+            tcron2 -= 10
+        tcron3 = tcron2 + 3
+        if tcron3 > 10:
+            tcron3 -= 10
+        cron_minion_checkalive = '0{0},1{0},2{0},3{0},4{0},5{0}'.format(tcron)
+        cron_sync_minute = '0{0},1{0},2{0},3{0},4{0},5{0}'.format(tcron2)
+
         saltCommonData = {
+            'mailto': 'root',
             'module_dirs': ['{salt_root}/_modules',
                             '{salt_root}/makina-states/mc_states/modules'],
             'returner_dirs': ['{salt_root}/_returners',
@@ -112,10 +124,10 @@ def settings():
             'cron_auto_restart': crons,
             'cron_check_alive': crons,
             'cron_auto_upgrade': crons,
-            'cron_clean_minute': 'random',
+            'cron_clean_minute': tcron3,
             'cron_clean_hour': '0,6,12,18',
-            'cron_minion_checkalive': '*/10',
-            'cron_sync_minute': '*/10',
+            'cron_minion_checkalive': cron_minion_checkalive,
+            'cron_sync_minute': cron_sync_minute,
             'cron_sync_hour': '*',
             'cron_upgrade_minute': 3,
             'cron_upgrade_hour': 0,
