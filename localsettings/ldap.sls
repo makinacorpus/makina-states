@@ -16,7 +16,7 @@ include:
 
 {% set olddeb= False %}
 {% set skip = False %}
-{% if grains['os_family'] == 'Debian' -%}
+{% if grains['os'] == 'Debian' -%}
 {% if grains['osrelease'] < '6'  -%}
 {% set skip = True %}
 {% set olddeb = True %}
@@ -26,7 +26,7 @@ ldap-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
       - libpam-ldap{%if not olddeb%}d{%endif%}
-      - libnss-ldap
+      - libnss-ldapd
       - ldap-utils
       - libsasl2-modules
       - sasl2-bin
