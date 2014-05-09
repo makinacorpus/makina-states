@@ -116,9 +116,20 @@ def settings():
         - read_blockdev
         - read_all_blockdevs
         - exclude_comp
-        - cron_periodicity
+        - cron_periodicity: automaticly spray all around the hour
         - cron_cmd
         - restore_client
+        - ssh_port (default 22)
+        - ssh_user (default root)
+
+    For each client you can define a ssh gateway
+    (eg: for VMs with a private ip)
+
+    Extra params are:
+
+        - ssh_gateway: ip[:port] (default: 22)
+        - ssh_gateway_user
+        - ssh_gateway_key
 
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
@@ -236,7 +247,7 @@ def settings():
                     'read_all_blockdevs': '0',
                     'exclude_comp': None,
                     'cron_periodicity': (
-                        "07,27,47 * * * *"
+                        "* * * * *"
                     ),
                     'cron_cmd': (
                         " {user} [ -x /usr/sbin/burp ] && "
@@ -259,9 +270,53 @@ def settings():
         data['client_common'].setdefault(
             'ssl_peer_cn', data['server_conf']['fqdn'])
         data['clients'].setdefault(data['server_conf']['fqdn'], {})
+        hour = [0, 20, 40]
         for cname in [a for a in data['clients']]:
             cl = data['clients'][cname]
             cl['cname'] = cname
+            ssh_port = cl.get('ssh_port', '')
+            if ssh_port:
+                ssh_port = '-p {0}'.format(ssh_port)
+            cl['rsh_cmd'] = 'ssh {1} {2} {0} {3}'.format(
+                '-oStrictHostKeyChecking=no',
+                # Set hosts key database path to /dev/null, ie, non-existing
+                '-oUserKnownHostsFile=/dev/null',
+                # Don't re-use the SSH connection. Less failures.
+                '-oControlPath=none',
+                ssh_port,
+            )
+            cl['rsh_dst'] = '{1}@{0}'.format(cname,
+                                             cl.get('ssh_user', 'root'))
+            cl['ssh_cmd'] = cl['rsh_cmd'] + '{1}@{0}'.format(
+                cname, cl.get('ssh_user', 'root'))
+            if 'ssh_gateway' in cl:
+                ssh_gateway_key = ''
+                if 'ssh_gateway_key' in cl:
+                    ssh_gateway_key = '-i {0}'.format(cl['ssh_gateway_key'])
+                ssh_gateway = cl['ssh_gateway']
+                ssh_gateway_port = ''
+                if ':' in ssh_gateway:
+                    ssh_gateway, ssh_gateway_port = ssh_gateway.split(':')
+                if ssh_gateway_port:
+                    ssh_gateway_port = '-p {0}'.format(ssh_gateway_port)
+                # Setup ProxyCommand
+                proxy_cmd = (
+                    ' -oProxyCommand="'
+                    'ssh {0} {1} {2} {3} {4}@{5} {6} '
+                    'nc -q0 %h %p"'
+                ).format(
+                    '-oStrictHostKeyChecking=no',
+                    # Set hosts key database path to /dev/null
+                    '-oUserKnownHostsFile=/dev/null',
+                    # Don't re-use the SSH connection. Less failures.
+                    '-oControlPath=none',
+                    ssh_gateway_key,
+                    cl.get('ssh_gateway_user', 'root'),
+                    ssh_gateway,
+                    ssh_gateway_port
+                )
+                cl['ssh_cmd'] += proxy_cmd
+                cl['rsh_cmd'] += proxy_cmd
 
             # backup host is only a client to query backups
             # and restore
@@ -290,6 +345,16 @@ def settings():
             local_conf[cpassk] = cpass
             cl['password'] = cpass
             for k, val in data['client_common'].items():
+                # spray around the periodicity to spray the backup load
+                # all over the hour.
+                if k == 'cron_periodicity':
+                    for ix, item in enumerate(hour[:]):
+                        item += 3
+                        if item >= 60:
+                            item = item - 60
+                        hour[ix] = item
+                    val = '{0} * * * *'.format(','.join(
+                        ["{0}".format(t) for t in hour]))
                 cl.setdefault(k, val)
         salt['mc_macros.update_registry_params'](
             'burp', local_conf)
