@@ -42,6 +42,61 @@ def sort_ifaces(infos):
     return key
 
 
+def get_broadcast(dn, ip):
+    '''Get a server broadcase
+    ipsubnet.255
+    '''
+    num = '255'
+    gw = '.'.join(ip.split('.')[:-1] + [num])
+    return gw
+
+
+def get_netmask(dn, ip):
+    '''Get a server netmask
+    default to ipsubnet.255
+    '''
+    netmask = '255.255.255.0'
+    return netmask
+
+
+def get_gateway(dn, ip):
+    '''Get a server gateway
+    default to ipsubnet.254
+    except for online where the gw == ipsubnet.1
+    '''
+    num = '254'
+    if 'online-' in dn:
+        num = '1'
+    gw = '.'.join(ip.split('.')[:-1] + [num])
+    return gw
+
+
+def get_dnss(dn, ip):
+    '''Get server dnss
+    '''
+    defaults = ['127.0.0.1', '8.8.8.8', '4.4.4.4']
+    if 'ovh-' in dn:
+        defaults.insert(1, '213.186.33.99')
+    if 'online-' in dn:
+        defaults.insert(1, '62.210.16.6')
+        defaults.insert(1, '62.210.16.7')
+    return ' '.join(defaults)
+
+
+def get_fo_netmask(dn, ip):
+    '''Get netmask for an ip failover
+    '''
+    netmask = '255.255.255.255'
+    return netmask
+
+
+def get_fo_broadcast(dn, ip):
+    '''Get broadcast for an ip failover
+    '''
+    broadcast = ip
+    return broadcast
+
+
 def settings():
     '''
     network registry
