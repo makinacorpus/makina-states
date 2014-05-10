@@ -259,7 +259,7 @@ def settings():
             if iface.startswith('tun'):
                 z = 'vpn'
                 data['have_vpn'] = True
-            if 'em1' == iface:
+            if iface in ['eth1', 'em1']:
                 if have_rpn:
                     z = 'rpn'
                 if providers['is']['online']:
