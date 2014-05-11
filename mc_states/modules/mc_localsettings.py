@@ -12,8 +12,10 @@ import mc_states.utils
 import re
 
 __name = 'localsettings'
+ipsan = re.compile('(\.|-|_)', re.M | re.U)
 slssan1 = re.compile('(minions\.)?(bm|(vm)(\.(lxc|kvm))?)\.')
-slssan2 = re.compile('(makina-states.cloud\.)?(compute_nodes?|(vms?)(\.(lxc|kvm))?)\.')
+slssan2 = re.compile(
+    '(makina-states.cloud\.)?(compute_nodes?|(vms?)(\.(lxc|kvm))?)\.')
 
 
 def metadata():
@@ -179,4 +181,10 @@ def get_pillar_fqdn(sls, domain, template):
     sls = slssan1.sub('', sls)
     sls = slssan2.sub('', sls)
     return '{0}.{1}'.format(sls.split('+')[0], domain)
+
+
+def get_pillar_sw_ip(ip):
+    return ipsan.sub('_', ip)
+
+
 #

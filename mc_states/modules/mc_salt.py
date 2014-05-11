@@ -357,6 +357,18 @@ def settings():
             mastersaltMasterData, mastersaltMasterPillar.copy())
         mastersaltMinionData = saltmods['mc_utils.dictupdate'](
             mastersaltMinionData, mastersaltMinionPillar.copy())
+
+        # new & prefered way:
+        # allow settings to also be modified ala mc_utils.default key/value pairs
+        saltMasterData = saltmods['mc_utils.defaults'](
+            'makina-states.controllers.salt_master.settings', saltMasterData)
+        saltMinionData = saltmods['mc_utils.defaults'](
+            'makina-states.controllers.salt_minion.settings', saltMinionData)
+        mastersaltMasterData = saltmods['mc_utils.defaults'](
+            'makina-states.controllers.mastersalt_master.settings', mastersaltMasterData)
+        mastersaltMinionData = saltmods['mc_utils.defaults'](
+            'makina-states.controllers.mastersalt_minion.settings', mastersaltMinionData)
+
         #
         ########################################
         # default exposed global variables

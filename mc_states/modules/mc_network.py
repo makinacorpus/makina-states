@@ -121,6 +121,7 @@ def settings():
         pillar = __pillar__
         data = {'interfaces': {}, 'ointerfaces': []}
         grainsPref = 'makina-states.localsettings.'
+        providers = __salt__['mc_provider.settings']()
         # Does the network base config file have to be managed via that
         # See makina-states.localsettings.network
         # Compat for the first test!
@@ -133,12 +134,17 @@ def settings():
         ifaces = grains['ip_interfaces'].items()
         ifaces.sort(key=sort_ifaces)
         devhost_ip = None
+        forced_ifs = {}
+        devhost = __salt__['mc_nodetypes.registry']()['is']['devhost']
         for iface, ips in ifaces:
             if ips:
                 if not default_ip:
                     default_ip = ips[0]
-                if iface == 'eth1':
+                if (iface == 'eth1') and devhost:
                     devhost_ip = ips[0]
+                if providers['have_rpn'] and (iface in ['eth1', 'em1']):
+                    # configure rpn with dhcp
+                    forced_ifs[iface] = {}
         if not default_ip:
             default_ip = '127.0.0.1'
         # hosts managment via pillar
@@ -178,6 +184,7 @@ def settings():
                 ifname = idata.get('ifname', ikey)
                 iconf = netdata['interfaces'].setdefault(ifname, {})
                 iconf.update(idata)
+        netdata['interfaces'].update(forced_ifs)
         for ifc, data in netdata['interfaces'].items():
             data.setdefault('ifname', ifc)
         # get the order configuration

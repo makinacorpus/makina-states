@@ -349,7 +349,7 @@ def defaults(prefix,
                 value = overridden[prefix][key]
             else:
                 nvalue = default_value[:]
-                if value is not _default_marker:
+                if (value != nvalue) and (value is not _default_marker):
                     nvalue.extend(value)
                 value = nvalue
         elif isinstance(value, dict):
