@@ -13,7 +13,7 @@ import re
 
 __name = 'localsettings'
 ipsan = re.compile('(\.|-|_)', re.M | re.U)
-slssan1 = re.compile('(minions\.)?(bm|(vm)(\.(lxc|kvm))?)\.')
+slssan1 = re.compile('(minions\.)?(bm|(vm)(\.(lxc|kvm))?)\.([^.]*\.)?')
 slssan2 = re.compile(
     '(makina-states.cloud\.)?(compute_nodes?|(vms?)(\.(lxc|kvm))?)\.')
 
@@ -163,24 +163,32 @@ def get_passwords(passwords_map, dn):
     return passwords
 
 
-def get_pillar_fqdn(sls, domain, template):
+def get_pillar_fqdn(sls, template):
     '''
     if template name is none, it is a directly
     accessed sls (rendered from a string), here
     we can guess the name from sls
     sls does not have '.' it is a directly
     '''
+    fqdn = sls
     tname = template._TemplateReference__context.name
     if tname:
-        sls = tname
-    if '/' in sls:
-        sls = sls.split('/')[-1]
-    sls = re.sub('\.sls$', '', sls)
-    sls = re.sub(
-        '\+{0}$'.format(domain.replace('.', '\\+')), '', sls)
-    sls = slssan1.sub('', sls)
-    sls = slssan2.sub('', sls)
-    return '{0}.{1}'.format(sls.split('+')[0], domain)
+        fqdn = tname
+    if '/' in fqdn:
+        fqdn = fqdn.split('/')[-1]
+    # remove any .sls extension
+    fqdn = re.sub('\.sls$', '', fqdn)
+    # # remove any domain part in last part on the input filed
+    # fqdn = re.sub(
+    #     '\+{0}$'.format(domain.replace('.', '\\+')), '', fqdn)
+    # extract the basename from the sls inclusion directive or filename
+    fqdn = slssan1.sub('', fqdn)
+    # extract the basename from the sls inclusion directive or filename, part2
+    fqdn = slssan2.sub('', fqdn)
+    fqdn = fqdn.replace('+', '.')
+    # if domain not in fqdn:
+    #     fqdn = '{0}.{1}'.format(fqdn, domain)
+    return fqdn
 
 
 def get_pillar_sw_ip(ip):
