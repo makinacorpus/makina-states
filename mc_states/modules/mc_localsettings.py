@@ -156,6 +156,8 @@ def get_passwords(passwords_map, dn):
             continue
         if isinstance(data, dict):
             for host, data in data.items():
+                if host not in [dn]:
+                    continue
                 if isinstance(data, basestring):
                     passwords['clear'][user] = data
     for user, password in passwords['clear'].items():
