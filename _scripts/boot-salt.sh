@@ -750,8 +750,20 @@ set_vars() {
              MASTERSALT_MASTER_PORT="$(egrep "^master_port:" "${SALT_CLOUD_DIR}"/minion|awk '{print $2}'|sed -e "s/ //")"
         fi
         if [ "x${SALT_CLOUD}" = "x" ] && [ -e "${MASTERSALT_PILLAR}/mastersalt.sls" ];then
-            MASTERSALT="$(grep "master: " ${MASTERSALT_PILLAR}/mastersalt.sls |awk '{print $2}'|tail -n 1)"
+            PMASTERSALT="$(grep "master: " ${MASTERSALT_PILLAR}/mastersalt.sls |awk '{print $2}'|tail -n 1|sed -e "s/ //g")"
+            if [ "x${PMASTERSALT}" != "x" ];then
+                MASTERSALT="${PMASTERSALT}"
+            fi
         fi
+        for i in /etc/mastersalt/minion /etc/mastersalt/minion.d/00_global.conf;do
+            if [ "x${MASTERSALT}" = "x" ];then
+                PMASTERSALT="$(egrep "^master: " ${i} |awk '{print $2}'|tail -n 1|sed -e "s/ //g")"
+                if [ "x${PMASTERSALT}" != "x" ];then
+                    MASTERSALT="${PMASTERSALT}"
+                    break
+                fi
+            fi
+        done
 
         MASTERSALT_MASTER_DNS="${MASTERSALT_MASTER_DNS:-${MASTERSALT}}"
         MASTERSALT_MASTER_IP="${MASTERSALT_MASTER_IP:-$(dns_resolve ${MASTERSALT_MASTER_DNS})}"
@@ -1981,43 +1993,41 @@ a\    - salt
     for salt_sls in "${SALT_PILLAR}/salt.sls" "${SALT_PILLAR}/salt_minion.sls";do
         if [ ! -e "${salt_sls}" ];then
             debug_msg "Creating default pillar's salt.sls"
-            echo 'salt:' > "${salt_sls}"
+            touch "${salt_sls}"
         fi
         if [ "x$(grep "$BRANCH_PILLAR_ID" "${salt_sls}"|wc -l|sed -e "s/ //g")" = "x0" ];then
             echo "" >> "${salt_sls}"
             echo "${BRANCH_PILLAR_ID}" >> "${salt_sls}"
         fi
         "${SED}" -e "s/${BRANCH_PILLAR_ID}.*/$BRANCH_PILLAR_ID: ${branch_id}/g" -i "${salt_sls}"
-        if [ "x$(egrep -- "^salt:" "${salt_sls}"|wc -l|sed -e "s/ //g")" = "x0" ];then
-            echo ''  >> "${salt_sls}"
-            echo 'salt:' >> "${salt_sls}"
-        fi
     done
-    if [ "x$(egrep -- "( |\t)*minion:( |\t)*$" "${SALT_PILLAR}/salt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
+    if [ "x$(egrep -- "salt_minion.settings" "${SALT_PILLAR}/salt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
         debug_msg "Adding minion info to pillar"
-        "${SED}" -i -e "/^salt:\( \|\t\)*$/ {
-a\  minion:
-a\    interface: $SALT_MINION_IP
-a\    master: $SALT_MASTER_DNS
-a\    master_port: ${SALT_MASTER_PORT}
-}" "${SALT_PILLAR}/salt.sls"
+        cat >> "${SALT_PILLAR}/salt.sls"  << EOF
+makina-states.controllers.salt_minion.settings.interface: $SALT_MINION_IP
+makina-states.controllers.salt_minion.settings.master: $SALT_MASTER_DNS
+makina-states.controllers.salt_minion.settings.master_port: ${SALT_MASTER_PORT}
+EOF
     fi
-    if [ "x$(egrep -- "( |\t)*minion:( |\t)*$" "${SALT_PILLAR}/salt_minion.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
+    if [ "x$(egrep -- "salt_minion.settings" "${SALT_PILLAR}/salt_minion.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
         debug_msg "Adding minion info to salt_minion pillar"
-        "${SED}" -i -e "/^salt:\( \|\t\)*$/ {
-a\  minion:
-a\    master: $(get_minion_id)
-a\    master_port: ${SALT_MASTER_PORT}
-}" "${SALT_PILLAR}/salt_minion.sls"
+        cat >> "${SALT_PILLAR}/salt_minion.sls" << EOF
+makina-states.controllers.salt_minion.settings.master: $(get_minion_id)
+makina-states.controllers.salt_minion.settings.master_port: ${SALT_MASTER_PORT}
+EOF
     fi
+
     "${SED}" -i -e "/^    id:/ d" "${SALT_PILLAR}/salt.sls"
     "${SED}" -i -e "/makina-states.minion_id:/ d" "${SALT_PILLAR}/salt.sls"
     echo "makina-states.minion_id: $(get_minion_id)">>"${SALT_PILLAR}/salt.sls"
-    "${SED}" -i -e "s/master:.*/master: $(get_minion_id)/g" "${SALT_PILLAR}/salt_minion.sls"
+
+    "${SED}" -i -e "s/.*\.master:.*/makina-states.controllers.salt_minion.master: $(get_minion_id)/g" "${SALT_PILLAR}/salt_minion.sls"
     touch "${MCONF_PREFIX}/grains"
+
     "${SED}" -i -e "/^    id:/ d" "${CONF_PREFIX}/grains"
     "${SED}" -i -e "/makina-states.minion_id:/ d" "${CONF_PREFIX}/grains"
     echo "makina-states.minion_id: $(get_minion_id)">>"${CONF_PREFIX}/grains"
+
     if [ "x${IS_SALT_MINION}" != "x" ];then
         "${SED}" -i -e "/makina-states.controllers.salt_minion: / d" "${CONF_PREFIX}/grains"
         echo "makina-states.controllers.salt_minion: true">>"${CONF_PREFIX}/grains"
@@ -2028,17 +2038,16 @@ a\    master_port: ${SALT_MASTER_PORT}
     fi
     # do no setup stuff for master for just a minion
     if [ "x${IS_SALT_MASTER}" != "x" ] \
-       && [ "x$(egrep -- "( |\t)*master:( |\t)*$" "${SALT_PILLAR}/salt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
+       && [ "x$(egrep -- "salt_master\.settings" "${SALT_PILLAR}/salt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
         debug_msg "Adding master info to pillar"
         # think to firewall the interfaces, but restricting only to localhost cause
         # mpre harm than good
         # any way the keys for attackers need to be accepted.
-        "${SED}" -i -e "/^salt:\( \|\t\)*$/ {
-a\  master:
-a\    interface: 0.0.0.0
-a\    publish_port: $SALT_MASTER_PUBLISH_PORT
-a\    ret_port: ${SALT_MASTER_PORT}
-}" "${SALT_PILLAR}/salt.sls"
+        cat >> "${SALT_PILLAR}/salt.sls"  << EOF
+makina-states.controllers.salt_master.settings.interface: 0.0.0.0
+makina-states.controllers.salt_master.settings.publish_port: $SALT_MASTER_PUBLISH_PORT
+makina-states.controllers.salt_master.settings.ret_port: ${SALT_MASTER_PORT}
+EOF
     fi
     # --------- MASTERSALT
     # Set default mastersalt  pillar
@@ -2067,44 +2076,37 @@ a\    - mastersalt
             "${MASTERSALT_PILLAR}/mastersalt_minion.sls";do
             if [ ! -f "${mastersalt_sls}" ];then
                 debug_msg "Creating mastersalt configuration file in ${mastersalt_sls}"
-                echo "mastersalt:" >  "${mastersalt_sls}"
+                touch >  "${mastersalt_sls}"
             fi
             if [ "x$(grep "${BRANCH_PILLAR_ID}" "${mastersalt_sls}"|wc -l|sed -e "s/ //g")" = "x0" ];then
                 echo "" >> "${mastersalt_sls}"
                 echo "$BRANCH_PILLAR_ID" >> "${mastersalt_sls}"
             fi
             "${SED}" -i -e "s/${BRANCH_PILLAR_ID}.*/$BRANCH_PILLAR_ID: ${branch_id}/g" "${mastersalt_sls}"
-            if [ "x$(egrep -- "^mastersalt:( |\t)*$" "${mastersalt_sls}"|wc -l|sed -e "s/ //g")" = "x0" ];then
-                echo ''  >> "${mastersalt_sls}"
-                echo 'mastersalt:' >> "${mastersalt_sls}"
-            fi
         done
-        if [ "x$(egrep -- "^( |\t)*minion:" "${MASTERSALT_PILLAR}/mastersalt_minion.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
+        if [ "x$(egrep -- "mastersalt_minion\.settings" "${MASTERSALT_PILLAR}/mastersalt_minion.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
             debug_msg "Adding mastersalt minion info to mastersalt minion pillar"
-            "${SED}" -i -e "/^mastersalt:\( \|\t\)*$/ {
-a\  minion:
-a\    master: ${MASTERSALT_MASTER_DNS}
-a\    master_port: ${MASTERSALT_MASTER_PORT}
-}" "${MASTERSALT_PILLAR}/mastersalt_minion.sls"
+            cat >> "${MASTERSALT_PILLAR}/mastersalt_minion.sls" << EOF
+makina-states.controllers.mastersalt_minion.settings.master: ${MASTERSALT_MASTER_DNS}
+makina-states.controllers.mastersalt_minion.settings.master_port: ${MASTERSALT_MASTER_PORT}
+EOF
         fi
-        if [ "x$(egrep -- "^( |\t)*minion:" "${MASTERSALT_PILLAR}/mastersalt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
+        if [ "x$(egrep -- "mastersalt_minion\.settings." "${MASTERSALT_PILLAR}/mastersalt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
             debug_msg "Adding mastersalt minion info to mastersalt pillar"
-            "${SED}" -i -e "/^mastersalt:\( \|\t\)*$/ {
-a\  minion:
-a\    interface: ${MASTERSALT_MINION_IP}
-a\    master: ${MASTERSALT_MASTER_DNS}
-a\    master_port: ${MASTERSALT_MASTER_PORT}
-}" "${MASTERSALT_PILLAR}/mastersalt.sls"
+            cat >>  "${MASTERSALT_PILLAR}/mastersalt.sls" << EOF
+makina-states.controllers.mastersalt_minion.settings.interface: ${MASTERSALT_MINION_IP}
+makina-states.controllers.mastersalt_minion.settings.master: ${MASTERSALT_MASTER_DNS}
+makina-states.controllers.mastersalt_minion.settings.master_port: ${MASTERSALT_MASTER_PORT}
+EOF
         fi
         if [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
-            if [ "x$(egrep -- "( |\t)+master:( |\t)*$" "${MASTERSALT_PILLAR}/mastersalt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
+            if [ "x$(egrep -- "mastersalt_master\.settings" "${MASTERSALT_PILLAR}/mastersalt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
                 debug_msg "Adding mastersalt master info to mastersalt pillar"
-                "${SED}" -i -e "/^mastersalt:\( \|\t\)*$/ {
-a\  master:
-a\    interface: 0.0.0.0
-a\    ret_port: ${MASTERSALT_MASTER_PORT}
-a\    publish_port: ${MASTERSALT_MASTER_PUBLISH_PORT}
-}" "${MASTERSALT_PILLAR}/mastersalt.sls"
+                cat >> "${MASTERSALT_PILLAR}/mastersalt.sls" << EOF
+makina-states.controllers.mastersalt_master.settings.interface: 0.0.0.0
+makina-states.controllers.mastersalt_master.settings.ret_port: ${MASTERSALT_MASTER_PORT}
+makina-states.controllers.mastersalt_master.settings.publish_port: ${MASTERSALT_MASTER_PUBLISH_PORT}
+EOF
             fi
         fi
         "${SED}" -i -e "/^    id:/ d" "${MASTERSALT_PILLAR}/mastersalt.sls"
