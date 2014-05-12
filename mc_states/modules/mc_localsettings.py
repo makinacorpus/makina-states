@@ -194,7 +194,9 @@ def get_pillar_fqdn(sls, template):
 
 
 def get_pillar_sw_ip(ip):
-    return ipsan.sub('_', ip)
+    return ipsan.sub('_', ip).replace(
+        '@', 'AROBASE').replace(
+            '*', 'DOTSTAR')
 
 
 #

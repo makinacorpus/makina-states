@@ -23,6 +23,10 @@ from mc_states import api
 _default_marker = object()
 
 
+def uniquify(seq):
+    return api.uniquify(seq)
+
+
 class _CycleError(Exception):
     """."""
 

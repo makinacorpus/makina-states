@@ -19,6 +19,7 @@ Documentation of this module is available with::
 '''
 # Import python libs
 import logging
+import copy
 import mc_states.utils
 import re
 from salt.utils.odict import OrderedDict
@@ -191,6 +192,71 @@ def settings():
         netdata['interfaces_order'] = [a for a in netdata['interfaces']]
         return netdata
     return _settings()
+
+
+def ip_for(fqdn, ips, ipsfo, ipsfo_map, domain):
+    '''Get an ip for a domain, try as a FQDN first and then
+    try to append the specified domain'''
+    if fqdn in ips:
+        ret = ips[fqdn][0]
+    elif fqdn in ipsfo:
+        ret = ipsfo[fqdn]
+    else:
+        try:
+            ret = ipsfo[ipsfo_map[fqdn][0]]
+        except:
+            ret = None
+    if (not ret) and (domain not in fqdn):
+        fqdn += '.{0}'.format(domain)
+        if fqdn in ips:
+            ret = ips[fqdn][0]
+        elif fqdn in ipsfo:
+            ret = ipsfo[fqdn]
+        else:
+            try:
+                ret = ipsfo[ipsfo_map[fqdn][0]]
+            except:
+                ret = None
+    if not ret:
+        raise KeyError('ip not found for {0}'.format(fqdn))
+    return ret
+
+
+def ips_for(fqdn, ips, ipsfo, ipsfo_map, domain):
+    '''Get all ip for a domain, try as a FQDN first and then
+    try to append the specified domain'''
+    resips = []
+    if fqdn in ips:
+        resips.extend(ips[fqdn][:])
+    if fqdn in ipsfo:
+        resips.append(ipsfo[fqdn])
+    for ipfo in ipsfo_map.get(fqdn, []):
+        resips.append(ipsfo[ipfo])
+    if (not resips) and (domain not in fqdn):
+        fqdn += '.{0}'.format(domain)
+        if fqdn in ips:
+            resips.extend[ips[fqdn][:]]
+        if fqdn in ipsfo:
+            resips.append(ipsfo[fqdn])
+        for ipfo in ipsfo_map.get(fqdn, []):
+            resips.append(ipsfo[ipfo])
+    if not resips:
+        raise KeyError('ips not found for {0}'.format(fqdn))
+    resips = __salt__['mc_utils.uniquify'](resips)
+    return resips
+
+
+def rr_a(fqdn, ips, ipsfo, ipsfo_map, domain):
+    ips = ips_for(fqdn, ips, ipsfo, ipsfo_map, domain)
+    if fqdn.startswith('@'):
+        fqdn = '@'
+    elif not fqdn.endswith('.'):
+        fqdn += '.'
+    rr = '{0} A {1}\n'.format(fqdn, ips[0])
+    for ip in ips[1:]:
+        rr += '       {0} A {1}\n'.format(fqdn, ip)
+    rr = '\n'.join([a for a in rr.split('\n') if a.strip()])
+    return rr
 
 
 def dump():
