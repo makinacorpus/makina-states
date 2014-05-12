@@ -61,8 +61,8 @@
 {%- set runPrefix      = settings.runPrefix      %}
 {%- set logPrefix      = settings.logPrefix      %}
 {%- set pillarRoot     = settings.pillarRoot     %}
-{%- set msr            = settings.msr            %}
-{%- set resetperms     = settings.resetperms     %}
+{%- set msr            = settings.c.o.msr        %}
+{%- set resetperms     = settings.c.o.resetperms %}
 {%- set saltbinpath    = settings.saltbinpath    %}
 
 {#- MASTERSALT VARIABLES #}
@@ -241,15 +241,15 @@ salt-{{ data.name }}-{{ group }}:
                 MAILTO="{{data.mailto}}"
                 {% if data.cron_check_alive %}
                 # salt checkalive job
-                {{data.cron_minion_checkalive}} * * * * root {{msr}}/_scripts/boot-salt.sh --check-alive --quiet -C --no-colors
+                {{data.cron_minion_checkalive}} * * * * root {{settings.c.o.msr}}/_scripts/boot-salt.sh --check-alive --quiet -C --no-colors
                 {% endif %}
                 {% if data.cron_auto_sync %}
                 # salt code synchronization job
-                {{data.cron_sync_minute}} {{data.cron_sync_hour}} * * * root {{msr}}/_scripts/boot-salt.sh --refresh-modules --quiet -C --no-colors
+                {{data.cron_sync_minute}} {{data.cron_sync_hour}} * * * root {{settings.c.o.msr}}/_scripts/boot-salt.sh --refresh-modules --quiet -C --no-colors
                 {% endif %}
                 {% if data.cron_auto_clean %}
                 # salt code cleanup job
-                {{data.cron_clean_minute}} {{data.cron_clean_hour}} * * * root {{msr}}/_scripts/boot-salt.sh --cleanup --quiet -C --no-colors
+                {{data.cron_clean_minute}} {{data.cron_clean_hour}} * * * root {{settings.c.o.msr}}/_scripts/boot-salt.sh --cleanup --quiet -C --no-colors
                 {% endif %}
 {% endif %}
 {#
@@ -262,7 +262,7 @@ salt-{{ data.name }}-{{ group }}:
     - hour: {{data.cron_upgrade_hour}}
     - minute: {{data.cron_upgrade_minute}}
   {% endif %}
-    - name: {{msr}}/_scripts/boot-salt.sh --upgrade -C --no-colors
+    - name: {{settings.c.o.msr}}/_scripts/boot-salt.sh --upgrade -C --no-colors
 #}
 
 {# deactivated in favor of paas platform and manual work on mastersalt node... #}
@@ -271,7 +271,7 @@ salt-{{ data.name }}-{{ group }}:
     - identifier: "salt upgrade job"
     - hour: {{data.cron_upgrade_hour}}
     - minute: {{data.cron_upgrade_minute}}
-    - name: {{msr}}/_scripts/boot-salt.sh --upgrade -C --no-colors
+    - name: {{settings.c.o.msr}}/_scripts/boot-salt.sh --upgrade -C --no-colors
 
 {#-
 # this is really factored
@@ -538,7 +538,7 @@ salt-{{ data.daemon_name }}-conf-global:
                 MAILTO="{{data.mailto}}"
                 {% if data.cron_auto_restart %}
                 # salt {{data.service_name}} auto restart job
-                {{data['cron_{0}_restart_minute'.format(data['service_name'])]}} {{data['cron_{0}_restart_hour'.format(data['service_name'])]}} * * * root {{msr}}/_scripts/boot-salt.sh --restart-{{data.service_name}}s -C --no-colors
+                {{data['cron_{0}_restart_minute'.format(data['service_name'])]}} {{data['cron_{0}_restart_hour'.format(data['service_name'])]}} * * * root {{settings.c.o.msr}}/_scripts/boot-salt.sh --restart-{{data.service_name}}s -C --no-colors
                 {% endif %}
 {% endif %}
 
