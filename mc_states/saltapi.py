@@ -43,6 +43,7 @@ from mc_states.api import STRIPPED_RES
 from mc_states.api import strip_colors
 from mc_states.api import magicstring
 from mc_states.api import get_ssh_username
+from mc_states.api import no_more_mastersalt
 
 
 log = logging.getLogger(__name__)
