@@ -12,6 +12,10 @@ import mc_states.utils
 import re
 
 __name = 'localsettings'
+ipsan = re.compile('(\.|-|_)', re.M | re.U)
+slssan1 = re.compile('(minions\.)?(bm|(vm)(\.(lxc|kvm))?)\.([^.]*\.)?')
+slssan2 = re.compile(
+    '(makina-states.cloud\.)?(compute_nodes?|(vms?)(\.(lxc|kvm))?)\.')
 
 
 def metadata():
@@ -138,5 +142,61 @@ def registry():
 
 def dump():
     return mc_states.utils.dump(__salt__, __name)
+
+
+def get_passwords(passwords_map, dn):
+    '''Return user/password mappings for a particular host from
+    a global pillar passwords map'''
+    passwords = {'clear': {}, 'crypted': {}}
+    passwords['clear']['root'] = passwords_map['root'][dn]
+    passwords['clear']['sysadmin'] = passwords_map.get('sysadmin', {}).get(
+        dn, passwords['clear']['root'])
+    for user, data in passwords_map.items():
+        if user in ['root', 'sysadmin']:
+            continue
+        if isinstance(data, dict):
+            for host, data in data.items():
+                if host not in [dn]:
+                    continue
+                if isinstance(data, basestring):
+                    passwords['clear'][user] = data
+    for user, password in passwords['clear'].items():
+        passwords['crypted'][user] = __salt__['mc_utils.unix_crypt'](password)
+    return passwords
+
+
+def get_pillar_fqdn(sls, template):
+    '''
+    if template name is none, it is a directly
+    accessed sls (rendered from a string), here
+    we can guess the name from sls
+    sls does not have '.' it is a directly
+    '''
+    fqdn = sls
+    tname = template._TemplateReference__context.name
+    if tname:
+        fqdn = tname
+    if '/' in fqdn:
+        fqdn = fqdn.split('/')[-1]
+    # remove any .sls extension
+    fqdn = re.sub('\.sls$', '', fqdn)
+    # # remove any domain part in last part on the input filed
+    # fqdn = re.sub(
+    #     '\+{0}$'.format(domain.replace('.', '\\+')), '', fqdn)
+    # extract the basename from the sls inclusion directive or filename
+    fqdn = slssan1.sub('', fqdn)
+    # extract the basename from the sls inclusion directive or filename, part2
+    fqdn = slssan2.sub('', fqdn)
+    fqdn = fqdn.replace('+', '.')
+    # if domain not in fqdn:
+    #     fqdn = '{0}.{1}'.format(fqdn, domain)
+    return fqdn
+
+
+def get_pillar_sw_ip(ip):
+    return ipsan.sub('_', ip).replace(
+        '@', 'AROBASE').replace(
+            '*', 'DOTSTAR')
+
 
 #

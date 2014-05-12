@@ -70,6 +70,7 @@ def settings():
         default_install_mode = 'installed'
         env = saltmods['mc_env.settings']()['env']
         deb_mirror = 'http://ftp.de.debian.org/debian'
+        deb_mirror = 'http://mirror.ovh.net/ftp.debian.org/debian/'
         if env in ['prod']:
             default_install_mode = 'installed'
 
@@ -78,7 +79,6 @@ def settings():
         ubuntu_lts = "trusty"
         ubuntu_last = "saucy"
         lts_dist = debian_stable
-        deb_mirror = 'http://ftp.de.debian.org/debian'
         if grains['os'] in ['Ubuntu']:
             lts_dist = ubuntu_lts
         if grains['os'] in ['Debian']:
@@ -95,7 +95,7 @@ def settings():
                 ddist = saltmods['mc_utils.get'](
                     'lsb_distrib_codename', debian_stable)
         mirrors = {
-            'ovh': 'http://mirror.ovh.net/ubuntu',
+            'ovh': 'http://mirror.ovh.net/ftp.ubuntu.com/',
             #'online': 'http://mirror.ovh.net/ubuntu',
             'online': 'http://ftp.free.fr/mirrors/ftp.ubuntu.com/ubuntu',
         }

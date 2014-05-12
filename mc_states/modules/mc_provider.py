@@ -54,8 +54,9 @@ def settings():
                 'have_rpn': have_rpn,
             })
         if data['is']['online'] and data['have_rpn'] is None:
-            if True in ['em1' == a[0] for a in ifaces]:
-                data['have_rpn'] = True  # must stay none if not found
+            for ifc in ['eth1', 'em1']:
+                if True in [ifc == a[0] for a in ifaces]:
+                    data['have_rpn'] = True  # must stay none if not found
         return data
     return _settings()
 

@@ -18,8 +18,10 @@
 {%- set bashrc = home + '/.bashrc' %}
 {%- set bashprofile = home + '/.bash_profile' %}
 {{id}}-homes:
- file.directory:
-    - name: {{locs.users_home_dir}}
+  file.directory:
+    - names:
+      - {{locs.users_home_dir}}
+      - {{home}}
     - makedirs: true
     - user: root
     - group: root
@@ -29,21 +31,35 @@
   group.present:
     - name: {{ id }}
     - system: {{udata.system}}
+  file.directory:
+    - require:
+      - file: {{ id }}-homes
+    - name: {{ home }}
+    - mode: 751
+    - makedirs: true
+    - user: root
+    - group: root
   user.present:
     {% if 'system' in udata %}
     - system: {{udata.system}}
     {% endif %}
     - require:
       - group: {{ id }}
+      - file: {{ id }}
     - require_in:
       - mc_proxy: users-ready-hook
     - name: {{ id }}
     {%- if id not in ['root'] %}
+    {% if not salt['mc_localsettings.registry']()['is']['ldap'] %}
     - fullname: {{ id }} user
+    {% endif %}
     - createhome: True
     - shell: /bin/bash
     - home: {{ home }}
+    {# do not change main group when using nssldap #}
+    {% if not salt['shadow.info'](id).get('name', '') %}
     - gid_from_name: True
+    {% endif %}
     - remove_groups: False
     {%- if password %}
     - password:  {{ password }}
@@ -69,10 +85,12 @@
       {% endif %}
       {% endif %}
       {% endif %}
+
+give-home-{{ id }}:
   file.directory:
     - require:
-      - user: {{ id }}
-      - file: {{ id }}-homes
+      - user: {{id}}
+      - group: {{id}}
     - name: {{ home }}
     - mode: 751
     - makedirs: true

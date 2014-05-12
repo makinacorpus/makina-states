@@ -101,6 +101,7 @@ SSL & reverse proxy
   https connection without the need to have a valid certificate
   under the hood, but, hay, prefer a valid one.
 - We redirect traffic based on the host providen on the request.
+- A **X-SSL** header is added on the request for SSL terminated backends.
 
 Inject custom configuration for http reverse proxy
 ***************************************************

@@ -42,8 +42,17 @@ def get_default_groups():
 
 
 def get_default_users():
-    return __salt__['mc_utils.defaults'](
+    users = __salt__['mc_utils.defaults'](
         'makina-states.localsettings.users', {})
+    for k in [a for a in users]:
+        if '.' in k:
+            data = users[k]
+            user = k.split('.')[0]
+            subk = '.'.join(k.split('.')[1:])
+            users[user] = {}
+            users[user].update({subk: data})
+            del users[k]
+    return users
 
 
 def get_default_sysadmins():
@@ -112,7 +121,7 @@ def settings():
         sysadmins_keys = []
         fr = __salt__['mc_utils.salt_root']()
         sshd = os.path.join(fr, 'files/ssh')
-        vagrant_key_path = os.path.join(fr, 'files/ssh/vagrant.pub') 
+        vagrant_key_path = os.path.join(fr, 'files/ssh/vagrant.pub')
         if saltmods['mc_macros.is_item_active'](
             'nodetypes', 'vagrantvm'
         ):

@@ -61,8 +61,8 @@
 {%- set runPrefix      = settings.runPrefix      %}
 {%- set logPrefix      = settings.logPrefix      %}
 {%- set pillarRoot     = settings.pillarRoot     %}
-{%- set msr            = settings.msr            %}
-{%- set resetperms     = settings.resetperms     %}
+{%- set msr            = settings.c.o.msr        %}
+{%- set resetperms     = settings.c.o.resetperms %}
 {%- set saltbinpath    = settings.saltbinpath    %}
 
 {#- MASTERSALT VARIABLES #}
@@ -220,38 +220,38 @@ salt-{{ data.name }}-{{ group }}:
     - system: True
     {% if groupId %}- gid: {{ groupId }}{% endif %}
 
+# retro compat
 {{data.name}}-checkalive-job:
-  {% if not data.cron_check_alive %}
-  cron.absent:
-  {% else %}
-  cron.present:
-    - identifier: "salt checkalive job"
-    - minute: "{{data.cron_minion_checkalive}}"
-  {% endif %}
-    - name: {{msr}}/_scripts/boot-salt.sh --check-alive --quiet -C --no-colors
+  cron.absent: []
 
 {{data.name}}-sync-job:
-  {% if not data.cron_auto_sync %}
-  cron.absent:
-  {% else %}
-  cron.present:
-    - identifier: "salt code synchronization job"
-    - minute: "{{data.cron_sync_minute}}"
-    - hour: "{{data.cron_sync_hour}}"
-  {% endif %}
-    - name: {{msr}}/_scripts/boot-salt.sh --refresh-modules --quiet -C --no-colors
+  cron.absent: []
 
 {{data.name}}-clean-job:
-  {% if not data.cron_auto_clean %}
-  cron.absent:
-  {% else %}
-  cron.present:
-    - identifier: "salt code cleanup job"
-    - minute: "{{data.cron_clean_minute}}"
-    - hour: "{{data.cron_clean_hour}}"
-  {% endif %}
-    - name: {{msr}}/_scripts/boot-salt.sh --cleanup --quiet -C --no-colors
+  cron.absent: []
 
+{% if salt['mc_controllers.mastersalt_mode']() %}
+{{data.name}}-crons:
+  file.managed:
+    - name: /etc/cron.d/salt.sh
+    - source: ''
+    - mode: 750
+    - user: root
+    - contents: |
+                MAILTO="{{data.mailto}}"
+                {% if data.cron_check_alive %}
+                # salt checkalive job
+                {{data.cron_minion_checkalive}} * * * * root {{settings.c.o.msr}}/_scripts/boot-salt.sh --check-alive --quiet -C --no-colors
+                {% endif %}
+                {% if data.cron_auto_sync %}
+                # salt code synchronization job
+                {{data.cron_sync_minute}} {{data.cron_sync_hour}} * * * root {{settings.c.o.msr}}/_scripts/boot-salt.sh --refresh-modules --quiet -C --no-colors
+                {% endif %}
+                {% if data.cron_auto_clean %}
+                # salt code cleanup job
+                {{data.cron_clean_minute}} {{data.cron_clean_hour}} * * * root {{settings.c.o.msr}}/_scripts/boot-salt.sh --cleanup --quiet -C --no-colors
+                {% endif %}
+{% endif %}
 {#
 {{data.name}}-upgrade-job:
   {% if not data.cron_auto_upgrade %}
@@ -262,7 +262,7 @@ salt-{{ data.name }}-{{ group }}:
     - hour: {{data.cron_upgrade_hour}}
     - minute: {{data.cron_upgrade_minute}}
   {% endif %}
-    - name: {{msr}}/_scripts/boot-salt.sh --upgrade -C --no-colors
+    - name: {{settings.c.o.msr}}/_scripts/boot-salt.sh --upgrade -C --no-colors
 #}
 
 {# deactivated in favor of paas platform and manual work on mastersalt node... #}
@@ -271,7 +271,7 @@ salt-{{ data.name }}-{{ group }}:
     - identifier: "salt upgrade job"
     - hour: {{data.cron_upgrade_hour}}
     - minute: {{data.cron_upgrade_minute}}
-    - name: {{msr}}/_scripts/boot-salt.sh --upgrade -C --no-colors
+    - name: {{settings.c.o.msr}}/_scripts/boot-salt.sh --upgrade -C --no-colors
 
 {#-
 # this is really factored
@@ -430,7 +430,7 @@ salt-{{ data.name }}-logrotate:
 etc-{{data.name}}-dirs-perms:
   cmd.run:
     - name: >
-            {{data.resetperms }}
+            {{settings.c.o.resetperms }}
             --dmode 0770 --fmode 0770
             --user "root" --group "{{ ugs.group }}"
             --paths {{ data.conf_prefix }}
@@ -442,7 +442,7 @@ etc-{{data.name}}-dirs-perms:
 {{data.name}}-projects-dirs-perms:
   cmd.run:
     - name: >
-            {{ data.resetperms }}
+            {{ settings.c.o.resetperms }}
             -u root -g "{{ ugs.group }}"
             --dmode 0770 --fmode 0770
             --only-acls
@@ -454,7 +454,7 @@ etc-{{data.name}}-dirs-perms:
 {{data.name}}-dirs-perms:
   cmd.run:
     - name: >
-            {{ data.resetperms }}
+            {{ settings.c.o.resetperms }}
             --dmode 0770 --fmode 0770
             --user "root" --group "{{ ugs.group }}"
             --paths "{{ data.salt_root }}"
@@ -515,16 +515,32 @@ salt-{{ data.daemon_name }}-conf-global:
     - require_in:
       - mc_proxy: dummy-pre-{{ data.name }}-service-restart
 
+# retro compat
 {{data.name}}-{{data.daemon_name}}-restart-job:
-  {% if not data.cron_auto_restart %}
   cron.absent:
-  {% else %}
-  cron.present:
-    - identifier: "salt {{data.service_name}} auto restart job"
-    - hour: {{data['cron_{0}_restart_hour'.format(data['service_name'])]}}
-    - minute: {{data['cron_{0}_restart_minute'.format(data['service_name'])]}}
-  {% endif %}
-    - name: {{msr}}/_scripts/boot-salt.sh --restart-{{data.service_name}}s -C --no-colors
+    - require:
+      - mc_proxy: dummy-{{data.name}}-layout
+    - require_in:
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
+
+{% if salt['mc_controllers.mastersalt_mode']() %}
+{{data.name}}-{{data.service_name}}-restart-crons:
+  file.managed:
+    - require:
+      - mc_proxy: dummy-{{data.name}}-layout
+    - require_in:
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
+    - name: /etc/cron.d/saltrestart-{{data.service_name}}.sh
+    - source: ''
+    - mode: 750
+    - user: root
+    - contents: |
+                MAILTO="{{data.mailto}}"
+                {% if data.cron_auto_restart %}
+                # salt {{data.service_name}} auto restart job
+                {{data['cron_{0}_restart_minute'.format(data['service_name'])]}} {{data['cron_{0}_restart_hour'.format(data['service_name'])]}} * * * root {{settings.c.o.msr}}/_scripts/boot-salt.sh --restart-{{data.service_name}}s -C --no-colors
+                {% endif %}
+{% endif %}
 
 salt-{{ data.daemon_name }}-conf:
   file.managed:

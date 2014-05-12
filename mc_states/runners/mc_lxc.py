@@ -38,7 +38,7 @@ def master_opts(*args, **kwargs):
 
 def cli(*args, **kwargs):
     return __salt__['mc_api.cli'](*args, **kwargs)
- 
+
 
 def _errmsg(msg):
     raise saltapi.MessageError(msg)

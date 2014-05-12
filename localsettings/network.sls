@@ -27,6 +27,7 @@ network-cfg-{{ifc}}:
     - user: root
     - group: root
     - mode: '0644'
+    - makedirs: true
     - template: jinja
     - name: {{ locs.conf_dir }}/network/interfaces.d/interface.{{ifn}}.cfg
     - source: salt://makina-states/files/etc/network/interface

@@ -19,6 +19,7 @@ Documentation of this module is available with::
 '''
 # Import python libs
 import logging
+import copy
 import mc_states.utils
 import re
 from salt.utils.odict import OrderedDict
@@ -40,6 +41,61 @@ def sort_ifaces(infos):
     if re.match('^(veth\|lo)', key):
         key = '900___' + a
     return key
+
+
+def get_broadcast(dn, ip):
+    '''Get a server broadcase
+    ipsubnet.255
+    '''
+    num = '255'
+    gw = '.'.join(ip.split('.')[:-1] + [num])
+    return gw
+
+
+def get_netmask(dn, ip):
+    '''Get a server netmask
+    default to ipsubnet.255
+    '''
+    netmask = '255.255.255.0'
+    return netmask
+
+
+def get_gateway(dn, ip):
+    '''Get a server gateway
+    default to ipsubnet.254
+    except for online where the gw == ipsubnet.1
+    '''
+    num = '254'
+    if 'online-' in dn:
+        num = '1'
+    gw = '.'.join(ip.split('.')[:-1] + [num])
+    return gw
+
+
+def get_dnss(dn, ip):
+    '''Get server dnss
+    '''
+    defaults = ['127.0.0.1', '8.8.8.8', '4.4.4.4']
+    if 'ovh-' in dn:
+        defaults.insert(1, '213.186.33.99')
+    if 'online-' in dn:
+        defaults.insert(1, '62.210.16.6')
+        defaults.insert(1, '62.210.16.7')
+    return ' '.join(defaults)
+
+
+def get_fo_netmask(dn, ip):
+    '''Get netmask for an ip failover
+    '''
+    netmask = '255.255.255.255'
+    return netmask
+
+
+def get_fo_broadcast(dn, ip):
+    '''Get broadcast for an ip failover
+    '''
+    broadcast = ip
+    return broadcast
 
 
 def settings():
@@ -66,6 +122,7 @@ def settings():
         pillar = __pillar__
         data = {'interfaces': {}, 'ointerfaces': []}
         grainsPref = 'makina-states.localsettings.'
+        providers = __salt__['mc_provider.settings']()
         # Does the network base config file have to be managed via that
         # See makina-states.localsettings.network
         # Compat for the first test!
@@ -78,12 +135,17 @@ def settings():
         ifaces = grains['ip_interfaces'].items()
         ifaces.sort(key=sort_ifaces)
         devhost_ip = None
+        forced_ifs = {}
+        devhost = __salt__['mc_nodetypes.registry']()['is']['devhost']
         for iface, ips in ifaces:
             if ips:
                 if not default_ip:
                     default_ip = ips[0]
-                if iface == 'eth1':
+                if (iface == 'eth1') and devhost:
                     devhost_ip = ips[0]
+                if providers['have_rpn'] and (iface in ['eth1', 'em1']):
+                    # configure rpn with dhcp
+                    forced_ifs[iface] = {}
         if not default_ip:
             default_ip = '127.0.0.1'
         # hosts managment via pillar
@@ -123,12 +185,78 @@ def settings():
                 ifname = idata.get('ifname', ikey)
                 iconf = netdata['interfaces'].setdefault(ifname, {})
                 iconf.update(idata)
+        netdata['interfaces'].update(forced_ifs)
         for ifc, data in netdata['interfaces'].items():
             data.setdefault('ifname', ifc)
         # get the order configuration
         netdata['interfaces_order'] = [a for a in netdata['interfaces']]
         return netdata
     return _settings()
+
+
+def ip_for(fqdn, ips, ipsfo, ipsfo_map, domain):
+    '''Get an ip for a domain, try as a FQDN first and then
+    try to append the specified domain'''
+    if fqdn in ips:
+        ret = ips[fqdn][0]
+    elif fqdn in ipsfo:
+        ret = ipsfo[fqdn]
+    else:
+        try:
+            ret = ipsfo[ipsfo_map[fqdn][0]]
+        except:
+            ret = None
+    if (not ret) and (domain not in fqdn):
+        fqdn += '.{0}'.format(domain)
+        if fqdn in ips:
+            ret = ips[fqdn][0]
+        elif fqdn in ipsfo:
+            ret = ipsfo[fqdn]
+        else:
+            try:
+                ret = ipsfo[ipsfo_map[fqdn][0]]
+            except:
+                ret = None
+    if not ret:
+        raise KeyError('ip not found for {0}'.format(fqdn))
+    return ret
+
+
+def ips_for(fqdn, ips, ipsfo, ipsfo_map, domain):
+    '''Get all ip for a domain, try as a FQDN first and then
+    try to append the specified domain'''
+    resips = []
+    if fqdn in ips:
+        resips.extend(ips[fqdn][:])
+    if fqdn in ipsfo:
+        resips.append(ipsfo[fqdn])
+    for ipfo in ipsfo_map.get(fqdn, []):
+        resips.append(ipsfo[ipfo])
+    if (not resips) and (domain not in fqdn):
+        fqdn += '.{0}'.format(domain)
+        if fqdn in ips:
+            resips.extend[ips[fqdn][:]]
+        if fqdn in ipsfo:
+            resips.append(ipsfo[fqdn])
+        for ipfo in ipsfo_map.get(fqdn, []):
+            resips.append(ipsfo[ipfo])
+    if not resips:
+        raise KeyError('ips not found for {0}'.format(fqdn))
+    resips = __salt__['mc_utils.uniquify'](resips)
+    return resips
+
+
+def rr_a(fqdn, ips, ipsfo, ipsfo_map, domain):
+    ips = ips_for(fqdn, ips, ipsfo, ipsfo_map, domain)
+    if fqdn.startswith('@'):
+        fqdn = '@'
+    elif not fqdn.endswith('.'):
+        fqdn += '.'
+    rr = '{0} A {1}\n'.format(fqdn, ips[0])
+    for ip in ips[1:]:
+        rr += '       {0} A {1}\n'.format(fqdn, ip)
+    rr = '\n'.join([a for a in rr.split('\n') if a.strip()])
+    return rr
 
 
 def dump():

@@ -15,12 +15,12 @@
 ###############################################################################
 {# on debian, we have an old shorewall 4.5.5 #}
 {% set shwdata = salt['mc_utils.json_load'](shwdata) %}
-{{shwdata.ifformat }}
+{{shwdata.ifformat.replace('??', '?') }}
 ###############################################################################
 #ZONE	INTERFACE	OPTIONS
 {% for zone, interfaces in shwdata['interfaces'].items() %}
 {% for data in interfaces %}
-{% if '4.1' < shwdata.sw_ver < '4.5' %}
+{% if  shwdata.sw_ver < '4.5' %}
 {% set br = data.get('broadcast', '-') %}
 {% else %}
 {% set br = '' %}
