@@ -22,7 +22,7 @@ is_lxc() {
     echo "$(cat -e /proc/1/environ 2>&1|grep container=lxc|wc -l|sed -e "s/ //g")"
 }
 
-LIST=`ps -ef | grep /usr/sbin/cron| grep -v grep | awk '{print $2}'`
+LIST=`ps auxf | grep cron| grep Ss|grep -v check_cron|grep -v grep | awk '{print $2}'`
 CRONPROC=`filter_host_pids $LIST | wc -l`
 case "${CRONPROC}" in
         0)  echo "CRON CRITICAL - Cron process is not running"; exit ${STATE_CRITICAL}
