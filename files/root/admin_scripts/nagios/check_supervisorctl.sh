@@ -33,8 +33,9 @@
 PROGNAME=$(basename $0)
 ERR_MESG=()
 export PATH="/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin"
-LIBEXEC="/usr/lib/nagios/plugins"
+LIBEXEC="/root/admin_scripts/nagios"
 . $LIBEXEC/utils.sh
+SUPERVISORCTL=$1
 
 # --------------------------------------------------------------------
 
@@ -54,7 +55,7 @@ function print_help() {
 	echo "For contact info, read the plugin itself..."
 }
 function check_supervisor(){
-	check_command=$(/home/zope/adria/rcse/production-2014-01-23-14-27-01/bin/supervisorctl status | egrep '(STOPPED)|(STARTING)|(BACKOFF)|(STOPPING)|(EXITED)|(FATAL)|(UNKNOWN)' | wc -l)
+	check_command=$(${SUPERVISORCTL} status | egrep '(STOPPED)|(STARTING)|(BACKOFF)|(STOPPING)|(EXITED)|(FATAL)|(UNKNOWN)' | wc -l)
 	if (( $check_command != 0 )); then
 		echo "One or more of your programs are not running!"
 		exit $STATE_CRITICAL
@@ -68,7 +69,7 @@ function check_supervisor(){
 # startup checks
 # --------------------------------------------------------------------
 
-if [ $# -eq 0 ]; then
+if [ $# -eq 1 ]; then
 	check_supervisor
 fi
 
