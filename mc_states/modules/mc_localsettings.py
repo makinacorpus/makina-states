@@ -13,7 +13,7 @@ import re
 
 __name = 'localsettings'
 ipsan = re.compile('(\.|-|_)', re.M | re.U)
-slssan1 = re.compile('(minions\.)?(bm|(vm)(\.(lxc|kvm))?)\.([^.]*\.)?')
+slssan1 = re.compile('(minions\.)?(old|bm|(vm)(\.(lxc|kvm))?)\.([^.]*\.)?')
 slssan2 = re.compile(
     '(makina-states.cloud\.)?(compute_nodes?|(vms?)(\.(lxc|kvm))?)\.')
 
