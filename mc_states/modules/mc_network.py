@@ -194,67 +194,86 @@ def settings():
     return _settings()
 
 
-def ip_for(fqdn, ips, ipsfo, ipsfo_map, domain):
-    '''Get an ip for a domain, try as a FQDN first and then
-    try to append the specified domain'''
-    if fqdn in ips:
-        ret = ips[fqdn][0]
-    elif fqdn in ipsfo:
-        ret = ipsfo[fqdn]
-    else:
-        try:
-            ret = ipsfo[ipsfo_map[fqdn][0]]
-        except:
-            ret = None
-    if (not ret) and (domain not in fqdn):
-        fqdn += '.{0}'.format(domain)
-        if fqdn in ips:
-            ret = ips[fqdn][0]
-        elif fqdn in ipsfo:
-            ret = ipsfo[fqdn]
-        else:
-            try:
-                ret = ipsfo[ipsfo_map[fqdn][0]]
-            except:
-                ret = None
-    if not ret:
-        raise KeyError('ip not found for {0}'.format(fqdn))
-    return ret
+def ips_for(fqdn, ips, ipsfo, ipsfo_map, fail_over=None):
+    '''
+    Get all ip for a domain, try as a FQDN first and then
+    try to append the specified domain
 
-
-def ips_for(fqdn, ips, ipsfo, ipsfo_map, domain):
-    '''Get all ip for a domain, try as a FQDN first and then
-    try to append the specified domain'''
+        ips
+            mapping FQDN / list of ips
+        ipsfo_map
+            mapping FQDN / list of failover identifiers (fqdn)
+        ipsfo
+            a mapping IPFO FQDN / list of associated ips
+        fail_over
+            If FailOver records exists and no ip was found, it will take this
+            value.
+            If failOver exists and fail_over=true, all ips
+            will be returned
+    '''
     resips = []
     if fqdn in ips:
         resips.extend(ips[fqdn][:])
-    if fqdn in ipsfo:
-        resips.append(ipsfo[fqdn])
-    for ipfo in ipsfo_map.get(fqdn, []):
-        resips.append(ipsfo[ipfo])
-    if (not resips) and (domain not in fqdn):
-        fqdn += '.{0}'.format(domain)
-        if fqdn in ips:
-            resips.extend[ips[fqdn][:]]
-        if fqdn in ipsfo:
+    if fail_over:
+        if (fqdn in ipsfo):
             resips.append(ipsfo[fqdn])
         for ipfo in ipsfo_map.get(fqdn, []):
             resips.append(ipsfo[ipfo])
     if not resips:
-        raise KeyError('ips not found for {0}'.format(fqdn))
+        # allow fail over fallback if nothing was specified
+        if fail_over is None:
+            return ips_for(fqdn, ips, ipsfo, ipsfo_map, fail_over=True)
+        else:
+            raise KeyError('ips not found for {0}'.format(fqdn))
     resips = __salt__['mc_utils.uniquify'](resips)
     return resips
 
 
-def rr_a(fqdn, ips, ipsfo, ipsfo_map, domain):
-    ips = ips_for(fqdn, ips, ipsfo, ipsfo_map, domain)
+def ip_for(fqdn, ips, ipsfo, ipsfo_map, fail_over=None):
+    '''
+    Get an ip for a domain, try as a FQDN first and then
+    try to append the specified domain
+
+        ips
+            mapping FQDN / list of ips
+        ipsfo_map
+            mapping FQDN / list of failover identifiers (fqdn)
+        ipsfo
+            a mapping IPFO FQDN / list of associated ips
+        fail_over
+            If FailOver records exists and no ip was found, it will take this
+            value.
+            If failOver exists and fail_over=true, all ips
+            will be returned
+    '''
+    return ips_for(fqdn, ips, ipsfo, ipsfo_map, fail_over=fail_over)[0]
+
+
+def rr_a(fqdn, ips, ipsfo, ipsfo_map, fail_over=None):
+    '''
+    Search for explicit A record on the baremetal box
+
+        ips
+            mapping FQDN / list of ips
+        ipsfo_map
+            mapping FQDN / list of failover identifiers (fqdn)
+        ipsfo
+            a mapping IPFO FQDN / list of associated ips
+        fail_over
+            If FailOver records exists and no ip was found, it will take this
+            value.
+            If failOver exists and fail_over=true, all ips
+            will be returned
+    '''
+    ips = ips_for(fqdn, ips, ipsfo, ipsfo_map, fail_over=fail_over)
+    fqdn_entry = fqdn
     if fqdn.startswith('@'):
-        fqdn = '@'
+        fqdn_entry = '@'
     elif not fqdn.endswith('.'):
-        fqdn += '.'
-    rr = '{0} A {1}\n'.format(fqdn, ips[0])
+        fqdn_entry += '.'
+    rr = '{0} A {1}\n'.format(fqdn_entry, ips[0])
     for ip in ips[1:]:
-        rr += '       {0} A {1}\n'.format(fqdn, ip)
+        rr += '       {0} A {1}\n'.format(fqdn_entry, ip)
     rr = '\n'.join([a for a in rr.split('\n') if a.strip()])
     return rr
 
