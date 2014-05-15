@@ -1761,8 +1761,25 @@ create_salt_skeleton(){
     if [ ! -e "${CONF_PREFIX}/minion.d" ];then mkdir "${CONF_PREFIX}/minion.d";fi
     if [ ! -e "${CONF_PREFIX}/pki/master/minions" ];then mkdir -p "${CONF_PREFIX}/pki/master/minions";fi
     if [ ! -e "${CONF_PREFIX}/pki/minion" ];then mkdir -p "${CONF_PREFIX}/pki/minion";fi
+    for d in \
+        /var/run/salt/salt-master\
+        /var/run/salt/salt-minion\
+        /var/cache/salt-minion\
+        /var/cache/salt-master\
+        /var/log/salt;do
+        if [ ! -e "${d}" ];then
+            mkdir -pv "${d}"
+        fi
+    done
     if [ ! -e "${CONF_PREFIX}/master" ];then
+
         cat > "${CONF_PREFIX}/master" << EOF
+pki_dir: ${CONF_PREFIX}/pki/master
+cachedir: /var/cache/salt/master
+conf_file: ${CONF_PREFIX}/master
+sock_dir: /var/run/salt/master
+log_file: /var/log/salt/salt-master
+pidfile: /var/run/salt-master.pid
 file_roots: {"base":["${SALT_ROOT}"]}
 pillar_roots: {"base":["${SALT_PILLAR}"]}
 runner_dirs: [${SALT_ROOT}/runners, ${SALT_MS}/mc_states/runners]
@@ -1776,6 +1793,12 @@ EOF
     touch "${CONF_PREFIX}/grains"
     if [ ! -e "${CONF_PREFIX}/minion" ];then
         cat > "${CONF_PREFIX}/minion" << EOF
+pki_dir: ${CONF_PREFIX}/pki/minion
+cachedir: /var/cache/salt/minion
+conf_file: ${CONF_PREFIX}/minion
+sock_dir: /var/run/salt/minion
+log_file: /var/log/salt/salt-minion
+pidfile: /var/run/salt/salt-minion.pid
 id: $(get_minion_id)
 master: $SALT_MASTER_DNS
 master_port: ${SALT_MASTER_PORT}
@@ -1791,6 +1814,16 @@ EOF
 
     # create etc/mastersalt
     if [ "x${IS_MASTERSALT}" != "x" ];then
+        for d in \
+            /var/run/mastersalt/mastersalt-master\
+            /var/run/mastersalt/mastersalt-minion\
+            /var/cache/mastersalt/mastersalt-minion\
+            /var/cache/mastersalt/mastersalt-master\
+            /var/log/mastersalt;do
+            if [ ! -e "${d}" ];then
+                mkdir -pv "${d}"
+            fi
+        done
         if [ ! -e "${MCONF_PREFIX}" ];then mkdir "${MCONF_PREFIX}";fi
         if [ ! -e "${MCONF_PREFIX}/master.d" ];then mkdir "${MCONF_PREFIX}/master.d";fi
         if [ ! -e "${MCONF_PREFIX}/minion.d" ];then mkdir "${MCONF_PREFIX}/minion.d";fi
@@ -1799,6 +1832,12 @@ EOF
         touch "${MCONF_PREFIX}/grains"
         if [ ! -e "${MCONF_PREFIX}/master" ];then
             cat > "${MCONF_PREFIX}/master" << EOF
+pki_dir: ${MCONF_PREFIX}/pki/master
+conf_file: ${MCONF_PREFIX}/master
+cachedir: /var/cache/mastersalt/mastersalt-master
+sock_dir: /var/run/mastersalt/mastersalt-master
+log_file: /var/log/mastersalt/mastersalt-master
+pidfile: /var/run/mastersalt-master.pid
 file_roots: {"base":["${MASTERSALT_ROOT}"]}
 pillar_roots: {"base":["${MASTERSALT_PILLAR}"]}
 runner_dirs: [${MASTERSALT_ROOT}/runners, ${MASTERSALT_MS}/mc_states/runners]
@@ -1811,6 +1850,12 @@ EOF
         fi
         if [ ! -e "${MCONF_PREFIX}/minion" ];then
             cat > "${MCONF_PREFIX}/minion" << EOF
+pki_dir: ${MCONF_PREFIX}/pki/minion
+cachedir: /var/cache/mastersalt/minion
+conf_file: ${MCONF_PREFIX}/minion
+sock_dir: /var/run/mastersalt/minion
+log_file: /var/log/mastersalt/mastersalt-minion
+pidfile: /var/run/mastersalt-minion.pid
 id: $(mastersalt_get_minion_id)
 master: ${MASTERSALT_MASTER_DNS}
 master_port: ${MASTERSALT_MASTER_PORT}
