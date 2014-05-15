@@ -46,10 +46,11 @@ def cli(*args, **kwargs):
     return __salt__['mc_api.cli'](*args, **kwargs)
 
 
-def saltify(name, output=True):
+def saltify(name, output=True, ret=None):
     '''Saltify a specific target'''
-    try:
+    if not ret:
         ret = result()
+    try:
         already_exists = __salt__['mc_cloud_controller.exists'](name)
         if already_exists:
             success = green('{0} is already saltified'.format(name))
@@ -75,14 +76,16 @@ def saltify(name, output=True):
                     if data.get(var):
                         kwargs[var] = data[var]
                 try:
-                    info = __salt__['cloud.profile'](data['profile'],
-                                                     [name],
-                                                     vm_overrides=kwargs)
+                    info = __salt__['cloud.profile'](
+                        data['profile'],
+                        [name],
+                        vm_overrides=kwargs)
                 except Exception, exc:
                     trace = traceback.format_exc()
                     ret['trace'] = trace
                     raise FailedStepError(red('{0}'.format(exc)))
-                ret = process_cloud_return(name, info, driver='saltify', ret=ret)
+                ret = process_cloud_return(
+                    name, info, driver='saltify', ret=ret)
             if ret['result']:
                 ret['comment'] = success
             if not output:
@@ -112,13 +115,25 @@ def filter_compute_nodes(nodes, skip, only):
     return targets
 
 
-def orchestrate(output=True, only=None, skip=None, refresh=False):
-    '''Parse saltify settings to saltify all targets'''
+def orchestrate(output=True, only=None, skip=None, ret=None, refresh=False):
+    '''Parse saltify settings to saltify all targets
+
+        output
+            display output
+        only
+            specify explicitly which hosts to provision among all
+            avalaible ones
+        skip
+            hosts to skip
+        refresh
+            refresh pillar
+    '''
     if skip is None:
         skip = []
     if only is None:
         only = []
-    ret = result()
+    if ret is None:
+        ret = result()
     if refresh:
         cli('saltutil.refresh_pillar')
     comment = ''
@@ -140,8 +155,8 @@ def orchestrate(output=True, only=None, skip=None, refresh=False):
         except Exception, exc:
             trace = traceback.format_exc()
             comment += yellow(
-                '\nSaltyfication failed for {0}: {1}'.format(compute_node,
-                                                              exc))
+                '\nSaltyfication failed for {0}: {1}'.format(
+                    compute_node, exc))
             if not isinstance(exc, SaltyficationError):
                 ret['trace'] += '\n'.format(trace)
             log.error(trace)

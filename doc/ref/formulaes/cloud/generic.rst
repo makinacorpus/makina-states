@@ -1,11 +1,17 @@
-Makina-states cloud controller & compute node documentation
-============================================================
+Makina-states cloud generic controller & compute node  & vm documentation
+=================================================================================
 
 Please have a look which some places  most of this stuff is implemented:
 
     - :ref:`module_mc_cloud`
     - :ref:`module_mc_cloud_controller`
     - :ref:`module_mc_cloud_compute_node`
+    - :ref:`runner_mc_api`
+    - :ref:`runner_mc_cloud_controller`
+    - :ref:`runner_mc_cloud_compute_node`
+    - :ref:`runner_mc_cloud_saltify`
+    - :ref:`runner_mc_cloud_vm`
+
 
 Controller
 ~~~~~~~~~~~~
@@ -15,20 +21,12 @@ On this node, we mainly do:
     - compute node & VMs deployment orchestration
     - SSL managment
     - Maintenance
+    - Images store for lxc containers
 
-The cloud configuration generation
------------------------------------
+The SSL certificates managment and centralization
+------------------------------------------------------
+The generation use and wait for such a layout::
 
-The generation generate use and waitfor such a layout::
-
-  |- <salt-root>/cloud-controller
-  | |- compute_node/<computenodename_without_dot>
-  |  |- sls to apply to compute node
-  |  |- compute_node/<computenodename_without_dot>/<vt>
-  |   |- sls to apply to compute node specific to vt
-  |   |- compute_node/<computenodename_without_dot>/<vt>/<vm_name>
-  |    |- sls to apply on container
-  |
   |- <salt-root>/cloud-controller/ssl
   |    |-<salt-root>/certs/<certname>.pub
   |    |-<salt-root>/certs/wildcards/<certname>.pub
@@ -37,16 +35,10 @@ The generation generate use and waitfor such a layout::
   |    |-<salt-root>/certs/wildcards/<certname>.pem
   |    |-<salt-root>/certs/<certname>.pem
 
-**Please note that <saltroot>/<cloud-controller may contain sensible and sentivite information.**
-This is not safe to commit that directory in public or mid-privates repos for example. Keep only
-restricted access on those files and version history.**
-
-The SSL certificates managment and centralization
-------------------------------------------------------
 - The idea is that each controller is tied to a subset of SSL certificates.
   Each domain tied to a controller will need to have a corresponding SSL
   certificate even self signed.
-- Crrolary, the cloud controller will also act as the signin certifates authority
+- Corrolary, the cloud controller will also act as the signin certifates authority
   for self signed certificates in this default case of not having a registered
   certificate for a particular domain.
 - Each of those certificates will also be tied to one ore more running vms.
@@ -173,52 +165,41 @@ You can define the underlying backend also this way
             bind: 10.0.3.7:80
             opts: check
 
-Then regenerate your cloud configuration, example::
-
-    mastersalt-call state.sls makina-states.cloud.generate
-
-And apply your reverse proxy configuration, example::
-
-    mastersalt-call state.sls cloud-controller.compute_node.devhost10local.run-compute_node_reverseproxy
-
-
-Dont forget to replace devhost10.local by your compute_node target.
 
 Settings of a compute node
 --------------------------
 Global settings
 ++++++++++++++++++
-    - know what vms we have for all targets::
+- know all enabled compute nodes and their associated VT drivers::
 
+  mastersalt-call mc_cloud_compute_node.targets
 
-        mastersalt-call mc_cloud_compute_node.get_vms <compute_node>
+- know what vms we have for all targets::
 
-    - know what vms we have for all targets::
+    mastersalt-call mc_cloud_compute_node.get_vms <compute_node>
 
-        mastersalt-call mc_cloud_compute_node.get_vms <compute_node>
+- only for a specific host::
 
-    - only for a specific host::
+    mastersalt-call mc_cloud_compute_node.get_vms_for_target <compute_node>
 
-        mastersalt-call mc_cloud_compute_node.get_vms_for_target <compute_node>
+- know the detailed vm settings::
 
-    - know the detailed vm settings::
-
-        mastersalt-call mc_cloud_compute_node.get_settings_for_target <compute_node>
+    mastersalt-call mc_cloud_compute_node.get_settings_for_target <compute_node>
 
 SSH & reverse proxy
 +++++++++++++++++++
 
-    - get the ssh mappings to have an overview of all ssh port mappings::
+- get the ssh mappings to have an overview of all ssh port mappings::
 
-       mastersalt-call mc_cloud_compute_node.get_ssh_mapping_for_target <compute_node>
+   mastersalt-call mc_cloud_compute_node.get_ssh_mapping_for_target <compute_node>
 
-    - get the ssh port for a specific vm::
+- get the ssh port for a specific vm::
 
-       mastersalt-call mc_cloud_compute_node.get_ssh_port <compute_node> <vm_name>
+   mastersalt-call mc_cloud_compute_node.get_ssh_port <compute_node> <vm_name>
 
-    - get the reverse proxy settings::
+- get the reverse proxy settings::
 
-        mastersalt-call mc_cloud_compute_node.get_reverse_proxies_for_target <compute_node>
+    mastersalt-call mc_cloud_compute_node.get_reverse_proxies_for_target <compute_node>
 
 
 Compute node Automatic grains
@@ -232,5 +213,32 @@ We enable some boolean grains for the compute not to install itself:
 If lxc, we also have:
 
     - makina-states.services.virt.lxc
+
+
+Install & configure the cloud ecosystem
+------------------------------------------------
+If you want to only install the controller configuration, just do::
+
+    mastersalt-run -lall mc_cloud_controller.orchestrate no_provision=true
+
+This is a good idea to do that when there is a long time you did not touched to
+it.
+
+Saltify
+-------
+The next step would certainly be to attach the compute nodes::
+
+    mastersalt-run -lall mc_cloud_controller.orchestrate only_saltify=True
+
+The next step would certainly be to attach a specific node::
+
+    mastersalt-run -lall mc_cloud_controller.orchestrate only_saltify=True only=[minionid]
+
+
+
+
+
+
+
 
 

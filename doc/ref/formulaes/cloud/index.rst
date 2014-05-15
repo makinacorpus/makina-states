@@ -1,7 +1,7 @@
 Salt Cloud integration
 ======================
 
-makina-states include a generic multi drivers cloud-controller as a part of an upper level PaaS project.
+makina-states include a generic multi-drivers cloud-controller as a part of an upper level PaaS project.
 Indeed, This is the raw level of the `corpus <https://github.com/makinacorpus/corpus.reactor/blob/master/doc/spec.rst>`_ PaaS project.
 
 At the moment:
@@ -12,47 +12,53 @@ At the moment:
 In the idea:
 
     - We have a cloud controller
-    - We have compute nodes which are bare metal slaves to host vms
-    - We have vms
+    - We have compute nodes which are bare metal slaves to host vms.
+      The driver of a compute node would then  be specialised to install
+      a configure a virtualisation technology (eg: kvm,
+      lcx)
+    - We have vms which are specialized to deploy a specific driver.
+      (eg: lxc container)
 
-- The cloud controller is driver agnostic, and the only thing to support a new technology is to add the relevant sls to mimic the awaitened interface.
-- Basically we do:
+- The cloud controller is driver agnostic, and the only thing to support a new technology is to add the relevant sls, modules & runners  to mimic the awaitened interface.
 
-    - predeploy
+The sequence:
 
-        - stuff to do on the controller and on the compute node before the vm can be spawned
-        - The cloud controller will install and require both a minion and a SSH key to have both SSH and salt control.
-        - The cloud controller will configure the compute node reverse proxy & firewalls.
-          For now we use:
+    - On the controller front:
 
-            - shorewall as the firewall
-            - haproxy to load balance http; httpŝ and ssh traffic
+        - generation of control ssh keys and minion keyss
+        - generation and configuration of saltcloud related stuff
+        - control of related services like new DNS records
 
-                - http/https use standart port
-                - ssh use a custom range (40000->50000) and one port is
-                  allocated for each vm.
+    - On the compute node:
 
-    - deploy
+        - shorewall as the firewall
+        - haproxy to load balance http; httpŝ and ssh traffic
 
-        - The actions for the VM to be spawn and rattached to the cloud
-          controller (mainly executing the cloud.profile state)
+            - http/https use standart port
+            - ssh use a custom range (40000->50000) and one port is
+              allocated for each vm.
 
-    - post-deploy
+    - On the driver specific front
+
+        - spawn the new minion via the compute node
+        - install default users
+        - install marker grains
+        - install the cloud controller ssh key on the vm
+        - run highstate on the new vm
+
+    - On the compute node & vms:
 
         - Any task remaining to make the newly VM minion a good citizen.
 
-            - highstate
-            - install default users
-            - install marker grains
-            - install the cloud controller ssh key on the vm
+Basically the interface with this cloud controller is done:
 
+    - Via runner modules to make action on controller, compute_nodes and vms
 
-As we want the cloud controller the less possible service dependant, the cloud installation is done in 2 phases.
+        - The runner may in turn execute slses from the makina-states.cloud
+          directory on the controller or on a compute_node or on a vm.
 
-    - We in the first place generate all the cloud configuration states
-      in <salt-root>/cloud-controller/<compute_node_id>.
-      You can see that a lot of sls will be generated in this place.
-    - In a second time, we can run specific states in this directory to finish the installation.
+    - Via generic modules to make settings structures and some specific stuff
+      like SSL certificate generation.
 
 .. toctree::
    :maxdepth: 2

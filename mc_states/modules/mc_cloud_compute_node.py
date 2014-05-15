@@ -659,6 +659,14 @@ def get_targets_and_vms_for_virt_type(virt_type):
     return vtargets
 
 
+def targets():
+    '''Get all configured compute nodes'''
+    _s = __salt__
+    _settings = settings()
+    return dict([(a, v.get('virt_types', []))
+                 for a, v in _settings['targets'].items()])
+
+
 def get_vms_per_type(target):
     '''Return all vms indexed by virt_type for a special target'''
     all_targets = OrderedDict()
