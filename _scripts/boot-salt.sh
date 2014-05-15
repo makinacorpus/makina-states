@@ -1766,6 +1766,11 @@ create_salt_skeleton(){
 file_roots: {"base":["${SALT_ROOT}"]}
 pillar_roots: {"base":["${SALT_PILLAR}"]}
 runner_dirs: [${SALT_ROOT}/runners, ${SALT_MS}/mc_states/runners]
+module_dirs: [${SALT_ROOT}/_modules, ${SALT_MS}/mc_states/modules]
+returner_dirs: [${SALT_ROOT}/_returners, ${SALT_MS}/mc_states/returners]
+states_dirs: [${SALT_ROOT}/_states, ${SALT_MS}/mc_states/states]
+grain_dirs: [${SALT_ROOT}/_grains, ${SALT_MS}/mc_states/grains]
+render_dirs: [${SALT_ROOT}/_renderers, ${SALT_MS}/mc_states/renderers]
 EOF
     fi
     touch "${CONF_PREFIX}/grains"
@@ -1797,6 +1802,11 @@ EOF
 file_roots: {"base":["${MASTERSALT_ROOT}"]}
 pillar_roots: {"base":["${MASTERSALT_PILLAR}"]}
 runner_dirs: [${MASTERSALT_ROOT}/runners, ${MASTERSALT_MS}/mc_states/runners]
+module_dirs: [${MASTERSALT_ROOT}/_modules, ${MASTERSALT_MS}/mc_states/modules]
+returner_dirs: [${MASTERSALT_ROOT}/_returners, ${MASTERSALT_MS}/mc_states/returners]
+states_dirs: [${MASTERSALT_ROOT}/_states, ${MASTERSALT_MS}/mc_states/states]
+grain_dirs: [${MASTERSALT_ROOT}/_grains, ${MASTERSALT_MS}/mc_states/grains]
+render_dirs: [${MASTERSALT_ROOT}/_renderers, ${MASTERSALT_MS}/mc_states/renderers]
 EOF
         fi
         if [ ! -e "${MCONF_PREFIX}/minion" ];then
