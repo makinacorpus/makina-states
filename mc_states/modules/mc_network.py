@@ -345,10 +345,18 @@ def rrs_cnames_for(domain, ips, ipsfo, ipsfo_map,
                                                rr)
             if entry not in rrs:
                 rrs.append(entry)
-    cvms = []
+    cvms = {}
     for vt, targets in vms.items():
         for target, _vms in targets.items():
-            cvms.extend(_vms)
+            for _vm in _vms:
+                cvms[_vm] = target
+    end_domain_re = re.compile(
+        '\\.{0}$'.format(domain), re.M | re. S | re. U | re.I)
+    # if this is a baremetal host or a vm
+    # this add automaticly a cname on each tied
+    # failover ip in the form <host>.<ipfo>.<domain>
+    # and <vm>.<host>.<ipfo>.<domain>
+    cvms_records = []
     for host, dn_ip_fos in ipsfo_map.items():
         if domain_re.search(host):
             if (
@@ -360,10 +368,26 @@ def rrs_cnames_for(domain, ips, ipsfo, ipsfo_map,
                     ttl = rrs_ttls.get(host,  '')
                     if ip_fo.endswith(domain):
                         ip_fo += '.'
-                    entry = '{0}.{1} {2} CNAME {3}'.format(
-                        dn, ip_fo, ttl, ip_fo)
+                    possible_host = ''
+                    if host in cvms:
+                        cvms_records.append(host)
+                        possible_host = cvms[host]
+                    if possible_host:
+                        possible_host = '.' + end_domain_re.sub('',
+                                                                possible_host)
+                    cnn = '{0}{2}.{1}'.format(dn, ip_fo, possible_host)
+                    entry = '{0} {1} CNAME {2}'.format(cnn, ttl, ip_fo)
                     if entry not in rrs:
                         rrs.append(entry)
+                    if host in cvms:
+                        entry2 = '{0}.{1} {2} CNAME {3}'.format(
+                            dn, ip_fo, ttl, cnn)
+                        if entry2 not in rrs:
+                            rrs.append(entry2)
+                        entry3 = '{0} {2} CNAME {0}.{1}'.format(
+                            dn, ip_fo, ttl, cnn)
+                        if entry3 not in rrs:
+                            rrs.append(entry3)
             else:
                 for dn_ip_fo in dn_ip_fos:
                     dcname = host
@@ -378,6 +402,38 @@ def rrs_cnames_for(domain, ips, ipsfo, ipsfo_map,
                     entry = '{0} {1} CNAME {2}'.format(dcname, ttl, dn_ip_fo)
                     if entry not in rrs:
                         rrs.append(entry)
+    # For all vms:
+    # if the vm was not mounted using an ip failover
+    # map a cname directly to the host
+    # If the host is mapped on an ip failover
+    # add a transitionnal cname for the vm to be mounted on this ipfo
+    #
+    # eg: direct
+    # <vm>.<host>.<domain>
+    # eg: failover
+    # <vm>.<host>.<ipfo_dn>.<domain>
+    for vm, vm_host in cvms.items():
+        if domain_re.search(vm):
+            if vm not in cvms_records:
+                cvms_records.append(vm)
+                dn = vm.split('.{0}'.format(domain))[0]
+                ttl = rrs_ttls.get(vm,  '')
+                if vm_host in ipsfo_map:
+                    fo_dn = ipsfo_map[vm_host][0]
+                    host_dn = vm_host.split('.{0}'.format(domain))[0]
+                    vm_host = '{0}.{1}'.format(host_dn, fo_dn)
+                if vm_host.endswith(domain):
+                    vm_host += '.'
+                # first cname in the form <vm>.<host>.<domain> -> <host>
+                cnn = '{0}.{1}'.format(dn, end_domain_re.sub('', vm_host))
+                entry = '{0} {1} CNAME {2}'.format(cnn, ttl, vm_host)
+                # first cname in the form <vm>.<host>.<domain>
+                # 2nd  cname in the form <vm>.<domain> -> <vm>.<host>.<domain>
+                if entry not in rrs:
+                    rrs.append(entry)
+                entry2 = '{0}.{3}. {1} CNAME {2}'.format(dn, ttl, cnn, domain)
+                if entry2 not in rrs:
+                    rrs.append(entry2)
     rr = ''
     for row in all_rrs.values():
         rr += '\n'.join(row) + '\n'
@@ -392,11 +448,15 @@ def rrs_cnames_for(domain, ips, ipsfo, ipsfo_map,
 
 def rrs_for(domain, ips, ipsfo, ipsfo_map, baremetal_hosts, vms, cnames, rrs_ttls):
     '''Return all configured records for a domain
+    take all rr found for the "ips" & "ipsfo" tables for domain
+        - Make A records for everything in ips
+        - Make A records for everything in ipsfo
+        - Make CNAME records for baremetal or vms if they are
+          in the ipsfo_map hashtable.
+        - Add the related TTL for each record matched inside
+          the rrs_ttls hashstable
 
-    For the moment:
 
-        - A records
-        - CNAME records
 
     '''
     rr = (
