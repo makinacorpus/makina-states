@@ -427,7 +427,6 @@ def check_point(ret, __opts__, output=True):
     api.msplitstrip(ret)
     if not ret['result']:
         salt_output(ret, __opts__, output=output)
-        import pdb;pdb.set_trace()  ## Breakpoint ##
         raise FailedStepError(
             red('Execution of the runner has been stopped due to'
                 ' error'))

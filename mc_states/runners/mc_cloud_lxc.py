@@ -132,6 +132,14 @@ def install_vt(target, output=True):
             step(target, ret=ret, output=False)
         except FailedStepError:
             pass
+    iret = __salt__['mc_lxc.sync_images'](only=[target])
+    if iret['result']:
+        ret['comment'] += yellow(
+            'LXC: images synchronnised on {0}\n'.format(target))
+    else:
+        merge_results(ret, iret)
+        ret['comment'] += yellow(
+            'LXC: images failed to synchronnise on {0}\n'.format(target))
     salt_output(ret, __opts__, output=output)
     return ret
 

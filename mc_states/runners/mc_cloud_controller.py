@@ -132,54 +132,79 @@ def orchestrate(skip=None,
                 skip_vms=None,
                 only=None,
                 only_vms=None,
+                no_configure=False,
+                no_saltify=False,
                 no_provision=False,
+                no_vms=False,
                 no_post_provision=False,
                 no_vms_post_provision=False,
-                no_vms=False,
                 output=True,
                 refresh=False,
-                only_saltify=False,
                 ret=None):
-    '''install controller, compute node, vms & run postdeploy'''
+    '''install controller, compute node, vms & run postdeploy
+
+        no_configure
+            skip configuring the cloud controller
+        skip
+            list of compute nodes to skip
+        skip_vms
+            list of vm to skip
+        only
+            explicit list of compute nodes to deploy
+        only_vms
+            explicit list of vm to deploy
+        no_provision
+            skip compute node & vm provision
+        no_vms
+            do not provision vms
+        no_post_provision
+            do not post provision compute nodes
+        no_vms_post_provision
+            do not post provision vms
+
+
+    '''
     if ret is None:
         ret = result()
     if refresh:
         cli('saltutil.refresh_pillar')
     cret = result()
     try:
-        if not only_saltify:
+        # only deploy base configuration if we did not set
+        # a specific saltify/computenode/vm switch
+        if not no_configure:
             deploy(output=False, ret=cret)
             check_point(cret, __opts__, output=output)
             del cret['result']
             merge_results(ret, cret)
-        if not no_provision:
+        if not no_saltify:
             cret = result()
             __salt__['mc_cloud_saltify.orchestrate'](
                 only=only, skip=skip, ret=cret,
                 output=False, refresh=False)
             del cret['result']
             merge_results(ret, cret)
-            cn_in_error = cret['changes'].get('saltified_errors', [])
-            if not only_saltify:
-                if not skip:
-                    skip = []
-                skip += cn_in_error
-                cret = result()
-                __salt__['mc_cloud_compute_node.orchestrate'](
-                    skip=skip,
-                    skip_vms=skip_vms,
-                    only=only,
-                    only_vms=only_vms,
-                    no_provision=no_provision,
-                    no_post_provision=no_post_provision,
-                    no_vms_post_provision=no_vms_post_provision,
-                    no_vms=no_vms,
-                    refresh=refresh,
-                    output=False,
-                    ret=cret)
-                del cret['result']
-                merge_results(ret, cret)
-                cn_in_error = cret['changes'].get('provision_error', [])
+        cn_in_error = cret['changes'].get('saltified_errors', [])
+        if not no_provision:
+            if not skip:
+                skip = []
+            skip += cn_in_error
+            cret = result()
+            __salt__['mc_cloud_compute_node.orchestrate'](
+                skip=skip,
+                skip_vms=skip_vms,
+                only=only,
+                only_vms=only_vms,
+                no_provision=no_provision,
+                no_post_provision=no_post_provision,
+                no_vms_post_provision=no_vms_post_provision,
+                no_vms=no_vms,
+                refresh=refresh,
+                output=False,
+                ret=cret)
+            del cret['result']
+            merge_results(ret, cret)
+            cn_in_error = cret['changes'].get('provision_error', [])
     except FailedStepError:
         merge_results(ret, cret)
         trace = traceback.format_exc()

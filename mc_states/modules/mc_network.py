@@ -249,9 +249,9 @@ def ip_for(fqdn, ips, ipsfo, ipsfo_map, fail_over=None):
     return ips_for(fqdn, ips, ipsfo, ipsfo_map, fail_over=fail_over)[0]
 
 
-def rr_a(fqdn, ips, ipsfo, ipsfo_map, fail_over=None):
+def rr_a(fqdn, ips, ipsfo, ipsfo_map, rrs_ttls, fail_over=None):
     '''
-    Search for explicit A record on the baremetal box
+    Search for explicit A record(s) (fqdn/ip) record on the inputed mappings
 
         ips
             mapping FQDN / list of ips
@@ -271,10 +271,141 @@ def rr_a(fqdn, ips, ipsfo, ipsfo_map, fail_over=None):
         fqdn_entry = '@'
     elif not fqdn.endswith('.'):
         fqdn_entry += '.'
-    rr = '{0} A {1}\n'.format(fqdn_entry, ips[0])
+    ttl = rrs_ttls.get(fqdn_entry,  '')
+    rr = '{0} {1} A {2}\n'.format(fqdn_entry, ttl, ips[0])
     for ip in ips[1:]:
-        rr += '       {0} A {1}\n'.format(fqdn_entry, ip)
+        ttl = rrs_ttls.get(fqdn_entry,  '')
+        rr += '       {0} {1} A {2}\n'.format(fqdn_entry,
+                                              ttl,
+                                              ip)
     rr = '\n'.join([a for a in rr.split('\n') if a.strip()])
+    return rr
+
+
+DOMAIN_PATTERN = '(@{0})|({0}\\.?)$'
+
+
+def rrs_a_for(domain, ips, ipsfo, ipsfo_map,
+              baremetal_hosts, vms, rrs_ttls):
+    '''Return all configured A records for a domain'''
+    all_rrs = {}
+    domain_re = re.compile(DOMAIN_PATTERN.format(domain),
+                           re.M | re.U | re.S | re.I)
+
+    # add all A from simple ips
+    for fqdn in ips:
+        if domain_re.search(fqdn):
+            rrs = all_rrs.setdefault(fqdn, [])
+            for rr in rr_a(
+                fqdn, ips, ipsfo, ipsfo_map, rrs_ttls
+            ).split('\n'):
+                if rr not in rrs:
+                    rrs.append(rr)
+    # add all A from failover ips
+    for fqdn in ipsfo:
+        if domain_re.search(fqdn):
+            rrs = all_rrs.setdefault(fqdn, [])
+            for rr in rr_a(
+                fqdn, ips, ipsfo, ipsfo_map, rrs_ttls,
+                fail_over=True
+            ).split('\n'):
+                if rr not in rrs:
+                    rrs.append(rr)
+    rr = ''
+    for row in all_rrs.values():
+        rr += '\n'.join(row) + '\n'
+    # add all domain baremetal mapped on failovers
+    rr = [re.sub('^ *', '       ', a)
+          for a in rr.split('\n') if a.strip()]
+    rr = __salt__['mc_utils.uniquify'](rr)
+    rr.sort()
+    rr = re.sub('^ *', '       ', '\n'.join(rr), re.X | re.S | re.U | re.M)
+    return rr
+
+
+def rrs_cnames_for(domain, ips, ipsfo, ipsfo_map,
+                   baremetal_hosts, vms, cnames, rrs_ttls):
+    '''Return all configured CNAME records for a domain'''
+    all_rrs = {}
+    domain_re = re.compile(DOMAIN_PATTERN.format(domain),
+                           re.M | re.U | re.S | re.I)
+    # add all domain ips
+    for cname, rr in cnames.items():
+        if domain_re.search(cname):
+            rrs = all_rrs.setdefault(cname, [])
+            dcname = cname
+            if (
+                (not cname.endswith('.'))
+                and cname.endswith(domain)
+            ):
+                dcname = '{0}.'.format(dcname)
+            ttl = rrs_ttls.get(cname,  '')
+            entry = '{0} {1} CNAME {2}'.format(dcname,
+                                               ttl,
+                                               rr)
+            if entry not in rrs:
+                rrs.append(entry)
+    cvms = []
+    for vt, targets in vms.items():
+        for target, _vms in targets.items():
+            cvms.extend(_vms)
+    for host, dn_ip_fos in ipsfo_map.items():
+        if domain_re.search(host):
+            if (
+                host in baremetal_hosts
+                or host in cvms
+            ):
+                dn = host.split('.{0}'.format(domain))[0]
+                for ip_fo in dn_ip_fos:
+                    ttl = rrs_ttls.get(host,  '')
+                    if ip_fo.endswith(domain):
+                        ip_fo += '.'
+                    entry = '{0}.{1} {2} CNAME {3}'.format(
+                        dn, ip_fo, ttl, ip_fo)
+                    if entry not in rrs:
+                        rrs.append(entry)
+            else:
+                for dn_ip_fo in dn_ip_fos:
+                    dcname = host
+                    if (
+                        (not dcname.endswith('.'))
+                        and dcname.endswith(domain)
+                    ):
+                        dcname = '{0}.'.format(dcname)
+                    if dcname.startswith('@') and len(dcname) > 1:
+                        continue
+                    ttl = rrs_ttls.get(host,  '')
+                    entry = '{0} {1} CNAME {2}'.format(dcname, ttl, dn_ip_fo)
+                    if entry not in rrs:
+                        rrs.append(entry)
+    rr = ''
+    for row in all_rrs.values():
+        rr += '\n'.join(row) + '\n'
+    # add all domain baremetal mapped on failovers
+    rr = [re.sub('^ *', '       ', a)
+          for a in rr.split('\n') if a.strip()]
+    rr.sort()
+    rr = __salt__['mc_utils.uniquify'](rr)
+    rr = '\n'.join(rr)
+    return rr
+
+
+def rrs_for(domain, ips, ipsfo, ipsfo_map, baremetal_hosts, vms, cnames, rrs_ttls):
+    '''Return all configured records for a domain
+
+    For the moment:
+
+        - A records
+        - CNAME records
+
+    '''
+    rr = (
+        rrs_a_for(domain, ips, ipsfo, ipsfo_map,
+                  baremetal_hosts, vms, rrs_ttls) +
+        '\n' +
+        rrs_cnames_for(domain, ips, ipsfo, ipsfo_map,
+                       baremetal_hosts, vms, cnames, rrs_ttls)
+    )
     return rr
 
 

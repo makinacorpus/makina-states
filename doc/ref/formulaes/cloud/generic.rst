@@ -127,15 +127,7 @@ You can define the underlying backend also this way
             bind: 10.0.3.7:80
             opts: check
 
-Then regenerate your cloud configuration, example::
-
-    mastersalt-call state.sls makina-states.cloud.generate
-
-And apply your reverse proxy configuration, example::
-
-    mastersalt-call state.sls cloud-controller.compute_node.devhost10local.run-compute_node_reverseproxy
-
-Inject custom configuration for https reverse proxy
+Custom configuration for https reverse proxy
 ***************************************************
 makina-states.cloud.compute_node.conf.<computenode_name>.https_proxy.raw_opts_pre
     insert before generated rules
@@ -166,42 +158,6 @@ You can define the underlying backend also this way
             opts: check
 
 
-Settings of a compute node
---------------------------
-Global settings
-++++++++++++++++++
-- know all enabled compute nodes and their associated VT drivers::
-
-  mastersalt-call mc_cloud_compute_node.targets
-
-- know what vms we have for all targets::
-
-    mastersalt-call mc_cloud_compute_node.get_vms <compute_node>
-
-- only for a specific host::
-
-    mastersalt-call mc_cloud_compute_node.get_vms_for_target <compute_node>
-
-- know the detailed vm settings::
-
-    mastersalt-call mc_cloud_compute_node.get_settings_for_target <compute_node>
-
-SSH & reverse proxy
-+++++++++++++++++++
-
-- get the ssh mappings to have an overview of all ssh port mappings::
-
-   mastersalt-call mc_cloud_compute_node.get_ssh_mapping_for_target <compute_node>
-
-- get the ssh port for a specific vm::
-
-   mastersalt-call mc_cloud_compute_node.get_ssh_port <compute_node> <vm_name>
-
-- get the reverse proxy settings::
-
-    mastersalt-call mc_cloud_compute_node.get_reverse_proxies_for_target <compute_node>
-
-
 Compute node Automatic grains
 --------------------------------
 We enable some boolean grains for the compute not to install itself:
@@ -213,32 +169,6 @@ We enable some boolean grains for the compute not to install itself:
 If lxc, we also have:
 
     - makina-states.services.virt.lxc
-
-
-Install & configure the cloud ecosystem
-------------------------------------------------
-If you want to only install the controller configuration, just do::
-
-    mastersalt-run -lall mc_cloud_controller.orchestrate no_provision=true
-
-This is a good idea to do that when there is a long time you did not touched to
-it.
-
-Saltify
--------
-The next step would certainly be to attach the compute nodes::
-
-    mastersalt-run -lall mc_cloud_controller.orchestrate only_saltify=True
-
-The next step would certainly be to attach a specific node::
-
-    mastersalt-run -lall mc_cloud_controller.orchestrate only_saltify=True only=[minionid]
-
-
-
-
-
-
 
 
 
