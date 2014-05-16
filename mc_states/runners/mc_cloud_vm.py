@@ -186,7 +186,7 @@ def provision(compute_node, vt, vm, steps=None, ret=None, output=True):
         ret = result()
     for step in steps:
         pre_vid_ = 'mc_cloud_{0}.pre_vm_{1}'.format(vt, step)
-        id_ = 'mc_cloud_vm.vm_{1}'.format(vt, step)
+        id_ = 'mc_cloud_{0}.vm_{1}'.format(vt, step)
         post_vid_ = 'mc_cloud_{0}.vm_{1}'.format(vt, step)
         for cid_ in [pre_vid_, id_, post_vid_]:
             if (not ret['result']) or (cid_ not in __salt__):

@@ -78,7 +78,7 @@ def sync_image_reference_containers(imgSettings, ret, _cmd_runner=None):
                        '/var/lib/lxc/{0}/rootfs'.format(img))
 
 
-def sync_images(output=True):
+def sync_images(output=True, only=None):
     '''
     Sync the 'makina-states' image to all configured LXC hosts minions
 
@@ -90,6 +90,8 @@ def sync_images(output=True):
             :images: list of image to sync to lxc minions
             :containers: all minion targets will be synced with that list of images
     '''
+    if not only:
+        only = []
     ret = saltapi.result()
     ret['targets'] = OrderedDict()
     dest = '/root/.ssh/.lxc.pub'
@@ -105,6 +107,8 @@ def sync_images(output=True):
     sync_image_reference_containers(imgSettings, ret)
     root = master_opts()['file_roots']['base'][0]
     for target in lxcSettings.get('vms', {}):
+        if only and (target not in only):
+            continue
         # skip local minion :) (in fact no)
         # if this_ == target:
         #    continue
@@ -164,18 +168,26 @@ def sync_images(output=True):
                         'fi').format(imgroot, rsync_cmd)
                     cret = cli('cmd.run_all', cmd, salt_target=target)
                     if not cret['retcode']:
-                        subret['comment'] += '\nRSYNC(local pre sync) complete'
-                        subret['trace'] += (
-                            '\nRSYNC:\n{0}\n'.format(cret['stdout']))
+                        subret['comment'] += (
+                            '\n{0} RSYNC(local pre sync) complete'
+                        ).format(target)
+                        if cret['stdout'].strip():
+                            subret['trace'] += (
+                                '\n{1} RSYNC:\n{0}\n'.format(cret['stdout'],
+                                                             target))
                     cmd = (
                         '{2} -z '
                         '{0}/ root@{1}:{0}.tmp/'
                     ).format(imgroot, host, rsync_cmd)
                     cret = cli('cmd.run_all', cmd, salt_timeout=timeout)
                     if not cret['retcode']:
-                        subret['comment'] += '\nRSYNC(net) complete'
-                        subret['trace'] += (
-                            '\nRSYNC:\n{0}\n'.format(cret['stdout']))
+                        subret['comment'] += (
+                            '\n{0} RSYNC(net -> tmp) complete'
+                        ).format(target)
+                        if cret['stdout'].strip():
+                            subret['trace'] += (
+                                '\n{1} RSYNC:\n{0}\n'
+                            ).format(cret['stdout'], target)
                         # if transfert success sync tmp / img
                         # img to tmp location
                         cmd = (
@@ -183,9 +195,13 @@ def sync_images(output=True):
                         ).format(imgroot, rsync_cmd)
                         cret = cli('cmd.run_all', cmd, salt_target=target)
                         if not cret['retcode']:
-                            subret['comment'] += '\nRSYNC(local sync) complete'
-                            subret['trace'] += (
-                                '\nRSYNC:\n{0}\n'.format(cret['stdout']))
+                            subret['comment'] += (
+                                '\n{0} RSYNC(distant local sync) complete'
+                            ).format(target)
+                            if cret['stdout'].strip():
+                                subret['trace'] += (
+                                    '\n{1} RSYNC:\n{0}\n'
+                                ).format(cret['stdout'], target)
                         else:
                             _errmsg(
                                 'Failed to sync local image')
@@ -212,14 +228,16 @@ def sync_images(output=True):
                 '\nWe failed to sync image for {0}:\n{1}'.format(
                     target, ex))
     for target, subret in ret['targets'].items():
+        if only and (target not in only):
+            continue
         api.msplitstrip(subret)
         if not subret['result']:
             ret['result'] = False
     ret['result'] = False
     if ret['result']:
-        ret['comment'] = 'We have sucessfully sync all targets'
+        ret['comment'] = 'We have sucessfully sync all targets\n'
     else:
-        ret['comment'] = 'We have missed some target, see logs'
+        ret['comment'] = 'We have missed some target, see logs\n'
     api.msplitstrip(ret)
     # return mail error only on error
     if output and not ret['result']:

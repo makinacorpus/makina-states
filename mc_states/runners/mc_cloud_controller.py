@@ -87,10 +87,12 @@ def run_vt_hook(hook_name,
     return ret
 
 
-def deploy(output=True):
+def deploy(output=True, ret=None):
     '''Prepare cloud controller configuration
     can also apply per virtualization type configuration'''
-    kw = {'ret': result(), 'output': output}
+    if ret is None:
+        ret = result()
+    kw = {'ret': ret, 'output': output}
     kw['ret']['comment'] += green(
         'Installing cloud controller configuration files\n')
     run_vt_hook('pre_deploy_controller', ret=kw['ret'], output=output)
@@ -109,16 +111,20 @@ def exists(name):
     key = '{prefix}/pki/master/minions/{name}'.format(
         prefix=cloudSettings['prefix'], name=name)
     already_exists = os.path.exists(key)
-    if not already_exists:
-        try:
-            instance = __salt__['cloud.action'](
-                fun='show_instance', names=[name])
-            prov = str(instance.keys()[0])
-            if instance and 'Not Actioned' not in prov:
-                already_exists = True
-        except:
-            trace = traceback.format_exc()
-            log.warn(trace)
+    # time too consuming and no performant at all
+    # we will get bad error on a vm which exists on a specified compute
+    # node without beeing attached to the controller
+    # but that's life.
+    # if not already_exists:
+    #     try:
+    #         instance = __salt__['cloud.action'](
+    #             fun='show_instance', names=[name])
+    #         prov = str(instance.keys()[0])
+    #         if instance and 'Not Actioned' not in prov:
+    #             already_exists = True
+    #     except:
+    #         trace = traceback.format_exc()
+    #         log.warn(trace)
     return already_exists
 
 
@@ -126,42 +132,83 @@ def orchestrate(skip=None,
                 skip_vms=None,
                 only=None,
                 only_vms=None,
+                no_configure=False,
+                no_saltify=False,
                 no_provision=False,
+                no_vms=False,
                 no_post_provision=False,
                 no_vms_post_provision=False,
-                no_vms=False,
                 output=True,
                 refresh=False,
                 ret=None):
-    '''install controller, compute node, vms & run postdeploy'''
-    ret = result()
+    '''install controller, compute node, vms & run postdeploy
+
+        no_configure
+            skip configuring the cloud controller
+        skip
+            list of compute nodes to skip
+        skip_vms
+            list of vm to skip
+        only
+            explicit list of compute nodes to deploy
+        only_vms
+            explicit list of vm to deploy
+        no_provision
+            skip compute node & vm provision
+        no_vms
+            do not provision vms
+        no_post_provision
+            do not post provision compute nodes
+        no_vms_post_provision
+            do not post provision vms
+
+
+    '''
+    if ret is None:
+        ret = result()
     if refresh:
         cli('saltutil.refresh_pillar')
+    cret = result()
     try:
-        ret = deploy(output=False)
-        check_point(ret, __opts__, output=output)
-        cret = __salt__['mc_cloud_saltify.orchestrate'](
-            only=only, skip=skip, output=False, refresh=False)
-        del cret['result']
-        merge_results(ret, cret)
+        # only deploy base configuration if we did not set
+        # a specific saltify/computenode/vm switch
+        if not no_configure:
+            deploy(output=False, ret=cret)
+            check_point(cret, __opts__, output=output)
+            del cret['result']
+            merge_results(ret, cret)
+        if not no_saltify:
+            cret = result()
+            __salt__['mc_cloud_saltify.orchestrate'](
+                only=only, skip=skip, ret=cret,
+                output=False, refresh=False)
+            del cret['result']
+            merge_results(ret, cret)
         cn_in_error = cret['changes'].get('saltified_errors', [])
-        if not skip:
-            skip = []
-        skip += cn_in_error
-        cret = __salt__['mc_cloud_compute_node.orchestrate'](
-            skip=skip,
-            skip_vms=skip_vms,
-            only=only,
-            only_vms=only_vms,
-            no_provision=no_provision,
-            no_post_provision=no_post_provision,
-            no_vms_post_provision=no_vms_post_provision,
-            no_vms=no_vms,
-            refresh=refresh, output=False)
-        del cret['result']
-        merge_results(ret, cret)
-        cn_in_error = cret['changes'].get('provision_error', [])
+        if not no_provision:
+            if not skip:
+                skip = []
+            skip += cn_in_error
+            cret = result()
+            __salt__['mc_cloud_compute_node.orchestrate'](
+                skip=skip,
+                skip_vms=skip_vms,
+                only=only,
+                only_vms=only_vms,
+                no_provision=no_provision,
+                no_post_provision=no_post_provision,
+                no_vms_post_provision=no_vms_post_provision,
+                no_vms=no_vms,
+                refresh=refresh,
+                output=False,
+                ret=cret)
+            del cret['result']
+            merge_results(ret, cret)
+            cn_in_error = cret['changes'].get('provision_error', [])
     except FailedStepError:
+        merge_results(ret, cret)
+        trace = traceback.format_exc()
+        ret['output'] += '\n{0}'.format(trace)
         salt_output(ret, __opts__, output=output)
         raise
     salt_output(ret, __opts__, output=output)
