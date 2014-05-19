@@ -19,14 +19,25 @@ Documentation of this module is available with::
 '''
 # Import python libs
 import logging
+import time
 import copy
 import mc_states.utils
+import datetime
 import re
 from salt.utils.odict import OrderedDict
+import traceback
+
+from mc_states.utils import memoize_cache
+
+
+class IPRetrievalError(KeyError): pass
+class IPRetrievalCycleError(IPRetrievalError): pass
+
 
 __name = 'network'
 
 log = logging.getLogger(__name__)
+DOMAIN_PATTERN = '(@{0})|({0}\\.?)$'
 
 
 def sort_ifaces(infos):
@@ -194,13 +205,17 @@ def settings():
     return _settings()
 
 
-def ips_for(fqdn, ips, ipsfo, ipsfo_map, fail_over=None):
+def ips_for(fqdn, ips, ips_map, ipsfo,
+            ipsfo_map, cnames, fail_over=None,
+            ignore_aliases=None, ignore_cnames=None):
     '''
     Get all ip for a domain, try as a FQDN first and then
     try to append the specified domain
 
         ips
             mapping FQDN / list of ips
+        ips_map
+            mapping FQDN / FQDN which has a real ip associated
         ipsfo_map
             mapping FQDN / list of failover identifiers (fqdn)
         ipsfo
@@ -212,30 +227,116 @@ def ips_for(fqdn, ips, ipsfo, ipsfo_map, fail_over=None):
             will be returned
     '''
     resips = []
+    if ignore_cnames is None:
+        ignore_cnames = []
+    if ignore_aliases is None:
+        ignore_aliases = []
+    # first, search for real baremetal ips
     if fqdn in ips:
         resips.extend(ips[fqdn][:])
+    # then failover
     if fail_over:
         if (fqdn in ipsfo):
             resips.append(ipsfo[fqdn])
         for ipfo in ipsfo_map.get(fqdn, []):
             resips.append(ipsfo[ipfo])
+    # then for ips which are duplicated among other dns names
+    for alias_fqdn in ips_map.get(fqdn, []):
+        # avoid recursion
+        for _fqdn in [fqdn, alias_fqdn]:
+            if _fqdn in ignore_aliases or _fqdn in ignore_cnames:
+                sfqdn = ''
+                if _fqdn != fqdn:
+                    sfqdn = '/{0}'.format(_fqdn)
+                    raise IPRetrievalCycleError((
+                        'Recursion from alias {0}{1}:\n'
+                        ' ignored aliases: {3}\n'
+                        ' ignored cnames: {2}\n'
+                    ).format(fqdn, sfqdn, ignore_cnames, ignore_aliases))
+        ignore_aliases.append(alias_fqdn)
+        try:
+            alias_ips = ips_for(alias_fqdn, ips, ips_map,
+                                ipsfo, ipsfo_map, cnames,
+                                fail_over=fail_over,
+                                ignore_aliases=ignore_aliases,
+                                ignore_cnames=ignore_cnames)
+        except RuntimeError:
+            raise IPRetrievalCycleError(
+                'Recursion(r) from alias {0}:\n'
+                ' ignored cnames: {1}\n'
+                ' ignored aliases: {2}\n'.format(
+                    alias_fqdn, ignore_cnames, ignore_aliases))
+        if alias_ips:
+            resips.extend(alias_ips)
+        for _fqdn in [fqdn, alias_fqdn]:
+            for ignore in [ignore_aliases, ignore_cnames]:
+                if _fqdn in ignore:
+                    ignore.pop(ignore.index(_fqdn))
+    for ignore in [ignore_aliases]:
+        if fqdn in ignore:
+            ignore.pop(ignore.index(fqdn))
+
+    # and if still no ip found but cname is present,
+    # try to get ip from cname
+    if (not resips) and fqdn in cnames:
+        alias_cname = cnames[fqdn]
+        if alias_cname.endswith('.'):
+            alias_cname = alias_cname[:-1]
+        # avoid recursion
+        for _fqdn in [alias_cname]:
+            if _fqdn in ignore_aliases or _fqdn in ignore_cnames:
+                sfqdn = ''
+                if _fqdn != fqdn:
+                    sfqdn = '/{0}'.format(_fqdn)
+                raise IPRetrievalCycleError(
+                    'Recursion from cname {0}{1}:\n'
+                    ' ignored cnames: {2}\n'
+                    ' ignored aliases: {3}\n'.format(
+                        fqdn, sfqdn, ignore_cnames, ignore_aliases))
+        ignore_cnames.append(alias_cname)
+        try:
+            alias_ips = ips_for(alias_cname, ips, ips_map,
+                                ipsfo, ipsfo_map, cnames,
+                                fail_over=fail_over,
+                                ignore_aliases=ignore_aliases,
+                                ignore_cnames=ignore_cnames)
+        except RuntimeError:
+            raise IPRetrievalCycleError(
+                'Recursion(r) from cname {0}:\n'
+                ' ignored cnames: {1}\n'
+                ' ignored aliases: {2}\n'.format(
+                    alias_cname, ignore_cnames, ignore_aliases))
+        if alias_ips:
+            resips.extend(alias_ips)
+        for _fqdn in [fqdn, alias_cname]:
+            for ignore in [ignore_aliases, ignore_cnames]:
+                if _fqdn in ignore:
+                    ignore.pop(ignore.index(_fqdn))
+
+    for ignore in [ignore_aliases, ignore_cnames]:
+        if fqdn in ignore:
+            ignore.pop(ignore.index(fqdn))
+
     if not resips:
         # allow fail over fallback if nothing was specified
         if fail_over is None:
-            return ips_for(fqdn, ips, ipsfo, ipsfo_map, fail_over=True)
+            return ips_for(fqdn, ips, ips_map, ipsfo, ipsfo_map,
+                           cnames, fail_over=True)
         else:
-            raise KeyError('ips not found for {0}'.format(fqdn))
+            raise IPRetrievalError('{0}\n'.format(fqdn))
     resips = __salt__['mc_utils.uniquify'](resips)
     return resips
 
 
-def ip_for(fqdn, ips, ipsfo, ipsfo_map, fail_over=None):
+def ip_for(fqdn, ips, ips_map, ipsfo, ipsfo_map, cnames, fail_over=None):
     '''
     Get an ip for a domain, try as a FQDN first and then
     try to append the specified domain
 
         ips
             mapping FQDN / list of ips
+        ips_map
+            mapping FQDN / FQDN which has a real ip associated
         ipsfo_map
             mapping FQDN / list of failover identifiers (fqdn)
         ipsfo
@@ -246,26 +347,10 @@ def ip_for(fqdn, ips, ipsfo, ipsfo_map, fail_over=None):
             If failOver exists and fail_over=true, all ips
             will be returned
     '''
-    return ips_for(fqdn, ips, ipsfo, ipsfo_map, fail_over=fail_over)[0]
+    return ips_for(fqdn, ips, ips_map, ipsfo, ipsfo_map, cnames, fail_over=fail_over)[0]
 
 
-def rr_a(fqdn, ips, ipsfo, ipsfo_map, rrs_ttls, fail_over=None):
-    '''
-    Search for explicit A record(s) (fqdn/ip) record on the inputed mappings
-
-        ips
-            mapping FQDN / list of ips
-        ipsfo_map
-            mapping FQDN / list of failover identifiers (fqdn)
-        ipsfo
-            a mapping IPFO FQDN / list of associated ips
-        fail_over
-            If FailOver records exists and no ip was found, it will take this
-            value.
-            If failOver exists and fail_over=true, all ips
-            will be returned
-    '''
-    ips = ips_for(fqdn, ips, ipsfo, ipsfo_map, fail_over=fail_over)
+def rr_a_(fqdn, ips, rrs_ttls):
     fqdn_entry = fqdn
     if fqdn.startswith('@'):
         fqdn_entry = '@'
@@ -282,32 +367,67 @@ def rr_a(fqdn, ips, ipsfo, ipsfo_map, rrs_ttls, fail_over=None):
     return rr
 
 
-DOMAIN_PATTERN = '(@{0})|({0}\\.?)$'
+def rr_a(fqdn, ips, ips_map, ipsfo, ipsfo_map, cnames, rrs_ttls, fail_over=None):
+    '''
+    Search for explicit A record(s) (fqdn/ip) record on the inputed mappings
+
+        ips
+            mapping FQDN / list of ips
+        ips_map
+            mapping FQDN / FQDN which has a real ip associated
+        ipsfo_map
+            mapping FQDN / list of failover identifiers (fqdn)
+        ipsfo
+            a mapping IPFO FQDN / list of associated ips
+        fail_over
+            If FailOver records exists and no ip was found, it will take this
+            value.
+            If failOver exists and fail_over=true, all ips
+            will be returned
+    '''
+    ips = ips_for(fqdn, ips, ips_map,
+                  ipsfo, ipsfo_map, cnames, fail_over=fail_over)
+    return rr_a_(fqdn, ips, rrs_ttls)
 
 
-def rrs_a_for(domain, ips, ipsfo, ipsfo_map,
-              baremetal_hosts, vms, rrs_ttls):
+def load_all_ips(domain, ips, ips_map, ipsfo, ipsfo_map,
+                 baremetal_hosts, vms, cnames, rrs_ttls):
+    for fqdn in ipsfo:
+        if fqdn in ips:
+            continue
+        ips[fqdn] = ips_for(fqdn, ips, ips_map, ipsfo, ipsfo_map,
+                            cnames, fail_over=True)
+    # add all IPS  from aliased ips to main dict
+    for fqdn in ips_map:
+        if fqdn in ips:
+            continue
+        ips[fqdn] = ips_for(fqdn, ips, ips_map, ipsfo, ipsfo_map,
+                            cnames)
+    # for @ failover mappings only, add a A record
+    # where normally we would end up with a CNAME
+    for fqdn in ipsfo_map:
+        zone_origin = '@{0}'.format(domain)
+        if fqdn == zone_origin and fqdn not in ips:
+            ips[fqdn] = ips_for(fqdn, ips, ips_map, ipsfo, ipsfo_map,
+                                cnames, fail_over=True)
+
+
+
+def rrs_a_for(domain, ips, ips_map, ipsfo, ipsfo_map,
+              baremetal_hosts, vms, cnames, rrs_ttls):
     '''Return all configured A records for a domain'''
+    load_all_ips(domain, ips, ips_map, ipsfo, ipsfo_map,
+                 baremetal_hosts, vms, cnames, rrs_ttls)
     all_rrs = {}
     domain_re = re.compile(DOMAIN_PATTERN.format(domain),
                            re.M | re.U | re.S | re.I)
-
     # add all A from simple ips
     for fqdn in ips:
         if domain_re.search(fqdn):
+            zone_origin = '@{0}'.format(domain)
             rrs = all_rrs.setdefault(fqdn, [])
-            for rr in rr_a(
-                fqdn, ips, ipsfo, ipsfo_map, rrs_ttls
-            ).split('\n'):
-                if rr not in rrs:
-                    rrs.append(rr)
-    # add all A from failover ips
-    for fqdn in ipsfo:
-        if domain_re.search(fqdn):
-            rrs = all_rrs.setdefault(fqdn, [])
-            for rr in rr_a(
-                fqdn, ips, ipsfo, ipsfo_map, rrs_ttls,
-                fail_over=True
+            for rr in rr_a_(
+                fqdn, ips[fqdn], rrs_ttls
             ).split('\n'):
                 if rr not in rrs:
                     rrs.append(rr)
@@ -323,28 +443,14 @@ def rrs_a_for(domain, ips, ipsfo, ipsfo_map,
     return rr
 
 
-def rrs_cnames_for(domain, ips, ipsfo, ipsfo_map,
+def rrs_cnames_for(domain, ips, ips_map, ipsfo, ipsfo_map,
                    baremetal_hosts, vms, cnames, rrs_ttls):
     '''Return all configured CNAME records for a domain'''
+    load_all_ips(domain, ips, ips_map, ipsfo, ipsfo_map,
+                 baremetal_hosts, vms, cnames, rrs_ttls)
     all_rrs = {}
     domain_re = re.compile(DOMAIN_PATTERN.format(domain),
                            re.M | re.U | re.S | re.I)
-    # add all domain ips
-    for cname, rr in cnames.items():
-        if domain_re.search(cname):
-            rrs = all_rrs.setdefault(cname, [])
-            dcname = cname
-            if (
-                (not cname.endswith('.'))
-                and cname.endswith(domain)
-            ):
-                dcname = '{0}.'.format(dcname)
-            ttl = rrs_ttls.get(cname,  '')
-            entry = '{0} {1} CNAME {2}'.format(dcname,
-                                               ttl,
-                                               rr)
-            if entry not in rrs:
-                rrs.append(entry)
     cvms = {}
     for vt, targets in vms.items():
         for target, _vms in targets.items():
@@ -357,6 +463,7 @@ def rrs_cnames_for(domain, ips, ipsfo, ipsfo_map,
     # failover ip in the form <host>.<ipfo>.<domain>
     # and <vm>.<host>.<ipfo>.<domain>
     cvms_records = []
+
     for host, dn_ip_fos in ipsfo_map.items():
         if domain_re.search(host):
             if (
@@ -365,7 +472,6 @@ def rrs_cnames_for(domain, ips, ipsfo, ipsfo_map,
             ):
                 dn = host.split('.{0}'.format(domain))[0]
                 for ip_fo in dn_ip_fos:
-                    ttl = rrs_ttls.get(host,  '')
                     if ip_fo.endswith(domain):
                         ip_fo += '.'
                     possible_host = ''
@@ -373,21 +479,18 @@ def rrs_cnames_for(domain, ips, ipsfo, ipsfo_map,
                         cvms_records.append(host)
                         possible_host = cvms[host]
                     if possible_host:
-                        possible_host = '.' + end_domain_re.sub('',
-                                                                possible_host)
+                        possible_host = '.{0}'.format(
+                            end_domain_re.sub('', possible_host))
                     cnn = '{0}{2}.{1}'.format(dn, ip_fo, possible_host)
-                    entry = '{0} {1} CNAME {2}'.format(cnn, ttl, ip_fo)
-                    if entry not in rrs:
-                        rrs.append(entry)
+                    if not cnn.endswith('.'):
+                        cnn += '.'
+                    cnames[cnn[:-1]] = ip_fo
                     if host in cvms:
-                        entry2 = '{0}.{1} {2} CNAME {3}'.format(
-                            dn, ip_fo, ttl, cnn)
-                        if entry2 not in rrs:
-                            rrs.append(entry2)
-                        entry3 = '{0} {2} CNAME {0}.{1}'.format(
-                            dn, ip_fo, ttl, cnn)
-                        if entry3 not in rrs:
-                            rrs.append(entry3)
+                        cnames['{0}.{1}'.format(dn, ip_fo[:-1])] = cnn
+                        dnipfo = '{0}.{1}'.format(dn, ip_fo)
+                        if not dnipfo.endswith('.'):
+                            dnipfo += '.'
+                        cnames['{0}.{1}'.format(dn, domain)] = dnipfo
             else:
                 for dn_ip_fo in dn_ip_fos:
                     dcname = host
@@ -396,12 +499,18 @@ def rrs_cnames_for(domain, ips, ipsfo, ipsfo_map,
                         and dcname.endswith(domain)
                     ):
                         dcname = '{0}.'.format(dcname)
-                    if dcname.startswith('@') and len(dcname) > 1:
+                    # if @ is handled on an ip failover, add a A record
+                    # so this is handled in rr_a and not here
+                    if dcname.startswith('@'):
                         continue
-                    ttl = rrs_ttls.get(host,  '')
-                    entry = '{0} {1} CNAME {2}'.format(dcname, ttl, dn_ip_fo)
-                    if entry not in rrs:
-                        rrs.append(entry)
+                    cname_tgt = dn_ip_fo
+                    # for other records, use a cname
+                    if not cname_tgt.endswith('.'):
+                        cname_tgt += '.'
+                    if dcname.endswith('.'):
+                        dcname = dcname[:-1]
+                    cnames[dcname] = cname_tgt
+
     # For all vms:
     # if the vm was not mounted using an ip failover
     # map a cname directly to the host
@@ -417,23 +526,63 @@ def rrs_cnames_for(domain, ips, ipsfo, ipsfo_map,
             if vm not in cvms_records:
                 cvms_records.append(vm)
                 dn = vm.split('.{0}'.format(domain))[0]
-                ttl = rrs_ttls.get(vm,  '')
                 if vm_host in ipsfo_map:
                     fo_dn = ipsfo_map[vm_host][0]
                     host_dn = vm_host.split('.{0}'.format(domain))[0]
                     vm_host = '{0}.{1}'.format(host_dn, fo_dn)
-                if vm_host.endswith(domain):
+                if not vm_host.endswith('.'):
                     vm_host += '.'
                 # first cname in the form <vm>.<host>.<domain> -> <host>
                 cnn = '{0}.{1}'.format(dn, end_domain_re.sub('', vm_host))
-                entry = '{0} {1} CNAME {2}'.format(cnn, ttl, vm_host)
+                if cnn.endswith('.'):
+                    cnn = cnn[:-1]
+                cnames[cnn] = vm_host
                 # first cname in the form <vm>.<host>.<domain>
                 # 2nd  cname in the form <vm>.<domain> -> <vm>.<host>.<domain>
-                if entry not in rrs:
-                    rrs.append(entry)
-                entry2 = '{0}.{3}. {1} CNAME {2}'.format(dn, ttl, cnn, domain)
-                if entry2 not in rrs:
-                    rrs.append(entry2)
+                if not cnn.endswith('.'):
+                    cnn += '.'
+                cnames['{0}.{1}'.format(dn, domain)] = cnn
+
+    # add all cnames
+    for cname, rr in cnames.items():
+        tcname, trr = cname, rr
+        if tcname.endswith('.'):
+            tcname = tcname[:-1]
+        if trr.endswith('.'):
+            trr = trr[:-1]
+        if domain_re.search(cname):
+            # on the same domain validate if the cname SOURCE or
+            # ENDPOINT are tied to real ip
+            # and raise exception if not found
+            checks = []
+            if trr.endswith(domain):
+                checks.append(trr)
+                if tcname.endswith(domain):
+                    checks.append(tcname)
+            for test in checks:
+                # raise exc if not found
+                try:
+                    ips_for(test, ips, ips_map, ipsfo,
+                            ipsfo_map, cnames, fail_over=True)
+                except IPRetrievalError, exc:
+                    if domain in exc.message:
+                        raise
+            rrs = all_rrs.setdefault(cname, [])
+            dcname = cname
+            if (
+                (not cname.endswith('.'))
+                and cname.endswith(domain)
+            ):
+                dcname = '{0}.'.format(dcname)
+            ttl = rrs_ttls.get(cname,  '')
+            entry = '{0} {1} CNAME {2}'.format(dcname,
+                                               ttl,
+                                               rr)
+            if entry not in rrs:
+                rrs.append(entry)
+
+
+
     rr = ''
     for row in all_rrs.values():
         rr += '\n'.join(row) + '\n'
@@ -446,25 +595,97 @@ def rrs_cnames_for(domain, ips, ipsfo, ipsfo_map,
     return rr
 
 
-def rrs_for(domain, ips, ipsfo, ipsfo_map, baremetal_hosts, vms, cnames, rrs_ttls):
+def serial_for(domain,
+               serials=None,
+               serial=None,
+               autoinc=True):
+    '''Get the serial for a DNS zone
+    This function is cached one
+
+    If serial is given: we take that as a value
+    Else:
+        - the serials defaults to 'YYYYMMDD01'
+        - We try to load the serial from db and if
+          it is superior to default, we use it
+        - We then load a local autosave file
+          with mappings of domain/dns serials
+
+            - If serial is found and autoinc:
+                this local stored serial is autoincremented
+                by 1
+
+            - if this local value is greater than the
+              current serial, this becomes the serial,
+    '''
+    def _do(domain, serials=None, serial=None, ttl=60):
+        # load the local pillar dns registry
+        dns_reg = __salt__['mc_macros.get_local_registry'](
+            'dns_serials')
+        if serials is None:
+            serials = {}
+        override = True
+        if serial is None:
+            override = False
+            serial = int(
+                datetime.datetime.now().strftime('%Y%m%d01'))
+        # serial ttl update
+        # we can only update the serial after a TTL
+        try:
+            db_serial = int(serials.get(domain, serial))
+        except (ValueError, TypeError):
+            db_serial = serial
+        tnow = time.time()
+        ttl_key = '{0}__ttl__'.format(domain)
+        stale = False
+        try:
+            stale = abs(int(tnow) - int(dns_reg[ttl_key])) > ttl
+        except (KeyError, ValueError, TypeError):
+            stale = True
+        if not override:
+            if db_serial > serial:
+                serial = db_serial
+            if domain in dns_reg:
+                try:
+                    dns_reg_serial = int(dns_reg[domain])
+                    if stale and autoinc:
+                        dns_reg_serial += 1
+                except (ValueError, TypeError):
+                    dns_reg_serial = serial
+                if dns_reg_serial > serial:
+                    serial = dns_reg_serial
+        dns_reg[domain] = serial
+        # only update the ttl on expiraton or creation
+        if stale:
+            dns_reg[ttl_key] = time.time()
+        __salt__['mc_macros.update_local_registry'](
+            'dns_serials', dns_reg)
+        return serial
+    return _do(domain, serials, serial)
+    #cache_key = 'dnsserials_t_{0}'.format(domain)
+    #return memoize_cache(
+    #    _do, [domain, serials, serial], {}, cache_key, 60)
+
+
+def rrs_for(domain, ips, ips_map, ipsfo, ipsfo_map,
+            baremetal_hosts, vms, cnames, rrs_ttls):
     '''Return all configured records for a domain
     take all rr found for the "ips" & "ipsfo" tables for domain
         - Make A records for everything in ips
+        - Make A records for everything in ips_map
         - Make A records for everything in ipsfo
         - Make CNAME records for baremetal or vms if they are
           in the ipsfo_map hashtable.
         - Add the related TTL for each record matched inside
           the rrs_ttls hashstable
-
-
-
     '''
     rr = (
-        rrs_a_for(domain, ips, ipsfo, ipsfo_map,
-                  baremetal_hosts, vms, rrs_ttls) +
+        rrs_a_for(
+            domain, ips, ips_map, ipsfo, ipsfo_map,
+            baremetal_hosts, vms, cnames, rrs_ttls) +
         '\n' +
-        rrs_cnames_for(domain, ips, ipsfo, ipsfo_map,
-                       baremetal_hosts, vms, cnames, rrs_ttls)
+        rrs_cnames_for(
+            domain, ips, ips_map, ipsfo, ipsfo_map,
+            baremetal_hosts, vms, cnames, rrs_ttls)
     )
     return rr
 

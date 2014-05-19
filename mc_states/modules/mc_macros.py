@@ -27,6 +27,8 @@ import yaml
 from salt.utils import yamldumper
 from salt.renderers.yaml import get_yaml_loader
 
+DEFAULT_SUF = 'makina-states.local'
+DEFAULT_LOCAL_REG_NAME = '{0}.{{0}}'.format(DEFAULT_SUF)
 
 class NoRegistryLoaderFound(SaltException):
     """."""
@@ -159,6 +161,13 @@ def get_local_registry(name, cached=True, cachetime=60):
                 registry = yaml.load(fic, Loader=get_yaml_loader(''))
                 if not registry:
                     registry = {}
+                # unprefix local simple registries
+                loc_k = DEFAULT_LOCAL_REG_NAME.format(name)
+                for k in [t for t in registry if t.startswith(loc_k)]:
+                    spl = loc_k + '.'
+                    nk = spl.join(k.split(spl)[1:])
+                    registry[nk] = registry[k]
+                    registry.pop(k)
                 _LOCAL_REG_CACHE[key] = registry
     elif cached:
         registry = _LOCAL_REG_CACHE[key]
@@ -174,11 +183,13 @@ def update_registry_params(registry_name, params):
     registry = get_local_registry(registry_name)
     changes = {}
     topreg_name = 'mc_{0}.registry'.format(registry_name)
+    default = True
     if topreg_name in __salt__:
         registry_obj = __salt__[topreg_name]()
         pref = registry_obj['grains_pref']
+        default = False
     else:
-        pref = 'makina-states.local.{0}'.format(registry_name)
+        pref = DEFAULT_LOCAL_REG_NAME.format(registry_name)
     for param, value in params.items():
         gparam = param
         if (
@@ -189,6 +200,8 @@ def update_registry_params(registry_name, params):
         if registry.get(gparam, _default) != value:
             for data in changes, registry:
                 data.update({gparam: value})
+        if default:
+            del registry[param]
     if changes:
         encode_local_registry(registry_name, registry)
         invalidate_cached_registry(registry_name)

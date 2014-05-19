@@ -18,6 +18,7 @@ AUTO_NAMES = {'_registry': 'registry',
 
 
 _CACHEKEY = '{0}__CACHEKEY'
+_LOCAL_CACHE = {}
 
 
 def lazy_subregistry_get(__salt__, registry):
@@ -40,7 +41,7 @@ def lazy_subregistry_get(__salt__, registry):
                 #with open('/foo', 'w') as fic:
                 #    fic.write(pprint.pformat(__salt__.keys()))
                 #with open('/foo', 'w') as fic:
-                #    fic.write(trace)
+              #    fic.write(trace)
             # TODO: replace the next line with the two others with a better test
             # cache each registry 5 minutes. which should be sufficient
             # to render the whole sls files
@@ -114,5 +115,46 @@ def is_valid_ip(ip_or_name):
             except:
                 pass
     return valid
+
+
+def memoize_cache(func, args=None, kwargs=None,
+                  key='cache_key_{0}',
+                  seconds=60, cache=None):
+    '''Memoize the func in the cache
+    in the key 'key' and store
+    the cached time in 'cache_key'
+    for further check of stale cache
+    EG::
+
+      >>> def serial_for(domain,
+      ...                serials=None,
+      ...                serial=None,
+      ...                autoinc=True):
+      ...     def _do(domain):
+      ...         serial = int(
+      ...                 datetime.datetime.now().strftime(
+      ...                         '%Y%m%d01'))
+      ...         return db_serial
+      ...     cache_key = 'dnsserials_t_{0}'.format(domain)
+      ...     return memoize_cache(
+      ...         _do, [domain], {}, cache_key, 60)
+
+    '''
+    if args is None:
+        args = []
+    if kwargs is None:
+        kwargs = {}
+    time_check = "{0}".format(time() // (seconds))
+    if cache is None:
+        cache = _LOCAL_CACHE
+    time_key = '{0}_time_check'.format(key)
+    if time_key not in cache:
+        cache[time_key] = ''
+    if time_check != cache[time_key] and key in cache:
+        del cache[key]
+    if key not in cache:
+        cache[key] = func(*args, **kwargs)
+        cache[time_key] = "{0}".format(time() // (seconds))
+    return cache[key]
 
 # vim:set et sts=4 ts=4 tw=80:
