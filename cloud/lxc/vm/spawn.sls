@@ -30,6 +30,7 @@ lxc-deploy:
     {# workaround for bizarious rendering bug with ' ...' at each variable end #}
     - {{var}}: {{data[var]}}
     {% endif -%}{% endfor %}
+{# NO MORE USED WITH LXC 1.0
 lxc-autostart-at-boot:
   salt.function:
     - require:
@@ -40,4 +41,5 @@ lxc-autostart-at-boot:
     - arg: [{{"'{0}'".format(
 "if [ ! -e /etc/lxc/auto ];then mkdir -p /etc/lxc/auto;fi;"
 "ln -sf /var/lib/lxc/{vmname}/config /etc/lxc/auto/{vmname}.conf".format(vmname=vmname))}}]
+#}
 {%endif%}
