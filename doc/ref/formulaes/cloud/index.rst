@@ -68,41 +68,8 @@ makina-states.cloud.generic do all the generic cloud related stuff:
 
         - Any task remaining to make the newly VM minion a good citizen.
 
+See :ref:`form_cloud_lxc` for an exemple
 
-Driver implemetantion exemple: makina-states.cloud.lxc
-++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Exemple of the makina-states.cloud.lxc and how will integrate itself in the previous sequence:
-         steps = ['spawn',
-                 'hostsfile',
-                 'sshkeys',
-                 'grains',
-                 'initial_setup',
-                 'initial_highstate']
-
-    - On the controller front:
-
-        - At run pre configured drivers specific hooks stage:
-
-            - install the salt cloud lxc providers
-            - install a cron that sync all defined images templates
-              from controller to compute nodes.
-
-        - At compute node post hook
-
-            - install lxc
-            - ensure images templates are installed
-            - install lxc host specific grains
-
-
-    - On the vm pre hook:
-
-        - spawn the vm
-
-    - on the vm post hook
-
-        - configure specific lxc grains
-        - configure host file
-        - initial setup
 
 How
 ++++

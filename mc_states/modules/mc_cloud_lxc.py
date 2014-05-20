@@ -243,9 +243,12 @@ def settings():
         for i in lxcSettings:
             if i.startswith('vms.'):
                 del lxcSettings[i]
-        for target in vms:
+        for target in [a for a in vms]:
             vm_ids.setdefault(target, [])
             data = vms[target]
+            if data is None:
+                vms[target] = []
+                continue
             for vmname in data:
                 vm_ids[target].append(vmname)
         return lxcSettings

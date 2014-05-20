@@ -169,7 +169,7 @@ def provision(compute_node, vt, vm, steps=None, ret=None, output=True):
     steps
          list or comma separated list of steps
          Default::
-   
+
               ['spawn', 'hostsfile', 'sshkeys',
               'grains', 'initial_setup', 'initial_highstate']
     '''
@@ -197,8 +197,10 @@ def provision(compute_node, vt, vm, steps=None, ret=None, output=True):
                 check_point(cret, __opts__, output=output)
             except FailedStepError:
                 cret['result'] = False
-            except Exception:
+            except Exception, exc:
                 trace = traceback.format_exc()
+                cret['trace'] += 'lxcprovision: {0} in {1}\n'.format(exc,
+                                                                     cid_)
                 cret['trace'] += trace
                 cret['result'] = False
                 cret['comment'] += red('unmanaged exception for '
@@ -325,6 +327,10 @@ def provision_vms(compute_node,
             cret['trace'] = ''
         else:
             ret['result'] = False
+            for k in ['trace', 'comment']:
+                if k in cret:
+                    val = ret.setdefault(k, '')
+                    val += cret[k]
             if vm not in provision_error:
                 provision_error.append(vm)
         cret.pop('result', False)
@@ -333,8 +339,9 @@ def provision_vms(compute_node,
         ret['comment'] += red('There were errors while provisionning '
                               'vms nodes {0}\n'.format(provision_error))
     else:
-        del ret['trace']
-        ret['comment'] += green('All vms were provisionned\n')
+        if ret['result']:
+            ret['trace'] = ''
+            ret['comment'] += green('All vms were provisionned\n')
     salt_output(ret, __opts__, output=output)
     return ret
 
@@ -399,8 +406,9 @@ def post_provision_vms(compute_node,
         ret['comment'] += red('There were errors while post provisionning '
                               'vms nodes {0}\n'.format(provision_error))
     else:
-        del ret['trace']
-        ret['comment'] += green('All vms were post provisionned\n')
+        if ret['result']:
+            ret['trace'] = ''
+            ret['comment'] += green('All vms were post provisionned\n')
     salt_output(ret, __opts__, output=output)
     return ret
 

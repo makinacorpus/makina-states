@@ -23,6 +23,7 @@ import salt.utils
 from salt.client import LocalClient
 from salt.exceptions import (
     SaltException,
+    EauthAuthenticationError,
     SaltRunnerError
 )
 from salt.runner import RunnerClient
@@ -298,23 +299,43 @@ def client(fun, *args, **kw):
         rkwargs = kwargs.copy()
         rkwargs['timeout'] = timeout
         jid = conn.cmd_async(tgt=target,
-                             fun=fun,
-                             arg=args,
-                             kwarg=kw,
-                             **rkwargs)
-        cret = conn.cmd(tgt=target,
-                        fun='saltutil.find_job',
-                        arg=[jid],
-                        timeout=10,
-                        **kwargs)
+                         fun=fun,
+                         arg=args,
+                         kwarg=kw,
+                         **rkwargs)
+        # do not fall too quick on findjob which is quite spamming the
+        # master and give too early of a false positive
+        findtries, thistry = 10, 0
+        while thistry < findtries:
+            thistry += 1
+            try:
+                cret = conn.cmd(tgt=target,
+                                fun='saltutil.find_job',
+                                arg=[jid],
+                                timeout=10,
+                                **kwargs)
+                break
+            except EauthAuthenticationError:
+                if thistry > findtries:
+                    raise
         running = bool(cret.get(target, False))
         endto = time.time() + timeout
         while running:
+            # Again, do not fall too quick on findjob which is quite spamming the
+            # master and give too early of a false positive
+            findtries, thistry = 10, 0
             rkwargs = {'tgt': target,
                        'fun': 'saltutil.find_job',
                        'arg': [jid],
                        'timeout': 10}
-            cret = conn.cmd(**rkwargs)
+            while thistry < findtries:
+                thistry += 1
+                try:
+                    cret = conn.cmd(**rkwargs)
+                    break
+                except EauthAuthenticationError:
+                    if thistry > findtries:
+                        raise
             running = bool(cret.get(target, False))
             if not running:
                 break

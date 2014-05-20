@@ -233,7 +233,6 @@ def sync_images(output=True, only=None):
         api.msplitstrip(subret)
         if not subret['result']:
             ret['result'] = False
-    ret['result'] = False
     if ret['result']:
         ret['comment'] = 'We have sucessfully sync all targets\n'
     else:

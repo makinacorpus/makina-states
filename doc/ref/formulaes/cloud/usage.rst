@@ -41,10 +41,17 @@ Is equivalent to (this call this one in fact)::
   if you do not filter out vms provision.
 
 This call ``provision_compute_nodes`` which in turn calls all
-``compute_node``related stuff.
+``compute_node`` related stuff which will run generic and per drivers specific
+hooks (firewall, loadbalancer, driver images sync, etc.).
 
 
-And the steps one by one::
+Spawning and running vm postconfiguration
+++++++++++++++++++++++++++++++++++++++++++
+Installing a vm on a specific compute node::
 
+    mastersalt-run -lall mc_cloud_controller.orchestrate no_configure=True no_saltify=True only_vms=[vm_id] only=[computenode_id]
 
- 
+Installing a vm on an already configured compute node::
+
+    mastersalt-run -lall mc_cloud_controller.orchestrate no_configure=True no_saltify=True only_vms=[vm_id] only=[computenode_id] skip_compute_node_provision=True
+
