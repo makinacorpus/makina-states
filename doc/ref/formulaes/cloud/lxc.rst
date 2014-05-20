@@ -1,5 +1,6 @@
 LXC provision
 ======================
+
 As always, the configuration is done via a registry module: :ref:`module_mc_cloud_lxc`.
 To provision a new lxc provider, you need to:
 
@@ -195,3 +196,75 @@ For exemple, you can have something like that::
     users:
         - root
         - sysadmin
+
+
+.. _form_cloud_lxc:
+
+Detailed documentation
+--------------------------
+Exemple of the makina-states.cloud.lxc and how will integrate itself in the previous sequence:
+         steps = ['spawn',
+                 'hostsfile',
+                 'sshkeys',
+                 'grains',
+                 'initial_setup',
+                 'initial_highstate']
+
+    - On the controller front:
+
+        - At run pre configured drivers specific hooks stage:
+
+            - install the salt cloud lxc providers
+            - install a cron that sync all defined images templates
+              from controller to compute nodes.
+
+        - At compute node post hook
+
+            - install lxc
+            - ensure images templates are installed
+            - install lxc host specific grains
+
+
+    - On the vm pre hook:
+
+        - spawn the vm
+
+    - on the vm post hook
+
+        - configure specific lxc grains
+        - configure host file
+        - initial setup
+
+
+LXC specific usage
+--------------------------
+
+All of those are integrated directly withe mc_cloud_{controller,compute_node,vm}
+runners, you do not have to use them directly, this is purely for documentation
+purpose.
+
+Controller
++++++++++++
+Re run configuration of cloudcontroller::
+
+    mastersalt-run -lall mc_cloud_lxc.post_deploy_controller
+
+
+compute node
+++++++++++++++++++
+
+Install lxc::
+
+    mastersalt-run -lall mc_cloud_lxc.install_vt <computenode_ida>
+
+This will call in turn those runners:
+
+    - mc_cloud_lxc.configure_grains  <computenode_id>
+    - mc_cloud_lxc.configure_install_lxc  <computenode_id>
+    - mc_cloud_lxc.configure_images  <computenode_id>
+
+This will also run the LXC images (templates) syncrhonnisation runner on that specific node.
+
+VM
+++++
+
