@@ -110,11 +110,7 @@ def apply_sls_(func, slss,
             cliret = cli(func, sls, salt_target=salt_target, *a, **sls_kw)
             cret = filter_state_return(cliret, target=target,
                                        output=salt_output_t)
-            try:
-                valid_state_return(cliret, sls=sls)
-            except:
-                import pdb;pdb.set_trace()  ## Breakpoint ##
-                raise
+            valid_state_return(cliret, sls=sls)
             ret['output'] += cret
             statuses.append((salt_ok, sls))
         except SaltExit, exc:
