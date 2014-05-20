@@ -339,8 +339,9 @@ def provision_vms(compute_node,
         ret['comment'] += red('There were errors while provisionning '
                               'vms nodes {0}\n'.format(provision_error))
     else:
-        del ret['trace']
-        ret['comment'] += green('All vms were provisionned\n')
+        if ret['result']:
+            ret['trace'] = ''
+            ret['comment'] += green('All vms were provisionned\n')
     salt_output(ret, __opts__, output=output)
     return ret
 

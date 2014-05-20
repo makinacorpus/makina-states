@@ -272,8 +272,9 @@ def provision_compute_nodes(skip=None, only=None,
         ret['comment'] += red('There were errors while provisionning '
                               'computes nodes {0}\n'.format(provision_error))
     else:
-        del ret['trace']
-        ret['comment'] += green('All computes nodes were provisionned\n')
+        if ret['result']:
+            ret['trace'] = ''
+            ret['comment'] += green('All computes nodes were provisionned\n')
     salt_output(ret, __opts__, output=output)
     return ret
 

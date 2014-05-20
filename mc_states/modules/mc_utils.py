@@ -7,6 +7,7 @@ mc_utils / Some usefull small tools
 '''
 
 # Import salt libs
+import os
 import salt.utils.dictupdate
 from salt.exceptions import SaltException
 import crypt
@@ -433,5 +434,20 @@ def file_read(fic):
 def unix_crypt(passwd):
     '''Encrypt the stringed password in the unix crypt format (/etc/shadow)'''
     return crypt.crypt(passwd, '$6$SALTsalt$')
+
+
+def sls_available(sls, pillar=True):
+    ret = True
+    if pillar:
+        root = __opts__['pillar_roots']['base'][0]
+    else:
+        root = __opts__['pillar_roots']['base'][0]
+    fp = os.path.join(root, sls.replace('.', '/') + '.sls')
+    try:
+        ret = os.path.exists(fp)
+    except OSError:
+        ret = False
+    return ret
+
 
 #
