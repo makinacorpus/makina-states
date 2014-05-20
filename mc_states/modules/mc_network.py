@@ -20,6 +20,7 @@ Documentation of this module is available with::
 # Import python libs
 import logging
 import time
+from pprint import pformat
 import copy
 import mc_states.utils
 import datetime
@@ -367,7 +368,8 @@ def rr_a_(fqdn, ips, rrs_ttls):
     return rr
 
 
-def rr_a(fqdn, ips, ips_map, ipsfo, ipsfo_map, cnames, rrs_ttls, fail_over=None):
+def rr_a(fqdn, ips, ips_map, ipsfo, ipsfo_map,
+         cnames, rrs_ttls, fail_over=None):
     '''
     Search for explicit A record(s) (fqdn/ip) record on the inputed mappings
 
@@ -390,8 +392,9 @@ def rr_a(fqdn, ips, ips_map, ipsfo, ipsfo_map, cnames, rrs_ttls, fail_over=None)
     return rr_a_(fqdn, ips, rrs_ttls)
 
 
-def load_all_ips(domain, ips, ips_map, ipsfo, ipsfo_map,
-                 baremetal_hosts, vms, cnames, rrs_ttls):
+
+def load_all_ips(ips, ips_map, ipsfo, ipsfo_map,
+                 baremetal_hosts, vms, cnames, rrs_ttls, domain=None):
     for fqdn in ipsfo:
         if fqdn in ips:
             continue
@@ -406,25 +409,23 @@ def load_all_ips(domain, ips, ips_map, ipsfo, ipsfo_map,
     # for @ failover mappings only, add a A record
     # where normally we would end up with a CNAME
     for fqdn in ipsfo_map:
-        zone_origin = '@{0}'.format(domain)
-        if fqdn == zone_origin and fqdn not in ips:
-            ips[fqdn] = ips_for(fqdn, ips, ips_map, ipsfo, ipsfo_map,
-                                cnames, fail_over=True)
-
+        if fqdn.startswith('@'):
+            if fqdn not in ips:
+                ips[fqdn] = ips_for(fqdn, ips, ips_map, ipsfo, ipsfo_map,
+                                    cnames, fail_over=True)
 
 
 def rrs_a_for(domain, ips, ips_map, ipsfo, ipsfo_map,
               baremetal_hosts, vms, cnames, rrs_ttls):
     '''Return all configured A records for a domain'''
-    load_all_ips(domain, ips, ips_map, ipsfo, ipsfo_map,
-                 baremetal_hosts, vms, cnames, rrs_ttls)
+    load_all_ips(ips, ips_map, ipsfo, ipsfo_map,
+                 baremetal_hosts, vms, cnames, rrs_ttls, domain=domain)
     all_rrs = {}
     domain_re = re.compile(DOMAIN_PATTERN.format(domain),
                            re.M | re.U | re.S | re.I)
     # add all A from simple ips
     for fqdn in ips:
         if domain_re.search(fqdn):
-            zone_origin = '@{0}'.format(domain)
             rrs = all_rrs.setdefault(fqdn, [])
             for rr in rr_a_(
                 fqdn, ips[fqdn], rrs_ttls
@@ -443,11 +444,38 @@ def rrs_a_for(domain, ips, ips_map, ipsfo, ipsfo_map,
     return rr
 
 
+def rrs_raw_for(domain, ips, ips_map, ipsfo, ipsfo_map,
+                baremetal_hosts, vms, cnames, rrs_ttls, rrs_raw):
+    '''Return all configured TXT records for a domain'''
+    # add all A from simple ips
+    load_all_ips(ips, ips_map, ipsfo, ipsfo_map,
+                 baremetal_hosts, vms, cnames, rrs_ttls, domain=domain)
+    all_rrs = {}
+    domain_re = re.compile(DOMAIN_PATTERN.format(domain),
+                           re.M | re.U | re.S | re.I)
+    for fqdn in rrs_raw:
+        if domain_re.search(fqdn):
+            rrs = all_rrs.setdefault(fqdn, [])
+            for rr in rrs_raw[fqdn]:
+                if rr not in rrs:
+                    rrs.append(rr)
+    rr = ''
+    for row in all_rrs.values():
+        rr += '\n'.join(row) + '\n'
+    # add all domain baremetal mapped on failovers
+    rr = [re.sub('^ *', '       ', a)
+          for a in rr.split('\n') if a.strip()]
+    rr = __salt__['mc_utils.uniquify'](rr)
+    rr = re.sub('^ *', '       ', '\n'.join(rr), re.X | re.S | re.U | re.M)
+    return rr
+
+
+
 def rrs_cnames_for(domain, ips, ips_map, ipsfo, ipsfo_map,
                    baremetal_hosts, vms, cnames, rrs_ttls):
     '''Return all configured CNAME records for a domain'''
-    load_all_ips(domain, ips, ips_map, ipsfo, ipsfo_map,
-                 baremetal_hosts, vms, cnames, rrs_ttls)
+    load_all_ips(ips, ips_map, ipsfo, ipsfo_map,
+                 baremetal_hosts, vms, cnames, rrs_ttls, domain=domain)
     all_rrs = {}
     domain_re = re.compile(DOMAIN_PATTERN.format(domain),
                            re.M | re.U | re.S | re.I)
@@ -667,7 +695,7 @@ def serial_for(domain,
 
 
 def rrs_for(domain, ips, ips_map, ipsfo, ipsfo_map,
-            baremetal_hosts, vms, cnames, rrs_ttls):
+            baremetal_hosts, vms, cnames, rrs_ttls, rrs_raw):
     '''Return all configured records for a domain
     take all rr found for the "ips" & "ipsfo" tables for domain
         - Make A records for everything in ips
@@ -679,6 +707,11 @@ def rrs_for(domain, ips, ips_map, ipsfo, ipsfo_map,
           the rrs_ttls hashstable
     '''
     rr = (
+        rrs_raw_for(
+            domain, ips, ips_map, ipsfo, ipsfo_map,
+            baremetal_hosts, vms, cnames, rrs_ttls, rrs_raw
+        ) +
+        '\n' +
         rrs_a_for(
             domain, ips, ips_map, ipsfo, ipsfo_map,
             baremetal_hosts, vms, cnames, rrs_ttls) +

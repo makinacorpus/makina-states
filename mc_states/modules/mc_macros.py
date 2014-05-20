@@ -200,7 +200,7 @@ def update_registry_params(registry_name, params):
         if registry.get(gparam, _default) != value:
             for data in changes, registry:
                 data.update({gparam: value})
-        if default:
+        if default and (param in registry):
             del registry[param]
     if changes:
         encode_local_registry(registry_name, registry)

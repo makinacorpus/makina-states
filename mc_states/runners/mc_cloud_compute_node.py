@@ -201,6 +201,7 @@ def filter_compute_nodes(nodes, skip, only):
 
 
 def provision_compute_nodes(skip=None, only=None,
+                            skip_compute_node_provision=False,
                             output=True,
                             refresh=False,
                             ret=None):
@@ -235,21 +236,26 @@ def provision_compute_nodes(skip=None, only=None,
     targets = filter_compute_nodes(targets, skip, only)
     for idx, compute_node in enumerate(targets):
         cret = result()
-        try:
-            deploy(compute_node, ret=cret, output=False)
-            #if idx == 1:
-            #    raise FailedStepError('foo')
-            #elif idx > 0:
-            #    raise Exception('bar')
-        except FailedStepError:
-            cret['result'] = False
-        except Exception, exc:
-            trace = traceback.format_exc()
-            cret = {'result': False,
-                    'output': 'unknown error on {0}\n{1}'.format(compute_node,
-                                                                 exc),
-                    'comment': 'unknown error on {0}\n'.format(compute_node),
-                    'trace': trace}
+        if skip_compute_node_provision:
+            cret['comment'] = yellow(
+                'Compute node configuration skipped for {0}\n'
+            ).format(compute_node)
+        else:
+            try:
+                deploy(compute_node, ret=cret, output=False)
+                #if idx == 1:
+                #    raise FailedStepError('foo')
+                #elif idx > 0:
+                #    raise Exception('bar')
+            except FailedStepError:
+                cret['result'] = False
+            except Exception, exc:
+                trace = traceback.format_exc()
+                cret = {'result': False,
+                        'output': 'unknown error on {0}\n{1}'.format(compute_node,
+                                                                     exc),
+                        'comment': 'unknown error on {0}\n'.format(compute_node),
+                        'trace': trace}
         if cret['result']:
             if compute_node not in provision:
                 provision.append(compute_node)
@@ -328,8 +334,10 @@ def post_provision_compute_nodes(skip=None, only=None,
         ret['comment'] += red('There were errors while postprovisionning '
                               'computes nodes {0}\n'.format(provision_error))
     else:
-        del ret['trace']
-        ret['comment'] += green('All computes nodes were postprovisionned\n')
+        if ret['result']:
+            ret['trace'] = ''
+            ret['comment'] += green(
+                'All computes nodes were postprovisionned\n')
     salt_output(ret, __opts__, output=output)
     return ret
 
@@ -338,6 +346,7 @@ def orchestrate(skip=None,
                 skip_vms=None,
                 only=None,
                 only_vms=None,
+                skip_compute_node_provision=False,
                 no_provision=False,
                 no_post_provision=False,
                 no_vms_post_provision=False,
@@ -369,6 +378,8 @@ def orchestrate(skip=None,
             do not run the compute nodes provision
         no_post_provision
             do not run the compute nodes post provision
+        skip_compute_node_provision
+            skip configuration of compute nodes
         skip_vms
             list or comma separated string of vms
             to skip
@@ -380,6 +391,14 @@ def orchestrate(skip=None,
         no_vms_post_provision
             do not run the vms post provision
     '''
+    if only is None:
+        only = []
+    if skip is None:
+        skip = []
+    if only_vms is None:
+        only_vms = []
+    if skip_vms is None:
+        skip_vms = []
     if isinstance(only, basestring):
         only = only.split(',')
     if isinstance(skip, basestring):
@@ -393,20 +412,21 @@ def orchestrate(skip=None,
     chg = ret['changes']
     lresult = True
     if not no_provision:
-        provision_compute_nodes(skip=skip, only=only,
-                                output=False, refresh=refresh, ret=ret)
+        provision_compute_nodes(
+            skip=skip, only=only,
+            skip_compute_node_provision=skip_compute_node_provision,
+            output=False, refresh=refresh, ret=ret)
         for a in ret.setdefault('cns_in_error', []):
             if a not in skip:
                 lresult = False
                 skip.append(a)
-
         if not no_vms:
-            for compute_node in chg['cns_provisionned']:
+            for compute_node in chg.setdefault('cns_provisionned', []):
                 __salt__['mc_cloud_vm.orchestrate'](
                     compute_node, output=False,
                     skip=skip_vms, only=only_vms,
                     refresh=refresh, ret=ret)
-            vms_in_error = chg.setdefault('vms_in_errors', {})
+            vms_in_error = chg.setdefault('vms_in_error', {})
             for node in vms_in_error:
                 for vm in vms_in_error[node]:
                     if vm not in skip_vms:

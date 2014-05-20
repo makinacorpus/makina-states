@@ -30,6 +30,11 @@ def update(name, params):
     reg_obj = __salt__['mc_{0}.registry'.format(name)]()
     reg = __salt__['mc_macros.get_local_registry'](name)
     sync = False
+    if params is None:
+        ret['result'] = False
+        ret['changes'] = {}
+        ret['comment'] = 'Params missing for {0}'.format(name)
+        return ret
     for param, value in params.items():
         gparam = '{0}.{1}'.format(reg_obj['grains_pref'], param)
         if reg.get(gparam, _default) != value:
