@@ -353,7 +353,7 @@ def orchestrate(skip=None,
                 no_vms_post_provision=False,
                 no_vms=False,
                 output=True,
-                refresh=False,
+                refresh=True,
                 ret=None):
     '''Orchestrate the whole cloud deployment.
     In this order:
@@ -392,6 +392,8 @@ def orchestrate(skip=None,
         no_vms_post_provision
             do not run the vms post provision
     '''
+    if refresh:
+        cli('saltutil.refresh_pillar')
     if only is None:
         only = []
     if skip is None:

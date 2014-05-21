@@ -162,10 +162,10 @@ def provision(compute_node, vt, vm, steps=None, ret=None, output=True):
 
     compute_node
          where to act
-    vm
-         vm to spawn
     vt
          virtual type
+    vm
+         vm to spawn
     steps
          list or comma separated list of steps
          Default::
@@ -185,13 +185,13 @@ def provision(compute_node, vt, vm, steps=None, ret=None, output=True):
     if ret is None:
         ret = result()
     for step in steps:
-        pre_vid_ = 'mc_cloud_{0}.pre_vm_{1}'.format(vt, step)
-        id_ = 'mc_cloud_{0}.vm_{1}'.format(vt, step)
-        post_vid_ = 'mc_cloud_{0}.vm_{1}'.format(vt, step)
+        pre_vid_ = 'mc_cloud_{0}.vm_{1}'.format(vt, step)
+        id_ = 'mc_cloud_vm.vm_{1}'.format(vt, step)
+        post_vid_ = 'mc_cloud_{0}.post_vm_{1}'.format(vt, step)
         for cid_ in [pre_vid_, id_, post_vid_]:
+            cret = result()
             if (not ret['result']) or (cid_ not in __salt__):
                 continue
-            cret = result()
             try:
                 cret = __salt__[cid_](compute_node, vm, ret=cret, output=False)
                 check_point(cret, __opts__, output=output)
@@ -223,15 +223,25 @@ def provision(compute_node, vt, vm, steps=None, ret=None, output=True):
 def post_provision(compute_node, vt, vm, ret=None, output=True):
     '''post provision a vm
 
-        vt
-            virtual type
+    compute_node
+         where to act
+    vt
+         virtual type
+    vm
+         vm to spawn
+    steps
+         list or comma separated list of steps
+         Default::
+
+              ['ping', 'post_provision_hook']
+
     '''
     if ret is None:
         ret = result()
-    for step in ['ping', 'vm_post_provision_hook']:
-        pre_vid_ = 'mc_cloud_{0}.pre_vm_{1}'.format(vt, step)
+    for step in ['ping', 'post_provision_hook']:
+        pre_vid_ = 'mc_cloud_{0}.vm_{1}'.format(vt, step)
         id_ = 'mc_cloud_vm.vm_{1}'.format(vt, step)
-        post_vid_ = 'mc_cloud_{0}.vm_{1}'.format(vt, step)
+        post_vid_ = 'mc_cloud_{0}.post_vm_{1}'.format(vt, step)
         for cid_ in [pre_vid_, id_, post_vid_]:
             if (not ret['result']) or (cid_ not in __salt__):
                 continue
@@ -304,12 +314,14 @@ def provision_vms(compute_node,
         vt = vms[vm]
         cret = result()
         try:
-            if idx == 1:
-                raise FailedStepError('foo')
-            elif idx > 0:
-                raise Exception('bar')
+            #if idx == 1:
+            #    raise FailedStepError('foo')
+            #elif idx > 0:
+            #    raise Exception('bar')
             cret = provision(compute_node, vt, vm, ret=cret, output=False)
-        except FailedStepError:
+        except FailedStepError, exc:
+            trace = traceback.format_exc()
+            cret['trace'] += '{0}\n'.format(exc.message)
             cret['result'] = False
         except Exception, exc:
             trace = traceback.format_exc()
@@ -425,5 +437,4 @@ def orchestrate(compute_node,
     salt_output(ret, __opts__, output=output)
     return ret
 
-
- # vim:set et sts=4 ts=4 tw=80:
+# vim:set et sts=4 ts=4 tw=80:

@@ -87,6 +87,22 @@ def run_vt_hook(hook_name,
     return ret
 
 
+def dns_conf(output=True, ret=None):
+    '''Prepare cloud controller dns (BIND) server'''
+    if ret is None:
+        ret = result()
+    kw = {'ret': ret, 'output': output}
+    kw['ret']['comment'] += green(
+        'Installing cloud controller DNS configuration\n')
+    run_vt_hook('pre_dns_conf_on_controller', ret=kw['ret'], output=output)
+    __salt__['mc_api.apply_sls'](
+        ['makina-states.cloud.generic.controller.dnsconf'], **kw)
+    check_point(kw['ret'], __opts__, output=output)
+    run_vt_hook('post_dns_conf_on_controller', ret=kw['ret'], output=output)
+    salt_output(kw['ret'], __opts__, output=output)
+    return kw['ret']
+
+
 def deploy(output=True, ret=None):
     '''Prepare cloud controller configuration
     can also apply per virtualization type configuration'''
@@ -132,6 +148,7 @@ def orchestrate(skip=None,
                 skip_vms=None,
                 only=None,
                 only_vms=None,
+                skip_dns_conf=False,
                 no_configure=False,
                 no_saltify=False,
                 no_provision=False,
@@ -140,7 +157,7 @@ def orchestrate(skip=None,
                 no_post_provision=False,
                 no_vms_post_provision=False,
                 output=True,
-                refresh=False,
+                refresh=True,
                 ret=None):
     '''install controller, compute node, vms & run postdeploy
 
@@ -175,7 +192,15 @@ def orchestrate(skip=None,
     try:
         # only deploy base configuration if we did not set
         # a specific saltify/computenode/vm switch
+        if not skip_dns_conf:
+            dns_conf(output=False, ret=cret)
+            check_point(cret, __opts__, output=output)
+            del cret['result']
+            merge_results(ret, cret)
         if not no_configure:
+            cret = result()
+            # test that all hosts resolve else
+            # for the dns migration
             deploy(output=False, ret=cret)
             check_point(cret, __opts__, output=output)
             del cret['result']
