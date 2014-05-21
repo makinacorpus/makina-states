@@ -151,6 +151,15 @@ bind-service-restart:
     - watch_in:
       - mc_proxy: bind-post-restart
 
+{% if grains['os'] in ['Ubuntu'] %}
+apparmor-bind-service-reload:
+  cmd.watch:
+    - name: service apparmor restart
+    - watch:
+      - mc_proxy: bind-pre-reload
+    - watch_in:
+      - mc_proxy: bind-post-reload
+{% endif %}
 bind-service-reload:
   service.running:
     - name: {{settings.service_name}}
