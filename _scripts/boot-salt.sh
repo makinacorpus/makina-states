@@ -4021,6 +4021,7 @@ set_dns() {
 }
 
 initial_highstates() {
+    ret=${?}
     if [ ! -e "${SALT_BOOT_INITIAL_HIGHSTATE_MARKER}" ];then
         run_highstates
         ret="${?}"
@@ -4030,11 +4031,11 @@ initial_highstates() {
             synchronize_code && run_highstates
             ret="${?}"
         fi
-        if [ "x${ret}" != "x0" ];then
+        if [ "x${ret}" = "x0" ];then
             touch "${SALT_BOOT_INITIAL_HIGHSTATE_MARKER}"
         fi
     fi
-    exit $?
+    exit ${ret}
 }
 
 cleanup_execlogs() {
