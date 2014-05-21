@@ -3987,7 +3987,9 @@ synchronize_code() {
             fi
         fi
     fi
-    exit ${exit_status}
+    if [ "x${SALT_BOOT_INITIAL_HIGHSTATE}" = "x" ];then
+        exit ${exit_status}
+    fi
 }
 
 set_dns() {
@@ -4020,7 +4022,17 @@ set_dns() {
 
 initial_highstates() {
     if [ ! -e "${SALT_BOOT_INITIAL_HIGHSTATE_MARKER}" ];then
-        run_highstates && touch "${SALT_BOOT_INITIAL_HIGHSTATE_MARKER}"
+        run_highstates
+        ret="${?}"
+        # on failure try to sync code
+        if [ "x${ret}" != "x0" ];then
+            SALT_BOOT_SKIP_CHECKOUTS=""
+            synchronize_code && run_highstates
+            ret="${?}"
+        fi
+        if [ "x${ret}" != "x0" ];then
+            touch "${SALT_BOOT_INITIAL_HIGHSTATE_MARKER}"
+        fi
     fi
     exit $?
 }
