@@ -148,12 +148,12 @@ def orchestrate(skip=None,
                 skip_vms=None,
                 only=None,
                 only_vms=None,
-                skip_dns_conf=False,
+                no_dns_conf=False,
                 no_configure=False,
                 no_saltify=False,
                 no_provision=False,
                 no_vms=False,
-                skip_compute_node_provision=False,
+                no_compute_node_provision=False,
                 no_post_provision=False,
                 no_vms_post_provision=False,
                 output=True,
@@ -173,7 +173,7 @@ def orchestrate(skip=None,
             explicit list of vm to deploy
         no_provision
             skip compute node & vm provision
-        skip_compute_node_provision
+        no_compute_node_provision
             skip configuration of compute nodes
         no_vms
             do not provision vms
@@ -192,7 +192,7 @@ def orchestrate(skip=None,
     try:
         # only deploy base configuration if we did not set
         # a specific saltify/computenode/vm switch
-        if not skip_dns_conf:
+        if not no_dns_conf:
             dns_conf(output=False, ret=cret)
             check_point(cret, __opts__, output=output)
             del cret['result']
@@ -224,7 +224,7 @@ def orchestrate(skip=None,
                 only=only,
                 only_vms=only_vms,
                 no_provision=no_provision,
-                skip_compute_node_provision=skip_compute_node_provision,
+                no_compute_node_provision=no_compute_node_provision,
                 no_post_provision=no_post_provision,
                 no_vms_post_provision=no_vms_post_provision,
                 no_vms=no_vms,

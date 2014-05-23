@@ -53,5 +53,5 @@ Installing a vm on a specific compute node::
 
 Installing a vm on an already configured compute node::
 
-    mastersalt-run -lall mc_cloud_controller.orchestrate no_configure=True no_saltify=True only_vms=[vm_id] only=[computenode_id] skip_compute_node_provision=True
+    mastersalt-run -lall mc_cloud_controller.orchestrate no_configure=True no_saltify=True only_vms=[vm_id] only=[computenode_id] no_compute_node_provision=True
 

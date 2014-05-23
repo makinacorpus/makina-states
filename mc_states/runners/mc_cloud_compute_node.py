@@ -201,7 +201,7 @@ def filter_compute_nodes(nodes, skip, only):
 
 
 def provision_compute_nodes(skip=None, only=None,
-                            skip_compute_node_provision=False,
+                            no_compute_node_provision=False,
                             output=True,
                             refresh=False,
                             ret=None):
@@ -236,7 +236,7 @@ def provision_compute_nodes(skip=None, only=None,
     targets = filter_compute_nodes(targets, skip, only)
     for idx, compute_node in enumerate(targets):
         cret = result()
-        if skip_compute_node_provision:
+        if no_compute_node_provision:
             cret['comment'] = yellow(
                 'Compute node configuration skipped for {0}\n'
             ).format(compute_node)
@@ -347,7 +347,7 @@ def orchestrate(skip=None,
                 skip_vms=None,
                 only=None,
                 only_vms=None,
-                skip_compute_node_provision=False,
+                no_compute_node_provision=False,
                 no_provision=False,
                 no_post_provision=False,
                 no_vms_post_provision=False,
@@ -379,7 +379,7 @@ def orchestrate(skip=None,
             do not run the compute nodes provision
         no_post_provision
             do not run the compute nodes post provision
-        skip_compute_node_provision
+        no_compute_node_provision
             skip configuration of compute nodes
         skip_vms
             list or comma separated string of vms
@@ -417,7 +417,7 @@ def orchestrate(skip=None,
     if not no_provision:
         provision_compute_nodes(
             skip=skip, only=only,
-            skip_compute_node_provision=skip_compute_node_provision,
+            no_compute_node_provision=no_compute_node_provision,
             output=False, refresh=refresh, ret=ret)
         for a in ret.setdefault('cns_in_error', []):
             if a not in skip:
