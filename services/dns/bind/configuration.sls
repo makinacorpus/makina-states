@@ -31,7 +31,7 @@ dns-rzones-{{zone}}-{{data.fpath}}:
 bind-checkconf-{{zone}}-{{data.fpath}}:
   cmd.run:
     - name: |
-            named-checkzone -m fail -M fail -n fail {{zone}} {{data.fpath}} && echo changed='false'
+            named-checkzone -k fail -m fail -M fail -n fail {{zone}} {{data.fpath}} && echo changed='false'
     - stateful: true
     {# do not trigger reload but report problems #}
     - user: root
