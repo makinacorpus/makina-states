@@ -417,7 +417,10 @@ def salt_output(ret, __opts__, output=True):
         del ret['z_700_comment']
         del ret['z_900_result']
 
-def complete_gateway(target_data, default_data):
+
+def complete_gateway(target_data, default_data=None):
+    if default_data is None:
+        default_data = {}
     if 'ssh_gateway' in target_data:
         gwk = target_data
     else:
