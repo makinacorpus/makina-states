@@ -465,9 +465,27 @@ def rr_a(fqdn, ips, ips_map, ipsfo, ipsfo_map,
 
 def load_all_ips(ips, ips_map, ipsfo, ipsfo_map,
                  baremetal_hosts, vms, cnames, rrs_ttls,
-                 ns_map, mx_map):
+                 ns_map, mx_map, managed_dns_zones, dns_servers):
+    '''This loads the structure while validating it for
+    reverse ip lookups'''
     if ips.get('__loaded__', False):
         return
+
+    # add the nameservers if not configured but a managed zone
+    for zone in managed_dns_zones:
+        if zone not in ns_map:
+            ns_map[zone] = {}
+        for i, slave in enumerate(dns_servers['slaves']):
+            # special case
+            if i == 0 and 'matricio' in zone:
+                nsq = 'ns.matricio.com'
+            else:
+                nsq = 'ns{0}.{1}'.format(i + 1, zone)
+            if nsq not in ns_map[zone]:
+                ns_map[zone][nsq] = {}
+            if nsq not in ips_map:
+                ips_map[nsq] = [slave]
+
     for fqdn in ipsfo:
         if fqdn in ips:
             continue
@@ -481,6 +499,7 @@ def load_all_ips(ips, ips_map, ipsfo, ipsfo_map,
             for _vm in _vms:
                 cvms[_vm] = target
 
+    cvalues = cvms.values()
     for host, dn_ip_fos in ipsfo_map.items():
         for ip_fo in dn_ip_fos:
             dn = host.split('.')[0]
@@ -496,6 +515,15 @@ def load_all_ips(ips, ips_map, ipsfo, ipsfo_map,
                 ahosts = ['{0}.{1}'.format(dn, ip_fo),
                           '{1}.{0}'.format(host, ipfo_dn),
                           'failover.{0}'.format(host)]
+                # only add an A record for a failover ip on something which
+                # is not a vm if this is an host without an entry in
+                # the ip and the vms maps
+                if (
+                    (host not in baremetal_hosts
+                     and host not in cvalues)
+                    and host not in ips
+                ):
+                    ahosts.append(host)
             for ahost in ahosts:
                 hostips = ips.setdefault(ahost, [])
                 if ip not in hostips:
@@ -526,9 +554,11 @@ def load_all_ips(ips, ips_map, ipsfo, ipsfo_map,
     for servers in mx_map.values():
         for server in servers:
             mxs.append(server)
+
     for servers in ns_map.values():
         for server in servers:
             nss.append(server)
+
     # for:
     #   - @ failover mappings
     #   - nameservers
@@ -542,13 +572,16 @@ def load_all_ips(ips, ips_map, ipsfo, ipsfo_map,
     ips['__loaded__'] = '1.2.3.4'
 
 
+def verify_loaded(ips):
+    if not ips['__loaded__'] == '1.2.3.4':
+        raise RuntimeError('ips not loaded')
+
+
 def rrs_mx_for(domain, ips, ips_map, ipsfo, ipsfo_map,
                baremetal_hosts, vms, cnames, rrs_ttls,
                rrs_raw, ns_map, mx_map):
     '''Return all configured NS records for a domain'''
-    load_all_ips(ips, ips_map, ipsfo, ipsfo_map,
-                 baremetal_hosts, vms, cnames, rrs_ttls,
-                 ns_map, mx_map)
+    verify_loaded(ips)
     all_rrs = {}
     servers = mx_map.get(domain, {})
     for fqdn in servers:
@@ -579,9 +612,7 @@ def rrs_ns_for(domain, ips, ips_map, ipsfo, ipsfo_map,
                baremetal_hosts, vms, cnames, rrs_ttls,
                rrs_raw, ns_map, mx_map):
     '''Return all configured NS records for a domain'''
-    load_all_ips(ips, ips_map, ipsfo, ipsfo_map,
-                 baremetal_hosts, vms, cnames, rrs_ttls,
-                 ns_map, mx_map)
+    verify_loaded(ips)
     all_rrs = {}
     servers = ns_map.get(domain, {})
     for fqdn in servers:
@@ -612,9 +643,7 @@ def rrs_a_for(domain, ips, ips_map, ipsfo, ipsfo_map,
               baremetal_hosts, vms, cnames, rrs_ttls,
               ns_map, mx_map):
     '''Return all configured A records for a domain'''
-    load_all_ips(ips, ips_map, ipsfo, ipsfo_map,
-                 baremetal_hosts, vms, cnames, rrs_ttls,
-                 ns_map, mx_map)
+    verify_loaded(ips)
     all_rrs = {}
     domain_re = re.compile(DOMAIN_PATTERN.format(domain),
                            re.M | re.U | re.S | re.I)
@@ -644,9 +673,7 @@ def rrs_raw_for(domain, ips, ips_map, ipsfo, ipsfo_map,
                 ns_map, mx_map):
     '''Return all configured TXT records for a domain'''
     # add all A from simple ips
-    load_all_ips(ips, ips_map, ipsfo, ipsfo_map,
-                 baremetal_hosts, vms, cnames, rrs_ttls,
-                 ns_map, mx_map)
+    verify_loaded(ips)
     all_rrs = {}
     domain_re = re.compile(DOMAIN_PATTERN.format(domain),
                            re.M | re.U | re.S | re.I)
@@ -671,9 +698,7 @@ def rrs_cnames_for(domain, ips, ips_map, ipsfo, ipsfo_map,
                    baremetal_hosts, vms, cnames, rrs_ttls,
                    ns_map, mx_map, managed_dns_zones):
     '''Return all configured CNAME records for a domain'''
-    load_all_ips(ips, ips_map, ipsfo, ipsfo_map,
-                 baremetal_hosts, vms, cnames, rrs_ttls,
-                 ns_map, mx_map)
+    verify_loaded(ips)
     all_rrs = {}
     domain_re = re.compile(DOMAIN_PATTERN.format(domain),
                            re.M | re.U | re.S | re.I)
