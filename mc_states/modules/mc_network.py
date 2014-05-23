@@ -502,7 +502,7 @@ def load_all_ips(ips, ips_map, ipsfo, ipsfo_map,
     # <vm>.<host>.<ipfo_dn>.<domain>
     for vm, vm_host in cvms.items():
         if vm not in ips:
-            ips[vm] = ips_for(host, ips, ips_map, ipsfo, ipsfo_map,
+            ips[vm] = ips_for(vm_host, ips, ips_map, ipsfo, ipsfo_map,
                               cnames)
 
     # add all IPS  from aliased ips to main dict
