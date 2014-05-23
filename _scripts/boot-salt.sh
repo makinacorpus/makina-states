@@ -897,11 +897,9 @@ set_vars() {
     else
         store_conf bootsalt_mode salt
     fi
-    SALT_BOOT_INITIAL_HIGHSTATE_MARKER="${SALT_MS}/.initial_hs"
 
     # export variables to support a restart
     export ONLY_BUILDOUT_REBOOTSTRAP
-    export SALT_BOOT_INITIAL_HIGHSTATE_MARKER
     export TRAVIS_DEBUG SALT_BOOT_LIGHT_VARS DO_REFRESH_MODULES
     export IS_SALT_UPGRADING SALT_BOOT_SYNC_CODE SALT_BOOT_INITIAL_HIGHSTATE
     export SALT_REBOOTSTRAP BUILDOUT_REBOOTSTRAP VENV_REBOOTSTRAP
@@ -3608,6 +3606,7 @@ parse_cli_opts() {
         fi
         if [ "x${1}" = "x--initial-highstate" ];then
             SALT_BOOT_LIGHT_VARS="1"
+            SALT_BOOT_NOCONFIRM="1"
             BUILDOUT_REBOOTSTRAP="1"
             SALT_BOOT_INITIAL_HIGHSTATE="1"
             SALT_BOOT_SKIP_HIGHSTATES=""
@@ -4022,7 +4021,7 @@ set_dns() {
 
 initial_highstates() {
     ret=${?}
-    if [ ! -e "${SALT_BOOT_INITIAL_HIGHSTATE_MARKER}" ];then
+    if [ "x$(get_conf initial_highstate)" != "x1" ];then
         run_highstates
         ret="${?}"
         # on failure try to sync code
@@ -4032,7 +4031,7 @@ initial_highstates() {
             ret="${?}"
         fi
         if [ "x${ret}" = "x0" ];then
-            touch "${SALT_BOOT_INITIAL_HIGHSTATE_MARKER}"
+            set_conf initial_highstate 1
         fi
     fi
     exit ${ret}
@@ -4098,7 +4097,7 @@ if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
         abort="1"
     fi
     if [ "x${SALT_BOOT_INITIAL_HIGHSTATE}" != "x" ] \
-        && [ -e "${SALT_BOOT_INITIAL_HIGHSTATE_MARKER}" ];then
+        && [ x"$(get_conf initial_highstate)" = "x1" ];then
         exit 0
     fi
     if [ "x${SALT_BOOT_SYNC_CODE}" != "x" ];then
