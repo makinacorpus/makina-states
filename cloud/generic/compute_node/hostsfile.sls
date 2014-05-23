@@ -4,6 +4,9 @@
 {% set domains = [] %}
 {% set tdata = compute_node_settings.cn %}
 
+configure-cloud-{{opts.id}}-hostfiles:
+  mc_proxy.hook: []
+
 {% for vmname, data in tdata.vms.items() -%}
 {%  for domain in data['domains'] %}
 {%    if not domain in domains%}

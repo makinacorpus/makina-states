@@ -137,6 +137,11 @@ def configure_hostsfile(target, ret=None, output=True):
     return _configure('hostsfile', target, ret, output)
 
 
+def configure_network(target, ret=None, output=True):
+    '''install marker grains'''
+    return _configure('network', target, ret, output)
+
+
 def configure_grains(target, ret=None, output=True):
     '''install marker grains'''
     return _configure('grains', target, ret, output)
@@ -154,6 +159,7 @@ def deploy(target, output=True, ret=None, hooks=True, pre=True, post=True):
     for step in [configure_sshkeys,
                  configure_grains,
                  install_vts,
+                 configure_network,
                  configure_hostsfile,
                  configure_firewall,
                  configure_sslcerts,

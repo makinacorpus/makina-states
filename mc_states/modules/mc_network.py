@@ -483,11 +483,21 @@ def load_all_ips(ips, ips_map, ipsfo, ipsfo_map,
 
     for host, dn_ip_fos in ipsfo_map.items():
         for ip_fo in dn_ip_fos:
-            if host in ips:
-                host = 'failover.{0}'.format(host, ip_fo)
-            hostips = ips.setdefault(host, [])
-            for ip in ips_for(ip_fo, ips, ips_map, ipsfo, ipsfo_map,
-                              cnames):
+            dn = host.split('.')[0]
+            ipfo_dn = ip_fo.split('.')[0]
+            ip = ip_for(ip_fo, ips, ips_map, ipsfo, ipsfo_map, cnames)
+            if host in cvms:
+                phost = cvms[host]
+                pdn = phost.split('.')[0]
+                ahosts = [host,
+                          '{0}.{1}.{2}'.format(dn, pdn, ip_fo),
+                          '{0}.{1}'.format(dn, ip_fo)]
+            else:
+                ahosts = ['{0}.{1}'.format(dn, ip_fo),
+                          '{1}.{0}'.format(host, ipfo_dn),
+                          'failover.{0}'.format(host)]
+            for ahost in ahosts:
+                hostips = ips.setdefault(ahost, [])
                 if ip not in hostips:
                     hostips.append(ip)
 
