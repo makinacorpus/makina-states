@@ -111,6 +111,7 @@ def registry():
         reg = __salt__[
             'mc_macros.construct_registry_configuration'
         ](__name, defaults={
+            'autoupgrade': {'active': True},
             'updatedb': {'active': True},
             'nscd': {'active': _ldapEn(__salt__)},
             'ldap': {'active': _ldapEn(__salt__)},
