@@ -949,6 +949,8 @@ def get_db_infrastructure_maps(ttl=60):
         lbms = __salt__['mc_pillar.query']('baremetal_hosts')
         bms = OrderedDict()
         vms = OrderedDict()
+        for lbm in lbms:
+            bms.setdefault(lbm, [])
         for vt, targets in __salt__['mc_pillar.query']('vms').items():
             for target, lvms in targets.items():
                 vts = bms.setdefault(target, [])

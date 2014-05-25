@@ -30,6 +30,21 @@ def settings():
         data = _s['mc_utils.defaults'](
             'makina-states.localsettings.autoupgrade', {
                 'enable': True,
+                "unattended": {
+                    "activated": "1",
+                    "autoclean": "7",
+                    "DownloadUpgradeablePackages": "1",
+                    "UpdatePackageLists": "1",
+                    "mail_on_error": "true",
+                    "remove_unused": "false",
+                    "mail": "root",
+                    "autofix": "true",
+                    'blacklist': [
+                    ],
+                    'origins': [
+                        "${distro_id}:${distro_codename}-security"
+                    ],
+                }
             }
         )
         return data
