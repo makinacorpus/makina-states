@@ -200,7 +200,11 @@ def update_registry_params(registry_name, params):
         if registry.get(gparam, _default) != value:
             for data in changes, registry:
                 data.update({gparam: value})
-        if default and (param in registry):
+        if (
+            default
+            and (not param.startswith('makina-states.'))
+            and (param in registry)
+        ):
             del registry[param]
     if changes:
         encode_local_registry(registry_name, registry)
@@ -271,10 +275,13 @@ def get_registry(registry_configuration):
     for item, data in registry['defaults'].items():
         activation_status = _default_activation_status
         if isinstance(data, dict):
-            activation_status = is_item_active(
-                registry['kind'], item,
-                default_status=data.get('active', activation_status),
-                force=data.get('force', False))
+            activation_status = __salt__[
+                'mc_macros.is_item_active'](
+                    registry['kind'],
+                    item,
+                    default_status=data.get('active',
+                                            activation_status),
+                    force=data.get('force', False))
             if activation_status is not _default_activation_status:
                 if activation_status:
                     registry['actives'][item] = data

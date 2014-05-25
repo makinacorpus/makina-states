@@ -15,4 +15,4 @@ cd $(dirname $0)
 
 # sync the only needed in makina-states for mastersalt
 # (quickier in virtualbox)
-# for i in src/salt/ files/ _scripts/ bootstraps/ top.sls buildout.cfg _modules/ _states/ services/ localsettings/ controllers/ nodetypes/ _macros/;do rsync -vPa --exclude=*pyc --exclude=*pyo --exclude=.installed.cfg --exclude=.mr.developer.cfg --exclude=.bootlogs --exclude=.git /srv/salt/makina-states/$i /srv/mastersalt/makina-states/$i;done
+# for i in doc src/salt/ files/ _scripts/ bootstraps/ top.sls buildout.cfg _modules/ _states/ services/ localsettings/ controllers/ nodetypes/ _macros/;do rsync -vPa --exclude=*pyc --exclude=*pyo --exclude=.installed.cfg --exclude=.mr.developer.cfg --exclude=.bootlogs --exclude=.git /srv/salt/makina-states/$i /srv/mastersalt/makina-states/$i;done

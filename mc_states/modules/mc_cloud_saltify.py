@@ -61,12 +61,12 @@ def settings():
                 'bootsalt_mastersalt_args': (
                     cloudSettings['bootsalt_mastersalt_args']),
                 'ssh_gateway': cloudSettings['ssh_gateway'],
-                'ssh_gateway_password': cloudSettings['ssh_gateway_password'],
+                'ssh_gateway_port': cloudSettings['ssh_gateway_port'],
                 'ssh_gateway_user': cloudSettings['ssh_gateway_user'],
+                'ssh_gateway_password': cloudSettings['ssh_gateway_password'],
+                'ssh_gateway_key': cloudSettings['ssh_gateway_key'],
                 'ssh_username': 'root',
                 'ssh_keyfile': None,
-                'ssh_gateway_key': cloudSettings['ssh_gateway_key'],
-                'ssh_gateway_port': cloudSettings['ssh_gateway_port'],
                 'mode': cloudSettings['mode'],
                 'master': cloudSettings['master'],
                 'no_sudo_password': False,
@@ -135,10 +135,10 @@ def settings_for_target(name):
     try:
         c_data = __salt__['mc_utils.defaults'](conf_key, {})
         if not c_data:
-            raise KeyError('empty')
-    except KeyError:
+            raise KeyError('empty data')
+    except KeyError, exc:
         raise KeyError(
-            '{0} is not to be saltified'.format(name))
+            '{0} is not to be saltified ({1})'.format(name, exc))
     c_data['name'] = c_data.get('name', name)
     c_data['ssh_host'] = c_data.get('ip', c_data['name'])
     c_data['profile'] = 'ms-salt-minion'
@@ -174,7 +174,7 @@ def settings_for_target(name):
         raise ValueError('Not possible to have sshkey + password '
                          'for \n{0}'.format(pformat(c_data)))
     if not c_data['ssh_keyfile'] and not c_data['password']:
-        raise ValueError('We should have one of have sshkey + '
+        raise ValueError('We should either have one of sshkey + '
                          'password for \n{0}'.format(pformat(c_data)))
     sudo_password = c_data.get('sudo_password', '')
     if not sudo_password:

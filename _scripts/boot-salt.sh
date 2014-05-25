@@ -897,11 +897,9 @@ set_vars() {
     else
         store_conf bootsalt_mode salt
     fi
-    SALT_BOOT_INITIAL_HIGHSTATE_MARKER="${SALT_MS}/.initial_hs"
 
     # export variables to support a restart
     export ONLY_BUILDOUT_REBOOTSTRAP
-    export SALT_BOOT_INITIAL_HIGHSTATE_MARKER
     export TRAVIS_DEBUG SALT_BOOT_LIGHT_VARS DO_REFRESH_MODULES
     export IS_SALT_UPGRADING SALT_BOOT_SYNC_CODE SALT_BOOT_INITIAL_HIGHSTATE
     export SALT_REBOOTSTRAP BUILDOUT_REBOOTSTRAP VENV_REBOOTSTRAP
@@ -1994,10 +1992,16 @@ base:
   '*':
 EOF
         fi
-        if [ "x$(grep -- "$(get_minion_id)" "${pillar_root}/top.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
-            debug_msg "Adding local info to top mastersalt pillar"
-            echo >> "${pillar_root}/top.sls"
-            echo "  '$(get_minion_id)':">> "${pillar_root}/top.sls"
+        skip_next=""
+        if [ "x$(egrep -- "^    - mastersalt(_minion)?[ ]*$" "${pillar_root}/top.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
+            skip_next="1"
+        fi
+        if [ "x${skip_next}" = "x" ];then
+            if [ "x$(grep -- "$(get_minion_id)" "${pillar_root}/top.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
+                debug_msg "Adding local info to top mastersalt pillar"
+                echo >> "${pillar_root}/top.sls"
+                echo "  '$(get_minion_id)':">> "${pillar_root}/top.sls"
+            fi
         fi
     done
     # Create a default top.sls in the tree if not present
@@ -3608,6 +3612,7 @@ parse_cli_opts() {
         fi
         if [ "x${1}" = "x--initial-highstate" ];then
             SALT_BOOT_LIGHT_VARS="1"
+            SALT_BOOT_NOCONFIRM="1"
             BUILDOUT_REBOOTSTRAP="1"
             SALT_BOOT_INITIAL_HIGHSTATE="1"
             SALT_BOOT_SKIP_HIGHSTATES=""
@@ -3987,7 +3992,9 @@ synchronize_code() {
             fi
         fi
     fi
-    exit ${exit_status}
+    if [ "x${SALT_BOOT_INITIAL_HIGHSTATE}" = "x" ];then
+        exit ${exit_status}
+    fi
 }
 
 set_dns() {
@@ -3995,6 +4002,13 @@ set_dns() {
         if [ "x$(cat /etc/hostname 2>/dev/null|sed -e "s/ //")" != "x$(echo "${HOST}"|sed -e "s/ //g")" ];then
             bs_log "Resetting hostname file to ${HOST}"
             echo "${HOST}" > /etc/hostname
+
+        fi
+        if [ "x$(cat /etc/salt/minion_id 2>/dev/null|sed -e "s/ //")" != "x$(echo "${HOST}"|sed -e "s/ //g")" ];then
+            if [ ! -d /etc/salt ];then
+                mkdir -p /etc/salt
+            fi
+            echo "${HOST}" > /etc/salt/minion_id
         fi
         if [ -e "$(which domainname 2>/dev/null)" ];then
             if [ "x$(domainname)" != "x$(echo "${DOMAINNAME}"|sed -e "s/ //g")" ];then
@@ -4019,10 +4033,21 @@ set_dns() {
 }
 
 initial_highstates() {
-    if [ ! -e "${SALT_BOOT_INITIAL_HIGHSTATE_MARKER}" ];then
-        run_highstates && touch "${SALT_BOOT_INITIAL_HIGHSTATE_MARKER}"
+    ret=${?}
+    if [ "x$(get_conf initial_highstate)" != "x1" ];then
+        run_highstates
+        ret="${?}"
+        # on failure try to sync code
+        if [ "x${ret}" != "x0" ];then
+            SALT_BOOT_SKIP_CHECKOUTS=""
+            synchronize_code && run_highstates
+            ret="${?}"
+        fi
+        if [ "x${ret}" = "x0" ];then
+            set_conf initial_highstate 1
+        fi
     fi
-    exit $?
+    exit ${ret}
 }
 
 cleanup_execlogs() {
@@ -4085,7 +4110,7 @@ if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
         abort="1"
     fi
     if [ "x${SALT_BOOT_INITIAL_HIGHSTATE}" != "x" ] \
-        && [ -e "${SALT_BOOT_INITIAL_HIGHSTATE_MARKER}" ];then
+        && [ x"$(get_conf initial_highstate)" = "x1" ];then
         exit 0
     fi
     if [ "x${SALT_BOOT_SYNC_CODE}" != "x" ];then

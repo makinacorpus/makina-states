@@ -52,6 +52,7 @@ def saltify(name, output=True, ret=None):
         ret = result()
     try:
         already_exists = __salt__['mc_cloud_controller.exists'](name)
+        data = None
         if already_exists:
             success = green('{0} is already saltified'.format(name))
         else:
@@ -70,8 +71,9 @@ def saltify(name, output=True, ret=None):
                 kwargs = {'minion': {'master': data['master'],
                                      'master_port': data['master_port']}}
                 for var in [
-                    "ssh_username", "ssh_keyfile", "keep_tmp", "gateway", "sudo",
-                    "password", "script_args", "ssh_host", "sudo_password",
+                    "ssh_username", "ssh_keyfile", "keep_tmp", "gateway",
+                    "sudo", "password", "script_args", "ssh_host",
+                    "sudo_password",
                 ]:
                     if data.get(var):
                         kwargs[var] = data[var]
@@ -91,6 +93,41 @@ def saltify(name, output=True, ret=None):
             if not output:
                 ret['changes'] = {}
             check_point(ret, __opts__)
+        # once saltified, also be sure that this host had
+        #a time to accomplish it's setup through a full initial
+        # highstate
+        if not cli('mc_cloud_compute_node.get_conf_for_target',
+                   name, 'saltified'):
+            if data is  None:
+                data = cli('mc_cloud_saltify.settings_for_target', name)
+            csettings = cli('mc_cloud.settings')
+            proxycmd = ''
+            if data.get('ssh_gateway', None):
+                args = '-oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null'
+                args += '-oControlPath=none'
+                if 'ssh_key' in data:
+                    args += ' -i {0}'.format(data['ssh_key'])
+                if 'ssh_port' in data:
+                    args += ' -p {0}'.format(data['ssh_port'])
+                proxycmd = '-o\"ProxyCommand=ssh {1} {2} nc -w300 {1} 22\"'.format(
+                    data['ssh_gateway'], name, args
+                )
+            cmd = (
+                'ssh {2} {0} {1}/makina-states/_scripts/boot-salt.sh '
+                '--initial-highstate'
+            ).format(name, csettings['root'], proxycmd)
+            cmdret = cli('cmd.run_all', cmd)
+            if cmdret['retcode']:
+                ret['result'] = False
+                ret['trace'] += 'Using cmd: \'{0}\''.format(cmd)
+                ret['trace'] += '{0}\n'.format(cmdret['stdout'])
+                ret['trace'] += '{0}\n'.format(cmdret['stderr'])
+                ret['comment'] += red(
+                    'SALTIFY: Error in highstate for {0}'.format(name))
+            check_point(ret, __opts__)
+            # ok, marking initial highstate done
+            cli('mc_cloud_compute_node.set_conf_for_target',
+                name, 'saltified', True)
     except FailedStepError:
         ret['result'] = False
         salt_output(ret, __opts__, output=output)

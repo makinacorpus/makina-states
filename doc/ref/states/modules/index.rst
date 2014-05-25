@@ -33,6 +33,7 @@ Subregistries
    mc_fail2ban.rst
    mc_haproxy.rst
    mc_java.rst
+   mc_autoupgrade.rst
    mc_kernel.rst
    mc_locales.rst
    mc_locations.rst

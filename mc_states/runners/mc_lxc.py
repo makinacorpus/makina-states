@@ -92,6 +92,8 @@ def sync_images(output=True, only=None):
     '''
     if not only:
         only = []
+    if isinstance(only, basestring):
+        only = [only]
     ret = saltapi.result()
     ret['targets'] = OrderedDict()
     dest = '/root/.ssh/.lxc.pub'

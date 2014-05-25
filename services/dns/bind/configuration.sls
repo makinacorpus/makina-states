@@ -29,12 +29,13 @@ dns-rzones-{{zone}}-{{data.fpath}}:
       - mc_proxy: bind-post-conf
 {% if data.server_type in ['master'] %}
 bind-checkconf-{{zone}}-{{data.fpath}}:
-  cmd.watch:
-    - name: named-checkzone {{zone}} {{data.fpath}}
+  cmd.run:
+    - name: |
+            named-checkzone -k fail -m fail -M fail -n fail {{zone}} {{data.fpath}} && echo changed='false'
+    - stateful: true
     {# do not trigger reload but report problems #}
-    - unless: named-checkzone {{zone}} {{data.fpath}}
     - user: root
-    - watch:
+    - require:
       - mc_proxy: bind-post-conf
     - watch_in:
       - mc_proxy: bind-check-conf
@@ -57,6 +58,7 @@ include:
   - makina-states.services.dns.bind.hooks
   - makina-states.services.dns.bind.services
 
+
 bind-dirs:
   file.directory:
     - names:
@@ -64,7 +66,7 @@ bind-dirs:
       - "{{d}}"
       {% endfor %}
     - makedirs: true
-    - user: root
+    - user: bind
     - group: bind
     - mode: 775
     - watch_in:
@@ -95,6 +97,25 @@ named_directory:
     - watch_in:
       - mc_proxy: bind-pre-conf
 
+{% if grains['os'] in ['Ubuntu'] %}
+{% for f in ['/etc/apparmor.d/usr.sbin.named'] %}
+bind_config_{{f}}:
+  file.managed:
+    - name: {{f}}
+    - source: salt://makina-states/files{{f}}
+    - template: jinja
+    - user: root
+    - group: root
+    - mode: {{settings.mode}}
+    - defaults:
+      data: |
+            {{yameld_data}}
+    - watch:
+      - mc_proxy: bind-pre-conf
+    - watch_in:
+      - mc_proxy: bind-post-conf
+{% endfor %}
+{% endif %}
 {% for tp in ['bind',
               'local',
               'key',

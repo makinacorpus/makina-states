@@ -14,6 +14,12 @@ D = os.path.dirname
 
 STATES_DIR = J(D(D(D(__file__))), '_modules')
 _NO_ATTR = object()
+DEFAULT_DUNDERS = {
+    '_opts': {
+        'config_dir': '/etc/mastersalt',
+    }
+}
+
 
 class ModuleCase(unittest.TestCase):
     '''Base test class
@@ -31,20 +37,23 @@ class ModuleCase(unittest.TestCase):
 
             - This search in self._{grains, pillar, salt} for a dict containing
               the monkey patch replacement and defaults to {}
-            - We will then have on the test class _salt, _grains & _pillar d
+            - We will then have on the test class _salt, _grains & _pillar
               dicts to be used and mocked in tests, this ensure that the mock
               has to be done only at one place, on the class attribute.
 
         '''
+
         for mod in self._mods:
             for patched in [
-                'salt', 'pillar', 'grains'
+                'salt', 'pillar', 'grains', 'opts'
             ]:
                 patch_key = '_{0}'.format(patched)
                 sav_attribute = '__old_{0}'.format(patched)
                 attribute = '__{0}__'.format(patched)
                 if not hasattr(mod, sav_attribute):
-                    _patch = getattr(self, patch_key, {})
+                    _patch = getattr(self,
+                                     patch_key,
+                                     DEFAULT_DUNDERS.get( patch_key, {}))
                     setattr(self, patch_key, _patch)
                     setattr(mod, sav_attribute,
                             getattr(mod, attribute, _NO_ATTR))
@@ -57,7 +66,7 @@ class ModuleCase(unittest.TestCase):
         '''
         for mod in self._mods:
             for patched in [
-                'salt', 'pillar', 'grains',
+                'salt', 'pillar', 'grains', 'opts'
             ]:
                 sav_attribute = '__old_{0}'.format(patched)
                 _patch = getattr(mod, sav_attribute)

@@ -111,6 +111,7 @@ def registry():
         reg = __salt__[
             'mc_macros.construct_registry_configuration'
         ](__name, defaults={
+            'autoupgrade': {'active': True},
             'updatedb': {'active': True},
             'nscd': {'active': _ldapEn(__salt__)},
             'ldap': {'active': _ldapEn(__salt__)},
@@ -142,27 +143,6 @@ def registry():
 
 def dump():
     return mc_states.utils.dump(__salt__, __name)
-
-
-def get_passwords(passwords_map, dn):
-    '''Return user/password mappings for a particular host from
-    a global pillar passwords map'''
-    passwords = {'clear': {}, 'crypted': {}}
-    passwords['clear']['root'] = passwords_map['root'][dn]
-    passwords['clear']['sysadmin'] = passwords_map.get('sysadmin', {}).get(
-        dn, passwords['clear']['root'])
-    for user, data in passwords_map.items():
-        if user in ['root', 'sysadmin']:
-            continue
-        if isinstance(data, dict):
-            for host, data in data.items():
-                if host not in [dn]:
-                    continue
-                if isinstance(data, basestring):
-                    passwords['clear'][user] = data
-    for user, password in passwords['clear'].items():
-        passwords['crypted'][user] = __salt__['mc_utils.unix_crypt'](password)
-    return passwords
 
 
 def get_pillar_fqdn(sls, template):
