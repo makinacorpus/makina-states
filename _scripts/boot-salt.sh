@@ -4002,6 +4002,13 @@ set_dns() {
         if [ "x$(cat /etc/hostname 2>/dev/null|sed -e "s/ //")" != "x$(echo "${HOST}"|sed -e "s/ //g")" ];then
             bs_log "Resetting hostname file to ${HOST}"
             echo "${HOST}" > /etc/hostname
+
+        fi
+        if [ "x$(cat /etc/salt/minion_id 2>/dev/null|sed -e "s/ //")" != "x$(echo "${HOST}"|sed -e "s/ //g")" ];then
+            if [ ! -d /etc/salt ];then
+                mkdir -p /etc/salt
+            fi
+            echo "${HOST}" > /etc/salt/minion_id
         fi
         if [ -e "$(which domainname 2>/dev/null)" ];then
             if [ "x$(domainname)" != "x$(echo "${DOMAINNAME}"|sed -e "s/ //g")" ];then
