@@ -29,7 +29,7 @@ def settings():
         locations = __salt__['mc_locations.settings']()
         origins = []
         if grains['os'] in ['Debian']:
-            origins.append("o=Debian,a=stable")
+            origins.append("o=Debian:a=stable")
         origins.append("${distro_id}:${distro_codename}-security")
         data = _s['mc_utils.defaults'](
             'makina-states.localsettings.autoupgrade', {
