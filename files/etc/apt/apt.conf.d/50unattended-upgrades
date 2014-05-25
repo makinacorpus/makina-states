@@ -1,3 +1,4 @@
+// MANAGED VIA SALT DO NOT EDIT
 {% set data = salt['mc_utils.json_load'](data) %}
 
 // Automatically upgrade packages from these (origin:archive) pairs

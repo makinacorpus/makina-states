@@ -1,4 +1,4 @@
-{% if grains['os'] in ['Ubuntu'] %}
+{% if grains['os_family'] in ['Debian'] %}
 include:
   - makina-states.localsettings.pkgs-hooks
 {% if salt['mc_controllers.mastersalt_mode']() %}
