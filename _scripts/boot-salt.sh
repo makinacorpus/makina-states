@@ -1992,10 +1992,16 @@ base:
   '*':
 EOF
         fi
-        if [ "x$(grep -- "$(get_minion_id)" "${pillar_root}/top.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
-            debug_msg "Adding local info to top mastersalt pillar"
-            echo >> "${pillar_root}/top.sls"
-            echo "  '$(get_minion_id)':">> "${pillar_root}/top.sls"
+        skip_next=""
+        if [ "x$(egrep -- "^    - mastersalt(_minion)?[ ]*$" "${pillar_root}/top.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
+            skip_next="1"
+        fi
+        if [ "x${skip_next}" = "x" ];then
+            if [ "x$(grep -- "$(get_minion_id)" "${pillar_root}/top.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
+                debug_msg "Adding local info to top mastersalt pillar"
+                echo >> "${pillar_root}/top.sls"
+                echo "  '$(get_minion_id)':">> "${pillar_root}/top.sls"
+            fi
         fi
     done
     # Create a default top.sls in the tree if not present

@@ -275,10 +275,13 @@ def get_registry(registry_configuration):
     for item, data in registry['defaults'].items():
         activation_status = _default_activation_status
         if isinstance(data, dict):
-            activation_status = is_item_active(
-                registry['kind'], item,
-                default_status=data.get('active', activation_status),
-                force=data.get('force', False))
+            activation_status = __salt__[
+                'mc_macros.is_item_active'](
+                    registry['kind'],
+                    item,
+                    default_status=data.get('active',
+                                            activation_status),
+                    force=data.get('force', False))
             if activation_status is not _default_activation_status:
                 if activation_status:
                     registry['actives'][item] = data

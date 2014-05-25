@@ -117,6 +117,18 @@ def is_valid_ip(ip_or_name):
     return valid
 
 
+def cache_check(cache, time_key, key, ttl_key):
+    '''Invalidate record in cache  if expired'''
+    time_check = "{0}".format(time() // cache[ttl_key])
+    if time_key not in cache:
+        cache[time_key] = ''
+    if time_check != cache[time_key] and key in cache:
+        for k in [time_key, ttl_key, key]:
+            if k in cache:
+                cache.pop(k)
+    return cache
+
+
 def memoize_cache(func, args=None, kwargs=None,
                   key='cache_key_{0}',
                   seconds=60, cache=None):
@@ -144,17 +156,28 @@ def memoize_cache(func, args=None, kwargs=None,
         args = []
     if kwargs is None:
         kwargs = {}
-    time_check = "{0}".format(time() // (seconds))
     if cache is None:
         cache = _LOCAL_CACHE
+    key += '_'
+    now = time()
     time_key = '{0}_time_check'.format(key)
-    if time_key not in cache:
-        cache[time_key] = ''
-    if time_check != cache[time_key] and key in cache:
-        del cache[key]
+    ttl_key = '{0}_ttl'.format(key)
+    cache[ttl_key] = seconds
+    last_access = cache.setdefault('last_access', now)
+    # global cleanup each 2 minutes
+    if last_access > (now + (2 * 60)):
+        for old_time_key in [a
+                             for a in cache
+                             if a.endswith('_time_check')]:
+            old_key = old_time_key.split('_time_check')[0]
+            old_ttl_key = old_time_key.split('_time_check')[0] + '_ttl'
+            cache_check(cache, old_time_key, old_key, old_ttl_key)
+    cache['last_access'] = now
+    cache_check(cache, time_key, key, ttl_key)
     if key not in cache:
         cache[key] = func(*args, **kwargs)
         cache[time_key] = "{0}".format(time() // (seconds))
+        cache[ttl_key] = seconds
     return cache[key]
 
 # vim:set et sts=4 ts=4 tw=80:

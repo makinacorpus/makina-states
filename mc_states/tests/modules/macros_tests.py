@@ -26,19 +26,23 @@ class TestCase(base.ModuleCase):
                        {1: 2},
                        {3: 2},
                        {4: 2},
+                       {4: 2},
+                       {4: 2},
+                       {4: 2},
+                       {4: 2},
                    ]):
             ret = mc_macros.load_registries()
             self.assertEqual(ret, ['localsettings'])
             self.assertTrue('localsettings' in mc_macros._REGISTRY)
 
     def test_get_regitry(self):
+        def _get(regname, item, default_status=None, *ar, **kw):
+            return {
+                'poo': True,
+                'qoo': False
+            }.get(item, default_status)
         with patch.dict(self._salt, {
-            'mc_utils.get': Mock(
-                side_effect={
-                    'makina-states.foo.poo': True,
-                    'makina-states.foo.qoo': False
-                }.get
-            )}
+            'mc_macros.is_item_active': Mock(side_effect=_get)}
         ):
             ret = mc_macros.get_registry({
                 'kind': 'foo',
@@ -73,9 +77,11 @@ class TestCase(base.ModuleCase):
             with patch.dict(self._salt, patched):
                 for i in sorted(mc_macros._GLOBAL_KINDS):
                     results[i] = mc_macros.load_kind_registries(i)
-                self.assertEqual(mc_macros.kinds(),
-                                 ['controllers', 'localsettings',
-                                  'nodetypes', 'services'])
+                ta = mc_macros.kinds()
+                ta.sort()
+                self.assertEqual(ta,
+                                  ['cloud', 'controllers', 'localsettings',
+                                   'nodetypes', 'services'])
                 self.assertEqual(
                     results['controllers'],
                     {'metadata': {2: 3},
@@ -99,21 +105,35 @@ class TestCase(base.ModuleCase):
                      'settings': {1: 4}})
 
     def test_is_item_active(self):
+        def _get(a, *ar, **kw):
+            return {
+                'makina-states.foo.prefix.1': True,
+                'makina-states.foo.prefix.2': False,
+            }.get(a)
+
         with patch.dict(self._salt,
                         {'mc_utils.get': Mock(
-                            side_effect={
-                                'prefix.1': True,
-                                'prefix.2': False,
-                            }.get)}):
-            self.assertTrue(mc_macros.is_item_active('prefix.1'))
-            self.assertFalse(mc_macros.is_item_active('prefix.2'))
+                            side_effect=_get)}):
+            self.assertTrue(mc_macros.is_item_active('foo', 'prefix.1'))
+            self.assertFalse(mc_macros.is_item_active('foo', 'prefix.2'))
+        with patch.dict(
+            self._salt,
+            {
+                'mc_utils.get': mc_utils.get
+            }
+        ):
             self.assertTrue(
-                mc_macros.is_item_active('prefix.a', default_status=True))
+                mc_macros.is_item_active('foo', 'prefix.a',
+                                         default_status=True))
             self.assertFalse(
-                mc_macros.is_item_active('prefix.b', default_status=False))
+                mc_macros.is_item_active('foo', 'prefix.b',
+                                         default_status=False))
 
     def test_registry_kind_get(self):
-        foo = mc_macros.registry_kind_get('foo')
+        with patch.dict(self._salt,
+                        {'mc_macros.is_item_active': Mock(
+                            return_value=True)}):
+            foo = mc_macros.registry_kind_get('foo')
         self.assertEqual(foo, {})
         self.assertTrue(foo is mc_macros._REGISTRY['foo'])
 
