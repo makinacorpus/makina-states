@@ -3,6 +3,8 @@
 {% set yameld_data = salt['mc_utils.json_dump'](settings) %}
 {% set zones = salt['mc_bind.cached_zone_headers']() %}
 
+{% set checked_zones = {} %}
+
 {% macro install_zone(zone) %}
 {% set data = zones[zone] %}
 dns-rzones-{{zone}}-{{data.fpath}}:
@@ -28,17 +30,9 @@ dns-rzones-{{zone}}-{{data.fpath}}:
     - watch_in:
       - mc_proxy: bind-post-conf
 {% if data.server_type in ['master'] %}
-bind-checkconf-{{zone}}-{{data.fpath}}:
-  cmd.run:
-    - name: |
-            named-checkzone -k fail -m fail -M fail -n fail {{zone}} {{data.fpath}} && echo changed='false'
-    - stateful: true
-    {# do not trigger reload but report problems #}
-    - user: root
-    - require:
-      - mc_proxy: bind-post-conf
-    - watch_in:
-      - mc_proxy: bind-check-conf
+{% if not zone in checked_zones %}
+{% do checked_zones.update({zone: data.fpath}) %}
+{% endif %}
 {% endif %}
 {#
 {% if data.dnssec %}
@@ -182,3 +176,37 @@ bind_config_rndc:
 {{ install_zone(zone) }}
 {% endfor %}
 {% endif %}
+
+bind-checkconf-zones:
+  file.managed:
+    - name: /etc/bind/checkzones.sh
+    - mode: 0755
+    - template: jinja
+    - source: ''
+    - makedirs: true
+    - contents: |
+                #!/usr/bin/env bash
+                ret=0
+                {% for zone, fpath in checked_zones.items() %}
+                named-checkzone -k fail -m fail -M fail -n fail {{zone}} "{{fpath}}"
+                if [ "x${?}" != "x0" ];then
+                  ret=1
+                fi
+                {% endfor %}
+                if [ "x${ret}" = "x0" ];then
+                  echo "changed='false'"
+                else
+                  exit ${ret}
+                fi
+  cmd.run:
+    - name: /etc/bind/checkzones.sh
+    - stateful: true
+    {# do not trigger reload but report problems #}
+    - user: root
+    - require:
+      - file: bind-checkconf-zones
+      - mc_proxy: bind-post-conf
+    - watch_in:
+      - mc_proxy: bind-check-conf
+
+

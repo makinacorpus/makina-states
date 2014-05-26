@@ -8,7 +8,9 @@ mc_macros / macros helpers
 '''
 
 # Import salt libs
+import msgpack
 import os
+import logging
 import time
 import traceback
 from salt.exceptions import SaltException
@@ -27,6 +29,7 @@ import yaml
 from salt.utils import yamldumper
 from salt.renderers.yaml import get_yaml_loader
 
+log = logging.getLogger(__name__)
 DEFAULT_SUF = 'makina-states.local'
 DEFAULT_LOCAL_REG_NAME = '{0}.{{0}}'.format(DEFAULT_SUF)
 
@@ -111,16 +114,52 @@ def is_active(registry, name):
         return False
 
 
-def encode_local_registry(name, registry):
-    registryf = os.path.join(
-        __opts__['config_dir'], 'makina-states/{0}.yaml'.format(name))
-    dregistry = os.path.dirname(registryf)
-    if not os.path.exists(dregistry):
-        os.makedirs(dregistry)
+def yaml_load_local_registry(name, registryf):
+    with open(registryf, 'r') as fic:
+        registry = yaml.load(fic, Loader=get_yaml_loader(''))
+        if not registry:
+            registry = {}
+        return registry
+
+
+def yaml_dump_local_registry(registry):
     content = yaml.dump(
         registry,
         default_flow_style=False,
         Dumper=yamldumper.SafeOrderedDumper)
+    return content
+
+
+def pack_load_local_registry(name, registryf):
+    value = {}
+    try:
+        if os.path.exists(registryf):
+            with open(registryf) as fic:
+                rvalue = fic.read()
+                value = msgpack.unpackb(rvalue)['value']
+    except msgpack.exceptions.UnpackValueError:
+        log.error('decoding error, removing stale {0}'.format(registryf))
+        os.unlink(registryf)
+        value = {}
+    return value
+
+
+def pack_dump_local_registry(registry):
+    '''encode in a file using msgpack backend'''
+    content = msgpack.packb({'value': registry})
+    return content
+
+
+def encode_local_registry(name, registry, registry_format='yaml'):
+    registryf = os.path.join(
+        __opts__['config_dir'], 'makina-states/{0}.{1}'.format(
+            name, registry_format))
+    dregistry = os.path.dirname(registryf)
+    if not os.path.exists(dregistry):
+        os.makedirs(dregistry)
+    content = __salt__[
+        'mc_macros.{0}_dump_local_registry'.format(
+            registry_format)](registry)
     sync = False
     if os.path.exists(registryf):
         with open(registryf) as fic:
@@ -143,10 +182,14 @@ def invalidate_cached_registry(name):
         _LOCAL_REG_CACHE.pop(k, None)
 
 
-def get_local_registry(name, cached=True, cachetime=60):
+def get_local_registry(name,
+                       cached=True,
+                       cachetime=60,
+                       registry_format='yaml'):
     '''Get local registry'''
     registryf = os.path.join(
-        __opts__['config_dir'], 'makina-states/{0}.yaml'.format(name))
+        __opts__['config_dir'], 'makina-states/{0}.{1}'.format(
+            name, registry_format))
     dregistry = os.path.dirname(registryf)
     if not os.path.exists(dregistry):
         os.makedirs(dregistry)
@@ -157,18 +200,16 @@ def get_local_registry(name, cached=True, cachetime=60):
     if (key not in _LOCAL_REG_CACHE) or (not cached):
         invalidate_cached_registry(name)
         if os.path.exists(registryf):
-            with open(registryf, 'r') as fic:
-                registry = yaml.load(fic, Loader=get_yaml_loader(''))
-                if not registry:
-                    registry = {}
-                # unprefix local simple registries
-                loc_k = DEFAULT_LOCAL_REG_NAME.format(name)
-                for k in [t for t in registry if t.startswith(loc_k)]:
-                    spl = loc_k + '.'
-                    nk = spl.join(k.split(spl)[1:])
-                    registry[nk] = registry[k]
-                    registry.pop(k)
-                _LOCAL_REG_CACHE[key] = registry
+            registry =_LOCAL_REG_CACHE[key] = __salt__[
+                'mc_macros.{0}_load_local_registry'.format(
+                    registry_format)](name, registryf)
+            # unprefix local simple registries
+            loc_k = DEFAULT_LOCAL_REG_NAME.format(name)
+            for k in [t for t in registry if t.startswith(loc_k)]:
+                spl = loc_k + '.'
+                nk = spl.join(k.split(spl)[1:])
+                registry[nk] = registry[k]
+                registry.pop(k)
     elif cached:
         registry = _LOCAL_REG_CACHE[key]
     return registry
@@ -177,10 +218,11 @@ def get_local_registry(name, cached=True, cachetime=60):
 _default = object()
 
 
-def update_registry_params(registry_name, params):
+def update_registry_params(registry_name, params, registry_format='yaml'):
     '''Update the desired local registry'''
     invalidate_cached_registry(registry_name)
-    registry = get_local_registry(registry_name)
+    registry = get_local_registry(
+        registry_name, registry_format=registry_format)
     changes = {}
     topreg_name = 'mc_{0}.registry'.format(registry_name)
     default = True
@@ -207,14 +249,17 @@ def update_registry_params(registry_name, params):
         ):
             del registry[param]
     if changes:
-        encode_local_registry(registry_name, registry)
+        encode_local_registry(
+            registry_name, registry, registry_format=registry_format)
         invalidate_cached_registry(registry_name)
     return changes
 
 
-def update_local_registry(registry_name, params):
+def update_local_registry(registry_name, params, registry_format='yaml'):
     '''Alias to update_local_registry'''
-    return update_registry_params(registry_name, params)
+    return update_registry_params(registry_name,
+                                  params,
+                                  registry_format=registry_format)
 
 
 def get_registry(registry_configuration):
