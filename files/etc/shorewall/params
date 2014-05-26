@@ -26,6 +26,11 @@
 #
 ###############################################################################
 {% set shwdata = salt['mc_utils.json_load'](shwdata) %}
+{% if shwdata.ulogd %}
+LOG=NFLOG
+{% else %}
+LOG=info
+{% endif %}
 {% for i in shwdata['params_keys'] -%}{% set data=shwdata['params'][i] -%}
 {{i}}={{data}}
 {% endfor -%}

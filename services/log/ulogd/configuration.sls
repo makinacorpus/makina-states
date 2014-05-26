@@ -15,6 +15,7 @@ makina-ulogd-configuration-check:
 
 {% set sdata =salt['mc_utils.json_dump'](data) %}
 {% for f in [
+'/etc/logrotate.d/{0}'.format(data.service_name),
 '/etc/ulogd.conf',
 ] %}
 makina-ulogd-{{f}}:

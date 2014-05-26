@@ -1,14 +1,11 @@
+{% if salt['mc_controllers.mastersalt_mode']() %}
+{% set data = salt['mc_ulogd.settings']() %}
 include:
   - makina-states.services.log.ulogd.hooks
-{% if salt['mc_controllers.mastersalt_mode']() %}
-{% set name = "ulogd" %}
-{% if grains['os'] in ['Ubuntu'] %}
-{% set name = "ulogd2" %}
-{% endif %}
 
 makina-ulogd-service:
   service.running:
-    - name: {{name}}
+    - name: {{data.service_name}}
     - enable: true
     - reload: true
     - watch:
@@ -18,7 +15,7 @@ makina-ulogd-service:
 
 makina-ulogd-restart-service:
   service.running:
-    - name: {{name}}
+    - name: {{data.service_name}}
     - enable: true
     - watch:
       - mc_proxy: ulogd-pre-hardrestart-hook
