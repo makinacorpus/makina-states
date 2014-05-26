@@ -1040,14 +1040,13 @@ def get_shorewall_settings(id_=None, ttl=60):
             for ip in __salt__['mc_pillar.ips_for'](n):
                 if not ip in allowed_ips:
                     allowed_ips.append(ip)
-        allowed_to_ping = allowed_ips
-        allowed_to_ntp = allowed_ips
-        allowed_to_snmp = allowed_ips
-        allowed_to_ssh = allowed_ips
+        allowed_to_ping = allowed_ips[:]
+        allowed_to_ntp = allowed_ips[:]
+        allowed_to_snmp = allowed_ips[:]
+        allowed_to_ssh = allowed_ips[:]
         infra = get_db_infrastructure_maps()
         vms = infra['vms']
         # configure shorewall for a particular host
-        sallowed_ips_to_ssh = 'net:'+','.join(allowed_to_ssh)
         # if at least one ip is natted
         # make sure localnets are allowed for ssh to work
         if id_ in vms:
@@ -1055,7 +1054,11 @@ def get_shorewall_settings(id_=None, ttl=60):
             hosts_ips = ips_for(vms[id_]['target'])
             for ip in vms_ips:
                 if ip in hosts_ips:
-                    sallowed_ips_to_ssh += ',net:172.16.0.0/12,net:192.168.0.0/24,10.0.0.0/16'
+                    allowed_to_ssh.extend(
+                        ['172.16.0.0/12',
+                         '192.168.0.0/24',
+                         '10.0.0.0/16'])
+        sallowed_ips_to_ssh = 'net:'+','.join(allowed_to_ssh)
         sallowed_ips_to_ping = 'net:'+','.join(allowed_to_ping)
         sallowed_ips_to_snmp = 'net:'+','.join(allowed_to_snmp)
         sallowed_ips_to_ntp = 'net:'+','.join(allowed_to_ntp)
