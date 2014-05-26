@@ -11,3 +11,4 @@ if [[ -e /etc/mastersalt ]];then
         service $i start
     done
 fi
+
