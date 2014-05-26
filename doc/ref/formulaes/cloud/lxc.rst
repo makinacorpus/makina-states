@@ -255,7 +255,7 @@ compute node
 
 Install lxc::
 
-    mastersalt-run -lall mc_cloud_lxc.install_vt <computenode_ida>
+    mastersalt-run -lall mc_cloud_lxc.install_vt <computenode_id>
 
 This will call in turn those runners:
 

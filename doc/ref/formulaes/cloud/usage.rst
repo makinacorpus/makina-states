@@ -32,11 +32,11 @@ VMs::
 
     mastersalt-run -lall mc_cloud_controller.orchestrate no_configure=True no_saltify=True no_vms=True only=[minionid]
 
-Is equivalent to (this call this one in fact)::
+Is equivalent and you have better to use (this call this one in fact)::
 
     mastersalt-run -lall mc_cloud_compute_node.orchestrate no_vms=True only=[minionid]
 
-- This will call in turn the ``mc_cloud_compute_node.orchestrate`` funcion.
+- This will call in turn the ``mc_cloud_compute_node.orchestrate`` function.
 - 'mc_cloud_compute_node' will in turn call ``mc_cloud_vm.orchestrate`` function
   if you do not filter out vms provision.
 
@@ -45,7 +45,7 @@ This call ``provision_compute_nodes`` which in turn calls all
 hooks (firewall, loadbalancer, driver images sync, etc.).
 
 
-Spawning and running vm postconfiguration
+Spawning and running vm post-configuration
 ++++++++++++++++++++++++++++++++++++++++++
 Installing a vm on a specific compute node::
 

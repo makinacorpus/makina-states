@@ -420,11 +420,11 @@ def get_configuration(name, *args, **kwargs):
                 the makina-states/projects/<APIVER> directory
                 (some valid values: generic zope)
 
-            a beginning with slashs
+            a string beginning with slashs
                 This one is an installer found on the filesystem
                 (/path/to/my/dir)
 
-            a with slashs
+            a string with slashs
                 This one is an installer found relativly in the project
                 salt root directory (<project_root>/.salt/mydir)
                 string without slashs
@@ -672,7 +672,7 @@ def get_configuration(name, *args, **kwargs):
     # we can try override default values via pillar/grains a last time
     # as format_resolve can have setted new entries
     # we do that only on the global data level and on non read only vars
-    if not 'data' in ignored_keys:
+    if 'data' not in ignored_keys:
         ignored_keys.append('data')
     cfg.update(
         __salt__['mc_utils.defaults'](
@@ -694,7 +694,7 @@ def get_configuration(name, *args, **kwargs):
         salt_settings['pillarRoot'], 'makina-projects', cfg['name'])
     # check if the specified sls installer files container
     # exists
-    if not '/' in cfg['installer']:
+    if '/' not in cfg['installer']:
         installer_path = os.path.join(
             salt_root, 'makina-states/projects/{0}/{1}'.format(
                 cfg['api_version'], cfg['installer']))

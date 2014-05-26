@@ -641,10 +641,11 @@ def settings():
                 'has': {'firewall': get_firewall_toggle()},
                 'ssh_port_range_start': get_ssh_port_start(),
                 'ssh_port_range_end': get_ssh_port_end(),
-                'targets': get_vms(),
+                'targets': get_vms()
             })
         return data
-    return _settings()
+    res = _settings()
+    return res
 
 
 def is_compute_node():
