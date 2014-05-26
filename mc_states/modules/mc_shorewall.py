@@ -104,6 +104,9 @@ def settings():
         have_rpn = providers['have_rpn']
         #if ((grains['os'] not in ['Debian'])
         #   and (grains.get('lsb_distrib_codename') not in ['precise'])):
+        ulogd = False
+        if nodetypes_registry['is']['lxccontainer']:
+            ulogd = True
 
         sw_ver = guess_shorewall_ver()
         shwIfformat = '?FORMAT 2'
@@ -165,6 +168,7 @@ def settings():
                 'no_computenode': False,
                 'defaultstate': 'new',
                 'ifformat': shwIfformat,
+                'ulogd': ulogd,
                 # retro compat
                 'enabled': __salt__['mc_utils.get'](
                     'makina-states.services.shorewall.enabled', True),

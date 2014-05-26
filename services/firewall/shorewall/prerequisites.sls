@@ -1,4 +1,8 @@
+{% set settings = salt['mc_shorewall.settings']() %}
 include:
+  {% if settings.ulogd %}
+  - makina-states.services.log.ulogd
+  {% endif %}
   - makina-states.services.firewall.shorewall.hooks
 
 {% if salt['mc_controllers.mastersalt_mode']() %}

@@ -28,6 +28,11 @@ class NoResultError(KeyError):
     ''''''
 
 
+def dolog(msg):
+    log.error("----------------")
+    log.error(msg)
+    log.error("----------------")
+
 
 class IPRetrievalCycleError(IPRetrievalError):
     ''''''
@@ -949,6 +954,8 @@ def get_db_infrastructure_maps(ttl=60):
         lbms = __salt__['mc_pillar.query']('baremetal_hosts')
         bms = OrderedDict()
         vms = OrderedDict()
+        for lbm in lbms:
+            bms.setdefault(lbm, [])
         for vt, targets in __salt__['mc_pillar.query']('vms').items():
             for target, lvms in targets.items():
                 vts = bms.setdefault(target, [])
@@ -991,6 +998,7 @@ def get_configuration(id_=None, ttl=60):
             data = __salt__['mc_utils.dictupdate'](data, configuration_settings[id_])
         return data
     cache_key = 'mc_pillar.get_global_settings_{0}'.format(id_)
+    log.error(cache_key)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 
@@ -1032,15 +1040,29 @@ def get_shorewall_settings(id_=None, ttl=60):
             for ip in __salt__['mc_pillar.ips_for'](n):
                 if not ip in allowed_ips:
                     allowed_ips.append(ip)
-        allowed_to_ping = allowed_ips
-        allowed_to_ntp = allowed_ips
-        allowed_to_snmp = allowed_ips
-        allowed_to_ssh = allowed_ips
-        # configure shorewall for a particular host #}
+        allowed_to_ping = allowed_ips[:]
+        allowed_to_ntp = allowed_ips[:]
+        allowed_to_snmp = allowed_ips[:]
+        allowed_to_ssh = allowed_ips[:]
+        infra = get_db_infrastructure_maps()
+        vms = infra['vms']
+        # configure shorewall for a particular host
+        # if at least one ip is natted
+        # make sure localnets are allowed for ssh to work
+        if id_ in vms:
+            vms_ips = ips_for(id_)
+            hosts_ips = ips_for(vms[id_]['target'])
+            for ip in vms_ips:
+                if ip in hosts_ips:
+                    allowed_to_ssh.extend(
+                        ['172.16.0.0/12',
+                         '192.168.0.0/24',
+                         '10.0.0.0/16'])
         sallowed_ips_to_ssh = 'net:'+','.join(allowed_to_ssh)
         sallowed_ips_to_ping = 'net:'+','.join(allowed_to_ping)
         sallowed_ips_to_snmp = 'net:'+','.join(allowed_to_snmp)
         sallowed_ips_to_ntp = 'net:'+','.join(allowed_to_ntp)
+
         shw_params = {
           'makina-states.services.firewall.shorewall': True,
           'makina-states.services.firewall.shorewall.params.RESTRICTED_SSH': sallowed_ips_to_ssh,
@@ -1163,8 +1185,7 @@ def is_dns_master(id_, ttl=60):
     return memoize_cache(_do, [], {}, cache_key, ttl)
 
 
-def get_makina_states_variables(ttl=60):
-    id_ = __opts__['id']
+def get_makina_states_variables(id_, ttl=60):
     def _do(id_):
         data = {}
         data.update(get_top_variables())

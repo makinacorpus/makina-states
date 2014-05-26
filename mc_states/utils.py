@@ -121,7 +121,7 @@ def cache_check(cache, time_key, key, ttl_key):
     '''Invalidate record in cache  if expired'''
     time_check = "{0}".format(time() // cache[ttl_key])
     if time_key not in cache:
-        cache[time_key] = ''
+        cache[time_key] = 0.0
     if time_check != cache[time_key] and key in cache:
         for k in [time_key, ttl_key, key]:
             if k in cache:

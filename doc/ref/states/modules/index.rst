@@ -53,6 +53,7 @@ Subregistries
    mc_pureftpd.rst
    mc_python.rst
    mc_rdiffbackup.rst
+   mc_ulogd.rst
    mc_rsyslog.rst
    mc_rvm.rst
    mc_salt.rst

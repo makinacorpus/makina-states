@@ -1,0 +1,11 @@
+{% set data = salt['mc_utils.json_load'](data) %}
+/var/log/ulog/*.log /var/log/ulog/*.pcap {
+    missingok
+    compress
+    sharedscripts
+    create 640 ulog adm
+    postrotate
+        invoke-rc.d {{data.service_name}} reload > /dev/null
+    endscript
+}
+

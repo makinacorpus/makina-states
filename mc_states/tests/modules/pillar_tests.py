@@ -146,6 +146,8 @@ ipsfo_map:
   thisfo.makina-corpus.net: [ifo-online-1.makina-corpus.net]
   a.makina-corpus.net: [ifo-online-1.makina-corpus.net]
   preprod-boo.makina-corpus.net: [ifo-online-1.makina-corpus.net]
+  testd.makina-corpus.net: [ifo-online-3.makina-corpus.net]
+  preprod-dd.makina-corpus.net: [ifo-online-4.makina-corpus.net]
 
 ips:
   foo.makina-corpus.net: [1.2.3.4]
@@ -157,6 +159,7 @@ ips:
   projecta.makina-corpus.net: [1.2.3.10]
   projectb.makina-corpus.net: [1.2.3.10]
   testa.makina-corpus.net: [1.2.3.10]
+  testd.makina-corpus.net: [1.2.3.10]
 
 
 managed_dns_zones:
@@ -167,6 +170,8 @@ managed_dns_zones:
 ipsfo:
   ifo-online-1.makina-corpus.net: 212.129.4.3
   ifo-online-2.makina-corpus.net: 212.129.4.4
+  ifo-online-3.makina-corpus.net: 212.129.4.5
+  ifo-online-4.makina-corpus.net: 212.129.4.6
 
 baremetal_hosts:
   - o.makina-corpus.net
@@ -178,6 +183,7 @@ baremetal_hosts:
   - d.makina-corpus.net
   - e.makina-corpus.net
   - f.makina-corpus.net
+  - testd.makina-corpus.net
 
 default_allowed_ips_names:
   - a.makina-corpus.net
@@ -188,6 +194,9 @@ vms:
     foo.makina-corpus.net:
       - preprod-goo.makina-corpus.net
   lxc:
+    testd.makina-corpus.net:
+      - preprod-d.makina-corpus.net
+      - preprod-dd.makina-corpus.net
     foo.makina-corpus.net:
       - preprod-moo.makina-corpus.net
       - preprod-boo.makina-corpus.net
@@ -328,6 +337,14 @@ class TestCase(base.ModuleCase):
             self.assertEqual(
                 res1['makina-states.services.firewall.'
                      'shorewall.params.RESTRICTED_FTP'], 'foo')
+            k = ('makina-states.services.firewall.'
+                 'shorewall.params.RESTRICTED_SSH')
+            res1 = mc_pillar.get_shorewall_settings(
+                'preprod-dd.makina-corpus.net')
+            res2 = mc_pillar.get_shorewall_settings(
+                'preprod-d.makina-corpus.net')
+            self.assertFalse('192.168' in res1[k])
+            self.assertTrue('192.168' in res2[k])
 
     def test_get_arr(self):
         def _load():
@@ -343,7 +360,7 @@ class TestCase(base.ModuleCase):
         }):
             res = mc_pillar.rrs_a_for('makina-corpus.net')
             self.assertEqual(
-                res,
+                res.splitlines(),
                 '       a.ifo-online-1.makina-corp'
                 'us.net. A 212.129.4.3\n'
                 '       a.makina-corpus.net. A 1.2.3.5\n'
@@ -354,6 +371,7 @@ class TestCase(base.ModuleCase):
                 '       e.makina-corpus.net. A 1.2.3.9\n'
                 '       f.makina-corpus.net. A 1.2.3.10\n'
                 '       failover.a.makina-corpus.net. A 212.129.4.3\n'
+                '       failover.testd.makina-corpus.net. A 212.129.4.5\n'
                 '       failover.thisfo.makina-corpus.net. A 212.129.4.3\n'
                 '       foo.makina-corpus.net. A 1.2.3.4\n'
                 '       goo.moo.makina-corpus.net. A 1.2.3.5\n'
@@ -363,19 +381,31 @@ class TestCase(base.ModuleCase):
                 '       ifo-online-1.thisfo.makina-corpus.net.'
                 ' A 212.129.4.3\n'
                 '       ifo-online-2.makina-corpus.net. A 212.129.4.4\n'
+                '       ifo-online-3.makina-corpus.net. A 212.129.4.5\n'
+                '       ifo-online-3.testd.makina-corpus.net. A 212.129.4.5\n'
+                '       ifo-online-4.makina-corpus.net. A 212.129.4.6\n'
                 '       ns1.makina-corpus.net. A 1.2.3.6\n'
                 '       preprod-boo.foo.ifo-online-1.makina'
                 '-corpus.net. A 212.129.4.3\n'
                 '       preprod-boo.ifo-online-1.makin'
                 'a-corpus.net. A 212.129.4.3\n'
                 '       preprod-boo.makina-corpus.net. A 212.129.4.3\n'
+                '       preprod-d.makina-corpus.net. A 1.2.3.10\n'
+                '       preprod-dd.ifo-online-4.makina-c'
+                'orpus.net. A 212.129.4.6\n'
+                '       preprod-dd.makina-cor'
+                'pus.net. A 212.129.4.6\n'
+                '       preprod-dd.testd.ifo-online-4.makin'
+                'a-corpus.net. A 212.129.4.6\n'
                 '       preprod-goo.makina-corpus.net. A 1.2.3.4\n'
                 '       preprod-moo.makina-corpus.net. A 1.2.3.4\n'
                 '       projecta.makina-corpus.net. A 1.2.3.10\n'
                 '       projectb.makina-corpus.net. A 1.2.3.10\n'
                 '       testa.makina-corpus.net. A 1.2.3.10\n'
+                '       testd.ifo-online-3.makina-corpus.net. A 212.129.4.5\n'
+                '       testd.makina-corpus.net. A 1.2.3.10\n'
                 '       thisfo.ifo-online-1.makina-corpus.net. A 212.129.4.3\n'
-                '       thisfo.makina-corpus.net. A 212.129.4.3')
+                '       thisfo.makina-corpus.net. A 212.129.4.3'.splitlines())
 
     def test_get_mx_rr(self):
         def _load():

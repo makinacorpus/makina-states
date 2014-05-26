@@ -4,4 +4,5 @@ Log services
    :maxdepth: 2
 
    rsyslog.rst
+   ulogd.rst
 
