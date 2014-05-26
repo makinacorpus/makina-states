@@ -350,7 +350,7 @@ def client(fun, *args, **kw):
         wendto = time.time() + wait_for_res
         while True:
             cret = runner.cmd('jobs.lookup_jid',
-                              [jid, {'__kwarg__': True, 'output': False}])
+                              [jid, {'__kwarg__': True}])
             if target in cret:
                 ret = cret[target]
                 break
