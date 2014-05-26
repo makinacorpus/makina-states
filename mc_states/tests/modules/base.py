@@ -29,6 +29,7 @@ class ModuleCase(unittest.TestCase):
 
     '''
     _mods = tuple()
+    maxDiff = None
 
     def setUp(self):
         '''
