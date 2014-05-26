@@ -26,6 +26,14 @@ def _rsyslogEn(__grains__):
     return __grains__.get('os', '').lower() in ['ubuntu']
 
 
+def _ulogdEn(__salt__):
+    nodetypes_registry = __salt__['mc_nodetypes.registry']()
+    return (
+        ('dockercontainer' in nodetypes_registry['actives'])
+        or ('lxccontainer' in nodetypes_registry['actives'])
+    )
+
+
 def _ntpEn(__salt__):
     nodetypes_registry = __salt__['mc_nodetypes.registry']()
     return not (
@@ -63,6 +71,7 @@ def registry():
         ntpen = _ntpEn(__salt__)
         binden = _bindEn(__salt__)
         rsyslogen = _rsyslogEn(__grains__)
+        ulogden = _ulogdEn(__salt__)
         data = __salt__[
             'mc_macros.construct_registry_configuration'
         ](__name, defaults={
@@ -71,6 +80,7 @@ def registry():
             'backup.burp.client': {'active': False},
             'backup.dbsmartbackup': {'active': False},
             'log.rsyslog': {'force': True, 'active': rsyslogen},
+            'log.ulogd': {'force': True, 'active': ulogden},
             'base.ntp': {'force': True, 'active': ntpen},
             'base.ssh': {'force': True, 'active': sshen},
             'dns.bind': {'force': True, 'active': binden},

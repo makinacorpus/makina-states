@@ -174,6 +174,9 @@ def settings():
                     'makina-states.services.shorewall.enabled', True),
 
             })
+        info_loglevel = 'info'
+        if data['ulogd']:
+            info_loglevel = 'NFLOG'
         # alias for retrocompat
         data['shwInterfaces'] = data['interfaces']
         data['shwPolicies'] = data['policies']
@@ -354,17 +357,17 @@ def settings():
             if data['have_rpn']:
                 data['default_policies'].append({
                     'source': 'rpn', 'dest': 'all',
-                    'policy': 'DROP', 'loglevel': 'info'})
+                    'policy': 'DROP', 'loglevel': info_loglevel})
                 data['default_policies'].append({
                     'source': '$FW', 'dest': 'rpn', 'policy': 'ACCEPT'})
 
             # drop all traffic by default
             data['default_policies'].append({
                 'source': 'all', 'dest': 'all',
-                'policy': 'REJECT', 'loglevel': 'info'})
+                'policy': 'REJECT', 'loglevel': info_loglevel})
             data['default_policies'].append({
                 'source': 'net', 'dest': 'all',
-                'policy': 'DROP', 'loglevel': 'info'})
+                'policy': 'DROP', 'loglevel': info_loglevel})
 
         # ATTENTION WE MERGE, so reverse order to append at begin
         data['default_policies'].reverse()
