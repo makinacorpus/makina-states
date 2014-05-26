@@ -230,10 +230,15 @@ salt-{{ data.name }}-{{ group }}:
 {{data.name}}-clean-job:
   cron.absent: []
 
+{{data.name}}-remove-oldcrons:
+  file.absent:
+    - names:
+      - /etc/cron.d/salt.sh
+
 {% if salt['mc_controllers.mastersalt_mode']() %}
 {{data.name}}-crons:
   file.managed:
-    - name: /etc/cron.d/salt.sh
+    - name: /etc/cron.d/salt
     - source: ''
     - mode: 750
     - user: root
@@ -524,13 +529,17 @@ salt-{{ data.daemon_name }}-conf-global:
       - mc_proxy: dummy-pre-{{ data.name }}-service-restart
 
 {% if salt['mc_controllers.mastersalt_mode']() %}
+{{data.service_name}}-remove-oldcrons:
+  file.absent:
+    - names:
+      - /etc/cron.d/saltrestart-{{data.service_name}}.sh
 {{data.name}}-{{data.service_name}}-restart-crons:
   file.managed:
     - require:
       - mc_proxy: dummy-{{data.name}}-layout
     - require_in:
       - mc_proxy: dummy-pre-{{ data.name }}-service-restart
-    - name: /etc/cron.d/saltrestart-{{data.service_name}}.sh
+    - name: /etc/cron.d/saltrestart-{{data.service_name}}
     - source: ''
     - mode: 750
     - user: root
