@@ -29,8 +29,14 @@ def settings():
         pillar = __pillar__
         nt_reg = __salt__['mc_nodetypes.registry']()
         locs = __salt__['mc_locations.settings']()
+        service = 'ulogd'
+        if grains['os'] in ['Ubuntu']:
+            service = 'ulogd2'
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.log.ulogd', {
+                'ulog_emu': True,
+                'nflog_emu': True,
+                'service_name': service,
             }
         )
         return data
