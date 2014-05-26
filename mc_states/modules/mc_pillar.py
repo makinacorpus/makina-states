@@ -1057,7 +1057,7 @@ def get_shorewall_settings(id_=None, ttl=60):
                     allowed_to_ssh.extend(
                         ['172.16.0.0/12',
                          '192.168.0.0/24',
-                         '10.0.0.0/16'])
+                         '10.0.0.0/8'])
         sallowed_ips_to_ssh = 'net:'+','.join(allowed_to_ssh)
         sallowed_ips_to_ping = 'net:'+','.join(allowed_to_ping)
         sallowed_ips_to_snmp = 'net:'+','.join(allowed_to_snmp)
