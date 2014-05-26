@@ -228,6 +228,7 @@ burp-{{client}}-cronjob:
     - name: /etc/burp/clients/{{client}}/etc/cron.d/burp
     - makedirs: true
     - contents: |
+                #!/usr/bin/env bash
                 MAILTO=""
                 {{cdata.cron_periodicity}} {{cdata.cron_cmd}}
     - user: root
