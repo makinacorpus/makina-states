@@ -559,18 +559,19 @@ def rrs_mx_for(domain, ttl=60):
     return memoize_cache(_do_mx, [domain], {}, cache_key, ttl)
 
 
-def whitelisted(ttl=60):
+def whitelisted(dn, ttl=60):
     '''Return all configured NS records for a domain'''
-    def _do_whitel():
+    def _do_whitel(dn):
         db = load_network_infrastructure()
         allow = query('default_allowed_ips_names')
+        allow = allow.get(dn, allow['default'])
         w = []
         for fqdn in allow:
             for ip in [a for a in ips_for(fqdn) if not a in w]:
                 w.append(ip)
         return w
-    cache_key = 'mc_pillar.whitelisted'
-    return memoize_cache(_do_whitel, [], {}, cache_key, ttl)
+    cache_key = 'mc_pillar.whitelisted_{0}'.format(dn)
+    return memoize_cache(_do_whitel, [dn], {}, cache_key, ttl)
 
 
 def filter_rr_str(all_rrs):
@@ -1032,13 +1033,8 @@ def get_shorewall_settings(id_=None, ttl=60):
         id_ = __opts__['id']
     def _do_sw(id_, sysadmins=None):
         qry = __salt__['mc_pillar.query']
-        allowed_ips = []
-        default_allowed_ips_names = qry('default_allowed_ips_names')
+        allowed_ips = __salt__['mc_pillar.whitelisted'](id_)
         shorewall_overrides = qry('shorewall_overrides')
-        for n in default_allowed_ips_names:
-            for ip in __salt__['mc_pillar.ips_for'](n):
-                if not ip in allowed_ips:
-                    allowed_ips.append(ip)
         allowed_to_ping = allowed_ips[:]
         allowed_to_ntp = allowed_ips[:]
         allowed_to_snmp = allowed_ips[:]
