@@ -127,6 +127,7 @@ def settings():
                     # 'Banner': '/etc/ssh/banner',
                     'UsePAM': 'yes',
                     'PermitRootLogin': 'without-password',
+                    'chroot_sftp': False,
                 }
             },
             'client': {
