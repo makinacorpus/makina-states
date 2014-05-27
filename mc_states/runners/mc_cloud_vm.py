@@ -58,6 +58,7 @@ def vm_sls_pillar(compute_node, vm):
     cloudSettingsData['root'] = cloudSettings['root']
     cloudSettingsData['prefix'] = cloudSettings['prefix']
     cnsettings = cli('mc_cloud_compute_node.settings')
+    cnsettings = cli('mc_cloud_compute_node.settings')
     targets = cnsettings.get('targets', {})
     cnSettingsData['virt_types'] = targets.get(
         compute_node, {}).get('virt_types', [])
@@ -67,6 +68,8 @@ def vm_sls_pillar(compute_node, vm):
     cnSettingsData = api.json_dump(cnSettingsData)
     pillar = {'scloudSettings': cloudSettingsData,
               'mccloud_vmname': vm,
+              'mccloud_vm_ssh_port': cli(
+                  'mc_cloud_compute_node.get_ssh_port', compute_node, vm),
               'mccloud_targetname': compute_node,
               'svmSettings': vmSettingsData,
               'sisdevhost': api.json_dump(
@@ -93,6 +96,17 @@ def _vm_configure(what, target, compute_node, vm, ret, output):
             'sls_kw': {'pillar': vm_sls_pillar(compute_node, vm)}})
     salt_output(ret, __opts__, output=output)
     return ret
+
+
+def vm_markers(compute_node, vm, ret=None, output=True):
+    '''install markers at / of the vm for proxified access
+
+        compute_node
+            where to act
+        vm
+            vm to install grains into
+    '''
+    return _vm_configure('markers', vm, compute_node, vm, ret, output)
 
 
 def vm_grains(compute_node, vm, ret=None, output=True):
@@ -180,6 +194,7 @@ def provision(compute_node, vt, vm, steps=None, ret=None, output=True):
                  'hostsfile',
                  'sshkeys',
                  'grains',
+                 'markers',
                  'initial_setup',
                  'initial_highstate']
     if ret is None:

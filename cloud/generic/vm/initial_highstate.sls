@@ -5,3 +5,4 @@ vm-initial-highstate:
   cmd.run:
     - name: "ssh -o\"ProxyCommand=ssh {{target}} nc -w300 {{vmname}} 22\" footarget {{cloudSettings.root}}/makina-states/_scripts/boot-salt.sh --initial-highstate"
     - user: root
+
