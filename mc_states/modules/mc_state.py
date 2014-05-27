@@ -23,11 +23,11 @@ def patch(mod):
         oldk = getattr(mod, k, None)
         setattr(mod, mkey, oldk)
         if not oldk:
-            setattr(mod, k, globals()[k] or default.get(k))
+            setattr(mod, k, globals().get(k, default.get(k)))
 
 
 def unpatch(mod):
-    for k in ['__env__',
+    for k in [#'__env__',
               '__pillar__',
               '__grains__',
               '__salt__',
