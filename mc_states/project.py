@@ -12,41 +12,23 @@ from salt.exceptions import SaltException
 
 LAST_PROJECT_API_VERSION = "2"
 EDITABLE_MODE = 'editable'
-COOKING_MODE = 'cooking'
 FINAL_MODE = 'final'
 OPERATION_MODES = [EDITABLE_MODE,
-                   COOKING_MODE,
                    FINAL_MODE]
 
 DEFAULTS_SKIPS = {
-    FINAL_MODE: {
-        True: [
-            'skip_build',
-        ],
-    },
-    EDITABLE_MODE: {
+    'dev': {
         True: [
             'skip_archive',
             'skip_rollback',
             'skip_release_sync',
-            'skip_reconfigure',
-            'skip_bundle',
-        ],
-    },
-    COOKING_MODE: {
-        True: [
-            'skip_archive',
-            'skip_release_sync',
-            'skip_rollback',
         ],
     },
 }
 ENVS = {
     'prod': ['prod'],
     'dev': ['dev'],
-    'qa': ['staging',
-           'test',
-           'preprod'],
+    'qa': ['staging', 'test', 'preprod'],
 }
 _DEFAULT = object()
 
