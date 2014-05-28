@@ -16,9 +16,25 @@ import re
 from salt.utils.odict import OrderedDict
 import traceback
 from mc_states.utils import memoize_cache
+import random
+import string
 
 log = logging.getLogger(__name__)
 DOMAIN_PATTERN = '(@{0})|({0}\\.?)$'
+
+
+
+def generate_password(length=None):
+    if length is None:
+        length = random.randint(16, 32)
+    ret = ''
+    strings = string.ascii_letters + string.digits
+    with open('/dev/urandom', 'r') as fic:
+        while len(ret) < length:
+            char = fic.read(1)
+            if char in strings:
+                ret += char
+    return ret
 
 
 class IPRetrievalError(KeyError):
@@ -1102,31 +1118,101 @@ def get_sysadmins_keys(id_=None, ttl=60):
     return memoize_cache(_do_sys_keys, [id_], {}, cache_key, ttl)
 
 
+def delete_password_for(id_, user='root', ttl=60):
+    '''Cleanup a password entry from the local password database'''
+    if not id_:
+        id_ = __opts__['id']
+    pw_reg = __salt__['mc_macros.get_local_registry'](
+        'passwords_map', registry_format='pack')
+    pw_id = pw_reg.setdefault(id_, {})
+    store = False
+    updated = 'not changed'
+    # default sysadmin password is root's one
+    if user in pw_id:
+        del pw_id[user]
+        __salt__['mc_macros.update_local_registry'](
+            'passwords_map', pw_reg, registry_format='pack')
+        updated = 'removed'
+    return updated
+
+
+def get_or_generate_password_for(id_, user='root', ttl=60, regenerate=False):
+    '''Return user/password mappings for a particular host from
+    a global pillar passwords map. Create it if not done'''
+    if not id_:
+        id_ = __opts__['id']
+    def _do_pass(id_, user='root'):
+        db_reg = __salt__['mc_pillar.query']('passwords_map')
+        db_id = db_reg.setdefault(id_, {})
+        pw_reg = __salt__['mc_macros.get_local_registry'](
+            'passwords_map', registry_format='pack')
+        pw_id = pw_reg.setdefault(id_, {})
+        store = False
+        pw = db_id.get(user, None)
+        # default sysadmin password is root's one
+        if pw is None and user == 'sysadmin':
+            pw = db_id.get('root', None)
+        # if not found, fallback on local database
+        if pw is None:
+            pw = pw_id.get(user, None)
+        if pw is None and user == 'sysadmin':
+            pw = pw_id.get('root', None)
+        # if still not found, generate and store
+        # if regenerate is asked, regenerate only if
+        # the password is not coming from the central database
+        # but may be present only in the localdb
+        if (pw is None) or (regenerate and (user not in db_id)):
+            pw = generate_password()
+            store = True
+        pw_id[user] = pw
+        db_id[user] = pw
+        # store locally passwords
+        # and update them on change
+        if (user not in pw_id) or (pw_id.get(user, None) != pw):
+            store = True
+        if store:
+            __salt__['mc_macros.update_local_registry'](
+                'passwords_map', pw_reg, registry_format='pack')
+        cpw = __salt__['mc_utils.unix_crypt'](pw)
+        return {'clear': pw,
+                'crypted': cpw}
+    cache_key = 'mc_pillar.get_passwords_for_{0}_{1}'.format(id_, user)
+    return memoize_cache(_do_pass, [id_, user], {}, cache_key, ttl)
+
+
 def get_passwords(id_, ttl=60):
     '''Return user/password mappings for a particular host from
-    a global pillar passwords map'''
+    a global pillar passwords map
+    Take in priority pw from the db map
+    But if does not exists in the db, lookup inside the local one
+    If stiff non found, generate it and store in in local
+    '''
     if not id_:
         id_ = __opts__['id']
     def _do_pass(id_):
-        passwords_map = __salt__['mc_pillar.query']('passwords_map')
-        passwords = {'clear': {}, 'crypted': {}}
-        passwords['clear']['root'] = passwords_map['root'][id_]
-        passwords['clear']['sysadmin'] = passwords_map.get('sysadmin', {}).get(
-            id_, passwords['clear']['root'])
-        for user, data in passwords_map.items():
-            if user in ['root', 'sysadmin']:
-                continue
-            if isinstance(data, dict):
-                for host, data in data.items():
-                    if host not in [id_]:
-                        continue
-                    if isinstance(data, basestring):
-                        passwords['clear'][user] = data
-        for user, password in passwords['clear'].items():
-            passwords['crypted'][user] = __salt__['mc_utils.unix_crypt'](password)
+        defaults_users = ['root', 'sysadmin']
+        pw_reg = __salt__['mc_macros.get_local_registry'](
+            'passwords_map', registry_format='pack')
+        db_reg = __salt__['mc_pillar.query']('passwords_map')
+        users, crypted, store= [], {}, False
+        pw_id = pw_reg.setdefault(id_, {})
+        db_id = db_reg.setdefault(id_, {})
+        for users_list in [pw_id, db_id, defaults_users]:
+            for user in users_list:
+                if not user in users:
+                    users.append(user)
+        for user in users:
+            pws = get_or_generate_password_for(id_, user)
+            pw = pws['clear']
+            cpw = pws['crypted']
+            crypted[user] = cpw
+            pw_id[user] = pw
+            db_id[user] = pw
+        passwords = {'clear': pw_id, 'crypted': crypted}
         return passwords
     cache_key = 'mc_pillar.get_passwords_{0}'.format(id_)
     return memoize_cache(_do_pass, [id_], {}, cache_key, ttl)
+
 
 
 def get_ssh_groups(id_=None, ttl=60):
