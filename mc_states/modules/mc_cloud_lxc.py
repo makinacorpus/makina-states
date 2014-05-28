@@ -376,7 +376,8 @@ def get_settings_for_vm(target, vm, full=True):
                 del lxc_data[k]
     # at this stage, only get already allocated ips
     lxc_data['ip'] = _s['mc_cloud_compute_node.find_ip_for_vm'](
-        target, 'lxc', vm,
+        target, vm,
+        virt_type='lxc',
         network=lxc_data['network'],
         netmask=lxc_data['netmask'],
         default=lxc_data.get('ip'))
