@@ -50,7 +50,6 @@ logger = logging.getLogger(__name__)
 API_VERSION = '2'
 PROJECT_INJECTED_CONFIG_VAR = 'cfg'
 
-
 DEFAULT_CONFIGURATION = {
     'api_version': API_VERSION,
     'name': None,
@@ -107,11 +106,18 @@ DEFAULT_CONFIGURATION = {
     'data': {},
 }
 STEPS = [
+    'deploy',
     'archive',
-    'install'
+    'install',
     'rollback',
+    'fixperms',
     'notify',
 ]
+SPECIAL_SLSES = ["{0}.sls".format(a)
+                 for a in STEPS
+                 if a not in ['deploy',
+                              'install']]
+
 
 for step in STEPS:
     DEFAULT_CONFIGURATION['skip_{0}'.format(step)] = None
@@ -1221,14 +1227,15 @@ def init_salt_dir(cfg, parent, ret=None):
              for a in os.listdir(salt_root)
              if a.endswith('.sls') and not os.path.isdir(a)]
     if not files:
-        for fil in ['00_helloworld']:
+        for fil in SPECIAL_SLSES + ['00_helloworld.sls']:
             template = (
                 'salt://makina-states/files/projects/{1}/'
-                'salt/{0}.sls'.format(fil, cfg['api_version']))
+                'salt/{0}'.format(fil, cfg['api_version']))
             cret = _state_exec(sfile, 'managed',
-                               name=os.path.join(salt_root, '{0}.sls').format(fil),
+                               name=os.path.join(salt_root, '{0}').format(fil),
                                source=template, defaults={},
                                user=user, group=group,
+                               makedirs=True,
                                mode='770', template='jinja')
             if not cret['result']:
                 raise ProjectInitException(
@@ -1335,10 +1342,12 @@ def guarded_step(cfg,
     try:
         try:
             for step in step_or_steps:
+                set_project(cfg)
                 cret = __salt__['mc_project_{1}.{0}'.format(
                     step, cfg['api_version'])](name, *args, **kwargs)
                 _merge_statuses(ret, cret, step=step)
         except ProjectProcedureException, pr:
+
             # if we are not in an inner step, raise in first place !
             # and do not mark for rollback
             if inner_step:
@@ -1439,20 +1448,38 @@ def release_sync(name, *args, **kwargs):
     return iret
 
 
+def get_executable_slss(path):
+    slses = []
+    return sles
+
+
 def install(name, *args, **kwargs):
     cfg = get_configuration(name, *args, **kwargs)
+    ret = _get_ret(name, *args, **kwargs)
     if not os.path.exists(cfg['installer_path']):
         raise ProjectInitException(
             'invalid project type or installer directory: {0}/{1}'.format(
                 cfg['installer'], cfg['installer_path']))
-
-    raise Exception('not finished, parse sls')
-    sls = [a for a in os.listdir()]
+    cret = None
+    slses = get_executable_slss(cfg['installer_path'])
+    if not sles:
+        raise _stop_proc('No installation slses avalaible for {0}'.format(name),
+                         'install', ret)
+    for sls in sles:
+        cret = _step_exec(cfg, sls)
+        _merge_statuses(ret, cret)
+    return ret
 
 
 def run_setup(name, step_name,  *args, **kwargs):
     cfg = get_configuration(name, *args, **kwargs)
     cret = _step_exec(cfg, step)
+    return cret
+
+
+def fixperms(name, *args, **kwargs):
+    cfg = get_configuration(name, *args, **kwargs)
+    cret = _step_exec(cfg, 'fixperms')
     return cret
 
 
