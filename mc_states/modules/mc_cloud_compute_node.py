@@ -441,17 +441,71 @@ def _get_next_available_port(ports, start, stop):
     for i in range(start, stop + 1):
         if i not in ports:
             return i
-    raise ValueError('mc_compute_node: No more available ssh port')
+    raise ValueError('mc_compute_node: No more available ssh port in'
+                     '{0}:{1}'.format(start, stop))
 
 
 def get_ssh_mapping_for_target(target, target_data=None):
-    feed_http_reverse_proxy_for_target(target, target_data=target_data)
-    return get_conf_for_target(target, 'ssh_map',  {})
+    _s = __salt__.get
+    if target_data is None:
+        target_data = get_settings_for_target(target)
+    mapping = {}
+    vms_infos = target_data.get('vms', {})
+    # generate or refresh ssh mappings
+    for vm in vms_infos:
+        mapping[vm] = _s('mc_cloud_compute_node.get_ssh_port')(
+            target, vm, target_data=target_data)
+    return mapping
+
+
+def set_ssh_port(target, vm, port, target_data=None):
+    if target_data is None:
+        target_data = get_settings_for_target(target)
+    ssh_map = get_conf_for_target(target, 'ssh_map', {})
+    if ssh_map.get(vm, None) != port:
+        ssh_map[vm] = port
+        set_conf_for_target(target, 'ssh_map', ssh_map)
+    return get_conf_for_target(target, 'ssh_map', {}).get(vm, None)
+
+
+def cleanup_ssh_ports(target, target_data=None):
+    '''This is a maintenance routine which can be called to cleanup
+    ssh ports when range exhaustion is incoming'''
+    if target_data is None:
+        target_data = get_settings_for_target(target)
+    vms_infos = target_data.get('vms', {})
+    ssh_map = get_conf_for_target(target, 'ssh_map', {})
+    # filter old vms grains
+    need_sync = True
+    for avm in [a for a in ssh_map]:
+        if avm not in vms_infos:
+            del ssh_map[avm]
+            need_sync = True
+    if need_sync:
+        set_conf_for_target(target, 'ssh_map', ssh_map)
+    return get_conf_for_target(target, 'ssh_map', {})
 
 
 def get_ssh_port(target, vm, target_data=None):
-    feed_http_reverse_proxy_for_target(target, target_data=target_data)
-    return get_conf_for_target(target, 'ssh_map',  {}).get(vm, None)
+    _s = __salt__.get
+    _settings = settings()
+    vms_infos = target_data.get('vms', {})
+    if target_data is None:
+        target_data = get_settings_for_target(target)
+    start = int(_settings['ssh_port_range_start'])
+    end = int(_settings['ssh_port_range_end'])
+    ssh_map = get_conf_for_target(target, 'ssh_map', {})
+    for a in [a for a in ssh_map]:
+        ssh_map[a] = int(ssh_map[a])
+    port = ssh_map.get(vm, None)
+    if port is None:
+        if vm in vms_infos:
+            port = _get_next_available_port(ssh_map.values(), start, end)
+            _s('mc_cloud_compute_node.set_ssh_port')(
+                target, vm, port, target_data=target_data)
+        else:
+            raise ValueError('{0} is not a vm of {1}'.foramt(vm, target))
+    return port
 
 
 def feed_ssh_reverse_proxies_for_target(target, target_data=None):
@@ -459,26 +513,12 @@ def feed_ssh_reverse_proxies_for_target(target, target_data=None):
     _settings = settings()
     if target_data is None:
         target_data = get_settings_for_target(target)
-    reversep = _get_rp(target_data)
-    start = int(_settings['ssh_port_range_start'])
-    end = int(_settings['ssh_port_range_end'])
-    need_sync = False
-    ssh_map = get_conf_for_target(target, 'ssh_map', {})
     vms_infos = target_data.get('vms', {})
+    reversep = _get_rp(target_data)
     ssh_proxies = reversep.setdefault('ssh_proxies', [])
-    for a in [a for a in ssh_map]:
-        ssh_map[a] = int(ssh_map[a])
-    # filter old vms grains
-    for avm in [a for a in ssh_map]:
-        if avm not in vms_infos:
-            del ssh_map[avm]
-            need_sync = True
     for vm, data in vms_infos.items():
-        port = ssh_map.get(vm, None)
-        if not port:
-            port = _get_next_available_port(ssh_map.values(), start, end)
-            ssh_map[vm] = port
-            need_sync = True
+        port = _s('mc_cloud_compute_node.get_ssh_port')(
+            target, vm, target_data=target_data)
         ssh_proxy = {'name': 'lst_{0}'.format(vm),
                      'bind': ':{0}'.format(port),
                      'mode': 'tcp',
@@ -489,8 +529,6 @@ def feed_ssh_reverse_proxies_for_target(target, target_data=None):
                          'opts': 'check'}]}
         if ssh_proxy not in ssh_proxies:
             ssh_proxies.append(ssh_proxy)
-    if need_sync:
-        set_conf_for_target(target, 'ssh_map', ssh_map)
     return reversep
 
 
