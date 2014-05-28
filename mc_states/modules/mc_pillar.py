@@ -1136,7 +1136,7 @@ def delete_password_for(id_, user='root', ttl=60):
     return updated
 
 
-def get_or_generate_password_for(id_, user='root', ttl=60, regenerate=False):
+def get_password(id_, user='root', ttl=60, regenerate=False):
     '''Return user/password mappings for a particular host from
     a global pillar passwords map. Create it if not done'''
     if not id_:
@@ -1202,7 +1202,7 @@ def get_passwords(id_, ttl=60):
                 if not user in users:
                     users.append(user)
         for user in users:
-            pws = get_or_generate_password_for(id_, user)
+            pws = get_password(id_, user)
             pw = pws['clear']
             cpw = pws['crypted']
             crypted[user] = cpw
