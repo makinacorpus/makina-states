@@ -24,6 +24,8 @@ _SUB_REGISTRIES = [
     'settings',
     'registry',
 ]
+NETWORK = '10.5.0.0'
+NETMASK = '16'
 
 
 def uniquify(seq):

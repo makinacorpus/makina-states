@@ -22,12 +22,13 @@ if [ "x${BRANCH}"  = "xmaster" ];then
         -p ${PROJECT_NAME}\
         -l "${LOGLEVEL}"\
         ${EXTRA_ARGS}
-    ret="${?}"
+    ret=${?}
     if [ "x${ret}" != "x0" ];then
         if [ -f hooks/curcom ];then
             cid="$(cat hooks/curcom)"
             echo "Reverting to ${cid}"
-            echo "${cid}">refs/heads/master 
+            echo "${cid}">refs/heads/master
+            exit ${ret}
         else
             echo "Undetermined old rev!"
         fi

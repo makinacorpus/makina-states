@@ -17,6 +17,8 @@ OPERATION_MODES = [EDITABLE_MODE,
                    FINAL_MODE]
 
 DEFAULTS_SKIPS = {
+    'prod': {},
+    'staging': {},
     'dev': {
         True: [
             'skip_archive',

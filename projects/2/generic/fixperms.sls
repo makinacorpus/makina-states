@@ -2,7 +2,6 @@
 {% set ugs = salt['mc_usergroup.settings']() %}
 {% set locs = salt['mc_locations.settings']() %}
 {% set cfg = opts['ms_project'] %}
-{%- if not cfg.no_reset_perms %}
 {{cfg.name}}-restricted-perms:
   file.managed:
     - name: {{cfg.project_dir}}/global-reset-perms.sh
@@ -34,4 +33,3 @@
     - user: root
     - watch:
       - file: {{cfg.name}}-restricted-perms
-{% endif %}

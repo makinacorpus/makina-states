@@ -164,9 +164,58 @@ def find_password_for_vm(target,
     return password
 
 
-def remove_allocated_ip(target, ip, vm=None):
+def _construct_ips_dict(target):
+    allocated_ips = get_conf_for_target(target, 'allocated_ips')
     sync = False
-    all_ips = get_allocated_ips(target, norm=True)
+    if (allocated_ips is None) or (not isinstance(allocated_ips, dict)):
+        allocated_ips = {}
+    for k in ['api', 'ips']:
+        if k not in allocated_ips:
+            sync = True
+    allocated_ips.setdefault('api', _CUR_API)
+    allocated_ips.setdefault('ips', {})
+    if sync:
+        set_conf_for_target(target, 'allocated_ips', allocated_ips)
+    return allocated_ips
+
+
+def cleanup_allocated_ips(target):
+    '''Maintenance routine to cleanup ips when ip
+    exhaution arrises'''
+    allocated_ips = _construct_ips_dict(target)
+    existing_vms = get_vms_for_target(target)
+    # recycle old ips for unexisting vms
+    sync = False
+    done = []
+    cur_ips = allocated_ips.setdefault('ips', {})
+    for name in [n for n in cur_ips]:
+        ip = cur_ips[name]
+        # doublon ip
+        if ip in done:
+            remove_allocated_ip(target, ip, vm=name)
+        else:
+            done.append(ip)
+        # ip not allocated to any vm
+        if name not in existing_vms:
+            sync = True
+            del cur_ips[name]
+    if sync:
+        set_conf_for_target(target, 'allocated_ips', allocated_ips)
+    return allocated_ips
+
+
+def get_allocated_ips(target):
+    '''Get the allocated ips for a specific target'''
+    allocated_ips = _construct_ips_dict(target)
+    return allocated_ips
+
+
+def remove_allocated_ip(target, ip, vm=None):
+    '''Remove any ip from the allocated IP registry.
+    If vm is specified, it must also match a vm
+    which is allocated to this ip'''
+    sync = False
+    all_ips = get_allocated_ips(target)
     if ip in all_ips['ips'].values():
         for i in [a for a in all_ips['ips']]:
             if all_ips['ips'][i] == ip:
@@ -176,56 +225,42 @@ def remove_allocated_ip(target, ip, vm=None):
                 sync = True
     if sync:
         set_conf_for_target(target, 'allocated_ips', all_ips)
-    return get_allocated_ips(target, norm=True)
-
-
-def get_allocated_ips(target, norm=False):
-    allocated_ips = get_conf_for_target(target, 'allocated_ips')
-    if (allocated_ips is None) or (not isinstance(allocated_ips, dict)):
-        allocated_ips = {}
-    for k in ['api', 'ips']:
-        if k not in allocated_ips:
-            sync = True
-    allocated_ips.setdefault('api', _CUR_API)
-    cur_ips = allocated_ips.setdefault('ips', {})
-    existing_vms = get_vms_for_target(target)
-    # recycle old ips for unexisting vms
-    sync = False
-    done = []
-    for name in [n for n in cur_ips]:
-        ip = cur_ips[name]
-        if ip in done and not norm:
-            remove_allocated_ip(target, ip, vm=name)
-        else:
-            done.append(ip)
-        if name not in existing_vms:
-            sync = True
-            del cur_ips[name]
-    if sync:
-        set_conf_for_target(target, 'allocated_ips', allocated_ips)
-    return allocated_ips
+    return get_allocated_ips(target)['ips']
 
 
 def find_ip_for_vm(target,
-                   virt_type,
                    vm,
-                   network,
-                   netmask,
-                   default=None):
+                   default=None,
+                   virt_type=None,
+                   network=api.NETWORK,
+                   netmask=api.NETMASK):
     '''Search for:
 
         - an ip already allocated
         - an random available ip in the range
 
-    '''
+    To get and maybe allocate an ip for a vm call
 
+        find_ip_for_vm(target, vmname)
+
+    For force/set an ip use::
+
+        set_allocated_ip(target, vmname, '1.2.3.4')
+
+    '''
     if not HAS_NETADDR:
         raise Exception('netaddr required for ip generation')
     allocated_ips = get_allocated_ips(target)
-    try:
-        ip4 = get_conf_for_vm(target, virt_type, vm, 'ip4')
-    except msgpack.exceptions.UnpackValueError:
-        ip4 = None
+    ip4 = None
+    if virt_type is None:
+        virt_type = get_vms_for_target(target).get(vm, None)
+    if virt_type:
+        try:
+            ip4 = get_conf_for_vm(target, virt_type, vm, 'ip4')
+        except msgpack.exceptions.UnpackValueError:
+            ip4 = None
+    if not virt_type:
+        virt_type = 'novtset'
     if not ip4:
         ip4 = default
     if not ip4:
@@ -248,6 +283,9 @@ def find_ip_for_vm(target,
             raise Exception('Did not get an available ip in the {2} network'
                             ' for {0}/{1}'.format(target, vm, virt_type))
         set_conf_for_vm(target, virt_type, vm, 'ip4', ip4)
+    if not ip4:
+        raise Exception('Did not get an available ip for {0}/{1}'.format(
+            target, vm))
     cur_ip = allocated_ips['ips'].get(vm)
     if ip4 and (ip4 != cur_ip):
         allocated_ips['ips'][vm] = ip4
@@ -255,8 +293,15 @@ def find_ip_for_vm(target,
     return ip4
 
 
-def set_allocated_ip(target, vm, ip, vt='lxc'):
-    '''.'''
+def set_allocated_ip(target, vm, ip, vt=None):
+    '''
+    For force/set an ip use::
+
+        set_allocated_ip(target, vmname, '1.2.3.4')
+
+    '''
+    if vt is None:
+        vt = get_vms_for_target(target).get(vm, 'lxc')
     allocated_ips = get_allocated_ips(target)
     allocated_ips['ips'][vm] = ip
     set_conf_for_vm(target, vt, vm, 'ip4', ip)
