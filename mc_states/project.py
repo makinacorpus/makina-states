@@ -11,6 +11,7 @@ __docformat__ = 'restructuredtext en'
 from salt.exceptions import SaltException
 
 LAST_PROJECT_API_VERSION = "2"
+KEEP_ARCHIVES = 3
 ENVS = {
     'prod': ['prod'],
     'dev': ['dev'],

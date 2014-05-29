@@ -21,6 +21,9 @@ APIS = {
     'archive': {
         '2': 'mc_project_2.archive',
     },
+    'rotate_archives': {
+        '2': 'mc_project_2.rotate_archives',
+    },
     'unlink': {
         '2': 'mc_project_2.unlink',
     },
@@ -92,6 +95,10 @@ def release_sync(name, *args, **kwargs):
 
 def fixperms(name, *args, **kwargs):
     return _api_switcher('fixperms', name, *args, **kwargs)
+
+
+def rotate_archives(name, *args, **kwargs):
+    return _api_switcher('rotate_archives', name, *args, **kwargs)
 
 
 def unlink(name, *args, **kwargs):
