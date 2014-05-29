@@ -21,29 +21,17 @@ APIS = {
     'archive': {
         '2': 'mc_project_2.archive',
     },
+    'unlink': {
+        '2': 'mc_project_2.unlink',
+    },
     'release_sync': {
         '2': 'mc_project_2.release_sync',
     },
-    'configure': {
-        '2': 'mc_project_2.configure',
+    'install': {
+        '2': 'mc_project_2.install',
     },
-    'build': {
-        '2': 'mc_project_2.build',
-    },
-    'reconfigure': {
-        '2': 'mc_project_2.reconfigure',
-    },
-    'activate': {
-        '2': 'mc_project_2.activate',
-    },
-    'upgrade': {
-        '2': 'mc_project_2.upgrade',
-    },
-    'bundle': {
-        '2': 'mc_project_2.bundle',
-    },
-    'post_install': {
-        '2': 'mc_project_2.post_install',
+    'fixperms': {
+        '2': 'mc_project_2.fixperms',
     },
     'notify': {
         '2': 'mc_project_2.notify',
@@ -102,32 +90,16 @@ def release_sync(name, *args, **kwargs):
     return _api_switcher('release_sync', name, *args, **kwargs)
 
 
-def configure(name, *args, **kwargs):
-    return _api_switcher('configure', name, *args, **kwargs)
+def fixperms(name, *args, **kwargs):
+    return _api_switcher('fixperms', name, *args, **kwargs)
 
 
-def build(name, *args, **kwargs):
-    return _api_switcher('build', name, *args, **kwargs)
+def unlink(name, *args, **kwargs):
+    return _api_switcher('unlink', name, *args, **kwargs)
 
 
-def reconfigure(name, *args, **kwargs):
-    return _api_switcher('reconfigure', name, *args, **kwargs)
-
-
-def activate(name, *args, **kwargs):
-    return _api_switcher('activate', name, *args, **kwargs)
-
-
-def upgrade(name, *args, **kwargs):
-    return _api_switcher('upgrade', name, *args, **kwargs)
-
-
-def bundle(name, *args, **kwargs):
-    return _api_switcher('bundle', name, *args, **kwargs)
-
-
-def post_install(name, *args, **kwargs):
-    return _api_switcher('post_install', name, *args, **kwargs)
+def install(name, *args, **kwargs):
+    return _api_switcher('install', name, *args, **kwargs)
 
 
 def doc_root(doc_root=None,

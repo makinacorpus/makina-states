@@ -10,6 +10,8 @@ import datetime
 import os
 import logging
 import socket
+from pprint import pformat
+import shutil
 import sys
 import traceback
 import uuid
@@ -22,6 +24,7 @@ from salt.states import group as sgroup
 from salt.states import user as suser
 from salt.states import file as sfile
 from salt.states import git as sgit
+#from mc_states.states import mc_git as sgit
 from salt.states import cmd as scmd
 import salt.output
 import salt.loader
@@ -44,7 +47,7 @@ from mc_states.project import (
 )
 
 
-logger = logging.getLogger(__name__)
+log = logger = logging.getLogger(__name__)
 
 
 API_VERSION = '2'
@@ -59,8 +62,6 @@ DEFAULT_CONFIGURATION = {
     #
     'installer': 'generic',
     #
-    'this_host': 'localhost',
-    'this_port': '22',
     'push_pillar_url': 'ssh://root@{this_host}:{this_port}{pillar_git_root}',
     'push_salt_url': 'ssh://root@{this_host}:{this_port}{project_git_root}',
     'project_dir': '{projects_dir}/{name}',
@@ -104,10 +105,15 @@ DEFAULT_CONFIGURATION = {
     'deploy_ret': {},
     'force_reload': False,
     'data': {},
+    #
+    'this_host': 'localhost',
+    'this_port': '22',
+    #
 }
 STEPS = [
     'deploy',
     'archive',
+    'release_sync',
     'install',
     'rollback',
     'fixperms',
@@ -116,6 +122,7 @@ STEPS = [
 SPECIAL_SLSES = ["{0}.sls".format(a)
                  for a in STEPS
                  if a not in ['deploy',
+                              'release_sync',
                               'install']]
 
 
@@ -172,6 +179,22 @@ def _force_cli_retcode(ret):
      else:
          __context__['retcode'] = 0
 
+
+def remove_path(path):
+    """Remove a path."""
+    if os.path.exists(path):
+        if os.path.islink(path):
+            os.unlink(path)
+        elif os.path.isfile(path):
+            os.unlink(path)
+        elif os.path.isdir(path):
+            shutil.rmtree(path)
+        else:
+            os.remove(path)
+    else:
+        print
+        print "'%s' was asked to be deleted but does not exists." % path
+        print
 
 def _sls_exec(name, cfg, sls):
     # be sure of the current project beeing loaded in the context
@@ -729,8 +752,8 @@ def init_project_dirs(cfg, ret=None):
         if not cret['result']:
             raise ProjectInitException(
                 'Can\'t manage {0} dir'.format(dr))
-        else:
-            _append_comment(ret, body=indent(cret['comment']))
+        #else:
+        #    _append_comment(ret, body=indent(cret['comment']))
     for symlink, target in (
         (cfg['wired_salt_root'], cfg['salt_root']),
         (cfg['wired_pillar_root'], cfg['pillar_root']),
@@ -740,8 +763,8 @@ def init_project_dirs(cfg, ret=None):
             raise ProjectInitException(
                 'Can\'t manage {0} -> {1} symlink\n{2}'.format(
                     symlink, target, cret))
-        else:
-            _append_comment(ret, body=indent(cret['comment']))
+        #else:
+        #    _append_comment(ret, body=indent(cret['comment']))
     return ret
 
 
@@ -787,12 +810,12 @@ exit $res;'''.format(user=user)
     if failhard and not cret['result']:
         raise ProjectInitException('SSH keys improperly configured\n'
                                    '{0}'.format(cret))
-    else:
-        _append_comment(ret, body=indent('SSH keys in place if any'))
+    #else:
+    #    _append_comment(ret, body=indent('SSH keys in place if any'))
     return ret
 
 
-def init_hooks(name, git, user, group, deploy_hooks=False,
+def sync_hooks(name, git, user, group, deploy_hooks=False,
                ret=None, bare=True, api_version=API_VERSION):
     _s = __salt__.get
     if not ret:
@@ -830,14 +853,17 @@ def init_hooks(name, git, user, group, deploy_hooks=False,
         #_append_comment(ret, body=indent(cret['comment']))
 
 
-def init_bare_repo(cfg, git, user, group, deploy_hooks=False,
+def init_repo(cfg, git, user, group, deploy_hooks=False,
                    ret=None, bare=True, init_salt=False,
                    init_pillar=False, api_version=API_VERSION):
     _s = __salt__.get
     if not ret:
         ret = _get_ret(user)
+    pref = 'Bare r'
+    if not bare:
+        pref = 'R'
     _append_comment(
-        ret, summary='Bare repository managment in {0}'.format(git))
+        ret, summary='{1}epository managment in {0}'.format(git, pref))
     lgit = git
     if not bare:
         lgit = os.path.join(lgit, '.git')
@@ -917,9 +943,9 @@ def init_bare_repo(cfg, git, user, group, deploy_hooks=False,
         if bare:
             cret = _s('cmd.run_all')(
                 ('rm -rf "{0}.tmp"').format(lgit), runas=user)
-    else:
-        _append_comment(
-            ret, body=indent('Commited first commit in {0}'.format(git)))
+    #else:
+    #    _append_comment(
+    #        ret, body=indent('Commited first commit in {0}'.format(git)))
     return ret
 
 
@@ -954,85 +980,79 @@ def init_local_repository(wc, url, user, group, ret=None):
     #    _append_comment(ret, body=indent(cret['comment']))
 
 
-def init_set_remotes(wc, user, localgit, ret=None):
+def set_git_remote(wc, user, localgit, remote='origin', ret=None):
     _s = __salt__.get
     _append_comment(
-        ret, summary=(
-            'Set remotes in {0}\n'
-            '    remote: {1}'.format(
-                wc, localgit)))
+        ret, summary=('Set remotes in local copy {0} -> {1}'.format(
+            localgit, wc)))
     if not ret:
         ret = _get_ret(user)
     # add the local and distant remotes
-    for remote, lurl in [('local', localgit)]:
-        cret = _s('git.remote_set')(wc, remote, lurl, user=user)
-        if not cret:
-            raise ProjectInitException(
-                'Can\'t initialize git remote '
-                '{0} from {1} in {2}'.format(
-                    remote, lurl, wc))
+    cret = _s('git.remote_set')(localgit, remote, wc , user=user)
+    if not cret:
+        raise ProjectInitException(
+            'Can\'t initialize git local remote '
+            '{0} from {1} in {2}'.format(
+                remote, lurl, wc))
         #else:
         #    _append_comment(ret,
-        #                    body=indent('Remote {0} -> {1} set'.format(
+        #                    body=indent('LocalRemote {0} -> {1} set'.format(
         #                        remote, lurl)))
     return ret
 
 
-
-
-def init_bare_set_remotes(wc, user, localgit, ret=None):
-    _s = __salt__.get
-    _append_comment(
-        ret, summary=(
-            'Set remotes in local copy {0}\n'
-            '    remote: {1}'.format(
-                localgit, wc)))
-    if not ret:
-        ret = _get_ret(user)
-    # add the local and distant remotes
-    for remote, lurl in [('local', wc)]:
-        cret = _s('git.remote_set')(localgit, remote, lurl, user=user)
-        if not cret:
-            raise ProjectInitException(
-                'Can\'t initialize git local remote '
-                '{0} from {1} in {2}'.format(
-                    remote, lurl, wc))
-        else:
-            _append_comment(ret,
-                            body=indent('LocalRemote {0} -> {1} set'.format(
-                                remote, lurl)))
-    return ret
-
-
-def init_fetch_last_commits(wc, user, ret=None):
+def fetch_last_commits(wc, user, origin='origin', ret=None):
     _s = __salt__.get
     if not ret:
         ret = _get_ret(user)
-    origin = 'local'
     _append_comment(
-        ret, summary=(
-            'Fetch last commits from {1} in working copy: {0}'.format(
-                wc, origin)))
+        ret, summary=('Fetch last commits from {1} '
+                      'in working copy: {0}'.format(
+                          wc, origin)))
     cret = _s('cmd.run_all')(
         'git fetch {0}'.format(origin), cwd=wc, runas=user)
     if cret['retcode']:
-        raise ProjectInitException(
-            'Can\'t fetch git in {0}'.format(wc))
-    else:
-        out = splitstrip('{stdout}\n{stderr}'.format(**cret))
-        _append_comment(ret, body=indent(out))
+        raise ProjectInitException('Can\'t fetch git in {0}'.format(wc))
+    cret = _s('cmd.run_all')(
+        'git fetch {0} --tags'.format(origin), cwd=wc, runas=user)
+    if cret['retcode']:
+        raise ProjectInitException('Can\'t fetch git tags in {0}'.format(wc))
+    #else:
+    #    out = splitstrip('{stdout}\n{stderr}'.format(**cret))
+    #    _append_comment(ret, body=indent(out))
     return ret
 
 
-def init_set_upstream(wc, rev, user, ret=None):
+def has_no_commits(wc, user='root'):
     _s = __salt__.get
-    origin = 'local'
+    nocommits = "fatal: bad default revision 'HEAD'" in _s('cmd.run')(
+        'git log', env={'LANG': 'C', 'LC_ALL': 'C'},
+        cwd=wc, user=user)
+    return nocommits
+
+
+def set_upstream(wc, rev, user, origin='origin', ret=None):
+    _s = __salt__.get
     _append_comment(
         ret, summary=(
             'Set upstream: {2}/{1} in {0}'.format(
                 wc, rev, origin)))
     # set branch upstreams
-    if _s('cmd.run_all')('git --version')['stdout'].split()[-1] < '1.8':
+    try:
+        git_ver = int(
+            _s('cmd.run_all')(
+                'git --version')['stdout'].split()[-1]
+        )
+    except (ValueError, TypeError):
+        git_ver = 1.8
+    if has_no_commits(wc, user=user):
+        cret2 = _s('cmd.run_all')(
+            'git reset --hard {1}/{0}'.format(
+                rev, origin), cwd=wc, runas=user)
+        if cret2['retcode'] or cret2['retcode']:
+            raise ProjectInitException(
+                'Can\'t reset to initial state in {0}'.format(wc))
+    if git_ver < 1.8:
         cret2 = _s('cmd.run_all')(
             'git branch --set-upstream master {1}/{0}'.format(
                 rev, origin), cwd=wc, runas=user)
@@ -1050,13 +1070,12 @@ def init_set_upstream(wc, rev, user, ret=None):
         cret = _s('cmd.run_all')(
             'git branch --set-upstream-to={1}/{0}'.format(rev, origin),
             cwd=wc, runas=user)
-        if not cret:
+        if cret['retcode']:
             out = splitstrip('{stdout}\n{stderr}'.format(**cret))
             _append_comment(ret, body=indent(out))
             raise ProjectInitException(
                 'Can not set upstream from {2} -> {0}/{1}'.format(
                     origin, rev, wc))
-
     return ret
 
 
@@ -1074,35 +1093,25 @@ def working_copy_in_initial_state(wc, user='root'):
     return initial
 
 
-def init_sync_working_copies(user,
-                             wc,
-                             localgit,
-                             rev=None,
-                             url=None,
-                             ret=None,
-                             origin=None):
+def sync_working_copy(user, wc, rev=None, ret=None, origin=None):
     _s = __salt__.get
     if rev is None:
         rev = 'master'
+    if origin is None:
+        origin = 'origin'
     if not ret:
         ret = _get_ret(wc)
-    if origin is None:
-        origin = 'local'
-    if url is None:
-        url = localgit
     _append_comment(
         ret, summary=(
-            'Synchronize working copy {0} from upstream {2}/{1}'.format(
+            'Synchronise working copy {0} from upstream {2}/{1}'.format(
                 wc, rev, origin)))
     initial = working_copy_in_initial_state(wc, user=user)
-    lret = _state_exec(
-        sgit, 'latest', url, target=wc, rev=rev, user=user)
+    nocommits = "fatal: bad default revision 'HEAD'" in _s('cmd.run')(
+        'git log', env={'LANG': 'C', 'LC_ALL': 'C'},
+        cwd=wc, user=user)
     # the local copy is not yet synchronnized with any repo
-    if initial or (
+    if initial or nocommits or (
         os.listdir(wc) == ['.git']
-    ) or (
-        not lret['result']
-        and 'ambiguous argument \'HEAD\'' in lret['comment']
     ):
         cret = _s('git.reset')(
             wc, '--hard {1}/{0}'.format(rev, origin),
@@ -1112,31 +1121,22 @@ def init_sync_working_copies(user,
         if not cret:
             raise ProjectInitException(
                 'Can not sync from {1}@{0} in {2}'.format(
-                    url, rev, wc))
-        else:
-            _append_comment(
-                ret, body=indent('Repository {1}: {0}\n'.format(cret, wc)))
+                    origin, rev, wc))
+        #else:
+        #    _append_comment(
+        #        ret, body=indent('Repository {1}: {0}\n'.format(cret, wc)))
     else:
-        changes = lret['changes']
-        if not changes:
-            changes = 'Repository {0}: up to date'.format(wc)
-        if not lret['result']:
-            raise ProjectInitException(
-                'There is something wrong with git update in {0},\n'
-                'you should verify that there is no '
-                'conflict, cherry-pick\n'
-                'or rebase to resolve or any other problem'.format(wc))
-        _append_comment(ret, body=indent('{0}\n{1}'.format(lret['comment'],
-                                                           changes)))
-        cret = _s('cmd.run_all')(
-            'cd {1};git fetch local;'
-            'cat refs/remotes/local/master>refs/heads/master;'
-            'git symbolic-ref HEAD refs/heads/master'.format(
-                rev, localgit),
-            cwd=wc,
-            runas=user)
-        out = splitstrip('{stdout}\n{stderr}'.format(**cret))
-        _append_comment(ret, body=indent(out))
+        cret = _s('cmd.run_all')('git pull {1} {0}'.format(rev, origin),
+                            cwd=wc, user=user)
+        if cret['retcode']:
+            # try to merge a bit but only what's mergeable
+            cret = _s('cmd.run_all')(
+                'git merge --ff-only {1}/{0}'.format(rev, origin),
+                cwd=wc, user=user)
+            if cret['retcode']:
+                raise ProjectInitException(
+                    'Can not sync from {0}/{1} in {2}'.format(
+                        origin, rev, wc))
     return ret
 
 
@@ -1221,8 +1221,8 @@ def init_salt_dir(cfg, parent, ret=None):
     if not cret['result']:
         raise ProjectInitException(
             'Can\'t manage {0} dir'.format(salt_root))
-    else:
-        _append_comment(ret, body=indent(cret['comment']))
+    #else:
+    #    _append_comment(ret, body=indent(cret['comment']))
     files = [os.path.join(salt_root, a)
              for a in os.listdir(salt_root)
              if a.endswith('.sls') and not os.path.isdir(a)]
@@ -1241,8 +1241,8 @@ def init_salt_dir(cfg, parent, ret=None):
                 raise ProjectInitException(
                     'Can\'t create default {0}\n{1}'.format(
                         fil, cret['comment']))
-            else:
-                _append_comment(ret, body=indent(cret['comment']))
+            #else:
+            #    _append_comment(ret, body=indent(cret['comment']))
     return ret
 
 
@@ -1269,52 +1269,58 @@ def init_project(name, *args, **kwargs):
         init_project_dirs(cfg, ret=ret)
         project_git_root = cfg['project_git_root']
         pillar_git_root = cfg['pillar_git_root']
-        for git, init_salt, init_pillar, hook in [
-            (project_git_root,True, False, True),
-            (pillar_git_root, False, True, False)]:
-            init_bare_repo(cfg,
-                           git, user, group, ret=ret, bare=True,
-                           init_salt=init_salt,
-                           init_pillar=init_pillar)
-            if hook:
-                init_hooks(name, git, user, group, ret=ret, bare=True,
-                           api_version=cfg['api_version'])
-        for wc, rev, localgit, hook in [
+        repos = [
             (
                 cfg['pillar_root'],
                 cfg['pillar_branch'],
                 pillar_git_root,
                 False,
+                False,
+                True,
             ),
             (
                 cfg['project_root'],
                 cfg['project_branch'],
                 project_git_root,
                 True,
+                True,
+                False,
             ),
-        ]:
-            init_bare_repo(
-                cfg, wc, user, group, ret=ret, bare=False)
+        ]
+        for wc, rev, localgit, hook, init_salt, init_pillar in repos:
+            init_repo(cfg, localgit, user, group, ret=ret,
+                      init_salt=init_salt, init_pillar=init_pillar,
+                      bare=True)
             if hook:
-                init_hooks(name, wc, user, group, ret=ret, bare=False,
-                           api_version=cfg['api_version'])
-            init_bare_set_remotes(wc, user, localgit, ret=ret)
-            init_set_remotes(wc, user, localgit, ret=ret)
-            init_fetch_last_commits(wc, user, ret=ret)
-            init_set_upstream(wc, rev, user, ret=ret)
-            init_sync_working_copies(user, wc, localgit, rev=rev, ret=ret)
+                sync_hooks(name, localgit, user, group, ret=ret,
+                           bare=True, api_version=cfg['api_version'])
+            init_repo(cfg, wc, user, group, ret=ret, bare=False)
+            for working_copy, remote in [(localgit, wc),
+                                         (wc, localgit)]:
+                set_git_remote(working_copy, user, remote, ret=ret)
+            fetch_last_commits(wc, user, ret=ret)
+        # to mutally sync remotes, all repos must be created
+        # first, so we need to cut off and reiterate over
+        # the same iterables, but in 2 times
+        for wc, rev, localgit, hook, init_salt, init_pillar in repos:
+            set_upstream(wc, rev, user, ret=ret)
+            sync_working_copy(user, wc, rev=rev, ret=ret)
     except ProjectInitException, ex:
         trace = traceback.format_exc()
         ret['result'] = False
-        _append_comment(ret, summary="{0}".format(ex), body=trace)
+        _append_comment(ret,
+                        summary="{0}".format(ex),
+                        color='RED_BOLD',
+                        body="{0}{1}{2}".format(
+                            _colors('RED'), trace, _colors('ENDC')
+                        ))
     if ret['result']:
         set_configuration(cfg['name'], cfg)
-
-    _append_comment(ret, summary="You can now push to",
-                    color='RED',
-                    body='Pillar: {0}\nProject: {1}'.format(
-                        cfg['push_pillar_url'],
-                        cfg['push_salt_url']))
+        _append_comment(ret, summary="You can now push to",
+                        color='RED',
+                        body='Pillar: {0}\nProject: {1}'.format(
+                            cfg['push_pillar_url'],
+                            cfg['push_salt_url']))
     msplitstrip(ret)
     return _filter_ret(ret, cfg['raw_console_return'])
 
@@ -1406,8 +1412,8 @@ def deploy(name, *args, **kwargs):
     # hand tights for the deployment
 
     if ret['result']:
-        guarded_step(cfg, ['release_sync',
-                           'install',],
+        guarded_step(cfg,
+                     ['release_sync', 'install',],
                      rollback=True,
                      inner_step=True,
                      ret=ret)
@@ -1442,15 +1448,23 @@ def archive(name, *args, **kwargs):
 def release_sync(name, *args, **kwargs):
     cfg = get_configuration(name, *args, **kwargs)
     iret = init_project(name, *args, **kwargs)
-    if iret['result']:
-        cret = _step_exec(cfg, 'release_sync')
-        iret = _merge_statuses(iret, cret)
     return iret
 
 
-def get_executable_slss(path):
-    slses = []
-    return sles
+def get_executable_slss(path, installer_path, installer):
+    def do_filter(sx):
+        x = os.path.join(path, sx)
+        filtered = True
+        if (
+            sx in SPECIAL_SLSES
+            or (os.path.isdir(x))
+            or (not sx.endswith('.sls'))
+        ):
+            filtered = False
+        return filtered
+    slses = [a.split('.sls')[0]
+             for a in filter(do_filter, os.listdir(path))]
+    return slses
 
 
 def install(name, *args, **kwargs):
@@ -1461,11 +1475,14 @@ def install(name, *args, **kwargs):
             'invalid project type or installer directory: {0}/{1}'.format(
                 cfg['installer'], cfg['installer_path']))
     cret = None
-    slses = get_executable_slss(cfg['installer_path'])
-    if not sles:
+    slses = get_executable_slss(
+        cfg['wired_salt_root'],
+        cfg['installer_path'],
+        cfg['installer'])
+    if not slses:
         raise _stop_proc('No installation slses avalaible for {0}'.format(name),
                          'install', ret)
-    for sls in sles:
+    for sls in slses:
         cret = _step_exec(cfg, sls)
         _merge_statuses(ret, cret)
     return ret
@@ -1481,6 +1498,38 @@ def fixperms(name, *args, **kwargs):
     cfg = get_configuration(name, *args, **kwargs)
     cret = _step_exec(cfg, 'fixperms')
     return cret
+
+
+def unlink_pillar(name, ret=None, *args, **kwargs):
+    cfg = get_configuration(name, *args, **kwargs)
+    ret = _get_ret(name, *args, **kwargs)
+    salt_settings = __salt__['mc_salt.settings']()
+    user, group = cfg['user'], cfg['group']
+    pillar_root = os.path.join(salt_settings['pillarRoot'])
+    pillarf = os.path.join(pillar_root, 'top.sls')
+
+    with open(pillarf) as fpillarf:
+        pillar_top = '- makina-projects.{name}'.format(**cfg)
+        pillars = fpillarf.read()
+        if pillar_top in pillars:
+            lines = []
+            for line in pillars.splitlines():
+                if line.endswith(pillar_top):
+                    continue
+                lines.append(line)
+            with open(pillarf, 'w') as wpillarf:
+                wpillarf.write('\n'.join(lines))
+            _append_comment(
+                ret, body=indent(
+                    'Cleaned pillar top: {0}'.format(cret['name'])))
+    if os.path.exists(cfg['wired_pillar_root']):
+        remove_path(cfg['wired_pillar_root'])
+    return ret
+
+
+def unlink(name, *args, **kwargs):
+    ret = unlink_pillar(name, *args, **kwargs)
+    return ret
 
 
 def rollback(name, *args, **kwargs):
