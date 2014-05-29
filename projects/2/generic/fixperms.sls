@@ -12,7 +12,7 @@
             #!/usr/bin/env bash
             if [ -e "{{cfg.pillar_root}}" ];then
             "{{locs.resetperms}}" "${@}" \
-              --dmode '0770' --fmode '0770'
+              --dmode '0770' --fmode '0770' \
               --user root --group "{{ugs.group}}" \
               --users root \
               --groups "{{ugs.group}}" \
