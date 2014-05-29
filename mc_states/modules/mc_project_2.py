@@ -103,6 +103,7 @@ STEPS = ['deploy',
          'archive',
          'release_sync',
          'install',
+         'rotate_archives',
          'rollback',
          'fixperms',
          'notify']
@@ -110,6 +111,7 @@ SPECIAL_SLSES = ["{0}.sls".format(a)
                  for a in STEPS
                  if a not in ['deploy',
                               'release_sync',
+                              'rotate_archives',
                               'install']]
 
 
