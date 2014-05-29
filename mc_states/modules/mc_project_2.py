@@ -1469,6 +1469,14 @@ def get_executable_slss(path, installer_path, installer):
         return filtered
     slses = [a.split('.sls')[0]
              for a in filter(do_filter, os.listdir(path))]
+    def sls_sort(a):
+        '''
+        >>> sorted(['0100_a', '0010_b', '0004_a','100_b',
+        ... '0_4', '0_1', '0_2'], key=a)
+        ['0004_a', '0010_b', '0100_a', '0_1', '0_2', '0_4', '100_b']
+        '''
+        return a
+    slses.sort(key=sls_sort)
     return slses
 
 
