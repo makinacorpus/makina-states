@@ -11,22 +11,6 @@ __docformat__ = 'restructuredtext en'
 from salt.exceptions import SaltException
 
 LAST_PROJECT_API_VERSION = "2"
-EDITABLE_MODE = 'editable'
-FINAL_MODE = 'final'
-OPERATION_MODES = [EDITABLE_MODE,
-                   FINAL_MODE]
-
-DEFAULTS_SKIPS = {
-    'prod': {},
-    'staging': {},
-    'dev': {
-        True: [
-            'skip_archive',
-            'skip_rollback',
-            'skip_release_sync',
-        ],
-    },
-}
 ENVS = {
     'prod': ['prod'],
     'dev': ['dev'],

@@ -41,7 +41,6 @@ from mc_states.api import (
 import mc_states.project
 from mc_states.project import (
     ENVS,
-    DEFAULTS_SKIPS,
     ProjectInitException,
     ProjectProcedureException,
 )
@@ -103,6 +102,7 @@ DEFAULT_CONFIGURATION = {
     #
     'deploy_summary': None,
     'deploy_ret': {},
+    'only_install': False,
     'force_reload': False,
     'data': {},
     #
@@ -232,7 +232,7 @@ def _sls_exec(name, cfg, sls):
         if isinstance(cret, list):
             body += indent(cret)
         _append_comment(ret,
-                        'Running {1} for {0} failed:'.format(name, sls),
+                        'Running {1} for {0} failed'.format(name, sls),
                         body=body)
     if cret and isinstance(cret, dict):
         _append_comment('SLS execution result of {0} for {1}:'.format(sls,
@@ -573,30 +573,31 @@ def get_configuration(name, *args, **kwargs):
 
     # set default skippped steps on a specific environment
     # to let them maybe be overriden in pillar
-    for val, skips in DEFAULTS_SKIPS.get(
-        cfg['default_env'], DEFAULTS_SKIPS['dev']
-    ).items():
-        for skip in skips:
-            dval = cfg.get(skip, None)
-            if dval is None:
-                dval = val
-            if not dval:
-                dval = False
-            cfg[skip] = val
+    skipped = {}
+    for step in STEPS:
+        ignored_keys.append('skip_{0}'.format(step))
+        skipped['skip_{0}'.format(step)] = kwargs.get(
+            'skip_{0}'.format(step), False)
+    if kwargs.get('only_install', cfg.get('only_install', False)):
+        for s in [a for a in skipped]:
+            if (
+                not skipped[s]
+                and not s in ['skip_deploy', 'skip_install']
+            ):
+                skipped[s] = True
+    cfg.update(skipped)
+    #
     if not cfg['user']:
         cfg['user'] = '{name}-user'
     if not cfg['groups']:
         cfg['groups'].append(__salt__['mc_usergroup.settings']()['group'])
     cfg['groups'] = uniquify(cfg['groups'])
     # those variables are overridable via pillar/grains
-    overridable_variables = [
-        'notify_methods',
-        'default_env',
-        'no_user',
-        'no_default_includes',
-    ]
-    for step in STEPS:
-        ignored_keys.append('skip_{0}'.format(step))
+    overridable_variables = ['notify_methods',
+                             'default_env',
+                             'no_user',
+                             'no_default_includes']
+
     # we can override many of default values via pillar/grains
     for k in overridable_variables:
         if k in ignored_keys:
@@ -673,6 +674,8 @@ def _get_filtered_cfg(cfg):
     to_save = {}
     for sk in cfg:
         val = cfg[sk]
+        if sk.startswith('skip_'):
+            continue
         if sk.startswith('__pub'):
             continue
         if sk in ignored_keys:
@@ -1143,10 +1146,7 @@ def sync_working_copy(user, wc, rev=None, ret=None, origin=None):
 def init_pillar_dir(cfg, parent, ret=None):
     salt_settings = __salt__['mc_salt.settings']()
     user, group = cfg['user'], cfg['group']
-    pillar_root = os.path.join(salt_settings['pillarRoot'])
     files = [os.path.join(parent, 'init.sls')]
-    pillar_top = 'makina-projects.{name}'.format(**cfg)
-    pillarf = os.path.join(pillar_root, 'top.sls')
     for fil in files:
         # if pillar is empty, create it
         if os.path.exists(fil):
@@ -1185,20 +1185,6 @@ def init_pillar_dir(cfg, parent, ret=None):
                 'Can\'t create default {0}\n{1}'.format(fil, cret['comment']))
         #else:
         #    _append_comment(ret, body=indent(cret['comment']))
-    with open(pillarf) as fpillarf:
-        pillars = fpillarf.read()
-        if pillar_top not in pillars:
-            lines = []
-            for line in pillars.splitlines():
-                lines.append(line)
-                if line == "  '*':":
-                    lines.append('    - {0}\n'.format(pillar_top))
-            with open(pillarf, 'w') as wpillarf:
-                wpillarf.write('\n'.join(lines))
-            _append_comment(
-                ret, body=indent(
-                    'Added to pillar top: {0}'.format(cret['name'])))
-    return ret
 
 
 def init_salt_dir(cfg, parent, ret=None):
@@ -1305,6 +1291,7 @@ def init_project(name, *args, **kwargs):
         for wc, rev, localgit, hook, init_salt, init_pillar in repos:
             set_upstream(wc, rev, user, ret=ret)
             sync_working_copy(user, wc, rev=rev, ret=ret)
+        link(name, *args, **kwargs)
     except ProjectInitException, ex:
         trace = traceback.format_exc()
         ret['result'] = False
@@ -1349,6 +1336,8 @@ def guarded_step(cfg,
         try:
             for step in step_or_steps:
                 set_project(cfg)
+                if cfg.get('skip_{0}'.format(step), False):
+                    continue
                 cret = __salt__['mc_project_{1}.{0}'.format(
                     step, cfg['api_version'])](name, *args, **kwargs)
                 _merge_statuses(ret, cret, step=step)
@@ -1395,6 +1384,22 @@ def execute_garded_step(name,
 
 
 def deploy(name, *args, **kwargs):
+    '''Deploy a project
+
+    Only run install::
+
+        salt-call --local -lall mc_project.deploy <name> only_install=True
+
+    Deploy entirely (this is what is run whithin the git hook)::
+
+        salt-call --local -lall mc_project.deploy <name>
+
+    Skip a particular step::
+
+        salt-call mc_project.deploy <name> skip_release_sync=True skip_archive=True skip_notify=True
+
+
+    '''
     ret = _get_ret(name, *args, **kwargs)
     cfg = get_configuration(name, *args, **kwargs)
     if cfg['skip_deploy']:
@@ -1500,14 +1505,36 @@ def fixperms(name, *args, **kwargs):
     return cret
 
 
+def link_pillar(name, *args, **kwargs):
+    cfg = get_configuration(name, *args, **kwargs)
+    ret = _get_ret(name, *args, **kwargs)
+    salt_settings = __salt__['mc_salt.settings']()
+    pillar_root = os.path.join(salt_settings['pillarRoot'])
+    pillarf = os.path.join(pillar_root, 'top.sls')
+    pillar_top = 'makina-projects.{name}'.format(**cfg)
+    with open(pillarf) as fpillarf:
+        pillars = fpillarf.read()
+        if pillar_top not in pillars:
+            lines = []
+            for line in pillars.splitlines():
+                lines.append(line)
+                if line == "  '*':":
+                    lines.append('    - {0}\n'.format(pillar_top))
+            with open(pillarf, 'w') as wpillarf:
+                wpillarf.write('\n'.join(lines))
+            _append_comment(
+                ret, body=indent(
+                    'Added to pillar top: {0}'.format(ret['name'])))
+    return ret
+
+
 def unlink_pillar(name, ret=None, *args, **kwargs):
     cfg = get_configuration(name, *args, **kwargs)
     ret = _get_ret(name, *args, **kwargs)
     salt_settings = __salt__['mc_salt.settings']()
-    user, group = cfg['user'], cfg['group']
     pillar_root = os.path.join(salt_settings['pillarRoot'])
     pillarf = os.path.join(pillar_root, 'top.sls')
-
+    pillar_top = 'makina-projects.{name}'.format(**cfg)
     with open(pillarf) as fpillarf:
         pillar_top = '- makina-projects.{name}'.format(**cfg)
         pillars = fpillarf.read()
@@ -1521,9 +1548,14 @@ def unlink_pillar(name, ret=None, *args, **kwargs):
                 wpillarf.write('\n'.join(lines))
             _append_comment(
                 ret, body=indent(
-                    'Cleaned pillar top: {0}'.format(cret['name'])))
+                    'Cleaned pillar top: {0}'.format(ret['name'])))
     if os.path.exists(cfg['wired_pillar_root']):
         remove_path(cfg['wired_pillar_root'])
+    return ret
+
+
+def link(name, *args, **kwargs):
+    ret = link_pillar(name, *args, **kwargs)
     return ret
 
 
