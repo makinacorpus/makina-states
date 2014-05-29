@@ -53,14 +53,32 @@ API_VERSION = '2'
 PROJECT_INJECTED_CONFIG_VAR = 'cfg'
 
 DEFAULT_CONFIGURATION = {
-    'api_version': API_VERSION,
     'name': None,
-    #
+    'default_env': None,
     'project_branch': 'master',
     'pillar_branch': 'master',
-    #
     'installer': 'generic',
     #
+    'user': None,
+    'groups': [],
+    #
+    'raw_console_return': False,
+    #
+    'only': None,
+    'force_reload': False,
+    #
+    'api_version': API_VERSION,
+    #
+    'defaults': {},
+    'env_defaults': {},
+    'os_defaults': {},
+    #
+    'no_user': False,
+    'no_default_includes': False,
+    # INTERNAL
+    'data': {},
+    'deploy_summary': None,
+    'deploy_ret': {},
     'push_pillar_url': 'ssh://root@{this_host}:{this_port}{pillar_git_root}',
     'push_salt_url': 'ssh://root@{this_host}:{this_port}{project_git_root}',
     'project_dir': '{projects_dir}/{name}',
@@ -78,47 +96,18 @@ DEFAULT_CONFIGURATION = {
     'pillar_git_root': '{git_root}/pillar.git',
     'current_archive_dir': None,
     'current_release_dir': None,
-    'main_ip': '127.0.0.1',
-    'domain': '{name}.local',
-    'domains': None,
-    #
     'rollback': False,
-    #
-    'default_env': None,
-    'run_mode': '',
-    #
-    'user': None,
-    'groups': [],
-    #
-    'defaults': {},
-    'env_defaults': {},
-    'os_defaults': {},
-    #
-    'no_user': False,
-    'no_default_includes': False,
-    #
-    'raw_console_return': False,
-    'notify_methods': [],
-    #
-    'deploy_summary': None,
-    'deploy_ret': {},
-    'only_install': False,
-    'force_reload': False,
-    'data': {},
-    #
     'this_host': 'localhost',
     'this_port': '22',
     #
 }
-STEPS = [
-    'deploy',
-    'archive',
-    'release_sync',
-    'install',
-    'rollback',
-    'fixperms',
-    'notify',
-]
+STEPS = ['deploy',
+         'archive',
+         'release_sync',
+         'install',
+         'rollback',
+         'fixperms',
+         'notify']
 SPECIAL_SLSES = ["{0}.sls".format(a)
                  for a in STEPS
                  if a not in ['deploy',
@@ -434,27 +423,6 @@ def get_configuration(name, *args, **kwargs):
         where to install the project,
     git_root
         root dir for git repositories
-    main_ip
-        main ip tied to this environment
-    domain
-        main domain of the installed application if any
-    domains
-        Additionnal hosts (mapping {host: ip}),
-        the main domain will be inserted
-    pillar_root
-        pillar local dir
-    salt_root
-        salt local dir
-    archives_root
-        archives directory
-    data_root
-        persistent data root
-    deploy_root
-        deployment directory
-    project_git_root
-        project local git dir
-    pillar_git_root
-        pillar local git dir
     project_branch
         the branch of the project
     user
@@ -470,29 +438,9 @@ def get_configuration(name, *args, **kwargs):
     os_defaults
         per os (eg: Ubuntu/Debian) specific defaults data to override or merge
         inside the defaults one
-    data
-        The final mapping where all defaults will be mangled.
-        If you want to add extra parameters in the configuration, you d
-        better have to add them to defaults.
 
-    force_reload
-        if the project configuration is already present in the context,
-        reload it anyway
-
-    sls_includes
-        includes to add to the project top includes statement
-    no_default_includes
-        Do not add salt_minon & other bases sls
-        like ssh to default includes
-    no_domain
-        Do not manage the domains in /etc/hosts
-
-    notify_methods
-        which method(s) do we use to notify users about system changes
-
-    rollback
-        do we rollback at the end of all processes
-
+    only_install
+        Only run the install step (make the others skipped)
     skip_archive
         Skip the archive step
     skip_release_sync
@@ -503,6 +451,37 @@ def get_configuration(name, *args, **kwargs):
         Skip the rollback step if any
     skip_notify
         Skip the notify step if any
+
+    Internal variables reference
+
+        pillar_root
+            pillar local dir
+        salt_root
+            salt local dir
+        archives_root
+            archives directory
+        data_root
+            persistent data root
+        deploy_root
+            deployment directory
+        project_git_root
+            project local git dir
+        pillar_git_root
+            pillar local git dir
+        data
+            The final mapping where all defaults will be mangled.
+            If you want to add extra parameters in the configuration, you d
+            better have to add them to defaults.
+        force_reload
+            if the project configuration is already present in the context,
+            reload it anyway
+        sls_includes
+            includes to add to the project top includes statement
+        no_default_includes
+            Do not add salt_minon & other bases sls
+            like ssh to default includes
+        rollback
+            FLAG: do we rollback at the end of all processes
 
     You can override the non read only default variables
     by pillar/grain like::
@@ -539,27 +518,6 @@ def get_configuration(name, *args, **kwargs):
     nodetypes_reg = __salt__['mc_nodetypes.registry']()
     salt_settings = __salt__['mc_salt.settings']()
     salt_root = salt_settings['saltRoot']
-    if cfg['domains'] is None:
-        cfg['domains'] = {}
-    if isinstance(cfg['domains'], basestring):
-        cfg['domains'] = cfg['domains'].split()
-    if isinstance(cfg['domains'], list):
-        cfg['domains'] = dict([(a, a)
-                               for a in cfg['domains']])
-    for adomain in list(cfg['domains']):
-        tied_ip = cfg['domains'][adomain]
-        # check if it is an hostname and then try to resolve it or
-        # let it as an ip
-        if not is_valid_ip(tied_ip):
-            try:
-                hostname, alias, ipaddrlist = socket.gethostbyaddr(tied_ip)
-                if ipaddrlist:
-                    cfg['domains'][adomain] = ipaddrlist[0]
-                else:
-                    cfg['domains'][adomain] = cfg['main_ip']
-            except Exception:
-                # mark this domain as localhost
-                cfg['domains'][adomain] = cfg['main_ip']
     if not cfg['default_env']:
         # one of:
         # - makina-projects.fooproject.default_env
@@ -578,13 +536,19 @@ def get_configuration(name, *args, **kwargs):
         ignored_keys.append('skip_{0}'.format(step))
         skipped['skip_{0}'.format(step)] = kwargs.get(
             'skip_{0}'.format(step), False)
-    if kwargs.get('only_install', cfg.get('only_install', False)):
+    only = kwargs.get('only', cfg.get('only', None))
+    if only:
+        if isinstance(only, basestring):
+            only = only.split(',')
+        if not isinstance(only, list):
+            raise ValueError('invalid only for {1}: {0}'.format(only, cfg['name']))
+    if only:
+        forced = ['skip_deploy'] + ['skip_{0}'.format(o) for o in only]
         for s in [a for a in skipped]:
-            if (
-                not skipped[s]
-                and not s in ['skip_deploy', 'skip_install']
-            ):
+            if not skipped[s] and not s in forced:
                 skipped[s] = True
+        for s in forced:
+            skipped[s] = False
     cfg.update(skipped)
     #
     if not cfg['user']:
@@ -593,8 +557,7 @@ def get_configuration(name, *args, **kwargs):
         cfg['groups'].append(__salt__['mc_usergroup.settings']()['group'])
     cfg['groups'] = uniquify(cfg['groups'])
     # those variables are overridable via pillar/grains
-    overridable_variables = ['notify_methods',
-                             'default_env',
+    overridable_variables = ['default_env',
                              'no_user',
                              'no_default_includes']
 
@@ -651,11 +614,6 @@ def get_configuration(name, *args, **kwargs):
         installer_path = os.path.join(
             salt_root, 'makina-states/projects/{0}/{1}'.format(
                 cfg['api_version'], cfg['installer']))
-    # notify methods
-    if cfg['default_env'] in ['dev']:
-        cfg['notify_methods'].append('stdout')
-    else:
-        cfg['notify_methods'].append('mail')
     # check for all sls to be in there
     cfg['installer_path'] = installer_path
     # put the result inside the context
@@ -664,13 +622,10 @@ def get_configuration(name, *args, **kwargs):
 
 
 def _get_filtered_cfg(cfg):
-    ignored_keys = [
-        'data',
-        'name',
-        'salt_root',
-        'notify_methods',
-        'rollback',
-    ]
+    ignored_keys = ['data',
+                    'name',
+                    'salt_root',
+                    'rollback']
     to_save = {}
     for sk in cfg:
         val = cfg[sk]
@@ -1386,9 +1341,13 @@ def execute_garded_step(name,
 def deploy(name, *args, **kwargs):
     '''Deploy a project
 
-    Only run install::
+    Only run install step::
 
-        salt-call --local -lall mc_project.deploy <name> only_install=True
+        salt-call --local -lall mc_project.deploy <name> only=install
+
+    Only run install & fixperms step::
+
+        salt-call --local -lall mc_project.deploy <name> only=install,fixperms
 
     Deploy entirely (this is what is run whithin the git hook)::
 
@@ -1438,6 +1397,7 @@ def deploy(name, *args, **kwargs):
     # notifications should not modify the result status even failed
     result = ret['result']
     msplitstrip(ret)
+    guarded_step(cfg, 'fixperms', ret=ret, *args, **kwargs)
     guarded_step(cfg, 'notify', ret=ret, *args, **kwargs)
     ret['result'] = result
     _force_cli_retcode(ret)
