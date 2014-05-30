@@ -69,7 +69,7 @@ def vm_sls_pillar(compute_node, vm):
     pillar = {'scloudSettings': cloudSettingsData,
               'mccloud_vmname': vm,
               'mccloud_vm_ssh_port': cli(
-                  'mc_cloud_compute_node.get_ssh_port', compute_node, vm),
+                  'mc_cloud_compute_node.get_ssh_port', vm, target=compute_node),
               'mccloud_targetname': compute_node,
               'svmSettings': vmSettingsData,
               'sisdevhost': api.json_dump(
