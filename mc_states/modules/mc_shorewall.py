@@ -278,7 +278,7 @@ def settings():
                     realrpn = False
                     if iface in ems:
                         if iface == ifaces[:-1]:
-                        realrpn = True
+                            realrpn = True
                     else:
                         realrpn = True
                     if not providers['is']['online']:
