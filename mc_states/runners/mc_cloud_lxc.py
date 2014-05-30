@@ -186,25 +186,50 @@ def _vm_configure(what, target, compute_node, vm, ret, output):
 
 
 def vm_spawn(vm, compute_node=None, vt='lxc', ret=None, output=True):
-    '''spawn the vm'''
+    '''spawn the vm
+
+    ::
+
+        mastersalt-run -lall mc_cloud_lxc.vm_spawn foo.domain.tld
+
+    '''
     compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
     return _vm_configure('spawn', None, compute_node, vm, ret, output)
 
 
 def vm_grains(vm, compute_node=None, vt='lxc', ret=None, output=True):
-    '''install marker grains'''
+    '''install marker grains
+
+    ::
+
+        mastersalt-run -lall mc_cloud_lxc.vm_grains foo.domain.tld
+
+    '''
     compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
     return _vm_configure('grains', vm, compute_node, vm, ret, output)
 
 
 def vm_initial_setup(vm, compute_node=None, vt='lxc', ret=None, output=True):
-    '''set initial password at least'''
+    '''set initial password at least
+
+    ::
+
+        mastersalt-run -lall mc_cloud_lxc.vm_initial_setup foo.domain.tld
+
+
+    '''
     compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
     return _vm_configure('initial_setup', vm, compute_node, vm, ret, output)
 
 
 def vm_hostsfile(vm, compute_node=None, vt='lxc', ret=None, output=True):
-    '''manage vm /etc/hosts to add link to host'''
+    '''manage vm /etc/hosts to add link to host
+
+    ::
+
+        mastersalt-run -lall mc_cloud_lxc.vm_hostsfile foo.domain.tld
+
+    '''
     compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
     return _vm_configure('hostsfile', vm, compute_node, vm, ret, output)
 

@@ -149,6 +149,10 @@ def vm_initial_highstate(vm, compute_node=None, vt=None, ret=None, output=True):
             where to act
         vm
             vm to run highstate on
+
+    ::
+
+        mastersalt-run -lall mc_cloud_vm.vm_initial_highstate foo.domain.tld
     '''
     compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
     vt = __salt__['mc_cloud_vm.get_vt'](vm, vt)
@@ -163,6 +167,11 @@ def vm_sshkeys(vm, compute_node=None, vt=None, ret=None, output=True):
             where to act
         vm
             vm to install keys into
+
+     ::
+
+        mastersalt-run -lall mc_cloud_vm.vm_sshkeys foo.domain.tld
+
     '''
     vt = __salt__['mc_cloud_vm.get_vt'](vm, vt)
     compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
@@ -176,6 +185,10 @@ def vm_ping(vm, compute_node=None, vt=None, ret=None, output=True):
             where to act
         vm
             vm to ping
+     ::
+
+        mastersalt-run -lall mc_cloud_vm.vm_ping foo.domain.tld
+
 
     '''
     vt = __salt__['mc_cloud_vm.get_vt'](vm, vt)
@@ -248,6 +261,11 @@ def provision(vm, compute_node=None, vt=None,
 
               ['spawn', 'hostsfile', 'sshkeys',
               'grains', 'initial_setup', 'initial_highstate']
+
+    ::
+
+        mastersalt-run -lall mc_cloud_vm.provision foo.domain.tld
+
     '''
     vt = __salt__['mc_cloud_vm.get_vt'](vm, vt)
     compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
@@ -295,6 +313,9 @@ def post_provision(vm, compute_node=None, vt=None, ret=None, output=True):
 
               ['ping', 'post_provision_hook']
 
+    ::
+
+        mastersalt-run -lall mc_cloud_vm.post_provision foo.domain.tld
     '''
     if ret is None:
         ret = result()
@@ -330,7 +351,14 @@ def filter_vms(compute_node, vms, skip, only):
 def provision_vms(compute_node,
                   skip=None, only=None, ret=None,
                   output=True, refresh=False):
-    '''Provision all vms on a compute node
+    '''Provision all or selected vms on a compute node
+
+    ::
+
+        mastersalt-run -lall mc_cloud_vm.provision_vms host1.domain.tld
+        mastersalt-run -lall mc_cloud_vm.provision_vms host1.domain.tld only=['foo.domain.tld']
+        mastersalt-run -lall mc_cloud_vm.provision_vms host1.domain.tld skip=['foo2.domain.tld']
+
     '''
     if ret is None:
         ret = result()
@@ -405,7 +433,15 @@ def provision_vms(compute_node,
 def post_provision_vms(compute_node,
                        skip=None, only=None, ret=None,
                        output=True, refresh=False):
-    '''post provision all compute node vms'''
+    '''post provision all or selected compute node vms
+
+    ::
+
+        mastersalt-run -lall mc_cloud_vm.post_provision_vms host1.domain.tld
+        mastersalt-run -lall mc_cloud_vm.post_provision_vms host1.domain.tld only=['foo.domain.tld']
+        mastersalt-run -lall mc_cloud_vm.post_provision_vms host1.domain.tld skip=['foo2.domain.tld']
+
+    '''
     if ret is None:
         ret = result()
     if isinstance(only, basestring):
@@ -476,7 +512,15 @@ def orchestrate(compute_node,
                 output=True,
                 refresh=False,
                 ret=None):
-    '''install all compute node vms'''
+    '''install all compute node vms
+
+    ::
+
+        mastersalt-run -lall mc_cloud_vm.orchestrate host1.domain.tld
+        mastersalt-run -lall mc_cloud_vm.orchestrate host1.domain.tld only=['foo.domain.tld']
+        mastersalt-run -lall mc_cloud_vm.orchestrate host1.domain.tld skip=['foo2.domain.tld']
+
+    '''
     ret = provision_vms(compute_node, skip=skip, only=only,
                         output=output, refresh=refresh, ret=ret)
     salt_output(ret, __opts__, output=output)
