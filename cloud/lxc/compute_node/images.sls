@@ -2,8 +2,6 @@
 {% set imgSettings = salt['mc_utils.json_load'](pillar.simgSettings) %}
 {% set cloudSettings = salt['mc_utils.json_load'](pillar.scloudSettings) %}
 {% set sprefix = cloudSettings.prefix %}
-include:
-  - makina-states.cloud.generic.hooks.generate
 {% for name, imgdata in imgSettings.items() %}
 {% set cwd = '/var/lib/lxc/{0}'.format(name) %}
 {% set arc = '{0}/{1}'.format(name, imgdata['lxc_tarball_name']) %}
