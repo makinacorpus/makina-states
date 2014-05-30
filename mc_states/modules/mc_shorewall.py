@@ -266,13 +266,19 @@ def settings():
             if iface.startswith('tun'):
                 z = 'vpn'
                 data['have_vpn'] = True
-            if iface in ['eth1', 'em1', 'em2']:
+            if (
+                iface in ['eth1'] 
+                or (iface.startswith('em') 
+                    and len(iface) in [3, 4])
+            ):
                 if have_rpn:
+                    realrpn = False
                     if ('em2' in ifaces) and (iface != ['em2']):
-                        continue
+                        realrpn = True
                     if not providers['is']['online']:
-                        continue
-                    z = 'rpn'
+                        realrpn = False
+                    if realrpn:
+                        z = 'rpn'
             if 'docker' in iface:
                 if data['have_docker']:
                     z = 'dck'
