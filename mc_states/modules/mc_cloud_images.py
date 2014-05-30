@@ -134,7 +134,8 @@ def sf_release(images=None):
         images = [a for a in imgSettings['lxc']['images']]
     imgSettings = __salt__['mc_cloud_images.settings']()
     gret = {'rets': [], 'result': True, 'comment': 'sucess', 'changes': {}}
-    mc_lxc.sync_image_reference_containers(imgSettings, gret, _cmd_runner=_run)
+    mc_lxc.sync_image_reference_containers(imgSettings, gret,
+                                           _cmd_runner=_run, force=True)
     if not gret['result']:
         return gret
     for img in images:

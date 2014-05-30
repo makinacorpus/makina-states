@@ -44,8 +44,25 @@ def _errmsg(msg):
     raise saltapi.MessageError(msg)
 
 
-def sync_container(cmd_runner, ret, origin, destination):
+def get_ver(origin):
+    try:
+        with open(os.path.join(origin, '.ms_version')) as fic:
+            old_ver = int(fic.read())
+    except Exception:
+        old_ver = 0
+    return old_ver
+
+
+def test_same_versions(origin, destination, force=False):
+    old_ver = get_ver(origin)
+    dold_ver = get_ver(destination)
+    return force or (dold_ver == old_ver)
+
+
+def sync_container(cmd_runner, ret, origin, destination, force=False):
     if os.path.exists(origin) and os.path.exists(destination):
+        if test_same_versions(origin, destination, force=force):
+            return ret
         cmd = 'rsync -aA --exclude=lock --delete {0}/ {1}/'.format(origin, destination)
         cret = cmd_runner(cmd)
         if cret['retcode']:
@@ -64,7 +81,8 @@ def sync_container(cmd_runner, ret, origin, destination):
     return ret
 
 
-def sync_image_reference_containers(imgSettings, ret, _cmd_runner=None):
+def sync_image_reference_containers(imgSettings, ret, _cmd_runner=None,
+                                    force=False):
     if _cmd_runner is None:
         def _cmd_runner(cmd):
             return cli('cmd.run_all', cmd)
@@ -75,12 +93,15 @@ def sync_image_reference_containers(imgSettings, ret, _cmd_runner=None):
         # and sync it back to the reference lxc
         sync_container(_cmd_runner, ret,
                        '/var/lib/lxc/{0}/rootfs'.format(bref),
-                       '/var/lib/lxc/{0}/rootfs'.format(img))
+                       '/var/lib/lxc/{0}/rootfs'.format(img),
+                       force=force,)
 
 
-def sync_images(output=True, only=None):
+def sync_images(output=True, only=None, force=False):
     '''
     Sync the 'makina-states' image to all configured LXC hosts minions
+    WARNING: it checks .ms_version inside the rootfs of the LXC
+             if this one didnt change, images wont be synced
 
     Configuration:
 
@@ -106,7 +127,7 @@ def sync_images(output=True, only=None):
         ' --numeric-ids '
     )
 
-    sync_image_reference_containers(imgSettings, ret)
+    sync_image_reference_containers(imgSettings, ret, force=force)
     root = master_opts()['file_roots']['base'][0]
     for target in lxcSettings.get('vms', {}):
         if only and (target not in only):
@@ -126,7 +147,6 @@ def sync_images(output=True, only=None):
             cret = cli('ssh.set_known_host', 'root', host, salt_target=target)
             # ssh key
             pubkey = os.path.join(root, '.lxcsshkey.pub')
-
             with open('/root/.ssh/id_dsa.pub') as fic:
                 with open(pubkey, 'w') as sshkey:
                     sshkey.write(fic.read())
@@ -164,25 +184,40 @@ def sync_images(output=True, only=None):
                     if cret['stdout'].strip() > '0':
                         _errmsg(
                             'Transfer already in progress')
-                    cmd = (
-                        'if [ -d {0} ];then '
-                        '{1} {0}/ {0}.tmp/;'
-                        'fi').format(imgroot, rsync_cmd)
-                    cret = cli('cmd.run_all', cmd, salt_target=target)
-                    if not cret['retcode']:
-                        subret['comment'] += (
-                            '\n{0} RSYNC(local pre sync) complete'
-                        ).format(target)
-                        if cret['stdout'].strip():
-                            subret['trace'] += (
-                                '\n{1} RSYNC:\n{0}\n'.format(cret['stdout'],
-                                                             target))
-                    cmd = (
-                        '{2} -z '
-                        '{0}/ root@{1}:{0}.tmp/'
-                    ).format(imgroot, host, rsync_cmd)
-                    cret = cli('cmd.run_all', cmd, salt_timeout=timeout)
-                    if not cret['retcode']:
+                    o = imgroot + "/rootfs"
+                    d = imgroot + '.tmp/rootfs'
+                    if not test_same_versions(o, d, force=force):
+                        cmd = (
+                            'if [ -d {0} ];then '
+                            '{1} {0}/ {0}.tmp/;'
+                            'fi').format(imgroot, rsync_cmd)
+                        cret = cli('cmd.run_all', cmd, salt_target=target)
+                        if not cret['retcode']:
+                            subret['comment'] += (
+                                '\n{0} RSYNC(local pre sync) complete'
+                            ).format(target)
+                            if cret['stdout'].strip():
+                                subret['trace'] += (
+                                    '\n{1} RSYNC:\n{0}\n'.format(cret['stdout'],
+                                                                 target))
+                    do_sync = True
+                    try:
+                        cmd = 'cat {0}.tmp/rootfs/.ms_version 2>/dev/null'.format(imgroot)
+                        ver = int(cli('cmd.run', cmd, salt_timeout=timeout, salt_target=host))
+                        lver = get_ver(imgroot+'/rootfs')
+                        if lver == ver:
+                            do_sync = False
+                    except Exception:
+                        pass
+                    good = True
+                    if do_sync:
+                        cmd = (
+                            '{2} -z '
+                            '{0}/ root@{1}:{0}.tmp/'
+                        ).format(imgroot, host, rsync_cmd)
+                        cret = cli('cmd.run_all', cmd, salt_timeout=timeout)
+                        good = not cret['retcode']
+                    if good:
                         subret['comment'] += (
                             '\n{0} RSYNC(net -> tmp) complete'
                         ).format(target)
@@ -190,13 +225,24 @@ def sync_images(output=True, only=None):
                             subret['trace'] += (
                                 '\n{1} RSYNC:\n{0}\n'
                             ).format(cret['stdout'], target)
-                        # if transfert success sync tmp / img
-                        # img to tmp location
-                        cmd = (
-                            '{1} {0}.tmp/ {0}/'
-                        ).format(imgroot, rsync_cmd)
-                        cret = cli('cmd.run_all', cmd, salt_target=target)
-                        if not cret['retcode']:
+                        do_sync = True
+                        try:
+                            cmd = 'cat {0}/rootfs/.ms_version 2>/dev/null'.format(imgroot)
+                            dver = int(cli('cmd.run', cmd, salt_timeout=timeout, salt_target=host))
+                            if dver == ver:
+                                do_sync = False
+                        except Exception:
+                            pass
+                        good = True
+                        if do_sync:
+                            # if transfert success sync tmp / img
+                            # img to tmp location
+                            cmd = (
+                                '{1} {0}.tmp/ {0}/'
+                            ).format(imgroot, rsync_cmd)
+                            cret = cli('cmd.run_all', cmd, salt_target=target)
+                            good = not cret['retcode']
+                        if good:
                             subret['comment'] += (
                                 '\n{0} RSYNC(distant local sync) complete'
                             ).format(target)
