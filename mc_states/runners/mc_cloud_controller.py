@@ -16,6 +16,7 @@ import logging
 import traceback
 
 from pprint import pformat
+from mc_states.utils import memoize_cache
 
 # Import salt libs
 from salt.utils import check_state_result
@@ -61,6 +62,10 @@ def run_vt_hook(hook_name,
                 *args, **kwargs):
     '''Run an hook for a special vt
     on a controller, or a compute node or a vm'''
+    func_name = (
+        'mc_cloud_controller.run_vt_hook '
+        '{0} {1}').format(hook_name, target)
+    __salt__['mc_api.time_log']('start {0}'.format(func_name))
     if target:
         kwargs['target'] = target
     if ret is None:
@@ -84,11 +89,14 @@ def run_vt_hook(hook_name,
             cret = __salt__[vid_](*args, **kwargs)
             merge_results(ret, cret)
             check_point(ret, __opts__, output=output)
+    __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
 
 def dns_conf(output=True, ret=None):
     '''Prepare cloud controller dns (BIND) server'''
+    func_name = 'mc_cloud_controller.dns_conf'
+    __salt__['mc_api.time_log']('start {0}'.format(func_name))
     if ret is None:
         ret = result()
     kw = {'ret': ret, 'output': output}
@@ -100,12 +108,15 @@ def dns_conf(output=True, ret=None):
     check_point(kw['ret'], __opts__, output=output)
     run_vt_hook('post_dns_conf_on_controller', ret=kw['ret'], output=output)
     salt_output(kw['ret'], __opts__, output=output)
+    __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return kw['ret']
 
 
 def deploy(output=True, ret=None):
     '''Prepare cloud controller configuration
     can also apply per virtualization type configuration'''
+    func_name = 'mc_cloud_controller.deploy'
+    __salt__['mc_api.time_log']('start {0}'.format(func_name))
     if ret is None:
         ret = result()
     kw = {'ret': ret, 'output': output}
@@ -118,6 +129,7 @@ def deploy(output=True, ret=None):
     check_point(kw['ret'], __opts__, output=output)
     run_vt_hook('post_deploy_controller', ret=kw['ret'], output=output)
     salt_output(kw['ret'], __opts__, output=output)
+    __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return kw['ret']
 
 
@@ -184,6 +196,8 @@ def orchestrate(skip=None,
 
 
     '''
+    func_name = 'mc_cloud_controller.orchestrate'
+    __salt__['mc_api.time_log']('start {0}'.format(func_name))
     if ret is None:
         ret = result()
     if refresh:
@@ -228,7 +242,7 @@ def orchestrate(skip=None,
                 no_post_provision=no_post_provision,
                 no_vms_post_provision=no_vms_post_provision,
                 no_vms=no_vms,
-                refresh=refresh,
+                refresh=False,
                 output=False,
                 ret=cret)
             del cret['result']
@@ -241,6 +255,7 @@ def orchestrate(skip=None,
         salt_output(ret, __opts__, output=output)
         raise
     salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
 #

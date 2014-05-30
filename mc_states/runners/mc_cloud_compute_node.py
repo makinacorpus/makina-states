@@ -21,6 +21,7 @@ from salt.utils import check_state_result
 import salt.output
 import salt.minion
 from salt.utils.odict import OrderedDict
+from mc_states.utils import memoize_cache
 
 from mc_states import api
 from mc_states.saltapi import (
@@ -41,24 +42,42 @@ log = logging.getLogger(__name__)
 _GPREF = 'makina-states.cloud.generic.compute_node'
 
 
-def cn_sls_pillar(target):
+def cn_sls_pillar(target, ttl=api.RUNNER_CACHE_TIME):
     '''limited cloud pillar to expose to a compute node'''
-    cloudSettings = cli('mc_cloud.settings')
-    cloudSettingsData = {}
-    cnSettingsData = {}
-    cnSettingsData['cn'] = cli(
-        'mc_cloud_compute_node.get_settings_for_target', target)
-    cnSettingsData['rp'] = cli(
-        'mc_cloud_compute_node.get_reverse_proxies_for_target', target)
-    cloudSettingsData['all_sls_dir'] = cloudSettings['all_sls_dir']
-    cloudSettingsData[
-        'compute_node_sls_dir'] = cloudSettings['compute_node_sls_dir']
-    cloudSettingsData['prefix'] = cloudSettings['prefix']
-    cloudSettingsData = api.json_dump(cloudSettingsData)
-    cnSettingsData = api.json_dump(cnSettingsData)
-    pillar = {'scloudSettings': cloudSettingsData,
-              'scnSettings': cnSettingsData}
-    return pillar
+    func_name = 'mc_cloud_compute_node.cn_sls_pillar {0}'.format(
+        target)
+    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+
+    def _do(target):
+        cloudSettings = cli('mc_cloud.settings')
+        cloudSettingsData = {}
+        cnSettingsData = {}
+        cnSettingsData['cn'] = cli(
+            'mc_cloud_compute_node.get_settings_for_target', target)
+        vt_data = cnSettingsData['cn'].get('virt_types', {})
+        vts = []
+        for vt, enabled in vt_data.items():
+            if enabled:
+                vts.append(vt)
+        cnSettingsData['rp'] = cli(
+            'mc_cloud_compute_node.get_reverse_proxies_for_target', target)
+        cloudSettingsData['all_sls_dir'] = cloudSettings['all_sls_dir']
+        cloudSettingsData[
+            'compute_node_sls_dir'] = cloudSettings['compute_node_sls_dir']
+        cloudSettingsData['prefix'] = cloudSettings['prefix']
+        cloudSettingsData = api.json_dump(cloudSettingsData)
+        cnSettingsData = api.json_dump(cnSettingsData)
+        pillar = {'scloudSettings': cloudSettingsData,
+                  'scnSettings': cnSettingsData}
+        for vt in vts:
+            cid = 'mc_cloud_{0}.cn_sls_pillar'.format(vt)
+            if cid in __salt__:
+                pillar.update(__salt__[cid](target))
+        return pillar
+    cache_key = 'mc_cloud_compute_node.cn_sls_pillar_{0}'.format(target)
+    ret = memoize_cache(_do, [target], {}, cache_key, ttl)
+    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+    return ret
 
 
 def cli(*args, **kwargs):
@@ -78,16 +97,23 @@ def run_vt_hook(hook_name,
                 *args, **kwargs):
     '''Difference with cloud controller bare one is that here
     we have the target argument mandatory'''
-    return  __salt__['mc_cloud_controller.run_vt_hook'](hook_name,
-                                                        target=target,
-                                                        ret=ret,
-                                                        vts=vts,
-                                                        output=output,
-                                                        *args, **kwargs)
+    func_name = 'mc_compute_node.run_vt_hook {0} {1}'.format(
+        target, hook_name)
+    __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    ret = __salt__['mc_cloud_controller.run_vt_hook'](hook_name,
+                                                      target=target,
+                                                      ret=ret,
+                                                      vts=vts,
+                                                      output=output,
+                                                      *args, **kwargs)
+    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+    return ret
 
 
 def install_vts(target, ret=None, output=True):
     '''install all virtual types to be ready to host vms'''
+    func_name = 'mc_compute_node.install_vts {0}'.format(target)
+    __salt__['mc_api.time_log']('start {0}'.format(func_name))
     if ret is None:
         ret = result()
     ret = run_vt_hook('install_vt',
@@ -96,10 +122,13 @@ def install_vts(target, ret=None, output=True):
         ret['comment'] += yellow(
             '{0} is now ready to host vms\n'.format(target))
     salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
 
 def _configure(what, target, ret, output):
+    func_name = 'mc_compute_node._configure {0} {1}'.format(what, target)
+    __salt__['mc_api.time_log']('start {0}'.format(func_name))
     if ret is None:
         ret = result()
     ret['comment'] += yellow('Installing {1} on {0}\n'.format(target, what))
@@ -107,8 +136,11 @@ def _configure(what, target, ret, output):
         '{0}.{1}'.format(_GPREF, what), **{
             'salt_target': target,
             'ret': ret,
-            'sls_kw': {'pillar': cn_sls_pillar(target)}})
+            'sls_kw': {'pillar': __salt__[
+                'mc_cloud_compute_node.cn_sls_pillar'
+            ](target)}})
     salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
 
@@ -150,6 +182,8 @@ def configure_grains(target, ret=None, output=True):
 def deploy(target, output=True, ret=None, hooks=True, pre=True, post=True):
     '''Prepare cloud controller configuration
     can also apply per virtualization type configuration'''
+    func_name = 'mc_compute_node.deploy {0}'.format(target)
+    __salt__['mc_api.time_log']('start {0}'.format(func_name))
     if ret is None:
         ret = result()
     ret['comment'] += green('Installing compute node configuration\n')
@@ -170,12 +204,15 @@ def deploy(target, output=True, ret=None, hooks=True, pre=True, post=True):
         run_vt_hook('post_deploy_compute_node',
                     ret=ret, target=target, output=output)
     salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
 
 def post_deploy(target, ret=None, output=True):
     '''Prepare cloud controller configuration
     can also apply per virtualization type configuration'''
+    func_name = 'mc_compute_node.post_deploy {0}'.format(target)
+    __salt__['mc_api.time_log']('start {0}'.format(func_name))
     if ret is None:
         ret = result()
     hook = 'pre_post_deploy_compute_node'
@@ -186,11 +223,14 @@ def post_deploy(target, ret=None, output=True):
     hook = 'post_post_deploy_compute_node'
     run_vt_hook(hook, ret=ret, target=target, output=output)
     salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
 
 def filter_compute_nodes(nodes, skip, only):
     '''filter compute nodes to run on'''
+    func_name = 'mc_compute_node.filter_compute_nodes'
+    __salt__['mc_api.time_log']('start {0}'.format(func_name))
     targets = []
     for a in nodes:
         if a not in skip and a not in targets:
@@ -203,13 +243,14 @@ def filter_compute_nodes(nodes, skip, only):
                 only = [a for a in only.split(',') if a.strip()]
         targets = [a for a in targets if a in only]
     targets.sort()
+    __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return targets
 
 
 def provision_compute_nodes(skip=None, only=None,
                             no_compute_node_provision=False,
                             output=True,
-                            refresh=False,
+                            refresh=True,
                             ret=None):
     '''provision compute nodes
 
@@ -222,6 +263,8 @@ def provision_compute_nodes(skip=None, only=None,
             and contained vms
 
     '''
+    func_name = 'mc_compute_node.provision_compute_nodes'
+    __salt__['mc_api.time_log']('start {0}'.format(func_name))
     if isinstance(only, basestring):
         only = only.split(',')
     if isinstance(skip, basestring):
@@ -282,6 +325,7 @@ def provision_compute_nodes(skip=None, only=None,
             ret['trace'] = ''
             ret['comment'] += green('All computes nodes were provisionned\n')
     salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
 
@@ -290,6 +334,8 @@ def post_provision_compute_nodes(skip=None, only=None,
     '''post provision all compute nodes
 
     '''
+    func_name = 'mc_compute_node.post_provision_compute_nodes'
+    __salt__['mc_api.time_log']('start {0}'.format(func_name))
     if isinstance(only, basestring):
         only = only.split(',')
     if isinstance(skip, basestring):
@@ -346,6 +392,7 @@ def post_provision_compute_nodes(skip=None, only=None,
             ret['comment'] += green(
                 'All computes nodes were postprovisionned\n')
     salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
 
@@ -398,6 +445,8 @@ def orchestrate(skip=None,
         no_vms_post_provision
             do not run the vms post provision
     '''
+    func_name = 'mc_compute_node.orchestrate'
+    __salt__['mc_api.time_log']('start {0}'.format(func_name))
     if refresh:
         cli('saltutil.refresh_pillar')
     if only is None:
@@ -424,7 +473,7 @@ def orchestrate(skip=None,
         provision_compute_nodes(
             skip=skip, only=only,
             no_compute_node_provision=no_compute_node_provision,
-            output=False, refresh=refresh, ret=ret)
+            output=False, refresh=False, ret=ret)
         for a in ret.setdefault('cns_in_error', []):
             if a not in skip:
                 lresult = False
@@ -434,7 +483,7 @@ def orchestrate(skip=None,
                 __salt__['mc_cloud_vm.orchestrate'](
                     compute_node, output=False,
                     skip=skip_vms, only=only_vms,
-                    refresh=refresh, ret=ret)
+                    refresh=False, ret=ret)
             vms_in_error = chg.setdefault('vms_in_error', {})
             for node in vms_in_error:
                 for vm in vms_in_error[node]:
@@ -444,7 +493,9 @@ def orchestrate(skip=None,
 
     if not no_post_provision:
         post_provision_compute_nodes(skip=skip, only=only,
-                                     output=False, refresh=refresh, ret=ret)
+                                     output=False,
+                                     refresh=False,
+                                     ret=ret)
         for a in chg.setdefault('postp_cns_in_error', []):
             if a not in skip:
                 lresult = False
@@ -455,7 +506,7 @@ def orchestrate(skip=None,
                 __salt__['mc_cloud_vm.post_provision_vms'](
                     compute_node, output=False,
                     skip=skip_vms, only=only_vms,
-                    refresh=refresh, ret=ret)
+                    refresh=False, ret=ret)
             vms_in_error = chg.setdefault('postp_vms_in_errors', {})
             for node in vms_in_error:
                 for vm in vms_in_error[node]:
@@ -464,5 +515,6 @@ def orchestrate(skip=None,
                         lresult = False
     ret['result'] = lresult
     salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 #

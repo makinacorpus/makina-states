@@ -5,15 +5,19 @@
 
 mc_api
 ======
-Convenient functions to use a salt infra as an api 
+Convenient functions to use a salt infra as an api
 Internal module used as api.
 '''
 # -*- coding: utf-8 -*-
 __docformat__ = 'restructuredtext en'
 import salt.output
 from pprint import pformat
+from mc_states.utils import memoize_cache
 import traceback
+import datetime
+import logging
 
+from mc_states import api
 from mc_states.saltapi import (
     result,
     client,
@@ -29,20 +33,60 @@ from mc_states.saltapi import (
     merge_results,
     salt_output,
 )
+log = logging.getLogger(__name__)
+
+
+def time_log(msg='Point', categ='CLOUD_TIMER'):
+    msg = '{2}::{0}:: {1}'.format(
+        datetime.datetime.now().strftime('%Y-%d-%d_%H-%M-%S.%f'),
+        msg, categ)
+    if __opts__.get('makina_states_timing_log_enabled', False):
+        log.debug(msg)
 
 
 def cli(*args, **kwargs):
     '''Correctly forward salt globals to a regular
     python module
     '''
-    if not kwargs:
-        kwargs = {}
-    kwargs.update({
-        'salt_cfgdir': __opts__.get('config_dir', None),
-        'salt_cfg': __opts__.get('conf_file', None),
-        'salt___opts__': __opts__,
-    })
-    return client(*args, **kwargs)
+    def _do(args, kwargs):
+        if not kwargs:
+            kwargs = {}
+        kwargs.update({
+            'salt_cfgdir': __opts__.get('config_dir', None),
+            'salt_cfg': __opts__.get('conf_file', None),
+            'salt___opts__': __opts__,
+        })
+        return client(*args, **kwargs)
+    fun_ = args[0]
+    ttl = kwargs.pop('cache_ttl', api.RUNNER_CACHE_TIME)
+    cache_key = ''
+    if (
+        fun_ in [
+            'mc_cloud_compute_node.target_for_vm',
+            'mc_cloud_compute_node.vt_for_vm',
+            'mc_cloud_compute_node.get_reverse_proxies_for_target',
+            'mc_cloud_compute_node.get_settings_for_target',
+            'mc_cloud_saltify.settings_for_target',
+        ]
+    ) or (
+        fun_.endswith('.get_settings_for_vm')
+    ):
+        cache_key = ' '.join(['{0}'.format(a) for a in args])
+    if (
+        fun_ in [
+            'mc_nodetypes.registry'
+        ]
+    ) or (
+        fun_.endswith('.settings')
+        and len(args) == 1
+        and not kwargs
+    ):
+            cache_key = fun_
+    if cache_key:
+        __salt__['mc_api.time_log'](cache_key, categ='CLOUD_CACHE')
+        return memoize_cache(_do, [args, kwargs], {}, cache_key, ttl)
+    else:
+        return _do(args, kwargs)
 
 
 def valid_state_return(cret, sls=None):

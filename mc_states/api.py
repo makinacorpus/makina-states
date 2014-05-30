@@ -26,6 +26,7 @@ _SUB_REGISTRIES = [
 ]
 NETWORK = '10.5.0.0'
 NETMASK = '16'
+RUNNER_CACHE_TIME = 24 * 60 * 60
 
 
 def uniquify(seq):
