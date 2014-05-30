@@ -258,6 +258,10 @@ def settings():
                 if z not in data['default_interfaces']:
                     data['zones'].setdefault(z, data['default_zones'][z])
 
+        ems = [i 
+               for i in ifaces 
+               if i.startwith('em') and len(i) in [3, 4]]
+
         for iface, ips in ifaces:
             if 'lo' in iface:
                 continue
@@ -268,12 +272,14 @@ def settings():
                 data['have_vpn'] = True
             if (
                 iface in ['eth1'] 
-                or (iface.startswith('em') 
-                    and len(iface) in [3, 4])
+                or iface in ems
             ):
                 if have_rpn:
                     realrpn = False
-                    if ('em2' in ifaces) and (iface != ['em2']):
+                    if iface in ems:
+                        if iface == ifaces[:-1]:
+                        realrpn = True
+                    else:
                         realrpn = True
                     if not providers['is']['online']:
                         realrpn = False
