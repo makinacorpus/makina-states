@@ -175,12 +175,12 @@ def configure_hostsfile(target, ret=None, output=True):
 
 
 def configure_network(target, ret=None, output=True):
-    '''install marker grains'''
+    '''install network configuration'''
     return _configure('network', target, ret, output)
 
 
 def configure_prevt(target, ret=None, output=True):
-    '''install marker grains'''
+    '''install all prevt steps'''
     return _configure('prevt', target, ret, output)
 
 

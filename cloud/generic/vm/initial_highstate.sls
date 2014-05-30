@@ -1,5 +1,3 @@
-include:
-  - makina-states.cloud.generic.vm.markers
 {% set vmname = pillar.mccloud_vmname %}
 {% set target = pillar.mccloud_targetname %}
 {% set cloudSettings = salt['mc_utils.json_load'](pillar.scloudSettings) %}

@@ -191,7 +191,7 @@ def vm_initial_highstate(vm, compute_node=None, vt=None,
 
 
 def vm_preprovision(vm, compute_node=None, vt=None,
-                         ret=None, output=True):
+                    ret=None, output=True):
     '''Run the preprovision:
 
         For performance reasons, this is a merge of steps
@@ -206,8 +206,7 @@ def vm_preprovision(vm, compute_node=None, vt=None,
     '''
     compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
     vt = __salt__['mc_cloud_vm.get_vt'](vm, vt)
-    return _vm_configure('preprovision',
-                         vm, compute_node, vm, ret, output)
+    return _vm_configure('preprovision', vm, compute_node, vm, ret, output)
 
 
 def vm_sshkeys(vm, compute_node=None, vt=None, ret=None, output=True):
