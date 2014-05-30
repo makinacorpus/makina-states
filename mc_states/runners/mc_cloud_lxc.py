@@ -71,12 +71,8 @@ def cn_sls_pillar(target):
 
 
 def vm_sls_pillar(compute_node, vm):
-    '''limited cloud pillar to expose to a vm'''
+    '''Retro compatible wrapper'''
     pillar = __salt__['mc_cloud_vm.vm_sls_pillar'](compute_node, vm)
-    lxcVmData = cli('mc_cloud_lxc.get_settings_for_vm',
-                    compute_node, vm, full=False)
-    lxcVmData = api.json_dump(lxcVmData)
-    pillar['slxcVmData'] = lxcVmData
     return pillar
 
 
@@ -180,7 +176,11 @@ def _vm_configure(what, target, compute_node, vm, ret, output):
         '{0}.{1}'.format(pref, what), **{
             'salt_target': target,
             'ret': ret,
-            'sls_kw': {'pillar': vm_sls_pillar(compute_node, vm)}})
+            'sls_kw': {'pillar': (
+                __salt__[
+                    'mc_cloud_vm.vm_sls_pillar'
+                ](compute_node, vm)
+            )}})
     salt_output(ret, __opts__, output=output)
     return ret
 

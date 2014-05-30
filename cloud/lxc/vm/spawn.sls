@@ -1,7 +1,7 @@
 {% set vmname = pillar.mccloud_vmname %}
 {% set target = pillar.mccloud_targetname %}
 {% set compute_node_settings = salt['mc_utils.json_load'](pillar.scnSettings) %}
-{% set data = salt['mc_utils.json_load'](pillar.slxcVmData) %}
+{% set data = salt['mc_utils.json_load'](pillar.svtVmData) %}
 {% set cloudSettings = salt['mc_utils.json_load'](pillar.scloudSettings) %}
 {% if 'lxc' not in compute_node_settings.virt_types %}
 not-installed:

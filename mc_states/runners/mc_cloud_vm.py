@@ -58,11 +58,13 @@ def vm_sls_pillar(compute_node, vm):
     cloudSettingsData['root'] = cloudSettings['root']
     cloudSettingsData['prefix'] = cloudSettings['prefix']
     cnsettings = cli('mc_cloud_compute_node.settings')
-    cnsettings = cli('mc_cloud_compute_node.settings')
     targets = cnsettings.get('targets', {})
     cnSettingsData['virt_types'] = targets.get(
         compute_node, {}).get('virt_types', [])
     vmSettingsData['vm_name'] = vm
+    vt = targets.get(compute_node, {}).get(
+        'vms', {}).get( vm, None)
+    vmSettingsData['vm_vt'] = vt
     vmSettingsData = api.json_dump(vmSettingsData)
     cloudSettingsData = api.json_dump(cloudSettingsData)
     cnSettingsData = api.json_dump(cnSettingsData)
@@ -75,6 +77,12 @@ def vm_sls_pillar(compute_node, vm):
               'sisdevhost': api.json_dump(
                   cli('mc_nodetypes.registry')['is']['devhost']),
               'scnSettings': cnSettingsData}
+    if vt in ['lxc']:
+        vtVmData = cli(
+            'mc_cloud_{0}.get_settings_for_vm'.format(vt),
+            compute_node, vm, full=False)
+        vtVmData = api.json_dump(vtVmData)
+        pillar['svtVmData'] = vtVmData
     return pillar
 
 
