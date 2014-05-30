@@ -260,7 +260,7 @@ def settings():
 
         ems = [i 
                for i in ifaces 
-               if i.startwith('em') and len(i) in [3, 4]]
+               if i.startswith('em') and len(i) in [3, 4]]
 
         for iface, ips in ifaces:
             if 'lo' in iface:
