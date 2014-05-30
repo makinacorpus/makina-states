@@ -277,7 +277,7 @@ def settings():
                 if have_rpn:
                     realrpn = False
                     if iface in ems:
-                        if iface == ifaces[:-1]:
+                        if iface == ems[-1]:
                             realrpn = True
                     else:
                         realrpn = True
