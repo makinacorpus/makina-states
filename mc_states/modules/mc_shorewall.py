@@ -259,7 +259,7 @@ def settings():
                     data['zones'].setdefault(z, data['default_zones'][z])
 
         ems = [i 
-               for i in ifaces 
+               for i, ips in ifaces 
                if i.startswith('em') and len(i) in [3, 4]]
 
         for iface, ips in ifaces:
