@@ -268,7 +268,7 @@ def settings():
                 data['have_vpn'] = True
             if iface in ['eth1', 'em1', 'em2']:
                 if have_rpn:
-                    if 'em2' in ifaces:
+                    if ('em2' in ifaces) and (iface != ['em2']):
                         continue
                     if not providers['is']['online']:
                         continue
