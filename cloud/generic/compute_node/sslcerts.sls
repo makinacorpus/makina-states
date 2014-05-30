@@ -14,3 +14,6 @@ cpt-cert-{{cert}}:
     - makedirs: true
     - template: jinja
 {% endfor %}
+
+cloud-sslcerts:
+  mc_proxy.hook: []

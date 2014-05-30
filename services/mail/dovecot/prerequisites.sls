@@ -4,7 +4,12 @@ include:
 dovecot-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
+      {% if grains.get('lsb_distrib_codename', grains.get('oscodename', 'foo')) in ['lucid'] %}
       - dovecot-common
+      {% else %}
+      {# salt is not easy with virtual packages ... #}
+      - dovecot-core
+      {% endif%}
       - dovecot-imapd
     - watch:
       - mc_proxy: dovecot-pre-install-hook

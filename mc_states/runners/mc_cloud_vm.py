@@ -190,6 +190,25 @@ def vm_initial_highstate(vm, compute_node=None, vt=None,
                          None, compute_node, vm, ret, output)
 
 
+def vm_preprovision(vm, compute_node=None, vt=None,
+                    ret=None, output=True):
+    '''Run the preprovision:
+
+        For performance reasons, this is a merge of steps
+
+        - markers
+        - grains
+        - sshkeys
+
+    ::
+
+        mastersalt-run -lall mc_cloud_vm.vm_preprovision foo.domain.tld
+    '''
+    compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
+    vt = __salt__['mc_cloud_vm.get_vt'](vm, vt)
+    return _vm_configure('preprovision', vm, compute_node, vm, ret, output)
+
+
 def vm_sshkeys(vm, compute_node=None, vt=None, ret=None, output=True):
     '''Install controller ssh keys for user too on this specific vm
 
@@ -312,10 +331,11 @@ def provision(vm, compute_node=None, vt=None,
         steps = steps.split(',')
     if steps is None:
         steps = ['spawn',
-                 'hostsfile',
-                 'sshkeys',
-                 'grains',
-                 'markers',
+                 'preprovision',
+                 #'hostsfile',
+                 #'sshkeys',
+                 #'grains',
+                 #'markers',
                  'initial_setup',
                  'initial_highstate']
     if ret is None:
@@ -574,7 +594,7 @@ def orchestrate(compute_node,
     '''
     func_name = 'mc_cloud_vm.orchestrate'
     __salt__['mc_api.time_log']('start {0}'.format(func_name))
-    __salt__['mc_api.time_log']()
+    __salt__['mc_api.time_log'](func_name)
     if refresh:
         cli('saltutil.refresh_pillar')
     ret = provision_vms(compute_node, skip=skip, only=only,

@@ -154,6 +154,11 @@ def configure_sslcerts(target, ret=None, output=True):
     return _configure('sslcerts', target, ret, output)
 
 
+def configure_host(target, ret=None, output=True):
+    '''shorewall configuration'''
+    return _configure('host', target, ret, output)
+
+
 def configure_firewall(target, ret=None, output=True):
     '''shorewall configuration'''
     return _configure('firewall', target, ret, output)
@@ -170,8 +175,13 @@ def configure_hostsfile(target, ret=None, output=True):
 
 
 def configure_network(target, ret=None, output=True):
-    '''install marker grains'''
+    '''install network configuration'''
     return _configure('network', target, ret, output)
+
+
+def configure_prevt(target, ret=None, output=True):
+    '''install all prevt steps'''
+    return _configure('prevt', target, ret, output)
 
 
 def configure_grains(target, ret=None, output=True):
@@ -190,16 +200,22 @@ def deploy(target, output=True, ret=None, hooks=True, pre=True, post=True):
     if hooks and pre:
         run_vt_hook('pre_deploy_compute_node',
                     ret=ret, target=target, output=output)
-    for step in [configure_sshkeys,
-                 configure_grains,
-                 install_vts,
-                 configure_network,
-                 configure_hostsfile,
-                 configure_firewall,
-                 configure_sslcerts,
-                 configure_reverse_proxy]:
-        step(target, ret=ret, output=False)
-        check_point(ret, __opts__, output=output)
+        for step in [
+            configure_prevt,
+            # merged in configure_prevt for perf reason
+            #configure_sshkeys,
+            #configure_grains,
+            install_vts,
+            configure_network,
+            configure_host,
+            # merged in configure_host for perf reason
+            #configure_hostsfile,
+            #configure_firewall,
+            #configure_sslcerts,
+            #configure_reverse_proxy
+        ]:
+            step(target, ret=ret, output=False)
+            check_point(ret, __opts__, output=output)
     if hooks and post:
         run_vt_hook('post_deploy_compute_node',
                     ret=ret, target=target, output=output)
