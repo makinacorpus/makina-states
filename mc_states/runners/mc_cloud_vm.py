@@ -595,7 +595,7 @@ def orchestrate(compute_node,
     '''
     func_name = 'mc_cloud_vm.orchestrate'
     __salt__['mc_api.time_log']('start {0}'.format(func_name))
-    __salt__['mc_api.time_log']()
+    __salt__['mc_api.time_log'](func_name)
     if refresh:
         cli('saltutil.refresh_pillar')
     ret = provision_vms(compute_node, skip=skip, only=only,
