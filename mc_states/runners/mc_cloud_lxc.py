@@ -119,6 +119,7 @@ def _cn_configure(what, target, ret, output):
     return ret
 
 
+
 def configure_grains(target, ret=None, output=True):
     '''install compute node grain markers'''
     return _cn_configure('grains', target, ret, output)
@@ -223,6 +224,18 @@ def vm_spawn(vm, compute_node=None, vt='lxc', ret=None, output=True):
     '''
     compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
     return _vm_configure('spawn', None, compute_node, vm, ret, output)
+
+
+def vm_preprovision(vm, compute_node=None, vt='lxc', ret=None, output=True):
+    '''install marker grains
+
+    ::
+
+        mastersalt-run -lall mc_cloud_lxc.vm_grains foo.domain.tld
+
+    '''
+    compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
+    return _vm_configure('preprovision', vm, compute_node, vm, ret, output)
 
 
 def vm_grains(vm, compute_node=None, vt='lxc', ret=None, output=True):

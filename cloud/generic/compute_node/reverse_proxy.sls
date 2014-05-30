@@ -14,6 +14,14 @@
 {% set data  = salt['mc_utils.json_load'](pillar.scnSettings) %}
 include:
   - makina-states.services.proxy.haproxy
+
+cloud-haproxy-sshcerts:
+  mc_proxy.hook:
+    - require:
+      - mc_proxy: cloud-sslcerts
+    - watch_in:
+      - mc_proxy: haproxy-post-conf-hook
+
 cpt-cloud-haproxy-cfg:
   file.managed:
     - name: {{salt['mc_haproxy.settings']().config_dir}}/extra/cloudcontroller.cfg
