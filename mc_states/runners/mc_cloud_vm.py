@@ -82,6 +82,22 @@ def cli(*args, **kwargs):
     return __salt__['mc_api.cli'](*args, **kwargs)
 
 
+def get_vt(vm, vt=None):
+    if vt is None:
+        vt = cli('mc_cloud_compute_node.vt_for_vm', vm)
+    if not vt:
+        raise KeyError('vt is empty for {0}'.format(vm))
+    return vt
+
+
+def get_compute_node(vm, compute_node=None):
+    if compute_node is None:
+        compute_node = cli('mc_cloud_compute_node.target_for_vm', vm)
+    if not compute_node:
+        raise KeyError('compute node is empty for {0}'.format(vm))
+    return compute_node
+
+
 def _vm_configure(what, target, compute_node, vm, ret, output):
     if ret is None:
         ret = result()
@@ -98,7 +114,7 @@ def _vm_configure(what, target, compute_node, vm, ret, output):
     return ret
 
 
-def vm_markers(compute_node, vm, ret=None, output=True):
+def vm_markers(vm, compute_node=None, ret=None, output=True):
     '''install markers at / of the vm for proxified access
 
         compute_node
@@ -106,10 +122,11 @@ def vm_markers(compute_node, vm, ret=None, output=True):
         vm
             vm to install grains into
     '''
+    compute_node = get_compute_node(compute_node)
     return _vm_configure('markers', vm, compute_node, vm, ret, output)
 
 
-def vm_grains(compute_node, vm, ret=None, output=True):
+def vm_grains(vm, compute_node=None, ret=None, output=True):
     '''install marker grains
 
         compute_node
@@ -117,10 +134,11 @@ def vm_grains(compute_node, vm, ret=None, output=True):
         vm
             vm to install grains into
     '''
+    compute_node = get_compute_node(compute_node)
     return _vm_configure('grains', vm, compute_node, vm, ret, output)
 
 
-def vm_initial_highstate(compute_node, vm, ret=None, output=True):
+def vm_initial_highstate(vm, compute_node=None, ret=None, output=True):
     '''Run the initial highstate, this step will run only once and will
     further check for the existence of
     <saltroot>/makina-states/.initial_hs file
@@ -130,11 +148,12 @@ def vm_initial_highstate(compute_node, vm, ret=None, output=True):
         vm
             vm to run highstate on
     '''
+    compute_node = get_compute_node(compute_node)
     return _vm_configure('initial_highstate',
                          None, compute_node, vm, ret, output)
 
 
-def vm_sshkeys(compute_node, vm, ret=None, output=True):
+def vm_sshkeys(vm, compute_node=None, ret=None, output=True):
     '''Install controller ssh keys for user too on this specific vm
 
         compute_node
@@ -142,10 +161,11 @@ def vm_sshkeys(compute_node, vm, ret=None, output=True):
         vm
             vm to install keys into
     '''
+    compute_node = get_compute_node(compute_node)
     return _vm_configure('sshkeys', vm, compute_node, vm, ret, output)
 
 
-def vm_ping(compute_node, vm, ret=None, output=True):
+def vm_ping(vm, compute_node=None, ret=None, output=True):
     '''ping a specific vm on a specific compute node
 
         compute_node
@@ -154,6 +174,7 @@ def vm_ping(compute_node, vm, ret=None, output=True):
             vm to ping
 
     '''
+    compute_node = get_compute_node(compute_node)
     if ret is None:
         ret = result()
     try:
@@ -171,7 +192,42 @@ def vm_ping(compute_node, vm, ret=None, output=True):
     return ret
 
 
-def provision(compute_node, vt, vm, steps=None, ret=None, output=True):
+def step(vm, step, compute_node=None, vt=None, ret=None, output=True):
+    '''Execute a step on a VM noder'''
+    compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
+    vt = __salt__['mc_cloud_vm.get_vt'](vm, vt)
+    if ret is None:
+        ret = result()
+    pre_vid_ = 'mc_cloud_{0}.vm_{1}'.format(vt, step)
+    id_ = 'mc_cloud_vm.vm_{1}'.format(vt, step)
+    post_vid_ = 'mc_cloud_{0}.post_vm_{1}'.format(vt, step)
+    for cid_ in [pre_vid_, id_, post_vid_]:
+        if (not ret['result']) or (cid_ not in __salt__):
+            continue
+        try:
+            ret = __salt__[cid_](vm, compute_node=compute_node,
+                                 ret=ret, output=False)
+            check_point(ret, __opts__, output=output)
+        except FailedStepError:
+            ret['result'] = False
+        except Exception, exc:
+            trace = traceback.format_exc()
+            ret['trace'] += 'lxcprovision: {0} in {1}\n'.format(
+                exc, cid_)
+            ret['trace'] += trace
+            ret['result'] = False
+            ret['comment'] += red('unmanaged exception for '
+                                  '{0}/{1}/{2}'.format(compute_node, vt,
+                                                       vm))
+        if ret['result']:
+            ret['trace'] = ''
+            ret['output'] = ''
+    salt_output(ret, __opts__, output=output)
+    return ret
+
+
+def provision(vm, compute_node=None, vt=None,
+              steps=None, ret=None, output=True):
     '''provision a vm
 
     compute_node
@@ -187,6 +243,9 @@ def provision(compute_node, vt, vm, steps=None, ret=None, output=True):
               ['spawn', 'hostsfile', 'sshkeys',
               'grains', 'initial_setup', 'initial_highstate']
     '''
+    vt = __salt__['mc_cloud_vm.get_vt'](vm, vt)
+    compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
+    vt = __salt__['mc_cloud_vm.get_vt'](vm, vt)
     if isinstance(steps, basestring):
         steps = steps.split(',')
     if steps is None:
@@ -200,31 +259,11 @@ def provision(compute_node, vt, vm, steps=None, ret=None, output=True):
     if ret is None:
         ret = result()
     for step in steps:
-        pre_vid_ = 'mc_cloud_{0}.vm_{1}'.format(vt, step)
-        id_ = 'mc_cloud_vm.vm_{1}'.format(vt, step)
-        post_vid_ = 'mc_cloud_{0}.post_vm_{1}'.format(vt, step)
-        for cid_ in [pre_vid_, id_, post_vid_]:
-            cret = result()
-            if (not ret['result']) or (cid_ not in __salt__):
-                continue
-            try:
-                cret = __salt__[cid_](compute_node, vm, ret=cret, output=False)
-                check_point(cret, __opts__, output=output)
-            except FailedStepError:
-                cret['result'] = False
-            except Exception, exc:
-                trace = traceback.format_exc()
-                cret['trace'] += 'lxcprovision: {0} in {1}\n'.format(exc,
-                                                                     cid_)
-                cret['trace'] += trace
-                cret['result'] = False
-                cret['comment'] += red('unmanaged exception for '
-                                       '{0}/{1}/{2}'.format(compute_node, vt,
-                                                            vm))
-            if cret['result']:
-                cret['trace'] = ''
-                cret['output'] = ''
-            merge_results(ret, cret)
+        cret = __salt__['mc_cloud_vm.step'](vm, step,
+                                            compute_node=compute_node,
+                                            vt=vt,
+                                            output=False)
+        merge_results(ret, cret)
     if ret['result']:
         ret['comment'] += green(
             '{0}/{1}/{2} deployed\n').format(compute_node, vt, vm)
@@ -235,7 +274,40 @@ def provision(compute_node, vt, vm, steps=None, ret=None, output=True):
     return ret
 
 
-def post_provision(compute_node, vt, vm, ret=None, output=True):
+def post_step(vm, step, compute_node=None, vt=None, ret=None, output=True):
+    if ret is None:
+        ret = result()
+    vt = __salt__['mc_cloud_vm.get_vt'](vm, vt)
+    compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
+    pre_vid_ = 'mc_cloud_{0}.vm_{1}'.format(vt, step)
+    id_ = 'mc_cloud_vm.vm_{1}'.format(vt, step)
+    post_vid_ = 'mc_cloud_{0}.post_vm_{1}'.format(vt, step)
+    for cid_ in [pre_vid_, id_, post_vid_]:
+        if (not ret['result']) or (cid_ not in __salt__):
+            continue
+        ret = result()
+        try:
+            ret = __salt__[cid_](
+                vm, compute_node=compute_node, vt=vt,
+                ret=ret, output=False)
+            check_point(ret, __opts__, output=output)
+        except FailedStepError:
+            ret['result'] = False
+        except Exception:
+            trace = traceback.format_exc()
+            ret['trace'] += trace
+            ret['result'] = False
+            ret['comment'] += red('unmanaged exception for '
+                                   '{0}/{1}/{2}'.format(compute_node, vt,
+                                                        vm))
+        if ret['result']:
+            ret['trace'] = ''
+            ret['output'] = ''
+    salt_output(ret, __opts__, output=output)
+    return ret
+
+
+def post_provision(vm, compute_node=None, vt=None, ret=None, output=True):
     '''post provision a vm
 
     compute_node
@@ -253,30 +325,13 @@ def post_provision(compute_node, vt, vm, ret=None, output=True):
     '''
     if ret is None:
         ret = result()
+    vt = __salt__['mc_cloud_vm.get_vt'](vm, vt)
+    compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
     for step in ['ping', 'post_provision_hook']:
-        pre_vid_ = 'mc_cloud_{0}.vm_{1}'.format(vt, step)
-        id_ = 'mc_cloud_vm.vm_{1}'.format(vt, step)
-        post_vid_ = 'mc_cloud_{0}.post_vm_{1}'.format(vt, step)
-        for cid_ in [pre_vid_, id_, post_vid_]:
-            if (not ret['result']) or (cid_ not in __salt__):
-                continue
-            cret = result()
-            try:
-                cret = __salt__[cid_](compute_node, vm, ret=cret, output=False)
-                check_point(cret, __opts__, output=output)
-            except FailedStepError:
-                cret['result'] = False
-            except Exception:
-                trace = traceback.format_exc()
-                cret['trace'] += trace
-                cret['result'] = False
-                cret['comment'] += red('unmanaged exception for '
-                                       '{0}/{1}/{2}'.format(compute_node, vt,
-                                                            vm))
-            if cret['result']:
-                cret['trace'] = ''
-                cret['output'] = ''
-            merge_results(ret, cret)
+        cret = __salt__['mc_cloud_vm.post_step'](vm, step,
+                                                 compute_node=compute_node,
+                                                 vt=vt, output=False)
+        merge_results(ret, cret)
     if ret['result']:
         ret['comment'] += green(
             '{0}/{1}/{2} deployed\n').format(compute_node, vt, vm)
@@ -333,7 +388,8 @@ def provision_vms(compute_node,
             #    raise FailedStepError('foo')
             #elif idx > 0:
             #    raise Exception('bar')
-            cret = provision(compute_node, vt, vm, ret=cret, output=False)
+            cret = provision(vm, compute_node=compute_node, vt=vt,
+                             ret=cret, output=False)
         except FailedStepError, exc:
             trace = traceback.format_exc()
             cret['trace'] += '{0}\n'.format(exc.message)
@@ -406,7 +462,8 @@ def post_provision_vms(compute_node,
             #    raise FailedStepError('foo')
             #elif idx > 0:
             #    raise Exception('bar')
-            cret = post_provision(compute_node, vt, vm, ret=cret, output=False)
+            cret = post_provision(vm, compute_node=compute_node, vt=vt,
+                                  ret=cret, output=False)
         except FailedStepError:
             cret['result'] = False
         except Exception, exc:

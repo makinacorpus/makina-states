@@ -73,7 +73,8 @@ def cn_sls_pillar(target):
 def vm_sls_pillar(compute_node, vm):
     '''limited cloud pillar to expose to a vm'''
     pillar = __salt__['mc_cloud_vm.vm_sls_pillar'](compute_node, vm)
-    lxcVmData = cli('mc_cloud_lxc.get_settings_for_vm', compute_node, vm, full=False)
+    lxcVmData = cli('mc_cloud_lxc.get_settings_for_vm',
+                    compute_node, vm, full=False)
     lxcVmData = api.json_dump(lxcVmData)
     pillar['slxcVmData'] = lxcVmData
     return pillar
@@ -184,23 +185,27 @@ def _vm_configure(what, target, compute_node, vm, ret, output):
     return ret
 
 
-def vm_spawn(compute_node, vm, ret=None, output=True):
+def vm_spawn(vm, compute_node=None, ret=None, output=True):
     '''spawn the vm'''
+    compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
     return _vm_configure('spawn', None, compute_node, vm, ret, output)
 
 
-def vm_grains(compute_node, vm, ret=None, output=True):
+def vm_grains(vm, compute_node=None, ret=None, output=True):
     '''install marker grains'''
+    compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
     return _vm_configure('grains', vm, compute_node, vm, ret, output)
 
 
-def vm_initial_setup(compute_node, vm, ret=None, output=True):
+def vm_initial_setup(vm, compute_node=None, ret=None, output=True):
     '''set initial password at least'''
+    compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
     return _vm_configure('initial_setup', vm, compute_node, vm, ret, output)
 
 
-def vm_hostsfile(compute_node, vm, ret=None, output=True):
+def vm_hostsfile(vm, compute_node=None, ret=None, output=True):
     '''manage vm /etc/hosts to add link to host'''
+    compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
     return _vm_configure('hostsfile', vm, compute_node, vm, ret, output)
 
 # vim:set et sts=4 ts=4 tw=80:

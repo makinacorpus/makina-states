@@ -228,6 +228,16 @@ def remove_allocated_ip(target, ip, vm=None):
     return get_allocated_ips(target)['ips']
 
 
+def target_for_vm(vm, target=None):
+    '''Get target for a vm'''
+    return get_vm(vm)['target']
+
+
+def vt_for_vm(vm, target=None):
+    '''Get VT for a vm'''
+    return get_vm(vm)['vt']
+
+
 def find_ip_for_vm(target,
                    vm,
                    default=None,
@@ -779,6 +789,15 @@ def get_vms():
             target['virt_types'] = [a for a in vts]
             target['vms'] = vms
     return data
+
+
+def get_vm(vm):
+    for target, data in get_vms().items():
+        vt = data.get('vms', {}).get(vm, None)
+        if vt:
+            vm = {'target': target, 'vt': vt}
+            return vm
+    raise KeyError('{0} vm not found'.format(vm))
 
 
 def get_vms_for_target(target):
