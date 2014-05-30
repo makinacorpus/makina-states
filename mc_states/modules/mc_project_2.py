@@ -41,6 +41,7 @@ from mc_states.api import (
 import mc_states.project
 from mc_states.project import (
     ENVS,
+    KEEP_ARCHIVES,
     ProjectInitException,
     ProjectProcedureException,
 )
@@ -58,6 +59,7 @@ DEFAULT_CONFIGURATION = {
     'project_branch': 'master',
     'pillar_branch': 'master',
     'installer': 'generic',
+    'keep_archives': KEEP_ARCHIVES,
     #
     'user': None,
     'groups': [],
@@ -87,15 +89,11 @@ DEFAULT_CONFIGURATION = {
     'salt_root': '{project_root}/.salt',
     'pillar_root': '{project_dir}/pillar',
     'data_root': '{project_dir}/data',
-    'deploy_root': '{project_dir}/deploy',
     'archives_root': '{project_dir}/archives',
-    'releases_root': '{project_dir}/releases',
-    'build_root': '{project_dir}/build',
     'git_root': '{project_dir}/git',
     'project_git_root': '{git_root}/project.git',
     'pillar_git_root': '{git_root}/pillar.git',
     'current_archive_dir': None,
-    'current_release_dir': None,
     'rollback': False,
     'this_host': 'localhost',
     'this_port': '22',
@@ -105,6 +103,7 @@ STEPS = ['deploy',
          'archive',
          'release_sync',
          'install',
+         'rotate_archives',
          'rollback',
          'fixperms',
          'notify']
@@ -112,6 +111,7 @@ SPECIAL_SLSES = ["{0}.sls".format(a)
                  for a in STEPS
                  if a not in ['deploy',
                               'release_sync',
+                              'rotate_archives',
                               'install']]
 
 
@@ -462,8 +462,6 @@ def get_configuration(name, *args, **kwargs):
             archives directory
         data_root
             persistent data root
-        deploy_root
-            deployment directory
         project_git_root
             project local git dir
         pillar_git_root
@@ -558,6 +556,7 @@ def get_configuration(name, *args, **kwargs):
     cfg['groups'] = uniquify(cfg['groups'])
     # those variables are overridable via pillar/grains
     overridable_variables = ['default_env',
+                             'keep_archives',
                              'no_user',
                              'no_default_includes']
 
@@ -567,6 +566,10 @@ def get_configuration(name, *args, **kwargs):
             continue
         cfg[k] = __salt__['mc_utils.get'](
             'makina-projects.{0}.{1}'.format(name, k), cfg[k])
+    try:
+        cfg['keep_archives'] = int(cfg['keep_archives'])
+    except (TypeError, ValueError, KeyError):
+        cfg['keep_archives'] = KEEP_ARCHIVES
     cfg['data'] = _defaultsConfiguration(cfg,
                                          cfg['default_env'],
                                          defaultsConfiguration=cfg['defaults'],
@@ -598,8 +601,6 @@ def get_configuration(name, *args, **kwargs):
     cfg['chrono'] = '{0}_{1}'.format(
         datetime.datetime.strftime(now, '%Y-%m-%d_%H_%M-%S'),
         str(uuid.uuid4()))
-    cfg['current_release_dir'] = os.path.join(
-        cfg['releases_root'], cfg['chrono'])
     cfg['current_archive_dir'] = os.path.join(
         cfg['archives_root'], cfg['chrono'])
 
@@ -694,11 +695,9 @@ def init_project_dirs(cfg, ret=None):
     for dr, mode in [
         (cfg['git_root'], '770'),
         (cfg['archives_root'], '770'),
-        (cfg['releases_root'], '770'),
         (os.path.dirname(cfg['wired_pillar_root']), '770'),
         (os.path.dirname(cfg['wired_salt_root']), '770'),
-        (cfg['deploy_root'], '770'),
-        (cfg['build_root'], '770'),
+        (cfg['data_root'], '770'),
     ]:
         cret = _state_exec(sfile,
                            'directory',
@@ -1383,6 +1382,8 @@ def deploy(name, *args, **kwargs):
                      ret=ret)
     # if the rollback flag has been raised, just do a rollback
     # only rollback if the minimum to rollback is there
+    if ret['result']:
+        guarded_step(cfg, 'rotate_archives', ret=ret, *args, **kwargs)
     if cfg['rollback'] and os.path.exists(cfg['project_root']):
         guarded_step(cfg, 'rollback', ret=ret, *args, **kwargs)
     if ret['result']:
@@ -1534,8 +1535,29 @@ def unlink(name, *args, **kwargs):
 
 def rollback(name, *args, **kwargs):
     cfg = get_configuration(name, *args, **kwargs)
+    ret = _get_ret(name, *args, **kwargs)
     cret = _step_exec(cfg, 'rollback')
     return cret
+
+def rotate_archives(name, *args, **kwargs):
+    cfg = get_configuration(name, *args, **kwargs)
+    ret = _get_ret(name, *args, **kwargs)
+    try:
+        if os.path.exists(cfg['archives_root']):
+            archives = sorted(os.listdir(cfg['archives_root']))
+            to_keep = archives[-cfg['keep_archives']:]
+            for archive in archives:
+                if not archive in to_keep:
+                    remove_path(os.path.join(cfg['archives_root'], archive))
+        _append_comment( ret, summary=('Archives cleanup done '))
+    except Exception, ex:
+        trace = traceback.format_exc()
+        ret['result'] = False
+        _append_comment(
+            ret, color='RED_BOLD',
+            summary=('Archives cleanup procedure '
+                     'failed:\n{0}').format(trace))
+    return ret
 
 
 def notify(name, *args, **kwargs):

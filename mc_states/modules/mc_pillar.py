@@ -147,6 +147,7 @@ def _load_network(ttl=60):
         data['rrs_ttls'] = __salt__['mc_pillar.query']('rrs_ttls')
         data['cnames'] = __salt__['mc_pillar.query']('cnames')
         data['standalone_hosts'] = __salt__['mc_pillar.query']('standalone_hosts')
+        data['cloud_vm_attrs'] = __salt__['mc_pillar.query']('cloud_vm_attrs')
         data['non_managed_hosts'] = __salt__['mc_pillar.query']('non_managed_hosts')
         data['baremetal_hosts'] = __salt__['mc_pillar.query']('baremetal_hosts')
         data['vms'] = __salt__['mc_pillar.query']('vms')
@@ -359,6 +360,7 @@ def load_network_infrastructure(ttl=60):
         cnames = data['cnames']
         standalone_hosts = data['standalone_hosts']
         non_managed_hosts = data['non_managed_hosts']
+        cloud_vm_attrs = data['cloud_vm_attrs']
         baremetal_hosts = data['baremetal_hosts']
         vms = data['vms']
         ips = data['ips']
@@ -484,6 +486,21 @@ def load_network_infrastructure(ttl=60):
                                         ips=ips, cnames=cnames, ipsfo=ipsfo,
                                         ipsfo_map=ipsfo_map, ips_map=ips_map,
                                         fail_over=True)
+        #
+        # tie extra domains of vms to a A record
+        #
+        for vm, _data in cloud_vm_attrs.items():
+            domains = _data.get('domains', [])
+            if not isinstance(domains, list):
+                continue
+            for domain in domains:
+                dips = ips.setdefault(domain, [])
+                for ip in ips_for(vm,
+                                  ips=ips, cnames=cnames, ipsfo=ipsfo,
+                                  ipsfo_map=ipsfo_map, ips_map=ips_map,
+                                  fail_over=True):
+                    if not ip in dips:
+                        dips.append(ip)
         return data
     cache_key = 'mc_pillar.load_network_infrastructure'
     return memoize_cache(_do_nt, [], {}, cache_key, ttl)

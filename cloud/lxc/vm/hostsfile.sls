@@ -2,8 +2,17 @@
 {% set target = pillar.mccloud_targetname %}
 {% set devhost = pillar.sisdevhost %}
 {% set compute_node_settings = salt['mc_utils.json_load'](pillar.scnSettings) %}
-{% set data = salt['mc_utils.json_load'](pillar.slxcVmData) %}
+{% set data = salt['mc_utils.json_load'](pillar.svtVmData) %}
 {% set cloudSettings = salt['mc_utils.json_load'](pillar.scloudSettings) %}
+{% set domains = [] %}
+{# only for extra domains, we map to localhost
+   the main domain is mapped to the local ip via another state #}
+{% for domain in data.get('domains', []) %}
+{%  if not domain in domains and not domain == grains['id'] %}
+{%    do domains.append(domain) %}
+{%  endif %}
+{% endfor %}
+{% set sdomains = ' '.join(domains) %}
 {% if devhost %}
 alxc-{{vmname}}-makina-append-parent-etc.computenode.management:
   file.blockreplace:
@@ -22,6 +31,7 @@ amakina-parent-append-etc.computenode.accumulated-lxc-{{vmname}}:
     - name: parent-hosts-append-accumulator-lxc-{{ vmname }}-entries
     - text: |
             {{ data.gateway }} {{ target }} {{grains['id'] }}
+            {% if sdomains.strip() %}127.0.0.1 {{sdomains}}{% endif%}
 lxc-{{vmname}}-makina-prepend-parent-etc.computenode.management:
   file.blockreplace:
     - name: /etc/hosts
@@ -38,7 +48,8 @@ makina-parent-prepend-etc.computenode.accumulated-lxc-{{vmname}}:
     - filename: /etc/hosts
     - name: parent-hosts-prepend-accumulator-lxc-{{ vmname }}-entries
     - text: |
-            {{ data.gateway }} {{ target }} {{grains['id'] }}
+            {{ data.gateway }} {{ target }}
+            {% if sdomains.strip() %}127.0.0.1 {{sdomains}}{% endif%}
 {% else %}
 c{{vmname}}-lxc.computenode.sls-generator-for-hostnode:
   mc_proxy.hook: []

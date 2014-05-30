@@ -228,6 +228,16 @@ def remove_allocated_ip(target, ip, vm=None):
     return get_allocated_ips(target)['ips']
 
 
+def target_for_vm(vm, target=None):
+    '''Get target for a vm'''
+    return get_vm(vm)['target']
+
+
+def vt_for_vm(vm, target=None):
+    '''Get VT for a vm'''
+    return get_vm(vm)['vt']
+
+
 def find_ip_for_vm(target,
                    vm,
                    default=None,
@@ -531,12 +541,14 @@ def cleanup_ssh_ports(target, target_data=None):
     return get_conf_for_target(target, 'ssh_map', {})
 
 
-def get_ssh_port(target, vm, target_data=None):
+def get_ssh_port(vm, target=None, target_data=None):
     _s = __salt__.get
     _settings = settings()
-    vms_infos = target_data.get('vms', {})
+    if target is None:
+        target = __salt__['mc_cloud_compute_node.target_for_vm'](vm)
     if target_data is None:
         target_data = get_settings_for_target(target)
+    vms_infos = target_data.get('vms', {})
     start = int(_settings['ssh_port_range_start'])
     end = int(_settings['ssh_port_range_end'])
     ssh_map = get_conf_for_target(target, 'ssh_map', {})
@@ -549,7 +561,7 @@ def get_ssh_port(target, vm, target_data=None):
             _s('mc_cloud_compute_node.set_ssh_port')(
                 target, vm, port, target_data=target_data)
         else:
-            raise ValueError('{0} is not a vm of {1}'.foramt(vm, target))
+            raise ValueError('{0} is not a vm of {1}'.format(vm, target))
     return port
 
 
@@ -563,7 +575,8 @@ def feed_ssh_reverse_proxies_for_target(target, target_data=None):
     ssh_proxies = reversep.setdefault('ssh_proxies', [])
     for vm, data in vms_infos.items():
         port = _s('mc_cloud_compute_node.get_ssh_port')(
-            target, vm, target_data=target_data)
+            vm, target=target,
+            target_data=target_data)
         ssh_proxy = {'name': 'lst_{0}'.format(vm),
                      'bind': ':{0}'.format(port),
                      'mode': 'tcp',
@@ -779,6 +792,15 @@ def get_vms():
             target['virt_types'] = [a for a in vts]
             target['vms'] = vms
     return data
+
+
+def get_vm(vm):
+    for target, data in get_vms().items():
+        vt = data.get('vms', {}).get(vm, None)
+        if vt:
+            vm = {'target': target, 'vt': vt}
+            return vm
+    raise KeyError('{0} vm not found'.format(vm))
 
 
 def get_vms_for_target(target):

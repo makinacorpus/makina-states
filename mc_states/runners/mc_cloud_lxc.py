@@ -21,6 +21,7 @@ import salt.client
 import salt.payload
 import salt.utils
 import salt.output
+from mc_states.utils import memoize_cache
 import salt.minion
 from salt.utils import check_state_result
 from salt.utils.odict import OrderedDict
@@ -45,42 +46,47 @@ def cli(*args, **kwargs):
     return __salt__['mc_api.cli'](*args, **kwargs)
 
 
-def cn_sls_pillar(target):
+def cn_sls_pillar(target, ttl=api.RUNNER_CACHE_TIME):
     '''limited cloud pillar to expose to a compute node'''
-    pillar = __salt__['mc_cloud_compute_node.cn_sls_pillar'](target)
-    imgSettings = cli('mc_cloud_images.settings')
-    lxcSettings = cli('mc_cloud_lxc.settings')
-    imgSettingsData = {}
-    lxcSettingsData = {}
-    for name, imageData in imgSettings['lxc']['images'].items():
-        imgSettingsData[name] = {
-            'lxc_tarball': imageData['lxc_tarball'],
-            'lxc_tarball_md5': imageData['lxc_tarball_md5'],
-            'lxc_tarball_name': imageData['lxc_tarball_name'],
-            'lxc_tarball_ver': imageData['lxc_tarball_ver']}
-    for v in ['use_bridge', 'bridge',
-              'gateway', 'netmask_full',
-              'network', 'netmask']:
-        lxcSettingsData[v] = lxcSettings['defaults'][v]
-    imgSettingsData = api.json_dump(imgSettingsData)
-    lxcSettingsData = api.json_dump(lxcSettingsData)
-    pillar.update(
-        {'slxcSettings': lxcSettingsData,
-         'simgSettings': imgSettingsData})
-    return pillar
+    func_name = 'mc_cloud_lxc.cn_sls_pillar {0}'.format(target)
+    __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    def _do(target):
+        pillar = {}
+        imgSettings = cli('mc_cloud_images.settings')
+        lxcSettings = cli('mc_cloud_lxc.settings')
+        imgSettingsData = {}
+        lxcSettingsData = {}
+        for name, imageData in imgSettings['lxc']['images'].items():
+            imgSettingsData[name] = {
+                'lxc_tarball': imageData['lxc_tarball'],
+                'lxc_tarball_md5': imageData['lxc_tarball_md5'],
+                'lxc_tarball_name': imageData['lxc_tarball_name'],
+                'lxc_tarball_ver': imageData['lxc_tarball_ver']}
+        for v in ['use_bridge', 'bridge',
+                  'gateway', 'netmask_full',
+                  'network', 'netmask']:
+            lxcSettingsData[v] = lxcSettings['defaults'][v]
+        imgSettingsData = api.json_dump(imgSettingsData)
+        lxcSettingsData = api.json_dump(lxcSettingsData)
+        pillar.update({'slxcSettings': lxcSettingsData,
+                       'simgSettings': imgSettingsData})
+        return pillar
+    cache_key = 'mc_cloud_lxc.cn_sls_pillar_{0}'.format(target)
+    ret = memoize_cache(_do, [target], {}, cache_key, ttl)
+    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+    return ret
 
 
 def vm_sls_pillar(compute_node, vm):
-    '''limited cloud pillar to expose to a vm'''
+    '''Retro compatible wrapper'''
     pillar = __salt__['mc_cloud_vm.vm_sls_pillar'](compute_node, vm)
-    lxcVmData = cli('mc_cloud_lxc.get_settings_for_vm', compute_node, vm, full=False)
-    lxcVmData = api.json_dump(lxcVmData)
-    pillar['slxcVmData'] = lxcVmData
     return pillar
 
 
 def post_deploy_controller(output=True):
     '''Prepare cloud controller LXC configuration'''
+    func_name = 'mc_cloud_lxc.post_deploy_controller'
+    __salt__['mc_api.time_log']('start {0}'.format(func_name))
     ret = result()
     ret['comment'] = yellow('Installing controller lxc configuration\n')
     pref = 'makina-states.cloud.lxc.controller'
@@ -88,10 +94,14 @@ def post_deploy_controller(output=True):
         ['{0}.layout'.format(pref), '{0}.crons'.format(pref)],
         **{'ret': ret})
     salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
 
 def _cn_configure(what, target, ret, output):
+    func_name = 'mc_cloud_lxc._cn_configure {0} {1}'.format(
+        what, target)
+    __salt__['mc_api.time_log']('start {0}'.format(func_name))
     if ret is None:
         ret = result()
     ret['comment'] += yellow(
@@ -101,8 +111,11 @@ def _cn_configure(what, target, ret, output):
         '{0}.{1}'.format(pref, what), **{
             'salt_target': target,
             'ret': ret,
-            'sls_kw': {'pillar': cn_sls_pillar(target)}})
+            'sls_kw': {'pillar': __salt__[
+                'mc_cloud_compute_node.cn_sls_pillar'
+            ](target)}})
     salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
 
@@ -123,6 +136,9 @@ def configure_images(target, ret=None, output=True):
 
 def install_vt(target, output=True):
     '''install & configure lxc'''
+    func_name = 'mc_cloud_lxc.install_vt {0}'.format(
+        target)
+    __salt__['mc_api.time_log']('start {0}'.format(func_name))
     ret = result()
     ret['comment'] += yellow('Installing lxc on {0}\n'.format(target))
     for step in [configure_grains,
@@ -141,11 +157,15 @@ def install_vt(target, output=True):
         ret['comment'] += yellow(
             'LXC: images failed to synchronnise on {0}\n'.format(target))
     salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
 
 def post_post_deploy_compute_node(target, output=True):
     '''post deployment hook for controller'''
+    func_name = 'mc_cloud_lxc.post_post_deploy_compute_node {0}'.format(
+        target)
+    __salt__['mc_api.time_log']('start {0}'.format(func_name))
     ret = result()
     nodetypes_reg = cli('mc_nodetypes.registry')
     slss, pref = [], 'makina-states.cloud.lxc.compute_node'
@@ -165,10 +185,14 @@ def post_post_deploy_compute_node(target, output=True):
         status = 'failure'
     ret['comment'] += clr(msg.format(status))
     salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
 
 def _vm_configure(what, target, compute_node, vm, ret, output):
+    func_name = 'mc_cloud_lxc._vm_configure {0} {1} {2} {3}'.format(
+        what, target, compute_node, vm)
+    __salt__['mc_api.time_log']('start {0}'.format(func_name))
     if ret is None:
         ret = result()
     ret['comment'] += yellow(
@@ -179,28 +203,62 @@ def _vm_configure(what, target, compute_node, vm, ret, output):
         '{0}.{1}'.format(pref, what), **{
             'salt_target': target,
             'ret': ret,
-            'sls_kw': {'pillar': vm_sls_pillar(compute_node, vm)}})
+            'sls_kw': {'pillar': (
+                __salt__[
+                    'mc_cloud_vm.vm_sls_pillar'
+                ](compute_node, vm)
+            )}})
     salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
 
-def vm_spawn(compute_node, vm, ret=None, output=True):
-    '''spawn the vm'''
+def vm_spawn(vm, compute_node=None, vt='lxc', ret=None, output=True):
+    '''spawn the vm
+
+    ::
+
+        mastersalt-run -lall mc_cloud_lxc.vm_spawn foo.domain.tld
+
+    '''
+    compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
     return _vm_configure('spawn', None, compute_node, vm, ret, output)
 
 
-def vm_grains(compute_node, vm, ret=None, output=True):
-    '''install marker grains'''
+def vm_grains(vm, compute_node=None, vt='lxc', ret=None, output=True):
+    '''install marker grains
+
+    ::
+
+        mastersalt-run -lall mc_cloud_lxc.vm_grains foo.domain.tld
+
+    '''
+    compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
     return _vm_configure('grains', vm, compute_node, vm, ret, output)
 
 
-def vm_initial_setup(compute_node, vm, ret=None, output=True):
-    '''set initial password at least'''
+def vm_initial_setup(vm, compute_node=None, vt='lxc', ret=None, output=True):
+    '''set initial password at least
+
+    ::
+
+        mastersalt-run -lall mc_cloud_lxc.vm_initial_setup foo.domain.tld
+
+
+    '''
+    compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
     return _vm_configure('initial_setup', vm, compute_node, vm, ret, output)
 
 
-def vm_hostsfile(compute_node, vm, ret=None, output=True):
-    '''manage vm /etc/hosts to add link to host'''
+def vm_hostsfile(vm, compute_node=None, vt='lxc', ret=None, output=True):
+    '''manage vm /etc/hosts to add link to host
+
+    ::
+
+        mastersalt-run -lall mc_cloud_lxc.vm_hostsfile foo.domain.tld
+
+    '''
+    compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
     return _vm_configure('hostsfile', vm, compute_node, vm, ret, output)
 
 # vim:set et sts=4 ts=4 tw=80:
