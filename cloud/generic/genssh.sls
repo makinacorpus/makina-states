@@ -1,24 +1,24 @@
 {% set cloudSettings = salt['mc_cloud.settings']() %}
 include:
-  - makina-states.cloud.generic.hooks.controller
-  - makina-states.localsettings.users
   - makina-states.services.base.ssh.rootkey
-  - makina-states.cloud.generic.controller.layout
+
+cloudgenssh-dir:
+  file.directory:
+    - name: {{cloudSettings.root}}/{{cloudSettings.all_sls_dir}}
+    - user: root
+    - group: root
+    - makedirs: true
 cloud-root-keygen:
   file.copy:
     - name: {{cloudSettings.root}}/{{cloudSettings.all_sls_dir}}/rootkey-dsa.pub
     - source: /root/.ssh/id_dsa.pub
     - watch:
       - cmd: root-ssh-keys-init
-      - mc_proxy: cloud-generic-controller-post-pre-deploy
-    - watch_in:
-      - mc_proxy: cloud-generic-controller-pre-grains-deploy
+      - file: cloudgenssh-dir
 cloud-root-keygen-rsa:
   file.copy:
     - name: {{cloudSettings.root}}/{{cloudSettings.all_sls_dir}}/rootkey-rsa.pub
     - source: /root/.ssh/id_rsa.pub
     - watch:
       - cmd: root-ssh-keys-init
-      - mc_proxy: cloud-generic-controller-post-pre-deploy
-    - watch_in:
-      - mc_proxy: cloud-generic-controller-pre-grains-deploy
+      - file: cloudgenssh-dir

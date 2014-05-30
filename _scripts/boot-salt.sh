@@ -19,6 +19,7 @@
 
 # be sure to have a populated base path
 PATH="${PATH}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
+ALIVE_MARKER="/tmp/mastersalt_alive"
 export PATH
 
 THIS="${0}"
@@ -2410,23 +2411,31 @@ kill_pids(){
 }
 
 killall_local_mastersalt_masters() {
-    kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(master|syndic)"|grep -v deploy.sh|grep -v boot-salt|grep mastersalt|awk '{print $2}')) 1>/dev/null 2>/dev/null
+    if [ ! -e "${ALIVE_MARKER}" ];then
+        kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(master|syndic)"|grep -v deploy.sh|grep -v boot-salt|grep mastersalt|awk '{print $2}')) 1>/dev/null 2>/dev/null
+    fi
 }
 
 killall_local_mastersalt_minions() {
-    kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(minion)"|grep -v deploy.sh|grep -v boot-salt|grep mastersalt|awk '{print $2}')) 1>/dev/null 2>/dev/null
+    if [ ! -e "${ALIVE_MARKER}" ];then
+        kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(minion)"|grep -v deploy.sh|grep -v boot-salt|grep mastersalt|awk '{print $2}')) 1>/dev/null 2>/dev/null
+    fi
 }
 
 killall_local_masters() {
-    kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(master|syndic)"|grep -v deploy.sh|grep -v boot-salt|grep -v mastersalt|awk '{print $2}')) 1>/dev/null 2>/dev/null
+    if [ ! -e "${ALIVE_MARKER}" ];then
+        kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(master|syndic)"|grep -v deploy.sh|grep -v boot-salt|grep -v mastersalt|awk '{print $2}')) 1>/dev/null 2>/dev/null
+    fi
 }
 
 killall_local_minions() {
-    kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(minion)"|grep -v deploy.sh|grep -v boot-salt|grep -v mastersalt|awk '{print $2}')) 1>/dev/null 2>/dev/null
+    if [ ! -e "${ALIVE_MARKER}" ];then
+        kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(minion)"|grep -v deploy.sh|grep -v boot-salt|grep -v mastersalt|awk '{print $2}')) 1>/dev/null 2>/dev/null
+    fi
 }
 
 restart_local_mastersalt_masters() {
-    if [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
+    if [ ! -e "${ALIVE_MARKER}" ] && [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
         service_ mastersalt-master stop
         killall_local_mastersalt_masters
         service_ mastersalt-master restart
@@ -2434,7 +2443,7 @@ restart_local_mastersalt_masters() {
 }
 
 restart_local_mastersalt_minions() {
-    if [ "x${IS_MASTERSALT_MINION}" != "x" ];then
+    if [ ! -e "${ALIVE_MARKER}" ] && [ "x${IS_MASTERSALT_MINION}" != "x" ];then
         service_ mastersalt-minion stop
         killall_local_mastersalt_minions
         service_ mastersalt-minion restart
@@ -2442,7 +2451,7 @@ restart_local_mastersalt_minions() {
 }
 
 restart_local_masters() {
-    if [ "x${IS_SALT_MASTER}" != "x" ];then
+    if [ ! -e "${ALIVE_MARKER}" ] && [ "x${IS_SALT_MASTER}" != "x" ];then
         service_ salt-master stop
         killall_local_masters
         service_ salt-master restart
@@ -2450,7 +2459,7 @@ restart_local_masters() {
 }
 
 restart_local_minions() {
-    if [ "x${IS_SALT_MINION}" != "x" ];then
+    if [ ! -e "${ALIVE_MARKER}" ] && [ "x${IS_SALT_MINION}" != "x" ];then
         service_ salt-minion stop
         killall_local_minions
         service_ salt-minion restart
@@ -3854,6 +3863,9 @@ start_missing_or_dead() {
 }
 
 check_alive() {
+    if [ -e "${ALIVE_MARKER}" ];then
+        return
+    fi
     restart_modes=""
     kill_old_syncs
     # kill all check alive

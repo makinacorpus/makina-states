@@ -3,7 +3,6 @@
 {% set pfdir = cloudSettings.pfdir %}
 include:
   - makina-states.localsettings.users
-  - makina-states.cloud.generic.hooks.controller
   - makina-states.cloud.generic.genssh
 salt_cloud-dirs:
   file.directory:
@@ -15,7 +14,3 @@ salt_cloud-dirs:
     - user: root
     - group: {{salt['mc_usergroup.settings']().group }}
     - mode: 2770
-    - require:
-      - mc_proxy: cloud-generic-controller-pre-pre-deploy
-    - require_in:
-      - mc_proxy: cloud-generic-controller-post-pre-deploy
