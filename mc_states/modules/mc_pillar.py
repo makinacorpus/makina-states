@@ -77,10 +77,13 @@ def get_fqdn_domains(fqdn):
 # to be easily mockable in tests while having it cached
 def loaddb_do(*a, **kw):
     root = '/srv/mastersalt-pillar'
-    db = 'makina-states/database.yaml'
+    db = 'database.yaml'
     db = yaml.load(open(os.path.join(root, db)).read())
     for item in db:
-        if not isinstance(db[item], (dict, list)):
+        types = (dict, list)
+        if item in ['format']:
+            types = (int,)
+        if not isinstance(db[item], types):
             raise ValueError('Db is invalid')
     return db
 
@@ -375,10 +378,8 @@ def load_network_infrastructure(ttl=60):
         # add the nameservers if not configured but a managed zone
         for zone in managed_dns_zones:
             nssz = get_nss_for_zone(zone)
-            nsszslaves = nssz['slaves']
-            for i, slave in enumerate(nsszslaves):
+            for nsq, slave in nssz['slaves'].items():
                 # special case
-                nsq = 'ns{0}.{1}'.format(i + 1, zone)
                 if nsq not in ips_map:
                     ips_map[nsq] = [slave]
                 if slave in cnames and nsq not in ips:
@@ -650,83 +651,196 @@ def rrs_txt_for(domain, ttl=60):
     return memoize_cache(_do, [domain], {}, cache_key, ttl)
 
 
+
+def get_nss(ttl=60):
+    '''Get a map of relationship between name servers
+    that is used in the pillar to attribute roles
+    and configuration to name servers
+
+    This return a mapping in the form::
+
+        {
+            all: [list of all nameservers],
+            masters: mapping of mappings {master: [list of related slaves]},
+            slaves: mapping of mappings {slave: [list of related masters]},
+        }
+
+    For each zone, if slaves are declared without master,
+    the default masters would be added as master for this zone if any defaults.
+
+    '''
+    def _do_getnss():
+        dns_servers = {'all': [],
+                       'masters': OrderedDict(),
+                       'slaves': OrderedDict()}
+        dbdns_zones = query('managed_dns_zones')
+        for domain in dbdns_zones:
+            master = get_ns_master(domain)
+            slaves = get_ns_slaves(domain)
+            slaves_targets = slaves.values()
+            for server in [master] + slaves_targets:
+                if server not in dns_servers['all']:
+                    dns_servers['all'].append(server)
+            master_slaves = dns_servers['masters'].setdefault(master, [])
+            for target in slaves_targets:
+                if not target in master_slaves:
+                    master_slaves.append(target)
+                target_masters = dns_servers['slaves'].setdefault(target, [])
+                if master not in target_masters:
+                    target_masters.append(master)
+        dns_servers['all'].sort()
+        return dns_servers
+    cache_key = 'mc_pillar.get_nss'
+    return memoize_cache(_do_getnss, [], {}, cache_key, ttl)
+
+
+def get_ns_master(id_, dns_servers=None, default=None, ttl=60):
+    '''Grab masters in this form::
+
+        dns_servers:
+            zoneid_dn:
+                master: fqfn
+    '''
+    def _do_get_ns_master(id_, dns_servers=None, default=None):
+        managed_dns_zones = query('managed_dns_zones')
+        if id_ not in managed_dns_zones:
+            raise ValueError('{0} is not managed'.format(id_))
+        if not dns_servers:
+            dns_servers = query('dns_servers')
+        if not default:
+            default = dns_servers['default']
+        master = dns_servers.get(
+            id_, OrderedDict()).get('master', None)
+        if not master:
+            master = default.get('master', None)
+        if not master:
+            raise ValueError('No master for {0}'.format(id_))
+        if not isinstance(master, basestring):
+            raise ValueError(
+                '{0} is not a string for dns master {1}'.format(
+                    master, id_))
+        return master
+    cache_key = 'mc_pillar.get_ns_master_{0}'.format(id_)
+    return memoize_cache(_do_get_ns_master,
+                         [id_, dns_servers, default], {}, cache_key, ttl)
+
+
+def get_ns_slaves(id_, dns_servers=None, default=None, ttl=60):
+    '''Grab slaves in this form::
+
+        dns_servers:
+            zoneid_dn:
+                slaves:
+                    - dn: fqdn
+    '''
+    def _do_get_ns_slaves(id_, dns_servers=None, default=None):
+        managed_dns_zones = query('managed_dns_zones')
+        if id_ not in managed_dns_zones:
+            raise ValueError('{0} is not managed'.format(id_))
+        if not dns_servers:
+            dns_servers = query('dns_servers')
+        if not default:
+            default = dns_servers['default']
+        lslaves = dns_servers.get(
+            id_, OrderedDict()).get('slaves', OrderedDict())
+        if not lslaves:
+            lslaves = default.get('slaves', OrderedDict())
+        if not isinstance(lslaves, list):
+            raise ValueError('Invalid format for slaves for {0}'.format(id_))
+        for item in lslaves:
+            if not isinstance(item, dict):
+                raise ValueError('Invalid format for slaves for {0}'.format(id_))
+        slaves = OrderedDict()
+        for slave in lslaves:
+            for nsid in [a for a in slave]:
+                target = copy.deepcopy(slave[nsid])
+                cnsid = nsid
+                if not isinstance(nsid, basestring):
+                    raise ValueError(
+                        '{0} is not a valid dn for nameserver in '
+                        '{1}'.format(nsid, id_))
+                if not isinstance(target, basestring):
+                    raise ValueError(
+                        '{0} is not a valid dn for nameserver target in '
+                        '{1}'.format(target, id_))
+                if id_ not in nsid:
+                    cnsid = '{0}.{1}'.format(nsid, id_)
+                slaves[cnsid] = target
+        return slaves
+    cache_key = 'mc_pillar.get_ns_slaves_{0}'.format(id_)
+    return memoize_cache(_do_get_ns_slaves,
+                         [id_, dns_servers, default], {}, cache_key, ttl)
+
+
+def get_nss_for_zone(id_, ttl=60):
+    '''Return all masters and slaves for a zone
+
+    If there is a master but no slaves, the master becomes also the only slave
+    for that zone
+
+    Slave in makina-states means a name server which is exposed to outside
+    world via an NS record.
+    '''
+    def _do_getnssforzone(id_):
+        dns_servers = query('dns_servers')
+        master = get_ns_master(id_, dns_servers=dns_servers)
+        slaves = get_ns_slaves(id_, dns_servers=dns_servers)
+        if not master and not slaves:
+            raise ValueError('no ns information for {0}'.format(id_))
+        data = {'master': master, 'slaves': slaves}
+        return data
+    cache_key = 'mc_pillar.get_nss_for_zone_{0}'.format(id_)
+    return memoize_cache(_do_getnssforzone, [id_], {}, cache_key, ttl)
+
+
 def get_slaves_for(id_, ttl=60):
+    '''Get all public exposed dns servers slaves
+    for a specific dns master
+    Return something like::
+
+        {
+            all: [all slaves related to this master],
+            z: {
+                {zone domains: [list of slaves related to this zone]
+               }
+        }
+
+    '''
     def _do_getslavesfor(id_):
-        allslaves = {'z': {}, 'all': []}
+        allslaves = {'z': OrderedDict(), 'all': []}
         for zone in query('managed_dns_zones'):
             zi = get_nss_for_zone(zone)
             if id_ == zi['master']:
                 slaves = allslaves['z'].setdefault(zone, [])
-                for fqdn in zi['slaves']:
+                for nsid, fqdn in zi['slaves'].items():
                     if not fqdn in allslaves['all']:
                         allslaves['all'].append(fqdn)
                     if not fqdn in slaves:
                         slaves.append(fqdn)
         allslaves['all'].sort()
         return allslaves
-    cache_key = 'mc_pillar.get_slaves_zones_for_{0}'.format(id_)
+    cache_key = 'mc_pillar.get_slaves_for_{0}'.format(id_)
     return memoize_cache(_do_getslavesfor, [id_], {}, cache_key, ttl)
 
 
-def get_slaves_zones_for(id_, ttl=60):
-    def _do_getslaveszonesfor(id_):
+def get_ns(domain):
+    '''Get the first configured public name server for domain'''
+    def _do(domain):
+        return get_nss_for_zone(domain)[0]
+    cache_key = 'mc_pillar.get_ns_{0}'.format(domain)
+    return memoize_cache(_do, [domain], {}, cache_key, ttl)
+
+
+def get_slaves_zones_for(fqdn, ttl=60):
+    def _do_getslaveszonesfor(fqdn):
         zones = {}
         for zone in query('managed_dns_zones'):
             zi = get_nss_for_zone(zone)
-            if id_ in zi['slaves']:
+            if fqdn in zi['slaves'].values():
                 zones[zone] = zi['master']
         return zones
-    cache_key = 'mc_pillar.get_slaves_zones_for_{0}'.format(id_)
-    return memoize_cache(_do_getslaveszonesfor, [id_], {}, cache_key, ttl)
-
-
-def get_nss(ttl=60):
-    def _do_getnss():
-        dns_servers = {
-            'all': [],
-            'masters': [],
-            'slaves': [],
-        }
-        dbdns_servers = query('dns_servers')
-        for domain, servers_types in dbdns_servers.items():
-            for typ_, servers in servers_types.items():
-                if not isinstance(servers, list):
-                    servers = [servers]
-                typ_ = {
-                    'master': 'masters'
-                }.get(typ_, typ_)
-                for s in servers:
-                    if s not in dns_servers['all']:
-                        dns_servers['all'].append(s)
-                    if s not in dns_servers[typ_]:
-                        dns_servers[typ_].append(s)
-        for a in ['all', 'masters']:
-            dns_servers[a].sort()
-        return dns_servers
-    cache_key = 'mc_pillar.get_nss'
-    return memoize_cache(_do_getnss, [], {}, cache_key, ttl)
-
-
-def get_nss_for_zone(id_, ttl=60):
-    def _do_getnssforzone(id_):
-        managed_dns_zones = query('managed_dns_zones')
-        dns_servers = query('dns_servers')
-        if id_ not in managed_dns_zones:
-            raise ValueError('{0} is not managed'.format(id_))
-        master = dns_servers.get(id_, {'master': None}).get('master', None)
-        slaves = dns_servers.get(id_, {'slaves': []}).get('slaves', [])
-        if not master:
-            master = dns_servers['default']['master']
-        if not slaves:
-            slaves = dns_servers['default']['slaves']
-        if not slaves:
-            slaves = [master]
-        if not master and not slaves:
-            raise ValueError('no ns for {0}'.format(id_))
-        return {'master': master,
-                'slaves': slaves}
-    cache_key = 'mc_pillar.get_nss_for_zone_{0}'.format(id_)
-    return memoize_cache(_do_getnssforzone, [id_], {}, cache_key, ttl)
+    cache_key = 'mc_pillar.get_slaves_zones_for_{0}'.format(fqdn)
+    return memoize_cache(_do_getslaveszonesfor, [fqdn], {}, cache_key, ttl)
 
 
 def rrs_ns_for(domain, ttl=60):
@@ -737,9 +851,8 @@ def rrs_ns_for(domain, ttl=60):
         ips = db['ips']
         all_rrs = OrderedDict()
         servers = get_nss_for_zone(domain)
-        for ix, fqdn in enumerate(servers['slaves']):
+        for ns_map, fqdn in servers['slaves'].items():
             # ensure NS A mapping is there
-            ns_map = 'ns{0}.{1}'.format(ix + 1, domain)
             assert ips[ns_map] == ips_for(fqdn)
             rrs = all_rrs.setdefault(fqdn, [])
             dfqdn = ns_map
@@ -970,10 +1083,6 @@ def rrs_for(domain):
     return rr
 
 
-def get_ns(domain):
-    return get_nss_for_zone(domain)[0]
-
-
 def get_db_infrastructure_maps(ttl=60):
     '''Return a struct::
 
@@ -1031,7 +1140,7 @@ def get_configuration(id_=None, ttl=60):
         if id_ in configuration_settings:
             data = __salt__['mc_utils.dictupdate'](data, configuration_settings[id_])
         return data
-    cache_key = 'mc_pillar.get_global_settings_{0}'.format(id_)
+    cache_key = 'mc_pillar.get_configuration_{0}'.format(id_)
     return memoize_cache(_do_conf, [id_], {}, cache_key, ttl)
 
 
@@ -1229,7 +1338,6 @@ def get_passwords(id_, ttl=60):
         return passwords
     cache_key = 'mc_pillar.get_passwords_{0}'.format(id_)
     return memoize_cache(_do_pass, [id_], {}, cache_key, ttl)
-
 
 
 def get_ssh_groups(id_=None, ttl=60):
