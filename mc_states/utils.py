@@ -152,6 +152,11 @@ def memoize_cache(func, args=None, kwargs=None,
       ...         _do, [domain], {}, cache_key, 60)
 
     '''
+    try:
+        seconds = int(seconds)
+    except Exception:
+        # in case of errors on seconds, try to run without cache
+        seconds = 1
     if args is None:
         args = []
     if kwargs is None:

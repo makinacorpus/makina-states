@@ -143,13 +143,26 @@ def settings():
         devhost_ip = None
         forced_ifs = {}
         devhost = __salt__['mc_nodetypes.registry']()['is']['devhost']
+        real_ifaces = [(a, ip) 
+                       for a, ip in ifaces 
+                       if 'br' not in a 
+                          and 'docker' not in a 
+                          and 'tun' not in a 
+                          and not a.startswith('lo')]
+        noeth = False
+        if not 'eth0'in [a for a, ip in ifaces]:
+            noeth = True
+        ems = [a for a, ip in ifaces if a.startswith('em')]
+        rpnem = 'em1'
+        if noeth and ems:
+            rpnem = ems[-1]
         for iface, ips in ifaces:
             if ips:
                 if not default_ip:
                     default_ip = ips[0]
                 if (iface == 'eth1') and devhost:
                     devhost_ip = ips[0]
-                if providers['have_rpn'] and (iface in ['eth1', 'em1']):
+                if providers['have_rpn'] and (iface in ['eth1', rpnem]):
                     # configure rpn with dhcp
                     forced_ifs[iface] = {}
         if not default_ip:
@@ -195,6 +208,54 @@ def settings():
         for ifc, data in netdata['interfaces'].items():
             data.setdefault('ifname', ifc)
         # get the order configuration
+        # on ubuntu trusty and some distros, copy where biosdevname is true
+        # from eth0 to the real network iface
+        if noeth:
+            for i in range(10):
+                ethn = 'eth{0}'.format(i)
+                for iface in [a for a in netdata['interfaces'] 
+                              if a.startswith(ethn)]:
+                    # handle eth0:0
+                    suf = iface.replace(ethn, '')
+                    newif = real_ifaces[i][0]
+                    ifdata = netdata['interfaces'].pop(iface)
+                    ifdata['post_roting'] = ['foo via eth0']
+                    for k in [b for b in ifdata]:
+                        val = ifdata[k]
+                        # handle eth0:0
+                        if isinstance(val, basestring):
+                            ifdata[k] = val.replace(ethn, newif)
+                        # handle pre/post/routing
+                        elif isinstance(val, list):
+                            newval = []
+                            for sube in val:
+                                if isinstance(sube, basestring):
+                                    sube = sube.replace(ethn, newif)
+                                newval.append(sube)
+                            ifdata[k] = newval
+                    netdata['interfaces'][newif + suf] = ifdata
+                for ifacedata in netdata['ointerfaces']:
+                    for iface in [a 
+                                  for a in ifacedata
+                                  if a.startswith(ethn)]:
+                        # handle eth0:0
+                        suf = iface.replace(ethn, '')
+                        newif = real_ifaces[i][0]
+                        ifdata = ifacedata.pop(iface)
+                        for k in [b for b in ifdata]:
+                            val = ifdata[k]
+                            # handle eth0:0
+                            if isinstance(val, basestring):
+                                ifdata[k] = val.replace(ethn, newif)
+                            # handle pre/post/routing
+                            elif isinstance(val, list):
+                                newval = []
+                                for sube in val:
+                                    if isinstance(sube, basestring):
+                                        sube = sube.replace(ethn, newif)
+                                    newval.append(sube)
+                                ifdata[k] = newval
+                        ifacedata[newif + suf] = ifdata
         netdata['interfaces_order'] = [a for a in netdata['interfaces']]
         return netdata
     return _settings()

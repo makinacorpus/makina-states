@@ -2,6 +2,7 @@
 __docformat__ = 'restructuredtext en'
 
 import unittest
+from collections import OrderedDict
 
 from . import base
 from mc_states.modules import (
@@ -17,14 +18,14 @@ import yaml
 TESTS = {
     'passwords_map': '''
 passwords_map:
-  root:
-    a.makina-corpus.net: uuu
-    b.makina-corpus.net: ttt
-  zope:
-    a.makina-corpus.net: zzz
-  sysadmin:
-    a.makina-corpus.net: yyy
-    c.makina-corpus.net: xxx
+  a.makina-corpus.net:
+    root: uuu
+    sysadmin: yyy
+    zope: zzz
+  b.makina-corpus.net:
+    root: ttt
+  c.makina-corpus.net:
+    sysadmin: xxx
 ''',
     'ssh_groups': '''
 ssh_groups:
@@ -161,11 +162,15 @@ ips:
   testa.makina-corpus.net: [1.2.3.10]
   testd.makina-corpus.net: [1.2.3.10]
 
+cloud_vm_attrs:
+  preprod-dd.makina-corpus.net:
+    domains: [sub.makina-corpus.net]
 
 managed_dns_zones:
   - makina-corpus.com
   - makina-corpus.net
   - makina-corpus.fr
+  - makina-corpus.org
 
 ipsfo:
   ifo-online-1.makina-corpus.net: 212.129.4.3
@@ -186,8 +191,9 @@ baremetal_hosts:
   - testd.makina-corpus.net
 
 default_allowed_ips_names:
-  - a.makina-corpus.net
-  - b.makina-corpus.net
+  default:
+      - a.makina-corpus.net
+      - b.makina-corpus.net
 
 vms:
   kvm:
@@ -206,22 +212,27 @@ dns_serials:
   makina-corpus.com: 2013042221
 
 dns_servers:
-  makina-corpus.net:
-    slaves:
-      - h.makina-corpus.net
-  makina-corpus.fr:
-    slaves:
-      - c.makina-corpus.net
-      - b.makina-corpus.net
-  makina-corpus.com:
-    slaves:
-      - b.makina-corpus.net
   default:
     master: a.makina-corpus.net
     slaves:
-      - b.makina-corpus.net
-      - d.makina-corpus.net
-      - h.makina-corpus.net
+      - ns1: b.makina-corpus.net
+      - ns2: d.makina-corpus.net
+      - ns3: h.makina-corpus.net
+  makina-corpus.eu:
+    master: nsbar.makina-corpus.net
+    slaves:
+      - ns1: nsfoo.makina-corpus.net
+  makina-corpus.org: {}
+  makina-corpus.net:
+    slaves:
+      - ns1: h.makina-corpus.net
+  makina-corpus.fr:
+    slaves:
+      - ns1: c.makina-corpus.net
+      - ns2: b.makina-corpus.net
+  makina-corpus.com:
+    slaves:
+      - ns1: b.makina-corpus.net
 
 mx_map:
   makina-corpus.com:
@@ -278,17 +289,19 @@ class TestCase(base.ModuleCase):
             'mc_localsettings.get_pillar_sw_ip': (
                 mc_localsettings.get_pillar_sw_ip
             ),
+            'mc_utils.dictupdate': mc_utils.dictupdate,
             'mc_pillar.get_sysadmins_keys': mc_pillar.get_sysadmins_keys,
             'mc_pillar.ips_for': mc_pillar.ips_for,
             'mc_pillar.ip_for': mc_pillar.ip_for,
         }):
-            res1 = mc_pillar.whitelisted()
+            res1 = mc_pillar.whitelisted('a')
             self.assertEqual(res1, ['1.2.3.5', '1.2.3.6'])
 
     def test_get_burp_conf(self):
         def _load():
             return yaml.load(TEST_NET)
         with patch.dict(self._salt, {
+            'mc_utils.dictupdate': mc_utils.dictupdate,
             'mc_utils.uniquify': mc_utils.uniquify,
             'mc_pillar.loaddb_do': _load,
             'mc_pillar.ips_for': mc_pillar.ips_for,
@@ -316,6 +329,7 @@ class TestCase(base.ModuleCase):
             'mc_utils.uniquify': mc_utils.uniquify,
             'mc_pillar.loaddb_do': _load,
             'mc_pillar.ips_for': mc_pillar.ips_for,
+            'mc_utils.dictupdate': mc_utils.dictupdate,
             'mc_pillar.query': mc_pillar.query,
             'mc_pillar.load_db': mc_pillar.load_db,
             'mc_localsettings.get_pillar_sw_ip': (
@@ -323,6 +337,7 @@ class TestCase(base.ModuleCase):
             ),
             'mc_pillar.get_sysadmins_keys': mc_pillar.get_sysadmins_keys,
             'mc_pillar.ips_for': mc_pillar.ips_for,
+            'mc_pillar.whitelisted': mc_pillar.whitelisted,
             'mc_pillar.ip_for': mc_pillar.ip_for,
         }):
             res1 = mc_pillar.get_shorewall_settings('foo.makina-corpus.net')
@@ -401,6 +416,8 @@ class TestCase(base.ModuleCase):
                 '       preprod-moo.makina-corpus.net. A 1.2.3.4\n'
                 '       projecta.makina-corpus.net. A 1.2.3.10\n'
                 '       projectb.makina-corpus.net. A 1.2.3.10\n'
+                '       sub.makina-corpus.net. A 212.129.4.6\n'
+
                 '       testa.makina-corpus.net. A 1.2.3.10\n'
                 '       testd.ifo-online-3.makina-corpus.net. A 212.129.4.5\n'
                 '       testd.makina-corpus.net. A 1.2.3.10\n'
@@ -414,6 +431,7 @@ class TestCase(base.ModuleCase):
             'mc_utils.uniquify': mc_utils.uniquify,
             'mc_pillar.loaddb_do': _load,
             'mc_pillar.query': mc_pillar.query,
+            'mc_utils.dictupdate': mc_utils.dictupdate,
             'mc_pillar.load_db': mc_pillar.load_db,
             'mc_pillar.get_sysadmins_keys': mc_pillar.get_sysadmins_keys,
             'mc_pillar.ips_for': mc_pillar.ips_for,
@@ -430,6 +448,7 @@ class TestCase(base.ModuleCase):
             'mc_pillar.loaddb_do': _load,
             'mc_pillar.query': mc_pillar.query,
             'mc_pillar.load_db': mc_pillar.load_db,
+            'mc_utils.dictupdate': mc_utils.dictupdate,
             'mc_pillar.get_sysadmins_keys': mc_pillar.get_sysadmins_keys,
             'mc_pillar.ips_for': mc_pillar.ips_for,
             'mc_pillar.ip_for': mc_pillar.ip_for,
@@ -442,6 +461,7 @@ class TestCase(base.ModuleCase):
             return yaml.load(TEST_NET)
         with patch.dict(self._salt, {
             'mc_utils.uniquify': mc_utils.uniquify,
+            'mc_utils.dictupdate': mc_utils.dictupdate,
             'mc_pillar.loaddb_do': _load,
             'mc_pillar.query': mc_pillar.query,
             'mc_pillar.load_db': mc_pillar.load_db,
@@ -470,6 +490,7 @@ class TestCase(base.ModuleCase):
             'mc_pillar.loaddb_do': _load,
             'mc_pillar.query': mc_pillar.query,
             'mc_pillar.load_db': mc_pillar.load_db,
+            'mc_utils.dictupdate': mc_utils.dictupdate,
             'mc_pillar.get_sysadmins_keys': mc_pillar.get_sysadmins_keys,
             'mc_pillar.ips_for': mc_pillar.ips_for,
             'mc_pillar.ip_for': mc_pillar.ip_for,
@@ -512,6 +533,7 @@ class TestCase(base.ModuleCase):
         with patch.dict(self._salt, {
             'mc_utils.uniquify': mc_utils.uniquify,
             'mc_pillar.loaddb_do': _load,
+            'mc_utils.dictupdate': mc_utils.dictupdate,
             'mc_pillar.query': mc_pillar.query,
             'mc_pillar.load_db': mc_pillar.load_db,
             'mc_pillar.get_sysadmins_keys': mc_pillar.get_sysadmins_keys,
@@ -522,20 +544,36 @@ class TestCase(base.ModuleCase):
             self.assertEqual(res1,
                              {'all': ['b.makina-corpus.net',
                                       'c.makina-corpus.net',
-                                      'h.makina-corpus.net'], 'z':
-                              {'makina-corpus.net': ['h.makina-corpus.net'],
-                               'makina-corpus.fr': ['c.makina-corpus.net',
-                                                    'b.makina-corpus.net'],
-                               'makina-corpus.com': ['b.makina-corpus.net']}})
+                                      'd.makina-corpus.net',
+                                      'h.makina-corpus.net'],
+                              'z': OrderedDict([('makina-corpus.com',
+                                                 ['b.makina-corpus.net']),
+                                                ('makina-corpus.net',
+                                                 ['h.makina-corpus.net']),
+                                                ('makina-corpus.fr',
+                                                 ['c.makina-corpus.net',
+                                                  'b.makina-corpus.net']),
+                                                ('makina-corpus.org',
+                                                 ['b.makina-corpus.net',
+                                                  'd.makina-corpus.net',
+                                                  'h.makina-corpus.net'])])})
             res1 = mc_pillar.get_slaves_zones_for('b.makina-corpus.net')
             self.assertEqual(res1,
                              {'makina-corpus.fr': 'a.makina-corpus.net',
+                              'makina-corpus.org': 'a.makina-corpus.net',
                               'makina-corpus.com': 'a.makina-corpus.net'})
             res1 = mc_pillar.get_nss_for_zone('makina-corpus.com')
             res2 = mc_pillar.get_nss_for_zone('makina-corpus.net')
-            self.assertEqual(res1['master'], 'a.makina-corpus.net')
-            self.assertEqual(res1['slaves'], ['b.makina-corpus.net'])
-            self.assertEqual(res2['slaves'], ['h.makina-corpus.net'])
+            self.assertEqual(
+                res1,
+                {'master': 'a.makina-corpus.net',
+                 'slaves': OrderedDict([('ns1.makina-corpus.com',
+                                         'b.makina-corpus.net')])})
+            self.assertEqual(
+                res2,
+                {'master': 'a.makina-corpus.net',
+                 'slaves': OrderedDict([('ns1.makina-corpus.net',
+                                         'h.makina-corpus.net')])})
             res = mc_pillar.get_nss()
             self.assertEqual(
                 res,
@@ -544,11 +582,20 @@ class TestCase(base.ModuleCase):
                          'c.makina-corpus.net',
                          'd.makina-corpus.net',
                          'h.makina-corpus.net'],
-                 'masters': ['a.makina-corpus.net'],
-                 'slaves': ['h.makina-corpus.net',
-                            'c.makina-corpus.net',
-                            'b.makina-corpus.net',
-                            'd.makina-corpus.net']})
+                 'masters': OrderedDict([('a.makina-corpus.net',
+                                          ['b.makina-corpus.net',
+                                           'h.makina-corpus.net',
+                                           'c.makina-corpus.net',
+                                           'd.makina-corpus.net'])]),
+                 'slaves': OrderedDict([('b.makina-corpus.net',
+                                         ['a.makina-corpus.net']),
+                                        ('h.makina-corpus.net',
+                                         ['a.makina-corpus.net']),
+                                        ('c.makina-corpus.net',
+                                         ['a.makina-corpus.net']),
+                                        ('d.makina-corpus.net',
+                                         ['a.makina-corpus.net'])])})
+
 
     def atest_load_networkinfra(self):
         def _load():
@@ -557,6 +604,7 @@ class TestCase(base.ModuleCase):
             'mc_utils.uniquify': mc_utils.uniquify,
             'mc_pillar.loaddb_do': _load,
             'mc_pillar.query': mc_pillar.query,
+            'mc_utils.dictupdate': mc_utils.dictupdate,
             'mc_pillar.load_db': mc_pillar.load_db,
             'mc_pillar.get_sysadmins_keys': mc_pillar.get_sysadmins_keys,
             'mc_pillar.ips_for': mc_pillar.ips_for,
@@ -621,6 +669,7 @@ class TestCase(base.ModuleCase):
         with patch.dict(self._salt, {
             'mc_utils.dictupdate': mc_utils.dictupdate,
             'mc_pillar.get_sysadmins_keys': mc_pillar.get_sysadmins_keys,
+            'mc_utils.dictupdate': mc_utils.dictupdate,
             'mc_pillar.query': Mock(side_effect=_query)}
         ):
             res1 = mc_pillar.get_mail_configuration('foo.makina-corpus.net')
@@ -654,6 +703,7 @@ class TestCase(base.ModuleCase):
         with patch.dict(self._salt, {
             'mc_utils.dictupdate': mc_utils.dictupdate,
             'mc_pillar.get_sysadmins_keys': mc_pillar.get_sysadmins_keys,
+            'mc_utils.dictupdate': mc_utils.dictupdate,
             'mc_pillar.query': Mock(side_effect=_query)}
         ):
             res1 = mc_pillar.get_configuration('foo.makina-corpus.net')
@@ -712,6 +762,14 @@ class TestCase(base.ModuleCase):
                              'mastersaltdn': 'm.makina-corpus.net'})
 
     def test_get_passwords(self):
+        data = {}
+        def _update_local_reg(name, *args, **kw):
+            lreg = data.setdefault(name, {})
+            lreg.update(args[0])
+            return lreg
+        def _local_reg(name, *args, **kw):
+            lreg = data.setdefault(name, {})
+            return lreg
         def _query(t, **kw):
             if t in ['ssh_groups',
                      'passwords_map',
@@ -722,7 +780,12 @@ class TestCase(base.ModuleCase):
         with patch.dict(self._salt, {
             'mc_pillar.get_sysadmins_keys': mc_pillar.get_sysadmins_keys,
             'mc_utils.unix_crypt': mc_utils.unix_crypt,
-            'mc_pillar.query': Mock(side_effect=_query)}
+            'mc_utils.dictupdate': mc_utils.dictupdate,
+            'mc_pillar.query': Mock(side_effect=_query),
+            'mc_macros.update_local_registry': Mock(
+                side_effect=_update_local_reg),
+            'mc_macros.get_local_registry': Mock(
+                side_effect=_local_reg)}
         ):
             res1 = mc_pillar.get_passwords('a.makina-corpus.net')
             self.assertEqual(
@@ -753,10 +816,12 @@ class TestCase(base.ModuleCase):
                              '$6$SALTsalt$.DJtg9kel/TTG8zCAg9bI6'
                              'jwVBdrIAn/bCCQgiaLOVmzrV9zDVamEX'
                              'Ii1vYQb8MjtqgSzHAwaLAVQ/KCOZQ6b1'}})
-            self.assertRaises(KeyError,
-                              mc_pillar.get_passwords, 'c.makina-corpus.net')
+            self.assertFalse('c.makina-corpus.net' in data['passwords_map'])
+            mc_pillar.get_passwords('c.makina-corpus.net')
+            self.assertTrue('c.makina-corpus.net' in data['passwords_map'])
 
     def test_get_sysadmins_keys(self):
+        '''Sysadmin keys'''
         def _query(t, **kw):
             if t in ['ssh_groups',
                      'keys_map',
@@ -765,6 +830,7 @@ class TestCase(base.ModuleCase):
                 return yaml.load(TESTS[t])[t]
         with patch.dict(self._salt, {
             'mc_pillar.get_sysadmins_keys': mc_pillar.get_sysadmins_keys,
+            'mc_utils.dictupdate': mc_utils.dictupdate,
             'mc_pillar.query': Mock(side_effect=_query)}
         ):
             res1 = mc_pillar.get_sudoers('foo.makina-corpus.net')
@@ -780,6 +846,7 @@ class TestCase(base.ModuleCase):
                      'sudoers_map']:
                 return yaml.load(TESTS[t])[t]
         with patch.dict(self._salt, {
+            'mc_utils.dictupdate': mc_utils.dictupdate,
             'mc_pillar.query': Mock(side_effect=_query)}
         ):
             res1 = mc_pillar.get_sysadmins_keys('foo.makina-corpus.net')
@@ -792,6 +859,7 @@ class TestCase(base.ModuleCase):
             if t == 'ssh_groups':
                 return yaml.load(TESTS[t])[t]
         with patch.dict(self._salt, {
+            'mc_utils.dictupdate': mc_utils.dictupdate,
             'mc_pillar.query': Mock(side_effect=_query)}
         ):
             res1 = mc_pillar.get_ssh_groups('foo.makina-corpus.net')

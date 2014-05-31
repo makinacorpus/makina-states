@@ -258,6 +258,10 @@ def settings():
                 if z not in data['default_interfaces']:
                     data['zones'].setdefault(z, data['default_zones'][z])
 
+        ems = [i 
+               for i, ips in ifaces 
+               if i.startswith('em') and len(i) in [3, 4]]
+
         for iface, ips in ifaces:
             if 'lo' in iface:
                 continue
@@ -266,13 +270,21 @@ def settings():
             if iface.startswith('tun'):
                 z = 'vpn'
                 data['have_vpn'] = True
-            if iface in ['eth1', 'em1', 'em2']:
+            if (
+                iface in ['eth1'] 
+                or iface in ems
+            ):
                 if have_rpn:
-                    if 'em2' in ifaces:
-                        continue
+                    realrpn = False
+                    if iface in ems:
+                        if iface == ems[-1]:
+                            realrpn = True
+                    else:
+                        realrpn = True
                     if not providers['is']['online']:
-                        continue
-                    z = 'rpn'
+                        realrpn = False
+                    if realrpn:
+                        z = 'rpn'
             if 'docker' in iface:
                 if data['have_docker']:
                     z = 'dck'
