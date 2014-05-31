@@ -383,20 +383,20 @@ def load_network_infrastructure(ttl=60):
                 if nsq not in ips_map:
                     ips_map[nsq] = [slave]
                 if slave in cnames and nsq not in ips:
-                    ips[slave] = ips_for(cnames[slave][:-1],
+                    ips[slave] = [ip_for(cnames[slave][:-1],
                                          ips=ips, cnames=cnames, ipsfo=ipsfo,
                                          ipsfo_map=ipsfo_map, ips_map=ips_map,
-                                         fail_over=True)
+                                         fail_over=True)]
                 if nsq in cnames and nsq not in ips:
-                    ips[slave] = ips_for(cnames[nsq][:-1],
+                    ips[slave] = [ip_for(cnames[nsq][:-1],
                                          ips=ips, cnames=cnames, ipsfo=ipsfo,
                                          ipsfo_map=ipsfo_map, ips_map=ips_map,
-                                         fail_over=True)
+                                         fail_over=True)]
                 if nsq in ips_map and nsq not in ips:
-                    ips[slave] = ips_for(nsq,
+                    ips[slave] = [ip_for(nsq,
                                          ips=ips, cnames=cnames, ipsfo=ipsfo,
                                          ipsfo_map=ipsfo_map, ips_map=ips_map,
-                                         fail_over=True)
+                                         fail_over=True)]
 
 
         for fqdn in ipsfo:
@@ -507,7 +507,7 @@ def load_network_infrastructure(ttl=60):
     return memoize_cache(_do_nt, [], {}, cache_key, ttl)
 
 
-def ip_for(fqdn, fail_over=None):
+def ip_for(fqdn, *args, **kw):
     '''
     Get an ip for a domain, try as a FQDN first and then
     try to append the specified domain
@@ -518,7 +518,7 @@ def ip_for(fqdn, fail_over=None):
             If failOver exists and fail_over=true, all ips
             will be returned
     '''
-    return ips_for(fqdn, fail_over=fail_over)[0]
+    return ips_for(fqdn, *args, **kw)[0]
 
 
 def rr_entry(fqdn, targets, priority='10', record_type='A'):
