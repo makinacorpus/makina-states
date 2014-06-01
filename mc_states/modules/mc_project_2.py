@@ -56,8 +56,6 @@ PROJECT_INJECTED_CONFIG_VAR = 'cfg'
 DEFAULT_CONFIGURATION = {
     'name': None,
     'default_env': None,
-    'project_branch': 'master',
-    'pillar_branch': 'master',
     'installer': 'generic',
     'keep_archives': KEEP_ARCHIVES,
     #
@@ -78,6 +76,8 @@ DEFAULT_CONFIGURATION = {
     'no_user': False,
     'no_default_includes': False,
     # INTERNAL
+    'project_branch': 'master',
+    'pillar_branch': 'master',
     'data': {},
     'deploy_summary': None,
     'deploy_ret': {},
@@ -328,16 +328,82 @@ def _defaultsConfiguration(
     os_defaults=None
 ):
     salt = __salt__
+    # load sample if present
+    sample = os.path.join(cfg['wired_salt_root'],
+                          'PILLAR.sample')
     if defaultsConfiguration is None:
         defaultsConfiguration = {}
+    if os.path.exists(sample):
+        try:
+            sample_data = OrderedDict()
+            with open(sample) as fic:
+                sample_data_l = yaml.load(fic.read())
+                if not isinstance(sample_data_l, dict):
+                    sample_data_l = OrderedDict()
+                for k, val in sample_data_l.items():
+                    if isinstance(val, dict):
+                        for k2, val2 in val.items():
+                            if isinstance(val2, dict):
+                                sample_data.update(val2)
+                            else:
+                                sample_data[k2] = val2
+                    else:
+                        sample_data[k] = val
+        except Exception, exc:
+            trace = traceback.format_exc()
+            log.error(trace)
+            sample_data = OrderedDict()
+        defaultsConfiguration.update(sample_data)
+    _dict_update = salt['mc_utils.dictupdate']
+    _defaults = salt['mc_utils.defaults']
     if os_defaults is None:
-        os_defaults = {}
+        os_defaults = OrderedDict()
     if env_defaults is None:
-        env_defaults = {}
-    os_defaults.setdefault(__grains__['os'], {})
-    os_defaults.setdefault(__grains__['os_family'], {})
+        env_defaults = OrderedDict()
+    if not env_defaults:
+        env_defaults = _dict_update(
+            env_defaults,
+            salt['mc_utils.get'](
+                'makina-projects.{name}.env_defaults'.format(**cfg),
+                {}))
+        env_defaults = _dict_update(
+            env_defaults,
+            salt['mc_utils.get'](
+                'makina-projects.{name}'.format(**cfg),
+                OrderedDict()
+            ).get('env_defaults', OrderedDict()))
+    if not os_defaults:
+        os_defaults = _dict_update(
+            os_defaults,
+            salt['mc_utils.get'](
+                'makina-projects.{name}.os_defaults'.format(**cfg),
+                {}))
+        os_defaults = _dict_update(
+            os_defaults,
+            salt['mc_utils.get'](
+                'makina-projects.{name}'.format(**cfg),
+                OrderedDict()
+            ).get('os_defaults', OrderedDict()))
+    pillar_data = {}
+    pillar_data = _dict_update(
+         pillar_data,
+         salt['mc_utils.get'](
+             'makina-projects.{name}.data'.format(**cfg),
+             OrderedDict()))
+    pillar_data = _dict_update(
+         pillar_data,
+         salt['mc_utils.get'](
+             'makina-projects.{name}'.format(**cfg),
+             OrderedDict()
+         ).get('data', OrderedDict()))
+    os_defaults.setdefault(__grains__['os'], OrderedDict())
+    os_defaults.setdefault(__grains__['os_family'],
+                           OrderedDict())
+    env_defaults.setdefault(default_env, OrderedDict())
     for k in ENVS:
-        env_defaults.setdefault(k, {})
+        env_defaults.setdefault(k, OrderedDict())
+    defaultsConfiguration = salt['mc_utils.dictupdate'](
+        defaultsConfiguration, pillar_data)
     defaultsConfiguration = salt['mc_utils.dictupdate'](
         defaultsConfiguration,
         salt['grains.filter_by'](
@@ -347,10 +413,12 @@ def _defaultsConfiguration(
         salt['grains.filter_by'](os_defaults, grain='os_family'))
     # retro compat 'foo-default-settings'
     defaultsConfiguration = salt['mc_utils.defaults'](
-        '{name}-default-settings'.format(**cfg), defaultsConfiguration)
+        '{name}-default-settings'.format(**cfg),
+        defaultsConfiguration)
     # new location 'makina-projects.foo.data'
     defaultsConfiguration = salt['mc_utils.defaults'](
-        'makina-projects.{name}.data'.format(**cfg), defaultsConfiguration)
+        'makina-projects.{name}.data'.format(**cfg),
+        defaultsConfiguration)
     return defaultsConfiguration
 
 
@@ -516,6 +584,12 @@ def get_configuration(name, *args, **kwargs):
     nodetypes_reg = __salt__['mc_nodetypes.registry']()
     salt_settings = __salt__['mc_salt.settings']()
     salt_root = salt_settings['saltRoot']
+    # special symlinks inside salt wiring
+    cfg['wired_salt_root'] = os.path.join(
+        salt_settings['saltRoot'], 'makina-projects', cfg['name'])
+    cfg['wired_pillar_root'] = os.path.join(
+        salt_settings['pillarRoot'], 'makina-projects', cfg['name'])
+    # check if the specified sls installer files container
     if not cfg['default_env']:
         # one of:
         # - makina-projects.fooproject.default_env
@@ -604,12 +678,6 @@ def get_configuration(name, *args, **kwargs):
     cfg['current_archive_dir'] = os.path.join(
         cfg['archives_root'], cfg['chrono'])
 
-    # special symlinks inside salt wiring
-    cfg['wired_salt_root'] = os.path.join(
-        salt_settings['saltRoot'], 'makina-projects', cfg['name'])
-    cfg['wired_pillar_root'] = os.path.join(
-        salt_settings['pillarRoot'], 'makina-projects', cfg['name'])
-    # check if the specified sls installer files container
     # exists
     if '/' not in cfg['installer']:
         installer_path = os.path.join(
@@ -1114,10 +1182,6 @@ def init_pillar_dir(cfg, parent, ret=None):
         for k in [a for a in init_data]:
             if k not in [
                 "api_version",
-                "pillar_url",
-                "pillar_branch",
-                "project_branch",
-                "url",
             ]:
                 del init_data[k]
         defaults = {
@@ -1139,6 +1203,39 @@ def init_pillar_dir(cfg, parent, ret=None):
                 'Can\'t create default {0}\n{1}'.format(fil, cret['comment']))
         #else:
         #    _append_comment(ret, body=indent(cret['comment']))
+
+
+def refresh_files_in_working_copy(name, *args, **kwargs):
+    _s = __salt__.get
+    cfg = get_configuration(name, *args, **kwargs)
+    ret = _get_ret(name, *args, **kwargs)
+    _append_comment(
+        ret, summary='Verify or initialise some default files')
+    user, group = cfg['user'], cfg['group']
+    project_root = cfg['project_root']
+    salt_root = os.path.join(project_root, '.salt')
+    if not os.path.exists(
+        os.path.join(project_root, '.salt')
+    ):
+        raise ProjectInitException('Too early to call me')
+    for fil in ['PILLAR.sample']:
+        dest = os.path.join(project_root, '.salt', fil)
+        if os.path.exists(dest):
+            continue
+        template = (
+            'salt://makina-states/files/projects/{1}/'
+            'salt/{0}'.format(fil, cfg['api_version']))
+        cret = _state_exec(sfile, 'managed',
+                           name=dest,
+                           source=template, defaults={},
+                           user=user, group=group,
+                           makedirs=True,
+                           mode='770', template='jinja')
+        if not cret['result']:
+            raise ProjectInitException(
+                'Can\'t create default {0}\n{1}'.format(
+                    fil, cret['comment']))
+    return ret
 
 
 def init_salt_dir(cfg, parent, ret=None):
@@ -1167,7 +1264,8 @@ def init_salt_dir(cfg, parent, ret=None):
              for a in os.listdir(salt_root)
              if a.endswith('.sls') and not os.path.isdir(a)]
     if not files:
-        for fil in SPECIAL_SLSES + ['00_helloworld.sls']:
+        for fil in SPECIAL_SLSES + ['PILLAR.sample',
+                                    '00_helloworld.sls']:
             template = (
                 'salt://makina-states/files/projects/{1}/'
                 'salt/{0}'.format(fil, cfg['api_version']))
@@ -1246,6 +1344,7 @@ def init_project(name, *args, **kwargs):
             set_upstream(wc, rev, user, ret=ret)
             sync_working_copy(user, wc, rev=rev, ret=ret)
         link(name, *args, **kwargs)
+        refresh_files_in_working_copy(name, *args, **kwargs)
     except ProjectInitException, ex:
         trace = traceback.format_exc()
         ret['result'] = False
