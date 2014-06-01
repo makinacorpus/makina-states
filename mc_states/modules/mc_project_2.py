@@ -353,6 +353,7 @@ def _defaultsConfiguration(
             trace = traceback.format_exc()
             log.error(trace)
             sample_data = OrderedDict()
+            cfg['force_reload'] = True
         defaultsConfiguration.update(sample_data)
     _dict_update = salt['mc_utils.dictupdate']
     _defaults = salt['mc_utils.defaults']
@@ -1154,14 +1155,18 @@ def sync_working_copy(user, wc, rev=None, ret=None, origin=None):
         cret = _s('cmd.run_all')('git pull {1} {0}'.format(rev, origin),
                             cwd=wc, user=user)
         if cret['retcode']:
-            # try to merge a bit but only what's mergeable
-            cret = _s('cmd.run_all')(
-                'git merge --ff-only {1}/{0}'.format(rev, origin),
-                cwd=wc, user=user)
+            # finally try to reset hard
+            cret = _s('cmd.run_all')('git reset --hard {1}/{0}'.format(rev, origin),
+                                cwd=wc, user=user)
             if cret['retcode']:
-                raise ProjectInitException(
-                    'Can not sync from {0}/{1} in {2}'.format(
-                        origin, rev, wc))
+                # try to merge a bit but only what's mergeable
+                cret = _s('cmd.run_all')(
+                    'git merge --ff-only {1}/{0}'.format(rev, origin),
+                    cwd=wc, user=user)
+                if cret['retcode']:
+                    raise ProjectInitException(
+                        'Can not sync from {0}/{1} in {2}'.format(
+                            origin, rev, wc))
     return ret
 
 

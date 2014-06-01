@@ -3,7 +3,7 @@
 include:
   - makina-states.localsettings.nodejs.hooks
 {#- Install specific versions of nodejs/npm  #}
-{% macro install(version, dest, hash=None) %}
+{% macro install(version, dest, hash=None, suf='manual') %}
 {% if grains['cpuarch'] == "x86_64" %}
 {% set arch = "x64" %}
 {% else %}
@@ -12,7 +12,7 @@ include:
 {% set bn = "node-v{0}-linux-{1}".format(version, arch) %}
 {% set archive = "{0}.tar.gz".format(bn)   %}
 {% set dest = '{0}/{1}'.format(settings['location'], version) %}
-npm-version-{{version.replace('.', '_') }}:
+npm-version-{{version.replace('.', '_') }}{{suf}}:
   file.directory:
     - name: {{ settings.location }}
     - user: root
@@ -31,21 +31,23 @@ npm-version-{{version.replace('.', '_') }}:
     - watch_in:
       - mc_proxy: nodejs-post-prefix-install
     - watch:
-      - file: npm-version-{{version.replace('.', '_')}}
+      - file: npm-version-{{version.replace('.', '_')}}{{suf}}
   cmd.run:
-    - name: mv -vf "{{dest}}/{{bn}}/"* "{{dest}}" && rm -rf "{{dest}}/{{bn}}/"
+    - name: mv -vf "{{dest}}/{{bn}}/"* "{{dest}}";rm -rf "{{dest}}/{{bn}}/"
     - onlyif: test -e "{{dest}}/{{bn}}"
     - user: root
     - watch_in:
       - mc_proxy: nodejs-post-prefix-install
     - watch:
-      - archive: npm-version-{{version.replace('.', '_')}}
-npm-version-{{ version.replace('.', '_')}}.post:
+      - archive: npm-version-{{version.replace('.', '_')}}{{suf}}
+npm-version-{{ version.replace('.', '_')}}.post{{suf}}:
   file.touch:
      - name: {{dest}}/bin/.node_{{version}}
      - require:
-       - cmd: npm-version-{{ version.replace('.', '_') }}
+       - cmd: npm-version-{{ version.replace('.', '_') }}{{suf}}
+     - watch_in:
+       - mc_proxy: nodejs-post-prefix-install
 {% endmacro %}
 {% for version in settings.versions %}
-{{ install(version) }}
+{{ install(version, suf='auto') }}
 {% endfor %}
