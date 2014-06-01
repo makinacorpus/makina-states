@@ -40,35 +40,42 @@ supervisord_pids() {
 RETVAL=0
 start() {
     echo -n "Starting $name: "
-    if [ "x$(whoami)" = "xroot" ];then
-        su $EFFECTIVE_USER -c "bash -c \"$supervisord\" -c '{{data.conf}}'"
-    else
-        "$supervisord -c '{{data.conf}}'"
+    #if [ "x$(whoami)" = "xroot" ];then
+    #    su $EFFECTIVE_USER -c "bash -c \"\"$supervisord\" -- -c '{{data.conf}}'"
+    #else
+    "${supervisord}" -c '{{data.conf}}'
+    #fi
+    RETVAL="${?}"
+    if [ "x${RETVAL}" = "x0" ];then
+        touch "${lock}"
     fi
-    RETVAL=$?
-    [ $RETVAL -eq 0 ] && touch $lock
-    chown $EFFECTIVE_USER $lock
-    echo
-    return $RETVAL
+    if [ -e "${lock}" ];then
+        chown "${EFFECTIVE_USER}" "${lock}"
+    fi
+    return ${RETVAL}
 }
 stop() {
     echo -n "Stopping $name: "
     supervisord_pids
     if [ "x$(supervisord_pids|wc -w|sed -e "s/  //g")" != "x0" ];then
-        if [ "x$(whoami)" = "xroot" ];then
-            su $EFFECTIVE_USER -c "$supervisorctl -c '{{data.conf}}' shutdown"
-        else
-            $supervisorctl -c "{{data.conf}}" shutdown
-        fi
+        #if [ "x$(whoami)" = "xroot" ];then
+        #    su $EFFECTIVE_USER -c "$supervisorctl -- -c '{{data.conf}}' shutdown"
+        #else
+        "${supervisorctl}" shutdown
+        echo "Waiting {{data.program.stopwaitsecs}}sec for exit" 
+        sleep "{{data.program.stopwaitsecs}}"
+        #fi
     fi
     if [ "x$(supervisord_pids|wc -w|sed -e "s/  //g")" != "x0" ];then
         kill -9 "$(supervisord_pids)"
     fi
     RETVAL=$?
-    [ $RETVAL -eq 0 ] && rm -f $lock
-    return $RETVAL
+    if [ -e "${lock}" ] &&  [ "x${RETVAL}" = "x0" ];then
+        rm -f "${lock}"
+    fi
+    return ${RETVAL}
 }
-case "$1" in
+case "${1}" in
          start)
              start
              ;;
@@ -79,7 +86,6 @@ case "$1" in
 
          restart)
              stop
-             sleep 2
              start
              ;;
 esac
