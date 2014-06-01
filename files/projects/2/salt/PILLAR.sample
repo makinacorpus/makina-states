@@ -1,0 +1,28 @@
+#
+# This file contains default values which are used
+# by the salt states deploying your project.
+# you may copy them to your relevant PILLAR file
+# before editing them.
+# If you need to add variables, this is where to begin.
+# Please keep defaults in there, but real passwords
+# must be putted inside pillar
+#
+# replace project_name in your pillar by
+# the current projectname
+# you can also merge parts of this file
+# with the relevant pillar
+makina-states.projectname:
+  data:
+    opt: value
+    password: SecretToBeChangedInsidePillar
+  env_defaults:
+    dev:
+      opt: value2
+  os_defaults:
+    Ubuntu:
+# os  filter
+      opt: value1
+    Debian:
+# os familly filter
+      opt1: value11
+# vim:set ft=yaml:

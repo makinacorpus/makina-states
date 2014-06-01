@@ -27,7 +27,7 @@ def settings():
         pillar = __pillar__
         locations = __salt__['mc_locations.settings']()
         # nodejs
-        cur_nodejsver = '0.10.26'
+        cur_nodejsver = '0.10.28'
         url = 'http://nodejs.org/dist/v{ver}/node-v{ver}-linux-{arch}.tar.gz'
         nodejsData = __salt__['mc_utils.defaults'](
             'makina-states.localsettings.nodejs', {
@@ -35,6 +35,7 @@ def settings():
                 'shas': {
                     'node-v0.10.26-linux-x86.tar.gz': 'b3bebee7f256644266fccce04f54e2825eccbfc0',
                     'node-v0.10.26-linux-x64.tar.gz': 'd15d39e119bdcf75c6fc222f51ff0630b2611160',
+                    'node-v0.10.28-linux-x64.tar.gz': '4b9cf9437decea3d9913b694ea2e9b0a06ced2dd',
                 },
                 'versions': [cur_nodejsver],
                 'version': cur_nodejsver,
