@@ -91,7 +91,7 @@ def post_deploy_controller(output=True):
     ret['comment'] = yellow('Installing controller lxc configuration\n')
     pref = 'makina-states.cloud.lxc.controller'
     ret = __salt__['mc_api.apply_sls'](
-        ['{0}.postdeploy'.format(pref),
+        ['{0}.postdeploy'.format(pref)],
         **{'ret': ret})
     salt_output(ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
