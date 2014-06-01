@@ -1,18 +1,6 @@
 Makina-states cloud generic controller & compute node  & vm documentation
 =================================================================================
 
-Please have a look which some places  most of this stuff is implemented:
-
-    - :ref:`module_mc_cloud`
-    - :ref:`module_mc_cloud_controller`
-    - :ref:`module_mc_cloud_compute_node`
-    - :ref:`runner_mc_api`
-    - :ref:`runner_mc_cloud_controller`
-    - :ref:`runner_mc_cloud_compute_node`
-    - :ref:`runner_mc_cloud_saltify`
-    - :ref:`runner_mc_cloud_vm`
-
-
 Controller
 ~~~~~~~~~~~~
 On this node, we mainly do:
@@ -52,6 +40,14 @@ The generation use and wait for such a layout::
 
 Compute nodes
 ~~~~~~~~~~~~~
+Responsabilities
+-----------------
+- Running vms
+- Routing network traffic
+- Basic network firewalling and redirections
+- Reverse proxies
+- Any other configured baremetal services
+
 Haproxy
 -------
 Some notes:
@@ -169,6 +165,5 @@ We enable some boolean grains for the compute not to install itself:
 If lxc, we also have:
 
     - makina-states.services.virt.lxc
-
 
 

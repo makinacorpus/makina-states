@@ -9,6 +9,7 @@ In makina states we have organised our states in the following way:
     :localsettings: states related to the base machine configuration minus all that can looks like a service or a deamon (eg: directories creations, hosts managment, pam, vim but not ssh)
     :services: states related to services configuration (eg: ssh, docker, apache, backups scripts & crons)
     :projects: Set of macros to be externallly included project consumers as the base to setup their projects using makina-states bricks
+    :cloud: set of related stuff linked to mastersalt salt cloud integration
 
 For all those kinds, we have execution modules, sub-execution modules and formulaes containers. to leverage and factorize all variables and have well placed macros.
 
@@ -46,12 +47,12 @@ Tree of different configuration flavors inheritance::
        |
     ---+-----------+
       server:base  |
-     configuration |
-    --+--------+---+
-      |        |
-      |        |            +---------------+
-      |        |            |               |  solr
-      |     running on <----+ Service:base  |   |
+     configuration |                                                ------------------------------
+    --+--------+---+                                                |   makina-states.cloud      |
+      |        |                                                    ------------------------------
+      |        |            +---------------+                         |___ generic
+      |        |            |               |  solr                   |___ lxc   
+      |     running on <----+ Service:base  |   |                     |___ saltify
       |                     |               |   |      docker
     LOCALSETTINGS           +-+-------------+  tomcat   |
     =============             |                 |       |

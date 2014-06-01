@@ -1,6 +1,9 @@
 Macros
 ========
 
+**OBSOLETE** We know do not use any more base macros but access directly to salt execution modules, read some formulaes
+to see in action.
+
 Base macros
 -----------
 To access the registries and make a thin and easier higth level settings API, we use macros as importable modules inside the states files.

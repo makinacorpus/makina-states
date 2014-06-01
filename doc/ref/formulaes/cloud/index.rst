@@ -3,7 +3,7 @@ Salt Cloud integration
 
 Introduction
 --------------
-makina-states include a generic multi-drivers cloud-controller as a part of a future upper level PaaS project.
+makina-states include a generic multi-drivers cloud-controller as a large part of a future upper level PaaS project.
 Indeed, This is the raw level of the `corpus <https://github.com/makinacorpus/corpus.reactor/blob/master/doc/spec.rst>`_ PaaS project.
 
 At the moment:
@@ -70,7 +70,6 @@ makina-states.cloud.generic do all the generic cloud related stuff:
 
 See :ref:`form_cloud_lxc` for an exemple
 
-
 How
 ++++
 Basically the interface with this cloud controller is done:
@@ -78,9 +77,9 @@ Basically the interface with this cloud controller is done:
     - Via the ``pillar`` for configuratioin
 
     - Via ``execution modules`` to make settings structures and some specific stuff
-      like SSL certificate generation.
+      like SSL certificate generation. They are heavily used by the runners.
 
-    - Via ``runner modules`` to make action on controller, compute_nodes and
+    - Via ``runner modules`` to make actions on controller, compute_nodes and
       vms.
 
         - The runner may in turn execute **slses** from the makina-states.cloud
@@ -90,7 +89,4 @@ Basically the interface with this cloud controller is done:
 .. toctree::
    :maxdepth: 2
 
-   generic.rst
-   lxc.rst
-   saltify.rst
    usage.rst
