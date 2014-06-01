@@ -190,11 +190,6 @@ baremetal_hosts:
   - f.makina-corpus.net
   - testd.makina-corpus.net
 
-default_allowed_ips_names:
-  default:
-      - a.makina-corpus.net
-      - b.makina-corpus.net
-
 vms:
   kvm:
     foo.makina-corpus.net:
@@ -256,6 +251,17 @@ shorewall_overrides:
     no_postgresql: False
     params.RESTRICTED_FTP: "foo"
     params.RESTRICTED_POSTGRESQL: "bar"
+
+default_allowed_ips_names:
+  default:
+    - a.makina-corpus.net
+    - b.makina-corpus.net
+
+configurations:
+  default:
+    manage_ssh_ip_restrictions: false
+  preprod-d.makina-corpus.net:
+    manage_ssh_ip_restrictions: True
 
 rrs_raw:
   makina-corpus.com:
@@ -358,8 +364,8 @@ class TestCase(base.ModuleCase):
                 'preprod-dd.makina-corpus.net')
             res2 = mc_pillar.get_shorewall_settings(
                 'preprod-d.makina-corpus.net')
-            self.assertFalse('192.168' in res1[k])
-            self.assertTrue('192.168' in res2[k])
+            self.assertEqual('all', res1[k])
+            self.assertNotEqual('all', res2[k])
 
     def test_get_arr(self):
         def _load():
@@ -381,7 +387,6 @@ class TestCase(base.ModuleCase):
                 '       a.makina-corpus.net. A 1.2.3.5\n'
                 '       b.makina-corpus.net. A 1.2.3.6\n'
                 '       c.makina-corpus.net. A 1.2.3.5\n'
-                '       c.makina-corpus.net. A 212.129.4.3\n'
                 '       d.makina-corpus.net. A 1.2.3.8\n'
                 '       e.makina-corpus.net. A 1.2.3.9\n'
                 '       f.makina-corpus.net. A 1.2.3.10\n'
