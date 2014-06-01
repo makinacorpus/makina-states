@@ -84,7 +84,7 @@ sys-pkgs:
       - manpages
       - manpages-fr
       - manpages-de
-      {% if not grains.get('lsb_distrib_codename') in ['wheezy'] %}
+      {% if grains.get('osrelease', '') != '5.0.10' and (not grains.get('lsb_distrib_codename') in ['wheezy', 'sarge'])%}
       - jq
       {% endif %}
       - lsof

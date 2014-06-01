@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+{% set data = salt['mc_utils.json_load'](data) %}
+# MANAGED VIA SALT -- DO NOT EDIT
+
+# RedHat startup script for a supervisor instance
+# chkconfig: - 90 15
+# description: supervisor init script
+
+### BEGIN INIT INFO
+# Provides:          ms_supervisor
+# Required-Start:    $syslog $network $time
+# Required-Stop:     $syslog $network
+# Should-Start:
+# Should-Stop:
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: ms_supervisor
+# Description:       ms_supervisor
+### END INIT INFO
+. /srv/apps/supervisor/venv/bin/activate
+TMPDIR="{{data.supervisord.tmpdir}}"
+EFFECTIVE_USER="{{data.supervisord.user}}"
+supervisorctl="$(which ms_supervisorctl)"
+supervisord="$(which supervisord)"
+name="supervisord_ms_supervisor_$INSTANCE_NAME"
+lock="/var/run/${name}.lock"
+
+
+export TMPDIR
+[ "x$supervisord" != "x" ] || exit 1
+[ "x$supervisorctl" != "x" ] || exit 1
+[ -f $supervisord ] || exit 1
+[ -f $supervisorctl ] || exit 1
+
+supervisord_pids() {
+    ps aux|grep supervisord|grep -v grep|grep -v supervisorctl|awk '{print $2}'
+}
+
+
+RETVAL=0
+start() {
+    echo -n "Starting $name: "
+    if [ "x$(whoami)" = "xroot" ];then
+        su $EFFECTIVE_USER -c "bash -c \"$supervisord\" -c '{{data.conf}}'"
+    else
+        "$supervisord -c '{{data.conf}}'"
+    fi
+    RETVAL=$?
+    [ $RETVAL -eq 0 ] && touch $lock
+    chown $EFFECTIVE_USER $lock
+    echo
+    return $RETVAL
+}
+stop() {
+    echo -n "Stopping $name: "
+    supervisord_pids
+    if [ "x$(supervisord_pids|wc -w|sed -e "s/  //g")" != "x0" ];then
+        if [ "x$(whoami)" = "xroot" ];then
+            su $EFFECTIVE_USER -c "$supervisorctl -c '{{data.conf}}' shutdown"
+        else
+            $supervisorctl -c "{{data.conf}}" shutdown
+        fi
+    fi
+    if [ "x$(supervisord_pids|wc -w|sed -e "s/  //g")" != "x0" ];then
+        kill -9 "$(supervisord_pids)"
+    fi
+    RETVAL=$?
+    [ $RETVAL -eq 0 ] && rm -f $lock
+    return $RETVAL
+}
+case "$1" in
+         start)
+             start
+             ;;
+
+         stop)
+             stop
+             ;;
+
+         restart)
+             stop
+             sleep 2
+             start
+             ;;
+esac
+exit $REVAL
+# vim:set ft=sh:

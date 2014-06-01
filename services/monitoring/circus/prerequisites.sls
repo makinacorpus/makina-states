@@ -25,5 +25,6 @@ circus-install-virtualenv:
     - bin_env: {{ venv }}/bin/pip
     - watch:
       - virtualenv: circus-install-virtualenv
+      - file: circus-install-pkg
     - watch_in:
       - mc_proxy: circus-post-install

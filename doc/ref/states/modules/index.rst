@@ -19,6 +19,7 @@ Subregistries
    mc_apache.rst
    mc_bind.rst
    mc_burp.rst
+   mc_supervisor.rst
    mc_circus.rst
    mc_cloud_compute_node.rst
    mc_cloud_controller.rst

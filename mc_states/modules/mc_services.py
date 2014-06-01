@@ -100,6 +100,7 @@ def registry():
             'java.tomcat7': {'active': False},
             'mail.dovecot': {'active': False},
             'mail.postfix': {'active': False},
+            'monitoring.supervisor': {'active': False},
             'monitoring.circus': {'active': False},
             'monitoring.snmpd': {'active': False},
             'monitoring.client': {'active': False},
