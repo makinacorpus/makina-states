@@ -4,5 +4,6 @@ Monitoring services
    :maxdepth: 2
 
    circus.rst
+   supervisor.rst
    snmpd.rst
    client.rst
