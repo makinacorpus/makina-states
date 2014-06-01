@@ -14,6 +14,7 @@ Salt
     - **/etc/salt**: salt configuration files
     - **/etc/makina-states/branch**: current used makina-states branch
     - **/etc/makina-states/nodetype**: configuration of the current nodetype
+    - **/etc/salt/makina-states**: local registries
 
 Mastersalt mode
 ---------------
@@ -25,6 +26,7 @@ Mastersalt mode
     - **/var/cache/mastersalt**: mastersalt cache files
     - **/var/run/mastersalt**: mastersalt run files
     - **/etc/mastersalt**: mastersalt configuration files
+    - **/etc/mastersalt/makina-states**: local registries
 
 Misc locations
 --------------
