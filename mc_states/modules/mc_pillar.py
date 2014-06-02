@@ -496,6 +496,9 @@ def load_network_infrastructure(ttl=60):
                 continue
             for domain in domains:
                 dips = ips.setdefault(domain, [])
+                # never append an ip of a vm is it is already defined
+                if len(dips):
+                    continue
                 for ip in ips_for(vm,
                                   ips=ips, cnames=cnames, ipsfo=ipsfo,
                                   ipsfo_map=ipsfo_map, ips_map=ips_map,
