@@ -50,7 +50,7 @@ supervisor-setup-conf-directories:
   file.directory:
     - names:
       -  {{ locs['conf_dir'] }}/supervisor.d
-      -  {{ defaults.logdir }}
+      -  {{ defaults.supervisord.logdir }}
     - watch:
       - mc_proxy: supervisor-pre-conf
     - watch_in:

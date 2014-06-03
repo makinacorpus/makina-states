@@ -48,7 +48,6 @@ def settings():
                     '/etc/supervisor.d/*.conf',
                     '/etc/supervisor.d/*.ini',
                 ]),
-                'logdir': '/var/log/supervisor',
                 'conf_template': (
                     'salt://makina-states/files/etc/supervisord.conf'
                 ),
@@ -74,7 +73,7 @@ def settings():
                     'password': pw,
                 },
                 'supervisord': {
-                    'logdir': '/var/log/supervisord',
+                    'logdir': '/var/log/supervisor',
                     'logfile': '/var/log/supervisord.log',
                     'logfile_maxbytes': '50MB',
                     'logfile_backups': '10',
