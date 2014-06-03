@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 __docformat__ = 'restructuredtext en'
 import json
-import yaml
 import copy
 # Import python libs
 import os
@@ -18,10 +17,23 @@ import traceback
 from mc_states.utils import memoize_cache
 import random
 import string
+import yaml
+try:
+    from yaml import CLoader as Loader, CDumper as Dumper
+except ImportError:
+    from yaml import Loader, Dumper
+
 
 log = logging.getLogger(__name__)
 DOMAIN_PATTERN = '(@{0})|({0}\\.?)$'
 
+
+def yaml_load(*args, **kw):
+    return yaml.load(Loader=Loader, *args, **kw)
+
+
+def yaml_dump(*args, **kw):
+    return yaml.dump(Dumper=Dumper, *args, **kw)
 
 
 def generate_password(length=None):
@@ -76,9 +88,11 @@ def get_fqdn_domains(fqdn):
 
 # to be easily mockable in tests while having it cached
 def loaddb_do(*a, **kw):
-    root = '/srv/mastersalt-pillar'
-    db = 'database.yaml'
-    db = yaml.load(open(os.path.join(root, db)).read())
+    dbpath = os.path.join(
+        __opts__['pillar_roots']['base'][0],
+        'database.yaml')
+    with open(dbpath) as fic:
+        db = yaml_load(fic.read())
     for item in db:
         types = (dict, list)
         if item in ['format']:
