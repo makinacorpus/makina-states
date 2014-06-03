@@ -76,8 +76,6 @@ DEFAULT_CONFIGURATION = {
     'no_user': False,
     'no_default_includes': False,
     # INTERNAL
-    'project_branch': 'master',
-    'pillar_branch': 'master',
     'data': {},
     'deploy_summary': None,
     'deploy_ret': {},
@@ -492,8 +490,6 @@ def get_configuration(name, *args, **kwargs):
         where to install the project,
     git_root
         root dir for git repositories
-    project_branch
-        the branch of the project
     user
         system project user
     groups
@@ -1315,7 +1311,7 @@ def init_project(name, *args, **kwargs):
         repos = [
             (
                 cfg['pillar_root'],
-                cfg['pillar_branch'],
+                'master',
                 pillar_git_root,
                 False,
                 False,
@@ -1323,7 +1319,7 @@ def init_project(name, *args, **kwargs):
             ),
             (
                 cfg['project_root'],
-                cfg['project_branch'],
+                'master',
                 project_git_root,
                 True,
                 True,
