@@ -28,14 +28,15 @@ def settings():
     def _settings():
         grains = __grains__
         pillar = __pillar__
+        log = '/var/log/circus/circus.log'
         locs = __salt__['mc_locations.settings']()
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.monitoring.circus', {
                 'location': locs['apps_dir'] + '/circus',
                 'venv': '{location}/venv',
+                'log': log,
                 'conf': '/etc/circus/circusd.ini',
                 'rotate': __salt__['mc_logrotate.settings'](),
-                'log': '{logdir}/circus.log',
                 'pidf': locs['var_run_dir'] + '/circusd.pid',
                 'logdir': '/var/log/circus',
                 'requirements': [
@@ -50,6 +51,7 @@ def settings():
                     'stream_backend': 'thread',
                     'loglevel': 'info',
                     'debug': False,
+                    'logoutput': log,
                     'statsd': True,
                     'statsd_close_outputs': False,
                     'httpd_close_outputs': False,

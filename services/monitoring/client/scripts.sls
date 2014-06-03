@@ -29,6 +29,18 @@ ms-scripts-d:
 ] %}
 {% endfor %}
 #}
+misc-distributed-plugins-rec:
+  file.recurse:
+    - name: /root/admin_scripts/misc/
+    - source: salt://makina-states/files/root/admin_scripts/misc/
+    - user: root
+    - group: root
+    - makedirs: true
+    - file_mode: 700
+    - dir_mode: 700
+    - template: jinja
+    - require:
+      - file: ms-scripts-d
 nagios-distributed-plugins-rec:
   file.recurse:
     - name: /root/admin_scripts/nagios/
