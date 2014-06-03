@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
+source /etc/profile || /bin/true
 {% set data = salt['mc_utils.json_load'](data) %}
 # MANAGED VIA SALT -- DO NOT EDIT
-
 # RedHat startup script for a supervisor instance
 # chkconfig: - 90 15
 # description: supervisor init script
-
 ### BEGIN INIT INFO
 # Provides:          ms_supervisor
 # Required-Start:    $syslog $network $time
@@ -20,12 +19,10 @@
 . /srv/apps/supervisor/venv/bin/activate
 TMPDIR="{{data.supervisord.tmpdir}}"
 EFFECTIVE_USER="{{data.supervisord.user}}"
+FORCE_STOP="1"
 supervisorctl="$(which ms_supervisorctl)"
 supervisord="$(which supervisord)"
-name="supervisord_ms_supervisor_$INSTANCE_NAME"
 lock="/var/run/${name}.lock"
-
-
 export TMPDIR
 [ "x$supervisord" != "x" ] || exit 1
 [ "x$supervisorctl" != "x" ] || exit 1
@@ -36,15 +33,10 @@ supervisord_pids() {
     ps aux|grep supervisord|grep -v grep|grep -v supervisorctl|awk '{print $2}'
 }
 
-
 RETVAL=0
 start() {
-    echo -n "Starting $name: "
-    #if [ "x$(whoami)" = "xroot" ];then
-    #    su $EFFECTIVE_USER -c "bash -c \"\"$supervisord\" -- -c '{{data.conf}}'"
-    #else
+    echo "Starting ${supervisord}"
     "${supervisord}" -c '{{data.conf}}'
-    #fi
     RETVAL="${?}"
     if [ "x${RETVAL}" = "x0" ];then
         touch "${lock}"
@@ -55,21 +47,22 @@ start() {
     return ${RETVAL}
 }
 stop() {
-    echo -n "Stopping $name: "
-    supervisord_pids
-    if [ "x$(supervisord_pids|wc -w|sed -e "s/  //g")" != "x0" ];then
-        #if [ "x$(whoami)" = "xroot" ];then
-        #    su $EFFECTIVE_USER -c "$supervisorctl -- -c '{{data.conf}}' shutdown"
-        #else
+    echo "Stopping ${supervisord}"
+    pids="$(supervisord_pids)"
+    if [ "x$(echo ${pids}|wc -w|sed -e "s/  //g")" != "x0" ];then
         "${supervisorctl}" shutdown
-        echo "Waiting {{data.program.stopwaitsecs}}sec for exit" 
-        sleep "{{data.program.stopwaitsecs}}"
-        #fi
+        if [ "x${FORCE_STOP}" = "x" ];then
+            echo "Waiting {{data.program.stopwaitsecs|int+1}}sec for exit" 
+            sleep "{{data.program.stopwaitsecs|int+1}}"
+        fi
     fi
-    if [ "x$(supervisord_pids|wc -w|sed -e "s/  //g")" != "x0" ];then
-        kill -9 "$(supervisord_pids)"
+    pids="$(supervisord_pids)"
+    if [ "x$(echo ${pids}|wc -w|sed -e "s/  //g")" != "x0" ];then
+        for pid in ${pids};do
+            kill -9  $pid
+        done
     fi
-    RETVAL=$?
+    RETVAL=${?}
     if [ -e "${lock}" ] &&  [ "x${RETVAL}" = "x0" ];then
         rm -f "${lock}"
     fi
@@ -79,15 +72,20 @@ case "${1}" in
          start)
              start
              ;;
-
          stop)
              stop
              ;;
-
+         graceful-stop)
+             FORCE_STOP=""
+             stop
+             ;;
          restart)
              stop
              start
              ;;
+        *)
+            echo "/etc/init.d/ms_supervisorctl start|stop|restart|graceful-stop"
+            ;;
 esac
 exit $REVAL
 # vim:set ft=sh:

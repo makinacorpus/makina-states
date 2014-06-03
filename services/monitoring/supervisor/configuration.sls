@@ -29,6 +29,24 @@ supervisord-conf:
       data: |
             {{salt['mc_utils.json_dump'](defaults)}}
 
+{% if grains['os'] in ['Ubuntu'] %}
+supervisor-init-conf:
+  file.managed:
+    - name: {{ locs['conf_dir'] }}/init/ms_supervisor.conf
+    - source: salt://makina-states/files/etc/init/ms_supervisor.conf
+    - template: jinja
+    - user: root
+    - makedirs: true
+    - group: root
+    - mode: 755
+    - watch:
+      - mc_proxy: supervisor-pre-conf
+    - watch_in:
+      - mc_proxy: supervisor-post-conf
+    - defaults:
+      data: |
+            {{salt['mc_utils.json_dump'](defaults)}}
+{% else %}
 supervisor-init-conf:
   file.managed:
     - name: {{ locs['conf_dir'] }}/init.d/ms_supervisor
@@ -45,6 +63,7 @@ supervisor-init-conf:
     - defaults:
       data: |
             {{salt['mc_utils.json_dump'](defaults)}}
+{% endif %}
 
 supervisor-setup-conf-directories:
   file.directory:
