@@ -7,6 +7,7 @@ mc_utils / Some usefull small tools
 '''
 
 # Import salt libs
+import copy
 import os
 import salt.utils.dictupdate
 from salt.exceptions import SaltException
@@ -16,9 +17,13 @@ import pwd
 import re
 import salt.utils
 from salt.utils.odict import OrderedDict
-import yaml
 from salt.utils import yamldumper
 from mc_states import api
+import yaml
+try:
+    from yaml import CLoader as Loader, CDumper as Dumper
+except ImportError:
+    from yaml import Loader, Dumper
 
 
 _default_marker = object()
@@ -380,6 +385,40 @@ def defaults(prefix,
             datadict[k] = value
 
     return format_resolve(datadict)
+
+
+def sanitize_kw(kw):
+    ckw = copy.deepcopy(kw)
+    for k in kw:
+        if ('__pub_' in k) and (k in ckw):
+            ckw.pop(k)
+    return ckw
+
+
+def cyaml_load(*args, **kw):
+    args = list(args)
+    close = False
+    if args and isinstance(args[0], basestring) and os.path.exists(args[0]):
+        args[0] = open(args[0])
+        close = True
+    ret = yaml.load(Loader=Loader, *args,
+                    **__salt__['mc_utils.sanitize_kw'](kw))
+    if close:
+        args[0].close()
+    return ret
+
+
+def cyaml_dump(*args, **kw):
+    args = list(args)
+    close = False
+    if args and isinstance(args[0], basestring) and os.path.exists(args[0]):
+        args[0] = open(args[0])
+        close = True
+    ret = yaml.dump(Dumper=Dumper, *args,
+                    **__salt__['mc_utils.sanitize_kw'](kw))
+    if close:
+        args[0].close()
+    return ret
 
 
 def yaml_dump(data, flow=False):
