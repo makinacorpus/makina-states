@@ -2529,6 +2529,11 @@ minion_challenge() {
     global_tries="30"
     inner_tries="5"
     for i in `seq ${global_tries}`;do
+        if [ "x${SALT_MASTER_DNS}" = "xlocalhost" ] && [ "x$(hostname|sed -e "s/.*devhost.*/match/")" = "xmatch" ];then
+            debug_msg "Forcing salt master restart"
+            restart_local_masters
+            sleep 10
+        fi
         restart_local_minions
         resultping="1"
         for j in `seq ${inner_tries}`;do
@@ -2557,6 +2562,11 @@ mastersalt_minion_challenge() {
     global_tries="30"
     inner_tries="5"
     for i in `seq ${global_tries}`;do
+        if [ "x${MASTERSALT}" = "xlocalhost" ] && [ "x$(hostname|sed -e "s/.*devhost.*/match/")" = "xmatch" ];then
+            debug_msg "Forcing salt mastersalt master restart" 
+            restart_local_mastersalt_masters
+            sleep 10
+        fi
         restart_local_mastersalt_minions
         resultping="1"
         for j in `seq ${inner_tries}`;do
