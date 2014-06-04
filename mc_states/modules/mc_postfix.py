@@ -75,8 +75,14 @@ def settings():
                           '[::1]/128',]
         for iface, ips in grains['ip_interfaces'].items():
             for ip in ips:
-                net = '.'.join(ip.split('.')[:3]) + '.0/24'
-                if not net in local_networks:
+                net = '.'.join(ip.split('.')[:3]) + '.0/'
+                netm = '24'
+                if net.startswith('10'):
+                    netm = '16'
+                if net.startswith('127.0'):
+                    netm = '8'
+                net += netm
+                if net not in local_networks:
                     local_networks.append(net)
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.mail.postfix', {
