@@ -10,7 +10,7 @@ inet_protocols = {{data.inet_protocols}}
 inet_interfaces = {{data.inet_interfaces}}
 mydestination  = hash:/etc/postfix/destinations,hash:/etc/postfix/destinations.local
 relay_domains  = hash:/etc/postfix/relay_domains,hash:/etc/postfix/relay_domains.local
-mynetworks     = hash:/etc/postfix/networks,hash:/etc/postfix/networks.local
+mynetworks     = cidr:/etc/postfix/networks,cidr:/etc/postfix/networks.local
 transport_maps = hash:/etc/postfix/transport,hash:/etc/postfix/transport.local
 # TLS parameters
 smtp_use_tls={{data.use_tls}}

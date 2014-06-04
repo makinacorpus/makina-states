@@ -108,6 +108,40 @@ circus-setup-conf:
     - defaults:
         conf_dir: {{ locs['conf_dir'] }}
 
+circus-ms_circusctl:
+  file.managed:
+    - name: {{defaults.venv}}/bin/ms_circusctl
+    - source: ''
+    - template: jinja
+    - user: root
+    - makedirs: true
+    - group: root
+    - mode: 700
+    - watch:
+      - mc_proxy: circus-pre-conf
+    - watch_in:
+      - mc_proxy: circus-pre-restart
+    - contents: |
+                #!/usr/bin/env bash
+                . {{defaults.venv}}/bin/activate
+                {{defaults.venv}}/bin/circusctl \
+                "$@"
+    - defaults:
+        data: |
+              {{salt['mc_utils.json_dump'](defaults)}}
+
+{% for i in ['circusd', 'circusctl', 'ms_circusctl'] %}
+file-symlink-{{i}}:
+  file.symlink:
+    - target: {{defaults.venv}}/bin/{{i}}
+    - name: /usr/local/bin/{{i}}
+    - watch:
+      - mc_proxy: circus-pre-conf
+    - watch_in:
+      - mc_proxy: circus-pre-restart
+{% endfor %}
+
+
 circus-globalconf:
   file.managed:
     - name: {{ locs['conf_dir'] }}/circus/circusd.conf.d/010_global.ini

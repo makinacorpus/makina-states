@@ -6,6 +6,8 @@ mc_project_2 / project settings regitry APIV2
 ================================================
 
 '''
+
+import yaml.error
 import datetime
 import os
 import logging
@@ -16,7 +18,6 @@ import sys
 import traceback
 import uuid
 import yaml
-
 
 import copy
 from salt.utils.odict import OrderedDict
@@ -76,8 +77,6 @@ DEFAULT_CONFIGURATION = {
     'no_user': False,
     'no_default_includes': False,
     # INTERNAL
-    'project_branch': 'master',
-    'pillar_branch': 'master',
     'data': {},
     'deploy_summary': None,
     'deploy_ret': {},
@@ -337,7 +336,7 @@ def _defaultsConfiguration(
         try:
             sample_data = OrderedDict()
             with open(sample) as fic:
-                sample_data_l = yaml.load(fic.read())
+                sample_data_l = __salt__['mc_utils.cyaml_load'](fic.read())
                 if not isinstance(sample_data_l, dict):
                     sample_data_l = OrderedDict()
                 for k, val in sample_data_l.items():
@@ -349,6 +348,13 @@ def _defaultsConfiguration(
                                 sample_data[k2] = val2
                     else:
                         sample_data[k] = val
+        except yaml.error.YAMLError:
+            trace = traceback.format_exc()
+            error = (
+                '{0}\n{1} is not a valid YAML File for {2}'.format(
+                    trace, sample, cfg['name']))
+            log.error(error)
+            raise ValueError(error)
         except Exception, exc:
             trace = traceback.format_exc()
             log.error(trace)
@@ -391,12 +397,17 @@ def _defaultsConfiguration(
          salt['mc_utils.get'](
              'makina-projects.{name}.data'.format(**cfg),
              OrderedDict()))
-    pillar_data = _dict_update(
-         pillar_data,
-         salt['mc_utils.get'](
-             'makina-projects.{name}'.format(**cfg),
-             OrderedDict()
-         ).get('data', OrderedDict()))
+
+    memd_data = salt['mc_utils.get'](
+        'makina-projects.{name}'.format(**cfg),
+        OrderedDict()
+    ).get('data', OrderedDict())
+    if not isinstance(memd_data, dict):
+        raise ValueError(
+            'data is not a dict for {0}, '
+            'review your pillar and yaml files'.format(
+                cfg.get('name', 'project')))
+    pillar_data = _dict_update(pillar_data, memd_data)
     os_defaults.setdefault(__grains__['os'], OrderedDict())
     os_defaults.setdefault(__grains__['os_family'],
                            OrderedDict())
@@ -492,8 +503,6 @@ def get_configuration(name, *args, **kwargs):
         where to install the project,
     git_root
         root dir for git repositories
-    project_branch
-        the branch of the project
     user
         system project user
     groups
@@ -1315,7 +1324,7 @@ def init_project(name, *args, **kwargs):
         repos = [
             (
                 cfg['pillar_root'],
-                cfg['pillar_branch'],
+                'master',
                 pillar_git_root,
                 False,
                 False,
@@ -1323,7 +1332,7 @@ def init_project(name, *args, **kwargs):
             ),
             (
                 cfg['project_root'],
-                cfg['project_branch'],
+                'master',
                 project_git_root,
                 True,
                 True,
@@ -1480,7 +1489,15 @@ def deploy(name, *args, **kwargs):
 
     if ret['result']:
         guarded_step(cfg,
-                     ['release_sync', 'install',],
+                     ['release_sync'],
+                     rollback=True,
+                     inner_step=True,
+                     ret=ret)
+        cfg['force_reload'] = True
+        cfg = get_configuration(name, *args, **kwargs)
+    if ret['result']:
+        guarded_step(cfg,
+                     ['install',],
                      rollback=True,
                      inner_step=True,
                      ret=ret)

@@ -17,23 +17,17 @@ import traceback
 from mc_states.utils import memoize_cache
 import random
 import string
-import yaml
-try:
-    from yaml import CLoader as Loader, CDumper as Dumper
-except ImportError:
-    from yaml import Loader, Dumper
-
 
 log = logging.getLogger(__name__)
 DOMAIN_PATTERN = '(@{0})|({0}\\.?)$'
 
 
 def yaml_load(*args, **kw):
-    return yaml.load(Loader=Loader, *args, **kw)
+    return __salt__['mc_utils.cyaml_load'](*args, **kw)
 
 
 def yaml_dump(*args, **kw):
-    return yaml.dump(Dumper=Dumper, *args, **kw)
+    return __salt__['mc_utils.cyaml_dump'](*args, **kw)
 
 
 def generate_password(length=None):
