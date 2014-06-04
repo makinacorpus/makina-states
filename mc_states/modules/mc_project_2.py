@@ -6,6 +6,8 @@ mc_project_2 / project settings regitry APIV2
 ================================================
 
 '''
+
+import yaml.error
 import datetime
 import os
 import logging
@@ -16,7 +18,6 @@ import sys
 import traceback
 import uuid
 import yaml
-
 
 import copy
 from salt.utils.odict import OrderedDict
@@ -335,7 +336,7 @@ def _defaultsConfiguration(
         try:
             sample_data = OrderedDict()
             with open(sample) as fic:
-                sample_data_l = yaml.load(fic.read())
+                sample_data_l = __salt__['mc_utils.cyaml_load'](fic.read())
                 if not isinstance(sample_data_l, dict):
                     sample_data_l = OrderedDict()
                 for k, val in sample_data_l.items():
@@ -347,6 +348,13 @@ def _defaultsConfiguration(
                                 sample_data[k2] = val2
                     else:
                         sample_data[k] = val
+        except yaml.error.YAMLError:
+            trace = traceback.format_exc()
+            error = (
+                '{0}\n{1} is not a valid YAML File for {2}'.format(
+                    trace, sample, cfg['name']))
+            log.error(error)
+            raise ValueError(error)
         except Exception, exc:
             trace = traceback.format_exc()
             log.error(trace)
@@ -389,12 +397,17 @@ def _defaultsConfiguration(
          salt['mc_utils.get'](
              'makina-projects.{name}.data'.format(**cfg),
              OrderedDict()))
-    pillar_data = _dict_update(
-         pillar_data,
-         salt['mc_utils.get'](
-             'makina-projects.{name}'.format(**cfg),
-             OrderedDict()
-         ).get('data', OrderedDict()))
+
+    memd_data = salt['mc_utils.get'](
+        'makina-projects.{name}'.format(**cfg),
+        OrderedDict()
+    ).get('data', OrderedDict())
+    if not isinstance(memd_data, dict):
+        raise ValueError(
+            'data is not a dict for {0}, '
+            'review your pillar and yaml files'.format(
+                cfg.get('name', 'project')))
+    pillar_data = _dict_update(pillar_data, memd_data)
     os_defaults.setdefault(__grains__['os'], OrderedDict())
     os_defaults.setdefault(__grains__['os_family'],
                            OrderedDict())
