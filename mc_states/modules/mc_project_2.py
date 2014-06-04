@@ -1489,7 +1489,15 @@ def deploy(name, *args, **kwargs):
 
     if ret['result']:
         guarded_step(cfg,
-                     ['release_sync', 'install',],
+                     ['release_sync'],
+                     rollback=True,
+                     inner_step=True,
+                     ret=ret)
+        cfg['force_reload'] = True
+        cfg = get_configuration(name, *args, **kwargs)
+    if ret['result']:
+        guarded_step(cfg,
+                     ['install',],
                      rollback=True,
                      inner_step=True,
                      ret=ret)
