@@ -15,7 +15,7 @@ include:
 icinga-conf:
   file.managed:
     - name: /etc/icinga/icinga.cfg
-    - source: salt://makina-states/files/etc/icinga/icinga.conf
+    - source: salt://makina-states/files/etc/icinga/icinga.cfg
     - template: jinja
     - makedirs: true
     - user: root
@@ -28,6 +28,28 @@ icinga-conf:
     - defaults:
       data: |
             {{salt['mc_utils.json_dump'](defaults)}}
+
+
+{% if defaults.modules.ido2db.enabled %}
+io2db-conf:
+  file.managed:
+    - name: /etc/icinga/ido2db.cfg
+    - source: salt://makina-states/files/etc/icinga/ido2db.cfg
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 644
+    - watch:
+      - mc_proxy: icinga-pre-conf
+    - watch_in:
+      - mc_proxy: icinga-post-conf
+    - defaults:
+      data: |
+            {{salt['mc_utils.json_dump'](defaults)}}
+{% endif %}
+
+
 
 {% if grains['os'] in ['Ubuntu'] %}
 icinga-init-conf:
