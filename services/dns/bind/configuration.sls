@@ -187,15 +187,18 @@ bind-checkconf-zones:
     - contents: |
                 #!/usr/bin/env bash
                 ret=0
+                domainerrors=""
                 {% for zone, fpath in checked_zones.items() %}
                 named-checkzone -k fail -m fail -M fail -n fail {{zone}} "{{fpath}}"
                 if [ "x${?}" != "x0" ];then
                   ret=1
+                  domainerrors="${domainerrors} {{zone}}:{{fpath}}"
                 fi
                 {% endfor %}
                 if [ "x${ret}" = "x0" ];then
                   echo "changed='false'"
                 else
+                  echo "${domainerrors}"
                   exit ${ret}
                 fi
   cmd.run:
