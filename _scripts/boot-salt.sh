@@ -3502,6 +3502,7 @@ usage() {
         #bs_help "-mmic|--mastersalt-minion-controller <controller>:" "makina-states controller to use for the mastersalt minion" "${MASTERSALT}_MASTER_CONTROLLER"  y
         bs_help "-no-MM|--no-mastersalt-master:" "do not install a mastersalt master" "${IS_MASTERSALT_MASTER}" y
         bs_help "-no-NN|--no-mastersalt-minion:" "do not install a mastersalt minion" "${IS_MASTERSALT_MINION}" y
+        bs_help "--corpus-glue" "prepare mastersalt master for corpus reactor" "$(get_conf corpus_glue)" y
 
         bs_log "  Project settings (if any):"
         bs_help "--projects-path <path>:" "projects root path" "${PROJECTS_PATH}" y
@@ -3739,6 +3740,9 @@ parse_cli_opts() {
         fi
         if [ "x${1}" = "x--salt-master-publish-port" ];then
             SALT_MASTER_PUBLISH_PORT="${2}";sh="2";argmatch="1"
+        fi
+        if [ "x${1}" = "x--corpus-glue" ];then
+            set_conf corpus_glue 1;sh="2";argmatch="1"
         fi
         if [ "x${1}" = "x--mastersalt-master-port" ];then
             MASTERSALT_MASTER_PORT="${2}";sh="2";argmatch="1"
@@ -4111,6 +4115,16 @@ postinstall() {
     fi
 }
 
+install_corpusreactor_glue() {
+    set_conf corpus_glue 1
+    mastersalt_call_wrapper makina-states.services.corpus.glue
+    if [ "x${SALT_BOOT_DEBUG}" != "x" ];then cat "${SALT_BOOT_OUTFILE}";fi
+    warn_log
+    if [ "x${last_salt_retcode}" != "x0" ];then
+        bs_log "Failed glue install for corpus"
+        exit 1
+    fi
+}
 
 if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
     parse_cli_opts $LAUNCH_ARGS
@@ -4173,6 +4187,9 @@ if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
             initial_highstates
         else
             run_highstates
+        fi
+        if [ "x$(get_conf corpus_glue)" = "x1" ];then
+            install_corpusreactor_glue
         fi
         maybe_install_projects
         maybe_run_tests

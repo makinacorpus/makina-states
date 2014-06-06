@@ -39,6 +39,7 @@ run_dbsmartbackups:
     - name: {{locs.bin_dir}}/run_dbsmartbackups.sh
     - source: salt://makina-states/files/usr/bin/run_dbsmartbackups.sh
     - mode: 750
+    - makedirs: true
     - user: root
     - group: root
     - template: jinja
@@ -55,7 +56,19 @@ run_dbsmartbackups:
 dbsmartbackup_pg_conf:
   file.managed:
     - name: /etc/dbsmartbackup/postgresql.conf
+    - makedirs: true
     - source: salt://makina-states/files/etc/dbsmartbackup/postgresql.conf
+    - template: jinja
+    - mode: 700
+    - context:
+      settings: |
+                {{settings}}
+
+dbsmartbackup_mongod_conf:
+  file.managed:
+    - makedirs: true
+    - name: /etc/dbsmartbackup/mongod.conf
+    - source: salt://makina-states/files/etc/dbsmartbackup/mongod.conf
     - template: jinja
     - mode: 700
     - context:
@@ -64,6 +77,7 @@ dbsmartbackup_pg_conf:
 
 dbsmartbackup_mysql_conf:
   file.managed:
+    - makedirs: true
     - name: /etc/dbsmartbackup/mysql.conf
     - source: salt://makina-states/files/etc/dbsmartbackup/mysql.conf
     - template: jinja

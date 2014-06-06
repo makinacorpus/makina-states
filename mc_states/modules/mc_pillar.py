@@ -20,6 +20,7 @@ import string
 
 log = logging.getLogger(__name__)
 DOMAIN_PATTERN = '(@{0})|({0}\\.?)$'
+DOTTED_DOMAIN_PATTERN = '((^{0}\\.?$)|(\\.(@{0})|({0}\\.?)))$'
 
 
 def yaml_load(*args, **kw):
@@ -31,16 +32,7 @@ def yaml_dump(*args, **kw):
 
 
 def generate_password(length=None):
-    if length is None:
-        length = random.randint(16, 32)
-    ret = ''
-    strings = string.ascii_letters + string.digits
-    with open('/dev/urandom', 'r') as fic:
-        while len(ret) < length:
-            char = fic.read(1)
-            if char in strings:
-                ret += char
-    return ret
+    return __salt__['mc_utils.generate_password'](length)
 
 
 class IPRetrievalError(KeyError):
@@ -473,6 +465,9 @@ def load_network_infrastructure(ttl=60):
         for fqdn in ips_map:
             if fqdn in ips:
                 continue
+            #if fqdn in 'tiles.ma':
+            #    import pdb;pdb.set_trace()  ## Breakpoint ##
+
             ips[fqdn] = ips_for(fqdn,
                                 ips=ips, cnames=cnames, ipsfo=ipsfo,
                                 ipsfo_map=ipsfo_map, ips_map=ips_map)
@@ -577,33 +572,6 @@ def rr_a(fqdn, fail_over=None, ttl=60):
     return memoize_cache(_do, [fqdn, fail_over], {}, cache_key, ttl)
 
 
-def rrs_mx_for(domain, ttl=60):
-    '''Return all configured NS records for a domain'''
-    def _do_mx(domain):
-        db = load_network_infrastructure()
-        rrs_ttls = db['rrs_ttls']
-        mx_map = db['mx_map']
-        ips = db['ips']
-        all_rrs = OrderedDict()
-        servers = mx_map.get(domain, {})
-        for fqdn in servers:
-            rrs = all_rrs.setdefault(fqdn, [])
-            dfqdn = fqdn
-            if not dfqdn.endswith('.'):
-                dfqdn += '.'
-            for rr in rr_entry(
-                '@', [dfqdn],
-                priority=servers[fqdn].get('priority', '10'),
-                record_type='MX'
-            ).split('\n'):
-                if rr not in rrs:
-                    rrs.append(rr)
-        rr = filter_rr_str(all_rrs)
-        return rr
-    cache_key = 'mc_pillar.rrs_mx_for_{0}'.format(domain)
-    return memoize_cache(_do_mx, [domain], {}, cache_key, ttl)
-
-
 def whitelisted(dn, ttl=60):
     '''Return all configured NS records for a domain'''
     def _do_whitel(dn):
@@ -638,7 +606,7 @@ def rrs_txt_for(domain, ttl=60):
         rrs_ttls = query('rrs_ttls')
         rrs_txts = query('rrs_txt')
         all_rrs = OrderedDict()
-        domain_re = re.compile(DOMAIN_PATTERN.format(domain),
+        domain_re = re.compile(DOTTED_DOMAIN_PATTERN.format(domain),
                                re.M | re.U | re.S | re.I)
         for rrscols in rrs_txts:
             for fqdn, rrs in rrscols.items():
@@ -854,6 +822,61 @@ def get_slaves_zones_for(fqdn, ttl=60):
     return memoize_cache(_do_getslaveszonesfor, [fqdn], {}, cache_key, ttl)
 
 
+def rrs_mx_for(domain, ttl=60):
+    '''Return all configured NS records for a domain'''
+    def _do_mx(domain):
+        db = load_network_infrastructure()
+        rrs_ttls = db['rrs_ttls']
+        mx_map = db['mx_map']
+        ips = db['ips']
+        all_rrs = OrderedDict()
+        servers = mx_map.get(domain, {})
+        for fqdn in servers:
+            rrs = all_rrs.setdefault(fqdn, [])
+            dfqdn = fqdn
+            if not dfqdn.endswith('.'):
+                dfqdn += '.'
+            for rr in rr_entry(
+                '@', [dfqdn],
+                priority=servers[fqdn].get('priority', '10'),
+                record_type='MX'
+            ).split('\n'):
+                if rr not in rrs:
+                    rrs.append(rr)
+        rr = filter_rr_str(all_rrs)
+        return rr
+    cache_key = 'mc_pillar.rrs_mx_for_{0}'.format(domain)
+    return memoize_cache(_do_mx, [domain], {}, cache_key, ttl)
+
+
+def rrs_mx_for(domain, ttl=60):
+    '''Return all configured NS records for a domain'''
+    def _do_mx(domain):
+        db = load_network_infrastructure()
+        rrs_ttls = db['rrs_ttls']
+        mx_map = db['mx_map']
+        ips = db['ips']
+        all_rrs = OrderedDict()
+        servers = mx_map.get(domain, {})
+        for fqdn in servers:
+            rrs = all_rrs.setdefault(fqdn, [])
+            dfqdn = fqdn
+            if not dfqdn.endswith('.'):
+                dfqdn += '.'
+            for rr in rr_entry(
+                '@', [dfqdn],
+                priority=servers[fqdn].get('priority', '10'),
+                record_type='MX'
+            ).split('\n'):
+                if rr not in rrs:
+                    rrs.append(rr)
+        rr = filter_rr_str(all_rrs)
+        return rr
+    cache_key = 'mc_pillar.rrs_mx_for_{0}'.format(domain)
+    return memoize_cache(_do_mx, [domain], {}, cache_key, ttl)
+
+
+
 def rrs_ns_for(domain, ttl=60):
     '''Return all configured NS records for a domain'''
     def _dorrsnsfor(domain):
@@ -888,7 +911,7 @@ def rrs_a_for(domain, ttl=60):
         rrs_ttls = db['rrs_ttls']
         ips = db['ips']
         all_rrs = OrderedDict()
-        domain_re = re.compile(DOMAIN_PATTERN.format(domain),
+        domain_re = re.compile(DOTTED_DOMAIN_PATTERN.format(domain),
                                re.M | re.U | re.S | re.I)
         # add all A from simple ips
         for fqdn in ips:
@@ -913,7 +936,7 @@ def rrs_raw_for(domain, ttl=60):
         rrs_raw = query('rrs_raw')
         ips = db['ips']
         all_rrs = OrderedDict()
-        domain_re = re.compile(DOMAIN_PATTERN.format(domain),
+        domain_re = re.compile(DOTTED_DOMAIN_PATTERN.format(domain),
                                re.M | re.U | re.S | re.I)
         for fqdn in rrs_raw:
             if domain_re.search(fqdn):
@@ -939,7 +962,7 @@ def rrs_cnames_for(domain, ttl=60):
         cnames = db['cnames']
         ips = db['ips']
         all_rrs = OrderedDict()
-        domain_re = re.compile(DOMAIN_PATTERN.format(domain),
+        domain_re = re.compile(DOTTED_DOMAIN_PATTERN.format(domain),
                                re.M | re.U | re.S | re.I)
 
         # filter out CNAME which have also A records
