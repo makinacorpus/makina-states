@@ -10,6 +10,5 @@ icinga-pkgs:
     - watch_in:
       - mc_proxy: icinga-post-install-hook
     - pkgs:
-      - icinga-common
-      - icinga-core
-      - icinga-doc
+      - {{ salt['mc_icinga.settings']().package }}
+
