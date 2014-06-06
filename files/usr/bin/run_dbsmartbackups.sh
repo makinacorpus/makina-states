@@ -46,5 +46,15 @@ fi
 if [ x"${DEBUG}" != "x" ];then
     set +x
 fi
+# try to run mongodb backups if the config file is present
+# and we found a mysqld process
+CONF="${DB_SMARTBACKUPS_CONFS}/mongod.conf"
+if [ x"$(ps aux|grep mongod|grep -v grep|wc -l)" != "x0" ] &&  [ -e "${CONF}" ];then
+    echo "$__NAME__: Running backup for mongod: $(mongod --version|head -n1) (${CONF} $(which mongod))"
+    db_smart_backup.sh "${CONF}"
+fi
+if [ x"${DEBUG}" != "x" ];then
+    set +x
+fi
 exit 0
-# vim:set et sts=4 ts=4 tw=00: 
+# vim:set et sts=4 ts=4 tw=00:

@@ -14,6 +14,7 @@ import mc_states.utils
 
 __name = 'services'
 
+
 def _bindEn(__salt__):
     nodetypes_registry = __salt__['mc_nodetypes.registry']()
     return not (
@@ -87,6 +88,7 @@ def registry():
             'dns.slapd.master': {'active': False},
             'dns.slapd.slave': {'active': False},
             'dns.slapd.common': {'active': False},
+            'db.mongodb': {'active': False},
             'db.mysql': {'active': False},
             'db.postgresql': {'active': False},
             'firewall.fail2ban': {'active': False},

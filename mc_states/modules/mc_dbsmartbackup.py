@@ -81,6 +81,9 @@ def settings():
     mysql_use_ssl
         do we use ssl to connect to mysql
 
+    mongodb_path
+        path to mongodb
+
     servername
         servername tied to those backups
     '''
@@ -98,6 +101,7 @@ def settings():
                 'dbnames': 'all',
                 'disable_mail': '',
                 'global_backup': '1',
+                'mongodb_path': '/var/lib/mongodb',
                 'group': 'root',
                 'keep_days': '14',
                 'keep_lasts': '24',
