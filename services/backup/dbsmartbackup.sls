@@ -58,6 +58,7 @@ dbsmartbackup_pg_conf:
     - name: /etc/dbsmartbackup/postgresql.conf
     - makedirs: true
     - source: salt://makina-states/files/etc/dbsmartbackup/postgresql.conf
+    - makedirs: true
     - template: jinja
     - mode: 700
     - context:
@@ -80,6 +81,7 @@ dbsmartbackup_mysql_conf:
     - makedirs: true
     - name: /etc/dbsmartbackup/mysql.conf
     - source: salt://makina-states/files/etc/dbsmartbackup/mysql.conf
+    - makedirs: true
     - template: jinja
     - mode: 700
     - context:
