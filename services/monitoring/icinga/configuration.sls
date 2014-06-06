@@ -12,15 +12,15 @@ include:
   - makina-states.services.monitoring.icinga.hooks
   - makina-states.services.monitoring.icinga.services
 
-icingad-conf:
+icinga-conf:
   file.managed:
-    - name: {{defaults.conf}}
-    - source: {{defaults.conf_template}}
+    - name: /etc/icinga/icinga.cfg
+    - source: salt://makina-states/files/etc/icinga/icinga.conf
     - template: jinja
-    - user: root
     - makedirs: true
+    - user: root
     - group: root
-    - mode: 700
+    - mode: 644
     - watch:
       - mc_proxy: icinga-pre-conf
     - watch_in:
