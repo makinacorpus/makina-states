@@ -396,7 +396,7 @@ def _defaultsConfiguration(
             copy.deepcopy(
                 salt['mc_utils.get'](
                     'makina-projects.{name}.os_defaults'.format(**cfg),
-                    {})))
+                    OrderedDict())))
         os_defaults = _dict_update(
             os_defaults,
             copy.deepcopy(
