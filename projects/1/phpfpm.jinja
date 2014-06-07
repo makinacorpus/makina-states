@@ -1,8 +1,8 @@
 {# Generate in one step the apache virtualhost,
                         the apache configuration
                         and the fpm pool #}
-{%- import "makina-states/_macros/apache.jinja" as apache with context %}
-{%- import "makina-states/_macros/php.jinja" as php with context %}
+{%- import "makina-states/services/http/apache/init.sls" as apache with context %}
+{%- import "makina-states/services/php/init.sls" as php with context %}
 {%- import "makina-states/projects/1/apache.jinja" as httpbase with context %}
 {%- import "makina-states/projects/1/base.jinja" as base with context %}
 {%- set base = base %}
@@ -84,11 +84,7 @@
 {%- do kwargs.setdefault('env_defaults', default_env_defaults) %}
 {%- do kwargs.setdefault('user', 'phpfpm') %}
 {%- set common = salt['mc_project.get_common_vars'](*varargs, **kwargs) %}
-{% if common.full %}
 {%-   do common.sls_includes.append('makina-states.services.php.phpfpm_with_apache')%}
-{%- else  %}
-{%-   do common.sls_includes.append('makina-states.services.php.phpfpm_with_apache-standalone')%}
-{% endif %}
 {{- base.install_project(common, install_macro=install_phpfpm_project_do) }}
 {% endmacro %}
 {# vim: set nofoldenable :#}

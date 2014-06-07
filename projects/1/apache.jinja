@@ -1,4 +1,8 @@
-{%- import "makina-states/_macros/apache.jinja" as apache with context %}
+{#
+# DEPRECATED PROJECT STYLE -- USE APIV2
+#
+#}
+{%- import "makina-states/services/http/apache/init.sls" as apache with context %}
 {%- import "makina-states/projects/1/base.jinja" as base with context %}
 {%- set base = base %}
 {%- set apache = apache %}
@@ -105,11 +109,7 @@
 {%- do kwargs.setdefault('env_defaults', default_env_defaults) %}
 {%- do kwargs.setdefault('user', 'apache') %}
 {%- set common = salt['mc_project.get_common_vars'](*varargs, **kwargs) %}
-{% if common.full %}
-{%-   do common.sls_includes.append('makina-states.services.http.apache')%}
-{%- else  %}
-{%-   do common.sls_includes.append('makina-states.services.http.apache-hooks')%}
-{% endif %}
+{%- do common.sls_includes.append('makina-states.services.http.apache')%}
 {{- base.install_project(common, install_macro=install_apache_project_do) }}
 {% endmacro %}
 {# vim: set nofoldenable :#}

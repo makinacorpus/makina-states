@@ -1,3 +1,7 @@
+{#
+# DEPRECATED PROJECT STYLE -- USE APIV2
+#
+#}
 {%- import "makina-states/projects/1/zope.jinja" as zope with context %}
 {%- set services = zope.services %}
 {%- import "makina-states/services/monitoring/circus/macros.jinja" as circus with context %}
@@ -54,15 +58,10 @@ beecollab_project_setup:
 {% do kwargs.setdefault('user', 'beecollab') -%}
 {% do kwargs.setdefault('domain', 'beecollab.makina-corpus.net') -%}
 
-{% if kwargs.get('full', True) %}
 {% do kwargs.setdefault('sls_includes', [
   'makina-states.services.collab.etherpad'
   ]) -%}
-{% else %}
-{% do kwargs.setdefault('sls_includes', [
-  'makina-states.services.collab.etherpad-standalone'
-  ]) -%}
-{% endif %}
+
 
 {% set common = salt['mc_project.get_common_vars'](*varargs, **kwargs) -%}
 

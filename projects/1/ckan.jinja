@@ -1,3 +1,7 @@
+{#
+# DEPRECATED PROJECT STYLE -- USE APIV2
+#
+#}
 {% import "makina-states/_macros/salt.jinja" as saltmac with context %}
 {% import "makina-states/projects/1/base.jinja" as base with context %}
 {% import "makina-states/services/db/postgresql/init.sls" as pgsql with context %}
@@ -491,7 +495,6 @@ etc-logrotate.d-{{common.name}}.conf:
 {%- do kwargs.setdefault('env_defaults', default_env_defaults) %}
 {%- do kwargs.setdefault('user', 'ckan') %}
 {%- set common = salt['mc_project.get_common_vars'](*varargs, **kwargs) %}
-{% if common.full %}
 {%-  if common.data.has_solr %}
 {%-   do common.sls_includes.extend(["makina-states.services.java.solr4",])%}
 {%-  endif %}
@@ -501,11 +504,6 @@ etc-logrotate.d-{{common.name}}.conf:
 {%-  if common.data.has_app %}
 {%-    do common.sls_includes.extend(["makina-states.services.http.apache"])%}
 {%-  endif %}
-{%-else  %}
-{%-   do common.sls_includes.append("makina-states.services.java.solr4-hooks")%}
-{%-   do common.sls_includes.append("makina-states.services.http.apache-standalone")%}
-{%-   do common.sls_includes.extend(["makina-states.services.db.postgresql.hooks",])%}
-{% endif %}
 {{- base.install_project(common, install_macro=install_ckan_project_do) }}
 {% endmacro %}
 {# vim: set nofoldenable :#}

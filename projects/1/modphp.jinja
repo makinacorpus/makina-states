@@ -1,4 +1,8 @@
-{%- import "makina-states/_macros/php.jinja" as php with context %}
+{#
+# DEPRECATED PROJECT STYLE -- USE APIV2
+#
+#}
+{%- import "makina-states/services/php/init.sls" as php with context %}
 {%- import "makina-states/projects/1/apache.jinja" as pbase with context %}
 {%- import "makina-states/projects/1/base.jinja" as base with context %}
 {%- set apache = php.apache %}
@@ -49,11 +53,7 @@
 {%- do kwargs.setdefault('env_defaults', default_env_defaults) %}
 {%- do kwargs.setdefault('user', 'modphp') %}
 {%- set common = salt['mc_project.get_common_vars'](*varargs, **kwargs) %}
-{% if common.full %}
 {%-   do common.sls_includes.append('makina-states.services.php.modphp')%}
-{%- else  %}
-{%-   do common.sls_includes.append('makina-states.services.php.modphp-standalone')%}
-{% endif %}
 {{- base.install_project(common, install_macro=install_modphp_project_do) }}
 {% endmacro %}
 {# vim: set nofoldenable :#}

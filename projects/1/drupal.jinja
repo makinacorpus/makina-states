@@ -1,3 +1,7 @@
+{#
+# DEPRECATED PROJECT STYLE -- USE APIV2
+#
+#}
 {%- import "makina-states/projects/1/base.jinja" as base with context %}
 {%- import "makina-states/services/db/mysql.sls" as mysql with context %}
 {%- set services = base.services %}
@@ -550,7 +554,6 @@ TODO: local checker if prod need passwords <> defaults!
 {%-  do kwargs.setdefault("env_defaults", default_env_defaults) %}
 {%-  do kwargs.setdefault("user", "drupal") %}
 {%-  set common = salt["mc_project.get_common_vars"](*varargs, **kwargs) %}
-{%-  if common.full %}
 {%-    if common.data.use_nginx %}
 {%-     set php_sls_path = "makina-states.services.php.phpfpm_with_nginx" %}
 {%-    else %}
@@ -565,33 +568,12 @@ TODO: local checker if prod need passwords <> defaults!
 {%-    else %}
 {%-     set db_sls_path = "makina-states.services.db.mysql" %}
 {%-    endif %}
-{%-  else %}
-{%-    if common.data.use_nginx %}
-{%-     set php_sls_path = "makina-states.services.php.phpfpm_with_nginx-standalone" %}
-{%-    else %}
-{%-      if common.data.use_phpfpm %}
-{%-        set php_sls_path = "makina-states.services.php.phpfpm_with_apache-standalone" %}
-{%-      else %}
-{%-        set php_sls_path = "makina-states.services.php.modphp-standalone" %}
-{%-      endif %}
-{%-    endif %}
-{%-    if common.data.use_postgresql %}
-{%-     set db_sls_path = "makina-states.services.db.postgresql.hooks" %}
-{%-    else %}
-{%-     set db_sls_path = "makina-states.services.db.mysql-hooks" %}
-{%-    endif %}
-{%-  endif %}
-{%   if common.full %}
 {%-    if common.data.has_app %}
 {%-      do common.sls_includes.extend([php_sls_path,])%}
 {%-    endif %}
 {#%-    if common.data.has_db %#}
 {#%-      do common.sls_includes.extend([db_sls_path,])%#}
 {#%-    endif %#}
-{%-  else  %}
-{%-    do common.sls_includes.append(php_sls_path)%}
-{#%-    do common.sls_includes.extend([db_sls_path,])%#}
-{%   endif %}
 {{-  base.install_project(common, install_macro=install_drupal_project_do) }}
 {%- endmacro %}
 {# vim: set nofoldenable :#}
