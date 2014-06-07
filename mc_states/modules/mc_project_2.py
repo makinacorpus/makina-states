@@ -195,6 +195,7 @@ def _sls_exec(name, cfg, sls):
     ret['return'] = cret
     comment = ''
     __context__.setdefault('retcode', 0)
+    is_really_valid = None
     if isinstance(cret, dict):
         if not cret:
             ret['result'] = True
@@ -208,13 +209,20 @@ def _sls_exec(name, cfg, sls):
             if not isinstance(state, dict):
                 # invalid data structure
                 failed = True
+    else:
+        failed = True
+    if not failed:
+        for lowid, state in cret.items():
+            if not state.get('result', False):
+                failed = True
             else:
-                if not state.get('result', False):
-                    failed = True
+                if is_really_valid is None:
+                    is_really_valid = True
             if failed:
                 __context__['retcode'] = 3
+                is_really_valid = False
                 ret['result'] = False
-    if __context__['retcode'] > 0:
+    if (not is_really_valid) and (__context__['retcode'] > 0):
         ret['result'] = False
         body = ''
         if isinstance(cret, list):
@@ -311,9 +319,11 @@ def get_default_configuration():
     conf = copy.deepcopy(DEFAULT_CONFIGURATION)
     this_host, this_port = 'localhost', '22'
     if os.path.exists('/this_port'):
-        this_port = open('/this_port').read()
+        with open('/this_port') as fic:
+            this_port = fic.read().splitlines()[0].strip()
     if os.path.exists('/this_host'):
-        this_host = open('/this_host').read()
+        with open('/this_host') as fic:
+            this_host = fic.read().splitlines()[0].strip()
     conf['this_host'] = this_host
     conf['this_port'] = this_port
     return conf
@@ -1074,10 +1084,8 @@ def set_upstream(wc, rev, user, origin='origin', ret=None):
                 wc, rev, origin)))
     # set branch upstreams
     try:
-        git_ver = int(
-            _s('cmd.run_all')(
-                'git --version')['stdout'].split()[-1]
-        )
+        sver = _s('cmd.run_all')('git --version')['stdout'].split()[-1]
+        git_ver = float('.'.join(sver.split('.')[:2]))
     except (ValueError, TypeError):
         git_ver = 1.8
     if has_no_commits(wc, user=user):
