@@ -1,23 +1,9 @@
-{# Shorewall configuration
-# Documentation
-# - doc/ref/formulaes/services/firewall/psad.rst
-#}
 {%- set locs = salt['mc_locations.settings']() %}
 {%- set data = salt['mc_psad.settings']() %}
-{{ salt['mc_macros.register']('services', 'firewall.psad') }}
 
-{% macro do(full=True) %}
-{% if full %}
-psad-pkgs:
-  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
-    - pkgs:
-      - psad
-    - watch_in:
-      - mc_proxy: makina-psad-pre-conf
-{% endif %}
-
-makina-psad-pre-conf:
-  mc_proxy.hook: []
+include:
+  - makina-states.services.firewall.psad.services
+  - makina-states.services.firewall.psad.hooks
 
 {% for i in [
   'auto_dl',
@@ -34,6 +20,7 @@ makina-etc-psad-{{i}}-conf:
   file.managed:
     - name: {{ locs.conf_dir }}/psad/{{i}}
     - source : salt://makina-states/files/etc/psad/{{i}}
+    - makedirs: true
     - template: jinja
     - user: root
     - group: root
@@ -42,14 +29,8 @@ makina-etc-psad-{{i}}-conf:
       data: |
             {{salt['mc_utils.json_dump']( data)}}
     - watch:
-      - mc_proxy: makina-psad-pre-conf
+      - mc_proxy: psad-pre-conf-hook
     - watch_in:
-      - service: psad-service
+      - mc_proxy: psad-post-conf-hook
 {% endfor %}
 
-psad-service:
-  service.running:
-    - name: psad
-    - enable: True
-{% endmacro %}
-{{ do(full=False) }}
