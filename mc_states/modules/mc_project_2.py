@@ -1469,6 +1469,10 @@ def deploy(name, *args, **kwargs):
 
         salt-call mc_project.deploy <name> skip_release_sync=True skip_archive=True skip_notify=True
 
+    Run only one install step::
+
+        salt mc_project.deploy only=install onlystep=00_foo
+
 
     '''
     ret = _get_ret(name, *args, **kwargs)
@@ -1487,6 +1491,7 @@ def deploy(name, *args, **kwargs):
     # okay, if backups are now done and in OK status
     # hand tights for the deployment
 
+    only_steps = kwargs.get('only_steps', None)
     if ret['result']:
         guarded_step(cfg,
                      ['release_sync'],
@@ -1499,6 +1504,7 @@ def deploy(name, *args, **kwargs):
         guarded_step(cfg,
                      ['install',],
                      rollback=True,
+                     only_steps=only_steps,
                      inner_step=True,
                      ret=ret)
     # if the rollback flag has been raised, just do a rollback
@@ -1562,7 +1568,19 @@ def get_executable_slss(path, installer_path, installer):
     return slses
 
 
-def install(name, *args, **kwargs):
+def install(name, only_steps=None,
+            *args, **kwargs):
+    """
+    You can filter steps to run with only_steps
+
+    eg::
+        salt mc_project.deploy only=install onlystep=00_foo,001_bar
+        salt mc_project.deploy only=install onlystep=00_foo
+    """
+    if not only_steps:
+        only_steps = []
+    if isinstance(only_steps, basestring):
+        only_steps = only_steps.split(',')
     cfg = get_configuration(name, *args, **kwargs)
     ret = _get_ret(name, *args, **kwargs)
     if not os.path.exists(cfg['installer_path']):
@@ -1577,7 +1595,22 @@ def install(name, *args, **kwargs):
     if not slses:
         raise _stop_proc('No installation slses avalaible for {0}'.format(name),
                          'install', ret)
+    only_steps_search = []
+    for s in only_steps:
+        only_steps_search.append(s)
+        if s.endswith('.sls'):
+            only_steps_search.append(s[:-4])
+        else:
+            only_steps_search.append(s + ".sls")
     for sls in slses:
+        skip = False
+        if only_steps_search:
+            if sls not in only_steps_search:
+                skip = True
+        if skip:
+            log.info(
+                'Skipped install step: {1} for {0}'.format(cfg['name'], sls))
+            continue
         cret = _step_exec(cfg, sls)
         _merge_statuses(ret, cret)
     return ret
