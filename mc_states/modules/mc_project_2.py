@@ -436,11 +436,11 @@ def _defaultsConfiguration(
     # retro compat 'foo-default-settings'
     defaultsConfiguration = salt['mc_utils.defaults'](
         '{name}-default-settings'.format(**cfg),
-        defaultsConfiguration)
+        defaultsConfiguration, noresolve=True)
     # new location 'makina-projects.foo.data'
     defaultsConfiguration = salt['mc_utils.defaults'](
         'makina-projects.{name}.data'.format(**cfg),
-        defaultsConfiguration)
+        defaultsConfiguration, noresolve=True)
     return defaultsConfiguration
 
 
@@ -673,15 +673,6 @@ def get_configuration(name, *args, **kwargs):
     cfg['group'] = cfg['groups'][0]
     cfg['projects_dir'] = __salt__['mc_locations.settings']()['projects_dir']
 
-    # finally resolve the format-variabilized dict key entries in
-    # arbitrary conf mapping
-    cfg['data'] = __salt__['mc_utils.format_resolve'](cfg['data'])
-    cfg['data'] = __salt__['mc_utils.format_resolve'](cfg['data'], cfg)
-
-    # finally resolve the format-variabilized dict key entries in global conf
-    cfg.update(__salt__['mc_utils.format_resolve'](cfg))
-    cfg.update(__salt__['mc_utils.format_resolve'](cfg, cfg['data']))
-
     # we can try override default values via pillar/grains a last time
     # as format_resolve can have setted new entries
     # we do that only on the global data level and on non read only vars
@@ -691,6 +682,15 @@ def get_configuration(name, *args, **kwargs):
         __salt__['mc_utils.defaults'](
             'makina-projects.{0}'.format(name),
             cfg, ignored_keys=ignored_keys))
+    # finally resolve the format-variabilized dict key entries in
+    # arbitrary conf mapping
+    cfg['data'] = __salt__['mc_utils.format_resolve'](cfg['data'])
+    cfg['data'] = __salt__['mc_utils.format_resolve'](cfg['data'], cfg)
+
+    # finally resolve the format-variabilized dict key entries in global conf
+    cfg.update(__salt__['mc_utils.format_resolve'](cfg))
+    cfg.update(__salt__['mc_utils.format_resolve'](cfg, cfg['data']))
+
     now = datetime.datetime.now()
     cfg['chrono'] = '{0}_{1}'.format(
         datetime.datetime.strftime(now, '%Y-%m-%d_%H_%M-%S'),

@@ -90,7 +90,7 @@ _marker = object()
 def format_resolve(value,
                    original_dict=None,
                    global_tries=50,
-                   this_call=0):
+                   this_call=0, topdb=False):
     """Resolve a dict of formatted strings, mappings & list to a valued dict
     Please also read the associated test::
 
@@ -116,18 +116,21 @@ def format_resolve(value,
         original_dict = value
     left = False
     cycle = True
+
     if isinstance(value, dict):
         new = OrderedDict()
         for key, val in value.items():
-            val = format_resolve(val, original_dict, this_call=this_call + 1)
+            val = format_resolve(val, original_dict, this_call=this_call + 1, topdb=topdb)
             new[key] = val
     elif isinstance(value, (list, tuple)):
         new = type(value)()
         for v in value:
-            val = format_resolve(v, original_dict, this_call=this_call + 1)
+            val = format_resolve(v, original_dict, this_call=this_call + 1, topdb=topdb)
             new = new + type(value)([val])
     elif isinstance(value, basestring):
         new = value
+        if '/downloads' in new:
+            topdb= True
         # do not directly call format to handle keyerror in original mapping
         # where we may have yet keyerrors
         if isinstance(original_dict, dict):
@@ -140,7 +143,7 @@ def format_resolve(value,
                 if subst in new:
                     if isinstance(subst_val, (list, dict)):
                         inner_new = format_resolve(
-                            subst_val, original_dict, this_call=this_call + 1)
+                            subst_val, original_dict, this_call=this_call + 1, topdb=topdb)
                         # composed, we take the repr
                         if new != subst:
                             new = new.replace(subst, str(inner_new))
@@ -148,7 +151,9 @@ def format_resolve(value,
                         else:
                             new = inner_new
                     else:
-                        new = new.replace(subst, str(subst_val))
+                        if new != subst_val:
+                            new = new.replace(subst,
+                                              str(subst_val))
         if ('{' in new) and ('}' in new):
             i = 0
             while True:
@@ -157,7 +162,7 @@ def format_resolve(value,
                     if this_call > 1000:
                         raise _CycleError('cycle')
                     new_val = format_resolve(
-                        new, original_dict, this_call=this_call + 1)
+                        new, original_dict, this_call=this_call + 1, topdb=topdb)
                     new_braces = new.count('{'), new.count('}')
                     newval_braces = new_val.count('{'), new_val.count('}')
                     if new_braces == newval_braces:
@@ -175,7 +180,7 @@ def format_resolve(value,
         if this_call == 0:
             for i in global_tries:
                 new_val = format_resolve(
-                    new, original_dict, this_call=this_call + 1)
+                    new, original_dict, this_call=this_call + 1, topdb=topdb)
                 if (new == new_val) or cycle:
                     break
                 else:
@@ -183,7 +188,7 @@ def format_resolve(value,
         else:
             while not cycle:
                 new_val = format_resolve(
-                    new, original_dict, this_call=this_call + 1)
+                    new, original_dict, this_call=this_call + 1, topdb=topdb)
                 if (new == new_val) or (cycle):
                     break
                 else:
@@ -305,6 +310,7 @@ def defaults(prefix,
              datadict,
              ignored_keys=None,
              overridden=None,
+             noresolve=False,
              firstcall=True):
     '''
     Magic defaults settings configuration getter
@@ -398,8 +404,9 @@ def defaults(prefix,
         datadict[key] = value
         for k, value in overridden[prefix].items():
             datadict[k] = value
-
-    return format_resolve(datadict)
+    if not noresolve:
+        datadict = format_resolve(datadict)
+    return datadict
 
 
 def sanitize_kw(kw):
