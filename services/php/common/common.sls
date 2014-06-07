@@ -1,12 +1,21 @@
-{#- Common php installations (mod_php or php-fpm) files #}
-{% import "makina-states/services/http/apache.sls" as apache with context %}
-{% set nodetypes_registry = salt['mc_nodetypes.registry']() %}
 {% set locs = salt['mc_locations.settings']() %}
 {% set phpSettings = salt['mc_php.settings']()  %}
 {% set s_ALL = phpSettings.s_ALL %}
-{% set apacheSettings = salt['mc_apache.settings']() %}
 
-{% macro do(full=False) %}
+{#- Common php installations (mod_php or php-fpm) files #}
+include:
+  - makina-states.services.php.hooks
+{%  if grains.get('lsb_distrib_id','') == "Debian" -%}
+  {# Include dotdeb repository for Debian #}
+  - makina-states.localsettings.repository_dotdeb
+
+dotdeb-apache-makina-apache-php-pre-inst:
+  mc_proxy.hook:
+    - require:
+      - pkgrepo: dotdeb-repo
+    - watch_in:
+      - mc_proxy: makina-php-pre-inst
+{%endif %}
 
 makina-php-timezone:
   file.managed:
@@ -44,7 +53,7 @@ makina-php-apc:
     - watch_in:
       - mc_proxy: makina-php-pre-conf
 
-{% if full and not (
+{% if not (
     (grains['os'] in 'Ubuntu')
     and (salt['mc_pkgs.settings']().udist not in ['precise'])
 ) %}
@@ -106,5 +115,3 @@ makina-php-xdebug-disable:
 {%   endif %}
 {% endif %}
 {% endif %}
-{%endmacro%}
-{{do(full=False)}}

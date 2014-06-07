@@ -1,5 +1,4 @@
-{# retrocompat #}
-{% import "makina-states/services/php/init.sls" as macros with context %}
+{% import "makina-states/services/php/macros.sls" as macros with context %}
 {% set minimal_index = macros.minimal_index %}
 {% set fpm_pool = macros.fpm_pool %}
 {% set includes = macros.includes %}
