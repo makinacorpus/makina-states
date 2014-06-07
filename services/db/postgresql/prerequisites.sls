@@ -5,14 +5,15 @@ include:
 
 {%- set orchestrate = hooks.orchestrate %}
 {%- set locs = salt['mc_locations.settings']() %}
+{% set pkgs = salt['mc_pkgs.settings']() %}
 {% set settings = salt['mc_pgsql.settings']() %}
 {%- if grains['os_family'] in ['Debian'] %}
 pgsql-repo:
   pkgrepo.managed:
-    - name: deb http://apt.postgresql.org/pub/repos/apt/ {{localsettings.lts_dist}}-pgdg main
+    - name: deb http://apt.postgresql.org/pub/repos/apt/ {{pkgs.lts_dist}}-pgdg main
     - file: {{ locs.conf_dir }}/apt/sources.list.d/pgsql.list
     - keyid: 'ACCC4CF8'
-    - keyserver: {{localsettings.keyserver }}
+    - keyserver: {{pkgs.keyserver }}
     - require:
       - mc_proxy: {{orchestrate['base']['prepkg']}}
     - require_in:
