@@ -35,7 +35,7 @@ def settings():
         user = 'user'
         pw = supervisor_reg.setdefault(
             'password',
-            __salt__['mc_pillar.generate_password']())
+            __salt__['mc_utils.generate_password']())
         sock = '/tmp/supervisor.sock'
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.monitoring.supervisor', {
