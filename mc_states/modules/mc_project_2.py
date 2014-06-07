@@ -66,7 +66,6 @@ DEFAULT_CONFIGURATION = {
     'raw_console_return': False,
     #
     'only': None,
-    'force_reload': False,
     #
     'api_version': API_VERSION,
     #
@@ -341,7 +340,7 @@ def _defaultsConfiguration(
     sample = os.path.join(cfg['wired_salt_root'],
                           'PILLAR.sample')
     if defaultsConfiguration is None:
-        defaultsConfiguration = {}
+        defaultsConfiguration = OrderedDict()
     if os.path.exists(sample):
         try:
             sample_data = OrderedDict()
@@ -380,38 +379,43 @@ def _defaultsConfiguration(
     if not env_defaults:
         env_defaults = _dict_update(
             env_defaults,
-            salt['mc_utils.get'](
-                'makina-projects.{name}.env_defaults'.format(**cfg),
-                {}))
+            copy.deepcopy(
+                salt['mc_utils.get'](
+                    'makina-projects.{name}.env_defaults'.format(**cfg),
+                    {})))
         env_defaults = _dict_update(
             env_defaults,
-            salt['mc_utils.get'](
-                'makina-projects.{name}'.format(**cfg),
-                OrderedDict()
-            ).get('env_defaults', OrderedDict()))
+            copy.deepcopy(
+                salt['mc_utils.get'](
+                    'makina-projects.{name}'.format(**cfg),
+                    OrderedDict()
+                ).get('env_defaults', OrderedDict())))
     if not os_defaults:
         os_defaults = _dict_update(
             os_defaults,
-            salt['mc_utils.get'](
-                'makina-projects.{name}.os_defaults'.format(**cfg),
-                {}))
+            copy.deepcopy(
+                salt['mc_utils.get'](
+                    'makina-projects.{name}.os_defaults'.format(**cfg),
+                    {})))
         os_defaults = _dict_update(
             os_defaults,
-            salt['mc_utils.get'](
-                'makina-projects.{name}'.format(**cfg),
-                OrderedDict()
-            ).get('os_defaults', OrderedDict()))
-    pillar_data = {}
+            copy.deepcopy(
+                salt['mc_utils.get'](
+                    'makina-projects.{name}'.format(**cfg),
+                    OrderedDict()
+                ).get('os_defaults', OrderedDict())))
+    pillar_data = OrderedDict()
     pillar_data = _dict_update(
-         pillar_data,
-         salt['mc_utils.get'](
-             'makina-projects.{name}.data'.format(**cfg),
-             OrderedDict()))
-
-    memd_data = salt['mc_utils.get'](
+        pillar_data,
+        copy.deepcopy(
+            salt['mc_utils.get'](
+                'makina-projects.{name}.data'.format(**cfg),
+                OrderedDict())))
+    memd_data = copy.deepcopy(
+        salt['mc_utils.get'](
         'makina-projects.{name}'.format(**cfg),
         OrderedDict()
-    ).get('data', OrderedDict())
+    ).get('data', OrderedDict()))
     if not isinstance(memd_data, dict):
         raise ValueError(
             'data is not a dict for {0}, '
@@ -434,13 +438,15 @@ def _defaultsConfiguration(
         defaultsConfiguration,
         salt['grains.filter_by'](os_defaults, grain='os_family'))
     # retro compat 'foo-default-settings'
-    defaultsConfiguration = salt['mc_utils.defaults'](
-        '{name}-default-settings'.format(**cfg),
-        defaultsConfiguration, noresolve=True)
+    defaultsConfiguration = copy.deepcopy(
+        salt['mc_utils.defaults'](
+            '{name}-default-settings'.format(**cfg),
+            defaultsConfiguration, noresolve=True))
     # new location 'makina-projects.foo.data'
-    defaultsConfiguration = salt['mc_utils.defaults'](
-        'makina-projects.{name}.data'.format(**cfg),
-        defaultsConfiguration, noresolve=True)
+    defaultsConfiguration = copy.deepcopy(
+        salt['mc_utils.defaults'](
+            'makina-projects.{name}.data'.format(**cfg),
+            defaultsConfiguration, noresolve=True))
     return defaultsConfiguration
 
 
@@ -492,7 +498,8 @@ def get_project(name):
 def _get_contextual_cached_project(name):
     _init_context()
     # throw KeyError if not already loaded
-    cfg = __opts__['ms_projects'][__opts__['ms_project_name']]
+    cfg = __opts__['ms_projects'].setdefault(
+        __opts__['ms_project_name'], get_default_configuration())
     __opts__['ms_project'] = cfg
     __opts__['ms_project_name'] = cfg['name']
     return cfg
@@ -583,14 +590,12 @@ def get_configuration(name, *args, **kwargs):
         makina-projects.foo.data.conf_port = 1234
 
     """
-    try:
-        cfg = _get_contextual_cached_project(name)
-        if cfg['force_reload'] or kwargs.get('force_reload', False):
-            raise KeyError('reload me!')
+    cfg = _get_contextual_cached_project(name)
+    if not (
+        cfg.get('force_reload', True)
+        or kwargs.get('force_reload', False)
+    ):
         return cfg
-    except KeyError:
-        pass
-    cfg = get_default_configuration()
     cfg['name'] = name
     cfg.update(dict([a
                      for a in kwargs.items()
@@ -706,6 +711,7 @@ def get_configuration(name, *args, **kwargs):
     # check for all sls to be in there
     cfg['installer_path'] = installer_path
     # put the result inside the context
+    cfg['force_reload'] = False
     set_project(cfg)
     return cfg
 

@@ -331,7 +331,8 @@ def defaults(prefix,
     if not ignored_keys:
         ignored_keys = []
     if firstcall:
-        global_pillar =  __salt__['mc_utils.get'](prefix)
+        global_pillar = copy.deepcopy(
+            __salt__['mc_utils.get'](prefix))
         if isinstance(global_pillar, dict):
             for k in [a for a in ignored_keys if a in global_pillar]:
                 if k in global_pillar:
