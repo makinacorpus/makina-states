@@ -7,7 +7,8 @@
 {# Adding modules #}
 
 include:
-  - makina-states.services.http.apache-hooks
+  - makina-states.services.http.apache.hooks
+  - makina-states.services.http.apache.services
 
 apache-reverse-proxy:
   mc_apache.include_module:
@@ -15,5 +16,7 @@ apache-reverse-proxy:
       - proxy_http
       - rewrite
       - env
-    - require_in:
+    - watch:
+      - mc_proxy: makina-apache-post-inst
+    - watch_in:
       - mc_proxy: makina-apache-pre-conf

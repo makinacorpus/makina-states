@@ -1,4 +1,3 @@
-{# Hooks for apache orchestration #}
 makina-apache-pre-inst:
   mc_proxy.hook:
     - watch_in:

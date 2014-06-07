@@ -154,11 +154,22 @@ def settings():
         locations = __salt__['mc_locations.settings']()
         apacheStepOne = __salt__['mc_utils.dictupdate'](
             {
+                'apacheConfCheck': (
+                    "salt://makina-states/_scripts/"
+                    "apacheConfCheck.sh"),
                 'httpd_user': 'www-data',
                 'mpm': 'worker',
                 'mpm-packages': {},
                 'version': '2.2',
                 'Timeout': 120,
+                'default_vh_template_source': (
+                    "salt://makina-states/files/etc/"
+                    "apache2/sites-available/"
+                    "virtualhost_template.conf"),
+                'default_vh_in_template_source':  (
+                    "salt://makina-states/files/etc/"
+                    "apache2/includes/"
+                    "in_virtualhost_template.conf"),
                 'KeepAlive': True,
                 'log_level': 'warn',
                 'serveradmin_mail': 'webmaster@localhost',
