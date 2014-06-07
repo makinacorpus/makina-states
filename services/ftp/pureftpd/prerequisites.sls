@@ -2,7 +2,7 @@
 {% set pureftpdSettings = settings.conf %}
 
 include:
-  - makina-states.services.ftp.ftpd-hooks
+  - makina-states.services.ftp.pureftpd.hooks
 
 prereq-pureftpd:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:

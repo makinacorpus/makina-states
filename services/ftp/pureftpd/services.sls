@@ -1,5 +1,5 @@
 include:
-  - makina-states.services.ftp.ftpd-hooks
+  - makina-states.services.ftp.pureftpd.hooks
 
 pure-ftpd-service:
   service.running:

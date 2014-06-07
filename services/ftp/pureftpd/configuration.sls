@@ -2,7 +2,7 @@
 # Pure FTPd service
 #}
 include:
-  - makina-states.services.ftp.ftpd-hooks
+  - makina-states.services.ftp.pureftpd.hooks
   - makina-states.services.ftp.pureftpd.services
 
 {% set settings = salt['mc_pureftpd.settings']() %}
