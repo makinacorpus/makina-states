@@ -1212,7 +1212,7 @@ def get_shorewall_settings(id_=None, ttl=60):
         allowed_ips = __salt__['mc_pillar.whitelisted'](id_)
         shorewall_overrides = qry('shorewall_overrides')
         cfg = get_configuration(id_)
-        allowed_to_ping = allowed_ips[:]
+        allowed_to_ping = ['all']
         allowed_to_ntp = allowed_ips[:]
         allowed_to_snmp = allowed_ips[:]
         allowed_to_ssh = allowed_ips[:]
