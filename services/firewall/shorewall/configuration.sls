@@ -48,9 +48,10 @@ etc-shorewall-{{config}}:
     - watch_in:
       - mc_proxy: shorewall-postconf
 {%- endfor %}
-{% set shareds = [] %}
+{% set shareds = ['macro.mongodb'] %}
 {% if grains['os'] in ['Debian'] %}
-{% do shareds.extend(['macro.PostgreSQL', 'macro.Mail'])%}
+{% do shareds.extend(['macro.PostgreSQL',
+                      'macro.Mail'])%}
 {% endif %}
 {% for shared in shareds %}
 shorewall-shared-{{shared}}:

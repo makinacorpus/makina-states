@@ -9,6 +9,7 @@ mc_shorewall / shorewall functions
 
 __docformat__ = 'restructuredtext en'
 # Import python libs
+import socket
 import logging
 from distutils.version import LooseVersion
 import mc_states.utils
@@ -63,6 +64,16 @@ def append_rules_for_zones(default_rules, rules, zones=None):
                 crule = rule.copy()
                 crule['dest'] = zone
                 default_rules.append(crule)
+
+
+def prefered_ips(bclients):
+    clients = []
+    for client in bclients:
+        try:
+            clients.append(socket.gethostbyname(client))
+        except Exception:
+            clients.append(client)
+    return clients
 
 
 def settings():
@@ -144,12 +155,12 @@ def settings():
                 # dict of section/rule mappings parsed from rules
                 '_rules': OrderedDict(),
                 'no_invalid': True,
-                'no_snmp': True,
-                'no_mysql': True,
-                'no_salt': True,
+                'no_snmp': False,
+                'no_mongodb': False,
+                'no_mysql': False,
+                'no_salt': False,
                 'no_mastersalt': False,
-                'no_postgresql': True,
-                'no_ftp': True,
+                'no_postgresql': False,
                 'have_docker': None,
                 'have_vpn': None,
                 # backward compat
@@ -162,6 +173,7 @@ def settings():
                 'no_ntp': False,
                 'no_web': False,
                 'no_ldap': False,
+                'no_ftp': False,
                 'no_burp': False,
                 'no_mumble': False,
                 'no_syslog': False,
@@ -226,15 +238,16 @@ def settings():
         # this will act at shorewall parameters in later rules
         burpsettings = __salt__['mc_burp.settings']()
         if not data['no_default_params']:
-            for p in ['SYSLOG', 'SSH', 'SNMP', 'PING', 'LDAP',
-                      'NTP', 'MUMBLE', 'DNS',
+            for p in ['SYSLOG', 'SSH', 'SNMP', 'PING', 'LDAP', 'SALT',
+                      'NTP', 'MUMBLE', 'DNS', 'WEB', 'MONGODB',
                       'BURP', 'MYSQL', 'POSTGRESQL', 'FTP']:
-                default = 'all'
-                if p in ['SYSLOG', 'BURP']:
-                    default = 'fw:127.0.0.1'
-                    if p == 'BURP':
-                        default = 'net:'
-                        default += ','.join(burpsettings['clients'])
+                default = 'fw:127.0.0.1'
+                if p in ['SSH', 'DNS', 'PING', 'WEB']:
+                    default = 'all'
+                if p == 'BURP':
+                    default = 'net:'
+                    bclients = prefered_ips(burpsettings['clients'])
+                    default += ','.join(bclients)
                 data['default_params'].setdefault(
                     'RESTRICTED_{0}'.format(p), default)
             for r, rdata in data['default_params'].items():
@@ -258,8 +271,8 @@ def settings():
                 if z not in data['default_interfaces']:
                     data['zones'].setdefault(z, data['default_zones'][z])
 
-        ems = [i 
-               for i, ips in ifaces 
+        ems = [i
+               for i, ips in ifaces
                if i.startswith('em') and len(i) in [3, 4]]
 
         for iface, ips in ifaces:
@@ -271,7 +284,7 @@ def settings():
                 z = 'vpn'
                 data['have_vpn'] = True
             if (
-                iface in ['eth1'] 
+                iface in ['eth1']
                 or iface in ems
             ):
                 if have_rpn:
@@ -490,7 +503,8 @@ def settings():
                         zones=data['internal_zones'])
             # enable salt traffic if any
             if (
-                controllers_registry['is']['salt_master']
+                (controllers_registry['is']['salt_master']
+                 or controllers_registry['is']['mastersalt_master'])
                 and not data['no_salt']
             ):
                     data['default_rules'].append({'comment': 'salt'})
@@ -498,7 +512,15 @@ def settings():
                         append_rules_for_zones(
                             data['default_rules'],
                             {'action': 'ACCEPT',
-                             'source': 'all',
+                             'source': '$SALT_RESTRICTED_SALT',
+                             'dest': 'fw',
+                             'proto': proto,
+                             'dport': '4605,4606'},
+                            zones=data['internal_zones'])
+                        append_rules_for_zones(
+                            data['default_rules'],
+                            {'action': 'ACCEPT',
+                             'source': '$SALT_RESTRICTED_SALT',
                              'dest': 'fw',
                              'proto': proto,
                              'dport': '4505,4506'},
@@ -511,7 +533,8 @@ def settings():
                 action = 'ACCEPT'
             append_rules_for_zones(
                 data['default_rules'],
-                {'action': get_macro('DNS', action), 'source': 'all', 'dest': 'all'},
+                {'action': get_macro('DNS', action),
+                 'source': 'all', 'dest': 'all'},
                 zones=data['internal_zones'])
 
             data['default_rules'].append({'comment': 'web'})
@@ -522,7 +545,7 @@ def settings():
                 append_rules_for_zones(
                     data['default_rules'],
                     {'action': get_macro('Web', action),
-                     'source': '$SALT_RESTRICTED_DNS', 'dest': 'all'},
+                     'source': '$SALT_RESTRICTED_WEB', 'dest': 'all'},
                     zones=data['internal_zones'])
 
             data['default_rules'].append({'comment': 'ntp'})
@@ -633,9 +656,20 @@ def settings():
             else:
                 action = 'ACCEPT'
             append_rules_for_zones(
-                data['default_rules'], 
+                data['default_rules'],
                 {'action': get_macro('PostgreSQL', action),
                  'source': '$SALT_RESTRICTED_POSTGRESQL', 'dest': 'all'},
+                zones=data['internal_zones'])
+
+            data['default_rules'].append({'comment': 'mongodb'})
+            if data['no_mongodb']:
+                action = 'DROP'
+            else:
+                action = 'ACCEPT'
+            append_rules_for_zones(
+                data['default_rules'],
+                {'action': get_macro('mongodb', action),
+                 'source': '$SALT_RESTRICTED_MONGODB', 'dest': 'all'},
                 zones=data['internal_zones'])
 
             data['default_rules'].append({'comment': 'mysql'})
@@ -706,7 +740,7 @@ def settings():
             # also accept configured hosts
             burpsettings = __salt__['mc_burp.settings']()
             clients = 'net:'
-            clients += ','.join(burpsettings['clients'])
+            clients += ','.join(prefered_ips(burpsettings['clients']))
             for proto in protos:
                 append_rules_for_zones(
                     data['default_rules'], {'action': action,
