@@ -1,6 +1,6 @@
 {% if grains['os_family'] in ['Debian'] %}
 include:
-  - makina-states.localsettings.pkgs-hooks
+  - makina-states.localsettings.pkgs.hooks
 {% if salt['mc_controllers.mastersalt_mode']() %}
 {%- set data = salt['mc_autoupgrade.settings']() %}
 {% for f in [

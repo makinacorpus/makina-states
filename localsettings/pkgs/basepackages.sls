@@ -4,26 +4,19 @@
 #   - makina-states/doc/ref/formulaes/localsettings/pkgs.rst
 #}
 
-{% macro do(full=True) %}
-{{ salt['mc_macros.register']('localsettings', 'pkgs') }}
+{{ salt['mc_macros.register']('localsettings', 'pkgs.basepackages') }}
 {% if salt['mc_controllers.mastersalt_mode']() %}
 {%- set locs = salt['mc_locations.settings']() %}
-
-{% if full %}
 include:
-  - makina-states.localsettings.pkgmgr
-  - makina-states.localsettings.pkgs-hooks
-{% endif %}
+  - makina-states.localsettings.pkgs.hooks
 
 {%- if grains['os'] in ['Ubuntu', 'Debian'] %}
 before-ubuntu-pkg-install-proxy:
   mc_proxy.hook:
-    {% if full %}
     - watch:
         - file: apt-sources-list
         - mc_proxy: before-pkg-install-proxy
         - cmd: apt-update-after
-    {% endif %}
     - watch_in:
       {% if grains['os'] == 'Ubuntu' %}
       - pkg: ubuntu-pkgs
@@ -174,5 +167,3 @@ salt-pkgs:
       - libgmp3-dev
 {% endif %}
 {% endif %}
-{% endmacro %}
-{{ do(full=False)}}

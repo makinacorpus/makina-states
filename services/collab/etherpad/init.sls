@@ -3,24 +3,16 @@
 #}
 {%- import "makina-states/services/monitoring/circus/macros.jinja" as circus with context %}
 
-{%- macro do(full=True) %}
 {{- salt['mc_macros.register']('services', 'collab.etherpad') }}
 {%- set locs = salt['mc_locations.settings']() %}
 {%- set etherpadSettings = salt['mc_etherpad.settings']() %}
 
 {%- set etherpadLocation = etherpadSettings['location'] + "/etherpad-lite-" + etherpadSettings['version'] %}
 
-{% if full %}
 include:
   - makina-states.localsettings.nodejs
   - makina-states.services.monitoring.circus
-{% else %}
-include:
-  - makina-states.localsettings.nodejs-standalone
-  - makina-states.services.monitoring.circus
-{% endif %}
 
-{%- if full %}
 etherpad-create-user:
   user.present:
     - name: etherpad
@@ -44,7 +36,6 @@ etherpad-install-pkg:
     - user: etherpad
     - group: etherpad
     - mode: 775
-  {% if full %}
   archive.extracted:
     - name: {{ etherpadSettings['location'] }}
     - archive_format: zip
@@ -57,7 +48,6 @@ etherpad-install-pkg:
     - require:
       - user: etherpad
       - file: etherpad-create-directory
-  {% endif %}
 etherpad-install-perms:
   file.managed:
     - name: {{etherpadLocation}}/reset-perms.sh
@@ -104,7 +94,6 @@ etherpad-settings:
     - require_in:
       - file: circus-add-watcher-etherpad
 
-{% if full %}
 etherpad-npms:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
@@ -119,7 +108,6 @@ etherpad-npms:
       - pkg: etherpad-npms
     - watch_in:
       - cmd: etherpad-install-perms
-{% endif %}
 
 {#- Run #}
 {{ circus.circusAddWatcher("etherpad",
@@ -129,5 +117,3 @@ etherpad-npms:
                            shell=True,
                            working_dir=etherpadLocation) }}
 
-{% endmacro %}
-{{ do(full=False) }}

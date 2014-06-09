@@ -1,3 +1,38 @@
-{#- Install in full mode, see the standalone file !  #}
-{% import  "makina-states/localsettings/repository_dotdeb-standalone.sls" as base with context %}
-{{base.do(full=True)}}
+{#-
+# dotdeb.org packages repository managment
+#  see:
+#   -  makina-states/doc/ref/formulaes/localsettings/repository_dotdeb.rst
+#}
+{% set pkgssettings = salt['mc_pkgs.settings']() %}
+{{ salt['mc_macros.register']('localsettings', 'repository_dotdeb') }}
+{%- if grains['os'] in ['Debian'] %}
+include:
+  - makina-states.localsettings.pkgs.mgr
+{%- set locs = salt['mc_locations.settings']() %}
+dotdeb-repo:
+  pkgrepo.managed:
+    - humanname: DotDeb PPA
+    - name: deb http://packages.dotdeb.org  {{pkgssettings.dist}}  all
+    - consolidate: true
+    - dist: {{pkgssettings.dist}}
+    - file: {{locs.conf_dir}}/apt/sources.list.d/dotdeb.org.list
+    - keyid: E9C74FEEA2098A6E
+    - keyserver: {{pkgssettings.keyserver }}
+    - watch:
+      - mc_proxy: after-base-pkgmgr-config-proxy
+    - watch_in:
+      - mc_proxy: after-pkgmgr-config-proxy
+
+makina-dotdeb-pin-php:
+  file.managed:
+    - name: {{ locs.conf_dir }}/apt/preferences.d/dotdeb.org.pref
+    - mode: 0644
+    - user: root
+    - group: root
+    - template: jinja
+    - source: salt://makina-states/files/etc/apt/preferences.d/dotdeb.org
+    - watch_in:
+        - pkgrepo: dotdeb-repo
+{% else %}
+no-op: {mc_proxy.hook: []}
+{% endif %}

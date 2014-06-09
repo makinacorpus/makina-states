@@ -213,9 +213,8 @@ makina-{{id}}-bashrc-load:
       - mc_proxy: users-ready-hook
 {% endmacro %}
 
-{% macro do(full=False) %}
 include:
-  - makina-states.localsettings.users-hooks
+  - makina-states.localsettings.users.hooks
   - makina-states.localsettings.groups
   - makina-states.localsettings.sudo
 {{ salt['mc_macros.register']('localsettings', 'users') }}
@@ -237,6 +236,4 @@ ms-add-user-{{i}}-to-sudoers:
 {% endfor %}
 #}
 {% endif %}
-{% endmacro %}
-{{ do(full=False) }}
 

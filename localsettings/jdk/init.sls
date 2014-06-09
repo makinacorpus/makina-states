@@ -17,9 +17,7 @@ jdk-{{ ver }}-pkgs{{suf}}:
       - pkgrepo: jdk-repo
       - cmd: jdk-{{ ver }}-pkgs
 {% endmacro %}
-{% macro do(full=False) %}
 {{ salt['mc_macros.register']('localsettings', 'jdk') }}
-{% if salt['mc_controllers.mastersalt_mode']() %}
 {% if grains['os_family'] in ['Debian'] %}
 {% set dist = salt['mc_pkgs.settings']().udist %}
 {% endif %}
@@ -28,8 +26,7 @@ jdk-{{ ver }}-pkgs{{suf}}:
 {% endif %}
 {%- set default_ver = javas.default_jdk_ver %}
 include:
-  - makina-states.localsettings.jdk-hooks
-{% if full %}
+  - makina-states.localsettings.jdk.hooks
 jdk-repo:
   pkgrepo.managed:
     - watch:
@@ -49,7 +46,3 @@ java-{{ default_ver }}-install:
       - pkg: jdk-{{ default_ver }}-pkgs
     - watch_in:
       - mc_proxy: makina-states-jdk_last
-{% endif %}
-{% endif %}
-{% endmacro %}
-{{ do(full=False)}}

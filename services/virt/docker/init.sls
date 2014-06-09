@@ -69,13 +69,12 @@
 #}
 
 {{ salt['mc_macros.register']('services', 'virt.docker') }}
+{% if salt['mc_controllers.mastersalt_mode']() %}
 {%- set locs = salt['mc_locations.settings']() %}
-{% macro do(full=True) %}
 
 include:
-  - makina-states.services.virt.docker-hooks
+  - makina-states.services.virt.docker.hooks
 
-{% if full %}
 docker-repo:
   pkgrepo.managed:
     - name: deb http://get.docker.io/ubuntu docker main
@@ -90,7 +89,6 @@ docker-pkgs:
       - pkgrepo: docker-repo
     - pkgs:
       - lxc-docker
-{% endif %}
 
 docker-conf:
   file.managed:
@@ -110,21 +108,17 @@ docker-restart:
 docker-services:
   service.running:
     - require:
-      {% if full -%}
       - pkg: docker-pkgs
-      {%- endif %}
       - file: docker-conf
     - enable: True
     - names:
       - docker
 
-{% if full -%}
 docker-preload-images:
   cmd.run:
     - name: for i in ubuntu;do docker pull $i;done
     - require:
       - service: docker-services
-{%- endif %}
 
 {#- as it is often a mount -bind, we must ensure we can attach dependencies there
 # set in pillar:
@@ -159,10 +153,8 @@ docker-mount:
 docker-after-maybe-bind-root:
   file.directory:
     - name: {{locs.var_lib_dir}}/docker
-    {% if full %}
     - require_in:
       - pkg: docker-pkgs
-    {% endif %}
     - require:
       - file: docker-root
 {# WIP
@@ -242,7 +234,4 @@ docker-{{ id }}{{ instancenumstr }}:
   {% endif %}
 {% endfor %}
 #}
-{% endmacro %}
-{% if salt['mc_controllers.mastersalt_mode']() %}
-{{ do(full=False) }}
 {% endif %}

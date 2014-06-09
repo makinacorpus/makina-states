@@ -5,7 +5,7 @@
 #}
 
 include:
-  - makina-states.localsettings.users-hooks
+  - makina-states.localsettings.users.hooks
 
 {{ salt['mc_macros.register']('localsettings', 'sudo') }}
 {%- set locs = salt['mc_locations.settings']() %}

@@ -11,7 +11,10 @@
 # the current projectname
 # you can also merge parts of this file
 # with the relevant pillar
-makina-states.projectname:
+#
+# think that dicts are updated/merged with default
+# but lists are overidden
+makina-projects.projectname:
   data:
     opt: value
     password: SecretToBeChangedInsidePillar
