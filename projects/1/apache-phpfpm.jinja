@@ -1,3 +1,4 @@
+{# broken with recent changes, was never really used #}
 {#
 # DEPRECATED PROJECT STYLE -- USE APIV2
 #
@@ -42,16 +43,12 @@
             'memory_limit': '256M',
             'upload_max_filesize': '100M',
             'max_input_vars': 3000,
-            'modules': {
-              'apc': {
-                  'user_entries_hint': 100,
-                  'num_files_hint': 200,
-                  'ttl': 0,
-                  'user_ttl': 300,
-                  'gc_ttl': 0,
-                  'shm_size': '32M'
-               }
-            }
+            'apc_user_entries_hint': 100,
+            'apc_num_files_hint': 200,
+            'apc_ttl': 0,
+            'apc_user_ttl': 300,
+            'apc_gc_ttl': 0,
+            'apc_shm_size': '32M'
       }
   }
 } %}
@@ -62,7 +59,10 @@
 } %}
 
 {% macro vhost(common, minimal_index=None) %}
-{% set sock = {'socket_name':  salt['mc_php.get_fpm_socket_name'](common.name)} %}
+{% set sock = {
+        'domain': common.domain,
+        'doc_root': common.project_root,
+        'socket_name':  salt['mc_php.get_fpm_socket_name'](common.name)} %}
 {% do common.data.fpmpool_opts.update(sock) %}
 {% do common.data.apache_opts.extra_jinja_apache_variables.update(sock) %}
 {{ httpbase.vhost_from_common_data(

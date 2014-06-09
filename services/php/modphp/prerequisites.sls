@@ -16,10 +16,10 @@ makina-modphp-pkgs:
     - pkgs:
       - {{ phpSettings.packages.main }}
       - {{ phpSettings.packages.mod_php }}
-      {% if phpSettings.modules.xdebug.install -%}
+      {% if phpSettings.xdebug_install -%}
       - {{ phpSettings.packages.xdebug }}
       {%- endif %}
-      {% if phpSettings.modules.apc.install -%}
+      {% if phpSettings.apc_install -%}
       - {{ phpSettings.packages.apc }}
       {%- endif %}
     - require:

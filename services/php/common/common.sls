@@ -1,6 +1,6 @@
 {% set locs = salt['mc_locations.settings']() %}
 {% set phpSettings = salt['mc_php.settings']()  %}
-{% set s_ALL = phpSettings.s_ALL %}
+{% set s_ALL = phpSettings.s_all %}
 
 {#- Common php installations (mod_php or php-fpm) files #}
 include:
@@ -33,7 +33,7 @@ makina-php-timezone:
       - mc_proxy: makina-php-pre-conf
 
 #--------------------- APC (mostly deprecated)
-{% if phpSettings.modules.apc.install %}
+{% if phpSettings.apc_install %}
 makina-php-apc:
   file.managed:
     - user: root
@@ -43,11 +43,11 @@ makina-php-apc:
     - source: salt://makina-states/files{{ phpSettings.confdir }}/apcu.ini
     - template: 'jinja'
     - defaults:
-        enabled: {{ phpSettings.modules.apc.enabled }}
-        enable_cli: {{ phpSettings.modules.apc.enable_cli }}
-        shm_segments: "{{ phpSettings.modules.apc.shm_segments }}"
-        shm_size: "{{ phpSettings.modules.apc.shm_size }}"
-        mmap_file_mask: "{{ phpSettings.modules.apc.mmap_file_mask }}"
+        enabled: {{ phpSettings.apc_enabled }}
+        enable_cli: {{ phpSettings.apc_enable_cli }}
+        shm_segments: "{{ phpSettings.apc_shm_segments }}"
+        shm_size: "{{ phpSettings.apc_shm_size }}"
+        mmap_file_mask: "{{ phpSettings.apc_mmap_file_mask }}"
     - require:
       - mc_proxy: makina-php-post-inst
     - watch_in:
@@ -57,7 +57,7 @@ makina-php-apc:
     (grains['os'] in 'Ubuntu')
     and (salt['mc_pkgs.settings']().udist not in ['precise'])
 ) %}
-{%   if phpSettings.modules.apc.enabled %}
+{%   if phpSettings.apc_enabled %}
 makina-php-apc-install:
   cmd.run:
     - name: {{ locs.sbin_dir }}/php5enmod {{s_ALL}} apcu
@@ -87,8 +87,9 @@ makina-php-apc-disable:
 {% endif %}
 
 #--------------------- XDEBUG
-{% if phpSettings.modules.xdebug.install %}
-{%   if phpSettings.modules.xdebug.enabled %}
+{% if (
+    phpSettings.xdebug_install 
+    and phpSettings.xdebug_enabled) %}
 makina-php-xdebug-install:
   cmd.run:
     - name: {{ locs.sbin_dir }}/php5enmod {{s_ALL}} xdebug
@@ -113,5 +114,4 @@ makina-php-xdebug-disable:
     - watch_in:
       - mc_proxy: makina-php-post-conf
 {%   endif %}
-{% endif %}
 {% endif %}

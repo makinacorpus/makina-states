@@ -1,9 +1,10 @@
 # Default Virtualhost managment
+{% import "makina-states/services/http/apache/macros.sls" as apache with context %}
 include:
   - makina-states.services.http.apache.hooks
   - makina-states.services.http.apache.services
 {% set locs = salt['mc_locations.settings']() %}
-{% set apacheSettings = salt['mc_apache.settings']() %}
+{% set apacheSettings  = salt['mc_apache.settings']()%}
 
 {# Replace defaut Virtualhost by a more minimal default Virtualhost [1]
 # this is the directory
@@ -11,7 +12,7 @@ include:
 makina-apache-default-vhost-directory:
   file.directory:
     - user: root
-    - group: {{salt['mc_apache.settings']().httpd_user}}
+    - group: {{apacheSettings.httpd_user}}
     - mode: "2755"
     - makedirs: True
     - name: {{ locs.var_dir }}/www/default/

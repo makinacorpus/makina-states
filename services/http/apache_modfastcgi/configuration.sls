@@ -21,7 +21,6 @@ makina-fastcgi-apache-module_connect_fastcgi_mod_fastcgi_module_conf:
     - template: 'jinja'
     - defaults:
         enabled: {{ apacheSettings.fastcgi_enabled }}
-        project_root: '{{apacheSettings.fastcgi_project_root}}'
         socket_directory:  '{{apacheSettings.fastcgi_socket_directory}}'
         extra: |
                {{salt['mc_utils.json_dump'](apacheSettings.fastcgi_params)}}

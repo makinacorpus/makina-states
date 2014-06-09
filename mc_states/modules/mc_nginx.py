@@ -18,6 +18,7 @@ Documentation of this module is available with::
 '''
 # Import python libs
 import logging
+import copy
 import mc_states.utils
 
 __name = 'nginx'
@@ -167,6 +168,7 @@ def settings():
             'custom_combined': logformat
         }
 
+        www_reg = __salt__['mc_www.settings']()
         nginxData = __salt__['mc_utils.defaults'](
             'makina-states.services.http.nginx', {
                 'rotate': '365',
@@ -176,9 +178,11 @@ def settings():
                 'real_ip_header': 'X-Forwarded-For',
                 'logformat': 'custom_combined',
                 'logformats': logformats,
+                'v6': False,
                 'allowed_hosts': [],
                 'ulimit': ulimit,
-                'client_max_body_size': '1M',
+                'client_max_body_size': www_reg[
+                    'upload_max_filesize'],
                 'open_file_cache': 'max=200000 inactive=5m',
                 'open_file_cache_valid': '6m',
                 'open_file_cache_min_uses': '2',
@@ -214,7 +218,7 @@ def settings():
                 'default_activation': True,
                 'package': 'nginx',
                 'docdir': '/usr/share/doc/nginx',
-                'doc_root': '/usr/share/nginx/www',
+                'doc_root': www_reg['doc_root'],
                 'service': 'nginx',
                 'basedir': locations['conf_dir'] + '/nginx',
                 'confdir': locations['conf_dir'] + '/nginx/conf.d',
@@ -239,6 +243,43 @@ def settings():
         )
         return nginxData
     return _settings()
+
+
+def vhost_settings(domain, doc_root, **kwargs):
+    '''Settings for the nginx macro'''
+    nginxSettings = copy.deepcopy(__salt__['mc_nginx.settings']())
+    # retro compat
+    extra = kwargs.pop('extra', {})
+    kwargs.update(extra)
+    kwargs.setdefault('small_name',
+                      domain.replace('.', '_').replace('-', '_'))
+    kwargs.setdefault(
+        'vhost_available_file',
+        nginxSettings['basedir'] + "/sites-available/" + domain + ".conf")
+    kwargs.setdefault(
+        'vhost_content_file',
+        (nginxSettings['basedir'] + "/sites-available/" +
+         domain + ".content.conf"))
+    kwargs.setdefault(
+        'vhost_top_file',
+        nginxSettings['basedir'] + "/sites-available/" + domain + ".top.conf")
+    kwargs.setdefault('domain', domain)
+    kwargs.setdefault('active', nginxSettings['default_activation'])
+    kwargs.setdefault('server_name', kwargs['domain'])
+    kwargs.setdefault('default_server', False)
+    kwargs.setdefault('server_aliases', None)
+    kwargs.setdefault('doc_root', doc_root)
+    kwargs.setdefault('vh_top_source', nginxSettings['vhost_top_template'])
+    kwargs.setdefault('vh_template_source',
+                      nginxSettings['vhost_wrapper_template'])
+    kwargs.setdefault('vh_content_source',
+                      nginxSettings['vhost_content_template'])
+    nginxSettings = __salt__['mc_utils.dictupdate'](nginxSettings, kwargs)
+    # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
+    nginxSettings['data'] = copy.deepcopy(nginxSettings)
+    nginxSettings['data']['extra'] = copy.deepcopy(nginxSettings)
+    nginxSettings['extra'] = copy.deepcopy(nginxSettings)
+    return nginxSettings
 
 
 def dump():

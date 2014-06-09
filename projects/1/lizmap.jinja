@@ -290,7 +290,7 @@
     },
   },
   "fpmpool_opts": {
-      "open_basedir_additions": (
+      "open_basedir": (
           ":../cmd.php"
           ":../application.init.php"
           ":{project_root}/cache"
@@ -300,7 +300,7 @@
           ":{project_root}/webapp/lib"
           ":{project_root}/webapp/"
           ),
-      "include_path_additions": (
+      "include_path": (
           ":../cmd.php"
           ":../application.init.php"
           ":{project_root}/cache"
@@ -310,24 +310,18 @@
           ":{project_root}/webapp/lib"
           ":{project_root}/webapp/"
       ),
-      "settings": {
-            "session_auto_start": False,
-            "allow_url_fopen": True,
-            "display_errors": True,
-            "memory_limit": "256M",
-            "upload_max_filesize": "100M",
-            "max_input_vars": 3000,
-            "modules": {
-              "apc": {
-                  "user_entries_hint": 100,
-                  "num_files_hint": 200,
-                  "ttl": 0,
-                  "user_ttl": 300,
-                  "gc_ttl": 0,
-                  "shm_size": "32M"
-               }
-            }
-      }
+      "session_auto_start": False,
+      "allow_url_fopen": True,
+      "display_errors": True,
+      "memory_limit": "256M",
+      "upload_max_filesize": "100M",
+      "max_input_vars": 3000,
+      "apc_user_entries_hint": 100,
+      "apc_num_files_hint": 200,
+      "apc_ttl": 0,
+      "apc_user_ttl": 300,
+      "apc_gc_ttl": 0,
+      "apc_shm_size": "32M"
   },
   "cron_hour": 2,
   "cron_minute": 5,

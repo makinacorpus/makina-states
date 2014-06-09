@@ -326,6 +326,7 @@ def exclude_module(name,
     ret['result'] = True
     return ret
 
+
 def deployed(name,
              mpm='worker',
              version="2.2",
@@ -359,13 +360,12 @@ def deployed(name,
            'result': None,
            'comment': ''}
     comments = []
-    ret = _check_apache_loaded(ret)
-    if ret['result'] is False:
-        return ret
-
-
+    cret = _check_apache_loaded(ret)
+    if cret['result'] is False:
+        return cret
     modules_excluded = []
     modules_included = []
+    settings = __salt__['mc_apache.settings']()
     # ensure only ONE apache main configuration is applied on this server
     if _APACHE_DEPLOYED:
         ret['result'] = False
@@ -394,6 +394,15 @@ def deployed(name,
     cur_mpm = infos.get('server_mpm', 'unknown').lower()
     mpm_check_done = False
     blind_mode = False
+    workers = [settings['mpm']] + [a for a in ['event', 'worker', 'prefork']
+                                   if not a == settings['mpm']]
+    if 'unknown' == cur_mpm:
+        for mpm in workers:
+            cret = __salt__['apache.a2enmod']('mpm_{0}'.format(mpm))
+            if 'not found' not in cret.get('Status', '').lower():
+                infos = __salt__['apache.fullversion']()
+                cur_mpm = infos.get('server_mpm', 'unknown').lower()
+                break
     if 'unknown' == cur_mpm:
         # quite certainly a syntax error in current conf
         mpm_check_done = True
@@ -430,7 +439,6 @@ def deployed(name,
                                  "we'll try to alter shared modules to "
                                  "fix that").format(mpm, cur_mpm))
         else:
-            #if module+'_module' in _static_modules:
             ret['result'] = False
             comments.append(
                 ("ERROR: MPM CHECK: Wrong apache core mpm module "

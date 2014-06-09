@@ -1,40 +1,39 @@
-  <!-- MANAGED VIA SALT -->
-	<!-- Service Metadata -->
-	<Service>               s
-   {% set data = salt['mc_utils.json_load'](data) %}
-    <Name>{{data.Name}}</Name>
-		<!-- Human-readable title for pick lists -->
-    <Title>{{data.Title}}</Title>
-		<!-- Narrative description providing additional information -->
-    <Abstract>{{data.Abstract}}</Abstract>
-		<KeywordList>
-      {% for k in data.Keywords %}
-      <Keyword>{{k}}</Keyword>
-      {% endfor %}
-		</KeywordList>
-		<!-- Top-level web address of service or service provider.  See also OnlineResource
-		     elements under <DCPType>. -->
-			     <OnlineResource xmlns:xlink="http://www.w3.org/1999/xlink" xlink:type="simple"
-					     xlink:href="http://www.sourcepole.ch/" />
-			     <!-- Contact information -->
-			     <ContactInformation>
-				     <ContactPersonPrimary>
-               <ContactPerson>{{data.ContactPerson}}</ContactPerson>
-               <ContactOrganization>{{data.ContactOrganization}}</ContactOrganization>
-				     </ContactPersonPrimary>
-				     <ContactAddress>
-               <AddressType>{{data.AddressType}}</AddressType>
-               <Address>{{data.Address}}</Address>
-               <City>{{data.City}}</City>
-               <StateOrProvince>{{data.StateOrProvince}}</StateOrProvince>
-               <PostCode>{{data.PostCode}}</PostCode>
-               <Country>{{data.Country}}</Country>
-				     </ContactAddress>
-             <ContactVoiceTelephone>{{data.ContactVoiceTelephone}}</ContactVoiceTelephone>
-             <ContactElectronicMailAddress>{{data.ContactElectronicMailAddress}}</ContactElectronicMailAddress>
-			     </ContactInformation>
-		<!-- Fees or access constraints imposed. -->
-    <Fees>{{data.fees}}</Fees>
-    <AccessConstraints>{{data.AccessConstraints}}</AccessConstraints>
-    <LayerLimit>{{data.LayerLimit}}</LayerLimit>
-	</Service>
+<!-- MANAGED VIA SALT -->
+<!-- Service Metadata -->
+<Service>{% set data = salt['mc_utils.json_load'](data) %}
+  <Name>{{data.Name}}</Name>
+	<!-- Human-readable title for pick lists -->
+  <Title>{{data.Title}}</Title>
+	<!-- Narrative description providing additional information -->
+  <Abstract>{{data.Abstract}}</Abstract>
+	<KeywordList>
+    {% for k in data.Keywords %}
+    <Keyword>{{k}}</Keyword>
+    {% endfor %}
+	</KeywordList>
+	<!-- Top-level web address of service or service provider.  See also OnlineResource
+	     elements under <DCPType>. -->
+		     <OnlineResource xmlns:xlink="http://www.w3.org/1999/xlink" xlink:type="simple"
+				     xlink:href="http://www.sourcepole.ch/" />
+		     <!-- Contact information -->
+		     <ContactInformation>
+			     <ContactPersonPrimary>
+             <ContactPerson>{{data.ContactPerson}}</ContactPerson>
+             <ContactOrganization>{{data.ContactOrganization}}</ContactOrganization>
+			     </ContactPersonPrimary>
+			     <ContactAddress>
+             <AddressType>{{data.AddressType}}</AddressType>
+             <Address>{{data.Address}}</Address>
+             <City>{{data.City}}</City>
+             <StateOrProvince>{{data.StateOrProvince}}</StateOrProvince>
+             <PostCode>{{data.PostCode}}</PostCode>
+             <Country>{{data.Country}}</Country>
+			     </ContactAddress>
+           <ContactVoiceTelephone>{{data.ContactVoiceTelephone}}</ContactVoiceTelephone>
+           <ContactElectronicMailAddress>{{data.ContactElectronicMailAddress}}</ContactElectronicMailAddress>
+		     </ContactInformation>
+	<!-- Fees or access constraints imposed. -->
+  <Fees>{{data.fees}}</Fees>
+  <AccessConstraints>{{data.AccessConstraints}}</AccessConstraints>
+  <LayerLimit>{{data.LayerLimit}}</LayerLimit>
+</Service>

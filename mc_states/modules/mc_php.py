@@ -6,7 +6,7 @@
 mc_php / php registry
 ============================================
 
-If you alter this module and want to test it, do not forget to deploy it on 
+If you alter this module and want to test it, do not forget to deploy it on
 minion using::
 
   salt '*' saltutil.sync_modules
@@ -20,6 +20,7 @@ Documentation of this module is available with::
 # Import python libs
 import logging
 import mc_states.utils
+import copy
 import os
 
 # Import salt libs
@@ -168,120 +169,110 @@ def settings():
         grains = __grains__
         pillar = __pillar__
         locations = __salt__['mc_locations.settings']()
+        www_reg = __salt__['mc_www.settings']()
+        if grains['os'] in ['Ubuntu']:
+            s_all = '-s ALL'
+        else:
+            s_all = ''
 
         phpdefaults = {
+            's_all': s_all,
             'rotate': __salt__['mc_logrotate.settings']()['days'],
-            'register-pools': {},
+            'fpm_pools': {},
             'timezone': 'Europe/Paris',
-            'open_basedir': True,
+            'open_basedir': 1,
             'open_basedir_additions': '',
-            'file_uploads': True,
-            'upload_max_filesize': '5M',
+            'file_uploads': 1,
+            'upload_max_filesize': www_reg['upload_max_filesize'],
             'max_input_vars': 500,
             'max_input_time': 300,
-            'display_errors': False,
+            'html_errors': 0,
+            'define_syslog_variables': 1,
+            'display_errors': 0,
+            'display_startup_errors': 0,
+            'log_errors': 1,
             'error_reporting': 6143,
-            'memory_limit': '32M',
+            'memory_limit': '256M',
             'max_execution_time': 120,
+            'session_auto_start': 1,
             'allow_url_fopen': 0,
-            'session': {
-                'gc_maxlifetime': 3600,
-                'gc_probability': 1,
-                'gc_divisor': 100,
-                'auto_start': 0,
-            },
-            'custom_sessions': {
-                'enabled': False,
-                'save_handler': 'redis',
-                'save_path': (
-                    'tcp://127.0.0.1:6379?weight=2&timeout=2.5, '
-                    'tcp://10.0.0.1:6379?weight=2'
-                ),
-            },
-            'fpm': {
-                'chroot': False,
-                'use_socket': True,
-                'socket_relative_path': 'var/fcgi',
-                'log_relative_path': 'var/log',
-                'tmp_relative_path': 'var/tmp',
-                'relative_document_root': 'www',
-                'private_relative_path': 'var/private',
-                'socket_name': 'fpm.sock',
-                'listen_backlog': 128,
-                'listen_allowed_clients': '127.0.0.1',
-                'phpuser': 'www-data',
-                'phpgroup': 'www-data',
-                'listen_mod': '0660',
-                'statuspath': '/fpmstatus',
-                'ping': '/ping',
-                'pong': 'pong',
-                'request_terminate_timeout': '300s',
-                'request_slowlog_timeout': '5s',
-                'pm': {
-                    'max_requests': 500,
-                    'max_children': 10,
-                    'start_servers': 3,
-                    'min_spare_servers': 3,
-                    'max_spare_servers': 8
-                }
-            },
-            'modules': {
-                'opcache': {
-                    'install': True,
-                    'enabled': True,
-                    'enable_cli': True,
-                    'memory_consumption': 64,
-                    'interned_strings_buffer': '8',
-                    'max_accelerated_files': 2000,
-                    'max_wasted_percentage': 5,
-                    'use_cwd': 1,
-                    'validate_timestamps': 1,
-                    'revalidate_freq': 2,
-                    'revalidate_path': 0,
-                    'save_comments': 0,
-                    'load_comments': 0,
-                    'fast_shutdown': 0,
-                    'enable_file_override': 1,
-                    'optimization_level': '0xffffffff',
-                    'blacklist_filename': '',
-                    'max_file_size': '0',
-                    'force_restart_timeout': '180',
-                    'error_log': '',
-                    'log_verbosity_level': '1',
-                },
-                'apc': {
-                    'install': True,
-                    'enabled': False,
-                    'enable_cli': False,
-                    'shm_segments': 1,
-                    'shm_size': '16M',
-                    'mmap_file_mask': '/apc.shm.XXXXXX',
-                    'rfc1867': True,
-                    'include_once_override': True,
-                    'canonicalize': True,
-                    'stat': True,
-                    'stat_ctime': True,
-                    'num_files_hint': 1000,
-                    'user_entries_hint': 1000,
-                    'ttl': 300,
-                    'user_ttl': 300,
-                    'gc_ttl': 0,
-                    'filters': '-config.php-.ini',
-                    'max_file_size': '5M',
-                    'write_lock': True,
-                    'file_update_protection': '2',
-                    'lazy_functions': '',
-                    'lazy_classes': ''
-                },
-                'xdebug': {
-                    'install': True,
-                    'enabled': True,
-                    'collect_params': False,
-                    'profiler_enable': False,
-                    'profiler_enable_trigger': False,
-                    'profiler_output_name': '/cachegrind.out.%p'
-                }
-            }
+            'session_gc_maxlifetime': 3600,
+            'session_gc_probability': 1,
+            'session_gc_divisor': 100,
+            'custom_sessions_enabled': False,
+            'session_save_handler': 'redis',
+            'session_save_path': (
+                'tcp://127.0.0.1:6379?weight=2&timeout=2.5, '
+                'tcp://10.0.0.1:6379?weight=2'
+            ),
+            'fpm_chroot': False,
+            'fpm_use_socket': True,
+            'fpm_socket_name': 'fpm.sock',
+            'fpm_listen_backlog': 128,
+            'fpm_listen_allowed_clients': '127.0.0.1',
+            'fpm_user': 'www-data',
+            'fpm_group': 'www-data',
+            'fpm_listen_mod': '0660',
+            'fpm_statuspath': '/fpmstatus',
+            'fpm_ping': '/ping',
+            'fpm_pong': 'pong',
+            'fpm_pool_nice_priority': -19,
+            'fpm_request_terminate_timeout': '300s',
+            'fpm_request_slowlog_timeout': '5s',
+            'fpm_pm_max_requests': 500,
+            'fpm_pm_max_children': 10,
+            'fpm_pm_start_servers': 3,
+            'fpm_pm_min_spare_servers': 3,
+            'fpm_pm_max_spare_servers': 8,
+            'opcache_install': 1,
+            'opcache_enabled': 1,
+            'opcache_enable_cli': 1,
+            'opcache_memory_consumption': 64,
+            'opcache_interned_strings_buffer': 8,
+            'opcache_max_accelerated_files': 2000,
+            'opcache_max_wasted_percentage': 5,
+            'opcache_validate_timestamps': 1,
+            'opcache_revalidate_freq': 2,
+            'opcache_revalidate_path': 0,
+            'opcache_use_cwd': 1,
+            'opcache_save_comments': 0,
+            'opcache_load_comments': 0,
+            'opcache_fast_shutdown': 0,
+            'opcache_enable_file_override': 1,
+            'opcache_optimization_level': '0xffffffff',
+            'opcache_blacklist_filename': '',
+            'opcache_max_file_size': 0,
+            'opcache_force_restart_timeout': 180,
+            'opcache_error_log': '',
+            'opcache_log_verbosity_level': 1,
+            'apc_install': 1,
+            'apc_enabled': 0,
+            'apc_enable_cli': 0,
+            'apc_shm_segments': 1,
+            'apc_shm_size': '32M',
+            'apc_mmap_file_mask': '/apc.shm.XXXXXX',
+            'apc_rfc1867': 1,
+            'apc_include_once_override': 1,
+            'apc_canonicalize': 1,
+            'apc_stat': 1,
+            'apc_stat_ctime': 1,
+            'apc_num_files_hint': 1000,
+            'apc_user_entries_hint': 1000,
+            'apc_ttl': 300,
+            'apc_user_ttl': 300,
+            'apc_gc_ttl': 0,
+            'apc_filters': '-config.php-.ini',
+            'apc_max_file_size': '5M',
+            'apc_write_lock': 1,
+            'apc_file_update_protection': '2',
+            'apc_lazy_functions': '',
+            'apc_lazy_classes': '',
+            'xdebug_install': True,
+            'xdebug_enabled': True,
+            'xdebug_collect_params': 0,
+            'xdebug_profiler_enable': 0,
+            'xdebug_profiler_enable_trigger': False,
+            'xdebug_profiler_output_name': '/cachegrind.out.%p'
         }
 
         # now filter defaults with dev/prod alterations
@@ -289,37 +280,24 @@ def settings():
             'dev': {
             },
             'prod': {
-                'memory_limit': '64M',
-                'fpm': {
-                    'pm': {
-                        'max_requests': 1000,
-                        'max_children': 50,
-                        'start_servers': 10,
-                        'min_spare_servers': 10,
-                        'max_spare_servers': 10
-                    }
-                },
-                'modules': {
-                    'opcache': {
-                        'memory_consumption': 64,
-                        'enable_file_override': 0,
-                        'validate_timestamps': 1,
-                        # 15 min before checking for changes
-                        'revalidate_freq': 900,
-                    },
-                    'apc': {
-                        'shm_size': '64M',
-                        'stat': False,
-                        'stat_ctime': False,
-                        'filters': '',
-                    },
-                    'xdebug': {
-                        'install': False,
-                        'enabled': False,
-                    }
-                }
-            }
-        },
+                'memory_limit': '256M',
+                'fpm_pm_max_requests': 1000,
+                'fpm_pm_max_children': 50,
+                'fpm_pm_start_servers': 10,
+                'fpm_pm_min_spare_servers': 10,
+                'fpm_pm_max_spare_servers': 10,
+                'modules_opcache_memory_consumption': 64,
+                'modules_opcache_enable_file_override': 0,
+                'modules_opcache_validate_timestamps': 1,
+                # modules_opcache_ 15 min before checking for changes
+                'modules_opcache_revalidate_freq': 900,
+                'modules_apc_shm_size': '64M',
+                'modules_apc_stat': False,
+                'modules_apc_stat_ctime': False,
+                'modules_apc_filters': '',
+                'modules_xdebug_install': False,
+                'modules_xdebug_enabled': False,
+            }},
             grain='default_env',
             merge=phpdefaults,
             default='dev'
@@ -374,12 +352,16 @@ def settings():
         # FINAL STEP: merge with data from pillar and grains
         phpData = __salt__['mc_utils.defaults'](
             'makina-states.services.php', phpStepThree)
-
-        if grains['os'] in ['Ubuntu']:
-            phpData['s_ALL'] = '-s ALL'
-        else:
-            phpData['s_ALL'] = ''
-
+        # retro compat
+        if 'register-pools' in phpData:
+            phpData['fpm_pools'] = __salt__[
+                'mc_utils.dict_update'](
+                    phpData['fpm_pools'], phpData['register-pools'])
+        if not phpData['fpm_pools'].get('localhost',
+                                        {}):
+            phpData['fpm_pools']['localhost'] = {
+                'doc_root': '/var/www/default'
+            }
         return phpData
     return _settings()
 
@@ -387,11 +369,13 @@ def settings():
 def get_fpm_socket_name(project):
     settings = __salt__['mc_php.settings']()
     project = __salt__['mc_project.gen_id'](project)
-    return '{0}.{1}'.format(project, settings['fpm']['socket_name'])
+    return '{0}.{1}'.format(project,
+                            settings['fpm_socket_name'])
 
 
 def dump():
     return mc_states.utils.dump(__salt__, __name)
+
 
 def _composer_infos(composer='/usr/local/bin/composer'):
     '''
@@ -403,8 +387,7 @@ def _composer_infos(composer='/usr/local/bin/composer'):
         return ret
 
     cmd = '"{0}" --version'.format(composer)
-    result = __salt__['cmd.run_all'](cmd,
-                                 runas='root')
+    result = __salt__['cmd.run_all'](cmd, runas='root')
     retcode = result['retcode']
     if retcode == 0:
         ret['version'] = result['stdout']
@@ -412,8 +395,7 @@ def _composer_infos(composer='/usr/local/bin/composer'):
         raise exceptions.CommandExecutionError(result['stderr'])
 
     cmd = '"{0}" list --raw'.format(composer)
-    result = __salt__['cmd.run_all'](cmd,
-                                 runas='root')
+    result = __salt__['cmd.run_all'](cmd, runas='root')
     retcode = result['retcode']
     commandlines = []
     commands = {}
@@ -423,7 +405,7 @@ def _composer_infos(composer='/usr/local/bin/composer'):
         raise exceptions.CommandExecutionError(result['stderr'])
     for line in commandlines:
         parts = line.split()
-        if len(parts)>0:
+        if len(parts) > 0:
             commands[parts[0]] = ' '.join(parts[1:])
     ret['commands'] = commands
     ret['status'] = True
@@ -431,10 +413,7 @@ def _composer_infos(composer='/usr/local/bin/composer'):
     return ret
 
 
-def composer_command(command=None,
-               cwd=None,
-               args=None,
-               composer=None):
+def composer_command(command=None, cwd=None, args=None, composer=None):
     '''
     Run a composer command.
     Result of the command is in the 'msg' key of the returnded dictionnary
@@ -454,6 +433,7 @@ def composer_command(command=None,
         composer = '/usr/local/bin/composer'
     if not args:
         args = ''
+
     if not cwd:
         ret['status'] = False
         ret['msg'] = 'Composer command needs a working directory (cwd).'
@@ -467,35 +447,31 @@ def composer_command(command=None,
 
     infos = _composer_infos(composer)
     if not infos['status']:
-        ret['msg'] =  '"{0}": Composer infos are not available. {1}'.format(
+        ret['msg'] = '"{0}": Composer infos are not available. {1}'.format(
             infos['status'],
             infos['msg'])
         return ret
 
     commands = infos['commands']
-    if not command or not command in commands.keys():
-        ret['msg'] =  '"{0}": unknown command for composer'.format(command)
+    if not command or command not in commands.keys():
+        ret['msg'] = '"{0}": unknown command for composer'.format(command)
         return ret
 
     cmd = '"{0}" {1} {2}'.format(composer, command, args)
-    result = __salt__['cmd.run_all'](cmd,
-                             cwd=cwd,
-                             runas='root')
+    result = __salt__['cmd.run_all'](cmd, cwd=cwd, runas='root')
 
     retcode = result['retcode']
-    ret['msg'] =  result['stdout']
+    ret['msg'] = result['stdout']
     if retcode == 0:
         ret['status'] = True
 
     return ret
 
-def install_composer(path=None,
-        installer=None,
-        update=False,
-        dry_run=False):
+
+def install_composer(path=None, installer=None, update=False, dry_run=False):
     '''
     Download composer.phar from the given url and install it on the given name.
-    A check is done on the given name, if it's already available nothing is 
+    A check is done on the given name, if it's already available nothing is
     done, except if update is set to True
 
     path
@@ -511,6 +487,10 @@ def install_composer(path=None,
 
     dry_run
         Boolean, if True we do not do anything really.
+
+    Please also read the mc_php.settings documentation, as the common
+    php from this function can be overidden here
+
     '''
     ret = {'status': False, 'msg': ''}
 
@@ -537,14 +517,15 @@ def install_composer(path=None,
             return ret
         else:
             if dry_run:
-                ret['msg'] = 'We would run {0} with command self-update'.format(
-                    path)
+                ret['msg'] = (
+                    'We would run {0} with command self-update'
+                ).format(path)
                 ret['status'] = None
                 return ret
             else:
                 ret = composer_command(command='self-update',
-                                   composer=path,
-                                   cwd="/tmp")
+                                       composer=path,
+                                       cwd="/tmp")
                 return ret
 
     if dry_run:
@@ -568,4 +549,92 @@ def install_composer(path=None,
         return ret
     else:
         raise exceptions.CommandExecutionError(result['stderr'])
+
+
+def fpmpool_settings(domain, doc_root, **kw):
+    '''Generate options to be given for the pool configuration generation
+    Some on the main options:
+
+    session_cookie_domain
+        Special cookie domain string for cookies (totally optionnal)
+    listen
+        Custom listen string for php fpm listen directive
+        For example, if you do not want to use the default sockets scheme
+    pool_name
+        force the fpm pool name (useful for multiple projects
+        to use the same pool)
+    chroot
+        Do we run in a fpm chrooted env.
+        (certainly defaults to true in current layout)
+    active
+        True by default, set to False to disable the
+        Virtualhost even if it will be generated.
+    '''
+    www_reg = copy.deepcopy(__salt__['mc_www.settings']())
+    default_mode = 'production'
+    if __salt__['mc_nodetypes.registry']()['is']['devhost']:
+        default_mode = 'dev'
+    kw['domain'] = domain
+    kw['docroot'] = kw['doc_root'] = doc_root
+    project_root = kw.setdefault('project_root', os.path.dirname(doc_root))
+    kw['pool_root'] = project_root
+    pool_name = kw.setdefault('pool_name',
+                              domain.replace('.', '_'))
+    kw.setdefault(
+        'socket_name',
+        __salt__['mc_php.get_fpm_socket_name'](pool_name))
+    kw.setdefault(
+        'pool_template_source',
+        'salt://makina-states/files/etc/php5'
+        '/fpm/pool.d/pool.conf')
+    kw.setdefault('mode', default_mode)
+    chroot = kw.setdefault('chroot', False)
+    if chroot and not doc_root.startswith(project_root):
+        chroot = False
+    kw['chroot'] = chroot
+    private_dir = kw.setdefault(
+        'private_dir', '{0}/{1}'.format(project_root, "private"))
+    log_dir = kw.setdefault(
+        'log_dir', '{0}/{1}'.format(project_root, "log"))
+    tmp_dir = kw.setdefault(
+        'tmp_dir', '{0}/{1}'.format(project_root, "tmp"))
+    kw.setdefault('session_cookie_domain', domain)
+    kw.setdefault(
+        'listen',
+        os.path.join(www_reg['socket_directory'],
+                     kw['socket_name']))
+    open_basedir = [".", "..", doc_root, "/tmp",
+                    tmp_dir, private_dir, log_dir]
+    include_path = [".", "..", doc_root,
+                    os.path.join(doc_root, 'include'),
+                    "/usr/lib/php5/20121212"]
+    for glob_inc in ['/usr/lib/php5']:
+        if os.path.exists(glob_inc):
+            for i in os.listdir(glob_inc):
+                if os.path.isdir(i):
+                    include_path.append(
+                        os.path.join(glob_inc, i))
+
+    custom_open_basedir = kw.pop('open_basedir', '')
+    if custom_open_basedir and not isinstance(custom_open_basedir, list):
+        custom_open_basedir = custom_open_basedir.split(':')
+    if isinstance(custom_open_basedir, list):
+        open_basedir.extend(custom_open_basedir)
+    open_basedir = [a for a in open_basedir if a.strip()]
+
+    custom_include_path = kw.pop('include_path', '')
+    if custom_include_path and not isinstance(custom_include_path, list):
+        custom_include_path = custom_include_path.split(':')
+    if isinstance(custom_include_path, list):
+        include_path.extend(custom_include_path)
+    include_path = [a for a in include_path if a.strip()]
+    if open_basedir:
+        kw['open_basedir'] = ":".join(
+            __salt__['mc_utils.uniquify'](open_basedir))
+    if include_path:
+        kw['include_path'] = ":".join(
+            __salt__['mc_utils.uniquify'](include_path))
+    phpData = __salt__['mc_utils.dictupdate'](
+        copy.deepcopy(__salt__['mc_php.settings']()), kw)
+    return phpData
 #

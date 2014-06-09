@@ -16,6 +16,7 @@ fpm-makina-php-restart:
       - mc_proxy: makina-php-post-restart
 
 # In most cases graceful reloads should be enough
+{# has problem with reload for now
 fpm-makina-php-reload:
   service.running:
     - name: {{ phpSettings.service }}
@@ -27,3 +28,4 @@ fpm-makina-php-reload:
       - mc_proxy: makina-php-post-restart
     - enable: True
     - reload: True
+#}

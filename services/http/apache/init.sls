@@ -4,6 +4,7 @@
 {% set apacheSettings = base.apacheSettings%}
 {% set apacheData = apacheSettings %}
 include:
+  - makina-states.services.http.common
   - makina-states.services.http.apache.prerequisites
   - makina-states.services.http.apache.configuration
   - makina-states.services.http.apache.services

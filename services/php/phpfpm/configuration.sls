@@ -10,10 +10,9 @@ makina-phpfpm-remove-default-pool:
     - name : {{ phpSettings.etcdir }}/fpm/pool.d/www.conf
 
 # --------- Pillar based php-fpm pools
-{% if 'register-pools' in phpSettings %}
-{%   for site,siteDef in phpSettings['register-pools'].items() %}
-{%     do siteDef.update({'site': site}) %}
-{%     do siteDef.update({'phpSettings': phpSettings}) %}
+{% if 'fpm_pools' in phpSettings %}
+{%   for site, siteDef in phpSettings['fpm_pools'].items() %}
+{%     do siteDef.setdefault('domain', site) %}
 {{     php.fpm_pool(**siteDef) }}
 {%   endfor %}
 {% endif %}

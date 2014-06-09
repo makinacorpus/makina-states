@@ -12,9 +12,9 @@ makina-php-pkgs:
     - pkgs:
       - {{ phpSettings.packages.main }}
       - {{ phpSettings.packages.php_fpm }}
-{% if phpSettings.modules.xdebug.install %}
+{% if phpSettings.xdebug_install %}
       - {{ phpSettings.packages.xdebug }}
 {% endif %}
-{% if phpSettings.modules.apc.install %}
+{% if phpSettings.apc_install %}
       - {{ phpSettings.packages.apc }}
 {% endif %}

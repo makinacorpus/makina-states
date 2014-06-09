@@ -23,6 +23,7 @@ Do not forget to sync salt cache::
 '''
 
 __docformat__ = 'restructuredtext en'
+import copy
 # Import python libs
 import logging
 import mc_states.utils
@@ -30,7 +31,10 @@ import mc_states.utils
 __name = 'apache'
 
 log = logging.getLogger(__name__)
-def_vh = 'salt://makina-states/files/etc/apache2/sites-available/default_vh.conf'
+def_vh = (
+    'salt://makina-states/files/etc/'
+    'apache2/sites-available/default_vh.conf')
+
 
 def settings():
     '''
@@ -57,12 +61,6 @@ def settings():
         mappings of specific params for mod_fastcgi
         Please look the module code and the apache documentation
         if you are not happy with defaults
-
-    fastcgi_project_root
-        internal setting
-
-    fastcgi_shared_mode
-        internal setting
 
     fastcgi_enabled
         internal setting
@@ -151,7 +149,19 @@ def settings():
     def _settings():
         grains = __grains__
         pillar = __pillar__
+        www_reg = __salt__['mc_www.settings']()
         locations = __salt__['mc_locations.settings']()
+        virtualhosts = {
+            'default': {
+                'number': '000',
+                'active': True,
+                'domain': 'default',
+                'vh_template_source': def_vh,
+                'doc_root': www_reg['doc_root'],
+                'log_level': "{log_level}",
+                'serveradmin_mail': www_reg['serveradmin_mail'],
+                'mode': 'production',
+            }}
         apacheStepOne = __salt__['mc_utils.dictupdate'](
             {
                 'apacheConfCheck': (
@@ -160,6 +170,9 @@ def settings():
                 'httpd_user': 'www-data',
                 'mpm': 'worker',
                 'mpm-packages': {},
+                'fastcgi_socket_directory': www_reg[
+                    'socket_directory'],
+                'virtualhosts': virtualhosts,
                 'version': '2.2',
                 'Timeout': 120,
                 'default_vh_template_source': (
@@ -172,7 +185,6 @@ def settings():
                     "in_virtualhost_template.conf"),
                 'KeepAlive': True,
                 'log_level': 'warn',
-                'serveradmin_mail': 'webmaster@localhost',
                 "fastcgi_params": {
                     "InitStartDelay": 1,
                     "minProcesses": 2,
@@ -187,11 +199,8 @@ def settings():
                     "multiThreshold": 50,
                     "processSlack": 5,
                 },
-                'fastcgi_project_root': '',
                 'fastcgi_shared_mode': True,
                 'fastcgi_enabled': True,
-                'fastcgi_socket_directory': (
-                    locations['var_dir'] + '/lib/apache2/fastcgi'),
                 'allow_bad_modules': {
                     'negotiation': False,
                     'autoindex': False,
@@ -225,8 +234,7 @@ def settings():
                         'monitoring': {
                             'allowed_servers': '127.0.0.1 ::1',
                             'extended_status': False
-                        },
-                        'virtualhosts': {}},
+                        }},
                     'prod': {
                         'MaxKeepAliveRequests': 100,
                         'KeepAliveTimeout': 3,
@@ -252,8 +260,6 @@ def settings():
                         'monitoring': {
                             'allowed_servers': '127.0.0.1 ::1',
                             'extended_status': False
-                        },
-                        'virtualhosts': {
                         }
                     }
                 },
@@ -274,18 +280,7 @@ def settings():
             'makina-states.services.http.apache',
             __salt__['grains.filter_by']({
                 'Debian': {
-                    'virtualhosts': {
-                        'default': {
-                            'number': '000',
-                            'active': True,
-                            'domain': 'default',
-                            'vh_template_source': def_vh,
-                            'doc_root': '/var/www/default',
-                            'log_level': "{log_level}",
-                            'serveradmin_mail': '{serveradmin_mail}',
-                            'mode': 'production',
-                        },
-                    },
+                    'virtualhosts': virtualhosts,
                     'packages': ['apache2'],
                     'mpm-packages': {
                         'worker': ['apache2-mpm-worker'],
@@ -303,6 +298,8 @@ def settings():
                     'basedir': locations['conf_dir'] + '/apache2',
                     'vhostdir': (
                         locations['conf_dir'] + '/apache2/sites-available'),
+                    'ivhostdir': (
+                        locations['conf_dir'] + '/apache2/includes'),
                     'evhostdir': (
                         locations['conf_dir'] + '/apache2/sites-enabled'),
                     'confdir': locations['conf_dir'] + '/apache2/conf.d',
@@ -474,6 +471,108 @@ def a2dismod(module):
         ret['Status'] = status
 
     return ret
+
+
+def vhost_settings(domain, doc_root, **kwargs):
+    '''Used by apache macro
+
+    vh_template_source
+        source (jinja) of the file.managed for
+        the vhirtualhost template
+        default: http://goo.gl/RFgkHE (github)
+    serveradmin_mail
+        data that may be used on error page
+        default is webmaster@<site-name>
+    number
+        Virtualhost priority number (for apache),
+        without a default VH the first one became the
+        default virtualhost
+    redirect_aliases
+        True by default, make a special Virtualhost with
+        all server_aliases, all redirecting with a 301
+        to the site name, better for SEO.
+        But you may need real server_aliases for static
+        parallel file servers, for example,
+        then set that to True.
+    allow_htaccess
+        False by default, if your project use .htaccess
+        files, then prey for your soul,
+        eat some shit, kill yourself and set that to True
+    log_level
+        log level
+    [ssl_]interface
+        interface of the namevirtualhost (like in "*:80"),
+        default is "*"
+    [ssl_]port
+        port of the namevirtualhost (like in "*:80"),
+        default is "80" and "443" for ssl version
+    '''
+    _s = __salt__
+    kwargs['domain'] = domain
+    kwargs['doc_root'] = doc_root
+    grains = __grains__
+    apacheSettings = copy.deepcopy(
+        _s['mc_apache.settings']()
+    )
+    nodetypes_reg = _s['mc_nodetypes.registry']()
+    # retro compat
+    extra_jinja_apache_variables = kwargs.pop(
+        'extra_jinja_apache_variables', {})
+    kwargs.update(extra_jinja_apache_variables)
+    ##
+    kwargs['domain'] = domain
+    number = kwargs.setdefault('number', '100')
+    kwargs.setdefault('project', domain.replace('.', '_'))
+
+    kwargs.setdefault(
+        'serveradmin_mail', "webmaster@{0}".format(domain))
+    server_aliases = kwargs.setdefault('server_aliases', [])
+    if not isinstance(server_aliases, list):
+        server_aliases = kwargs['server_aliases'] = server_aliases.split()
+    old_mode = (
+        (grains["lsb_distrib_id"] == "Ubuntu"
+         and grains["lsb_distrib_release"] < 13.10)
+        or (grains["lsb_distrib_id"] == "Debian"
+            and grains["lsb_distrib_release"] <= 7.0))
+
+    mode = "production"
+    if nodetypes_reg['is']['devhost']:
+        mode = "dev"
+    kwargs.setdefault('old_mode', old_mode)
+    kwargs.setdefault('log_level', "warn")
+    kwargs.setdefault('interface', "*")
+    kwargs.setdefault('server_name', domain)
+    kwargs.setdefault('ssl_interface', "*")
+    kwargs.setdefault('port', 80)
+    kwargs.setdefault('ssl_port', 443)
+    kwargs.setdefault('redirect_aliases', True)
+    kwargs.setdefault('allow_htaccess', False)
+    kwargs.setdefault('active', True)
+    kwargs.setdefault('mode', mode)
+    kwargs.setdefault(
+        'vh_template_source',
+        apacheSettings['default_vh_template_source'])
+    kwargs.setdefault(
+        'vh_in_template_source',
+        apacheSettings['default_vh_in_template_source'])
+    kwargs['ivhost'] = (
+        "{basedir}/{number}-{domain}"
+    ).format(number=number,
+             basedir=apacheSettings['ivhostdir'],
+             domain=domain)
+    kwargs['evhost'] = (
+        "{basedir}/{number}-{domain}"
+    ).format(number=number,
+             basedir=apacheSettings['evhostdir'],
+             domain=domain)
+    kwargs['avhost'] = (
+        "{basedir}/{number}-{domain}"
+    ).format(number=number,
+             basedir=apacheSettings['vhostdir'],
+             domain=domain)
+    data = _s['mc_utils.dictupdate'](apacheSettings,
+                                     kwargs)
+    return data
 
 
 def dump():
