@@ -1,5 +1,5 @@
 include:
-  - makina-states.localsettings.users-hooks
+  - makina-states.localsettings.users.hooks
 
 cloud-generic-pre:
   mc_proxy.hook:

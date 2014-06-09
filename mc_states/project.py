@@ -27,13 +27,18 @@ class ProjectException(SaltException):
 class ProjectInitException(SaltException):
     '''Project init exc'''
 
+
 class ProjectProcedureException(SaltException):
     '''Project init exc'''
-
 
     def __init__(self, *args, **kw):
         super(ProjectProcedureException, self).__init__(*args)
         self.salt_ret = kw.get('salt_ret', None)
         self.salt_step = kw.get('salt_step', None)
+
+
+class TooEarlyError(ProjectInitException):
+    '''.'''
+
 
 # vim:set et sts=4 ts=4 tw=80:

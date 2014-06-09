@@ -12,7 +12,7 @@
 
 include:
   - makina-states.localsettings.nscd
-  - makina-states.localsettings.users-hooks
+  - makina-states.localsettings.users.hooks
 
 {% set olddeb= False %}
 {% set skip = False %}

@@ -8,8 +8,8 @@ include:
   - makina-states.localsettings.network
   - makina-states.localsettings.nodejs
   - makina-states.localsettings.nscd
-  - makina-states.localsettings.pkgmgr
-  - makina-states.localsettings.pkgs
+  - makina-states.localsettings.pkgs.mgr
+  - makina-states.localsettings.pkgs.basepackages
   - makina-states.localsettings.python
   - makina-states.localsettings.repository_dotdeb
   - makina-states.localsettings.rvm

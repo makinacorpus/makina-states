@@ -1,3 +1,27 @@
-{#- Install in full mode, see the standalone file !  #}
-{% import  "makina-states/localsettings/timezone-standalone.sls" as base with context %}
-{{base.do(full=True)}}
+{#-
+# RVM integration
+# see:
+#   - makina-states/doc/ref/formulaes/localsettings/timezone.rst
+#}
+
+{% set tzs = salt['mc_timezone.settings']() %}
+{{ salt['mc_macros.register']('localsettings', 'timezone') }}
+{% if salt['mc_controllers.mastersalt_mode']() %}
+{%- set locs = salt['mc_locations.settings']() %}
+{%- set defaults = tzs %}
+tz-pkgs:
+  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
+    - pkgs:
+      - tzdata
+tz-conf:
+  file.managed:
+    - name: {{locs.conf_dir}}/timezone
+    - source: salt://makina-states/files/etc/timezone
+    - mode: 644
+    - user: root
+    - group: root
+    - template: jinja
+    - defaults:
+      data: |
+            {{ salt['mc_utils.json_dump'](defaults)}}
+{% endif %}

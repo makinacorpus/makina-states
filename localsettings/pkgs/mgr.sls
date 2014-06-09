@@ -4,7 +4,9 @@
 #   - makina-states/doc/ref/formulaes/localsettings/pkgmgr.rst
 #}
 
-{{ salt['mc_macros.register']('localsettings', 'pkgmgr') }}
+include:
+  - makina-states.localsettings.pkgs.hooks
+{{ salt['mc_macros.register']('localsettings', 'pkgs.mgr') }}
 {% if salt['mc_controllers.mastersalt_mode']() %}
 {% set pkgssettings = salt['mc_pkgs.settings']() %}
 {%- set locs = salt['mc_locations.settings']() %}
@@ -80,6 +82,8 @@
 {% endif%}
 apt-sources-list:
   file.managed:
+    - watch_in:
+      - mc_proxy: before-pkgmgr-config-proxy
     - name: {{ locs.conf_dir }}/apt/sources.list
     - source: salt://makina-states/files/etc/apt/sources.list
     - mode: 755
@@ -125,8 +129,8 @@ apt-sources-list-sid:
 apt-update-after:
   cmd.watch:
     - name: apt-get update
-    - watch:
-      - file: apt-sources-list
+    - watch_in:
+      - mc_proxy: after-base-pkgmgr-config-proxy
 {% endif %}
 {% endif %}
 # vim:set nofoldenable:

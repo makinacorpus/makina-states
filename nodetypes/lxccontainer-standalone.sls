@@ -8,9 +8,9 @@
 
 include:
   {% if full %}
-  - makina-states.localsettings.pkgs
+  - makina-states.localsettings.pkgs.basepackages
   {% endif %}
-  - makina-states.localsettings.pkgs-hooks
+  - makina-states.localsettings.pkgs.hooks
   - makina-states.nodetypes.vm
 
 makina-lxc-proxy-dep:

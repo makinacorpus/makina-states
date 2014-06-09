@@ -1,10 +1,9 @@
 {#- Integration of rdiff-backup, a file backup software #}
-{% macro do(full=True) %}
 {%- set locs = salt['mc_locations.settings']() %}
 {{ salt['mc_macros.register']('services', 'backup.rdiff-backup') }}
+{% if salt['mc_controllers.mastersalt_mode']() %}
 {%- set data=salt['mc_rdiffbackup.settings']() %}
 {%- set settings = salt['mc_utils.json_dump'](salt['mc_rdiffbackup.settings']()) %}
-{% if full %}
 remove-rdiff-backup-pkgs:
   pkg.removed:
     - pkgs:
@@ -23,7 +22,6 @@ rdiff-backup-pkgs:
       - libattr1-dev
       - libacl1
       - libacl1-dev
-{% endif %}
 {# own rdiff wasnt working that well 
 rdiff-backup:
   file.directory:
@@ -33,10 +31,8 @@ rdiff-backup:
     - makedirs: true
   mc_git.latest:
     - require:
-      {% if full %}
       - pkg: rdiff-backup-pkgs
       - file: rdiff-backup
-      {% endif %}
     - name: https://github.com/makinacorpus/rdiff-backup.git
     - target: {{locs.apps_dir}}/rdiff-backup
     - user: root
@@ -75,7 +71,4 @@ rdiff-backup-{{bin}}-man:
       - cmd: rdiff-backup-install
 {%endfor%}
 #}
-{% endmacro %}
-{% if salt['mc_controllers.mastersalt_mode']() %}
-{{ do(full=False) }}
 {%endif %}

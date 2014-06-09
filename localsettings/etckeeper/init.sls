@@ -5,14 +5,12 @@
 #}
 
 {% set locs=salt['mc_locations.settings']() %}
-{% macro do(full=False ) %}
 {{ salt['mc_macros.register']('localsettings', 'etckeeper') }}
 {% if salt['mc_controllers.mastersalt_mode']() %}
 include:
-  - makina-states.localsettings.etckeeper-hooks
+  - makina-states.localsettings.etckeeper.hooks
 {% set defaults = salt['mc_etckeeper.settings']() %}
 
-{% if full %}
 etckeeper-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
@@ -22,7 +20,6 @@ etckeeper-pkgs:
       - name: etckeeper-initial
       - mc_proxy: etckeeper-run-hook
       - file: etckeeper-conf
-{% endif %}
 
 etckeeper-cron:
   file.managed:
@@ -97,5 +94,4 @@ etckeeper-run:
       - mc_proxy: etckeeper-post-run-hook
 #}
 {% endif %}
-{% endmacro %}
-{{ do(full=False) }}
+

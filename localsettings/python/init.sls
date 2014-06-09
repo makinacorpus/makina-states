@@ -3,11 +3,9 @@
 #  see:
 #   -  makina-states/doc/ref/formulaes/localsettings/python.rst
 #}
-{% macro do(full=True) %}
 {{ salt['mc_macros.register']('localsettings', 'python') }}
-{% if full %}
 include:
-  - makina-states.localsettings.pkgmgr
+  - makina-states.localsettings.pkgs.mgr
 {% endif %}
 {%- set locs = salt['mc_locations.settings']() %}
 {%- set pyvers = salt['mc_python.settings']().alt_versions %}
@@ -25,10 +23,8 @@ deadsnakes:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - require:
       - pkgrepo: deadsnakes
-      {% if full %}
       - file: apt-sources-list
       - cmd: apt-update-after
-      {% endif %}
     - pkgs:
       {%- for pyver in pyvers %}
       - python{{pyver}}-dev
@@ -36,11 +32,4 @@ deadsnakes:
       - python-pip
       {%- endfor %}
     {%- endif %}
-{% endif %}
-{# be sure to have at least one state #}
-python-last-hook:
-  mc_proxy.hook:
-    - order: last
-{% endmacro %}
-{{ do(full=False) }}
 # vim:set nofoldenable:
