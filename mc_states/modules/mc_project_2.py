@@ -45,8 +45,8 @@ from mc_states.project import (
     KEEP_ARCHIVES,
     ProjectInitException,
     ProjectProcedureException,
+    TooEarlyError,
 )
-
 
 log = logger = logging.getLogger(__name__)
 
@@ -948,7 +948,15 @@ def init_repo(cfg, git, user, group, deploy_hooks=False,
             'Can\'t manage {0} dir'.format(git))
     #else:
     #    _append_comment(ret, body=indent(cret['comment']))
+    create = False
     if len(os.listdir(lgit + '/refs/heads')) < 1:
+        cret = git_log(lgit, user=user)
+        commits = [a for a in cret.splitlines() if a.startswith('commit ')]
+        if len(commits) > 1:
+            create = False
+        else:
+            create = True
+    if create:
         igit = lgit
         if bare:
             igit += '.tmp'
@@ -1074,11 +1082,16 @@ def fetch_last_commits(wc, user, origin='origin', ret=None):
     return ret
 
 
-def has_no_commits(wc, user='root'):
+def git_log(wc, user='root'):
     _s = __salt__.get
-    nocommits = "fatal: bad default revision 'HEAD'" in _s('cmd.run')(
+    return _s('cmd.run')(
         'git log', env={'LANG': 'C', 'LC_ALL': 'C'},
         cwd=wc, user=user)
+
+
+def has_no_commits(wc, user='root'):
+    _s = __salt__.get
+    nocommits = "fatal: bad default revision 'HEAD'" in git_log(wc, user)
     return nocommits
 
 
@@ -1233,7 +1246,7 @@ def init_pillar_dir(cfg, parent, ret=None):
         #    _append_comment(ret, body=indent(cret['comment']))
 
 
-def refresh_files_in_working_copy(name, *args, **kwargs):
+def refresh_files_in_working_copy(name, force=False, *args, **kwargs):
     _s = __salt__.get
     cfg = get_configuration(name, *args, **kwargs)
     ret = _get_ret(name, *args, **kwargs)
@@ -1245,7 +1258,10 @@ def refresh_files_in_working_copy(name, *args, **kwargs):
     if not os.path.exists(
         os.path.join(project_root, '.salt')
     ):
-        raise ProjectInitException('Too early to call me')
+        if not force:
+            raise TooEarlyError('Too early to call me')
+        else:
+            ret = init_salt_dir(cfg, project_root, ret=ret)
     for fil in ['PILLAR.sample']:
         dest = os.path.join(project_root, '.salt', fil)
         if os.path.exists(dest):
@@ -1372,7 +1388,7 @@ def init_project(name, *args, **kwargs):
             set_upstream(wc, rev, user, ret=ret)
             sync_working_copy(user, wc, rev=rev, ret=ret)
         link(name, *args, **kwargs)
-        refresh_files_in_working_copy(name, *args, **kwargs)
+        refresh_files_in_working_copy(name, force=True, *args, **kwargs)
     except ProjectInitException, ex:
         trace = traceback.format_exc()
         ret['result'] = False
