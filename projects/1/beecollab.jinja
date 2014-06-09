@@ -2,6 +2,7 @@
 # DEPRECATED PROJECT STYLE -- USE APIV2
 #
 #}
+{%- import "makina-states/_macros/apache.jinja" as apache with context %}
 {%- import "makina-states/projects/1/zope.jinja" as zope with context %}
 {%- set services = zope.services %}
 {%- import "makina-states/services/monitoring/circus/macros.jinja" as circus with context %}
@@ -16,6 +17,10 @@ beecollab_install_dependancies:
 {% endmacro %}
 
 {% macro install_zope(common) %}
+{% if common.data.demo %}
+  {% do kwargs.update({'domain': 'demo.{}'.format(kwargs['domain'])}) %}
+{%- import "makina-states/projects/1/zope.jinja" as zope with context %}
+{% endif %}
 {{ zope.install_generic_zope_project(*varargs, **kwargs) }}
 {#
 {{ circus.circusAddWatcher(common.name + "-trancode",
@@ -50,6 +55,35 @@ beecollab_project_setup:
 
 {% endmacro %}
 
+{% macro install_demo(common) %}
+beecollab-clone-vitrine:
+  file.directory:
+    - name: {{common.project_root}}/beecollab-vitrine
+    - makedirs: true
+    - user: {{common.user}}
+    - group: {{common.group}}
+    - watch:
+      - cmd: beecollab_project_setup
+  mc_git.latest:
+    - name: git@gitorious.makina-corpus.net:beecollab/beecollab-vitrine.git
+    - target: {{common.project_root}}/beecollab-vitrine
+
+{{apache.virtualhost(
+    domain=common['domain'],
+    doc_root='{0}/beecollab-vitrine/'.format(common['project_root'])
+    )
+}}
+
+{# see reset.sh to see which files are needed to allow the reset. #}
+beecollab-reset-cron:
+  cron.present:
+    - name: sh {{common.project_root}}/reset.sh
+    - identifier: BEECOLLAB_RESET
+    - user: {{common.user}}
+    - minute: 0
+    - hour: 4
+{% endmacro %}
+
 {% macro install_beecollab_project() %}
 {% do kwargs.setdefault('url', 'ssh://git@gitorious.makina-corpus.net/beecollab/beecollab.git') -%}
 {% if varargs|length < 1 %}
@@ -57,6 +91,15 @@ beecollab_project_setup:
 {% endif %}
 {% do kwargs.setdefault('user', 'beecollab') -%}
 {% do kwargs.setdefault('domain', 'beecollab.makina-corpus.net') -%}
+{#-
+  Setting demo to "true" will:
+  * install the static website beecollab-vitrine on the domain
+  * install beecollab on demo."domain"
+  * activate the reset cron
+#}
+{% set default_defaults = zope.default_defaults %}
+{% do default_defaults.update({'demo': kwargs.get('demo', False)}) %}
+{% do kwargs.setdefault('defaults', default_defaults) -%}
 
 {% do kwargs.setdefault('sls_includes', [
   'makina-states.services.collab.etherpad'
@@ -68,4 +111,7 @@ beecollab_project_setup:
 {{ install_dependancies(common) }}
 {{ install_zope(common, *varargs, **kwargs) }}
 {{ install_setup(common) }}
+{% if common.data.demo %}
+{{ install_demo(common) }}
+{% endif %}
 {% endmacro %}
