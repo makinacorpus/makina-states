@@ -19,8 +19,11 @@ import traceback
 import uuid
 import yaml
 
+
+
 import copy
 from salt.utils.odict import OrderedDict
+import salt.template
 from salt.states import group as sgroup
 from salt.states import user as suser
 from salt.states import file as sfile
@@ -30,6 +33,7 @@ from salt.states import cmd as scmd
 import salt.output
 import salt.loader
 import salt.utils
+import salt.exceptions
 
 from mc_states.utils import is_valid_ip
 from mc_states.api import (
@@ -77,6 +81,7 @@ DEFAULT_CONFIGURATION = {
     'no_default_includes': False,
     # INTERNAL
     'data': {},
+    'sls_default_pillar': OrderedDict(),
     'deploy_summary': None,
     'deploy_ret': {},
     'push_pillar_url': 'ssh://root@{this_host}:{this_port}{pillar_git_root}',
@@ -190,7 +195,9 @@ def _sls_exec(name, cfg, sls):
     ret = _get_ret(name)
     ret.update({'return': None, 'sls': sls, 'name': name})
     old_retcode = __context__.get('retcode', 0)
-    cret = __salt__['state.sls'](sls.format(**cfg))
+    pillar = __salt__['mc_utils.dictupdate'](copy.deepcopy(cfg['sls_default_pillar']),
+                                             copy.deepcopy(__pillar__))
+    cret = __salt__['state.sls'](sls.format(**cfg), concurrent=True, pillar=pillar)
     ret['return'] = cret
     comment = ''
     __context__.setdefault('retcode', 0)
@@ -335,7 +342,7 @@ def _defaultsConfiguration(
     env_defaults=None,
     os_defaults=None
 ):
-    salt = __salt__
+    _s = __salt__
     # load sample if present
     sample = os.path.join(cfg['wired_salt_root'],
                           'PILLAR.sample')
@@ -345,19 +352,31 @@ def _defaultsConfiguration(
         try:
             sample_data = OrderedDict()
             with open(sample) as fic:
-                sample_data_l = __salt__['mc_utils.cyaml_load'](fic.read())
+                jinjarend = salt.loader.render(__opts__, __salt__)
+                sample_data_l = salt.template.compile_template(sample,
+                                                               jinjarend,
+                                                               __opts__['renderer'],
+                                                               'base')
+                #sample_data_l = __salt__['mc_utils.cyaml_load'](fic.read())
+                defaultsConfiguration['sls_default_pillar'] = sample_data_l
                 if not isinstance(sample_data_l, dict):
                     sample_data_l = OrderedDict()
                 for k, val in sample_data_l.items():
+                    # retro compat
+                    retro = k.startswith('makina-states.') and (k.count('.') < 2)
+                    # only load first level makina-projects. sections
+                    if not retro and not k.startswith('makina-projects.'):
+                        continue
                     if isinstance(val, dict):
                         for k2, val2 in val.items():
                             if isinstance(val2, dict):
-                                sample_data.update(val2)
+                                sample_data = _s['mc_utils.dictupdate'](
+                                    sample_data, val2)
                             else:
                                 sample_data[k2] = val2
                     else:
                         sample_data[k] = val
-        except yaml.error.YAMLError:
+        except (yaml.error.YAMLError, salt.exceptions.SaltException):
             trace = traceback.format_exc()
             error = (
                 '{0}\n{1} is not a valid YAML File for {2}'.format(
@@ -370,8 +389,8 @@ def _defaultsConfiguration(
             sample_data = OrderedDict()
             cfg['force_reload'] = True
         defaultsConfiguration.update(sample_data)
-    _dict_update = salt['mc_utils.dictupdate']
-    _defaults = salt['mc_utils.defaults']
+    _dict_update = _s['mc_utils.dictupdate']
+    _defaults = _s['mc_utils.defaults']
     if os_defaults is None:
         os_defaults = OrderedDict()
     if env_defaults is None:
@@ -380,13 +399,13 @@ def _defaultsConfiguration(
         env_defaults = _dict_update(
             env_defaults,
             copy.deepcopy(
-                salt['mc_utils.get'](
+                _s['mc_utils.get'](
                     'makina-projects.{name}.env_defaults'.format(**cfg),
                     {})))
         env_defaults = _dict_update(
             env_defaults,
             copy.deepcopy(
-                salt['mc_utils.get'](
+                _s['mc_utils.get'](
                     'makina-projects.{name}'.format(**cfg),
                     OrderedDict()
                 ).get('env_defaults', OrderedDict())))
@@ -394,57 +413,63 @@ def _defaultsConfiguration(
         os_defaults = _dict_update(
             os_defaults,
             copy.deepcopy(
-                salt['mc_utils.get'](
+                _s['mc_utils.get'](
                     'makina-projects.{name}.os_defaults'.format(**cfg),
                     OrderedDict())))
         os_defaults = _dict_update(
             os_defaults,
             copy.deepcopy(
-                salt['mc_utils.get'](
+                _s['mc_utils.get'](
                     'makina-projects.{name}'.format(**cfg),
                     OrderedDict()
                 ).get('os_defaults', OrderedDict())))
+
     pillar_data = OrderedDict()
-    pillar_data = _dict_update(
-        pillar_data,
-        copy.deepcopy(
-            salt['mc_utils.get'](
-                'makina-projects.{name}.data'.format(**cfg),
-                OrderedDict())))
-    memd_data = copy.deepcopy(
-        salt['mc_utils.get'](
-        'makina-projects.{name}'.format(**cfg),
-        OrderedDict()
-    ).get('data', OrderedDict()))
-    if not isinstance(memd_data, dict):
-        raise ValueError(
-            'data is not a dict for {0}, '
-            'review your pillar and yaml files'.format(
-                cfg.get('name', 'project')))
-    pillar_data = _dict_update(pillar_data, memd_data)
+    # load pillar prefix makina-states.projectname and makina-projects.projectname
+    # makina-states is the old prefix, retro compat
+    for subp in ['states', 'projects']:
+        pillar_data = _dict_update(
+            pillar_data,
+            copy.deepcopy(
+                _s['mc_utils.get'](
+                    'makina-{subp}.{name}.data'.format(name=cfg['name'],
+                                                       subp=subp),
+                    OrderedDict())))
+        memd_data = copy.deepcopy(
+            _s['mc_utils.get'](
+            'makina-{subp}.{name}'.format(name=cfg['name'],
+                                          subp=subp),
+            OrderedDict()
+        ).get('data', OrderedDict()))
+        if not isinstance(memd_data, dict):
+            raise ValueError(
+                'data is not a dict for {0}, '
+                'review your pillar and yaml files'.format(
+                    cfg.get('name', 'project')))
+        pillar_data = _dict_update(pillar_data, memd_data)
     os_defaults.setdefault(__grains__['os'], OrderedDict())
     os_defaults.setdefault(__grains__['os_family'],
                            OrderedDict())
     env_defaults.setdefault(default_env, OrderedDict())
     for k in ENVS:
         env_defaults.setdefault(k, OrderedDict())
-    defaultsConfiguration = salt['mc_utils.dictupdate'](
+    defaultsConfiguration = _s['mc_utils.dictupdate'](
         defaultsConfiguration, pillar_data)
-    defaultsConfiguration = salt['mc_utils.dictupdate'](
+    defaultsConfiguration = _s['mc_utils.dictupdate'](
         defaultsConfiguration,
-        salt['grains.filter_by'](
+        _s['grains.filter_by'](
             env_defaults, grain=default_env, default="dev"))
-    defaultsConfiguration = salt['mc_utils.dictupdate'](
+    defaultsConfiguration = _s['mc_utils.dictupdate'](
         defaultsConfiguration,
-        salt['grains.filter_by'](os_defaults, grain='os_family'))
+        _s['grains.filter_by'](os_defaults, grain='os_family'))
     # retro compat 'foo-default-settings'
     defaultsConfiguration = copy.deepcopy(
-        salt['mc_utils.defaults'](
+        _s['mc_utils.defaults'](
             '{name}-default-settings'.format(**cfg),
             defaultsConfiguration, noresolve=True))
     # new location 'makina-projects.foo.data'
     defaultsConfiguration = copy.deepcopy(
-        salt['mc_utils.defaults'](
+        _s['mc_utils.defaults'](
             'makina-projects.{name}.data'.format(**cfg),
             defaultsConfiguration, noresolve=True))
     return defaultsConfiguration
@@ -674,6 +699,8 @@ def get_configuration(name, *args, **kwargs):
                                          defaultsConfiguration=cfg['defaults'],
                                          env_defaults=cfg['env_defaults'],
                                          os_defaults=cfg['os_defaults'])
+    if cfg['data'].get('sls_default_pillar', {}):
+        cfg['sls_default_pillar'] = cfg['data'].pop('sls_default_pillar')
     # some vars need to be setted just a that time
     cfg['group'] = cfg['groups'][0]
     cfg['projects_dir'] = __salt__['mc_locations.settings']()['projects_dir']
@@ -693,6 +720,7 @@ def get_configuration(name, *args, **kwargs):
     cfg['data'] = __salt__['mc_utils.format_resolve'](cfg['data'], cfg)
 
     # finally resolve the format-variabilized dict key entries in global conf
+    # the default pillar will also recursively be resolved here
     cfg.update(__salt__['mc_utils.format_resolve'](cfg))
     cfg.update(__salt__['mc_utils.format_resolve'](cfg, cfg['data']))
 
