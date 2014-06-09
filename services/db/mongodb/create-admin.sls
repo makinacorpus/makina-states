@@ -21,6 +21,18 @@ makina-mongodb-createadmin:
                       ]})
   cmd.run:
     - name: mongo /etc/mongodbuser.js && service mongod restart
-    - onlyif: echo "use admin"|mongo
+    - unless: echo "use admin"|mongo -u "{{data.admin}}" -p "{{data.password}}"  admin
     - watch:
       - mc_proxy: mongodb-post-hardrestart
+
+makina-mongodb-noanon:
+  cmd.run:
+    - name: test "x$(echo "JSON.stringify(db.hostInfo())"|mongo admin --quiet|jq .ok)" = "x0"
+    - watch:
+      - cmd: makina-mongodb-createadmin
+
+makina-mongodb-rootaccess:
+  cmd.run:
+    - name: test "x$(echo "JSON.stringify(db.hostInfo())"|mongo -u "{{data.admin}}" -p "{{data.password}}" admin --quiet|jq .ok)" = "x1"
+    - watch:
+      - cmd: makina-mongodb-createadmin
