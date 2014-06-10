@@ -83,12 +83,19 @@ def settings():
 
     mongodb_path
         path to mongodb
+    mongodb_user
+        mongodb admin
+    mongodb_password
+        mongodb admin password
+
+
 
     servername
         servername tied to those backups
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
+        mongoSettings = __salt__['mc_mongodb.settings']()
         mysqlSettings = __salt__['mc_mysql.settings']()
         pillar = __pillar__
         locs = __salt__['mc_locations.settings']()
@@ -115,6 +122,8 @@ def settings():
                 'mysqldump_locktables': '',
                 'mysqldump_noroutines': '',
                 'mysqldump_no_single_transaction': '',
+                'mongodb_user': mongoSettings['admin'],
+                'mongodb_password': mongoSettings['password'],
                 'mysql_password': mysqlSettings['root_passwd'],
                 'mysql_sock_paths': mysqlSettings['sockdir'] + '/mysqld.sock',
                 'mysql_use_ssl': '',
