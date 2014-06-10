@@ -88,8 +88,6 @@ icinga-init-conf:
             {{salt['mc_utils.json_dump'](defaults)}}
 {% endif %}
 
-
-
 icinga-setup-conf-directories:
   file.directory:
     - names:
