@@ -31,6 +31,7 @@ icinga-conf:
 
 
 {% if defaults.modules.ido2db.enabled %}
+
 io2db-conf:
   file.managed:
     - name: /etc/icinga/ido2db.cfg
@@ -47,6 +48,24 @@ io2db-conf:
     - defaults:
       data: |
             {{salt['mc_utils.json_dump'](defaults)}}
+
+iomod-conf:
+  file.managed:
+    - name: /etc/icinga/idomod.cfg
+    - source: salt://makina-states/files/etc/icinga/idomod.cfg
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 644
+    - watch:
+      - mc_proxy: icinga-pre-conf
+    - watch_in:
+      - mc_proxy: icinga-post-conf
+    - defaults:
+      data: |
+            {{salt['mc_utils.json_dump'](defaults)}}
+
 {% endif %}
 
 
