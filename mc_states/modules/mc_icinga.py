@@ -33,9 +33,12 @@ def settings():
                 'icinga', registry_format='pack')
         locs = __salt__['mc_locations.settings']()
 
+        # generate default password
+        password = mongodb_reg.setdefault('password', __salt__['mc_utils.generate_password']())
+
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.monitoring.icinga', {
-                'package': ['icinga-core', 'icinga-common', 'icinga-doc', 'icinga-idoutils'],
+                'package': ['icinga-core', 'icinga-common', 'icinga-doc'],
                 'user' = "icinga",
                 'group' = "icinga",
                 'pidfile': "/var/run/icinga/icinga.pid",
@@ -186,6 +189,7 @@ def settings():
 
                 'modules': {
                     'ido2db': {
+                        'package': ['icinga-idoutils'],
                         'enabled': True,
                         'user': "nagios",
                         'group': "nagios",
@@ -196,7 +200,7 @@ def settings():
                             'post': 3306,
 #                            'socket': "",
                             'user': "localhost",
-                            'password': "?",
+                            'password': password,
                             'name': "icinga",
                             'prefix': "icinga_",
                         },

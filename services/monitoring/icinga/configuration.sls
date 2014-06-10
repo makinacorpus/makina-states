@@ -50,6 +50,7 @@ io2db-conf:
 {% endif %}
 
 
+# not used
 
 {% if grains['os'] in ['Ubuntu'] %}
 icinga-init-conf:
@@ -86,6 +87,8 @@ icinga-init-conf:
       data: |
             {{salt['mc_utils.json_dump'](defaults)}}
 {% endif %}
+
+
 
 icinga-setup-conf-directories:
   file.directory:
