@@ -51,3 +51,14 @@ dbsmartbackup_mysql_conf:
     - context:
       settings: |
                 {{settings}}
+
+dbsmartbackup_mongodb.conf:
+  file.managed:
+    - name: /etc/dbsmartbackup/mongod.conf
+    - source: salt://makina-states/files/etc/dbsmartbackup/mongod.conf
+    - makedirs: true
+    - template: jinja
+    - mode: 700
+    - context:
+      settings: |
+                {{settings}}
