@@ -42,9 +42,11 @@ def settings():
                 'user' = "icinga",
                 'group' = "icinga",
                 'pidfile': "/var/run/icinga/icinga.pid",
+                'icinga_conf': locs['conf_dir']+"/icinga",
+                'niceness': 5,
                 'icinga.cfg': {
                     'log_file': "/var/log/icinga/icinga.log",
-                    'cfg_file': "/etc/icinga/commands.cfg",
+                    'cfg_file': ["/etc/icinga/commands.cfg"],
                     'cfg_dir': ["/etc/nagios-plugins/config", "/etc/icinga/objects/", "/etc/icinga/modules"],
                     'object_cache_file': "/var/cache/icinga/objects.cache",
                     'precached_object_file': "/var/cache/icinga/objects.precache",
@@ -194,6 +196,15 @@ def settings():
                         'user': "nagios",
                         'group': "nagios",
                         'pidfile': "/var/run/icinga/ido2db.pid",
+
+                        'icinga_socket': {
+                            'socket_type': "unix",
+                            'socket_name': "/var/lib/icinga/ido.sock"
+                            'socket_perm': "0755",
+                            'tcp_port': "5668",
+                            'use_ssl': 0,
+                        },
+
                         'database': {
                             'type': "mysql",
                             'host': "localhost",
@@ -205,11 +216,6 @@ def settings():
                             'prefix': "icinga_",
                         },
                         'ido2db.cfg': {
-                            'socket_type': "unix",
-                            'socket_name': "/var/lib/icinga/ido.sock",
-                            'socket_perm': "0755",
-                            'tcp_port': "5668",
-                            'use_ssl': 0,
 #                            'libdbi_driver_dir': "",
                             'max_systemcommands_age': 1440,
                             'max_servicechecks_age': 1440,
@@ -234,10 +240,6 @@ def settings():
                         },
                         'idomod.cfg': {
                             'instance_name': "default",
-                            'output_type': "unixsocket",
-                            'output': "/var/lib/icinga/ido.sock",
-                            'tcp_port': 5668,
-                            'use_ssl': 0,
                             'output_buffer_items': 5000,
                             'buffer_file': "/var/lib/icinga/idomod.tmp",
                             'file_rotation_interval': 14400,
