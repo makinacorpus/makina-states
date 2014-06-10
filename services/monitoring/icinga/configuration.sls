@@ -73,7 +73,7 @@ iomod-conf:
 # startup configuration
 icinga-init-default-conf:
   file.managed:
-    - name: {{}}
+    - name: {{ locs['conf_dir'] }}/etc/default
     - source: salt://makina-states/files/etc/default/icinga
     - template: jinja
     - makedirs: true
@@ -88,107 +88,127 @@ icinga-init-default-conf:
       data: |
             {{salt['mc_utils.json_dump'](icingaSettings)}}
 
-# not used
-
 {% if grains['os'] in ['Ubuntu'] %}
-icinga-init-conf:
+icinga-init-upstart-conf:
   file.managed:
-    - name: {{ locs['conf_dir'] }}/init/ms_icinga.conf
-    - source: salt://makina-states/files/etc/init/ms_icinga.conf
+    - name: {{ locs['conf_dir'] }}/init/icinga.conf
+    - source: salt://makina-states/files/etc/init/icinga.conf
     - template: jinja
-    - user: root
     - makedirs: true
+    - user: root
     - group: root
-    - mode: 755
+    - mode: 644
     - watch:
       - mc_proxy: icinga-pre-conf
     - watch_in:
       - mc_proxy: icinga-post-conf
     - defaults:
       data: |
-            {{salt['mc_utils.json_dump'](defaults)}}
-{% else %}
-icinga-init-conf:
-  file.managed:
-    - name: {{ locs['conf_dir'] }}/init.d/ms_icinga
-    - source: salt://makina-states/files/etc/init.d/ms_icinga
-    - template: jinja
-    - user: root
-    - makedirs: true
-    - group: root
-    - mode: 755
-    - watch:
-      - mc_proxy: icinga-pre-conf
-    - watch_in:
-      - mc_proxy: icinga-post-conf
-    - defaults:
-      data: |
-            {{salt['mc_utils.json_dump'](defaults)}}
+            {{salt['mc_utils.json_dump'](icingaSettings)}}
 {% endif %}
 
-icinga-setup-conf-directories:
-  file.directory:
-    - names:
-      -  {{ locs['conf_dir'] }}/icinga.d
-      -  {{ defaults.icingad.logdir }}
-    - watch:
-      - mc_proxy: icinga-pre-conf
-    - watch_in:
-      - mc_proxy: icinga-post-conf
 
-icinga-logrotate:
-  file.managed:
-    - name: {{ locs['conf_dir'] }}/logrotate.d/icinga.conf
-    - source: salt://makina-states/files/etc/logrotate.d/icinga.conf
-    - template: jinja
-    - user: root
-    - makedirs: true
-    - group: root
-    - mode: 755
-    - watch:
-      - mc_proxy: icinga-pre-conf
-    - watch_in:
-      - mc_proxy: icinga-pre-restart
-    - defaults:
-        data: |
-              {{salt['mc_utils.json_dump'](defaults)}}
-
-icinga-ms_icingactl:
-  file.managed:
-    - name: {{defaults.venv}}/bin/ms_icingactl
-    - source: ''
-    - template: jinja
-    - user: root
-    - makedirs: true
-    - group: root
-    - mode: 700
-    - watch:
-      - mc_proxy: icinga-pre-conf
-    - watch_in:
-      - mc_proxy: icinga-pre-restart
-    - contents: |
-                #!/usr/bin/env bash
-                . {{defaults.venv}}/bin/activate
-                {{defaults.venv}}/bin/icingactl \
-                  -c "{{defaults.conf}}" \
-                  -u "{{defaults.icingactl.username}}"\
-                  -p "{{defaults.icingactl.password}}" "$@"
-    - defaults:
-        data: |
-              {{salt['mc_utils.json_dump'](defaults)}}
-
-{% for i in ['icingad', 'icingactl', 'ms_icingactl'] %}
-file-symlink-{{i}}:
-  file.symlink:
-    - target: {{defaults.venv}}/bin/{{i}}
-    - name: /usr/local/bin/{{i}}
-    - watch:
-      - mc_proxy: icinga-pre-conf
-    - watch_in:
-      - mc_proxy: icinga-pre-restart
-{% endfor %}
-
-
+# not used
+#
+#{% if grains['os'] in ['Ubuntu'] %}
+#icinga-init-conf:
+#  file.managed:
+#    - name: {{ locs['conf_dir'] }}/init/ms_icinga.conf
+#    - source: salt://makina-states/files/etc/init/ms_icinga.conf
+#    - template: jinja
+#    - user: root
+#    - makedirs: true
+#    - group: root
+#    - mode: 755
+#    - watch:
+#      - mc_proxy: icinga-pre-conf
+#    - watch_in:
+#      - mc_proxy: icinga-post-conf
+#    - defaults:
+#      data: |
+#            {{salt['mc_utils.json_dump'](defaults)}}
+#{% else %}
+#icinga-init-conf:
+#  file.managed:
+#    - name: {{ locs['conf_dir'] }}/init.d/ms_icinga
+#    - source: salt://makina-states/files/etc/init.d/ms_icinga
+#    - template: jinja
+#    - user: root
+#    - makedirs: true
+#    - group: root
+#    - mode: 755
+#    - watch:
+#      - mc_proxy: icinga-pre-conf
+#    - watch_in:
+#      - mc_proxy: icinga-post-conf
+#    - defaults:
+#      data: |
+#            {{salt['mc_utils.json_dump'](defaults)}}
+#{% endif %}
+#
+#icinga-setup-conf-directories:
+#  file.directory:
+#    - names:
+#      -  {{ locs['conf_dir'] }}/icinga.d
+#      -  {{ defaults.icingad.logdir }}
+#    - watch:
+#      - mc_proxy: icinga-pre-conf
+#    - watch_in:
+#      - mc_proxy: icinga-post-conf
+#
+#icinga-logrotate:
+#  file.managed:
+#    - name: {{ locs['conf_dir'] }}/logrotate.d/icinga.conf
+#    - source: salt://makina-states/files/etc/logrotate.d/icinga.conf
+#    - template: jinja
+#    - user: root
+#    - makedirs: true
+#    - group: root
+#    - mode: 755
+#    - watch:
+#      - mc_proxy: icinga-pre-conf
+#    - watch_in:
+#      - mc_proxy: icinga-pre-restart
+#    - defaults:
+#        data: |
+#              {{salt['mc_utils.json_dump'](defaults)}}
+#
+#icinga-ms_icingactl:
+#  file.managed:
+#    - name: {{defaults.venv}}/bin/ms_icingactl
+#    - source: ''
+#    - template: jinja
+#    - user: root
+#    - makedirs: true
+#    - group: root
+#    - mode: 700
+#    - watch:
+#      - mc_proxy: icinga-pre-conf
+#    - watch_in:
+#      - mc_proxy: icinga-pre-restart
+#    - contents: |
+#                #!/usr/bin/env bash
+#                . {{defaults.venv}}/bin/activate
+#                {{defaults.venv}}/bin/icingactl \
+#                  -c "{{defaults.conf}}" \
+#                  -u "{{defaults.icingactl.username}}"\
+#                  -p "{{defaults.icingactl.password}}" "$@"
+#    - defaults:
+#        data: |
+#              {{salt['mc_utils.json_dump'](defaults)}}
+#
+#{% for i in ['icingad', 'icingactl', 'ms_icingactl'] %}
+#file-symlink-{{i}}:
+#  file.symlink:
+#    - target: {{defaults.venv}}/bin/{{i}}
+#    - name: /usr/local/bin/{{i}}
+#    - watch:
+#      - mc_proxy: icinga-pre-conf
+#    - watch_in:
+#      - mc_proxy: icinga-pre-restart
+#{% endfor %}
+#
+#
 {%- import "makina-states/services/monitoring/icinga/macros.jinja" as icinga with context %}
 {#
 {{icinga.icingaAddWatcher('foo', '/bin/echo', args=[1]) }}
