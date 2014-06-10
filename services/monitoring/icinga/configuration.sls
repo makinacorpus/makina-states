@@ -6,15 +6,16 @@
 #}
 
 {% set locs = salt['mc_locations.settings']() %}
-{% set defaults = salt['mc_icinga.settings']() %}
+{% set icingaSettings = salt['mc_icinga.settings']() %}
 {%- set venv = defaults['venv'] %}
 include:
   - makina-states.services.monitoring.icinga.hooks
   - makina-states.services.monitoring.icinga.services
 
+# general configuration
 icinga-conf:
   file.managed:
-    - name: /etc/icinga/icinga.cfg
+    - name: {{icingaSettings.data.icinga_conf}}/icinga.cfg
     - source: salt://makina-states/files/etc/icinga/icinga.cfg
     - template: jinja
     - makedirs: true
@@ -27,14 +28,15 @@ icinga-conf:
       - mc_proxy: icinga-post-conf
     - defaults:
       data: |
-            {{salt['mc_utils.json_dump'](defaults)}}
+            {{salt['mc_utils.json_dump'](icingaSettings)}}
 
 
-{% if defaults.modules.ido2db.enabled %}
+# modules configuration
+{% if icingaSettings.data.modules.ido2db.enabled %}
 
 io2db-conf:
   file.managed:
-    - name: /etc/icinga/ido2db.cfg
+    - name: {{icingaSettings.data.icinga_conf}}/ido2db.cfg
     - source: salt://makina-states/files/etc/icinga/ido2db.cfg
     - template: jinja
     - makedirs: true
@@ -47,11 +49,11 @@ io2db-conf:
       - mc_proxy: icinga-post-conf
     - defaults:
       data: |
-            {{salt['mc_utils.json_dump'](defaults)}}
+            {{salt['mc_utils.json_dump'](icingaSettings)}}
 
 iomod-conf:
   file.managed:
-    - name: /etc/icinga/idomod.cfg
+    - name: {{icingaSettings.data.icinga_conf}}/idomod.cfg
     - source: salt://makina-states/files/etc/icinga/idomod.cfg
     - template: jinja
     - makedirs: true
@@ -64,10 +66,27 @@ iomod-conf:
       - mc_proxy: icinga-post-conf
     - defaults:
       data: |
-            {{salt['mc_utils.json_dump'](defaults)}}
+            {{salt['mc_utils.json_dump'](icingaSettings)}}
 
 {% endif %}
 
+# startup configuration
+icinga-init-default-conf:
+  file.managed:
+    - name: {{}}
+    - source: salt://makina-states/files/etc/default/icinga
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 644
+    - watch:
+      - mc_proxy: icinga-pre-conf
+    - watch_in:
+      - mc_proxy: icinga-post-conf
+    - defaults:
+      data: |
+            {{salt['mc_utils.json_dump'](icingaSettings)}}
 
 # not used
 
