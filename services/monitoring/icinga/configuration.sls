@@ -7,7 +7,7 @@
 
 {% set locs = salt['mc_locations.settings']() %}
 {% set icingaSettings = salt['mc_icinga.settings']() %}
-{%- set venv = defaults['venv'] %}
+
 include:
   - makina-states.services.monitoring.icinga.hooks
   - makina-states.services.monitoring.icinga.services
@@ -15,7 +15,7 @@ include:
 # general configuration
 icinga-conf:
   file.managed:
-    - name: {{icingaSettings.data.icinga_conf}}/icinga.cfg
+    - name: {{icingaSettings.icinga_conf}}/icinga.cfg
     - source: salt://makina-states/files/etc/icinga/icinga.cfg
     - template: jinja
     - makedirs: true
@@ -31,46 +31,28 @@ icinga-conf:
             {{salt['mc_utils.json_dump'](icingaSettings)}}
 
 
-# modules configuration
-{% if icingaSettings.data.modules.ido2db.enabled %}
-
-io2db-conf:
-  file.managed:
-    - name: {{icingaSettings.data.icinga_conf}}/ido2db.cfg
-    - source: salt://makina-states/files/etc/icinga/ido2db.cfg
-    - template: jinja
-    - makedirs: true
-    - user: root
-    - group: root
-    - mode: 644
-    - watch:
-      - mc_proxy: icinga-pre-conf
-    - watch_in:
-      - mc_proxy: icinga-post-conf
-    - defaults:
-      data: |
-            {{salt['mc_utils.json_dump'](icingaSettings)}}
-
-iomod-conf:
-  file.managed:
-    - name: {{icingaSettings.data.icinga_conf}}/idomod.cfg
-    - source: salt://makina-states/files/etc/icinga/idomod.cfg
-    - template: jinja
-    - makedirs: true
-    - user: root
-    - group: root
-    - mode: 644
-    - watch:
-      - mc_proxy: icinga-pre-conf
-    - watch_in:
-      - mc_proxy: icinga-post-conf
-    - defaults:
-      data: |
-            {{salt['mc_utils.json_dump'](icingaSettings)}}
-
-{% endif %}
-
 # startup configuration
+{% if grains['os'] in ['Ubuntu'] %}
+
+icinga-init-upstart-conf:
+  file.managed:
+    - name: {{ locs['conf_dir'] }}/init/icinga.conf
+    - source: salt://makina-states/files/etc/init/icinga.conf
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 644
+    - watch:
+      - mc_proxy: icinga-pre-conf
+    - watch_in:
+      - mc_proxy: icinga-post-conf
+    - defaults:
+      data: |
+            {{salt['mc_utils.json_dump'](icingaSettings)}}
+
+{% else %}
+
 icinga-init-default-conf:
   file.managed:
     - name: {{ locs['conf_dir'] }}/etc/default
@@ -88,11 +70,32 @@ icinga-init-default-conf:
       data: |
             {{salt['mc_utils.json_dump'](icingaSettings)}}
 
-{% if grains['os'] in ['Ubuntu'] %}
-icinga-init-upstart-conf:
+icinga-init-sysvinit-conf:
   file.managed:
-    - name: {{ locs['conf_dir'] }}/init/icinga.conf
-    - source: salt://makina-states/files/etc/init/icinga.conf
+    - name: {{ locs['conf_dir'] }}/init.d/icinga
+    - source: salt://makina-states/files/etc/init.d/icinga
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 755
+    - watch:
+      - mc_proxy: icinga-pre-conf
+    - watch_in:
+      - mc_proxy: icinga-post-conf
+    - defaults:
+      data: |
+            {{salt['mc_utils.json_dump'](icingaSettings)}}
+
+{% endif %}
+
+# modules configuration
+{% if icingaSettings.modules.ido2db.enabled %}
+
+io2db-conf:
+  file.managed:
+    - name: {{icingaSettings.icinga_conf}}/ido2db.cfg
+    - source: salt://makina-states/files/etc/icinga/ido2db.cfg
     - template: jinja
     - makedirs: true
     - user: root
@@ -105,10 +108,54 @@ icinga-init-upstart-conf:
     - defaults:
       data: |
             {{salt['mc_utils.json_dump'](icingaSettings)}}
+
+iomod-conf:
+  file.managed:
+    - name: {{icingaSettings.icinga_conf}}/idomod.cfg
+    - source: salt://makina-states/files/etc/icinga/idomod.cfg
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 644
+    - watch:
+      - mc_proxy: icinga-pre-conf
+    - watch_in:
+      - mc_proxy: icinga-post-conf
+    - defaults:
+      data: |
+            {{salt['mc_utils.json_dump'](icingaSettings)}}
+
+# startup ido2db configuration
+{% if grains['os'] in ['Ubuntu'] %}
+
+ido2db-init-upstart-conf:
+  file.managed:
+    - name: {{ locs['conf_dir'] }}/init/ido2db.conf
+    - source: salt://makina-states/files/etc/init/ido2db.conf
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 644
+    - watch:
+      - mc_proxy: icinga-pre-conf
+    - watch_in:
+      - mc_proxy: icinga-post-conf
+    - defaults:
+      data: |
+            {{salt['mc_utils.json_dump'](icingaSettings)}}
+
+{% else %}
+
+{% endif %}
+
 {% endif %}
 
 
+
 # not used
+{#
 #
 #{% if grains['os'] in ['Ubuntu'] %}
 #icinga-init-conf:
@@ -209,6 +256,7 @@ icinga-init-upstart-conf:
 #{% endfor %}
 #
 #
+#}
 {%- import "makina-states/services/monitoring/icinga/macros.jinja" as icinga with context %}
 {#
 {{icinga.icingaAddWatcher('foo', '/bin/echo', args=[1]) }}

@@ -34,7 +34,11 @@ def settings():
         locs = __salt__['mc_locations.settings']()
 
         # generate default password
-        password = mongodb_reg.setdefault('password', __salt__['mc_utils.generate_password']())
+        icinga_reg = __salt__[
+            'mc_macros.get_local_registry'](
+                'icinga', registry_format='pack')
+
+        password = icinga_reg.setdefault('password', __salt__['mc_utils.generate_password']())
 
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.monitoring.icinga', {
