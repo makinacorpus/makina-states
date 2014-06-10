@@ -10,15 +10,19 @@ icinga-pkgs:
     - watch_in:
       - mc_proxy: icinga-post-install
     - pkgs:
-      - {{ icingaSettings.package }}
+      {% for package in icingaSettings.package %}
+      - {{package}}
+      {% endfor %}
 
 {% if icingaSettings.modules.ido2db.enabled %}
 icinga-ido2db-pkgs:
   pkg.{{pkgssettings['installmode']}}:
     - watch:
-      - mc_proxy: icinga-pkgs
+      - mc_proxy: icinga-pre-install # TODO: try to change with "icinga-pkgs"
     - watch_in:
       - mc_proxy: icinga-post-install
     - pkgs:
-      - {{ icingaSettings.modules.ido2db.package }}
+      {% for package in icingaSettings.modules.ido2db.package %}
+      - {{package}}
+      {% endfor %}
 {% endif %}

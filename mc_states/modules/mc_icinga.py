@@ -48,7 +48,7 @@ def settings():
                 'pidfile': "/var/run/icinga/icinga.pid",
                 'icinga_conf': locs['conf_dir']+"/icinga",
                 'niceness': 5,
-                'icinga.cfg': {
+                'icinga_cfg': {
                     'log_file': "/var/log/icinga/icinga.log",
                     'cfg_file': ["/etc/icinga/commands.cfg"],
                     'cfg_dir': ["/etc/nagios-plugins/config", "/etc/icinga/objects/", "/etc/icinga/modules"],
@@ -212,14 +212,14 @@ def settings():
                         'database': {
                             'type': "mysql",
                             'host': "localhost",
-                            'post': 3306,
+                            'port': 3306,
 #                            'socket': "",
                             'user': "localhost",
                             'password': password,
                             'name': "icinga",
                             'prefix': "icinga_",
                         },
-                        'ido2db.cfg': {
+                        'ido2db_cfg': {
 #                            'libdbi_driver_dir': "",
                             'max_systemcommands_age': 1440,
                             'max_servicechecks_age': 1440,
@@ -242,7 +242,7 @@ def settings():
                             'oci_errors_to_syslog': 1,
                             'oracle_trace_level': 0,
                         },
-                        'idomod.cfg': {
+                        'idomod_cfg': {
                             'instance_name': "default",
                             'output_buffer_items': 5000,
                             'buffer_file': "/var/lib/icinga/idomod.tmp",
