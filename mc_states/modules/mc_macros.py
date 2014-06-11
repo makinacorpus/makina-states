@@ -152,9 +152,17 @@ def pack_dump_local_registry(registry):
 
 def encode_local_registry(name, registry, registry_format='yaml'):
     locs = __salt__['mc_locations.settings']()
-    registryf = os.path.join(
-        locs['conf_dir'], 'makina-states/{0}.{1}'.format(
-            name, registry_format))
+    not_shared = ['controllers', 'services', 'nodetypes',
+                  'localsettings', 'cloud']
+
+    if name not in not_shared:
+        registryf = os.path.join(
+            locs['conf_dir'], 'makina-states/{0}.{1}'.format(
+                name, registry_format))
+    else:
+        registryf = os.path.join(
+            __opts__['config_dir'], 'makina-states/{0}.{1}'.format(
+                name, registry_format))
     dregistry = os.path.dirname(registryf)
     if not os.path.exists(dregistry):
         os.makedirs(dregistry)
