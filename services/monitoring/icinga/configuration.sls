@@ -127,25 +127,6 @@ idomod-conf:
       data: |
             {{sdata}}
 
-# IDO database schema should be created here
-
-{% if 'pgsql' == data.modules.ido2db.database.type %}
-ido2db-create-pgsql-user:
-  postgres.user_create:
-    - username: {{data.modules.ido2db.database.user}}
-    - rolepassword: {{data.modules.ido2db.database.password}}
-
-
-#ido2db-create-pgsql-database:
-#ido2db-import-pgsql-schema:
-
-{% elif 'mysql' == data.modules.ido2db.database.type %}
-#ido2db-create-mysql-user:
-#ido2db-create-mysql-database:
-#ido2db-import-mysql-schema:
-
-{% endif %}
-
 # startup ido2db configuration
 {% if grains['os'] in ['Ubuntu'] %}
 
