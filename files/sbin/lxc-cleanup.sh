@@ -32,9 +32,30 @@ done
 update-rc.d -f apparmor remove || /bin/true
 # disabling useless and harmfull services
 #    $(find /etc/init -name dbus.conf)\
+# instead of delete the proccps service, reset it to do nothing by default
+#    $(find /etc/init -name procps.conf)\
+syscfgs="/etc/sysctl.conf"
+if [ -e /etc/sysctl.d ];then
+    syscfgs="${syscfgs} $(ls /etc/sysctl.d/*conf)"
+fi
+for syscfg in ${syscfgs};do
+    if [ "x$(grep -q mastersalt-cleanup "${syscfg}";echo ${?})" != "x0" ];then
+        sed -i -e "s/^/#/g" "${syscfg}" ||/bin/true
+        echo "# mastersalt-cleanup" >> "${syscfg}" ||/bin/true
+    fi
+done
+# reacticated services
+reactivated_services="procps"
+for reactivated_service in ${reactivated_services};do
+    if [ -e "/etc/init/${reactivated_service}.conf.orig" ];then
+        mv -f "/etc/init/${reactivated_service}.conf.orig" "/etc/init/${reactivated_service}.conf" ||/bin/true
+    fi
+    if [ -e "/etc/init/${reactivated_service}.override" ];then
+        rm -f "${reactivated_service}.override" ||/bin/true
+    fi
+done
 for f in\
     $(find /etc/init -name console-setup.conf)\
-    $(find /etc/init -name procps.conf)\
     $(find /etc/init -name acpid.conf)\
     $(find /etc/init -name apport.conf)\
     $(find /etc/init -name control-alt-delete.conf)\
