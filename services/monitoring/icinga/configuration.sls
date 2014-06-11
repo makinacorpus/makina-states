@@ -148,6 +148,23 @@ ido2db-init-upstart-conf:
 
 {% else %}
 
+ido2db-init-sysvinit-conf:
+  file.managed:
+    - name: {{ locs['conf_dir'] }}/init.d/ido2db
+    - source: salt://makina-states/files/etc/init.d/ido2db
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 755
+    - watch:
+      - mc_proxy: icinga-pre-conf
+    - watch_in:
+      - mc_proxy: icinga-post-conf
+    - defaults:
+      data: |
+            {{salt['mc_utils.json_dump'](icingaSettings)}}
+
 {% endif %}
 
 {% endif %}
