@@ -38,7 +38,7 @@ def settings():
             'mc_macros.get_local_registry'](
                 'icinga', registry_format='pack')
 
-        password = icinga_reg.setdefault('password', __salt__['mc_utils.generate_password']())
+        password = icinga_reg.setdefault('ido.password', __salt__['mc_utils.generate_password']())
 
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.monitoring.icinga', {
@@ -46,7 +46,7 @@ def settings():
                 'user': "nagios",
                 'group': "nagios",
                 'pidfile': "/var/run/icinga/icinga.pid",
-                'icinga_conf': locs['conf_dir']+"/icinga",
+                'configuration_directory': locs['conf_dir']+"/icinga",
                 'niceness': 5,
                 'icinga_cfg': {
                     'log_file': "/var/log/icinga/icinga.log",
@@ -210,11 +210,12 @@ def settings():
                         },
 
                         'database': {
-                            'type': "mysql",
+#                            'type': "mysql",
+                            'type': "pgsql",
                             'host': "localhost",
                             'port': 3306,
 #                            'socket': "",
-                            'user': "localhost",
+                            'user': "icinga",
                             'password': password,
                             'name': "icinga",
                             'prefix': "icinga_",

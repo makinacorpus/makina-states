@@ -6,7 +6,8 @@
 #}
 
 {% set locs = salt['mc_locations.settings']() %}
-{% set icingaSettings = salt['mc_icinga.settings']() %}
+{% set data = salt['mc_icinga.settings']() %}
+{% set sdata = salt['mc_utils.json_dump'](data) %}
 
 include:
   - makina-states.services.monitoring.icinga.hooks
@@ -15,7 +16,7 @@ include:
 # general configuration
 icinga-conf:
   file.managed:
-    - name: {{icingaSettings.icinga_conf}}/icinga.cfg
+    - name: {{data.configuration_directory}}/icinga.cfg
     - source: salt://makina-states/files/etc/icinga/icinga.cfg
     - template: jinja
     - makedirs: true
@@ -28,7 +29,7 @@ icinga-conf:
       - mc_proxy: icinga-post-conf
     - defaults:
       data: |
-            {{salt['mc_utils.json_dump'](icingaSettings)}}
+            {{sdata}}
 
 
 # startup configuration
@@ -49,7 +50,7 @@ icinga-init-upstart-conf:
       - mc_proxy: icinga-post-conf
     - defaults:
       data: |
-            {{salt['mc_utils.json_dump'](icingaSettings)}}
+            {{sdata}}
 
 {% else %}
 
@@ -68,7 +69,7 @@ icinga-init-default-conf:
       - mc_proxy: icinga-post-conf
     - defaults:
       data: |
-            {{salt['mc_utils.json_dump'](icingaSettings)}}
+            {{sdata}}
 
 icinga-init-sysvinit-conf:
   file.managed:
@@ -85,16 +86,16 @@ icinga-init-sysvinit-conf:
       - mc_proxy: icinga-post-conf
     - defaults:
       data: |
-            {{salt['mc_utils.json_dump'](icingaSettings)}}
+            {{sdata}}
 
 {% endif %}
 
 # modules configuration
-{% if icingaSettings.modules.ido2db.enabled %}
+{% if data.modules.ido2db.enabled %}
 
-io2db-conf:
+ido2db-conf:
   file.managed:
-    - name: {{icingaSettings.icinga_conf}}/ido2db.cfg
+    - name: {{data.configuration_directory}}/ido2db.cfg
     - source: salt://makina-states/files/etc/icinga/ido2db.cfg
     - template: jinja
     - makedirs: true
@@ -107,11 +108,11 @@ io2db-conf:
       - mc_proxy: icinga-post-conf
     - defaults:
       data: |
-            {{salt['mc_utils.json_dump'](icingaSettings)}}
+            {{sdata}}
 
-iomod-conf:
+idomod-conf:
   file.managed:
-    - name: {{icingaSettings.icinga_conf}}/idomod.cfg
+    - name: {{data.configuration_directory}}/idomod.cfg
     - source: salt://makina-states/files/etc/icinga/idomod.cfg
     - template: jinja
     - makedirs: true
@@ -124,7 +125,26 @@ iomod-conf:
       - mc_proxy: icinga-post-conf
     - defaults:
       data: |
-            {{salt['mc_utils.json_dump'](icingaSettings)}}
+            {{sdata}}
+
+# IDO database schema should be created here
+
+{% if 'pgsql' == data.modules.ido2db.database.type %}
+ido2db-create-pgsql-user:
+  postgres.user_create:
+    - username: {{data.modules.ido2db.database.user}}
+    - rolepassword: {{data.modules.ido2db.database.password}}
+
+
+#ido2db-create-pgsql-database:
+#ido2db-import-pgsql-schema:
+
+{% elif 'mysql' == data.modules.ido2db.database.type %}
+#ido2db-create-mysql-user:
+#ido2db-create-mysql-database:
+#ido2db-import-mysql-schema:
+
+{% endif %}
 
 # startup ido2db configuration
 {% if grains['os'] in ['Ubuntu'] %}
@@ -144,7 +164,7 @@ ido2db-init-upstart-conf:
       - mc_proxy: icinga-post-conf
     - defaults:
       data: |
-            {{salt['mc_utils.json_dump'](icingaSettings)}}
+            {{sdata}}
 
 {% else %}
 
@@ -163,7 +183,7 @@ ido2db-init-sysvinit-conf:
       - mc_proxy: icinga-post-conf
     - defaults:
       data: |
-            {{salt['mc_utils.json_dump'](icingaSettings)}}
+            {{sdata}}
 
 {% endif %}
 
