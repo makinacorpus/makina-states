@@ -43,8 +43,8 @@ def settings():
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.monitoring.icinga', {
                 'package': ['icinga-core', 'icinga-common', 'icinga-doc'],
-                'user': "icinga",
-                'group': "icinga",
+                'user': "nagios",
+                'group': "nagios",
                 'pidfile': "/var/run/icinga/icinga.pid",
                 'icinga_conf': locs['conf_dir']+"/icinga",
                 'niceness': 5,
@@ -174,7 +174,7 @@ def settings():
                     'stalking_event_handlers_for_services': 0,
                     'stalking_notifications_for_hosts': 0,
                     'stalking_notifications_for_services': 0,
-                    'illegal_object_name_chars': "`~!$%^&*|'\"<>?,()=': \"",
+                    'illegal_object_name_chars': "`~!$%^&*|'\"<>?,()=': ",
                     'illegal_macro_output_chars': "`~$&|'\"<>",
                     'keep_unknown_macros': 0,
                     'use_regexp_matching': 0,
