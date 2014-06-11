@@ -260,6 +260,10 @@ def settings():
                             'max_debug_file_size': 100000000,
                         },
                     },
+                    'nagios-plugins': {
+                        'package': ['nagios-plugins'],
+                        'enabled': True,
+                    },
                 },
 
 

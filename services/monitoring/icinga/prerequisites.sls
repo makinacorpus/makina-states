@@ -27,3 +27,17 @@ icinga-ido2db-pkgs:
       - {{package}}
       {% endfor %}
 {% endif %}
+
+{% if icingaSettings.modules['nagios-plugins'].enabled %}
+icinga-nagios-plugins-pkgs:
+  pkg.{{pkgssettings['installmode']}}:
+    - watch:
+      - mc_proxy: icinga-pre-install
+      - pkg: icinga-pkgs
+    - watch_in:
+      - mc_proxy: icinga-post-install
+    - pkgs:
+      {% for package in icingaSettings.modules['nagios-plugins'].package %}
+      - {{package}}
+      {% endfor %}
+{% endif %}
