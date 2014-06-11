@@ -24,7 +24,10 @@ import salt.utils
 
 from salt.states import git
 
-_run_check = git._run_check
+try:
+    _run_check = git._run_check
+except AttributeError:
+    _run_check = git.mod_run_check
 _fail = git._fail
 _neutral_test = git._neutral_test
 
