@@ -11,6 +11,8 @@ mc_pgsql / Postgresql related functions
 __docformat__ = 'restructuredtext en'
 import re
 import os
+import copy
+from salt.utils.odict import OrderedDict
 from salt.utils import context
 from copy import deepcopy
 
@@ -92,6 +94,33 @@ def settings():
         name of the postis template
     pg_hba
         List of pg_hba entries
+    pg_conf
+        settings for postgresql.conf
+        'default' is looked up by default but
+        you can override settings for a specific version
+        inside a subversion part eg::
+
+            makina-states.services.db.postgresql.pg_conf.9.1:
+                port: 5433
+
+
+            listen
+                list of hosts to listen on
+            port
+                value for port
+            unix_socket_directories
+                value for unix_socket_directories
+            extras
+                free dict with key/values pairs,
+                for strings you must quote them::
+
+                    makina-states.services.db.postgresql.pg_conf.extras:
+                      # no quote
+                      enable_tidscan: 'on'
+                      # quote
+                      log_line_prefix: "'%t '"
+
+
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
@@ -134,6 +163,31 @@ def settings():
                 'locale': 'en_US.UTF-8',
                 'postgis': {'2.1': [defaultPgVersion, '9.2']},
                 'postgis_db': 'postgis',
+                'pg_conf': {
+                    'default': {
+                        'catalog': 'pg_catalog.french',
+                        'locale': 'fr_FR.UTF-8',
+                        'port': 5432,
+                        'unix_socket_directories': (
+                            "'/var/run/postgresql'"),
+                        'ssl': 'true',
+                        'listen': ['localhost'],
+                        'datestyle': 'iso, dmy',
+                        'timezone': 'localtime',
+                        'max_connections': '100',
+                        'log_line_prefix': '%t ',
+                        'log_timezone': 'localtime',
+                        'shared_buffers': '128MB',
+                        'ssl_cert_file': (
+                            '/etc/ssl/certs/'
+                            'ssl-cert-snakeoil.pem'),
+                        'ssl_key_file': (
+                            '/etc/ssl/private/'
+                            'ssl-cert-snakeoil.key'),
+                        'extras': {
+                        }
+                    },
+                },
                 'pg_hba':  [
                     {'comment': "# administration "},
                     {'type': 'local',
@@ -162,6 +216,17 @@ def settings():
                 ]
             }
         )
+        dpgconf = pgSettings['pg_conf']['default']
+        dport = dpgconf['port']
+        for i, ver in enumerate(pgSettings['versions']):
+            pgconf = pgSettings['pg_conf'].setdefault(
+                ver, OrderedDict())
+            pgconf.setdefault('port', dport + i)
+            pgSettings['pg_conf'][ver] = __salt__[
+                'mc_utils.dictupdate'](
+                    copy.deepcopy(dpgconf), pgconf)
+            pgSettings['pg_conf'][ver][
+                'unix_socket_directories']
         pgSettings['pgDbs'] = pgDbs
         pgSettings['postgresqlUsers'] = postgresqlUsers
         return pgSettings
