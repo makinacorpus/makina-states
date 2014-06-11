@@ -18,7 +18,8 @@ icinga-pkgs:
 icinga-ido2db-pkgs:
   pkg.{{pkgssettings['installmode']}}:
     - watch:
-      - mc_proxy: icinga-pre-install # TODO: try to change with "icinga-pkgs"
+      - mc_proxy: icinga-pre-install
+      - pkg: icinga-pkgs
     - watch_in:
       - mc_proxy: icinga-post-install
     - pkgs:
