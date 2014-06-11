@@ -40,9 +40,22 @@ def settings():
 
         password = icinga_reg.setdefault('ido.password', __salt__['mc_utils.generate_password']())
 
+	module_ido2db_database = {
+#            'type': "mysql",
+            'type': "pgsql",
+            'host': "localhost",
+            'port': 3306,
+#            'socket': "",
+            'user': "icinga",
+            'password': password,
+            'name': "icinga",
+            'prefix': "icinga_",
+        }
+
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.monitoring.icinga', {
                 'package': ['icinga-core', 'icinga-common', 'icinga-doc'],
+                'has_pgsql': ((('host' in module_ido2db_database) and (module_ido2db_database['host'] in ['localhost', '127.0.0.1', grains['host']])) or ('socket' in module_ido2db_database)),
                 'user': "nagios",
                 'group': "nagios",
                 'pidfile': "/var/run/icinga/icinga.pid",
@@ -209,17 +222,7 @@ def settings():
                             'use_ssl': 0,
                         },
 
-                        'database': {
-#                            'type': "mysql",
-                            'type': "pgsql",
-                            'host': "localhost",
-                            'port': 3306,
-#                            'socket': "",
-                            'user': "icinga",
-                            'password': password,
-                            'name': "icinga",
-                            'prefix': "icinga_",
-                        },
+                        'database': module_ido2db_database,
                         'ido2db_cfg': {
 #                            'libdbi_driver_dir': "",
                             'max_systemcommands_age': 1440,

@@ -10,7 +10,7 @@ include:
   # if ido2db is enabled, install and configure the sgbd
 
   # install postgresql
-  {% if ((('host' in data.modules.ido2db.database) and (data.modules.ido2db.database.host in ['localhost', '127.0.0.1', grains['host']])) or ('socket' in data.modules.ido2db.database)) %}
+  {% if data.has_pgsql %}
   - makina-states.services.db.postgresql
   {% else %}
   - makina-states.services.db.postgresql.hooks
@@ -20,6 +20,8 @@ include:
 {{ pgsql.postgresql_user(data.modules.ido2db.database.user,
                          data.modules.ido2db.database.password)}}
 
+# create the database
+{{ pgsql.postgresql_db(data.modules.ido2db.database.name) }}
 
 {% endif %}
 {% endif %}
