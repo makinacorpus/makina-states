@@ -20,6 +20,15 @@ You have:
   postgresql_exts
     a macro to install pgsql extensions
 
+
+postgresql.conf configuration
+-----------------------------
+You can override the postgresql.conf by either:
+  - attaching to the accumulator (see below)
+  - write a file in $CONF_PREFIX/<filename>.conf (except for any default setting in postgresql.conf)
+  - editing or overriding the 'pg_conf.<ver>' setting in the pgsql settings
+    a (list of dicts), see the mc_states.modules.mc_pgsql module)
+
 PG_HBA configuration
 -----------------------
 You can override the pg_hba.conf by either:

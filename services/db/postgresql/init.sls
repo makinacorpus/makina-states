@@ -14,6 +14,7 @@ include:
   - makina-states.services.db.postgresql.wrappers
   - makina-states.services.db.postgresql.prerequisites
   - makina-states.services.db.postgresql.fix-template-1-encoding
+  - makina-states.services.db.postgresql.pg_conf
   - makina-states.services.db.postgresql.pg_hba
   - makina-states.services.db.postgresql.groups
   - makina-states.services.db.postgresql.dbs
