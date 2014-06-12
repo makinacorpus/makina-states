@@ -85,6 +85,7 @@ def settings():
                     'ido2db': ido2db_database,
                     'web': web_database,
                 },
+                'exclude_customvars_xml': [],
                 'access_xml': {
                     'instances': ["localhost"],
                     'defaults': {
