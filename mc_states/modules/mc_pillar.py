@@ -1410,6 +1410,98 @@ def get_sudoers(id_=None, ttl=60):
     return memoize_cache(_do_sudoers, [id_], {}, cache_key, ttl)
 
 
+def backup_configuration_type_for(id_, ttl=60):
+    def _do(id_):
+        confs = query('backup_configuration_map')
+        db = get_db_infrastructure_maps()
+        if id_ in db['vms']:
+            default = 'default-vm'
+        else:
+            default = 'default'
+        return confs.get(id_, confs[default])
+    cache_key = 'mc_pillar.backup_configuration_type_for{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+
+
+def backup_configuration_for(id_, ttl=60):
+    def _do(id_):
+        conf = __salt__['mc_pillar.backup_configuration_type_for'](id_)
+        confs = query('backup_configurations')
+        return confs[conf]
+    cache_key = 'mc_pillar.backup_configuration_for{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+
+
+def backup_server_for(id_, ttl=60):
+    def _do(id_):
+        confs = query('backup_server_map')
+        return confs.get(id_, confs['default'])
+    cache_key = 'mc_pillar.backup_server_for{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+
+
+def backup_server(id_, ttl=60):
+    def _do(id_):
+        confs = query('backup_servers')
+        return confs[id_]
+    cache_key = 'mc_pillar.backup_server{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+
+
+def is_burp_server(id_, ttl=60):
+    def _do(id_):
+        confs = query('backup_servers')
+        return 'burp' in confs.get(id_, {}).get('types', [])
+    cache_key = 'mc_pillar.is_burp_server{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+
+
+def backup_server_settings_for(id_, ttl=60):
+    def _do(id_):
+        data = OrderedDict()
+        db = get_db_infrastructure_maps()
+        ndb = load_network_infrastructure()
+        # pretendants are all managed baremetals excluding non managed
+        # hosts and current backup server
+        db['non_managed_hosts'] + [id_]
+        gconf = get_configuration(id_)
+        backup_excluded = ['default', 'default-vm']
+        backup_excluded.extend(id_)
+        backup_excluded.extend(db['non_managed_hosts'])
+        bms = [a for a in db['bms']
+               if not a in backup_excluded
+               and get_configuration(a)['manage_backups']]
+        vms = [a for a in db['vms']
+               if not a in backup_excluded
+               and get_configuration(a)['manage_backups']]
+        manual_hosts = [a for a in query('backup_configuration_map')
+                        if not a in backup_excluded
+                        and a in ndb['ips']
+                        and a not in bms
+                        and a not in vms]
+        # filter all baremetals and vms if they are tied to this backup
+        # server
+        server_conf = data.setdefault('server_conf',
+                                      __salt__['mc_pillar.backup_server'](id_))
+        confs = data.setdefault('confs', {})
+        for host in bms + vms + manual_hosts:
+            server = backup_server_for(host)
+            if not server == id_:
+                continue
+            conf =__salt__['mc_pillar.backup_configuration_for'](host)
+            # for vms, set the vm host as the gateway by default (if
+            # not defined)
+            if host in vms:
+                conf.setdefault('ssh_gateway', db['vms'][host]['target'])
+                conf.setdefault('ssh_gateway_port', '22')
+            type_ = conf.get('backup_type', server_conf['default_type'])
+            confs[host] = {'type': type_, 'conf': conf}
+        data['confs'] = confs
+        return data
+    cache_key = 'mc_pillar.backup_configurations_for{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+
+
 def get_top_variables(ttl=15):
     def _do_top():
         data = {}

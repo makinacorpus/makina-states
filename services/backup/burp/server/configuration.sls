@@ -66,6 +66,7 @@ burp-copy-server-client:
     - source: /usr/sbin/burp
     - watch:
       - mc_proxy: burp-pre-conf-hook
+      - file: burp-copy-server-cert
     - watch_in:
       - mc_proxy: burp-post-conf-hook
 #}
@@ -76,6 +77,7 @@ burp-copy-ca-crt:
     - source: /etc/burp/CA/CA_{{ssdata.ca_name}}.crt
     - watch:
       - mc_proxy: burp-pre-conf-hook
+      - file: burp-copy-server-cert
     - watch_in:
       - mc_proxy: burp-post-conf-hook
 
@@ -85,6 +87,7 @@ burp-copy-server-key:
     - source: /etc/burp/CA/{{ssdata.fqdn}}.key
     - watch:
       - mc_proxy: burp-pre-conf-hook
+      - file: burp-copy-server-cert
     - watch_in:
       - mc_proxy: burp-post-conf-hook
 
@@ -123,6 +126,7 @@ etc-burp-CA:
     - user: {{data.user}}
     - group: {{data.group}}
     - watch:
+      - file: burp-copy-server-cert
       - mc_proxy: burp-pre-conf-hook
     - watch_in:
       - mc_proxy: burp-post-conf-hook
@@ -152,6 +156,7 @@ etc-burp-burp-client.{{client}}-conf-{{f}}:
             {{scdata}}
     - watch:
       - mc_proxy: burp-pre-conf-hook
+      - file: burp-copy-server-cert
     - watch_in:
       - mc_proxy: burp-post-conf-hook
       - file: burp-copy-{{client}}-server-cert
@@ -171,6 +176,7 @@ etc-burp-burp-client.{{client}}-confdir:
       data: |
             {{scdata}}
     - watch:
+      - file: burp-copy-server-cert
       - mc_proxy: burp-pre-conf-hook
     - watch_in:
       - mc_proxy: burp-post-conf-hook
@@ -198,6 +204,7 @@ burp-copy-{{client}}-ca-crt:
     - source: /etc/burp/CA/CA_{{ssdata.ca_name}}.crt
     - watch:
       - mc_proxy: burp-pre-conf-hook
+      - cmd: etc-burp-{{client}}-ca-gen
       - file: etc-burp-burp-client.{{client}}-confdir
     - watch_in:
       - mc_proxy: burp-post-conf-hook
@@ -220,6 +227,7 @@ burp-copy-{{client}}-server-key:
     - watch:
       - mc_proxy: burp-pre-conf-hook
       - file: etc-burp-burp-client.{{client}}-confdir
+      - file: burp-copy-server-cert
     - watch_in:
       - mc_proxy: burp-post-conf-hook
 
@@ -237,6 +245,7 @@ burp-{{client}}-cronjob:
     - watch:
       - mc_proxy: burp-pre-conf-hook
       - file: etc-burp-burp-client.{{client}}-confdir
+      - file: burp-copy-server-cert
     - watch_in:
       - mc_proxy: burp-post-conf-hook
 {% endfor %}
