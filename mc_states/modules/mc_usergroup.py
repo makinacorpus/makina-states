@@ -103,6 +103,8 @@ def settings():
         sysadmin password
     makina-states.localsettings.admin.root_password
         root password
+    makina-states.localsettings.admin.removed
+        list of ssh keys to remove from all accounts
     makina-states.localsettings.admin.absent_keys
         mappings to feed ssh_auth.absent_keys in order
         to remove ssh keys entries from all managed users
@@ -119,6 +121,7 @@ def settings():
         data['sudoers'] = []
         data['sysadmins'] = []
         sysadmins_keys = []
+        removed = []
         fr = __salt__['mc_utils.salt_root']()
         sshd = os.path.join(fr, 'files/ssh')
         vagrant_key_path = os.path.join(fr, 'files/ssh/vagrant.pub')
@@ -145,6 +148,7 @@ def settings():
                 'sysadmin_password': None,
                 'root_password': None,
                 'sysadmins_keys': sysadmins_keys,
+                'removed': removed,
                 'absent_keys': [],
             }
         )
@@ -202,7 +206,7 @@ def settings():
             udata.setdefault('home', get_home(i, udata.get('home', None)))
             ssh_keys = udata.setdefault('ssh_keys', [])
             ssh_abs_keys = udata.setdefault('ssh_absent_keys', [])
-            for k in data['admin']['absent_keys']:
+            for k in data['admin']['removed']:
                 if k not in ssh_abs_keys:
                     ssh_abs_keys.append(k)
             for k in data['sshkeys'].get(i, []):

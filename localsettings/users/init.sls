@@ -99,7 +99,7 @@ give-home-{{ id }}:
 
 {% if udata['ssh_absent_keys'] %}
 {% for key, data in udata['ssh_absent_keys'].items() %}
-{% set enc = data.get('encs', ['ed25519, ecdsa', 'ssh-rsa', 'ssh-ds']) %}
+{% set enc = data.get('encs', ['ed25519', 'ecdsa', 'ssh-rsa', 'ssh-ds']) %}
 {% for enc in encs %}
 ssh_auth-absent-key-{{id}}-{{key-}}-ssh-keys:
   ssh_auth.absent:
