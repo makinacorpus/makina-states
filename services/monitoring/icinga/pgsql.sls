@@ -30,7 +30,7 @@ include:
 import-pgsql-schema:
   file.managed:
     - name: {{tmpf}}
-    - source: salt://makina-states/files/etc/icinga/schemas/icinga-ido.schema.sql
+    - source: salt://makina-states/files/etc/icinga/schemas/icinga-ido.pgsql-schema.sql
     - makedirs: true
     - user: root
     - group: root
@@ -47,8 +47,9 @@ import-pgsql-schema:
     - watch_in:
       - mc_proxy: icinga-pre-install
 
+# check schema importation
 {% set tmpf = '/tmp/icinga-ido.check.sql' %}
-import-pgsql-schema-check:
+check-pgsql-schema:
   file.managed:
     - name: {{tmpf}}
     - source: ''
@@ -86,7 +87,7 @@ import-pgsql-schema-check:
     - name: {{tmpf}}
     - watch:
        - cmd: import-pgsql-schema
-       - file: import-pgsql-schema-check
+       - file: check-pgsql-schema
     - watch_in:
        - mc_proxy: icinga-pre-install
 
