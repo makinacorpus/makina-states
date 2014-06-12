@@ -29,6 +29,7 @@ postgresql-pkgs:
       - postgresql-server-dev-{{pgver}}
       {% endfor %}
       - libpq-dev
+      - pgtune
       - postgresql-contrib
       {% endif %}
     {% if grains['os_family'] in ['Debian'] %}
