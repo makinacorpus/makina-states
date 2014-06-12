@@ -84,7 +84,36 @@ def settings():
                 'databases': {
                     'ido2db': ido2db_database,
                     'web': web_database,
-                }
+                },
+                'databases_xml': {
+                    'icinga': {
+                        'charset': "utf8",
+                        'use_retained': "true",
+                        'Doctrine_Core_ATTR_MODEL_LOADING': "CONSERVATIVE",
+                        'load_models': "%core.module_dir%/Api/lib/database/models/generated",
+                        'models_directory': "%core.module_dir%/Api/lib/database/models",
+                        'date_format': "<![CDATA[YYYY-MM-DD HH24:MI:SS]]>",
+                        'caching': {
+                            'enabled': "false",
+                            'driver': "apc",
+                            'use_query_cache': "true",
+                        },
+                    },
+                    'icinga_web': {
+                        'charset': "utf8",
+                        'Doctrine_Core_ATTR_MODEL_LOADING': "CONSERVATIVE",
+                        'load_models': "%core.module_dir%/AppKit/lib/database/models/generated",
+                        'models_directory': "%core.module_dir%/AppKit/lib/database/models",
+                        'date_format': "<![CDATA[YYYY-MM-DD HH24:MI:SS]]>",
+                        'caching': {
+                            'enabled': "false",
+                            'driver': "apc",
+                            'use_query_cache': "true",
+                            'use_result_cache': "true",
+                            'result_cache_lifespan': "60",
+                        },
+                    },
+                },
         })
 
         __salt__['mc_macros.update_local_registry'](

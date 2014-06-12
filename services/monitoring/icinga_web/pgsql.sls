@@ -90,4 +90,3 @@ icinga_web-check-pgsql-schema:
        - mc_proxy: icinga_web-pre-install
 
 {% endif %}
-

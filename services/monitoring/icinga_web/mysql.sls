@@ -1,7 +1,7 @@
 {% set data = salt['mc_icinga_web.settings']() %}
 {% set locs = salt['mc_locations.settings']() %}
 
-{% if data.modules.ido2db.enabled %}
+{% if 'mysql' == data.databases.web.type %}
 
 {% from 'makina-states/services/db/mysql/macros.sls' import mysql_base,mysql_db with context %}
 
@@ -53,4 +53,3 @@ icinga_web-import-mysql-schema:
 # check schema importation
 # TODO
 {% endif %}
-

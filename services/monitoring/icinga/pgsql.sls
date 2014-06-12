@@ -2,6 +2,7 @@
 {% set locs = salt['mc_locations.settings']() %}
 
 {% if data.modules.ido2db.enabled %}
+{% if 'pgsql' == data.modules.ido2db.database.type %}
 
 {% import "makina-states/services/db/postgresql/init.sls" as pgsql with context %}
 
@@ -91,4 +92,4 @@ icinga-check-pgsql-schema:
        - mc_proxy: icinga-pre-install
 
 {% endif %}
-
+{% endif %}

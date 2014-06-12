@@ -2,6 +2,7 @@
 {% set locs = salt['mc_locations.settings']() %}
 
 {% if data.modules.ido2db.enabled %}
+{% if 'mysql' == data.modules.ido2db.database.type %}
 
 {% from 'makina-states/services/db/mysql/macros.sls' import mysql_base,mysql_db with context %}
 
@@ -53,4 +54,4 @@ icinga-import-mysql-schema:
 # check schema importation
 # TODO
 {% endif %}
-
+{% endif %}
