@@ -57,7 +57,10 @@ def settings():
             'makina-states.services.monitoring.icinga', {
                 'package': ['icinga-core', 'icinga-common', 'icinga-doc'],
                 'has_pgsql': ((('host' in module_ido2db_database) 
-                              and (module_ido2db_database['host'] in  [ 'localhost', '127.0.0.1', grains['host'] ]))
+                              and (module_ido2db_database['host']
+                              in  [
+                                   'localhost', '127.0.0.1', grains['host']
+                                  ]))
                               or ('socket' in module_ido2db_database)),
                 'user': "nagios",
                 'group': "nagios",
@@ -67,7 +70,9 @@ def settings():
                 'icinga_cfg': {
                     'log_file': "/var/log/icinga/icinga.log",
                     'cfg_file': ["/etc/icinga/commands.cfg"],
-                    'cfg_dir': ["/etc/nagios-plugins/config", "/etc/icinga/objects/", "/etc/icinga/modules"],
+                    'cfg_dir': ["/etc/nagios-plugins/config"
+                                ,"/etc/icinga/objects/"
+                                ,"/etc/icinga/modules"],
                     'object_cache_file': "/var/cache/icinga/objects.cache",
                     'precached_object_file': "/var/cache/icinga/objects.precache",
                     'resource_file': "/etc/icinga/resource.cfg",
