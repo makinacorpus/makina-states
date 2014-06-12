@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- MANAGED VIA SALT -- DO NOT EDIT -->
+{% set data = salt['mc_utils.json_load'](data) %}
+<ae:configurations xmlns="http://icinga.org/api/config/parts/access/1.0"
+    xmlns:ae="http://agavi.org/agavi/config/global/envelope/1.0">
+    <ae:configuration>
+
+        <!-- Document resources 
+            http://docs.icinga.org/latest/en/icinga-web-config.html#configweb-access 
+            https://wiki.icinga.org/display/howtos/access.xml -->
+
+        <!-- Map your instances to hosts here -->
+        <instances>
+            <!-- For slave commands seperate hosts with ';' 
+                    <instance name="default">localhost;host1;host15</instance> -->
+            {% for host in data.access_xml.instances %}
+            <instance name="default">{{host}}</instance>
+            {% endfor %}
+        </instances>
+
+        <!-- Default settings that will be set if useDefaults is true -->
+        <defaults>
+            <access>
+                {% if 'readwrite' in data.access_xml.defaults.access %}
+                <readwrite>
+                    {% if 'folders' in data.access_xml.defaults.access.readwrite %}
+                    <folders>
+                        {% for folder in data.access_xml.defaults.access.readwrite.folders %}
+                        <resource name="{{folder.name}}">{{folder.folder}}</resource>
+                        {% endfor %}
+                    </folders>
+                    {% endif %}
+                    {% if 'files' in data.access_xml.defaults.access.readwrite %}
+                    <files>
+                        {% for file in data.access_xml.defaults.access.readwrite.files %}
+                        <resource name="{{file.name}}">{{file.file}}</resource>
+                        {% endfor %}
+                    </files>
+                    {% endif %}
+                </readwrite>
+                {% endif %}
+                <!-- allowed to be read from -->
+                {% if 'read' in data.access_xml.defaults.access %}
+                <read>
+                    {% if 'folders' in data.access_xml.defaults.access.read %}
+                    <folders>
+                        {% for folder in data.access_xml.defaults.access.read.folders %}
+                        <resource name="{{folder.name}}">{{folder.folder}}</resource>
+                        {% endfor %}
+                    </folders>
+                    {% endif %}
+                    {% if 'files' in data.access_xml.defaults.access.read %}
+                    <files>
+                        {% for file in data.access_xml.defaults.access.read.files %}
+                        <resource name="{{file.name}}">{{file.file}}</resource>
+                        {% endfor %}
+                    </files>
+                    {% endif %}
+                </read>
+                {% endif %}
+                <!-- allowed to be written to -->
+                {% if 'write' in data.access_xml.defaults.access %}
+                <write>
+                    {% if 'folders' in data.access_xml.defaults.access.write %}
+                    <folders>
+                        {% for folder in data.access_xml.defaults.access.write.folders %}
+                        <resource name="{{folder.name}}">{{folder.folder}}</resource>
+                        {% endfor %}
+                    </folders>
+                    {% endif %}
+                    {% if 'files' in data.access_xml.defaults.access.write %}
+                    <files>
+                        {% for file in data.access_xml.defaults.access.write.files %}
+                        <resource name="{{file.name}}">{{file.file}}</resource>
+                        {% endfor %}
+                    </files>
+                    {% endif %}
+                </write>
+                {% endif %}
+                <!-- allowed to be executed -->
+                {% if 'execute' in data.access_xml.defaults.access %}
+                <execute>
+                    {% if 'folders' in data.access_xml.defaults.access.execute %}
+                    <folders>
+                        {% for folder in data.access_xml.defaults.access.execute.folders %}
+                        <resource name="{{folder.name}}">{{folder.folder}}</resource>
+                        {% endfor %}
+                    </folders>
+                    {% endif %}
+                    {% if 'files' in data.access_xml.defaults.access.execute %}
+                    <files>
+                        {% for file in data.access_xml.defaults.access.execute.files %}
+                        <resource name="{{file.name}}">{{file.file}}</resource>
+                        {% endfor %}
+                    </files>
+                    {% endif %}
+                </execute>
+                {% endif %}
+            </access>
+        </defaults>
+
+
+        <!-- Hosts that can be accessed via the console interface -->
+        <hosts>
+            {% for host in data.access_xml.hosts %}
+            <host name="{{host.name}}">
+                <type>{{host.type}}</type>
+
+                {% if 'ssh' == host.type and 'ssh_config' in host %}
+                <ssh-config>
+                    <host>{{host.ssh_config.host}}</host>
+                    <port>{{host.ssh_config.port}}</port>
+                    <auth>
+                        <type>{{host.ssh_config.auth.type}}</type>
+                        <user>{{host.ssh_config.auth.user}}</user>   
+                        {% if 'private_key' in host.ssh_config.auth %}
+                        <private-key>{{host.ssh_config.auth.private_key}}</private-key>
+                        {% endif %}
+                        {% if 'password' in host.ssh_config.auth %}
+                        <password>{{host.ssh_config.auth.password}}</password>
+                        {% endif %}
+                    </auth>
+                </ssh-config>
+                {% endif %}
+
+                {% if 'access' in host %}
+                <access useDefaults="{{host.access.useDefaults}}">
+                    {% if 'readwrite' in host.access %}
+                    <readwrite>
+                        {% if 'folders' in host.access.readwrite %}
+                        <folders>
+                            {% for folder in host.access.readwrite.folders %}
+                            <resource name="{{folder.name}}">{{folder.folder}}</resource>
+                            {% endfor %}
+                        </folders>
+                        {% endif %}
+                        {% if 'files' in host.access.readwrite %}
+                        <files>
+                            {% for file in host.access.readwrite.files %}
+                            <resource name="{{file.name}}">{{file.file}}</resource>
+                            {% endfor %}
+                        </files>
+                        {% endif %}
+                    </readwrite>
+                    {% endif %}
+                    {% if 'read' in host.access %}
+                    <read>
+                        {% if 'folders' in host.access.read %}
+                        <folders>
+                            {% for folder in host.access.read.folders %}
+                            <resource name="{{folder.name}}">{{folder.folder}}</resource>
+                            {% endfor %}
+                        </folders>
+                        {% endif %}
+                        {% if 'files' in host.access.read %}
+                        <files>
+                            {% for file in host.access.read.files %}
+                            <resource name="{{file.name}}">{{file.file}}</resource>
+                            {% endfor %}
+                        </files>
+                        {% endif %}
+                    </read>
+                    {% endif %}
+                    {% if 'write' in host.access %}
+                    <write>
+                        {% if 'folders' in host.access.write %}
+                        <folders>
+                            {% for folder in host.access.write.folders %}
+                            <resource name="{{folder.name}}">{{folder.folder}}</resource>
+                            {% endfor %}
+                        </folders>
+                        {% endif %}
+                        {% if 'files' in host.access.write %}
+                        <files>
+                            {% for file in host.access.write.files %}
+                            <resource name="{{file.name}}">{{file.file}}</resource>
+                            {% endfor %}
+                        </files>
+                        {% endif %}
+                    </write>
+                    {% endif %}
+                    {% if 'execute' in host.access %}
+                    <execute>
+                        {% if 'folders' in host.access.execute %}
+                        <folders>
+                            {% for folder in host.access.execute.folders %}
+                            <resource name="{{folder.name}}">{{folder.folder}}</resource>
+                            {% endfor %}
+                         </folders>
+                        {% endif %}
+                        {% if 'files' in host.access.execute %}
+                        <files>
+                            {% for file in host.access.execute.files %}
+                            <resource name="{{file.name}}">{{file.file}}</resource>
+                            {% endfor %}
+                        </files>
+                        {% endif %}
+                    </execute>
+                    {% endif %}
+                </access>
+                {% endif %}
+            </host>
+            {% endfor %}
+        </hosts>
+
+    </ae:configuration>
+</ae:configurations>

@@ -14,7 +14,7 @@ include:
   - makina-states.services.monitoring.icinga_web.services
 
 # configure databases
-icinga-conf:
+icinga_web-databases-conf:
   file.managed:
     - name: {{data.configuration_directory}}/conf.d/databases.xml
     - source: salt://makina-states/files/etc/icinga-web/conf.d/databases.xml
@@ -30,6 +30,25 @@ icinga-conf:
     - defaults:
       data: |
             {{sdata}}
+
+icinga_web-access-conf:
+  file.managed:
+    - name: {{data.configuration_directory}}/conf.d/access.xml
+    - source: salt://makina-states/files/etc/icinga-web/conf.d/access.xml
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: www-data
+    - mode: 640
+    - watch:
+      - mc_proxy: icinga_web-pre-conf
+    - watch_in:
+      - mc_proxy: icinga_web-post-conf
+    - defaults:
+      data: |
+            {{sdata}}
+
+
 
 # not used
 {#

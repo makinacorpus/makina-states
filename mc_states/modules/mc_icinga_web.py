@@ -85,6 +85,88 @@ def settings():
                     'ido2db': ido2db_database,
                     'web': web_database,
                 },
+                'access_xml': {
+                    'instances': ["localhost"],
+                    'defaults': {
+                        'access': {
+                            'readwrite': {
+                                'folders': [
+                                    {'name': "icinga_objects",
+                                     'folder': "/etc/icinga/objects",},
+                                ],
+                                'files': [
+                                    {'name': "icinga_cfg",
+                                     'file': "/etc/icinga/icinga.cfg",},
+                                ],
+                            },
+#                            'read': {
+#                                'folders': [],
+#                                'files': [],
+#                            },
+                            'write': {
+#                                'folders': [],
+                                'files': [
+                                    {'name': "icinga_pipe",
+                                     'file': "/var/lib/icinga/rw/icinga.cmd",},
+                                ],
+                            },
+                            'execute': {
+#                                'folders': [],
+                                'files': [
+                                    {'name': "icinga_service",
+                                     'file': "/usr/bin/service icinga",},
+                                    {'name': "icinga_bin",
+                                     'file': "/usr/sbin/icinga",},
+                                    {'name': "echo",
+                                     'file': "/bin/echo",},
+                                    {'name': "printf",
+                                     'file': "printf",},
+                                    {'name': "cp",
+                                     'file': "/bin/cp",},
+                                    {'name': "ls",
+                                     'file': "/bin/ls",},
+                                    {'name': "grep",
+                                     'file': "/bin/grep",},
+                                ],
+                            },
+                        },
+                    },
+                    'hosts': [
+                        {
+                            'name': "localhost",
+                            'type': 'ssh',
+#                            'ssh_config': {
+#                                'host': "debian.www",
+#                                'port': 22,
+#                                'auth': {
+#                                    'type': "key",
+#                                    'user': "icinga",
+#                                    'private_key': "/usr/local/icinga-web/id_debian",
+#                                    'password': "123",
+#                                },
+#                            },
+                            'access': {
+                                'useDefaults': "true",
+#                                'readwrite': {
+#                                    'folders': [],
+#                                    'files': [],
+#                                },
+#                                'read': {
+#                                    'folders': [],
+#                                    'files': [],
+#                                },
+#                                'write': {
+#                                    'folders': [],
+#                                    'files': [],
+#                                },
+#                                'execute': {
+#                                    'folders': [],
+#                                    'files': [],
+#                                },
+                            },
+                        },
+                    ],
+                },
                 'databases_xml': {
                     'icinga': {
                         'charset': "utf8",
