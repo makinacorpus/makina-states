@@ -465,9 +465,6 @@ def load_network_infrastructure(ttl=60):
         for fqdn in ips_map:
             if fqdn in ips:
                 continue
-            #if fqdn in 'tiles.ma':
-            #    import pdb;pdb.set_trace()  ## Breakpoint ##
-
             ips[fqdn] = ips_for(fqdn,
                                 ips=ips, cnames=cnames, ipsfo=ipsfo,
                                 ipsfo_map=ipsfo_map, ips_map=ips_map)
@@ -1267,7 +1264,7 @@ def get_shorewall_settings(id_=None, ttl=60):
 def get_removed_keys(id_=None, ttl=60):
     if not id_:
         id_ = __opts__['id']
-    def _do_sys_keys(id_, removed=None):
+    def _do_removed(id_, removed=None):
         removed_keys_map = __salt__['mc_pillar.query']('removed_keys_map')
         keys_map = __salt__['mc_pillar.query']('keys_map')
         skeys = []
@@ -1280,7 +1277,7 @@ def get_removed_keys(id_=None, ttl=60):
                     skeys.append(key)
         return skeys
     cache_key = 'mc_pillar.get_removed_keys{0}'.format(id_)
-    return memoize_cache(_do_sys_keys, [id_], {}, cache_key, ttl)
+    return memoize_cache(_do_removed, [id_], {}, cache_key, ttl)
 
 
 def get_sysadmins_keys(id_=None, ttl=60):

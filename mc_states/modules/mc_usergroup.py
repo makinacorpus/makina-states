@@ -103,11 +103,10 @@ def settings():
         sysadmin password
     makina-states.localsettings.admin.root_password
         root password
-    makina-states.localsettings.admin.removed
-        list of ssh keys to remove from all accounts
     makina-states.localsettings.admin.absent_keys
-        mappings to feed ssh_auth.absent_keys in order
-        to remove ssh keys entries from all managed users
+        list of mappings to feed ssh_auth.absent_keys
+        in order to remove ssh keys entries from all
+        managed users
 
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
@@ -121,7 +120,6 @@ def settings():
         data['sudoers'] = []
         data['sysadmins'] = []
         sysadmins_keys = []
-        removed = []
         fr = __salt__['mc_utils.salt_root']()
         sshd = os.path.join(fr, 'files/ssh')
         vagrant_key_path = os.path.join(fr, 'files/ssh/vagrant.pub')
@@ -148,7 +146,6 @@ def settings():
                 'sysadmin_password': None,
                 'root_password': None,
                 'sysadmins_keys': sysadmins_keys,
-                'removed': removed,
                 'absent_keys': [],
             }
         )
@@ -205,18 +202,23 @@ def settings():
             udata.setdefault("system", False)
             udata.setdefault('home', get_home(i, udata.get('home', None)))
             ssh_keys = udata.setdefault('ssh_keys', [])
-            ssh_abs_keys = udata.setdefault('ssh_absent_keys', [])
-            for k in data['admin']['removed']:
-                if k not in ssh_abs_keys:
-                    ssh_abs_keys.append(k)
+            ssh_absent_keys = udata.setdefault('ssh_absent_keys', [])
+            for k in data['admin']['absent_keys']:
+                if k not in ssh_absent_keys:
+                    ssh_absent_keys.append(
+                        deepcopy(k))
             for k in data['sshkeys'].get(i, []):
                 if k not in ssh_keys:
                     ssh_keys.append(k)
             udata['ssh_keys'] = []
             for k in ssh_keys:
-                if not '://' in k:
+                if (
+                    '://' not in k
+                    and k.endswith('.pub')
+                    and '/files/' in k
+                ):
                     k = 'salt://files/ssh/' + k
-                if not k in udata['ssh_keys']:
+                if k not in udata['ssh_keys']:
                     udata['ssh_keys'].append(k)
         return data
     return _settings()
