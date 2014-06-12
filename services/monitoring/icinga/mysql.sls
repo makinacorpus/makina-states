@@ -2,7 +2,6 @@
 {% set locs = salt['mc_locations.settings']() %}
 
 {% if data.modules.ido2db.enabled %}
-{% if 'mysql' == data.modules.ido2db.database.type %}
 
 {% from 'makina-states/services/db/mysql/macros.sls' import mysql_base,mysql_db with context %}
 
@@ -17,9 +16,9 @@ include:
   {% endif %}
 
 # add the user
-icinga-mysql:
+icinga-create-mysql-user:
   mysql_database.present:
-    - name: icinga
+    - name: {{data.modules.ido2db.database.user}}
 
 
 # create the database
@@ -29,10 +28,9 @@ icinga-mysql:
     password=data.modules.ido2db.database.password) }}
 
 # import schema
-# mysql.query supports only select statement
 # this state is inspired by "services/db/postgresql/fix-template-1-encoding.sls"
 {% set tmpf = '/tmp/icinga-ido.schema.sql' %}
-import-mysql-schema:
+icinga-import-mysql-schema:
   file.managed:
     - name: {{tmpf}}
     - source: salt://makina-states/files/etc/icinga/schemas/icinga-ido.mysql-schema.sql
@@ -47,13 +45,12 @@ import-mysql-schema:
     - name: mysql --host="{{data.modules.ido2db.database.host}}" --port="{{data.modules.ido2db.database.port}}" --user="{{data.modules.ido2db.database.user}}" --password="{{data.modules.ido2db.database.password}}" "{{data.modules.ido2db.database.name}}" < "{{tmpf}}"
     {% endif %}
     - watch:
-      - file: import-mysql-schema
+      - file: icinga-import-mysql-schema
 #      - mc_proxy: makina-mysql-post-base
     - watch_in:
       - mc_proxy: icinga-pre-install
 
 # check schema importation
 # TODO
-{% endif %}
 {% endif %}
 

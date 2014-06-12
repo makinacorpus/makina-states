@@ -2,7 +2,6 @@
 {% set locs = salt['mc_locations.settings']() %}
 
 {% if data.modules.ido2db.enabled %}
-{% if 'pgsql' == data.modules.ido2db.database.type %}
 
 {% import "makina-states/services/db/postgresql/init.sls" as pgsql with context %}
 
@@ -27,7 +26,7 @@ include:
 # postgres.psql_query supports only select statement
 # this state is inspired by "services/db/postgresql/fix-template-1-encoding.sls"
 {% set tmpf = '/tmp/icinga-ido.schema.sql' %}
-import-pgsql-schema:
+icinga-import-pgsql-schema:
   file.managed:
     - name: {{tmpf}}
     - source: salt://makina-states/files/etc/icinga/schemas/icinga-ido.pgsql-schema.sql
@@ -42,14 +41,14 @@ import-pgsql-schema:
     - name: psql "postgresql://{{data.modules.ido2db.database.user}}:{{data.modules.ido2db.database.password}}@[{{data.modules.ido2db.database.host}}]:{{data.modules.ido2db.database.port}}/{{data.modules.ido2db.database.name}}" -f "{{tmpf}}"
     {% endif %}
     - watch:
-      - file: import-pgsql-schema
+      - file: icinga-import-pgsql-schema
       - mc_proxy: makina-postgresql-post-base
     - watch_in:
       - mc_proxy: icinga-pre-install
 
 # check schema importation
 {% set tmpf = '/tmp/icinga-ido.check.sql' %}
-check-pgsql-schema:
+icinga-check-pgsql-schema:
   file.managed:
     - name: {{tmpf}}
     - source: ''
@@ -86,11 +85,10 @@ check-pgsql-schema:
   cmd.run:
     - name: {{tmpf}}
     - watch:
-       - cmd: import-pgsql-schema
-       - file: check-pgsql-schema
+       - cmd: icinga-import-pgsql-schema
+       - file: icinga-check-pgsql-schema
     - watch_in:
        - mc_proxy: icinga-pre-install
 
-{% endif %}
 {% endif %}
 

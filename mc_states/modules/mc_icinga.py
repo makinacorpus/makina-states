@@ -48,7 +48,7 @@ def settings():
 #            'socket': "",
             'user': "icinga",
             'password': password,
-            'name': "icinga",
+            'name': "icinga_ido",
             'prefix': "icinga_",
         }
 

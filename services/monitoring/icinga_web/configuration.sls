@@ -13,14 +13,7 @@ include:
   - makina-states.services.monitoring.icinga_web.hooks
   - makina-states.services.monitoring.icinga_web.services
 
-
-# not finished because ido database should be created in the icinga service
-
-# import schema into databases
-
-
 # configure databases
-{#
 icinga-conf:
   file.managed:
     - name: {{data.configuration_directory}}/conf.d/databases.xml
@@ -38,7 +31,6 @@ icinga-conf:
       data: |
             {{sdata}}
 
-#}
 # not used
 {#
 #

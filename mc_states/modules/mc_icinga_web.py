@@ -34,42 +34,58 @@ def settings():
         locs = __salt__['mc_locations.settings']()
 
         # generate default password
-        icinga_reg = __salt__[
+        icinga_web_reg = __salt__[
             'mc_macros.get_local_registry'](
                 'icinga_web', registry_format='pack')
 
-        password = icinga_reg.setdefault('web.password', __salt__['mc_utils.generate_password']())
+        password_web = icinga_web_reg.setdefault('web.password', __salt__['mc_utils.generate_password']())
+
+        # get default ido password
+        password_ido=""
+        # TODO
+
+        ido2db_database = {
+            'type': "pgsql",
+            'host': "localhost",
+            'port': 5432,
+#            'socket': "",
+            'user': "icinga",
+            'password': password_ido,
+            'name': "icinga_ido",
+            'prefix': "icinga_",
+        }
+
+        web_database = {
+            'type': "pgsql",
+            'host': "localhost",
+            'port': 5432,
+#            'socket': "",
+            'user': "icinga",
+            'password': password_web,
+            'name': "icinga_web",
+            'prefix': "nsm_",
+        }
+
+        has_sgbd = ((('host' in web_database)
+                     and (web_database['host']
+                          in  [
+                              'localhost', '127.0.0.1', grains['host']
+                          ]))
+                    or ('socket' in web_database))
 
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.monitoring.icinga_web', {
                 'package': ['icinga-web'],
                 'configuration_directory': locs['conf_dir']+"/icinga-web",
-
-                'database': {
-                    'icinga_web': {
-                        'type': "mysql",
-                        'host': "localhost",
-                        'port': 3306,
-#                        'socket': "",
-                        'user': "localhost",
-                        'password': password,
-                        'name': "icinga_web",
-                        'prefix': "icinga_",
-                    },
-                    'icinga_ido': {
-                        'type': "mysql",
-                        'host': "localhost",
-                        'port': 3306,
-#                        'socket': "",
-                        'user': "icinga",
-                        'password': password,
-                        'name': "icinga_ido",
-                        'prefix': "icinga_",
-                    },
-                },
-
-
-            })
+                'has_pgsql': ('pgsql' == web_database['type']
+                              and has_sgbd),
+                'has_mysql': ('mysql' == web_database['type']
+                              and has_sgbd),
+                'databases': {
+                    'ido2db': ido2db_database,
+                    'web': web_database,
+                }
+        })
 
         __salt__['mc_macros.update_local_registry'](
             'icinga_web', icinga_web_reg,
