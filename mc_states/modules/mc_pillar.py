@@ -1427,7 +1427,7 @@ def backup_configuration_for(id_, ttl=60):
     def _do(id_):
         conf = __salt__['mc_pillar.backup_configuration_type_for'](id_)
         confs = query('backup_configurations')
-        return confs[conf]
+        return copy.deepcopy(confs[conf])
     cache_key = 'mc_pillar.backup_configuration_for{0}'.format(id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
@@ -1498,7 +1498,7 @@ def backup_server_settings_for(id_, ttl=60):
             confs[host] = {'type': type_, 'conf': conf}
         data['confs'] = confs
         return data
-    cache_key = 'mc_pillar.backup_configurations_for{0}'.format(id_)
+    cache_key = 'mc_pillar.backup_server_settings_for{0}'.format(id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 
