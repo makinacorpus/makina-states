@@ -48,6 +48,40 @@ icinga_web-access-conf:
       data: |
             {{sdata}}
 
+icinga_web-auth-conf:
+  file.managed:
+    - name: {{data.configuration_directory}}/conf.d/auth.xml
+    - source: salt://makina-states/files/etc/icinga-web/conf.d/auth.xml
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: www-data
+    - mode: 640
+    - watch:
+      - mc_proxy: icinga_web-pre-conf
+    - watch_in:
+      - mc_proxy: icinga_web-post-conf
+    - defaults:
+      data: |
+            {{sdata}}
+
+icinga_web-cronks-conf:
+  file.managed:
+    - name: {{data.configuration_directory}}/conf.d/cronks.xml
+    - source: salt://makina-states/files/etc/icinga-web/conf.d/cronks.xml
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: www-data
+    - mode: 640
+    - watch:
+      - mc_proxy: icinga_web-pre-conf
+    - watch_in:
+      - mc_proxy: icinga_web-post-conf
+    - defaults:
+      data: |
+            {{sdata}}
+
 icinga_web-exclude_customvars-conf:
   file.managed:
     - name: {{data.configuration_directory}}/conf.d/exclude_customvars.xml

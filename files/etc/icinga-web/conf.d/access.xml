@@ -25,15 +25,15 @@
                 <readwrite>
                     {% if 'folders' in data.access_xml.defaults.access.readwrite %}
                     <folders>
-                        {% for folder in data.access_xml.defaults.access.readwrite.folders %}
-                        <resource name="{{folder.name}}">{{folder.folder}}</resource>
+                        {% for name,value in data.access_xml.defaults.access.readwrite.folders.items() %}
+                        <resource name="{{name}}">{{value}}</resource>
                         {% endfor %}
                     </folders>
                     {% endif %}
                     {% if 'files' in data.access_xml.defaults.access.readwrite %}
                     <files>
-                        {% for file in data.access_xml.defaults.access.readwrite.files %}
-                        <resource name="{{file.name}}">{{file.file}}</resource>
+                        {% for name,value in data.access_xml.defaults.access.readwrite.files.items() %}
+                        <resource name="{{name}}">{{value}}</resource>
                         {% endfor %}
                     </files>
                     {% endif %}
@@ -44,15 +44,15 @@
                 <read>
                     {% if 'folders' in data.access_xml.defaults.access.read %}
                     <folders>
-                        {% for folder in data.access_xml.defaults.access.read.folders %}
-                        <resource name="{{folder.name}}">{{folder.folder}}</resource>
+                        {% for name,value in data.access_xml.defaults.access.read.folders.items() %}
+                        <resource name="{{name}}">{{value}}</resource>
                         {% endfor %}
                     </folders>
                     {% endif %}
-                    {% if 'files' in data.access_xml.defaults.access.read %}
+                    {% if 'files' in data.access_xml.defaults.access.read.items() %}
                     <files>
-                        {% for file in data.access_xml.defaults.access.read.files %}
-                        <resource name="{{file.name}}">{{file.file}}</resource>
+                        {% for name,value in data.access_xml.defaults.access.read.files.items() %}
+                        <resource name="{{name}}">{{value}}</resource>
                         {% endfor %}
                     </files>
                     {% endif %}
@@ -63,15 +63,15 @@
                 <write>
                     {% if 'folders' in data.access_xml.defaults.access.write %}
                     <folders>
-                        {% for folder in data.access_xml.defaults.access.write.folders %}
-                        <resource name="{{folder.name}}">{{folder.folder}}</resource>
+                        {% for name,value in data.access_xml.defaults.access.write.folders.items() %}
+                        <resource name="{{name}}">{{value}}</resource>
                         {% endfor %}
                     </folders>
                     {% endif %}
                     {% if 'files' in data.access_xml.defaults.access.write %}
                     <files>
-                        {% for file in data.access_xml.defaults.access.write.files %}
-                        <resource name="{{file.name}}">{{file.file}}</resource>
+                        {% for name,value in data.access_xml.defaults.access.write.files.items() %}
+                        <resource name="{{name}}">{{value}}</resource>
                         {% endfor %}
                     </files>
                     {% endif %}
@@ -82,15 +82,15 @@
                 <execute>
                     {% if 'folders' in data.access_xml.defaults.access.execute %}
                     <folders>
-                        {% for folder in data.access_xml.defaults.access.execute.folders %}
-                        <resource name="{{folder.name}}">{{folder.folder}}</resource>
+                        {% for name,value in data.access_xml.defaults.access.execute.folders.items() %}
+                        <resource name="{{name}}">{{value}}</resource>
                         {% endfor %}
                     </folders>
                     {% endif %}
                     {% if 'files' in data.access_xml.defaults.access.execute %}
                     <files>
-                        {% for file in data.access_xml.defaults.access.execute.files %}
-                        <resource name="{{file.name}}">{{file.file}}</resource>
+                        {% for name,value in data.access_xml.defaults.access.execute.files.items() %}
+                        <resource name="{{name}}">{{value}}</resource>
                         {% endfor %}
                     </files>
                     {% endif %}
@@ -129,15 +129,15 @@
                     <readwrite>
                         {% if 'folders' in host.access.readwrite %}
                         <folders>
-                            {% for folder in host.access.readwrite.folders %}
-                            <resource name="{{folder.name}}">{{folder.folder}}</resource>
+                            {% for name,value in host.access.readwrite.folders.items() %}
+                            <resource name="{{name}}">{{value}}</resource>
                             {% endfor %}
                         </folders>
                         {% endif %}
                         {% if 'files' in host.access.readwrite %}
                         <files>
-                            {% for file in host.access.readwrite.files %}
-                            <resource name="{{file.name}}">{{file.file}}</resource>
+                            {% for name,value in host.access.readwrite.files.items() %}
+                            <resource name="{{name}}">{{value}}</resource>
                             {% endfor %}
                         </files>
                         {% endif %}
@@ -147,15 +147,15 @@
                     <read>
                         {% if 'folders' in host.access.read %}
                         <folders>
-                            {% for folder in host.access.read.folders %}
-                            <resource name="{{folder.name}}">{{folder.folder}}</resource>
+                            {% for name,value in host.access.read.folders.items() %}
+                            <resource name="{{name}}">{{value}}</resource>
                             {% endfor %}
                         </folders>
                         {% endif %}
                         {% if 'files' in host.access.read %}
                         <files>
-                            {% for file in host.access.read.files %}
-                            <resource name="{{file.name}}">{{file.file}}</resource>
+                            {% for name,value in host.access.read.files.items() %}
+                            <resource name="{{name}}">{{value}}</resource>
                             {% endfor %}
                         </files>
                         {% endif %}
@@ -165,15 +165,15 @@
                     <write>
                         {% if 'folders' in host.access.write %}
                         <folders>
-                            {% for folder in host.access.write.folders %}
-                            <resource name="{{folder.name}}">{{folder.folder}}</resource>
+                            {% for name,value in host.access.write.folders.items() %}
+                            <resource name="{{name}}">{{value}}</resource>
                             {% endfor %}
                         </folders>
                         {% endif %}
                         {% if 'files' in host.access.write %}
                         <files>
-                            {% for file in host.access.write.files %}
-                            <resource name="{{file.name}}">{{file.file}}</resource>
+                            {% for name,value in host.access.write.files.items() %}
+                            <resource name="{{name}}">{{value}}</resource>
                             {% endfor %}
                         </files>
                         {% endif %}
@@ -183,15 +183,15 @@
                     <execute>
                         {% if 'folders' in host.access.execute %}
                         <folders>
-                            {% for folder in host.access.execute.folders %}
-                            <resource name="{{folder.name}}">{{folder.folder}}</resource>
+                            {% for name,value in host.access.execute.folders.items() %}
+                            <resource name="{{name}}">{{value}}</resource>
                             {% endfor %}
                          </folders>
                         {% endif %}
                         {% if 'files' in host.access.execute %}
                         <files>
-                            {% for file in host.access.execute.files %}
-                            <resource name="{{file.name}}">{{file.file}}</resource>
+                            {% for name,value in host.access.execute.files.items() %}
+                            <resource name="{{name}}">{{value}}</resource>
                             {% endfor %}
                         </files>
                         {% endif %}

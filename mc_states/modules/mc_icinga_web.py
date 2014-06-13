@@ -91,64 +91,58 @@ def settings():
                               and has_sgbd),
                 'root_account': {
                     'login': "root",
-                    'hashed_password': hmac.new(root_account['salt'], root_account['password'], digestmod=hashlib.sha256).hexdigest(),
+                    'hashed_password': hmac.new(root_account['salt']
+                                               ,root_account['password']
+                                               ,digestmod=hashlib.sha256).hexdigest(),
                     'salt': root_account['salt'],
                 },
                 'databases': {
                     'ido2db': ido2db_database,
                     'web': web_database,
                 },
-                'exclude_customvars_xml': [],
+                'exclude_customvars_xml': {
+                    'settings': [],
+                },
                 'access_xml': {
                     'instances': ["localhost"],
                     'defaults': {
                         'access': {
                             'readwrite': {
-                                'folders': [
-                                    {'name': "icinga_objects",
-                                     'folder': "/etc/icinga/objects",},
-                                ],
-                                'files': [
-                                    {'name': "icinga_cfg",
-                                     'file': "/etc/icinga/icinga.cfg",},
-                                ],
+                                'folders': {
+                                    'icinga_objects': "/etc/icinga/objects",
+                                },
+                                'files': {
+                                    'icinga_cfg': "/etc/icinga/icinga.cfg",
+                                },
                             },
 #                            'read': {
-#                                'folders': [],
-#                                'files': [],
+#                                'folders': {},
+#                                'files': {},
 #                            },
                             'write': {
-#                                'folders': [],
-                                'files': [
-                                    {'name': "icinga_pipe",
-                                     'file': "/var/lib/icinga/rw/icinga.cmd",},
-                                ],
+#                                'folders': {},
+                                'files': {
+                                    'icinga_pipe': "/var/lib/icinga/rw/icinga.cmd",
+                                },
                             },
                             'execute': {
-#                                'folders': [],
-                                'files': [
-                                    {'name': "icinga_service",
-                                     'file': "/usr/bin/service icinga",},
-                                    {'name': "icinga_bin",
-                                     'file': "/usr/sbin/icinga",},
-                                    {'name': "echo",
-                                     'file': "/bin/echo",},
-                                    {'name': "printf",
-                                     'file': "printf",},
-                                    {'name': "cp",
-                                     'file': "/bin/cp",},
-                                    {'name': "ls",
-                                     'file': "/bin/ls",},
-                                    {'name': "grep",
-                                     'file': "/bin/grep",},
-                                ],
+#                                'folders': {},
+                                'files': {
+                                    'icinga_service': "/usr/bin/service icinga",
+                                    'icinga_bin': "/usr/sbin/icinga",
+                                    'echo': "/bin/echo",
+                                    'printf': "printf",
+                                    'cp': "/bin/cp",
+                                    'ls': "/bin/ls",
+                                    'grep': "/bin/grep",
+                                },
                             },
                         },
                     },
                     'hosts': [
                         {
                             'name': "localhost",
-                            'type': 'ssh',
+                            'type': 'local',
 #                            'ssh_config': {
 #                                'host': "debian.www",
 #                                'port': 22,
@@ -162,22 +156,108 @@ def settings():
                             'access': {
                                 'useDefaults': "true",
 #                                'readwrite': {
-#                                    'folders': [],
-#                                    'files': [],
+#                                    'folders': {},
+#                                    'files': {},
 #                                },
 #                                'read': {
-#                                    'folders': [],
-#                                    'files': [],
+#                                    'folders': {},
+#                                    'files': {},
 #                                },
 #                                'write': {
-#                                    'folders': [],
-#                                    'files': [],
+#                                    'folders': {},
+#                                    'files': {},
 #                                },
 #                                'execute': {
-#                                    'folders': [],
-#                                    'files': [],
+#                                    'folders': {},
+#                                    'files': {},
 #                                },
                             },
+                        },
+                    ],
+                },
+                'auth_xml': {
+                    'settings': [
+                        {'name': "defaults",
+                         'parameters': {
+                             'auth_create': "false",
+                             'auth_update': "false",
+                             'auth_resume': "true",
+                             'auth_groups': "icinga_user",
+                             'auth_enable': "true",
+                             'auth_authoritative': "true",
+                         },
+                        },
+                        {'name': "auth_key",
+                         'parameters': {
+                             'auth_create': "false",
+                             'auth_update': "false",
+                             'auth_resume': "true",
+                             'auth_groups': "icinga_user",
+                             'auth_enable': "true",
+                             'auth_authoritative': "true",
+                         },
+                        },
+                    ],
+                },
+                'cronks_xml': {
+                    'cronks': [
+                        {'name': "iframeViewIcingaDocsEn",
+                         'parameters': {
+                             'module': "Cronks",
+                             'action': "System.IframeView",
+                             'hide': "false",
+                             'description': "Icinga docs english version",
+                             'name': "Docs EN",
+                             'image': "cronks.Info2",
+                             'categories': "misc",
+                             'position': 300,
+                             'parameters': {
+                                 'url': "<![CDATA[/icinga-web/docs/en/index.html]]>",
+                             },
+                         },
+                        },
+                        {'name': "iframeViewIcingaDocsDe",
+                         'parameters': {
+                             'module': "Cronks",
+                             'action': "System.IframeView",
+                             'hide': "false",
+                             'description': "Icinga docs german version",
+                             'name': "Docs DE",
+                             'image': "cronks.Info2",
+                             'categories': "misc",
+                             'position': 310,
+                             'parameters': {
+                                 'url': "<![CDATA[/icinga-web/docs/de/index.html]]>",
+                             },
+                         },
+                        },
+                        {'name': "icingaReportingDefault",
+                         'parameters': {
+                             'module': "Reporting",
+                             'action': "Cronk.Main",
+                             'hide': "true",
+                             'enabled': "false",
+                             'description': "Seamless Jasper Integration",
+                             'name': "Reporting",
+                             'categories': "icinga-reporting",
+                             'image': "cronks.Weather_Cloud_Sun",
+                             'groupsonly': "appkit_admin",
+                             'parameters': {
+                                 'jasperconfig': "modules.reporting.jasperconfig.default",
+                                 'enable_onthefly': 1,
+                                 'enable_repository': 1,
+                                 'enable_scheduling': 1,
+                             },
+                         },
+                        },
+                    ],
+                    'categories': [
+#                        {'name': "misc",
+#                         'parameters': {
+#                             'title': "Misc",
+#                             'visible': "true",
+#                             'position': 99,
+                         },
                         },
                     ],
                 },

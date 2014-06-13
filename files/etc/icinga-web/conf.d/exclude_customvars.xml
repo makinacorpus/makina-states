@@ -9,8 +9,8 @@
                 from the users
             -->
             <settings>
-                {% for parameter in data.exclude_customvars_xml %}
-                <ae:parameter>{{parameter}}</ae:parameter>
+                {% for value in data.exclude_customvars_xml.settings %}
+                <ae:parameter>{{value}}</ae:parameter>
                 {% endfor %}
                 <!-- <ae:parameter>PASSWORD</ae:parameter> -->
                 <!-- <ae:parameter>DN</ae:parameter> -->
