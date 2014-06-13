@@ -1,5 +1,6 @@
-{% set data = salt['mc_icinga_web.settings']() %}
 {% set locs = salt['mc_locations.settings']() %}
+{% set data = salt['mc_icinga_web.settings']() %}
+{% set sdata = salt['mc_utils.json_dump'](data) %}
 
 {% if 'pgsql' == data.databases.web.type %}
 
@@ -29,10 +30,14 @@ icinga_web-import-pgsql-schema:
   file.managed:
     - name: {{tmpf}}
     - source: salt://makina-states/files/etc/icinga-web/schemas/icinga-web.pgsql-schema.sql
+    - template: jinja
     - makedirs: true
     - user: root
     - group: root
     - mode: 644
+    - defaults:
+      data: |
+            {{sdata}}
   cmd.run:
     {% if 'socket' in data.databases.web %}
     - name: psql "postgresql://{{data.databases.web.user}}:{{data.databases.web.password}}@[{{data.databases.web.socket}}]/{{data.databases.web.name}}" -f "{{tmpf}}"

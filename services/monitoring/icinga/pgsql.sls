@@ -1,5 +1,6 @@
-{% set data = salt['mc_icinga.settings']() %}
 {% set locs = salt['mc_locations.settings']() %}
+{% set data = salt['mc_icinga.settings']() %}
+{% set sdata = salt['mc_utils.json_dump'](data) %}
 
 {% if data.modules.ido2db.enabled %}
 {% if 'pgsql' == data.modules.ido2db.database.type %}
@@ -31,10 +32,14 @@ icinga-import-pgsql-schema:
   file.managed:
     - name: {{tmpf}}
     - source: salt://makina-states/files/etc/icinga/schemas/icinga-ido.pgsql-schema.sql
+    - template: jinja
     - makedirs: true
     - user: root
     - group: root
     - mode: 644
+    - defaults:
+      data: |
+            {{sdata}}
   cmd.run:
     {% if 'socket' in data.modules.ido2db.database %}
     - name: psql "postgresql://{{data.modules.ido2db.database.user}}:{{data.modules.ido2db.database.password}}@[{{data.modules.ido2db.database.socket}}]/{{data.modules.ido2db.database.name}}" -f "{{tmpf}}"

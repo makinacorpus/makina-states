@@ -1,3 +1,4 @@
+/* MANAGED VIA SALT -- DO NOT EDIT */
 /*****************************************************/
 /* Auto generated mysql SQL Schema file for icinga-web*/
 /* Creation date: 2012-10-10T13:52:21+02:00          */

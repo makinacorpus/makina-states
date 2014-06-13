@@ -63,7 +63,6 @@ def settings():
             'user': "icinga",
             'password': password_web,
             'name': "icinga_web",
-            'prefix': "nsm_",
         }
 
         has_sgbd = ((('host' in web_database)

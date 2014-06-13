@@ -1,5 +1,5 @@
-{% set data = salt['mc_icinga_web.settings']() %}
 {% set locs = salt['mc_locations.settings']() %}
+{% set data = salt['mc_icinga_web.settings']() %}
 
 {% if 'mysql' == data.databases.web.type %}
 

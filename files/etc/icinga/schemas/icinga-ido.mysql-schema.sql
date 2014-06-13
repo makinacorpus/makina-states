@@ -1,3 +1,6 @@
+{% set data = salt['mc_utils.json_load'](data) %}
+-- MANAGED VIA SALT -- DO NOT EDIT
+-- from /usr/share/doc/icinga-idoutils/examples/mysql/mysql.sql
 -- --------------------------------------------------------
 -- mysql.sql
 -- DB definition for MySQL
@@ -22,10 +25,10 @@ SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_acknowledgements
+-- Table structure for table {{data.modules.ido2db.database.prefix}}acknowledgements
 --
 
-CREATE TABLE IF NOT EXISTS icinga_acknowledgements (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}acknowledgements (
   acknowledgement_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   entry_time timestamp  default '0000-00-00 00:00:00',
@@ -45,10 +48,10 @@ CREATE TABLE IF NOT EXISTS icinga_acknowledgements (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_commands
+-- Table structure for table {{data.modules.ido2db.database.prefix}}commands
 --
 
-CREATE TABLE IF NOT EXISTS icinga_commands (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}commands (
   command_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   config_type smallint default 0,
@@ -61,10 +64,10 @@ CREATE TABLE IF NOT EXISTS icinga_commands (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_commenthistory
+-- Table structure for table {{data.modules.ido2db.database.prefix}}commenthistory
 --
 
-CREATE TABLE IF NOT EXISTS icinga_commenthistory (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}commenthistory (
   commenthistory_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   entry_time timestamp  default '0000-00-00 00:00:00',
@@ -89,10 +92,10 @@ CREATE TABLE IF NOT EXISTS icinga_commenthistory (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_comments
+-- Table structure for table {{data.modules.ido2db.database.prefix}}comments
 --
 
-CREATE TABLE IF NOT EXISTS icinga_comments (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}comments (
   comment_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   entry_time timestamp  default '0000-00-00 00:00:00',
@@ -115,10 +118,10 @@ CREATE TABLE IF NOT EXISTS icinga_comments (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_configfiles
+-- Table structure for table {{data.modules.ido2db.database.prefix}}configfiles
 --
 
-CREATE TABLE IF NOT EXISTS icinga_configfiles (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}configfiles (
   configfile_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   configfile_type smallint default 0,
@@ -130,10 +133,10 @@ CREATE TABLE IF NOT EXISTS icinga_configfiles (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_configfilevariables
+-- Table structure for table {{data.modules.ido2db.database.prefix}}configfilevariables
 --
 
-CREATE TABLE IF NOT EXISTS icinga_configfilevariables (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}configfilevariables (
   configfilevariable_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   configfile_id bigint unsigned default 0,
@@ -145,10 +148,10 @@ CREATE TABLE IF NOT EXISTS icinga_configfilevariables (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_conninfo
+-- Table structure for table {{data.modules.ido2db.database.prefix}}conninfo
 --
 
-CREATE TABLE IF NOT EXISTS icinga_conninfo (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}conninfo (
   conninfo_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   agent_name varchar(32) character set latin1  default '',
@@ -170,10 +173,10 @@ CREATE TABLE IF NOT EXISTS icinga_conninfo (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_contactgroups
+-- Table structure for table {{data.modules.ido2db.database.prefix}}contactgroups
 --
 
-CREATE TABLE IF NOT EXISTS icinga_contactgroups (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}contactgroups (
   contactgroup_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   config_type smallint default 0,
@@ -186,10 +189,10 @@ CREATE TABLE IF NOT EXISTS icinga_contactgroups (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_contactgroup_members
+-- Table structure for table {{data.modules.ido2db.database.prefix}}contactgroup_members
 --
 
-CREATE TABLE IF NOT EXISTS icinga_contactgroup_members (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}contactgroup_members (
   contactgroup_member_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   contactgroup_id bigint unsigned default 0,
@@ -200,10 +203,10 @@ CREATE TABLE IF NOT EXISTS icinga_contactgroup_members (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_contactnotificationmethods
+-- Table structure for table {{data.modules.ido2db.database.prefix}}contactnotificationmethods
 --
 
-CREATE TABLE IF NOT EXISTS icinga_contactnotificationmethods (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}contactnotificationmethods (
   contactnotificationmethod_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   contactnotification_id bigint unsigned default 0,
@@ -220,10 +223,10 @@ CREATE TABLE IF NOT EXISTS icinga_contactnotificationmethods (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_contactnotifications
+-- Table structure for table {{data.modules.ido2db.database.prefix}}contactnotifications
 --
 
-CREATE TABLE IF NOT EXISTS icinga_contactnotifications (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}contactnotifications (
   contactnotification_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   notification_id bigint unsigned default 0,
@@ -239,10 +242,10 @@ CREATE TABLE IF NOT EXISTS icinga_contactnotifications (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_contacts
+-- Table structure for table {{data.modules.ido2db.database.prefix}}contacts
 --
 
-CREATE TABLE IF NOT EXISTS icinga_contacts (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}contacts (
   contact_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   config_type smallint default 0,
@@ -273,10 +276,10 @@ CREATE TABLE IF NOT EXISTS icinga_contacts (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_contactstatus
+-- Table structure for table {{data.modules.ido2db.database.prefix}}contactstatus
 --
 
-CREATE TABLE IF NOT EXISTS icinga_contactstatus (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}contactstatus (
   contactstatus_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   contact_object_id bigint unsigned default 0,
@@ -295,10 +298,10 @@ CREATE TABLE IF NOT EXISTS icinga_contactstatus (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_contact_addresses
+-- Table structure for table {{data.modules.ido2db.database.prefix}}contact_addresses
 --
 
-CREATE TABLE IF NOT EXISTS icinga_contact_addresses (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}contact_addresses (
   contact_address_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   contact_id bigint unsigned default 0,
@@ -311,10 +314,10 @@ CREATE TABLE IF NOT EXISTS icinga_contact_addresses (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_contact_notificationcommands
+-- Table structure for table {{data.modules.ido2db.database.prefix}}contact_notificationcommands
 --
 
-CREATE TABLE IF NOT EXISTS icinga_contact_notificationcommands (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}contact_notificationcommands (
   contact_notificationcommand_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   contact_id bigint unsigned default 0,
@@ -328,10 +331,10 @@ CREATE TABLE IF NOT EXISTS icinga_contact_notificationcommands (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_customvariables
+-- Table structure for table {{data.modules.ido2db.database.prefix}}customvariables
 --
 
-CREATE TABLE IF NOT EXISTS icinga_customvariables (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}customvariables (
   customvariable_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   object_id bigint unsigned default 0,
@@ -347,10 +350,10 @@ CREATE TABLE IF NOT EXISTS icinga_customvariables (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_customvariablestatus
+-- Table structure for table {{data.modules.ido2db.database.prefix}}customvariablestatus
 --
 
-CREATE TABLE IF NOT EXISTS icinga_customvariablestatus (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}customvariablestatus (
   customvariablestatus_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   object_id bigint unsigned default 0,
@@ -366,10 +369,10 @@ CREATE TABLE IF NOT EXISTS icinga_customvariablestatus (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_dbversion
+-- Table structure for table {{data.modules.ido2db.database.prefix}}dbversion
 --
 
-CREATE TABLE IF NOT EXISTS icinga_dbversion (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}dbversion (
   dbversion_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   name varchar(10) character set latin1  default '',
   version varchar(10) character set latin1  default '',
@@ -382,10 +385,10 @@ CREATE TABLE IF NOT EXISTS icinga_dbversion (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_downtimehistory
+-- Table structure for table {{data.modules.ido2db.database.prefix}}downtimehistory
 --
 
-CREATE TABLE IF NOT EXISTS icinga_downtimehistory (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}downtimehistory (
   downtimehistory_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   downtime_type smallint default 0,
@@ -414,10 +417,10 @@ CREATE TABLE IF NOT EXISTS icinga_downtimehistory (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_eventhandlers
+-- Table structure for table {{data.modules.ido2db.database.prefix}}eventhandlers
 --
 
-CREATE TABLE IF NOT EXISTS icinga_eventhandlers (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}eventhandlers (
   eventhandler_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   eventhandler_type smallint default 0,
@@ -444,10 +447,10 @@ CREATE TABLE IF NOT EXISTS icinga_eventhandlers (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_externalcommands
+-- Table structure for table {{data.modules.ido2db.database.prefix}}externalcommands
 --
 
-CREATE TABLE IF NOT EXISTS icinga_externalcommands (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}externalcommands (
   externalcommand_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   entry_time timestamp  default '0000-00-00 00:00:00',
@@ -460,10 +463,10 @@ CREATE TABLE IF NOT EXISTS icinga_externalcommands (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_flappinghistory
+-- Table structure for table {{data.modules.ido2db.database.prefix}}flappinghistory
 --
 
-CREATE TABLE IF NOT EXISTS icinga_flappinghistory (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}flappinghistory (
   flappinghistory_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   event_time timestamp  default '0000-00-00 00:00:00',
@@ -483,10 +486,10 @@ CREATE TABLE IF NOT EXISTS icinga_flappinghistory (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_hostchecks
+-- Table structure for table {{data.modules.ido2db.database.prefix}}hostchecks
 --
 
-CREATE TABLE IF NOT EXISTS icinga_hostchecks (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}hostchecks (
   hostcheck_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   host_object_id bigint unsigned default 0,
@@ -517,10 +520,10 @@ CREATE TABLE IF NOT EXISTS icinga_hostchecks (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_hostdependencies
+-- Table structure for table {{data.modules.ido2db.database.prefix}}hostdependencies
 --
 
-CREATE TABLE IF NOT EXISTS icinga_hostdependencies (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}hostdependencies (
   hostdependency_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   config_type smallint default 0,
@@ -539,10 +542,10 @@ CREATE TABLE IF NOT EXISTS icinga_hostdependencies (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_hostescalations
+-- Table structure for table {{data.modules.ido2db.database.prefix}}hostescalations
 --
 
-CREATE TABLE IF NOT EXISTS icinga_hostescalations (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}hostescalations (
   hostescalation_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   config_type smallint default 0,
@@ -561,10 +564,10 @@ CREATE TABLE IF NOT EXISTS icinga_hostescalations (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_hostescalation_contactgroups
+-- Table structure for table {{data.modules.ido2db.database.prefix}}hostescalation_contactgroups
 --
 
-CREATE TABLE IF NOT EXISTS icinga_hostescalation_contactgroups (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}hostescalation_contactgroups (
   hostescalation_contactgroup_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   hostescalation_id bigint unsigned default 0,
@@ -576,10 +579,10 @@ CREATE TABLE IF NOT EXISTS icinga_hostescalation_contactgroups (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_hostescalation_contacts
+-- Table structure for table {{data.modules.ido2db.database.prefix}}hostescalation_contacts
 --
 
-CREATE TABLE IF NOT EXISTS icinga_hostescalation_contacts (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}hostescalation_contacts (
   hostescalation_contact_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   hostescalation_id bigint unsigned default 0,
@@ -591,10 +594,10 @@ CREATE TABLE IF NOT EXISTS icinga_hostescalation_contacts (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_hostgroups
+-- Table structure for table {{data.modules.ido2db.database.prefix}}hostgroups
 --
 
-CREATE TABLE IF NOT EXISTS icinga_hostgroups (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}hostgroups (
   hostgroup_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   config_type smallint default 0,
@@ -607,10 +610,10 @@ CREATE TABLE IF NOT EXISTS icinga_hostgroups (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_hostgroup_members
+-- Table structure for table {{data.modules.ido2db.database.prefix}}hostgroup_members
 --
 
-CREATE TABLE IF NOT EXISTS icinga_hostgroup_members (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}hostgroup_members (
   hostgroup_member_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   hostgroup_id bigint unsigned default 0,
@@ -621,10 +624,10 @@ CREATE TABLE IF NOT EXISTS icinga_hostgroup_members (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_hosts
+-- Table structure for table {{data.modules.ido2db.database.prefix}}hosts
 --
 
-CREATE TABLE IF NOT EXISTS icinga_hosts (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}hosts (
   host_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   config_type smallint default 0,
@@ -692,10 +695,10 @@ CREATE TABLE IF NOT EXISTS icinga_hosts (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_hoststatus
+-- Table structure for table {{data.modules.ido2db.database.prefix}}hoststatus
 --
 
-CREATE TABLE IF NOT EXISTS icinga_hoststatus (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}hoststatus (
   hoststatus_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   host_object_id bigint unsigned default 0,
@@ -751,10 +754,10 @@ CREATE TABLE IF NOT EXISTS icinga_hoststatus (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_host_contactgroups
+-- Table structure for table {{data.modules.ido2db.database.prefix}}host_contactgroups
 --
 
-CREATE TABLE IF NOT EXISTS icinga_host_contactgroups (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}host_contactgroups (
   host_contactgroup_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   host_id bigint unsigned default 0,
@@ -765,10 +768,10 @@ CREATE TABLE IF NOT EXISTS icinga_host_contactgroups (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_host_contacts
+-- Table structure for table {{data.modules.ido2db.database.prefix}}host_contacts
 --
 
-CREATE TABLE IF NOT EXISTS icinga_host_contacts (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}host_contacts (
   host_contact_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   host_id bigint unsigned default 0,
@@ -779,10 +782,10 @@ CREATE TABLE IF NOT EXISTS icinga_host_contacts (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_host_parenthosts
+-- Table structure for table {{data.modules.ido2db.database.prefix}}host_parenthosts
 --
 
-CREATE TABLE IF NOT EXISTS icinga_host_parenthosts (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}host_parenthosts (
   host_parenthost_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   host_id bigint unsigned default 0,
@@ -793,10 +796,10 @@ CREATE TABLE IF NOT EXISTS icinga_host_parenthosts (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_instances
+-- Table structure for table {{data.modules.ido2db.database.prefix}}instances
 --
 
-CREATE TABLE IF NOT EXISTS icinga_instances (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}instances (
   instance_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_name varchar(64) character set latin1  default '',
   instance_description varchar(128) character set latin1  default '',
@@ -806,10 +809,10 @@ CREATE TABLE IF NOT EXISTS icinga_instances (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_logentries
+-- Table structure for table {{data.modules.ido2db.database.prefix}}logentries
 --
 
-CREATE TABLE IF NOT EXISTS icinga_logentries (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}logentries (
   logentry_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   logentry_time timestamp  default '0000-00-00 00:00:00',
@@ -826,10 +829,10 @@ CREATE TABLE IF NOT EXISTS icinga_logentries (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_notifications
+-- Table structure for table {{data.modules.ido2db.database.prefix}}notifications
 --
 
-CREATE TABLE IF NOT EXISTS icinga_notifications (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}notifications (
   notification_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   notification_type smallint default 0,
@@ -851,10 +854,10 @@ CREATE TABLE IF NOT EXISTS icinga_notifications (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_objects
+-- Table structure for table {{data.modules.ido2db.database.prefix}}objects
 --
 
-CREATE TABLE IF NOT EXISTS icinga_objects (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}objects (
   object_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   objecttype_id bigint unsigned default 0,
@@ -868,10 +871,10 @@ CREATE TABLE IF NOT EXISTS icinga_objects (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_processevents
+-- Table structure for table {{data.modules.ido2db.database.prefix}}processevents
 --
 
-CREATE TABLE IF NOT EXISTS icinga_processevents (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}processevents (
   processevent_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   event_type smallint default 0,
@@ -887,10 +890,10 @@ CREATE TABLE IF NOT EXISTS icinga_processevents (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_programstatus
+-- Table structure for table {{data.modules.ido2db.database.prefix}}programstatus
 --
 
-CREATE TABLE IF NOT EXISTS icinga_programstatus (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}programstatus (
   programstatus_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   status_update_time timestamp  default '0000-00-00 00:00:00',
@@ -924,10 +927,10 @@ CREATE TABLE IF NOT EXISTS icinga_programstatus (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_runtimevariables
+-- Table structure for table {{data.modules.ido2db.database.prefix}}runtimevariables
 --
 
-CREATE TABLE IF NOT EXISTS icinga_runtimevariables (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}runtimevariables (
   runtimevariable_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   varname varchar(64) character set latin1  default '',
@@ -938,10 +941,10 @@ CREATE TABLE IF NOT EXISTS icinga_runtimevariables (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_scheduleddowntime
+-- Table structure for table {{data.modules.ido2db.database.prefix}}scheduleddowntime
 --
 
-CREATE TABLE IF NOT EXISTS icinga_scheduleddowntime (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}scheduleddowntime (
   scheduleddowntime_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   downtime_type smallint default 0,
@@ -967,10 +970,10 @@ CREATE TABLE IF NOT EXISTS icinga_scheduleddowntime (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_servicechecks
+-- Table structure for table {{data.modules.ido2db.database.prefix}}servicechecks
 --
 
-CREATE TABLE IF NOT EXISTS icinga_servicechecks (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}servicechecks (
   servicecheck_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   service_object_id bigint unsigned default 0,
@@ -1000,10 +1003,10 @@ CREATE TABLE IF NOT EXISTS icinga_servicechecks (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_servicedependencies
+-- Table structure for table {{data.modules.ido2db.database.prefix}}servicedependencies
 --
 
-CREATE TABLE IF NOT EXISTS icinga_servicedependencies (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}servicedependencies (
   servicedependency_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   config_type smallint default 0,
@@ -1023,10 +1026,10 @@ CREATE TABLE IF NOT EXISTS icinga_servicedependencies (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_serviceescalations
+-- Table structure for table {{data.modules.ido2db.database.prefix}}serviceescalations
 --
 
-CREATE TABLE IF NOT EXISTS icinga_serviceescalations (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}serviceescalations (
   serviceescalation_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   config_type smallint default 0,
@@ -1046,10 +1049,10 @@ CREATE TABLE IF NOT EXISTS icinga_serviceescalations (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_serviceescalation_contactgroups
+-- Table structure for table {{data.modules.ido2db.database.prefix}}serviceescalation_contactgroups
 --
 
-CREATE TABLE IF NOT EXISTS icinga_serviceescalation_contactgroups (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}serviceescalation_contactgroups (
   serviceescalation_contactgroup_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   serviceescalation_id bigint unsigned default 0,
@@ -1061,10 +1064,10 @@ CREATE TABLE IF NOT EXISTS icinga_serviceescalation_contactgroups (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_serviceescalation_contacts
+-- Table structure for table {{data.modules.ido2db.database.prefix}}serviceescalation_contacts
 --
 
-CREATE TABLE IF NOT EXISTS icinga_serviceescalation_contacts (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}serviceescalation_contacts (
   serviceescalation_contact_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   serviceescalation_id bigint unsigned default 0,
@@ -1076,10 +1079,10 @@ CREATE TABLE IF NOT EXISTS icinga_serviceescalation_contacts (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_servicegroups
+-- Table structure for table {{data.modules.ido2db.database.prefix}}servicegroups
 --
 
-CREATE TABLE IF NOT EXISTS icinga_servicegroups (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}servicegroups (
   servicegroup_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   config_type smallint default 0,
@@ -1092,10 +1095,10 @@ CREATE TABLE IF NOT EXISTS icinga_servicegroups (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_servicegroup_members
+-- Table structure for table {{data.modules.ido2db.database.prefix}}servicegroup_members
 --
 
-CREATE TABLE IF NOT EXISTS icinga_servicegroup_members (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}servicegroup_members (
   servicegroup_member_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   servicegroup_id bigint unsigned default 0,
@@ -1106,10 +1109,10 @@ CREATE TABLE IF NOT EXISTS icinga_servicegroup_members (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_services
+-- Table structure for table {{data.modules.ido2db.database.prefix}}services
 --
 
-CREATE TABLE IF NOT EXISTS icinga_services (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}services (
   service_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   config_type smallint default 0,
@@ -1170,10 +1173,10 @@ CREATE TABLE IF NOT EXISTS icinga_services (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_servicestatus
+-- Table structure for table {{data.modules.ido2db.database.prefix}}servicestatus
 --
 
-CREATE TABLE IF NOT EXISTS icinga_servicestatus (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}servicestatus (
   servicestatus_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   service_object_id bigint unsigned default 0,
@@ -1230,10 +1233,10 @@ CREATE TABLE IF NOT EXISTS icinga_servicestatus (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_service_contactgroups
+-- Table structure for table {{data.modules.ido2db.database.prefix}}service_contactgroups
 --
 
-CREATE TABLE IF NOT EXISTS icinga_service_contactgroups (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}service_contactgroups (
   service_contactgroup_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   service_id bigint unsigned default 0,
@@ -1244,10 +1247,10 @@ CREATE TABLE IF NOT EXISTS icinga_service_contactgroups (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_service_contacts
+-- Table structure for table {{data.modules.ido2db.database.prefix}}service_contacts
 --
 
-CREATE TABLE IF NOT EXISTS icinga_service_contacts (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}service_contacts (
   service_contact_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   service_id bigint unsigned default 0,
@@ -1258,10 +1261,10 @@ CREATE TABLE IF NOT EXISTS icinga_service_contacts (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_statehistory
+-- Table structure for table {{data.modules.ido2db.database.prefix}}statehistory
 --
 
-CREATE TABLE IF NOT EXISTS icinga_statehistory (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}statehistory (
   statehistory_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   state_time timestamp  default '0000-00-00 00:00:00',
@@ -1282,10 +1285,10 @@ CREATE TABLE IF NOT EXISTS icinga_statehistory (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_systemcommands
+-- Table structure for table {{data.modules.ido2db.database.prefix}}systemcommands
 --
 
-CREATE TABLE IF NOT EXISTS icinga_systemcommands (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}systemcommands (
   systemcommand_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   start_time timestamp  default '0000-00-00 00:00:00',
@@ -1306,10 +1309,10 @@ CREATE TABLE IF NOT EXISTS icinga_systemcommands (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_timeperiods
+-- Table structure for table {{data.modules.ido2db.database.prefix}}timeperiods
 --
 
-CREATE TABLE IF NOT EXISTS icinga_timeperiods (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}timeperiods (
   timeperiod_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   config_type smallint default 0,
@@ -1322,10 +1325,10 @@ CREATE TABLE IF NOT EXISTS icinga_timeperiods (
 -- --------------------------------------------------------
 
 --
--- Table structure for table icinga_timeperiod_timeranges
+-- Table structure for table {{data.modules.ido2db.database.prefix}}timeperiod_timeranges
 --
 
-CREATE TABLE IF NOT EXISTS icinga_timeperiod_timeranges (
+CREATE TABLE IF NOT EXISTS {{data.modules.ido2db.database.prefix}}timeperiod_timeranges (
   timeperiod_timerange_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   instance_id bigint unsigned default 0,
   timeperiod_id bigint unsigned default 0,
@@ -1346,186 +1349,186 @@ CREATE TABLE IF NOT EXISTS icinga_timeperiod_timeranges (
 -- EXTERNALCOMMANDS => entry_time
 
 -- instance_id
-CREATE INDEX systemcommands_i_id_idx on icinga_systemcommands(instance_id);
-CREATE INDEX servicechecks_i_id_idx on icinga_servicechecks(instance_id);
-CREATE INDEX hostchecks_i_id_idx on icinga_hostchecks(instance_id);
-CREATE INDEX eventhandlers_i_id_idx on icinga_eventhandlers(instance_id);
-CREATE INDEX externalcommands_i_id_idx on icinga_externalcommands(instance_id);
+CREATE INDEX systemcommands_i_id_idx on {{data.modules.ido2db.database.prefix}}systemcommands(instance_id);
+CREATE INDEX servicechecks_i_id_idx on {{data.modules.ido2db.database.prefix}}servicechecks(instance_id);
+CREATE INDEX hostchecks_i_id_idx on {{data.modules.ido2db.database.prefix}}hostchecks(instance_id);
+CREATE INDEX eventhandlers_i_id_idx on {{data.modules.ido2db.database.prefix}}eventhandlers(instance_id);
+CREATE INDEX externalcommands_i_id_idx on {{data.modules.ido2db.database.prefix}}externalcommands(instance_id);
 
 -- time
-CREATE INDEX systemcommands_time_id_idx on icinga_systemcommands(start_time);
-CREATE INDEX servicechecks_time_id_idx on icinga_servicechecks(start_time);
-CREATE INDEX hostchecks_time_id_idx on icinga_hostchecks(start_time);
-CREATE INDEX eventhandlers_time_id_idx on icinga_eventhandlers(start_time);
-CREATE INDEX externalcommands_time_id_idx on icinga_externalcommands(entry_time);
+CREATE INDEX systemcommands_time_id_idx on {{data.modules.ido2db.database.prefix}}systemcommands(start_time);
+CREATE INDEX servicechecks_time_id_idx on {{data.modules.ido2db.database.prefix}}servicechecks(start_time);
+CREATE INDEX hostchecks_time_id_idx on {{data.modules.ido2db.database.prefix}}hostchecks(start_time);
+CREATE INDEX eventhandlers_time_id_idx on {{data.modules.ido2db.database.prefix}}eventhandlers(start_time);
+CREATE INDEX externalcommands_time_id_idx on {{data.modules.ido2db.database.prefix}}externalcommands(entry_time);
 
 
 -- for starting cleanup - referenced in dbhandler.c:882
 -- instance_id only
 
 -- realtime data
-CREATE INDEX programstatus_i_id_idx on icinga_programstatus(instance_id);
-CREATE INDEX hoststatus_i_id_idx on icinga_hoststatus(instance_id);
-CREATE INDEX servicestatus_i_id_idx on icinga_servicestatus(instance_id);
-CREATE INDEX contactstatus_i_id_idx on icinga_contactstatus(instance_id);
-CREATE INDEX comments_i_id_idx on icinga_comments(instance_id);
-CREATE INDEX scheduleddowntime_i_id_idx on icinga_scheduleddowntime(instance_id);
-CREATE INDEX runtimevariables_i_id_idx on icinga_runtimevariables(instance_id);
-CREATE INDEX customvariablestatus_i_id_idx on icinga_customvariablestatus(instance_id);
+CREATE INDEX programstatus_i_id_idx on {{data.modules.ido2db.database.prefix}}programstatus(instance_id);
+CREATE INDEX hoststatus_i_id_idx on {{data.modules.ido2db.database.prefix}}hoststatus(instance_id);
+CREATE INDEX servicestatus_i_id_idx on {{data.modules.ido2db.database.prefix}}servicestatus(instance_id);
+CREATE INDEX contactstatus_i_id_idx on {{data.modules.ido2db.database.prefix}}contactstatus(instance_id);
+CREATE INDEX comments_i_id_idx on {{data.modules.ido2db.database.prefix}}comments(instance_id);
+CREATE INDEX scheduleddowntime_i_id_idx on {{data.modules.ido2db.database.prefix}}scheduleddowntime(instance_id);
+CREATE INDEX runtimevariables_i_id_idx on {{data.modules.ido2db.database.prefix}}runtimevariables(instance_id);
+CREATE INDEX customvariablestatus_i_id_idx on {{data.modules.ido2db.database.prefix}}customvariablestatus(instance_id);
 
 -- config data
-CREATE INDEX configfiles_i_id_idx on icinga_configfiles(instance_id);
-CREATE INDEX configfilevariables_i_id_idx on icinga_configfilevariables(instance_id);
-CREATE INDEX customvariables_i_id_idx on icinga_customvariables(instance_id);
-CREATE INDEX commands_i_id_idx on icinga_commands(instance_id);
-CREATE INDEX timeperiods_i_id_idx on icinga_timeperiods(instance_id);
-CREATE INDEX timeperiod_timeranges_i_id_idx on icinga_timeperiod_timeranges(instance_id);
-CREATE INDEX contactgroups_i_id_idx on icinga_contactgroups(instance_id);
-CREATE INDEX contactgroup_members_i_id_idx on icinga_contactgroup_members(instance_id);
-CREATE INDEX hostgroups_i_id_idx on icinga_hostgroups(instance_id);
-CREATE INDEX hostgroup_members_i_id_idx on icinga_hostgroup_members(instance_id);
-CREATE INDEX servicegroups_i_id_idx on icinga_servicegroups(instance_id);
-CREATE INDEX servicegroup_members_i_id_idx on icinga_servicegroup_members(instance_id);
-CREATE INDEX hostesc_i_id_idx on icinga_hostescalations(instance_id);
-CREATE INDEX hostesc_contacts_i_id_idx on icinga_hostescalation_contacts(instance_id);
-CREATE INDEX serviceesc_i_id_idx on icinga_serviceescalations(instance_id);
-CREATE INDEX serviceesc_contacts_i_id_idx on icinga_serviceescalation_contacts(instance_id);
-CREATE INDEX hostdependencies_i_id_idx on icinga_hostdependencies(instance_id);
-CREATE INDEX contacts_i_id_idx on icinga_contacts(instance_id);
-CREATE INDEX contact_addresses_i_id_idx on icinga_contact_addresses(instance_id);
-CREATE INDEX contact_notifcommands_i_id_idx on icinga_contact_notificationcommands(instance_id);
-CREATE INDEX hosts_i_id_idx on icinga_hosts(instance_id);
-CREATE INDEX host_parenthosts_i_id_idx on icinga_host_parenthosts(instance_id);
-CREATE INDEX host_contacts_i_id_idx on icinga_host_contacts(instance_id);
-CREATE INDEX services_i_id_idx on icinga_services(instance_id);
-CREATE INDEX service_contacts_i_id_idx on icinga_service_contacts(instance_id);
-CREATE INDEX service_contactgroups_i_id_idx on icinga_service_contactgroups(instance_id);
-CREATE INDEX host_contactgroups_i_id_idx on icinga_host_contactgroups(instance_id);
-CREATE INDEX hostesc_cgroups_i_id_idx on icinga_hostescalation_contactgroups(instance_id);
-CREATE INDEX serviceesc_cgroups_i_id_idx on icinga_serviceescalation_contactgroups(instance_id);
+CREATE INDEX configfiles_i_id_idx on {{data.modules.ido2db.database.prefix}}configfiles(instance_id);
+CREATE INDEX configfilevariables_i_id_idx on {{data.modules.ido2db.database.prefix}}configfilevariables(instance_id);
+CREATE INDEX customvariables_i_id_idx on {{data.modules.ido2db.database.prefix}}customvariables(instance_id);
+CREATE INDEX commands_i_id_idx on {{data.modules.ido2db.database.prefix}}commands(instance_id);
+CREATE INDEX timeperiods_i_id_idx on {{data.modules.ido2db.database.prefix}}timeperiods(instance_id);
+CREATE INDEX timeperiod_timeranges_i_id_idx on {{data.modules.ido2db.database.prefix}}timeperiod_timeranges(instance_id);
+CREATE INDEX contactgroups_i_id_idx on {{data.modules.ido2db.database.prefix}}contactgroups(instance_id);
+CREATE INDEX contactgroup_members_i_id_idx on {{data.modules.ido2db.database.prefix}}contactgroup_members(instance_id);
+CREATE INDEX hostgroups_i_id_idx on {{data.modules.ido2db.database.prefix}}hostgroups(instance_id);
+CREATE INDEX hostgroup_members_i_id_idx on {{data.modules.ido2db.database.prefix}}hostgroup_members(instance_id);
+CREATE INDEX servicegroups_i_id_idx on {{data.modules.ido2db.database.prefix}}servicegroups(instance_id);
+CREATE INDEX servicegroup_members_i_id_idx on {{data.modules.ido2db.database.prefix}}servicegroup_members(instance_id);
+CREATE INDEX hostesc_i_id_idx on {{data.modules.ido2db.database.prefix}}hostescalations(instance_id);
+CREATE INDEX hostesc_contacts_i_id_idx on {{data.modules.ido2db.database.prefix}}hostescalation_contacts(instance_id);
+CREATE INDEX serviceesc_i_id_idx on {{data.modules.ido2db.database.prefix}}serviceescalations(instance_id);
+CREATE INDEX serviceesc_contacts_i_id_idx on {{data.modules.ido2db.database.prefix}}serviceescalation_contacts(instance_id);
+CREATE INDEX hostdependencies_i_id_idx on {{data.modules.ido2db.database.prefix}}hostdependencies(instance_id);
+CREATE INDEX contacts_i_id_idx on {{data.modules.ido2db.database.prefix}}contacts(instance_id);
+CREATE INDEX contact_addresses_i_id_idx on {{data.modules.ido2db.database.prefix}}contact_addresses(instance_id);
+CREATE INDEX contact_notifcommands_i_id_idx on {{data.modules.ido2db.database.prefix}}contact_notificationcommands(instance_id);
+CREATE INDEX hosts_i_id_idx on {{data.modules.ido2db.database.prefix}}hosts(instance_id);
+CREATE INDEX host_parenthosts_i_id_idx on {{data.modules.ido2db.database.prefix}}host_parenthosts(instance_id);
+CREATE INDEX host_contacts_i_id_idx on {{data.modules.ido2db.database.prefix}}host_contacts(instance_id);
+CREATE INDEX services_i_id_idx on {{data.modules.ido2db.database.prefix}}services(instance_id);
+CREATE INDEX service_contacts_i_id_idx on {{data.modules.ido2db.database.prefix}}service_contacts(instance_id);
+CREATE INDEX service_contactgroups_i_id_idx on {{data.modules.ido2db.database.prefix}}service_contactgroups(instance_id);
+CREATE INDEX host_contactgroups_i_id_idx on {{data.modules.ido2db.database.prefix}}host_contactgroups(instance_id);
+CREATE INDEX hostesc_cgroups_i_id_idx on {{data.modules.ido2db.database.prefix}}hostescalation_contactgroups(instance_id);
+CREATE INDEX serviceesc_cgroups_i_id_idx on {{data.modules.ido2db.database.prefix}}serviceescalation_contactgroups(instance_id);
 
 -- -----------------------------------------
 -- more index stuff (WHERE clauses)
 -- -----------------------------------------
 
 -- hosts
-CREATE INDEX hosts_host_object_id_idx on icinga_hosts(host_object_id);
+CREATE INDEX hosts_host_object_id_idx on {{data.modules.ido2db.database.prefix}}hosts(host_object_id);
 
 -- hoststatus
-CREATE INDEX hoststatus_stat_upd_time_idx on icinga_hoststatus(status_update_time);
-CREATE INDEX hoststatus_current_state_idx on icinga_hoststatus(current_state);
-CREATE INDEX hoststatus_check_type_idx on icinga_hoststatus(check_type);
-CREATE INDEX hoststatus_state_type_idx on icinga_hoststatus(state_type);
-CREATE INDEX hoststatus_last_state_chg_idx on icinga_hoststatus(last_state_change);
-CREATE INDEX hoststatus_notif_enabled_idx on icinga_hoststatus(notifications_enabled);
-CREATE INDEX hoststatus_problem_ack_idx on icinga_hoststatus(problem_has_been_acknowledged);
-CREATE INDEX hoststatus_act_chks_en_idx on icinga_hoststatus(active_checks_enabled);
-CREATE INDEX hoststatus_pas_chks_en_idx on icinga_hoststatus(passive_checks_enabled);
-CREATE INDEX hoststatus_event_hdl_en_idx on icinga_hoststatus(event_handler_enabled);
-CREATE INDEX hoststatus_flap_det_en_idx on icinga_hoststatus(flap_detection_enabled);
-CREATE INDEX hoststatus_is_flapping_idx on icinga_hoststatus(is_flapping);
-CREATE INDEX hoststatus_p_state_chg_idx on icinga_hoststatus(percent_state_change);
-CREATE INDEX hoststatus_latency_idx on icinga_hoststatus(latency);
-CREATE INDEX hoststatus_ex_time_idx on icinga_hoststatus(execution_time);
-CREATE INDEX hoststatus_sch_downt_d_idx on icinga_hoststatus(scheduled_downtime_depth);
+CREATE INDEX hoststatus_stat_upd_time_idx on {{data.modules.ido2db.database.prefix}}hoststatus(status_update_time);
+CREATE INDEX hoststatus_current_state_idx on {{data.modules.ido2db.database.prefix}}hoststatus(current_state);
+CREATE INDEX hoststatus_check_type_idx on {{data.modules.ido2db.database.prefix}}hoststatus(check_type);
+CREATE INDEX hoststatus_state_type_idx on {{data.modules.ido2db.database.prefix}}hoststatus(state_type);
+CREATE INDEX hoststatus_last_state_chg_idx on {{data.modules.ido2db.database.prefix}}hoststatus(last_state_change);
+CREATE INDEX hoststatus_notif_enabled_idx on {{data.modules.ido2db.database.prefix}}hoststatus(notifications_enabled);
+CREATE INDEX hoststatus_problem_ack_idx on {{data.modules.ido2db.database.prefix}}hoststatus(problem_has_been_acknowledged);
+CREATE INDEX hoststatus_act_chks_en_idx on {{data.modules.ido2db.database.prefix}}hoststatus(active_checks_enabled);
+CREATE INDEX hoststatus_pas_chks_en_idx on {{data.modules.ido2db.database.prefix}}hoststatus(passive_checks_enabled);
+CREATE INDEX hoststatus_event_hdl_en_idx on {{data.modules.ido2db.database.prefix}}hoststatus(event_handler_enabled);
+CREATE INDEX hoststatus_flap_det_en_idx on {{data.modules.ido2db.database.prefix}}hoststatus(flap_detection_enabled);
+CREATE INDEX hoststatus_is_flapping_idx on {{data.modules.ido2db.database.prefix}}hoststatus(is_flapping);
+CREATE INDEX hoststatus_p_state_chg_idx on {{data.modules.ido2db.database.prefix}}hoststatus(percent_state_change);
+CREATE INDEX hoststatus_latency_idx on {{data.modules.ido2db.database.prefix}}hoststatus(latency);
+CREATE INDEX hoststatus_ex_time_idx on {{data.modules.ido2db.database.prefix}}hoststatus(execution_time);
+CREATE INDEX hoststatus_sch_downt_d_idx on {{data.modules.ido2db.database.prefix}}hoststatus(scheduled_downtime_depth);
 
 -- services
-CREATE INDEX services_host_object_id_idx on icinga_services(host_object_id);
+CREATE INDEX services_host_object_id_idx on {{data.modules.ido2db.database.prefix}}services(host_object_id);
 
 -- servicestatus
-CREATE INDEX srvcstatus_stat_upd_time_idx on icinga_servicestatus(status_update_time);
-CREATE INDEX srvcstatus_current_state_idx on icinga_servicestatus(current_state);
-CREATE INDEX srvcstatus_check_type_idx on icinga_servicestatus(check_type);
-CREATE INDEX srvcstatus_state_type_idx on icinga_servicestatus(state_type);
-CREATE INDEX srvcstatus_last_state_chg_idx on icinga_servicestatus(last_state_change);
-CREATE INDEX srvcstatus_notif_enabled_idx on icinga_servicestatus(notifications_enabled);
-CREATE INDEX srvcstatus_problem_ack_idx on icinga_servicestatus(problem_has_been_acknowledged);
-CREATE INDEX srvcstatus_act_chks_en_idx on icinga_servicestatus(active_checks_enabled);
-CREATE INDEX srvcstatus_pas_chks_en_idx on icinga_servicestatus(passive_checks_enabled);
-CREATE INDEX srvcstatus_event_hdl_en_idx on icinga_servicestatus(event_handler_enabled);
-CREATE INDEX srvcstatus_flap_det_en_idx on icinga_servicestatus(flap_detection_enabled);
-CREATE INDEX srvcstatus_is_flapping_idx on icinga_servicestatus(is_flapping);
-CREATE INDEX srvcstatus_p_state_chg_idx on icinga_servicestatus(percent_state_change);
-CREATE INDEX srvcstatus_latency_idx on icinga_servicestatus(latency);
-CREATE INDEX srvcstatus_ex_time_idx on icinga_servicestatus(execution_time);
-CREATE INDEX srvcstatus_sch_downt_d_idx on icinga_servicestatus(scheduled_downtime_depth);
+CREATE INDEX srvcstatus_stat_upd_time_idx on {{data.modules.ido2db.database.prefix}}servicestatus(status_update_time);
+CREATE INDEX srvcstatus_current_state_idx on {{data.modules.ido2db.database.prefix}}servicestatus(current_state);
+CREATE INDEX srvcstatus_check_type_idx on {{data.modules.ido2db.database.prefix}}servicestatus(check_type);
+CREATE INDEX srvcstatus_state_type_idx on {{data.modules.ido2db.database.prefix}}servicestatus(state_type);
+CREATE INDEX srvcstatus_last_state_chg_idx on {{data.modules.ido2db.database.prefix}}servicestatus(last_state_change);
+CREATE INDEX srvcstatus_notif_enabled_idx on {{data.modules.ido2db.database.prefix}}servicestatus(notifications_enabled);
+CREATE INDEX srvcstatus_problem_ack_idx on {{data.modules.ido2db.database.prefix}}servicestatus(problem_has_been_acknowledged);
+CREATE INDEX srvcstatus_act_chks_en_idx on {{data.modules.ido2db.database.prefix}}servicestatus(active_checks_enabled);
+CREATE INDEX srvcstatus_pas_chks_en_idx on {{data.modules.ido2db.database.prefix}}servicestatus(passive_checks_enabled);
+CREATE INDEX srvcstatus_event_hdl_en_idx on {{data.modules.ido2db.database.prefix}}servicestatus(event_handler_enabled);
+CREATE INDEX srvcstatus_flap_det_en_idx on {{data.modules.ido2db.database.prefix}}servicestatus(flap_detection_enabled);
+CREATE INDEX srvcstatus_is_flapping_idx on {{data.modules.ido2db.database.prefix}}servicestatus(is_flapping);
+CREATE INDEX srvcstatus_p_state_chg_idx on {{data.modules.ido2db.database.prefix}}servicestatus(percent_state_change);
+CREATE INDEX srvcstatus_latency_idx on {{data.modules.ido2db.database.prefix}}servicestatus(latency);
+CREATE INDEX srvcstatus_ex_time_idx on {{data.modules.ido2db.database.prefix}}servicestatus(execution_time);
+CREATE INDEX srvcstatus_sch_downt_d_idx on {{data.modules.ido2db.database.prefix}}servicestatus(scheduled_downtime_depth);
 
 -- hostchecks
-CREATE INDEX hostchks_h_obj_id_idx on icinga_hostchecks(host_object_id);
+CREATE INDEX hostchks_h_obj_id_idx on {{data.modules.ido2db.database.prefix}}hostchecks(host_object_id);
 
 -- servicechecks
-CREATE INDEX servicechks_s_obj_id_idx on icinga_servicechecks(service_object_id);
+CREATE INDEX servicechks_s_obj_id_idx on {{data.modules.ido2db.database.prefix}}servicechecks(service_object_id);
 
 -- objects
-CREATE INDEX objects_objtype_id_idx ON icinga_objects(objecttype_id);
-CREATE INDEX objects_name1_idx ON icinga_objects(name1);
-CREATE INDEX objects_name2_idx ON icinga_objects(name2);
-CREATE INDEX objects_inst_id_idx ON icinga_objects(instance_id);
+CREATE INDEX objects_objtype_id_idx ON {{data.modules.ido2db.database.prefix}}objects(objecttype_id);
+CREATE INDEX objects_name1_idx ON {{data.modules.ido2db.database.prefix}}objects(name1);
+CREATE INDEX objects_name2_idx ON {{data.modules.ido2db.database.prefix}}objects(name2);
+CREATE INDEX objects_inst_id_idx ON {{data.modules.ido2db.database.prefix}}objects(instance_id);
 
 -- instances
--- CREATE INDEX instances_name_idx on icinga_instances(instance_name);
+-- CREATE INDEX instances_name_idx on {{data.modules.ido2db.database.prefix}}instances(instance_name);
 
 -- logentries
--- CREATE INDEX loge_instance_id_idx on icinga_logentries(instance_id);
+-- CREATE INDEX loge_instance_id_idx on {{data.modules.ido2db.database.prefix}}logentries(instance_id);
 -- #236
-CREATE INDEX loge_time_idx on icinga_logentries(logentry_time);
--- CREATE INDEX loge_data_idx on icinga_logentries(logentry_data);
-CREATE INDEX loge_inst_id_time_idx on icinga_logentries (instance_id ASC, logentry_time DESC);
+CREATE INDEX loge_time_idx on {{data.modules.ido2db.database.prefix}}logentries(logentry_time);
+-- CREATE INDEX loge_data_idx on {{data.modules.ido2db.database.prefix}}logentries(logentry_data);
+CREATE INDEX loge_inst_id_time_idx on {{data.modules.ido2db.database.prefix}}logentries (instance_id ASC, logentry_time DESC);
 
 -- commenthistory
--- CREATE INDEX c_hist_instance_id_idx on icinga_logentries(instance_id);
--- CREATE INDEX c_hist_c_time_idx on icinga_logentries(comment_time);
--- CREATE INDEX c_hist_i_c_id_idx on icinga_logentries(internal_comment_id);
+-- CREATE INDEX c_hist_instance_id_idx on {{data.modules.ido2db.database.prefix}}logentries(instance_id);
+-- CREATE INDEX c_hist_c_time_idx on {{data.modules.ido2db.database.prefix}}logentries(comment_time);
+-- CREATE INDEX c_hist_i_c_id_idx on {{data.modules.ido2db.database.prefix}}logentries(internal_comment_id);
 
 -- downtimehistory
--- CREATE INDEX d_t_hist_nstance_id_idx on icinga_downtimehistory(instance_id);
--- CREATE INDEX d_t_hist_type_idx on icinga_downtimehistory(downtime_type);
--- CREATE INDEX d_t_hist_object_id_idx on icinga_downtimehistory(object_id);
--- CREATE INDEX d_t_hist_entry_time_idx on icinga_downtimehistory(entry_time);
--- CREATE INDEX d_t_hist_sched_start_idx on icinga_downtimehistory(scheduled_start_time);
--- CREATE INDEX d_t_hist_sched_end_idx on icinga_downtimehistory(scheduled_end_time);
+-- CREATE INDEX d_t_hist_nstance_id_idx on {{data.modules.ido2db.database.prefix}}downtimehistory(instance_id);
+-- CREATE INDEX d_t_hist_type_idx on {{data.modules.ido2db.database.prefix}}downtimehistory(downtime_type);
+-- CREATE INDEX d_t_hist_object_id_idx on {{data.modules.ido2db.database.prefix}}downtimehistory(object_id);
+-- CREATE INDEX d_t_hist_entry_time_idx on {{data.modules.ido2db.database.prefix}}downtimehistory(entry_time);
+-- CREATE INDEX d_t_hist_sched_start_idx on {{data.modules.ido2db.database.prefix}}downtimehistory(scheduled_start_time);
+-- CREATE INDEX d_t_hist_sched_end_idx on {{data.modules.ido2db.database.prefix}}downtimehistory(scheduled_end_time);
 
 -- scheduleddowntime
--- CREATE INDEX sched_d_t_downtime_type_idx on icinga_scheduleddowntime(downtime_type);
--- CREATE INDEX sched_d_t_object_id_idx on icinga_scheduleddowntime(object_id);
--- CREATE INDEX sched_d_t_entry_time_idx on icinga_scheduleddowntime(entry_time);
--- CREATE INDEX sched_d_t_start_time_idx on icinga_scheduleddowntime(scheduled_start_time);
--- CREATE INDEX sched_d_t_end_time_idx on icinga_scheduleddowntime(scheduled_end_time);
+-- CREATE INDEX sched_d_t_downtime_type_idx on {{data.modules.ido2db.database.prefix}}scheduleddowntime(downtime_type);
+-- CREATE INDEX sched_d_t_object_id_idx on {{data.modules.ido2db.database.prefix}}scheduleddowntime(object_id);
+-- CREATE INDEX sched_d_t_entry_time_idx on {{data.modules.ido2db.database.prefix}}scheduleddowntime(entry_time);
+-- CREATE INDEX sched_d_t_start_time_idx on {{data.modules.ido2db.database.prefix}}scheduleddowntime(scheduled_start_time);
+-- CREATE INDEX sched_d_t_end_time_idx on {{data.modules.ido2db.database.prefix}}scheduleddowntime(scheduled_end_time);
 
 -- statehistory
-CREATE INDEX statehist_i_id_o_id_s_ty_s_ti on icinga_statehistory(instance_id, object_id, state_type, state_time);
+CREATE INDEX statehist_i_id_o_id_s_ty_s_ti on {{data.modules.ido2db.database.prefix}}statehistory(instance_id, object_id, state_type, state_time);
 --#2274
-create index statehist_state_idx on icinga_statehistory(object_id,state);
+create index statehist_state_idx on {{data.modules.ido2db.database.prefix}}statehistory(object_id,state);
 
 
 -- Icinga Web Notifications
-CREATE INDEX notification_idx ON icinga_notifications(notification_type, object_id, start_time);
-CREATE INDEX notification_object_id_idx ON icinga_notifications(object_id);
-CREATE INDEX contact_notification_idx ON icinga_contactnotifications(notification_id, contact_object_id);
-CREATE INDEX contacts_object_id_idx ON icinga_contacts(contact_object_id);
-CREATE INDEX contact_notif_meth_notif_idx ON icinga_contactnotificationmethods(contactnotification_id, command_object_id);
-CREATE INDEX command_object_idx ON icinga_commands(object_id); 
-CREATE INDEX services_combined_object_idx ON icinga_services(service_object_id, host_object_id);
+CREATE INDEX notification_idx ON {{data.modules.ido2db.database.prefix}}notifications(notification_type, object_id, start_time);
+CREATE INDEX notification_object_id_idx ON {{data.modules.ido2db.database.prefix}}notifications(object_id);
+CREATE INDEX contact_notification_idx ON {{data.modules.ido2db.database.prefix}}contactnotifications(notification_id, contact_object_id);
+CREATE INDEX contacts_object_id_idx ON {{data.modules.ido2db.database.prefix}}contacts(contact_object_id);
+CREATE INDEX contact_notif_meth_notif_idx ON {{data.modules.ido2db.database.prefix}}contactnotificationmethods(contactnotification_id, command_object_id);
+CREATE INDEX command_object_idx ON {{data.modules.ido2db.database.prefix}}commands(object_id); 
+CREATE INDEX services_combined_object_idx ON {{data.modules.ido2db.database.prefix}}services(service_object_id, host_object_id);
 
 
 -- #2618
-CREATE INDEX cntgrpmbrs_cgid_coid ON icinga_contactgroup_members (contactgroup_id,contact_object_id);
-CREATE INDEX hstgrpmbrs_hgid_hoid ON icinga_hostgroup_members (hostgroup_id,host_object_id);
-CREATE INDEX hstcntgrps_hid_cgoid ON icinga_host_contactgroups (host_id,contactgroup_object_id);
-CREATE INDEX hstprnthsts_hid_phoid ON icinga_host_parenthosts (host_id,parent_host_object_id);
-CREATE INDEX runtimevars_iid_varn ON icinga_runtimevariables (instance_id,varname);
-CREATE INDEX sgmbrs_sgid_soid ON icinga_servicegroup_members (servicegroup_id,service_object_id);
-CREATE INDEX scgrps_sid_cgoid ON icinga_service_contactgroups (service_id,contactgroup_object_id);
-CREATE INDEX tperiod_tid_d_ss_es ON icinga_timeperiod_timeranges (timeperiod_id,day,start_sec,end_sec);
+CREATE INDEX cntgrpmbrs_cgid_coid ON {{data.modules.ido2db.database.prefix}}contactgroup_members (contactgroup_id,contact_object_id);
+CREATE INDEX hstgrpmbrs_hgid_hoid ON {{data.modules.ido2db.database.prefix}}hostgroup_members (hostgroup_id,host_object_id);
+CREATE INDEX hstcntgrps_hid_cgoid ON {{data.modules.ido2db.database.prefix}}host_contactgroups (host_id,contactgroup_object_id);
+CREATE INDEX hstprnthsts_hid_phoid ON {{data.modules.ido2db.database.prefix}}host_parenthosts (host_id,parent_host_object_id);
+CREATE INDEX runtimevars_iid_varn ON {{data.modules.ido2db.database.prefix}}runtimevariables (instance_id,varname);
+CREATE INDEX sgmbrs_sgid_soid ON {{data.modules.ido2db.database.prefix}}servicegroup_members (servicegroup_id,service_object_id);
+CREATE INDEX scgrps_sid_cgoid ON {{data.modules.ido2db.database.prefix}}service_contactgroups (service_id,contactgroup_object_id);
+CREATE INDEX tperiod_tid_d_ss_es ON {{data.modules.ido2db.database.prefix}}timeperiod_timeranges (timeperiod_id,day,start_sec,end_sec);
 
 -- #3649
-CREATE INDEX sla_idx_sthist ON icinga_statehistory (object_id, state_time DESC);
-CREATE INDEX sla_idx_dohist ON icinga_downtimehistory (object_id, actual_start_time, actual_end_time);
-CREATE INDEX sla_idx_obj ON icinga_objects (objecttype_id, is_active, name1);
+CREATE INDEX sla_idx_sthist ON {{data.modules.ido2db.database.prefix}}statehistory (object_id, state_time DESC);
+CREATE INDEX sla_idx_dohist ON {{data.modules.ido2db.database.prefix}}downtimehistory (object_id, actual_start_time, actual_end_time);
+CREATE INDEX sla_idx_obj ON {{data.modules.ido2db.database.prefix}}objects (objecttype_id, is_active, name1);
 
 -- -----------------------------------------
 -- set dbversion
 -- -----------------------------------------
-INSERT INTO icinga_dbversion (name, version, create_time, modify_time) VALUES ('idoutils', '1.10.0', NOW(), NOW()) ON DUPLICATE KEY UPDATE version='1.10.0', modify_time=NOW();
+INSERT INTO {{data.modules.ido2db.database.prefix}}dbversion (name, version, create_time, modify_time) VALUES ('idoutils', '1.10.0', NOW(), NOW()) ON DUPLICATE KEY UPDATE version='1.10.0', modify_time=NOW();
 
 

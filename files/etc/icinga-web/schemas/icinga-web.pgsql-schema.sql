@@ -1,4 +1,6 @@
-\set icinga_web_owner 'icinga_web';
+{% set data = salt['mc_utils.json_load'](data) %}
+-- MANAGED VIA SALT -- DO NOT EDIT
+\set icinga_web_owner '{{data.databases.web.user}}';
 
 SET statement_timeout = 0;
 SET client_encoding = 'UTF8';
