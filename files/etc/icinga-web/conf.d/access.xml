@@ -102,8 +102,8 @@
 
         <!-- Hosts that can be accessed via the console interface -->
         <hosts>
-            {% for host in data.access_xml.hosts %}
-            <host name="{{host.name}}">
+            {% for name,host in data.access_xml.hosts.items() %}
+            <host name="{{name}}">
                 <type>{{host.type}}</type>
 
                 {% if 'ssh' == host.type and 'ssh_config' in host %}

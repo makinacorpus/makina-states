@@ -185,6 +185,23 @@ icinga_web-mdoule_cronks-conf:
       data: |
             {{sdata}}
 
+icinga_web-mdoule_reporting-conf:
+  file.managed:
+    - name: {{data.configuration_directory}}/conf.d/module_cronks.xml
+    - source: salt://makina-states/files/etc/icinga-web/conf.d/module_cronks.xml
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: www-data
+    - mode: 640
+    - watch:
+      - mc_proxy: icinga_web-pre-conf
+    - watch_in:
+      - mc_proxy: icinga_web-post-conf
+    - defaults:
+      data: |
+            {{sdata}}
+
 
 
 # not used

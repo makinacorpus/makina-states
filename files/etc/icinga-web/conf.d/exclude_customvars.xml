@@ -8,6 +8,7 @@
                 can hide passwords and other system related information
                 from the users
             -->
+            {% if 'settings' in data.exclude_customvars_xml %}
             <settings>
                 {% for value in data.exclude_customvars_xml.settings %}
                 <ae:parameter>{{value}}</ae:parameter>
@@ -15,5 +16,6 @@
                 <!-- <ae:parameter>PASSWORD</ae:parameter> -->
                 <!-- <ae:parameter>DN</ae:parameter> -->
             </settings>
+            {% endif %}
     </ae:configuration>
 </ae:configurations>

@@ -139,9 +139,8 @@ def settings():
                             },
                         },
                     },
-                    'hosts': [
-                        {
-                            'name': "localhost",
+                    'hosts': {
+                        'localhost': {
                             'type': 'local',
 #                            'ssh_config': {
 #                                'host': "debian.www",
@@ -173,11 +172,11 @@ def settings():
 #                                },
                             },
                         },
-                    ],
+                    },
                 },
                 'auth_xml': {
-                    'settings': [
-                        {'name': "defaults",
+                    'settings': {
+                        'defaults' : {
                          'parameters': {
                              'auth_create': "false",
                              'auth_update': "false",
@@ -187,7 +186,7 @@ def settings():
                              'auth_authoritative': "true",
                          },
                         },
-                        {'name': "auth_key",
+                        'auth_key': {
                          'parameters': {
                              'auth_create': "false",
                              'auth_update': "false",
@@ -197,11 +196,11 @@ def settings():
                              'auth_authoritative': "true",
                          },
                         },
-                    ],
+                    },
                 },
                 'cronks_xml': {
-                    'cronks': [
-                        {'name': "iframeViewIcingaDocsEn",
+                    'cronks': {
+                        'iframeViewIcingaDocsEn': {
                          'parameters': {
                              'module': "Cronks",
                              'action': "System.IframeView",
@@ -216,7 +215,7 @@ def settings():
                              },
                          },
                         },
-                        {'name': "iframeViewIcingaDocsDe",
+                        'iframeViewIcingaDocsDe': {
                          'parameters': {
                              'module': "Cronks",
                              'action': "System.IframeView",
@@ -231,7 +230,7 @@ def settings():
                              },
                          },
                         },
-                        {'name': "icingaReportingDefault",
+                        'icingaReportingDefault': {
                          'parameters': {
                              'module': "Reporting",
                              'action': "Cronk.Main",
@@ -250,16 +249,16 @@ def settings():
                              },
                          },
                         },
-                    ],
-                    'categories': [
-#                        {'name': "misc",
+                    },
+                    'categories': {
+#                        'misc': {,
 #                         'parameters': {
 #                             'title': "Misc",
 #                             'visible': "true",
 #                             'position': 99,
 #                         },
 #                        },
-                    ],
+                    },
                 },
                 'databases_xml': {
                     'icinga': {
@@ -329,6 +328,17 @@ def settings():
                     'settings': {
 #                        'search.numberMinimumLetters': 2,
 #                        'search.maximumResults': 200,
+                    },
+                },
+                'module_reporting_xml': {
+                    'enabled': "false",
+                    'settings': {
+                        'jasperconfig.default': {
+                            'jasper_url': "http://127.0.0.1:8080/jasperserver",
+                            'jasper_user': "jasperadmin",
+                            'jasper_pass': "jasperadmin",
+                            'tree_root': "/icinga/reports",
+                        },
                     },
                 },
         })

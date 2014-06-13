@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- MANAGED VIA SALT -- DO NOT EDIT -->
+{% set data = salt['mc_utils.json_load'](data) %}
+<ae:configurations xmlns="http://agavi.org/agavi/config/parts/module/1.0" xmlns:ae="http://agavi.org/agavi/config/global/envelope/1.0">
+    <ae:configuration>
+
+    <!--
+        Overwrite or append your reporting cronk configuration
+        here
+    -->
+
+    <module enabled="{{data.module_reporting_xml.enabled}}">
+    {% if 'settings' in data.module_reporting_xml %}
+     <settings>
+      {% for name, setting in data.module_reporting_xml.settings.items() %}
+      <setting name="{{name}}">
+       {% for name,value in setting.items() %}
+       <ae:parameter name="{{name}}">{{value}}</ae:parameter>
+       {% endfor %}
+      </setting>
+      {% endfor %}
+     </settings>
+    {% endif %}
+    </module>
+    
+    </ae:configuration>
+</ae:configurations>

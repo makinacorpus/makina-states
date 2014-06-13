@@ -10,8 +10,8 @@
 	
 -->
         {% if 'settings' in data.auth_xml %}
-         {% for setting in data.auth_xml.settings %}
-	  <setting name="{{setting.name}}">
+         {% for name,setting in data.auth_xml.settings.items() %}
+	  <setting name="{{name}}">
            {% if 'parameters' in setting %}
              {% for name,value in setting.parameters.items() %}
               <ae:parameter name="{{name}}">{{value}}</ae:parameter>

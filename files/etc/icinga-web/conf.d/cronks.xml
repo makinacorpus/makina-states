@@ -3,7 +3,7 @@
 {% set data = salt['mc_utils.json_load'](data) %}
 <ae:configurations xmlns:ae="http://agavi.org/agavi/config/global/envelope/1.0" xmlns="http://icinga.org/cronks/config/parts/cronks/1.0">
 	<ae:configuration>
-		<cronks>
+        {% if 'cronks' in data.cronks_xml %}
 	    <!-- 
             Cronk overwrites - for example 
         -->
@@ -40,9 +40,9 @@
                 </ae:parameter>
             </cronk>
         -->
-        {% if 'cronks' in data.cronks_xml %}
-         {% for cronk in data.cronks_xml.cronks %}
-           <cronk name="{{cronk.name}}">
+	<cronks>
+         {% for name,cronk in data.cronks_xml.cronks.items() %}
+           <cronk name="{{name}}">
             {% if 'parameters' in cronk %}
             {% for name,value in cronk.parameters.items() %}
              {% if 'parameters' == name %}
@@ -58,8 +58,6 @@
             {% endif %}
            </cronk>
          {% endfor %}
-        {% endif %}
-        
         <!-- set correct url for docs -->
 <!--
             <cronk name="iframeViewIcingaDocsEn">
@@ -91,6 +89,7 @@
                 </ae:parameter>
             </cronk>
 -->
+        
         <!-- Disable default activated cronks -->
 <!--
             <cronk name="icingaReportingDefault">
@@ -114,12 +113,13 @@
             </cronk>
 -->        
        	</cronks>
-        <categories>
+        {% endif %}
         <!--
             Category overwrites - for example:
         -->
         {% if 'categories' in data.cronks_xml %}
-         {% for category in data.cronks_xml.categories %}
+        <categories>
+         {% for name,category in data.cronks_xml.categories.items() %}
            <category name="{{category.name}}">
             {% if 'parameters' in category %}
             {% for name,value in category.parameters.items() %}
@@ -128,8 +128,6 @@
             {% endif %}
            </category>
          {% endfor %}
-        {% endif %}
-
 
 
         <!--
@@ -141,5 +139,7 @@
 	
          -->
         </categories>
+        {% endif %}
+
 	</ae:configuration>
 </ae:configurations>
