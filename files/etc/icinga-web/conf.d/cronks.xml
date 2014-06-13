@@ -3,7 +3,7 @@
 {% set data = salt['mc_utils.json_load'](data) %}
 <ae:configurations xmlns:ae="http://agavi.org/agavi/config/global/envelope/1.0" xmlns="http://icinga.org/cronks/config/parts/cronks/1.0">
 	<ae:configuration>
-        {% if 'cronks' in data.cronks_xml %}
+        {% if data.cronks_xml.get('cronks', None) %}
 	    <!-- 
             Cronk overwrites - for example 
         -->
@@ -43,7 +43,6 @@
 	<cronks>
          {% for name,cronk in data.cronks_xml.cronks.items() %}
            <cronk name="{{name}}">
-            {% if cronk is mapping %}
             {% for name,value in cronk.items() %}
              {% if value is mapping %}
              <ae:parameter name="ae:parameter">
@@ -55,7 +54,6 @@
              <ae:parameter name="{{name}}">{{value}}</ae:parameter>
              {% endif %}
             {% endfor %}
-            {% endif %}
            </cronk>
          {% endfor %}
         <!-- set correct url for docs -->
@@ -117,11 +115,11 @@
         <!--
             Category overwrites - for example:
         -->
-        {% if 'categories' in data.cronks_xml %}
+        {% if data.cronks_xml.get('categories', None) %}
         <categories>
          {% for name,category in data.cronks_xml.categories.items() %}
            <category name="{{category.name}}">
-            {% if 'parameters' in category %}
+            {% if category.get('parameters', None) %}
             {% for name,value in category.parameters.items() %}
              <ae:parameter name="{{name}}">{{value}}</ae:parameter>
             {% endfor %}

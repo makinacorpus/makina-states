@@ -5,10 +5,10 @@
     <ae:configuration>
     
 
-        {% if 'loggers' in data.logging_xml %}
+        {% if data.logging_xml.get('loggers', None) %}
         <loggers default="{{data.logging_xml.loggers.default}}">
 
-         {% if 'loggers' in data.logging_xml.loggers %}
+         {% if data.logging_xml.loggers.get('loggers', None) %}
          {% for name,logger in data.logging_xml.loggers.loggers.items() %}
             <logger name="{{name}}" class="{{logger.class}}" level="{{logger.level}}">
                 

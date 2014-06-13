@@ -9,7 +9,7 @@
         Example how to overwrite settings from settings.xml
         -->
 
-       {% if 'settings' in data.settings_xml %}
+       {% if data.settings_xml.get('settings', None) %}
        <settings>
         {% for name, value in data.settings_xml.settings.items() %}
         <setting name="{{name}}">{{value}}</setting>

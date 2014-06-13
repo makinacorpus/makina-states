@@ -23,7 +23,7 @@
 <!--
 	<setting name="version.extension">mycustom</setting>
 -->
-        {% if 'settings' in data.icinga_xml %}
+        {% if data.icinga_xml.get('settings', None) %}
         {% for name,value in data.icinga_xml.settings.items() %}
 	<setting name="{{name}}">{{value}}</setting>
         {% endfor %}

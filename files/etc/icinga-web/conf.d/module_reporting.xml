@@ -10,7 +10,7 @@
     -->
 
     <module enabled="{{data.module_reporting_xml.enabled}}">
-    {% if 'settings' in data.module_reporting_xml %}
+    {% if data.module_reporting_xml.get('settings', None) %}
      <settings>
       {% for name, setting in data.module_reporting_xml.settings.items() %}
       <setting name="{{name}}">

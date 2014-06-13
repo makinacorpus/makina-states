@@ -19,14 +19,12 @@
 	            - https://dev.icinga.org/issues/2054
             
 	        -->
-               {% if 'storages' in data.factories_xml %}
+               {% if data.factories_xml.get('storages', None) %}
                {% for name,storage in data.factories_xml.storages.items() %}
 	       <storage class="{{name}}">
-                {% if storage is mapping %}
                 {% for name,value in storage.items() %}
 	           <ae:parameter name="{{name}}">{{value}}</ae:parameter>
                 {% endfor %}
-                {% endif %}
 	       </storage>
                {% endfor %}
                {% endif %}

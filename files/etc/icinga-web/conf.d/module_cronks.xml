@@ -16,7 +16,7 @@
             Look into app/modules/Cronks/config/module.xml for
             possible settings
         -->
-        {% if 'settings' in data.module_cronks_xml %}
+        {% if data.module_cronks_xml.get('settings', None) %}
         {% for name,value in data.module_cronks_xml.settings.items() %}
         <setting name="{{name}}">{{value}}</setting>
         {% endfor %}

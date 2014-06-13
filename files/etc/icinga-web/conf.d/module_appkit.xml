@@ -5,7 +5,7 @@
     <ae:configuration>
         <module enabled="true">
             <!-- Overwrite debuglog handling(verbosy) -->
-{% if 'settings' in data.module_appkit_xml %}
+{% if data.module_appkit_xml.get('settings', None) %}
             <settings>            
 {% for name,value in data.module_appkit_xml.settings.items() -%}
 <setting name="{{name}}">

@@ -10,10 +10,10 @@
             API
         -->
 
-        {% if 'dql' in data.views_xml %}
+        {% if data.views_xml.get('dql', None) %}
         {% for target,dql in data.views_xml.dql.items() %}
         <dql name="{{target}}" >
-         {% if 'content' in dql %}
+         {% if dql.get('content', None) %}
          {{dql.content}}
          {% endif %}
         </dql>

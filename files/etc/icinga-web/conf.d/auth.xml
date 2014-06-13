@@ -9,7 +9,7 @@
 	This file won't be overwritten
 	
 -->
-        {% if 'settings' in data.auth_xml %}
+        {% if data.auth_xml.get('settings', None) %}
          {% for name,setting in data.auth_xml.settings.items() %}
 	  <setting name="{{name}}">
              {% for name,value in setting.items() %}
