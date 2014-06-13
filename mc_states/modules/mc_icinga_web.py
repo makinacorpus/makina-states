@@ -11,6 +11,9 @@ __docformat__ = 'restructuredtext en'
 import logging
 import mc_states.utils
 
+import hmac
+import hashlib
+
 __name = 'icinga_web'
 
 log = logging.getLogger(__name__)
@@ -38,7 +41,8 @@ def settings():
             'mc_macros.get_local_registry'](
                 'icinga_web', registry_format='pack')
 
-        password_web = icinga_web_reg.setdefault('web.password', __salt__['mc_utils.generate_password']())
+        password_web_db = icinga_web_reg.setdefault('web.db_password', __salt__['mc_utils.generate_password']())
+        password_web_root_account = icinga_web_reg.setdefault('web.root_account_password', __salt__['mc_utils.generate_password']())
 
         # get default ido password
         password_ido=""
@@ -61,8 +65,13 @@ def settings():
             'port': 5432,
 #            'socket': "",
             'user': "icinga",
-            'password': password_web,
+            'password': password_web_db,
             'name': "icinga_web",
+        }
+
+        root_account = {
+            'password': password_web_root_account,
+            'salt': "0c099ae4627b144f3a7eaa763ba43b10fd5d1caa8738a98f11bb973bebc52ccd",
         }
 
         has_sgbd = ((('host' in web_database)
@@ -80,6 +89,11 @@ def settings():
                               and has_sgbd),
                 'has_mysql': ('mysql' == web_database['type']
                               and has_sgbd),
+                'root_account': {
+                    'login': "root",
+                    'hashed_password': hmac.new(root_account['salt'], root_account['password'], digestmod=hashlib.sha256).hexdigest(),
+                    'salt': root_account['salt'],
+                },
                 'databases': {
                     'ido2db': ido2db_database,
                     'web': web_database,

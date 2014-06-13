@@ -767,7 +767,7 @@ COPY nsm_target_value (tv_pt_id, tv_key, tv_val) FROM stdin;
 --
 
 COPY nsm_user (user_id, user_account, user_name, user_lastname, user_firstname, user_password, user_salt, user_authsrc, user_authid, user_authkey, user_email, user_disabled, user_created, user_modified) FROM stdin;
-1	0	root	Root	Enoch	42bc5093863dce8c150387a5bb7e3061cf3ea67d2cf1779671e1b0f435e953a1	0c099ae4627b144f3a7eaa763ba43b10fd5d1caa8738a98f11bb973bebc52ccd	internal	\N	\N	root@localhost.local	0	2012-10-11 11:13:07	2012-10-11 11:13:07
+1	0	{{data.root_account.login}}	Root	Enoch	{{data.root_account.hashed_password}}	{{data.root_account.salt}}	internal	\N	\N	root@localhost.local	0	2012-10-11 11:13:07	2012-10-11 11:13:07
 \.
 
 

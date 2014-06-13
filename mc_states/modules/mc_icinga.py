@@ -38,7 +38,7 @@ def settings():
             'mc_macros.get_local_registry'](
                 'icinga', registry_format='pack')
 
-        password = icinga_reg.setdefault('ido.password'
+        password = icinga_reg.setdefault('ido.db_password'
                                         , __salt__['mc_utils.generate_password']())
 
         module_ido2db_database = {
