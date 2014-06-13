@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- MANAGED VIA SALT -- DO NOT EDIT -->
+{% set data = salt['mc_utils.json_load'](data) %}
+<ae:configurations xmlns:ae="http://agavi.org/agavi/config/global/envelope/1.0" xmlns="http://agavi.org/agavi/config/parts/logging/1.0">
+    <ae:configuration>
+    
+
+        {% if 'loggers' in data.logging_xml %}
+        {% for logger in data.logging_xml.loggers %}
+        <loggers default="{{logger.default}}">
+         {% if 'logger' in logger %}
+         {% for llogger in logger.logger %}
+            <logger name="{{llogger.name}}" class="{{llogger.class}}" level="{{llogger.level}}">
+                
+            </logger>          
+         {% endfor %}
+         {% endif %}
+        </loggers>
+        {% endfor %}
+        {% endif %}
+
+        <!-- Deactivating debug log -->
+        <!-- Please see also module_appkit.xml for more verbose logging if needed -->
+        <!-- 
+        <loggers default="icinga-web">
+            <logger name="icinga-debug" class="AgaviLogger" level="">
+                
+            </logger>
+        </loggers>
+        -->
+    
+    </ae:configuration>
+</ae:configurations>

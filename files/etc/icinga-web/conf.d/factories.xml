@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- MANAGED VIA SALT -- DO NOT EDIT -->
+{% set data = salt['mc_utils.json_load'](data) %}
+<ae:configurations xmlns:ae="http://agavi.org/agavi/config/global/envelope/1.0" xmlns="http://agavi.org/agavi/config/parts/factories/1.0">
+	
+	<ae:configuration>
+		<!--
+		* Example customize sessions 
+		-->
+
+        	<!--
+	            * Session configuration
+	            
+	            - Choose between AppKitDoctrineSessionStorage and AgaviSessionStorage
+	            - Database sessions are default again because of PHP session file locking
+	              (Only one request per session)
+	            - https://dev.icinga.org/issues/2061
+	            - https://dev.icinga.org/issues/2035
+	            - https://dev.icinga.org/issues/2054
+            
+	        -->
+               {% if 'storages' in data.factories_xml %}
+               {% for storage in data.factories_xml.storages %}
+	       <storage class="{{storage.class}}">
+                {% if 'parameters' in storage %}
+                {% for name,value in storage.parameters.items() %}
+	           <ae:parameter name="{{name}}">{{value}}</ae:parameter>
+                {% endfor %}
+                {% endif %}
+	       </storage>
+               {% endfor %}
+               {% endif %}
+
+
+               <!--
+	       <storage class="AppKitDoctrineSessionStorage">
+	           <ae:parameter name="session_cookie_lifetime">0</ae:parameter>
+	           <ae:parameter name="session_name">icinga-web</ae:parameter>
+	           <ae:parameter name="gzip_level">6</ae:parameter>
+	       </storage>
+               -->
+
+	</ae:configuration>
+	
+</ae:configurations>

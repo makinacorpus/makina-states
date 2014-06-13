@@ -257,8 +257,8 @@ def settings():
 #                             'title': "Misc",
 #                             'visible': "true",
 #                             'position': 99,
-                         },
-                        },
+#                         },
+#                        },
                     ],
                 },
                 'databases_xml': {
@@ -288,6 +288,47 @@ def settings():
                             'use_result_cache': "true",
                             'result_cache_lifespan': "60",
                         },
+                    },
+                },
+                'factories_xml': {
+                    'storages': [
+                        {'class': "AppKitDoctrineSessionStorage",
+                         'parameters': {
+                             'session_cookie_lifetime': 0,
+                             'session_name': "icinga-web",
+                             'gzip_level': 6,
+                         },
+                        },
+                    ],
+                },
+                'icinga_xml': {
+                    'settings': {
+                        'bogus.include': "true",
+                    },
+                },
+                'logging_xml': {
+                    'loggers': [
+#                        {'default': "icinga-web",
+#                         'logger': [
+#                             {'name': "icinga-debug",
+#                              'class': "AgaviLogger",
+#                              'level': "",
+#                             }
+#                         ],
+#                        },
+                    ],
+                },
+                'module_appkit_xml': {
+                    'settings': {
+                        'ajax.timeout': 240000,
+                        'debug.verbose': ["API_Views_ApiDQLViewModel"],
+                    },
+                },
+                'module_cronks_xml': {
+                    'enabled': "true",
+                    'settings': {
+#                        'search.numberMinimumLetters': 2,
+#                        'search.maximumResults': 200,
                     },
                 },
         })

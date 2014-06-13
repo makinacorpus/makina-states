@@ -99,6 +99,92 @@ icinga_web-exclude_customvars-conf:
       data: |
             {{sdata}}
 
+icinga_web-factories-conf:
+  file.managed:
+    - name: {{data.configuration_directory}}/conf.d/factories.xml
+    - source: salt://makina-states/files/etc/icinga-web/conf.d/factories.xml
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: www-data
+    - mode: 640
+    - watch:
+      - mc_proxy: icinga_web-pre-conf
+    - watch_in:
+      - mc_proxy: icinga_web-post-conf
+    - defaults:
+      data: |
+            {{sdata}}
+
+icinga_web-icinga-conf:
+  file.managed:
+    - name: {{data.configuration_directory}}/conf.d/icinga.xml
+    - source: salt://makina-states/files/etc/icinga-web/conf.d/icinga.xml
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: www-data
+    - mode: 640
+    - watch:
+      - mc_proxy: icinga_web-pre-conf
+    - watch_in:
+      - mc_proxy: icinga_web-post-conf
+    - defaults:
+      data: |
+            {{sdata}}
+
+
+icinga_web-logging-conf:
+  file.managed:
+    - name: {{data.configuration_directory}}/conf.d/logging.xml
+    - source: salt://makina-states/files/etc/icinga-web/conf.d/logging.xml
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: www-data
+    - mode: 640
+    - watch:
+      - mc_proxy: icinga_web-pre-conf
+    - watch_in:
+      - mc_proxy: icinga_web-post-conf
+    - defaults:
+      data: |
+            {{sdata}}
+
+icinga_web-mdoule_appkit-conf:
+  file.managed:
+    - name: {{data.configuration_directory}}/conf.d/module_appkit.xml
+    - source: salt://makina-states/files/etc/icinga-web/conf.d/module_appkit.xml
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: www-data
+    - mode: 640
+    - watch:
+      - mc_proxy: icinga_web-pre-conf
+    - watch_in:
+      - mc_proxy: icinga_web-post-conf
+    - defaults:
+      data: |
+            {{sdata}}
+
+icinga_web-mdoule_cronks-conf:
+  file.managed:
+    - name: {{data.configuration_directory}}/conf.d/module_cronks.xml
+    - source: salt://makina-states/files/etc/icinga-web/conf.d/module_cronks.xml
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: www-data
+    - mode: 640
+    - watch:
+      - mc_proxy: icinga_web-pre-conf
+    - watch_in:
+      - mc_proxy: icinga_web-post-conf
+    - defaults:
+      data: |
+            {{sdata}}
+
 
 
 # not used
