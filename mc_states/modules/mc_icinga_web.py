@@ -341,6 +341,50 @@ def settings():
                         'enabled': "false,"
                     }
                 },
+                'translation_xml': {
+#                    'available_locales': {
+#                        'default_locale': "de",
+#                        'default_timezone': "GMT",
+#                        'available_locales': {
+#                            'de_DE': {
+#                                'description': "Deutsch",
+#                            },
+#                            'en': {
+#                                'description': "English",
+#                            },
+#                        },
+#                    },
+#                    'translators': {
+#                        'default_domain': "icinga.default",
+#                        'translators': {
+#                            'date-tstamp': {
+#                                'date_formatter': {
+#                                    'type': "date",
+#                                    'format': "yyyy-MM-dd"
+#                                },
+#                            },
+#                        },
+#                    },
+                },
+                'userpreferences_xml': {
+                    'org_icinga_grid_pagerMaxItems': 25,
+                    'org_icinga_grid_refreshTime': 300,
+                    'org_icinga_grid_outputLength': 70,
+                    'org_icinga_tabslider_changeTime': 10,
+                    'org_icinga_cronk_default': "portalHello",
+                    'org_icinga_bugTrackerEnabled': "false",
+                    'org_icinga_errorNotificationsEnabled': "false",
+                    'org_icinga_autoRefresh': "true",
+                    'org_icinga_status_refreshTime': 60,
+                    'org_icinga_cronk_liststyle': "list",
+                },
+                'views_xml': {
+#                   'dql': {
+#                       'TARGET_MYVIEW': {
+#                           'content': "<!-- - ... -->",
+#                       },
+#                   },
+                },
         })
 
         __salt__['mc_macros.update_local_registry'](

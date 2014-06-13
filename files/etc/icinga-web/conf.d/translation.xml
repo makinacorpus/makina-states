@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- MANAGED VIA SALT -- DO NOT EDIT -->
+{% set data = salt['mc_utils.json_load'](data) %}
+<ae:configurations xmlns:ae="http://agavi.org/agavi/config/global/envelope/1.0" xmlns="http://agavi.org/agavi/config/parts/translation/1.0">
+    <ae:configuration>
+        <!--
+        * Example to change locales
+        Stripping down available languages and set one as default
+        -->
+        {% if 'available_locales' in data.translation_xml %}
+         <available_locales default_locale="{{data.translation_xml.available_locales.default_locale}}" default_timezone="{{data.translation_xml.available_locales.default_timezone}}">
+            {% if 'available_locales' in data.translation_xml.available_locales %}
+            {% for identifier,locale in data.translation_xml.available_locales.available_locales.items() %}
+            <available_locale identifier="{{identifier}}">
+              {% for name,value in locale.items() %}
+              <ae:parameter name="{{name}}">{{value}}</ae:parameter>
+              {% endfor %}
+            </available_locale>
+            {% endfor %}
+            {% endif %}
+         </available_locales>
+         {% endif %}
+        
+        <!-- 
+        * Example changing date formats
+        Changing the tstamp format for icinga grids
+        -->
+        {% if 'translators' in data.translation_xml %}
+        <translators default_domain="icinga.default">
+            {% if 'translators' in data.translation_xml.translators %}
+            {% for domain,translator in data.translation_xml.translators.translators.items() %}
+            <translator domain="{{domain}}">
+                {% for formatter, parameters in translator.items() %}
+                <{{formatter}}>
+                    {% for name,value in parameters.items() %}
+                    <ae:parameter name="{{name}}">{{value}}</ae:parameter>
+                    {% endfor %}
+                </{{formatter}}>
+                {% endfor %}
+            </translator>
+            {% endfor %}
+            {% endif %}
+        </translators>
+        {% endif %}
+        
+    </ae:configuration>
+</ae:configurations>
