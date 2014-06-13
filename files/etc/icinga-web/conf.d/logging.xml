@@ -6,17 +6,18 @@
     
 
         {% if 'loggers' in data.logging_xml %}
-        {% for logger in data.logging_xml.loggers %}
-        <loggers default="{{logger.default}}">
-         {% if 'logger' in logger %}
-         {% for llogger in logger.logger %}
-            <logger name="{{llogger.name}}" class="{{llogger.class}}" level="{{llogger.level}}">
+        <loggers default="{{data.logging_xml.loggers.default}}">
+
+         {% if 'loggers' in data.logging_xml.loggers %}
+         {% for name,logger in data.logging_xml.loggers.loggers.items() %}
+            <logger name="{{name}}" class="{{logger.class}}" level="{{logger.level}}">
                 
             </logger>          
          {% endfor %}
          {% endif %}
+
+
         </loggers>
-        {% endfor %}
         {% endif %}
 
         <!-- Deactivating debug log -->

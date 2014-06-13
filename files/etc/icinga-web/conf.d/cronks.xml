@@ -43,11 +43,11 @@
 	<cronks>
          {% for name,cronk in data.cronks_xml.cronks.items() %}
            <cronk name="{{name}}">
-            {% if 'parameters' in cronk %}
-            {% for name,value in cronk.parameters.items() %}
-             {% if 'parameters' == name %}
+            {% if cronk is mapping %}
+            {% for name,value in cronk.items() %}
+             {% if value is mapping %}
              <ae:parameter name="ae:parameter">
-             {% for name2,value2 in value.items() %}
+             {% for name2, value2 in value.items() %}
               <ae:parameter name="{{name2}}">{{value2}}</ae:parameter>
              {% endfor %}
              </ae:parameter>

@@ -20,10 +20,10 @@
             
 	        -->
                {% if 'storages' in data.factories_xml %}
-               {% for storage in data.factories_xml.storages %}
-	       <storage class="{{storage.class}}">
-                {% if 'parameters' in storage %}
-                {% for name,value in storage.parameters.items() %}
+               {% for name,storage in data.factories_xml.storages.items() %}
+	       <storage class="{{name}}">
+                {% if storage is mapping %}
+                {% for name,value in storage.items() %}
 	           <ae:parameter name="{{name}}">{{value}}</ae:parameter>
                 {% endfor %}
                 {% endif %}

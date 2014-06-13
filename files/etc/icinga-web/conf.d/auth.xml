@@ -12,16 +12,16 @@
         {% if 'settings' in data.auth_xml %}
          {% for name,setting in data.auth_xml.settings.items() %}
 	  <setting name="{{name}}">
-           {% if 'parameters' in setting %}
-             {% for name,value in setting.parameters.items() %}
+             {% for name,value in setting.items() %}
               <ae:parameter name="{{name}}">{{value}}</ae:parameter>
              {% endfor %}
-           {% endif %}
 	  </setting>
          {% endfor %}
         {% endif %}
 
+<!--
 	<setting name="provider">
+-->
 	<!--
 		<ae:parameter name="openldap-ldap1">
 			<ae:parameter name="auth_module">AppKit</ae:parameter>
@@ -43,9 +43,11 @@
 			<ae:parameter name="ldap_filter_user"><![CDATA[(&(uid=__USERNAME__))]]></ae:parameter>
 		</ae:parameter>
 	-->
+<!--
    	</setting>
 
 	<setting name="message">
+-->
 	<!--
 		<ae:parameter name="show">true</ae:parameter>
 		<ae:parameter name="title">¡Hola</ae:parameter>
@@ -53,6 +55,7 @@
 		<ae:parameter name="include_file"></ae:parameter>
 		<ae:parameter name="expand_first">false</ae:parameter>
 	-->
+<!--
 	</setting>
-	
+-->	
 </settings>

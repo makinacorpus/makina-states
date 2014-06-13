@@ -177,87 +177,75 @@ def settings():
                 'auth_xml': {
                     'settings': {
                         'defaults' : {
-                         'parameters': {
-                             'auth_create': "false",
-                             'auth_update': "false",
-                             'auth_resume': "true",
-                             'auth_groups': "icinga_user",
-                             'auth_enable': "true",
-                             'auth_authoritative': "true",
+                            'auth_create': "false",
+                            'auth_update': "false",
+                            'auth_resume': "true",
+                            'auth_groups': "icinga_user",
+                            'auth_enable': "true",
+                            'auth_authoritative': "true",
                          },
-                        },
                         'auth_key': {
-                         'parameters': {
-                             'auth_create': "false",
-                             'auth_update': "false",
-                             'auth_resume': "true",
-                             'auth_groups': "icinga_user",
-                             'auth_enable': "true",
-                             'auth_authoritative': "true",
-                         },
+                            'auth_create': "false",
+                            'auth_update': "false",
+                            'auth_resume': "true",
+                            'auth_groups': "icinga_user",
+                            'auth_enable': "true",
+                            'auth_authoritative': "true",
                         },
                     },
                 },
                 'cronks_xml': {
                     'cronks': {
                         'iframeViewIcingaDocsEn': {
-                         'parameters': {
-                             'module': "Cronks",
-                             'action': "System.IframeView",
-                             'hide': "false",
-                             'description': "Icinga docs english version",
-                             'name': "Docs EN",
-                             'image': "cronks.Info2",
-                             'categories': "misc",
-                             'position': 300,
-                             'parameters': {
-                                 'url': "<![CDATA[/icinga-web/docs/en/index.html]]>",
-                             },
-                         },
+                            'module': "Cronks",
+                            'action': "System.IframeView",
+                            'hide': "false",
+                            'description': "Icinga docs english version",
+                            'name': "Docs EN",
+                            'image': "cronks.Info2",
+                            'categories': "misc",
+                            'position': 300,
+                            'parameters': {
+                                'url': "<![CDATA[/icinga-web/docs/en/index.html]]>",
+                            },
                         },
                         'iframeViewIcingaDocsDe': {
-                         'parameters': {
-                             'module': "Cronks",
-                             'action': "System.IframeView",
-                             'hide': "false",
-                             'description': "Icinga docs german version",
-                             'name': "Docs DE",
-                             'image': "cronks.Info2",
-                             'categories': "misc",
-                             'position': 310,
-                             'parameters': {
-                                 'url': "<![CDATA[/icinga-web/docs/de/index.html]]>",
-                             },
-                         },
+                            'module': "Cronks",
+                            'action': "System.IframeView",
+                            'hide': "false",
+                            'description': "Icinga docs german version",
+                            'name': "Docs DE",
+                            'image': "cronks.Info2",
+                            'categories': "misc",
+                            'position': 310,
+                            'parameters': {
+                                'url': "<![CDATA[/icinga-web/docs/de/index.html]]>",
+                            },
                         },
                         'icingaReportingDefault': {
-                         'parameters': {
-                             'module': "Reporting",
-                             'action': "Cronk.Main",
-                             'hide': "true",
-                             'enabled': "false",
-                             'description': "Seamless Jasper Integration",
-                             'name': "Reporting",
-                             'categories': "icinga-reporting",
-                             'image': "cronks.Weather_Cloud_Sun",
-                             'groupsonly': "appkit_admin",
-                             'parameters': {
-                                 'jasperconfig': "modules.reporting.jasperconfig.default",
-                                 'enable_onthefly': 1,
-                                 'enable_repository': 1,
-                                 'enable_scheduling': 1,
-                             },
-                         },
+                            'module': "Reporting",
+                            'action': "Cronk.Main",
+                            'hide': "true",
+                            'enabled': "false",
+                            'description': "Seamless Jasper Integration",
+                            'name': "Reporting",
+                            'categories': "icinga-reporting",
+                            'image': "cronks.Weather_Cloud_Sun",
+                            'groupsonly': "appkit_admin",
+                            'parameters': {
+                                'jasperconfig': "modules.reporting.jasperconfig.default",
+                                'enable_onthefly': 1,
+                                'enable_repository': 1,
+                                'enable_scheduling': 1,
+                            },
                         },
                     },
                     'categories': {
-#                        'misc': {,
-#                         'parameters': {
-#                             'title': "Misc",
-#                             'visible': "true",
-#                             'position': 99,
-#                         },
-#                        },
+#                       'misc': {,
+#                            'title': "Misc",
+#                            'visible': "true",
+#                            'position': 99,
+#                       },
                     },
                 },
                 'databases_xml': {
@@ -290,15 +278,13 @@ def settings():
                     },
                 },
                 'factories_xml': {
-                    'storages': [
-                        {'class': "AppKitDoctrineSessionStorage",
-                         'parameters': {
-                             'session_cookie_lifetime': 0,
-                             'session_name': "icinga-web",
-                             'gzip_level': 6,
-                         },
+                    'storages': {
+                        'AppKitDoctrineSessionStorage': {
+                            'session_cookie_lifetime': 0,
+                            'session_name': "icinga-web",
+                            'gzip_level': 6,
                         },
-                    ],
+                    },
                 },
                 'icinga_xml': {
                     'settings': {
@@ -306,16 +292,15 @@ def settings():
                     },
                 },
                 'logging_xml': {
-                    'loggers': [
-#                        {'default': "icinga-web",
-#                         'logger': [
-#                             {'name': "icinga-debug",
-#                              'class': "AgaviLogger",
-#                              'level': "",
-#                             }
-#                         ],
-#                        },
-                    ],
+#                    'loggers': {
+#                        'default': "icinga-web",
+#                         'loggers': {
+#                             'icinga-debug': {
+#                                  'class': "AgaviLogger",
+#                                  'level': "",
+#                             },
+#                         },
+#                    },
                 },
                 'module_appkit_xml': {
                     'settings': {
@@ -340,6 +325,21 @@ def settings():
                             'tree_root': "/icinga/reports",
                         },
                     },
+                },
+                'module_web_xml': {
+                    'enabled': "true",
+                },
+                'settings_xml': {
+#                    'settings': {
+#                        'available': "false",
+#                        'app_name': "My Custom Version",
+#                    },
+                },
+                'sla_xml': {
+                    'settings': {
+                        'default_timespan': "-1 month",
+                        'enabled': "false,"
+                    }
                 },
         })
 
