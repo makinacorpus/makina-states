@@ -100,6 +100,13 @@ def settings():
                     'ido2db': ido2db_database,
                     'web': web_database,
                 },
+                'nginx': {
+                    'virtualhost': "localhost.localdomain.",
+                    'doc_root': "/usr/share/icinga-web/pub/",
+                },
+                'phpfpm': {
+                    'listen': "/var/spool/www/icinga_fpm.sock",
+                },
                 'exclude_customvars_xml': {
                     'settings': [],
                 },
