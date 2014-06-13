@@ -281,14 +281,9 @@ def provision_compute_nodes(skip=None, only=None,
     '''
     func_name = 'mc_compute_node.provision_compute_nodes'
     __salt__['mc_api.time_log']('start {0}'.format(func_name))
-    if isinstance(only, basestring):
-        only = only.split(',')
-    if isinstance(skip, basestring):
-        skip = skip.split(',')
-    if only is None:
-        only = []
-    if skip is None:
-        skip = []
+    only, _, skip, __ = (
+        __salt__['mc_cloud_controller.gather_only_skip'](
+            only=only, skip=skip))
     if ret is None:
         ret = result()
     if refresh:
@@ -352,14 +347,9 @@ def post_provision_compute_nodes(skip=None, only=None,
     '''
     func_name = 'mc_compute_node.post_provision_compute_nodes'
     __salt__['mc_api.time_log']('start {0}'.format(func_name))
-    if isinstance(only, basestring):
-        only = only.split(',')
-    if isinstance(skip, basestring):
-        skip = skip.split(',')
-    if only is None:
-        only = []
-    if skip is None:
-        skip = []
+    only, _, skip, __ = (
+        __salt__['mc_cloud_controller.gather_only_skip'](
+            only=only, skip=skip))
     if ret is None:
         ret = result()
     if refresh:
@@ -465,26 +455,14 @@ def orchestrate(skip=None,
     __salt__['mc_api.time_log']('start {0}'.format(func_name))
     if refresh:
         cli('saltutil.refresh_pillar')
-    if only is None:
-        only = []
-    if skip is None:
-        skip = []
-    if only_vms is None:
-        only_vms = []
-    if skip_vms is None:
-        skip_vms = []
-    if isinstance(only, basestring):
-        only = only.split(',')
-    if isinstance(skip, basestring):
-        skip = skip.split(',')
-    if isinstance(only_vms, basestring):
-        only_vms = only_vms.split(',')
-    if isinstance(skip_vms, basestring):
-        skip_vms = skip_vms.split(',')
     if ret is None:
         ret = result()
     chg = ret['changes']
     lresult = True
+    only, only_vms, skip, skip_vms = (
+        __salt__['mc_cloud_controller.gather_only_skip'](
+            only=only, only_vms=only_vms,
+            skip=skip, skip_vms=skip_vms))
     if not no_provision:
         provision_compute_nodes(
             skip=skip, only=only,

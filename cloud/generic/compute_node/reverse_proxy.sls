@@ -14,6 +14,7 @@
 {% set data  = salt['mc_utils.json_load'](pillar.scnSettings) %}
 include:
   - makina-states.services.proxy.haproxy
+  - makina-states.cloud.generic.hooks
 
 cloud-haproxy-sshcerts:
   mc_proxy.hook:

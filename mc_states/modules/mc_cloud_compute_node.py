@@ -454,8 +454,11 @@ def _init_http_proxies(target_data, reversep):
             'raw_opts': []})
 
     ssl_bind = '*:443 ssl'
-    for ssl_cert, content in target_data['ssl_certs']:
-        ssl_bind += ' crt /etc/ssl/cloud/certs/{0}.crt'.format(ssl_cert)
+    if target_data['ssl_certs']:
+        ssl_bind += (
+            ' crt /etc/ssl/cloud/certs/{0}.crt'
+            ' crt /etc/ssl/cloud/certs'
+        ).format(reversep['target'])
     reversep.setdefault(
         'https_proxy', {
             'name': "secure-" + reversep['target'],
