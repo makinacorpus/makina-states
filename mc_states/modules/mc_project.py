@@ -33,6 +33,9 @@ APIS = {
     'install': {
         '2': 'mc_project_2.install',
     },
+    'run_task': {
+        '2': 'mc_project_2.run_task',
+    },
     'fixperms': {
         '2': 'mc_project_2.fixperms',
     },
@@ -107,6 +110,10 @@ def unlink(name, *args, **kwargs):
 
 def install(name, *args, **kwargs):
     return _api_switcher('install', name, *args, **kwargs)
+
+
+def run_task(name, *args, **kwargs):
+    return _api_switcher('run_task', name, *args, **kwargs)
 
 
 def doc_root(doc_root=None,
