@@ -70,6 +70,7 @@ DEFAULT_CONFIGURATION = {
     'raw_console_return': False,
     #
     'only': None,
+    'only_steps': None,
     #
     'api_version': API_VERSION,
     #
@@ -173,7 +174,7 @@ def _force_cli_retcode(ret):
 
 
 def remove_path(path):
-    """Remove a path."""
+    '''Remove a path.'''
     if os.path.exists(path):
         if os.path.islink(path):
             os.unlink(path)
@@ -531,7 +532,7 @@ def _get_contextual_cached_project(name):
 
 
 def get_configuration(name, *args, **kwargs):
-    """
+    '''
     Return a configuration data structure needed data for
     the project API macros and configurations functions
     project API 2
@@ -571,6 +572,8 @@ def get_configuration(name, *args, **kwargs):
         Skip the rollback step if any
     skip_notify
         Skip the notify step if any
+
+    Any other kwarg is added to the data dict.
 
     Internal variables reference
 
@@ -614,7 +617,7 @@ def get_configuration(name, *args, **kwargs):
 
         makina-projects.foo.data.conf_port = 1234
 
-    """
+    '''
     cfg = _get_contextual_cached_project(name)
     if not (
         cfg.get('force_reload', True)
@@ -631,7 +634,6 @@ def get_configuration(name, *args, **kwargs):
     for k in kwargs:
         if k in cfg:
             ignored_keys.append(k)
-    nodetypes_reg = __salt__['mc_nodetypes.registry']()
     salt_settings = __salt__['mc_salt.settings']()
     salt_root = salt_settings['saltRoot']
     # special symlinks inside salt wiring
@@ -714,6 +716,11 @@ def get_configuration(name, *args, **kwargs):
         __salt__['mc_utils.defaults'](
             'makina-projects.{0}'.format(name),
             cfg, ignored_keys=ignored_keys))
+    # add/override data parameters via arguments given on cmdline
+    for k in [a for a in kwargs
+              if not a.startswith('__pub')
+              and not a in [b for b in DEFAULT_CONFIGURATION]]:
+        cfg['data'][k] = kwargs[k]
     # finally resolve the format-variabilized dict key entries in
     # arbitrary conf mapping
     cfg['data'] = __salt__['mc_utils.format_resolve'](cfg['data'])
@@ -1560,7 +1567,7 @@ def deploy(name, *args, **kwargs):
         cfg = get_configuration(name, *args, **kwargs)
     if ret['result']:
         guarded_step(cfg,
-                     ['install',],
+                     ['install'],
                      rollback=True,
                      only_steps=only_steps,
                      inner_step=True,
@@ -1590,6 +1597,47 @@ def deploy(name, *args, **kwargs):
     return _filter_ret(ret, cfg['raw_console_return'])
 
 
+def run_task(name, only_steps, *args, **kwargs):
+    '''
+    Run one or more tasks inside a project context
+
+    You can filter steps to run with only_steps
+    All sls in .salt which are a task (beginning with task_ will be searched
+    and the one matching only_steps (string or list) will be executed
+    '''
+    if not only_steps:
+        raise _stop_proc('One task at least must be providen')
+    ret = _get_ret(name, *args, **kwargs)
+    cfg = get_configuration(name, *args, **kwargs)
+    if cfg['skip_deploy']:
+        return ret
+    # make the deploy_ret dict available in notify sls runners
+    # via the __opts__.ms_project.deploy_ret variable
+    cfg['deploy_summary'] = None
+    cfg['deploy_ret'] = ret
+    if ret['result']:
+        guarded_step(cfg,
+                     ['install'],
+                     rollback=False,
+                     only_steps=only_steps,
+                     task_mode=True,
+                     inner_step=True,
+                     ret=ret)
+    if ret['result']:
+        summary = 'Task(s) {0} finished successfully for {1}'.format(
+            only_steps, name)
+    else:
+        summary = 'Task(s) {0} failed for {1}'.format(
+            only_steps, name)
+    _append_separator(ret)
+    _append_comment(ret, summary, color='RED_BOLD')
+    cfg['deploy_summary'] = summary
+    # notifications should not modify the result status even failed
+    msplitstrip(ret)
+    _force_cli_retcode(ret)
+    return _filter_ret(ret, cfg['raw_console_return'])
+
+
 def archive(name, *args, **kwargs):
     cfg = get_configuration(name, *args, **kwargs)
     cret = _step_exec(cfg, 'archive')
@@ -1602,7 +1650,7 @@ def release_sync(name, *args, **kwargs):
     return iret
 
 
-def get_executable_slss(path, installer_path, installer):
+def get_executable_slss_(path, installer_path, installer, task=False):
     def do_filter(sx):
         x = os.path.join(path, sx)
         filtered = True
@@ -1611,6 +1659,10 @@ def get_executable_slss(path, installer_path, installer):
             or (os.path.isdir(x))
             or (not sx.endswith('.sls'))
         ):
+            filtered = False
+        if task and not sx.startswith('task_'):
+            filtered = False
+        if not task and sx.startswith('task_'):
             filtered = False
         return filtered
     slses = [a.split('.sls')[0]
@@ -1626,15 +1678,23 @@ def get_executable_slss(path, installer_path, installer):
     return slses
 
 
-def install(name, only_steps=None,
-            *args, **kwargs):
-    """
-    You can filter steps to run with only_steps
+def get_executable_slss(path, installer_path, installer):
+    return get_executable_slss_(path, installer_path, installer, task=False)
 
+
+def get_task_slss(path, installer_path, installer):
+    return get_executable_slss_(path, installer_path, installer, task=True)
+
+
+def install(name, only_steps=None, task_mode=False, *args, **kwargs):
+    '''
+    You can filter steps to run with only_steps
+    All sls in .salt which are not special or tasks (beginning with tasks
+    will be executed)
     eg::
         salt mc_project.deploy only=install onlystep=00_foo,001_bar
         salt mc_project.deploy only=install onlystep=00_foo
-    """
+    '''
     if not only_steps:
         only_steps = []
     if isinstance(only_steps, basestring):
@@ -1646,13 +1706,16 @@ def install(name, only_steps=None,
             'invalid project type or installer directory: {0}/{1}'.format(
                 cfg['installer'], cfg['installer_path']))
     cret = None
-    slses = get_executable_slss(
+    method = get_executable_slss
+    if task_mode:
+        method = get_task_slss
+    slses = method(
         cfg['wired_salt_root'],
         cfg['installer_path'],
         cfg['installer'])
     if not slses:
-        raise _stop_proc('No installation slses avalaible for {0}'.format(name),
-                         'install', ret)
+        raise _stop_proc('No installation slses '
+                         'avalaible for {0}'.format(name), 'install', ret)
     only_steps_search = []
     for s in only_steps:
         only_steps_search.append(s)
@@ -1747,9 +1810,9 @@ def unlink(name, *args, **kwargs):
 
 def rollback(name, *args, **kwargs):
     cfg = get_configuration(name, *args, **kwargs)
-    ret = _get_ret(name, *args, **kwargs)
     cret = _step_exec(cfg, 'rollback')
     return cret
+
 
 def rotate_archives(name, *args, **kwargs):
     cfg = get_configuration(name, *args, **kwargs)
@@ -1759,10 +1822,10 @@ def rotate_archives(name, *args, **kwargs):
             archives = sorted(os.listdir(cfg['archives_root']))
             to_keep = archives[-cfg['keep_archives']:]
             for archive in archives:
-                if not archive in to_keep:
+                if archive not in to_keep:
                     remove_path(os.path.join(cfg['archives_root'], archive))
-        _append_comment( ret, summary=('Archives cleanup done '))
-    except Exception, ex:
+        _append_comment(ret, summary=('Archives cleanup done '))
+    except Exception:
         trace = traceback.format_exc()
         ret['result'] = False
         _append_comment(

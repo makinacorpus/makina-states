@@ -47,7 +47,10 @@ include:
     - require:
       - mc_proxy: {{orchestrate[version]['predb']}}
       - mc_proxy: {{orchestrate['base']['postbase']}}
-      {% if template not in ['template0', 'template1'] and wait_for_template %}
+      {% if (
+          template not in ['template0', 'template1']
+          and wait_for_template
+      )%}
       - mc_proxy: {{version}}-{{ template }}-makina-postgresql-database-post-hook
       {% endif %}
 
