@@ -465,9 +465,6 @@ def load_network_infrastructure(ttl=60):
         for fqdn in ips_map:
             if fqdn in ips:
                 continue
-            #if fqdn in 'tiles.ma':
-            #    import pdb;pdb.set_trace()  ## Breakpoint ##
-
             ips[fqdn] = ips_for(fqdn,
                                 ips=ips, cnames=cnames, ipsfo=ipsfo,
                                 ipsfo_map=ipsfo_map, ips_map=ips_map)
@@ -1264,6 +1261,25 @@ def get_shorewall_settings(id_=None, ttl=60):
     return memoize_cache(_do_sw, [id_], {}, cache_key, ttl)
 
 
+def get_removed_keys(id_=None, ttl=60):
+    if not id_:
+        id_ = __opts__['id']
+    def _do_removed(id_, removed=None):
+        removed_keys_map = __salt__['mc_pillar.query']('removed_keys_map')
+        keys_map = __salt__['mc_pillar.query']('keys_map')
+        skeys = []
+        removed = removed_keys_map.get(
+            id_, removed_keys_map['default'])
+        for k in removed:
+            keys = keys_map.get(k, [])
+            for key in keys:
+                if key not in skeys:
+                    skeys.append(key)
+        return skeys
+    cache_key = 'mc_pillar.get_removed_keys{0}'.format(id_)
+    return memoize_cache(_do_removed, [id_], {}, cache_key, ttl)
+
+
 def get_sysadmins_keys(id_=None, ttl=60):
     if not id_:
         id_ = __opts__['id']
@@ -1427,7 +1443,7 @@ def backup_configuration_for(id_, ttl=60):
     def _do(id_):
         conf = __salt__['mc_pillar.backup_configuration_type_for'](id_)
         confs = query('backup_configurations')
-        return confs[conf]
+        return copy.deepcopy(confs[conf])
     cache_key = 'mc_pillar.backup_configuration_for{0}'.format(id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
@@ -1498,7 +1514,7 @@ def backup_server_settings_for(id_, ttl=60):
             confs[host] = {'type': type_, 'conf': conf}
         data['confs'] = confs
         return data
-    cache_key = 'mc_pillar.backup_configurations_for{0}'.format(id_)
+    cache_key = 'mc_pillar.backup_server_settings_for{0}'.format(id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 

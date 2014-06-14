@@ -98,20 +98,22 @@ give-home-{{ id }}:
     - group: {{id}}
 
 {% if udata['ssh_absent_keys'] %}
-{% for key, data in udata['ssh_absent_keys'].items() %}
-{% set enc = data.get('encs', ['ed25519, ecdsa', 'ssh-rsa', 'ssh-ds']) %}
+{% for rkeydata in udata['ssh_absent_keys'] %}
+{% for key, data in rkeydata.items() %}
+{% set encs = data.get('encs', ['ed25519', 'ecdsa', 'ssh-rsa', 'ssh-ds']) %}
 {% for enc in encs %}
-ssh_auth-absent-key-{{id}}-{{key-}}-ssh-keys:
+ssh_auth-absent-key-{{id}}-{{key}}-{{loop.index0-}}-ssh-keys:
   ssh_auth.absent:
     - name: '{{key}}'
     - user: {{id}}
-    - enc; {{enc}}
+    - enc: {{enc}}
     {% for opt in ['options', 'config'] %}
     {% if opt in data %}- {{opt}}: {{data[opt]}}{%endif%}
     {% endfor %}
     - require:
       - user: {{id}}
       - file: {{id}}
+{%    endfor %}
 {%    endfor %}
 {%    endfor %}
 {% endif %}
@@ -126,10 +128,18 @@ ssh_{{id}}-auth-key-cleanup-ssh-keys:
       - user: {{id}}
       - file: {{id}}
 {% for key in udata['ssh_keys'] %}
+{% if key.endswith('.pub') and '/files/' in key %}
 ssh_auth-key-{{id}}-{{key-}}-ssh-keys:
+{% else%}
+ssh_auth-key-{{id}}-keys-{{loop.index0}}-ssh-keys:
+{% endif %}
   ssh_auth.present:
     - user: {{id}}
+    {% if key.endswith('.pub') and '/files/' in key %}
     - source: {{key}}
+    {% else%}
+    - name: '{{key}}'
+    {% endif %}
     - require:
       - user: {{id}}
       - file: ssh_{{id}}-auth-key-cleanup-ssh-keys

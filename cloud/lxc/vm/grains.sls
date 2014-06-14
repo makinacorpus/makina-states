@@ -6,5 +6,5 @@ lxc-run-grains:
   mc_registry.update:
     - name: cloud
     - params:
-      is.vm: true
-      is.lxcvm: true
+        is.vm: true
+        is.lxcvm: true
