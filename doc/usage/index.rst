@@ -10,5 +10,5 @@ End user documentation
    projects/index.rst
    troubleshooting.rst
    write/index.rst
-   DEBIAN_LENNY.rst
+   misc/DEBIAN_LENNY.rst
 
