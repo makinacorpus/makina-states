@@ -1,5 +1,5 @@
-Misc
-======================
+Misc Topics
+=============
 
 .. toctree::
    :maxdepth: 1
