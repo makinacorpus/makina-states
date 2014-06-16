@@ -26,3 +26,13 @@ include:
                doc_root=data.nginx.doc_root,
                open_basedir=data.phpfpm.open_basedir)}}
 #               **data.phpfpm)}}
+
+# install php5-pgsql
+icinga_web-php5-pgsql:
+  pkg.{{pkgssettings['installmode']}}:
+    - watch_in:
+      - mc_proxy: icinga_web-pre-install
+    - pkgs:
+      {% for package in data.phpfpm.extensions_packages %}
+      - {{package}}
+      {% endfor %}

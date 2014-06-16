@@ -109,7 +109,7 @@ def settings():
                 'phpfpm': {
                     'listen': "/var/spool/www/icinga_fpm.sock",
                     'open_basedir': "/usr/share/icinga-web/:/var/cache/icinga-web/:/var/log/icinga-web/",
-#                    'extension': [],
+                    'extensions_packages': ['php5-pgsql'],
                 },
                 'exclude_customvars_xml': {
                     'settings': [],
