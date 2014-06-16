@@ -101,11 +101,15 @@ def settings():
                     'web': web_database,
                 },
                 'nginx': {
-                    'virtualhost': "localhost.localdomain.",
+                    'virtualhost': "icinga.localhost",
                     'doc_root': "/usr/share/icinga-web/pub/",
+                    'vh_content_source': "salt://makina-states/files/etc/icinga-web/nginx.conf",
+                    'vh_top_source': "salt://makina-states/files/etc/icinga-web/nginx.top.conf",
                 },
                 'phpfpm': {
                     'listen': "/var/spool/www/icinga_fpm.sock",
+                    'open_basedir': "/usr/share/icinga-web/pup/",
+#                    'extension': [],
                 },
                 'exclude_customvars_xml': {
                     'settings': [],
@@ -345,7 +349,7 @@ def settings():
                 'sla_xml': {
                     'settings': {
                         'default_timespan': "-1 month",
-                        'enabled': "false,"
+                        'enabled': "false",
                     }
                 },
                 'translation_xml': {

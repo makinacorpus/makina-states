@@ -17,9 +17,12 @@ include:
 {{ nginx.virtualhost(domain=data.nginx.virtualhost,
                      doc_root=data.nginx.doc_root,
 
-                     vh_content_source="salt://makina-states/files/etc/icinga-web/nginx.conf",
-                     vh_top_source="salt://makina-states/files/etc/icinga-web/nginx.top.conf",
+                     vh_content_source=data.nginx.vh_content_source,
+                     vh_top_source=data.nginx.vh_top_source,
                      cfg="salt://makina-states/files/etc/icinga-web/nginx.conf")}}
 
 # add a pool php-fpm
-{{php.fpm_pool(data.nginx.virtualhost, data.nginx.doc_root, **data.phpfpm)}}
+{{php.fpm_pool(domain=data.nginx.virtualhost,
+               doc_root=data.nginx.doc_root,
+               open_basedir=data.phpfpm.open_basedir)}}
+#               **data.phpfpm)}}
