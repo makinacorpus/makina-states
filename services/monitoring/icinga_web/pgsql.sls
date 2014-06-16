@@ -94,4 +94,41 @@ icinga_web-check-pgsql-schema:
     - watch_in:
        - mc_proxy: icinga_web-pre-install
 
+# delete logs in the database
+# TODO: it is not a good idea but doctrine compilation reset serial when 
+# configuration change that produces "duplicate primary key in nsm_log"
+{% set tmpf = '/tmp/icinga-web.clearlogs.sql' %}
+icinga_web-clear-dblogs:
+  file.managed:
+    - name: {{tmpf}}
+    - source: ''
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 755
+    - contents: |
+                #!/bin/bash
+                sql_queries=(
+                 'delete from nsm_log'
+                )
+                for query in "${sql_queries[@]}"; do
+                 {% if 'socket' in data.databases.web %}
+                  res="$(echo "$query;" | psql -t "postgresql://{{data.databases.web.user}}:{{data.databases.web.password}}@[{{data.databases.web.socket}}]/{{data.databases.web.name}}")"
+                 {% else %}
+                  res="$(echo "$query;" | psql -t "postgresql://{{data.databases.web.user}}:{{data.databases.web.password}}@{{data.databases.web.host}}:{{data.databases.web.port}}/{{data.databases.web.name}}")"
+                 {% endif %}
+                done;
+                rm {{tmpf}};
+                exit 0;
+
+  cmd.run:
+    - name: {{tmpf}}
+    - watch:
+       - cmd: icinga_web-check-pgsql-schema
+       - file: icinga_web-clear-dblogs
+    - watch_in:
+       - mc_proxy: icinga_web-pre-install
+
+
 {% endif %}

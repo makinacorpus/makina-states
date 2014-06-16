@@ -32,6 +32,15 @@ icinga_web-{{file}}-conf:
             {{sdata}}
 {% endfor %}
 
+# clear cache
+icinga_web-clear-cache:
+  cmd.run:
+    - name: rm /var/cache/icinga-web/config/*
+    - watch:
+      - mc_proxy: icinga_web-pre-conf
+    - watch_in:
+      - mc_proxy: icinga_web-post-conf
+
 # not used
 {#
 #
