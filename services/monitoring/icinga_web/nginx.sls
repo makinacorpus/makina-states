@@ -1,4 +1,5 @@
 {% set locs = salt['mc_locations.settings']() %}
+{% set pkgssettings = salt['mc_pkgs.settings']() %}
 {% set data = salt['mc_icinga_web.settings']() %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 
