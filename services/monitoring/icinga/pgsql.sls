@@ -44,7 +44,7 @@ icinga-import-pgsql-schema:
     {% if 'socket' in data.modules.ido2db.database %}
     - name: psql "postgresql://{{data.modules.ido2db.database.user}}:{{data.modules.ido2db.database.password}}@[{{data.modules.ido2db.database.socket}}]/{{data.modules.ido2db.database.name}}" -f "{{tmpf}}"
     {% else %}
-    - name: psql "postgresql://{{data.modules.ido2db.database.user}}:{{data.modules.ido2db.database.password}}@[{{data.modules.ido2db.database.host}}]:{{data.modules.ido2db.database.port}}/{{data.modules.ido2db.database.name}}" -f "{{tmpf}}"
+    - name: psql "postgresql://{{data.modules.ido2db.database.user}}:{{data.modules.ido2db.database.password}}@{{data.modules.ido2db.database.host}}:{{data.modules.ido2db.database.port}}/{{data.modules.ido2db.database.name}}" -f "{{tmpf}}"
     {% endif %}
     - watch:
       - file: icinga-import-pgsql-schema
@@ -76,7 +76,7 @@ icinga-check-pgsql-schema:
                  {% if 'socket' in data.modules.ido2db.database %}
                   res="$(echo "select row_to_json(row) from ($query) row;" | psql -t "postgresql://{{data.modules.ido2db.database.user}}:{{data.modules.ido2db.database.password}}@[{{data.modules.ido2db.database.socket}}]/{{data.modules.ido2db.database.name}}" | jq .ok)"
                  {% else %}
-                  res="$(echo "select row_to_json(row) from ($query) row;" | psql -t "postgresql://{{data.modules.ido2db.database.user}}:{{data.modules.ido2db.database.password}}@[{{data.modules.ido2db.database.host}}]:{{data.modules.ido2db.database.port}}/{{data.modules.ido2db.database.name}}" | jq .ok)"
+                  res="$(echo "select row_to_json(row) from ($query) row;" | psql -t "postgresql://{{data.modules.ido2db.database.user}}:{{data.modules.ido2db.database.password}}@{{data.modules.ido2db.database.host}}:{{data.modules.ido2db.database.port}}/{{data.modules.ido2db.database.name}}" | jq .ok)"
                  {% endif %}
                  if [ "true" != "$res" ]; then
                   echo "Error with query \"$query;\"";

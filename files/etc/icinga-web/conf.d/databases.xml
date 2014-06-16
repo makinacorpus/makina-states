@@ -19,7 +19,7 @@
         {% if data.databases.web.get('socket', None) %}
         <ae:parameter name="dsn">{{data.databases.web.type}}://{{data.databases.web.user}}:{{data.databases.web.password}}@[{{data.databases.web.socket}}]/{{data.databases.web.name}}</ae:parameter>
         {% else %}
-        <ae:parameter name="dsn">{{data.databases.web.type}}://{{data.databases.web.user}}:{{data.databases.web.password}}@[{{data.databases.web.host}}]:{{data.databases.web.port}}/{{data.databases.web.name}}</ae:parameter>
+        <ae:parameter name="dsn">{{data.databases.web.type}}://{{data.databases.web.user}}:{{data.databases.web.password}}@{{data.databases.web.host}}:{{data.databases.web.port}}/{{data.databases.web.name}}</ae:parameter>
         {% endif %}
 
         <ae:parameter name="charset">{{data.databases_xml.icinga_web.charset}}</ae:parameter>
@@ -54,7 +54,7 @@
         {% if data.databases.ido2db.get('socket', None) %}
         <ae:parameter name="dsn">{{data.databases.ido2db.type}}://{{data.databases.ido2db.user}}:{{data.databases.ido2db.password}}@[{{data.databases.ido2db.socket}}]/{{data.databases.ido2db.name}}</ae:parameter>
         {% else %}
-        <ae:parameter name="dsn">{{data.databases.ido2db.type}}://{{data.databases.ido2db.user}}:{{data.databases.ido2db.password}}@[{{data.databases.ido2db.host}}]:{{data.databases.ido2db.port}}/{{data.databases.ido2db.name}}</ae:parameter>
+        <ae:parameter name="dsn">{{data.databases.ido2db.type}}://{{data.databases.ido2db.user}}:{{data.databases.ido2db.password}}@{{data.databases.ido2db.host}}:{{data.databases.ido2db.port}}/{{data.databases.ido2db.name}}</ae:parameter>
         {% endif %}
         <ae:parameter name="prefix">{{data.databases.ido2db.prefix}}</ae:parameter>
         <ae:parameter name="charset">{{data.databases_xml.icinga.charset}}</ae:parameter>

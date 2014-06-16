@@ -42,7 +42,7 @@ icinga_web-import-pgsql-schema:
     {% if 'socket' in data.databases.web %}
     - name: psql "postgresql://{{data.databases.web.user}}:{{data.databases.web.password}}@[{{data.databases.web.socket}}]/{{data.databases.web.name}}" -f "{{tmpf}}"
     {% else %}
-    - name: psql "postgresql://{{data.databases.web.user}}:{{data.databases.web.password}}@[{{data.databases.web.host}}]:{{data.databases.web.port}}/{{data.databases.web.name}}" -f "{{tmpf}}"
+    - name: psql "postgresql://{{data.databases.web.user}}:{{data.databases.web.password}}@{{data.databases.web.host}}:{{data.databases.web.port}}/{{data.databases.web.name}}" -f "{{tmpf}}"
     {% endif %}
     - watch:
       - file: icinga_web-import-pgsql-schema
@@ -74,7 +74,7 @@ icinga_web-check-pgsql-schema:
                  {% if 'socket' in data.databases.web %}
                   res="$(echo "select row_to_json(row) from ($query) row;" | psql -t "postgresql://{{data.databases.web.user}}:{{data.databases.web.password}}@[{{data.databases.web.socket}}]/{{data.databases.web.name}}" | jq .ok)"
                  {% else %}
-                  res="$(echo "select row_to_json(row) from ($query) row;" | psql -t "postgresql://{{data.databases.web.user}}:{{data.databases.web.password}}@[{{data.databases.web.host}}]:{{data.databases.web.port}}/{{data.databases.web.name}}" | jq .ok)"
+                  res="$(echo "select row_to_json(row) from ($query) row;" | psql -t "postgresql://{{data.databases.web.user}}:{{data.databases.web.password}}@{{data.databases.web.host}}:{{data.databases.web.port}}/{{data.databases.web.name}}" | jq .ok)"
                  {% endif %}
                  if [ "true" != "$res" ]; then
                   echo "Error with query \"$query;\"";
