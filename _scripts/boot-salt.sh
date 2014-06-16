@@ -3473,6 +3473,7 @@ usage() {
         bs_help "--no-colors:" "No terminal colors" "${NO_COLORS}" "y"
         bs_help "--salt-rebootstrap:" "Redo salt bootstrap" "${SALT_REBOOTSTRAP}" "y"
         bs_help "--buildout-rebootstrap:" "Redo buildout" "${BUILDOUT_REBOOTSTRAP}" "y"
+        bs_help "--salt-cloud-dir" "directory to grab salt cloud content from" "${SALT_CLOUD_DIR}" y
         bs_help "--only-buildout-rebootstrap:" "Redo buildout and stop after buildout has run" "${ONLY_BUILDOUT_REBOOTSTRAP}" "y"
         bs_help "--venv-rebootstrap:" "Redo venv, buildout & salt bootstrap" "${VENV_REBOOTSTRAP}" "y"
         bs_help "--test:" "run makina-states tests, be caution, this installs everything and is to be installed on a vm which will be trashed afterwards!" "${MAKINASTATES_TEST}" "y"
@@ -3719,6 +3720,11 @@ parse_cli_opts() {
         fi
         if [ "x${1}" = "x-mmic" ] || [ "x${1}" = "x--mastersalt-minion-controller" ];then
             MASTERSALT_MINION_CONTROLLER="${2}";sh="2";argmatch="1"
+        fi
+        if [ "x${1}" = "x--salt-cloud-dir" ];then
+            SALT_CLOUD_DIR="$2";sh="2";argmatch="1"
+            SALT_CLOUD="1" 
+            SALT_BOOT_SKIP_HIGHSTATES="1"
         fi
         if [ "x${1}" = "x--salt-master-dns" ];then
             SALT_MASTER_DNS="${2}";sh="2";argmatch="1"
