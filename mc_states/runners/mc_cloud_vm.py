@@ -429,14 +429,9 @@ def provision_vms(compute_node,
     __salt__['mc_api.time_log']('start {0}'.format(func_name))
     if ret is None:
         ret = result()
-    if isinstance(only, basestring):
-        only = only.split(',')
-    if isinstance(skip, basestring):
-        skip = skip.split(',')
-    if only is None:
-        only = []
-    if skip is None:
-        skip = []
+    _, only_vms, __, skip_vms = (
+        __salt__['mc_cloud_controller.gather_only_skip'](
+            only_vms=only, skip_vms=skip))
     if refresh:
         cli('saltutil.refresh_pillar')
     settings = cli('mc_cloud_compute_node.settings')
@@ -514,14 +509,9 @@ def post_provision_vms(compute_node,
     __salt__['mc_api.time_log']('start {0}'.format(func_name))
     if ret is None:
         ret = result()
-    if isinstance(only, basestring):
-        only = only.split(',')
-    if isinstance(skip, basestring):
-        skip = skip.split(',')
-    if only is None:
-        only = []
-    if skip is None:
-        skip = []
+    _, only_vms, __, skip_vms = (
+        __salt__['mc_cloud_controller.gather_only_skip'](
+            only_vms=only, skip_vms=skip))
     if refresh:
         cli('saltutil.refresh_pillar')
     settings = cli('mc_cloud_compute_node.settings')

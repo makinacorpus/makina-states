@@ -11,6 +11,7 @@ __docformat__ = 'restructuredtext en'
 import logging
 import random
 import os
+from mc_states.utils import memoize_cache
 import msgpack
 import mc_states.utils
 from salt.utils.odict import OrderedDict
@@ -454,8 +455,11 @@ def _init_http_proxies(target_data, reversep):
             'raw_opts': []})
 
     ssl_bind = '*:443 ssl'
-    for ssl_cert, content in target_data['ssl_certs']:
-        ssl_bind += ' crt /etc/ssl/cloud/certs/{0}.crt'.format(ssl_cert)
+    if target_data['ssl_certs']:
+        ssl_bind += (
+            ' crt /etc/ssl/cloud/certs/{0}.crt'
+            ' crt /etc/ssl/cloud/certs'
+        ).format(reversep['target'])
     reversep.setdefault(
         'https_proxy', {
             'name': "secure-" + reversep['target'],
@@ -685,9 +689,27 @@ def get_reverse_proxies_for_target(target):
                  if k in (_RP, 'target')])
 
 
+def cn_settings(ttl=60):
+    '''
+    compute node related settings
+    THIS IS USED ON THE COMPUTE NODE SIDE !
+    '''
+    def _do():
+        reg = __salt__['mc_macros.get_local_registry'](
+            'cloud_compute_node_settings',
+            registry_format='pack')
+        if 'cnSettings' not in reg:
+            raise ValueError(
+                'Registry not yet configured')
+        return reg
+    cache_key = 'mc_cloud_compute_node.cn_settings'
+    return memoize_cache(_do, [], {}, cache_key, ttl)
+
+
 def settings():
     '''
     compute node related settings
+    THIS IS USED ON THE CONTROLLER SIDE !
 
     targets
         a mapping indexed by target minions ids

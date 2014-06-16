@@ -1,5 +1,7 @@
 Journal of installing makina-states old an old uncentralamnaged box
------------------------------------------------------------------------
+=======================================================================
+
+
 get a recent git
 -----------------------
 If you do not have a git >= 1.8::

@@ -25,11 +25,17 @@
 {%- endif %}
 {# if db is providen, add user to db owners #}
 {%- if db %}
-{% do groups.append('{0}_owners'.format(db)) %}
+{%    set owners = '{0}_owners'.format(db)  %}
+{%    if owners not in groups %}
+{%      do groups.append(owners) %}
+{%    endif %}
 {% endif %}
 {#- create groups prior to user #}
 {%- for group in groups %}
-{{ groupsmac.postgresql_group(group, user=user, version=version, suf='-user') }}
+{{ groupsmac.postgresql_group(group,
+                              user=user,
+                              version=version,
+                              suf='-{0}-user'.format(name)) }}
 {%- endfor %}
 {{version}}-{{ name }}-makina-services-postgresql-user:
   mc_postgres_user.present:

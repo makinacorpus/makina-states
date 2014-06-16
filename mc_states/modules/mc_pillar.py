@@ -465,9 +465,6 @@ def load_network_infrastructure(ttl=60):
         for fqdn in ips_map:
             if fqdn in ips:
                 continue
-            #if fqdn in 'tiles.ma':
-            #    import pdb;pdb.set_trace()  ## Breakpoint ##
-
             ips[fqdn] = ips_for(fqdn,
                                 ips=ips, cnames=cnames, ipsfo=ipsfo,
                                 ipsfo_map=ipsfo_map, ips_map=ips_map)
@@ -1264,6 +1261,25 @@ def get_shorewall_settings(id_=None, ttl=60):
     return memoize_cache(_do_sw, [id_], {}, cache_key, ttl)
 
 
+def get_removed_keys(id_=None, ttl=60):
+    if not id_:
+        id_ = __opts__['id']
+    def _do_removed(id_, removed=None):
+        removed_keys_map = __salt__['mc_pillar.query']('removed_keys_map')
+        keys_map = __salt__['mc_pillar.query']('keys_map')
+        skeys = []
+        removed = removed_keys_map.get(
+            id_, removed_keys_map['default'])
+        for k in removed:
+            keys = keys_map.get(k, [])
+            for key in keys:
+                if key not in skeys:
+                    skeys.append(key)
+        return skeys
+    cache_key = 'mc_pillar.get_removed_keys{0}'.format(id_)
+    return memoize_cache(_do_removed, [id_], {}, cache_key, ttl)
+
+
 def get_sysadmins_keys(id_=None, ttl=60):
     if not id_:
         id_ = __opts__['id']
@@ -1410,24 +1426,68 @@ def get_sudoers(id_=None, ttl=60):
     return memoize_cache(_do_sudoers, [id_], {}, cache_key, ttl)
 
 
+def backup_default_configuration_type_for(id_, ttl=60):
+    def _do(id_):
+        db = get_db_infrastructure_maps()
+        confs = query('backup_configuration_map')
+        if id_ not in db['non_managed_hosts']:
+            if id_ in db['vms']:
+                id_ = 'default-vm'
+            else:
+                id_ = 'default'
+        return confs.get(id_, None)
+    cache_key = 'mc_pillar.backup_default_configuration_type_for{0}'.format(
+        id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+
+
 def backup_configuration_type_for(id_, ttl=60):
     def _do(id_):
         confs = query('backup_configuration_map')
-        db = get_db_infrastructure_maps()
-        if id_ in db['vms']:
-            default = 'default-vm'
-        else:
-            default = 'default'
-        return confs.get(id_, confs[default])
+        return confs.get(id_, None)
     cache_key = 'mc_pillar.backup_configuration_type_for{0}'.format(id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 
 def backup_configuration_for(id_, ttl=60):
     def _do(id_):
-        conf = __salt__['mc_pillar.backup_configuration_type_for'](id_)
+        db = get_db_infrastructure_maps()
+        default_conf_id = __salt__[
+            'mc_pillar.backup_default_configuration_type_for'](id_)
         confs = query('backup_configurations')
-        return confs[conf]
+        conf_id = __salt__['mc_pillar.backup_configuration_type_for'](id_)
+        data = OrderedDict()
+        if id_ not in db['non_managed_hosts'] and not default_conf_id:
+            raise ValueError(
+                'No backup info for {0}'.format(id))
+        if id_ in db['non_managed_hosts'] and not conf_id:
+            raise ValueError(
+                'No backup info for {0}'.format(id))
+        # load default conf
+        default_conf = confs.get(default_conf_id, OrderedDict())
+        conf = confs.get(conf_id, OrderedDict())
+        for k in [a for a in default_conf if a.startswith('add_')]:
+            adding = k.split('add_', 1)[1]
+            ddata = data.setdefault(adding, [])
+            ddata.extend([a for a in default_conf[k] if a not in ddata])
+        data = __salt__['mc_utils.dictupdate'](data, default_conf)
+        # load per host conf
+        if conf_id != default_conf_id:
+            for k in [a for a in conf if a.startswith('add_')]:
+                adding = k.split('add_', 1)[1]
+                ddata = data.setdefault(adding, [])
+                ddata.extend([a for a in conf[k] if a not in ddata])
+            data = __salt__['mc_utils.dictupdate'](data, conf)
+        for cfg in [default_conf, conf]:
+            for k, val in [a
+                           for a in cfg.items()
+                           if a[0].startswith('remove_')]:
+                removing = k.split('remove_', 1)[1]
+                ddata = data.setdefault(removing, [])
+                for item in [obj for obj in ddata if obj in val]:
+                    if item in ddata:
+                        ddata.pop(ddata.index(item))
+        return data
     cache_key = 'mc_pillar.backup_configuration_for{0}'.format(id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
@@ -1469,13 +1529,13 @@ def backup_server_settings_for(id_, ttl=60):
         backup_excluded.extend(id_)
         backup_excluded.extend(db['non_managed_hosts'])
         bms = [a for a in db['bms']
-               if not a in backup_excluded
+               if a not in backup_excluded
                and get_configuration(a)['manage_backups']]
         vms = [a for a in db['vms']
-               if not a in backup_excluded
+               if a not in backup_excluded
                and get_configuration(a)['manage_backups']]
         manual_hosts = [a for a in query('backup_configuration_map')
-                        if not a in backup_excluded
+                        if a not in backup_excluded
                         and a in ndb['ips']
                         and a not in bms
                         and a not in vms]
@@ -1494,11 +1554,14 @@ def backup_server_settings_for(id_, ttl=60):
             if host in vms:
                 conf.setdefault('ssh_gateway', db['vms'][host]['target'])
                 conf.setdefault('ssh_gateway_port', '22')
+            elif host in bms:
+                pass
+
             type_ = conf.get('backup_type', server_conf['default_type'])
             confs[host] = {'type': type_, 'conf': conf}
         data['confs'] = confs
         return data
-    cache_key = 'mc_pillar.backup_configurations_for{0}'.format(id_)
+    cache_key = 'mc_pillar.backup_server_settings_for{0}'.format(id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 

@@ -163,6 +163,18 @@ etc-burp-burp-client.{{client}}-conf-{{f}}:
       - file: burp-copy-{{client}}-server-key
 {% endfor %}
 
+etc-burp-burp-client.{{client}}-backup-init:
+  file.directory:
+    - name: {{data.server_conf.directory}}/{{client}}
+    - makedirs: true
+    - mode: 700
+    - user: root
+    - user: root
+    - watch:
+      - mc_proxy: burp-pre-conf-hook
+    - watch_in:
+      - mc_proxy: burp-post-conf-hook
+
 etc-burp-burp-client.{{client}}-confdir:
   file.managed:
     - name: /etc/burp/clientconfdir/{{cdata.cname}}

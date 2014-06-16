@@ -1,6 +1,5 @@
 {#- see doc/ref/formulaes/services/db/resql.rst #}
 {%- import "makina-states/services/db/postgresql/hooks.sls" as hooks with context %}
-
 include:
   - makina-states.services.db.postgresql.hooks
 

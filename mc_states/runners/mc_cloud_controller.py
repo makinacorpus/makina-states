@@ -155,6 +155,41 @@ def exists(name):
     #         log.warn(trace)
     return already_exists
 
+def gather_only_skip(only=None,
+                     skip=None,
+                     skip_vms=None,
+                     only_vms=None):
+    if only is None:
+        only = []
+    if skip is None:
+        skip = []
+    if only_vms is None:
+        only_vms = []
+    if skip_vms is None:
+        skip_vms = []
+    if isinstance(only, basestring):
+        only = only.split(',')
+    if isinstance(skip, basestring):
+        skip = skip.split(',')
+    if isinstance(only_vms, basestring):
+        only_vms = only_vms.split(',')
+    if isinstance(skip_vms, basestring):
+        skip_vms = skip_vms.split(',')
+    if only_vms and not only:
+        # fiter compute nodes here
+        for vm in only_vms:
+            target = __salt__[
+                'mc_cloud_vm.get_compute_node'](
+                    vm)
+            if target not in only:
+                only.append(target)
+    return (
+        only,
+        only_vms,
+        skip,
+        skip_vms
+    )
+
 
 def orchestrate(skip=None,
                 skip_vms=None,
@@ -198,6 +233,12 @@ def orchestrate(skip=None,
     '''
     func_name = 'mc_cloud_controller.orchestrate'
     __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    only, only_vms, skip, skip_vms = (
+        __salt__['mc_cloud_controller.gather_only_skip'](
+            only=only,
+            only_vms=only_vms,
+            skip=skip,
+            skip_vms=skip_vms))
     if ret is None:
         ret = result()
     if refresh:
