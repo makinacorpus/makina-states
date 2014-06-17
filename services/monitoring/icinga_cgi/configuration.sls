@@ -13,6 +13,24 @@ include:
   - makina-states.services.monitoring.icinga_cgi.hooks
   - makina-states.services.monitoring.icinga_cgi.services
 
+# general configuration
+icinga_cgi-conf:
+  file.managed:
+    - name: {{data.configuration_directory}}/cgi.cfg
+    - source: salt://makina-states/files/etc/icinga-cgi/cgi.cfg
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 644
+    - watch:
+      - mc_proxy: icinga_cgi-pre-conf
+    - watch_in:
+      - mc_proxy: icinga_cgi-post-conf
+    - defaults:
+      data: |
+            {{sdata}}
+
 
 {%- import "makina-states/services/monitoring/icinga/macros.jinja" as icinga with context %}
 {#
