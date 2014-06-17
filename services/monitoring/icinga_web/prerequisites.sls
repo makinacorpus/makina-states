@@ -14,5 +14,3 @@ icinga_web-pkgs:
       - {{package}}
       {% endfor %}
 
-# TODO: add dependencies: nginx and php
-# ubuntu package of icinga_web depends on apache2.
