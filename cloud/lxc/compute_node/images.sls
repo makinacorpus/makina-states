@@ -1,6 +1,7 @@
 {# WARNING THIS STATE FILE IS GENERATED #}
-{% set imgSettings = salt['mc_utils.json_load'](pillar.simgSettings) %}
-{% set cloudSettings = salt['mc_utils.json_load'](pillar.scloudSettings) %}
+{% set data = salt['mc_cloud_compute_node.cn_settings']() %}
+{% set imgSettings = data.imgSettings %}
+{% set cloudSettings = data.cloudSettings %}
 {% set sprefix = cloudSettings.prefix %}
 {% for name, imgdata in imgSettings.items() %}
 {% set cwd = '/var/lib/lxc/{0}'.format(name) %}

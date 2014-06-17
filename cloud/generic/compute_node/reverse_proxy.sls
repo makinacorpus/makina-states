@@ -11,7 +11,7 @@
  # eg ip: 10.5.0.2 will have its ssh port mapped to 40002 on host
  # eg ip: 10.5.1.2 will have its ssh port mapped to 40258 on host
  #}
-{% set data  = salt['mc_utils.json_load'](pillar.scnSettings) %}
+{% set data = salt['mc_cloud_compute_node.cn_settings']().cnSettings %}
 include:
   - makina-states.services.proxy.haproxy
   - makina-states.cloud.generic.hooks

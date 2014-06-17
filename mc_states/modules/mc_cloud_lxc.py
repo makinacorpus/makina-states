@@ -340,6 +340,11 @@ def get_settings_for_vm(target, vm, full=True):
         default_args = cloudSettings['bootsalt_mastersalt_args']
     else:
         default_args = cloudSettings['bootsalt_args']
+    if 'mastersalt' in lxc_data.get('mode', 'salt'):
+        script = cloudSettings['script']
+    else:
+        script = cloudSettings['script']
+    lxc_data['script'] = lxc_data.get('script', script)
     lxc_data['script_args'] = lxc_data.get('script_args',
                                            default_args)
     branch = lxc_data.get('bootsalt_branch',
