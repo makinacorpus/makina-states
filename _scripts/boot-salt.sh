@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -x
 #
 # SEE MAKINA-STATES DOCS FOR FURTHER INSTRUCTIONS (or ../README.rst):
 #
