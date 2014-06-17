@@ -1323,7 +1323,7 @@ set_grain() {
 }
 
 check_restartmarker_and_maybe_restart() {
-    if [ "x${SALT_BOOT_IN_RESTART}" = "x" ];then
+    if [ "x${SALT_BOOT_IN_RESTART}" = "x" ] && [ "x${SALT_CLOUD}" = "x" ];then
         if [ "x${SALT_BOOT_NEEDS_RESTART}" != "x" ];then
             touch "${SALT_MS}/.bootsalt_need_restart"
         fi
