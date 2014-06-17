@@ -109,6 +109,14 @@ icinga-cgi-conf:
       data: |
             {{sdata}}
 
+icinga-cgi-root-account:
+  cmd.run:
+    - name: htpasswd -nb {{data.modules.cgi.root_account.login}} {{data.modules.cgi.root_account.password}} >> {{data.configuration_directory}}/htpasswd
+    - watch:
+      - mc_proxy: icinga-pre-conf
+    - watch_in:
+      - mc_proxy: icinga-post-conf
+
 {% endif %}
 
 {% if data.modules.ido2db.enabled %}

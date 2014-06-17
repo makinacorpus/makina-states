@@ -38,7 +38,9 @@ def settings():
             'mc_macros.get_local_registry'](
                 'icinga', registry_format='pack')
 
-        password = icinga_reg.setdefault('ido.db_password'
+        password_ido = icinga_reg.setdefault('ido.db_password'
+                                        , __salt__['mc_utils.generate_password']())
+        password_cgi = icinga_reg.setdefault('cgi.root_account_password'
                                         , __salt__['mc_utils.generate_password']())
 
         module_ido2db_database = {
@@ -47,7 +49,7 @@ def settings():
             'port': 5432,
 #            'socket': "",
             'user': "icinga",
-            'password': password,
+            'password': password_ido,
             'name': "icinga_ido",
             'prefix': "icinga_",
         }
@@ -224,6 +226,12 @@ def settings():
                         'enabled': True,
                         'user': "www-data",
                         'group': "www-data",
+                        'root_account': {
+                          'login': "icingaadmin",
+                          'password': password_cgi,
+# not used because of nginx.conf is not templated
+#                          'htpaswd': "htpasswd",
+                        },
                         'nginx': {
                             'virtualhost': "icinga-cgi.localhost",
                             'doc_root': "/usr/share/icinga-web/pub/",
