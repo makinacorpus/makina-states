@@ -91,9 +91,29 @@ icinga-init-sysvinit-conf:
 {% endif %}
 
 # modules configuration
+{% if data.modules.cgi.enabled %}
+icinga-cgi-conf:
+  file.managed:
+    - name: {{data.configuration_directory}}/cgi.cfg
+    - source: salt://makina-states/files/etc/icinga/cgi.cfg
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 644
+    - watch:
+      - mc_proxy: icinga-pre-conf
+    - watch_in:
+      - mc_proxy: icinga-post-conf
+    - defaults:
+      data: |
+            {{sdata}}
+
+{% endif %}
+
 {% if data.modules.ido2db.enabled %}
 
-ido2db-conf:
+icinga-ido2db-conf:
   file.managed:
     - name: {{data.configuration_directory}}/ido2db.cfg
     - source: salt://makina-states/files/etc/icinga/ido2db.cfg
@@ -110,7 +130,7 @@ ido2db-conf:
       data: |
             {{sdata}}
 
-idomod-conf:
+icinga-idomod-conf:
   file.managed:
     - name: {{data.configuration_directory}}/idomod.cfg
     - source: salt://makina-states/files/etc/icinga/idomod.cfg
@@ -130,7 +150,7 @@ idomod-conf:
 # startup ido2db configuration
 {% if grains['os'] in ['Ubuntu'] %}
 
-ido2db-init-upstart-conf:
+icinga-ido2db-init-upstart-conf:
   file.managed:
     - name: {{ locs['conf_dir'] }}/init/ido2db.conf
     - source: salt://makina-states/files/etc/init/ido2db.conf
@@ -149,7 +169,7 @@ ido2db-init-upstart-conf:
 
 {% else %}
 
-ido2db-init-sysvinit-conf:
+icinga-ido2db-init-sysvinit-conf:
   file.managed:
     - name: {{ locs['conf_dir'] }}/init.d/ido2db
     - source: salt://makina-states/files/etc/init.d/ido2db
