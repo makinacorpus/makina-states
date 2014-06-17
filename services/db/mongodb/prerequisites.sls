@@ -12,7 +12,7 @@ include:
 {% else %}
 {% set mir = 'deb http://downloads-distro.mongodb.org/repo/debian-sysvinit dist 10gen' %}
 {% endif %}
-base:
+mongodb-base:
   pkgrepo.managed:
     - humanname: mongodb ppa
     - name: {{mir}}

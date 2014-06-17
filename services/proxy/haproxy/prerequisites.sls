@@ -9,7 +9,7 @@ include:
 {% if grains['os'] in ['Debian'] %}
 {% set dist = pkgssettings.ubuntu_lts %}
 {% endif %}
-base:
+haproxy-base:
   pkgrepo.managed:
     - humanname: haproxy ppa
     - name: deb http://ppa.launchpad.net/vbernat/haproxy-1.5/ubuntu {{dist}} main
