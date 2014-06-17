@@ -20,7 +20,7 @@ include:
 
                      vh_content_source=data.nginx.vh_content_source,
                      vh_top_source=data.nginx.vh_top_source,
-                     cfg="salt://makina-states/files/etc/icinga-web/nginx.conf")}}
+                     cfg=data.nginx.vh_content_source)}}
 
 # add a pool php-fpm
 {{php.fpm_pool(domain=data.nginx.virtualhost,

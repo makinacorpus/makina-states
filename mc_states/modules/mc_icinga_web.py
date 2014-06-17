@@ -101,7 +101,7 @@ def settings():
                     'web': web_database,
                 },
                 'nginx': {
-                    'virtualhost': "icinga.localhost",
+                    'virtualhost': "icinga-web.localhost",
                     'doc_root': "/usr/share/icinga-web/pub/",
                     'vh_content_source': "salt://makina-states/files/etc/icinga-web/nginx.conf",
                     'vh_top_source': "salt://makina-states/files/etc/icinga-web/nginx.top.conf",
