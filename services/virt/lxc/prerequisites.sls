@@ -31,6 +31,7 @@ lxc-pkgs:
 {% endif %}
 {% endif %}
     - pkgs:
+      - lxc-templates
       - lxc
       - lxctl
       - dnsmasq
