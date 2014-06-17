@@ -21,7 +21,7 @@ uwsgi-{{name}}-conf:
     - user: root
     - group: root
     - mode: 644
-    - name: {{data.configuration_directory}}/apps-available/{{name}}.conf
+    - name: {{data.configuration_directory}}/apps-available/{{name}}.ini
     - source: {{config_file}}
     - template: jinja
     - makedirs: true
@@ -36,7 +36,7 @@ uwsgi-{{name}}-conf:
 {% if enabled %}
 uwsgi-{{name}}-enable-conf:
   cmd.run:
-    - name: ln -sf {{data.configuration_directory}}/apps-available/{{name}}.conf {{data.configuration_directory}}/apps-enabled/{{name}}.conf
+    - name: ln -sf {{data.configuration_directory}}/apps-available/{{name}}.ini {{data.configuration_directory}}/apps-enabled/{{name}}.ini
     - watch:
       - mc_proxy: uwsgi-pre-conf
       - file: uwsgi-{{name}}-conf

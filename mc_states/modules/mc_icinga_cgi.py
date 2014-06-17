@@ -40,6 +40,8 @@ def settings():
             'makina-states.services.monitoring.icinga_cgi', {
                 'package': ['icinga-cgi'],
                 'configuration_directory': locs['conf_dir']+"/icinga-web",
+                'user': "www-data",
+                'group': "www-data",
                 'nginx': {
                     'virtualhost': "icinga-cgi.localhost",
                     'doc_root': "/usr/share/icinga-web/pub/",
@@ -48,13 +50,14 @@ def settings():
                 },
                 'uwsgi': {
                     'name': "icinga",
-                    'config_file': "salt://makina-states/files/etc/icinga-cgi/uwsgi.conf",
+                    'config_file': "salt://makina-states/files/etc/icinga-cgi/uwsgi.ini",
                     'enabled': True,
                     'config_data': {
+                        'master': "true",
                         'plugins': "cgi",
                         'async': 20,
                         'socket': "127.0.0.1:3030",
-                        'cgi': "/usr/lib/cgi-bin/icinga",
+                        'cgi': "/cgi-bin/icinga/=/usr/lib/cgi-bin/icinga/",
                         'cgi_allowed_ext': ".cgi",
                     },
                 },
