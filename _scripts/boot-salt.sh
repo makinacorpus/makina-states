@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -x
 #
 # SEE MAKINA-STATES DOCS FOR FURTHER INSTRUCTIONS (or ../README.rst):
 #
@@ -2136,7 +2137,7 @@ a\    - mastersalt
             "${MASTERSALT_PILLAR}/mastersalt_minion.sls";do
             if [ ! -f "${mastersalt_sls}" ];then
                 debug_msg "Creating mastersalt configuration file in ${mastersalt_sls}"
-                touch >  "${mastersalt_sls}"
+                touch "${mastersalt_sls}"
             fi
             if [ "x$(grep "${BRANCH_PILLAR_ID}" "${mastersalt_sls}"|wc -l|sed -e "s/ //g")" = "x0" ];then
                 echo "" >> "${mastersalt_sls}"
