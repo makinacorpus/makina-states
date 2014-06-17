@@ -1,4 +1,5 @@
-{%set lxcSettings = salt['mc_utils.json_load'](pillar.slxcSettings) %}
+{% set data = salt['mc_cloud_compute_node.cn_settings']() %}
+{%set lxcSettings = data.lxcSettings %}
 {% set sdata = salt['mc_utils.json_dump'](lxcSettings) %}
 include:
   - makina-states.services.firewall.shorewall

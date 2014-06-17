@@ -1,9 +1,10 @@
-{% set vmname = pillar.mccloud_vmname %}
-{% set target = pillar.mccloud_targetname %}
-{% set devhost = pillar.sisdevhost %}
-{% set compute_node_settings = salt['mc_utils.json_load'](pillar.scnSettings) %}
-{% set data = salt['mc_utils.json_load'](pillar.svtVmData) %}
-{% set cloudSettings = salt['mc_utils.json_load'](pillar.scloudSettings) %}
+{% set reg = salt['mc_cloud_vm.vm_settings']() %}
+{% set vmname = reg.mccloud_vmname %}
+{% set target = reg.mccloud_targetname %}
+{% set devhost = reg.isdevhost %}
+{% set compute_node_settings = reg.cnSettings %}
+{% set data = reg.svtVmData %}
+{% set cloudSettings = reg.cloudSettings %}
 {% set domains = [] %}
 {# only for extra domains, we map to localhost
    the main domain is mapped to the local ip via another state #}

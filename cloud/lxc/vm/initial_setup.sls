@@ -1,8 +1,9 @@
-{% set vmname = pillar.mccloud_svmname %}
-{% set target = pillar.mccloud_stargetname %}
-{% set compute_node_settings = salt['mc_utils.json_load'](pillar.scnSettings) %}
-{% set data = salt['mc_utils.json_load'](pillar.svtVmData) %}
-{% set cloudSettings = salt['mc_utils.json_load'](pillar.scloudSettings) %}
+{% set reg = salt['mc_cloud_vm.vm_settings']() %}
+{% set vmname = reg.mccloud_svmname %}
+{% set target = reg.mccloud_stargetname %}
+{% set compute_node_settings = reg.cnSettings) %}
+{% set data = reg.vtVmData) %}
+{% set cloudSettings = reg.cloudSettings) %}
 sysadmin-user-initial-password:
   cmd.run:
     - name: >
