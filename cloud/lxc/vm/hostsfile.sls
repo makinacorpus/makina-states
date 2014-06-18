@@ -3,7 +3,7 @@
 {% set target = reg.mccloud_targetname %}
 {% set devhost = reg.isdevhost %}
 {% set compute_node_settings = reg.cnSettings %}
-{% set data = reg.svtVmData %}
+{% set data = reg.vtVmData %}
 {% set cloudSettings = reg.cloudSettings %}
 {% set domains = [] %}
 {# only for extra domains, we map to localhost
