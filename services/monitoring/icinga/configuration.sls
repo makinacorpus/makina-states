@@ -110,10 +110,14 @@ icinga-cgi-conf:
             {{sdata}}
 
 icinga-cgi-root-account:
+  file.touch:
+    - name: {{data.configuration_directory}}/htpasswd.users
+
   cmd.run:
-    - name: htpasswd -nb {{data.modules.cgi.root_account.login}} {{data.modules.cgi.root_account.password}} >> {{data.configuration_directory}}/htpasswd
+    - name: if [ -z "$(grep -E '^icingaadmin:' {{data.configuration_directory}}/htpasswd.users)" ]; then htpasswd -b {{data.configuration_directory}}/htpasswd.users {{data.modules.cgi.root_account.login}} {{data.modules.cgi.root_account.password}};  fi;
     - watch:
       - mc_proxy: icinga-pre-conf
+      - file: icinga-cgi-root-account
     - watch_in:
       - mc_proxy: icinga-post-conf
 

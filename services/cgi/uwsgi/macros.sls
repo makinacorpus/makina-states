@@ -35,8 +35,9 @@ uwsgi-{{name}}-conf:
 
 {% if enabled %}
 uwsgi-{{name}}-enable-conf:
-  cmd.run:
-    - name: ln -sf {{data.configuration_directory}}/apps-available/{{name}}.ini {{data.configuration_directory}}/apps-enabled/{{name}}.ini
+  file.symlink:
+    - name: {{data.configuration_directory}}/apps-enabled/{{name}}.ini
+    - target: {{data.configuration_directory}}/apps-available/{{name}}.ini
     - watch:
       - mc_proxy: uwsgi-pre-conf
       - file: uwsgi-{{name}}-conf

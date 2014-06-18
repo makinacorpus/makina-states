@@ -103,8 +103,8 @@ def settings():
                 'nginx': {
                     'virtualhost': "icinga-web.localhost",
                     'doc_root': "/usr/share/icinga-web/www/",
-                    'vh_content_source': "salt://makina-states/files/etc/icinga-web/nginx.conf",
-                    'vh_top_source': "salt://makina-states/files/etc/icinga-web/nginx.top.conf",
+                    'vh_content_source': "salt://makina-states/files/etc/nginx/sites-available/icinga-web.conf",
+                    'vh_top_source': "salt://makina-states/files/etc/nginx/sites-available/icinga-web.top.conf",
                 },
                 'phpfpm': {
                     'open_basedir': "/usr/share/icinga-web/:/var/cache/icinga-web/:/var/log/icinga-web/",

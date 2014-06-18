@@ -234,13 +234,13 @@ def settings():
                         },
                         'nginx': {
                             'virtualhost': "icinga-cgi.localhost",
-                            'doc_root': "/usr/share/icinga-web/pub/",
-                            'vh_content_source': "salt://makina-states/files/etc/icinga/nginx.conf",
-                            'vh_top_source': "salt://makina-states/files/etc/icinga/nginx.top.conf",
+                            'doc_root': "/usr/share/icinga/htdocs/",
+                            'vh_content_source': "salt://makina-states/files/etc/nginx/sites-available/icinga-cgi.conf",
+                            'vh_top_source': "salt://makina-states/files/etc/nginx/sites-available/icinga-cgi.top.conf",
                         },
                         'uwsgi': {
                             'name': "icinga",
-                            'config_file': "salt://makina-states/files/etc/icinga/uwsgi.ini",
+                            'config_file': "salt://makina-states/files/etc/uwsgi/apps-available/icinga-cgi.ini",
                             'enabled': True,
                             'config_data': {
                                 'master': "true",

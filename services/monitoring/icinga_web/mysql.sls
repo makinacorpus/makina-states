@@ -16,20 +16,19 @@ include:
   - makina-states.services.db.mysql.hooks
   {% endif %}
 
-# add the user
+# add user
 icinga_web-create-mysql-user:
   mysql_database.present:
     - name: {{data.databases.web.user}}
 
 
-# create the database
+# create database
 {{ mysql_db(
     db=data.databases.web.name,
     user=data.databases.web.user,
     password=data.databases.web.password) }}
 
 # import schema
-# this state is inspired by "services/db/postgresql/fix-template-1-encoding.sls"
 {% set tmpf = '/tmp/icinga-web.schema.sql' %}
 icinga_web-import-mysql-schema:
   file.managed:
@@ -51,7 +50,6 @@ icinga_web-import-mysql-schema:
     {% endif %}
     - watch:
       - file: icinga_web-import-mysql-schema
-#      - mc_proxy: makina-mysql-post-base
     - watch_in:
       - mc_proxy: icinga_web-pre-install
 

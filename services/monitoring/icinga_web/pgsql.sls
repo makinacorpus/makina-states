@@ -15,16 +15,14 @@ include:
   - makina-states.services.db.postgresql.hooks
   {% endif %}
 
-# add the user
+# add user
 {{ pgsql.postgresql_user(data.databases.web.user,
                          data.databases.web.password)}}
 
-# create the database
+# create database
 {{ pgsql.postgresql_db(data.databases.web.name) }}
 
 # import schema
-# postgres.psql_query supports only select statement
-# this state is inspired by "services/db/postgresql/fix-template-1-encoding.sls"
 {% set tmpf = '/tmp/icinga-web.schema.sql' %}
 icinga_web-import-pgsql-schema:
   file.managed:

@@ -17,20 +17,19 @@ include:
   - makina-states.services.db.mysql.hooks
   {% endif %}
 
-# add the user
+# add user
 icinga-create-mysql-user:
   mysql_database.present:
     - name: {{data.modules.ido2db.database.user}}
 
 
-# create the database
+# create database
 {{ mysql_db(
     db=data.modules.ido2db.database.name,
     user=data.modules.ido2db.database.user,
     password=data.modules.ido2db.database.password) }}
 
 # import schema
-# this state is inspired by "services/db/postgresql/fix-template-1-encoding.sls"
 {% set tmpf = '/tmp/icinga-ido.schema.sql' %}
 icinga-import-mysql-schema:
   file.managed:
@@ -52,11 +51,11 @@ icinga-import-mysql-schema:
     {% endif %}
     - watch:
       - file: icinga-import-mysql-schema
-#      - mc_proxy: makina-mysql-post-base
     - watch_in:
       - mc_proxy: icinga-pre-install
 
 # check schema importation
 # TODO
+
 {% endif %}
 {% endif %}

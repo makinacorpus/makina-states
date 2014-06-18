@@ -34,7 +34,8 @@ icinga_web-php5-pgsql:
       - {{package}}
       {% endfor %}
 
-icinga-web-www-dir:
+# configure content of doc_root
+icinga_web-www-dir:
   file.directory:
     - name: {{data.nginx.doc_root}}
     - makedirs: true
@@ -43,14 +44,14 @@ icinga-web-www-dir:
     - mode: 755
 
   
-icinga-web-www-dir-link-docroot:
+icinga_web-www-dir-link-docroot:
   file.symlink:
     - name: {{data.nginx.doc_root}}/icinga-web
     - target: /usr/share/icinga-web/pub
     - watch:
-      - file: icinga-web-www-dir
+      - file: icinga_web-www-dir
 
-icinga-web-www-dir-pub:
+icinga_web-www-dir-pub:
   file.directory:
     - name: {{data.nginx.doc_root}}/pub
     - makedirs: true
@@ -58,11 +59,11 @@ icinga-web-www-dir-pub:
     - group: root
     - mode: 755
     - watch:
-      - file: icinga-web-www-dir-link-docroot
+      - file: icinga_web-www-dir-link-docroot
 
 icinga-web-www-dir-js:
   file.symlink:
     - name: {{data.nginx.doc_root}}/pub/js
     - target: /usr/share/icinga-web/lib
     - watch:
-      - file: icinga-web-www-dir-pub
+      - file: icinga_web-www-dir-pub
