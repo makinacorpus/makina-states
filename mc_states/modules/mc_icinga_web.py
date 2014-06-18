@@ -109,13 +109,13 @@ def settings():
                         'images_dir': "/usr/share/icinga-web/app/modules/$1/pub/images/$2",
                         'styles_dir': "/usr/share/icinga-web/app/modules/$1/pub/styles/$2",
                         'bpaddon_dir': "/usr/share/icinga-web/app/modules/BPAddon/pub",
-                        'ext3_dir': "/usr/share/icinga-web/lib/ext3",
+                        'ext3_dir': "/usr/share/icinga-web/lib/ext3/",
                         'fastcgi_pass': "unix:/var/spool/www/icinga-web_localhost.fpm.sock",
                     },
                     'icinga_cgi': {
                         'enabled': True, # icinga cgi will not be configured. It is done in services.monitoring.icinga
                         'web_directory': "/icinga",
-                        'realm': "Authentification",
+                        'realm': "Authentication",
                         'htpasswd_file': "/etc/icinga/htpasswd.users",
                         'htdocs_dir': "/usr/share/icinga/htdocs/",
                         'images_dir': "/usr/share/icinga/htdocs/images/$1",

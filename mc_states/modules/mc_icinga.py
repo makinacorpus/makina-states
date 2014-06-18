@@ -237,7 +237,7 @@ def settings():
                             'vh_top_source': "salt://makina-states/files/etc/nginx/sites-available/icinga-cgi.top.conf",
                             'icinga_cgi': {
                                 'web_directory': "",
-                                'realm': "Authentification",
+                                'realm': "Authentication",
                                 'htpasswd_file': "/etc/icinga/htpasswd.users",
                                 'htdocs_dir': "/usr/share/icinga/htdocs/",
                                 'images_dir': "/usr/share/icinga/htdocs/images/$1",

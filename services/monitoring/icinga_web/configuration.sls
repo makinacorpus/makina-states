@@ -32,6 +32,26 @@ icinga_web-{{file}}-conf:
             {{sdata}}
 {% endfor %}
 
+# sometimes, the password in /usr/share/icinga-web/config/databases.xml is not updated
+# "I noticed that /etc/icinga-web doesn't seem to be parsed. at the very least, /etc/icinga-web/databases.xml doesn't seem to be."
+# manually update
+icinga_web-usr-databases-conf:
+  file.managed:
+    - name: /usr/share/icinga-web/app/config/databases.xml
+    - source: salt://makina-states/files/etc/icinga-web/databases-usr.xml
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: www-data
+    - mode: 640
+    - watch:
+      - mc_proxy: icinga_web-pre-conf
+    - watch_in:
+      - mc_proxy: icinga_web-post-conf
+    - defaults:
+      data: |
+            {{sdata}}
+
 # clear cache
 icinga_web-clear-cache:
   cmd.run:

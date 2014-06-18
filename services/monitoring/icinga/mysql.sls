@@ -22,7 +22,6 @@ icinga-create-mysql-user:
   mysql_database.present:
     - name: {{data.modules.ido2db.database.user}}
 
-
 # create database
 {{ mysql_db(
     db=data.modules.ido2db.database.name,

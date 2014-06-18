@@ -21,7 +21,6 @@ icinga_web-create-mysql-user:
   mysql_database.present:
     - name: {{data.databases.web.user}}
 
-
 # create database
 {{ mysql_db(
     db=data.databases.web.name,
