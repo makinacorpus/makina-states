@@ -246,7 +246,7 @@ salt-{{ data.name }}-{{ group }}:
                 MAILTO="{{data.mailto}}"
                 {% if data.cron_check_alive %}
                 # salt checkalive job
-                {{data.cron_minion_checkalive}} * * * * root {{settings.c.o.msr}}/_scripts/boot-salt.sh --check-alive --quiet -C --no-colors
+                {{data.cron_minion_checkalive}} root {{settings.c.o.msr}}/_scripts/boot-salt.sh --check-alive --quiet -C --no-colors
                 {% endif %}
                 {% if data.cron_auto_sync %}
                 # salt code synchronization job
