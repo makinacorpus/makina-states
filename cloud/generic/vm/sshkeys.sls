@@ -1,4 +1,5 @@
-{% set cloudSettings = salt['mc_utils.json_load'](pillar.scloudSettings ) %}
+{% set data = salt['mc_cloud_vm.vm_settings']() %}
+{% set cloudSettings = data.cloudSettings %}
 insdsakey:
   ssh_auth.present:
     - source: salt://{{cloudSettings.all_sls_dir}}/rootkey-dsa.pub
