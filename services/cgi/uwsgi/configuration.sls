@@ -13,7 +13,22 @@ include:
   - makina-states.services.cgi.uwsgi.hooks
   - makina-states.services.cgi.uwsgi.services
 
-# TODO upstart script for uwsgi
+icinga-init-default-conf:
+  file.managed:
+    - name: {{ locs['conf_dir'] }}/default/uwsgi
+    - source: salt://makina-states/files/etc/default/uwsgi
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 644
+    - watch:
+      - mc_proxy: uwsgi-pre-conf
+    - watch_in:
+      - mc_proxy: uwsgi-post-conf
+    - defaults:
+      data: |
+            {{sdata}}
 
 {#
 {%- import "makina-states/services/cgi/uwsgi/macros.jinja" as uwsgi with context %}

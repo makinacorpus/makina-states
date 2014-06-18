@@ -56,7 +56,7 @@ icinga-init-upstart-conf:
 
 icinga-init-default-conf:
   file.managed:
-    - name: {{ locs['conf_dir'] }}/etc/default
+    - name: {{ locs['conf_dir'] }}/default/icinga
     - source: salt://makina-states/files/etc/default/icinga
     - template: jinja
     - makedirs: true

@@ -40,6 +40,12 @@ def settings():
             'makina-states.services.cgi.uwsgi', {
                 'package': ['uwsgi', 'uwsgi-core'],
                 'configuration_directory': locs['conf_dir']+"/uwsgi",
+                'default_uwsgi': {
+                    'run_at_startup': "yes",
+                    'verbose': "yes",
+                    'print_confnames_in_initd_script_output': "no",
+                    'inherited_config': "/usr/share/uwsgi/conf/default.ini",
+                },
         })
 
         __salt__['mc_macros.update_local_registry'](
@@ -47,24 +53,6 @@ def settings():
             registry_format='pack')
         return data
     return _settings()
-
-#def config_settings(name, **kwargs):
-#    '''Settings for the nginx macro'''
-#    uwsgiSettings = copy.deepcopy(__salt__['mc_uwsgi.settings']())
-#    # retro compat
-#    extra = kwargs.pop('extra', {})
-#    kwargs.update(extra)
-#    kwargs.setdefault('name', name)
-#    kwargs.setdefault('config_file', config_file)
-#    uwsgiSettings = __salt__['mc_utils.dictupdate'](nginxSettings, kwargs)
-#    # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
-#    uwsgiSettings['data'] = copy.deepcopy(uwsgiSettings)
-#    uwsgiSettings['data']['extra'] = copy.deepcopy(uwsgiSettings)
-#    uwsgiSettings['extra'] = copy.deepcopy(uwsgiSettings)
-#    return uwsgiSettings
-
-
-
 
 def dump():
     return mc_states.utils.dump(__salt__,__name)
