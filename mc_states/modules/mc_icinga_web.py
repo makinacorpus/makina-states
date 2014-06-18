@@ -102,14 +102,16 @@ def settings():
                 },
                 'nginx': {
                     'virtualhost': "icinga-web.localhost",
-                    'doc_root': "/usr/share/icinga-web/pub/",
+                    'doc_root': "/usr/share/icinga-web/www/",
                     'vh_content_source': "salt://makina-states/files/etc/icinga-web/nginx.conf",
                     'vh_top_source': "salt://makina-states/files/etc/icinga-web/nginx.top.conf",
                 },
                 'phpfpm': {
-                    'listen': "/var/spool/www/icinga_fpm.sock",
                     'open_basedir': "/usr/share/icinga-web/:/var/cache/icinga-web/:/var/log/icinga-web/",
                     'extensions_packages': ['php5-pgsql'],
+                    'doc_root': '/usr/share/icinga-web/',
+                    #'session_save_path': '/var/lib/php5',
+                    'session_auto_start': 0,
                 },
                 'exclude_customvars_xml': {
                     'settings': [],
@@ -261,6 +263,7 @@ def settings():
                 },
                 'databases_xml': {
                     'icinga': {
+                        'enable_dbconfig_common': True,
                         'charset': "utf8",
                         'use_retained': "true",
                         'Doctrine_Core_ATTR_MODEL_LOADING': "CONSERVATIVE",
@@ -274,6 +277,7 @@ def settings():
                         },
                     },
                     'icinga_web': {
+                        'enable_dbconfig_common': True,
                         'charset': "utf8",
                         'Doctrine_Core_ATTR_MODEL_LOADING': "CONSERVATIVE",
                         'load_models': "%core.module_dir%/AppKit/lib/database/models/generated",

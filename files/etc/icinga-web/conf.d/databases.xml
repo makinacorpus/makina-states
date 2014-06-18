@@ -43,11 +43,11 @@
     </db:database>
 
     <!-- comment this if you do not want to use debconf with dbconfig-common -->
-    <!--
+    {% if data.databases_xml.icinga_web.enable_dbconfig_common %}
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="/etc/icinga-web/conf.d/database-web.xml#xpointer(databases/node())">
         <xi:fallback></xi:fallback>
     </xi:include>
-    -->
+    {% endif %}
 
     <db:database xmlns="http://agavi.org/agavi/config/parts/databases/1.0" name="icinga" class="IcingaDoctrineDatabase">
         <!-- will be overridden by a include! -->
@@ -74,10 +74,10 @@
 
 
     <!-- comment this if you do not want to use debconf with dbconfig-common for the IDO database -->
-    <!--
+    {% if data.databases_xml.icinga.enable_dbconfig_common %}
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="/etc/icinga-web/conf.d/database-ido.xml#xpointer(databases/node())">
         <xi:fallback></xi:fallback>
     </xi:include>
-    -->
+    {% endif %}
 
 </databases>

@@ -583,6 +583,7 @@ def fpmpool_settings(domain, doc_root, **kw):
     kw.setdefault(
         'socket_name',
         __salt__['mc_php.get_fpm_socket_name'](pool_name))
+    import pdb;pdb.set_trace()
     kw.setdefault(
         'pool_template_source',
         'salt://makina-states/files/etc/php5'
