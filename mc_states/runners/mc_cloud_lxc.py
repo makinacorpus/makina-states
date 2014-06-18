@@ -100,7 +100,7 @@ def post_deploy_controller(output=True):
 
 
 def _cn_configure(what, target, ret, output):
-    __salt__['mc_cloud_compute_node.lazy_register_configuration'](compute_node)
+    __salt__['mc_cloud_compute_node.lazy_register_configuration'](target)
     func_name = 'mc_cloud_lxc._cn_configure {0} {1}'.format(
         what, target)
     __salt__['mc_api.time_log']('start {0}'.format(func_name))

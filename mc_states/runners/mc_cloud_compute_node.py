@@ -161,7 +161,9 @@ def _configure(what, target, ret, output):
 
 
 def register_configuration(target, ret=None, output=True):
-    '''drop the compute node ssh key'''
+    '''
+    drop the compute node configuration
+    '''
     func_name = 'mc_compute_node.register_configuration {0}'.format(target)
     if ret is None:
         ret = result()
@@ -198,10 +200,8 @@ def lazy_register_configuration(cn, ttl=5*60, *args, **kwargs):
     This can be used as a decorator in orchestrations functions
     to ensure configuration has been dropped on target tenants.
     '''
-    salt_target = kwargs.get('salt_target', '')
     cache_key = ('mc_cloud_compute_node.lazy_'
-                 'register_configuration_{0}_{1}').format(
-                     vm, salt_target)
+                 'register_configuration_{0}').format(cn)
 
     def _do(cn, *args, **kwargs):
         return __salt__['mc_cloud_compute_node.register_configuration'](
