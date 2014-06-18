@@ -97,6 +97,7 @@ def settings():
         ):
             crons = False
 
+        tcrond = random.randint(2, 5)
         tcron = random.randint(0, 9)
         tcron2 = tcron + 5
         if tcron2 > 10:
@@ -104,7 +105,8 @@ def settings():
         tcron3 = tcron2 + 3
         if tcron3 > 10:
             tcron3 -= 10
-        cron_minion_checkalive = '0{0},1{0},2{0},3{0},4{0},5{0}'.format(tcron)
+        #cron_minion_checkalive = '0{0},1{0},2{0},3{0},4{0},5{0}'.format(tcron)
+        cron_minion_checkalive = '{0}{1} 0,6,12,20 * * *'.format(tcrond, tcron)
         cron_sync_minute = '0{0},1{0},2{0},3{0},4{0},5{0}'.format(tcron2)
 
         saltCommonData = {

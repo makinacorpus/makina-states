@@ -19,7 +19,7 @@ makina-postgresql-service-reload:
   service.running:
     - name: postgresql
     - enable: True
-    - reload: True
+    {#- reload: True # reload is not working ! #}
     - require:
       - mc_proxy: {{orchestrate['base']['postpkg']}}
     - require_in:
