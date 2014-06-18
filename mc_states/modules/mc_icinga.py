@@ -229,14 +229,22 @@ def settings():
                         'root_account': {
                           'login': "icingaadmin",
                           'password': password_cgi,
-# not used because of nginx.conf is not templated
-#                          'htpaswd': "htpasswd",
                         },
                         'nginx': {
                             'virtualhost': "icinga-cgi.localhost",
                             'doc_root': "/usr/share/icinga/htdocs/",
-                            'vh_content_source': "salt://makina-states/files/etc/nginx/sites-available/icinga-cgi.conf",
+                            'vh_content_source': "salt://makina-states/files/etc/nginx/sites-available/icinga-cgi.content.conf",
                             'vh_top_source': "salt://makina-states/files/etc/nginx/sites-available/icinga-cgi.top.conf",
+                            'icinga_cgi': {
+                                'web_directory': "",
+                                'realm': "Authentification",
+                                'htpasswd_file': "/etc/icinga/htpasswd.users",
+                                'htdocs_dir': "/usr/share/icinga/htdocs/",
+                                'images_dir': "/usr/share/icinga/htdocs/images/$1",
+                                'styles_dir': "/usr/share/icinga/stylesheets/$1",
+                                'cgi_dir': "/usr/lib/cgi-bin/",
+                                'uwsgi_pass': "127.0.0.1:3030",
+                            },
                         },
                         'uwsgi': {
                             'name': "icinga",
@@ -246,6 +254,7 @@ def settings():
                                 'master': "true",
                                 'plugins': "cgi",
                                 'async': 20,
+                                'ugreen': True,
                                 'socket': "127.0.0.1:3030",
                                 'uid': "www-data",
                                 'gid': "www-data",

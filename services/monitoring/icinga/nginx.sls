@@ -12,12 +12,7 @@ include:
   - makina-states.services.cgi.uwsgi
 
 # create a virtualhost in nginx
-{{ nginx.virtualhost(domain=data.modules.cgi.nginx.virtualhost,
-                     doc_root=data.modules.cgi.nginx.doc_root,
-
-                     vh_content_source=data.modules.cgi.nginx.vh_content_source,
-                     vh_top_source=data.modules.cgi.nginx.vh_top_source,
-                     cfg=data.modules.cgi.nginx.vh_content_source)}}
+{{ nginx.virtualhost(domain=data.modules.cgi.nginx.virtualhost, **data.modules.cgi.nginx)}}
 
 # configure uwsgi
 {{ uwsgi.app(name=data.modules.cgi.uwsgi.name,

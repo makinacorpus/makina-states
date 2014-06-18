@@ -11,19 +11,12 @@ include:
   - makina-states.services.http.nginx
   - makina-states.services.monitoring.icinga_web.hooks
 
-# copy configuration
-#icinga_web-copy-configuration:
-#  file.managed:
-
 # create a virtualhost in nginx
-{{ nginx.virtualhost(domain=data.nginx.virtualhost,
-                     doc_root=data.nginx.doc_root,
-                     vh_content_source=data.nginx.vh_content_source,
-                     vh_top_source=data.nginx.vh_top_source,
-                     cfg=data.nginx.vh_content_source)}}
+{{ nginx.virtualhost(domain=data.nginx.virtualhost, **data.nginx)}}
 
 # add a pool php-fpm
 {{php.fpm_pool(domain=data.nginx.virtualhost, **data.phpfpm)}}
+
 # install php5-pgsql
 icinga_web-php5-pgsql:
   pkg.{{pkgssettings['installmode']}}:

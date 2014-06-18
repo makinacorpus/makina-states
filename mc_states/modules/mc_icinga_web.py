@@ -31,22 +31,21 @@ def settings():
     def _settings():
         grains = __grains__
         pillar = __pillar__
-        icinga_web_reg = __salt__[
-            'mc_macros.get_local_registry'](
-                'icinga_web', registry_format='pack')
         locs = __salt__['mc_locations.settings']()
 
-        # generate default password
+
+        # get default ido password from mc_icinga
+        icinga_settings =  __salt__['mc_icinga.settings']()
+        password_ido= icinga_settings['modules']['ido2db']['database']['password']
+
+
+        # by default, icinga_web and icinga_ido use the same sql user, so the password are the same
         icinga_web_reg = __salt__[
             'mc_macros.get_local_registry'](
                 'icinga_web', registry_format='pack')
 
-        password_web_db = icinga_web_reg.setdefault('web.db_password', __salt__['mc_utils.generate_password']())
+        password_web_db = icinga_web_reg.setdefault('web.db_password', password_ido)
         password_web_root_account = icinga_web_reg.setdefault('web.root_account_password', __salt__['mc_utils.generate_password']())
-
-        # get default ido password
-        password_ido=""
-        # TODO
 
         ido2db_database = {
             'type': "pgsql",
@@ -103,8 +102,27 @@ def settings():
                 'nginx': {
                     'virtualhost': "icinga-web.localhost",
                     'doc_root': "/usr/share/icinga-web/www/",
-                    'vh_content_source': "salt://makina-states/files/etc/nginx/sites-available/icinga-web.conf",
+                    'vh_content_source': "salt://makina-states/files/etc/nginx/sites-available/icinga-web.content.conf",
                     'vh_top_source': "salt://makina-states/files/etc/nginx/sites-available/icinga-web.top.conf",
+                    'icinga_web': {
+                        'web_directory': "/icinga-web",
+                        'images_dir': "/usr/share/icinga-web/app/modules/$1/pub/images/$2",
+                        'styles_dir': "/usr/share/icinga-web/app/modules/$1/pub/styles/$2",
+                        'bpaddon_dir': "/usr/share/icinga-web/app/modules/BPAddon/pub",
+                        'ext3_dir': "/usr/share/icinga-web/lib/ext3",
+                        'fastcgi_pass': "unix:/var/spool/www/icinga-web_localhost.fpm.sock",
+                    },
+                    'icinga_cgi': {
+                        'enabled': True, # icinga cgi will not be configured. It is done in services.monitoring.icinga
+                        'web_directory': "/icinga",
+                        'realm': "Authentification",
+                        'htpasswd_file': "/etc/icinga/htpasswd.users",
+                        'htdocs_dir': "/usr/share/icinga/htdocs/",
+                        'images_dir': "/usr/share/icinga/htdocs/images/$1",
+                        'styles_dir': "/usr/share/icinga/stylesheets/$1",
+                        'cgi_dir': "/usr/lib/cgi-bin/",
+                        'uwsgi_pass': "127.0.0.1:3030",
+                    },
                 },
                 'phpfpm': {
                     'open_basedir': "/usr/share/icinga-web/:/var/cache/icinga-web/:/var/log/icinga-web/",
