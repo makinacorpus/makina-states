@@ -126,7 +126,7 @@ def get_compute_node(vm, compute_node=None):
 
 
 def _vm_configure(what, target, compute_node, vm, ret, output):
-    __salt__['mc_cloud_compute_vm.lazy_register_configuration'](vm, compute_node)
+    __salt__['mc_cloud_vm.lazy_register_configuration'](vm, compute_node)
     func_name = 'mc_cloud_vm._vm_configure {0} {1} {2} {3}'.format(
         what, target, compute_node, vm)
     __salt__['mc_api.time_log']('start {0}'.format(func_name))
@@ -187,11 +187,11 @@ def vm_initial_highstate(vm, compute_node=None, vt=None,
 
         mastersalt-run -lall mc_cloud_vm.vm_initial_highstate foo.domain.tld
     '''
-    __salt__['mc_cloud_compute_vm.lazy_register_configuration'](
+    __salt__['mc_cloud_vm.lazy_register_configuration'](
         vm, compute_node)
     compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
     if not ret:
-        ret=result()
+        ret = result()
     pillar = __salt__['mc_cloud_vm.vm_sls_pillar'](compute_node, vm)
     vt = __salt__['mc_cloud_vm.get_vt'](vm, vt)
     cmd = ("ssh -o\"ProxyCommand=ssh {target} nc -w300 {vm} 22\""
@@ -207,16 +207,20 @@ def vm_initial_highstate(vm, compute_node=None, vt=None,
     cret = cli('cmd.run_all', unless)
     if cret['retcode']:
         rcret = cli('cmd.run_all', cmd)
-        if rcret['retcode']:
-            cret['comment'] = (
-                'Initial highstate already done on {0}'.format(vm)
+        if not rcret['retcode']:
+            ret['comment'] = (
+                'Initial highstate done on {0}'.format(vm)
             )
         else:
-            cret['comment'] = (
-                'Initial highstate already failed on {0}'.format(vm)
+            ret['result'] = False
+            ret['trace'] += rcret['stdout'] + '\n'
+            ret['trace'] += rcret['stderr'] + '\n'
+            ret['comment'] += (
+                'Initial highstate failed on {0}\n'.format(vm)
             )
     else:
-        cret['comment'] = 'Initial highstate already done on {0}'.format(vm)
+        cret['comment'] += 'Initial highstate already done on {0}'.format(vm)
+    salt_output(ret, __opts__, output=output)
     return ret
 
 
@@ -270,7 +274,7 @@ def vm_ping(vm, compute_node=None, vt=None, ret=None, output=True):
 
 
     '''
-    __salt__['mc_cloud_compute_vm.lazy_register_configuration'](
+    __salt__['mc_cloud_vm.lazy_register_configuration'](
         vm, compute_node)
     func_name = 'mc_cloud_vm.provision.ping {0}'.format(vm)
     __salt__['mc_api.time_log']('start {0}'.format(func_name))
