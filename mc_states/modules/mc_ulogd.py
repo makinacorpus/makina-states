@@ -30,7 +30,10 @@ def settings():
         nt_reg = __salt__['mc_nodetypes.registry']()
         locs = __salt__['mc_locations.settings']()
         service = 'ulogd'
-        if grains['os'] in ['Ubuntu']:
+        if (
+            grains['os'] in ['Ubuntu'] 
+            and (grains.get('oscodename', '') not in ['precise'])
+        ):
             service = 'ulogd2'
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.log.ulogd', {
