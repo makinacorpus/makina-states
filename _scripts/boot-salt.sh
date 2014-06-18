@@ -727,6 +727,8 @@ set_vars() {
         IS_MASTERSALT=""
     fi
 
+    MASTERSALT_MASTER_IP="${MASTERSALT_MASTER_IP:-"0.0.0.0"}"
+    MASTERSALT_MINION_IP="${MASTERSALT_MINION_IP:-"127.0.0.1"}"
     # mastersalt variables
     if [ "x${IS_MASTERSALT}" != "x" ];then
         MASTERSALT_MASTER_CONTROLLER_DEFAULT="mastersalt_master"
@@ -767,13 +769,11 @@ set_vars() {
         done
 
         MASTERSALT_MASTER_DNS="${MASTERSALT_MASTER_DNS:-${MASTERSALT}}"
-        MASTERSALT_MASTER_IP="${MASTERSALT_MASTER_IP:-$(dns_resolve ${MASTERSALT_MASTER_DNS})}"
         MASTERSALT_MASTER_PORT="${MASTERSALT_MASTER_PORT:-"${MASTERSALT_PORT:-"4606"}"}"
         MASTERSALT_MASTER_PUBLISH_PORT="$(( ${MASTERSALT_MASTER_PORT} - 1 ))"
 
         MASTERSALT_MINION_DNS="${MASTERSALT_MINION_DNS:-"localhost"}"
         MASTERSALT_MINION_ID="$(mastersalt_get_minion_id)"
-        MASTERSALT_MINION_IP="$(dns_resolve ${MASTERSALT_MINION_DNS})"
 
         if [ "x${MASTERSALT_MASTER_IP}" = "x127.0.0.1" ];then
             MASTERSALT_MASTER_DNS="localhost"
@@ -1063,8 +1063,7 @@ recap_(){
         done
     fi
     if [ "x${IS_MASTERSALT}" != "x" ];then
-        for i in \
-            "${MASTERSALT_MASTER_IP}" "${MASTERSALT_MINION_IP}";\
+        for i in  "${MASTERSALT_MINION_IP}";\
         do
             thistest="$(echo "${i}"|grep -q "${DNS_RESOLUTION_FAILED}")"
             if [ "x${thistest}" = "x0" ];then
@@ -2104,7 +2103,7 @@ EOF
         # mpre harm than good
         # any way the keys for attackers need to be accepted.
         cat >> "${SALT_PILLAR}/salt.sls"  << EOF
-makina-states.controllers.salt_master.settings.interface: 0.0.0.0
+makina-states.controllers.salt_master.settings.interface: ${MASTERSALT_MASTER_IP}
 makina-states.controllers.salt_master.settings.publish_port: $SALT_MASTER_PUBLISH_PORT
 makina-states.controllers.salt_master.settings.ret_port: ${SALT_MASTER_PORT}
 EOF
@@ -2163,7 +2162,7 @@ EOF
             if [ "x$(egrep -- "mastersalt_master\.settings" "${MASTERSALT_PILLAR}/mastersalt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
                 debug_msg "Adding mastersalt master info to mastersalt pillar"
                 cat >> "${MASTERSALT_PILLAR}/mastersalt.sls" << EOF
-makina-states.controllers.mastersalt_master.settings.interface: 0.0.0.0
+makina-states.controllers.mastersalt_master.settings.interface: ${MASTERSALT_MASTER_IP}
 makina-states.controllers.mastersalt_master.settings.ret_port: ${MASTERSALT_MASTER_PORT}
 makina-states.controllers.mastersalt_master.settings.publish_port: ${MASTERSALT_MASTER_PUBLISH_PORT}
 EOF
