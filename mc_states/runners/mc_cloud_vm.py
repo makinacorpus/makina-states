@@ -219,7 +219,7 @@ def vm_initial_highstate(vm, compute_node=None, vt=None,
                 'Initial highstate failed on {0}\n'.format(vm)
             )
     else:
-        cret['comment'] += 'Initial highstate already done on {0}'.format(vm)
+        ret['comment'] += 'Initial highstate already done on {0}\n'.format(vm)
     salt_output(ret, __opts__, output=output)
     return ret
 
