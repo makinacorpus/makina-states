@@ -1,6 +1,6 @@
-{% set compute_node_settings  = salt['mc_utils.json_load'](pillar.scnSettings) %}
-{% set cloudSettings  = salt['mc_utils.json_load'](pillar.scloudSettings) %}
-
+{% set data = salt['mc_cloud_compute_node.cn_settings']() %}
+{% set compute_node_settings = data.cnSettings %}
+{% set cloudSettings = data.cloudSettings %}
 {% set domains = [] %}
 {% set tdata = compute_node_settings.cn %}
 

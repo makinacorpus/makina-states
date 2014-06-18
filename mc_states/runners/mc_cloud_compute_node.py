@@ -43,7 +43,8 @@ _GPREF = 'makina-states.cloud.generic.compute_node'
 
 
 def cn_sls_pillar(target, ttl=api.RUNNER_CACHE_TIME):
-    '''limited cloud pillar to expose to a compute node'''
+    '''limited cloud pillar to expose to a compute node
+    This will be stored locally inside a local registry'''
     func_name = 'mc_cloud_compute_node.cn_sls_pillar {0}'.format(
         target)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
@@ -65,14 +66,16 @@ def cn_sls_pillar(target, ttl=api.RUNNER_CACHE_TIME):
         cloudSettingsData[
             'compute_node_sls_dir'] = cloudSettings['compute_node_sls_dir']
         cloudSettingsData['prefix'] = cloudSettings['prefix']
-        cloudSettingsData = api.json_dump(cloudSettingsData)
-        cnSettingsData = api.json_dump(cnSettingsData)
-        pillar = {'scloudSettings': cloudSettingsData,
-                  'scnSettings': cnSettingsData}
+        cloudSettingsData = cloudSettingsData
+        cnSettingsData = cnSettingsData
+        pillar = {'cloudSettings': cloudSettingsData,
+                  'cnSettings': cnSettingsData}
+        # add to the compute node pillar all the VT specific pillars
         for vt in vts:
             cid = 'mc_cloud_{0}.cn_sls_pillar'.format(vt)
             if cid in __salt__:
                 pillar.update(__salt__[cid](target))
+        # add to the compute node pillar all the VM pillars
         return pillar
     cache_key = 'mc_cloud_compute_node.cn_sls_pillar_{0}'.format(target)
     ret = memoize_cache(_do, [target], {}, cache_key, ttl)
@@ -110,6 +113,22 @@ def run_vt_hook(hook_name,
     return ret
 
 
+def upgrade_vts(target, ret=None, output=True):
+    '''upgrade all virtual types to be ready to host vms'''
+    func_name = 'mc_compute_node.install_vts {0}'.format(target)
+    __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    if ret is None:
+        ret = result()
+    ret = run_vt_hook('upgrade_vt',
+                      ret=ret, target=target, output=output)
+    if ret['result']:
+        ret['comment'] += yellow(
+            '{0} is now upgraded to host vms\n'.format(target))
+    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+    return ret
+
+
 def install_vts(target, ret=None, output=True):
     '''install all virtual types to be ready to host vms'''
     func_name = 'mc_compute_node.install_vts {0}'.format(target)
@@ -127,6 +146,7 @@ def install_vts(target, ret=None, output=True):
 
 
 def _configure(what, target, ret, output):
+    __salt__['mc_cloud_compute_node.lazy_register_configuration'](target)
     func_name = 'mc_compute_node._configure {0} {1}'.format(what, target)
     __salt__['mc_api.time_log']('start {0}'.format(func_name))
     if ret is None:
@@ -134,11 +154,165 @@ def _configure(what, target, ret, output):
     ret['comment'] += yellow('Installing {1} on {0}\n'.format(target, what))
     ret =  __salt__['mc_api.apply_sls'](
         '{0}.{1}'.format(_GPREF, what), **{
-            'salt_target': target,
-            'ret': ret,
-            'sls_kw': {'pillar': __salt__[
-                'mc_cloud_compute_node.cn_sls_pillar'
-            ](target)}})
+            'salt_target': target, 'ret': ret})
+    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+    return ret
+
+
+def register_configuration(target, ret=None, output=True):
+    '''drop the compute node ssh key'''
+    func_name = 'mc_compute_node.register_configuration {0}'.format(target)
+    if ret is None:
+        ret = result()
+    __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    settings = __salt__['mc_cloud_compute_node.cn_sls_pillar'](target)
+    cret = cli(
+        'mc_macros.update_local_registry',
+        'cloud_compute_node_settings', settings, registry_format='pack',
+        salt_target=target)
+    if (
+        isinstance(cret, dict)
+        and(
+            'makina-states.local.'
+            'cloud_compute_node_settings.cnSettings' in cret
+        )
+    ):
+        ret['result'] = True
+        ret['comment'] += yellow('Configuration stored'
+                                 ' on {0}\n'.format(target))
+    else:
+        ret['result'] = False
+        ret['comment'] += red('Configuration failed to store'
+                              ' on {0}\n'.format(target))
+    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+    return ret
+
+
+def lazy_register_configuration(cn, ttl=5*60, *args, **kwargs):
+    '''
+    Wrapper to register_configuration at the exception
+    that only one shared call can de done in a five minutes row.
+
+    This can be used as a decorator in orchestrations functions
+    to ensure configuration has been dropped on target tenants.
+    '''
+    salt_target = kwargs.get('salt_target', '')
+    cache_key = ('mc_cloud_compute_node.lazy_'
+                 'register_configuration_{0}_{1}').format(
+                     vm, salt_target)
+
+    def _do(cn, *args, **kwargs):
+        return __salt__['mc_cloud_compute_node.register_configuration'](
+            cn, *args, **kwargs)
+    ret = memoize_cache(_do, [cn] + list(args), kwargs, cache_key, ttl)
+    return ret
+
+
+def register_configurations(only=None, only_vms=None,
+                            skip=None, skip_vms=None,
+                            refresh=False, ret=None, output=True):
+    '''Parse all reachable compute nodes and vms
+    and regenerate the local configuration registries concerning
+    cloud deployment'''
+    func_name = 'mc_compute_node.register_configurations'
+    __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    only, _, skip, __ = (
+        __salt__['mc_cloud_controller.gather_only_skip'](
+            only=only, skip=skip))
+    if ret is None:
+        ret = result()
+    if refresh:
+        cli('saltutil.refresh_pillar')
+    settings = cli('mc_cloud_compute_node.settings')
+    configuration = ret['changes'].setdefault('cns_configured', [])
+    configuration_error = ret['changes'].setdefault('cns_in_error', [])
+    targets = [a for a in settings['targets']]
+    # targets += ['foo', 'bar']
+    targets = filter_compute_nodes(targets, skip, only)
+    hosts_to_configure_vms = []
+    for idx, compute_node in enumerate(targets):
+        cret = result()
+        try:
+            if not cli('test.ping', salt_target=compute_node):
+                raise FailedStepError('not reachable')
+            register_configuration(compute_node, ret=cret, output=False)
+            check_point(cret, __opts__, output=output)
+            if compute_node not in hosts_to_configure_vms:
+                hosts_to_configure_vms.append(compute_node)
+        except FailedStepError:
+            cret['result'] = False
+        except Exception, exc:
+            trace = traceback.format_exc()
+            cret = {'result': False,
+                    'output': 'unknown error on {0}\n{1}'.format(compute_node,
+                                                                 exc),
+                    'comment': 'unknown error on {0}\n'.format(compute_node),
+                    'trace': trace}
+        if cret['result']:
+            if compute_node not in configuration:
+                configuration.append(compute_node)
+            # if everything is well, wipe the unseful output
+            cret['output'] = ''
+            cret['trace'] = ''
+        else:
+            ret['result'] = False
+            if compute_node not in configuration_error:
+                configuration_error.append(compute_node)
+        cret.pop('result', False)
+        merge_results(ret, cret)
+    if len(configuration_error):
+        ret['comment'] += red('There were errors while configuring '
+                              'computes nodes {0}\n'.format(
+                                  configuration_error))
+    else:
+        if ret['result']:
+            ret['trace'] = ''
+            ret['comment'] += green('All computes nodes were preconfigured\n')
+    # now for each reachable vm, also preconfigure it
+    for idx, compute_node in enumerate(hosts_to_configure_vms):
+        cret = result()
+        try:
+            __salt__['mc_cloud_vm.register_configurations'](
+                compute_node, skip=skip_vms, only=only_vms,
+                ret=cret, output=False)
+            check_point(cret, __opts__, output=output)
+        except FailedStepError:
+            cret['result'] = False
+        except Exception, exc:
+            trace = traceback.format_exc()
+            cret = {'result': False,
+                    'output': (
+                        'unknown error on '
+                        'configuring vms {0}\n{1}'
+                    ).format(compute_node),
+                    'comment': (
+                        'unknown error on configuring vms'
+                        '{0}\n'
+                    ).format(compute_node),
+                    'trace': trace}
+        if cret['result']:
+            if compute_node not in configuration:
+                configuration.append(compute_node)
+            # if everything is well, wipe the unseful output
+            cret['output'] = ''
+            cret['trace'] = ''
+        else:
+            ret['result'] = False
+            if compute_node not in configuration_error:
+                configuration_error.append(compute_node)
+        cret.pop('result', False)
+        merge_results(ret, cret)
+    if len(configuration_error):
+        ret['comment'] += red('There were errors while configuring '
+                              'computes nodes vms {0}\n'.format(
+                                  configuration_error))
+    else:
+        if ret['result']:
+            ret['trace'] = ''
+            ret['comment'] += green('All computes nodes vms '
+                                    'were preconfigured\n')
     salt_output(ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
@@ -192,6 +366,7 @@ def configure_grains(target, ret=None, output=True):
 def deploy(target, output=True, ret=None, hooks=True, pre=True, post=True):
     '''Prepare cloud controller configuration
     can also apply per virtualization type configuration'''
+    __salt__['mc_cloud_compute_node.lazy_register_configuration'](target)
     func_name = 'mc_compute_node.deploy {0}'.format(target)
     __salt__['mc_api.time_log']('start {0}'.format(func_name))
     if ret is None:
@@ -201,18 +376,19 @@ def deploy(target, output=True, ret=None, hooks=True, pre=True, post=True):
         run_vt_hook('pre_deploy_compute_node',
                     ret=ret, target=target, output=output)
         for step in [
+            register_configuration,
             configure_prevt,
             # merged in configure_prevt for perf reason
-            #configure_sshkeys,
-            #configure_grains,
+            # configure_sshkeys,
+            # configure_grains,
             install_vts,
             configure_network,
             configure_host,
             # merged in configure_host for perf reason
-            #configure_hostsfile,
-            #configure_firewall,
-            #configure_sslcerts,
-            #configure_reverse_proxy
+            # configure_hostsfile,
+            # configure_firewall,
+            # configure_sslcerts,
+            # configure_reverse_proxy
         ]:
             step(target, ret=ret, output=False)
             check_point(ret, __opts__, output=output)

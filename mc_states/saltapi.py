@@ -10,6 +10,7 @@ Convenient functions to use a salt infra as an api
 __docformat__ = 'restructuredtext en'
 import salt.config as config
 import os
+import logging
 import json
 from pprint import pformat
 import salt.syspaths
@@ -28,6 +29,9 @@ from salt.exceptions import (
 )
 from salt.runner import RunnerClient
 from mc_states import api
+
+
+log = logging.getLogger(__name__)
 
 
 class SaltExit(SaltException):
@@ -221,6 +225,36 @@ def _client(cfgdir=None, cfg=None):
     return LocalClient(mopts=_master_opts(cfgdir=cfgdir, cfg=cfg))
 
 
+def get_timeout_error(wait_for_res,
+                      jid,
+                      fun,
+                      target,
+                      args,
+                      kw):
+    try:
+        jidt = ''
+        if jid:
+            jidt = '{0}'.format(jid)
+        to_errmsg = (
+            'Timeout {0}s for [job/]fun[/args/kw'
+            ' {1}{2}/{4}/{5}'
+            ' launched on {3} is elapsed,'
+            ' return will unlikely return results now'
+        ).format(wait_for_res, jidt, fun, target, args, kw)
+        raise
+    except:
+        jidt = ''
+        if jid:
+            jidt = '{0}'.format(jid)
+        to_errmsg = (
+            'Timeout {0}s for [job/]fun'
+            ' {1}{2}'
+            ' launched on {3} is elapsed,'
+            ' return will unlikely return results now'
+        ).format(wait_for_res, jidt, fun, target)
+    return to_errmsg
+
+
 def client(fun, *args, **kw):
     '''Execute a salt function on a specific minion using the salt api.
     This will set automatic timeouts for well known functions.
@@ -267,10 +301,8 @@ def client(fun, *args, **kw):
         timeout = int(kw.pop('salt_timeout'))
     except (KeyError, ValueError):
         # try to has some low timeouts for very basic commands
-        timeout = __FUN_TIMEOUT.get(
-            fun,
-            900  # wait up to 15 minutes for the default timeout
-        )
+        # wait up to 15 minutes for the default timeout
+        timeout = __FUN_TIMEOUT.get(fun, 900)
     try:
         kwargs = kw.pop('kwargs')
     except KeyError:
@@ -293,16 +325,60 @@ def client(fun, *args, **kw):
     except TypeError:
         skwargs = ''
     cache_key = (laps, target, fun, sargs, skw, skwargs)
-    if not cache or (cache and (not cache_key in __CACHED_CALLS)):
+    if (
+        not cache
+        or (cache and (cache_key not in __CACHED_CALLS))
+    ):
+        # timeout for the master to return data
+        # about a specific job
+        wait_for_res = float({
+            'test.ping': '5',
+        }.get(fun, '120'))
         conn = _client(cfgdir=cfgdir, cfg=cfg)
         runner = _runner(cfgdir=cfgdir, cfg=cfg)
+        ping_retries = 0
+        # the target(s) have environ one minute to respond
+        # we call 60 ping request, without HERE time
+        # check which is useless in this check
+        ping_max_retries = 60
+        ping = True
+        # do not check ping... if we are pinguing
+        if fun == 'test.ping':
+            ping_retries = ping_max_retries + 1
+        # be sure that the executors are alive
+        while ping_retries <= ping_max_retries:
+            try:
+                if ping_retries > 0:
+                    time.sleep(1)
+                pings = conn.cmd(tgt=target,
+                                 timeout=10,
+                                 fun='test.ping')
+                values = pings.values()
+                if not values:
+                    ping = False
+                for v in values:
+                    if v is not True:
+                        ping = False
+                if not ping:
+                    raise ValueError('Unreachable')
+                break
+            except Exception:
+                ping = False
+                ping_retries += 1
+                log.error(get_timeout_error(
+                    10, '', 'test.ping', target, '', ''))
+        if not ping:
+            raise SaltExit(
+                'Target {0} unreachable'.format(target))
+
+        # throw the real job command
         rkwargs = kwargs.copy()
         rkwargs['timeout'] = timeout
         jid = conn.cmd_async(tgt=target,
-                         fun=fun,
-                         arg=args,
-                         kwarg=kw,
-                         **rkwargs)
+                             fun=fun,
+                             arg=args,
+                             kwarg=kw,
+                             **rkwargs)
         # do not fall too quick on findjob which is quite spamming the
         # master and give too early of a false positive
         findtries, thistry = 10, 0
@@ -321,8 +397,8 @@ def client(fun, *args, **kw):
         running = bool(cret.get(target, False))
         endto = time.time() + timeout
         while running:
-            # Again, do not fall too quick on findjob which is quite spamming the
-            # master and give too early of a false positive
+            # Again, do not fall too quick on findjob which is quite spamming
+            # the master and give too early of a false positive
             findtries, thistry = 10, 0
             rkwargs = {'tgt': target,
                        'fun': 'saltutil.find_job',
@@ -340,13 +416,11 @@ def client(fun, *args, **kw):
             if not running:
                 break
             if running and (time.time() > endto):
-                raise SaltExit('Timeout {0}s for {1} is elapsed'.format(
-                    timeout, pformat(kwargs)))
+                raise SaltExit(
+                    'Timeout {0}s for {1} is elapsed'.format(
+                        timeout, pformat(kwargs)))
             time.sleep(poll)
-        # timeout for the master to return data about a specific job
-        wait_for_res = float({
-            'test.ping': '5',
-        }.get(fun, '120'))
+
         wendto = time.time() + wait_for_res
         while True:
             cret = runner.cmd('jobs.lookup_jid',
@@ -360,19 +434,9 @@ def client(fun, *args, **kw):
             if fun in ['test.ping'] and not wait_for_res:
                 ret = {'test.ping': False}.get(fun, False)
             if time.time() > wendto:
-                try:
-                    msg = (
-                        'Timeout {0}s for job/fun/kw {1}/{3}/{4} '
-                        'running on {3} is elapsed, '
-                        'return will unlikely retun results now'
-                    ).format(wait_for_res, jid, fun, target, kw)
-                except:
-                    msg = (
-                        'Timeout {0}s for job/fun {1}/{2}'
-                        ' running on {3} is elapsed,'
-                        ' return will unlikely return results now'
-                    ).format(wait_for_res, jid, fun, target, kw)
-                raise SaltExit(msg)
+                raise SaltExit(
+                    get_timeout_error(10, jid, fun,
+                                      target, args, kw))
             time.sleep(poll)
         try:
             if 'The minion function caused an exception:' in ret:

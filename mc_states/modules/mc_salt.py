@@ -317,6 +317,7 @@ def settings():
                                     'pillar_root': locs['prefix'] + '/{name}-pillar'})
         mastersaltMasterData = saltmods['mc_utils.dictupdate'](
             saltMasterData.copy(), mastersaltCommonData.copy())
+        mastersaltMasterData['interface'] = '0.0.0.0'
         mastersaltMinionData = saltmods['mc_utils.dictupdate'](
             saltMinionData.copy(), mastersaltCommonData.copy())
         mastersaltMasterData = saltmods['mc_utils.dictupdate'](

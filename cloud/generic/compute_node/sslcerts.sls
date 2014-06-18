@@ -2,7 +2,7 @@ include:
   - makina-states.cloud.generic.hooks
 
 {# drop any configured ssl cert on the compute node #}
-{% set data  = salt['mc_utils.json_load'](pillar.scnSettings) %}
+{% set data  = salt['mc_cloud_compute_node.cn_settings']().cnSettings %}
 {% for cert, content in data.cn.ssl_certs %}
 cpt-cert-{{cert}}:
   file.managed:

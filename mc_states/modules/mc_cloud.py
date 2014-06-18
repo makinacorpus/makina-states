@@ -146,6 +146,9 @@ def settings():
                 ),
                 'prefix': prefix,
                 'mode': 'mastersalt',
+                'script': (
+                    '/srv/mastersalt/makina-states/'
+                    '_scripts/boot-salt.sh'),
                 'bootsalt_args': '-C --from-salt-cloud -no-M',
                 'bootsalt_mastersalt_args': (
                     '-C --from-salt-cloud --mastersalt-minion'),

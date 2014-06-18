@@ -727,6 +727,8 @@ set_vars() {
         IS_MASTERSALT=""
     fi
 
+    MASTERSALT_MASTER_IP="${MASTERSALT_MASTER_IP:-"0.0.0.0"}"
+    MASTERSALT_MINION_IP="${MASTERSALT_MINION_IP:-"127.0.0.1"}"
     # mastersalt variables
     if [ "x${IS_MASTERSALT}" != "x" ];then
         MASTERSALT_MASTER_CONTROLLER_DEFAULT="mastersalt_master"
@@ -767,13 +769,11 @@ set_vars() {
         done
 
         MASTERSALT_MASTER_DNS="${MASTERSALT_MASTER_DNS:-${MASTERSALT}}"
-        MASTERSALT_MASTER_IP="${MASTERSALT_MASTER_IP:-$(dns_resolve ${MASTERSALT_MASTER_DNS})}"
         MASTERSALT_MASTER_PORT="${MASTERSALT_MASTER_PORT:-"${MASTERSALT_PORT:-"4606"}"}"
         MASTERSALT_MASTER_PUBLISH_PORT="$(( ${MASTERSALT_MASTER_PORT} - 1 ))"
 
         MASTERSALT_MINION_DNS="${MASTERSALT_MINION_DNS:-"localhost"}"
         MASTERSALT_MINION_ID="$(mastersalt_get_minion_id)"
-        MASTERSALT_MINION_IP="$(dns_resolve ${MASTERSALT_MINION_DNS})"
 
         if [ "x${MASTERSALT_MASTER_IP}" = "x127.0.0.1" ];then
             MASTERSALT_MASTER_DNS="localhost"
@@ -1063,8 +1063,7 @@ recap_(){
         done
     fi
     if [ "x${IS_MASTERSALT}" != "x" ];then
-        for i in \
-            "${MASTERSALT_MASTER_IP}" "${MASTERSALT_MINION_IP}";\
+        for i in  "${MASTERSALT_MINION_IP}";\
         do
             thistest="$(echo "${i}"|grep -q "${DNS_RESOLUTION_FAILED}")"
             if [ "x${thistest}" = "x0" ];then
@@ -1322,7 +1321,7 @@ set_grain() {
 }
 
 check_restartmarker_and_maybe_restart() {
-    if [ "x${SALT_BOOT_IN_RESTART}" = "x" ];then
+    if [ "x${SALT_BOOT_IN_RESTART}" = "x" ] && [ "x${SALT_CLOUD}" = "x" ];then
         if [ "x${SALT_BOOT_NEEDS_RESTART}" != "x" ];then
             touch "${SALT_MS}/.bootsalt_need_restart"
         fi
@@ -2104,7 +2103,7 @@ EOF
         # mpre harm than good
         # any way the keys for attackers need to be accepted.
         cat >> "${SALT_PILLAR}/salt.sls"  << EOF
-makina-states.controllers.salt_master.settings.interface: 0.0.0.0
+makina-states.controllers.salt_master.settings.interface: ${MASTERSALT_MASTER_IP}
 makina-states.controllers.salt_master.settings.publish_port: $SALT_MASTER_PUBLISH_PORT
 makina-states.controllers.salt_master.settings.ret_port: ${SALT_MASTER_PORT}
 EOF
@@ -2136,7 +2135,7 @@ a\    - mastersalt
             "${MASTERSALT_PILLAR}/mastersalt_minion.sls";do
             if [ ! -f "${mastersalt_sls}" ];then
                 debug_msg "Creating mastersalt configuration file in ${mastersalt_sls}"
-                touch >  "${mastersalt_sls}"
+                touch "${mastersalt_sls}"
             fi
             if [ "x$(grep "${BRANCH_PILLAR_ID}" "${mastersalt_sls}"|wc -l|sed -e "s/ //g")" = "x0" ];then
                 echo "" >> "${mastersalt_sls}"
@@ -2163,7 +2162,7 @@ EOF
             if [ "x$(egrep -- "mastersalt_master\.settings" "${MASTERSALT_PILLAR}/mastersalt.sls"|wc -l|sed -e "s/ //g")" = "x0" ];then
                 debug_msg "Adding mastersalt master info to mastersalt pillar"
                 cat >> "${MASTERSALT_PILLAR}/mastersalt.sls" << EOF
-makina-states.controllers.mastersalt_master.settings.interface: 0.0.0.0
+makina-states.controllers.mastersalt_master.settings.interface: ${MASTERSALT_MASTER_IP}
 makina-states.controllers.mastersalt_master.settings.ret_port: ${MASTERSALT_MASTER_PORT}
 makina-states.controllers.mastersalt_master.settings.publish_port: ${MASTERSALT_MASTER_PUBLISH_PORT}
 EOF
@@ -2210,20 +2209,20 @@ filter_host_pids() {
 }
 
 mastersalt_master_processes() {
-    filter_host_pids $(${PS} aux|grep salt-master|grep -v deploy.sh|grep -v boot-salt|grep mastersalt|grep -v grep|awk '{print $2}')|wc -w|sed -e "s/ //g"
+    filter_host_pids $(${PS} aux|grep salt-master|grep -v deploy.sh|grep -v boot-salt|grep -v bootstrap.sh|grep mastersalt|grep -v grep|awk '{print $2}')|wc -w|sed -e "s/ //g"
 }
 
 mastersalt_minion_processes() {
-    filter_host_pids $(${PS} aux|grep salt-minion|grep -v deploy.sh|grep -v boot-salt|grep mastersalt|grep -v grep|awk '{print $2}')|wc -w|sed -e "s/ //g"
+    filter_host_pids $(${PS} aux|grep salt-minion|grep -v deploy.sh|grep -v boot-salt|grep -v bootstrap.sh|grep mastersalt|grep -v grep|awk '{print $2}')|wc -w|sed -e "s/ //g"
 }
 
 master_processes() {
-    filter_host_pids $(${PS} aux|grep salt-master|grep -v deploy.sh|grep -v boot-salt|grep -v mastersalt|grep -v grep|awk '{print $2}')|wc -w|sed -e "s/ //g"
+    filter_host_pids $(${PS} aux|grep salt-master|grep -v deploy.sh|grep -v boot-salt|grep -v bootstrap.sh|grep -v mastersalt|grep -v grep|awk '{print $2}')|wc -w|sed -e "s/ //g"
 }
 
 
 minion_processes() {
-    filter_host_pids $(${PS} aux|grep salt-minion|grep -v deploy.sh|grep -v boot-salt|grep -v mastersalt|grep -v grep|awk '{print $2}')|wc -w|sed -e "s/ //g"
+    filter_host_pids $(${PS} aux|grep salt-minion|grep -v deploy.sh|grep -v boot-salt|grep -v bootstrap.sh|grep -v mastersalt|grep -v grep|awk '{print $2}')|wc -w|sed -e "s/ //g"
 }
 
 lazy_start_salt_daemons() {
@@ -2412,25 +2411,25 @@ kill_pids(){
 
 killall_local_mastersalt_masters() {
     if [ ! -e "${ALIVE_MARKER}" ];then
-        kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(master|syndic)"|grep -v deploy.sh|grep -v boot-salt|grep mastersalt|awk '{print $2}')) 1>/dev/null 2>/dev/null
+        kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(master|syndic)"|grep -v deploy.sh|grep -v bootstrap.sh|grep -v boot-salt|grep mastersalt|awk '{print $2}')) 1>/dev/null 2>/dev/null
     fi
 }
 
 killall_local_mastersalt_minions() {
     if [ ! -e "${ALIVE_MARKER}" ];then
-        kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(minion)"|grep -v deploy.sh|grep -v boot-salt|grep mastersalt|awk '{print $2}')) 1>/dev/null 2>/dev/null
+        kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(minion)"|grep -v deploy.sh|grep -v bootstrap.sh|grep -v boot-salt|grep mastersalt|awk '{print $2}')) 1>/dev/null 2>/dev/null
     fi
 }
 
 killall_local_masters() {
     if [ ! -e "${ALIVE_MARKER}" ];then
-        kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(master|syndic)"|grep -v deploy.sh|grep -v boot-salt|grep -v mastersalt|awk '{print $2}')) 1>/dev/null 2>/dev/null
+        kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(master|syndic)"|grep -v deploy.sh|grep -v bootstrap.sh|grep -v boot-salt|grep -v mastersalt|awk '{print $2}')) 1>/dev/null 2>/dev/null
     fi
 }
 
 killall_local_minions() {
     if [ ! -e "${ALIVE_MARKER}" ];then
-        kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(minion)"|grep -v deploy.sh|grep -v boot-salt|grep -v mastersalt|awk '{print $2}')) 1>/dev/null 2>/dev/null
+        kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(minion)"|grep -v deploy.sh|grep -v bootstrap.sh|grep -v boot-salt|grep -v mastersalt|awk '{print $2}')) 1>/dev/null 2>/dev/null
     fi
 }
 
