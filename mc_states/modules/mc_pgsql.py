@@ -213,6 +213,12 @@ def settings():
                      'user': 'all',
                      'address': '::1/128',
                      'method': 'md5'},
+                    {"comment": '# makina-states lxc inter communication'},
+                    {'type': 'host',
+                     'db': 'all',
+                     'user': 'all',
+                     'address': '10.5.0.0/16',
+                     'method': 'md5'},
                 ]
             }
         )
