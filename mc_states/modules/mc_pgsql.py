@@ -171,7 +171,7 @@ def settings():
                         'unix_socket_directories': (
                             "'/var/run/postgresql'"),
                         'ssl': 'true',
-                        'listen': ['localhost'],
+                        'listen': ['*'],
                         'datestyle': 'iso, dmy',
                         'timezone': 'localtime',
                         'max_connections': '100',
