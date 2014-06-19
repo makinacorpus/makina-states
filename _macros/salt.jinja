@@ -685,9 +685,9 @@ salt-{{ data.daemon_name }}-remove-minionid:
 {{ install_salt_common_daemon(adata=data, full=full) }}
 {% set json_data = salt['mc_utils.json_dump'](data) %}
 
-salt-{{ data.name }}-{{cur_name}}-remove-minionid:
+salt-{{ data.name }}-remove-minionid:
   file.absent:
-    - name:
+    - names:
       - {{ data.conf_prefix }}/minion_id
       - {{locs.conf_dir}}/salt/minion_id
       - {{locs.conf_dir}}/mastersalt/minion_id
