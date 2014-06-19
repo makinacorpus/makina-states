@@ -156,50 +156,333 @@ def settings():
        access_xml
            dictionary to store values of access.xml configuration file
 
+           instances
+               list of icinga instances
+           default
+               dictionary which describe defaults rights
+               (applied for all hosts by defaults)
+
+
+               access
+                   readwrite
+                      folders
+                          dictionary of folders in readwrite access
+                          the structure is:
+
+                          name
+                              path_to_folder
+
+                      files
+                          dictionary of files in readwrite access
+                          the structure is:
+
+                          name
+                              path_to_file
+
+                   read
+                      folders
+                          dictionary of folders in read only access
+                          the structure is:
+
+                          name
+                              path_to_folder
+
+                      files
+                          dictionary of files in read only access
+                          the structure is:
+
+                          name
+                              path_to_file
+                   write
+                      folder
+                          dictionary of folders in write only access
+                          the structure is:
+
+                          name
+                              path_to_folder
+                      files
+                          dictionary of files in write only access
+                          the structure is:
+
+                          name
+                              path_to_file
+                   execute
+                      folder
+                          dictionary of folders with execute access
+                          the structure is:
+
+                          name
+                              path_to_folder
+                      files
+                          dictionary of files with execute access
+                          the structure is:
+
+                          name
+                              path_to_files
+           hosts
+               dictionary to store access for a specific host
+
+               hostname
+                   "hostname" must be changed by the "hostname"
+
+                   type
+                       "local" or "ssh"
+                   ssh_config
+                       dictionary to store ssh connection parameters i
+                       (used only if "type" is "ssh")
+
+                       host
+                           ssh hostname
+                       port
+                           ssh port
+                       auth
+                           type
+                               "key" or "password"
+                           user
+                               ssh login
+                           password
+                               ssh password
+                           private_key
+                               file with ssh private key
+
+                       access
+                           dictionary with the same structure that
+                           the default access dictionary
+
+                           useDefault
+                               whether the defaults access are applied or note
+                           readwrite
+                               folders
+                                   dictionary of folders in readwrite access
+                                   the structure is:
+
+                                   name
+                                       path_to_folder
+
+                               files
+                                   dictionary of files in readwrite access
+                                   the structure is:
+
+                                   name
+                                       path_to_file
+
+                           read
+                               folders
+                                   dictionary of folders in read only access
+                                   the structure is:
+
+                                   name
+                                       path_to_folder
+
+                               files
+                                   dictionary of files in read only access
+                                   the structure is:
+
+                                   name
+                                       path_to_file
+                           write
+                               folder
+                                   dictionary of folders in write only access
+                                   the structure is:
+
+                                   name
+                                       path_to_folder
+                               files
+                                   dictionary of files in write only access
+                                   the structure is:
+
+                                   name
+                                       path_to_file
+                           execute
+                               folder
+                                   dictionary of folders with execute access
+                                   the structure is:
+
+                                   name
+                                       path_to_folder
+                               files
+                                   dictionary of files with execute access
+                                   the structure is:
+
+                                   name
+                                       readwrite
+
        auth_xml
            dictionary to store values of auth.xml configuration file
+           
+           settings
+               auth_provider
+               "auth_provider" must be changed by the "auth provider" or "default"
+
+               auth_create
+                   "true" or "false"
+               aut_update
+                   "true" or "false"
+               auth_resume
+                   "true" or "false"
+               auth_groups
+                   group name concerned by this configuration
+               auth_enable
+                   "true" or "false"
+               auth_authoritative
+                   "true" or "false"
                 
        cronks_xml
            dictionary to store values of cronks.xml configuration file
+
+           cronks
+               cronksname
+                   "cronksname" must be replaced by the "cronk name"
+                   dictionary in which each key will be treated as a parameter
+
+           categories
+               categoryname
+                   "categoryname" must be replaced by the "categoryname"
+                   dictionary in which each key will be treated as a parameter
                 
        databases_xml
            dictionary to store values of databases.xml configuration file
+
+           icinga
+               dictionary to store parameters about ido2db database
+
+           icinga_web
+               dictionary to store parameters about icinga-web database
                 
        factories_xml
            dictionary to store values of factories.xml configuration file
 
+           storages
+               storagename
+               "storagename" must be replaced by the storage name
+               dictionary in which each key will be treated as a parameter
+
        icinga_xml
            dictionary to store values of icinga.xml configuration file
+
+           settings
+               dictionary in which each key will be treated as a parameter
                 
        logging_xml
-           dictionary to store values of loggin.xml configuration file
+           dictionary to store values of logging.xml configuration file
+
+           loggers
+               default
+                   name of the default logger
+               loggername
+               "loggername" must replaced by the logger name
+               dictionary in which each key will be treated as a parameter 
+
                 
        module_appkit_xml
            dictionary to store values of module_appkit.xml configuration file
-                
+
+           settings
+               ajax.timeout
+                   ajax timeout
+               debug.verbose
+                   list
+
        module_cronks_xml
            dictionary to store values of module_cronks.xml configuration file
+
+           enable
+               "true" or "false"
+
+           settings
+                dictionary in which each key will be treated as a parameter
                 
        module_reporting_xml
            dictionary to store values of module_reporting.xml configuration file
+
+           enable
+               "true" or "false"
+
+               settings
+                  jasperconfig.default
+                      jasper_url
+                          jasper url
+                      jasper_user
+                          jasper user
+                      jasper_pass
+                          jasper pass
+                      tree_root
+                          tree root
+
                 
        module_web_xml
            dictionary to store values of module_web.xml configuration file
+
+           enable
+               "true" or "false"
                 
        settings_xml
            dictionary to store values of settings.xml configuration file
+
+           settings
+             dictionary in which each key will be treated as a parameter
                 
        sla_xml
            dictionary to store values of sla.xml configuration file
+
+           settings
+               dictionary in which each key will be treated as a parameter
                 
        translation_xml
            dictionary to store values of translation.xml configuration file
+
+           available_locales
+               default_locale
+                   default locale
+               default_timezone
+                   default timezone
+               available_locales
+                   lang
+                       "lang" must be replaced by the lang
+                       dictionary in which each key will be treated as a parameter
+           translators
+               default_domain
+                   default domain
+               translators
+                   translatorname
+                   "translatorname" must be replaced by the translator name
+
+                   dictionary in which each key will be treated as a parameter
+
                 
        userpreferences_xml
            dictionary to store values of userpreferences.xml configuration file
+
+           org_icinga_grid_pagerMaxItems
+               number
+           org_icinga_grid_refreshTime
+               number
+           org_icinga_grid_outputLength
+               number
+           org_icinga_tabslider_changeTime
+               number
+           org_icinga_cronk_default
+               text
+           org_icinga_bugTrackerEnabled
+               "true" or "false"
+           org_icinga_errorNotificationsEnabled
+               "true" or "false"
+           org_icinga_autoRefresh
+               "true" or "false"
+           org_icinga_status_refreshTime
+               number
+           org_icinga_cronk_liststyle
+               "list"
                 
        views_xml
            dictionary to store values of views.xml configuration file
+
+           dql
+               target
+               "target" must be replaced with the target
+
+               content
+                   plain text for the dql tag
                 
                 
     '''
