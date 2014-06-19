@@ -35,6 +35,8 @@ Subregistries
    mc_etherpad.rst
    mc_fail2ban.rst
    mc_haproxy.rst
+   mc_icinga.rst
+   mc_icinga_web.rst
    mc_java.rst
    mc_autoupgrade.rst
    mc_kernel.rst

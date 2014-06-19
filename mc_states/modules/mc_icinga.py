@@ -23,6 +23,161 @@ def settings():
     location
         installation directory
 
+    package
+        list of packages to install icinga
+    has_pgsql
+        install and configure a postgresql service in order to be used with ido2db module
+    has_mysql
+        install and configure a mysql service in order to be used with ido2db module
+    user
+        icinga user
+    group
+        icinga group
+    pidfile
+        file to store icinga pid
+    configuration directory
+        directory where the configuration is located
+    niceness
+        priority of icinga process
+    icinga_cfg
+        dictionary to store values of icinga.cfg configuration file
+    modules
+        cgi
+            enabled
+                enable cgi module. If true, nginx webserver 
+                and uwsgi will be installed and configured
+            package
+                list of packages to install for cgi module
+            absolute_styles_dir
+                absolute path of directory where css files will be moved
+                (by default icinga-cgi package stores them in /etc/icinga 
+                which seems to be a bad location for theses files)
+            root_account
+                login
+                    login for root login on cgi interface
+                password
+                    password for root login on cgi interface
+            nginx
+                dictionary to store values of nginx configuration
+            
+                virtualhost
+                    name of virtualhost created to serve webpages 
+                    (dns will not be configured)
+                doc_root
+                    root location of virtualhost
+                vh_content_source
+                    template file for nginx content file
+                vh_top_source
+                    template file for nginx top file
+                icinga_cgi
+                    dictionary to store values used in templates given in 
+                    vh_content_source and vh_top_source
+
+                    web_directory
+                        location under which webpages will be available
+                    realm
+                        message displayed for digest authentication
+                    htpasswd_file
+                        location of file storing users password
+                    htdoc_dir
+                        root location for web_directory
+                    images_dir
+                        directory where images used by cgi are stored
+                    styles_dir
+                        directory where css used by cgi are stored
+                    cgi_dir
+                        directory where cgi files are located
+                    uwsgi_pass
+                        socket used to contact uwsgi server
+            uwsgi
+                name
+                    name of uwsgi configuration file
+                config_file
+                    template file for uwsgi configuration  file
+                enabled
+                    true if uwsgi configuration must be enabled
+                config_data
+                    dictionary to store value in template given in config_file
+
+                    master
+                        .
+                    plugins
+                        plugin used in uwsgi. with icinga we have to use the "cgi" plugin
+                    async
+                        number of threads used by uwsgi
+                    ugreen
+                        .
+                    socket
+                        socket where uwsgi listen on. This value should be equal to one in 
+                        uwsgi_pass
+                    uid
+                        uwsgi user
+                    gid
+                        uwsgi group
+                    cgi
+                        location where cgi files are located. This value should be equal 
+                        to one in cgi_dir
+                    cgi_allowed_ext
+                        extension used by file which can be executed
+
+            cgi_cfg
+                dictionary to store values of cgi.cfg configuration file
+
+
+        ido2db
+            enabled
+                enable ido2db module
+            package
+                list of packages to install for ido2db module
+            user
+                ido2db user
+            group
+                ido2db group
+            pidfile
+                file to store ido2db pid
+            icinga_socket
+                dictionary to store connection parameters between icinga and ido2db module
+                
+                socket_type
+                    "tcp" or "unix" socket
+                name
+                    host/port or pipe used for connection
+                socket_perm
+                    used only in unix socket for pipe chmod
+                tcp_port
+                    used only in tcp socket
+                use_ssl
+                    used only in tcp socket
+           database:
+               dictionary to store database connection parameters
+               
+               type
+                   type of sgbd used "pgsql" or "mysql"
+               host
+                   host used for connection
+               port
+                   port used for connection
+               user
+                   user used for connection
+               password
+                   password used for connection
+               name
+                   database name
+               prefix
+                   prefix used in table's names
+
+           ido2db_cfg
+               dictionary to store values of ido2db.cfg configuration file
+           idomod_cfg
+               dictionary to store values of idomod.cfg configuration file
+
+
+        nagios-plugins
+            enabled
+                install nagios-plugins package which provides some standards check binaries
+                for icinga
+            package
+                list of packages to install nagios-plugins
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():

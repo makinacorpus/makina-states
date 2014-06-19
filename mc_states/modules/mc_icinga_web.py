@@ -26,6 +26,182 @@ def settings():
     location
         installation directory
 
+    package
+        list of packages to install icinga-web
+    configuration directory
+        directory where the configuration is located
+    has_pgsql
+        install and configure a postgresql service in order to store icinga-web data
+        (no ido2db data)
+    has_mysql
+        install and configure a mysql service in order to store icinga-web data
+        (no ido2db data)
+    root_account
+        login
+            login for root login on web interface
+        hashed_password
+            password for root login on web interface
+        salt
+            salt used to hash the password
+    databases
+        dictionary to store databases connections parameters
+
+        ido2db
+            dictionary to store ido2db database connection parameters
+
+            type
+               type of sgbd used "pgsql" or "mysql"
+            host
+                host used for connection
+            port
+                port used for connection
+            user
+                user used for connection
+            password
+                password used for connection
+            name
+                database name
+            prefix
+                prefix used in table's names
+
+        web
+            dictionary to store icinga-web database connection parameters
+
+            type
+               type of sgbd used "pgsql" or "mysql"
+            host
+                host used for connection
+            port
+                port used for connection
+            user
+                user used for connection
+            password
+                password used for connection
+            name
+                database name
+        
+        nginx
+            dictionary to store values of nginx configuration
+
+            virtualhost
+                name of virtualhost created to serve webpages
+            doc_root
+                root location of virtualhost
+            vh_content_source
+                template file for nginx content file
+            vh_top_source
+                template file for nginx top file
+
+            icinga_web
+                dictionary to store values used in templates given in
+                vh_content_source and vh_top_source
+
+                web_directory
+                    location under which webpages of icinga-web will be available
+                images_dir
+                    directory where images used by icinga-web are stored
+                styles_dir
+                    directory where css used by icinga-web are stored
+                bpaddon_dir
+                    directory where bpaddon scripts are located
+                ext3_dir
+                    directory where ext3 scripts are located
+                fastcgi_pass
+                    socket used to contact fastcgi server in order to interpret php files
+
+            icinga_cgi
+                dictionary to store values used in templates given in
+                vh_content_source and vh_top_source
+
+                enabled
+                    enable a web directory to serve cgi files. If True, icinga-cgi 
+                    will no be installed and configured automatically.
+
+                web_directory
+                    location under which webpages of icinga-cgi will be available
+                realm
+                    message displayed for digest authentication
+                htpasswd_file
+                    location of file storing users password
+                htdoc_dir
+                    root location for web_directory
+                images_dir
+                    directory where images used by cgi are stored
+                styles_dir
+                    directory where css used by cgi are stored
+                cgi_dir
+                    directory where cgi files are located
+                uwsgi_pass
+                    socket used to contact uwsgi server
+
+        phpfpm
+            dictionary to store values of phpfpm configuration
+            
+            open_basedir
+                paths to add to open_basedir
+            extensions_package
+                additional packages to install (such as php5-pgsql or php5-mysql for
+                php database connection)
+            doc_root
+                root location for php-fpm
+            session_auto_start
+                must be 0 to run icinga-web
+
+       exclude_customvars_xml
+           dictionary to store values of exclude_customvars.xml configuration file
+        
+           settings
+               list of settings added in exclude_customvars.xml file
+               
+       access_xml
+           dictionary to store values of access.xml configuration file
+
+       auth_xml
+           dictionary to store values of auth.xml configuration file
+                
+       cronks_xml
+           dictionary to store values of cronks.xml configuration file
+                
+       databases_xml
+           dictionary to store values of databases.xml configuration file
+                
+       factories_xml
+           dictionary to store values of factories.xml configuration file
+
+       icinga_xml
+           dictionary to store values of icinga.xml configuration file
+                
+       logging_xml
+           dictionary to store values of loggin.xml configuration file
+                
+       module_appkit_xml
+           dictionary to store values of module_appkit.xml configuration file
+                
+       module_cronks_xml
+           dictionary to store values of module_cronks.xml configuration file
+                
+       module_reporting_xml
+           dictionary to store values of module_reporting.xml configuration file
+                
+       module_web_xml
+           dictionary to store values of module_web.xml configuration file
+                
+       settings_xml
+           dictionary to store values of settings.xml configuration file
+                
+       sla_xml
+           dictionary to store values of sla.xml configuration file
+                
+       translation_xml
+           dictionary to store values of translation.xml configuration file
+                
+       userpreferences_xml
+           dictionary to store values of userpreferences.xml configuration file
+                
+       views_xml
+           dictionary to store values of views.xml configuration file
+                
+                
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
