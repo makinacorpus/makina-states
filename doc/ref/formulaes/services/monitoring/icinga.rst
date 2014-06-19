@@ -1,7 +1,7 @@
 Icinga configuration
 ====================
 
-See :ref:`mc_module_icinga` for configuration options.
+See :ref:`module_mc_icinga` for configuration options.
 
 The icinga module can provide:
 

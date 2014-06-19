@@ -27,6 +27,10 @@ def settings():
     location
         installation directory
 
+    package
+        list of packages to install uwsgi
+    configuration directory
+        directory where configuration files are located
     run_at_startup
         "yes" or "no"
     verbose

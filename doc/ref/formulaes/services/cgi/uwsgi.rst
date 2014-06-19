@@ -1,7 +1,7 @@
 uwsgi configuration
 ===================
 
-See :ref:`mc_module_uwsgi` for configuration options.
+See :ref:`module_mc_uwsgi` for configuration options.
 
 
 Please note that we offer a special macro to generate configurations.

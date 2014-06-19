@@ -24,7 +24,7 @@ def settings():
         installation directory
 
     package
-        list of packages to install icinga
+        list packages to install icinga
     has_pgsql
         install and configure a postgresql service in order to be used with ido2db module
     has_mysql
@@ -35,8 +35,8 @@ def settings():
         icinga group
     pidfile
         file to store icinga pid
-    configuration directory
-        directory where the configuration is located
+    configuration_directory
+        directory where configuration files are located
     niceness
         priority of icinga process
     icinga_cfg
@@ -47,7 +47,7 @@ def settings():
                 enable cgi module. If true, nginx webserver 
                 and uwsgi will be installed and configured
             package
-                list of packages to install for cgi module
+                list of packages to install cgi module
             absolute_styles_dir
                 absolute path of directory where css files will be moved
                 (by default icinga-cgi package stores them in /etc/icinga 
@@ -110,7 +110,7 @@ def settings():
                     socket where uwsgi listen on. This value should be equal to one in 
                     uwsgi_pass
                 uid
-                        uwsgi user
+                    uwsgi user
                 gid
                     uwsgi group
                 cgi
@@ -127,7 +127,7 @@ def settings():
             enabled
                 enable ido2db module
             package
-                list of packages to install for ido2db module
+                list of packages to install ido2db module
             user
                 ido2db user
             group
@@ -136,7 +136,7 @@ def settings():
                 file to store ido2db pid
             icinga_socket
                 dictionary to store connection parameters between icinga and ido2db module
-                
+
                 socket_type
                     "tcp" or "unix" socket
                 name
@@ -147,6 +147,7 @@ def settings():
                     used only in tcp socket
                 use_ssl
                     used only in tcp socket
+
            database:
                dictionary to store database connection parameters
                

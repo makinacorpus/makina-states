@@ -28,8 +28,8 @@ def settings():
 
     package
         list of packages to install icinga-web
-    configuration directory
-        directory where the configuration is located
+    configuration_directory
+        directory where configuration files are located
     has_pgsql
         install and configure a postgresql service in order to store icinga-web data
         (no ido2db data)
@@ -370,8 +370,8 @@ def settings():
                default
                    name of the default logger
                loggername
-               "loggername" must replaced by the logger name
-               dictionary in which each key will be treated as a parameter 
+                   "loggername" must replaced by the logger name
+                   dictionary in which each key will be treated as a parameter 
 
                 
        module_appkit_xml
