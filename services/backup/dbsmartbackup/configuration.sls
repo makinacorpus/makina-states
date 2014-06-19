@@ -23,12 +23,23 @@ run_dbsmartbackups:
     - context:
       settings: |
                 {{settings}}
-  cron.present:
+  cron.absent: {# retro compat #}
     - identifier: db_smart_backup cron
     - name: {{locs.bin_dir}}/run_dbsmartbackups.sh
     - user: root
     - hour: {{data.cron_hour}}
     - minute: {{data.cron_minute}}
+
+run_dbsmartbackups-cron:
+  file.managed:
+    - name: /etc/cron.d/run_dbsmartbackups
+    - source: ''
+    - mode: 750
+    - user: root
+    - group: root
+    - template: jinja
+    - contents: |
+                {{data.cron_minute}} {{data.cron_hour}} * * * root {{locs.bin_dir}}/run_dbsmartbackups.sh
 
 dbsmartbackup_pg_conf:
   file.managed:

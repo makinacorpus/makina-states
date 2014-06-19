@@ -143,11 +143,11 @@ def settings():
         devhost_ip = None
         forced_ifs = {}
         devhost = __salt__['mc_nodetypes.registry']()['is']['devhost']
-        real_ifaces = [(a, ip) 
-                       for a, ip in ifaces 
-                       if 'br' not in a 
-                          and 'docker' not in a 
-                          and 'tun' not in a 
+        real_ifaces = [(a, ip)
+                       for a, ip in ifaces
+                       if 'br' not in a
+                          and 'docker' not in a
+                          and 'tun' not in a
                           and not a.startswith('lo')]
         noeth = False
         if not 'eth0'in [a for a, ip in ifaces]:
@@ -182,16 +182,19 @@ def settings():
         data['domain'] = saltmods['mc_utils.get'](
             grainsPref + 'domain', default_domain)
         data['fqdn'] = saltmods['mc_utils.get']('nickname', grains['id'])
+        localhosts = []
         if data['domain']:
-            data['makinahosts'].append({
-                'ip': '{main_ip}'.format(**data),
-                'hosts': '{hostname} {hostname}.{domain}'.format(**data)
-            })
+            localhosts.extend([
+               '{main_ip} {hostname}.{domain} {hostname}'.format(**data),
+               '127.0.1.1 {hostname}.{domain} {hostname}'.format(**data),
+               '127.0.0.1 {hostname}.{domain} {hostname}'.format(**data),
+            ])
         data['hosts_list'] = hosts_list = []
         for k, edata in pillar.items():
             if k.endswith('makina-hosts'):
                 makinahosts.extend(edata)
-        # -loop to create a dynamic list of hosts based on pillar content
+        # loop to create a dynamic list of hosts based on pillar content
+        hosts_list.extend(localhosts)
         for host in makinahosts:
             ip = host['ip']
             for dnsname in host['hosts'].split():
@@ -213,7 +216,7 @@ def settings():
         if noeth:
             for i in range(10):
                 ethn = 'eth{0}'.format(i)
-                for iface in [a for a in netdata['interfaces'] 
+                for iface in [a for a in netdata['interfaces']
                               if a.startswith(ethn)]:
                     # handle eth0:0
                     suf = iface.replace(ethn, '')
@@ -235,7 +238,7 @@ def settings():
                             ifdata[k] = newval
                     netdata['interfaces'][newif + suf] = ifdata
                 for ifacedata in netdata['ointerfaces']:
-                    for iface in [a 
+                    for iface in [a
                                   for a in ifacedata
                                   if a.startswith(ethn)]:
                         # handle eth0:0
