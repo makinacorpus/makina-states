@@ -182,25 +182,19 @@ def settings():
         data['domain'] = saltmods['mc_utils.get'](
             grainsPref + 'domain', default_domain)
         data['fqdn'] = saltmods['mc_utils.get']('nickname', grains['id'])
+        localhosts = []
         if data['domain']:
-            data['makinahosts'].extend([
-                {
-                    'ip': '{main_ip}'.format(**data),
-                    'hosts': '{hostname} {hostname}.{domain}'.format(**data)
-                },
-                {
-                    'ip': '127.0.1.1',
-                    'hosts': '{hostname} {hostname}.{domain}'.format(**data)
-                },
-                {
-                    'ip': '127.0.0.1',
-                    'hosts': '{hostname} {hostname}.{domain}'.format(**data)
-                }])
+            localhosts.extend([
+               '{main_ip} {hostname}.{domain} {hostname}'.format(**data),
+               '127.0.1.1 {hostname}.{domain} {hostname}'.format(**data),
+               '127.0.0.1 {hostname}.{domain} {hostname}'.format(**data),
+            ])
         data['hosts_list'] = hosts_list = []
         for k, edata in pillar.items():
             if k.endswith('makina-hosts'):
                 makinahosts.extend(edata)
         # loop to create a dynamic list of hosts based on pillar content
+        hosts_list.extend(localhosts)
         for host in makinahosts:
             ip = host['ip']
             for dnsname in host['hosts'].split():
