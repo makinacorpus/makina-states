@@ -7,3 +7,4 @@ Monitoring services
    supervisor.rst
    snmpd.rst
    client.rst
+   icinga.rst

@@ -26,6 +26,14 @@ def settings():
     location
         installation directory
 
+    run_at_startup
+        "yes" or "no"
+    verbose
+        "yes" or "no"
+    print_confnames_in_initd_script_output
+        "yes" or "no"
+    inherited_config
+        inherited config to fill missing uwsgi parameters
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():

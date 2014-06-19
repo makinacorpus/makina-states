@@ -70,6 +70,7 @@ Subregistries
    mc_tomcat.rst
    mc_updatedb.rst
    mc_usergroup.rst
+   mc_uwsgi.rst
 
 
 Other modules
