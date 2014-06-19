@@ -660,6 +660,16 @@ salt-{{ data.daemon_name }}:
     - require:
       - mc_proxy: dummy-post-{{ data.name }}-service-restart
       - mc_proxy: dummy-post-{{ data.service_name }}-service-restart
+
+salt-{{ data.daemon_name }}-remove-minionid:
+  file.absent:
+    - names:
+      - {{ data.conf_prefix }}/minion_id
+      - {{locs.conf_dir}}/salt/minion_id
+      - {{locs.conf_dir}}/mastersalt/minion_id
+    - requir_in:
+      - mc_proxy: dummy-post-{{ data.name }}-service-restart
+      - mc_proxy: dummy-post-{{ data.service_name }}-service-restart
 {% endmacro %}
 
 {#-
@@ -674,6 +684,15 @@ salt-{{ data.daemon_name }}:
 {%- endif %}
 {{ install_salt_common_daemon(adata=data, full=full) }}
 {% set json_data = salt['mc_utils.json_dump'](data) %}
+
+salt-{{ data.name }}-remove-minionid:
+  file.absent:
+    - names:
+      - {{ data.conf_prefix }}/minion_id
+      - {{locs.conf_dir}}/salt/minion_id
+      - {{locs.conf_dir}}/mastersalt/minion_id
+    - require_in:
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
 
 {% for cur_name in  [
   'roster',
