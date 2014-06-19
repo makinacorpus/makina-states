@@ -13,6 +13,28 @@ include:
   - makina-states.services.cgi.uwsgi.hooks
   - makina-states.services.cgi.uwsgi.services
 
+# startup configuration
+{% if grains['os'] in ['Ubuntu'] %}
+
+uwsgi-init-upstart-conf:
+  file.managed:
+    - name: {{ locs['conf_dir'] }}/init/uwsgi.conf
+    - source: salt://makina-states/files/etc/init/uwsgi.conf
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 644
+    - watch:
+      - mc_proxy: uwsgi-pre-conf
+    - watch_in:
+      - mc_proxy: uwsgi-post-conf
+    - defaults:
+      data: |
+            {{sdata}}
+
+{% endif %}
+
 uwsgi-init-default-conf:
   file.managed:
     - name: {{ locs['conf_dir'] }}/default/uwsgi
