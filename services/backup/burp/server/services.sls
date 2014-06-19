@@ -3,7 +3,7 @@ include:
 {% if salt['mc_controllers.mastersalt_mode']() %}
 {% set data = salt['mc_burp.settings']() %}
 burp-svc:
-  service.enabled:
+  service.running:
     - name:  burp-server
     - reload: True
     - watch:
