@@ -1529,18 +1529,22 @@ def backup_server_settings_for(id_, ttl=60):
         gconf = get_configuration(id_)
         backup_excluded = ['default', 'default-vm']
         backup_excluded.extend(id_)
-        backup_excluded.extend(db['non_managed_hosts'])
+        manual_hosts = query('backup_manual_hosts')
+        backup_excluded.extend([a for a in db['non_managed_hosts']
+                                if a not  in manual_hosts])
         bms = [a for a in db['bms']
                if a not in backup_excluded
                and get_configuration(a)['manage_backups']]
         vms = [a for a in db['vms']
                if a not in backup_excluded
                and get_configuration(a)['manage_backups']]
-        manual_hosts = [a for a in query('backup_configuration_map')
-                        if a not in backup_excluded
-                        and a in ndb['ips']
-                        and a not in bms
-                        and a not in vms]
+        cmap = query('backup_configuration_map')
+        manual_hosts = __salt__['mc_utils.uniquify']([
+            a for a in ([a for a in cmap] + manual_hosts)
+            if a not in backup_excluded
+            and __salt__['mc_pillar.ip_for'](a)  # ip is resolvable via our pillar
+            and a not in bms
+            and a not in vms])
         # filter all baremetals and vms if they are tied to this backup
         # server
         server_conf = data.setdefault('server_conf',
