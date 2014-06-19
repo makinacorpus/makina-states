@@ -12,8 +12,10 @@ burp settings
 __docformat__ = 'restructuredtext en'
 # Import python libs
 import logging
+import random
 import os
 import mc_states.utils
+from salt.utils.odict import OrderedDict
 from salt.utils.pycrypto import secure_password
 
 
@@ -135,9 +137,11 @@ def settings():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
         salt = __salt__
-        local_conf = salt['mc_macros.get_local_registry']('burp')
+        local_conf = salt['mc_macros.get_local_registry'](
+            'burp', registry_format='pack')
         ca_pass = local_conf.get('ca_pass', secure_password(32))
         server_pass = local_conf.get('server_pass', secure_password(32))
+        timers = local_conf.setdefault('timers', OrderedDict())
         local_conf['ca_pass'] = ca_pass
         local_conf['server_pass'] = server_pass
         grains = __grains__
@@ -348,16 +352,31 @@ def settings():
                 # spray around the periodicity to spray the backup load
                 # all over the hour.
                 if k == 'cron_periodicity':
-                    for ix, item in enumerate(hour[:]):
-                        item += 3
-                        if item >= 60:
-                            item = item - 60
-                        hour[ix] = item
-                    val = '{0} * * * *'.format(','.join(
-                        ["{0}".format(t) for t in hour]))
+                    val = timers.get(cname, None)
+                    # val = None
+                    if not val:
+                        per = hour[:]
+                        for ix, item in enumerate(per[:]):
+                            item = item + (
+                                random.randint(0, 3) +
+                                random.randint(0, 3) +
+                                random.randint(0, 3) +
+                                random.randint(0, 3) +
+                                random.randint(0, 3) +
+                                random.randint(0, 3))  # max 18 < 20m in
+                            if item >= 60:
+                                item = item - 60
+                            per[ix] = item
+                        val = '{0} * * * *'.format(','.join(
+                            ["{0}".format(t) for t in per]))
+                    timers[cname] = val
                 cl.setdefault(k, val)
+        to_delete = [a for a in local_conf
+                     if a.count('makina-states.local.burp.') >= 1]
+        for a in to_delete:
+            local_conf.pop(a, None)
         salt['mc_macros.update_registry_params'](
-            'burp', local_conf)
+            'burp', local_conf, registry_format='pack')
         return data
     return _settings()
 
