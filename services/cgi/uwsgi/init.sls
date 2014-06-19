@@ -4,5 +4,5 @@ include:
   - makina-states.services.cgi.uwsgi.configuration
   - makina-states.services.cgi.uwsgi.services
 {% import "makina-states/services/cgi/uwsgi/macros.sls"  as macros %}
-{% set app = macros.app %}
+{% set config = macros.config %}
 

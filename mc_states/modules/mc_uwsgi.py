@@ -9,6 +9,7 @@ mc_uwsgi / uwsgi functions
 __docformat__ = 'restructuredtext en'
 # Import python libs
 import logging
+import copy
 import mc_states.utils
 
 import hmac
@@ -61,6 +62,21 @@ def settings():
             registry_format='pack')
         return data
     return _settings()
+
+def config_settings(config_name, config_file, enabled, **kwargs):
+    '''Settings for the uwsgi macro'''
+    uwsgiSettings = copy.deepcopy(__salt__['mc_uwsgi.settings']())
+    extra = kwargs.pop('extra', {})
+    kwargs.update(extra)
+    kwargs.setdefault('config_name', config_name)
+    kwargs.setdefault('config_file', config_file)
+    kwargs.setdefault('enabled', enabled)
+    uwsgiSettings = __salt__['mc_utils.dictupdate'](uwsgiSettings, kwargs)
+    # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
+    uwsgiSettings['data'] = copy.deepcopy(uwsgiSettings)
+    uwsgiSettings['data']['extra'] = copy.deepcopy(uwsgiSettings)
+    uwsgiSettings['extra'] = copy.deepcopy(uwsgiSettings)
+    return uwsgiSettings
 
 def dump():
     return mc_states.utils.dump(__salt__,__name)

@@ -90,35 +90,34 @@ def settings():
                     uwsgi_pass
                         socket used to contact uwsgi server
             uwsgi
-                name
+                dictionary to store values of uwsgi configuration
+
+                config_name
                     name of uwsgi configuration file
                 config_file
                     template file for uwsgi configuration  file
                 enabled
                     true if uwsgi configuration must be enabled
-                config_data
-                    dictionary to store value in template given in config_file
-
-                    master
-                        .
-                    plugins
-                        plugin used in uwsgi. with icinga we have to use the "cgi" plugin
-                    async
-                        number of threads used by uwsgi
-                    ugreen
-                        .
-                    socket
-                        socket where uwsgi listen on. This value should be equal to one in 
-                        uwsgi_pass
-                    uid
+                master
+                    .
+                plugins
+                    plugin used in uwsgi. with icinga we have to use the "cgi" plugin
+                async
+                    number of threads used by uwsgi
+                ugreen
+                    .
+                socket
+                    socket where uwsgi listen on. This value should be equal to one in 
+                    uwsgi_pass
+                uid
                         uwsgi user
-                    gid
-                        uwsgi group
-                    cgi
-                        location where cgi files are located. This value should be equal 
-                        to one in cgi_dir
-                    cgi_allowed_ext
-                        extension used by file which can be executed
+                gid
+                    uwsgi group
+                cgi
+                    location where cgi files are located. This value should be equal 
+                    to one in cgi_dir
+                cgi_allowed_ext
+                    extension used by file which can be executed
 
             cgi_cfg
                 dictionary to store values of cgi.cfg configuration file
@@ -403,20 +402,18 @@ def settings():
                             },
                         },
                         'uwsgi': {
-                            'name': "icinga",
+                            'config_name': "icinga.ini",
                             'config_file': "salt://makina-states/files/etc/uwsgi/apps-available/icinga-cgi.ini",
                             'enabled': True,
-                            'config_data': {
-                                'master': "true",
-                                'plugins': "cgi",
-                                'async': 20,
-                                'ugreen': True,
-                                'socket': "127.0.0.1:3030",
-                                'uid': "www-data",
-                                'gid': "www-data",
-                                'cgi': "/cgi-bin/icinga/=/usr/lib/cgi-bin/icinga/",
-                                'cgi_allowed_ext': ".cgi",
-                            },
+                            'master': "true",
+                            'plugins': "cgi",
+                            'async': 20,
+                            'ugreen': True,
+                            'socket': "127.0.0.1:3030",
+                            'uid': "www-data",
+                            'gid': "www-data",
+                            'cgi': "/cgi-bin/icinga/=/usr/lib/cgi-bin/icinga/",
+                            'cgi_allowed_ext': ".cgi",
                         },
                         'cgi_cfg': {
                             'main_config_file': "/etc/icinga/icinga.cfg",

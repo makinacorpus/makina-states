@@ -15,9 +15,6 @@ include:
 {{ nginx.virtualhost(domain=data.modules.cgi.nginx.virtualhost, **data.modules.cgi.nginx)}}
 
 # configure uwsgi
-{{ uwsgi.app(name=data.modules.cgi.uwsgi.name,
-             config_file=data.modules.cgi.uwsgi.config_file,
-             config_data=data.modules.cgi.uwsgi.config_data,
-             enabled=data.modules.cgi.uwsgi.enabled) }}
+{{ uwsgi.config(**data.modules.cgi.uwsgi) }}
 
 {% endif %}

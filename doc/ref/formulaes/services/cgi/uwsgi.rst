@@ -10,13 +10,11 @@ Configurations are enabled and deactivated a la debian, with the /etc/uwsgi/apps
 ::
 
 {% import "makina-states/services/cgi/uwsgi/init.sls" as uwsgi with context %}
-{{ uwsgi.app(name,config_file,config_data,enabled) }}
-
+{{ uwsgi.config(config_name, config_file, enabled, **kwargs) }}
 
 with
 
-    :name: name of configuration file
+    :config_name: name of configuration file
     :config_file: template of configuration file
-    :config_data: dictionary to fill template
-    :enabled: symlink configuration file in /etc/uwsgi/apps-enabled
+    :enabled: if true, symlink configuration file in /etc/uwsgi/apps-enabled
 
