@@ -1461,10 +1461,12 @@ def backup_configuration_for(id_, ttl=60):
         data = OrderedDict()
         if id_ not in db['non_managed_hosts'] and not default_conf_id:
             raise ValueError(
-                'No backup info for {0}'.format(id))
+                'No backup info for {0}'.format(id_))
         if id_ in db['non_managed_hosts'] and not conf_id:
-            raise ValueError(
-                'No backup info for {0}'.format(id))
+            conf_id = __salt__['mc_pillar.backup_configuration_type_for'](
+                'default')
+            #raise ValueError(
+            #    'No backup info for {0}'.format(id_))
         # load default conf
         default_conf = confs.get(default_conf_id, OrderedDict())
         conf = confs.get(conf_id, OrderedDict())
@@ -1481,14 +1483,16 @@ def backup_configuration_for(id_, ttl=60):
                 ddata.extend([a for a in conf[k] if a not in ddata])
             data = __salt__['mc_utils.dictupdate'](data, conf)
         for cfg in [default_conf, conf]:
-            for k, val in [a
-                           for a in cfg.items()
-                           if a[0].startswith('remove_')]:
-                removing = k.split('remove_', 1)[1]
-                ddata = data.setdefault(removing, [])
-                for item in [obj for obj in ddata if obj in val]:
-                    if item in ddata:
-                        ddata.pop(ddata.index(item))
+            for revove_key in ['remove', 'delete', 'del']:
+                for k, val in [a
+                               for a in cfg.items()
+                               if a[0].startswith('remove_')]:
+                    removing = k.split('{0}_'.format(remove_key),
+                                       1)[1]
+                    ddata = data.setdefault(removing, [])
+                    for item in [obj for obj in ddata if obj in val]:
+                        if item in ddata:
+                            ddata.pop(ddata.index(item))
         return data
     cache_key = 'mc_pillar.backup_configuration_for{0}'.format(id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
