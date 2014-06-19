@@ -52,7 +52,7 @@ icinga-init-upstart-conf:
       data: |
             {{sdata}}
 
-{% else %}
+{% endif %}
 
 icinga-init-default-conf:
   file.managed:
@@ -88,7 +88,6 @@ icinga-init-sysvinit-conf:
       data: |
             {{sdata}}
 
-{% endif %}
 
 # modules configuration
 {% if data.modules.cgi.enabled %}
@@ -179,7 +178,7 @@ icinga-ido2db-init-upstart-conf:
       data: |
             {{sdata}}
 
-{% else %}
+{% endif %}
 
 icinga-ido2db-init-sysvinit-conf:
   file.managed:
@@ -198,7 +197,6 @@ icinga-ido2db-init-sysvinit-conf:
       data: |
             {{sdata}}
 
-{% endif %}
 
 {% endif %}
 

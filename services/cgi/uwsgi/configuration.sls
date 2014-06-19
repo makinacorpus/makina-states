@@ -13,7 +13,7 @@ include:
   - makina-states.services.cgi.uwsgi.hooks
   - makina-states.services.cgi.uwsgi.services
 
-icinga-init-default-conf:
+uwsgi-init-default-conf:
   file.managed:
     - name: {{ locs['conf_dir'] }}/default/uwsgi
     - source: salt://makina-states/files/etc/default/uwsgi

@@ -3,10 +3,10 @@
 # /etc/default/icinga
 
 # location of the icinga configuration file
-ICINGACFG="{{data.icinga_conf}}/icinga.cfg"
+ICINGACFG="{{data.configuration_directory}}/icinga.cfg"
 
 # location of the CGI configuration file
-#CGICFG="{{data.icinga_conf}}/cgi.cfg"
+CGICFG="{{data.configuration_directory}}/cgi.cfg"
 
 # nicelevel to run icinga daemon with
 NICENESS={{data.niceness}}
