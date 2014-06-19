@@ -1534,6 +1534,7 @@ def backup_server_settings_for(id_, ttl=60):
         backup_excluded = ['default', 'default-vm']
         backup_excluded.extend(id_)
         manual_hosts = query('backup_manual_hosts')
+        non_managed_hosts = query('non_managed_hosts')
         backup_excluded.extend([a for a in db['non_managed_hosts']
                                 if a not  in manual_hosts])
         bms = [a for a in db['bms']
@@ -1561,7 +1562,7 @@ def backup_server_settings_for(id_, ttl=60):
             conf =__salt__['mc_pillar.backup_configuration_for'](host)
             # for vms, set the vm host as the gateway by default (if
             # not defined)
-            if host in vms:
+            if host in vms and host not in non_managed_hosts:
                 conf.setdefault('ssh_gateway', db['vms'][host]['target'])
                 conf.setdefault('ssh_gateway_port', '22')
             elif host in bms:
