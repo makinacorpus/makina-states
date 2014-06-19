@@ -4,6 +4,17 @@
 
 mc_icinga / icinga functions
 ============================================
+
+The first level of subdictionaries is for distinguish configuration files. There is one subdictionary per configuration file. The key used for subdictionary correspond
+to the name of the file but the "." is replaced with a "_"
+
+The subdictionary "modules" contains a subsubdictionary for each module. In each module subdictionary, there is a subdictionary per file.
+The key "enabled" in each module dictionary is for enabling or disabling the module.
+
+The "nginx" and "uwsgi" sub-dictionaries are given to macros as **kwargs parameter.
+
+The key "package" is for listing packages installed between pre-install and post-install hooks
+
 '''
 
 __docformat__ = 'restructuredtext en'

@@ -4,6 +4,56 @@
 
 mc_icinga_web / icinga_web functions
 ============================================
+
+when it is written that "each key will be treated as a parameter", if you add keys in dictionary, they will be added in the configuration file with
+
+::
+
+<ae:paremeter name="{{key}}">{{value}}</ae:parameter>
+
+
+when it is written that "foo must be replace with foo value", you can add as many sub-dictionaries as you want. All sub-dictionaries must have the same structure. It is to avoid
+a list but in templates it is treated as if there was a list of dictionaries.
+
+I have prefered
+
+::
+
+    'foo': {
+        'n1': {
+            'param1': "v1",
+        },
+        'n2': {
+            'param1': "v2",
+        }
+    },
+
+instead of
+
+::
+
+    'foo': [
+        {'name': "n1",
+         'param1': "v1",
+        },
+        {'name': "n2",
+         'param1': "v2",
+        }
+    ]
+
+
+When a real list is kept, It is precised below. Generally it is when the content is not structures but simple values.
+
+The "nginx" and "phpfpm" sub-dictionaries are given to macros as **kwargs parameter. If you add a key in, you can access in the nginx configuration template or in phpfpm configuration template.
+
+Otherwise, the first level of subdictionaries is for distinguish configuration files. There is one subdictionary per configuration file. The key used for subdictionary correspond
+to the name of the file but the "." is replaced with a "_"
+
+The template of xml configuration files use a lot of loops in order to add content easily 
+but it is not the case with the ini files where directives are limited and always the same.
+
+I have not found dtd/xsd files in order to verify grammar of xml files.
+
 '''
 
 __docformat__ = 'restructuredtext en'
@@ -36,13 +86,17 @@ def settings():
     has_mysql
         install and configure a mysql service in order to store icinga-web data
         (no ido2db data)
+
     root_account
+        dictionary to store root accoutn information. It is the account created on first installation of icinga_web
+
         login
             login for root login on web interface
         hashed_password
             password for root login on web interface
         salt
             salt used to hash the password
+
     databases
         dictionary to store databases connections parameters
 
@@ -332,12 +386,12 @@ def settings():
 
            cronks
                cronksname
-                   "cronksname" must be replaced by the "cronk name"
+                   "cronksname" must be replaced with the cronk name
                    dictionary in which each key will be treated as a parameter
 
            categories
                categoryname
-                   "categoryname" must be replaced by the "categoryname"
+                   "categoryname" must be replaced with the category name
                    dictionary in which each key will be treated as a parameter
                 
        databases_xml
@@ -354,7 +408,7 @@ def settings():
 
            storages
                storagename
-               "storagename" must be replaced by the storage name
+               "storagename" must be replaced with the storage name
                dictionary in which each key will be treated as a parameter
 
        icinga_xml
@@ -370,7 +424,7 @@ def settings():
                default
                    name of the default logger
                loggername
-                   "loggername" must replaced by the logger name
+                   "loggername" must replaced with the logger name
                    dictionary in which each key will be treated as a parameter 
 
                 
@@ -438,14 +492,14 @@ def settings():
                    default timezone
                available_locales
                    lang
-                       "lang" must be replaced by the lang
+                       "lang" must be replaced with the lang
                        dictionary in which each key will be treated as a parameter
            translators
                default_domain
                    default domain
                translators
                    translatorname
-                   "translatorname" must be replaced by the translator name
+                   "translatorname" must be replaced with the translator name
 
                    dictionary in which each key will be treated as a parameter
 
