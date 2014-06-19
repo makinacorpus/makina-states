@@ -110,6 +110,8 @@ def settings():
         cron_sync_minute = '0{0},1{0},2{0},3{0},4{0},5{0}'.format(tcron2)
 
         saltCommonData = {
+            'id': saltmods['config.option']('makina-states.minion_id',
+                                            saltmods['config.option']('id', None)),
             'mailto': 'root',
             'module_dirs': ['{salt_root}/_modules',
                             '{salt_root}/makina-states/mc_states/modules'],
@@ -213,8 +215,6 @@ def settings():
             'master': '127.0.0.1',
             'master_port': '4506',
             'retry_dns': '30',
-            'id': saltmods['config.option']('makina-states.minion_id',
-                                            saltmods['config.option']('id', None)),
             'append_domain': False,
             'grains': {},
             'output': None,
