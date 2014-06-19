@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-VER"=${BURP_VER:-"1.3.48"}"
+set -e
+set -x
+VER="${BURP_VER:-"1.3.48"}"
 cd $HOME
 if [ ! -d burp ];then
-    git clone git clone https://github.com/grke/burp.git
+    git clone https://github.com/grke/burp.git
 fi
 cd burp
 git reset --hard remotes/origin/$VER
