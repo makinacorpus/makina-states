@@ -119,7 +119,7 @@ def settings():
                         'htpasswd_file': "/etc/icinga/htpasswd.users",
                         'htdocs_dir': "/usr/share/icinga/htdocs/",
                         'images_dir': "/usr/share/icinga/htdocs/images/$1",
-                        'styles_dir': "/usr/share/icinga/stylesheets/$1",
+                        'styles_dir': "/usr/share/icinga/htdocs/stylesheets/$1",
                         'cgi_dir': "/usr/lib/cgi-bin/",
                         'uwsgi_pass': "127.0.0.1:3030",
                     },

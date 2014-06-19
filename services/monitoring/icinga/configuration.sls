@@ -120,6 +120,15 @@ icinga-cgi-root-account:
     - watch_in:
       - mc_proxy: icinga-post-conf
 
+icinga-cgi-move-stylesheets:
+  file.rename:
+    - name: {{data.modules.cgi.absolute_styles_dir}}
+    - source: {{data.configuration_directory}}/stylesheets
+    - watch:
+      - mc_proxy: icinga-pre-conf
+    - watch_in:
+      - mc_proxy: icinga-post-conf
+
 {% endif %}
 
 {% if data.modules.ido2db.enabled %}
