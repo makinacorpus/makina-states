@@ -578,7 +578,6 @@ def settings():
         ido2db_database= icinga_settings['modules']['ido2db']['database']
 
 
-        # by default, icinga_web and icinga_ido use the same sql user, so the password are the same
         icinga_web_reg = __salt__[
             'mc_macros.get_local_registry'](
                 'icinga_web', registry_format='pack')

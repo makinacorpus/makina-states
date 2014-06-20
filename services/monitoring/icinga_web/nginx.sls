@@ -35,6 +35,8 @@ icinga_web-www-dir:
     - user: root
     - group: root
     - mode: 755
+    - watch_in:
+      - mc_proxy: icinga_web-pre-install
 
   
 icinga_web-www-dir-link-docroot:
@@ -43,6 +45,8 @@ icinga_web-www-dir-link-docroot:
     - target: /usr/share/icinga-web/pub
     - watch:
       - file: icinga_web-www-dir
+    - watch_in:
+      - mc_proxy: icinga_web-pre-install
 
 icinga_web-www-dir-pub:
   file.directory:
@@ -53,6 +57,8 @@ icinga_web-www-dir-pub:
     - mode: 755
     - watch:
       - file: icinga_web-www-dir-link-docroot
+    - watch_in:
+      - mc_proxy: icinga_web-pre-install
 
 icinga-web-www-dir-js:
   file.symlink:
@@ -60,3 +66,6 @@ icinga-web-www-dir-js:
     - target: /usr/share/icinga-web/lib
     - watch:
       - file: icinga_web-www-dir-pub
+    - watch_in:
+      - mc_proxy: icinga_web-pre-install
+
