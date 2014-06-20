@@ -207,17 +207,17 @@ def settings():
         data['shw_rules'] = data['rules']
         data['shw_defaultState'] = data['defaultstate']
         data['shw_enabled'] = data['enabled']
-        ifaces = grains['ip_interfaces'].items()
+        gifaces = grains['ip_interfaces'].items()
         # search & autodetect for well known network interfaces bridges
         # to activate in case default rules for lxc & docker
         if data['have_lxc'] is None:
-            if True in ['lxc' in a[0] for a in ifaces]:
+            if True in ['lxc' in a[0] for a in gifaces]:
                 data['have_lxc'] = True  # must stay none if not found
         if data['have_docker'] is None:
-            if True in ['docker' in a[0] for a in ifaces]:
+            if True in ['docker' in a[0] for a in gifaces]:
                 data['have_docker'] = True  # must stay none if not found
         if data['have_vpn'] is None:
-            if True in [a[0].startswith('tun') for a in ifaces]:
+            if True in [a[0].startswith('tun') for a in gifaces]:
                 data['have_vpn'] = True  # must stay none if not found
 
         opts_45 = ',sourceroute=0'
@@ -272,10 +272,10 @@ def settings():
                     data['zones'].setdefault(z, data['default_zones'][z])
 
         ems = [i
-               for i, ips in ifaces
+               for i, ips in gifaces
                if i.startswith('em') and len(i) in [3, 4]]
 
-        for iface, ips in ifaces:
+        for iface, ips in gifaces:
             if 'lo' in iface:
                 continue
             z = 'net'
@@ -318,8 +318,17 @@ def settings():
         # default mode: masquerading on the interface containing
         # the default route for lxc and docker containers
         # later, we will add maybe support for failover ip bridges/ vmac
+        nifaces = [a[0] for a in gifaces
+                   if 'veth' not in a
+                   and 'br' not in a
+                   and 'tun' not in a
+                   and 'tap' not in a]
         default_lxc_docker_mode = 'masq'
-        default_if = [a for a in ifaces][0]
+        if 'eth0' in nifaces:
+            default_if = 'eth0'
+        else:
+            default_if = nifaces[0]
+
         if default_route:
             default_if = default_route['iface']
         if default_lxc_docker_mode == 'masq':
