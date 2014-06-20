@@ -17,12 +17,14 @@ include:
   - makina-states.services.db.postgresql.hooks
   {% endif %}
 
-# add user
-{{ pgsql.postgresql_user(data.modules.ido2db.database.user,
-                         data.modules.ido2db.database.password)}}
-
 # create database
-{{ pgsql.postgresql_db(data.modules.ido2db.database.name) }}
+{{ pgsql.postgresql_db(db=data.modules.ido2db.database.name) }}
+
+# add user
+{{ pgsql.postgresql_user(name=data.modules.ido2db.database.user,
+                         password=data.modules.ido2db.database.password,
+                         db=data.modules.ido2db.database.name)}}
+
 
 # import schema
 {% set tmpf = '/tmp/icinga-ido.schema.sql' %}

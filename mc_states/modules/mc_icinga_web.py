@@ -55,9 +55,6 @@ to the name of the file but the "." is replaced with a "_"
 
 I have not found dtd/xsd files in order to verify grammar of xml files.
 
-By default, the both databases icinga_web and icinga_ido use the same user. The default password for icinga_web database is copied from mc_icinga.py.
-If you overwrite icinga_ido password in mc_icinga.py. It will be changed for icinga_web too.
-
 Only the hashed password and the salt for the root account for icinga-web interface are stored in settings.
 The hashed password is not computed automatically from an other value with the clear password (settings dictionary doesn't contains the clear password)
 
@@ -574,9 +571,9 @@ def settings():
         locs = __salt__['mc_locations.settings']()
 
 
-        # get default ido password from mc_icinga
+        # get default ido database connectionfrom mc_icinga
         icinga_settings =  __salt__['mc_icinga.settings']()
-        password_ido= icinga_settings['modules']['ido2db']['database']['password']
+        ido2db_database= icinga_settings['modules']['ido2db']['database']
 
 
         # by default, icinga_web and icinga_ido use the same sql user, so the password are the same
@@ -584,26 +581,15 @@ def settings():
             'mc_macros.get_local_registry'](
                 'icinga_web', registry_format='pack')
 
-        password_web_db = icinga_web_reg.setdefault('web.db_password', password_ido)
+        password_web_db = icinga_web_reg.setdefault('web.db_password', __salt__['mc_utils.generate_password']())
         password_web_root_account = icinga_web_reg.setdefault('web.root_account_password', __salt__['mc_utils.generate_password']())
-
-        ido2db_database = {
-            'type': "pgsql",
-            'host': "localhost",
-            'port': 5432,
-#            'socket': "",
-            'user': "icinga",
-            'password': password_ido,
-            'name': "icinga_ido",
-            'prefix': "icinga_",
-        }
 
         web_database = {
             'type': "pgsql",
             'host': "localhost",
             'port': 5432,
 #            'socket': "",
-            'user': "icinga",
+            'user': "icinga_web",
             'password': password_web_db,
             'name': "icinga_web",
         }

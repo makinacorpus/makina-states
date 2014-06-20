@@ -222,7 +222,7 @@ def settings():
             'host': "localhost",
             'port': 5432,
 #            'socket': "",
-            'user': "icinga",
+            'user': "icinga_ido",
             'password': password_ido,
             'name': "icinga_ido",
             'prefix': "icinga_",

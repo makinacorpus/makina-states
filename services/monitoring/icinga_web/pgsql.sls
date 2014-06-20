@@ -15,12 +15,13 @@ include:
   - makina-states.services.db.postgresql.hooks
   {% endif %}
 
-# add user
-{{ pgsql.postgresql_user(data.databases.web.user,
-                         data.databases.web.password)}}
-
 # create database
-{{ pgsql.postgresql_db(data.databases.web.name) }}
+{{ pgsql.postgresql_db(db=data.databases.web.name) }}
+
+# add user
+{{ pgsql.postgresql_user(name=data.databases.web.user,
+                         password=data.databases.web.password,
+                         db=data.databases.web.name)}}
 
 # import schema
 {% set tmpf = '/tmp/icinga-web.schema.sql' %}
