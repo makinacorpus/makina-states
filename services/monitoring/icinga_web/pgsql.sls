@@ -21,7 +21,7 @@ include:
 # add user
 {{ pgsql.postgresql_user(name=data.databases.web.user,
                          password=data.databases.web.password,
-                         db=data.databases.web.name)}}
+                         db=data.databases.web.name) }}
 
 # import schema
 {% set tmpf = '/tmp/icinga-web.schema.sql' %}

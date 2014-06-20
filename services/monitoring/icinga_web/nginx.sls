@@ -12,10 +12,10 @@ include:
   - makina-states.services.monitoring.icinga_web.hooks
 
 # create a virtualhost in nginx
-{{ nginx.virtualhost(domain=data.nginx.virtualhost, **data.nginx)}}
+{{ nginx.virtualhost(**data.nginx)}}
 
 # add a pool php-fpm
-{{php.fpm_pool(domain=data.nginx.virtualhost, **data.phpfpm)}}
+{{php.fpm_pool(domain=data.nginx.domain, **data.phpfpm)}}
 
 # install php5-pgsql
 icinga_web-php5-pgsql:

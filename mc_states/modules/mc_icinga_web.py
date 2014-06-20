@@ -64,6 +64,8 @@ The keys "has_pgsql" and "has_mysql" determine if a local postgresql or mysql in
 The default value is computed from default database parameters
 If the connection is made through a unix pipe or with the localhost hostname, the booleans are set to True.
 
+The default parameters for icinga_ido database connection are get from icinga settings.
+
 In the templates, I didn't perform a lot of check. For example if a value must be set only if a other directive has a precise value, I didn't add a if statement.
 It is possible to create invalid configuration files.
 
@@ -161,7 +163,7 @@ def settings():
         nginx
             dictionary to store values of nginx configuration
 
-            virtualhost
+            domain
                 name of virtualhost created to serve webpages
             doc_root
                 root location of virtualhost
@@ -626,7 +628,7 @@ def settings():
                     'web': web_database,
                 },
                 'nginx': {
-                    'virtualhost': "icinga-web.localhost",
+                    'domain': "icinga-web.localhost",
                     'doc_root': "/usr/share/icinga-web/www/",
                     'vh_content_source': "salt://makina-states/files/etc/nginx/sites-available/icinga-web.content.conf",
                     'vh_top_source': "salt://makina-states/files/etc/nginx/sites-available/icinga-web.top.conf",

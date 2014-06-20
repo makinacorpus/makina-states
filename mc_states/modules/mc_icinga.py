@@ -79,7 +79,7 @@ def settings():
             nginx
                 dictionary to store values of nginx configuration
             
-                virtualhost
+                domain
                     name of virtualhost created to serve webpages 
                     (dns will not be configured)
                 doc_root
@@ -406,7 +406,7 @@ def settings():
                         },
                         'absolute_styles_dir': "/usr/share/icinga/htdocs/stylesheets",
                         'nginx': {
-                            'virtualhost': "icinga-cgi.localhost",
+                            'domain': "icinga-cgi.localhost",
                             'doc_root': "/usr/share/icinga/htdocs/",
                             'vh_content_source': "salt://makina-states/files/etc/nginx/sites-available/icinga-cgi.content.conf",
                             'vh_top_source': "salt://makina-states/files/etc/nginx/sites-available/icinga-cgi.top.conf",

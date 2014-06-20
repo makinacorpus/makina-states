@@ -23,7 +23,7 @@ include:
 # add user
 {{ pgsql.postgresql_user(name=data.modules.ido2db.database.user,
                          password=data.modules.ido2db.database.password,
-                         db=data.modules.ido2db.database.name)}}
+                         db=data.modules.ido2db.database.name) }}
 
 
 # import schema
