@@ -56,6 +56,17 @@ def settings():
                         'web_directory': "/nagvis",
                         'fastcgi_pass': "unix:/var/spool/www/nagvis_localhost.fpm.sock",
                     },
+                    'icinga_cgi': {
+                        'enabled': True, # icinga cgi will not be configured. It is done in services.monitoring.icinga
+                        'web_directory': "/icinga",
+                        'realm': "Authentication",
+                        'htpasswd_file': "/etc/icinga/htpasswd.users",
+                        'htdocs_dir': "/usr/share/icinga/htdocs/",
+                        'images_dir': "/usr/share/icinga/htdocs/images/$1",
+                        'styles_dir': "/usr/share/icinga/htdocs/stylesheets/$1",
+                        'cgi_dir': "/usr/lib/cgi-bin/",
+                        'uwsgi_pass': "127.0.0.1:3030",
+                    },
                 },
                 'phpfpm': {
                     'open_basedir': "/usr/share/php/php-gettext/:/etc/nagvis/:/var/lib/nagvis/:/var/cache/nagvis/",

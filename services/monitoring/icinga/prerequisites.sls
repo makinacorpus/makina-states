@@ -55,3 +55,52 @@ icinga-nagios-plugins-pkgs:
       - {{package}}
       {% endfor %}
 {% endif %}
+
+{% if icingaSettings.modules['mklivestatus'].enabled %}
+{% set tmpf = "/tmp/mk-livestatus" %}
+icinga-mklivestatus-download:
+  archive.extracted:
+    - name: {{tmpf}}
+    - source: {{icingaSettings.modules.mklivestatus.download.url}}
+    - source_hash: sha512={{icingaSettings.modules.mklivestatus.download.sha512sum}}
+    - archive_format: tar
+    - watch:
+      - mc_proxy: icinga-pre-install
+      - pkg: icinga-pkgs
+    - watch_in:
+      - mc_proxy: icinga-post-install
+      - cmd: icinga-mklivestatus-build-configure
+
+icinga-mklivestatus-build-configure:
+  cmd.run:
+    - name: cd "{{tmpf}}/mk-livestatus-1.2.4" && ./configure --prefix=/usr/share/icinga --exec-prefix=/usr/share/icinga
+    - watch:
+      - mc_proxy: icinga-pre-install
+      - pkg: icinga-pkgs
+      - archive: icinga-mklivestatus-download
+    - watch_in:
+      - mc_proxy: icinga-post-install
+      - cmd: icinga-mklivestatus-build-make
+
+icinga-mklivestatus-build-make:
+  cmd.run:
+    - name: cd "{{tmpf}}/mk-livestatus-1.2.4" && make
+    - watch:
+      - mc_proxy: icinga-pre-install
+      - pkg: icinga-pkgs
+      - cmd: icinga-mklivestatus-build-configure
+    - watch_in:
+      - mc_proxy: icinga-post-install
+
+icinga-mklivestatus-install:
+  file.copy:
+    - name: {{icingaSettings.modules.mklivestatus.lib_file}}
+    - source: {{tmpf}}/mk-livestatus-1.2.4/src/livestatus.o
+    - watch:
+      - mc_proxy: icinga-pre-install
+      - pkg: icinga-pkgs
+      - cmd: icinga-mklivestatus-build-make
+    - watch_in:
+      - mc_proxy: icinga-post-install
+
+{% endif %}

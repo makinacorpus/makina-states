@@ -209,6 +209,28 @@ icinga-ido2db-init-sysvinit-conf:
 
 {% endif %}
 
+{% if data.modules.mklivestatus.enabled %}
+
+icinga-mklivestatus-conf:
+  file.managed:
+    - name: {{data.configuration_directory}}/modules/mklivestatus.cfg
+    - source: salt://makina-states/files/etc/icinga/modules/mklivestatus.cfg
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 644
+    - watch:
+      - mc_proxy: icinga-pre-conf
+    - watch_in:
+      - mc_proxy: icinga-post-conf
+    - defaults:
+      data: |
+            {{sdata}}
+
+
+{% endif %}
+
 {%- import "makina-states/services/monitoring/icinga/macros.jinja" as icinga with context %}
 {#
 {{icinga.icingaAddWatcher('foo', '/bin/echo', args=[1]) }}

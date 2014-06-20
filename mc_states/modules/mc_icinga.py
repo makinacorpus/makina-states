@@ -19,8 +19,6 @@ The keys "has_pgsql" and "has_mysql" determine if a local postgresql or mysql in
 The default value is computed from default database parameters
 If the connection is made through a unix pipe or with the localhost hostname, the booleans are set to True.
 
-
-
 '''
 
 __docformat__ = 'restructuredtext en'
@@ -59,6 +57,21 @@ def settings():
     icinga_cfg
         dictionary to store values of icinga.cfg configuration file
     modules
+        mklivestatus
+            enabled
+                enable mklivestatus module. If true, mklivestatus will be
+                downloaded and built.
+            socket
+                file through wich mklivestatus will be available
+            lib_file
+                location for installing the module
+            download
+                url
+                    url to download mklivestatus
+                sha512sum
+                    hash to verify that the downloaded file is not corrupted
+
+
         cgi
             enabled
                 enable cgi module. If true, nginx webserver 
@@ -197,6 +210,7 @@ def settings():
                 for icinga
             package
                 list of packages to install nagios-plugins
+
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
@@ -395,6 +409,15 @@ def settings():
                 },
 
                 'modules': {
+                    'mklivestatus': {
+                        'enabled': True,
+                        'socket': "/var/lib/icinga/rw/live",
+                        'lib_file': "/usr/lib/icinga/livestatus.o",
+                        'download': {
+                            'url': "http://mathias-kettner.de/download/mk-livestatus-1.2.4.tar.gz",
+                            'sha512sum': "412215c5fbed5897e4e2f2adf44ccc340334f7138acd2002df0ae42cfe1022250b94ed76288bd6cdd7469856ad8f176674a7cce6e4998e2fd95fcd447c533192",
+                        },
+                    },
                     'cgi': {
                         'package': ['icinga-cgi'],
                         'enabled': True,
