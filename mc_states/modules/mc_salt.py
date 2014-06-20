@@ -138,6 +138,7 @@ def settings():
             'cron_master_restart_minute': 0,
             'cron_master_restart_hour': 0,
             'cron_minion_restart_minute': 3,
+            'strip_colors': False,
             'cron_minion_restart_hour': 0,
             'init_debug': init_debug,
             'has_filelimit': has_filelimit,
