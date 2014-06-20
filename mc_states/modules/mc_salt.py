@@ -28,6 +28,8 @@ def settings():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
         saltmods = __salt__
+        local_conf = __salt__['mc_macros.get_local_registry'](
+            'salt', registry_format='pack')
         nodetypes_reg = saltmods['mc_nodetypes.registry']()
         resolver = saltmods['mc_utils.format_resolve']
         pillar = __pillar__
@@ -100,14 +102,22 @@ def settings():
         tcrond = random.randint(2, 5)
         tcron = random.randint(0, 9)
         tcron2 = tcron + 5
-        if tcron2 > 10:
+        if tcron2 >= 10:
             tcron2 -= 10
         tcron3 = tcron2 + 3
-        if tcron3 > 10:
+        if tcron3 >= 10:
             tcron3 -= 10
         #cron_minion_checkalive = '0{0},1{0},2{0},3{0},4{0},5{0}'.format(tcron)
         cron_minion_checkalive = '{0}{1} 0,6,12,20 * * *'.format(tcrond, tcron)
         cron_sync_minute = '0{0},1{0},2{0},3{0},4{0},5{0}'.format(tcron2)
+        cron_minion_checkalive = local_conf.setdefault('cron_minion_checkalive',
+                                                 cron_minion_checkalive)
+        cron_sync_minute = local_conf.setdefault('cron_sync_minute',
+                                                 cron_sync_minute)
+        tcrond = local_conf.setdefault('tcrond', tcrond)
+        tcron = local_conf.setdefault('tcron', tcron)
+        tcron2 = local_conf.setdefault('tcron_2', tcron2)
+        tcron3 = local_conf.setdefault('tcron_3', tcron3)
 
         saltCommonData = {
             'id': saltmods['config.option']('makina-states.minion_id',
@@ -451,6 +461,8 @@ def settings():
                 'mastersalt': mastersaltMinionData,
             }
         }
+        __salt__['mc_macros.update_registry_params'](
+            'salt', local_conf, registry_format='pack')
         return data
     return _settings()
 
