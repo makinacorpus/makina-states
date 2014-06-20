@@ -191,6 +191,26 @@ def upgrade_vt(target, ret=None, output=True):
     return ret
 
 
+def sync_images(target, output=True, ret=None):
+    '''sync images on target'''
+    func_name = 'mc_cloud_lxc.sync_images {0}'.format(
+        target)
+    __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    if ret is None:
+        ret = result()
+    iret = __salt__['mc_lxc.sync_images'](only=[target])
+    if iret['result']:
+        ret['comment'] += yellow(
+            'LXC: images synchronnised on {0}\n'.format(target))
+    else:
+        merge_results(ret, iret)
+        ret['comment'] += yellow(
+            'LXC: images failed to synchronnise on {0}\n'.format(target))
+    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+    return ret
+
+
 def install_vt(target, output=True):
     '''install & configure lxc'''
     func_name = 'mc_cloud_lxc.install_vt {0}'.format(
@@ -205,14 +225,7 @@ def install_vt(target, output=True):
             step(target, ret=ret, output=False)
         except FailedStepError:
             pass
-    iret = __salt__['mc_lxc.sync_images'](only=[target])
-    if iret['result']:
-        ret['comment'] += yellow(
-            'LXC: images synchronnised on {0}\n'.format(target))
-    else:
-        merge_results(ret, iret)
-        ret['comment'] += yellow(
-            'LXC: images failed to synchronnise on {0}\n'.format(target))
+    __salt__['mc_cloud_lxc.sync_images'](target, output=False, ret=ret)
     salt_output(ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
@@ -321,7 +334,7 @@ def vm_spawn(vm, compute_node=None, vt='lxc', ret=None, output=True):
     # this add a 10 seconds overhead upon VM creation
     # but enable us from crashing a vm that was loosed from local
     # registry and where reprovisionning can be harmful
-    # As we are pinguing it, we are managing it, we will not 
+    # As we are pinguing it, we are managing it, we will not
     # enforce spawning here !
     try:
         ping = False
@@ -335,7 +348,7 @@ def vm_spawn(vm, compute_node=None, vt='lxc', ret=None, output=True):
             # cret = __salt__['cloud.profile'](
             #     profile, [vm], vm_overrides=profile_data)
             # if vm not in cret:
-            #     cret['result'] = False 
+            #     cret['result'] = False
             # cret = cret[vm]['runner_return']
             # XXX: using the lxc runner which is now faster and nicer.
             cret = __salt__['lxc.cloud_init'](
