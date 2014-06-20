@@ -3,7 +3,7 @@
 .. _module_mc_icinga:
 
 mc_icinga / icinga functions
-============================================
+============================
 
 The first level of subdictionaries is for distinguish configuration files. There is one subdictionary per configuration file. The key used for subdictionary correspond
 to the name of the file but the "." is replaced with a "_"
@@ -11,9 +11,15 @@ to the name of the file but the "." is replaced with a "_"
 The subdictionary "modules" contains a subsubdictionary for each module. In each module subdictionary, there is a subdictionary per file.
 The key "enabled" in each module dictionary is for enabling or disabling the module.
 
-The "nginx" and "uwsgi" sub-dictionaries are given to macros as **kwargs parameter.
+The "nginx" and "uwsgi" sub-dictionaries are given to macros in \*\*kwargs parameter.
 
 The key "package" is for listing packages installed between pre-install and post-install hooks
+
+The keys "has_pgsql" and "has_mysql" determine if a local postgresql or mysql instance must be installed.
+The default value is computed from default database parameters
+If the connection is made through a unix pipe or with the localhost hostname, the booleans are set to True.
+
+
 
 '''
 
@@ -61,8 +67,10 @@ def settings():
                 list of packages to install cgi module
             absolute_styles_dir
                 absolute path of directory where css files will be moved
-                (by default icinga-cgi package stores them in /etc/icinga 
-                which seems to be a bad location for theses files)
+                (by default on ubuntu/debian icinga-cgi package stores 
+                them in /etc/icinga which seems to be a bad location for 
+                theses css files. /etc/ should be dedicated for 
+                configuration only)
             root_account
                 login
                     login for root login on cgi interface
@@ -110,13 +118,13 @@ def settings():
                 enabled
                     true if uwsgi configuration must be enabled
                 master
-                    .
+                    "true" or "false"
                 plugins
                     plugin used in uwsgi. with icinga we have to use the "cgi" plugin
                 async
                     number of threads used by uwsgi
                 ugreen
-                    .
+                    "true" or "false"
                 socket
                     socket where uwsgi listen on. This value should be equal to one in 
                     uwsgi_pass
@@ -243,8 +251,8 @@ def settings():
                     'log_file': "/var/log/icinga/icinga.log",
                     'cfg_file': ["/etc/icinga/commands.cfg"],
                     'cfg_dir': ["/etc/nagios-plugins/config"
-                                ,"/etc/icinga/objects/"
-                                ,"/etc/icinga/modules"],
+                               ,"/etc/icinga/objects/"
+                               ,"/etc/icinga/modules"],
                     'object_cache_file': "/var/cache/icinga/objects.cache",
                     'precached_object_file': "/var/cache/icinga/objects.precache",
                     'resource_file': "/etc/icinga/resource.cfg",

@@ -28,3 +28,18 @@ icinga_web module depends on icinga module only if cgi is enabled in icinga-web 
 
 The mysql configuration doesn't work.
 
+
+The architecture of service folder looks like to :
+
+    :init.sls: is the file which includes the others
+    :hooks.sls: defines some states for schedule
+    :macros.jinja: is empty because I don't have used macros for icinga and icinga_web
+    :prerequisites.sls: defines states which install packages
+    :configuration.sls: defines states which write configuration and init scripts
+    :services.sls: defines states which start the service
+    :pgsql.sls: the states which install and configure postgresql if this dependance is needed. The states are called before ones in prerequisites.sls
+    :mysql.sls: the states which install and configure mysql if this dependance is needed. The states are called before ones in prerequisites.sls
+    :nginx.sls: the states which install and configure nginx and phpfpm if theses dependances are needed. The states are called before ones in prerequisites.sls
+
+For pgsql.sls, mysql.sls and nginx.sls, I don't have separated the states between prerequisites, configuration and services.
+

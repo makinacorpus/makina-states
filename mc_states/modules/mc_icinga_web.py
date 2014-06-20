@@ -25,7 +25,7 @@ I have prefered
         },
         'n2': {
             'param1': "v2",
-        }
+        },
     },
 
 instead of
@@ -38,21 +38,48 @@ instead of
         },
         {'name': "n2",
          'param1': "v2",
-        }
+        },
     ]
 
 
 When a real list is kept, It is precised below. Generally it is when the content is not structures but simple values.
 
-The "nginx" and "phpfpm" sub-dictionaries are given to macros as **kwargs parameter. If you add a key in, you can access in the nginx configuration template or in phpfpm configuration template.
+The template of xml configuration files use a lot of loops in order to add content easily 
+but it is not the case with the ini files where directives are limited and always the same.
+
+The "nginx" and "phpfpm" sub-dictionaries are given to macros in \*\*kwargs parameter. If you add a key in, you can access in the nginx configuration template or in phpfpm configuration template.
+In nginx subdictionary, the "icinga_cgi" and "icinga_web" keys store values used to fill the template.
 
 Otherwise, the first level of subdictionaries is for distinguish configuration files. There is one subdictionary per configuration file. The key used for subdictionary correspond
 to the name of the file but the "." is replaced with a "_"
 
-The template of xml configuration files use a lot of loops in order to add content easily 
-but it is not the case with the ini files where directives are limited and always the same.
-
 I have not found dtd/xsd files in order to verify grammar of xml files.
+
+By default, the both databases icinga_web and icinga_ido use the same user. The default password for icinga_web database is copied from mc_icinga.py.
+If you overwrite icinga_ido password in mc_icinga.py. It will be changed for icinga_web too.
+
+Only the hashed password and the salt for the root account for icinga-web interface are stored in settings.
+The hashed password is not computed automatically from an other value with the clear password (settings dictionary doesn't contains the clear password)
+
+I should add a state to compute the hash from clear password but I don't have successfully done this.
+
+The keys "has_pgsql" and "has_mysql" determine if a local postgresql or mysql instance must be installed.
+The default value is computed from default database parameters
+If the connection is made through a unix pipe or with the localhost hostname, the booleans are set to True.
+
+In the templates, I didn't perform a lot of check. For example if a value must be set only if a other directive has a precise value, I didn't add a if statement.
+It is possible to create invalid configuration files.
+
+If in a list, each value must be unique, I tried to have the elements of the list as dictionary keys.
+
+For optional values which don't have a default value, I didn't set them in the default dictionary but in the templates, I have done::
+
+    {% if data.get('foo', None) %}
+    foo={{data.foo}}
+    {% endif %}
+
+Theses optional values corresponds to commented keys in the default dictionary.
+
 
 '''
 
