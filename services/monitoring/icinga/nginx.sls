@@ -9,7 +9,7 @@
 {% import "makina-states/services/cgi/uwsgi/init.sls" as uwsgi with context %}
 include:
   - makina-states.services.http.nginx
-  - makina-states.services.cgi.uwsgi
+  - makina-states.services.proxy.uwsgi
 
 # create a virtualhost in nginx
 {{ nginx.virtualhost(domain=data.modules.cgi.nginx.virtualhost, **data.modules.cgi.nginx)}}

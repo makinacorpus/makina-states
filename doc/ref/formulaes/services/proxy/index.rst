@@ -4,4 +4,5 @@ Proxy services
    :maxdepth: 2
 
    haproxy.rst
+   uwsgi.rst
 

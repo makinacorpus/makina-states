@@ -1,7 +1,7 @@
 {% set pkgssettings = salt['mc_pkgs.settings']() %}
 {% set uwsgiSettings = salt['mc_uwsgi.settings']() %}
 include:
-  - makina-states.services.cgi.uwsgi.hooks
+  - makina-states.services.proxy.uwsgi.hooks
 
 uwsgi-pkgs:
   pkg.{{pkgssettings['installmode']}}:

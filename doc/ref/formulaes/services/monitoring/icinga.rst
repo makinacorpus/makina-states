@@ -41,5 +41,5 @@ The architecture of service folder looks like to :
     :mysql.sls: the states which install and configure mysql if this dependance is needed. The states are called before ones in prerequisites.sls
     :nginx.sls: the states which install and configure nginx and phpfpm if theses dependances are needed. The states are called before ones in prerequisites.sls
 
-For pgsql.sls, mysql.sls and nginx.sls, I don't have separated the states between prerequisites, configuration and services.
+For "pgsql.sls", "mysql.sls" and "nginx.sls", I don't have separated the states between prerequisites, configuration and services.
 

@@ -50,7 +50,7 @@ def settings():
         locs = __salt__['mc_locations.settings']()
 
         data = __salt__['mc_utils.defaults'](
-            'makina-states.services.cgi.uwsgi', {
+            'makina-states.services.proxy.uwsgi', {
                 'package': ['uwsgi', 'uwsgi-core'],
                 'configuration_directory': locs['conf_dir']+"/uwsgi",
                 'default_uwsgi': {

@@ -10,8 +10,8 @@
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 
 include:
-  - makina-states.services.cgi.uwsgi.hooks
-  - makina-states.services.cgi.uwsgi.services
+  - makina-states.services.proxy.uwsgi.hooks
+  - makina-states.services.proxy.uwsgi.services
 
 # startup configuration
 {% if grains['os'] in ['Ubuntu'] %}
@@ -53,7 +53,7 @@ uwsgi-init-default-conf:
             {{sdata}}
 
 {#
-{%- import "makina-states/services/cgi/uwsgi/macros.jinja" as uwsgi with context %}
+{%- import "makina-states/services/proxy/uwsgi/macros.jinja" as uwsgi with context %}
 #}
 {#
 {{uwsgi.uwsgiAddWatcher('foo', '/bin/echo', args=[1]) }}

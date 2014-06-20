@@ -1,5 +1,5 @@
 include:
-  - makina-states.services.cgi.uwsgi.hooks
+  - makina-states.services.proxy.uwsgi.hooks
 
 uwsgi-start:
   service.running:
