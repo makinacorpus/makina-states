@@ -354,7 +354,7 @@ def client(fun, *args, **kw):
         # the target(s) have environ one minute to respond
         # we call 60 ping request, without HERE time
         # check which is useless in this check
-        ping_max_retries = 60
+        ping_max_retries = 6
         ping = True
         # do not check ping... if we are pinguing
         if fun == 'test.ping':
