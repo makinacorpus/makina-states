@@ -318,8 +318,18 @@ def settings():
         # default mode: masquerading on the interface containing
         # the default route for lxc and docker containers
         # later, we will add maybe support for failover ip bridges/ vmac
+        nifaces = [a['interface'] for a in ifaces]
+        nifaces = [a for a in nifaces
+                   if 'veth' not in a
+                   and 'br' not in a
+                   and 'tun' not in a
+                   and 'tap' not in a]
         default_lxc_docker_mode = 'masq'
-        default_if = [a for a in ifaces][0]
+        if 'eth0' in nifaces:
+            default_if = 'eth0'
+        else:
+            default_if = nifaces[0]
+
         if default_route:
             default_if = default_route['iface']
         if default_lxc_docker_mode == 'masq':
