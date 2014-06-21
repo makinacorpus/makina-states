@@ -37,7 +37,7 @@ ubuntugis-pgrouting-base:
   pkgrepo.managed:
     - humanname: ubuntugis pgrouting ppa
     - name: deb http://ppa.launchpad.net/georepublic/pgrouting/ubuntu {{dist}} main
-    - file: {{ salt['mc_locations.settings']().conf_dir }}/apt/sources.list.d/ubuntugis.list
+    - file: {{ salt['mc_locations.settings']().conf_dir }}/apt/sources.list.d/pgrouting.list
     - keyid: B65ADE33
     - keyserver: keyserver.ubuntu.com
     - watch:
