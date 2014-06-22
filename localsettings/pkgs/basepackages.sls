@@ -85,6 +85,7 @@ sys-pkgs:
       - lynx
       - mc
       - mlocate
+      - gdisk
       - ncdu
       - psmisc
       - pwgen
