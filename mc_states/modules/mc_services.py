@@ -96,6 +96,7 @@ def registry():
             'firewall.psad': {'active': False},
             'ftp.pureftpd': {'active': False},
             'gis.postgis': {'active': False},
+            'gis.ubuntgis': {'active': False},
             'gis.qgis': {'active': False},
             'http.apache': {'active': False},
             'http.nginx': {'active': False},

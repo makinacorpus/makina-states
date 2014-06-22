@@ -32,6 +32,8 @@ from mc_states import api
 
 
 log = logging.getLogger(__name__)
+_CLIENTS = {}
+_RUNNERS = {}
 
 
 class SaltExit(SaltException):
@@ -213,7 +215,10 @@ def master_opts(*args, **kwargs):
 def _runner(cfgdir=None, cfg=None):
     # opts = _master_opts()
     # opts['output'] = 'quiet'
-    return RunnerClient(_master_opts(cfgdir=cfgdir, cfg=cfg))
+    key = '{0}_{1}'.format(cfgdir, cfg)
+    if key not in _RUNNERS:
+        _RUNNERS[key] = RunnerClient(_master_opts(cfgdir=cfgdir, cfg=cfg))
+    return _RUNNERS
 
 
 def get_local_target(cfgdir=None):
@@ -222,7 +227,10 @@ def get_local_target(cfgdir=None):
 
 
 def _client(cfgdir=None, cfg=None):
-    return LocalClient(mopts=_master_opts(cfgdir=cfgdir, cfg=cfg))
+    key = '{0}_{1}'.format(cfgdir, cfg)
+    if key not in _CLIENTS:
+        _CLIENTS[key] = LocalClient(mopts=_master_opts(cfgdir=cfgdir, cfg=cfg))
+    return _CLIENTS[key]
 
 
 def get_timeout_error(wait_for_res,
@@ -298,6 +306,12 @@ def client(fun, *args, **kw):
         if not target:
             raise SaltExit('no target')
     try:
+        polling = bool((kw.pop('salt_polling')))
+    except (KeyError, ValueError):
+        # try to has some low timeouts for very basic commands
+        # wait up to 15 minutes for the default timeout
+        polling = False
+    try:
         timeout = int(kw.pop('salt_timeout'))
     except (KeyError, ValueError):
         # try to has some low timeouts for very basic commands
@@ -340,7 +354,7 @@ def client(fun, *args, **kw):
         # the target(s) have environ one minute to respond
         # we call 60 ping request, without HERE time
         # check which is useless in this check
-        ping_max_retries = 60
+        ping_max_retries = 6
         ping = True
         # do not check ping... if we are pinguing
         if fun == 'test.ping':
@@ -374,70 +388,77 @@ def client(fun, *args, **kw):
         # throw the real job command
         rkwargs = kwargs.copy()
         rkwargs['timeout'] = timeout
-        jid = conn.cmd_async(tgt=target,
-                             fun=fun,
-                             arg=args,
-                             kwarg=kw,
-                             **rkwargs)
-        # do not fall too quick on findjob which is quite spamming the
-        # master and give too early of a false positive
-        findtries, thistry = 10, 0
-        while thistry < findtries:
-            thistry += 1
-            try:
-                cret = conn.cmd(tgt=target,
-                                fun='saltutil.find_job',
-                                arg=[jid],
-                                timeout=10,
-                                **kwargs)
-                break
-            except EauthAuthenticationError:
-                if thistry > findtries:
-                    raise
-        running = bool(cret.get(target, False))
-        endto = time.time() + timeout
-        while running:
-            # Again, do not fall too quick on findjob which is quite spamming
-            # the master and give too early of a false positive
+        if not polling:
+            ret = conn.cmd(tgt=target,
+                           fun=fun,
+                           arg=args,
+                           kwarg=kw,
+                           **rkwargs)[target]
+        else:
+            jid = conn.cmd_async(tgt=target,
+                                 fun=fun,
+                                 arg=args,
+                                 kwarg=kw,
+                                 **rkwargs)
+            # do not fall too quick on findjob which is quite spamming the
+            # master and give too early of a false positive
             findtries, thistry = 10, 0
-            rkwargs = {'tgt': target,
-                       'fun': 'saltutil.find_job',
-                       'arg': [jid],
-                       'timeout': 10}
             while thistry < findtries:
                 thistry += 1
                 try:
-                    cret = conn.cmd(**rkwargs)
+                    cret = conn.cmd(tgt=target,
+                                    fun='saltutil.find_job',
+                                    arg=[jid],
+                                    timeout=10,
+                                    **kwargs)
                     break
                 except EauthAuthenticationError:
                     if thistry > findtries:
                         raise
             running = bool(cret.get(target, False))
-            if not running:
-                break
-            if running and (time.time() > endto):
-                raise SaltExit(
-                    'Timeout {0}s for {1} is elapsed'.format(
-                        timeout, pformat(kwargs)))
-            time.sleep(poll)
+            endto = time.time() + timeout
+            while running:
+                # Again, do not fall too quick on findjob which is quite spamming
+                # the master and give too early of a false positive
+                findtries, thistry = 10, 0
+                rkwargs = {'tgt': target,
+                           'fun': 'saltutil.find_job',
+                           'arg': [jid],
+                           'timeout': 10}
+                while thistry < findtries:
+                    thistry += 1
+                    try:
+                        cret = conn.cmd(**rkwargs)
+                        break
+                    except EauthAuthenticationError:
+                        if thistry > findtries:
+                            raise
+                running = bool(cret.get(target, False))
+                if not running:
+                    break
+                if running and (time.time() > endto):
+                    raise SaltExit(
+                        'Timeout {0}s for {1} is elapsed'.format(
+                            timeout, pformat(kwargs)))
+                time.sleep(poll)
 
-        wendto = time.time() + wait_for_res
-        while True:
-            cret = runner.cmd('jobs.lookup_jid',
-                              [jid, {'__kwarg__': True}])
-            if target in cret:
-                ret = cret[target]
-                break
-            # special case, some answers may be crafted
-            # to handle the unresponsivness of a specific command
-            # which is also meaningfull, eg a minion not yet provisionned
-            if fun in ['test.ping'] and not wait_for_res:
-                ret = {'test.ping': False}.get(fun, False)
-            if time.time() > wendto:
-                raise SaltExit(
-                    get_timeout_error(10, jid, fun,
-                                      target, args, kw))
-            time.sleep(poll)
+            wendto = time.time() + wait_for_res
+            while True:
+                cret = runner.cmd('jobs.lookup_jid',
+                                  [jid, {'__kwarg__': True}])
+                if target in cret:
+                    ret = cret[target]
+                    break
+                # special case, some answers may be crafted
+                # to handle the unresponsivness of a specific command
+                # which is also meaningfull, eg a minion not yet provisionned
+                if fun in ['test.ping'] and not wait_for_res:
+                    ret = {'test.ping': False}.get(fun, False)
+                if time.time() > wendto:
+                    raise SaltExit(
+                        get_timeout_error(10, jid, fun,
+                                          target, args, kw))
+                time.sleep(poll)
         try:
             if 'The minion function caused an exception:' in ret:
                 raise SaltExecutionError(
