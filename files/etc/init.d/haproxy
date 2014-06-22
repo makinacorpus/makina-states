@@ -2,13 +2,15 @@
 {% set data=salt['mc_utils.json_load'](data) %}
 ### BEGIN INIT INFO
 # Provides:          haproxy
-# Required-Start:    $local_fs $network $remote_fs
-# Required-Stop:     $local_fs $remote_fs
+# Required-Start:    $local_fs $network $remote_fs $syslog
+# Required-Stop:     $local_fs $remote_fs $syslog
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: fast and reliable load balancing reverse proxy
 # Description:       This file should be used to start and stop haproxy.
 ### END INIT INFO
+
+# Author: Arnaud Cornet <acornet@debian.org>
 
 # MANAGED VIA SALT DO NOT EDIT
 # Original Author: Arnaud Cornet <acornet@debian.org>
@@ -29,13 +31,13 @@ if [ -e /etc/default/haproxy ]; then
 	. /etc/default/haproxy
 fi
 
-test "$ENABLED" != "0" || exit 0
+test -f "$CONFIG" || exit 0
 
 [ -f /etc/default/rcS ] && . /etc/default/rcS
 . /lib/lsb/init-functions
 
 
-get_opts() {
+et_opts() {
     opts="-f $CONFIG"
     for j in backends dispatchers listeners extra;do
         idir="${CONFIGDIR}/${j}"
@@ -48,15 +50,27 @@ get_opts() {
     opts="${opts} $EXTRAOPTS"
     echo "${opts}"
 }
-haproxy_checkconfig()
+
+check_haproxy_config()
 {
-    echo "$HAPROXY -c $(get_opts)"
-    $HAPROXY -c $(get_opts)
-    exit $?
+    $HAPROXY -c $(get_opts) >/dev/null
+	if [ $? -eq 1 ]; then
+		log_end_msg 1
+		exit 1
+	fi
+}
+
+haproxy_check_perms() {
+	[ -d "$RUNDIR" ] || mkdir "$RUNDIR"
+	chown haproxy:haproxy "$RUNDIR"
+	chmod 2775 "$RUNDIR"
 }
 
 haproxy_start()
 {
+    haproxy_check_perms
+	check_haproxy_config
+
 	start-stop-daemon --start --pidfile "$PIDFILE" \
         --exec $HAPROXY -- $(get_opts) -D -p "$PIDFILE" \
 		$EXTRAOPTS || return 2
@@ -78,6 +92,7 @@ haproxy_stop()
 
 haproxy_reload()
 {
+	check_haproxy_config
     $HAPROXY -p $PIDFILE -D $(get_opts) -sf $(cat $PIDFILE) \
 		|| return 2
 	return 0
@@ -103,7 +118,7 @@ haproxy_status()
 
 case "$1" in
 checkconfig)
-    haproxy_checkconfig
+    check_haproxy_config
     ;;
 start)
 	log_daemon_msg "Starting haproxy" "haproxy"
@@ -140,7 +155,8 @@ stop)
 reload|force-reload)
 	log_daemon_msg "Reloading haproxy" "haproxy"
 	haproxy_reload
-	case "$?" in
+	ret=$?
+	case "$ret" in
 	0|1)
 		log_end_msg 0
 		;;
@@ -148,12 +164,14 @@ reload|force-reload)
 		log_end_msg 1
 		;;
 	esac
+	exit $ret
 	;;
 restart)
 	log_daemon_msg "Restarting haproxy" "haproxy"
 	haproxy_stop
 	haproxy_start
-	case "$?" in
+	ret=$?
+	case "$ret" in
 	0)
 		log_end_msg 0
 		;;
@@ -164,6 +182,7 @@ restart)
 		log_end_msg 1
 		;;
 	esac
+	exit $ret
 	;;
 status)
 	haproxy_status
