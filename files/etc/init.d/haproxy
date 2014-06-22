@@ -37,7 +37,7 @@ test -f "$CONFIG" || exit 0
 . /lib/lsb/init-functions
 
 
-et_opts() {
+get_opts() {
     opts="-f $CONFIG"
     for j in backends dispatchers listeners extra;do
         idir="${CONFIGDIR}/${j}"
