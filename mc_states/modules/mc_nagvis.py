@@ -46,24 +46,6 @@ def settings():
         default_password
             the password inserted when nagvis is installed. it is to check that the password was not previously modified
 
-
-    geomap
-            dictionary to store values about geomap. Each dictionary corresponds to a file
-
-            foo
-                foo should be replaced with the csv filename to generate
-                each key in this dictionary describe a host
-
-                host
-                    dictionary to describe the host
-
-                    name
-                        hostname
-                    lat
-                        latitude
-                    lon
-                        longitude
-               
     nginx
             dictionary to store values of nginx configuration
 
@@ -621,20 +603,6 @@ def settings():
                     'default_password': "868103841a2244768b2dbead5dbea2b533940e20", # default value that we find if before nagvis
                     # configuration. It is the password set during installation
                 },
-                'geomap' : {
-                    'demo-locations': {
-                        'ham-srv1': {
-                            'name': "Hamburg Server 1",
-                            'lat': 53.556866,
-                            'lon': 9.994622,
-                        },
-                        'muc-srv1': {
-                            'name': "Munich Server 1",
-                            'lat': 48.1448353,
-                            'lon': 11.5580067,
-                        },
-                    },
-                },
                 'nginx': {
                     'domain': "nagvis.localhost",
                     'doc_root': "/usr/share/nagvis/www/",
@@ -912,14 +880,28 @@ def settings():
     return _settings()
 
 
-def add_map_settings(map_name, **kwargs):
+def add_map_settings(name, _global, hosts, **kwargs):
     '''Settings for the add_map macro'''
     nagvisSettings = copy.deepcopy(__salt__['mc_nagvis.settings']())
     extra = kwargs.pop('extra', {})
     kwargs.update(extra)
-    kwargs.setdefault('map_name', map_name)
-    kwargs.setdefault('global', {})
-    kwargs.setdefault('hosts', {})
+    kwargs.setdefault('name', name)
+    kwargs.setdefault('_global', _global)
+    kwargs.setdefault('hosts', hosts)
+    nagvisSettings = __salt__['mc_utils.dictupdate'](nagvisSettings, kwargs)
+    # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
+    nagvisSettings['data'] = copy.deepcopy(nagvisSettings)
+    nagvisSettings['data']['extra'] = copy.deepcopy(nagvisSettings)
+    nagvisSettings['extra'] = copy.deepcopy(nagvisSettings)
+    return nagvisSettings
+
+def add_geomap_settings(name, hosts, **kwargs):
+    '''Settings for the add_geomap macro'''
+    nagvisSettings = copy.deepcopy(__salt__['mc_nagvis.settings']())
+    extra = kwargs.pop('extra', {})
+    kwargs.update(extra)
+    kwargs.setdefault('name', name)
+    kwargs.setdefault('hosts', hosts)
     nagvisSettings = __salt__['mc_utils.dictupdate'](nagvisSettings, kwargs)
     # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
     nagvisSettings['data'] = copy.deepcopy(nagvisSettings)
