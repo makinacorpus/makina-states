@@ -6,7 +6,7 @@
 #     _global
 #         dictionary which contains directives for 'define global {}'
 #     objects
-#         dictionary which each subdictionary contains directives for 'define object{}'
+#         dictionary in which each subdictionary contains directives for 'define object{}'
 #         'object_id' directive is set with the key of subdictionary
 #         'type' contains 'host', 'service', 'hostgroup', 'servicegroup', 'shape', ...
 #
@@ -62,7 +62,7 @@ nagvis-map-{{data.name}}-conf:
 #     name
 #         the filename of geomap without extension
 #     hosts
-#         dictionary which each subdictionary defines a host
+#         dictionary in which each subdictionary defines a host
 #
 #     {
 #         'name': "test",

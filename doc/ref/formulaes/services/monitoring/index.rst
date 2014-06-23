@@ -8,3 +8,4 @@ Monitoring services
    snmpd.rst
    client.rst
    icinga.rst
+   nagvis.rst
