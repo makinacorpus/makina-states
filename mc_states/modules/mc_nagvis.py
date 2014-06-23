@@ -226,6 +226,14 @@ def settings():
                     1 or 0
                 logonenvcreaterole
                     .
+                logon_multisite_htpasswd
+                    .
+                logon_multisite_secret
+                    .
+                logon_multisite_createuser
+                    .
+                logon_multisite_createrole
+                    .
                 refreshtime
                     automatically refresh
                 sesscookiedomain
@@ -380,7 +388,7 @@ def settings():
                 grid_color
                     grid color
                 grid_steps
-                    grid steps
+                    scale of the grid
 
             worker
                 dictionary to store values of worker section in nagvis_ini_php
@@ -427,7 +435,7 @@ def settings():
                     action_type
                         type of action
                     obj_type
-                        type of objects for which the action will be applied
+                        "host" or "service" or "host,service"
                     condition
                         condition to apply the action
                     domain
@@ -619,6 +627,7 @@ def settings():
                     'doc_root': '/usr/share/nagvis/',
                     #'session_save_path': '/var/lib/php5',
                     'session_auto_start': 0,
+                    'extensions_packages': ['php-gettext', 'php-net-socket', 'php-pear', 'php5-sqlite'],
                 },
                 'global_php': {
                     'CONST_VERSION': "1.7.10",
@@ -681,6 +690,10 @@ def settings():
                         'logonenvvar': "REMOTE_USER",
                         'logonenvcreateuser': 1,
                         'logonenvcreaterole': "Guests",
+                        'logon_multisite_htpasswd': "",
+                        'logon_multisite_secret': "",
+                        'logon_multisite_createuser': 1,
+                        'logon_multisite_createrole': "Guest",
                         'refreshtime': 60,
                         'sesscookiedomain': "auto-detect",
                         'sesscookiepath': "auto-detect",

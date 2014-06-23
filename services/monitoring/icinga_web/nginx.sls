@@ -18,7 +18,7 @@ include:
 {{php.fpm_pool(domain=data.nginx.domain, **data.phpfpm)}}
 
 # install php5-pgsql
-icinga_web-php5-pgsql:
+nagvis-php5-deps:
   pkg.{{pkgssettings['installmode']}}:
     - watch_in:
       - mc_proxy: icinga_web-pre-install

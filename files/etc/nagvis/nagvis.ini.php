@@ -157,14 +157,16 @@ language="{{data.nagvis_ini_php.global.language}}"
 
 logonmodule="{{data.nagvis_ini_php.global.logonmodule}}"
 
-
 logonenvvar="{{data.nagvis_ini_php.global.logonenvvar}}"
-
-
 logonenvcreateuser="{{data.nagvis_ini_php.global.logonenvcreateuser}}"
-
-
 logonenvcreaterole="{{data.nagvis_ini_php.global.logonenvcreaterole}}"
+
+{% if 'LogonMultisite' == data.nagvis_ini_php.global.logonmodule %}
+logon_multisite_htpasswd="{{data.nagvis_ini_php.global.logon_multisite_htpasswd}}"
+logon_multisite_secret="{{data.nagvis_ini_php.global.logon_multisite_secret}}"
+logon_multisite_createuser="{{data.nagvis_ini_php.global.logon_multisite_createuser}}"
+logon_multisite_createrole="{{data.nagvis_ini_php.global.logon_multisite_createrole}}"
+{% endif %}
 
 ;
 ; Default rotation time of pages in rotations
