@@ -43,10 +43,24 @@ def settings():
             'mc_macros.get_local_registry'](
                 'nagvis', registry_format='pack')
 
+        password_web_root_account = nagvis_reg.setdefault('web.root_account_password', __salt__['mc_utils.generate_password']())
+
+        root_account = {
+            'password': password_web_root_account,
+            'salt': "29d58ead6a65f5c00342ae03cdc6d26565e20954", # if you change this, you must change it in php
+        }
+
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.monitoring.nagvis', {
                 'package': ['nagvis'],
                 'configuration_directory': locs['conf_dir']+"/nagvis",
+                'root_account': { # we considere that the root_account has the ID 1
+                    'user': "admin",
+                    'hashed_password': hashlib.sha1(root_account['salt']+root_account['password']).hexdigest(),
+                    'salt': root_account['salt'],
+                    'default_password': "868103841a2244768b2dbead5dbea2b533940e20", # default value that we find if before nagvis
+                    # configuration. It is the password set during installation
+                },
                 'nginx': {
                     'domain': "nagvis.localhost",
                     'doc_root': "/usr/share/nagvis/www/",
@@ -73,6 +87,44 @@ def settings():
                     'doc_root': '/usr/share/nagvis/',
                     #'session_save_path': '/var/lib/php5',
                     'session_auto_start': 0,
+                },
+                'global_php': {
+                    'CONST_VERSION': "1.7.10",
+                    'PROFILE': "false",
+                    'DEBUG': "false",
+                    'DEBUGLEVEL': 6,
+                    'DEBUGFILE': "../../../var/nagvis-debug.log",
+                    'CONST_MAINCFG': "/etc/nagvis/nagvis.ini.php",
+                    'CONST_MAINCFG_CACHE': "/var/cache/nagvis/nagvis-conf",
+                    'CONST_MAINCFG_DIR': "/etc/nagvis/conf.d",
+                    'HTDOCS_DIR': "share",
+                    'CONST_NEEDED_PHP_VERSION': "5.0",
+                    'SESSION_NAME': "nagvis_session",
+                    'REQUIRES_AUTHORISATION': "true",
+                    'GET_STATE': "true",
+                    'GET_PHYSICAL_PATH': "false",
+                    'DONT_GET_OBJECT_STATE': "false",
+                    'DONT_GET_SINGLE_MEMBER_STATES': "false",
+                    'GET_SINGLE_MEMBER_STATES': "true",
+                    'HANDLE_USERCFG': "true",
+                    'ONLY_USERCFG': "true",
+                    'ONLY_STATE': "true",
+                    'COMPLETE': "false",
+                    'IS_VIEW': "true",
+                    'ONLY_GLOBAL': "true",
+                    'GET_CHILDS': "true",
+                    'SET_KEYS': "true",
+                    'SUMMARY_STATE': "true",
+                    'COUNT_QUERY': "true",
+                    'MEMBER_QUERY': "true",
+                    'HOST_QUERY': "true",
+                    'AUTH_MAX_PASSWORD_LENGTH': 30,
+                    'AUTH_MAX_USERNAME_LENGTH': 30,
+                    'AUTH_MAX_ROLENAME_LENGTH': 30,
+                    'AUTH_PERMISSION_WILDCARD': "*",
+                    'AUTH_TRUST_USERNAME': "true",
+                    'AUTH_NOT_TRUST_USERNAME': "false",
+                    'AUTH_PASSWORD_SALT': root_account['salt'],
                 },
                 'nagvis_ini_php': {
                     'global': {
