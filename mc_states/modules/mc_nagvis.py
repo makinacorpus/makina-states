@@ -5,6 +5,8 @@
 mc_nagvis / nagvis functions
 ============================================
 
+You can add your own key/values in backends, rotations and actions subdictionaries.
+
 '''
 
 __docformat__ = 'restructuredtext en'
@@ -908,6 +910,23 @@ def settings():
             registry_format='pack')
         return data
     return _settings()
+
+
+def add_map_settings(map_name, **kwargs):
+    '''Settings for the add_map macro'''
+    nagvisSettings = copy.deepcopy(__salt__['mc_nagvis.settings']())
+    extra = kwargs.pop('extra', {})
+    kwargs.update(extra)
+    kwargs.setdefault('map_name', map_name)
+    kwargs.setdefault('global', {})
+    kwargs.setdefault('hosts', {})
+    nagvisSettings = __salt__['mc_utils.dictupdate'](nagvisSettings, kwargs)
+    # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
+    nagvisSettings['data'] = copy.deepcopy(nagvisSettings)
+    nagvisSettings['data']['extra'] = copy.deepcopy(nagvisSettings)
+    nagvisSettings['extra'] = copy.deepcopy(nagvisSettings)
+    return nagvisSettings
+
 
 
 def dump():

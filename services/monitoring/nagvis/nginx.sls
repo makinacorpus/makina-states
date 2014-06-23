@@ -18,7 +18,7 @@ include:
 {{php.fpm_pool(domain=data.nginx.domain, **data.phpfpm)}}
 
 # install php5 dependancies
-icinga_web-php5-deps:
+nagvis-php5-deps:
   pkg.{{pkgssettings['installmode']}}:
     - watch_in:
       - mc_proxy: nagvis-pre-install

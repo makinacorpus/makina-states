@@ -1,0 +1,17 @@
+# MANAGED VIA SALT -- DO NOT EDIT
+{%- set data = salt['mc_utils.json_load'](data) -%}
+
+define global {
+{% for key, value in data.global.items() %}
+{{key}}={{value}}
+{% endfor %}
+}
+
+{% for name, host in data.hosts.items() %}
+define host {
+ {% for key, value in host.items() %}
+ {{key}}={{value}}
+ {% endfor %}
+}
+{% endfor -%}
+
