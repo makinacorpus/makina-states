@@ -7,39 +7,14 @@ define global {
 {% endfor %}
 }
 
-{% for id, host in data.hosts.items() %}
-define host {
+{% for id, object in data.objects.items() %}
+define {{object.type}} {
  object_id={{id}}
- {% for key, value in host.items() %}
+ {% for key, value in object.items() %}
+ {% if 'type' != key %}
  {{key}}={{value}}
+ {% endif %}
  {% endfor %}
 }
-{% endfor -%}
-
-{% for id, service in data.services.items() %}
-define service {
- object_id={{id}}
- {% for key, value in service.items() %}
- {{key}}={{value}}
- {% endfor %}
-}
-{% endfor -%}
-
-{% for id, hostgroup in data.hostgroups.items() %}
-define hostgroup {
- object_id={{id}}
- {% for key, value in hostgroup.items() %}
- {{key}}={{value}}
- {% endfor %}
-}
-{% endfor -%}
-
-{% for id, servicegroup in data.servicegroups.items() %}
-define hostgroup {
- object_id={{id}}
- {% for key, value in servicegroup.items() %}
- {{key}}={{value}}
- {% endfor %}
-}
-{% endfor -%}
+{% endfor %}
 
