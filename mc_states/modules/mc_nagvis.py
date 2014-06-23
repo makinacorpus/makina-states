@@ -224,13 +224,13 @@ def settings():
                 language
                     default language
                 logonmodule
-                    .
+                    for old style authentication
                 logonenvvar
-                    .
+                    header containing username
                 logonenvcreateuser
-                    .
+                    1 or 0
                 logonenvcreaterole
-                    .
+                    1 or 0
                 refreshtime
                     automatically refresh
                 sesscookiedomain

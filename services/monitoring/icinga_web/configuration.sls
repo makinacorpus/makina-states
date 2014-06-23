@@ -38,7 +38,7 @@ icinga_web-{{file}}-conf:
 icinga_web-usr-databases-conf:
   file.managed:
     - name: /usr/share/icinga-web/app/config/databases.xml
-    - source: salt://makina-states/files/etc/icinga-web/databases-usr.xml
+    - source: salt://makina-states/files/usr/share/icinga-web/app/config/databases.xml
     - template: jinja
     - makedirs: true
     - user: root

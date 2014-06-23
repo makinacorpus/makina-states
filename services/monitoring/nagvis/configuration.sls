@@ -35,7 +35,7 @@ nagvis-conf:
 nagvis-global-conf:
   file.managed:
     - name: /usr/share/nagvis/share/server/core/defines/global.php
-    - source: salt://makina-states/files/etc/nagvis/global.php
+    - source: salt://makina-states/files/usr/share/nagvis/share/server/core/defines/global.php
     - template: jinja
     - makedirs: true
     - user: root
