@@ -259,15 +259,16 @@ def vm_sshkeys(vm, compute_node=None, vt=None, ret=None, output=True):
 
     '''
     vt = __salt__['mc_cloud_vm.get_vt'](vm, vt)
-    id_rsa = cli('cmd.run', 'cat /root/.ssh/id_rsa.pub', salt_target=vm)
-    id_dsa = cli('cmd.run', 'cat /root/.ssh/id_dsa.pub', salt_target=vm)
-    if not LXC_REF_RE.search(vm):
-        if LXC_REF_RE.search(id_rsa):
-            log.info('Deleting default rsa ssh key')
-            id_rsa = cli('cmd.run', 'rm -f /root/.ssh/id_rsa*', salt_target=vm)
-        if LXC_REF_RE.search(id_dsa):
-            log.info('Deleting default dsa ssh key')
-            id_rsa = cli('cmd.run', 'rm -f /root/.ssh/id_dsa*', salt_target=vm)
+    # moved in the sls
+    # id_rsa = cli('cmd.run', 'cat /root/.ssh/id_rsa.pub', salt_target=vm)
+    # id_dsa = cli('cmd.run', 'cat /root/.ssh/id_dsa.pub', salt_target=vm)
+    # if not LXC_REF_RE.search(vm):
+    #     if LXC_REF_RE.search(id_rsa):
+    #         log.info('Deleting default rsa ssh key')
+    #         id_rsa = cli('cmd.run', 'rm -f /root/.ssh/id_rsa*', salt_target=vm)
+    #     if LXC_REF_RE.search(id_dsa):
+    #         log.info('Deleting default dsa ssh key')
+    #         id_rsa = cli('cmd.run', 'rm -f /root/.ssh/id_dsa*', salt_target=vm)
     compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
     return _vm_configure('sshkeys', vm, compute_node, vm, ret, output)
 
@@ -381,8 +382,8 @@ def provision(vm, compute_node=None, vt=None,
                  'spawn',
                  'register_configuration',
                  'preprovision',
-                 # 'hostsfile',
                  # 'sshkeys',
+                 # 'hostsfile',
                  # 'grains',
                  # 'markers',
                  'initial_setup',

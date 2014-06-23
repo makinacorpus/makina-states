@@ -2,6 +2,7 @@
 ##################################
 ## INTERNAL RULES IDS:1-10      ##
 ##################################
+
 #weird_request : 1
 #big_body : 2
 #no_content_type : 3
@@ -40,7 +41,7 @@ MainRule "str:php://" "msg:html comment tag" "mz:ARGS|BODY|$HEADERS_VAR:Cookie" 
 
 #######################################
 ## Directory traversal IDs:1200-1299 ##
-#######################################                                          
+#######################################
 MainRule "str:.." "msg:html comment tag" "mz:ARGS|URL|BODY|$HEADERS_VAR:Cookie" "s:$TRAVERSAL:4" id:1200;
 MainRule "str:/etc/passwd" "msg:html comment tag" "mz:ARGS|URL|BODY|$HEADERS_VAR:Cookie" "s:$TRAVERSAL:4" id:1202;
 MainRule "str:c:\\" "msg:html comment tag" "mz:ARGS|URL|BODY|$HEADERS_VAR:Cookie" "s:$TRAVERSAL:4" id:1203;
