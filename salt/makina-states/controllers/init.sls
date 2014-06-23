@@ -10,9 +10,6 @@
 # This can be customized by putting keys either in pillar or in grains
 # in the form: 'makina-states.controllers.<statename>'
 #
-# EG: to disable the mastersalt_master
-#
-#  makina-states.controllers.mastersalt_master: False
 #}
 {{ salt['mc_macros.autoinclude'](
      salt['mc_controllers.registry'](),
