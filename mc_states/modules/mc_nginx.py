@@ -20,6 +20,7 @@ Documentation of this module is available with::
 import logging
 import copy
 import mc_states.utils
+from salt.utils.pycrypto import secure_password
 
 __name = 'nginx'
 
@@ -46,6 +47,22 @@ def settings():
         authorized reverse proxied addresses
     use_real_ip
         do we use real ip module
+    use_naxsi
+        configure & use naxsi
+    use_naxsi_secrules
+        use sec rules in naxsi
+    naxsi_ui_pass
+        pass for naxsi leaning mode ui
+    naxsi_ui_host
+        host for naxsi leaning mode ui
+    naxsi_ui_intercept_port
+        intercept_port for naxsi leaning mode ui
+    naxsi_ui_extract_port
+        extract port for naxsi leaning mode ui
+    use_naxsi_learning
+        put naxsi in learning mode
+    naxsi_denied_url
+        uri for naxsi refused cnx
     real_ip_header
         which http header to search for real ip
     reverse_proxy_addresses
@@ -148,6 +165,9 @@ def settings():
     def _settings():
         grains = __grains__
         pillar = __pillar__
+        local_conf = __salt__['mc_macros.get_local_registry'](
+            'burp', registry_format='pack')
+        naxsi_ui_pass = local_conf.get('naxsi_pass', secure_password(32))
         locations = __salt__['mc_locations.settings']()
         nbcpus = __grains__.get('num_cpus', '4')
         epoll = False
@@ -175,6 +195,15 @@ def settings():
                 'is_reverse_proxied': is_rp,
                 'reverse_proxy_addresses': reverse_proxy_addresses,
                 'use_real_ip': True,
+                'use_naxsi': False,
+                'use_naxsi_secrules': True,
+                'naxsi_ui_user': 'naxsi_web',
+                'naxsi_ui_pass': naxsi_ui_pass,
+                'naxsi_ui_host': '127.0.01',
+                'naxsi_ui_intercept_port': '18080',
+                'naxsi_ui_extract_port': '18081',
+                'use_naxsi_learning': True,
+                'naxsi_denied_url': "/RequestDenied",
                 'real_ip_header': 'X-Forwarded-For',
                 'logformat': 'custom_combined',
                 'logformats': logformats,

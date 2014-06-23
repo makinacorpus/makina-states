@@ -1,6 +1,7 @@
 include:
   - makina-states.services.http.nginx.hooks
 
+{% set pkgssettings = salt['mc_pkgs.settings']() %}
 {% if grains['os_family'] in ['Debian'] %}
 {% set dist = pkgssettings.udist %}
 {% endif %}
