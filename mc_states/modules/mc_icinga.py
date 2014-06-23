@@ -135,9 +135,12 @@ def settings():
                 plugins
                     plugin used in uwsgi. with icinga we have to use the "cgi" plugin
                 async
-                    number of threads used by uwsgi
+                    number of asynchronous threads used by uwsgi
+                    it seems that icinga-cgi doesn't work very well when we use async (the webpages are not complete)
                 ugreen
                     "true" or "false"
+                threads
+                    number of threads used by uwsgi
                 socket
                     socket where uwsgi listen on. This value should be equal to one in 
                     uwsgi_pass
@@ -452,6 +455,7 @@ def settings():
                             'plugins': "cgi",
                             'async': 20,
                             'ugreen': True,
+                            'threads': 5,
                             'socket': "127.0.0.1:3030",
                             'uid': "www-data",
                             'gid': "www-data",
