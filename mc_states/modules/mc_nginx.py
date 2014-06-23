@@ -177,7 +177,7 @@ def settings():
         is_rp = is_reverse_proxied()
         reverse_proxy_addresses = []
         if is_rp:
-            gw = grains.get('makina.default_route', {}).get('gateway').strip()
+            gw = grains.get('makina.default_route', {}).get('gateway', '').strip()
             if gw and gw not in reverse_proxy_addresses:
                 reverse_proxy_addresses.append(gw)
 
