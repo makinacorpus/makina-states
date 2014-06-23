@@ -14,6 +14,25 @@ include:
   - makina-states.services.monitoring.nagvis.services
 
 
+# general configuration
+nagvis-conf:
+  file.managed:
+    - name: {{data.configuration_directory}}/nagvis.ini.php
+    - source: salt://makina-states/files/etc/nagvis/nagvis.ini.php
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 644
+    - watch:
+      - mc_proxy: nagvis-pre-conf
+    - watch_in:
+      - mc_proxy: nagvis-post-conf
+    - defaults:
+      data: |
+            {{sdata}}
+
+
 {%- import "makina-states/services/monitoring/icinga/macros.jinja" as icinga with context %}
 {#
 {{icinga.icingaAddWatcher('foo', '/bin/echo', args=[1]) }}
