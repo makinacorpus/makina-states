@@ -45,6 +45,23 @@ def settings():
             the password inserted when nagvis is installed. it is to check that the password was not previously modified
 
 
+    geomap
+            dictionary to store values about geomap. Each dictionary corresponds to a file
+
+            foo
+                foo should be replaced with the csv filename to generate
+                each key in this dictionary describe a host
+
+                host
+                    dictionary to describe the host
+
+                    name
+                        hostname
+                    lat
+                        latitude
+                    lon
+                        longitude
+               
     nginx
             dictionary to store values of nginx configuration
 
@@ -227,11 +244,11 @@ def settings():
                 logonenvcreaterole
                     .
                 logon_multisite_htpasswd
-                    .
+                    location of htpasswd file used by logon multisite
                 logon_multisite_secret
                     .
                 logon_multisite_createuser
-                    .
+                    1 or 0
                 logon_multisite_createrole
                     .
                 refreshtime
@@ -490,6 +507,7 @@ def settings():
                     .
                 pending
                     .
+
                 unreachable_bgcolor
                     .
                 unreachable_color
@@ -600,6 +618,20 @@ def settings():
                     'salt': root_account['salt'],
                     'default_password': "868103841a2244768b2dbead5dbea2b533940e20", # default value that we find if before nagvis
                     # configuration. It is the password set during installation
+                },
+                'geomap' : {
+                    'demo-locations': {
+                        'ham-srv1': {
+                            'name': "Hamburg Server 1",
+                            'lat': 53.556866,
+                            'lon': 9.994622,
+                        },
+                        'muc-srv1': {
+                            'name': "Munich Server 1",
+                            'lat': 48.1448353,
+                            'lon': 11.5580067,
+                        },
+                    },
                 },
                 'nginx': {
                     'domain': "nagvis.localhost",

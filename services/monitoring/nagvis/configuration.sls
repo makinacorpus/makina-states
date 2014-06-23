@@ -87,6 +87,28 @@ nagvis-root-account:
     - watch_in:
        - mc_proxy: nagvis-post-conf
 
+# add geomap hosts
+{% for name, geomap in data.geomap.items() %}
+nagvis-geomap-{{name}}-conf:
+  file.managed:
+    - name: {{data.configuration_directory}}/geomap/{{name}}.csv
+    - source: salt://makina-states/files/etc/nagvis/geomap/template.csv
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 644
+    - watch:
+      - mc_proxy: nagvis-pre-conf
+    - watch_in:
+      - mc_proxy: nagvis-post-conf
+    - defaults:
+      data: |
+            {{salt['mc_utils.json_dump'](geomap)}}
+
+{% endfor %}
+
+
 {%- import "makina-states/services/monitoring/icinga/macros.jinja" as icinga with context %}
 {#
 {{icinga.icingaAddWatcher('foo', '/bin/echo', args=[1]) }}
