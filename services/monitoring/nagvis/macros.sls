@@ -7,7 +7,11 @@
 #         dictionary which contains directives for 'define global {}'
 #     hosts
 #         dictionary which each subdictionary contains directives for 'define host{}'
-#         'host_name' directive is set with the key of subdictionary
+#         'object_id' directive is set with the key of subdictionary
+#     services
+#         dictionary which each subdictionary contains directives for 'define service{}'
+#         'object_id' directive is set with the key of subdictionary
+#
 #
 #     {
 #         'name': "test",
@@ -16,16 +20,24 @@
 #             'iconset': "std_medium",
 #         },
 #         'hosts': {
-#             'host1': {
-#                 'object_id': "abc",
+#             'abc': {
+#                 'host_name': "host1",
+#                 'x': 4,
+#                 'y': 3,
+#             },
+#         },
+#         'services': {
+#             'def': {
+#                 'host_name': "host1",
+#                 'service_description': "SSH",
 #                 'x': 4,
 #                 'y': 3,
 #             },
 #         },
 #     }
 #}
-{% macro add_map(name, _global, hosts) %}
-{% set data = salt['mc_nagvis.add_map_settings'](name, _global, hosts, **kwargs) %}
+{% macro add_map(name, _global={}, hosts={}, services={}) %}
+{% set data = salt['mc_nagvis.add_map_settings'](name, _global, hosts, services, **kwargs) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 
 nagvis-map-{{data.name}}-conf:
@@ -71,7 +83,7 @@ nagvis-map-{{data.name}}-conf:
 #         },
 #     }
 #}
-{% macro add_geomap(name,hosts) %}
+{% macro add_geomap(name, hosts={}) %}
 {% set data = salt['mc_nagvis.add_geomap_settings'](name, hosts, **kwargs) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 

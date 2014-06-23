@@ -7,10 +7,19 @@ define global {
 {% endfor %}
 }
 
-{% for host_name, host in data.hosts.items() %}
+{% for id, host in data.hosts.items() %}
 define host {
- host_name={{host_name}}
+ object_id={{id}}
  {% for key, value in host.items() %}
+ {{key}}={{value}}
+ {% endfor %}
+}
+{% endfor -%}
+
+{% for id, service in data.services.items() %}
+define service {
+ object_id={{id}}
+ {% for key, value in service.items() %}
  {{key}}={{value}}
  {% endfor %}
 }

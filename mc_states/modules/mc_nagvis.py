@@ -880,7 +880,7 @@ def settings():
     return _settings()
 
 
-def add_map_settings(name, _global, hosts, **kwargs):
+def add_map_settings(name, _global, hosts, services, **kwargs):
     '''Settings for the add_map macro'''
     nagvisSettings = copy.deepcopy(__salt__['mc_nagvis.settings']())
     extra = kwargs.pop('extra', {})
@@ -888,6 +888,7 @@ def add_map_settings(name, _global, hosts, **kwargs):
     kwargs.setdefault('name', name)
     kwargs.setdefault('_global', _global)
     kwargs.setdefault('hosts', hosts)
+    kwargs.setdefault('services', services)
     nagvisSettings = __salt__['mc_utils.dictupdate'](nagvisSettings, kwargs)
     # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
     nagvisSettings['data'] = copy.deepcopy(nagvisSettings)
