@@ -1,7 +1,4 @@
 # enable or disable
 {% set data = salt['mc_utils.json_load'](data) %}
-{% if data.use_naxsi %}
+# let the init script kill even if disabled
 NAXSI_ENABLED=1
-{% else %}
-NAXSI_ENABLED=0
-{% endif %}
