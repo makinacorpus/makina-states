@@ -11,6 +11,12 @@
 #     services
 #         dictionary which each subdictionary contains directives for 'define service{}'
 #         'object_id' directive is set with the key of subdictionary
+#     hostgroups
+#         dictionary which each subdictionary contains directives for 'define hostgroup{}'
+#         'object_id' directive is set with the key of subdictionary
+#     servicegroups
+#         dictionary which each subdictionary contains directives for 'define servicegroup{}'
+#         'object_id' directive is set with the key of subdictionary
 #
 #
 #     {
@@ -34,10 +40,14 @@
 #                 'y': 3,
 #             },
 #         },
+#         'hostgroups': {
+#         }
+#         'servicesgroups': {
+#         }
 #     }
 #}
-{% macro add_map(name, _global={}, hosts={}, services={}) %}
-{% set data = salt['mc_nagvis.add_map_settings'](name, _global, hosts, services, **kwargs) %}
+{% macro add_map(name, _global={}, hosts={}, services={}, hostgroups={}, servicegroups={}) %}
+{% set data = salt['mc_nagvis.add_map_settings'](name, _global, hosts, services, hostgroups, servicesgroups, **kwargs) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 
 nagvis-map-{{data.name}}-conf:

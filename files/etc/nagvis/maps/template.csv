@@ -25,3 +25,21 @@ define service {
 }
 {% endfor -%}
 
+{% for id, hostgroup in data.hostgroups.items() %}
+define hostgroup {
+ object_id={{id}}
+ {% for key, value in hostgroup.items() %}
+ {{key}}={{value}}
+ {% endfor %}
+}
+{% endfor -%}
+
+{% for id, servicegroup in data.servicegroups.items() %}
+define hostgroup {
+ object_id={{id}}
+ {% for key, value in servicegroup.items() %}
+ {{key}}={{value}}
+ {% endfor %}
+}
+{% endfor -%}
+
