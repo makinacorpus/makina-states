@@ -31,6 +31,180 @@ def settings():
         list of packages to install icinga-web
     configuration_directory
         directory where configuration files are located
+
+    root_account
+        dictionary to store root account information. It is the account with the userId=1 in the sqlite database
+
+        login
+            login for root login on web interface
+        hashed_password
+            password for root login on web interface
+        salt
+            salt used to hash the password
+        default_password
+            the password inserted when nagvis is installed. it is to check that the password was not previously modified
+
+
+    nginx
+            dictionary to store values of nginx configuration
+
+            domain
+                name of virtualhost created to serve webpages
+            doc_root
+                root location of virtualhost
+            vh_content_source
+                template file for nginx content file
+            vh_top_source
+                template file for nginx top file
+
+            nagvis
+                dictionary to store values used in templates given in
+                vh_content_source and vh_top_source
+
+                web_directory
+                    location under which webpages of nagvis will be available
+                fastcgi_pass
+                    socket used to contact fastcgi server in order to interpret php files
+
+            icinga_cgi
+                dictionary to store values used in templates given in
+                vh_content_source and vh_top_source
+
+                enabled
+                    enable a web directory to serve cgi files. If True, icinga-cgi
+                    will no be installed and configured automatically.
+
+                web_directory
+                    location under which webpages of icinga-cgi will be available
+                realm
+                    message displayed for digest authentication
+                htpasswd_file
+                    location of file storing users password
+                htdoc_dir
+                    root location for web_directory
+                images_dir
+                    directory where images used by cgi are stored
+                styles_dir
+                    directory where css used by cgi are stored
+                cgi_dir
+                    directory where cgi files are located
+                uwsgi_pass
+                    socket used to contact uwsgi server
+
+        phpfpm
+            dictionary to store values of phpfpm configuration
+
+            open_basedir
+                paths to add to open_basedir
+            doc_root
+                root location for php-fpm
+            session_auto_start
+                must be 0 to run nagvis
+
+        global_php
+            dictionary to store values used in global.php
+
+            CONST_VERSION
+                str
+            PROFILE
+                "true" or "false"
+            DEBUG
+                "true" or "false"
+            DEBUGLEVEL
+                number
+            DEBUGFILE
+                location of file
+            CONST_MAINCFG
+                location of nagvis.ini.php
+            CONST_MAINCFG_CACHE
+                location of cache directory
+            CONST_MAINCFG_DIR
+                location of configuration directory
+            HTDOCS_DIR
+                location of webserver root
+                I have not modified this value because it seems it doesn't work when we use a subdirectory
+            CONST_NEEDED_PHP_VERSION
+                str
+            SESSION_NAME
+                name of cookie session
+            REQUIRES_AUTHORISATION
+                "true" or "false"
+            GET_STATE
+                "true" or "false"
+            GET_PHYSICAL_PATH
+                "true" or "false"
+            DONT_GET_OBJECT_STATE
+                "true" or "false"
+            DONT_GET_SINGLE_MEMBER_STATES
+                "true" or "false"
+            GET_SINGLE_MEMBER_STATES
+                "true" or "false"
+            HANDLE_USERCFG
+                "true" or "false"
+            ONLY_USERCFG
+                "true" or "false"
+            ONLY_STATE
+                "true" or "false"
+            COMPLETE
+                "true" or "false"
+            IS_VIEW
+                "true" or "false"
+            ONLY_GLOBAL
+                "true" or "false"
+            GET_CHILDS
+                "true" or "false"
+            SUMMARY_STATE
+                "true" or "false"
+            COUNT_QUERY
+                "true" or "false"
+            MEMBER_QUERY
+                "true" or "false"
+            HOST_QUERY
+                "true" or "false"
+            AUTH_MAX_PASSWORD_LENGTH
+                number
+            AUTH_MAX_USERNAME_LENGTH
+                number
+            AUTH_MAX_ROLENAME_LENGTH
+                number
+            AUTH_PERMISSION_WILDCARD
+                str
+            AUTH_TRUST_USERNAME
+                "true" or "false"
+            AUTH_NOT_TRUST_USERNAME
+                "true" or "false"
+            AUTH_PASSWORD_SALT
+                salt used for password. We notice the salt used is the same for all passwords which is a security weakness.
+
+        nagvis_ini_php
+            dictionary to store values used in nagvis_ini_php
+            each subdictionary represents an ini section
+
+            global
+                dictionary to store values of global section in nagvis_ini_php
+            paths
+                dictionary to store values of paths section in nagvis_ini_php
+            defaults
+                dictionary to store values of defaults section in nagvis_ini_php
+            index
+                dictionary to store values of index section in nagvis_ini_php
+            automap
+                dictionary to store values of automap section in nagvis_ini_php
+            wui
+                dictionary to store values of wui section in nagvis_ini_php
+            worker
+                dictionary to store values of worker section in nagvis_ini_php
+            backends
+                dictionary to store values of backends section in nagvis_ini_php
+                each subdictionary corresponds to a "backend_foo" section
+            rotations
+                dictionary to store values of rotations section in nagvis_ini_php
+                each subdictionary corresponds to a "rotation_foo" section
+            actions
+                dictionary to store values of actions section in nagvis_ini_php
+                each subdictionary corresponds to a "action_foo" section
+            states
+                dictionary to store values of states section in nagvis_ini_php
                 
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
@@ -239,7 +413,7 @@ def settings():
                         'live_1': {
                             'backendtype': "mklivestatus",
                             'socket': "unix:/var/lib/icinga/rw/live",
-                            'htmlcgi': "/icinga/cgi-bin",
+                            'htmlcgi': "/cgi-bin/icinga/",
                         },
                     },
                     'rotations': {

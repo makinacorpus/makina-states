@@ -114,7 +114,7 @@ def settings():
         (no ido2db data)
 
     root_account
-        dictionary to store root accoutn information. It is the account created on first installation of icinga_web
+        dictionary to store root account information. It is the account created on first installation of icinga_web
 
         login
             login for root login on web interface

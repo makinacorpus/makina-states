@@ -41,7 +41,7 @@ icinga_web-www-dir:
   
 icinga_web-www-dir-link-docroot:
   file.symlink:
-    - name: {{data.nginx.doc_root}}/icinga-web
+    - name: {{data.nginx.doc_root}}/{{data.nginx.icinga_web.web_directory}}
     - target: /usr/share/icinga-web/pub
     - watch:
       - file: icinga_web-www-dir

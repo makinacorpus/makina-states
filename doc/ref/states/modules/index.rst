@@ -45,6 +45,7 @@ Subregistries
    mc_logrotate.rst
    mc_lxc.rst
    mc_mysql.rst
+   mc_nagvis.rst
    mc_network.rst
    mc_nginx.rst
    mc_nodejs.rst
