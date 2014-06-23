@@ -43,3 +43,12 @@ The architecture of service folder looks like to :
 
 For "pgsql.sls", "mysql.sls" and "nginx.sls", I don't have separated the states between prerequisites, configuration and services.
 
+
+The architecture between Icinga, Icinga-web and nagvis looks like to:
+
+::
+
+	Icinga --ido2db--> Postgresql <---- Icinga-web
+	     |
+	     +---mklivestatus--><---------- Nagvis
+

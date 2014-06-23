@@ -5,6 +5,11 @@
 mc_nagvis / nagvis functions
 ============================================
 
+in nagvis_ini_php dictionary,if a key is missing, the directive in configuration file 
+will not be added because some default value proposed in the default configuration 
+file seems to be not correct or no default value are proposed 
+(the directive are commented in the default configuration file)
+
 '''
 
 __docformat__ = 'restructuredtext en'
@@ -179,32 +184,390 @@ def settings():
         nagvis_ini_php
             dictionary to store values used in nagvis_ini_php
             each subdictionary represents an ini section
+            if a key is not present, the directive will not be added in the configuration file
 
             global
                 dictionary to store values of global section in nagvis_ini_php
+
+                audit_log
+                    1 or 0
+                authmodule
+                    name of authentication module
+                authorisationmodule
+                    name of authorisation module
+                controls_size
+                    controls size
+                dateformat
+                    date format
+                dialog_ack_sticky
+                    .
+                dialog_ack_notify
+                    .
+                dialog_ack_persist
+                    .
+                file_group
+                    group used to launch nagvis script
+                file_mode
+                    default file mode for temporary files
+                geomap_server
+                    url of geomap server
+                http_proxy
+                    http proxy
+                http_proxy_auth
+                    auth for http proxy
+                http_timeout
+                    timeout
+                language_available
+                    language available
+                language_detection
+                    language detection
+                language
+                    default language
+                logonmodule
+                    .
+                logonenvvar
+                    .
+                logonenvcreateuser
+                    .
+                logonenvcreaterole
+                    .
+                refreshtime
+                    automatically refresh
+                sesscookiedomain
+                    session cookie domain
+                sesscookiepath
+                    session cookie path
+                sesscookieduration
+                    session cookie lifetime
+                startmodule
+                    .
+                startaction
+                    .
+                startshow
+                    .
+                shinken_features
+                    1 or 0
+
             paths
                 dictionary to store values of paths section in nagvis_ini_php
+
+                base
+                    location of nagvis installation
+                htmlbase
+                    location of php files. It should be the same value that nginx.nagvis.web_directory
             defaults
                 dictionary to store values of defaults section in nagvis_ini_php
+
+                backend
+                    default backend
+                backgroundcolor
+                    background color
+                contextmenu
+                    1 or 0
+                contexttemplate
+                    template
+                event_on_load
+                    1 or 0
+                event_repeat_interval
+                    1 or 0
+                event_repeat_duration
+                    number
+                eventbackground
+                    1 or 0
+                eventhighlight
+                    1 or 0
+                eventhighlightduration
+                    number
+                eventhighlightinterval
+                    number
+                eventlog
+                    1 or 0
+                eventloglevel
+                    number
+                eventlogevents
+                    number
+                eventlogheight
+                    number
+                eventloghidden
+                    1 or 0
+                eventscroll
+                    1 or 0
+                eventsound
+                    1 or 0
+                headermenu
+                    1 or 0
+                headertemplate
+                    name of header template
+                headerfade
+                    1 or 0
+                hovermenu
+                    1 or 0
+                hovertemplate
+                    name of hover template
+                hoverdelay
+                    number
+                hoverchildsshow
+                    1 or 0
+                hoverchildslimit
+                    number
+                hoverchildsorder
+                    "asc" or "desc"
+                hoverchildssort
+                    "s"
+                icons
+                    name of icons
+                onlyhardstates
+                    1 or 0
+                recognizeservices
+                    1 or 0
+                showinlists
+                    1 or 0
+                showinmultisite
+                    1 or 0
+                stylesheet
+                    ""
+                urltarget
+                    "_self"
+                hosturl
+                    url for hosts
+                hostgroupurl
+                    url for hostgroups
+                serviceurl
+                    url for services
+                servicegroupurl
+                    url for servicegroups
+                mapurl
+                    url of maps
+                view_template
+                    name of the view template
+                label_show
+                    1 or 0
+                line_weather_colors
+                    .
+
             index
                 dictionary to store values of index section in nagvis_ini_php
+
+                backgroundcolor
+                    background color
+                cellsperrow
+                    number
+                headermenu
+                    1 or 0
+                headertemplate
+                    header template
+                showmaps
+                    1 or 0
+                showgeomap
+                    1 or 0
+                showrotations
+                    1 or 0
+                showmapthumbs
+                    1 or 0
+
             automap
                 dictionary to store values of automap section in nagvis_ini_php
+
+                defaultparams
+                    default parameters
+                defaultroot
+                    default root
+                graphvizpath
+                    location of graphviz binary
+
             wui
                 dictionary to store values of wui section in nagvis_ini_php
+
+                maplocktime
+                    map lock time
+                grid_show
+                    1 or 0
+                grid_color
+                    grid color
+                grid_steps
+                    grid steps
+
             worker
                 dictionary to store values of worker section in nagvis_ini_php
+
+                interval
+                    number
+                requestmaxparams
+                    number
+                requestmaxlength
+                    number
+                updateobjectstates
+                    number
+
             backends
                 dictionary to store values of backends section in nagvis_ini_php
                 each subdictionary corresponds to a "backend_foo" section
+
+                foo
+                    dictionary to store values of foo backend. foo must be replaced with the name of the backend
+                    the keys and values expected depends on the backend type
+
+                    backendtype
+                        type of backend
+
             rotations
                 dictionary to store values of rotations section in nagvis_ini_php
                 each subdictionary corresponds to a "rotation_foo" section
+
+                foo
+                    dictionary to store values of foo rotation. foo must be replaced with the name of the rotation
+
+                    maps
+                        list of maps which are in the rotation
+                    interval
+                        interval
+
             actions
                 dictionary to store values of actions section in nagvis_ini_php
                 each subdictionary corresponds to a "action_foo" section
+
+                foo
+                    dictionary to store values of foo action. foo must be replaced with the name of the action
+
+                    action_type
+                        type of action
+                    obj_type
+                        type of objects for which the action will be applied
+                    condition
+                        condition to apply the action
+                    domain
+                        domain
+                    username
+                        username
+
             states
                 dictionary to store values of states section in nagvis_ini_php
+
+                down
+                    .
+                down_ack
+                    .
+                down_downtime
+                    .
+                unreachable
+                    .
+                unreachable_ack
+                    .
+                unreachable_downtime
+                    .
+                critical
+                    .
+                critical_ack
+                    .
+                critical_downtime
+                    .
+                warning
+                    .
+                warning_ack
+                    .
+                warning_downtime
+                    .
+                unknown
+                    .
+                unknown_ack
+                    .
+                unknown_downtime
+                    .
+                error
+                    .
+                error_ack
+                    .
+                error_downtime
+                    .
+                up
+                    .
+                ok
+                    .
+                unchecked
+                    .
+                pending
+                    .
+                unreachable_bgcolor
+                    .
+                unreachable_color
+                    .
+                unreachable_ack_bgcolor
+                    .
+                unreachable_downtime_bgcolor
+                    .
+                down_bgcolor
+                    .
+                down_color
+                    .
+                down_ack_bgcolor
+                    .
+                down_downtime_bgcolor
+                    .
+                critical_bgcolor
+                    .
+                critical_color
+                    .
+                critical_ack_bgcolor
+                    .
+                critical_downtime_bgcolor
+                    .
+                warning_bgcolor
+                    .
+                warning_color
+                    .
+                warning_ack_bgcolor
+                    .
+                warning_downtime_bgcolor
+                    .
+                unknown_bgcolor
+                    .
+                unknown_color
+                    .
+                unknown_ack_bgcolor
+                    .
+                unknown_downtime_bgcolor
+                    .
+                error_bgcolor
+                    .
+                error_color
+                    .
+                up_bgcolor
+                    .
+                up_color
+                    .
+                ok_bgcolor
+                    .
+                ok_color
+                    .
+                unchecked_bgcolor
+                    .
+                unchecked_color
+                    .
+                pending_bgcolor
+                    .
+                pending_color
+                    .
+                unreachable_sound
+                    .
+                down_sound
+                    .
+                critical_sound
+                    .
+                warning_sound
+                    .
+                unknown_sound
+                    .
+                error_sound
+                    .
+                up_sound
+                    .
+                ok_sound
+                    .
+                unchecked_sound
+                    .
+                pending_sound
+                    .
+
                 
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
