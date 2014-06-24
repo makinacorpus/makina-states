@@ -14,3 +14,18 @@ icinga_web-pkgs:
       - {{package}}
       {% endfor %}
 
+{% if icinga_webSettings.modules.pnp4nagios.enabled %}
+icinga_web-pnp4nagios-pkgs:
+  pkg.{{pkgssettings['installmode']}}:
+    - watch:
+      - mc_proxy: icinga_web-pre-install
+      - pkg: icinga_web-pkgs
+    - watch_in:
+      - mc_proxy: icinga_web-post-install
+    - pkgs:
+      {% for package in icinga_webSettings.modules.pnp4nagios.package %}
+      - {{package}}
+      {% endfor %}
+{% endif %}
+
+

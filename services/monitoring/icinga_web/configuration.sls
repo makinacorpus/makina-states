@@ -61,6 +61,33 @@ icinga_web-clear-cache:
     - watch_in:
       - mc_proxy: icinga_web-post-conf
 
+# pnp4nagios module
+{% if data.modules.pnp4nagios.enabled %}
+
+# add cronks templates
+{% for name, template in data.modules.pnp4nagios.cronks_extensions_templates.items() %}
+
+icinga_web-module-pnp4nagios-template-{{name}}-conf:
+  file.managed:
+    - name: /usr/share/icinga-web/app/modules/Cronks/data/xml/extensions/{{name}}.xml
+    - source: salt://makina-states/files/usr/share/icinga-web/app/modules/Cronks/data/xml/extensions/{{name}}.xml
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: www-data
+    - mode: 640
+    - watch:
+      - mc_proxy: icinga_web-pre-conf
+    - watch_in:
+      - mc_proxy: icinga_web-post-conf
+    - defaults:
+      data: |
+            {{ salt['mc_utils.json_dump'](template) }}
+
+{% endfor %}
+{% endif %}
+
+
 {%- import "makina-states/services/monitoring/icinga_web/macros.jinja" as icinga_web with context %}
 {#
 {{icinga_web.icingaAddWatcher('foo', '/bin/echo', args=[1]) }}

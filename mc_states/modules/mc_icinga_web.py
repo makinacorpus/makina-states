@@ -615,6 +615,20 @@ def settings():
                               and has_sgbd),
                 'has_mysql': ('mysql' == web_database['type']
                               and has_sgbd),
+                'modules': {
+                    'pnp4nagios': {
+                        'enabled': True,
+                        'package': ['icinga-web-pnp'],
+                        'cronks_extensions_templates': {
+                            'pnp-host-extension': {
+                                'url': "http://pnp4nagios.localhost/pnp4nagios/index.php",
+                            },
+                            'pnp-service-extension': {
+                                'url': "http://pnp4nagios.localhost/pnp4nagios/index.php",
+                            },
+                        },
+                    },
+                },
                 'root_account': {
                     'login': "root",
                     'hashed_password': hmac.new(root_account['salt']
