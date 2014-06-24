@@ -9,6 +9,7 @@
 {% set orchestrate = hooks.orchestrate %}
 include:
   - makina-states.services.db.postgresql.hooks
+  - makina-states.services.db.postgresql.wrappers
 {#
 # many database installers create the template1
 # with latin1 encoding making then difficult to handle
@@ -19,6 +20,8 @@ include:
 {% set tmpf = '/tmp/psql.{0}fix.sql'.format(version) %}
 makina-postgresql-{{version}}-fix-template1:
   file.managed:
+    - require:
+      - mc_proxy: pgsql-wrappers
     - name: {{tmpf}}
     - source: ''
     - user: {{default_user}}

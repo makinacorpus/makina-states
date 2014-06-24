@@ -37,6 +37,8 @@ pgwrapper-{{binary}}-{{version}}-makina-postgresql:
       - mc_proxy: {{orchestrate[version]['predb']}}
       - mc_proxy: {{orchestrate[version]['pregroup']}}
       - mc_proxy: {{orchestrate[version]['preuser']}}
+    - require_in:
+      - mc_proxy: pgsql-wrappers
     - require:
       - file: pgwrapper-{{version}}-makina-postgresql
     - context:
@@ -44,3 +46,7 @@ pgwrapper-{{binary}}-{{version}}-makina-postgresql:
       binary: {{ binary }}
 {%-  endfor %}
 {%- endfor %}
+
+pgsql-wrappers:
+  mc_proxy.hook: []
+

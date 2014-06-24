@@ -131,7 +131,7 @@ def settings():
     gzip
         enabling gzip
     redirect_aliases
-        do we redirect server aliases to /
+        do we redirect server aliases to main domain
     port
         http port (80)
     sshl_port
@@ -166,7 +166,7 @@ def settings():
         grains = __grains__
         pillar = __pillar__
         local_conf = __salt__['mc_macros.get_local_registry'](
-            'burp', registry_format='pack')
+            'nginx', registry_format='pack')
         naxsi_ui_pass = local_conf.get('naxsi_pass', secure_password(32))
         locations = __salt__['mc_locations.settings']()
         nbcpus = __grains__.get('num_cpus', '4')
@@ -270,6 +270,8 @@ def settings():
                     'etc/nginx/sites-available/vhost.content.conf'),
             }
         )
+        __salt__['mc_macros.update_local_registry'](
+            'nginx', local_conf, registry_format='pack')
         return nginxData
     return _settings()
 
@@ -292,6 +294,7 @@ def vhost_settings(domain, doc_root, **kwargs):
     kwargs.setdefault(
         'vhost_top_file',
         nginxSettings['basedir'] + "/sites-available/" + domain + ".top.conf")
+    kwargs.setdefault('redirect_aliases', True)
     kwargs.setdefault('domain', domain)
     kwargs.setdefault('active', nginxSettings['default_activation'])
     kwargs.setdefault('server_name', kwargs['domain'])
