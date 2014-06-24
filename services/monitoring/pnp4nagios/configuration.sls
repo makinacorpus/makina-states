@@ -83,6 +83,63 @@ pnp4nagios-rraconf:
       data: |
             {{sdata}}
 
+# startup configuration
+{% if grains['os'] in ['Ubuntu'] %}
+{#
+pnp4nagios-npcd-init-upstart-conf:
+  file.managed:
+    - name: {{ locs['conf_dir'] }}/init/npcd.conf
+    - source: salt://makina-states/files/etc/init/npcd.conf
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 644
+    - watch:
+      - mc_proxy: pnp4nagios-pre-conf
+    - watch_in:
+      - mc_proxy: pnp4nagios-post-conf
+    - defaults:
+      data: |
+            {{sdata}}
+#}
+{% endif %}
+
+pnp4nagios-npcd-init-default-conf:
+  file.managed:
+    - name: {{ locs['conf_dir'] }}/default/npcd
+    - source: salt://makina-states/files/etc/default/npcd
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 644
+    - watch:
+      - mc_proxy: pnp4nagios-pre-conf
+    - watch_in:
+      - mc_proxy: pnp4nagios-post-conf
+    - defaults:
+      data: |
+            {{sdata}}
+
+pnp4nagios-npcd-init-sysvinit-conf:
+  file.managed:
+    - name: {{ locs['conf_dir'] }}/init.d/npcd
+    - source: salt://makina-states/files/etc/init.d/npcd
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 755
+    - watch:
+      - mc_proxy: pnp4nagios-pre-conf
+    - watch_in:
+      - mc_proxy: pnp4nagios-post-conf
+    - defaults:
+      data: |
+            {{sdata}}
+
+
 
 {%- import "makina-states/services/monitoring/pnp4nagios/macros.jinja" as pnp4nagios with context %}
 {#
