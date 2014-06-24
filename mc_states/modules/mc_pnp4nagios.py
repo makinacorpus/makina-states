@@ -180,7 +180,7 @@ def settings():
                     'doc_root': '/usr/share/pnp4nagios/',
                     #'session_save_path': '/var/lib/php5',
                     'session_auto_start': 0,
-                    'extensions_packages': ['php-gettext', 'php-net-socket', 'php-pear', 'php5-sqlite'],
+                    'extensions_packages': ['php5-gd'],
                 },
                 'icinga_cfg': {
                     'location': "/etc/icinga/icinga.cfg",
