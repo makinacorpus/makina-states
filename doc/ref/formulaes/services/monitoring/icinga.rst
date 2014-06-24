@@ -26,6 +26,9 @@ icinga-web and icinga can be installed on two differents hosts but CGI files req
 
 icinga_web module depends on icinga module only if cgi is enabled in icinga-web virtualhost (makina-states.services.monitoring.icinga_web.nginx.icinga_cgi.enabled is set to True).
 
+In the same way, icinga_web doesn't depends on pnp4nagios even if the module is enabled.
+You have to install pnp4nagios separately.
+
 The mysql configuration doesn't work.
 
 
@@ -51,4 +54,5 @@ The architecture between Icinga, Icinga-web and nagvis looks like to:
 	Icinga --ido2db--> Postgresql <---- Icinga-web
 	     |
 	     +---mklivestatus--><---------- Nagvis
-
+             |
+             +---npcdmod--><-npcd-><------- Pnp4nagios

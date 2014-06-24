@@ -1,5 +1,5 @@
 {#-
-# icinga
+# nagvis
 #
 # You only need to drop a configuration file in the include dir to add a program.
 # Please see the macro at the end of this file.

@@ -105,6 +105,17 @@ def settings():
             session_auto_start
                 must be 0 to run icinga-web
 
+        icinga_cfg
+            location
+                location of icinga.cfg file
+            marker_start
+                the beginning of the zone which will be replace.
+                this zone contains the "process_performance_data" and "broker_module" directives
+            marked_end
+                the end of the zone which will be replace.
+            content
+                the replacment content
+
         npcd_cfg
             dictionary to store configuration of npcd.cfg file
         config_php
@@ -117,6 +128,13 @@ def settings():
 
                 each subdictionary under views corresponds to a subarray. The key of subdictionaries are
                 the values for "title" array key
+        rra_cfg
+            dictionary to store the configuration of rra.cfg file
+
+            RRA_STEP
+                value for RRA_STEP
+            steps
+                list of strings where each string is a line in rra.cfg file
 
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
@@ -163,6 +181,15 @@ def settings():
                     #'session_save_path': '/var/lib/php5',
                     'session_auto_start': 0,
                     'extensions_packages': ['php-gettext', 'php-net-socket', 'php-pear', 'php5-sqlite'],
+                },
+                'icinga_cfg': {
+                    'location': "/etc/icinga/icinga.cfg",
+                    'marker_start': "# START managed zone pnp4nagios",
+                    'marker_end': "# END managed zone pnp4nagios",
+                    'content': [
+                                   "process_performance_data=1",
+                                   "broker_module=/usr/lib/pnp4nagios/npcdmod.o config_file=/etc/pnp4nagios/npcd.cfg",
+                               ],
                 },
                 'npcd_cfg': {
                     'user': "nagios",

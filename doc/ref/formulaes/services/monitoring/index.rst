@@ -9,3 +9,4 @@ Monitoring services
    client.rst
    icinga.rst
    nagvis.rst
+   pnp4nagios.rst
