@@ -112,6 +112,15 @@ def settings():
     has_mysql
         install and configure a mysql service in order to store icinga-web data
         (no ido2db data)
+    modules
+        pnp4nagios
+            enable
+                enable the pnp4nagios module which add graphs in icinga-web
+            package
+                package to install for pnp4nagios integration
+            cronks_extensions-templates
+                dictionary in which, each key is the name of an extension template and the content of the dictionary contains
+                the values to fill the template
 
     root_account
         dictionary to store root account information. It is the account created on first installation of icinga_web

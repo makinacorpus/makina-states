@@ -53,6 +53,7 @@ Subregistries
    mc_pgsql.rst
    mc_php.rst
    mc_pkgs.rst
+   mc_pnp4nagios.rst
    mc_postfix.rst
    mc_provider.rst
    mc_psad.rst

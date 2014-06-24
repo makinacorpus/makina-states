@@ -5,6 +5,12 @@
 mc_pnp4nagios / pnp4nagios functions
 ============================================
 
+There are many way to configure pnp4nagios.
+I have chosen to configure pnp4nagios "Bulk Mode with NPCD and npcdmod" 
+(http://docs.pnp4nagios.org/pnp-0.6/config#bulk_mode_with_npcd_and_npcdmod)
+because of the lightness of the configuration
+
+
 '''
 
 __docformat__ = 'restructuredtext en'
@@ -32,7 +38,86 @@ def settings():
         list of packages to install icinga-web
     configuration_directory
         directory where configuration files are located
-                
+
+        nginx
+            dictionary to store values of nginx configuration
+
+            domain
+                name of virtualhost created to serve webpages
+            doc_root
+                root location of virtualhost
+            vh_content_source
+                template file for nginx content file
+            vh_top_source
+                template file for nginx top file
+
+            pnp4nagios
+                dictionary to store values used in templates given in
+                vh_content_source and vh_top_source
+
+                web_directory
+                    location under which webpages of pnp4nagios will be available
+                fastcgi_pass
+                    socket used to contact fastcgi server in order to interpret php files
+                realm
+                    message displayed for digest authentication
+                htpasswd_file
+                    location of file storing users password
+                htdoc_dir
+                    root location for web_directory
+
+
+            icinga_cgi
+                dictionary to store values used in templates given in
+                vh_content_source and vh_top_source
+
+                enabled
+                    enable a web directory to serve cgi files. If True, icinga-cgi 
+                    will no be installed and configured automatically.
+
+                web_directory
+                    location under which webpages of icinga-cgi will be available
+                realm
+                    message displayed for digest authentication
+                htpasswd_file
+                    location of file storing users password
+                htdoc_dir
+                    root location for web_directory
+                images_dir
+                    directory where images used by cgi are stored
+                styles_dir
+                    directory where css used by cgi are stored
+                cgi_dir
+                    directory where cgi files are located
+                uwsgi_pass
+                    socket used to contact uwsgi server
+
+        phpfpm
+            dictionary to store values of phpfpm configuration
+
+            open_basedir
+                paths to add to open_basedir
+            extensions_package
+                additional packages to install (such as php5-pgsql or php5-mysql for
+                php database connection)
+            doc_root
+                root location for php-fpm
+            session_auto_start
+                must be 0 to run icinga-web
+
+        npcd_cfg
+            dictionary to store configuration of npcd.cfg file
+        config_php
+            dictionary to store configuration of config.php file
+
+            conf
+                subdictionary to store the values of the $conf[] php array variable
+            views
+                subdictionary to store the values of the $views[] php array variable
+
+                each subdictionary under views corresponds to a subarray. The key of subdictionaries are
+                the values for "title" array key
+
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
