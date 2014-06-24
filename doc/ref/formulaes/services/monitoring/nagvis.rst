@@ -13,7 +13,7 @@ add_map macro
 ::
 
 {% import "makina-states/services/monitoring/nagvis/init.sls" as nagvis with context %}
-{{ uwsgi.add_map(name, _global, objects, **kwargs) }}
+{{ nagvis.add_map(name, _global, objects, **kwargs) }}
 
 with
 
@@ -53,7 +53,7 @@ add_geomap macro
 ::
 
 {% import "makina-states/services/monitoring/nagvis/init.sls" as nagvis with context %}
-{{ uwsgi.add_geomap(name, hosts, **kwargs) }}
+{{ nagvis.add_geomap(name, hosts, **kwargs) }}
 
 with
 

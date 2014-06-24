@@ -12,6 +12,7 @@ You can add your own key/values in backends, rotations and actions subdictionari
 __docformat__ = 'restructuredtext en'
 # Import python libs
 import logging
+import copy
 import mc_states.utils
 
 import hmac
