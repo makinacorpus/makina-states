@@ -87,7 +87,7 @@ nagvis-root-account:
     - watch_in:
        - mc_proxy: nagvis-post-conf
 
-{%- import "makina-states/services/monitoring/icinga/macros.jinja" as icinga with context %}
+{%- import "makina-states/services/monitoring/nagvis/macros.jinja" as nagvis with context %}
 {#
-{{icinga.icingaAddWatcher('foo', '/bin/echo', args=[1]) }}
+{{nagvis.nagvisAddWatcher('foo', '/bin/echo', args=[1]) }}
 #}

@@ -3,6 +3,13 @@ Nagvis configuration
 
 See :ref:`module_mc_nagvis` for configuration options.
 
+This service configure nagvis with a connection to icinga using mklivestatus
+because nagvis currently can't connect to a postgresql database.
+
+Nagvis doesn't depend on icinga unless mklivestatus socket is done with a unix pipe
+
+
+
 Please note that we offer two special macros to generate configurations.
 
 One macro is designed to add a map and the other is to add a geomap

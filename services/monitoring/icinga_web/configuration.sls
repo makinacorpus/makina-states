@@ -61,7 +61,7 @@ icinga_web-clear-cache:
     - watch_in:
       - mc_proxy: icinga_web-post-conf
 
-{%- import "makina-states/services/monitoring/icinga/macros.jinja" as icinga with context %}
+{%- import "makina-states/services/monitoring/icinga_web/macros.jinja" as icinga_web with context %}
 {#
-{{icinga.icingaAddWatcher('foo', '/bin/echo', args=[1]) }}
+{{icinga_web.icingaAddWatcher('foo', '/bin/echo', args=[1]) }}
 #}
