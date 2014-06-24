@@ -6,9 +6,15 @@
 #     _global
 #         dictionary which contains directives for 'define global {}'
 #     objects
-#         dictionary in which each subdictionary contains directives for 'define object{}'
-#         'object_id' directive is set with the key of subdictionary
-#         'type' contains 'host', 'service', 'hostgroup', 'servicegroup', 'shape', ...
+#         dictionary where each key contains a subdictionary. Each key concerns
+#         a type of objects such as
+#         'host', 'service', 'hostgroup', 'servicegroup', 'shape', ...
+#
+#         in each subdictionary, the subsubdictionaries contains directives 
+#         for a 'define <type>{}'
+#         'object_id' directive is set with the key of subsubdictionary
+#         (in order to have unique object_id, the value are prefixed with 
+#         the type of objects)
 #
 #     {
 #         'name': "test",
@@ -17,22 +23,22 @@
 #             'iconset': "std_medium",
 #         },
 #         'objects': {
-#             'abc': {
-#                 'type': "host",
-#                 'host_name': "host1",
-#                 'x': 4,
-#                 'y': 3,
+#             'host': {
+#                 'h1': {
+#                     'host_name': "host1",
+#                     'x': 4,
+#                     'y': 3,
+#                 },
 #             },
-#             'def': {
-#                 'type': "service",
-#                 'host_name': "host1",
-#                 'service_description': "SSH",
-#                 'x': 4,
-#                 'y': 3,
+#             'service': {
+#                 's1': {
+#                     'host_name': "host1",
+#                     'service_description': "SSH",
+#                 },
 #             },
 #         },
-#     }
-#}
+#     },
+#
 {% macro add_map(name, _global={}, objects={}) %}
 {% set data = salt['mc_nagvis.add_map_settings'](name, _global, objects, **kwargs) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
@@ -68,12 +74,12 @@ nagvis-map-{{data.name}}-conf:
 #         'name': "test",
 #         'hosts': {
 #             'ham-srv1': {
-#                 'description': "Hamburg Server 1",
+#                 'alias': "Hamburg Server 1",
 #                 'lat': 53.556866,
 #                 'lon': 9.994622,
 #             },
 #             'mun-srv1': {
-#                 'description': "Munich Server 1",
+#                 'alias': "Munich Server 1",
 #                 'lat': 48.1448353,
 #                 'lon': 11.5580067,
 #             },
@@ -84,7 +90,8 @@ nagvis-map-{{data.name}}-conf:
 {% set data = salt['mc_nagvis.add_geomap_settings'](name, hosts, **kwargs) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 
-nagvis-geomap-{{data.name}}-conf:
+# add the csv file into geomap directory
+nagvis-geomap-csv-{{data.name}}-conf:
   file.managed:
     - user: root
     - group: root

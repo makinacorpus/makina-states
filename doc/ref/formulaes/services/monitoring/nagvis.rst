@@ -19,30 +19,38 @@ with
 
     :name: name of the map (it is the filename too, so each name must be unique)
     :_global: dictionary in wich contians directives for 'define global{}' section
-    :object: dictionary wich defines all objects
+    :objects: dictionary wich defines all objects.
 
-The object dictionary looks like:
+The objects dictionary contains a subdictionary for each type of objects.
+In each subdictionary, subsubdictionaries contains directives for each 'define <type> {}'
+
+The keys of subsubdictionaries are the values for 'object_id'.
+In order to have unique 'object_id', the values are prefixed with the type of the object
+
+The objects dictionary looks like:
 
 ::
 
-	'objects': {
-	    'abc': {
-	        'type': "host",
-	        'host_name': "host1",
-	        'x': 4,
-	        'y': 3,
-	    },
-	    'def': {
-	        'type': "service",
-	        'host_name': "host1",
-	        'service_description': "SSH",
-	        'x': 4,
-	        'y': 3,
+    'objects': {
+        'host': {
+            'h1': {
+                'host_name': "host1",
+                'x': 4,
+                'y': 3,
+
+            },
+        'service': {
+            'def': {
+                'host_name': "host1",
+                'service_description': "SSH",
+                'x': 4,
+                'y': 3,
              },
-         },
+	    },
+    }
+
 
 The keys are the values for "object_id" directives and "type" corresponds to the type of objects. 
-The values for key "type" can be "host", "service", "servicegroup", "hostgroup", ...
 
 You can add directives as key:value in each subdictionary
 
@@ -66,21 +74,23 @@ The hosts dictionary looks like:
 
 	'hosts': {
 	    'ham-srv1': {
-	        'description': "Hamburg Server 1",
+	        'alias': "Hamburg Server 1",
 	        'lat': 53.556866,
 	        'lon': 9.994622,
 	    },
 	    'mun-srv1': {
-	        'description': "Munich Server 1",
+	        'alias': "Munich Server 1",
 	        'lat': 48.1448353,
 	        'lon': 11.5580067,
 	    },
 	},
 
-The macro produce a svg files like
+The macro produces a csv file like
 
 ::
 
 	muc-srv1;Munich Server 1;48.1448353;11.5580067
 	ham-srv1;Hamburg Server 1;53.556866;9.994622
 
+This macro produces only the geomap/name.csv file and not the map/name.cfg file.
+In order to produce the map/name.cfg file, you should call the "add_map" macro.
