@@ -38,7 +38,7 @@
 #             },
 #         },
 #     },
-#
+#}
 {% macro add_map(name, _global={}, objects={}) %}
 {% set data = salt['mc_nagvis.add_map_settings'](name, _global, objects, **kwargs) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
@@ -91,7 +91,7 @@ nagvis-map-{{data.name}}-conf:
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 
 # add the csv file into geomap directory
-nagvis-geomap-csv-{{data.name}}-conf:
+nagvis-geomap-{{data.name}}-conf:
   file.managed:
     - user: root
     - group: root

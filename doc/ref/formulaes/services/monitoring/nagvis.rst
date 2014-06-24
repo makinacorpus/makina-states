@@ -24,8 +24,8 @@ with
 The objects dictionary contains a subdictionary for each type of objects.
 In each subdictionary, subsubdictionaries contains directives for each 'define <type> {}'
 
-The keys of subsubdictionaries are the values for 'object_id'.
-In order to have unique 'object_id', the values are prefixed with the type of the object
+The keys of subsubdictionaries are the values for 'object_id'. 
+In order to have unique 'object_id' in cfg file, the keys are prefixed with the type of the object
 
 The objects dictionary looks like:
 
@@ -34,14 +34,14 @@ The objects dictionary looks like:
     'objects': {
         'host': {
             'h1': {
-                'host_name': "host1",
+                'host_name': "h1",
                 'x': 4,
                 'y': 3,
 
             },
         'service': {
-            'def': {
-                'host_name': "host1",
+            's1': {
+                'host_name': "h1",
                 'service_description': "SSH",
                 'x': 4,
                 'y': 3,
@@ -50,11 +50,31 @@ The objects dictionary looks like:
     }
 
 
-The keys are the values for "object_id" directives and "type" corresponds to the type of objects. 
-
 You can add directives as key:value in each subdictionary
 
-The macro produce a cfg files in /etc/nagvis/maps/name.cfg
+The macro produces a cfg file in /etc/nagvis/maps/name.cfg. This file contains
+
+With the example above, the file located in /etc/nagvis/maps/name.cfg will contain:
+
+::
+
+    define global {
+    }
+    define host {
+        object_id=hosth1
+        host_name=h1
+        x=4
+        y=3
+    }
+    define service {
+        object_id=services1
+        host_name=h1
+        service_description=SSH
+        x=4
+        y=3
+    }
+        
+
 
 add_geomap macro
 ----------------
@@ -92,5 +112,6 @@ The macro produces a csv file like
 	muc-srv1;Munich Server 1;48.1448353;11.5580067
 	ham-srv1;Hamburg Server 1;53.556866;9.994622
 
-This macro produces only the geomap/name.csv file and not the map/name.cfg file.
-In order to produce the map/name.cfg file, you should call the "add_map" macro.
+This macro produces only the /etc/nagvis/geomap/name.csv file and 
+not the /etc/nagvis/maps/name.cfg file.
+In order to produce the /etc/nagvis/maps/name.cfg file, you should call the "add_map" macro.

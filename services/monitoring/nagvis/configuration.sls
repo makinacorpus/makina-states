@@ -87,33 +87,6 @@ nagvis-root-account:
     - watch_in:
        - mc_proxy: nagvis-post-conf
 
-{% import "makina-states/services/monitoring/nagvis/init.sls" as nagvis with context %}
-{{ nagvis.add_map(name="test",
-                  _global={
-                      'object_id': 1,
-                  },
-                  objects={
-                      'host': {
-                         'h1': {
-                               'host_name': "localhost",
-                               'x': 100,
-                               'y': 100,
-                          }
-                      },
-                      'service': {
-                          's1': {
-                              'host_name': "localhost",
-                              'service_description': "SSH",
-                              'x': 150,
-                              'y': 250,
-                          },
-
-                      },
-                  }
-                  ) }}
-
-
-
 {%- import "makina-states/services/monitoring/icinga/macros.jinja" as icinga with context %}
 {#
 {{icinga.icingaAddWatcher('foo', '/bin/echo', args=[1]) }}
