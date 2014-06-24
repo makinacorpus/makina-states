@@ -13,6 +13,24 @@ include:
   - makina-states.services.monitoring.pnp4nagios.hooks
   - makina-states.services.monitoring.pnp4nagios.services
 
+# general configuration
+pnp4nagios-conf:
+  file.managed:
+    - name: {{data.configuration_directory}}/config.php
+    - source: salt://makina-states/files/etc/pnp4nagios/config.php
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 644
+    - watch:
+      - mc_proxy: pnp4nagios-pre-conf
+    - watch_in:
+      - mc_proxy: pnp4nagios-post-conf
+    - defaults:
+      data: |
+            {{sdata}}
+
 # npcd daemon configuration
 pnp4nagios-npcd-conf:
   file.managed:
