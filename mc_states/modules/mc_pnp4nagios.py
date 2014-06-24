@@ -164,6 +164,23 @@ def settings():
                         },
                     },
                 },
+                'rra_cfg': {
+                    'RRA_STEP': 60,
+                    'steps': [
+                        "RRA:AVERAGE:0.5:1:2880",
+                        "RRA:AVERAGE:0.5:5:2880",
+                        "RRA:AVERAGE:0.5:30:4320",
+                        "RRA:AVERAGE:0.5:360:5840",
+                        "RRA:MAX:0.5:1:2880",
+                        "RRA:MAX:0.5:5:2880",
+                        "RRA:MAX:0.5:30:4320",
+                        "RRA:MAX:0.5:360:5840",
+                        "RRA:MIN:0.5:1:2880",
+                        "RRA:MIN:0.5:5:2880",
+                        "RRA:MIN:0.5:30:4320",
+                        "RRA:MIN:0.5:360:5840",
+                    ],
+                },
         })
 
         __salt__['mc_macros.update_local_registry'](

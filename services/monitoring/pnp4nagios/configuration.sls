@@ -49,6 +49,24 @@ pnp4nagios-npcd-conf:
       data: |
             {{sdata}}
 
+# rra configuration
+pnp4nagios-rraconf:
+  file.managed:
+    - name: {{data.configuration_directory}}/rra.cfg
+    - source: salt://makina-states/files/etc/pnp4nagios/rra.cfg
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 644
+    - watch:
+      - mc_proxy: pnp4nagios-pre-conf
+    - watch_in:
+      - mc_proxy: pnp4nagios-post-conf
+    - defaults:
+      data: |
+            {{sdata}}
+
 
 {%- import "makina-states/services/monitoring/pnp4nagios/macros.jinja" as pnp4nagios with context %}
 {#
