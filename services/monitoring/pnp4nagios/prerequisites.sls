@@ -14,3 +14,6 @@ pnp4nagios-pkgs:
       - {{package}}
       {% endfor %}
 
+
+# it nagios3 may be a dependency for pnp4nagios (in the unbuntu package)
+

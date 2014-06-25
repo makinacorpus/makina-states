@@ -121,6 +121,8 @@ def settings():
             cronks_extensions-templates
                 dictionary in which, each key is the name of an extension template and the content of the dictionary contains
                 the values to fill the template
+                each 'key': "value" produce a "<parameter name={{key}}>{{value}}</parameter>". The key "parameter" or "parameter_*" produce a "<parameter></parameter>" tag
+                each subdictionary add sub parameters tags.
 
     root_account
         dictionary to store root account information. It is the account created on first installation of icinga_web
@@ -630,10 +632,194 @@ def settings():
                         'package': ['icinga-web-pnp'],
                         'cronks_extensions_templates': {
                             'pnp-host-extension': {
-                                'url': "http://pnp4nagios.localhost/pnp4nagios/index.php",
+                                'match_pattern': "icinga-(host-template|.+-host-problems)",
+                                'option': {
+                                    'rowEvents': {
+                                        'parameter': {
+                                            'title': "PNP4Nagios",
+                                            'menuid': "pnp4nagios",
+                                            'items': {
+                                                'parameter': {
+                                                    'target': "sub",
+                                                    'handler': {
+                                                        'click': "Cronk.grid.handler.URL.imagePanel",
+                                                    },
+                                                    'handlerArguments': {
+                                                        'src': "<![CDATA[http://pnp4nagios.localhost/pnp4nagios/index.php/image?host={host_name}&srv=_HOST_&view=0]]>",
+                                                        'iconCls': "icinga-icon-image-arrow",
+                                                        'width': 400,
+                                                        'title': "Hostgraph for {host_name}",
+                                                    },
+
+                                                    'conditions': {
+                                                        'parameter': {
+                                                            'condition': "show",
+                                                            'fn': "<![CDATA[ \n \
+                                                                function() { \n \
+                                                                    if (this.getRecord().get(\"process_performance_data\") == \"1\") { \n \
+                                                                        return true; \n \
+                                                                    } else { \n \
+                                                                        return false; \n \
+                                                                    } \n \
+                                                                } \n \
+                                                            ]]>",
+                                                        },
+                                                    },
+                                                    'model': "",
+                                                    'xtype': "grideventbutton",
+                                                    'menuid': "pnp4nagios_host_image_hover",
+                                                    'iconCls': "icinga-icon-image-arrow",
+                                                    'tooltip': "Host performance chart",
+                                                    'text': "Graph",
+                                                },
+                                                'parameter_1': {
+                                                    'target': "sub",
+                                                    'handler': {
+                                                        'click': "Cronk.grid.handler.URL.open",
+                                                    },
+                                                    'handlerArguments': {
+                                                        'cronkTitle': "Chart for {host_name}",
+                                                        'url': "<![CDATA[{{data.url}}/graph?host={host_name}&srv=_HOST_]]>",
+                                                        'activateOnClick': "true",
+                                                    },
+                                                    'conditions': {
+                                                        'parameter': {
+                                                            'condition': "show",
+                                                            'fn': "<![CDATA[ \n \
+                                                                function() { \n \
+                                                                    if (this.getRecord().get(\"process_performance_data\") == \"1\") { \n \
+                                                                        return true; \n \
+                                                                    } else { \n \
+                                                                        return false; \n \
+                                                                    } \n \
+                                                                } \n \
+                                                            ]]>",
+                                                        },
+                                                    },
+                                                    'model': "",
+                                                    'xtype': "grideventbutton",
+                                                    'menuid': "pnp4nagios_host_detail",
+                                                    'iconCls': "icinga-icon-hostlightning",
+                                                    'tooltip': "Chart Detail for this host",
+                                                    'text': "Detail",
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                                'fields': {
+                                    'process_performance_data': {
+                                        'datasource': {
+                                            'field': "HOST_PROCESS_PERFORMANCE_DATA",
+                                        },
+                                        'display': {
+                                            'visible': "false",
+                                            'label': "",
+                                        },
+                                        'filter': {
+                                            'enabled': "false",
+                                        },
+                                        'order': {
+                                            'enabled': "false",
+                                            'default': "false",
+                                        },
+                                    },
+                                },
                             },
                             'pnp-service-extension': {
-                                'url': "http://pnp4nagios.localhost/pnp4nagios/index.php",
+                                'match_pattern': "icinga-(service-template|.+-service-problems)",
+                                'option': {
+                                    'rowEvents': {
+                                        'parameter': {
+                                            'title': "PNP4Nagios",
+                                            'menuid': "pnp4nagios",
+                                            'items': {
+                                                'parameter': {
+                                                    'target': "sub",
+                                                    'handler': {
+                                                        'click': "Cronk.grid.handler.URL.imagePanel",
+                                                    },
+                                                    'handlerArguments': {
+                                                        'src': "<![CDATA[http://pnp4nagios.localhost/pnp4nagios/index.php/image?host={host_name}&srv={service_name}&view=0]]>",
+                                                        'iconCls': "icinga-icon-image-arrow",
+                                                        'width': 400,
+                                                        'title': "Servicegraph for {service_name}",
+                                                    },
+
+                                                    'conditions': {
+                                                        'parameter': {
+                                                            'condition': "show",
+                                                            'fn': "<![CDATA[ \n \
+                                                                function() { \n \
+                                                                    if (this.getRecord().get(\"process_performance_data\") == \"1\") { \n \
+                                                                        return true; \n \
+                                                                    } else { \n \
+                                                                        return false; \n \
+                                                                    } \n \
+                                                                } \n \
+                                                            ]]>",
+                                                        },
+                                                    },
+                                                    'model': "",
+                                                    'xtype': "grideventbutton",
+                                                    'menuid': "pnp4nagios_service_image_hover",
+                                                    'iconCls': "icinga-icon-image-arrow",
+                                                    'tooltip': "Service performance chart",
+                                                    'text': "Graph",
+                                                },
+                                                'parameter_1': {
+                                                    'target': "sub",
+                                                    'handler': {
+                                                        'click': "Cronk.grid.handler.URL.open",
+                                                    },
+                                                    'handlerArguments': {
+                                                        'cronkTitle': "Chart for {host_name}/{service_name}",
+                                                        'url': "<![CDATA[http://pnp4nagios.localhost/pnp4nagios/index.php/graph?host={host_name}&srv={service_name}]]>",
+                                                        'activateOnClick': "true",
+                                                    },
+                                                    'conditions': {
+                                                        'parameter': {
+                                                            'condition': "show",
+                                                            'fn': "<![CDATA[ \n \
+                                                                function() { \n \
+                                                                    if (this.getRecord().get(\"process_performance_data\") == \"1\") { \n \
+                                                                        return true; \n \
+                                                                    } else { \n \
+                                                                        return false; \n \
+                                                                    } \n \
+                                                                } \n \
+                                                            ]]>",
+                                                        },
+                                                    },
+                                                    'model': "",
+                                                    'xtype': "grideventbutton",
+                                                    'menuid': "pnp4nagios_service_detail",
+                                                    'iconCls': "icinga-icon-hostlightning",
+                                                    'tooltip': "Chart Detail for this service",
+                                                    'text': "Detail",
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                                'fields': {
+                                    'process_performance_data': {
+                                        'datasource': {
+                                            'field': "SERVICE_PROCESS_PERFORMANCE_DATA",
+                                        },
+                                        'display': {
+                                            'visible': "false",
+                                            'label': "",
+                                        },
+                                        'filter': {
+                                            'enabled': "false",
+                                        },
+                                        'order': {
+                                            'enabled': "false",
+                                            'default': "false",
+                                        },
+                                    },
+                                },
                             },
                         },
                     },
