@@ -49,6 +49,9 @@
     - require_in:
       - mc_proxy: users-ready-hook
     - name: {{ id }}
+    {%- if password %}
+    - password:  {{ password }}
+    {%- endif %}
     {%- if id not in ['root'] %}
     {% if not salt['mc_localsettings.registry']()['is']['ldap'] %}
     - fullname: {{ id }} user
@@ -61,9 +64,6 @@
     - gid_from_name: True
     {% endif %}
     - remove_groups: False
-    {%- if password %}
-    - password:  {{ password }}
-    {%- endif %}
     - optional_groups:
       - {{ id }}
       - cdrom
