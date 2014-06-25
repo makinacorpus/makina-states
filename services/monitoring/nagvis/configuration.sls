@@ -87,6 +87,37 @@ nagvis-root-account:
     - watch_in:
        - mc_proxy: nagvis-post-conf
 
+# test to add configuratipn (MUST BE REMOVED SOON)
+{% import "makina-states/services/monitoring/nagvis/init.sls" as nagvis with context %}
+{{ nagvis.add_map(file="test4", _global={'object_id': "abcde"},
+                            objects={
+                                'host': {
+                                    'hostname1': {
+                                        'directive1': "value1",
+                                        'directive2': "value2",
+                                    },
+                                    'hostname2': {
+                                        'directive1': "value3",
+                                        'directive2': "value4",
+                                    },
+                                },
+                                'service': {
+                                    'service1': {
+                                        'directive3': "valueA",
+                                    },
+                                },
+                                'hostdependency': [
+                                    {
+                                        'directive3': "valueB"
+                                    },
+                                    {
+                                        'directive3': "valueC"
+                                    },
+                                ],
+                            },
+                           )}}
+
+
 {%- import "makina-states/services/monitoring/nagvis/macros.jinja" as nagvis with context %}
 {#
 {{nagvis.nagvisAddWatcher('foo', '/bin/echo', args=[1]) }}

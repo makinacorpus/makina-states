@@ -9,12 +9,14 @@
 #         dictionary where each key contains a subdictionary. Each key concerns
 #         a type of objects such as
 #         'host', 'service', 'hostgroup', 'servicegroup', 'shape', ...
-#
 #         in each subdictionary, the subsubdictionaries contains directives 
-#         for a 'define <type>{}'
-#         'object_id' directive is set with the key of subsubdictionary
-#         (in order to have unique object_id, the value are prefixed with 
-#         the type of objects)
+#         for the 'define <type>{}'
+#     keys_mapping
+#         dictionary to do the associations between keys of dictionaries and directive
+#         for example the keys in the "host" subdctionary are values for "host_name" directive
+#         if the value is None, the dictionary become a list (it will be usefull because sometimes
+#         no directive has a unique value)
+#
 #
 #     {
 #         'name': "test",
@@ -24,23 +26,36 @@
 #         },
 #         'objects': {
 #             'host': {
-#                 'h1': {
-#                     'host_name': "host1",
+#                 'host1': {
 #                     'x': 4,
 #                     'y': 3,
 #                 },
 #             },
 #             'service': {
-#                 's1': {
+#                 'SSH': {
 #                     'host_name': "host1",
-#                     'service_description': "SSH",
 #                 },
 #             },
 #         },
 #     },
 #}
+{%
+    set keys_mapping_default = {
+      'host': "host_name",
+      'hostgroup': "hostgroup_name",
+      'service': "service_description",
+      'servicegroup': "servicegroup_name",
+      'map': "map_name",
+      'textbox': None,
+      'shape': None,
+      'line': None,
+      'template': None,
+      'container': None,
+    }
+
+%}
 {% macro add_map(name, _global={}, objects={}) %}
-{% set data = salt['mc_nagvis.add_map_settings'](name, _global, objects, **kwargs) %}
+{% set data = salt['mc_nagvis.add_map_settings'](name, _global, objects, keys_mapping_default, **kwargs) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 
 nagvis-map-{{data.name}}-conf:
