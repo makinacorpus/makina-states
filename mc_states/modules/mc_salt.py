@@ -323,11 +323,16 @@ def settings():
             }
         )
 
+        #  common pillar overrides
+        salt_pillar = pillar.get('salt', {})
+        saltCommonPillar = salt_pillar.get('common', {})
 
         #  mastersalt daemon overrides
         mastersaltCommonData = saltmods['mc_utils.dictupdate'](
-            saltCommonData.copy(), {'pref_name': 'master',
-                                    'pillar_root': locs['prefix'] + '/{name}-pillar'})
+            saltCommonData.copy(), {
+                'pref_name': 'master',
+                'pillar_root': locs['prefix'] + '/{name}-pillar'})
+
         mastersaltMasterData = saltmods['mc_utils.dictupdate'](
             saltMasterData.copy(), mastersaltCommonData.copy())
         mastersaltMasterData['interface'] = '0.0.0.0'
@@ -343,9 +348,7 @@ def settings():
                 'master_port': '4606',
                 'tcp_pub_port': '4610',
                 'tcp_pull_port': '4611'})
-        #  common pillar overrides
-        salt_pillar = pillar.get('salt', {})
-        saltCommonPillar = salt_pillar.get('common', {})
+        # salt
         saltMasterPillar = salt_pillar.get('master', {})
         saltMinionPillar = salt_pillar.get('minion', {})
         mastersalt_pillar = pillar.get('mastersalt', {})
@@ -387,6 +390,12 @@ def settings():
         ########################################
         # default exposed global variables
         ########################################
+        saltCommonData = saltmods['mc_utils.defaults'](
+            'makina-states.controllers.salt.settings',
+            saltCommonData)
+        mastersaltCommonData = saltmods['mc_utils.defaults'](
+            'makina-states.controllers.mastersalt.settings',
+            mastersaltCommonData)
         # SALT VARIABLES
         data['saltCommonData'] = saltCommonData = resolver(saltCommonData)
         data['saltMasterData'] = saltMasterData = resolver(saltMasterData)
