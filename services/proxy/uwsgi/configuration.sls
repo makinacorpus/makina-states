@@ -52,9 +52,7 @@ uwsgi-init-default-conf:
       data: |
             {{sdata}}
 
-{#
 {%- import "makina-states/services/proxy/uwsgi/macros.jinja" as uwsgi with context %}
-#}
 {#
 {{uwsgi.uwsgiAddWatcher('foo', '/bin/echo', args=[1]) }}
 #}

@@ -24,7 +24,10 @@ If the connection is made through a unix pipe or with the localhost hostname, th
 __docformat__ = 'restructuredtext en'
 # Import python libs
 import logging
+import copy
 import mc_states.utils
+
+import os.path
 
 __name = 'icinga'
 
@@ -632,6 +635,36 @@ def settings():
             registry_format='pack')
         return data
     return _settings()
+
+def add_configuration_settings(file, objects, keys_mapping, **kwargs):
+    '''Settings for the add_map macro'''
+    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
+    extra = kwargs.pop('extra', {})
+    kwargs.update(extra)
+
+    # extend environment variables in path
+    file_expanded = os.path.expandvars(file)
+
+    # if the path is relative, it should be relative to /etc/icinga
+    if not file_expanded.startswith('/'):
+        file_expanded = icingaSettings['configuration_directory']/file_expanded
+
+    # we don't store file as a string but we build a dictionary with some information 
+    file_info = {
+        'dirname': os.path.dirname(file_expanded),
+        'basename': os.path.basename(file_expanded),
+        'basename_without_ext': os.path.basename(file_expanded).split('.')[0],
+        'abspath': file_expanded,
+    }
+    kwargs.setdefault('file', file_info)
+    kwargs.setdefault('objects', objects)
+    kwargs.setdefault('keys_mapping', keys_mapping)
+    icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
+    # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
+    icingaSettings['data'] = copy.deepcopy(icingaSettings)
+    icingaSettings['data']['extra'] = copy.deepcopy(icingaSettings)
+    icingaSettings['extra'] = copy.deepcopy(icingaSettings)
+    return icingaSettings
 
 
 def dump():

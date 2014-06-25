@@ -231,6 +231,36 @@ icinga-mklivestatus-conf:
 
 {% endif %}
 
+# test to add configuratipn (MUST BE REMOVED SOON)
+{% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
+{{ icinga.add_configuration(file="/etc/icinga/objects/test.cfg",
+                            objects={
+                                'host': {
+                                    'hostname1': {
+                                        'directive1': "value1",
+                                        'directive2': "value2",
+                                    },
+                                    'hostname2': {
+                                        'directive1': "value3",
+                                        'directive2': "value4",
+                                    },
+                                },
+                                'service': {
+                                    'service1': {
+                                        'directive3': "valueA",
+                                    },
+                                },
+                                'hostdependency': [
+                                    {
+                                        'directive3': "valueB"
+                                    },
+                                    {
+                                        'directive3': "valueC"
+                                    },
+                                ],
+                            },
+                           )}}
+
 {%- import "makina-states/services/monitoring/icinga/macros.jinja" as icinga with context %}
 {#
 {{icinga.icingaAddWatcher('foo', '/bin/echo', args=[1]) }}
