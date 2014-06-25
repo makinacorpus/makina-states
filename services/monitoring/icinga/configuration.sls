@@ -232,9 +232,8 @@ icinga-mklivestatus-conf:
 {% endif %}
 
 # test to add configuratipn (MUST BE REMOVED SOON)
-{#
 {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
-{{ icinga.add_configuration(file="/etc/icinga/objects/test.cfg",
+{{ icinga.add_configuration(rand=1,directory='/tmp/icinga_conf/',
                             objects={
                                 'host': {
                                     'hostname1': {
@@ -251,17 +250,35 @@ icinga-mklivestatus-conf:
                                         'directive3': "valueA",
                                     },
                                 },
-                                'hostdependency': [
+                                'servicedependency': [
                                     {
-                                        'directive3': "valueB"
-                                    },
-                                    {
-                                        'directive3': "valueC"
+                                        'key1': "value1",
                                     },
                                 ],
                             },
                            )}}
-#}
+{{ icinga.add_configuration(rand=2,directory='/tmp/icinga_conf/',
+                            objects={
+                                'host': {
+                                    'hostname1': {
+                                        'directive5': "value",
+                                    },
+                                    'hostname3': {
+                                        'directive1': "value1",
+                                    },
+                                },
+                                'service': {
+                                    'service1': {
+                                        'directive3': "valueA",
+                                    },
+                                },
+                                'servicedependency': [
+                                    {
+                                        'key1': "value1",
+                                    },
+                                ],
+                            },
+                           )}}
 
 {%- import "makina-states/services/monitoring/icinga/macros.jinja" as icinga with context %}
 {#

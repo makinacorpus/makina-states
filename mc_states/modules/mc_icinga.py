@@ -27,8 +27,6 @@ import logging
 import copy
 import mc_states.utils
 
-import os.path
-
 __name = 'icinga'
 
 log = logging.getLogger(__name__)
@@ -636,45 +634,34 @@ def settings():
         return data
     return _settings()
 
-def add_configuration_settings(file, objects, keys_mapping, **kwargs):
+def add_configuration_settings(objects, directory, files_mapping, keys_mapping, **kwargs):
     '''Settings for the add_configuration macro'''
     icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
     extra = kwargs.pop('extra', {})
     kwargs.update(extra)
 
-    # extend environment variables in path
-    file_expanded = os.path.expandvars(file)
+    # we add the directory for each value of files_mapping 
+    if directory.startswith('/'):
+        directory_tmp=directory
+    else:
+        directory_tmp=data['configuration_directory']+'/'+directory
 
-    # if the path is relative, it should be relative to /etc/icinga
-    if not file_expanded.startswith('/'):
-        file_expanded = icingaSettings['configuration_directory']/file_expanded
+    for key, value in files_mapping.items():
+        if not key.startswith('/'):
+            files_mapping[key]=directory_tmp+'/'+value
 
-    # we don't store file as a string but we build a dictionary with some information 
-    file_info = {
-        'dirname': os.path.dirname(file_expanded),
-        'basename': os.path.basename(file_expanded),
-        'basename_without_ext': os.path.basename(file_expanded).split('.')[0],
-        'abspath': file_expanded,
-    }
-    kwargs.setdefault('file', file_info)
+
+    # all subdictionaries are transformed into lists
+    for type, objs in objects.items():
+        if None == keys_mapping[type]:
+            objects[type]=zip(range(len(objs)), objs)
+        else:
+            objects[type]=objs.items()
+
     kwargs.setdefault('objects', objects)
-    kwargs.setdefault('keys_mapping', keys_mapping)
-    icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
-    # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
-    icingaSettings['data'] = copy.deepcopy(icingaSettings)
-    icingaSettings['data']['extra'] = copy.deepcopy(icingaSettings)
-    icingaSettings['extra'] = copy.deepcopy(icingaSettings)
-    return icingaSettings
-
-
-def add_accumulated_configuration_settings( objects, keys_mapping, files_mapping, **kwargs):
-    '''Settings for the add_accumulated_configuration macro'''
-    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
-    extra = kwargs.pop('extra', {})
-    kwargs.update(extra)
-    kwargs.setdefault('objects', objects)
-    kwargs.setdefault('keys_mapping', keys_mapping)
+    kwargs.setdefault('directory', directory)
     kwargs.setdefault('files_mapping', files_mapping)
+    kwargs.setdefault('keys_mapping', keys_mapping)
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
     # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
     icingaSettings['data'] = copy.deepcopy(icingaSettings)
