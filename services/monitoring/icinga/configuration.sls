@@ -239,6 +239,7 @@ icinga-mklivestatus-conf:
                                     'hostname1': {
                                         'directive1': "value1",
                                         'directive2': "value2",
+                                        'parents': "p1",
                                     },
                                     'hostname2': {
                                         'directive1': "value3",
@@ -260,11 +261,12 @@ icinga-mklivestatus-conf:
 {{ icinga.add_configuration(rand=2,directory='/tmp/icinga_conf/',
                             objects={
                                 'host': {
-                                    'hostname1': {
-                                        'directive5': "value",
-                                    },
                                     'hostname3': {
                                         'directive1': "value1",
+                                    },
+                                    'hostname1': {
+                                        'directive5': "value",
+                                        'parents': "p2",
                                     },
                                 },
                                 'service': {

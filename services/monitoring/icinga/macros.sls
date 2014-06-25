@@ -82,8 +82,8 @@
       'serviceextinfo': [],
     }
 %}
-{% macro add_configuration(rand, objects={}, directory, files_mapping=files_mapping_default, keys_mapping=keys_mapping_default) %}
-{% set data = salt['mc_icinga.add_configuration_settings'](objects, directory, files_mapping, keys_mapping, **kwargs) %}
+{% macro add_configuration(rand, objects={}, directory, files_mapping=files_mapping_default, keys_mapping=keys_mapping_default, accumulated_values=accumulated_values_default) %}
+{% set data = salt['mc_icinga.add_configuration_settings'](objects, directory, files_mapping, keys_mapping, accumulated_values, **kwargs) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 
 # we use a blockreplace in order to avoid to have each objects more than one time in the file
@@ -130,8 +130,19 @@ icinga-configuration-{{type}}-{{key_map}}-{{rand}}-conf:
       - mc_proxy: icinga-post-conf
     - content: |
                define {{type}} {
+               {%- if unique %}
+                {{keys_mapping[type]}}={{key_map}}
+               {% endif -%}
                {%- for key, value in object.items() %}
+                {%- if (not unique) or (key_map != key) -%}
+
+                 {%- if key in accumulated_values[type] %}
+                {{key}}={#{% for value in accumulator%}{{value}}{% endfor %}#}
+                 {%- else -%}
                 {{key}}={{value}}
+                 {% endif -%}
+
+                {%- endif -%}
                {% endfor -%}
                }
 
