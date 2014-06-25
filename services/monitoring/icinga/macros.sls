@@ -137,15 +137,31 @@ icinga-configuration-{{type}}-{{key_map}}-{{rand}}-conf:
                 {%- if (not unique) or (key_map != key) -%}
 
                  {%- if key in accumulated_values[type] %}
-                {{key}}={#{% for value in accumulator%}{{value}}{% endfor %}#}
-                 {%- else -%}
+                {{key}}={% raw %}{% for value in accumulator[{% endraw %}'icinga-configuration-acc-{{type}}-{{key_map}}-{{key}}'{% raw %}] %}{{value}}{% endfor %}{% endraw %}
+                 {% else -%}
                 {{key}}={{value}}
                  {% endif -%}
 
                 {%- endif -%}
                {% endfor -%}
                }
+{#
+{% for key, value in object.items() %}
+{% if key in accumulated_values[type] %}
+icinga-configuration-{{type}}-{{key_map}}-{{key}}-{{rand}}-accumulator:
+  file.accumulated:
+    - name: icinga-configuration-acc-{{type}}-{{key_map}}-{{key}}
+    - filename: {{data.files_mapping[type]}}
+    - text: "{{value}}"
+    - watch:
+      - mc_proxy: icinga-pre-conf
+    - watch_in:
+      - file: icinga-configuration-{{type}}-{{key_map}}-{{rand}}-conf
+      - mc_proxy: icinga-post-conf
 
+{% endif %}
+{% endfor %}
+#}
 
 {% endfor %}
 
