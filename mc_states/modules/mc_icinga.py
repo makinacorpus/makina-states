@@ -637,7 +637,7 @@ def settings():
     return _settings()
 
 def add_configuration_settings(file, objects, keys_mapping, **kwargs):
-    '''Settings for the add_map macro'''
+    '''Settings for the add_configuration macro'''
     icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
     extra = kwargs.pop('extra', {})
     kwargs.update(extra)
@@ -659,6 +659,22 @@ def add_configuration_settings(file, objects, keys_mapping, **kwargs):
     kwargs.setdefault('file', file_info)
     kwargs.setdefault('objects', objects)
     kwargs.setdefault('keys_mapping', keys_mapping)
+    icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
+    # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
+    icingaSettings['data'] = copy.deepcopy(icingaSettings)
+    icingaSettings['data']['extra'] = copy.deepcopy(icingaSettings)
+    icingaSettings['extra'] = copy.deepcopy(icingaSettings)
+    return icingaSettings
+
+
+def add_accumulated_configuration_settings( objects, keys_mapping, files_mapping, **kwargs):
+    '''Settings for the add_accumulated_configuration macro'''
+    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
+    extra = kwargs.pop('extra', {})
+    kwargs.update(extra)
+    kwargs.setdefault('objects', objects)
+    kwargs.setdefault('keys_mapping', keys_mapping)
+    kwargs.setdefault('files_mapping', files_mapping)
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
     # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
     icingaSettings['data'] = copy.deepcopy(icingaSettings)

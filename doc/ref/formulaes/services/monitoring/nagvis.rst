@@ -20,42 +20,63 @@ add_map macro
 ::
 
 {% import "makina-states/services/monitoring/nagvis/init.sls" as nagvis with context %}
-{{ nagvis.add_map(name, _global, objects, **kwargs) }}
+{{ nagvis.add_map(name, _global, objects, keys_mapping, **kwargs) }}
 
 with
 
     :name: name of the map (it is the filename too, so each name must be unique)
     :_global: dictionary in wich contians directives for 'define global{}' section
     :objects: dictionary wich defines all objects.
+    :keys_mapping: dictionary to etablish the associations between keys of dictionaries and directives
 
 The objects dictionary contains a subdictionary for each type of objects.
 In each subdictionary, subsubdictionaries contains directives for each 'define <type> {}'
 
-The keys of subsubdictionaries are the values for 'object_id'. 
-In order to have unique 'object_id' in cfg file, the keys are prefixed with the type of the object
+The keys of subsubdictionaries are the values of directives defined in the keys_mapping dictionary.
+Because sometimes it is not possible to find a directive with unique value, if a value is set to "None", in the key_mapping dictionary,
+the subdictionary become a list
+
 
 The objects dictionary looks like:
 
 ::
 
-    'objects': {
+    'objects' = {
         'host': {
             'h1': {
-                'host_name': "h1",
                 'x': 4,
                 'y': 3,
 
             },
+        },
         'service': {
-            's1': {
+            'SSH': {
                 'host_name': "h1",
-                'service_description': "SSH",
                 'x': 4,
                 'y': 3,
              },
-	    },
+        },
     }
 
+
+With the key_mapping dictionary:
+
+::
+
+    keys_mapping = {
+        'host': "host_name",
+        'hostgroup': "hostgroup_name",
+        'service': "service_description",
+        'servicegroup': "servicegroup_name",
+        'map': "map_name",
+        'textbox': None,
+        'shape': None,
+        'line': None,
+        'template': None,
+        'container': None,
+    }
+
+So, "h1" is the value for "host_name" directive and "SSH" is the value for "service_description" directive
 
 You can add directives as key:value in each subdictionary
 
@@ -68,13 +89,11 @@ With the example above, the file located in /etc/nagvis/maps/name.cfg will conta
     define global {
     }
     define host {
-        object_id=hosth1
         host_name=h1
         x=4
         y=3
     }
     define service {
-        object_id=services1
         host_name=h1
         service_description=SSH
         x=4
