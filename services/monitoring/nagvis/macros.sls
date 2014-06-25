@@ -54,8 +54,8 @@
     }
 
 %}
-{% macro add_map(name, _global={}, objects={}) %}
-{% set data = salt['mc_nagvis.add_map_settings'](name, _global, objects, keys_mapping_default, **kwargs) %}
+{% macro add_map(name, _global={}, objects={}, keys_mapping=keys_mapping_default) %}
+{% set data = salt['mc_nagvis.add_map_settings'](name, _global, objects, keys_mapping, **kwargs) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 
 nagvis-map-{{data.name}}-conf:

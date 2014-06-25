@@ -88,8 +88,9 @@ nagvis-root-account:
        - mc_proxy: nagvis-post-conf
 
 # test to add configuratipn (MUST BE REMOVED SOON)
+{#
 {% import "makina-states/services/monitoring/nagvis/init.sls" as nagvis with context %}
-{{ nagvis.add_map(file="test4", _global={'object_id': "abcde"},
+{{ nagvis.add_map(name="test4", _global={'object_id': "abcde"},
                             objects={
                                 'host': {
                                     'hostname1': {
@@ -106,7 +107,7 @@ nagvis-root-account:
                                         'directive3': "valueA",
                                     },
                                 },
-                                'hostdependency': [
+                                'shape': [
                                     {
                                         'directive3': "valueB"
                                     },
@@ -116,7 +117,7 @@ nagvis-root-account:
                                 ],
                             },
                            )}}
-
+#}
 
 {%- import "makina-states/services/monitoring/nagvis/macros.jinja" as nagvis with context %}
 {#

@@ -232,6 +232,7 @@ icinga-mklivestatus-conf:
 {% endif %}
 
 # test to add configuratipn (MUST BE REMOVED SOON)
+{#
 {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
 {{ icinga.add_configuration(file="/etc/icinga/objects/test.cfg",
                             objects={
@@ -260,6 +261,7 @@ icinga-mklivestatus-conf:
                                 ],
                             },
                            )}}
+#}
 
 {%- import "makina-states/services/monitoring/icinga/macros.jinja" as icinga with context %}
 {#
