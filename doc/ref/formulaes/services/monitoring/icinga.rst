@@ -223,6 +223,8 @@ the generated configuration will contain (if you use the default keys_mapping an
 
 The "parents" directive contains the two parents because "parents" is an accumulated value
 but alias which is not one will contain only the first value given. The second value will be ignored.
+(the first will be not necessary the value given in the first call because of the states orchestration in salt.
+It will be the first value for which the accumulator is called)
 
 The value for "use" is set because it was not given the first time.
 
@@ -232,15 +234,6 @@ Limits
 
 The salt-stack states are naming with a hash of the object dictionary. If you call the macro several times with exactly the same
 objects dictionary, errors will happen.
-
-
-Currently, all the directives are stored in accumulators (it takes a lot of time).
-The name used for accumulator looks like::
-
-    "{{type}}-{{key_map}}-attribute-{{directive}}"
-
-So, if you use this string in a directive name (not in the value), errors can hapen because the directives are
-find from this string (the substring `{{type}}-{{key_map}}-attribute-` is removed)
 
 Currently, the macro doesn't edit the icinga.cfg file in order to add the directory in the list of "cfg_dir"
 You should think to make a coherent configuration.

@@ -104,7 +104,7 @@ icinga-{{data.objects_hash}}-configuration-clean-directory:
  {% for value_splitted in object[key].split(',') %}
 icinga-{{data.objects_hash}}-configuration-{{type}}-{{key_map}}-attribute-{{key}}-{{value_splitted}}-accumulated:
   file.accumulated:
-    - name: "{{type}}-{{key_map}}-attribute-{{key}}"
+    - name: "{{key}}"
     - filename: {{data.directory}}/{{type}}/{{key_map}}.cfg
     - text: "{{value_splitted}}"
     - watch:
@@ -118,7 +118,7 @@ icinga-{{data.objects_hash}}-configuration-{{type}}-{{key_map}}-attribute-{{key}
 # for example in a call we have a=1 and in another we have b=2, we must merge "a=1\nb=2"
 icinga-{{data.objects_hash}}-configuration-{{type}}-{{key_map}}-attribute-{{key}}-accumulated:
   file.accumulated:
-    - name: "{{type}}-{{key_map}}-attribute-{{key}}"
+    - name: "{{key}}"
     - filename: {{data.directory}}/{{type}}/{{key_map}}.cfg
     - text: "{{object[key]}}"
     - watch:
