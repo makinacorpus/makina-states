@@ -645,18 +645,23 @@ def add_configuration_settings(objects, directory, keys_mapping, accumulated_val
     if not directory.startswith('/'):
         directory_abs=data['configuration_directory']+'/'+directory
 
-#    for key, value in files_mapping.items():
-#        if not value.startswith('/'):
-#            files_mapping[key]=directory_tmp+'/'+value
+    # we hash objects dictionary in order to have a unique value
+    # it is used for naming states
+    def make_hash(o):
+        if isinstance(o, (set, tuple, list)):
+            return tuple([make_hash(e) for e in o])
+        elif not isinstance(o, dict):
+            return hash(o)
+        new_o = copy.deepcopy(o)
+        for k, v in new_o.items():
+            new_o[k] = make_hash(v)
 
-    # all subdictionaries are transformed into lists
-#    for type, objs in objects.items():
-#        if None == keys_mapping[type]:
-#            objects[type]=zip(range(len(objs)), objs)
-#        else:
-#            objects[type]=objs.items()
+        return hash(tuple(frozenset(sorted(new_o.items()))))
+
+    objects_hash = abs(make_hash(objects))
 
     kwargs.setdefault('objects', objects)
+    kwargs.setdefault('objects_hash', objects_hash)
     kwargs.setdefault('directory', directory_abs)
     kwargs.setdefault('keys_mapping', keys_mapping)
     kwargs.setdefault('accumulated_values', accumulated_values)

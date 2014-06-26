@@ -48,7 +48,7 @@
     }
 %}{%
     set accumulated_values_default = {
-      'host': ["parents"],
+      'host': ["parents", "attr"],
       'hostgroup': [],
       'service': [],
       'servicegroup': [],
@@ -64,7 +64,7 @@
       'serviceextinfo': [],
     }
 %}
-{% macro add_configuration(rand, objects={}, directory, keys_mapping=keys_mapping_default, accumulated_values=accumulated_values_default) %}
+{% macro add_configuration(objects={}, directory, keys_mapping=keys_mapping_default, accumulated_values=accumulated_values_default) %}
 {% set data = salt['mc_icinga.add_configuration_settings'](objects, directory, keys_mapping, accumulated_values, **kwargs) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 
@@ -74,10 +74,9 @@
 # loop over objects
 {% for key_map, object in objs.items() %}
 
-
 # we fill accumulators for all attributes (it is bad but I don't find something better)
 {% for key, value in object.items() %}
-icinga-{{rand}}-configuration-{{type}}-{{key_map}}-attribute-{{key}}-accumulated:
+icinga-{{data.objects_hash}}-configuration-{{type}}-{{key_map}}-attribute-{{key}}-accumulated:
   file.accumulated:
     - name: "{{type}}-{{key_map}}-attribute-{{key}}"
     - filename: {{data.directory}}/{{type}}/{{key_map}}.cfg
@@ -86,12 +85,12 @@ icinga-{{rand}}-configuration-{{type}}-{{key_map}}-attribute-{{key}}-accumulated
       - mc_proxy: icinga-configuration-pre-accumulated-attributes-conf 
     - watch_in:
       - mc_proxy: icinga-configuration-post-accumulated-attributes-conf
-      - file: icinga-{{rand}}-configuration-{{type}}-{{key_map}}-object-conf
+      - file: icinga-{{data.objects_hash}}-configuration-{{type}}-{{key_map}}-object-conf
 {% endfor %}
 
 
 # we add the definition of object
-icinga-{{rand}}-configuration-{{type}}-{{key_map}}-object-conf:
+icinga-{{data.objects_hash}}-configuration-{{type}}-{{key_map}}-object-conf:
   file.managed:
     - name: {{data.directory}}/{{type}}/{{key_map}}.cfg
     - source: salt://makina-states/files/etc/icinga/objects/template.cfg
