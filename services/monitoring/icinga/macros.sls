@@ -1,6 +1,5 @@
 {# icinga macro helpers #}
 {#
-# A more simple script can be found in commit 9a65b2ce2cae9bbf2bd2cff22a558b890ea7f231
 #
 # Macros mains args:
 #     file
@@ -11,6 +10,7 @@
 #         dictionary to do the associations between keys of dictionaries and directive
 #         for example the keys in the "host" subdctionary are values for "host_name" directive
 #         if the value is None, key is an unique id which will not be transformed into a directive
+#         but used for the filename
 #
 #         'objects': {
 #             'host': {
@@ -30,23 +30,6 @@
 #
 #}
 {%
-    set files_mapping_default = {
-      'host': "hosts.cfg",
-      'hostgroup': "hostgroups.cfg",
-      'service': "services.cfg",
-      'servicegroup': "servicegroups.cfg",
-      'contact': "contacts.cfg",
-      'contactgroup': "contactgroups.cfg",
-      'timeperiod': "timeperiods.cfg",
-      'command': "commands.cfg",
-      'servicedependency': "servicedependency.cfg",
-      'serviceescalation': "serviceescalation.cfg",
-      'hostdependency': "hostdependency.cfg",
-      'hostescalation': "hostescalation.cfg",
-      'hostextinfo': "hostextinfo.cfg",
-      'serviceextinfo': "serviceextinfo.cfg",
-    }
-%}{%
     set keys_mapping_default = {
       'host': "host_name",
       'hostgroup': "hostgroup_name",
@@ -81,52 +64,56 @@
       'serviceextinfo': [],
     }
 %}
-{% macro add_configuration(rand, objects={}, directory, files_mapping=files_mapping_default, keys_mapping=keys_mapping_default, accumulated_values=accumulated_values_default) %}
-{% set data = salt['mc_icinga.add_configuration_settings'](objects, directory, files_mapping, keys_mapping, accumulated_values, **kwargs) %}
+{% macro add_configuration(rand, objects={}, directory, keys_mapping=keys_mapping_default, accumulated_values=accumulated_values_default) %}
+{% set data = salt['mc_icinga.add_configuration_settings'](objects, directory, keys_mapping, accumulated_values, **kwargs) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
-
-# we use a blockreplace in order to avoid to have each objects more than one time in the file
-# even if the macro is called several times
 
 # loop over types
 {% for type, objs in objects.items() %}
 
-# we create the file if not exists
-icinga-{{rand}}-configuration-{{type}}-create-file:
-  file.managed:
-    - name: {{data.files_mapping[type]}}
-    - user: root
-    - group: root
-    - mode: 644
-    - makedirs: True
-    - watch:
-      - mc_proxy: icinga-configuration-pre-object-conf
-    - watch_in:
-      - mc_proxy: icinga-configuration-post-object-conf
-
-#
 {% if None == data.keys_mapping[type] %}
     {% set key_map_is_directive = False %}
 {% else %}
     {% set key_map_is_directive = True %}
 {% endif %}
 
+
 # loop over objects
 {% for key_map, object in objs.items() %}
 
+
+# we fill accumulators for accumulated attributes
+{% for key, value in object.items() %}
+{% if key in accumulated_values[type] %}
+
+icinga-{{rand}}-configuration-{{type}}-{{key_map}}-attribute-{{key}}-accumulated:
+  file.accumulated:
+    - name: "{{type}}-{{key_map}}-attribute-{{key}}"
+    - filename: {{data.directory}}/{{type}}/{{key_map}}.cfg
+    - text: "{{value}}"
+    - watch:
+      - mc_proxy: icinga-pre-conf
+    - watch_in:
+      - mc_proxy: icinga-post-conf
+      - file: icinga-{{rand}}-configuration-{{type}}-{{key_map}}-object-conf
+{% endif %}
+{% endfor %}
+
+
 # we add the definition of object
 icinga-{{rand}}-configuration-{{type}}-{{key_map}}-object-conf:
-  file.blockreplace:
-    - name: {{data.files_mapping[type]}}
-    - marker_start: "# BEGIN {{type}}-{{key_map}}-object"
-    - marker_end: "# END {{type}}-{{key_map}}-object"
-    - append_if_not_found: True
+  file.managed:
+    - name: {{data.directory}}/{{type}}/{{key_map}}.cfg
+    - user: root
+    - group: root
+    - mode: 644
+    - makedirs: True
     - watch:
-      - mc_proxy: icinga-configuration-pre-object-conf
-      - file: icinga-{{rand}}-configuration-{{type}}-create-file
+      - mc_proxy: icinga-pre-conf
     - watch_in:
-      - mc_proxy: icinga-configuration-post-object-conf
-    - content: |
+      - mc_proxy: icinga-post-conf
+    - template: jinja
+    - contents: |
                define {{type}} {
                {%- if key_map_is_directive %}
                 {{keys_mapping[type]}}={{key_map}}
@@ -134,46 +121,14 @@ icinga-{{rand}}-configuration-{{type}}-{{key_map}}-object-conf:
                {%- for key, value in object.items() %}
                {%- if (not key_map_is_directive) or (key_map != key) -%}
                {%- if key in accumulated_values[type] -%}
-               # BEGIN {{type}}-{{key_map}}-attribute-{{key}}
                 {{key}}=
-               # END {{type}}-{{key_map}}-attribute-{{key}}
-               {% else -%}
+                {% for values in accumulator['{{type}}-{{key_map}}-attribute-{{key}}'] %}{{ value }},{% endfor %}
+               {% else %}
                 {{key}}={{value}}
                {% endif -%}
                {%- endif -%}
                {% endfor -%}
                }
-
-
-# we fill accumulators for accumulated attributes
-{% for key, value in object.items() %}
-{% if key in accumulated_values[type] %}
-
-icinga-{{rand}}-configuration-{{type}}-{{key_map}}-attribute-{{key}}-conf:
-  file.blockreplace:
-    - name: {{data.files_mapping[type]}}
-    - marker_start: "# BEGIN {{type}}-{{key_map}}-attribute-{{key}}"
-    - marker_end: "# END {{type}}-{{key_map}}-attribute-{{key}}"
-    - append_if_not_found: False
-    - watch:
-      - mc_proxy: icinga-configuration-pre-accumulated-attributes-conf
-      - file: icinga-{{rand}}-configuration-{{type}}-{{key_map}}-attribute-{{key}}-accumulated
-    - watch_in:
-      - mc_proxy: icinga-configuration-post-accumulated-attributes-conf
-    - content: "{{key}}="
-
-icinga-{{rand}}-configuration-{{type}}-{{key_map}}-attribute-{{key}}-accumulated:
-  file.accumulated:
-    - name: "{{type}}-{{key_map}}-attribute-{{key}}"
-    - filename: {{data.files_mapping[type]}}
-    - text: "{{value}}"
-    - watch:
-      - mc_proxy: icinga-configuration-pre-accumulated-attributes-conf 
-    - watch_in:
-      - mc_proxy: icinga-configuration-post-accumulated-attributes-conf 
-      - file: icinga-{{rand}}-configuration-{{type}}-{{key_map}}-attribute-{{key}}-conf
-{% endif %}
-{% endfor %}
 
 
 # endloop over objects

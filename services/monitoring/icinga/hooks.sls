@@ -36,27 +36,24 @@ icinga-post-restart:
 
 
 # hooks used for the add_configuration macro
-# it is to avoid merging in accumulators
-
-icinga-configuration-pre-object-conf:
+icinga-configuration-pre-accumulated-attributes-conf:
   mc_proxy.hook:
     - watch:
       - mc_proxy: icinga-pre-conf
-    - watch_in:
-      - mc_proxy: icinga-configuration-post-object-conf
-
-icinga-configuration-post-object-conf:
-  mc_proxy.hook:
-    - watch_in:
-      - mc_proxy: icinga-configuration-pre-accumulated-attributes-conf
-
-icinga-configuration-pre-accumulated-attributes-conf:
-  mc_proxy.hook:
-    - watch_in:
-      - mc_proxy: icinga-configuration-post-accumulated-attributes-conf
 
 icinga-configuration-post-accumulated-attributes-conf:
   mc_proxy.hook:
     - watch_in:
-      - mc_proxy: icinga-post-conf
+      - mc_proxy: icinga-configuration-pre-accumulated-attributes-conf
+
+icinga-configuration-pre-object-conf:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: icinga-configuration-post-accumulated-attributes-conf
+
+icinga-configuration-post-object-conf:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: icinga-configuration-pre-object-conf
+
 

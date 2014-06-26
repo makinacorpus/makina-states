@@ -634,21 +634,20 @@ def settings():
         return data
     return _settings()
 
-def add_configuration_settings(objects, directory, files_mapping, keys_mapping, accumulated_values, **kwargs):
+def add_configuration_settings(objects, directory, keys_mapping, accumulated_values, **kwargs):
     '''Settings for the add_configuration macro'''
     icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
     extra = kwargs.pop('extra', {})
     kwargs.update(extra)
 
     # we add the directory for each value of files_mapping 
-    if directory.startswith('/'):
-        directory_tmp=directory
-    else:
-        directory_tmp=data['configuration_directory']+'/'+directory
+    directory_abs=directory
+    if not directory.startswith('/'):
+        directory_abs=data['configuration_directory']+'/'+directory
 
-    for key, value in files_mapping.items():
-        if not value.startswith('/'):
-            files_mapping[key]=directory_tmp+'/'+value
+#    for key, value in files_mapping.items():
+#        if not value.startswith('/'):
+#            files_mapping[key]=directory_tmp+'/'+value
 
     # all subdictionaries are transformed into lists
 #    for type, objs in objects.items():
@@ -658,8 +657,7 @@ def add_configuration_settings(objects, directory, files_mapping, keys_mapping, 
 #            objects[type]=objs.items()
 
     kwargs.setdefault('objects', objects)
-    kwargs.setdefault('directory', directory)
-    kwargs.setdefault('files_mapping', files_mapping)
+    kwargs.setdefault('directory', directory_abs)
     kwargs.setdefault('keys_mapping', keys_mapping)
     kwargs.setdefault('accumulated_values', accumulated_values)
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
