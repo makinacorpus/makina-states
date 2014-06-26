@@ -48,7 +48,7 @@
     }
 %}{%
     set accumulated_values_default = {
-      'host': ["parents", "attr"],
+      'host': ["parents"],
       'hostgroup': [],
       'service': [],
       'servicegroup': [],
@@ -71,32 +71,22 @@
 # loop over types
 {% for type, objs in objects.items() %}
 
-{% if None == data.keys_mapping[type] %}
-    {% set key_map_is_directive = False %}
-{% else %}
-    {% set key_map_is_directive = True %}
-{% endif %}
-
-
 # loop over objects
 {% for key_map, object in objs.items() %}
 
 
-# we fill accumulators for accumulated attributes
+# we fill accumulators for all attributes (it is bad but I don't find something better)
 {% for key, value in object.items() %}
-{% if key in accumulated_values[type] %}
-
 icinga-{{rand}}-configuration-{{type}}-{{key_map}}-attribute-{{key}}-accumulated:
   file.accumulated:
     - name: "{{type}}-{{key_map}}-attribute-{{key}}"
     - filename: {{data.directory}}/{{type}}/{{key_map}}.cfg
-    - text: "{{value}}"
+    - text: "{{object[key]}}"
     - watch:
-      - mc_proxy: icinga-pre-conf
+      - mc_proxy: icinga-configuration-pre-accumulated-attributes-conf 
     - watch_in:
-      - mc_proxy: icinga-post-conf
+      - mc_proxy: icinga-configuration-post-accumulated-attributes-conf
       - file: icinga-{{rand}}-configuration-{{type}}-{{key_map}}-object-conf
-{% endif %}
 {% endfor %}
 
 
@@ -104,31 +94,25 @@ icinga-{{rand}}-configuration-{{type}}-{{key_map}}-attribute-{{key}}-accumulated
 icinga-{{rand}}-configuration-{{type}}-{{key_map}}-object-conf:
   file.managed:
     - name: {{data.directory}}/{{type}}/{{key_map}}.cfg
+    - source: salt://makina-states/files/etc/icinga/objects/template.cfg
     - user: root
     - group: root
     - mode: 644
     - makedirs: True
     - watch:
-      - mc_proxy: icinga-pre-conf
+      - mc_proxy: icinga-configuration-pre-object-conf
     - watch_in:
-      - mc_proxy: icinga-post-conf
+      - mc_proxy: icinga-configuration-post-object-conf
     - template: jinja
-    - contents: |
-               define {{type}} {
-               {%- if key_map_is_directive %}
-                {{keys_mapping[type]}}={{key_map}}
-               {% endif -%}
-               {%- for key, value in object.items() %}
-               {%- if (not key_map_is_directive) or (key_map != key) -%}
-               {%- if key in accumulated_values[type] -%}
-                {{key}}=
-                {% for values in accumulator['{{type}}-{{key_map}}-attribute-{{key}}'] %}{{ value }},{% endfor %}
-               {% else %}
-                {{key}}={{value}}
-               {% endif -%}
-               {%- endif -%}
-               {% endfor -%}
-               }
+    - defaults:
+      data: |
+            {{sdata}}
+      type: |
+            {{salt['mc_utils.json_dump'](type)}}
+      key_map: |
+               {{salt['mc_utils.json_dump'](key_map)}}
+      object: |
+              {{salt['mc_utils.json_dump'](object)}}
 
 
 # endloop over objects
