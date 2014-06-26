@@ -2,15 +2,21 @@
 {#
 #
 # Macros mains args:
-#     file
-#         the filename in which configuration must be written
+#     directory
+#         the directory in which configuration must be written. The configuration files will be located
+#         in subdirectories with a file for each defined object
 #     objects
 #         dictionary where the objects are defined
 #     keys_mapping
 #         dictionary to do the associations between keys of dictionaries and directive
-#         for example the keys in the "host" subdctionary are values for "host_name" directive
+#         for example the keys in the "host" subdictionary are values for "host_name" directive
 #         if the value is None, key is an unique id which will not be transformed into a directive
 #         but used for the filename
+#     accumulated_values
+#         dictionary to list the directives for which several values are allowed
+#
+#
+#         the objects dictionary looks like:
 #
 #         'objects': {
 #             'host': {
@@ -48,7 +54,7 @@
     }
 %}{%
     set accumulated_values_default = {
-      'host': ["parents", "attr"],
+      'host': ["use", "parents"],
       'hostgroup': [],
       'service': [],
       'servicegroup': [],
@@ -68,7 +74,7 @@
 {% set data = salt['mc_icinga.add_configuration_settings'](objects, directory, keys_mapping, accumulated_values, **kwargs) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 
-# we clean the directory
+# we clean the directory in order to remove old configuration
 icinga-{{data.objects_hash}}-configuration-clean-directory:
   file.directory:
     - name: {{data.directory}}
@@ -88,6 +94,7 @@ icinga-{{data.objects_hash}}-configuration-clean-directory:
 # loop over objects
 {% for key_map, object in objs.items() %}
 
+# loop over attributes
 # we fill accumulators for all attributes (it is bad but I don't find something better)
 {% for key, value in object.items() %}
 icinga-{{data.objects_hash}}-configuration-{{type}}-{{key_map}}-attribute-{{key}}-accumulated:

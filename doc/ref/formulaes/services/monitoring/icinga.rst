@@ -3,6 +3,9 @@ Icinga configuration
 
 See :ref:`module_mc_icinga` for configuration options.
 
+About packaging
+---------------
+
 The icinga module can provide:
 
   - configuration of icinga core
@@ -60,19 +63,26 @@ The architecture between Icinga, Icinga-web and nagvis looks like to:
 
 Please note that icinga service offers a special macros to generate configurations.
 
+Macros
+------
+
 add_configuration
------------------
++++++++++++++++++
 
 ::
 
     {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
-    {{ icinga.add_configuration(file, objects, keys_mapping, **kwargs) }}
+    {{ icinga.add_configuration(directory, objects, keys_mapping, accumulated_values, **kwargs) }}
 
 with
 
-    :file: the filename to create with the configuration. You can provide an absolute path. Otherwise the relative path are relative to "configuration_directory" directory ("/etc/icinga" by default)
-    :objects: dictionary wich defines all objects.
-    :keys_mapping: dictionary to etablish the associations between keys of dictionaries and directives
+    :directory: the directory in which configuration must be written. You can provide an absolute path. Otherwise the relative path are relative to "configuration_directory" directory ("/etc/icinga" by default). The configuration will be located in subdirectories (one subdirectory per object types) with a file for each defined object. **Before generating the configuration, all files and directories located in the directory given are unlinked**.
+    :objects: dictionary wich defines all objects. See below for structure.
+    :keys_mapping: dictionary to establish the associations between keys of dictionaries and directives
+    :accumulated_values: dictionary to establish the directives for which several values are allowed
+
+**Before generating the configuration, all files and directories located in the directory given are unlinked**. It is to avoid to detect
+what are the objects which must be deleted.
 
 
 The objects dictionary looks like:
@@ -81,8 +91,8 @@ The objects dictionary looks like:
 
     'objects' = {
         'host': {
-            'h1': {
-                'alias': "host1",
+            'host1': {
+                'alias': "foo",
                 'use': "generic-host",
             },
         },
@@ -91,11 +101,11 @@ The objects dictionary looks like:
                 'host_name': "h1",
             },
         },
-        'hostdependency': [
-            {
-                'host_name': "h1"
+        'hostdependency': {
+            'dependency1' {
+                'host_name': "host1"
             },
-        ],
+        },
     }
 
 
@@ -120,25 +130,34 @@ With the default keys_mapping::
       'serviceextinfo': 'host_name',
     }
 
-the key "h1" is the value for host directive "host_name" and the key "SSH" is the value for directive "service_description".
-When the value is set to None in the keys_mapping dictionary, the subdictionary become a list. It is usefull when no attribute has a unique value.
+the key "host1" is the value for host directive "host_name" in the host definition
+and the key "SSH" is the value for directive "service_description".
+When the value is set to None in the keys_mapping dictionary, the key is not used as a directive
+but it is used for filename
 
 The generated configuration looks like to::
 
     define host {
-        host_name=h1
-        alias=host1
+        host_name=host1
+        alias=foo
         use=generic-host
     }
     define service {
         service_description=SSH
-        host_name=h1
+        host_name=host1
     }
     define hostdependency {
-        host_name=h1
+        host_name=host1
     }
 
-The macro allow to produce an invalid configuration with non-existent directives but forbide to have two same directives even if the values are different
+Each object definition will be in its file:
+
+  - the definition for host1 will be in `host/host1.cfg`
+  - the defintion for ssh service will be in `service/SSH.cfg`
+  - and the hostdependency will be in `hostdependency/dependency1.cfg`
+
+
+The macro allow to produce an invalid configuration with non-existent directives but forbidde to have two same directives even if the values are different
 (because of the use of a dictionary in which keys are unique)
 
 If you have::
@@ -162,3 +181,79 @@ The produced file will contains::
     }
 
 The second value for "host_name" directive will be ignored
+
+You can call the macro several times. If you call a first time the macro with::
+
+    'objects' = {
+        'host': {
+            'host1': {
+                'parents': "host2"
+                'alias': "foo",
+            },
+            'host2': {
+            },
+        },
+    }
+
+
+and a second time the macro with::
+
+    'objects' = {
+        'host': {
+            'host1': {
+                'parents': "host3"
+                'alias': "bar",
+                'use': "generic-host"
+            },
+        },
+    }
+
+the generated configuration will contain (if you use the default keys_mapping and accumulated_values)::
+
+    define host {
+        host_name=host1
+        alias=foo
+        parents=host1,host3
+        use=generic-host
+    }
+    define host {
+        host_name=host2
+    }
+
+
+The "parents" directive contains the two parents because "parents" is an accumulated value
+but alias which is not one will contain only the first value given. The second value will be ignored.
+
+The value for "use" is set because it was not given the first time.
+
+
+Limits
+++++++
+
+The salt-stack states are naming with a hash of the object dictionary. If you call the macro several times with exactly the same
+objects dictionary, errors will happen.
+
+
+Currently, all the directives are stored in accumulators (it takes a lot of time).
+The name used for accumulator looks like::
+
+    "{{type}}-{{key_map}}-attribute-{{directive}}"
+
+So, if you use this string in a directive name (not in the value), errors can hapen because the directives are
+find from this string (the substring `{{type}}-{{key_map}}-attribute-` is removed)
+
+Another problem is when you add::
+
+    'attr': "v1,v2"
+
+and in a second call, you add::
+
+    'attr': "v2"
+
+in this case, the second value "v2" is not removed and the generated file contains::
+
+    attr=v1,v2,v2
+
+
+Currently, the macro doesn't edit the icinga.cfg file in order to add the directory in the list of "cfg_dir"
+You should think to make a coherent configuration.
