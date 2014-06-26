@@ -83,7 +83,7 @@ supervisor-logrotate:
     - user: root
     - makedirs: true
     - group: root
-    - mode: 755
+    - mode: 644
     - watch:
       - mc_proxy: supervisor-pre-conf
     - watch_in:

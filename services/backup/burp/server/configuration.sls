@@ -24,6 +24,26 @@ etc-burp-ca-gen:
 
 {% for f in [
   '/etc/logrotate.d/burp',
+] %}
+etc-burp-burp-server.conf-{{f}}:
+  file.managed:
+    - name: {{f}}
+    - source: salt://makina-states/files/{{f}}
+    - mode: 644
+    - user: {{data.user}}
+    - template: jinja
+    - makedirs: true
+    - group: {{data.group}}
+    - defaults:
+      data: |
+            {{sdata}}
+    - watch:
+      - mc_proxy: burp-pre-conf-hook
+    - watch_in:
+      - mc_proxy: burp-post-conf-hook
+      - file: burp-copy-server-cert
+{% endfor %}
+{% for f in [
   '/etc/default/burp-server',
   '/etc/init.d/burp-server',
   '/etc/burp/burp-server.conf',

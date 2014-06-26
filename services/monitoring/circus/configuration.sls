@@ -84,7 +84,7 @@ circus-logrotate:
     - user: root
     - makedirs: true
     - group: root
-    - mode: 755
+    - mode: 644
     - watch:
       - mc_proxy: circus-pre-conf
     - watch_in:

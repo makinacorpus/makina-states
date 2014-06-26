@@ -7,4 +7,4 @@
               mkdir -p "{{dest}}";
             fi;
             rsync -Aa --delete "{{cfg.project_root}}/" "{{dest}}/"
-    - user: {{cfg.user}}
+    - user: root

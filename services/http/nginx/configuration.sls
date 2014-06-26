@@ -24,6 +24,27 @@ nginx-vhost-dirs:
 {% set sdata =salt['mc_utils.json_dump'](settings)  %}
 {% for f in [
     '/etc/logrotate.d/nginx',
+] %}
+makina-nginx-minimal-{{f}}:
+  file.managed:
+    - name: {{f}}
+    - source: salt://makina-states/files/{{f}}
+    - template: jinja
+    - defaults:
+      data: |
+            {{sdata}}
+    - user: root
+    - mode: 644
+    - group: root
+    - makedirs: true
+    - mode: {{modes.get(f, 644)}}
+    - template: jinja
+    - watch_in:
+      - mc_proxy: nginx-pre-conf-hook
+    - watch_in:
+      - mc_proxy: nginx-post-conf-hook
+{% endfor %}
+{% for f in [
     '/usr/share/nginx-naxsi-ui/naxsi-ui/nx_extract.py',
     '/etc/init.d/nginx-naxsi-ui',
     '/etc/default/nginx-naxsi-ui',
