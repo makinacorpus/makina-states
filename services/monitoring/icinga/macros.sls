@@ -10,8 +10,7 @@
 #     keys_mapping
 #         dictionary to do the associations between keys of dictionaries and directive
 #         for example the keys in the "host" subdctionary are values for "host_name" directive
-#         if the value is None, the dictionary become a list (it will be usefull because sometimes
-#         no directive has a unique value)
+#         if the value is None, key is an unique id which will not be transformed into a directive
 #
 #         'objects': {
 #             'host': {
@@ -24,9 +23,9 @@
 #                     'host_name': "host1",
 #                 },
 #             },
-#             'servicedependency': [
-#                 {},
-#             ],
+#             'servicedependency': {
+#                 'abc': {},
+#             },
 #         },
 #
 #}
@@ -64,26 +63,9 @@
       'hostextinfo': "host_name",
       'serviceextinfo': "host_name",
     }
-%}{%
-    set accumulated_values_default = {
-      'host': ['parents'],
-      'hostgroup': [],
-      'service': [],
-      'servicegroup': [],
-      'contact': [],
-      'contactgroup': [],
-      'timeperiod': [],
-      'command': [],
-      'servicedependency': [],
-      'serviceescalation': [],
-      'hostdependency': [],
-      'hostescalation': [],
-      'hostextinfo': [],
-      'serviceextinfo': [],
-    }
 %}
-{% macro add_configuration(rand, objects={}, directory, files_mapping=files_mapping_default, keys_mapping=keys_mapping_default, accumulated_values=accumulated_values_default) %}
-{% set data = salt['mc_icinga.add_configuration_settings'](objects, directory, files_mapping, keys_mapping, accumulated_values, **kwargs) %}
+{% macro add_configuration(rand, objects={}, directory, files_mapping=files_mapping_default, keys_mapping=keys_mapping_default) %}
+{% set data = salt['mc_icinga.add_configuration_settings'](objects, directory, files_mapping, keys_mapping, **kwargs) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 
 # we use a blockreplace in order to avoid to have each objects more than one time in the file
@@ -105,16 +87,15 @@ icinga-configuration-{{type}}-{{rand}}-create-file:
     - watch_in:
       - mc_proxy: icinga-post-conf
 
-# loop over objects
+#
 {% if None == data.keys_mapping[type] %}
-# the objects don't have unique value to differentiate them
-    {% set unique = False %}
+    {% set key_map_is_directive = False %}
 {% else %}
-# the objects can be differencied. We can have only one object per unique value
-    {% set unique = True %}
+    {% set key_map_is_directive = True %}
 {% endif %}
 
-{% for key_map, object in objs %}
+# loop over objects
+{% for key_map, object in objs.items() %}
 
 # we add the definition of object
 icinga-configuration-{{type}}-{{key_map}}-{{rand}}-conf:
@@ -130,38 +111,15 @@ icinga-configuration-{{type}}-{{key_map}}-{{rand}}-conf:
       - mc_proxy: icinga-post-conf
     - content: |
                define {{type}} {
-               {%- if unique %}
+               {%- if key_map_is_directive %}
                 {{keys_mapping[type]}}={{key_map}}
                {% endif -%}
                {%- for key, value in object.items() %}
-                {%- if (not unique) or (key_map != key) -%}
-
-                 {%- if key in accumulated_values[type] %}
-                {{key}}={% raw %}{% for value in accumulator[{% endraw %}'icinga-configuration-acc-{{type}}-{{key_map}}-{{key}}'{% raw %}] %}{{value}}{% endfor %}{% endraw %}
-                 {% else -%}
+                {%- if (not key_map_is_directive) or (key_map != key) -%}
                 {{key}}={{value}}
-                 {% endif -%}
-
                 {%- endif -%}
                {% endfor -%}
                }
-{#
-{% for key, value in object.items() %}
-{% if key in accumulated_values[type] %}
-icinga-configuration-{{type}}-{{key_map}}-{{key}}-{{rand}}-accumulator:
-  file.accumulated:
-    - name: icinga-configuration-acc-{{type}}-{{key_map}}-{{key}}
-    - filename: {{data.files_mapping[type]}}
-    - text: "{{value}}"
-    - watch:
-      - mc_proxy: icinga-pre-conf
-    - watch_in:
-      - file: icinga-configuration-{{type}}-{{key_map}}-{{rand}}-conf
-      - mc_proxy: icinga-post-conf
-
-{% endif %}
-{% endfor %}
-#}
 
 {% endfor %}
 

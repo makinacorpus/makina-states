@@ -233,7 +233,7 @@ icinga-mklivestatus-conf:
 
 # test to add configuratipn (MUST BE REMOVED SOON)
 {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
-{{ icinga.add_configuration(rand=1,directory='/tmp/icinga_conf/',
+{{ icinga.add_configuration(rand=1,directory='/tmp/icinga_conf',
                             objects={
                                 'host': {
                                     'hostname1': {
@@ -251,14 +251,14 @@ icinga-mklivestatus-conf:
                                         'directive3': "valueA",
                                     },
                                 },
-                                'servicedependency': [
-                                    {
+                                'servicedependency': {
+                                    'abc': {
                                         'key1': "value1",
                                     },
-                                ],
+                                },
                             },
                            )}}
-{{ icinga.add_configuration(rand=2,directory='/tmp/icinga_conf/',
+{{ icinga.add_configuration(rand=2,directory='/tmp/icinga_conf',
                             objects={
                                 'host': {
                                     'hostname3': {
@@ -274,11 +274,11 @@ icinga-mklivestatus-conf:
                                         'directive3': "valueA",
                                     },
                                 },
-                                'servicedependency': [
-                                    {
+                                'servicedependency': {
+                                    'abc': {
                                         'key1': "value1",
                                     },
-                                ],
+                                },
                             },
                            )}}
 

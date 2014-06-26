@@ -634,7 +634,7 @@ def settings():
         return data
     return _settings()
 
-def add_configuration_settings(objects, directory, files_mapping, keys_mapping, accumulated_values, **kwargs):
+def add_configuration_settings(objects, directory, files_mapping, keys_mapping, **kwargs):
     '''Settings for the add_configuration macro'''
     icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
     extra = kwargs.pop('extra', {})
@@ -647,22 +647,20 @@ def add_configuration_settings(objects, directory, files_mapping, keys_mapping, 
         directory_tmp=data['configuration_directory']+'/'+directory
 
     for key, value in files_mapping.items():
-        if not key.startswith('/'):
+        if not value.startswith('/'):
             files_mapping[key]=directory_tmp+'/'+value
 
-
     # all subdictionaries are transformed into lists
-    for type, objs in objects.items():
-        if None == keys_mapping[type]:
-            objects[type]=zip(range(len(objs)), objs)
-        else:
-            objects[type]=objs.items()
+#    for type, objs in objects.items():
+#        if None == keys_mapping[type]:
+#            objects[type]=zip(range(len(objs)), objs)
+#        else:
+#            objects[type]=objs.items()
 
     kwargs.setdefault('objects', objects)
     kwargs.setdefault('directory', directory)
     kwargs.setdefault('files_mapping', files_mapping)
     kwargs.setdefault('keys_mapping', keys_mapping)
-    kwargs.setdefault('accumulated_values', accumulated_values)
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
     # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
     icingaSettings['data'] = copy.deepcopy(icingaSettings)
