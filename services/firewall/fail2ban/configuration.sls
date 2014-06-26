@@ -6,21 +6,24 @@ include:
 {% if salt['mc_controllers.mastersalt_mode']() %}
 makina-fail2ban-pre-conf:
   mc_proxy.hook: []
-makina-etc-fail2ban-fail-conf:
+
+{% for f in ['fail2ban/jail.conf', 'init.d/fail2ban'] %}
+makina-etc-{{f}}:
   file.managed:
-    - name: {{ locs.conf_dir }}/fail2ban/jail.conf
-    - source : salt://makina-states/files/etc/fail2ban/jail.conf
+    - name: {{ locs.conf_dir }}/{{f}}
+    - source : salt://makina-states/files/etc/{{f}}
     - template: jinja
     - user: root
     - group: root
     - mode: "0700"
     - defaults:
       data: |
-            {{salt['mc_utils.json_dump']( data)}}
+            {{salt['mc_utils.json_dump'](data)}}
     - watch:
       - mc_proxy: fail2ban-pre-conf-hook
     - watch_in:
       - mc_proxy: fail2ban-post-conf-hook
+{% endfor %}
 
 makina-etc-fail2ban-fail2ban-conf:
   file.managed:
