@@ -65,7 +65,7 @@
     }
 %}{%
     set accumulated_values_default = {
-      'host': ["parents"],
+      'host': ["parents", "attr"],
       'hostgroup': [],
       'service': [],
       'servicegroup': [],
@@ -92,7 +92,7 @@
 {% for type, objs in objects.items() %}
 
 # we create the file if not exists
-icinga-configuration-{{type}}-{{rand}}-create-file:
+icinga-{{rand}}-configuration-{{type}}-create-file:
   file.managed:
     - name: {{data.files_mapping[type]}}
     - user: root
@@ -100,9 +100,9 @@ icinga-configuration-{{type}}-{{rand}}-create-file:
     - mode: 644
     - makedirs: True
     - watch:
-      - mc_proxy: icinga-pre-conf
+      - mc_proxy: icinga-configuration-pre-object-conf
     - watch_in:
-      - mc_proxy: icinga-post-conf
+      - mc_proxy: icinga-configuration-post-object-conf
 
 #
 {% if None == data.keys_mapping[type] %}
@@ -115,17 +115,17 @@ icinga-configuration-{{type}}-{{rand}}-create-file:
 {% for key_map, object in objs.items() %}
 
 # we add the definition of object
-icinga-configuration-{{type}}-{{key_map}}-{{rand}}-object-conf:
+icinga-{{rand}}-configuration-{{type}}-{{key_map}}-object-conf:
   file.blockreplace:
     - name: {{data.files_mapping[type]}}
     - marker_start: "# BEGIN {{type}}-{{key_map}}-object"
     - marker_end: "# END {{type}}-{{key_map}}-object"
     - append_if_not_found: True
     - watch:
-      - mc_proxy: icinga-pre-conf
-      - file: icinga-configuration-{{type}}-{{rand}}-create-file
+      - mc_proxy: icinga-configuration-pre-object-conf
+      - file: icinga-{{rand}}-configuration-{{type}}-create-file
     - watch_in:
-      - mc_proxy: icinga-post-conf
+      - mc_proxy: icinga-configuration-post-object-conf
     - content: |
                define {{type}} {
                {%- if key_map_is_directive %}
@@ -149,30 +149,29 @@ icinga-configuration-{{type}}-{{key_map}}-{{rand}}-object-conf:
 {% for key, value in object.items() %}
 {% if key in accumulated_values[type] %}
 
-icinga-configuration-{{type}}-{{key_map}}-{{rand}}-attribute-{{key}}-conf:
+icinga-{{rand}}-configuration-{{type}}-{{key_map}}-attribute-{{key}}-conf:
   file.blockreplace:
     - name: {{data.files_mapping[type]}}
     - marker_start: "# BEGIN {{type}}-{{key_map}}-attribute-{{key}}"
     - marker_end: "# END {{type}}-{{key_map}}-attribute-{{key}}"
     - append_if_not_found: False
     - watch:
-      - mc_proxy: icinga-pre-conf
-      - file: icinga-configuration-{{type}}-{{key_map}}-{{rand}}-object-conf
-      - file: icinga-configuration-{{type}}-{{key_map}}-{{rand}}-attribute-{{key}}-accumulated
+      - mc_proxy: icinga-configuration-pre-accumulated-attributes-conf
+      - file: icinga-{{rand}}-configuration-{{type}}-{{key_map}}-attribute-{{key}}-accumulated
     - watch_in:
-      - mc_proxy: icinga-post-conf
+      - mc_proxy: icinga-configuration-post-accumulated-attributes-conf
     - content: "{{key}}="
 
-icinga-configuration-{{type}}-{{key_map}}-{{rand}}-attribute-{{key}}-accumulated:
+icinga-{{rand}}-configuration-{{type}}-{{key_map}}-attribute-{{key}}-accumulated:
   file.accumulated:
     - name: "{{type}}-{{key_map}}-attribute-{{key}}"
     - filename: {{data.files_mapping[type]}}
     - text: "{{value}}"
     - watch:
-      - mc_proxy: icinga-pre-conf
+      - mc_proxy: icinga-configuration-pre-accumulated-attributes-conf 
     - watch_in:
-      - mc_proxy: icinga-post-conf
-      - file: icinga-configuration-{{type}}-{{key_map}}-{{rand}}-attribute-{{key}}-conf
+      - mc_proxy: icinga-configuration-post-accumulated-attributes-conf 
+      - file: icinga-{{rand}}-configuration-{{type}}-{{key_map}}-attribute-{{key}}-conf
 {% endif %}
 {% endfor %}
 

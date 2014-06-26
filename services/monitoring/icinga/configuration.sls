@@ -240,10 +240,12 @@ icinga-mklivestatus-conf:
                                         'directive1': "value1",
                                         'directive2': "value2",
                                         'parents': "p1",
+                                        'attr': "v1",
                                     },
                                     'hostname2': {
                                         'directive1': "value3",
                                         'directive2': "value4",
+                                        'attr': "v3",
                                     },
                                 },
                                 'service': {
@@ -267,6 +269,7 @@ icinga-mklivestatus-conf:
                                     'hostname1': {
                                         'directive5': "value",
                                         'parents': "p2",
+                                        'attr': "v2",
                                     },
                                 },
                                 'service': {
