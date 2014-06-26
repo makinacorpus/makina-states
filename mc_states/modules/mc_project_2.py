@@ -1522,6 +1522,11 @@ def deploy(name, *args, **kwargs):
 
         salt-call --local -lall mc_project.deploy <name> only=install
 
+    Run only one or certain install step::
+
+        salt mc_project.deploy only=install only_steps=00_foo
+        salt mc_project.deploy only=install only_steps=00_foo,02_bar
+
     Only run install & fixperms step::
 
         salt-call --local -lall mc_project.deploy <name> only=install,fixperms
@@ -1533,11 +1538,6 @@ def deploy(name, *args, **kwargs):
     Skip a particular step::
 
         salt-call mc_project.deploy <name> skip_release_sync=True skip_archive=True skip_notify=True
-
-    Run only one install step::
-
-        salt mc_project.deploy only=install onlystep=00_foo
-
 
     '''
     ret = _get_ret(name, *args, **kwargs)
