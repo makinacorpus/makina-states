@@ -59,7 +59,7 @@ makina-haproxy-{{f}}:
     - user: root
     - makedirs: true
     - group: root
-    - mode: 755
+    - mode: 644
     - template: jinja
     - defaults:
       data: |

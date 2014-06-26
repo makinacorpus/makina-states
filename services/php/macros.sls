@@ -84,7 +84,7 @@ makina-php-pool-{{ data.pool_name }}-logrotate:
         name: {{data.pool_name}}
         logdir: {{data.log_dir}}
         rotate: {{data.rotate}}
-    - mode: 750
+    - mode: 644
     - user: root
     - group: root
     - require:
