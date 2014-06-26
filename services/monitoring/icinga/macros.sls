@@ -68,6 +68,20 @@
 {% set data = salt['mc_icinga.add_configuration_settings'](objects, directory, keys_mapping, accumulated_values, **kwargs) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 
+# we clean the directory
+icinga-{{data.objects_hash}}-configuration-clean-directory:
+  file.directory:
+    - name: {{data.directory}}
+    - user: root
+    - group: root
+    - dir_mode: 755
+    - makedirs: True
+    - clean: True
+    - watch:
+      - mc_proxy: icinga-pre-conf
+    - watch_in:
+      - mc_proxy: icinga-configuration-pre-accumulated-attributes-conf
+
 # loop over types
 {% for type, objs in objects.items() %}
 
