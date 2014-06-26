@@ -268,7 +268,7 @@ icinga-mklivestatus-conf:
                                     },
                                     'hostname1': {
                                         'directive5': "value",
-                                        'parents': "p2",
+                                        'parents': "p1,p2",
                                         'attr': "v2",
                                     },
                                 },

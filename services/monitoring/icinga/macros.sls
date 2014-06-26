@@ -97,6 +97,25 @@ icinga-{{data.objects_hash}}-configuration-clean-directory:
 # loop over attributes
 # we fill accumulators for all attributes (it is bad but I don't find something better)
 {% for key, value in object.items() %}
+
+{% if key in accumulated_values[type] %}
+
+# if the attribute can be accumulated, we split the value in ',' and loop. it is to remove duplicates values.
+ {% for value_splitted in object[key].split(',') %}
+icinga-{{data.objects_hash}}-configuration-{{type}}-{{key_map}}-attribute-{{key}}-{{value_splitted}}-accumulated:
+  file.accumulated:
+    - name: "{{type}}-{{key_map}}-attribute-{{key}}"
+    - filename: {{data.directory}}/{{type}}/{{key_map}}.cfg
+    - text: "{{value_splitted}}"
+    - watch:
+      - mc_proxy: icinga-configuration-pre-accumulated-attributes-conf
+    - watch_in:
+      - mc_proxy: icinga-configuration-post-accumulated-attributes-conf
+      - file: icinga-{{data.objects_hash}}-configuration-{{type}}-{{key_map}}-object-conf
+ {% endfor %}
+{% else %}
+# even if the attribute can't be accumulated, we use an accumulator in order to merge the keys obtained with differents calls
+# for example in a call we have a=1 and in another we have b=2, we must merge "a=1\nb=2"
 icinga-{{data.objects_hash}}-configuration-{{type}}-{{key_map}}-attribute-{{key}}-accumulated:
   file.accumulated:
     - name: "{{type}}-{{key_map}}-attribute-{{key}}"
@@ -107,6 +126,10 @@ icinga-{{data.objects_hash}}-configuration-{{type}}-{{key_map}}-attribute-{{key}
     - watch_in:
       - mc_proxy: icinga-configuration-post-accumulated-attributes-conf
       - file: icinga-{{data.objects_hash}}-configuration-{{type}}-{{key_map}}-object-conf
+
+{% endif %}
+
+# endloop over attributes
 {% endfor %}
 
 

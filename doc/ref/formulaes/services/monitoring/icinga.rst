@@ -242,18 +242,6 @@ The name used for accumulator looks like::
 So, if you use this string in a directive name (not in the value), errors can hapen because the directives are
 find from this string (the substring `{{type}}-{{key_map}}-attribute-` is removed)
 
-Another problem is when you add::
-
-    'attr': "v1,v2"
-
-and in a second call, you add::
-
-    'attr': "v2"
-
-in this case, the second value "v2" is not removed and the generated file contains::
-
-    attr=v1,v2,v2
-
-
 Currently, the macro doesn't edit the icinga.cfg file in order to add the directory in the list of "cfg_dir"
 You should think to make a coherent configuration.
+
