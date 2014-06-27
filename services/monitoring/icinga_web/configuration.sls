@@ -43,14 +43,39 @@ icinga_web-usr-databases-conf:
     - makedirs: true
     - user: root
     - group: www-data
-    - mode: 640
+    - mode: 644
     - watch:
       - mc_proxy: icinga_web-pre-conf
+      - file: icinga_web-databases-conf
     - watch_in:
       - mc_proxy: icinga_web-post-conf
     - defaults:
       data: |
             {{sdata}}
+
+icinga_web-usr-cronks-conf:
+  file.copy:
+    - name: /usr/share/icinga-web/app/config/cronks.xml
+    - source:  {{data.configuration_directory}}/conf.d/cronks.xml
+    - makedirs: true
+    - force: True
+    - watch:
+      - mc_proxy: icinga_web-pre-conf
+      - file: icinga_web-cronks-conf
+    - watch_in:
+      - mc_proxy: icinga_web-post-conf
+
+icinga_web-usr-cronks-2-conf:
+  file.managed:
+    - name: /usr/share/icinga-web/app/config/cronks.xml
+    - user: root
+    - group: www-data
+    - mode: 644
+    - watch:
+      - mc_proxy: icinga_web-pre-conf
+      - file: icinga_web-usr-cronks-conf
+    - watch_in:
+      - mc_proxy: icinga_web-post-conf
 
 # clear cache
 icinga_web-clear-cache:

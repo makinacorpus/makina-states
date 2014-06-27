@@ -113,9 +113,14 @@ def settings():
         install and configure a mysql service in order to store icinga-web data
         (no ido2db data)
     modules
+        nagvis
+            enable
+                enable the nagvis module which add link to nagvis in icinga-web
+            cronks_xml
+                dictionary to store the cronks. The content is added in cronks.xml. The structure is the same that 'cronks_xml' subdictionary.
         pnp4nagios
             enable
-                enable the pnp4nagios module which add graphs in icinga-web
+                enable the pnp4nagios module which add links to graphs in icinga-web
             package
                 package to install for pnp4nagios integration
             cronks_extensions-templates
@@ -627,6 +632,28 @@ def settings():
                 'has_mysql': ('mysql' == web_database['type']
                               and has_sgbd),
                 'modules': {
+                    'nagvis': {
+                        'enabled': True,
+                        'cronks_xml': {
+                            'cronks': {
+                                'iFrameViewNagvis': {
+                                    'module': "Cronks",
+                                    'action': "System.IframeView",
+                                    'hide': "false",
+                                    'description': "Nagvis Maps views",
+                                    'name': "Nagvis Display",
+                                    'image': "cronks.Info2",
+                                    'categories': "misc",
+                                    'position': 310,
+                                    'parameter': {
+                                         'url': "<![CDATA[http://nagvis.localhost/nagvis/frontend/nagvis-js/]]>",
+#                                        'user': "",
+#                                        'password': "",
+                                    },
+                                },
+                            },
+                        },
+                    },
                     'pnp4nagios': {
                         'enabled': True,
                         'package': ['icinga-web-pnp'],

@@ -197,7 +197,7 @@ You should think to make a coherent configuration.
 
 By default, the /etc/icinga/objects is present in "cfg_dir".
 
-
+No checks are done. You can add invalid values for any directives. You can set non-existent directives too.
 
 .. Call the macro automatically
 .. ----------------------------

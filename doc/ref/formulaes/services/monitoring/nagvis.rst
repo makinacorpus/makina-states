@@ -8,6 +8,7 @@ because nagvis currently can't connect to a postgresql database.
 
 Nagvis doesn't depend on icinga unless mklivestatus socket is done with a unix pipe
 
+Integration with icinga-web is done in icinga_web service.
 
 
 Please note that we offer two special macros to generate configurations.

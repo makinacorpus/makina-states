@@ -56,6 +56,30 @@
             {% endfor %}
            </cronk>
          {% endfor %}
+
+
+         <!-- nagvis module -->
+        {% if data.modules.get('nagvis', None) and data.modules.nagvis.enabled %}
+
+         {% for name,cronk in data.modules.nagvis.cronks_xml.cronks.items() %}
+           <cronk name="{{name}}">
+            {% for name,value in cronk.items() %}
+             {% if value is mapping %}
+             <ae:parameter name="ae:parameter">
+             {% for name2, value2 in value.items() %}
+              <ae:parameter name="{{name2}}">{{value2}}</ae:parameter>
+             {% endfor %}
+             </ae:parameter>
+             {% else %}
+             <ae:parameter name="{{name}}">{{value}}</ae:parameter>
+             {% endif %}
+            {% endfor %}
+           </cronk>
+         {% endfor %}
+
+
+        {% endif %}
+
         <!-- set correct url for docs -->
 <!--
             <cronk name="iframeViewIcingaDocsEn">
