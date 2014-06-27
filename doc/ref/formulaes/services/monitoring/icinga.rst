@@ -61,179 +61,136 @@ The architecture between Icinga, Icinga-web and nagvis looks like to:
              +---npcdmod--><-npcd-><------- Pnp4nagios
 
 
-Please note that icinga service offers a special macros to generate configurations.
+Please note that icinga service offers two special macros to generate configurations.
 
 Macros
 ------
 
-add_configuration
-+++++++++++++++++
+configuration_add_object
+++++++++++++++++++++++++
+
+This macro was written in order to add an object in the icinga configuration
 
 ::
 
     {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
-    {{ icinga.add_configuration(directory, objects, keys_mapping, accumulated_values, **kwargs) }}
+    {{ icinga.configuration_add_object(type, name, attrs, **kwargs) }}
 
 with
 
-    :directory: the directory in which configuration must be written. You can provide an absolute path. Otherwise the relative path are relative to "configuration_directory" directory ("/etc/icinga" by default). The configuration will be located in subdirectories (one subdirectory per object types) with a file for each defined object. **Before generating the configuration, all files and directories located in the directory given are unlinked**.
-    :objects: dictionary wich defines all objects. See below for structure.
-    :keys_mapping: dictionary to establish the associations between keys of dictionaries and directives
-    :accumulated_values: dictionary to establish the directives for which several values are allowed
+    :type: the type of added object
+    :name: the name of the added object used for the filename
+    :attrs: a dictionary in which each key corresponds to a directive
 
-**Before generating the configuration, all files and directories located in the directory given are unlinked**. It is to avoid to detect
+The default directory where configuration files are located is::
+
+    /etc/icinga/objects/salt_generated/
+
+**Before generating the configuration, all files and directories located in the directory are unlinked**. It is to avoid to detect
 what are the objects which must be deleted.
 
+You can change the configuration directory using \*\*kwargs parameter
 
-The objects dictionary looks like:
+
+A call with::
+
+    {{ icinga.configuration_add_object(
+                                   type='host',
+                                   name='hostname1',
+                                   attrs={
+                                            'host_name': "hostname1",
+                                            'use': "generic-host",
+                                        },
+                                  ) }}
+
+Generates the file in /etc/icinga/objects/salt_generated/host/hostname1.cfg containing::
+
+    define host {
+     use=generic-host
+     host_name=hostname1
+    }
+
+
+The services are managed in the same way::
+
+    {{ icinga.configuration_add_object(
+                                   type='service',
+                                   name='SSH',
+                                   attrs={
+                                            'use': "generic-service",
+                                            'service_description': "SSH",
+                                        },
+                                  ) }}
+
+That generates the file /etc/icinga/objects/salt_generated/service/SSH.cfg containing::
+
+    define service {
+     use=generic-service
+     service_description=SSH
+    }
+
+
+configuration_edit_object
++++++++++++++++++++++++++
+
+This macro was written because some values in object configuration depends on the rest of the configuration.
+
+For example, you can have::
+
+    host_name=host1,host2,host3
+
+in a service definition
+
+But when you call the configuration_add_object, you don't know what hosts will be listed in this directive.
+
 
 ::
 
-    'objects' = {
-        'host': {
-            'host1': {
-                'alias': "foo",
-                'use': "generic-host",
-            },
-        },
-        'service': {
-            'SSH': {
-                'host_name': "h1",
-            },
-        },
-        'hostdependency': {
-            'dependency1' {
-                'host_name': "host1"
-            },
-        },
-    }
+    {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
+    {{ icinga.configuration_edit_object(type, name, attr, value, **kwargs) }}
 
+with
 
-The keys of each dictionaries are the value for directives defined in "keys_mapping" dictionary.
+    :type: the type of edited object
+    :name: the name of the edited object
+    :attr: the directive for which a value must be added
+    :value: the value added
 
-With the default keys_mapping::
+The old values of the attr directive are not removed. 
 
-    set keys_mapping_default = {
-      'host': "host_name",
-      'hostgroup': "hostgroup_name",
-      'service': "service_description",
-      'servicegroup': "servicegroup_name",
-      'contact': "contact_name",
-      'contactgroup': "contactgroup_name",
-      'timeperiod': "timeperiod_name",
-      'command': "command_name",
-      'servicedependency': None,
-      'serviceescalation': None,
-      'hostdependency': None,
-      'hostescalation': None,
-      'hostextinfo': 'host_name',
-      'serviceextinfo': 'host_name',
-    }
+If you call::
 
-the key "host1" is the value for host directive "host_name" in the host definition
-and the key "SSH" is the value for directive "service_description".
-When the value is set to None in the keys_mapping dictionary, the key is not used as a directive
-but it is used for filename
+    {{ icinga.configuration_edit_object(type='service',
+                                        name='SSH',
+                                        attr='host_name',
+                                        value='hostname1') }}
 
-The generated configuration looks like to::
+the previous service definition becomes::
 
-    define host {
-        host_name=host1
-        alias=foo
-        use=generic-host
-    }
     define service {
-        service_description=SSH
-        host_name=host1
-    }
-    define hostdependency {
-        host_name=host1
+     use=generic-service
+     service_description=SSH
+     host_name=hostname1
     }
 
-Each object definition will be in its file:
+If you recall the macro with a different value::
 
-  - the definition for host1 will be in `host/host1.cfg`
-  - the defintion for ssh service will be in `service/SSH.cfg`
-  - and the hostdependency will be in `hostdependency/dependency1.cfg`
+    {{ icinga.configuration_edit_object(type='service',
+                                        name='SSH',
+                                        attr='host_name',
+                                        value='hostname2') }}
 
+the previous service definition becomes::
 
-The macro allow to produce an invalid configuration with non-existent directives but forbid to have two same directives even if the values are different
-(because of the use of a dictionary in which keys are unique)
-
-If you have::
-
-    'host': {
-        'host1': {
-            'host_name': "host2",
-        }
+    define service {
+     use=generic-service
+     service_description=SSH
+     host_name=hostname1,hostname2
     }
-
-with::
-
-    'host': "host_name",
-
-in keys_mapping,
-
-The produced file will contains::
-
-    define host {
-        host_name=host1
-    }
-
-The second value for "host_name" directive will be ignored
-
-You can call the macro several times. If you call a first time the macro with::
-
-    'objects' = {
-        'host': {
-            'host1': {
-                'parents': "host2"
-                'alias': "foo",
-            },
-            'host2': {
-            },
-        },
-    }
-
-
-and a second time the macro with::
-
-    'objects' = {
-        'host': {
-            'host1': {
-                'parents': "host3"
-                'alias': "bar",
-                'use': "generic-host"
-            },
-        },
-    }
-
-the generated configuration will contain (if you use the default keys_mapping and accumulated_values)::
-
-    define host {
-        host_name=host1
-        alias=foo
-        parents=host1,host3
-        use=generic-host
-    }
-    define host {
-        host_name=host2
-    }
-
-
-The "parents" directive contains the two parents because "parents" is an accumulated value
-but alias which is not one will contain only the first value given. The second value will be ignored.
-(the first will be not necessary the value given in the first call because of the states orchestration in salt.
-It will be the first value for which the accumulator is called)
-
-The value for "use" is set because it was not given the first time.
 
 
 Limits
 ++++++
-
-The salt-stack states are naming with a hash of the object dictionary. If you call the macro several times with exactly the same
-objects dictionary, errors will happen.
 
 Currently, the macro doesn't edit the icinga.cfg file in order to add the directory in the list of "cfg_dir"
 You should think to make a coherent configuration.

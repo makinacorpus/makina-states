@@ -255,7 +255,6 @@ icinga-mklivestatus-conf:
                                    type='service',
                                    name='SSH',
                                    attrs={
-                                            'host_name': "",
                                             'use': "generic-service",
                                         },
 
