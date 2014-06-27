@@ -233,40 +233,29 @@ icinga-mklivestatus-conf:
 
 # test to add configuratipn (MUST BE REMOVED SOON)
 {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
-{{ icinga.configuration_add_object(
-                                   type='host',
-                                   name='hostname1',
+{{ icinga.configuration_add_object(type='service', name='SSH',
+                                   attrs={
+                                            'service_description': "SSH",
+                                            'use': "generic-service",
+                                            'check_command': "check_ssh",
+                                        }
+                                  ) }}
+
+
+{{ icinga.configuration_add_auto_host(name='hostname1',
                                    attrs={
                                             'host_name': "hostname1",
                                             'use': "generic-host",
                                             'alias': "host1 generated with salt",
                                             'address': "127.127.0.1",
                                         },
-
+                                   ssh_user='root'
                                   ) }}
-{{ icinga.configuration_add_object(
-                                   type='host',
-                                   name='hostname2',
-                                   attrs={
-                                            'host_name': "hostname2",
-                                            'use': "generic-host",
-                                            'alias': "host2 generated with salt",
-                                            'address': "127.127.0.2",
-                                        },
-
-                                  ) }}
-{{ icinga.configuration_add_object(
-                                   type='service',
-                                   name='SSH',
-                                   attrs={
-                                            'use': "generic-service",
-                                            'service_description': "SSH service generated with salt",
-                                            'check_command': "check_ssh",
-                                        },
-
-                                  ) }}
+{#
 {{ icinga.configuration_edit_object(type='service', name='SSH', attr='host_name', value='hostname1') }}
 {{ icinga.configuration_edit_object(type='service', name='SSH', attr='host_name', value='hostname2') }}
+#}
+
 
 {%- import "makina-states/services/monitoring/icinga/macros.jinja" as icinga with context %}
 {#

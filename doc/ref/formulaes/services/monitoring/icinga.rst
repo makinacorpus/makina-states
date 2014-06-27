@@ -199,9 +199,21 @@ By default, the /etc/icinga/objects is present in "cfg_dir".
 
 No checks are done. You can add invalid values for any directives. You can set non-existent directives too.
 
-.. Call the macro automatically
-.. ----------------------------
-.. I have no idea.
+
+With the old macro, it was possible to recall the macro to add an object already added and all the parameters were merged.
+Now it is not possible. You can add an object only one time but you can complete it with the second macro.
+
+In comparaison to the previous version:
+It is not possible to define several objects in one call. It is not possible to know if an attribute can accept several values or not.
+
+.. Trouver l
+.. determine which services 
+
+.. Call the macros automatically
+.. -----------------------------
+.. We want call the macro autmaticaly in order to generate all the icinga configuration.
+.. 
 .. Perhaps with a runner on the icinga host. but we must gvie it all configuration of all hosts
 .. or
-.. with a returner. The minions return to salt-master the state of services and salt-master generates a sls for icinga.
+.. with a returner. The minions return to salt-master the state of services and salt-master generates a sls for the icinga host.
+.. we can give all the localsettings to the host which runs icinga but it is not a good idea for security reasons.

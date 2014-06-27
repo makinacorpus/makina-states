@@ -11,6 +11,7 @@
 #         a dictionary in which each key corresponds to a directive
 #
 #}
+
 {% macro configuration_add_object(type, name, attrs={}) %}
 {% set data = salt['mc_icinga.add_configuration_object_settings'](type, name, attrs, **kwargs) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
@@ -81,3 +82,35 @@ icinga-configuration-{{data.type}}-{{data.name}}-attribute-{{data.attr}}-{{value
 {% endfor %}
 
 {% endmacro %}
+
+
+{% macro configuration_add_auto_host(name, attrs={}, ssh_user) %}
+{% set data = salt['mc_icinga.edit_configuration_object_settings'](type='service', name='SSH', attr='host_name', value=name, **kwargs) %}
+{% set sdata = salt['mc_utils.json_dump'](data) %}
+
+
+
+# we add the host object
+{{ configuration_add_object(type='host', name=name, attrs=attrs) }}
+
+# we connect to ssh and get if ssh service is enabled
+icinga-configuration-has-ssh:
+  file.accumulated:
+    - name: "{{data.attr}}"
+    - filename: {{data.directory}}/{{data.type}}/{{data.name}}.cfg
+    - text: "{{name}}"
+    - onlyif: "[[ \"true\" == \"$(ssh {{ssh_user}}@{{attrs['address']}} 'salt-call --out=json mc_services.registry | jq .local.actives[\\\"base.ssh\\\"].active')\" ]]"
+    - watch:
+      - mc_proxy: icinga-configuration-pre-accumulated-attributes-conf
+    - watch_in:
+      - mc_proxy: icinga-configuration-post-accumulated-attributes-conf
+      - file: icinga-configuration-{{data.type}}-{{data.name}}-object-conf
+
+# The onlyif seems to work (https://github.com/saltstack/salt/issues/1976)
+# TODO: - make a mc_ function in order to use kwargs
+#       - find a solution to get params like ssh port. I think about
+#         something like "{% set port = salt['cmd.run']('ssh foo ...') %}"
+
+
+{% endmacro %}
+
