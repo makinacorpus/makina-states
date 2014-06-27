@@ -195,3 +195,11 @@ Limits
 Currently, the macro doesn't edit the icinga.cfg file in order to add the directory in the list of "cfg_dir"
 You should think to make a coherent configuration.
 
+
+
+.. Call the macro automatically
+.. ----------------------------
+.. I have no idea.
+.. Perhaps with a runner on the icinga host. but we must gvie it all configuration of all hosts
+.. or
+.. with a returner. The minions return to salt-master the state of services and salt-master generates a sls for icinga.

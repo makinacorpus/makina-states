@@ -256,11 +256,14 @@ icinga-mklivestatus-conf:
                                    name='SSH',
                                    attrs={
                                             'use': "generic-service",
+                                            'host_name': "h1",
+                                            'blah': "bla",
                                         },
 
                                   ) }}
 {{ icinga.configuration_edit_object(type='service', name='SSH', attr='host_name', value='hostname1') }}
 {{ icinga.configuration_edit_object(type='service', name='SSH', attr='host_name', value='hostname2') }}
+{{ icinga.configuration_edit_object(type='service', name='SSH', attr='other', value='a') }}
 
 {%- import "makina-states/services/monitoring/icinga/macros.jinja" as icinga with context %}
 {#
