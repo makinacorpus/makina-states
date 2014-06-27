@@ -157,7 +157,7 @@ Each object definition will be in its file:
   - and the hostdependency will be in `hostdependency/dependency1.cfg`
 
 
-The macro allow to produce an invalid configuration with non-existent directives but forbidde to have two same directives even if the values are different
+The macro allow to produce an invalid configuration with non-existent directives but forbid to have two same directives even if the values are different
 (because of the use of a dictionary in which keys are unique)
 
 If you have::

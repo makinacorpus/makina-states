@@ -233,57 +233,35 @@ icinga-mklivestatus-conf:
 
 # test to add configuratipn (MUST BE REMOVED SOON)
 {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
-{{ icinga.add_configuration(directory='/tmp/icinga_conf',
-                            objects={
-                                'host': {
-                                    'hostname1': {
-                                        'directive1': "value1",
-                                        'directive2': "value2",
-                                        'parents': "p1",
-                                        'attr': "v1",
-                                    },
-                                    'hostname2': {
-                                        'directive1': "value3",
-                                        'directive2': "value4",
-                                        'attr': "v3",
-                                    },
-                                },
-                                'service': {
-                                    'service1': {
-                                        'directive3': "valueA",
-                                    },
-                                },
-                                'servicedependency': {
-                                    'abc': {
-                                        'key1': "value1",
-                                    },
-                                },
-                            },
-                           )}}
-{{ icinga.add_configuration(directory='/tmp/icinga_conf',
-                            objects={
-                                'host': {
-                                    'hostname3': {
-                                        'directive1': "value1",
-                                    },
-                                    'hostname1': {
-                                        'directive5': "value",
-                                        'parents': "p1,p2",
-                                        'attr': "v2",
-                                    },
-                                },
-                                'service': {
-                                    'service1': {
-                                        'directive3': "valueA",
-                                    },
-                                },
-                                'servicedependency': {
-                                    'abc': {
-                                        'key1': "value1",
-                                    },
-                                },
-                            },
-                           )}}
+{{ icinga.configuration_add_object(
+                                   type='host',
+                                   name='hostname1',
+                                   attrs={
+                                            'host_name': "hostname1",
+                                            'use': "generic-host",
+                                        },
+
+                                  ) }}
+{{ icinga.configuration_add_object(
+                                   type='host',
+                                   name='hostname2',
+                                   attrs={
+                                            'host_name': "hostname2",
+                                            'use': "generic-host",
+                                        },
+
+                                  ) }}
+{{ icinga.configuration_add_object(
+                                   type='service',
+                                   name='SSH',
+                                   attrs={
+                                            'host_name': "",
+                                            'use': "generic-service",
+                                        },
+
+                                  ) }}
+{{ icinga.configuration_edit_object(type='service', name='SSH', attr='host_name', value='hostname1') }}
+{{ icinga.configuration_edit_object(type='service', name='SSH', attr='host_name', value='hostname2') }}
 
 {%- import "makina-states/services/monitoring/icinga/macros.jinja" as icinga with context %}
 {#

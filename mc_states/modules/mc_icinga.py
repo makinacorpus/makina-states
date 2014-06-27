@@ -634,37 +634,15 @@ def settings():
         return data
     return _settings()
 
-def add_configuration_settings(objects, directory, keys_mapping, accumulated_values, **kwargs):
-    '''Settings for the add_configuration macro'''
+def add_configuration_object_settings(type, name, attrs, **kwargs):
+    '''Settings for the add_configuration_object macro'''
     icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
     extra = kwargs.pop('extra', {})
     kwargs.update(extra)
-
-    # we add the directory for each value of files_mapping 
-    directory_abs=directory
-    if not directory.startswith('/'):
-        directory_abs=data['configuration_directory']+'/'+directory
-
-    # we hash objects dictionary in order to have a unique value
-    # it is used for naming states
-    def make_hash(o):
-        if isinstance(o, (set, tuple, list)):
-            return tuple([make_hash(e) for e in o])
-        elif not isinstance(o, dict):
-            return hash(o)
-        new_o = copy.deepcopy(o)
-        for k, v in new_o.items():
-            new_o[k] = make_hash(v)
-
-        return hash(tuple(frozenset(sorted(new_o.items()))))
-
-    objects_hash = abs(make_hash(objects))
-
-    kwargs.setdefault('objects', objects)
-    kwargs.setdefault('objects_hash', objects_hash)
-    kwargs.setdefault('directory', directory_abs)
-    kwargs.setdefault('keys_mapping', keys_mapping)
-    kwargs.setdefault('accumulated_values', accumulated_values)
+    kwargs.setdefault('type', type)
+    kwargs.setdefault('name', name)
+    kwargs.setdefault('attrs', attrs)
+    kwargs.setdefault('directory', icingaSettings['configuration_directory']+'/objects/salt_generated')
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
     # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
     icingaSettings['data'] = copy.deepcopy(icingaSettings)
@@ -672,6 +650,22 @@ def add_configuration_settings(objects, directory, keys_mapping, accumulated_val
     icingaSettings['extra'] = copy.deepcopy(icingaSettings)
     return icingaSettings
 
+def edit_configuration_object_settings(type, name, attr, value, **kwargs):
+    '''Settings for the edit_configuration_object macro'''
+    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
+    extra = kwargs.pop('extra', {})
+    kwargs.update(extra)
+    kwargs.setdefault('type', type)
+    kwargs.setdefault('name', name)
+    kwargs.setdefault('attr', attr)
+    kwargs.setdefault('value', value)
+    kwargs.setdefault('directory', icingaSettings['configuration_directory']+'/objects/salt_generated')
+    icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
+    # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
+    icingaSettings['data'] = copy.deepcopy(icingaSettings)
+    icingaSettings['data']['extra'] = copy.deepcopy(icingaSettings)
+    icingaSettings['extra'] = copy.deepcopy(icingaSettings)
+    return icingaSettings
 
 def dump():
     return mc_states.utils.dump(__salt__,__name)

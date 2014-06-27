@@ -9,5 +9,6 @@ include:
   - makina-states.services.monitoring.icinga.configuration
   - makina-states.services.monitoring.icinga.services
 {% import "makina-states/services/monitoring/icinga/macros.sls"  as macros %}
-{% set add_configuration = macros.add_configuration %}
+{% set configuration_add_object = macros.configuration_add_object %}
+{% set configuration_edit_object = macros.configuration_edit_object %}
 
