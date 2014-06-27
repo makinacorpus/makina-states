@@ -239,6 +239,8 @@ icinga-mklivestatus-conf:
                                    attrs={
                                             'host_name': "hostname1",
                                             'use': "generic-host",
+                                            'alias': "host1 generated with salt",
+                                            'address': "127.127.0.1",
                                         },
 
                                   ) }}
@@ -248,6 +250,8 @@ icinga-mklivestatus-conf:
                                    attrs={
                                             'host_name': "hostname2",
                                             'use': "generic-host",
+                                            'alias': "host2 generated with salt",
+                                            'address': "127.127.0.2",
                                         },
 
                                   ) }}
@@ -256,14 +260,13 @@ icinga-mklivestatus-conf:
                                    name='SSH',
                                    attrs={
                                             'use': "generic-service",
-                                            'host_name': "h1",
-                                            'blah': "bla",
+                                            'service_description': "SSH service generated with salt",
+                                            'check_command': "check_ssh",
                                         },
 
                                   ) }}
 {{ icinga.configuration_edit_object(type='service', name='SSH', attr='host_name', value='hostname1') }}
 {{ icinga.configuration_edit_object(type='service', name='SSH', attr='host_name', value='hostname2') }}
-{{ icinga.configuration_edit_object(type='service', name='SSH', attr='other', value='a') }}
 
 {%- import "makina-states/services/monitoring/icinga/macros.jinja" as icinga with context %}
 {#

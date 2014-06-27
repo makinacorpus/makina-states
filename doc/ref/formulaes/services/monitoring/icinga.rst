@@ -195,6 +195,8 @@ Limits
 Currently, the macro doesn't edit the icinga.cfg file in order to add the directory in the list of "cfg_dir"
 You should think to make a coherent configuration.
 
+By default, the /etc/icinga/objects is present in "cfg_dir".
+
 
 
 .. Call the macro automatically

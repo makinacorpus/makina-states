@@ -36,6 +36,16 @@ icinga-post-restart:
 
 
 # hooks used for the add_configuration macro
+icinga-configuration-pre-clean-directories:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: icinga-configuration-post-clean-directories
+
+icinga-configuration-post-clean-directories:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: icinga-configuration-pre-accumulated-attributes-conf
+
 icinga-configuration-pre-accumulated-attributes-conf:
   mc_proxy.hook:
     - watch_in:

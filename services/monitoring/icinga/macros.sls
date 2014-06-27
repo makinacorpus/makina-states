@@ -25,9 +25,9 @@ icinga-configuration-{{data.type}}-{{data.name}}-clean-directory:
     - makedirs: True
     - clean: True
     - watch:
-      - mc_proxy: icinga-pre-conf
+      - mc_proxy: icinga-configuration-pre-clean-directories
     - watch_in:
-      - mc_proxy: icinga-configuration-pre-accumulated-attributes-conf
+      - mc_proxy: icinga-configuration-post-clean-directories
 
 icinga-configuration-{{data.type}}-{{data.name}}-object-conf:
   file.managed:
