@@ -20,8 +20,7 @@ reset-perms.py --paths bin/ --reset --only-acls --users vagrant:r-x
 
 from __future__ import (print_function,
                         division,
-                        absolute_import,
-                        unicode_literals)
+                        absolute_import)
 import os
 import grp
 import re
@@ -230,14 +229,15 @@ def quote_paths(paths):
 
 
 def shell_exec(cmd, shell=False):
-    scmd = ' '.join([encode_str(a) for a in cmd])
+    scmd = ' '.join([encode_str(a) for a in cmd[:]])
     try:
         if options.debug:
             print('Executing {0}'.format(scmd))
         ret = subprocess.check_output(
             cmd, stderr=sys.stdout, shell=shell)
         if ret:
-            if not options.quiet: print(ret)
+            if not options.quiet:
+                print(ret)
     except Exception:
         print(u'Reset failed for {0}'.format(scmd))
         print(traceback.format_exc())
@@ -249,7 +249,7 @@ def collect_acl(path, mode, uid=UID, gid=GID, is_dir=False):
     the same acl to reduce the number of setfacl calls
     '''
     perms = permissions_to_unix_name(mode)
-    #mask = permissions_to_unix_name(mode[-2])['OTH']
+    # mask = permissions_to_unix_name(mode[-2])['OTH']
     mask = 'rwx'
     uacl = 'mask:{2},u:{0}:{1}'.format(*(uid, perms['USR'], mask))
     gacl = 'mask:{2},g:{0}:{1}'.format(*(gid, perms['GRP'], mask))
