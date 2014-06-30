@@ -667,6 +667,23 @@ def edit_configuration_object_settings(type, name, attr, value, **kwargs):
     icingaSettings['extra'] = copy.deepcopy(icingaSettings)
     return icingaSettings
 
+def add_auto_configuration_host_settings(name, attrs, ssh_user, **kwargs):
+    '''Settings for the edit_configuration_object macro'''
+    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
+    extra = kwargs.pop('extra', {})
+    kwargs.update(extra)
+    kwargs.setdefault('type', 'host')
+    kwargs.setdefault('name', name)
+    kwargs.setdefault('attrs', attrs)
+    kwargs.setdefault('ssh_user', ssh_user)
+    kwargs.setdefault('directory', icingaSettings['configuration_directory']+'/objects/salt_generated')
+    icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
+    # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
+    icingaSettings['data'] = copy.deepcopy(icingaSettings)
+    icingaSettings['data']['extra'] = copy.deepcopy(icingaSettings)
+    icingaSettings['extra'] = copy.deepcopy(icingaSettings)
+    return icingaSettings
+
 def dump():
     return mc_states.utils.dump(__salt__,__name)
 

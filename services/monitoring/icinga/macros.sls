@@ -85,15 +85,39 @@ icinga-configuration-{{data.type}}-{{data.name}}-attribute-{{data.attr}}-{{value
 
 
 {% macro configuration_add_auto_host(name, attrs={}, ssh_user) %}
-{% set data = salt['mc_icinga.edit_configuration_object_settings'](type='service', name='SSH', attr='host_name', value=name, **kwargs) %}
+{% set data = salt['mc_icinga.add_auto_configuration_host_settings'](name, attrs, ssh_user, **kwargs) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
-
-
+{% set ssh_command = 'ssh -q '+data.ssh_user+'@'+data.attrs['address']+' ' %}
 
 # we add the host object
-{{ configuration_add_object(type='host', name=name, attrs=attrs) }}
+{{ configuration_add_object(type='host', name=data.name, attrs=data.attrs) }}
+
+# we connect to ssh and get the mc_localsettings.registry and mc_services.registry
+{% set host_services_registry = salt['cmd.run'](ssh_command+'salt-call --out=json mc_services.registry') %}
+{% set host_localsettings_registry = salt['cmd.run'](ssh_command+'salt-call --out=json mc_localsettings.registry') %}
+# and transform str to json
+{% set host_services_registry = salt['mc_utils.json_load'](host_services_registry) %}
+{% set host_localsettings_registry = salt['mc_utils.json_load'](host_localsettings_registry) %}
+
+
+{% if host_services_registry.local.actives['base.ssh'] %}
+# we get ssh port
+    {% set ssh_port = salt['cmd.run'](ssh_command+'"grep -E \'^([ \t]*)Port\' /etc/ssh/sshd_config" | awk \'{print $2}\'') %}
+# if ssh is active we add a SSH service
+{{ configuration_add_object(type='service',
+                            name="SSH-"+data.name,
+                            attrs= {
+                             'service_description': "SSH port "+ssh_port,
+                             'use': "generic-service",
+                             'check_command': "check_ssh!"+ssh_port,
+                            }
+) }}
+
+{% endif %}
 
 # we connect to ssh and get if ssh service is enabled
+
+{#
 icinga-configuration-has-ssh:
   file.accumulated:
     - name: "{{data.attr}}"
@@ -105,7 +129,7 @@ icinga-configuration-has-ssh:
     - watch_in:
       - mc_proxy: icinga-configuration-post-accumulated-attributes-conf
       - file: icinga-configuration-{{data.type}}-{{data.name}}-object-conf
-
+#}
 # The onlyif seems to work (https://github.com/saltstack/salt/issues/1976)
 # TODO: - make a mc_ function in order to use kwargs
 #       - find a solution to get params like ssh port. I think about

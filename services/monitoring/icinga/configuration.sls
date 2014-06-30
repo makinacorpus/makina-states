@@ -233,14 +233,6 @@ icinga-mklivestatus-conf:
 
 # test to add configuratipn (MUST BE REMOVED SOON)
 {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
-{{ icinga.configuration_add_object(type='service', name='SSH',
-                                   attrs={
-                                            'service_description': "SSH",
-                                            'use': "generic-service",
-                                            'check_command': "check_ssh",
-                                        }
-                                  ) }}
-
 
 {{ icinga.configuration_add_auto_host(name='hostname1',
                                    attrs={
