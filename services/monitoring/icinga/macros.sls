@@ -92,49 +92,40 @@ icinga-configuration-{{data.type}}-{{data.name}}-attribute-{{data.attr}}-{{value
 # we add the host object
 {{ configuration_add_object(type='host', name=data.name, attrs=data.attrs) }}
 
-# we connect to ssh and get the mc_localsettings.registry and mc_services.registry
+# we connect to ssh and get the mc_localsettings.registry, mc_services.registry and grains
 {% set host_services_registry = salt['cmd.run'](ssh_command+'salt-call --out=json mc_services.registry') %}
 {% set host_localsettings_registry = salt['cmd.run'](ssh_command+'salt-call --out=json mc_localsettings.registry') %}
+{% set host_grains = salt['cmd.run'](ssh_command+'salt-call --out=json grains.items') %}
 # and transform str to json
 {% set host_services_registry = salt['mc_utils.json_load'](host_services_registry) %}
 {% set host_localsettings_registry = salt['mc_utils.json_load'](host_localsettings_registry) %}
+{% set host_grains = salt['mc_utils.json_load'](host_grains) %}
 
-
-{% if host_services_registry.local.actives['base.ssh'] %}
-# we get ssh port
-    {% set ssh_port = salt['cmd.run'](ssh_command+'"grep -E \'^([ \t]*)Port\' /etc/ssh/sshd_config" | awk \'{print $2}\'') %}
 # if ssh is active we add a SSH service
-{{ configuration_add_object(type='service',
-                            name="SSH-"+data.name,
+{% if host_services_registry.local.actives['base.ssh'] %}
+    {% set ssh_port = salt['cmd.run'](ssh_command+'"grep -E \'^([ \t]*)Port\' /etc/ssh/sshd_config" | awk \'{print $2}\'') %}
+    # python doesn't like
+    {#{% set default_ssh_port =  salt['cmd.run']('sed -ne \'s#^ssh\([^0-9]\+\)\([0-9]*\)/tcp\(.*\)#\2#p\' /etc/services') %}#}
+    {% set default_ssh_port = salt['cmd.run']('grep ssh /etc/services | awk \'{print $2}\' | grep tcp | awk -F \'/\' \'{print $1}\'') %}
+
+    {% set ssh_port= default_ssh_port if (''==ssh_port) else ssh_port %}
+    {{ configuration_add_object(type='service',
+                            name="SSH_"+data.name,
                             attrs= {
                              'service_description': "SSH port "+ssh_port,
+                             'host_name': data.name,
                              'use': "generic-service",
                              'check_command': "check_ssh!"+ssh_port,
                             }
-) }}
+       ) }}
 
 {% endif %}
 
-# we connect to ssh and get if ssh service is enabled
+# get mountpoints
 
-{#
-icinga-configuration-has-ssh:
-  file.accumulated:
-    - name: "{{data.attr}}"
-    - filename: {{data.directory}}/{{data.type}}/{{data.name}}.cfg
-    - text: "{{name}}"
-    - onlyif: "[[ \"true\" == \"$(ssh {{ssh_user}}@{{attrs['address']}} 'salt-call --out=json mc_services.registry | jq .local.actives[\\\"base.ssh\\\"].active')\" ]]"
-    - watch:
-      - mc_proxy: icinga-configuration-pre-accumulated-attributes-conf
-    - watch_in:
-      - mc_proxy: icinga-configuration-post-accumulated-attributes-conf
-      - file: icinga-configuration-{{data.type}}-{{data.name}}-object-conf
-#}
-# The onlyif seems to work (https://github.com/saltstack/salt/issues/1976)
-# TODO: - make a mc_ function in order to use kwargs
-#       - find a solution to get params like ssh port. I think about
-#         something like "{% set port = salt['cmd.run']('ssh foo ...') %}"
 
+# TODO: find ssh_port in grains or localsettings
+#       find mountpoints from grains or localsettings
 
 {% endmacro %}
 

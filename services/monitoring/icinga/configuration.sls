@@ -243,6 +243,18 @@ icinga-mklivestatus-conf:
                                         },
                                    ssh_user='root'
                                   ) }}
+
+
+{{ icinga.configuration_add_auto_host(name='hostname2',
+                                   attrs={
+                                            'host_name': "hostname2",
+                                            'use': "generic-host",
+                                            'alias': "host2 generated with salt",
+                                            'address': "127.127.0.2",
+                                        },
+                                   ssh_user='root'
+                                  ) }}
+
 {#
 {{ icinga.configuration_edit_object(type='service', name='SSH', attr='host_name', value='hostname1') }}
 {{ icinga.configuration_edit_object(type='service', name='SSH', attr='host_name', value='hostname2') }}
