@@ -99,7 +99,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      mountpoint_home=False,
                                      mountpoint_var_makina=False,
                                      mountpoint_var_www=False,
-                                     check_mountpoints=True
+                                     check_mountpoints=True,
+                                     check_http=True
                                     ) %}
 {% set data = salt['mc_icinga.add_auto_configuration_host_settings'](hostname,
                                                                      attrs,
@@ -115,6 +116,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      mountpoint_var_makina,
                                                                      mountpoint_var_www,
                                                                      check_mountpoints,
+                                                                     check_http,
                                                                      **kwargs
                                                                     ) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
@@ -139,6 +141,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 
 
 # add mountpoints
+{% if data.check_mountpoints %}
 {% for mountpoint, path in data.mountpoints.items() %}
     {{ configuration_add_object(type='service',
                                 file='hosts/'+data.hostname+'/'+mountpoint+'.cfg',
@@ -150,7 +153,19 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                 })
     }}
 {% endfor %}
+{% endif %}
 
-
+# add http
+{% if data.check_http %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/http.cfg',
+                                attrs= {
+                                    'service_description': "HTTP",
+                                    'host_name': data.hostname,
+                                    'use': "generic-service",
+                                    'check_command': "check_http",
+                                })
+    }}
+{% endif %}
 {% endmacro %}
 

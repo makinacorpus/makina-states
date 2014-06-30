@@ -251,24 +251,20 @@ icinga-mklivestatus-conf:
                                    file='commands/check_by_ssh_mountpoint.cfg',
                                    attrs= {
                                        'command_name': "check_by_ssh_mountpoint",
-                                       'command_line': "/usr/lib/nagios/plugins/check_by_ssh_mountpoint -u '$ARG1$' -h '$ARG2$' -p '$ARG3$' -m '$ARG4$' -w '$ARG5$' -c '$ARG6$'",
+                                       'command_line': "/usr/lib/nagios/plugins/check_by_ssh -q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$'  -C '/usr/lib/nagios/plugins/check_disk \"$ARG4$\" -w \"$ARG5$\" -c \"$ARG6$\"'",
                                    })
 }}
+# check_http already defined in /etc/nagios-plugins/config/http.cfg
+{#
+{{ icinga.configuration_add_object(type='command',
+                                   file='commands/http.cfg',
+                                   attrs= {
+                                       'command_name': "check_http",
+                                       'command_line': "/usr/lib/nagios/plugins/check_http '$HOSTADDRESS$'",
+                                   })
+}}
+#}
 
-{% if data.modules['nagios-plugins'].enabled %}
-icinga-configuration-create-check-by-ssh-mountpoint:
-  file.managed:
-    - name: /usr/lib/nagios/plugins/check_by_ssh_mountpoint
-    - source: salt://makina-states/files/usr/lib/nagios/plugins/check_by_ssh_mountpoint
-    - makedirs: true
-    - user: root
-    - group: root
-    - mode: 755
-    - watch:
-      - mc_proxy: icinga-pre-conf
-    - watch_in:
-      - mc_proxy: icinga-post-conf
-{% endif %}
 
 
 {{ icinga.configuration_add_auto_host(hostname='hostname1',
