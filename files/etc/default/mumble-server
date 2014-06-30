@@ -1,0 +1,16 @@
+# MANAGED VIA SALT -- DO NOT EDIT
+{%set data = salt['mc_utils.json_load'](data) %}
+
+# 0 = don't start, 1 = start
+MURMUR_DAEMON_START={{data.default.start}}
+
+# 0 = don't use capabilities, 1 = start process as root and drop to non-privileged user
+# If started as root, mumble will keep the CAP_NET_ADMIN privilege and drop
+# all others. This allows it to set high-priority TOS on outgoing IP packets.
+MURMUR_USE_CAPABILITIES={{data.default.use_caps}}
+
+# This controls how many file descriptors the murmur process can open.
+# As a rule of thumb, you should have about 20 descriptors per virtaul
+# server and one for each client. So 30 servers with 20 clients each would
+# need at least 720 descriptors (30 * 4 + 30 * 20).
+MURMUR_LIMIT_NOFILE={{data.default.nofile}}

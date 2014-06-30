@@ -30,6 +30,7 @@ makina-apache-default-vhost-index:
     - source:
       - salt://makina-states/files{{ locs.var_dir }}/www/default/default_vh.index.html
     - user: root
+    - makedirs: true
     - group: root
     - mode: 644
     - template: jinja

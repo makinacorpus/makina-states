@@ -390,8 +390,19 @@ def deployed(name,
 
     # MPM check
     infos = __salt__['apache.fullversion']()
-    versions = __salt__['mc_apache.get_version']()['result']
     cur_mpm = infos.get('server_mpm', 'unknown').lower()
+    if mpm in ['unknown']:
+        # try to activate mpm
+        __salt__['cmd.run']('a2enmod mpm_{0}'.format(mpm))
+        cur_mpm = infos.get('server_mpm', 'unknown').lower()
+        for _mpm in [a for a in ['event', 'worker', 'prefork']
+                    if not _mpm == a]:
+            if mpm not in ['unknown']:
+                break
+            __salt__['cmd.run']('a2enmod mpm_{0}'.format(_mpm))
+            cur_mpm = infos.get('server_mpm', 'unknown').lower()
+
+    versions = __salt__['mc_apache.get_version']()['result']
     mpm_check_done = False
     blind_mode = False
     workers = [settings['mpm']] + [a for a in ['event', 'worker', 'prefork']

@@ -17,6 +17,7 @@ Subregistries
    :maxdepth: 2
 
    mc_www.rst
+   mc_mumble.rst
    mc_mongodb.rst
    mc_apache.rst
    mc_bind.rst
