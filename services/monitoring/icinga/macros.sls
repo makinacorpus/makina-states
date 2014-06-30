@@ -5,7 +5,6 @@
 # Macros mains args:
 #     type
 #         the type of added object
-#     
 #     file
 #         the filename where the object will be added
 #     attrs
@@ -56,8 +55,8 @@ icinga-configuration-{{data.state_name_salt}}-object-conf:
 # Macros mains args:
 #     type
 #         the type of edited object
-#     name
-#         the name of edited object
+#     file
+#         the filename where is located the edited object
 #     attr
 #         the name of the edited directive
 #     value
@@ -141,9 +140,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 
 {% endfor %}
 
-# add mountpoints
+# add mountpoints service
 
-# add www
+
+# add http service
 {% if ( ('http.apache' in host_services_registry.local.has
          and host_services_registry.local.has['http.apache'])
    or   ('http.apache_modfastcgi' in host_services_registry.local.has
@@ -168,14 +168,59 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 
 {% endif %}
 
-# add dns
+# add dns service
+# the command should be modified. there is no check_dns command by default
+{% for ip4 in host_grains.local.fqdn_ip4 %}
+    # fqdn to ip4
+    {{ configuration_add_object(type='service',
+                            file=data.hostname+'/dns-ip4-'+host_grains.local.fqdn+'-'+ip4+'.cfg',
+                            attrs= {
+                             'service_description': "DNS for "+host_grains.local.fqdn+" → "+ip4,
+                             'host_name': data.hostname,
+                             'use': "generic-service",
+                             'check_command': "check_passive",
+                            }
+       ) }}
+    # ip4 to fqdn
+    # think to translate a.b.c.d -> d.c.b.a.ip-addr.arpa.
+    {{ configuration_add_object(type='service',
+                            file=data.hostname+'/dns-ip4-'+ip4+'-'+host_grains.local.fqdn+'.cfg',
+                            attrs= {
+                             'service_description': "DNS for "+ip4+" → "+host_grains.local.fqdn,
+                             'host_name': data.hostname,
+                             'use': "generic-service",
+                             'check_command': "check_passive",
+                            }
+       ) }}
+{% endfor %}
+{% for ip6 in host_grains.local.fqdn_ip6 %}
+    # fqdn to ip6
+    {{ configuration_add_object(type='service',
+                            file=data.hostname+'/dns-ip6-'+host_grains.local.fqdn+'-'+ip6+'.cfg',
+                            attrs= {
+                             'service_description': "DNS for "+host_grains.local.fqdn+" → "+ip6,
+                             'host_name': data.hostname,
+                             'use': "generic-service",
+                             'check_command': "check_passive",
+                            }
+       ) }}
+    # ip6 to fqdn
+    # think to translate a:b:c:d:e:f:g:h -> h.g.f.e.d.c.d.a.ip6.arpa.
+    {{ configuration_add_object(type='service',
+                            file=data.hostname+'/dns-ip6-'+ip6+'-'+host_grains.local.fqdn+'.cfg',
+                            attrs= {
+                             'service_description': "DNS for "+ip6+" → "+host_grains.local.fqdn,
+                             'host_name': data.hostname,
+                             'use': "generic-service",
+                             'check_command': "check_passive",
+                            }
+       ) }}
+{% endfor %}
 
-# add reverse dns
-
-
-# TODO: find ssh_port in grains or localsettings
+# TODO: find ssh_port in grains or localsettings instead of using /etc/ssh/sshd_config
 #       find mountpoints and storage devices from grains or localsettings
 #       get http port and virtualhosts
+#       add commands to check_dns
 
 {% endmacro %}
 

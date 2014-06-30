@@ -643,7 +643,7 @@ def add_configuration_object_settings(type, file, attrs, **kwargs):
     kwargs.setdefault('file', file)
     kwargs.setdefault('attrs', attrs)
     kwargs.setdefault('objects_directory', icingaSettings['configuration_directory']+'/objects/salt_generated')
-    kwargs.setdefault('state_name_salt', file.replace('/', '-').replace('.', '-'))
+    kwargs.setdefault('state_name_salt', file.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
     # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
     icingaSettings['data'] = copy.deepcopy(icingaSettings)
@@ -661,7 +661,7 @@ def edit_configuration_object_settings(type, file, attr, value, **kwargs):
     kwargs.setdefault('attr', attr)
     kwargs.setdefault('value', value)
     kwargs.setdefault('objects_directory', icingaSettings['configuration_directory']+'/objects/salt_generated')
-    kwargs.setdefault('state_name_salt', file.replace('/', '-').replace('.', '-'))
+    kwargs.setdefault('state_name_salt', file.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
     # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
     icingaSettings['data'] = copy.deepcopy(icingaSettings)
