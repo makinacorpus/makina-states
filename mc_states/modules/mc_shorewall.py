@@ -242,7 +242,7 @@ def settings():
                       'NTP', 'MUMBLE', 'DNS', 'WEB', 'MONGODB',
                       'BURP', 'MYSQL', 'POSTGRESQL', 'FTP']:
                 default = 'fw:127.0.0.1'
-                if p in ['SSH', 'DNS', 'PING', 'WEB']:
+                if p in ['SSH', 'DNS', 'PING', 'WEB', 'MUMBLE']:
                     default = 'all'
                 if p == 'BURP':
                     default = 'net:'
