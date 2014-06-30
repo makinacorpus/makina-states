@@ -100,7 +100,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      mountpoint_var_makina=False,
                                      mountpoint_var_www=False,
                                      check_mountpoints=True,
-                                     check_http=True
+                                     check_http=True,
+                                     check_cpuload=True
                                     ) %}
 {% set data = salt['mc_icinga.add_auto_configuration_host_settings'](hostname,
                                                                      attrs,
@@ -117,6 +118,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      mountpoint_var_www,
                                                                      check_mountpoints,
                                                                      check_http,
+                                                                     check_cpuload,
                                                                      **kwargs
                                                                     ) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
@@ -149,10 +151,23 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'service_description': "Free space on "+path,
                                     'host_name': data.hostname,
                                     'use': "generic-service",
-                                    'check_command': "check_by_ssh_mountpoint!"+ssh_user+"!"+ssh_addr+"!"+ssh_port|string+"!"+path+"!5!3",
+                                    'check_command': "check_by_ssh_mountpoint!"+ssh_user+"!"+ssh_addr+"!"+ssh_port|string+"!"+path+"!"+data.mountpoints_warning|string+"!"+data.mountpoints_critical|string,
                                 })
     }}
 {% endfor %}
+{% endif %}
+
+# add cpuload
+{% if data.check_cpuload %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/cpuload.cfg',
+                                attrs= {
+                                    'service_description': "Cpu load",
+                                    'host_name': data.hostname,
+                                    'use': "generic-service",
+                                    'check_command': "check_by_ssh_cpuload!"+ssh_user+"!"+ssh_addr+"!"+ssh_port|string+"!"+data.cpuload_warning|string+"!"+data.cpuload_critical|string,
+                                })
+    }}
 {% endif %}
 
 # add http

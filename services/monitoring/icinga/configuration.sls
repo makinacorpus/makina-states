@@ -264,6 +264,13 @@ icinga-mklivestatus-conf:
                                    })
 }}
 #}
+{{ icinga.configuration_add_object(type='command',
+                                   file='commands/check_by_ssh_cpuload.cfg',
+                                   attrs= {
+                                       'command_name': "check_by_ssh_cpuload",
+                                       'command_line': "/usr/lib/nagios/plugins/check_by_ssh -q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$'  -C '/usr/lib/nagios/plugins/check_load -w \"$ARG4$\" -c \"$ARG5$\"'",
+                                   })
+}}
 
 
 

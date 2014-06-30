@@ -684,6 +684,7 @@ def add_auto_configuration_host_settings(hostname,
                                         mountpoint_var_www,
                                         check_mountpoints,
                                         check_http,
+                                        check_cpuload,
                                         **kwargs):
     '''Settings for the edit_configuration_object macro'''
     icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
@@ -713,7 +714,12 @@ def add_auto_configuration_host_settings(hostname,
 
     kwargs.setdefault('mountpoints', mountpoints)
     kwargs.setdefault('check_mountpoints', check_mountpoints)
+    kwargs.setdefault('mountpoints_warning', 10) # 10% left
+    kwargs.setdefault('mountpoints_critical', 5) # 5% left
     kwargs.setdefault('check_http', check_http)
+    kwargs.setdefault('check_cpuload', check_mountpoints)
+    kwargs.setdefault('cpuload_warning', 0.7)
+    kwargs.setdefault('cpuload_critical', 0.9)
     kwargs.setdefault('objects_directory', icingaSettings['configuration_directory']+'/objects/salt_generated')
     kwargs.setdefault('state_name_salt', hostname.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
