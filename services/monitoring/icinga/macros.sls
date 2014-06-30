@@ -85,142 +85,72 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% endmacro %}
 
 
-{% macro configuration_add_auto_host(hostname, attrs={}, ssh_user) %}
-{% set data = salt['mc_icinga.add_auto_configuration_host_settings'](hostname, attrs, ssh_user, **kwargs) %}
-{% set sdata = salt['mc_utils.json_dump'](data) %}
-{% set ssh_command = 'ssh -q '+data.ssh_user+'@'+data.attrs['address']+' ' %}
 
-# we add the host object
+{% macro configuration_add_auto_host(hostname,
+                                     attrs={},
+                                     ssh_user='root',
+                                     ssh_addr,
+                                     ssh_port=22,
+                                     check_ssh=True,
+                                     mountpoint_root=True,
+                                     mountpoint_var=False,
+                                     mountpoint_srv=False,
+                                     mountpoint_data=False,
+                                     mountpoint_home=False,
+                                     mountpoint_var_makina=False,
+                                     mountpoint_var_www=False,
+                                     check_mountpoints=True
+                                    ) %}
+{% set data = salt['mc_icinga.add_auto_configuration_host_settings'](hostname,
+                                                                     attrs,
+                                                                     ssh_user,
+                                                                     ssh_addr,
+                                                                     ssh_port,
+                                                                     check_ssh,
+                                                                     mountpoint_root,
+                                                                     mountpoint_var,
+                                                                     mountpoint_srv,
+                                                                     mountpoint_data,
+                                                                     mountpoint_home,
+                                                                     mountpoint_var_makina,
+                                                                     mountpoint_var_www,
+                                                                     check_mountpoints,
+                                                                     **kwargs
+                                                                    ) %}
+{% set sdata = salt['mc_utils.json_dump'](data) %}
+
+# add the host object
 {{ configuration_add_object(type='host',
-                            file=data.hostname+'/host.cfg',
+                            file='hosts/'+data.hostname+'/host.cfg',
                             attrs=data.attrs) }}
 
-# we connect to ssh and get the mc_localsettings.registry, mc_services.registry and grains
-{% set host_services_registry = salt['cmd.run'](ssh_command+'salt-call --out=json mc_services.registry') %}
-{% set host_localsettings_registry = salt['cmd.run'](ssh_command+'salt-call --out=json mc_localsettings.registry') %}
-{% set host_grains = salt['cmd.run'](ssh_command+'salt-call --out=json grains.items') %}
-# and transform str to json
-{% set host_services_registry = salt['mc_utils.json_load'](host_services_registry) %}
-{% set host_localsettings_registry = salt['mc_utils.json_load'](host_localsettings_registry) %}
-{% set host_grains = salt['mc_utils.json_load'](host_grains) %}
-
 # add a SSH service
-{% if ( 'base.ssh' in host_services_registry.local.has
-      and host_services_registry.local.has['base.ssh'] ) %}
-    {% set ssh_port = salt['cmd.run'](ssh_command+'"grep -E \'^([ \t]*)Port\' /etc/ssh/sshd_config" | awk \'{print $2}\'') %}
-    # python doesn't like
-    {#{% set default_ssh_port =  salt['cmd.run']('sed -ne \'s#^ssh\([^0-9]\+\)\([0-9]*\)/tcp\(.*\)#\2#p\' /etc/services') %}#}
-    {% set default_ssh_port = salt['cmd.run']('grep ssh /etc/services | awk \'{print $2}\' | grep tcp | awk -F \'/\' \'{print $1}\'') %}
-    {% set ssh_port= default_ssh_port if (''==ssh_port) else ssh_port %}
-
+{% if data.check_ssh %}
     {{ configuration_add_object(type='service',
-                            file=data.hostname+'/ssh.cfg',
-                            attrs= {
-                             'service_description': "SSH port "+ssh_port,
-                             'host_name': data.hostname,
-                             'use': "generic-service",
-                             'check_command': "check_ssh!"+ssh_port,
-                            }
-       ) }}
-
+                                file='hosts/'+data.hostname+'/ssh.cfg',
+                                attrs= {
+                                    'service_description': "SSH port "+ssh_port|string,
+                                    'host_name': data.hostname,
+                                    'use': "generic-service",
+                                    'check_command': "check_ssh!"+ssh_port|string,
+                                })
+    }}
 {% endif %}
 
-# add cpu loads
-# the command should be modified in order to use nrpe or nsca
-{% for cpu in range(host_grains.local.num_cpus) %}
-    {{ configuration_add_object(type='service',
-                            file=data.hostname+"/cpu_"+cpu|string+".cfg",
-                            attrs= {
-                             'service_description': "CPU_"+cpu|string+" load",
-                             'host_name': data.hostname,
-                             'use': "generic-service",
-                             'check_command': "check_passive",
-                            }
-       ) }}
 
+# add mountpoints
+{% for mountpoint, path in data.mountpoints.items() %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/'+mountpoint+'.cfg',
+                                attrs= {
+                                    'service_description': "Free space on "+path,
+                                    'host_name': data.hostname,
+                                    'use': "generic-service",
+                                    'check_command': "check_by_ssh_mountpoint!"+ssh_user+"!"+ssh_addr+"!"+ssh_port|string+"!"+path+"!5!3",
+                                })
+    }}
 {% endfor %}
 
-# add mountpoints service
-
-
-# add http service
-{% if ( ('http.apache' in host_services_registry.local.has
-         and host_services_registry.local.has['http.apache'])
-   or   ('http.apache_modfastcgi' in host_services_registry.local.has
-         and host_services_registry.local.has['http.apache_modfastcgi'])
-   or   ('http.apache_modfcgid' in host_services_registry.local.has
-         and host_services_registry.local.has['http.apache_modfcgid'])
-   or   ('http.apache_modproxy' in host_services_registry.local.has
-         and host_services_registry.local.has['http.apache_modproxy'])
-   or   ('http.nginx' in host_services_registry.local.has
-         and host_services_registry.local.has['http.nginx'])
-      ) %}
-
-    {{ configuration_add_object(type='service',
-                            file=data.hostname+'/http.cfg',
-                            attrs= {
-                             'service_description': "HTTP",
-                             'host_name': data.hostname,
-                             'use': "generic-service",
-                             'check_command': "check_http",
-                            }
-       ) }}
-
-{% endif %}
-
-# add dns service
-# the command should be modified. there is no check_dns command by default
-{% for ip4 in host_grains.local.fqdn_ip4 %}
-    # fqdn to ip4
-    {{ configuration_add_object(type='service',
-                            file=data.hostname+'/dns-ip4-'+host_grains.local.fqdn+'-'+ip4+'.cfg',
-                            attrs= {
-                             'service_description': "DNS for "+host_grains.local.fqdn+" → "+ip4,
-                             'host_name': data.hostname,
-                             'use': "generic-service",
-                             'check_command': "check_passive",
-                            }
-       ) }}
-    # ip4 to fqdn
-    # think to translate a.b.c.d -> d.c.b.a.ip-addr.arpa.
-    {{ configuration_add_object(type='service',
-                            file=data.hostname+'/dns-ip4-'+ip4+'-'+host_grains.local.fqdn+'.cfg',
-                            attrs= {
-                             'service_description': "DNS for "+ip4+" → "+host_grains.local.fqdn,
-                             'host_name': data.hostname,
-                             'use': "generic-service",
-                             'check_command': "check_passive",
-                            }
-       ) }}
-{% endfor %}
-{% for ip6 in host_grains.local.fqdn_ip6 %}
-    # fqdn to ip6
-    {{ configuration_add_object(type='service',
-                            file=data.hostname+'/dns-ip6-'+host_grains.local.fqdn+'-'+ip6+'.cfg',
-                            attrs= {
-                             'service_description': "DNS for "+host_grains.local.fqdn+" → "+ip6,
-                             'host_name': data.hostname,
-                             'use': "generic-service",
-                             'check_command': "check_passive",
-                            }
-       ) }}
-    # ip6 to fqdn
-    # think to translate a:b:c:d:e:f:g:h -> h.g.f.e.d.c.d.a.ip6.arpa.
-    {{ configuration_add_object(type='service',
-                            file=data.hostname+'/dns-ip6-'+ip6+'-'+host_grains.local.fqdn+'.cfg',
-                            attrs= {
-                             'service_description': "DNS for "+ip6+" → "+host_grains.local.fqdn,
-                             'host_name': data.hostname,
-                             'use': "generic-service",
-                             'check_command': "check_passive",
-                            }
-       ) }}
-{% endfor %}
-
-# TODO: find ssh_port in grains or localsettings instead of using /etc/ssh/sshd_config
-#       find mountpoints and storage devices from grains or localsettings
-#       get http port and virtualhosts
-#       add commands to check_dns
 
 {% endmacro %}
 

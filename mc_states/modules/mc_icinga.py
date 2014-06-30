@@ -669,7 +669,21 @@ def edit_configuration_object_settings(type, file, attr, value, **kwargs):
     icingaSettings['extra'] = copy.deepcopy(icingaSettings)
     return icingaSettings
 
-def add_auto_configuration_host_settings(hostname, attrs, ssh_user, **kwargs):
+def add_auto_configuration_host_settings(hostname,
+                                        attrs,
+                                        ssh_user,
+                                        ssh_addr,
+                                        ssh_port,
+                                        check_ssh,
+                                        mountpoint_root,
+                                        mountpoint_var,
+                                        mountpoint_srv,
+                                        mountpoint_data,
+                                        mountpoint_home,
+                                        mountpoint_var_makina,
+                                        mountpoint_var_www,
+                                        check_mountpoints,
+                                        **kwargs):
     '''Settings for the edit_configuration_object macro'''
     icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
     extra = kwargs.pop('extra', {})
@@ -678,8 +692,28 @@ def add_auto_configuration_host_settings(hostname, attrs, ssh_user, **kwargs):
     kwargs.setdefault('hostname', hostname)
     kwargs.setdefault('attrs', attrs)
     kwargs.setdefault('ssh_user', ssh_user)
+    kwargs.setdefault('ssh_addr', ssh_addr)
+    kwargs.setdefault('ssh_port', ssh_port)
+    kwargs.setdefault('check_ssh', check_ssh)
+
+    mountpoints_path = {
+        'mountpoint_root': "/",
+        'mountpoint_var': "/var",
+        'mountpoint_srv': "/srv",
+        'mountpoint_data': "/data",
+        'mountpoint_home': "/home",
+        'mountpoint_var_makina': "/var/makina",
+        'mountpoint_var_www': "/var/www",
+    }
+    mountpoints = dict()
+    for mountpoint, path in mountpoints_path.items():
+        if eval(mountpoint):
+            mountpoints[mountpoint]=path
+
+    kwargs.setdefault('mountpoints', mountpoints)
+    kwargs.setdefault('check_mountpoints', check_mountpoints)
     kwargs.setdefault('objects_directory', icingaSettings['configuration_directory']+'/objects/salt_generated')
-    kwargs.setdefault('state_name_salt', hostname)
+    kwargs.setdefault('state_name_salt', hostname.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
     # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
     icingaSettings['data'] = copy.deepcopy(icingaSettings)

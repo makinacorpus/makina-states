@@ -234,14 +234,53 @@ icinga-mklivestatus-conf:
 # test to add configuratipn (MUST BE REMOVED SOON)
 {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
 
+
+# we create the default commands
+
+# check_ssh already defined in /etc/nagios-plugins/config/ssh.cfg
+{#
+{{ icinga.configuration_add_object(type='command',
+                                   file='commands/ssh.cfg',
+                                   attrs= {
+                                       'command_name': "check_ssh",
+                                       'command_line': "/usr/lib/nagios/plugins/check_ssh -p '$ARG1$' '$HOSTADDRESS$'",
+                                   })
+}}
+#}
+{{ icinga.configuration_add_object(type='command',
+                                   file='commands/check_by_ssh_mountpoint.cfg',
+                                   attrs= {
+                                       'command_name': "check_by_ssh_mountpoint",
+                                       'command_line': "/usr/lib/nagios/plugins/check_by_ssh_mountpoint -u '$ARG1$' -h '$ARG2$' -p '$ARG3$' -m '$ARG4$' -w '$ARG5$' -c '$ARG6$'",
+                                   })
+}}
+
+{% if data.modules['nagios-plugins'].enabled %}
+icinga-configuration-create-check-by-ssh-mountpoint:
+  file.managed:
+    - name: /usr/lib/nagios/plugins/check_by_ssh_mountpoint
+    - source: salt://makina-states/files/usr/lib/nagios/plugins/check_by_ssh_mountpoint
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 755
+    - watch:
+      - mc_proxy: icinga-pre-conf
+    - watch_in:
+      - mc_proxy: icinga-post-conf
+{% endif %}
+
+
 {{ icinga.configuration_add_auto_host(hostname='hostname1',
                                    attrs={
                                             'host_name': "hostname1",
                                             'use': "generic-host",
                                             'alias': "host1 generated with salt",
                                             'address': "127.127.0.1",
-                                        },
-                                   ssh_user='root'
+                                         },
+                                   ssh_user='root',
+                                   ssh_addr='127.127.0.1',
+                                   ssh_port=22
                                   ) }}
 
 
@@ -251,9 +290,12 @@ icinga-mklivestatus-conf:
                                             'use': "generic-host",
                                             'alias': "host2 generated with salt",
                                             'address': "127.127.0.2",
-                                        },
-                                   ssh_user='root'
+                                         },
+                                   ssh_user='root',
+                                   ssh_addr='127.127.0.2',
+                                   ssh_port=22
                                   ) }}
+
 
 {#
 {{ icinga.configuration_edit_object(type='service', name='SSH', attr='host_name', value='hostname1') }}
