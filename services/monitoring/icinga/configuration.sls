@@ -234,7 +234,7 @@ icinga-mklivestatus-conf:
 # test to add configuratipn (MUST BE REMOVED SOON)
 {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
 
-{{ icinga.configuration_add_auto_host(name='hostname1',
+{{ icinga.configuration_add_auto_host(hostname='hostname1',
                                    attrs={
                                             'host_name': "hostname1",
                                             'use': "generic-host",
@@ -245,7 +245,7 @@ icinga-mklivestatus-conf:
                                   ) }}
 
 
-{{ icinga.configuration_add_auto_host(name='hostname2',
+{{ icinga.configuration_add_auto_host(hostname='hostname2',
                                    attrs={
                                             'host_name': "hostname2",
                                             'use': "generic-host",
