@@ -1769,10 +1769,15 @@ def link_pillar(name, *args, **kwargs):
             _append_comment(
                 ret, body=indent(
                     'Added to pillar top: {0}'.format(ret['name'])))
+    if not os.path.exists(cfg['wired_pillar_root']):
+        os.symlink(cfg['pillar_root'], cfg['wired_pillar_root'])
+        _append_comment(
+            ret, body=indent(
+                'Added  pillar link: {0}'.format(ret['name'])))
     return ret
 
 
-def unlink_pillar(name, ret=None, *args, **kwargs):
+def unlink_pillar(name, *args, **kwargs):
     cfg = get_configuration(name, *args, **kwargs)
     ret = _get_ret(name, *args, **kwargs)
     salt_settings = __salt__['mc_salt.settings']()
@@ -1795,17 +1800,52 @@ def unlink_pillar(name, ret=None, *args, **kwargs):
                     'Cleaned pillar top: {0}'.format(ret['name'])))
     if os.path.exists(cfg['wired_pillar_root']):
         remove_path(cfg['wired_pillar_root'])
+        _append_comment(
+            ret, body=indent(
+                'Removed pillar link: {0}'.format(ret['name'])))
+    return ret
+
+
+def link_salt(name, *args, **kwargs):
+    cfg = get_configuration(name, *args, **kwargs)
+    ret = _get_ret(name, *args, **kwargs)
+    if not  os.path.exists(cfg['wired_salt_root']):
+        os.symlink(cfg['salt_root'], cfg['wired_salt_root'])
+        _append_comment(
+            ret, body=indent(
+                'Linked {0} into salt root'.format(ret['name'])))
+    return ret
+
+
+def unlink_salt(name, *args, **kwargs):
+    cfg = get_configuration(name, *args, **kwargs)
+    ret = _get_ret(name, *args, **kwargs)
+    if os.path.exists(cfg['wired_salt_root']):
+        remove_path(cfg['wired_salt_root'])
+        _append_comment(
+            ret, body=indent(
+                'Cleaned salt root from {0}'.format(ret['name'])))
     return ret
 
 
 def link(name, *args, **kwargs):
-    ret = link_pillar(name, *args, **kwargs)
-    return ret
+    '''
+    Add the link wired in salt folders (pillar & salt)
+    '''
+    ret = _get_ret(name, *args, **kwargs)
+    link_pillar(name, ret=ret, *args, **kwargs)
+    link_salt(name, ret=ret, *args, **kwargs)
+    return msplitstrip(ret)
 
 
 def unlink(name, *args, **kwargs):
-    ret = unlink_pillar(name, *args, **kwargs)
-    return ret
+    '''
+    Remove the link wired in salt folders (pillar & salt)
+    '''
+    ret = _get_ret(name, *args, **kwargs)
+    unlink_pillar(name, ret=ret, *args, **kwargs)
+    unlink_salt(name, ret=ret, *args, **kwargs)
+    return msplitstrip(ret)
 
 
 def rollback(name, *args, **kwargs):
