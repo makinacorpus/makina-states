@@ -55,6 +55,21 @@ def settings():
         directory where configuration files are located
     niceness
         priority of icinga process
+    objects
+        dictionary to configure objects
+
+        directory
+            directory in which objects will be stored. All the files in this directory are removed when salt is executed
+        filescopy
+            the list of programs which have to be copied in /roott/admin_scripts/nagios/
+        commands_static_values
+            dictionary to store values used in check_commands in configuration_add_auto_host macro
+        objects_definitions
+            dictionary to store objects configuration like commands, contacts, timeperiods, ... each subdictionary is given to configuration_add_object macros
+            as kwargs parameter
+        autoconfigured_hosts_definitions
+            dictionary to store hosts auto configurations ; each subdictionary is given to configuration_add_auto_host macro as kwargs parameter
+
     icinga_cfg
         dictionary to store values of icinga.cfg configuration file
     modules
@@ -290,7 +305,7 @@ def settings():
                             'critical': 0.9,
                         },
                     },
-                    'definitions': {
+                    'objects_definitions': {
                         'command_ping': {
                             'type': "command",
                             'file': "commands/ping.cfg",
@@ -368,12 +383,106 @@ def settings():
                                 'register': 0,
                             },
                         },
+                        'generic-service': {
+                            'type': "service",
+                            'file': "templates/generic-service.cfg",
+                            'attrs': {
+                                'name': "generic-service",
+                                'active_checks_enabled': 1,
+                                'passive_checks_enabled': 1,
+                                'parallelize_check': 1,
+                                'obsess_over_service': 1,
+                                'check_freshness': 0,
+                                'notifications_enabled': 1,
+                                'event_handler_enabled': 1,
+                                'flap_detection_enabled': 1,
+                                'failure_prediction_enabled': 1,
+                                'process_perf_data': 1,
+                                'retain_status_information': 1,
+                                'retain_nonstatus_information': 1,
+                                'notification_interval': 0,
+                                'is_volatile': 0,
+                                'check_period': "24x7",
+                                'normal_check_interval': 5,
+                                'retry_check_interval': 1,
+                                'max_check_attempts': 4,
+                                'notification_period': "24x7",
+                                'notification_options': "w,u,c,r",
+                                'contact_groups': "admins",
+                                'register': 0,
+                            },
+                        },
+                        '24x7': {
+                            'type': "timeperiod",
+                            'file': "timeperiods/24x7.cfg",
+                            'attrs': {
+                                'timeperiod_name': "24x7",
+                                'alias': "24 Hours A Day, 7 Days A Week",
+                                'sunday': "00:00-24:00",
+                                'monday': "00:00-24:00",
+                                'tuesday': "00:00-24:00",
+                                'wednesday': "00:00-24:00",
+                                'thursday': "00:00-24:00",
+                                'friday': "00:00-24:00",
+                                'saturday': "00:00-24:00",
+                            },
+                        },
+                        'root': {
+                            'type': "contact",
+                            'file': "contacts/root.cfg",
+                            'attrs': {
+                                'contact_name': "root",
+                                'alias': "Root",
+                                'service_notification_period': "24x7",
+                                'host_notification_period': "24x7",
+                                'service_notification_options': "w,u,c,r",
+                                'host_notification_options': "d,r",
+                                'service_notification_commands': "notify-service-by-email",
+                                'host_notification_commands': "notify-host-by-email",
+                                'email': "root@localhost",
+                            },
+                        },
+                        'admins': {
+                            'type': "contactgroup",
+                            'file': "contactgroups/admins.cfg",
+                            'attrs': {
+                                'contactgroup_name': "admins",
+                                'alias': "Nagios Administrators",
+                                'members': "root",
+                            },
+                        },
                     },
+                    'autoconfigured_hosts_definitions': {
+                        'hostname1': {
+                            'hostname': "hostname1",
+                            'attrs': {
+                                'host_name': "hostname1",
+                                'use': "generic-host",
+                                'alias': "host1 generated with salt",
+                                'address': "127.128.129.130",
+                            },
+                            'ssh_user': "root",
+                            'ssh_addr': "127.255",
+                            'ssh_port': 22,
+                        },
+                        'hostname2': {
+                            'hostname': "hostname2",
+                            'attrs': {
+                                'host_name': "hostname2",
+                                'use': "generic-host",
+                                'alias': "host2 generated with salt",
+                                'address': "127.1.2.7",
+                            },
+                            'ssh_user': "root",
+                            'ssh_addr': "127.254",
+                            'ssh_port': 22,
+                        },
+                    }
                 },
                 'icinga_cfg': {
                     'log_file': "/var/log/icinga/icinga.log",
                     'cfg_file': ["/etc/icinga/commands.cfg"],
-                    'cfg_dir': ["/etc/icinga/objects/"
+                    'cfg_dir': ["/etc/icinga/objects/salt_generated/"
                                ,"/etc/icinga/modules"],
                     'object_cache_file': "/var/cache/icinga/objects.cache",
                     'precached_object_file': "/var/cache/icinga/objects.precache",

@@ -49,6 +49,7 @@ icinga-configuration-{{data.state_name_salt}}-object-conf:
 #         the value to append after the directive. The old value will not be removed
 #
 #}
+
 {% macro configuration_edit_object(type, file, attr, value) %}
 {% set data = salt['mc_icinga.edit_configuration_object_settings'](type, file, attr, value, **kwargs) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
@@ -71,6 +72,17 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% endmacro %}
 
 
+{#
+#
+# Macros mains args:
+#     hostname
+#         the hostname for the host to add
+#     attrs
+#         a dictionary in which each key corresponds to a directive
+#     check_*
+#         a boolean which indicates that the service has to be checked
+#
+#}
 
 {% macro configuration_add_auto_host(hostname,
                                      attrs={},
@@ -213,7 +225,6 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     })
         }}
 {% endif %}
-
 
 {% endmacro %}
 

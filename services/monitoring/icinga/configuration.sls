@@ -265,40 +265,15 @@ icinga-configuration-clean-objects-directory:
     - watch_in:
       - mc_proxy: icinga-configuration-post-clean-directories
 
-# add generic host and generic service
-{% for name, object in data.objects.definitions.items() %}
-    {{ icinga.configuration_add_object(type=object.type,
-                                       file=object.file,
-                                       attrs=object.attrs)
-    }}
+# add templates and commands (and contacts, timeperiods...)
+{% for name, object in data.objects.objects_definitions.items() %}
+    {{ icinga.configuration_add_object(**object) }}
 {% endfor %}
 
-# autoconfigure two hosts
-{{ icinga.configuration_add_auto_host(hostname='hostname1',
-                                   attrs={
-                                            'host_name': "hostname1",
-                                            'use': "generic-host",
-                                            'alias': "host1 generated with salt",
-                                            'address': "127.127.0.1",
-                                         },
-                                   ssh_user='root',
-                                   ssh_addr='127.127.0.1',
-                                   ssh_port=22,
-                                  ) }}
-
-
-{{ icinga.configuration_add_auto_host(hostname='hostname2',
-                                   attrs={
-                                            'host_name': "hostname2",
-                                            'use': "generic-host",
-                                            'alias': "host2 generated with salt",
-                                            'address': "127.127.0.2",
-                                         },
-                                   ssh_user='root',
-                                   ssh_addr='127.127.0.2',
-                                   ssh_port=22
-                                  ) }}
-
+# add autoconfigured hosts
+{% for name, object in data.objects.autoconfigured_hosts_definitions.items() %}
+    {{ icinga.configuration_add_auto_host(**object) }}
+{% endfor %}
 
 {#
 {{ icinga.configuration_edit_object(type='service', name='SSH', attr='host_name', value='hostname1') }}
