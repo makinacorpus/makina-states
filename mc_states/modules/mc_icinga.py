@@ -254,6 +254,8 @@ def settings():
                     or ('socket' in module_ido2db_database))
 
         checks_directory = "/root/admin_scripts/nagios"
+        check_ping_warning = "5000,100%"
+        check_ping_critical = check_ping_warning
 
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.monitoring.icinga', {
@@ -267,75 +269,104 @@ def settings():
                 'pidfile': "/var/run/icinga/icinga.pid",
                 'configuration_directory': locs['conf_dir']+"/icinga",
                 'niceness': 5,
-                'objects_directory': locs['conf_dir']+"/icinga/objects/salt_generated",
                 'objects': {
-                    'command_ping': {
-                        'type': "command",
-                        'file': "commands/ping.cfg",
-                        'attrs': {
-                            'command_name': "check_host_alive",
-                            'command_line': checks_directory+"/check_ping -H '$HOSTADDRESS$' -w 5000,100% -c 5000,100% -p 1",
+                    'directory': locs['conf_dir']+"/icinga/objects/salt_generated",
+                    'filescopy': ['check_ping', 'check_ssh', 'check_by_ssh', 'check_disk', 'check_swap', 'check_load', 'check_http', 'check_dig'],
+                    'commands_static_values': {
+                        'command_ping': {
+                            'warning': check_ping_warning,
+                            'critical': check_ping_critical,
+                        },
+                        'command_check_by_ssh_mountpoint': {
+                            'warning': 10,
+                            'critical': 5,
+                        },
+                        'command_check_by_ssh_swap': {
+                            'warning': 10,
+                            'critical': 5,
+                        },
+                        'command_check_by_ssh_cpuload': {
+                            'warning': 0.7,
+                            'critical': 0.9,
                         },
                     },
-                    'command_ssh': {
-                        'type': "command",
-                        'file': "commands/ssh.cfg",
-                        'attrs': {
-                            'command_name': "check_ssh",
-                            'command_line': checks_directory+"/check_ssh -p '$ARG1$' '$HOSTADDRESS$'",
+                    'definitions': {
+                        'command_ping': {
+                            'type': "command",
+                            'file': "commands/ping.cfg",
+                            'attrs': {
+                                'command_name': "check_host_alive",
+                                'command_line': checks_directory+"/check_ping -H '$HOSTADDRESS$' -w '$ARG1$' -c '$ARG1$' -p 1",
+                            },
                         },
-                    },
-                    'command_check_by_ssh_mountpoint': {
-                        'type': "command",
-                        'file': "commands/check_by_ssh_mountpoint.cfg",
-                        'attrs': {
-                            'command_name': "check_by_ssh_mountpoint",
-                            'command_line': checks_directory+"/nagios/check_by_ssh -q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$'  -C '/root/admin_scripts/nagios/check_disk \"$ARG4$\" -w \"$ARG5$\" -c \"$ARG6$\"'",
+                        'command_ssh': {
+                            'type': "command",
+                            'file': "commands/ssh.cfg",
+                            'attrs': {
+                                'command_name': "check_ssh",
+                                'command_line': checks_directory+"/check_ssh -p '$ARG1$' '$HOSTADDRESS$'",
+                            },
                         },
-                    },
-                    'command_check_by_ssh_cpuload': {
-                        'type': "command",
-                        'file': "commands/check_by_ssh_cpuload.cfg",
-                        'attrs': {
-                            'command_name': "check_by_ssh_cpuload",
-                            'command_line': checks_directory+"/check_by_ssh -q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$'  -C '/root/admin_scripts/nagios/check_load -w \"$ARG4$\" -c \"$ARG5$\"'",
+                        'command_check_by_ssh_mountpoint': {
+                            'type': "command",
+                            'file': "commands/check_by_ssh_mountpoint.cfg",
+                            'attrs': {
+                                'command_name': "check_by_ssh_mountpoint",
+                                'command_line': checks_directory+"/check_by_ssh -q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$'  -C '"+checks_directory+"/check_disk \"$ARG4$\" -w \"$ARG5$\" -c \"$ARG6$\"'",
+                            },
                         },
-                    },
-                    'command_http': {
-                        'type': "command",
-                        'file': "commands/http.cfg",
-                        'attrs': {
-                            'command_name': "check_http",
-                            'command_line': checks_directory+"/check_http '$HOSTADDRESS$'",
+                        'command_check_by_ssh_swap': {
+                            'type': "command",
+                            'file': "commands/check_by_ssh_swap.cfg",
+                            'attrs': {
+                                'command_name': "check_by_ssh_swap",
+                                'command_line': checks_directory+"/check_by_ssh -q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$'  -C '"+checks_directory+"/check_swap -w \"$ARG4$\" -c \"$ARG5$\"'",
+                            },
                         },
-                    },
-                    'command_dig': {
-                        'type': "command",
-                        'file': "commands/dig.cfg",
-                        'attrs': {
-                            'command_name': "check_dig",
-                            'command_line': checks_directory+"/check_dig -T '$ARG1$' -l '$ARG2$' -a '$ARG3$'",
+                        'command_check_by_ssh_cpuload': {
+                            'type': "command",
+                            'file': "commands/check_by_ssh_cpuload.cfg",
+                            'attrs': {
+                                'command_name': "check_by_ssh_cpuload",
+                                'command_line': checks_directory+"/check_by_ssh -q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$'  -C '"+checks_directory+"/check_load -w \"$ARG4$\" -c \"$ARG5$\"'",
+                            },
                         },
-                    },
-                    'generic-host': {
-                        'type': "host",
-                        'file': "templates/generic-host.cfg",
-                        'attrs': {
-                            'name': "generic-host",
-                            'notifications_enabled': 1,
-                            'event_handler_enabled': 1,
-                            'flap_detection_enabled': 1,
-                            'failure_prediction_enabled': 1,
-                            'process_perf_data': 1,
-                            'retain_status_information': 1,
-                            'retain_nonstatus_information': 1,
-                            'check_command': "check_host_alive",
-                            'max_check_attempts': 10,
-                            'notification_interval': 0,
-                            'notification_period': "24x7",
-                            'notification_options': "d,u,r",
-                            'contact_groups': "admins",
-                            'register': 0,
+                        'command_http': {
+                            'type': "command",
+                            'file': "commands/http.cfg",
+                            'attrs': {
+                                'command_name': "check_http",
+                                'command_line': checks_directory+"/check_http '$HOSTADDRESS$'",
+                            },
+                        },
+                        'command_dig': {
+                            'type': "command",
+                            'file': "commands/dig.cfg",
+                            'attrs': {
+                                'command_name': "check_dig",
+                                'command_line': checks_directory+"/check_dig -T '$ARG1$' -l '$ARG2$' -a '$ARG3$'",
+                            },
+                        },
+                        'generic-host': {
+                            'type': "host",
+                            'file': "templates/generic-host.cfg",
+                            'attrs': {
+                                'name': "generic-host",
+                                'notifications_enabled': 1,
+                                'event_handler_enabled': 1,
+                                'flap_detection_enabled': 1,
+                                'failure_prediction_enabled': 1,
+                                'process_perf_data': 1,
+                                'retain_status_information': 1,
+                                'retain_nonstatus_information': 1,
+                                'check_command': "check_host_alive!"+check_ping_warning+"!"+check_ping_critical,
+                                'max_check_attempts': 10,
+                                'notification_interval': 0,
+                                'notification_period': "24x7",
+                                'notification_options': "d,u,r",
+                                'contact_groups': "admins",
+                                'register': 0,
+                            },
                         },
                     },
                 },
@@ -754,6 +785,7 @@ def add_auto_configuration_host_settings(hostname,
                                         mountpoint_var_makina,
                                         mountpoint_var_www,
                                         check_mountpoints,
+                                        check_swap,
                                         check_http,
                                         check_cpuload,
                                         check_dns,
@@ -785,14 +817,14 @@ def add_auto_configuration_host_settings(hostname,
         if eval(mountpoint):
             mountpoints[mountpoint]=path
 
-    kwargs.setdefault('mountpoints', mountpoints)
     kwargs.setdefault('check_mountpoints', check_mountpoints)
-    kwargs.setdefault('mountpoints_warning', 10) # 10% left
-    kwargs.setdefault('mountpoints_critical', 5) # 5% left
-    kwargs.setdefault('check_http', check_http)
+    kwargs.setdefault('mountpoints', mountpoints)
+
+    kwargs.setdefault('check_swap', check_swap)
+
     kwargs.setdefault('check_cpuload', check_mountpoints)
-    kwargs.setdefault('cpuload_warning', 0.7)
-    kwargs.setdefault('cpuload_critical', 0.9)
+
+    kwargs.setdefault('check_http', check_http)
 
     # add dns between host_name and address value (and reverse)
     if not 'address' in attrs:

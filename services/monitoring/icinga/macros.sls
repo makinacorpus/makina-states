@@ -16,24 +16,10 @@
 {% set data = salt['mc_icinga.add_configuration_object_settings'](type, file, attrs, **kwargs) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 
-# we clean the directory
-icinga-configuration-{{data.state_name_salt}}-clean-directory:
-  file.directory:
-    - name: {{data.objects_directory}}
-    - user: root
-    - group: root
-    - dir_mode: 755
-    - makedirs: True
-    - clean: True
-    - watch:
-      - mc_proxy: icinga-configuration-pre-clean-directories
-    - watch_in:
-      - mc_proxy: icinga-configuration-post-clean-directories
-
 # we add the object
 icinga-configuration-{{data.state_name_salt}}-object-conf:
   file.managed:
-    - name: {{data.objects_directory}}/{{data.file}}
+    - name: {{data.objects.directory}}/{{data.file}}
     - source: salt://makina-states/files/etc/icinga/objects/template.cfg
     - user: root
     - group: root
@@ -73,7 +59,7 @@ icinga-configuration-{{data.state_name_salt}}-object-conf:
 icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_splitted}}-conf:
   file.accumulated:
     - name: "{{data.attr}}"
-    - filename: {{data.objects_directory}}/{{data.file}}
+    - filename: {{data.objects.directory}}/{{data.file}}
     - text: "{{value_splitted}}"
     - watch:
       - mc_proxy: icinga-configuration-pre-accumulated-attributes-conf
@@ -100,6 +86,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      mountpoint_var_makina=False,
                                      mountpoint_var_www=False,
                                      check_mountpoints=True,
+                                     check_swap=True,
                                      check_http=True,
                                      check_cpuload=True,
                                      check_dns=True,
@@ -119,6 +106,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      mountpoint_var_makina,
                                                                      mountpoint_var_www,
                                                                      check_mountpoints,
+                                                                     check_swap,
                                                                      check_http,
                                                                      check_cpuload,
                                                                      check_dns,
@@ -146,7 +134,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% endif %}
 
 
-# add mountpoints (check by ssh)
+# add mountpoints service (check by ssh)
 {% if data.check_mountpoints %}
 {% for mountpoint, path in data.mountpoints.items() %}
     {{ configuration_add_object(type='service',
@@ -155,13 +143,28 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'service_description': "Free space on "+path,
                                     'host_name': data.hostname,
                                     'use': "generic-service",
-                                    'check_command': "check_by_ssh_mountpoint!"+ssh_user+"!"+ssh_addr+"!"+ssh_port|string+"!"+path+"!"+data.mountpoints_warning|string+"!"+data.mountpoints_critical|string,
+                                    'check_command': "check_by_ssh_mountpoint!"+ssh_user+"!"+ssh_addr+"!"+ssh_port|string+"!"+path+"!"+data.objects.commands_static_values.command_check_by_ssh_mountpoint.warning|string+"!"+data.objects.commands_static_values.command_check_by_ssh_mountpoint.critical|string,
                                 })
     }}
 {% endfor %}
 {% endif %}
 
-# add cpuload (check by ssh)
+# add swap service (check by ssh)
+{% if data.check_swap %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/swap.cfg',
+                                attrs= {
+                                    'service_description': "Swap",
+                                    'host_name': data.hostname,
+                                    'use': "generic-service",
+                                    'check_command': "check_by_ssh_swap!"+ssh_user+"!"+ssh_addr+"!"+ssh_port|string+"!"+data.objects.commands_static_values.command_check_by_ssh_swap.warning|string+"%!"+data.objects.commands_static_values.command_check_by_ssh_swap.critical|string+"%",
+                                })
+    }}
+{% endif %}
+
+
+
+# add cpuload service (check by ssh)
 {% if data.check_cpuload %}
     {{ configuration_add_object(type='service',
                                 file='hosts/'+data.hostname+'/cpuload.cfg',
@@ -169,12 +172,12 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'service_description': "Cpu load",
                                     'host_name': data.hostname,
                                     'use': "generic-service",
-                                    'check_command': "check_by_ssh_cpuload!"+ssh_user+"!"+ssh_addr+"!"+ssh_port|string+"!"+data.cpuload_warning|string+"!"+data.cpuload_critical|string,
+                                    'check_command': "check_by_ssh_cpuload!"+ssh_user+"!"+ssh_addr+"!"+ssh_port|string+"!"+data.objects.commands_static_values.command_check_by_ssh_cpuload.warning|string+"!"+data.objects.commands_static_values.command_check_by_ssh_cpuload.critical|string,
                                 })
     }}
 {% endif %}
 
-# add http
+# add http service
 {% if data.check_http %}
     {{ configuration_add_object(type='service',
                                 file='hosts/'+data.hostname+'/http.cfg',
@@ -187,7 +190,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     }}
 {% endif %}
 
-# add dns check
+# add dns service (check only data, the host doesn't have neither solver nor autority zone)
 {% if data.check_dns %}
         {{ configuration_add_object(type='service',
                                     file='hosts/'+data.hostname+'/dns.cfg',

@@ -232,11 +232,11 @@ icinga-mklivestatus-conf:
 {% endif %}
 
 
-# test to add configuratipn (MUST BE REMOVED SOON)
+# add objects configuration
 {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
 
 # copy the checks
-{% for check in ['check_ping', 'check_ssh', 'check_by_ssh', 'check_disk', 'check_load', 'check_http', 'check_dig'] %}
+{% for check in data.objects.filescopy %}
 icinga-configuration-check-{{check}}-plugin:
   file.managed:
     - name: /root/admin_scripts/nagios/{{check}}
@@ -251,15 +251,29 @@ icinga-configuration-check-{{check}}-plugin:
       - mc_proxy: icinga-post-conf
 {% endfor %}
 
+# clean the objects directory
+icinga-configuration-clean-objects-directory:
+  file.directory:
+    - name: {{data.objects.directory}}
+    - user: root
+    - group: root
+    - dir_mode: 755
+    - makedirs: True
+    - clean: True
+    - watch:
+      - mc_proxy: icinga-configuration-pre-clean-directories
+    - watch_in:
+      - mc_proxy: icinga-configuration-post-clean-directories
+
 # add generic host and generic service
-{% for name, object in data.objects.items() %}
+{% for name, object in data.objects.definitions.items() %}
     {{ icinga.configuration_add_object(type=object.type,
                                        file=object.file,
                                        attrs=object.attrs)
     }}
 {% endfor %}
 
-
+# autoconfigure two hosts
 {{ icinga.configuration_add_auto_host(hostname='hostname1',
                                    attrs={
                                             'host_name': "hostname1",
