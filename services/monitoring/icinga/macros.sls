@@ -103,6 +103,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      check_http=True,
                                      check_cpuload=True,
                                      dns_rr={},
+                                     dns_use_attrs=True,
                                      check_dns=True,
                                      check_dns_reverse=True
                                     ) %}
@@ -123,6 +124,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      check_http,
                                                                      check_cpuload,
                                                                      dns_rr,
+                                                                     dns_use_attrs,
                                                                      check_dns,
                                                                      check_dns_reverse,
                                                                      **kwargs

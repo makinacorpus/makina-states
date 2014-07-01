@@ -239,15 +239,93 @@ icinga-mklivestatus-conf:
 {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
 
 
-# we create the default commands
+# copy the checks
+icinga-configuration-check-ssh-plugin:
+  file.managed:
+    - name: /root/admin_scripts/nagios/check_ssh
+    - source: salt://makina-states/files/root/admin_scripts/nagios/check_ssh
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 755
+    - watch:
+      - mc_proxy: icinga-pre-conf
+    - watch_in:
+      - mc_proxy: icinga-post-conf
 
+icinga-configuration-check-by-ssh-plugin:
+  file.managed:
+    - name: /root/admin_scripts/nagios/check_by_ssh
+    - source: salt://makina-states/files/root/admin_scripts/nagios/check_by_ssh
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 755
+    - watch:
+      - mc_proxy: icinga-pre-conf
+    - watch_in:
+      - mc_proxy: icinga-post-conf
+
+icinga-configuration-check-disk-plugin:
+  file.managed:
+    - name: /root/admin_scripts/nagios/check_disk
+    - source: salt://makina-states/files/root/admin_scripts/nagios/check_disk
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 755
+    - watch:
+      - mc_proxy: icinga-pre-conf
+    - watch_in:
+      - mc_proxy: icinga-post-conf
+
+icinga-configuration-check-http-plugins:
+  file.managed:
+    - name: /root/admin_scripts/nagios/check_http
+    - source: salt://makina-states/files/root/admin_scripts/nagios/check_http
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 755
+    - watch:
+      - mc_proxy: icinga-pre-conf
+    - watch_in:
+      - mc_proxy: icinga-post-conf
+
+icinga-configuration-check-load-plugins:
+  file.managed:
+    - name: /root/admin_scripts/nagios/check_load
+    - source: salt://makina-states/files/root/admin_scripts/nagios/check_load
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 755
+    - watch:
+      - mc_proxy: icinga-pre-conf
+    - watch_in:
+      - mc_proxy: icinga-post-conf
+
+icinga-configuration-check-dig-plugins:
+  file.managed:
+    - name: /root/admin_scripts/nagios/check_dig
+    - source: salt://makina-states/files/root/admin_scripts/nagios/check_dig
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 755
+    - watch:
+      - mc_proxy: icinga-pre-conf
+    - watch_in:
+      - mc_proxy: icinga-post-conf
+
+# create commands
 # check_ssh already defined in /etc/nagios-plugins/config/ssh.cfg
 {#
 {{ icinga.configuration_add_object(type='command',
                                    file='commands/ssh.cfg',
                                    attrs= {
                                        'command_name': "check_ssh",
-                                       'command_line': "/usr/lib/nagios/plugins/check_ssh -p '$ARG1$' '$HOSTADDRESS$'",
+                                       'command_line': "/root/admin_scripts/nagios/check_ssh -p '$ARG1$' '$HOSTADDRESS$'",
                                    })
 }}
 #}
@@ -255,7 +333,7 @@ icinga-mklivestatus-conf:
                                    file='commands/check_by_ssh_mountpoint.cfg',
                                    attrs= {
                                        'command_name': "check_by_ssh_mountpoint",
-                                       'command_line': "/usr/lib/nagios/plugins/check_by_ssh -q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$'  -C '/usr/lib/nagios/plugins/check_disk \"$ARG4$\" -w \"$ARG5$\" -c \"$ARG6$\"'",
+                                       'command_line': "/root/admin_scripts/nagios/check_by_ssh -q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$'  -C '/root/admin_scripts/nagios/check_disk \"$ARG4$\" -w \"$ARG5$\" -c \"$ARG6$\"'",
                                    })
 }}
 # check_http already defined in /etc/nagios-plugins/config/http.cfg
@@ -264,7 +342,7 @@ icinga-mklivestatus-conf:
                                    file='commands/http.cfg',
                                    attrs= {
                                        'command_name': "check_http",
-                                       'command_line': "/usr/lib/nagios/plugins/check_http '$HOSTADDRESS$'",
+                                       'command_line': "/root/admin_scripts/nagios/check_http '$HOSTADDRESS$'",
                                    })
 }}
 #}
@@ -272,7 +350,14 @@ icinga-mklivestatus-conf:
                                    file='commands/check_by_ssh_cpuload.cfg',
                                    attrs= {
                                        'command_name': "check_by_ssh_cpuload",
-                                       'command_line': "/usr/lib/nagios/plugins/check_by_ssh -q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$'  -C '/usr/lib/nagios/plugins/check_load -w \"$ARG4$\" -c \"$ARG5$\"'",
+                                       'command_line': "/root/admin_scripts/nagios/check_by_ssh -q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$'  -C '/root/admin_scripts/nagios/check_load -w \"$ARG4$\" -c \"$ARG5$\"'",
+                                   })
+}}
+{{ icinga.configuration_add_object(type='command',
+                                   file='commands/check_dig.cfg',
+                                   attrs= {
+                                       'command_name': "check_dig",
+                                       'command_line': "/root/admin_scripts/nagios/check_dig -T '$ARG1$' -l '$ARG2$' -a '$ARG3$'",
                                    })
 }}
 

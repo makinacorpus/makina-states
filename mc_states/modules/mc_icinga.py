@@ -686,10 +686,11 @@ def add_auto_configuration_host_settings(hostname,
                                         check_http,
                                         check_cpuload,
                                         dns_rr,
+                                        dns_use_attrs,
                                         check_dns,
                                         check_dns_reverse,
                                         **kwargs):
-    '''Settings for the edit_configuration_object macro'''
+    '''Settings for the add_auto_configuration_host macro'''
     icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
     extra = kwargs.pop('extra', {})
     kwargs.update(extra)
@@ -724,10 +725,33 @@ def add_auto_configuration_host_settings(hostname,
     kwargs.setdefault('cpuload_warning', 0.7)
     kwargs.setdefault('cpuload_critical', 0.9)
 
-    for type in dns_rr:
-        for query, answer in dns_rr[type].items():
-            if not isinstance(answer, list):
-                dns_rr[type][query]=[answer]
+    # if dns_use_attrs, add dns between host_name and address value (and reverse)
+
+    if dns_use_attrs:
+        if 'host_name' in attrs and 'address' in attrs:
+            if 'A' not in dns_rr:
+                dns_rr['A'] = {}
+            if 'PTR' not in dns_rr:
+                dns_rr['PTR'] = {}
+
+            if attrs['host_name'] not in dns_rr['A']:
+                dns_rr['A'][attrs['host_name']] = []
+            dns_rr['A'][attrs['host_name']].append(attrs['address'])
+
+
+            address_splitted = attrs['address'].split('.')
+            inaddr = '.'.join(address_splitted[::-1])
+            inaddr = inaddr + '.in-addr.arpa.'
+
+            if inaddr not in dns_rr['PTR']:
+                dns_rr['PTR'][inaddr] = attrs['host_name']
+
+    # only one answer is required for ptr records
+    for type in ['PTR']:
+        if type in dns_rr:
+            for query, answer in dns_rr[type].items():
+                if not isinstance(answer, list):
+                    dns_rr[type][query]=[answer]
 
     kwargs.setdefault('dns_rr', dns_rr)
 
