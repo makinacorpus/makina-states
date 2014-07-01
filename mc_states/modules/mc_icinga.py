@@ -1007,13 +1007,12 @@ def add_auto_configuration_host_settings(hostname,
     # we complete the "commands_static_values" with values in "data.objects.commands_static_values"
     if not isinstance(commands_static_values, dict):
         commands_static_values = {}
+
     for name, command in icingaSettings['objects']['commands_static_values'].items():
         if not name in commands_static_values:
             commands_static_values[name] = icingaSettings['objects']['commands_static_values'][name]
         else:
-            for key, value in command.items():
-                if key not in commands_static_values[name]:
-                    commands_static_values[name][key] = icingaSettings['objects']['commands_static_values'][name][key]
+            commands_static_values[name] = dict(icingaSettings['objects']['commands_static_values'][name].items() + commands_static_values[name].items())
 
     kwargs.setdefault('commands_static_values', commands_static_values)
 
