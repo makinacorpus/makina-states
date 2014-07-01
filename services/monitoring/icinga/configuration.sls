@@ -235,20 +235,23 @@ icinga-mklivestatus-conf:
 {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
 
 # copy the checks
+# the binaries are compiled for x86_64. we have to check this using grains
+{% if 'amd64' == salt['grains.items']()['osarch'] %}
 {% for check in data.objects.filescopy %}
 icinga-configuration-check-{{check}}-plugin:
   file.managed:
-    - name: /root/admin_scripts/nagios/{{check}}
-    - source: salt://makina-states/files/root/admin_scripts/nagios/{{check}}
-    - makedirs: true
-    - user: root
-    - group: root
-    - mode: 755
-    - watch:
-      - mc_proxy: icinga-pre-conf
-    - watch_in:
-      - mc_proxy: icinga-post-conf
+   - name: /root/admin_scripts/nagios/{{check}}
+   - source: salt://makina-states/files/root/admin_scripts/nagios/{{check}}
+   - makedirs: true
+   - user: root
+   - group: root
+   - mode: 755
+   - watch:
+     - mc_proxy: icinga-pre-conf
+   - watch_in:
+     - mc_proxy: icinga-post-conf
 {% endfor %}
+{% endif %}
 
 # TODO: we have to copy some of theses files in the monitored host.
 

@@ -499,7 +499,6 @@ def settings():
                             'ssh_port': 22,
                             'commands_static_values': {
                                 'command_check_by_ssh_process': {
-                                    'metric': "PROCS",
                                     'warning': 2,
                                     'critical': 3,
                                 },
