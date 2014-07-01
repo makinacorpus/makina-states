@@ -110,6 +110,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      check_cpuload=True,
                                      check_procs=True,
                                      check_cron=True,
+                                     check_debian_packages=False,
                                      check_dns=True,
                                      check_dns_reverse=True,
                                      commands_static_values={}
@@ -133,6 +134,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      check_cpuload,
                                                                      check_procs,
                                                                      check_cron,
+                                                                     check_debian_packages,
                                                                      check_dns,
                                                                      check_dns_reverse,
                                                                      commands_static_values,
@@ -223,7 +225,20 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'service_description': "Cron",
                                     'host_name': data.hostname,
                                     'use': "generic-service",
-                                    'check_command': "check_by_ssh_process!"+ssh_user+"!"+ssh_addr+"!"+ssh_port|string,
+                                    'check_command': "check_by_ssh_cron!"+ssh_user+"!"+ssh_addr+"!"+ssh_port|string,
+                                })
+    }}
+{% endif %}
+
+# add debian packages service (check by ssh)
+{% if data.check_debian_packages %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/debian_packages.cfg',
+                                attrs= {
+                                    'service_description': "Debian packages",
+                                    'host_name': data.hostname,
+                                    'use': "generic-service",
+                                    'check_command': "check_by_ssh_debian_packages!"+ssh_user+"!"+ssh_addr+"!"+ssh_port|string,
                                 })
     }}
 {% endif %}

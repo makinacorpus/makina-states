@@ -286,7 +286,7 @@ def settings():
                 'niceness': 5,
                 'objects': {
                     'directory': locs['conf_dir']+"/icinga/objects/salt_generated",
-                    'filescopy': ['check_ping', 'check_ssh', 'check_by_ssh', 'check_disk', 'check_swap', 'check_load', 'check_procs', 'check_http', 'check_dig'],
+                    'filescopy': ['check_ping', 'check_ssh', 'check_by_ssh', 'check_disk', 'check_swap', 'check_load', 'check_procs', 'check_cron', 'check_debian_packages', 'check_http', 'check_dig'],
                     'commands_static_values': {
                         'command_ping': {
                             'warning': check_ping_warning,
@@ -364,7 +364,15 @@ def settings():
                             'file': "commands/check_by_ssh_cron.cfg",
                             'attrs': {
                                 'command_name': "check_by_ssh_cron",
-                                'command_line': checks_directory+"/check_by_ssh -q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$'  -C '"+checks_directory+"/check_cron",
+                                'command_line': checks_directory+"/check_by_ssh -q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$'  -C '"+checks_directory+"/check_cron'",
+                            },
+                        },
+                        'command_check_by_ssh_debian_packages': {
+                            'type': "command",
+                            'file': "commands/check_by_ssh_debian_packages.cfg",
+                            'attrs': {
+                                'command_name': "check_by_ssh_debian_packages",
+                                'command_line': checks_directory+"/check_by_ssh -q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$'  -C '"+checks_directory+"/check_debian_packages' -t 30",
                             },
                         },
                         'command_http': {
@@ -485,6 +493,7 @@ def settings():
                             'ssh_user': "root",
                             'ssh_addr': "127.255",
                             'ssh_port': 22,
+                            'check_debian_packages': True,
                         },
                         'hostname2': {
                             'hostname': "hostname2",
@@ -926,6 +935,7 @@ def add_auto_configuration_host_settings(hostname,
                                         check_cpuload,
                                         check_procs,
                                         check_cron,
+                                        check_debian_packages,
                                         check_dns,
                                         check_dns_reverse,
                                         commands_static_values,
@@ -963,6 +973,7 @@ def add_auto_configuration_host_settings(hostname,
     kwargs.setdefault('check_cpuload', check_cpuload)
     kwargs.setdefault('check_procs', check_procs)
     kwargs.setdefault('check_cron', check_cron)
+    kwargs.setdefault('check_debian_packages', check_debian_packages)
     kwargs.setdefault('check_http', check_http)
 
     # add dns between host_name and address value (and reverse)
