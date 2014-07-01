@@ -101,7 +101,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      mountpoint_var_www=False,
                                      check_mountpoints=True,
                                      check_http=True,
-                                     check_cpuload=True
+                                     check_cpuload=True,
+                                     dns_rr={},
+                                     check_dns=True,
+                                     check_dns_reverse=True
                                     ) %}
 {% set data = salt['mc_icinga.add_auto_configuration_host_settings'](hostname,
                                                                      attrs,
@@ -119,6 +122,9 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      check_mountpoints,
                                                                      check_http,
                                                                      check_cpuload,
+                                                                     dns_rr,
+                                                                     check_dns,
+                                                                     check_dns_reverse,
                                                                      **kwargs
                                                                     ) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
@@ -142,7 +148,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% endif %}
 
 
-# add mountpoints
+# add mountpoints (check by ssh)
 {% if data.check_mountpoints %}
 {% for mountpoint, path in data.mountpoints.items() %}
     {{ configuration_add_object(type='service',
@@ -157,7 +163,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% endfor %}
 {% endif %}
 
-# add cpuload
+# add cpuload (check by ssh)
 {% if data.check_cpuload %}
     {{ configuration_add_object(type='service',
                                 file='hosts/'+data.hostname+'/cpuload.cfg',
@@ -182,5 +188,26 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                 })
     }}
 {% endif %}
+
+# add dns check
+{% if data.check_dns %}
+{% for type in data.dns_rr %}
+    {% for query, answers in data.dns_rr[type].items() %}
+        {% for answer in answers %}
+            {{ configuration_add_object(type='service',
+                                        file='hosts/'+data.hostname+'/dns_'+query+'_'+answer+'.cfg',
+                                        attrs= {
+                                            'service_description': "DNS "+type+" "+query+" → "+answer,
+                                            'host_name': data.hostname,
+                                            'use': "generic-service",
+                                            'check_command': "check_dns!"+type+"!"+query+"!"+answer,
+                                        })
+            }}
+        {% endfor %}
+    {% endfor %}
+{% endfor %}
+{% endif %}
+
+
 {% endmacro %}
 

@@ -13,6 +13,8 @@ include:
   - makina-states.services.monitoring.icinga.hooks
   - makina-states.services.monitoring.icinga.services
 
+{#
+
 # general configuration
 icinga-conf:
   file.managed:
@@ -231,6 +233,8 @@ icinga-mklivestatus-conf:
 
 {% endif %}
 
+#}
+
 # test to add configuratipn (MUST BE REMOVED SOON)
 {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
 
@@ -283,7 +287,15 @@ icinga-mklivestatus-conf:
                                          },
                                    ssh_user='root',
                                    ssh_addr='127.127.0.1',
-                                   ssh_port=22
+                                   ssh_port=22,
+                                   dns_rr={
+                                    'A': {
+                                        'example.net.': ["1.2.3.4"],
+                                    },
+                                    'PTR': {
+                                        '4.3.2.1.in-addr.arpa.': "example.net.",
+                                    },
+                                   }
                                   ) }}
 
 
