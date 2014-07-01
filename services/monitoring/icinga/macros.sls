@@ -102,8 +102,6 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      check_mountpoints=True,
                                      check_http=True,
                                      check_cpuload=True,
-                                     dns_rr={},
-                                     dns_use_attrs=True,
                                      check_dns=True,
                                      check_dns_reverse=True
                                     ) %}
@@ -123,8 +121,6 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      check_mountpoints,
                                                                      check_http,
                                                                      check_cpuload,
-                                                                     dns_rr,
-                                                                     dns_use_attrs,
                                                                      check_dns,
                                                                      check_dns_reverse,
                                                                      **kwargs
@@ -193,21 +189,26 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 
 # add dns check
 {% if data.check_dns %}
-{% for type in data.dns_rr %}
-    {% for query, answers in data.dns_rr[type].items() %}
-        {% for answer in answers %}
-            {{ configuration_add_object(type='service',
-                                        file='hosts/'+data.hostname+'/dns_'+query+'_'+answer+'.cfg',
-                                        attrs= {
-                                            'service_description': "DNS "+type+" "+query+" → "+answer,
-                                            'host_name': data.hostname,
-                                            'use': "generic-service",
-                                            'check_command': "check_dns!"+type+"!"+query+"!"+answer,
-                                        })
-            }}
-        {% endfor %}
-    {% endfor %}
-{% endfor %}
+        {{ configuration_add_object(type='service',
+                                    file='hosts/'+data.hostname+'/dns.cfg',
+                                    attrs= {
+                                        'service_description': "DNS "+data.dns_hostname+" → "+data.dns_address,
+                                        'host_name': data.hostname,
+                                        'use': "generic-service",
+                                        'check_command': "check_dig!A!"+data.dns_hostname+"!"+data.dns_address,
+                                    })
+        }}
+{% endif %}
+{% if data.check_dns_reverse %}
+        {{ configuration_add_object(type='service',
+                                    file='hosts/'+data.hostname+'/dns_reverse.cfg',
+                                    attrs= {
+                                        'service_description': "DNS "+data.dns_address+" → "+data.dns_hostname,
+                                        'host_name': data.hostname,
+                                        'use': "generic-service",
+                                        'check_command': "check_dig!PTR!"+data.dns_inaddr+"!"+data.dns_hostname,
+                                    })
+        }}
 {% endif %}
 
 

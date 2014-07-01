@@ -13,8 +13,6 @@ include:
   - makina-states.services.monitoring.icinga.hooks
   - makina-states.services.monitoring.icinga.services
 
-{#
-
 # general configuration
 icinga-conf:
   file.managed:
@@ -233,13 +231,24 @@ icinga-mklivestatus-conf:
 
 {% endif %}
 
-#}
 
 # test to add configuratipn (MUST BE REMOVED SOON)
 {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
 
-
 # copy the checks
+icinga-configuration-check-ping-plugin:
+  file.managed:
+    - name: /root/admin_scripts/nagios/check_ping
+    - source: salt://makina-states/files/root/admin_scripts/nagios/check_ping
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 755
+    - watch:
+      - mc_proxy: icinga-pre-conf
+    - watch_in:
+      - mc_proxy: icinga-post-conf
+
 icinga-configuration-check-ssh-plugin:
   file.managed:
     - name: /root/admin_scripts/nagios/check_ssh
@@ -319,8 +328,13 @@ icinga-configuration-check-dig-plugins:
       - mc_proxy: icinga-post-conf
 
 # create commands
-# check_ssh already defined in /etc/nagios-plugins/config/ssh.cfg
-{#
+{{ icinga.configuration_add_object(type='command',
+                                   file='commands/ping.cfg',
+                                   attrs= {
+                                       'command_name': "check-host-alive",
+                                       'command_line': "/root/admin_scripts/nagios/check_ping -H '$HOSTADDRESS$' -w 5000,100% -c 5000,100% -p 1",
+                                   })
+}}
 {{ icinga.configuration_add_object(type='command',
                                    file='commands/ssh.cfg',
                                    attrs= {
@@ -328,7 +342,6 @@ icinga-configuration-check-dig-plugins:
                                        'command_line': "/root/admin_scripts/nagios/check_ssh -p '$ARG1$' '$HOSTADDRESS$'",
                                    })
 }}
-#}
 {{ icinga.configuration_add_object(type='command',
                                    file='commands/check_by_ssh_mountpoint.cfg',
                                    attrs= {
@@ -337,7 +350,6 @@ icinga-configuration-check-dig-plugins:
                                    })
 }}
 # check_http already defined in /etc/nagios-plugins/config/http.cfg
-{#
 {{ icinga.configuration_add_object(type='command',
                                    file='commands/http.cfg',
                                    attrs= {
@@ -345,7 +357,6 @@ icinga-configuration-check-dig-plugins:
                                        'command_line': "/root/admin_scripts/nagios/check_http '$HOSTADDRESS$'",
                                    })
 }}
-#}
 {{ icinga.configuration_add_object(type='command',
                                    file='commands/check_by_ssh_cpuload.cfg',
                                    attrs= {
@@ -373,14 +384,6 @@ icinga-configuration-check-dig-plugins:
                                    ssh_user='root',
                                    ssh_addr='127.127.0.1',
                                    ssh_port=22,
-                                   dns_rr={
-                                    'A': {
-                                        'example.net.': ["1.2.3.4"],
-                                    },
-                                    'PTR': {
-                                        '4.3.2.1.in-addr.arpa.': "example.net.",
-                                    },
-                                   }
                                   ) }}
 
 

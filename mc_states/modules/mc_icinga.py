@@ -268,8 +268,7 @@ def settings():
                 'icinga_cfg': {
                     'log_file': "/var/log/icinga/icinga.log",
                     'cfg_file': ["/etc/icinga/commands.cfg"],
-                    'cfg_dir': ["/etc/nagios-plugins/config"
-                               ,"/etc/icinga/objects/"
+                    'cfg_dir': ["/etc/icinga/objects/"
                                ,"/etc/icinga/modules"],
                     'object_cache_file': "/var/cache/icinga/objects.cache",
                     'precached_object_file': "/var/cache/icinga/objects.precache",
@@ -685,8 +684,6 @@ def add_auto_configuration_host_settings(hostname,
                                         check_mountpoints,
                                         check_http,
                                         check_cpuload,
-                                        dns_rr,
-                                        dns_use_attrs,
                                         check_dns,
                                         check_dns_reverse,
                                         **kwargs):
@@ -725,35 +722,29 @@ def add_auto_configuration_host_settings(hostname,
     kwargs.setdefault('cpuload_warning', 0.7)
     kwargs.setdefault('cpuload_critical', 0.9)
 
-    # if dns_use_attrs, add dns between host_name and address value (and reverse)
+    # add dns between host_name and address value (and reverse)
+    if not 'address' in attrs:
+        check_dns = False
+        check_dns_reverse = False
 
-    if dns_use_attrs:
-        if 'host_name' in attrs and 'address' in attrs:
-            if 'A' not in dns_rr:
-                dns_rr['A'] = {}
-            if 'PTR' not in dns_rr:
-                dns_rr['PTR'] = {}
+    if check_dns or check_dns_reverse:
 
-            if attrs['host_name'] not in dns_rr['A']:
-                dns_rr['A'][attrs['host_name']] = []
-            dns_rr['A'][attrs['host_name']].append(attrs['address'])
+        address_splitted = attrs['address'].split('.')
+        inaddr = '.'.join(address_splitted[::-1]) # tanslate a.b.c.d in d.c.b.a
+        inaddr = inaddr + '.in-addr.arpa.'
 
+        if 'host_name' in attrs:
+            dns_hostname = attrs['host_name']
+        else:
+            dns_hostname = hostname
 
-            address_splitted = attrs['address'].split('.')
-            inaddr = '.'.join(address_splitted[::-1])
-            inaddr = inaddr + '.in-addr.arpa.'
+        if not dns_hostname.endswith('.'):
+            dns_hostname = dns_hostname+'.'
 
-            if inaddr not in dns_rr['PTR']:
-                dns_rr['PTR'][inaddr] = attrs['host_name']
+        kwargs.setdefault('dns_hostname', dns_hostname)
+        kwargs.setdefault('dns_address', attrs['address'])
+        kwargs.setdefault('dns_inaddr', inaddr)
 
-    # only one answer is required for ptr records
-    for type in ['PTR']:
-        if type in dns_rr:
-            for query, answer in dns_rr[type].items():
-                if not isinstance(answer, list):
-                    dns_rr[type][query]=[answer]
-
-    kwargs.setdefault('dns_rr', dns_rr)
 
     kwargs.setdefault('check_dns', check_dns)
     kwargs.setdefault('check_dns_reverse', check_dns_reverse)
