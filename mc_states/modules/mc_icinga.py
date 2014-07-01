@@ -286,7 +286,7 @@ def settings():
                 'niceness': 5,
                 'objects': {
                     'directory': locs['conf_dir']+"/icinga/objects/salt_generated",
-                    'filescopy': ['check_ping', 'check_ssh', 'check_by_ssh', 'check_disk', 'check_swap', 'check_load', 'check_http', 'check_dig'],
+                    'filescopy': ['check_ping', 'check_ssh', 'check_by_ssh', 'check_disk', 'check_swap', 'check_load', 'check_procs', 'check_http', 'check_dig'],
                     'commands_static_values': {
                         'command_ping': {
                             'warning': check_ping_warning,
@@ -304,6 +304,11 @@ def settings():
                             'warning': 0.7,
                             'critical': 0.9,
                         },
+                        'command_check_by_ssh_process': {
+                            'metric': "PROCS",
+                            'warning': 200,
+                            'critical': 250,
+                        },
                     },
                     'objects_definitions': {
                         'command_ping': {
@@ -319,7 +324,7 @@ def settings():
                             'file': "commands/ssh.cfg",
                             'attrs': {
                                 'command_name': "check_ssh",
-                                'command_line': checks_directory+"/check_ssh -p '$ARG1$' '$HOSTADDRESS$'",
+                                'command_line': checks_directory+"/check_ssh -p '$ARG2$' '$ARG1$'",
                             },
                         },
                         'command_check_by_ssh_mountpoint': {
@@ -344,6 +349,22 @@ def settings():
                             'attrs': {
                                 'command_name': "check_by_ssh_cpuload",
                                 'command_line': checks_directory+"/check_by_ssh -q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$'  -C '"+checks_directory+"/check_load -w \"$ARG4$\" -c \"$ARG5$\"'",
+                            },
+                        },
+                        'command_check_by_ssh_process': {
+                            'type': "command",
+                            'file': "commands/check_by_ssh_process.cfg",
+                            'attrs': {
+                                'command_name': "check_by_ssh_process",
+                                'command_line': checks_directory+"/check_by_ssh -q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$'  -C '"+checks_directory+"/check_procs -m \"$ARG4$\" -w \"$ARG5$\" -c \"$ARG6$\"'",
+                            },
+                        },
+                        'command_check_by_ssh_cron': {
+                            'type': "command",
+                            'file': "commands/check_by_ssh_cron.cfg",
+                            'attrs': {
+                                'command_name': "check_by_ssh_cron",
+                                'command_line': checks_directory+"/check_by_ssh -q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$'  -C '"+checks_directory+"/check_cron",
                             },
                         },
                         'command_http': {
@@ -476,6 +497,13 @@ def settings():
                             'ssh_user': "root",
                             'ssh_addr': "127.254",
                             'ssh_port': 22,
+                            'commands_static_values': {
+                                'command_check_by_ssh_process': {
+                                    'metric': "PROCS",
+                                    'warning': 2,
+                                    'critical': 3,
+                                },
+                            },
                         },
                     }
                 },
@@ -897,8 +925,11 @@ def add_auto_configuration_host_settings(hostname,
                                         check_swap,
                                         check_http,
                                         check_cpuload,
+                                        check_procs,
+                                        check_cron,
                                         check_dns,
                                         check_dns_reverse,
+                                        commands_static_values,
                                         **kwargs):
     '''Settings for the add_auto_configuration_host macro'''
     icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
@@ -930,9 +961,9 @@ def add_auto_configuration_host_settings(hostname,
     kwargs.setdefault('mountpoints', mountpoints)
 
     kwargs.setdefault('check_swap', check_swap)
-
-    kwargs.setdefault('check_cpuload', check_mountpoints)
-
+    kwargs.setdefault('check_cpuload', check_cpuload)
+    kwargs.setdefault('check_procs', check_procs)
+    kwargs.setdefault('check_cron', check_cron)
     kwargs.setdefault('check_http', check_http)
 
     # add dns between host_name and address value (and reverse)
@@ -961,6 +992,20 @@ def add_auto_configuration_host_settings(hostname,
 
     kwargs.setdefault('check_dns', check_dns)
     kwargs.setdefault('check_dns_reverse', check_dns_reverse)
+
+
+    # we complete the "commands_static_values" with values in "data.objects.commands_static_values"
+    if not isinstance(commands_static_values, dict):
+        commands_static_values = {}
+    for name, command in icingaSettings['objects']['commands_static_values'].items():
+        if not name in commands_static_values:
+            commands_static_values[name] = icingaSettings['objects']['commands_static_values'][name]
+        else:
+            for key, value in command.items():
+                if key not in commands_static_values[name]:
+                    commands_static_values[name][key] = icingaSettings['objects']['commands_static_values'][name][key]
+
+    kwargs.setdefault('commands_static_values', commands_static_values)
 
     kwargs.setdefault('state_name_salt', hostname.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)

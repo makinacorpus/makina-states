@@ -231,7 +231,6 @@ icinga-mklivestatus-conf:
 
 {% endif %}
 
-
 # add objects configuration
 {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
 
@@ -250,6 +249,8 @@ icinga-configuration-check-{{check}}-plugin:
     - watch_in:
       - mc_proxy: icinga-post-conf
 {% endfor %}
+
+# TODO: we have to copy some of theses files in the monitored host.
 
 # clean the objects directory
 icinga-configuration-clean-objects-directory:
@@ -274,12 +275,6 @@ icinga-configuration-clean-objects-directory:
 {% for name, object in data.objects.autoconfigured_hosts_definitions.items() %}
     {{ icinga.configuration_add_auto_host(**object) }}
 {% endfor %}
-
-{#
-{{ icinga.configuration_edit_object(type='service', name='SSH', attr='host_name', value='hostname1') }}
-{{ icinga.configuration_edit_object(type='service', name='SSH', attr='host_name', value='hostname2') }}
-#}
-
 
 {%- import "makina-states/services/monitoring/icinga/macros.jinja" as icinga with context %}
 {#

@@ -80,7 +80,14 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 #     attrs
 #         a dictionary in which each key corresponds to a directive
 #     check_*
-#         a boolean which indicates that the service has to be checked
+#         a boolean to indicate that the service has to be checked
+#     ssh_user
+#         user which is used to perform check_by_ssh
+#     ssh_addr
+#         address used to do the ssh connection in order to perform check_by_ssh
+#         this address is not the hostname address becasue we can use a ssh gateway
+#     ssh_port
+#         ssh port
 #
 #}
 
@@ -101,8 +108,11 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      check_swap=True,
                                      check_http=True,
                                      check_cpuload=True,
+                                     check_procs=True,
+                                     check_cron=True,
                                      check_dns=True,
-                                     check_dns_reverse=True
+                                     check_dns_reverse=True,
+                                     commands_static_values={}
                                     ) %}
 {% set data = salt['mc_icinga.add_auto_configuration_host_settings'](hostname,
                                                                      attrs,
@@ -121,8 +131,11 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      check_swap,
                                                                      check_http,
                                                                      check_cpuload,
+                                                                     check_procs,
+                                                                     check_cron,
                                                                      check_dns,
                                                                      check_dns_reverse,
+                                                                     commands_static_values,
                                                                      **kwargs
                                                                     ) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
@@ -137,10 +150,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     {{ configuration_add_object(type='service',
                                 file='hosts/'+data.hostname+'/ssh.cfg',
                                 attrs= {
-                                    'service_description': "SSH port "+ssh_port|string,
+                                    'service_description': "SSH "+ssh_addr+" port "+ssh_port|string,
                                     'host_name': data.hostname,
                                     'use': "generic-service",
-                                    'check_command': "check_ssh!"+ssh_port|string,
+                                    'check_command': "check_ssh!"+ssh_addr+"!"+ssh_port|string,
                                 })
     }}
 {% endif %}
@@ -155,7 +168,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'service_description': "Free space on "+path,
                                     'host_name': data.hostname,
                                     'use': "generic-service",
-                                    'check_command': "check_by_ssh_mountpoint!"+ssh_user+"!"+ssh_addr+"!"+ssh_port|string+"!"+path+"!"+data.objects.commands_static_values.command_check_by_ssh_mountpoint.warning|string+"!"+data.objects.commands_static_values.command_check_by_ssh_mountpoint.critical|string,
+                                    'check_command': "check_by_ssh_mountpoint!"+ssh_user+"!"+ssh_addr+"!"+ssh_port|string+"!"+path+"!"+data.commands_static_values.command_check_by_ssh_mountpoint.warning|string+"!"+data.commands_static_values.command_check_by_ssh_mountpoint.critical|string,
                                 })
     }}
 {% endfor %}
@@ -169,7 +182,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'service_description': "Swap",
                                     'host_name': data.hostname,
                                     'use': "generic-service",
-                                    'check_command': "check_by_ssh_swap!"+ssh_user+"!"+ssh_addr+"!"+ssh_port|string+"!"+data.objects.commands_static_values.command_check_by_ssh_swap.warning|string+"%!"+data.objects.commands_static_values.command_check_by_ssh_swap.critical|string+"%",
+                                    'check_command': "check_by_ssh_swap!"+ssh_user+"!"+ssh_addr+"!"+ssh_port|string+"!"+data.commands_static_values.command_check_by_ssh_swap.warning|string+"%!"+data.commands_static_values.command_check_by_ssh_swap.critical|string+"%",
                                 })
     }}
 {% endif %}
@@ -184,7 +197,33 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'service_description': "Cpu load",
                                     'host_name': data.hostname,
                                     'use': "generic-service",
-                                    'check_command': "check_by_ssh_cpuload!"+ssh_user+"!"+ssh_addr+"!"+ssh_port|string+"!"+data.objects.commands_static_values.command_check_by_ssh_cpuload.warning|string+"!"+data.objects.commands_static_values.command_check_by_ssh_cpuload.critical|string,
+                                    'check_command': "check_by_ssh_cpuload!"+ssh_user+"!"+ssh_addr+"!"+ssh_port|string+"!"+data.commands_static_values.command_check_by_ssh_cpuload.warning|string+"!"+data.commands_static_values.command_check_by_ssh_cpuload.critical|string,
+                                })
+    }}
+{% endif %}
+
+# add nb procs services (check by ssh)
+{% if data.check_procs %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/procs.cfg',
+                                attrs= {
+                                    'service_description': "Process",
+                                    'host_name': data.hostname,
+                                    'use': "generic-service",
+                                    'check_command': "check_by_ssh_process!"+ssh_user+"!"+ssh_addr+"!"+ssh_port|string+"!"+data.commands_static_values.command_check_by_ssh_process.metric+"!"+data.commands_static_values.command_check_by_ssh_process.warning|string+"!"+data.commands_static_values.command_check_by_ssh_process.critical|string,
+                                })
+    }}
+{% endif %}
+
+# add cron service (check by ssh)
+{% if data.check_cron %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/cron.cfg',
+                                attrs= {
+                                    'service_description': "Cron",
+                                    'host_name': data.hostname,
+                                    'use': "generic-service",
+                                    'check_command': "check_by_ssh_process!"+ssh_user+"!"+ssh_addr+"!"+ssh_port|string,
                                 })
     }}
 {% endif %}

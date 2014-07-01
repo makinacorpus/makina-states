@@ -206,14 +206,46 @@ Now it is not possible. You can add an object only one time but you can complete
 In comparaison to the previous version:
 It is not possible to define several objects in one call. It is not possible to know if an attribute can accept several values or not.
 
-.. Trouver l
-.. determine which services 
+configuration_add_auto_host
++++++++++++++++++++++++++++
 
-.. Call the macros automatically
-.. -----------------------------
-.. We want call the macro autmaticaly in order to generate all the icinga configuration.
-.. 
-.. Perhaps with a runner on the icinga host. but we must gvie it all configuration of all hosts
-.. or
-.. with a returner. The minions return to salt-master the state of services and salt-master generates a sls for the icinga host.
-.. we can give all the localsettings to the host which runs icinga but it is not a good idea for security reasons.
+This macro is designed to add an host and associated services
+
+::
+
+    {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
+    {% set data = salt['mc_icinga.add_auto_configuration_host_settings'](hostname,
+                                                                         attrs,
+                                                                         ssh_user,
+                                                                         ssh_addr,
+                                                                         ssh_port,
+                                                                         check_ssh,
+                                                                         mountpoint_root,
+                                                                         mountpoint_var,
+                                                                         mountpoint_srv,
+                                                                         mountpoint_data,
+                                                                         mountpoint_home,
+                                                                         mountpoint_var_makina,
+                                                                         mountpoint_var_www,
+                                                                         check_mountpoints,
+                                                                         check_swap,
+                                                                         check_http,
+                                                                         check_cpuload,
+                                                                         check_procs,
+                                                                         check_dns,
+                                                                         check_dns_reverse,
+                                                                         **kwargs
+                                                                        ) %}
+
+with
+
+    :hostname: the hostname of the added host
+    :attr: the directive for which a value must be added
+    :attrs: a dictionary in which each key corresponds to a directive
+    :ssh_user: user to connect the host (it is used by check_by_ssh command)
+    :ssh_addr: address used to do the ssh connection in order to perform check_by_ssh. this address is not the hostname address becasue we can use a ssh gateway
+    :ssh_port: ssh_port
+    :check_*: a boolean to indicate that the service has to be checked
+
+The host is added in /etc/icinga/object/salt_generated/<hostname>/host.cfg
+The services are added in this directory too.
