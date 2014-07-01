@@ -253,6 +253,8 @@ def settings():
                           ]))
                     or ('socket' in module_ido2db_database))
 
+        checks_directory = "/root/admin_scripts/nagios"
+
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.monitoring.icinga', {
                 'package': ['icinga-core', 'icinga-common', 'icinga-doc'],
@@ -265,6 +267,78 @@ def settings():
                 'pidfile': "/var/run/icinga/icinga.pid",
                 'configuration_directory': locs['conf_dir']+"/icinga",
                 'niceness': 5,
+                'objects_directory': locs['conf_dir']+"/icinga/objects/salt_generated",
+                'objects': {
+                    'command_ping': {
+                        'type': "command",
+                        'file': "commands/ping.cfg",
+                        'attrs': {
+                            'command_name': "check_host_alive",
+                            'command_line': checks_directory+"/check_ping -H '$HOSTADDRESS$' -w 5000,100% -c 5000,100% -p 1",
+                        },
+                    },
+                    'command_ssh': {
+                        'type': "command",
+                        'file': "commands/ssh.cfg",
+                        'attrs': {
+                            'command_name': "check_ssh",
+                            'command_line': checks_directory+"/check_ssh -p '$ARG1$' '$HOSTADDRESS$'",
+                        },
+                    },
+                    'command_check_by_ssh_mountpoint': {
+                        'type': "command",
+                        'file': "commands/check_by_ssh_mountpoint.cfg",
+                        'attrs': {
+                            'command_name': "check_by_ssh_mountpoint",
+                            'command_line': checks_directory+"/nagios/check_by_ssh -q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$'  -C '/root/admin_scripts/nagios/check_disk \"$ARG4$\" -w \"$ARG5$\" -c \"$ARG6$\"'",
+                        },
+                    },
+                    'command_check_by_ssh_cpuload': {
+                        'type': "command",
+                        'file': "commands/check_by_ssh_cpuload.cfg",
+                        'attrs': {
+                            'command_name': "check_by_ssh_cpuload",
+                            'command_line': checks_directory+"/check_by_ssh -q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$'  -C '/root/admin_scripts/nagios/check_load -w \"$ARG4$\" -c \"$ARG5$\"'",
+                        },
+                    },
+                    'command_http': {
+                        'type': "command",
+                        'file': "commands/http.cfg",
+                        'attrs': {
+                            'command_name': "check_http",
+                            'command_line': checks_directory+"/check_http '$HOSTADDRESS$'",
+                        },
+                    },
+                    'command_dig': {
+                        'type': "command",
+                        'file': "commands/dig.cfg",
+                        'attrs': {
+                            'command_name': "check_dig",
+                            'command_line': checks_directory+"/check_dig -T '$ARG1$' -l '$ARG2$' -a '$ARG3$'",
+                        },
+                    },
+                    'generic-host': {
+                        'type': "host",
+                        'file': "templates/generic-host.cfg",
+                        'attrs': {
+                            'name': "generic-host",
+                            'notifications_enabled': 1,
+                            'event_handler_enabled': 1,
+                            'flap_detection_enabled': 1,
+                            'failure_prediction_enabled': 1,
+                            'process_perf_data': 1,
+                            'retain_status_information': 1,
+                            'retain_nonstatus_information': 1,
+                            'check_command': "check_host_alive",
+                            'max_check_attempts': 10,
+                            'notification_interval': 0,
+                            'notification_period': "24x7",
+                            'notification_options': "d,u,r",
+                            'contact_groups': "admins",
+                            'register': 0,
+                        },
+                    },
+                },
                 'icinga_cfg': {
                     'log_file': "/var/log/icinga/icinga.log",
                     'cfg_file': ["/etc/icinga/commands.cfg"],
@@ -620,7 +694,7 @@ def settings():
                     },
                     'nagios-plugins': {
                         'package': ['nagios-plugins'],
-                        'enabled': True,
+                        'enabled': False,
                     },
                 },
 
@@ -641,7 +715,6 @@ def add_configuration_object_settings(type, file, attrs, **kwargs):
     kwargs.setdefault('type', type)
     kwargs.setdefault('file', file)
     kwargs.setdefault('attrs', attrs)
-    kwargs.setdefault('objects_directory', icingaSettings['configuration_directory']+'/objects/salt_generated')
     kwargs.setdefault('state_name_salt', file.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
     # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
@@ -659,7 +732,6 @@ def edit_configuration_object_settings(type, file, attr, value, **kwargs):
     kwargs.setdefault('file', file)
     kwargs.setdefault('attr', attr)
     kwargs.setdefault('value', value)
-    kwargs.setdefault('objects_directory', icingaSettings['configuration_directory']+'/objects/salt_generated')
     kwargs.setdefault('state_name_salt', file.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
     # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
@@ -749,7 +821,6 @@ def add_auto_configuration_host_settings(hostname,
     kwargs.setdefault('check_dns', check_dns)
     kwargs.setdefault('check_dns_reverse', check_dns_reverse)
 
-    kwargs.setdefault('objects_directory', icingaSettings['configuration_directory']+'/objects/salt_generated')
     kwargs.setdefault('state_name_salt', hostname.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
     # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !

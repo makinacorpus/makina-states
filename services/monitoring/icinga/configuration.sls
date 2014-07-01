@@ -236,10 +236,11 @@ icinga-mklivestatus-conf:
 {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
 
 # copy the checks
-icinga-configuration-check-ping-plugin:
+{% for check in ['check_ping', 'check_ssh', 'check_by_ssh', 'check_disk', 'check_load', 'check_http', 'check_dig'] %}
+icinga-configuration-check-{{check}}-plugin:
   file.managed:
-    - name: /root/admin_scripts/nagios/check_ping
-    - source: salt://makina-states/files/root/admin_scripts/nagios/check_ping
+    - name: /root/admin_scripts/nagios/{{check}}
+    - source: salt://makina-states/files/root/admin_scripts/nagios/{{check}}
     - makedirs: true
     - user: root
     - group: root
@@ -248,130 +249,15 @@ icinga-configuration-check-ping-plugin:
       - mc_proxy: icinga-pre-conf
     - watch_in:
       - mc_proxy: icinga-post-conf
+{% endfor %}
 
-icinga-configuration-check-ssh-plugin:
-  file.managed:
-    - name: /root/admin_scripts/nagios/check_ssh
-    - source: salt://makina-states/files/root/admin_scripts/nagios/check_ssh
-    - makedirs: true
-    - user: root
-    - group: root
-    - mode: 755
-    - watch:
-      - mc_proxy: icinga-pre-conf
-    - watch_in:
-      - mc_proxy: icinga-post-conf
-
-icinga-configuration-check-by-ssh-plugin:
-  file.managed:
-    - name: /root/admin_scripts/nagios/check_by_ssh
-    - source: salt://makina-states/files/root/admin_scripts/nagios/check_by_ssh
-    - makedirs: true
-    - user: root
-    - group: root
-    - mode: 755
-    - watch:
-      - mc_proxy: icinga-pre-conf
-    - watch_in:
-      - mc_proxy: icinga-post-conf
-
-icinga-configuration-check-disk-plugin:
-  file.managed:
-    - name: /root/admin_scripts/nagios/check_disk
-    - source: salt://makina-states/files/root/admin_scripts/nagios/check_disk
-    - makedirs: true
-    - user: root
-    - group: root
-    - mode: 755
-    - watch:
-      - mc_proxy: icinga-pre-conf
-    - watch_in:
-      - mc_proxy: icinga-post-conf
-
-icinga-configuration-check-http-plugins:
-  file.managed:
-    - name: /root/admin_scripts/nagios/check_http
-    - source: salt://makina-states/files/root/admin_scripts/nagios/check_http
-    - makedirs: true
-    - user: root
-    - group: root
-    - mode: 755
-    - watch:
-      - mc_proxy: icinga-pre-conf
-    - watch_in:
-      - mc_proxy: icinga-post-conf
-
-icinga-configuration-check-load-plugins:
-  file.managed:
-    - name: /root/admin_scripts/nagios/check_load
-    - source: salt://makina-states/files/root/admin_scripts/nagios/check_load
-    - makedirs: true
-    - user: root
-    - group: root
-    - mode: 755
-    - watch:
-      - mc_proxy: icinga-pre-conf
-    - watch_in:
-      - mc_proxy: icinga-post-conf
-
-icinga-configuration-check-dig-plugins:
-  file.managed:
-    - name: /root/admin_scripts/nagios/check_dig
-    - source: salt://makina-states/files/root/admin_scripts/nagios/check_dig
-    - makedirs: true
-    - user: root
-    - group: root
-    - mode: 755
-    - watch:
-      - mc_proxy: icinga-pre-conf
-    - watch_in:
-      - mc_proxy: icinga-post-conf
-
-# create commands
-{{ icinga.configuration_add_object(type='command',
-                                   file='commands/ping.cfg',
-                                   attrs= {
-                                       'command_name': "check-host-alive",
-                                       'command_line': "/root/admin_scripts/nagios/check_ping -H '$HOSTADDRESS$' -w 5000,100% -c 5000,100% -p 1",
-                                   })
-}}
-{{ icinga.configuration_add_object(type='command',
-                                   file='commands/ssh.cfg',
-                                   attrs= {
-                                       'command_name': "check_ssh",
-                                       'command_line': "/root/admin_scripts/nagios/check_ssh -p '$ARG1$' '$HOSTADDRESS$'",
-                                   })
-}}
-{{ icinga.configuration_add_object(type='command',
-                                   file='commands/check_by_ssh_mountpoint.cfg',
-                                   attrs= {
-                                       'command_name': "check_by_ssh_mountpoint",
-                                       'command_line': "/root/admin_scripts/nagios/check_by_ssh -q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$'  -C '/root/admin_scripts/nagios/check_disk \"$ARG4$\" -w \"$ARG5$\" -c \"$ARG6$\"'",
-                                   })
-}}
-# check_http already defined in /etc/nagios-plugins/config/http.cfg
-{{ icinga.configuration_add_object(type='command',
-                                   file='commands/http.cfg',
-                                   attrs= {
-                                       'command_name': "check_http",
-                                       'command_line': "/root/admin_scripts/nagios/check_http '$HOSTADDRESS$'",
-                                   })
-}}
-{{ icinga.configuration_add_object(type='command',
-                                   file='commands/check_by_ssh_cpuload.cfg',
-                                   attrs= {
-                                       'command_name': "check_by_ssh_cpuload",
-                                       'command_line': "/root/admin_scripts/nagios/check_by_ssh -q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$'  -C '/root/admin_scripts/nagios/check_load -w \"$ARG4$\" -c \"$ARG5$\"'",
-                                   })
-}}
-{{ icinga.configuration_add_object(type='command',
-                                   file='commands/check_dig.cfg',
-                                   attrs= {
-                                       'command_name': "check_dig",
-                                       'command_line': "/root/admin_scripts/nagios/check_dig -T '$ARG1$' -l '$ARG2$' -a '$ARG3$'",
-                                   })
-}}
-
+# add generic host and generic service
+{% for name, object in data.objects.items() %}
+    {{ icinga.configuration_add_object(type=object.type,
+                                       file=object.file,
+                                       attrs=object.attrs)
+    }}
+{% endfor %}
 
 
 {{ icinga.configuration_add_auto_host(hostname='hostname1',
