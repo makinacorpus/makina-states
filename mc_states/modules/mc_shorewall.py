@@ -142,6 +142,8 @@ def settings():
                 'default_interfaces': OrderedDict(),
                 'default_policies': [],
                 'default_rules': [],
+                'banned_networks': [],
+                'trusted_networks': [],
                 'internal_zones': [],
                 'default_zones': {'net': OrderedDict(),
                                   'fw': {'type': 'firewall'}},
@@ -328,9 +330,24 @@ def settings():
             default_if = 'eth0'
         else:
             default_if = nifaces[0]
-
         if default_route:
             default_if = default_route['iface']
+        try:
+            default_net = '.'.join(
+                [a for a in gifaces
+                 if a[0] == default_if][
+                     0][1][0].split('.')[:3] + ['0'])
+            parts = default_net.split('.')
+            parts.reverse()
+            default_netmask = 32
+            for part in parts:
+                if part == '0':
+                    default_netmask -= 8
+                else:
+                    break
+        except Exception:
+            default_net = None
+            default_netmask = 32
         if default_lxc_docker_mode == 'masq':
             for z, ifaces in data['interfaces'].items():
                 if 'lxc' in z or 'dck' in z:
@@ -412,6 +429,17 @@ def settings():
                 data['policies'].insert(0, rdata)
 
         if not data['no_default_rules']:
+            if nodetypes_registry['is']['lxccontainer']:
+                if not data['trusted_networks']:
+                    data['trusted_networks'].append('net:{0}/{1}'.format(
+                        default_net, default_netmask))
+            for network in data['banned_networks']:
+                data['default_rules'].insert(
+                    0, {'action': 'DROP!', 'source': network, 'dest': 'fw'})
+            for network in data['trusted_networks']:
+                data['default_rules'].insert(
+                    0, {'action': 'ACCEPT!', 'source': network, 'dest': 'fw'})
+            data['default_rules'].insert(0, {'comment': 'inter lxc traffic'})
             if sw_ver >= '4.5':
                 data['default_rules'].append({'comment': 'invalid traffic'})
                 if data['no_invalid']:
