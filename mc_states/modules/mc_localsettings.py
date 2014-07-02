@@ -126,6 +126,8 @@ def registry():
             'nodejs': {'active': False},
             'npm': {'active': has_nodejs},
             'pkgs.mgr': {'active': True},
+            'casperjs': {'active': False},
+            'phantomjs': {'active': False},
             'python': {'active': False},
             'pkgs.basepackages': {'active': True},
             'repository_dotdeb': {'active': False},

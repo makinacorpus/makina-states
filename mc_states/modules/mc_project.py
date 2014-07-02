@@ -24,6 +24,9 @@ APIS = {
     'rotate_archives': {
         '2': 'mc_project_2.rotate_archives',
     },
+    'link': {
+        '2': 'mc_project_2.link',
+    },
     'unlink': {
         '2': 'mc_project_2.unlink',
     },
@@ -110,6 +113,10 @@ def unlink(name, *args, **kwargs):
 
 def install(name, *args, **kwargs):
     return _api_switcher('install', name, *args, **kwargs)
+
+
+def link(name, *args, **kwargs):
+    return _api_switcher('link', name, *args, **kwargs)
 
 
 def run_task(name, *args, **kwargs):

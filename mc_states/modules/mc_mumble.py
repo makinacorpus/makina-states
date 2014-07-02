@@ -38,8 +38,9 @@ def settings():
         pillar = __pillar__
         local_conf = __salt__['mc_macros.get_local_registry'](
             'mumble', registry_format='pack')
-        supassword = local_conf.get('supassword', secure_password(32))
-        htpassword = local_conf.get('htpassword', secure_password(32))
+        password = local_conf.setdefault('password', secure_password(8))
+        supassword = local_conf.setdefault('supassword', secure_password(32))
+        htpassword = local_conf.setdefault('htpassword', secure_password(32))
         locations = __salt__['mc_locations.settings']()
         fqdn = grains['id']
         mumbleData = __salt__['mc_utils.defaults'](
@@ -52,7 +53,7 @@ def settings():
                 'murmur': {
                     'supassword': htpassword,
                     'uname': 'mumble-server',
-                    'password': '',
+                    'password': password,
                     'sendversion': 'True',
                     'allowhtml': 'True',
                     'port': 64738,

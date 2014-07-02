@@ -589,6 +589,8 @@ def get_configuration(name, *args, **kwargs):
             project local git dir
         pillar_git_root
             pillar local git dir
+        nodata
+            do not compute data
         data
             The final mapping where all defaults will be mangled.
             If you want to add extra parameters in the configuration, you d
@@ -619,6 +621,7 @@ def get_configuration(name, *args, **kwargs):
 
     '''
     cfg = _get_contextual_cached_project(name)
+    nodata = kwargs.pop('nodata', False)
     if not (
         cfg.get('force_reload', True)
         or kwargs.get('force_reload', False)
@@ -696,11 +699,14 @@ def get_configuration(name, *args, **kwargs):
         cfg['keep_archives'] = int(cfg['keep_archives'])
     except (TypeError, ValueError, KeyError):
         cfg['keep_archives'] = KEEP_ARCHIVES
-    cfg['data'] = _defaultsConfiguration(cfg,
-                                         cfg['default_env'],
-                                         defaultsConfiguration=cfg['defaults'],
-                                         env_defaults=cfg['env_defaults'],
-                                         os_defaults=cfg['os_defaults'])
+    if nodata:
+        cfg['data'] = {}
+    else:
+        cfg['data'] = _defaultsConfiguration(cfg,
+                                             cfg['default_env'],
+                                             defaultsConfiguration=cfg['defaults'],
+                                             env_defaults=cfg['env_defaults'],
+                                             os_defaults=cfg['os_defaults'])
     if cfg['data'].get('sls_default_pillar', {}):
         cfg['sls_default_pillar'] = cfg['data'].pop('sls_default_pillar')
     # some vars need to be setted just a that time
@@ -747,7 +753,8 @@ def get_configuration(name, *args, **kwargs):
     cfg['installer_path'] = installer_path
     # put the result inside the context
     cfg['force_reload'] = False
-    set_project(cfg)
+    if not nodata:
+        set_project(cfg)
     return cfg
 
 
@@ -1750,12 +1757,17 @@ def fixperms(name, *args, **kwargs):
 
 
 def link_pillar(name, *args, **kwargs):
-    cfg = get_configuration(name, *args, **kwargs)
+    cfg = get_configuration(name, nodata=True, *args, **kwargs)
     ret = _get_ret(name, *args, **kwargs)
     salt_settings = __salt__['mc_salt.settings']()
     pillar_root = os.path.join(salt_settings['pillarRoot'])
     pillarf = os.path.join(pillar_root, 'top.sls')
     pillar_top = 'makina-projects.{name}'.format(**cfg)
+    if not os.path.exists(cfg['wired_pillar_root']):
+        os.symlink(cfg['pillar_root'], cfg['wired_pillar_root'])
+        _append_comment(
+            ret, body=indent(
+                'Added  pillar link: {0}'.format(ret['name'])))
     with open(pillarf) as fpillarf:
         pillars = fpillarf.read()
         if pillar_top not in pillars:
@@ -1772,8 +1784,8 @@ def link_pillar(name, *args, **kwargs):
     return ret
 
 
-def unlink_pillar(name, ret=None, *args, **kwargs):
-    cfg = get_configuration(name, *args, **kwargs)
+def unlink_pillar(name, *args, **kwargs):
+    cfg = get_configuration(name, nodata=True,  *args, **kwargs)
     ret = _get_ret(name, *args, **kwargs)
     salt_settings = __salt__['mc_salt.settings']()
     pillar_root = os.path.join(salt_settings['pillarRoot'])
@@ -1795,17 +1807,60 @@ def unlink_pillar(name, ret=None, *args, **kwargs):
                     'Cleaned pillar top: {0}'.format(ret['name'])))
     if os.path.exists(cfg['wired_pillar_root']):
         remove_path(cfg['wired_pillar_root'])
+        _append_comment(
+            ret, body=indent(
+                'Removed pillar link: {0}'.format(ret['name'])))
+    return ret
+
+
+def link_salt(name, *args, **kwargs):
+    cfg = get_configuration(name, nodata=True, *args, **kwargs)
+    ret = _get_ret(name, *args, **kwargs)
+    if not  os.path.exists(cfg['wired_salt_root']):
+        os.symlink(cfg['salt_root'], cfg['wired_salt_root'])
+        _append_comment(
+            ret, body=indent(
+                'Linked {0} into salt root'.format(ret['name'])))
+    return ret
+
+
+def unlink_salt(name, *args, **kwargs):
+    cfg = get_configuration(name, nodata=True, *args, **kwargs)
+    ret = _get_ret(name, *args, **kwargs)
+    if os.path.exists(cfg['wired_salt_root']):
+        remove_path(cfg['wired_salt_root'])
+        _append_comment(
+            ret, body=indent(
+                'Cleaned salt root from {0}'.format(ret['name'])))
     return ret
 
 
 def link(name, *args, **kwargs):
-    ret = link_pillar(name, *args, **kwargs)
-    return ret
+    '''
+    Add the link wired in salt folders (pillar & salt)
+
+    name
+        list of project(s) separated by commas
+
+    '''
+    ret = _get_ret(name, *args, **kwargs)
+    for nm in name.split(','):
+        link_pillar(nm, ret=ret, *args, **kwargs)
+        link_salt(nm, ret=ret, *args, **kwargs)
+    return msplitstrip(ret)
 
 
 def unlink(name, *args, **kwargs):
-    ret = unlink_pillar(name, *args, **kwargs)
-    return ret
+    '''
+    Remove the link wired in salt folders (pillar & salt)
+    name
+        list of project(s) separated by commas
+    '''
+    ret = _get_ret(name, *args, **kwargs)
+    for nm in name.split(','):
+        unlink_pillar(nm, ret=ret, *args, **kwargs)
+        unlink_salt(nm, ret=ret, *args, **kwargs)
+    return msplitstrip(ret)
 
 
 def rollback(name, *args, **kwargs):
