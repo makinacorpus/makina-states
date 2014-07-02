@@ -100,6 +100,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      check_dns=True,
                                      check_dns_reverse=True,
                                      check_http=True,
+                                     check_html=True,
+                                     html={},
                                      check_ntp_peer=False,
                                      check_ntp_time=True,
                                      mountpoint_root=True,
@@ -138,6 +140,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      check_dns,
                                                                      check_dns_reverse,
                                                                      check_http,
+                                                                     check_html,
+                                                                     html,
                                                                      check_ntp_peer,
                                                                      check_ntp_time,
                                                                      mountpoint_root,
@@ -245,7 +249,26 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% endif %}
 
 # add html service
-
+{% if data.check_html %}
+    {% for name, check in data.html.items() %}
+        {{ configuration_add_object(type='service',
+                                    file='hosts/'+data.hostname+'/html_'+name+'.cfg',
+                                    attrs= {
+                                        'service_description': "HTML for "+check.url+" on vhost "+check.hostname,
+                                        'host_name': data.hostname,
+                                        'use': "generic-service",
+                                        'check_command': "check_html!"
+                                                         +data.services_check_command_args.html.port|string+"!"
+                                                         +check.hostname+"!"
+                                                         +data.services_check_command_args.html.ip_address+"!"
+                                                         +data.services_check_command_args.html.timeout|string+"!"
+                                                         +check.url+"!"
+                                                         +check.auth+"!"
+                                                         +check.expected_strings,
+                                    })
+        }}
+    {% endfor %}
+{% endif %}
 
 # add ntp peer service
 {% if data.check_ntp_peer %}

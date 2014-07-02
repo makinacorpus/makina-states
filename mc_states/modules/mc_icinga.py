@@ -361,6 +361,21 @@ def settings():
                                                 "-t '$ARG4$' ",
                             },
                         },
+                        'command_html': {
+                            'type': "command",
+                            'file': "commands/html.cfg",
+                            'attrs': {
+                                'command_name': "check_html",
+                                'command_line': checks_directory+"/check_http "\
+                                                "-p '$ARG1$' "\
+                                                "-H '$ARG2$' "\
+                                                "-I '$ARG3$' "\
+                                                "-t '$ARG4$' "\
+                                                "-u '$ARG5$' "\
+                                                "-a '$ARG6$' "\
+                                                " $ARG7$ ",
+                            },
+                        },
                         'command_ntp_peer': {
                             'type': "command",
                             'file': "commands/ntp_peer.cfg",
@@ -703,6 +718,14 @@ def settings():
                             'check_3ware_raid': True,
                             'check_cciss': True,
                             'check_ntp_peer': True,
+                            'html': {
+                                'url1': {
+                                    'hostname': "icinga-cgi.localhost",
+                                    'url': "/",
+                                    'auth': "icingaadmin:icingaadmin",
+                                    'expected_strings': ['str1', 'str    2']
+                                },
+                            },
                         },
                         'hostname2': {
                             'hostname': "hostname2",
@@ -1133,6 +1156,8 @@ def add_auto_configuration_host_settings(hostname,
                                         check_dns,
                                         check_dns_reverse,
                                         check_http,
+                                        check_html,
+                                        html,
                                         check_ntp_peer,
                                         check_ntp_time,
                                         mountpoint_root,
@@ -1206,6 +1231,15 @@ def add_auto_configuration_host_settings(hostname,
     kwargs.setdefault('check_dns', check_dns)
     kwargs.setdefault('check_dns_reverse', check_dns_reverse)
     kwargs.setdefault('check_http', check_http)
+
+    # transform the list in string with "-s" before each element
+    for name, check in html.items():
+        if isinstance(check['expected_strings'], list):
+            expected_strings = check['expected_strings']
+            html[name]['expected_strings'] = '-s "'+'" -s "'.join(expected_strings)+'"'
+
+    kwargs.setdefault('html', html)
+    kwargs.setdefault('check_html', check_html)
     kwargs.setdefault('check_ntp_peer', check_ntp_peer)
     kwargs.setdefault('check_ntp_time', check_ntp_time)
 
@@ -1271,6 +1305,13 @@ def add_auto_configuration_host_settings(hostname,
            'hostname': hostname,
            'ip_address': attrs['address'],
            'timeout': 10,
+       },
+       'html': {
+           'port': 80,
+           'ip_address': attrs['address'],
+           'warning': 1,
+           'critical': 2,
+           'timeout': 8,
        },
        'ntp_peer': {
            'port': 123,
