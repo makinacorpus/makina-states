@@ -271,7 +271,7 @@ def settings():
         checks_directory = "/root/admin_scripts/nagios"
         check_ping_warning = "5000,100%"
         check_ping_critical = check_ping_warning
-        check_by_ssh_params="-q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$' "
+        check_by_ssh_params="-q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$' -t '$ARG4$' "
 
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.monitoring.icinga', {
@@ -312,63 +312,6 @@ def settings():
                                   'check_haproxy_stats.pl',
                                   'check_postfixqueue.sh',
                                   'check_postfix_mailqueue'],
-                    'commands_static_values': {
-                        'ping': {
-                            'warning': check_ping_warning,
-                            'critical': check_ping_critical,
-                        },
-                        'check_by_ssh_ntp_time': {
-                            'host': "pool.ntp.org",
-                        },
-                        'check_by_ssh_mountpoint': {
-                            'warning': 10,
-                            'critical': 5,
-                        },
-                        'check_by_ssh_swap': {
-                            'warning': 10,
-                            'critical': 5,
-                        },
-                        'check_by_ssh_cpuload': {
-                            'warning': 0.7,
-                            'critical': 0.9,
-                        },
-                        'check_by_ssh_process': {
-                            'metric': "PROCS",
-                            'warning': 200,
-                            'critical': 250,
-                        },
-                        'check_by_ssh_burp_backup_age': {
-                        # the ssh params are different for burp because it is the ssh param of the backup server
-                            'ssh_user': 'root',
-                            'ssh_addr': '127.3',
-                            'ssh_port': 22,
-                            'directory': "/backups",
-                            'warning': 1560,
-                            'critical': 1800,
-                        },
-                        'check_by_ssh_rdiff': {
-                        # the ssh params are different for burp because it is the ssh param of the backup server
-                            'ssh_user': 'root',
-                            'ssh_addr': '127.3',
-                            'ssh_port': 22,
-                            'repository': "/backups/$HOSTADDRESS$/",
-                            'transferred_warning': 1,
-                            'cron_period': 1,
-                            'warning': 24,
-                            'critical': 48,
-                        },
-                        'check_by_ssh_ddos': {
-                            'warning': 3,
-                            'critical': 4,
-                        },
-                        'check_by_ssh_haproxy_stats': {
-                            'socket': "/var/run/haproxy.sock",
-                        },
-                        'check_by_ssh_postfixqueue': {
-                            'warning': 50,
-                            'critical': 100,
-                        }
-                    },
                     'objects_definitions': {
                         'command_ping': {
                             'type': "command",
@@ -388,8 +331,9 @@ def settings():
                             'attrs': {
                                 'command_name': "check_ssh",
                                 'command_line': checks_directory+"/check_ssh "\
+                                                "-H '$ARG1$' "\
                                                 "-p '$ARG2$' "\
-                                                "'$ARG1$'",
+                                                "-t '$ARG3$' ",
                             },
                         },
                         'command_dig': {
@@ -398,9 +342,11 @@ def settings():
                             'attrs': {
                                 'command_name': "check_dig",
                                 'command_line': checks_directory+"/check_dig "\
-                                                "-T '$ARG1$' "\
+                                                "-p '$ARG1$' "\
                                                 "-l '$ARG2$' "\
-                                                "-a '$ARG3$'",
+                                                "-T '$ARG3$' "\
+                                                "-a '$ARG4$' "\
+                                                "-t '$ARG5$' ",
                             },
                         },
                         'command_http': {
@@ -408,7 +354,11 @@ def settings():
                             'file': "commands/http.cfg",
                             'attrs': {
                                 'command_name': "check_http",
-                                'command_line': checks_directory+"/check_http '$HOSTADDRESS$'",
+                                'command_line': checks_directory+"/check_http "\
+                                                "-p '$ARG1$' "\
+                                                "-H '$ARG2$' "\
+                                                "-I '$ARG3$' "\
+                                                "-t '$ARG4$' ",
                             },
                         },
                         'command_ntp_peer': {
@@ -416,7 +366,10 @@ def settings():
                             'file': "commands/ntp_peer.cfg",
                             'attrs': {
                                 'command_name': "check_ntp_peer",
-                                'command_line': checks_directory+"/check_ntp_peer -H '$HOSTADDRESS$'",
+                                'command_line': checks_directory+"/check_ntp_peer"\
+                                                "-p '$ARG1$' "\
+                                                "-H '$ARG2$' "\
+                                                "-t '$ARG3$' ",
                             },
                         },
                         'command_check_by_ssh_ntp_time': {
@@ -427,7 +380,9 @@ def settings():
                                 'command_line': checks_directory+"/check_by_ssh "\
                                                 +check_by_ssh_params+\
                                                 "-C '"+checks_directory+"/check_ntp_time "\
-                                                    "-H \"$ARG4$\" '"
+                                                    "-p \"$ARG5$\" "\
+                                                    "-H \"$ARG6$\" "\
+                                                    "-t \"$ARG7$\" '",
                             },
                         },
                         'command_check_by_ssh_mountpoint': {
@@ -437,9 +392,9 @@ def settings():
                                 'command_name': "check_by_ssh_mountpoint",
                                 'command_line': checks_directory+"/check_by_ssh "\
                                                 +check_by_ssh_params+\
-                                                "-C '"+checks_directory+"/check_disk \"$ARG4$\" "\
-                                                    "-w \"$ARG5$\" "\
-                                                    "-c \"$ARG6$\"'",
+                                                "-C '"+checks_directory+"/check_disk \"$ARG5$\" "\
+                                                    "-w \"$ARG6$\" "\
+                                                    "-c \"$ARG7$\"'",
                             },
                         },
                         'command_check_by_ssh_raid': {
@@ -510,8 +465,8 @@ def settings():
                                 'command_line': checks_directory+"/check_by_ssh "\
                                                 +check_by_ssh_params+\
                                                 "-C '"+checks_directory+"/check_swap "\
-                                                    "-w \"$ARG4$\" "\
-                                                    "-c \"$ARG5$\"'",
+                                                    "-w \"$ARG5$\" "\
+                                                    "-c \"$ARG6$\"'",
                             },
                         },
                         'command_check_by_ssh_cpuload': {
@@ -522,8 +477,8 @@ def settings():
                                 'command_line': checks_directory+"/check_by_ssh "\
                                                 +check_by_ssh_params+\
                                                 "-C '"+checks_directory+"/check_load "\
-                                                    "-w \"$ARG4$\" "\
-                                                    "-c \"$ARG5$\"'",
+                                                    "-w \"$ARG5$\" "\
+                                                    "-c \"$ARG6$\"'",
                             },
                         },
                         'command_check_by_ssh_process': {
@@ -534,9 +489,9 @@ def settings():
                                 'command_line': checks_directory+"/check_by_ssh "\
                                                 +check_by_ssh_params+\
                                                 "-C '"+checks_directory+"/check_procs "\
-                                                    "-m \"$ARG4$\" "\
-                                                    "-w \"$ARG5$\" "\
-                                                    "-c \"$ARG6$\"'",
+                                                    "-m \"$ARG5$\" "\
+                                                    "-w \"$ARG6$\" "\
+                                                    "-c \"$ARG7$\"'",
                             },
                         },
                         'command_check_by_ssh_cron': {
@@ -556,8 +511,8 @@ def settings():
                                 'command_name': "check_by_ssh_debian_packages",
                                 'command_line': checks_directory+"/check_by_ssh "\
                                                 +check_by_ssh_params+\
-                                                "-t 30 "\
-                                                "-C '"+checks_directory+"/check_debian_packages' ",
+                                                "-C '"+checks_directory+"/check_debian_packages "\
+                                                    "-t \"$ARG5$\"'",
                             },
                         },
                         'command_check_by_ssh_burp_backup_age': {
@@ -568,10 +523,10 @@ def settings():
                                 'command_line': checks_directory+"/check_by_ssh "\
                                                 +check_by_ssh_params+\
                                                 "-C '"+checks_directory+"/check_burp_backup_age.py "\
-                                                    "-H \"$HOSTADDRESS$\" "\
-                                                    "-d \"$ARG4$\" "\
-                                                    "-w \"$ARG5$\" "\
-                                                    "-c \"$ARG6$\"'",
+                                                    "-H \"$ARG5$\" "\
+                                                    "-d \"$ARG6$\" "\
+                                                    "-w \"$ARG7$\" "\
+                                                    "-c \"$ARG8$\"'",
                             },
                         },
                         'command_check_by_ssh_rdiff': {
@@ -582,11 +537,11 @@ def settings():
                                 'command_line': checks_directory+"/check_by_ssh "\
                                                 +check_by_ssh_params+\
                                                 "-C '"+checks_directory+"/check_rdiff "\
-                                                    "-r \"$ARG4$\" "\
-                                                    "-l \"$ARG5$\" "\
-                                                    "-p \"$ARG6$\" "\
-                                                    "-w \"$ARG7$\" "\
-                                                    "-c \"$ARG8$\" '",
+                                                    "-r \"$ARG5$\" "\
+                                                    "-l \"$ARG6$\" "\
+                                                    "-p \"$ARG7$\" "\
+                                                    "-w \"$ARG8$\" "\
+                                                    "-c \"$ARG9$\" '",
                             },
                         },
                         'command_check_by_ssh_ddos': {
@@ -597,8 +552,8 @@ def settings():
                                 'command_line': checks_directory+"/check_by_ssh "\
                                                 +check_by_ssh_params+\
                                                 "-C '"+checks_directory+"/check_ddos.pl "\
-                                                    "-w \"$ARG4$\" "\
-                                                    "-c \"$ARG5$\"'",
+                                                    "-w \"$ARG5$\" "\
+                                                    "-c \"$ARG6$\"'",
                             },
                         },
                         'command_check_by_ssh_haproxy_stats': {
@@ -609,7 +564,7 @@ def settings():
                                 'command_line': checks_directory+"/check_by_ssh "\
                                                 +check_by_ssh_params+\
                                                 "-C '"+checks_directory+"/check_haproxy_stats.pl "\
-                                                    "-s \"$ARG4$\" '"
+                                                    "-s \"$ARG5$\" '"
                             },
                         },
                         'command_check_by_ssh_postfixqueue': {
@@ -620,8 +575,8 @@ def settings():
                                 'command_line': checks_directory+"/check_by_ssh "\
                                                 +check_by_ssh_params+\
                                                 "-C '"+checks_directory+"/check_postfixqueue.sh "\
-                                                    "-w \"$ARG4$\" "\
-                                                    "-c \"$ARG5$\" '"
+                                                    "-w \"$ARG5$\" "\
+                                                    "-c \"$ARG6$\" '"
                             },
                         },
                         'command_check_by_ssh_postfix_mailqueue': {
@@ -747,6 +702,7 @@ def settings():
                             'check_haproxy_stats': True,
                             'check_3ware_raid': True,
                             'check_cciss': True,
+                            'check_ntp_peer': True,
                         },
                         'hostname2': {
                             'hostname': "hostname2",
@@ -759,10 +715,9 @@ def settings():
                             'ssh_user': "root",
                             'ssh_addr': "127.254",
                             'ssh_port': 22,
-                            'commands_static_values': {
-                                'check_by_ssh_process': {
-                                    'warning': 2,
-                                    'critical': 3,
+                            'services_check_command_args': {
+                                'ssh': {
+                                    'hostname': '127.127',
                                 },
                             },
                         },
@@ -1205,7 +1160,7 @@ def add_auto_configuration_host_settings(hostname,
                                         check_haproxy_stats,
                                         check_postfixqueue,
                                         check_postfix_mailqueue,
-                                        commands_static_values,
+                                        services_check_command_args,
                                         **kwargs):
     '''Settings for the add_auto_configuration_host macro'''
     icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
@@ -1217,9 +1172,13 @@ def add_auto_configuration_host_settings(hostname,
     kwargs.setdefault('ssh_user', ssh_user)
     kwargs.setdefault('ssh_addr', ssh_addr)
     kwargs.setdefault('ssh_port', ssh_port)
+    kwargs.setdefault('ssh_timeout', '60')
     kwargs.setdefault('check_ssh', check_ssh)
 
     # add dns between host_name and address value (and reverse)
+    dns_hostname=''
+    dns_address=''
+    dns_inaddr=''
     if not 'address' in attrs:
         check_dns = False
         check_dns_reverse = False
@@ -1239,9 +1198,10 @@ def add_auto_configuration_host_settings(hostname,
             dns_hostname = dns_hostname+'.'
 
         kwargs.setdefault('dns_hostname', dns_hostname)
+        dns_address = attrs['address']
         kwargs.setdefault('dns_address', attrs['address'])
+        dns_inaddr = inaddr
         kwargs.setdefault('dns_inaddr', inaddr)
-
 
     kwargs.setdefault('check_dns', check_dns)
     kwargs.setdefault('check_dns_reverse', check_dns_reverse)
@@ -1284,17 +1244,117 @@ def add_auto_configuration_host_settings(hostname,
     kwargs.setdefault('check_postfixqueue', check_postfixqueue)
     kwargs.setdefault('check_postfix_mailqueue', check_postfix_mailqueue)
 
-    # we complete the "commands_static_values" with values in "data.objects.commands_static_values"
-    if not isinstance(commands_static_values, dict):
-        commands_static_values = {}
+    # give the default values for commands parameters values
+    # the keys are the services names, not the commands names (use the service filename)
+    services_check_command_default_args = {
+       'ssh': {
+           'hostname': ssh_addr,
+           'port': ssh_port,
+           'timeout': 10,
+       },
+       'dns': {
+           'port': 53,
+           'query_address': dns_hostname,
+           'record_type': 'A',
+           'expected_address': dns_address,
+           'timeout': 10,
+       },
+       'dns_reverse': {
+           'port': 53,
+           'query_address': dns_inaddr,
+           'record_type': 'PTR',
+           'expected_address': dns_hostname,
+           'timeout': 10,
+       },
+       'http': {
+           'port': 80,
+           'hostname': hostname,
+           'ip_address': attrs['address'],
+           'timeout': 10,
+       },
+       'ntp_peer': {
+           'port': 123,
+           'hostname': attrs['address'],
+           'timeout': 10,
+       },
+       'ntp_time': {
+           'port': 123,
+           'hostname': "pool.ntp.org",
+           'timeout': 10,
+       },
+       'mountpoints': {
+           'warning': 10,
+           'critical': 5,
+       },
+       'raid': {},
+       'md_raid': {},
+       'megaraid_sas': {},
+       '3ware_raid': {},
+       'ccis': {},
+       'drbd': {},
+       'swap': {
+           'warning': '10%',
+           'critical': '5%',
+       },
+       'cpuload': {
+           'warning': 0.7,
+           'critical': 0.9,
+       },
+       'procs': {
+           'metric': "PROCS",
+           'warning': 170,
+           'critical': 200,
+       },
+       'cron': {},
+       'debian_packages': {
+           'timeout': 60,
+       },
+       'burp_backup_age': {
+           # ssh values should be replaced with the values concerning the backup host
+           'ssh_user': ssh_user,
+           'ssh_addr': ssh_addr,
+           'ssh_port': ssh_port,
+           'ssh_timeout': "60",
+           'hostname': hostname,
+           'directory': "/backups",
+           'warning': 1560,
+           'critical': 1800,
+       },
+       'rdiff': {
+           # ssh values should be replaced with the values concerning the backup host
+           'ssh_user': ssh_user,
+           'ssh_addr': ssh_addr,
+           'ssh_port': ssh_port,
+           'ssh_timeout': "60",
+           'repository': '/backups/'+hostname,
+           'transferred_warning': 1,
+           'cron_period': 1,
+           'warning': 24,
+           'critical': 48,
+       },
+       'ddos': {
+           'warning': 3,
+           'critical': 4,
+       },
+       'haproxy_stats': {
+           'socket': "/var/run/haproxy.sock",
+       },
+       'postfixqueue': {
+           'warning': 50,
+           'critical': 100,
+       },
+    }
+    # override the commands parameters values
+    if not isinstance(services_check_command_args, dict):
+        services_check_command_args = {}
 
-    for name, command in icingaSettings['objects']['commands_static_values'].items():
-        if not name in commands_static_values:
-            commands_static_values[name] = icingaSettings['objects']['commands_static_values'][name]
+    for name, command in services_check_command_default_args.items():
+        if not name in services_check_command_args:
+            services_check_command_args[name] = services_check_command_default_args[name]
         else:
-            commands_static_values[name] = dict(icingaSettings['objects']['commands_static_values'][name].items() + commands_static_values[name].items())
+            services_check_command_args[name] = dict(services_check_command_default_args[name].items() + services_check_command_args[name].items())
 
-    kwargs.setdefault('commands_static_values', commands_static_values)
+    kwargs.setdefault('services_check_command_args', services_check_command_args)
 
     kwargs.setdefault('state_name_salt', hostname.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
