@@ -113,6 +113,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      check_raid=False,
                                      check_md_raid=False,
                                      check_megaraid_sas=False,
+                                     check_3ware_raid=False,
+                                     check_cciss=False,
                                      check_drbd=False,
                                      check_swap=True,
                                      check_cpuload=True,
@@ -120,6 +122,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      check_cron=True,
                                      check_debian_packages=False,
                                      check_burp_backup_age=False,
+                                     check_rdiff=False,
                                      check_ddos=True,
                                      check_haproxy_stats=False,
                                      check_postfixqueue=False,
@@ -148,6 +151,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      check_raid,
                                                                      check_md_raid,
                                                                      check_megaraid_sas,
+                                                                     check_3ware_raid,
+                                                                     check_cciss,
                                                                      check_drbd,
                                                                      check_swap,
                                                                      check_cpuload,
@@ -155,6 +160,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      check_cron,
                                                                      check_debian_packages,
                                                                      check_burp_backup_age,
+                                                                     check_rdiff,
                                                                      check_ddos,
                                                                      check_haproxy_stats,
                                                                      check_postfixqueue,
@@ -317,7 +323,33 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     }}
 {% endif %}
 
-# add drbd service (check by ssh)
+# add 3ware raid  service (check by ssh)
+{% if data.check_drbd %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/3ware_raid.cfg',
+                                attrs= {
+                                    'service_description': "3ware raid",
+                                    'host_name': data.hostname,
+                                    'use': "generic-service",
+                                    'check_command': "check_by_ssh_3ware_raid!"
+                                                     +check_by_ssh_params
+                                })
+    }}
+{% endif %}
+
+# add ccis service (check by ssh)
+{% if data.check_cciss %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/cciss.cfg',
+                                attrs= {
+                                    'service_description': "CCISS",
+                                    'host_name': data.hostname,
+                                    'use': "generic-service",
+                                    'check_command': "check_by_ssh_cciss!"
+                                                     +check_by_ssh_params
+                                })
+    }}
+{% endif %}
 
 # add drbd service (check by ssh)
 {% if data.check_drbd %}
@@ -413,7 +445,6 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     }}
 {% endif %}
 
-
 # add burp backup age (check by ssh on the backup server)
 {% if data.check_burp_backup_age %}
     {{ configuration_add_object(type='service',
@@ -429,6 +460,27 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                      +data.commands_static_values.check_by_ssh_burp_backup_age.directory+"!" 
                                                      +data.commands_static_values.check_by_ssh_burp_backup_age.warning|string+"!" 
                                                      +data.commands_static_values.check_by_ssh_burp_backup_age.critical|string
+                                })
+    }}
+{% endif %}
+
+# add rdiff backup age (check by ssh on the backup server)
+{% if data.check_burp_backup_age %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/rdiff.cfg',
+                                attrs= {
+                                    'service_description': "Rdiff backup age on "+data.commands_static_values.check_by_ssh_burp_backup_age.ssh_addr,
+                                    'host_name': data.hostname,
+                                    'use': "generic-service",
+                                    'check_command': "check_by_ssh_rdiff!"
+                                                     +data.commands_static_values.check_by_ssh_rdiff.ssh_user+"!" 
+                                                     +data.commands_static_values.check_by_ssh_rdiff.ssh_addr+"!" 
+                                                     +data.commands_static_values.check_by_ssh_rdiff.ssh_port|string+"!" 
+                                                     +data.commands_static_values.check_by_ssh_rdiff.repository+"!" 
+                                                     +data.commands_static_values.check_by_ssh_rdiff.transferred_warning|string+"!" 
+                                                     +data.commands_static_values.check_by_ssh_rdiff.cron_period|string
+                                                     +data.commands_static_values.check_by_ssh_rdiff.warning|string+"!" 
+                                                     +data.commands_static_values.check_by_ssh_rdiff.critical|string+"!" 
                                 })
     }}
 {% endif %}

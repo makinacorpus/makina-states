@@ -298,6 +298,8 @@ def settings():
                                   'check_raid.pl',
                                   'check_md_raid',
                                   'check_megaraid_sas',
+                                  'check_3ware_raid',
+                                  'check_cciss-1.12',
                                   'check_drbd',
                                   'check_swap',
                                   'check_load',
@@ -305,6 +307,7 @@ def settings():
                                   'check_cron',
                                   'check_debian_packages',
                                   'check_burp_backup_age.py',
+                                  'check_rdiff',
                                   'check_ddos.pl',
                                   'check_haproxy_stats.pl',
                                   'check_postfixqueue.sh',
@@ -342,6 +345,17 @@ def settings():
                             'directory': "/backups",
                             'warning': 1560,
                             'critical': 1800,
+                        },
+                        'check_by_ssh_rdiff': {
+                        # the ssh params are different for burp because it is the ssh param of the backup server
+                            'ssh_user': 'root',
+                            'ssh_addr': '127.3',
+                            'ssh_port': 22,
+                            'repository': "/backups/$HOSTADDRESS$/",
+                            'transferred_warning': 1,
+                            'cron_period': 1,
+                            'warning': 24,
+                            'critical': 48,
                         },
                         'check_by_ssh_ddos': {
                             'warning': 3,
@@ -428,16 +442,6 @@ def settings():
                                                     "-c \"$ARG6$\"'",
                             },
                         },
-                        'command_check_by_ssh_drbd': {
-                            'type': "command",
-                            'file': "commands/check_by_ssh_drbd.cfg",
-                            'attrs': {
-                                'command_name': "check_by_ssh_drbd",
-                                'command_line': checks_directory+"/check_by_ssh "\
-                                                +check_by_ssh_params+\
-                                                "-C '"+checks_directory+"/check_drbd'",
-                            },
-                        },
                         'command_check_by_ssh_raid': {
                             'type': "command",
                             'file': "commands/check_by_ssh_raid.cfg",
@@ -466,6 +470,36 @@ def settings():
                                 'command_line': checks_directory+"/check_by_ssh "\
                                                 +check_by_ssh_params+\
                                                 "-C '"+checks_directory+"/check_megaraid_sas'",
+                            },
+                        },
+                        'command_check_by_ssh_3ware_raid': {
+                            'type': "command",
+                            'file': "commands/check_by_ssh_3ware_raid.cfg",
+                            'attrs': {
+                                'command_name': "check_by_ssh_3ware_raid",
+                                'command_line': checks_directory+"/check_by_ssh "\
+                                                +check_by_ssh_params+\
+                                                "-C '"+checks_directory+"/check_3ware_raid'",
+                            },
+                        },
+                        'command_check_by_ssh_cciss': {
+                            'type': "command",
+                            'file': "commands/check_by_ssh_cciss.cfg",
+                            'attrs': {
+                                'command_name': "check_by_ssh_cciss",
+                                'command_line': checks_directory+"/check_by_ssh "\
+                                                +check_by_ssh_params+\
+                                                "-C '"+checks_directory+"/check_cciss-1.12 '"
+                            },
+                        },
+                        'command_check_by_ssh_drbd': {
+                            'type': "command",
+                            'file': "commands/check_by_ssh_drbd.cfg",
+                            'attrs': {
+                                'command_name': "check_by_ssh_drbd",
+                                'command_line': checks_directory+"/check_by_ssh "\
+                                                +check_by_ssh_params+\
+                                                "-C '"+checks_directory+"/check_drbd'",
                             },
                         },
                         'command_check_by_ssh_swap': {
@@ -538,6 +572,21 @@ def settings():
                                                     "-d \"$ARG4$\" "\
                                                     "-w \"$ARG5$\" "\
                                                     "-c \"$ARG6$\"'",
+                            },
+                        },
+                        'command_check_by_ssh_rdiff': {
+                            'type': "command",
+                            'file': "commands/check_by_ssh_rdiff.cfg",
+                            'attrs': {
+                                'command_name': "check_by_ssh_rdiff",
+                                'command_line': checks_directory+"/check_by_ssh "\
+                                                +check_by_ssh_params+\
+                                                "-C '"+checks_directory+"/check_rdiff "\
+                                                    "-r \"$ARG4$\" "\
+                                                    "-l \"$ARG5$\" "\
+                                                    "-p \"$ARG6$\" "\
+                                                    "-w \"$ARG7$\" "\
+                                                    "-c \"$ARG8$\" '",
                             },
                         },
                         'command_check_by_ssh_ddos': {
@@ -689,12 +738,15 @@ def settings():
                             'ssh_port': 22,
                             'check_debian_packages': True,
                             'check_burp_backup_age': True,
+                            'check_rdiff': True,
                             'check_raid': True,
                             'check_md_raid': True,
                             'check_megaraid_sas': True,
                             'check_postfixqueue': True,
                             'check_drbd': True,
                             'check_haproxy_stats': True,
+                            'check_3ware_raid': True,
+                            'check_cciss': True,
                         },
                         'hostname2': {
                             'hostname': "hostname2",
@@ -1139,6 +1191,8 @@ def add_auto_configuration_host_settings(hostname,
                                         check_raid,
                                         check_md_raid,
                                         check_megaraid_sas,
+                                        check_3ware_raid,
+                                        check_cciss,
                                         check_drbd,
                                         check_swap,
                                         check_cpuload,
@@ -1146,6 +1200,7 @@ def add_auto_configuration_host_settings(hostname,
                                         check_cron,
                                         check_debian_packages,
                                         check_burp_backup_age,
+                                        check_rdiff,
                                         check_ddos,
                                         check_haproxy_stats,
                                         check_postfixqueue,
@@ -1214,6 +1269,8 @@ def add_auto_configuration_host_settings(hostname,
     kwargs.setdefault('check_raid', check_raid)
     kwargs.setdefault('check_md_raid', check_md_raid)
     kwargs.setdefault('check_megaraid_sas', check_megaraid_sas)
+    kwargs.setdefault('check_3ware_raid', check_3ware_raid)
+    kwargs.setdefault('check_cciss', check_cciss)
     kwargs.setdefault('check_drbd', check_drbd)
     kwargs.setdefault('check_swap', check_swap)
     kwargs.setdefault('check_cpuload', check_cpuload)
@@ -1221,6 +1278,7 @@ def add_auto_configuration_host_settings(hostname,
     kwargs.setdefault('check_cron', check_cron)
     kwargs.setdefault('check_debian_packages', check_debian_packages)
     kwargs.setdefault('check_burp_backup_age', check_burp_backup_age)
+    kwargs.setdefault('check_rdiff', check_rdiff)
     kwargs.setdefault('check_ddos', check_ddos)
     kwargs.setdefault('check_haproxy_stats', check_haproxy_stats)
     kwargs.setdefault('check_postfixqueue', check_postfixqueue)
