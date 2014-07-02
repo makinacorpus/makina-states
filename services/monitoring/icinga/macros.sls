@@ -113,6 +113,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      check_debian_packages=False,
                                      check_dns=True,
                                      check_dns_reverse=True,
+                                     check_burp_backup_age=False,
                                      commands_static_values={}
                                     ) %}
 {% set data = salt['mc_icinga.add_auto_configuration_host_settings'](hostname,
@@ -137,6 +138,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      check_debian_packages,
                                                                      check_dns,
                                                                      check_dns_reverse,
+                                                                     check_burp_backup_age,
                                                                      commands_static_values,
                                                                      **kwargs
                                                                     ) %}
@@ -152,10 +154,12 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     {{ configuration_add_object(type='service',
                                 file='hosts/'+data.hostname+'/ssh.cfg',
                                 attrs= {
-                                    'service_description': "SSH "+ssh_addr+" port "+ssh_port|string,
+                                    'service_description': "SSH "+data.ssh_addr+" port "+data.ssh_port|string,
                                     'host_name': data.hostname,
                                     'use': "generic-service",
-                                    'check_command': "check_ssh!"+ssh_addr+"!"+ssh_port|string,
+                                    'check_command': "check_ssh!"
+                                                     +data.ssh_addr+"!"
+                                                     +data.ssh_port|string,
                                 })
     }}
 {% endif %}
@@ -170,7 +174,13 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'service_description': "Free space on "+path,
                                     'host_name': data.hostname,
                                     'use': "generic-service",
-                                    'check_command': "check_by_ssh_mountpoint!"+ssh_user+"!"+ssh_addr+"!"+ssh_port|string+"!"+path+"!"+data.commands_static_values.command_check_by_ssh_mountpoint.warning|string+"!"+data.commands_static_values.command_check_by_ssh_mountpoint.critical|string,
+                                    'check_command': "check_by_ssh_mountpoint!"
+                                                     +data.ssh_user+"!"
+                                                     +data.ssh_addr+"!"
+                                                     +data.ssh_port|string+"!"
+                                                     +path+"!"
+                                                     +data.commands_static_values.check_by_ssh_mountpoint.warning|string+"!"
+                                                     +data.commands_static_values.check_by_ssh_mountpoint.critical|string,
                                 })
     }}
 {% endfor %}
@@ -184,7 +194,12 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'service_description': "Swap",
                                     'host_name': data.hostname,
                                     'use': "generic-service",
-                                    'check_command': "check_by_ssh_swap!"+ssh_user+"!"+ssh_addr+"!"+ssh_port|string+"!"+data.commands_static_values.command_check_by_ssh_swap.warning|string+"%!"+data.commands_static_values.command_check_by_ssh_swap.critical|string+"%",
+                                    'check_command': "check_by_ssh_swap!"
+                                                     +data.ssh_user+"!"
+                                                     +data.ssh_addr+"!"
+                                                     +data.ssh_port|string+"!"
+                                                     +data.commands_static_values.check_by_ssh_swap.warning|string+"%!"
+                                                     +data.commands_static_values.check_by_ssh_swap.critical|string+"%",
                                 })
     }}
 {% endif %}
@@ -199,7 +214,12 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'service_description': "Cpu load",
                                     'host_name': data.hostname,
                                     'use': "generic-service",
-                                    'check_command': "check_by_ssh_cpuload!"+ssh_user+"!"+ssh_addr+"!"+ssh_port|string+"!"+data.commands_static_values.command_check_by_ssh_cpuload.warning|string+"!"+data.commands_static_values.command_check_by_ssh_cpuload.critical|string,
+                                    'check_command': "check_by_ssh_cpuload!"
+                                                     +data.ssh_user+"!"
+                                                     +data.ssh_addr+"!"
+                                                     +data.ssh_port|string+"!"
+                                                     +data.commands_static_values.check_by_ssh_cpuload.warning|string+"!"
+                                                     +data.commands_static_values.check_by_ssh_cpuload.critical|string,
                                 })
     }}
 {% endif %}
@@ -212,7 +232,13 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'service_description': "Process",
                                     'host_name': data.hostname,
                                     'use': "generic-service",
-                                    'check_command': "check_by_ssh_process!"+ssh_user+"!"+ssh_addr+"!"+ssh_port|string+"!"+data.commands_static_values.command_check_by_ssh_process.metric+"!"+data.commands_static_values.command_check_by_ssh_process.warning|string+"!"+data.commands_static_values.command_check_by_ssh_process.critical|string,
+                                    'check_command': "check_by_ssh_process!"
+                                                     +data.ssh_user+"!"
+                                                     +data.ssh_addr+"!"
+                                                     +data.ssh_port|string+"!"
+                                                     +data.commands_static_values.check_by_ssh_process.metric+"!"
+                                                     +data.commands_static_values.check_by_ssh_process.warning|string+"!"
+                                                     +data.commands_static_values.check_by_ssh_process.critical|string,
                                 })
     }}
 {% endif %}
@@ -225,7 +251,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'service_description': "Cron",
                                     'host_name': data.hostname,
                                     'use': "generic-service",
-                                    'check_command': "check_by_ssh_cron!"+ssh_user+"!"+ssh_addr+"!"+ssh_port|string,
+                                    'check_command': "check_by_ssh_cron!"
+                                                     +data.ssh_user+"!"
+                                                     +data.ssh_addr+"!"
+                                                     +data.ssh_port|string,
                                 })
     }}
 {% endif %}
@@ -238,7 +267,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'service_description': "Debian packages",
                                     'host_name': data.hostname,
                                     'use': "generic-service",
-                                    'check_command': "check_by_ssh_debian_packages!"+ssh_user+"!"+ssh_addr+"!"+ssh_port|string,
+                                    'check_command': "check_by_ssh_debian_packages!"
+                                                     +data.ssh_user+"!"
+                                                     +data.ssh_addr+"!"
+                                                     +data.ssh_port|string,
                                 })
     }}
 {% endif %}
@@ -264,7 +296,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                         'service_description': "DNS "+data.dns_hostname+" → "+data.dns_address,
                                         'host_name': data.hostname,
                                         'use': "generic-service",
-                                        'check_command': "check_dig!A!"+data.dns_hostname+"!"+data.dns_address,
+                                        'check_command': "check_dig!"
+                                                         +"A!"
+                                                         +data.dns_hostname+"!"
+                                                         +data.dns_address,
                                     })
         }}
 {% endif %}
@@ -275,7 +310,27 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                         'service_description': "DNS "+data.dns_address+" → "+data.dns_hostname,
                                         'host_name': data.hostname,
                                         'use': "generic-service",
-                                        'check_command': "check_dig!PTR!"+data.dns_inaddr+"!"+data.dns_hostname,
+                                        'check_command': "check_dig!PTR!"
+                                                         +data.dns_inaddr+"!"
+                                                         +data.dns_hostname,
+                                    })
+        }}
+{% endif %}
+
+{% if data.check_burp_backup_age %}
+        {{ configuration_add_object(type='service',
+                                    file='hosts/'+data.hostname+'/burp.cfg',
+                                    attrs= {
+                                        'service_description': "Burp backup age on "+data.commands_static_values.check_by_ssh_burp_backup_age.ssh_addr,
+                                        'host_name': data.hostname,
+                                        'use': "generic-service",
+                                        'check_command': "check_by_ssh_burp_backup_age!"
+                                                         +data.commands_static_values.check_by_ssh_burp_backup_age.ssh_user+"!" 
+                                                         +data.commands_static_values.check_by_ssh_burp_backup_age.ssh_addr+"!" 
+                                                         +data.commands_static_values.check_by_ssh_burp_backup_age.ssh_port|string+"!" 
+                                                         +data.commands_static_values.check_by_ssh_burp_backup_age.directory+"!" 
+                                                         +data.commands_static_values.check_by_ssh_burp_backup_age.warning|string+"!" 
+                                                         +data.commands_static_values.check_by_ssh_burp_backup_age.critical|string,
                                     })
         }}
 {% endif %}

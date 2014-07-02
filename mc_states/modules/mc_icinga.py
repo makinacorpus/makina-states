@@ -286,28 +286,48 @@ def settings():
                 'niceness': 5,
                 'objects': {
                     'directory': locs['conf_dir']+"/icinga/objects/salt_generated",
-                    'filescopy': ['check_ping', 'check_ssh', 'check_by_ssh', 'check_disk', 'check_swap', 'check_load', 'check_procs', 'check_cron', 'check_debian_packages', 'check_http', 'check_dig'],
+                    'filescopy': ['check_ping',
+                                  'check_ssh',
+                                  'check_by_ssh',
+                                  'check_disk',
+                                  'check_swap',
+                                  'check_load',
+                                  'check_procs',
+                                  'check_cron',
+                                  'check_debian_packages',
+                                  'check_http',
+                                  'check_dig',
+                                  'check_burp_backup_age.py'],
                     'commands_static_values': {
-                        'command_ping': {
+                        'ping': {
                             'warning': check_ping_warning,
                             'critical': check_ping_critical,
                         },
-                        'command_check_by_ssh_mountpoint': {
+                        'check_by_ssh_mountpoint': {
                             'warning': 10,
                             'critical': 5,
                         },
-                        'command_check_by_ssh_swap': {
+                        'check_by_ssh_swap': {
                             'warning': 10,
                             'critical': 5,
                         },
-                        'command_check_by_ssh_cpuload': {
+                        'check_by_ssh_cpuload': {
                             'warning': 0.7,
                             'critical': 0.9,
                         },
-                        'command_check_by_ssh_process': {
+                        'check_by_ssh_process': {
                             'metric': "PROCS",
                             'warning': 200,
                             'critical': 250,
+                        },
+                        'check_by_ssh_burp_backup_age': {
+                        # the ssh params are different for burp because it is the ssh param of the backup server
+                            'ssh_user': 'root',
+                            'ssh_addr': '127.3',
+                            'ssh_port': 22,
+                            'directory': "/backups",
+                            'warning': 1560,
+                            'critical': 1800,
                         },
                     },
                     'objects_definitions': {
@@ -389,6 +409,14 @@ def settings():
                             'attrs': {
                                 'command_name': "check_dig",
                                 'command_line': checks_directory+"/check_dig -T '$ARG1$' -l '$ARG2$' -a '$ARG3$'",
+                            },
+                        },
+                        'command_check_by_ssh_burp_backup_age': {
+                            'type': "command",
+                            'file': "commands/check_by_ssh_burp_backup_age.cfg",
+                            'attrs': {
+                                'command_name': "check_by_ssh_burp_backup_age",
+                                'command_line': checks_directory+"/check_by_ssh -q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$'  -C '"+checks_directory+"/check_burp_backup_age.py -H \"$HOSTADDRESS$\" -d \"$ARG4$\" -w \"$ARG5$\" -c \"$ARG6$\"'",
                             },
                         },
                         'generic-host': {
@@ -494,6 +522,7 @@ def settings():
                             'ssh_addr': "127.255",
                             'ssh_port': 22,
                             'check_debian_packages': True,
+                            'check_burp_backup_age': True,
                         },
                         'hostname2': {
                             'hostname': "hostname2",
@@ -507,7 +536,7 @@ def settings():
                             'ssh_addr': "127.254",
                             'ssh_port': 22,
                             'commands_static_values': {
-                                'command_check_by_ssh_process': {
+                                'check_by_ssh_process': {
                                     'warning': 2,
                                     'critical': 3,
                                 },
@@ -938,6 +967,7 @@ def add_auto_configuration_host_settings(hostname,
                                         check_debian_packages,
                                         check_dns,
                                         check_dns_reverse,
+                                        check_burp_backup_age,
                                         commands_static_values,
                                         **kwargs):
     '''Settings for the add_auto_configuration_host macro'''
@@ -1002,6 +1032,7 @@ def add_auto_configuration_host_settings(hostname,
 
     kwargs.setdefault('check_dns', check_dns)
     kwargs.setdefault('check_dns_reverse', check_dns_reverse)
+    kwargs.setdefault('check_burp_backup_age', check_burp_backup_age)
 
 
     # we complete the "commands_static_values" with values in "data.objects.commands_static_values"
