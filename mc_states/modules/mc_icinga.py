@@ -288,6 +288,8 @@ def settings():
                     'directory': locs['conf_dir']+"/icinga/objects/salt_generated",
                     'filescopy': ['check_ping',
                                   'check_ssh',
+                                  'check_dig',
+                                  'check_http',
                                   'check_by_ssh',
                                   'check_disk',
                                   'check_swap',
@@ -295,9 +297,8 @@ def settings():
                                   'check_procs',
                                   'check_cron',
                                   'check_debian_packages',
-                                  'check_http',
-                                  'check_dig',
-                                  'check_burp_backup_age.py'],
+                                  'check_burp_backup_age.py',
+                                  'check_ddos.pl'],
                     'commands_static_values': {
                         'ping': {
                             'warning': check_ping_warning,
@@ -329,6 +330,10 @@ def settings():
                             'warning': 1560,
                             'critical': 1800,
                         },
+                        'check_by_ssh_ddos': {
+                            'warning': 3,
+                            'critical': 4,
+                        }
                     },
                     'objects_definitions': {
                         'command_ping': {
@@ -345,6 +350,22 @@ def settings():
                             'attrs': {
                                 'command_name': "check_ssh",
                                 'command_line': checks_directory+"/check_ssh -p '$ARG2$' '$ARG1$'",
+                            },
+                        },
+                        'command_dig': {
+                            'type': "command",
+                            'file': "commands/dig.cfg",
+                            'attrs': {
+                                'command_name': "check_dig",
+                                'command_line': checks_directory+"/check_dig -T '$ARG1$' -l '$ARG2$' -a '$ARG3$'",
+                            },
+                        },
+                        'command_http': {
+                            'type': "command",
+                            'file': "commands/http.cfg",
+                            'attrs': {
+                                'command_name': "check_http",
+                                'command_line': checks_directory+"/check_http '$HOSTADDRESS$'",
                             },
                         },
                         'command_check_by_ssh_mountpoint': {
@@ -395,28 +416,20 @@ def settings():
                                 'command_line': checks_directory+"/check_by_ssh -q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$'  -C '"+checks_directory+"/check_debian_packages' -t 30",
                             },
                         },
-                        'command_http': {
-                            'type': "command",
-                            'file': "commands/http.cfg",
-                            'attrs': {
-                                'command_name': "check_http",
-                                'command_line': checks_directory+"/check_http '$HOSTADDRESS$'",
-                            },
-                        },
-                        'command_dig': {
-                            'type': "command",
-                            'file': "commands/dig.cfg",
-                            'attrs': {
-                                'command_name': "check_dig",
-                                'command_line': checks_directory+"/check_dig -T '$ARG1$' -l '$ARG2$' -a '$ARG3$'",
-                            },
-                        },
                         'command_check_by_ssh_burp_backup_age': {
                             'type': "command",
                             'file': "commands/check_by_ssh_burp_backup_age.cfg",
                             'attrs': {
                                 'command_name': "check_by_ssh_burp_backup_age",
                                 'command_line': checks_directory+"/check_by_ssh -q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$'  -C '"+checks_directory+"/check_burp_backup_age.py -H \"$HOSTADDRESS$\" -d \"$ARG4$\" -w \"$ARG5$\" -c \"$ARG6$\"'",
+                            },
+                        },
+                        'command_check_by_ssh_ddos': {
+                            'type': "command",
+                            'file': "commands/check_by_ssh_ddos.cfg",
+                            'attrs': {
+                                'command_name': "check_by_ssh_ddos",
+                                'command_line': checks_directory+"/check_by_ssh -q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$'  -C '"+checks_directory+"/check_ddos.pl -w \"$ARG4$\" -c \"$ARG5$\"'",
                             },
                         },
                         'generic-host': {
@@ -951,6 +964,9 @@ def add_auto_configuration_host_settings(hostname,
                                         ssh_addr,
                                         ssh_port,
                                         check_ssh,
+                                        check_dns,
+                                        check_dns_reverse,
+                                        check_http,
                                         mountpoint_root,
                                         mountpoint_var,
                                         mountpoint_srv,
@@ -960,14 +976,12 @@ def add_auto_configuration_host_settings(hostname,
                                         mountpoint_var_www,
                                         check_mountpoints,
                                         check_swap,
-                                        check_http,
                                         check_cpuload,
                                         check_procs,
                                         check_cron,
                                         check_debian_packages,
-                                        check_dns,
-                                        check_dns_reverse,
                                         check_burp_backup_age,
+                                        check_ddos,
                                         commands_static_values,
                                         **kwargs):
     '''Settings for the add_auto_configuration_host macro'''
@@ -981,30 +995,6 @@ def add_auto_configuration_host_settings(hostname,
     kwargs.setdefault('ssh_addr', ssh_addr)
     kwargs.setdefault('ssh_port', ssh_port)
     kwargs.setdefault('check_ssh', check_ssh)
-
-    mountpoints_path = {
-        'mountpoint_root': "/",
-        'mountpoint_var': "/var",
-        'mountpoint_srv': "/srv",
-        'mountpoint_data': "/data",
-        'mountpoint_home': "/home",
-        'mountpoint_var_makina': "/var/makina",
-        'mountpoint_var_www': "/var/www",
-    }
-    mountpoints = dict()
-    for mountpoint, path in mountpoints_path.items():
-        if eval(mountpoint):
-            mountpoints[mountpoint]=path
-
-    kwargs.setdefault('check_mountpoints', check_mountpoints)
-    kwargs.setdefault('mountpoints', mountpoints)
-
-    kwargs.setdefault('check_swap', check_swap)
-    kwargs.setdefault('check_cpuload', check_cpuload)
-    kwargs.setdefault('check_procs', check_procs)
-    kwargs.setdefault('check_cron', check_cron)
-    kwargs.setdefault('check_debian_packages', check_debian_packages)
-    kwargs.setdefault('check_http', check_http)
 
     # add dns between host_name and address value (and reverse)
     if not 'address' in attrs:
@@ -1032,7 +1022,32 @@ def add_auto_configuration_host_settings(hostname,
 
     kwargs.setdefault('check_dns', check_dns)
     kwargs.setdefault('check_dns_reverse', check_dns_reverse)
+    kwargs.setdefault('check_http', check_http)
+
+    mountpoints_path = {
+        'mountpoint_root': "/",
+        'mountpoint_var': "/var",
+        'mountpoint_srv': "/srv",
+        'mountpoint_data': "/data",
+        'mountpoint_home': "/home",
+        'mountpoint_var_makina': "/var/makina",
+        'mountpoint_var_www': "/var/www",
+    }
+    mountpoints = dict()
+    for mountpoint, path in mountpoints_path.items():
+        if eval(mountpoint):
+            mountpoints[mountpoint]=path
+
+    kwargs.setdefault('check_mountpoints', check_mountpoints)
+    kwargs.setdefault('mountpoints', mountpoints)
+
+    kwargs.setdefault('check_swap', check_swap)
+    kwargs.setdefault('check_cpuload', check_cpuload)
+    kwargs.setdefault('check_procs', check_procs)
+    kwargs.setdefault('check_cron', check_cron)
+    kwargs.setdefault('check_debian_packages', check_debian_packages)
     kwargs.setdefault('check_burp_backup_age', check_burp_backup_age)
+    kwargs.setdefault('check_ddos', check_ddos)
 
 
     # we complete the "commands_static_values" with values in "data.objects.commands_static_values"

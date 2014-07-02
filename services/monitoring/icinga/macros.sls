@@ -97,6 +97,9 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      ssh_addr,
                                      ssh_port=22,
                                      check_ssh=True,
+                                     check_dns=True,
+                                     check_dns_reverse=True,
+                                     check_http=True,
                                      mountpoint_root=True,
                                      mountpoint_var=False,
                                      mountpoint_srv=False,
@@ -106,14 +109,12 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      mountpoint_var_www=False,
                                      check_mountpoints=True,
                                      check_swap=True,
-                                     check_http=True,
                                      check_cpuload=True,
                                      check_procs=True,
                                      check_cron=True,
                                      check_debian_packages=False,
-                                     check_dns=True,
-                                     check_dns_reverse=True,
                                      check_burp_backup_age=False,
+                                     check_ddos=True,
                                      commands_static_values={}
                                     ) %}
 {% set data = salt['mc_icinga.add_auto_configuration_host_settings'](hostname,
@@ -122,6 +123,9 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      ssh_addr,
                                                                      ssh_port,
                                                                      check_ssh,
+                                                                     check_dns,
+                                                                     check_dns_reverse,
+                                                                     check_http,
                                                                      mountpoint_root,
                                                                      mountpoint_var,
                                                                      mountpoint_srv,
@@ -131,14 +135,12 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      mountpoint_var_www,
                                                                      check_mountpoints,
                                                                      check_swap,
-                                                                     check_http,
                                                                      check_cpuload,
                                                                      check_procs,
                                                                      check_cron,
                                                                      check_debian_packages,
-                                                                     check_dns,
-                                                                     check_dns_reverse,
                                                                      check_burp_backup_age,
+                                                                     check_ddos,
                                                                      commands_static_values,
                                                                      **kwargs
                                                                     ) %}
@@ -164,6 +166,47 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     }}
 {% endif %}
 
+# add dns service (check only data, the host doesn't have neither solver nor autority zone)
+{% if data.check_dns %}
+        {{ configuration_add_object(type='service',
+                                    file='hosts/'+data.hostname+'/dns.cfg',
+                                    attrs= {
+                                        'service_description': "DNS "+data.dns_hostname+" → "+data.dns_address,
+                                        'host_name': data.hostname,
+                                        'use': "generic-service",
+                                        'check_command': "check_dig!"
+                                                         +"A!"
+                                                         +data.dns_hostname+"!"
+                                                         +data.dns_address,
+                                    })
+        }}
+{% endif %}
+{% if data.check_dns_reverse %}
+        {{ configuration_add_object(type='service',
+                                    file='hosts/'+data.hostname+'/dns_reverse.cfg',
+                                    attrs= {
+                                        'service_description': "DNS "+data.dns_address+" → "+data.dns_hostname,
+                                        'host_name': data.hostname,
+                                        'use': "generic-service",
+                                        'check_command': "check_dig!PTR!"
+                                                         +data.dns_inaddr+"!"
+                                                         +data.dns_hostname,
+                                    })
+        }}
+{% endif %}
+
+# add http service
+{% if data.check_http %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/http.cfg',
+                                attrs= {
+                                    'service_description': "HTTP",
+                                    'host_name': data.hostname,
+                                    'use': "generic-service",
+                                    'check_command': "check_http",
+                                })
+    }}
+{% endif %}
 
 # add mountpoints service (check by ssh)
 {% if data.check_mountpoints %}
@@ -275,48 +318,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     }}
 {% endif %}
 
-# add http service
-{% if data.check_http %}
-    {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/http.cfg',
-                                attrs= {
-                                    'service_description': "HTTP",
-                                    'host_name': data.hostname,
-                                    'use': "generic-service",
-                                    'check_command': "check_http",
-                                })
-    }}
-{% endif %}
 
-# add dns service (check only data, the host doesn't have neither solver nor autority zone)
-{% if data.check_dns %}
-        {{ configuration_add_object(type='service',
-                                    file='hosts/'+data.hostname+'/dns.cfg',
-                                    attrs= {
-                                        'service_description': "DNS "+data.dns_hostname+" → "+data.dns_address,
-                                        'host_name': data.hostname,
-                                        'use': "generic-service",
-                                        'check_command': "check_dig!"
-                                                         +"A!"
-                                                         +data.dns_hostname+"!"
-                                                         +data.dns_address,
-                                    })
-        }}
-{% endif %}
-{% if data.check_dns_reverse %}
-        {{ configuration_add_object(type='service',
-                                    file='hosts/'+data.hostname+'/dns_reverse.cfg',
-                                    attrs= {
-                                        'service_description': "DNS "+data.dns_address+" → "+data.dns_hostname,
-                                        'host_name': data.hostname,
-                                        'use': "generic-service",
-                                        'check_command': "check_dig!PTR!"
-                                                         +data.dns_inaddr+"!"
-                                                         +data.dns_hostname,
-                                    })
-        }}
-{% endif %}
-
+# add burp backup age (check by ssh on the backup server)
 {% if data.check_burp_backup_age %}
         {{ configuration_add_object(type='service',
                                     file='hosts/'+data.hostname+'/burp.cfg',
@@ -333,6 +336,24 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                          +data.commands_static_values.check_by_ssh_burp_backup_age.critical|string,
                                     })
         }}
+{% endif %}
+
+# add ddos check service (check by ssh)
+{% if data.check_ddos %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/ddos.cfg',
+                                attrs= {
+                                    'service_description': "DDOS",
+                                    'host_name': data.hostname,
+                                    'use': "generic-service",
+                                    'check_command': "check_by_ssh_ddos!"
+                                                     +data.ssh_user+"!"
+                                                     +data.ssh_addr+"!"
+                                                     +data.ssh_port|string+"!"
+                                                     +data.commands_static_values.check_by_ssh_ddos.warning|string+"!"
+                                                     +data.commands_static_values.check_by_ssh_ddos.critical|string
+                                })
+    }}
 {% endif %}
 
 {% endmacro %}
