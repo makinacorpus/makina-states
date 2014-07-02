@@ -16,6 +16,8 @@ Subregistries
 .. toctree::
    :maxdepth: 2
 
+   mc_phantomjs.rst
+   mc_casperjs.rst
    mc_www.rst
    mc_mumble.rst
    mc_mongodb.rst
