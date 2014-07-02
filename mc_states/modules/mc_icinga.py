@@ -373,6 +373,7 @@ def settings():
                                                 "-t '$ARG4$' "\
                                                 "-u '$ARG5$' "\
                                                 "-a '$ARG6$' "\
+                                                # allow code injection ):
                                                 " $ARG7$ ",
                             },
                         },
@@ -723,7 +724,7 @@ def settings():
                                     'hostname': "icinga-cgi.localhost",
                                     'url': "/",
                                     'auth': "icingaadmin:icingaadmin",
-                                    'expected_strings': ['str1', 'str    2']
+                                    'expected_strings': ['icinga', 'These pages require a browser which supports frames.', '" ;']
                                 },
                             },
                         },
@@ -1236,6 +1237,7 @@ def add_auto_configuration_host_settings(hostname,
     for name, check in html.items():
         if isinstance(check['expected_strings'], list):
             expected_strings = check['expected_strings']
+            expected_strings = [ value.replace('"', '\\\\"').replace(';', '\\\\;') for value in expected_strings ]
             html[name]['expected_strings'] = '-s "'+'" -s "'.join(expected_strings)+'"'
 
     kwargs.setdefault('html', html)
