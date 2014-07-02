@@ -658,11 +658,15 @@ def get_configuration(name, *args, **kwargs):
         # - makina-projects.fooproject.default_env
         # - fooproject.default_env
         # - default_env
+        denv = 'dev'
+        for midstart in ['prod', 'staging']:
+            if __grains__['id'].startswith('{0}-'.format(midstart)):
+                denv = midstart
         cfg['default_env'] = __salt__['mc_utils.get'](
             'makina-projects.{0}.{1}'.format(name, 'default_env'),
             __salt__['mc_utils.get'](
                 '{0}.{1}'.format(name, 'default_env'),
-                __salt__['mc_utils.get']('default_env', 'dev')))
+                __salt__['mc_utils.get']('default_env', denv)))
 
     # set default skippped steps on a specific environment
     # to let them maybe be overriden in pillar
