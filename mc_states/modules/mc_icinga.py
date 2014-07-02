@@ -291,9 +291,13 @@ def settings():
                                   'check_ssh',
                                   'check_dig',
                                   'check_http',
+                                  'check_ntp_peer',
+                                  'check_ntp_time',
                                   'check_by_ssh',
                                   'check_disk',
                                   'check_raid.pl',
+                                  'check_md_raid',
+                                  'check_megaraid_sas',
                                   'check_drbd',
                                   'check_swap',
                                   'check_load',
@@ -301,11 +305,17 @@ def settings():
                                   'check_cron',
                                   'check_debian_packages',
                                   'check_burp_backup_age.py',
-                                  'check_ddos.pl'],
+                                  'check_ddos.pl',
+                                  'check_haproxy_stats.pl',
+                                  'check_postfixqueue.sh',
+                                  'check_postfix_mailqueue'],
                     'commands_static_values': {
                         'ping': {
                             'warning': check_ping_warning,
                             'critical': check_ping_critical,
+                        },
+                        'check_by_ssh_ntp_time': {
+                            'host': "pool.ntp.org",
                         },
                         'check_by_ssh_mountpoint': {
                             'warning': 10,
@@ -340,6 +350,10 @@ def settings():
                         'check_by_ssh_haproxy_stats': {
                             'socket': "/var/run/haproxy.sock",
                         },
+                        'check_by_ssh_postfixqueue': {
+                            'warning': 50,
+                            'critical': 100,
+                        }
                     },
                     'objects_definitions': {
                         'command_ping': {
@@ -383,6 +397,25 @@ def settings():
                                 'command_line': checks_directory+"/check_http '$HOSTADDRESS$'",
                             },
                         },
+                        'command_ntp_peer': {
+                            'type': "command",
+                            'file': "commands/ntp_peer.cfg",
+                            'attrs': {
+                                'command_name': "check_ntp_peer",
+                                'command_line': checks_directory+"/check_ntp_peer -H '$HOSTADDRESS$'",
+                            },
+                        },
+                        'command_check_by_ssh_ntp_time': {
+                            'type': "command",
+                            'file': "commands/check_by_ssh_ntp_time.cfg",
+                            'attrs': {
+                                'command_name': "check_by_ssh_ntp_time",
+                                'command_line': checks_directory+"/check_by_ssh "\
+                                                +check_by_ssh_params+\
+                                                "-C '"+checks_directory+"/check_ntp_time "\
+                                                    "-H \"$ARG4$\" '"
+                            },
+                        },
                         'command_check_by_ssh_mountpoint': {
                             'type': "command",
                             'file': "commands/check_by_ssh_mountpoint.cfg",
@@ -413,6 +446,26 @@ def settings():
                                 'command_line': checks_directory+"/check_by_ssh "\
                                                 +check_by_ssh_params+\
                                                 "-C '"+checks_directory+"/check_raid.pl'",
+                            },
+                        },
+                        'command_check_by_ssh_md_raid': {
+                            'type': "command",
+                            'file': "commands/check_by_ssh_md_raid.cfg",
+                            'attrs': {
+                                'command_name': "check_by_ssh_md_raid",
+                                'command_line': checks_directory+"/check_by_ssh "\
+                                                +check_by_ssh_params+\
+                                                "-C '"+checks_directory+"/check_md_raid'",
+                            },
+                        },
+                        'command_check_by_ssh_megaraid_sas': {
+                            'type': "command",
+                            'file': "commands/check_by_ssh_megaraid_sas.cfg",
+                            'attrs': {
+                                'command_name': "check_by_ssh_megaraid_sas",
+                                'command_line': checks_directory+"/check_by_ssh "\
+                                                +check_by_ssh_params+\
+                                                "-C '"+checks_directory+"/check_megaraid_sas'",
                             },
                         },
                         'command_check_by_ssh_swap': {
@@ -507,7 +560,29 @@ def settings():
                                 'command_line': checks_directory+"/check_by_ssh "\
                                                 +check_by_ssh_params+\
                                                 "-C '"+checks_directory+"/check_haproxy_stats.pl "\
-                                                    "-s \"$ARG4$\" "
+                                                    "-s \"$ARG4$\" '"
+                            },
+                        },
+                        'command_check_by_ssh_postfixqueue': {
+                            'type': "command",
+                            'file': "commands/check_by_ssh_postfixqueue.cfg",
+                            'attrs': {
+                                'command_name': "check_by_ssh_postfixqueue",
+                                'command_line': checks_directory+"/check_by_ssh "\
+                                                +check_by_ssh_params+\
+                                                "-C '"+checks_directory+"/check_postfixqueue.sh "\
+                                                    "-w \"$ARG4$\" "\
+                                                    "-c \"$ARG5$\" '"
+                            },
+                        },
+                        'command_check_by_ssh_postfix_mailqueue': {
+                            'type': "command",
+                            'file': "commands/check_by_ssh_postfix_mailqueue.cfg",
+                            'attrs': {
+                                'command_name': "check_by_ssh_postfix_mailqueue",
+                                'command_line': checks_directory+"/check_by_ssh "\
+                                                +check_by_ssh_params+\
+                                                "-C '"+checks_directory+"/check_postfix_mailqueue '"
                             },
                         },
                         'generic-host': {
@@ -615,6 +690,9 @@ def settings():
                             'check_debian_packages': True,
                             'check_burp_backup_age': True,
                             'check_raid': True,
+                            'check_md_raid': True,
+                            'check_megaraid_sas': True,
+                            'check_postfixqueue': True,
                             'check_drbd': True,
                             'check_haproxy_stats': True,
                         },
@@ -1048,6 +1126,8 @@ def add_auto_configuration_host_settings(hostname,
                                         check_dns,
                                         check_dns_reverse,
                                         check_http,
+                                        check_ntp_peer,
+                                        check_ntp_time,
                                         mountpoint_root,
                                         mountpoint_var,
                                         mountpoint_srv,
@@ -1057,6 +1137,8 @@ def add_auto_configuration_host_settings(hostname,
                                         mountpoint_var_www,
                                         check_mountpoints,
                                         check_raid,
+                                        check_md_raid,
+                                        check_megaraid_sas,
                                         check_drbd,
                                         check_swap,
                                         check_cpuload,
@@ -1066,6 +1148,8 @@ def add_auto_configuration_host_settings(hostname,
                                         check_burp_backup_age,
                                         check_ddos,
                                         check_haproxy_stats,
+                                        check_postfixqueue,
+                                        check_postfix_mailqueue,
                                         commands_static_values,
                                         **kwargs):
     '''Settings for the add_auto_configuration_host macro'''
@@ -1107,6 +1191,8 @@ def add_auto_configuration_host_settings(hostname,
     kwargs.setdefault('check_dns', check_dns)
     kwargs.setdefault('check_dns_reverse', check_dns_reverse)
     kwargs.setdefault('check_http', check_http)
+    kwargs.setdefault('check_ntp_peer', check_ntp_peer)
+    kwargs.setdefault('check_ntp_time', check_ntp_time)
 
     mountpoints_path = {
         'mountpoint_root': "/",
@@ -1126,6 +1212,8 @@ def add_auto_configuration_host_settings(hostname,
     kwargs.setdefault('mountpoints', mountpoints)
 
     kwargs.setdefault('check_raid', check_raid)
+    kwargs.setdefault('check_md_raid', check_md_raid)
+    kwargs.setdefault('check_megaraid_sas', check_megaraid_sas)
     kwargs.setdefault('check_drbd', check_drbd)
     kwargs.setdefault('check_swap', check_swap)
     kwargs.setdefault('check_cpuload', check_cpuload)
@@ -1135,7 +1223,8 @@ def add_auto_configuration_host_settings(hostname,
     kwargs.setdefault('check_burp_backup_age', check_burp_backup_age)
     kwargs.setdefault('check_ddos', check_ddos)
     kwargs.setdefault('check_haproxy_stats', check_haproxy_stats)
-
+    kwargs.setdefault('check_postfixqueue', check_postfixqueue)
+    kwargs.setdefault('check_postfix_mailqueue', check_postfix_mailqueue)
 
     # we complete the "commands_static_values" with values in "data.objects.commands_static_values"
     if not isinstance(commands_static_values, dict):

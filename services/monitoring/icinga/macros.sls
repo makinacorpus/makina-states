@@ -100,6 +100,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      check_dns=True,
                                      check_dns_reverse=True,
                                      check_http=True,
+                                     check_ntp_peer=False,
+                                     check_ntp_time=True,
                                      mountpoint_root=True,
                                      mountpoint_var=False,
                                      mountpoint_srv=False,
@@ -109,6 +111,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      mountpoint_var_www=False,
                                      check_mountpoints=True,
                                      check_raid=False,
+                                     check_md_raid=False,
+                                     check_megaraid_sas=False,
                                      check_drbd=False,
                                      check_swap=True,
                                      check_cpuload=True,
@@ -118,6 +122,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      check_burp_backup_age=False,
                                      check_ddos=True,
                                      check_haproxy_stats=False,
+                                     check_postfixqueue=False,
+                                     check_postfix_mailqueue=True,
                                      commands_static_values={}
                                     ) %}
 {% set data = salt['mc_icinga.add_auto_configuration_host_settings'](hostname,
@@ -129,6 +135,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      check_dns,
                                                                      check_dns_reverse,
                                                                      check_http,
+                                                                     check_ntp_peer,
+                                                                     check_ntp_time,
                                                                      mountpoint_root,
                                                                      mountpoint_var,
                                                                      mountpoint_srv,
@@ -138,6 +146,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      mountpoint_var_www,
                                                                      check_mountpoints,
                                                                      check_raid,
+                                                                     check_md_raid,
+                                                                     check_megaraid_sas,
                                                                      check_drbd,
                                                                      check_swap,
                                                                      check_cpuload,
@@ -147,6 +157,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      check_burp_backup_age,
                                                                      check_ddos,
                                                                      check_haproxy_stats,
+                                                                     check_postfixqueue,
+                                                                     check_postfix_mailqueue,
                                                                      commands_static_values,
                                                                      **kwargs
                                                                     ) %}
@@ -216,6 +228,34 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     }}
 {% endif %}
 
+# add ntp peer service
+{% if data.check_ntp_peer %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/ntp_peer.cfg',
+                                attrs= {
+                                    'service_description': "NTP peer",
+                                    'host_name': data.hostname,
+                                    'use': "generic-service",
+                                    'check_command': "check_ntp_peer",
+                                })
+    }}
+{% endif %}
+
+# add ntp time service (check by ssh)
+{% if data.check_ntp_time %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/ntp_time.cfg',
+                                attrs= {
+                                    'service_description': "NTP time",
+                                    'host_name': data.hostname,
+                                    'use': "generic-service",
+                                    'check_command': "check_by_ssh_ntp_time!"
+                                                     +check_by_ssh_params+"!"
+                                                     +data.commands_static_values.check_by_ssh_ntp_time.host
+                                })
+    }}
+{% endif %}
+
 # add mountpoints service (check by ssh)
 {% if data.check_mountpoints %}
 {% for mountpoint, path in data.mountpoints.items() %}
@@ -248,6 +288,36 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                 })
     }}
 {% endif %}
+
+# add md_raid check (check by ssh)
+{% if data.check_md_raid %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/md_raid.cfg',
+                                attrs= {
+                                    'service_description': "md_raid",
+                                    'host_name': data.hostname,
+                                    'use': "generic-service",
+                                    'check_command': "check_by_ssh_md_raid!"
+                                                     +check_by_ssh_params
+                                })
+    }}
+{% endif %}
+
+# add megaraid_sas check (check by ssh)
+{% if data.check_megaraid_sas %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/megaraid_sas.cfg',
+                                attrs= {
+                                    'service_description': "megaraid sas",
+                                    'host_name': data.hostname,
+                                    'use': "generic-service",
+                                    'check_command': "check_by_ssh_megaraid_sas!"
+                                                     +check_by_ssh_params
+                                })
+    }}
+{% endif %}
+
+# add drbd service (check by ssh)
 
 # add drbd service (check by ssh)
 {% if data.check_drbd %}
@@ -379,6 +449,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     }}
 {% endif %}
 
+
 # add haproxy service (check by ssh)
 {% if data.check_haproxy_stats %}
     {{ configuration_add_object(type='service',
@@ -394,5 +465,34 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     }}
 {% endif %}
 
-{% endmacro %}
+# add postfix mailqueue service (check by ssh)
+{% if data.check_postfixqueue %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/postfixqueue.cfg',
+                                attrs= {
+                                    'service_description': "Postfix queue",
+                                    'host_name': data.hostname,
+                                    'use': "generic-service",
+                                    'check_command': "check_by_ssh_postfixqueue!"
+                                                     +check_by_ssh_params+"!"
+                                                     +data.commands_static_values.check_by_ssh_postfixqueue.warning|string+"!"
+                                                     +data.commands_static_values.check_by_ssh_postfixqueue.critical|string
+                                })
+    }}
+{% endif %}
 
+# add postfix mail queue service (check by ssh)
+{% if data.check_postfix_mailqueue %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/postfix_mailqueue.cfg',
+                                attrs= {
+                                    'service_description': "Postfix mailqueue",
+                                    'host_name': data.hostname,
+                                    'use': "generic-service",
+                                    'check_command': "check_by_ssh_postfix_mailqueue!"
+                                                     +check_by_ssh_params
+                                })
+    }}
+{% endif %}
+
+{% endmacro %}
