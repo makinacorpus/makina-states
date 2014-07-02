@@ -60,6 +60,8 @@ PROJECT_INJECTED_CONFIG_VAR = 'cfg'
 
 DEFAULT_CONFIGURATION = {
     'name': None,
+    'minion_id': None,
+    'fqdn': None,
     'default_env': None,
     'installer': 'generic',
     'keep_archives': KEEP_ARCHIVES,
@@ -539,6 +541,10 @@ def get_configuration(name, *args, **kwargs):
 
     name
         name of the project
+    fqdn
+        fqdn of the box
+    minion_id
+        minion_id of the box
     default_env
         environnemt to run into (may be dev|prod, better
         to set a grain see bellow)
@@ -628,6 +634,8 @@ def get_configuration(name, *args, **kwargs):
     ):
         return cfg
     cfg['name'] = name
+    cfg['minion_id'] = __grains__['id']
+    cfg['fqdn'] = __grains__['fqdn']
     cfg.update(dict([a
                      for a in kwargs.items()
                      if a[0] in cfg]))
