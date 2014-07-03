@@ -19,135 +19,142 @@ Documentation of this module is available with::
 # Import python libs
 import logging
 import mc_states.utils
-
+from salt.utils.pycrypto import secure_password
+import base64
+import getpass
+import hashlib
+from base64 import urlsafe_b64encode as encode
+import os
 __name = 'slapd'
+
 
 log = logging.getLogger(__name__)
 
 
-def is_reverse_proxied():
-    is_vm = False
-    try:
-        with open('/etc/mastersalt/makina-states/cloud.yaml') as fic:
-            is_vm = 'is.vm' in fic.read()
-    except Exception:
-        pass
-    return __salt__['mc_cloud.is_vm']() or is_vm
+default_acl_schema = [
+    (
+        "{{0}}"
+        " to attrs=userPassword,sambaNTPassword,"
+        "sambaLMPassword,sambaPwdLastSet,sambaPWDMustChange"
+        " by dn.base=\"cn=admin,{data[dn]}\" write"
+        " by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
+        " by dn.base=\"cn=ldapwriter,ou=virtual,ou=people,{data[dn]}\" read"
+        " by dn.base=\"cn=replicator,ou=virtual,ou=people,{data[dn]}\" read"
+        " by dn.base=\"cn=ldapreader,ou=virtual,ou=people,{data[dn]}\" read"
+        " by anonymous auth  by self write  by * none"
+    ),
+    (
+        "{{1}}"
+        " to attrs=uid,cn,sn,homeDirectory,"
+        "uidNumber,gidNumber,memberUid,loginShell,employeeType"
+        " by dn.base=\"cn=admin,{data[dn]}\" write  "
+        " by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
+        " by dn.base=\"cn=ldapwriter,ou=virtual,ou=people,{data[dn]}\" read"
+        " by anonymous read  by * read"
+    ),
+    (
+        "{{2}}"
+        " to attrs=description,telephoneNumber,"
+        "roomNumber,gecos,cn,sn,givenname,jpegPhoto"
+        " by dn.base=\"cn=admin,{data[dn]}\" write"
+        " by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
+        " by dn.base=\"cn=ldapwriter,ou=virtual,ou=people,{data[dn]}\" write"
+        " by self write  by * read"
+    ),
+    (
+        "{{3}}"
+        " to attrs=homePhone,mobile"
+        " by dn.base=\"cn=admin,{data[dn]}\" write"
+        " by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
+        " by dn.base=\"cn=ldapwriter,ou=virtual,ou=people,{data[dn]}\" write"
+        " by self write"
+        " by * none"
+    ),
+    (
+        "{{4}}"
+        " to dn.regex=\"(uid=.*,)?ou=People,{data[dn]}\""
+        " by dn.base=\"cn=admin,{data[dn]}\" write"
+        " by dn.base=\"uid=fd-admin,ou=people,dc={data[dn]}\" write"
+        " by dn.base=\"cn=ldapwriter,ou=virtual,ou=people,{data[dn]}\" write"
+        " by self write  by anonymous read"
+        " by * read"
+    ),
+    (
+        "{{5}}"
+        " to dn.subtree=\"ou=group,{data[dn]}\""
+        " by dn.base=\"cn=admin,dc={data[dn]}\" write"
+        " by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
+        " by * read"
+    ),
+    (
+        "{{6}}"
+        " to dn.subtree=\"ou=people,{data[dn]}\""
+        " by dn.base=\"cn=admin,{data[dn]}\" write"
+        " by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
+        " by dn.base=\"cn=ldapwriter,ou=virtual,ou=people,{data[dn]}\" write"
+        " by self write  by * read"
+    ),
+    (
+        "{{7}}"
+        " to dn.subtree=\"ou=contact,{data[dn]}\""
+        " by dn.base=\"cn=admin,{data[dn]}\" write"
+        " by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
+        " by dn.base=\"cn=ldapwriter,ou=virtual,ou=people,{data[dn]}\" write"
+        " by anonymous none  by dn.one=\"ou=people,{data[dn]}\" read"
+        " by * none"
+    ),
+    (
+        "{{8}} to dn.base=\"\"  by * read"
+    ),
+    (
+        "{{9}}"
+        "  to *"
+        "  by dn.base=\"cn=admin,{data[dn]}\" write"
+        "  by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
+        "  by dn.base=\"cn=replicator,ou=virtual,ou=people,{data[dn]}\" read"
+        "  by * read"
+    ),
+]
+
+
+def salt_pw(pw):
+    salt = secure_password(8)
+    h = hashlib.sha1(pw)
+    h.update(salt)
+    return encode( "{SSHA}" + h.hexdigest() + salt)
+
+
+def sha_pw(pw):
+    h = hashlib.sha1(pw)
+    return encode("{SHA}" + h.hexdigest())
 
 
 def settings():
     '''
     slapd registry
 
-    is_reverse_proxied
-        is slapd itself is reverse proxified (true in cloudcontroller mode)
-    reverse_proxy_addresses
-        authorized reverse proxied addresses
-    use_real_ip
-        do we use real ip module
-    real_ip_header
-        which http header to search for real ip
-    reverse_proxy_addresses
-        control real ip addresses (list of values).
-        Default to network gateway (in cloud controllermode, haproxy is there)
-    logformat
-        default log format
-    logformats
-        custom log formats mapping
-    allowed_hosts
-        default allowed hosts
-    ulimit
-        default ulimit for the workers
-    open_file_cache
-        raw setting for slapd (see slapd documentation)
-    open_file_cache_valid
-        raw setting for slapd (see slapd documentation)
-    open_file_cache_min_uses
-        raw setting for slapd (see slapd documentation)
-    open_file_cache_errors
-        raw setting for slapd (see slapd documentation)
-    epoll
-        do we use epoll (true on linux)
-    default_type
-        raw setting for slapd (see slapd documentation)
-    worker_processes
-        nb workers, default to nb of cpus
-    worker_connections
-        raw setting for slapd (see slapd documentation)
-    multi_accept
-        raw setting for slapd (see slapd documentation)
-    user
-        slapd user
-    server_names_hash_bucket_size
-        raw setting for slapd (see slapd documentation)
-    loglevel
-        slapd error loglevel (crit)
-    logdir
-        slapd logdir (/var/log/slapd)
-    access_log
-        '{logdir}/access.log
-    sendfile
-        raw setting for slapd (see slapd documentation)
-    tcp_nodelay
-        raw setting for slapd (see slapd documentation)
-    tcp_nopush
-        raw setting for slapd (see slapd documentation)
-    reset_timedout_connection
-        raw setting for slapd (see slapd documentation)
-    client_body_timeout
-        raw setting for slapd (see slapd documentation)
-    send_timeout
-        raw setting for slapd (see slapd documentation)
-    keepalive_requests
-        raw setting for slapd (see slapd documentation)
-    keepalive_timeout
-        raw setting for slapd (see slapd documentation)
-    types_hash_max_size
-        raw setting for slapd (see slapd documentation)
-    server_tokens
-        raw setting for slapd (see slapd documentation)
-    server_name_in_redirect
-        raw setting for slapd (see slapd documentation)
-    error_log
-        '{logdir}/error.log'
-    gzip
-        enabling gzip
-    redirect_aliases
-        do we redirect server aliases to /
-    port
-        http port (80)
-    sshl_port
-        https port (443)
-    default_domains
-        default domains to server ['localhost']
-    docdir
-        /usr/share/doc/slapd
-    doc_root
-        /usr/share/slapd/www
-    vhost_default_template
-       salt://makina-states/files/etc/slapd/sites-available/vhost.conf
-    vhost_wrapper_template
-        Default template for vhosts
-        salt://makina-states/files/etc/slapd/sites-available/vhost.conf
-    vhost_default_content
-        Default content template for the DEFAULT DOMAIN vhost
-        salt://makina-states/files/etc/slapd/sites-available/default.conf'
-    vhost_top_template
-       default template to include in vhost top
-       salt://makina-states/files/etc/slapd/sites-available/vhost.top.conf,
-    vhost_content_template
-       default template for vhost content
-       salt://makina-states/files/etc/slapd/sites-available/vhost.content.conf
-    virtualhosts
-        Mapping containing all defined virtualhosts
-    rotate
-        days to rotate log
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
         grains = __grains__
         pillar = __pillar__
         locations = __salt__['mc_locations.settings']()
+        local_conf = __salt__['mc_macros.get_local_registry'](
+            'slapd', registry_format='pack')
+        cn_pass = local_conf.setdefault('cn_pass', secure_password(32))
+        dn_pass = local_conf.setdefault('dn_pass', secure_password(32))
+
+        cn_config_files = [
+            ('/etc/ldap/slapd.d/cn=config/olcDatabase={1}hdb/'
+             'olcOverlay={0}memberof.ldif'),
+            ('/etc/ldap/slapd.d/cn=config/olcDatabase={1}hdb/'
+             'olcOverlay={1}syncprov.ldif'),
+            '/etc/ldap/slapd.d/cn=config/cn=schema.ldif',
+            '/etc/ldap/slapd.d/cn=config/olcDatabase={1}hdb.ldif',
+            #'/etc/ldap/slapd.d/cn=config/olcDatabase={-1}frontend.ldif',
+            '/etc/ldap/slapd.d/cn=config/olcDatabase={0}config.ldif',
+            '/etc/ldap/slapd.d/cn=config/cn=module{0}.ldif',
+        ]
         slapdData = __salt__['mc_utils.defaults'](
             'makina-states.services.dns.slapd', {
                 'slapd_directory': "/etc/ldap/slapd.d",
@@ -155,30 +162,104 @@ def settings():
                     '/etc/ldap',
                     '/var/lib/ldap',
                 ],
-                'pkgs': ['ldap-utils', 'slapd'],
+                'cn_config_files': [],
+                'mode': 'master',
+                'pkgs': ['ldap-utils', 'ca-certificates',
+                         'slapd', 'python-ldap'],
                 'user': 'openldap',
                 'group': 'openldap',
-                'SLAPD_CONF': '/etc/slapd.d',
+                'service_name': 'slapd',
+                'SLAPD_CONF': '/etc/ldap/slapd.d',
                 'SLAPD_PIDFILE': '',
                 'SLAPD_SERVICES': 'ldaps:/// ldap:/// ldapi:///',
                 'SLAPD_NO_START': "",
                 'SLAPD_SENTINEL_FILE': '/etc/ldap/noslapd',
                 'SLAPD_OPTIONS': '',
-                'config_root_dn': 'cn=admin,cn=config',
-                'config_root_pw': 's3cr3t',
-                'dn': 'dc=sample,dc=com',
                 'init_ldif': 'salt://makina-states/files/etc/ldap/init.ldif',
-                'mode': 'bare',
+                'config_dn': 'cn=config',
+                'config_cn': 'config',
+                'cn_config_files': cn_config_files,
+                'config_rootdn': 'cn=admin,cn=config',
+                'config_pw': cn_pass,
+                'econfig_pw': '',
+                'dn': 'dc=sample,dc=com',
+                'verify_client': 'never',
                 'root_dn': None,
-                'root_pw': None,
+                'root_pw': dn_pass,
+                'eroot_pw': '',
                 'loglevel': 'sync',
                 'syncprov': True,
                 'syncrepl': None,
-                'tls_cacert': None,
-                'tls_cert': None,
-                'tls_key': None,
-            }
-        )
+                'olcloglevel': -1,
+                'tls_cacert': '',
+                'tls_cert': '',
+                'tls_key': '',
+                'acls': [],
+                'acls_schema': default_acl_schema,
+                'master_uri': '',
+                'cert_domain': grains['id'],
+                'default_schema': True,
+                'fd_schema': True,
+            })
+        local_conf['cn_pass'] = slapdData['config_pw']
+        local_conf['dn_pass'] = slapdData['root_pw']
+        for k in ['eroot_pw', 'econfig_pw']:
+            if not slapdData[k]:
+                slapdData[k] = sha_pw(slapdData[k[1:]])
+        if not slapdData['root_dn']:
+            slapdData['root_dn'] = 'cn=admin,{0}'.format(slapdData['dn'])
+        cn_config_files = slapdData['cn_config_files']
+        if not slapdData['tls_cert']:
+            info = __salt__['mc_ssl.ca_ssl_certs'](slapdData['cert_domain'])[0]
+            slapdData['tls_cacert'] = info[0]
+            slapdData['tls_cert'] = info[1]
+            slapdData['tls_key'] = info[2]
+        cn_config_files = slapdData['cn_config_files']
+        if slapdData['default_schema']:
+            for i in [
+                '/etc/ldap/slapd.d/cn=config.ldif',
+                '/etc/ldap/slapd.d/cn=config/cn=schema/cn={0}core.ldif',
+                '/etc/ldap/slapd.d/cn=config/cn=schema/cn={1}cosine.ldif',
+                ('/etc/ldap/slapd.d/cn=config/'
+                 'cn=schema/cn={2}inetorgperson.ldif'),
+                '/etc/ldap/slapd.d/cn=config/cn=schema/cn={3}misc.ldif',
+                '/etc/ldap/slapd.d/cn=config/cn=schema/cn={4}rfc2307bis.ldif',
+                '/etc/ldap/slapd.d/cn=config/cn=schema/cn={8}samba.ldif',
+                '/etc/ldap/slapd.d/cn=config/cn=schema/cn={11}ldapns.ldif',
+                '/etc/ldap/slapd.d/cn=config/cn=schema/cn={19}mozilla.ldif',
+                '/etc/ldap/slapd.d/cn=config/cn=schema/cn={15}sudo.ldif',
+                ('/etc/ldap/slapd.d/cn=config/'
+                 'cn=schema/cn={17}openssh-lpk.ldif'),
+                '/etc/ldap/slapd.d/cn=config/cn=schema/cn={20}extension.ldif',
+            ]:
+                if i not in cn_config_files:
+                    cn_config_files.append(i)
+        if not slapdData['acls']:
+            acls = [a.format(data=slapdData)
+                    for a in slapdData['acls_schema'][:]]
+            slapdData['acls'] = acls
+        if slapdData['fd_schema']:
+            for i in [
+                '/etc/ldap/slapd.d/cn=config/cn=schema/cn={5}service-fd.ldif',
+                ('/etc/ldap/slapd.d/cn=config/'
+                 'cn=schema/cn={6}systems-fd-conf.ldif'),
+                '/etc/ldap/slapd.d/cn=config/cn=schema/cn={7}systems-fd.ldif',
+                '/etc/ldap/slapd.d/cn=config/cn=schema/cn={9}core-fd.ldif',
+                ('/etc/ldap/slapd.d/cn=config/cn=schema/'
+                 'cn={10}core-fd-conf.ldif'),
+                ('/etc/ldap/slapd.d/cn=config/cn=schema/'
+                 'cn={12}recovery-fd.ldif'),
+                '/etc/ldap/slapd.d/cn=config/cn=schema/cn={13}mail-fd.ldif',
+                ('/etc/ldap/slapd.d/cn=config/cn=schema/'
+                 'cn={14}mail-fd-conf.ldif'),
+                ('/etc/ldap/slapd.d/cn=config/cn=schema/'
+                 'cn={16}sudo-fd-conf.ldif'),
+                '/etc/ldap/slapd.d/cn=config/cn=schema/cn={18}gpg-fd.ldif',
+            ]:
+                if i not in cn_config_files:
+                    cn_config_files.append(i)
+        __salt__['mc_macros.update_registry_params'](
+            'slapd', local_conf, registry_format='pack')
         return slapdData
     return _settings()
 

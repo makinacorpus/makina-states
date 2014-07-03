@@ -155,6 +155,7 @@ def _load_network(ttl=60):
         data['non_managed_hosts'] = __salt__['mc_pillar.query']('non_managed_hosts')
         data['baremetal_hosts'] = __salt__['mc_pillar.query']('baremetal_hosts')
         data['vms'] = __salt__['mc_pillar.query']('vms')
+        data['ldap_maps'] = __salt__['mc_pillar.query']('ldap_maps')
         data['ips'] = __salt__['mc_pillar.query']('ips')
         data['dns_serials'] = __salt__['mc_pillar.query']('dns_serials')
         data['dns_servers'] = __salt__['mc_pillar.query']('dns_servers')
@@ -371,6 +372,7 @@ def load_network_infrastructure(ttl=60):
         ips = data['ips']
         dns_serials = data['dns_serials']
         dns_servers = data['dns_servers']
+        ldap_maps = data['ldap_maps']
         ipsfo = data['ipsfo']
         mx_map = data['mx_map']
         ips_map = data['ips_map']
@@ -629,6 +631,89 @@ def rrs_txt_for(domain, ttl=60):
     return memoize_cache(_do, [domain], {}, cache_key, ttl)
 
 
+def get_ldap(ttl=60):
+    '''Get a map of relationship between name servers
+    that is used in the pillar to attribute roles
+    and configuration to name servers
+
+    This return a mapping in the form::
+
+        {
+            all: [list of all nameservers],
+            masters: mapping of mappings {master: [list of related slaves]},
+            slaves: mapping of mappings {slave: [list of related masters]},
+        }
+
+    For each zone, if slaves are declared without master,
+    the default masters would be added as master for this zone if any defaults.
+
+    '''
+    def _do_getldap():
+        db = load_network_infrastructure()
+        data = OrderedDict()
+        data.setdefault('masters', OrderedDict())
+        data.setdefault('slaves', OrderedDict())
+        default = db['ldap_maps'].get('default', OrderedDict())
+        for kind in ['masters', 'slaves']:
+            for server, adata in db['ldap_maps'].get(kind,
+                                                     OrderedDict()).items():
+                sdata = data[kind][server] = copy.deepcopy(adata)
+                for k, val in default.items():
+                    sdata.setdefault(k, val)
+        return data
+    cache_key = 'mc_pillar.get_nss'
+    return memoize_cache(_do_getldap, [], {}, cache_key, ttl)
+
+
+def get_slapd_conf(id_, ttl=60):
+    '''
+    Return pillar information to configure makina-states.services.dns.slapd
+    '''
+    def _do_getldap(id_):
+        is_master = is_ldap_master(id_)
+        is_slave = is_ldap_slave(id_)
+        if is_master and is_slave:
+            raise ValueError(
+                'Cant be at the same time master and ldap slave: {0}'.format(id_))
+        if not is_master and not is_slave:
+            raise ValueError(
+                'Choose between master and ldap slave: {0}'.format(id_))
+        conf = get_ldap()
+        if is_master:
+            data = conf['masters'][id_]
+            data['mode'] = 'master'
+        elif is_slave:
+            data = conf['slaves'][id_]
+            data['mode'] = 'slave'
+        ssl_domain = data.setdefault('cert_domain', id_)
+        # maybe generate and get the ldap certificates info
+        ssl_infos = __salt__['mc_ssl.ca_ssl_certs'](
+            ssl_domain, as_text=True)[0]
+        data.setdefault('tls_cacert', ssl_infos[0])
+        data.setdefault('tls_cert', ssl_infos[1])
+        data.setdefault('tls_key', ssl_infos[2])
+        return data
+    cache_key = 'mc_pillar.get_ldap_conf_for_{0}'.format(id_)
+    return memoize_cache(_do_getldap, [id_], {}, cache_key, ttl)
+
+
+def is_ldap_slave(id_, ttl=60):
+    def _do(id_):
+        if id_ in __salt__['mc_pillar.get_ldap']()['slaves']:
+            return True
+        return False
+    cache_key = 'mc_pillar.is_ldap_slave_{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+
+
+def is_ldap_master(id_, ttl=60):
+    def _do(id_):
+        if id_ in __salt__['mc_pillar.get_ldap']()['masters']:
+            return True
+        return False
+    cache_key = 'mc_pillar.is_ldap_master_{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+
 
 def get_nss(ttl=60):
     '''Get a map of relationship between name servers
@@ -661,7 +746,7 @@ def get_nss(ttl=60):
                     dns_servers['all'].append(server)
             master_slaves = dns_servers['masters'].setdefault(master, [])
             for target in slaves_targets:
-                if not target in master_slaves:
+                if target not in master_slaves:
                     master_slaves.append(target)
                 target_masters = dns_servers['slaves'].setdefault(target, [])
                 if master not in target_masters:
@@ -1151,6 +1236,9 @@ def get_db_infrastructure_maps(ttl=60):
 
 
 def get_ldap_configuration(id_=None, ttl=60):
+    '''
+    Ldap client configuration
+    '''
     if not id_:
         id_ = __opts__['id']
     def _do_ldap(id_, sysadmins=None):
@@ -1587,15 +1675,20 @@ def get_top_variables(ttl=15):
 
 def is_dns_slave(id_, ttl=60):
     def _do(id_):
-        servers = get_nss_for_zone(id_)
-    cache_key = 'mc_pillar.is_dns_slave_{9}'.format(id_)
-    return memoize_cache(_do, [], {}, cache_key, ttl)
+        if id_ in __salt__['mc_pillar.get_nss']()['slaves']:
+            return True
+        return False
+    cache_key = 'mc_pillar.is_dns_slave_{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+
 
 def is_dns_master(id_, ttl=60):
     def _do(id_):
-        return
-    cache_key = 'mc_pillar.is_dns_master_{9}'.format(id_)
-    return memoize_cache(_do, [], {}, cache_key, ttl)
+        if id_ in __salt__['mc_pillar.get_nss']()['masters']:
+            return True
+        return False
+    cache_key = 'mc_pillar.is_dns_master_{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 
 def get_makina_states_variables(id_, ttl=60):

@@ -1,0 +1,18 @@
+# AUTO-GENERATED FILE - DO NOT EDIT!! Use ldapmodify.
+# CRC32 cbf6a964
+dn: cn={16}sudo-fd-conf
+objectClass: olcSchemaConfig
+cn: {16}sudo-fd-conf
+olcAttributeTypes: {0}( 1.3.6.1.4.1.38414.23.1.1 NAME 'fdSudoRDN' DESC 'Fusion
+ Directory - sudo RDN' EQUALITY caseExactIA5Match SUBSTR caseExactIA5Substring
+ sMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE )
+olcObjectClasses: {0}( 1.3.6.1.4.1.38414.23.2.1 NAME 'fdSudoPluginConf' DESC '
+ FusionDirectory sudo plugin configuration' SUP top AUXILIARY MUST cn MAY fdSu
+ doRDN )
+structuralObjectClass: olcSchemaConfig
+entryUUID: b2d263c0-6a4f-1033-86d1-773bdb858bca
+creatorsName: cn=config
+createTimestamp: 20140507162342Z
+entryCSN: 20140507162342.230263Z#000000#000#000000
+modifiersName: cn=config
+modifyTimestamp: 20140507162342Z
