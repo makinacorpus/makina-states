@@ -202,7 +202,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     {{ configuration_add_object(type='service',
                                 file='hosts/'+data.hostname+'/dns.cfg',
                                 attrs= {
-                                    'service_description': "DNS "+data.dns_hostname+" → "+data.dns_address,
+                                    'service_description': "DNS "+data.services_check_command_args.dns.query_address+" → "+data.services_check_command_args.dns.expected_address,
                                     'host_name': data.hostname,
                                     'use': "generic-service",
                                     'check_command': "check_dig!"
@@ -218,7 +218,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     {{ configuration_add_object(type='service',
                                 file='hosts/'+data.hostname+'/dns_reverse.cfg',
                                 attrs= {
-                                    'service_description': "DNS "+data.dns_address+" → "+data.dns_hostname,
+                                    'service_description': "DNS "+data.services_check_command_args.dns_reverse.query_address+" → "+data.services_check_command_args.dns_reverse.expected_address,
                                     'host_name': data.hostname,
                                     'use': "generic-service",
                                     'check_command': "check_dig!"

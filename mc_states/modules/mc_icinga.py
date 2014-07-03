@@ -727,6 +727,12 @@ def settings():
                                     'expected_strings': ['icinga', 'These pages require a browser which supports frames.', '" ;']
                                 },
                             },
+                            'services_check_command_args': {
+                                'dns': {
+                                    'query_address': "localhost.",
+                                    'expected_address': "127.0.0.1",
+                                },
+                            },
                         },
                         'hostname2': {
                             'hostname': "hostname2",
@@ -742,6 +748,10 @@ def settings():
                             'services_check_command_args': {
                                 'ssh': {
                                     'hostname': '127.127',
+                                },
+                                'dns': {
+                                    'query_address': "localhost.",
+                                    'expected_address': "127.0.0.1",
                                 },
                             },
                         },
