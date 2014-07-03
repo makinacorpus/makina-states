@@ -323,8 +323,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'check_command': "check_by_ssh_mountpoint!"
                                                      +check_by_ssh_params+"!"
                                                      +path+"!"
-                                                     +data.services_check_command_args.mountpoints.warning|string+"!"
-                                                     +data.services_check_command_args.mountpoints.critical|string,
+                                                     +data.services_check_command_args.mountpoints[mountpoint].warning|string+"!"
+                                                     +data.services_check_command_args.mountpoints[mountpoint].critical|string,
                                 })
     }}
 {% endfor %}

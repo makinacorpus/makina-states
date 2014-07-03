@@ -738,6 +738,7 @@ def settings():
                             'check_3ware_raid': True,
                             'check_cciss': True,
                             'check_ntp_peer': True,
+                            'mountpoint_home': True,
                             'html': {
                                 'url1': {
                                     'hostname': "icinga-cgi.localhost",
@@ -754,6 +755,11 @@ def settings():
                                 },
                             },
                             'services_check_command_args': {
+                                'mountpoints': {
+                                    'default': {
+                                        'warning': 90,
+                                    },
+                                },
                                 'dns': {
                                     'query_address': "localhost.",
                                     'expected_address': "127.0.0.1",
@@ -1365,8 +1371,10 @@ def add_auto_configuration_host_settings(hostname,
            'timeout': 10,
        },
        'mountpoints': {
-           'warning': 10,
-           'critical': 5,
+           'default': {
+               'warning': 10,
+               'critical': 5,
+           },
        },
        'raid': {},
        'md_raid': {},
@@ -1433,28 +1441,47 @@ def add_auto_configuration_host_settings(hostname,
            'critical': 100,
        },
     }
+
     # override the commands parameters values
     if not isinstance(services_check_command_args, dict):
         services_check_command_args = {}
 
     for name, command in services_check_command_default_args.items():
         if not name in services_check_command_args:
-            services_check_command_args[name] = services_check_command_default_args[name]
-        else:
-            services_check_command_args[name] = dict(services_check_command_default_args[name].items() + services_check_command_args[name].items())
+            services_check_command_args[name] = {}
+        services_check_command_args[name] = dict(services_check_command_default_args[name].items() + services_check_command_args[name].items())
 
-    # copy the ssh values for each service
-    for name, command in services_check_command_args.items():
-        if 'check_by_ssh' not in command:
-            command_ssh_user = command['ssh_user'] if 'ssh_user' in command else ssh_user
-            command_ssh_addr = command['ssh_addr'] if 'ssh_addr' in command else ssh_addr
-            command_ssh_port = command['ssh_port'] if 'ssh_port' in command else ssh_port
-            command_ssh_timeout = command['ssh_timeout'] if 'ssh_timeout' in command else ssh_timeout
-            services_check_command_args[name]['check_by_ssh'] = str(command_ssh_user)+"!"\
-                                                               +str(command_ssh_addr)+"!"\
-                                                               +str(command_ssh_port)+"!"\
-                                                               +str(command_ssh_timeout)
 
+    # override mountpoints subdictionaries
+
+    # for each mountpoint, build the dictionary:
+    # priority for values
+    # services_check_command_default_args['mountpoints']['default']
+    # services_check_command_default_args['mountpoints'][mountpoint]
+    # services_check_command_args['mountpoints']['default']
+    # services_check_command_args['mountpoints'][mountpoint]
+    for mountpoint, path in mountpoints_path.items():
+        if not mountpoint in services_check_command_args['mountpoints']:
+            services_check_command_args['mountpoints'][mountpoint] = {}
+
+        if not mountpoint in services_check_command_default_args['mountpoints']:
+            services_check_command_default_args['mountpoints'][mountpoint] = services_check_command_default_args['mountpoints']['default']
+
+        services_check_command_args['mountpoints'][mountpoint] = dict(services_check_command_default_args['mountpoints']['default'].items()
+                                                                     +services_check_command_default_args['mountpoints'][mountpoint].items())
+
+        services_check_command_args['mountpoints'][mountpoint] = dict(services_check_command_args['mountpoints'][mountpoint].items()
+                                                                     +services_check_command_args['mountpoints']['default'].items())
+
+        services_check_command_args['mountpoints'][mountpoint] = dict(services_check_command_args['mountpoints'][mountpoint].items()
+                                                                     +services_check_command_args['mountpoints'][mountpoint].items())
+
+    # merge default dictionaries in order to allow {{mountpoints.defaults.warning}} in jinja template
+    if not 'default' in services_check_command_args['mountpoints']:
+        services_check_command_args['mountpoints']['default'] = services_check_command_default_args['mountpoints']['default']
+    else:
+        services_check_command_args['mountpoints']['default'] = dict(services_check_command_default_args['mountpoints']['default'].items() 
+                                                                   + services_check_command_args['mountpoints']['default'].items())
 
     kwargs.setdefault('services_check_command_args', services_check_command_args)
 
