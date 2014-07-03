@@ -1,8 +1,8 @@
 {% set data = salt['mc_burp.settings']() %}
 include:
   - makina-states.services.backup.burp.hooks
-  - makina-states.services.backup.burp.sync
-  - makina-states.services.backup.burp.cleanup
+  - makina-states.services.backup.burp.server.sync
+  - makina-states.services.backup.burp.server.cleanup
 {% if salt['mc_controllers.mastersalt_mode']() %}
 {% for client, cdata in data['clients'].items() %}
 {{client}}-install-burp-configuration:
