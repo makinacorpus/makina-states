@@ -25,7 +25,6 @@ from copy import deepcopy
 import os
 from salt.utils.odict import OrderedDict
 import mc_states.utils
-from salt.modules import tls as tlsm
 import M2Crypto
 try:
     import OpenSSL
@@ -95,25 +94,35 @@ def settings():
     return _settings()
 
 
-
-
-
 def ensure_ca_present():
     cloudSettings = __salt__['mc_cloud.settings']()
     ssl_gen_d = cloudSettings['ssl_pillar_dir']
     old_d = __opts__.get('ca.cert_base_path', '')
     try:
-        __opts__['ca.cert_base_path'] = ssl_gen_d
-        tlsm.__salt__ = __salt__
-        tlsm.__opts__ = __opts__
-        if not tlsm._ca_exists(cloudSettings['ssl']['ca']['ca_name']):
+        __salt__['tls.set_ca_path'](ssl_gen_d)
+        if not __salt__['tls.ca_exists'](cloudSettings['ssl']['ca']['ca_name']):
             ret = __salt__['tls.create_ca'](**cloudSettings['ssl']['ca'])
             lret = ret.lower()
             if not (('already' in lret) or ('created' in lret)):
                 raise CertificateCreationError(
                     'Failed to create ca cert for cloud controller')
     finally:
-        __opts__['ca.cert_base_path'] = old_d
+        __salt__['tls.set_ca_path'](old_d)
+
+
+def get_cacert(as_text=False):
+    cloudSettings = __salt__['mc_cloud.settings']()
+    ssl_gen_d = cloudSettings['ssl_pillar_dir']
+    old_d = __opts__.get('ca.cert_base_path', '')
+    path = None
+    try:
+        __salt__['tls.set_ca_path'](ssl_gen_d)
+        path = __salt__['tls.get_ca'](
+            cloudSettings['ssl']['ca']['ca_name'],
+            as_text=as_text)
+    finally:
+        __salt__['tls.set_ca_path'](old_d)
+    return path
 
 
 def get_cert_for(domain, gen=False, domain_csr_data=None):
@@ -133,10 +142,8 @@ def get_cert_for(domain, gen=False, domain_csr_data=None):
         selfsigned = True
         old_d = __opts__.get('ca.cert_base_path', '')
         try:
-            __opts__['ca.cert_base_path'] = ssl_gen_d
-            tlsm.__salt__ = __salt__
-            tlsm.__opts__ = __opts__
-            if not tlsm._ca_exists(cloudSettings['ssl']['ca']['ca_name']):
+            __salt__['tls.set_ca_path'](ssl_gen_d)
+            if not __salt__['tls.ca_exists'](cloudSettings['ssl']['ca']['ca_name']):
                 ret = __salt__['tls.create_ca'](**cloudSettings['ssl']['ca'])
                 lret = ret.lower()
                 if not (('already' in lret) or ('created' in lret)):
@@ -154,7 +161,7 @@ def get_cert_for(domain, gen=False, domain_csr_data=None):
             __salt__['tls.create_ca_signed_cert'](
                 ca, domain, cloudSettings['ssl']['cert_days'])
         finally:
-            __opts__['ca.cert_base_path'] = old_d
+            __salt__['tls.set_ca_path'](old_d)
     if not os.path.exists(certp):
         raise CertificateNotFoundError(
             'Certificate not found for {0}'.format(domain))
@@ -257,7 +264,7 @@ def get_certs_dir():
     return certs_dir
 
 
-def search_matching_certificate(domain):
+def search_matching_certificate(domain, as_text=False):
     '''Search in the pillar certificate directory the
     certificate belonging to a particular domain'''
     if not HAS_SSL:
@@ -294,10 +301,15 @@ def search_matching_certificate(domain):
     if (not certk) or (certk and not os.path.exists(certk)):
         raise MissingKeyError(
             '{1}: Missing private key for cert: {0}'.format(certp, domain))
+    if as_text:
+        with open(certp) as fic:
+            certp = fic.read()
+        with open(certk) as fic:
+            certk = fic.read()
     return certp, certk
 
 
-def ssl_certs(domains):
+def ssl_certs(domains, as_text=False):
     '''
     Maybe Generate
     and Return SSL certificate and key paths for domain
@@ -312,10 +324,24 @@ def ssl_certs(domains):
         domains = domains.split(',')
     ssl_certs = []
     for domain in domains:
-        crt_data = search_matching_certificate(domain)
+        crt_data = search_matching_certificate(
+            domain, as_text=as_text)
         if crt_data not in ssl_certs:
             ssl_certs.append(crt_data)
     return ssl_certs
+
+
+def ca_ssl_certs(domains, as_text=False):
+    '''
+    Wrapper to ssl_certs to also return the cacert
+    information
+    '''
+
+    cacert = get_cacert(as_text=as_text)
+    rdomains = []
+    for domain in ssl_certs(domains, as_text=as_text):
+        rdomains.append((cacert,) + domain)
+    return rdomains
 
 
 def dump():
