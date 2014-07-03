@@ -214,38 +214,130 @@ This macro is designed to add an host and associated services
 ::
 
     {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
-    {% set data = salt['mc_icinga.add_auto_configuration_host_settings'](hostname,
-                                                                         attrs,
-                                                                         ssh_user,
-                                                                         ssh_addr,
-                                                                         ssh_port,
-                                                                         check_ssh,
-                                                                         mountpoint_root,
-                                                                         mountpoint_var,
-                                                                         mountpoint_srv,
-                                                                         mountpoint_data,
-                                                                         mountpoint_home,
-                                                                         mountpoint_var_makina,
-                                                                         mountpoint_var_www,
-                                                                         check_mountpoints,
-                                                                         check_swap,
-                                                                         check_http,
-                                                                         check_cpuload,
-                                                                         check_procs,
-                                                                         check_dns,
-                                                                         check_dns_reverse,
-                                                                         **kwargs
-                                                                        ) %}
+    {% icinga.configuration_add_auto_host(hostname,
+                                         attrs={},
+                                         ssh_user='root',
+                                         ssh_addr,
+                                         ssh_port=22,
+                                         check_ssh=True,
+                                         check_dns=True,
+                                         check_dns_reverse=True,
+                                         check_http=True,
+                                         check_html=True,
+                                         html={},
+                                         check_ntp_peer=False,
+                                         check_ntp_time=True,
+                                         mountpoint_root=True,
+                                         mountpoint_var=False,
+                                         mountpoint_srv=False,
+                                         mountpoint_data=False,
+                                         mountpoint_home=False,
+                                         mountpoint_var_makina=False,
+                                         mountpoint_var_www=False,
+                                         check_mountpoints=True,
+                                         check_raid=False,
+                                         check_md_raid=False,
+                                         check_megaraid_sas=False,
+                                         check_3ware_raid=False,
+                                         check_cciss=False,
+                                         check_drbd=False,
+                                         check_swap=True,
+                                         check_cpuload=True,
+                                         check_procs=True,
+                                         check_cron=True,
+                                         check_debian_packages=False,
+                                         check_burp_backup_age=False,
+                                         check_rdiff=False,
+                                         check_ddos=True,
+                                         check_haproxy_stats=False,
+                                         check_postfixqueue=False,
+                                         check_postfix_mailqueue=True,
+                                         services_check_command_args={}
+                                        ) %}
 
 with
 
     :hostname: the hostname of the added host
-    :attr: the directive for which a value must be added
-    :attrs: a dictionary in which each key corresponds to a directive
+    :attrs: a dictionary in which each key corresponds to a directive in the host definition
     :ssh_user: user to connect the host (it is used by check_by_ssh command)
     :ssh_addr: address used to do the ssh connection in order to perform check_by_ssh. this address is not the hostname address becasue we can use a ssh gateway
     :ssh_port: ssh_port
-    :check_*: a boolean to indicate that the service has to be checked
+    :check_*: boolean to indicate that the service has to be checked
+    :services_check_command_args: dictionary to override the arguments given in check_command in each service
+    :html: dictionary in wich subdictionaries define vhost, url and s a list of strings which must be found in the webpage (this dictionary is used only if check_html=True)
 
-The host is added in /etc/icinga/object/salt_generated/<hostname>/host.cfg
-The services are added in this directory too.
+
+The host is added in /etc/icinga/objects/salt_generated/<hostname>/host.cfg
+The services are added in this directory too (for ssh it will be /etc/icinga/objects/salt_generated/<hostname>/ssh.cfg)
+
+The services are defined specially for the host.
+There is no::
+
+    define service {
+        host_name host1,host2
+    }
+
+The commands definitions are located in objects/objects_defintions subdictionary in mc_icinga.py
+They are installed with a state in configuration.sls.
+
+All the commands objects are created even if no service use them.
+
+In commands, the icinga/nagios variables like '$HOSTADDRESS$' and '$HOSTNAME$' are not used in order to allow
+overriding parameters with 'services_check_command_args' dictionary.
+
+Only '$ARGN$' variables are used.
+
+All parameters have not been added for each command because for most of them, no default value is given.
+To add a new parameter:
+
+  - Add the parameter in command definition located in objects_defintions dictionary
+  - Add the default value in 'services_check_command_default_args' dictionary located in 'add_auto_configuration_host_settings'
+    function (in mc_icinga.py)
+  - Edit the 'attrs' dictionary in service defintion in macro configuration_add_auto_host
+
+
+
+
+The syntax for 'html' argument is a dictionary for each url to check. In each dictionary, the url is defined and a list of strings.
+Each string is looked for in the webpage.
+
+The dictionary looks like::
+
+    html = {
+        'name1': {
+            'hostname': "vhost1.localhost",
+            'url': "/robots.txt",
+            'auth': "",
+            'expected_strings': ['Disallow'],
+        },
+    }
+
+The key for subdictionaries ('name1' in the example) are used only for service filename.
+
+The values in 'expected_strings' list are transformed in '-s "value1" -s "value2"' so that it can be used in only one argument for command
+It may be possible to inject code.
+
+It is possible to inject code with all icinga/nagios variables because it is not managed with bash, so that quotes arround variables are useless::
+
+    command!" ; rm -r / ; echo "
+
+is replace in::
+
+    check_ssh -H "$ARG1$"
+
+with::
+
+    check_ssh -H "" ; rm -r / ; echo ""
+
+the injection works.
+
+I don't find any obvious solution to avoid injection in variables.
+
+We can generate one command definition per service and hard code arguments with salt::
+
+    define command {
+        command_name check_ssh_for_hostname1
+        command_line check_ssh -H 'hostname1'
+    }
+
+but it move the issue on salt. we can't know if a corrupted command will be generated.

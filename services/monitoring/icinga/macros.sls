@@ -78,7 +78,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 #     hostname
 #         the hostname for the host to add
 #     attrs
-#         a dictionary in which each key corresponds to a directive
+#         a dictionary in which each key corresponds to a directive in host definition
 #     check_*
 #         a boolean to indicate that the service has to be checked
 #     ssh_user
@@ -88,6 +88,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 #         this address is not the hostname address becasue we can use a ssh gateway
 #     ssh_port
 #         ssh port
+#     services_check_command_args
+#         dictionary to override the arguments given in check_command for each service
+#     html
+#         dictionary to define vhost,url and a list of strings which must be found in the webpage
 #
 #}
 

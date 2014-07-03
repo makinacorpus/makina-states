@@ -65,10 +65,13 @@ def settings():
         commands_static_values
             dictionary to store values used in check_commands in configuration_add_auto_host macro
         objects_definitions
-            dictionary to store objects configuration like commands, contacts, timeperiods, ... each subdictionary is given to configuration_add_object macros
-            as kwargs parameter
+            dictionary to store objects configuration like commands, contacts, timeperiods, ...
+            each subdictionary is given to configuration_add_object macros
+            as \*\*kwargs parameter
         autoconfigured_hosts_definitions
-            dictionary to store hosts auto configurations ; each subdictionary is given to configuration_add_auto_host macro as kwargs parameter
+            dictionary to store hosts auto configurations ;
+            each subdictionary is given to configuration_add_auto_host macro as \*\*kwargs
+            parameter
 
     icinga_cfg
         dictionary to store values of icinga.cfg configuration file
@@ -373,7 +376,6 @@ def settings():
                                                 "-t '$ARG4$' "\
                                                 "-u '$ARG5$' "\
                                                 "-a '$ARG6$' "\
-                                                # allow code injection ):
                                                 " $ARG7$ ",
                             },
                         },
@@ -724,7 +726,8 @@ def settings():
                                     'hostname': "icinga-cgi.localhost",
                                     'url': "/",
                                     'auth': "icingaadmin:icingaadmin",
-                                    'expected_strings': ['icinga', 'These pages require a browser which supports frames.', '" ;']
+                                    'expected_strings': ['icinga', '\\\\" \\\\; exit 3 \\\\; \\\\" ']
+
                                 },
                             },
                             'services_check_command_args': {
@@ -1247,7 +1250,8 @@ def add_auto_configuration_host_settings(hostname,
     for name, check in html.items():
         if isinstance(check['expected_strings'], list):
             expected_strings = check['expected_strings']
-            expected_strings = [ value.replace('"', '\\\\"').replace(';', '\\\\;') for value in expected_strings ]
+            # to avoid quotes conflicts
+            expected_strings = [ value.replace('"', '\\\\"') for value in expected_strings ]
             html[name]['expected_strings'] = '-s "'+'" -s "'.join(expected_strings)+'"'
 
     kwargs.setdefault('html', html)
