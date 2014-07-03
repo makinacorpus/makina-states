@@ -58,7 +58,17 @@ def cli(*args, **kwargs):
         })
         return client(*args, **kwargs)
     fun_ = args[0]
-    ttl = kwargs.pop('cache_ttl', api.RUNNER_CACHE_TIME)
+
+    defaults_ttls = {}
+    #    'mc_cloud_compute_node.target_for_vm': 60,
+    #    'mc_cloud_compute_node.vt_for_vm': 60,
+    #    'mc_cloud_compute_node.get_reverse_proxies_for_target': 60,
+    #    'mc_cloud_compute_node.get_settings_for_target': 60,
+    #    'mc_cloud_saltify.settings_for_target': 60,
+    #}
+    ttl = kwargs.pop('cache_ttl',
+                     defaults_ttls.get(fun_,
+                                       api.RUNNER_CACHE_TIME))
     cache_key = ''
     if (
         fun_ in [

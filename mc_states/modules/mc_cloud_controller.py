@@ -309,7 +309,7 @@ def ssl_certs(domains):
     if not domains:
         raise ValueError('domains must be set')
     if isinstance(domains, basestring):
-        domains = [domains]
+        domains = domains.split(',')
     ssl_certs = []
     for domain in domains:
         crt_data = search_matching_certificate(domain)
