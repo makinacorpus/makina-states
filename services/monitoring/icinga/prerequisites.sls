@@ -83,7 +83,6 @@ icinga-mklivestatus-build-configure:
     - watch_in:
       - mc_proxy: icinga-post-install
       - cmd: icinga-mklivestatus-build-make
-    - unless: "test -f {{icingaSettings.modules.mklivestatus.lib_file}}"
 
 icinga-mklivestatus-build-make:
   cmd.run:
@@ -94,7 +93,6 @@ icinga-mklivestatus-build-make:
       - cmd: icinga-mklivestatus-build-configure
     - watch_in:
       - mc_proxy: icinga-post-install
-    - unless: "test -f {{icingaSettings.modules.mklivestatus.lib_file}}"
 
 icinga-mklivestatus-install:
   file.copy:
@@ -117,7 +115,6 @@ icinga-mklivestatus-clean-tmp:
       - file: icinga-mklivestatus-install
     - watch_in:
       - mc_proxy: icinga-post-install
-    - unless: "test -f {{icingaSettings.modules.mklivestatus.lib_file}}"
 
 
 {% endif %}

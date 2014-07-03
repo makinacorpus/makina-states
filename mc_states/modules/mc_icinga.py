@@ -359,6 +359,7 @@ def settings():
                             'attrs': {
                                 'command_name': "check_http",
                                 'command_line': checks_directory+"/check_http "\
+                                                "-E "\
                                                 "-p '$ARG1$' "\
                                                 "-H '$ARG2$' "\
                                                 "-I '$ARG3$' "\
@@ -371,6 +372,7 @@ def settings():
                             'attrs': {
                                 'command_name': "check_html",
                                 'command_line': checks_directory+"/check_http "\
+                                                "-E "\
                                                 "-p '$ARG1$' "\
                                                 "-H '$ARG2$' "\
                                                 "-I '$ARG3$' "\
@@ -744,6 +746,12 @@ def settings():
                                     'expected_strings': ['icinga', '\\\\" \\\\\\\\; exit 1 \\\\\\\\; \\\\" ']
 
                                 },
+                                'url2': {
+                                    'hostname': "icinga-web.localhost",
+                                    'url': "/icinga-web/",
+                                    'auth': "",
+                                    'expected_strings': [],
+                                },
                             },
                             'services_check_command_args': {
                                 'dns': {
@@ -911,7 +919,7 @@ def settings():
                     'admin_pager': "pageroot@localhost",
                     'daemon_dumps_core': 0,
                     'use_large_installation_tweaks': 0,
-                    'enable_environment_macros': 1,
+                    'enable_environment_macros': 0,
                     'free_child_process_memory': 1,
                     'child_processes_fork_twice': 1,
                     'debug_level': 0,
@@ -1240,7 +1248,6 @@ def add_auto_configuration_host_settings(hostname,
         check_dns_reverse = False
 
     if check_dns or check_dns_reverse:
-
         address_splitted = attrs['address'].split('.')
         inaddr = '.'.join(address_splitted[::-1]) # tanslate a.b.c.d in d.c.b.a
         inaddr = inaddr + '.in-addr.arpa.'
@@ -1267,7 +1274,7 @@ def add_auto_configuration_host_settings(hostname,
     for name, check in html.items():
         if isinstance(check['expected_strings'], list):
             expected_strings = check['expected_strings']
-            # to avoid quotes conflicts
+            # to avoid quotes conflicts (doesn't avoid code injection)
             expected_strings = [ value.replace('"', '\\\\"') for value in expected_strings ]
             html[name]['expected_strings'] = '-s "'+'" -s "'.join(expected_strings)+'"'
 
@@ -1372,6 +1379,7 @@ def add_auto_configuration_host_settings(hostname,
            'critical': '5%',
        },
        'cpuload': {
+#          we don't know the cpu number of the monitored host
            'warning': 0.7,
            'critical': 0.9,
        },
@@ -1391,7 +1399,7 @@ def add_auto_configuration_host_settings(hostname,
 #           'critical':
        },
        'burp_backup_age': {
-           # ssh values should be replaced with the values concerning the backup host
+           # ssh values should be replaced with the values concerning the backup host.
            'ssh_user': ssh_user,
            'ssh_addr': ssh_addr,
            'ssh_port': ssh_port,
@@ -1434,6 +1442,19 @@ def add_auto_configuration_host_settings(hostname,
             services_check_command_args[name] = services_check_command_default_args[name]
         else:
             services_check_command_args[name] = dict(services_check_command_default_args[name].items() + services_check_command_args[name].items())
+
+    # copy the ssh values for each service
+    for name, command in services_check_command_args.items():
+        if 'check_by_ssh' not in command:
+            command_ssh_user = command['ssh_user'] if 'ssh_user' in command else ssh_user
+            command_ssh_addr = command['ssh_addr'] if 'ssh_addr' in command else ssh_addr
+            command_ssh_port = command['ssh_port'] if 'ssh_port' in command else ssh_port
+            command_ssh_timeout = command['ssh_timeout'] if 'ssh_timeout' in command else ssh_timeout
+            services_check_command_args[name]['check_by_ssh'] = str(command_ssh_user)+"!"\
+                                                               +str(command_ssh_addr)+"!"\
+                                                               +str(command_ssh_port)+"!"\
+                                                               +str(command_ssh_timeout)
+
 
     kwargs.setdefault('services_check_command_args', services_check_command_args)
 

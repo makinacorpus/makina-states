@@ -262,7 +262,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
         {{ configuration_add_object(type='service',
                                     file='hosts/'+data.hostname+'/html_'+name+'.cfg',
                                     attrs= {
-                                        'service_description': "HTML for "+check.url+" on vhost "+check.hostname,
+                                        'service_description': "HTML for "+check.url+" on vhost "+check.hostname+" - "+name,
                                         'host_name': data.hostname,
                                         'use': "generic-service",
                                         'check_command': "check_html!"
@@ -493,6 +493,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     }}
 {% endif %}
 
+# add solr service
 {% if data.check_solr %}
     {{ configuration_add_object(type='service',
                                 file='hosts/'+data.hostname+'/solr.cfg',
