@@ -57,7 +57,9 @@ icinga-nagios-plugins-pkgs:
 {% endif %}
 
 {% if icingaSettings.modules['mklivestatus'].enabled %}
+{% set need_build = salt['cmd.run']("[[ -f '"+icingaSettings.modules.mklivestatus.lib_file+"' ]]; echo -n $?") %}
 {% set tmpf = "/tmp/mk-livestatus" %}
+{% if "1" == need_build %}
 icinga-mklivestatus-download:
   archive.extracted:
     - name: {{tmpf}}
@@ -103,4 +105,5 @@ icinga-mklivestatus-install:
     - watch_in:
       - mc_proxy: icinga-post-install
 
+{% endif %}
 {% endif %}
