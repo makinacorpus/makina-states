@@ -1799,6 +1799,7 @@ def link_pillar(name, *args, **kwargs):
 def unlink_pillar(name, *args, **kwargs):
     cfg = get_configuration(name, nodata=True,  *args, **kwargs)
     ret = _get_ret(name, *args, **kwargs)
+    kwargs.pop('ret', None)
     salt_settings = __salt__['mc_salt.settings']()
     pillar_root = os.path.join(salt_settings['pillarRoot'])
     pillarf = os.path.join(pillar_root, 'top.sls')
@@ -1828,6 +1829,7 @@ def unlink_pillar(name, *args, **kwargs):
 def link_salt(name, *args, **kwargs):
     cfg = get_configuration(name, nodata=True, *args, **kwargs)
     ret = _get_ret(name, *args, **kwargs)
+    kwargs.pop('ret', None)
     if not  os.path.exists(cfg['wired_salt_root']):
         os.symlink(cfg['salt_root'], cfg['wired_salt_root'])
         _append_comment(
@@ -1839,6 +1841,7 @@ def link_salt(name, *args, **kwargs):
 def unlink_salt(name, *args, **kwargs):
     cfg = get_configuration(name, nodata=True, *args, **kwargs)
     ret = _get_ret(name, *args, **kwargs)
+    kwargs.pop('ret', None)
     if os.path.exists(cfg['wired_salt_root']):
         remove_path(cfg['wired_salt_root'])
         _append_comment(
@@ -1856,6 +1859,7 @@ def link(name, *args, **kwargs):
 
     '''
     ret = _get_ret(name, *args, **kwargs)
+    kwargs.pop('ret', None)
     for nm in name.split(','):
         link_pillar(nm, ret=ret, *args, **kwargs)
         link_salt(nm, ret=ret, *args, **kwargs)
@@ -1868,6 +1872,7 @@ def unlink(name, *args, **kwargs):
     name
         list of project(s) separated by commas
     '''
+    kwargs.pop('ret', None)
     ret = _get_ret(name, *args, **kwargs)
     for nm in name.split(','):
         unlink_pillar(nm, ret=ret, *args, **kwargs)
