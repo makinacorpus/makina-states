@@ -57,9 +57,8 @@ icinga-nagios-plugins-pkgs:
 {% endif %}
 
 {% if icingaSettings.modules['mklivestatus'].enabled %}
-{% set need_build = salt['cmd.run']("[[ -f '"+icingaSettings.modules.mklivestatus.lib_file+"' ]]; echo -n $?") %}
 {% set tmpf = "/tmp/mk-livestatus" %}
-{% if "1" == need_build %}
+
 icinga-mklivestatus-download:
   archive.extracted:
     - name: {{tmpf}}
@@ -72,10 +71,11 @@ icinga-mklivestatus-download:
     - watch_in:
       - mc_proxy: icinga-post-install
       - cmd: icinga-mklivestatus-build-configure
+    - unless: "test -f {{icingaSettings.modules.mklivestatus.lib_file}}"
 
 icinga-mklivestatus-build-configure:
   cmd.run:
-    - name: cd "{{tmpf}}/mk-livestatus-1.2.4" && ./configure --prefix=/usr/share/icinga --exec-prefix=/usr/share/icinga
+    - name: if [[ -d "{{tmpf}}/mk-livestatus-1.2.4" ]]; then cd "{{tmpf}}/mk-livestatus-1.2.4" && ./configure --prefix=/usr/share/icinga --exec-prefix=/usr/share/icinga; fi
     - watch:
       - mc_proxy: icinga-pre-install
       - pkg: icinga-pkgs
@@ -83,16 +83,18 @@ icinga-mklivestatus-build-configure:
     - watch_in:
       - mc_proxy: icinga-post-install
       - cmd: icinga-mklivestatus-build-make
+    - unless: "test -f {{icingaSettings.modules.mklivestatus.lib_file}}"
 
 icinga-mklivestatus-build-make:
   cmd.run:
-    - name: cd "{{tmpf}}/mk-livestatus-1.2.4" && make
+    - name: if [[ -d "{{tmpf}}/mk-livestatus-1.2.4" ]]; then cd "{{tmpf}}/mk-livestatus-1.2.4" && make; fi
     - watch:
       - mc_proxy: icinga-pre-install
       - pkg: icinga-pkgs
       - cmd: icinga-mklivestatus-build-configure
     - watch_in:
       - mc_proxy: icinga-post-install
+    - unless: "test -f {{icingaSettings.modules.mklivestatus.lib_file}}"
 
 icinga-mklivestatus-install:
   file.copy:
@@ -104,6 +106,7 @@ icinga-mklivestatus-install:
       - cmd: icinga-mklivestatus-build-make
     - watch_in:
       - mc_proxy: icinga-post-install
+    - unless: "test -f {{icingaSettings.modules.mklivestatus.lib_file}}"
 
-{% endif %}
+
 {% endif %}
