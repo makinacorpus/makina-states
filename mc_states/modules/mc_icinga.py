@@ -309,6 +309,7 @@ def settings():
                                   'check_procs',
                                   'check_cron',
                                   'check_debian_packages',
+                                  'check_solr.py',
                                   'check_burp_backup_age.py',
                                   'check_rdiff',
                                   'check_ddos.pl',
@@ -376,6 +377,7 @@ def settings():
                                                 "-t '$ARG4$' "\
                                                 "-u '$ARG5$' "\
                                                 "-a '$ARG6$' "\
+                                                # allow code injection
                                                 " $ARG7$ ",
                             },
                         },
@@ -533,6 +535,19 @@ def settings():
                                                     "-t \"$ARG5$\"'",
                             },
                         },
+                        'command_check_solr': {
+                            'type': "command",
+                            'file': "commands/solr.cfg",
+                            'attrs': {
+                                'command_name': "check_solr",
+                                'command_line': checks_directory+"/check_solr.py "\
+                                                +"-p '$ARG1$' "\
+                                                +"-H '$ARG2$' "\
+                                                +"-w '$ARG3$' "\
+                                                +"-c '$ARG4$' "
+                            },
+                        },
+
                         'command_check_by_ssh_burp_backup_age': {
                             'type': "command",
                             'file': "commands/check_by_ssh_burp_backup_age.cfg",
@@ -726,7 +741,7 @@ def settings():
                                     'hostname': "icinga-cgi.localhost",
                                     'url': "/",
                                     'auth': "icingaadmin:icingaadmin",
-                                    'expected_strings': ['icinga', '\\\\" \\\\; exit 3 \\\\; \\\\" ']
+                                    'expected_strings': ['icinga', '\\\\" \\\\\\\\; exit 1 \\\\\\\\; \\\\" ']
 
                                 },
                             },
@@ -1193,6 +1208,7 @@ def add_auto_configuration_host_settings(hostname,
                                         check_procs,
                                         check_cron,
                                         check_debian_packages,
+                                        check_solr,
                                         check_burp_backup_age,
                                         check_rdiff,
                                         check_ddos,
@@ -1287,6 +1303,7 @@ def add_auto_configuration_host_settings(hostname,
     kwargs.setdefault('check_procs', check_procs)
     kwargs.setdefault('check_cron', check_cron)
     kwargs.setdefault('check_debian_packages', check_debian_packages)
+    kwargs.setdefault('check_solr', check_solr)
     kwargs.setdefault('check_burp_backup_age', check_burp_backup_age)
     kwargs.setdefault('check_rdiff', check_rdiff)
     kwargs.setdefault('check_ddos', check_ddos)
@@ -1365,6 +1382,12 @@ def add_auto_configuration_host_settings(hostname,
        'cron': {},
        'debian_packages': {
            'timeout': 60,
+       },
+       'solr': {
+#           'port':
+#           'hostname':
+#           'warning':
+#           'critical':
        },
        'burp_backup_age': {
            # ssh values should be replaced with the values concerning the backup host

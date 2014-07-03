@@ -127,6 +127,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      check_procs=True,
                                      check_cron=True,
                                      check_debian_packages=False,
+                                     check_solr=False,
                                      check_burp_backup_age=False,
                                      check_rdiff=False,
                                      check_ddos=True,
@@ -167,6 +168,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      check_procs,
                                                                      check_cron,
                                                                      check_debian_packages,
+                                                                     check_solr,
                                                                      check_burp_backup_age,
                                                                      check_rdiff,
                                                                      check_ddos,
@@ -485,6 +487,22 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'check_command': "check_by_ssh_debian_packages!"
                                                      +check_by_ssh_params
                                                      +data.services_check_command_args.debian_packages.timeout|string,
+                                })
+    }}
+{% endif %}
+
+{% if data.check_solr %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/solr.cfg',
+                                attrs= {
+                                    'service_description': "Solr",
+                                    'host_name': data.hostname,
+                                    'use': "generic-service",
+                                    'check_command': "check_solr!"
+                                                     +data.services_check_command_args.solr.port|string+"!"
+                                                     +data.services_check_command_args.solr.hostname+"!"
+                                                     +data.services_check_command_args.solr.warning|string+"!"
+                                                     +data.services_check_command_args.solr.critical|string+"!"
                                 })
     }}
 {% endif %}

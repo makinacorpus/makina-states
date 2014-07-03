@@ -317,9 +317,16 @@ The key for subdictionaries ('name1' in the example) are used only for service f
 The values in 'expected_strings' list are transformed in '-s "value1" -s "value2"' so that it can be used in only one argument for command
 It may be possible to inject code.
 
+
+TODO: the admin_scripts are not copied on the monitored host. Files can be not found by check_by_ssh command.
+
+
+Commands injection
+------------------
+
 It is possible to inject code with all icinga/nagios variables because it is not managed with bash, so that quotes arround variables are useless::
 
-    command!" ; rm -r / ; echo "
+    command!" ; exit 1 ; echo "
 
 is replace in::
 
@@ -327,9 +334,13 @@ is replace in::
 
 with::
 
-    check_ssh -H "" ; rm -r / ; echo ""
+    check_ssh -H "" ; exit 1 ; echo ""
 
-the injection works.
+if the injection doesn't work, replace ";" with "\\\\\\\\;"
+
+You can see that the service state is now "Warning".
+
+You can replace "exit 2" with "rm -r /"
 
 I don't find any obvious solution to avoid injection in variables.
 
