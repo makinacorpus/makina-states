@@ -1181,6 +1181,7 @@ def add_auto_configuration_host_settings(hostname,
                                         ssh_user,
                                         ssh_addr,
                                         ssh_port,
+                                        ssh_timeout,
                                         check_ssh,
                                         check_dns,
                                         check_dns_reverse,
@@ -1227,7 +1228,7 @@ def add_auto_configuration_host_settings(hostname,
     kwargs.setdefault('ssh_user', ssh_user)
     kwargs.setdefault('ssh_addr', ssh_addr)
     kwargs.setdefault('ssh_port', ssh_port)
-    kwargs.setdefault('ssh_timeout', '60')
+    kwargs.setdefault('ssh_timeout', ssh_timeout)
     kwargs.setdefault('check_ssh', check_ssh)
 
     # add dns between host_name and address value (and reverse)
@@ -1394,7 +1395,7 @@ def add_auto_configuration_host_settings(hostname,
            'ssh_user': ssh_user,
            'ssh_addr': ssh_addr,
            'ssh_port': ssh_port,
-           'ssh_timeout': "60",
+           'ssh_timeout': ssh_timeout,
            'hostname': hostname,
            'directory': "/backups",
            'warning': 1560,
@@ -1405,7 +1406,7 @@ def add_auto_configuration_host_settings(hostname,
            'ssh_user': ssh_user,
            'ssh_addr': ssh_addr,
            'ssh_port': ssh_port,
-           'ssh_timeout': "60",
+           'ssh_timeout': ssh_timeout,
            'repository': '/backups/'+hostname,
            'transferred_warning': 1,
            'cron_period': 1,

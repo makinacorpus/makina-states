@@ -100,6 +100,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      ssh_user='root',
                                      ssh_addr,
                                      ssh_port=22,
+                                     ssh_timeout=30,
                                      check_ssh=True,
                                      check_dns=True,
                                      check_dns_reverse=True,
@@ -141,6 +142,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      ssh_user,
                                                                      ssh_addr,
                                                                      ssh_port,
+                                                                     ssh_timeout,
                                                                      check_ssh,
                                                                      check_dns,
                                                                      check_dns_reverse,
@@ -179,7 +181,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      **kwargs
                                                                     ) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
-{% set check_by_ssh_params = data.ssh_user+"!"+data.ssh_addr+"!"+data.ssh_port|string+"!"+data.ssh_timeout %}
+{% set check_by_ssh_params = data.ssh_user+"!"+data.ssh_addr+"!"+data.ssh_port|string+"!"+data.ssh_timeout|string %}
 
 
 # add the host object

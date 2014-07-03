@@ -108,5 +108,16 @@ icinga-mklivestatus-install:
       - mc_proxy: icinga-post-install
     - unless: "test -f {{icingaSettings.modules.mklivestatus.lib_file}}"
 
+icinga-mklivestatus-clean-tmp:
+  file.absent:
+    - name: {{tmpf}}
+    - watch:
+      - mc_proxy: icinga-pre-install
+      - pkg: icinga-pkgs
+      - file: icinga-mklivestatus-install
+    - watch_in:
+      - mc_proxy: icinga-post-install
+    - unless: "test -f {{icingaSettings.modules.mklivestatus.lib_file}}"
+
 
 {% endif %}
