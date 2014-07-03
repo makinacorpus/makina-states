@@ -13,8 +13,10 @@ include:
     - group: root
     - watch_in:
       - mc_proxy: burp-post-restart-hook
+      - mc_proxy: burp-post-gen-sync
     - contents: |
             {{'#'}}!/usr/bin/env bash
+            echo "Syncing {{client}}"
             {% for dir in ['burp', 'default', 'init.d', 'cron.d'] -%}rsync -azv -e '{{cdata['rsh_cmd']}}' /etc/burp/clients/{{client}}/etc/{{dir}}/ {{cdata['rsh_dst']}}:/etc/{{dir}}/ &&\
             {% endfor -%}
             /bin/true

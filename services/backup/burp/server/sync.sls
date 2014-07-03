@@ -38,9 +38,9 @@ install-burp-configuration-sync:
                 exit 0
   cmd.run:
     - name: /etc/burp/clients/sync.sh
+    - use_vt: true
     - watch:
-      - service: burp-svc
-      - file: install-burp-configuration-sync
+      - mc_proxy: burp-post-gen-sync
     - watch_in:
-      - mc_proxy: burp-post-restart-hook
+      - mc_proxy: burp-post-sync
 {%endif %}
