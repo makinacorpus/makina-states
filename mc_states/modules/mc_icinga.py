@@ -31,6 +31,1057 @@ __name = 'icinga'
 
 log = logging.getLogger(__name__)
 
+def objects():
+    locs = __salt__['mc_locations.settings']()
+    data = {
+        'directory': locs['conf_dir']+"/icinga/objects/salt_generated",
+        'filescopy': ['check_ping',
+                      'check_ssh',
+                      'check_dig',
+                      'check_http',
+                      'check_ntp_peer',
+                      'check_ntp_time',
+                      'check_by_ssh',
+                      'check_disk',
+                      'check_raid.pl',
+                      'check_md_raid',
+                      'check_megaraid_sas',
+                      'check_3ware_raid',
+                      'check_cciss-1.12',
+                      'check_drbd',
+                      'check_swap',
+                      'check_load',
+                      'check_procs',
+                      'check_cron',
+                      'check_debian_packages',
+                      'check_solr.py',
+                      'check_burp_backup_age.py',
+                      'check_rdiff',
+                      'check_ddos.pl',
+                      'check_haproxy_stats.pl',
+                      'check_postfixqueue.sh',
+                      'check_postfix_mailqueue'],
+        'objects_definitions': {
+            # meta_commands defintions
+            'command_check_meta': {
+                'type': "command",
+                'file': "checkcommands/check_meta.cfg",
+                'attrs': {
+                    'command_name': "check_meta",
+                    'command_line': "/usr/local/nagios/libexec/check_meta_service -i $ARG1$",
+                },
+            },
+            'command_meta_notify': {
+                'type': "command",
+                'file': "checkcommands/meta_notify.cfg",
+                'attrs': {
+                    'command_name': "meta_notify",
+                    'command_line': "/usr/bin/printf \"%b\" \"***** Meta Service Centreon *****\\n\\nNotification Type: $NOTIFICATIONTYPE$\\n\\nService: $SERVICEDESC$\\nState: $SERVICESTATE$\\n\\nDate/Time: $DATETIME$\\n\\nAdditional Info:\\n\\n$OUTPUT$\" | \/bin\/mail -s \"** $NOTIFICATIONTYPE$ $SERVICEDESC$ is $SERVICESTATE$ **\" $CONTACTEMAIL$",
+                },
+            },
+
+            # commands definitions
+            'command_ALWAYS_UP': {
+                'type': "command",
+                'file': "checkcommands/ALWAYS_UP.cfg",
+                'attrs': {
+                    'command_name': "ALWAYS_UP",
+                    'command_line': "$USER1$/check_centreon_dummy -s 0 -o \"PING Not Allowed, always OK\"",
+                },
+            },
+            'command_check_centreon_cpu': {
+                'type': "command",
+                'file': "checkcommands/check_centreon_cpu.cfg",
+                'attrs': {
+                    'command_name': "check_centreon_cpu",
+                    'command_line': "$USER1$/check_centreon_snmp_cpu -H $HOSTADDRESS$ -v 1 -C $ARG1$ -c $ARG2$ -w $ARG3$",
+                },
+            },
+            'command_check_centreon_dummy': {
+                'type': "command",
+                'file': "checkcommands/check_centreon_dummy.cfg",
+                'attrs': {
+                    'command_name': "check_centreon_dummy",
+                    'command_line': "$USER1$/check_centreon_dummy -s $ARG1$ -o $ARG2$",
+                },
+            },
+            'command_check_centreon_load_average': {
+                'type': "command",
+                'file': "checkcommands/check_centreon_load_average.cfg",
+                'attrs': {
+                    'command_name': "check_centreon_load_average",
+                    'command_line': "$USER1$/check_centreon_snmp_loadaverage -H $HOSTADDRESS$ -v $ARG1$ -C $ARG2$ -w $ARG3$ -c $ARG4$",
+                },
+            },
+            'command_check_centreon_memory': {
+                'type': "command",
+                'file': "checkcommands/check_centreon_memory.cfg",
+                'attrs': {
+                    'command_name': "check_centreon_memory",
+                    'command_line': "$USER1$/check_centreon_snmp_memory -H $HOSTADDRESS$ -C $USER2$ -v 1 -w 80 -c 90",
+                },
+            },
+            'command_check_centreon_nb_connections': {
+                'type': "command",
+                'file': "checkcommands/check_centreon_nb_connections.cfg",
+                'attrs': {
+                    'command_name': "check_centreon_nb_connections",
+                    'command_line': "$USER1$/check_centreon_TcpConn -H $HOSTADDRESS$ -C $USER2$ -v 1 -p $ARG1$ -w $ARG2$ -c $ARG3$",
+                },
+            },
+            'command_check_centreon_nt': {
+                'type': "command",
+                'file': "checkcommands/check_centreon_nt.cfg",
+                'attrs': {
+                    'command_name': "check_centreon_nt",
+                    'command_line': "$USER1$/check_centreon_nt -H $HOSTADDRESS$ -p 12489 -v $ARG1$ -l $ARG2$ -s $ARG3$ -w $ARG4$ -c $ARG5$",
+                },
+            },
+            'command_check_centreon_ping': {
+                'type': "command",
+                'file': "checkcommands/check_centreon_ping.cfg",
+                'attrs': {
+                    'command_name': "check_centreon_ping",
+                    'command_line': "$USER1$/check_centreon_ping -H $HOSTADDRESS$ -n $ARG1$ -w $ARG2$ -c $ARG3$",
+                },
+            },
+            'command_check_centreon_process': {
+                'type': "command",
+                'file': "checkcommands/check_centreon_process.cfg",
+                'attrs': {
+                    'command_name': "check_centreon_process",
+                    'command_line': "$USER1$/check_centreon_snmp_process -H $HOSTADDRESS$ -v $ARG1$ -C $ARG2$ -n -p $ARG3$",
+                },
+            },
+            'command_check_centreon_remote_storage': {
+                'type': "command",
+                'file': "checkcommands/check_centreon_remote_storage.cfg",
+                'attrs': {
+                    'command_name': "check_centreon_remote_storage",
+                    'command_line': "$USER1$/check_centreon_snmp_remote_storage -H $HOSTADDRESS$ -n -d $ARG1$ -w $ARG2$ -c $ARG3$ -C $ARG4$ -v $ARG5$",
+                },
+            },
+            'command_check_centreon_snmp_proc_detailed': {
+                'type': "command",
+                'file': "checkcommands/check_centreon_snmp_proc_detailed.cfg",
+                'attrs': {
+                    'command_name': "check_centreon_snmp_proc_detailed",
+                    'command_line': "$USER1$/check_centreon_snmp_process_detailed -H $HOSTADDRESS$ -C $USER2$ -n $ARG1$ -m $ARG2$",
+                },
+            },
+            'command_check_centreon_snmp_value': {
+                'type': "command",
+                'file': "checkcommands/check_centreon_snmp_value.cfg",
+                'attrs': {
+                    'command_name': "check_centreon_snmp_value",
+                    'command_line': "$USER1$/check_centreon_snmp_value -H $HOSTADDRESS$ -C $ARG1$ -v $ARG2$ -o $ARG3$ -w $ARG4$  -c $ARG5$",
+                },
+            },
+            'command_check_centreon_traffic': {
+                'type': "command",
+                'file': "checkcommands/check_centreon_traffic.cfg",
+                'attrs': {
+                    'command_name': "check_centreon_traffic",
+                    'command_line': "$USER1$/check_centreon_snmp_traffic -H $HOSTADDRESS$ -n -i $ARG1$ -w $ARG2$ -c $ARG3$ -C $USER2$ -v $ARG4$",
+                },
+            },
+            'command_check_centreon_traffic_limited': {
+                'type': "command",
+                'file': "checkcommands/check_centreon_traffic_limited.cfg",
+                'attrs': {
+                    'command_name': "check_centreon_traffic_limited",
+                    'command_line': "$USER1$/check_centreon_snmp_traffic -H $HOSTADDRESS$ -n -i $ARG1$ -w $ARG2$ -c $ARG3$ -C $ARG4$ -v $ARG5$ -T $ARG6$",
+                },
+            },
+            'command_check_centreon_uptime': {
+                'type': "command",
+                'file': "checkcommands/check_centreon_uptime.cfg",
+                'attrs': {
+                    'command_name': "check_centreon_uptime",
+                    'command_line': "$USER1$/check_centreon_snmp_uptime -H $HOSTADDRESS$ -C $USER2$ -v 2 -d",
+                },
+            },
+            'command_check_dhcp': {
+                'type': "command",
+                'file': "checkcommands/check_dhcp.cfg",
+                'attrs': {
+                    'command_name': "check_dhcp",
+                    'command_line': "$USER1$/check_dhcp -s $HOSTADDRESS$ -i $ARG1$",
+                },
+            },
+            'command_check_dig': {
+                'type': "command",
+                'file': "checkcommands/check_dig.cfg",
+                'attrs': {
+                    'command_name': "check_dig",
+                    'command_line': "$USER1$/check_dig -H $HOSTADDRESS$ -l $ARG1$",
+                },
+            },
+            'command_check_disk_smb': {
+                'type': "command",
+                'file': "checkcommands/check_disk_smb.cfg",
+                'attrs': {
+                    'command_name': "check_disk_smb",
+                    'command_line': "$USER1$/check_disk_smb -H $HOSTADDRESS$ -s $ARG1$ -u $ARG2$ -p $ARG3$ -w $ARG4$ -c $ARG5$",
+                },
+            },
+            'command_check_distant_disk_space': {
+                'type': "command",
+                'file': "checkcommands/check_distant_disk_space.cfg",
+                'attrs': {
+                    'command_name': "check_distant_disk_space",
+                    'command_line': "$USER1$/check_distant_disk_space -H $HOSTADDRESS$ -C $ARG1$ -p $ARG2$ -w $ARG3$ -c $ARG4$",
+                },
+            },
+            'command_check_dns': {
+                'type': "command",
+                'file': "checkcommands/check_dns.cfg",
+                'attrs': {
+                    'command_name': "check_dns",
+                    'command_line': "$USER1$/check_dns -H $ARG1$ -s $HOSTADDRESS$",
+                },
+            },
+            'command_check_ftp': {
+                'type': "command",
+                'file': "checkcommands/check_ftp.cfg",
+                'attrs': {
+                    'command_name': "check_ftp",
+                    'command_line': "$USER1$/check_ftp -H $HOSTADDRESS$",
+                },
+            },
+            'command_check_host_alive': {
+                'type': "command",
+                'file': "checkcommands/check_host_alive.cfg",
+                'attrs': {
+                    'command_name': "check_host_alive",
+                    'command_line': "$USER1$/check_ping -H $HOSTADDRESS$ -w 3000.0,80% -c 5000.0,100% -p 1",
+                },
+            },
+            'command_check_hpjd': {
+                'type': "command",
+                'file': "checkcommands/check_hpjd.cfg",
+                'attrs': {
+                    'command_name': "check_hpjd",
+                    'command_line': "$USER1$/check_hpjd -H $HOSTADDRESS$ -C public",
+                },
+            },
+            'command_check_http': {
+                'type': "command",
+                'file': "checkcommands/check_http.cfg",
+                'attrs': {
+                    'command_name': "check_http",
+                    'command_line': "$USER1$/check_http -H $HOSTADDRESS$",
+                },
+            },
+            'command_check_https': {
+                'type': "command",
+                'file': "checkcommands/check_https.cfg",
+                'attrs': {
+                    'command_name': "check_https",
+                    'command_line': "$USER1$/check_http -S $HOSTADDRESS$",
+                },
+            },
+            'command_check_http_vhost_uri': {
+                'type': "command",
+                'file': "checkcommands/check_http_vhost_uri.cfg",
+                'attrs': {
+                    'command_name': "check_http_vhost_uri",
+                    'command_line': "$USER1$/check_http -H $ARG1$ -u $ARG2$",
+                },
+            },
+            'command_check_load_average': {
+                'type': "command",
+                'file': "checkcommands/check_load_average.cfg",
+                'attrs': {
+                    'command_name': "check_load_average",
+                    'command_line': "$USER1$/check_load $HOSTADDRESS$ -w $ARG1$ -c $ARG2$",
+                },
+            },
+            'command_check_local_cpu_load': {
+                'type': "command",
+                'file': "checkcommands/check_local_cpu_load.cfg",
+                'attrs': {
+                    'command_name': "check_local_cpu_load",
+                    'command_line': "$USER1$/check_nt -H $HOSTADDRESS$ -v CPULOAD -l $ARG1$ -s \"public\"",
+                },
+            },
+            'command_check_local_disk': {
+                'type': "command",
+                'file': "checkcommands/check_local_disk.cfg",
+                'attrs': {
+                    'command_name': "check_local_disk",
+                    'command_line': "$USER1$/check_disk -w $ARG2$ -c $ARG3$ -p $ARG1$",
+                },
+            },
+            'command_check_local_disk_space': {
+                'type': "command",
+                'file': "checkcommands/check_local_disk_space.cfg",
+                'attrs': {
+                    'command_name': "check_local_disk_space",
+                    'command_line': "$USER1$/check_nt -H $HOSTADDRESS$ -v USEDDISKSPACE -l $ARG1$ -w $ARG2$ -c $ARG3$ -s \"public\"",
+                },
+            },
+            'command_check_local_load': {
+                'type': "command",
+                'file': "checkcommands/check_local_load.cfg",
+                'attrs': {
+                    'command_name': "check_local_load",
+                    'command_line': "$USER1$/check_load -w $ARG1$ -c $ARG2$",
+                },
+            },
+            'command_check_local_procs': {
+                'type': "command",
+                'file': "checkcommands/check_local_procs.cfg",
+                'attrs': {
+                    'command_name': "check_local_procs",
+                    'command_line': "$USER1$/check_procs -w $ARG1$ -c $ARG2$ -u $ARG3$",
+                },
+            },
+            'command_check_local_procs_1': {
+                'type': "command",
+                'file': "checkcommands/check_local_procs_1.cfg",
+                'attrs': {
+                    'command_name': "check_local_procs_1",
+                    'command_line': "$USER1$/check_procs -w $ARG1$ -c $ARG2$ -u $ARG3$",
+                },
+            },
+            'command_check_local_swap': {
+                'type': "command",
+                'file': "checkcommands/check_local_swap.cfg",
+                'attrs': {
+                    'command_name': "check_local_swap",
+                    'command_line': "$USER1$/check_swap -w $ARG1$ -c $ARG2$ -v",
+                },
+            },
+            'command_check_local_users': {
+                'type': "command",
+                'file': "checkcommands/check_local_users.cfg",
+                'attrs': {
+                    'command_name': "check_local_users",
+                    'command_line': "$USER1$/check_users -w $ARG1$ -c $ARG2$",
+                },
+            },
+            'command_check_maxq': {
+                'type': "command",
+                'file': "checkcommands/check_maxq.cfg",
+                'attrs': {
+                    'command_name': "check_maxq",
+                    'command_line': "$USER1$/check_maxq_script_return -r $ARG1$ -P $ARG2$",
+                },
+            },
+            'command_check_nntp': {
+                'type': "command",
+                'file': "checkcommands/check_nntp.cfg",
+                'attrs': {
+                    'command_name': "check_nntp",
+                    'command_line': "$USER1$/check_nntp -H $HOSTADDRESS$",
+                },
+            },
+            'command_check_nt_cpu': {
+                'type': "command",
+                'file': "checkcommands/check_nt_cpu.cfg",
+                'attrs': {
+                    'command_name': "check_nt_cpu",
+                    'command_line': "$USER1$/check_nt -H $HOSTADDRESS$ -v CPULOAD -s \"public\" -p $ARG1$ -l 2,90,95",
+                },
+            },
+            'command_check_nt_disk': {
+                'type': "command",
+                'file': "checkcommands/check_nt_disk.cfg",
+                'attrs': {
+                    'command_name': "check_nt_disk",
+                    'command_line': "$USER1$/check_nt -H $HOSTADDRESS$ -v USEDDISKSPACE -s \"public\" -l $ARG1$ -w $ARG2$ -c $ARG3$",
+                },
+            },
+            'command_check_nt_memuse': {
+                'type': "command",
+                'file': "checkcommands/check_nt_memuse.cfg",
+                'attrs': {
+                    'command_name': "check_nt_memuse",
+                    'command_line': "$USER1$/check_nt -H $HOSTADDRESS$ -v MEMUSE -s \"public\" -p $ARG1$ -w $ARG2$ -c $ARG3$",
+                },
+            },
+            'command_check_pop': {
+                'type': "command",
+                'file': "checkcommands/check_pop.cfg",
+                'attrs': {
+                    'command_name': "check_pop",
+                    'command_line': "$USER1$/check_pop -H $HOSTADDRESS$",
+                },
+            },
+            'command_check_smtp': {
+                'type': "command",
+                'file': "checkcommands/check_smtp.cfg",
+                'attrs': {
+                    'command_name': "check_smtp",
+                    'command_line': "$USER1$/check_smtp -H $HOSTADDRESS$",
+                },
+            },
+            'command_check_snmp': {
+                'type': "command",
+                'file': "checkcommands/check_snmp.cfg",
+                'attrs': {
+                    'command_name': "check_snmp",
+                    'command_line': "$USER1$/check_snmp -H $HOSTADDRESS$ -o $ARG1$ -w $ARG2$ -C $ARG3$",
+                },
+            },
+            'command_check_tcp': {
+                'type': "command",
+                'file': "checkcommands/check_tcp.cfg",
+                'attrs': {
+                    'command_name': "check_tcp",
+                    'command_line': "$USER1$/check_tcp -H $HOSTADDRESS$ -p $ARG1$ -w $ARG2$ -c $ARG3$",
+                },
+            },
+            'command_check_telnet': {
+                'type': "command",
+                'file': "checkcommands/check_telnet.cfg",
+                'attrs': {
+                    'command_name': "check_telnet",
+                    'command_line': "$USER1$/check_tcp -H $HOSTADDRESS$ -p 23",
+                },
+            },
+            'command_check_udp': {
+                'type': "command",
+                'file': "checkcommands/check_udp.cfg",
+                'attrs': {
+                    'command_name': "check_udp",
+                    'command_line': "$USER1$/check_udp -H $HOSTADDRESS$ -p $ARG1$",
+                },
+            },
+            'command_CSSH_BACKUP': {
+                'type': "command",
+                'file': "checkcommands/CSSH_BACKUP.cfg",
+                'attrs': {
+                    'command_name': "CSSH_BACKUP",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C $ARG1$",
+                },
+            },
+            'command_CSSH_BACKUP_BURP': {
+                'type': "command",
+                'file': "checkcommands/CSSH_BACKUP_BURP.cfg",
+                'attrs': {
+                    'command_name': "CSSH_BACKUP_BURP",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr -q -H $ARG1$ -l root -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_burp_backup_age.py -H $HOSTNAME$ -d /data/burp -w $ARG2$ -c $ARG3$'",
+                },
+            },
+            'command_CSSH_BACKUP_EXT': {
+                'type': "command",
+                'file': "checkcommands/CSSH_BACKUP_EXT.cfg",
+                'attrs': {
+                    'command_name': "CSSH_BACKUP_EXT",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C $ARG1$",
+                },
+            },
+            'command_CSSH_CRON': {
+                'type': "command",
+                'file': "checkcommands/CSSH_CRON.cfg",
+                'attrs': {
+                    'command_name': "CSSH_CRON",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_cron'",
+                },
+            },
+            'command_CSSH_CUSTOM': {
+                'type': "command",
+                'file': "checkcommands/CSSH_CUSTOM.cfg",
+                'attrs': {
+                    'command_name': "CSSH_CUSTOM",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr -q -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C $ARG1$",
+                },
+            },
+            'command_CSSH_CYRUS_CONNECTIONS': {
+                'type': "command",
+                'file': "checkcommands/CSSH_CYRUS_CONNECTIONS.cfg",
+                'attrs': {
+                    'command_name': "CSSH_CYRUS_CONNECTIONS",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr  -q -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_cyrus-imapd -w  $ARG1$ -c $ARG2$'",
+                },
+            },
+            'command_CSSH_DDOS': {
+                'type': "command",
+                'file': "checkcommands/CSSH_DDOS.cfg",
+                'attrs': {
+                    'command_name': "CSSH_DDOS",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_ddos.pl -w $ARG1$ -c$ARG2$'",
+                },
+            },
+            'command_CSSH_DEBIAN_UPDATES': {
+                'type': "command",
+                'file': "checkcommands/CSSH_DEBIAN_UPDATES.cfg",
+                'attrs': {
+                    'command_name': "CSSH_DEBIAN_UPDATES",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr -q -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_debian_packages --timeout=60' --timeout=60",
+                },
+            },
+            'command_CSSH_DRBD': {
+                'type': "command",
+                'file': "checkcommands/CSSH_DRBD.cfg",
+                'attrs': {
+                    'command_name': "CSSH_DRBD",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C $ARG1$",
+                },
+            },
+            'command_CSSH_HAPROXY': {
+                'type': "command",
+                'file': "checkcommands/CSSH_HAPROXY.cfg",
+                'attrs': {
+                    'command_name': "CSSH_HAPROXY",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C $ARG1$",
+                },
+            },
+            'command_CSSH_MAILQUEUE': {
+                'type': "command",
+                'file': "checkcommands/CSSH_MAILQUEUE.cfg",
+                'attrs': {
+                    'command_name': "CSSH_MAILQUEUE",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_postfix_mailqueue -w $ARG1$ -c $ARG2$'",
+                },
+            },
+            'command_CSSH_MEGARAID_SAS': {
+                'type': "command",
+                'file': "checkcommands/CSSH_MEGARAID_SAS.cfg",
+                'attrs': {
+                    'command_name': "CSSH_MEGARAID_SAS",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C $ARG1$",
+                },
+            },
+            'command_CSSH_NTP_PEER': {
+                'type': "command",
+                'file': "checkcommands/CSSH_NTP_PEER.cfg",
+                'attrs': {
+                    'command_name': "CSSH_NTP_PEER",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$  -C '/root/check_ntp_peer -H 195.144.11.170 -w 1 -c 10 -j -1:100 -k -1:200 -W 4 -C 10'",
+                },
+            },
+            'command_CSSH_NTP_PEERS': {
+                'type': "command",
+                'file': "checkcommands/CSSH_NTP_PEERS.cfg",
+                'attrs': {
+                    'command_name': "CSSH_NTP_PEERS",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_ntp_peer -H $ARG1$ -w 1 -c 10 -j -1:100 -k -1:200 -W 4 -C 10'",
+                },
+            },
+            'command_CSSH_NTP_TIME': {
+                'type': "command",
+                'file': "checkcommands/CSSH_NTP_TIME.cfg",
+                'attrs': {
+                    'command_name': "CSSH_NTP_TIME",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C '/root/check_ntp_time -H 195.144.11.170 -w 60 -c 120'",
+                },
+            },
+            'command_CSSH_PROCESS_CRON_RUNNING': {
+                'type': "command",
+                'file': "checkcommands/CSSH_PROCESS_CRON_RUNNING.cfg",
+                'attrs': {
+                    'command_name': "CSSH_PROCESS_CRON_RUNNING",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr -q -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_procs -w 1: -c 1: --command=cron'",
+                },
+            },
+            'command_CSSH_RAID_3WARE': {
+                'type': "command",
+                'file': "checkcommands/CSSH_RAID_3WARE.cfg",
+                'attrs': {
+                    'command_name': "CSSH_RAID_3WARE",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C $ARG1$",
+                },
+            },
+            'command_CSSH_RAID_SOFT': {
+                'type': "command",
+                'file': "checkcommands/CSSH_RAID_SOFT.cfg",
+                'attrs': {
+                    'command_name': "CSSH_RAID_SOFT",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C $ARG1$",
+                },
+            },
+            'command_CSSH_RO_MOUNT': {
+                'type': "command",
+                'file': "checkcommands/CSSH_RO_MOUNT.cfg",
+                'attrs': {
+                    'command_name': "CSSH_RO_MOUNT",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr  -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C $ARG1$ -t $ARG2$",
+                },
+            },
+            'command_CSSH_SAS2IRCU': {
+                'type': "command",
+                'file': "checkcommands/CSSH_SAS2IRCU.cfg",
+                'attrs': {
+                    'command_name': "CSSH_SAS2IRCU",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C $ARG2$",
+                },
+            },
+            'command_CSSH_SUPERVISOR': {
+                'type': "command",
+                'file': "checkcommands/CSSH_SUPERVISOR.cfg",
+                'attrs': {
+                    'command_name': "CSSH_SUPERVISOR",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr  -q -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_supervisorctl.sh $ARG1$'",
+                },
+            },
+            'command_C_APACHE_STATUS': {
+                'type': "command",
+                'file': "checkcommands/C_APACHE_STATUS.cfg",
+                'attrs': {
+                    'command_name': "C_APACHE_STATUS",
+                    'command_line': "$USER1$/check_apachestatus_auto.pl -H $HOSTADDRESS$  -t 8 -w $ARG1$ -c $ARG2$ $ARG3$",
+                },
+            },
+            'command_C_CHECK_LABORANGE_LOGIN': {
+                'type': "command",
+                'file': "checkcommands/C_CHECK_LABORANGE_LOGIN.cfg",
+                'attrs': {
+                    'command_name': "C_CHECK_LABORANGE_LOGIN",
+                    'command_line': "$USER1$/check_laborange_login.sh -u $ARG1$  -w $ARG2$  -c $ARG3$  $ARG4$",
+                },
+            },
+            'command_C_CHECK_LABORANGE_STATS': {
+                'type': "command",
+                'file': "checkcommands/C_CHECK_LABORANGE_STATS.cfg",
+                'attrs': {
+                    'command_name': "C_CHECK_LABORANGE_STATS",
+                    'command_line': "$USER1$/check_laborange_stats.pl -H $HOSTADDRESS$ -s $ARG1$  -t 5",
+                },
+            },
+            'command_C_CHECK_NGINX_STATUS': {
+                'type': "command",
+                'file': "checkcommands/C_CHECK_NGINX_STATUS.cfg",
+                'attrs': {
+                    'command_name': "C_CHECK_NGINX_STATUS",
+                    'command_line': "$USER1$/check_nginx_status.pl -H $HOSTADDRESS$ -u $ARG1$ -s $ARG2$  -t 8 -w $ARG3$ -c $ARG4$",
+                },
+            },
+            'command_C_CHECK_ONE_NAGIOS_ONLY': {
+                'type': "command",
+                'file': "checkcommands/C_CHECK_ONE_NAGIOS_ONLY.cfg",
+                'attrs': {
+                    'command_name': "C_CHECK_ONE_NAGIOS_ONLY",
+                    'command_line': "$USER1$/check_one_nagios",
+                },
+            },
+            'command_C_CHECK_PHPFPM': {
+                'type': "command",
+                'file': "checkcommands/C_CHECK_PHPFPM.cfg",
+                'attrs': {
+                    'command_name': "C_CHECK_PHPFPM",
+                    'command_line': "$USER1$/check_phpfpm_status.pl -H $HOSTADDRESS$ -u $ARG1$ -s $ARG2$  -t 8 -w $ARG3$ -c $ARG4$",
+                },
+            },
+            'command_C_DNS_EXTERNE_ASSOCIATION': {
+                'type': "command",
+                'file': "checkcommands/C_DNS_EXTERNE_ASSOCIATION.cfg",
+                'attrs': {
+                    'command_name': "C_DNS_EXTERNE_ASSOCIATION",
+                    'command_line': "$USER1$/check_dns_host.pl  -H $ARG1$ -q FORWARD -w 50 -c 500 -m $HOSTADDRESS$ -t 8 --recurse=1 $ARG2$",
+                },
+            },
+            'command_C_HTTPS_OPENID_REDIRECT': {
+                'type': "command",
+                'file': "checkcommands/C_HTTPS_OPENID_REDIRECT.cfg",
+                'attrs': {
+                    'command_name': "C_HTTPS_OPENID_REDIRECT",
+                    'command_line': "$USER1$/check_http -H $ARG1$ -I $HOSTADDRESS$  -u $ARG2$ --useragent=supervision --warning=$ARG3$ --critical=$ARG4$ --timeout=$ARG5$ -s \"https://openid.makina-corpus.net/login/login.php\" -S -e \"HTTP/1.1 302 Found\"",
+                },
+            },
+            'command_C_HTTPS_STRING_ONLY': {
+                'type': "command",
+                'file': "checkcommands/C_HTTPS_STRING_ONLY.cfg",
+                'attrs': {
+                    'command_name': "C_HTTPS_STRING_ONLY",
+                    'command_line': "$USER1$/check_http --ssl -H $ARG1$ -I $HOSTADDRESS$  -u $ARG2$ --useragent=supervision --onredirect=follow --timeout=$ARG4$ -s $ARG5$ $ARG6$",
+                },
+            },
+            'command_C_HTTP_STRING': {
+                'type': "command",
+                'file': "checkcommands/C_HTTP_STRING.cfg",
+                'attrs': {
+                    'command_name': "C_HTTP_STRING",
+                    'command_line': "$USER1$/check_http -H $ARG1$ -I $HOSTADDRESS$  -u $ARG2$ --useragent=supervision  --onredirect=follow --warning=$ARG3$ --critical=$ARG4$ --timeout=$ARG5$ -s $ARG6$ $ARG7$",
+                },
+            },
+            'command_C_HTTP_STRING_AUTH': {
+                'type': "command",
+                'file': "checkcommands/C_HTTP_STRING_AUTH.cfg",
+                'attrs': {
+                    'command_name': "C_HTTP_STRING_AUTH",
+                    'command_line': "$USER1$/check_http --ssl -H $ARG1$ -I $HOSTADDRESS$  -u $ARG2$ -a $USER6_AUTHPAIR$ --useragent=supervision --onredirect=follow --warning=$ARG3$ --critical=$ARG4$ --timeout=$ARG5$ -s $ARG6$ $ARG7$",
+                },
+            },
+            'command_C_HTTP_STRING_ONLY': {
+                'type': "command",
+                'file': "checkcommands/C_HTTP_STRING_ONLY.cfg",
+                'attrs': {
+                    'command_name': "C_HTTP_STRING_ONLY",
+                    'command_line': "$USER1$/check_http -H $ARG1$ -I $HOSTADDRESS$  -u $ARG2$ --useragent=supervision --onredirect=follow --timeout=$ARG4$ -s $ARG5$ $ARG6$",
+                },
+            },
+            'command_C_HTTP_STRING_SOLR': {
+                'type': "command",
+                'file': "checkcommands/C_HTTP_STRING_SOLR.cfg",
+                'attrs': {
+                    'command_name': "C_HTTP_STRING_SOLR",
+                    'command_line': "$USER1$/check_http -H $ARG1$ -p $ARG2$ -I $HOSTADDRESS$  -u $ARG3$ --useragent=supervision --onredirect=follow --warning=$ARG4$ --critical=$ARG5$ --timeout=$ARG6$ -s $ARG7$ $ARG8$",
+                },
+            },
+            'command_C_HTTP_STRING_ZOPE': {
+                'type': "command",
+                'file': "checkcommands/C_HTTP_STRING_ZOPE.cfg",
+                'attrs': {
+                    'command_name': "C_HTTP_STRING_ZOPE",
+                    'command_line': "$USER1$/check_http -H $ARG1$ -p $ARG2$ -I $HOSTADDRESS$  -u $ARG3$ --useragent=supervision --onredirect=follow --warning=$ARG4$ --critical=$ARG5$ --timeout=$ARG6$ -s $ARG7$ $ARG8$",
+                },
+            },
+            'command_C_MAIL_IMAP': {
+                'type': "command",
+                'file': "checkcommands/C_MAIL_IMAP.cfg",
+                'attrs': {
+                    'command_name': "C_MAIL_IMAP",
+                    'command_line': "$USER1$/check_imap -H $HOSTADDRESS$ -w $ARG1$ -c $ARG2$",
+                },
+            },
+            'command_C_MAIL_IMAP_SSL': {
+                'type': "command",
+                'file': "checkcommands/C_MAIL_IMAP_SSL.cfg",
+                'attrs': {
+                    'command_name': "C_MAIL_IMAP_SSL",
+                    'command_line': "$USER1$/check_imap -p 993 --ssl -H $HOSTADDRESS$ -w $ARG1$ -c $ARG2$",
+                },
+            },
+            'command_C_MAIL_POP': {
+                'type': "command",
+                'file': "checkcommands/C_MAIL_POP.cfg",
+                'attrs': {
+                    'command_name': "C_MAIL_POP",
+                    'command_line': "$USER1$/check_pop -H $HOSTADDRESS$ -w $ARG1$ -c $ARG2$",
+                },
+            },
+            'command_C_MAIL_POP_SSL': {
+                'type': "command",
+                'file': "checkcommands/C_MAIL_POP_SSL.cfg",
+                'attrs': {
+                    'command_name': "C_MAIL_POP_SSL",
+                    'command_line': "$USER1$/check_pop -p 995 --ssl -H $HOSTADDRESS$ -w $ARG1$ -c $ARG2$",
+                },
+            },
+            'command_C_MAIL_SMTP': {
+                'type': "command",
+                'file': "checkcommands/C_MAIL_SMTP.cfg",
+                'attrs': {
+                    'command_name': "C_MAIL_SMTP",
+                    'command_line': "$USER1$/check_smtp -H $HOSTADDRESS$ -w $ARG1$ -c $ARG2$ -e \"220 mail.makina-corpus.com ESMTP Postfix (BlueMind)\"  -f \"$USER8_TESTUSER$@makina-corpus.com\" -C 'RCPT TO:<$USER8_TESTUSER$@makina-corpus.com>' -R '250 2.1.5 Ok' -C 'data' -R '354 End data with <CR><LF>.<CR><LF>' -C '.' -R '250 2.0.0 Ok: queued'",
+                },
+            },
+            'command_C_PING': {
+                'type': "command",
+                'file': "checkcommands/C_PING.cfg",
+                'attrs': {
+                    'command_name': "C_PING",
+                    'command_line': "$USER1$/check_centreon_ping -H $HOSTADDRESS$ -n 5 -i 0.5",
+                },
+            },
+            'command_C_POP3_TEST_SIZE_AND_DELETE': {
+                'type': "command",
+                'file': "checkcommands/C_POP3_TEST_SIZE_AND_DELETE.cfg",
+                'attrs': {
+                    'command_name': "C_POP3_TEST_SIZE_AND_DELETE",
+                    'command_line': "$USER1$/check_pop3_cleaner.py -H $HOSTADDRESS$  -u $USER8_TESTUSER$$ARG5$ -p \"$USER9_TESTPWD$\" -d 25 -t 10 -w $ARG1$,$ARG3$ -c $ARG2$,$ARG4$",
+                },
+            },
+            'command_C_PROCESS_IRCBOT_RUNNING': {
+                'type': "command",
+                'file': "checkcommands/C_PROCESS_IRCBOT_RUNNING.cfg",
+                'attrs': {
+                    'command_name': "C_PROCESS_IRCBOT_RUNNING",
+                    'command_line': "$USER1$/check_procs -w 1: -c 1: --command=ircbot.py",
+                },
+            },
+            'command_C_SNMP_DISK': {
+                'type': "command",
+                'file': "checkcommands/C_SNMP_DISK.cfg",
+                'attrs': {
+                    'command_name': "C_SNMP_DISK",
+                    'command_line': "$USER1$/check_centreon_snmp_remote_storage2 -P 161 -v 3 -z des -x sha -y $USER3_SNMPCRYPT$ -p $USER4_SNMPPASS$ -u $USER5_SNMPUSER$ -H $HOSTADDRESS$ -n -d $ARG1$ -w $ARG2$ -c $ARG3$ -a 5",
+                },
+            },
+            'command_C_SNMP_LOADAVG': {
+                'type': "command",
+                'file': "checkcommands/C_SNMP_LOADAVG.cfg",
+                'attrs': {
+                    'command_name': "C_SNMP_LOADAVG",
+                    'command_line': "$USER1$/check_centreon_snmp_loadaverage2 -P 161 -v 3 -z des -x sha -y $USER3_SNMPCRYPT$ -p $USER4_SNMPPASS$ -u $USER5_SNMPUSER$ -H $HOSTADDRESS$ -w 30,30,30 -c 50,50,50 $ARG1$",
+                },
+            },
+            'command_C_SNMP_MEMORY': {
+                'type': "command",
+                'file': "checkcommands/C_SNMP_MEMORY.cfg",
+                'attrs': {
+                    'command_name': "C_SNMP_MEMORY",
+                    'command_line': "$USER1$/check_centreon_snmp_memory2 -P 161 -v 3 -z des -x sha -y $USER3_SNMPCRYPT$ -p $USER4_SNMPPASS$ -u $USER5_SNMPUSER$ -H $HOSTADDRESS$ -w $ARG1$ -c $ARG2$",
+                },
+            },
+            'command_C_SNMP_NETWORK': {
+                'type': "command",
+                'file': "checkcommands/C_SNMP_NETWORK.cfg",
+                'attrs': {
+                    'command_name': "C_SNMP_NETWORK",
+                    'command_line': "$USER1$/check_centreon_snmp_traffic2 -P 161 -v 3 -z des -x sha -y $USER3_SNMPCRYPT$ -p $USER4_SNMPPASS$ -u $USER5_SNMPUSER$ -H $HOSTADDRESS$ -n -i $ARG1$ -a 5 $ARG2$",
+                },
+            },
+            'command_C_SNMP_PROCESS': {
+                'type': "command",
+                'file': "checkcommands/C_SNMP_PROCESS.cfg",
+                'attrs': {
+                    'command_name': "C_SNMP_PROCESS",
+                    'command_line': "$USER1$/check_snmp_process.pl -H $HOSTADDRESS$ -l $USER5_SNMPUSER$ -x $USER4_SNMPPASS$ -X $USER3_SNMPCRYPT$ -L sha,des -n $ARG1$ -w $ARG2$ -c $ARG3$ -F",
+                },
+            },
+            'command_C_SNMP_PROCESS_COMPLETE': {
+                'type': "command",
+                'file': "checkcommands/C_SNMP_PROCESS_COMPLETE.cfg",
+                'attrs': {
+                    'command_name': "C_SNMP_PROCESS_COMPLETE",
+                    'command_line': "$USER1$/check_snmp_process.pl -H $HOSTADDRESS$ -l $USER5_SNMPUSER$ -x $USER4_SNMPPASS$ -X $USER3_SNMPCRYPT$ -L sha,des -n $ARG1$ -w $ARG2$ -c $ARG3$ -F -a --memory=$ARG4$ -d 300 -u $ARG5$",
+                },
+            },
+            'command_C_SNMP_PROCESS_WITH_MEM': {
+                'type': "command",
+                'file': "checkcommands/C_SNMP_PROCESS_WITH_MEM.cfg",
+                'attrs': {
+                    'command_name': "C_SNMP_PROCESS_WITH_MEM",
+                    'command_line': "$USER1$/check_snmp_process.pl -H $HOSTADDRESS$ -l $USER5_SNMPUSER$ -x $USER4_SNMPPASS$ -X $USER3_SNMPCRYPT$ -L sha,des -n $ARG1$ -w $ARG2$ -c $ARG3$ -F -a --memory=$ARG4$",
+                },
+            },
+            'command_C_VERIFY_TCP_PORT': {
+                'type': "command",
+                'file': "checkcommands/C_VERIFY_TCP_PORT.cfg",
+                'attrs': {
+                    'command_name': "C_VERIFY_TCP_PORT",
+                    'command_line': "$USER1$/check_tcp  -H $HOSTADDRESS$ -p $ARG1$",
+                },
+            },
+            'command_EV_SSH_RELANCE_NTP': {
+                'type': "command",
+                'file': "checkcommands/EV_SSH_RELANCE_NTP.cfg",
+                'attrs': {
+                    'command_name': "EV_SSH_RELANCE_NTP",
+                    'command_line': "$USER1$/eventhandlers/relance_ntp  $SERVICESTATE$ $SERVICESTATETYPE$ $SERVICEATTEMPT$ $HOSTADDRESS$ $HOSTNAME$ $SERVICEDESC$",
+                },
+            },
+            # hosts templates definitions
+            # (shouldn't use autoconfigured for templates because we can't associate a service to
+            # a host template. It seems to be not working with icinga)
+            'hostTemplateHT+_BACKUP_BURP': {
+                'type': "host",
+                'file': "hostTemplates/HT+_BACKUP_BURP.cfg",
+                'attrs': {
+                    'name': "HT+_BACKUP_BURP",
+                    'alias': "HT+_BACKUP_BURP",
+                    'register': 0,
+                },
+            },
+            'hostTemplateHT+_PUBLIC_DNS': {
+                'type': "host",
+                'file': "hostTemplates/HT+_PUBLIC_DNS.cfg",
+                'attrs': {
+                    'name': "HT+_PUBLIC_DNS",
+                    'alias': "Host avec DNS public",
+                    'register': 0,
+                },
+            },
+            'hostTemplateHT+_SNMP_Linux': {
+                'type': "host",
+                'file': "hostTemplates/HT+_SNMP_Linux.cfg",
+                'attrs': {
+                    'name': "HT+_SNMP_Linux",
+                    'alias': "HT+_SNMP_Linux",
+                    'register': 0,
+                },
+            },
+            'hostTemplateHT+_WEB_INTRA': {
+                'type': "host",
+                'file': "hostTemplates/HT+_WEB_INTRA.cfg",
+                'attrs': {
+                    'name': "HT+_WEB_INTRA",
+                    'alias': "HT+_WEB_INTRA",
+                    'register': 0,
+                },
+            },
+            'hostTemplateHT+_WEB_PUBLIC': {
+                'type': "host",
+                'file': "hostTemplates/HT+_WEB_PUBLIC.cfg",
+                'attrs': {
+                    'name': "HT+_WEB_PUBLIC",
+                    'alias': "HT+_WEB_PUBLIC",
+                    'register': 0,
+                },
+            },
+            'hostTemplateHT_ICON_Dedibox': {
+                'type': "host",
+                'file': "hostTemplates/HT_ICON_Dedibox.cfg",
+                'attrs': {
+                    'name': "HT_ICON_Dedibox",
+                    'use': "_HT_BASE",
+                    'alias': "Hébergeur Dedibox pour logo",
+                    'register': 0,
+                    'icon_image': "heberg/dedibox.png",
+                },
+            },
+            'hostTemplateHT_ICON_Free': {
+                'type': "host",
+                'file': "hostTemplates/HT_ICON_Free.cfg",
+                'attrs': {
+                    'name': "HT_ICON_Free",
+                    'use': "_HT_BASE",
+                    'alias': "Hébergeur Free pour logo",
+                    'register': 0,
+                    'icon_image': "heberg/news_free.gif",
+                },
+            },
+            'hostTemplateHT_ICON_Gandi': {
+                'type': "host",
+                'file': "hostTemplates/HT_ICON_Gandi.cfg",
+                'attrs': {
+                    'name': "HT_ICON_Gandi",
+                    'use': "_HT_BASE",
+                    'alias': "Hébergeur Gandi pour logo",
+                    'register': 0,
+                    'icon_image': "heberg/gandi.png",
+                },
+            },
+            'hostTemplateHT_ICON_ImageCrea': {
+                'type': "host",
+                'file': "hostTemplates/HT_ICON_ImageCrea.cfg",
+                'attrs': {
+                    'name': "HT_ICON_ImageCrea",
+                    'use': "_HT_BASE",
+                    'alias': "Hébergeur ImageCrea pour logo",
+                    'register': 0,
+                    'icon_image': "heberg/imagecreation.jpg",
+                },
+            },
+            'hostTemplateHT_ICON_OVH': {
+                'type': "host",
+                'file': "hostTemplates/HT_ICON_OVH.cfg",
+                'attrs': {
+                    'name': "HT_ICON_OVH",
+                    'use': "_HT_BASE",
+                    'alias': "Hébergeur OVH pour logo",
+                    'register': 0,
+                    'icon_image': "heberg/logo_ovh.png",
+                },
+            },
+            'hostTemplateHT_ICON_PHPNET': {
+                'type': "host",
+                'file': "hostTemplates/HT_ICON_PHPNET.cfg",
+                'attrs': {
+                    'name': "HT_ICON_PHPNET",
+                    'use': "_HT_BASE",
+                    'alias': "Hébergeur PHPNET pour logo",
+                    'register': 0,
+                    'icon_image': "heberg/phpnet.gif",
+                },
+            },
+            'hostTemplateHT_Router': {
+                'type': "host",
+                'file': "hostTemplates/HT_Router.cfg",
+                'attrs': {
+                    'name': "HT_Router",
+                    'use': "_HT_BASE",
+                    'alias': "Tous les routeurs",
+                    'register': 0,
+                },
+            },
+            'hostTemplateHT_test_1': {
+                'type': "host",
+                'file': "hostTemplates/HT_test_1.cfg",
+                'attrs': {
+                    'name': "HT_test_1",
+                    'use': "HT_test_2",
+                    'alias': "HT_test_1",
+                    'register': 0,
+                },
+            },
+            'hostTemplateHT_test_2': {
+                'type': "host",
+                'file': "hostTemplates/HT_test_2.cfg",
+                'attrs': {
+                    'name': "HT_test_2",
+                    'use': "HT_test_3",
+                    'alias': "HT_test_2",
+                    'register': 0,
+                },
+            },
+            'hostTemplateHT_test_3': {
+                'type': "host",
+                'file': "hostTemplates/HT_test_3.cfg",
+                'attrs': {
+                    'name': "HT_test_3",
+                    'use': "_HT_BASE",
+                    'alias': "HT_test_3",
+                    'register': 0,
+                },
+            },
+            'hostTemplateHT_Xen': {
+                'type': "host",
+                'file': "hostTemplates/HT_Xen.cfg",
+                'attrs': {
+                    'name': "HT_Xen",
+                    'use': "_HT_BASE",
+                    'alias': "Xen server",
+                    'register': 0,
+                },
+            },
+            'hostTemplateSwitchs-Cisco': {
+                'type': "host",
+                'file': "hostTemplates/Switchs-Cisco.cfg",
+                'attrs': {
+                    'name': "Switchs-Cisco",
+                    'use': "_HT_BASE",
+                    'alias': "Cisco Switchs",
+                    'register': 0,
+                },
+            },
+            'hostTemplate_HT_BASE': {
+                'type': "host",
+                'file': "hostTemplates/_HT_BASE.cfg",
+                'attrs': {
+                    'name': "_HT_BASE",
+                    'alias': "Base Generic Host",
+                    'check_command': "check_host_alive",
+                    'max_check_attempts': 5,
+                    'active_checks_enabled': 1,
+                    'passive_checks_enabled': 1,
+                    'check_period': "24x7",
+                    'contact_groups': "Supervisors",
+                    'notification_interval': 0,
+                    'notification_period': "24x7",
+                    'notification_options': "d,r",
+                    'notifications_enabled': 1,
+                    'register': 0,
+                    'statusmap_image': "gd2/fonc//server2.gd2",
+                },
+            },
+        },
+
+        # host definitions
+        'autoconfigured_hosts_definitions': {
+            'webservices': {
+                'hostname': "webservices",
+                'attrs': {
+                    'host_name': "webservices",
+                    'use': "HT_ICON_OVH,HT+_SNMP_Linux,HT+_PUBLIC_DNS",
+                    'alias': "VIRT",
+                    'address': "127.0.0.1",
+                    '_HOST_ID': 78,
+                    'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
+                },
+                'ssh_user': "root",
+                'ssh_addr': "127.0.0.1",
+                'mountpoint_root': True,
+                'check_mountpoints': True,
+            },
+        },
+    }
+    return data
+
 
 def settings():
     '''
@@ -288,507 +1339,7 @@ def settings():
                 'pidfile': "/var/run/icinga/icinga.pid",
                 'configuration_directory': locs['conf_dir']+"/icinga",
                 'niceness': 5,
-                'objects': {
-                    'directory': locs['conf_dir']+"/icinga/objects/salt_generated",
-                    'filescopy': ['check_ping',
-                                  'check_ssh',
-                                  'check_dig',
-                                  'check_http',
-                                  'check_ntp_peer',
-                                  'check_ntp_time',
-                                  'check_by_ssh',
-                                  'check_disk',
-                                  'check_raid.pl',
-                                  'check_md_raid',
-                                  'check_megaraid_sas',
-                                  'check_3ware_raid',
-                                  'check_cciss-1.12',
-                                  'check_drbd',
-                                  'check_swap',
-                                  'check_load',
-                                  'check_procs',
-                                  'check_cron',
-                                  'check_debian_packages',
-                                  'check_solr.py',
-                                  'check_burp_backup_age.py',
-                                  'check_rdiff',
-                                  'check_ddos.pl',
-                                  'check_haproxy_stats.pl',
-                                  'check_postfixqueue.sh',
-                                  'check_postfix_mailqueue'],
-                    'objects_definitions': {
-                        'command_ping': {
-                            'type': "command",
-                            'file': "commands/ping.cfg",
-                            'attrs': {
-                                'command_name': "check_host_alive",
-                                'command_line': checks_directory+"/check_ping " \
-                                                "-H '$HOSTADDRESS$' " \
-                                                "-w '$ARG1$' " \
-                                                "-c '$ARG1$' " \
-                                                "-p 1",
-                            },
-                        },
-                        'command_ssh': {
-                            'type': "command",
-                            'file': "commands/ssh.cfg",
-                            'attrs': {
-                                'command_name': "check_ssh",
-                                'command_line': checks_directory+"/check_ssh "\
-                                                "-H '$ARG1$' "\
-                                                "-p '$ARG2$' "\
-                                                "-t '$ARG3$' ",
-                            },
-                        },
-                        'command_dig': {
-                            'type': "command",
-                            'file': "commands/dig.cfg",
-                            'attrs': {
-                                'command_name': "check_dig",
-                                'command_line': checks_directory+"/check_dig "\
-                                                "-p '$ARG1$' "\
-                                                "-l '$ARG2$' "\
-                                                "-T '$ARG3$' "\
-                                                "-a '$ARG4$' "\
-                                                "-t '$ARG5$' ",
-                            },
-                        },
-                        'command_http': {
-                            'type': "command",
-                            'file': "commands/http.cfg",
-                            'attrs': {
-                                'command_name': "check_http",
-                                'command_line': checks_directory+"/check_http "\
-                                                "-E "\
-                                                "-p '$ARG1$' "\
-                                                "-H '$ARG2$' "\
-                                                "-I '$ARG3$' "\
-                                                "-t '$ARG4$' ",
-                            },
-                        },
-                        'command_html': {
-                            'type': "command",
-                            'file': "commands/html.cfg",
-                            'attrs': {
-                                'command_name': "check_html",
-                                'command_line': checks_directory+"/check_http "\
-                                                "-E "\
-                                                "-p '$ARG1$' "\
-                                                "-H '$ARG2$' "\
-                                                "-I '$ARG3$' "\
-                                                "-t '$ARG4$' "\
-                                                "-u '$ARG5$' "\
-                                                "-a '$ARG6$' "\
-                                                # allow code injection
-                                                " $ARG7$ ",
-                            },
-                        },
-                        'command_ntp_peer': {
-                            'type': "command",
-                            'file': "commands/ntp_peer.cfg",
-                            'attrs': {
-                                'command_name': "check_ntp_peer",
-                                'command_line': checks_directory+"/check_ntp_peer"\
-                                                "-p '$ARG1$' "\
-                                                "-H '$ARG2$' "\
-                                                "-t '$ARG3$' ",
-                            },
-                        },
-                        'command_check_by_ssh_ntp_time': {
-                            'type': "command",
-                            'file': "commands/check_by_ssh_ntp_time.cfg",
-                            'attrs': {
-                                'command_name': "check_by_ssh_ntp_time",
-                                'command_line': checks_directory+"/check_by_ssh "\
-                                                +check_by_ssh_params+\
-                                                "-C '"+checks_directory+"/check_ntp_time "\
-                                                    "-p \"$ARG5$\" "\
-                                                    "-H \"$ARG6$\" "\
-                                                    "-t \"$ARG7$\" '",
-                            },
-                        },
-                        'command_check_by_ssh_mountpoint': {
-                            'type': "command",
-                            'file': "commands/check_by_ssh_mountpoint.cfg",
-                            'attrs': {
-                                'command_name': "check_by_ssh_mountpoint",
-                                'command_line': checks_directory+"/check_by_ssh "\
-                                                +check_by_ssh_params+\
-                                                "-C '"+checks_directory+"/check_disk \"$ARG5$\" "\
-                                                    "-w \"$ARG6$\" "\
-                                                    "-c \"$ARG7$\"'",
-                            },
-                        },
-                        'command_check_by_ssh_raid': {
-                            'type': "command",
-                            'file': "commands/check_by_ssh_raid.cfg",
-                            'attrs': {
-                                'command_name': "check_by_ssh_raid",
-                                'command_line': checks_directory+"/check_by_ssh "\
-                                                +check_by_ssh_params+\
-                                                "-C '"+checks_directory+"/check_raid.pl'",
-                            },
-                        },
-                        'command_check_by_ssh_md_raid': {
-                            'type': "command",
-                            'file': "commands/check_by_ssh_md_raid.cfg",
-                            'attrs': {
-                                'command_name': "check_by_ssh_md_raid",
-                                'command_line': checks_directory+"/check_by_ssh "\
-                                                +check_by_ssh_params+\
-                                                "-C '"+checks_directory+"/check_md_raid'",
-                            },
-                        },
-                        'command_check_by_ssh_megaraid_sas': {
-                            'type': "command",
-                            'file': "commands/check_by_ssh_megaraid_sas.cfg",
-                            'attrs': {
-                                'command_name': "check_by_ssh_megaraid_sas",
-                                'command_line': checks_directory+"/check_by_ssh "\
-                                                +check_by_ssh_params+\
-                                                "-C '"+checks_directory+"/check_megaraid_sas'",
-                            },
-                        },
-                        'command_check_by_ssh_3ware_raid': {
-                            'type': "command",
-                            'file': "commands/check_by_ssh_3ware_raid.cfg",
-                            'attrs': {
-                                'command_name': "check_by_ssh_3ware_raid",
-                                'command_line': checks_directory+"/check_by_ssh "\
-                                                +check_by_ssh_params+\
-                                                "-C '"+checks_directory+"/check_3ware_raid'",
-                            },
-                        },
-                        'command_check_by_ssh_cciss': {
-                            'type': "command",
-                            'file': "commands/check_by_ssh_cciss.cfg",
-                            'attrs': {
-                                'command_name': "check_by_ssh_cciss",
-                                'command_line': checks_directory+"/check_by_ssh "\
-                                                +check_by_ssh_params+\
-                                                "-C '"+checks_directory+"/check_cciss-1.12 '"
-                            },
-                        },
-                        'command_check_by_ssh_drbd': {
-                            'type': "command",
-                            'file': "commands/check_by_ssh_drbd.cfg",
-                            'attrs': {
-                                'command_name': "check_by_ssh_drbd",
-                                'command_line': checks_directory+"/check_by_ssh "\
-                                                +check_by_ssh_params+\
-                                                "-C '"+checks_directory+"/check_drbd'",
-                            },
-                        },
-                        'command_check_by_ssh_swap': {
-                            'type': "command",
-                            'file': "commands/check_by_ssh_swap.cfg",
-                            'attrs': {
-                                'command_name': "check_by_ssh_swap",
-                                'command_line': checks_directory+"/check_by_ssh "\
-                                                +check_by_ssh_params+\
-                                                "-C '"+checks_directory+"/check_swap "\
-                                                    "-w \"$ARG5$\" "\
-                                                    "-c \"$ARG6$\"'",
-                            },
-                        },
-                        'command_check_by_ssh_cpuload': {
-                            'type': "command",
-                            'file': "commands/check_by_ssh_cpuload.cfg",
-                            'attrs': {
-                                'command_name': "check_by_ssh_cpuload",
-                                'command_line': checks_directory+"/check_by_ssh "\
-                                                +check_by_ssh_params+\
-                                                "-C '"+checks_directory+"/check_load "\
-                                                    "-w \"$ARG5$\" "\
-                                                    "-c \"$ARG6$\"'",
-                            },
-                        },
-                        'command_check_by_ssh_process': {
-                            'type': "command",
-                            'file': "commands/check_by_ssh_process.cfg",
-                            'attrs': {
-                                'command_name': "check_by_ssh_process",
-                                'command_line': checks_directory+"/check_by_ssh "\
-                                                +check_by_ssh_params+\
-                                                "-C '"+checks_directory+"/check_procs "\
-                                                    "-m \"$ARG5$\" "\
-                                                    "-w \"$ARG6$\" "\
-                                                    "-c \"$ARG7$\"'",
-                            },
-                        },
-                        'command_check_by_ssh_cron': {
-                            'type': "command",
-                            'file': "commands/check_by_ssh_cron.cfg",
-                            'attrs': {
-                                'command_name': "check_by_ssh_cron",
-                                'command_line': checks_directory+"/check_by_ssh "\
-                                                +check_by_ssh_params+\
-                                                "-C '"+checks_directory+"/check_cron'",
-                            },
-                        },
-                        'command_check_by_ssh_debian_packages': {
-                            'type': "command",
-                            'file': "commands/check_by_ssh_debian_packages.cfg",
-                            'attrs': {
-                                'command_name': "check_by_ssh_debian_packages",
-                                'command_line': checks_directory+"/check_by_ssh "\
-                                                +check_by_ssh_params+\
-                                                "-C '"+checks_directory+"/check_debian_packages "\
-                                                    "-t \"$ARG5$\"'",
-                            },
-                        },
-                        'command_check_solr': {
-                            'type': "command",
-                            'file': "commands/solr.cfg",
-                            'attrs': {
-                                'command_name': "check_solr",
-                                'command_line': checks_directory+"/check_solr.py "\
-                                                +"-p '$ARG1$' "\
-                                                +"-H '$ARG2$' "\
-                                                +"-w '$ARG3$' "\
-                                                +"-c '$ARG4$' "
-                            },
-                        },
-
-                        'command_check_by_ssh_burp_backup_age': {
-                            'type': "command",
-                            'file': "commands/check_by_ssh_burp_backup_age.cfg",
-                            'attrs': {
-                                'command_name': "check_by_ssh_burp_backup_age",
-                                'command_line': checks_directory+"/check_by_ssh "\
-                                                +check_by_ssh_params+\
-                                                "-C '"+checks_directory+"/check_burp_backup_age.py "\
-                                                    "-H \"$ARG5$\" "\
-                                                    "-d \"$ARG6$\" "\
-                                                    "-w \"$ARG7$\" "\
-                                                    "-c \"$ARG8$\"'",
-                            },
-                        },
-                        'command_check_by_ssh_rdiff': {
-                            'type': "command",
-                            'file': "commands/check_by_ssh_rdiff.cfg",
-                            'attrs': {
-                                'command_name': "check_by_ssh_rdiff",
-                                'command_line': checks_directory+"/check_by_ssh "\
-                                                +check_by_ssh_params+\
-                                                "-C '"+checks_directory+"/check_rdiff "\
-                                                    "-r \"$ARG5$\" "\
-                                                    "-l \"$ARG6$\" "\
-                                                    "-p \"$ARG7$\" "\
-                                                    "-w \"$ARG8$\" "\
-                                                    "-c \"$ARG9$\" '",
-                            },
-                        },
-                        'command_check_by_ssh_ddos': {
-                            'type': "command",
-                            'file': "commands/check_by_ssh_ddos.cfg",
-                            'attrs': {
-                                'command_name': "check_by_ssh_ddos",
-                                'command_line': checks_directory+"/check_by_ssh "\
-                                                +check_by_ssh_params+\
-                                                "-C '"+checks_directory+"/check_ddos.pl "\
-                                                    "-w \"$ARG5$\" "\
-                                                    "-c \"$ARG6$\"'",
-                            },
-                        },
-                        'command_check_by_ssh_haproxy_stats': {
-                            'type': "command",
-                            'file': "commands/check_by_ssh_haproxy_stats.cfg",
-                            'attrs': {
-                                'command_name': "check_by_ssh_haproxy_stats",
-                                'command_line': checks_directory+"/check_by_ssh "\
-                                                +check_by_ssh_params+\
-                                                "-C '"+checks_directory+"/check_haproxy_stats.pl "\
-                                                    "-s \"$ARG5$\" '"
-                            },
-                        },
-                        'command_check_by_ssh_postfixqueue': {
-                            'type': "command",
-                            'file': "commands/check_by_ssh_postfixqueue.cfg",
-                            'attrs': {
-                                'command_name': "check_by_ssh_postfixqueue",
-                                'command_line': checks_directory+"/check_by_ssh "\
-                                                +check_by_ssh_params+\
-                                                "-C '"+checks_directory+"/check_postfixqueue.sh "\
-                                                    "-w \"$ARG5$\" "\
-                                                    "-c \"$ARG6$\" '"
-                            },
-                        },
-                        'command_check_by_ssh_postfix_mailqueue': {
-                            'type': "command",
-                            'file': "commands/check_by_ssh_postfix_mailqueue.cfg",
-                            'attrs': {
-                                'command_name': "check_by_ssh_postfix_mailqueue",
-                                'command_line': checks_directory+"/check_by_ssh "\
-                                                +check_by_ssh_params+\
-                                                "-C '"+checks_directory+"/check_postfix_mailqueue '"
-                            },
-                        },
-                        'generic-host': {
-                            'type': "host",
-                            'file': "templates/generic-host.cfg",
-                            'attrs': {
-                                'name': "generic-host",
-                                'notifications_enabled': 1,
-                                'event_handler_enabled': 1,
-                                'flap_detection_enabled': 1,
-                                'failure_prediction_enabled': 1,
-                                'process_perf_data': 1,
-                                'retain_status_information': 1,
-                                'retain_nonstatus_information': 1,
-                                'check_command': "check_host_alive!"+check_ping_warning+"!"+check_ping_critical,
-                                'max_check_attempts': 10,
-                                'notification_interval': 0,
-                                'notification_period': "24x7",
-                                'notification_options': "d,u,r",
-                                'contact_groups': "admins",
-                                'register': 0,
-                            },
-                        },
-                        'generic-service': {
-                            'type': "service",
-                            'file': "templates/generic-service.cfg",
-                            'attrs': {
-                                'name': "generic-service",
-                                'active_checks_enabled': 1,
-                                'passive_checks_enabled': 1,
-                                'parallelize_check': 1,
-                                'obsess_over_service': 1,
-                                'check_freshness': 0,
-                                'notifications_enabled': 1,
-                                'event_handler_enabled': 1,
-                                'flap_detection_enabled': 1,
-                                'failure_prediction_enabled': 1,
-                                'process_perf_data': 1,
-                                'retain_status_information': 1,
-                                'retain_nonstatus_information': 1,
-                                'notification_interval': 0,
-                                'is_volatile': 0,
-                                'check_period': "24x7",
-                                'normal_check_interval': 5,
-                                'retry_check_interval': 1,
-                                'max_check_attempts': 4,
-                                'notification_period': "24x7",
-                                'notification_options': "w,u,c,r",
-                                'contact_groups': "admins",
-                                'register': 0,
-                            },
-                        },
-                        '24x7': {
-                            'type': "timeperiod",
-                            'file': "timeperiods/24x7.cfg",
-                            'attrs': {
-                                'timeperiod_name': "24x7",
-                                'alias': "24 Hours A Day, 7 Days A Week",
-                                'sunday': "00:00-24:00",
-                                'monday': "00:00-24:00",
-                                'tuesday': "00:00-24:00",
-                                'wednesday': "00:00-24:00",
-                                'thursday': "00:00-24:00",
-                                'friday': "00:00-24:00",
-                                'saturday': "00:00-24:00",
-                            },
-                        },
-                        'root': {
-                            'type': "contact",
-                            'file': "contacts/root.cfg",
-                            'attrs': {
-                                'contact_name': "root",
-                                'alias': "Root",
-                                'service_notification_period': "24x7",
-                                'host_notification_period': "24x7",
-                                'service_notification_options': "w,u,c,r",
-                                'host_notification_options': "d,r",
-                                'service_notification_commands': "notify-service-by-email",
-                                'host_notification_commands': "notify-host-by-email",
-                                'email': "root@localhost",
-                            },
-                        },
-                        'admins': {
-                            'type': "contactgroup",
-                            'file': "contactgroups/admins.cfg",
-                            'attrs': {
-                                'contactgroup_name': "admins",
-                                'alias': "Nagios Administrators",
-                                'members': "root",
-                            },
-                        },
-                    },
-                    'autoconfigured_hosts_definitions': {
-                        'hostname1': {
-                            'hostname': "hostname1",
-                            'attrs': {
-                                'host_name': "hostname1",
-                                'use': "generic-host",
-                                'alias': "host1 generated with salt",
-                                'address': "127.128.129.130",
-                            },
-                            'ssh_user': "root",
-                            'ssh_addr': "127.255",
-                            'ssh_port': 22,
-                            'check_debian_packages': True,
-                            'check_burp_backup_age': True,
-                            'check_rdiff': True,
-                            'check_raid': True,
-                            'check_md_raid': True,
-                            'check_megaraid_sas': True,
-                            'check_postfixqueue': True,
-                            'check_drbd': True,
-                            'check_haproxy_stats': True,
-                            'check_3ware_raid': True,
-                            'check_cciss': True,
-                            'check_ntp_peer': True,
-                            'mountpoint_home': True,
-                            'html': {
-                                'url1': {
-                                    'hostname': "icinga-cgi.localhost",
-                                    'url': "/",
-                                    'auth': "icingaadmin:icingaadmin",
-                                    'expected_strings': ['icinga', '\\\\" \\\\\\\\; exit 1 \\\\\\\\; \\\\" ']
-
-                                },
-                                'url2': {
-                                    'hostname': "icinga-web.localhost",
-                                    'url': "/icinga-web/",
-                                    'auth': "",
-                                    'expected_strings': [],
-                                },
-                            },
-                            'services_check_command_args': {
-                                'mountpoints': {
-                                    'default': {
-                                        'warning': 90,
-                                    },
-                                },
-                                'dns': {
-                                    'query_address': "localhost.",
-                                    'expected_address': "127.0.0.1",
-                                },
-                            },
-                        },
-                        'hostname2': {
-                            'hostname': "hostname2",
-                            'attrs': {
-                                'host_name': "hostname2",
-                                'use': "generic-host",
-                                'alias': "host2 generated with salt",
-                                'address': "127.1.2.7",
-                            },
-                            'ssh_user': "root",
-                            'ssh_addr': "127.254",
-                            'ssh_port': 22,
-                            'services_check_command_args': {
-                                'ssh': {
-                                    'hostname': '127.127',
-                                },
-                                'dns': {
-                                    'query_address': "localhost.",
-                                    'expected_address': "127.0.0.1",
-                                },
-                            },
-                        },
-                    }
-                },
+                'objects': objects(),
                 'icinga_cfg': {
                     'log_file': "/var/log/icinga/icinga.log",
                     'cfg_file': ["/etc/icinga/commands.cfg"],
@@ -942,7 +1493,7 @@ def settings():
                     '$USER4_SNMPPASS$': "CHANGETHIS",
                     '$USER6_AUTHPAIRS$': "CHANGETHIS",
                     '$USER7_SSHKEYS$': "/home/nagios/.ssh/id_rsa_supervision",
-                    '$USER8_TESTUSER$$': "tsa",
+                    '$USER8_TESTUSER$': "tsa",
                     '$USER9_TESTPWD$': "CHANGETHIS"
                 },
                 'modules': {
