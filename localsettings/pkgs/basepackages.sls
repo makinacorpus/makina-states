@@ -48,6 +48,7 @@ ubuntu-pkgs:
       - language-pack-en
       - language-pack-fr
       - rsyslog
+      - ca-certificates
       - ubuntu-cloudimage-keyring
       - ubuntu-cloud-keyring
       - ubuntu-extras-keyring

@@ -60,6 +60,8 @@ PROJECT_INJECTED_CONFIG_VAR = 'cfg'
 
 DEFAULT_CONFIGURATION = {
     'name': None,
+    'minion_id': None,
+    'fqdn': None,
     'default_env': None,
     'installer': 'generic',
     'keep_archives': KEEP_ARCHIVES,
@@ -539,6 +541,10 @@ def get_configuration(name, *args, **kwargs):
 
     name
         name of the project
+    fqdn
+        fqdn of the box
+    minion_id
+        minion_id of the box
     default_env
         environnemt to run into (may be dev|prod, better
         to set a grain see bellow)
@@ -628,6 +634,8 @@ def get_configuration(name, *args, **kwargs):
     ):
         return cfg
     cfg['name'] = name
+    cfg['minion_id'] = __grains__['id']
+    cfg['fqdn'] = __grains__['fqdn']
     cfg.update(dict([a
                      for a in kwargs.items()
                      if a[0] in cfg]))
@@ -650,11 +658,15 @@ def get_configuration(name, *args, **kwargs):
         # - makina-projects.fooproject.default_env
         # - fooproject.default_env
         # - default_env
+        denv = 'dev'
+        for midstart in ['prod', 'staging']:
+            if __grains__['id'].startswith('{0}-'.format(midstart)):
+                denv = midstart
         cfg['default_env'] = __salt__['mc_utils.get'](
             'makina-projects.{0}.{1}'.format(name, 'default_env'),
             __salt__['mc_utils.get'](
                 '{0}.{1}'.format(name, 'default_env'),
-                __salt__['mc_utils.get']('default_env', 'dev')))
+                __salt__['mc_utils.get']('default_env', denv)))
 
     # set default skippped steps on a specific environment
     # to let them maybe be overriden in pillar
@@ -1787,6 +1799,7 @@ def link_pillar(name, *args, **kwargs):
 def unlink_pillar(name, *args, **kwargs):
     cfg = get_configuration(name, nodata=True,  *args, **kwargs)
     ret = _get_ret(name, *args, **kwargs)
+    kwargs.pop('ret', None)
     salt_settings = __salt__['mc_salt.settings']()
     pillar_root = os.path.join(salt_settings['pillarRoot'])
     pillarf = os.path.join(pillar_root, 'top.sls')
@@ -1816,6 +1829,7 @@ def unlink_pillar(name, *args, **kwargs):
 def link_salt(name, *args, **kwargs):
     cfg = get_configuration(name, nodata=True, *args, **kwargs)
     ret = _get_ret(name, *args, **kwargs)
+    kwargs.pop('ret', None)
     if not  os.path.exists(cfg['wired_salt_root']):
         os.symlink(cfg['salt_root'], cfg['wired_salt_root'])
         _append_comment(
@@ -1827,6 +1841,7 @@ def link_salt(name, *args, **kwargs):
 def unlink_salt(name, *args, **kwargs):
     cfg = get_configuration(name, nodata=True, *args, **kwargs)
     ret = _get_ret(name, *args, **kwargs)
+    kwargs.pop('ret', None)
     if os.path.exists(cfg['wired_salt_root']):
         remove_path(cfg['wired_salt_root'])
         _append_comment(
@@ -1844,6 +1859,7 @@ def link(name, *args, **kwargs):
 
     '''
     ret = _get_ret(name, *args, **kwargs)
+    kwargs.pop('ret', None)
     for nm in name.split(','):
         link_pillar(nm, ret=ret, *args, **kwargs)
         link_salt(nm, ret=ret, *args, **kwargs)
@@ -1856,6 +1872,7 @@ def unlink(name, *args, **kwargs):
     name
         list of project(s) separated by commas
     '''
+    kwargs.pop('ret', None)
     ret = _get_ret(name, *args, **kwargs)
     for nm in name.split(','):
         unlink_pillar(nm, ret=ret, *args, **kwargs)

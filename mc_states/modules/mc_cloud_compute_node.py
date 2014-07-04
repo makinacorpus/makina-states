@@ -663,7 +663,7 @@ def get_settings_for_target(target, target_data=None):
             if target_data.get('virt_type', '') in ['lxc', 'docker']:
                 target_data['virt_types']['lxc'] = True
     domains = [target] + target_domains
-    for cert, key in __salt__['mc_cloud_controller.ssl_certs'](domains):
+    for cert, key in __salt__['mc_ssl.ssl_certs'](domains):
         certname = cert
         if certname.endswith('.crt'):
             certname = os.path.basename(certname)[:-4]

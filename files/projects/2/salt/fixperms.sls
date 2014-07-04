@@ -1,3 +1,4 @@
+{% raw %}
 {% set cfg = opts['ms_project'] %}
 {# export macro to callees #}
 {% set ugs = salt['mc_usergroup.settings']() %}
@@ -44,3 +45,4 @@
     - user: root
     - watch:
       - file: {{cfg.name}}-restricted-perms
+{% endraw %}

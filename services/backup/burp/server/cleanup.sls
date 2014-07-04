@@ -58,6 +58,7 @@ install-burp-configuration-cleanup:
                 exit ${ret}
   cmd.run:
     - name: /etc/burp/cleanup.sh
+    - use_vt: true
     - watch:
       - mc_proxy: burp-post-restart-hook
 {%endif %}

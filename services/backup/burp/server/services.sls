@@ -1,8 +1,8 @@
 {% set data = salt['mc_burp.settings']() %}
 include:
   - makina-states.services.backup.burp.hooks
-  - makina-states.services.backup.burp.sync
-  - makina-states.services.backup.burp.cleanup
+  - makina-states.services.backup.burp.server.sync
+  - makina-states.services.backup.burp.server.cleanup
 {% if salt['mc_controllers.mastersalt_mode']() %}
 {% for client, cdata in data['clients'].items() %}
 {{client}}-install-burp-configuration:
@@ -13,8 +13,10 @@ include:
     - group: root
     - watch_in:
       - mc_proxy: burp-post-restart-hook
+      - mc_proxy: burp-post-gen-sync
     - contents: |
             {{'#'}}!/usr/bin/env bash
+            echo "Syncing {{client}}"
             {% for dir in ['burp', 'default', 'init.d', 'cron.d'] -%}rsync -azv -e '{{cdata['rsh_cmd']}}' /etc/burp/clients/{{client}}/etc/{{dir}}/ {{cdata['rsh_dst']}}:/etc/{{dir}}/ &&\
             {% endfor -%}
             /bin/true

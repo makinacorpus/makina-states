@@ -1,0 +1,58 @@
+# AUTO-GENERATED FILE - DO NOT EDIT!! Use ldapmodify.
+{%- set data = salt['mc_utils.json_load'](data) %}
+dn: olcDatabase={-1}frontend
+objectClass: olcDatabaseConfig
+objectClass: olcFrontendConfig
+olcDatabase: {-1}frontend
+olcAccess: {0}to attrs=userPassword,sambaNTPassword,sambaLMPassword,sambaPwdLa
+ stSet,sambaPWDMustChange  by dn.base="cn=admin,{{data.dn}}" write  by dn.
+ base="uid=fd-admin,ou=people,{{data.dn}}" write  by dn.base="cn=ldapwrite
+ r,ou=virtual,ou=people,{{data.dn}}" read  by dn.base="cn=replicator,ou=vi
+ rtual,ou=people,{{data.dn}}" read  by dn.base="cn=ldapreader,ou=virtual,o
+ u=people,{{data.dn}}" read  by anonymous auth  by self write  by * none
+olcAccess: {1}to attrs=uid,cn,sn,homeDirectory,uidNumber,gidNumber,memberUid,l
+ oginShell,employeeType  by dn.base="cn=admin,{{data.dn}}" write  by dn.ba
+ se="uid=fd-admin,ou=people,{{data.dn}}" write  by dn.base="cn=ldapwriter,
+ ou=virtual,ou=people,{{data.dn}}" read  by anonymous read  by * read
+olcAccess: {2}to attrs=description,telephoneNumber,roomNumber,gecos,cn,sn,give
+ nname,jpegPhoto  by dn.base="cn=admin,{{data.dn}}" write  by dn.base="uid
+ =fd-admin,ou=people,{{data.dn}}" write  by dn.base="cn=ldapwriter,ou=virt
+ ual,ou=people,{{data.dn}}" write  by self write  by * read
+olcAccess: {3}to attrs=homePhone,mobile  by dn.base="cn=admin,{{data.dn}}"
+  write  by dn.base="uid=fd-admin,ou=people,{{data.dn}}" write  by dn.base
+ ="cn=ldapwriter,ou=virtual,ou=people,{{data.dn}}" write  by self write  b
+ y * none
+olcAccess: {4}to dn.regex="(uid=.*,)?ou=People,{{data.dn}}"  by dn.base="c
+ n=admin,{{data.dn}}" write  by dn.base="uid=fd-admin,ou=people,dc={{data.dn}}"
+ write  by dn.base="cn=ldapwriter,ou=virtual,ou=people,{{data.dn}}"
+  write  by self write  by anonymous read  by * read
+olcAccess: {5}to dn.subtree="ou=group,{{data.dn}}"  by dn.base="cn=admin,d
+ c={{data.dn}}" write  by dn.base="uid=fd-admin,ou=people,{{data.dn}}" wr
+ ite  by * read
+olcAccess: {6}to dn.subtree="ou=people,{{data.dn}}"  by dn.base="cn=admin,
+ {{data.dn}}" write  by dn.base="uid=fd-admin,ou=people,{{data.dn}}" w
+ rite  by dn.base="cn=ldapwriter,ou=virtual,ou=people,{{data.dn}}" write
+ by self write  by * read
+olcAccess: {7}to dn.subtree="ou=contact,{{data.dn}}"  by dn.base="cn=admin
+ ,{{data.dn}}" write  by dn.base="uid=fd-admin,ou=people,{{data.dn}}"
+ write  by dn.base="cn=ldapwriter,ou=virtual,ou=people,{{data.dn}}" write
+  by anonymous none  by dn.one="ou=people,{{data.dn}}" read  by * none
+olcAccess: {8}to dn.base=""  by * read
+olcAccess: {9}to *  by dn.base="cn=admin,{{data.dn}}" write  by dn.base="u
+ id=fd-admin,ou=people,{{data.dn}}" write  by dn.base="cn=replicator,ou=vi
+ rtual,ou=people,{{data.dn}}" read  by * read
+olcAddContentAcl: FALSE
+olcLastMod: TRUE
+olcMaxDerefDepth: 0
+olcReadOnly: FALSE
+olcSchemaDN: cn=Subschema
+olcSizeLimit: 5000
+olcSyncUseSubentry: FALSE
+olcMonitoring: FALSE
+structuralObjectClass: olcDatabaseConfig
+entryUUID: b2d27176-6a4f-1033-86d6-773bdb858bca
+creatorsName: cn=config
+createTimestamp: 20140507162342Z
+entryCSN: 20140507165431.978200Z#000000#000#000000
+modifiersName: cn=admin,cn=config
+modifyTimestamp: 20140507165431Z

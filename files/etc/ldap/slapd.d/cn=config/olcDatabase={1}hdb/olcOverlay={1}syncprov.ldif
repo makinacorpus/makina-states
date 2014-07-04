@@ -1,0 +1,14 @@
+# AUTO-GENERATED FILE - DO NOT EDIT!! Use ldapmodify.
+dn: olcOverlay={1}syncprov
+objectClass: olcOverlayConfig
+objectClass: olcSyncProvConfig
+olcOverlay: {1}syncprov
+olcSpCheckpoint: 50 10
+olcSpSessionlog: 100
+structuralObjectClass: olcSyncProvConfig
+entryUUID: b2d27bc6-6a4f-1033-86da-773bdb858bca
+creatorsName: cn=config
+createTimestamp: 20140507162342Z
+entryCSN: 20140507162342.230263Z#000000#000#000000
+modifiersName: cn=config
+modifyTimestamp: 20140507162342Z
