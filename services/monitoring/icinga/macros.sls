@@ -101,21 +101,28 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      ssh_addr,
                                      ssh_port=22,
                                      ssh_timeout=30,
+                                     dns_association=False,
+                                     disk_space=False,
+                                     disk_space_root=False,
+                                     disk_space_var=False,
+                                     disk_space_srv=False,
+                                     disk_space_data=False,
+                                     disk_space_home=False,
+                                     disk_space_var_makina=False,
+                                     disk_space_var_www=False,
+                                     load_avg=False,
+                                     memory=False,
+                                     network=False,
+                                     web_apache_status=False,
+                                     web_public=False,
                                      check_ssh=False,
-                                     check_dns=False,
                                      check_dns_reverse=False,
+                                     check_web_apache_status=False,
                                      check_http=False,
-                                     check_html=False,
+                                     check_web_public_client=False,
                                      html={},
                                      check_ntp_peer=False,
                                      check_ntp_time=False,
-                                     mountpoint_root=False,
-                                     mountpoint_var=False,
-                                     mountpoint_srv=False,
-                                     mountpoint_data=False,
-                                     mountpoint_home=False,
-                                     mountpoint_var_makina=False,
-                                     mountpoint_var_www=False,
                                      check_mountpoints=False,
                                      check_raid=False,
                                      check_md_raid=False,
@@ -124,7 +131,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      check_cciss=False,
                                      check_drbd=False,
                                      check_swap=False,
-                                     check_cpuload=False,
+                                     check_network=False,
+                                     check_load_avg=False,
                                      check_memory=False,
                                      check_procs=False,
                                      check_cron=False,
@@ -144,21 +152,28 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      ssh_addr,
                                                                      ssh_port,
                                                                      ssh_timeout,
+                                                                     dns_association,
+                                                                     disk_space,
+                                                                     disk_space_root,
+                                                                     disk_space_var,
+                                                                     disk_space_srv,
+                                                                     disk_space_data,
+                                                                     disk_space_home,
+                                                                     disk_space_var_makina,
+                                                                     disk_space_var_www,
+                                                                     load_avg,
+                                                                     memory,
+                                                                     network,
+                                                                     web_apache_status,
+                                                                     web_public,
                                                                      check_ssh,
-                                                                     check_dns,
                                                                      check_dns_reverse,
+                                                                     check_web_apache_status,
                                                                      check_http,
-                                                                     check_html,
+                                                                     check_web_public_client,
                                                                      html,
                                                                      check_ntp_peer,
                                                                      check_ntp_time,
-                                                                     mountpoint_root,
-                                                                     mountpoint_var,
-                                                                     mountpoint_srv,
-                                                                     mountpoint_data,
-                                                                     mountpoint_home,
-                                                                     mountpoint_var_makina,
-                                                                     mountpoint_var_www,
                                                                      check_mountpoints,
                                                                      check_raid,
                                                                      check_md_raid,
@@ -167,7 +182,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      check_cciss,
                                                                      check_drbd,
                                                                      check_swap,
-                                                                     check_cpuload,
+                                                                     check_network,
+                                                                     check_load_avg,
                                                                      check_memory,
                                                                      check_procs,
                                                                      check_cron,
@@ -191,6 +207,141 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                             file='hosts/'+data.hostname+'/host.cfg',
                             attrs=data.attrs) }}
 
+
+# add dns_association service 
+{% if data.dns_association %}
+    {% for name, dns_association in data.services_check_command_args.dns_association.items() %}
+    {% if data.hostname == dns_association.hostname %}
+        {% set use = "ST_DNS_ASSOCIATION_hostname" %}
+    {% else %}
+        {% set use = "ST_DNS_ASSOCIATION" %}
+    {% endif %}
+        {{ configuration_add_object(type='service',
+                                    file='hosts/'+data.hostname+'/dns_association_'+name+'.cfg',
+                                    attrs= {
+                                        'service_description': "DNS_ASSOCIATION_"+dns_association.hostname,
+                                        'host_name': data.hostname,
+                                        'use': use,
+                                        'check_command': "C_DNS_EXTERNE_ASSOCIATION!"
+                                                         +dns_association.hostname+"!"
+                                                         +dns_association.other_args,
+                                    })
+        }}
+    {% endfor %}
+{% endif %}
+
+# add mountpoints service
+# ST_DISK_/ template not included in order to allow override the check command
+{% if data.disk_space %}
+{% for mountpoint, path in data.disks_spaces.items() %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/'+mountpoint+'.cfg',
+                                attrs= {
+                                    'service_description': "DISK_SPACE_"+path,
+                                    'host_name': data.hostname,
+                                    'use': "ST_DISK_"+path,
+                                    'icon_image': "services/nas3.png",
+                                    'check_command': "C_SNMP_DISK!"
+                                                     +path+"!"
+                                                     +data.services_check_command_args.disk_space[mountpoint].warning|string+"!"
+                                                     +data.services_check_command_args.disk_space[mountpoint].critical|string,
+                                })
+    }}
+{% endfor %}
+{% endif %}
+
+# add load avg service
+{% if data.load_avg %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/load_avg.cfg',
+                                attrs= {
+                                    'service_description': "LOAD_AVG",
+                                    'host_name': data.hostname,
+                                    'use': "ST_LOAD_AVG",
+                                    'check_command': "C_SNMP_LOADAVG!"
+                                                     +data.services_check_command_args.load_avg.other_args,
+                                })
+    }}
+{% endif %}
+
+# add memory service
+{% if data.memory %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/memory.cfg',
+                                attrs= {
+                                    'service_description': "MEMORY",
+                                    'host_name': data.hostname,
+                                    'use': "ST_MEMORY",
+                                    'check_command': "C_SNMP_MEMORY!"
+                                                     +data.services_check_command_args.memory.warning|string+"!"
+                                                     +data.services_check_command_args.memory.critical|string,
+                                })
+    }}
+{% endif %}
+
+# add network service
+{% if data.network %}
+    {% for name, network in data.services_check_command_args.network.items() %}
+        {{ configuration_add_object(type='service',
+                                    file='hosts/'+data.hostname+'/network_'+name+'.cfg',
+                                    attrs= {
+                                        'service_description': "NETWORK_"+network.interface,
+                                        'host_name': data.hostname,
+                                        'use': "ST_NETWORK_"+network.interface,
+                                        'check_command': "C_SNMP_NETWORK!"
+                                                         +network.interface+"!"
+                                                         +network.other_args,
+                                    })
+        }}
+    {% endfor %}
+{% endif %}
+
+# add web apache status service
+{% if data.web_apache_status %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/web_apache_status.cfg',
+                                attrs= {
+                                    'service_description': "WEB_APACHE_STATUS",
+                                    'host_name': data.hostname,
+                                    'use': "ST_WEB_APACHE_STATUS",
+                                    'check_command': "C_APACHE_STATUS!"
+                                                     +data.services_check_command_args.web_apache_status.warning|string+"!"
+                                                     +data.services_check_command_args.web_apache_status.critical|string+"!"
+                                                     +data.services_check_command_args.web_apache_status.other_args,
+                                })
+    }}
+{% endif %}
+
+# add web_public_client service
+# TODO: readd auth
+{% if data.web_public %}
+    {% for name, web_public in data.services_check_command_args.web_public.items() %}
+        {% if 'antibug' == web_public.type %}
+            {% set use = "ST_WEB_PUBLIC_antibug" %}
+        {% else %}
+            {% set use = "ST_WEB_PUBLIC_CLIENT" %}
+        {% endif %}
+        {{ configuration_add_object(type='service',
+                                    file='hosts/'+data.hostname+'/web_public_'+name+'.cfg',
+                                    attrs= {
+                                        'service_description': "WEB_PUBLIC_"+name,
+                                        'host_name': data.hostname,
+                                        'use': use,
+                                        'check_command': "C_HTTP_STRING!"
+                                                         +web_public.hostname+"!"
+                                                         +web_public.url+"!"
+                                                         +web_public.warning|string+"!"
+                                                         +web_public.critical|string+"!"
+                                                         +web_public.timeout|string+"!"
+                                                         +web_public.strings+"!"
+                                                         +web_public.other_args,
+                                    })
+        }}
+    {% endfor %}
+{% endif %}
+
+# FOR BACKUP (we adapt all services from centreon configuration)
+{#
 # add a SSH service
 {% if data.check_ssh %}
     {{ configuration_add_object(type='service',
@@ -207,27 +358,6 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     }}
 {% endif %}
 
-# add dns service (check only data, the host doesn't have neither solver nor autority zone)
-{% if data.check_dns %}
-    {% for name, dns in data.services_check_command_args.dns.items() %}
-    {% if data.hostname == dns.hostname %}
-        {% set use = "ST_DNS_ASSOCIATION_hostname" %}
-    {% else %}
-        {% set use = "ST_DNS_ASSOCIATION" %}
-    {% endif %}
-        {{ configuration_add_object(type='service',
-                                    file='hosts/'+data.hostname+'/dns_'+name+'.cfg',
-                                    attrs= {
-                                        'service_description': "DNS_ASSOCIATION_"+dns.hostname,
-                                        'host_name': data.hostname,
-                                        'use': use,
-                                        'check_command': "C_DNS_EXTERNE_ASSOCIATION!"
-                                                         +dns.hostname+"!"
-                                                         +dns.other_args,
-                                    })
-        }}
-    {% endfor %}
-{% endif %}
 {% if data.check_dns_reverse %}
     {{ configuration_add_object(type='service',
                                 file='hosts/'+data.hostname+'/dns_reverse.cfg',
@@ -244,6 +374,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                 })
     }}
 {% endif %}
+
 
 # add http service
 {% if data.check_http %}
@@ -262,27 +393,6 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     }}
 {% endif %}
 
-# add html service
-{% if data.check_html %}
-    {% for name, check in data.html.items() %}
-        {{ configuration_add_object(type='service',
-                                    file='hosts/'+data.hostname+'/html_'+name+'.cfg',
-                                    attrs= {
-                                        'service_description': "HTML for "+check.url+" on vhost "+check.hostname+" - "+name,
-                                        'host_name': data.hostname,
-                                        'use': "generic-service",
-                                        'check_command': "check_html!"
-                                                         +data.services_check_command_args.html.port|string+"!"
-                                                         +check.hostname+"!"
-                                                         +data.services_check_command_args.html.ip_address+"!"
-                                                         +data.services_check_command_args.html.timeout|string+"!"
-                                                         +check.url+"!"
-                                                         +check.auth+"!"
-                                                         +check.expected_strings,
-                                    })
-        }}
-    {% endfor %}
-{% endif %}
 
 # add ntp peer service
 {% if data.check_ntp_peer %}
@@ -317,25 +427,6 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     }}
 {% endif %}
 
-# add mountpoints service
-# ST_DISK_/ template not included in order to allow override the check command
-{% if data.check_mountpoints %}
-{% for mountpoint, path in data.mountpoints.items() %}
-    {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/'+mountpoint+'.cfg',
-                                attrs= {
-                                    'service_description': "DISK_SPACE_"+path,
-                                    'host_name': data.hostname,
-                                    'use': "ST_HOURLY_ALERT",
-                                    'icon_image': "services/nas3.png",
-                                    'check_command': "C_SNMP_DISK!"
-                                                     +path+"!"
-                                                     +data.services_check_command_args.mountpoints[mountpoint].warning|string+"!"
-                                                     +data.services_check_command_args.mountpoints[mountpoint].critical|string,
-                                })
-    }}
-{% endfor %}
-{% endif %}
 
 # add raid check (check by ssh)
 {% if data.check_raid %}
@@ -438,34 +529,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     }}
 {% endif %}
 
-# add cpuload service
-{% if data.check_cpuload %}
-    {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/cpuload.cfg',
-                                attrs= {
-                                    'service_description': "LOAD_AVG",
-                                    'host_name': data.hostname,
-                                    'use': "ST_LOAD_AVG",
-                                    'check_command': "C_SNMP_LOADAVG!"
-                                                     +data.services_check_command_args.cpuload.other_args,
-                                })
-    }}
-{% endif %}
 
-# add memory service
-{% if data.check_memory %}
-    {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/memory.cfg',
-                                attrs= {
-                                    'service_description': "MEMORY",
-                                    'host_name': data.hostname,
-                                    'use': "ST_MEMORY",
-                                    'check_command': "C_SNMP_MEMORY!"
-                                                     +data.services_check_command_args.memory.warning|string+"!"
-                                                     +data.services_check_command_args.memory.critical|string,
-                                })
-    }}
-{% endif %}
 
 # add nb procs services (check by ssh)
 {% if data.check_procs %}
@@ -634,5 +698,5 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                 })
     }}
 {% endif %}
-
+#}
 {% endmacro %}

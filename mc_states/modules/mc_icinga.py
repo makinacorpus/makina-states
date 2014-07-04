@@ -1109,12 +1109,16 @@ def objects():
                 'ssh_user': "root",
                 'ssh_addr': "127.0.0.1",
                 'mountpoint_root': True,
-                'check_mountpoints': True,
-                'check_dns': True,
-                'check_cpuload': True,
-                'check_memory': True,
+                'dns_association': True,
+                'disk_space': True,
+                'disk_space_root': True,
+                'load_avg': True,
+                'memory': True,
+                'network': True,
+                'web_apache_status': True,
+                'web_public': True,
                 'services_check_command_args': {
-                    'dns': {
+                    'dns_association': {
                         'localhost': {
                             'hostname': "www.localhost",
                         },
@@ -1123,6 +1127,11 @@ def objects():
                         },
                         'hostname': {
                             'hostname': "webservices",
+                        },
+                    },
+                    'web_public': {
+                        'test': {
+                            'strings': ['a', 'b'],
                         },
                     },
                 },
@@ -1806,21 +1815,28 @@ def add_auto_configuration_host_settings(hostname,
                                         ssh_addr,
                                         ssh_port,
                                         ssh_timeout,
+                                        dns_association,
+                                        disk_space,
+                                        disk_space_root,
+                                        disk_space_var,
+                                        disk_space_srv,
+                                        disk_space_data,
+                                        disk_space_home,
+                                        disk_space_var_makina,
+                                        disk_space_var_www,
+                                        load_avg,
+                                        memory,
+                                        network,
+                                        web_apache_status,
+                                        web_public,
                                         check_ssh,
-                                        check_dns,
                                         check_dns_reverse,
+                                        check_web_apache_status,
                                         check_http,
-                                        check_html,
+                                        check_web_public_client,
                                         html,
                                         check_ntp_peer,
                                         check_ntp_time,
-                                        mountpoint_root,
-                                        mountpoint_var,
-                                        mountpoint_srv,
-                                        mountpoint_data,
-                                        mountpoint_home,
-                                        mountpoint_var_makina,
-                                        mountpoint_var_www,
                                         check_mountpoints,
                                         check_raid,
                                         check_md_raid,
@@ -1829,7 +1845,8 @@ def add_auto_configuration_host_settings(hostname,
                                         check_cciss,
                                         check_drbd,
                                         check_swap,
-                                        check_cpuload,
+                                        check_network,
+                                        check_load_avg,
                                         check_memory,
                                         check_procs,
                                         check_cron,
@@ -1854,17 +1871,22 @@ def add_auto_configuration_host_settings(hostname,
     kwargs.setdefault('ssh_addr', ssh_addr)
     kwargs.setdefault('ssh_port', ssh_port)
     kwargs.setdefault('ssh_timeout', ssh_timeout)
-    kwargs.setdefault('check_ssh', check_ssh)
 
-    # add dns between host_name and address value (and reverse)
+
+    kwargs.setdefault('dns_association', dns_association)
+    kwargs.setdefault('disk_space', disk_space)
+    kwargs.setdefault('load_avg', load_avg)
+    kwargs.setdefault('memory', memory)
+    kwargs.setdefault('network', network)
+    kwargs.setdefault('web_apache_status', web_apache_status)
+    kwargs.setdefault('web_public', web_public)
+
+    # values for dns_association service
     dns_hostname=''
     dns_address=''
     dns_inaddr=''
-    if not 'address' in attrs:
-        check_dns = False
-        check_dns_reverse = False
 
-    if check_dns or check_dns_reverse:
+    if dns_association or dns_reverse and 'address' in attrs and 'host_name' in attrs:
         address_splitted = attrs['address'].split('.')
         inaddr = '.'.join(address_splitted[::-1]) # tanslate a.b.c.d in d.c.b.a
         inaddr = inaddr + '.in-addr.arpa.'
@@ -1883,8 +1905,27 @@ def add_auto_configuration_host_settings(hostname,
         dns_inaddr = inaddr
         kwargs.setdefault('dns_inaddr', inaddr)
 
-    kwargs.setdefault('check_dns', check_dns)
+    # values for disk_space service
+    mountpoints_path = {
+        'disk_space_root': "/",
+        'disk_space_var': "/var",
+        'disk_space_srv': "/srv",
+        'disk_space_data': "/data",
+        'disk_space_home': "/home",
+        'disk_space_var_makina': "/var/makina",
+        'disk_space_var_www': "/var/www",
+    }
+    disks_spaces = dict()
+    for mountpoint, path in mountpoints_path.items():
+        if eval(mountpoint):
+            disks_spaces[mountpoint]=path
+
+    kwargs.setdefault('disks_spaces', disks_spaces)
+
+    # BACKUP
+    kwargs.setdefault('check_ssh', check_ssh)
     kwargs.setdefault('check_dns_reverse', check_dns_reverse)
+    kwargs.setdefault('check_web_apache_status', check_web_apache_status)
     kwargs.setdefault('check_http', check_http)
 
     # transform the list in string with "-s" before each element
@@ -1896,26 +1937,12 @@ def add_auto_configuration_host_settings(hostname,
             html[name]['expected_strings'] = '-s "'+'" -s "'.join(expected_strings)+'"'
 
     kwargs.setdefault('html', html)
-    kwargs.setdefault('check_html', check_html)
+    kwargs.setdefault('check_web_public_client', check_web_public_client)
     kwargs.setdefault('check_ntp_peer', check_ntp_peer)
     kwargs.setdefault('check_ntp_time', check_ntp_time)
 
-    mountpoints_path = {
-        'mountpoint_root': "/",
-        'mountpoint_var': "/var",
-        'mountpoint_srv': "/srv",
-        'mountpoint_data': "/data",
-        'mountpoint_home': "/home",
-        'mountpoint_var_makina': "/var/makina",
-        'mountpoint_var_www': "/var/www",
-    }
-    mountpoints = dict()
-    for mountpoint, path in mountpoints_path.items():
-        if eval(mountpoint):
-            mountpoints[mountpoint]=path
 
     kwargs.setdefault('check_mountpoints', check_mountpoints)
-    kwargs.setdefault('mountpoints', mountpoints)
 
     kwargs.setdefault('check_raid', check_raid)
     kwargs.setdefault('check_md_raid', check_md_raid)
@@ -1924,7 +1951,8 @@ def add_auto_configuration_host_settings(hostname,
     kwargs.setdefault('check_cciss', check_cciss)
     kwargs.setdefault('check_drbd', check_drbd)
     kwargs.setdefault('check_swap', check_swap)
-    kwargs.setdefault('check_cpuload', check_cpuload)
+    kwargs.setdefault('check_network', check_network)
+    kwargs.setdefault('check_load_avg', check_load_avg)
     kwargs.setdefault('check_memory', check_memory)
     kwargs.setdefault('check_procs', check_procs)
     kwargs.setdefault('check_cron', check_cron)
@@ -1940,16 +1968,54 @@ def add_auto_configuration_host_settings(hostname,
     # give the default values for commands parameters values
     # the keys are the services names, not the commands names (use the service filename)
     services_check_command_default_args = {
-       'ssh': {
-           'hostname': ssh_addr,
-           'port': ssh_port,
-           'timeout': 10,
-       },
-       'dns': {
+       'dns_association': {
            'default': {
                'hostname': dns_hostname,
                'other_args': "",
            }
+       },
+       'disk_space': {
+           'default': {
+               'warning': 80,
+               'critical': 90,
+           },
+       },
+       'load_avg': {
+           'other_args': "",
+       },
+       'memory': {
+           'warning': 80,
+           'critical': 90,
+       },
+       'network': {
+           'default': {
+               'interface': "eth0",
+               'other_args': "",
+           },
+       },
+       'web_apache_status': {
+           'warning': 4,
+           'critical': 2,
+           'other_args': "",
+       },
+       'web_public': {
+           'default': {
+               'hostname': hostname,
+               'url': "/",
+               'warning': 2,
+               'critical': 3,
+               'timeout': 8,
+               'strings': [],
+               'type': "client",
+               'other_args': "",
+           },
+       },
+
+       # BACKUP
+       'ssh': {
+           'hostname': ssh_addr,
+           'port': ssh_port,
+           'timeout': 10,
        },
        'dns_reverse': {
            'port': 53,
@@ -1981,13 +2047,6 @@ def add_auto_configuration_host_settings(hostname,
            'hostname': "pool.ntp.org",
            'timeout': 10,
        },
-       'mountpoints': {
-           'default': {
-#              from ST_DISK_SPACE_/
-               'warning': 80,
-               'critical': 90,
-           },
-       },
        'raid': {},
        'md_raid': {},
        'megaraid_sas': {},
@@ -1997,13 +2056,6 @@ def add_auto_configuration_host_settings(hostname,
        'swap': {
            'warning': '10%',
            'critical': '5%',
-       },
-       'cpuload': {
-           'other_args': "",
-       },
-       'memory': {
-           'warning': 80,
-           'critical': 90,
        },
        'procs': {
            'metric': "PROCS",
@@ -2058,59 +2110,83 @@ def add_auto_configuration_host_settings(hostname,
 
     # override the commands parameters values
 
-    # override dns subdictionary
-    if not 'dns' in services_check_command_args:
-        services_check_command_args['dns'] =  services_check_command_default_args['dns']
+    # override dns_association subdictionary
+    if not 'dns_association' in services_check_command_args:
+        services_check_command_args['dns_association'] =  services_check_command_default_args['dns_association']
     else:
-        for name, dns in services_check_command_args['dns'].items():
-            for key, value in services_check_command_default_args['dns']['default'].items():
+        for name, dns in services_check_command_args['dns_association'].items():
+            for key, value in services_check_command_default_args['dns_association']['default'].items():
                 if not key in dns:
-                    services_check_command_args['dns'][name][key]=value
+                    services_check_command_args['dns_association'][name][key]=value
+
+    # override network subdictionary
+    if not 'network' in services_check_command_args:
+        services_check_command_args['network'] =  services_check_command_default_args['network']
+    else:
+        for name, network in services_check_command_args['network'].items():
+            for key, value in services_check_command_default_args['network']['default'].items():
+                if not key in network:
+                    services_check_command_args['network'][name][key]=value
+
+    # override web_public subdictionary
+    if not 'web_public' in services_check_command_args:
+        services_check_command_args['web_public'] =  services_check_command_default_args['web_public']
+    else:
+        for name, web_public in services_check_command_args['web_public'].items():
+            for key, value in services_check_command_default_args['web_public']['default'].items():
+                if not key in web_public:
+                    services_check_command_args['web_public'][name][key]=value
+            # transform list of values in string ['a', 'b'] becomes '"a" -s "b"'
+            if isinstance(services_check_command_args['web_public'][name]['strings'], list):
+                str_list = services_check_command_args['web_public'][name]['strings']
+                # to avoid quotes conflicts (doesn't avoid code injection)
+                str_list = [ value.replace('"', '\\\\"') for value in str_list ]
+                services_check_command_args['web_public'][name]['strings']='"'+'" -s "'.join(str_list)+'"'
 
     # override mountpoints subdictionaries
 
-    # for each mountpoint, build the dictionary:
-    # priority for values
-    # services_check_command_default_args['mountpoints']['default'] # default values in default dictionary
-    # services_check_command_default_args['mountpoints'][mountpoint] # specific values in default dictionary
-    # services_check_command_args['mountpoints']['default'] # default value in overrided dictionary
-    # services_check_command_args['mountpoints'][mountpoint] # specific value in overrided dictionary
-    if 'mountpoints' not in services_check_command_args:
-        services_check_command_args['mountpoints'] = {}
 
+    # for each disk_space, build the dictionary:
+    # priority for values
+    # services_check_command_default_args['disk_space']['default'] # default values in default dictionary
+    # services_check_command_default_args['disk_space'][mountpoint] # specific values in default dictionary
+    # services_check_command_args['disk_space']['default'] # default value in overrided dictionary
+    # services_check_command_args['disk_space'][mountpoint] # specific value in overrided dictionary
+    if 'disk_space' not in services_check_command_args:
+        services_check_command_args['disk_space'] = {}
     # we can't merge default dictionary yet because priorities will not be respected
-    if 'default' not in services_check_command_args['mountpoints']:
-        services_check_command_args['mountpoints']['default'] = {}
+    if 'default' not in services_check_command_args['disk_space']:
+        services_check_command_args['disk_space']['default'] = {}
 
     for mountpoint, path in mountpoints_path.items():
-        if not mountpoint in services_check_command_args['mountpoints']:
-            services_check_command_args['mountpoints'][mountpoint] = {}
+        if not mountpoint in services_check_command_args['disk_space']:
+            services_check_command_args['disk_space'][mountpoint] = {}
 
-        if not mountpoint in services_check_command_default_args['mountpoints']:
-            services_check_command_default_args['mountpoints'][mountpoint] = services_check_command_default_args['mountpoints']['default']
+        if not mountpoint in services_check_command_default_args['disk_space']:
+            services_check_command_default_args['disk_space'][mountpoint] = services_check_command_default_args['disk_space']['default']
 
-        services_check_command_args['mountpoints'][mountpoint] = dict(services_check_command_default_args['mountpoints']['default'].items()
-                                                                     +services_check_command_default_args['mountpoints'][mountpoint].items())
+        services_check_command_args['disk_space'][mountpoint] = dict(services_check_command_default_args['disk_space']['default'].items()
+                                                                     +services_check_command_default_args['disk_space'][mountpoint].items())
 
-        services_check_command_args['mountpoints'][mountpoint] = dict(services_check_command_args['mountpoints'][mountpoint].items()
-                                                                     +services_check_command_args['mountpoints']['default'].items())
+        services_check_command_args['disk_space'][mountpoint] = dict(services_check_command_args['disk_space'][mountpoint].items()
+                                                                     +services_check_command_args['disk_space']['default'].items())
 
-        services_check_command_args['mountpoints'][mountpoint] = dict(services_check_command_args['mountpoints'][mountpoint].items()
-                                                                     +services_check_command_args['mountpoints'][mountpoint].items())
+        services_check_command_args['disk_space'][mountpoint] = dict(services_check_command_args['disk_space'][mountpoint].items()
+                                                                     +services_check_command_args['disk_space'][mountpoint].items())
 
     # merge default dictionaries in order to allow {{mountpoints.defaults.warning}} in jinja template
-    if not 'default' in services_check_command_args['mountpoints']:
-        services_check_command_args['mountpoints']['default'] = services_check_command_default_args['mountpoints']['default']
+    if not 'default' in services_check_command_args['disk_space']:
+        services_check_command_args['disk_space']['default'] = services_check_command_default_args['disk_space']['default']
     else:
-        services_check_command_args['mountpoints']['default'] = dict(services_check_command_default_args['mountpoints']['default'].items() 
-                                                                   + services_check_command_args['mountpoints']['default'].items())
+        services_check_command_args['disk_space']['default'] = dict(services_check_command_default_args['disk_space']['default'].items() 
+                                                                   + services_check_command_args['disk_space']['default'].items())
 
-    # override others values
+    # override others values (type are string or int)
     if not isinstance(services_check_command_args, dict):
         services_check_command_args = {}
 
     for name, command in services_check_command_default_args.items():
-        if not name in ['dns', 'mountpoints']:
+        if not name in ['dns_association', 'mountpoints', 'network', 'web_public']:
             if not name in services_check_command_args:
                 services_check_command_args[name] = {}
             services_check_command_args[name] = dict(services_check_command_default_args[name].items() + services_check_command_args[name].items())
