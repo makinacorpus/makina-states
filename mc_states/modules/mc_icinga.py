@@ -1108,13 +1108,19 @@ def objects():
                 },
                 'ssh_user': "root",
                 'ssh_addr': "127.0.0.1",
-                'mountpoint_root': True,
+                'backup_burp_age': True,
+                'ddos': True,
+                'debian_updates': True,
                 'dns_association': True,
                 'disk_space': True,
                 'disk_space_root': True,
+                'drbd': True,
                 'load_avg': True,
                 'memory': True,
+                'memory_hyperviseur': True,
                 'network': True,
+                'raid': True,
+                'swap': True,
                 'web_apache_status': True,
                 'web_public': True,
                 'services_check_command_args': {
@@ -1815,6 +1821,9 @@ def add_auto_configuration_host_settings(hostname,
                                         ssh_addr,
                                         ssh_port,
                                         ssh_timeout,
+                                        backup_burp_age,
+                                        ddos,
+                                        debian_updates,
                                         dns_association,
                                         disk_space,
                                         disk_space_root,
@@ -1824,40 +1833,15 @@ def add_auto_configuration_host_settings(hostname,
                                         disk_space_home,
                                         disk_space_var_makina,
                                         disk_space_var_www,
+                                        drbd,
                                         load_avg,
                                         memory,
+                                        memory_hyperviseur,
                                         network,
+                                        raid,
+                                        swap,
                                         web_apache_status,
                                         web_public,
-                                        check_ssh,
-                                        check_dns_reverse,
-                                        check_web_apache_status,
-                                        check_http,
-                                        check_web_public_client,
-                                        html,
-                                        check_ntp_peer,
-                                        check_ntp_time,
-                                        check_mountpoints,
-                                        check_raid,
-                                        check_md_raid,
-                                        check_megaraid_sas,
-                                        check_3ware_raid,
-                                        check_cciss,
-                                        check_drbd,
-                                        check_swap,
-                                        check_network,
-                                        check_load_avg,
-                                        check_memory,
-                                        check_procs,
-                                        check_cron,
-                                        check_debian_packages,
-                                        check_solr,
-                                        check_burp_backup_age,
-                                        check_rdiff,
-                                        check_ddos,
-                                        check_haproxy_stats,
-                                        check_postfixqueue,
-                                        check_postfix_mailqueue,
                                         services_check_command_args,
                                         **kwargs):
     '''Settings for the add_auto_configuration_host macro'''
@@ -1873,11 +1857,18 @@ def add_auto_configuration_host_settings(hostname,
     kwargs.setdefault('ssh_timeout', ssh_timeout)
 
 
+    kwargs.setdefault('backup_burp_age', backup_burp_age)
+    kwargs.setdefault('ddos', ddos)
+    kwargs.setdefault('debian_updates', debian_updates)
     kwargs.setdefault('dns_association', dns_association)
     kwargs.setdefault('disk_space', disk_space)
+    kwargs.setdefault('drbd', drbd)
     kwargs.setdefault('load_avg', load_avg)
     kwargs.setdefault('memory', memory)
+    kwargs.setdefault('memory_hyperviseur', memory_hyperviseur)
     kwargs.setdefault('network', network)
+    kwargs.setdefault('raid', raid)
+    kwargs.setdefault('swap', swap)
     kwargs.setdefault('web_apache_status', web_apache_status)
     kwargs.setdefault('web_public', web_public)
 
@@ -1922,52 +1913,20 @@ def add_auto_configuration_host_settings(hostname,
 
     kwargs.setdefault('disks_spaces', disks_spaces)
 
-    # BACKUP
-    kwargs.setdefault('check_ssh', check_ssh)
-    kwargs.setdefault('check_dns_reverse', check_dns_reverse)
-    kwargs.setdefault('check_web_apache_status', check_web_apache_status)
-    kwargs.setdefault('check_http', check_http)
-
-    # transform the list in string with "-s" before each element
-    for name, check in html.items():
-        if isinstance(check['expected_strings'], list):
-            expected_strings = check['expected_strings']
-            # to avoid quotes conflicts (doesn't avoid code injection)
-            expected_strings = [ value.replace('"', '\\\\"') for value in expected_strings ]
-            html[name]['expected_strings'] = '-s "'+'" -s "'.join(expected_strings)+'"'
-
-    kwargs.setdefault('html', html)
-    kwargs.setdefault('check_web_public_client', check_web_public_client)
-    kwargs.setdefault('check_ntp_peer', check_ntp_peer)
-    kwargs.setdefault('check_ntp_time', check_ntp_time)
-
-
-    kwargs.setdefault('check_mountpoints', check_mountpoints)
-
-    kwargs.setdefault('check_raid', check_raid)
-    kwargs.setdefault('check_md_raid', check_md_raid)
-    kwargs.setdefault('check_megaraid_sas', check_megaraid_sas)
-    kwargs.setdefault('check_3ware_raid', check_3ware_raid)
-    kwargs.setdefault('check_cciss', check_cciss)
-    kwargs.setdefault('check_drbd', check_drbd)
-    kwargs.setdefault('check_swap', check_swap)
-    kwargs.setdefault('check_network', check_network)
-    kwargs.setdefault('check_load_avg', check_load_avg)
-    kwargs.setdefault('check_memory', check_memory)
-    kwargs.setdefault('check_procs', check_procs)
-    kwargs.setdefault('check_cron', check_cron)
-    kwargs.setdefault('check_debian_packages', check_debian_packages)
-    kwargs.setdefault('check_solr', check_solr)
-    kwargs.setdefault('check_burp_backup_age', check_burp_backup_age)
-    kwargs.setdefault('check_rdiff', check_rdiff)
-    kwargs.setdefault('check_ddos', check_ddos)
-    kwargs.setdefault('check_haproxy_stats', check_haproxy_stats)
-    kwargs.setdefault('check_postfixqueue', check_postfixqueue)
-    kwargs.setdefault('check_postfix_mailqueue', check_postfix_mailqueue)
 
     # give the default values for commands parameters values
     # the keys are the services names, not the commands names (use the service filename)
     services_check_command_default_args = {
+       'backup_burp_age': {
+           'ssh_addr': "backup.makina-corpus.net",
+           'warning': 1560,
+           'critical': 1800,
+       },
+       'ddos': {
+           'warning': 50,
+           'critical': 60,
+       },
+       'debian_updates': {},
        'dns_association': {
            'default': {
                'hostname': dns_hostname,
@@ -1980,6 +1939,9 @@ def add_auto_configuration_host_settings(hostname,
                'critical': 90,
            },
        },
+       'drbd': {
+           'command': "'/root/admin_scripts/nagios/check_drbd -d  0,1'",
+       },
        'load_avg': {
            'other_args': "",
        },
@@ -1987,11 +1949,21 @@ def add_auto_configuration_host_settings(hostname,
            'warning': 80,
            'critical': 90,
        },
+       'memory_hyperviseur': {
+           'warning': 95,
+           'critical': 99,
+       },
        'network': {
            'default': {
                'interface': "eth0",
                'other_args': "",
            },
+       },
+       'raid': {
+           'command': "'/root/admin_scripts/nagios/check_md_raid'",
+       },
+       'swap': {
+           'command': "'/root/admin_scripts/nagios/check_swap -w 80%% -c 50%%'",
        },
        'web_apache_status': {
            'warning': 4,
@@ -2047,16 +2019,10 @@ def add_auto_configuration_host_settings(hostname,
            'hostname': "pool.ntp.org",
            'timeout': 10,
        },
-       'raid': {},
        'md_raid': {},
        'megaraid_sas': {},
        '3ware_raid': {},
        'ccis': {},
-       'drbd': {},
-       'swap': {
-           'warning': '10%',
-           'critical': '5%',
-       },
        'procs': {
            'metric': "PROCS",
            'warning': 170,
@@ -2072,17 +2038,6 @@ def add_auto_configuration_host_settings(hostname,
 #           'warning':
 #           'critical':
        },
-       'burp_backup_age': {
-           # ssh values should be replaced with the values concerning the backup host.
-           'ssh_user': ssh_user,
-           'ssh_addr': ssh_addr,
-           'ssh_port': ssh_port,
-           'ssh_timeout': ssh_timeout,
-           'hostname': hostname,
-           'directory': "/backups",
-           'warning': 1560,
-           'critical': 1800,
-       },
        'rdiff': {
            # ssh values should be replaced with the values concerning the backup host
            'ssh_user': ssh_user,
@@ -2094,10 +2049,6 @@ def add_auto_configuration_host_settings(hostname,
            'cron_period': 1,
            'warning': 24,
            'critical': 48,
-       },
-       'ddos': {
-           'warning': 3,
-           'critical': 4,
        },
        'haproxy_stats': {
            'socket': "/var/run/haproxy.sock",

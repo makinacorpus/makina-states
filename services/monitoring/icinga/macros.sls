@@ -101,6 +101,9 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      ssh_addr,
                                      ssh_port=22,
                                      ssh_timeout=30,
+                                     backup_burp_age=False,
+                                     ddos=false,
+                                     debian_updates=False,
                                      dns_association=False,
                                      disk_space=False,
                                      disk_space_root=False,
@@ -110,40 +113,15 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      disk_space_home=False,
                                      disk_space_var_makina=False,
                                      disk_space_var_www=False,
+                                     drbd=False,
                                      load_avg=False,
                                      memory=False,
+                                     memory_hyperviseur=False,
                                      network=False,
+                                     raid=False,
+                                     swap=False,
                                      web_apache_status=False,
                                      web_public=False,
-                                     check_ssh=False,
-                                     check_dns_reverse=False,
-                                     check_web_apache_status=False,
-                                     check_http=False,
-                                     check_web_public_client=False,
-                                     html={},
-                                     check_ntp_peer=False,
-                                     check_ntp_time=False,
-                                     check_mountpoints=False,
-                                     check_raid=False,
-                                     check_md_raid=False,
-                                     check_megaraid_sas=False,
-                                     check_3ware_raid=False,
-                                     check_cciss=False,
-                                     check_drbd=False,
-                                     check_swap=False,
-                                     check_network=False,
-                                     check_load_avg=False,
-                                     check_memory=False,
-                                     check_procs=False,
-                                     check_cron=False,
-                                     check_debian_packages=False,
-                                     check_solr=False,
-                                     check_burp_backup_age=False,
-                                     check_rdiff=False,
-                                     check_ddos=False,
-                                     check_haproxy_stats=False,
-                                     check_postfixqueue=False,
-                                     check_postfix_mailqueue=False,
                                      services_check_command_args={}
                                     ) %}
 {% set data = salt['mc_icinga.add_auto_configuration_host_settings'](hostname,
@@ -152,6 +130,9 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      ssh_addr,
                                                                      ssh_port,
                                                                      ssh_timeout,
+                                                                     backup_burp_age,
+                                                                     ddos,
+                                                                     debian_updates,
                                                                      dns_association,
                                                                      disk_space,
                                                                      disk_space_root,
@@ -161,40 +142,15 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      disk_space_home,
                                                                      disk_space_var_makina,
                                                                      disk_space_var_www,
+                                                                     drbd,
                                                                      load_avg,
                                                                      memory,
+                                                                     memory_hyperviseur,
                                                                      network,
+                                                                     raid,
+                                                                     swap,
                                                                      web_apache_status,
                                                                      web_public,
-                                                                     check_ssh,
-                                                                     check_dns_reverse,
-                                                                     check_web_apache_status,
-                                                                     check_http,
-                                                                     check_web_public_client,
-                                                                     html,
-                                                                     check_ntp_peer,
-                                                                     check_ntp_time,
-                                                                     check_mountpoints,
-                                                                     check_raid,
-                                                                     check_md_raid,
-                                                                     check_megaraid_sas,
-                                                                     check_3ware_raid,
-                                                                     check_cciss,
-                                                                     check_drbd,
-                                                                     check_swap,
-                                                                     check_network,
-                                                                     check_load_avg,
-                                                                     check_memory,
-                                                                     check_procs,
-                                                                     check_cron,
-                                                                     check_debian_packages,
-                                                                     check_solr,
-                                                                     check_burp_backup_age,
-                                                                     check_rdiff,
-                                                                     check_ddos,
-                                                                     check_haproxy_stats,
-                                                                     check_postfixqueue,
-                                                                     check_postfix_mailqueue,
                                                                      services_check_command_args,
                                                                      **kwargs
                                                                     ) %}
@@ -207,6 +163,53 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                             file='hosts/'+data.hostname+'/host.cfg',
                             attrs=data.attrs) }}
 
+
+# add backup_burp_age service 
+# TODO: edit command in order to allow customization in check_by_ssh
+{% if data.backup_burp_age %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/backup_burp_age.cfg',
+                                attrs= {
+                                    'service_description': "S_BACKUP_BURP_AGE",
+                                    'host_name': data.hostname,
+                                    'use': "ST_BACKUP_DAILY_ALERT",
+                                    'check_command': "CSSH_BACKUP_BURP!"
+                                                     +data.services_check_command_args.backup_burp_age.ssh_addr+"!"
+                                                     +data.services_check_command_args.backup_burp_age.warning|string+"!"
+                                                     +data.services_check_command_args.backup_burp_age.critical|string,
+                                })
+    }}
+{% endif %}
+
+# add ddos service
+# TODO: edit command in order to allow customization in check_by_ssh
+{% if data.ddos %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/ddos.cfg',
+                                attrs= {
+                                    'service_description': "DDOS",
+                                    'host_name': data.hostname,
+                                    'use': "ST_ALERT",
+                                    'check_command': "CSSH_DDOS!"
+                                                     +data.services_check_command_args.ddos.warning|string+"!"
+                                                     +data.services_check_command_args.ddos.critical|string,
+                                })
+    }}
+{% endif %}
+
+# add debian_updates service
+# TODO: edit command in order to allow customization in check_by_ssh
+{% if data.debian_updates %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/debian_updates.cfg',
+                                attrs= {
+                                    'service_description': "S_DEBIAN_UPDATES",
+                                    'host_name': data.hostname,
+                                    'use': "ST_DAILY_NOALERT",
+                                    'check_command': "CSSH_DEBIAN_UPDATES"
+                                })
+    }}
+{% endif %}
 
 # add dns_association service 
 {% if data.dns_association %}
@@ -230,24 +233,39 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     {% endfor %}
 {% endif %}
 
-# add mountpoints service
-# ST_DISK_/ template not included in order to allow override the check command
+# add disk_space service
 {% if data.disk_space %}
-{% for mountpoint, path in data.disks_spaces.items() %}
+    {% for mountpoint, path in data.disks_spaces.items() %}
+        {{ configuration_add_object(type='service',
+                                    file='hosts/'+data.hostname+'/'+mountpoint+'.cfg',
+                                    attrs= {
+                                        'service_description': "DISK_SPACE_"+path,
+                                        'host_name': data.hostname,
+                                        'use': "ST_DISK_"+path,
+                                        'icon_image': "services/nas3.png",
+                                        'check_command': "C_SNMP_DISK!"
+                                                         +path+"!"
+                                                         +data.services_check_command_args.disk_space[mountpoint].warning|string+"!"
+                                                         +data.services_check_command_args.disk_space[mountpoint].critical|string,
+                                    })
+        }}
+    {% endfor %}
+{% endif %}
+
+# add drbd service
+# TODO: edit command in order to allow customization in check_by_ssh
+# TODO: add contact groups
+{% if data.drbd %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/'+mountpoint+'.cfg',
+                                file='hosts/'+data.hostname+'/drbd.cfg',
                                 attrs= {
-                                    'service_description': "DISK_SPACE_"+path,
+                                    'service_description': "CHECK_DRBD",
                                     'host_name': data.hostname,
-                                    'use': "ST_DISK_"+path,
-                                    'icon_image': "services/nas3.png",
-                                    'check_command': "C_SNMP_DISK!"
-                                                     +path+"!"
-                                                     +data.services_check_command_args.disk_space[mountpoint].warning|string+"!"
-                                                     +data.services_check_command_args.disk_space[mountpoint].critical|string,
+                                    'use': "ST_ALERT",
+                                    'check_command': "CSSH_DRBD!"
+                                                     +data.services_check_command_args.drbd.command,
                                 })
     }}
-{% endfor %}
 {% endif %}
 
 # add load avg service
@@ -279,6 +297,21 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     }}
 {% endif %}
 
+# add memory_hyperviseur service
+{% if data.memory_hyperviseur %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/memory_hyperviseur.cfg',
+                                attrs= {
+                                    'service_description': "MEMORY_HYPERVISEUR",
+                                    'host_name': data.hostname,
+                                    'use': "ST_MEMORY_HYPERVISEUR",
+                                    'check_command': "C_SNMP_MEMORY!"
+                                                     +data.services_check_command_args.memory_hyperviseur.warning|string+"!"
+                                                     +data.services_check_command_args.memory_hyperviseur.critical|string,
+                                })
+    }}
+{% endif %}
+
 # add network service
 {% if data.network %}
     {% for name, network in data.services_check_command_args.network.items() %}
@@ -294,6 +327,36 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     })
         }}
     {% endfor %}
+{% endif %}
+
+# add raid service
+# TODO: edit command in order to allow customization in check_by_ssh
+{% if data.raid %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/raid.cfg',
+                                attrs= {
+                                    'service_description': "CHECK_RAID",
+                                    'host_name': data.hostname,
+                                    'use': "ST_ALERT",
+                                    'check_command': "CSSH_RAID_SOFT!"
+                                                     +data.services_check_command_args.raid.command,
+                                })
+    }}
+{% endif %}
+
+# add swap service
+# TODO: edit command in order to allow customization in check_by_ssh
+{% if data.swap %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/swap.cfg',
+                                attrs= {
+                                    'service_description': "CHECK_SWAP",
+                                    'host_name': data.hostname,
+                                    'use': "ST_ALERT",
+                                    'check_command': "CSSH_RAID_SOFT!"
+                                                     +data.services_check_command_args.swap.command,
+                                })
+    }}
 {% endif %}
 
 # add web apache status service
@@ -513,22 +576,6 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% endif %}
 
 
-# add swap service (check by ssh)
-{% if data.check_swap %}
-    {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/swap.cfg',
-                                attrs= {
-                                    'service_description': "Swap",
-                                    'host_name': data.hostname,
-                                    'use': "generic-service",
-                                    'check_command': "check_by_ssh_swap!"
-                                                     +check_by_ssh_params+"!"
-                                                     +data.services_check_command_args.swap.warning|string+"!"
-                                                     +data.services_check_command_args.swap.critical|string,
-                                })
-    }}
-{% endif %}
-
 
 
 # add nb procs services (check by ssh)
@@ -594,26 +641,6 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     }}
 {% endif %}
 
-# add burp backup age (check by ssh on the backup server)
-{% if data.check_burp_backup_age %}
-    {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/burp_backup_age.cfg',
-                                attrs= {
-                                    'service_description': "Burp backup age on "+data.services_check_command_args.burp_backup_age.ssh_addr,
-                                    'host_name': data.hostname,
-                                    'use': "generic-service",
-                                    'check_command': "check_by_ssh_burp_backup_age!"
-                                                     +data.services_check_command_args.burp_backup_age.ssh_user+"!"
-                                                     +data.services_check_command_args.burp_backup_age.ssh_addr+"!"
-                                                     +data.services_check_command_args.burp_backup_age.ssh_port|string+"!"
-                                                     +data.services_check_command_args.burp_backup_age.ssh_timeout|string+"!"
-                                                     +data.services_check_command_args.burp_backup_age.hostname+"!"
-                                                     +data.services_check_command_args.burp_backup_age.directory+"!"
-                                                     +data.services_check_command_args.burp_backup_age.warning|string+"!"
-                                                     +data.services_check_command_args.burp_backup_age.critical|string,
-                                })
-    }}
-{% endif %}
 
 # add rdiff backup age (check by ssh on the backup server)
 {% if data.check_burp_backup_age %}
@@ -637,21 +664,6 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     }}
 {% endif %}
 
-# add ddos check service (check by ssh)
-{% if data.check_ddos %}
-    {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/ddos.cfg',
-                                attrs= {
-                                    'service_description': "DDOS",
-                                    'host_name': data.hostname,
-                                    'use': "generic-service",
-                                    'check_command': "check_by_ssh_ddos!"
-                                                     +check_by_ssh_params+"!"
-                                                     +data.services_check_command_args.ddos.warning|string+"!"
-                                                     +data.services_check_command_args.ddos.critical|string,
-                                })
-    }}
-{% endif %}
 
 
 # add haproxy service (check by ssh)
