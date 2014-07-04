@@ -934,7 +934,17 @@ def settings():
                     'max_debug_file_size': 100000000,
                     'event_profiling_enabled': 0,
                 },
-
+                'resource_cfg': {
+                    '$USER1$': "/usr/local/nagios/libexec",
+                    '$USER2$': "public",
+                    '$USER5_SNMPUSER': "CHANGETHIS",
+                    '$USER3_SNMPCRYPT$': "CHANGETHIS",
+                    '$USER4_SNMPPASS$': "CHANGETHIS",
+                    '$USER6_AUTHPAIRS$': "CHANGETHIS",
+                    '$USER7_SSHKEYS$': "/home/nagios/.ssh/id_rsa_supervision",
+                    '$USER8_TESTUSER$$': "tsa",
+                    '$USER9_TESTPWD$': "CHANGETHIS"
+                },
                 'modules': {
                     'mklivestatus': {
                         'enabled': True,
@@ -1036,7 +1046,7 @@ def settings():
                             'show_all_services_host_is_authorized_for': 1,
                             'show_partial_hostgroups': 0,
                             'show_partial_servicegroups': 0,
-                            'statusmap_background_image': "smbackground.gd2",
+                            'statusmap_background_image': "logomakina.png",
                             'color_transparency': [255, 255, 255], 
                             'default_statusmap_layout': 5,
                             'host_unreachable_sound': "hostdown.wav",
@@ -1456,10 +1466,10 @@ def add_auto_configuration_host_settings(hostname,
 
     # for each mountpoint, build the dictionary:
     # priority for values
-    # services_check_command_default_args['mountpoints']['default']
-    # services_check_command_default_args['mountpoints'][mountpoint]
-    # services_check_command_args['mountpoints']['default']
-    # services_check_command_args['mountpoints'][mountpoint]
+    # services_check_command_default_args['mountpoints']['default'] # default values in default dictionary
+    # services_check_command_default_args['mountpoints'][mountpoint] # specific values in default dictionary
+    # services_check_command_args['mountpoints']['default'] # default value in overrided dictionary
+    # services_check_command_args['mountpoints'][mountpoint] # specific value in overrided dictionary
     for mountpoint, path in mountpoints_path.items():
         if not mountpoint in services_check_command_args['mountpoints']:
             services_check_command_args['mountpoints'][mountpoint] = {}

@@ -31,6 +31,24 @@ icinga-conf:
       data: |
             {{sdata}}
 
+# resource configuration
+icinga-resource-conf:
+  file.managed:
+    - name: {{data.configuration_directory}}/resource.cfg
+    - source: salt://makina-states/files/etc/icinga/resource.cfg
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 644
+    - watch:
+      - mc_proxy: icinga-pre-conf
+    - watch_in:
+      - mc_proxy: icinga-post-conf
+    - defaults:
+      data: |
+            {{sdata}}
+
 
 # startup configuration
 {% if grains['os'] in ['Ubuntu'] %}
