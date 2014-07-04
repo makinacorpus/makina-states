@@ -102,6 +102,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      ssh_port=22,
                                      ssh_timeout=30,
                                      backup_burp_age=False,
+                                     cron=False,
                                      ddos=false,
                                      debian_updates=False,
                                      dns_association=False,
@@ -131,6 +132,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      ssh_port,
                                                                      ssh_timeout,
                                                                      backup_burp_age,
+                                                                     cron,
                                                                      ddos,
                                                                      debian_updates,
                                                                      dns_association,
@@ -177,6 +179,20 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                      +data.services_check_command_args.backup_burp_age.ssh_addr+"!"
                                                      +data.services_check_command_args.backup_burp_age.warning|string+"!"
                                                      +data.services_check_command_args.backup_burp_age.critical|string,
+                                })
+    }}
+{% endif %}
+
+# add cron service
+# TODO: edit command in order to allow customization in check_by_ssh
+{% if data.cron %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/cron.cfg',
+                                attrs= {
+                                    'service_description': "S_PROC_CRON",
+                                    'host_name': data.hostname,
+                                    'use': "ST_SSH_PROC_CRON",
+                                    'check_command': "CSSH_CRON"
                                 })
     }}
 {% endif %}

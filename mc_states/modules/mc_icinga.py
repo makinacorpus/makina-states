@@ -1109,6 +1109,7 @@ def objects():
                 'ssh_user': "root",
                 'ssh_addr': "127.0.0.1",
                 'backup_burp_age': True,
+                'cron': True,
                 'ddos': True,
                 'debian_updates': True,
                 'dns_association': True,
@@ -1822,6 +1823,7 @@ def add_auto_configuration_host_settings(hostname,
                                         ssh_port,
                                         ssh_timeout,
                                         backup_burp_age,
+                                        cron,
                                         ddos,
                                         debian_updates,
                                         dns_association,
@@ -1858,6 +1860,7 @@ def add_auto_configuration_host_settings(hostname,
 
 
     kwargs.setdefault('backup_burp_age', backup_burp_age)
+    kwargs.setdefault('cron', cron)
     kwargs.setdefault('ddos', ddos)
     kwargs.setdefault('debian_updates', debian_updates)
     kwargs.setdefault('dns_association', dns_association)
@@ -1922,6 +1925,7 @@ def add_auto_configuration_host_settings(hostname,
            'warning': 1560,
            'critical': 1800,
        },
+       'cron': {},
        'ddos': {
            'warning': 50,
            'critical': 60,
