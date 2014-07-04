@@ -125,6 +125,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      check_drbd=False,
                                      check_swap=False,
                                      check_cpuload=False,
+                                     check_memory=False,
                                      check_procs=False,
                                      check_cron=False,
                                      check_debian_packages=False,
@@ -167,6 +168,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      check_drbd,
                                                                      check_swap,
                                                                      check_cpuload,
+                                                                     check_memory,
                                                                      check_procs,
                                                                      check_cron,
                                                                      check_debian_packages,
@@ -208,13 +210,17 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add dns service (check only data, the host doesn't have neither solver nor autority zone)
 {% if data.check_dns %}
     {% for name, dns in data.services_check_command_args.dns.items() %}
+    {% if data.hostname == dns.hostname %}
+        {% set use = "ST_DNS_ASSOCIATION_hostname" %}
+    {% else %}
+        {% set use = "ST_DNS_ASSOCIATION" %}
+    {% endif %}
         {{ configuration_add_object(type='service',
                                     file='hosts/'+data.hostname+'/dns_'+name+'.cfg',
                                     attrs= {
                                         'service_description': "DNS_ASSOCIATION_"+dns.hostname,
                                         'host_name': data.hostname,
-                                        'use': "ST_DAILY_ALERT",
-                                        'icon_image': "services/search_server2.png",
+                                        'use': use,
                                         'check_command': "C_DNS_EXTERNE_ASSOCIATION!"
                                                          +dns.hostname+"!"
                                                          +dns.other_args,
@@ -311,7 +317,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     }}
 {% endif %}
 
-# add mountpoints service (check by ssh)
+# add mountpoints service
 # ST_DISK_/ template not included in order to allow override the check command
 {% if data.check_mountpoints %}
 {% for mountpoint, path in data.mountpoints.items() %}
@@ -432,18 +438,31 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     }}
 {% endif %}
 
-# add cpuload service (check by ssh)
+# add cpuload service
 {% if data.check_cpuload %}
     {{ configuration_add_object(type='service',
                                 file='hosts/'+data.hostname+'/cpuload.cfg',
                                 attrs= {
-                                    'service_description': "CPU load",
+                                    'service_description': "LOAD_AVG",
                                     'host_name': data.hostname,
-                                    'use': "generic-service",
-                                    'check_command': "check_by_ssh_cpuload!"
-                                                     +check_by_ssh_params+"!"
-                                                     +data.services_check_command_args.cpuload.warning|string+"!"
-                                                     +data.services_check_command_args.cpuload.critical|string,
+                                    'use': "ST_LOAD_AVG",
+                                    'check_command': "C_SNMP_LOADAVG!"
+                                                     +data.services_check_command_args.cpuload.other_args,
+                                })
+    }}
+{% endif %}
+
+# add memory service
+{% if data.check_memory %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/memory.cfg',
+                                attrs= {
+                                    'service_description': "MEMORY",
+                                    'host_name': data.hostname,
+                                    'use': "ST_MEMORY",
+                                    'check_command': "C_SNMP_MEMORY!"
+                                                     +data.services_check_command_args.memory.warning|string+"!"
+                                                     +data.services_check_command_args.memory.critical|string,
                                 })
     }}
 {% endif %}

@@ -1111,6 +1111,8 @@ def objects():
                 'mountpoint_root': True,
                 'check_mountpoints': True,
                 'check_dns': True,
+                'check_cpuload': True,
+                'check_memory': True,
                 'services_check_command_args': {
                     'dns': {
                         'localhost': {
@@ -1118,6 +1120,9 @@ def objects():
                         },
                         'other_name': {
                             'hostname': "www.example.net",
+                        },
+                        'hostname': {
+                            'hostname': "webservices",
                         },
                     },
                 },
@@ -1825,6 +1830,7 @@ def add_auto_configuration_host_settings(hostname,
                                         check_drbd,
                                         check_swap,
                                         check_cpuload,
+                                        check_memory,
                                         check_procs,
                                         check_cron,
                                         check_debian_packages,
@@ -1919,6 +1925,7 @@ def add_auto_configuration_host_settings(hostname,
     kwargs.setdefault('check_drbd', check_drbd)
     kwargs.setdefault('check_swap', check_swap)
     kwargs.setdefault('check_cpuload', check_cpuload)
+    kwargs.setdefault('check_memory', check_memory)
     kwargs.setdefault('check_procs', check_procs)
     kwargs.setdefault('check_cron', check_cron)
     kwargs.setdefault('check_debian_packages', check_debian_packages)
@@ -1992,9 +1999,11 @@ def add_auto_configuration_host_settings(hostname,
            'critical': '5%',
        },
        'cpuload': {
-#          we don't know the cpu number of the monitored host
-           'warning': 0.7,
-           'critical': 0.9,
+           'other_args': "",
+       },
+       'memory': {
+           'warning': 80,
+           'critical': 90,
        },
        'procs': {
            'metric': "PROCS",
