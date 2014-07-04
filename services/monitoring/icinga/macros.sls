@@ -207,20 +207,20 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 
 # add dns service (check only data, the host doesn't have neither solver nor autority zone)
 {% if data.check_dns %}
-    {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/dns.cfg',
-                                attrs= {
-                                    'service_description': "DNS "+data.services_check_command_args.dns.query_address+" → "+data.services_check_command_args.dns.expected_address,
-                                    'host_name': data.hostname,
-                                    'use': "generic-service",
-                                    'check_command': "check_dig!"
-                                                     +data.services_check_command_args.dns.port|string+"!"
-                                                     +data.services_check_command_args.dns.query_address+"!"
-                                                     +data.services_check_command_args.dns.record_type+"!"
-                                                     +data.services_check_command_args.dns.expected_address+"!"
-                                                     +data.services_check_command_args.dns.timeout|string,
-                                })
-    }}
+    {% for name, dns in data.services_check_command_args.dns.items() %}
+        {{ configuration_add_object(type='service',
+                                    file='hosts/'+data.hostname+'/dns_'+name+'.cfg',
+                                    attrs= {
+                                        'service_description': "DNS_ASSOCIATION_"+dns.hostname,
+                                        'host_name': data.hostname,
+                                        'use': "ST_DAILY_ALERT",
+                                        'icon_image': "services/search_server2.png",
+                                        'check_command': "C_DNS_EXTERNE_ASSOCIATION!"
+                                                         +dns.hostname+"!"
+                                                         +dns.other_args,
+                                    })
+        }}
+    {% endfor %}
 {% endif %}
 {% if data.check_dns_reverse %}
     {{ configuration_add_object(type='service',
@@ -312,16 +312,17 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% endif %}
 
 # add mountpoints service (check by ssh)
+# ST_DISK_/ template not included in order to allow override the check command
 {% if data.check_mountpoints %}
 {% for mountpoint, path in data.mountpoints.items() %}
     {{ configuration_add_object(type='service',
                                 file='hosts/'+data.hostname+'/'+mountpoint+'.cfg',
                                 attrs= {
-                                    'service_description': "Free space on "+path,
+                                    'service_description': "DISK_SPACE_"+path,
                                     'host_name': data.hostname,
-                                    'use': "generic-service",
-                                    'check_command': "check_by_ssh_mountpoint!"
-                                                     +check_by_ssh_params+"!"
+                                    'use': "ST_HOURLY_ALERT",
+                                    'icon_image': "services/nas3.png",
+                                    'check_command': "C_SNMP_DISK!"
                                                      +path+"!"
                                                      +data.services_check_command_args.mountpoints[mountpoint].warning|string+"!"
                                                      +data.services_check_command_args.mountpoints[mountpoint].critical|string,

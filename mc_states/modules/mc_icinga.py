@@ -865,6 +865,39 @@ def objects():
                     'command_line': "$USER1$/eventhandlers/relance_ntp  $SERVICESTATE$ $SERVICESTATETYPE$ $SERVICEATTEMPT$ $HOSTADDRESS$ $HOSTNAME$ $SERVICEDESC$",
                 },
             },
+            # services templates definitions
+            'serviceTemplate_ST_ROOT': {
+                'type': "service",
+                'file': "serviceTemplates/ST_ROOT.cfg",
+                'attrs': {
+                    'name': "ST_ROOT",
+                    'service_description': 'S_ROOT',
+                    'is_volatile': 0,
+                    'max_check_attempts': 3,
+                    'normal_check_interval': 5,
+                    'retry_check_interval': 1,
+                    'active_checks_enabled': 1,
+                    'passive_checks_enabled': 1,
+                    'check_period': "24x7",
+                    'notification_interval': 0,
+                    'notifications_enabled': 0,
+                    'contact_groups': "Supervisors",
+                    'register': 0,
+                },
+            },
+            'serviceTemplate_ST_HOURLY_ALERT': {
+                'type': "service",
+                'file': "serviceTemplates/ST_HOURLY_ALERT.cfg",
+                'attrs': {
+                    'name': "ST_HOURLY_ALERT",
+                    'service_description': "ST_HOURLY_ALERT",
+                    'use': "ST_ROOT",
+                    'max_check_attempts': 3,
+                    'normal_check_interval': 60,
+                    'retry_check_interval': 1,
+                    'register': 0,
+                },
+            },
             # hosts templates definitions
             # (shouldn't use autoconfigured for templates because we can't associate a service to
             # a host template. It seems to be not working with icinga)
@@ -1077,6 +1110,17 @@ def objects():
                 'ssh_addr': "127.0.0.1",
                 'mountpoint_root': True,
                 'check_mountpoints': True,
+                'check_dns': True,
+                'services_check_command_args': {
+                    'dns': {
+                        'localhost': {
+                            'hostname': "www.localhost",
+                        },
+                        'other_name': {
+                            'hostname': "www.example.net",
+                        },
+                    },
+                },
             },
         },
     }
@@ -1895,11 +1939,10 @@ def add_auto_configuration_host_settings(hostname,
            'timeout': 10,
        },
        'dns': {
-           'port': 53,
-           'query_address': dns_hostname,
-           'record_type': 'A',
-           'expected_address': dns_address,
-           'timeout': 10,
+           'default': {
+               'hostname': dns_hostname,
+               'other_args': "",
+           }
        },
        'dns_reverse': {
            'port': 53,
@@ -1933,8 +1976,9 @@ def add_auto_configuration_host_settings(hostname,
        },
        'mountpoints': {
            'default': {
-               'warning': 10,
-               'critical': 5,
+#              from ST_DISK_SPACE_/
+               'warning': 80,
+               'critical': 90,
            },
        },
        'raid': {},
@@ -2004,14 +2048,15 @@ def add_auto_configuration_host_settings(hostname,
     }
 
     # override the commands parameters values
-    if not isinstance(services_check_command_args, dict):
-        services_check_command_args = {}
 
-    for name, command in services_check_command_default_args.items():
-        if not name in services_check_command_args:
-            services_check_command_args[name] = {}
-        services_check_command_args[name] = dict(services_check_command_default_args[name].items() + services_check_command_args[name].items())
-
+    # override dns subdictionary
+    if not 'dns' in services_check_command_args:
+        services_check_command_args['dns'] =  services_check_command_default_args['dns']
+    else:
+        for name, dns in services_check_command_args['dns'].items():
+            for key, value in services_check_command_default_args['dns']['default'].items():
+                if not key in dns:
+                    services_check_command_args['dns'][name][key]=value
 
     # override mountpoints subdictionaries
 
@@ -2021,6 +2066,13 @@ def add_auto_configuration_host_settings(hostname,
     # services_check_command_default_args['mountpoints'][mountpoint] # specific values in default dictionary
     # services_check_command_args['mountpoints']['default'] # default value in overrided dictionary
     # services_check_command_args['mountpoints'][mountpoint] # specific value in overrided dictionary
+    if 'mountpoints' not in services_check_command_args:
+        services_check_command_args['mountpoints'] = {}
+
+    # we can't merge default dictionary yet because priorities will not be respected
+    if 'default' not in services_check_command_args['mountpoints']:
+        services_check_command_args['mountpoints']['default'] = {}
+
     for mountpoint, path in mountpoints_path.items():
         if not mountpoint in services_check_command_args['mountpoints']:
             services_check_command_args['mountpoints'][mountpoint] = {}
@@ -2043,6 +2095,17 @@ def add_auto_configuration_host_settings(hostname,
     else:
         services_check_command_args['mountpoints']['default'] = dict(services_check_command_default_args['mountpoints']['default'].items() 
                                                                    + services_check_command_args['mountpoints']['default'].items())
+
+    # override others values
+    if not isinstance(services_check_command_args, dict):
+        services_check_command_args = {}
+
+    for name, command in services_check_command_default_args.items():
+        if not name in ['dns', 'mountpoints']:
+            if not name in services_check_command_args:
+                services_check_command_args[name] = {}
+            services_check_command_args[name] = dict(services_check_command_default_args[name].items() + services_check_command_args[name].items())
+
 
     kwargs.setdefault('services_check_command_args', services_check_command_args)
 
