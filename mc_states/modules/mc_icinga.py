@@ -975,9 +975,9 @@ def objects():
                     'register': 0,
                 },
             },
-            'serviceTemplate_ST_DISK_SPACE_/': {
+            'serviceTemplate_ST_DISK_SPACE_ROOT': {
                 'type': "service",
-                'file': "serviceTemplates/ST_DISK_SPACE_/.cfg",
+                'file': "serviceTemplates/ST_DISK_SPACE_ROOT.cfg",
                 'attrs': {
                     'name': "ST_DISK_SPACE_/",
                     'service_description': "DISK_SPACE_/",
@@ -1657,6 +1657,97 @@ def objects():
                     'statusmap_image': "gd2/fonc//server2.gd2",
                 },
             },
+            # timeperiods
+            'timeperiod_24x7': {
+                'type': "timeperiod",
+                'file': "timeperiods/24x7.cfg",
+                'attrs': {
+                    'timeperiod_name': "24x7",
+                    'alias': "24_Hours_A_Day,_7_Days_A_Week",
+                    'sunday': "00:00-24:00",
+                    'monday': "00:00-24:00",
+                    'tuesday': "00:00-24:00",
+                    'wednesday': "00:00-24:00",
+                    'thursday': "00:00-24:00",
+                    'friday': "00:00-24:00",
+                    'saturday': "00:00-24:00",
+                },
+            },
+            'timeperiod_begin_day': {
+                'type': "timeperiod",
+                'file': "timeperiods/begin_day.cfg",
+                'attrs': {
+                    'timeperiod_name': "begin_day",
+                    'alias': "BeginDay",
+                    'sunday': "00:00-24:00",
+                    'monday': "00:00-24:00",
+                    'tuesday': "00:00-24:00",
+                    'wednesday': "00:00-24:00",
+                    'thursday': "00:00-24:00",
+                    'friday': "00:00-24:00",
+                    'saturday': "00:00-24:00",
+                },
+            },
+            'timeperiod_end_day': {
+                'type': "timeperiod",
+                'file': "timeperiods/end_day.cfg",
+                'attrs': {
+                    'timeperiod_name': "end_day",
+                    'alias': "EndDays",
+                    'sunday': "00:00-24:00",
+                    'monday': "00:00-24:00",
+                    'tuesday': "00:00-24:00",
+                    'wednesday': "00:00-24:00",
+                    'thursday': "00:00-24:00",
+                    'friday': "00:00-24:00",
+                    'saturday': "00:00-24:00",
+                },
+            },
+            'timeperiod_none': {
+                'type': "timeperiod",
+                'file': "timeperiods/none.cfg",
+                'attrs': {
+                    'name': "timeperiod_none",
+                    'alias': "No Time Is A Good Time",
+                },
+            },
+            'timeperiod_nonworkhours': {
+                'type': "timeperiod",
+                'file': "timeperiods/nonworkhours.cfg",
+                'attrs': {
+                    'name': "timeperiod_nonworkhours",
+                    'alias': "Non-Work Hours",
+                    'sunday': "00:00-24:00",
+                    'monday': "00:00-09:00,17:00-24:00",
+                    'tuesday': "00:00-09:00,17:00-24:00",
+                    'wednesday': "00:00-09:00,17:00-24:00",
+                    'thursday': "00:00-09:00,17:00-24:00",
+                    'friday': "00:00-09:00,17:00-24:00",
+                    'saturday': "00:00-24:00",
+                },
+            },
+            'timeperiod_workhours': {
+                'type': "timeperiod",
+                'file': "timeperiods/workhours.cfg",
+                'attrs': {
+                    'name': "timeperiod_workhours",
+                    'alias': "Work hours",
+                    'monday': "09:00-17:00",
+                    'tuesday': "09:00-17:00",
+                    'wednesday': "09:00-17:00",
+                    'thursday': "09:00-17:00",
+                    'friday': "09:00-17:00",
+                },
+            },
+            # contactgroups
+            'contactgroup_supervisors': {
+                'type': "contactgroup",
+                'file': "contactgroups/supervisors.cfg",
+                'attrs': {
+                    'contactgroup_name': "Supervisors",
+                },
+            },
+
         },
 
         # host definitions
@@ -1669,7 +1760,7 @@ def objects():
                     'alias': "VIRT",
                     'address': "127.0.0.1",
                     '_HOST_ID': 78,
-                    'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
+#                    'hostgroups': "HG_ALL_HOSTS,HG",
                 },
                 'ssh_user': "root",
 #                'ssh_addr': "127.0.0.1",

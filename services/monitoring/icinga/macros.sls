@@ -328,7 +328,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'service_description': "S_DEBIAN_UPDATES",
                                     data.service_key_hostname: data.hostname,
                                     'use': "ST_DAILY_NOALERT",
-                                    'check_command': "CSSH_DEBIAN_UPDATES"
+                                    'check_command': "CSSH_DEBIAN_UPDATES!"
                                                      +check_by_ssh_params,
                                 })
     }}
@@ -364,7 +364,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     attrs= {
                                         'service_description': "DISK_SPACE_"+path,
                                         data.service_key_hostname: data.hostname,
-                                        'use': "ST_DISK_"+path,
+                                        'use': "ST_DISK_SPACE_"+path|upper,
                                         'icon_image': "services/nas3.png",
                                         'check_command': "C_SNMP_DISK!"
                                                          +path+"!"
@@ -670,7 +670,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     attrs= {
                                         'service_description': "NETWORK_"+network.interface,
                                         data.service_key_hostname: data.hostname,
-                                        'use': "ST_NETWORK_"+network.interface,
+                                        'use': "ST_NETWORK_"+network.interface|upper,
                                         'check_command': "C_SNMP_NETWORK!"
                                                          +network.interface+"!"
                                                          +network.other_args,
@@ -870,7 +870,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'service_description': "S_SUPERVISORD_STATUS",
                                     data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
-                                    'check_command': "CSSH_SUPERVISORD!"
+                                    'check_command': "CSSH_SUPERVISOR!"
                                                      +check_by_ssh_params+"!"
                                                      +data.services_check_command_args.supervisord_status.command,
                                 })
