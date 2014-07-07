@@ -252,26 +252,6 @@ icinga-mklivestatus-conf:
 # add objects configuration
 {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
 
-# copy the checks
-# the binaries are compiled for x86_64. we have to check this using grains
-{% if 'amd64' == salt['grains.items']()['osarch'] %}
-{% for check in data.objects.filescopy %}
-icinga-configuration-check-{{check}}-plugin:
-  file.managed:
-   - name: /root/admin_scripts/nagios/{{check}}
-   - source: salt://makina-states/files/root/admin_scripts/nagios/{{check}}
-   - makedirs: true
-   - user: root
-   - group: root
-   - mode: 755
-   - watch:
-     - mc_proxy: icinga-pre-conf
-   - watch_in:
-     - mc_proxy: icinga-post-conf
-{% endfor %}
-{% endif %}
-
-# TODO: we have to copy some of theses files in the monitored host.
 
 # clean the objects directory
 icinga-configuration-clean-objects-directory:
@@ -288,9 +268,11 @@ icinga-configuration-clean-objects-directory:
       - mc_proxy: icinga-configuration-post-clean-directories
 
 # add templates and commands (and contacts, timeperiods...)
+{#
 {% for name, object in data.objects.objects_definitions.items() %}
     {{ icinga.configuration_add_object(**object) }}
 {% endfor %}
+#}
 
 # add autoconfigured hosts
 {% for name, object in data.objects.autoconfigured_hosts_definitions.items() %}

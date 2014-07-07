@@ -94,6 +94,11 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 #     services_check_command_args
 #         dictionary to override the arguments given in check_command for each service
 #
+
+# WILL BE REMOVED:
+# for contacts and contact_groups, by default if no contact is given in services::
+# If the contacts and contact_groups options are not set, it will notify host contacts instead
+
 #}
 
 {% macro configuration_add_auto_host(hostname,
@@ -826,7 +831,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                         'service_description': "SOLR_"+name,
                                         data.service_key_hostname: data.hostname,
                                         'use': "ST_WEB_PUBLIC",
-                                        'check_command': "C_HTTP_STRING!"
+                                        'check_command': "C_HTTP_STRING_SOLR!"
                                                          +solr.hostname+"!"
                                                          +solr.port|string+"!"
                                                          +solr.url+"!"
@@ -946,18 +951,13 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # TODO: readd auth
 {% if data.web_public %}
     {% for name, web_public in data.services_check_command_args.web_public.items() %}
-        {% if 'antibug' == web_public.type %}
-            {% set use = "ST_WEB_PUBLIC_antibug" %}
-        {% else %}
-            {% set use = "ST_WEB_PUBLIC_CLIENT" %}
-        {% endif %}
         {{ configuration_add_object(type='service',
                                     file=data.service_subdirectory+'/'+data.hostname+'/web_public_'+name+'.cfg',
                                     attrs= {
                                         'service_description': "WEB_PUBLIC_"+name,
                                         data.service_key_hostname: data.hostname,
-                                        'use': use,
-                                        'check_command': "C_HTTP_STRING!"
+                                        'use': "ST_WEB_PUBLIC"+web_public.use_type,
+                                        'check_command': web_public.command+"!"
                                                          +web_public.hostname+"!"
                                                          +web_public.url+"!"
                                                          +web_public.warning|string+"!"
@@ -972,21 +972,6 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 
 # FOR BACKUP (we adapt all services from centreon configuration)
 {#
-# add a SSH service
-{% if data.check_ssh %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/ssh.cfg',
-                                attrs= {
-                                    'service_description': "SSH "+data.services_check_command_args.ssh.hostname+" port "+data.services_check_command_args.ssh.port|string,
-                                    data.service_key_hostname: data.hostname,
-                                    'use': "generic-service",
-                                    'check_command': "check_ssh!"
-                                                     +data.services_check_command_args.ssh.hostname+"!"
-                                                     +data.services_check_command_args.ssh.port|string+"!"
-                                                     +data.services_check_command_args.ssh.timeout|string
-                                })
-    }}
-{% endif %}
 
 {% if data.check_dns_reverse %}
     {{ configuration_add_object(type='service',
@@ -1005,7 +990,6 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     }}
 {% endif %}
 
-
 # add http service
 {% if data.check_http %}
     {{ configuration_add_object(type='service',
@@ -1019,55 +1003,6 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                      +data.services_check_command_args.http.hostname+"!"
                                                      +data.services_check_command_args.http.ip_address+"!"
                                                      +data.services_check_command_args.http.timeout|string,
-                                })
-    }}
-{% endif %}
-
-
-# add ntp peer service
-{% if data.check_ntp_peer %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/ntp_peer.cfg',
-                                attrs= {
-                                    'service_description': "NTP peer",
-                                    data.service_key_hostname: data.hostname,
-                                    'use': "generic-service",
-                                    'check_command': "check_ntp_peer!"
-                                                     +data.services_check_command_args.ntp_peer.port|string+"!"
-                                                     +data.services_check_command_args.ntp_peer.hostname+"!"
-                                                     +data.services_check_command_args.ntp_peer.timeout|string,
-                                })
-    }}
-{% endif %}
-
-# add ntp time service (check by ssh)
-{% if data.check_ntp_time %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/ntp_time.cfg',
-                                attrs= {
-                                    'service_description': "NTP time",
-                                    data.service_key_hostname: data.hostname,
-                                    'use': "generic-service",
-                                    'check_command': "check_by_ssh_ntp_time!"
-                                                     +check_by_ssh_params+"!"
-                                                     +data.services_check_command_args.ntp_time.port|string+"!"
-                                                     +data.services_check_command_args.ntp_time.hostname+"!"
-                                                     +data.services_check_command_args.ntp_time.timeout|string,
-                                })
-    }}
-{% endif %}
-
-
-# add raid check (check by ssh)
-{% if data.check_raid %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/raid.cfg',
-                                attrs= {
-                                    'service_description': "Raid",
-                                    data.service_key_hostname: data.hostname,
-                                    'use': "generic-service",
-                                    'check_command': "check_by_ssh_raid!"
-                                                     +check_by_ssh_params
                                 })
     }}
 {% endif %}
@@ -1128,23 +1063,6 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     }}
 {% endif %}
 
-# add drbd service (check by ssh)
-{% if data.check_drbd %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/drbd.cfg',
-                                attrs= {
-                                    'service_description': "Drbd",
-                                    data.service_key_hostname: data.hostname,
-                                    'use': "generic-service",
-                                    'check_command': "check_by_ssh_drbd!"
-                                                     +check_by_ssh_params
-                                })
-    }}
-{% endif %}
-
-
-
-
 # add nb procs services (check by ssh)
 {% if data.check_procs %}
     {{ configuration_add_object(type='service',
@@ -1161,53 +1079,6 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                 })
     }}
 {% endif %}
-
-# add cron service (check by ssh)
-{% if data.check_cron %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/cron.cfg',
-                                attrs= {
-                                    'service_description': "Cron",
-                                    data.service_key_hostname: data.hostname,
-                                    'use': "generic-service",
-                                    'check_command': "check_by_ssh_cron!"
-                                                     +check_by_ssh_params
-                                })
-    }}
-{% endif %}
-
-# add debian packages service (check by ssh)
-{% if data.check_debian_packages %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/debian_packages.cfg',
-                                attrs= {
-                                    'service_description': "Debian packages",
-                                    data.service_key_hostname: data.hostname,
-                                    'use': "generic-service",
-                                    'check_command': "check_by_ssh_debian_packages!"
-                                                     +check_by_ssh_params
-                                                     +data.services_check_command_args.debian_packages.timeout|string,
-                                })
-    }}
-{% endif %}
-
-# add solr service
-{% if data.check_solr %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/solr.cfg',
-                                attrs= {
-                                    'service_description': "Solr",
-                                    data.service_key_hostname: data.hostname,
-                                    'use': "generic-service",
-                                    'check_command': "check_solr!"
-                                                     +data.services_check_command_args.solr.port|string+"!"
-                                                     +data.services_check_command_args.solr.hostname+"!"
-                                                     +data.services_check_command_args.solr.warning|string+"!"
-                                                     +data.services_check_command_args.solr.critical|string+"!"
-                                })
-    }}
-{% endif %}
-
 
 # add rdiff backup age (check by ssh on the backup server)
 {% if data.check_burp_backup_age %}
@@ -1231,8 +1102,6 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     }}
 {% endif %}
 
-
-
 # add haproxy service (check by ssh)
 {% if data.check_haproxy_stats %}
     {{ configuration_add_object(type='service',
@@ -1248,34 +1117,5 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     }}
 {% endif %}
 
-# add postfix mailqueue service (check by ssh)
-{% if data.check_postfixqueue %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/postfixqueue.cfg',
-                                attrs= {
-                                    'service_description': "Postfix queue",
-                                    data.service_key_hostname: data.hostname,
-                                    'use': "generic-service",
-                                    'check_command': "check_by_ssh_postfixqueue!"
-                                                     +check_by_ssh_params+"!"
-                                                     +data.services_check_command_args.postfixqueue.warning|string+"!"
-                                                     +data.services_check_command_args.postfixqueue.critical|string,
-                                })
-    }}
-{% endif %}
-
-# add postfix mail queue service (check by ssh)
-{% if data.check_postfix_mailqueue %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/postfix_mailqueue.cfg',
-                                attrs= {
-                                    'service_description': "Postfix mailqueue",
-                                    data.service_key_hostname: data.hostname,
-                                    'use': "generic-service",
-                                    'check_command': "check_by_ssh_postfix_mailqueue!"
-                                                     +check_by_ssh_params
-                                })
-    }}
-{% endif %}
 #}
 {% endmacro %}

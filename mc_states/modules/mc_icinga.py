@@ -32,36 +32,11 @@ __name = 'icinga'
 log = logging.getLogger(__name__)
 
 def objects():
+
     locs = __salt__['mc_locations.settings']()
     check_by_ssh_params="-q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$' -t '$ARG4$' "
     data = {
-        'directory': locs['conf_dir']+"/icinga/objects/salt_generated",
-        'filescopy': ['check_ping',
-                      'check_ssh',
-                      'check_dig',
-                      'check_http',
-                      'check_ntp_peer',
-                      'check_ntp_time',
-                      'check_by_ssh',
-                      'check_disk',
-                      'check_raid.pl',
-                      'check_md_raid',
-                      'check_megaraid_sas',
-                      'check_3ware_raid',
-                      'check_cciss-1.12',
-                      'check_drbd',
-                      'check_swap',
-                      'check_load',
-                      'check_procs',
-                      'check_cron',
-                      'check_debian_packages',
-                      'check_solr.py',
-                      'check_burp_backup_age.py',
-                      'check_rdiff',
-                      'check_ddos.pl',
-                      'check_haproxy_stats.pl',
-                      'check_postfixqueue.sh',
-                      'check_postfix_mailqueue'],
+            'directory': locs['conf_dir']+"/icinga/objects/salt_generated",
         'objects_definitions': {
             # meta_commands defintions
             'command_check_meta': {
@@ -475,6 +450,7 @@ def objects():
                     'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C $ARG1$",
                 },
             },
+            # edited in order to allow other users in check_by_ssh
             'command_CSSH_CRON': {
                 'type': "command",
                 'file': "checkcommands/CSSH_CRON.cfg",
@@ -483,6 +459,7 @@ def objects():
                     'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_cron'",
                 },
             },
+            # edited in order to allow other users in check_by_ssh
             'command_CSSH_CUSTOM': {
                 'type': "command",
                 'file': "checkcommands/CSSH_CUSTOM.cfg",
@@ -491,6 +468,7 @@ def objects():
                     'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C $ARG5$",
                 },
             },
+            # edited in order to allow other users in check_by_ssh
             'command_CSSH_CYRUS_CONNECTIONS': {
                 'type': "command",
                 'file': "checkcommands/CSSH_CYRUS_CONNECTIONS.cfg",
@@ -499,6 +477,7 @@ def objects():
                     'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_cyrus-imapd -w  $ARG5$ -c $ARG6$'",
                 },
             },
+            # edited in order to allow other users in check_by_ssh
             'command_CSSH_DDOS': {
                 'type': "command",
                 'file': "checkcommands/CSSH_DDOS.cfg",
@@ -507,6 +486,7 @@ def objects():
                     'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_ddos.pl -w $ARG5$ -c$ARG6$'",
                 },
             },
+            # edited in order to allow other users in check_by_ssh
             'command_CSSH_DEBIAN_UPDATES': {
                 'type': "command",
                 'file': "checkcommands/CSSH_DEBIAN_UPDATES.cfg",
@@ -515,6 +495,7 @@ def objects():
                     'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_debian_packages --timeout=60' --timeout=60",
                 },
             },
+            # edited in order to allow other users in check_by_ssh
             'command_CSSH_DRBD': {
                 'type': "command",
                 'file': "checkcommands/CSSH_DRBD.cfg",
@@ -531,6 +512,7 @@ def objects():
                     'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C $ARG1$",
                 },
             },
+            # edited in order to allow other users in check_by_ssh
             'command_CSSH_MAILQUEUE': {
                 'type': "command",
                 'file': "checkcommands/CSSH_MAILQUEUE.cfg",
@@ -547,6 +529,7 @@ def objects():
                     'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C $ARG1$",
                 }
             },
+            # edited in order to allow other users in check_by_ssh
             'command_CSSH_NTP_PEER': {
                 'type': "command",
                 'file': "checkcommands/CSSH_NTP_PEER.cfg",
@@ -555,6 +538,7 @@ def objects():
                     'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$  -C '/root/check_ntp_peer -H 195.144.11.170 -w 1 -c 10 -j -1:100 -k -1:200 -W 4 -C 10'",
                 },
             },
+            # edited in order to allow other users in check_by_ssh
             'command_CSSH_NTP_PEERS': {
                 'type': "command",
                 'file': "checkcommands/CSSH_NTP_PEERS.cfg",
@@ -563,6 +547,7 @@ def objects():
                     'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_ntp_peer -H $ARG5$ -w 1 -c 10 -j -1:100 -k -1:200 -W 4 -C 10'",
                 },
             },
+            # edited in order to allow other users in check_by_ssh
             'command_CSSH_NTP_TIME': {
                 'type': "command",
                 'file': "checkcommands/CSSH_NTP_TIME.cfg",
@@ -587,6 +572,7 @@ def objects():
                     'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C $ARG1$",
                 },
             },
+            # edited in order to allow other users in check_by_ssh
             'command_CSSH_RAID_SOFT': {
                 'type': "command",
                 'file': "checkcommands/CSSH_RAID_SOFT.cfg",
@@ -603,6 +589,7 @@ def objects():
                     'command_line': "$USER1$/check_by_ssh --skip-stderr  -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C $ARG1$ -t $ARG2$",
                 },
             },
+            # edited in order to allow other users in check_by_ssh
             'command_CSSH_SAS2IRCU': {
                 'type': "command",
                 'file': "checkcommands/CSSH_SAS2IRCU.cfg",
@@ -611,6 +598,7 @@ def objects():
                     'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C $ARG5$",
                 },
             },
+            # edited in order to allow other users in check_by_ssh
             'command_CSSH_SUPERVISOR': {
                 'type': "command",
                 'file': "checkcommands/CSSH_SUPERVISOR.cfg",
@@ -867,16 +855,453 @@ def objects():
                     'command_line': "$USER1$/eventhandlers/relance_ntp  $SERVICESTATE$ $SERVICESTATETYPE$ $SERVICEATTEMPT$ $HOSTADDRESS$ $HOSTNAME$ $SERVICEDESC$",
                 },
             },
+
             # services templates definitions
+            'serviceTemplate_OLD-SNMP-Linux-Load-Average': {
+                'type': "service",
+                'file': "serviceTemplates/OLD-SNMP-Linux-Load-Average.cfg",
+                'attrs': {
+                    'name': "OLD-SNMP-Linux-Load-Average",
+                    'service_description': "Old_Load",
+                    'use': "ST_ROOT",
+                    'check_command': "check_centreon_load_average!1!$USER2$!4,3,2!6,5,4",
+                    'register': 0,
+                },
+            },
+            'serviceTemplate_OLD-SNMP-Linux-Memory': {
+                'type': "service",
+                'file': "serviceTemplates/OLD-SNMP-Linux-Memory.cfg",
+                'attrs': {
+                    'name': "OLD-SNMP-Linux-Memory",
+                    'service_description': "OLD_Memory",
+                    'use': "ST_ROOT",
+                    'check_command': "check_centreon_memory",
+                    'register': 0,
+                },
+            },
+            'serviceTemplate_OLD-SNMP-Linux-Swap': {
+                'type': "service",
+                'file': "serviceTemplates/OLD-SNMP-Linux-Swap.cfg",
+                'attrs': {
+                    'name': "OLD-SNMP-Linux-Swap",
+                    'service_description': "OLD-Memory",
+                    'use': "ST_ROOT",
+                    'check_command': "check_centreon_remote_storage!\"Swap Space\"!80!90!$USER2$!1",
+                    'register': 0,
+                },
+            },
+            'serviceTemplate_ST_ALERT': {
+                'type': "service",
+                'file': "serviceTemplates/ST_ALERT.cfg",
+                'attrs': {
+                    'name': "ST_ALERT",
+                    'service_description': "S_ALERT",
+                    'use': "ST_ROOT",
+                    'notification_period': "24x7",
+                    'notification_interval': 0,
+                    'notification_options': "w,u,c,r",
+                    'notifications_enabled': 1,
+                    'first_notification_delay': 0,
+                    'contact_groups': "Supervisors",
+                    'register': 0,
+                },
+            },
+            'serviceTemplate_ST_BACKUP_DAILY_ALERT': {
+                'type': "service",
+                'file': "serviceTemplates/ST_BACKUP_DAILY_ALERT.cfg",
+                'attrs': {
+                    'name': "ST_BACKUP_DAILY_ALERT",
+                    'service_description': "S_BACKUP_BURP_AGE",
+                    'use': "ST_DAILY_ALERT",
+                    'check_command': "CSSH_BACKUP_BURP!backup.makina-corpus.net!1800!2400",
+                    'max_check_attempts': "6",
+                    'normal_check_interval': "360",
+                    'retry_check_interval': "30",
+                    'register': 0,
+                    'icon_image': "services/heartbeat.png",
+                },
+            },
+            'serviceTemplate_ST_DAILY_ALERT': {
+                'type': "service",
+                'file': "serviceTemplates/ST_DAILY_ALERT.cfg",
+                'attrs': {
+                    'name': "ST_DAILY_ALERT",
+                    'service_description': "ST_DAILY",
+                    'use': "ST_ALERT",
+                    'max_check_attempts': 3,
+                    'normal_check_interval': 1440,
+                    'retry_check_interval': 60,
+                    'register': 0,
+                },
+            },
+            'serviceTemplate_ST_DAILY_BEGIN_DAY': {
+                'type': "service",
+                'file': "serviceTemplates/ST_DAILY_BEGIN_DAY.cfg",
+                'attrs': {
+                    'name': "ST_DAILY_BEGIN_DAY",
+                    'service_description': "ST_DAILY_BEGIN_DAY",
+                    'use': "ST_DAILY_ALERT",
+                    'max_check_attempts': 3,
+                    'normal_check_interval': 1440,
+                    'retry_check_interval': 60,
+                    'check_period': "24x7",
+                    'register': 0,
+                },
+            },
+            'serviceTemplate_ST_DAILY_END-DAY': {
+                'type': "service",
+                'file': "serviceTemplates/ST_DAILY_END-DAY.cfg",
+                'attrs': {
+                    'name': "ST_DAILY_END-DAY",
+                    'service_description': "ST_DAILY_END_DAY",
+                    'use': "ST_DAILY_ALERT",
+                    'max_check_attempts': 3,
+                    'normal_check_interval': 1440,
+                    'retry_check_interval': 60,
+                    'check_period': "end_day",
+                    'register': 0,
+                },
+            },
+            'serviceTemplate_ST_DAILY_NOALERT': {
+                'type': "service",
+                'file': "serviceTemplates/ST_DAILY_NOALERT.cfg",
+                'attrs': {
+                    'name': "ST_DAILY_NOALERT",
+                    'service_description': "ST_DAILY",
+                    'use': "ST_ROOT",
+                    'max_check_attempts': "5",
+                    'normal_check_interval': 1440,
+                    'retry_check_interval': 60,
+                    'register': 0,
+                },
+            },
+            'serviceTemplate_ST_DISK_SPACE_/': {
+                'type': "service",
+                'file': "serviceTemplates/ST_DISK_SPACE_/.cfg",
+                'attrs': {
+                    'name': "ST_DISK_SPACE_/",
+                    'service_description': "DISK_SPACE_/",
+                    'use': "ST_HOURLY_ALERT",
+                    'check_command': "C_SNMP_DISK!/!80!90!",
+                    'register': 0,
+                    'icon_image': "services/nas3.png",
+                },
+            },
+            'serviceTemplate_ST_DISK_SPACE_/BKP/BM': {
+                'type': "service",
+                'file': "serviceTemplates/ST_DISK_SPACE_/BKP/BM.cfg",
+                'attrs': {
+                    'name': "ST_DISK_SPACE_/BKP/BM",
+                    'service_description': "DISK_SPACE_/BKP/BM",
+                    'use': "ST_HOURLY_ALERT",
+                    'check_command': "C_SNMP_DISK!/var/backups/bluemind!80!90!",
+                    'register': 0,
+                    'icon_image': "services/nas3.png",
+                },
+            },
+            'serviceTemplate_ST_DISK_SPACE_/DATA': {
+                'type': "service",
+                'file': "serviceTemplates/ST_DISK_SPACE_/DATA.cfg",
+                'attrs': {
+                    'name': "ST_DISK_SPACE_/DATA",
+                    'service_description': "DISK_SPACE_/DATA",
+                    'use': "ST_HOURLY_ALERT",
+                    'check_command': "C_SNMP_DISK!/data!80!90!",
+                    'register': 0,
+                    'icon_image': "services/nas3.png",
+                },
+            },
+            'serviceTemplate_ST_DISK_SPACE_/MNT/DATA': {
+                'type': "service",
+                'file': "serviceTemplates/ST_DISK_SPACE_/MNT/DATA.cfg",
+                'attrs': {
+                    'name': "ST_DISK_SPACE_/MNT/DATA",
+                    'service_description': "DISK_SPACE_/MNT/DATA",
+                    'use': "ST_HOURLY_ALERT",
+                    'check_command': "C_SNMP_DISK!/mnt/data!80!90!",
+                    'register': 0,
+                    'icon_image': "services/nas3.png",
+                },
+            },
+            'serviceTemplate_ST_DISK_SPACE_/SRV': {
+                'type': "service",
+                'file': "serviceTemplates/ST_DISK_SPACE_/SRV.cfg",
+                'attrs': {
+                    'name': "ST_DISK_SPACE_/SRV",
+                    'service_description': "DISK_SPACE_/SRV",
+                    'use': "ST_HOURLY_ALERT",
+                    'check_command': "C_SNMP_DISK!/srv!80!90!",
+                    'register': 0,
+                    'icon_image': "services/nas3.png",
+                },
+            },
+            'serviceTemplate_ST_DISK_SPACE_/TMP': {
+                'type': "service",
+                'file': "serviceTemplates/ST_DISK_SPACE_/TMP.cfg",
+                'attrs': {
+                    'name': "ST_DISK_SPACE_/TMP",
+                    'service_description': "DISK_SPACE_/TMP",
+                    'use': "ST_HOURLY_ALERT",
+                    'check_command': "C_SNMP_DISK!/tmp!80!90!",
+                    'register': 0,
+                    'icon_image': "services/nas3.png",
+                },
+            },
+            'serviceTemplate_ST_DISK_SPACE_/VAR': {
+                'type': "service",
+                'file': "serviceTemplates/ST_DISK_SPACE_/VAR.cfg",
+                'attrs': {
+                    'name': "ST_DISK_SPACE_/VAR",
+                    'service_description': "DISK_SPACE_/VAR",
+                    'use': "ST_HOURLY_ALERT",
+                    'check_command': "C_SNMP_DISK!/var!80!90!",
+                    'register': 0,
+                    'icon_image': "services/nas3.png",
+                },
+            },
+            'serviceTemplate_ST_DISK_SPACE_/VAR_LOG': {
+                'type': "service",
+                'file': "serviceTemplates/ST_DISK_SPACE_/VAR_LOG.cfg",
+                'attrs': {
+                    'name': "ST_DISK_SPACE_/VAR_LOG",
+                    'service_description': "DISK_SPACE_/VAR_LOG",
+                    'use': "ST_HOURLY_ALERT",
+                    'check_command': "C_SNMP_DISK!/var/log!80!90!",
+                    'register': 0,
+                    'icon_image': "services/nas3.png",
+                },
+            },
+            'serviceTemplate_ST_DISK_SPACE_/VAR_LXC': {
+                'type': "service",
+                'file': "serviceTemplates/ST_DISK_SPACE_/VAR_LXC.cfg",
+                'attrs': {
+                    'name': "ST_DISK_SPACE_/VAR_LXC",
+                    'service_description': "DISK_SPACE_/VAR_LXC",
+                    'use': "ST_HOURLY_ALERT",
+                    'check_command': "C_SNMP_DISK!/var/lxc!80!90!",
+                    'register': 0,
+                    'icon_image': "services/nas3.png",
+                },
+            },
+            'serviceTemplate_ST_DISK_SPACE_/VAR_MAKINA': {
+                'type': "service",
+                'file': "serviceTemplates/ST_DISK_SPACE_/VAR_MAKINA.cfg",
+                'attrs': {
+                    'name': "ST_DISK_SPACE_/VAR_MAKINA",
+                    'service_description': "DISK_SPACE_/VAR_MAKINA",
+                    'use': "ST_HOURLY_ALERT",
+                    'check_command': "C_SNMP_DISK!/var/makina!80!90!",
+                    'register': 0,
+                    'icon_image': "services/nas3.png",
+                },
+            },
+            'serviceTemplate_ST_DISK_SPACE_/VAR_MYSQL': {
+                'type': "service",
+                'file': "serviceTemplates/ST_DISK_SPACE_/VAR_MYSQL.cfg",
+                'attrs': {
+                    'name': "ST_DISK_SPACE_/VAR_MYSQL",
+                    'service_description': "DISK_SPACE_/VAR_MYSQL",
+                    'use': "ST_HOURLY_ALERT",
+                    'check_command': "C_SNMP_DISK!/var/lib/mysql!80!90!",
+                    'register': 0,
+                    'icon_image': "services/nas3.png",
+                },
+            },
+            'serviceTemplate_ST_DISK_SPACE_/VAR_SPOOL_CYRUS': {
+                'type': "service",
+                'file': "serviceTemplates/ST_DISK_SPACE_/VAR_SPOOL_CYRUS.cfg",
+                'attrs': {
+                    'name': "ST_DISK_SPACE_/VAR_SPOOL_CYRUS",
+                    'service_description': "DISK_SPACE_/VAR_SPOOL_CYRUS",
+                    'use': "ST_HOURLY_ALERT",
+                    'check_command': "C_SNMP_DISK!/var/spool/cyrus!80!90!",
+                    'register': 0,
+                    'icon_image': "services/nas3.png",
+                },
+            },
+            'serviceTemplate_ST_DISK_SPACE_/VAR_WWW': {
+                'type': "service",
+                'file': "serviceTemplates/ST_DISK_SPACE_/VAR_WWW.cfg",
+                'attrs': {
+                    'name': "ST_DISK_SPACE_/VAR_WWW",
+                    'service_description': "DISK_SPACE_/VAR_WWW",
+                    'use': "ST_HOURLY_ALERT",
+                    'check_command': "C_SNMP_DISK!/var/www!80!90!",
+                    'register': 0,
+                    'icon_image': "services/nas3.png",
+                },
+            },
+            'serviceTemplate_ST_DNS_ASSOCIATION': {
+                'type': "service",
+                'file': "serviceTemplates/ST_DNS_ASSOCIATION.cfg",
+                'attrs': {
+                    'name': "ST_DNS_ASSOCIATION",
+                    'service_description': "DNS_ASSOCIATION",
+                    'use': "ST_DAILY_ALERT",
+                    'check_command': "C_DNS_EXTERNE_ASSOCIATION!foo.example.com!",
+                    'register': 0,
+                    'icon_image': "services/search_server2.png",
+                },
+            },
+            'serviceTemplate_ST_DNS_ASSOCIATION_hostname': {
+                'type': "service",
+                'file': "serviceTemplates/ST_DNS_ASSOCIATION_hostname.cfg",
+                'attrs': {
+                    'name': "ST_DNS_ASSOCIATION_hostname",
+                    'service_description': "DNS_ASSOCIATION_hostname",
+                    'use': "ST_DNS_ASSOCIATION",
+                    'check_command': "C_DNS_EXTERNE_ASSOCIATION!$HOSTNAME$!",
+                    'process_perf_data': 0,
+                    'register': 0,
+                    'icon_image': "services/search_server2.png",
+                },
+            },
+            'serviceTemplate_ST_DOUBLE_DAILY_ALERT': {
+                'type': "service",
+                'file': "serviceTemplates/ST_DOUBLE_DAILY_ALERT.cfg",
+                'attrs': {
+                    'name': "ST_DOUBLE_DAILY_ALERT",
+                    'service_description': "ST_DOUBLE_DAILY",
+                    'use': "ST_ALERT",
+                    'max_check_attempts': 3,
+                    'normal_check_interval': "720",
+                    'retry_check_interval': 60,
+                    'register': 0,
+                },
+            },
+            'serviceTemplate_ST_HOURLY': {
+                'type': "service",
+                'file': "serviceTemplates/ST_HOURLY.cfg",
+                'attrs': {
+                    'name': "ST_HOURLY",
+                    'service_description': "ST_HOURLY",
+                    'use': "ST_ROOT",
+                    'max_check_attempts': 3,
+                    'normal_check_interval': 60,
+                    'retry_check_interval': 1,
+                    'register': 0,
+                },
+            },
+            'serviceTemplate_ST_HOURLY_ALERT': {
+                'type': "service",
+                'file': "serviceTemplates/ST_HOURLY_ALERT.cfg",
+                'attrs': {
+                    'name': "ST_HOURLY_ALERT",
+                    'service_description': "ST_HOURLY",
+                    'use': "ST_ALERT",
+                    'max_check_attempts': 3,
+                    'normal_check_interval': 60,
+                    'retry_check_interval': 1,
+                    'register': 0,
+                },
+            },
+            'serviceTemplate_ST_LOAD_AVG': {
+                'type': "service",
+                'file': "serviceTemplates/ST_LOAD_AVG.cfg",
+                'attrs': {
+                    'name': "ST_LOAD_AVG",
+                    'service_description': "LOAD_AVG",
+                    'use': "ST_ROOT",
+                    'check_command': "C_SNMP_LOADAVG!",
+                    'register': 0,
+                    'icon_image': "services/heartbeat.png",
+                },
+            },
+            'serviceTemplate_ST_MEMORY': {
+                'type': "service",
+                'file': "serviceTemplates/ST_MEMORY.cfg",
+                'attrs': {
+                    'name': "ST_MEMORY",
+                    'service_description': "MEMORY",
+                    'use': "ST_ALERT",
+                    'check_command': "C_SNMP_MEMORY!80!90!",
+                    'register': 0,
+                    'icon_image': "services/whirl.png",
+                },
+            },
+            'serviceTemplate_ST_MEMORY_HYPERVISEUR': {
+                'type': "service",
+                'file': "serviceTemplates/ST_MEMORY_HYPERVISEUR.cfg",
+                'attrs': {
+                    'name': "ST_MEMORY_HYPERVISEUR",
+                    'service_description': "MEMORY_HYPERVISEUR",
+                    'use': "ST_ALERT",
+                    'check_command': "C_SNMP_MEMORY!95!99!",
+                    'register': 0,
+                    'icon_image': "services/whirl.png",
+                },
+            },
+            'serviceTemplate_ST_NETWORK_EM0': {
+                'type': "service",
+                'file': "serviceTemplates/ST_NETWORK_EM0.cfg",
+                'attrs': {
+                    'name': "ST_NETWORK_EM0",
+                    'service_description': "NETWORK_EM0",
+                    'use': "ST_ROOT",
+                    'check_command': "C_SNMP_NETWORK!em0!",
+                    'register': 0,
+                    'icon_image': "services/interconnect.png",
+                },
+            },
+            'serviceTemplate_ST_NETWORK_EM1': {
+                'type': "service",
+                'file': "serviceTemplates/ST_NETWORK_EM1.cfg",
+                'attrs': {
+                    'name': "ST_NETWORK_EM1",
+                    'service_description': "NETWORK_EM1",
+                    'use': "ST_ROOT",
+                    'check_command': "C_SNMP_NETWORK!em1!",
+                    'register': 0,
+                    'icon_image': "services/interconnect.png",
+                },
+            },
+            'serviceTemplate_ST_NETWORK_ETH0': {
+                'type': "service",
+                'file': "serviceTemplates/ST_NETWORK_ETH0.cfg",
+                'attrs': {
+                    'name': "ST_NETWORK_ETH0",
+                    'service_description': "NETWORK_ETH0",
+                    'use': "ST_ROOT",
+                    'check_command': "C_SNMP_NETWORK!eth0!",
+                    'register': 0,
+                    'icon_image': "services/interconnect.png",
+                },
+            },
+            'serviceTemplate_ST_NETWORK_ETH1': {
+                'type': "service",
+                'file': "serviceTemplates/ST_NETWORK_ETH1.cfg",
+                'attrs': {
+                    'name': "ST_NETWORK_ETH1",
+                    'service_description': "NETWORK_ETH1",
+                    'use': "ST_ROOT",
+                    'check_command': "C_SNMP_NETWORK!eth1!",
+                    'register': 0,
+                    'icon_image': "services/interconnect.png",
+                },
+            },
+            'serviceTemplate_ST_REPEAT_ALERT': {
+                'type': "service",
+                'file': "serviceTemplates/ST_REPEAT_ALERT.cfg",
+                'attrs': {
+                    'name': "ST_REPEAT_ALERT",
+                    'service_description': "REPEAT_ALERT",
+                    'use': "ST_ALERT",
+                    'notification_period': "24x7",
+                    'notification_interval': 60,
+                    'notification_options': "w,u,c,r",
+                    'first_notification_delay': 0,
+                    'register': 0,
+                },
+            },
             'serviceTemplate_ST_ROOT': {
                 'type': "service",
                 'file': "serviceTemplates/ST_ROOT.cfg",
                 'attrs': {
                     'name': "ST_ROOT",
-                    'service_description': 'S_ROOT',
+                    'service_description': "S_ROOT",
                     'is_volatile': 0,
                     'max_check_attempts': 3,
-                    'normal_check_interval': 5,
+                    'normal_check_interval': "5",
                     'retry_check_interval': 1,
                     'active_checks_enabled': 1,
                     'passive_checks_enabled': 1,
@@ -887,21 +1312,159 @@ def objects():
                     'register': 0,
                 },
             },
-            'serviceTemplate_ST_HOURLY_ALERT': {
+            'serviceTemplate_ST_SSH_DEBIAN_UPDATE': {
                 'type': "service",
-                'file': "serviceTemplates/ST_HOURLY_ALERT.cfg",
+                'file': "serviceTemplates/ST_SSH_DEBIAN_UPDATE.cfg",
                 'attrs': {
-                    'name': "ST_HOURLY_ALERT",
-                    'service_description': "ST_HOURLY_ALERT",
-                    'use': "ST_ROOT",
-                    'max_check_attempts': 3,
-                    'normal_check_interval': 60,
-                    'retry_check_interval': 1,
+                    'name': "ST_SSH_DEBIAN_UPDATE",
+                    'service_description': "S_DEBIAN_UPDATES",
+                    'use': "ST_DAILY_NOALERT",
+                    'check_command': "CSSH_DEBIAN_UPDATES",
+                    'register': 0,
+                    'icon_image': "services/whirl.png",
+                },
+            },
+            'serviceTemplate_ST_SSH_PROC_CRON': {
+                'type': "service",
+                'file': "serviceTemplates/ST_SSH_PROC_CRON.cfg",
+                'attrs': {
+                    'name': "ST_SSH_PROC_CRON",
+                    'service_description': "S_PROC_CRON",
+                    'use': "ST_HOURLY_ALERT",
+                    'check_command': "CSSH_CRON",
+                    'register': 0,
+                    'icon_image': "services/time_server3.png",
+                },
+            },
+            'serviceTemplate_ST_TEST_A': {
+                'type': "service",
+                'file': "serviceTemplates/ST_TEST_A.cfg",
+                'attrs': {
+                    'name': "ST_TEST_A",
+                    'service_description': "S_TEST_A",
+                    'use': "ST_TEST_B",
+                    'check_command': "check_centreon_dummy!0!OK",
                     'register': 0,
                 },
             },
+            'serviceTemplate_ST_TEST_B': {
+                'type': "service",
+                'file': "serviceTemplates/ST_TEST_B.cfg",
+                'attrs': {
+                    'name': "ST_TEST_B",
+                    'service_description': "S_TEST_B",
+                    'use': "ST_TEST_C",
+                    'check_command': "check_centreon_dummy!0!OK",
+                    'register': 0,
+                },
+            },
+            'serviceTemplate_ST_TEST_C': {
+                'type': "service",
+                'file': "serviceTemplates/ST_TEST_C.cfg",
+                'attrs': {
+                    'name': "ST_TEST_C",
+                    'service_description': "S_TEST_C",
+                    'use': "ST_ROOT",
+                    'check_command': "check_centreon_dummy!0!OK",
+                    'register': 0,
+                },
+            },
+            'serviceTemplate_ST_TEST_D': {
+                'type': "service",
+                'file': "serviceTemplates/ST_TEST_D.cfg",
+                'attrs': {
+                    'name': "ST_TEST_D",
+                    'service_description': "S_TEST_D",
+                    'use': "ST_ROOT",
+                    'check_command': "check_centreon_dummy!0!OK",
+                    'register': 0,
+                },
+            },
+            'serviceTemplate_ST_TEST_E': {
+                'type': "service",
+                'file': "serviceTemplates/ST_TEST_E.cfg",
+                'attrs': {
+                    'name': "ST_TEST_E",
+                    'service_description': "S_TEST_E",
+                    'use': "ST_ROOT",
+                    'check_command': "check_centreon_dummy!0!OK",
+                    'register': 0,
+                },
+            },
+            'serviceTemplate_ST_TEST_F': {
+                'type': "service",
+                'file': "serviceTemplates/ST_TEST_F.cfg",
+                'attrs': {
+                    'name': "ST_TEST_F",
+                    'service_description': "S_TEST_F",
+                    'use': "ST_ROOT",
+                    'check_command': "check_centreon_dummy!0!OK",
+                    'register': 0,
+                },
+            },
+            'serviceTemplate_ST_WEB_APACHE_STATUS': {
+                'type': "service",
+                'file': "serviceTemplates/ST_WEB_APACHE_STATUS.cfg",
+                'attrs': {
+                    'name': "ST_WEB_APACHE_STATUS",
+                    'service_description': "WEB_APACHE_STATUS",
+                    'use': "ST_ROOT",
+                    'check_command': "C_APACHE_STATUS!4!2!",
+                    'register': 0,
+                    'icon_image': "services/globe4.png",
+                },
+            },
+            'serviceTemplate_ST_WEB_INTRA': {
+                'type': "service",
+                'file': "serviceTemplates/ST_WEB_INTRA.cfg",
+                'attrs': {
+                    'name': "ST_WEB_INTRA",
+                    'service_description': "WEB_INTRA_default",
+                    'use': "ST_ROOT",
+                    'check_command': "C_HTTP_STRING!default!/!2!5!8!html!",
+                    'register': 0,
+                    'icon_image': "services/globe4.png",
+                },
+            },
+            'serviceTemplate_ST_WEB_PUBLIC': {
+                'type': "service",
+                'file': "serviceTemplates/ST_WEB_PUBLIC.cfg",
+                'attrs': {
+                    'name': "ST_WEB_PUBLIC",
+                    'service_description': "WEB_PUBLIC_default",
+                    'use': "ST_ALERT",
+                    'check_command': "C_HTTP_STRING!default!/!2!5!8!html!",
+                    'register': 0,
+                    'icon_image': "services/globe4.png",
+                },
+            },
+            'serviceTemplate_ST_WEB_PUBLIC_antibug': {
+                'type': "service",
+                'file': "serviceTemplates/ST_WEB_PUBLIC_antibug.cfg",
+                'attrs': {
+                    'name': "ST_WEB_PUBLIC_antibug",
+                    'service_description': "WEB_PUBLIC_antibug",
+                    'use': "ST_WEB_PUBLIC",
+                    'check_command': "C_HTTP_STRING!default!/!2!5!8!html!",
+                    'register': 0,
+                    'icon_image': "services/globe4.png",
+                },
+            },
+            'serviceTemplate_ST_WEB_PUBLIC_CLIENT': {
+                'type': "service",
+                'file': "serviceTemplates/ST_WEB_PUBLIC_CLIENT.cfg",
+                'attrs': {
+                    'name': "ST_WEB_PUBLIC_CLIENT",
+                    'service_description': "WEB_PUBLIC_CLIENT",
+                    'use': "ST_REPEAT_ALERT",
+                    'check_command': "C_HTTP_STRING!www.toto.com!/!2!5!8!toto!",
+                    'register': 0,
+                    'icon_image': "services/globe4.png",
+                },
+            },
+
             # hosts templates definitions
-            # (shouldn't use autoconfigured for templates because we can't associate a service to
+            # (shouldn't use autoconfiguration macr for templates because we can't associate a service to
             # a host template. It seems to be not working with icinga)
             'hostTemplateHT+_BACKUP_BURP': {
                 'type': "host",
@@ -1196,6 +1759,7 @@ def objects():
             },
         },
     }
+
     return data
 
 
@@ -2196,7 +2760,7 @@ def add_auto_configuration_host_settings(hostname,
                'warning': 1,
                'critical': 5,
                'timeout': 8,
-               'strings': ['Apache'],
+               'strings': [],
                'other_args': "",
            },
        },
@@ -2237,7 +2801,10 @@ def add_auto_configuration_host_settings(hostname,
                'critical': 3,
                'timeout': 8,
                'strings': [],
-               'type': "client",
+               'use_type': "",
+               'authentication': False,
+               'only': False,
+               'ssl': False,
                'other_args': "",
            },
        },
@@ -2351,6 +2918,18 @@ def add_auto_configuration_host_settings(hostname,
                 # to avoid quotes conflicts (doesn't avoid code injection)
                 str_list = [ value.replace('"', '\\\\"') for value in str_list ]
                 services_check_command_args['web_public'][name]['strings']='"'+'" -s "'.join(str_list)+'"'
+
+            # build the command
+            if services_check_command_args['web_public'][name]['ssl']:
+                cmd = "C_HTTPS_STRING"
+            else:
+                cmd = "C_HTTP_STRING"
+            if services_check_command_args['web_public'][name]['authentication']:
+                cmd = cmd + "_AUTH"
+            if services_check_command_args['web_public'][name]['only']:
+                cmd = cmd + "_ONLY"
+
+            services_check_command_args['web_public'][name]['command'] = cmd
 
     # override mountpoints subdictionaries
 
