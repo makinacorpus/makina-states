@@ -1926,9 +1926,9 @@ def report():
         ret += '''
 {id}:
 SSH Config:
-Host: {id}
-Port: {conf[mccloud_vm_ssh_port]}
-User: root
+Host {id}
+Port {conf[mccloud_vm_ssh_port]}
+User root
 ServerAliveInterval: 5
 
 '''.format(conf=vmconf, id=target)
