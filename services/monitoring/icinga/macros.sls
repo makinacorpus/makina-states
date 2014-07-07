@@ -77,6 +77,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # Macros mains args:
 #     hostname
 #         the hostname for the host to add
+#     hostgroup
+#         true if you want define a hostgroup instead of a host
 #     attrs
 #         a dictionary in which each key corresponds to a directive in host definition
 #     check_*
@@ -86,19 +88,19 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 #     ssh_addr
 #         address used to do the ssh connection in order to perform check_by_ssh
 #         this address is not the hostname address becasue we can use a ssh gateway
+#         if empty: take the value given for "hostname"
 #     ssh_port
 #         ssh port
 #     services_check_command_args
 #         dictionary to override the arguments given in check_command for each service
-#     html
-#         dictionary to define vhost,url and a list of strings which must be found in the webpage
 #
 #}
 
 {% macro configuration_add_auto_host(hostname,
+                                     hostgroup=False,
                                      attrs={},
                                      ssh_user='root',
-                                     ssh_addr,
+                                     ssh_addr='',
                                      ssh_port=22,
                                      ssh_timeout=30,
                                      backup_burp_age=False,
@@ -155,6 +157,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      services_check_command_args={}
                                     ) %}
 {% set data = salt['mc_icinga.add_auto_configuration_host_settings'](hostname,
+                                                                     hostgroup,
                                                                      attrs,
                                                                      ssh_user,
                                                                      ssh_addr,
@@ -217,10 +220,9 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 {% set check_by_ssh_params = data.ssh_user+"!"+data.ssh_addr+"!"+data.ssh_port|string+"!"+data.ssh_timeout|string %}
 
-
-# add the host object
-{{ configuration_add_object(type='host',
-                            file='hosts/'+data.hostname+'/host.cfg',
+# add the host/hostgroup object
+{{ configuration_add_object(type=data.type,
+                            file=data.service_subdirectory+'/'+data.hostname+'/'+data.type+'.cfg',
                             attrs=data.attrs) }}
 
 
@@ -228,10 +230,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # TODO/ok: edit command in order to allow customization in check_by_ssh
 {% if data.backup_burp_age %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/backup_burp_age.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/backup_burp_age.cfg',
                                 attrs= {
                                     'service_description': "S_BACKUP_BURP_AGE",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_BACKUP_DAILY_ALERT",
                                     'check_command': "CSSH_BACKUP_BURP!"
                                                      +data.services_check_command_args.backup_burp_age.ssh_user+"!"
@@ -247,10 +249,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add beam_process service
 {% if data.beam_process %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/beam_process.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/beam_process.cfg',
                                 attrs= {
                                     'service_description': "Check beam process",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'notification_options': "w,c,r",
                                     'notifications_enabled': 1,
@@ -265,10 +267,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add celeryd_process service
 {% if data.celeryd_process %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/celeryd_process.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/celeryd_process.cfg',
                                 attrs= {
                                     'service_description': "Check celeryd process",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'notification_options': "w,c,r",
                                     'notifications_enabled': 1,
@@ -284,10 +286,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # TODO/ok: edit command in order to allow customization in check_by_ssh
 {% if data.cron %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/cron.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/cron.cfg',
                                 attrs= {
                                     'service_description': "S_PROC_CRON",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_SSH_PROC_CRON",
                                     'check_command': "CSSH_CRON!"
                                                      +check_by_ssh_params,
@@ -299,10 +301,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # TODO/ok: edit command in order to allow customization in check_by_ssh
 {% if data.ddos %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/ddos.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/ddos.cfg',
                                 attrs= {
                                     'service_description': "DDOS",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_DDOS!"
                                                      +check_by_ssh_params+"!"
@@ -316,10 +318,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # TODO/ok: edit command in order to allow customization in check_by_ssh
 {% if data.debian_updates %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/debian_updates.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/debian_updates.cfg',
                                 attrs= {
                                     'service_description': "S_DEBIAN_UPDATES",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_DAILY_NOALERT",
                                     'check_command': "CSSH_DEBIAN_UPDATES"
                                                      +check_by_ssh_params,
@@ -336,10 +338,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
         {% set use = "ST_DNS_ASSOCIATION" %}
     {% endif %}
         {{ configuration_add_object(type='service',
-                                    file='hosts/'+data.hostname+'/dns_association_'+name+'.cfg',
+                                    file=data.service_subdirectory+'/'+data.hostname+'/dns_association_'+name+'.cfg',
                                     attrs= {
                                         'service_description': "DNS_ASSOCIATION_"+dns_association.hostname,
-                                        'host_name': data.hostname,
+                                        data.service_key_hostname: data.hostname,
                                         'use': use,
                                         'check_command': "C_DNS_EXTERNE_ASSOCIATION!"
                                                          +dns_association.hostname+"!"
@@ -353,10 +355,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% if data.disk_space %}
     {% for mountpoint, path in data.disks_spaces.items() %}
         {{ configuration_add_object(type='service',
-                                    file='hosts/'+data.hostname+'/'+mountpoint+'.cfg',
+                                    file=data.service_subdirectory+'/'+data.hostname+'/'+mountpoint+'.cfg',
                                     attrs= {
                                         'service_description': "DISK_SPACE_"+path,
-                                        'host_name': data.hostname,
+                                        data.service_key_hostname: data.hostname,
                                         'use': "ST_DISK_"+path,
                                         'icon_image': "services/nas3.png",
                                         'check_command': "C_SNMP_DISK!"
@@ -373,10 +375,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # TODO: add contact groups
 {% if data.drbd %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/drbd.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/drbd.cfg',
                                 attrs= {
                                     'service_description': "CHECK_DRBD",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_DRBD!"
                                                      +check_by_ssh_params+"!"
@@ -388,10 +390,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add epmd_process service
 {% if data.epmd_process %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/epmd_process.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/epmd_process.cfg',
                                 attrs= {
                                     'service_description': "Check epmd process",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'notification_options': "w,c,r",
                                     'notifications_enabled': 1,
@@ -408,10 +410,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # TODO: add contact groups
 {% if data.erp_files %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/erp_files.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/erp_files.cfg',
                                 attrs= {
                                     'service_description': "CHECK_ERP_FILES",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_CUSTOM!"
                                                      +check_by_ssh_params+"!"
@@ -423,10 +425,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add fail2ban service
 {% if data.fail2ban %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/fail2ban.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/fail2ban.cfg',
                                 attrs= {
                                     'service_description': "S_FAIL2BAN",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_ROOT",
                                     'notifications_enabled': 1,
                                     'check_command': "C_SNMP_PROCESS!"
@@ -440,10 +442,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add gunicorn_process service
 {% if data.gunicorn_process %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/gunicorn_process.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/gunicorn_process.cfg',
                                 attrs= {
                                     'service_description': "Check gunicorn process",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'notification_options': "w,c,r",
                                     'notifications_enabled': 1,
@@ -458,10 +460,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add ircbot_process service
 {% if data.ircbot_process %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/ircbot_process.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/ircbot_process.cfg',
                                 attrs= {
                                     'service_description': "S_IRCBOT_PROCESS",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_HOURLY_ALERT",
                                     'check_command': "C_PROCESS_IRCBOT_RUNNING",
                                 })
@@ -471,10 +473,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add load avg service
 {% if data.load_avg %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/load_avg.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/load_avg.cfg',
                                 attrs= {
                                     'service_description': "LOAD_AVG",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_LOAD_AVG",
                                     'check_command': "C_SNMP_LOADAVG!"
                                                      +data.services_check_command_args.load_avg.other_args,
@@ -486,10 +488,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # TODO/ok: edit command in order to allow customization in check_by_ssh
 {% if data.mail_cyrus_imap_connections %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/mail_cyrus_imap_connections.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/mail_cyrus_imap_connections.cfg',
                                 attrs= {
                                     'service_description': "S_MAIL_CYRUS_IMAP_CONNECTIONS",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_CYRUS_CONNECTIONS!"
                                                      +check_by_ssh_params+"!"
@@ -502,10 +504,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add mail_imap service
 {% if data.mail_imap %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/mail_imap.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/mail_imap.cfg',
                                 attrs= {
                                     'service_description': "S_MAIL_IMAP",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "C_MAIL_IMAP!"
                                                      +data.services_check_command_args.mail_imap.warning|string+"!"
@@ -517,10 +519,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add mail_imap_ssl service
 {% if data.mail_imap_ssl %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/mail_imap_ssl.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/mail_imap_ssl.cfg',
                                 attrs= {
                                     'service_description': "S_MAIL_IMAP_SSL",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "C_MAIL_IMAP_SSL!"
                                                      +data.services_check_command_args.mail_imap_ssl.warning|string+"!"
@@ -532,10 +534,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add mail_pop service
 {% if data.mail_pop %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/mail_pop.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/mail_pop.cfg',
                                 attrs= {
                                     'service_description': "S_MAIL_POP",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "C_MAIL_POP!"
                                                      +data.services_check_command_args.mail_pop.warning|string+"!"
@@ -547,10 +549,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add mail_pop_ssl service
 {% if data.mail_pop_ssl %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/mail_pop_ssl.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/mail_pop_ssl.cfg',
                                 attrs= {
                                     'service_description': "S_MAIL_POP_SSL",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "C_MAIL_POP_SSL!"
                                                      +data.services_check_command_args.mail_pop_ssl.warning|string+"!"
@@ -562,10 +564,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add mail_pop_test_account service
 {% if data.mail_pop_test_account %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/mail_pop_test_account.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/mail_pop_test_account.cfg',
                                 attrs= {
                                     'service_description': "S_MAIL_POP3_TEST_ACCOUNT",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "C_POP3_TEST_SIZE_AND_DELETE!"
                                                      +data.services_check_command_args.mail_pop_test_account.warning1|string+"!"
@@ -581,10 +583,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # TODO/ok: edit command in order to allow customization in check_by_ssh
 {% if data.mail_server_queues %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/mail_server_queues.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/mail_server_queues.cfg',
                                 attrs= {
                                     'service_description': "S_MAIL_SERVER_QUEUES",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_MAILQUEUE!"
                                                      +check_by_ssh_params+"!"
@@ -597,10 +599,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add mail_smtp service
 {% if data.mail_smtp %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/mail_smtp.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/mail_smtp.cfg',
                                 attrs= {
                                     'service_description': "S_MAIL_SMTP",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "C_MAIL_SMTP!"
                                                      +data.services_check_command_args.mail_smtp.warning|string+"!"
@@ -612,10 +614,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add memory service
 {% if data.memory %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/memory.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/memory.cfg',
                                 attrs= {
                                     'service_description': "MEMORY",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_MEMORY",
                                     'check_command': "C_SNMP_MEMORY!"
                                                      +data.services_check_command_args.memory.warning|string+"!"
@@ -627,10 +629,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add memory_hyperviseur service
 {% if data.memory_hyperviseur %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/memory_hyperviseur.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/memory_hyperviseur.cfg',
                                 attrs= {
                                     'service_description': "MEMORY_HYPERVISEUR",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_MEMORY_HYPERVISEUR",
                                     'check_command': "C_SNMP_MEMORY!"
                                                      +data.services_check_command_args.memory_hyperviseur.warning|string+"!"
@@ -642,10 +644,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add mysql_process service
 {% if data.mysql_process %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/mysql_process.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/mysql_process.cfg',
                                 attrs= {
                                     'service_description': "S_MYSQL_PROCESS",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "C_SNMP_PROCESS!"
                                                      +data.services_check_command_args.mysql_process.process+"!"
@@ -659,10 +661,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% if data.network %}
     {% for name, network in data.services_check_command_args.network.items() %}
         {{ configuration_add_object(type='service',
-                                    file='hosts/'+data.hostname+'/network_'+name+'.cfg',
+                                    file=data.service_subdirectory+'/'+data.hostname+'/network_'+name+'.cfg',
                                     attrs= {
                                         'service_description': "NETWORK_"+network.interface,
-                                        'host_name': data.hostname,
+                                        data.service_key_hostname: data.hostname,
                                         'use': "ST_NETWORK_"+network.interface,
                                         'check_command': "C_SNMP_NETWORK!"
                                                          +network.interface+"!"
@@ -676,10 +678,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # TODO/ok: cssh
 {% if data.ntp_peers %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/ntp_peers.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/ntp_peers.cfg',
                                 attrs= {
                                     'service_description': "S_NTP_PEERS",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_ROOT",
                                     'check_command': "CSSH_NTP_PEER!"
                                                      +check_by_ssh_params,
@@ -691,10 +693,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # TODO/ok: cssh
 {% if data.ntp_time %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/ntp_time.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/ntp_time.cfg',
                                 attrs= {
                                     'service_description': "S_NTP_TIME",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_ROOT",
                                     'check_command': "CSSH_NTP_TIME!"
                                                      +check_by_ssh_params,
@@ -705,10 +707,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add only_one_nagios_running service
 {% if data.only_one_nagios_running %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/only_one_nagios_running.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/only_one_nagios_running.cfg',
                                 attrs= {
                                     'service_description': "S_ONLY_ONE_NAGIOS_RUNNING",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_HOURLY_ALERT",
                                     'check_command': "C_CHECK_ONE_NAGIOS_ONLY"
                                 })
@@ -718,10 +720,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add postgres_port service
 {% if data.postgres_port %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/postgres_port.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/postgres_port.cfg',
                                 attrs= {
                                     'service_description': "S_POSTGRESQL_PORT",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_ROOT",
                                     'check_command': "check_tcp!"
                                                      +data.services_check_command_args.postgres_port.port|string+"!"
@@ -734,10 +736,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add postgres_process service
 {% if data.postgres_process %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/postgres_process.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/postgres_process.cfg',
                                 attrs= {
                                     'service_description': "Check postgres process",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'notification_options': "w,c,r",
                                     'notifications_enabled': 1,
@@ -753,10 +755,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # TODO/ok: edit command in order to allow customization in check_by_ssh
 {% if data.prebill_sending %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/prebill_sending.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/prebill_sending.cfg',
                                 attrs= {
                                     'service_description': "CHECK_PREBILL_SENDING",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_CUSTOM!"
                                                      +check_by_ssh_params+"!"
@@ -769,10 +771,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # TODO/ok: edit command in order to allow customization in check_by_ssh
 {% if data.raid %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/raid.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/raid.cfg',
                                 attrs= {
                                     'service_description': "CHECK_RAID",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_RAID_SOFT!"
                                                      +check_by_ssh_params+"!"
@@ -785,10 +787,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # TODO/ok: edit command in order to allow customization in check_by_ssh
 {% if data.raid %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/sas.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/sas.cfg',
                                 attrs= {
                                     'service_description': "S_SAS",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_ROOT",
                                     'check_command': "CSSH_SAS2IRCU!"
                                                      +check_by_ssh_params+"!"
@@ -800,10 +802,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add snmpd_memory_control service
 {% if data.raid %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/snmpd_memory_control.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/snmpd_memory_control.cfg',
                                 attrs= {
                                     'service_description': "S_SNMPD_MEMORY_CONTROL",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "C_SNMP_PROCESS_WITH_MEM!"
                                                      +data.services_check_command_args.snmpd_memory_control.process+"!"
@@ -819,10 +821,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% if data.solr %}
     {% for name, solr in data.services_check_command_args.solr.items() %}
         {{ configuration_add_object(type='service',
-                                    file='hosts/'+data.hostname+'/solr_'+name+'.cfg',
+                                    file=data.service_subdirectory+'/'+data.hostname+'/solr_'+name+'.cfg',
                                     attrs= {
                                         'service_description': "SOLR_"+name,
-                                        'host_name': data.hostname,
+                                        data.service_key_hostname: data.hostname,
                                         'use': "ST_WEB_PUBLIC",
                                         'check_command': "C_HTTP_STRING!"
                                                          +solr.hostname+"!"
@@ -841,10 +843,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add ssh service
 {% if data.ssh %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/ssh.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/ssh.cfg',
                                 attrs= {
                                     'service_description': "S_SSH",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_ROOT",
                                     'check_command': "check_tcp!"
                                                      +data.services_check_command_args.ssh.port|string+"!"
@@ -858,10 +860,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # TODO/ok: edit command in order to allow customization in check_by_ssh
 {% if data.supervisord_status %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/supervisord_status.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/supervisord_status.cfg',
                                 attrs= {
                                     'service_description': "S_SUPERVISORD_STATUS",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_SUPERVISORD!"
                                                      +check_by_ssh_params+"!"
@@ -874,10 +876,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # TODO/ok: edit command in order to allow customization in check_by_ssh
 {% if data.swap %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/swap.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/swap.cfg',
                                 attrs= {
                                     'service_description': "CHECK_SWAP",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_RAID_SOFT!"
                                                      +check_by_ssh_params+"!"
@@ -889,10 +891,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add tiles_generator_access service
 {% if data.tiles_generator_access %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/tiles_generator_access.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/tiles_generator_access.cfg',
                                 attrs= {
                                     'service_description': "Check tiles generator access",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'notification_options': "w,c,r",
                                     'notifications_enabled': 1,
@@ -906,10 +908,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add web apache status service
 {% if data.web_apache_status %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/web_apache_status.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/web_apache_status.cfg',
                                 attrs= {
                                     'service_description': "WEB_APACHE_STATUS",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "ST_WEB_APACHE_STATUS",
                                     'check_command': "C_APACHE_STATUS!"
                                                      +data.services_check_command_args.web_apache_status.warning|string+"!"
@@ -924,10 +926,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% if data.web_openid %}
     {% for name, web_openid in data.services_check_command_args.web_openid.items() %}
         {{ configuration_add_object(type='service',
-                                    file='hosts/'+data.hostname+'/web_openid_'+name+'.cfg',
+                                    file=data.service_subdirectory+'/'+data.hostname+'/web_openid_'+name+'.cfg',
                                     attrs= {
                                         'service_description': "WEB_OPENID_"+name,
-                                        'host_name': data.hostname,
+                                        data.service_key_hostname: data.hostname,
                                         'use': "ST_WEB_PUBLIC",
                                         'check_command': "C_HTTPS_OPENID_REDIRECT!"
                                                          +web_openid.hostname+"!"
@@ -950,10 +952,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
             {% set use = "ST_WEB_PUBLIC_CLIENT" %}
         {% endif %}
         {{ configuration_add_object(type='service',
-                                    file='hosts/'+data.hostname+'/web_public_'+name+'.cfg',
+                                    file=data.service_subdirectory+'/'+data.hostname+'/web_public_'+name+'.cfg',
                                     attrs= {
                                         'service_description': "WEB_PUBLIC_"+name,
-                                        'host_name': data.hostname,
+                                        data.service_key_hostname: data.hostname,
                                         'use': use,
                                         'check_command': "C_HTTP_STRING!"
                                                          +web_public.hostname+"!"
@@ -973,10 +975,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add a SSH service
 {% if data.check_ssh %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/ssh.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/ssh.cfg',
                                 attrs= {
                                     'service_description': "SSH "+data.services_check_command_args.ssh.hostname+" port "+data.services_check_command_args.ssh.port|string,
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "generic-service",
                                     'check_command': "check_ssh!"
                                                      +data.services_check_command_args.ssh.hostname+"!"
@@ -988,10 +990,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 
 {% if data.check_dns_reverse %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/dns_reverse.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/dns_reverse.cfg',
                                 attrs= {
                                     'service_description': "DNS "+data.services_check_command_args.dns_reverse.query_address+" → "+data.services_check_command_args.dns_reverse.expected_address,
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "generic-service",
                                     'check_command': "check_dig!"
                                                      +data.services_check_command_args.dns_reverse.port|string+"!"
@@ -1007,10 +1009,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add http service
 {% if data.check_http %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/http.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/http.cfg',
                                 attrs= {
                                     'service_description': "HTTP",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "generic-service",
                                     'check_command': "check_http!"
                                                      +data.services_check_command_args.http.port|string+"!"
@@ -1025,10 +1027,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add ntp peer service
 {% if data.check_ntp_peer %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/ntp_peer.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/ntp_peer.cfg',
                                 attrs= {
                                     'service_description': "NTP peer",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "generic-service",
                                     'check_command': "check_ntp_peer!"
                                                      +data.services_check_command_args.ntp_peer.port|string+"!"
@@ -1041,10 +1043,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add ntp time service (check by ssh)
 {% if data.check_ntp_time %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/ntp_time.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/ntp_time.cfg',
                                 attrs= {
                                     'service_description': "NTP time",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "generic-service",
                                     'check_command': "check_by_ssh_ntp_time!"
                                                      +check_by_ssh_params+"!"
@@ -1059,10 +1061,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add raid check (check by ssh)
 {% if data.check_raid %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/raid.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/raid.cfg',
                                 attrs= {
                                     'service_description': "Raid",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "generic-service",
                                     'check_command': "check_by_ssh_raid!"
                                                      +check_by_ssh_params
@@ -1073,10 +1075,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add md_raid check (check by ssh)
 {% if data.check_md_raid %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/md_raid.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/md_raid.cfg',
                                 attrs= {
                                     'service_description': "md_raid",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "generic-service",
                                     'check_command': "check_by_ssh_md_raid!"
                                                      +check_by_ssh_params
@@ -1087,10 +1089,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add megaraid_sas check (check by ssh)
 {% if data.check_megaraid_sas %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/megaraid_sas.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/megaraid_sas.cfg',
                                 attrs= {
                                     'service_description': "megaraid sas",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "generic-service",
                                     'check_command': "check_by_ssh_megaraid_sas!"
                                                      +check_by_ssh_params
@@ -1101,10 +1103,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add 3ware raid  service (check by ssh)
 {% if data.check_drbd %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/3ware_raid.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/3ware_raid.cfg',
                                 attrs= {
                                     'service_description': "3ware raid",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "generic-service",
                                     'check_command': "check_by_ssh_3ware_raid!"
                                                      +check_by_ssh_params
@@ -1115,10 +1117,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add ccis service (check by ssh)
 {% if data.check_cciss %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/cciss.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/cciss.cfg',
                                 attrs= {
                                     'service_description': "CCISS",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "generic-service",
                                     'check_command': "check_by_ssh_cciss!"
                                                      +check_by_ssh_params
@@ -1129,10 +1131,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add drbd service (check by ssh)
 {% if data.check_drbd %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/drbd.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/drbd.cfg',
                                 attrs= {
                                     'service_description': "Drbd",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "generic-service",
                                     'check_command': "check_by_ssh_drbd!"
                                                      +check_by_ssh_params
@@ -1146,10 +1148,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add nb procs services (check by ssh)
 {% if data.check_procs %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/procs.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/procs.cfg',
                                 attrs= {
                                     'service_description': "Process",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "generic-service",
                                     'check_command': "check_by_ssh_process!"
                                                      +check_by_ssh_params+"!"
@@ -1163,10 +1165,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add cron service (check by ssh)
 {% if data.check_cron %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/cron.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/cron.cfg',
                                 attrs= {
                                     'service_description': "Cron",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "generic-service",
                                     'check_command': "check_by_ssh_cron!"
                                                      +check_by_ssh_params
@@ -1177,10 +1179,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add debian packages service (check by ssh)
 {% if data.check_debian_packages %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/debian_packages.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/debian_packages.cfg',
                                 attrs= {
                                     'service_description': "Debian packages",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "generic-service",
                                     'check_command': "check_by_ssh_debian_packages!"
                                                      +check_by_ssh_params
@@ -1192,10 +1194,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add solr service
 {% if data.check_solr %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/solr.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/solr.cfg',
                                 attrs= {
                                     'service_description': "Solr",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "generic-service",
                                     'check_command': "check_solr!"
                                                      +data.services_check_command_args.solr.port|string+"!"
@@ -1210,10 +1212,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add rdiff backup age (check by ssh on the backup server)
 {% if data.check_burp_backup_age %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/rdiff.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/rdiff.cfg',
                                 attrs= {
                                     'service_description': "Rdiff backup age on "+data.services_check_command_args.rdiff.ssh_addr,
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "generic-service",
                                     'check_command': "check_by_ssh_rdiff!"
                                                      +data.services_check_command_args.rdiff.ssh_user+"!"
@@ -1234,10 +1236,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add haproxy service (check by ssh)
 {% if data.check_haproxy_stats %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/haproxy_stats.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/haproxy_stats.cfg',
                                 attrs= {
                                     'service_description': "haproxy stats",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "generic-service",
                                     'check_command': "check_by_ssh_haproxy_stats!"
                                                      +check_by_ssh_params+"!"
@@ -1249,10 +1251,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add postfix mailqueue service (check by ssh)
 {% if data.check_postfixqueue %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/postfixqueue.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/postfixqueue.cfg',
                                 attrs= {
                                     'service_description': "Postfix queue",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "generic-service",
                                     'check_command': "check_by_ssh_postfixqueue!"
                                                      +check_by_ssh_params+"!"
@@ -1265,10 +1267,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add postfix mail queue service (check by ssh)
 {% if data.check_postfix_mailqueue %}
     {{ configuration_add_object(type='service',
-                                file='hosts/'+data.hostname+'/postfix_mailqueue.cfg',
+                                file=data.service_subdirectory+'/'+data.hostname+'/postfix_mailqueue.cfg',
                                 attrs= {
                                     'service_description': "Postfix mailqueue",
-                                    'host_name': data.hostname,
+                                    data.service_key_hostname: data.hostname,
                                     'use': "generic-service",
                                     'check_command': "check_by_ssh_postfix_mailqueue!"
                                                      +check_by_ssh_params

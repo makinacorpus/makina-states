@@ -1109,7 +1109,7 @@ def objects():
                     'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
                 },
                 'ssh_user': "root",
-                'ssh_addr': "127.0.0.1",
+#                'ssh_addr': "127.0.0.1",
                 'backup_burp_age': True,
                 'beam_process': True,
                 'celeryd_process': True,
@@ -1867,75 +1867,92 @@ def edit_configuration_object_settings(type, file, attr, value, **kwargs):
     return icingaSettings
 
 def add_auto_configuration_host_settings(hostname,
-                                        attrs,
-                                        ssh_user,
-                                        ssh_addr,
-                                        ssh_port,
-                                        ssh_timeout,
-                                        backup_burp_age,
-                                        beam_process,
-                                        celeryd_process,
-                                        cron,
-                                        ddos,
-                                        debian_updates,
-                                        dns_association,
-                                        disk_space,
-                                        disk_space_root,
-                                        disk_space_var,
-                                        disk_space_srv,
-                                        disk_space_data,
-                                        disk_space_home,
-                                        disk_space_var_makina,
-                                        disk_space_var_www,
-                                        drbd,
-                                        epmd_process,
-                                        erp_files,
-                                        fail2ban,
-                                        gunicorn_process,
-                                        ircbot_process,
-                                        load_avg,
-                                        mail_cyrus_imap_connections,
-                                        mail_imap,
-                                        mail_imap_ssl,
-                                        mail_pop,
-                                        mail_pop_ssl,
-                                        mail_pop_test_account,
-                                        mail_server_queues,
-                                        mail_smtp,
-                                        memory,
-                                        memory_hyperviseur,
-                                        mysql_process,
-                                        network,
-                                        ntp_peers,
-                                        ntp_time,
-                                        only_one_nagios_running,
-                                        postgres_port,
-                                        postgres_process,
-                                        prebill_sending,
-                                        raid,
-                                        sas,
-                                        snmpd_memory_control,
-                                        solr,
-                                        ssh,
-                                        supervisord_status,
-                                        swap,
-                                        tiles_generator_access,
-                                        web_apache_status,
-                                        web_openid,
-                                        web_public,
-                                        services_check_command_args,
-                                        **kwargs):
+                                         hostgroup,
+                                         attrs,
+                                         ssh_user,
+                                         ssh_addr,
+                                         ssh_port,
+                                         ssh_timeout,
+                                         backup_burp_age,
+                                         beam_process,
+                                         celeryd_process,
+                                         cron,
+                                         ddos,
+                                         debian_updates,
+                                         dns_association,
+                                         disk_space,
+                                         disk_space_root,
+                                         disk_space_var,
+                                         disk_space_srv,
+                                         disk_space_data,
+                                         disk_space_home,
+                                         disk_space_var_makina,
+                                         disk_space_var_www,
+                                         drbd,
+                                         epmd_process,
+                                         erp_files,
+                                         fail2ban,
+                                         gunicorn_process,
+                                         ircbot_process,
+                                         load_avg,
+                                         mail_cyrus_imap_connections,
+                                         mail_imap,
+                                         mail_imap_ssl,
+                                         mail_pop,
+                                         mail_pop_ssl,
+                                         mail_pop_test_account,
+                                         mail_server_queues,
+                                         mail_smtp,
+                                         memory,
+                                         memory_hyperviseur,
+                                         mysql_process,
+                                         network,
+                                         ntp_peers,
+                                         ntp_time,
+                                         only_one_nagios_running,
+                                         postgres_port,
+                                         postgres_process,
+                                         prebill_sending,
+                                         raid,
+                                         sas,
+                                         snmpd_memory_control,
+                                         solr,
+                                         ssh,
+                                         supervisord_status,
+                                         swap,
+                                         tiles_generator_access,
+                                         web_apache_status,
+                                         web_openid,
+                                         web_public,
+                                         services_check_command_args,
+                                         **kwargs):
     '''Settings for the add_auto_configuration_host macro'''
     icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
     extra = kwargs.pop('extra', {})
     kwargs.update(extra)
     kwargs.setdefault('type', 'host')
     kwargs.setdefault('hostname', hostname)
+    kwargs.setdefault('hostgroup', hostgroup)
+
+    if hostgroup:
+        kwargs.setdefault('type', 'hostgroup')
+        kwargs.setdefault('service_key_hostname', 'hostgroup_name')
+        kwargs.setdefault('service_subdirectory', 'hostgroups')
+    else:
+        kwargs.setdefault('type', 'host')
+        kwargs.setdefault('service_key_hostname', 'host_name')
+        kwargs.setdefault('service_subdirectory', 'hosts')
+
     kwargs.setdefault('attrs', attrs)
     kwargs.setdefault('ssh_user', ssh_user)
-    kwargs.setdefault('ssh_addr', ssh_addr)
+    if not ssh_addr:
+       kwargs.setdefault('ssh_addr', ssh_addr)
+    else:
+       kwargs.setdefault('ssh_addr', hostname)
     kwargs.setdefault('ssh_port', ssh_port)
     kwargs.setdefault('ssh_timeout', ssh_timeout)
+
+
 
 
     kwargs.setdefault('backup_burp_age', backup_burp_age)
