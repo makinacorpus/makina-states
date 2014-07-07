@@ -39,7 +39,6 @@ burp-repo:
   pkgrepo.managed:
     - humanname: burp {{udist}} stable ppa
     - name: deb http://ppa.launchpad.net/bas-dikkenberg/burp-stable/ubuntu {{udist}}  main
-    - consolidate: true
     - file: {{locs.conf_dir}}/apt/sources.list.d/burp.list
     - keyid: 31287BA1
     - keyserver: keyserver.ubuntu.com

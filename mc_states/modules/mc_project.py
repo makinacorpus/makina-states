@@ -12,6 +12,9 @@ from mc_states import api
 
 
 APIS = {
+    'report': {
+        '2': 'mc_project_2.report',
+    },
     'deploy': {
         '2': 'mc_project_2.deploy',
     },
@@ -58,7 +61,7 @@ APIS = {
 }
 
 
-def _api_switcher(module, name, *args, **kwargs):
+def _api_switcher(module, *args, **kwargs):
     '''Get the right module:
 
             - from explicitly given api
@@ -68,11 +71,15 @@ def _api_switcher(module, name, *args, **kwargs):
     try:
         api_ver = kwargs.pop('api_ver')
     except KeyError:
-        api_ver = __salt__['mc_utils.get'](
-            'makina-projects.{0}.api_version'.format(name),
-            LAST_PROJECT_API_VERSION)
+        if args:
+            api_ver = __salt__['mc_utils.get'](
+                'makina-projects.{0}.api_version'.format(
+                    args[0]),
+                LAST_PROJECT_API_VERSION)
+        else:
+            api_ver = LAST_PROJECT_API_VERSION
     mod = APIS[module]["{0}".format(api_ver)]
-    return __salt__[mod](name, *args, **kwargs)
+    return __salt__[mod](*args, **kwargs)
 
 
 def get_configuration(name, *args, **kwargs):
@@ -85,6 +92,10 @@ def set_configuration(name, *args, **kwargs):
 
 def init_project(name, *args, **kwargs):
     return _api_switcher('init_project', name, *args, **kwargs)
+
+
+def report(*args, **kwargs):
+    return _api_switcher('report')
 
 
 def deploy(name, *args, **kwargs):

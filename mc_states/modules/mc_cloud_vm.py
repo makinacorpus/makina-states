@@ -41,7 +41,6 @@ def vm_settings(suf='', ttl=60):
     return memoize_cache(_do, [suf], {}, cache_key, ttl)
 
 
-
 def settings(suf='', ttl=60):
     '''
     Alias to vm_settings

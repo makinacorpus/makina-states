@@ -632,7 +632,8 @@ def get_configuration(name, *args, **kwargs):
         cfg.get('force_reload', True)
         or kwargs.get('force_reload', False)
     ):
-        return cfg
+        if cfg.get('name', None) == name:
+            return cfg
     cfg['name'] = name
     cfg['minion_id'] = __grains__['id']
     cfg['fqdn'] = __grains__['fqdn']
@@ -1911,4 +1912,38 @@ def notify(name, *args, **kwargs):
     cfg = get_configuration(name, *args, **kwargs)
     cret = _step_exec(cfg, 'notify')
     return cret
+
+
+def report():
+    '''
+    Get connection details & projects report
+    '''
+    pt = '/srv/projects'
+    ret = ''
+    target = __grains__['id']
+    vmconf = __salt__['mc_cloud_vm.settings']()
+    if os.path.exists(pt):
+        ret += '''
+{id}:
+SSH Config:
+Host {id}
+Port {conf[mccloud_vm_ssh_port]}
+User root
+ServerAliveInterval 5
+
+'''.format(conf=vmconf, id=target)
+    projects = os.listdir(pt)
+    if projects:
+        ret += 'Projects:'
+        for pj in projects:
+            conf = __salt__[
+                'mc_project.get_configuration'](pj)
+            ret += '''
+Name: {conf[name]}
+Pillar: {conf[push_pillar_url]}
+Project: {conf[push_salt_url]}
+'''.format(conf=conf)
+    return ret
+
+
 #

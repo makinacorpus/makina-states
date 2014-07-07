@@ -13,7 +13,6 @@ dotdeb-repo:
   pkgrepo.managed:
     - humanname: DotDeb PPA
     - name: deb http://packages.dotdeb.org  {{pkgssettings.dist}}  all
-    - consolidate: true
     - dist: {{pkgssettings.dist}}
     - file: {{locs.conf_dir}}/apt/sources.list.d/dotdeb.org.list
     - keyid: E9C74FEEA2098A6E

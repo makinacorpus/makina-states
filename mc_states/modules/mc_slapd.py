@@ -41,7 +41,9 @@ default_acl_schema = [
         " by dn.base=\"cn=ldapwriter,ou=virtual,ou=people,{data[dn]}\" read"
         " by dn.base=\"cn=replicator,ou=virtual,ou=people,{data[dn]}\" read"
         " by dn.base=\"cn=ldapreader,ou=virtual,ou=people,{data[dn]}\" read"
-        " by anonymous auth  by self write  by * none"
+        " by anonymous auth"
+        " by self write"
+        " by * none"
     ),
     (
         "{{1}}"
@@ -50,7 +52,8 @@ default_acl_schema = [
         " by dn.base=\"cn=admin,{data[dn]}\" write  "
         " by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
         " by dn.base=\"cn=ldapwriter,ou=virtual,ou=people,{data[dn]}\" read"
-        " by anonymous read  by * read"
+        " by anonymous read"
+        " by * read"
     ),
     (
         "{{2}}"
@@ -76,7 +79,8 @@ default_acl_schema = [
         " by dn.base=\"cn=admin,{data[dn]}\" write"
         " by dn.base=\"uid=fd-admin,ou=people,dc={data[dn]}\" write"
         " by dn.base=\"cn=ldapwriter,ou=virtual,ou=people,{data[dn]}\" write"
-        " by self write  by anonymous read"
+        " by self write"
+        " by anonymous read"
         " by * read"
     ),
     (
@@ -92,7 +96,8 @@ default_acl_schema = [
         " by dn.base=\"cn=admin,{data[dn]}\" write"
         " by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
         " by dn.base=\"cn=ldapwriter,ou=virtual,ou=people,{data[dn]}\" write"
-        " by self write  by * read"
+        " by self write"
+        " by * read"
     ),
     (
         "{{7}}"
@@ -100,11 +105,14 @@ default_acl_schema = [
         " by dn.base=\"cn=admin,{data[dn]}\" write"
         " by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
         " by dn.base=\"cn=ldapwriter,ou=virtual,ou=people,{data[dn]}\" write"
-        " by anonymous none  by dn.one=\"ou=people,{data[dn]}\" read"
+        " by anonymous none"
+        " by dn.one=\"ou=people,{data[dn]}\" read"
         " by * none"
     ),
     (
-        "{{8}} to dn.base=\"\"  by * read"
+        "{{8}}"
+        " to dn.base=\"{data[dn]}\""
+        " by * read"
     ),
     (
         "{{9}}"

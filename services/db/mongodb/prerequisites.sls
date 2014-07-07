@@ -17,7 +17,6 @@ mongodb-base:
     - humanname: mongodb ppa
     - name: {{mir}}
     - file: {{ salt['mc_locations.settings']().conf_dir }}/apt/sources.list.d/mongodb.list
-    - consolidate: true
     - keyid: 7F0CEB10
     - keyserver: keyserver.ubuntu.com
     - require_in:
