@@ -33,6 +33,7 @@ log = logging.getLogger(__name__)
 
 def objects():
     locs = __salt__['mc_locations.settings']()
+    check_by_ssh_params="-q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$' -t '$ARG4$' "
     data = {
         'directory': locs['conf_dir']+"/icinga/objects/salt_generated",
         'filescopy': ['check_ping',
@@ -457,12 +458,13 @@ def objects():
                     'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C $ARG1$",
                 },
             },
+            # edited in order to allow other users in check_by_ssh
             'command_CSSH_BACKUP_BURP': {
                 'type': "command",
                 'file': "checkcommands/CSSH_BACKUP_BURP.cfg",
                 'attrs': {
                     'command_name': "CSSH_BACKUP_BURP",
-                    'command_line': "$USER1$/check_by_ssh --skip-stderr -q -H $ARG1$ -l root -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_burp_backup_age.py -H $HOSTNAME$ -d /data/burp -w $ARG2$ -c $ARG3$'",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_burp_backup_age.py -H $HOSTNAME$ -d /data/burp -w $ARG5$ -c $ARG6$'",
                 },
             },
             'command_CSSH_BACKUP_EXT': {
@@ -478,7 +480,7 @@ def objects():
                 'file': "checkcommands/CSSH_CRON.cfg",
                 'attrs': {
                     'command_name': "CSSH_CRON",
-                    'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_cron'",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_cron'",
                 },
             },
             'command_CSSH_CUSTOM': {
@@ -486,7 +488,7 @@ def objects():
                 'file': "checkcommands/CSSH_CUSTOM.cfg",
                 'attrs': {
                     'command_name': "CSSH_CUSTOM",
-                    'command_line': "$USER1$/check_by_ssh --skip-stderr -q -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C $ARG1$",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C $ARG5$",
                 },
             },
             'command_CSSH_CYRUS_CONNECTIONS': {
@@ -494,7 +496,7 @@ def objects():
                 'file': "checkcommands/CSSH_CYRUS_CONNECTIONS.cfg",
                 'attrs': {
                     'command_name': "CSSH_CYRUS_CONNECTIONS",
-                    'command_line': "$USER1$/check_by_ssh --skip-stderr  -q -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_cyrus-imapd -w  $ARG1$ -c $ARG2$'",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_cyrus-imapd -w  $ARG5$ -c $ARG6$'",
                 },
             },
             'command_CSSH_DDOS': {
@@ -502,7 +504,7 @@ def objects():
                 'file': "checkcommands/CSSH_DDOS.cfg",
                 'attrs': {
                     'command_name': "CSSH_DDOS",
-                    'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_ddos.pl -w $ARG1$ -c$ARG2$'",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_ddos.pl -w $ARG5$ -c$ARG6$'",
                 },
             },
             'command_CSSH_DEBIAN_UPDATES': {
@@ -510,7 +512,7 @@ def objects():
                 'file': "checkcommands/CSSH_DEBIAN_UPDATES.cfg",
                 'attrs': {
                     'command_name': "CSSH_DEBIAN_UPDATES",
-                    'command_line': "$USER1$/check_by_ssh --skip-stderr -q -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_debian_packages --timeout=60' --timeout=60",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_debian_packages --timeout=60' --timeout=60",
                 },
             },
             'command_CSSH_DRBD': {
@@ -518,7 +520,7 @@ def objects():
                 'file': "checkcommands/CSSH_DRBD.cfg",
                 'attrs': {
                     'command_name': "CSSH_DRBD",
-                    'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C $ARG1$",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C $ARG5$",
                 },
             },
             'command_CSSH_HAPROXY': {
@@ -534,7 +536,7 @@ def objects():
                 'file': "checkcommands/CSSH_MAILQUEUE.cfg",
                 'attrs': {
                     'command_name': "CSSH_MAILQUEUE",
-                    'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_postfix_mailqueue -w $ARG1$ -c $ARG2$'",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_postfix_mailqueue -w $ARG5$ -c $ARG6$'",
                 },
             },
             'command_CSSH_MEGARAID_SAS': {
@@ -543,14 +545,14 @@ def objects():
                 'attrs': {
                     'command_name': "CSSH_MEGARAID_SAS",
                     'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C $ARG1$",
-                },
+                }
             },
             'command_CSSH_NTP_PEER': {
                 'type': "command",
                 'file': "checkcommands/CSSH_NTP_PEER.cfg",
                 'attrs': {
                     'command_name': "CSSH_NTP_PEER",
-                    'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$  -C '/root/check_ntp_peer -H 195.144.11.170 -w 1 -c 10 -j -1:100 -k -1:200 -W 4 -C 10'",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$  -C '/root/check_ntp_peer -H 195.144.11.170 -w 1 -c 10 -j -1:100 -k -1:200 -W 4 -C 10'",
                 },
             },
             'command_CSSH_NTP_PEERS': {
@@ -558,7 +560,7 @@ def objects():
                 'file': "checkcommands/CSSH_NTP_PEERS.cfg",
                 'attrs': {
                     'command_name': "CSSH_NTP_PEERS",
-                    'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_ntp_peer -H $ARG1$ -w 1 -c 10 -j -1:100 -k -1:200 -W 4 -C 10'",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_ntp_peer -H $ARG5$ -w 1 -c 10 -j -1:100 -k -1:200 -W 4 -C 10'",
                 },
             },
             'command_CSSH_NTP_TIME': {
@@ -566,7 +568,7 @@ def objects():
                 'file': "checkcommands/CSSH_NTP_TIME.cfg",
                 'attrs': {
                     'command_name': "CSSH_NTP_TIME",
-                    'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C '/root/check_ntp_time -H 195.144.11.170 -w 60 -c 120'",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C '/root/check_ntp_time -H 195.144.11.170 -w 60 -c 120'",
                 },
             },
             'command_CSSH_PROCESS_CRON_RUNNING': {
@@ -590,7 +592,7 @@ def objects():
                 'file': "checkcommands/CSSH_RAID_SOFT.cfg",
                 'attrs': {
                     'command_name': "CSSH_RAID_SOFT",
-                    'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C $ARG1$",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C $ARG5$",
                 },
             },
             'command_CSSH_RO_MOUNT': {
@@ -606,7 +608,7 @@ def objects():
                 'file': "checkcommands/CSSH_SAS2IRCU.cfg",
                 'attrs': {
                     'command_name': "CSSH_SAS2IRCU",
-                    'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C $ARG2$",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C $ARG5$",
                 },
             },
             'command_CSSH_SUPERVISOR': {
@@ -614,7 +616,7 @@ def objects():
                 'file': "checkcommands/CSSH_SUPERVISOR.cfg",
                 'attrs': {
                     'command_name': "CSSH_SUPERVISOR",
-                    'command_line': "$USER1$/check_by_ssh --skip-stderr  -q -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_supervisorctl.sh $ARG1$'",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_supervisorctl.sh $ARG1$'",
                 },
             },
             'command_C_APACHE_STATUS': {
@@ -1439,7 +1441,6 @@ def settings():
         checks_directory = "/root/admin_scripts/nagios"
         check_ping_warning = "5000,100%"
         check_ping_critical = check_ping_warning
-        check_by_ssh_params="-q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$' -t '$ARG4$' "
 
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.monitoring.icinga', {
@@ -2028,7 +2029,10 @@ def add_auto_configuration_host_settings(hostname,
     # the keys are the services names, not the commands names (use the service filename)
     services_check_command_default_args = {
        'backup_burp_age': {
+           'ssh_user': "root",
            'ssh_addr': "backup.makina-corpus.net",
+           'ssh_port': "22",
+           'ssh_timeout': 10,
            'warning': 1560,
            'critical': 1800,
        },

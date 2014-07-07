@@ -225,7 +225,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 
 
 # add backup_burp_age service 
-# TODO: edit command in order to allow customization in check_by_ssh
+# TODO/ok: edit command in order to allow customization in check_by_ssh
 {% if data.backup_burp_age %}
     {{ configuration_add_object(type='service',
                                 file='hosts/'+data.hostname+'/backup_burp_age.cfg',
@@ -234,7 +234,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'host_name': data.hostname,
                                     'use': "ST_BACKUP_DAILY_ALERT",
                                     'check_command': "CSSH_BACKUP_BURP!"
+                                                     +data.services_check_command_args.backup_burp_age.ssh_user+"!"
                                                      +data.services_check_command_args.backup_burp_age.ssh_addr+"!"
+                                                     +data.services_check_command_args.backup_burp_age.ssh_port|string+"!"
+                                                     +data.services_check_command_args.backup_burp_age.ssh_timeout|string+"!"
                                                      +data.services_check_command_args.backup_burp_age.warning|string+"!"
                                                      +data.services_check_command_args.backup_burp_age.critical|string,
                                 })
@@ -278,7 +281,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% endif %}
 
 # add cron service
-# TODO: edit command in order to allow customization in check_by_ssh
+# TODO/ok: edit command in order to allow customization in check_by_ssh
 {% if data.cron %}
     {{ configuration_add_object(type='service',
                                 file='hosts/'+data.hostname+'/cron.cfg',
@@ -286,13 +289,14 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'service_description': "S_PROC_CRON",
                                     'host_name': data.hostname,
                                     'use': "ST_SSH_PROC_CRON",
-                                    'check_command': "CSSH_CRON"
+                                    'check_command': "CSSH_CRON!"
+                                                     +check_by_ssh_params,
                                 })
     }}
 {% endif %}
 
 # add ddos service
-# TODO: edit command in order to allow customization in check_by_ssh
+# TODO/ok: edit command in order to allow customization in check_by_ssh
 {% if data.ddos %}
     {{ configuration_add_object(type='service',
                                 file='hosts/'+data.hostname+'/ddos.cfg',
@@ -301,6 +305,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'host_name': data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_DDOS!"
+                                                     +check_by_ssh_params+"!"
                                                      +data.services_check_command_args.ddos.warning|string+"!"
                                                      +data.services_check_command_args.ddos.critical|string,
                                 })
@@ -308,7 +313,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% endif %}
 
 # add debian_updates service
-# TODO: edit command in order to allow customization in check_by_ssh
+# TODO/ok: edit command in order to allow customization in check_by_ssh
 {% if data.debian_updates %}
     {{ configuration_add_object(type='service',
                                 file='hosts/'+data.hostname+'/debian_updates.cfg',
@@ -317,6 +322,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'host_name': data.hostname,
                                     'use': "ST_DAILY_NOALERT",
                                     'check_command': "CSSH_DEBIAN_UPDATES"
+                                                     +check_by_ssh_params,
                                 })
     }}
 {% endif %}
@@ -363,7 +369,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% endif %}
 
 # add drbd service
-# TODO: edit command in order to allow customization in check_by_ssh
+# TODO/ok: edit command in order to allow customization in check_by_ssh
 # TODO: add contact groups
 {% if data.drbd %}
     {{ configuration_add_object(type='service',
@@ -373,6 +379,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'host_name': data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_DRBD!"
+                                                     +check_by_ssh_params+"!"
                                                      +data.services_check_command_args.drbd.command,
                                 })
     }}
@@ -397,7 +404,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% endif %}
 
 # add erp_files service
-# TODO: edit command in order to allow customization in check_by_ssh
+# TODO/ok: edit command in order to allow customization in check_by_ssh
 # TODO: add contact groups
 {% if data.erp_files %}
     {{ configuration_add_object(type='service',
@@ -407,6 +414,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'host_name': data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_CUSTOM!"
+                                                     +check_by_ssh_params+"!"
                                                      +data.services_check_command_args.erp_files.command,
                                 })
     }}
@@ -475,7 +483,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% endif %}
 
 # add mail_cyrus_imap_connections service
-# TODO: edit command in order to allow customization in check_by_ssh
+# TODO/ok: edit command in order to allow customization in check_by_ssh
 {% if data.mail_cyrus_imap_connections %}
     {{ configuration_add_object(type='service',
                                 file='hosts/'+data.hostname+'/mail_cyrus_imap_connections.cfg',
@@ -484,6 +492,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'host_name': data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_CYRUS_CONNECTIONS!"
+                                                     +check_by_ssh_params+"!"
                                                      +data.services_check_command_args.mail_cyrus_imap_connections.warning|string+"!"
                                                      +data.services_check_command_args.mail_cyrus_imap_connections.critical|string,
                                 })
@@ -569,7 +578,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% endif %}
 
 # add mail_server_queues service
-# TODO: edit command in order to allow customization in check_by_ssh
+# TODO/ok: edit command in order to allow customization in check_by_ssh
 {% if data.mail_server_queues %}
     {{ configuration_add_object(type='service',
                                 file='hosts/'+data.hostname+'/mail_server_queues.cfg',
@@ -578,6 +587,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'host_name': data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_MAILQUEUE!"
+                                                     +check_by_ssh_params+"!"
                                                      +data.services_check_command_args.mail_server_queues.warning|string+"!"
                                                      +data.services_check_command_args.mail_server_queues.critical|string,
                                 })
@@ -663,7 +673,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% endif %}
 
 # add ntp_peers service
-# TODO: cssh
+# TODO/ok: cssh
 {% if data.ntp_peers %}
     {{ configuration_add_object(type='service',
                                 file='hosts/'+data.hostname+'/ntp_peers.cfg',
@@ -671,13 +681,14 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'service_description': "S_NTP_PEERS",
                                     'host_name': data.hostname,
                                     'use': "ST_ROOT",
-                                    'check_command': "CSSH_NTP_PEER"
+                                    'check_command': "CSSH_NTP_PEER!"
+                                                     +check_by_ssh_params,
                                 })
     }}
 {% endif %}
 
 # add ntp_time service
-# TODO: cssh
+# TODO/ok: cssh
 {% if data.ntp_time %}
     {{ configuration_add_object(type='service',
                                 file='hosts/'+data.hostname+'/ntp_time.cfg',
@@ -685,7 +696,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'service_description': "S_NTP_TIME",
                                     'host_name': data.hostname,
                                     'use': "ST_ROOT",
-                                    'check_command': "CSSH_NTP_TIME"
+                                    'check_command': "CSSH_NTP_TIME!"
+                                                     +check_by_ssh_params,
                                 })
     }}
 {% endif %}
@@ -738,7 +750,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% endif %}
 
 # add prebill_sending service
-# TODO: edit command in order to allow customization in check_by_ssh
+# TODO/ok: edit command in order to allow customization in check_by_ssh
 {% if data.prebill_sending %}
     {{ configuration_add_object(type='service',
                                 file='hosts/'+data.hostname+'/prebill_sending.cfg',
@@ -747,13 +759,14 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'host_name': data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_CUSTOM!"
+                                                     +check_by_ssh_params+"!"
                                                      +data.services_check_command_args.prebill_sending.command,
                                 })
     }}
 {% endif %}
 
 # add raid service
-# TODO: edit command in order to allow customization in check_by_ssh
+# TODO/ok: edit command in order to allow customization in check_by_ssh
 {% if data.raid %}
     {{ configuration_add_object(type='service',
                                 file='hosts/'+data.hostname+'/raid.cfg',
@@ -762,13 +775,14 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'host_name': data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_RAID_SOFT!"
+                                                     +check_by_ssh_params+"!"
                                                      +data.services_check_command_args.raid.command,
                                 })
     }}
 {% endif %}
 
 # add sas service
-# TODO: edit command in order to allow customization in check_by_ssh
+# TODO/ok: edit command in order to allow customization in check_by_ssh
 {% if data.raid %}
     {{ configuration_add_object(type='service',
                                 file='hosts/'+data.hostname+'/sas.cfg',
@@ -776,14 +790,14 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'service_description': "S_SAS",
                                     'host_name': data.hostname,
                                     'use': "ST_ROOT",
-                                    'check_command': "CSSH_2IRCU!!"
+                                    'check_command': "CSSH_SAS2IRCU!"
+                                                     +check_by_ssh_params+"!"
                                                      +data.services_check_command_args.sas.command,
                                 })
     }}
 {% endif %}
 
 # add snmpd_memory_control service
-# TODO: edit command in order to allow customization in check_by_ssh
 {% if data.raid %}
     {{ configuration_add_object(type='service',
                                 file='hosts/'+data.hostname+'/snmpd_memory_control.cfg',
@@ -841,7 +855,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% endif %}
 
 # add supervisord_status service
-# TODO: edit command in order to allow customization in check_by_ssh
+# TODO/ok: edit command in order to allow customization in check_by_ssh
 {% if data.supervisord_status %}
     {{ configuration_add_object(type='service',
                                 file='hosts/'+data.hostname+'/supervisord_status.cfg',
@@ -849,14 +863,15 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'service_description': "S_SUPERVISORD_STATUS",
                                     'host_name': data.hostname,
                                     'use': "ST_ALERT",
-                                    'check_command': "CSS_SUPERVISORD!"
+                                    'check_command': "CSSH_SUPERVISORD!"
+                                                     +check_by_ssh_params+"!"
                                                      +data.services_check_command_args.supervisord_status.command,
                                 })
     }}
 {% endif %}
 
 # add swap service
-# TODO: edit command in order to allow customization in check_by_ssh
+# TODO/ok: edit command in order to allow customization in check_by_ssh
 {% if data.swap %}
     {{ configuration_add_object(type='service',
                                 file='hosts/'+data.hostname+'/swap.cfg',
@@ -865,6 +880,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'host_name': data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_RAID_SOFT!"
+                                                     +check_by_ssh_params+"!"
                                                      +data.services_check_command_args.swap.command,
                                 })
     }}
