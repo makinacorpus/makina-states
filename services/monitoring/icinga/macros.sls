@@ -102,6 +102,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      ssh_port=22,
                                      ssh_timeout=30,
                                      backup_burp_age=False,
+                                     beam_process=False,
+                                     celeryd_process=False,
                                      cron=False,
                                      ddos=false,
                                      debian_updates=False,
@@ -115,13 +117,40 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      disk_space_var_makina=False,
                                      disk_space_var_www=False,
                                      drbd=False,
+                                     epmd_process=False,
+                                     erp_files=False,
+                                     fail2ban=False,
+                                     gunicorn_process=False,
+                                     ircbot_process=False,
                                      load_avg=False,
+                                     mail_cyrus_imap_connections=False,
+                                     mail_imap=False,
+                                     mail_imap_ssl=False,
+                                     mail_pop=False,
+                                     mail_pop_ssl=False,
+                                     mail_pop_test_account=False,
+                                     mail_server_queues=False,
+                                     mail_smtp=False,
                                      memory=False,
                                      memory_hyperviseur=False,
+                                     mysql_process=False,
                                      network=False,
+                                     ntp_peers=False,
+                                     ntp_time=False,
+                                     only_one_nagios_running=False,
+                                     postgres_port=False,
+                                     postgres_process=False,
+                                     prebill_sending=False,
                                      raid=False,
+                                     sas=False,
+                                     snmpd_memory_control=False,
+                                     solr=False,
+                                     ssh=False,
+                                     supervisord_status=False,
                                      swap=False,
+                                     tiles_generator_access=False,
                                      web_apache_status=False,
+                                     web_openid=False,
                                      web_public=False,
                                      services_check_command_args={}
                                     ) %}
@@ -132,6 +161,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      ssh_port,
                                                                      ssh_timeout,
                                                                      backup_burp_age,
+                                                                     beam_process,
+                                                                     celeryd_process,
                                                                      cron,
                                                                      ddos,
                                                                      debian_updates,
@@ -145,13 +176,40 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      disk_space_var_makina,
                                                                      disk_space_var_www,
                                                                      drbd,
+                                                                     epmd_process,
+                                                                     erp_files,
+                                                                     fail2ban,
+                                                                     gunicorn_process,
+                                                                     ircbot_process,
                                                                      load_avg,
+                                                                     mail_cyrus_imap_connections,
+                                                                     mail_imap,
+                                                                     mail_imap_ssl,
+                                                                     mail_pop,
+                                                                     mail_pop_ssl,
+                                                                     mail_pop_test_account,
+                                                                     mail_server_queues,
+                                                                     mail_smtp,
                                                                      memory,
                                                                      memory_hyperviseur,
+                                                                     mysql_process,
                                                                      network,
+                                                                     ntp_peers,
+                                                                     ntp_time,
+                                                                     only_one_nagios_running,
+                                                                     postgres_port,
+                                                                     postgres_process,
+                                                                     prebill_sending,
                                                                      raid,
+                                                                     sas,
+                                                                     snmpd_memory_control,
+                                                                     solr,
+                                                                     ssh,
+                                                                     supervisord_status,
                                                                      swap,
+                                                                     tiles_generator_access,
                                                                      web_apache_status,
+                                                                     web_openid,
                                                                      web_public,
                                                                      services_check_command_args,
                                                                      **kwargs
@@ -179,6 +237,42 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                      +data.services_check_command_args.backup_burp_age.ssh_addr+"!"
                                                      +data.services_check_command_args.backup_burp_age.warning|string+"!"
                                                      +data.services_check_command_args.backup_burp_age.critical|string,
+                                })
+    }}
+{% endif %}
+
+# add beam_process service
+{% if data.beam_process %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/beam_process.cfg',
+                                attrs= {
+                                    'service_description': "Check beam process",
+                                    'host_name': data.hostname,
+                                    'use': "ST_ALERT",
+                                    'notification_options': "w,c,r",
+                                    'notifications_enabled': 1,
+                                    'check_command': "C_SNMP_PROCESS!"
+                                                     +data.services_check_command_args.beam_process.process+"!"
+                                                     +data.services_check_command_args.beam_process.warning|string+"!"
+                                                     +data.services_check_command_args.beam_process.critical|string,
+                                })
+    }}
+{% endif %}
+
+# add celeryd_process service
+{% if data.celeryd_process %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/celeryd_process.cfg',
+                                attrs= {
+                                    'service_description': "Check celeryd process",
+                                    'host_name': data.hostname,
+                                    'use': "ST_ALERT",
+                                    'notification_options': "w,c,r",
+                                    'notifications_enabled': 1,
+                                    'check_command': "C_SNMP_PROCESS!"
+                                                     +data.services_check_command_args.celeryd_process.process+"!"
+                                                     +data.services_check_command_args.celeryd_process.warning|string+"!"
+                                                     +data.services_check_command_args.celeryd_process.critical|string,
                                 })
     }}
 {% endif %}
@@ -284,6 +378,88 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     }}
 {% endif %}
 
+# add epmd_process service
+{% if data.epmd_process %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/epmd_process.cfg',
+                                attrs= {
+                                    'service_description': "Check epmd process",
+                                    'host_name': data.hostname,
+                                    'use': "ST_ALERT",
+                                    'notification_options': "w,c,r",
+                                    'notifications_enabled': 1,
+                                    'check_command': "C_SNMP_PROCESS!"
+                                                     +data.services_check_command_args.epmd_process.process+"!"
+                                                     +data.services_check_command_args.epmd_process.warning|string+"!"
+                                                     +data.services_check_command_args.epmd_process.critical|string,
+                                })
+    }}
+{% endif %}
+
+# add erp_files service
+# TODO: edit command in order to allow customization in check_by_ssh
+# TODO: add contact groups
+{% if data.erp_files %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/erp_files.cfg',
+                                attrs= {
+                                    'service_description': "CHECK_ERP_FILES",
+                                    'host_name': data.hostname,
+                                    'use': "ST_ALERT",
+                                    'check_command': "CSSH_CUSTOM!"
+                                                     +data.services_check_command_args.erp_files.command,
+                                })
+    }}
+{% endif %}
+
+# add fail2ban service
+{% if data.fail2ban %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/fail2ban.cfg',
+                                attrs= {
+                                    'service_description': "S_FAIL2BAN",
+                                    'host_name': data.hostname,
+                                    'use': "ST_ROOT",
+                                    'notifications_enabled': 1,
+                                    'check_command': "C_SNMP_PROCESS!"
+                                                     +data.services_check_command_args.fail2ban.process+"!"
+                                                     +data.services_check_command_args.fail2ban.warning|string+"!"
+                                                     +data.services_check_command_args.fail2ban.critical|string,
+                                })
+    }}
+{% endif %}
+
+# add gunicorn_process service
+{% if data.gunicorn_process %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/gunicorn_process.cfg',
+                                attrs= {
+                                    'service_description': "Check gunicorn process",
+                                    'host_name': data.hostname,
+                                    'use': "ST_ALERT",
+                                    'notification_options': "w,c,r",
+                                    'notifications_enabled': 1,
+                                    'check_command': "C_SNMP_PROCESS!"
+                                                     +data.services_check_command_args.gunicorn_process.process+"!"
+                                                     +data.services_check_command_args.gunicorn_process.warning|string+"!"
+                                                     +data.services_check_command_args.gunicorn_process.critical|string,
+                                })
+    }}
+{% endif %}
+
+# add ircbot_process service
+{% if data.ircbot_process %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/ircbot_process.cfg',
+                                attrs= {
+                                    'service_description': "S_IRCBOT_PROCESS",
+                                    'host_name': data.hostname,
+                                    'use': "ST_HOURLY_ALERT",
+                                    'check_command': "C_PROCESS_IRCBOT_RUNNING",
+                                })
+    }}
+{% endif %}
+
 # add load avg service
 {% if data.load_avg %}
     {{ configuration_add_object(type='service',
@@ -294,6 +470,131 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'use': "ST_LOAD_AVG",
                                     'check_command': "C_SNMP_LOADAVG!"
                                                      +data.services_check_command_args.load_avg.other_args,
+                                })
+    }}
+{% endif %}
+
+# add mail_cyrus_imap_connections service
+# TODO: edit command in order to allow customization in check_by_ssh
+{% if data.mail_cyrus_imap_connections %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/mail_cyrus_imap_connections.cfg',
+                                attrs= {
+                                    'service_description': "S_MAIL_CYRUS_IMAP_CONNECTIONS",
+                                    'host_name': data.hostname,
+                                    'use': "ST_ALERT",
+                                    'check_command': "CSSH_CYRUS_CONNECTIONS!"
+                                                     +data.services_check_command_args.mail_cyrus_imap_connections.warning|string+"!"
+                                                     +data.services_check_command_args.mail_cyrus_imap_connections.critical|string,
+                                })
+    }}
+{% endif %}
+
+# add mail_imap service
+{% if data.mail_imap %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/mail_imap.cfg',
+                                attrs= {
+                                    'service_description': "S_MAIL_IMAP",
+                                    'host_name': data.hostname,
+                                    'use': "ST_ALERT",
+                                    'check_command': "C_MAIL_IMAP!"
+                                                     +data.services_check_command_args.mail_imap.warning|string+"!"
+                                                     +data.services_check_command_args.mail_imap.critical|string,
+                                })
+    }}
+{% endif %}
+
+# add mail_imap_ssl service
+{% if data.mail_imap_ssl %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/mail_imap_ssl.cfg',
+                                attrs= {
+                                    'service_description': "S_MAIL_IMAP_SSL",
+                                    'host_name': data.hostname,
+                                    'use': "ST_ALERT",
+                                    'check_command': "C_MAIL_IMAP_SSL!"
+                                                     +data.services_check_command_args.mail_imap_ssl.warning|string+"!"
+                                                     +data.services_check_command_args.mail_imap_ssl.critical|string,
+                                })
+    }}
+{% endif %}
+
+# add mail_pop service
+{% if data.mail_pop %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/mail_pop.cfg',
+                                attrs= {
+                                    'service_description': "S_MAIL_POP",
+                                    'host_name': data.hostname,
+                                    'use': "ST_ALERT",
+                                    'check_command': "C_MAIL_POP!"
+                                                     +data.services_check_command_args.mail_pop.warning|string+"!"
+                                                     +data.services_check_command_args.mail_pop.critical|string,
+                                })
+    }}
+{% endif %}
+
+# add mail_pop_ssl service
+{% if data.mail_pop_ssl %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/mail_pop_ssl.cfg',
+                                attrs= {
+                                    'service_description': "S_MAIL_POP_SSL",
+                                    'host_name': data.hostname,
+                                    'use': "ST_ALERT",
+                                    'check_command': "C_MAIL_POP_SSL!"
+                                                     +data.services_check_command_args.mail_pop_ssl.warning|string+"!"
+                                                     +data.services_check_command_args.mail_pop_ssl.critical|string,
+                                })
+    }}
+{% endif %}
+
+# add mail_pop_test_account service
+{% if data.mail_pop_test_account %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/mail_pop_test_account.cfg',
+                                attrs= {
+                                    'service_description': "S_MAIL_POP3_TEST_ACCOUNT",
+                                    'host_name': data.hostname,
+                                    'use': "ST_ALERT",
+                                    'check_command': "C_POP3_TEST_SIZE_AND_DELETE!"
+                                                     +data.services_check_command_args.mail_pop_test_account.warning1|string+"!"
+                                                     +data.services_check_command_args.mail_pop_test_account.critical1|string+"!"
+                                                     +data.services_check_command_args.mail_pop_test_account.warning2|string+"!"
+                                                     +data.services_check_command_args.mail_pop_test_account.critical2|string+"!"
+                                                     +data.services_check_command_args.mail_pop_test_account.mx,
+                                })
+    }}
+{% endif %}
+
+# add mail_server_queues service
+# TODO: edit command in order to allow customization in check_by_ssh
+{% if data.mail_server_queues %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/mail_server_queues.cfg',
+                                attrs= {
+                                    'service_description': "S_MAIL_SERVER_QUEUES",
+                                    'host_name': data.hostname,
+                                    'use': "ST_ALERT",
+                                    'check_command': "CSSH_MAILQUEUE!"
+                                                     +data.services_check_command_args.mail_server_queues.warning|string+"!"
+                                                     +data.services_check_command_args.mail_server_queues.critical|string,
+                                })
+    }}
+{% endif %}
+
+# add mail_smtp service
+{% if data.mail_smtp %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/mail_smtp.cfg',
+                                attrs= {
+                                    'service_description': "S_MAIL_SMTP",
+                                    'host_name': data.hostname,
+                                    'use': "ST_ALERT",
+                                    'check_command': "C_MAIL_SMTP!"
+                                                     +data.services_check_command_args.mail_smtp.warning|string+"!"
+                                                     +data.services_check_command_args.mail_smtp.critical|string,
                                 })
     }}
 {% endif %}
@@ -328,6 +629,22 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     }}
 {% endif %}
 
+# add mysql_process service
+{% if data.mysql_process %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/mysql_process.cfg',
+                                attrs= {
+                                    'service_description': "S_MYSQL_PROCESS",
+                                    'host_name': data.hostname,
+                                    'use': "ST_ALERT",
+                                    'check_command': "C_SNMP_PROCESS!"
+                                                     +data.services_check_command_args.mysql_process.process+"!"
+                                                     +data.services_check_command_args.mysql_process.warning|string+"!"
+                                                     +data.services_check_command_args.mysql_process.critical|string,
+                                })
+    }}
+{% endif %}
+
 # add network service
 {% if data.network %}
     {% for name, network in data.services_check_command_args.network.items() %}
@@ -345,6 +662,96 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     {% endfor %}
 {% endif %}
 
+# add ntp_peers service
+# TODO: cssh
+{% if data.ntp_peers %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/ntp_peers.cfg',
+                                attrs= {
+                                    'service_description': "S_NTP_PEERS",
+                                    'host_name': data.hostname,
+                                    'use': "ST_ROOT",
+                                    'check_command': "CSSH_NTP_PEER"
+                                })
+    }}
+{% endif %}
+
+# add ntp_time service
+# TODO: cssh
+{% if data.ntp_time %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/ntp_time.cfg',
+                                attrs= {
+                                    'service_description': "S_NTP_TIME",
+                                    'host_name': data.hostname,
+                                    'use': "ST_ROOT",
+                                    'check_command': "CSSH_NTP_TIME"
+                                })
+    }}
+{% endif %}
+
+# add only_one_nagios_running service
+{% if data.only_one_nagios_running %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/only_one_nagios_running.cfg',
+                                attrs= {
+                                    'service_description': "S_ONLY_ONE_NAGIOS_RUNNING",
+                                    'host_name': data.hostname,
+                                    'use': "ST_HOURLY_ALERT",
+                                    'check_command': "C_CHECK_ONE_NAGIOS_ONLY"
+                                })
+    }}
+{% endif %}
+
+# add postgres_port service
+{% if data.postgres_port %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/postgres_port.cfg',
+                                attrs= {
+                                    'service_description': "S_POSTGRESQL_PORT",
+                                    'host_name': data.hostname,
+                                    'use': "ST_ROOT",
+                                    'check_command': "check_tcp!"
+                                                     +data.services_check_command_args.postgres_port.port|string+"!"
+                                                     +data.services_check_command_args.postgres_port.warning|string+"!"
+                                                     +data.services_check_command_args.postgres_port.critical|string,
+                                })
+    }}
+{% endif %}
+
+# add postgres_process service
+{% if data.postgres_process %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/postgres_process.cfg',
+                                attrs= {
+                                    'service_description': "Check postgres process",
+                                    'host_name': data.hostname,
+                                    'use': "ST_ALERT",
+                                    'notification_options': "w,c,r",
+                                    'notifications_enabled': 1,
+                                    'check_command': "C_SNMP_PROCESS!"
+                                                     +data.services_check_command_args.postgres_process.process+"!"
+                                                     +data.services_check_command_args.postgres_process.warning|string+"!"
+                                                     +data.services_check_command_args.postgres_process.critical|string,
+                                })
+    }}
+{% endif %}
+
+# add prebill_sending service
+# TODO: edit command in order to allow customization in check_by_ssh
+{% if data.prebill_sending %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/prebill_sending.cfg',
+                                attrs= {
+                                    'service_description': "CHECK_PREBILL_SENDING",
+                                    'host_name': data.hostname,
+                                    'use': "ST_ALERT",
+                                    'check_command': "CSSH_CUSTOM!"
+                                                     +data.services_check_command_args.prebill_sending.command,
+                                })
+    }}
+{% endif %}
+
 # add raid service
 # TODO: edit command in order to allow customization in check_by_ssh
 {% if data.raid %}
@@ -360,6 +767,94 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     }}
 {% endif %}
 
+# add sas service
+# TODO: edit command in order to allow customization in check_by_ssh
+{% if data.raid %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/sas.cfg',
+                                attrs= {
+                                    'service_description': "S_SAS",
+                                    'host_name': data.hostname,
+                                    'use': "ST_ROOT",
+                                    'check_command': "CSSH_2IRCU!!"
+                                                     +data.services_check_command_args.sas.command,
+                                })
+    }}
+{% endif %}
+
+# add snmpd_memory_control service
+# TODO: edit command in order to allow customization in check_by_ssh
+{% if data.raid %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/snmpd_memory_control.cfg',
+                                attrs= {
+                                    'service_description': "S_SNMPD_MEMORY_CONTROL",
+                                    'host_name': data.hostname,
+                                    'use': "ST_ALERT",
+                                    'check_command': "C_SNMP_PROCESS_WITH_MEM!"
+                                                     +data.services_check_command_args.snmpd_memory_control.process+"!"
+                                                     +data.services_check_command_args.snmpd_memory_control.warning+"!"
+                                                     +data.services_check_command_args.snmpd_memory_control.critical+"!"
+                                                     +data.services_check_command_args.snmpd_memory_control.memory,
+                                })
+    }}
+{% endif %}
+
+# add solr service
+# TODO: readd auth
+{% if data.solr %}
+    {% for name, solr in data.services_check_command_args.solr.items() %}
+        {{ configuration_add_object(type='service',
+                                    file='hosts/'+data.hostname+'/solr_'+name+'.cfg',
+                                    attrs= {
+                                        'service_description': "SOLR_"+name,
+                                        'host_name': data.hostname,
+                                        'use': "ST_WEB_PUBLIC",
+                                        'check_command': "C_HTTP_STRING!"
+                                                         +solr.hostname+"!"
+                                                         +solr.port|string+"!"
+                                                         +solr.url+"!"
+                                                         +solr.warning|string+"!"
+                                                         +solr.critical|string+"!"
+                                                         +solr.timeout|string+"!"
+                                                         +solr.strings+"!"
+                                                         +solr.other_args,
+                                    })
+        }}
+    {% endfor %}
+{% endif %}
+
+# add ssh service
+{% if data.ssh %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/ssh.cfg',
+                                attrs= {
+                                    'service_description': "S_SSH",
+                                    'host_name': data.hostname,
+                                    'use': "ST_ROOT",
+                                    'check_command': "check_tcp!"
+                                                     +data.services_check_command_args.ssh.port|string+"!"
+                                                     +data.services_check_command_args.ssh.warning|string+"!"
+                                                     +data.services_check_command_args.ssh.critical|string
+                                })
+    }}
+{% endif %}
+
+# add supervisord_status service
+# TODO: edit command in order to allow customization in check_by_ssh
+{% if data.supervisord_status %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/supervisord_status.cfg',
+                                attrs= {
+                                    'service_description': "S_SUPERVISORD_STATUS",
+                                    'host_name': data.hostname,
+                                    'use': "ST_ALERT",
+                                    'check_command': "CSS_SUPERVISORD!"
+                                                     +data.services_check_command_args.supervisord_status.command,
+                                })
+    }}
+{% endif %}
+
 # add swap service
 # TODO: edit command in order to allow customization in check_by_ssh
 {% if data.swap %}
@@ -371,6 +866,23 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_RAID_SOFT!"
                                                      +data.services_check_command_args.swap.command,
+                                })
+    }}
+{% endif %}
+
+# add tiles_generator_access service
+{% if data.tiles_generator_access %}
+    {{ configuration_add_object(type='service',
+                                file='hosts/'+data.hostname+'/tiles_generator_access.cfg',
+                                attrs= {
+                                    'service_description': "Check tiles generator access",
+                                    'host_name': data.hostname,
+                                    'use': "ST_ALERT",
+                                    'notification_options': "w,c,r",
+                                    'notifications_enabled': 1,
+                                    'check_command': "check_http_vhost_uri!"
+                                                     +data.services_check_command_args.tiles_generator_access.hostname+"!"
+                                                     +data.services_check_command_args.tiles_generator_access.url,
                                 })
     }}
 {% endif %}
@@ -391,7 +903,28 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     }}
 {% endif %}
 
-# add web_public_client service
+# add web_openid service
+# TODO: readd auth
+{% if data.web_openid %}
+    {% for name, web_openid in data.services_check_command_args.web_openid.items() %}
+        {{ configuration_add_object(type='service',
+                                    file='hosts/'+data.hostname+'/web_openid_'+name+'.cfg',
+                                    attrs= {
+                                        'service_description': "WEB_OPENID_"+name,
+                                        'host_name': data.hostname,
+                                        'use': "ST_WEB_PUBLIC",
+                                        'check_command': "C_HTTPS_OPENID_REDIRECT!"
+                                                         +web_openid.hostname+"!"
+                                                         +web_openid.url+"!"
+                                                         +web_openid.warning|string+"!"
+                                                         +web_openid.critical|string+"!"
+                                                         +web_openid.timeout|string,
+                                    })
+        }}
+    {% endfor %}
+{% endif %}
+
+# add web_public service
 # TODO: readd auth
 {% if data.web_public %}
     {% for name, web_public in data.services_check_command_args.web_public.items() %}

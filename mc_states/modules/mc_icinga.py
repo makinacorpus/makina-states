@@ -1109,6 +1109,8 @@ def objects():
                 'ssh_user': "root",
                 'ssh_addr': "127.0.0.1",
                 'backup_burp_age': True,
+                'beam_process': True,
+                'celeryd_process': True,
                 'cron': True,
                 'ddos': True,
                 'debian_updates': True,
@@ -1116,12 +1118,38 @@ def objects():
                 'disk_space': True,
                 'disk_space_root': True,
                 'drbd': True,
+                'epmd_process': True,
+                'erp_files': True,
+                'fail2ban': True,
+                'gunicorn_process': True,
+                'ircbot_process': True,
                 'load_avg': True,
+                'mail_cyrus_imap_connections': True,
+                'mail_imap': True,
+                'mail_imap_ssl': True,
+                'mail_pop': True,
+                'mail_pop_ssl': True,
+                'mail_pop_test_account': True,
+                'mail_server_queues': True,
+                'mail_smtp': True,
                 'memory': True,
                 'memory_hyperviseur': True,
+                'mysql_process': True,
                 'network': True,
+                'ntp_peers': True,
+                'ntp_time': True,
+                'only_one_nagios_running': True,
+                'postgres_port': True,
+                'postgres_process': True,
+                'prebill_sending': True,
                 'raid': True,
+                'sas': True,
+                'snmpd_memory_control': True,
+                'solr': True,
+                'ssh': True,
+                'supervisord_status': True,
                 'swap': True,
+                'tiles_access_generator': True,
                 'web_apache_status': True,
                 'web_public': True,
                 'services_check_command_args': {
@@ -1134,6 +1162,27 @@ def objects():
                         },
                         'hostname': {
                             'hostname': "webservices",
+                        },
+                    },
+                    'solr': {
+                        'test': {
+                            'hostname': "h",
+                            'port': 80,
+                            'url': "/",
+                            'warning': 1,
+                            'critical': 5,
+                            'timeout': 8,
+                            'strings': ['Apache'],
+                            'other_args': "",
+                        },
+                    },
+                    'web_openid': {
+                        'test': {
+                            'hostname': "a",
+                            'url': "/",
+                            'warning': 1,
+                            'critical': 5,
+                            'timeout': 8,
                         },
                     },
                     'web_public': {
@@ -1823,6 +1872,8 @@ def add_auto_configuration_host_settings(hostname,
                                         ssh_port,
                                         ssh_timeout,
                                         backup_burp_age,
+                                        beam_process,
+                                        celeryd_process,
                                         cron,
                                         ddos,
                                         debian_updates,
@@ -1836,13 +1887,40 @@ def add_auto_configuration_host_settings(hostname,
                                         disk_space_var_makina,
                                         disk_space_var_www,
                                         drbd,
+                                        epmd_process,
+                                        erp_files,
+                                        fail2ban,
+                                        gunicorn_process,
+                                        ircbot_process,
                                         load_avg,
+                                        mail_cyrus_imap_connections,
+                                        mail_imap,
+                                        mail_imap_ssl,
+                                        mail_pop,
+                                        mail_pop_ssl,
+                                        mail_pop_test_account,
+                                        mail_server_queues,
+                                        mail_smtp,
                                         memory,
                                         memory_hyperviseur,
+                                        mysql_process,
                                         network,
+                                        ntp_peers,
+                                        ntp_time,
+                                        only_one_nagios_running,
+                                        postgres_port,
+                                        postgres_process,
+                                        prebill_sending,
                                         raid,
+                                        sas,
+                                        snmpd_memory_control,
+                                        solr,
+                                        ssh,
+                                        supervisord_status,
                                         swap,
+                                        tiles_generator_access,
                                         web_apache_status,
+                                        web_openid,
                                         web_public,
                                         services_check_command_args,
                                         **kwargs):
@@ -1860,19 +1938,48 @@ def add_auto_configuration_host_settings(hostname,
 
 
     kwargs.setdefault('backup_burp_age', backup_burp_age)
+    kwargs.setdefault('beam_process', beam_process)
+    kwargs.setdefault('celeryd_process', celeryd_process)
     kwargs.setdefault('cron', cron)
     kwargs.setdefault('ddos', ddos)
     kwargs.setdefault('debian_updates', debian_updates)
     kwargs.setdefault('dns_association', dns_association)
     kwargs.setdefault('disk_space', disk_space)
     kwargs.setdefault('drbd', drbd)
+    kwargs.setdefault('epmd_process', epmd_process)
+    kwargs.setdefault('erp_files', erp_files)
+    kwargs.setdefault('fail2ban', fail2ban)
+    kwargs.setdefault('gunicorn_process', gunicorn_process)
+    kwargs.setdefault('ircbot_process', ircbot_process)
     kwargs.setdefault('load_avg', load_avg)
+    kwargs.setdefault('mail_cyrus_imap_connections', mail_cyrus_imap_connections)
+    kwargs.setdefault('mail_imap', mail_imap)
+    kwargs.setdefault('mail_imap_ssl', mail_imap_ssl)
+    kwargs.setdefault('mail_pop', mail_pop)
+    kwargs.setdefault('mail_pop_ssl', mail_pop_ssl)
+    kwargs.setdefault('mail_pop_test_account', mail_pop_test_account)
+    kwargs.setdefault('mail_server_queues', mail_server_queues)
+    kwargs.setdefault('mail_smtp', mail_smtp)
     kwargs.setdefault('memory', memory)
     kwargs.setdefault('memory_hyperviseur', memory_hyperviseur)
+    kwargs.setdefault('mysql_process', mysql_process)
     kwargs.setdefault('network', network)
+    kwargs.setdefault('ntp_peers', ntp_peers)
+    kwargs.setdefault('ntp_time', ntp_time)
+    kwargs.setdefault('only_one_nagios_running', only_one_nagios_running)
+    kwargs.setdefault('postgres_port', postgres_port)
+    kwargs.setdefault('postgres_process', postgres_process)
+    kwargs.setdefault('prebill_sending', prebill_sending)
     kwargs.setdefault('raid', raid)
+    kwargs.setdefault('sas', sas)
+    kwargs.setdefault('snmpd_memory_control', snmpd_memory_control)
+    kwargs.setdefault('solr', solr)
+    kwargs.setdefault('ssh', ssh)
+    kwargs.setdefault('supervisord_status', supervisord_status)
     kwargs.setdefault('swap', swap)
+    kwargs.setdefault('tiles_generator_access', tiles_generator_access)
     kwargs.setdefault('web_apache_status', web_apache_status)
+    kwargs.setdefault('web_openid', web_openid)
     kwargs.setdefault('web_public', web_public)
 
     # values for dns_association service
@@ -1925,6 +2032,16 @@ def add_auto_configuration_host_settings(hostname,
            'warning': 1560,
            'critical': 1800,
        },
+       'beam_process': {
+           'process': "beam",
+           'warning': 0,
+           'critical': 0,
+       },
+       'celeryd_process': {
+           'process': "python",
+           'warning': 1,
+           'critical': 0,
+       },
        'cron': {},
        'ddos': {
            'warning': 50,
@@ -1946,8 +2063,62 @@ def add_auto_configuration_host_settings(hostname,
        'drbd': {
            'command': "'/root/admin_scripts/nagios/check_drbd -d  0,1'",
        },
+       'epmd_process': {
+           'process': "epmd",
+           'warning': 0,
+           'critical': 0,
+       },
+       'erp_files': {
+           'command': "/var/makina/alma-job/job/supervision/check_erp_files.sh",
+       },
+       'fail2ban': {
+           'process': "fail2ban-server",
+           'warning': 0,
+           'critical': 0,
+       },
+       'gunicorn_process': {
+           'process': "gunicorn_django",
+           'warning': 0,
+           'critical': 0,
+       },
+       'ircbot_process': {},
        'load_avg': {
            'other_args': "",
+       },
+       'mail_cyrus_imap_connections': {
+           'warning': 300,
+           'critical': 900,
+       },
+       'mail_imap': {
+           'warning': 1,
+           'critical': 3,
+       },
+       'mail_imap_ssl': {
+           'warning': 1,
+           'critical': 3,
+       },
+       'mail_pop': {
+           'warning': 1,
+           'critical': 3,
+       },
+       'mail_pop_ssl': {
+           'warning': 1,
+           'critical': 3,
+       },
+       'mail_pop_test_account': {
+           'warning1': 52488,
+           'critical1': 1048576,
+           'warning2': 100,
+           'critical2': 2000,
+           'mx': "@makina-corpus.com",
+       },
+       'mail_server_queues': {
+           'warning': 50,
+           'critical': 100,
+       },
+       'mail_smtp': {
+           'warning': 1,
+           'critical': 3,
        },
        'memory': {
            'warning': 80,
@@ -1957,22 +2128,85 @@ def add_auto_configuration_host_settings(hostname,
            'warning': 95,
            'critical': 99,
        },
+       'mysql_process': {
+           'process': "mysql",
+           'warning': 0,
+           'critical': 0,
+       },
        'network': {
            'default': {
                'interface': "eth0",
                'other_args': "",
            },
        },
+       'ntp_peers': {},
+       'ntp_time': {},
+       'only_one_nagios_running': {},
+       'postgres_port': {
+           'port': 5432,
+           'warning': 2,
+           'critical': 8,
+       },
+       'postgres_process': {
+           'process': "postgres",
+           'warning': 0,
+           'critical': 0,
+       },
+       'prebill_sending': {
+           'command': "/var/makina/alma-job/job/supervision/check_prebill_sending.sh",
+       },
        'raid': {
            'command': "'/root/admin_scripts/nagios/check_md_raid'",
        },
+       'sas': {
+           'command': "/root/admin_scripts/check_nagios/check_sas2ircu/check_sas2ircu",
+       },
+       'snmpd_memory_control': {
+           'process': "snmpd",
+           'warning': "0,1",
+           'critical': "0,1",
+           'memory': "256,512",
+       },
+       'solr': {
+           'default': {
+               'hostname': "h",
+               'port': 80,
+               'url': "/",
+               'warning': 1,
+               'critical': 5,
+               'timeout': 8,
+               'strings': ['Apache'],
+               'other_args': "",
+           },
+       },
+       'ssh': {
+           'port': 22,
+           'warning': 1,
+           'critical': 4,
+       },
+       'supervisord_status': {
+           'command': "/home/zope/adria/rcse/production-2014-01-23-14-27-01/bin/supervisorctl",
+       },
        'swap': {
            'command': "'/root/admin_scripts/nagios/check_swap -w 80%% -c 50%%'",
+       },
+       'tiles_generator_access': {
+           'hostname': "vdm.makina-corpus.net",
+           'url': "/vdm-tiles/status/",
        },
        'web_apache_status': {
            'warning': 4,
            'critical': 2,
            'other_args': "",
+       },
+       'web_openid': {
+           'default': {
+               'hostname': hostname,
+               'url': "/",
+               'warning': 1,
+               'critical': 5,
+               'timeout': 8,
+           },
        },
        'web_public': {
            'default': {
@@ -1988,11 +2222,6 @@ def add_auto_configuration_host_settings(hostname,
        },
 
        # BACKUP
-       'ssh': {
-           'hostname': ssh_addr,
-           'port': ssh_port,
-           'timeout': 10,
-       },
        'dns_reverse': {
            'port': 53,
            'query_address': dns_inaddr,
@@ -2013,16 +2242,6 @@ def add_auto_configuration_host_settings(hostname,
            'critical': 2,
            'timeout': 8,
        },
-       'ntp_peer': {
-           'port': 123,
-           'hostname': attrs['address'],
-           'timeout': 10,
-       },
-       'ntp_time': {
-           'port': 123,
-           'hostname': "pool.ntp.org",
-           'timeout': 10,
-       },
        'md_raid': {},
        'megaraid_sas': {},
        '3ware_raid': {},
@@ -2031,16 +2250,6 @@ def add_auto_configuration_host_settings(hostname,
            'metric': "PROCS",
            'warning': 170,
            'critical': 200,
-       },
-       'cron': {},
-       'debian_packages': {
-           'timeout': 60,
-       },
-       'solr': {
-#           'port':
-#           'hostname':
-#           'warning':
-#           'critical':
        },
        'rdiff': {
            # ssh values should be replaced with the values concerning the backup host
@@ -2082,6 +2291,30 @@ def add_auto_configuration_host_settings(hostname,
             for key, value in services_check_command_default_args['network']['default'].items():
                 if not key in network:
                     services_check_command_args['network'][name][key]=value
+
+    # override solr subdictionary
+    if not 'solr' in services_check_command_args:
+        services_check_command_args['solr'] =  services_check_command_default_args['solr']
+    else:
+        for name, web_public in services_check_command_args['solr'].items():
+            for key, value in services_check_command_default_args['solr']['default'].items():
+                if not key in web_public:
+                    services_check_command_args['solr'][name][key]=value
+            # transform list of values in string ['a', 'b'] becomes '"a" -s "b"'
+            if isinstance(services_check_command_args['solr'][name]['strings'], list):
+                str_list = services_check_command_args['solr'][name]['strings']
+                # to avoid quotes conflicts (doesn't avoid code injection)
+                str_list = [ value.replace('"', '\\\\"') for value in str_list ]
+                services_check_command_args['solr'][name]['strings']='"'+'" -s "'.join(str_list)+'"'
+
+    # override web_openid subdictionary
+    if not 'web_openid' in services_check_command_args:
+        services_check_command_args['web_openid'] =  services_check_command_default_args['web_openid']
+    else:
+        for name, web_openid in services_check_command_args['web_openid'].items():
+            for key, value in services_check_command_default_args['web_openid']['default'].items():
+                if not key in web_openid:
+                    services_check_command_args['web_openid'][name][key]=value
 
     # override web_public subdictionary
     if not 'web_public' in services_check_command_args:
@@ -2141,7 +2374,7 @@ def add_auto_configuration_host_settings(hostname,
         services_check_command_args = {}
 
     for name, command in services_check_command_default_args.items():
-        if not name in ['dns_association', 'mountpoints', 'network', 'web_public']:
+        if not name in ['dns_association', 'mountpoints', 'network', 'solr', 'web_openid', 'web_public']:
             if not name in services_check_command_args:
                 services_check_command_args[name] = {}
             services_check_command_args[name] = dict(services_check_command_default_args[name].items() + services_check_command_args[name].items())
