@@ -268,11 +268,9 @@ icinga-configuration-clean-objects-directory:
       - mc_proxy: icinga-configuration-post-clean-directories
 
 # add templates and commands (and contacts, timeperiods...)
-{#
 {% for name, object in data.objects.objects_definitions.items() %}
     {{ icinga.configuration_add_object(**object) }}
 {% endfor %}
-#}
 
 # add autoconfigured hosts
 {% for name, object in data.objects.autoconfigured_hosts_definitions.items() %}

@@ -1464,7 +1464,7 @@ def objects():
             },
 
             # hosts templates definitions
-            # (shouldn't use autoconfiguration macr for templates because we can't associate a service to
+            # (shouldn't use autoconfiguration macro for templates because we can't associate a service to
             # a host template. It seems to be not working with icinga)
             'hostTemplateHT+_BACKUP_BURP': {
                 'type': "host",
@@ -2408,9 +2408,9 @@ def add_configuration_object_settings(type, file, attrs, **kwargs):
     kwargs.setdefault('state_name_salt', file.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
     # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
-    icingaSettings['data'] = copy.deepcopy(icingaSettings)
-    icingaSettings['data']['extra'] = copy.deepcopy(icingaSettings)
-    icingaSettings['extra'] = copy.deepcopy(icingaSettings)
+    #icingaSettings['data'] = copy.deepcopy(icingaSettings)
+    #icingaSettings['data']['extra'] = copy.deepcopy(icingaSettings)
+    #icingaSettings['extra'] = copy.deepcopy(icingaSettings)
     return icingaSettings
 
 def edit_configuration_object_settings(type, file, attr, value, **kwargs):
@@ -2425,9 +2425,9 @@ def edit_configuration_object_settings(type, file, attr, value, **kwargs):
     kwargs.setdefault('state_name_salt', file.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
     # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
-    icingaSettings['data'] = copy.deepcopy(icingaSettings)
-    icingaSettings['data']['extra'] = copy.deepcopy(icingaSettings)
-    icingaSettings['extra'] = copy.deepcopy(icingaSettings)
+    #icingaSettings['data'] = copy.deepcopy(icingaSettings)
+    #icingaSettings['data']['extra'] = copy.deepcopy(icingaSettings)
+    #icingaSettings['extra'] = copy.deepcopy(icingaSettings)
     return icingaSettings
 
 def add_auto_configuration_host_settings(hostname,
@@ -2985,9 +2985,9 @@ def add_auto_configuration_host_settings(hostname,
     kwargs.setdefault('state_name_salt', hostname.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
     # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
-    icingaSettings['data'] = copy.deepcopy(icingaSettings)
-    icingaSettings['data']['extra'] = copy.deepcopy(icingaSettings)
-    icingaSettings['extra'] = copy.deepcopy(icingaSettings)
+    #icingaSettings['data'] = copy.deepcopy(icingaSettings)
+    #icingaSettings['data']['extra'] = copy.deepcopy(icingaSettings)
+    #icingaSettings['extra'] = copy.deepcopy(icingaSettings)
     return icingaSettings
 
 def dump():
