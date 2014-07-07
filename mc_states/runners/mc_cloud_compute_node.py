@@ -687,4 +687,35 @@ def orchestrate(skip=None,
     salt_output(ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
+
+
+def report(targets, ret=None, refresh=False, output=True):
+    '''Parse all reachable compute nodes and vms
+    and regenerate the local configuration registries concerning
+    cloud deployment'''
+    func_name = 'mc_compute_node.register_configurations'
+    __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    if ret is None:
+        ret = result()
+    if refresh:
+        cli('saltutil.refresh_pillar')
+    sret = ''
+    if not isinstance(targets, list):
+        targets = targets.split(',')
+    for idx, target in enumerate(targets):
+        try:
+            if not cli('test.ping', salt_target=target):
+                continue
+        except Exception:
+            continue
+        sret += '{0}'.format(
+            cli('mc_project.report', salt_target=target)
+        )
+    ret['result'] = sret
+    salt_output(ret, __opts__, output=output, onlyret=True)
+    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+    return ret
+
+
+
 #
