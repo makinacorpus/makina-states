@@ -160,6 +160,8 @@ def settings():
         Mapping containing all defined virtualhosts
     rotate
         days to rotate log
+    default_vhost
+        set to false to disable default vhost
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
@@ -194,6 +196,7 @@ def settings():
                 'rotate': '365',
                 'is_reverse_proxied': is_rp,
                 'reverse_proxy_addresses': reverse_proxy_addresses,
+                'default_vhost': True,
                 'use_real_ip': True,
                 'use_naxsi': False,
                 'use_naxsi_secrules': True,
