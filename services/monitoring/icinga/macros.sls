@@ -128,6 +128,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      erp_files=False,
                                      fail2ban=False,
                                      gunicorn_process=False,
+                                     haproxy=False,
                                      ircbot_process=False,
                                      load_avg=False,
                                      mail_cyrus_imap_connections=False,
@@ -188,6 +189,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      erp_files,
                                                                      fail2ban,
                                                                      gunicorn_process,
+                                                                     haproxy,
                                                                      ircbot_process,
                                                                      load_avg,
                                                                      mail_cyrus_imap_connections,
@@ -462,6 +464,22 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     }}
 {% endif %}
 
+# add haproxy service
+{% if data.haproxy %}
+    {{ configuration_add_object(type='service',
+                                file=data.service_subdirectory+'/'+data.hostname+'/haproxy.cfg',
+                                attrs= {
+                                    'service_description': "haproxy stats",
+                                    data.service_key_hostname: data.hostname,
+                                    'use': "ST_ALERT",
+                                    'check_command': "CSSH_HAPROXY!"
+                                                     +check_by_ssh_params+"!"
+                                                     +data.services_check_command_args.haproxy.proxy,
+                                                     +data.services_check_command_args.haproxy.warning|string,
+                                                     +data.services_check_command_args.haproxy.critical|string,
+                                })
+    }}
+{% endif %}
 # add ircbot_process service
 {% if data.ircbot_process %}
     {{ configuration_add_object(type='service',
@@ -1102,20 +1120,6 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     }}
 {% endif %}
 
-# add haproxy service (check by ssh)
-{% if data.check_haproxy_stats %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/haproxy_stats.cfg',
-                                attrs= {
-                                    'service_description': "haproxy stats",
-                                    data.service_key_hostname: data.hostname,
-                                    'use': "generic-service",
-                                    'check_command': "check_by_ssh_haproxy_stats!"
-                                                     +check_by_ssh_params+"!"
-                                                     +data.services_check_command_args.haproxy_stats.socket,
-                                })
-    }}
-{% endif %}
 
 #}
 {% endmacro %}

@@ -2548,6 +2548,7 @@ def add_auto_configuration_host_settings(hostname,
                                          erp_files,
                                          fail2ban,
                                          gunicorn_process,
+                                         haproxy,
                                          ircbot_process,
                                          load_avg,
                                          mail_cyrus_imap_connections,
@@ -2623,6 +2624,7 @@ def add_auto_configuration_host_settings(hostname,
     kwargs.setdefault('erp_files', erp_files)
     kwargs.setdefault('fail2ban', fail2ban)
     kwargs.setdefault('gunicorn_process', gunicorn_process)
+    kwargs.setdefault('haproxy', haproxy)
     kwargs.setdefault('ircbot_process', ircbot_process)
     kwargs.setdefault('load_avg', load_avg)
     kwargs.setdefault('mail_cyrus_imap_connections', mail_cyrus_imap_connections)
@@ -2758,6 +2760,11 @@ def add_auto_configuration_host_settings(hostname,
            'critical': 0,
        },
        'ircbot_process': {},
+       'haproxy': {
+           'proxy': "web",
+           'warning': 80,
+           'critical': 90,
+       },
        'load_avg': {
            'other_args': "",
        },
