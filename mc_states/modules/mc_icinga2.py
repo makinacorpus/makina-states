@@ -27,7 +27,7 @@ import logging
 import copy
 import mc_states.utils
 
-__name = 'icinga'
+__name = 'icinga2'
 
 log = logging.getLogger(__name__)
 
@@ -113,14 +113,14 @@ def settings():
                           'login': "icingaadmin",
                           'password': password_cgi,
                         },
-                        'absolute_styles_dir': "/usr/share/icinga2/classicui/stylesheets",
+                        'absolute_styles_dir': "/usr/share/icinga/htdocs/stylesheets",
                         'nginx': {
-                            'domain': "icinga-cgi.localhost",
+                            'domain': "icinga2-cgi.localhost",
                             'doc_root': "/usr/share/icinga2/classicui/",
                             'vh_content_source': "salt://makina-states/files/etc/nginx/sites-available/icinga2-cgi.content.conf",
                             'vh_top_source': "salt://makina-states/files/etc/nginx/sites-available/icinga2-cgi.top.conf",
                             'icinga_cgi': {
-                                'web_directory': "",
+                                'web_directory': "/icinga2-classicui",
                                 'realm': "Authentication",
                                 'htpasswd_file': "/etc/icinga2/classicui/htpasswd.users",
                                 'htdocs_dir': "/usr/share/icinga2/classicui/",
@@ -142,12 +142,12 @@ def settings():
                             'socket': "127.0.0.1:3030",
                             'uid': "www-data",
                             'gid': "www-data",
-                            'cgi': "/cgi-bin/icinga/=/usr/lib/cgi-bin/icinga2-classicui/",
+                            'cgi': "/cgi-bin/icinga2-classicui/=/usr/lib/cgi-bin/icinga2-classicui/",
                             'cgi_allowed_ext': ".cgi",
                         },
                         'cgi_cfg': {
                             'standalone_installation': "1",
-                            'physical_html_path': "/usr/share/icinga",
+                            'physical_html_path': "/usr/share/icinga2/classicui/",
                             'url_html_path': "/icinga2-classicui",
                             'url_stylesheets_path': "/icinga2-classicui/stylesheets",
                             'http_charset': "utf-8",
@@ -230,7 +230,7 @@ def settings():
             })
 
         __salt__['mc_macros.update_local_registry'](
-            'icinga', icinga_reg,
+            'icinga2', icinga_reg,
             registry_format='pack')
         return data
     return _settings()

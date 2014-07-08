@@ -164,6 +164,16 @@ icinga2-cgi-move-stylesheets:
     - watch_in:
       - mc_proxy: icinga2-post-conf
 
+icinga2-cgi-link-stylesheets:
+  file.symlink:
+    - name: {{data.modules.cgi.nginx.doc_root}}/stylesheets
+    - target: {{data.modules.cgi.absolute_styles_dir}}
+    - watch:
+      - mc_proxy: icinga2-pre-conf
+      - file: icinga2-cgi-move-stylesheets
+    - watch_in:
+      - mc_proxy: icinga2-post-conf
+
 {% endif %}
 
 {% if data.modules.ido2db.enabled %}
