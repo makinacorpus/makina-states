@@ -489,7 +489,7 @@ def errmsg(msg):
     raise MessageError(msg)
 
 
-def salt_output(ret, __opts__, output=True, onlyret=True):
+def salt_output(ret, __opts__, output=True, onlyret=False):
     if output:
         api.msplitstrip(ret)
         # copy the result to zresult key for bare out to really
