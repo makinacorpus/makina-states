@@ -27,6 +27,7 @@ import logging
 import copy
 import mc_states.utils
 
+
 __name = 'icinga'
 
 log = logging.getLogger(__name__)
@@ -1825,42 +1826,42 @@ def objects():
                 'ware_raid': True,
                 'web_apache_status': True,
                 'web': True,
-                'services_check_command_args': {
+                'services_attrs': {
                     'dns_association': {
                         'localhost': {
-                            'hostname': "www.localhost",
+                            'cmdarg_hostname': "www.localhost",
                         },
                         'other_name': {
-                            'hostname': "www.example.net",
+                            'cmdarg_hostname': "www.example.net",
                         },
                         'hostname': {
-                            'hostname': "webservices",
+                            'cmdarg_hostname': "webservices",
                         },
                     },
                     'solr': {
                         'test': {
-                            'hostname': "h",
-                            'port': 80,
-                            'url': "/",
-                            'warning': 1,
-                            'critical': 5,
-                            'timeout': 8,
-                            'strings': ['Apache'],
-                            'other_args': "",
+                            'cmdarg_hostname': "h",
+                            'cmdarg_port': 80,
+                            'cmdarg_url': "/",
+                            'cmdarg_warning': 1,
+                            'cmdarg_critical': 5,
+                            'cmdarg_timeout': 8,
+                            'cmdarg_strings': ['Apache'],
+                            'cmdarg_other_args': "",
                         },
                     },
                     'web_openid': {
                         'test': {
-                            'hostname': "a",
-                            'url': "/",
-                            'warning': 1,
-                            'critical': 5,
-                            'timeout': 8,
+                            'cmdarg_hostname': "a",
+                            'cmdarg_url': "/",
+                            'cmdarg_warning': 1,
+                            'cmdarg_critical': 5,
+                            'cmdarg_timeout': 8,
                         },
                     },
                     'web': {
                         'test': {
-                            'strings': ['a', 'b'],
+                            'cmdarg_strings': ['a', 'b'],
                         },
                     },
                 },
@@ -2598,7 +2599,7 @@ def add_auto_configuration_host_settings(hostname,
                                          web_apache_status,
                                          web_openid,
                                          web,
-                                         services_check_command_args,
+                                         services_attrs,
                                          **kwargs):
     '''Settings for the add_auto_configuration_host macro'''
     icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
@@ -2610,12 +2611,12 @@ def add_auto_configuration_host_settings(hostname,
 
     if hostgroup:
         kwargs.setdefault('type', 'hostgroup')
-        kwargs.setdefault('service_key_hostname', 'hostgroup_name')
         kwargs.setdefault('service_subdirectory', 'hostgroups')
+        service_key_hostname = 'hostgroup_name'
     else:
         kwargs.setdefault('type', 'host')
-        kwargs.setdefault('service_key_hostname', 'host_name')
         kwargs.setdefault('service_subdirectory', 'hosts')
+        service_key_hostname = 'host_name'
 
     kwargs.setdefault('attrs', attrs)
     kwargs.setdefault('ssh_user', ssh_user)
@@ -2713,357 +2714,700 @@ def add_auto_configuration_host_settings(hostname,
     kwargs.setdefault('disks_spaces', disks_spaces)
 
 
+
     # give the default values for commands parameters values
     # the keys are the services names, not the commands names (use the service filename)
-    services_check_command_default_args = {
+    services_default_attrs = {
        'backup_burp_age': {
-           'ssh_user': "root",
-           'ssh_addr': "backup.makina-corpus.net",
-           'ssh_port': "22",
-           'ssh_timeout': 10,
-           'warning': 1560,
-           'critical': 1800,
+           'service_description': "S_BACKUP_BURP_AGE",
+           'use': "ST_BACKUP_DAILY_ALERT",
+           'check_command': "CSSH_BACKUP_BURP",
+
+           'cmdarg_ssh_user': "root",
+           'cmdarg_ssh_addr': "backup.makina-corpus.net",
+           'cmdarg_ssh_port': "22",
+           'cmdarg_ssh_timeout': 10,
+           'cmdarg_warning': 1560,
+           'cmdarg_critical': 1800,
        },
        'backup_rdiff': {
-           'ssh_user': "root",
-           'ssh_addr': "backup.makina-corpus.net",
-           'ssh_port': "22",
-           'ssh_timeout': 10,
-           'command': "/root/admin_scripts/nagios/check_rdiff -r /data/backups/phpnet6 -w 24 -c 48 -l 2048 -p 24"
+           'service_description': "S_BACKUP_RDIFF",
+           'use': "ST_BACKUP_DAILY_ALERT",
+           'check_command': "CSSH_BACKUP",
+
+           'cmdarg_ssh_user': "root",
+           'cmdarg_ssh_addr': "backup.makina-corpus.net",
+           'cmdarg_ssh_port': "22",
+           'cmdarg_ssh_timeout': 10,
+           'cmdarg_command': "/root/admin_scripts/nagios/check_rdiff -r /data/backups/phpnet6 -w 24 -c 48 -l 2048 -p 24"
        },
        'beam_process': {
-           'process': "beam",
-           'warning': 0,
-           'critical': 0,
+           'service_description': "Check beam proces",
+           'use': "ST_ALERT",
+           'notification_options': "w,c,r",
+           'notifications_enabled': 1,
+           'check_command': "C_SNMP_PROCESS",
+
+           'cmdarg_process': "beam",
+           'cmdarg_warning': 0,
+           'cmdarg_critical': 0,
        },
        'celeryd_process': {
-           'process': "python",
-           'warning': 1,
-           'critical': 0,
+           'service_description': "Check celeryd process",
+           'use': "ST_ALERT",
+           'notification_options': "w,c,r",
+           'notifications_enabled': 1,
+           'check_command': "C_SNMP_PROCESS",
+
+           'cmdarg_process': "python",
+           'cmdarg_warning': 1,
+           'cmdarg_critical': 0,
        },
-       'cron': {},
+       'cron': {
+           'service_description': "S_PROC_CRON",
+           'use': "ST_SSH_PROC_CRON",
+           'check_command': "CSSH_CRON",
+       },
        'ddos': {
-           'warning': 50,
-           'critical': 60,
+           'service_description': "DDOS",
+           'use': "ST_ALERT",
+           'check_command': "CSSH_DDOS",
+
+           'cmdarg_warning': 50,
+           'cmdarg_critical': 60,
        },
-       'debian_updates': {},
+       'debian_updates': {
+           'service_description': "S_DEBIAN_UPDATES",
+           'use': "ST_DAILY_NOALERT",
+           'check_command': "CSSH_DEBIAN_UPDATES",
+       },
        'dns_association': {
            'default': {
-               'hostname': dns_hostname,
-               'dns_address': dns_address,
-               'other_args': "",
+               # default service_description is a prefix (see below)
+               'service_description': "DNS_ASSOCIATION_",
+               'use': "ST_DNS_ASSOCATION",
+               'check_command': "C_DNS_EXTERNE_ASSOCATION",
+               'cmdarg_hostname': dns_hostname,
+               'cmdarg_dns_address': dns_address,
+               'cmdarg_other_args': "",
            }
+       },
+       'dns_reverse_association': {
+           'default': {
+               'service_description': "DNS_REVERSE_ASSOCATION_",
+               'check_command': "C_DNS_EXTERNE_REVERSE_ASSOCIATION",
+#               'cmdarg_inaddr': "" # generated below
+#               'cmdarg_hostname': ""
+               'cmdarg_other_args': "",
+           },
        },
        'disk_space': {
            'default': {
-               'warning': 80,
-               'critical': 90,
+               # it is prefix
+               'service_description': "DISK_SPACE_",
+               'use': "ST_DISK_SPACE_",
+               'check_command': "C_SNMP_DISK",
+
+               'cmdarg_warning': 80,
+               'cmdarg_critical': 90,
            },
        },
        'drbd': {
-           'command': "'/root/admin_scripts/nagios/check_drbd -d  0,1'",
+           'service_description': "CHECK_DRBD",
+           'use': "ST_ALERT",
+           'check_command': "CSSH_DRBD",
+
+           'cmdarg_command': "'/root/admin_scripts/nagios/check_drbd -d  0,1'",
        },
        'epmd_process': {
-           'process': "epmd",
-           'warning': 0,
-           'critical': 0,
+           'service_description': "Check epmd process",
+           'use': "ST_ALERT",
+           'notification_options': "w,c,r",
+           'notifications_enabled': 1,
+           'check_command': "C_SNMP_PROCESS",
+
+           'cmdarg_process': "epmd",
+           'cmdarg_warning': 0,
+           'cmdarg_critical': 0,
        },
        'erp_files': {
-           'command': "/var/makina/alma-job/job/supervision/check_erp_files.sh",
+           'service_description': "CHECK_ERP_FILES",
+           'use': "ST_ALERT",
+           'check_command': "CSSH_CUSTOM",
+
+           'cmdarg_command': "/var/makina/alma-job/job/supervision/check_erp_files.sh",
        },
        'fail2ban': {
-           'process': "fail2ban-server",
-           'warning': 0,
-           'critical': 0,
+           'service_description': "S_FAIL2BAN",
+           'use': "ST_ROOT",
+           'notifications_enabled': 1,
+           'check_command': "C_SNMP_PROCESS",
+
+           'cmdarg_process': "fail2ban-server",
+           'cmdarg_warning': 0,
+           'cmdarg_critical': 0,
        },
        'gunicorn_process': {
-           'process': "gunicorn_django",
-           'warning': 0,
-           'critical': 0,
+           'service_description': "Check gunicorn process",
+           'use': "ST_ALERT",
+           'notification_options': "w,c,r",
+           'notifications_enabled': 1,
+           'check_command': "C_SNMP_PROCESS",
+
+           'cmdarg_process': "gunicorn_django",
+           'cmdarg_warning': 0,
+           'cmdarg_critical': 0,
        },
        'haproxy': {
-           'command': "/root/admin_scripts/nagios/check_haproxy_stats.pl -p web -w 80 -c 90",
+           'service_description': "haproxy_stats",
+           'use': "ST_ALERT",
+           'check_command': "CSSH_HAPROXY",
+
+           'cmdarg_command': "/root/admin_scripts/nagios/check_haproxy_stats.pl -p web -w 80 -c 90",
        },
-       'ircbot_process': {},
+       'ircbot_process': {
+           'service_description': "S_IRCBOT_PROCESS",
+           'use': "ST_HOURLY_ALERT",
+           'check_command': "C_PROCESS_IRCBOT_RUNNING",
+       },
        'load_avg': {
-           'other_args': "",
+           'service_description': "LOAD_AVG",
+           'use': "ST_LOAD_AVG",
+           'check_command': "C_SNMP_LOADAVG",
+
+           'cmdarg_other_args': "",
        },
        'mail_cyrus_imap_connections': {
-           'warning': 300,
-           'critical': 900,
+           'service_description': "S_MAIL_CYRUS_IMAP_CONNECTIONS",
+           'use': "ST_ALERT",
+           'check_command': "CSSH_CYRUS_CONNECTIONS",
+
+           'cmdarg_warning': 300,
+           'cmdarg_critical': 900,
        },
        'mail_imap': {
-           'warning': 1,
-           'critical': 3,
+           'service_description': "S_MAIL_IMAP",
+           'use': "ST_ALERT",
+           'check_command': "C_MAIL_IMAP",
+
+           'cmdarg_warning': 1,
+           'cmdarg_critical': 3,
        },
        'mail_imap_ssl': {
-           'warning': 1,
-           'critical': 3,
+           'service_description': "S_MAIL_IMAP_SSL",
+           'use': "ST_ALERT",
+           'check_command': "C_MAIL_IMAP_SSL",
+
+           'cmdarg_warning': 1,
+           'cmdarg_critical': 3,
        },
        'mail_pop': {
-           'warning': 1,
-           'critical': 3,
+           'service_description': "S_MAIL_POP",
+           'use': "ST_ALERT",
+           'check_command': "C_MAIL_POP",
+
+           'cmdarg_warning': 1,
+           'cmdarg_critical': 3,
        },
        'mail_pop_ssl': {
-           'warning': 1,
-           'critical': 3,
+           'service_description': "S_MAIL_POP_SSL",
+           'use': "ST_ALERT",
+           'check_command': "C_MAIL_POP_SSL",
+
+           'cmdarg_warning': 1,
+           'cmdarg_critical': 3,
        },
        'mail_pop_test_account': {
-           'warning1': 52488,
-           'critical1': 1048576,
-           'warning2': 100,
-           'critical2': 2000,
-           'mx': "@makina-corpus.com",
+           'service_description': "S_MAIL_POP3_TEST_ACCOUNT",
+           'use': "ST_ALERT",
+           'check_command': "C_POP3_TEST_SIZE_AND_DELETE",
+
+           'cmdarg_warning1': 52488,
+           'cmdarg_critical1': 1048576,
+           'cmdarg_warning2': 100,
+           'cmdarg_critical2': 2000,
+           'cmdarg_mx': "@makina-corpus.com",
        },
        'mail_server_queues': {
-           'warning': 50,
-           'critical': 100,
+           'service_description': "S_MAIL_SERVER_QUEUES",
+           'use': "ST_ALERT",
+           'check_command': "CSSH_MAILQUEUE",
+
+           'cmdarg_warning': 50,
+           'cmdarg_critical': 100,
        },
        'mail_smtp': {
-           'warning': 1,
-           'critical': 3,
+           'service_description': "S_MAIL_SMTP",
+           'use': "ST_ALERT",
+           'check_command': "C_MAIL_SMTP",
+
+           'cmdarg_warning': 1,
+           'cmdarg_critical': 3,
        },
        'md_raid': {
-           'command': "/root/admin_scripts/nagios/check_md_raid",
+           'service_description': "CHECK_MD_RAID",
+           'use': "ST_ALERT",
+           'check_command': "CSSH_RAID_SOFT",
+
+           'cmdarg_command': "/root/admin_scripts/nagios/check_md_raid",
        },
        'megaraid_sas': {
-           'command': "/root/admin_scripts/nagios/check_megaraid_sas",
+           'service_description': "CHECK_MEGARAID_SAS",
+           'use': "ST_ALERT",
+           'check_command': "CSSH_MEGARAID_SAS",
+
+           'cmdarg_command': "/root/admin_scripts/nagios/check_megaraid_sas",
        },
        'memory': {
-           'warning': 80,
-           'critical': 90,
+           'service_description': "MEMORY",
+           'use': "ST_MEMORY",
+           'check_command': "C_SNMP_MEMORY",
+
+           'cmdarg_warning': 80,
+           'cmdarg_critical': 90,
        },
        'memory_hyperviseur': {
-           'warning': 95,
-           'critical': 99,
+           'service_description': "MEMORY_HYPERVISEUR",
+           'use': "ST_MEMORY_HYPERVISEUR",
+           'check_command': "C_SNMP_MEMORY",
+
+           'cmdarg_warning': 95,
+           'cmdarg_critical': 99,
        },
        'mysql_process': {
-           'process': "mysql",
-           'warning': 0,
-           'critical': 0,
+           'service_description': "S_MYSQL_PROCESS",
+           'use': "ST_ALERT",
+           'check_command': "C_SNMP_PROCESS",
+
+           'cmdarg_process': "mysql",
+           'cmdarg_warning': 0,
+           'cmdarg_critical': 0,
        },
        'network': {
            'default': {
-               'interface': "eth0",
-               'other_args': "",
+               # prefix
+               'service_description': "NETWORK_",
+               'use': "ST_NETWORK_",
+               'check_command': "C_SNMP_NETWORK",
+
+               'cmdarg_interface': "eth0",
+               'cmdarg_other_args': "",
            },
        },
-       'ntp_peers': {},
-       'ntp_time': {},
-       'only_one_nagios_running': {},
+       'ntp_peers': {
+           'service_description': "S_NTP_PEERS",
+           'use': "ST_ROOT",
+           'check_command': "CSSH_NTP_PEER",
+       },
+       'ntp_time': {
+           'service_description': "S_NTP_TIME",
+           'use': "ST_ROOT",
+           'check_command': "CSSH_NTP_TIME",
+       },
+       'only_one_nagios_running': {
+           'service_description': "S_ONLY_ONE_NAGIOS_RUNNING",
+           'use': "ST_HOURLY_ALERT",
+           'check_command': "C_CHECK_ONE_NAGIOS_ONLY",
+       },
        'postgres_port': {
-           'port': 5432,
-           'warning': 2,
-           'critical': 8,
+           'service_description': "S_POSTGRESQL_PORT",
+           'use': "ST_ROOT",
+           'check_command': "check_tcp",
+
+           'cmdarg_port': 5432,
+           'cmdarg_warning': 2,
+           'cmdarg_critical': 8,
        },
        'postgres_process': {
-           'process': "postgres",
-           'warning': 0,
-           'critical': 0,
+           'service_description': "Check postgres process",
+           'use': "ST_ALERT",
+           'notification_options': "w,c,r",
+           'notifications_enabled': 1,
+           'check_command': "C_SNMP_PROCESS",
+
+           'cmdarg_process': "postgres",
+           'cmdarg_warning': 0,
+           'cmdarg_critical': 0,
        },
        'prebill_sending': {
-           'command': "/var/makina/alma-job/job/supervision/check_prebill_sending.sh",
+           'service_description': "CHECK_PREBILL_SENDING",
+           'use': "ST_ALERT",
+           'check_command': "CSSH_CUSTOM",
+
+           'cmdarg_command': "/var/makina/alma-job/job/supervision/check_prebill_sending.sh",
        },
        'raid': {
-           'command': "'/root/admin_scripts/nagios/check_md_raid'",
+           'service_description': "CHECK_RAID",
+           'use': "ST_ALERT",
+           'check_command': "CSSH_RAID_SOFT",
+
+           'cmdarg_command': "'/root/admin_scripts/nagios/check_md_raid'",
        },
        'sas': {
-           'command': "/root/admin_scripts/check_nagios/check_sas2ircu/check_sas2ircu",
+           'service_description': "S_SAS",
+           'use': "ST_ROOT",
+           'check_command': "CSSH_SAS2IRCU",
+
+           'cmdarg_command': "/root/admin_scripts/check_nagios/check_sas2ircu/check_sas2ircu",
        },
        'snmpd_memory_control': {
-           'process': "snmpd",
-           'warning': "0,1",
-           'critical': "0,1",
-           'memory': "256,512",
+           'service_description': "S_SNMPD_MEMORY_CONTROL",
+           'use': "ST_ALERT",
+           'check_command': "C_SNMP_PROCESS_WITH_MEM",
+
+           'cmdarg_process': "snmpd",
+           'cmdarg_warning': "0,1",
+           'cmdarg_critical': "0,1",
+           'cmdarg_memory': "256,512",
        },
        'solr': {
            'default': {
-               'hostname': "h",
-               'port': 80,
-               'url': "/",
-               'warning': 1,
-               'critical': 5,
-               'timeout': 8,
-               'strings': [],
-               'other_args': "",
+               'service_description': "SOLR_",
+               'use': "ST_WEB_PUBLIC",
+               'check_command': "C_HTTP_STRING_SOLR",
+
+               'cmdarg_hostname': "h",
+               'cmdarg_port': 80,
+               'cmdarg_url': "/",
+               'cmdarg_warning': 1,
+               'cmdarg_critical': 5,
+               'cmdarg_timeout': 8,
+               'cmdarg_strings': [],
+               'cmdarg_other_args': "",
            },
        },
        'ssh': {
-           'port': 22,
-           'warning': 1,
-           'critical': 4,
+           'service_description': "S_SSH",
+           'use': "ST_ROOT",
+           'check_command': "check_tcp",
+
+           'cmdarg_port': 22,
+           'cmdarg_warning': 1,
+           'cmdarg_critical': 4,
        },
        'supervisord_status': {
-           'command': "/home/zope/adria/rcse/production-2014-01-23-14-27-01/bin/supervisorctl",
+           'service_description': "S_SUPERVISORD_STATUS",
+           'use': "ST_ALERT",
+           'check_command': "CSSH_SUPERVISOR",
+
+           'cmdarg_command': "/home/zope/adria/rcse/production-2014-01-23-14-27-01/bin/supervisorctl",
        },
        'swap': {
-           'command': "'/root/admin_scripts/nagios/check_swap -w 80%% -c 50%%'",
+           'service_description': "CHECK_SWAP",
+           'use': "ST_ALERT",
+           'check_command': "CSSH_RAID_SOFT",
+
+           'cmdarg_command': "'/root/admin_scripts/nagios/check_swap -w 80%% -c 50%%'",
        },
        'tiles_generator_access': {
-           'hostname': "vdm.makina-corpus.net",
-           'url': "/vdm-tiles/status/",
+           'service_description': "Check tiles generator access",
+           'use': "ST_ALERT",
+           'notification_options': "w,c,r",
+           'notifications_enabled': 1,
+           'check_command': "check_http_vhost_uri",
+
+           'cmdarg_hostname': "vdm.makina-corpus.net",
+           'cmdarg_url': "/vdm-tiles/status/",
        },
        'ware_raid': {
-           'command': "/root/admin_scripts/nagios/check_3ware_raid",
+           'service_description': "CHECK_3WARE_RAID",
+           'use': "ST_ALERT",
+           'check_command': "CSSH_RAID_3WARE",
+
+           'cmdarg_command': "/root/admin_scripts/nagios/check_3ware_raid",
        },
        'web_apache_status': {
-           'warning': 4,
-           'critical': 2,
-           'other_args': "",
+           'service_description': "WEB_APACHE_STATUS",
+           'use': "ST_WEB_APACHE_STATUS",
+           'check_command': "C_APACHE_STATUS",
+
+           'cmdarg_warning': 4,
+           'cmdarg_critical': 2,
+           'cmdarg_other_args': "",
        },
        'web_openid': {
            'default': {
-               'hostname': hostname,
-               'url': "/",
-               'warning': 1,
-               'critical': 5,
-               'timeout': 8,
+               'service_description': "WEB_OPENID_",
+               'use': "ST_WEB_PUBLIC",
+               'check_command': "C_HTTPS_OPENID_REDIRECT",
+
+               'cmdarg_hostname': hostname,
+               'cmdarg_url': "/",
+               'cmdarg_warning': 1,
+               'cmdarg_critical': 5,
+               'cmdarg_timeout': 8,
            },
        },
        'web': {
            'default': {
-               'hostname': hostname,
-               'url': "/",
-               'warning': 2,
-               'critical': 3,
-               'timeout': 8,
-               'strings': [],
-               'use_type': "_PUBLIC",
-               'authentication': False,
-               'only': False,
-               'ssl': False,
-               'other_args': "",
+               'service_description': "WEB_",
+               'cmdarg_hostname': hostname,
+               'check_command': "C_HTTP_STRING",
+               'cmdarg_url': "/",
+               'cmdarg_warning': 2,
+               'cmdarg_critical': 3,
+               'cmdarg_timeout': 8,
+               'cmdarg_strings': [],
+               'cmdarg_other_args': "",
            },
        },
-
     }
 
     # override the commands parameters values
 
     # override dns_association subdictionary
-    if not 'dns_association' in services_check_command_args:
-        services_check_command_args['dns_association'] =  services_check_command_default_args['dns_association']
+    if not 'dns_association' in services_attrs:
+        services_attrs['dns_association'] =  services_default_attrs['dns_association']
+        services_attrs['dns_association']['default']['service_description']=services_default_attrs['dns_association']['default']['service_description']+'default'
     else:
-        for name, dns in services_check_command_args['dns_association'].items():
-            for key, value in services_check_command_default_args['dns_association']['default'].items():
+        for name, dns in services_attrs['dns_association'].items():
+            # generate the service_description if not given
+            if 'service_description' not in dns:
+                services_attrs['dns_association'][name]['service_description']=services_default_attrs['dns_association']['default']['service_description']+name
+            for key, value in services_default_attrs['dns_association']['default'].items():
                 if not key in dns:
-                    services_check_command_args['dns_association'][name][key]=value
-            address_splitted = dns['hostname'].split('.')
+                    services_attrs['dns_association'][name][key]=value
+          
+
+
+    # override dns_reverse_assocation subdictionary
+    if not 'dns_reverse_association' in services_attrs:
+        services_attrs['dns_reverse_association'] = {}
+        # the dictionary is not set, we generate it from dns_association dictionary (we suppose all ips are ipv4 that is bad):
+        for name, dns in services_attrs['dns_association'].items():
+            services_attrs['dns_reverse_association'][name] = services_default_attrs['dns_reverse_association']['default']
+            services_attrs['dns_reverse_association'][name]['service_description']=services_default_attrs['dns_reverse_association']['default']['service_description']+name
+             
+            address_splitted = dns['cmdarg_hostname'].split('.')
             inaddr = '.'.join(address_splitted[::-1]) # tanslate a.b.c.d in d.c.b.a
             inaddr = inaddr + '.in-addr.arpa.'
-            services_check_command_args['dns_association'][name]['inaddr']=inaddr
+            services_attrs['dns_reverse_association'][name]['cmdarg_inaddr']=inaddr
+            services_attrs['dns_reverse_association'][name]['cmdarg_hostname']=dns['cmdarg_hostname']
+         
+    else:
+        # the dictionary is set, we merging normally
+        for name, dns in services_attrs['dns_reverse_association'].items():
+            if 'service_description' not in dns:
+                services_attrs['dns_reverse_association'][name]['service_description']=services_default_attrs['dns_association'][name]['service_reverse_description']+name
+            for key, value in services_default_attrs['dns_reverse_association']['default'].items():
+                if not key in dns:
+                    services_attrs['dns_reverse_association'][name][key]=value
 
 
     # override network subdictionary
-    if not 'network' in services_check_command_args:
-        services_check_command_args['network'] =  services_check_command_default_args['network']
+    if not 'network' in services_attrs:
+        services_attrs['network'] =  services_default_attrs['network']
+        services_attrs['network']['default']['service_description']=services_default_attrs['network']['default']['service_description']+'default'
+        services_attrs['network']['default']['use']=services_default_attrs['network']['default']['use']+'default'
     else:
-        for name, network in services_check_command_args['network'].items():
-            for key, value in services_check_command_default_args['network']['default'].items():
+        for name, network in services_attrs['network'].items():
+            # generate the service_description if not given
+            if 'service_description' not in network:
+                services_attrs['network'][name]['service_description']=services_default_attrs['network']['default']['service_description']+name
+            if 'use' not in network:
+                services_attrs['network'][name]['use']=services_default_attrs['network']['default']['use']+name
+            for key, value in services_default_attrs['network']['default'].items():
                 if not key in network:
-                    services_check_command_args['network'][name][key]=value
+                    services_attrs['network'][name][key]=value
+
 
     # override solr subdictionary
-    if not 'solr' in services_check_command_args:
-        services_check_command_args['solr'] =  services_check_command_default_args['solr']
+    if not 'solr' in services_attrs:
+        services_attrs['solr'] =  services_default_attrs['solr']
+        services_attrs['solr']['default']['service_description']=services_default_attrs['solr']['default']['service_description']+'default'
     else:
-        for name, solr in services_check_command_args['solr'].items():
-            for key, value in services_check_command_default_args['solr']['default'].items():
+        for name, solr in services_attrs['solr'].items():
+            # generate the service_description if not given
+            if 'service_description' not in solr:
+                services_attrs['solr'][name]['service_description']=services_default_attrs['solr']['default']['service_description']+name
+            for key, value in services_default_attrs['solr']['default'].items():
                 if not key in solr:
-                    services_check_command_args['solr'][name][key]=value
+                    services_attrs['solr'][name][key]=value
             # transform list of values in string ['a', 'b'] becomes '"a" -s "b"'
-            if isinstance(services_check_command_args['solr'][name]['strings'], list):
-                str_list = services_check_command_args['solr'][name]['strings']
+            if isinstance(services_attrs['solr'][name]['cmdarg_strings'], list):
+                str_list = services_attrs['solr'][name]['cmdarg_strings']
                 # to avoid quotes conflicts (doesn't avoid code injection)
                 str_list = [ value.replace('"', '\\\\"') for value in str_list ]
-                services_check_command_args['solr'][name]['strings']='"'+'" -s "'.join(str_list)+'"'
+                services_attrs['solr'][name]['cmdarg_strings']='"'+'" -s "'.join(str_list)+'"'
+
 
     # override web_openid subdictionary
-    if not 'web_openid' in services_check_command_args:
-        services_check_command_args['web_openid'] =  services_check_command_default_args['web_openid']
+    if not 'web_openid' in services_attrs:
+        services_attrs['web_openid'] =  services_default_attrs['web_openid']
+        services_attrs['web_openid']['default']['service_description']=services_default_attrs['web_openid']['default']['service_description']+'default'
     else:
-        for name, web_openid in services_check_command_args['web_openid'].items():
-            for key, value in services_check_command_default_args['web_openid']['default'].items():
+        for name, web_openid in services_attrs['web_openid'].items():
+            # generate the service_description if not given
+            if 'service_description' not in web_openid:
+                services_attrs['web_openid'][name]['service_description']=services_default_attrs['web_openid']['default']['service_description']+name
+            for key, value in services_default_attrs['web_openid']['default'].items():
                 if not key in web_openid:
-                    services_check_command_args['web_openid'][name][key]=value
+                    services_attrs['web_openid'][name][key]=value
+
 
     # override web subdictionary
-    if not 'web' in services_check_command_args:
-        services_check_command_args['web'] =  services_check_command_default_args['web']
+    if not 'web' in services_attrs:
+        services_attrs['web'] =  services_default_attrs['web']
+        services_attrs['web']['default']['service_description']=services_default_attrs['web']['default']['service_description']+'default'
     else:
-        for name, web in services_check_command_args['web'].items():
-            for key, value in services_check_command_default_args['web']['default'].items():
+        for name, web in services_attrs['web'].items():
+            # generate the service_description if not given
+            if 'service_description' not in web:
+                services_attrs['web'][name]['service_description']=services_default_attrs['web']['default']['service_description']+name
+            for key, value in services_default_attrs['web']['default'].items():
                 if not key in web:
-                    services_check_command_args['web'][name][key]=value
+                    services_attrs['web'][name][key]=value
             # transform list of values in string ['a', 'b'] becomes '"a" -s "b"'
-            if isinstance(services_check_command_args['web'][name]['strings'], list):
-                str_list = services_check_command_args['web'][name]['strings']
+            if isinstance(services_attrs['web'][name]['cmdarg_strings'], list):
+                str_list = services_attrs['web'][name]['cmdarg_strings']
                 # to avoid quotes conflicts (doesn't avoid code injection)
                 str_list = [ value.replace('"', '\\\\"') for value in str_list ]
-                services_check_command_args['web'][name]['strings']='"'+'" -s "'.join(str_list)+'"'
+                services_attrs['web'][name]['cmdarg_strings']='"'+'" -s "'.join(str_list)+'"'
 
             # build the command
-            if services_check_command_args['web'][name]['ssl']:
-                cmd = "C_HTTPS_STRING"
-            else:
-                cmd = "C_HTTP_STRING"
-            if services_check_command_args['web'][name]['authentication']:
-                cmd = cmd + "_AUTH"
-            if services_check_command_args['web'][name]['only']:
-                cmd = cmd + "_ONLY"
+#            if services_attrs['web'][name]['cmdarg_ssl']:
+#                cmd = "C_HTTPS_STRING"
+#            else:
+#                cmd = "C_HTTP_STRING"
+#            if services_attrs['web'][name]['cmdarg_authentication']:
+#                cmd = cmd + "_AUTH"
+#            if services_attrs['web'][name]['cmdarg_only']:
+#                cmd = cmd + "_ONLY"
+#
+#            services_attrs['web'][name]['cmdarg_command'] = cmd
 
-            services_check_command_args['web'][name]['command'] = cmd
 
     # override mountpoints subdictionaries
-
-
     # for each disk_space, build the dictionary:
     # priority for values
-    # services_check_command_default_args['disk_space']['default'] # default values in default dictionary
-    # services_check_command_default_args['disk_space'][mountpoint] # specific values in default dictionary
-    # services_check_command_args['disk_space']['default'] # default value in overrided dictionary
-    # services_check_command_args['disk_space'][mountpoint] # specific value in overrided dictionary
-    if 'disk_space' not in services_check_command_args:
-        services_check_command_args['disk_space'] = {}
+    # services_default_attrs['disk_space']['default'] # default values in default dictionary
+    # services_default_attrs['disk_space'][mountpoint] # specific values in default dictionary
+    # services_attrs['disk_space']['default'] # default value in overrided dictionary
+    # services_attrs['disk_space'][mountpoint] # specific value in overrided dictionary
+    if 'disk_space' not in services_attrs:
+        services_attrs['disk_space'] = {}
     # we can't merge default dictionary yet because priorities will not be respected
-    if 'default' not in services_check_command_args['disk_space']:
-        services_check_command_args['disk_space']['default'] = {}
+    if 'default' not in services_attrs['disk_space']:
+        services_attrs['disk_space']['default'] = {}
+
+    # add the prefix for service_description and use values
+    for mountpoint, values in services_attrs['disk_space'].items():
+        if not 'service_description'  in values:
+            services_attrs['disk_space'][mountpoint]['service_description'] = services_default_attrs['disk_space']['default']['service_description']+mountpoint
+        if not 'use'  in values:
+            services_attrs['disk_space'][mountpoint]['use'] = services_default_attrs['disk_space']['default']['use']+mountpoint
 
     for mountpoint, path in mountpoints_path.items():
-        if not mountpoint in services_check_command_args['disk_space']:
-            services_check_command_args['disk_space'][mountpoint] = {}
+        if not mountpoint in services_attrs['disk_space']:
+            services_attrs['disk_space'][mountpoint] = {}
 
-        if not mountpoint in services_check_command_default_args['disk_space']:
-            services_check_command_default_args['disk_space'][mountpoint] = services_check_command_default_args['disk_space']['default']
+        if not mountpoint in services_default_attrs['disk_space']:
+            services_default_attrs['disk_space'][mountpoint] = services_default_attrs['disk_space']['default']
 
-        services_check_command_args['disk_space'][mountpoint] = dict(services_check_command_default_args['disk_space']['default'].items()
-                                                                     +services_check_command_default_args['disk_space'][mountpoint].items())
+        services_attrs['disk_space'][mountpoint] = dict(services_default_attrs['disk_space']['default'].items()
+                                                                     +services_default_attrs['disk_space'][mountpoint].items())
 
-        services_check_command_args['disk_space'][mountpoint] = dict(services_check_command_args['disk_space'][mountpoint].items()
-                                                                     +services_check_command_args['disk_space']['default'].items())
+        services_attrs['disk_space'][mountpoint] = dict(services_attrs['disk_space'][mountpoint].items()
+                                                                     +services_attrs['disk_space']['default'].items())
 
-        services_check_command_args['disk_space'][mountpoint] = dict(services_check_command_args['disk_space'][mountpoint].items()
-                                                                     +services_check_command_args['disk_space'][mountpoint].items())
+        services_attrs['disk_space'][mountpoint] = dict(services_attrs['disk_space'][mountpoint].items()
+                                                                     +services_attrs['disk_space'][mountpoint].items())
 
     # merge default dictionaries in order to allow {{mountpoints.defaults.warning}} in jinja template
-    if not 'default' in services_check_command_args['disk_space']:
-        services_check_command_args['disk_space']['default'] = services_check_command_default_args['disk_space']['default']
+    if not 'default' in services_attrs['disk_space']:
+        services_attrs['disk_space']['default'] = services_default_attrs['disk_space']['default']
     else:
-        services_check_command_args['disk_space']['default'] = dict(services_check_command_default_args['disk_space']['default'].items() 
-                                                                   + services_check_command_args['disk_space']['default'].items())
+        services_attrs['disk_space']['default'] = dict(services_default_attrs['disk_space']['default'].items() 
+                                                                   + services_attrs['disk_space']['default'].items())
 
     # override others values (type are string or int)
-    if not isinstance(services_check_command_args, dict):
-        services_check_command_args = {}
+    if not isinstance(services_attrs, dict):
+        services_attrs = {}
 
-    for name, command in services_check_command_default_args.items():
+    for name, command in services_default_attrs.items():
         if not name in ['dns_association', 'mountpoints', 'network', 'solr', 'web_openid', 'web']:
-            if not name in services_check_command_args:
-                services_check_command_args[name] = {}
-            services_check_command_args[name] = dict(services_check_command_default_args[name].items() + services_check_command_args[name].items())
+            if not name in services_attrs:
+                services_attrs[name] = {}
+            services_attrs[name] = dict(services_default_attrs[name].items() + services_attrs[name].items())
 
 
-    kwargs.setdefault('services_check_command_args', services_check_command_args)
+
+    # generate the complete check command (we can't do a loop before we have to give the good order for arguments)
+    cssh_params = [ssh_user, ssh_addr, str(ssh_port), str(ssh_timeout) ]
+
+    services_attrs['backup_burp_age']['check_command'] = "!".join([
+                                                                  str(services_attrs['backup_burp_age']['check_command']),
+                                                                  str(services_attrs['backup_burp_age']['cmdarg_ssh_user']),
+                                                                  str(services_attrs['backup_burp_age']['cmdarg_ssh_addr']),
+                                                                  str(services_attrs['backup_burp_age']['cmdarg_ssh_port']),
+                                                                  str(services_attrs['backup_burp_age']['cmdarg_warning']),
+                                                                  str(services_attrs['backup_burp_age']['cmdarg_critical']),
+                                                                  ])
+    services_attrs['backup_rdiff']['check_command'] = "!".join([
+                                                                  str(services_attrs['backup_rdiff']['check_command']),
+                                                                  str(services_attrs['backup_rdiff']['cmdarg_ssh_user']),
+                                                                  str(services_attrs['backup_rdiff']['cmdarg_ssh_addr']),
+                                                                  str(services_attrs['backup_rdiff']['cmdarg_ssh_port']),
+                                                                  str(services_attrs['backup_rdiff']['cmdarg_command']),
+                                                               ])
+    services_attrs['beam_process']['check_command'] = "!".join([
+                                                                  str(services_attrs['beam_process']['check_command']),
+                                                                  str(services_attrs['beam_process']['cmdarg_warning']),
+                                                                  str(services_attrs['beam_process']['cmdarg_critical']),
+                                                               ])
+    services_attrs['celeryd_process']['check_command'] = "!".join([
+                                                                  str(services_attrs['celeryd_process']['check_command']),
+                                                                  str(services_attrs['celeryd_process']['cmdarg_warning']),
+                                                                  str(services_attrs['celeryd_process']['cmdarg_critical']),
+                                                                 ])
+    services_attrs['cron']['check_command'] = "!".join([
+                                                                  str(services_attrs['cron']['check_command']),
+                                                       ]+cssh_params,
+                                                      )
+    services_attrs['ddos']['check_command'] = "!".join([
+                                                                  str(services_attrs['ddos']['check_command']),
+                                                       ]+cssh_params+[
+                                                                  str(services_attrs['ddos']['cmdarg_warning']),
+                                                                  str(services_attrs['ddos']['cmdarg_critical']),
+                                                      ])
+    services_attrs['debian_updates']['check_command'] = "!".join([
+                                                                  str(services_attrs['debian_updates']['check_command']),
+                                                       ]+cssh_params,
+                                                      )
+    for name, dns_association in services_attrs['dns_association'].items():
+        services_attrs['dns_association'][name]['check_command'] = "!".join([
+                                                                  str(dns_association['check_command']),
+                                                                  str(dns_association['cmdarg_hostname']),
+                                                                  str(dns_association['cmdarg_other_args']),
+                                                                ])
+    for name, dns_reverse_association in services_attrs['dns_reverse_association'].items():
+        services_attrs['dns_reverse_association'][name]['check_command'] = "!".join([
+                                                                  str(dns_reverse_association['check_command']),
+                                                                  str(dns_reverse_association['cmdarg_inaddr']),
+                                                                  str(dns_reverse_association['cmdarg_hostname']),
+                                                                  str(dns_reverse_association['cmdarg_other_args']),
+                                                                ])
+    
+    # add the host_name or hostgroup_name in each service and remove directives begining with "cmdarg_"
+    for name, service in services_attrs.items():
+            subdict = False
+            for key, value in service.items():
+                if isinstance(value, dict):
+                    subdict = True
+                    for key2, value2 in value.items():
+                        if key2.startswith('cmdarg_'):
+                            services_attrs[name][key].pop(key2, None)
+                else:
+                    if key.startswith('cmdarg_'):
+                        services_attrs[name].pop(key, None)
+            if subdict:
+                for key, value in service.items():
+                    services_attrs[name][key][service_key_hostname] = hostname
+            else:
+                services_attrs[name][service_key_hostname] = hostname
+
+    kwargs.setdefault('services_attrs', services_attrs)
+
 
     kwargs.setdefault('state_name_salt', hostname.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)

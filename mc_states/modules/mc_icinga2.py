@@ -332,7 +332,7 @@ def add_auto_configuration_host_settings(hostname,
                                          web_apache_status,
                                          web_openid,
                                          web,
-                                         services_check_command_args,
+                                         services_attrs,
                                          **kwargs):
     '''Settings for the add_auto_configuration_host macro'''
     icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
@@ -449,7 +449,7 @@ def add_auto_configuration_host_settings(hostname,
 
     # give the default values for commands parameters values
     # the keys are the services names, not the commands names (use the service filename)
-    services_check_command_default_args = {
+    services_default_attrs = {
        'backup_burp_age': {
            'ssh_user': "root",
            'ssh_addr': "backup.makina-corpus.net",
@@ -675,129 +675,129 @@ def add_auto_configuration_host_settings(hostname,
     # override the commands parameters values
 
     # override dns_association subdictionary
-    if not 'dns_association' in services_check_command_args:
-        services_check_command_args['dns_association'] =  services_check_command_default_args['dns_association']
+    if not 'dns_association' in services_attrs:
+        services_attrs['dns_association'] =  services_default_attrs['dns_association']
     else:
-        for name, dns in services_check_command_args['dns_association'].items():
-            for key, value in services_check_command_default_args['dns_association']['default'].items():
+        for name, dns in services_attrs['dns_association'].items():
+            for key, value in services_default_attrs['dns_association']['default'].items():
                 if not key in dns:
-                    services_check_command_args['dns_association'][name][key]=value
+                    services_attrs['dns_association'][name][key]=value
             address_splitted = dns['hostname'].split('.')
             inaddr = '.'.join(address_splitted[::-1]) # tanslate a.b.c.d in d.c.b.a
             inaddr = inaddr + '.in-addr.arpa.'
-            services_check_command_args['dns_association'][name]['inaddr']=inaddr
+            services_attrs['dns_association'][name]['inaddr']=inaddr
 
 
     # override network subdictionary
-    if not 'network' in services_check_command_args:
-        services_check_command_args['network'] =  services_check_command_default_args['network']
+    if not 'network' in services_attrs:
+        services_attrs['network'] =  services_default_attrs['network']
     else:
-        for name, network in services_check_command_args['network'].items():
-            for key, value in services_check_command_default_args['network']['default'].items():
+        for name, network in services_attrs['network'].items():
+            for key, value in services_default_attrs['network']['default'].items():
                 if not key in network:
-                    services_check_command_args['network'][name][key]=value
+                    services_attrs['network'][name][key]=value
 
     # override solr subdictionary
-    if not 'solr' in services_check_command_args:
-        services_check_command_args['solr'] =  services_check_command_default_args['solr']
+    if not 'solr' in services_attrs:
+        services_attrs['solr'] =  services_default_attrs['solr']
     else:
-        for name, solr in services_check_command_args['solr'].items():
-            for key, value in services_check_command_default_args['solr']['default'].items():
+        for name, solr in services_attrs['solr'].items():
+            for key, value in services_default_attrs['solr']['default'].items():
                 if not key in solr:
-                    services_check_command_args['solr'][name][key]=value
+                    services_attrs['solr'][name][key]=value
             # transform list of values in string ['a', 'b'] becomes '"a" -s "b"'
-            if isinstance(services_check_command_args['solr'][name]['strings'], list):
-                str_list = services_check_command_args['solr'][name]['strings']
+            if isinstance(services_attrs['solr'][name]['strings'], list):
+                str_list = services_attrs['solr'][name]['strings']
                 # to avoid quotes conflicts (doesn't avoid code injection)
                 str_list = [ value.replace('"', '\\\\"') for value in str_list ]
-                services_check_command_args['solr'][name]['strings']='"'+'" -s "'.join(str_list)+'"'
+                services_attrs['solr'][name]['strings']='"'+'" -s "'.join(str_list)+'"'
 
     # override web_openid subdictionary
-    if not 'web_openid' in services_check_command_args:
-        services_check_command_args['web_openid'] =  services_check_command_default_args['web_openid']
+    if not 'web_openid' in services_attrs:
+        services_attrs['web_openid'] =  services_default_attrs['web_openid']
     else:
-        for name, web_openid in services_check_command_args['web_openid'].items():
-            for key, value in services_check_command_default_args['web_openid']['default'].items():
+        for name, web_openid in services_attrs['web_openid'].items():
+            for key, value in services_default_attrs['web_openid']['default'].items():
                 if not key in web_openid:
-                    services_check_command_args['web_openid'][name][key]=value
+                    services_attrs['web_openid'][name][key]=value
 
     # override web subdictionary
-    if not 'web' in services_check_command_args:
-        services_check_command_args['web'] =  services_check_command_default_args['web']
+    if not 'web' in services_attrs:
+        services_attrs['web'] =  services_default_attrs['web']
     else:
-        for name, web in services_check_command_args['web'].items():
-            for key, value in services_check_command_default_args['web']['default'].items():
+        for name, web in services_attrs['web'].items():
+            for key, value in services_default_attrs['web']['default'].items():
                 if not key in web:
-                    services_check_command_args['web'][name][key]=value
+                    services_attrs['web'][name][key]=value
             # transform list of values in string ['a', 'b'] becomes '"a" -s "b"'
-            if isinstance(services_check_command_args['web'][name]['strings'], list):
-                str_list = services_check_command_args['web'][name]['strings']
+            if isinstance(services_attrs['web'][name]['strings'], list):
+                str_list = services_attrs['web'][name]['strings']
                 # to avoid quotes conflicts (doesn't avoid code injection)
                 str_list = [ value.replace('"', '\\\\"') for value in str_list ]
-                services_check_command_args['web'][name]['strings']='"'+'" -s "'.join(str_list)+'"'
+                services_attrs['web'][name]['strings']='"'+'" -s "'.join(str_list)+'"'
 
             # build the command
-            if services_check_command_args['web'][name]['ssl']:
+            if services_attrs['web'][name]['ssl']:
                 cmd = "C_HTTPS_STRING"
             else:
                 cmd = "C_HTTP_STRING"
-            if services_check_command_args['web'][name]['authentication']:
+            if services_attrs['web'][name]['authentication']:
                 cmd = cmd + "_AUTH"
-            if services_check_command_args['web'][name]['only']:
+            if services_attrs['web'][name]['only']:
                 cmd = cmd + "_ONLY"
 
-            services_check_command_args['web'][name]['command'] = cmd
+            services_attrs['web'][name]['command'] = cmd
 
     # override mountpoints subdictionaries
 
 
     # for each disk_space, build the dictionary:
     # priority for values
-    # services_check_command_default_args['disk_space']['default'] # default values in default dictionary
-    # services_check_command_default_args['disk_space'][mountpoint] # specific values in default dictionary
-    # services_check_command_args['disk_space']['default'] # default value in overrided dictionary
-    # services_check_command_args['disk_space'][mountpoint] # specific value in overrided dictionary
-    if 'disk_space' not in services_check_command_args:
-        services_check_command_args['disk_space'] = {}
+    # services_default_attrs['disk_space']['default'] # default values in default dictionary
+    # services_default_attrs['disk_space'][mountpoint] # specific values in default dictionary
+    # services_attrs['disk_space']['default'] # default value in overrided dictionary
+    # services_attrs['disk_space'][mountpoint] # specific value in overrided dictionary
+    if 'disk_space' not in services_attrs:
+        services_attrs['disk_space'] = {}
     # we can't merge default dictionary yet because priorities will not be respected
-    if 'default' not in services_check_command_args['disk_space']:
-        services_check_command_args['disk_space']['default'] = {}
+    if 'default' not in services_attrs['disk_space']:
+        services_attrs['disk_space']['default'] = {}
 
     for mountpoint, path in mountpoints_path.items():
-        if not mountpoint in services_check_command_args['disk_space']:
-            services_check_command_args['disk_space'][mountpoint] = {}
+        if not mountpoint in services_attrs['disk_space']:
+            services_attrs['disk_space'][mountpoint] = {}
 
-        if not mountpoint in services_check_command_default_args['disk_space']:
-            services_check_command_default_args['disk_space'][mountpoint] = services_check_command_default_args['disk_space']['default']
+        if not mountpoint in services_default_attrs['disk_space']:
+            services_default_attrs['disk_space'][mountpoint] = services_default_attrs['disk_space']['default']
 
-        services_check_command_args['disk_space'][mountpoint] = dict(services_check_command_default_args['disk_space']['default'].items()
-                                                                     +services_check_command_default_args['disk_space'][mountpoint].items())
+        services_attrs['disk_space'][mountpoint] = dict(services_default_attrs['disk_space']['default'].items()
+                                                                     +services_default_attrs['disk_space'][mountpoint].items())
 
-        services_check_command_args['disk_space'][mountpoint] = dict(services_check_command_args['disk_space'][mountpoint].items()
-                                                                     +services_check_command_args['disk_space']['default'].items())
+        services_attrs['disk_space'][mountpoint] = dict(services_attrs['disk_space'][mountpoint].items()
+                                                                     +services_attrs['disk_space']['default'].items())
 
-        services_check_command_args['disk_space'][mountpoint] = dict(services_check_command_args['disk_space'][mountpoint].items()
-                                                                     +services_check_command_args['disk_space'][mountpoint].items())
+        services_attrs['disk_space'][mountpoint] = dict(services_attrs['disk_space'][mountpoint].items()
+                                                                     +services_attrs['disk_space'][mountpoint].items())
 
     # merge default dictionaries in order to allow {{mountpoints.defaults.warning}} in jinja template
-    if not 'default' in services_check_command_args['disk_space']:
-        services_check_command_args['disk_space']['default'] = services_check_command_default_args['disk_space']['default']
+    if not 'default' in services_attrs['disk_space']:
+        services_attrs['disk_space']['default'] = services_default_attrs['disk_space']['default']
     else:
-        services_check_command_args['disk_space']['default'] = dict(services_check_command_default_args['disk_space']['default'].items() 
-                                                                   + services_check_command_args['disk_space']['default'].items())
+        services_attrs['disk_space']['default'] = dict(services_default_attrs['disk_space']['default'].items() 
+                                                                   + services_attrs['disk_space']['default'].items())
 
     # override others values (type are string or int)
-    if not isinstance(services_check_command_args, dict):
-        services_check_command_args = {}
+    if not isinstance(services_attrs, dict):
+        services_attrs = {}
 
-    for name, command in services_check_command_default_args.items():
+    for name, command in services_default_attrs.items():
         if not name in ['dns_association', 'mountpoints', 'network', 'solr', 'web_openid', 'web']:
-            if not name in services_check_command_args:
-                services_check_command_args[name] = {}
-            services_check_command_args[name] = dict(services_check_command_default_args[name].items() + services_check_command_args[name].items())
+            if not name in services_attrs:
+                services_attrs[name] = {}
+            services_attrs[name] = dict(services_default_attrs[name].items() + services_attrs[name].items())
 
 
-    kwargs.setdefault('services_check_command_args', services_check_command_args)
+    kwargs.setdefault('services_attrs', services_attrs)
 
     kwargs.setdefault('state_name_salt', hostname.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)

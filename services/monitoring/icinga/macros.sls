@@ -91,7 +91,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 #         if empty: take the value given for "hostname"
 #     ssh_port
 #         ssh port
-#     services_check_command_args
+#     services_attrs
 #         dictionary to override the arguments given in check_command for each service
 #
 
@@ -165,7 +165,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      web_apache_status=False,
                                      web_openid=False,
                                      web=False,
-                                     services_check_command_args={}
+                                     services_attrs={}
                                     ) %}
 {% set data = salt['mc_icinga.add_auto_configuration_host_settings'](hostname,
                                                                      hostgroup,
@@ -231,7 +231,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      web_apache_status,
                                                                      web_openid,
                                                                      web,
-                                                                     services_check_command_args,
+                                                                     services_attrs,
                                                                      **kwargs
                                                                     ) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
@@ -248,18 +248,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% if data.backup_burp_age %}
     {{ configuration_add_object(type='service',
                                 file=data.service_subdirectory+'/'+data.hostname+'/backup_burp_age.cfg',
-                                attrs= {
-                                    'service_description': "S_BACKUP_BURP_AGE",
-                                    data.service_key_hostname: data.hostname,
-                                    'use': "ST_BACKUP_DAILY_ALERT",
-                                    'check_command': "CSSH_BACKUP_BURP!"
-                                                     +data.services_check_command_args.backup_burp_age.ssh_user+"!"
-                                                     +data.services_check_command_args.backup_burp_age.ssh_addr+"!"
-                                                     +data.services_check_command_args.backup_burp_age.ssh_port|string+"!"
-                                                     +data.services_check_command_args.backup_burp_age.ssh_timeout|string+"!"
-                                                     +data.services_check_command_args.backup_burp_age.warning|string+"!"
-                                                     +data.services_check_command_args.backup_burp_age.critical|string,
-                                })
+                                attrs=data.services_attrs.backup_burp_age 
+                               )
     }}
 {% endif %}
 
@@ -268,17 +258,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% if data.backup_rdiff %}
     {{ configuration_add_object(type='service',
                                 file=data.service_subdirectory+'/'+data.hostname+'/backup_rdiff.cfg',
-                                attrs= {
-                                    'service_description': "S_BACKUP_RDIFF",
-                                    data.service_key_hostname: data.hostname,
-                                    'use': "ST_BACKUP_DAILY_ALERT",
-                                    'check_command': "CSSH_BACKUP!"
-                                                     +data.services_check_command_args.backup_rdiff.ssh_user+"!"
-                                                     +data.services_check_command_args.backup_rdiff.ssh_addr+"!"
-                                                     +data.services_check_command_args.backup_rdiff.ssh_port|string+"!"
-                                                     +data.services_check_command_args.backup_rdiff.ssh_timeout|string+"!"
-                                                     +data.services_check_command_args.backup_rdiff.command,
-                                })
+                                attrs=data.services_attrs.backup_rdiff
+                               )
     }}
 {% endif %}
 
@@ -286,17 +267,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% if data.beam_process %}
     {{ configuration_add_object(type='service',
                                 file=data.service_subdirectory+'/'+data.hostname+'/beam_process.cfg',
-                                attrs= {
-                                    'service_description': "Check beam process",
-                                    data.service_key_hostname: data.hostname,
-                                    'use': "ST_ALERT",
-                                    'notification_options': "w,c,r",
-                                    'notifications_enabled': 1,
-                                    'check_command': "C_SNMP_PROCESS!"
-                                                     +data.services_check_command_args.beam_process.process+"!"
-                                                     +data.services_check_command_args.beam_process.warning|string+"!"
-                                                     +data.services_check_command_args.beam_process.critical|string,
-                                })
+                                attrs=data.services_attrs.beam_process
+                               )
     }}
 {% endif %}
 
@@ -304,17 +276,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% if data.celeryd_process %}
     {{ configuration_add_object(type='service',
                                 file=data.service_subdirectory+'/'+data.hostname+'/celeryd_process.cfg',
-                                attrs= {
-                                    'service_description': "Check celeryd process",
-                                    data.service_key_hostname: data.hostname,
-                                    'use': "ST_ALERT",
-                                    'notification_options': "w,c,r",
-                                    'notifications_enabled': 1,
-                                    'check_command': "C_SNMP_PROCESS!"
-                                                     +data.services_check_command_args.celeryd_process.process+"!"
-                                                     +data.services_check_command_args.celeryd_process.warning|string+"!"
-                                                     +data.services_check_command_args.celeryd_process.critical|string,
-                                })
+                                attrs=data.services_attrs.celeryd_process
+                               )
     }}
 {% endif %}
 
@@ -323,13 +286,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% if data.cron %}
     {{ configuration_add_object(type='service',
                                 file=data.service_subdirectory+'/'+data.hostname+'/cron.cfg',
-                                attrs= {
-                                    'service_description': "S_PROC_CRON",
-                                    data.service_key_hostname: data.hostname,
-                                    'use': "ST_SSH_PROC_CRON",
-                                    'check_command': "CSSH_CRON!"
-                                                     +check_by_ssh_params,
-                                })
+                                attrs=data.services_attrs.cron
+                               )
     }}
 {% endif %}
 
@@ -338,15 +296,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% if data.ddos %}
     {{ configuration_add_object(type='service',
                                 file=data.service_subdirectory+'/'+data.hostname+'/ddos.cfg',
-                                attrs= {
-                                    'service_description': "DDOS",
-                                    data.service_key_hostname: data.hostname,
-                                    'use': "ST_ALERT",
-                                    'check_command': "CSSH_DDOS!"
-                                                     +check_by_ssh_params+"!"
-                                                     +data.services_check_command_args.ddos.warning|string+"!"
-                                                     +data.services_check_command_args.ddos.critical|string,
-                                })
+                                attrs=data.services_attrs.ddos
+                               )
     }}
 {% endif %}
 
@@ -355,60 +306,34 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% if data.debian_updates %}
     {{ configuration_add_object(type='service',
                                 file=data.service_subdirectory+'/'+data.hostname+'/debian_updates.cfg',
-                                attrs= {
-                                    'service_description': "S_DEBIAN_UPDATES",
-                                    data.service_key_hostname: data.hostname,
-                                    'use': "ST_DAILY_NOALERT",
-                                    'check_command': "CSSH_DEBIAN_UPDATES!"
-                                                     +check_by_ssh_params,
-                                })
+                                attrs=data.services_attrs.debian_updates
+                               )
     }}
 {% endif %}
 
 # add dns_association service 
 {% if data.dns_association %}
-    {% for name, dns_association in data.services_check_command_args.dns_association.items() %}
-    {% if data.hostname == dns_association.hostname %}
-        {% set use = "ST_DNS_ASSOCIATION_hostname" %}
-    {% else %}
-        {% set use = "ST_DNS_ASSOCIATION" %}
-    {% endif %}
+    {% for name, dns_association in data.services_attrs.dns_association.items() %}
         {{ configuration_add_object(type='service',
                                     file=data.service_subdirectory+'/'+data.hostname+'/dns_association_'+name+'.cfg',
-                                    attrs= {
-                                        'service_description': "DNS_ASSOCIATION_"+dns_association.hostname,
-                                        data.service_key_hostname: data.hostname,
-                                        'use': use,
-                                        'check_command': "C_DNS_EXTERNE_ASSOCIATION!"
-                                                         +dns_association.hostname+"!"
-                                                         +dns_association.other_args,
-                                    })
+                                    attrs=dns_association
+                                   )
         }}
     {% endfor %}
 {% endif %}
 
 # add dns_reverse_association service
 {% if data.dns_reverse_association %}
-    {% for name, dns_association in data.services_check_command_args.dns_association.items() %}
-    {% if data.hostname == dns_association.hostname %}
-        {% set use = "ST_DNS_ASSOCIATION_hostname" %}
-    {% else %}
-        {% set use = "ST_DNS_ASSOCIATION" %}
-    {% endif %}
+    {% for name, dns_reverse_association in data.services_attrs.dns_reverse_association.items() %}
         {{ configuration_add_object(type='service',
                                     file=data.service_subdirectory+'/'+data.hostname+'/dns_reverse_association_'+name+'.cfg',
-                                    attrs= {
-                                        'service_description': "DNS_REVERSE_ASSOCIATION_"+dns_association.hostname,
-                                        data.service_key_hostname: data.hostname,
-                                        'use': use,
-                                        'check_command': "C_DNS_EXTERNE_REVERSE_ASSOCIATION!"
-                                                         +dns_association.inaddr+"!"
-                                                         +dns_association.hostname+"!"
-                                                         +dns_association.other_args,
-                                    })
+                                    attrs=dns_reverse_association
+                                   )
         }}
     {% endfor %}
 {% endif %}
+
+{#
 # add disk_space service
 {% if data.disk_space %}
     {% for mountpoint, path in data.disks_spaces.items() %}
@@ -421,8 +346,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                         'icon_image': "services/nas3.png",
                                         'check_command': "C_SNMP_DISK!"
                                                          +path+"!"
-                                                         +data.services_check_command_args.disk_space[mountpoint].warning|string+"!"
-                                                         +data.services_check_command_args.disk_space[mountpoint].critical|string,
+                                                         +data.services_attrs.disk_space[mountpoint].warning|string+"!"
+                                                         +data.services_attrs.disk_space[mountpoint].critical|string,
                                     })
         }}
     {% endfor %}
@@ -440,7 +365,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_DRBD!"
                                                      +check_by_ssh_params+"!"
-                                                     +data.services_check_command_args.drbd.command,
+                                                     +data.services_attrs.drbd.command,
                                 })
     }}
 {% endif %}
@@ -456,9 +381,9 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'notification_options': "w,c,r",
                                     'notifications_enabled': 1,
                                     'check_command': "C_SNMP_PROCESS!"
-                                                     +data.services_check_command_args.epmd_process.process+"!"
-                                                     +data.services_check_command_args.epmd_process.warning|string+"!"
-                                                     +data.services_check_command_args.epmd_process.critical|string,
+                                                     +data.services_attrs.epmd_process.process+"!"
+                                                     +data.services_attrs.epmd_process.warning|string+"!"
+                                                     +data.services_attrs.epmd_process.critical|string,
                                 })
     }}
 {% endif %}
@@ -475,7 +400,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_CUSTOM!"
                                                      +check_by_ssh_params+"!"
-                                                     +data.services_check_command_args.erp_files.command,
+                                                     +data.services_attrs.erp_files.command,
                                 })
     }}
 {% endif %}
@@ -490,9 +415,9 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'use': "ST_ROOT",
                                     'notifications_enabled': 1,
                                     'check_command': "C_SNMP_PROCESS!"
-                                                     +data.services_check_command_args.fail2ban.process+"!"
-                                                     +data.services_check_command_args.fail2ban.warning|string+"!"
-                                                     +data.services_check_command_args.fail2ban.critical|string,
+                                                     +data.services_attrs.fail2ban.process+"!"
+                                                     +data.services_attrs.fail2ban.warning|string+"!"
+                                                     +data.services_attrs.fail2ban.critical|string,
                                 })
     }}
 {% endif %}
@@ -508,9 +433,9 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'notification_options': "w,c,r",
                                     'notifications_enabled': 1,
                                     'check_command': "C_SNMP_PROCESS!"
-                                                     +data.services_check_command_args.gunicorn_process.process+"!"
-                                                     +data.services_check_command_args.gunicorn_process.warning|string+"!"
-                                                     +data.services_check_command_args.gunicorn_process.critical|string,
+                                                     +data.services_attrs.gunicorn_process.process+"!"
+                                                     +data.services_attrs.gunicorn_process.warning|string+"!"
+                                                     +data.services_attrs.gunicorn_process.critical|string,
                                 })
     }}
 {% endif %}
@@ -525,7 +450,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_HAPROXY!"
                                                      +check_by_ssh_params+"!"
-                                                     +data.services_check_command_args.haproxy.command,
+                                                     +data.services_attrs.haproxy.command,
                                 })
     }}
 {% endif %}
@@ -552,7 +477,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     data.service_key_hostname: data.hostname,
                                     'use': "ST_LOAD_AVG",
                                     'check_command': "C_SNMP_LOADAVG!"
-                                                     +data.services_check_command_args.load_avg.other_args,
+                                                     +data.services_attrs.load_avg.other_args,
                                 })
     }}
 {% endif %}
@@ -568,8 +493,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_CYRUS_CONNECTIONS!"
                                                      +check_by_ssh_params+"!"
-                                                     +data.services_check_command_args.mail_cyrus_imap_connections.warning|string+"!"
-                                                     +data.services_check_command_args.mail_cyrus_imap_connections.critical|string,
+                                                     +data.services_attrs.mail_cyrus_imap_connections.warning|string+"!"
+                                                     +data.services_attrs.mail_cyrus_imap_connections.critical|string,
                                 })
     }}
 {% endif %}
@@ -583,8 +508,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "C_MAIL_IMAP!"
-                                                     +data.services_check_command_args.mail_imap.warning|string+"!"
-                                                     +data.services_check_command_args.mail_imap.critical|string,
+                                                     +data.services_attrs.mail_imap.warning|string+"!"
+                                                     +data.services_attrs.mail_imap.critical|string,
                                 })
     }}
 {% endif %}
@@ -598,8 +523,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "C_MAIL_IMAP_SSL!"
-                                                     +data.services_check_command_args.mail_imap_ssl.warning|string+"!"
-                                                     +data.services_check_command_args.mail_imap_ssl.critical|string,
+                                                     +data.services_attrs.mail_imap_ssl.warning|string+"!"
+                                                     +data.services_attrs.mail_imap_ssl.critical|string,
                                 })
     }}
 {% endif %}
@@ -613,8 +538,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "C_MAIL_POP!"
-                                                     +data.services_check_command_args.mail_pop.warning|string+"!"
-                                                     +data.services_check_command_args.mail_pop.critical|string,
+                                                     +data.services_attrs.mail_pop.warning|string+"!"
+                                                     +data.services_attrs.mail_pop.critical|string,
                                 })
     }}
 {% endif %}
@@ -628,8 +553,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "C_MAIL_POP_SSL!"
-                                                     +data.services_check_command_args.mail_pop_ssl.warning|string+"!"
-                                                     +data.services_check_command_args.mail_pop_ssl.critical|string,
+                                                     +data.services_attrs.mail_pop_ssl.warning|string+"!"
+                                                     +data.services_attrs.mail_pop_ssl.critical|string,
                                 })
     }}
 {% endif %}
@@ -643,11 +568,11 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "C_POP3_TEST_SIZE_AND_DELETE!"
-                                                     +data.services_check_command_args.mail_pop_test_account.warning1|string+"!"
-                                                     +data.services_check_command_args.mail_pop_test_account.critical1|string+"!"
-                                                     +data.services_check_command_args.mail_pop_test_account.warning2|string+"!"
-                                                     +data.services_check_command_args.mail_pop_test_account.critical2|string+"!"
-                                                     +data.services_check_command_args.mail_pop_test_account.mx,
+                                                     +data.services_attrs.mail_pop_test_account.warning1|string+"!"
+                                                     +data.services_attrs.mail_pop_test_account.critical1|string+"!"
+                                                     +data.services_attrs.mail_pop_test_account.warning2|string+"!"
+                                                     +data.services_attrs.mail_pop_test_account.critical2|string+"!"
+                                                     +data.services_attrs.mail_pop_test_account.mx,
                                 })
     }}
 {% endif %}
@@ -663,8 +588,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_MAILQUEUE!"
                                                      +check_by_ssh_params+"!"
-                                                     +data.services_check_command_args.mail_server_queues.warning|string+"!"
-                                                     +data.services_check_command_args.mail_server_queues.critical|string,
+                                                     +data.services_attrs.mail_server_queues.warning|string+"!"
+                                                     +data.services_attrs.mail_server_queues.critical|string,
                                 })
     }}
 {% endif %}
@@ -678,8 +603,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "C_MAIL_SMTP!"
-                                                     +data.services_check_command_args.mail_smtp.warning|string+"!"
-                                                     +data.services_check_command_args.mail_smtp.critical|string,
+                                                     +data.services_attrs.mail_smtp.warning|string+"!"
+                                                     +data.services_attrs.mail_smtp.critical|string,
                                 })
     }}
 {% endif %}
@@ -695,7 +620,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_RAID_SOFT!"
                                                      +check_by_ssh_params+"!"
-                                                     +data.services_check_command_args.md_raid.command,
+                                                     +data.services_attrs.md_raid.command,
                                 })
     }}
 {% endif %}
@@ -710,7 +635,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_MEGARAID_SAS!"
                                                      +check_by_ssh_params+"!"
-                                                     +data.services_check_command_args.megaraid_sas.command,
+                                                     +data.services_attrs.megaraid_sas.command,
                                 })
     }}
 {% endif %}
@@ -724,8 +649,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     data.service_key_hostname: data.hostname,
                                     'use': "ST_MEMORY",
                                     'check_command': "C_SNMP_MEMORY!"
-                                                     +data.services_check_command_args.memory.warning|string+"!"
-                                                     +data.services_check_command_args.memory.critical|string,
+                                                     +data.services_attrs.memory.warning|string+"!"
+                                                     +data.services_attrs.memory.critical|string,
                                 })
     }}
 {% endif %}
@@ -739,8 +664,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     data.service_key_hostname: data.hostname,
                                     'use': "ST_MEMORY_HYPERVISEUR",
                                     'check_command': "C_SNMP_MEMORY!"
-                                                     +data.services_check_command_args.memory_hyperviseur.warning|string+"!"
-                                                     +data.services_check_command_args.memory_hyperviseur.critical|string,
+                                                     +data.services_attrs.memory_hyperviseur.warning|string+"!"
+                                                     +data.services_attrs.memory_hyperviseur.critical|string,
                                 })
     }}
 {% endif %}
@@ -754,16 +679,16 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "C_SNMP_PROCESS!"
-                                                     +data.services_check_command_args.mysql_process.process+"!"
-                                                     +data.services_check_command_args.mysql_process.warning|string+"!"
-                                                     +data.services_check_command_args.mysql_process.critical|string,
+                                                     +data.services_attrs.mysql_process.process+"!"
+                                                     +data.services_attrs.mysql_process.warning|string+"!"
+                                                     +data.services_attrs.mysql_process.critical|string,
                                 })
     }}
 {% endif %}
 
 # add network service
 {% if data.network %}
-    {% for name, network in data.services_check_command_args.network.items() %}
+    {% for name, network in data.services_attrs.network.items() %}
         {{ configuration_add_object(type='service',
                                     file=data.service_subdirectory+'/'+data.hostname+'/network_'+name+'.cfg',
                                     attrs= {
@@ -830,9 +755,9 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     data.service_key_hostname: data.hostname,
                                     'use': "ST_ROOT",
                                     'check_command': "check_tcp!"
-                                                     +data.services_check_command_args.postgres_port.port|string+"!"
-                                                     +data.services_check_command_args.postgres_port.warning|string+"!"
-                                                     +data.services_check_command_args.postgres_port.critical|string,
+                                                     +data.services_attrs.postgres_port.port|string+"!"
+                                                     +data.services_attrs.postgres_port.warning|string+"!"
+                                                     +data.services_attrs.postgres_port.critical|string,
                                 })
     }}
 {% endif %}
@@ -848,9 +773,9 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'notification_options': "w,c,r",
                                     'notifications_enabled': 1,
                                     'check_command': "C_SNMP_PROCESS!"
-                                                     +data.services_check_command_args.postgres_process.process+"!"
-                                                     +data.services_check_command_args.postgres_process.warning|string+"!"
-                                                     +data.services_check_command_args.postgres_process.critical|string,
+                                                     +data.services_attrs.postgres_process.process+"!"
+                                                     +data.services_attrs.postgres_process.warning|string+"!"
+                                                     +data.services_attrs.postgres_process.critical|string,
                                 })
     }}
 {% endif %}
@@ -866,7 +791,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_CUSTOM!"
                                                      +check_by_ssh_params+"!"
-                                                     +data.services_check_command_args.prebill_sending.command,
+                                                     +data.services_attrs.prebill_sending.command,
                                 })
     }}
 {% endif %}
@@ -882,7 +807,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_RAID_SOFT!"
                                                      +check_by_ssh_params+"!"
-                                                     +data.services_check_command_args.raid.command,
+                                                     +data.services_attrs.raid.command,
                                 })
     }}
 {% endif %}
@@ -898,7 +823,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'use': "ST_ROOT",
                                     'check_command': "CSSH_SAS2IRCU!"
                                                      +check_by_ssh_params+"!"
-                                                     +data.services_check_command_args.sas.command,
+                                                     +data.services_attrs.sas.command,
                                 })
     }}
 {% endif %}
@@ -912,10 +837,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     data.service_key_hostname: data.hostname,
                                     'use': "ST_ALERT",
                                     'check_command': "C_SNMP_PROCESS_WITH_MEM!"
-                                                     +data.services_check_command_args.snmpd_memory_control.process+"!"
-                                                     +data.services_check_command_args.snmpd_memory_control.warning+"!"
-                                                     +data.services_check_command_args.snmpd_memory_control.critical+"!"
-                                                     +data.services_check_command_args.snmpd_memory_control.memory,
+                                                     +data.services_attrs.snmpd_memory_control.process+"!"
+                                                     +data.services_attrs.snmpd_memory_control.warning+"!"
+                                                     +data.services_attrs.snmpd_memory_control.critical+"!"
+                                                     +data.services_attrs.snmpd_memory_control.memory,
                                 })
     }}
 {% endif %}
@@ -923,7 +848,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add solr service
 # TODO: readd auth
 {% if data.solr %}
-    {% for name, solr in data.services_check_command_args.solr.items() %}
+    {% for name, solr in data.services_attrs.solr.items() %}
         {{ configuration_add_object(type='service',
                                     file=data.service_subdirectory+'/'+data.hostname+'/solr_'+name+'.cfg',
                                     attrs= {
@@ -953,9 +878,9 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     data.service_key_hostname: data.hostname,
                                     'use': "ST_ROOT",
                                     'check_command': "check_tcp!"
-                                                     +data.services_check_command_args.ssh.port|string+"!"
-                                                     +data.services_check_command_args.ssh.warning|string+"!"
-                                                     +data.services_check_command_args.ssh.critical|string
+                                                     +data.services_attrs.ssh.port|string+"!"
+                                                     +data.services_attrs.ssh.warning|string+"!"
+                                                     +data.services_attrs.ssh.critical|string
                                 })
     }}
 {% endif %}
@@ -971,7 +896,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_SUPERVISOR!"
                                                      +check_by_ssh_params+"!"
-                                                     +data.services_check_command_args.supervisord_status.command,
+                                                     +data.services_attrs.supervisord_status.command,
                                 })
     }}
 {% endif %}
@@ -987,7 +912,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_RAID_SOFT!"
                                                      +check_by_ssh_params+"!"
-                                                     +data.services_check_command_args.swap.command,
+                                                     +data.services_attrs.swap.command,
                                 })
     }}
 {% endif %}
@@ -1003,8 +928,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'notification_options': "w,c,r",
                                     'notifications_enabled': 1,
                                     'check_command': "check_http_vhost_uri!"
-                                                     +data.services_check_command_args.tiles_generator_access.hostname+"!"
-                                                     +data.services_check_command_args.tiles_generator_access.url,
+                                                     +data.services_attrs.tiles_generator_access.hostname+"!"
+                                                     +data.services_attrs.tiles_generator_access.url,
                                 })
     }}
 {% endif %}
@@ -1019,7 +944,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_RAID_3WARE!"
                                                      +check_by_ssh_params+"!"
-                                                     +data.services_check_command_args.ware_raid.command,
+                                                     +data.services_attrs.ware_raid.command,
                                 })
     }}
 {% endif %}
@@ -1033,9 +958,9 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     data.service_key_hostname: data.hostname,
                                     'use': "ST_WEB_APACHE_STATUS",
                                     'check_command': "C_APACHE_STATUS!"
-                                                     +data.services_check_command_args.web_apache_status.warning|string+"!"
-                                                     +data.services_check_command_args.web_apache_status.critical|string+"!"
-                                                     +data.services_check_command_args.web_apache_status.other_args,
+                                                     +data.services_attrs.web_apache_status.warning|string+"!"
+                                                     +data.services_attrs.web_apache_status.critical|string+"!"
+                                                     +data.services_attrs.web_apache_status.other_args,
                                 })
     }}
 {% endif %}
@@ -1043,7 +968,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add web_openid service
 # TODO: readd auth
 {% if data.web_openid %}
-    {% for name, web_openid in data.services_check_command_args.web_openid.items() %}
+    {% for name, web_openid in data.services_attrs.web_openid.items() %}
         {{ configuration_add_object(type='service',
                                     file=data.service_subdirectory+'/'+data.hostname+'/web_openid_'+name+'.cfg',
                                     attrs= {
@@ -1064,7 +989,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add web service
 # TODO/ok: readd auth
 {% if data.web %}
-    {% for name, web in data.services_check_command_args.web.items() %}
+    {% for name, web in data.services_attrs.web.items() %}
         {{ configuration_add_object(type='service',
                                     file=data.service_subdirectory+'/'+data.hostname+'/web_'+name+'.cfg',
                                     attrs= {
@@ -1083,5 +1008,5 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
         }}
     {% endfor %}
 {% endif %}
-
+#}
 {% endmacro %}
