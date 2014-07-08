@@ -109,12 +109,14 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      ssh_port=22,
                                      ssh_timeout=30,
                                      backup_burp_age=False,
+                                     backup_rdiff=False,
                                      beam_process=False,
                                      celeryd_process=False,
                                      cron=False,
                                      ddos=false,
                                      debian_updates=False,
                                      dns_association=False,
+                                     dns_reverse_association=False,
                                      disk_space=False,
                                      disk_space_root=False,
                                      disk_space_var=False,
@@ -139,6 +141,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      mail_pop_test_account=False,
                                      mail_server_queues=False,
                                      mail_smtp=False,
+                                     md_raid=False,
+                                     megaraid_sas=False,
                                      memory=False,
                                      memory_hyperviseur=False,
                                      mysql_process=False,
@@ -157,9 +161,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      supervisord_status=False,
                                      swap=False,
                                      tiles_generator_access=False,
+                                     ware_raid=False,
                                      web_apache_status=False,
                                      web_openid=False,
-                                     web_public=False,
+                                     web=False,
                                      services_check_command_args={}
                                     ) %}
 {% set data = salt['mc_icinga.add_auto_configuration_host_settings'](hostname,
@@ -170,12 +175,14 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      ssh_port,
                                                                      ssh_timeout,
                                                                      backup_burp_age,
+                                                                     backup_rdiff,
                                                                      beam_process,
                                                                      celeryd_process,
                                                                      cron,
                                                                      ddos,
                                                                      debian_updates,
                                                                      dns_association,
+                                                                     dns_reverse_association,
                                                                      disk_space,
                                                                      disk_space_root,
                                                                      disk_space_var,
@@ -200,6 +207,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      mail_pop_test_account,
                                                                      mail_server_queues,
                                                                      mail_smtp,
+                                                                     md_raid,
+                                                                     megaraid_sas,
                                                                      memory,
                                                                      memory_hyperviseur,
                                                                      mysql_process,
@@ -218,9 +227,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      supervisord_status,
                                                                      swap,
                                                                      tiles_generator_access,
+                                                                     ware_raid,
                                                                      web_apache_status,
                                                                      web_openid,
-                                                                     web_public,
+                                                                     web,
                                                                      services_check_command_args,
                                                                      **kwargs
                                                                     ) %}
@@ -249,6 +259,25 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                      +data.services_check_command_args.backup_burp_age.ssh_timeout|string+"!"
                                                      +data.services_check_command_args.backup_burp_age.warning|string+"!"
                                                      +data.services_check_command_args.backup_burp_age.critical|string,
+                                })
+    }}
+{% endif %}
+
+# add backup_rdiff service
+# TODO/ok: edit command in order to allow customization in check_by_ssh
+{% if data.backup_rdiff %}
+    {{ configuration_add_object(type='service',
+                                file=data.service_subdirectory+'/'+data.hostname+'/backup_rdiff.cfg',
+                                attrs= {
+                                    'service_description': "S_BACKUP_RDIFF",
+                                    data.service_key_hostname: data.hostname,
+                                    'use': "ST_BACKUP_DAILY_ALERT",
+                                    'check_command': "CSSH_BACKUP!"
+                                                     +data.services_check_command_args.backup_rdiff.ssh_user+"!"
+                                                     +data.services_check_command_args.backup_rdiff.ssh_addr+"!"
+                                                     +data.services_check_command_args.backup_rdiff.ssh_port|string+"!"
+                                                     +data.services_check_command_args.backup_rdiff.ssh_timeout|string+"!"
+                                                     +data.services_check_command_args.backup_rdiff.command,
                                 })
     }}
 {% endif %}
@@ -358,6 +387,28 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     {% endfor %}
 {% endif %}
 
+# add dns_reverse_association service
+{% if data.dns_reverse_association %}
+    {% for name, dns_association in data.services_check_command_args.dns_association.items() %}
+    {% if data.hostname == dns_association.hostname %}
+        {% set use = "ST_DNS_ASSOCIATION_hostname" %}
+    {% else %}
+        {% set use = "ST_DNS_ASSOCIATION" %}
+    {% endif %}
+        {{ configuration_add_object(type='service',
+                                    file=data.service_subdirectory+'/'+data.hostname+'/dns_reverse_association_'+name+'.cfg',
+                                    attrs= {
+                                        'service_description': "DNS_REVERSE_ASSOCIATION_"+dns_association.hostname,
+                                        data.service_key_hostname: data.hostname,
+                                        'use': use,
+                                        'check_command': "C_DNS_EXTERNE_REVERSE_ASSOCIATION!"
+                                                         +dns_association.inaddr+"!"
+                                                         +dns_association.hostname+"!"
+                                                         +dns_association.other_args,
+                                    })
+        }}
+    {% endfor %}
+{% endif %}
 # add disk_space service
 {% if data.disk_space %}
     {% for mountpoint, path in data.disks_spaces.items() %}
@@ -474,12 +525,11 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'use': "ST_ALERT",
                                     'check_command': "CSSH_HAPROXY!"
                                                      +check_by_ssh_params+"!"
-                                                     +data.services_check_command_args.haproxy.proxy,
-                                                     +data.services_check_command_args.haproxy.warning|string,
-                                                     +data.services_check_command_args.haproxy.critical|string,
+                                                     +data.services_check_command_args.haproxy.command,
                                 })
     }}
 {% endif %}
+
 # add ircbot_process service
 {% if data.ircbot_process %}
     {{ configuration_add_object(type='service',
@@ -630,6 +680,37 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                     'check_command': "C_MAIL_SMTP!"
                                                      +data.services_check_command_args.mail_smtp.warning|string+"!"
                                                      +data.services_check_command_args.mail_smtp.critical|string,
+                                })
+    }}
+{% endif %}
+
+# add md_raid service
+# TODO/ok: edit command in order to allow customization in check_by_ssh
+{% if data.md_raid %}
+    {{ configuration_add_object(type='service',
+                                file=data.service_subdirectory+'/'+data.hostname+'/md_raid.cfg',
+                                attrs= {
+                                    'service_description': "CHECK_MD_RAID",
+                                    data.service_key_hostname: data.hostname,
+                                    'use': "ST_ALERT",
+                                    'check_command': "CSSH_RAID_SOFT!"
+                                                     +check_by_ssh_params+"!"
+                                                     +data.services_check_command_args.md_raid.command,
+                                })
+    }}
+{% endif %}
+
+# add megaraid_sas service
+{% if data.megaraid_sas %}
+    {{ configuration_add_object(type='service',
+                                file=data.service_subdirectory+'/'+data.hostname+'/megaraid_sas.cfg',
+                                attrs= {
+                                    'service_description': "CHECK_MEGARAID_SAS",
+                                    data.service_key_hostname: data.hostname,
+                                    'use': "ST_ALERT",
+                                    'check_command': "CSSH_MEGARAID_SAS!"
+                                                     +check_by_ssh_params+"!"
+                                                     +data.services_check_command_args.megaraid_sas.command,
                                 })
     }}
 {% endif %}
@@ -928,6 +1009,21 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     }}
 {% endif %}
 
+# add 3ware raid  service (check by ssh)
+{% if data.ware_raid %}
+    {{ configuration_add_object(type='service',
+                                file=data.service_subdirectory+'/'+data.hostname+'/3ware_raid.cfg',
+                                attrs= {
+                                    'service_description': "CHECK_3WARE_RAID",
+                                    data.service_key_hostname: data.hostname,
+                                    'use': "ST_ALERT",
+                                    'check_command': "CSSH_RAID_3WARE!"
+                                                     +check_by_ssh_params+"!"
+                                                     +data.services_check_command_args.ware_raid.command,
+                                })
+    }}
+{% endif %}
+
 # add web apache status service
 {% if data.web_apache_status %}
     {{ configuration_add_object(type='service',
@@ -965,161 +1061,27 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     {% endfor %}
 {% endif %}
 
-# add web_public service
-# TODO: readd auth
-{% if data.web_public %}
-    {% for name, web_public in data.services_check_command_args.web_public.items() %}
+# add web service
+# TODO/ok: readd auth
+{% if data.web %}
+    {% for name, web in data.services_check_command_args.web.items() %}
         {{ configuration_add_object(type='service',
-                                    file=data.service_subdirectory+'/'+data.hostname+'/web_public_'+name+'.cfg',
+                                    file=data.service_subdirectory+'/'+data.hostname+'/web_'+name+'.cfg',
                                     attrs= {
                                         'service_description': "WEB_PUBLIC_"+name,
                                         data.service_key_hostname: data.hostname,
-                                        'use': "ST_WEB_PUBLIC"+web_public.use_type,
-                                        'check_command': web_public.command+"!"
-                                                         +web_public.hostname+"!"
-                                                         +web_public.url+"!"
-                                                         +web_public.warning|string+"!"
-                                                         +web_public.critical|string+"!"
-                                                         +web_public.timeout|string+"!"
-                                                         +web_public.strings+"!"
-                                                         +web_public.other_args,
+                                        'use': "ST_WEB"+web.use_type,
+                                        'check_command': web.command+"!"
+                                                         +web.hostname+"!"
+                                                         +web.url+"!"
+                                                         +web.warning|string+"!"
+                                                         +web.critical|string+"!"
+                                                         +web.timeout|string+"!"
+                                                         +web.strings+"!"
+                                                         +web.other_args,
                                     })
         }}
     {% endfor %}
 {% endif %}
 
-# FOR BACKUP (we adapt all services from centreon configuration)
-{#
-
-{% if data.check_dns_reverse %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/dns_reverse.cfg',
-                                attrs= {
-                                    'service_description': "DNS "+data.services_check_command_args.dns_reverse.query_address+" → "+data.services_check_command_args.dns_reverse.expected_address,
-                                    data.service_key_hostname: data.hostname,
-                                    'use': "generic-service",
-                                    'check_command': "check_dig!"
-                                                     +data.services_check_command_args.dns_reverse.port|string+"!"
-                                                     +data.services_check_command_args.dns_reverse.query_address+"!"
-                                                     +data.services_check_command_args.dns_reverse.record_type+"!"
-                                                     +data.services_check_command_args.dns_reverse.expected_address+"!"
-                                                     +data.services_check_command_args.dns_reverse.timeout|string,
-                                })
-    }}
-{% endif %}
-
-# add http service
-{% if data.check_http %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/http.cfg',
-                                attrs= {
-                                    'service_description': "HTTP",
-                                    data.service_key_hostname: data.hostname,
-                                    'use': "generic-service",
-                                    'check_command': "check_http!"
-                                                     +data.services_check_command_args.http.port|string+"!"
-                                                     +data.services_check_command_args.http.hostname+"!"
-                                                     +data.services_check_command_args.http.ip_address+"!"
-                                                     +data.services_check_command_args.http.timeout|string,
-                                })
-    }}
-{% endif %}
-
-# add md_raid check (check by ssh)
-{% if data.check_md_raid %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/md_raid.cfg',
-                                attrs= {
-                                    'service_description': "md_raid",
-                                    data.service_key_hostname: data.hostname,
-                                    'use': "generic-service",
-                                    'check_command': "check_by_ssh_md_raid!"
-                                                     +check_by_ssh_params
-                                })
-    }}
-{% endif %}
-
-# add megaraid_sas check (check by ssh)
-{% if data.check_megaraid_sas %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/megaraid_sas.cfg',
-                                attrs= {
-                                    'service_description': "megaraid sas",
-                                    data.service_key_hostname: data.hostname,
-                                    'use': "generic-service",
-                                    'check_command': "check_by_ssh_megaraid_sas!"
-                                                     +check_by_ssh_params
-                                })
-    }}
-{% endif %}
-
-# add 3ware raid  service (check by ssh)
-{% if data.check_drbd %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/3ware_raid.cfg',
-                                attrs= {
-                                    'service_description': "3ware raid",
-                                    data.service_key_hostname: data.hostname,
-                                    'use': "generic-service",
-                                    'check_command': "check_by_ssh_3ware_raid!"
-                                                     +check_by_ssh_params
-                                })
-    }}
-{% endif %}
-
-# add ccis service (check by ssh)
-{% if data.check_cciss %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/cciss.cfg',
-                                attrs= {
-                                    'service_description': "CCISS",
-                                    data.service_key_hostname: data.hostname,
-                                    'use': "generic-service",
-                                    'check_command': "check_by_ssh_cciss!"
-                                                     +check_by_ssh_params
-                                })
-    }}
-{% endif %}
-
-# add nb procs services (check by ssh)
-{% if data.check_procs %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/procs.cfg',
-                                attrs= {
-                                    'service_description': "Process",
-                                    data.service_key_hostname: data.hostname,
-                                    'use': "generic-service",
-                                    'check_command': "check_by_ssh_process!"
-                                                     +check_by_ssh_params+"!"
-                                                     +data.services_check_command_args.procs.metric+"!"
-                                                     +data.services_check_command_args.procs.warning|string+"!"
-                                                     +data.services_check_command_args.procs.critical|string,
-                                })
-    }}
-{% endif %}
-
-# add rdiff backup age (check by ssh on the backup server)
-{% if data.check_burp_backup_age %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/rdiff.cfg',
-                                attrs= {
-                                    'service_description': "Rdiff backup age on "+data.services_check_command_args.rdiff.ssh_addr,
-                                    data.service_key_hostname: data.hostname,
-                                    'use': "generic-service",
-                                    'check_command': "check_by_ssh_rdiff!"
-                                                     +data.services_check_command_args.rdiff.ssh_user+"!"
-                                                     +data.services_check_command_args.rdiff.ssh_addr+"!"
-                                                     +data.services_check_command_args.rdiff.ssh_port|string+"!"
-                                                     +data.services_check_command_args.rdiff.ssh_timeout|string+"!"
-                                                     +data.services_check_command_args.rdiff.repository+"!"
-                                                     +data.services_check_command_args.rdiff.transferred_warning|string+"!"
-                                                     +data.services_check_command_args.rdiff.cron_period|string+"!"
-                                                     +data.services_check_command_args.rdiff.warning|string+"!"
-                                                     +data.services_check_command_args.rdiff.critical|string,
-                                })
-    }}
-{% endif %}
-
-
-#}
 {% endmacro %}

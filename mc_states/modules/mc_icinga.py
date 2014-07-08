@@ -425,12 +425,13 @@ def objects():
                     'command_line': "$USER1$/check_udp -H $HOSTADDRESS$ -p $ARG1$",
                 },
             },
+            # edited in order to allow other users in check_by_ssh
             'command_CSSH_BACKUP': {
                 'type': "command",
                 'file': "checkcommands/CSSH_BACKUP.cfg",
                 'attrs': {
                     'command_name': "CSSH_BACKUP",
-                    'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C $ARG1$",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C $ARG1$",
                 },
             },
             # edited in order to allow other users in check_by_ssh
@@ -509,7 +510,7 @@ def objects():
                 'file': "checkcommands/CSSH_HAPROXY.cfg",
                 'attrs': {
                     'command_name': "CSSH_HAPROXY",
-                    'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C $ARG1$",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C $ARG1$",
                 },
             },
             # edited in order to allow other users in check_by_ssh
@@ -521,12 +522,13 @@ def objects():
                     'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_postfix_mailqueue -w $ARG5$ -c $ARG6$'",
                 },
             },
+            # edited in order to allow other users in check_by_ssh
             'command_CSSH_MEGARAID_SAS': {
                 'type': "command",
                 'file': "checkcommands/CSSH_MEGARAID_SAS.cfg",
                 'attrs': {
                     'command_name': "CSSH_MEGARAID_SAS",
-                    'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C $ARG1$",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C $ARG1$",
                 }
             },
             # edited in order to allow other users in check_by_ssh
@@ -564,12 +566,13 @@ def objects():
                     'command_line': "$USER1$/check_by_ssh --skip-stderr -q -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_procs -w 1: -c 1: --command=cron'",
                 },
             },
+            # edited in order to allow other users in check_by_ssh
             'command_CSSH_RAID_3WARE': {
                 'type': "command",
                 'file': "checkcommands/CSSH_RAID_3WARE.cfg",
                 'attrs': {
                     'command_name': "CSSH_RAID_3WARE",
-                    'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C $ARG1$",
+                    'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C $ARG1$",
                 },
             },
             # edited in order to allow other users in check_by_ssh
@@ -661,6 +664,14 @@ def objects():
                 'attrs': {
                     'command_name': "C_DNS_EXTERNE_ASSOCIATION",
                     'command_line': "$USER1$/check_dns_host.pl  -H $ARG1$ -q FORWARD -w 50 -c 500 -m $HOSTADDRESS$ -t 8 --recurse=1 $ARG2$",
+                },
+            },
+            'command_C_DNS_EXTERNE_REVERSE_ASSOCIATION': {
+                'type': "command",
+                'file': "checkcommands/C_DNS_EXTERNE_REVERSE_ASSOCIATION.cfg",
+                'attrs': {
+                    'command_name': "C_DNS_EXTERNE_REVERSE_ASSOCIATION",
+                    'command_line': "$USER1$/check_dig  -l $ARG1$ -T PTR -a $ARG2$ $ARG3$",
                 },
             },
             'command_C_HTTPS_OPENID_REDIRECT': {
@@ -1765,12 +1776,14 @@ def objects():
                 'ssh_user': "root",
 #                'ssh_addr': "127.0.0.1",
                 'backup_burp_age': True,
+                'backup_rdiff': True,
                 'beam_process': True,
                 'celeryd_process': True,
                 'cron': True,
                 'ddos': True,
                 'debian_updates': True,
                 'dns_association': True,
+                'dns_reverse_association': True,
                 'disk_space': True,
                 'disk_space_root': True,
                 'drbd': True,
@@ -1778,6 +1791,7 @@ def objects():
                 'erp_files': True,
                 'fail2ban': True,
                 'gunicorn_process': True,
+                'haproxy': True,
                 'ircbot_process': True,
                 'load_avg': True,
                 'mail_cyrus_imap_connections': True,
@@ -1788,6 +1802,8 @@ def objects():
                 'mail_pop_test_account': True,
                 'mail_server_queues': True,
                 'mail_smtp': True,
+                'md_raid': True,
+                'megaraid_sas': True,
                 'memory': True,
                 'memory_hyperviseur': True,
                 'mysql_process': True,
@@ -1806,8 +1822,9 @@ def objects():
                 'supervisord_status': True,
                 'swap': True,
                 'tiles_access_generator': True,
+                'ware_raid': True,
                 'web_apache_status': True,
-                'web_public': True,
+                'web': True,
                 'services_check_command_args': {
                     'dns_association': {
                         'localhost': {
@@ -1841,7 +1858,7 @@ def objects():
                             'timeout': 8,
                         },
                     },
-                    'web_public': {
+                    'web': {
                         'test': {
                             'strings': ['a', 'b'],
                         },
@@ -2529,12 +2546,14 @@ def add_auto_configuration_host_settings(hostname,
                                          ssh_port,
                                          ssh_timeout,
                                          backup_burp_age,
+                                         backup_rdiff,
                                          beam_process,
                                          celeryd_process,
                                          cron,
                                          ddos,
                                          debian_updates,
                                          dns_association,
+                                         dns_reverse_association,
                                          disk_space,
                                          disk_space_root,
                                          disk_space_var,
@@ -2559,6 +2578,8 @@ def add_auto_configuration_host_settings(hostname,
                                          mail_pop_test_account,
                                          mail_server_queues,
                                          mail_smtp,
+                                         md_raid,
+                                         megaraid_sas,
                                          memory,
                                          memory_hyperviseur,
                                          mysql_process,
@@ -2577,9 +2598,10 @@ def add_auto_configuration_host_settings(hostname,
                                          supervisord_status,
                                          swap,
                                          tiles_generator_access,
+                                         ware_raid,
                                          web_apache_status,
                                          web_openid,
-                                         web_public,
+                                         web,
                                          services_check_command_args,
                                          **kwargs):
     '''Settings for the add_auto_configuration_host macro'''
@@ -2601,7 +2623,7 @@ def add_auto_configuration_host_settings(hostname,
 
     kwargs.setdefault('attrs', attrs)
     kwargs.setdefault('ssh_user', ssh_user)
-    if not ssh_addr:
+    if ssh_addr:
        kwargs.setdefault('ssh_addr', ssh_addr)
     else:
        kwargs.setdefault('ssh_addr', hostname)
@@ -2612,12 +2634,14 @@ def add_auto_configuration_host_settings(hostname,
 
 
     kwargs.setdefault('backup_burp_age', backup_burp_age)
+    kwargs.setdefault('backup_rdiff', backup_rdiff)
     kwargs.setdefault('beam_process', beam_process)
     kwargs.setdefault('celeryd_process', celeryd_process)
     kwargs.setdefault('cron', cron)
     kwargs.setdefault('ddos', ddos)
     kwargs.setdefault('debian_updates', debian_updates)
     kwargs.setdefault('dns_association', dns_association)
+    kwargs.setdefault('dns_reverse_association', dns_reverse_association)
     kwargs.setdefault('disk_space', disk_space)
     kwargs.setdefault('drbd', drbd)
     kwargs.setdefault('epmd_process', epmd_process)
@@ -2635,6 +2659,8 @@ def add_auto_configuration_host_settings(hostname,
     kwargs.setdefault('mail_pop_test_account', mail_pop_test_account)
     kwargs.setdefault('mail_server_queues', mail_server_queues)
     kwargs.setdefault('mail_smtp', mail_smtp)
+    kwargs.setdefault('md_raid', md_raid)
+    kwargs.setdefault('megaraid_sas', megaraid_sas)
     kwargs.setdefault('memory', memory)
     kwargs.setdefault('memory_hyperviseur', memory_hyperviseur)
     kwargs.setdefault('mysql_process', mysql_process)
@@ -2653,20 +2679,16 @@ def add_auto_configuration_host_settings(hostname,
     kwargs.setdefault('supervisord_status', supervisord_status)
     kwargs.setdefault('swap', swap)
     kwargs.setdefault('tiles_generator_access', tiles_generator_access)
+    kwargs.setdefault('ware_raid', ware_raid)
     kwargs.setdefault('web_apache_status', web_apache_status)
     kwargs.setdefault('web_openid', web_openid)
-    kwargs.setdefault('web_public', web_public)
+    kwargs.setdefault('web', web)
 
-    # values for dns_association service
+    # default values for dns_association service
     dns_hostname=''
     dns_address=''
-    dns_inaddr=''
 
     if dns_association or dns_reverse and 'address' in attrs and 'host_name' in attrs:
-        address_splitted = attrs['address'].split('.')
-        inaddr = '.'.join(address_splitted[::-1]) # tanslate a.b.c.d in d.c.b.a
-        inaddr = inaddr + '.in-addr.arpa.'
-
         if 'host_name' in attrs:
             dns_hostname = attrs['host_name']
         else:
@@ -2675,11 +2697,7 @@ def add_auto_configuration_host_settings(hostname,
         if not dns_hostname.endswith('.'):
             dns_hostname = dns_hostname+'.'
 
-        kwargs.setdefault('dns_hostname', dns_hostname)
         dns_address = attrs['address']
-        kwargs.setdefault('dns_address', attrs['address'])
-        dns_inaddr = inaddr
-        kwargs.setdefault('dns_inaddr', inaddr)
 
     # values for disk_space service
     mountpoints_path = {
@@ -2710,6 +2728,13 @@ def add_auto_configuration_host_settings(hostname,
            'warning': 1560,
            'critical': 1800,
        },
+       'backup_rdiff': {
+           'ssh_user': "root",
+           'ssh_addr': "backup.makina-corpus.net",
+           'ssh_port': "22",
+           'ssh_timeout': 10,
+           'command': "/root/admin_scripts/nagios/check_rdiff -r /data/backups/phpnet6 -w 24 -c 48 -l 2048 -p 24"
+       },
        'beam_process': {
            'process': "beam",
            'warning': 0,
@@ -2729,6 +2754,7 @@ def add_auto_configuration_host_settings(hostname,
        'dns_association': {
            'default': {
                'hostname': dns_hostname,
+               'dns_address': dns_address,
                'other_args': "",
            }
        },
@@ -2759,12 +2785,10 @@ def add_auto_configuration_host_settings(hostname,
            'warning': 0,
            'critical': 0,
        },
-       'ircbot_process': {},
        'haproxy': {
-           'proxy': "web",
-           'warning': 80,
-           'critical': 90,
+           'command': "/root/admin_scripts/nagios/check_haproxy_stats.pl -p web -w 80 -c 90",
        },
+       'ircbot_process': {},
        'load_avg': {
            'other_args': "",
        },
@@ -2802,6 +2826,12 @@ def add_auto_configuration_host_settings(hostname,
        'mail_smtp': {
            'warning': 1,
            'critical': 3,
+       },
+       'md_raid': {
+           'command': "/root/admin_scripts/nagios/check_md_raid",
+       },
+       'megaraid_sas': {
+           'command': "/root/admin_scripts/nagios/check_megaraid_sas",
        },
        'memory': {
            'warning': 80,
@@ -2877,6 +2907,9 @@ def add_auto_configuration_host_settings(hostname,
            'hostname': "vdm.makina-corpus.net",
            'url': "/vdm-tiles/status/",
        },
+       'ware_raid': {
+           'command': "/root/admin_scripts/nagios/check_3ware_raid",
+       },
        'web_apache_status': {
            'warning': 4,
            'critical': 2,
@@ -2891,7 +2924,7 @@ def add_auto_configuration_host_settings(hostname,
                'timeout': 8,
            },
        },
-       'web_public': {
+       'web': {
            'default': {
                'hostname': hostname,
                'url': "/",
@@ -2899,7 +2932,7 @@ def add_auto_configuration_host_settings(hostname,
                'critical': 3,
                'timeout': 8,
                'strings': [],
-               'use_type': "",
+               'use_type': "_PUBLIC",
                'authentication': False,
                'only': False,
                'ssl': False,
@@ -2907,55 +2940,6 @@ def add_auto_configuration_host_settings(hostname,
            },
        },
 
-       # BACKUP
-       'dns_reverse': {
-           'port': 53,
-           'query_address': dns_inaddr,
-           'record_type': 'PTR',
-           'expected_address': dns_hostname,
-           'timeout': 10,
-       },
-       'http': {
-           'port': 80,
-           'hostname': hostname,
-           'ip_address': attrs['address'],
-           'timeout': 10,
-       },
-       'html': {
-           'port': 80,
-           'ip_address': attrs['address'],
-           'warning': 1,
-           'critical': 2,
-           'timeout': 8,
-       },
-       'md_raid': {},
-       'megaraid_sas': {},
-       '3ware_raid': {},
-       'ccis': {},
-       'procs': {
-           'metric': "PROCS",
-           'warning': 170,
-           'critical': 200,
-       },
-       'rdiff': {
-           # ssh values should be replaced with the values concerning the backup host
-           'ssh_user': ssh_user,
-           'ssh_addr': ssh_addr,
-           'ssh_port': ssh_port,
-           'ssh_timeout': ssh_timeout,
-           'repository': '/backups/'+hostname,
-           'transferred_warning': 1,
-           'cron_period': 1,
-           'warning': 24,
-           'critical': 48,
-       },
-       'haproxy_stats': {
-           'socket': "/var/run/haproxy.sock",
-       },
-       'postfixqueue': {
-           'warning': 50,
-           'critical': 100,
-       },
     }
 
     # override the commands parameters values
@@ -2968,6 +2952,11 @@ def add_auto_configuration_host_settings(hostname,
             for key, value in services_check_command_default_args['dns_association']['default'].items():
                 if not key in dns:
                     services_check_command_args['dns_association'][name][key]=value
+            address_splitted = dns['hostname'].split('.')
+            inaddr = '.'.join(address_splitted[::-1]) # tanslate a.b.c.d in d.c.b.a
+            inaddr = inaddr + '.in-addr.arpa.'
+            services_check_command_args['dns_association'][name]['inaddr']=inaddr
+
 
     # override network subdictionary
     if not 'network' in services_check_command_args:
@@ -2982,9 +2971,9 @@ def add_auto_configuration_host_settings(hostname,
     if not 'solr' in services_check_command_args:
         services_check_command_args['solr'] =  services_check_command_default_args['solr']
     else:
-        for name, web_public in services_check_command_args['solr'].items():
+        for name, solr in services_check_command_args['solr'].items():
             for key, value in services_check_command_default_args['solr']['default'].items():
-                if not key in web_public:
+                if not key in solr:
                     services_check_command_args['solr'][name][key]=value
             # transform list of values in string ['a', 'b'] becomes '"a" -s "b"'
             if isinstance(services_check_command_args['solr'][name]['strings'], list):
@@ -3002,32 +2991,32 @@ def add_auto_configuration_host_settings(hostname,
                 if not key in web_openid:
                     services_check_command_args['web_openid'][name][key]=value
 
-    # override web_public subdictionary
-    if not 'web_public' in services_check_command_args:
-        services_check_command_args['web_public'] =  services_check_command_default_args['web_public']
+    # override web subdictionary
+    if not 'web' in services_check_command_args:
+        services_check_command_args['web'] =  services_check_command_default_args['web']
     else:
-        for name, web_public in services_check_command_args['web_public'].items():
-            for key, value in services_check_command_default_args['web_public']['default'].items():
-                if not key in web_public:
-                    services_check_command_args['web_public'][name][key]=value
+        for name, web in services_check_command_args['web'].items():
+            for key, value in services_check_command_default_args['web']['default'].items():
+                if not key in web:
+                    services_check_command_args['web'][name][key]=value
             # transform list of values in string ['a', 'b'] becomes '"a" -s "b"'
-            if isinstance(services_check_command_args['web_public'][name]['strings'], list):
-                str_list = services_check_command_args['web_public'][name]['strings']
+            if isinstance(services_check_command_args['web'][name]['strings'], list):
+                str_list = services_check_command_args['web'][name]['strings']
                 # to avoid quotes conflicts (doesn't avoid code injection)
                 str_list = [ value.replace('"', '\\\\"') for value in str_list ]
-                services_check_command_args['web_public'][name]['strings']='"'+'" -s "'.join(str_list)+'"'
+                services_check_command_args['web'][name]['strings']='"'+'" -s "'.join(str_list)+'"'
 
             # build the command
-            if services_check_command_args['web_public'][name]['ssl']:
+            if services_check_command_args['web'][name]['ssl']:
                 cmd = "C_HTTPS_STRING"
             else:
                 cmd = "C_HTTP_STRING"
-            if services_check_command_args['web_public'][name]['authentication']:
+            if services_check_command_args['web'][name]['authentication']:
                 cmd = cmd + "_AUTH"
-            if services_check_command_args['web_public'][name]['only']:
+            if services_check_command_args['web'][name]['only']:
                 cmd = cmd + "_ONLY"
 
-            services_check_command_args['web_public'][name]['command'] = cmd
+            services_check_command_args['web'][name]['command'] = cmd
 
     # override mountpoints subdictionaries
 
@@ -3072,7 +3061,7 @@ def add_auto_configuration_host_settings(hostname,
         services_check_command_args = {}
 
     for name, command in services_check_command_default_args.items():
-        if not name in ['dns_association', 'mountpoints', 'network', 'solr', 'web_openid', 'web_public']:
+        if not name in ['dns_association', 'mountpoints', 'network', 'solr', 'web_openid', 'web']:
             if not name in services_check_command_args:
                 services_check_command_args[name] = {}
             services_check_command_args[name] = dict(services_check_command_default_args[name].items() + services_check_command_args[name].items())
