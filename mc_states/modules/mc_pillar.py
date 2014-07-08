@@ -507,7 +507,7 @@ def load_network_infrastructure(ttl=60):
                                   ips=ips, cnames=cnames, ipsfo=ipsfo,
                                   ipsfo_map=ipsfo_map, ips_map=ips_map,
                                   fail_over=True):
-                    if not ip in dips:
+                    if ip not in dips:
                         dips.append(ip)
         return data
     cache_key = 'mc_pillar.load_network_infrastructure'

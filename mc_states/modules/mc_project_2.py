@@ -205,6 +205,7 @@ def _sls_exec(name, cfg, sls):
     comment = ''
     __context__.setdefault('retcode', 0)
     is_really_valid = None
+    failed = False
     if isinstance(cret, dict):
         if not cret:
             ret['result'] = True

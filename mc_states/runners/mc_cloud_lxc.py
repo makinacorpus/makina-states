@@ -47,7 +47,7 @@ def cli(*args, **kwargs):
     return __salt__['mc_api.cli'](*args, **kwargs)
 
 
-def cn_sls_pillar(target, ttl=api.RUNNER_CACHE_TIME):
+def cn_sls_pillar(target, ttl=api.RUNNER_CACHE_TIME, output=False):
     '''limited cloud pillar to expose to a compute node'''
     func_name = 'mc_cloud_lxc.cn_sls_pillar {0}'.format(target)
     __salt__['mc_api.time_log']('start {0}'.format(func_name))
@@ -74,6 +74,9 @@ def cn_sls_pillar(target, ttl=api.RUNNER_CACHE_TIME):
         return pillar
     cache_key = 'mc_cloud_lxc.cn_sls_pillar_{0}'.format(target)
     ret = memoize_cache(_do, [target], {}, cache_key, ttl)
+    cret = result()
+    cret['result'] = ret
+    salt_output(cret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
