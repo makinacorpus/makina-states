@@ -66,9 +66,9 @@ icinga2-check-pgsql-schema:
     - contents: |
                 #!/bin/bash
                 sql_queries=(
-                 "select 57=count(*) as ok from information_schema.tables where table_schema='public'"
-                 "select 149=count(*) as ok from information_schema.table_constraints"
-                 "select 204=count(*) as ok from pg_index as idx
+                 "select 59=count(*) as ok from information_schema.tables where table_schema='public'"
+                 "select 155=count(*) as ok from information_schema.table_constraints"
+                 "select 209=count(*) as ok from pg_index as idx
                   join pg_class as i on i.oid = idx.indexrelid
                   join pg_namespace as ns on ns.oid = i.relnamespace and ns.nspname = any(current_schemas(false))"
                 )

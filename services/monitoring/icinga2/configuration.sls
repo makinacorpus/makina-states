@@ -67,10 +67,9 @@ icinga2-zones-conf:
       data: |
             {{sdata}}
 
-{#
 # startup configuration
+{#
 {% if grains['os'] in ['Ubuntu'] %}
-
 icinga2-init-upstart-conf:
   file.managed:
     - name: {{ locs['conf_dir'] }}/init/icinga2.conf
@@ -87,8 +86,8 @@ icinga2-init-upstart-conf:
     - defaults:
       data: |
             {{sdata}}
-
 {% endif %}
+#}
 
 icinga2-init-default-conf:
   file.managed:
@@ -129,8 +128,8 @@ icinga2-init-sysvinit-conf:
 {% if data.modules.cgi.enabled %}
 icinga2-cgi-conf:
   file.managed:
-    - name: {{data.configuration_directory}}/cgi.cfg
-    - source: salt://makina-states/files/etc/icinga2/cgi.cfg
+    - name: {{data.configuration_directory}}/classicui/cgi.cfg
+    - source: salt://makina-states/files/etc/icinga2/classicui/cgi.cfg
     - template: jinja
     - makedirs: true
     - user: root
@@ -146,10 +145,10 @@ icinga2-cgi-conf:
 
 icinga2-cgi-root-account:
   file.touch:
-    - name: {{data.configuration_directory}}/htpasswd.users
+    - name: {{data.configuration_directory}}/classicui/htpasswd.users
 
   cmd.run:
-    - name: if [ -z "$(grep -E '^icinga2admin:' {{data.configuration_directory}}/htpasswd.users)" ]; then htpasswd -b {{data.configuration_directory}}/htpasswd.users {{data.modules.cgi.root_account.login}} {{data.modules.cgi.root_account.password}};  fi;
+    - name: if [ -z "$(grep -E '^{{data.modules.cgi.root_account.login}}:' {{data.configuration_directory}}/classicui/htpasswd.users)" ]; then htpasswd -b {{data.configuration_directory}}/classicui/htpasswd.users {{data.modules.cgi.root_account.login}} {{data.modules.cgi.root_account.password}};  fi;
     - watch:
       - mc_proxy: icinga2-pre-conf
       - file: icinga2-cgi-root-account
@@ -159,7 +158,7 @@ icinga2-cgi-root-account:
 icinga2-cgi-move-stylesheets:
   file.rename:
     - name: {{data.modules.cgi.absolute_styles_dir}}
-    - source: {{data.configuration_directory}}/stylesheets
+    - source: {{data.configuration_directory}}/classicui/stylesheets
     - watch:
       - mc_proxy: icinga2-pre-conf
     - watch_in:
@@ -171,8 +170,8 @@ icinga2-cgi-move-stylesheets:
 
 icinga2-ido2db-conf:
   file.managed:
-    - name: {{data.configuration_directory}}/ido2db.cfg
-    - source: salt://makina-states/files/etc/icinga2/ido2db.cfg
+    - name: {{data.configuration_directory}}/features-available/ido-{{data.modules.ido2db.database.type}}.conf
+    - source: salt://makina-states/files/etc/icinga2/features-available/ido-{{data.modules.ido2db.database.type}}.conf
     - template: jinja
     - makedirs: true
     - user: root
@@ -186,22 +185,15 @@ icinga2-ido2db-conf:
       data: |
             {{sdata}}
 
-icinga2-idomod-conf:
-  file.managed:
-    - name: {{data.configuration_directory}}/idomod.cfg
-    - source: salt://makina-states/files/etc/icinga2/idomod.cfg
-    - template: jinja
-    - makedirs: true
-    - user: root
-    - group: root
-    - mode: 644
+icinga2-ido2db-enable:
+  cmd.run:
+    - name: icinga2-enable-feature ido-{{data.modules.ido2db.database.type}}
     - watch:
       - mc_proxy: icinga2-pre-conf
     - watch_in:
       - mc_proxy: icinga2-post-conf
-    - defaults:
-      data: |
-            {{sdata}}
+
+
 
 # startup ido2db configuration
 {% if grains['os'] in ['Ubuntu'] %}
@@ -242,31 +234,19 @@ icinga2-ido2db-init-sysvinit-conf:
       data: |
             {{sdata}}
 
-
 {% endif %}
 
 {% if data.modules.mklivestatus.enabled %}
-
-icinga2-mklivestatus-conf:
-  file.managed:
-    - name: {{data.configuration_directory}}/modules/mklivestatus.cfg
-    - source: salt://makina-states/files/etc/icinga2/modules/mklivestatus.cfg
-    - template: jinja
-    - makedirs: true
-    - user: root
-    - group: root
-    - mode: 644
+icinga2-mklivestatus-enable:
+  cmd.run:
+    - name: icinga2-enable-feature livestatus
     - watch:
       - mc_proxy: icinga2-pre-conf
     - watch_in:
       - mc_proxy: icinga2-post-conf
-    - defaults:
-      data: |
-            {{sdata}}
-
-
 {% endif %}
 
+{#
 # add objects configuration
 {% import "makina-states/services/monitoring/icinga2/init.sls" as icinga2 with context %}
 

@@ -788,6 +788,8 @@ def settings():
                         'live_1': {
                             'backendtype': "mklivestatus",
                             'socket': "unix:/var/lib/icinga/rw/live",
+#                           for icinga2
+#                           'socket': "unix:/var/run/icinga2/cmd/livestatus",
                             'htmlcgi': "/cgi-bin/icinga/",
                         },
                     },

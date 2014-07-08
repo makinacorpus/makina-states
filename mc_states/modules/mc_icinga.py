@@ -2110,10 +2110,6 @@ def settings():
                           ]))
                     or ('socket' in module_ido2db_database))
 
-        checks_directory = "/root/admin_scripts/nagios"
-        check_ping_warning = "5000,100%"
-        check_ping_critical = check_ping_warning
-
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.monitoring.icinga', {
                 'package': ['icinga-core', 'icinga-common', 'icinga-doc'],
