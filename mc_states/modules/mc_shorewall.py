@@ -419,7 +419,7 @@ def settings():
                     'source': '$FW', 'dest': 'rpn', 'policy': 'ACCEPT'})
 
             # drop all traffic by default if not in permissive_mode
-            if not permissive_mode:
+            if not data['permissive_mode']:
                 data['default_policies'].append({
                     'source': 'all', 'dest': 'all',
                     'policy': 'REJECT', 'loglevel': info_loglevel})
@@ -462,7 +462,7 @@ def settings():
                     zones=data['internal_zones'])
 
 
-        if not data['no_default_rules'] and not permissive_mode:
+        if not data['no_default_rules'] and not data['permissive_mode']:
             data['default_rules'].append({'comment': 'lxc dhcp traffic'})
             if data['have_lxc']:
                 data['default_rules'].append(
