@@ -1764,6 +1764,320 @@ def objects():
 
         # host definitions
         'autoconfigured_hosts_definitions': {
+            'agv': {
+                'hostname': "agv",
+                'attrs': {
+                    'host_name': "agv",
+                    'use': "HT_ICON_OVH,HT+_PUBLIC_DNS,HT+_SNMP_Linux,HT+_BACKUP_BURP",
+                    'alias': "AGV",
+                    'address': "127.0.0.1",
+                    'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
+                },
+                'disk_space': True,
+                'disk_space_root': True,
+                'disk_space_var_makina': True,
+                'dns_association_hostname': True,
+                'load_avg': True,
+                'memory': True,
+                'network': True,
+                'backup_burp_age': True,
+                'debian_updates': True,
+
+                'services_attrs': {
+                    'default': {
+                        'contact_groups': "admins",
+                    },
+                    'network': {
+                        'default': {
+                            'cmdarg_other_args': "-T 1000",
+                        },
+                    },
+                },
+            },
+            'aex': {
+                'hostname': "aex",
+                'attrs': {
+                    'host_name': "aex",
+                    'use': "HT_ICON_OVH,HT+_PUBLIC_DNS,HT+_SNMP_Linux,HT+_BACKUP_BURP",
+                    'alias': "AEX",
+                    'address': "127.0.0.1",
+                    'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
+                },
+                'disk_space': True,
+                'disk_space_root': True,
+                'disk_space_var_makina': True,
+                'dns_association_hostname': True,
+                'load_avg': True,
+                'memory': True,
+                'network': True,
+                'backup_burp_age': True,
+                'debian_updates': True,
+                'web_apache_status': True,
+                'web': True,
+                'services_attrs': {
+                    'default': {
+                        'contact_groups': "admins",
+                    },
+                    'network': {
+                        'default': {
+                            'cmdarg_other_args': "-T 1000",
+                        },
+                    },
+                    'web': {
+                        'ext': {
+                            'service_description': "WEB_PUBLIC_EXT",
+                            'use': "ST_WEB_PUBLIC_antibug",
+                            'cmdarg_hostname': "ext",
+                            'cmdarg_url': "/index2.php",
+                            'cmdarg_critical': 4,
+                            'cmdarg_strings': ["identifiant"],
+                        },
+                    },
+                },
+            },
+            'aeib': {
+                'hostname': "aeib",
+                'attrs': {
+                    'host_name': "aeib",
+                    'use': "HT_ICON_OVH,HT+_PUBLIC_DNS,HT+_SNMP_Linux,HT+_BACKUP_BURP",
+                    'alias': "AEIB",
+                    'address': "127.0.0.1",
+                    'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
+                },
+                'disk_space': True,
+                'disk_space_root': True,
+                'dns_association_hostname': True,
+                'load_avg': True,
+                'memory': True,
+                'network': True,
+                'backup_burp_age': True,
+                'debian_updates': True,
+                'cron': True,
+                'services_attrs': {
+                    'default': {
+                        'contact_groups': "admins",
+                    },
+                    'network': {
+                        'default': {
+                            'cmdarg_other_args': "-T 1000",
+                        },
+                    },
+                },
+            },
+            'ademo': {
+                'hostname': "ademo",
+                'attrs': {
+                    'host_name': "ademo",
+                    'use': "HT_ICON_OVH,HT+_PUBLIC_DNS,HT+_SNMP_Linux,HT+_BACKUP_BURP",
+                    'alias': "ADEMO",
+                    'address': "127.0.0.1",
+                    'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
+                },
+                'disk_space': True,
+                'disk_space_root': True,
+                'disk_space_var_makina': True,
+                'dns_association_hostname': True,
+                'load_avg': True,
+                'memory': True,
+                'network': True,
+                'backup_burp_age': True,
+                'debian_updates': True,
+                'services_attrs': {
+                    'default': {
+                        'contact_groups': "admins",
+                    },
+                    'network': {
+                        'default': {
+                            'cmdarg_other_args': "-T 1000",
+                        },
+                    },
+                },
+            },
+            'alfa02': {
+                'hostname': "alfa02",
+                'attrs': {
+                    'host_name': "alfa02",
+                    'use': "HT_ICON_OVH,HT+_PUBLIC_DNS,HT+_SNMP_Linux,HT+_BACKUP_BURP",
+                    'alias': "ALFA02",
+                    'address': "127.0.0.1",
+                    'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
+                },
+                'md_raid': True,
+                'disk_space': True,
+                'disk_space_root': True,
+                'disk_space_var': True,
+                'dns_association_hostname': True,
+                'load_avg': True,
+                'memory': True,
+                'network': True,
+                'backup_burp_age': True,
+                'web': True,
+                'services_attrs': {
+                    'web': {
+                        'alf': {
+                            'service_description': "WEB_PUBLIC",
+                            'use': "ST_WEB_PUBLIC_antibug",
+                            'cmdarg_hostname': "www",
+                            'cmdarg_warning': 1,
+                            'cmdarg_critical': 2,
+                            'cmdarg_timeout': 8,
+                            'cmdarg_strings': [ "admin" ],
+                        },
+                    },
+                },
+            },
+            'alfa01': {
+                'hostname': "alfa01",
+                'attrs': {
+                    'host_name': "alfa01",
+                    'use': "HT_ICON_OVH,HT+_PUBLIC_DNS,HT+_SNMP_Linux,HT+_BACKUP_BURP",
+                    'alias': "ALFA01",
+                    'address': "127.0.0.1",
+                    'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
+                },
+                'md_raid': True,
+                'disk_space': True,
+                'disk_space_root': True,
+                'disk_space_var': True,
+                'dns_association_hostname': True,
+                'load_avg': True,
+                'memory': True,
+                'network': True,
+                'backup_burp_age': True,
+                'web': True,
+                'services_attrs': {
+                    'web': {
+                        'alf': {
+                            'service_description': "WEB_PUBLIC",
+                            'use': "ST_WEB_PUBLIC_antibug",
+                            'cmdarg_hostname': "www",
+                            'cmdarg_warning': 1,
+                            'cmdarg_critical': 5,
+                            'cmdarg_timeout': 8,
+                            'cmdarg_strings': [ "admin" ],
+                        },
+                    },
+                },
+            },
+            'ald01': {
+                'hostname': "ald01",
+                'attrs': {
+                    'host_name': "ald01",
+                    'use': "HT_ICON_OVH,HT+_PUBLIC_DNS,HT+_SNMP_Linux,HT+_BACKUP_BURP",
+                    'alias': "ALD01",
+                    'address': "127.0.0.1",
+                    'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
+                },
+                'disk_space': True,
+                'disk_space_root': True,
+                'disk_space_var': True,
+                'dns_association_hostname': True,
+                'load_avg': True,
+                'memory': True,
+                'network': True,
+                'backup_burp_age': True,
+                'web': True,
+                'services_attrs': {
+                    'web': {
+                        'aev': {
+                            'service_description': "WEB_PUBLIC",
+                            'cmdarg_hostname': "www",
+                            'cmdarg_warning': 1,
+                            'cmdarg_critical': 5,
+                            'cmdarg_timeout': 8,
+                            'cmdarg_strings': [ "ALD" ],
+                        },
+                    },
+                },
+            },
+            'aev': {
+                'hostname': "aev",
+                'attrs': {
+                    'host_name': "aev",
+                    'use': "HT_ICON_OVH,HT+_PUBLIC_DNS,HT+_SNMP_Linux,HT+_BACKUP_BURP",
+                    'alias': "AEV",
+                    'address': "127.0.0.1",
+                    'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
+                },
+                'disk_space': True,
+                'disk_space_root': True,
+                'disk_space_var_makina': True,
+                'dns_association': True,
+                'dns_association_hostname': True,
+                'load_avg': True,
+                'memory': True,
+                'network': True,
+                'backup_burp_age': True,
+                'debian_updates': True,
+                'web_apache_status': True,
+                'web': True,
+                'services_attrs': {
+                    'dns_association': {
+                        'aev': { 
+                            'cmdarg_hostname': "www",
+                        },
+                    },
+                    'web': {
+                        'aev': {
+                            'service_description': "WEB_PUBLIC_AEV",
+                            'use': "ST_WEB_PUBLIC_antibug",
+                            'cmdarg_hostname': "www",
+                            'cmdarg_warning': 1,
+                            'cmdarg_critical': 2,
+                            'cmdarg_timeout': 8,
+                            'cmdarg_strings': [ "Design" ],
+                        },
+                    },
+                },
+            },
+            'a01': {
+                'hostname': "a01",
+                'attrs': {
+                    'host_name': "a01",
+                    'use': "HT_ICON_OVH,HT+_PUBLIC_DNS,HT+_SNMP_Linux,HT+_BACKUP_BURP",
+                    'alias': "A01",
+                    'address': "127.0.0.1",
+                    'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
+                },
+                'megaraid_sas': True,
+                'disk_space': True,
+                'disk_space_root': True,
+                'disk_space_var_makina': True,
+                'dns_association_hostname': True,
+                'load_avg': True,
+                'memory': True,
+                'network': True,
+                'backup_burp_age': True,
+                'debian_updates': True,
+                'supervisord_status': True,
+                'web': True,
+                'services_attrs': {
+                    'web': {
+                        'cas': {
+                            'service_description': "WEB_CAS",
+                            'use': "ST_WEB_PUBLIC_CLIENT",
+                            'check_command': "C_HTTP_STRING_AUTH",
+                            'cmdarg_hostname': "cas",
+                            'cmdarg_warning': 1,
+                            'cmdarg_critical': 5,
+                            'cmdarg_timeout': 8,
+                            'cmdarg_strings': [ "authentification" ],
+                        },
+                        'www': {
+                            'service_description': "WEB_CLIENT",
+                            'use': "ST_WEB_PUBLIC_CLIENT",
+                            'check_command': "C_HTTP_STRING",
+                            'cmdarg_hostname': "www",
+                            'cmdarg_warning': 1,
+                            'cmdarg_critical': 5,
+                            'cmdarg_timeout': 8,
+                            'cmdarg_strings': [ "authentification" ],
+                        },
+                    },
+                },
+
+            },
+
             'webservices': {
                 'hostname': "webservices",
                 'attrs': {
@@ -2550,6 +2864,7 @@ def add_auto_configuration_host_settings(hostname,
                                          cron,
                                          ddos,
                                          debian_updates,
+                                         dns_association_hostname,
                                          dns_association,
                                          dns_reverse_association,
                                          disk_space,
@@ -2638,6 +2953,7 @@ def add_auto_configuration_host_settings(hostname,
     kwargs.setdefault('cron', cron)
     kwargs.setdefault('ddos', ddos)
     kwargs.setdefault('debian_updates', debian_updates)
+    kwargs.setdefault('dns_association_hostname', dns_association_hostname)
     kwargs.setdefault('dns_association', dns_association)
     kwargs.setdefault('dns_reverse_association', dns_reverse_association)
     kwargs.setdefault('disk_space', disk_space)
@@ -2686,7 +3002,7 @@ def add_auto_configuration_host_settings(hostname,
     dns_hostname=''
     dns_address=''
 
-    if dns_association or dns_reverse and 'address' in attrs and 'host_name' in attrs:
+    if dns_association_hostname or dns_association or dns_reverse_association and 'address' in attrs and 'host_name' in attrs:
         if 'host_name' in attrs:
             dns_hostname = attrs['host_name']
         else:
@@ -2781,6 +3097,14 @@ def add_auto_configuration_host_settings(hostname,
            'service_description': "S_DEBIAN_UPDATES",
            'use': "ST_DAILY_NOALERT",
            'check_command': "CSSH_DEBIAN_UPDATES",
+       },
+       'dns_association_hostname': {
+           'service_description': "DNS_ASSOCIATION_hostname",
+           'use': "ST_DNS_ASSOCIATION_hostname",
+           'check_command': "C_DNS_EXTERNE_ASSOCIATION",
+           'cmdarg_hostname': dns_hostname,
+           'cmdarg_dns_address': dns_address,
+           'cmdarg_other_args': "",
        },
        'dns_association': {
            'default': {
@@ -3021,10 +3345,9 @@ def add_auto_configuration_host_settings(hostname,
            'cmdarg_critical': 8,
        },
        'postgres_process': {
-           'service_description': "Check postgres process",
+           'service_description': "S_POSTGRESQL_PROCESS",
            'use': "ST_ALERT",
-           'notification_options': "w,c,r",
-           'notifications_enabled': 1,
+           'icon_image': "services/sql4.png",
            'check_command': "C_SNMP_PROCESS",
 
            'cmdarg_process': "postgres",
@@ -3157,7 +3480,20 @@ def add_auto_configuration_host_settings(hostname,
        },
     }
 
+    # add the services_attrs 'default' in all services in services_default_attrs
+    # in order to add directives for all services (like contact_groups)
+    if 'default' in services_attrs:
+        for name, service in services_default_attrs.items():
+            if not name in services_attrs:
+                services_attrs[name]={}
+            if not name in ['dns_association', 'dns_reverse_association', 'disk_space', 'network', 'solr', 'web_openid', 'web']:
+                services_default_attrs[name] = dict(services_default_attrs[name].items() + services_attrs['default'].items())
+            else:
+                services_default_attrs[name]['default'] = dict(services_default_attrs[name]['default'].items() + services_attrs['default'].items())
+        services_attrs.pop('default', None)
+
     # override the commands parameters values
+    # we complete the services_attrs dictionary with values from services_default_attrs
 
     # override dns_association subdictionary
     if not 'dns_association' in services_attrs:
@@ -3274,19 +3610,6 @@ def add_auto_configuration_host_settings(hostname,
                 str_list = [ value.replace('"', '\\\\"') for value in str_list ]
                 services_attrs['web'][name]['cmdarg_strings']='"'+'" -s "'.join(str_list)+'"'
 
-            # build the command
-#            if services_attrs['web'][name]['cmdarg_ssl']:
-#                cmd = "C_HTTPS_STRING"
-#            else:
-#                cmd = "C_HTTP_STRING"
-#            if services_attrs['web'][name]['cmdarg_authentication']:
-#                cmd = cmd + "_AUTH"
-#            if services_attrs['web'][name]['cmdarg_only']:
-#                cmd = cmd + "_ONLY"
-#
-#            services_attrs['web'][name]['cmdarg_command'] = cmd
-
-
     # override mountpoints subdictionaries
     # for each disk_space, build the dictionary:
     # priority for values
@@ -3315,9 +3638,9 @@ def add_auto_configuration_host_settings(hostname,
                                                                          +services_attrs['disk_space'][mountpoint].items())
 
             if services_attrs['disk_space'][mountpoint]['service_description'] == services_default_attrs['disk_space']['default']['service_description']:
-                services_attrs['disk_space'][mountpoint]['service_description']=services_attrs['disk_space'][mountpoint]['service_description']+mountpoint.upper()
+                services_attrs['disk_space'][mountpoint]['service_description']=services_attrs['disk_space'][mountpoint]['service_description']+disks_spaces[mountpoint].upper()
             if services_attrs['disk_space'][mountpoint]['use'] == services_default_attrs['disk_space']['default']['use']:
-                services_attrs['disk_space'][mountpoint]['use']=services_attrs['disk_space'][mountpoint]['use']+disks_spaces[mountpoint]
+                services_attrs['disk_space'][mountpoint]['use']=services_attrs['disk_space'][mountpoint]['use']+disks_spaces[mountpoint].replace('/', '_').replace('_', '/', 1).upper()
             services_attrs['disk_space'][mountpoint]['cmdarg_path']= disks_spaces[mountpoint]
 
 
@@ -3379,6 +3702,11 @@ def add_auto_configuration_host_settings(hostname,
                                                                   str(services_attrs['debian_updates']['check_command']),
                                                                  ]+cssh_params,
                                                                 )
+    services_attrs['dns_association_hostname']['check_command'] = "!".join([
+                                                                  str(services_attrs['dns_association_hostname']['check_command']),
+                                                                  str(services_attrs['dns_association_hostname']['cmdarg_hostname']),
+                                                                  str(services_attrs['dns_association_hostname']['cmdarg_other_args']),
+                                                                ])
     for name, dns_association in services_attrs['dns_association'].items():
         services_attrs['dns_association'][name]['check_command'] = "!".join([
                                                                   str(dns_association['check_command']),

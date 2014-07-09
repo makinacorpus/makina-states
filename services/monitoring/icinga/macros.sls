@@ -115,6 +115,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      cron=False,
                                      ddos=false,
                                      debian_updates=False,
+                                     dns_association_hostname=False,
                                      dns_association=False,
                                      dns_reverse_association=False,
                                      disk_space=False,
@@ -181,6 +182,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      cron,
                                                                      ddos,
                                                                      debian_updates,
+                                                                     dns_association_hostname,
                                                                      dns_association,
                                                                      dns_reverse_association,
                                                                      disk_space,
@@ -307,6 +309,15 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     {{ configuration_add_object(type='service',
                                 file=data.service_subdirectory+'/'+data.hostname+'/debian_updates.cfg',
                                 attrs=data.services_attrs.debian_updates
+                               )
+    }}
+{% endif %}
+
+# add dns_association_hostname service
+{% if data.dns_association_hostname %}
+    {{ configuration_add_object(type='service',
+                                file=data.service_subdirectory+'/'+data.hostname+'/dns_association_hostname.cfg',
+                                attrs=data.services_attrs.dns_association_hostname
                                )
     }}
 {% endif %}
