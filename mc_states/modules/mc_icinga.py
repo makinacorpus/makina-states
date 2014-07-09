@@ -1782,11 +1782,70 @@ def objects():
                 },
             },
             # hosts
+            ''
+#            'car': {}
+            'awebsite': {
+                'hostname': "awebsite",
+                'attrs': {
+                    'host_name': "awebsite",
+                    'use': "HT_ICON_OVH,HT+_PUBLIC_DNS,HT+_SNMP_Linux,HT+_BACKUP_BURP",
+                    'alias': "AWEBSITE",
+                    'address': "127.0.0.1",
+                    'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
+                    'statusmap_image': "gd2/vendors/xen.gd2",
+            },
+            'asrv2': {
+                'hostname': "asrv2",
+                'attrs': {
+                    'host_name': "asrv1",
+                    'use': "HT_ICON_OVH,HT+_SNMP_Linux,HT+_PUBLIC_DNS,HT_Xen",
+                    'alias': "ASRV1",
+                    'address': "127.0.0.1",
+                    'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
+                    'statusmap_image': "gd2/vendors/xen.gd2",
+                },
+                'drbd': True,
+                'disk_space': True,
+                'disk_space_root': True,
+                'dns_association_hostname': True,
+                'load_avg': True,
+                'memory_hyperviseur': True,
+                'network': True,
+                'services_attrs': {
+                    'default': {
+                        'contact_groups': "admins",
+                    },
+                },
+            },
+            'asrv1': {
+                'hostname': "asrv1",
+                'attrs': {
+                    'host_name': "asrv1",
+                    'use': "HT_ICON_OVH,HT+_SNMP_Linux,HT+_PUBLIC_DNS,HT_Xen",
+                    'alias': "ASRV1",
+                    'address': "127.0.0.1",
+                    'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
+                    'statusmap_image': "gd2/vendors/xen.gd2",
+                },
+                'drbd': True,
+                'disk_space': True,
+                'disk_space_root': True,
+                'dns_association_hostname': True,
+                'load_avg': True,
+                'memory_hyperviseur': True,
+                'network': True,
+                'debian_updates': True,
+                'services_attrs': {
+                    'default': {
+                        'contact_groups': "admins",
+                    },
+                },
+            },
             'apre': {
                 'hostname': "apre",
                 'attrs': {
                     'host_name': "apre",
-                    'use': "HT_ICON_OVH,HT+_PUBLIC_DNS,HT+_SNMP_Linux,HT+_BACKUP_BURP",
+                    'use': " HT_ICON_OVH,HT+_BACKUP_BURP,HT+_PUBLIC_DNS,HT+_SNMP_Linux",
                     'alias': "APRE",
                     'address': "127.0.0.1",
                     'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
@@ -3288,6 +3347,7 @@ def add_auto_configuration_host_settings(hostname,
        'drbd': {
            'service_description': "CHECK_DRBD",
            'use': "ST_ALERT",
+           'icon_image': "services/heartbeat.png",
            'check_command': "CSSH_DRBD",
 
            'cmdarg_command': "'/root/admin_scripts/nagios/check_drbd -d  0,1'",
