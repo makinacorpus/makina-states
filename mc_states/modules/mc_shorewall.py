@@ -136,6 +136,7 @@ def settings():
                 'interfaces': OrderedDict(),
                 'params': OrderedDict(),
                 'rules': [],
+                'nat': [],
                 'policies': [],
                 'zones': OrderedDict(),
                 'masqs': [],

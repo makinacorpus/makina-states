@@ -1,0 +1,4 @@
+{% set shwdata = salt['mc_utils.json_load'](shwdata) %}
+{% for i in  shwdata.nat %}
+{{i}}
+{% endfor %}

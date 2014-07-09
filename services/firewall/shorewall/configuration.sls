@@ -26,6 +26,7 @@ shorewall-config:
 {%- for config in [
   'interfaces',
   'masq',
+  'nat',
   'params',
   'policy',
   'rules',
