@@ -1922,7 +1922,13 @@ def report():
     pt = '/srv/projects'
     ret = ''
     target = __grains__['id']
-    vmconf = __salt__['mc_cloud_vm.settings']()
+    try:
+        vmconf = __salt__['mc_cloud_vm.settings']()
+    except ValueError:
+        vmconf = {
+            'mccloud_vm_ssh_port': '22',
+        }
+
     if os.path.exists(pt):
         ret += '''
 {id}:
