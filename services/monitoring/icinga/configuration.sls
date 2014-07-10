@@ -252,6 +252,11 @@ icinga-mklivestatus-conf:
 # add objects configuration
 {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
 
+# purge objects
+{% for file in data.objects.purge_definitions %}
+    {{ icinga.configuration_remove_object(file=file) }}
+{% endfor %}
+
 # add templates and commands (and contacts, timeperiods...)
 {% for name, object in data.objects.objects_definitions.items() %}
     {{ icinga.configuration_add_object(**object) }}

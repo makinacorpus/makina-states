@@ -17,7 +17,7 @@
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 
 # we add the object
-icinga-configuration-{{data.state_name_salt}}-object-conf:
+icinga-configuration-{{data.state_name_salt}}-add-object-conf:
   file.managed:
     - name: {{data.objects.directory}}/{{data.file}}
     - source: salt://makina-states/files/etc/icinga/objects/template.cfg
@@ -36,20 +36,35 @@ icinga-configuration-{{data.state_name_salt}}-object-conf:
 
 {% endmacro %}
 
+{#
+#
+# Macros mains args:
+#     file
+#         the filename where the object will be removed 
+#
+#}
+
 {% macro configuration_remove_object(file) %}
 {% set data = salt['mc_icinga.remove_configuration_object_settings'](file, **kwargs) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 
-# we add the object
-icinga-configuration-{{data.state_name_salt}}-object-conf:
+# we remove the object
+icinga-configuration-{{data.state_name_salt}}-remove-object-conf:
   file.absent:
-    - name: {{data.objects.directory}}/{{data.file}}
+    - name: echo {{data.objects.directory}}/{{data.file}}
     - watch:
+      - mc_proxy: icinga-configuration-pre-object-conf
+{#
       - mc_proxy: icinga-configuration-pre-clean-directories 
+#}
     - watch_in:
+      - mc_proxy: icinga-configuration-post-object-conf
+{#
       - mc_proxy:  icinga-configuration-post-clean-directories
+#}
 
 {% endmacro %}
+
 {#
 #
 # Macros mains args:
@@ -71,7 +86,7 @@ icinga-configuration-{{data.state_name_salt}}-object-conf:
 # we split the value in ',' and loop. it is to remove duplicates values.
 # for example, it is to avoid to produce "v1,v2,v1" if "v1,v2" are given in a call and "v1" in an other call
 {% for value_splitted in data.value.split(',') %}
-icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_splitted}}-conf:
+icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_splitted}}-edit-object-conf:
   file.accumulated:
     - name: "{{data.attr}}"
     - filename: {{data.objects.directory}}/{{data.file}}
@@ -108,11 +123,6 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 #     services_attrs
 #         dictionary to override the arguments given in check_command for each service
 #
-
-# WILL BE REMOVED:
-# for contacts and contact_groups, by default if no contact is given in services::
-# If the contacts and contact_groups options are not set, it will notify host contacts instead
-
 #}
 
 {% macro configuration_add_auto_host(hostname,
@@ -276,24 +286,23 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 
 
 # configure the services
-{% for service, enable in data.services_enabled.items() %}
-    {% if not service in data.services_loop %}
-        {% set file=data.service_subdirectory+'/'+data.hostname+'/'+service+'.cfg' %}
-        {% if enable %}
-            {{ configuration_add_object(type='service',
-                                        file=file,
-                                        attrs=data.services_attrs[service] 
-                                       )
-            }}
-        {% else %}
-            {{ configuration_remove_object(file=file) }}
-        {% endif %}
-    {% endif %}
+{% for service in data.services_disabled %}
+    {% set file=data.service_subdirectory+'/'+data.hostname+'/'+service+'.cfg' %}
+    {{ configuration_remove_object(file=file) }}
+{% endfor %}
+
+{% for service in data.services_enabled %}
+    {% set file=data.service_subdirectory+'/'+data.hostname+'/'+service+'.cfg' %}
+    {{ configuration_add_object(type='service',
+                                file=file,
+                                attrs=data.services_attrs[service] 
+                               )
+    }}
 {% endfor %}
 
 # add dns_association service
 # TODO: find how to delete old configuration
-{% if data.services_enabled.dns_association %}
+{% if data.services_loop_enabled.dns_association %}
     {% for name, dns_association in data.services_attrs.dns_association.items() %}
         {{ configuration_add_object(type='service',
                                     file=data.service_subdirectory+'/'+data.hostname+'/dns_association_e_'+name+'.cfg',
@@ -305,7 +314,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 
 # add dns_reverse_association service
 # TODO: find how to delete old configuration
-{% if data.services_enabled.dns_reverse_association %}
+{% if data.services_loop_enabled.dns_reverse_association %}
     {% for name, dns_reverse_association in data.services_attrs.dns_reverse_association.items() %}
         {{ configuration_add_object(type='service',
                                     file=data.service_subdirectory+'/'+data.hostname+'/dns_reverse_association_'+name+'.cfg',
@@ -317,7 +326,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 
 # add disk_space service
 # TODO: find how to delete old configuration
-{% if data.services_enabled.disk_space %}
+{% if data.services_loop_enabled.disk_space %}
     {% for mountpoint, disk_space in data.services_attrs.disk_space.items() %}
         {{ configuration_add_object(type='service',
                                     file=data.service_subdirectory+'/'+data.hostname+'/disk_space_'+mountpoint+'.cfg',
@@ -329,7 +338,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 
 # add network service
 # TODO: find how to delete old configuration
-{% if data.services_enabled.network %}
+{% if data.services_loop_enabled.network %}
     {% for name, network in data.services_attrs.network.items() %}
         {{ configuration_add_object(type='service',
                                     file=data.service_subdirectory+'/'+data.hostname+'/network_'+name+'.cfg',
@@ -342,7 +351,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add solr service
 # TODO: find how to delete old configuration
 # TODO: readd auth
-{% if data.services_enabled.solr %}
+{% if data.services_loop_enabled.solr %}
     {% for name, solr in data.services_attrs.solr.items() %}
         {{ configuration_add_object(type='service',
                                     file=data.service_subdirectory+'/'+data.hostname+'/solr_'+name+'.cfg',
@@ -355,7 +364,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 # add web_openid service
 # TODO: find how to delete old configuration
 # TODO: readd auth
-{% if data.services_enabled.web_openid %}
+{% if data.services_loop_enabled.web_openid %}
     {% for name, web_openid in data.services_attrs.web_openid.items() %}
         {{ configuration_add_object(type='service',
                                     file=data.service_subdirectory+'/'+data.hostname+'/web_openid_'+name+'.cfg',
@@ -367,7 +376,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 
 # add web service
 # TODO: find how to delete old configuration
-{% if data.services_enabled.web %}
+{% if data.services_loop_enabled.web %}
     {% for name, web in data.services_attrs.web.items() %}
         {{ configuration_add_object(type='service',
                                     file=data.service_subdirectory+'/'+data.hostname+'/web_'+name+'.cfg',

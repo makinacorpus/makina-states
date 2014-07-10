@@ -1761,7 +1761,10 @@ def objects():
             },
 
         },
-
+        # purge in order to remove old configuration
+        'purge_definitions': [
+            'hostgroups/HG_ALL_HOSTS',
+        ], 
         # host definitions
         'autoconfigured_hosts_definitions': {
             # hostgroups
@@ -2708,9 +2711,6 @@ def add_auto_configuration_host_settings(hostname,
         'ddos',
         'debian_updates',
         'dns_association_hostname',
-        'dns_association',
-        'dns_reverse_association',
-        'disk_space',
         'drbd',
         'epmd_process',
         'erp_files',
@@ -2730,7 +2730,6 @@ def add_auto_configuration_host_settings(hostname,
         'memory',
         'memory_hyperviseur',
         'mysql_process',
-        'network',
         'ntp_peers',
         'ntp_time',
         'only_one_nagios_running',
@@ -2740,24 +2739,23 @@ def add_auto_configuration_host_settings(hostname,
         'raid',
         'sas',
         'snmpd_memory_control',
-        'solr',
         'ssh',
         'supervisord_status',
         'swap',
         'tiles_generator_access',
         'ware_raid',
         'web_apache_status',
-        'web_openid',
-        'web',
     ]
-    services_enabled = dict()
+    services_enabled = []
+    services_disabled = []
     for service in services:
         if eval(service):
-            services_enabled[service]=True
+            services_enabled.append(service)
         else:
-            services_enabled[service]=False
+            services_disabled.append(service)
 
     kwargs.setdefault('services_enabled', services_enabled)
+    kwargs.setdefault('services_disabled', services_disabled)
 
     # services for which a loop is used in the macro
     services_loop = [
@@ -2769,7 +2767,14 @@ def add_auto_configuration_host_settings(hostname,
         'web_openid',
         'web',
     ]
-    kwargs.setdefault('services_loop', services_loop)
+    services_loop_enabled = dict()
+    for service in services_loop:
+        if eval(service):
+            services_loop_enabled[service]=True
+        else:
+            services_loop_enabled[service]=False
+
+    kwargs.setdefault('services_loop_enabled', services_loop_enabled)
 
     # values for disk_space service
     mountpoints_path = {
