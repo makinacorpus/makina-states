@@ -37,7 +37,7 @@ def objects():
     locs = __salt__['mc_locations.settings']()
     check_by_ssh_params="-q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$' -t '$ARG4$' "
     data = {
-            'directory': locs['conf_dir']+"/icinga/objects/salt_generated",
+        'directory': locs['conf_dir']+"/icinga/objects/salt_generated",
         'objects_definitions': {
             # meta_commands defintions
             'command_check_meta': {
@@ -1782,509 +1782,6 @@ def objects():
                 },
             },
             # hosts
-            ''
-#            'car': {}
-            'awebsite': {
-                'hostname': "awebsite",
-                'attrs': {
-                    'host_name': "awebsite",
-                    'use': "HT_ICON_OVH,HT+_PUBLIC_DNS,HT+_SNMP_Linux,HT+_BACKUP_BURP",
-                    'alias': "AWEBSITE",
-                    'address': "127.0.0.1",
-                    'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
-                    'statusmap_image': "gd2/vendors/xen.gd2",
-            },
-            'asrv2': {
-                'hostname': "asrv2",
-                'attrs': {
-                    'host_name': "asrv1",
-                    'use': "HT_ICON_OVH,HT+_SNMP_Linux,HT+_PUBLIC_DNS,HT_Xen",
-                    'alias': "ASRV1",
-                    'address': "127.0.0.1",
-                    'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
-                    'statusmap_image': "gd2/vendors/xen.gd2",
-                },
-                'drbd': True,
-                'disk_space': True,
-                'disk_space_root': True,
-                'dns_association_hostname': True,
-                'load_avg': True,
-                'memory_hyperviseur': True,
-                'network': True,
-                'services_attrs': {
-                    'default': {
-                        'contact_groups': "admins",
-                    },
-                },
-            },
-            'asrv1': {
-                'hostname': "asrv1",
-                'attrs': {
-                    'host_name': "asrv1",
-                    'use': "HT_ICON_OVH,HT+_SNMP_Linux,HT+_PUBLIC_DNS,HT_Xen",
-                    'alias': "ASRV1",
-                    'address': "127.0.0.1",
-                    'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
-                    'statusmap_image': "gd2/vendors/xen.gd2",
-                },
-                'drbd': True,
-                'disk_space': True,
-                'disk_space_root': True,
-                'dns_association_hostname': True,
-                'load_avg': True,
-                'memory_hyperviseur': True,
-                'network': True,
-                'debian_updates': True,
-                'services_attrs': {
-                    'default': {
-                        'contact_groups': "admins",
-                    },
-                },
-            },
-            'apre': {
-                'hostname': "apre",
-                'attrs': {
-                    'host_name': "apre",
-                    'use': " HT_ICON_OVH,HT+_BACKUP_BURP,HT+_PUBLIC_DNS,HT+_SNMP_Linux",
-                    'alias': "APRE",
-                    'address': "127.0.0.1",
-                    'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
-                },
-                'disk_space': True,
-                'disk_space_root': True,
-                'disk_space_var_makina': True,
-                'dns_association_hostname': True,
-                'load_avg': True,
-                'memory': True,
-                'network': True,
-                'backup_burp_age': True,
-                'debian_updates': True,
-                'web_apache_status': True,
-                'web': True,
-                'services_attrs': {
-                    'default': {
-                        'contact_groups': "admins",
-                    },
-                    'network': {
-                        'default': {
-                            'cmdarg_other_args': "-T 1000",
-                        },
-                    },
-                    'web': {
-                        'apre': {
-                            'service_description': "WEB",
-                            'use': "ST_WEB_INTRA",
-                            'cmdarg_hostname': "apre",
-                            'cmdarg_url': "/",
-                            'cmdarg_critical': 4,
-                            'cmdarg_strings': ["JOB"],
-                        },
-                    },
-                },
-            },
-            'ldap': {
-                'hostname': "ldap",
-                'attrs': {
-                    'host_name': "ldap",
-                    'use': "HT_ICON_OVH,HT+_PUBLIC_DNS,HT+_SNMP_Linux,HT+_BACKUP_BURP",
-                    'alias': "LDAP",
-                    'address': "127.0.0.1",
-                    'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
-                },
-                'disk_space': True,
-                'disk_space_root': True,
-                'dns_association_hostname': True,
-                'load_avg': True,
-                'memory': True,
-                'network': True,
-                'backup_burp_age': True,
-                'debian_updates': True,
-                'web_apache_status': True,
-                'web': True,
-                'services_attrs': {
-                    'default': {
-                        'contact_groups': "admins",
-                    },
-                    'network': {
-                        'default': {
-                            'cmdarg_other_args': "-T 1000",
-                        },
-                    },
-                    'web': {
-                        'ldap': {
-                            'service_description': "WEB_PUBLIC_LDAP",
-                            'use': "ST_WEB_PUBLIC_antibug",
-                            'cmdarg_hostname': "ldap",
-                            'cmdarg_url': "/",
-                            'cmdarg_critical': 4,
-                            'cmdarg_strings': ["Directory"],
-                        },
-                    },
-                },
-            },
-            'ajo': {
-                'hostname': "ajo",
-                'attrs': {
-                    'host_name': "ajo",
-                    'use': "HT_ICON_OVH,HT+_PUBLIC_DNS,HT+_SNMP_Linux,HT+_BACKUP_BURP",
-                    'alias': "AJO",
-                    'address': "127.0.0.1",
-                    'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
-                },
-                'erp_files': True,
-                'prebill_sending': True,
-                'disk_space': True,
-                'disk_space_root': True,
-                'disk_space_var_makina': True,
-                'dns_association_hostname': True,
-                'load_avg': True,
-                'memory': True,
-                'network': True,
-                'backup_burp_age': True,
-                'debian_updates': True,
-                'postgres_port': True,
-                'postgres_process': True,
-                'cron': True,
-                'web_apache_status': True,
-                'web': True,
-                'services_attrs': {
-                    'default': {
-                        'contact_groups': "admins",
-                    },
-                    'network': {
-                        'default': {
-                            'cmdarg_other_args': "-T 1000",
-                        },
-                    },
-                    'postgres_port': {
-                        'contact_groups': "admins,Sysadmins"
-                    },
-                    'web': {
-                        'ajo': {
-                            'service_description': "WEB_PUBLIC_AJO",
-                            'use': "ST_WEB_PUBLIC_antibug",
-                            'cmdarg_hostname': "ext",
-                            'cmdarg_url': "/",
-                            'cmdarg_critical': 4,
-                            'cmdarg_strings': ["JO"],
-                        },
-                    },
-                },
-            },
-            'agv': {
-                'hostname': "agv",
-                'attrs': {
-                    'host_name': "agv",
-                    'use': "HT_ICON_OVH,HT+_PUBLIC_DNS,HT+_SNMP_Linux,HT+_BACKUP_BURP",
-                    'alias': "AGV",
-                    'address': "127.0.0.1",
-                    'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
-                },
-                'disk_space': True,
-                'disk_space_root': True,
-                'disk_space_var_makina': True,
-                'dns_association_hostname': True,
-                'load_avg': True,
-                'memory': True,
-                'network': True,
-                'backup_burp_age': True,
-                'debian_updates': True,
-
-                'services_attrs': {
-                    'default': {
-                        'contact_groups': "admins",
-                    },
-                    'network': {
-                        'default': {
-                            'cmdarg_other_args': "-T 1000",
-                        },
-                    },
-                },
-            },
-            'aex': {
-                'hostname': "aex",
-                'attrs': {
-                    'host_name': "aex",
-                    'use': "HT_ICON_OVH,HT+_PUBLIC_DNS,HT+_SNMP_Linux,HT+_BACKUP_BURP",
-                    'alias': "AEX",
-                    'address': "127.0.0.1",
-                    'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
-                },
-                'disk_space': True,
-                'disk_space_root': True,
-                'disk_space_var_makina': True,
-                'dns_association_hostname': True,
-                'load_avg': True,
-                'memory': True,
-                'network': True,
-                'backup_burp_age': True,
-                'debian_updates': True,
-                'web_apache_status': True,
-                'web': True,
-                'services_attrs': {
-                    'default': {
-                        'contact_groups': "admins",
-                    },
-                    'network': {
-                        'default': {
-                            'cmdarg_other_args': "-T 1000",
-                        },
-                    },
-                    'web': {
-                        'ext': {
-                            'service_description': "WEB_PUBLIC_EXT",
-                            'use': "ST_WEB_PUBLIC_antibug",
-                            'cmdarg_hostname': "ext",
-                            'cmdarg_url': "/index2.php",
-                            'cmdarg_critical': 4,
-                            'cmdarg_strings': ["identifiant"],
-                        },
-                    },
-                },
-            },
-            'aeib': {
-                'hostname': "aeib",
-                'attrs': {
-                    'host_name': "aeib",
-                    'use': "HT_ICON_OVH,HT+_PUBLIC_DNS,HT+_SNMP_Linux,HT+_BACKUP_BURP",
-                    'alias': "AEIB",
-                    'address': "127.0.0.1",
-                    'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
-                },
-                'disk_space': True,
-                'disk_space_root': True,
-                'dns_association_hostname': True,
-                'load_avg': True,
-                'memory': True,
-                'network': True,
-                'backup_burp_age': True,
-                'debian_updates': True,
-                'cron': True,
-                'services_attrs': {
-                    'default': {
-                        'contact_groups': "admins",
-                    },
-                    'network': {
-                        'default': {
-                            'cmdarg_other_args': "-T 1000",
-                        },
-                    },
-                },
-            },
-            'ademo': {
-                'hostname': "ademo",
-                'attrs': {
-                    'host_name': "ademo",
-                    'use': "HT_ICON_OVH,HT+_PUBLIC_DNS,HT+_SNMP_Linux,HT+_BACKUP_BURP",
-                    'alias': "ADEMO",
-                    'address': "127.0.0.1",
-                    'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
-                },
-                'disk_space': True,
-                'disk_space_root': True,
-                'disk_space_var_makina': True,
-                'dns_association_hostname': True,
-                'load_avg': True,
-                'memory': True,
-                'network': True,
-                'backup_burp_age': True,
-                'debian_updates': True,
-                'services_attrs': {
-                    'default': {
-                        'contact_groups': "admins",
-                    },
-                    'network': {
-                        'default': {
-                            'cmdarg_other_args': "-T 1000",
-                        },
-                    },
-                },
-            },
-            'alfa02': {
-                'hostname': "alfa02",
-                'attrs': {
-                    'host_name': "alfa02",
-                    'use': "HT_ICON_OVH,HT+_PUBLIC_DNS,HT+_SNMP_Linux,HT+_BACKUP_BURP",
-                    'alias': "ALFA02",
-                    'address': "127.0.0.1",
-                    'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
-                },
-                'md_raid': True,
-                'disk_space': True,
-                'disk_space_root': True,
-                'disk_space_var': True,
-                'dns_association_hostname': True,
-                'load_avg': True,
-                'memory': True,
-                'network': True,
-                'backup_burp_age': True,
-                'web': True,
-                'services_attrs': {
-                    'web': {
-                        'alf': {
-                            'service_description': "WEB_PUBLIC",
-                            'use': "ST_WEB_PUBLIC_antibug",
-                            'cmdarg_hostname': "www",
-                            'cmdarg_warning': 1,
-                            'cmdarg_critical': 2,
-                            'cmdarg_timeout': 8,
-                            'cmdarg_strings': [ "admin" ],
-                        },
-                    },
-                },
-            },
-            'alfa01': {
-                'hostname': "alfa01",
-                'attrs': {
-                    'host_name': "alfa01",
-                    'use': "HT_ICON_OVH,HT+_PUBLIC_DNS,HT+_SNMP_Linux,HT+_BACKUP_BURP",
-                    'alias': "ALFA01",
-                    'address': "127.0.0.1",
-                    'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
-                },
-                'md_raid': True,
-                'disk_space': True,
-                'disk_space_root': True,
-                'disk_space_var': True,
-                'dns_association_hostname': True,
-                'load_avg': True,
-                'memory': True,
-                'network': True,
-                'backup_burp_age': True,
-                'web': True,
-                'services_attrs': {
-                    'web': {
-                        'alf': {
-                            'service_description': "WEB_PUBLIC",
-                            'use': "ST_WEB_PUBLIC_antibug",
-                            'cmdarg_hostname': "www",
-                            'cmdarg_warning': 1,
-                            'cmdarg_critical': 5,
-                            'cmdarg_timeout': 8,
-                            'cmdarg_strings': [ "admin" ],
-                        },
-                    },
-                },
-            },
-            'ald01': {
-                'hostname': "ald01",
-                'attrs': {
-                    'host_name': "ald01",
-                    'use': "HT_ICON_OVH,HT+_PUBLIC_DNS,HT+_SNMP_Linux,HT+_BACKUP_BURP",
-                    'alias': "ALD01",
-                    'address': "127.0.0.1",
-                    'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
-                },
-                'disk_space': True,
-                'disk_space_root': True,
-                'disk_space_var': True,
-                'dns_association_hostname': True,
-                'load_avg': True,
-                'memory': True,
-                'network': True,
-                'backup_burp_age': True,
-                'web': True,
-                'services_attrs': {
-                    'web': {
-                        'aev': {
-                            'service_description': "WEB_PUBLIC",
-                            'cmdarg_hostname': "www",
-                            'cmdarg_warning': 1,
-                            'cmdarg_critical': 5,
-                            'cmdarg_timeout': 8,
-                            'cmdarg_strings': [ "ALD" ],
-                        },
-                    },
-                },
-            },
-            'aev': {
-                'hostname': "aev",
-                'attrs': {
-                    'host_name': "aev",
-                    'use': "HT_ICON_OVH,HT+_PUBLIC_DNS,HT+_SNMP_Linux,HT+_BACKUP_BURP",
-                    'alias': "AEV",
-                    'address': "127.0.0.1",
-                    'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
-                },
-                'disk_space': True,
-                'disk_space_root': True,
-                'disk_space_var_makina': True,
-                'dns_association': True,
-                'dns_association_hostname': True,
-                'load_avg': True,
-                'memory': True,
-                'network': True,
-                'backup_burp_age': True,
-                'debian_updates': True,
-                'web_apache_status': True,
-                'web': True,
-                'services_attrs': {
-                    'dns_association': {
-                        'aev': { 
-                            'cmdarg_hostname': "www",
-                        },
-                    },
-                    'web': {
-                        'aev': {
-                            'service_description': "WEB_PUBLIC_AEV",
-                            'use': "ST_WEB_PUBLIC_antibug",
-                            'cmdarg_hostname': "www",
-                            'cmdarg_warning': 1,
-                            'cmdarg_critical': 2,
-                            'cmdarg_timeout': 8,
-                            'cmdarg_strings': [ "Design" ],
-                        },
-                    },
-                },
-            },
-            'a01': {
-                'hostname': "a01",
-                'attrs': {
-                    'host_name': "a01",
-                    'use': "HT_ICON_OVH,HT+_PUBLIC_DNS,HT+_SNMP_Linux,HT+_BACKUP_BURP",
-                    'alias': "A01",
-                    'address': "127.0.0.1",
-                    'hostgroups': "HG_ALL_HOSTS,HG_HEBERGEUR",
-                },
-                'megaraid_sas': True,
-                'disk_space': True,
-                'disk_space_root': True,
-                'disk_space_var_makina': True,
-                'dns_association_hostname': True,
-                'load_avg': True,
-                'memory': True,
-                'network': True,
-                'backup_burp_age': True,
-                'debian_updates': True,
-                'supervisord_status': True,
-                'web': True,
-                'services_attrs': {
-                    'web': {
-                        'cas': {
-                            'service_description': "WEB_CAS",
-                            'use': "ST_WEB_PUBLIC_CLIENT",
-                            'check_command': "C_HTTP_STRING_AUTH",
-                            'cmdarg_hostname': "cas",
-                            'cmdarg_warning': 1,
-                            'cmdarg_critical': 5,
-                            'cmdarg_timeout': 8,
-                            'cmdarg_strings': [ "authentification" ],
-                        },
-                        'www': {
-                            'service_description': "WEB_CLIENT",
-                            'use': "ST_WEB_PUBLIC_CLIENT",
-                            'check_command': "C_HTTP_STRING",
-                            'cmdarg_hostname': "www",
-                            'cmdarg_warning': 1,
-                            'cmdarg_critical': 5,
-                            'cmdarg_timeout': 8,
-                            'cmdarg_strings': [ "authentification" ],
-                        },
-                    },
-                },
-
-            },
-
             'webservices': {
                 'hostname': "webservices",
                 'attrs': {
@@ -2293,10 +1790,10 @@ def objects():
                     'alias': "VIRT",
                     'address': "127.0.0.1",
                     '_HOST_ID': 78,
-#                    'hostgroups': "HG_ALL_HOSTS,HG",
+                    'hostgroups': "HG_ALL_HOSTS",
                 },
                 'ssh_user': "root",
-#                'ssh_addr': "127.0.0.1",
+                'ssh_addr': "127.0.0.1",
                 'backup_burp_age': True,
                 'backup_rdiff': True,
                 'beam_process': True,
@@ -2324,7 +1821,6 @@ def objects():
                 'mail_pop_test_account': True,
                 'mail_server_queues': True,
                 'mail_smtp': True,
-                'md_raid': True,
                 'megaraid_sas': True,
                 'memory': True,
                 'memory_hyperviseur': True,
@@ -3026,9 +2522,17 @@ def settings():
 
 def add_configuration_object_settings(type, file, attrs, **kwargs):
     '''Settings for the add_configuration_object macro'''
-    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
+#    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
+#   save the ram
+    icingaSettings_complete = __salt__['mc_icinga.settings']()
+    icingaSettings = {}
+
     extra = kwargs.pop('extra', {})
     kwargs.update(extra)
+
+#   save the ram (we get only useful values)
+    kwargs.setdefault('objects', {'directory': icingaSettings_complete['objects']['directory']})
+
     kwargs.setdefault('type', type)
     kwargs.setdefault('file', file)
     kwargs.setdefault('attrs', attrs)
@@ -3040,11 +2544,41 @@ def add_configuration_object_settings(type, file, attrs, **kwargs):
     #icingaSettings['extra'] = copy.deepcopy(icingaSettings)
     return icingaSettings
 
-def edit_configuration_object_settings(type, file, attr, value, **kwargs):
-    '''Settings for the edit_configuration_object macro'''
-    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
+def remove_configuration_object_settings(file, **kwargs):
+    '''Settings for the remove_configuration_object macro'''
+#    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
+#   save the ram
+    icingaSettings_complete = __salt__['mc_icinga.settings']()
+    icingaSettings = {}
+
     extra = kwargs.pop('extra', {})
     kwargs.update(extra)
+
+#   save the ram (we get only useful values)
+    kwargs.setdefault('objects', {'directory': icingaSettings_complete['objects']['directory']})
+
+    kwargs.setdefault('file', file)
+    kwargs.setdefault('state_name_salt', file.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
+    icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
+    # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
+    #icingaSettings['data'] = copy.deepcopy(icingaSettings)
+    #icingaSettings['data']['extra'] = copy.deepcopy(icingaSettings)
+    #icingaSettings['extra'] = copy.deepcopy(icingaSettings)
+    return icingaSettings
+
+def edit_configuration_object_settings(type, file, attr, value, **kwargs):
+    '''Settings for the edit_configuration_object macro'''
+#    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
+#   save the ram
+    icingaSettings_complete = __salt__['mc_icinga.settings']()
+    icingaSettings = {}
+
+    extra = kwargs.pop('extra', {})
+    kwargs.update(extra)
+
+#   save the ram (we get only useful values)
+    kwargs.setdefault('objects', {'directory': icingaSettings_complete['objects']['directory']})
+
     kwargs.setdefault('type', type)
     kwargs.setdefault('file', file)
     kwargs.setdefault('attr', attr)
@@ -3059,75 +2593,91 @@ def edit_configuration_object_settings(type, file, attr, value, **kwargs):
 
 def add_auto_configuration_host_settings(hostname,
                                          hostgroup,
-                                         attrs,
-                                         ssh_user,
-                                         ssh_addr,
-                                         ssh_port,
-                                         ssh_timeout,
-                                         backup_burp_age,
-                                         backup_rdiff,
-                                         beam_process,
-                                         celeryd_process,
-                                         cron,
-                                         ddos,
-                                         debian_updates,
-                                         dns_association_hostname,
-                                         dns_association,
-                                         dns_reverse_association,
-                                         disk_space,
-                                         disk_space_root,
-                                         disk_space_var,
-                                         disk_space_srv,
-                                         disk_space_data,
-                                         disk_space_home,
-                                         disk_space_var_makina,
-                                         disk_space_var_www,
-                                         drbd,
-                                         epmd_process,
-                                         erp_files,
-                                         fail2ban,
-                                         gunicorn_process,
-                                         haproxy,
-                                         ircbot_process,
-                                         load_avg,
-                                         mail_cyrus_imap_connections,
-                                         mail_imap,
-                                         mail_imap_ssl,
-                                         mail_pop,
-                                         mail_pop_ssl,
-                                         mail_pop_test_account,
-                                         mail_server_queues,
-                                         mail_smtp,
-                                         md_raid,
-                                         megaraid_sas,
-                                         memory,
-                                         memory_hyperviseur,
-                                         mysql_process,
-                                         network,
-                                         ntp_peers,
-                                         ntp_time,
-                                         only_one_nagios_running,
-                                         postgres_port,
-                                         postgres_process,
-                                         prebill_sending,
-                                         raid,
-                                         sas,
-                                         snmpd_memory_control,
-                                         solr,
-                                         ssh,
-                                         supervisord_status,
-                                         swap,
-                                         tiles_generator_access,
-                                         ware_raid,
-                                         web_apache_status,
-                                         web_openid,
-                                         web,
-                                         services_attrs,
+                                         attrs={},
+                                         ssh_user='root',
+                                         ssh_addr='',
+                                         ssh_port=22,
+                                         ssh_timeout=30,
+                                         backup_burp_age=False,
+                                         backup_rdiff=False,
+                                         beam_process=False,
+                                         celeryd_process=False,
+                                         cron=False,
+                                         ddos=False,
+                                         debian_updates=False,
+                                         dns_association_hostname=False,
+                                         dns_association=False,
+                                         dns_reverse_association=False,
+                                         disk_space=False,
+                                         disk_space_root=False,
+                                         disk_space_var=False,
+                                         disk_space_srv=False,
+                                         disk_space_tmp=False,
+                                         disk_space_data=False,
+                                         disk_space_mnt_data=False,
+                                         disk_space_home=False,
+                                         disk_space_var_lxc=False,
+                                         disk_space_var_makina=False,
+                                         disk_space_var_mysql=False,
+                                         disk_space_var_www=False,
+                                         disk_space_backups=False,
+                                         disk_space_backups_guidtz=False,
+                                         disk_space_var_backups_bluemind=False,
+                                         disk_space_var_spool_cyrus=False,
+                                         disk_space_nmd_www=False,
+                                         drbd=False,
+                                         epmd_process=False,
+                                         erp_files=False,
+                                         fail2ban=False,
+                                         gunicorn_process=False,
+                                         haproxy=False,
+                                         ircbot_process=False,
+                                         load_avg=False,
+                                         mail_cyrus_imap_connections=False,
+                                         mail_imap=False,
+                                         mail_imap_ssl=False,
+                                         mail_pop=False,
+                                         mail_pop_ssl=False,
+                                         mail_pop_test_account=False,
+                                         mail_server_queues=False,
+                                         mail_smtp=False,
+                                         megaraid_sas=False,
+                                         memory=False,
+                                         memory_hyperviseur=False,
+                                         mysql_process=False,
+                                         network=False,
+                                         ntp_peers=False,
+                                         ntp_time=False,
+                                         only_one_nagios_running=False,
+                                         postgres_port=False,
+                                         postgres_process=False,
+                                         prebill_sending=False,
+                                         raid=False,
+                                         sas=False,
+                                         snmpd_memory_control=False,
+                                         solr=False,
+                                         ssh=False,
+                                         supervisord_status=False,
+                                         swap=False,
+                                         tiles_generator_access=False,
+                                         ware_raid=False,
+                                         web_apache_status=False,
+                                         web_openid=False,
+                                         web=False,
+                                         services_attrs={},
                                          **kwargs):
     '''Settings for the add_auto_configuration_host macro'''
-    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
+#    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
+#   save the ram
+    icingaSettings_complete = __salt__['mc_icinga.settings']()
+    icingaSettings = {}
+
     extra = kwargs.pop('extra', {})
     kwargs.update(extra)
+
+#   save the ram (get only useful values)
+    kwargs.setdefault('objects', {'directory': icingaSettings_complete['objects']['directory']})
+
     kwargs.setdefault('hostname', hostname)
     kwargs.setdefault('hostgroup', hostgroup)
 
@@ -3149,60 +2699,103 @@ def add_auto_configuration_host_settings(hostname,
     kwargs.setdefault('ssh_port', ssh_port)
     kwargs.setdefault('ssh_timeout', ssh_timeout)
 
+    services = [
+        'backup_burp_age',
+        'backup_rdiff',
+        'beam_process',
+        'celeryd_process',
+        'cron',
+        'ddos',
+        'debian_updates',
+        'dns_association_hostname',
+        'dns_association',
+        'dns_reverse_association',
+        'disk_space',
+        'drbd',
+        'epmd_process',
+        'erp_files',
+        'fail2ban',
+        'gunicorn_process',
+        'haproxy',
+        'ircbot_process',
+        'mail_cyrus_imap_connections',
+        'mail_imap',
+        'mail_imap_ssl',
+        'mail_pop',
+        'mail_pop_ssl',
+        'mail_pop_test_account',
+        'mail_server_queues',
+        'mail_smtp',
+        'megaraid_sas',
+        'memory',
+        'memory_hyperviseur',
+        'mysql_process',
+        'network',
+        'ntp_peers',
+        'ntp_time',
+        'only_one_nagios_running',
+        'postgres_port',
+        'postgres_process',
+        'prebill_sending',
+        'raid',
+        'sas',
+        'snmpd_memory_control',
+        'solr',
+        'ssh',
+        'supervisord_status',
+        'swap',
+        'tiles_generator_access',
+        'ware_raid',
+        'web_apache_status',
+        'web_openid',
+        'web',
+    ]
+    services_enabled = dict()
+    for service in services:
+        if eval(service):
+            services_enabled[service]=True
+        else:
+            services_enabled[service]=False
 
+    kwargs.setdefault('services_enabled', services_enabled)
 
+    # services for which a loop is used in the macro
+    services_loop = [
+        'dns_association',
+        'dns_reverse_association',
+        'disk_space',
+        'network',
+        'solr',
+        'web_openid',
+        'web',
+    ]
+    kwargs.setdefault('services_loop', services_loop)
 
-    kwargs.setdefault('backup_burp_age', backup_burp_age)
-    kwargs.setdefault('backup_rdiff', backup_rdiff)
-    kwargs.setdefault('beam_process', beam_process)
-    kwargs.setdefault('celeryd_process', celeryd_process)
-    kwargs.setdefault('cron', cron)
-    kwargs.setdefault('ddos', ddos)
-    kwargs.setdefault('debian_updates', debian_updates)
-    kwargs.setdefault('dns_association_hostname', dns_association_hostname)
-    kwargs.setdefault('dns_association', dns_association)
-    kwargs.setdefault('dns_reverse_association', dns_reverse_association)
-    kwargs.setdefault('disk_space', disk_space)
-    kwargs.setdefault('drbd', drbd)
-    kwargs.setdefault('epmd_process', epmd_process)
-    kwargs.setdefault('erp_files', erp_files)
-    kwargs.setdefault('fail2ban', fail2ban)
-    kwargs.setdefault('gunicorn_process', gunicorn_process)
-    kwargs.setdefault('haproxy', haproxy)
-    kwargs.setdefault('ircbot_process', ircbot_process)
-    kwargs.setdefault('load_avg', load_avg)
-    kwargs.setdefault('mail_cyrus_imap_connections', mail_cyrus_imap_connections)
-    kwargs.setdefault('mail_imap', mail_imap)
-    kwargs.setdefault('mail_imap_ssl', mail_imap_ssl)
-    kwargs.setdefault('mail_pop', mail_pop)
-    kwargs.setdefault('mail_pop_ssl', mail_pop_ssl)
-    kwargs.setdefault('mail_pop_test_account', mail_pop_test_account)
-    kwargs.setdefault('mail_server_queues', mail_server_queues)
-    kwargs.setdefault('mail_smtp', mail_smtp)
-    kwargs.setdefault('md_raid', md_raid)
-    kwargs.setdefault('megaraid_sas', megaraid_sas)
-    kwargs.setdefault('memory', memory)
-    kwargs.setdefault('memory_hyperviseur', memory_hyperviseur)
-    kwargs.setdefault('mysql_process', mysql_process)
-    kwargs.setdefault('network', network)
-    kwargs.setdefault('ntp_peers', ntp_peers)
-    kwargs.setdefault('ntp_time', ntp_time)
-    kwargs.setdefault('only_one_nagios_running', only_one_nagios_running)
-    kwargs.setdefault('postgres_port', postgres_port)
-    kwargs.setdefault('postgres_process', postgres_process)
-    kwargs.setdefault('prebill_sending', prebill_sending)
-    kwargs.setdefault('raid', raid)
-    kwargs.setdefault('sas', sas)
-    kwargs.setdefault('snmpd_memory_control', snmpd_memory_control)
-    kwargs.setdefault('solr', solr)
-    kwargs.setdefault('ssh', ssh)
-    kwargs.setdefault('supervisord_status', supervisord_status)
-    kwargs.setdefault('swap', swap)
-    kwargs.setdefault('tiles_generator_access', tiles_generator_access)
-    kwargs.setdefault('ware_raid', ware_raid)
-    kwargs.setdefault('web_apache_status', web_apache_status)
-    kwargs.setdefault('web_openid', web_openid)
-    kwargs.setdefault('web', web)
+    # values for disk_space service
+    mountpoints_path = {
+        'root': "/",
+        'var': "/var",
+        'srv': "/srv",
+        'tmp': "/tmp",
+        'data': "/data",
+        'mnt_data': "/mnt/data",
+        'home': "/home",
+        'var_lxc': "/var/lxc",
+        'var_makina': "/var/makina",
+        'var_mysql': "/var/mysql",
+        'var_www': "/var/www",
+        'backups': "/backups",
+        'backups_guidtz': "/backups/guidtz",
+        'var_backups_bluemind': "/var/backups/bluemind",
+        'var_spool_cyrus': "/var/spool/cyrus",
+        'nmd_www': "", # must be completed
+    }
+    disks_spaces = dict()
+    for mountpoint, path in mountpoints_path.items():
+        if eval('disk_space_'+mountpoint):
+            disks_spaces[mountpoint]=path
+
+    kwargs.setdefault('disks_spaces', disks_spaces)
 
     # default values for dns_association service
     dns_hostname=''
@@ -3218,25 +2811,6 @@ def add_auto_configuration_host_settings(hostname,
             dns_hostname = dns_hostname+'.'
 
         dns_address = attrs['address']
-
-    # values for disk_space service
-    mountpoints_path = {
-        'root': "/",
-        'var': "/var",
-        'srv': "/srv",
-        'data': "/data",
-        'home': "/home",
-        'var_makina': "/var/makina",
-        'var_www': "/var/www",
-    }
-    disks_spaces = dict()
-    for mountpoint, path in mountpoints_path.items():
-        if eval('disk_space_'+mountpoint):
-            disks_spaces[mountpoint]=path
-
-    kwargs.setdefault('disks_spaces', disks_spaces)
-
-
 
     # give the default values for commands parameters values
     # the keys are the services names, not the commands names (use the service filename)
@@ -3477,19 +3051,12 @@ def add_auto_configuration_host_settings(hostname,
            'cmdarg_warning': 1,
            'cmdarg_critical': 3,
        },
-       'md_raid': {
-           'service_description': "CHECK_MD_RAID",
-           'use': "ST_ALERT",
-           'check_command': "CSSH_RAID_SOFT",
-
-           'cmdarg_command': "/root/admin_scripts/nagios/check_md_raid",
-       },
        'megaraid_sas': {
            'service_description': "CHECK_MEGARAID_SAS",
            'use': "ST_ALERT",
            'check_command': "CSSH_MEGARAID_SAS",
 
-           'cmdarg_command': "/root/admin_scripts/nagios/check_megaraid_sas",
+           'cmdarg_command': "'/root/admin_scripts/nagios/check_megaraid_sas'",
        },
        'memory': {
            'service_description': "MEMORY",
@@ -4027,7 +3594,7 @@ def add_auto_configuration_host_settings(hostname,
         services_attrs['mail_pop_test_account']['check_command'] = "!".join([
                                                                             str(services_attrs['mail_pop_test_account']['check_command']),
                                                                             str(services_attrs['mail_pop_test_account']['cmdarg_warning1']),
-                                                                            str(services_attrs['mail_pop_test_account']['cmdarg_critical2']),
+                                                                            str(services_attrs['mail_pop_test_account']['cmdarg_critical1']),
                                                                             str(services_attrs['mail_pop_test_account']['cmdarg_warning2']),
                                                                             str(services_attrs['mail_pop_test_account']['cmdarg_critical2']),
                                                                             str(services_attrs['mail_pop_test_account']['cmdarg_mx']),
@@ -4045,12 +3612,6 @@ def add_auto_configuration_host_settings(hostname,
                                                                 str(services_attrs['mail_smtp']['cmdarg_warning']),
                                                                 str(services_attrs['mail_smtp']['cmdarg_critical']),
                                                                ])
-    if md_raid:
-        services_attrs['md_raid']['check_command'] = "!".join([
-                                                              str(services_attrs['md_raid']['check_command']),
-                                                              ]+cssh_params+[
-                                                              str(services_attrs['md_raid']['cmdarg_command']),
-                                                             ])
     if megaraid_sas:
         services_attrs['megaraid_sas']['check_command'] = "!".join([
                                                                    str(services_attrs['megaraid_sas']['check_command']),
@@ -4145,7 +3706,6 @@ def add_auto_configuration_host_settings(hostname,
                                                                      str(solr['cmdarg_critical']),
                                                                      str(solr['cmdarg_timeout']),
                                                                      str(solr['cmdarg_strings']),
-                                                                     str(solr['cmdarg_hostname']),
                                                                      str(solr['cmdarg_other_args']),
                                                                     ])
     if ssh:

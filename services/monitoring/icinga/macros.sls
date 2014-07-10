@@ -36,6 +36,20 @@ icinga-configuration-{{data.state_name_salt}}-object-conf:
 
 {% endmacro %}
 
+{% macro configuration_remove_object(file) %}
+{% set data = salt['mc_icinga.remove_configuration_object_settings'](file, **kwargs) %}
+{% set sdata = salt['mc_utils.json_dump'](data) %}
+
+# we add the object
+icinga-configuration-{{data.state_name_salt}}-object-conf:
+  file.absent:
+    - name: {{data.objects.directory}}/{{data.file}}
+    - watch:
+      - mc_proxy: icinga-configuration-pre-clean-directories 
+    - watch_in:
+      - mc_proxy:  icinga-configuration-post-clean-directories
+
+{% endmacro %}
 {#
 #
 # Macros mains args:
@@ -122,10 +136,19 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      disk_space_root=False,
                                      disk_space_var=False,
                                      disk_space_srv=False,
+                                     disk_space_tmp=False,
                                      disk_space_data=False,
+                                     disk_space_mnt_data=False,
                                      disk_space_home=False,
+                                     disk_space_var_lxc=False,
                                      disk_space_var_makina=False,
+                                     disk_space_var_mysql=False,
                                      disk_space_var_www=False,
+                                     disk_space_backups=False,
+                                     disk_space_backups_guidtz=False,
+                                     disk_space_var_backups_bluemind=False,
+                                     disk_space_var_spool_cyrus=False,
+                                     disk_space_nmd_www=False,
                                      drbd=False,
                                      epmd_process=False,
                                      erp_files=False,
@@ -142,7 +165,6 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      mail_pop_test_account=False,
                                      mail_server_queues=False,
                                      mail_smtp=False,
-                                     md_raid=False,
                                      megaraid_sas=False,
                                      memory=False,
                                      memory_hyperviseur=False,
@@ -168,72 +190,80 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      web=False,
                                      services_attrs={}
                                     ) %}
-{% set data = salt['mc_icinga.add_auto_configuration_host_settings'](hostname,
-                                                                     hostgroup,
-                                                                     attrs,
-                                                                     ssh_user,
-                                                                     ssh_addr,
-                                                                     ssh_port,
-                                                                     ssh_timeout,
-                                                                     backup_burp_age,
-                                                                     backup_rdiff,
-                                                                     beam_process,
-                                                                     celeryd_process,
-                                                                     cron,
-                                                                     ddos,
-                                                                     debian_updates,
-                                                                     dns_association_hostname,
-                                                                     dns_association,
-                                                                     dns_reverse_association,
-                                                                     disk_space,
-                                                                     disk_space_root,
-                                                                     disk_space_var,
-                                                                     disk_space_srv,
-                                                                     disk_space_data,
-                                                                     disk_space_home,
-                                                                     disk_space_var_makina,
-                                                                     disk_space_var_www,
-                                                                     drbd,
-                                                                     epmd_process,
-                                                                     erp_files,
-                                                                     fail2ban,
-                                                                     gunicorn_process,
-                                                                     haproxy,
-                                                                     ircbot_process,
-                                                                     load_avg,
-                                                                     mail_cyrus_imap_connections,
-                                                                     mail_imap,
-                                                                     mail_imap_ssl,
-                                                                     mail_pop,
-                                                                     mail_pop_ssl,
-                                                                     mail_pop_test_account,
-                                                                     mail_server_queues,
-                                                                     mail_smtp,
-                                                                     md_raid,
-                                                                     megaraid_sas,
-                                                                     memory,
-                                                                     memory_hyperviseur,
-                                                                     mysql_process,
-                                                                     network,
-                                                                     ntp_peers,
-                                                                     ntp_time,
-                                                                     only_one_nagios_running,
-                                                                     postgres_port,
-                                                                     postgres_process,
-                                                                     prebill_sending,
-                                                                     raid,
-                                                                     sas,
-                                                                     snmpd_memory_control,
-                                                                     solr,
-                                                                     ssh,
-                                                                     supervisord_status,
-                                                                     swap,
-                                                                     tiles_generator_access,
-                                                                     ware_raid,
-                                                                     web_apache_status,
-                                                                     web_openid,
-                                                                     web,
-                                                                     services_attrs,
+{% set data = salt['mc_icinga.add_auto_configuration_host_settings'](hostname=hostname,
+                                                                     hostgroup=hostgroup,
+                                                                     attrs=attrs,
+                                                                     ssh_user=ssh_user,
+                                                                     ssh_addr=ssh_addr,
+                                                                     ssh_port=ssh_port,
+                                                                     ssh_timeout=ssh_timeout,
+                                                                     backup_burp_age=backup_burp_age,
+                                                                     backup_rdiff=backup_rdiff,
+                                                                     beam_process=beam_process,
+                                                                     celeryd_process=celeryd_process,
+                                                                     cron=cron,
+                                                                     ddos=ddos,
+                                                                     debian_updates=debian_updates,
+                                                                     dns_association_hostname=dns_association_hostname,
+                                                                     dns_association=dns_association,
+                                                                     dns_reverse_association=dns_reverse_association,
+                                                                     disk_space=disk_space,
+                                                                     disk_space_root=disk_space_root,
+                                                                     disk_space_var=disk_space_var,
+                                                                     disk_space_srv=disk_space_srv,
+                                                                     disk_space_tmp=disk_space_tmp,
+                                                                     disk_space_data=disk_space_data,
+                                                                     disk_space_mnt_data=disk_space_mnt_data,
+                                                                     disk_space_home=disk_space_home,
+                                                                     disk_space_var_lxc=disk_space_var_lxc,
+                                                                     disk_space_var_makina=disk_space_var_makina,
+                                                                     disk_space_var_mysql=disk_space_var_mysql,
+                                                                     disk_space_var_www=disk_space_var_www,
+                                                                     disk_space_backups=disk_space_backups,
+                                                                     disk_space_backups_guidtz=disk_space_backups_guidtz,
+                                                                     disk_space_var_backups_bluemind=disk_space_var_backups_bluemind,
+                                                                     disk_space_var_spool_cyrus=disk_space_var_spool_cyrus,
+                                                                     disk_space_nmd_www=disk_space_nmd_www,
+                                                                     drbd=drbd,
+                                                                     epmd_process=epmd_process,
+                                                                     erp_files=erp_files,
+                                                                     fail2ban=fail2ban,
+                                                                     gunicorn_process=gunicorn_process,
+                                                                     haproxy=haproxy,
+                                                                     ircbot_process=ircbot_process,
+                                                                     load_avg=load_avg,
+                                                                     mail_cyrus_imap_connections=mail_cyrus_imap_connections,
+                                                                     mail_imap=mail_imap,
+                                                                     mail_imap_ssl=mail_imap_ssl,
+                                                                     mail_pop=mail_pop,
+                                                                     mail_pop_ssl=mail_pop_ssl,
+                                                                     mail_pop_test_account=mail_pop_test_account,
+                                                                     mail_server_queues=mail_server_queues,
+                                                                     mail_smtp=mail_smtp,
+                                                                     megaraid_sas=megaraid_sas,
+                                                                     memory=memory,
+                                                                     memory_hyperviseur=memory_hyperviseur,
+                                                                     mysql_process=mysql_process,
+                                                                     network=network,
+                                                                     ntp_peers=ntp_peers,
+                                                                     ntp_time=ntp_time,
+                                                                     only_one_nagios_running=only_one_nagios_running,
+                                                                     postgres_port=postgres_port,
+                                                                     postgres_process=postgres_process,
+                                                                     prebill_sending=prebill_sending,
+                                                                     raid=raid,
+                                                                     sas=sas,
+                                                                     snmpd_memory_control=snmpd_memory_control,
+                                                                     solr=solr,
+                                                                     ssh=ssh,
+                                                                     supervisord_status=supervisord_status,
+                                                                     swap=swap,
+                                                                     tiles_generator_access=tiles_generator_access,
+                                                                     ware_raid=ware_raid,
+                                                                     web_apache_status=web_apache_status,
+                                                                     web_openid=web_openid,
+                                                                     web=web,
+                                                                     services_attrs=services_attrs,
                                                                      **kwargs
                                                                     ) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
@@ -245,88 +275,28 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                             attrs=data.attrs) }}
 
 
-# add backup_burp_age service 
-# TODO/ok: edit command in order to allow customization in check_by_ssh
-{% if data.backup_burp_age %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/backup_burp_age.cfg',
-                                attrs=data.services_attrs.backup_burp_age 
-                               )
-    }}
-{% endif %}
+# configure the services
+{% for service, enable in data.services_enabled.items() %}
+    {% if not service in data.services_loop %}
+        {% set file=data.service_subdirectory+'/'+data.hostname+'/'+service+'.cfg' %}
+        {% if enable %}
+            {{ configuration_add_object(type='service',
+                                        file=file,
+                                        attrs=data.services_attrs[service] 
+                                       )
+            }}
+        {% else %}
+            {{ configuration_remove_object(file=file) }}
+        {% endif %}
+    {% endif %}
+{% endfor %}
 
-# add backup_rdiff service
-# TODO/ok: edit command in order to allow customization in check_by_ssh
-{% if data.backup_rdiff %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/backup_rdiff.cfg',
-                                attrs=data.services_attrs.backup_rdiff
-                               )
-    }}
-{% endif %}
-
-# add beam_process service
-{% if data.beam_process %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/beam_process.cfg',
-                                attrs=data.services_attrs.beam_process
-                               )
-    }}
-{% endif %}
-
-# add celeryd_process service
-{% if data.celeryd_process %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/celeryd_process.cfg',
-                                attrs=data.services_attrs.celeryd_process
-                               )
-    }}
-{% endif %}
-
-# add cron service
-# TODO/ok: edit command in order to allow customization in check_by_ssh
-{% if data.cron %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/cron.cfg',
-                                attrs=data.services_attrs.cron
-                               )
-    }}
-{% endif %}
-
-# add ddos service
-# TODO/ok: edit command in order to allow customization in check_by_ssh
-{% if data.ddos %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/ddos.cfg',
-                                attrs=data.services_attrs.ddos
-                               )
-    }}
-{% endif %}
-
-# add debian_updates service
-# TODO/ok: edit command in order to allow customization in check_by_ssh
-{% if data.debian_updates %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/debian_updates.cfg',
-                                attrs=data.services_attrs.debian_updates
-                               )
-    }}
-{% endif %}
-
-# add dns_association_hostname service
-{% if data.dns_association_hostname %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/dns_association_hostname.cfg',
-                                attrs=data.services_attrs.dns_association_hostname
-                               )
-    }}
-{% endif %}
-
-# add dns_association service 
-{% if data.dns_association %}
+# add dns_association service
+# TODO: find how to delete old configuration
+{% if data.services_enabled.dns_association %}
     {% for name, dns_association in data.services_attrs.dns_association.items() %}
         {{ configuration_add_object(type='service',
-                                    file=data.service_subdirectory+'/'+data.hostname+'/dns_association_'+name+'.cfg',
+                                    file=data.service_subdirectory+'/'+data.hostname+'/dns_association_e_'+name+'.cfg',
                                     attrs=dns_association
                                    )
         }}
@@ -334,7 +304,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% endif %}
 
 # add dns_reverse_association service
-{% if data.dns_reverse_association %}
+# TODO: find how to delete old configuration
+{% if data.services_enabled.dns_reverse_association %}
     {% for name, dns_reverse_association in data.services_attrs.dns_reverse_association.items() %}
         {{ configuration_add_object(type='service',
                                     file=data.service_subdirectory+'/'+data.hostname+'/dns_reverse_association_'+name+'.cfg',
@@ -345,7 +316,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% endif %}
 
 # add disk_space service
-{% if data.disk_space %}
+# TODO: find how to delete old configuration
+{% if data.services_enabled.disk_space %}
     {% for mountpoint, disk_space in data.services_attrs.disk_space.items() %}
         {{ configuration_add_object(type='service',
                                     file=data.service_subdirectory+'/'+data.hostname+'/disk_space_'+mountpoint+'.cfg',
@@ -355,204 +327,9 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     {% endfor %}
 {% endif %}
 
-# add drbd service
-# TODO/ok: edit command in order to allow customization in check_by_ssh
-# TODO: add contact groups
-{% if data.drbd %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/drbd.cfg',
-                                attrs=data.services_attrs.drbd
-                               )
-    }}
-{% endif %}
-
-# add epmd_process service
-{% if data.epmd_process %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/epmd_process.cfg',
-                                attrs=data.services_attrs.epmd_process
-                               )
-    }}
-{% endif %}
-
-# add erp_files service
-# TODO/ok: edit command in order to allow customization in check_by_ssh
-# TODO: add contact groups
-{% if data.erp_files %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/erp_files.cfg',
-                                attrs=data.services_attrs.erp_files
-                               )
-    }}
-{% endif %}
-
-# add fail2ban service
-{% if data.fail2ban %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/fail2ban.cfg',
-                                attrs=data.services_attrs.fail2ban
-                               )
-    }}
-{% endif %}
-
-# add gunicorn_process service
-{% if data.gunicorn_process %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/gunicorn_process.cfg',
-                                attrs=data.services_attrs.gunicorn_process
-                               )
-    }}
-{% endif %}
-
-# add haproxy service
-{% if data.haproxy %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/haproxy.cfg',
-                                attrs=data.services_attrs.haproxy
-                               )
-    }}
-{% endif %}
-
-# add ircbot_process service
-{% if data.ircbot_process %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/ircbot_process.cfg',
-                                attrs=data.services_attrs.ircbot_process
-                               )
-    }}
-{% endif %}
-
-# add load avg service
-{% if data.load_avg %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/load_avg.cfg',
-                                attrs=data.services_attrs.load_avg
-                               )
-    }}
-{% endif %}
-
-# add mail_cyrus_imap_connections service
-# TODO/ok: edit command in order to allow customization in check_by_ssh
-{% if data.mail_cyrus_imap_connections %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/mail_cyrus_imap_connections.cfg',
-                                attrs=data.services_attrs.mail_cyrus_imap_connections
-                               )
-    }}
-{% endif %}
-
-# add mail_imap service
-{% if data.mail_imap %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/mail_imap.cfg',
-                                attrs=data.services_attrs.mail_imap
-                               )
-    }}
-{% endif %}
-
-# add mail_imap_ssl service
-{% if data.mail_imap_ssl %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/mail_imap_ssl.cfg',
-                                attrs=data.services_attrs.mail_imap_ssl
-                               )
-    }}
-{% endif %}
-
-# add mail_pop service
-{% if data.mail_pop %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/mail_pop.cfg',
-                                attrs=data.services_attrs.mail_pop
-                               )
-    }}
-{% endif %}
-
-# add mail_pop_ssl service
-{% if data.mail_pop_ssl %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/mail_pop_ssl.cfg',
-                                attrs=data.services_attrs.mail_pop_ssl
-                               )
-    }}
-{% endif %}
-
-# add mail_pop_test_account service
-{% if data.mail_pop_test_account %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/mail_pop_test_account.cfg',
-                                attrs=data.services_attrs.mail_pop_test_account
-                               )
-    }}
-{% endif %}
-
-# add mail_server_queues service
-# TODO/ok: edit command in order to allow customization in check_by_ssh
-{% if data.mail_server_queues %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/mail_server_queues.cfg',
-                                attrs=data.services_attrs.mail_server_queues
-                               )
-    }}
-{% endif %}
-
-# add mail_smtp service
-{% if data.mail_smtp %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/mail_smtp.cfg',
-                                attrs=data.services_attrs.mail_smtp
-                               )
-    }}
-{% endif %}
-
-# add md_raid service
-# TODO/ok: edit command in order to allow customization in check_by_ssh
-{% if data.md_raid %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/md_raid.cfg',
-                                attrs=data.services_attrs.md_raid
-                               )
-    }}
-{% endif %}
-
-# add megaraid_sas service
-{% if data.megaraid_sas %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/megaraid_sas.cfg',
-                                attrs=data.services_attrs.megaraid_sas
-                               )
-    }}
-{% endif %}
-
-# add memory service
-{% if data.memory %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/memory.cfg',
-                                attrs=data.services_attrs.memory
-                               )
-    }}
-{% endif %}
-
-# add memory_hyperviseur service
-{% if data.memory_hyperviseur %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/memory_hyperviseur.cfg',
-                                attrs=data.services_attrs.memory_hyperviseur
-                               )
-    }}
-{% endif %}
-
-# add mysql_process service
-{% if data.mysql_process %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/mysql_process.cfg',
-                                attrs=data.services_attrs.mysql_process
-                               )
-    }}
-{% endif %}
-
 # add network service
-{% if data.network %}
+# TODO: find how to delete old configuration
+{% if data.services_enabled.network %}
     {% for name, network in data.services_attrs.network.items() %}
         {{ configuration_add_object(type='service',
                                     file=data.service_subdirectory+'/'+data.hostname+'/network_'+name+'.cfg',
@@ -562,95 +339,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     {% endfor %}
 {% endif %}
 
-# add ntp_peers service
-# TODO/ok: cssh
-{% if data.ntp_peers %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/ntp_peers.cfg',
-                                attrs=data.services_attrs.ntp_peers
-                               )
-    }}
-{% endif %}
-
-# add ntp_time service
-# TODO/ok: cssh
-{% if data.ntp_time %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/ntp_time.cfg',
-                                attrs=data.services_attrs.ntp_time
-                               )
-    }}
-{% endif %}
-
-# add only_one_nagios_running service
-{% if data.only_one_nagios_running %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/only_one_nagios_running.cfg',
-                                attrs=data.services_attrs.only_one_nagios_running
-                               )
-    }}
-{% endif %}
-
-# add postgres_port service
-{% if data.postgres_port %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/postgres_port.cfg',
-                                attrs=data.services_attrs.postgres_port
-                               )
-    }}
-{% endif %}
-
-# add postgres_process service
-{% if data.postgres_process %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/postgres_process.cfg',
-                                attrs=data.services_attrs.postgres_process
-                               )
-    }}
-{% endif %}
-
-# add prebill_sending service
-# TODO/ok: edit command in order to allow customization in check_by_ssh
-{% if data.prebill_sending %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/prebill_sending.cfg',
-                                attrs=data.services_attrs.prebill_sending
-                               )
-    }}
-{% endif %}
-
-# add raid service
-# TODO/ok: edit command in order to allow customization in check_by_ssh
-{% if data.raid %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/raid.cfg',
-                                attrs=data.services_attrs.raid
-                               )
-    }}
-{% endif %}
-
-# add sas service
-# TODO/ok: edit command in order to allow customization in check_by_ssh
-{% if data.sas %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/sas.cfg',
-                                attrs=data.services_attrs.sas
-                               )
-    }}
-{% endif %}
-
-# add snmpd_memory_control service
-{% if data.snmpd_memory_control %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/snmpd_memory_control.cfg',
-                                attrs=data.services_attrs.snmpd_memory_control
-                               )
-    }}
-{% endif %}
-
 # add solr service
+# TODO: find how to delete old configuration
 # TODO: readd auth
-{% if data.solr %}
+{% if data.services_enabled.solr %}
     {% for name, solr in data.services_attrs.solr.items() %}
         {{ configuration_add_object(type='service',
                                     file=data.service_subdirectory+'/'+data.hostname+'/solr_'+name+'.cfg',
@@ -660,65 +352,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     {% endfor %}
 {% endif %}
 
-# add ssh service
-{% if data.ssh %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/ssh.cfg',
-                                attrs=data.services_attrs.ssh
-                               )
-    }}
-{% endif %}
-
-# add supervisord_status service
-# TODO/ok: edit command in order to allow customization in check_by_ssh
-{% if data.supervisord_status %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/supervisord_status.cfg',
-                                attrs=data.services_attrs.supervisord_status
-                               )
-    }}
-{% endif %}
-
-# add swap service
-# TODO/ok: edit command in order to allow customization in check_by_ssh
-{% if data.swap %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/swap.cfg',
-                                attrs=data.services_attrs.swap
-                               )
-    }}
-{% endif %}
-
-# add tiles_generator_access service
-{% if data.tiles_generator_access %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/tiles_generator_access.cfg',
-                                attrs=data.services_attrs.tiles_generator_access
-                               )
-    }}
-{% endif %}
-
-# add 3ware raid  service (check by ssh)
-{% if data.ware_raid %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/3ware_raid.cfg',
-                                attrs=data.services_attrs.ware_raid
-                               )
-    }}
-{% endif %}
-
-# add web apache status service
-{% if data.web_apache_status %}
-    {{ configuration_add_object(type='service',
-                                file=data.service_subdirectory+'/'+data.hostname+'/web_apache_status.cfg',
-                                attrs=data.services_attrs.web_apache_status
-                               )
-    }}
-{% endif %}
-
 # add web_openid service
+# TODO: find how to delete old configuration
 # TODO: readd auth
-{% if data.web_openid %}
+{% if data.services_enabled.web_openid %}
     {% for name, web_openid in data.services_attrs.web_openid.items() %}
         {{ configuration_add_object(type='service',
                                     file=data.service_subdirectory+'/'+data.hostname+'/web_openid_'+name+'.cfg',
@@ -729,8 +366,8 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% endif %}
 
 # add web service
-# TODO/ok: readd auth
-{% if data.web %}
+# TODO: find how to delete old configuration
+{% if data.services_enabled.web %}
     {% for name, web in data.services_attrs.web.items() %}
         {{ configuration_add_object(type='service',
                                     file=data.service_subdirectory+'/'+data.hostname+'/web_'+name+'.cfg',
@@ -739,6 +376,5 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
         }}
     {% endfor %}
 {% endif %}
-
 
 {% endmacro %}

@@ -252,21 +252,6 @@ icinga-mklivestatus-conf:
 # add objects configuration
 {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
 
-
-# clean the objects directory
-icinga-configuration-clean-objects-directory:
-  file.directory:
-    - name: {{data.objects.directory}}
-    - user: root
-    - group: root
-    - dir_mode: 755
-    - makedirs: True
-    - clean: True
-    - watch:
-      - mc_proxy: icinga-configuration-pre-clean-directories
-    - watch_in:
-      - mc_proxy: icinga-configuration-post-clean-directories
-
 # add templates and commands (and contacts, timeperiods...)
 {% for name, object in data.objects.objects_definitions.items() %}
     {{ icinga.configuration_add_object(**object) }}
