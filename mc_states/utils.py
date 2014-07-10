@@ -47,21 +47,29 @@ def lazy_subregistry_get(__salt__, registry):
             # to render the whole sls files
             # remember that the registry is a reference and even cached
             # it will be editable
+            nocache = False
+            if kw:
+                nocache = True
             tkey = "{0}".format(time() // (60 * 5))
             ckey = _CACHEKEY.format(key)
             if ckey not in REG:
                 REG[ckey] = ''
             if tkey != REG[ckey] and key in REG:
                 del REG[key]
-            if key not in REG:
-                REG[key] = func(*a, **kw)
-                REG[key]['reg_kind'] = registry
-                REG[key]['reg_func_name'] = key
-                filter_locals(REG[key])
-                REG[ckey] = tkey
-                __salt__['mc_macros.registry_kind_set'](registry, REG)
-                REG = __salt__['mc_macros.registry_kind_get'](registry)
-            return REG[key]
+            ret = None
+            if (key not in REG) or nocache:
+                ret = func(*a, **kw)
+                if not nocache:
+                    REG[key] = ret
+                    REG[key]['reg_kind'] = registry
+                    REG[key]['reg_func_name'] = key
+                    filter_locals(REG[key])
+                    REG[ckey] = tkey
+                    __salt__['mc_macros.registry_kind_set'](registry, REG)
+                    REG = __salt__['mc_macros.registry_kind_get'](registry)
+            if key in REG:
+                ret = REG[key]
+            return ret
         return _call
     return wrapper
 

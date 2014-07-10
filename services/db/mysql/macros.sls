@@ -93,4 +93,70 @@ makina-mysql-user-grants-{{ state_uid }}-{{ host_simple }}:
       - mysql_user: makina-mysql-user-{{ state_uid }}-{{ host_simple }}
 {%-   endfor %}
 {%- endif %}
-{% endmacro %} 
+{% endmacro %}
+
+{# Thiks macro will generate the /etc/my/local.cnf
+   which is used to tune and configure mysql.
+   This is likely a macro that you will want to use to tune
+   mysql.
+
+   Any kwarg will update default mysql settings !
+   See mysql.settings module to know what to modify
+
+   this macro can be called multiple times, just pay attention to add unique suffixes
+   and to order the real one last in the state execution stack.
+   Yes, there will only have one state that will over take all other previous
+   generations.
+
+   eg; if you call it twice, to order do this
+
+   {{gen_settings}}
+        - mc_proxy: makina-mysql-settings-othersuf
+
+    As it will render to
+
+makina-mysql-settings..:
+  file.managed:
+    - name: ..
+    - source: ..
+    - user: root
+    - group: root
+    - mode: 644
+    - template: jinja
+    - show_diff: True
+    - defaults:
+      data: |
+            ...
+    - watch:
+      - mc_proxy: mysql-pre-conf-hook
+    - watch_in:
+      - mc_proxy: mysql-post-conf-hook
+      - mc_proxy: mysql-post-default-tuning-hook
+      - mc_proxy: makina-mysql-settings-othersuf
+
+   #}
+{% macro gen_settings(suf='') %}
+{% set settings = salt['mc_mysql.settings'](**kwargs) %}
+makina-mysql-settings{{suf}}:
+  file.managed:
+    - name: {{ mysqlData.etcdir }}/local.cnf
+    - source: "{{ mysqlData.myCnf }}"
+    - user: root
+    - group: root
+    - mode: 644
+    - template: jinja
+    - show_diff: True
+    - defaults:
+      data: |
+            {{salt['mc_utils.json_dump'](settings)}}
+    - watch:
+      - mc_proxy: mysql-pre-conf-hook
+      {% if suf %}
+      - mc_proxy: mysql-post-default-tuning-hook
+      {% endif %}
+    - watch_in:
+      - mc_proxy: mysql-post-conf-hook
+      {% if not suf %}
+      - mc_proxy: mysql-post-default-tuning-hook
+      {% endif %}
+{% endmacro%}
