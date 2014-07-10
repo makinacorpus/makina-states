@@ -305,6 +305,7 @@ def settings(**kwargs):
 
 
 def dump():
-    return tes.utils.(__salt__,__name)
+    return mc_states.utils.dump(__salt__,__name)
+
 
 #
