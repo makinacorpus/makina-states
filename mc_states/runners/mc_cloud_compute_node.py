@@ -695,6 +695,7 @@ def report(targets, ret=None, refresh=False, output=True):
     cloud deployment'''
     func_name = 'mc_compute_node.register_configurations'
     __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    settings = cli('mc_cloud_compute_node.settings')
     if ret is None:
         ret = result()
     if refresh:
@@ -702,6 +703,12 @@ def report(targets, ret=None, refresh=False, output=True):
     sret = ''
     if not isinstance(targets, list):
         targets = targets.split(',')
+    for target in targets:
+        # if compute_node
+        if target in settings['targets']:
+            for vm in settings['targets'][target]['vms']:
+                if vm not in targets:
+                    targets.append(vm)
     for idx, target in enumerate(targets):
         try:
             if not cli('test.ping', salt_target=target):
