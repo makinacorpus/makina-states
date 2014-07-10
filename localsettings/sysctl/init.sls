@@ -12,6 +12,13 @@ include:
 {% set nodetypes_registry = salt['mc_nodetypes.registry']()%}
 {% set isLxc = nodetypes_registry.is.lxccontainer %}
 {% set isTravis = nodetypes_registry.is.travis %}
+sysctl-vm.swappiness:
+  sysctl.present:
+    - names:
+      - vm.swappiness
+    - value: {{kernel.vm_swappiness}}
+    - require_in:
+      - mc_proxy: sysctl-post-hook
 {% if not (isTravis or isLxc) %}
 {# increase TCP max buffer size settable using setsockopt() #}
 sysctl-net.core.rmem__wmem_max:

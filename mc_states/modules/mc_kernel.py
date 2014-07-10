@@ -64,6 +64,8 @@ def settings():
              1
         tcp_timestamps
              0
+        vm_swappiness
+            1
 
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
@@ -104,6 +106,7 @@ def settings():
                 'tcp_syn_retries': '2',
                 'tcp_tw_reuse': '1',
                 'tcp_timestamps': '0',
+                'vm_swappiness': '1',
             }
         )
         return data
