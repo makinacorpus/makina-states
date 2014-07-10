@@ -178,6 +178,12 @@ def settings():
         phpdefaults = {
             's_all': s_all,
             'rotate': __salt__['mc_logrotate.settings']()['days'],
+            'composer': (
+                'http://downloads.sourceforge.net/project'
+                '/makinacorpus/makina-states/'
+                'composer-e77435cd0c984e2031d915a6b42648e7b284dd5c'
+            ),
+            'composer_sha1': '017a611cd72cc1878d3ca1db2c0cc7f0a5f58541',
             'fpm_pools': {},
             'timezone': 'Europe/Paris',
             'open_basedir': 1,
@@ -466,89 +472,6 @@ def composer_command(command=None, cwd=None, args=None, composer=None):
         ret['status'] = True
 
     return ret
-
-
-def install_composer(path=None, installer=None, update=False, dry_run=False):
-    '''
-    Download composer.phar from the given url and install it on the given name.
-    A check is done on the given name, if it's already available nothing is
-    done, except if update is set to True
-
-    path
-        Local file name of composer (like /usr/local/bin/composer)
-
-    installer
-        Distant name of composer phar installer source
-        like https://getcomposer.org/installer which is the default
-
-    update
-        Boolean, whether to redo the install even if the program is already
-        there or not.
-
-    dry_run
-        Boolean, if True we do not do anything really.
-
-    Please also read the mc_php.settings documentation, as the common
-    php from this function can be overidden here
-
-    '''
-    ret = {'status': False, 'msg': ''}
-
-    if not installer:
-        installer = 'https://getcomposer.org/installer'
-    if not path:
-        path = '/usr/local/bin/composer'
-
-    if not __salt__['cmd.has_exec']('php'):
-        ret['msg'] = 'PHP dependency error: ' + \
-            'you need a php-cli to install composer.'
-        return ret
-
-    if not __salt__['cmd.has_exec']('curl'):
-        ret['msg'] = 'CURL dependency error: ' + \
-            'you need curl to install composer.'
-        return ret
-
-
-    if os.path.exists(path):
-        if not update:
-            ret['msg'] = '{0}: already installed. nothing to do'.format(path)
-            ret['status'] = True
-            return ret
-        else:
-            if dry_run:
-                ret['msg'] = (
-                    'We would run {0} with command self-update'
-                ).format(path)
-                ret['status'] = None
-                return ret
-            else:
-                ret = composer_command(command='self-update',
-                                       composer=path,
-                                       cwd="/tmp")
-                return ret
-
-    if dry_run:
-        ret['msg'] = 'We would install composer by downloading {0} to {1}' \
-            .format(installer, path)
-        ret['status'] = None
-        return ret
-
-    cwd = '/tmp'
-    cmd = 'rm -f /tmp/composer.phar;' +\
-          ' curl -sS "{0}" | php -- --install-dir=/tmp;'.format(installer) + \
-          ' mv /tmp/composer.phar "{0}"'.format(path)
-    result = __salt__['cmd.run_all'](cmd,
-                                     cwd=cwd,
-                                     runas='root')
-    retcode = result['retcode']
-
-    if retcode == 0:
-        ret['msg'] = result['stdout']
-        ret['status'] = True
-        return ret
-    else:
-        raise exceptions.CommandExecutionError(result['stderr'])
 
 
 def fpmpool_settings(domain, doc_root, **kw):

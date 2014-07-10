@@ -36,7 +36,7 @@ boot_salt_top
 include
 lib
 local
-bin/
+/bin
 .mr.developer.cfg
 develop-eggs/
 downloads/
@@ -48,6 +48,6 @@ src/
 .restart_salt
 .restart_salt_minion
 !files/*
-!files/usr/bin*
+!files/usr/bin
 !_states
 !_modules
