@@ -86,8 +86,6 @@ The default directory where configuration files are located is::
 
     /etc/icinga/objects/salt_generated/
 
-**Before generating the configuration, all files and directories located in the directory are unlinked**. It is to avoid to detect
-what are the objects which must be deleted.
 
 You can change the configuration directory using \*\*kwargs parameter
 
@@ -129,6 +127,26 @@ That generates the file /etc/icinga/objects/salt_generated/service/SSH.cfg conta
      service_description=SSH
     }
 
+configuration_remove_object
++++++++++++++++++++++++++++
+
+This macro was written in order to remove an object in the icinga configuration
+
+::
+
+    {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
+    {{ icinga.configuration_remove_object(file, **kwargs) }}
+
+with
+
+    :file: the filename of the added object
+
+The default directory where configuration files are located is::
+
+    /etc/icinga/objects/salt_generated/
+
+
+You can change the configuration directory using \*\*kwargs parameter
 
 configuration_edit_object
 +++++++++++++++++++++++++
@@ -299,7 +317,7 @@ with
     :ssh_addr: address used to do the ssh connection in order to perform check_by_ssh. this address is not the hostname address becasue we can use a ssh gateway
     :ssh_port: ssh_port
     :[service]: a boolean to indicate that the service [service] has to be added
-    :services_attrs: a dictionary to override the default values for each service definition and to ad additional values. The keys begining with "cmdarg_" are the check command arguments. Each subdictionary corresponds to a service.
+    :services_attrs: a dictionary to override the default values for each service definition and to ad additional values. The keys begining with "cmdarg" are the check command arguments. Each subdictionary corresponds to a service.
 
 Some services use an additional subdictionary because they can be defined several times. It is the case of
 
@@ -311,7 +329,9 @@ Some services use an additional subdictionary because they can be defined severa
   - web_openid
   - web
 
+
 For theses services, you may complete the services_attrs dictionary by adding a subdictionary ('a_service' here)::
+
     service_attrs: {
         'dns_association': {
             'a_service': {
@@ -323,6 +343,7 @@ For theses services, you may complete the services_attrs dictionary by adding a 
 You can add several dns_association, disk_space, network, ...
 
 For others services, the directives are not in a subdctionary::
+
     service_attrs: {
         'raid': {
             'check_command': "check",
