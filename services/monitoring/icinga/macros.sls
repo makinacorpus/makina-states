@@ -54,11 +54,9 @@ icinga-configuration-{{data.state_name_salt}}-remove-object-conf:
     - name: {{data.objects.directory}}/{{data.file}}
     - watch:
       - mc_proxy: icinga-configuration-pre-clean-directories
-# with the watch_in, execution is slow
-{#
+# use of watch_in is very slow but i don't find any other method
     - watch_in:
       - mc_proxy: icinga-configuration-post-clean-directories
-#}
 {% endmacro %}
 
 {#
@@ -275,6 +273,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 {% set check_by_ssh_params = data.ssh_user+"!"+data.ssh_addr+"!"+data.ssh_port|string+"!"+data.ssh_timeout|string %}
 
+
 # add the host/hostgroup object
 {{ configuration_add_object(type=data.type,
                             file=data.service_subdirectory+'/'+data.hostname+'/'+data.type+'.cfg',
@@ -295,90 +294,23 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
     {% endif %}
 {% endfor %}
 
-# add dns_association service
-# TODO: find how to delete old configuration
-{% if data.services_loop_enabled.dns_association %}
-    {% for name, dns_association in data.services_attrs.dns_association.items() %}
-        {{ configuration_add_object(type='service',
-                                    file=data.service_subdirectory+'/'+data.hostname+'/dns_association_e_'+name+'.cfg',
-                                    attrs=dns_association
-                                   )
-        }}
-    {% endfor %}
-{% endif %}
 
-# add dns_reverse_association service
-# TODO: find how to delete old configuration
-{% if data.services_loop_enabled.dns_reverse_association %}
-    {% for name, dns_reverse_association in data.services_attrs.dns_reverse_association.items() %}
-        {{ configuration_add_object(type='service',
-                                    file=data.service_subdirectory+'/'+data.hostname+'/dns_reverse_association_'+name+'.cfg',
-                                    attrs=dns_reverse_association
-                                   )
-        }}
+# configure the loop services
+# TODO: it removes only services which are in services_attrs subdictionaries if the subdictionaries are removed, service deletion will not work
+{% for service, enabled in data.services_loop_enabled.items() %}
+    {% for name, values in data.services_attrs[service].items() %}
+        {% set file=data.service_subdirectory+'/'+data.hostname+'/'+service+'_'+name+'.cfg' %}
+        {% if enabled %}
+            {{ configuration_add_object(type='service',
+                                        file=file,
+                                        attrs=values
+                                       )
+            }}
+        {% else %}
+            {{ configuration_remove_object(file=file) }}
+        {% endif %}
     {% endfor %}
-{% endif %}
+{% endfor %}
 
-# add disk_space service
-# TODO: find how to delete old configuration
-{% if data.services_loop_enabled.disk_space %}
-    {% for mountpoint, disk_space in data.services_attrs.disk_space.items() %}
-        {{ configuration_add_object(type='service',
-                                    file=data.service_subdirectory+'/'+data.hostname+'/disk_space_'+mountpoint+'.cfg',
-                                    attrs=disk_space
-                                   )
-        }}
-    {% endfor %}
-{% endif %}
-
-# add network service
-# TODO: find how to delete old configuration
-{% if data.services_loop_enabled.network %}
-    {% for name, network in data.services_attrs.network.items() %}
-        {{ configuration_add_object(type='service',
-                                    file=data.service_subdirectory+'/'+data.hostname+'/network_'+name+'.cfg',
-                                    attrs=network
-                                   )
-        }}
-    {% endfor %}
-{% endif %}
-
-# add solr service
-# TODO: find how to delete old configuration
-# TODO: readd auth
-{% if data.services_loop_enabled.solr %}
-    {% for name, solr in data.services_attrs.solr.items() %}
-        {{ configuration_add_object(type='service',
-                                    file=data.service_subdirectory+'/'+data.hostname+'/solr_'+name+'.cfg',
-                                    attrs=solr
-                                   )
-        }}
-    {% endfor %}
-{% endif %}
-
-# add web_openid service
-# TODO: find how to delete old configuration
-# TODO: readd auth
-{% if data.services_loop_enabled.web_openid %}
-    {% for name, web_openid in data.services_attrs.web_openid.items() %}
-        {{ configuration_add_object(type='service',
-                                    file=data.service_subdirectory+'/'+data.hostname+'/web_openid_'+name+'.cfg',
-                                    attrs=web_openid
-                                   )
-        }}
-    {% endfor %}
-{% endif %}
-
-# add web service
-# TODO: find how to delete old configuration
-{% if data.services_loop_enabled.web %}
-    {% for name, web in data.services_attrs.web.items() %}
-        {{ configuration_add_object(type='service',
-                                    file=data.service_subdirectory+'/'+data.hostname+'/web_'+name+'.cfg',
-                                    attrs=web
-                                   )
-        }}
-    {% endfor %}
-{% endif %}
 
 {% endmacro %}
