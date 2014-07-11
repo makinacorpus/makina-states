@@ -51,18 +51,14 @@ icinga-configuration-{{data.state_name_salt}}-add-object-conf:
 # we remove the object
 icinga-configuration-{{data.state_name_salt}}-remove-object-conf:
   file.absent:
-    - name: echo {{data.objects.directory}}/{{data.file}}
+    - name: {{data.objects.directory}}/{{data.file}}
     - watch:
-      - mc_proxy: icinga-configuration-pre-object-conf
+      - mc_proxy: icinga-configuration-pre-clean-directories
+# with the watch_in, execution is slow
 {#
-      - mc_proxy: icinga-configuration-pre-clean-directories 
-#}
     - watch_in:
-      - mc_proxy: icinga-configuration-post-object-conf
-{#
-      - mc_proxy:  icinga-configuration-post-clean-directories
+      - mc_proxy: icinga-configuration-post-clean-directories
 #}
-
 {% endmacro %}
 
 {#
@@ -286,18 +282,17 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 
 
 # configure the services
-{% for service in data.services_disabled %}
+{% for service, enabled in data.services_enabled.items() %}
     {% set file=data.service_subdirectory+'/'+data.hostname+'/'+service+'.cfg' %}
-    {{ configuration_remove_object(file=file) }}
-{% endfor %}
-
-{% for service in data.services_enabled %}
-    {% set file=data.service_subdirectory+'/'+data.hostname+'/'+service+'.cfg' %}
-    {{ configuration_add_object(type='service',
-                                file=file,
-                                attrs=data.services_attrs[service] 
-                               )
-    }}
+    {% if enabled %}
+        {{ configuration_add_object(type='service',
+                                    file=file,
+                                    attrs=data.services_attrs[service]
+                                   )
+        }}
+    {% else %}
+        {{ configuration_remove_object(file=file) }}
+    {% endif %}
 {% endfor %}
 
 # add dns_association service

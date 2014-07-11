@@ -2526,14 +2526,9 @@ def settings():
 def add_configuration_object_settings(type, file, attrs, **kwargs):
     '''Settings for the add_configuration_object macro'''
 #    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
-#   save the ram
+#   save the ram (we get only useful values)
     icingaSettings_complete = __salt__['mc_icinga.settings']()
     icingaSettings = {}
-
-    extra = kwargs.pop('extra', {})
-    kwargs.update(extra)
-
-#   save the ram (we get only useful values)
     kwargs.setdefault('objects', {'directory': icingaSettings_complete['objects']['directory']})
 
     kwargs.setdefault('type', type)
@@ -2541,45 +2536,27 @@ def add_configuration_object_settings(type, file, attrs, **kwargs):
     kwargs.setdefault('attrs', attrs)
     kwargs.setdefault('state_name_salt', file.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
-    # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
-    #icingaSettings['data'] = copy.deepcopy(icingaSettings)
-    #icingaSettings['data']['extra'] = copy.deepcopy(icingaSettings)
-    #icingaSettings['extra'] = copy.deepcopy(icingaSettings)
     return icingaSettings
 
 def remove_configuration_object_settings(file, **kwargs):
     '''Settings for the remove_configuration_object macro'''
 #    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
-#   save the ram
+#   save the ram (we get only useful values)
     icingaSettings_complete = __salt__['mc_icinga.settings']()
     icingaSettings = {}
-
-    extra = kwargs.pop('extra', {})
-    kwargs.update(extra)
-
-#   save the ram (we get only useful values)
     kwargs.setdefault('objects', {'directory': icingaSettings_complete['objects']['directory']})
 
     kwargs.setdefault('file', file)
     kwargs.setdefault('state_name_salt', file.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
-    # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
-    #icingaSettings['data'] = copy.deepcopy(icingaSettings)
-    #icingaSettings['data']['extra'] = copy.deepcopy(icingaSettings)
-    #icingaSettings['extra'] = copy.deepcopy(icingaSettings)
     return icingaSettings
 
 def edit_configuration_object_settings(type, file, attr, value, **kwargs):
     '''Settings for the edit_configuration_object macro'''
 #    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
-#   save the ram
+#   save the ram (we get only useful values)
     icingaSettings_complete = __salt__['mc_icinga.settings']()
     icingaSettings = {}
-
-    extra = kwargs.pop('extra', {})
-    kwargs.update(extra)
-
-#   save the ram (we get only useful values)
     kwargs.setdefault('objects', {'directory': icingaSettings_complete['objects']['directory']})
 
     kwargs.setdefault('type', type)
@@ -2588,10 +2565,6 @@ def edit_configuration_object_settings(type, file, attr, value, **kwargs):
     kwargs.setdefault('value', value)
     kwargs.setdefault('state_name_salt', file.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
-    # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
-    #icingaSettings['data'] = copy.deepcopy(icingaSettings)
-    #icingaSettings['data']['extra'] = copy.deepcopy(icingaSettings)
-    #icingaSettings['extra'] = copy.deepcopy(icingaSettings)
     return icingaSettings
 
 def add_auto_configuration_host_settings(hostname,
@@ -2671,14 +2644,9 @@ def add_auto_configuration_host_settings(hostname,
                                          **kwargs):
     '''Settings for the add_auto_configuration_host macro'''
 #    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
-#   save the ram
+#   save the ram (get only useful values)
     icingaSettings_complete = __salt__['mc_icinga.settings']()
     icingaSettings = {}
-
-    extra = kwargs.pop('extra', {})
-    kwargs.update(extra)
-
-#   save the ram (get only useful values)
     kwargs.setdefault('objects', {'directory': icingaSettings_complete['objects']['directory']})
 
     kwargs.setdefault('hostname', hostname)
@@ -2746,16 +2714,11 @@ def add_auto_configuration_host_settings(hostname,
         'ware_raid',
         'web_apache_status',
     ]
-    services_enabled = []
-    services_disabled = []
+    services_enabled = dict()
     for service in services:
-        if eval(service):
-            services_enabled.append(service)
-        else:
-            services_disabled.append(service)
+        services_enabled[service] = eval(service)
 
     kwargs.setdefault('services_enabled', services_enabled)
-    kwargs.setdefault('services_disabled', services_disabled)
 
     # services for which a loop is used in the macro
     services_loop = [
@@ -3799,10 +3762,6 @@ def add_auto_configuration_host_settings(hostname,
 
     kwargs.setdefault('state_name_salt', hostname.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
-    # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
-    #icingaSettings['data'] = copy.deepcopy(icingaSettings)
-    #icingaSettings['data']['extra'] = copy.deepcopy(icingaSettings)
-    #icingaSettings['extra'] = copy.deepcopy(icingaSettings)
     return icingaSettings
 
 def dump():
