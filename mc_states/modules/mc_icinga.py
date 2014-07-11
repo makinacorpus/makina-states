@@ -2663,10 +2663,9 @@ def add_auto_configuration_host_settings(hostname,
 
     kwargs.setdefault('attrs', attrs)
     kwargs.setdefault('ssh_user', ssh_user)
-    if ssh_addr:
-       kwargs.setdefault('ssh_addr', ssh_addr)
-    else:
-       kwargs.setdefault('ssh_addr', hostname)
+    if not ssh_addr:
+        ssh_addr = hostname
+    kwargs.setdefault('ssh_addr', ssh_addr)
     kwargs.setdefault('ssh_port', ssh_port)
     kwargs.setdefault('ssh_timeout', ssh_timeout)
 
@@ -3404,360 +3403,111 @@ def add_auto_configuration_host_settings(hostname,
 
 
     # generate the complete check command (we can't do a loop before we have to give the good order for arguments)
-    cssh_params = [ssh_user, ssh_addr, str(ssh_port), str(ssh_timeout) ]
+    cssh_params = ['ssh_user', 'ssh_addr', 'ssh_port', 'ssh_timeout']
 
-    if backup_burp_age:
-        services_attrs['backup_burp_age']['check_command'] = "!".join([
-                                                                      str(services_attrs['backup_burp_age']['check_command']),
-                                                                      str(services_attrs['backup_burp_age']['cmdarg_ssh_user']),
-                                                                      str(services_attrs['backup_burp_age']['cmdarg_ssh_addr']),
-                                                                      str(services_attrs['backup_burp_age']['cmdarg_ssh_port']),
-                                                                      str(services_attrs['backup_burp_age']['cmdarg_warning']),
-                                                                      str(services_attrs['backup_burp_age']['cmdarg_critical']),
-                                                                     ])
-    if backup_rdiff:
-        services_attrs['backup_rdiff']['check_command'] = "!".join([
-                                                                   str(services_attrs['backup_rdiff']['check_command']),
-                                                                   str(services_attrs['backup_rdiff']['cmdarg_ssh_user']),
-                                                                   str(services_attrs['backup_rdiff']['cmdarg_ssh_addr']),
-                                                                   str(services_attrs['backup_rdiff']['cmdarg_ssh_port']),
-                                                                   str(services_attrs['backup_rdiff']['cmdarg_command']),
-                                                                  ])
-    if beam_process:
-        services_attrs['beam_process']['check_command'] = "!".join([
-                                                                   str(services_attrs['beam_process']['check_command']),
-                                                                   str(services_attrs['beam_process']['cmdarg_warning']),
-                                                                   str(services_attrs['beam_process']['cmdarg_critical']),
-                                                                  ])
-    if celeryd_process:
-        services_attrs['celeryd_process']['check_command'] = "!".join([
-                                                                      str(services_attrs['celeryd_process']['check_command']),
-                                                                      str(services_attrs['celeryd_process']['cmdarg_warning']),
-                                                                      str(services_attrs['celeryd_process']['cmdarg_critical']),
-                                                                     ])
-    if cron:
-        services_attrs['cron']['check_command'] = "!".join([
-                                                           str(services_attrs['cron']['check_command']),
-                                                           ]+cssh_params,
-                                                          )
-    if ddos:
-        services_attrs['ddos']['check_command'] = "!".join([
-                                                           str(services_attrs['ddos']['check_command']),
-                                                           ]+cssh_params+[
-                                                           str(services_attrs['ddos']['cmdarg_warning']),
-                                                           str(services_attrs['ddos']['cmdarg_critical']),
-                                                          ])
-    if debian_updates:
-        services_attrs['debian_updates']['check_command'] = "!".join([
-                                                                     str(services_attrs['debian_updates']['check_command']),
-                                                                     ]+cssh_params,
-                                                                    )
-    if dns_association_hostname:
-        services_attrs['dns_association_hostname']['check_command'] = "!".join([
-                                                                               str(services_attrs['dns_association_hostname']['check_command']),
-                                                                               str(services_attrs['dns_association_hostname']['cmdarg_hostname']),
-                                                                               str(services_attrs['dns_association_hostname']['cmdarg_other_args']),
-                                                                              ])
-    if dns_association:
-        for name, dns_association in services_attrs['dns_association'].items():
-            services_attrs['dns_association'][name]['check_command'] = "!".join([
-                                                                                str(dns_association['check_command']),
-                                                                                str(dns_association['cmdarg_hostname']),
-                                                                                str(dns_association['cmdarg_other_args']),
-                                                                               ])
-    if dns_reverse_association:
-        for name, dns_reverse_association in services_attrs['dns_reverse_association'].items():
-            services_attrs['dns_reverse_association'][name]['check_command'] = "!".join([
-                                                                      str(dns_reverse_association['check_command']),
-                                                                      str(dns_reverse_association['cmdarg_inaddr']),
-                                                                      str(dns_reverse_association['cmdarg_hostname']),
-                                                                      str(dns_reverse_association['cmdarg_other_args']),
-                                                                    ])
-    if disk_space:
-        for name, disk_space in services_attrs['disk_space'].items():
-            services_attrs['disk_space'][name]['check_command'] = "!".join([
-                                                                      str(disk_space['check_command']),
-                                                                      str(disk_space['cmdarg_path']),
-                                                                      str(disk_space['cmdarg_warning']),
-                                                                      str(disk_space['cmdarg_critical']),
-                                                                        ])
-    if drbd:
-        services_attrs['drbd']['check_command'] = "!".join([
-                                                           str(services_attrs['drbd']['check_command']),
-                                                           ]+cssh_params+[
-                                                           str(services_attrs['drbd']['cmdarg_command']),
-                                                          ])
-    if epmd_process:
-        services_attrs['epmd_process']['check_command'] = "!".join([
-                                                                   str(services_attrs['epmd_process']['check_command']),
-                                                                   str(services_attrs['epmd_process']['cmdarg_process']),
-                                                                   str(services_attrs['epmd_process']['cmdarg_warning']),
-                                                                   str(services_attrs['epmd_process']['cmdarg_critical']),
-                                                                  ])
-    if erp_files:
-        services_attrs['erp_files']['check_command'] = "!".join([
-                                                                str(services_attrs['erp_files']['check_command']),
-                                                                ]+cssh_params+[
-                                                                str(services_attrs['erp_files']['cmdarg_command']),
-                                                               ])
-    if fail2ban:
-        services_attrs['fail2ban']['check_command'] = "!".join([
-                                                               str(services_attrs['fail2ban']['check_command']),
-                                                               str(services_attrs['fail2ban']['cmdarg_process']),
-                                                               str(services_attrs['fail2ban']['cmdarg_warning']),
-                                                               str(services_attrs['fail2ban']['cmdarg_critical']),
-                                                              ])
-    if gunicorn_process:
-        services_attrs['gunicorn_process']['check_command'] = "!".join([
-                                                                       str(services_attrs['gunicorn_process']['check_command']),
-                                                                       str(services_attrs['gunicorn_process']['cmdarg_process']),
-                                                                       str(services_attrs['gunicorn_process']['cmdarg_warning']),
-                                                                       str(services_attrs['gunicorn_process']['cmdarg_critical']),
-                                                                      ])
-    if haproxy:
-        services_attrs['haproxy']['check_command'] = "!".join([
-                                                              str(services_attrs['haproxy']['check_command']),
-                                                              ]+cssh_params+[
-                                                              str(services_attrs['haproxy']['cmdarg_command']),
-                                                             ])
-#    if ircbot_process:
-#        services_attrs['ircbot_process']['check_command'] = 
-    if load_avg:
-        services_attrs['load_avg']['check_command'] = "!".join([
-                                                               str(services_attrs['load_avg']['check_command']),
-                                                               str(services_attrs['load_avg']['cmdarg_other_args']),
-                                                              ])
-    if mail_cyrus_imap_connections:
-        services_attrs['mail_cyrus_imap_connections']['check_command'] = "!".join([
-                                                                                  str(services_attrs['mail_cyrus_imap_connections']['check_command']),
-                                                                                  ]+cssh_params+[
-                                                                                  str(services_attrs['mail_cyrus_imap_connections']['cmdarg_warning']),
-                                                                                  str(services_attrs['mail_cyrus_imap_connections']['cmdarg_critical']),
-                                                                                 ])
-    if mail_imap:
-        services_attrs['mail_imap']['check_command'] = "!".join([
-                                                                str(services_attrs['mail_imap']['check_command']),
-                                                                str(services_attrs['mail_imap']['cmdarg_warning']),
-                                                                str(services_attrs['mail_imap']['cmdarg_critical']),
-                                                               ])
-    if mail_imap_ssl:
-        services_attrs['mail_imap_ssl']['check_command'] = "!".join([
-                                                                    str(services_attrs['mail_imap_ssl']['check_command']),
-                                                                    str(services_attrs['mail_imap_ssl']['cmdarg_warning']),
-                                                                    str(services_attrs['mail_imap_ssl']['cmdarg_critical']),
-                                                                   ])
-    if mail_pop:
-        services_attrs['mail_pop']['check_command'] = "!".join([
-                                                               str(services_attrs['mail_pop']['check_command']),
-                                                               str(services_attrs['mail_pop']['cmdarg_warning']),
-                                                               str(services_attrs['mail_pop']['cmdarg_critical']),
-                                                              ])
-    if mail_pop_ssl:
-        services_attrs['mail_pop_ssl']['check_command'] = "!".join([
-                                                                   str(services_attrs['mail_pop_ssl']['check_command']),
-                                                                   str(services_attrs['mail_pop_ssl']['cmdarg_warning']),
-                                                                   str(services_attrs['mail_pop_ssl']['cmdarg_critical']),
-                                                                  ])
-    if mail_pop_test_account:
-        services_attrs['mail_pop_test_account']['check_command'] = "!".join([
-                                                                            str(services_attrs['mail_pop_test_account']['check_command']),
-                                                                            str(services_attrs['mail_pop_test_account']['cmdarg_warning1']),
-                                                                            str(services_attrs['mail_pop_test_account']['cmdarg_critical1']),
-                                                                            str(services_attrs['mail_pop_test_account']['cmdarg_warning2']),
-                                                                            str(services_attrs['mail_pop_test_account']['cmdarg_critical2']),
-                                                                            str(services_attrs['mail_pop_test_account']['cmdarg_mx']),
-                                                                           ])
-    if mail_server_queues:
-        services_attrs['mail_server_queues']['check_command'] = "!".join([
-                                                                         str(services_attrs['mail_server_queues']['check_command']),
-                                                                         ]+cssh_params+[
-                                                                         str(services_attrs['mail_server_queues']['cmdarg_warning']),
-                                                                         str(services_attrs['mail_server_queues']['cmdarg_critical']),
-                                                                        ])
-    if mail_smtp:
-        services_attrs['mail_smtp']['check_command'] = "!".join([
-                                                                str(services_attrs['mail_smtp']['check_command']),
-                                                                str(services_attrs['mail_smtp']['cmdarg_warning']),
-                                                                str(services_attrs['mail_smtp']['cmdarg_critical']),
-                                                               ])
-    if megaraid_sas:
-        services_attrs['megaraid_sas']['check_command'] = "!".join([
-                                                                   str(services_attrs['megaraid_sas']['check_command']),
-                                                                   ]+cssh_params+[
-                                                                   str(services_attrs['megaraid_sas']['cmdarg_command']),
-                                                                  ])
-    if memory:
-        services_attrs['memory']['check_command'] = "!".join([
-                                                             str(services_attrs['memory']['check_command']),
-                                                             str(services_attrs['memory']['cmdarg_warning']),
-                                                             str(services_attrs['memory']['cmdarg_critical']),
-                                                            ])
-    if memory_hyperviseur:
-        services_attrs['memory_hyperviseur']['check_command'] = "!".join([
-                                                                         str(services_attrs['memory_hyperviseur']['check_command']),
-                                                                         str(services_attrs['memory_hyperviseur']['cmdarg_warning']),
-                                                                         str(services_attrs['memory_hyperviseur']['cmdarg_critical']),
-                                                                        ])
-    if mysql_process:
-        services_attrs['mysql_process']['check_command'] = "!".join([
-                                                                    str(services_attrs['mysql_process']['check_command']),
-                                                                    str(services_attrs['mysql_process']['cmdarg_process']),
-                                                                    str(services_attrs['mysql_process']['cmdarg_warning']),
-                                                                    str(services_attrs['mysql_process']['cmdarg_critical']),
-                                                                   ])
-    if network:
-        for name, network in services_attrs['network'].items():
-            services_attrs['network'][name]['check_command'] = "!".join([
-                                                                        str(network['check_command']),
-                                                                        str(network['cmdarg_interface']),
-                                                                        str(network['cmdarg_other_args']),
-                                                                       ])
-    if ntp_peers:
-        services_attrs['ntp_peers']['check_command'] = "!".join([
-                                                                str(services_attrs['ntp_peers']['check_command']),
-                                                                ]+cssh_params
-                                                               )
-    if ntp_time:
-        services_attrs['ntp_time']['check_command'] = "!".join([
-                                                               str(services_attrs['ntp_time']['check_command']),
-                                                               ]+cssh_params
-                                                              )
-#    if only_one_nagios_running:
-#        services_attrs['only_one_nagios_running']['check_command'] = 
-    if postgres_port:
-        services_attrs['postgres_port']['check_command'] = "!".join([
-                                                                    str(services_attrs['postgres_port']['check_command']),
-                                                                    str(services_attrs['postgres_port']['cmdarg_port']),
-                                                                    str(services_attrs['postgres_port']['cmdarg_warning']),
-                                                                    str(services_attrs['postgres_port']['cmdarg_critical']),
-                                                                   ])
-    if postgres_process:
-        services_attrs['postgres_process']['check_command'] = "!".join([
-                                                                       str(services_attrs['postgres_process']['check_command']),
-                                                                       str(services_attrs['postgres_process']['cmdarg_process']),
-                                                                       str(services_attrs['postgres_process']['cmdarg_warning']),
-                                                                       str(services_attrs['postgres_process']['cmdarg_critical']),
-                                                                      ])
-    if prebill_sending:
-        services_attrs['prebill_sending']['check_command'] = "!".join([
-                                                                      str(services_attrs['prebill_sending']['check_command']),
-                                                                      ]+cssh_params+[
-                                                                      str(services_attrs['prebill_sending']['cmdarg_command']),
-                                                                     ])
-    if raid:
-        services_attrs['raid']['check_command'] = "!".join([
-                                                           str(services_attrs['raid']['check_command']),
-                                                           ]+cssh_params+[
-                                                           str(services_attrs['raid']['cmdarg_command']),
-                                                          ])
-    if sas:
-        services_attrs['sas']['check_command'] = "!".join([
-                                                          str(services_attrs['sas']['check_command']),
-                                                          ]+cssh_params+[
-                                                          str(services_attrs['sas']['cmdarg_command']),
-                                                         ])
-    if snmpd_memory_control:
-        services_attrs['snmpd_memory_control']['check_command'] = "!".join([
-                                                                           str(services_attrs['snmpd_memory_control']['check_command']),
-                                                                           str(services_attrs['snmpd_memory_control']['cmdarg_process']),
-                                                                           str(services_attrs['snmpd_memory_control']['cmdarg_warning']),
-                                                                           str(services_attrs['snmpd_memory_control']['cmdarg_critical']),
-                                                                           str(services_attrs['snmpd_memory_control']['cmdarg_memory']),
-                                                                          ])
-    if solr:
-        for name, solr in services_attrs['solr'].items():
-            services_attrs['solr'][name]['check_command'] = "!".join([
-                                                                     str(solr['check_command']),
-                                                                     str(solr['cmdarg_hostname']),
-                                                                     str(solr['cmdarg_port']),
-                                                                     str(solr['cmdarg_warning']),
-                                                                     str(solr['cmdarg_critical']),
-                                                                     str(solr['cmdarg_timeout']),
-                                                                     str(solr['cmdarg_strings']),
-                                                                     str(solr['cmdarg_other_args']),
-                                                                    ])
-    if ssh:
-        services_attrs['ssh']['check_command'] = "!".join([
-                                                          str(services_attrs['ssh']['check_command']),
-                                                          str(services_attrs['ssh']['cmdarg_port']),
-                                                          str(services_attrs['ssh']['cmdarg_warning']),
-                                                          str(services_attrs['ssh']['cmdarg_critical']),
-                                                         ])
-    if supervisord_status:
-        services_attrs['supervisord_status']['check_command'] = "!".join([
-                                                                         str(services_attrs['supervisord_status']['check_command']),
-                                                                         ]+cssh_params+[
-                                                                         str(services_attrs['supervisord_status']['cmdarg_command']),
-                                                                        ])
-    if swap:
-        services_attrs['swap']['check_command'] = "!".join([
-                                                           str(services_attrs['swap']['check_command']),
-                                                           ]+cssh_params+[
-                                                           str(services_attrs['swap']['cmdarg_command']),
-                                                          ])
-    if tiles_generator_access:
-        services_attrs['tiles_generator_access']['check_command'] = "!".join([
-                                                                             str(services_attrs['tiles_generator_access']['check_command']),
-                                                                             str(services_attrs['tiles_generator_access']['cmdarg_hostname']),
-                                                                             str(services_attrs['tiles_generator_access']['cmdarg_url']),
-                                                                            ])
-    if ware_raid:
-        services_attrs['ware_raid']['check_command'] = "!".join([
-                                                                str(services_attrs['ware_raid']['check_command']),
-                                                                ]+cssh_params+[
-                                                                str(services_attrs['ware_raid']['cmdarg_command']),
-                                                               ])
-    if web_apache_status:
-        services_attrs['web_apache_status']['check_command'] = "!".join([
-                                                                        str(services_attrs['web_apache_status']['check_command']),
-                                                                        str(services_attrs['web_apache_status']['cmdarg_warning']),
-                                                                        str(services_attrs['web_apache_status']['cmdarg_critical']),
-                                                                        str(services_attrs['web_apache_status']['cmdarg_other_args']),
-                                                                       ])
-    if web_openid:
-        for name, web_openid in services_attrs['web_openid'].items():
-            services_attrs['web_openid'][name]['check_command'] = "!".join([
-                                                                           str(web_openid['check_command']),
-                                                                           str(web_openid['cmdarg_hostname']),
-                                                                           str(web_openid['cmdarg_url']),
-                                                                           str(web_openid['cmdarg_warning']),
-                                                                           str(web_openid['cmdarg_critical']),
-                                                                           str(web_openid['cmdarg_timeout']),
-                                                                          ])
-    if web:
-        for name, web in services_attrs['web'].items():
-            services_attrs['web'][name]['check_command'] = "!".join([
-                                                                    str(web['check_command']),
-                                                                    str(web['cmdarg_hostname']),
-                                                                    str(web['cmdarg_url']),
-                                                                    str(web['cmdarg_warning']),
-                                                                    str(web['cmdarg_critical']),
-                                                                    str(web['cmdarg_timeout']),
-                                                                    str(web['cmdarg_strings']),
-                                                                    str(web['cmdarg_other_args']),
-                                                                   ])
+    check_command_args = {
+        'CSSH_BACKUP_BURP': ['ssh_user', 'ssh_addr', 'ssh_port', 'warning', 'critical'],
+        'CSSH_BACKUP': ['ssh_user', 'ssh_addr', 'ssh_port', 'warning', 'critical'],
+        'C_SNMP_PROCESS': ['process', 'warning', 'critical'],
+        'CSSH_CRON': cssh_params,
+        'CSSH_DDOS': cssh_params+['warning', 'critical'],
+        'CSSH_DEBIAN_UPDATES': cssh_params,
+        'C_DNS_EXTERNE_ASSOCIATION': ['hostname', 'other_args'],
+        'C_DNS_EXTERNE_REVERSE_ASSOCIATION': ['inaddr', 'hostname', 'other_args'],
+        'C_SNMP_DISK': ['path', 'warning', 'critical'],
+        'CSSH_DRBD': cssh_params+['command'],
+        'CSSH_CUSTOM': cssh_params+['command'],
+        'CSSH_HAPROXY': cssh_params+['command'],
+        'C_PROCESS_IRCBOT_RUNNING': [],
+        'C_SNMP_LOADAVG': ['other_args'],
+        'CSSH_CYRUS_CONNECTIONS': cssh_params+['warning', 'critical'],
+        'C_MAIL_IMAP': ['warning', 'critical'],
+        'C_MAIL_IMAP_SSL': ['warning', 'critical'],
+        'C_MAIL_POP': ['warning', 'critical'],
+        'C_MAIL_POP_SSL': ['warning', 'critical'],
+        'C_POP3_TEST_SIZE_AND_DELETE': ['warning1', 'critical1', 'warning2', 'critical2', 'mx'],
+        'CSSH_MAILQUEUE': cssh_params+['warning', 'critical'],
+        'C_MAIL_SMTP': ['warning', 'critical'],
+        'CSSH_MEGARAID_SAS': cssh_params+['command'],
+        'C_SNMP_MEMORY': ['warning', 'critical'],
+        'C_SNMP_NETWORK': ['interface', 'other_args'],
+        'CSSH_NTP_PEER': cssh_params,
+        'CSSH_NTP_TIME': cssh_params,
+        'C_CHECK_ONE_NAGIOS_ONLY': [],
+        'check_tcp': ['port', 'warning', 'critical'],
+        'CSSH_RAID_SOFT': cssh_params+['command'],
+        'CSSH_SAS2IRCU': cssh_params+['command'],
+        'C_SNMP_PROCESS_WITH_MEM': ['process', 'warning', 'critical', 'memory'],
+        'C_HTTP_STRING_SOLR': ['hostname', 'port', 'warning', 'critical', 'timeout', 'strings', 'other_args'],
+        'CSSH_SUPERVISOR': cssh_params+['command'],
+        'check_http_vhost_uri': ['hostname', 'url'],
+        'CSSH_RAID_3WARE': cssh_params+['command'],
+        'C_APACHE_STATUS': ['warning', 'critical', 'other_args'],
+        'C_HTTPS_OPENID_REDIRECT': ['hostname', 'url', 'warning', 'critical', 'timeout'],
+        'C_HTTP_STRING': ['hostname', 'url', 'warning', 'critical', 'timeout', 'strings', 'other_args'],
+        'C_HTTP_STRING_AUTH': ['hostname', 'url', 'warning', 'critical', 'timeout', 'strings', 'other_args'],
+        'C_HTTP_STRING_ONLY': ['hostname', 'url', 'warning', 'critical', 'timeout', 'strings', 'other_args'],
+    }
+
+    # build the check command with args
+    for service in services:
+        if service in services_attrs:
+            if 'check_command' in services_attrs[service]:
+
+                args = [ str(services_attrs[service]['check_command']) ]
+
+                for arg in check_command_args[services_attrs[service]['check_command']]:
+                    # case of ssh params because we look for ssh_user not cmdarg_ssh_user
+                    if arg in cssh_params:
+                        if arg in services_attrs[service]:
+                            args.append(str(services_attrs[service][arg]))
+                        else:
+                            args.append(str(eval(arg)))
+                    else:
+                        if 'cmdarg_'+arg in services_attrs[service]:
+                            args.append(str(services_attrs[service]['cmdarg_'+arg]))
+                        else:
+                            args.append('')
+                services_attrs[service]['check_command'] = "!".join(args)
 
 
+    for service in services_loop:
+        if service in services_attrs:
+            for subservice in services_attrs[service]:
+                if 'check_command' in services_attrs[service][subservice]:
 
+                    args = [ str(services_attrs[service][subservice]['check_command']) ]
+
+                    for arg in check_command_args[services_attrs[service][subservice]['check_command']]:
+                        # case of ssh params because we look for ssh_user not cmdarg_ssh_user
+                        if arg in cssh_params:
+                            if arg in services_attrs[service][subservice]:
+                                args.append(str(services_attrs[service][subservice][arg]))
+                            else:
+                                args.append(str(eval(arg)))
+                        else:
+                            if 'cmdarg_'+arg in services_attrs[service][subservice]:
+                                args.append(str(services_attrs[service][subservice]['cmdarg_'+arg]))
+                            else:
+                                args.append('')
+                    services_attrs[service][subservice]['check_command'] = "!".join(args)
 
     # add the host_name or hostgroup_name in each service and remove directives begining with "cmdarg_"
-    for name, service in services_attrs.items():
-            subdict = False
-            for key, value in service.items():
-                if isinstance(value, dict):
-                    subdict = True
-                    for key2, value2 in value.items():
-                        if key2.startswith('cmdarg_'):
-                            services_attrs[name][key].pop(key2, None)
-                else:
-                    if key.startswith('cmdarg_'):
-                        services_attrs[name].pop(key, None)
-            if subdict:
-                for key, value in service.items():
-                    services_attrs[name][key][service_key_hostname] = hostname
-            else:
-                services_attrs[name][service_key_hostname] = hostname
+    for service in services:
+        if service in services_attrs:
+            for arg in copy.deepcopy(services_attrs[service]):
+                if arg.startswith('cmdarg_'):
+                    services_attrs[service].pop(arg, None)
+            services_attrs[service][service_key_hostname] = hostname
 
+    for service in services_loop:
+        if service in services_attrs:
+            for subservice  in services_attrs[service]:
+                for arg in copy.deepcopy(services_attrs[service][subservice]):
+                    if arg.startswith('cmdarg_'):
+                        services_attrs[service][subservice].pop(arg, None)
+                services_attrs[service][subservice][service_key_hostname] = hostname
+    
     kwargs.setdefault('services_attrs', services_attrs)
 
     kwargs.setdefault('state_name_salt', hostname.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))

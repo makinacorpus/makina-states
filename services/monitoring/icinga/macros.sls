@@ -54,7 +54,7 @@ icinga-configuration-{{data.state_name_salt}}-remove-object-conf:
     - name: {{data.objects.directory}}/{{data.file}}
     - watch:
       - mc_proxy: icinga-configuration-pre-clean-directories
-# use of watch_in is very slow but i don't find any other method
+# use of watch_in is very slow but i don't find any other method (with 128 hosts execution takes 11 minutes without the watch_in and  )
     - watch_in:
       - mc_proxy: icinga-configuration-post-clean-directories
 {% endmacro %}
@@ -104,8 +104,6 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 #         true if you want define a hostgroup instead of a host
 #     attrs
 #         a dictionary in which each key corresponds to a directive in host definition
-#     check_*
-#         a boolean to indicate that the service has to be checked
 #     ssh_user
 #         user which is used to perform check_by_ssh
 #     ssh_addr
@@ -115,8 +113,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 #     ssh_port
 #         ssh port
 #     services_attrs
-#         dictionary to override the arguments given in check_command for each service
-#
+#         dictionary to override the default values for each service definition and to add additional values.
+#         the keys which name begins whit "cmdarg_" are the parameters for the check command
+#     [service]
+#         a boolean to indicate that the service [service] has to be checked (it generates the configuration file for the service)
 #}
 
 {% macro configuration_add_auto_host(hostname,
