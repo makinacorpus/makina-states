@@ -3543,4 +3543,14 @@ def add_auto_configuration_host_settings(hostname,
 def dump():
     return mc_states.utils.dump(__salt__,__name)
 
+# hack to ordering state without using "watch_in".
+# it is bad to do this and I think I will have to remove this later ! 
+def test(state):
+    if not state:
+        return test.value
+    else:
+        test.value.append({'file': state})
+        return True
+test.value=[]
+
 #

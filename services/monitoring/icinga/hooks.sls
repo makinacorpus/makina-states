@@ -43,6 +43,7 @@ icinga-configuration-pre-clean-directories:
 
 icinga-configuration-post-clean-directories:
   mc_proxy.hook:
+    - watch: {{salt["mc_icinga.test"](None)}}
     - watch_in:
       - mc_proxy: icinga-configuration-pre-accumulated-attributes-conf
 
