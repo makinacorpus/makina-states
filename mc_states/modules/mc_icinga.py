@@ -3452,7 +3452,7 @@ def add_auto_configuration_host_settings(hostname,
     # build the check command with args
     for service in services:
         if service in services_attrs:
-            if 'check_command' in services_attrs[service]:
+            if 'check_command' in services_attrs[service] and '!' not in services_attrs[service]['check_command']:
 
                 args = [ str(services_attrs[service]['check_command']) ]
 
@@ -3470,11 +3470,10 @@ def add_auto_configuration_host_settings(hostname,
                             args.append('')
                 services_attrs[service]['check_command'] = "!".join(args)
 
-
     for service in services_loop:
         if service in services_attrs:
             for subservice in services_attrs[service]:
-                if 'check_command' in services_attrs[service][subservice]:
+                if 'check_command' in services_attrs[service][subservice] and '!' not in services_attrs[service][subservice]['check_command']:
 
                     args = [ str(services_attrs[service][subservice]['check_command']) ]
 
