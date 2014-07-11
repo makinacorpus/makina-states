@@ -74,12 +74,12 @@ This macro was written in order to add an object in the icinga configuration
 ::
 
     {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
-    {{ icinga.configuration_add_object(type, name, attrs, **kwargs) }}
+    {{ icinga.configuration_add_object(type, file, attrs, **kwargs) }}
 
 with
 
     :type: the type of added object
-    :name: the name of the added object used for the filename
+    :file: the filename of the added object
     :attrs: a dictionary in which each key corresponds to a directive
 
 The default directory where configuration files are located is::
@@ -96,7 +96,7 @@ A call with::
 
     {{ icinga.configuration_add_object(
                                    type='host',
-                                   name='hostname1',
+                                   file='hosts/hostname1.cfg',
                                    attrs={
                                             'host_name': "hostname1",
                                             'use': "generic-host",
@@ -115,7 +115,7 @@ The services are managed in the same way::
 
     {{ icinga.configuration_add_object(
                                    type='service',
-                                   name='SSH',
+                                   file='services/SSH',
                                    attrs={
                                             'use': "generic-service",
                                             'service_description': "SSH",
@@ -147,12 +147,12 @@ But when you call the configuration_add_object, you don't know what hosts will b
 ::
 
     {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
-    {{ icinga.configuration_edit_object(type, name, attr, value, **kwargs) }}
+    {{ icinga.configuration_edit_object(type, file, attr, value, **kwargs) }}
 
 with
 
     :type: the type of edited object
-    :name: the name of the edited object
+    :file: the name of the edited object
     :attr: the directive for which a value must be added
     :value: the value added
 
@@ -161,7 +161,7 @@ The old values of the attr directive are not removed.
 If you call::
 
     {{ icinga.configuration_edit_object(type='service',
-                                        name='SSH',
+                                        file='SSH.cfg',
                                         attr='host_name',
                                         value='hostname1') }}
 
@@ -176,7 +176,7 @@ the previous service definition becomes::
 If you recall the macro with a different value::
 
     {{ icinga.configuration_edit_object(type='service',
-                                        name='SSH',
+                                        file='SSH.cfg',
                                         attr='host_name',
                                         value='hostname2') }}
 
@@ -215,57 +215,124 @@ This macro is designed to add an host and associated services
 
     {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
     {% icinga.configuration_add_auto_host(hostname,
-                                         attrs={},
-                                         ssh_user='root',
-                                         ssh_addr,
-                                         ssh_port=22,
-                                         check_ssh=True,
-                                         check_dns=True,
-                                         check_dns_reverse=True,
-                                         check_http=True,
-                                         check_html=True,
-                                         html={},
-                                         check_ntp_peer=False,
-                                         check_ntp_time=True,
-                                         mountpoint_root=True,
-                                         mountpoint_var=False,
-                                         mountpoint_srv=False,
-                                         mountpoint_data=False,
-                                         mountpoint_home=False,
-                                         mountpoint_var_makina=False,
-                                         mountpoint_var_www=False,
-                                         check_mountpoints=True,
-                                         check_raid=False,
-                                         check_md_raid=False,
-                                         check_megaraid_sas=False,
-                                         check_3ware_raid=False,
-                                         check_cciss=False,
-                                         check_drbd=False,
-                                         check_swap=True,
-                                         check_cpuload=True,
-                                         check_procs=True,
-                                         check_cron=True,
-                                         check_debian_packages=False,
-                                         check_burp_backup_age=False,
-                                         check_rdiff=False,
-                                         check_ddos=True,
-                                         check_haproxy_stats=False,
-                                         check_postfixqueue=False,
-                                         check_postfix_mailqueue=True,
-                                         services_check_command_args={}
-                                        ) %}
+                                          hostgroup=False,
+                                          attrs={},
+                                          ssh_user='root',
+                                          ssh_addr='',
+                                          ssh_port=22,
+                                          ssh_timeout=30,
+                                          backup_burp_age=False,
+                                          backup_rdiff=False,
+                                          beam_process=False,
+                                          celeryd_process=False,
+                                          cron=False,
+                                          ddos=false,
+                                          debian_updates=False,
+                                          dns_association_hostname=False,
+                                          dns_association=False,
+                                          dns_reverse_association=False,
+                                          disk_space=False,
+                                          disk_space_root=False,
+                                          disk_space_var=False,
+                                          disk_space_srv=False,
+                                          disk_space_tmp=False,
+                                          disk_space_data=False,
+                                          disk_space_mnt_data=False,
+                                          disk_space_home=False,
+                                          disk_space_var_lxc=False,
+                                          disk_space_var_makina=False,
+                                          disk_space_var_mysql=False,
+                                          disk_space_var_www=False,
+                                          disk_space_backups=False,
+                                          disk_space_backups_guidtz=False,
+                                          disk_space_var_backups_bluemind=False,
+                                          disk_space_var_spool_cyrus=False,
+                                          disk_space_nmd_www=False,
+                                          drbd=False,
+                                          epmd_process=False,
+                                          erp_files=False,
+                                          fail2ban=False,
+                                          gunicorn_process=False,
+                                          haproxy=False,
+                                          ircbot_process=False,
+                                          load_avg=False,
+                                          mail_cyrus_imap_connections=False,
+                                          mail_imap=False,
+                                          mail_imap_ssl=False,
+                                          mail_pop=False,
+                                          mail_pop_ssl=False,
+                                          mail_pop_test_account=False,
+                                          mail_server_queues=False,
+                                          mail_smtp=False,
+                                          megaraid_sas=False,
+                                          memory=False,
+                                          memory_hyperviseur=False,
+                                          mysql_process=False,
+                                          network=False,
+                                          ntp_peers=False,
+                                          ntp_time=False,
+                                          only_one_nagios_running=False,
+                                          postgres_port=False,
+                                          postgres_process=False,
+                                          prebill_sending=False,
+                                          raid=False,
+                                          sas=False,
+                                          snmpd_memory_control=False,
+                                          solr=False,
+                                          ssh=False,
+                                          supervisord_status=False,
+                                          swap=False,
+                                          tiles_generator_access=False,
+                                          ware_raid=False,
+                                          web_apache_status=False,
+                                          web_openid=False,
+                                          web=False,
+                                          services_attrs={}
+                                         ) %}
 
 with
 
     :hostname: the hostname of the added host
+    :hostgroup: if true, a hostgroup will be added instead of a simple host (because it is possible to add services for a hostgroup)
     :attrs: a dictionary in which each key corresponds to a directive in the host definition
     :ssh_user: user to connect the host (it is used by check_by_ssh command)
     :ssh_addr: address used to do the ssh connection in order to perform check_by_ssh. this address is not the hostname address becasue we can use a ssh gateway
     :ssh_port: ssh_port
-    :check_*: boolean to indicate that the service has to be checked
-    :services_check_command_args: dictionary to override the arguments given in check_command in each service
-    :html: dictionary in wich subdictionaries define vhost, url and s a list of strings which must be found in the webpage (this dictionary is used only if check_html=True)
+    :[service]: a boolean to indicate that the service [service] has to be added
+    :services_attrs: a dictionary to override the default values for each service definition and to ad additional values. The keys begining with "cmdarg_" are the check command arguments. Each subdictionary corresponds to a service.
 
+Some services use an additional subdictionary because they can be defined several times. It is the case of
+
+  - dns_association
+  - dns_reverse_assocation
+  - disk_space
+  - network
+  - solr
+  - web_openid
+  - web
+
+For theses services, you may complete the services_attrs dictionary by adding a subdictionary ('a_service' here)::
+    service_attrs: {
+        'dns_association': {
+            'a_service': {
+                'cmdarg_hostname': "www.example.net",
+            }
+        }
+    }
+
+You can add several dns_association, disk_space, network, ...
+
+For others services, the directives are not in a subdctionary::
+    service_attrs: {
+        'raid': {
+            'check_command': "check",
+        }
+    }
+
+
+You have to insert in services_attrs only the non default values.
+
+Note: The directive "host_name" will not be taken into account. The value will be replace by the value of "hostname" argument
 
 The host is added in /etc/icinga/objects/salt_generated/<hostname>/host.cfg
 The services are added in this directory too (for ssh it will be /etc/icinga/objects/salt_generated/<hostname>/ssh.cfg)
@@ -282,73 +349,3 @@ They are installed with a state in configuration.sls.
 
 All the commands objects are created even if no service use them.
 
-In commands, the icinga/nagios variables like '$HOSTADDRESS$' and '$HOSTNAME$' are not used in order to allow
-overriding parameters with 'services_check_command_args' dictionary.
-
-Only '$ARGN$' variables are used.
-
-All parameters have not been added for each command because for most of them, no default value is given.
-To add a new parameter:
-
-  - Add the parameter in command definition located in objects_defintions dictionary
-  - Add the default value in 'services_check_command_default_args' dictionary located in 'add_auto_configuration_host_settings'
-    function (in mc_icinga.py)
-  - Edit the 'attrs' dictionary in service defintion in macro configuration_add_auto_host
-
-
-
-
-The syntax for 'html' argument is a dictionary for each url to check. In each dictionary, the url is defined and a list of strings.
-Each string is looked for in the webpage.
-
-The dictionary looks like::
-
-    html = {
-        'name1': {
-            'hostname': "vhost1.localhost",
-            'url': "/robots.txt",
-            'auth': "",
-            'expected_strings': ['Disallow'],
-        },
-    }
-
-The key for subdictionaries ('name1' in the example) are used only for service filename.
-
-The values in 'expected_strings' list are transformed in '-s "value1" -s "value2"' so that it can be used in only one argument for command
-It may be possible to inject code.
-
-
-TODO: the admin_scripts are not copied on the monitored host. Files can be not found by check_by_ssh command.
-
-
-Commands injection
-------------------
-
-It is possible to inject code with all icinga/nagios variables because it is not managed with bash, so that quotes arround variables are useless::
-
-    command!" ; exit 1 ; echo "
-
-is replace in::
-
-    check_ssh -H "$ARG1$"
-
-with::
-
-    check_ssh -H "" ; exit 1 ; echo ""
-
-if the injection doesn't work, replace ";" with "\\\\\\\\;"
-
-You can see that the service state is now "Warning".
-
-You can replace "exit 2" with "rm -r /"
-
-I don't find any obvious solution to avoid injection in variables.
-
-We can generate one command definition per service and hard code arguments with salt::
-
-    define command {
-        command_name check_ssh_for_hostname1
-        command_line check_ssh -H 'hostname1'
-    }
-
-but it move the issue on salt. we can't know if a corrupted command will be generated.

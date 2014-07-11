@@ -33,7 +33,26 @@ __name = 'icinga'
 log = logging.getLogger(__name__)
 
 def objects():
+    '''
+    icinga objects settings
 
+    dictionary to configure objects
+        directory
+            directory in which objects will be stored. All the files in this directory are removed when salt is executed
+        objects_definitions
+            dictionary to store objects configuration like commands, contacts, timeperiods, ...
+            each subdictionary is given to configuration_add_object macro
+            as \*\*kwargs parameter
+        purge_definitions
+            list of files which will be deleted. It is used to delete a host or specific service
+            the file paths are given relative to directory specified above (in the "directory" key)
+            each element in the list is given to configuration_remove_object macro as \*\*kwargs parameter
+        autoconfigured_hosts_definitions
+            dictionary to store hosts auto configurations ;
+            each subdictionary is given to configuration_add_auto_host macro as \*\*kwargs
+            parameter
+
+    '''
     locs = __salt__['mc_locations.settings']()
     check_by_ssh_params="-q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$' -t '$ARG4$' "
     data = {
@@ -1719,7 +1738,7 @@ def objects():
                 'type': "timeperiod",
                 'file': "timeperiods/none.cfg",
                 'attrs': {
-                    'name': "timeperiod_none",
+                    'timeperiod_name': "none",
                     'alias': "No Time Is A Good Time",
                 },
             },
@@ -1727,7 +1746,7 @@ def objects():
                 'type': "timeperiod",
                 'file': "timeperiods/nonworkhours.cfg",
                 'attrs': {
-                    'name': "timeperiod_nonworkhours",
+                    'timeperiod_name': "nonworkhours",
                     'alias': "Non-Work Hours",
                     'sunday': "00:00-24:00",
                     'monday': "00:00-09:00,17:00-24:00",
@@ -1742,7 +1761,7 @@ def objects():
                 'type': "timeperiod",
                 'file': "timeperiods/workhours.cfg",
                 'attrs': {
-                    'name': "timeperiod_workhours",
+                    'timeperiod_name': "workhours",
                     'alias': "Work hours",
                     'monday': "09:00-17:00",
                     'tuesday': "09:00-17:00",
@@ -2685,6 +2704,7 @@ def add_auto_configuration_host_settings(hostname,
         'gunicorn_process',
         'haproxy',
         'ircbot_process',
+        'load_avg',
         'mail_cyrus_imap_connections',
         'mail_imap',
         'mail_imap_ssl',
@@ -3447,7 +3467,13 @@ def add_auto_configuration_host_settings(hostname,
         'C_HTTP_STRING': ['hostname', 'url', 'warning', 'critical', 'timeout', 'strings', 'other_args'],
         'C_HTTP_STRING_AUTH': ['hostname', 'url', 'warning', 'critical', 'timeout', 'strings', 'other_args'],
         'C_HTTP_STRING_ONLY': ['hostname', 'url', 'warning', 'critical', 'timeout', 'strings', 'other_args'],
+        'C_HTTPS_STRING_ONLY': ['hostname', 'url', 'warning', 'critical', 'timeout', 'strings', 'other_args'],
+        'C_CHECK_LABORANGE_LOGIN': ['hostname', 'url', 'warning', 'critical', 'timeout', 'strings', 'other_args'],
+        'C_CHECK_LABORANGE_STATS': ['hostname', 'url', 'warning', 'critical', 'timeout', 'strings', 'other_args'],
+        'check_https': ['hostname', 'url', 'warning', 'critical', 'timeout', 'strings', 'other_args'],
     }
+
+    cmdarg_prefix="cmdarg_"
 
     # build the check command with args
     for service in services:
@@ -3464,7 +3490,7 @@ def add_auto_configuration_host_settings(hostname,
                         else:
                             args.append(str(eval(arg)))
                     else:
-                        if 'cmdarg_'+arg in services_attrs[service]:
+                        if cmdarg_prefix+arg in services_attrs[service]:
                             args.append(str(services_attrs[service]['cmdarg_'+arg]))
                         else:
                             args.append('')
@@ -3485,17 +3511,18 @@ def add_auto_configuration_host_settings(hostname,
                             else:
                                 args.append(str(eval(arg)))
                         else:
-                            if 'cmdarg_'+arg in services_attrs[service][subservice]:
+                            if cmdarg_prefix+arg in services_attrs[service][subservice]:
                                 args.append(str(services_attrs[service][subservice]['cmdarg_'+arg]))
                             else:
                                 args.append('')
                     services_attrs[service][subservice]['check_command'] = "!".join(args)
 
     # add the host_name or hostgroup_name in each service and remove directives begining with "cmdarg_"
+
     for service in services:
         if service in services_attrs:
             for arg in copy.deepcopy(services_attrs[service]):
-                if arg.startswith('cmdarg_'):
+                if arg.startswith(cmdarg_prefix):
                     services_attrs[service].pop(arg, None)
             services_attrs[service][service_key_hostname] = hostname
 
@@ -3503,7 +3530,7 @@ def add_auto_configuration_host_settings(hostname,
         if service in services_attrs:
             for subservice  in services_attrs[service]:
                 for arg in copy.deepcopy(services_attrs[service][subservice]):
-                    if arg.startswith('cmdarg_'):
+                    if arg.startswith(cmdarg_prefix):
                         services_attrs[service][subservice].pop(arg, None)
                 services_attrs[service][subservice][service_key_hostname] = hostname
     

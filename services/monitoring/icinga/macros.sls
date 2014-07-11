@@ -54,7 +54,7 @@ icinga-configuration-{{data.state_name_salt}}-remove-object-conf:
     - name: {{data.objects.directory}}/{{data.file}}
     - watch:
       - mc_proxy: icinga-configuration-pre-clean-directories
-# use of watch_in is very slow but i don't find any other method (with 128 hosts execution takes 11 minutes without the watch_in and  )
+# use of watch_in is very slow but i don't find any other method (with 128 hosts execution takes 32 minutes instead of 11 minutes when the watch_in is not used)
     - watch_in:
       - mc_proxy: icinga-configuration-post-clean-directories
 {% endmacro %}
