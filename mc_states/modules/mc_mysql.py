@@ -126,6 +126,7 @@ def settings(**kwargs):
         if 'devhost' in nodetypes_registry['actives']:
             mode = 'dev'
         data.update({
+            'bind_address'! '0.0.0.0',
             'mode': mode,
             'var_log': data['logdir'],
             'myCnf': None,
