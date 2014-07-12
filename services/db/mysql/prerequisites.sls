@@ -31,6 +31,6 @@ mysql-salt-pythonmysqldb-pip-install-module-reloader:
     - reload_modules: true
     - watch:
       - pip: mysql-salt-pythonmysqldb-pip-install
-    - watch:
+    - watch_in:
       - mc_proxy: mysql-post-install-hook
 

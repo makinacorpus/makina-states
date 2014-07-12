@@ -9,6 +9,7 @@ mc_mysql / mysql functions
 
 __docformat__ = 'restructuredtext en'
 # Import python libs
+import copy
 import logging
 import mc_states.utils
 
@@ -17,7 +18,7 @@ __name = 'mysql'
 log = logging.getLogger(__name__)
 
 
-def settings():
+def settings(**kwargs):
     '''
     mysql settings
 
@@ -62,7 +63,7 @@ def settings():
     noDNS
         Avoid name resolution on connections checks, must-have.
         This is the skip-name-resolv option
-    memory_usage_percent
+    memory_usage_percent / available_mem
         the macro will compute magiccaly the settings to
         fit this percentage of full memory on the host. So by default it's 50%
         of all RAM on a dev envirronment and 85% for a production one where
@@ -88,7 +89,7 @@ def settings():
     documented but spared from configuration from end users.
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
-    def _settings():
+    def _settings(**lkwargs):
         nodetypes_registry = __salt__['mc_nodetypes.registry']()
         mysql_reg = __salt__[
             'mc_macros.get_local_registry'](
@@ -107,6 +108,7 @@ def settings():
                     'python': 'python-mysqldb',
                     'php': 'php-mysql'
                 },
+                'use_mem': None,
                 'service': 'mysql',
                 'sharedir': locs['share_dir'] + '/mysql',
                 'datadir': locs['var_lib_dir'] + '/mysql',
@@ -124,12 +126,13 @@ def settings():
         if 'devhost' in nodetypes_registry['actives']:
             mode = 'dev'
         data.update({
+            'bind_address': '0.0.0.0',
             'mode': mode,
             'var_log': data['logdir'],
             'myCnf': None,
             'conn_host': 'localhost',
             'conn_user': 'root',
-            'conn_pass': rootpw,
+            'conn_pass': 'secret',
             'character_set': 'utf8',
             'collate': 'utf8_general_ci',
             'noDNS': True,
@@ -195,7 +198,7 @@ def settings():
             'available_mem', full_mem * data['memory_usage_percent'] / 100)
         # Now for all non set tuning parameters try to fill the gaps
         # ---- NUMBER OF CONNECTIONS
-        nb_connections = data.setdefault('nb_connections', 100)
+        data.setdefault('nb_connections', 100)
 
         # ---- QUERY CACHE SIZE
         try:
@@ -225,6 +228,12 @@ def settings():
             'innodb_log_buffer_size_M',
             int(round((innodb_buffer_pool_size_M / 4), 0)))
 
+        data = __salt__['mc_utils.defaults'](
+            'makina-states.services.db.mysql',
+            data)
+        data = __salt__['mc_utils.dictupdate'](data, lkwargs)
+        if data['conn_user'] == 'root':
+            data['conn_pass'] = data['root_passwd']
         # ------- INNODB other settings
         data.setdefault('innodb_flush_method', 'fdatasync')
         # recommended value is 2*nb cpu + nb of disks, we assume one disk
@@ -244,8 +253,7 @@ def settings():
         #
         # let users override default values
         #
-        data = __salt__['mc_utils.defaults']('makina-states.services.db.mysql',
-                                             data)
+
         # --------- Settings related to number of tables
         # This is by default 8M, should store all tables and indexes
         if data['number_of_table_indicator'] < 251:
@@ -274,10 +282,10 @@ def settings():
         data.setdefault('table_definition_cache',
                         data['number_of_table_indicator'])
         table_open_cache = data.setdefault('table_open_cache',
-                                           nb_connections * 8)
+                                           data['nb_connections'] * 8)
         # this should be table_open_cache * nb_connections
         data.setdefault('open_file_limit',
-                        nb_connections * table_open_cache)
+                        data['nb_connections'] * table_open_cache)
         # tmp_table_size: On queries using temporary data, is this data gets
         # bigger than then the temporary memory things becames real physical
         # temporary tablesand things gets very slow, but this must be some free
@@ -285,14 +293,20 @@ def settings():
         # 1024Mo prey that queries using this amount
         # of temporary data are not running too often...
         data.setdefault('tmp_table_size_M',
-                        int((available_mem / 10)))
+                        int((data['available_mem'] / 10)))
+        mysql_reg['root_password'] = data['root_passwd']
         __salt__['mc_macros.update_local_registry'](
             'mysql', mysql_reg, registry_format='pack')
         return data
-    return _settings()
+    kwargs = copy.deepcopy(kwargs)
+    for k in [a for a in kwargs]:
+        if '__pub_' in k:
+            kwargs.pop(k, '')
+    return _settings(**kwargs)
 
 
 def dump():
     return mc_states.utils.dump(__salt__,__name)
+
 
 #

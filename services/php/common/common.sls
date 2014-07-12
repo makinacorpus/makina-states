@@ -17,10 +17,19 @@ dotdeb-apache-makina-apache-php-pre-inst:
       - mc_proxy: makina-php-pre-inst
 {%endif %}
 
+php-cli:
+  pkg.installed:
+    - pkgs:
+      - php5-cli
+    - watch:
+      - mc_proxy: makina-php-pre-inst
+    - watch_in:
+      - mc_proxy: makina-php-post-inst
 makina-php-timezone:
   file.managed:
     - user: root
     - group: root
+    - makedirs: true
     - mode: 664
     - name: {{ phpSettings.confdir }}/timezone.ini
     - source: salt://makina-states/files{{ phpSettings.confdir }}/timezone.ini
@@ -32,11 +41,24 @@ makina-php-timezone:
     - watch_in:
       - mc_proxy: makina-php-pre-conf
 
+makina-php-composer:
+  file.managed:
+    - user: root
+    - group: root
+    - mode: 755
+    - name: /usr/local/bin/composer
+    - source: '{{phpSettings.composer}}'
+    - source_hash: 'sha1={{phpSettings.composer_sha1}}'
+    - require:
+      - mc_proxy: makina-php-post-inst
+    - watch_in:
+      - mc_proxy: makina-php-pre-conf
 #--------------------- APC (mostly deprecated)
 {% if phpSettings.apc_install %}
 makina-php-apc:
   file.managed:
     - user: root
+    - makedirs: true
     - group: root
     - mode: 664
     - name: {{ phpSettings.confdir }}/apcu.ini
@@ -88,7 +110,7 @@ makina-php-apc-disable:
 
 #--------------------- XDEBUG
 {% if (
-    phpSettings.xdebug_install 
+    phpSettings.xdebug_install
     and phpSettings.xdebug_enabled) %}
 makina-php-xdebug-install:
   cmd.run:

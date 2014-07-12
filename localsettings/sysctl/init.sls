@@ -11,8 +11,22 @@ include:
 {% set kernel = salt['mc_kernel.settings']() %}
 {% set nodetypes_registry = salt['mc_nodetypes.registry']()%}
 {% set isLxc = nodetypes_registry.is.lxccontainer %}
+
+sysctl-net.core.somaxconn:
+  sysctl.present:
+    - name: net.core.somaxconn
+    - value: {{kernel.net_core_somaxconn}}
+    - require_in:
+      - mc_proxy: sysctl-post-hook
+
+sysctl-net-ip_local_port_range:
+  sysctl.present:
+    - name: net.ipv4.ip_local_port_range
+    - value: {{kernel.ip_local_port_range}}
+    - require_in:
+      - mc_proxy: sysctl-post-hook
+
 {% set isTravis = nodetypes_registry.is.travis %}
-{% if not (isTravis or isLxc) %}
 {# increase TCP max buffer size settable using setsockopt() #}
 sysctl-net.core.rmem__wmem_max:
   sysctl.present:
@@ -36,13 +50,6 @@ sysctl-net.ipv4.tcp_wmem:
     - names:
       - net.ipv4.tcp_wmem
     - value:  {{kernel.tcp_wmem}}
-    - require_in:
-      - mc_proxy: sysctl-post-hook
-
-sysctl-net-ip_local_port_range:
-  sysctl.present:
-    - name: net.ipv4.ip_local_port_range
-    - value: {{kernel.ip_local_port_range}}
     - require_in:
       - mc_proxy: sysctl-post-hook
 
@@ -79,13 +86,6 @@ sysctl-net-tcp_max_tw_buckets:
   sysctl.present:
     - name: net.ipv4.tcp_max_tw_buckets
     - value: {{kernel.tcp_max_tw_buckets}}
-    - require_in:
-      - mc_proxy: sysctl-post-hook
-
-sysctl-net.core.somaxconn:
-  sysctl.present:
-    - name: net.core.somaxconn
-    - value: {{kernel.net_core_somaxconn}}
     - require_in:
       - mc_proxy: sysctl-post-hook
 
@@ -146,6 +146,15 @@ sysctl-net-various:
     - value: 1
     - require_in:
       - mc_proxy: sysctl-post-hook
+{% if not (isTravis or isLxc) %}
+sysctl-vm.swappiness:
+  sysctl.present:
+    - names:
+      - vm.swappiness
+    - value: {{kernel.vm_swappiness}}
+    - require_in:
+      - mc_proxy: sysctl-post-hook
+
 {% endif %}
 {% endif %}
 # vim: set nofoldenable:

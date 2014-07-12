@@ -127,12 +127,16 @@ def settings():
             shwIfformat = 'FORMAT 2'
         elif LooseVersion(sw_ver) <= LooseVersion('4.1'):
             shwIfformat = '#?{0}'.format(shwIfformat)
+        permissive_mode = False
+        if nodetypes_registry['is']['lxccontainer']:
+            permissive_mode = True
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.firewall.shorewall', {
                 # mapping of list of mappings
                 'interfaces': OrderedDict(),
                 'params': OrderedDict(),
                 'rules': [],
+                'nat': [],
                 'policies': [],
                 'zones': OrderedDict(),
                 'masqs': [],
@@ -181,6 +185,7 @@ def settings():
                 'no_syslog': False,
                 'no_computenode': False,
                 'defaultstate': 'new',
+                'permissive_mode': permissive_mode,
                 'ifformat': shwIfformat,
                 'ulogd': ulogd,
                 # retro compat
@@ -414,13 +419,19 @@ def settings():
                 data['default_policies'].append({
                     'source': '$FW', 'dest': 'rpn', 'policy': 'ACCEPT'})
 
-            # drop all traffic by default
-            data['default_policies'].append({
-                'source': 'all', 'dest': 'all',
-                'policy': 'REJECT', 'loglevel': info_loglevel})
-            data['default_policies'].append({
-                'source': 'net', 'dest': 'all',
-                'policy': 'DROP', 'loglevel': info_loglevel})
+            # drop all traffic by default if not in permissive_mode
+            if not data['permissive_mode']:
+                data['default_policies'].append({
+                    'source': 'all', 'dest': 'all',
+                    'policy': 'REJECT', 'loglevel': info_loglevel})
+                data['default_policies'].append({
+                    'source': 'net', 'dest': 'all',
+                    'policy': 'DROP', 'loglevel': info_loglevel})
+            else:
+                data['default_policies'].append({
+                    'source': 'all', 'dest': 'all', 'policy': 'ACCEPT'})
+                data['default_policies'].append({
+                    'source': 'net', 'dest': 'all', 'policy': 'ACCEPT'})
 
         # ATTENTION WE MERGE, so reverse order to append at begin
         data['default_policies'].reverse()
@@ -451,6 +462,8 @@ def settings():
                     'source': 'net', 'dest': 'all'},
                     zones=data['internal_zones'])
 
+
+        if not data['no_default_rules'] and not data['permissive_mode']:
             data['default_rules'].append({'comment': 'lxc dhcp traffic'})
             if data['have_lxc']:
                 data['default_rules'].append(
