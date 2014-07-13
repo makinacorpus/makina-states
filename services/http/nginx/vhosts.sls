@@ -6,6 +6,7 @@
 {% set toggle_virtualhost = nginx.toggle_virtualhost %}
 
 include:
+  - makina-states.services.http.common.default_vhost
   - makina-states.services.http.nginx.hooks
   - makina-states.services.http.nginx.services
 nginx-remove-def:
