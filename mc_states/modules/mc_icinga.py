@@ -1796,14 +1796,6 @@ def objects():
                     'alias': "toutes les machines avec ping",
                 },
             },
-            'HG_HEBERGEUR': {
-                'hostname': "HG_HEBERGEUR",
-                'hostgroup': True,
-                'attrs': {
-                    'hostgroup_name': "HG_HEBERGEUR",
-                    'alias': "Hosts heberges en externe",
-                },
-            },
             # hosts
             'webservices': {
                 'hostname': "webservices",
@@ -1909,6 +1901,10 @@ def objects():
             },
         },
     }
+
+    # import the centreon configuration (have to be removed later)
+    import mc_icinga_with_hosts
+    data['autoconfigured_hosts_definitions'] = mc_icinga_with_hosts.complete_hosts
 
     return data
 
@@ -2690,7 +2686,7 @@ def add_auto_configuration_host_settings(hostname,
         Finally, "host_name" or "hostgroup_name" key is added for each services of "services_attrs" dictionary
         and the "cmdarg\_" keys are removed.
 
-        Only the arguments for CSSH (ssh_user, ssh_addr, ssh_port and ssh_timeout) don't begin with "cmdarg_"
+        Only the arguments for CSSH (ssh_user, ssh_addr, ssh_port and ssh_timeout) don't begin with "cmdarg\_"
 
     '''
 #    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())

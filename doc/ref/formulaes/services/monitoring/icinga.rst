@@ -397,7 +397,8 @@ if the service is disabled:
   a state removes the service configuration file by calling the "configuration_remove_object" macro
 
 For each host, a state is executed for each service even if all the services are disabled.
-The execution takes about 30 minutes for 128 hosts and 50 services.
+The execution takes about 30 minutes for 128 hosts and 50 services (the macro configuration_add_object is called 939 times and configuration_remove_object is called 6158 times
+(yes, it doesn't correspond to 50*128 because there are the commands definitions, contacts, ...)).
 
 The speed can be improved by removing the "watch\_in" directive in the "configuration_remove_object" macro (because this macro is called a lot of time).
 
@@ -406,6 +407,24 @@ Without this directive. the execution takes about 10 minutes for 128 hosts and 5
 I don't have find how to fix this problem. I used a "order: 1" directive but in this case the states are executed before prerequisite (which is less problematic than when the execution was after the restart of icinga. The files are deleted before the creation of new files. If a file is in "purge\_definitions" dictionary and is created in another macro call. The file will be deleted and recreated in a next state)
 
 Another idea is to delete several configuration files with only one state.
+
+
+Off topic:
+I have used "order" directive in configuration_add_object macro too. (the execution time seems to be the same without any directive like order or watch_in and with a order directive)
+
+The execution is 629.685 secondes for 128 hosts, 50 services and "order" instead of "watch\_in" in "configuration_add_object" and "configuration_remove_object"
+
+Without the "order" directive in configuration_add_object macro but with a "watch\_in" directive, the execution is 820.238 secondes.
+
+The difference is 190.553 for 939 "watch\_in" (the 939 call of "configuration\_add\_object" macro). So a \"watch\_in\" directive take 0.203 secondes
+
+With 6158 "watch\_in" for "configuration\_remove\_object", it is (0.203*6158) 1249.654 secondes (about 20 minutes).
+
+I have supposed watch\_in execution time constant.
+
+With 50 services per hosts (ignore services_loop which can increase the number of services): The host autoconfiguration macro need about 10.353 secondes to execute "watch\_in" directives in one call.
+
+With about 360 hosts the excessive execution time approach the entire hour.
 
 Add a new service in configuration_add_auto_host macro
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++

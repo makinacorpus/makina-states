@@ -16,7 +16,7 @@
 {% set data = salt['mc_icinga.add_configuration_object_settings'](type, file, attrs, **kwargs) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 
-# we add the object
+# add the object
 icinga-configuration-{{data.state_name_salt}}-add-object-conf:
   file.managed:
     - name: {{data.objects.directory}}/{{data.file}}
@@ -48,18 +48,22 @@ icinga-configuration-{{data.state_name_salt}}-add-object-conf:
 {% set data = salt['mc_icinga.remove_configuration_object_settings'](file, **kwargs) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 
-# we remove the object
+# remove the object
 icinga-configuration-{{data.state_name_salt}}-remove-object-conf:
   file.absent:
     - name: {{data.objects.directory}}/{{data.file}}
     - watch:
       - mc_proxy: icinga-configuration-pre-clean-directories
-# use of watch_in is very slow but i don't find any other method (with 128 hosts execution takes 32 minutes (with log disabled) instead of 11 minutes when the watch_in is not used (but the icinga restart is executed before configuration. it is bad))
+# use of watch_in is very slow but i don't find any other method 
+# (with 128 hosts execution takes 32 minutes (with log disabled) 
+# instead of 11 minutes when the watch_in is not used 
+# (but the icinga restart is executed before configuration. it is bad))
 {#
     - watch_in:
       - mc_proxy: icinga-configuration-post-clean-directories
 #}
-# we can try to use order directive. With 128 hosts it takes 11 minutes (the restart is done after configuration but configuration is done before prerequisites)
+# can try to use order directive. With 128 hosts it takes 11 minutes
+# (the restart is done after configuration but configuration is done before prerequisites)
     - order: 1
 {% endmacro %}
 
@@ -81,7 +85,7 @@ icinga-configuration-{{data.state_name_salt}}-remove-object-conf:
 {% set data = salt['mc_icinga.edit_configuration_object_settings'](type, file, attr, value, **kwargs) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 
-# we split the value in ',' and loop. it is to remove duplicates values.
+# split the value in ',' and loop. it is to remove duplicates values.
 # for example, it is to avoid to produce "v1,v2,v1" if "v1,v2" are given in a call and "v1" in an other call
 {% for value_splitted in data.value.split(',') %}
 icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_splitted}}-edit-object-conf:
@@ -112,7 +116,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 #         user which is used to perform check_by_ssh
 #     ssh_addr
 #         address used to do the ssh connection in order to perform check_by_ssh
-#         this address is not the hostname address becasue we can use a ssh gateway
+#         this address is not the hostname address because we can use a ssh gateway
 #         if empty: take the value given for "hostname"
 #     ssh_port
 #         ssh port
@@ -275,18 +279,16 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                      **kwargs
                                                                     ) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
-{% set check_by_ssh_params = data.ssh_user+"!"+data.ssh_addr+"!"+data.ssh_port|string+"!"+data.ssh_timeout|string %}
-
 
 # add the host/hostgroup object
 {{ configuration_add_object(type=data.type,
-                            file=data.service_subdirectory+'/'+data.hostname+'/'+data.type+'.cfg',
+                            file='/'.join([data.service_subdirectory, data.hostname, data.type+'.cfg']),
                             attrs=data.attrs) }}
 
 
 # configure the services
 {% for service, enabled in data.services_enabled.items() %}
-    {% set file=data.service_subdirectory+'/'+data.hostname+'/'+service+'.cfg' %}
+    {% set file='/'.join([data.service_subdirectory, data.hostname, service+'.cfg']) %}
     {% if enabled %}
         {{ configuration_add_object(type='service',
                                     file=file,
@@ -301,9 +303,10 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 
 # configure the loop services
 # TODO: it removes only services which are in services_attrs subdictionaries if the subdictionaries are removed, service deletion will not work
+# unless the service is kept in the subdictionary and the service argument is set to False. the configuration_remove_object macro can be used too
 {% for service, enabled in data.services_loop_enabled.items() %}
     {% for name, values in data.services_attrs[service].items() %}
-        {% set file=data.service_subdirectory+'/'+data.hostname+'/'+service+'_'+name+'.cfg' %}
+        {% set file='/'.join([data.service_subdirectory, data.hostname, service, name+'.cfg']) %}
         {% if enabled %}
             {{ configuration_add_object(type='service',
                                         file=file,
