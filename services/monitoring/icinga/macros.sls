@@ -54,12 +54,13 @@ icinga-configuration-{{data.state_name_salt}}-remove-object-conf:
     - name: {{data.objects.directory}}/{{data.file}}
     - watch:
       - mc_proxy: icinga-configuration-pre-clean-directories
-# use of watch_in is very slow but i don't find any other method (with 128 hosts execution takes 32 minutes instead of 11 minutes when the watch_in is not used)
+# use of watch_in is very slow but i don't find any other method (with 128 hosts execution takes 32 minutes (with log disabled) instead of 11 minutes when the watch_in is not used (but the icinga restart is executed before configuration. it is bad))
 {#
     - watch_in:
       - mc_proxy: icinga-configuration-post-clean-directories
 #}
-{% set test = salt["mc_icinga.test"]('icinga-configuration-'+data.state_name_salt+'-remove-object-conf') %}
+# we can try to use order directive. With 128 hosts it takes 11 minutes (the restart is done after configuration but configuration is done before prerequisites)
+    - order: 1
 {% endmacro %}
 
 {#
