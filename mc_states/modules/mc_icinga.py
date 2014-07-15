@@ -52,6 +52,7 @@ def objects():
             each subdictionary is given to configuration_add_auto_host macro as \*\*kwargs
             parameter
 
+
     '''
     locs = __salt__['mc_locations.settings']()
     check_by_ssh_params="-q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$' -t '$ARG4$' "
@@ -2543,7 +2544,7 @@ def settings():
     return _settings()
 
 def add_configuration_object_settings(type, file, attrs, **kwargs):
-    '''Settings for the add_configuration_object macro'''
+    '''Settings for add_configuration_object macro'''
 #    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
 #   save the ram (we get only useful values)
     icingaSettings_complete = __salt__['mc_icinga.settings']()
@@ -2558,7 +2559,7 @@ def add_configuration_object_settings(type, file, attrs, **kwargs):
     return icingaSettings
 
 def remove_configuration_object_settings(file, **kwargs):
-    '''Settings for the remove_configuration_object macro'''
+    '''Settings for remove_configuration_object macro'''
 #    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
 #   save the ram (we get only useful values)
     icingaSettings_complete = __salt__['mc_icinga.settings']()
@@ -2571,7 +2572,7 @@ def remove_configuration_object_settings(file, **kwargs):
     return icingaSettings
 
 def edit_configuration_object_settings(type, file, attr, value, **kwargs):
-    '''Settings for the edit_configuration_object macro'''
+    '''Settings for edit_configuration_object macro'''
 #    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
 #   save the ram (we get only useful values)
     icingaSettings_complete = __salt__['mc_icinga.settings']()
@@ -2661,7 +2662,37 @@ def add_auto_configuration_host_settings(hostname,
                                          web=False,
                                          services_attrs={},
                                          **kwargs):
-    '''Settings for the add_auto_configuration_host macro'''
+    '''Settings for add_auto_configuration_host macro
+
+       The dictionaries and lists used are:
+            services
+                list of services (the name are the same as arguments)
+            services_loop
+                list of services that can be defined several times
+            mountpoints_path:
+                dictionary to association disk_space argument with the system path
+            services_default_attrs
+                dictionary with the same structure as services_attrs containing the default
+                values for each service
+            check_command_args
+                dictionary in which, each key corresponds to a check command and each value is 
+                the list of arguments (the arguments are taken in services_attrs dictionary)
+
+        The function build two dictionaries "services_enabled" and "services_loop_enabled" in which
+        each key corresponds to a service and each value is True or False, whever the service is enabled or not
+
+        Then the function merges the two dictionaries: "services_default_attrs" with the "services_attrs".
+        The missing values in "services_attrs" dictionary are taken from "services_default_attrs" dictionary.
+
+        Then, the "check_command" values are build in "services_attrs" dictionary.
+        The arguments (values associated to a "cmdarg\_" key) are added next to the command
+
+        Finally, "host_name" or "hostgroup_name" key is added for each services of "services_attrs" dictionary
+        and the "cmdarg\_" keys are removed.
+
+        Only the arguments for CSSH (ssh_user, ssh_addr, ssh_port and ssh_timeout) don't begin with "cmdarg_"
+
+    '''
 #    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
 #   save the ram (get only useful values)
     icingaSettings_complete = __salt__['mc_icinga.settings']()

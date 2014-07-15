@@ -13,6 +13,7 @@ The icinga module can provide:
   - configuration of ido2db daemon
   - configuration of uwsgi in order to serve cgi
   - configuration of nginx to serve cgi through uwsgi
+  - configuration of icinga (add/remove objects configuration)
 
 
 The icinga_web module can provide:
@@ -54,14 +55,31 @@ The architecture between Icinga, Icinga-web and nagvis looks like to:
 
 ::
 
-	Icinga --ido2db--> Postgresql <---- Icinga-web
+	icinga---ido2db---------><-postgresql-><---icinga-web
 	     |
-	     +---mklivestatus--><---------- Nagvis
+	     +---mklivestatus---><-----------------nagvis
              |
-             +---npcdmod--><-npcd-><------- Pnp4nagios
+             +---npcdmod--------><-npcd-><-rrd-><--pnp4nagios
 
 
-Please note that icinga service offers two special macros to generate configurations.
+Please note that icinga service offers four special macros to generate configurations. Theses macros are described below.
+
+Configuration
+-------------
+
+In configuration.sls, the general configuration of icinga and the objects configuration are made
+For the objects configuration, some macros are called automatically with the content defined in::
+
+    makina-states.services.monitoring.icinga.objects
+
+This dictionary architecture looks like:
+
+    :directory: directory in which configurations files will be written (default: /etc/icinga/objects/salt_generated)
+    :objects_definition: dictionary in which each subdictionary is given to "configuration_add_object" macro as \*\*kwargs. It is used to define objects like contacts or timeperiods or commands
+    :autoconfigured_hosts_definitions: dictionary in which each subdictionary is given to "configuration_add_auto_host" macro as \*\*kwargs. It is used to define hosts and hostgroups and add services associated to them.
+    :purge_definitions: a list of files or directory which can be deleted. Each element of the list is given to "configuration_remove_object" macro as \*\*kwargs)
+
+The "purge\_definitions" list is used to remove hosts. because a call to "configuration_add_auto_host" macro with all services disabled will remove only the services and not the host itself.
 
 Macros
 ------
@@ -85,6 +103,8 @@ with
 The default directory where configuration files are located is::
 
     /etc/icinga/objects/salt_generated/
+
+The directory can be modified in the "makina-states.services.monitoring.icinga.objects" dictionary
 
 
 You can change the configuration directory using \*\*kwargs parameter
@@ -145,8 +165,7 @@ The default directory where configuration files are located is::
 
     /etc/icinga/objects/salt_generated/
 
-
-You can change the configuration directory using \*\*kwargs parameter
+The directory can be modified in the "makina-states.services.monitoring.icinga.objects" dictionary
 
 configuration_edit_object
 +++++++++++++++++++++++++
@@ -173,6 +192,8 @@ with
     :file: the name of the edited object
     :attr: the directive for which a value must be added
     :value: the value added
+
+The "file" argument value is relative to "makina-states.services.monitoring.icinga.objects.directory" (default: /etc/icinga/objects/salt_generated/)
 
 The old values of the attr directive are not removed. 
 
@@ -215,14 +236,7 @@ You should think to make a coherent configuration.
 
 By default, the /etc/icinga/objects is present in "cfg_dir".
 
-No checks are done. You can add invalid values for any directives. You can set non-existent directives too.
-
-
-With the old macro, it was possible to recall the macro to add an object already added and all the parameters were merged.
-Now it is not possible. You can add an object only one time but you can complete it with the second macro.
-
-In comparaison to the previous version:
-It is not possible to define several objects in one call. It is not possible to know if an attribute can accept several values or not.
+No checks are done. You can generate invalid values for any directives. You can set non-existent directives too.
 
 configuration_add_auto_host
 +++++++++++++++++++++++++++
@@ -317,7 +331,7 @@ with
     :ssh_addr: address used to do the ssh connection in order to perform check_by_ssh. this address is not the hostname address becasue we can use a ssh gateway
     :ssh_port: ssh_port
     :[service]: a boolean to indicate that the service [service] has to be added
-    :services_attrs: a dictionary to override the default values for each service definition and to ad additional values. The keys begining with "cmdarg" are the check command arguments. Each subdictionary corresponds to a service.
+    :services_attrs: a dictionary to override the default values for each service definition and to ad additional values. The keys begining with "cmdarg\_" are the check command arguments. Each subdictionary corresponds to a service.
 
 Some services use an additional subdictionary because they can be defined several times. It is the case of
 
@@ -330,7 +344,8 @@ Some services use an additional subdictionary because they can be defined severa
   - web
 
 
-For theses services, you may complete the services_attrs dictionary by adding a subdictionary ('a_service' here)::
+For theses services, you may complete the services_attrs dictionary by adding a subsubdictionary
+(the dictionary associatio to 'a_service' key here)::
 
     service_attrs: {
         'dns_association': {
@@ -340,9 +355,9 @@ For theses services, you may complete the services_attrs dictionary by adding a 
         }
     }
 
-You can add several dns_association, disk_space, network, ...
+You can add several dns_association, disk_space, network, solr, web_openid, web
 
-For others services, the directives are not in a subdctionary::
+For others services, the directives are not in a subsubdctionary but directly in the subdictionary::
 
     service_attrs: {
         'raid': {
@@ -353,7 +368,9 @@ For others services, the directives are not in a subdctionary::
 
 You have to insert in services_attrs only the non default values.
 
-Note: The directive "host_name" will not be taken into account. The value will be replace by the value of "hostname" argument
+
+Note: The directive "host_name" will not be taken into account.
+The value will be replaced with the value of "hostname" macro argument
 
 The host is added in /etc/icinga/objects/salt_generated/<hostname>/host.cfg
 The services are added in this directory too (for ssh it will be /etc/icinga/objects/salt_generated/<hostname>/ssh.cfg)
@@ -369,4 +386,38 @@ The commands definitions are located in objects/objects_defintions subdictionary
 They are installed with a state in configuration.sls.
 
 All the commands objects are created even if no service use them.
+
+All the complexity is in "mc_icinga.add_auto_configuration_host_settings" function (see :ref:`module_mc_icinga`)
+
+The macro only adds the host (or hostgroup) by calling "configuration_add_object" and browses the services.
+
+if the service is enabled:
+  a state adds the service configuration file by calling the "configuration_add_object" macro
+if the service is disabled:
+  a state removes the service configuration file by calling the "configuration_remove_object" macro
+
+For each host, a state is executed for each service even if all the services are disabled.
+The execution takes about 30 minutes for 128 hosts and 50 services.
+
+The speed can be improved by removing the "watch\_in" directive in the "configuration_remove_object" macro (because this macro is called a lot of time).
+
+Without this directive. the execution takes about 10 minutes for 128 hosts and 50 services but the configuration files are removed after the restart of icinga.
+
+I don't have find how to fix this problem. I used a "order: 1" directive but in this case the states are executed before prerequisite (which is less problematic than when the execution was after the restart of icinga. The files are deleted before the creation of new files. If a file is in "purge\_definitions" dictionary and is created in another macro call. The file will be deleted and recreated in a next state)
+
+Another idea is to delete several configuration files with only one state.
+
+Add a new service in configuration_add_auto_host macro
+++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+If you want add a new service managed with this macro, you have to:
+
+  1. add arguments in macro and in add_auto_configuration_host_settings function
+  2. add the service in "services" or "services_loop" list
+  3. add the default values in "services_default_attrs"
+  4. if the service was added in "services_loop" list, add code to merge dictionaries
+  5. if the default "check_command" is new, add a "command" definition in
+     "objects_definitions" dictionary (in "objects" function)
+     and add the command with its arguments in "check_command_args"
+
 

@@ -127,8 +127,18 @@ icinga-cgi-conf:
             {{sdata}}
 
 icinga-cgi-root-account:
-  file.touch:
+  file.managed:
     - name: {{data.configuration_directory}}/htpasswd.users
+    - source: ''
+    - makedirs: true
+    - user: root
+    - group: www-data
+    - mode: 644
+    - contents: ''
+    - watch:
+      - mc_proxy: icinga-pre-conf
+    - watch_in:
+      - mc_proxy: icinga-post-conf
 
   cmd.run:
     - name: if [ -z "$(grep -E '^{{data.modules.cgi.root_account.login}}:' {{data.configuration_directory}}/htpasswd.users)" ]; then htpasswd -b {{data.configuration_directory}}/htpasswd.users {{data.modules.cgi.root_account.login}} {{data.modules.cgi.root_account.password}};  fi;
