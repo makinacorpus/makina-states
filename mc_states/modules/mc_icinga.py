@@ -2558,7 +2558,7 @@ def add_configuration_object_settings(type, file, attrs, **kwargs):
 def remove_configuration_object(file=None, get=False):
     '''Add the file in the file's list to be removed'''
     if get :
-        return remove_configuration_object.values
+        return remove_configuration_object.files_list
     elif file:
         icingaSettings_complete = __salt__['mc_icinga.settings']()
 
@@ -2566,12 +2566,13 @@ def remove_configuration_object(file=None, get=False):
         filename='/'.join([icingaSettings_complete['objects']['directory'], file])
         # it doesn't avoid injection, just allow the '"' char in filename
         filename=filename.replace('"', '\"')
-        remove_configuration_object.values += " \""+filename+"\""
+
+        remove_configuration_object.files_list += " \""+filename+"\""
 
 # global variable initialisation
-remove_configuration_object.values=""
+remove_configuration_object.files_list=""
 
-def edit_configuration_object_settings(type, file, attr, value, **kwargs):
+def edit_configuration_object_settings(file, attr, value, **kwargs):
     '''Settings for edit_configuration_object macro'''
 #    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
 #   save the ram (we get only useful values)
@@ -2579,7 +2580,6 @@ def edit_configuration_object_settings(type, file, attr, value, **kwargs):
     icingaSettings = {}
     kwargs.setdefault('objects', {'directory': icingaSettings_complete['objects']['directory']})
 
-    kwargs.setdefault('type', type)
     kwargs.setdefault('file', file)
     kwargs.setdefault('attr', attr)
     kwargs.setdefault('value', value)

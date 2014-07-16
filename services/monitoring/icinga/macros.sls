@@ -61,6 +61,8 @@ icinga-configuration-{{data.state_name_salt}}-add-object-conf:
 #         the type of edited object
 #     file
 #         the filename where is located the edited object
+#     definition
+#         name of accumulator to fill. The name are the keys in services_attrs dictionaries
 #     attr
 #         the name of the edited directive
 #     value
@@ -68,14 +70,14 @@ icinga-configuration-{{data.state_name_salt}}-add-object-conf:
 #
 #}
 
-{% macro configuration_edit_object(type, file, attr, value) %}
-{% set data = salt['mc_icinga.edit_configuration_object_settings'](type, file, attr, value, **kwargs) %}
+{% macro configuration_edit_object(file, attr, value) %}
+{% set data = salt['mc_icinga.edit_configuration_object_settings'](file, attr, value, **kwargs) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 
 # split the value in ',' and loop. it is to remove duplicates values.
 # for example, it is to avoid to produce "v1,v2,v1" if "v1,v2" are given in a call and "v1" in an other call
 {% for value_splitted in data.value.split(',') %}
-icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_splitted}}-edit-object-conf:
+icinga-configuration-{{data.state_name_salt}}i-attribute-{{data.attr}}-{{value_splitted}}-edit-object-conf:
   file.accumulated:
     - name: "{{data.attr}}"
     - filename: {{data.objects.directory}}/{{data.file}}
@@ -267,44 +269,26 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                     ) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 
-# add the host/hostgroup object
-{{ configuration_add_object(type=data.type,
-                            file='/'.join([data.service_subdirectory, data.hostname, data.type+'.cfg']),
-                            attrs=data.attrs) }}
+# the host/hostgroup file
+{% set file='/'.join([data.objects.directory, data.service_subdirectory, data.hostname+'.cfg']) %}
 
-
-# configure the services
-{% for service, enabled in data.services_enabled.items() %}
-    {% set file='/'.join([data.service_subdirectory, data.hostname, service+'.cfg']) %}
-    {% if enabled %}
-        {{ configuration_add_object(type='service',
-                                    file=file,
-                                    attrs=data.services_attrs[service]
-                                   )
-        }}
-    {% else %}
-        {{ configuration_remove_object(file=file) }}
-    {% endif %}
-{% endfor %}
-
-
-# configure the loop services
-# TODO: it removes only services which are in services_attrs subdictionaries if the subdictionaries are removed, service deletion will not work
-# unless the service is kept in the subdictionary and the service argument is set to False. the configuration_remove_object macro can be used too
-{% for service, enabled in data.services_loop_enabled.items() %}
-    {% for name, values in data.services_attrs[service].items() %}
-        {% set file='/'.join([data.service_subdirectory, data.hostname, service, name+'.cfg']) %}
-        {% if enabled %}
-            {{ configuration_add_object(type='service',
-                                        file=file,
-                                        attrs=values
-                                       )
-            }}
-        {% else %}
-            {{ configuration_remove_object(file=file) }}
-        {% endif %}
-    {% endfor %}
-{% endfor %}
-
+# we can't call the configuration_edit_object macro
+# add the host/hostgroup object and its services with only one state
+icinga-configuration-{{data.state_name_salt}}-add-autoconfigured-host-conf:
+  file.managed:
+    - name: {{file}}
+    - source: salt://makina-states/files/etc/icinga/objects/template_autoconfigured.cfg
+    - user: root
+    - group: root
+    - mode: 644
+    - makedirs: True
+    - watch:
+      - mc_proxy: icinga-configuration-pre-object-conf
+    - watch_in:
+      - mc_proxy: icinga-configuration-post-object-conf
+    - template: jinja
+    - defaults:
+      data: |
+            {{sdata}}
 
 {% endmacro %}

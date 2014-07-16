@@ -296,7 +296,11 @@ icinga-configuration-remove-objects-conf:
                 #!/bin/bash
                 files=({{salt['mc_icinga.remove_configuration_object'](get=True)}});
                 for i in "${files[@]}"; do
-                  rm -f "$i";
+                  if [ -f "$i" ]; then
+                   rm "$i";
+                  elif [ -d "$i" ]; then
+                   rm -r "$i";
+                  fi;
                 done;
 
   cmd.run:
