@@ -2572,7 +2572,7 @@ def remove_configuration_object(file=None, get=False):
 # global variable initialisation
 remove_configuration_object.files_list=""
 
-def edit_configuration_object_settings(file, attr, value, **kwargs):
+def edit_configuration_object_settings(file, attr, value, definition, **kwargs):
     '''Settings for edit_configuration_object macro'''
 #    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
 #   save the ram (we get only useful values)
@@ -2583,6 +2583,7 @@ def edit_configuration_object_settings(file, attr, value, **kwargs):
     kwargs.setdefault('file', file)
     kwargs.setdefault('attr', attr)
     kwargs.setdefault('value', value)
+    kwargs.setdefault('definition', definition)
     kwargs.setdefault('state_name_salt', file.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
     return icingaSettings
@@ -2705,11 +2706,11 @@ def add_auto_configuration_host_settings(hostname,
 
     if hostgroup:
         kwargs.setdefault('type', 'hostgroup')
-        kwargs.setdefault('service_subdirectory', 'hostgroups')
+        service_subdirectory = 'hostgroups'
         service_key_hostname = 'hostgroup_name'
     else:
         kwargs.setdefault('type', 'host')
-        kwargs.setdefault('service_subdirectory', 'hosts')
+        service_subdirectory = 'hosts'
         service_key_hostname = 'host_name'
 
     kwargs.setdefault('attrs', attrs)
@@ -3568,7 +3569,13 @@ def add_auto_configuration_host_settings(hostname,
     
     kwargs.setdefault('services_attrs', services_attrs)
 
-    kwargs.setdefault('state_name_salt', hostname.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
+
+    # set the filename here
+    file='/'.join([service_subdirectory, hostname+'.cfg'])
+    kwargs.setdefault('state_name_salt', file.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
+    kwargs.setdefault('file', '/'.join([icingaSettings_complete['objects']['directory'], file]))
+
+    #kwargs.setdefault('state_name_salt', hostname.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
     return icingaSettings
 
