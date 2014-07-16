@@ -2555,16 +2555,21 @@ def add_configuration_object_settings(type, file, attrs, **kwargs):
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
     return icingaSettings
 
-def remove_configuration_object(file):
+def remove_configuration_object(file=None, get=False):
     '''Add the file in the file's list to be removed'''
-    if file is not None:
-        icingaSettings_complete = __salt__['mc_icinga.settings']()
-        remove_configuration_object.values.append('/'.join([icingaSettings_complete['objects']['directory'], file]))
-    else:
+    if get :
         return remove_configuration_object.values
+    elif file:
+        icingaSettings_complete = __salt__['mc_icinga.settings']()
+
+        # append " \"file\"" to the global variable
+        filename='/'.join([icingaSettings_complete['objects']['directory'], file])
+        # it doesn't avoid injection, just allow the '"' char in filename
+        filename=filename.replace('"', '\"')
+        remove_configuration_object.values += " \""+filename+"\""
 
 # global variable initialisation
-remove_configuration_object.values=[]
+remove_configuration_object.values=""
 
 def edit_configuration_object_settings(type, file, attr, value, **kwargs):
     '''Settings for edit_configuration_object macro'''

@@ -277,11 +277,32 @@ icinga-mklivestatus-conf:
     {{ icinga.configuration_add_auto_host(**object) }}
 {% endfor %}
 
-# really, delete the files
+# really, delete the files (with a script)
+{% set tmpf="/tmp/delete.sh" %}
 icinga-configuration-remove-objects-conf:
-  file.absent:
-    - names: {{ salt['mc_icinga.remove_configuration_object'](None) }}
+  file.managed:
+    - name: {{tmpf}}
+    - source: ''
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 755
     - watch:
+      - mc_proxy: icinga-configuration-pre-clean-directories
+    - watch_in:
+      - mc_proxy: icinga-configuration-post-clean-directories
+    - contents: |
+                #!/bin/bash
+                files=({{salt['mc_icinga.remove_configuration_object'](get=True)}});
+                for i in "${files[@]}"; do
+                  rm -f "$i";
+                done;
+
+  cmd.run:
+    - name: {{tmpf}}
+    - watch:
+      - file: icinga-configuration-remove-objects-conf
       - mc_proxy: icinga-configuration-pre-clean-directories
     - watch_in:
       - mc_proxy: icinga-configuration-post-clean-directories

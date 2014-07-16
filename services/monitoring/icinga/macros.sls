@@ -25,13 +25,10 @@ icinga-configuration-{{data.state_name_salt}}-add-object-conf:
     - group: root
     - mode: 644
     - makedirs: True
-    - order: 1
-    {#
     - watch:
-      - mc_proxy: icinga-configuration-pre-object-conf 
+      - mc_proxy: icinga-configuration-pre-object-conf
     - watch_in:
       - mc_proxy: icinga-configuration-post-object-conf
-    #}
     - template: jinja
     - defaults:
       data: |
@@ -53,7 +50,7 @@ icinga-configuration-{{data.state_name_salt}}-add-object-conf:
 {% macro configuration_remove_object(file) %}
 
 # add the file in the list of objects to remove
-{% set res = salt['mc_icinga.remove_configuration_object'](file) %}
+{% set res = salt['mc_icinga.remove_configuration_object'](file=file) %}
 
 {% endmacro %}
 
