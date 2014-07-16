@@ -184,7 +184,7 @@ But when you call the configuration_add_object, you don't know what hosts will b
 ::
 
     {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
-    {{ icinga.configuration_edit_object(type, file, attr, value, **kwargs) }}
+    {{ icinga.configuration_edit_object(type, file, attr, value, definition, **kwargs) }}
 
 with
 
@@ -192,6 +192,7 @@ with
     :file: the name of the edited object
     :attr: the directive for which a value must be added
     :value: the value added
+    :auto_host_definition: the definition to edit in the file (when configuration_add_auto_host is used)
 
 The "file" argument value is relative to "makina-states.services.monitoring.icinga.objects.directory" (default: /etc/icinga/objects/salt_generated/)
 
@@ -226,6 +227,14 @@ the previous service definition becomes::
      service_description=SSH
      host_name=hostname1,hostname2
     }
+
+
+The auto_host_definition argument is useful only when the configuration_add_auto_host macro is used. In this case, all services are in the host file.
+You have to use the "auto_host_definition" argument to specify in which definition the "attr" must be added.
+
+with auto_host_definition='host' or definition='hostgroup' the attribute will be added in the host/hostgroup definition 
+with auto_host_definition=service the attribute will be added in service definition. service have to be in the service list and have to be enabled
+with auto_host_definition=service-name the attribute will be added in service loop definition.
 
 
 Limits
@@ -426,17 +435,13 @@ With 50 services per hosts (ignore services_loop which can increase the number o
 
 With about 360 hosts the excessive execution time approach the entire hour.
 
-In order to improve performances I have commented the two states in configuration_add_object and configuration_remove_object macros. Only python functions in mc_icinga.py were executed. The execution time was about 40 secondes.
+The issue is resolved by decreasing the number of states: there is only one state to create each host.
+The services for the host are in the same file.
 
-Then I uncommented the previous commented states but I removed the watch and watch_in directives. Without theses directives, the execution time was about 2 minutes and 35 secondes.
+This decrease the number of states and the call to configuration_remove_object is useless to delete old services because the file with services of the hosts
+is naturally edited.
 
-With only watch directive in configuration_add_object macro, the execution time increase to 3 minutes and 35 secondes.
-
-with only watch directives in the two macros (but no watch_in), the execution time is still very long: about 10 minutes
-
-with cmd.run instead of file.absent the execution time, even if there is no watch and watch in is big: about 7 minutes
-
-
+The execution time decrease to 1 minute about for 128 hosts 
 
 Add a new service in configuration_add_auto_host macro
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++

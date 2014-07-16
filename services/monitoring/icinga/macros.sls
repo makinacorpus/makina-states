@@ -33,6 +33,7 @@ icinga-configuration-{{data.state_name_salt}}-add-object-conf:
     - defaults:
       data: |
             {{sdata}}
+
 {% endmacro %}
 
 {#
@@ -41,16 +42,20 @@ icinga-configuration-{{data.state_name_salt}}-add-object-conf:
 #     file
 #         the filename where the object will be removed
 #
-#     the macro doesn't delete the file. The file is added into a list and the state
-#     icinga-configuration-remove-objects-conf (configuration.sls) removes the files
-#     in the list
-#
 #}
 
 {% macro configuration_remove_object(file) %}
+{% set data = salt['mc_icinga.remove_configuration_object_settings'](file, **kwargs) %}
+{% set sdata = salt['mc_utils.json_dump'](data) %}
 
-# add the file in the list of objects to remove
-{% set res = salt['mc_icinga.remove_configuration_object'](file=file) %}
+# remove the object
+icinga-configuration-{{data.state_name_salt}}-remove-object-conf:
+  file.absent:
+    - name: {{data.objects.directory}}/{{data.file}}
+    - watch:
+      - mc_proxy: icinga-configuration-pre-clean-directories
+    - watch_in:
+      - mc_proxy: icinga-configuration-post-clean-directories
 
 {% endmacro %}
 
@@ -61,9 +66,12 @@ icinga-configuration-{{data.state_name_salt}}-add-object-conf:
 #         the type of edited object
 #     file
 #         the filename where is located the edited object
-#     definition
-#         name of accumulator to fill. Default: object to edit the main object definition.
-#         use service name to edit service definition of an autoconfigured host/hostgroup or service-name for services loop
+#     auto_host_definition
+#         name of accumulator to fill.
+#         use this value is only useful when the object is created with the configuration_add_auto_host macro 
+#         use service name to edit service definition (for example 'load_avg') of an autoconfigured host/hostgroup 
+#         or service+'-'+name for services loop (for example 'network-eth0')
+#         or host/hostgroup to edit the host or hostgroup definition
 #     attr
 #         the name of the edited directive
 #     value
@@ -71,16 +79,34 @@ icinga-configuration-{{data.state_name_salt}}-add-object-conf:
 #
 #}
 
-{% macro configuration_edit_object(file, attr, value, definition='object') %}
-{% set data = salt['mc_icinga.edit_configuration_object_settings'](file, attr, value, definition, **kwargs) %}
+{% macro configuration_edit_object(file, attr, value, auto_host_definition=None) %}
+{% set data = salt['mc_icinga.edit_configuration_object_settings'](file, attr, value, auto_host_definition, **kwargs) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 
 # split the value in ',' and loop. it is to remove duplicates values.
 # for example, it is to avoid to produce "v1,v2,v1" if "v1,v2" are given in a call and "v1" in an other call
+
+{% if data.auto_host_definition %}
+
 {% for value_splitted in data.value.split(',') %}
-icinga-configuration-{{data.state_name_salt}}i-attribute-{{data.attr}}-{{value_splitted}}-edit-object-conf:
+icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_splitted}}-edit-{{auto_host_definition}}-conf:
   file.accumulated:
-    - name: "{{data.definition}}.{{data.attr}}"
+    - name: "{{data.auto_host_definition}}.{{data.attr}}"
+    - filename: {{data.objects.directory}}/{{data.file}}
+    - text: "{{value_splitted}}"
+    - watch:
+      - mc_proxy: icinga-configuration-pre-accumulated-attributes-conf
+    - watch_in:
+      - mc_proxy: icinga-configuration-post-accumulated-attributes-conf
+      - file: icinga-configuration-{{data.state_name_salt}}-add-auto-host-conf 
+{% endfor %}
+
+{% else %}
+
+{% for value_splitted in data.value.split(',') %}
+icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_splitted}}-edit-object-conf:
+  file.accumulated:
+    - name: "{{data.attr}}"
     - filename: {{data.objects.directory}}/{{data.file}}
     - text: "{{value_splitted}}"
     - watch:
@@ -90,6 +116,7 @@ icinga-configuration-{{data.state_name_salt}}i-attribute-{{data.attr}}-{{value_s
       - file: icinga-configuration-{{data.state_name_salt}}-add-object-conf 
 {% endfor %}
 
+{% endif %}
 {% endmacro %}
 
 
@@ -272,12 +299,13 @@ icinga-configuration-{{data.state_name_salt}}i-attribute-{{data.attr}}-{{value_s
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 
 
-# add the host/hostgroup object and its services with only one state
-# we have the same state name as configuration_add_object macro because of the compatibility with configuration_edit_object macro
-icinga-configuration-{{data.state_name_salt}}-add-object-conf:
+# add the host/hostgroup object and its services with only one state (the host and its services are in the same file)
+# having all services associated to a host in one file avoid to delete files for disabled services
+# the macro configuration_remove_object isn't called so much
+icinga-configuration-{{data.state_name_salt}}-add-auto-host-conf:
   file.managed:
-    - name: {{data.file}}
-    - source: salt://makina-states/files/etc/icinga/objects/template_autoconfigured.cfg
+    - name: {{data.objects.directory}}/{{data.file}}
+    - source: salt://makina-states/files/etc/icinga/objects/template_auto_configuration_host.cfg
     - user: root
     - group: root
     - mode: 644
@@ -290,5 +318,6 @@ icinga-configuration-{{data.state_name_salt}}-add-object-conf:
     - defaults:
       data: |
             {{sdata}}
+
 
 {% endmacro %}
