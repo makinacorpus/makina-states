@@ -25,46 +25,36 @@ icinga-configuration-{{data.state_name_salt}}-add-object-conf:
     - group: root
     - mode: 644
     - makedirs: True
+    - order: 1
+    {#
     - watch:
-      - mc_proxy: icinga-configuration-pre-object-conf
+      - mc_proxy: icinga-configuration-pre-object-conf 
     - watch_in:
       - mc_proxy: icinga-configuration-post-object-conf
+    #}
     - template: jinja
     - defaults:
       data: |
             {{sdata}}
-
 {% endmacro %}
 
 {#
 #
 # Macros mains args:
 #     file
-#         the filename where the object will be removed 
+#         the filename where the object will be removed
+#
+#     the macro doesn't delete the file. The file is added into a list and the state
+#     icinga-configuration-remove-objects-conf (configuration.sls) removes the files
+#     in the list
 #
 #}
 
 {% macro configuration_remove_object(file) %}
-{% set data = salt['mc_icinga.remove_configuration_object_settings'](file, **kwargs) %}
-{% set sdata = salt['mc_utils.json_dump'](data) %}
 
-# remove the object
-icinga-configuration-{{data.state_name_salt}}-remove-object-conf:
-  file.absent:
-    - name: {{data.objects.directory}}/{{data.file}}
-    - watch:
-      - mc_proxy: icinga-configuration-pre-clean-directories
-# use of watch_in is very slow but i don't find any other method 
-# (with 128 hosts execution takes 32 minutes (with log disabled) 
-# instead of 11 minutes when the watch_in is not used 
-# (but the icinga restart is executed before configuration. it is bad))
-{#
-    - watch_in:
-      - mc_proxy: icinga-configuration-post-clean-directories
-#}
-# can try to use order directive. With 128 hosts it takes 11 minutes
-# (the restart is done after configuration but configuration is done before prerequisites)
-    - order: 1
+# add the file in the list of objects to remove
+{% set res = salt['mc_icinga.remove_configuration_object'](file) %}
+
 {% endmacro %}
 
 {#
@@ -97,7 +87,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
       - mc_proxy: icinga-configuration-pre-accumulated-attributes-conf
     - watch_in:
       - mc_proxy: icinga-configuration-post-accumulated-attributes-conf
-      - file: icinga-configuration-{{data.type}}-{{data.name}}-object-conf
+      - file: icinga-configuration-{{data.type}}-{{data.name}}-add-object-conf
 {% endfor %}
 
 {% endmacro %}

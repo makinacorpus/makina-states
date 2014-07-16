@@ -262,7 +262,7 @@ icinga-mklivestatus-conf:
 # add objects configuration
 {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
 
-# purge objects
+# purge objects (the macro add the files into a list)
 {% for file in data.objects.purge_definitions %}
     {{ icinga.configuration_remove_object(file=file) }}
 {% endfor %}
@@ -276,6 +276,15 @@ icinga-mklivestatus-conf:
 {% for name, object in data.objects.autoconfigured_hosts_definitions.items() %}
     {{ icinga.configuration_add_auto_host(**object) }}
 {% endfor %}
+
+# really, delete the files
+icinga-configuration-remove-objects-conf:
+  file.absent:
+    - names: {{ salt['mc_icinga.remove_configuration_object'](None) }}
+    - watch:
+      - mc_proxy: icinga-configuration-pre-clean-directories
+    - watch_in:
+      - mc_proxy: icinga-configuration-post-clean-directories
 
 {%- import "makina-states/services/monitoring/icinga/macros.jinja" as icinga with context %}
 {#

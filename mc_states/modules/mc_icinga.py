@@ -1784,6 +1784,7 @@ def objects():
         # purge in order to remove old configuration
         'purge_definitions': [
             'hostgroups/HG_ALL_HOSTS',
+            'test',
         ], 
         # host definitions
         'autoconfigured_hosts_definitions': {
@@ -2554,18 +2555,16 @@ def add_configuration_object_settings(type, file, attrs, **kwargs):
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
     return icingaSettings
 
-def remove_configuration_object_settings(file, **kwargs):
-    '''Settings for remove_configuration_object macro'''
-#    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
-#   save the ram (we get only useful values)
-    icingaSettings_complete = __salt__['mc_icinga.settings']()
-    icingaSettings = {}
-    kwargs.setdefault('objects', {'directory': icingaSettings_complete['objects']['directory']})
+def remove_configuration_object(file):
+    '''Add the file in the file's list to be removed'''
+    if file is not None:
+        icingaSettings_complete = __salt__['mc_icinga.settings']()
+        remove_configuration_object.values.append('/'.join([icingaSettings_complete['objects']['directory'], file]))
+    else:
+        return remove_configuration_object.values
 
-    kwargs.setdefault('file', file)
-    kwargs.setdefault('state_name_salt', file.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
-    icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
-    return icingaSettings
+# global variable initialisation
+remove_configuration_object.values=[]
 
 def edit_configuration_object_settings(type, file, attr, value, **kwargs):
     '''Settings for edit_configuration_object macro'''
@@ -2583,8 +2582,9 @@ def edit_configuration_object_settings(type, file, attr, value, **kwargs):
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
     return icingaSettings
 
+
 def add_auto_configuration_host_settings(hostname,
-                                         hostgroup,
+                                         hostgroup=False,
                                          attrs={},
                                          ssh_user='root',
                                          ssh_addr='',

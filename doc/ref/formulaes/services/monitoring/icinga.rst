@@ -420,11 +420,23 @@ The difference is 190.553 for 939 "watch\_in" (the 939 call of "configuration\_a
 
 With 6158 "watch\_in" for "configuration\_remove\_object", it is (0.203*6158) 1249.654 secondes (about 20 minutes).
 
-I have supposed watch\_in execution time constant.
+I have supposed "watch\_in" execution time constant.
 
 With 50 services per hosts (ignore services_loop which can increase the number of services): The host autoconfiguration macro need about 10.353 secondes to execute "watch\_in" directives in one call.
 
 With about 360 hosts the excessive execution time approach the entire hour.
+
+In order to improve performances I have commented the two states in configuration_add_object and configuration_remove_object macros. Only python functions in mc_icinga.py were executed. The execution time was about 40 secondes.
+
+Then I uncommented the previous commented states but I removed the watch and watch_in directives. Without theses directives, the execution time was about 2 minutes and 35 secondes.
+
+With only watch directive in configuration_add_object macro, the execution time increase to 3 minutes and 35 secondes.
+
+with only watch directives in the two macros (but no watch_in), the execution time is still very long: about 10 minutes
+
+with cmd.run instead of file.absent the execution time, even if there is no watch and watch in is big: about 7 minutes
+
+
 
 Add a new service in configuration_add_auto_host macro
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
