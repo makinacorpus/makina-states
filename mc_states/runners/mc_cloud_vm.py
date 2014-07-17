@@ -208,7 +208,7 @@ def vm_initial_highstate(vm, compute_node=None, vt=None,
                   cloudSettings=pillar['cloudSettings'])
     cret = cli('cmd.run_all', unless)
     if cret['retcode']:
-        rcret = cli('cmd.run_all', cmd)
+        rcret = cli('cmd.run_all', cmd, use_vt=True, output_loglevel='info')
         if not rcret['retcode']:
             ret['comment'] = (
                 'Initial highstate done on {0}'.format(vm)
