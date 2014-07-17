@@ -92,13 +92,14 @@ This macro was written in order to add an object in the icinga configuration
 ::
 
     {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
-    {{ icinga.configuration_add_object(type, file, attrs, **kwargs) }}
+    {{ icinga.configuration_add_object(type, file, attrs, definition, **kwargs) }}
 
 with
 
     :type: the type of added object
     :file: the filename of the added object
     :attrs: a dictionary in which each key corresponds to a directive
+    :definition: the name used to identify the definition. It is the name used by configuration_edit_object. If none, configuration_edit_object will not work for this definition
 
 The default directory where configuration files are located is::
 
@@ -184,7 +185,7 @@ But when you call the configuration_add_object, you don't know what hosts will b
 ::
 
     {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
-    {{ icinga.configuration_edit_object(type, file, attr, value, definition, **kwargs) }}
+    {{ icinga.configuration_edit_object(type, file, attr, value, auto_host, definition, **kwargs) }}
 
 with
 
@@ -192,7 +193,8 @@ with
     :file: the name of the edited object
     :attr: the directive for which a value must be added
     :value: the value added
-    :auto_host_definition: the definition to edit in the file (when configuration_add_auto_host is used)
+    :auto_host: true if the file is a file created with configuration_add_auto_host macro
+    :definition: the definition to edit in the file
 
 The "file" argument value is relative to "makina-states.services.monitoring.icinga.objects.directory" (default: /etc/icinga/objects/salt_generated/)
 
@@ -228,13 +230,11 @@ the previous service definition becomes::
      host_name=hostname1,hostname2
     }
 
+when auto_host is set to true, the value for definition argument are:
 
-The auto_host_definition argument is useful only when the configuration_add_auto_host macro is used. In this case, all services are in the host file.
-You have to use the "auto_host_definition" argument to specify in which definition the "attr" must be added.
-
-with auto_host_definition='host' or definition='hostgroup' the attribute will be added in the host/hostgroup definition 
-with auto_host_definition=service the attribute will be added in service definition. service have to be in the service list and have to be enabled
-with auto_host_definition=service-name the attribute will be added in service loop definition.
+  - definition='host': or definition='hostgroup' the attribute will be added in the host/hostgroup definition 
+  - definition=service: the attribute will be added in service definition. service have to be in the service list and have to be enabled
+  - definition=service-name: the attribute will be added in service loop definition.
 
 
 Limits

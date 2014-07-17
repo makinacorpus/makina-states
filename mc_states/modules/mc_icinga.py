@@ -67,7 +67,6 @@ def objects():
                     'command_name': "check_meta",
                     'command_line': "/usr/local/nagios/libexec/check_meta_service -i $ARG1$",
                 },
-                'definition': 'test',
             },
             'command_meta_notify': {
                 'type': "command",
@@ -2574,7 +2573,7 @@ def remove_configuration_object(file=None, get=False, **kwargs):
 # global variable initialisation
 remove_configuration_object.files=""
 
-def edit_configuration_object_settings(file, attr, value, definition, auto_host, **kwargs):
+def edit_configuration_object_settings(file, attr, value, auto_host, definition, **kwargs):
     '''Settings for edit_configuration_object macro'''
 #    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
 #   save the ram (we get only useful values)
@@ -2585,8 +2584,8 @@ def edit_configuration_object_settings(file, attr, value, definition, auto_host,
     kwargs.setdefault('file', file)
     kwargs.setdefault('attr', attr)
     kwargs.setdefault('value', value)
-    kwargs.setdefault('definition', definition)
     kwargs.setdefault('auto_host', auto_host)
+    kwargs.setdefault('definition', definition)
 
     kwargs.setdefault('state_name_salt', replace_chars(file)) 
 
