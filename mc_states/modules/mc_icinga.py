@@ -62,7 +62,7 @@ def objects():
             # meta_commands defintions
             'command_check_meta': {
                 'type': "command",
-                'file': "checkcommands/check_meta.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_meta",
                     'command_line': "/usr/local/nagios/libexec/check_meta_service -i $ARG1$",
@@ -70,7 +70,7 @@ def objects():
             },
             'command_meta_notify': {
                 'type': "command",
-                'file': "checkcommands/meta_notify.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "meta_notify",
                     'command_line': "/usr/bin/printf \"%b\" \"***** Meta Service Centreon *****\\n\\nNotification Type: $NOTIFICATIONTYPE$\\n\\nService: $SERVICEDESC$\\nState: $SERVICESTATE$\\n\\nDate/Time: $DATETIME$\\n\\nAdditional Info:\\n\\n$OUTPUT$\" | \/bin\/mail -s \"** $NOTIFICATIONTYPE$ $SERVICEDESC$ is $SERVICESTATE$ **\" $CONTACTEMAIL$",
@@ -144,7 +144,7 @@ def objects():
             },
             'command_check_centreon_process': {
                 'type': "command",
-                'file': "checkcommandsi.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_centreon_process",
                     'command_line': "$USER1$/check_centreon_snmp_process -H $HOSTADDRESS$ -v $ARG1$ -C $ARG2$ -n -p $ARG3$",
@@ -2546,8 +2546,8 @@ def replace_chars(s):
         res=res.replace(char, '-')
     return res
 
-def add_configuration_object(type=None, file=None, attrs=None, get=False, **kwargs):
-    '''Add the object file in the file's list to be removed'''
+def add_configuration_object(type=None, file=None, attrs=None, definition=None, get=False, **kwargs):
+    '''Add the object file in the file's list to be added'''
     if get:
         return add_configuration_object.objects
     elif type and file and attrs:
@@ -2555,7 +2555,7 @@ def add_configuration_object(type=None, file=None, attrs=None, get=False, **kwar
         filename='/'.join([icingaSettings_complete['objects']['directory'], file])
         if filename not in add_configuration_object.objects:
             add_configuration_object.objects[filename]=[]
-        add_configuration_object.objects[filename].append({'type': type, 'attrs': attrs})
+        add_configuration_object.objects[filename].append({'type': type, 'attrs': attrs, 'definition': definition})
 
 # global variable initialisation
 add_configuration_object.objects={}
@@ -2575,7 +2575,7 @@ def remove_configuration_object(file=None, get=False, **kwargs):
 # global variable initialisation
 remove_configuration_object.files=""
 
-def edit_configuration_object_settings(file, attr, value, auto_host_definition=None, **kwargs):
+def edit_configuration_object_settings(file, attr, value, definition, auto_host, **kwargs):
     '''Settings for edit_configuration_object macro'''
 #    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
 #   save the ram (we get only useful values)
@@ -2586,7 +2586,8 @@ def edit_configuration_object_settings(file, attr, value, auto_host_definition=N
     kwargs.setdefault('file', file)
     kwargs.setdefault('attr', attr)
     kwargs.setdefault('value', value)
-    kwargs.setdefault('auto_host_definition', auto_host_definition)
+    kwargs.setdefault('definition', definition)
+    kwargs.setdefault('auto_host', auto_host)
 
     kwargs.setdefault('state_name_salt', replace_chars(file)) 
 
@@ -2819,8 +2820,6 @@ def add_auto_configuration_host_settings(hostname,
     for mountpoint, path in mountpoints_path.items():
         if eval('disk_space_'+mountpoint):
             disks_spaces[mountpoint]=path
-
-    kwargs.setdefault('disks_spaces', disks_spaces)
 
     # default values for dns_association service
     dns_hostname=''

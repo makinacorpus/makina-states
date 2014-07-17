@@ -12,9 +12,9 @@
 #
 #}
 
-{% macro configuration_add_object(type, file, attrs={}) %}
+{% macro configuration_add_object(type, file, attrs={}, definition=None) %}
 # add the object in the list of objects to add
-{% set res = salt['mc_icinga.add_configuration_object'](type=type, file=file, attrs=attrs, get=False, **kwargs) %}
+{% set res = salt['mc_icinga.add_configuration_object'](type=type, file=file, attrs=attrs, definition=definition, get=False, **kwargs) %}
 {% endmacro %}
 
 {#
@@ -37,9 +37,12 @@
 #         the type of edited object
 #     file
 #         the filename where is located the edited object
-#     auto_host_definition
+#     auto_host
+#         true if the file contains a auto_host
+#     definition
+#         definition in which the attribute will be added
 #         name of accumulator to fill.
-#         use this value is only useful when the object is created with the configuration_add_auto_host macro 
+#         when auto_host=True,
 #         use service name to edit service definition (for example 'load_avg') of an autoconfigured host/hostgroup 
 #         or service+'-'+name for services loop (for example 'network-eth0')
 #         or host/hostgroup to edit the host or hostgroup definition
@@ -60,37 +63,24 @@
 
 # we have two cases, one case when the file is created with the configuration_add_auto_host macro
 # and when the file is created with configuration_add_object macro
-{% if data.auto_host_definition %}
 
 {% for value_splitted in data.value.split(',') %}
 icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_splitted}}-edit-{{auto_host_definition}}-conf:
   file.accumulated:
-    - name: "{{data.auto_host_definition}}.{{data.attr}}"
+    - name: "{{data.definition}}.{{data.attr}}"
     - filename: {{data.objects.directory}}/{{data.file}}
     - text: "{{value_splitted}}"
     - watch:
       - mc_proxy: icinga-configuration-pre-accumulated-attributes-conf
     - watch_in:
       - mc_proxy: icinga-configuration-post-accumulated-attributes-conf
+      {% if auto_host %}
       - file: icinga-configuration-{{data.state_name_salt}}-add-auto-host-conf 
-{% endfor %}
-
-{% else %}
-
-{% for value_splitted in data.value.split(',') %}
-icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_splitted}}-edit-object-conf:
-  file.accumulated:
-    - name: "{{data.attr}}"
-    - filename: {{data.objects.directory}}/{{data.file}}
-    - text: "{{value_splitted}}"
-    - watch:
-      - mc_proxy: icinga-configuration-pre-accumulated-attributes-conf
-    - watch_in:
-      - mc_proxy: icinga-configuration-post-accumulated-attributes-conf
+      {% else %}
       - file: icinga-configuration-{{data.state_name_salt}}-add-object-conf 
+      {% endif %}
 {% endfor %}
 
-{% endif %}
 {% endmacro %}
 
 {#
