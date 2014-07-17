@@ -277,6 +277,56 @@ icinga-mklivestatus-conf:
     {{ icinga.configuration_add_auto_host(**object) }}
 {% endfor %}
 
+# really add the files
+{% for file, objects in salt['mc_icinga.add_configuration_object'](get=True).items() %}
+{% set state_name_salt =  salt['mc_icinga.replace_chars'](file) %}
+icinga-configuration-{{state_name_salt}}-add-objects-conf:
+  file.managed:
+    - name: {{file}}
+    - source: salt://makina-states/files/etc/icinga/objects/template.cfg
+    - user: root
+    - group: root
+    - mode: 644
+    - makedirs: True
+    - watch:
+      - mc_proxy: icinga-configuration-pre-object-conf
+    - watch_in:
+      - mc_proxy: icinga-configuration-post-object-conf
+    - template: jinja
+    - defaults:
+      data: |
+            {{salt['mc_utils.json_dump'](objects)}}
+{% endfor %}
+
+# really delete the files
+{% set tmpf="/tmp/delete.sh" %}
+icinga-configuration-remove-objects-conf:
+  file.managed:
+    - name: {{tmpf}}
+    - source: ''
+    - makedirs: true
+    - user: root
+    - group: root
+    -  mode: 755
+    - watch:
+      - mc_proxy: icinga-configuration-pre-clean-directories
+    - watch_in:
+      - mc_proxy: icinga-configuration-post-clean-directories
+    - contents: |
+                #!/bin/bash
+                files=({{salt['mc_icinga.remove_configuration_object'](get=True)}});
+                for i in "${files[@]}"; do
+                    rm -f "$i";
+                done;
+
+  cmd.run:
+    - name: {{tmpf}}
+    - watch:
+      - file: icinga-configuration-remove-objects-conf
+      - mc_proxy: icinga-configuration-pre-clean-directories
+    - watch_in:
+      - mc_proxy: icinga-configuration-post-clean-directories
+
 {%- import "makina-states/services/monitoring/icinga/macros.jinja" as icinga with context %}
 {#
 {{icinga.icingaAddWatcher('foo', '/bin/echo', args=[1]) }}

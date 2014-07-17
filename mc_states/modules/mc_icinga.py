@@ -80,7 +80,7 @@ def objects():
             # commands definitions
             'command_ALWAYS_UP': {
                 'type': "command",
-                'file': "checkcommands/ALWAYS_UP.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "ALWAYS_UP",
                     'command_line': "$USER1$/check_centreon_dummy -s 0 -o \"PING Not Allowed, always OK\"",
@@ -88,7 +88,7 @@ def objects():
             },
             'command_check_centreon_cpu': {
                 'type': "command",
-                'file': "checkcommands/check_centreon_cpu.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_centreon_cpu",
                     'command_line': "$USER1$/check_centreon_snmp_cpu -H $HOSTADDRESS$ -v 1 -C $ARG1$ -c $ARG2$ -w $ARG3$",
@@ -96,7 +96,7 @@ def objects():
             },
             'command_check_centreon_dummy': {
                 'type': "command",
-                'file': "checkcommands/check_centreon_dummy.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_centreon_dummy",
                     'command_line': "$USER1$/check_centreon_dummy -s $ARG1$ -o $ARG2$",
@@ -104,7 +104,7 @@ def objects():
             },
             'command_check_centreon_load_average': {
                 'type': "command",
-                'file': "checkcommands/check_centreon_load_average.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_centreon_load_average",
                     'command_line': "$USER1$/check_centreon_snmp_loadaverage -H $HOSTADDRESS$ -v $ARG1$ -C $ARG2$ -w $ARG3$ -c $ARG4$",
@@ -112,7 +112,7 @@ def objects():
             },
             'command_check_centreon_memory': {
                 'type': "command",
-                'file': "checkcommands/check_centreon_memory.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_centreon_memory",
                     'command_line': "$USER1$/check_centreon_snmp_memory -H $HOSTADDRESS$ -C $USER2$ -v 1 -w 80 -c 90",
@@ -120,7 +120,7 @@ def objects():
             },
             'command_check_centreon_nb_connections': {
                 'type': "command",
-                'file': "checkcommands/check_centreon_nb_connections.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_centreon_nb_connections",
                     'command_line': "$USER1$/check_centreon_TcpConn -H $HOSTADDRESS$ -C $USER2$ -v 1 -p $ARG1$ -w $ARG2$ -c $ARG3$",
@@ -128,7 +128,7 @@ def objects():
             },
             'command_check_centreon_nt': {
                 'type': "command",
-                'file': "checkcommands/check_centreon_nt.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_centreon_nt",
                     'command_line': "$USER1$/check_centreon_nt -H $HOSTADDRESS$ -p 12489 -v $ARG1$ -l $ARG2$ -s $ARG3$ -w $ARG4$ -c $ARG5$",
@@ -136,7 +136,7 @@ def objects():
             },
             'command_check_centreon_ping': {
                 'type': "command",
-                'file': "checkcommands/check_centreon_ping.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_centreon_ping",
                     'command_line': "$USER1$/check_centreon_ping -H $HOSTADDRESS$ -n $ARG1$ -w $ARG2$ -c $ARG3$",
@@ -144,7 +144,7 @@ def objects():
             },
             'command_check_centreon_process': {
                 'type': "command",
-                'file': "checkcommands/check_centreon_process.cfg",
+                'file': "checkcommandsi.cfg",
                 'attrs': {
                     'command_name': "check_centreon_process",
                     'command_line': "$USER1$/check_centreon_snmp_process -H $HOSTADDRESS$ -v $ARG1$ -C $ARG2$ -n -p $ARG3$",
@@ -152,7 +152,7 @@ def objects():
             },
             'command_check_centreon_remote_storage': {
                 'type': "command",
-                'file': "checkcommands/check_centreon_remote_storage.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_centreon_remote_storage",
                     'command_line': "$USER1$/check_centreon_snmp_remote_storage -H $HOSTADDRESS$ -n -d $ARG1$ -w $ARG2$ -c $ARG3$ -C $ARG4$ -v $ARG5$",
@@ -160,7 +160,7 @@ def objects():
             },
             'command_check_centreon_snmp_proc_detailed': {
                 'type': "command",
-                'file': "checkcommands/check_centreon_snmp_proc_detailed.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_centreon_snmp_proc_detailed",
                     'command_line': "$USER1$/check_centreon_snmp_process_detailed -H $HOSTADDRESS$ -C $USER2$ -n $ARG1$ -m $ARG2$",
@@ -168,7 +168,7 @@ def objects():
             },
             'command_check_centreon_snmp_value': {
                 'type': "command",
-                'file': "checkcommands/check_centreon_snmp_value.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_centreon_snmp_value",
                     'command_line': "$USER1$/check_centreon_snmp_value -H $HOSTADDRESS$ -C $ARG1$ -v $ARG2$ -o $ARG3$ -w $ARG4$  -c $ARG5$",
@@ -176,15 +176,15 @@ def objects():
             },
             'command_check_centreon_traffic': {
                 'type': "command",
-                'file': "checkcommands/check_centreon_traffic.cfg",
-                'attrs': {
+                'file': "checkcommands.cfg",
+                'attrs': { 
                     'command_name': "check_centreon_traffic",
                     'command_line': "$USER1$/check_centreon_snmp_traffic -H $HOSTADDRESS$ -n -i $ARG1$ -w $ARG2$ -c $ARG3$ -C $USER2$ -v $ARG4$",
                 },
             },
             'command_check_centreon_traffic_limited': {
                 'type': "command",
-                'file': "checkcommands/check_centreon_traffic_limited.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_centreon_traffic_limited",
                     'command_line': "$USER1$/check_centreon_snmp_traffic -H $HOSTADDRESS$ -n -i $ARG1$ -w $ARG2$ -c $ARG3$ -C $ARG4$ -v $ARG5$ -T $ARG6$",
@@ -192,7 +192,7 @@ def objects():
             },
             'command_check_centreon_uptime': {
                 'type': "command",
-                'file': "checkcommands/check_centreon_uptime.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_centreon_uptime",
                     'command_line': "$USER1$/check_centreon_snmp_uptime -H $HOSTADDRESS$ -C $USER2$ -v 2 -d",
@@ -200,7 +200,7 @@ def objects():
             },
             'command_check_dhcp': {
                 'type': "command",
-                'file': "checkcommands/check_dhcp.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_dhcp",
                     'command_line': "$USER1$/check_dhcp -s $HOSTADDRESS$ -i $ARG1$",
@@ -208,7 +208,7 @@ def objects():
             },
             'command_check_dig': {
                 'type': "command",
-                'file': "checkcommands/check_dig.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_dig",
                     'command_line': "$USER1$/check_dig -H $HOSTADDRESS$ -l $ARG1$",
@@ -216,7 +216,7 @@ def objects():
             },
             'command_check_disk_smb': {
                 'type': "command",
-                'file': "checkcommands/check_disk_smb.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_disk_smb",
                     'command_line': "$USER1$/check_disk_smb -H $HOSTADDRESS$ -s $ARG1$ -u $ARG2$ -p $ARG3$ -w $ARG4$ -c $ARG5$",
@@ -224,7 +224,7 @@ def objects():
             },
             'command_check_distant_disk_space': {
                 'type': "command",
-                'file': "checkcommands/check_distant_disk_space.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_distant_disk_space",
                     'command_line': "$USER1$/check_distant_disk_space -H $HOSTADDRESS$ -C $ARG1$ -p $ARG2$ -w $ARG3$ -c $ARG4$",
@@ -232,7 +232,7 @@ def objects():
             },
             'command_check_dns': {
                 'type': "command",
-                'file': "checkcommands/check_dns.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_dns",
                     'command_line': "$USER1$/check_dns -H $ARG1$ -s $HOSTADDRESS$",
@@ -240,7 +240,7 @@ def objects():
             },
             'command_check_ftp': {
                 'type': "command",
-                'file': "checkcommands/check_ftp.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_ftp",
                     'command_line': "$USER1$/check_ftp -H $HOSTADDRESS$",
@@ -248,7 +248,7 @@ def objects():
             },
             'command_check_host_alive': {
                 'type': "command",
-                'file': "checkcommands/check_host_alive.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_host_alive",
                     'command_line': "$USER1$/check_ping -H $HOSTADDRESS$ -w 3000.0,80% -c 5000.0,100% -p 1",
@@ -256,7 +256,7 @@ def objects():
             },
             'command_check_hpjd': {
                 'type': "command",
-                'file': "checkcommands/check_hpjd.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_hpjd",
                     'command_line': "$USER1$/check_hpjd -H $HOSTADDRESS$ -C public",
@@ -264,7 +264,7 @@ def objects():
             },
             'command_check_http': {
                 'type': "command",
-                'file': "checkcommands/check_http.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_http",
                     'command_line': "$USER1$/check_http -H $HOSTADDRESS$",
@@ -272,7 +272,7 @@ def objects():
             },
             'command_check_https': {
                 'type': "command",
-                'file': "checkcommands/check_https.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_https",
                     'command_line': "$USER1$/check_http -S $HOSTADDRESS$",
@@ -280,7 +280,7 @@ def objects():
             },
             'command_check_http_vhost_uri': {
                 'type': "command",
-                'file': "checkcommands/check_http_vhost_uri.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_http_vhost_uri",
                     'command_line': "$USER1$/check_http -H $ARG1$ -u $ARG2$",
@@ -288,7 +288,7 @@ def objects():
             },
             'command_check_load_average': {
                 'type': "command",
-                'file': "checkcommands/check_load_average.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_load_average",
                     'command_line': "$USER1$/check_load $HOSTADDRESS$ -w $ARG1$ -c $ARG2$",
@@ -296,7 +296,7 @@ def objects():
             },
             'command_check_local_cpu_load': {
                 'type': "command",
-                'file': "checkcommands/check_local_cpu_load.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_local_cpu_load",
                     'command_line': "$USER1$/check_nt -H $HOSTADDRESS$ -v CPULOAD -l $ARG1$ -s \"public\"",
@@ -304,7 +304,7 @@ def objects():
             },
             'command_check_local_disk': {
                 'type': "command",
-                'file': "checkcommands/check_local_disk.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_local_disk",
                     'command_line': "$USER1$/check_disk -w $ARG2$ -c $ARG3$ -p $ARG1$",
@@ -312,7 +312,7 @@ def objects():
             },
             'command_check_local_disk_space': {
                 'type': "command",
-                'file': "checkcommands/check_local_disk_space.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_local_disk_space",
                     'command_line': "$USER1$/check_nt -H $HOSTADDRESS$ -v USEDDISKSPACE -l $ARG1$ -w $ARG2$ -c $ARG3$ -s \"public\"",
@@ -320,7 +320,7 @@ def objects():
             },
             'command_check_local_load': {
                 'type': "command",
-                'file': "checkcommands/check_local_load.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_local_load",
                     'command_line': "$USER1$/check_load -w $ARG1$ -c $ARG2$",
@@ -328,7 +328,7 @@ def objects():
             },
             'command_check_local_procs': {
                 'type': "command",
-                'file': "checkcommands/check_local_procs.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_local_procs",
                     'command_line': "$USER1$/check_procs -w $ARG1$ -c $ARG2$ -u $ARG3$",
@@ -336,7 +336,7 @@ def objects():
             },
             'command_check_local_procs_1': {
                 'type': "command",
-                'file': "checkcommands/check_local_procs_1.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_local_procs_1",
                     'command_line': "$USER1$/check_procs -w $ARG1$ -c $ARG2$ -u $ARG3$",
@@ -344,7 +344,7 @@ def objects():
             },
             'command_check_local_swap': {
                 'type': "command",
-                'file': "checkcommands/check_local_swap.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_local_swap",
                     'command_line': "$USER1$/check_swap -w $ARG1$ -c $ARG2$ -v",
@@ -352,7 +352,7 @@ def objects():
             },
             'command_check_local_users': {
                 'type': "command",
-                'file': "checkcommands/check_local_users.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_local_users",
                     'command_line': "$USER1$/check_users -w $ARG1$ -c $ARG2$",
@@ -360,7 +360,7 @@ def objects():
             },
             'command_check_maxq': {
                 'type': "command",
-                'file': "checkcommands/check_maxq.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_maxq",
                     'command_line': "$USER1$/check_maxq_script_return -r $ARG1$ -P $ARG2$",
@@ -368,7 +368,7 @@ def objects():
             },
             'command_check_nntp': {
                 'type': "command",
-                'file': "checkcommands/check_nntp.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_nntp",
                     'command_line': "$USER1$/check_nntp -H $HOSTADDRESS$",
@@ -376,7 +376,7 @@ def objects():
             },
             'command_check_nt_cpu': {
                 'type': "command",
-                'file': "checkcommands/check_nt_cpu.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_nt_cpu",
                     'command_line': "$USER1$/check_nt -H $HOSTADDRESS$ -v CPULOAD -s \"public\" -p $ARG1$ -l 2,90,95",
@@ -384,7 +384,7 @@ def objects():
             },
             'command_check_nt_disk': {
                 'type': "command",
-                'file': "checkcommands/check_nt_disk.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_nt_disk",
                     'command_line': "$USER1$/check_nt -H $HOSTADDRESS$ -v USEDDISKSPACE -s \"public\" -l $ARG1$ -w $ARG2$ -c $ARG3$",
@@ -392,7 +392,7 @@ def objects():
             },
             'command_check_nt_memuse': {
                 'type': "command",
-                'file': "checkcommands/check_nt_memuse.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_nt_memuse",
                     'command_line': "$USER1$/check_nt -H $HOSTADDRESS$ -v MEMUSE -s \"public\" -p $ARG1$ -w $ARG2$ -c $ARG3$",
@@ -400,7 +400,7 @@ def objects():
             },
             'command_check_pop': {
                 'type': "command",
-                'file': "checkcommands/check_pop.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_pop",
                     'command_line': "$USER1$/check_pop -H $HOSTADDRESS$",
@@ -408,7 +408,7 @@ def objects():
             },
             'command_check_smtp': {
                 'type': "command",
-                'file': "checkcommands/check_smtp.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_smtp",
                     'command_line': "$USER1$/check_smtp -H $HOSTADDRESS$",
@@ -416,7 +416,7 @@ def objects():
             },
             'command_check_snmp': {
                 'type': "command",
-                'file': "checkcommands/check_snmp.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_snmp",
                     'command_line': "$USER1$/check_snmp -H $HOSTADDRESS$ -o $ARG1$ -w $ARG2$ -C $ARG3$",
@@ -424,7 +424,7 @@ def objects():
             },
             'command_check_tcp': {
                 'type': "command",
-                'file': "checkcommands/check_tcp.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_tcp",
                     'command_line': "$USER1$/check_tcp -H $HOSTADDRESS$ -p $ARG1$ -w $ARG2$ -c $ARG3$",
@@ -432,7 +432,7 @@ def objects():
             },
             'command_check_telnet': {
                 'type': "command",
-                'file': "checkcommands/check_telnet.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_telnet",
                     'command_line': "$USER1$/check_tcp -H $HOSTADDRESS$ -p 23",
@@ -440,7 +440,7 @@ def objects():
             },
             'command_check_udp': {
                 'type': "command",
-                'file': "checkcommands/check_udp.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "check_udp",
                     'command_line': "$USER1$/check_udp -H $HOSTADDRESS$ -p $ARG1$",
@@ -449,7 +449,7 @@ def objects():
             # edited in order to allow other users in check_by_ssh
             'command_CSSH_BACKUP': {
                 'type': "command",
-                'file': "checkcommands/CSSH_BACKUP.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "CSSH_BACKUP",
                     'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C $ARG1$",
@@ -458,7 +458,7 @@ def objects():
             # edited in order to allow other users in check_by_ssh
             'command_CSSH_BACKUP_BURP': {
                 'type': "command",
-                'file': "checkcommands/CSSH_BACKUP_BURP.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "CSSH_BACKUP_BURP",
                     'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_burp_backup_age.py -H $HOSTNAME$ -d /data/burp -w $ARG5$ -c $ARG6$'",
@@ -466,7 +466,7 @@ def objects():
             },
             'command_CSSH_BACKUP_EXT': {
                 'type': "command",
-                'file': "checkcommands/CSSH_BACKUP_EXT.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "CSSH_BACKUP_EXT",
                     'command_line': "$USER1$/check_by_ssh --skip-stderr -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C $ARG1$",
@@ -475,7 +475,7 @@ def objects():
             # edited in order to allow other users in check_by_ssh
             'command_CSSH_CRON': {
                 'type': "command",
-                'file': "checkcommands/CSSH_CRON.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "CSSH_CRON",
                     'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_cron'",
@@ -484,7 +484,7 @@ def objects():
             # edited in order to allow other users in check_by_ssh
             'command_CSSH_CUSTOM': {
                 'type': "command",
-                'file': "checkcommands/CSSH_CUSTOM.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "CSSH_CUSTOM",
                     'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C $ARG5$",
@@ -493,7 +493,7 @@ def objects():
             # edited in order to allow other users in check_by_ssh
             'command_CSSH_CYRUS_CONNECTIONS': {
                 'type': "command",
-                'file': "checkcommands/CSSH_CYRUS_CONNECTIONS.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "CSSH_CYRUS_CONNECTIONS",
                     'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_cyrus-imapd -w  $ARG5$ -c $ARG6$'",
@@ -502,7 +502,7 @@ def objects():
             # edited in order to allow other users in check_by_ssh
             'command_CSSH_DDOS': {
                 'type': "command",
-                'file': "checkcommands/CSSH_DDOS.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "CSSH_DDOS",
                     'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_ddos.pl -w $ARG5$ -c$ARG6$'",
@@ -511,7 +511,7 @@ def objects():
             # edited in order to allow other users in check_by_ssh
             'command_CSSH_DEBIAN_UPDATES': {
                 'type': "command",
-                'file': "checkcommands/CSSH_DEBIAN_UPDATES.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "CSSH_DEBIAN_UPDATES",
                     'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_debian_packages --timeout=60' --timeout=60",
@@ -520,7 +520,7 @@ def objects():
             # edited in order to allow other users in check_by_ssh
             'command_CSSH_DRBD': {
                 'type': "command",
-                'file': "checkcommands/CSSH_DRBD.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "CSSH_DRBD",
                     'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C $ARG5$",
@@ -528,7 +528,7 @@ def objects():
             },
             'command_CSSH_HAPROXY': {
                 'type': "command",
-                'file': "checkcommands/CSSH_HAPROXY.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "CSSH_HAPROXY",
                     'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C $ARG1$",
@@ -537,7 +537,7 @@ def objects():
             # edited in order to allow other users in check_by_ssh
             'command_CSSH_MAILQUEUE': {
                 'type': "command",
-                'file': "checkcommands/CSSH_MAILQUEUE.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "CSSH_MAILQUEUE",
                     'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_postfix_mailqueue -w $ARG5$ -c $ARG6$'",
@@ -546,7 +546,7 @@ def objects():
             # edited in order to allow other users in check_by_ssh
             'command_CSSH_MEGARAID_SAS': {
                 'type': "command",
-                'file': "checkcommands/CSSH_MEGARAID_SAS.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "CSSH_MEGARAID_SAS",
                     'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C $ARG1$",
@@ -555,7 +555,7 @@ def objects():
             # edited in order to allow other users in check_by_ssh
             'command_CSSH_NTP_PEER': {
                 'type': "command",
-                'file': "checkcommands/CSSH_NTP_PEER.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "CSSH_NTP_PEER",
                     'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$  -C '/root/check_ntp_peer -H 195.144.11.170 -w 1 -c 10 -j -1:100 -k -1:200 -W 4 -C 10'",
@@ -564,7 +564,7 @@ def objects():
             # edited in order to allow other users in check_by_ssh
             'command_CSSH_NTP_PEERS': {
                 'type': "command",
-                'file': "checkcommands/CSSH_NTP_PEERS.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "CSSH_NTP_PEERS",
                     'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_ntp_peer -H $ARG5$ -w 1 -c 10 -j -1:100 -k -1:200 -W 4 -C 10'",
@@ -573,7 +573,7 @@ def objects():
             # edited in order to allow other users in check_by_ssh
             'command_CSSH_NTP_TIME': {
                 'type': "command",
-                'file': "checkcommands/CSSH_NTP_TIME.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "CSSH_NTP_TIME",
                     'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C '/root/check_ntp_time -H 195.144.11.170 -w 60 -c 120'",
@@ -581,7 +581,7 @@ def objects():
             },
             'command_CSSH_PROCESS_CRON_RUNNING': {
                 'type': "command",
-                'file': "checkcommands/CSSH_PROCESS_CRON_RUNNING.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "CSSH_PROCESS_CRON_RUNNING",
                     'command_line': "$USER1$/check_by_ssh --skip-stderr -q -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_procs -w 1: -c 1: --command=cron'",
@@ -590,7 +590,7 @@ def objects():
             # edited in order to allow other users in check_by_ssh
             'command_CSSH_RAID_3WARE': {
                 'type': "command",
-                'file': "checkcommands/CSSH_RAID_3WARE.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "CSSH_RAID_3WARE",
                     'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C $ARG1$",
@@ -599,7 +599,7 @@ def objects():
             # edited in order to allow other users in check_by_ssh
             'command_CSSH_RAID_SOFT': {
                 'type': "command",
-                'file': "checkcommands/CSSH_RAID_SOFT.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "CSSH_RAID_SOFT",
                     'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C $ARG5$",
@@ -607,7 +607,7 @@ def objects():
             },
             'command_CSSH_RO_MOUNT': {
                 'type': "command",
-                'file': "checkcommands/CSSH_RO_MOUNT.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "CSSH_RO_MOUNT",
                     'command_line': "$USER1$/check_by_ssh --skip-stderr  -H $HOSTADDRESS$ -l root -i $USER7_SSHKEY$ -C $ARG1$ -t $ARG2$",
@@ -616,7 +616,7 @@ def objects():
             # edited in order to allow other users in check_by_ssh
             'command_CSSH_SAS2IRCU': {
                 'type': "command",
-                'file': "checkcommands/CSSH_SAS2IRCU.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "CSSH_SAS2IRCU",
                     'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C $ARG5$",
@@ -625,7 +625,7 @@ def objects():
             # edited in order to allow other users in check_by_ssh
             'command_CSSH_SUPERVISOR': {
                 'type': "command",
-                'file': "checkcommands/CSSH_SUPERVISOR.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "CSSH_SUPERVISOR",
                     'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_supervisorctl.sh $ARG1$'",
@@ -633,7 +633,7 @@ def objects():
             },
             'command_C_APACHE_STATUS': {
                 'type': "command",
-                'file': "checkcommands/C_APACHE_STATUS.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "C_APACHE_STATUS",
                     'command_line': "$USER1$/check_apachestatus_auto.pl -H $HOSTADDRESS$  -t 8 -w $ARG1$ -c $ARG2$ $ARG3$",
@@ -641,7 +641,7 @@ def objects():
             },
             'command_C_CHECK_LABORANGE_LOGIN': {
                 'type': "command",
-                'file': "checkcommands/C_CHECK_LABORANGE_LOGIN.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "C_CHECK_LABORANGE_LOGIN",
                     'command_line': "$USER1$/check_laborange_login.sh -u $ARG1$  -w $ARG2$  -c $ARG3$  $ARG4$",
@@ -649,7 +649,7 @@ def objects():
             },
             'command_C_CHECK_LABORANGE_STATS': {
                 'type': "command",
-                'file': "checkcommands/C_CHECK_LABORANGE_STATS.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "C_CHECK_LABORANGE_STATS",
                     'command_line': "$USER1$/check_laborange_stats.pl -H $HOSTADDRESS$ -s $ARG1$  -t 5",
@@ -657,7 +657,7 @@ def objects():
             },
             'command_C_CHECK_NGINX_STATUS': {
                 'type': "command",
-                'file': "checkcommands/C_CHECK_NGINX_STATUS.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "C_CHECK_NGINX_STATUS",
                     'command_line': "$USER1$/check_nginx_status.pl -H $HOSTADDRESS$ -u $ARG1$ -s $ARG2$  -t 8 -w $ARG3$ -c $ARG4$",
@@ -665,7 +665,7 @@ def objects():
             },
             'command_C_CHECK_ONE_NAGIOS_ONLY': {
                 'type': "command",
-                'file': "checkcommands/C_CHECK_ONE_NAGIOS_ONLY.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "C_CHECK_ONE_NAGIOS_ONLY",
                     'command_line': "$USER1$/check_one_nagios",
@@ -673,7 +673,7 @@ def objects():
             },
             'command_C_CHECK_PHPFPM': {
                 'type': "command",
-                'file': "checkcommands/C_CHECK_PHPFPM.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "C_CHECK_PHPFPM",
                     'command_line': "$USER1$/check_phpfpm_status.pl -H $HOSTADDRESS$ -u $ARG1$ -s $ARG2$  -t 8 -w $ARG3$ -c $ARG4$",
@@ -681,7 +681,7 @@ def objects():
             },
             'command_C_DNS_EXTERNE_ASSOCIATION': {
                 'type': "command",
-                'file': "checkcommands/C_DNS_EXTERNE_ASSOCIATION.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "C_DNS_EXTERNE_ASSOCIATION",
                     'command_line': "$USER1$/check_dns_host.pl  -H $ARG1$ -q FORWARD -w 50 -c 500 -m $HOSTADDRESS$ -t 8 --recurse=1 $ARG2$",
@@ -689,7 +689,7 @@ def objects():
             },
             'command_C_DNS_EXTERNE_REVERSE_ASSOCIATION': {
                 'type': "command",
-                'file': "checkcommands/C_DNS_EXTERNE_REVERSE_ASSOCIATION.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "C_DNS_EXTERNE_REVERSE_ASSOCIATION",
                     'command_line': "$USER1$/check_dig  -l $ARG1$ -T PTR -a $ARG2$ $ARG3$",
@@ -697,7 +697,7 @@ def objects():
             },
             'command_C_HTTPS_OPENID_REDIRECT': {
                 'type': "command",
-                'file': "checkcommands/C_HTTPS_OPENID_REDIRECT.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "C_HTTPS_OPENID_REDIRECT",
                     'command_line': "$USER1$/check_http -H $ARG1$ -I $HOSTADDRESS$  -u $ARG2$ --useragent=supervision --warning=$ARG3$ --critical=$ARG4$ --timeout=$ARG5$ -s \"https://openid.makina-corpus.net/login/login.php\" -S -e \"HTTP/1.1 302 Found\"",
@@ -705,7 +705,7 @@ def objects():
             },
             'command_C_HTTPS_STRING_ONLY': {
                 'type': "command",
-                'file': "checkcommands/C_HTTPS_STRING_ONLY.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "C_HTTPS_STRING_ONLY",
                     'command_line': "$USER1$/check_http --ssl -H $ARG1$ -I $HOSTADDRESS$  -u $ARG2$ --useragent=supervision --onredirect=follow --timeout=$ARG4$ -s $ARG5$ $ARG6$",
@@ -713,7 +713,7 @@ def objects():
             },
             'command_C_HTTP_STRING': {
                 'type': "command",
-                'file': "checkcommands/C_HTTP_STRING.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "C_HTTP_STRING",
                     'command_line': "$USER1$/check_http -H $ARG1$ -I $HOSTADDRESS$  -u $ARG2$ --useragent=supervision  --onredirect=follow --warning=$ARG3$ --critical=$ARG4$ --timeout=$ARG5$ -s $ARG6$ $ARG7$",
@@ -721,7 +721,7 @@ def objects():
             },
             'command_C_HTTP_STRING_AUTH': {
                 'type': "command",
-                'file': "checkcommands/C_HTTP_STRING_AUTH.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "C_HTTP_STRING_AUTH",
                     'command_line': "$USER1$/check_http --ssl -H $ARG1$ -I $HOSTADDRESS$  -u $ARG2$ -a $USER6_AUTHPAIR$ --useragent=supervision --onredirect=follow --warning=$ARG3$ --critical=$ARG4$ --timeout=$ARG5$ -s $ARG6$ $ARG7$",
@@ -729,7 +729,7 @@ def objects():
             },
             'command_C_HTTP_STRING_ONLY': {
                 'type': "command",
-                'file': "checkcommands/C_HTTP_STRING_ONLY.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "C_HTTP_STRING_ONLY",
                     'command_line': "$USER1$/check_http -H $ARG1$ -I $HOSTADDRESS$  -u $ARG2$ --useragent=supervision --onredirect=follow --timeout=$ARG4$ -s $ARG5$ $ARG6$",
@@ -737,15 +737,15 @@ def objects():
             },
             'command_C_HTTP_STRING_SOLR': {
                 'type': "command",
-                'file': "checkcommands/C_HTTP_STRING_SOLR.cfg",
-                'attrs': {
+                'file': "checkcommands.cfg",
+                'attrs': { 
                     'command_name': "C_HTTP_STRING_SOLR",
                     'command_line': "$USER1$/check_http -H $ARG1$ -p $ARG2$ -I $HOSTADDRESS$  -u $ARG3$ --useragent=supervision --onredirect=follow --warning=$ARG4$ --critical=$ARG5$ --timeout=$ARG6$ -s $ARG7$ $ARG8$",
                 },
             },
             'command_C_HTTP_STRING_ZOPE': {
                 'type': "command",
-                'file': "checkcommands/C_HTTP_STRING_ZOPE.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "C_HTTP_STRING_ZOPE",
                     'command_line': "$USER1$/check_http -H $ARG1$ -p $ARG2$ -I $HOSTADDRESS$  -u $ARG3$ --useragent=supervision --onredirect=follow --warning=$ARG4$ --critical=$ARG5$ --timeout=$ARG6$ -s $ARG7$ $ARG8$",
@@ -753,7 +753,7 @@ def objects():
             },
             'command_C_MAIL_IMAP': {
                 'type': "command",
-                'file': "checkcommands/C_MAIL_IMAP.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "C_MAIL_IMAP",
                     'command_line': "$USER1$/check_imap -H $HOSTADDRESS$ -w $ARG1$ -c $ARG2$",
@@ -761,7 +761,7 @@ def objects():
             },
             'command_C_MAIL_IMAP_SSL': {
                 'type': "command",
-                'file': "checkcommands/C_MAIL_IMAP_SSL.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "C_MAIL_IMAP_SSL",
                     'command_line': "$USER1$/check_imap -p 993 --ssl -H $HOSTADDRESS$ -w $ARG1$ -c $ARG2$",
@@ -769,7 +769,7 @@ def objects():
             },
             'command_C_MAIL_POP': {
                 'type': "command",
-                'file': "checkcommands/C_MAIL_POP.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "C_MAIL_POP",
                     'command_line': "$USER1$/check_pop -H $HOSTADDRESS$ -w $ARG1$ -c $ARG2$",
@@ -777,7 +777,7 @@ def objects():
             },
             'command_C_MAIL_POP_SSL': {
                 'type': "command",
-                'file': "checkcommands/C_MAIL_POP_SSL.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "C_MAIL_POP_SSL",
                     'command_line': "$USER1$/check_pop -p 995 --ssl -H $HOSTADDRESS$ -w $ARG1$ -c $ARG2$",
@@ -785,7 +785,7 @@ def objects():
             },
             'command_C_MAIL_SMTP': {
                 'type': "command",
-                'file': "checkcommands/C_MAIL_SMTP.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "C_MAIL_SMTP",
                     'command_line': "$USER1$/check_smtp -H $HOSTADDRESS$ -w $ARG1$ -c $ARG2$ -e \"220 mail.makina-corpus.com ESMTP Postfix (BlueMind)\"  -f \"$USER8_TESTUSER$@makina-corpus.com\" -C 'RCPT TO:<$USER8_TESTUSER$@makina-corpus.com>' -R '250 2.1.5 Ok' -C 'data' -R '354 End data with <CR><LF>.<CR><LF>' -C '.' -R '250 2.0.0 Ok: queued'",
@@ -793,7 +793,7 @@ def objects():
             },
             'command_C_PING': {
                 'type': "command",
-                'file': "checkcommands/C_PING.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "C_PING",
                     'command_line': "$USER1$/check_centreon_ping -H $HOSTADDRESS$ -n 5 -i 0.5",
@@ -801,7 +801,7 @@ def objects():
             },
             'command_C_POP3_TEST_SIZE_AND_DELETE': {
                 'type': "command",
-                'file': "checkcommands/C_POP3_TEST_SIZE_AND_DELETE.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "C_POP3_TEST_SIZE_AND_DELETE",
                     'command_line': "$USER1$/check_pop3_cleaner.py -H $HOSTADDRESS$  -u $USER8_TESTUSER$$ARG5$ -p \"$USER9_TESTPWD$\" -d 25 -t 10 -w $ARG1$,$ARG3$ -c $ARG2$,$ARG4$",
@@ -809,7 +809,7 @@ def objects():
             },
             'command_C_PROCESS_IRCBOT_RUNNING': {
                 'type': "command",
-                'file': "checkcommands/C_PROCESS_IRCBOT_RUNNING.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "C_PROCESS_IRCBOT_RUNNING",
                     'command_line': "$USER1$/check_procs -w 1: -c 1: --command=ircbot.py",
@@ -817,7 +817,7 @@ def objects():
             },
             'command_C_SNMP_DISK': {
                 'type': "command",
-                'file': "checkcommands/C_SNMP_DISK.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "C_SNMP_DISK",
                     'command_line': "$USER1$/check_centreon_snmp_remote_storage2 -P 161 -v 3 -z des -x sha -y $USER3_SNMPCRYPT$ -p $USER4_SNMPPASS$ -u $USER5_SNMPUSER$ -H $HOSTADDRESS$ -n -d $ARG1$ -w $ARG2$ -c $ARG3$ -a 5",
@@ -825,7 +825,7 @@ def objects():
             },
             'command_C_SNMP_LOADAVG': {
                 'type': "command",
-                'file': "checkcommands/C_SNMP_LOADAVG.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "C_SNMP_LOADAVG",
                     'command_line': "$USER1$/check_centreon_snmp_loadaverage2 -P 161 -v 3 -z des -x sha -y $USER3_SNMPCRYPT$ -p $USER4_SNMPPASS$ -u $USER5_SNMPUSER$ -H $HOSTADDRESS$ -w 30,30,30 -c 50,50,50 $ARG1$",
@@ -833,15 +833,15 @@ def objects():
             },
             'command_C_SNMP_MEMORY': {
                 'type': "command",
-                'file': "checkcommands/C_SNMP_MEMORY.cfg",
-                'attrs': {
+                'file': "checkcommands.cfg",
+                'attrs': { 
                     'command_name': "C_SNMP_MEMORY",
                     'command_line': "$USER1$/check_centreon_snmp_memory2 -P 161 -v 3 -z des -x sha -y $USER3_SNMPCRYPT$ -p $USER4_SNMPPASS$ -u $USER5_SNMPUSER$ -H $HOSTADDRESS$ -w $ARG1$ -c $ARG2$",
                 },
             },
             'command_C_SNMP_NETWORK': {
                 'type': "command",
-                'file': "checkcommands/C_SNMP_NETWORK.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "C_SNMP_NETWORK",
                     'command_line': "$USER1$/check_centreon_snmp_traffic2 -P 161 -v 3 -z des -x sha -y $USER3_SNMPCRYPT$ -p $USER4_SNMPPASS$ -u $USER5_SNMPUSER$ -H $HOSTADDRESS$ -n -i $ARG1$ -a 5 $ARG2$",
@@ -849,7 +849,7 @@ def objects():
             },
             'command_C_SNMP_PROCESS': {
                 'type': "command",
-                'file': "checkcommands/C_SNMP_PROCESS.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "C_SNMP_PROCESS",
                     'command_line': "$USER1$/check_snmp_process.pl -H $HOSTADDRESS$ -l $USER5_SNMPUSER$ -x $USER4_SNMPPASS$ -X $USER3_SNMPCRYPT$ -L sha,des -n $ARG1$ -w $ARG2$ -c $ARG3$ -F",
@@ -857,7 +857,7 @@ def objects():
             },
             'command_C_SNMP_PROCESS_COMPLETE': {
                 'type': "command",
-                'file': "checkcommands/C_SNMP_PROCESS_COMPLETE.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "C_SNMP_PROCESS_COMPLETE",
                     'command_line': "$USER1$/check_snmp_process.pl -H $HOSTADDRESS$ -l $USER5_SNMPUSER$ -x $USER4_SNMPPASS$ -X $USER3_SNMPCRYPT$ -L sha,des -n $ARG1$ -w $ARG2$ -c $ARG3$ -F -a --memory=$ARG4$ -d 300 -u $ARG5$",
@@ -865,7 +865,7 @@ def objects():
             },
             'command_C_SNMP_PROCESS_WITH_MEM': {
                 'type': "command",
-                'file': "checkcommands/C_SNMP_PROCESS_WITH_MEM.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "C_SNMP_PROCESS_WITH_MEM",
                     'command_line': "$USER1$/check_snmp_process.pl -H $HOSTADDRESS$ -l $USER5_SNMPUSER$ -x $USER4_SNMPPASS$ -X $USER3_SNMPCRYPT$ -L sha,des -n $ARG1$ -w $ARG2$ -c $ARG3$ -F -a --memory=$ARG4$",
@@ -873,7 +873,7 @@ def objects():
             },
             'command_C_VERIFY_TCP_PORT': {
                 'type': "command",
-                'file': "checkcommands/C_VERIFY_TCP_PORT.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "C_VERIFY_TCP_PORT",
                     'command_line': "$USER1$/check_tcp  -H $HOSTADDRESS$ -p $ARG1$",
@@ -881,7 +881,7 @@ def objects():
             },
             'command_EV_SSH_RELANCE_NTP': {
                 'type': "command",
-                'file': "checkcommands/EV_SSH_RELANCE_NTP.cfg",
+                'file': "checkcommands.cfg",
                 'attrs': {
                     'command_name': "EV_SSH_RELANCE_NTP",
                     'command_line': "$USER1$/eventhandlers/relance_ntp  $SERVICESTATE$ $SERVICESTATETYPE$ $SERVICEATTEMPT$ $HOSTADDRESS$ $HOSTNAME$ $SERVICEDESC$",
@@ -891,7 +891,7 @@ def objects():
             # services templates definitions
             'serviceTemplate_OLD-SNMP-Linux-Load-Average': {
                 'type': "service",
-                'file': "serviceTemplates/OLD-SNMP-Linux-Load-Average.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "OLD-SNMP-Linux-Load-Average",
                     'service_description': "Old_Load",
@@ -902,7 +902,7 @@ def objects():
             },
             'serviceTemplate_OLD-SNMP-Linux-Memory': {
                 'type': "service",
-                'file': "serviceTemplates/OLD-SNMP-Linux-Memory.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "OLD-SNMP-Linux-Memory",
                     'service_description': "OLD_Memory",
@@ -913,7 +913,7 @@ def objects():
             },
             'serviceTemplate_OLD-SNMP-Linux-Swap': {
                 'type': "service",
-                'file': "serviceTemplates/OLD-SNMP-Linux-Swap.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "OLD-SNMP-Linux-Swap",
                     'service_description': "OLD-Memory",
@@ -924,7 +924,7 @@ def objects():
             },
             'serviceTemplate_ST_ALERT': {
                 'type': "service",
-                'file': "serviceTemplates/ST_ALERT.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_ALERT",
                     'service_description': "S_ALERT",
@@ -940,7 +940,7 @@ def objects():
             },
             'serviceTemplate_ST_BACKUP_DAILY_ALERT': {
                 'type': "service",
-                'file': "serviceTemplates/ST_BACKUP_DAILY_ALERT.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_BACKUP_DAILY_ALERT",
                     'service_description': "S_BACKUP_BURP_AGE",
@@ -955,7 +955,7 @@ def objects():
             },
             'serviceTemplate_ST_DAILY_ALERT': {
                 'type': "service",
-                'file': "serviceTemplates/ST_DAILY_ALERT.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_DAILY_ALERT",
                     'service_description': "ST_DAILY",
@@ -968,7 +968,7 @@ def objects():
             },
             'serviceTemplate_ST_DAILY_BEGIN_DAY': {
                 'type': "service",
-                'file': "serviceTemplates/ST_DAILY_BEGIN_DAY.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_DAILY_BEGIN_DAY",
                     'service_description': "ST_DAILY_BEGIN_DAY",
@@ -982,7 +982,7 @@ def objects():
             },
             'serviceTemplate_ST_DAILY_END-DAY': {
                 'type': "service",
-                'file': "serviceTemplates/ST_DAILY_END-DAY.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_DAILY_END-DAY",
                     'service_description': "ST_DAILY_END_DAY",
@@ -996,7 +996,7 @@ def objects():
             },
             'serviceTemplate_ST_DAILY_NOALERT': {
                 'type': "service",
-                'file': "serviceTemplates/ST_DAILY_NOALERT.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_DAILY_NOALERT",
                     'service_description': "ST_DAILY",
@@ -1009,7 +1009,7 @@ def objects():
             },
             'serviceTemplate_ST_DISK_SPACE_ROOT': {
                 'type': "service",
-                'file': "serviceTemplates/ST_DISK_SPACE_ROOT.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_DISK_SPACE_/",
                     'service_description': "DISK_SPACE_/",
@@ -1021,7 +1021,7 @@ def objects():
             },
             'serviceTemplate_ST_DISK_SPACE_/BKP/BM': {
                 'type': "service",
-                'file': "serviceTemplates/ST_DISK_SPACE_/BKP/BM.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_DISK_SPACE_/BKP/BM",
                     'service_description': "DISK_SPACE_/BKP/BM",
@@ -1033,7 +1033,7 @@ def objects():
             },
             'serviceTemplate_ST_DISK_SPACE_/DATA': {
                 'type': "service",
-                'file': "serviceTemplates/ST_DISK_SPACE_/DATA.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_DISK_SPACE_/DATA",
                     'service_description': "DISK_SPACE_/DATA",
@@ -1045,7 +1045,7 @@ def objects():
             },
             'serviceTemplate_ST_DISK_SPACE_/MNT/DATA': {
                 'type': "service",
-                'file': "serviceTemplates/ST_DISK_SPACE_/MNT/DATA.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_DISK_SPACE_/MNT/DATA",
                     'service_description': "DISK_SPACE_/MNT/DATA",
@@ -1057,7 +1057,7 @@ def objects():
             },
             'serviceTemplate_ST_DISK_SPACE_/SRV': {
                 'type': "service",
-                'file': "serviceTemplates/ST_DISK_SPACE_/SRV.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_DISK_SPACE_/SRV",
                     'service_description': "DISK_SPACE_/SRV",
@@ -1069,7 +1069,7 @@ def objects():
             },
             'serviceTemplate_ST_DISK_SPACE_/TMP': {
                 'type': "service",
-                'file': "serviceTemplates/ST_DISK_SPACE_/TMP.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_DISK_SPACE_/TMP",
                     'service_description': "DISK_SPACE_/TMP",
@@ -1081,7 +1081,7 @@ def objects():
             },
             'serviceTemplate_ST_DISK_SPACE_/VAR': {
                 'type': "service",
-                'file': "serviceTemplates/ST_DISK_SPACE_/VAR.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_DISK_SPACE_/VAR",
                     'service_description': "DISK_SPACE_/VAR",
@@ -1093,7 +1093,7 @@ def objects():
             },
             'serviceTemplate_ST_DISK_SPACE_/VAR_LOG': {
                 'type': "service",
-                'file': "serviceTemplates/ST_DISK_SPACE_/VAR_LOG.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_DISK_SPACE_/VAR_LOG",
                     'service_description': "DISK_SPACE_/VAR_LOG",
@@ -1105,7 +1105,7 @@ def objects():
             },
             'serviceTemplate_ST_DISK_SPACE_/VAR_LXC': {
                 'type': "service",
-                'file': "serviceTemplates/ST_DISK_SPACE_/VAR_LXC.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_DISK_SPACE_/VAR_LXC",
                     'service_description': "DISK_SPACE_/VAR_LXC",
@@ -1117,7 +1117,7 @@ def objects():
             },
             'serviceTemplate_ST_DISK_SPACE_/VAR_MAKINA': {
                 'type': "service",
-                'file': "serviceTemplates/ST_DISK_SPACE_/VAR_MAKINA.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_DISK_SPACE_/VAR_MAKINA",
                     'service_description': "DISK_SPACE_/VAR_MAKINA",
@@ -1129,7 +1129,7 @@ def objects():
             },
             'serviceTemplate_ST_DISK_SPACE_/VAR_MYSQL': {
                 'type': "service",
-                'file': "serviceTemplates/ST_DISK_SPACE_/VAR_MYSQL.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_DISK_SPACE_/VAR_MYSQL",
                     'service_description': "DISK_SPACE_/VAR_MYSQL",
@@ -1141,7 +1141,7 @@ def objects():
             },
             'serviceTemplate_ST_DISK_SPACE_/VAR_SPOOL_CYRUS': {
                 'type': "service",
-                'file': "serviceTemplates/ST_DISK_SPACE_/VAR_SPOOL_CYRUS.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_DISK_SPACE_/VAR_SPOOL_CYRUS",
                     'service_description': "DISK_SPACE_/VAR_SPOOL_CYRUS",
@@ -1153,7 +1153,7 @@ def objects():
             },
             'serviceTemplate_ST_DISK_SPACE_/VAR_WWW': {
                 'type': "service",
-                'file': "serviceTemplates/ST_DISK_SPACE_/VAR_WWW.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_DISK_SPACE_/VAR_WWW",
                     'service_description': "DISK_SPACE_/VAR_WWW",
@@ -1165,7 +1165,7 @@ def objects():
             },
             'serviceTemplate_ST_DNS_ASSOCIATION': {
                 'type': "service",
-                'file': "serviceTemplates/ST_DNS_ASSOCIATION.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_DNS_ASSOCIATION",
                     'service_description': "DNS_ASSOCIATION",
@@ -1177,7 +1177,7 @@ def objects():
             },
             'serviceTemplate_ST_DNS_ASSOCIATION_hostname': {
                 'type': "service",
-                'file': "serviceTemplates/ST_DNS_ASSOCIATION_hostname.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_DNS_ASSOCIATION_hostname",
                     'service_description': "DNS_ASSOCIATION_hostname",
@@ -1190,7 +1190,7 @@ def objects():
             },
             'serviceTemplate_ST_DOUBLE_DAILY_ALERT': {
                 'type': "service",
-                'file': "serviceTemplates/ST_DOUBLE_DAILY_ALERT.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_DOUBLE_DAILY_ALERT",
                     'service_description': "ST_DOUBLE_DAILY",
@@ -1203,7 +1203,7 @@ def objects():
             },
             'serviceTemplate_ST_HOURLY': {
                 'type': "service",
-                'file': "serviceTemplates/ST_HOURLY.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_HOURLY",
                     'service_description': "ST_HOURLY",
@@ -1216,7 +1216,7 @@ def objects():
             },
             'serviceTemplate_ST_HOURLY_ALERT': {
                 'type': "service",
-                'file': "serviceTemplates/ST_HOURLY_ALERT.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_HOURLY_ALERT",
                     'service_description': "ST_HOURLY",
@@ -1229,7 +1229,7 @@ def objects():
             },
             'serviceTemplate_ST_LOAD_AVG': {
                 'type': "service",
-                'file': "serviceTemplates/ST_LOAD_AVG.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_LOAD_AVG",
                     'service_description': "LOAD_AVG",
@@ -1241,7 +1241,7 @@ def objects():
             },
             'serviceTemplate_ST_MEMORY': {
                 'type': "service",
-                'file': "serviceTemplates/ST_MEMORY.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_MEMORY",
                     'service_description': "MEMORY",
@@ -1253,7 +1253,7 @@ def objects():
             },
             'serviceTemplate_ST_MEMORY_HYPERVISEUR': {
                 'type': "service",
-                'file': "serviceTemplates/ST_MEMORY_HYPERVISEUR.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_MEMORY_HYPERVISEUR",
                     'service_description': "MEMORY_HYPERVISEUR",
@@ -1265,7 +1265,7 @@ def objects():
             },
             'serviceTemplate_ST_NETWORK_EM0': {
                 'type': "service",
-                'file': "serviceTemplates/ST_NETWORK_EM0.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_NETWORK_EM0",
                     'service_description': "NETWORK_EM0",
@@ -1277,7 +1277,7 @@ def objects():
             },
             'serviceTemplate_ST_NETWORK_EM1': {
                 'type': "service",
-                'file': "serviceTemplates/ST_NETWORK_EM1.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_NETWORK_EM1",
                     'service_description': "NETWORK_EM1",
@@ -1289,7 +1289,7 @@ def objects():
             },
             'serviceTemplate_ST_NETWORK_ETH0': {
                 'type': "service",
-                'file': "serviceTemplates/ST_NETWORK_ETH0.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_NETWORK_ETH0",
                     'service_description': "NETWORK_ETH0",
@@ -1301,7 +1301,7 @@ def objects():
             },
             'serviceTemplate_ST_NETWORK_ETH1': {
                 'type': "service",
-                'file': "serviceTemplates/ST_NETWORK_ETH1.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_NETWORK_ETH1",
                     'service_description': "NETWORK_ETH1",
@@ -1313,7 +1313,7 @@ def objects():
             },
             'serviceTemplate_ST_REPEAT_ALERT': {
                 'type': "service",
-                'file': "serviceTemplates/ST_REPEAT_ALERT.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_REPEAT_ALERT",
                     'service_description': "REPEAT_ALERT",
@@ -1327,7 +1327,7 @@ def objects():
             },
             'serviceTemplate_ST_ROOT': {
                 'type': "service",
-                'file': "serviceTemplates/ST_ROOT.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_ROOT",
                     'service_description': "S_ROOT",
@@ -1346,7 +1346,7 @@ def objects():
             },
             'serviceTemplate_ST_SSH_DEBIAN_UPDATE': {
                 'type': "service",
-                'file': "serviceTemplates/ST_SSH_DEBIAN_UPDATE.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_SSH_DEBIAN_UPDATE",
                     'service_description': "S_DEBIAN_UPDATES",
@@ -1358,7 +1358,7 @@ def objects():
             },
             'serviceTemplate_ST_SSH_PROC_CRON': {
                 'type': "service",
-                'file': "serviceTemplates/ST_SSH_PROC_CRON.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_SSH_PROC_CRON",
                     'service_description': "S_PROC_CRON",
@@ -1370,7 +1370,7 @@ def objects():
             },
             'serviceTemplate_ST_TEST_A': {
                 'type': "service",
-                'file': "serviceTemplates/ST_TEST_A.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_TEST_A",
                     'service_description': "S_TEST_A",
@@ -1381,7 +1381,7 @@ def objects():
             },
             'serviceTemplate_ST_TEST_B': {
                 'type': "service",
-                'file': "serviceTemplates/ST_TEST_B.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_TEST_B",
                     'service_description': "S_TEST_B",
@@ -1392,7 +1392,7 @@ def objects():
             },
             'serviceTemplate_ST_TEST_C': {
                 'type': "service",
-                'file': "serviceTemplates/ST_TEST_C.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_TEST_C",
                     'service_description': "S_TEST_C",
@@ -1403,7 +1403,7 @@ def objects():
             },
             'serviceTemplate_ST_TEST_D': {
                 'type': "service",
-                'file': "serviceTemplates/ST_TEST_D.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_TEST_D",
                     'service_description': "S_TEST_D",
@@ -1414,7 +1414,7 @@ def objects():
             },
             'serviceTemplate_ST_TEST_E': {
                 'type': "service",
-                'file': "serviceTemplates/ST_TEST_E.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_TEST_E",
                     'service_description': "S_TEST_E",
@@ -1425,7 +1425,7 @@ def objects():
             },
             'serviceTemplate_ST_TEST_F': {
                 'type': "service",
-                'file': "serviceTemplates/ST_TEST_F.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_TEST_F",
                     'service_description': "S_TEST_F",
@@ -1436,7 +1436,7 @@ def objects():
             },
             'serviceTemplate_ST_WEB_APACHE_STATUS': {
                 'type': "service",
-                'file': "serviceTemplates/ST_WEB_APACHE_STATUS.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_WEB_APACHE_STATUS",
                     'service_description': "WEB_APACHE_STATUS",
@@ -1448,7 +1448,7 @@ def objects():
             },
             'serviceTemplate_ST_WEB_INTRA': {
                 'type': "service",
-                'file': "serviceTemplates/ST_WEB_INTRA.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_WEB_INTRA",
                     'service_description': "WEB_INTRA_default",
@@ -1460,7 +1460,7 @@ def objects():
             },
             'serviceTemplate_ST_WEB_PUBLIC': {
                 'type': "service",
-                'file': "serviceTemplates/ST_WEB_PUBLIC.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_WEB_PUBLIC",
                     'service_description': "WEB_PUBLIC_default",
@@ -1472,7 +1472,7 @@ def objects():
             },
             'serviceTemplate_ST_WEB_PUBLIC_antibug': {
                 'type': "service",
-                'file': "serviceTemplates/ST_WEB_PUBLIC_antibug.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_WEB_PUBLIC_antibug",
                     'service_description': "WEB_PUBLIC_antibug",
@@ -1484,7 +1484,7 @@ def objects():
             },
             'serviceTemplate_ST_WEB_PUBLIC_CLIENT': {
                 'type': "service",
-                'file': "serviceTemplates/ST_WEB_PUBLIC_CLIENT.cfg",
+                'file': "serviceTemplates.cfg",
                 'attrs': {
                     'name': "ST_WEB_PUBLIC_CLIENT",
                     'service_description': "WEB_PUBLIC_CLIENT",
@@ -1500,7 +1500,7 @@ def objects():
             # a host template. It seems to be not working with icinga)
             'hostTemplateHT+_BACKUP_BURP': {
                 'type': "host",
-                'file': "hostTemplates/HT+_BACKUP_BURP.cfg",
+                'file': "hostTemplates.cfg",
                 'attrs': {
                     'name': "HT+_BACKUP_BURP",
                     'alias': "HT+_BACKUP_BURP",
@@ -1509,7 +1509,7 @@ def objects():
             },
             'hostTemplateHT+_PUBLIC_DNS': {
                 'type': "host",
-                'file': "hostTemplates/HT+_PUBLIC_DNS.cfg",
+                'file': "hostTemplates.cfg",
                 'attrs': {
                     'name': "HT+_PUBLIC_DNS",
                     'alias': "Host avec DNS public",
@@ -1518,7 +1518,7 @@ def objects():
             },
             'hostTemplateHT+_SNMP_Linux': {
                 'type': "host",
-                'file': "hostTemplates/HT+_SNMP_Linux.cfg",
+                'file': "hostTemplates.cfg",
                 'attrs': {
                     'name': "HT+_SNMP_Linux",
                     'alias': "HT+_SNMP_Linux",
@@ -1527,7 +1527,7 @@ def objects():
             },
             'hostTemplateHT+_WEB_INTRA': {
                 'type': "host",
-                'file': "hostTemplates/HT+_WEB_INTRA.cfg",
+                'file': "hostTemplates.cfg",
                 'attrs': {
                     'name': "HT+_WEB_INTRA",
                     'alias': "HT+_WEB_INTRA",
@@ -1536,7 +1536,7 @@ def objects():
             },
             'hostTemplateHT+_WEB_PUBLIC': {
                 'type': "host",
-                'file': "hostTemplates/HT+_WEB_PUBLIC.cfg",
+                'file': "hostTemplates.cfg",
                 'attrs': {
                     'name': "HT+_WEB_PUBLIC",
                     'alias': "HT+_WEB_PUBLIC",
@@ -1545,7 +1545,7 @@ def objects():
             },
             'hostTemplateHT_ICON_Dedibox': {
                 'type': "host",
-                'file': "hostTemplates/HT_ICON_Dedibox.cfg",
+                'file': "hostTemplates.cfg",
                 'attrs': {
                     'name': "HT_ICON_Dedibox",
                     'use': "_HT_BASE",
@@ -1556,7 +1556,7 @@ def objects():
             },
             'hostTemplateHT_ICON_Free': {
                 'type': "host",
-                'file': "hostTemplates/HT_ICON_Free.cfg",
+                'file': "hostTemplates.cfg",
                 'attrs': {
                     'name': "HT_ICON_Free",
                     'use': "_HT_BASE",
@@ -1567,7 +1567,7 @@ def objects():
             },
             'hostTemplateHT_ICON_Gandi': {
                 'type': "host",
-                'file': "hostTemplates/HT_ICON_Gandi.cfg",
+                'file': "hostTemplates.cfg",
                 'attrs': {
                     'name': "HT_ICON_Gandi",
                     'use': "_HT_BASE",
@@ -1578,7 +1578,7 @@ def objects():
             },
             'hostTemplateHT_ICON_ImageCrea': {
                 'type': "host",
-                'file': "hostTemplates/HT_ICON_ImageCrea.cfg",
+                'file': "hostTemplates.cfg",
                 'attrs': {
                     'name': "HT_ICON_ImageCrea",
                     'use': "_HT_BASE",
@@ -1589,7 +1589,7 @@ def objects():
             },
             'hostTemplateHT_ICON_OVH': {
                 'type': "host",
-                'file': "hostTemplates/HT_ICON_OVH.cfg",
+                'file': "hostTemplates.cfg",
                 'attrs': {
                     'name': "HT_ICON_OVH",
                     'use': "_HT_BASE",
@@ -1600,7 +1600,7 @@ def objects():
             },
             'hostTemplateHT_ICON_PHPNET': {
                 'type': "host",
-                'file': "hostTemplates/HT_ICON_PHPNET.cfg",
+                'file': "hostTemplates.cfg",
                 'attrs': {
                     'name': "HT_ICON_PHPNET",
                     'use': "_HT_BASE",
@@ -1611,7 +1611,7 @@ def objects():
             },
             'hostTemplateHT_Router': {
                 'type': "host",
-                'file': "hostTemplates/HT_Router.cfg",
+                'file': "hostTemplates.cfg",
                 'attrs': {
                     'name': "HT_Router",
                     'use': "_HT_BASE",
@@ -1621,7 +1621,7 @@ def objects():
             },
             'hostTemplateHT_test_1': {
                 'type': "host",
-                'file': "hostTemplates/HT_test_1.cfg",
+                'file': "hostTemplates.cfg",
                 'attrs': {
                     'name': "HT_test_1",
                     'use': "HT_test_2",
@@ -1631,7 +1631,7 @@ def objects():
             },
             'hostTemplateHT_test_2': {
                 'type': "host",
-                'file': "hostTemplates/HT_test_2.cfg",
+                'file': "hostTemplates.cfg",
                 'attrs': {
                     'name': "HT_test_2",
                     'use': "HT_test_3",
@@ -1641,7 +1641,7 @@ def objects():
             },
             'hostTemplateHT_test_3': {
                 'type': "host",
-                'file': "hostTemplates/HT_test_3.cfg",
+                'file': "hostTemplates.cfg",
                 'attrs': {
                     'name': "HT_test_3",
                     'use': "_HT_BASE",
@@ -1651,7 +1651,7 @@ def objects():
             },
             'hostTemplateHT_Xen': {
                 'type': "host",
-                'file': "hostTemplates/HT_Xen.cfg",
+                'file': "hostTemplates.cfg",
                 'attrs': {
                     'name': "HT_Xen",
                     'use': "_HT_BASE",
@@ -1661,7 +1661,7 @@ def objects():
             },
             'hostTemplateSwitchs-Cisco': {
                 'type': "host",
-                'file': "hostTemplates/Switchs-Cisco.cfg",
+                'file': "hostTemplates.cfg",
                 'attrs': {
                     'name': "Switchs-Cisco",
                     'use': "_HT_BASE",
@@ -1671,7 +1671,7 @@ def objects():
             },
             'hostTemplate_HT_BASE': {
                 'type': "host",
-                'file': "hostTemplates/_HT_BASE.cfg",
+                'file': "hostTemplates.cfg",
                 'attrs': {
                     'name': "_HT_BASE",
                     'alias': "Base Generic Host",
@@ -1692,7 +1692,7 @@ def objects():
             # timeperiods
             'timeperiod_24x7': {
                 'type': "timeperiod",
-                'file': "timeperiods/24x7.cfg",
+                'file': "timeperiods.cfg",
                 'attrs': {
                     'timeperiod_name': "24x7",
                     'alias': "24_Hours_A_Day,_7_Days_A_Week",
@@ -1707,7 +1707,7 @@ def objects():
             },
             'timeperiod_begin_day': {
                 'type': "timeperiod",
-                'file': "timeperiods/begin_day.cfg",
+                'file': "timeperiods.cfg",
                 'attrs': {
                     'timeperiod_name': "begin_day",
                     'alias': "BeginDay",
@@ -1722,7 +1722,7 @@ def objects():
             },
             'timeperiod_end_day': {
                 'type': "timeperiod",
-                'file': "timeperiods/end_day.cfg",
+                'file': "timeperiods.cfg",
                 'attrs': {
                     'timeperiod_name': "end_day",
                     'alias': "EndDays",
@@ -1737,7 +1737,7 @@ def objects():
             },
             'timeperiod_none': {
                 'type': "timeperiod",
-                'file': "timeperiods/none.cfg",
+                'file': "timeperiods.cfg",
                 'attrs': {
                     'timeperiod_name': "none",
                     'alias': "No Time Is A Good Time",
@@ -1745,7 +1745,7 @@ def objects():
             },
             'timeperiod_nonworkhours': {
                 'type': "timeperiod",
-                'file': "timeperiods/nonworkhours.cfg",
+                'file': "timeperiods.cfg",
                 'attrs': {
                     'timeperiod_name': "nonworkhours",
                     'alias': "Non-Work Hours",
@@ -1760,7 +1760,7 @@ def objects():
             },
             'timeperiod_workhours': {
                 'type': "timeperiod",
-                'file': "timeperiods/workhours.cfg",
+                'file': "timeperiods.cfg",
                 'attrs': {
                     'timeperiod_name': "workhours",
                     'alias': "Work hours",
@@ -1774,7 +1774,7 @@ def objects():
             # contactgroups
             'contactgroup_supervisors': {
                 'type': "contactgroup",
-                'file': "contactgroups/supervisors.cfg",
+                'file': "contactgroups.cfg",
                 'attrs': {
                     'contactgroup_name': "Supervisors",
                 },
@@ -1904,8 +1904,8 @@ def objects():
     }
 
     # import the centreon configuration (have to be removed later)
-    import mc_icinga_with_hosts
-    data['autoconfigured_hosts_definitions'] = mc_icinga_with_hosts.complete_hosts
+    import mc_icinga_with_thousand_hosts
+    data['autoconfigured_hosts_definitions'] = mc_icinga_with_thousand_hosts.complete_hosts
 
     return data
 
@@ -2546,37 +2546,34 @@ def replace_chars(s):
         res=res.replace(char, '-')
     return res
 
-def add_configuration_object_settings(type, file, attrs, **kwargs):
-    '''Settings for add_configuration_object macro'''
-#    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
-#   save the ram (we get only useful values)
-    icingaSettings_complete = __salt__['mc_icinga.settings']()
-    icingaSettings = {}
-    kwargs.setdefault('objects', {'directory': icingaSettings_complete['objects']['directory']})
+def add_configuration_object(type=None, file=None, attrs=None, get=False, **kwargs):
+    '''Add the object file in the file's list to be removed'''
+    if get:
+        return add_configuration_object.objects
+    elif type and file and attrs:
+        icingaSettings_complete = __salt__['mc_icinga.settings']()
+        filename='/'.join([icingaSettings_complete['objects']['directory'], file])
+        if filename not in add_configuration_object.objects:
+            add_configuration_object.objects[filename]=[]
+        add_configuration_object.objects[filename].append({'type': type, 'attrs': attrs})
 
-    kwargs.setdefault('type', type)
-    kwargs.setdefault('file', file)
-    kwargs.setdefault('attrs', attrs)
+# global variable initialisation
+add_configuration_object.objects={}
 
-    kwargs.setdefault('state_name_salt', replace_chars(file))
+def remove_configuration_object(file=None, get=False, **kwargs):
+    '''Add the file in the file's list to be removed'''
+    if get :
+        return remove_configuration_object.files
+    elif file:
+        icingaSettings_complete = __salt__['mc_icinga.settings']()
+        # append " \"file\"" to the global variable
+        filename='/'.join([icingaSettings_complete['objects']['directory'], file])
+        # it doesn't avoid injection, just allow the '"' char in filename
+        filename=filename.replace('"', '\"')
+        remove_configuration_object.files += " \""+filename+"\""
 
-    icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
-    return icingaSettings
-
-def remove_configuration_object_settings(file, **kwargs):
-    '''Settings for remove_configuration_object macro'''
-#    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
-#   save the ram (we get only useful values)
-    icingaSettings_complete = __salt__['mc_icinga.settings']()
-    icingaSettings = {}
-    kwargs.setdefault('objects', {'directory': icingaSettings_complete['objects']['directory']})
-
-    kwargs.setdefault('file', file)
-
-    kwargs.setdefault('state_name_salt', replace_chars(file))
-
-    icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
-    return icingaSettings
+# global variable initialisation
+remove_configuration_object.files=""
 
 def edit_configuration_object_settings(file, attr, value, auto_host_definition=None, **kwargs):
     '''Settings for edit_configuration_object macro'''

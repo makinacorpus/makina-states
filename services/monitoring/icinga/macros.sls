@@ -13,27 +13,8 @@
 #}
 
 {% macro configuration_add_object(type, file, attrs={}) %}
-{% set data = salt['mc_icinga.add_configuration_object_settings'](type, file, attrs, **kwargs) %}
-{% set sdata = salt['mc_utils.json_dump'](data) %}
-
-# add the object
-icinga-configuration-{{data.state_name_salt}}-add-object-conf:
-  file.managed:
-    - name: {{data.objects.directory}}/{{data.file}}
-    - source: salt://makina-states/files/etc/icinga/objects/template.cfg
-    - user: root
-    - group: root
-    - mode: 644
-    - makedirs: True
-    - watch:
-      - mc_proxy: icinga-configuration-pre-object-conf
-    - watch_in:
-      - mc_proxy: icinga-configuration-post-object-conf
-    - template: jinja
-    - defaults:
-      data: |
-            {{sdata}}
-
+# add the object in the list of objects to add
+{% set res = salt['mc_icinga.add_configuration_object'](type=type, file=file, attrs=attrs, get=False, **kwargs) %}
 {% endmacro %}
 
 {#
@@ -45,18 +26,8 @@ icinga-configuration-{{data.state_name_salt}}-add-object-conf:
 #}
 
 {% macro configuration_remove_object(file) %}
-{% set data = salt['mc_icinga.remove_configuration_object_settings'](file, **kwargs) %}
-{% set sdata = salt['mc_utils.json_dump'](data) %}
-
-# remove the object
-icinga-configuration-{{data.state_name_salt}}-remove-object-conf:
-  file.absent:
-    - name: {{data.objects.directory}}/{{data.file}}
-    - watch:
-      - mc_proxy: icinga-configuration-pre-clean-directories
-    - watch_in:
-      - mc_proxy: icinga-configuration-post-clean-directories
-
+# add the file in the list of objects to remove
+{% set res = salt['mc_icinga.remove_configuration_object'](file=file, **kwargs) %}
 {% endmacro %}
 
 {#
