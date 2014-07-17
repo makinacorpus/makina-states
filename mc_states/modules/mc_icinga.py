@@ -2540,6 +2540,12 @@ def settings():
         return data
     return _settings()
 
+def replace_chars(s):
+    res=s
+    for char in list('/.:_'):
+        res=res.replace(char, '-')
+    return res
+
 def add_configuration_object_settings(type, file, attrs, **kwargs):
     '''Settings for add_configuration_object macro'''
 #    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
@@ -2551,7 +2557,9 @@ def add_configuration_object_settings(type, file, attrs, **kwargs):
     kwargs.setdefault('type', type)
     kwargs.setdefault('file', file)
     kwargs.setdefault('attrs', attrs)
-    kwargs.setdefault('state_name_salt', file.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
+
+    kwargs.setdefault('state_name_salt', replace_chars(file))
+
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
     return icingaSettings
 
@@ -2564,7 +2572,9 @@ def remove_configuration_object_settings(file, **kwargs):
     kwargs.setdefault('objects', {'directory': icingaSettings_complete['objects']['directory']})
 
     kwargs.setdefault('file', file)
-    kwargs.setdefault('state_name_salt', file.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
+
+    kwargs.setdefault('state_name_salt', replace_chars(file))
+
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
     return icingaSettings
 
@@ -2580,7 +2590,9 @@ def edit_configuration_object_settings(file, attr, value, auto_host_definition=N
     kwargs.setdefault('attr', attr)
     kwargs.setdefault('value', value)
     kwargs.setdefault('auto_host_definition', auto_host_definition)
-    kwargs.setdefault('state_name_salt', file.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
+
+    kwargs.setdefault('state_name_salt', replace_chars(file)) 
+
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
     return icingaSettings
 
@@ -3565,13 +3577,12 @@ def add_auto_configuration_host_settings(hostname,
     
     kwargs.setdefault('services_attrs', services_attrs)
 
-
-    # we set the filename here because the macro doesn't take it in arguments
+    # we set the filename here
     file='/'.join([service_subdirectory, hostname+'.cfg'])
     kwargs.setdefault('file', file)
-    kwargs.setdefault('state_name_salt', file.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
 
-    #kwargs.setdefault('state_name_salt', hostname.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
+    kwargs.setdefault('state_name_salt', replace_chars(file))
+
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
     return icingaSettings
 

@@ -435,13 +435,15 @@ With 50 services per hosts (ignore services_loop which can increase the number o
 
 With about 360 hosts the excessive execution time approach the entire hour.
 
-The issue is resolved by decreasing the number of states: there is only one state to create each host.
+The issue was resolved by decreasing the number of states: there is only one state to create each host.
 The services for the host are in the same file.
 
 This decrease the number of states and the call to configuration_remove_object is useless to delete old services because the file with services of the hosts
 is naturally edited.
 
-The execution time decrease to 1 minute about for 128 hosts 
+The execution time decrease to 1 minute about for 128 hosts
+
+However, it is perhaps a bad idea to have all services in a same file because the files becomes long
 
 Add a new service in configuration_add_auto_host macro
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++

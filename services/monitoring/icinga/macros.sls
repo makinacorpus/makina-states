@@ -85,7 +85,10 @@ icinga-configuration-{{data.state_name_salt}}-remove-object-conf:
 
 # split the value in ',' and loop. it is to remove duplicates values.
 # for example, it is to avoid to produce "v1,v2,v1" if "v1,v2" are given in a call and "v1" in an other call
+# it doesn't avoid the case where v1 is givent in configuration_add_object and regiven to configuration_edit_object
 
+# we have two cases, one case when the file is created with the configuration_add_auto_host macro
+# and when the file is created with configuration_add_object macro
 {% if data.auto_host_definition %}
 
 {% for value_splitted in data.value.split(',') %}
@@ -118,7 +121,6 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 
 {% endif %}
 {% endmacro %}
-
 
 {#
 #
@@ -219,7 +221,6 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      web=False,
                                      services_attrs={}
                                     ) %}
-# the host/hostgroup file
 {% set data = salt['mc_icinga.add_auto_configuration_host_settings'](hostname=hostname,
                                                                      hostgroup=hostgroup,
                                                                      attrs=attrs,
@@ -298,10 +299,12 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                                                     ) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 
-
 # add the host/hostgroup object and its services with only one state (the host and its services are in the same file)
 # having all services associated to a host in one file avoid to delete files for disabled services
 # the macro configuration_remove_object isn't called so much
+
+# the main difference with the previous version, where there was one file per service is that the loops over services 
+# are done in the template, not in the sls file.
 icinga-configuration-{{data.state_name_salt}}-add-auto-host-conf:
   file.managed:
     - name: {{data.objects.directory}}/{{data.file}}
