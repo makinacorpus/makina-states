@@ -67,6 +67,7 @@ def objects():
                     'command_name': "check_meta",
                     'command_line': "/usr/local/nagios/libexec/check_meta_service -i $ARG1$",
                 },
+                'definition': 'test',
             },
             'command_meta_notify': {
                 'type': "command",
@@ -2551,11 +2552,9 @@ def add_configuration_object(type=None, file=None, attrs=None, definition=None, 
     if get:
         return add_configuration_object.objects
     elif type and file and attrs:
-        icingaSettings_complete = __salt__['mc_icinga.settings']()
-        filename='/'.join([icingaSettings_complete['objects']['directory'], file])
-        if filename not in add_configuration_object.objects:
-            add_configuration_object.objects[filename]=[]
-        add_configuration_object.objects[filename].append({'type': type, 'attrs': attrs, 'definition': definition})
+        if file not in add_configuration_object.objects:
+            add_configuration_object.objects[file]=[]
+        add_configuration_object.objects[file].append({'type': type, 'attrs': attrs, 'definition': definition})
 
 # global variable initialisation
 add_configuration_object.objects={}

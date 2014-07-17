@@ -277,12 +277,15 @@ icinga-mklivestatus-conf:
     {{ icinga.configuration_add_auto_host(**object) }}
 {% endfor %}
 
+# test
+{{ icinga.configuration_edit_object(file='checkcommands.cfg', attr='foor', value='bar', auto_host=False, definition="test") }}
+
 # really add the files
 {% for file, objects in salt['mc_icinga.add_configuration_object'](get=True).items() %}
 {% set state_name_salt =  salt['mc_icinga.replace_chars'](file) %}
 icinga-configuration-{{state_name_salt}}-add-objects-conf:
   file.managed:
-    - name: {{file}}
+    - name: {{data.objects.directory}}/{{file}}
     - source: salt://makina-states/files/etc/icinga/objects/template.cfg
     - user: root
     - group: root

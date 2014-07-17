@@ -9,6 +9,9 @@
 #         the filename where the object will be added
 #     attrs
 #         a dictionary in which each key corresponds to a directive
+#     definition
+#         a string to identify the definition in the file. If none, configuration_edit_object macro will not be able
+#         to edit this definition
 #
 #}
 
@@ -53,8 +56,8 @@
 #
 #}
 
-{% macro configuration_edit_object(file, attr, value, auto_host_definition=None) %}
-{% set data = salt['mc_icinga.edit_configuration_object_settings'](file, attr, value, auto_host_definition, **kwargs) %}
+{% macro configuration_edit_object(file, attr, value, auto_host=None, definition) %}
+{% set data = salt['mc_icinga.edit_configuration_object_settings'](file, attr, value, auto_host, definition, **kwargs) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 
 # split the value in ',' and loop. it is to remove duplicates values.
@@ -65,7 +68,7 @@
 # and when the file is created with configuration_add_object macro
 
 {% for value_splitted in data.value.split(',') %}
-icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_splitted}}-edit-{{auto_host_definition}}-conf:
+icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_splitted}}-edit-{{definition}}-conf:
   file.accumulated:
     - name: "{{data.definition}}.{{data.attr}}"
     - filename: {{data.objects.directory}}/{{data.file}}
@@ -77,7 +80,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
       {% if auto_host %}
       - file: icinga-configuration-{{data.state_name_salt}}-add-auto-host-conf 
       {% else %}
-      - file: icinga-configuration-{{data.state_name_salt}}-add-object-conf 
+      - file: icinga-configuration-{{data.state_name_salt}}-add-objects-conf 
       {% endif %}
 {% endfor %}
 
