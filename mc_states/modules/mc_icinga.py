@@ -33,8 +33,12 @@ __name = 'icinga'
 log = logging.getLogger(__name__)
 
 def objects():
+    print('call objects')
     '''
     icinga objects settings
+
+    this dictionary is the subdictionary of icinga.settings.objects but because of it is too big,
+    we can't put it in the cache
 
     dictionary to configure objects
         directory
@@ -1907,10 +1911,12 @@ def objects():
     import mc_icinga_with_thousand_hosts
     data['autoconfigured_hosts_definitions'] = mc_icinga_with_thousand_hosts.complete_hosts
 
+    print('end call objects')
     return data
 
 
 def settings():
+    print('call settings')
     '''
     icinga settings
 
@@ -2161,7 +2167,8 @@ def settings():
                 'pidfile': "/var/run/icinga/icinga.pid",
                 'configuration_directory': locs['conf_dir']+"/icinga",
                 'niceness': 5,
-                'objects': objects(),
+                # because all the dictionary is too big. We cache only this value because of it is often needed
+                'objects': { 'directory': objects()['directory'] },
                 'icinga_cfg': {
                     'log_file': "/var/log/icinga/icinga.log",
                     'cfg_file': ["/etc/icinga/commands.cfg"],
@@ -2538,6 +2545,7 @@ def settings():
             'icinga', icinga_reg,
             registry_format='pack')
         return data
+    print('end call settings')
     return _settings()
 
 def replace_chars(s):

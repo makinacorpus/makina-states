@@ -7,6 +7,7 @@
 
 {% set locs = salt['mc_locations.settings']() %}
 {% set data = salt['mc_icinga.settings']() %}
+{% set objects = salt['mc_icinga.objects']() %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 
 include:
@@ -263,17 +264,17 @@ icinga-mklivestatus-conf:
 {% import "makina-states/services/monitoring/icinga/init.sls" as icinga with context %}
 
 # purge objects (the macro add the files into a list)
-{% for file in data.objects.purge_definitions %}
+{% for file in objects.purge_definitions %}
     {{ icinga.configuration_remove_object(file=file) }}
 {% endfor %}
 
 # add templates and commands (and contacts, timeperiods...)
-{% for name, object in data.objects.objects_definitions.items() %}
+{% for name, object in objects.objects_definitions.items() %}
     {{ icinga.configuration_add_object(**object) }}
 {% endfor %}
 
 # add autoconfigured hosts
-{% for name, object in data.objects.autoconfigured_hosts_definitions.items() %}
+{% for name, object in objects.autoconfigured_hosts_definitions.items() %}
     {{ icinga.configuration_add_auto_host(**object) }}
 {% endfor %}
 
