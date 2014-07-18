@@ -12,12 +12,16 @@
 #     definition
 #         a string to identify the definition in the file. If none, configuration_edit_object macro will not be able
 #         to edit this definition
+#     fromsettings
+#         instead of adding all object settings, only the name is stored and mc_icinga.get_settings_for_object
+#         will be called in the template to retrieve all the values
+#         only the file argument is useful to set when fromsettings is used
 #
 #}
 
-{% macro configuration_add_object(type, file, attrs={}, definition=None) %}
+{% macro configuration_add_object(file, type=None, attrs={}, definition=None, fromsettings=None) %}
 # add the object in the list of objects to add
-{% set res = salt['mc_icinga.add_configuration_object'](type=type, file=file, attrs=attrs, definition=definition, get=False, **kwargs) %}
+{% set res = salt['mc_icinga.add_configuration_object'](file=file, type=type, attrs=attrs, definition=definition, fromsettings=fromsettings, get=False, **kwargs) %}
 {% endmacro %}
 
 {#

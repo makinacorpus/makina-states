@@ -270,7 +270,7 @@ icinga-mklivestatus-conf:
 # add templates and commands (and contacts, timeperiods...)
 {% for name in data.objects.objects_definitions %}
 {% set object = salt['mc_icinga.get_settings_for_object']('objects_definitions', name) %}
-    {{ icinga.configuration_add_object(**object) }}
+    {{ icinga.configuration_add_object(file=object.file, fromsettings=name) }}
 {% endfor %}
 
 # add autoconfigured hosts
@@ -328,8 +328,7 @@ icinga-configuration-remove-objects-conf:
       - mc_proxy: icinga-configuration-pre-clean-directories
     - watch_in:
       - mc_proxy: icinga-configuration-post-clean-directories
-
-{%- import "makina-states/services/monitoring/icinga/macros.jinja" as icinga with context %}
 {#
+{%- import "makina-states/services/monitoring/icinga/macros.jinja" as icinga with context %}
 {{icinga.icingaAddWatcher('foo', '/bin/echo', args=[1]) }}
 #}

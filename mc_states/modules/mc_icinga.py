@@ -33,7 +33,6 @@ __name = 'icinga'
 log = logging.getLogger(__name__)
 
 def objects():
-    print('call objects')
     '''
     icinga objects settings
 
@@ -1911,22 +1910,18 @@ def objects():
     import mc_icinga_with_thousand_hosts
     data['autoconfigured_hosts_definitions'] = mc_icinga_with_thousand_hosts.complete_hosts
 
-    print('end call objects')
     return data
 
 def get_settings_for_object(target=None, obj=None):
-    print('call get_settings_for_object')
     '''
     expand the subdictionaries which are not cached in mc_icinga.settings.objects
     '''
-    print('end call get_settings_for_object')
     if 'purge_definitions' == target:
         return __salt__['mc_utils.defaults']('makina-states.services.monitoring.icinga.objects.'+target, { target: objects()[target] })[target]
     else:
         return __salt__['mc_utils.defaults']('makina-states.services.monitoring.icinga.objects.'+target+'.'+obj, objects()[target][obj])
 
 def settings():
-    print('call settings')
     '''
     icinga settings
 
@@ -2565,7 +2560,6 @@ def settings():
             'icinga', icinga_reg,
             registry_format='pack')
         return data
-    print('end call settings')
     return _settings()
 
 def replace_chars(s):
@@ -2574,7 +2568,7 @@ def replace_chars(s):
         res=res.replace(char, '-')
     return res
 
-def add_configuration_object(type=None, file=None, attrs=None, definition=None, get=False, **kwargs):
+def add_configuration_object(file=None, type=None, attrs=None, definition=None, fromsettings=None, get=False, **kwargs):
     '''Add the object file in the file's list to be added'''
     if get:
         return add_configuration_object.objects
@@ -2582,6 +2576,10 @@ def add_configuration_object(type=None, file=None, attrs=None, definition=None, 
         if file not in add_configuration_object.objects:
             add_configuration_object.objects[file]=[]
         add_configuration_object.objects[file].append({'type': type, 'attrs': attrs, 'definition': definition})
+    elif fromsettings:
+        if file not in add_configuration_object.objects:
+            add_configuration_object.objects[file]=[]
+        add_configuration_object.objects[file].append({'fromsettings': fromsettings})
 
 # global variable initialisation
 add_configuration_object.objects={}
