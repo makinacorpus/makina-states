@@ -1914,6 +1914,16 @@ def objects():
     print('end call objects')
     return data
 
+def get_settings_for_object(target=None, obj=None):
+    print('call get_settings_for_object')
+    '''
+    expand the subdictionaries which are not cached in mc_icinga.settings.objects
+    '''
+    print('end call get_settings_for_object')
+    if 'purge_definitions' == target:
+        return __salt__['mc_utils.defaults']('makina-states.services.monitoring.icinga.objects.'+target, { target: objects()[target] })[target]
+    else:
+        return __salt__['mc_utils.defaults']('makina-states.services.monitoring.icinga.objects.'+target+'.'+obj, objects()[target][obj])
 
 def settings():
     print('call settings')
@@ -2127,6 +2137,16 @@ def settings():
                 'icinga', registry_format='pack')
         locs = __salt__['mc_locations.settings']()
 
+
+        # do not store in cached
+        # registry the whole conf, memory would explode
+        # keep only the list of keys for each subdictionary
+        # get_settings_for_object is the function to retrieve a non cached subdictionary
+        dict_objects = objects()
+        dict_objects['objects_definitions'] = dict_objects['objects_definitions'].keys()
+        dict_objects['purge_definitions'] = []
+        dict_objects['autoconfigured_hosts_definitions'] = dict_objects['autoconfigured_hosts_definitions'].keys()
+
         # generate default password
         icinga_reg = __salt__[
             'mc_macros.get_local_registry'](
@@ -2167,8 +2187,8 @@ def settings():
                 'pidfile': "/var/run/icinga/icinga.pid",
                 'configuration_directory': locs['conf_dir']+"/icinga",
                 'niceness': 5,
-                # because all the dictionary is too big. We cache only this value because of it is often needed
-                'objects': { 'directory': objects()['directory'] },
+                # because the subdictionary is very big, we take it from another function but we can copy/paste it here
+                'objects': dict_objects,
                 'icinga_cfg': {
                     'log_file': "/var/log/icinga/icinga.log",
                     'cfg_file': ["/etc/icinga/commands.cfg"],
