@@ -441,6 +441,13 @@ def settings():
         data['mresetperms'] = mmsr + '/_scripts/reset-perms.py'
         data['msaltbinpath'] = mmsr + '/bin'
 
+
+        # in salt master mode (non mastersalt), spawn only one
+        # worker not to alieate all box ressources only for idle
+        # salt masters
+        data['saltMasterData']['worker_threads'] = "1"
+        data['saltMasterData']['dev_worker_threads'] = "1"
+
         keys = ['saltname', 'prefix', 'projects_root', 'vagrant_root',
                 'resetperms',
                 'saltRoot', 'confPrefix', 'cachePrefix', 'runPrefix',
