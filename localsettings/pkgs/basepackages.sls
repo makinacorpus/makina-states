@@ -112,6 +112,7 @@ sys-pkgs:
       {%- endif %}
 # too much consuming     
 #      - atop
+#      - vnstat
 
 {% if 'devhost' in salt['mc_localsettings.registry']()['actives'] -%}
 devhost-pkgs:
@@ -158,7 +159,6 @@ net-pkgs:
       - telnet
       - traceroute
       - vlan
-      - vnstat
       - wakeonlan
       - wget
       - whois
