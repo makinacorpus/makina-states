@@ -347,14 +347,13 @@ def defaults(prefix,
     for fullkey in items:
         key = dotedprefix.join(fullkey.split(dotedprefix)[1:])
         val = items[fullkey]
-        if (
-            isinstance(datadict, (dict, list, set))
-        ):
+        if isinstance(datadict, dict):
             curval = datadict.get(key, None)
             if isinstance(curval, dict):
                 val = __salt__['mc_utils.dictupdate'](curval, val)
-            elif isinstance(curval, list):
-                curval.extend(val)
+            elif isinstance(curval, (list, set)):
+                if val is not None:
+                    curval.extend(val)
                 val = curval
             datadict[key] = val
     if overridden is None:
@@ -382,7 +381,9 @@ def defaults(prefix,
                 value = overridden[prefix][key]
             else:
                 nvalue = default_value[:]
-                if (value != nvalue) and (value is not _default_marker):
+                if value and (value != nvalue) and (value is not _default_marker):
+                    if nvalue is None:
+                        nvalue = []
                     nvalue.extend(value)
                 value = nvalue
         elif isinstance(value, dict):

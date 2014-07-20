@@ -960,7 +960,6 @@ def rrs_mx_for(domain, ttl=60):
     return memoize_cache(_do_mx, [domain], {}, cache_key, ttl)
 
 
-
 def rrs_ns_for(domain, ttl=60):
     '''Return all configured NS records for a domain'''
     def _dorrsnsfor(domain):
@@ -969,7 +968,13 @@ def rrs_ns_for(domain, ttl=60):
         ips = db['ips']
         all_rrs = OrderedDict()
         servers = get_nss_for_zone(domain)
-        for ns_map, fqdn in servers['slaves'].items():
+        slaves = servers['slaves']
+        if not slaves:
+            rrs = all_rrs.setdefault(domain, [])
+            rrs.append(
+                rr_entry('@', ["{0}.".format(servers['master'])],
+                         rrs_ttls, record_type='NS'))
+        for ns_map, fqdn in slaves.items():
             # ensure NS A mapping is there
             assert ips[ns_map] == ips_for(fqdn)
             rrs = all_rrs.setdefault(fqdn, [])
