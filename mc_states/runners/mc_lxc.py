@@ -63,7 +63,8 @@ def sync_container(cmd_runner, ret, origin, destination, force=False):
     if os.path.exists(origin) and os.path.exists(destination):
         if test_same_versions(origin, destination, force=force):
             return ret
-        cmd = 'rsync -aA --exclude=lock --delete {0}/ {1}/'.format(origin, destination)
+        cmd = ('rsync -aA --exclude=lock --delete '
+               '{0}/ {1}/').format(origin, destination)
         cret = cmd_runner(cmd)
         if cret['retcode']:
             ret['comment'] += (
@@ -94,10 +95,14 @@ def sync_image_reference_containers(imgSettings, ret, _cmd_runner=None,
         sync_container(_cmd_runner, ret,
                        '/var/lib/lxc/{0}/rootfs'.format(bref),
                        '/var/lib/lxc/{0}/rootfs'.format(img),
-                       force=force,)
+                       force=force)
+        sync_container(_cmd_runner, ret,
+                       '/var/lib/lxc/{0}/rootfs'.format(bref),
+                       '/var/lib/lxc/{0}.tmp/rootfs'.format(img),
+                       force=force)
 
 
-def sync_images(output=True, only=None, force=False):
+def sync_images(only=None, force=False, output=True, force_output=False):
     '''
     Sync the 'makina-states' image to all configured LXC hosts minions
     WARNING: it checks .ms_version inside the rootfs of the LXC
@@ -126,7 +131,6 @@ def sync_images(output=True, only=None, force=False):
         'rsync -aA --delete-excluded --exclude="makina-states-lxc-*xz"'
         ' --numeric-ids '
     )
-
     sync_image_reference_containers(imgSettings, ret, force=force)
     root = master_opts()['file_roots']['base'][0]
     for target in lxcSettings.get('vms', {}):
@@ -177,6 +181,7 @@ def sync_images(output=True, only=None, force=False):
                     if not os.path.exists(imgroot):
                         _errmsg(
                             '{0} does not exists'.format(img))
+                    lver = get_ver(imgroot + '/rootfs')
                     cmd = (
                         'ps aux|egrep "rsync.*{0}"|grep -v grep|wc -l'
                     ).format(imgroot)
@@ -198,13 +203,15 @@ def sync_images(output=True, only=None, force=False):
                             ).format(target)
                             if cret['stdout'].strip():
                                 subret['trace'] += (
-                                    '\n{1} RSYNC:\n{0}\n'.format(cret['stdout'],
-                                                                 target))
+                                    '\n{1} RSYNC:\n{0}\n'.format(
+                                        cret['stdout'], target))
                     do_sync = True
                     try:
-                        cmd = 'cat {0}.tmp/rootfs/.ms_version 2>/dev/null'.format(imgroot)
-                        ver = int(cli('cmd.run', cmd, salt_timeout=timeout, salt_target=host))
-                        lver = get_ver(imgroot+'/rootfs')
+                        cmd = ('cat {0}.tmp/rootfs/.ms_version '
+                               '2>/dev/null').format(imgroot)
+                        ver = int(cli('cmd.run',
+                                      cmd, salt_timeout=timeout,
+                                      salt_target=host))
                         if lver == ver:
                             do_sync = False
                     except Exception:
@@ -227,10 +234,15 @@ def sync_images(output=True, only=None, force=False):
                             ).format(cret['stdout'], target)
                         do_sync = True
                         try:
-                            cmd = 'cat {0}/rootfs/.ms_version 2>/dev/null'.format(imgroot)
-                            dver = int(cli('cmd.run', cmd, salt_timeout=timeout, salt_target=host))
-                            if dver == ver:
+                            cmd = ('cat {0}/rootfs/.ms_version '
+                                   '2>/dev/null').format(imgroot)
+                            dver = int(cli('cmd.run',
+                                           cmd, salt_timeout=timeout,
+                                           salt_target=host))
+                            if dver == lver:
                                 do_sync = False
+                            else:
+                                do_sync = True
                         except Exception:
                             pass
                         good = True
@@ -287,7 +299,7 @@ def sync_images(output=True, only=None, force=False):
         ret['comment'] = 'We have missed some target, see logs\n'
     api.msplitstrip(ret)
     # return mail error only on error
-    if output and not ret['result']:
+    if force_output or (output and not ret['result']):
         salt.output.display_output(ret, 'yaml', __opts__)
     return ret
 #

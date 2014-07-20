@@ -75,10 +75,26 @@ snmpd-user:
     - watch_in:
       - mc_proxy: snmpd-post-conf-hook
     - unless: grep -q  {{data['default_user']}} /usr/share/snmp/snmpd.conf
-    - name: >
+    - name: |
+            is_lxc() {
+                echo  "$(cat -e /proc/1/environ |grep container=lxc|wc -l|sed -e "s/ //g")"
+            }
+            filter_host_pids() {
+                if [ "x$(is_lxc)" != "x0" ];then
+                    echo "${@}"
+                else
+                    for pid in ${@};do
+                        if [ "x$(grep -q lxc /proc/${pid}/cgroup 2>/dev/null;echo "${?}")" != "x0" ];then
+                             echo ${pid}
+                         fi
+                     done
+                fi
+            }
+            for i in $(filter_host_pids $(ps aux|grep /usr/bin/snmpd|grep -v grep|awk '{print $2}'));do kill -9 $i;done
+            for i in $(filter_host_pids $(ps aux|grep /usr/sbin/snmpd|grep -v grep|awk '{print $2}'));do kill -9 $i;done
             service snmpd stop;
-            net-snmp-config --create-snmpv3-user -A SHA
-            -a {{data['default_password']}}
-            -X DES -x {{data['default_key']}} {{data['default_user']}}
+            net-snmp-config --create-snmpv3-user -A SHA \
+              -a {{data['default_password']}} \
+              -X DES -x {{data['default_key']}} {{data['default_user']}}
 
 {% endif %}

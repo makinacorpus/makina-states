@@ -56,7 +56,7 @@ def settings():
         nt_registry = __salt__['mc_nodetypes.registry']()
         sv_registry = __salt__['mc_services.registry']()
         images['makina-states-trusty'] = {}
-        images['makina-states-precise'] = {}
+        #images['makina-states-precise'] = {}
         root = cloud_settings['root']
         for img in images:
             images[img]['builder_ref'] = '{0}-lxc-ref.foo.net'.format(img)

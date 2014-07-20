@@ -61,7 +61,6 @@ sys-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
       - acpid
-      - atop
       - acl
       - libacl1-dev
       - bash-completion
@@ -111,6 +110,9 @@ sys-pkgs:
       - debconf-utils
       - dstat
       {%- endif %}
+# too much consuming     
+#      - atop
+#      - vnstat
 
 {% if 'devhost' in salt['mc_localsettings.registry']()['actives'] -%}
 devhost-pkgs:
@@ -157,7 +159,6 @@ net-pkgs:
       - telnet
       - traceroute
       - vlan
-      - vnstat
       - wakeonlan
       - wget
       - whois
