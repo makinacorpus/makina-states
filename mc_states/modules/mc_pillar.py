@@ -84,7 +84,7 @@ def loaddb_do(*a, **kw):
         if item in ['format']:
             types = (int,)
         if not isinstance(db[item], types):
-            raise ValueError('Db is invalid')
+            raise ValueError('Db is invalid for {0}'.format(item))
     return db
 
 def load_db(ttl=60):
@@ -808,7 +808,7 @@ def get_ns_slaves(id_, dns_servers=None, default=None, ttl=60):
             id_, OrderedDict()).get('slaves', OrderedDict())
         if not lslaves:
             lslaves = default.get('slaves', OrderedDict())
-        if not isinstance(lslaves, list):
+        if lslaves and not isinstance(lslaves, list):
             raise ValueError('Invalid format for slaves for {0}'.format(id_))
         for item in lslaves:
             if not isinstance(item, dict):

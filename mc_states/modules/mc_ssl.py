@@ -117,6 +117,7 @@ def get_cacert(as_text=False):
     path = None
     try:
         __salt__['tls.set_ca_path'](ssl_gen_d)
+        ensure_ca_present()
         path = __salt__['tls.get_ca'](
             cloudSettings['ssl']['ca']['ca_name'],
             as_text=as_text)
