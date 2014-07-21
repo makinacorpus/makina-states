@@ -10,6 +10,7 @@
 {% set auto = ifc.get('auto', '') -%}
 {% set mode = ifc.get('mode', '') %}
 {% set allow_hotplug = ifc.get('allow-hotplug', False) %}
+{% set bridge_ports = ifc.get('bridge_ports', '') -%}
 {% set broadcast = ifc.get('broadcast', '') -%}
 {% set address = ifc.get('address', '') -%}
 {% set preup = ifc.get('pre-up', []) -%}
@@ -40,6 +41,9 @@ auto {{ real_ifname }}
 iface {{ real_ifname }} {{inet}} {{ mode -}}
 {% if address %}
     address {{ address -}}
+{% endif -%}
+{% if bridge_ports %}
+    bridge_ports {{ bridge_ports -}}
 {% endif -%}
 {% if netmask %}
     netmask {{ netmask -}}

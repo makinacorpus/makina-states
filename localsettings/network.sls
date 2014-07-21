@@ -39,11 +39,18 @@ network-cfg-{{ifc}}:
 network-services-{{ifc}}:
   cmd.watch:
     - name: ifdown {{ifn}};ifup {{ifn}}
-#    - watch_in:
-#      - service: network-services
     - watch:
       - file: network-cfg
       - file: network-cfg-{{ifc}}
+{# restart bridges after getting ifs in static mode #}
+{% if 'br' in ifc %}
+{% for ifcinner in mcnet.interfaces_order %}
+{% if not 'br' in ifcinner %}
+      - file: network-cfg-{{ifcinner}}
+      - cmd: network-services-{{ifcinner}}
+{%endif %}
+{%endfor %}
+{%endif %}
 {% endfor %}
 
 #network-services:

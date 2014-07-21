@@ -335,11 +335,20 @@ def settings():
                    and 'br' not in a
                    and 'tun' not in a
                    and 'tap' not in a]
+        brifs = [a for a in nifaces if 'br' in a]
         default_lxc_docker_mode = 'masq'
         if 'eth0' in nifaces:
             default_if = 'eth0'
         else:
             default_if = nifaces[0]
+        # if a bridge bas the if port, use that instead
+        if brifs and not grains['ip_interfaces'].get(default_if):
+            for br in brifs:
+                res = __salt__['cmd.run']('brctl show {0}'.format(br))
+                if default_if in res:
+                    default_if = br
+                    break
+        # in all cases, if possible use the gw holder as main interface
         if default_route:
             default_if = default_route['iface']
         try:
