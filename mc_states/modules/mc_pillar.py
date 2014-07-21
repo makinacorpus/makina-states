@@ -661,7 +661,7 @@ def get_ldap(ttl=60):
                 for k, val in default.items():
                     sdata.setdefault(k, val)
         return data
-    cache_key = 'mc_pillar.get_nss'
+    cache_key = 'mc_pillar.getldap'
     return memoize_cache(_do_getldap, [], {}, cache_key, ttl)
 
 
