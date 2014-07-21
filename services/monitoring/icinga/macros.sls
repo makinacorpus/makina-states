@@ -21,7 +21,13 @@
 
 {% macro configuration_add_object(file, type=None, attrs={}, definition=None, fromsettings=None) %}
 # add the object in the list of objects to add
-{% set res = salt['mc_icinga.add_configuration_object'](file=file, type=type, attrs=attrs, definition=definition, fromsettings=fromsettings, get=False, **kwargs) %}
+{% set data = salt['mc_icinga.add_configuration_object'](file=file,
+                                                        type=type,
+                                                        attrs=attrs,
+                                                        definition=definition,
+                                                        fromsettings=fromsettings,
+                                                        get=False,
+                                                        **kwargs) %}
 {% endmacro %}
 
 {#
@@ -34,7 +40,7 @@
 
 {% macro configuration_remove_object(file) %}
 # add the file in the list of objects to remove
-{% set res = salt['mc_icinga.remove_configuration_object'](file=file, **kwargs) %}
+{% set data = salt['mc_icinga.remove_configuration_object'](file=file, **kwargs) %}
 {% endmacro %}
 
 {#
@@ -187,85 +193,87 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
                                      web_apache_status=False,
                                      web_openid=False,
                                      web=False,
-                                     services_attrs={}
+                                     services_attrs={},
+                                     fromsettings=None
                                     ) %}
-{% set data = salt['mc_icinga.add_auto_configuration_host_settings'](hostname=hostname,
-                                                                     hostgroup=hostgroup,
-                                                                     attrs=attrs,
-                                                                     ssh_user=ssh_user,
-                                                                     ssh_addr=ssh_addr,
-                                                                     ssh_port=ssh_port,
-                                                                     ssh_timeout=ssh_timeout,
-                                                                     backup_burp_age=backup_burp_age,
-                                                                     backup_rdiff=backup_rdiff,
-                                                                     beam_process=beam_process,
-                                                                     celeryd_process=celeryd_process,
-                                                                     cron=cron,
-                                                                     ddos=ddos,
-                                                                     debian_updates=debian_updates,
-                                                                     dns_association_hostname=dns_association_hostname,
-                                                                     dns_association=dns_association,
-                                                                     dns_reverse_association=dns_reverse_association,
-                                                                     disk_space=disk_space,
-                                                                     disk_space_root=disk_space_root,
-                                                                     disk_space_var=disk_space_var,
-                                                                     disk_space_srv=disk_space_srv,
-                                                                     disk_space_tmp=disk_space_tmp,
-                                                                     disk_space_data=disk_space_data,
-                                                                     disk_space_mnt_data=disk_space_mnt_data,
-                                                                     disk_space_home=disk_space_home,
-                                                                     disk_space_var_lxc=disk_space_var_lxc,
-                                                                     disk_space_var_makina=disk_space_var_makina,
-                                                                     disk_space_var_mysql=disk_space_var_mysql,
-                                                                     disk_space_var_www=disk_space_var_www,
-                                                                     disk_space_backups=disk_space_backups,
-                                                                     disk_space_backups_guidtz=disk_space_backups_guidtz,
-                                                                     disk_space_var_backups_bluemind=disk_space_var_backups_bluemind,
-                                                                     disk_space_var_spool_cyrus=disk_space_var_spool_cyrus,
-                                                                     disk_space_nmd_www=disk_space_nmd_www,
-                                                                     drbd=drbd,
-                                                                     epmd_process=epmd_process,
-                                                                     erp_files=erp_files,
-                                                                     fail2ban=fail2ban,
-                                                                     gunicorn_process=gunicorn_process,
-                                                                     haproxy=haproxy,
-                                                                     ircbot_process=ircbot_process,
-                                                                     load_avg=load_avg,
-                                                                     mail_cyrus_imap_connections=mail_cyrus_imap_connections,
-                                                                     mail_imap=mail_imap,
-                                                                     mail_imap_ssl=mail_imap_ssl,
-                                                                     mail_pop=mail_pop,
-                                                                     mail_pop_ssl=mail_pop_ssl,
-                                                                     mail_pop_test_account=mail_pop_test_account,
-                                                                     mail_server_queues=mail_server_queues,
-                                                                     mail_smtp=mail_smtp,
-                                                                     megaraid_sas=megaraid_sas,
-                                                                     memory=memory,
-                                                                     memory_hyperviseur=memory_hyperviseur,
-                                                                     mysql_process=mysql_process,
-                                                                     network=network,
-                                                                     ntp_peers=ntp_peers,
-                                                                     ntp_time=ntp_time,
-                                                                     only_one_nagios_running=only_one_nagios_running,
-                                                                     postgres_port=postgres_port,
-                                                                     postgres_process=postgres_process,
-                                                                     prebill_sending=prebill_sending,
-                                                                     raid=raid,
-                                                                     sas=sas,
-                                                                     snmpd_memory_control=snmpd_memory_control,
-                                                                     solr=solr,
-                                                                     ssh=ssh,
-                                                                     supervisord_status=supervisord_status,
-                                                                     swap=swap,
-                                                                     tiles_generator_access=tiles_generator_access,
-                                                                     ware_raid=ware_raid,
-                                                                     web_apache_status=web_apache_status,
-                                                                     web_openid=web_openid,
-                                                                     web=web,
-                                                                     services_attrs=services_attrs,
-                                                                     **kwargs
+{% set data = salt['mc_icinga.add_auto_configuration_host'](hostname=hostname,
+                                                            hostgroup=hostgroup,
+                                                            attrs=attrs,
+                                                            ssh_user=ssh_user,
+                                                            ssh_addr=ssh_addr,
+                                                            ssh_port=ssh_port,
+                                                            ssh_timeout=ssh_timeout,
+                                                            backup_burp_age=backup_burp_age,
+                                                            backup_rdiff=backup_rdiff,
+                                                            beam_process=beam_process,
+                                                            celeryd_process=celeryd_process,
+                                                            cron=cron,
+                                                            ddos=ddos,
+                                                            debian_updates=debian_updates,
+                                                            dns_association_hostname=dns_association_hostname,
+                                                            dns_association=dns_association,
+                                                            dns_reverse_association=dns_reverse_association,
+                                                            disk_space=disk_space,
+                                                            disk_space_root=disk_space_root,
+                                                            disk_space_var=disk_space_var,
+                                                            disk_space_srv=disk_space_srv,
+                                                            disk_space_tmp=disk_space_tmp,
+                                                            disk_space_data=disk_space_data,
+                                                            disk_space_mnt_data=disk_space_mnt_data,
+                                                            disk_space_home=disk_space_home,
+                                                            disk_space_var_lxc=disk_space_var_lxc,
+                                                            disk_space_var_makina=disk_space_var_makina,
+                                                            disk_space_var_mysql=disk_space_var_mysql,
+                                                            disk_space_var_www=disk_space_var_www,
+                                                            disk_space_backups=disk_space_backups,
+                                                            disk_space_backups_guidtz=disk_space_backups_guidtz,
+                                                            disk_space_var_backups_bluemind=disk_space_var_backups_bluemind,
+                                                            disk_space_var_spool_cyrus=disk_space_var_spool_cyrus,
+                                                            disk_space_nmd_www=disk_space_nmd_www,
+                                                            drbd=drbd,
+                                                            epmd_process=epmd_process,
+                                                            erp_files=erp_files,
+                                                            fail2ban=fail2ban,
+                                                            gunicorn_process=gunicorn_process,
+                                                            haproxy=haproxy,
+                                                            ircbot_process=ircbot_process,
+                                                            load_avg=load_avg,
+                                                            mail_cyrus_imap_connections=mail_cyrus_imap_connections,
+                                                            mail_imap=mail_imap,
+                                                            mail_imap_ssl=mail_imap_ssl,
+                                                            mail_pop=mail_pop,
+                                                            mail_pop_ssl=mail_pop_ssl,
+                                                            mail_pop_test_account=mail_pop_test_account,
+                                                            mail_server_queues=mail_server_queues,
+                                                            mail_smtp=mail_smtp,
+                                                            megaraid_sas=megaraid_sas,
+                                                            memory=memory,
+                                                            memory_hyperviseur=memory_hyperviseur,
+                                                            mysql_process=mysql_process,
+                                                            network=network,
+                                                            ntp_peers=ntp_peers,
+                                                            ntp_time=ntp_time,
+                                                            only_one_nagios_running=only_one_nagios_running,
+                                                            postgres_port=postgres_port,
+                                                            postgres_process=postgres_process,
+                                                            prebill_sending=prebill_sending,
+                                                            raid=raid,
+                                                            sas=sas,
+                                                            snmpd_memory_control=snmpd_memory_control,
+                                                            solr=solr,
+                                                            ssh=ssh,
+                                                            supervisord_status=supervisord_status,
+                                                            swap=swap,
+                                                            tiles_generator_access=tiles_generator_access,
+                                                            ware_raid=ware_raid,
+                                                            web_apache_status=web_apache_status,
+                                                            web_openid=web_openid,
+                                                            web=web,
+                                                            services_attrs=services_attrs,
+                                                            fromsettings=fromsettings,
+                                                            get=False,
+                                                            **kwargs
                                                                     ) %}
-{% set sdata = salt['mc_utils.json_dump'](data) %}
 
 # add the host/hostgroup object and its services with only one state (the host and its services are in the same file)
 # having all services associated to a host in one file avoid to delete files for disabled services
@@ -287,8 +295,8 @@ icinga-configuration-{{data.state_name_salt}}-add-auto-host-conf:
       - mc_proxy: icinga-configuration-post-object-conf
     - template: jinja
     - defaults:
-      data: |
-            {{sdata}}
+      hostname: |
+                {{salt['mc_utils.json_dump'](hostname)}}
 
 
 {% endmacro %}

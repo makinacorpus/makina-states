@@ -276,11 +276,11 @@ icinga-mklivestatus-conf:
 # add autoconfigured hosts
 {% for name in data.objects.autoconfigured_hosts_definitions %}
 {% set object = salt['mc_icinga.get_settings_for_object']('autoconfigured_hosts_definitions', name) %}
-    {{ icinga.configuration_add_auto_host(**object) }}
+    {{ icinga.configuration_add_auto_host(hostname=object.hostname, fromsettings=name) }}
 {% endfor %}
 
 # really add the files
-{% for file, objects in salt['mc_icinga.add_configuration_object'](get=True).items() %}
+{% for file in salt['mc_icinga.add_configuration_object'](get=True) %}
 {% set state_name_salt =  salt['mc_icinga.replace_chars'](file) %}
 icinga-configuration-{{state_name_salt}}-add-objects-conf:
   file.managed:
@@ -296,8 +296,9 @@ icinga-configuration-{{state_name_salt}}-add-objects-conf:
       - mc_proxy: icinga-configuration-post-object-conf
     - template: jinja
     - defaults:
-      data: |
-            {{salt['mc_utils.json_dump'](objects)}}
+      file: |
+            {{salt['mc_utils.json_dump'](file)}}
+
 {% endfor %}
 
 # really delete the files

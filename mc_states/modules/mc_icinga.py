@@ -1552,7 +1552,7 @@ def objects():
                 'attrs': {
                     'name': "HT_ICON_Dedibox",
                     'use': "_HT_BASE",
-                    'alias': "Hébergeur Dedibox pour logo",
+                    'alias': "Hebergeur Dedibox pour logo",
                     'register': 0,
                     'icon_image': "heberg/dedibox.png",
                 },
@@ -1563,7 +1563,7 @@ def objects():
                 'attrs': {
                     'name': "HT_ICON_Free",
                     'use': "_HT_BASE",
-                    'alias': "Hébergeur Free pour logo",
+                    'alias': "Hebergeur Free pour logo",
                     'register': 0,
                     'icon_image': "heberg/news_free.gif",
                 },
@@ -1574,7 +1574,7 @@ def objects():
                 'attrs': {
                     'name': "HT_ICON_Gandi",
                     'use': "_HT_BASE",
-                    'alias': "Hébergeur Gandi pour logo",
+                    'alias': "Hebergeur Gandi pour logo",
                     'register': 0,
                     'icon_image': "heberg/gandi.png",
                 },
@@ -1585,7 +1585,7 @@ def objects():
                 'attrs': {
                     'name': "HT_ICON_ImageCrea",
                     'use': "_HT_BASE",
-                    'alias': "Hébergeur ImageCrea pour logo",
+                    'alias': "Hebergeur ImageCrea pour logo",
                     'register': 0,
                     'icon_image': "heberg/imagecreation.jpg",
                 },
@@ -1596,7 +1596,7 @@ def objects():
                 'attrs': {
                     'name': "HT_ICON_OVH",
                     'use': "_HT_BASE",
-                    'alias': "Hébergeur OVH pour logo",
+                    'alias': "Hebergeur OVH pour logo",
                     'register': 0,
                     'icon_image': "heberg/logo_ovh.png",
                 },
@@ -1607,7 +1607,7 @@ def objects():
                 'attrs': {
                     'name': "HT_ICON_PHPNET",
                     'use': "_HT_BASE",
-                    'alias': "Hébergeur PHPNET pour logo",
+                    'alias': "Hebergeur PHPNET pour logo",
                     'register': 0,
                     'icon_image': "heberg/phpnet.gif",
                 },
@@ -1919,7 +1919,20 @@ def get_settings_for_object(target=None, obj=None):
     if 'purge_definitions' == target:
         return __salt__['mc_utils.defaults']('makina-states.services.monitoring.icinga.objects.'+target, { target: objects()[target] })[target]
     else:
-        return __salt__['mc_utils.defaults']('makina-states.services.monitoring.icinga.objects.'+target+'.'+obj, objects()[target][obj])
+        try:
+            a = __salt__['mc_utils.defaults']('makina-states.services.monitoring.icinga.objects.'+target+'.'+obj, objects()[target][obj])
+        except KeyError:
+            import pdb; pdb.set_trace()
+        return a
+
+#    objs = objects()
+#    if 'purge_definitions' == target:
+#        # transform list in dict
+#        res = objs[target]
+#    else:
+#        res = objs[target][obj]
+#    del objs
+#    return res
 
 def settings():
     '''
@@ -2560,6 +2573,7 @@ def settings():
             'icinga', icinga_reg,
             registry_format='pack')
         return data
+
     return _settings()
 
 def replace_chars(s):
@@ -2568,10 +2582,13 @@ def replace_chars(s):
         res=res.replace(char, '-')
     return res
 
-def add_configuration_object(file=None, type=None, attrs=None, definition=None, fromsettings=None, get=False, **kwargs):
+def add_configuration_object(file=None, type=None, attrs=None, definition=None, fromsettings=None, get=False, get_objects_file=None, **kwargs):
     '''Add the object file in the file's list to be added'''
     if get:
-        return add_configuration_object.objects
+        if get_objects_file:
+            return add_configuration_object.objects[get_objects_file]
+        else:
+            return add_configuration_object.objects
     elif type and file and attrs:
         if file not in add_configuration_object.objects:
             add_configuration_object.objects[file]=[]
@@ -2581,13 +2598,15 @@ def add_configuration_object(file=None, type=None, attrs=None, definition=None, 
             add_configuration_object.objects[file]=[]
         add_configuration_object.objects[file].append({'fromsettings': fromsettings})
 
+
 # global variable initialisation
 add_configuration_object.objects={}
 
 def remove_configuration_object(file=None, get=False, **kwargs):
     '''Add the file in the file's list to be removed'''
     if get :
-        return remove_configuration_object.files
+        return []
+#        return remove_configuration_object.files
     elif file:
         icingaSettings_complete = __salt__['mc_icinga.settings']()
         # append " \"file\"" to the global variable
@@ -3554,7 +3573,7 @@ def add_auto_configuration_host_settings(hostname,
                         if cmdarg_prefix+arg in services_attrs[service]:
                             args.append(str(services_attrs[service]['cmdarg_'+arg]))
                         else:
-                            args.append('')
+                            args.append('') # by default, a non specified arg take an empty value
                 services_attrs[service]['check_command'] = "!".join(args)
 
     for service in services_loop:
@@ -3582,7 +3601,8 @@ def add_auto_configuration_host_settings(hostname,
 
     for service in services:
         if service in services_attrs:
-            for arg in copy.deepcopy(services_attrs[service]):
+#            for arg in copy.deepcopy(services_attrs[service]):
+            for arg, v in services_attrs[service].items():
                 if arg.startswith(cmdarg_prefix):
                     services_attrs[service].pop(arg, None)
             services_attrs[service][service_key_hostname] = hostname
@@ -3590,7 +3610,8 @@ def add_auto_configuration_host_settings(hostname,
     for service in services_loop:
         if service in services_attrs:
             for subservice  in services_attrs[service]:
-                for arg in copy.deepcopy(services_attrs[service][subservice]):
+#                for arg in copy.deepcopy(services_attrs[service][subservice]):
+                for arg, v in services_attrs[service][subservice].items():
                     if arg.startswith(cmdarg_prefix):
                         services_attrs[service][subservice].pop(arg, None)
                 services_attrs[service][subservice][service_key_hostname] = hostname
@@ -3605,6 +3626,206 @@ def add_auto_configuration_host_settings(hostname,
 
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
     return icingaSettings
+
+
+def add_auto_configuration_host(hostname=None,
+                                hostgroup=False,
+                                attrs={},
+                                ssh_user='root',
+                                ssh_addr='',
+                                ssh_port=22,
+                                ssh_timeout=30,
+                                backup_burp_age=False,
+                                backup_rdiff=False,
+                                beam_process=False,
+                                celeryd_process=False,
+                                cron=False,
+                                ddos=False,
+                                debian_updates=False,
+                                dns_association_hostname=False,
+                                dns_association=False,
+                                dns_reverse_association=False,
+                                disk_space=False,
+                                disk_space_root=False,
+                                disk_space_var=False,
+                                disk_space_srv=False,
+                                disk_space_tmp=False,
+                                disk_space_data=False,
+                                disk_space_mnt_data=False,
+                                disk_space_home=False,
+                                disk_space_var_lxc=False,
+                                disk_space_var_makina=False,
+                                disk_space_var_mysql=False,
+                                disk_space_var_www=False,
+                                disk_space_backups=False,
+                                disk_space_backups_guidtz=False,
+                                disk_space_var_backups_bluemind=False,
+                                disk_space_var_spool_cyrus=False,
+                                disk_space_nmd_www=False,
+                                drbd=False,
+                                epmd_process=False,
+                                erp_files=False,
+                                fail2ban=False,
+                                gunicorn_process=False,
+                                haproxy=False,
+                                ircbot_process=False,
+                                load_avg=False,
+                                mail_cyrus_imap_connections=False,
+                                mail_imap=False,
+                                mail_imap_ssl=False,
+                                mail_pop=False,
+                                mail_pop_ssl=False,
+                                mail_pop_test_account=False,
+                                mail_server_queues=False,
+                                mail_smtp=False,
+                                megaraid_sas=False,
+                                memory=False,
+                                memory_hyperviseur=False,
+                                mysql_process=False,
+                                network=False,
+                                ntp_peers=False,
+                                ntp_time=False,
+                                only_one_nagios_running=False,
+                                postgres_port=False,
+                                postgres_process=False,
+                                prebill_sending=False,
+                                raid=False,
+                                sas=False,
+                                snmpd_memory_control=False,
+                                solr=False,
+                                ssh=False,
+                                supervisord_status=False,
+                                swap=False,
+                                tiles_generator_access=False,
+                                ware_raid=False,
+                                web_apache_status=False,
+                                web_openid=False,
+                                web=False,
+                                services_attrs={},
+                                fromsettings=None,
+                                get=False,
+                                **kwargs):
+    if get:
+        if hostname:
+            return add_auto_configuration_host.objects[hostname]
+        else:
+            return add_auto_configuration_host.objects
+    else:
+        # we need some variables to write the state
+
+        # if fromsettings is used, we need to get some arguments values
+        if fromsettings:
+            host = get_settings_for_object('autoconfigured_hosts_definitions', fromsettings)
+            if 'hostgroup' in host:
+                hostgroup = host['hostgroup']
+
+        #    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
+        #   save the ram (get only useful values)
+        icingaSettings_complete = __salt__['mc_icinga.settings']()
+        icingaSettings = {}
+        kwargs.setdefault('objects', {'directory': icingaSettings_complete['objects']['directory']})
+        kwargs.setdefault('hostname', hostname)
+        kwargs.setdefault('hostgroup', hostgroup)
+        if hostgroup:
+            kwargs.setdefault('type', 'hostgroup')
+            service_subdirectory = 'hostgroups'
+            service_key_hostname = 'hostgroup_name'
+        else:
+            kwargs.setdefault('type', 'host')
+            service_subdirectory = 'hosts'
+            service_key_hostname = 'host_name'
+        # we set the filename here
+        file='/'.join([service_subdirectory, hostname+'.cfg'])
+        kwargs.setdefault('file', file)
+        kwargs.setdefault('state_name_salt', replace_chars(file))
+        icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
+
+        # we remember the host to add:
+
+        if fromsettings:
+            add_auto_configuration_host.objects[hostname] = { 'fromsettings': fromsettings }
+        else:
+            add_auto_configuration_host.objects[hostname] = {
+                'hostname': hostname,
+                'hostgroup': hostgroup,
+                'attrs': attrs,
+                'ssh_user': ssh_user,
+                'ssh_addr': ssh_addr,
+                'ssh_port': ssh_port,
+                'ssh_timeout': ssh_timeout,
+                'backup_burp_age': backup_burp_age,
+                'backup_rdiff': backup_rdiff,
+                'beam_process': beam_process,
+                'celeryd_process': celeryd_process,
+                'cron': cron,
+                'ddos': ddos,
+                'debian_updates': debian_updates,
+                'dns_association_hostname': dns_association_hostname,
+                'dns_association': dns_association,
+                'dns_reverse_association': dns_reverse_association,
+                'disk_space': disk_space,
+                'disk_space_root': disk_space_root,
+                'disk_space_var': disk_space_var,
+                'disk_space_srv': disk_space_srv,
+                'disk_space_tmp': disk_space_tmp,
+                'disk_space_data': disk_space_data,
+                'disk_space_mnt_data': disk_space_mnt_data,
+                'disk_space_home': disk_space_home,
+                'disk_space_var_lxc': disk_space_var_lxc,
+                'disk_space_var_makina': disk_space_var_makina,
+                'disk_space_var_mysql': disk_space_var_mysql,
+                'disk_space_var_www': disk_space_var_www,
+                'disk_space_backups': disk_space_backups,
+                'disk_space_backups_guidtz': disk_space_backups_guidtz,
+                'disk_space_var_backups_bluemind': disk_space_var_backups_bluemind,
+                'disk_space_var_spool_cyrus': disk_space_var_spool_cyrus,
+                'disk_space_nmd_www': disk_space_nmd_www,
+                'drbd': drbd,
+                'epmd_process': epmd_process,
+                'erp_files': erp_files,
+                'fail2ban': fail2ban,
+                'gunicorn_process': gunicorn_process,
+                'haproxy': haproxy,
+                'ircbot_process': ircbot_process,
+                'load_avg': load_avg,
+                'mail_cyrus_imap_connections': mail_cyrus_imap_connections,
+                'mail_imap': mail_imap,
+                'mail_imap_ssl': mail_imap_ssl,
+                'mail_pop': mail_pop,
+                'mail_pop_ssl': mail_pop_ssl,
+                'mail_pop_test_account': mail_pop_test_account,
+                'mail_server_queues': mail_server_queues,
+                'mail_smtp': mail_smtp,
+                'megaraid_sas': megaraid_sas,
+                'memory': memory,
+                'memory_hyperviseur': memory_hyperviseur,
+                'mysql_process': mysql_process,
+                'network': network,
+                'ntp_peers': ntp_peers,
+                'ntp_time': ntp_time,
+                'only_one_nagios_running': only_one_nagios_running,
+                'postgres_port': postgres_port,
+                'postgres_process': postgres_process,
+                'prebill_sending': prebill_sending,
+                'raid': raid,
+                'sas': sas,
+                'snmpd_memory_control': snmpd_memory_control,
+                'solr': solr,
+                'ssh': ssh,
+                'supervisord_status': supervisord_status,
+                'swap': swap,
+                'tiles_generator_access': tiles_generator_access,
+                'ware_raid': ware_raid,
+                'web_apache_status': web_apache_status,
+                'web_openid': web_openid,
+                'web': web,
+                'services_attrs': services_attrs,
+            }
+        return icingaSettings
+
+
+# global variable initialisation
+add_auto_configuration_host.objects={}
 
 def dump():
     return mc_states.utils.dump(__salt__,__name)
