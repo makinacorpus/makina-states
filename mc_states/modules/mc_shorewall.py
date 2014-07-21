@@ -111,6 +111,10 @@ def settings():
         protos = ['tcp', 'udp']
         grains = __grains__
         pillar = __pillar__
+        data_net = __salt__['mc_network.default_net']()
+        default_netmask = data_net['default_netmask']
+        gifaces = data_net['gifaces']
+        default_if = data_net['default_if']
         services_registry = __salt__['mc_services.registry']()
         controllers_registry = __salt__['mc_controllers.registry']()
         nodetypes_registry = __salt__['mc_nodetypes.registry']()
@@ -219,7 +223,6 @@ def settings():
         data['shw_rules'] = data['rules']
         data['shw_defaultState'] = data['defaultstate']
         data['shw_enabled'] = data['enabled']
-        gifaces = grains['ip_interfaces'].items()
         # search & autodetect for well known network interfaces bridges
         # to activate in case default rules for lxc & docker
         if data['have_lxc'] is None:
@@ -325,48 +328,7 @@ def settings():
                 data['interfaces'].setdefault(z, [])
                 if iface not in data['interfaces'][z]:
                     data['interfaces'][z].append(iface)
-
-        default_route = __grains__.get('makina.default_route', OrderedDict())
-        # default mode: masquerading on the interface containing
-        # the default route for lxc and docker containers
-        # later, we will add maybe support for failover ip bridges/ vmac
-        nifaces = [a[0] for a in gifaces
-                   if 'veth' not in a
-                   and 'br' not in a
-                   and 'tun' not in a
-                   and 'tap' not in a]
-        brifs = [a for a in nifaces if 'br' in a]
         default_lxc_docker_mode = 'masq'
-        if 'eth0' in nifaces:
-            default_if = 'eth0'
-        else:
-            default_if = nifaces[0]
-        # if a bridge bas the if port, use that instead
-        if brifs and not grains['ip_interfaces'].get(default_if):
-            for br in brifs:
-                res = __salt__['cmd.run']('brctl show {0}'.format(br))
-                if default_if in res:
-                    default_if = br
-                    break
-        # in all cases, if possible use the gw holder as main interface
-        if default_route:
-            default_if = default_route['iface']
-        try:
-            default_net = '.'.join(
-                [a for a in gifaces
-                 if a[0] == default_if][
-                     0][1][0].split('.')[:3] + ['0'])
-            parts = default_net.split('.')
-            parts.reverse()
-            default_netmask = 32
-            for part in parts:
-                if part == '0':
-                    default_netmask -= 8
-                else:
-                    break
-        except Exception:
-            default_net = None
-            default_netmask = 32
         if default_lxc_docker_mode == 'masq':
             for z, ifaces in data['interfaces'].items():
                 if 'lxc' in z or 'dck' in z:

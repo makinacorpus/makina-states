@@ -35,6 +35,61 @@ __name = 'network'
 
 log = logging.getLogger(__name__)
 
+
+def default_net():
+    '''
+    Function to be used on a running system (opposed to settings)
+    Use by default a bridge (with main interface as the only first port)
+    or the main interface as the link with internet
+    '''
+    gifaces = __grains__['ip_interfaces'].items()
+    default_route = __grains__.get('makina.default_route', OrderedDict())
+    # default mode: masquerading on the interface containing
+    # the default route for lxc and docker containers
+    # later, we will add maybe support for failover ip bridges/ vmac
+    nifaces = [a[0] for a in gifaces
+               if 'veth' not in a
+               and 'br' not in a
+               and 'tun' not in a
+               and 'tap' not in a]
+    brifs = [a for a in nifaces if 'br' in a]
+    if 'eth0' in nifaces:
+        default_if = 'eth0'
+    else:
+        default_if = nifaces[0]
+    # if a bridge bas the if port, use that instead
+    if brifs and not __grains__['ip_interfaces'].get(default_if):
+        for br in brifs:
+            res = __salt__['cmd.run']('brctl show {0}'.format(br))
+            if default_if in res:
+                default_if = br
+                break
+    try:
+        default_net = '.'.join(
+            [a for a in gifaces
+             if a[0] == default_if][
+                 0][1][0].split('.')[:3] + ['0'])
+        parts = default_net.split('.')
+        parts.reverse()
+        default_netmask = 32
+        for part in parts:
+            if part == '0':
+                default_netmask -= 8
+            else:
+                break
+    except Exception:
+        default_net = None
+        default_netmask = 32
+    return {
+        'default_net': default_net,
+        'default_netmask': default_netmask,
+        'gifaces': gifaces,
+        'nifaces': nifaces,
+        'brifs': brifs,
+        'default_if': default_if,
+    }
+
+
 def sort_ifaces(infos):
     a = infos[0]
     key = a
