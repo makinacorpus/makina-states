@@ -27,6 +27,7 @@ shorewall-config:
   'interfaces',
   'masq',
   'nat',
+  'proxyarp',
   'params',
   'policy',
   'rules',

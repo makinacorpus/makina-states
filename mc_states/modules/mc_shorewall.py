@@ -87,7 +87,7 @@ def settings():
 
     All entries are merged in the lexicograpĥical order
 
-    item-makina-shorewall
+    makina-states.services.firewall.shorewall:
         interfaces
             TBD
         rules
@@ -99,6 +99,10 @@ def settings():
         zones
             TBD
         masqs
+            TBD
+        proxyarp
+            TBD
+        nat
             TBD
 
     '''
@@ -137,6 +141,7 @@ def settings():
                 'params': OrderedDict(),
                 'rules': [],
                 'nat': [],
+                'proxyarp': [],
                 'policies': [],
                 'zones': OrderedDict(),
                 'masqs': [],
