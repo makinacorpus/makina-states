@@ -84,7 +84,7 @@ def loaddb_do(*a, **kw):
         if item in ['format']:
             types = (int,)
         if not isinstance(db[item], types):
-            raise ValueError('Db is invalid')
+            raise ValueError('Db is invalid for {0}'.format(item))
     return db
 
 def load_db(ttl=60):
@@ -661,7 +661,7 @@ def get_ldap(ttl=60):
                 for k, val in default.items():
                     sdata.setdefault(k, val)
         return data
-    cache_key = 'mc_pillar.get_nss'
+    cache_key = 'mc_pillar.getldap'
     return memoize_cache(_do_getldap, [], {}, cache_key, ttl)
 
 
@@ -808,7 +808,7 @@ def get_ns_slaves(id_, dns_servers=None, default=None, ttl=60):
             id_, OrderedDict()).get('slaves', OrderedDict())
         if not lslaves:
             lslaves = default.get('slaves', OrderedDict())
-        if not isinstance(lslaves, list):
+        if lslaves and not isinstance(lslaves, list):
             raise ValueError('Invalid format for slaves for {0}'.format(id_))
         for item in lslaves:
             if not isinstance(item, dict):
@@ -960,7 +960,6 @@ def rrs_mx_for(domain, ttl=60):
     return memoize_cache(_do_mx, [domain], {}, cache_key, ttl)
 
 
-
 def rrs_ns_for(domain, ttl=60):
     '''Return all configured NS records for a domain'''
     def _dorrsnsfor(domain):
@@ -969,7 +968,13 @@ def rrs_ns_for(domain, ttl=60):
         ips = db['ips']
         all_rrs = OrderedDict()
         servers = get_nss_for_zone(domain)
-        for ns_map, fqdn in servers['slaves'].items():
+        slaves = servers['slaves']
+        if not slaves:
+            rrs = all_rrs.setdefault(domain, [])
+            rrs.append(
+                rr_entry('@', ["{0}.".format(servers['master'])],
+                         rrs_ttls, record_type='NS'))
+        for ns_map, fqdn in slaves.items():
             # ensure NS A mapping is there
             assert ips[ns_map] == ips_for(fqdn)
             rrs = all_rrs.setdefault(fqdn, [])

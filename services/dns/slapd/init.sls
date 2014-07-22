@@ -1,4 +1,4 @@
-{{ salt['mc_macros.register']('services', 'dns.slapd) }}
+{{ salt['mc_macros.register']('services', 'dns.slapd') }}
 include:
   - makina-states.services.dns.slapd.hooks
   - makina-states.services.dns.slapd.prerequisites

@@ -129,12 +129,20 @@ def salt_pw(pw):
     salt = secure_password(8)
     h = hashlib.sha1(pw)
     h.update(salt)
-    return encode( "{SSHA}" + h.hexdigest() + salt)
+    return encode("{SSHA}" + encode(h.digest() + salt))
+    #return "{SSHA}" + encode(h.hexdigest() + salt)
+    #return encode("{SSHA}" + encode(h.hexdigest() + salt))
+    #return "{SSHA}" + h.hexdigest() + salt
+    #return encode( "{SSHA}" + h.hexdigest() + salt)
 
 
 def sha_pw(pw):
     h = hashlib.sha1(pw)
-    return encode("{SHA}" + h.hexdigest())
+    return encode("{SHA}" + encode(h.digest()))
+    #return "{SHA}" + encode(h.hexdigest())
+    #return encode("{SHA}" + encode(h.hexdigest()))
+    #return "{SHA}" + h.hexdigest()
+    #return encode("{SHA}" + h.hexdigest())
 
 
 def settings():
@@ -198,7 +206,7 @@ def settings():
                 'loglevel': 'sync',
                 'syncprov': True,
                 'syncrepl': None,
-                'olcloglevel': -1,
+                'olcloglevel': "sync",
                 'tls_cacert': '',
                 'tls_cert': '',
                 'tls_key': '',

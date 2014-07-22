@@ -87,7 +87,7 @@ def settings():
 
     All entries are merged in the lexicograpĥical order
 
-    item-makina-shorewall
+    makina-states.services.firewall.shorewall:
         interfaces
             TBD
         rules
@@ -100,6 +100,10 @@ def settings():
             TBD
         masqs
             TBD
+        proxyarp
+            TBD
+        nat
+            TBD
 
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
@@ -107,6 +111,11 @@ def settings():
         protos = ['tcp', 'udp']
         grains = __grains__
         pillar = __pillar__
+        data_net = __salt__['mc_network.default_net']()
+        default_netmask = data_net['default_netmask']
+        gifaces = data_net['gifaces']
+        default_if = data_net['default_if']
+        default_net = data_net['default_net']
         services_registry = __salt__['mc_services.registry']()
         controllers_registry = __salt__['mc_controllers.registry']()
         nodetypes_registry = __salt__['mc_nodetypes.registry']()
@@ -137,6 +146,7 @@ def settings():
                 'params': OrderedDict(),
                 'rules': [],
                 'nat': [],
+                'proxyarp': [],
                 'policies': [],
                 'zones': OrderedDict(),
                 'masqs': [],
@@ -160,6 +170,7 @@ def settings():
                 # list of mappings
                 # dict of section/rule mappings parsed from rules
                 '_rules': OrderedDict(),
+                'no_default_net_bridge': False,
                 'no_invalid': True,
                 'no_snmp': False,
                 'no_mongodb': False,
@@ -214,7 +225,6 @@ def settings():
         data['shw_rules'] = data['rules']
         data['shw_defaultState'] = data['defaultstate']
         data['shw_enabled'] = data['enabled']
-        gifaces = grains['ip_interfaces'].items()
         # search & autodetect for well known network interfaces bridges
         # to activate in case default rules for lxc & docker
         if data['have_lxc'] is None:
@@ -229,14 +239,17 @@ def settings():
 
         opts_45 = ',sourceroute=0'
         bridged_opts = 'routeback,bridge,tcpflags,nosmurfs,logmartians'
-        phy_opts = ('tcpflags,dhcp,nosmurfs,routefilter,'
-                    'logmartians')
+        bridged_net_opts = (
+            'bridge,tcpflags,dhcp,nosmurfs,routefilter,logmartians')
+        phy_opts = 'tcpflags,dhcp,nosmurfs,routefilter,logmartians'
         if sw_ver >= '4.4':
             phy_opts += opts_45
+            bridged_net_opts += opts_45
         iface_opts = {
             'vpn': '',
             'net': phy_opts,
             'rpn': phy_opts,
+            'brnet': bridged_net_opts,
             'lxc': bridged_opts,
             'dck': bridged_opts,
         }
@@ -244,6 +257,7 @@ def settings():
         # enable all by default, but can by overriden easily in config
         # this will act at shorewall parameters in later rules
         burpsettings = __salt__['mc_burp.settings']()
+
         if not data['no_default_params']:
             for p in ['SYSLOG', 'SSH', 'SNMP', 'PING', 'LDAP', 'SALT',
                       'NTP', 'MUMBLE', 'DNS', 'WEB', 'MONGODB',
@@ -282,6 +296,13 @@ def settings():
                for i, ips in gifaces
                if i.startswith('em') and len(i) in [3, 4]]
 
+        has_br0 = 'br0' in [a[0] for a in gifaces]
+        # add br0 to the net network even if it does not
+        # exists to facilitate switchs from wired nic
+        # to bridged nics
+        if not data['no_default_net_bridge'] and not has_br0:
+            gifaces.append(('br0', []))
+
         for iface, ips in gifaces:
             if 'lo' in iface:
                 continue
@@ -308,11 +329,14 @@ def settings():
             if 'docker' in iface:
                 if data['have_docker']:
                     z = 'dck'
+            if iface == 'br0':
+                z = 'brnet'
             if 'lxc' in iface:
                 if data['have_lxc']:
                     z = 'lxc'
             data['default_interfaces'].setdefault(z, [])
-            data['default_interfaces'][z].append({
+            zz = {'brnet': 'net'}.get(z, z)
+            data['default_interfaces'][zz].append({
                 'interface': iface, 'options': iface_opts[z]})
 
         for z, ifaces in data['default_interfaces'].items():
@@ -320,39 +344,7 @@ def settings():
                 data['interfaces'].setdefault(z, [])
                 if iface not in data['interfaces'][z]:
                     data['interfaces'][z].append(iface)
-
-        default_route = __grains__.get('makina.default_route', OrderedDict())
-        # default mode: masquerading on the interface containing
-        # the default route for lxc and docker containers
-        # later, we will add maybe support for failover ip bridges/ vmac
-        nifaces = [a[0] for a in gifaces
-                   if 'veth' not in a
-                   and 'br' not in a
-                   and 'tun' not in a
-                   and 'tap' not in a]
         default_lxc_docker_mode = 'masq'
-        if 'eth0' in nifaces:
-            default_if = 'eth0'
-        else:
-            default_if = nifaces[0]
-        if default_route:
-            default_if = default_route['iface']
-        try:
-            default_net = '.'.join(
-                [a for a in gifaces
-                 if a[0] == default_if][
-                     0][1][0].split('.')[:3] + ['0'])
-            parts = default_net.split('.')
-            parts.reverse()
-            default_netmask = 32
-            for part in parts:
-                if part == '0':
-                    default_netmask -= 8
-                else:
-                    break
-        except Exception:
-            default_net = None
-            default_netmask = 32
         if default_lxc_docker_mode == 'masq':
             for z, ifaces in data['interfaces'].items():
                 if 'lxc' in z or 'dck' in z:
@@ -375,7 +367,7 @@ def settings():
                     'source': '$FW', 'dest': z, 'policy': 'ACCEPT'})
 
             for z in ['fw'] + [a for a in data['zones']]:
-                if not z in data['internal_zones'] and not z in ['net']:
+                if z not in data['internal_zones'] and z not in ['net']:
                     data['internal_zones'].append(z)
 
             # dck -> net: auth
@@ -817,6 +809,7 @@ def settings():
             data['params']['{0}_{1}'.format('SALT', p)] = value
         data['params_keys'] = [a for a in data['params']]
         data['params_keys'].sort()
+
         return data
     return _settings()
 

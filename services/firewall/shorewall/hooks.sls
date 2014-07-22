@@ -1,5 +1,10 @@
+include:
+  - makina-states.localsettings.network
+
 shorewall-preinstall:
   mc_proxy.hook:
+    - watch:
+      - mc_proxy: network-last-hook
     - watch_in:
       - mc_proxy: shorewall-preconf
       - mc_proxy: shorewall-postconf

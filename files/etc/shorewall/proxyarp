@@ -1,0 +1,5 @@
+#ADDRESS INTERFACE   EXTERNAL  HAVEROUTE  PERSISTENT
+{% set shwdata = salt['mc_utils.json_load'](shwdata) %}
+{% for i in  shwdata.proxyarp %}
+{{i}}
+{% endfor %}

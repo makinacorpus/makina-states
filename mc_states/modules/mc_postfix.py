@@ -97,7 +97,7 @@ def settings():
                 'smtp_auth': True,
                 'smtpd_auth': True,
                 'inet_interfaces': None,
-                'mode': 'localdeliveryonly',
+                'mode': '',
                 'virtual_mailbox_base': '/var/mail/virtual',
                 'mailbox_size_limit': 0,
                 'mynetworks': local_networks,
@@ -107,11 +107,12 @@ def settings():
                 'sasl_passwd': [],
                 'transport': [],
                 'virtual_map': OrderedDict(),
-                'local_dest': 'root@localhost',
+                'local_dest': 'root',
             }
         )
         if nodetypes_registry['is']['devhost']:
             data['local_dest'] = 'vagrant@localhost'
+            data['mode'] = 'localdeliveryonly'
         if data['mode'] in ['redirect']:
             data['virtual_map']['/.*/'] = data['local_dest']
         if data['mode'] in ['localdeliveryonly']:
