@@ -269,14 +269,14 @@ icinga-mklivestatus-conf:
 
 # add templates and commands (and contacts, timeperiods...)
 {% for name in data.objects.objects_definitions %}
-{% set object = salt['mc_icinga.get_settings_for_object']('objects_definitions', name) %}
-    {{ icinga.configuration_add_object(file=object.file, fromsettings=name) }}
+{% set file = salt['mc_icinga.get_settings_for_object']('objects_definitions', name, 'file') %}
+    {{ icinga.configuration_add_object(file=file, fromsettings=name) }}
 {% endfor %}
 
 # add autoconfigured hosts
 {% for name in data.objects.autoconfigured_hosts_definitions %}
-{% set object = salt['mc_icinga.get_settings_for_object']('autoconfigured_hosts_definitions', name) %}
-    {{ icinga.configuration_add_auto_host(hostname=object.hostname, fromsettings=name) }}
+{% set hostname = salt['mc_icinga.get_settings_for_object']('autoconfigured_hosts_definitions', name, 'hostname') %}
+    {{ icinga.configuration_add_auto_host(hostname=hostname, fromsettings=name) }}
 {% endfor %}
 
 # really add the files

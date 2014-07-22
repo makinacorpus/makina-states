@@ -1552,7 +1552,7 @@ def objects():
                 'attrs': {
                     'name': "HT_ICON_Dedibox",
                     'use': "_HT_BASE",
-                    'alias': "Hebergeur Dedibox pour logo",
+                    'alias': "Hébergeur Dedibox pour logo",
                     'register': 0,
                     'icon_image': "heberg/dedibox.png",
                 },
@@ -1563,7 +1563,7 @@ def objects():
                 'attrs': {
                     'name': "HT_ICON_Free",
                     'use': "_HT_BASE",
-                    'alias': "Hebergeur Free pour logo",
+                    'alias': "Hébergeur Free pour logo",
                     'register': 0,
                     'icon_image': "heberg/news_free.gif",
                 },
@@ -1574,7 +1574,7 @@ def objects():
                 'attrs': {
                     'name': "HT_ICON_Gandi",
                     'use': "_HT_BASE",
-                    'alias': "Hebergeur Gandi pour logo",
+                    'alias': "Hébergeur Gandi pour logo",
                     'register': 0,
                     'icon_image': "heberg/gandi.png",
                 },
@@ -1585,7 +1585,7 @@ def objects():
                 'attrs': {
                     'name': "HT_ICON_ImageCrea",
                     'use': "_HT_BASE",
-                    'alias': "Hebergeur ImageCrea pour logo",
+                    'alias': "Hébergeur ImageCrea pour logo",
                     'register': 0,
                     'icon_image': "heberg/imagecreation.jpg",
                 },
@@ -1596,7 +1596,7 @@ def objects():
                 'attrs': {
                     'name': "HT_ICON_OVH",
                     'use': "_HT_BASE",
-                    'alias': "Hebergeur OVH pour logo",
+                    'alias': "Hébergeur OVH pour logo",
                     'register': 0,
                     'icon_image': "heberg/logo_ovh.png",
                 },
@@ -1607,7 +1607,7 @@ def objects():
                 'attrs': {
                     'name': "HT_ICON_PHPNET",
                     'use': "_HT_BASE",
-                    'alias': "Hebergeur PHPNET pour logo",
+                    'alias': "Hébergeur PHPNET pour logo",
                     'register': 0,
                     'icon_image': "heberg/phpnet.gif",
                 },
@@ -1912,29 +1912,23 @@ def objects():
 
     return data
 
-def get_settings_for_object(target=None, obj=None):
+
+def get_settings_for_object(target=None, obj=None, attr=None):
+    print('call get_settings_for_object')
     '''
     expand the subdictionaries which are not cached in mc_icinga.settings.objects
     '''
+    print('end call get_settings_for_object')
     if 'purge_definitions' == target:
-        return __salt__['mc_utils.defaults']('makina-states.services.monitoring.icinga.objects.'+target, { target: objects()[target] })[target]
+        res =  __salt__['mc_utils.defaults']('makina-states.services.monitoring.icinga.objects.'+target, { target: objects()[target] })[target]
     else:
-        try:
-            a = __salt__['mc_utils.defaults']('makina-states.services.monitoring.icinga.objects.'+target+'.'+obj, objects()[target][obj])
-        except KeyError:
-            import pdb; pdb.set_trace()
-        return a
-
-#    objs = objects()
-#    if 'purge_definitions' == target:
-#        # transform list in dict
-#        res = objs[target]
-#    else:
-#        res = objs[target][obj]
-#    del objs
-#    return res
+        res = __salt__['mc_utils.defaults']('makina-states.services.monitoring.icinga.objects.'+target+'.'+obj, objects()[target][obj])
+        if attr: # and attr in res:
+            res = res[attr]
+    return res
 
 def settings():
+    print('call settings')
     '''
     icinga settings
 
@@ -2146,7 +2140,7 @@ def settings():
         locs = __salt__['mc_locations.settings']()
 
 
-        # do not store in cached
+        # do not store in cache
         # registry the whole conf, memory would explode
         # keep only the list of keys for each subdictionary
         # get_settings_for_object is the function to retrieve a non cached subdictionary
@@ -2574,6 +2568,7 @@ def settings():
             registry_format='pack')
         return data
 
+    print('end call settings')
     return _settings()
 
 def replace_chars(s):
@@ -2583,6 +2578,7 @@ def replace_chars(s):
     return res
 
 def add_configuration_object(file=None, type=None, attrs=None, definition=None, fromsettings=None, get=False, get_objects_file=None, **kwargs):
+    print('call add_configuration_object')
     '''Add the object file in the file's list to be added'''
     if get:
         if get_objects_file:
@@ -2597,6 +2593,7 @@ def add_configuration_object(file=None, type=None, attrs=None, definition=None, 
         if file not in add_configuration_object.objects:
             add_configuration_object.objects[file]=[]
         add_configuration_object.objects[file].append({'fromsettings': fromsettings})
+    print('end call add_configuration_object')
 
 
 # global variable initialisation
@@ -2605,8 +2602,7 @@ add_configuration_object.objects={}
 def remove_configuration_object(file=None, get=False, **kwargs):
     '''Add the file in the file's list to be removed'''
     if get :
-        return []
-#        return remove_configuration_object.files
+        return remove_configuration_object.files
     elif file:
         icingaSettings_complete = __salt__['mc_icinga.settings']()
         # append " \"file\"" to the global variable
@@ -2713,6 +2709,7 @@ def add_auto_configuration_host_settings(hostname,
                                          web=False,
                                          services_attrs={},
                                          **kwargs):
+    print('call add_auto_configuration_host_settings')
     '''Settings for add_auto_configuration_host macro
 
        The dictionaries and lists used are:
@@ -2755,11 +2752,9 @@ def add_auto_configuration_host_settings(hostname,
 
     if hostgroup:
         kwargs.setdefault('type', 'hostgroup')
-        service_subdirectory = 'hostgroups'
         service_key_hostname = 'hostgroup_name'
     else:
         kwargs.setdefault('type', 'host')
-        service_subdirectory = 'hosts'
         service_key_hostname = 'host_name'
 
     kwargs.setdefault('attrs', attrs)
@@ -3618,15 +3613,9 @@ def add_auto_configuration_host_settings(hostname,
     
     kwargs.setdefault('services_attrs', services_attrs)
 
-    # we set the filename here
-    file='/'.join([service_subdirectory, hostname+'.cfg'])
-    kwargs.setdefault('file', file)
-
-    kwargs.setdefault('state_name_salt', replace_chars(file))
-
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
+    print('end call add_auto_configuration_host_settings')
     return icingaSettings
-
 
 def add_auto_configuration_host(hostname=None,
                                 hostgroup=False,
@@ -3705,6 +3694,9 @@ def add_auto_configuration_host(hostname=None,
                                 fromsettings=None,
                                 get=False,
                                 **kwargs):
+
+    print('call add_auto_configuration_host')
+    print('end call add_auto_configuration_host')
     if get:
         if hostname:
             return add_auto_configuration_host.objects[hostname]
@@ -3715,7 +3707,7 @@ def add_auto_configuration_host(hostname=None,
 
         # if fromsettings is used, we need to get some arguments values
         if fromsettings:
-            host = get_settings_for_object('autoconfigured_hosts_definitions', fromsettings)
+            host =  get_settings_for_object('autoconfigured_hosts_definitions', fromsettings)
             if 'hostgroup' in host:
                 hostgroup = host['hostgroup']
 
