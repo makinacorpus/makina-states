@@ -1914,11 +1914,9 @@ def objects():
 
 
 def get_settings_for_object(target=None, obj=None, attr=None):
-    print('call get_settings_for_object')
     '''
     expand the subdictionaries which are not cached in mc_icinga.settings.objects
     '''
-    print('end call get_settings_for_object')
     if 'purge_definitions' == target:
         res =  __salt__['mc_utils.defaults']('makina-states.services.monitoring.icinga.objects.'+target, { target: objects()[target] })[target]
     else:
@@ -3815,9 +3813,15 @@ def add_auto_configuration_host(hostname=None,
             }
         return icingaSettings
 
-
 # global variable initialisation
 add_auto_configuration_host.objects={}
+
+#TODO: find how to call this function
+def clean_global_variables():
+    '''Function to remove global variables'''
+    del add_configuration_object.objects
+    del remove_configuration_object.files
+    del add_auto_configuration_host.objects
 
 def dump():
     return mc_states.utils.dump(__salt__,__name)

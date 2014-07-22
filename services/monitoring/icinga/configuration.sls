@@ -302,6 +302,7 @@ icinga-configuration-{{state_name_salt}}-add-objects-conf:
 {% endfor %}
 
 # really delete the files
+# if there is a lot of files, it is better to use the "source" argument instead of the "contents" argument
 {% set tmpf="/tmp/delete.sh" %}
 icinga-configuration-remove-objects-conf:
   file.managed:
@@ -329,6 +330,7 @@ icinga-configuration-remove-objects-conf:
       - mc_proxy: icinga-configuration-pre-clean-directories
     - watch_in:
       - mc_proxy: icinga-configuration-post-clean-directories
+
 {#
 {%- import "makina-states/services/monitoring/icinga/macros.jinja" as icinga with context %}
 {{icinga.icingaAddWatcher('foo', '/bin/echo', args=[1]) }}

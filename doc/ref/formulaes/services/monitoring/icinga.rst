@@ -441,9 +441,68 @@ The services for the host are in the same file.
 This decrease the number of states and the call to configuration_remove_object is useless to delete old services because the file with services of the hosts
 is naturally edited.
 
-The execution time decrease to 1 minute about for 128 hosts
+The execution time decrease to 1 minute about for 128 hosts but with 1000 hosts it ran out of memory.
+However, it is perhaps a bad idea to have all services in a same file because the files becomes long.
 
-However, it is perhaps a bad idea to have all services in a same file because the files becomes long
+The memory problem was solved by moving the "object" subdiction so that it is not cached.
+Only a list of hosts is cached is "object" subdictionary.
+
+The function "get_settings_for_object" is designed to get non cached values.
+
+An other modification is that the macro doesn't give the data to template.
+Before the modification it was::
+
+    {% set data = salt['mc_icinga.add_auto_configuration_host_settings'](...) %}
+    icinga-configuration-{{data.state_name_salt}}-add-auto-host-conf:
+        ...
+        - defaults
+          data: |
+                {{sdata}}
+
+Now, the data are stored in a light dictionary in global variables in "mc_icinga.add_auto_configuration_host.objects"
+In the macro there is::
+
+    {% set data = salt['mc_icinga.add_auto_configuration_host'](...) %}
+    icinga-configuration-{{data.state_name_salt}}-add-auto-host-conf:
+        ...
+        - defaults
+          hostname: |
+                {{salt['mc_utils.json_dump'](data.hostname}}
+
+The function "mc_icinga.add_auto_configuration_host" stores the object informations in a dictionary like::
+
+    {
+        'hostname': {}
+    }
+
+Each subdictionary contains all arguments given to the macro.
+But this methods requires to store a lot of data. For objects which are in localsettings, I have added a "fromsetting" argument. Instead of store all arguments given to the macro, only the key in localsettings is stored::
+
+    {
+        'hostname': {'fromsettings': 'host1'}
+    }
+
+Only key of this dictionary is given to template. 
+The template get the object from localsettings by calling "get_settings_for_object" if a "fromsettings" key is found.
+And the settings are given to the previous "mc_icinga.add_auto_configuration_host_settings" function.
+
+All is done in the template in order to avoid store a lot of data in memory during a long time.
+Then, a lot of memory is used during template compilation, when::
+
+    default:
+      data: |
+            {{sdata}}
+
+is replaced with::
+
+    default:
+      data: |
+            {a big dictionary here which is the return of utf8 encode in order to use more memory}
+
+
+
+With theses modifications, it is possible to manage only 7000 hosts with 10 services per host with 1Go of memory (another 800Mo of memory is needed to run salt-master).
+
 
 Add a new service in configuration_add_auto_host macro
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
