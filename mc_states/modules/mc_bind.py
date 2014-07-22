@@ -164,6 +164,7 @@ def settings():
                 'pkgs': ['bind9',
                          'bind9utils',
                          'bind9-host'],
+                'forwarders': [],
                 'config_dir': '/etc/bind',
                 'bind_config': '/etc/bind/named.conf',
                 'acl_config': '/etc/bind/named.conf.acl',
@@ -199,7 +200,7 @@ def settings():
             grain='os_family', default='Debian')
         defaults = __salt__['mc_utils.dictupdate'](
             os_defaults, {
-                'default_dnses': ['8.8.8.8', '4.4.4.4'],
+                'default_dnses': [],
                 'log_dir': '/var/log/named',
                 "rndc_conf": "/etc/rndc.conf",
                 "rndc_key": "/etc/bind/rndc.key",
@@ -345,6 +346,10 @@ def settings():
             if 'secret' not in kdata:
                 raise ValueError(
                     'no secret for {0}'.format(k))
+        for i in ['127.0.0.1', '8.8.8.8', '4.4.4.4']:
+            if not i in data['default_dnses']:
+                data['default_dnses'].append(i)
+        data['default_dnses'] = __salt__['mc_utils.uniquify'](data['default_dnses'])
         return data
     return _settings()
 

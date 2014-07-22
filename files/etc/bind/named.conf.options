@@ -10,5 +10,10 @@ options {
         listen-on-v6 { {{data.ipv6}}; };
         listen-on { {{data.ipv4}}; };
         allow-transfer {"none";};
+        {% if data.forwarders%}
+        forwarders {
+            {%for f in data.forwarders %}{{f}};{%endfor%}
+        };
+        {% endif%}
 };
 // vim: set ft=named:
