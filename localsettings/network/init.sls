@@ -1,15 +1,25 @@
 {#-
 # network configuration
 #}
-{% set mcnet = salt['mc_network.settings']() %}
-{{ salt['mc_macros.register']('localsettings', 'network') }}
-{% if salt['mc_controllers.mastersalt_mode']() %}
+include:
+  - makina-states.localsettings.network.hooks
+{% if salt['mc_services.registry']().has['firewall.shorewall'] %}
+# be sure to reconfigure firewall on network
+# reconfiguration
+  - makina-states.services.firewall.shorewall
+{% endif %}
 
+
+{% set mcnet = salt['mc_network.settings']() %}
 {%- set locs = salt['mc_locations.settings']() %}
+{{ salt['mc_macros.register']('localsettings', 'network') }}
+{%  if salt['mc_controllers.mastersalt_mode']() %}
 {%- if mcnet.networkManaged %}
 {%- if grains['os_family'] in ['Debian'] %}
 network-cfg:
   file.managed:
+    - watch_in:
+      - mc_proxy: network-last-hook
     - user: root
     - group: root
     - mode: '0644'
@@ -24,6 +34,8 @@ network-cfg:
 {% set ifn = mcnet.interfaces[ifc]['ifname'] %}
 network-cfg-{{ifc}}:
   file.managed:
+    - watch_in:
+      - mc_proxy: network-last-hook
     - user: root
     - group: root
     - mode: '0644'
@@ -38,11 +50,13 @@ network-cfg-{{ifc}}:
 
 network-services-{{ifc}}:
   cmd.watch:
-    - name: ifdown {{ifn}};ifup {{ifn}}
+    - name: ifdown {{ifn}};ifconfig {{ifn}} down;ifup {{ifn}}
+    - watch_in:
+      - mc_proxy: network-last-hook
     - watch:
       - file: network-cfg
       - file: network-cfg-{{ifc}}
-{# restart bridges after getting ifs in static mode #}
+{# restart bridges after getting real nic ifs in static mode #}
 {% if 'br' in ifc %}
 {% for ifcinner in mcnet.interfaces_order %}
 {% if not 'br' in ifcinner %}
@@ -51,19 +65,8 @@ network-services-{{ifc}}:
 {%endif %}
 {%endfor %}
 {%endif %}
-{% endfor %}
-
-#network-services:
-#  service.running:
-#    - enable: True
-#    - names:
-#      {% if grains.get('oscodename:') not in ['trusty'] %}- networking{% endif %}
-#      {% if grains['os'] in ['Ubuntu'] %}- resolvconf{% endif %} {% endif %}
+{%endfor %}
 
 {% endif %}
 {% endif %}
-{# be sure to have at least one state #}
-network-last-hook:
-  mc_proxy.hook:
-    - order: last
-
+{% endif %}
