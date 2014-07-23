@@ -27,7 +27,6 @@ shorewall-restart:
       - mc_proxy: shorewall-prerestart
     - watch_in:
       - mc_proxy: shorewall-postrestart
-
 {#-
 # Disabled as we now use {{ locs.conf_dir }}/rc.local
 # shorewall-upstart:

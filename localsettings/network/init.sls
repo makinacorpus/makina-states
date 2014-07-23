@@ -7,6 +7,7 @@ include:
 # be sure to reconfigure firewall on network
 # reconfiguration
   - makina-states.services.firewall.shorewall
+  - makina-states.localsettings.grub
 {% endif %}
 
 

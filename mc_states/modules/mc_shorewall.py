@@ -334,11 +334,10 @@ def settings():
             if 'lxc' in iface:
                 if data['have_lxc']:
                     z = 'lxc'
-            data['default_interfaces'].setdefault(z, [])
             zz = {'brnet': 'net'}.get(z, z)
+            data['default_interfaces'].setdefault(zz, [])
             data['default_interfaces'][zz].append({
                 'interface': iface, 'options': iface_opts[z]})
-
         for z, ifaces in data['default_interfaces'].items():
             for iface in ifaces:
                 data['interfaces'].setdefault(z, [])
