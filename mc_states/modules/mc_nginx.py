@@ -104,6 +104,8 @@ def settings():
         nginx logdir (/var/log/nginx)
     access_log
         '{logdir}/access.log
+    ldap_cache:
+        use ldap auth plugin cache (True)
     sendfile
         raw setting for nginx (see nginx documentation)
     tcp_nodelay
@@ -227,6 +229,7 @@ def settings():
                 'user': 'www-data',
                 'server_names_hash_bucket_size': '64',
                 'loglevel': 'crit',
+                'ldap_cache': True,
                 'logdir': '/var/log/nginx',
                 'access_log': '{logdir}/access.log',
                 'sendfile': True,
