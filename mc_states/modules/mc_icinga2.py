@@ -125,24 +125,57 @@ def objects_icinga2():
         res['objects_definitions'][name]['type'] = obj['type'] 
 
         # determine if the object is a template or not
-        if 'attrs' in obj and 'register' in obj['attrs'] and 1 == obj['attrs']['register']:
-            res['objects_definitions'][name]['template']=False
-        else:
+        if 'attrs' in obj and 'register' in obj['attrs'] and 0 == obj['attrs']['register']:
             res['objects_definitions'][name]['template']=True
+        else:
+            res['objects_definitions'][name]['template']=False
 
         # change "use" in "import"
         if 'attrs' in obj and 'use' in obj['attrs']:
             res['objects_definitions'][name]['attrs']['import'] = obj['attrs']['use']
 
 
-        if 'service' == obj['type']:
-            # changes for services
-            res['objects_definitions'][name]['type'] = 'Service'
+        if 'timeperiod' == obj['type']:
+            # changes for timeperiods
+            res['objects_definitions'][name]['type'] = 'TimePeriod'
+            res['objects_definitions'][name]['attrs']['ranges'] = {}
             for key,value in obj['attrs'].items():
-                if key not in attrs_deleted:
+                if key in attrs_deleted:
+                    pass
+                elif 'timeperiod_name' == key:
+                    res['objects_definitions'][name]['attrs']['display_name'] = value
+                elif key in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']:
+                    res['objects_definitions'][name]['attrs']['ranges'][key] = value
+                else:
                     res['objects_definitions'][name]['attrs'][key] = value
 
 
+        elif 'service' == obj['type']:
+            # changes for services
+            res['objects_definitions'][name]['type'] = 'Service'
+            for key,value in obj['attrs'].items():
+                if key in attrs_deleted:
+                    pass
+                elif 'check_command' == key:
+                    # we have to split the "!"
+                    command_splitted=value.split('!')
+                    res['objects_definitions'][name]['attrs']['check_command']=command_splitted[0]
+                    if command_splitted[0] in check_command_args:
+                        for i, val in enumerate(command_splitted[1:]):
+                            if val.startswith('\'') or val.startswith('"'):
+                                val=val[1:]
+                            if val.endswith('\'') or val.endswith('"'):
+                                val=val[:-1]
+                            res['objects_definitions'][name]['attrs']['vars.'+check_command_args[command_splitted[0]][i-1]] = val.replace('"', '\\"') # we replace because in template the delimiter is '"'
+                    else:
+                        for i, val in enumerate(command_splitted[1:]):
+                            if val.startswith('\'') or val.startswith('"'):
+                                val=val[1:]
+                            if val.endswith('\'') or val.endswith('"'):
+                                val=val[:-1]
+                            res['objects_definitions'][name]['attrs']['vars.ARG'+str(i)] = val.replace('"', '\\"')
+                else:
+                    res['objects_definitions'][name]['attrs'][key] = value
 
         elif 'command' == obj['type']:
             # changes for commands
@@ -199,6 +232,7 @@ def objects_icinga2():
                             command_splitted[i_args]=command_splitted[i_args][1:]
                         if command_splitted[i_args].endswith('\'') or command_splitted[i_args].endswith('"'):
                             command_splitted[i_args]=command_splitted[i_args][:-1]
+                        command_splitted[i_args]=command_splitted[i_args].replace('"', '\\"')
                         i_args += 1
 
                     # find the couple of arguments
