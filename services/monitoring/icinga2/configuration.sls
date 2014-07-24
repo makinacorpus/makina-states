@@ -69,6 +69,7 @@ icinga2-zones-conf:
 
 # startup configuration
 {#
+# I don't have succeeded to write a correct upstart script
 {% if grains['os'] in ['Ubuntu'] %}
 icinga2-init-upstart-conf:
   file.managed:
@@ -256,36 +257,80 @@ icinga2-mklivestatus-enable:
       - mc_proxy: icinga2-post-conf
 {% endif %}
 
-{#
 # add objects configuration
 {% import "makina-states/services/monitoring/icinga2/init.sls" as icinga2 with context %}
 
+# purge objects (the macro add the files into a list)
+{% for file in salt['mc_icinga2.get_settings_for_object']('purge_definitions') %}
+    {{ icinga2.configuration_remove_object(file=file) }}
+{% endfor %}
 
-# clean the objects directory
-icinga2-configuration-clean-objects-directory:
-  file.directory:
-    - name: {{data.objects.directory}}
+# add templates and commands (and contacts, timeperiods...)
+{% for name in data.objects.objects_definitions %}
+{% set file = salt['mc_icinga2.get_settings_for_object']('objects_definitions', name, 'file') %}
+    {{ icinga2.configuration_add_object(file=file, fromsettings=name) }}
+{% endfor %}
+
+# add autoconfigured hosts
+{% for name in data.objects.autoconfigured_hosts_definitions %}
+{% set hostname = salt['mc_icinga2.get_settings_for_object']('autoconfigured_hosts_definitions', name, 'hostname') %}
+    {{ icinga2.configuration_add_auto_host(hostname=hostname, fromsettings=name) }}
+{% endfor %}
+
+# really add the files
+{% for file in salt['mc_icinga2.add_configuration_object'](get=True) %}
+{% set state_name_salt =  salt['mc_icinga2.replace_chars'](file) %}
+icinga2-configuration-{{state_name_salt}}-add-objects-conf:
+  file.managed:
+    - name: {{data.objects.directory}}/{{file}}
+    - source: salt://makina-states/files/etc/icinga2/conf.d/template.cfg
     - user: root
     - group: root
-    - dir_mode: 755
+    - mode: 644
     - makedirs: True
-    - clean: True
+    - watch:
+      - mc_proxy: icinga2-configuration-pre-object-conf
+    - watch_in:
+      - mc_proxy: icinga2-configuration-post-object-conf
+    - template: jinja
+    - defaults:
+      file: |
+            {{salt['mc_utils.json_dump'](file)}}
+
+{% endfor %}
+
+# really delete the files
+# if there is a lot of files, it is better to use the "source" argument instead of the "contents" argument
+{% set tmpf="/tmp/delete.sh" %}
+icinga2-configuration-remove-objects-conf:
+  file.managed:
+    - name: {{tmpf}}
+    - source: ''
+    - makedirs: true
+    - user: root
+    - group: root
+    -  mode: 755
     - watch:
       - mc_proxy: icinga2-configuration-pre-clean-directories
     - watch_in:
       - mc_proxy: icinga2-configuration-post-clean-directories
+    - contents: |
+                #!/bin/bash
+                files=({{salt['mc_icinga2.remove_configuration_object'](get=True)}});
+                for i in "${files[@]}"; do
+                    rm -f "$i";
+                done;
 
-# add templates and commands (and contacts, timeperiods...)
-{% for name, object in data.objects.objects_definitions.items() %}
-    {{ icinga2.configuration_add_object(**object) }}
-{% endfor %}
-# add autoconfigured hosts
-{% for name, object in data.objects.autoconfigured_hosts_definitions.items() %}
-    {{ icinga2.configuration_add_auto_host(**object) }}
-{% endfor %}
-#}
+  cmd.run:
+    - name: {{tmpf}}
+    - watch:
+      - file: icinga2-configuration-remove-objects-conf
+      - mc_proxy: icinga2-configuration-pre-clean-directories
+    - watch_in:
+      - mc_proxy: icinga2-configuration-post-clean-directories
 
-{%- import "makina-states/services/monitoring/icinga2/macros.jinja" as icinga2 with context %}
+
 {#
+{%- import "makina-states/services/monitoring/icinga2/macros.jinja" as icinga2 with context %}
 {{icinga2.icinga2AddWatcher('foo', '/bin/echo', args=[1]) }}
 #}

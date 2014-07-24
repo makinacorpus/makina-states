@@ -61,8 +61,10 @@ icinga2-configuration-pre-object-conf:
     - watch_in:
       - mc_proxy: icinga2-configuration-post-object-conf
 
+
 icinga2-configuration-post-object-conf:
   mc_proxy.hook:
     - watch_in:
       - mc_proxy: icinga2-post-conf
+
 
