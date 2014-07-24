@@ -114,7 +114,24 @@ def objects_icinga2():
     # objects definitions
     res['objects_definitions'] = {}
 
-    attrs_deleted = ['name', 'register', 'use']
+    attrs_deleted = ['name', 'register', 'use', 'alias']
+
+    def _unquoting(value):
+        # remove begining and ending quotes
+        value = str(value)
+        if value.startswith('\\\'') or value.startswith('\\"'):
+            value=value[2:]
+        elif value.startswith('\'') or value.startswith('"'):
+            value=value[1:]
+        if value.endswith('\\\'') or value.endswith('\\"'):
+            value=value[:-2]
+        elif value.endswith('\'') or value.endswith('"'):
+            value=value[:-1]
+        # because of in the template, the value are enclosed with '"' character, we escape the quotes
+        value = value.replace('"', '\\"')
+        return value
+
+
 
     for name, obj in src['objects_definitions'].items():
         # global changes
@@ -134,18 +151,53 @@ def objects_icinga2():
         if 'attrs' in obj and 'use' in obj['attrs']:
             res['objects_definitions'][name]['attrs']['import'] = obj['attrs']['use']
 
+        # change "alias" in display_name
+        if 'attrs' in obj and 'alias' in obj['attrs']:
+            res['objects_definitions'][name]['attrs']['display_name'] = obj['attrs']['alias']
 
         if 'timeperiod' == obj['type']:
             # changes for timeperiods
             res['objects_definitions'][name]['type'] = 'TimePeriod'
             res['objects_definitions'][name]['attrs']['ranges'] = {}
+            res['objects_definitions'][name]['attrs']['import'] = 'legacy-timeperiod'
             for key,value in obj['attrs'].items():
-                if key in attrs_deleted:
-                    pass
-                elif 'timeperiod_name' == key:
+                if 'timeperiod_name' == key:
                     res['objects_definitions'][name]['attrs']['display_name'] = value
                 elif key in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']:
                     res['objects_definitions'][name]['attrs']['ranges'][key] = value
+                elif key in attrs_deleted:
+                    pass
+                else:
+                    res['objects_definitions'][name]['attrs'][key] = value
+
+
+        #elif 'contactgroup' == obj['type']:
+        #    # changes for contactgroups
+        #    res['objects_definitions'][name]['type'] = 'ContactGroup'
+
+
+
+        elif 'host' == obj['type']:
+            # changes for hosts (concerns only the hosts templates, not the autoconfigured)
+            res['objects_definitions'][name]['type'] = 'Host'
+            for key,value in obj['attrs'].items():
+                value = _unquoting(value)
+
+                if key in ['name', 'host_name']:
+                    res['objects_definitions'][name]['name'] = value # we set the name of the host
+                elif 'check_command' == key:
+                    # we have to split the "!"
+                    command_splitted=value.split('!')
+                    res['objects_definitions'][name]['attrs']['check_command']=command_splitted[0]
+                    if command_splitted[0] in check_command_args:
+                        for i, val in enumerate(command_splitted[1:]):
+                            val = _unquoting(val)
+                            res['objects_definitions'][name]['attrs']['vars.'+check_command_args[command_splitted[0]][i-1]] = val
+                    else:
+                        for i, val in enumerate(command_splitted[1:]):
+                            res['objects_definitions'][name]['attrs']['vars.ARG'+str(i)] = val
+                elif key in attrs_deleted:
+                    pass
                 else:
                     res['objects_definitions'][name]['attrs'][key] = value
 
@@ -153,46 +205,43 @@ def objects_icinga2():
         elif 'service' == obj['type']:
             # changes for services
             res['objects_definitions'][name]['type'] = 'Service'
+
             for key,value in obj['attrs'].items():
-                if key in attrs_deleted:
-                    pass
+                value = _unquoting(value)
+
+                if 'name' == key:
+                    res['objects_definitions'][name]['name'] = value # we set the name of the service
                 elif 'check_command' == key:
                     # we have to split the "!"
                     command_splitted=value.split('!')
                     res['objects_definitions'][name]['attrs']['check_command']=command_splitted[0]
                     if command_splitted[0] in check_command_args:
                         for i, val in enumerate(command_splitted[1:]):
-                            if val.startswith('\'') or val.startswith('"'):
-                                val=val[1:]
-                            if val.endswith('\'') or val.endswith('"'):
-                                val=val[:-1]
-                            res['objects_definitions'][name]['attrs']['vars.'+check_command_args[command_splitted[0]][i-1]] = val.replace('"', '\\"') # we replace because in template the delimiter is '"'
+                            val = _unquoting(val)
+                            res['objects_definitions'][name]['attrs']['vars.'+check_command_args[command_splitted[0]][i-1]] = val
                     else:
                         for i, val in enumerate(command_splitted[1:]):
-                            if val.startswith('\'') or val.startswith('"'):
-                                val=val[1:]
-                            if val.endswith('\'') or val.endswith('"'):
-                                val=val[:-1]
-                            res['objects_definitions'][name]['attrs']['vars.ARG'+str(i)] = val.replace('"', '\\"')
+                            val = _unquoting(val)
+                            res['objects_definitions'][name]['attrs']['vars.ARG'+str(i+1)] = val
+                elif key in attrs_deleted:
+                    pass
                 else:
                     res['objects_definitions'][name]['attrs'][key] = value
 
         elif 'command' == obj['type']:
             # changes for commands
             res['objects_definitions'][name]['type'] = 'CheckCommand'
-            if 'attrs' in obj and 'command_name' in obj['attrs']:
-                res['objects_definitions'][name]['name'] = obj['attrs']['command_name']
-                command_name = obj['attrs']['command_name']
-            else:
-                res['objects_definitions'][name]['name'] = name
-                command_name = name
             res['objects_definitions'][name]['attrs']['arguments'] = {}
+            res['objects_definitions'][name]['attrs']['import'] = 'plugin-check-command'
+
+            if 'command_name' in obj['attrs']:
+                command_name = obj['attrs']['command_name']
 
             for key,value in obj['attrs'].items():
-                if key in attrs_deleted:
-                    pass
+                value = _unquoting(value)
+
                 if 'command_name' == key:
-                    pass # don't copy the command_name
+                    res['objects_definitions'][name]['name'] = value
                 elif 'command_line' == key: # we generate a dict for arguments and cut the command_line (we do not map the $ARGx$)
                     command_splitted=[]
 
@@ -228,11 +277,7 @@ def objects_icinga2():
                     # remove quotes
                     i_args = 1
                     while i_args <= n_args:
-                        if command_splitted[i_args].startswith('\'') or command_splitted[i_args].startswith('"'):
-                            command_splitted[i_args]=command_splitted[i_args][1:]
-                        if command_splitted[i_args].endswith('\'') or command_splitted[i_args].endswith('"'):
-                            command_splitted[i_args]=command_splitted[i_args][:-1]
-                        command_splitted[i_args]=command_splitted[i_args].replace('"', '\\"')
+                        command_splitted[i_args] = _unquoting(command_splitted[i_args])
                         i_args += 1
 
                     # find the couple of arguments
@@ -252,13 +297,16 @@ def objects_icinga2():
                                     res['objects_definitions'][name]['attrs']['arguments'][command_splitted[i_args]] = {} 
                                     i_args += 1
 
+                elif key in attrs_deleted:
+                    pass
                 else:
                     res['objects_definitions'][name]['attrs'][key] = value
 
 
         else:
-            # default copy when no rules specified for the object type
+            # default when no rules specified for the object type
             for key, value in obj['attrs'].items():
+                value = _unquoting(value)
                 if key not in attrs_deleted: # do not copy the renamed keys
                     res['objects_definitions'][name]['attrs'][key]=value
 
