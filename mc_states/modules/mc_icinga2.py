@@ -38,24 +38,7 @@ def objects_icinga1():
     check_by_ssh_params="-q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$' -t '$ARG4$' "
     data = {
        'directory': locs['conf_dir']+"/icinga2/conf.d/salt_generated",
-       'objects_definitions': {
-            'command_CSSH_CRON': {
-                'type': "command",
-                'file': "checkcommands.cfg",
-                'attrs': {
-                    'command_name': "CSSH_CRON",
-                    'command_line': "$USER1$/check_by_ssh --skip-stderr "+check_by_ssh_params+" -i $USER7_SSHKEY$ -C '/root/admin_scripts/nagios/check_cron'",
-                },
-            },
-           'command_check_meta': {
-               'type': "command",
-               'file': "checkcommands.cfg",
-               'attrs': {
-                   'command_name': "check_meta",
-                   'command_line': "/usr/local/nagios/libexec/check_meta_service -i $ARG1$",
-               },
-           },
-       },
+       'objects_definitions': (__salt__['mc_icinga.objects']())['objects_definitions'],
        'purge_definitions': [],
        'autoconfigured_hosts_definitions': {},
     }
@@ -130,11 +113,39 @@ def objects_icinga2():
 
     # objects definitions
     res['objects_definitions'] = {}
-    for name, obj in src['objects_definitions'].items():
 
-        if 'command' == obj['type']:
+    attrs_deleted = ['name', 'register', 'use']
+
+    for name, obj in src['objects_definitions'].items():
+        # global changes
+        res['objects_definitions'][name]={}
+        res['objects_definitions'][name]['attrs'] = {}
+        res['objects_definitions'][name]['file'] = obj['file'].replace('.cfg', '.conf') # the extension of filenames is changed
+        res['objects_definitions'][name]['name'] = name
+        res['objects_definitions'][name]['type'] = obj['type'] 
+
+        # determine if the object is a template or not
+        if 'attrs' in obj and 'register' in obj['attrs'] and 1 == obj['attrs']['register']:
+            res['objects_definitions'][name]['template']=False
+        else:
+            res['objects_definitions'][name]['template']=True
+
+        # change "use" in "import"
+        if 'attrs' in obj and 'use' in obj['attrs']:
+            res['objects_definitions'][name]['attrs']['import'] = obj['attrs']['use']
+
+
+        if 'service' == obj['type']:
+            # changes for services
+            res['objects_definitions'][name]['type'] = 'Service'
+            for key,value in obj['attrs'].items():
+                if key not in attrs_deleted:
+                    res['objects_definitions'][name]['attrs'][key] = value
+
+
+
+        elif 'command' == obj['type']:
             # changes for commands
-            res['objects_definitions'][name]={}
             res['objects_definitions'][name]['type'] = 'CheckCommand'
             if 'attrs' in obj and 'command_name' in obj['attrs']:
                 res['objects_definitions'][name]['name'] = obj['attrs']['command_name']
@@ -142,35 +153,56 @@ def objects_icinga2():
             else:
                 res['objects_definitions'][name]['name'] = name
                 command_name = name
-            res['objects_definitions'][name]['file'] = obj['file']
-            res['objects_definitions'][name]['attrs'] = {}
             res['objects_definitions'][name]['attrs']['arguments'] = {}
 
             for key,value in obj['attrs'].items():
+                if key in attrs_deleted:
+                    pass
                 if 'command_name' == key:
                     pass # don't copy the command_name
                 elif 'command_line' == key: # we generate a dict for arguments and cut the command_line (we do not map the $ARGx$)
-                    command_splitted = value.split(' ')
+                    command_splitted=[]
+
+                    # bad method to split command_line
+                    tmp=[]
+                    spaced_arg=False
+                    for arg in re.split(' |=', value): # split on space and =
+                        if arg.startswith('\'') or arg.startswith('\\\'') or arg.startswith('\"') or arg.startswith('\\\"'):
+                            spaced_arg=True
+                        if arg.endswith('\'') or arg.endswith('\\\'') or  arg.endswith('\"') or arg.endswith('\\\"'):
+                            spaced_arg=False
+                        tmp.append(arg)
+                        if not spaced_arg:
+                            command_splitted.append(" ".join(tmp)) # merge the argument on quotes (bad)
+                            tmp=[]
+
                     res['objects_definitions'][name]['attrs']['command'] = command_splitted[0]
+
 
                     n_args = len(command_splitted)-1
                     i_args = 1
-                    while i_args <= n_args: # try to replace $ARGx$ with the name. it works only if there is one ARGx per argument max 
-                        regex = re.search('^(.*)\$ARG([0-9]+)\$(.*)$', command_splitted[i_args])
-                        if regex and command_name in check_command_args:
-                            if regex.group(1) in ['\'', '"']: # remove quotes when the argument was '$ARGx$'
-                                regex_group1 = ''
-                            else:
-                                regex_group1 = regex.group(1)
-                            if regex.group(3) in ['\'', '"']:
-                                regex_group3 = ''
-                            else:
-                                regex_group3 = regex.group(3)
-                            command_splitted[i_args] = regex_group1+'$'+check_command_args[command_name][int(int(regex.group(2))-1)]+'$'+regex_group3
+
+                    # replace $ARGx$ with the names found in check_command_args
+                    if command_name in check_command_args:
+                        argx = 1
+                        for param in check_command_args[command_name]:
+                            i_args = 1
+                            while i_args <= n_args:
+                                command_splitted[i_args] = command_splitted[i_args].replace('$ARG'+str(argx)+'$', '$'+str(param)+'$')
+                                i_args += 1
+                            argx += 1
+
+                    # remove quotes
+                    i_args = 1
+                    while i_args <= n_args:
+                        if command_splitted[i_args].startswith('\'') or command_splitted[i_args].startswith('"'):
+                            command_splitted[i_args]=command_splitted[i_args][1:]
+                        if command_splitted[i_args].endswith('\'') or command_splitted[i_args].endswith('"'):
+                            command_splitted[i_args]=command_splitted[i_args][:-1]
                         i_args += 1
 
+                    # find the couple of arguments
                     i_args = 1
-
                     while i_args <= n_args:
                         if not command_splitted[i_args]: # to remove blanks
                             i_args += 1
@@ -191,7 +223,10 @@ def objects_icinga2():
 
 
         else:
-            res['objects_definitions'][name]=obj
+            # default copy when no rules specified for the object type
+            for key, value in obj['attrs'].items():
+                if key not in attrs_deleted: # do not copy the renamed keys
+                    res['objects_definitions'][name]['attrs'][key]=value
 
         # purge_definitions
         res['purge_definitions'] = src['purge_definitions']
