@@ -1,8 +1,10 @@
 {{- salt['mc_macros.register']('services', 'monitoring.icinga2') }}
 include:
+{#
   - makina-states.services.monitoring.icinga2.pgsql
   - makina-states.services.monitoring.icinga2.mysql
   - makina-states.services.monitoring.icinga2.nginx
+#}
   - makina-states.services.monitoring.icinga2.prerequisites
   - makina-states.services.monitoring.icinga2.configuration
   - makina-states.services.monitoring.icinga2.services
