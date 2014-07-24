@@ -96,13 +96,6 @@ sysctl-net.ipv4.tcp_tw_recycle:
     - require_in:
       - mc_proxy: sysctl-post-hook
 
-sysctl-net.ipv4.vm.min_free_kbytes:
-  sysctl.present:
-    - name: vm.min_free_kbytes
-    - value: {{kernel.vm_min_free_kbytes}}
-    - require_in:
-      - mc_proxy: sysctl-post-hook
-
 sysctl-net.ipv4.tcp_syn_retries:
   sysctl.present:
     - name: net.ipv4.tcp_syn_retries
@@ -147,6 +140,13 @@ sysctl-net-various:
     - require_in:
       - mc_proxy: sysctl-post-hook
 {% if not (isTravis or isLxc) %}
+sysctl-net.ipv4.vm.min_free_kbytes:
+  sysctl.present:
+    - name: vm.min_free_kbytes
+    - value: {{kernel.vm_min_free_kbytes}}
+    - require_in:
+      - mc_proxy: sysctl-post-hook
+
 sysctl-vm.swappiness:
   sysctl.present:
     - names:
