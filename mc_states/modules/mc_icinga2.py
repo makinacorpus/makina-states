@@ -51,7 +51,10 @@ def objects_icinga2():
        this function is here, only to reuse the icinga dictionary
 
        http://docs.icinga.org/icinga2/latest/doc/module/icinga2/toc#!/icinga2/latest/doc/module/icinga2/chapter/monitoring-basics#check-commands
+       https://github.com/Icinga/icinga2-migration
     '''
+
+    # TODO: translate durations in minutes
 
     # ARGx are not beautiful arguments, we will try to give name. This dictionary was used in mc_icinga to do the reverse operation (association a named value to ARGx variable)
     cssh_params = ['ssh_user', 'ssh_addr', 'ssh_port', 'ssh_timeout']
@@ -171,10 +174,32 @@ def objects_icinga2():
                     res['objects_definitions'][name]['attrs'][key] = value
 
 
-        #elif 'contactgroup' == obj['type']:
-        #    # changes for contactgroups
-        #    res['objects_definitions'][name]['type'] = 'ContactGroup'
+        elif 'contactgroup' == obj['type']:
+            # changes for contactgroups
+            res['objects_definitions'][name]['type'] = 'UserGroup'
 
+            for key,value in obj['attrs'].items():
+                value = _unquoting(value)
+                if 'contactgroup_name' == key:
+                    res['objects_definitions'][name]['name'] = value
+                elif key in attrs_deleted:
+                    pass
+                else:
+                    res['objects_definitions'][name]['attrs'][key] = value
+
+        # TODO: find the error with service_notification_period and host_notification_period
+        elif 'contact' == obj['type']:
+            # changes for contacts
+            res['objects_definitions'][name]['type'] = 'User'
+
+            for key,value in obj['attrs'].items():
+                value = _unquoting(value)
+                if 'contact_name' == key:
+                    res['objects_definitions'][name]['name'] = value
+                elif key in attrs_deleted:
+                    pass
+                else:
+                    res['objects_definitions'][name]['attrs'][key] = value
 
 
         elif 'host' == obj['type']:

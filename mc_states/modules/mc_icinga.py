@@ -1782,6 +1782,20 @@ def objects():
                     'contactgroup_name': "Supervisors",
                 },
             },
+            # contacts
+            'contact_me': {
+                'type': "contact",
+                'file': "contacts.cfg",
+                'attrs': {
+                    'contact_name': "Me",
+                    'contactgroups': "Supervisors",
+                    'host_notification_period': "24x7",
+                    'service_notification_period': "24x7",
+                    'service_notifications_options': "w,u,c,r",
+#                   'host_notification_commands': "service-notify-by-email",
+#                   'service_notification_commands': "service-notify-by-email",
+                },
+            },
 
         },
         # purge in order to remove old configuration
