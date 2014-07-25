@@ -117,10 +117,8 @@ def objects_icinga2():
     # objects definitions
     res['objects_definitions'] = {}
 
-    attrs_deleted = ['name', 'register', 'use', 'alias']
-
     def _unquoting(value):
-        # remove begining and ending quotes
+        '''remove begining and ending quotes'''
         value = str(value)
         if value.startswith('\\\'') or value.startswith('\\"'):
             value=value[2:]
@@ -134,15 +132,142 @@ def objects_icinga2():
         value = value.replace('"', '\\"')
         return value
 
+    def _check_command_arguments(check_command):
+        # we have to split the "!"
+        command_splitted=check_command.split('!')
+        res = {}
+        res['check_command']=command_splitted[0]
+        if command_splitted[0] in check_command_args:
+            nb_args = len(check_command_args[command_splitted[0]])
+            for i, val in enumerate(command_splitted[1:]):
+                if i < nb_args: # because some commands ends with "!!!!" but the ARG are not used in command_line
+                    res['vars.'+check_command_args[command_splitted[0]][i]] = _unquoting(val)
+        else:
+            for i, val in enumerate(command_splitted[1:]):
+                res['vars.ARG'+str(i)] = _unquoting(val)
+        return res
 
+    def _command_line_arguments(command_line):
+        '''generate arguments dictionary from a command_line'''
+        res={}
+        command_splitted=[]
+
+        # bad method to split command_line
+        tmp=[]
+        spaced_arg=False
+        for arg in re.split(' |=', command_line): # split on space and =
+            if arg.startswith('\'') or arg.startswith('\\\'') or arg.startswith('\"') or arg.startswith('\\\"'):
+                spaced_arg=True
+            if arg.endswith('\'') or arg.endswith('\\\'') or  arg.endswith('\"') or arg.endswith('\\\"'):
+                spaced_arg=False
+            tmp.append(arg)
+            if not spaced_arg:
+                command_splitted.append(" ".join(tmp)) # merge the argument on quotes (bad)
+                tmp=[]
+
+        res['command'] = command_splitted[0]
+        n_args = len(command_splitted)-1
+        i_args = 1
+
+        # replace $ARGx$ with the names found in check_command_args
+        if res['command'] in check_command_args:
+            argx = 1
+            for param in check_command_args[command_name]:
+                i_args = 1
+                while i_args <= n_args:
+                    command_splitted[i_args] = command_splitted[i_args].replace('$ARG'+str(argx)+'$', '$'+str(param)+'$')
+                    i_args += 1
+                argx += 1
+
+        # remove quotes
+        i_args = 1
+        while i_args <= n_args:
+            command_splitted[i_args] = _unquoting(command_splitted[i_args])
+            i_args += 1
+
+        # find the couple of arguments
+        res['arguments'] = {}
+        i_args = 1
+        while i_args <= n_args:
+            if not command_splitted[i_args]: # to remove blanks
+                i_args += 1
+            else:
+                if i_args < n_args:
+                    if not command_splitted[i_args+1].startswith('-'): # bad method to detect the couple of arguments "-a 1", the "1" doesn't begin with '-'
+                        res['arguments'][command_splitted[i_args]] = command_splitted[i_args+1]
+                        i_args += 2
+                    else:
+                        res['arguments'][command_splitted[i_args]] = {} 
+                        i_args += 1
+                else:
+                    res['arguments'][command_splitted[i_args]] = {} 
+                    i_args += 1
+        return res
+
+    types_renamed = {
+        'timeperiod': "TimePeriod",
+        'contactgroup': "UserGroup",
+        'contact': "User",
+        'service': "Service",
+        'host': "Host",
+        'command': "CheckCommand",
+    }
+    attrs_used_as_name = {
+        'timeperiod': "timeperiod_name",
+        'contactgroup': "contactgroup_name",
+        'service': "service_description",
+        'host': "host_name",
+        'command': "command_name",
+    }
+    attrs_used_as_name_not_removed = ['service_description']
+    attrs_renamed = {
+        'use': "import",
+        'alias': "display_name",
+        # timeperiods
+        'active_checks_enabled': "enable_active_checks",
+        'passive_checks_enabled': "enable_passive_checks",
+        'event_handler_enabled': "enable_event_handler",
+        'low_flap_threshold': "flapping_threshold",
+        'high_flap_threshold': 'flapping_threshold',
+        'flap_detection_enabled': "enable_flapping",
+        'process_perf_data': "enabled_perfata",
+        'notifications_enabled': "enable_notifications",
+        # contacts
+        'contactgroups': "groups",
+        # services
+        'is_volatile': "volatile",
+    }
+    attrs_removed = [ # from icinga2-migration php script
+        'name',
+        'register',
+        # services
+        'initial_state',
+        'obsess_over_service',
+        'check_freshness',
+        'freshness_threshold',
+        'flap_detection_options',
+        'failure_prediction_enabled',
+        'retain_status_information',
+        'stalking_options',
+        'parallelize_check',
+        'notification_interval',
+        'first_notification_delay',
+        'notification_period',
+        'notification_options',
+
+    ]
 
     for name, obj in src['objects_definitions'].items():
         # global changes
         res['objects_definitions'][name]={}
         res['objects_definitions'][name]['attrs'] = {}
         res['objects_definitions'][name]['file'] = obj['file'].replace('.cfg', '.conf') # the extension of filenames is changed
-        res['objects_definitions'][name]['name'] = name
-        res['objects_definitions'][name]['type'] = obj['type'] 
+
+        # translate the type of the object
+        if obj['type'] in types_renamed:
+            res['objects_definitions'][name]['type'] = types_renamed[obj['type']]
+        else:
+            res['objects_definitions'][name]['type'] = obj['type'] 
 
         # determine if the object is a template or not
         if 'attrs' in obj and 'register' in obj['attrs'] and 0 == obj['attrs']['register']:
@@ -150,196 +275,48 @@ def objects_icinga2():
         else:
             res['objects_definitions'][name]['template']=False
 
-        # change "use" in "import"
-        if 'attrs' in obj and 'use' in obj['attrs']:
-            res['objects_definitions'][name]['attrs']['import'] = obj['attrs']['use']
-
-        # change "alias" in display_name
-        if 'attrs' in obj and 'alias' in obj['attrs']:
-            res['objects_definitions'][name]['attrs']['display_name'] = obj['attrs']['alias']
-
-        if 'timeperiod' == obj['type']:
-            # changes for timeperiods
-            res['objects_definitions'][name]['type'] = 'TimePeriod'
-            res['objects_definitions'][name]['attrs']['ranges'] = {}
-            res['objects_definitions'][name]['attrs']['import'] = 'legacy-timeperiod'
-            for key,value in obj['attrs'].items():
-                if 'timeperiod_name' == key:
-                    res['objects_definitions'][name]['attrs']['display_name'] = value
-                elif key in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']:
-                    res['objects_definitions'][name]['attrs']['ranges'][key] = value
-                elif key in attrs_deleted:
-                    pass
-                else:
-                    res['objects_definitions'][name]['attrs'][key] = value
-
-
-        elif 'contactgroup' == obj['type']:
-            # changes for contactgroups
-            res['objects_definitions'][name]['type'] = 'UserGroup'
-
-            for key,value in obj['attrs'].items():
-                value = _unquoting(value)
-                if 'contactgroup_name' == key:
-                    res['objects_definitions'][name]['name'] = value
-                elif key in attrs_deleted:
-                    pass
-                else:
-                    res['objects_definitions'][name]['attrs'][key] = value
-
-        # TODO: find the error with service_notification_period and host_notification_period
-        elif 'contact' == obj['type']:
-            # changes for contacts
-            res['objects_definitions'][name]['type'] = 'User'
-
-            for key,value in obj['attrs'].items():
-                value = _unquoting(value)
-                if 'contact_name' == key:
-                    res['objects_definitions'][name]['name'] = value
-                elif key in attrs_deleted:
-                    pass
-                else:
-                    res['objects_definitions'][name]['attrs'][key] = value
-
-
-        elif 'host' == obj['type']:
-            # changes for hosts (concerns only the hosts templates, not the autoconfigured)
-            res['objects_definitions'][name]['type'] = 'Host'
-            for key,value in obj['attrs'].items():
-                value = _unquoting(value)
-
-                if key in ['name', 'host_name']:
-                    res['objects_definitions'][name]['name'] = value # we set the name of the host
-                elif 'check_command' == key:
-                    # we have to split the "!"
-                    command_splitted=value.split('!')
-                    res['objects_definitions'][name]['attrs']['check_command']=command_splitted[0]
-                    if command_splitted[0] in check_command_args:
-                        for i, val in enumerate(command_splitted[1:]):
-                            val = _unquoting(val)
-                            res['objects_definitions'][name]['attrs']['vars.'+check_command_args[command_splitted[0]][i-1]] = val
-                    else:
-                        for i, val in enumerate(command_splitted[1:]):
-                            res['objects_definitions'][name]['attrs']['vars.ARG'+str(i)] = val
-                elif key in attrs_deleted:
-                    pass
-                else:
-                    res['objects_definitions'][name]['attrs'][key] = value
-
-
-        elif 'service' == obj['type']:
-            # changes for services
-            res['objects_definitions'][name]['type'] = 'Service'
-
-            for key,value in obj['attrs'].items():
-                value = _unquoting(value)
-
-                if 'name' == key:
-                    res['objects_definitions'][name]['name'] = value # we set the name of the service
-                elif 'check_command' == key:
-                    # we have to split the "!"
-                    command_splitted=value.split('!')
-                    res['objects_definitions'][name]['attrs']['check_command']=command_splitted[0]
-                    if command_splitted[0] in check_command_args:
-                        for i, val in enumerate(command_splitted[1:]):
-                            val = _unquoting(val)
-                            res['objects_definitions'][name]['attrs']['vars.'+check_command_args[command_splitted[0]][i-1]] = val
-                    else:
-                        for i, val in enumerate(command_splitted[1:]):
-                            val = _unquoting(val)
-                            res['objects_definitions'][name]['attrs']['vars.ARG'+str(i+1)] = val
-                elif key in attrs_deleted:
-                    pass
-                else:
-                    res['objects_definitions'][name]['attrs'][key] = value
-
-        elif 'command' == obj['type']:
-            # changes for commands
-            res['objects_definitions'][name]['type'] = 'CheckCommand'
-            res['objects_definitions'][name]['attrs']['arguments'] = {}
-            res['objects_definitions'][name]['attrs']['import'] = 'plugin-check-command'
-
-            if 'command_name' in obj['attrs']:
-                command_name = obj['attrs']['command_name']
-
-            for key,value in obj['attrs'].items():
-                value = _unquoting(value)
-
-                if 'command_name' == key:
-                    res['objects_definitions'][name]['name'] = value
-                elif 'command_line' == key: # we generate a dict for arguments and cut the command_line (we do not map the $ARGx$)
-                    command_splitted=[]
-
-                    # bad method to split command_line
-                    tmp=[]
-                    spaced_arg=False
-                    for arg in re.split(' |=', value): # split on space and =
-                        if arg.startswith('\'') or arg.startswith('\\\'') or arg.startswith('\"') or arg.startswith('\\\"'):
-                            spaced_arg=True
-                        if arg.endswith('\'') or arg.endswith('\\\'') or  arg.endswith('\"') or arg.endswith('\\\"'):
-                            spaced_arg=False
-                        tmp.append(arg)
-                        if not spaced_arg:
-                            command_splitted.append(" ".join(tmp)) # merge the argument on quotes (bad)
-                            tmp=[]
-
-                    res['objects_definitions'][name]['attrs']['command'] = command_splitted[0]
-
-
-                    n_args = len(command_splitted)-1
-                    i_args = 1
-
-                    # replace $ARGx$ with the names found in check_command_args
-                    if command_name in check_command_args:
-                        argx = 1
-                        for param in check_command_args[command_name]:
-                            i_args = 1
-                            while i_args <= n_args:
-                                command_splitted[i_args] = command_splitted[i_args].replace('$ARG'+str(argx)+'$', '$'+str(param)+'$')
-                                i_args += 1
-                            argx += 1
-
-                    # remove quotes
-                    i_args = 1
-                    while i_args <= n_args:
-                        command_splitted[i_args] = _unquoting(command_splitted[i_args])
-                        i_args += 1
-
-                    # find the couple of arguments
-                    i_args = 1
-                    while i_args <= n_args:
-                        if not command_splitted[i_args]: # to remove blanks
-                            i_args += 1
-                        else:
-                            if i_args < n_args:
-                                if not command_splitted[i_args+1].startswith('-'): # bad method to detect the couple of arguments "-a 1", the "1" doesn't begin with '-'
-                                    res['objects_definitions'][name]['attrs']['arguments'][command_splitted[i_args]] = command_splitted[i_args+1]
-                                    i_args += 2
-                                else:
-                                    res['objects_definitions'][name]['attrs']['arguments'][command_splitted[i_args]] = {} 
-                                    i_args += 1
-                            else:
-                                    res['objects_definitions'][name]['attrs']['arguments'][command_splitted[i_args]] = {} 
-                                    i_args += 1
-
-                elif key in attrs_deleted:
-                    pass
-                else:
-                    res['objects_definitions'][name]['attrs'][key] = value
-
-
+        # find the object name
+        if 'attrs' in obj and 'name' in obj['attrs']: # priority for the name attribute (change this generates an invalid configuration)
+            res['objects_definitions'][name]['name'] = obj['attrs']['name']
+        elif obj['type'] in attrs_used_as_name and 'attrs' in obj and attrs_used_as_name[obj['type']] in obj['attrs']:
+            res['objects_definitions'][name]['name'] = obj['attrs'][attrs_used_as_name[obj['type']]]
         else:
-            # default when no rules specified for the object type
-            for key, value in obj['attrs'].items():
-                value = _unquoting(value)
-                if key not in attrs_deleted: # do not copy the renamed keys
-                    res['objects_definitions'][name]['attrs'][key]=value
+            res['objects_definitions'][name]['name'] = name
 
-        # purge_definitions
-        res['purge_definitions'] = src['purge_definitions']
-        # autoconfigured_hosts
-        res['autoconfigured_hosts_definitions'] = src['autoconfigured_hosts_definitions']
+        # translate the attributes
+        for key,value in obj['attrs'].items():
+            if 'command_line' == key: # translate the command_line attributes
+                command = _command_line_arguments(value)
+                res['objects_definitions'][name]['attrs']['command'] = command['command']
+                res['objects_definitions'][name]['attrs']['arguments'] = command['arguments']
+            elif 'check_command' == key: # translate the check_command attributes
+                command = _check_command_arguments(value)
+                for key, value in command.items():
+                    res['objects_definitions'][name]['attrs'][key] = value
+            elif key in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']: # for timeperiods
+                if 'ranges' not in res['objects_definitions'][name]['attrs']:
+                    res['objects_definitions'][name]['attrs']['ranges'] = {}
+                res['objects_definitions'][name]['attrs']['ranges'][key] = value
+            elif key in attrs_renamed: # attribute renamed
+                res['objects_definitions'][name]['attrs'][attrs_renamed[key]] = value
+            elif 'name' == key and obj['type'] in attrs_used_as_name and attrs_used_as_name[obj['type']] not in obj['attrs']: # translate "name" attrs
+                 res['objects_definitions'][name]['attrs'][attrs_used_as_name[obj['type']]] = value
+            elif obj['type'] in attrs_used_as_name and key == attrs_used_as_name[obj['type']] and key not in attrs_used_as_name_not_removed:
+                # the attribute used as name is removed from attrs list
+                pass
+            elif key in attrs_removed: # attribute removed
+                pass
+            else: # attribute preserved
+                res['objects_definitions'][name]['attrs'][key] = value
 
+    # add legacy imports
+    if 'timeperiod' == obj['type']:
+        res['objects_definitions'][name]['attrs']["import"] = "legacy-timeperiod" 
+
+    # purge_definitions
+    res['purge_definitions'] = src['purge_definitions']
+    # autoconfigured_hosts
+    res['autoconfigured_hosts_definitions'] = src['autoconfigured_hosts_definitions']
     return res
 
 def objects():
