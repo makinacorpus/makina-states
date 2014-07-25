@@ -1791,7 +1791,7 @@ def objects():
                     'contactgroups': "Supervisors",
                     'host_notification_period': "24x7",
                     'service_notification_period': "24x7",
-                    'service_notifications_options': "w,u,c,r",
+                    'service_notification_options': "w,u,c,r",
                     'host_notification_commands': "service-notify-by-email",
                     'service_notification_commands': "service-notify-by-email",
                 },

@@ -132,19 +132,31 @@ def objects_icinga2():
         value = value.replace('"', '\\"')
         return value
 
+    def _format(value, to_list=False):
+        '''transform a string with ',' in a list '''
+        if to_list:
+            value_splitted = str(value).split(',')
+            for i in range(len(value_splitted)):
+                value_splitted[i] = '"'+_unquoting(value_splitted[i])+'"'
+            return '[ '+', '.join(value_splitted)+' ]'
+        else:
+            return '"'+_unquoting(value)+'"'
+
+
     def _check_command_arguments(check_command):
+        '''split a check_command in order to get the arguments'''
         # we have to split the "!"
         command_splitted=check_command.split('!')
         res = {}
-        res['check_command']=command_splitted[0]
+        res['check_command']=_format(command_splitted[0])
         if command_splitted[0] in check_command_args:
             nb_args = len(check_command_args[command_splitted[0]])
             for i, val in enumerate(command_splitted[1:]):
                 if i < nb_args: # because some commands ends with "!!!!" but the ARG are not used in command_line
-                    res['vars.'+check_command_args[command_splitted[0]][i]] = _unquoting(val)
+                    res['vars.'+check_command_args[command_splitted[0]][i]] = _format(val)
         else:
             for i, val in enumerate(command_splitted[1:]):
-                res['vars.ARG'+str(i)] = _unquoting(val)
+                res['vars.ARG'+str(i)] = _format(val)
         return res
 
     def _command_line_arguments(command_line):
@@ -162,10 +174,12 @@ def objects_icinga2():
                 spaced_arg=False
             tmp.append(arg)
             if not spaced_arg:
-                command_splitted.append(" ".join(tmp)) # merge the argument on quotes (bad)
+                tmpstr = " ".join(tmp)
+                if tmpstr:
+                    command_splitted.append(tmpstr) # merge the argument on quotes (bad)
                 tmp=[]
 
-        res['command'] = command_splitted[0]
+        res['command'] = _format(command_splitted[0])
         n_args = len(command_splitted)-1
         i_args = 1
 
@@ -194,13 +208,13 @@ def objects_icinga2():
             else:
                 if i_args < n_args:
                     if not command_splitted[i_args+1].startswith('-'): # bad method to detect the couple of arguments "-a 1", the "1" doesn't begin with '-'
-                        res['arguments'][command_splitted[i_args]] = command_splitted[i_args+1]
+                        res['arguments'][_format(command_splitted[i_args])] = _format(command_splitted[i_args+1])
                         i_args += 2
                     else:
-                        res['arguments'][command_splitted[i_args]] = {} 
+                        res['arguments'][_format(command_splitted[i_args])] = {} 
                         i_args += 1
                 else:
-                    res['arguments'][command_splitted[i_args]] = {} 
+                    res['arguments'][_format(command_splitted[i_args])] = {} 
                     i_args += 1
         return res
 
@@ -215,6 +229,7 @@ def objects_icinga2():
     attrs_used_as_name = {
         'timeperiod': "timeperiod_name",
         'contactgroup': "contactgroup_name",
+        'contact': "contact_name",
         'service': "service_description",
         'host': "host_name",
         'command': "command_name",
@@ -232,14 +247,33 @@ def objects_icinga2():
         'flap_detection_enabled': "enable_flapping",
         'process_perf_data': "enabled_perfata",
         'notifications_enabled': "enable_notifications",
+        # contactgroups
         # contacts
         'contactgroups': "groups",
         # services
         'is_volatile': "volatile",
     }
+    attrs_force_list = ['contactgroups']
     attrs_removed = [ # from icinga2-migration php script
         'name',
         'register',
+        # timeperiods
+        # contactgroups
+        # contacts
+        'service_notification_period',
+        'host_notification_period',
+        'host_notification_options',
+        'service_notification_options',
+        'service_notification_commands',
+        'host_notification_commands',
+        'host_notifications_enabled',
+        'service_notifications_enabled',
+        'address1',
+        'address2',
+        'address3',
+        'address4',
+        'address5',
+        'address6',
         # services
         'initial_state',
         'obsess_over_service',
@@ -285,6 +319,9 @@ def objects_icinga2():
 
         # translate the attributes
         for key,value in obj['attrs'].items():
+
+
+            # specific translation
             if 'command_line' == key: # translate the command_line attributes
                 command = _command_line_arguments(value)
                 res['objects_definitions'][name]['attrs']['command'] = command['command']
@@ -293,25 +330,43 @@ def objects_icinga2():
                 command = _check_command_arguments(value)
                 for key, value in command.items():
                     res['objects_definitions'][name]['attrs'][key] = value
+
             elif key in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']: # for timeperiods
                 if 'ranges' not in res['objects_definitions'][name]['attrs']:
                     res['objects_definitions'][name]['attrs']['ranges'] = {}
-                res['objects_definitions'][name]['attrs']['ranges'][key] = value
-            elif key in attrs_renamed: # attribute renamed
-                res['objects_definitions'][name]['attrs'][attrs_renamed[key]] = value
-            elif 'name' == key and obj['type'] in attrs_used_as_name and attrs_used_as_name[obj['type']] not in obj['attrs']: # translate "name" attrs
-                 res['objects_definitions'][name]['attrs'][attrs_used_as_name[obj['type']]] = value
-            elif obj['type'] in attrs_used_as_name and key == attrs_used_as_name[obj['type']] and key not in attrs_used_as_name_not_removed:
-                # the attribute used as name is removed from attrs list
-                pass
-            elif key in attrs_removed: # attribute removed
-                pass
-            else: # attribute preserved
-                res['objects_definitions'][name]['attrs'][key] = value
+                res['objects_definitions'][name]['attrs']['ranges'][_format(key)] = _format(value)
 
-    # add legacy imports
-    if 'timeperiod' == obj['type']:
-        res['objects_definitions'][name]['attrs']["import"] = "legacy-timeperiod" 
+            # global translation
+            else:
+                # check if the attribute is removed
+                if obj['type'] in attrs_used_as_name and key == attrs_used_as_name[obj['type']] and key not in attrs_used_as_name_not_removed:
+                    # the attribute used as name is removed from attrs list
+                    continue
+                elif key in attrs_removed: # attribute removed
+                    continue
+
+                # translate the attribute key
+                if key in attrs_renamed:
+                    res_key = attrs_renamed[key]
+                elif 'name' == key and obj['type'] in attrs_used_as_name and attrs_used_as_name[obj['type']] not in obj['attrs']: # translate "name" attrs
+                    res_key = attrs_used_as_name[obj['type']]
+                else:
+                    res_key = key
+
+                # create the lists if needed
+                if key in attrs_force_list:
+                    res_value = _format(value, to_list=True)
+                else:
+                    res_value = _format(value, to_list=False)
+
+                # add the attribute
+                res['objects_definitions'][name]['attrs'][res_key] = res_value
+
+        # add legacy imports
+        if 'timeperiod' == obj['type']:
+            res['objects_definitions'][name]['attrs']["import"] = _format("legacy-timeperiod")
+        elif 'command' == obj['type']:
+            res['objects_definitions'][name]['attrs']["import"] = _format("plugin-check-command")
 
     # purge_definitions
     res['purge_definitions'] = src['purge_definitions']
