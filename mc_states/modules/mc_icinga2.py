@@ -284,11 +284,13 @@ def objects_icinga2():
         'timeperiod': "timeperiod_name",
         'contactgroup': "contactgroup_name",
         'contact': "contact_name",
+        'servicegroup': "servicegroup_name",
         'service': "service_description",
+        'hostgroup': "hostgroup_name",
         'host': "host_name",
         'command': "command_name",
     }
-    attrs_used_as_name_not_removed = ['service_description']
+    attrs_used_as_name_not_removed = ['service_description'] # commented as "ugly hack" in php migration script
     attrs_renamed = {
         'use': "import",
         'alias': "display_name",
@@ -304,8 +306,10 @@ def objects_icinga2():
         # contactgroups
         # contacts
         'contactgroups': "groups",
+        # servicegroups
         # services
         'is_volatile': "volatile",
+        # hostgroups
         # hosts
     }
     attrs_force_list = [
@@ -336,6 +340,7 @@ def objects_icinga2():
         'address4',
         'address5',
         'address6',
+        # servicegroups
         # services
         'initial_state',
         'obsess_over_service',
@@ -350,6 +355,7 @@ def objects_icinga2():
         'first_notification_delay',
         'notification_period',
         'notification_options',
+        # hostgroups
         # hosts
         'host_name',
         'initial_state',
@@ -460,19 +466,23 @@ def objects_icinga2():
 
     # autoconfigured_hosts
     #res['autoconfigured_hosts_definitions'] = src['autoconfigured_hosts_definitions']
+    res['objects_definitions'] = {}
     res['autoconfigured_hosts_definitions'] = {}
     for name, params in src['autoconfigured_hosts_definitions'].items():
         res['autoconfigured_hosts_definitions'][name] = {}
 
         # translate the host attrs
         if 'attrs' in params:
-            res['autoconfigured_hosts_definitions'][name]['attrs'] = _translate_attrs('host', params['attrs'])
+            if 'hostgroup' in params and params['hostgroup']:
+                res['autoconfigured_hosts_definitions'][name]['attrs'] = _translate_attrs('hostgroup', params['attrs'])
+            else:
+                res['autoconfigured_hosts_definitions'][name]['attrs'] = _translate_attrs('host', params['attrs'])
         else:
             res['autoconfigured_hosts_definitions'][name]['attrs'] = {}
        
         # keep the booleans
         for key, value in params.items():
-            if value not in ['service_attrs', 'attrs']:
+            if key not in ['service_attrs', 'attrs']:
                 res['autoconfigured_hosts_definitions'][name][key] = value
 
         # translate the service_attrs
@@ -849,10 +859,10 @@ def add_auto_configuration_host_settings(hostname,
     kwargs.setdefault('hostgroup', hostgroup)
 
     if hostgroup:
-        kwargs.setdefault('type', 'hostgroup')
+        kwargs.setdefault('type', 'HostGroup')
         service_key_hostname = 'hostgroup_name'
     else:
-        kwargs.setdefault('type', 'host')
+        kwargs.setdefault('type', 'Host')
         service_key_hostname = 'host_name'
 
     kwargs.setdefault('attrs', attrs)
