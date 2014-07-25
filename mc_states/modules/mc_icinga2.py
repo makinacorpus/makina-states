@@ -206,7 +206,7 @@ def objects_icinga2():
                 i_args += 1
             else:
                 if i_args < n_args:
-                    if not command_splitted[i_args+1].startswith('-'): # bad method to detect the couple of arguments "-a 1", the "1" doesn't begin with '-'
+                    if (not command_splitted[i_args+1].startswith('-')) and (not command_splitted[i_args].startswith('$')): # bad method to detect the couple of arguments "-a 1", the "1" doesn't begin with '-'
 #                        res['arguments'][_format(command_splitted[i_args])] = _format(command_splitted[i_args+1])
                         res['arguments'][command_splitted[i_args]] = command_splitted[i_args+1]
                         i_args += 2
@@ -478,7 +478,6 @@ def objects_icinga2():
 
     # autoconfigured_hosts
     #res['autoconfigured_hosts_definitions'] = src['autoconfigured_hosts_definitions']
-    res['objects_definitions'] = {}
     res['autoconfigured_hosts_definitions'] = {}
     for name, params in src['autoconfigured_hosts_definitions'].items():
         res['autoconfigured_hosts_definitions'][name] = {}
@@ -513,6 +512,8 @@ def objects_icinga2():
 
 def objects():
     return objects_icinga2()
+
+
 
 def get_settings_for_object(target=None, obj=None, attr=None):
     '''
