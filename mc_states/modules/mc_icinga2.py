@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 '''
-.. _module_mc_icinga:
+.. _module_mc_icinga2:
 
-mc_icinga / icinga functions
+mc_icinga2 / icinga functions
 ============================
 
 The first level of subdictionaries is for distinguish configuration files. There is one subdictionary per configuration file. The key used for subdictionary correspond
@@ -128,7 +128,7 @@ def objects_icinga2():
         return value
 
     def _format(value, to_list=False):
-        '''transform a string with ',' in a list '''
+        '''transform a string with ',' in a string looks like a list (not a real list) '''
         if to_list:
             value_splitted = str(value).split(',')
             for i in range(len(value_splitted)):
@@ -212,6 +212,65 @@ def objects_icinga2():
                     res['arguments'][_format(command_splitted[i_args])] = {} 
                     i_args += 1
         return res
+
+    def _translate_attrs(obj_type, obj_attrs):
+        '''function to translate attrs subdictionary
+           it is used to translate objects_definitions and autoconfigured_hosts_definitions
+        '''
+        res={}
+        for key,value in obj_attrs.items():
+
+            # specific translation
+            if 'command_line' == key: # translate the command_line attributes
+                command = _command_line_arguments(value)
+                res['command'] = command['command']
+                res['arguments'] = command['arguments']
+            elif 'check_command' == key: # translate the check_command attributes
+                command = _check_command_arguments(value)
+                for key, value in command.items():
+                    res[key] = value
+
+            elif key in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']: # for timeperiods
+                if 'ranges' not in res:
+                    res['ranges'] = {}
+                res['ranges'][_format(key)] = _format(value)
+
+            # global translation
+            else:
+                # check if the attribute is removed
+                if obj_type in attrs_used_as_name and key == attrs_used_as_name[obj_type] and key not in attrs_used_as_name_not_removed:
+                    # the attribute used as name is removed from attrs list
+                    continue
+                elif key in attrs_removed: # attribute removed
+                    continue
+
+                # translate the attribute key
+                if key in attrs_renamed:
+                    res_key = attrs_renamed[key]
+                elif 'name' == key and obj_type in attrs_used_as_name and attrs_used_as_name[obj_type] not in obj_attrs: # translate "name" attrs
+                    res_key = attrs_used_as_name[obj_type]
+                elif key.startswith('cmdarg_'): # translate the old argument prefix
+                    res_key = key.replace('cmdarg_', 'vars.')
+                else:
+                    res_key = key
+
+                # create the lists if needed and format the value (escape quotes and add external double quotes arround value 'a"b' becomes '"a\"b"')
+                if key in attrs_force_list:
+                    res_value = _format(value, to_list=True)
+                else:
+                    res_value = _format(value, to_list=False)
+
+                # add the attribute
+                res[res_key] = res_value
+
+        # add legacy imports
+        if 'timeperiod' == obj_type:
+            res["import"] = _format("legacy-timeperiod")
+        elif 'command' == obj_type:
+            res["import"] = _format("plugin-check-command")
+
+        return res
+
 
     types_renamed = {
         'timeperiod': "TimePeriod",
@@ -311,7 +370,62 @@ def objects_icinga2():
 #        'notification_options',
 
     ]
+    services = [
+        'backup_burp_age',
+        'backup_rdiff',
+        'beam_process',
+        'celeryd_process',
+        'cron',
+        'ddos',
+        'debian_updates',
+        'dns_association_hostname',
+        'drbd',
+        'epmd_process',
+        'erp_files',
+        'fail2ban',
+        'gunicorn_process',
+        'haproxy',
+        'ircbot_process',
+        'load_avg',
+        'mail_cyrus_imap_connections',
+        'mail_imap',
+        'mail_imap_ssl',
+        'mail_pop',
+        'mail_pop_ssl',
+        'mail_pop_test_account',
+        'mail_server_queues',
+        'mail_smtp',
+        'megaraid_sas',
+        'memory',
+        'memory_hyperviseur',
+        'mysql_process',
+        'ntp_peers',
+        'ntp_time',
+        'only_one_nagios_running',
+        'postgres_port',
+        'postgres_process',
+        'prebill_sending',
+        'raid',
+        'sas',
+        'snmpd_memory_control',
+        'ssh',
+        'supervisord_status',
+        'swap',
+        'tiles_generator_access',
+        'ware_raid',
+        'web_apache_status',
+    ]
+    services_loop = [
+        'dns_association',
+        'dns_reverse_association',
+        'disk_space',
+        'network',
+        'solr',
+        'web_openid',
+        'web',
+    ]
 
+    services_enabled = dict()
     for name, obj in src['objects_definitions'].items():
         # global changes
         res['objects_definitions'][name]={}
@@ -339,60 +453,42 @@ def objects_icinga2():
             res['objects_definitions'][name]['name'] = name
 
         # translate the attributes
-        for key,value in obj['attrs'].items():
-
-
-            # specific translation
-            if 'command_line' == key: # translate the command_line attributes
-                command = _command_line_arguments(value)
-                res['objects_definitions'][name]['attrs']['command'] = command['command']
-                res['objects_definitions'][name]['attrs']['arguments'] = command['arguments']
-            elif 'check_command' == key: # translate the check_command attributes
-                command = _check_command_arguments(value)
-                for key, value in command.items():
-                    res['objects_definitions'][name]['attrs'][key] = value
-
-            elif key in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']: # for timeperiods
-                if 'ranges' not in res['objects_definitions'][name]['attrs']:
-                    res['objects_definitions'][name]['attrs']['ranges'] = {}
-                res['objects_definitions'][name]['attrs']['ranges'][_format(key)] = _format(value)
-
-            # global translation
-            else:
-                # check if the attribute is removed
-                if obj['type'] in attrs_used_as_name and key == attrs_used_as_name[obj['type']] and key not in attrs_used_as_name_not_removed:
-                    # the attribute used as name is removed from attrs list
-                    continue
-                elif key in attrs_removed: # attribute removed
-                    continue
-
-                # translate the attribute key
-                if key in attrs_renamed:
-                    res_key = attrs_renamed[key]
-                elif 'name' == key and obj['type'] in attrs_used_as_name and attrs_used_as_name[obj['type']] not in obj['attrs']: # translate "name" attrs
-                    res_key = attrs_used_as_name[obj['type']]
-                else:
-                    res_key = key
-
-                # create the lists if needed and format the value (escape quotes and add external double quotes arround value 'a"b' becomes '"a\"b"')
-                if key in attrs_force_list:
-                    res_value = _format(value, to_list=True)
-                else:
-                    res_value = _format(value, to_list=False)
-
-                # add the attribute
-                res['objects_definitions'][name]['attrs'][res_key] = res_value
-
-        # add legacy imports
-        if 'timeperiod' == obj['type']:
-            res['objects_definitions'][name]['attrs']["import"] = _format("legacy-timeperiod")
-        elif 'command' == obj['type']:
-            res['objects_definitions'][name]['attrs']["import"] = _format("plugin-check-command")
+        res['objects_definitions'][name]['attrs'] = _translate_attrs(obj['type'], obj['attrs'])
 
     # purge_definitions
     res['purge_definitions'] = src['purge_definitions']
+
     # autoconfigured_hosts
-    res['autoconfigured_hosts_definitions'] = src['autoconfigured_hosts_definitions']
+    #res['autoconfigured_hosts_definitions'] = src['autoconfigured_hosts_definitions']
+    res['autoconfigured_hosts_definitions'] = {}
+    for name, params in src['autoconfigured_hosts_definitions'].items():
+        res['autoconfigured_hosts_definitions'][name] = {}
+
+        # translate the host attrs
+        if 'attrs' in params:
+            res['autoconfigured_hosts_definitions'][name]['attrs'] = _translate_attrs('host', params['attrs'])
+        else:
+            res['autoconfigured_hosts_definitions'][name]['attrs'] = {}
+       
+        # keep the booleans
+        for key, value in params.items():
+            if value not in ['service_attrs', 'attrs']:
+                res['autoconfigured_hosts_definitions'][name][key] = value
+
+        # translate the service_attrs
+        if 'services_attrs' in params:
+            res['autoconfigured_hosts_definitions'][name]['services_attrs'] = {}
+            for service in services:
+                if service in params['services_attrs']:
+                    res['autoconfigured_hosts_definitions'][name]['services_attrs'][service] = _translate_attrs('service', params['services_attrs'][service])
+
+            for service in services_loop:
+                if service in params['services_attrs']:
+                    res['autoconfigured_hosts_definitions'][name]['services_attrs'][service] = {}
+                    for subservice in params['services_attrs'][service]:
+                        res['autoconfigured_hosts_definitions'][name]['services_attrs'][service][subservice] = _translate_attrs('service', params['services_attrs'][service][subservice])
+
+
     return res
 
 def objects():
@@ -400,7 +496,7 @@ def objects():
 
 def get_settings_for_object(target=None, obj=None, attr=None):
     '''
-    expand the subdictionaries which are not cached in mc_icinga.settings.objects
+    expand the subdictionaries which are not cached in mc_icinga2.settings.objects
     '''
     if 'purge_definitions' == target:
         res =  __salt__['mc_utils.defaults']('makina-states.services.monitoring.icinga2.objects.'+target, { target: objects()[target] })[target]
@@ -625,578 +721,6 @@ def settings():
         return data
     return _settings()
 
-def add_configuration_object_settings(type, file, attrs, **kwargs):
-    '''Settings for the add_configuration_object macro'''
-    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
-    extra = kwargs.pop('extra', {})
-    kwargs.update(extra)
-    kwargs.setdefault('type', type)
-    kwargs.setdefault('file', file)
-    kwargs.setdefault('attrs', attrs)
-    kwargs.setdefault('state_name_salt', file.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
-    icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
-    # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
-    #icingaSettings['data'] = copy.deepcopy(icingaSettings)
-    #icingaSettings['data']['extra'] = copy.deepcopy(icingaSettings)
-    #icingaSettings['extra'] = copy.deepcopy(icingaSettings)
-    return icingaSettings
-
-def edit_configuration_object_settings(type, file, attr, value, **kwargs):
-    '''Settings for the edit_configuration_object macro'''
-    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
-    extra = kwargs.pop('extra', {})
-    kwargs.update(extra)
-    kwargs.setdefault('type', type)
-    kwargs.setdefault('file', file)
-    kwargs.setdefault('attr', attr)
-    kwargs.setdefault('value', value)
-    kwargs.setdefault('state_name_salt', file.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
-    icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
-    # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
-    #icingaSettings['data'] = copy.deepcopy(icingaSettings)
-    #icingaSettings['data']['extra'] = copy.deepcopy(icingaSettings)
-    #icingaSettings['extra'] = copy.deepcopy(icingaSettings)
-    return icingaSettings
-
-def add_auto_configuration_host_settings(hostname,
-                                         hostgroup,
-                                         attrs,
-                                         ssh_user,
-                                         ssh_addr,
-                                         ssh_port,
-                                         ssh_timeout,
-                                         backup_burp_age,
-                                         backup_rdiff,
-                                         beam_process,
-                                         celeryd_process,
-                                         cron,
-                                         ddos,
-                                         debian_updates,
-                                         dns_association,
-                                         dns_reverse_association,
-                                         disk_space,
-                                         disk_space_root,
-                                         disk_space_var,
-                                         disk_space_srv,
-                                         disk_space_data,
-                                         disk_space_home,
-                                         disk_space_var_makina,
-                                         disk_space_var_www,
-                                         drbd,
-                                         epmd_process,
-                                         erp_files,
-                                         fail2ban,
-                                         gunicorn_process,
-                                         haproxy,
-                                         ircbot_process,
-                                         load_avg,
-                                         mail_cyrus_imap_connections,
-                                         mail_imap,
-                                         mail_imap_ssl,
-                                         mail_pop,
-                                         mail_pop_ssl,
-                                         mail_pop_test_account,
-                                         mail_server_queues,
-                                         mail_smtp,
-                                         md_raid,
-                                         megaraid_sas,
-                                         memory,
-                                         memory_hyperviseur,
-                                         mysql_process,
-                                         network,
-                                         ntp_peers,
-                                         ntp_time,
-                                         only_one_nagios_running,
-                                         postgres_port,
-                                         postgres_process,
-                                         prebill_sending,
-                                         raid,
-                                         sas,
-                                         snmpd_memory_control,
-                                         solr,
-                                         ssh,
-                                         supervisord_status,
-                                         swap,
-                                         tiles_generator_access,
-                                         ware_raid,
-                                         web_apache_status,
-                                         web_openid,
-                                         web,
-                                         services_attrs,
-                                         **kwargs):
-    '''Settings for the add_auto_configuration_host macro'''
-    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
-    extra = kwargs.pop('extra', {})
-    kwargs.update(extra)
-    kwargs.setdefault('type', 'host')
-    kwargs.setdefault('hostname', hostname)
-    kwargs.setdefault('hostgroup', hostgroup)
-
-    if hostgroup:
-        kwargs.setdefault('type', 'hostgroup')
-        kwargs.setdefault('service_key_hostname', 'hostgroup_name')
-        kwargs.setdefault('service_subdirectory', 'hostgroups')
-    else:
-        kwargs.setdefault('type', 'host')
-        kwargs.setdefault('service_key_hostname', 'host_name')
-        kwargs.setdefault('service_subdirectory', 'hosts')
-
-    kwargs.setdefault('attrs', attrs)
-    kwargs.setdefault('ssh_user', ssh_user)
-    if ssh_addr:
-       kwargs.setdefault('ssh_addr', ssh_addr)
-    else:
-       kwargs.setdefault('ssh_addr', hostname)
-    kwargs.setdefault('ssh_port', ssh_port)
-    kwargs.setdefault('ssh_timeout', ssh_timeout)
-
-
-
-
-    kwargs.setdefault('backup_burp_age', backup_burp_age)
-    kwargs.setdefault('backup_rdiff', backup_rdiff)
-    kwargs.setdefault('beam_process', beam_process)
-    kwargs.setdefault('celeryd_process', celeryd_process)
-    kwargs.setdefault('cron', cron)
-    kwargs.setdefault('ddos', ddos)
-    kwargs.setdefault('debian_updates', debian_updates)
-    kwargs.setdefault('dns_association', dns_association)
-    kwargs.setdefault('dns_reverse_association', dns_reverse_association)
-    kwargs.setdefault('disk_space', disk_space)
-    kwargs.setdefault('drbd', drbd)
-    kwargs.setdefault('epmd_process', epmd_process)
-    kwargs.setdefault('erp_files', erp_files)
-    kwargs.setdefault('fail2ban', fail2ban)
-    kwargs.setdefault('gunicorn_process', gunicorn_process)
-    kwargs.setdefault('haproxy', haproxy)
-    kwargs.setdefault('ircbot_process', ircbot_process)
-    kwargs.setdefault('load_avg', load_avg)
-    kwargs.setdefault('mail_cyrus_imap_connections', mail_cyrus_imap_connections)
-    kwargs.setdefault('mail_imap', mail_imap)
-    kwargs.setdefault('mail_imap_ssl', mail_imap_ssl)
-    kwargs.setdefault('mail_pop', mail_pop)
-    kwargs.setdefault('mail_pop_ssl', mail_pop_ssl)
-    kwargs.setdefault('mail_pop_test_account', mail_pop_test_account)
-    kwargs.setdefault('mail_server_queues', mail_server_queues)
-    kwargs.setdefault('mail_smtp', mail_smtp)
-    kwargs.setdefault('md_raid', md_raid)
-    kwargs.setdefault('megaraid_sas', megaraid_sas)
-    kwargs.setdefault('memory', memory)
-    kwargs.setdefault('memory_hyperviseur', memory_hyperviseur)
-    kwargs.setdefault('mysql_process', mysql_process)
-    kwargs.setdefault('network', network)
-    kwargs.setdefault('ntp_peers', ntp_peers)
-    kwargs.setdefault('ntp_time', ntp_time)
-    kwargs.setdefault('only_one_nagios_running', only_one_nagios_running)
-    kwargs.setdefault('postgres_port', postgres_port)
-    kwargs.setdefault('postgres_process', postgres_process)
-    kwargs.setdefault('prebill_sending', prebill_sending)
-    kwargs.setdefault('raid', raid)
-    kwargs.setdefault('sas', sas)
-    kwargs.setdefault('snmpd_memory_control', snmpd_memory_control)
-    kwargs.setdefault('solr', solr)
-    kwargs.setdefault('ssh', ssh)
-    kwargs.setdefault('supervisord_status', supervisord_status)
-    kwargs.setdefault('swap', swap)
-    kwargs.setdefault('tiles_generator_access', tiles_generator_access)
-    kwargs.setdefault('ware_raid', ware_raid)
-    kwargs.setdefault('web_apache_status', web_apache_status)
-    kwargs.setdefault('web_openid', web_openid)
-    kwargs.setdefault('web', web)
-
-    # default values for dns_association service
-    dns_hostname=''
-    dns_address=''
-
-    if dns_association or dns_reverse and 'address' in attrs and 'host_name' in attrs:
-        if 'host_name' in attrs:
-            dns_hostname = attrs['host_name']
-        else:
-            dns_hostname = hostname
-
-        if not dns_hostname.endswith('.'):
-            dns_hostname = dns_hostname+'.'
-
-        dns_address = attrs['address']
-
-    # values for disk_space service
-    mountpoints_path = {
-        'disk_space_root': "/",
-        'disk_space_var': "/var",
-        'disk_space_srv': "/srv",
-        'disk_space_data': "/data",
-        'disk_space_home': "/home",
-        'disk_space_var_makina': "/var/makina",
-        'disk_space_var_www': "/var/www",
-    }
-    disks_spaces = dict()
-    for mountpoint, path in mountpoints_path.items():
-        if eval(mountpoint):
-            disks_spaces[mountpoint]=path
-
-    kwargs.setdefault('disks_spaces', disks_spaces)
-
-
-    # give the default values for commands parameters values
-    # the keys are the services names, not the commands names (use the service filename)
-    services_default_attrs = {
-       'backup_burp_age': {
-           'ssh_user': "root",
-           'ssh_addr': "backup.makina-corpus.net",
-           'ssh_port': "22",
-           'ssh_timeout': 10,
-           'warning': 1560,
-           'critical': 1800,
-       },
-       'backup_rdiff': {
-           'ssh_user': "root",
-           'ssh_addr': "backup.makina-corpus.net",
-           'ssh_port': "22",
-           'ssh_timeout': 10,
-           'command': "/root/admin_scripts/nagios/check_rdiff -r /data/backups/phpnet6 -w 24 -c 48 -l 2048 -p 24"
-       },
-       'beam_process': {
-           'process': "beam",
-           'warning': 0,
-           'critical': 0,
-       },
-       'celeryd_process': {
-           'process': "python",
-           'warning': 1,
-           'critical': 0,
-       },
-       'cron': {},
-       'ddos': {
-           'warning': 50,
-           'critical': 60,
-       },
-       'debian_updates': {},
-       'dns_association': {
-           'default': {
-               'hostname': dns_hostname,
-               'dns_address': dns_address,
-               'other_args': "",
-           }
-       },
-       'disk_space': {
-           'default': {
-               'warning': 80,
-               'critical': 90,
-           },
-       },
-       'drbd': {
-           'command': "'/root/admin_scripts/nagios/check_drbd -d  0,1'",
-       },
-       'epmd_process': {
-           'process': "epmd",
-           'warning': 0,
-           'critical': 0,
-       },
-       'erp_files': {
-           'command': "/var/makina/alma-job/job/supervision/check_erp_files.sh",
-       },
-       'fail2ban': {
-           'process': "fail2ban-server",
-           'warning': 0,
-           'critical': 0,
-       },
-       'gunicorn_process': {
-           'process': "gunicorn_django",
-           'warning': 0,
-           'critical': 0,
-       },
-       'haproxy': {
-           'command': "/root/admin_scripts/nagios/check_haproxy_stats.pl -p web -w 80 -c 90",
-       },
-       'ircbot_process': {},
-       'load_avg': {
-           'other_args': "",
-       },
-       'mail_cyrus_imap_connections': {
-           'warning': 300,
-           'critical': 900,
-       },
-       'mail_imap': {
-           'warning': 1,
-           'critical': 3,
-       },
-       'mail_imap_ssl': {
-           'warning': 1,
-           'critical': 3,
-       },
-       'mail_pop': {
-           'warning': 1,
-           'critical': 3,
-       },
-       'mail_pop_ssl': {
-           'warning': 1,
-           'critical': 3,
-       },
-       'mail_pop_test_account': {
-           'warning1': 52488,
-           'critical1': 1048576,
-           'warning2': 100,
-           'critical2': 2000,
-           'mx': "@makina-corpus.com",
-       },
-       'mail_server_queues': {
-           'warning': 50,
-           'critical': 100,
-       },
-       'mail_smtp': {
-           'warning': 1,
-           'critical': 3,
-       },
-       'md_raid': {
-           'command': "/root/admin_scripts/nagios/check_md_raid",
-       },
-       'megaraid_sas': {
-           'command': "/root/admin_scripts/nagios/check_megaraid_sas",
-       },
-       'memory': {
-           'warning': 80,
-           'critical': 90,
-       },
-       'memory_hyperviseur': {
-           'warning': 95,
-           'critical': 99,
-       },
-       'mysql_process': {
-           'process': "mysql",
-           'warning': 0,
-           'critical': 0,
-       },
-       'network': {
-           'default': {
-               'interface': "eth0",
-               'other_args': "",
-           },
-       },
-       'ntp_peers': {},
-       'ntp_time': {},
-       'only_one_nagios_running': {},
-       'postgres_port': {
-           'port': 5432,
-           'warning': 2,
-           'critical': 8,
-       },
-       'postgres_process': {
-           'process': "postgres",
-           'warning': 0,
-           'critical': 0,
-       },
-       'prebill_sending': {
-           'command': "/var/makina/alma-job/job/supervision/check_prebill_sending.sh",
-       },
-       'raid': {
-           'command': "'/root/admin_scripts/nagios/check_md_raid'",
-       },
-       'sas': {
-           'command': "/root/admin_scripts/check_nagios/check_sas2ircu/check_sas2ircu",
-       },
-       'snmpd_memory_control': {
-           'process': "snmpd",
-           'warning': "0,1",
-           'critical': "0,1",
-           'memory': "256,512",
-       },
-       'solr': {
-           'default': {
-               'hostname': "h",
-               'port': 80,
-               'url': "/",
-               'warning': 1,
-               'critical': 5,
-               'timeout': 8,
-               'strings': [],
-               'other_args': "",
-           },
-       },
-       'ssh': {
-           'port': 22,
-           'warning': 1,
-           'critical': 4,
-       },
-       'supervisord_status': {
-           'command': "/home/zope/adria/rcse/production-2014-01-23-14-27-01/bin/supervisorctl",
-       },
-       'swap': {
-           'command': "'/root/admin_scripts/nagios/check_swap -w 80%% -c 50%%'",
-       },
-       'tiles_generator_access': {
-           'hostname': "vdm.makina-corpus.net",
-           'url': "/vdm-tiles/status/",
-       },
-       'ware_raid': {
-           'command': "/root/admin_scripts/nagios/check_3ware_raid",
-       },
-       'web_apache_status': {
-           'warning': 4,
-           'critical': 2,
-           'other_args': "",
-       },
-       'web_openid': {
-           'default': {
-               'hostname': hostname,
-               'url': "/",
-               'warning': 1,
-               'critical': 5,
-               'timeout': 8,
-           },
-       },
-       'web': {
-           'default': {
-               'hostname': hostname,
-               'url': "/",
-               'warning': 2,
-               'critical': 3,
-               'timeout': 8,
-               'strings': [],
-               'use_type': "_PUBLIC",
-               'authentication': False,
-               'only': False,
-               'ssl': False,
-               'other_args': "",
-           },
-       },
-
-    }
-
-    # override the commands parameters values
-
-    # override dns_association subdictionary
-    if not 'dns_association' in services_attrs:
-        services_attrs['dns_association'] =  services_default_attrs['dns_association']
-    else:
-        for name, dns in services_attrs['dns_association'].items():
-            for key, value in services_default_attrs['dns_association']['default'].items():
-                if not key in dns:
-                    services_attrs['dns_association'][name][key]=value
-            address_splitted = dns['hostname'].split('.')
-            inaddr = '.'.join(address_splitted[::-1]) # tanslate a.b.c.d in d.c.b.a
-            inaddr = inaddr + '.in-addr.arpa.'
-            services_attrs['dns_association'][name]['inaddr']=inaddr
-
-
-    # override network subdictionary
-    if not 'network' in services_attrs:
-        services_attrs['network'] =  services_default_attrs['network']
-    else:
-        for name, network in services_attrs['network'].items():
-            for key, value in services_default_attrs['network']['default'].items():
-                if not key in network:
-                    services_attrs['network'][name][key]=value
-
-    # override solr subdictionary
-    if not 'solr' in services_attrs:
-        services_attrs['solr'] =  services_default_attrs['solr']
-    else:
-        for name, solr in services_attrs['solr'].items():
-            for key, value in services_default_attrs['solr']['default'].items():
-                if not key in solr:
-                    services_attrs['solr'][name][key]=value
-            # transform list of values in string ['a', 'b'] becomes '"a" -s "b"'
-            if isinstance(services_attrs['solr'][name]['strings'], list):
-                str_list = services_attrs['solr'][name]['strings']
-                # to avoid quotes conflicts (doesn't avoid code injection)
-                str_list = [ value.replace('"', '\\\\"') for value in str_list ]
-                services_attrs['solr'][name]['strings']='"'+'" -s "'.join(str_list)+'"'
-
-    # override web_openid subdictionary
-    if not 'web_openid' in services_attrs:
-        services_attrs['web_openid'] =  services_default_attrs['web_openid']
-    else:
-        for name, web_openid in services_attrs['web_openid'].items():
-            for key, value in services_default_attrs['web_openid']['default'].items():
-                if not key in web_openid:
-                    services_attrs['web_openid'][name][key]=value
-
-    # override web subdictionary
-    if not 'web' in services_attrs:
-        services_attrs['web'] =  services_default_attrs['web']
-    else:
-        for name, web in services_attrs['web'].items():
-            for key, value in services_default_attrs['web']['default'].items():
-                if not key in web:
-                    services_attrs['web'][name][key]=value
-            # transform list of values in string ['a', 'b'] becomes '"a" -s "b"'
-            if isinstance(services_attrs['web'][name]['strings'], list):
-                str_list = services_attrs['web'][name]['strings']
-                # to avoid quotes conflicts (doesn't avoid code injection)
-                str_list = [ value.replace('"', '\\\\"') for value in str_list ]
-                services_attrs['web'][name]['strings']='"'+'" -s "'.join(str_list)+'"'
-
-            # build the command
-            if services_attrs['web'][name]['ssl']:
-                cmd = "C_HTTPS_STRING"
-            else:
-                cmd = "C_HTTP_STRING"
-            if services_attrs['web'][name]['authentication']:
-                cmd = cmd + "_AUTH"
-            if services_attrs['web'][name]['only']:
-                cmd = cmd + "_ONLY"
-
-            services_attrs['web'][name]['command'] = cmd
-
-    # override mountpoints subdictionaries
-
-
-    # for each disk_space, build the dictionary:
-    # priority for values
-    # services_default_attrs['disk_space']['default'] # default values in default dictionary
-    # services_default_attrs['disk_space'][mountpoint] # specific values in default dictionary
-    # services_attrs['disk_space']['default'] # default value in overrided dictionary
-    # services_attrs['disk_space'][mountpoint] # specific value in overrided dictionary
-    if 'disk_space' not in services_attrs:
-        services_attrs['disk_space'] = {}
-    # we can't merge default dictionary yet because priorities will not be respected
-    if 'default' not in services_attrs['disk_space']:
-        services_attrs['disk_space']['default'] = {}
-
-    for mountpoint, path in mountpoints_path.items():
-        if not mountpoint in services_attrs['disk_space']:
-            services_attrs['disk_space'][mountpoint] = {}
-
-        if not mountpoint in services_default_attrs['disk_space']:
-            services_default_attrs['disk_space'][mountpoint] = services_default_attrs['disk_space']['default']
-
-        services_attrs['disk_space'][mountpoint] = dict(services_default_attrs['disk_space']['default'].items()
-                                                                     +services_default_attrs['disk_space'][mountpoint].items())
-
-        services_attrs['disk_space'][mountpoint] = dict(services_attrs['disk_space'][mountpoint].items()
-                                                                     +services_attrs['disk_space']['default'].items())
-
-        services_attrs['disk_space'][mountpoint] = dict(services_attrs['disk_space'][mountpoint].items()
-                                                                     +services_attrs['disk_space'][mountpoint].items())
-
-    # merge default dictionaries in order to allow {{mountpoints.defaults.warning}} in jinja template
-    if not 'default' in services_attrs['disk_space']:
-        services_attrs['disk_space']['default'] = services_default_attrs['disk_space']['default']
-    else:
-        services_attrs['disk_space']['default'] = dict(services_default_attrs['disk_space']['default'].items() 
-                                                                   + services_attrs['disk_space']['default'].items())
-
-    # override others values (type are string or int)
-    if not isinstance(services_attrs, dict):
-        services_attrs = {}
-
-    for name, command in services_default_attrs.items():
-        if not name in ['dns_association', 'mountpoints', 'network', 'solr', 'web_openid', 'web']:
-            if not name in services_attrs:
-                services_attrs[name] = {}
-            services_attrs[name] = dict(services_default_attrs[name].items() + services_attrs[name].items())
-
-
-    kwargs.setdefault('services_attrs', services_attrs)
-
-    kwargs.setdefault('state_name_salt', hostname.replace('/', '-').replace('.', '-').replace(':', '-').replace('_', '-'))
-    icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
-    # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
-    #icingaSettings['data'] = copy.deepcopy(icingaSettings)
-    #icingaSettings['data']['extra'] = copy.deepcopy(icingaSettings)
-    #icingaSettings['extra'] = copy.deepcopy(icingaSettings)
-    return icingaSettings
-
 def replace_chars(s):
     res=s
     for char in list('/.:_'):
@@ -1221,6 +745,7 @@ def add_configuration_object(file=None, type=None, attrs=None, definition=None, 
         add_configuration_object.objects[file].append({'fromsettings': fromsettings})
     print('end call add_configuration_object')
 
+
 # global variable initialisation
 add_configuration_object.objects={}
 
@@ -1238,25 +763,6 @@ def remove_configuration_object(file=None, get=False, **kwargs):
 
 # global variable initialisation
 remove_configuration_object.files=""
-
-def edit_configuration_object_settings(file, attr, value, auto_host, definition, **kwargs):
-    '''Settings for edit_configuration_object macro'''
-#    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
-#   save the ram (we get only useful values)
-    icingaSettings_complete = __salt__['mc_icinga2.settings']()
-    icingaSettings = {}
-    kwargs.setdefault('objects', {'directory': icingaSettings_complete['objects']['directory']})
-
-    kwargs.setdefault('file', file)
-    kwargs.setdefault('attr', attr)
-    kwargs.setdefault('value', value)
-    kwargs.setdefault('auto_host', auto_host)
-    kwargs.setdefault('definition', definition)
-
-    kwargs.setdefault('state_name_salt', replace_chars(file))
-
-    icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
-    return icingaSettings
 
 def add_auto_configuration_host_settings(hostname,
                                          hostgroup=False,
@@ -1333,7 +839,7 @@ def add_auto_configuration_host_settings(hostname,
                                          web=False,
                                          services_attrs={},
                                          **kwargs):
-#    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
+#    icingaSettings = copy.deepcopy(__salt__['mc_icinga2.settings']())
 #   save the ram (get only useful values)
     icingaSettings_complete = __salt__['mc_icinga2.settings']()
     icingaSettings = {}
@@ -1895,7 +1401,7 @@ def add_auto_configuration_host_settings(hostname,
        'web': {
            'default': {
                'service_description': "WEB_",
-               'cmdarg_hostname': hostname,
+               'vars.hostname': hostname,
                'use': "ST_WEB_PUBLIC",
                'check_command': "C_HTTP_STRING",
 
@@ -1937,8 +1443,6 @@ def add_auto_configuration_host_settings(hostname,
                 if not key in dns:
                     services_attrs['dns_association'][name][key]=value
 
-
-
     # override dns_reverse_assocation subdictionary
     if not 'dns_reverse_association' in services_attrs:
         services_attrs['dns_reverse_association'] = {}
@@ -1946,7 +1450,7 @@ def add_auto_configuration_host_settings(hostname,
         for name, dns in services_attrs['dns_association'].items():
             services_attrs['dns_reverse_association'][name] = copy.deepcopy(services_default_attrs['dns_reverse_association']['default'])
             services_attrs['dns_reverse_association'][name]['service_description']=services_default_attrs['dns_reverse_association']['default']['service_description']+name
-
+ 
             address_splitted = dns['vars.dns_address'].split('.')
             inaddr = '.'.join(address_splitted[::-1]) # tanslate a.b.c.d in d.c.b.a
             inaddr = inaddr + '.in-addr.arpa.'
@@ -1961,7 +1465,6 @@ def add_auto_configuration_host_settings(hostname,
                 if not key in dns:
                     services_attrs['dns_reverse_association'][name][key]=value
 
-
     # override network subdictionary
     if not 'network' in services_attrs:
         services_attrs['network'] =  services_default_attrs['network']
@@ -1975,7 +1478,6 @@ def add_auto_configuration_host_settings(hostname,
                     services_attrs['network'][name]['service_description']=services_default_attrs['network']['default']['service_description']+services_attrs['network'][name]['vars.interface'].upper()
                 else:
                     services_attrs['network'][name]['service_description']=services_default_attrs['network']['default']['service_description']+services_default_attrs['network']['default']['vars.interface'].upper()
-
             if 'use' not in network:
                 if 'vars.interface' in services_attrs['network'][name]:
                     services_attrs['network'][name]['use']=services_default_attrs['network']['default']['use']+services_attrs['network'][name]['vars.interface'].upper()
@@ -2005,6 +1507,7 @@ def add_auto_configuration_host_settings(hostname,
                 str_list = [ value.replace('"', '\\\\"') for value in str_list ]
                 services_attrs['solr'][name]['vars.strings']='"'+'" -s "'.join(str_list)+'"'
 
+
     # override web_openid subdictionary
     if not 'web_openid' in services_attrs:
         services_attrs['web_openid'] =  services_default_attrs['web_openid']
@@ -2017,7 +1520,6 @@ def add_auto_configuration_host_settings(hostname,
             for key, value in services_default_attrs['web_openid']['default'].items():
                 if not key in web_openid:
                     services_attrs['web_openid'][name][key]=value
-
 
     # override web subdictionary
     if not 'web' in services_attrs:
@@ -2087,123 +1589,20 @@ def add_auto_configuration_host_settings(hostname,
             services_attrs[name] = dict(services_default_attrs[name].items() + services_attrs[name].items())
 
 
-
     # generate the complete check command (we can't do a loop before we have to give the good order for arguments)
-
-    # TODO: not compatible with icinga2 
-    cssh_params = ['ssh_user', 'ssh_addr', 'ssh_port', 'ssh_timeout']
-
-    check_command_args = {
-        'CSSH_BACKUP_BURP': ['ssh_user', 'ssh_addr', 'ssh_port', 'warning', 'critical'],
-        'CSSH_BACKUP': ['ssh_user', 'ssh_addr', 'ssh_port', 'warning', 'critical'],
-        'C_SNMP_PROCESS': ['process', 'warning', 'critical'],
-        'CSSH_CRON': cssh_params,
-        'CSSH_DDOS': cssh_params+['warning', 'critical'],
-        'CSSH_DEBIAN_UPDATES': cssh_params,
-        'C_DNS_EXTERNE_ASSOCIATION': ['hostname', 'other_args'],
-        'C_DNS_EXTERNE_REVERSE_ASSOCIATION': ['inaddr', 'hostname', 'other_args'],
-        'C_SNMP_DISK': ['path', 'warning', 'critical'],
-        'CSSH_DRBD': cssh_params+['command'],
-        'CSSH_CUSTOM': cssh_params+['command'],
-        'CSSH_HAPROXY': cssh_params+['command'],
-        'C_PROCESS_IRCBOT_RUNNING': [],
-        'C_SNMP_LOADAVG': ['other_args'],
-        'CSSH_CYRUS_CONNECTIONS': cssh_params+['warning', 'critical'],
-        'C_MAIL_IMAP': ['warning', 'critical'],
-        'C_MAIL_IMAP_SSL': ['warning', 'critical'],
-        'C_MAIL_POP': ['warning', 'critical'],
-        'C_MAIL_POP_SSL': ['warning', 'critical'],
-        'C_POP3_TEST_SIZE_AND_DELETE': ['warning1', 'critical1', 'warning2', 'critical2', 'mx'],
-        'CSSH_MAILQUEUE': cssh_params+['warning', 'critical'],
-        'C_MAIL_SMTP': ['warning', 'critical'],
-        'CSSH_MEGARAID_SAS': cssh_params+['command'],
-        'C_SNMP_MEMORY': ['warning', 'critical'],
-        'C_SNMP_NETWORK': ['interface', 'other_args'],
-        'CSSH_NTP_PEER': cssh_params,
-        'CSSH_NTP_TIME': cssh_params,
-        'C_CHECK_ONE_NAGIOS_ONLY': [],
-        'check_tcp': ['port', 'warning', 'critical'],
-        'CSSH_RAID_SOFT': cssh_params+['command'],
-        'CSSH_SAS2IRCU': cssh_params+['command'],
-        'C_SNMP_PROCESS_WITH_MEM': ['process', 'warning', 'critical', 'memory'],
-        'C_HTTP_STRING_SOLR': ['hostname', 'port', 'warning', 'critical', 'timeout', 'strings', 'other_args'],
-        'CSSH_SUPERVISOR': cssh_params+['command'],
-        'check_http_vhost_uri': ['hostname', 'url'],
-        'CSSH_RAID_3WARE': cssh_params+['command'],
-        'C_APACHE_STATUS': ['warning', 'critical', 'other_args'],
-        'C_HTTPS_OPENID_REDIRECT': ['hostname', 'url', 'warning', 'critical', 'timeout'],
-        'C_HTTP_STRING': ['hostname', 'url', 'warning', 'critical', 'timeout', 'strings', 'other_args'],
-        'C_HTTP_STRING_AUTH': ['hostname', 'url', 'warning', 'critical', 'timeout', 'strings', 'other_args'],
-        'C_HTTP_STRING_ONLY': ['hostname', 'url', 'warning', 'critical', 'timeout', 'strings', 'other_args'],
-        'C_HTTPS_STRING_ONLY': ['hostname', 'url', 'warning', 'critical', 'timeout', 'strings', 'other_args'],
-        'C_CHECK_LABORANGE_LOGIN': ['hostname', 'url', 'warning', 'critical', 'timeout', 'strings', 'other_args'],
-        'C_CHECK_LABORANGE_STATS': ['hostname', 'url', 'warning', 'critical', 'timeout', 'strings', 'other_args'],
-        'check_https': ['hostname', 'url', 'warning', 'critical', 'timeout', 'strings', 'other_args'],
-    }
-
-    cmdarg_prefix="cmdarg_"
-
-    # build the check command with args
-    for service in services:
-        if service in services_attrs:
-            if 'check_command' in services_attrs[service] and '!' not in services_attrs[service]['check_command']:
-
-                args = [ str(services_attrs[service]['check_command']) ]
-
-                for arg in check_command_args[services_attrs[service]['check_command']]:
-                    # case of ssh params because we look for ssh_user not cmdarg_ssh_user
-                    if arg in cssh_params:
-                        if arg in services_attrs[service]:
-                            args.append(str(services_attrs[service][arg]))
-                        else:
-                            args.append(str(eval(arg)))
-                    else:
-                        if cmdarg_prefix+arg in services_attrs[service]:
-                            args.append(str(services_attrs[service]['cmdarg_'+arg]))
-                        else:
-                            args.append('') # by default, a non specified arg take an empty value
-                services_attrs[service]['check_command'] = "!".join(args)
-
-    for service in services_loop:
-        if service in services_attrs:
-            for subservice in services_attrs[service]:
-                if 'check_command' in services_attrs[service][subservice] and '!' not in services_attrs[service][subservice]['check_command']:
-
-                    args = [ str(services_attrs[service][subservice]['check_command']) ]
-
-                    for arg in check_command_args[services_attrs[service][subservice]['check_command']]:
-                        # case of ssh params because we look for ssh_user not cmdarg_ssh_user
-                        if arg in cssh_params:
-                            if arg in services_attrs[service][subservice]:
-                                args.append(str(services_attrs[service][subservice][arg]))
-                            else:
-                                args.append(str(eval(arg)))
-                        else:
-                            if cmdarg_prefix+arg in services_attrs[service][subservice]:
-                                args.append(str(services_attrs[service][subservice]['cmdarg_'+arg]))
-                            else:
-                                args.append('')
-                    services_attrs[service][subservice]['check_command'] = "!".join(args)
-
-    # add the host_name or hostgroup_name in each service and remove directives begining with "cmdarg_"
+    ## don't generate the complete check command because it is icinga2 ##
+    
+    # add the host_name or hostgroup_name in each service and don't remove directives begining with "vars." (because it is icinga2)
 
     for service in services:
         if service in services_attrs:
-#            for arg in copy.deepcopy(services_attrs[service]):
-            for arg, v in services_attrs[service].items():
-                if arg.startswith(cmdarg_prefix):
-                    services_attrs[service].pop(arg, None)
             services_attrs[service][service_key_hostname] = hostname
 
     for service in services_loop:
         if service in services_attrs:
             for subservice  in services_attrs[service]:
-#                for arg in copy.deepcopy(services_attrs[service][subservice]):
-                for arg, v in services_attrs[service][subservice].items():
-                    if arg.startswith(cmdarg_prefix):
-                        services_attrs[service][subservice].pop(arg, None)
                 services_attrs[service][subservice][service_key_hostname] = hostname
-
+ 
     kwargs.setdefault('services_attrs', services_attrs)
 
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
@@ -2287,7 +1686,6 @@ def add_auto_configuration_host(hostname=None,
                                 fromsettings=None,
                                 get=False,
                                 **kwargs):
-
     print('call add_auto_configuration_host')
     print('end call add_auto_configuration_host')
     if get:
@@ -2304,7 +1702,7 @@ def add_auto_configuration_host(hostname=None,
             if 'hostgroup' in host:
                 hostgroup = host['hostgroup']
 
-        #    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
+        #    icingaSettings = copy.deepcopy(__salt__['mc_icinga2.settings']())
         #   save the ram (get only useful values)
         icingaSettings_complete = __salt__['mc_icinga2.settings']()
         icingaSettings = {}
@@ -2312,11 +1710,11 @@ def add_auto_configuration_host(hostname=None,
         kwargs.setdefault('hostname', hostname)
         kwargs.setdefault('hostgroup', hostgroup)
         if hostgroup:
-            kwargs.setdefault('type', 'hostgroup')
+            kwargs.setdefault('type', 'HostGroup')
             service_subdirectory = 'hostgroups'
             service_key_hostname = 'hostgroup_name'
         else:
-            kwargs.setdefault('type', 'host')
+            kwargs.setdefault('type', 'Host')
             service_subdirectory = 'hosts'
             service_key_hostname = 'host_name'
         # we set the filename here
@@ -2395,7 +1793,7 @@ def add_auto_configuration_host(hostname=None,
                 'raid': raid,
                 'sas': sas,
                 'snmpd_memory_control': snmpd_memory_control,
-               'solr': solr,
+                'solr': solr,
                 'ssh': ssh,
                 'supervisord_status': supervisord_status,
                 'swap': swap,
@@ -2417,6 +1815,10 @@ def clean_global_variables():
     del add_configuration_object.objects
     del remove_configuration_object.files
     del add_auto_configuration_host.objects
+
+
+
+
 
 
 def dump():
