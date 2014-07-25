@@ -44,8 +44,10 @@ icinga2-configuration-pre-clean-directories:
 icinga2-configuration-post-clean-directories:
   mc_proxy.hook:
     - watch_in:
-      - mc_proxy: icinga2-configuration-pre-accumulated-attributes-conf
-
+      - mc_proxy: icinga2-configuration-pre-object-conf
+{# because configuration_edit_object macro is not here #}
+{#      - mc_proxy: icinga2-configuration-pre-accumulated-attributes-conf #}
+{#
 icinga2-configuration-pre-accumulated-attributes-conf:
   mc_proxy.hook:
     - watch_in:
@@ -55,7 +57,7 @@ icinga2-configuration-post-accumulated-attributes-conf:
   mc_proxy.hook:
     - watch_in:
       - mc_proxy: icinga2-configuration-pre-object-conf
-
+#}
 icinga2-configuration-pre-object-conf:
   mc_proxy.hook:
     - watch_in:

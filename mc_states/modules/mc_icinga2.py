@@ -35,13 +35,8 @@ log = logging.getLogger(__name__)
 
 def objects_icinga1():
     locs = __salt__['mc_locations.settings']()
-    check_by_ssh_params="-q -l '$ARG1$' -H '$ARG2$' -p '$ARG3$' -t '$ARG4$' "
-    data = {
-       'directory': locs['conf_dir']+"/icinga2/conf.d/salt_generated",
-       'objects_definitions': (__salt__['mc_icinga.objects']())['objects_definitions'],
-       'purge_definitions': [],
-       'autoconfigured_hosts_definitions': {},
-    }
+    data = __salt__['mc_icinga.objects']()
+    data['directory'] = locs['conf_dir']+"/icinga2/conf.d/salt_generated"
     return data
 
 
@@ -156,7 +151,7 @@ def objects_icinga2():
                     res['vars.'+check_command_args[command_splitted[0]][i]] = _format(val)
         else:
             for i, val in enumerate(command_splitted[1:]):
-                res['vars.ARG'+str(i)] = _format(val)
+                res['vars.ARG'+str(i+1)] = _format(val)
         return res
 
     def _command_line_arguments(command_line):
@@ -252,8 +247,16 @@ def objects_icinga2():
         'contactgroups': "groups",
         # services
         'is_volatile': "volatile",
+        # hosts
     }
-    attrs_force_list = ['contactgroups']
+    attrs_force_list = [
+        # contacts
+        'contactgroups',
+        # services
+        'contact_groups',
+        # hosts
+        'parents',
+    ]
     attrs_removed = [ # from icinga2-migration php script
         'name',
         'register',
@@ -288,6 +291,24 @@ def objects_icinga2():
         'first_notification_delay',
         'notification_period',
         'notification_options',
+        # hosts
+        'host_name',
+        'initial_state',
+        'obsess_over_host',
+#        'check_freshness',
+#        'freshness_threshold',
+#        'flap_detection_options',
+#        'failure_prediction_enabled',
+#        'retain_status_information',
+        'retain_nonstatus_information',
+#        'stalking_options',
+        'statusmap_image',
+        '2d_coords',
+#        'parallelize_check',
+#        'notification_interval',
+#        'first_notification_delay',
+#        'notification_period',
+#        'notification_options',
 
     ]
 
@@ -353,7 +374,7 @@ def objects_icinga2():
                 else:
                     res_key = key
 
-                # create the lists if needed
+                # create the lists if needed and format the value (escape quotes and add external double quotes arround value 'a"b' becomes '"a\"b"')
                 if key in attrs_force_list:
                     res_value = _format(value, to_list=True)
                 else:
@@ -1208,7 +1229,7 @@ def remove_configuration_object(file=None, get=False, **kwargs):
     if get :
         return remove_configuration_object.files
     elif file:
-        icingaSettings_complete = __salt__['mc_icinga.settings']()
+        icingaSettings_complete = __salt__['mc_icinga2.settings']()
         # append " \"file\"" to the global variable
         filename='/'.join([icingaSettings_complete['objects']['directory'], file])
         # it doesn't avoid injection, just allow the '"' char in filename
@@ -1222,7 +1243,7 @@ def edit_configuration_object_settings(file, attr, value, auto_host, definition,
     '''Settings for edit_configuration_object macro'''
 #    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
 #   save the ram (we get only useful values)
-    icingaSettings_complete = __salt__['mc_icinga.settings']()
+    icingaSettings_complete = __salt__['mc_icinga2.settings']()
     icingaSettings = {}
     kwargs.setdefault('objects', {'directory': icingaSettings_complete['objects']['directory']})
 
@@ -1314,7 +1335,7 @@ def add_auto_configuration_host_settings(hostname,
                                          **kwargs):
 #    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
 #   save the ram (get only useful values)
-    icingaSettings_complete = __salt__['mc_icinga.settings']()
+    icingaSettings_complete = __salt__['mc_icinga2.settings']()
     icingaSettings = {}
     kwargs.setdefault('objects', {'directory': icingaSettings_complete['objects']['directory']})
 
@@ -2285,7 +2306,7 @@ def add_auto_configuration_host(hostname=None,
 
         #    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
         #   save the ram (get only useful values)
-        icingaSettings_complete = __salt__['mc_icinga.settings']()
+        icingaSettings_complete = __salt__['mc_icinga2.settings']()
         icingaSettings = {}
         kwargs.setdefault('objects', {'directory': icingaSettings_complete['objects']['directory']})
         kwargs.setdefault('hostname', hostname)
@@ -2299,7 +2320,7 @@ def add_auto_configuration_host(hostname=None,
             service_subdirectory = 'hosts'
             service_key_hostname = 'host_name'
         # we set the filename here
-        file='/'.join([service_subdirectory, hostname+'.cfg'])
+        file='/'.join([service_subdirectory, hostname+'.conf'])
         kwargs.setdefault('file', file)
         kwargs.setdefault('state_name_salt', replace_chars(file))
         icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)

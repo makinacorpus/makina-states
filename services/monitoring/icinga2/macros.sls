@@ -1,4 +1,4 @@
-{# icinga macro helpers #}
+{# icinga2 macro helpers #}
 
 {#
 #
@@ -12,6 +12,7 @@
 #     definition
 #         a string to identify the definition in the file. If none, configuration_edit_object macro will not be able
 #         to edit this definition
+#         the configuration_edit_object macro is removed for this time because the template for icinga2 are already complex 
 #     fromsettings
 #         instead of adding all object settings, only the name is stored and mc_icinga2.get_settings_for_object
 #         will be called in the template to retrieve all the values
@@ -41,59 +42,6 @@
 {% macro configuration_remove_object(file) %}
 # add the file in the list of objects to remove
 {% set data = salt['mc_icinga2.remove_configuration_object'](file=file, **kwargs) %}
-{% endmacro %}
-
-{#
-#
-# Macros mains args:
-#     type
-#         the type of edited object
-#     file
-#         the filename where is located the edited object
-#     auto_host
-#         true if the file contains a auto_host
-#     definition
-#         definition in which the attribute will be added
-#         name of accumulator to fill.
-#         when auto_host=True,
-#         use service name to edit service definition (for example 'load_avg') of an autoconfigured host/hostgroup 
-#         or service+'-'+name for services loop (for example 'network-eth0')
-#         or host/hostgroup to edit the host or hostgroup definition
-#     attr
-#         the name of the edited directive
-#     value
-#         the value to append after the directive. The old value will not be removed
-#
-#}
-
-{% macro configuration_edit_object(file, attr, value, auto_host=None, definition) %}
-{% set data = salt['mc_icinga2.edit_configuration_object_settings'](file, attr, value, auto_host, definition, **kwargs) %}
-{% set sdata = salt['mc_utils.json_dump'](data) %}
-
-# split the value in ',' and loop. it is to remove duplicates values.
-# for example, it is to avoid to produce "v1,v2,v1" if "v1,v2" are given in a call and "v1" in an other call
-# it doesn't avoid the case where v1 is givent in configuration_add_object and regiven to configuration_edit_object
-
-# we have two cases, one case when the file is created with the configuration_add_auto_host macro
-# and when the file is created with configuration_add_object macro
-
-{% for value_splitted in data.value.split(',') %}
-icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_splitted}}-edit-{{definition}}-conf:
-  file.accumulated:
-    - name: "{{data.definition}}.{{data.attr}}"
-    - filename: {{data.objects.directory}}/{{data.file}}
-    - text: "{{value_splitted}}"
-    - watch:
-      - mc_proxy: icinga-configuration-pre-accumulated-attributes-conf
-    - watch_in:
-      - mc_proxy: icinga-configuration-post-accumulated-attributes-conf
-      {% if auto_host %}
-      - file: icinga-configuration-{{data.state_name_salt}}-add-auto-host-conf 
-      {% else %}
-      - file: icinga-configuration-{{data.state_name_salt}}-add-objects-conf 
-      {% endif %}
-{% endfor %}
-
 {% endmacro %}
 
 {#
