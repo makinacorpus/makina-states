@@ -143,15 +143,18 @@ def objects_icinga2():
         # we have to split the "!"
         command_splitted=check_command.split('!')
         res = {}
-        res['check_command']=_format(command_splitted[0])
+#        res['check_command']=_format(command_splitted[0])
+        res['check_command']=command_splitted[0]
         if command_splitted[0] in check_command_args:
             nb_args = len(check_command_args[command_splitted[0]])
             for i, val in enumerate(command_splitted[1:]):
                 if i < nb_args: # because some commands ends with "!!!!" but the ARG are not used in command_line
-                    res['vars.'+check_command_args[command_splitted[0]][i]] = _format(val)
+#                    res['vars.'+check_command_args[command_splitted[0]][i]] = _format(val)
+                    res['vars.'+check_command_args[command_splitted[0]][i]] = val
         else:
             for i, val in enumerate(command_splitted[1:]):
-                res['vars.ARG'+str(i+1)] = _format(val)
+#                res['vars.ARG'+str(i+1)] = _format(val)
+                res['vars.ARG'+str(i+1)] = val
         return res
 
     def _command_line_arguments(command_line):
@@ -174,7 +177,8 @@ def objects_icinga2():
                     command_splitted.append(tmpstr) # merge the argument on quotes (bad)
                 tmp=[]
 
-        res['command'] = _format(command_splitted[0])
+#        res['command'] = _format(command_splitted[0])
+        res['command'] = command_splitted[0]
         n_args = len(command_splitted)-1
         i_args = 1
 
@@ -203,13 +207,16 @@ def objects_icinga2():
             else:
                 if i_args < n_args:
                     if not command_splitted[i_args+1].startswith('-'): # bad method to detect the couple of arguments "-a 1", the "1" doesn't begin with '-'
-                        res['arguments'][_format(command_splitted[i_args])] = _format(command_splitted[i_args+1])
+#                        res['arguments'][_format(command_splitted[i_args])] = _format(command_splitted[i_args+1])
+                        res['arguments'][command_splitted[i_args]] = command_splitted[i_args+1]
                         i_args += 2
                     else:
-                        res['arguments'][_format(command_splitted[i_args])] = {} 
+#                        res['arguments'][_format(command_splitted[i_args])] = {} 
+                        res['arguments'][command_splitted[i_args]] = {} 
                         i_args += 1
                 else:
-                    res['arguments'][_format(command_splitted[i_args])] = {} 
+#                    res['arguments'][_format(command_splitted[i_args])] = {} 
+                    res['arguments'][command_splitted[i_args]] = {} 
                     i_args += 1
         return res
 
@@ -233,7 +240,8 @@ def objects_icinga2():
             elif key in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']: # for timeperiods
                 if 'ranges' not in res:
                     res['ranges'] = {}
-                res['ranges'][_format(key)] = _format(value)
+#                res['ranges'][_format(key)] = _format(value)
+                res['ranges'][key] = value
 
             # global translation
             else:
@@ -254,20 +262,23 @@ def objects_icinga2():
                 else:
                     res_key = key
 
-                # create the lists if needed and format the value (escape quotes and add external double quotes arround value 'a"b' becomes '"a\"b"')
+                # create the lists if needed and format the value 
                 if key in attrs_force_list:
-                    res_value = _format(value, to_list=True)
+                    res_value = value.split(',') 
                 else:
-                    res_value = _format(value, to_list=False)
+                    res_value = value
+#                    res_value = _format(value, to_list=False)
 
                 # add the attribute
                 res[res_key] = res_value
 
         # add legacy imports
         if 'timeperiod' == obj_type:
-            res["import"] = _format("legacy-timeperiod")
+#            res["import"] = _format("legacy-timeperiod")
+            res["import"] = "legacy-timeperiod"
         elif 'command' == obj_type:
-            res["import"] = _format("plugin-check-command")
+#            res["import"] = _format("plugin-check-command")
+            res["import"] = "plugin-check-command"
 
         return res
 
@@ -313,6 +324,7 @@ def objects_icinga2():
         # hosts
     }
     attrs_force_list = [
+        'use',
         # contacts
         'contactgroups',
         # services
@@ -497,8 +509,6 @@ def objects_icinga2():
                     res['autoconfigured_hosts_definitions'][name]['services_attrs'][service] = {}
                     for subservice in params['services_attrs'][service]:
                         res['autoconfigured_hosts_definitions'][name]['services_attrs'][service][subservice] = _translate_attrs('service', params['services_attrs'][service][subservice])
-
-
     return res
 
 def objects():

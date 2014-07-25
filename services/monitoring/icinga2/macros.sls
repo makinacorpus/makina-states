@@ -232,7 +232,7 @@
 icinga2-configuration-{{data.state_name_salt}}-add-auto-host-conf:
   file.managed:
     - name: {{data.objects.directory}}/{{data.file}}
-    - source: salt://makina-states/files/etc/icinga2/conf.d/template_auto_configuration_host.cfg
+    - source: salt://makina-states/files/etc/icinga2/conf.d/template_auto_configuration_host.conf
     - user: root
     - group: root
     - mode: 644

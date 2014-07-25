@@ -283,7 +283,7 @@ icinga2-mklivestatus-enable:
 icinga2-configuration-{{state_name_salt}}-add-objects-conf:
   file.managed:
     - name: {{data.objects.directory}}/{{file}}
-    - source: salt://makina-states/files/etc/icinga2/conf.d/template.cfg
+    - source: salt://makina-states/files/etc/icinga2/conf.d/template.conf
     - user: root
     - group: root
     - mode: 644
