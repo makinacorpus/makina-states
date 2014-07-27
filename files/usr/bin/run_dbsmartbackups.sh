@@ -7,6 +7,20 @@ __NAME__="RUN_DB_SMARTBACKUPS"
 if [ x"${DEBUG}" != "x" ];then
     set -x
 fi
+filter_host_pids() {
+    if [ "x$(is_lxc)" != "x0" ];then
+        echo "${@}"
+    else
+        for pid in ${@};do
+            if [ "x$(grep -q lxc /proc/${pid}/cgroup 2>/dev/null;echo "${?}")" != "x0" ];then
+                 echo ${pid}
+             fi
+         done
+    fi
+}
+is_lxc() {
+    echo  "$(cat -e /proc/1/environ |grep container=lxc|wc -l|sed -e "s/ //g")"
+}
 PORTS=$(egrep -h "^port\s=\s" /etc/postgresql/*/*/post*.conf 2>/dev/null|awk -F= '{print $2}'|awk '{print $1}'|sort -u)
 DB_SMARTBACKUPS_CONFS="/etc/dbsmartbackup"
 # try to run postgresql backup to any postgresql version if we found
@@ -39,22 +53,27 @@ done
 # try to run mysql backups if the config file is present
 # and we found a mysqld process
 CONF="${DB_SMARTBACKUPS_CONFS}/mysql.conf"
-if [ x"$(ps aux|grep mysqld|grep -v grep|wc -l)" != "x0" ] &&  [ -e "${CONF}" ];then
+if [ x"$(filter_host_pids $(ps aux|grep mysqld|grep -v grep|awk '{print $2}')|wc -l)" != "x0" ] &&  [ -e "${CONF}" ];then
     echo "$__NAME__: Running backup for mysql: $(mysql --version) (${CONF} $(which mysql))"
     db_smart_backup.sh "${CONF}"
-fi
-if [ x"${DEBUG}" != "x" ];then
-    set +x
 fi
 # try to run mongodb backups if the config file is present
 # and we found a mysqld process
 CONF="${DB_SMARTBACKUPS_CONFS}/mongod.conf"
-if [ x"$(ps aux|grep mongod|grep -v grep|wc -l)" != "x0" ] &&  [ -e "${CONF}" ];then
+if [ x"$(filter_host_pids $(ps aux|grep mongod|grep -v grep|awk '{print $2}')|wc -l)" != "x0" ] &&  [ -e "${CONF}" ];then
     echo "$__NAME__: Running backup for mongod: $(mongod --version|head -n1) (${CONF} $(which mongod))"
     db_smart_backup.sh "${CONF}"
 fi
+# try to run slapd backups if the config file is present
+# and we found a mysqld process
+CONF="${DB_SMARTBACKUPS_CONFS}/slapd.conf"
+if [ x"$(filter_host_pids $(ps aux|grep slapd|grep -v grep|awk '{print $2}')|wc -l)" != "x0" ] &&  [ -e "${CONF}" ];then
+    echo "$__NAME__: Running backup for slapd"
+    db_smart_backup.sh "${CONF}"
+fi
+#
 if [ x"${DEBUG}" != "x" ];then
     set +x
 fi
 exit 0
-# vim:set et sts=4 ts=4 tw=00:
+# vim:set et sts=4 ts=4 tw=00:          a
