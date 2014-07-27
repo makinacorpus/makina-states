@@ -61,7 +61,10 @@ def default_net():
     if brifs and not __grains__['ip_interfaces'].get(default_if):
         for br in brifs:
             res = __salt__['cmd.run']('brctl show {0}'.format(br))
-            if default_if in res:
+            ifs = []
+            for line in res.split('\n'):
+                ifs.append(line.split()[-1].replace('\n', ''))
+            if default_if in ifs:
                 default_if = br
                 break
     try:

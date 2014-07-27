@@ -196,6 +196,9 @@ def settings(**kwargs):
         # Then extract memory that we could use for this MySQL server
         available_mem = data.setdefault(
             'available_mem', full_mem * data['memory_usage_percent'] / 100)
+        pref = 'makina-states.services.db.mysql'
+        data = __salt__['mc_utils.defaults'](pref , data)
+        available_mem = data['available_mem']
         # Now for all non set tuning parameters try to fill the gaps
         # ---- NUMBER OF CONNECTIONS
         data.setdefault('nb_connections', 100)

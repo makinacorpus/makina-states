@@ -73,3 +73,15 @@ dbsmartbackup_mongodb.conf:
     - context:
       settings: |
                 {{settings}}
+
+dbsmartbackup_slapd.conf:
+  file.managed:
+    - name: /etc/dbsmartbackup/slapd.conf
+    - source: salt://makina-states/files/etc/dbsmartbackup/slapd.conf
+    - makedirs: true
+    - template: jinja
+    - mode: 700
+    - context:
+      settings: |
+                {{settings}}
+

@@ -40,6 +40,7 @@ install-burp-configuration-sync:
     - name: /etc/burp/clients/sync.sh
     - use_vt: true
     - watch:
+      - file: install-burp-configuration-sync
       - mc_proxy: burp-post-gen-sync
     - watch_in:
       - mc_proxy: burp-post-sync

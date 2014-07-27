@@ -61,6 +61,7 @@ sys-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
       - acpid
+      - bridge-utils
       - acl
       - libacl1-dev
       - bash-completion

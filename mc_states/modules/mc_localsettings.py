@@ -115,6 +115,7 @@ def registry():
             'updatedb': {'active': True},
             'nscd': {'active': _ldapEn(__salt__)},
             'ldap': {'active': _ldapEn(__salt__)},
+            'grub': {'active': False},
             'git': {'active': True},
             'hosts': {'active': True},
             'jdk': {'active': False},

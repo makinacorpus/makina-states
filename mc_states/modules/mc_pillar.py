@@ -1414,7 +1414,8 @@ def delete_password_for(id_, user='root', ttl=60):
     return updated
 
 
-def get_password(id_, user='root', ttl=60, regenerate=False):
+def get_password(id_, user='root', ttl=60, regenerate=False, length=12,
+                 force=False):
     '''Return user/password mappings for a particular host from
     a global pillar passwords map. Create it if not done'''
     if not id_:
@@ -1439,8 +1440,12 @@ def get_password(id_, user='root', ttl=60, regenerate=False):
         # if regenerate is asked, regenerate only if
         # the password is not coming from the central database
         # but may be present only in the localdb
-        if (pw is None) or (regenerate and (user not in db_id)):
-            pw = generate_password()
+        if (
+            (pw is None)
+            or (regenerate and (user not in db_id))
+            or force
+        ):
+            pw = generate_password(length)
             store = True
         pw_id[user] = pw
         db_id[user] = pw
@@ -1454,6 +1459,8 @@ def get_password(id_, user='root', ttl=60, regenerate=False):
         cpw = __salt__['mc_utils.unix_crypt'](pw)
         return {'clear': pw,
                 'crypted': cpw}
+    if force or regenerate:
+        return _do_pass(id_, user)
     cache_key = 'mc_pillar.get_passwords_for_{0}_{1}'.format(id_, user)
     return memoize_cache(_do_pass, [id_, user], {}, cache_key, ttl)
 
@@ -1467,6 +1474,7 @@ def get_passwords(id_, ttl=60):
     '''
     if not id_:
         id_ = __opts__['id']
+
     def _do_pass(id_):
         defaults_users = ['root', 'sysadmin']
         pw_reg = __salt__['mc_macros.get_local_registry'](
@@ -1490,6 +1498,24 @@ def get_passwords(id_, ttl=60):
         return passwords
     cache_key = 'mc_pillar.get_passwords_{0}'.format(id_)
     return memoize_cache(_do_pass, [id_], {}, cache_key, ttl)
+
+
+def regenerate_passwords(ids_=None, users=None):
+    pw_reg = __salt__['mc_macros.get_local_registry'](
+        'passwords_map', registry_format='pack')
+    if ids_ and not isinstance(ids_, list):
+        ids_ = ids_.split(',')
+    if users and not isinstance(users, list):
+        users = users.split(',')
+    for pw_id in [a for a in pw_reg]:
+        data = pw_reg[a]
+        if ids_ and pw_id not in ids_:
+            continue
+        for u, pw, in copy.deepcopy(data).items():
+            print pw_id, u
+            if users and u not in users:
+                continue
+            pw = get_password(pw_id, u, force=True)
 
 
 def get_ssh_groups(id_=None, ttl=60):

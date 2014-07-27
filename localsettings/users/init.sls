@@ -50,6 +50,7 @@
       - mc_proxy: users-ready-hook
     - name: {{ id }}
     {%- if password %}
+    - enforce_password: True
     - password:  {{ password }}
     {%- endif %}
     {%- if id not in ['root'] %}

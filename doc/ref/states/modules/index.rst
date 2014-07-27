@@ -19,6 +19,7 @@ Subregistries
    mc_phantomjs.rst
    mc_casperjs.rst
    mc_www.rst
+   mc_grub.rst
    mc_mumble.rst
    mc_mongodb.rst
    mc_apache.rst

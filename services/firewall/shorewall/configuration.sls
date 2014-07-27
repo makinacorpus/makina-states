@@ -23,6 +23,21 @@ shorewall-config:
     - watch_in:
       - mc_proxy: shorewall-postconf
 
+{% for i in ['shorewall', 'shorewall6'] %}
+shorewall-initd{{i}}:
+  file.managed:
+    - name: /etc/init.d/{{i}}
+    - source : salt://makina-states/files/etc/init.d/{{i}}
+    - template: jinja
+    - mode: 755
+    - user: root
+    - group: root
+    - watch_in:
+      - mc_proxy: shorewall-preconf
+    - watch_in:
+      - mc_proxy: shorewall-postconf
+{% endfor %}
+
 {%- for config in [
   'interfaces',
   'masq',

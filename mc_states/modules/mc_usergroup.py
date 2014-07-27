@@ -181,7 +181,8 @@ def settings():
         for i in get_default_sysadmins():
             udata = users.setdefault(i, {})
             sdata = deepcopy(admin_data)
-            udata.update(sdata)
+            if i != 'root':
+                udata.update(sdata)
             keys = data['sshkeys'].setdefault(i, [])
             for k in data['admin']['sysadmins_keys']:
                 if k not in keys:

@@ -26,22 +26,14 @@ except ImportError:
     from yaml import Loader, Dumper
 import string
 import random
+from salt.utils.pycrypto import secure_password
 
 
 _default_marker = object()
 
 
 def generate_password(length=None):
-    if length is None:
-        length = random.randint(16, 32)
-    ret = ''
-    strings = string.ascii_letters + string.digits
-    with open('/dev/urandom', 'r') as fic:
-        while len(ret) < length:
-            char = fic.read(1)
-            if char in strings:
-                ret += char
-    return ret
+    return secure_password(length)
 
 
 def uniquify(seq):
