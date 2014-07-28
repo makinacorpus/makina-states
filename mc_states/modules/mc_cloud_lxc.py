@@ -207,6 +207,7 @@ def settings():
                     'bootsalt_branch': cloudSettings['bootsalt_branch'],
                     'netmask_full': '255.255.0.0',
                     'bridge': 'lxcbr1',
+                    'main_bridge': 'br0',
                     'sudo': True,
                     'use_bridge': True,
                     'backing': backing,
@@ -259,12 +260,29 @@ def get_settings_for_vm(target, vm, full=True):
     '''get per container specific settings
 
     All the defaults defaults registry settings are redinable here +
+    This is for the moment the only backend of corpus cloud infra.
+    If you want to implement another backend, mimic the dictionnary
+    for this method and also settings.
 
         Corpus API
 
         ip
             do not set it, or use at ure own risk, prefer just to read the
-            value.
+            value. This is the main ip (private network)
+        aditonnal_ips
+            additionnal ips which will be wired on the main bridge (br0)
+            which is connected to internet.
+            Be aware that you may use manual virtual mac addresses
+            providen by you provider (online, ovh).
+            This is a list of mappings {ip: '', mac: '',netmask:''}
+            eg::
+
+                makina-states.cloud.lxc.vms.<target>.<name>.additionnal_ips:
+                  - {'mac': '00:16:3e:01:29:40',
+                     'gateway': None, (default)
+                     'link': 'br0', (default)
+                     'netmask': '32', (default)
+                     'ip': '22.1.4.25'}
         domains
             list of domains tied with this host (first is minion id
             and main domain name, it is automaticly added)
@@ -362,9 +380,10 @@ def get_settings_for_vm(target, vm, full=True):
     lxc_data = saltapi.complete_gateway(lxc_data, lxcSettings)
     for i in ['bootsalt_branch',
               "master", "master_port", "autostart",
-              'size', 'image', 'bridge',
-              'network', 'netmask', 'gateway',
-              'dnsservers', 'backing', 'vgname', 'lvname',
+              'size', 'image', 'main_bridge',
+              'bridge', 'network', 'netmask',
+              'gateway', 'dnsservers',
+              'backing', 'vgname', 'lvname',
               'ssh_gateway_password',
               'ssh_gateway_user',
               'ssh_gateway_key',
@@ -388,7 +407,25 @@ def get_settings_for_vm(target, vm, full=True):
         default=lxc_data.get('ip'))
     if full:
         lxc_data['ssh_reverse_proxy_port'] = __salt__[
-            'mc_cloud_compute_node.get_ssh_port'](target, vm)
+            'mc_cloud_compute_node.get_ssh_port'](vm=vm, target=target)
+
+    additional_ips = lxc_data.setdefault('additional_ips', [])
+    for ix, ipinfos in enumerate(additional_ips):
+        k = '{0}_{1}_{2}_aip_fo'.format(target, vm, ix)
+        mac = ipinfos.setdefault('mac', None)
+        if not mac:
+            mac = __salt__['mc_cloud_compute_node.get_conf_for_vm'](
+                target, 'lxc', vm, k, default=mac)
+        if not mac:
+            __salt__['mc_cloud_compute_node.set_conf_for_vm'](
+                target, 'lxc', vm,
+                k, __salt__['mc_cloud_compute_node.gen_mac']())
+        ipinfos['mac'] = mac
+        ipinfos.setdefault('gateway', None)
+        if ipinfos['gateway']:
+            lxc_data['gateway'] = None
+        ipinfos.setdefault('netmask', '')
+        ipinfos.setdefault('link', 'br0')
     return lxc_data
 
 
