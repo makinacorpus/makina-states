@@ -305,8 +305,7 @@ def objects_icinga2():
         'low_flap_threshold': "flapping_threshold",
         'high_flap_threshold': 'flapping_threshold',
         'flap_detection_enabled': "enable_flapping",
-#TODO:
-#        'process_perf_data': "enabled_perfata",
+        'process_perf_data': "enable_perfdata",
         'notifications_enabled': "enable_notifications",
         # contactgroups
         # contacts
@@ -386,7 +385,7 @@ def objects_icinga2():
 # TODO: because the configuration is invalid 
          'normal_check_interval',
          'retry_check_interval',
-         'process_perf_data',
+#         'process_perf_data',
 #         'parents',
 #         'hostgroups',
          'contacts',
@@ -535,6 +534,7 @@ def format(dictionary, quote_keys=False, quote_values=True):
         if key in ['type', 'template']: # ugly hack
             quote_values = False
 
+
         if isinstance(value, dict): # recurse
             if key in ['arguments', 'ranges']: # in theses subdictionaries, the keys are also quoted
                 res[key] = format(value, True, True)
@@ -542,6 +542,8 @@ def format(dictionary, quote_keys=False, quote_values=True):
                 res[key] = format(value, False, False)
             else:
                 res[key] = format(value)
+        elif key in ['vars.strings']: # TODO: vars.string not managed 
+            res[key] = '"'+str(value).replace('"', '\\"')+'"'
         elif isinstance(value, list):
             if key in ['import', 'parents']: # theses lists are managed in the template
                 res[key] = map((lambda v: '"'+str(v).replace('"','\\"')+'"'), value)
@@ -554,6 +556,15 @@ def format(dictionary, quote_keys=False, quote_values=True):
                 else:
                     res[key] += ', '.join(value)
                 res[key] += ']'
+        elif key.startswith('enable_') :
+            if '"1"' == value or '1' == value or 1 == value:
+                res[key] = "true"
+            else:
+                res[key] = "false"
+        elif key in ['template']:
+            res[key] = value
+        elif isinstance(value, int):
+            res[key] = str(value)
         elif isinstance(value, unicode):
             if quote_values:
                 res[key] = '"'+value.replace('"', '\\"')+'"'
@@ -923,10 +934,10 @@ def add_auto_configuration_host_settings(hostname,
 
     if hostgroup:
         kwargs.setdefault('type', 'HostGroup')
-        service_key_hostname = 'hostgroup_name'
+        service_key_hostname = 'host.groups'
     else:
         kwargs.setdefault('type', 'Host')
-        service_key_hostname = 'host_name'
+        service_key_hostname = 'host.name'
 
     kwargs.setdefault('attrs', attrs)
     kwargs.setdefault('ssh_user', ssh_user)
@@ -1542,7 +1553,7 @@ def add_auto_configuration_host_settings(hostname,
     if not 'network' in services_attrs:
         services_attrs['network'] =  services_default_attrs['network']
         services_attrs['network']['default']['service_description']=services_default_attrs['network']['default']['service_description']+'default'
-        services_attrs['network']['default']['import']=services_default_attrs['network']['default']['import']+[services_default_attrs['network']['default']['vars.interface']]
+        services_attrs['network']['default']['import']=[services_default_attrs['network']['default']['import'][0]+services_default_attrs['network']['default']['vars.interface'].upper()]
     else:
         for name, network in services_attrs['network'].items():
             # generate the service_description if not given
