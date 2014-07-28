@@ -115,6 +115,7 @@ def settings():
         default_netmask = data_net['default_netmask']
         gifaces = data_net['gifaces']
         default_if = data_net['default_if']
+        default_route = data_net['default_route']
         default_net = data_net['default_net']
         services_registry = __salt__['mc_services.registry']()
         controllers_registry = __salt__['mc_controllers.registry']()
@@ -141,7 +142,12 @@ def settings():
             # be permissive on the firewall side only if we are
             # routing via the host only network and going
             # outside througth NAT
-            if default_if == 'eth0':
+            # IOW
+            # if we have multiple interfaces and the default route is not on
+            # eth0, we certainly have a directly internet addressable lxc
+            # BE NOT permissive
+            rif = default_route.get('iface', 'eth0')
+            if rif == 'eth0':
                 permissive_mode = True
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.firewall.shorewall', {
