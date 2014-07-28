@@ -1022,6 +1022,54 @@ def objects():
                     'icon_image': "services/nas3.png",
                 },
             },
+            'serviceTemplate_ST_DISK_SPACE_HOME': {
+                'type': "service",
+                'file': "serviceTemplates.cfg",
+                'attrs': {
+                    'name': "ST_DISK_SPACE_/HOME",
+                    'service_description': "DISK_SPACE_/HOME",
+                    'use': "ST_HOURLY_ALERT",
+                    'check_command': "C_SNMP_DISK!/!80!90!",
+                    'register': 0,
+                    'icon_image': "services/nas3.png",
+                },
+            },
+            'serviceTemplate_ST_DISK_SPACE_VAR_BACKUPS_BLUEMIND': {
+                'type': "service",
+                'file': "serviceTemplates.cfg",
+                'attrs': {
+                    'name': "ST_DISK_SPACE_/VAR_BACKUPS_BLUEMIND",
+                    'service_description': "DISK_SPACE_/VAR_BACKUPS_BLUEMIND",
+                    'use': "ST_HOURLY_ALERT",
+                    'check_command': "C_SNMP_DISK!/!80!90!",
+                    'register': 0,
+                    'icon_image': "services/nas3.png",
+                },
+            },
+            'serviceTemplate_ST_DISK_SPACE_BACKUPS': {
+                'type': "service",
+                'file': "serviceTemplates.cfg",
+                'attrs': {
+                    'name': "ST_DISK_SPACE_/BACKUPS",
+                    'service_description': "DISK_SPACE_/BACKUPS",
+                    'use': "ST_HOURLY_ALERT",
+                    'check_command': "C_SNMP_DISK!/!80!90!",
+                    'register': 0,
+                    'icon_image': "services/nas3.png",
+                },
+            },
+            'serviceTemplate_ST_DISK_SPACE_BACKUPS_GUIDTZ': {
+                'type': "service",
+                'file': "serviceTemplates.cfg",
+                'attrs': {
+                    'name': "ST_DISK_SPACE_/BACKUPS_GUIDTZ",
+                    'service_description': "DISK_SPACE_/BACKUPS_GUIDTZ",
+                    'use': "ST_HOURLY_ALERT",
+                    'check_command': "C_SNMP_DISK!/!80!90!",
+                    'register': 0,
+                    'icon_image': "services/nas3.png",
+                },
+            },
             'serviceTemplate_ST_DISK_SPACE_/BKP/BM': {
                 'type': "service",
                 'file': "serviceTemplates.cfg",
@@ -1046,12 +1094,12 @@ def objects():
                     'icon_image': "services/nas3.png",
                 },
             },
-            'serviceTemplate_ST_DISK_SPACE_/MNT/DATA': {
+            'serviceTemplate_ST_DISK_SPACE_/MNT_DATA': {
                 'type': "service",
                 'file': "serviceTemplates.cfg",
                 'attrs': {
-                    'name': "ST_DISK_SPACE_/MNT/DATA",
-                    'service_description': "DISK_SPACE_/MNT/DATA",
+                    'name': "ST_DISK_SPACE_/MNT_DATA",
+                    'service_description': "DISK_SPACE_/MNT_DATA",
                     'use': "ST_HOURLY_ALERT",
                     'check_command': "C_SNMP_DISK!/mnt/data!80!90!",
                     'register': 0,

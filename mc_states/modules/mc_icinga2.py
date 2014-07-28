@@ -127,32 +127,19 @@ def objects_icinga2():
         value = value.replace('"', '\\"')
         return value
 
-    def _format(value, to_list=False):
-        '''transform a string with ',' in a string looks like a list (not a real list) '''
-        if to_list:
-            value_splitted = str(value).split(',')
-            for i in range(len(value_splitted)):
-                value_splitted[i] = '"'+_unquoting(value_splitted[i])+'"'
-            return '[ '+', '.join(value_splitted)+' ]'
-        else:
-            return '"'+_unquoting(value)+'"'
-
     def _check_command_arguments(check_command):
         '''split a check_command in order to get the arguments'''
         # we have to split the "!"
         command_splitted=check_command.split('!')
         res = {}
-#        res['check_command']=_format(command_splitted[0])
         res['check_command']=command_splitted[0]
         if command_splitted[0] in check_command_args:
             nb_args = len(check_command_args[command_splitted[0]])
             for i, val in enumerate(command_splitted[1:]):
                 if i < nb_args: # because some commands ends with "!!!!" but the ARG are not used in command_line
-#                    res['vars.'+check_command_args[command_splitted[0]][i]] = _format(val)
                     res['vars.'+check_command_args[command_splitted[0]][i]] = val
         else:
             for i, val in enumerate(command_splitted[1:]):
-#                res['vars.ARG'+str(i+1)] = _format(val)
                 res['vars.ARG'+str(i+1)] = val
         return res
 
@@ -175,6 +162,7 @@ def objects_icinga2():
                 if tmpstr:
                     command_splitted.append(tmpstr) # merge the argument on quotes (bad)
                 tmp=[]
+
 
 #        res['command'] = _format(command_splitted[0])
         res['command'] = command_splitted[0]
@@ -206,20 +194,17 @@ def objects_icinga2():
             else:
                 if i_args < n_args:
                     if (not command_splitted[i_args+1].startswith('-')) and (not command_splitted[i_args].startswith('$')): # bad method to detect the couple of arguments "-a 1", the "1" doesn't begin with '-'
-#                        res['arguments'][_format(command_splitted[i_args])] = _format(command_splitted[i_args+1])
                         res['arguments'][command_splitted[i_args]] = command_splitted[i_args+1]
                         i_args += 2
                     else:
-#                        res['arguments'][_format(command_splitted[i_args])] = {} 
                         res['arguments'][command_splitted[i_args]] = {} 
                         i_args += 1
                 else:
-#                    res['arguments'][_format(command_splitted[i_args])] = {} 
                     res['arguments'][command_splitted[i_args]] = {} 
                     i_args += 1
         return res
 
-    def _translate_attrs(obj_type, obj_attrs):
+    def _translate_attrs(obj_type, res_type, obj_attrs):
         '''function to translate attrs subdictionary
            it is used to translate objects_definitions and autoconfigured_hosts_definitions
         '''
@@ -245,7 +230,7 @@ def objects_icinga2():
             # global translation
             else:
                 # check if the attribute is removed
-                if obj_type in attrs_used_as_name and key == attrs_used_as_name[obj_type] and key not in attrs_used_as_name_not_removed:
+                if obj_type in attrs_used_as_name and key == attrs_used_as_name[obj_type]:
                     # the attribute used as name is removed from attrs list
                     continue
                 elif key in attrs_removed: # attribute removed
@@ -258,6 +243,8 @@ def objects_icinga2():
                     res_key = attrs_used_as_name[obj_type]
                 elif key.startswith('cmdarg_'): # translate the old argument prefix
                     res_key = key.replace('cmdarg_', 'vars.')
+                elif key in ['_SERVICE_ID', '_HOST_ID']: # theses arguments seems to be not supported
+                    continue 
                 else:
                     res_key = key
 
@@ -270,16 +257,19 @@ def objects_icinga2():
                 # add the attribute
                 res[res_key] = res_value
 
-        # add legacy imports
+
         if 'timeperiod' == obj_type:
             if 'import' not in res:
                 res['import'] = []
             res["import"] = res["import"] + ["legacy-timeperiod"] + res['import']
-        elif 'command' == obj_type:
+        elif 'command' == obj_type and 'CheckCommand' == res_type: 
             if 'import' not in res:
                 res['import'] = []
             res['import'] = ["plugin-check-command"] + res['import']
-
+        elif 'command' == obj_type and 'NotificationCommand' == res_type:
+            if 'import' not in res:
+                res['import'] = []
+            res['import'] = ["plugin-notification-command"] + res['import']
         return res
 
 
@@ -287,7 +277,9 @@ def objects_icinga2():
         'timeperiod': "TimePeriod",
         'contactgroup': "UserGroup",
         'contact': "User",
+        'servicegroup': "ServiceGroup",
         'service': "Service",
+        'hostgroup': "HostGroup",
         'host': "Host",
         'command': "CheckCommand",
     }
@@ -301,7 +293,6 @@ def objects_icinga2():
         'host': "host_name",
         'command': "command_name",
     }
-    attrs_used_as_name_not_removed = ['service_description'] # commented as "ugly hack" in php migration script
     attrs_renamed = {
         'use': "import",
         'alias': "display_name",
@@ -312,7 +303,8 @@ def objects_icinga2():
         'low_flap_threshold': "flapping_threshold",
         'high_flap_threshold': 'flapping_threshold',
         'flap_detection_enabled': "enable_flapping",
-        'process_perf_data': "enabled_perfata",
+#TODO:
+#        'process_perf_data': "enabled_perfata",
         'notifications_enabled': "enable_notifications",
         # contactgroups
         # contacts
@@ -387,6 +379,18 @@ def objects_icinga2():
 #        'notification_period',
 #        'notification_options',
 
+# TODO: because the configuration is invalid 
+         'normal_check_interval',
+         'retry_check_interval',
+         'process_perf_data',
+         'parents',
+         'hostgroups',
+
+# TODO:
+# because, we don't have done the contact migration (http://docs.icinga.org/icinga2/latest/doc/module/icinga2/toc#!/icinga2/latest/doc/module/icinga2/chapter/migration#manual-config-migration-hints-contacts-users)
+         'contacts',
+         'contact_groups',
+
     ]
     services = [
         'backup_burp_age',
@@ -452,7 +456,10 @@ def objects_icinga2():
 
         # translate the type of the object
         if obj['type'] in types_renamed:
-            res['objects_definitions'][name]['type'] = types_renamed[obj['type']]
+            if name in ['command_meta_notify']: # hack 
+                res['objects_definitions'][name]['type'] = "NotificationCommand"
+            else:
+                res['objects_definitions'][name]['type'] = types_renamed[obj['type']]
         else:
             res['objects_definitions'][name]['type'] = obj['type'] 
 
@@ -471,7 +478,7 @@ def objects_icinga2():
             res['objects_definitions'][name]['name'] = name
 
         # translate the attributes
-        res['objects_definitions'][name]['attrs'] = _translate_attrs(obj['type'], obj['attrs'])
+        res['objects_definitions'][name]['attrs'] = _translate_attrs(obj['type'], res['objects_definitions'][name]['type'], obj['attrs'])
 
     # purge_definitions
     res['purge_definitions'] = src['purge_definitions']
@@ -485,9 +492,9 @@ def objects_icinga2():
         # translate the host attrs
         if 'attrs' in params:
             if 'hostgroup' in params and params['hostgroup']:
-                res['autoconfigured_hosts_definitions'][name]['attrs'] = _translate_attrs('hostgroup', params['attrs'])
+                res['autoconfigured_hosts_definitions'][name]['attrs'] = _translate_attrs('hostgroup', types_renamed['hostgroup'], params['attrs'])
             else:
-                res['autoconfigured_hosts_definitions'][name]['attrs'] = _translate_attrs('host', params['attrs'])
+                res['autoconfigured_hosts_definitions'][name]['attrs'] = _translate_attrs('host', types_renamed['host'], params['attrs'])
         else:
             res['autoconfigured_hosts_definitions'][name]['attrs'] = {}
        
@@ -501,13 +508,13 @@ def objects_icinga2():
             res['autoconfigured_hosts_definitions'][name]['services_attrs'] = {}
             for service in services:
                 if service in params['services_attrs']:
-                    res['autoconfigured_hosts_definitions'][name]['services_attrs'][service] = _translate_attrs('service', params['services_attrs'][service])
+                    res['autoconfigured_hosts_definitions'][name]['services_attrs'][service] = _translate_attrs('service', types_renamed['service'], params['services_attrs'][service])
 
             for service in services_loop:
                 if service in params['services_attrs']:
                     res['autoconfigured_hosts_definitions'][name]['services_attrs'][service] = {}
                     for subservice in params['services_attrs'][service]:
-                        res['autoconfigured_hosts_definitions'][name]['services_attrs'][service][subservice] = _translate_attrs('service', params['services_attrs'][service][subservice])
+                        res['autoconfigured_hosts_definitions'][name]['services_attrs'][service][subservice] = _translate_attrs('service', types_renamed['service'], params['services_attrs'][service][subservice])
     return res
 
 def objects():
@@ -524,7 +531,7 @@ def format(dictionary, quote_keys=False, quote_values=True):
         if quote_keys:
             key = '"'+str(key)+'"'
 
-        if key in ['type']: # ugly hack
+        if key in ['type', 'template']: # ugly hack
             quote_values = False
 
         if isinstance(value, dict): # recurse
@@ -535,14 +542,17 @@ def format(dictionary, quote_keys=False, quote_values=True):
             else:
                 res[key] = format(value)
         elif isinstance(value, list):
-            res[key] = '['
-            # suppose that all values in list are strings
-            # escape '"' char and quote each strings
-            if quote_values:
-                res[key] += ', '.join(map((lambda v: '"'+str(v).replace('"','\\"')+'"'), value))
+            if 'import' == key:
+                res[key] = map((lambda v: '"'+str(v).replace('"','\\"')+'"'), value)
             else:
-                res[key] += ', '.join(value)
-            res[key] += ']'
+                res[key] = '['
+                # suppose that all values in list are strings
+                # escape '"' char and quote each strings
+                if quote_values:
+                    res[key] += ', '.join(map((lambda v: '"'+str(v).replace('"','\\"')+'"'), value))
+                else:
+                    res[key] += ', '.join(value)
+                res[key] += ']'
         elif isinstance(value, unicode):
             if quote_values:
                 res[key] = '"'+value.replace('"', '\\"')+'"'
@@ -1012,7 +1022,7 @@ def add_auto_configuration_host_settings(hostname,
         'backups_guidtz': "/backups/guidtz",
         'var_backups_bluemind': "/var/backups/bluemind",
         'var_spool_cyrus': "/var/spool/cyrus",
-        'nmd_www': "", # must be completed
+        'nmd_www': "/", # must be completed
     }
     disks_spaces = dict()
     for mountpoint, path in mountpoints_path.items():
@@ -1039,7 +1049,7 @@ def add_auto_configuration_host_settings(hostname,
     services_default_attrs = {
        'backup_burp_age': {
            'service_description': "S_BACKUP_BURP_AGE",
-           'use': "ST_BACKUP_DAILY_ALERT",
+           'import': ["ST_BACKUP_DAILY_ALERT"],
            'check_command': "CSSH_BACKUP_BURP",
 
            'vars.ssh_user': "root",
@@ -1051,7 +1061,7 @@ def add_auto_configuration_host_settings(hostname,
        },
        'backup_rdiff': {
            'service_description': "S_BACKUP_RDIFF",
-           'use': "ST_BACKUP_DAILY_ALERT",
+           'import': ["ST_BACKUP_DAILY_ALERT"],
            'check_command': "CSSH_BACKUP",
 
            'vars.ssh_user': "root",
@@ -1062,9 +1072,9 @@ def add_auto_configuration_host_settings(hostname,
        },
        'beam_process': {
            'service_description': "Check beam proces",
-           'use': "ST_ALERT",
-           'notification_options': "w,c,r",
-           'notifications_enabled': 1,
+           'import': ["ST_ALERT"],
+#           'notification_options': "w,c,r",
+           'enable_notifications': 1,
            'check_command': "C_SNMP_PROCESS",
 
            'vars.process': "beam",
@@ -1073,9 +1083,9 @@ def add_auto_configuration_host_settings(hostname,
        },
        'celeryd_process': {
            'service_description': "Check celeryd process",
-           'use': "ST_ALERT",
-           'notification_options': "w,c,r",
-           'notifications_enabled': 1,
+           'import': ["ST_ALERT"],
+#           'notification_options': "w,c,r",
+           'enable_notifications': 1,
            'check_command': "C_SNMP_PROCESS",
 
            'vars.process': "python",
@@ -1084,12 +1094,12 @@ def add_auto_configuration_host_settings(hostname,
        },
        'cron': {
            'service_description': "S_PROC_CRON",
-           'use': "ST_SSH_PROC_CRON",
+           'import': ["ST_SSH_PROC_CRON"],
            'check_command': "CSSH_CRON",
        },
        'ddos': {
            'service_description': "DDOS",
-           'use': "ST_ALERT",
+           'import': ["ST_ALERT"],
            'check_command': "CSSH_DDOS",
 
            'vars.warning': 50,
@@ -1097,12 +1107,12 @@ def add_auto_configuration_host_settings(hostname,
        },
        'debian_updates': {
            'service_description': "S_DEBIAN_UPDATES",
-           'use': "ST_DAILY_NOALERT",
+           'import': ["ST_DAILY_NOALERT"],
            'check_command': "CSSH_DEBIAN_UPDATES",
        },
        'dns_association_hostname': {
            'service_description': "DNS_ASSOCIATION_hostname",
-           'use': "ST_DNS_ASSOCIATION_hostname",
+           'import': ["ST_DNS_ASSOCIATION_hostname"],
            'check_command': "C_DNS_EXTERNE_ASSOCIATION",
            'vars.hostname': dns_hostname,
            'vars.dns_address': dns_address,
@@ -1112,7 +1122,7 @@ def add_auto_configuration_host_settings(hostname,
            'default': {
                # default service_description is a prefix (see below)
                'service_description': "DNS_ASSOCIATION_",
-               'use': "ST_DNS_ASSOCIATION",
+               'import': ["ST_DNS_ASSOCIATION"],
                'check_command': "C_DNS_EXTERNE_ASSOCIATION",
                'vars.hostname': dns_hostname,
                'vars.dns_address': dns_address,
@@ -1122,7 +1132,7 @@ def add_auto_configuration_host_settings(hostname,
        'dns_reverse_association': {
            'default': {
                'service_description': "DNS_REVERSE_ASSOCIATION_",
-               'use': "ST_DNS_ASSOCIATION",
+               'import': ["ST_DNS_ASSOCIATION"],
                'check_command': "C_DNS_EXTERNE_REVERSE_ASSOCIATION",
 #               'vars.inaddr': "" # generated below from dns_association dictionary
 #               'vars.hostname': ""
@@ -1133,7 +1143,7 @@ def add_auto_configuration_host_settings(hostname,
            'default': {
                # it is prefix
                'service_description': "DISK_SPACE_",
-               'use': "ST_DISK_SPACE_",
+               'import': ["ST_DISK_SPACE_"],
                'check_command': "C_SNMP_DISK",
 
                'vars.warning': 80,
@@ -1142,7 +1152,7 @@ def add_auto_configuration_host_settings(hostname,
        },
        'drbd': {
            'service_description': "CHECK_DRBD",
-           'use': "ST_ALERT",
+           'import': ["ST_ALERT"],
            'icon_image': "services/heartbeat.png",
            'check_command': "CSSH_DRBD",
 
@@ -1150,9 +1160,9 @@ def add_auto_configuration_host_settings(hostname,
        },
        'epmd_process': {
            'service_description': "Check epmd process",
-           'use': "ST_ALERT",
-           'notification_options': "w,c,r",
-           'notifications_enabled': 1,
+           'import': ["ST_ALERT"],
+#           'notification_options': "w,c,r",
+           'enable_notifications': 1,
            'check_command': "C_SNMP_PROCESS",
 
            'vars.process': "epmd",
@@ -1161,15 +1171,15 @@ def add_auto_configuration_host_settings(hostname,
        },
        'erp_files': {
            'service_description': "CHECK_ERP_FILES",
-           'use': "ST_ALERT",
+           'import': ["ST_ALERT"],
            'check_command': "CSSH_CUSTOM",
 
            'vars.command': "/var/makina/alma-job/job/supervision/check_erp_files.sh",
        },
        'fail2ban': {
            'service_description': "S_FAIL2BAN",
-           'use': "ST_ROOT",
-           'notifications_enabled': 1,
+           'import': ["ST_ROOT"],
+           'enable_notifications': 1,
            'check_command': "C_SNMP_PROCESS",
 
            'vars.process': "fail2ban-server",
@@ -1178,9 +1188,9 @@ def add_auto_configuration_host_settings(hostname,
        },
        'gunicorn_process': {
            'service_description': "Check gunicorn process",
-           'use': "ST_ALERT",
-           'notification_options': "w,c,r",
-           'notifications_enabled': 1,
+           'import': ["ST_ALERT"],
+#           'notification_options': "w,c,r",
+           'enable_notifications': 1,
            'check_command': "C_SNMP_PROCESS",
 
            'vars.process': "gunicorn_django",
@@ -1189,26 +1199,26 @@ def add_auto_configuration_host_settings(hostname,
        },
        'haproxy': {
            'service_description': "haproxy_stats",
-           'use': "ST_ALERT",
+           'import': ["ST_ALERT"],
            'check_command': "CSSH_HAPROXY",
 
            'vars.command': "/root/admin_scripts/nagios/check_haproxy_stats.pl -p web -w 80 -c 90",
        },
        'ircbot_process': {
            'service_description': "S_IRCBOT_PROCESS",
-           'use': "ST_HOURLY_ALERT",
+           'import': ["ST_HOURLY_ALERT"],
            'check_command': "C_PROCESS_IRCBOT_RUNNING",
        },
        'load_avg': {
            'service_description': "LOAD_AVG",
-           'use': "ST_LOAD_AVG",
+           'import': ["ST_LOAD_AVG"],
            'check_command': "C_SNMP_LOADAVG",
 
            'vars.other_args': "",
        },
        'mail_cyrus_imap_connections': {
            'service_description': "S_MAIL_CYRUS_IMAP_CONNECTIONS",
-           'use': "ST_ALERT",
+           'import': ["ST_ALERT"],
            'check_command': "CSSH_CYRUS_CONNECTIONS",
 
            'vars.warning': 300,
@@ -1216,7 +1226,7 @@ def add_auto_configuration_host_settings(hostname,
        },
        'mail_imap': {
            'service_description': "S_MAIL_IMAP",
-           'use': "ST_ALERT",
+           'import': ["ST_ALERT"],
            'check_command': "C_MAIL_IMAP",
 
            'vars.warning': 1,
@@ -1224,7 +1234,7 @@ def add_auto_configuration_host_settings(hostname,
        },
        'mail_imap_ssl': {
            'service_description': "S_MAIL_IMAP_SSL",
-           'use': "ST_ALERT",
+           'import': ["ST_ALERT"],
            'check_command': "C_MAIL_IMAP_SSL",
 
            'vars.warning': 1,
@@ -1232,7 +1242,7 @@ def add_auto_configuration_host_settings(hostname,
        },
        'mail_pop': {
            'service_description': "S_MAIL_POP",
-           'use': "ST_ALERT",
+           'import': ["ST_ALERT"],
            'check_command': "C_MAIL_POP",
 
            'vars.warning': 1,
@@ -1240,7 +1250,7 @@ def add_auto_configuration_host_settings(hostname,
        },
        'mail_pop_ssl': {
            'service_description': "S_MAIL_POP_SSL",
-           'use': "ST_ALERT",
+           'import': ["ST_ALERT"],
            'check_command': "C_MAIL_POP_SSL",
 
            'vars.warning': 1,
@@ -1248,7 +1258,7 @@ def add_auto_configuration_host_settings(hostname,
        },
        'mail_pop_test_account': {
            'service_description': "S_MAIL_POP3_TEST_ACCOUNT",
-           'use': "ST_ALERT",
+           'import': ["ST_ALERT"],
            'check_command': "C_POP3_TEST_SIZE_AND_DELETE",
 
            'vars.warning1': 52488,
@@ -1259,7 +1269,7 @@ def add_auto_configuration_host_settings(hostname,
        },
        'mail_server_queues': {
            'service_description': "S_MAIL_SERVER_QUEUES",
-           'use': "ST_ALERT",
+           'import': ["ST_ALERT"],
            'check_command': "CSSH_MAILQUEUE",
 
            'vars.warning': 50,
@@ -1267,7 +1277,7 @@ def add_auto_configuration_host_settings(hostname,
        },
        'mail_smtp': {
            'service_description': "S_MAIL_SMTP",
-           'use': "ST_ALERT",
+           'import': ["ST_ALERT"],
            'check_command': "C_MAIL_SMTP",
 
            'vars.warning': 1,
@@ -1275,14 +1285,14 @@ def add_auto_configuration_host_settings(hostname,
        },
        'megaraid_sas': {
            'service_description': "CHECK_MEGARAID_SAS",
-           'use': "ST_ALERT",
+           'import': ["ST_ALERT"],
            'check_command': "CSSH_MEGARAID_SAS",
 
            'vars.command': "'/root/admin_scripts/nagios/check_megaraid_sas'",
        },
        'memory': {
            'service_description': "MEMORY",
-           'use': "ST_MEMORY",
+           'import': ["ST_MEMORY"],
            'check_command': "C_SNMP_MEMORY",
 
            'vars.warning': 80,
@@ -1290,7 +1300,7 @@ def add_auto_configuration_host_settings(hostname,
        },
        'memory_hyperviseur': {
            'service_description': "MEMORY_HYPERVISEUR",
-           'use': "ST_MEMORY_HYPERVISEUR",
+           'import': ["ST_MEMORY_HYPERVISEUR"],
            'check_command': "C_SNMP_MEMORY",
 
            'vars.warning': 95,
@@ -1298,7 +1308,7 @@ def add_auto_configuration_host_settings(hostname,
        },
        'mysql_process': {
            'service_description': "S_MYSQL_PROCESS",
-           'use': "ST_ALERT",
+           'import': ["ST_ALERT"],
            'check_command': "C_SNMP_PROCESS",
 
            'vars.process': "mysql",
@@ -1309,7 +1319,7 @@ def add_auto_configuration_host_settings(hostname,
            'default': {
                # prefix
                'service_description': "NETWORK_",
-               'use': "ST_NETWORK_",
+               'import': ["ST_NETWORK_"],
                'check_command': "C_SNMP_NETWORK",
 
                'vars.interface': "eth0",
@@ -1318,22 +1328,22 @@ def add_auto_configuration_host_settings(hostname,
        },
        'ntp_peers': {
            'service_description': "S_NTP_PEERS",
-           'use': "ST_ROOT",
+           'import': ["ST_ROOT"],
            'check_command': "CSSH_NTP_PEER",
        },
        'ntp_time': {
            'service_description': "S_NTP_TIME",
-           'use': "ST_ROOT",
+           'import': ["ST_ROOT"],
            'check_command': "CSSH_NTP_TIME",
        },
        'only_one_nagios_running': {
            'service_description': "S_ONLY_ONE_NAGIOS_RUNNING",
-           'use': "ST_HOURLY_ALERT",
+           'import': ["ST_HOURLY_ALERT"],
            'check_command': "C_CHECK_ONE_NAGIOS_ONLY",
        },
        'postgres_port': {
            'service_description': "S_POSTGRESQL_PORT",
-           'use': "ST_ROOT",
+           'import': ["ST_ROOT"],
            'icon_image': "services/sql4.png",
            'check_command': "check_tcp",
 
@@ -1343,7 +1353,7 @@ def add_auto_configuration_host_settings(hostname,
        },
        'postgres_process': {
            'service_description': "S_POSTGRESQL_PROCESS",
-           'use': "ST_ALERT",
+           'import': ["ST_ALERT"],
            'icon_image': "services/sql4.png",
            'check_command': "C_SNMP_PROCESS",
 
@@ -1353,28 +1363,28 @@ def add_auto_configuration_host_settings(hostname,
        },
        'prebill_sending': {
            'service_description': "CHECK_PREBILL_SENDING",
-           'use': "ST_ALERT",
+           'import': ["ST_ALERT"],
            'check_command': "CSSH_CUSTOM",
 
            'vars.command': "/var/makina/alma-job/job/supervision/check_prebill_sending.sh",
        },
        'raid': {
            'service_description': "CHECK_RAID",
-           'use': "ST_ALERT",
+           'import': ["ST_ALERT"],
            'check_command': "CSSH_RAID_SOFT",
 
            'vars.command': "'/root/admin_scripts/nagios/check_md_raid'",
        },
        'sas': {
            'service_description': "S_SAS",
-           'use': "ST_ROOT",
+           'import': ["ST_ROOT"],
            'check_command': "CSSH_SAS2IRCU",
 
            'vars.command': "/root/admin_scripts/check_nagios/check_sas2ircu/check_sas2ircu",
        },
        'snmpd_memory_control': {
            'service_description': "S_SNMPD_MEMORY_CONTROL",
-           'use': "ST_ALERT",
+           'import': ["ST_ALERT"],
            'check_command': "C_SNMP_PROCESS_WITH_MEM",
 
            'vars.process': "snmpd",
@@ -1385,7 +1395,7 @@ def add_auto_configuration_host_settings(hostname,
        'solr': {
            'default': {
                'service_description': "SOLR_",
-               'use': "ST_WEB_PUBLIC",
+               'import': ["ST_WEB_PUBLIC"],
                'check_command': "C_HTTP_STRING_SOLR",
 
                'vars.hostname': "h",
@@ -1400,7 +1410,7 @@ def add_auto_configuration_host_settings(hostname,
        },
        'ssh': {
            'service_description': "S_SSH",
-           'use': "ST_ROOT",
+           'import': ["ST_ROOT"],
            'check_command': "check_tcp",
 
            'vars.port': 22,
@@ -1409,23 +1419,23 @@ def add_auto_configuration_host_settings(hostname,
        },
        'supervisord_status': {
            'service_description': "S_SUPERVISORD_STATUS",
-           'use': "ST_ALERT",
+           'import': ["ST_ALERT"],
            'check_command': "CSSH_SUPERVISOR",
 
            'vars.command': "/home/zope/adria/rcse/production-2014-01-23-14-27-01/bin/supervisorctl",
        },
        'swap': {
            'service_description': "CHECK_SWAP",
-           'use': "ST_ALERT",
+           'import': ["ST_ALERT"],
            'check_command': "CSSH_RAID_SOFT",
 
            'vars.command': "'/root/admin_scripts/nagios/check_swap -w 80%% -c 50%%'",
        },
        'tiles_generator_access': {
            'service_description': "Check tiles generator access",
-           'use': "ST_ALERT",
-           'notification_options': "w,c,r",
-           'notifications_enabled': 1,
+           'import': ["ST_ALERT"],
+#           'notification_options': "w,c,r",
+           'enable_notifications': 1,
            'check_command': "check_http_vhost_uri",
 
            'vars.hostname': "vdm.makina-corpus.net",
@@ -1433,14 +1443,14 @@ def add_auto_configuration_host_settings(hostname,
        },
        'ware_raid': {
            'service_description': "CHECK_3WARE_RAID",
-           'use': "ST_ALERT",
+           'import': ["ST_ALERT"],
            'check_command': "CSSH_RAID_3WARE",
 
            'vars.command': "/root/admin_scripts/nagios/check_3ware_raid",
        },
        'web_apache_status': {
            'service_description': "WEB_APACHE_STATUS",
-           'use': "ST_WEB_APACHE_STATUS",
+           'import': ["ST_WEB_APACHE_STATUS"],
            'check_command': "C_APACHE_STATUS",
 
            'vars.warning': 4,
@@ -1450,7 +1460,7 @@ def add_auto_configuration_host_settings(hostname,
        'web_openid': {
            'default': {
                'service_description': "WEB_OPENID_",
-               'use': "ST_WEB_PUBLIC",
+               'import': ["ST_WEB_PUBLIC"],
                'check_command': "C_HTTPS_OPENID_REDIRECT",
 
                'vars.hostname': hostname,
@@ -1464,7 +1474,7 @@ def add_auto_configuration_host_settings(hostname,
            'default': {
                'service_description': "WEB_",
                'vars.hostname': hostname,
-               'use': "ST_WEB_PUBLIC",
+               'import': ["ST_WEB_PUBLIC"],
                'check_command': "C_HTTP_STRING",
 
                'vars.url': "/",
@@ -1531,7 +1541,7 @@ def add_auto_configuration_host_settings(hostname,
     if not 'network' in services_attrs:
         services_attrs['network'] =  services_default_attrs['network']
         services_attrs['network']['default']['service_description']=services_default_attrs['network']['default']['service_description']+'default'
-        services_attrs['network']['default']['use']=services_default_attrs['network']['default']['use']+services_default_attrs['network']['default']['vars.interface'].upper()
+        services_attrs['network']['default']['import']=services_default_attrs['network']['default']['import']+[services_default_attrs['network']['default']['vars.interface']]
     else:
         for name, network in services_attrs['network'].items():
             # generate the service_description if not given
@@ -1540,11 +1550,11 @@ def add_auto_configuration_host_settings(hostname,
                     services_attrs['network'][name]['service_description']=services_default_attrs['network']['default']['service_description']+services_attrs['network'][name]['vars.interface'].upper()
                 else:
                     services_attrs['network'][name]['service_description']=services_default_attrs['network']['default']['service_description']+services_default_attrs['network']['default']['vars.interface'].upper()
-            if 'use' not in network:
+            if 'import' not in network:
                 if 'vars.interface' in services_attrs['network'][name]:
-                    services_attrs['network'][name]['use']=services_default_attrs['network']['default']['use']+services_attrs['network'][name]['vars.interface'].upper()
+                    services_attrs['network'][name]['import']=services_default_attrs['network']['default']['import']+services_attrs['network'][name]['vars.interface'].upper()
                 else:
-                    services_attrs['network'][name]['use']=services_default_attrs['network']['default']['use']+services_default_attrs['network']['default']['vars.interface'].upper()
+                    services_attrs['network'][name]['import']=[services_default_attrs['network']['default']['import'][0]+i.upper() for i in services_default_attrs['network']['default']['vars.interface']] # add the prefix to the import
 
             for key, value in services_default_attrs['network']['default'].items():
                 if not key in network:
@@ -1631,8 +1641,8 @@ def add_auto_configuration_host_settings(hostname,
 
             if services_attrs['disk_space'][mountpoint]['service_description'] == services_default_attrs['disk_space']['default']['service_description']:
                 services_attrs['disk_space'][mountpoint]['service_description']=services_attrs['disk_space'][mountpoint]['service_description']+disks_spaces[mountpoint].upper()
-            if services_attrs['disk_space'][mountpoint]['use'] == services_default_attrs['disk_space']['default']['use']:
-                services_attrs['disk_space'][mountpoint]['use']=services_attrs['disk_space'][mountpoint]['use']+disks_spaces[mountpoint].replace('/', '_').replace('_', '/', 1).upper()
+#            if services_attrs['disk_space'][mountpoint]['import'][0] in services_default_attrs['disk_space']['default']['import']:
+            services_attrs['disk_space'][mountpoint]['import']=[services_attrs['disk_space'][mountpoint]['import'][0]+disks_spaces[mountpoint].replace('/', '_').replace('_', '/', 1).upper()]
             services_attrs['disk_space'][mountpoint]['vars.path']= disks_spaces[mountpoint]
 
 
