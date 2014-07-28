@@ -224,7 +224,6 @@ def objects_icinga2():
             elif key in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']: # for timeperiods
                 if 'ranges' not in res:
                     res['ranges'] = {}
-#                res['ranges'][_format(key)] = _format(value)
                 res['ranges'][key] = value
 
             # global translation
@@ -252,7 +251,7 @@ def objects_icinga2():
                 # create the lists if needed and format the value 
                 if key in attrs_force_list:
                     res_value = value.split(',')
-                    res_value = map((lambda v: v.strip()), res_value)
+                    res_value = map((lambda v: v.strip()), res_value) # strip all values (because we can have "a,       b    ,   c")
                 else:
                     res_value = value
 
@@ -317,6 +316,7 @@ def objects_icinga2():
         'is_volatile': "volatile",
         # hostgroups
         # hosts
+        'hostgroups': "groups",
     }
     attrs_force_list = [
         'use',
@@ -326,6 +326,7 @@ def objects_icinga2():
         'contact_groups',
         # hosts
         'parents',
+        'hostgroups',
     ]
     attrs_removed = [ # from icinga2-migration php script
         'name',
@@ -387,7 +388,7 @@ def objects_icinga2():
          'retry_check_interval',
          'process_perf_data',
 #         'parents',
-         'hostgroups',
+#         'hostgroups',
          'contacts',
          'contact_groups',
 
