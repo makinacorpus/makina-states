@@ -252,8 +252,18 @@ def objects_icinga2():
                 if key in attrs_force_list:
                     res_value = value.split(',')
                     res_value = map((lambda v: v.strip()), res_value) # strip all values (because we can have "a,       b    ,   c")
+                elif key in attrs_timed:
+                    try:
+                        res_value = int(value)
+                        res_value = str(res_value)+'m' # by default the time is in minutes
+                    except:
+                        # already a unit because it is not a number
+                        res_value = value
                 else:
-                    res_value = value
+                    try:
+                        res_value = int(value)
+                    except:
+                        res_value = value
 
                 # add the attribute
                 res[res_key] = res_value
@@ -313,6 +323,8 @@ def objects_icinga2():
         # servicegroups
         # services
         'is_volatile': "volatile",
+        'normal_check_interval': "check_interval",
+        'retry_check_interval': "retry_interval",
         # hostgroups
         # hosts
         'hostgroups': "groups",
@@ -326,6 +338,10 @@ def objects_icinga2():
         # hosts
         'parents',
         'hostgroups',
+    ]
+    attrs_timed = [
+        'normal_check_interval',
+        'retry_check_interval',
     ]
     attrs_removed = [ # from icinga2-migration php script
         'name',
@@ -382,12 +398,7 @@ def objects_icinga2():
 #        'notification_period',
 #        'notification_options',
 
-# TODO: because the configuration is invalid 
-         'normal_check_interval',
-         'retry_check_interval',
-#         'process_perf_data',
-#         'parents',
-#         'hostgroups',
+# TODO: the contacts are not already managed in services and hosts 
          'contacts',
          'contact_groups',
 
@@ -562,6 +573,8 @@ def format(dictionary, quote_keys=False, quote_values=True):
             else:
                 res[key] = "false"
         elif key in ['template']:
+            res[key] = value
+        elif key.endswith('_interval'): # a bad method to find a time
             res[key] = value
         elif isinstance(value, int):
             res[key] = str(value)
