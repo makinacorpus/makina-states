@@ -204,7 +204,7 @@ def objects_icinga2():
                     i_args += 1
         return res
 
-    def _translate_attrs(obj_type, res_type, obj_attrs):
+    def _translate_attrs(obj_type, res_type, obj_attrs, force_remove_attrs_used_as_name_not_removed = False):
         '''function to translate attrs subdictionary
            it is used to translate objects_definitions and autoconfigured_hosts_definitions
         '''
@@ -230,7 +230,8 @@ def objects_icinga2():
             # global translation
             else:
                 # check if the attribute is removed
-                if obj_type in attrs_used_as_name and key == attrs_used_as_name[obj_type]:
+                # remove if the attribute is used as name and not in conserved attributes list, unless remove is forced
+                if obj_type in attrs_used_as_name and (key == attrs_used_as_name[obj_type] and key not in attrs_used_as_name_not_removed) or (key == attrs_used_as_name[obj_type] and key in attrs_used_as_name_not_removed and force_remove_attrs_used_as_name_not_removed):
                     # the attribute used as name is removed from attrs list
                     continue
                 elif key in attrs_removed: # attribute removed
@@ -283,6 +284,7 @@ def objects_icinga2():
         'host': "Host",
         'command': "CheckCommand",
     }
+    attrs_used_as_name_not_removed = ['service_description'] # commented as "ugly hack"in php migration script
     attrs_used_as_name = {
         'timeperiod': "timeperiod_name",
         'contactgroup': "contactgroup_name",
@@ -478,7 +480,7 @@ def objects_icinga2():
             res['objects_definitions'][name]['name'] = name
 
         # translate the attributes
-        res['objects_definitions'][name]['attrs'] = _translate_attrs(obj['type'], res['objects_definitions'][name]['type'], obj['attrs'])
+        res['objects_definitions'][name]['attrs'] = _translate_attrs(obj['type'], res['objects_definitions'][name]['type'], obj['attrs'], True)
 
     # purge_definitions
     res['purge_definitions'] = src['purge_definitions']
@@ -508,7 +510,7 @@ def objects_icinga2():
             res['autoconfigured_hosts_definitions'][name]['services_attrs'] = {}
             for service in services:
                 if service in params['services_attrs']:
-                    res['autoconfigured_hosts_definitions'][name]['services_attrs'][service] = _translate_attrs('service', types_renamed['service'], params['services_attrs'][service])
+                    res['autoconfigured_hosts_definitions'][name]['services_attrs'][service] = _translate_attrs('service', types_renamed['service'], params['services_attrs'][service], False) # we have to preserve service_description attribute because in the template it is the value used as name (because there is not an additional subdictionary to store the name like in objects_definitions)
 
             for service in services_loop:
                 if service in params['services_attrs']:
@@ -1022,7 +1024,7 @@ def add_auto_configuration_host_settings(hostname,
         'backups_guidtz': "/backups/guidtz",
         'var_backups_bluemind': "/var/backups/bluemind",
         'var_spool_cyrus': "/var/spool/cyrus",
-        'nmd_www': "/", # must be completed
+        'nmd_www': "/home", #TODO: must be modified
     }
     disks_spaces = dict()
     for mountpoint, path in mountpoints_path.items():
