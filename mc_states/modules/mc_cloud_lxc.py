@@ -424,7 +424,7 @@ def get_settings_for_vm(target, vm, full=True):
         ipinfos.setdefault('gateway', None)
         if ipinfos['gateway']:
             lxc_data['gateway'] = None
-        ipinfos.setdefault('netmask', '')
+        ipinfos.setdefault('netmask', '32')
         ipinfos.setdefault('link', 'br0')
     return lxc_data
 
