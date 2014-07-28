@@ -251,7 +251,8 @@ def objects_icinga2():
 
                 # create the lists if needed and format the value 
                 if key in attrs_force_list:
-                    res_value = value.split(',') 
+                    res_value = value.split(',')
+                    res_value = map((lambda v: v.strip()), res_value)
                 else:
                     res_value = value
 
@@ -385,11 +386,8 @@ def objects_icinga2():
          'normal_check_interval',
          'retry_check_interval',
          'process_perf_data',
-         'parents',
+#         'parents',
          'hostgroups',
-
-# TODO:
-# because, we don't have done the contact migration (http://docs.icinga.org/icinga2/latest/doc/module/icinga2/toc#!/icinga2/latest/doc/module/icinga2/chapter/migration#manual-config-migration-hints-contacts-users)
          'contacts',
          'contact_groups',
 
@@ -544,7 +542,7 @@ def format(dictionary, quote_keys=False, quote_values=True):
             else:
                 res[key] = format(value)
         elif isinstance(value, list):
-            if 'import' == key:
+            if key in ['import', 'parents']: # theses lists are managed in the template
                 res[key] = map((lambda v: '"'+str(v).replace('"','\\"')+'"'), value)
             else:
                 res[key] = '['
