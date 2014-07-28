@@ -137,7 +137,6 @@ def objects_icinga2():
         else:
             return '"'+_unquoting(value)+'"'
 
-
     def _check_command_arguments(check_command):
         '''split a check_command in order to get the arguments'''
         # we have to split the "!"
@@ -267,18 +266,19 @@ def objects_icinga2():
                     res_value = value.split(',') 
                 else:
                     res_value = value
-#                    res_value = _format(value, to_list=False)
 
                 # add the attribute
                 res[res_key] = res_value
 
         # add legacy imports
         if 'timeperiod' == obj_type:
-#            res["import"] = _format("legacy-timeperiod")
-            res["import"] = "legacy-timeperiod"
+            if 'import' not in res:
+                res['import'] = []
+            res["import"] = res["import"] + ["legacy-timeperiod"] + res['import']
         elif 'command' == obj_type:
-#            res["import"] = _format("plugin-check-command")
-            res["import"] = "plugin-check-command"
+            if 'import' not in res:
+                res['import'] = []
+            res['import'] = ["plugin-check-command"] + res['import']
 
         return res
 
@@ -513,7 +513,48 @@ def objects_icinga2():
 def objects():
     return objects_icinga2()
 
+def format(dictionary, quote_keys=False, quote_values=True):
+    '''
+    function to transform all values in a dictionary in string and adding quotes
+    the main goal is to print values with quotes like "value" but we don't want print list with quotes like "[v1, v2]". This should be ["v1", "v2"]
+    this can be done in jinja template but the template is already complex
+    '''
+    res={}
+    for key, value in dictionary.items():
+        if quote_keys:
+            key = '"'+str(key)+'"'
 
+        if key in ['type']: # ugly hack
+            quote_values = False
+
+        if isinstance(value, dict): # recurse
+            if key in ['arguments', 'ranges']: # in theses subdictionaries, the keys are also quoted
+                res[key] = format(value, True, True)
+            elif key in ['services_enabled', 'services_loop_enabled']: # theses dictionaries contains booleans
+                res[key] = format(value, False, False)
+            else:
+                res[key] = format(value)
+        elif isinstance(value, list):
+            res[key] = '['
+            # suppose that all values in list are strings
+            # escape '"' char and quote each strings
+            if quote_values:
+                res[key] += ', '.join(map((lambda v: '"'+str(v).replace('"','\\"')+'"'), value))
+            else:
+                res[key] += ', '.join(value)
+            res[key] += ']'
+        elif isinstance(value, unicode):
+            if quote_values:
+                res[key] = '"'+value.replace('"', '\\"')+'"'
+            else:
+                res[key] = value
+        else:
+            if quote_values:
+                res[key] = '"'+str(value).encode('utf-8').replace('"', '\\"')+'"'
+            else:
+                res[key] = value
+
+    return res
 
 def get_settings_for_object(target=None, obj=None, attr=None):
     '''
