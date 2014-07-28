@@ -238,10 +238,10 @@ def settings():
                 data['have_vpn'] = True  # must stay none if not found
 
         opts_45 = ',sourceroute=0'
-        bridged_opts = 'routeback,bridge,tcpflags,nosmurfs,logmartians'
+        bridged_opts = 'routeback,bridge,tcpflags,nosmurfs'
         bridged_net_opts = (
-            'bridge,tcpflags,dhcp,nosmurfs,routefilter,logmartians')
-        phy_opts = 'tcpflags,dhcp,nosmurfs,routefilter,logmartians'
+            'bridge,tcpflags,dhcp,nosmurfs,routefilter')
+        phy_opts = 'tcpflags,dhcp,nosmurfs,routefilter'
         if sw_ver >= '4.4':
             phy_opts += opts_45
             bridged_net_opts += opts_45
