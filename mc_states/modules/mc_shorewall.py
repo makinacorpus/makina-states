@@ -138,7 +138,11 @@ def settings():
             shwIfformat = '#?{0}'.format(shwIfformat)
         permissive_mode = False
         if nodetypes_registry['is']['lxccontainer']:
-            permissive_mode = True
+            # be permissive on the firewall side only if we are
+            # routing via the host only network and going
+            # outside througth NAT
+            if default_if == 'eth0':
+                permissive_mode = True
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.firewall.shorewall', {
                 # mapping of list of mappings
