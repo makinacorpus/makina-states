@@ -1381,7 +1381,7 @@ def add_auto_configuration_host_settings(hostname,
            'vars.command': "/var/makina/alma-job/job/supervision/check_prebill_sending.sh",
        },
        'raid': {
-           'service_description': "CHECK_RAID",
+           'service_description': "CHECK_MD_RAID",
            'import': ["ST_ALERT"],
            'check_command': "CSSH_RAID_SOFT",
 
@@ -1681,11 +1681,14 @@ def add_auto_configuration_host_settings(hostname,
     for service in services:
         if service in services_attrs:
             services_attrs[service][service_key_hostname] = hostname
+            services_attrs[service]['service_description'] = hostname+'__'+services_attrs[service]['service_description']
 
     for service in services_loop:
         if service in services_attrs:
             for subservice  in services_attrs[service]:
                 services_attrs[service][subservice][service_key_hostname] = hostname
+                services_attrs[service][subservice]['service_description'] = hostname+'__'+services_attrs[service][subservice]['service_description']
+
  
     kwargs.setdefault('services_attrs', services_attrs)
 
