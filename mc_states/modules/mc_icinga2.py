@@ -1077,12 +1077,16 @@ def add_configuration_object(file=None,
             return add_configuration_object.objects
     elif type and file and attrs:
         if file not in add_configuration_object.objects:
-            add_configuration_object.objects[file]=[]
-        add_configuration_object.objects[file].append({'type': type, 'attrs': attrs, 'definition': definition})
+            add_configuration_object.objects[file] = []
+        add_configuration_object.objects[
+            file].append({'type': type,
+                          'attrs': attrs,
+                          'definition': definition})
     elif fromsettings:
         if file not in add_configuration_object.objects:
-            add_configuration_object.objects[file]=[]
-        add_configuration_object.objects[file].append({'fromsettings': fromsettings})
+            add_configuration_object.objects[file] = []
+        add_configuration_object.objects[
+            file].append({'fromsettings': fromsettings})
     print('end call add_configuration_object')
 
 
@@ -1106,7 +1110,7 @@ def remove_configuration_object(file=None, get=False, **kwargs):
 
 
 # global variable initialisation
-remove_configuration_object.files=""
+remove_configuration_object.files = ""
 
 
 def add_auto_configuration_host_settings(hostname,
@@ -1297,18 +1301,24 @@ def add_auto_configuration_host_settings(hostname,
         'backups_guidtz': "/backups/guidtz",
         'var_backups_bluemind': "/var/backups/bluemind",
         'var_spool_cyrus': "/var/spool/cyrus",
-        'nmd_www': "/home", # TODO: must be modified
+        'nmd_www': "/home",  # TODO: must be modified
     }
     disks_spaces = dict()
     for mountpoint, path in mountpoints_path.items():
         if eval('disk_space_'+mountpoint):
-            disks_spaces[mountpoint]=path
+            disks_spaces[mountpoint] = path
 
     # default values for dns_association service
-    dns_hostname=''
-    dns_address=''
+    dns_hostname = ''
+    dns_address = ''
 
-    if dns_association_hostname or dns_association or dns_reverse_association and 'address' in attrs and 'host_name' in attrs:
+    if (
+        dns_association_hostname
+        or dns_association
+        or dns_reverse_association
+        and 'address' in attrs
+        and 'host_name' in attrs
+    ):
         if 'host_name' in attrs:
             dns_hostname = attrs['host_name']
         else:
@@ -1320,457 +1330,459 @@ def add_auto_configuration_host_settings(hostname,
         dns_address = attrs['address']
 
     # give the default values for commands parameters values
-    # the keys are the services names, not the commands names (use the service filename)
+    # the keys are the services names,
+    # not the commands names (use the service filename)
     services_default_attrs = {
-       'backup_burp_age': {
-           'service_description': "S_BACKUP_BURP_AGE",
-           'import': ["ST_BACKUP_DAILY_ALERT"],
-           'check_command': "CSSH_BACKUP_BURP",
+        'backup_burp_age': {
+            'service_description': "S_BACKUP_BURP_AGE",
+            'import': ["ST_BACKUP_DAILY_ALERT"],
+            'check_command': "CSSH_BACKUP_BURP",
 
-           'vars.ssh_user': "root",
-           'vars.ssh_addr': "backup.makina-corpus.net",
-           'vars.ssh_port': "22",
-           'vars.ssh_timeout': 10,
-           'vars.warning': 1560,
-           'vars.critical': 1800,
-       },
-       'backup_rdiff': {
-           'service_description': "S_BACKUP_RDIFF",
-           'import': ["ST_BACKUP_DAILY_ALERT"],
-           'check_command': "CSSH_BACKUP",
+            'vars.ssh_user': "root",
+            'vars.ssh_addr': "backup.makina-corpus.net",
+            'vars.ssh_port': "22",
+            'vars.ssh_timeout': 10,
+            'vars.warning': 1560,
+            'vars.critical': 1800,
+        },
+        'backup_rdiff': {
+            'service_description': "S_BACKUP_RDIFF",
+            'import': ["ST_BACKUP_DAILY_ALERT"],
+            'check_command': "CSSH_BACKUP",
 
-           'vars.ssh_user': "root",
-           'vars.ssh_addr': "backup.makina-corpus.net",
-           'vars.ssh_port': "22",
-           'vars.ssh_timeout': 10,
-           'vars.command': ("/root/admin_scripts/nagios/"
-                            "check_rdiff -r /data/backups/phpnet6"
-                            " -w 24 -c 48 -l 2048 -p 24")
-       },
-       'beam_process': {
-           'service_description': "Check beam proces",
-           'import': ["ST_ALERT"],
-           # 'notification_options': "w,c,r",
-           'enable_notifications': 1,
-           'check_command': "C_SNMP_PROCESS",
+            'vars.ssh_user': "root",
+            'vars.ssh_addr': "backup.makina-corpus.net",
+            'vars.ssh_port': "22",
+            'vars.ssh_timeout': 10,
+            'vars.command': ("/root/admin_scripts/nagios/"
+                             "check_rdiff -r /data/backups/phpnet6"
+                             " -w 24 -c 48 -l 2048 -p 24")
+        },
+        'beam_process': {
+            'service_description': "Check beam proces",
+            'import': ["ST_ALERT"],
+            # 'notification_options': "w,c,r",
+            'enable_notifications': 1,
+            'check_command': "C_SNMP_PROCESS",
 
-           'vars.process': "beam",
-           'vars.warning': 0,
-           'vars.critical': 0,
-       },
-       'celeryd_process': {
-           'service_description': "Check celeryd process",
-           'import': ["ST_ALERT"],
-           # 'notification_options': "w,c,r",
-           'enable_notifications': 1,
-           'check_command': "C_SNMP_PROCESS",
+            'vars.process': "beam",
+            'vars.warning': 0,
+            'vars.critical': 0,
+        },
+        'celeryd_process': {
+            'service_description': "Check celeryd process",
+            'import': ["ST_ALERT"],
+            # 'notification_options': "w,c,r",
+            'enable_notifications': 1,
+            'check_command': "C_SNMP_PROCESS",
 
-           'vars.process': "python",
-           'vars.warning': 1,
-           'vars.critical': 0,
-       },
-       'cron': {
-           'service_description': "S_PROC_CRON",
-           'import': ["ST_SSH_PROC_CRON"],
-           'check_command': "CSSH_CRON",
-       },
-       'ddos': {
-           'service_description': "DDOS",
-           'import': ["ST_ALERT"],
-           'check_command': "CSSH_DDOS",
+            'vars.process': "python",
+            'vars.warning': 1,
+            'vars.critical': 0,
+        },
+        'cron': {
+            'service_description': "S_PROC_CRON",
+            'import': ["ST_SSH_PROC_CRON"],
+            'check_command': "CSSH_CRON",
+        },
+        'ddos': {
+            'service_description': "DDOS",
+            'import': ["ST_ALERT"],
+            'check_command': "CSSH_DDOS",
 
-           'vars.warning': 50,
-           'vars.critical': 60,
-       },
-       'debian_updates': {
-           'service_description': "S_DEBIAN_UPDATES",
-           'import': ["ST_DAILY_NOALERT"],
-           'check_command': "CSSH_DEBIAN_UPDATES",
-       },
-       'dns_association_hostname': {
-           'service_description': "DNS_ASSOCIATION_hostname",
-           'import': ["ST_DNS_ASSOCIATION_hostname"],
-           'check_command': "C_DNS_EXTERNE_ASSOCIATION",
-           'vars.hostname': dns_hostname,
-           'vars.dns_address': dns_address,
-           'vars.other_args': "",
-       },
-       'dns_association': {
-           'default': {
-               # default service_description is a prefix (see below)
-               'service_description': "DNS_ASSOCIATION_",
-               'import': ["ST_DNS_ASSOCIATION"],
-               'check_command': "C_DNS_EXTERNE_ASSOCIATION",
-               'vars.hostname': dns_hostname,
-               'vars.dns_address': dns_address,
-               'vars.other_args': "",
-           }
-       },
-       DRA: {
-           'default': {
-               'service_description': "DNS_REVERSE_ASSOCIATION_",
-               'import': ["ST_DNS_ASSOCIATION"],
-               'check_command': "C_DNS_EXTERNE_REVERSE_ASSOCIATION",
-               # 'vars.inaddr': "" # generated below from
-                                   # dns_association dictionary
-               #  'vars.hostname': ""
-               'vars.other_args': "",
-           },
-       },
-       'disk_space': {
-           'default': {
-               # it is prefix
-               'service_description': "DISK_SPACE_",
-               'import': ["ST_DISK_SPACE_"],
-               'check_command': "C_SNMP_DISK",
+            'vars.warning': 50,
+            'vars.critical': 60,
+        },
+        'debian_updates': {
+            'service_description': "S_DEBIAN_UPDATES",
+            'import': ["ST_DAILY_NOALERT"],
+            'check_command': "CSSH_DEBIAN_UPDATES",
+        },
+        'dns_association_hostname': {
+            'service_description': "DNS_ASSOCIATION_hostname",
+            'import': ["ST_DNS_ASSOCIATION_hostname"],
+            'check_command': "C_DNS_EXTERNE_ASSOCIATION",
+            'vars.hostname': dns_hostname,
+            'vars.dns_address': dns_address,
+            'vars.other_args': "",
+        },
+        'dns_association': {
+            'default': {
+                # default service_description is a prefix (see below)
+                'service_description': "DNS_ASSOCIATION_",
+                'import': ["ST_DNS_ASSOCIATION"],
+                'check_command': "C_DNS_EXTERNE_ASSOCIATION",
+                'vars.hostname': dns_hostname,
+                'vars.dns_address': dns_address,
+                'vars.other_args': "",
+            }
+        },
+        DRA: {
+            'default': {
+                'service_description': "DNS_REVERSE_ASSOCIATION_",
+                'import': ["ST_DNS_ASSOCIATION"],
+                'check_command': "C_DNS_EXTERNE_REVERSE_ASSOCIATION",
+                # 'vars.inaddr': "" # generated below from
+                # dns_association dictionary
+                #  'vars.hostname': ""
+                'vars.other_args': "",
+            },
+        },
+        'disk_space': {
+            'default': {
+                # it is prefix
+                'service_description': "DISK_SPACE_",
+                'import': ["ST_DISK_SPACE_"],
+                'check_command': "C_SNMP_DISK",
 
-               'vars.warning': 80,
-               'vars.critical': 90,
-           },
-       },
-       'drbd': {
-           'service_description': "CHECK_DRBD",
-           'import': ["ST_ALERT"],
-           'icon_image': "services/heartbeat.png",
-           'check_command': "CSSH_DRBD",
+                'vars.warning': 80,
+                'vars.critical': 90,
+            },
+        },
+        'drbd': {
+            'service_description': "CHECK_DRBD",
+            'import': ["ST_ALERT"],
+            'icon_image': "services/heartbeat.png",
+            'check_command': "CSSH_DRBD",
 
-           'vars.command': ("'/root/admin_scripts/nagios/"
-                            "check_drbd -d  0,1'"),
-       },
-       'epmd_process': {
-           'service_description': "Check epmd process",
-           'import': ["ST_ALERT"],
-           # 'notification_options': "w,c,r",
-           'enable_notifications': 1,
-           'check_command': "C_SNMP_PROCESS",
+            'vars.command': ("'/root/admin_scripts/nagios/"
+                             "check_drbd -d  0,1'"),
+        },
+        'epmd_process': {
+            'service_description': "Check epmd process",
+            'import': ["ST_ALERT"],
+            # 'notification_options': "w,c,r",
+            'enable_notifications': 1,
+            'check_command': "C_SNMP_PROCESS",
 
-           'vars.process': "epmd",
-           'vars.warning': 0,
-           'vars.critical': 0,
-       },
-       'erp_files': {
-           'service_description': "CHECK_ERP_FILES",
-           'import': ["ST_ALERT"],
-           'check_command': "CSSH_CUSTOM",
+            'vars.process': "epmd",
+            'vars.warning': 0,
+            'vars.critical': 0,
+        },
+        'erp_files': {
+            'service_description': "CHECK_ERP_FILES",
+            'import': ["ST_ALERT"],
+            'check_command': "CSSH_CUSTOM",
 
-           'vars.command': ("/var/makina/alma-job/job"
-                            "/supervision/check_erp_files.sh"),
-       },
-       'fail2ban': {
-           'service_description': "S_FAIL2BAN",
-           'import': ["ST_ROOT"],
-           'enable_notifications': 1,
-           'check_command': "C_SNMP_PROCESS",
+            'vars.command': ("/var/makina/alma-job/job"
+                             "/supervision/check_erp_files.sh"),
+        },
+        'fail2ban': {
+            'service_description': "S_FAIL2BAN",
+            'import': ["ST_ROOT"],
+            'enable_notifications': 1,
+            'check_command': "C_SNMP_PROCESS",
 
-           'vars.process': "fail2ban-server",
-           'vars.warning': 0,
-           'vars.critical': 0,
-       },
-       'gunicorn_process': {
-           'service_description': "Check gunicorn process",
-           'import': ["ST_ALERT"],
-           # 'notification_options': "w,c,r",
-           'enable_notifications': 1,
-           'check_command': "C_SNMP_PROCESS",
+            'vars.process': "fail2ban-server",
+            'vars.warning': 0,
+            'vars.critical': 0,
+        },
+        'gunicorn_process': {
+            'service_description': "Check gunicorn process",
+            'import': ["ST_ALERT"],
+            # 'notification_options': "w,c,r",
+            'enable_notifications': 1,
+            'check_command': "C_SNMP_PROCESS",
 
-           'vars.process': "gunicorn_django",
-           'vars.warning': 0,
-           'vars.critical': 0,
-       },
-       'haproxy': {
-           'service_description': "haproxy_stats",
-           'import': ["ST_ALERT"],
-           'check_command': "CSSH_HAPROXY",
-           'vars.command': ("/root/admin_scripts/nagios/"
-                            "check_haproxy_stats.pl -p "
-                            "web -w 80 -c 90"),
-       },
-       'ircbot_process': {
-           'service_description': "S_IRCBOT_PROCESS",
-           'import': ["ST_HOURLY_ALERT"],
-           'check_command': "C_PROCESS_IRCBOT_RUNNING",
-       },
-       'load_avg': {
-           'service_description': "LOAD_AVG",
-           'import': ["ST_LOAD_AVG"],
-           'check_command': "C_SNMP_LOADAVG",
+            'vars.process': "gunicorn_django",
+            'vars.warning': 0,
+            'vars.critical': 0,
+        },
+        'haproxy': {
+            'service_description': "haproxy_stats",
+            'import': ["ST_ALERT"],
+            'check_command': "CSSH_HAPROXY",
+            'vars.command': ("/root/admin_scripts/nagios/"
+                             "check_haproxy_stats.pl -p "
+                             "web -w 80 -c 90"),
+        },
+        'ircbot_process': {
+            'service_description': "S_IRCBOT_PROCESS",
+            'import': ["ST_HOURLY_ALERT"],
+            'check_command': "C_PROCESS_IRCBOT_RUNNING",
+        },
+        'load_avg': {
+            'service_description': "LOAD_AVG",
+            'import': ["ST_LOAD_AVG"],
+            'check_command': "C_SNMP_LOADAVG",
 
-           'vars.other_args': "",
-       },
-       'mail_cyrus_imap_connections': {
-           'service_description': "S_MAIL_CYRUS_IMAP_CONNECTIONS",
-           'import': ["ST_ALERT"],
-           'check_command': "CSSH_CYRUS_CONNECTIONS",
+            'vars.other_args': "",
+        },
+        'mail_cyrus_imap_connections': {
+            'service_description': "S_MAIL_CYRUS_IMAP_CONNECTIONS",
+            'import': ["ST_ALERT"],
+            'check_command': "CSSH_CYRUS_CONNECTIONS",
 
-           'vars.warning': 300,
-           'vars.critical': 900,
-       },
-       'mail_imap': {
-           'service_description': "S_MAIL_IMAP",
-           'import': ["ST_ALERT"],
-           'check_command': "C_MAIL_IMAP",
+            'vars.warning': 300,
+            'vars.critical': 900,
+        },
+        'mail_imap': {
+            'service_description': "S_MAIL_IMAP",
+            'import': ["ST_ALERT"],
+            'check_command': "C_MAIL_IMAP",
 
-           'vars.warning': 1,
-           'vars.critical': 3,
-       },
-       'mail_imap_ssl': {
-           'service_description': "S_MAIL_IMAP_SSL",
-           'import': ["ST_ALERT"],
-           'check_command': "C_MAIL_IMAP_SSL",
+            'vars.warning': 1,
+            'vars.critical': 3,
+        },
+        'mail_imap_ssl': {
+            'service_description': "S_MAIL_IMAP_SSL",
+            'import': ["ST_ALERT"],
+            'check_command': "C_MAIL_IMAP_SSL",
 
-           'vars.warning': 1,
-           'vars.critical': 3,
-       },
-       'mail_pop': {
-           'service_description': "S_MAIL_POP",
-           'import': ["ST_ALERT"],
-           'check_command': "C_MAIL_POP",
+            'vars.warning': 1,
+            'vars.critical': 3,
+        },
+        'mail_pop': {
+            'service_description': "S_MAIL_POP",
+            'import': ["ST_ALERT"],
+            'check_command': "C_MAIL_POP",
 
-           'vars.warning': 1,
-           'vars.critical': 3,
-       },
-       'mail_pop_ssl': {
-           'service_description': "S_MAIL_POP_SSL",
-           'import': ["ST_ALERT"],
-           'check_command': "C_MAIL_POP_SSL",
+            'vars.warning': 1,
+            'vars.critical': 3,
+        },
+        'mail_pop_ssl': {
+            'service_description': "S_MAIL_POP_SSL",
+            'import': ["ST_ALERT"],
+            'check_command': "C_MAIL_POP_SSL",
 
-           'vars.warning': 1,
-           'vars.critical': 3,
-       },
-       'mail_pop_test_account': {
-           'service_description': "S_MAIL_POP3_TEST_ACCOUNT",
-           'import': ["ST_ALERT"],
-           'check_command': "C_POP3_TEST_SIZE_AND_DELETE",
+            'vars.warning': 1,
+            'vars.critical': 3,
+        },
+        'mail_pop_test_account': {
+            'service_description': "S_MAIL_POP3_TEST_ACCOUNT",
+            'import': ["ST_ALERT"],
+            'check_command': "C_POP3_TEST_SIZE_AND_DELETE",
 
-           'vars.warning1': 52488,
-           'vars.critical1': 1048576,
-           'vars.warning2': 100,
-           'vars.critical2': 2000,
-           'vars.mx': "@makina-corpus.com",
-       },
-       'mail_server_queues': {
-           'service_description': "S_MAIL_SERVER_QUEUES",
-           'import': ["ST_ALERT"],
-           'check_command': "CSSH_MAILQUEUE",
+            'vars.warning1': 52488,
+            'vars.critical1': 1048576,
+            'vars.warning2': 100,
+            'vars.critical2': 2000,
+            'vars.mx': "@makina-corpus.com",
+        },
+        'mail_server_queues': {
+            'service_description': "S_MAIL_SERVER_QUEUES",
+            'import': ["ST_ALERT"],
+            'check_command': "CSSH_MAILQUEUE",
 
-           'vars.warning': 50,
-           'vars.critical': 100,
-       },
-       'mail_smtp': {
-           'service_description': "S_MAIL_SMTP",
-           'import': ["ST_ALERT"],
-           'check_command': "C_MAIL_SMTP",
+            'vars.warning': 50,
+            'vars.critical': 100,
+        },
+        'mail_smtp': {
+            'service_description': "S_MAIL_SMTP",
+            'import': ["ST_ALERT"],
+            'check_command': "C_MAIL_SMTP",
 
-           'vars.warning': 1,
-           'vars.critical': 3,
-       },
-       'megaraid_sas': {
-           'service_description': "CHECK_MEGARAID_SAS",
-           'import': ["ST_ALERT"],
-           'check_command': "CSSH_MEGARAID_SAS",
+            'vars.warning': 1,
+            'vars.critical': 3,
+        },
+        'megaraid_sas': {
+            'service_description': "CHECK_MEGARAID_SAS",
+            'import': ["ST_ALERT"],
+            'check_command': "CSSH_MEGARAID_SAS",
 
-           'vars.command': ("'/root/admin_scripts/"
-                            "nagios/check_megaraid_sas'"),
-       },
-       'memory': {
-           'service_description': "MEMORY",
-           'import': ["ST_MEMORY"],
-           'check_command': "C_SNMP_MEMORY",
+            'vars.command': ("'/root/admin_scripts/"
+                             "nagios/check_megaraid_sas'"),
+        },
+        'memory': {
+            'service_description': "MEMORY",
+            'import': ["ST_MEMORY"],
+            'check_command': "C_SNMP_MEMORY",
 
-           'vars.warning': 80,
-           'vars.critical': 90,
-       },
-       'memory_hyperviseur': {
-           'service_description': "MEMORY_HYPERVISEUR",
-           'import': ["ST_MEMORY_HYPERVISEUR"],
-           'check_command': "C_SNMP_MEMORY",
+            'vars.warning': 80,
+            'vars.critical': 90,
+        },
+        'memory_hyperviseur': {
+            'service_description': "MEMORY_HYPERVISEUR",
+            'import': ["ST_MEMORY_HYPERVISEUR"],
+            'check_command': "C_SNMP_MEMORY",
 
-           'vars.warning': 95,
-           'vars.critical': 99,
-       },
-       'mysql_process': {
-           'service_description': "S_MYSQL_PROCESS",
-           'import': ["ST_ALERT"],
-           'check_command': "C_SNMP_PROCESS",
+            'vars.warning': 95,
+            'vars.critical': 99,
+        },
+        'mysql_process': {
+            'service_description': "S_MYSQL_PROCESS",
+            'import': ["ST_ALERT"],
+            'check_command': "C_SNMP_PROCESS",
 
-           'vars.process': "mysql",
-           'vars.warning': 0,
-           'vars.critical': 0,
-       },
-       'network': {
-           'default': {
-               # prefix
-               'service_description': "NETWORK_",
-               'import': ["ST_NETWORK_"],
-               'check_command': "C_SNMP_NETWORK",
+            'vars.process': "mysql",
+            'vars.warning': 0,
+            'vars.critical': 0,
+        },
+        'network': {
+            'default': {
+                # prefix
+                'service_description': "NETWORK_",
+                'import': ["ST_NETWORK_"],
+                'check_command': "C_SNMP_NETWORK",
 
-               'vars.interface': "eth0",
-               'vars.other_args': "",
-           },
-       },
-       'ntp_peers': {
-           'service_description': "S_NTP_PEERS",
-           'import': ["ST_ROOT"],
-           'check_command': "CSSH_NTP_PEER",
-       },
-       'ntp_time': {
-           'service_description': "S_NTP_TIME",
-           'import': ["ST_ROOT"],
-           'check_command': "CSSH_NTP_TIME",
-       },
-       'only_one_nagios_running': {
-           'service_description': "S_ONLY_ONE_NAGIOS_RUNNING",
-           'import': ["ST_HOURLY_ALERT"],
-           'check_command': "C_CHECK_ONE_NAGIOS_ONLY",
-       },
-       'postgres_port': {
-           'service_description': "S_POSTGRESQL_PORT",
-           'import': ["ST_ROOT"],
-           'icon_image': "services/sql4.png",
-           'check_command': "check_tcp",
+                'vars.interface': "eth0",
+                'vars.other_args': "",
+            },
+        },
+        'ntp_peers': {
+            'service_description': "S_NTP_PEERS",
+            'import': ["ST_ROOT"],
+            'check_command': "CSSH_NTP_PEER",
+        },
+        'ntp_time': {
+            'service_description': "S_NTP_TIME",
+            'import': ["ST_ROOT"],
+            'check_command': "CSSH_NTP_TIME",
+        },
+        'only_one_nagios_running': {
+            'service_description': "S_ONLY_ONE_NAGIOS_RUNNING",
+            'import': ["ST_HOURLY_ALERT"],
+            'check_command': "C_CHECK_ONE_NAGIOS_ONLY",
+        },
+        'postgres_port': {
+            'service_description': "S_POSTGRESQL_PORT",
+            'import': ["ST_ROOT"],
+            'icon_image': "services/sql4.png",
+            'check_command': "check_tcp",
 
-           'vars.port': 5432,
-           'vars.warning': 2,
-           'vars.critical': 8,
-       },
-       'postgres_process': {
-           'service_description': "S_POSTGRESQL_PROCESS",
-           'import': ["ST_ALERT"],
-           'icon_image': "services/sql4.png",
-           'check_command': "C_SNMP_PROCESS",
+            'vars.port': 5432,
+            'vars.warning': 2,
+            'vars.critical': 8,
+        },
+        'postgres_process': {
+            'service_description': "S_POSTGRESQL_PROCESS",
+            'import': ["ST_ALERT"],
+            'icon_image': "services/sql4.png",
+            'check_command': "C_SNMP_PROCESS",
 
-           'vars.process': "postgres",
-           'vars.warning': 0,
-           'vars.critical': 0,
-       },
-       'prebill_sending': {
-           'service_description': "CHECK_PREBILL_SENDING",
-           'import': ["ST_ALERT"],
-           'check_command': "CSSH_CUSTOM",
+            'vars.process': "postgres",
+            'vars.warning': 0,
+            'vars.critical': 0,
+        },
+        'prebill_sending': {
+            'service_description': "CHECK_PREBILL_SENDING",
+            'import': ["ST_ALERT"],
+            'check_command': "CSSH_CUSTOM",
 
-           'vars.command': ("/var/makina/alma-job/job/"
-                            "supervision/check_prebill_sending.sh"),
-       },
-       'raid': {
-           'service_description': "CHECK_MD_RAID",
-           'import': ["ST_ALERT"],
-           'check_command': "CSSH_RAID_SOFT",
+            'vars.command': ("/var/makina/alma-job/job/"
+                             "supervision/check_prebill_sending.sh"),
+        },
+        'raid': {
+            'service_description': "CHECK_MD_RAID",
+            'import': ["ST_ALERT"],
+            'check_command': "CSSH_RAID_SOFT",
 
-           'vars.command': "'/root/admin_scripts/nagios/check_md_raid'",
-       },
-       'sas': {
-           'service_description': "S_SAS",
-           'import': ["ST_ROOT"],
-           'check_command': "CSSH_SAS2IRCU",
+            'vars.command': "'/root/admin_scripts/nagios/check_md_raid'",
+        },
+        'sas': {
+            'service_description': "S_SAS",
+            'import': ["ST_ROOT"],
+            'check_command': "CSSH_SAS2IRCU",
 
-           'vars.command': ("/root/admin_scripts/check_nagios"
-                            "/check_sas2ircu/check_sas2ircu"),
-       },
-       'snmpd_memory_control': {
-           'service_description': "S_SNMPD_MEMORY_CONTROL",
-           'import': ["ST_ALERT"],
-           'check_command': "C_SNMP_PROCESS_WITH_MEM",
+            'vars.command': ("/root/admin_scripts/check_nagios"
+                             "/check_sas2ircu/check_sas2ircu"),
+        },
+        'snmpd_memory_control': {
+            'service_description': "S_SNMPD_MEMORY_CONTROL",
+            'import': ["ST_ALERT"],
+            'check_command': "C_SNMP_PROCESS_WITH_MEM",
 
-           'vars.process': "snmpd",
-           'vars.warning': "0,1",
-           'vars.critical': "0,1",
-           'vars.memory': "256,512",
-       },
-       'solr': {
-           'default': {
-               'service_description': "SOLR_",
-               'import': ["ST_WEB_PUBLIC"],
-               'check_command': "C_HTTP_STRING_SOLR",
+            'vars.process': "snmpd",
+            'vars.warning': "0,1",
+            'vars.critical': "0,1",
+            'vars.memory': "256,512",
+        },
+        'solr': {
+            'default': {
+                'service_description': "SOLR_",
+                'import': ["ST_WEB_PUBLIC"],
+                'check_command': "C_HTTP_STRING_SOLR",
 
-               'vars.hostname': "h",
-               'vars.port': 80,
-               'vars.url': "/",
-               'vars.warning': 1,
-               'vars.critical': 5,
-               'vars.timeout': 8,
-               'vars.strings': [],
-               'vars.other_args': "",
-           },
-       },
-       'ssh': {
-           'service_description': "S_SSH",
-           'import': ["ST_ROOT"],
-           'check_command': "check_tcp",
+                'vars.hostname': "h",
+                'vars.port': 80,
+                'vars.url': "/",
+                'vars.warning': 1,
+                'vars.critical': 5,
+                'vars.timeout': 8,
+                'vars.strings': [],
+                'vars.other_args': "",
+            },
+        },
+        'ssh': {
+            'service_description': "S_SSH",
+            'import': ["ST_ROOT"],
+            'check_command': "check_tcp",
 
-           'vars.port': 22,
-           'vars.warning': 1,
-           'vars.critical': 4,
-       },
-       'supervisord_status': {
-           'service_description': "S_SUPERVISORD_STATUS",
-           'import': ["ST_ALERT"],
-           'check_command': "CSSH_SUPERVISOR",
+            'vars.port': 22,
+            'vars.warning': 1,
+            'vars.critical': 4,
+        },
+        'supervisord_status': {
+            'service_description': "S_SUPERVISORD_STATUS",
+            'import': ["ST_ALERT"],
+            'check_command': "CSSH_SUPERVISOR",
 
-           'vars.command': ("/home/zope/adria/rcse/"
-                            "production-2014-01-23-14-27-01/bin/supervisorctl"),
-       },
-       'swap': {
-           'service_description': "CHECK_SWAP",
-           'import': ["ST_ALERT"],
-           'check_command': "CSSH_RAID_SOFT",
+            'vars.command': ("/home/zope/adria/rcse/"
+                             "production-2014-01-"
+                             "23-14-27-01/bin/supervisorctl"),
+        },
+        'swap': {
+            'service_description': "CHECK_SWAP",
+            'import': ["ST_ALERT"],
+            'check_command': "CSSH_RAID_SOFT",
 
-           'vars.command': ("'/root/admin_scripts/"
-                            "nagios/check_swap -w 80%% -c 50%%'"),
-       },
-       'tiles_generator_access': {
-           'service_description': "Check tiles generator access",
-           'import': ["ST_ALERT"],
-           # 'notification_options': "w,c,r",
-           'enable_notifications': 1,
-           'check_command': "check_http_vhost_uri",
+            'vars.command': ("'/root/admin_scripts/"
+                             "nagios/check_swap -w 80%% -c 50%%'"),
+        },
+        'tiles_generator_access': {
+            'service_description': "Check tiles generator access",
+            'import': ["ST_ALERT"],
+            # 'notification_options': "w,c,r",
+            'enable_notifications': 1,
+            'check_command': "check_http_vhost_uri",
 
-           'vars.hostname': "vdm.makina-corpus.net",
-           'vars.url': "/vdm-tiles/status/",
-       },
-       'ware_raid': {
-           'service_description': "CHECK_3WARE_RAID",
-           'import': ["ST_ALERT"],
-           'check_command': "CSSH_RAID_3WARE",
+            'vars.hostname': "vdm.makina-corpus.net",
+            'vars.url': "/vdm-tiles/status/",
+        },
+        'ware_raid': {
+            'service_description': "CHECK_3WARE_RAID",
+            'import': ["ST_ALERT"],
+            'check_command': "CSSH_RAID_3WARE",
 
-           'vars.command': "/root/admin_scripts/nagios/check_3ware_raid",
-       },
-       'web_apache_status': {
-           'service_description': "WEB_APACHE_STATUS",
-           'import': ["ST_WEB_APACHE_STATUS"],
-           'check_command': "C_APACHE_STATUS",
+            'vars.command': "/root/admin_scripts/nagios/check_3ware_raid",
+        },
+        'web_apache_status': {
+            'service_description': "WEB_APACHE_STATUS",
+            'import': ["ST_WEB_APACHE_STATUS"],
+            'check_command': "C_APACHE_STATUS",
 
-           'vars.warning': 4,
-           'vars.critical': 2,
-           'vars.other_args': "",
-       },
-       'web_openid': {
-           'default': {
-               'service_description': "WEB_OPENID_",
-               'import': ["ST_WEB_PUBLIC"],
-               'check_command': "C_HTTPS_OPENID_REDIRECT",
+            'vars.warning': 4,
+            'vars.critical': 2,
+            'vars.other_args': "",
+        },
+        'web_openid': {
+            'default': {
+                'service_description': "WEB_OPENID_",
+                'import': ["ST_WEB_PUBLIC"],
+                'check_command': "C_HTTPS_OPENID_REDIRECT",
 
-               'vars.hostname': hostname,
-               'vars.url': "/",
-               'vars.warning': 1,
-               'vars.critical': 5,
-               'vars.timeout': 8,
-           },
-       },
-       'web': {
-           'default': {
-               'service_description': "WEB_",
-               'vars.hostname': hostname,
-               'import': ["ST_WEB_PUBLIC"],
-               'check_command': "C_HTTP_STRING",
+                'vars.hostname': hostname,
+                'vars.url': "/",
+                'vars.warning': 1,
+                'vars.critical': 5,
+                'vars.timeout': 8,
+            },
+        },
+        'web': {
+            'default': {
+                'service_description': "WEB_",
+                'vars.hostname': hostname,
+                'import': ["ST_WEB_PUBLIC"],
+                'check_command': "C_HTTP_STRING",
 
-               'vars.url': "/",
-               'vars.warning': 2,
-               'vars.critical': 3,
-               'vars.timeout': 8,
-               'vars.strings': [],
-               'vars.other_args': "",
-           },
-       },
+                'vars.url': "/",
+                'vars.warning': 2,
+                'vars.critical': 3,
+                'vars.timeout': 8,
+                'vars.strings': [],
+                'vars.other_args': "",
+            },
+        },
     }
 
     # add the services_attrs 'default' in all services
