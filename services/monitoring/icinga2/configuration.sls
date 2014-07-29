@@ -198,6 +198,7 @@ icinga2-ido2db-conf:
 icinga2-ido2db-enable:
   cmd.run:
     - name: icinga2-enable-feature ido-{{data.modules.ido2db.database.type}}
+    - unless: test -e /etc/icinga2/features-enabled/ido-pgsql.conf
     - watch:
       - mc_proxy: icinga2-pre-conf
     - watch_in:
@@ -247,6 +248,7 @@ icinga2-ido2db-init-sysvinit-conf:
 icinga2-mklivestatus-enable:
   cmd.run:
     - name: icinga2-enable-feature livestatus
+    - unless: test -e /etc/icinga2/features-enabled/livestatus.conf
     - watch:
       - mc_proxy: icinga2-pre-conf
     - watch_in:
@@ -305,7 +307,7 @@ icinga2-configuration-remove-objects-conf:
     - makedirs: true
     - user: root
     - group: root
-    -  mode: 755
+    - mode: 755
     - watch:
       - mc_proxy: icinga2-configuration-pre-clean-directories
     - watch_in:
@@ -316,7 +318,6 @@ icinga2-configuration-remove-objects-conf:
                 for i in "${files[@]}"; do
                     rm -f "$i";
                 done;
-
   cmd.run:
     - name: {{tmpf}}
     - watch:
@@ -324,8 +325,3 @@ icinga2-configuration-remove-objects-conf:
       - mc_proxy: icinga2-configuration-pre-clean-directories
     - watch_in:
       - mc_proxy: icinga2-configuration-post-clean-directories
-
-{#
-{%- import "makina-states/services/monitoring/icinga2/macros.jinja" as icinga2 with context %}
-{{icinga2.icinga2AddWatcher('foo', '/bin/echo', args=[1]) }}
-#}
