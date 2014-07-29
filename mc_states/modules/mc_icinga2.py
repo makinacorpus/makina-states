@@ -1830,9 +1830,10 @@ def add_auto_configuration_host_settings(hostname,
             if services_attrs['disk_space'][mountpoint]['service_description'] == services_default_attrs['disk_space']['default']['service_description']:
                 services_attrs['disk_space'][mountpoint]['service_description']=services_attrs['disk_space'][mountpoint]['service_description']+disks_spaces[mountpoint].upper()
 #            if services_attrs['disk_space'][mountpoint]['import'][0] in services_default_attrs['disk_space']['default']['import']:
-            services_attrs['disk_space'][mountpoint]['import']=[services_attrs['disk_space'][mountpoint]['import'][0]+disks_spaces[mountpoint].replace('/', '_').replace('_', '/', 1).upper()]
-            services_attrs['disk_space'][mountpoint]['vars.path']= disks_spaces[mountpoint]
-
+            services_attrs['disk_space'][
+                mountpoint]['import'] = [services_attrs['disk_space'][mountpoint]['import'][0]+disks_spaces[mountpoint].replace('/', '_').replace('_', '/', 1).upper()]
+            services_attrs['disk_space'][
+                mountpoint]['vars.path']= disks_spaces[mountpoint]
 
     # remove default dictionary
     if 'default' in services_attrs['disk_space']:
@@ -1843,34 +1844,51 @@ def add_auto_configuration_host_settings(hostname,
         services_attrs = {}
 
     for name, command in services_default_attrs.items():
-        if not name in ['dns_association', DRA, 'disk_space', 'network', 'solr', 'web_openid', 'web']:
+        if name not in ['dns_association', DRA, 
+                        'disk_space', 'network', 'solr', 
+                        'web_openid', 'web']:
             if not name in services_attrs:
                 services_attrs[name] = {}
-            services_attrs[name] = dict(services_default_attrs[name].items() + services_attrs[name].items())
+            services_attrs[name] = dict(
+                services_default_attrs[name].items() + 
+                services_attrs[name].items())
 
 
-    # generate the complete check command (we can't do a loop before we have to give the good order for arguments)
-    ## don't generate the complete check command because it is icinga2 ##
+    # generate the complete check command (we can't do a loop
+    # before we have to give the good order for arguments)
+    # don't generate the complete check command because it is 
+    # icinga2
 
-    # add the host_name or hostgroup_name in each service and don't remove directives begining with "vars." (because it is icinga2)
+    # add the host_name or hostgroup_name in each service 
+    # and don't remove directives begining with "vars."
+    # (because it is icinga2)
 
     for service in services:
         if service in services_attrs:
             services_attrs[service][service_key_hostname] = hostname
             # TODO: fix this
-            services_attrs[service]['service_description'] = hostname+'__'+services_attrs[service]['service_description']
+            services_attrs[service][
+                'service_description'] = (
+                    hostname
+                    + '__'
+                    + services_attrs[service]['service_description'])
 
     for service in services_loop:
         if service in services_attrs:
-            for subservice  in services_attrs[service]:
-                services_attrs[service][subservice][service_key_hostname] = hostname
+            for subservice in services_attrs[service]:
+                services_attrs[service][subservice][
+                    service_key_hostname] = hostname
                 # TODO: fix this
-                services_attrs[service][subservice]['service_description'] = hostname+'__'+services_attrs[service][subservice]['service_description']
+                services_attrs[service][subservice][
+                    'service_description'
+                ] = hostname + '__' + services_attrs[
+                    service][subservice]['service_description']
 
 
     kwargs.setdefault('services_attrs', services_attrs)
 
-    icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings, kwargs)
+    icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings,
+                                                     kwargs)
     print('end call add_auto_configuration_host_settings')
     return icingaSettings
 
@@ -1963,7 +1981,8 @@ def add_auto_configuration_host(hostname=None,
 
         # if fromsettings is used, we need to get some arguments values
         if fromsettings:
-            host =  get_settings_for_object('autoconfigured_hosts_definitions', fromsettings)
+            host =  get_settings_for_object(
+                'autoconfigured_hosts_definitions', fromsettings)
             if 'hostgroup' in host:
                 hostgroup = host['hostgroup']
 
