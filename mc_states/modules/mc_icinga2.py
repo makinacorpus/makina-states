@@ -731,11 +731,14 @@ def get_settings_for_object(target=None, obj=None, attr=None):
     '''
     expand the subdictionaries which are not cached in mc_icinga2.settings.objects
     '''
+    pref = 'makina-states.services.monitoring.icinga2.objects.'
     if 'purge_definitions' == target:
-        res =  __salt__['mc_utils.defaults']('makina-states.services.monitoring.icinga2.objects.'+target, { target: objects()[target] })[target]
+        res =  __salt__['mc_utils.defaults'](pref + target,
+                                             {target: objects()[target] })[target]
     else:
-        res = __salt__['mc_utils.defaults']('makina-states.services.monitoring.icinga2.objects.'+target+'.'+obj, objects()[target][obj])
-        if attr: # and attr in res:
+        res = __salt__['mc_utils.defaults'](pref + target+'.'+obj,
+                                            objects()[target][obj])
+        if attr:
             res = res[attr]
     return res
 
@@ -757,36 +760,37 @@ def settings():
         # keep only the list of keys for each subdictionary
         # get_settings_for_object is the function to retrieve a non cached subdictionary
         dict_objects = objects()
-        dict_objects['objects_definitions'] = dict_objects['objects_definitions'].keys()
+        dict_objects['objects_definitions'] = dict_objects[
+            'objects_definitions'].keys()
         dict_objects['purge_definitions'] = []
-        dict_objects['autoconfigured_hosts_definitions'] = dict_objects['autoconfigured_hosts_definitions'].keys()
+        dict_objects['autoconfigured_hosts_definitions'] = dict_objects[
+            'autoconfigured_hosts_definitions'].keys()
 
         # generate default password
         icinga2_reg = __salt__[
             'mc_macros.get_local_registry'](
                 'icinga2', registry_format='pack')
 
-        password_ido = icinga2_reg.setdefault('ido.db_password'
-                                        , __salt__['mc_utils.generate_password']())
-        password_cgi = icinga2_reg.setdefault('cgi.root_account_password'
-                                        , __salt__['mc_utils.generate_password']())
+        password_ido = icinga2_reg.setdefault('ido.db_password',
+                                              __salt__['mc_utils.generate_password']())
+        password_cgi = icinga2_reg.setdefault('cgi.root_account_password',
+                                              __salt__['mc_utils.generate_password']())
 
         module_ido2db_database = {
             'type': "pgsql",
             'host': "localhost",
             'port': 5432,
-#            'socket': "",
+            # 'socket': "",
             'user': "icinga2_ido",
             'password': password_ido,
             'name': "icinga2_ido",
         }
 
-        has_sgbd = ((('host' in module_ido2db_database)
-                     and (module_ido2db_database['host']
-                          in  [
-                              'localhost', '127.0.0.1', grains['host']
-                          ]))
-                    or ('socket' in module_ido2db_database))
+        has_sgbd = ((
+            ('host' in module_ido2db_database)
+            and (module_ido2db_database['host']
+                 in ['localhost', '127.0.0.1', grains['host']])
+        ) or ('socket' in module_ido2db_database))
 
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.monitoring.icinga2', {
@@ -1239,12 +1243,14 @@ def add_auto_configuration_host_settings(hostname,
            'vars.ssh_addr': "backup.makina-corpus.net",
            'vars.ssh_port': "22",
            'vars.ssh_timeout': 10,
-           'vars.command': "/root/admin_scripts/nagios/check_rdiff -r /data/backups/phpnet6 -w 24 -c 48 -l 2048 -p 24"
+           'vars.command': ("/root/admin_scripts/nagios/"
+                            "check_rdiff -r /data/backups/phpnet6"
+                            " -w 24 -c 48 -l 2048 -p 24")
        },
        'beam_process': {
            'service_description': "Check beam proces",
            'import': ["ST_ALERT"],
-#           'notification_options': "w,c,r",
+           # 'notification_options': "w,c,r",
            'enable_notifications': 1,
            'check_command': "C_SNMP_PROCESS",
 
@@ -1255,7 +1261,7 @@ def add_auto_configuration_host_settings(hostname,
        'celeryd_process': {
            'service_description': "Check celeryd process",
            'import': ["ST_ALERT"],
-#           'notification_options': "w,c,r",
+           # 'notification_options': "w,c,r",
            'enable_notifications': 1,
            'check_command': "C_SNMP_PROCESS",
 
@@ -1305,8 +1311,9 @@ def add_auto_configuration_host_settings(hostname,
                'service_description': "DNS_REVERSE_ASSOCIATION_",
                'import': ["ST_DNS_ASSOCIATION"],
                'check_command': "C_DNS_EXTERNE_REVERSE_ASSOCIATION",
-#               'vars.inaddr': "" # generated below from dns_association dictionary
-#               'vars.hostname': ""
+               # 'vars.inaddr': "" # generated below from
+                                   # dns_association dictionary
+               #  'vars.hostname': ""
                'vars.other_args': "",
            },
        },
@@ -1327,12 +1334,13 @@ def add_auto_configuration_host_settings(hostname,
            'icon_image': "services/heartbeat.png",
            'check_command': "CSSH_DRBD",
 
-           'vars.command': "'/root/admin_scripts/nagios/check_drbd -d  0,1'",
+           'vars.command': ("'/root/admin_scripts/nagios/"
+                            "check_drbd -d  0,1'"),
        },
        'epmd_process': {
            'service_description': "Check epmd process",
            'import': ["ST_ALERT"],
-#           'notification_options': "w,c,r",
+           # 'notification_options': "w,c,r",
            'enable_notifications': 1,
            'check_command': "C_SNMP_PROCESS",
 
@@ -1345,7 +1353,8 @@ def add_auto_configuration_host_settings(hostname,
            'import': ["ST_ALERT"],
            'check_command': "CSSH_CUSTOM",
 
-           'vars.command': "/var/makina/alma-job/job/supervision/check_erp_files.sh",
+           'vars.command': ("/var/makina/alma-job/job"
+                            "/supervision/check_erp_files.sh"),
        },
        'fail2ban': {
            'service_description': "S_FAIL2BAN",
@@ -1360,7 +1369,7 @@ def add_auto_configuration_host_settings(hostname,
        'gunicorn_process': {
            'service_description': "Check gunicorn process",
            'import': ["ST_ALERT"],
-#           'notification_options': "w,c,r",
+           # 'notification_options': "w,c,r",
            'enable_notifications': 1,
            'check_command': "C_SNMP_PROCESS",
 
@@ -1372,8 +1381,9 @@ def add_auto_configuration_host_settings(hostname,
            'service_description': "haproxy_stats",
            'import': ["ST_ALERT"],
            'check_command': "CSSH_HAPROXY",
-
-           'vars.command': "/root/admin_scripts/nagios/check_haproxy_stats.pl -p web -w 80 -c 90",
+           'vars.command': ("/root/admin_scripts/nagios/"
+                            "check_haproxy_stats.pl -p "
+                            "web -w 80 -c 90"),
        },
        'ircbot_process': {
            'service_description': "S_IRCBOT_PROCESS",
@@ -1459,7 +1469,8 @@ def add_auto_configuration_host_settings(hostname,
            'import': ["ST_ALERT"],
            'check_command': "CSSH_MEGARAID_SAS",
 
-           'vars.command': "'/root/admin_scripts/nagios/check_megaraid_sas'",
+           'vars.command': ("'/root/admin_scripts/"
+                            "nagios/check_megaraid_sas'"),
        },
        'memory': {
            'service_description': "MEMORY",
@@ -1537,7 +1548,8 @@ def add_auto_configuration_host_settings(hostname,
            'import': ["ST_ALERT"],
            'check_command': "CSSH_CUSTOM",
 
-           'vars.command': "/var/makina/alma-job/job/supervision/check_prebill_sending.sh",
+           'vars.command': ("/var/makina/alma-job/job/"
+                            "supervision/check_prebill_sending.sh"),
        },
        'raid': {
            'service_description': "CHECK_MD_RAID",
@@ -1551,7 +1563,8 @@ def add_auto_configuration_host_settings(hostname,
            'import': ["ST_ROOT"],
            'check_command': "CSSH_SAS2IRCU",
 
-           'vars.command': "/root/admin_scripts/check_nagios/check_sas2ircu/check_sas2ircu",
+           'vars.command': ("/root/admin_scripts/check_nagios"
+                            "/check_sas2ircu/check_sas2ircu"),
        },
        'snmpd_memory_control': {
            'service_description': "S_SNMPD_MEMORY_CONTROL",
@@ -1593,19 +1606,21 @@ def add_auto_configuration_host_settings(hostname,
            'import': ["ST_ALERT"],
            'check_command': "CSSH_SUPERVISOR",
 
-           'vars.command': "/home/zope/adria/rcse/production-2014-01-23-14-27-01/bin/supervisorctl",
+           'vars.command': ("/home/zope/adria/rcse/"
+                            "production-2014-01-23-14-27-01/bin/supervisorctl"),
        },
        'swap': {
            'service_description': "CHECK_SWAP",
            'import': ["ST_ALERT"],
            'check_command': "CSSH_RAID_SOFT",
 
-           'vars.command': "'/root/admin_scripts/nagios/check_swap -w 80%% -c 50%%'",
+           'vars.command': ("'/root/admin_scripts/"
+                            "nagios/check_swap -w 80%% -c 50%%'"),
        },
        'tiles_generator_access': {
            'service_description': "Check tiles generator access",
            'import': ["ST_ALERT"],
-#           'notification_options': "w,c,r",
+           # 'notification_options': "w,c,r",
            'enable_notifications': 1,
            'check_command': "check_http_vhost_uri",
 
@@ -1658,12 +1673,13 @@ def add_auto_configuration_host_settings(hostname,
        },
     }
 
-    # add the services_attrs 'default' in all services in services_default_attrs
-    # in order to add directives for all services (like contact_groups)
+    # add the services_attrs 'default' in all services
+    # in services_default_attrs # in order to add
+    # directives for all services (like contact_groups)
     if 'default' in services_attrs:
         for name, service in services_default_attrs.items():
             if name not in services_attrs:
-                services_attrs[name]={}
+                services_attrs[name] = {}
             if name not in ['dns_association',
                             DRA,
                             'disk_space',
@@ -1681,7 +1697,8 @@ def add_auto_configuration_host_settings(hostname,
         services_attrs.pop('default', None)
 
     # override the commands parameters values
-    # we complete the services_attrs dictionary with values from services_default_attrs
+    # we complete the services_attrs dictionary
+    # with values from services_default_attrs
 
     # override dns_association subdictionary
     if 'dns_association' not in services_attrs:
