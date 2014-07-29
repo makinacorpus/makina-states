@@ -205,9 +205,9 @@ def objects_icinga2():
             if not spaced_arg:
                 tmpstr = " ".join(tmp)
                 if tmpstr:
-                    command_splitted.append(tmpstr) # merge the argument on quotes (bad)
+                    # merge the argument on quotes (bad)
+                    command_splitted.append(tmpstr)
                 tmp = []
-
 
         res['command'] = command_splitted[0]
         n_args = len(command_splitted)-1
@@ -223,7 +223,7 @@ def objects_icinga2():
                         i_args] = command_splitted[
                             i_args
                         ].replace(
-                                '$ARG' + str(argx) + '$',
+                            '$ARG' + str(argx) + '$',
                             '$' + str(param)+'$')
                     i_args += 1
                 argx += 1
@@ -238,12 +238,17 @@ def objects_icinga2():
         res['arguments'] = {}
         i_args = 1
         while i_args <= n_args:
-            if not command_splitted[i_args]: # to remove blanks
+            if not command_splitted[i_args]:  # to remove blanks
                 i_args += 1
             else:
                 if i_args < n_args:
-                    if (not command_splitted[i_args+1].startswith('-')) and (not command_splitted[i_args].startswith('$')): # bad method to detect the couple of arguments "-a 1", the "1" doesn't begin with '-'
-                        res['arguments'][command_splitted[i_args]] = command_splitted[i_args+1]
+                    if (
+                        (not command_splitted[i_args+1].startswith('-'))
+                        and (not command_splitted[i_args].startswith('$'))
+                    ):  # bad method to detect the couple of arguments
+                        # "-a 1", the "1" doesn't begin with '-'
+                        res['arguments'][
+                            command_splitted[i_args]] = command_splitted[i_args+1]
                         i_args += 2
                     else:
                         res['arguments'][command_splitted[i_args]] = {}
@@ -253,29 +258,34 @@ def objects_icinga2():
                     i_args += 1
         return res
 
-    def _translate_attrs(obj_type, res_type, obj_attrs, force_remove_attrs_used_as_name_not_removed = False):
-        '''function to translate attrs subdictionary
-           it is used to translate objects_definitions and autoconfigured_hosts_definitions
+    def _translate_attrs(obj_type,
+                         res_type,
+                         obj_attrs,
+                         force_remove_attrs_used_as_name_not_removed = False):
         '''
-        res={}
-        for key,value in obj_attrs.items():
+        function to translate attrs subdictionary
+        it is used to translate objects_definitions and autoconfigured_hosts_definitions
+        '''
+        res = {}
+        for key, value in obj_attrs.items():
 
             # specific translation
             if 'command_line' == key: # translate the command_line attributes
                 command = _command_line_arguments(value)
                 res['command'] = command['command']
                 res['arguments'] = command['arguments']
-            elif 'check_command' == key: # translate the check_command attributes
+            elif 'check_command' == key:  # translate the check_command attributes
                 command = _check_command_arguments(value)
                 for key, value in command.items():
                     res[key] = value
             # TODO: perhaps a separated object will be better but it may be problematic with autoconfigured hosts
-            elif key in ['contacts', 'contact_groups', 'notification_options', 'notification_period', 'notification_interval']: # for notifications
+            elif key in ['contacts', 'contact_groups', 'notification_options',
+                         'notification_period', 'notification_interval']:  # for notifications
                 if 'notification' not in res:
                     res['notification'] = {}
                 if 'notification_options' == key:
                     value_splitted = value.split(',')
-                    value_splitted = map((lambda v: v.strip()), value_splitted) # strip all values (because we can have "a,       b    ,   c". we want ["a","b","c"])
+                    value_splitted = map((lambda v: v.strip()), value_splitted)  # strip all values (because we can have "a,       b    ,   c". we want ["a","b","c"])
                     res['notification']['state'] = []
                     res['notification']['type'] = []
                     # from http://docs.icinga.org/icinga2/latest/doc/module/icinga2/toc#!/icinga2/latest/doc/module/icinga2/chapter/migration#manual-config-migration-hints-contacts-users
