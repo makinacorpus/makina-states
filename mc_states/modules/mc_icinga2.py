@@ -331,10 +331,10 @@ def objects_icinga2():
                             res['notification']['state'].append('.')
                             res['notification']['type'].append('Custom')
                     # unique values
-                    res['notification']['state'] = __salt__['mc_utils.uniquify'](
-                        res['notification']['state'])
-                    res['notification']['type'] =  __salt__['mc_utils.uniquify'](
-                        res['notification']['type'])
+                    res['notification']['state'] = __salt__[
+                        'mc_utils.uniquify'](res['notification']['state'])
+                    res['notification']['type'] = __salt__[
+                        'mc_utils.uniquify'](res['notification']['type'])
                     # remove key if the list is empty
                     if 0 == len(res['notification']['type']):
                         res['notification'].pop('type', None)
@@ -691,7 +691,6 @@ def objects_icinga2():
     res['purge_definitions'] = src['purge_definitions']
 
     # autoconfigured_hosts
-    # res['autoconfigured_hosts_definitions'] = src['autoconfigured_hosts_definitions']
     res['autoconfigured_hosts_definitions'] = {}
     for name, params in src['autoconfigured_hosts_definitions'].items():
         res['autoconfigured_hosts_definitions'][name] = {}
@@ -699,9 +698,17 @@ def objects_icinga2():
         # translate the host attrs
         if 'attrs' in params:
             if 'hostgroup' in params and params['hostgroup']:
-                res['autoconfigured_hosts_definitions'][name]['attrs'] = _translate_attrs('hostgroup', types_renamed['hostgroup'], params['attrs'])
+                res['autoconfigured_hosts_definitions'][
+                    name]['attrs'] = _translate_attrs(
+                        'hostgroup',
+                        types_renamed['hostgroup'],
+                        params['attrs'])
             else:
-                res['autoconfigured_hosts_definitions'][name]['attrs'] = _translate_attrs('host', types_renamed['host'], params['attrs'])
+                res['autoconfigured_hosts_definitions'][
+                    name]['attrs'] = _translate_attrs(
+                        'host',
+                        types_renamed['host'],
+                        params['attrs'])
         else:
             res['autoconfigured_hosts_definitions'][name]['attrs'] = {}
 
@@ -712,51 +719,79 @@ def objects_icinga2():
 
         # translate the service_attrs
         if 'services_attrs' in params:
-            res['autoconfigured_hosts_definitions'][name]['services_attrs'] = {}
+            res['autoconfigured_hosts_definitions'][
+                name]['services_attrs'] = {}
             for service in services:
                 if service in params['services_attrs']:
-                    res['autoconfigured_hosts_definitions'][name]['services_attrs'][service] = _translate_attrs('service', types_renamed['service'], params['services_attrs'][service], False) # we have to preserve service_description attribute because in the template it is the value used as name (because there is not an additional subdictionary to store the name like in objects_definitions)
+                    # we have to preserve service_description attribute
+                    # because in the template it is the value used as
+                    # name (because there is not an additional
+                    # subdictionary to store the name like
+                    # in objects_definitions)
+                    res['autoconfigured_hosts_definitions'][
+                        name]['services_attrs'][service] = _translate_attrs(
+                            'service',
+                            types_renamed['service'],
+                            params['services_attrs'][service],
+                            False)
 
             for service in services_loop:
                 if service in params['services_attrs']:
-                    res['autoconfigured_hosts_definitions'][name]['services_attrs'][service] = {}
+                    res['autoconfigured_hosts_definitions']
+                    [name]['services_attrs'][service] = {}
                     for subservice in params['services_attrs'][service]:
-                        res['autoconfigured_hosts_definitions'][name]['services_attrs'][service][subservice] = _translate_attrs('service', types_renamed['service'], params['services_attrs'][service][subservice])
+                        res['autoconfigured_hosts_definitions'][
+                            name]['services_attrs'][
+                                service][subservice] = _translate_attrs(
+                                    'service',
+                                    types_renamed['service'],
+                                    params['services_attrs'][
+                                        service][subservice])
     return res
+
 
 def objects():
     return objects_icinga2()
 
+
 def format(dictionary, quote_keys=False, quote_values=True):
     '''
-    function to transform all values in a dictionary in string and adding quotes
-    the main goal is to print values with quotes like "value" but we don't want print list with quotes like "[v1, v2]". This should be ["v1", "v2"]
-    this can be done in jinja template but the template is already complex
+    function to transform all values in a dictionary in string
+    and adding quotes.
+    The main goal is to print values with quotes like "value"
+    but we don't want print list with quotes like "[v1, v2]".
+    This should be ["v1", "v2"] this can be done in jinja
+    template but the template is already complex
     '''
-    res={}
+    res = {}
     for key, value in dictionary.items():
         if quote_keys:
             res_key = '"'+str(key)+'"'
         else:
             res_key = key
-
-        if key in ['type', 'template', 'state']: # ugly hack
+        if key in ['type', 'template', 'state']:  # ugly hack
             quote_values = False
         elif key in ['period', 'users', 'user_groups']:
             quote_values = True
 
-        if isinstance(value, dict): # recurse
-            if key in ['arguments', 'ranges']: # in theses subdictionaries, the keys are also quoted
+        if isinstance(value, dict):  # recurse
+            # in theses subdictionaries, the keys are also quoted
+            if key in ['arguments', 'ranges']:
                 res[res_key] = format(value, True, True)
-            elif key in ['services_enabled', 'services_loop_enabled']: # theses dictionaries contains booleans
+            # theses dictionaries contains booleans
+            elif key in ['services_enabled', 'services_loop_enabled']:
                 res[res_key] = format(value, False, False)
             else:
                 res[res_key] = format(value)
-        elif key in ['vars.strings']: # TODO: vars.string not managed
-            res[res_key] = '"'+str(value).replace('"', '\\"')+'"'
+        # TODO: vars.string not managed
+        elif key in ['vars.strings']:
+            res[res_key] = '"' + str(value).replace('"', '\\"') + '"'
         elif isinstance(value, list):
-            if key in ['import', 'parents']: # theses lists are managed in the template, we only quote each string in the list
-                res[res_key] = map((lambda v: '"'+str(v).replace('"','\\"')+'"'), value)
+            # theses lists are managed in the template,
+            # we only quote each string in the list
+            if key in ['import', 'parents']:
+                res[res_key] = map((
+                    lambda v: '"' + str(v).replace('"', '\\"') + '"'), value)
             else:
 
                 res[res_key] = '['
@@ -793,23 +828,28 @@ def format(dictionary, quote_keys=False, quote_values=True):
                 res[res_key] = value
         else:
             if quote_values:
-                res[res_key] = '"' + str(value).encode('utf-8').replace('"', '\\"')+'"'
+                res[res_key] = '"' + str(value).encode(
+                    'utf-8').replace('"', '\\"')+'"'
             else:
                 res[res_key] = value
 
     return res
 
+
 def get_settings_for_object(target=None, obj=None, attr=None):
     '''
-    expand the subdictionaries which are not cached in mc_icinga2.settings.objects
+    expand the subdictionaries which are not cached
+    in mc_icinga2.settings.objects
     '''
     pref = 'makina-states.services.monitoring.icinga2.objects.'
     if 'purge_definitions' == target:
-        res =  __salt__['mc_utils.defaults'](pref + target,
-                                             {target: objects()[target] })[target]
+        res = __salt__['mc_utils.defaults'](
+            pref + target,
+            {target: objects()[target]})[target]
     else:
-        res = __salt__['mc_utils.defaults'](pref + target+'.'+obj,
-                                            objects()[target][obj])
+        res = __salt__['mc_utils.defaults'](
+            pref + target+'.'+obj,
+            objects()[target][obj])
         if attr:
             res = res[attr]
     return res
@@ -1911,9 +1951,19 @@ def add_auto_configuration_host_settings(hostname,
                                 'default']['vars.interface'].upper())
             if 'import' not in network:
                 if 'vars.interface' in services_attrs['network'][name]:
-                    services_attrs['network'][name]['import']=services_default_attrs['network']['default']['import']+services_attrs['network'][name]['vars.interface'].upper()
+                    services_attrs['network'][
+                        name]['import'] = services_default_attrs[
+                            'network']['default']['import'] +
+                    services_attrs['network'][name]['vars.interface'].upper()
                 else:
-                    services_attrs['network'][name]['import']=[services_default_attrs['network']['default']['import'][0]+i.upper() for i in services_default_attrs['network']['default']['vars.interface']] # add the prefix to the import
+                    # add the prefix to the import
+                    services_attrs['network'][
+                        name]['import'] = [
+                            services_default_attrs['network'][
+                                'default']['import'][0] +
+                            i.upper()
+                            for i in services_default_attrs['network'][
+                                'default']['vars.interface']]
 
             for key, value in services_default_attrs['network']['default'].items():
                 if not key in network:
