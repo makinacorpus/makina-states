@@ -519,7 +519,6 @@ def objects_icinga2():
     # from icinga2-migration php script
     attrs_removed = [
         'name',
-        import pdb;pdb.set_trace()  ## Breakpoint ##
         'register',
         # timeperiods
         # contactgroups
