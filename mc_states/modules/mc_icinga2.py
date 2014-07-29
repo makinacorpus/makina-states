@@ -763,29 +763,37 @@ def format(dictionary, quote_keys=False, quote_values=True):
                 # suppose that all values in list are strings
                 # escape '"' char and quote each strings
                 if quote_values:
-                    res[res_key] += ', '.join(map((lambda v: '"'+str(v).replace('"','\\"')+'"'), value))
+                    res[res_key] += ', '.join(
+                        map((lambda v: '"' + str(v).replace(
+                            '"', '\\"') + '"'), value))
                 else:
                     res[res_key] += ', '.join(value)
                 res[res_key] += ']'
-        elif key.startswith('enable_') :
-            if '"1"' == value or '1' == value or 1 == value or 'true' == value or True == value:
+        elif key.startswith('enable_'):
+            if (
+                '"1"' == value
+                or '1' == value
+                or 1 == value
+                or 'true' == value
+                or True == value
+            ):
                 res[res_key] = "true"
             else:
                 res[res_key] = "false"
         elif key in ['template']:
             res[res_key] = value
-        elif key.endswith('_interval'): # a bad method to find a time
+        elif key.endswith('_interval'):  # a bad method to find a time
             res[res_key] = value
         elif isinstance(value, int):
             res[res_key] = str(value)
         elif isinstance(value, unicode):
             if quote_values:
-                res[res_key] = '"'+value.replace('"', '\\"')+'"'
+                res[res_key] = '"' + value.replace('"', '\\"') + '"'
             else:
                 res[res_key] = value
         else:
             if quote_values:
-                res[res_key] = '"'+str(value).encode('utf-8').replace('"', '\\"')+'"'
+                res[res_key] = '"' + str(value).encode('utf-8').replace('"', '\\"')+'"'
             else:
                 res[res_key] = value
 
@@ -1864,24 +1872,43 @@ def add_auto_configuration_host_settings(hostname,
         # the dictionary is set, we merging normally
         for name, dns in services_attrs[DRA].items():
             if 'service_description' not in dns:
-                services_attrs[DRA][name]['service_description']=services_default_attrs['dns_association'][name]['service_reverse_description']+name
+                services_attrs[DRA][name][
+                    'service_description'] = services_default_attrs[
+                        'dns_association'][name][
+                            'service_reverse_description'] + name
             for key, value in services_default_attrs[DRA]['default'].items():
-                if not key in dns:
-                    services_attrs[DRA][name][key]=value
+                if key not in dns:
+                    services_attrs[DRA][name][key] = value
 
     # override network subdictionary
-    if not 'network' in services_attrs:
-        services_attrs['network'] =  services_default_attrs['network']
-        services_attrs['network']['default']['service_description']=services_default_attrs['network']['default']['service_description']+'default'
-        services_attrs['network']['default']['import']=[services_default_attrs['network']['default']['import'][0]+services_default_attrs['network']['default']['vars.interface'].upper()]
+    if 'network' not in services_attrs:
+        services_attrs['network'] = services_default_attrs['network']
+        services_attrs['network'][
+            'default']['service_description'] = services_default_attrs[
+                'network']['default']['service_description'] + 'default'
+        services_attrs['network'][
+            'default']['import'] = [
+                services_default_attrs['network']['default']['import'][0] +
+                services_default_attrs['network'][
+                    'default']['vars.interface'].upper()]
     else:
         for name, network in services_attrs['network'].items():
             # generate the service_description if not given
             if 'service_description' not in network:
                 if 'vars.interface' in services_attrs['network'][name]:
-                    services_attrs['network'][name]['service_description']=services_default_attrs['network']['default']['service_description']+services_attrs['network'][name]['vars.interface'].upper()
+                    services_attrs['network'][name][
+                        'service_description'] = (
+                            services_default_attrs['network'][
+                                'default']['service_description'] +
+                            services_attrs['network'][
+                                name]['vars.interface'].upper())
                 else:
-                    services_attrs['network'][name]['service_description']=services_default_attrs['network']['default']['service_description']+services_default_attrs['network']['default']['vars.interface'].upper()
+                    services_attrs['network'][name][
+                        'service_description'] = (
+                            services_default_attrs['network'][
+                                'default']['service_description'] +
+                            services_default_attrs['network'][
+                                'default']['vars.interface'].upper())
             if 'import' not in network:
                 if 'vars.interface' in services_attrs['network'][name]:
                     services_attrs['network'][name]['import']=services_default_attrs['network']['default']['import']+services_attrs['network'][name]['vars.interface'].upper()
@@ -1971,13 +1998,22 @@ def add_auto_configuration_host_settings(hostname,
             services_attrs['disk_space'][mountpoint] = dict(services_attrs['disk_space'][mountpoint].items()
                                                                          +services_attrs['disk_space'][mountpoint].items())
 
-            if services_attrs['disk_space'][mountpoint]['service_description'] == services_default_attrs['disk_space']['default']['service_description']:
-                services_attrs['disk_space'][mountpoint]['service_description']=services_attrs['disk_space'][mountpoint]['service_description']+disks_spaces[mountpoint].upper()
-#            if services_attrs['disk_space'][mountpoint]['import'][0] in services_default_attrs['disk_space']['default']['import']:
+            if (
+                services_attrs['disk_space'][
+                    mountpoint]['service_description'] == services_default_attrs[
+                        'disk_space']['default']['service_description']
+            ):
+                services_attrs['disk_space'][
+                    mountpoint]['service_description'] = services_attrs[
+                        'disk_space'][mountpoint][
+                            'service_description'] + disks_spaces[mountpoint].upper()
             services_attrs['disk_space'][
-                mountpoint]['import'] = [services_attrs['disk_space'][mountpoint]['import'][0]+disks_spaces[mountpoint].replace('/', '_').replace('_', '/', 1).upper()]
+                mountpoint]['import'] = [
+                    services_attrs['disk_space'][mountpoint]['import'][0] +
+                    disks_spaces[mountpoint].replace(
+                        '/', '_').replace('_', '/', 1).upper()]
             services_attrs['disk_space'][
-                mountpoint]['vars.path']= disks_spaces[mountpoint]
+                mountpoint]['vars.path'] = disks_spaces[mountpoint]
 
     # remove default dictionary
     if 'default' in services_attrs['disk_space']:
@@ -2027,13 +2063,13 @@ def add_auto_configuration_host_settings(hostname,
                 ] = hostname + '__' + services_attrs[
                     service][subservice]['service_description']
 
-
     kwargs.setdefault('services_attrs', services_attrs)
 
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings,
                                                      kwargs)
     print('end call add_auto_configuration_host_settings')
     return icingaSettings
+
 
 def add_auto_configuration_host(hostname=None,
                                 hostgroup=False,
