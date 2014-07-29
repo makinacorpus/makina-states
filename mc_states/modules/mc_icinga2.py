@@ -62,7 +62,9 @@ def objects_icinga2():
        https://github.com/Icinga/icinga2-migration
     '''
 
-    # ARGx are not beautiful arguments, we will try to give name. This dictionary was used in mc_icinga to do the reverse operation (association a named value to ARGx variable)
+    # ARGx are not beautiful arguments, we will try to give name.
+    # This dictionary was used in mc_icinga to do the
+    # reverse operation (association a named value to ARGx variable)
     cssh_params = ['ssh_user', 'ssh_addr', 'ssh_port', 'ssh_timeout']
 
     check_command_args = {
@@ -248,7 +250,8 @@ def objects_icinga2():
                     ):  # bad method to detect the couple of arguments
                         # "-a 1", the "1" doesn't begin with '-'
                         res['arguments'][
-                            command_splitted[i_args]] = command_splitted[i_args+1]
+                            command_splitted[i_args]
+                        ] = command_splitted[i_args+1]
                         i_args += 2
                     else:
                         res['arguments'][command_splitted[i_args]] = {}
@@ -373,7 +376,8 @@ def objects_icinga2():
             # global translation
             else:
                 # check if the attribute is removed
-                # remove if the attribute is used as name and not in conserved attributes list, unless remove is forced
+                # remove if the attribute is used as name and
+                # not in conserved attributes list, unless remove is forced
                 if (
                     obj_type in attrs_used_as_name
                     and (key == attrs_used_as_name[obj_type]
@@ -1952,9 +1956,11 @@ def add_auto_configuration_host_settings(hostname,
             if 'import' not in network:
                 if 'vars.interface' in services_attrs['network'][name]:
                     services_attrs['network'][
-                        name]['import'] = services_default_attrs[
-                            'network']['default']['import'] +
-                    services_attrs['network'][name]['vars.interface'].upper()
+                        name]['import'] = (
+                            services_default_attrs['network'][
+                                'default']['import'] +
+                            services_attrs['network'][
+                                name]['vars.interface'].upper())
                 else:
                     # add the prefix to the import
                     services_attrs['network'][
@@ -1965,88 +1971,111 @@ def add_auto_configuration_host_settings(hostname,
                             for i in services_default_attrs['network'][
                                 'default']['vars.interface']]
 
-            for key, value in services_default_attrs['network']['default'].items():
-                if not key in network:
-                    services_attrs['network'][name][key]=value
+            for key, value in services_default_attrs[
+                'network'
+            ]['default'].items():
+                if key not in network:
+                    services_attrs['network'][name][key] = value
 
     # override solr subdictionary
-    if not 'solr' in services_attrs:
-        services_attrs['solr'] =  services_default_attrs['solr']
-        services_attrs['solr']['default']['service_description']=services_default_attrs['solr']['default']['service_description']+'default'
+    if 'solr' not in services_attrs:
+        services_attrs['solr'] = services_default_attrs['solr']
+        services_attrs['solr']['default'][
+            'service_description'] = services_default_attrs[
+                'solr']['default']['service_description'] + 'default'
     else:
         for name, solr in services_attrs['solr'].items():
             # generate the service_description if not given
             if 'service_description' not in solr:
-                services_attrs['solr'][name]['service_description']=services_default_attrs['solr']['default']['service_description']+name
-            for key, value in services_default_attrs['solr']['default'].items():
-                if not key in solr:
-                    services_attrs['solr'][name][key]=value
-            # transform list of values in string ['a', 'b'] becomes '"a" -s "b"'
+                services_attrs['solr'][name][
+                    'service_description'] = (
+                        services_default_attrs['solr']['default'][
+                            'service_description'] + name)
+            for key, value in services_default_attrs[
+                'solr'
+            ]['default'].items():
+                if key not in solr:
+                    services_attrs['solr'][name][key] = value
+            # transform list of values in
+            # string ['a', 'b'] becomes '"a" -s "b"'
             if isinstance(services_attrs['solr'][name]['vars.strings'], list):
                 str_list = services_attrs['solr'][name]['vars.strings']
                 # to avoid quotes conflicts (doesn't avoid code injection)
-                str_list = [ value.replace('"', '\\\\"') for value in str_list ]
-                services_attrs['solr'][name]['vars.strings']='"'+'" -s "'.join(str_list)+'"'
-
+                str_list = [value.replace('"', '\\\\"') for value in str_list]
+                services_attrs['solr'][name]['vars.strings'] = (
+                    '"' + '" -s "'.join(str_list) + '"')
 
     # override web_openid subdictionary
-    if not 'web_openid' in services_attrs:
-        services_attrs['web_openid'] =  services_default_attrs['web_openid']
-        services_attrs['web_openid']['default']['service_description']=services_default_attrs['web_openid']['default']['service_description']+'default'
+    if 'web_openid' not in services_attrs:
+        services_attrs['web_openid'] = services_default_attrs['web_openid']
+        services_attrs['web_openid']['default'][
+            'service_description'] = services_default_attrs[
+                'web_openid']['default']['service_description'] + 'default'
     else:
         for name, web_openid in services_attrs['web_openid'].items():
             # generate the service_description if not given
             if 'service_description' not in web_openid:
-                services_attrs['web_openid'][name]['service_description']=services_default_attrs['web_openid']['default']['service_description']+name
-            for key, value in services_default_attrs['web_openid']['default'].items():
-                if not key in web_openid:
-                    services_attrs['web_openid'][name][key]=value
+                services_attrs['web_openid'][name][
+                    'service_description'] = services_default_attrs[
+                        'web_openid']['default']['service_description'] + name
+            for key, value in services_default_attrs[
+                'web_openid'
+            ]['default'].items():
+                if key not in web_openid:
+                    services_attrs['web_openid'][name][key] = value
 
     # override web subdictionary
-    if not 'web' in services_attrs:
-        services_attrs['web'] =  services_default_attrs['web']
-        services_attrs['web']['default']['service_description']=services_default_attrs['web']['default']['service_description']+'default'
+    if 'web' not in services_attrs:
+        services_attrs['web'] = services_default_attrs['web']
+        services_attrs['web']['default'][
+            'service_description'] = services_default_attrs[
+                'web']['default']['service_description'] + 'default'
     else:
         for name, web in services_attrs['web'].items():
             # generate the service_description if not given
             if 'service_description' not in web:
-                services_attrs['web'][name]['service_description']=services_default_attrs['web']['default']['service_description']+name
-            for key, value in services_default_attrs['web']['default'].items():
-                if not key in web:
-                    services_attrs['web'][name][key]=value
-            # transform list of values in string ['a', 'b'] becomes '"a" -s "b"'
+                services_attrs['web'][name][
+                    'service_description'] = services_default_attrs[
+                        'web']['default']['service_description'] + name
+            for key, value in services_default_attrs[
+                'web'
+            ]['default'].items():
+                if key not in web:
+                    services_attrs['web'][name][key] = value
+            # transform list of values
+            # in string ['a', 'b'] becomes '"a" -s "b"'
             if isinstance(services_attrs['web'][name]['vars.strings'], list):
                 str_list = services_attrs['web'][name]['vars.strings']
                 # to avoid quotes conflicts (doesn't avoid code injection)
-                str_list = [ value.replace('"', '\\\\"') for value in str_list ]
-                services_attrs['web'][name]['vars.strings']='"'+'" -s "'.join(str_list)+'"'
+                str_list = [value.replace('"', '\\\\"') for value in str_list]
+                services_attrs['web'][name][
+                    'vars.strings'] = '"' + '" -s "'.join(str_list) + '"'
 
     # override mountpoints subdictionaries
     # for each disk_space, build the dictionary:
     # priority for values
-    # services_default_attrs['disk_space']['default'] # default values in default dictionary
-    # services_default_attrs['disk_space'][mountpoint] # specific values in default dictionary
-    # services_attrs['disk_space']['default'] # default value in overrided dictionary
-    # services_attrs['disk_space'][mountpoint] # specific value in overrided dictionary
     if 'disk_space' not in services_attrs:
         services_attrs['disk_space'] = {}
-    # we can't merge default dictionary yet because priorities will not be respected
+    # we can't merge default dictionary yet because priorities
+    # will not be respected
     if 'default' not in services_attrs['disk_space']:
         services_attrs['disk_space']['default'] = {}
 
     for mountpoint, path in mountpoints_path.items():
-        if mountpoint in disks_spaces: # the check is enabled
+        if mountpoint in disks_spaces:  # the check is enabled
             if mountpoint not in services_default_attrs['disk_space']:
-                services_default_attrs['disk_space'][mountpoint] = copy.deepcopy(services_default_attrs['disk_space']['default'])
-
-            services_attrs['disk_space'][mountpoint] = dict(services_default_attrs['disk_space']['default'].items()
-                                                                         +services_default_attrs['disk_space'][mountpoint].items())
-
-            services_attrs['disk_space'][mountpoint] = dict(services_attrs['disk_space'][mountpoint].items()
-                                                                         +services_attrs['disk_space']['default'].items())
-
-            services_attrs['disk_space'][mountpoint] = dict(services_attrs['disk_space'][mountpoint].items()
-                                                                         +services_attrs['disk_space'][mountpoint].items())
+                services_default_attrs['disk_space'][
+                    mountpoint] = copy.deepcopy(
+                        services_default_attrs['disk_space']['default'])
+            services_attrs['disk_space'][mountpoint] = dict(
+                services_default_attrs['disk_space']['default'].items() +
+                services_default_attrs['disk_space'][mountpoint].items())
+            services_attrs['disk_space'][mountpoint] = dict(
+                services_attrs['disk_space'][mountpoint].items() +
+                services_attrs['disk_space']['default'].items())
+            services_attrs['disk_space'][mountpoint] = dict(
+                services_attrs['disk_space'][mountpoint].items() +
+                services_attrs['disk_space'][mountpoint].items())
 
             if (
                 services_attrs['disk_space'][
@@ -2054,9 +2083,10 @@ def add_auto_configuration_host_settings(hostname,
                         'disk_space']['default']['service_description']
             ):
                 services_attrs['disk_space'][
-                    mountpoint]['service_description'] = services_attrs[
-                        'disk_space'][mountpoint][
-                            'service_description'] + disks_spaces[mountpoint].upper()
+                    mountpoint]['service_description'] = (
+                        services_attrs['disk_space'][mountpoint][
+                            'service_description'] +
+                        disks_spaces[mountpoint].upper())
             services_attrs['disk_space'][
                 mountpoint]['import'] = [
                     services_attrs['disk_space'][mountpoint]['import'][0] +
@@ -2234,7 +2264,7 @@ def add_auto_configuration_host(hostname=None,
             service_subdirectory = 'hosts'
             service_key_hostname = 'host_name'
         # we set the filename here
-        file='/'.join([service_subdirectory, hostname+'.conf'])
+        file = '/'.join([service_subdirectory, hostname+'.conf'])
         kwargs.setdefault('file', file)
         kwargs.setdefault('state_name_salt', replace_chars(file))
         icingaSettings = __salt__['mc_utils.dictupdate'](
