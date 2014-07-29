@@ -303,7 +303,7 @@ def objects_icinga2():
                                        res['notification']['command'] = obj['attrs']['service_notification_commands']
                                    elif 'host' == obj_type and 'host_notification_commands' in obj['attrs']:
                                        res['notification']['command'] = obj['attrs']['host_notification_commands']
-                    
+
 
                 if 'notification_options' == key:
                     value_splitted = value.split(',')
@@ -928,6 +928,7 @@ def settings():
                 'package': ['icinga2-bin', 'icinga2-common', 'icinga2-doc'],
                 'has_pgsql': ('pgsql' == module_ido2db_database['type']
                               and has_sgbd),
+                'create_pgsql': True,
                 'has_mysql': ('mysql' == module_ido2db_database['type']
                               and has_sgbd),
                 'user': "nagios",
@@ -940,8 +941,11 @@ def settings():
                 # from another function but we can copy/paste it here
                 'objects': dict_objects,
                 'icinga_conf': {
-                    'include': ['"constants.conf"', '"zones.conf"', '<itl>',
-                                '<plugins>', '"features-enabled/*.conf"'],
+                    'include': ['"constants.conf"',
+                                '"zones.conf"',
+                                '<itl>',
+                                '<plugins>',
+                                '"features-enabled/*.conf"'],
                     'include_recursive': ['"conf.d"'],
                 },
                 'constants_conf': {

@@ -1981,9 +1981,10 @@ def objects():
         },
     }
 
-    # import the centreon configuration (have to be removed later)
-    import mc_icinga_with_thousand_hosts
-    data['autoconfigured_hosts_definitions'] = mc_icinga_with_thousand_hosts.complete_hosts
+    # XXX: import the centreon configuration (have to be removed later)
+    # import mc_icinga_with_thousand_hosts
+    # data['autoconfigured_hosts_definitions'] = mc_icinga_with_thousand_hosts.complete_hosts
+    data['autoconfigured_hosts_definitions'] = {}
 
     return data
 
