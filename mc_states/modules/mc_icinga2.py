@@ -197,7 +197,7 @@ def objects_icinga2():
             if (
                 arg.endswith('\'')
                 or arg.endswith('\\\'')
-                or  arg.endswith('\"')
+                or arg.endswith('\"')
                 or arg.endswith('\\\"')
             ):
                 spaced_arg = False
@@ -206,7 +206,7 @@ def objects_icinga2():
                 tmpstr = " ".join(tmp)
                 if tmpstr:
                     command_splitted.append(tmpstr) # merge the argument on quotes (bad)
-                tmp=[]
+                tmp = []
 
 
         res['command'] = command_splitted[0]
@@ -219,7 +219,12 @@ def objects_icinga2():
             for param in check_command_args[command_name]:
                 i_args = 1
                 while i_args <= n_args:
-                    command_splitted[i_args] = command_splitted[i_args].replace('$ARG'+str(argx)+'$', '$'+str(param)+'$')
+                    command_splitted[
+                        i_args] = command_splitted[
+                            i_args
+                        ].replace(
+                                '$ARG' + str(argx) + '$',
+                            '$' + str(param)+'$')
                     i_args += 1
                 argx += 1
 
@@ -588,7 +593,7 @@ def objects_icinga2():
     services_enabled = dict()
     for name, obj in src['objects_definitions'].items():
         # global changes
-        res['objects_definitions'][name]={}
+        res['objects_definitions'][name] = {}
         res['objects_definitions'][name]['attrs'] = {}
         res['objects_definitions'][name]['file'] = obj['file'].replace('.cfg', '.conf') # the extension of filenames is changed
 
@@ -950,13 +955,19 @@ def settings():
     return _settings()
 
 def replace_chars(s):
-    res=s
+    res = s
     for char in list('/.:_'):
-        res=res.replace(char, '-')
+        res = res.replace(char, '-')
     return res
 
-def add_configuration_object(file=None, type=None, attrs=None, definition=None, fromsettings=None, get=False, get_objects_file=None, **kwargs):
-    print('call add_configuration_object')
+def add_configuration_object(file=None,
+                             type=None,
+                             attrs=None,
+                             definition=None,
+                             fromsettings=None,
+                             get=False,
+                             get_objects_file=None,
+                             **kwargs):
     '''Add the object file in the file's list to be added'''
     if get:
         if get_objects_file:
@@ -975,18 +986,20 @@ def add_configuration_object(file=None, type=None, attrs=None, definition=None, 
 
 
 # global variable initialisation
-add_configuration_object.objects={}
+add_configuration_object.objects = {}
 
 def remove_configuration_object(file=None, get=False, **kwargs):
     '''Add the file in the file's list to be removed'''
-    if get :
+    if get:
         return remove_configuration_object.files
     elif file:
         icingaSettings_complete = __salt__['mc_icinga2.settings']()
         # append " \"file\"" to the global variable
-        filename='/'.join([icingaSettings_complete['objects']['directory'], file])
-        # it doesn't avoid injection, just allow the '"' char in filename
-        filename=filename.replace('"', '\"')
+        filename = '/'.join([icingaSettings_complete[
+            'objects']['directory'], file])
+        # it doesn't avoid injection, just allow the '"' char
+        # in filename
+        filename = filename.replace('"', '\"')
         remove_configuration_object.files += " \""+filename+"\""
 
 # global variable initialisation
@@ -1071,7 +1084,9 @@ def add_auto_configuration_host_settings(hostname,
 #   save the ram (get only useful values)
     icingaSettings_complete = __salt__['mc_icinga2.settings']()
     icingaSettings = {}
-    kwargs.setdefault('objects', {'directory': icingaSettings_complete['objects']['directory']})
+    kwargs.setdefault(
+        'objects',
+        {'directory': icingaSettings_complete['objects']['directory']})
 
     kwargs.setdefault('hostname', hostname)
     kwargs.setdefault('hostgroup', hostgroup)
@@ -1155,9 +1170,9 @@ def add_auto_configuration_host_settings(hostname,
     services_loop_enabled = dict()
     for service in services_loop:
         if eval(service):
-            services_loop_enabled[service]=True
+            services_loop_enabled[service] = True
         else:
-            services_loop_enabled[service]=False
+            services_loop_enabled[service] = False
 
     kwargs.setdefault('services_loop_enabled', services_loop_enabled)
 
@@ -1178,7 +1193,7 @@ def add_auto_configuration_host_settings(hostname,
         'backups_guidtz': "/backups/guidtz",
         'var_backups_bluemind': "/var/backups/bluemind",
         'var_spool_cyrus': "/var/spool/cyrus",
-        'nmd_www': "/home", #TODO: must be modified
+        'nmd_www': "/home", # TODO: must be modified
     }
     disks_spaces = dict()
     for mountpoint, path in mountpoints_path.items():
@@ -1844,22 +1859,21 @@ def add_auto_configuration_host_settings(hostname,
         services_attrs = {}
 
     for name, command in services_default_attrs.items():
-        if name not in ['dns_association', DRA, 
-                        'disk_space', 'network', 'solr', 
+        if name not in ['dns_association', DRA,
+                        'disk_space', 'network', 'solr',
                         'web_openid', 'web']:
-            if not name in services_attrs:
+            if name not in services_attrs:
                 services_attrs[name] = {}
             services_attrs[name] = dict(
-                services_default_attrs[name].items() + 
+                services_default_attrs[name].items() +
                 services_attrs[name].items())
-
 
     # generate the complete check command (we can't do a loop
     # before we have to give the good order for arguments)
-    # don't generate the complete check command because it is 
+    # don't generate the complete check command because it is
     # icinga2
 
-    # add the host_name or hostgroup_name in each service 
+    # add the host_name or hostgroup_name in each service
     # and don't remove directives begining with "vars."
     # (because it is icinga2)
 
@@ -1981,7 +1995,7 @@ def add_auto_configuration_host(hostname=None,
 
         # if fromsettings is used, we need to get some arguments values
         if fromsettings:
-            host =  get_settings_for_object(
+            host = get_settings_for_object(
                 'autoconfigured_hosts_definitions', fromsettings)
             if 'hostgroup' in host:
                 hostgroup = host['hostgroup']
