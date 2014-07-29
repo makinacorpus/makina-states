@@ -49,8 +49,6 @@ def objects_icinga2():
        https://github.com/Icinga/icinga2-migration
     '''
 
-    # TODO: translate durations in minutes
-
     # ARGx are not beautiful arguments, we will try to give name. This dictionary was used in mc_icinga to do the reverse operation (association a named value to ARGx variable)
     cssh_params = ['ssh_user', 'ssh_addr', 'ssh_port', 'ssh_timeout']
 
@@ -164,7 +162,6 @@ def objects_icinga2():
                 tmp=[]
 
 
-#        res['command'] = _format(command_splitted[0])
         res['command'] = command_splitted[0]
         n_args = len(command_splitted)-1
         i_args = 1
@@ -220,6 +217,75 @@ def objects_icinga2():
                 command = _check_command_arguments(value)
                 for key, value in command.items():
                     res[key] = value
+            elif key in ['contacts', 'contact_groups', 'notification_options', 'notification_period', 'notification_interval']: # for notifications
+                if 'notification' not in res:
+                    res['notification'] = {}
+                if 'notification_options' == key:
+                    value_splitted = value.split(',')
+                    value_splitted = map((lambda v: v.strip()), value_splitted) # strip all values (because we can have "a,       b    ,   c". we want ["a","b","c"])
+                    res['notification']['state'] = []
+                    res['notification']['type'] = []
+                    # from http://docs.icinga.org/icinga2/latest/doc/module/icinga2/toc#!/icinga2/latest/doc/module/icinga2/chapter/migration#manual-config-migration-hints-contacts-users
+                    for v in value_splitted:
+                        if 'o' == v:
+                            res['notification']['state'].append('OK')
+                        elif 'w' == v:
+                            res['notification']['state'].append('Warning')
+                            res['notification']['type'].append('Problem')
+                        elif 'c' == v:
+                            res['notification']['state'].append('Critical')
+                            res['notification']['type'].append('Problem')
+                        elif 'u' == v:
+                            res['notification']['state'].append('Unknown')
+                            res['notification']['type'].append('Problem')
+                        elif 'd' == v:
+                            res['notification']['state'].append('Down')
+                            res['notification']['type'].append('Problem')
+                        elif 's' == v:
+                            res['notification']['state'].append('.')
+                            res['notification']['type'].append('DowntimeStart')
+                            res['notification']['type'].append('DowntimeEnd')
+                            res['notification']['type'].append('DowntimeRemoved')
+                        elif 'r' == v:
+                            res['notification']['state'].append('Ok')
+                            res['notification']['type'].append('Recovery')
+                        elif 'f' == v:
+                            res['notification']['state'].append('.')
+                            res['notification']['type'].append('FlappingStart')
+                            res['notification']['type'].append('FlappingEnd')
+                        elif 'n' == v:
+                            res['notification']['state'].append('.')
+                        elif '.' == v:
+                            res['notification']['state'].append('.')
+                            res['notification']['type'].append('Custom')
+                    res['notification']['state'] = list(set(res['notification']['state']))
+                    res['notification']['type'] = list(set(res['notification']['type']))
+                    if 0 == len(res['notification']['type']):
+                        res['notification'].pop('type', None)
+                    if 0 == len(res['notification']['state']):
+                        res['notification'].pop('state', None)
+                else:
+                    if key in attrs_renamed:
+                        res_key = attrs_renamed[key]
+                    else:
+                        res_key = key
+
+                    if key in attrs_force_list:
+                        res_value = value.split(',')
+                        res_value = map((lambda v: v.strip()), res_value) # strip all values (because we can have "a,       b    ,   c". we want ["a","b","c"])
+                    elif key in attrs_timed:
+                        try:
+                            res_value = int(value)
+                            res_value = str(res_value)+'m' # by default the time is in minutes
+                        except:
+                            # already a unit because it is not a number
+                            res_value = value
+                    else:
+                        res_value = value
+
+                    res['notification'][res_key] = res_value
+
+
 
             elif key in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']: # for timeperiods
                 if 'ranges' not in res:
@@ -251,7 +317,7 @@ def objects_icinga2():
                 # create the lists if needed and format the value 
                 if key in attrs_force_list:
                     res_value = value.split(',')
-                    res_value = map((lambda v: v.strip()), res_value) # strip all values (because we can have "a,       b    ,   c")
+                    res_value = map((lambda v: v.strip()), res_value) # strip all values (because we can have "a,       b    ,   c". we want ["a","b","c"])
                 elif key in attrs_timed:
                     try:
                         res_value = int(value)
@@ -268,7 +334,7 @@ def objects_icinga2():
                 # add the attribute
                 res[res_key] = res_value
 
-
+        # legacy import
         if 'timeperiod' == obj_type:
             if 'import' not in res:
                 res['import'] = []
@@ -328,6 +394,10 @@ def objects_icinga2():
         # hostgroups
         # hosts
         'hostgroups': "groups",
+        # notifications
+        'notification_period': "period",
+        'contacts': "users",
+        'contact_groups': "user_groups",
     }
     attrs_force_list = [
         'use',
@@ -338,10 +408,14 @@ def objects_icinga2():
         # hosts
         'parents',
         'hostgroups',
+        # notifications
+        'contacts',
+        'contact_groups',
     ]
     attrs_timed = [
         'normal_check_interval',
         'retry_check_interval',
+        'notification_interval',
     ]
     attrs_removed = [ # from icinga2-migration php script
         'name',
@@ -376,7 +450,7 @@ def objects_icinga2():
         'parallelize_check',
         'notification_interval',
         'first_notification_delay',
-        'notification_period',
+##        'notification_period',
         'notification_options',
         # hostgroups
         # hosts
@@ -399,8 +473,11 @@ def objects_icinga2():
 #        'notification_options',
 
 # TODO: the contacts are not already managed in services and hosts 
-         'contacts',
-         'contact_groups',
+#http://docs.icinga.org/icinga2/latest/doc/module/icinga2/toc#!/icinga2/latest/doc/module/icinga2/chapter/migration#manual-config-migration-hints-contacts-users
+# TODO: generate a notification object when a contact is set
+#         'contacts',
+#         'contact_groups',
+#         'notification_options' # we have to split the options in state and type attribute
 
     ]
     services = [
@@ -547,7 +624,7 @@ def format(dictionary, quote_keys=False, quote_values=True):
 
 
         if isinstance(value, dict): # recurse
-            if key in ['arguments', 'ranges']: # in theses subdictionaries, the keys are also quoted
+            if key in ['arguments', 'ranges', 'notification']: # in theses subdictionaries, the keys are also quoted
                 res[key] = format(value, True, True)
             elif key in ['services_enabled', 'services_loop_enabled']: # theses dictionaries contains booleans
                 res[key] = format(value, False, False)
@@ -556,9 +633,13 @@ def format(dictionary, quote_keys=False, quote_values=True):
         elif key in ['vars.strings']: # TODO: vars.string not managed 
             res[key] = '"'+str(value).replace('"', '\\"')+'"'
         elif isinstance(value, list):
-            if key in ['import', 'parents']: # theses lists are managed in the template
+            if key in ['import', 'parents']: # theses lists are managed in the template, we only quote each string in the list
                 res[key] = map((lambda v: '"'+str(v).replace('"','\\"')+'"'), value)
             else:
+                # type and state are not quoted
+                if key in ['type', 'state']:
+                    quote_value = False
+
                 res[key] = '['
                 # suppose that all values in list are strings
                 # escape '"' char and quote each strings
@@ -568,7 +649,7 @@ def format(dictionary, quote_keys=False, quote_values=True):
                     res[key] += ', '.join(value)
                 res[key] += ']'
         elif key.startswith('enable_') :
-            if '"1"' == value or '1' == value or 1 == value:
+            if '"1"' == value or '1' == value or 1 == value or 'true' == value or True == value:
                 res[key] = "true"
             else:
                 res[key] = "false"
@@ -1694,12 +1775,14 @@ def add_auto_configuration_host_settings(hostname,
     for service in services:
         if service in services_attrs:
             services_attrs[service][service_key_hostname] = hostname
+            # TODO: fix this
             services_attrs[service]['service_description'] = hostname+'__'+services_attrs[service]['service_description']
 
     for service in services_loop:
         if service in services_attrs:
             for subservice  in services_attrs[service]:
                 services_attrs[service][subservice][service_key_hostname] = hostname
+                # TODO: fix this
                 services_attrs[service][subservice]['service_description'] = hostname+'__'+services_attrs[service][subservice]['service_description']
 
  
