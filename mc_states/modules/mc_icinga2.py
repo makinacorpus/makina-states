@@ -264,7 +264,8 @@ def objects_icinga2():
                          force_remove_attrs_used_as_name_not_removed=False):
         '''
         function to translate attrs subdictionary
-        it is used to translate objects_definitions and autoconfigured_hosts_definitions
+        it is used to translate objects_definitions
+        and autoconfigured_hosts_definitions
         '''
         res = {}
         for key, value in obj_attrs.items():
@@ -315,7 +316,8 @@ def objects_icinga2():
                             res['notification']['state'].append('.')
                             res['notification']['type'].append('DowntimeStart')
                             res['notification']['type'].append('DowntimeEnd')
-                            res['notification']['type'].append('DowntimeRemoved')
+                            res['notification']['type'].append(
+                                'DowntimeRemoved')
                         elif 'r' == v:
                             res['notification']['state'].append('OK')
                             res['notification']['type'].append('Recovery')
@@ -346,11 +348,14 @@ def objects_icinga2():
 
                     if key in attrs_force_list:
                         res_value = value.split(',')
-                        res_value = map((lambda v: v.strip()), res_value) # strip all values (because we can have "a,       b    ,   c". we want ["a","b","c"])
+                        # strip all values (because we can have
+                        # "a,       b    ,   c". we want ["a","b","c"])
+                        res_value = map((lambda v: v.strip()), res_value)
                     elif key in attrs_timed:
                         try:
                             res_value = int(value)
-                            res_value = str(res_value)+'m' # by default the time is in minutes
+                            # by default the time is in minutes
+                            res_value = str(res_value) + 'm'
                         except:
                             # already a unit because it is not a number
                             res_value = value
@@ -358,10 +363,9 @@ def objects_icinga2():
                         res_value = value
 
                     res['notification'][res_key] = res_value
-
-
-
-            elif key in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']: # for timeperiods
+            elif key in ['monday', 'tuesday', 'wednesday',
+                         'thursday', 'friday',
+                         'saturday', 'sunday']:  # for timeperiods
                 if 'ranges' not in res:
                     res['ranges'] = {}
                 res['ranges'][key] = value
@@ -370,20 +374,33 @@ def objects_icinga2():
             else:
                 # check if the attribute is removed
                 # remove if the attribute is used as name and not in conserved attributes list, unless remove is forced
-                if obj_type in attrs_used_as_name and (key == attrs_used_as_name[obj_type] and key not in attrs_used_as_name_not_removed) or (key == attrs_used_as_name[obj_type] and key in attrs_used_as_name_not_removed and force_remove_attrs_used_as_name_not_removed):
+                if (
+                    obj_type in attrs_used_as_name
+                    and (key == attrs_used_as_name[obj_type]
+                         and key not in attrs_used_as_name_not_removed)
+                    or (key == attrs_used_as_name[obj_type]
+                        and key in attrs_used_as_name_not_removed
+                        and force_remove_attrs_used_as_name_not_removed)
+                ):
                     # the attribute used as name is removed from attrs list
                     continue
-                elif key in attrs_removed: # attribute removed
+                elif key in attrs_removed:  # attribute removed
                     continue
 
                 # translate the attribute key
                 if key in attrs_renamed:
                     res_key = attrs_renamed[key]
-                elif 'name' == key and obj_type in attrs_used_as_name and attrs_used_as_name[obj_type] not in obj_attrs: # translate "name" attrs
+                elif (
+                    'name' == key
+                    and obj_type in attrs_used_as_name
+                    and attrs_used_as_name[obj_type] not in obj_attrs
+                ):  # translate "name" attrs
                     res_key = attrs_used_as_name[obj_type]
-                elif key.startswith('cmdarg_'): # translate the old argument prefix
+                # translate the old argument prefix
+                elif key.startswith('cmdarg_'):
                     res_key = key.replace('cmdarg_', 'vars.')
-                elif key in ['_SERVICE_ID', '_HOST_ID']: # theses arguments seems to be not supported
+                # theses arguments seems to be not supported
+                elif key in ['_SERVICE_ID', '_HOST_ID']:
                     continue
                 else:
                     res_key = key
@@ -391,11 +408,14 @@ def objects_icinga2():
                 # create the lists if needed and format the value
                 if key in attrs_force_list:
                     res_value = value.split(',')
-                    res_value = map((lambda v: v.strip()), res_value) # strip all values (because we can have "a,       b    ,   c". we want ["a","b","c"])
+                    # strip all values (because we can have
+                    # a,       b    ,   c". we want ["a","b","c"])
+                    res_value = map((lambda v: v.strip()), res_value)
                 elif key in attrs_timed:
                     try:
                         res_value = int(value)
-                        res_value = str(res_value)+'m' # by default the time is in minutes
+                        # by default the time is in minutes
+                        res_value = str(res_value)+'m'
                     except:
                         # already a unit because it is not a number
                         res_value = value
@@ -412,7 +432,8 @@ def objects_icinga2():
         if 'timeperiod' == obj_type:
             if 'import' not in res:
                 res['import'] = []
-            res["import"] = res["import"] + ["legacy-timeperiod"] + res['import']
+            res["import"] = (
+                res["import"] + ["legacy-timeperiod"] + res['import'])
         elif 'command' == obj_type and 'CheckCommand' == res_type:
             if 'import' not in res:
                 res['import'] = []
@@ -422,7 +443,6 @@ def objects_icinga2():
                 res['import'] = []
             res['import'] = ["plugin-notification-command"] + res['import']
         return res
-
 
     types_renamed = {
         'timeperiod': "TimePeriod",
@@ -434,7 +454,8 @@ def objects_icinga2():
         'host': "Host",
         'command': "CheckCommand",
     }
-    attrs_used_as_name_not_removed = ['service_description'] # commented as "ugly hack"in php migration script
+    # commented as "ugly hack"in php migration script
+    attrs_used_as_name_not_removed = ['service_description']
     attrs_used_as_name = {
         'timeperiod': "timeperiod_name",
         'contactgroup': "contactgroup_name",
@@ -491,7 +512,8 @@ def objects_icinga2():
         'retry_check_interval',
         'notification_interval',
     ]
-    attrs_removed = [ # from icinga2-migration php script
+    # from icinga2-migration php script
+    attrs_removed = [
         'name',
         'register',
         # timeperiods
@@ -524,35 +546,35 @@ def objects_icinga2():
         'parallelize_check',
         'notification_interval',
         'first_notification_delay',
-##        'notification_period',
+        #        'notification_period',
         'notification_options',
         # hostgroups
         # hosts
         'host_name',
         'initial_state',
         'obsess_over_host',
-#        'check_freshness',
-#        'freshness_threshold',
-#        'flap_detection_options',
-#        'failure_prediction_enabled',
-#        'retain_status_information',
+        #        'check_freshness',
+        #        'freshness_threshold',
+        #        'flap_detection_options',
+        #        'failure_prediction_enabled',
+        #        'retain_status_information',
         'retain_nonstatus_information',
-#        'stalking_options',
+        #        'stalking_options',
         'statusmap_image',
         '2d_coords',
-#        'parallelize_check',
-#        'notification_interval',
-#        'first_notification_delay',
-#        'notification_period',
-#        'notification_options',
-
-# TODO: the contacts are not already managed in services and hosts
-#http://docs.icinga.org/icinga2/latest/doc/module/icinga2/toc#!/icinga2/latest/doc/module/icinga2/chapter/migration#manual-config-migration-hints-contacts-users
-# TODO: generate a notification object when a contact is set
-#         'contacts',
-#         'contact_groups',
-#         'notification_options' # we have to split the options in state and type attribute
-
+        #        'parallelize_check',
+        #        'notification_interval',
+        #        'first_notification_delay',
+        #        'notification_period',
+        #        'notification_options',
+        # TODO: the contacts are not already managed in services and hosts
+        # http://docs.icinga.org/icinga2/latest/doc/module/icinga2/toc#!/icinga2/latest/doc/module/icinga2/chapter/migration#manual-config-migration-hints-contacts-users
+        # TODO: generate a notification object when a contact is set
+        #         'contacts',
+        #         'contact_groups',
+        #         'notification_options'
+        #               we have to split the options in
+        #               state and type attribute
     ]
     services = [
         'backup_burp_age',
@@ -614,39 +636,62 @@ def objects_icinga2():
         # global changes
         res['objects_definitions'][name] = {}
         res['objects_definitions'][name]['attrs'] = {}
-        res['objects_definitions'][name]['file'] = obj['file'].replace('.cfg', '.conf') # the extension of filenames is changed
+        # the extension of filenames is changed
+        res['objects_definitions'][
+            name]['file'] = obj['file'].replace('.cfg', '.conf')
 
         # translate the type of the object
         if obj['type'] in types_renamed:
-            if name in ['command_meta_notify']: # hack
-                res['objects_definitions'][name]['type'] = "NotificationCommand"
+            if name in ['command_meta_notify']:  # hack
+                res['objects_definitions'][
+                    name]['type'] = "NotificationCommand"
             else:
-                res['objects_definitions'][name]['type'] = types_renamed[obj['type']]
+                res['objects_definitions'][
+                    name]['type'] = types_renamed[obj['type']]
         else:
-            res['objects_definitions'][name]['type'] = obj['type']
+            res['objects_definitions'][
+                name]['type'] = obj['type']
 
         # determine if the object is a template or not
-        if 'attrs' in obj and 'register' in obj['attrs'] and 0 == obj['attrs']['register']:
-            res['objects_definitions'][name]['template']=True
+        if (
+            'attrs' in obj
+            and 'register' in obj['attrs']
+            and 0 == obj['attrs']['register']
+        ):
+            res['objects_definitions'][
+                name]['template'] = True
         else:
-            res['objects_definitions'][name]['template']=False
+            res['objects_definitions'][
+                name]['template'] = False
 
         # find the object name
-        if 'attrs' in obj and 'name' in obj['attrs']: # priority for the name attribute (change this generates an invalid configuration)
+        if (
+            'attrs' in obj
+            # priority for the name attribute
+            # (change this generates an invalid configuration)
+            and 'name' in obj['attrs']
+        ):
             res['objects_definitions'][name]['name'] = obj['attrs']['name']
-        elif obj['type'] in attrs_used_as_name and 'attrs' in obj and attrs_used_as_name[obj['type']] in obj['attrs']:
-            res['objects_definitions'][name]['name'] = obj['attrs'][attrs_used_as_name[obj['type']]]
+        elif (
+            obj['type'] in attrs_used_as_name
+            and 'attrs' in obj
+            and attrs_used_as_name[obj['type']] in obj['attrs']
+        ):
+            res['objects_definitions'][
+                name]['name'] = obj['attrs'][attrs_used_as_name[obj['type']]]
         else:
             res['objects_definitions'][name]['name'] = name
 
         # translate the attributes
-        res['objects_definitions'][name]['attrs'] = _translate_attrs(obj['type'], res['objects_definitions'][name]['type'], obj['attrs'], True)
+        res['objects_definitions'][name]['attrs'] = _translate_attrs(
+            obj['type'],
+            res['objects_definitions'][name]['type'], obj['attrs'], True)
 
     # purge_definitions
     res['purge_definitions'] = src['purge_definitions']
 
     # autoconfigured_hosts
-    #res['autoconfigured_hosts_definitions'] = src['autoconfigured_hosts_definitions']
+    # res['autoconfigured_hosts_definitions'] = src['autoconfigured_hosts_definitions']
     res['autoconfigured_hosts_definitions'] = {}
     for name, params in src['autoconfigured_hosts_definitions'].items():
         res['autoconfigured_hosts_definitions'][name] = {}
