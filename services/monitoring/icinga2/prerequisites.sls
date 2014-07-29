@@ -3,9 +3,32 @@
 include:
   - makina-states.services.monitoring.icinga2.hooks
 
+{% set pkgssettings = salt['mc_pkgs.settings']() %}
+{% if grains['os_family'] in ['Debian'] %}
+{% set dist = pkgssettings.udist %}
+{% endif %}
+{% if grains['os'] in ['Debian'] %}
+{% set dist = pkgssettings.ubuntu_lts %}
+{% endif %}
+
+icinga2-base:
+  cmd.run:
+    - name: wget http://packages.icinga.org/icinga.key -O - | apt-key add -
+    - user: root
+    - unmess: apt-key list|grep -q Icinga
+  pkgrepo.managed:
+    - humanname: icinga ppa
+    - name: deb  http://packages.icinga.org/{{grains['os'].lower()}}/ icinga-{{dist}} main
+    - dist: icinga-{{dist}}
+    - file: {{ salt['mc_locations.settings']().conf_dir }}/apt/sources.list.d/icinga.list
+    - watch:
+      - mc_proxy: icinga2-pre-install
+      - cmd: icinga2-base
+
 icinga2-pkgs:
   pkg.{{pkgssettings['installmode']}}:
     - watch:
+      - pkgrepo: icinga2-base
       - mc_proxy: icinga2-pre-install
     - watch_in:
       - mc_proxy: icinga2-post-install
@@ -13,46 +36,19 @@ icinga2-pkgs:
       {% for package in icinga2Settings.package %}
       - {{package}}
       {% endfor %}
-
-{% if icinga2Settings.modules.ido2db.enabled %}
-icinga2-ido2db-pkgs:
-  pkg.{{pkgssettings['installmode']}}:
-    - watch:
-      - mc_proxy: icinga2-pre-install
-      - pkg: icinga2-pkgs
-    - watch_in:
-      - mc_proxy: icinga2-post-install
-    - pkgs:
-      {% for package in icinga2Settings.modules.ido2db.package %}
+      {% if icinga2Settings.modules.ido2db.enabled %}
+      {%  for package in icinga2Settings.modules.ido2db.package %}
       - {{package}}
-      {% endfor %}
-{% endif %}
-
-{% if icinga2Settings.modules.cgi.enabled %}
-icinga2-cgi-pkgs:
-  pkg.{{pkgssettings['installmode']}}:
-    - watch:
-      - mc_proxy: icinga2-pre-install
-      - pkg: icinga2-pkgs
-    - watch_in:
-      - mc_proxy: icinga2-post-install
-    - pkgs:
-      {% for package in icinga2Settings.modules.cgi.package %}
+      {%  endfor %}
+      {% endif %}
+      {% if icinga2Settings.modules.cgi.enabled %}
+      {%  for package in icinga2Settings.modules.cgi.package %}
       - {{package}}
-      {% endfor %}
-{% endif %}
-
-{% if icinga2Settings.modules['nagios-plugins'].enabled %}
-icinga2-nagios-plugins-pkgs:
-  pkg.{{pkgssettings['installmode']}}:
-    - watch:
-      - mc_proxy: icinga2-pre-install
-      - pkg: icinga2-pkgs
-    - watch_in:
-      - mc_proxy: icinga2-post-install
-    - pkgs:
-      {% for package in icinga2Settings.modules['nagios-plugins'].package %}
+      {%  endfor %}
+      {% endif %}
+      {% if icinga2Settings.modules['nagios-plugins'].enabled %}
+      {%  for package in icinga2Settings.modules['nagios-plugins'].package %}
       - {{package}}
-      {% endfor %}
-{% endif %}
+      {%  endfor %}
+      {% endif %}
 

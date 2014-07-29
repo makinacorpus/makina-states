@@ -11,12 +11,14 @@ include:
   # if ido2db is enabled, install and configure the sgbd
 
   # install postgresql
-  {% if data.has_pgsql %}
+  - makina-states.services.monitoring.icinga2.hooks
+  {% if data.has_pgsql and data.create_pgsql %}
   - makina-states.services.db.postgresql
   {% else %}
   - makina-states.services.db.postgresql.hooks
   {% endif %}
 
+{% if data.create_pgsql %}
 # create database
 {{ pgsql.postgresql_db(db=data.modules.ido2db.database.name) }}
 
@@ -25,6 +27,7 @@ include:
                          password=data.modules.ido2db.database.password,
                          db=data.modules.ido2db.database.name) }}
 
+{% endif %}
 
 # import schema
 {% set tmpf = '/tmp/icinga2-ido.schema.sql' %}
@@ -78,7 +81,7 @@ icinga2-check-pgsql-schema:
                  {% else %}
                   res="$(echo "select row_to_json(row) from ($query) row;" | psql -t "postgresql://{{data.modules.ido2db.database.user}}:{{data.modules.ido2db.database.password}}@{{data.modules.ido2db.database.host}}:{{data.modules.ido2db.database.port}}/{{data.modules.ido2db.database.name}}" | jq .ok)"
                  {% endif %}
-                 if [ "true" != "$res" ]; then
+                 if [ "xtrue" != "x$res" ]; then
                   echo "Error with query \"$query;\"";
                   rm "{{tmpf}}";
                   exit 1;
