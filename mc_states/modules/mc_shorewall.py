@@ -115,6 +115,7 @@ def settings():
         default_netmask = data_net['default_netmask']
         gifaces = data_net['gifaces']
         default_if = data_net['default_if']
+        default_route = data_net['default_route']
         default_net = data_net['default_net']
         services_registry = __salt__['mc_services.registry']()
         controllers_registry = __salt__['mc_controllers.registry']()
@@ -138,7 +139,16 @@ def settings():
             shwIfformat = '#?{0}'.format(shwIfformat)
         permissive_mode = False
         if nodetypes_registry['is']['lxccontainer']:
-            permissive_mode = True
+            # be permissive on the firewall side only if we are
+            # routing via the host only network and going
+            # outside througth NAT
+            # IOW
+            # if we have multiple interfaces and the default route is not on
+            # eth0, we certainly have a directly internet addressable lxc
+            # BE NOT permissive
+            rif = default_route.get('iface', 'eth0')
+            if rif == 'eth0':
+                permissive_mode = True
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.firewall.shorewall', {
                 # mapping of list of mappings
@@ -238,10 +248,10 @@ def settings():
                 data['have_vpn'] = True  # must stay none if not found
 
         opts_45 = ',sourceroute=0'
-        bridged_opts = 'routeback,bridge,tcpflags,nosmurfs,logmartians'
+        bridged_opts = 'routeback,bridge,tcpflags,nosmurfs'
         bridged_net_opts = (
-            'bridge,tcpflags,dhcp,nosmurfs,routefilter,logmartians')
-        phy_opts = 'tcpflags,dhcp,nosmurfs,routefilter,logmartians'
+            'bridge,tcpflags,dhcp,nosmurfs,routefilter')
+        phy_opts = 'tcpflags,dhcp,nosmurfs,routefilter'
         if sw_ver >= '4.4':
             phy_opts += opts_45
             bridged_net_opts += opts_45

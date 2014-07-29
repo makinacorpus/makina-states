@@ -84,6 +84,7 @@ def default_net():
         default_net = None
         default_netmask = 32
     return {
+        'default_route': default_route,
         'default_net': default_net,
         'default_netmask': default_netmask,
         'gifaces': gifaces,

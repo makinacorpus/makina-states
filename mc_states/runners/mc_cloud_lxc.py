@@ -281,7 +281,12 @@ def _vm_configure(what, target, compute_node, vm, ret, output):
     return ret
 
 
-def vm_spawn(vm, compute_node=None, vt='lxc', ret=None, output=True):
+def vm_spawn(vm,
+             compute_node=None,
+             vt='lxc',
+             ret=None,
+             output=True,
+             force=False):
     '''spawn the vm
 
     ::
@@ -316,6 +321,7 @@ def vm_spawn(vm, compute_node=None, vt='lxc', ret=None, output=True):
         }
     }
     for var in ["from_container", "snapshot", "image",
+                "additional_ips",
                 "gateway", "bridge", "mac", "lxc_conf_unset",
                 "ssh_gateway", "ssh_gateway_user", "ssh_gateway_port",
                 "ssh_gateway_key", "ip", "netmask",
@@ -345,7 +351,7 @@ def vm_spawn(vm, compute_node=None, vt='lxc', ret=None, output=True):
             ping = cli('test.ping', salt_timeout=10, salt_target=vm)
     except Exception:
         ping = False
-    if lret['retcode'] and not ping:
+    if force or (lret['retcode'] and not ping):
         try:
             # XXX: Code to use with salt-cloud
             # cret = __salt__['cloud.profile'](
