@@ -270,15 +270,16 @@ def objects_icinga2():
         for key, value in obj_attrs.items():
 
             # specific translation
-            if 'command_line' == key: # translate the command_line attributes
+            if 'command_line' == key:  # translate the command_line attributes
                 command = _command_line_arguments(value)
                 res['command'] = command['command']
                 res['arguments'] = command['arguments']
-            elif 'check_command' == key:  # translate the check_command attributes
+            elif 'check_command' == key:  # translate the check_command attrs
                 command = _check_command_arguments(value)
                 for key, value in command.items():
                     res[key] = value
-            # TODO: perhaps a separated object will be better but it may be problematic with autoconfigured hosts
+            # TODO: perhaps a separated object will be better but it may
+            # be problematic with autoconfigured hosts
             elif key in ['contacts', 'contact_groups', 'notification_options',
                          'notification_period', 'notification_interval']:  # for notifications
                 if 'notification' not in res:
