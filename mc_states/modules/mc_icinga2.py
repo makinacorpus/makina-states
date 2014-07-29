@@ -769,7 +769,8 @@ def settings():
         # do not store in cache
         # registry the whole conf, memory would explode
         # keep only the list of keys for each subdictionary
-        # get_settings_for_object is the function to retrieve a non cached subdictionary
+        # get_settings_for_object is the function to retrieve
+        # a non cached subdictionary
         dict_objects = objects()
         dict_objects['objects_definitions'] = dict_objects[
             'objects_definitions'].keys()
@@ -816,10 +817,12 @@ def settings():
                 'pidfile': "/var/run/icinga2/icinga2.pid",
                 'configuration_directory': locs['conf_dir']+"/icinga2",
                 'niceness': 5,
-                # because the subdictionary is very big, we take it from another function but we can copy/paste it here
+                # because the subdictionary is very big, we take it
+                # from another function but we can copy/paste it here
                 'objects': dict_objects,
                 'icinga_conf': {
-                    'include': ['"constants.conf"', '"zones.conf"', '<itl>', '<plugins>', '"features-enabled/*.conf"'],
+                    'include': ['"constants.conf"', '"zones.conf"', '<itl>',
+                                '<plugins>', '"features-enabled/*.conf"'],
                     'include_recursive': ['"conf.d"'],
                 },
                 'constants_conf': {
@@ -844,29 +847,41 @@ def settings():
                         'user': "www-data",
                         'group': "www-data",
                         'root_account': {
-                          'login': "icingaadmin",
-                          'password': password_cgi,
+                            'login': "icingaadmin",
+                            'password': password_cgi,
                         },
-                        'absolute_styles_dir': "/usr/share/icinga/htdocs/stylesheets",
+                        'absolute_styles_dir': (
+                            "/usr/share/icinga/htdocs/stylesheets"
+                        ),
                         'nginx': {
                             'domain': "icinga2-cgi.localhost",
                             'doc_root': "/usr/share/icinga2/classicui/",
-                            'vh_content_source': "salt://makina-states/files/etc/nginx/sites-available/icinga2-cgi.content.conf",
-                            'vh_top_source': "salt://makina-states/files/etc/nginx/sites-available/icinga2-cgi.top.conf",
+                            'vh_content_source': ("salt://makina-states/files/"
+                                                  "etc/nginx/sites-available/"
+                                                  "icinga2-cgi.content.conf"),
+                            'vh_top_source': ("salt://makina-states/files/etc"
+                                              "/nginx/sites-available/"
+                                              "icinga2-cgi.top.conf"),
                             'icinga_cgi': {
                                 'web_directory': "/icinga2-classicui",
                                 'realm': "Authentication",
-                                'htpasswd_file': "/etc/icinga2/classicui/htpasswd.users",
-                                'htdocs_dir': "/usr/share/icinga2/classicui/",
-                                'images_dir': "/usr/share/icinga2/classicui/images/$1",
-                                'styles_dir': "/usr/share/icinga2/classicui/stylesheets/$1",
+                                'htpasswd_file': ("/etc/icinga2/classicui"
+                                                  "/htpasswd.users"),
+                                'htdocs_dir': ("/usr/share/icinga2/"
+                                               "classicui/"),
+                                'images_dir': ("/usr/share/icinga2/"
+                                               "classicui/images/$1"),
+                                'styles_dir': ("/usr/share/icinga2/"
+                                               "classicui/stylesheets/$1"),
                                 'cgi_dir': "/usr/lib/cgi-bin/",
                                 'uwsgi_pass': "127.0.0.1:3031",
                             },
                         },
                         'uwsgi': {
                             'config_name': "icinga2.ini",
-                            'config_file': "salt://makina-states/files/etc/uwsgi/apps-available/icinga2-cgi.ini",
+                            'config_file': (
+                                "salt://makina-states/files/etc/uwsgi/"
+                                "apps-available/icinga2-cgi.ini"),
                             'enabled': True,
                             'master': "true",
                             'plugins': "cgi",
@@ -876,14 +891,17 @@ def settings():
                             'socket': "127.0.0.1:3031",
                             'uid': "www-data",
                             'gid': "www-data",
-                            'cgi': "/cgi-bin/icinga2-classicui/=/usr/lib/cgi-bin/icinga2-classicui/",
+                            'cgi': ("/cgi-bin/icinga2-classicui/"
+                                    "=/usr/lib/cgi-bin/icinga2-classicui/"),
                             'cgi_allowed_ext': ".cgi",
                         },
                         'cgi_cfg': {
                             'standalone_installation': "1",
-                            'physical_html_path': "/usr/share/icinga2/classicui/",
+                            'physical_html_path': ("/usr/share/icinga2"
+                                                   "/classicui/"),
                             'url_html_path': "/icinga2-classicui",
-                            'url_stylesheets_path': "/icinga2-classicui/stylesheets",
+                            'url_stylesheets_path': ("/icinga2-classicui"
+                                                     "/stylesheets"),
                             'http_charset': "utf-8",
                             'refresh_rate': 30,
                             'refresh_type': 1,
@@ -899,12 +917,18 @@ def settings():
                             'use_ssl_authentication': 0,
                             'lowercase_user_name': 0,
                             'authorized_for_system_information': "icingaadmin",
-                            'authorized_for_configuration_information': "icingaadmin",
-                            'authorized_for_full_command_resolution': "icingaadmin",
+                            'authorized_for_configuration_information': (
+                                "icingaadmin"
+                            ),
+                            'authorized_for_full_command_resolution': (
+                                "icingaadmin"
+                            ),
                             'authorized_for_system_commands': "icingaadmin",
                             'authorized_for_all_services': "icingaadmin",
                             'authorized_for_all_hosts': "icingaadmin",
-                            'authorized_for_all_service_commands': "icingaadmin",
+                            'authorized_for_all_service_commands': (
+                                "icingaadmin"
+                            ),
                             'authorized_for_all_host_commands': "icingaadmin",
                             'show_all_services_host_is_authorized_for': 1,
                             'show_partial_hostgroups': 0,
@@ -916,7 +940,9 @@ def settings():
                             'add_notif_num_hard': 28,
                             'add_notif_num_soft': 0,
                             'use_logging': 0,
-                            'cgi_log_file': "/var/log/icinga/gui/icinga-cgi.log",
+                            'cgi_log_file': (
+                                "/var/log/icinga/gui/icinga-cgi.log"
+                            ),
                             'cgi_log_rotation_method': "d",
                             'cgi_log_archive_path': "/var/log/icinga/gui",
                             'enforce_comments_on_actions': 0,
@@ -926,14 +952,17 @@ def settings():
                             'default_downtime_duration': 7200,
                             'set_expire_ack_by_default': 0,
                             'default_expiring_acknowledgement_duration': 86400,
-                            'default_expiring_disabled_notifications_duration': 86400,
+                            ('default_expiring_disabled_'
+                             'notifications_duration'): (
+                                86400),
                             'tac_show_only_hard_state': 0,
                             'show_tac_header_pending': 1,
                             'exclude_customvar_name': "PASSWORD,COMMUNITY",
                             'exclude_customvar_value': "secret",
                             'extinfo_show_child_hosts': 0,
                             'tab_friendly_titles': 1,
-                            'object_cache_file': "/var/cache/icinga2/objects.cache",
+                            'object_cache_file': (
+                                "/var/cache/icinga2/objects.cache"),
                             'status_file': "/var/cache/icinga2/status.dat",
                             'resource_file': "/etc/icinga/resource.cfg",
                             'command_file': "/var/run/icinga2/cmd/icinga2.cmd",
@@ -942,12 +971,15 @@ def settings():
                             'status_update_interval': 10,
                             'log_file': "/var/log/icinga2/compat/icinga.log",
                             'log_rotation_method': "h",
-                            'log_archive_path': "/var/log/icinga2/compat/archives",
+                            'log_archive_path': (
+                                "/var/log/icinga2/compat/archives"
+                            ),
                             'date_format': "us",
                         },
                     },
                     'ido2db': {
-                        'package': ['icinga2-ido-'+module_ido2db_database['type']],
+                        'package': [
+                            'icinga2-ido-'+module_ido2db_database['type']],
                         'enabled': True,
                         'user': "nagios",
                         'group': "nagios",
@@ -962,18 +994,19 @@ def settings():
 
 
             })
-
         __salt__['mc_macros.update_local_registry'](
             'icinga2', icinga2_reg,
             registry_format='pack')
         return data
     return _settings()
 
+
 def replace_chars(s):
     res = s
     for char in list('/.:_'):
         res = res.replace(char, '-')
     return res
+
 
 def add_configuration_object(file=None,
                              type=None,
@@ -1003,6 +1036,7 @@ def add_configuration_object(file=None,
 # global variable initialisation
 add_configuration_object.objects = {}
 
+
 def remove_configuration_object(file=None, get=False, **kwargs):
     '''Add the file in the file's list to be removed'''
     if get:
@@ -1017,8 +1051,10 @@ def remove_configuration_object(file=None, get=False, **kwargs):
         filename = filename.replace('"', '\"')
         remove_configuration_object.files += " \""+filename+"\""
 
+
 # global variable initialisation
 remove_configuration_object.files=""
+
 
 def add_auto_configuration_host_settings(hostname,
                                          hostgroup=False,
@@ -1095,8 +1131,8 @@ def add_auto_configuration_host_settings(hostname,
                                          web=False,
                                          services_attrs={},
                                          **kwargs):
-#    icingaSettings = copy.deepcopy(__salt__['mc_icinga2.settings']())
-#   save the ram (get only useful values)
+    #    icingaSettings = copy.deepcopy(__salt__['mc_icinga2.settings']())
+    #   save the ram (get only useful values)
     icingaSettings_complete = __salt__['mc_icinga2.settings']()
     icingaSettings = {}
     kwargs.setdefault(
