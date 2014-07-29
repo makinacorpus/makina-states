@@ -44,20 +44,25 @@ def objects():
     '''
     icinga objects settings
 
-    this dictionary is the subdictionary of icinga.settings.objects but because of it is too big,
-    we can't put it in the cache
+    this dictionary is the subdictionary of icinga.settings.objects
+    but because of it is too big, we can't put it in the cache
 
     dictionary to configure objects
         directory
-            directory in which objects will be stored. All the files in this directory are removed when salt is executed
+            directory in which objects will be stored. 
+            All the files in this directory are removed
+            when salt is executed
         objects_definitions
-            dictionary to store objects configuration like commands, contacts, timeperiods, ...
+            dictionary to store objects configuration like commands, 
+            contacts, timeperiods, ...
             each subdictionary is given to configuration_add_object macro
             as \*\*kwargs parameter
         purge_definitions
-            list of files which will be deleted. It is used to delete a host or specific service
-            the file paths are given relative to directory specified above (in the "directory" key)
-            each element in the list is given to configuration_remove_object macro as \*\*kwargs parameter
+            list of files which will be deleted. It is used to delete a host
+            or specific service the file paths are given relative to directory
+            specified above (in the "directory" key) each element in the
+            list is given to configuration_remove_object macro
+            as \*\*kwargs parameter
         autoconfigured_hosts_definitions
             dictionary to store hosts auto configurations ;
             each subdictionary is given to configuration_add_auto_host macro as \*\*kwargs
@@ -2645,7 +2650,14 @@ def replace_chars(s):
         res=res.replace(char, '-')
     return res
 
-def add_configuration_object(file=None, type=None, attrs=None, definition=None, fromsettings=None, get=False, get_objects_file=None, **kwargs):
+def add_configuration_object(file=None,
+                             type=None,
+                             attrs=None,
+                             definition=None,
+                             fromsettings=None,
+                             get=False,
+                             get_objects_file=None,
+                             **kwargs):
     print('call add_configuration_object')
     '''Add the object file in the file's list to be added'''
     if get:
@@ -2655,11 +2667,13 @@ def add_configuration_object(file=None, type=None, attrs=None, definition=None, 
             return add_configuration_object.objects
     elif type and file and attrs:
         if file not in add_configuration_object.objects:
-            add_configuration_object.objects[file]=[]
-        add_configuration_object.objects[file].append({'type': type, 'attrs': attrs, 'definition': definition})
+            add_configuration_object.objects[file] = []
+        add_configuration_object.objects[file].append({'type': type,
+                                                       'attrs': attrs,
+                                                       'definition': definition})
     elif fromsettings:
         if file not in add_configuration_object.objects:
-            add_configuration_object.objects[file]=[]
+            add_configuration_object.objects[file] = []
         add_configuration_object.objects[file].append({'fromsettings': fromsettings})
     print('end call add_configuration_object')
 
@@ -2674,9 +2688,9 @@ def remove_configuration_object(file=None, get=False, **kwargs):
     elif file:
         icingaSettings_complete = __salt__['mc_icinga.settings']()
         # append " \"file\"" to the global variable
-        filename='/'.join([icingaSettings_complete['objects']['directory'], file])
+        filename = '/'.join([icingaSettings_complete['objects']['directory'], file])
         # it doesn't avoid injection, just allow the '"' char in filename
-        filename=filename.replace('"', '\"')
+        filename = filename.replace('"', '\"')
         remove_configuration_object.files += " \""+filename+"\""
 
 # global variable initialisation

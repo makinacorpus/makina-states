@@ -177,7 +177,7 @@ def objects_icinga2():
                 res['vars.ARG'+str(i+1)] = val
         return res
 
-    def _command_line_arguments(command_line):
+    def _command_line_arguments(command_name, command_line):
         '''generate arguments dictionary from a command_line'''
         res = {}
         command_splitted = []
@@ -205,16 +205,16 @@ def objects_icinga2():
             if not spaced_arg:
                 tmpstr = " ".join(tmp)
                 if tmpstr:
-                    command_splitted.append(tmpstr) # merge the argument on quotes (bad)
+                    # merge the argument on quotes (bad)
+                    command_splitted.append(tmpstr)
                 tmp = []
-
 
         res['command'] = command_splitted[0]
         n_args = len(command_splitted)-1
         i_args = 1
 
         # replace $ARGx$ with the names found in check_command_args
-        if res['command'] in check_command_args:
+        if command_name in check_command_args:
             argx = 1
             for param in check_command_args[command_name]:
                 i_args = 1
@@ -223,7 +223,7 @@ def objects_icinga2():
                         i_args] = command_splitted[
                             i_args
                         ].replace(
-                                '$ARG' + str(argx) + '$',
+                            '$ARG' + str(argx) + '$',
                             '$' + str(param)+'$')
                     i_args += 1
                 argx += 1
@@ -238,12 +238,17 @@ def objects_icinga2():
         res['arguments'] = {}
         i_args = 1
         while i_args <= n_args:
-            if not command_splitted[i_args]: # to remove blanks
+            if not command_splitted[i_args]:  # to remove blanks
                 i_args += 1
             else:
                 if i_args < n_args:
-                    if (not command_splitted[i_args+1].startswith('-')) and (not command_splitted[i_args].startswith('$')): # bad method to detect the couple of arguments "-a 1", the "1" doesn't begin with '-'
-                        res['arguments'][command_splitted[i_args]] = command_splitted[i_args+1]
+                    if (
+                        (not command_splitted[i_args+1].startswith('-'))
+                        and (not command_splitted[i_args].startswith('$'))
+                    ):  # bad method to detect the couple of arguments
+                        # "-a 1", the "1" doesn't begin with '-'
+                        res['arguments'][
+                            command_splitted[i_args]] = command_splitted[i_args+1]
                         i_args += 2
                     else:
                         res['arguments'][command_splitted[i_args]] = {}
@@ -253,26 +258,31 @@ def objects_icinga2():
                     i_args += 1
         return res
 
-    def _translate_attrs(obj_type, res_type, obj_attrs, force_remove_attrs_used_as_name_not_removed = False):
-        '''function to translate attrs subdictionary
-           it is used to translate objects_definitions and autoconfigured_hosts_definitions
+    def _translate_attrs(obj_name,
+                         obj_type,
+                         res_type,
+                         obj_attrs,
+                         force_remove_attrs_used_as_name_not_removed = False):
         '''
-        res={}
-        for key,value in obj_attrs.items():
+        function to translate attrs subdictionary
+        it is used to translate objects_definitions and autoconfigured_hosts_definitions
+        '''
+        res = {}
+        for key, value in obj_attrs.items():
 
             # specific translation
-            if 'command_line' == key: # translate the command_line attributes
-                command = _command_line_arguments(value)
+            if 'command_line' == key:  # translate the command_line attributes
+                command = _command_line_arguments(obj_name, value)
                 res['command'] = command['command']
                 res['arguments'] = command['arguments']
-            elif 'check_command' == key: # translate the check_command attributes
+            elif 'check_command' == key:  # translate the check_command attrs
                 command = _check_command_arguments(value)
                 for key, value in command.items():
                     res[key] = value
-            # TODO: perhaps a separated object will be better but it may be problematic with autoconfigured hosts
-            elif key in ['service_notification_commands', 'host_notification_commands'] and 'contact' == obj_type:
-                pass
-            elif key in ['contacts', 'contact_groups', 'notification_options', 'notification_period', 'notification_interval']: # for notifications
+            # TODO: perhaps a separated object will be better but it may
+            # be problematic with autoconfigured hosts
+            elif key in ['contacts', 'contact_groups', 'notification_options',
+                         'notification_period', 'notification_interval']:  # for notifications
                 if 'notification' not in res:
                     res['notification'] = {}
 
@@ -291,7 +301,7 @@ def objects_icinga2():
 
                 if 'notification_options' == key:
                     value_splitted = value.split(',')
-                    value_splitted = map((lambda v: v.strip()), value_splitted) # strip all values (because we can have "a,       b    ,   c". we want ["a","b","c"])
+                    value_splitted = map((lambda v: v.strip()), value_splitted)  # strip all values (because we can have "a,       b    ,   c". we want ["a","b","c"])
                     res['notification']['states'] = []
                     res['notification']['types'] = []
                     # from http://docs.icinga.org/icinga2/latest/doc/module/icinga2/toc#!/icinga2/latest/doc/module/icinga2/chapter/migration#manual-config-migration-hints-contacts-users
@@ -473,8 +483,6 @@ def objects_icinga2():
         'notification_period': "period",
         'contacts': "users",
         'contact_groups': "user_groups",
-#        'service_notification_commands': "command",
-#        'host_notification_commands': "command",
     }
     attrs_force_list = [
         'use',
@@ -504,8 +512,8 @@ def objects_icinga2():
         'host_notification_period',
         'host_notification_options',
         'service_notification_options',
-#        'service_notification_commands',
-#        'host_notification_commands',
+        'service_notification_commands',
+        'host_notification_commands',
         'host_notifications_enabled',
         'service_notifications_enabled',
         'address1',
@@ -635,7 +643,7 @@ def objects_icinga2():
             res['objects_definitions'][name]['name'] = name
 
         # translate the attributes
-        res['objects_definitions'][name]['attrs'] = _translate_attrs(obj['type'], res['objects_definitions'][name]['type'], obj['attrs'], True)
+        res['objects_definitions'][name]['attrs'] = _translate_attrs(res['objects_definitions'][name]['name'], obj['type'], res['objects_definitions'][name]['type'], obj['attrs'], True)
 
     # purge_definitions
     res['purge_definitions'] = src['purge_definitions']
@@ -649,9 +657,9 @@ def objects_icinga2():
         # translate the host attrs
         if 'attrs' in params:
             if 'hostgroup' in params and params['hostgroup']:
-                res['autoconfigured_hosts_definitions'][name]['attrs'] = _translate_attrs('hostgroup', types_renamed['hostgroup'], params['attrs'])
+                res['autoconfigured_hosts_definitions'][name]['attrs'] = _translate_attrs(name, 'hostgroup', types_renamed['hostgroup'], params['attrs'])
             else:
-                res['autoconfigured_hosts_definitions'][name]['attrs'] = _translate_attrs('host', types_renamed['host'], params['attrs'])
+                res['autoconfigured_hosts_definitions'][name]['attrs'] = _translate_attrs(name, 'host', types_renamed['host'], params['attrs'])
         else:
             res['autoconfigured_hosts_definitions'][name]['attrs'] = {}
 
@@ -665,13 +673,13 @@ def objects_icinga2():
             res['autoconfigured_hosts_definitions'][name]['services_attrs'] = {}
             for service in services:
                 if service in params['services_attrs']:
-                    res['autoconfigured_hosts_definitions'][name]['services_attrs'][service] = _translate_attrs('service', types_renamed['service'], params['services_attrs'][service], False) # we have to preserve service_description attribute because in the template it is the value used as name (because there is not an additional subdictionary to store the name like in objects_definitions)
+                    res['autoconfigured_hosts_definitions'][name]['services_attrs'][service] = _translate_attrs(service, 'service', types_renamed['service'], params['services_attrs'][service], False) # we have to preserve service_description attribute because in the template it is the value used as name (because there is not an additional subdictionary to store the name like in objects_definitions)
 
             for service in services_loop:
                 if service in params['services_attrs']:
                     res['autoconfigured_hosts_definitions'][name]['services_attrs'][service] = {}
                     for subservice in params['services_attrs'][service]:
-                        res['autoconfigured_hosts_definitions'][name]['services_attrs'][service][subservice] = _translate_attrs('service', types_renamed['service'], params['services_attrs'][service][subservice])
+                        res['autoconfigured_hosts_definitions'][name]['services_attrs'][service][subservice] = _translate_attrs(service, 'service', types_renamed['service'], params['services_attrs'][service][subservice])
     return res
 
 def objects():
@@ -702,8 +710,8 @@ def format(dictionary, quote_keys=False, quote_values=True):
                 res[res_key] = format(value, False, False)
             else:
                 res[res_key] = format(value, quote_keys, quote_value)
-        elif key in ['vars.strings']: # TODO: vars.string not managed 
-            res[res_key] = '"'+str(value).replace('"', '\\"')+'"'
+#        elif key in ['vars.strings']: # TODO: vars.string not managed 
+#            res[res_key] = '"'+str(value).replace('"', '\\"')+'"'
         elif isinstance(value, list):
             if key in ['import', 'parents']: # theses lists are managed in the template, we only quote each string in the list
                 res[res_key] = map((lambda v: '"'+str(v).replace('"','\\"')+'"'), value)
@@ -726,6 +734,8 @@ def format(dictionary, quote_keys=False, quote_values=True):
             res[res_key] = value
         elif key.endswith('_interval'): # a bad method to find a time
             res[res_key] = value
+        elif isinstance(value, bool) and not quote_value:
+            res[res_key] = value
         elif isinstance(value, int):
             res[res_key] = str(value)
         elif isinstance(value, unicode):
@@ -745,11 +755,14 @@ def get_settings_for_object(target=None, obj=None, attr=None):
     '''
     expand the subdictionaries which are not cached in mc_icinga2.settings.objects
     '''
+    pref = 'makina-states.services.monitoring.icinga2.objects.'
     if 'purge_definitions' == target:
-        res =  __salt__['mc_utils.defaults']('makina-states.services.monitoring.icinga2.objects.'+target, { target: objects()[target] })[target]
+        res =  __salt__['mc_utils.defaults'](pref + target,
+                                             {target: objects()[target] })[target]
     else:
-        res = __salt__['mc_utils.defaults']('makina-states.services.monitoring.icinga2.objects.'+target+'.'+obj, objects()[target][obj])
-        if attr: # and attr in res:
+        res = __salt__['mc_utils.defaults'](pref + target+'.'+obj,
+                                            objects()[target][obj])
+        if attr:
             res = res[attr]
     return res
 
@@ -771,36 +784,37 @@ def settings():
         # keep only the list of keys for each subdictionary
         # get_settings_for_object is the function to retrieve a non cached subdictionary
         dict_objects = objects()
-        dict_objects['objects_definitions'] = dict_objects['objects_definitions'].keys()
+        dict_objects['objects_definitions'] = dict_objects[
+            'objects_definitions'].keys()
         dict_objects['purge_definitions'] = []
-        dict_objects['autoconfigured_hosts_definitions'] = dict_objects['autoconfigured_hosts_definitions'].keys()
+        dict_objects['autoconfigured_hosts_definitions'] = dict_objects[
+            'autoconfigured_hosts_definitions'].keys()
 
         # generate default password
         icinga2_reg = __salt__[
             'mc_macros.get_local_registry'](
                 'icinga2', registry_format='pack')
 
-        password_ido = icinga2_reg.setdefault('ido.db_password'
-                                        , __salt__['mc_utils.generate_password']())
-        password_cgi = icinga2_reg.setdefault('cgi.root_account_password'
-                                        , __salt__['mc_utils.generate_password']())
+        password_ido = icinga2_reg.setdefault('ido.db_password',
+                                              __salt__['mc_utils.generate_password']())
+        password_cgi = icinga2_reg.setdefault('cgi.root_account_password',
+                                              __salt__['mc_utils.generate_password']())
 
         module_ido2db_database = {
             'type': "pgsql",
             'host': "localhost",
             'port': 5432,
-#            'socket': "",
+            # 'socket': "",
             'user': "icinga2_ido",
             'password': password_ido,
             'name': "icinga2_ido",
         }
 
-        has_sgbd = ((('host' in module_ido2db_database)
-                     and (module_ido2db_database['host']
-                          in  [
-                              'localhost', '127.0.0.1', grains['host']
-                          ]))
-                    or ('socket' in module_ido2db_database))
+        has_sgbd = ((
+            ('host' in module_ido2db_database)
+            and (module_ido2db_database['host']
+                 in ['localhost', '127.0.0.1', grains['host']])
+        ) or ('socket' in module_ido2db_database))
 
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.monitoring.icinga2', {
@@ -1253,12 +1267,14 @@ def add_auto_configuration_host_settings(hostname,
            'vars.ssh_addr': "backup.makina-corpus.net",
            'vars.ssh_port': "22",
            'vars.ssh_timeout': 10,
-           'vars.command': "/root/admin_scripts/nagios/check_rdiff -r /data/backups/phpnet6 -w 24 -c 48 -l 2048 -p 24"
+           'vars.command': ("/root/admin_scripts/nagios/"
+                            "check_rdiff -r /data/backups/phpnet6"
+                            " -w 24 -c 48 -l 2048 -p 24")
        },
        'beam_process': {
            'service_description': "Check beam proces",
            'import': ["ST_ALERT"],
-#           'notification_options': "w,c,r",
+           # 'notification_options': "w,c,r",
            'enable_notifications': 1,
            'check_command': "C_SNMP_PROCESS",
 
@@ -1269,7 +1285,7 @@ def add_auto_configuration_host_settings(hostname,
        'celeryd_process': {
            'service_description': "Check celeryd process",
            'import': ["ST_ALERT"],
-#           'notification_options': "w,c,r",
+           # 'notification_options': "w,c,r",
            'enable_notifications': 1,
            'check_command': "C_SNMP_PROCESS",
 
@@ -1319,8 +1335,9 @@ def add_auto_configuration_host_settings(hostname,
                'service_description': "DNS_REVERSE_ASSOCIATION_",
                'import': ["ST_DNS_ASSOCIATION"],
                'check_command': "C_DNS_EXTERNE_REVERSE_ASSOCIATION",
-#               'vars.inaddr': "" # generated below from dns_association dictionary
-#               'vars.hostname': ""
+               # 'vars.inaddr': "" # generated below from
+                                   # dns_association dictionary
+               #  'vars.hostname': ""
                'vars.other_args': "",
            },
        },
@@ -1341,12 +1358,13 @@ def add_auto_configuration_host_settings(hostname,
            'icon_image': "services/heartbeat.png",
            'check_command': "CSSH_DRBD",
 
-           'vars.command': "'/root/admin_scripts/nagios/check_drbd -d  0,1'",
+           'vars.command': ("'/root/admin_scripts/nagios/"
+                            "check_drbd -d  0,1'"),
        },
        'epmd_process': {
            'service_description': "Check epmd process",
            'import': ["ST_ALERT"],
-#           'notification_options': "w,c,r",
+           # 'notification_options': "w,c,r",
            'enable_notifications': 1,
            'check_command': "C_SNMP_PROCESS",
 
@@ -1359,7 +1377,8 @@ def add_auto_configuration_host_settings(hostname,
            'import': ["ST_ALERT"],
            'check_command': "CSSH_CUSTOM",
 
-           'vars.command': "/var/makina/alma-job/job/supervision/check_erp_files.sh",
+           'vars.command': ("/var/makina/alma-job/job"
+                            "/supervision/check_erp_files.sh"),
        },
        'fail2ban': {
            'service_description': "S_FAIL2BAN",
@@ -1374,7 +1393,7 @@ def add_auto_configuration_host_settings(hostname,
        'gunicorn_process': {
            'service_description': "Check gunicorn process",
            'import': ["ST_ALERT"],
-#           'notification_options': "w,c,r",
+           # 'notification_options': "w,c,r",
            'enable_notifications': 1,
            'check_command': "C_SNMP_PROCESS",
 
@@ -1386,8 +1405,9 @@ def add_auto_configuration_host_settings(hostname,
            'service_description': "haproxy_stats",
            'import': ["ST_ALERT"],
            'check_command': "CSSH_HAPROXY",
-
-           'vars.command': "/root/admin_scripts/nagios/check_haproxy_stats.pl -p web -w 80 -c 90",
+           'vars.command': ("/root/admin_scripts/nagios/"
+                            "check_haproxy_stats.pl -p "
+                            "web -w 80 -c 90"),
        },
        'ircbot_process': {
            'service_description': "S_IRCBOT_PROCESS",
@@ -1473,7 +1493,8 @@ def add_auto_configuration_host_settings(hostname,
            'import': ["ST_ALERT"],
            'check_command': "CSSH_MEGARAID_SAS",
 
-           'vars.command': "'/root/admin_scripts/nagios/check_megaraid_sas'",
+           'vars.command': ("'/root/admin_scripts/"
+                            "nagios/check_megaraid_sas'"),
        },
        'memory': {
            'service_description': "MEMORY",
@@ -1551,7 +1572,8 @@ def add_auto_configuration_host_settings(hostname,
            'import': ["ST_ALERT"],
            'check_command': "CSSH_CUSTOM",
 
-           'vars.command': "/var/makina/alma-job/job/supervision/check_prebill_sending.sh",
+           'vars.command': ("/var/makina/alma-job/job/"
+                            "supervision/check_prebill_sending.sh"),
        },
        'raid': {
            'service_description': "CHECK_MD_RAID",
@@ -1565,7 +1587,8 @@ def add_auto_configuration_host_settings(hostname,
            'import': ["ST_ROOT"],
            'check_command': "CSSH_SAS2IRCU",
 
-           'vars.command': "/root/admin_scripts/check_nagios/check_sas2ircu/check_sas2ircu",
+           'vars.command': ("/root/admin_scripts/check_nagios"
+                            "/check_sas2ircu/check_sas2ircu"),
        },
        'snmpd_memory_control': {
            'service_description': "S_SNMPD_MEMORY_CONTROL",
@@ -1607,19 +1630,21 @@ def add_auto_configuration_host_settings(hostname,
            'import': ["ST_ALERT"],
            'check_command': "CSSH_SUPERVISOR",
 
-           'vars.command': "/home/zope/adria/rcse/production-2014-01-23-14-27-01/bin/supervisorctl",
+           'vars.command': ("/home/zope/adria/rcse/"
+                            "production-2014-01-23-14-27-01/bin/supervisorctl"),
        },
        'swap': {
            'service_description': "CHECK_SWAP",
            'import': ["ST_ALERT"],
            'check_command': "CSSH_RAID_SOFT",
 
-           'vars.command': "'/root/admin_scripts/nagios/check_swap -w 80%% -c 50%%'",
+           'vars.command': ("'/root/admin_scripts/"
+                            "nagios/check_swap -w 80%% -c 50%%'"),
        },
        'tiles_generator_access': {
            'service_description': "Check tiles generator access",
            'import': ["ST_ALERT"],
-#           'notification_options': "w,c,r",
+           # 'notification_options': "w,c,r",
            'enable_notifications': 1,
            'check_command': "check_http_vhost_uri",
 
@@ -1672,12 +1697,13 @@ def add_auto_configuration_host_settings(hostname,
        },
     }
 
-    # add the services_attrs 'default' in all services in services_default_attrs
-    # in order to add directives for all services (like contact_groups)
+    # add the services_attrs 'default' in all services
+    # in services_default_attrs # in order to add
+    # directives for all services (like contact_groups)
     if 'default' in services_attrs:
         for name, service in services_default_attrs.items():
             if name not in services_attrs:
-                services_attrs[name]={}
+                services_attrs[name] = {}
             if name not in ['dns_association',
                             DRA,
                             'disk_space',
@@ -1695,7 +1721,8 @@ def add_auto_configuration_host_settings(hostname,
         services_attrs.pop('default', None)
 
     # override the commands parameters values
-    # we complete the services_attrs dictionary with values from services_default_attrs
+    # we complete the services_attrs dictionary
+    # with values from services_default_attrs
 
     # override dns_association subdictionary
     if 'dns_association' not in services_attrs:
