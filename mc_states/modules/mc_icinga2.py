@@ -270,55 +270,71 @@ def objects_icinga2():
                 for key, value in command.items():
                     res[key] = value
             # TODO: perhaps a separated object will be better but it may be problematic with autoconfigured hosts
+            elif key in ['service_notification_commands', 'host_notification_commands'] and 'contact' == obj_type:
+                pass
             elif key in ['contacts', 'contact_groups', 'notification_options', 'notification_period', 'notification_interval']: # for notifications
                 if 'notification' not in res:
                     res['notification'] = {}
+
+                if key in ['contacts', 'contact_groups']:
+                    # try to get the notification command (now the command is in the notification object and not in the user object)
+                    for name,obj  in src['objects_definitions'].items(): # src is a more global variable ; warning with algorithm complexity
+                        if 'command' not in  res['notification']:
+                            if obj['type'] in ['contact', 'contact_groups']:
+                               if 'attrs' in obj and attrs_used_as_name[obj['type']] in obj['attrs']:
+
+                                   if 'service' == obj_type and 'service_notification_commands' in obj['attrs']:
+                                       res['notification']['command'] = obj['attrs']['service_notification_commands']
+                                   elif 'host' == obj_type and 'host_notification_commands' in obj['attrs']:
+                                       res['notification']['command'] = obj['attrs']['host_notification_commands']
+                    
+
                 if 'notification_options' == key:
                     value_splitted = value.split(',')
                     value_splitted = map((lambda v: v.strip()), value_splitted) # strip all values (because we can have "a,       b    ,   c". we want ["a","b","c"])
-                    res['notification']['state'] = []
-                    res['notification']['type'] = []
+                    res['notification']['states'] = []
+                    res['notification']['types'] = []
                     # from http://docs.icinga.org/icinga2/latest/doc/module/icinga2/toc#!/icinga2/latest/doc/module/icinga2/chapter/migration#manual-config-migration-hints-contacts-users
                     for v in value_splitted:
                         if 'o' == v:
-                            res['notification']['state'].append('OK')
+                            res['notification']['states'].append('OK')
                         elif 'w' == v:
-                            res['notification']['state'].append('Warning')
-                            res['notification']['type'].append('Problem')
+                            res['notification']['states'].append('Warning')
+                            res['notification']['types'].append('Problem')
                         elif 'c' == v:
-                            res['notification']['state'].append('Critical')
-                            res['notification']['type'].append('Problem')
+                            res['notification']['states'].append('Critical')
+                            res['notification']['types'].append('Problem')
                         elif 'u' == v:
-                            res['notification']['state'].append('Unknown')
-                            res['notification']['type'].append('Problem')
+                            res['notification']['states'].append('Unknown')
+                            res['notification']['types'].append('Problem')
                         elif 'd' == v:
-                            res['notification']['state'].append('Down')
-                            res['notification']['type'].append('Problem')
+                            res['notification']['states'].append('Down')
+                            res['notification']['types'].append('Problem')
                         elif 's' == v:
-                            res['notification']['state'].append('.')
-                            res['notification']['type'].append('DowntimeStart')
-                            res['notification']['type'].append('DowntimeEnd')
-                            res['notification']['type'].append('DowntimeRemoved')
+                            res['notification']['states'].append('.')
+                            res['notification']['types'].append('DowntimeStart')
+                            res['notification']['types'].append('DowntimeEnd')
+                            res['notification']['types'].append('DowntimeRemoved')
                         elif 'r' == v:
-                            res['notification']['state'].append('OK')
-                            res['notification']['type'].append('Recovery')
+                            res['notification']['states'].append('OK')
+                            res['notification']['types'].append('Recovery')
                         elif 'f' == v:
-                            res['notification']['state'].append('.')
-                            res['notification']['type'].append('FlappingStart')
-                            res['notification']['type'].append('FlappingEnd')
+                            res['notification']['states'].append('.')
+                            res['notification']['types'].append('FlappingStart')
+                            res['notification']['types'].append('FlappingEnd')
                         elif 'n' == v:
-                            res['notification']['state'].append('.')
+                            res['notification']['states'].append('.')
                         elif '.' == v:
-                            res['notification']['state'].append('.')
-                            res['notification']['type'].append('Custom')
+                            res['notification']['states'].append('.')
+                            res['notification']['types'].append('Custom')
                     # unique values
-                    res['notification']['state'] = list(set(res['notification']['state']))
-                    res['notification']['type'] = list(set(res['notification']['type']))
+                    res['notification']['states'] = list(set(res['notification']['states']))
+                    res['notification']['types'] = list(set(res['notification']['types']))
                     # remove key if the list is empty
-                    if 0 == len(res['notification']['type']):
-                        res['notification'].pop('type', None)
-                    if 0 == len(res['notification']['state']):
-                        res['notification'].pop('state', None)
+                    if 0 == len(res['notification']['types']):
+                        res['notification'].pop('types', None)
+                    if 0 == len(res['notification']['states']):
+                        res['notification'].pop('states', None)
                 else:
                     if key in attrs_renamed:
                         res_key = attrs_renamed[key]
@@ -394,6 +410,10 @@ def objects_icinga2():
             if 'import' not in res:
                 res['import'] = []
             res["import"] = res["import"] + ["legacy-timeperiod"] + res['import']
+        elif 'user' == obj_type:
+            if 'import' not in res:
+                res['import'] = []
+            res["import"] = res["import"] + ["generic-user"] + res['import']
         elif 'command' == obj_type and 'CheckCommand' == res_type:
             if 'import' not in res:
                 res['import'] = []
@@ -453,6 +473,8 @@ def objects_icinga2():
         'notification_period': "period",
         'contacts': "users",
         'contact_groups': "user_groups",
+#        'service_notification_commands': "command",
+#        'host_notification_commands': "command",
     }
     attrs_force_list = [
         'use',
@@ -482,8 +504,8 @@ def objects_icinga2():
         'host_notification_period',
         'host_notification_options',
         'service_notification_options',
-        'service_notification_commands',
-        'host_notification_commands',
+#        'service_notification_commands',
+#        'host_notification_commands',
         'host_notifications_enabled',
         'service_notifications_enabled',
         'address1',
@@ -526,14 +548,6 @@ def objects_icinga2():
 #        'first_notification_delay',
 #        'notification_period',
 #        'notification_options',
-
-# TODO: the contacts are not already managed in services and hosts
-#http://docs.icinga.org/icinga2/latest/doc/module/icinga2/toc#!/icinga2/latest/doc/module/icinga2/chapter/migration#manual-config-migration-hints-contacts-users
-# TODO: generate a notification object when a contact is set
-#         'contacts',
-#         'contact_groups',
-#         'notification_options' # we have to split the options in state and type attribute
-
     ]
     services = [
         'backup_burp_age',
@@ -676,10 +690,10 @@ def format(dictionary, quote_keys=False, quote_values=True):
         else:
             res_key = key
 
-        if key in ['type', 'template', 'state']: # ugly hack
-            quote_values = False
-        elif key in ['period', 'users', 'user_groups']:
-            quote_values = True
+        if key in ['type', 'template', 'types', 'states']: # ugly hack
+            quote_value = False
+        else:
+            quote_value = quote_values
 
         if isinstance(value, dict): # recurse
             if key in ['arguments', 'ranges']: # in theses subdictionaries, the keys are also quoted
@@ -687,8 +701,8 @@ def format(dictionary, quote_keys=False, quote_values=True):
             elif key in ['services_enabled', 'services_loop_enabled']: # theses dictionaries contains booleans
                 res[res_key] = format(value, False, False)
             else:
-                res[res_key] = format(value)
-        elif key in ['vars.strings']: # TODO: vars.string not managed
+                res[res_key] = format(value, quote_keys, quote_value)
+        elif key in ['vars.strings']: # TODO: vars.string not managed 
             res[res_key] = '"'+str(value).replace('"', '\\"')+'"'
         elif isinstance(value, list):
             if key in ['import', 'parents']: # theses lists are managed in the template, we only quote each string in the list
@@ -698,7 +712,7 @@ def format(dictionary, quote_keys=False, quote_values=True):
                 res[res_key] = '['
                 # suppose that all values in list are strings
                 # escape '"' char and quote each strings
-                if quote_values:
+                if quote_value:
                     res[res_key] += ', '.join(map((lambda v: '"'+str(v).replace('"','\\"')+'"'), value))
                 else:
                     res[res_key] += ', '.join(value)
@@ -715,12 +729,12 @@ def format(dictionary, quote_keys=False, quote_values=True):
         elif isinstance(value, int):
             res[res_key] = str(value)
         elif isinstance(value, unicode):
-            if quote_values:
+            if quote_value:
                 res[res_key] = '"'+value.replace('"', '\\"')+'"'
             else:
                 res[res_key] = value
         else:
-            if quote_values:
+            if quote_value:
                 res[res_key] = '"'+str(value).encode('utf-8').replace('"', '\\"')+'"'
             else:
                 res[res_key] = value

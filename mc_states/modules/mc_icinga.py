@@ -5,19 +5,27 @@
 mc_icinga / icinga functions
 ============================
 
-The first level of subdictionaries is for distinguish configuration files. There is one subdictionary per configuration file. The key used for subdictionary correspond
+The first level of subdictionaries is for distinguish configuration
+files. There is one subdictionary per configuration file.
+The key used for subdictionary correspond
 to the name of the file but the "." is replaced with a "_"
 
-The subdictionary "modules" contains a subsubdictionary for each module. In each module subdictionary, there is a subdictionary per file.
-The key "enabled" in each module dictionary is for enabling or disabling the module.
+The subdictionary "modules" contains a subsubdictionary for each module.
+In each module subdictionary, there is a subdictionary per file.
+The key "enabled" in each module dictionary is for enabling or
+disabling the module.
 
-The "nginx" and "uwsgi" sub-dictionaries are given to macros in \*\*kwargs parameter.
+The "nginx" and "uwsgi" sub-dictionaries are given to macros 
+in \*\*kwargs parameter.
 
-The key "package" is for listing packages installed between pre-install and post-install hooks
+The key "package" is for listing packages installed between pre-install
+and post-install hooks
 
-The keys "has_pgsql" and "has_mysql" determine if a local postgresql or mysql instance must be installed.
+The keys "has_pgsql" and "has_mysql" determine if a local postgresql 
+or mysql instance must be installed.
 The default value is computed from default database parameters
-If the connection is made through a unix pipe or with the localhost hostname, the booleans are set to True.
+If the connection is made through a unix pipe or with the localhost 
+hostname, the booleans are set to True.
 
 '''
 
@@ -3878,9 +3886,11 @@ def add_auto_configuration_host(hostname=None,
 # global variable initialisation
 add_auto_configuration_host.objects={}
 
-#TODO: find how to call this function
 def clean_global_variables():
-    '''Function to remove global variables'''
+    '''
+    Function to remove global variables
+    # TODO: find how to call this function
+    '''
     del add_configuration_object.objects
     del remove_configuration_object.files
     del add_auto_configuration_host.objects
