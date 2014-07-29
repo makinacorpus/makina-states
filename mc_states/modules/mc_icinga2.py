@@ -1114,7 +1114,7 @@ def replace_chars(s):
 
 
 def add_configuration_object(filen=None,
-                             type=None,
+                             typen=None,
                              attrs=None,
                              definition=None,
                              fromsettings=None,
@@ -1127,13 +1127,13 @@ def add_configuration_object(filen=None,
             return add_configuration_object.objects[get_objects_file]
         else:
             return add_configuration_object.objects
-    elif type and filen and attrs:
+    elif typen and filen and attrs:
         if filen not in add_configuration_object.objects:
             add_configuration_object.objects[filen] = []
         add_configuration_object.objects[
-            filen].append({'type': type,
-                          'attrs': attrs,
-                          'definition': definition})
+            filen].append({'type': typen,
+                           'attrs': attrs,
+                           'definition': definition})
     elif fromsettings:
         if filen not in add_configuration_object.objects:
             add_configuration_object.objects[filen] = []
