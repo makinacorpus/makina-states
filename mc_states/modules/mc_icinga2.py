@@ -62,7 +62,9 @@ def objects_icinga2():
        https://github.com/Icinga/icinga2-migration
     '''
 
-    # ARGx are not beautiful arguments, we will try to give name. This dictionary was used in mc_icinga to do the reverse operation (association a named value to ARGx variable)
+    # ARGx are not beautiful arguments, we will try to give name.
+    # This dictionary was used in mc_icinga to do the
+    # reverse operation (association a named value to ARGx variable)
     cssh_params = ['ssh_user', 'ssh_addr', 'ssh_port', 'ssh_timeout']
 
     check_command_args = {
@@ -167,9 +169,9 @@ def objects_icinga2():
         if command_splitted[0] in check_command_args:
             nb_args = len(check_command_args[command_splitted[0]])
             for i, val in enumerate(command_splitted[1:]):
-                if i < nb_args:  # because some commands ends
-                                 # with "!!!!" but the ARG are not
-                                 # used in command_line
+                # because some commands ends with "!!!!" but the ARG are not
+                # used in command_line
+                if i < nb_args:
                     res['vars.'+check_command_args[
                         command_splitted[0]][i]] = val
         else:
@@ -248,7 +250,8 @@ def objects_icinga2():
                     ):  # bad method to detect the couple of arguments
                         # "-a 1", the "1" doesn't begin with '-'
                         res['arguments'][
-                            command_splitted[i_args]] = command_splitted[i_args+1]
+                            command_splitted[i_args]
+                        ] = command_splitted[i_args+1]
                         i_args += 2
                     else:
                         res['arguments'][command_splitted[i_args]] = {}
@@ -262,10 +265,11 @@ def objects_icinga2():
                          obj_type,
                          res_type,
                          obj_attrs,
-                         force_remove_attrs_used_as_name_not_removed = False):
+                         force_remove_attrs_used_as_name_not_removed=False):
         '''
         function to translate attrs subdictionary
-        it is used to translate objects_definitions and autoconfigured_hosts_definitions
+        it is used to translate objects_definitions
+        and autoconfigured_hosts_definitions
         '''
         res = {}
         for key, value in obj_attrs.items():
@@ -281,8 +285,10 @@ def objects_icinga2():
                     res[key] = value
             # TODO: perhaps a separated object will be better but it may
             # be problematic with autoconfigured hosts
-            elif key in ['contacts', 'contact_groups', 'notification_options',
-                         'notification_period', 'notification_interval']:  # for notifications
+            elif key in [
+                'contacts', 'contact_groups', 'notification_options',
+                'notification_period', 'notification_interval'
+            ]:  # for notifications
                 if 'notification' not in res:
                     res['notification'] = {}
 
@@ -301,7 +307,11 @@ def objects_icinga2():
 
                 if 'notification_options' == key:
                     value_splitted = value.split(',')
-                    value_splitted = map((lambda v: v.strip()), value_splitted)  # strip all values (because we can have "a,       b    ,   c". we want ["a","b","c"])
+                    # strip all values (because we can have
+                    # "a,       b    ,   c". we want ["a","b","c"])
+                    value_splitted = map(
+                        (lambda v: v.strip()),
+                        value_splitted)
                     res['notification']['states'] = []
                     res['notification']['types'] = []
                     # from http://docs.icinga.org/icinga2/latest/doc/module/icinga2/toc#!/icinga2/latest/doc/module/icinga2/chapter/migration#manual-config-migration-hints-contacts-users
@@ -338,8 +348,10 @@ def objects_icinga2():
                             res['notification']['states'].append('.')
                             res['notification']['types'].append('Custom')
                     # unique values
-                    res['notification']['states'] = list(set(res['notification']['states']))
-                    res['notification']['types'] = list(set(res['notification']['types']))
+                    res['notification']['states'] = __salt__[
+                        'mc_utils.uniquify'](res['notification']['states'])
+                    res['notification']['types'] = __salt__[
+                        'mc_utils.uniquify'](res['notification']['types'])
                     # remove key if the list is empty
                     if 0 == len(res['notification']['types']):
                         res['notification'].pop('types', None)
@@ -353,11 +365,14 @@ def objects_icinga2():
 
                     if key in attrs_force_list:
                         res_value = value.split(',')
-                        res_value = map((lambda v: v.strip()), res_value) # strip all values (because we can have "a,       b    ,   c". we want ["a","b","c"])
+                        # strip all values (because we can have
+                        # "a,       b    ,   c". we want ["a","b","c"])
+                        res_value = map((lambda v: v.strip()), res_value)
                     elif key in attrs_timed:
                         try:
                             res_value = int(value)
-                            res_value = str(res_value)+'m' # by default the time is in minutes
+                            # by default the time is in minutes
+                            res_value = str(res_value) + 'm'
                         except:
                             # already a unit because it is not a number
                             res_value = value
@@ -365,10 +380,9 @@ def objects_icinga2():
                         res_value = value
 
                     res['notification'][res_key] = res_value
-
-
-
-            elif key in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']: # for timeperiods
+            elif key in ['monday', 'tuesday', 'wednesday',
+                         'thursday', 'friday',
+                         'saturday', 'sunday']:  # for timeperiods
                 if 'ranges' not in res:
                     res['ranges'] = {}
                 res['ranges'][key] = value
@@ -376,21 +390,35 @@ def objects_icinga2():
             # global translation
             else:
                 # check if the attribute is removed
-                # remove if the attribute is used as name and not in conserved attributes list, unless remove is forced
-                if obj_type in attrs_used_as_name and (key == attrs_used_as_name[obj_type] and key not in attrs_used_as_name_not_removed) or (key == attrs_used_as_name[obj_type] and key in attrs_used_as_name_not_removed and force_remove_attrs_used_as_name_not_removed):
+                # remove if the attribute is used as name and
+                # not in conserved attributes list, unless remove is forced
+                if (
+                    obj_type in attrs_used_as_name
+                    and (key == attrs_used_as_name[obj_type]
+                         and key not in attrs_used_as_name_not_removed)
+                    or (key == attrs_used_as_name[obj_type]
+                        and key in attrs_used_as_name_not_removed
+                        and force_remove_attrs_used_as_name_not_removed)
+                ):
                     # the attribute used as name is removed from attrs list
                     continue
-                elif key in attrs_removed: # attribute removed
+                elif key in attrs_removed:  # attribute removed
                     continue
 
                 # translate the attribute key
                 if key in attrs_renamed:
                     res_key = attrs_renamed[key]
-                elif 'name' == key and obj_type in attrs_used_as_name and attrs_used_as_name[obj_type] not in obj_attrs: # translate "name" attrs
+                elif (
+                    'name' == key
+                    and obj_type in attrs_used_as_name
+                    and attrs_used_as_name[obj_type] not in obj_attrs
+                ):  # translate "name" attrs
                     res_key = attrs_used_as_name[obj_type]
-                elif key.startswith('cmdarg_'): # translate the old argument prefix
+                # translate the old argument prefix
+                elif key.startswith('cmdarg_'):
                     res_key = key.replace('cmdarg_', 'vars.')
-                elif key in ['_SERVICE_ID', '_HOST_ID']: # theses arguments seems to be not supported
+                # theses arguments seems to be not supported
+                elif key in ['_SERVICE_ID', '_HOST_ID']:
                     continue
                 else:
                     res_key = key
@@ -398,11 +426,14 @@ def objects_icinga2():
                 # create the lists if needed and format the value
                 if key in attrs_force_list:
                     res_value = value.split(',')
-                    res_value = map((lambda v: v.strip()), res_value) # strip all values (because we can have "a,       b    ,   c". we want ["a","b","c"])
+                    # strip all values (because we can have
+                    # a,       b    ,   c". we want ["a","b","c"])
+                    res_value = map((lambda v: v.strip()), res_value)
                 elif key in attrs_timed:
                     try:
                         res_value = int(value)
-                        res_value = str(res_value)+'m' # by default the time is in minutes
+                        # by default the time is in minutes
+                        res_value = str(res_value)+'m'
                     except:
                         # already a unit because it is not a number
                         res_value = value
@@ -419,11 +450,13 @@ def objects_icinga2():
         if 'timeperiod' == obj_type:
             if 'import' not in res:
                 res['import'] = []
-            res["import"] = res["import"] + ["legacy-timeperiod"] + res['import']
+            res["import"] = (
+                res["import"] + ["legacy-timeperiod"] + res['import']
         elif 'user' == obj_type:
             if 'import' not in res:
                 res['import'] = []
-            res["import"] = res["import"] + ["generic-user"] + res['import']
+            res["import"] = (
+                res["import"] + ["generic-user"] + res['import']
         elif 'command' == obj_type and 'CheckCommand' == res_type:
             if 'import' not in res:
                 res['import'] = []
@@ -433,7 +466,6 @@ def objects_icinga2():
                 res['import'] = []
             res['import'] = ["plugin-notification-command"] + res['import']
         return res
-
 
     types_renamed = {
         'timeperiod': "TimePeriod",
@@ -445,7 +477,8 @@ def objects_icinga2():
         'host': "Host",
         'command': "CheckCommand",
     }
-    attrs_used_as_name_not_removed = ['service_description'] # commented as "ugly hack"in php migration script
+    # commented as "ugly hack"in php migration script
+    attrs_used_as_name_not_removed = ['service_description']
     attrs_used_as_name = {
         'timeperiod': "timeperiod_name",
         'contactgroup': "contactgroup_name",
@@ -502,7 +535,8 @@ def objects_icinga2():
         'retry_check_interval',
         'notification_interval',
     ]
-    attrs_removed = [ # from icinga2-migration php script
+    # from icinga2-migration php script
+    attrs_removed = [
         'name',
         'register',
         # timeperiods
@@ -535,27 +569,27 @@ def objects_icinga2():
         'parallelize_check',
         'notification_interval',
         'first_notification_delay',
-##        'notification_period',
+        #        'notification_period',
         'notification_options',
         # hostgroups
         # hosts
         'host_name',
         'initial_state',
         'obsess_over_host',
-#        'check_freshness',
-#        'freshness_threshold',
-#        'flap_detection_options',
-#        'failure_prediction_enabled',
-#        'retain_status_information',
+        #        'check_freshness',
+        #        'freshness_threshold',
+        #        'flap_detection_options',
+        #        'failure_prediction_enabled',
+        #        'retain_status_information',
         'retain_nonstatus_information',
-#        'stalking_options',
+        #        'stalking_options',
         'statusmap_image',
         '2d_coords',
-#        'parallelize_check',
-#        'notification_interval',
-#        'first_notification_delay',
-#        'notification_period',
-#        'notification_options',
+        #        'parallelize_check',
+        #        'notification_interval',
+        #        'first_notification_delay',
+        #        'notification_period',
+        #        'notification_options',
     ]
     services = [
         'backup_burp_age',
@@ -612,44 +646,66 @@ def objects_icinga2():
         'web',
     ]
 
-    services_enabled = dict()
     for name, obj in src['objects_definitions'].items():
         # global changes
         res['objects_definitions'][name] = {}
         res['objects_definitions'][name]['attrs'] = {}
-        res['objects_definitions'][name]['file'] = obj['file'].replace('.cfg', '.conf') # the extension of filenames is changed
+        # the extension of filenames is changed
+        res['objects_definitions'][
+            name]['file'] = obj['file'].replace('.cfg', '.conf')
 
         # translate the type of the object
         if obj['type'] in types_renamed:
-            if name in ['command_meta_notify']: # hack
-                res['objects_definitions'][name]['type'] = "NotificationCommand"
+            if name in ['command_meta_notify']:  # hack
+                res['objects_definitions'][
+                    name]['type'] = "NotificationCommand"
             else:
-                res['objects_definitions'][name]['type'] = types_renamed[obj['type']]
+                res['objects_definitions'][
+                    name]['type'] = types_renamed[obj['type']]
         else:
-            res['objects_definitions'][name]['type'] = obj['type']
+            res['objects_definitions'][
+                name]['type'] = obj['type']
 
         # determine if the object is a template or not
-        if 'attrs' in obj and 'register' in obj['attrs'] and 0 == obj['attrs']['register']:
-            res['objects_definitions'][name]['template']=True
+        if (
+            'attrs' in obj
+            and 'register' in obj['attrs']
+            and 0 == obj['attrs']['register']
+        ):
+            res['objects_definitions'][
+                name]['template'] = True
         else:
-            res['objects_definitions'][name]['template']=False
+            res['objects_definitions'][
+                name]['template'] = False
 
         # find the object name
-        if 'attrs' in obj and 'name' in obj['attrs']: # priority for the name attribute (change this generates an invalid configuration)
+        if (
+            'attrs' in obj
+            # priority for the name attribute
+            # (change this generates an invalid configuration)
+            and 'name' in obj['attrs']
+        ):
             res['objects_definitions'][name]['name'] = obj['attrs']['name']
-        elif obj['type'] in attrs_used_as_name and 'attrs' in obj and attrs_used_as_name[obj['type']] in obj['attrs']:
-            res['objects_definitions'][name]['name'] = obj['attrs'][attrs_used_as_name[obj['type']]]
+        elif (
+            obj['type'] in attrs_used_as_name
+            and 'attrs' in obj
+            and attrs_used_as_name[obj['type']] in obj['attrs']
+        ):
+            res['objects_definitions'][
+                name]['name'] = obj['attrs'][attrs_used_as_name[obj['type']]]
         else:
             res['objects_definitions'][name]['name'] = name
 
         # translate the attributes
-        res['objects_definitions'][name]['attrs'] = _translate_attrs(res['objects_definitions'][name]['name'], obj['type'], res['objects_definitions'][name]['type'], obj['attrs'], True)
+        res['objects_definitions'][name]['attrs'] = _translate_attrs(
+            res['objects_definitions'][name]['name'],
+            obj['type'],
+            res['objects_definitions'][name]['type'], obj['attrs'], True)
 
     # purge_definitions
     res['purge_definitions'] = src['purge_definitions']
 
     # autoconfigured_hosts
-    #res['autoconfigured_hosts_definitions'] = src['autoconfigured_hosts_definitions']
     res['autoconfigured_hosts_definitions'] = {}
     for name, params in src['autoconfigured_hosts_definitions'].items():
         res['autoconfigured_hosts_definitions'][name] = {}
@@ -657,9 +713,19 @@ def objects_icinga2():
         # translate the host attrs
         if 'attrs' in params:
             if 'hostgroup' in params and params['hostgroup']:
-                res['autoconfigured_hosts_definitions'][name]['attrs'] = _translate_attrs(name, 'hostgroup', types_renamed['hostgroup'], params['attrs'])
+                res['autoconfigured_hosts_definitions'][
+                    name]['attrs'] = _translate_attrs(
+                        name,
+                        'hostgroup',
+                        types_renamed['hostgroup'],
+                        params['attrs'])
             else:
-                res['autoconfigured_hosts_definitions'][name]['attrs'] = _translate_attrs(name, 'host', types_renamed['host'], params['attrs'])
+                res['autoconfigured_hosts_definitions'][
+                    name]['attrs'] = _translate_attrs(
+                        name,
+                        'host',
+                        types_renamed['host'],
+                        params['attrs'])
         else:
             res['autoconfigured_hosts_definitions'][name]['attrs'] = {}
 
@@ -670,28 +736,52 @@ def objects_icinga2():
 
         # translate the service_attrs
         if 'services_attrs' in params:
-            res['autoconfigured_hosts_definitions'][name]['services_attrs'] = {}
+            res['autoconfigured_hosts_definitions'][
+                name]['services_attrs'] = {}
             for service in services:
                 if service in params['services_attrs']:
-                    res['autoconfigured_hosts_definitions'][name]['services_attrs'][service] = _translate_attrs(service, 'service', types_renamed['service'], params['services_attrs'][service], False) # we have to preserve service_description attribute because in the template it is the value used as name (because there is not an additional subdictionary to store the name like in objects_definitions)
+                    # we have to preserve service_description attribute
+                    # because in the template it is the value used as
+                    # name (because there is not an additional
+                    # subdictionary to store the name like
+                    # in objects_definitions)
+                    res['autoconfigured_hosts_definitions'][
+                        name]['services_attrs'][service] = _translate_attrs(
+                            service,
+                            'service',
+                            types_renamed['service'],
+                            params['services_attrs'][service], False)
 
             for service in services_loop:
                 if service in params['services_attrs']:
-                    res['autoconfigured_hosts_definitions'][name]['services_attrs'][service] = {}
+                    res['autoconfigured_hosts_definitions']
+                    [name]['services_attrs'][service] = {}
                     for subservice in params['services_attrs'][service]:
-                        res['autoconfigured_hosts_definitions'][name]['services_attrs'][service][subservice] = _translate_attrs(service, 'service', types_renamed['service'], params['services_attrs'][service][subservice])
+                        res['autoconfigured_hosts_definitions'][
+                            name]['services_attrs'][
+                                service][subservice] = _translate_attrs(
+                                    service,
+                                    'service',
+                                    types_renamed['service'],
+                                    params['services_attrs'][
+                                        service][subservice])
     return res
+
 
 def objects():
     return objects_icinga2()
 
+
 def format(dictionary, quote_keys=False, quote_values=True):
     '''
-    function to transform all values in a dictionary in string and adding quotes
-    the main goal is to print values with quotes like "value" but we don't want print list with quotes like "[v1, v2]". This should be ["v1", "v2"]
-    this can be done in jinja template but the template is already complex
+    function to transform all values in a dictionary in string
+    and adding quotes.
+    The main goal is to print values with quotes like "value"
+    but we don't want print list with quotes like "[v1, v2]".
+    This should be ["v1", "v2"] this can be done in jinja
+    template but the template is already complex
     '''
-    res={}
+    res = {}
     for key, value in dictionary.items():
         if quote_keys:
             res_key = '"'+str(key)+'"'
@@ -703,36 +793,47 @@ def format(dictionary, quote_keys=False, quote_values=True):
         else:
             quote_value = quote_values
 
-        if isinstance(value, dict): # recurse
-            if key in ['arguments', 'ranges']: # in theses subdictionaries, the keys are also quoted
+        if isinstance(value, dict):  # recurse
+            # in theses subdictionaries, the keys are also quoted
+            if key in ['arguments', 'ranges']:
                 res[res_key] = format(value, True, True)
-            elif key in ['services_enabled', 'services_loop_enabled']: # theses dictionaries contains booleans
+            # theses dictionaries contains booleans
+            elif key in ['services_enabled', 'services_loop_enabled']:
                 res[res_key] = format(value, False, False)
             else:
                 res[res_key] = format(value, quote_keys, quote_value)
-#        elif key in ['vars.strings']: # TODO: vars.string not managed 
-#            res[res_key] = '"'+str(value).replace('"', '\\"')+'"'
         elif isinstance(value, list):
-            if key in ['import', 'parents']: # theses lists are managed in the template, we only quote each string in the list
-                res[res_key] = map((lambda v: '"'+str(v).replace('"','\\"')+'"'), value)
+            # theses lists are managed in the template,
+            # we only quote each string in the list
+            if key in ['import', 'parents']:
+                res[res_key] = map((
+                    lambda v: '"' + str(v).replace('"', '\\"') + '"'), value)
             else:
 
                 res[res_key] = '['
                 # suppose that all values in list are strings
                 # escape '"' char and quote each strings
                 if quote_value:
-                    res[res_key] += ', '.join(map((lambda v: '"'+str(v).replace('"','\\"')+'"'), value))
+                    res[res_key] += ', '.join(
+                        map((lambda v: '"' + str(v).replace(
+                            '"', '\\"') + '"'), value))
                 else:
                     res[res_key] += ', '.join(value)
                 res[res_key] += ']'
-        elif key.startswith('enable_') :
-            if '"1"' == value or '1' == value or 1 == value or 'true' == value or True == value:
+        elif key.startswith('enable_'):
+            if (
+                '"1"' == value
+                or '1' == value
+                or 1 == value
+                or 'true' == value
+                or True == value
+            ):
                 res[res_key] = "true"
             else:
                 res[res_key] = "false"
         elif key in ['template']:
             res[res_key] = value
-        elif key.endswith('_interval'): # a bad method to find a time
+        elif key.endswith('_interval'):  # a bad method to find a time
             res[res_key] = value
         elif isinstance(value, bool) and not quote_value:
             res[res_key] = value
@@ -740,28 +841,33 @@ def format(dictionary, quote_keys=False, quote_values=True):
             res[res_key] = str(value)
         elif isinstance(value, unicode):
             if quote_value:
-                res[res_key] = '"'+value.replace('"', '\\"')+'"'
+                res[res_key] = '"' + value.replace('"', '\\"') + '"'
             else:
                 res[res_key] = value
         else:
             if quote_value:
-                res[res_key] = '"'+str(value).encode('utf-8').replace('"', '\\"')+'"'
+                res[res_key] = '"' + str(value).encode(
+                    'utf-8').replace('"', '\\"')+'"'
             else:
                 res[res_key] = value
 
     return res
 
+
 def get_settings_for_object(target=None, obj=None, attr=None):
     '''
-    expand the subdictionaries which are not cached in mc_icinga2.settings.objects
+    expand the subdictionaries which are not cached
+    in mc_icinga2.settings.objects
     '''
     pref = 'makina-states.services.monitoring.icinga2.objects.'
     if 'purge_definitions' == target:
-        res =  __salt__['mc_utils.defaults'](pref + target,
-                                             {target: objects()[target] })[target]
+        res = __salt__['mc_utils.defaults'](
+            pref + target,
+            {target: objects()[target]})[target]
     else:
-        res = __salt__['mc_utils.defaults'](pref + target+'.'+obj,
-                                            objects()[target][obj])
+        res = __salt__['mc_utils.defaults'](
+            pref + target+'.'+obj,
+            objects()[target][obj])
         if attr:
             res = res[attr]
     return res
@@ -782,7 +888,8 @@ def settings():
         # do not store in cache
         # registry the whole conf, memory would explode
         # keep only the list of keys for each subdictionary
-        # get_settings_for_object is the function to retrieve a non cached subdictionary
+        # get_settings_for_object is the function to retrieve
+        # a non cached subdictionary
         dict_objects = objects()
         dict_objects['objects_definitions'] = dict_objects[
             'objects_definitions'].keys()
@@ -829,10 +936,12 @@ def settings():
                 'pidfile': "/var/run/icinga2/icinga2.pid",
                 'configuration_directory': locs['conf_dir']+"/icinga2",
                 'niceness': 5,
-                # because the subdictionary is very big, we take it from another function but we can copy/paste it here
+                # because the subdictionary is very big, we take it
+                # from another function but we can copy/paste it here
                 'objects': dict_objects,
                 'icinga_conf': {
-                    'include': ['"constants.conf"', '"zones.conf"', '<itl>', '<plugins>', '"features-enabled/*.conf"'],
+                    'include': ['"constants.conf"', '"zones.conf"', '<itl>',
+                                '<plugins>', '"features-enabled/*.conf"'],
                     'include_recursive': ['"conf.d"'],
                 },
                 'constants_conf': {
@@ -857,29 +966,41 @@ def settings():
                         'user': "www-data",
                         'group': "www-data",
                         'root_account': {
-                          'login': "icingaadmin",
-                          'password': password_cgi,
+                            'login': "icingaadmin",
+                            'password': password_cgi,
                         },
-                        'absolute_styles_dir': "/usr/share/icinga/htdocs/stylesheets",
+                        'absolute_styles_dir': (
+                            "/usr/share/icinga/htdocs/stylesheets"
+                        ),
                         'nginx': {
                             'domain': "icinga2-cgi.localhost",
                             'doc_root': "/usr/share/icinga2/classicui/",
-                            'vh_content_source': "salt://makina-states/files/etc/nginx/sites-available/icinga2-cgi.content.conf",
-                            'vh_top_source': "salt://makina-states/files/etc/nginx/sites-available/icinga2-cgi.top.conf",
+                            'vh_content_source': ("salt://makina-states/files/"
+                                                  "etc/nginx/sites-available/"
+                                                  "icinga2-cgi.content.conf"),
+                            'vh_top_source': ("salt://makina-states/files/etc"
+                                              "/nginx/sites-available/"
+                                              "icinga2-cgi.top.conf"),
                             'icinga_cgi': {
                                 'web_directory': "/icinga2-classicui",
                                 'realm': "Authentication",
-                                'htpasswd_file': "/etc/icinga2/classicui/htpasswd.users",
-                                'htdocs_dir': "/usr/share/icinga2/classicui/",
-                                'images_dir': "/usr/share/icinga2/classicui/images/$1",
-                                'styles_dir': "/usr/share/icinga2/classicui/stylesheets/$1",
+                                'htpasswd_file': ("/etc/icinga2/classicui"
+                                                  "/htpasswd.users"),
+                                'htdocs_dir': ("/usr/share/icinga2/"
+                                               "classicui/"),
+                                'images_dir': ("/usr/share/icinga2/"
+                                               "classicui/images/$1"),
+                                'styles_dir': ("/usr/share/icinga2/"
+                                               "classicui/stylesheets/$1"),
                                 'cgi_dir': "/usr/lib/cgi-bin/",
                                 'uwsgi_pass': "127.0.0.1:3031",
                             },
                         },
                         'uwsgi': {
                             'config_name': "icinga2.ini",
-                            'config_file': "salt://makina-states/files/etc/uwsgi/apps-available/icinga2-cgi.ini",
+                            'config_file': (
+                                "salt://makina-states/files/etc/uwsgi/"
+                                "apps-available/icinga2-cgi.ini"),
                             'enabled': True,
                             'master': "true",
                             'plugins': "cgi",
@@ -889,14 +1010,17 @@ def settings():
                             'socket': "127.0.0.1:3031",
                             'uid': "www-data",
                             'gid': "www-data",
-                            'cgi': "/cgi-bin/icinga2-classicui/=/usr/lib/cgi-bin/icinga2-classicui/",
+                            'cgi': ("/cgi-bin/icinga2-classicui/"
+                                    "=/usr/lib/cgi-bin/icinga2-classicui/"),
                             'cgi_allowed_ext': ".cgi",
                         },
                         'cgi_cfg': {
                             'standalone_installation': "1",
-                            'physical_html_path': "/usr/share/icinga2/classicui/",
+                            'physical_html_path': ("/usr/share/icinga2"
+                                                   "/classicui/"),
                             'url_html_path': "/icinga2-classicui",
-                            'url_stylesheets_path': "/icinga2-classicui/stylesheets",
+                            'url_stylesheets_path': ("/icinga2-classicui"
+                                                     "/stylesheets"),
                             'http_charset': "utf-8",
                             'refresh_rate': 30,
                             'refresh_type': 1,
@@ -912,12 +1036,18 @@ def settings():
                             'use_ssl_authentication': 0,
                             'lowercase_user_name': 0,
                             'authorized_for_system_information': "icingaadmin",
-                            'authorized_for_configuration_information': "icingaadmin",
-                            'authorized_for_full_command_resolution': "icingaadmin",
+                            'authorized_for_configuration_information': (
+                                "icingaadmin"
+                            ),
+                            'authorized_for_full_command_resolution': (
+                                "icingaadmin"
+                            ),
                             'authorized_for_system_commands': "icingaadmin",
                             'authorized_for_all_services': "icingaadmin",
                             'authorized_for_all_hosts': "icingaadmin",
-                            'authorized_for_all_service_commands': "icingaadmin",
+                            'authorized_for_all_service_commands': (
+                                "icingaadmin"
+                            ),
                             'authorized_for_all_host_commands': "icingaadmin",
                             'show_all_services_host_is_authorized_for': 1,
                             'show_partial_hostgroups': 0,
@@ -929,7 +1059,9 @@ def settings():
                             'add_notif_num_hard': 28,
                             'add_notif_num_soft': 0,
                             'use_logging': 0,
-                            'cgi_log_file': "/var/log/icinga/gui/icinga-cgi.log",
+                            'cgi_log_file': (
+                                "/var/log/icinga/gui/icinga-cgi.log"
+                            ),
                             'cgi_log_rotation_method': "d",
                             'cgi_log_archive_path': "/var/log/icinga/gui",
                             'enforce_comments_on_actions': 0,
@@ -939,14 +1071,17 @@ def settings():
                             'default_downtime_duration': 7200,
                             'set_expire_ack_by_default': 0,
                             'default_expiring_acknowledgement_duration': 86400,
-                            'default_expiring_disabled_notifications_duration': 86400,
+                            ('default_expiring_disabled_'
+                             'notifications_duration'): (
+                                86400),
                             'tac_show_only_hard_state': 0,
                             'show_tac_header_pending': 1,
                             'exclude_customvar_name': "PASSWORD,COMMUNITY",
                             'exclude_customvar_value': "secret",
                             'extinfo_show_child_hosts': 0,
                             'tab_friendly_titles': 1,
-                            'object_cache_file': "/var/cache/icinga2/objects.cache",
+                            'object_cache_file': (
+                                "/var/cache/icinga2/objects.cache"),
                             'status_file': "/var/cache/icinga2/status.dat",
                             'resource_file': "/etc/icinga/resource.cfg",
                             'command_file': "/var/run/icinga2/cmd/icinga2.cmd",
@@ -955,12 +1090,15 @@ def settings():
                             'status_update_interval': 10,
                             'log_file': "/var/log/icinga2/compat/icinga.log",
                             'log_rotation_method': "h",
-                            'log_archive_path': "/var/log/icinga2/compat/archives",
+                            'log_archive_path': (
+                                "/var/log/icinga2/compat/archives"
+                            ),
                             'date_format': "us",
                         },
                     },
                     'ido2db': {
-                        'package': ['icinga2-ido-'+module_ido2db_database['type']],
+                        'package': [
+                            'icinga2-ido-'+module_ido2db_database['type']],
                         'enabled': True,
                         'user': "nagios",
                         'group': "nagios",
@@ -975,12 +1113,12 @@ def settings():
 
 
             })
-
         __salt__['mc_macros.update_local_registry'](
             'icinga2', icinga2_reg,
             registry_format='pack')
         return data
     return _settings()
+
 
 def replace_chars(s):
     res = s
@@ -988,8 +1126,9 @@ def replace_chars(s):
         res = res.replace(char, '-')
     return res
 
-def add_configuration_object(file=None,
-                             type=None,
+
+def add_configuration_object(filen=None,
+                             typen=None,
                              attrs=None,
                              definition=None,
                              fromsettings=None,
@@ -1002,36 +1141,43 @@ def add_configuration_object(file=None,
             return add_configuration_object.objects[get_objects_file]
         else:
             return add_configuration_object.objects
-    elif type and file and attrs:
-        if file not in add_configuration_object.objects:
-            add_configuration_object.objects[file]=[]
-        add_configuration_object.objects[file].append({'type': type, 'attrs': attrs, 'definition': definition})
+    elif typen and filen and attrs:
+        if filen not in add_configuration_object.objects:
+            add_configuration_object.objects[filen] = []
+        add_configuration_object.objects[
+            filen].append({'type': typen,
+                           'attrs': attrs,
+                           'definition': definition})
     elif fromsettings:
-        if file not in add_configuration_object.objects:
-            add_configuration_object.objects[file]=[]
-        add_configuration_object.objects[file].append({'fromsettings': fromsettings})
+        if filen not in add_configuration_object.objects:
+            add_configuration_object.objects[filen] = []
+        add_configuration_object.objects[
+            filen].append({'fromsettings': fromsettings})
     print('end call add_configuration_object')
 
 
 # global variable initialisation
 add_configuration_object.objects = {}
 
-def remove_configuration_object(file=None, get=False, **kwargs):
+
+def remove_configuration_object(filen=None, get=False, **kwargs):
     '''Add the file in the file's list to be removed'''
     if get:
         return remove_configuration_object.files
-    elif file:
+    elif filen:
         icingaSettings_complete = __salt__['mc_icinga2.settings']()
         # append " \"file\"" to the global variable
         filename = '/'.join([icingaSettings_complete[
-            'objects']['directory'], file])
+            'objects']['directory'], filen])
         # it doesn't avoid injection, just allow the '"' char
         # in filename
         filename = filename.replace('"', '\"')
         remove_configuration_object.files += " \""+filename+"\""
 
+
 # global variable initialisation
-remove_configuration_object.files=""
+remove_configuration_object.files = ""
+
 
 def add_auto_configuration_host_settings(hostname,
                                          hostgroup=False,
@@ -1108,8 +1254,8 @@ def add_auto_configuration_host_settings(hostname,
                                          web=False,
                                          services_attrs={},
                                          **kwargs):
-#    icingaSettings = copy.deepcopy(__salt__['mc_icinga2.settings']())
-#   save the ram (get only useful values)
+    #    icingaSettings = copy.deepcopy(__salt__['mc_icinga2.settings']())
+    #   save the ram (get only useful values)
     icingaSettings_complete = __salt__['mc_icinga2.settings']()
     icingaSettings = {}
     kwargs.setdefault(
@@ -1221,18 +1367,24 @@ def add_auto_configuration_host_settings(hostname,
         'backups_guidtz': "/backups/guidtz",
         'var_backups_bluemind': "/var/backups/bluemind",
         'var_spool_cyrus': "/var/spool/cyrus",
-        'nmd_www': "/home", # TODO: must be modified
+        'nmd_www': "/home",  # TODO: must be modified
     }
     disks_spaces = dict()
     for mountpoint, path in mountpoints_path.items():
         if eval('disk_space_'+mountpoint):
-            disks_spaces[mountpoint]=path
+            disks_spaces[mountpoint] = path
 
     # default values for dns_association service
-    dns_hostname=''
-    dns_address=''
+    dns_hostname = ''
+    dns_address = ''
 
-    if dns_association_hostname or dns_association or dns_reverse_association and 'address' in attrs and 'host_name' in attrs:
+    if (
+        dns_association_hostname
+        or dns_association
+        or dns_reverse_association
+        and 'address' in attrs
+        and 'host_name' in attrs
+    ):
         if 'host_name' in attrs:
             dns_hostname = attrs['host_name']
         else:
@@ -1244,457 +1396,459 @@ def add_auto_configuration_host_settings(hostname,
         dns_address = attrs['address']
 
     # give the default values for commands parameters values
-    # the keys are the services names, not the commands names (use the service filename)
+    # the keys are the services names,
+    # not the commands names (use the service filename)
     services_default_attrs = {
-       'backup_burp_age': {
-           'service_description': "S_BACKUP_BURP_AGE",
-           'import': ["ST_BACKUP_DAILY_ALERT"],
-           'check_command': "CSSH_BACKUP_BURP",
+        'backup_burp_age': {
+            'service_description': "S_BACKUP_BURP_AGE",
+            'import': ["ST_BACKUP_DAILY_ALERT"],
+            'check_command': "CSSH_BACKUP_BURP",
 
-           'vars.ssh_user': "root",
-           'vars.ssh_addr': "backup.makina-corpus.net",
-           'vars.ssh_port': "22",
-           'vars.ssh_timeout': 10,
-           'vars.warning': 1560,
-           'vars.critical': 1800,
-       },
-       'backup_rdiff': {
-           'service_description': "S_BACKUP_RDIFF",
-           'import': ["ST_BACKUP_DAILY_ALERT"],
-           'check_command': "CSSH_BACKUP",
+            'vars.ssh_user': "root",
+            'vars.ssh_addr': "backup.makina-corpus.net",
+            'vars.ssh_port': "22",
+            'vars.ssh_timeout': 10,
+            'vars.warning': 1560,
+            'vars.critical': 1800,
+        },
+        'backup_rdiff': {
+            'service_description': "S_BACKUP_RDIFF",
+            'import': ["ST_BACKUP_DAILY_ALERT"],
+            'check_command': "CSSH_BACKUP",
 
-           'vars.ssh_user': "root",
-           'vars.ssh_addr': "backup.makina-corpus.net",
-           'vars.ssh_port': "22",
-           'vars.ssh_timeout': 10,
-           'vars.command': ("/root/admin_scripts/nagios/"
-                            "check_rdiff -r /data/backups/phpnet6"
-                            " -w 24 -c 48 -l 2048 -p 24")
-       },
-       'beam_process': {
-           'service_description': "Check beam proces",
-           'import': ["ST_ALERT"],
-           # 'notification_options': "w,c,r",
-           'enable_notifications': 1,
-           'check_command': "C_SNMP_PROCESS",
+            'vars.ssh_user': "root",
+            'vars.ssh_addr': "backup.makina-corpus.net",
+            'vars.ssh_port': "22",
+            'vars.ssh_timeout': 10,
+            'vars.command': ("/root/admin_scripts/nagios/"
+                             "check_rdiff -r /data/backups/phpnet6"
+                             " -w 24 -c 48 -l 2048 -p 24")
+        },
+        'beam_process': {
+            'service_description': "Check beam proces",
+            'import': ["ST_ALERT"],
+            # 'notification_options': "w,c,r",
+            'enable_notifications': 1,
+            'check_command': "C_SNMP_PROCESS",
 
-           'vars.process': "beam",
-           'vars.warning': 0,
-           'vars.critical': 0,
-       },
-       'celeryd_process': {
-           'service_description': "Check celeryd process",
-           'import': ["ST_ALERT"],
-           # 'notification_options': "w,c,r",
-           'enable_notifications': 1,
-           'check_command': "C_SNMP_PROCESS",
+            'vars.process': "beam",
+            'vars.warning': 0,
+            'vars.critical': 0,
+        },
+        'celeryd_process': {
+            'service_description': "Check celeryd process",
+            'import': ["ST_ALERT"],
+            # 'notification_options': "w,c,r",
+            'enable_notifications': 1,
+            'check_command': "C_SNMP_PROCESS",
 
-           'vars.process': "python",
-           'vars.warning': 1,
-           'vars.critical': 0,
-       },
-       'cron': {
-           'service_description': "S_PROC_CRON",
-           'import': ["ST_SSH_PROC_CRON"],
-           'check_command': "CSSH_CRON",
-       },
-       'ddos': {
-           'service_description': "DDOS",
-           'import': ["ST_ALERT"],
-           'check_command': "CSSH_DDOS",
+            'vars.process': "python",
+            'vars.warning': 1,
+            'vars.critical': 0,
+        },
+        'cron': {
+            'service_description': "S_PROC_CRON",
+            'import': ["ST_SSH_PROC_CRON"],
+            'check_command': "CSSH_CRON",
+        },
+        'ddos': {
+            'service_description': "DDOS",
+            'import': ["ST_ALERT"],
+            'check_command': "CSSH_DDOS",
 
-           'vars.warning': 50,
-           'vars.critical': 60,
-       },
-       'debian_updates': {
-           'service_description': "S_DEBIAN_UPDATES",
-           'import': ["ST_DAILY_NOALERT"],
-           'check_command': "CSSH_DEBIAN_UPDATES",
-       },
-       'dns_association_hostname': {
-           'service_description': "DNS_ASSOCIATION_hostname",
-           'import': ["ST_DNS_ASSOCIATION_hostname"],
-           'check_command': "C_DNS_EXTERNE_ASSOCIATION",
-           'vars.hostname': dns_hostname,
-           'vars.dns_address': dns_address,
-           'vars.other_args': "",
-       },
-       'dns_association': {
-           'default': {
-               # default service_description is a prefix (see below)
-               'service_description': "DNS_ASSOCIATION_",
-               'import': ["ST_DNS_ASSOCIATION"],
-               'check_command': "C_DNS_EXTERNE_ASSOCIATION",
-               'vars.hostname': dns_hostname,
-               'vars.dns_address': dns_address,
-               'vars.other_args': "",
-           }
-       },
-       DRA: {
-           'default': {
-               'service_description': "DNS_REVERSE_ASSOCIATION_",
-               'import': ["ST_DNS_ASSOCIATION"],
-               'check_command': "C_DNS_EXTERNE_REVERSE_ASSOCIATION",
-               # 'vars.inaddr': "" # generated below from
-                                   # dns_association dictionary
-               #  'vars.hostname': ""
-               'vars.other_args': "",
-           },
-       },
-       'disk_space': {
-           'default': {
-               # it is prefix
-               'service_description': "DISK_SPACE_",
-               'import': ["ST_DISK_SPACE_"],
-               'check_command': "C_SNMP_DISK",
+            'vars.warning': 50,
+            'vars.critical': 60,
+        },
+        'debian_updates': {
+            'service_description': "S_DEBIAN_UPDATES",
+            'import': ["ST_DAILY_NOALERT"],
+            'check_command': "CSSH_DEBIAN_UPDATES",
+        },
+        'dns_association_hostname': {
+            'service_description': "DNS_ASSOCIATION_hostname",
+            'import': ["ST_DNS_ASSOCIATION_hostname"],
+            'check_command': "C_DNS_EXTERNE_ASSOCIATION",
+            'vars.hostname': dns_hostname,
+            'vars.dns_address': dns_address,
+            'vars.other_args': "",
+        },
+        'dns_association': {
+            'default': {
+                # default service_description is a prefix (see below)
+                'service_description': "DNS_ASSOCIATION_",
+                'import': ["ST_DNS_ASSOCIATION"],
+                'check_command': "C_DNS_EXTERNE_ASSOCIATION",
+                'vars.hostname': dns_hostname,
+                'vars.dns_address': dns_address,
+                'vars.other_args': "",
+            }
+        },
+        DRA: {
+            'default': {
+                'service_description': "DNS_REVERSE_ASSOCIATION_",
+                'import': ["ST_DNS_ASSOCIATION"],
+                'check_command': "C_DNS_EXTERNE_REVERSE_ASSOCIATION",
+                # 'vars.inaddr': "" # generated below from
+                # dns_association dictionary
+                #  'vars.hostname': ""
+                'vars.other_args': "",
+            },
+        },
+        'disk_space': {
+            'default': {
+                # it is prefix
+                'service_description': "DISK_SPACE_",
+                'import': ["ST_DISK_SPACE_"],
+                'check_command': "C_SNMP_DISK",
 
-               'vars.warning': 80,
-               'vars.critical': 90,
-           },
-       },
-       'drbd': {
-           'service_description': "CHECK_DRBD",
-           'import': ["ST_ALERT"],
-           'icon_image': "services/heartbeat.png",
-           'check_command': "CSSH_DRBD",
+                'vars.warning': 80,
+                'vars.critical': 90,
+            },
+        },
+        'drbd': {
+            'service_description': "CHECK_DRBD",
+            'import': ["ST_ALERT"],
+            'icon_image': "services/heartbeat.png",
+            'check_command': "CSSH_DRBD",
 
-           'vars.command': ("'/root/admin_scripts/nagios/"
-                            "check_drbd -d  0,1'"),
-       },
-       'epmd_process': {
-           'service_description': "Check epmd process",
-           'import': ["ST_ALERT"],
-           # 'notification_options': "w,c,r",
-           'enable_notifications': 1,
-           'check_command': "C_SNMP_PROCESS",
+            'vars.command': ("'/root/admin_scripts/nagios/"
+                             "check_drbd -d  0,1'"),
+        },
+        'epmd_process': {
+            'service_description': "Check epmd process",
+            'import': ["ST_ALERT"],
+            # 'notification_options': "w,c,r",
+            'enable_notifications': 1,
+            'check_command': "C_SNMP_PROCESS",
 
-           'vars.process': "epmd",
-           'vars.warning': 0,
-           'vars.critical': 0,
-       },
-       'erp_files': {
-           'service_description': "CHECK_ERP_FILES",
-           'import': ["ST_ALERT"],
-           'check_command': "CSSH_CUSTOM",
+            'vars.process': "epmd",
+            'vars.warning': 0,
+            'vars.critical': 0,
+        },
+        'erp_files': {
+            'service_description': "CHECK_ERP_FILES",
+            'import': ["ST_ALERT"],
+            'check_command': "CSSH_CUSTOM",
 
-           'vars.command': ("/var/makina/alma-job/job"
-                            "/supervision/check_erp_files.sh"),
-       },
-       'fail2ban': {
-           'service_description': "S_FAIL2BAN",
-           'import': ["ST_ROOT"],
-           'enable_notifications': 1,
-           'check_command': "C_SNMP_PROCESS",
+            'vars.command': ("/var/makina/alma-job/job"
+                             "/supervision/check_erp_files.sh"),
+        },
+        'fail2ban': {
+            'service_description': "S_FAIL2BAN",
+            'import': ["ST_ROOT"],
+            'enable_notifications': 1,
+            'check_command': "C_SNMP_PROCESS",
 
-           'vars.process': "fail2ban-server",
-           'vars.warning': 0,
-           'vars.critical': 0,
-       },
-       'gunicorn_process': {
-           'service_description': "Check gunicorn process",
-           'import': ["ST_ALERT"],
-           # 'notification_options': "w,c,r",
-           'enable_notifications': 1,
-           'check_command': "C_SNMP_PROCESS",
+            'vars.process': "fail2ban-server",
+            'vars.warning': 0,
+            'vars.critical': 0,
+        },
+        'gunicorn_process': {
+            'service_description': "Check gunicorn process",
+            'import': ["ST_ALERT"],
+            # 'notification_options': "w,c,r",
+            'enable_notifications': 1,
+            'check_command': "C_SNMP_PROCESS",
 
-           'vars.process': "gunicorn_django",
-           'vars.warning': 0,
-           'vars.critical': 0,
-       },
-       'haproxy': {
-           'service_description': "haproxy_stats",
-           'import': ["ST_ALERT"],
-           'check_command': "CSSH_HAPROXY",
-           'vars.command': ("/root/admin_scripts/nagios/"
-                            "check_haproxy_stats.pl -p "
-                            "web -w 80 -c 90"),
-       },
-       'ircbot_process': {
-           'service_description': "S_IRCBOT_PROCESS",
-           'import': ["ST_HOURLY_ALERT"],
-           'check_command': "C_PROCESS_IRCBOT_RUNNING",
-       },
-       'load_avg': {
-           'service_description': "LOAD_AVG",
-           'import': ["ST_LOAD_AVG"],
-           'check_command': "C_SNMP_LOADAVG",
+            'vars.process': "gunicorn_django",
+            'vars.warning': 0,
+            'vars.critical': 0,
+        },
+        'haproxy': {
+            'service_description': "haproxy_stats",
+            'import': ["ST_ALERT"],
+            'check_command': "CSSH_HAPROXY",
+            'vars.command': ("/root/admin_scripts/nagios/"
+                             "check_haproxy_stats.pl -p "
+                             "web -w 80 -c 90"),
+        },
+        'ircbot_process': {
+            'service_description': "S_IRCBOT_PROCESS",
+            'import': ["ST_HOURLY_ALERT"],
+            'check_command': "C_PROCESS_IRCBOT_RUNNING",
+        },
+        'load_avg': {
+            'service_description': "LOAD_AVG",
+            'import': ["ST_LOAD_AVG"],
+            'check_command': "C_SNMP_LOADAVG",
 
-           'vars.other_args': "",
-       },
-       'mail_cyrus_imap_connections': {
-           'service_description': "S_MAIL_CYRUS_IMAP_CONNECTIONS",
-           'import': ["ST_ALERT"],
-           'check_command': "CSSH_CYRUS_CONNECTIONS",
+            'vars.other_args': "",
+        },
+        'mail_cyrus_imap_connections': {
+            'service_description': "S_MAIL_CYRUS_IMAP_CONNECTIONS",
+            'import': ["ST_ALERT"],
+            'check_command': "CSSH_CYRUS_CONNECTIONS",
 
-           'vars.warning': 300,
-           'vars.critical': 900,
-       },
-       'mail_imap': {
-           'service_description': "S_MAIL_IMAP",
-           'import': ["ST_ALERT"],
-           'check_command': "C_MAIL_IMAP",
+            'vars.warning': 300,
+            'vars.critical': 900,
+        },
+        'mail_imap': {
+            'service_description': "S_MAIL_IMAP",
+            'import': ["ST_ALERT"],
+            'check_command': "C_MAIL_IMAP",
 
-           'vars.warning': 1,
-           'vars.critical': 3,
-       },
-       'mail_imap_ssl': {
-           'service_description': "S_MAIL_IMAP_SSL",
-           'import': ["ST_ALERT"],
-           'check_command': "C_MAIL_IMAP_SSL",
+            'vars.warning': 1,
+            'vars.critical': 3,
+        },
+        'mail_imap_ssl': {
+            'service_description': "S_MAIL_IMAP_SSL",
+            'import': ["ST_ALERT"],
+            'check_command': "C_MAIL_IMAP_SSL",
 
-           'vars.warning': 1,
-           'vars.critical': 3,
-       },
-       'mail_pop': {
-           'service_description': "S_MAIL_POP",
-           'import': ["ST_ALERT"],
-           'check_command': "C_MAIL_POP",
+            'vars.warning': 1,
+            'vars.critical': 3,
+        },
+        'mail_pop': {
+            'service_description': "S_MAIL_POP",
+            'import': ["ST_ALERT"],
+            'check_command': "C_MAIL_POP",
 
-           'vars.warning': 1,
-           'vars.critical': 3,
-       },
-       'mail_pop_ssl': {
-           'service_description': "S_MAIL_POP_SSL",
-           'import': ["ST_ALERT"],
-           'check_command': "C_MAIL_POP_SSL",
+            'vars.warning': 1,
+            'vars.critical': 3,
+        },
+        'mail_pop_ssl': {
+            'service_description': "S_MAIL_POP_SSL",
+            'import': ["ST_ALERT"],
+            'check_command': "C_MAIL_POP_SSL",
 
-           'vars.warning': 1,
-           'vars.critical': 3,
-       },
-       'mail_pop_test_account': {
-           'service_description': "S_MAIL_POP3_TEST_ACCOUNT",
-           'import': ["ST_ALERT"],
-           'check_command': "C_POP3_TEST_SIZE_AND_DELETE",
+            'vars.warning': 1,
+            'vars.critical': 3,
+        },
+        'mail_pop_test_account': {
+            'service_description': "S_MAIL_POP3_TEST_ACCOUNT",
+            'import': ["ST_ALERT"],
+            'check_command': "C_POP3_TEST_SIZE_AND_DELETE",
 
-           'vars.warning1': 52488,
-           'vars.critical1': 1048576,
-           'vars.warning2': 100,
-           'vars.critical2': 2000,
-           'vars.mx': "@makina-corpus.com",
-       },
-       'mail_server_queues': {
-           'service_description': "S_MAIL_SERVER_QUEUES",
-           'import': ["ST_ALERT"],
-           'check_command': "CSSH_MAILQUEUE",
+            'vars.warning1': 52488,
+            'vars.critical1': 1048576,
+            'vars.warning2': 100,
+            'vars.critical2': 2000,
+            'vars.mx': "@makina-corpus.com",
+        },
+        'mail_server_queues': {
+            'service_description': "S_MAIL_SERVER_QUEUES",
+            'import': ["ST_ALERT"],
+            'check_command': "CSSH_MAILQUEUE",
 
-           'vars.warning': 50,
-           'vars.critical': 100,
-       },
-       'mail_smtp': {
-           'service_description': "S_MAIL_SMTP",
-           'import': ["ST_ALERT"],
-           'check_command': "C_MAIL_SMTP",
+            'vars.warning': 50,
+            'vars.critical': 100,
+        },
+        'mail_smtp': {
+            'service_description': "S_MAIL_SMTP",
+            'import': ["ST_ALERT"],
+            'check_command': "C_MAIL_SMTP",
 
-           'vars.warning': 1,
-           'vars.critical': 3,
-       },
-       'megaraid_sas': {
-           'service_description': "CHECK_MEGARAID_SAS",
-           'import': ["ST_ALERT"],
-           'check_command': "CSSH_MEGARAID_SAS",
+            'vars.warning': 1,
+            'vars.critical': 3,
+        },
+        'megaraid_sas': {
+            'service_description': "CHECK_MEGARAID_SAS",
+            'import': ["ST_ALERT"],
+            'check_command': "CSSH_MEGARAID_SAS",
 
-           'vars.command': ("'/root/admin_scripts/"
-                            "nagios/check_megaraid_sas'"),
-       },
-       'memory': {
-           'service_description': "MEMORY",
-           'import': ["ST_MEMORY"],
-           'check_command': "C_SNMP_MEMORY",
+            'vars.command': ("'/root/admin_scripts/"
+                             "nagios/check_megaraid_sas'"),
+        },
+        'memory': {
+            'service_description': "MEMORY",
+            'import': ["ST_MEMORY"],
+            'check_command': "C_SNMP_MEMORY",
 
-           'vars.warning': 80,
-           'vars.critical': 90,
-       },
-       'memory_hyperviseur': {
-           'service_description': "MEMORY_HYPERVISEUR",
-           'import': ["ST_MEMORY_HYPERVISEUR"],
-           'check_command': "C_SNMP_MEMORY",
+            'vars.warning': 80,
+            'vars.critical': 90,
+        },
+        'memory_hyperviseur': {
+            'service_description': "MEMORY_HYPERVISEUR",
+            'import': ["ST_MEMORY_HYPERVISEUR"],
+            'check_command': "C_SNMP_MEMORY",
 
-           'vars.warning': 95,
-           'vars.critical': 99,
-       },
-       'mysql_process': {
-           'service_description': "S_MYSQL_PROCESS",
-           'import': ["ST_ALERT"],
-           'check_command': "C_SNMP_PROCESS",
+            'vars.warning': 95,
+            'vars.critical': 99,
+        },
+        'mysql_process': {
+            'service_description': "S_MYSQL_PROCESS",
+            'import': ["ST_ALERT"],
+            'check_command': "C_SNMP_PROCESS",
 
-           'vars.process': "mysql",
-           'vars.warning': 0,
-           'vars.critical': 0,
-       },
-       'network': {
-           'default': {
-               # prefix
-               'service_description': "NETWORK_",
-               'import': ["ST_NETWORK_"],
-               'check_command': "C_SNMP_NETWORK",
+            'vars.process': "mysql",
+            'vars.warning': 0,
+            'vars.critical': 0,
+        },
+        'network': {
+            'default': {
+                # prefix
+                'service_description': "NETWORK_",
+                'import': ["ST_NETWORK_"],
+                'check_command': "C_SNMP_NETWORK",
 
-               'vars.interface': "eth0",
-               'vars.other_args': "",
-           },
-       },
-       'ntp_peers': {
-           'service_description': "S_NTP_PEERS",
-           'import': ["ST_ROOT"],
-           'check_command': "CSSH_NTP_PEER",
-       },
-       'ntp_time': {
-           'service_description': "S_NTP_TIME",
-           'import': ["ST_ROOT"],
-           'check_command': "CSSH_NTP_TIME",
-       },
-       'only_one_nagios_running': {
-           'service_description': "S_ONLY_ONE_NAGIOS_RUNNING",
-           'import': ["ST_HOURLY_ALERT"],
-           'check_command': "C_CHECK_ONE_NAGIOS_ONLY",
-       },
-       'postgres_port': {
-           'service_description': "S_POSTGRESQL_PORT",
-           'import': ["ST_ROOT"],
-           'icon_image': "services/sql4.png",
-           'check_command': "check_tcp",
+                'vars.interface': "eth0",
+                'vars.other_args': "",
+            },
+        },
+        'ntp_peers': {
+            'service_description': "S_NTP_PEERS",
+            'import': ["ST_ROOT"],
+            'check_command': "CSSH_NTP_PEER",
+        },
+        'ntp_time': {
+            'service_description': "S_NTP_TIME",
+            'import': ["ST_ROOT"],
+            'check_command': "CSSH_NTP_TIME",
+        },
+        'only_one_nagios_running': {
+            'service_description': "S_ONLY_ONE_NAGIOS_RUNNING",
+            'import': ["ST_HOURLY_ALERT"],
+            'check_command': "C_CHECK_ONE_NAGIOS_ONLY",
+        },
+        'postgres_port': {
+            'service_description': "S_POSTGRESQL_PORT",
+            'import': ["ST_ROOT"],
+            'icon_image': "services/sql4.png",
+            'check_command': "check_tcp",
 
-           'vars.port': 5432,
-           'vars.warning': 2,
-           'vars.critical': 8,
-       },
-       'postgres_process': {
-           'service_description': "S_POSTGRESQL_PROCESS",
-           'import': ["ST_ALERT"],
-           'icon_image': "services/sql4.png",
-           'check_command': "C_SNMP_PROCESS",
+            'vars.port': 5432,
+            'vars.warning': 2,
+            'vars.critical': 8,
+        },
+        'postgres_process': {
+            'service_description': "S_POSTGRESQL_PROCESS",
+            'import': ["ST_ALERT"],
+            'icon_image': "services/sql4.png",
+            'check_command': "C_SNMP_PROCESS",
 
-           'vars.process': "postgres",
-           'vars.warning': 0,
-           'vars.critical': 0,
-       },
-       'prebill_sending': {
-           'service_description': "CHECK_PREBILL_SENDING",
-           'import': ["ST_ALERT"],
-           'check_command': "CSSH_CUSTOM",
+            'vars.process': "postgres",
+            'vars.warning': 0,
+            'vars.critical': 0,
+        },
+        'prebill_sending': {
+            'service_description': "CHECK_PREBILL_SENDING",
+            'import': ["ST_ALERT"],
+            'check_command': "CSSH_CUSTOM",
 
-           'vars.command': ("/var/makina/alma-job/job/"
-                            "supervision/check_prebill_sending.sh"),
-       },
-       'raid': {
-           'service_description': "CHECK_MD_RAID",
-           'import': ["ST_ALERT"],
-           'check_command': "CSSH_RAID_SOFT",
+            'vars.command': ("/var/makina/alma-job/job/"
+                             "supervision/check_prebill_sending.sh"),
+        },
+        'raid': {
+            'service_description': "CHECK_MD_RAID",
+            'import': ["ST_ALERT"],
+            'check_command': "CSSH_RAID_SOFT",
 
-           'vars.command': "'/root/admin_scripts/nagios/check_md_raid'",
-       },
-       'sas': {
-           'service_description': "S_SAS",
-           'import': ["ST_ROOT"],
-           'check_command': "CSSH_SAS2IRCU",
+            'vars.command': "'/root/admin_scripts/nagios/check_md_raid'",
+        },
+        'sas': {
+            'service_description': "S_SAS",
+            'import': ["ST_ROOT"],
+            'check_command': "CSSH_SAS2IRCU",
 
-           'vars.command': ("/root/admin_scripts/check_nagios"
-                            "/check_sas2ircu/check_sas2ircu"),
-       },
-       'snmpd_memory_control': {
-           'service_description': "S_SNMPD_MEMORY_CONTROL",
-           'import': ["ST_ALERT"],
-           'check_command': "C_SNMP_PROCESS_WITH_MEM",
+            'vars.command': ("/root/admin_scripts/check_nagios"
+                             "/check_sas2ircu/check_sas2ircu"),
+        },
+        'snmpd_memory_control': {
+            'service_description': "S_SNMPD_MEMORY_CONTROL",
+            'import': ["ST_ALERT"],
+            'check_command': "C_SNMP_PROCESS_WITH_MEM",
 
-           'vars.process': "snmpd",
-           'vars.warning': "0,1",
-           'vars.critical': "0,1",
-           'vars.memory': "256,512",
-       },
-       'solr': {
-           'default': {
-               'service_description': "SOLR_",
-               'import': ["ST_WEB_PUBLIC"],
-               'check_command': "C_HTTP_STRING_SOLR",
+            'vars.process': "snmpd",
+            'vars.warning': "0,1",
+            'vars.critical': "0,1",
+            'vars.memory': "256,512",
+        },
+        'solr': {
+            'default': {
+                'service_description': "SOLR_",
+                'import': ["ST_WEB_PUBLIC"],
+                'check_command': "C_HTTP_STRING_SOLR",
 
-               'vars.hostname': "h",
-               'vars.port': 80,
-               'vars.url': "/",
-               'vars.warning': 1,
-               'vars.critical': 5,
-               'vars.timeout': 8,
-               'vars.strings': [],
-               'vars.other_args': "",
-           },
-       },
-       'ssh': {
-           'service_description': "S_SSH",
-           'import': ["ST_ROOT"],
-           'check_command': "check_tcp",
+                'vars.hostname': "h",
+                'vars.port': 80,
+                'vars.url': "/",
+                'vars.warning': 1,
+                'vars.critical': 5,
+                'vars.timeout': 8,
+                'vars.strings': [],
+                'vars.other_args': "",
+            },
+        },
+        'ssh': {
+            'service_description': "S_SSH",
+            'import': ["ST_ROOT"],
+            'check_command': "check_tcp",
 
-           'vars.port': 22,
-           'vars.warning': 1,
-           'vars.critical': 4,
-       },
-       'supervisord_status': {
-           'service_description': "S_SUPERVISORD_STATUS",
-           'import': ["ST_ALERT"],
-           'check_command': "CSSH_SUPERVISOR",
+            'vars.port': 22,
+            'vars.warning': 1,
+            'vars.critical': 4,
+        },
+        'supervisord_status': {
+            'service_description': "S_SUPERVISORD_STATUS",
+            'import': ["ST_ALERT"],
+            'check_command': "CSSH_SUPERVISOR",
 
-           'vars.command': ("/home/zope/adria/rcse/"
-                            "production-2014-01-23-14-27-01/bin/supervisorctl"),
-       },
-       'swap': {
-           'service_description': "CHECK_SWAP",
-           'import': ["ST_ALERT"],
-           'check_command': "CSSH_RAID_SOFT",
+            'vars.command': ("/home/zope/adria/rcse/"
+                             "production-2014-01-"
+                             "23-14-27-01/bin/supervisorctl"),
+        },
+        'swap': {
+            'service_description': "CHECK_SWAP",
+            'import': ["ST_ALERT"],
+            'check_command': "CSSH_RAID_SOFT",
 
-           'vars.command': ("'/root/admin_scripts/"
-                            "nagios/check_swap -w 80%% -c 50%%'"),
-       },
-       'tiles_generator_access': {
-           'service_description': "Check tiles generator access",
-           'import': ["ST_ALERT"],
-           # 'notification_options': "w,c,r",
-           'enable_notifications': 1,
-           'check_command': "check_http_vhost_uri",
+            'vars.command': ("'/root/admin_scripts/"
+                             "nagios/check_swap -w 80%% -c 50%%'"),
+        },
+        'tiles_generator_access': {
+            'service_description': "Check tiles generator access",
+            'import': ["ST_ALERT"],
+            # 'notification_options': "w,c,r",
+            'enable_notifications': 1,
+            'check_command': "check_http_vhost_uri",
 
-           'vars.hostname': "vdm.makina-corpus.net",
-           'vars.url': "/vdm-tiles/status/",
-       },
-       'ware_raid': {
-           'service_description': "CHECK_3WARE_RAID",
-           'import': ["ST_ALERT"],
-           'check_command': "CSSH_RAID_3WARE",
+            'vars.hostname': "vdm.makina-corpus.net",
+            'vars.url': "/vdm-tiles/status/",
+        },
+        'ware_raid': {
+            'service_description': "CHECK_3WARE_RAID",
+            'import': ["ST_ALERT"],
+            'check_command': "CSSH_RAID_3WARE",
 
-           'vars.command': "/root/admin_scripts/nagios/check_3ware_raid",
-       },
-       'web_apache_status': {
-           'service_description': "WEB_APACHE_STATUS",
-           'import': ["ST_WEB_APACHE_STATUS"],
-           'check_command': "C_APACHE_STATUS",
+            'vars.command': "/root/admin_scripts/nagios/check_3ware_raid",
+        },
+        'web_apache_status': {
+            'service_description': "WEB_APACHE_STATUS",
+            'import': ["ST_WEB_APACHE_STATUS"],
+            'check_command': "C_APACHE_STATUS",
 
-           'vars.warning': 4,
-           'vars.critical': 2,
-           'vars.other_args': "",
-       },
-       'web_openid': {
-           'default': {
-               'service_description': "WEB_OPENID_",
-               'import': ["ST_WEB_PUBLIC"],
-               'check_command': "C_HTTPS_OPENID_REDIRECT",
+            'vars.warning': 4,
+            'vars.critical': 2,
+            'vars.other_args': "",
+        },
+        'web_openid': {
+            'default': {
+                'service_description': "WEB_OPENID_",
+                'import': ["ST_WEB_PUBLIC"],
+                'check_command': "C_HTTPS_OPENID_REDIRECT",
 
-               'vars.hostname': hostname,
-               'vars.url': "/",
-               'vars.warning': 1,
-               'vars.critical': 5,
-               'vars.timeout': 8,
-           },
-       },
-       'web': {
-           'default': {
-               'service_description': "WEB_",
-               'vars.hostname': hostname,
-               'import': ["ST_WEB_PUBLIC"],
-               'check_command': "C_HTTP_STRING",
+                'vars.hostname': hostname,
+                'vars.url': "/",
+                'vars.warning': 1,
+                'vars.critical': 5,
+                'vars.timeout': 8,
+            },
+        },
+        'web': {
+            'default': {
+                'service_description': "WEB_",
+                'vars.hostname': hostname,
+                'import': ["ST_WEB_PUBLIC"],
+                'check_command': "C_HTTP_STRING",
 
-               'vars.url': "/",
-               'vars.warning': 2,
-               'vars.critical': 3,
-               'vars.timeout': 8,
-               'vars.strings': [],
-               'vars.other_args': "",
-           },
-       },
+                'vars.url': "/",
+                'vars.warning': 2,
+                'vars.critical': 3,
+                'vars.timeout': 8,
+                'vars.strings': [],
+                'vars.other_args': "",
+            },
+        },
     }
 
     # add the services_attrs 'default' in all services
@@ -1776,120 +1930,185 @@ def add_auto_configuration_host_settings(hostname,
         # the dictionary is set, we merging normally
         for name, dns in services_attrs[DRA].items():
             if 'service_description' not in dns:
-                services_attrs[DRA][name]['service_description']=services_default_attrs['dns_association'][name]['service_reverse_description']+name
+                services_attrs[DRA][name][
+                    'service_description'] = services_default_attrs[
+                        'dns_association'][name][
+                            'service_reverse_description'] + name
             for key, value in services_default_attrs[DRA]['default'].items():
-                if not key in dns:
-                    services_attrs[DRA][name][key]=value
+                if key not in dns:
+                    services_attrs[DRA][name][key] = value
 
     # override network subdictionary
-    if not 'network' in services_attrs:
-        services_attrs['network'] =  services_default_attrs['network']
-        services_attrs['network']['default']['service_description']=services_default_attrs['network']['default']['service_description']+'default'
-        services_attrs['network']['default']['import']=[services_default_attrs['network']['default']['import'][0]+services_default_attrs['network']['default']['vars.interface'].upper()]
+    if 'network' not in services_attrs:
+        services_attrs['network'] = services_default_attrs['network']
+        services_attrs['network'][
+            'default']['service_description'] = services_default_attrs[
+                'network']['default']['service_description'] + 'default'
+        services_attrs['network'][
+            'default']['import'] = [
+                services_default_attrs['network']['default']['import'][0] +
+                services_default_attrs['network'][
+                    'default']['vars.interface'].upper()]
     else:
         for name, network in services_attrs['network'].items():
             # generate the service_description if not given
             if 'service_description' not in network:
                 if 'vars.interface' in services_attrs['network'][name]:
-                    services_attrs['network'][name]['service_description']=services_default_attrs['network']['default']['service_description']+services_attrs['network'][name]['vars.interface'].upper()
+                    services_attrs['network'][name][
+                        'service_description'] = (
+                            services_default_attrs['network'][
+                                'default']['service_description'] +
+                            services_attrs['network'][
+                                name]['vars.interface'].upper())
                 else:
-                    services_attrs['network'][name]['service_description']=services_default_attrs['network']['default']['service_description']+services_default_attrs['network']['default']['vars.interface'].upper()
+                    services_attrs['network'][name][
+                        'service_description'] = (
+                            services_default_attrs['network'][
+                                'default']['service_description'] +
+                            services_default_attrs['network'][
+                                'default']['vars.interface'].upper())
             if 'import' not in network:
                 if 'vars.interface' in services_attrs['network'][name]:
-                    services_attrs['network'][name]['import']=services_default_attrs['network']['default']['import']+services_attrs['network'][name]['vars.interface'].upper()
+                    services_attrs['network'][
+                        name]['import'] = (
+                            services_default_attrs['network'][
+                                'default']['import'] +
+                            services_attrs['network'][
+                                name]['vars.interface'].upper())
                 else:
-                    services_attrs['network'][name]['import']=[services_default_attrs['network']['default']['import'][0]+i.upper() for i in services_default_attrs['network']['default']['vars.interface']] # add the prefix to the import
+                    # add the prefix to the import
+                    services_attrs['network'][
+                        name]['import'] = [
+                            services_default_attrs['network'][
+                                'default']['import'][0] +
+                            i.upper()
+                            for i in services_default_attrs['network'][
+                                'default']['vars.interface']]
 
-            for key, value in services_default_attrs['network']['default'].items():
-                if not key in network:
-                    services_attrs['network'][name][key]=value
+            for key, value in services_default_attrs[
+                'network'
+            ]['default'].items():
+                if key not in network:
+                    services_attrs['network'][name][key] = value
 
     # override solr subdictionary
-    if not 'solr' in services_attrs:
-        services_attrs['solr'] =  services_default_attrs['solr']
-        services_attrs['solr']['default']['service_description']=services_default_attrs['solr']['default']['service_description']+'default'
+    if 'solr' not in services_attrs:
+        services_attrs['solr'] = services_default_attrs['solr']
+        services_attrs['solr']['default'][
+            'service_description'] = services_default_attrs[
+                'solr']['default']['service_description'] + 'default'
     else:
         for name, solr in services_attrs['solr'].items():
             # generate the service_description if not given
             if 'service_description' not in solr:
-                services_attrs['solr'][name]['service_description']=services_default_attrs['solr']['default']['service_description']+name
-            for key, value in services_default_attrs['solr']['default'].items():
-                if not key in solr:
-                    services_attrs['solr'][name][key]=value
-            # transform list of values in string ['a', 'b'] becomes '"a" -s "b"'
+                services_attrs['solr'][name][
+                    'service_description'] = (
+                        services_default_attrs['solr']['default'][
+                            'service_description'] + name)
+            for key, value in services_default_attrs[
+                'solr'
+            ]['default'].items():
+                if key not in solr:
+                    services_attrs['solr'][name][key] = value
+            # transform list of values in
+            # string ['a', 'b'] becomes '"a" -s "b"'
             if isinstance(services_attrs['solr'][name]['vars.strings'], list):
                 str_list = services_attrs['solr'][name]['vars.strings']
                 # to avoid quotes conflicts (doesn't avoid code injection)
-                str_list = [ value.replace('"', '\\\\"') for value in str_list ]
-                services_attrs['solr'][name]['vars.strings']='"'+'" -s "'.join(str_list)+'"'
-
+                str_list = [value.replace('"', '\\\\"') for value in str_list]
+                services_attrs['solr'][name]['vars.strings'] = (
+                    '"' + '" -s "'.join(str_list) + '"')
 
     # override web_openid subdictionary
-    if not 'web_openid' in services_attrs:
-        services_attrs['web_openid'] =  services_default_attrs['web_openid']
-        services_attrs['web_openid']['default']['service_description']=services_default_attrs['web_openid']['default']['service_description']+'default'
+    if 'web_openid' not in services_attrs:
+        services_attrs['web_openid'] = services_default_attrs['web_openid']
+        services_attrs['web_openid']['default'][
+            'service_description'] = services_default_attrs[
+                'web_openid']['default']['service_description'] + 'default'
     else:
         for name, web_openid in services_attrs['web_openid'].items():
             # generate the service_description if not given
             if 'service_description' not in web_openid:
-                services_attrs['web_openid'][name]['service_description']=services_default_attrs['web_openid']['default']['service_description']+name
-            for key, value in services_default_attrs['web_openid']['default'].items():
-                if not key in web_openid:
-                    services_attrs['web_openid'][name][key]=value
+                services_attrs['web_openid'][name][
+                    'service_description'] = services_default_attrs[
+                        'web_openid']['default']['service_description'] + name
+            for key, value in services_default_attrs[
+                'web_openid'
+            ]['default'].items():
+                if key not in web_openid:
+                    services_attrs['web_openid'][name][key] = value
 
     # override web subdictionary
-    if not 'web' in services_attrs:
-        services_attrs['web'] =  services_default_attrs['web']
-        services_attrs['web']['default']['service_description']=services_default_attrs['web']['default']['service_description']+'default'
+    if 'web' not in services_attrs:
+        services_attrs['web'] = services_default_attrs['web']
+        services_attrs['web']['default'][
+            'service_description'] = services_default_attrs[
+                'web']['default']['service_description'] + 'default'
     else:
         for name, web in services_attrs['web'].items():
             # generate the service_description if not given
             if 'service_description' not in web:
-                services_attrs['web'][name]['service_description']=services_default_attrs['web']['default']['service_description']+name
-            for key, value in services_default_attrs['web']['default'].items():
-                if not key in web:
-                    services_attrs['web'][name][key]=value
-            # transform list of values in string ['a', 'b'] becomes '"a" -s "b"'
+                services_attrs['web'][name][
+                    'service_description'] = services_default_attrs[
+                        'web']['default']['service_description'] + name
+            for key, value in services_default_attrs[
+                'web'
+            ]['default'].items():
+                if key not in web:
+                    services_attrs['web'][name][key] = value
+            # transform list of values
+            # in string ['a', 'b'] becomes '"a" -s "b"'
             if isinstance(services_attrs['web'][name]['vars.strings'], list):
                 str_list = services_attrs['web'][name]['vars.strings']
                 # to avoid quotes conflicts (doesn't avoid code injection)
-                str_list = [ value.replace('"', '\\\\"') for value in str_list ]
-                services_attrs['web'][name]['vars.strings']='"'+'" -s "'.join(str_list)+'"'
+                str_list = [value.replace('"', '\\\\"') for value in str_list]
+                services_attrs['web'][name][
+                    'vars.strings'] = '"' + '" -s "'.join(str_list) + '"'
 
     # override mountpoints subdictionaries
     # for each disk_space, build the dictionary:
     # priority for values
-    # services_default_attrs['disk_space']['default'] # default values in default dictionary
-    # services_default_attrs['disk_space'][mountpoint] # specific values in default dictionary
-    # services_attrs['disk_space']['default'] # default value in overrided dictionary
-    # services_attrs['disk_space'][mountpoint] # specific value in overrided dictionary
     if 'disk_space' not in services_attrs:
         services_attrs['disk_space'] = {}
-    # we can't merge default dictionary yet because priorities will not be respected
+    # we can't merge default dictionary yet because priorities
+    # will not be respected
     if 'default' not in services_attrs['disk_space']:
         services_attrs['disk_space']['default'] = {}
 
     for mountpoint, path in mountpoints_path.items():
-        if mountpoint in disks_spaces: # the check is enabled
+        if mountpoint in disks_spaces:  # the check is enabled
             if mountpoint not in services_default_attrs['disk_space']:
-                services_default_attrs['disk_space'][mountpoint] = copy.deepcopy(services_default_attrs['disk_space']['default'])
+                services_default_attrs['disk_space'][
+                    mountpoint] = copy.deepcopy(
+                        services_default_attrs['disk_space']['default'])
+            services_attrs['disk_space'][mountpoint] = dict(
+                services_default_attrs['disk_space']['default'].items() +
+                services_default_attrs['disk_space'][mountpoint].items())
+            services_attrs['disk_space'][mountpoint] = dict(
+                services_attrs['disk_space'][mountpoint].items() +
+                services_attrs['disk_space']['default'].items())
+            services_attrs['disk_space'][mountpoint] = dict(
+                services_attrs['disk_space'][mountpoint].items() +
+                services_attrs['disk_space'][mountpoint].items())
 
-            services_attrs['disk_space'][mountpoint] = dict(services_default_attrs['disk_space']['default'].items()
-                                                                         +services_default_attrs['disk_space'][mountpoint].items())
-
-            services_attrs['disk_space'][mountpoint] = dict(services_attrs['disk_space'][mountpoint].items()
-                                                                         +services_attrs['disk_space']['default'].items())
-
-            services_attrs['disk_space'][mountpoint] = dict(services_attrs['disk_space'][mountpoint].items()
-                                                                         +services_attrs['disk_space'][mountpoint].items())
-
-            if services_attrs['disk_space'][mountpoint]['service_description'] == services_default_attrs['disk_space']['default']['service_description']:
-                services_attrs['disk_space'][mountpoint]['service_description']=services_attrs['disk_space'][mountpoint]['service_description']+disks_spaces[mountpoint].upper()
-#            if services_attrs['disk_space'][mountpoint]['import'][0] in services_default_attrs['disk_space']['default']['import']:
+            if (
+                services_attrs['disk_space'][
+                    mountpoint
+                ]['service_description'] == services_default_attrs[
+                    'disk_space']['default']['service_description']
+            ):
+                services_attrs['disk_space'][
+                    mountpoint]['service_description'] = (
+                        services_attrs['disk_space'][mountpoint][
+                            'service_description'] +
+                        disks_spaces[mountpoint].upper())
             services_attrs['disk_space'][
-                mountpoint]['import'] = [services_attrs['disk_space'][mountpoint]['import'][0]+disks_spaces[mountpoint].replace('/', '_').replace('_', '/', 1).upper()]
+                mountpoint]['import'] = [
+                    services_attrs['disk_space'][mountpoint]['import'][0] +
+                    disks_spaces[mountpoint].replace(
+                        '/', '_').replace('_', '/', 1).upper()]
             services_attrs['disk_space'][
-                mountpoint]['vars.path']= disks_spaces[mountpoint]
+                mountpoint]['vars.path'] = disks_spaces[mountpoint]
 
     # remove default dictionary
     if 'default' in services_attrs['disk_space']:
@@ -1939,13 +2158,13 @@ def add_auto_configuration_host_settings(hostname,
                 ] = hostname + '__' + services_attrs[
                     service][subservice]['service_description']
 
-
     kwargs.setdefault('services_attrs', services_attrs)
 
     icingaSettings = __salt__['mc_utils.dictupdate'](icingaSettings,
                                                      kwargs)
     print('end call add_auto_configuration_host_settings')
     return icingaSettings
+
 
 def add_auto_configuration_host(hostname=None,
                                 hostgroup=False,
@@ -2060,9 +2279,9 @@ def add_auto_configuration_host(hostname=None,
             service_subdirectory = 'hosts'
             service_key_hostname = 'host_name'
         # we set the filename here
-        file='/'.join([service_subdirectory, hostname+'.conf'])
-        kwargs.setdefault('file', file)
-        kwargs.setdefault('state_name_salt', replace_chars(file))
+        filen = '/'.join([service_subdirectory, hostname+'.conf'])
+        kwargs.setdefault('file', filen)
+        kwargs.setdefault('state_name_salt', replace_chars(filen))
         icingaSettings = __salt__['mc_utils.dictupdate'](
             icingaSettings, kwargs)
 
