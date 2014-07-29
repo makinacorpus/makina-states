@@ -217,6 +217,7 @@ def objects_icinga2():
                 command = _check_command_arguments(value)
                 for key, value in command.items():
                     res[key] = value
+            # TODO: perhaps a separated object will be better but it may be problematic with autoconfigured hosts
             elif key in ['contacts', 'contact_groups', 'notification_options', 'notification_period', 'notification_interval']: # for notifications
                 if 'notification' not in res:
                     res['notification'] = {}
@@ -247,7 +248,7 @@ def objects_icinga2():
                             res['notification']['type'].append('DowntimeEnd')
                             res['notification']['type'].append('DowntimeRemoved')
                         elif 'r' == v:
-                            res['notification']['state'].append('Ok')
+                            res['notification']['state'].append('OK')
                             res['notification']['type'].append('Recovery')
                         elif 'f' == v:
                             res['notification']['state'].append('.')
@@ -258,8 +259,10 @@ def objects_icinga2():
                         elif '.' == v:
                             res['notification']['state'].append('.')
                             res['notification']['type'].append('Custom')
+                    # unique values
                     res['notification']['state'] = list(set(res['notification']['state']))
                     res['notification']['type'] = list(set(res['notification']['type']))
+                    # remove key if the list is empty
                     if 0 == len(res['notification']['type']):
                         res['notification'].pop('type', None)
                     if 0 == len(res['notification']['state']):
@@ -617,58 +620,58 @@ def format(dictionary, quote_keys=False, quote_values=True):
     res={}
     for key, value in dictionary.items():
         if quote_keys:
-            key = '"'+str(key)+'"'
+            res_key = '"'+str(key)+'"'
+        else:
+            res_key = key
 
-        if key in ['type', 'template']: # ugly hack
+        if key in ['type', 'template', 'state']: # ugly hack
             quote_values = False
-
+        elif key in ['period', 'users', 'user_groups']:
+            quote_values = True
 
         if isinstance(value, dict): # recurse
-            if key in ['arguments', 'ranges', 'notification']: # in theses subdictionaries, the keys are also quoted
-                res[key] = format(value, True, True)
+            if key in ['arguments', 'ranges']: # in theses subdictionaries, the keys are also quoted
+                res[res_key] = format(value, True, True)
             elif key in ['services_enabled', 'services_loop_enabled']: # theses dictionaries contains booleans
-                res[key] = format(value, False, False)
+                res[res_key] = format(value, False, False)
             else:
-                res[key] = format(value)
+                res[res_key] = format(value)
         elif key in ['vars.strings']: # TODO: vars.string not managed 
-            res[key] = '"'+str(value).replace('"', '\\"')+'"'
+            res[res_key] = '"'+str(value).replace('"', '\\"')+'"'
         elif isinstance(value, list):
             if key in ['import', 'parents']: # theses lists are managed in the template, we only quote each string in the list
-                res[key] = map((lambda v: '"'+str(v).replace('"','\\"')+'"'), value)
+                res[res_key] = map((lambda v: '"'+str(v).replace('"','\\"')+'"'), value)
             else:
-                # type and state are not quoted
-                if key in ['type', 'state']:
-                    quote_value = False
 
-                res[key] = '['
+                res[res_key] = '['
                 # suppose that all values in list are strings
                 # escape '"' char and quote each strings
                 if quote_values:
-                    res[key] += ', '.join(map((lambda v: '"'+str(v).replace('"','\\"')+'"'), value))
+                    res[res_key] += ', '.join(map((lambda v: '"'+str(v).replace('"','\\"')+'"'), value))
                 else:
-                    res[key] += ', '.join(value)
-                res[key] += ']'
+                    res[res_key] += ', '.join(value)
+                res[res_key] += ']'
         elif key.startswith('enable_') :
             if '"1"' == value or '1' == value or 1 == value or 'true' == value or True == value:
-                res[key] = "true"
+                res[res_key] = "true"
             else:
-                res[key] = "false"
+                res[res_key] = "false"
         elif key in ['template']:
-            res[key] = value
+            res[res_key] = value
         elif key.endswith('_interval'): # a bad method to find a time
-            res[key] = value
+            res[res_key] = value
         elif isinstance(value, int):
-            res[key] = str(value)
+            res[res_key] = str(value)
         elif isinstance(value, unicode):
             if quote_values:
-                res[key] = '"'+value.replace('"', '\\"')+'"'
+                res[res_key] = '"'+value.replace('"', '\\"')+'"'
             else:
-                res[key] = value
+                res[res_key] = value
         else:
             if quote_values:
-                res[key] = '"'+str(value).encode('utf-8').replace('"', '\\"')+'"'
+                res[res_key] = '"'+str(value).encode('utf-8').replace('"', '\\"')+'"'
             else:
-                res[key] = value
+                res[res_key] = value
 
     return res
 
