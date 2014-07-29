@@ -519,6 +519,7 @@ def objects_icinga2():
     # from icinga2-migration php script
     attrs_removed = [
         'name',
+        import pdb;pdb.set_trace()  ## Breakpoint ##
         'register',
         # timeperiods
         # contactgroups
@@ -635,7 +636,6 @@ def objects_icinga2():
         'web',
     ]
 
-    services_enabled = dict()
     for name, obj in src['objects_definitions'].items():
         # global changes
         res['objects_definitions'][name] = {}
@@ -1113,7 +1113,7 @@ def replace_chars(s):
     return res
 
 
-def add_configuration_object(file=None,
+def add_configuration_object(filen=None,
                              type=None,
                              attrs=None,
                              definition=None,
@@ -1127,18 +1127,18 @@ def add_configuration_object(file=None,
             return add_configuration_object.objects[get_objects_file]
         else:
             return add_configuration_object.objects
-    elif type and file and attrs:
-        if file not in add_configuration_object.objects:
-            add_configuration_object.objects[file] = []
+    elif type and filen and attrs:
+        if filen not in add_configuration_object.objects:
+            add_configuration_object.objects[filen] = []
         add_configuration_object.objects[
-            file].append({'type': type,
+            filen].append({'type': type,
                           'attrs': attrs,
                           'definition': definition})
     elif fromsettings:
-        if file not in add_configuration_object.objects:
-            add_configuration_object.objects[file] = []
+        if filen not in add_configuration_object.objects:
+            add_configuration_object.objects[filen] = []
         add_configuration_object.objects[
-            file].append({'fromsettings': fromsettings})
+            filen].append({'fromsettings': fromsettings})
     print('end call add_configuration_object')
 
 
@@ -1146,15 +1146,15 @@ def add_configuration_object(file=None,
 add_configuration_object.objects = {}
 
 
-def remove_configuration_object(file=None, get=False, **kwargs):
+def remove_configuration_object(filen=None, get=False, **kwargs):
     '''Add the file in the file's list to be removed'''
     if get:
         return remove_configuration_object.files
-    elif file:
+    elif filen:
         icingaSettings_complete = __salt__['mc_icinga2.settings']()
         # append " \"file\"" to the global variable
         filename = '/'.join([icingaSettings_complete[
-            'objects']['directory'], file])
+            'objects']['directory'], filen])
         # it doesn't avoid injection, just allow the '"' char
         # in filename
         filename = filename.replace('"', '\"')
@@ -2079,8 +2079,9 @@ def add_auto_configuration_host_settings(hostname,
 
             if (
                 services_attrs['disk_space'][
-                    mountpoint]['service_description'] == services_default_attrs[
-                        'disk_space']['default']['service_description']
+                    mountpoint
+                ]['service_description'] == services_default_attrs[
+                    'disk_space']['default']['service_description']
             ):
                 services_attrs['disk_space'][
                     mountpoint]['service_description'] = (
@@ -2264,9 +2265,9 @@ def add_auto_configuration_host(hostname=None,
             service_subdirectory = 'hosts'
             service_key_hostname = 'host_name'
         # we set the filename here
-        file = '/'.join([service_subdirectory, hostname+'.conf'])
-        kwargs.setdefault('file', file)
-        kwargs.setdefault('state_name_salt', replace_chars(file))
+        filen = '/'.join([service_subdirectory, hostname+'.conf'])
+        kwargs.setdefault('file', filen)
+        kwargs.setdefault('state_name_salt', replace_chars(filen))
         icingaSettings = __salt__['mc_utils.dictupdate'](
             icingaSettings, kwargs)
 
