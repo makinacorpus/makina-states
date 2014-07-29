@@ -39,6 +39,8 @@ Subregistries
    mc_etherpad.rst
    mc_fail2ban.rst
    mc_haproxy.rst
+   mc_icinga.rst
+   mc_icinga_web.rst
    mc_java.rst
    mc_autoupgrade.rst
    mc_kernel.rst
@@ -47,6 +49,7 @@ Subregistries
    mc_logrotate.rst
    mc_lxc.rst
    mc_mysql.rst
+   mc_nagvis.rst
    mc_network.rst
    mc_nginx.rst
    mc_nodejs.rst
@@ -54,6 +57,7 @@ Subregistries
    mc_pgsql.rst
    mc_php.rst
    mc_pkgs.rst
+   mc_pnp4nagios.rst
    mc_postfix.rst
    mc_provider.rst
    mc_psad.rst
@@ -72,6 +76,7 @@ Subregistries
    mc_tomcat.rst
    mc_updatedb.rst
    mc_usergroup.rst
+   mc_uwsgi.rst
 
 
 Other modules

@@ -1,0 +1,9 @@
+# MANAGED VIA SALT -- DO NOT EDIT
+{% set data = salt['mc_utils.json_load'](data) %}
+# Default settings for the NPCD init script.
+
+# Should NPCD be started? ("yes" to enable)
+RUN="yes"
+
+# Additional options that are passed to the daemon.
+DAEMON_OPTS="-d -f {{data.configuration_directory}}/npcd.cfg"

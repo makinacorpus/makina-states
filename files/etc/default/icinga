@@ -1,0 +1,23 @@
+# MANAGED VIA SALT -- DO NOT EDIT
+{% set data = salt['mc_utils.json_load'](data) %}
+# /etc/default/icinga
+
+# location of the icinga configuration file
+ICINGACFG="{{data.configuration_directory}}/icinga.cfg"
+
+# location of the CGI configuration file
+CGICFG="{{data.configuration_directory}}/cgi.cfg"
+
+# nicelevel to run icinga daemon with
+NICENESS={{data.niceness}}
+
+# start ido2db daemon (no/yes)
+{% if data.modules.ido2db.enabled %}
+IDO2DB=yes
+{% else %}
+IDO2DB=no
+{% endif %}
+
+# if you use pam_tmpdir, you need to explicitly set TMPDIR:
+#TMPDIR=/tmp
+

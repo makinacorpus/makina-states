@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- MANAGED VIA SALT - DO NOT EDIT -->
+{%- set data = salt['mc_utils.json_load'](data) %}
+<ae:configurations xmlns="http://agavi.org/agavi/config/parts/module/1.0" xmlns:ae="http://agavi.org/agavi/config/global/envelope/1.0">
+    <ae:configuration>
+        <module enabled="true">
+            <!-- Overwrite debuglog handling(verbosy) -->
+{% if data.module_appkit_xml.get('settings', None) %}
+            <settings>            
+{% for name,value in data.module_appkit_xml.settings.items() -%}
+<setting name="{{name}}">
+{%- if value is iterable -%}
+{% for parameter in value %}
+<ae:parameter>{{parameter}}</ae:parameter>
+{% endfor %}
+{%- else -%}
+{{value}}
+{%- endif -%}
+</setting>
+{% endfor %}
+                <!-- Ajax default request timeout (ms), 4 minutes == 240000 -->
+<!--
+                <setting name="ajax.timeout">240000</setting>
+-->
+<!--            
+                <setting name="debug.verbose">
+-->
+                    <!--  Debug output for db queries -->
+<!--
+		    <ae:parameter>API_Views_ApiDQLViewModel</ae:parameter>
+-->
+
+                    <!-- 
+		    <ae:parameter>Api_Store_LegacyLayer_IcingaApiModel</ae:parameter>
+                    -->
+                    
+                    <!--  Debug output for object search -->
+                    <!-- 
+                    <ae:parameter>Cronks_System_ObjectSearchResultModel</ae:parameter>
+                    -->
+            
+                    <!-- Debug output for Session handling via Doctrine-->
+                    <!-- 
+                    <ae:parameter>AppKitDoctrineSessionStorage</ae:parameter>
+                    -->
+<!--
+                </setting>
+-->
+            </settings>
+{% endif %}
+        </module>
+    </ae:configuration>
+</ae:configurations>
