@@ -1748,4 +1748,28 @@ def get_makina_states_variables(id_, ttl=60):
     return memoize_cache(_do_ms_var, [id_], {}, cache_key, ttl)
 
 
+def get_supervision_master_conf(id_, ttl=60):
+    def _do_ms_var(id_):
+        rdata = {}
+        supervision = query('supervision_configurations')
+        for cid, data in supervision.items():
+            if data.get('master', '') == id_:
+                rdata.update(data.get('master_conf', {}))
+        return rdata
+    cache_key = 'mc_pillar.get_supervision_master_conf{0}'.format(id_)
+    return memoize_cache(_do_ms_var, [id_], {}, cache_key, ttl)
+
+
+def is_supervision_master(id_, ttl=60):
+    def _do_ms_var(id_):
+        supervision = query('supervision_configurations')
+        if not supervision:
+            return False
+        for cid, data in supervision.items():
+            if data.get('master', '') == id_:
+                return True
+        return False
+    cache_key = 'mc_pillar.is_supervision_master{0}'.format(id_)
+    return memoize_cache(_do_ms_var, [id_], {}, cache_key, ttl)
+
 # vim:set et sts=4 ts=4 tw=80:

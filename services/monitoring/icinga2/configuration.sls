@@ -124,7 +124,6 @@ icinga2-init-sysvinit-conf:
       data: |
             {{sdata}}
 
-
 # modules configuration
 {% if data.modules.cgi.enabled %}
 icinga2-cgi-conf:
@@ -205,10 +204,8 @@ icinga2-ido2db-enable:
       - mc_proxy: icinga2-post-conf
 
 
-
 # startup ido2db configuration
 {% if grains['os'] in ['Ubuntu'] %}
-
 icinga2-ido2db-init-upstart-conf:
   file.managed:
     - name: {{ locs['conf_dir'] }}/init/ido2db.conf
@@ -225,7 +222,6 @@ icinga2-ido2db-init-upstart-conf:
     - defaults:
       data: |
             {{sdata}}
-
 {% endif %}
 
 icinga2-ido2db-init-sysvinit-conf:
@@ -328,7 +324,6 @@ icinga2-configuration-remove-objects-conf:
       - mc_proxy: icinga2-configuration-pre-clean-directories
     - watch_in:
       - mc_proxy: icinga2-configuration-post-clean-directories
-
 
 {#
 {%- import "makina-states/services/monitoring/icinga2/macros.jinja" as icinga2 with context %}
