@@ -1,0 +1,4 @@
+{%- set data = salt['mc_utils.json_load'](data) -%}
+{%- for host_name, host in data.hosts.items() -%}
+{{host_name}};{{host.alias}};{{host.lat}};{{host.lon}}
+{% endfor -%}

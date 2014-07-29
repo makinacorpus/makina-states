@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- MANAGED VIA SALT - DO NOT EDIT -->
+{%- set data = salt['mc_utils.json_load'](data) %}
+<ae:configurations xmlns:ae="http://agavi.org/agavi/config/global/envelope/1.0" xmlns="http://agavi.org/agavi/config/parts/databases/1.0">
+    <!-- Some resources for:
+        http://docs.icinga.org/latest/de/icinga-web-config.html#configweb-databases
+        https://wiki.icinga.org/display/howtos/databases.xml -->
+    
+    <ae:configuration>
+        <databases default="icinga_web">
+            <database name="icinga_web" class="AppKitDoctrineDatabase">
+
+                <!--
+                    Doctrine dsn strings:
+                    
+                    http://www.doctrine-project.org/documentation/manual/1_1/en/introduction-to-connections
+                    
+                    * Postgre: pgsql://icinga_web:icinga_web@localhost:5432/icinga_web
+                    * MySQL: mysql://icinga_web:icinga_web@127.0.0.1:3306/icinga_web
+                    * Oracle: oracle://icinga_web:icinga_web@localhost/iweb (iweb is the DSN name on localhost)
+                    * Oracle TSNAMES (e.g. /opt/oracle/instantclient_11_2/network/admin/tnsnames.ora):
+                            iweb =
+                                    (DESCRIPTION =
+                                    (ADDRESS = (PROTOCOL = TCP)(HOST = 10.121.0.85)(PORT = 1521))
+                                    (CONNECT_DATA =
+                                    (SERVER = DEDICATED)
+                                    (SERVICE_NAME = XE)
+                                    )
+                             )
+                    * SQLite: sqlite:///%core.root_dir%/app/data/icinga-web.db
+                      Development only
+ 
+                    
+                    Please note that some drivers can not be configured through attributes.
+                    Just to be safe add attributes to the dsn, e.g.
+                        oracle://icinga_web:icinga_web@localhost/iweb;persistent=true
+                    
+                    (https://dev.icinga.org/issues/2200)
+                    
+                -->
+                <!-- <ae:parameter name="dsn">pgsql://icinga:q9Ctq4JUCc1h0jRmAhmEvWUEKb@localhost:5432/icinga_web</ae:parameter> -->
+                {% if data.databases.web.get('socket', None) %}
+                <ae:parameter name="dsn">{{data.databases.web.type}}://{{data.databases.web.user}}:{{data.databases.web.password}}@[{{data.databases.web.socket}}]/{{data.databases.web.name}}</ae:parameter>
+                {% else %}
+                <ae:parameter name="dsn">{{data.databases.web.type}}://{{data.databases.web.user}}:{{data.databases.web.password}}@{{data.databases.web.host}}:{{data.databases.web.port}}/{{data.databases.web.name}}</ae:parameter>
+                {% endif %}
+        
+                <!-- Generic credentials  -->
+                <!-- <ae:parameter name="username">icinga_web</ae:parameter> -->
+                <!-- <ae:parameter name="password">icinga_web</ae:parameter> -->
+                
+                <!-- DB encoding type -->
+                <ae:parameter name="charset">{{data.databases_xml.icinga_web.charset}}</ae:parameter>
+                
+                <!--
+                    Doctrine_Manager configuration
+                -->
+                <ae:parameter name="manager_attributes">
+                    <!-- This allows lazy loading of the models -->
+                    <ae:parameter name="Doctrine_Core::ATTR_MODEL_LOADING">{{data.databases_xml.icinga_web.Doctrine_Core_ATTR_MODEL_LOADING}}</ae:parameter>
+                </ae:parameter>
+                
+                <!-- The path to our models -->
+                <ae:parameter name="load_models">{{data.databases_xml.icinga_web.load_models}}</ae:parameter>
+                <ae:parameter name="models_directory">{{data.databases_xml.icinga_web.models_directory}}</ae:parameter>               
+                <!-- Oracle specific -->
+                <ae:parameter name="date_format">{{data.databases_xml.icinga_web.date_format}}</ae:parameter>
+            
+                <!-- Define caching rules for this connection -->
+                <ae:parameter name="caching">
+                    <!-- enable caching -->
+                    <ae:parameter name="enabled">{{data.databases_xml.icinga_web.caching.enabled}}</ae:parameter>
+                    <!-- curerntly supported: memcache and APC -->
+                    <ae:parameter name="driver">{{data.databases_xml.icinga_web.caching.driver}}</ae:parameter>
+                    <!--
+                        Memcache specific
+                    <ae:parameter name="memcache_server">localhost</ae:parameter>
+                    <ae:parameter name="memcache_port">11211</ae:parameter>
+                    -->
+                
+                    <!-- there aren't many reasons for not using query-caches -->
+                    <ae:parameter name="use_query_cache">{{data.databases_xml.icinga_web.caching.use_query_cache}}</ae:parameter>
+                    <!-- result cache: If in doubt, let it out! This caches results from the database -->
+                    <ae:parameter name="use_result_cache">{{data.databases_xml.icinga_web.caching.use_result_cache}}</ae:parameter>
+                    <ae:parameter name="result_cache_lifespan">{{data.databases_xml.icinga_web.caching.result_cache_lifespan}}</ae:parameter>
+                </ae:parameter>     
+            </database>
+
+            <!-- 
+                This part configures the icinga database (destination to ido2db)
+                
+                If you're using oracle in this case the driver 'icingaOracle' is needed.
+                
+                - oracle: icingaOracle://icinga:icinga@localhost/iweb
+            -->
+            <database xmlns="http://agavi.org/agavi/config/parts/databases/1.0" name="icinga" class="IcingaDoctrineDatabase">
+                {% if data.databases.ido2db.get('socket', None) %}
+                <ae:parameter name="dsn">{{data.databases.ido2db.type}}://{{data.databases.ido2db.user}}:{{data.databases.ido2db.password}}@[{{data.databases.ido2db.socket}}]/{{data.databases.ido2db.name}}</ae:parameter>
+                {% else %}
+                <ae:parameter name="dsn">{{data.databases.ido2db.type}}://{{data.databases.ido2db.user}}:{{data.databases.ido2db.password}}@{{data.databases.ido2db.host}}:{{data.databases.ido2db.port}}/{{data.databases.ido2db.name}}</ae:parameter>
+                {% endif %}
+                <!-- Must be removed for oracle databases -->
+                <ae:parameter name="prefix">{{data.databases.ido2db.prefix}}</ae:parameter>
+                <ae:parameter name="charset">{{data.databases_xml.icinga.charset}}</ae:parameter>
+                <ae:parameter name="date_format">{{data.databases_xml.icinga.date_format}}</ae:parameter>
+                <ae:parameter name="manager_attributes">
+                    <ae:parameter name="Doctrine_Core::ATTR_MODEL_LOADING">{{data.databases_xml.icinga.Doctrine_Core_ATTR_MODEL_LOADING}}</ae:parameter>
+                </ae:parameter>
+                <ae:parameter name="use_retained">{{data.databases_xml.icinga.use_retained}}</ae:parameter>
+
+                <ae:parameter name="load_models">{{data.databases_xml.icinga.load_models}}</ae:parameter>
+                <ae:parameter name="models_directory">{{data.databases_xml.icinga.models_directory}}</ae:parameter>              
+                <ae:parameter name="caching">
+                    <!-- enable caching -->
+                    <ae:parameter name="enabled">{{data.databases_xml.icinga.caching.enabled}}</ae:parameter>
+                    <!-- curerntly supported: memcache and APC -->
+                    <ae:parameter name="driver">{{data.databases_xml.icinga.caching.driver}}</ae:parameter>
+                    <ae:parameter name="use_query_cache">{{data.databases_xml.icinga.caching.use_query_cache}}</ae:parameter>
+                </ae:parameter>
+
+            </database>
+            <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="/etc/icinga-web/conf.d/databases.xml#xpointer(databases/node())">
+                <xi:fallback></xi:fallback>
+            </xi:include>
+        </databases>
+    </ae:configuration>
+</ae:configurations>

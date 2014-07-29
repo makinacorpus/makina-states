@@ -1,0 +1,10 @@
+# MANAGED VIA SALT -- DO NOT EDIT
+{% set data = salt['mc_utils.json_load'](data) %}
+
+# default settings for icinga2's initscript
+
+DAEMON_CONFIG="{{data.configuration_directory}}/icinga2.conf"
+DAEMON_USER={{data.user}}
+DAEMON_GROUP={{data.group}}
+DAEMON_CMDGROUP={{data.cmdgroup}}
+#DAEMON_ARGS="-e /var/log/icinga2/icinga2.err"
