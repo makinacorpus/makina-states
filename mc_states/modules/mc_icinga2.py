@@ -167,9 +167,9 @@ def objects_icinga2():
         if command_splitted[0] in check_command_args:
             nb_args = len(check_command_args[command_splitted[0]])
             for i, val in enumerate(command_splitted[1:]):
-                if i < nb_args:  # because some commands ends
-                                 # with "!!!!" but the ARG are not
-                                 # used in command_line
+                # because some commands ends with "!!!!" but the ARG are not
+                # used in command_line
+                if i < nb_args:
                     res['vars.'+check_command_args[
                         command_splitted[0]][i]] = val
         else:
@@ -261,7 +261,7 @@ def objects_icinga2():
     def _translate_attrs(obj_type,
                          res_type,
                          obj_attrs,
-                         force_remove_attrs_used_as_name_not_removed = False):
+                         force_remove_attrs_used_as_name_not_removed=False):
         '''
         function to translate attrs subdictionary
         it is used to translate objects_definitions and autoconfigured_hosts_definitions
@@ -280,13 +280,19 @@ def objects_icinga2():
                     res[key] = value
             # TODO: perhaps a separated object will be better but it may
             # be problematic with autoconfigured hosts
-            elif key in ['contacts', 'contact_groups', 'notification_options',
-                         'notification_period', 'notification_interval']:  # for notifications
+            elif key in [
+                'contacts', 'contact_groups', 'notification_options',
+                'notification_period', 'notification_interval'
+            ]:  # for notifications
                 if 'notification' not in res:
                     res['notification'] = {}
                 if 'notification_options' == key:
                     value_splitted = value.split(',')
-                    value_splitted = map((lambda v: v.strip()), value_splitted)  # strip all values (because we can have "a,       b    ,   c". we want ["a","b","c"])
+                    # strip all values (because we can have
+                    # "a,       b    ,   c". we want ["a","b","c"])
+                    value_splitted = map(
+                        (lambda v: v.strip()),
+                        value_splitted)
                     res['notification']['state'] = []
                     res['notification']['type'] = []
                     # from http://docs.icinga.org/icinga2/latest/doc/module/icinga2/toc#!/icinga2/latest/doc/module/icinga2/chapter/migration#manual-config-migration-hints-contacts-users
@@ -323,8 +329,10 @@ def objects_icinga2():
                             res['notification']['state'].append('.')
                             res['notification']['type'].append('Custom')
                     # unique values
-                    res['notification']['state'] = list(set(res['notification']['state']))
-                    res['notification']['type'] = list(set(res['notification']['type']))
+                    res['notification']['state'] = __salt__['mc_utils.uniquify'](
+                        res['notification']['state'])
+                    res['notification']['type'] =  __salt__['mc_utils.uniquify'](
+                        res['notification']['type'])
                     # remove key if the list is empty
                     if 0 == len(res['notification']['type']):
                         res['notification'].pop('type', None)
