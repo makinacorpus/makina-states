@@ -451,12 +451,12 @@ def objects_icinga2():
             if 'import' not in res:
                 res['import'] = []
             res["import"] = (
-                res["import"] + ["legacy-timeperiod"] + res['import']
+                res["import"] + ["legacy-timeperiod"] + res['import'])
         elif 'user' == obj_type:
             if 'import' not in res:
                 res['import'] = []
             res["import"] = (
-                res["import"] + ["generic-user"] + res['import']
+                res["import"] + ["generic-user"] + res['import'])
         elif 'command' == obj_type and 'CheckCommand' == res_type:
             if 'import' not in res:
                 res['import'] = []
@@ -754,8 +754,8 @@ def objects_icinga2():
 
             for service in services_loop:
                 if service in params['services_attrs']:
-                    res['autoconfigured_hosts_definitions']
-                    [name]['services_attrs'][service] = {}
+                    res['autoconfigured_hosts_definitions'][
+                     name]['services_attrs'][service] = {}
                     for subservice in params['services_attrs'][service]:
                         res['autoconfigured_hosts_definitions'][
                             name]['services_attrs'][
