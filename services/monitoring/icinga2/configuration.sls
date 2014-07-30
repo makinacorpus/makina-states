@@ -278,11 +278,29 @@ icinga2-ido2db-init-sysvinit-conf:
 {% endif %}
 
 {% if data.modules.mklivestatus.enabled %}
+icinga2-mklivestatus-conf:
+  file.managed:
+    - name: {{data.configuration_directory}}/features-available/livestatus.conf
+    - source: salt://makina-states/files/etc/icinga2/features-available/livestatus.conf
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 644
+    - watch:
+      - mc_proxy: icinga2-pre-conf
+    - watch_in:
+      - mc_proxy: icinga2-post-conf
+    - defaults:
+      data: |
+            {{sdata}}
+
 icinga2-mklivestatus-enable:
   cmd.run:
     - name: icinga2-enable-feature livestatus
     - unless: test -e /etc/icinga2/features-enabled/livestatus.conf
     - watch:
+      - file: icinga2-mklivestatus-conf
       - mc_proxy: icinga2-pre-conf
     - watch_in:
       - mc_proxy: icinga2-post-conf
