@@ -36,19 +36,7 @@ icinga2-pkgs:
       {% for package in icinga2Settings.package %}
       - {{package}}
       {% endfor %}
-      {% if icinga2Settings.modules.ido2db.enabled %}
       {%  for package in icinga2Settings.modules.ido2db.package %}
       - {{package}}
       {%  endfor %}
-      {% endif %}
-      {% if icinga2Settings.modules.cgi.enabled %}
-      {%  for package in icinga2Settings.modules.cgi.package %}
-      - {{package}}
-      {%  endfor %}
-      {% endif %}
-      {% if icinga2Settings.modules['nagios-plugins'].enabled %}
-      {%  for package in icinga2Settings.modules['nagios-plugins'].package %}
-      - {{package}}
-      {%  endfor %}
-      {% endif %}
 
