@@ -574,7 +574,7 @@ def settings():
                 pending_sound
                     .
 
-                
+
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
@@ -617,24 +617,20 @@ def settings():
                         'web_directory': "/nagvis",
                         'fastcgi_pass': "unix:/var/spool/www/nagvis_localhost.fpm.sock",
                     },
-                    'icinga_cgi': {
-                        'enabled': True, # icinga cgi will not be configured. It is done in services.monitoring.icinga
-                        'web_directory': "/icinga",
-                        'realm': "Authentication",
-                        'htpasswd_file': "/etc/icinga/htpasswd.users",
-                        'htdocs_dir': "/usr/share/icinga/htdocs/",
-                        'images_dir': "/usr/share/icinga/htdocs/images/$1",
-                        'styles_dir': "/usr/share/icinga/htdocs/stylesheets/$1",
-                        'cgi_dir': "/usr/lib/cgi-bin/",
-                        'uwsgi_pass': "127.0.0.1:3030",
-                    },
                 },
                 'phpfpm': {
-                    'open_basedir': "/var/lib/icinga/rw/:/usr/share/php/php-gettext/:/etc/nagvis/:/var/lib/nagvis/:/var/cache/nagvis/",
+                    'open_basedir': (
+                        "/var/lib/icinga/rw/"
+                        ":/usr/share/php/php-gettext/"
+                        ":/etc/nagvis/"
+                        ":/var/lib/nagvis/"
+                        ":/var/cache/nagvis/"),
                     'doc_root': '/usr/share/nagvis/',
-                    #'session_save_path': '/var/lib/php5',
                     'session_auto_start': 0,
-                    'extensions_packages': ['php-gettext', 'php-net-socket', 'php-pear', 'php5-sqlite'],
+                    'extensions_packages': ['php-gettext',
+                                            'php-net-socket',
+                                            'php-pear',
+                                            'php5-sqlite'],
                 },
                 'global_php': {
                     'CONST_VERSION': "1.7.10",
@@ -749,7 +745,7 @@ def settings():
                         'recognizeservices': 1,
                         'showinlists': 1,
                         'showinmultisite': 1,
-#                        'stylesheet': "",
+                        # 'stylesheet': "",
                         'urltarget': "_self",
                         'hosturl': "[htmlcgi]/status.cgi?host=[host_name]",
                         'hostgroupurl': "[htmlcgi]/status.cgi?hostgroup=[hostgroup_name]",
