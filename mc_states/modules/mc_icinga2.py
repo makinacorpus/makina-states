@@ -175,12 +175,11 @@ def format(dictionary, quote_keys=False, quote_values=True):
                 res[res_key] = value
         else:
             if quote_value:
-                res[res_key] = '"' + str(value).encode(
+                res[res_key] = '"' + str(value).decode(
                     'utf-8').replace('"', '\\"')+'"'
             else:
                 res[res_key] = value
-
-    return res
+    return __salt__['mc_utils.json_dump'](res)
 
 
 def get_settings_for_object(target=None, obj=None, attr=None):
@@ -223,7 +222,7 @@ def settings():
 
         # where the icinga2 objects configuration will be written
         dict_objects['directory'] = (locs['conf_dir'] +
-                                     "/icinga/objects/salt_generated")
+                                     "/icinga2/conf.d/salt_generated")
 
         # generate default password
         icinga2_reg = __salt__[
@@ -428,7 +427,7 @@ def settings():
                             'object_cache_file': (
                                 "/var/cache/icinga2/objects.cache"),
                             'status_file': "/var/cache/icinga2/status.dat",
-                            'resource_file': "/etc/icinga/resource.cfg",
+                            'resource_file': "/etc/icinga2/resource.cfg",
                             'command_file': "/var/run/icinga2/cmd/icinga2.cmd",
                             'check_external_commands': 1,
                             'interval_length': 60,

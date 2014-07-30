@@ -722,7 +722,7 @@ def settings():
                             ),
                         }
                     },
-                }
+                },
                 'root_account': {
                     'login': "root",
                     'hashed_password': hmac.new(
