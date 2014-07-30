@@ -36,8 +36,6 @@ import logging
 import copy
 import mc_states.utils
 
-import re
-
 __name = 'icinga2'
 
 DRA = 'dns_reverse_association'
@@ -46,6 +44,39 @@ log = logging.getLogger(__name__)
 
 def objects():
     '''
+    function to load the dictionary from pillar
+    the dictionary contains the objects definitions to add in icinga2
+
+    the autoconfigured_hosts_definitions dictionary contains the
+    definitions of hosts created with the configuration_add_auto_host
+    macro
+
+    the objects_definitions dictionary contains the defintinions of
+    objects created with the configuration_add_object_macro
+
+    the purge_definitions list contains the files to delete
+
+    example:
+        autoconfigured_hosts_definitions:
+          localhost:
+            hostname: "localhost"
+            attrs:
+              address: 127.0.0.1
+              display_name: "localhost"
+            ssh: true
+            services_attrs:
+         objects_definitions:
+           mycommand:
+             attrs:
+              command: /usr/bin/mycommand
+              arguments:
+                -arg: value
+           name: mycommand
+           file: command.conf
+           type: CheckCommand
+           template: false
+        purge_definitions:
+          - commands.conf
     '''
     locs = __salt__['mc_locations.settings']()
     # XXX: import the centreon configuration
@@ -55,15 +86,19 @@ def objects():
     # timeperiods.cfg contacts.cfg contactgroups.cfg meta_* \ 
     # misccommands.cfg servicegroups.cfg  \ 
     # > /srv/salt/makina-states/mc_states/modules/mc_icinga2_from_centreon.py
-    import mc_icinga2_from_centreon
-    tmp = mc_icinga2_from_centreon.data
-    data = {}
-    data['directory'] = locs['conf_dir']+"/icinga/objects/salt_generated"
-    data['objects_definitions'] = tmp['objects_definitions']
-    data['purge_definitions'] = tmp['purge_definitions']
-    data['autoconfigured_hosts_definitions'] = tmp['autoconfigured_hosts_definitions']
 
+    # try to load from a pillar file
+    data = __salt__['mc_pillar.yaml_load']('/srv/pillar/icinga2.sls')
+    if not data:
+        data = {}
+    if 'objects_definitions' not in data:
+        data['objects_definitions'] = {}
+    if 'purge_definitions' not in data:
+        data['purge_definitions'] = []
+    if 'autoconfigured_hosts_definitions' not in data:
+        data['autoconfigured_hosts_definitions'] = {}
     return data
+
 
 
 def format(dictionary, quote_keys=False, quote_values=True):
@@ -190,6 +225,9 @@ def settings():
         dict_objects['purge_definitions'] = []
         dict_objects['autoconfigured_hosts_definitions'] = dict_objects[
             'autoconfigured_hosts_definitions'].keys()
+
+        # where the icinga2 objects configuration will be written
+        dict_objects['directory'] = locs['conf_dir']+"/icinga/objects/salt_generated"
 
         # generate default password
         icinga2_reg = __salt__[

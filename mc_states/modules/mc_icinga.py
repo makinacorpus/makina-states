@@ -2012,9 +2012,11 @@ def settings():
     package
         list packages to install icinga
     has_pgsql
-        install and configure a postgresql service in order to be used with ido2db module
+        install and configure a postgresql service in order to be used
+        with ido2db module
     has_mysql
-        install and configure a mysql service in order to be used with ido2db module
+        install and configure a mysql service in order to be used with
+        ido2db module
     user
         icinga user
     group
@@ -2029,27 +2031,31 @@ def settings():
         dictionary to configure objects
 
         directory
-            directory in which objects will be stored. All the files in this directory are removed when salt is executed
+            directory in which objects will be stored. All the files
+            in this directory are removed when salt is executed
         filescopy
-            the list of programs which have to be copied in /roott/admin_scripts/nagios/
+            the list of programs which have to be copied in /root/
+            admin_scripts/nagios/
         commands_static_values
-            dictionary to store values used in check_commands in configuration_add_auto_host macro
+            dictionary to store values used in check_commands in
+            configuration_add_auto_host macro
         objects_definitions
-            dictionary to store objects configuration like commands, contacts, timeperiods, ...
-            each subdictionary is given to configuration_add_object macros
-            as \*\*kwargs parameter
+            dictionary to store objects configuration like commands,
+            contacts, timeperiods, ...
+            each subdictionary is given to configuration_add_object
+            macros as \*\*kwargs parameter
         autoconfigured_hosts_definitions
             dictionary to store hosts auto configurations ;
-            each subdictionary is given to configuration_add_auto_host macro as \*\*kwargs
-            parameter
+            each subdictionary is given to configuration_add_auto_host
+            macro as \*\*kwargs parameter
 
     icinga_cfg
         dictionary to store values of icinga.cfg configuration file
     modules
         mklivestatus
             enabled
-                enable mklivestatus module. If true, mklivestatus will be
-                downloaded and built.
+                enable mklivestatus module. If true, mklivestatus will
+                be downloaded and built.
             socket
                 file through wich mklivestatus will be available
             lib_file
@@ -2058,7 +2064,8 @@ def settings():
                 url
                     url to download mklivestatus
                 sha512sum
-                    hash to verify that the downloaded file is not corrupted
+                    hash to verify that the downloaded file is not
+                    corrupted
 
 
         cgi
@@ -2122,24 +2129,26 @@ def settings():
                 master
                     "true" or "false"
                 plugins
-                    plugin used in uwsgi. with icinga we have to use the "cgi" plugin
+                    plugin used in uwsgi. with icinga we have to use the
+                    "cgi" plugin
                 async
                     number of asynchronous threads used by uwsgi
-                    it seems that icinga-cgi doesn't work very well when we use async (the webpages are not complete)
+                    it seems that icinga-cgi doesn't work very well when
+                    we use async (the webpages are not complete)
                 ugreen
                     "true" or "false"
                 threads
                     number of threads used by uwsgi
                 socket
-                    socket where uwsgi listen on. This value should be equal to one in 
-                    uwsgi_pass
+                    socket where uwsgi listen on. This value should be
+                    equal to one in uwsgi_pass
                 uid
                     uwsgi user
                 gid
                     uwsgi group
                 cgi
-                    location where cgi files are located. This value should be equal 
-                    to one in cgi_dir
+                    location where cgi files are located. This value
+                    should be equal to one in cgi_dir
                 cgi_allowed_ext
                     extension used by file which can be executed
 
@@ -2159,7 +2168,8 @@ def settings():
             pidfile
                 file to store ido2db pid
             icinga_socket
-                dictionary to store connection parameters between icinga and ido2db module
+                dictionary to store connection parameters between
+                icinga and ido2db module
 
                 socket_type
                     "tcp" or "unix" socket
@@ -2191,14 +2201,16 @@ def settings():
                    prefix used in table's names
 
            ido2db_cfg
-               dictionary to store values of ido2db.cfg configuration file
+               dictionary to store values of ido2db.cfg configuration
+               file
            idomod_cfg
-               dictionary to store values of idomod.cfg configuration file
-
+               dictionary to store values of idomod.cfg configuration
+               file
 
         nagios-plugins
             enabled
-                install nagios-plugins package which provides some standards check binaries
+                install nagios-plugins package which provides some
+                standards check binaries
                 for icinga
             package
                 list of packages to install nagios-plugins
@@ -2219,9 +2231,11 @@ def settings():
         # keep only the list of keys for each subdictionary
         # get_settings_for_object is the function to retrieve a non cached subdictionary
         dict_objects = objects()
-        dict_objects['objects_definitions'] = dict_objects['objects_definitions'].keys()
+        dict_objects['objects_definitions'] = dict_objects[
+           'objects_definitions'].keys()
         dict_objects['purge_definitions'] = []
-        dict_objects['autoconfigured_hosts_definitions'] = dict_objects['autoconfigured_hosts_definitions'].keys()
+        dict_objects['autoconfigured_hosts_definitions'] = dict_objects[
+           'autoconfigured_hosts_definitions'].keys()
 
         # generate default password
         icinga_reg = __salt__[
@@ -2229,9 +2243,9 @@ def settings():
                 'icinga', registry_format='pack')
 
         password_ido = icinga_reg.setdefault('ido.db_password'
-                                        , __salt__['mc_utils.generate_password']())
+                               , __salt__['mc_utils.generate_password']())
         password_cgi = icinga_reg.setdefault('cgi.root_account_password'
-                                        , __salt__['mc_utils.generate_password']())
+                               , __salt__['mc_utils.generate_password']())
 
         module_ido2db_database = {
             'type': "pgsql",
@@ -2801,34 +2815,47 @@ def add_auto_configuration_host_settings(hostname,
             services_loop
                 list of services that can be defined several times
             mountpoints_path:
-                dictionary to association disk_space argument with the system path
+                dictionary to association disk_space argument with the
+                system path
             services_default_attrs
-                dictionary with the same structure as services_attrs containing the default
+                dictionary with the same structure as services_attrs
+                containing the default
                 values for each service
             check_command_args
-                dictionary in which, each key corresponds to a check command and each value is 
-                the list of arguments (the arguments are taken in services_attrs dictionary)
+                dictionary in which, each key corresponds to a check
+                command and each value is the list of arguments
+                (the arguments are taken in services_attrs dictionary)
 
-        The function build two dictionaries "services_enabled" and "services_loop_enabled" in which
-        each key corresponds to a service and each value is True or False, whever the service is enabled or not
+        The function build two dictionaries "services_enabled" and
+        "services_loop_enabled" in which
+        each key corresponds to a service and each value is True or
+        False, whever the service is enabled or not
 
-        Then the function merges the two dictionaries: "services_default_attrs" with the "services_attrs".
-        The missing values in "services_attrs" dictionary are taken from "services_default_attrs" dictionary.
+        Then the function merges the two dictionaries:
+        "services_default_attrs" with the "services_attrs".
+        The missing values in "services_attrs" dictionary are taken from
+        "services_default_attrs" dictionary.
 
-        Then, the "check_command" values are build in "services_attrs" dictionary.
-        The arguments (values associated to a "cmdarg\_" key) are added next to the command
+        Then, the "check_command" values are build in "services_attrs"
+        dictionary.
+        The arguments (values associated to a "cmdarg\_" key) are
+        added next to the command
 
-        Finally, "host_name" or "hostgroup_name" key is added for each services of "services_attrs" dictionary
+        Finally, "host_name" or "hostgroup_name" key is added for each
+        services of "services_attrs" dictionary
         and the "cmdarg\_" keys are removed.
 
-        Only the arguments for CSSH (ssh_user, ssh_addr, ssh_port and ssh_timeout) don't begin with "cmdarg\_"
-
+        Only the arguments for CSSH (ssh_user, ssh_addr,
+        ssh_port and ssh_timeout) don't begin with "cmdarg\_"
     '''
 #    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
 #   save the ram (get only useful values)
     icingaSettings_complete = __salt__['mc_icinga.settings']()
     icingaSettings = {}
-    kwargs.setdefault('objects', {'directory': icingaSettings_complete['objects']['directory']})
+    kwargs.setdefault('objects', {
+                          'directory': icingaSettings_complete[
+                              'objects']['directory']
+                      })
 
     kwargs.setdefault('hostname', hostname)
     kwargs.setdefault('hostgroup', hostgroup)

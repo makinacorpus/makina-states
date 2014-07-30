@@ -14,7 +14,8 @@ include:
   - makina-states.services.monitoring.icinga2.services
 
 # general configuration
-{% set confd = data.configuration_directory + '/conf.d' %}
+{% for confd in data.icinga_conf.include_recursive %}
+{% set confd = data.configuration_directory + '/'+confd|replace('"', '') %}
 icinga2-confddefault-rename:
   file.rename:
     - name: {{confd}}.default
@@ -44,6 +45,7 @@ icinga2-confddefault-recreate-confd:
       - file: icinga2-confddefault-rename
     - watch_in:
       - mc_proxy: icinga2-pre-conf
+{% endfor %}
 
 icinga2-conf:
   file.managed:
