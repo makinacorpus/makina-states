@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!-- MANAGED VIA SALT - DO NOT EDIT -->
+{%- set data = salt['mc_utils.json_load'](data) %}
+<template match-pattern="{{data.match_pattern}}">
+    <option>
+            {% for name, parameter in data.option.items() %}
+                <parameter name="{{name}}">
+                    {% for key1, value1 in parameter.items() %}
+                    {% if value1 is mapping %}
+                     {% if 'parameter' == key1 or key1.startswith('parameter_') %}
+                     <parameter>
+                     {% else %}
+                     <parameter name="{{key1}}">
+                     {% endif %}
+
+
+                         {% for key2, value2 in value1.items() %}
+                         {% if value2 is mapping %}
+                          {% if 'parameter' == key2 or key2.startswith('parameter_') %}
+                          <parameter>
+                          {% else %}
+                          <parameter name="{{key2}}">
+                          {% endif %}
+
+
+                              {% for key3, value3 in value2.items() %}
+                              {% if value3 is mapping %}
+                               {% if 'parameter' == key3 or key3.startswith('parameter_') %}
+                               <parameter>
+                               {% else %}
+                               <parameter name="{key3}}">
+                               {% endif %}
+
+                                   {% for key4, value4 in value3.items() %}
+                                   {% if value4 is mapping %}
+                                    {% if 'parameter' == key4 or key4.startswith('parameter_') %}
+                                    <parameter>
+                                    {% else %}
+                                    <parameter name="{{key4}}">
+                                    {% endif %}
+
+                                        {% for key5, value5 in value4.items() %}
+                                        {% if value5 is mapping %}
+                                         {% if 'parameter' == key5 or key5.startswith('parameter_') %}
+                                         <parameter>
+                                         {% else %}
+                                         <parameter name="{{key5}}">
+                                         {% endif %}
+
+                                             {% for key6, value6 in value5.items() %}
+                                                 <parameter name="{{key6}}">{{value6}}</parameter>
+                                             {% endfor %}
+
+                                         </parameter>
+                                        {% else %}
+
+                                        <parameter name="{{key5}}">{{value5}}</parameter>
+                                        {% endif %}
+                                        {% endfor %}
+
+                                    </parameter>
+                                   {% else %}
+                                   <parameter name="{{key4}}">{{value4}}</parameter>
+                                   {% endif %}
+                                   {% endfor %}
+
+
+                               </parameter>
+                              {% else %}
+                              <parameter name="{{key3}}">{{value3}}</parameter>
+                              {% endif %}
+                              {% endfor %}
+
+
+                          </parameter>
+                         {% else %}
+                         <parameter name="{{key2}}">{{value2}}</parameter>
+                         {% endif %}
+                         {% endfor %}
+
+
+                     </parameter>
+                    {% else %}
+                     <parameter name="{{key1}}">{{value1}}</parameter>
+                    {% endif %}
+                    {% endfor%}
+
+                </parameter>
+            {% endfor %}
+    </option>
+
+
+    <fields>
+        {% for name, field in data.fields.items() %}
+         <field name="{{name}}">
+
+             <datasource>
+                 {% for key, value in field.datasource.items() %}
+                 <parameter name="{{key}}">{{value}}</parameter>
+                 {% endfor %}
+             </datasource>
+
+             <display>
+                 {% for key, value in field.display.items() %}
+                 <parameter name="{{key}}">{{value}}</parameter>
+                 {% endfor %}
+             </display>
+
+             <filter>
+                 {% for key, value in field.filter.items() %}
+                 <parameter name="{{key}}">{{value}}</parameter>
+                 {% endfor %}
+             </filter>
+
+             <order>
+                 {% for key, value in field.order.items() %}
+                 <parameter name="{{key}}">{{value}}</parameter>
+                 {% endfor %}
+             </order>
+
+         </field>
+        {% endfor %}
+    </fields>
+</template>

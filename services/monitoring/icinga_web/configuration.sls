@@ -14,9 +14,9 @@ include:
   - makina-states.services.monitoring.icinga_web.services
 
 {% for file in ['access', 'auth', 'cronks', 'databases',
-                'exclude_customvars', 'factories', 'icinga', 
-                'logging', 'module_appkit', 'module_cronks', 
-                'module_reporting', 'module_web', 'settings', 
+                'exclude_customvars', 'factories', 'icinga',
+                'logging', 'module_appkit', 'module_cronks',
+                'module_reporting', 'module_web', 'settings',
                 'sla', 'translation', 'userpreferences', 'views'] %}
 icinga_web-{{file}}-conf:
   file.managed:
@@ -92,14 +92,12 @@ icinga_web-clear-cache:
 
 # pnp4nagios module
 {% if data.modules.pnp4nagios.enabled %}
-
 # add cronks templates
 {% for name, template in data.modules.pnp4nagios.cronks_extensions_templates.items() %}
-
 icinga_web-module-pnp4nagios-template-{{name}}-conf:
   file.managed:
-    - name: /usr/share/icinga-web/app/modules/Cronks/data/xml/extensions/{{name}}.xml
-    - source: salt://makina-states/files/usr/share/icinga-web/app/modules/Cronks/data/xml/extensions/{{name}}.xml
+    - name: /usr/share/icinga-web/app/modules/Cronks/data/xml/extensions/{{name}}
+    - source: {{template}}
     - template: jinja
     - makedirs: true
     - user: root
@@ -112,6 +110,5 @@ icinga_web-module-pnp4nagios-template-{{name}}-conf:
     - defaults:
       data: |
             {{ salt['mc_utils.json_dump'](template) }}
-
 {% endfor %}
 {% endif %}
