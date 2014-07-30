@@ -13,7 +13,11 @@ include:
   - makina-states.services.monitoring.icinga_web.hooks
   - makina-states.services.monitoring.icinga_web.services
 
-{% for file in ['access', 'auth', 'cronks', 'databases', 'exclude_customvars', 'factories', 'icinga', 'logging', 'module_appkit', 'module_cronks', 'module_reporting', 'module_web', 'settings', 'sla', 'translation', 'userpreferences', 'views'] %}
+{% for file in ['access', 'auth', 'cronks', 'databases',
+                'exclude_customvars', 'factories', 'icinga', 
+                'logging', 'module_appkit', 'module_cronks', 
+                'module_reporting', 'module_web', 'settings', 
+                'sla', 'translation', 'userpreferences', 'views'] %}
 icinga_web-{{file}}-conf:
   file.managed:
     - name: {{data.configuration_directory}}/conf.d/{{file}}.xml
@@ -111,9 +115,3 @@ icinga_web-module-pnp4nagios-template-{{name}}-conf:
 
 {% endfor %}
 {% endif %}
-
-
-{%- import "makina-states/services/monitoring/icinga_web/macros.jinja" as icinga_web with context %}
-{#
-{{icinga_web.icingaAddWatcher('foo', '/bin/echo', args=[1]) }}
-#}
