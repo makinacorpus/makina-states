@@ -21,7 +21,6 @@ icinga2-confddefault-rename:
     - source: {{confd}}
     - user: root
     - group: root
-    - mode: 644
     - force: true
     - watch:
       - mc_proxy: icinga2-predefault-conf
@@ -32,6 +31,19 @@ icinga2-confddefault-rename:
                 if test -e "{{confd}}/${i}";then exit 0;fi
               done
               exit 1
+
+icinga2-confddefault-recreate-confd:
+  file.directory:
+    - name: {{confd}}
+    - user: root
+    - group: root
+    - mode: 755
+    - force: true
+    - makedirs: true
+    - watch:
+      - file: icinga2-confddefault-rename
+    - watch_in:
+      - mc_proxy: icinga2-pre-conf
 
 icinga2-conf:
   file.managed:
