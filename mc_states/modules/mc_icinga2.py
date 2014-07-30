@@ -291,6 +291,17 @@ def settings():
                 'modules': {
                     'mklivestatus': {
                         'enabled': True,
+                        'sockets': {
+                            'livestatus-tcp': {
+                                'socket_type': "tcp",
+                                'bin_host': "127.0.0.1",
+                                'bind_port': 6558,
+                            },
+                            'livestatus-unix': {
+                                'socket_type': "unix",
+                                'socket_path': "/var/run/icinga2/cmd/livestatus",
+                            },
+                        },
                     },
                     'cgi': {
                         'package': ['icinga2-classicui'],
