@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- MANAGED VIA SALT - DO NOT EDIT -->
+{%- set data = salt['mc_utils.json_load'](data) %}
 <settings xmlns:ae="http://agavi.org/agavi/config/global/envelope/1.0" xmlns="http://agavi.org/agavi/1.0/config" prefix="org.icinga.">
 
 <!--
@@ -22,8 +23,12 @@
 <!--
 	<setting name="version.extension">mycustom</setting>
 -->
-        
-	<setting name="bogus.include">true</setting>
+        {% if data.icinga_xml.get('settings', None) %}
+        {% for name,value in data.icinga_xml.settings.items() %}
+	<setting name="{{name}}">{{value}}</setting>
+        {% endfor %}
+        {% endif %}
+
 <!--	<setting name="bogus.include">true</setting>-->
 
 </settings>

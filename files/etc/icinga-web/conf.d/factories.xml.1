@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- MANAGED VIA SALT - DO NOT EDIT -->
+{%- set data = salt['mc_utils.json_load'](data) %}
 <ae:configurations xmlns:ae="http://agavi.org/agavi/config/global/envelope/1.0" xmlns="http://agavi.org/agavi/config/parts/factories/1.0">
 	
 	<ae:configuration>
@@ -18,13 +19,17 @@
 	            - https://dev.icinga.org/issues/2054
             
 	        -->
-               
-	       <storage class="AppKitDoctrineSessionStorage">
-	           <ae:parameter name="gzip_level">6</ae:parameter>
-	           <ae:parameter name="session_cookie_lifetime">0</ae:parameter>
-	           <ae:parameter name="session_name">icinga-web</ae:parameter>
-                
+               {% if data.factories_xml.get('storages', None) %}
+               {% for name,storage in data.factories_xml.storages.items() %}
+	       <storage class="{{name}}">
+                {% for name,value in storage.items() %}
+	           <ae:parameter name="{{name}}">{{value}}</ae:parameter>
+                {% endfor %}
 	       </storage>
+               {% endfor %}
+               {% endif %}
+
+
                <!--
 	       <storage class="AppKitDoctrineSessionStorage">
 	           <ae:parameter name="session_cookie_lifetime">0</ae:parameter>

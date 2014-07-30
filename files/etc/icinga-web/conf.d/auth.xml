@@ -1,24 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- MANAGED VIA SALT - DO NOT EDIT -->
-{%- set data = salt['mc_utils.json_load'](data) %}
 <settings xmlns:ae="http://agavi.org/agavi/config/global/envelope/1.0">
-
 <!--
 	+++ Site configuration file +++
 	
 	This file won't be overwritten
 	
 -->
-        {% if data.auth_xml.get('settings', None) %}
-         {% for name,setting in data.auth_xml.settings.items() %}
-	  <setting name="{{name}}">
-             {% for name,value in setting.items() %}
-              <ae:parameter name="{{name}}">{{value}}</ae:parameter>
-             {% endfor %}
+	  <setting name="defaults">
+              <ae:parameter name="auth_authoritative">true</ae:parameter>
+              <ae:parameter name="auth_groups">icinga_user</ae:parameter>
+              <ae:parameter name="auth_resume">true</ae:parameter>
+              <ae:parameter name="auth_create">false</ae:parameter>
+              <ae:parameter name="auth_update">false</ae:parameter>
+              <ae:parameter name="auth_enable">true</ae:parameter>
 	  </setting>
-         {% endfor %}
-        {% endif %}
-
+         
+	  <setting name="auth_key">
+             
+              <ae:parameter name="auth_authoritative">true</ae:parameter>
+              <ae:parameter name="auth_groups">icinga_user</ae:parameter>
+              <ae:parameter name="auth_resume">true</ae:parameter>
+              <ae:parameter name="auth_create">false</ae:parameter>
+              <ae:parameter name="auth_update">false</ae:parameter>
+              <ae:parameter name="auth_enable">true</ae:parameter>
+	  </setting>
 <!--
 	<setting name="provider">
 -->

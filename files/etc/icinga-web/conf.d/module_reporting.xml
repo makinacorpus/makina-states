@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- MANAGED VIA SALT - DO NOT EDIT -->
 {%- set data = salt['mc_utils.json_load'](data) %}
+<!-- MANAGED VIA SALT - DO NOT EDIT -->
 <ae:configurations xmlns="http://agavi.org/agavi/config/parts/module/1.0" xmlns:ae="http://agavi.org/agavi/config/global/envelope/1.0">
     <ae:configuration>
 
@@ -8,20 +8,15 @@
         Overwrite or append your reporting cronk configuration
         here
     -->
-
-    <module enabled="{{data.module_reporting_xml.enabled}}">
-    {% if data.module_reporting_xml.get('settings', None) %}
+    <module enabled="{{data.has_jasper}}">
      <settings>
-      {% for name, setting in data.module_reporting_xml.settings.items() %}
-      <setting name="{{name}}">
-       {% for name,value in setting.items() %}
-       <ae:parameter name="{{name}}">{{value}}</ae:parameter>
-       {% endfor %}
+      <setting name="jasperconfig.default">
+       <ae:parameter name="jasper_pass">jasperadmin</ae:parameter>
+       <ae:parameter name="jasper_url">http://127.0.0.1:8080/jasperserver</ae:parameter>
+       <ae:parameter name="jasper_user">jasperadmin</ae:parameter>
+       <ae:parameter name="tree_root">/icinga/reports</ae:parameter>
       </setting>
-      {% endfor %}
      </settings>
-    {% endif %}
     </module>
-    
     </ae:configuration>
 </ae:configurations>
