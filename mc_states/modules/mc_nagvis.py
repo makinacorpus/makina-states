@@ -35,7 +35,8 @@ def settings():
         directory where configuration files are located
 
     root_account
-        dictionary to store root account information. It is the account with the userId=1 in the sqlite database
+        dictionary to store root account information.
+        It is the account with the userId=1 in the sqlite database
 
         login
             login for root login on web interface
@@ -44,7 +45,8 @@ def settings():
         salt
             salt used to hash the password
         default_password
-            the password inserted when nagvis is installed. it is to check that the password was not previously modified
+            the password inserted when nagvis is installed.
+            it is to check that the password was not previously modified
 
     nginx
             dictionary to store values of nginx configuration
@@ -383,8 +385,9 @@ def settings():
                     number
 
             backends
-                dictionary to store values of backends section in nagvis_ini_php
-                each subdictionary corresponds to a "backend_foo" section
+                dictionary to store values of backends section in
+                nagvis_ini_php each subdictionary corresponds to
+                a "backend_foo" section
 
                 foo
                     dictionary to store values of foo backend. foo must
@@ -395,8 +398,9 @@ def settings():
                         type of backend
 
             rotations
-                dictionary to store values of rotations section in nagvis_ini_php
-                each subdictionary corresponds to a "rotation_foo" section
+                dictionary to store values of rotations section
+                in nagvis_ini_php each subdictionary corresponds
+                to a "rotation_foo" section
 
                 foo
                     dictionary to store values of foo rotation.
