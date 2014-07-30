@@ -83,8 +83,8 @@ def objects():
     # generated with
     # ./parse.py icinga2 hosts.cfg  hostgroups.cfg services.cfg \
     # hostTemplates.cfg  serviceTemplates.cfg checkcommands.cfg \
-    # timeperiods.cfg contacts.cfg contactgroups.cfg meta_* \ 
-    # misccommands.cfg servicegroups.cfg  \ 
+    # timeperiods.cfg contacts.cfg contactgroups.cfg meta_* \
+    # misccommands.cfg servicegroups.cfg  \
     # > /srv/salt/makina-states/mc_states/modules/mc_icinga2_from_centreon.py
 
     # try to load from a pillar file
@@ -98,7 +98,6 @@ def objects():
     if 'autoconfigured_hosts_definitions' not in data:
         data['autoconfigured_hosts_definitions'] = {}
     return data
-
 
 
 def format(dictionary, quote_keys=False, quote_values=True):
@@ -117,7 +116,8 @@ def format(dictionary, quote_keys=False, quote_values=True):
         else:
             res_key = key
 
-        if key in ['type', 'template', 'types', 'states']: # ugly hack
+        # ugly hack
+        if key in ['type', 'template', 'types', 'states']:
             quote_value = False
         else:
             quote_value = quote_values
@@ -188,15 +188,10 @@ def get_settings_for_object(target=None, obj=None, attr=None):
     expand the subdictionaries which are not cached
     in mc_icinga2.settings.objects
     '''
-    pref = 'makina-states.services.monitoring.icinga2.objects.'
     if 'purge_definitions' == target:
-        res = __salt__['mc_utils.defaults'](
-            pref + target,
-            {target: objects()[target]})[target]
+        res = objects()[target]
     else:
-        res = __salt__['mc_utils.defaults'](
-            pref + target+'.'+obj,
-            objects()[target][obj])
+        res = objects()[target][obj]
         if attr:
             res = res[attr]
     return res
@@ -227,17 +222,18 @@ def settings():
             'autoconfigured_hosts_definitions'].keys()
 
         # where the icinga2 objects configuration will be written
-        dict_objects['directory'] = locs['conf_dir']+"/icinga/objects/salt_generated"
+        dict_objects['directory'] = (locs['conf_dir'] +
+                                     "/icinga/objects/salt_generated")
 
         # generate default password
         icinga2_reg = __salt__[
             'mc_macros.get_local_registry'](
                 'icinga2', registry_format='pack')
 
-        password_ido = icinga2_reg.setdefault('ido.db_password',
-                                              __salt__['mc_utils.generate_password']())
-        password_cgi = icinga2_reg.setdefault('cgi.root_account_password',
-                                              __salt__['mc_utils.generate_password']())
+        password_ido = icinga2_reg.setdefault('ido.db_password', __salt__[
+            'mc_utils.generate_password']())
+        password_cgi = icinga2_reg.setdefault('cgi.root_account_password',__salt__[
+            'mc_utils.generate_password']())
 
         module_ido2db_database = {
             'type': "pgsql",

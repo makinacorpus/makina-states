@@ -21,8 +21,8 @@
 
 {% macro configuration_add_object(file, type=None, attrs={}, definition=None, fromsettings=None) %}
 # add the object in the list of objects to add
-{% set data = salt['mc_icinga.add_configuration_object'](file=file,
-                                                        type=type,
+{% set data = salt['mc_icinga.add_configuration_object'](filen=file,
+                                                        typen=type,
                                                         attrs=attrs,
                                                         definition=definition,
                                                         fromsettings=fromsettings,
@@ -40,7 +40,7 @@
 
 {% macro configuration_remove_object(file) %}
 # add the file in the list of objects to remove
-{% set data = salt['mc_icinga.remove_configuration_object'](file=file, **kwargs) %}
+{% set data = salt['mc_icinga.remove_configuration_object'](filen=file, **kwargs) %}
 {% endmacro %}
 
 {#
