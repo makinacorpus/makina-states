@@ -6,7 +6,7 @@ mc_pnp4nagios / pnp4nagios functions
 ============================================
 
 There are many way to configure pnp4nagios.
-I have chosen to configure pnp4nagios "Bulk Mode with NPCD and npcdmod" 
+I have chosen to configure pnp4nagios "Bulk Mode with NPCD and npcdmod"
 (http://docs.pnp4nagios.org/pnp-0.6/config#bulk_mode_with_npcd_and_npcdmod)
 because of the lightness of the configuration
 
@@ -56,9 +56,11 @@ def settings():
                 vh_content_source and vh_top_source
 
                 web_directory
-                    location under which webpages of pnp4nagios will be available
+                    location under which webpages of pnp4nagios
+                    will be available
                 fastcgi_pass
-                    socket used to contact fastcgi server in order to interpret php files
+                    socket used to contact fastcgi server in order to
+                    interpret php files
                 realm
                     message displayed for digest authentication
                 htpasswd_file
@@ -72,11 +74,13 @@ def settings():
                 vh_content_source and vh_top_source
 
                 enabled
-                    enable a web directory to serve cgi files. If True, icinga-cgi 
-                    will no be installed and configured automatically.
+                    enable a web directory to serve cgi files.
+                    If True, icinga-cgi will no be installed and
+                    configured automatically.
 
                 web_directory
-                    location under which webpages of icinga-cgi will be available
+                    location under which webpages of icinga-cgi
+                    will be available
                 realm
                     message displayed for digest authentication
                 htpasswd_file
@@ -98,7 +102,8 @@ def settings():
             open_basedir
                 paths to add to open_basedir
             extensions_package
-                additional packages to install (such as php5-pgsql or php5-mysql for
+                additional packages to install (such
+                as php5-pgsql or php5-mysql for
                 php database connection)
             doc_root
                 root location for php-fpm
@@ -110,7 +115,8 @@ def settings():
                 location of icinga.cfg file
             marker_start
                 the beginning of the zone which will be replace.
-                this zone contains the "process_performance_data" and "broker_module" directives
+                this zone contains the "process_performance_data"
+                and "broker_module" directives
             marked_end
                 the end of the zone which will be replace.
             content
@@ -122,11 +128,14 @@ def settings():
             dictionary to store configuration of config.php file
 
             conf
-                subdictionary to store the values of the $conf[] php array variable
+                subdictionary to store the values
+                of the $conf[] php array variable
             views
-                subdictionary to store the values of the $views[] php array variable
+                subdictionary to store the values of
+                the $views[] php array variable
 
-                each subdictionary under views corresponds to a subarray. The key of subdictionaries are
+                each subdictionary under views corresponds
+                to a subarray. The key of subdictionaries are
                 the values for "title" array key
         rra_cfg
             dictionary to store the configuration of rra.cfg file
@@ -154,31 +163,30 @@ def settings():
                 'nginx': {
                     'domain': "pnp4nagios.localhost",
                     'doc_root': "/usr/share/pnp4nagios/html/",
-                    'vh_content_source': "salt://makina-states/files/etc/nginx/sites-available/pnp4nagios.content.conf",
-                    'vh_top_source': "salt://makina-states/files/etc/nginx/sites-available/pnp4nagios.top.conf",
+                    'vh_content_source': (
+                        "salt://makina-states/files/"
+                        "etc/nginx/sites-available/"
+                        "pnp4nagios.content.conf"),
+                    'vh_top_source': (
+                        "salt://makina-states/files/etc/nginx/"
+                        "sites-available/pnp4nagios.top.conf"),
                     'pnp4nagios': {
                         'web_directory': "/pnp4nagios",
-                        'fastcgi_pass': "unix:/var/spool/www/pnp4nagios_localhost.fpm.sock",
+                        'fastcgi_pass': ("unix:/var/spool/www/"
+                                         "pnp4nagios_localhost.fpm.sock"),
                         'realm': "Authentication",
                         'htpasswd_file': "/etc/icinga/htpasswd.users",
                         'htdocs_dir': "/usr/share/icinga/htdocs/",
-                    },
-                    'icinga_cgi': {
-                        'enabled': True, # icinga cgi will not be configured. It is done in services.monitoring.icinga
-                        'web_directory': "/icinga",
-                        'realm': "Authentication",
-                        'htpasswd_file': "/etc/icinga/htpasswd.users",
-                        'htdocs_dir': "/usr/share/icinga/htdocs/",
-                        'images_dir': "/usr/share/icinga/htdocs/images/$1",
-                        'styles_dir': "/usr/share/icinga/htdocs/stylesheets/$1",
-                        'cgi_dir': "/usr/lib/cgi-bin/",
-                        'uwsgi_pass': "127.0.0.1:3030",
                     },
                 },
                 'phpfpm': {
-                    'open_basedir': "/usr/bin/rrdtool:/etc/pnp4nagios/:/usr/share/php/kohana2/system/:/usr/share/php/kohana2/system/config/:/var/lib/pnp4nagios/perfdata/",
+                    'open_basedir': (
+                        "/usr/bin/rrdtool"
+                        ":/etc/pnp4nagios/:"
+                        "/usr/share/php/kohana2/system/:"
+                        "/usr/share/php/kohana2/system/config/:"
+                        "/var/lib/pnp4nagios/perfdata/"),
                     'doc_root': '/usr/share/pnp4nagios/',
-                    #'session_save_path': '/var/lib/php5',
                     'session_auto_start': 0,
                     'extensions_packages': ['php5-gd'],
                 },
@@ -187,9 +195,10 @@ def settings():
                     'marker_start': "# START managed zone pnp4nagios",
                     'marker_end': "# END managed zone pnp4nagios",
                     'content': [
-                                   "process_performance_data=1",
-                                   "broker_module=/usr/lib/pnp4nagios/npcdmod.o config_file=/etc/pnp4nagios/npcd.cfg",
-                               ],
+                        "process_performance_data=1",
+                        ("broker_module=/usr/lib/pnp4nagios/npcdmod.o "
+                         "config_file=/etc/pnp4nagios/npcd.cfg"),
+                    ],
                 },
                 'npcd_cfg': {
                     'user': "nagios",
@@ -199,7 +208,8 @@ def settings():
                     'max_logfile_size': 10485760,
                     'log_level': 2,
                     'perfdata_spool_dir': "/var/lib/icinga/spool/",
-                    'perfdata_file_run_cmd': "/usr/lib/pnp4nagios/libexec/process_perfdata.pl",
+                    'perfdata_file_run_cmd': (
+                        "/usr/lib/pnp4nagios/libexec/process_perfdata.pl"),
                     'perfdata_file_run_cmd_args': "-b",
                     'identify_npcd': 1,
                     'npcd_max_threads': 5,
@@ -225,12 +235,12 @@ def settings():
                         'pdf_margin_top': 30,
                         'pdf_margin_left': 17.5,
                         'pdf_margin_right': 10,
-                        'graph_opt': "", 
-                        'pdf_graph_opt': "", 
+                        'graph_opt': "",
+                        'pdf_graph_opt': "",
                         'rrdbase': "/var/lib/pnp4nagios/perfdata/",
                         'page_dir': "/etc/pnp4nagios/pages/",
                         'refresh': 90,
-                        'max_age': "60*60*6",   
+                        'max_age': "60*60*6",
                         'temp': "/var/tmp",
                         'nagios_base': "/cgi-bin/icinga",
                         'multisite_base_url': "/check_mk",
@@ -243,19 +253,22 @@ def settings():
                         'allowed_for_host_search': "EVERYONE",
                         'allowed_for_host_overview': "EVERYONE",
                         'allowed_for_pages': "EVERYONE",
-                        'overview_range': 1 ,
+                        'overview_range': 1,
                         'popup_width': "300px",
                         'ui_theme': 'smoothness',
                         'lang': "en_US",
                         'date_fmt': "d.m.y G:i",
                         'enable_recursive_template_search': 1,
                         'show_xml_icon': 1,
-                        'use_fpdf': 1,	
+                        'use_fpdf': 1,
                         'background_pdf': "/etc/pnp4nagios/background.pdf",
                         'use_calendar': 1,
                         'RRD_DAEMON_OPTS': "",
-                        'template_dirs': ["/etc/pnp4nagios/templates", "/usr/share/pnp4nagios/html/templates.dist"],
-                        'special_template_dir': "/etc/pnp4nagios/templates.special",
+                        'template_dirs': [
+                            "/etc/pnp4nagios/templates",
+                            "/usr/share/pnp4nagios/html/templates.dist"],
+                        'special_template_dir': (
+                            "/etc/pnp4nagios/templates.special"),
                         'mobile_device': "iPhone|iPod|iPad|android",
                     },
                     'views': {
