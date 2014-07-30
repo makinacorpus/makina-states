@@ -28,7 +28,7 @@ icinga2-confddefault-rename:
     - watch_in:
       - mc_proxy: icinga2-pre-conf
     - onlyif: |
-              for i in commands.conf downtimes.conf groups.conf hosts notifications.conf salt_generated services.conf templates.conf timeperiods.conf users.conf;do
+              for i in commands.conf downtimes.conf groups.conf hosts notifications.conf services.conf templates.conf timeperiods.conf users.conf;do
                 if test -e "{{confd}}/${i}";then exit 0;fi
               done
               exit 1
