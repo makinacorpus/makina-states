@@ -607,8 +607,12 @@ def settings():
                 'nginx': {
                     'domain': "nagvis.localhost",
                     'doc_root': "/usr/share/nagvis/www/",
-                    'vh_content_source': "salt://makina-states/files/etc/nginx/sites-available/nagvis.content.conf",
-                    'vh_top_source': "salt://makina-states/files/etc/nginx/sites-available/nagvis.top.conf",
+                    'vh_content_source': (
+                        "salt://makina-states/files/etc/nginx/"
+                        "sites-available/nagvis.content.conf"
+                    ),
+                    'vh_top_source': ("salt://makina-states/files/"
+                                      "etc/nginx/sites-available/nagvis.top.conf"),
                     'nagvis': {
                         'web_directory': "/nagvis",
                         'fastcgi_pass': "unix:/var/spool/www/nagvis_localhost.fpm.sock",
@@ -774,7 +778,7 @@ def settings():
                     'wui': {
                         'maplocktime': 5,
                         'grid_show': 0,
-#                        'grid_color': "#D5DCEF",
+                        # 'grid_color': "#D5DCEF",
                         'grid_color': "#F7F7F7",
                         'grid_steps': 32,
                     },
@@ -787,7 +791,7 @@ def settings():
                     'backends': {
                         'live_1': {
                             'backendtype': "mklivestatus",
-                            'socket': "unix:/var/lib/icinga/rw/live",
+                            'socket': "tcp:localhost:6558",
                             # for icinga2
                             # 'socket': "unix:/var/run/icinga2/cmd/livestatus",
                             'htmlcgi': "/cgi-bin/icinga/",
