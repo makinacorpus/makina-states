@@ -88,7 +88,7 @@ icinga2-ido2db-conf:
       data: |
             {{sdata}}
 
-{{activate_mod(data.modules.ido2db.database.type)}}
+{{activate_mod('ido-'+data.modules.ido2db.database.type)}}
 # startup ido2db configuration
 {% if grains['os'] in ['Ubuntu'] %}
 {% do templates.append('/etc/init.d/ido2db') %}
@@ -100,10 +100,10 @@ icinga2-ido2db-init-upstart-conf:
 
 {% for mod in ['livestatus', 'perfdata'] %}
 {% if data.modules[mod]['enabled'] %}
-{% do templates.append(
-  '/etc/icinga2/features-available/{0}.conf'.format(mod)) %}
+{% do templates.append('/etc/icinga2/features-available/{0}.conf'.format(mod)) %}
 {{activate_mod(mod)}}
 {% endif %}
+{% endfor %}
 
 {% for f in templates %}
 # constants.conf configuration
