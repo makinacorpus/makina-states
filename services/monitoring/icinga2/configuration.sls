@@ -14,6 +14,25 @@ include:
   - makina-states.services.monitoring.icinga2.services
 
 # general configuration
+{% set confd = data.configuration_directory + '/conf.d' %}
+icinga2-confddefault-rename:
+  file.rename:
+    - name: {{confd}}.default
+    - source: {{confd}}
+    - user: root
+    - group: root
+    - mode: 644
+    - force: true
+    - watch:
+      - mc_proxy: icinga2-predefault-conf
+    - watch_in:
+      - mc_proxy: icinga2-pre-conf
+    - onlyif: |
+              for i in commands.conf downtimes.conf groups.conf hosts notifications.conf salt_generated services.conf templates.conf timeperiods.conf users.conf;do
+                if test -e "{{confd}}/${i}";then exit 0;fi
+              done
+              exit 1
+
 icinga2-conf:
   file.managed:
     - name: {{data.configuration_directory}}/icinga2.conf
