@@ -30,7 +30,7 @@ def settings():
         installation directory
 
     package
-        list of packages to install icinga-web
+        list of packages to install navgis
     configuration_directory
         directory where configuration files are located
 
