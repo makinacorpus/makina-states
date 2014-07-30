@@ -1,4 +1,5 @@
 {{- salt['mc_macros.register']('services', 'monitoring.icinga2') }}
+{% set data = salt['mc_icinga2.settings']() %}
 include:
 {#
   - makina-states.services.monitoring.icinga2.mysql

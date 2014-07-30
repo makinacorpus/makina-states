@@ -175,12 +175,11 @@ def format(dictionary, quote_keys=False, quote_values=True):
                 res[res_key] = value
         else:
             if quote_value:
-                res[res_key] = '"' + str(value).encode(
+                res[res_key] = '"' + str(value).decode(
                     'utf-8').replace('"', '\\"')+'"'
             else:
                 res[res_key] = value
-
-    return res
+    return __salt__['mc_utils.json_dump'](res)
 
 
 def get_settings_for_object(target=None, obj=None, attr=None):
@@ -223,7 +222,7 @@ def settings():
 
         # where the icinga2 objects configuration will be written
         dict_objects['directory'] = (locs['conf_dir'] +
-                                     "/icinga/objects/salt_generated")
+                                     "/icinga2/conf.d/salt_generated")
 
         # generate default password
         icinga2_reg = __salt__[
@@ -232,33 +231,15 @@ def settings():
 
         password_ido = icinga2_reg.setdefault('ido.db_password', __salt__[
             'mc_utils.generate_password']())
-        password_cgi = icinga2_reg.setdefault('cgi.root_account_password',__salt__[
-            'mc_utils.generate_password']())
-
-        module_ido2db_database = {
-            'type': "pgsql",
-            'host': "localhost",
-            'port': 5432,
-            # 'socket': "",
-            'user': "icinga2_ido",
-            'password': password_ido,
-            'name': "icinga2_ido",
-        }
-
-        has_sgbd = ((
-            ('host' in module_ido2db_database)
-            and (module_ido2db_database['host']
-                 in ['localhost', '127.0.0.1', grains['host']])
-        ) or ('socket' in module_ido2db_database))
-
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.monitoring.icinga2', {
-                'package': ['icinga2-bin', 'icinga2-common', 'icinga2-doc'],
-                'has_pgsql': ('pgsql' == module_ido2db_database['type']
-                              and has_sgbd),
+                'package': ['icinga2-bin',
+                            'nagios-plugins',
+                            'icinga2-common',
+                            'icinga2-doc'],
+                'has_pgsql': False,
                 'create_pgsql': True,
-                'has_mysql': ('mysql' == module_ido2db_database['type']
-                              and has_sgbd),
+                'has_mysql': False,
                 'user': "nagios",
                 'group': "nagios",
                 'cmdgroup': "www-data",
@@ -282,169 +263,48 @@ def settings():
                 },
                 'zones_conf': {
                     'object Endpoint NodeName': {
-                        'host': "NodeName",
-                    },
+                        'host': "NodeName"},
                     'object Zone ZoneName': {
-                        'endpoints': "[ NodeName ]",
-                    },
+                        'endpoints': "[ NodeName ]"},
                 },
                 'modules': {
-                    'mklivestatus': {
+                    'perfdata': {'enabled': True},
+                    'livestatus': {
                         'enabled': True,
-                    },
-                    'cgi': {
-                        'package': ['icinga2-classicui'],
-                        'enabled': True,
-                        'user': "www-data",
-                        'group': "www-data",
-                        'root_account': {
-                            'login': "icingaadmin",
-                            'password': password_cgi,
-                        },
-                        'absolute_styles_dir': (
-                            "/usr/share/icinga/htdocs/stylesheets"
-                        ),
-                        'nginx': {
-                            'domain': "icinga2-cgi.localhost",
-                            'doc_root': "/usr/share/icinga2/classicui/",
-                            'vh_content_source': ("salt://makina-states/files/"
-                                                  "etc/nginx/sites-available/"
-                                                  "icinga2-cgi.content.conf"),
-                            'vh_top_source': ("salt://makina-states/files/etc"
-                                              "/nginx/sites-available/"
-                                              "icinga2-cgi.top.conf"),
-                            'icinga_cgi': {
-                                'web_directory': "/icinga2-classicui",
-                                'realm': "Authentication",
-                                'htpasswd_file': ("/etc/icinga2/classicui"
-                                                  "/htpasswd.users"),
-                                'htdocs_dir': ("/usr/share/icinga2/"
-                                               "classicui/"),
-                                'images_dir': ("/usr/share/icinga2/"
-                                               "classicui/images/$1"),
-                                'styles_dir': ("/usr/share/icinga2/"
-                                               "classicui/stylesheets/$1"),
-                                'cgi_dir': "/usr/lib/cgi-bin/",
-                                'uwsgi_pass': "127.0.0.1:3031",
-                            },
-                        },
-                        'uwsgi': {
-                            'config_name': "icinga2.ini",
-                            'config_file': (
-                                "salt://makina-states/files/etc/uwsgi/"
-                                "apps-available/icinga2-cgi.ini"),
-                            'enabled': True,
-                            'master': "true",
-                            'plugins': "cgi",
-                            'async': 20,
-                            'ugreen': True,
-                            'threads': 5,
-                            'socket': "127.0.0.1:3031",
-                            'uid': "www-data",
-                            'gid': "www-data",
-                            'cgi': ("/cgi-bin/icinga2-classicui/"
-                                    "=/usr/lib/cgi-bin/icinga2-classicui/"),
-                            'cgi_allowed_ext': ".cgi",
-                        },
-                        'cgi_cfg': {
-                            'standalone_installation': "1",
-                            'physical_html_path': ("/usr/share/icinga2"
-                                                   "/classicui/"),
-                            'url_html_path': "/icinga2-classicui",
-                            'url_stylesheets_path': ("/icinga2-classicui"
-                                                     "/stylesheets"),
-                            'http_charset': "utf-8",
-                            'refresh_rate': 30,
-                            'refresh_type': 1,
-                            'escape_html_tags': 1,
-                            'result_limit': 50,
-                            'show_tac_header': 1,
-                            'use_pending_states': 1,
-                            'first_day_of_week': 0,
-                            'suppress_maintenance_downtime': 0,
-                            'action_url_target': "main",
-                            'notes_url_target': "main",
-                            'use_authentication': 1,
-                            'use_ssl_authentication': 0,
-                            'lowercase_user_name': 0,
-                            'authorized_for_system_information': "icingaadmin",
-                            'authorized_for_configuration_information': (
-                                "icingaadmin"
-                            ),
-                            'authorized_for_full_command_resolution': (
-                                "icingaadmin"
-                            ),
-                            'authorized_for_system_commands': "icingaadmin",
-                            'authorized_for_all_services': "icingaadmin",
-                            'authorized_for_all_hosts': "icingaadmin",
-                            'authorized_for_all_service_commands': (
-                                "icingaadmin"
-                            ),
-                            'authorized_for_all_host_commands': "icingaadmin",
-                            'show_all_services_host_is_authorized_for': 1,
-                            'show_partial_hostgroups': 0,
-                            'show_partial_servicegroups': 0,
-                            'default_statusmap_layout': 5,
-                            'status_show_long_plugin_output': 0,
-                            'display_status_totals': 0,
-                            'highlight_table_rows': 1,
-                            'add_notif_num_hard': 28,
-                            'add_notif_num_soft': 0,
-                            'use_logging': 0,
-                            'cgi_log_file': (
-                                "/var/log/icinga/gui/icinga-cgi.log"
-                            ),
-                            'cgi_log_rotation_method': "d",
-                            'cgi_log_archive_path': "/var/log/icinga/gui",
-                            'enforce_comments_on_actions': 0,
-                            'send_ack_notifications': 1,
-                            'persistent_ack_comments': 0,
-                            'lock_author_names': 1,
-                            'default_downtime_duration': 7200,
-                            'set_expire_ack_by_default': 0,
-                            'default_expiring_acknowledgement_duration': 86400,
-                            ('default_expiring_disabled_'
-                             'notifications_duration'): (
-                                86400),
-                            'tac_show_only_hard_state': 0,
-                            'show_tac_header_pending': 1,
-                            'exclude_customvar_name': "PASSWORD,COMMUNITY",
-                            'exclude_customvar_value': "secret",
-                            'extinfo_show_child_hosts': 0,
-                            'tab_friendly_titles': 1,
-                            'object_cache_file': (
-                                "/var/cache/icinga2/objects.cache"),
-                            'status_file': "/var/cache/icinga2/status.dat",
-                            'resource_file': "/etc/icinga/resource.cfg",
-                            'command_file': "/var/run/icinga2/cmd/icinga2.cmd",
-                            'check_external_commands': 1,
-                            'interval_length': 60,
-                            'status_update_interval': 10,
-                            'log_file': "/var/log/icinga2/compat/icinga.log",
-                            'log_rotation_method': "h",
-                            'log_archive_path': (
-                                "/var/log/icinga2/compat/archives"
-                            ),
-                            'date_format': "us",
-                        },
+                        'bind_host': "127.0.0.1",
+                        'bind_port': 6558,
+                        'socket_path': (
+                            "/var/run/icinga2/cmd/livestatus"
+                        )
                     },
                     'ido2db': {
-                        'package': [
-                            'icinga2-ido-'+module_ido2db_database['type']],
                         'enabled': True,
                         'user': "nagios",
                         'group': "nagios",
                         'pidfile': "/var/run/icinga2/ido2db.pid",
-                        'database': module_ido2db_database,
-                    },
-                    'nagios-plugins': {
-                        'package': ['nagios-plugins'],
-                        'enabled': False,
+                        'database': {
+                            'type': "pgsql",
+                            'host': "localhost",
+                            'port': 5432,
+                            'user': "icinga2_ido",
+                            'password': password_ido,
+                            'name': "icinga2_ido",
+                        }
                     },
                 },
-
-
-            })
+            }
+        )
+        ido2db = data['modules']['ido2db']
+        data['has_pgsql'] = 'pgsql' == ido2db['database']['type']
+        data['has_mysql'] = 'mysql' == ido2db['database']['type']
+        if data['has_pgsql']:
+            ido2db['package'] = [
+                'icinga2-ido-{0}'.format(
+                    ido2db['database']['type'])]
+        if data['has_pgsql'] and data['has_mysql']:
+            raise ValueError('choose only one sgbd')
+        if not (data['has_pgsql'] or data['has_mysql']):
+            raise ValueError('choose at least one sgbd')
         __salt__['mc_macros.update_local_registry'](
             'icinga2', icinga2_reg,
             registry_format='pack')
@@ -1575,8 +1435,6 @@ def add_auto_configuration_host(hostname=None,
                                 fromsettings=None,
                                 get=False,
                                 **kwargs):
-    print('call add_auto_configuration_host')
-    print('end call add_auto_configuration_host')
     if get:
         if hostname:
             return add_auto_configuration_host.objects[hostname]

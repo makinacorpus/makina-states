@@ -1,19 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- MANAGED VIA SALT - DO NOT EDIT -->
+{%- set data = salt['mc_utils.json_load'](data) %}
+
 <ae:configurations xmlns="http://agavi.org/agavi/config/parts/module/1.0" xmlns:ae="http://agavi.org/agavi/config/global/envelope/1.0">
     <ae:configuration>
+
         <!--
             Overwrite or append your reporting cronk configuration
             here
         -->
 
-        <module enabled="true">
+        <module enabled="{{data.module_cronks_xml.enabled}}">
 
         <!-- 
             Look into app/modules/Cronks/config/module.xml for
             possible settings
         -->
-        
+        {% if data.module_cronks_xml.get('settings', None) %}
+        {% for name,value in data.module_cronks_xml.settings.items() %}
+        <setting name="{{name}}">{{value}}</setting>
+        {% endfor %}
+        {% endif %}
         <!--
             <setting name="search.numberMinimumLetters">2</setting>
             <setting name="search.maximumResults">200</setting>

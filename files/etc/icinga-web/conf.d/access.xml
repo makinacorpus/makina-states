@@ -4,204 +4,55 @@
 <ae:configurations xmlns="http://icinga.org/api/config/parts/access/1.0"
     xmlns:ae="http://agavi.org/agavi/config/global/envelope/1.0">
     <ae:configuration>
-
         <!-- Document resources 
             http://docs.icinga.org/latest/en/icinga-web-config.html#configweb-access 
             https://wiki.icinga.org/display/howtos/access.xml -->
-
         <!-- Map your instances to hosts here -->
         <instances>
             <!-- For slave commands seperate hosts with ';' 
                     <instance name="default">localhost;host1;host15</instance> -->
-            {% for host in data.access_xml.instances %}
-            <instance name="default">{{host}}</instance>
-            {% endfor %}
+            <instance name="default">localhost</instance>
         </instances>
-
         <!-- Default settings that will be set if useDefaults is true -->
         <defaults>
             <access>
-                {% if data.access_xml.defaults.access.get('readwrite', None) %}
                 <readwrite>
-                    {% if data.access_xml.defaults.access.readwrite.get('folders', None) %}
                     <folders>
-                        {% for name,value in data.access_xml.defaults.access.readwrite.folders.items() %}
-                        <resource name="{{name}}">{{value}}</resource>
-                        {% endfor %}
+                        <resource name="icinga_objects">/etc/icinga/objects</resource>
                     </folders>
-                    {% endif %}
-                    {% if data.access_xml.defaults.access.readwrite.get('files', None) %}
                     <files>
-                        {% for name,value in data.access_xml.defaults.access.readwrite.files.items() %}
-                        <resource name="{{name}}">{{value}}</resource>
-                        {% endfor %}
+                        <resource name="icinga_cfg">/etc/icinga/icinga.cfg</resource>
                     </files>
-                    {% endif %}
                 </readwrite>
-                {% endif %}
                 <!-- allowed to be read from -->
-                {% if data.access_xml.defaults.access.get('read', None) %}
-                <read>
-                    {% if data.access_xml.defaults.access.read.get('folders', None) %}
-                    <folders>
-                        {% for name,value in data.access_xml.defaults.access.read.folders.items() %}
-                        <resource name="{{name}}">{{value}}</resource>
-                        {% endfor %}
-                    </folders>
-                    {% endif %}
-                    {% if data.access_xml.defaults.access.read.items().get('files', None) %}
-                    <files>
-                        {% for name,value in data.access_xml.defaults.access.read.files.items() %}
-                        <resource name="{{name}}">{{value}}</resource>
-                        {% endfor %}
-                    </files>
-                    {% endif %}
-                </read>
-                {% endif %}
                 <!-- allowed to be written to -->
-                {% if data.access_xml.defaults.access.get('write', None) %}
                 <write>
-                    {% if data.access_xml.defaults.access.write.get('folders', None) %}
-                    <folders>
-                        {% for name,value in data.access_xml.defaults.access.write.folders.items() %}
-                        <resource name="{{name}}">{{value}}</resource>
-                        {% endfor %}
-                    </folders>
-                    {% endif %}
-                    {% if data.access_xml.defaults.access.write.get('files', None) %}
                     <files>
-                        {% for name,value in data.access_xml.defaults.access.write.files.items() %}
-                        <resource name="{{name}}">{{value}}</resource>
-                        {% endfor %}
+                        <resource name="icinga_pipe">/var/lib/icinga/rw/icinga.cmd</resource>
                     </files>
-                    {% endif %}
+                    
                 </write>
-                {% endif %}
                 <!-- allowed to be executed -->
-                {% if data.access_xml.defaults.access.get('execute', None) %}
                 <execute>
-                    {% if data.access_xml.defaults.access.execute.get('folders', None) %}
-                    <folders>
-                        {% for name,value in data.access_xml.defaults.access.execute.folders.items() %}
-                        <resource name="{{name}}">{{value}}</resource>
-                        {% endfor %}
-                    </folders>
-                    {% endif %}
-                    {% if data.access_xml.defaults.access.execute.get('files', None) %}
                     <files>
-                        {% for name,value in data.access_xml.defaults.access.execute.files.items() %}
-                        <resource name="{{name}}">{{value}}</resource>
-                        {% endfor %}
+                        <resource name="grep">/bin/grep</resource>
+                        <resource name="icinga_bin">/usr/sbin/icinga</resource>
+                        <resource name="echo">/bin/echo</resource>
+                        <resource name="icinga_service">/usr/bin/service icinga</resource>
+                        <resource name="ls">/bin/ls</resource>
+                        <resource name="printf">printf</resource>
+                        <resource name="cp">/bin/cp</resource>
                     </files>
-                    {% endif %}
                 </execute>
-                {% endif %}
             </access>
         </defaults>
-
-
         <!-- Hosts that can be accessed via the console interface -->
         <hosts>
-            {% for name,host in data.access_xml.hosts.items() %}
-            <host name="{{name}}">
-                <type>{{host.type}}</type>
-
-                {% if host.get('ssh' == host.type and 'ssh_config', None) %}
-                <ssh-config>
-                    <host>{{host.ssh_config.host}}</host>
-                    <port>{{host.ssh_config.port}}</port>
-                    <auth>
-                        <type>{{host.ssh_config.auth.type}}</type>
-                        <user>{{host.ssh_config.auth.user}}</user>   
-                        {% if host.ssh_config.auth.get('private_key', None) %}
-                        <private-key>{{host.ssh_config.auth.private_key}}</private-key>
-                        {% endif %}
-                        {% if host.ssh_config.auth.get('password', None) %}
-                        <password>{{host.ssh_config.auth.password}}</password>
-                        {% endif %}
-                    </auth>
-                </ssh-config>
-                {% endif %}
-
-                {% if host.get('access', None) %}
-                <access useDefaults="{{host.access.useDefaults}}">
-                    {% if host.access.get('readwrite', None) %}
-                    <readwrite>
-                        {% if host.access.readwrite.get('folders', None) %}
-                        <folders>
-                            {% for name,value in host.access.readwrite.folders.items() %}
-                            <resource name="{{name}}">{{value}}</resource>
-                            {% endfor %}
-                        </folders>
-                        {% endif %}
-                        {% if host.access.readwrite.get('files', None) %}
-                        <files>
-                            {% for name,value in host.access.readwrite.files.items() %}
-                            <resource name="{{name}}">{{value}}</resource>
-                            {% endfor %}
-                        </files>
-                        {% endif %}
-                    </readwrite>
-                    {% endif %}
-                    {% if host.access.get('read', None) %}
-                    <read>
-                        {% if host.access.read.get('folders', None) %}
-                        <folders>
-                            {% for name,value in host.access.read.folders.items() %}
-                            <resource name="{{name}}">{{value}}</resource>
-                            {% endfor %}
-                        </folders>
-                        {% endif %}
-                        {% if host.access.read.get('files', None) %}
-                        <files>
-                            {% for name,value in host.access.read.files.items() %}
-                            <resource name="{{name}}">{{value}}</resource>
-                            {% endfor %}
-                        </files>
-                        {% endif %}
-                    </read>
-                    {% endif %}
-                    {% if host.access.get('write', None) %}
-                    <write>
-                        {% if host.access.write.get('folders', None) %}
-                        <folders>
-                            {% for name,value in host.access.write.folders.items() %}
-                            <resource name="{{name}}">{{value}}</resource>
-                            {% endfor %}
-                        </folders>
-                        {% endif %}
-                        {% if host.access.write.get('files', None) %}
-                        <files>
-                            {% for name,value in host.access.write.files.items() %}
-                            <resource name="{{name}}">{{value}}</resource>
-                            {% endfor %}
-                        </files>
-                        {% endif %}
-                    </write>
-                    {% endif %}
-                    {% if host.access.get('execute', None) %}
-                    <execute>
-                        {% if host.access.execute.get('folders', None) %}
-                        <folders>
-                            {% for name,value in host.access.execute.folders.items() %}
-                            <resource name="{{name}}">{{value}}</resource>
-                            {% endfor %}
-                         </folders>
-                        {% endif %}
-                        {% if host.access.execute.get('files', None) %}
-                        <files>
-                            {% for name,value in host.access.execute.files.items() %}
-                            <resource name="{{name}}">{{value}}</resource>
-                            {% endfor %}
-                        </files>
-                        {% endif %}
-                    </execute>
-                    {% endif %}
+            <host name="localhost">
+                <type>local</type>
+                <access useDefaults="true">
                 </access>
-                {% endif %}
             </host>
-            {% endfor %}
         </hosts>
-
     </ae:configuration>
 </ae:configurations>

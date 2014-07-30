@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- MANAGED VIA SALT - DO NOT EDIT -->
+{%- set data = salt['mc_utils.json_load'](data) %}
 <ae:configurations xmlns:ae="http://agavi.org/agavi/config/global/envelope/1.0" xmlns="http://icinga.org/cronks/config/parts/cronks/1.0">
 	<ae:configuration>
-        
+        {% if data.cronks_xml.get('cronks', None) %}
 	    <!-- 
             Cronk overwrites - for example 
         -->
@@ -40,202 +41,44 @@
             </cronk>
         -->
 	<cronks>
-         
-           <cronk name="iframeViewIcingaDocsEn">
-            
-             
-             <ae:parameter name="hide">false</ae:parameter>
-             
-            
-             
-             <ae:parameter name="description">Icinga docs english version</ae:parameter>
-             
-            
-             
+         {% for name,cronk in data.cronks_xml.cronks.items() %}
+           <cronk name="{{name}}">
+            {% for name,value in cronk.items() %}
+             {% if value is mapping %}
              <ae:parameter name="ae:parameter">
-             
-              <ae:parameter name="url"><![CDATA[/icinga-web/docs/en/index.html]]></ae:parameter>
-             
+             {% for name2, value2 in value.items() %}
+              <ae:parameter name="{{name2}}">{{value2}}</ae:parameter>
+             {% endfor %}
              </ae:parameter>
-             
-            
-             
-             <ae:parameter name="image">cronks.Info2</ae:parameter>
-             
-            
-             
-             <ae:parameter name="module">Cronks</ae:parameter>
-             
-            
-             
-             <ae:parameter name="action">System.IframeView</ae:parameter>
-             
-            
-             
-             <ae:parameter name="position">300</ae:parameter>
-             
-            
-             
-             <ae:parameter name="categories">misc</ae:parameter>
-             
-            
-             
-             <ae:parameter name="name">Docs EN</ae:parameter>
-             
-            
+             {% else %}
+             <ae:parameter name="{{name}}">{{value}}</ae:parameter>
+             {% endif %}
+            {% endfor %}
            </cronk>
-         
-           <cronk name="iframeViewIcingaDocsDe">
-            
-             
-             <ae:parameter name="hide">false</ae:parameter>
-             
-            
-             
-             <ae:parameter name="description">Icinga docs german version</ae:parameter>
-             
-            
-             
-             <ae:parameter name="ae:parameter">
-             
-              <ae:parameter name="url"><![CDATA[/icinga-web/docs/de/index.html]]></ae:parameter>
-             
-             </ae:parameter>
-             
-            
-             
-             <ae:parameter name="image">cronks.Info2</ae:parameter>
-             
-            
-             
-             <ae:parameter name="module">Cronks</ae:parameter>
-             
-            
-             
-             <ae:parameter name="action">System.IframeView</ae:parameter>
-             
-            
-             
-             <ae:parameter name="position">310</ae:parameter>
-             
-            
-             
-             <ae:parameter name="categories">misc</ae:parameter>
-             
-            
-             
-             <ae:parameter name="name">Docs DE</ae:parameter>
-             
-            
-           </cronk>
-         
-           <cronk name="icingaReportingDefault">
-            
-             
-             <ae:parameter name="hide">true</ae:parameter>
-             
-            
-             
-             <ae:parameter name="description">Seamless Jasper Integration</ae:parameter>
-             
-            
-             
-             <ae:parameter name="ae:parameter">
-             
-              <ae:parameter name="enable_scheduling">1</ae:parameter>
-             
-              <ae:parameter name="enable_onthefly">1</ae:parameter>
-             
-              <ae:parameter name="jasperconfig">modules.reporting.jasperconfig.default</ae:parameter>
-             
-              <ae:parameter name="enable_repository">1</ae:parameter>
-             
-             </ae:parameter>
-             
-            
-             
-             <ae:parameter name="enabled">false</ae:parameter>
-             
-            
-             
-             <ae:parameter name="image">cronks.Weather_Cloud_Sun</ae:parameter>
-             
-            
-             
-             <ae:parameter name="groupsonly">appkit_admin</ae:parameter>
-             
-            
-             
-             <ae:parameter name="module">Reporting</ae:parameter>
-             
-            
-             
-             <ae:parameter name="action">Cronk.Main</ae:parameter>
-             
-            
-             
-             <ae:parameter name="categories">icinga-reporting</ae:parameter>
-             
-            
-             
-             <ae:parameter name="name">Reporting</ae:parameter>
-             
-            
-           </cronk>
-         
+         {% endfor %}
 
 
          <!-- nagvis module -->
-        
+        {% if data.modules.get('nagvis', None) and data.modules.nagvis.enabled %}
 
-         
-           <cronk name="iFrameViewNagvis">
-            
-             
-             <ae:parameter name="hide">false</ae:parameter>
-             
-            
-             
-             <ae:parameter name="description">Nagvis Maps views</ae:parameter>
-             
-            
-             
-             <ae:parameter name="image">cronks.Info2</ae:parameter>
-             
-            
-             
-             <ae:parameter name="module">Cronks</ae:parameter>
-             
-            
-             
-             <ae:parameter name="action">System.IframeView</ae:parameter>
-             
-            
-             
-             <ae:parameter name="position">310</ae:parameter>
-             
-            
-             
+         {% for name,cronk in data.modules.nagvis.cronks_xml.cronks.items() %}
+           <cronk name="{{name}}">
+            {% for name,value in cronk.items() %}
+             {% if value is mapping %}
              <ae:parameter name="ae:parameter">
-             
-              <ae:parameter name="url"><![CDATA[http://nagvis.localhost/nagvis/frontend/nagvis-js/]]></ae:parameter>
-             
+             {% for name2, value2 in value.items() %}
+              <ae:parameter name="{{name2}}">{{value2}}</ae:parameter>
+             {% endfor %}
              </ae:parameter>
-             
-            
-             
-             <ae:parameter name="categories">misc</ae:parameter>
-             
-            
-             
-             <ae:parameter name="name">Nagvis Display</ae:parameter>
-             
-            
+             {% else %}
+             <ae:parameter name="{{name}}">{{value}}</ae:parameter>
+             {% endif %}
+            {% endfor %}
            </cronk>
-         
+         {% endfor %}
 
 
-        
+        {% endif %}
 
         <!-- set correct url for docs -->
 <!--
@@ -292,11 +135,33 @@
             </cronk>
 -->        
        	</cronks>
-        
+        {% endif %}
         <!--
             Category overwrites - for example:
         -->
-        
+        {% if data.cronks_xml.get('categories', None) %}
+        <categories>
+         {% for name,category in data.cronks_xml.categories.items() %}
+           <category name="{{category.name}}">
+            {% if category.get('parameters', None) %}
+            {% for name,value in category.parameters.items() %}
+             <ae:parameter name="{{name}}">{{value}}</ae:parameter>
+            {% endfor %}
+            {% endif %}
+           </category>
+         {% endfor %}
+
+
+        <!--
+			<category name="misc">
+				<ae:parameter name="title">Misc</ae:parameter>
+				<ae:parameter name="visible">true</ae:parameter>
+				<ae:parameter name="position">99</ae:parameter>
+			</category>
+	
+         -->
+        </categories>
+        {% endif %}
 
 	</ae:configuration>
 </ae:configurations>

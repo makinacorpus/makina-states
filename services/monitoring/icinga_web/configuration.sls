@@ -13,15 +13,29 @@ include:
   - makina-states.services.monitoring.icinga_web.hooks
   - makina-states.services.monitoring.icinga_web.services
 
-{% for file in ['access', 'auth', 'cronks', 'databases',
-                'exclude_customvars', 'factories', 'icinga',
-                'logging', 'module_appkit', 'module_cronks',
-                'module_reporting', 'module_web', 'settings',
-                'sla', 'translation', 'userpreferences', 'views'] %}
+{% for file in ['access',
+                'auth',
+                'cronks',
+                'databases',
+                'exclude_customvars',
+                'factories',
+                'icinga',
+                'logging',
+                'module_appkit',
+                'module_cronks',
+                'module_reporting',
+                'module_web',
+                'settings',
+                'sla',
+                'translation',
+                'userpreferences',
+                'views'] %}
 icinga_web-{{file}}-conf:
   file.managed:
     - name: {{data.configuration_directory}}/conf.d/{{file}}.xml
-    - source: salt://makina-states/files/etc/icinga-web/conf.d/{{file}}.xml
+    - source: {{data.templates.get(
+                   file,
+                   'salt://makina-states/files/etc/icinga-web/conf.d/{0}.xml'.format(file)}}
     - template: jinja
     - makedirs: true
     - user: root

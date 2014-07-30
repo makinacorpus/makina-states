@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- MANAGED VIA SALT - DO NOT EDIT -->
-{%- set data = salt['mc_utils.json_load'](data) %}
 <ae:configurations xmlns:ae="http://agavi.org/agavi/config/global/envelope/1.0" xmlns="http://agavi.org/agavi/config/parts/settings/1.0">
 
     <ae:configuration>
@@ -9,19 +8,6 @@
         Example how to overwrite settings from settings.xml
         -->
 
-       {% if data.settings_xml.get('settings', None) %}
-       <settings>
-        {% for name, value in data.settings_xml.settings.items() %}
-        <setting name="{{name}}">{{value}}</setting>
-        {% endfor %}
-       </settings>
-        <!--
-            <settings>
-                <setting name="available">false</setting>
-                <setting name="app_name">My Custom Version</setting>
-            </settings>
-        -->
-
-        {% endif %}
+       
     </ae:configuration>
 </ae:configurations>

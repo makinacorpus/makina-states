@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- MANAGED VIA SALT - DO NOT EDIT -->
+{%- set data = salt['mc_utils.json_load'](data) %}
 <ae:configurations xmlns="http://agavi.org/agavi/config/parts/module/1.0" xmlns:ae="http://agavi.org/agavi/config/global/envelope/1.0">
     <ae:configuration>
             <!--
@@ -7,6 +8,14 @@
                 can hide passwords and other system related information
                 from the users
             -->
-            
+            {% if data.exclude_customvars_xml.get('settings', None) %}
+            <settings>
+                {% for value in data.exclude_customvars_xml.settings %}
+                <ae:parameter>{{value}}</ae:parameter>
+                {% endfor %}
+                <!-- <ae:parameter>PASSWORD</ae:parameter> -->
+                <!-- <ae:parameter>DN</ae:parameter> -->
+            </settings>
+            {% endif %}
     </ae:configuration>
 </ae:configurations>

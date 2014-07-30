@@ -78,4 +78,9 @@ icinga2-configuration-post-object-conf:
     - watch_in:
       - mc_proxy: icinga2-post-conf
 
-
+icinga2-templates-gen:
+  mc_proxy.hook:
+    - watch:
+      - mc_proxy: icinga2-pre-conf
+    - watch_in:
+      - mc_proxy: icinga2-post-conf
