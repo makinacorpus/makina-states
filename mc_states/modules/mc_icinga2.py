@@ -294,12 +294,14 @@ def settings():
                         'sockets': {
                             'livestatus-tcp': {
                                 'socket_type': "tcp",
-                                'bin_host': "127.0.0.1",
+                                'bind_host': "127.0.0.1",
                                 'bind_port': 6558,
                             },
                             'livestatus-unix': {
                                 'socket_type': "unix",
-                                'socket_path': "/var/run/icinga2/cmd/livestatus",
+                                'socket_path': (
+                                    "/var/run/icinga2/cmd/livestatus"
+                                ),
                             },
                         },
                     },
