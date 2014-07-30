@@ -49,55 +49,15 @@ icinga2-import-pgsql-schema:
     {% else %}
     - name: psql "postgresql://{{data.modules.ido2db.database.user}}:{{data.modules.ido2db.database.password}}@{{data.modules.ido2db.database.host}}:{{data.modules.ido2db.database.port}}/{{data.modules.ido2db.database.name}}" -f "{{tmpf}}"
     {% endif %}
+    {% if 'socket' in data.modules.ido2db.database %}
+    - unless: echo "select * from icinga_commands;" | psql "postgresql://{{data.modules.ido2db.database.user}}:{{data.modules.ido2db.database.password}}@[{{data.modules.ido2db.database.socket}}]/{{data.modules.ido2db.database.name}}"
+    {% else %}
+    - unless: echo "select * from icinga_commands;" | psql "postgresql://{{data.modules.ido2db.database.user}}:{{data.modules.ido2db.database.password}}@{{data.modules.ido2db.database.host}}:{{data.modules.ido2db.database.port}}/{{data.modules.ido2db.database.name}}"
+    {% endif %}
     - watch:
       - file: icinga2-import-pgsql-schema
       - mc_proxy: makina-postgresql-post-base
     - watch_in:
       - mc_proxy: icinga2-pre-install
-
-# check schema importation
-{% set tmpf = '/tmp/icinga2-ido.check.sql' %}
-icinga2-check-pgsql-schema:
-  file.managed:
-    - name: {{tmpf}}
-    - source: ''
-    - template: jinja
-    - makedirs: true
-    - user: root
-    - group: root
-    - mode: 755
-    - contents: |
-                #!/bin/bash
-                sql_queries=(
-                 "select 59=count(*) as ok from information_schema.tables where table_schema='public'"
-                 "select 155=count(*) as ok from information_schema.table_constraints"
-                 "select 209=count(*) as ok from pg_index as idx
-                  join pg_class as i on i.oid = idx.indexrelid
-                  join pg_namespace as ns on ns.oid = i.relnamespace and ns.nspname = any(current_schemas(false))"
-                )
-                for query in "${sql_queries[@]}"; do
-                 {% if 'socket' in data.modules.ido2db.database %}
-                  res="$(echo "select row_to_json(row) from ($query) row;" | psql -t "postgresql://{{data.modules.ido2db.database.user}}:{{data.modules.ido2db.database.password}}@[{{data.modules.ido2db.database.socket}}]/{{data.modules.ido2db.database.name}}" | jq .ok)"
-                 {% else %}
-                  res="$(echo "select row_to_json(row) from ($query) row;" | psql -t "postgresql://{{data.modules.ido2db.database.user}}:{{data.modules.ido2db.database.password}}@{{data.modules.ido2db.database.host}}:{{data.modules.ido2db.database.port}}/{{data.modules.ido2db.database.name}}" | jq .ok)"
-                 {% endif %}
-                 if [ "xtrue" != "x$res" ]; then
-                  echo "Error with query \"$query;\"";
-                  rm "{{tmpf}}";
-                  exit 1;
-                fi
-                done;
-                echo "OK";
-                rm {{tmpf}};
-                exit 0;
-
-  cmd.run:
-    - name: {{tmpf}}
-    - watch:
-       - cmd: icinga2-import-pgsql-schema
-       - file: icinga2-check-pgsql-schema
-    - watch_in:
-       - mc_proxy: icinga2-pre-install
-
 {% endif %}
 {% endif %}

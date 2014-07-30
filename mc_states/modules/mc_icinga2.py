@@ -36,740 +36,68 @@ import logging
 import copy
 import mc_states.utils
 
-import re
-
 __name = 'icinga2'
 
 DRA = 'dns_reverse_association'
 log = logging.getLogger(__name__)
 
 
-def objects_icinga1():
-    locs = __salt__['mc_locations.settings']()
-    data = __salt__['mc_icinga.objects']()
-    data['directory'] = (locs['conf_dir'] +
-                         "/icinga2/conf.d/salt_generated")
-    return data
-
-
-def objects_icinga2():
-    '''function to translate objects() dictionary for icinga2
-       the objects() dictionary can be translated manually in order
-       to improve performance
-       this function is here, only to reuse the icinga dictionary
-
-       http://docs.icinga.org/icinga2/latest/doc/module/icinga2/toc#!/icinga2/latest/doc/module/icinga2/chapter/monitoring-basics#check-commands
-       https://github.com/Icinga/icinga2-migration
-    '''
-
-    # ARGx are not beautiful arguments, we will try to give name.
-    # This dictionary was used in mc_icinga to do the
-    # reverse operation (association a named value to ARGx variable)
-    cssh_params = ['ssh_user', 'ssh_addr', 'ssh_port', 'ssh_timeout']
-
-    check_command_args = {
-        'CSSH_BACKUP_BURP': ['ssh_user', 'ssh_addr', 'ssh_port',
-                             'warning', 'critical'],
-        'CSSH_BACKUP': ['ssh_user', 'ssh_addr', 'ssh_port',
-                        'warning', 'critical'],
-        'C_SNMP_PROCESS': ['process', 'warning', 'critical'],
-        'CSSH_CRON': cssh_params,
-        'CSSH_DDOS': cssh_params+['warning', 'critical'],
-        'CSSH_DEBIAN_UPDATES': cssh_params,
-        'C_DNS_EXTERNE_ASSOCIATION': ['hostname', 'other_args'],
-        'C_DNS_EXTERNE_REVERSE_ASSOCIATION': ['inaddr', 'hostname',
-                                              'other_args'],
-        'C_SNMP_DISK': ['path', 'warning', 'critical'],
-        'CSSH_DRBD': cssh_params+['command'],
-        'CSSH_CUSTOM': cssh_params+['command'],
-        'CSSH_HAPROXY': cssh_params+['command'],
-        'C_PROCESS_IRCBOT_RUNNING': [],
-        'C_SNMP_LOADAVG': ['other_args'],
-        'CSSH_CYRUS_CONNECTIONS': cssh_params+['warning', 'critical'],
-        'C_MAIL_IMAP': ['warning', 'critical'],
-        'C_MAIL_IMAP_SSL': ['warning', 'critical'],
-        'C_MAIL_POP': ['warning', 'critical'],
-        'C_MAIL_POP_SSL': ['warning', 'critical'],
-        'C_POP3_TEST_SIZE_AND_DELETE': ['warning1', 'critical1',
-                                        'warning2', 'critical2', 'mx'],
-        'CSSH_MAILQUEUE': cssh_params+['warning', 'critical'],
-        'C_MAIL_SMTP': ['warning', 'critical'],
-        'CSSH_MEGARAID_SAS': cssh_params+['command'],
-        'C_SNMP_MEMORY': ['warning', 'critical'],
-        'C_SNMP_NETWORK': ['interface', 'other_args'],
-        'CSSH_NTP_PEER': cssh_params,
-        'CSSH_NTP_TIME': cssh_params,
-        'C_CHECK_ONE_NAGIOS_ONLY': [],
-        'check_tcp': ['port', 'warning', 'critical'],
-        'CSSH_RAID_SOFT': cssh_params+['command'],
-        'CSSH_SAS2IRCU': cssh_params+['command'],
-        'C_SNMP_PROCESS_WITH_MEM': ['process', 'warning', 'critical',
-                                    'memory'],
-        'C_HTTP_STRING_SOLR': ['hostname', 'port', 'warning',
-                               'critical', 'timeout', 'strings', 'other_args'],
-        'CSSH_SUPERVISOR': cssh_params+['command'],
-        'check_http_vhost_uri': ['hostname', 'url'],
-        'CSSH_RAID_3WARE': cssh_params+['command'],
-        'C_APACHE_STATUS': ['warning', 'critical', 'other_args'],
-        'C_HTTPS_OPENID_REDIRECT': ['hostname', 'url', 'warning',
-                                    'critical', 'timeout'],
-        'C_HTTP_STRING': ['hostname', 'url', 'warning', 'critical',
-                          'timeout', 'strings', 'other_args'],
-        'C_HTTP_STRING_AUTH': ['hostname', 'url', 'warning',
-                               'critical', 'timeout', 'strings',
-                               'other_args'],
-        'C_HTTP_STRING_ONLY': ['hostname', 'url', 'warning',
-                               'critical', 'timeout', 'strings',
-                               'other_args'],
-        'C_HTTPS_STRING_ONLY': ['hostname', 'url', 'warning',
-                                'critical', 'timeout', 'strings',
-                                'other_args'],
-        'C_CHECK_LABORANGE_LOGIN': ['hostname', 'url', 'warning',
-                                    'critical', 'timeout', 'strings',
-                                    'other_args'],
-        'C_CHECK_LABORANGE_STATS': ['hostname', 'url', 'warning',
-                                    'critical', 'timeout', 'strings',
-                                    'other_args'],
-        'check_https': ['hostname', 'url', 'warning', 'critical',
-                        'timeout', 'strings', 'other_args'],
-    }
-
-    # build the check command with args
-    src = objects_icinga1()
-    res = {}
-
-    # directory
-    res['directory'] = src['directory']
-
-    # objects definitions
-    res['objects_definitions'] = {}
-
-    def _unquoting(value):
-        '''remove begining and ending quotes'''
-        value = str(value)
-        if value.startswith('\\\'') or value.startswith('\\"'):
-            value = value[2:]
-        elif value.startswith('\'') or value.startswith('"'):
-            value = value[1:]
-        if value.endswith('\\\'') or value.endswith('\\"'):
-            value = value[:-2]
-        elif value.endswith('\'') or value.endswith('"'):
-            value = value[:-1]
-        # because of in the template, the value are enclosed
-        # with '"' character, we escape the quotes
-        value = value.replace('"', '\\"')
-        return value
-
-    def _check_command_arguments(check_command):
-        '''split a check_command in order to get the arguments'''
-        # we have to split the "!"
-        command_splitted = check_command.split('!')
-        res = {}
-        res['check_command'] = command_splitted[0]
-        if command_splitted[0] in check_command_args:
-            nb_args = len(check_command_args[command_splitted[0]])
-            for i, val in enumerate(command_splitted[1:]):
-                # because some commands ends with "!!!!" but the ARG are not
-                # used in command_line
-                if i < nb_args:
-                    res['vars.'+check_command_args[
-                        command_splitted[0]][i]] = val
-        else:
-            for i, val in enumerate(command_splitted[1:]):
-                res['vars.ARG'+str(i+1)] = val
-        return res
-
-    def _command_line_arguments(command_name, command_line):
-        '''generate arguments dictionary from a command_line'''
-        res = {}
-        command_splitted = []
-
-        # bad method to split command_line
-        tmp = []
-        spaced_arg = False
-        # split on space and =
-        for arg in re.split(' |=', command_line):
-            if (
-                arg.startswith('\'')
-                or arg.startswith('\\\'')
-                or arg.startswith('\"')
-                or arg.startswith('\\\"')
-            ):
-                spaced_arg = True
-            if (
-                arg.endswith('\'')
-                or arg.endswith('\\\'')
-                or arg.endswith('\"')
-                or arg.endswith('\\\"')
-            ):
-                spaced_arg = False
-            tmp.append(arg)
-            if not spaced_arg:
-                tmpstr = " ".join(tmp)
-                if tmpstr:
-                    # merge the argument on quotes (bad)
-                    command_splitted.append(tmpstr)
-                tmp = []
-
-        res['command'] = command_splitted[0]
-        n_args = len(command_splitted)-1
-        i_args = 1
-
-        # replace $ARGx$ with the names found in check_command_args
-        if command_name in check_command_args:
-            argx = 1
-            for param in check_command_args[command_name]:
-                i_args = 1
-                while i_args <= n_args:
-                    command_splitted[
-                        i_args] = command_splitted[
-                            i_args
-                        ].replace(
-                            '$ARG' + str(argx) + '$',
-                            '$' + str(param)+'$')
-                    i_args += 1
-                argx += 1
-
-        # remove quotes
-        i_args = 1
-        while i_args <= n_args:
-            command_splitted[i_args] = _unquoting(command_splitted[i_args])
-            i_args += 1
-
-        # find the couple of arguments
-        res['arguments'] = {}
-        i_args = 1
-        while i_args <= n_args:
-            if not command_splitted[i_args]:  # to remove blanks
-                i_args += 1
-            else:
-                if i_args < n_args:
-                    if (
-                        (not command_splitted[i_args+1].startswith('-'))
-                        and (not command_splitted[i_args].startswith('$'))
-                    ):  # bad method to detect the couple of arguments
-                        # "-a 1", the "1" doesn't begin with '-'
-                        res['arguments'][
-                            command_splitted[i_args]
-                        ] = command_splitted[i_args+1]
-                        i_args += 2
-                    else:
-                        res['arguments'][command_splitted[i_args]] = {}
-                        i_args += 1
-                else:
-                    res['arguments'][command_splitted[i_args]] = {}
-                    i_args += 1
-        return res
-
-    def _translate_attrs(obj_name,
-                         obj_type,
-                         res_type,
-                         obj_attrs,
-                         force_remove_attrs_used_as_name_not_removed=False):
-        '''
-        function to translate attrs subdictionary
-        it is used to translate objects_definitions
-        and autoconfigured_hosts_definitions
-        '''
-        res = {}
-        for key, value in obj_attrs.items():
-
-            # specific translation
-            if 'command_line' == key:  # translate the command_line attributes
-                command = _command_line_arguments(obj_name, value)
-                res['command'] = command['command']
-                res['arguments'] = command['arguments']
-            elif 'check_command' == key:  # translate the check_command attrs
-                command = _check_command_arguments(value)
-                for key, value in command.items():
-                    res[key] = value
-            # TODO: perhaps a separated object will be better but it may
-            # be problematic with autoconfigured hosts
-            elif key in [
-                'contacts', 'contact_groups', 'notification_options',
-                'notification_period', 'notification_interval'
-            ]:  # for notifications
-                if 'notification' not in res:
-                    res['notification'] = {}
-
-                if key in ['contacts', 'contact_groups']:
-                    # try to get the notification command (now the command is in the notification object and not in the user object)
-                    for name,obj  in src['objects_definitions'].items(): # src is a more global variable ; warning with algorithm complexity
-                        if 'command' not in  res['notification']:
-                            if obj['type'] in ['contact', 'contact_groups']:
-                               if 'attrs' in obj and attrs_used_as_name[obj['type']] in obj['attrs']:
-
-                                   if 'service' == obj_type and 'service_notification_commands' in obj['attrs']:
-                                       res['notification']['command'] = obj['attrs']['service_notification_commands']
-                                   elif 'host' == obj_type and 'host_notification_commands' in obj['attrs']:
-                                       res['notification']['command'] = obj['attrs']['host_notification_commands']
-
-
-                if 'notification_options' == key:
-                    value_splitted = value.split(',')
-                    # strip all values (because we can have
-                    # "a,       b    ,   c". we want ["a","b","c"])
-                    value_splitted = map(
-                        (lambda v: v.strip()),
-                        value_splitted)
-                    res['notification']['states'] = []
-                    res['notification']['types'] = []
-                    # from http://docs.icinga.org/icinga2/latest/doc/module/icinga2/toc#!/icinga2/latest/doc/module/icinga2/chapter/migration#manual-config-migration-hints-contacts-users
-                    for v in value_splitted:
-                        if 'o' == v:
-                            res['notification']['states'].append('OK')
-                        elif 'w' == v:
-                            res['notification']['states'].append('Warning')
-                            res['notification']['types'].append('Problem')
-                        elif 'c' == v:
-                            res['notification']['states'].append('Critical')
-                            res['notification']['types'].append('Problem')
-                        elif 'u' == v:
-                            res['notification']['states'].append('Unknown')
-                            res['notification']['types'].append('Problem')
-                        elif 'd' == v:
-                            res['notification']['states'].append('Down')
-                            res['notification']['types'].append('Problem')
-                        elif 's' == v:
-                            res['notification']['states'].append('.')
-                            res['notification']['types'].append('DowntimeStart')
-                            res['notification']['types'].append('DowntimeEnd')
-                            res['notification']['types'].append('DowntimeRemoved')
-                        elif 'r' == v:
-                            res['notification']['states'].append('OK')
-                            res['notification']['types'].append('Recovery')
-                        elif 'f' == v:
-                            res['notification']['states'].append('.')
-                            res['notification']['types'].append('FlappingStart')
-                            res['notification']['types'].append('FlappingEnd')
-                        elif 'n' == v:
-                            res['notification']['states'].append('.')
-                        elif '.' == v:
-                            res['notification']['states'].append('.')
-                            res['notification']['types'].append('Custom')
-                    # unique values
-                    res['notification']['states'] = __salt__[
-                        'mc_utils.uniquify'](res['notification']['states'])
-                    res['notification']['types'] = __salt__[
-                        'mc_utils.uniquify'](res['notification']['types'])
-                    # remove key if the list is empty
-                    if 0 == len(res['notification']['types']):
-                        res['notification'].pop('types', None)
-                    if 0 == len(res['notification']['states']):
-                        res['notification'].pop('states', None)
-                else:
-                    if key in attrs_renamed:
-                        res_key = attrs_renamed[key]
-                    else:
-                        res_key = key
-
-                    if key in attrs_force_list:
-                        res_value = value.split(',')
-                        # strip all values (because we can have
-                        # "a,       b    ,   c". we want ["a","b","c"])
-                        res_value = map((lambda v: v.strip()), res_value)
-                    elif key in attrs_timed:
-                        try:
-                            res_value = int(value)
-                            # by default the time is in minutes
-                            res_value = str(res_value) + 'm'
-                        except:
-                            # already a unit because it is not a number
-                            res_value = value
-                    else:
-                        res_value = value
-
-                    res['notification'][res_key] = res_value
-            elif key in ['monday', 'tuesday', 'wednesday',
-                         'thursday', 'friday',
-                         'saturday', 'sunday']:  # for timeperiods
-                if 'ranges' not in res:
-                    res['ranges'] = {}
-                res['ranges'][key] = value
-
-            # global translation
-            else:
-                # check if the attribute is removed
-                # remove if the attribute is used as name and
-                # not in conserved attributes list, unless remove is forced
-                if (
-                    obj_type in attrs_used_as_name
-                    and (key == attrs_used_as_name[obj_type]
-                         and key not in attrs_used_as_name_not_removed)
-                    or (key == attrs_used_as_name[obj_type]
-                        and key in attrs_used_as_name_not_removed
-                        and force_remove_attrs_used_as_name_not_removed)
-                ):
-                    # the attribute used as name is removed from attrs list
-                    continue
-                elif key in attrs_removed:  # attribute removed
-                    continue
-
-                # translate the attribute key
-                if key in attrs_renamed:
-                    res_key = attrs_renamed[key]
-                elif (
-                    'name' == key
-                    and obj_type in attrs_used_as_name
-                    and attrs_used_as_name[obj_type] not in obj_attrs
-                ):  # translate "name" attrs
-                    res_key = attrs_used_as_name[obj_type]
-                # translate the old argument prefix
-                elif key.startswith('cmdarg_'):
-                    res_key = key.replace('cmdarg_', 'vars.')
-                # theses arguments seems to be not supported
-                elif key in ['_SERVICE_ID', '_HOST_ID']:
-                    continue
-                else:
-                    res_key = key
-
-                # create the lists if needed and format the value
-                if key in attrs_force_list:
-                    res_value = value.split(',')
-                    # strip all values (because we can have
-                    # a,       b    ,   c". we want ["a","b","c"])
-                    res_value = map((lambda v: v.strip()), res_value)
-                elif key in attrs_timed:
-                    try:
-                        res_value = int(value)
-                        # by default the time is in minutes
-                        res_value = str(res_value)+'m'
-                    except:
-                        # already a unit because it is not a number
-                        res_value = value
-                else:
-                    try:
-                        res_value = int(value)
-                    except:
-                        res_value = value
-
-                # add the attribute
-                res[res_key] = res_value
-
-        # legacy import
-        if 'timeperiod' == obj_type:
-            if 'import' not in res:
-                res['import'] = []
-            res["import"] = (
-                res["import"] + ["legacy-timeperiod"] + res['import'])
-        elif 'user' == obj_type:
-            if 'import' not in res:
-                res['import'] = []
-            res["import"] = (
-                res["import"] + ["generic-user"] + res['import'])
-        elif 'command' == obj_type and 'CheckCommand' == res_type:
-            if 'import' not in res:
-                res['import'] = []
-            res['import'] = ["plugin-check-command"] + res['import']
-        elif 'command' == obj_type and 'NotificationCommand' == res_type:
-            if 'import' not in res:
-                res['import'] = []
-            res['import'] = ["plugin-notification-command"] + res['import']
-        return res
-
-    types_renamed = {
-        'timeperiod': "TimePeriod",
-        'contactgroup': "UserGroup",
-        'contact': "User",
-        'servicegroup': "ServiceGroup",
-        'service': "Service",
-        'hostgroup': "HostGroup",
-        'host': "Host",
-        'command': "CheckCommand",
-    }
-    # commented as "ugly hack"in php migration script
-    attrs_used_as_name_not_removed = ['service_description']
-    attrs_used_as_name = {
-        'timeperiod': "timeperiod_name",
-        'contactgroup': "contactgroup_name",
-        'contact': "contact_name",
-        'servicegroup': "servicegroup_name",
-        'service': "service_description",
-        'hostgroup': "hostgroup_name",
-        'host': "host_name",
-        'command': "command_name",
-    }
-    attrs_renamed = {
-        'use': "import",
-        'alias': "display_name",
-        # timeperiods
-        'active_checks_enabled': "enable_active_checks",
-        'passive_checks_enabled': "enable_passive_checks",
-        'event_handler_enabled': "enable_event_handler",
-        'low_flap_threshold': "flapping_threshold",
-        'high_flap_threshold': 'flapping_threshold',
-        'flap_detection_enabled': "enable_flapping",
-        'process_perf_data': "enable_perfdata",
-        'notifications_enabled': "enable_notifications",
-        # contactgroups
-        # contacts
-        'contactgroups': "groups",
-        # servicegroups
-        # services
-        'is_volatile': "volatile",
-        'normal_check_interval': "check_interval",
-        'retry_check_interval': "retry_interval",
-        # hostgroups
-        # hosts
-        'hostgroups': "groups",
-        # notifications
-        'notification_period': "period",
-        'contacts': "users",
-        'contact_groups': "user_groups",
-    }
-    attrs_force_list = [
-        'use',
-        # contacts
-        'contactgroups',
-        # services
-        'contact_groups',
-        # hosts
-        'parents',
-        'hostgroups',
-        # notifications
-        'contacts',
-        'contact_groups',
-    ]
-    attrs_timed = [
-        'normal_check_interval',
-        'retry_check_interval',
-        'notification_interval',
-    ]
-    # from icinga2-migration php script
-    attrs_removed = [
-        'name',
-        'register',
-        # timeperiods
-        # contactgroups
-        # contacts
-        'service_notification_period',
-        'host_notification_period',
-        'host_notification_options',
-        'service_notification_options',
-        'service_notification_commands',
-        'host_notification_commands',
-        'host_notifications_enabled',
-        'service_notifications_enabled',
-        'address1',
-        'address2',
-        'address3',
-        'address4',
-        'address5',
-        'address6',
-        # servicegroups
-        # services
-        'initial_state',
-        'obsess_over_service',
-        'check_freshness',
-        'freshness_threshold',
-        'flap_detection_options',
-        'failure_prediction_enabled',
-        'retain_status_information',
-        'stalking_options',
-        'parallelize_check',
-        'notification_interval',
-        'first_notification_delay',
-        #        'notification_period',
-        'notification_options',
-        # hostgroups
-        # hosts
-        'host_name',
-        'initial_state',
-        'obsess_over_host',
-        #        'check_freshness',
-        #        'freshness_threshold',
-        #        'flap_detection_options',
-        #        'failure_prediction_enabled',
-        #        'retain_status_information',
-        'retain_nonstatus_information',
-        #        'stalking_options',
-        'statusmap_image',
-        '2d_coords',
-        #        'parallelize_check',
-        #        'notification_interval',
-        #        'first_notification_delay',
-        #        'notification_period',
-        #        'notification_options',
-    ]
-    services = [
-        'backup_burp_age',
-        'backup_rdiff',
-        'beam_process',
-        'celeryd_process',
-        'cron',
-        'ddos',
-        'debian_updates',
-        'dns_association_hostname',
-        'drbd',
-        'epmd_process',
-        'erp_files',
-        'fail2ban',
-        'gunicorn_process',
-        'haproxy',
-        'ircbot_process',
-        'load_avg',
-        'mail_cyrus_imap_connections',
-        'mail_imap',
-        'mail_imap_ssl',
-        'mail_pop',
-        'mail_pop_ssl',
-        'mail_pop_test_account',
-        'mail_server_queues',
-        'mail_smtp',
-        'megaraid_sas',
-        'memory',
-        'memory_hyperviseur',
-        'mysql_process',
-        'ntp_peers',
-        'ntp_time',
-        'only_one_nagios_running',
-        'postgres_port',
-        'postgres_process',
-        'prebill_sending',
-        'raid',
-        'sas',
-        'snmpd_memory_control',
-        'ssh',
-        'supervisord_status',
-        'swap',
-        'tiles_generator_access',
-        'ware_raid',
-        'web_apache_status',
-    ]
-    services_loop = [
-        'dns_association',
-        DRA,
-        'disk_space',
-        'network',
-        'solr',
-        'web_openid',
-        'web',
-    ]
-
-    for name, obj in src['objects_definitions'].items():
-        # global changes
-        res['objects_definitions'][name] = {}
-        res['objects_definitions'][name]['attrs'] = {}
-        # the extension of filenames is changed
-        res['objects_definitions'][
-            name]['file'] = obj['file'].replace('.cfg', '.conf')
-
-        # translate the type of the object
-        if obj['type'] in types_renamed:
-            if name in ['command_meta_notify']:  # hack
-                res['objects_definitions'][
-                    name]['type'] = "NotificationCommand"
-            else:
-                res['objects_definitions'][
-                    name]['type'] = types_renamed[obj['type']]
-        else:
-            res['objects_definitions'][
-                name]['type'] = obj['type']
-
-        # determine if the object is a template or not
-        if (
-            'attrs' in obj
-            and 'register' in obj['attrs']
-            and 0 == obj['attrs']['register']
-        ):
-            res['objects_definitions'][
-                name]['template'] = True
-        else:
-            res['objects_definitions'][
-                name]['template'] = False
-
-        # find the object name
-        if (
-            'attrs' in obj
-            # priority for the name attribute
-            # (change this generates an invalid configuration)
-            and 'name' in obj['attrs']
-        ):
-            res['objects_definitions'][name]['name'] = obj['attrs']['name']
-        elif (
-            obj['type'] in attrs_used_as_name
-            and 'attrs' in obj
-            and attrs_used_as_name[obj['type']] in obj['attrs']
-        ):
-            res['objects_definitions'][
-                name]['name'] = obj['attrs'][attrs_used_as_name[obj['type']]]
-        else:
-            res['objects_definitions'][name]['name'] = name
-
-        # translate the attributes
-        res['objects_definitions'][name]['attrs'] = _translate_attrs(
-            res['objects_definitions'][name]['name'],
-            obj['type'],
-            res['objects_definitions'][name]['type'], obj['attrs'], True)
-
-    # purge_definitions
-    res['purge_definitions'] = src['purge_definitions']
-
-    # autoconfigured_hosts
-    res['autoconfigured_hosts_definitions'] = {}
-    for name, params in src['autoconfigured_hosts_definitions'].items():
-        res['autoconfigured_hosts_definitions'][name] = {}
-
-        # translate the host attrs
-        if 'attrs' in params:
-            if 'hostgroup' in params and params['hostgroup']:
-                res['autoconfigured_hosts_definitions'][
-                    name]['attrs'] = _translate_attrs(
-                        name,
-                        'hostgroup',
-                        types_renamed['hostgroup'],
-                        params['attrs'])
-            else:
-                res['autoconfigured_hosts_definitions'][
-                    name]['attrs'] = _translate_attrs(
-                        name,
-                        'host',
-                        types_renamed['host'],
-                        params['attrs'])
-        else:
-            res['autoconfigured_hosts_definitions'][name]['attrs'] = {}
-
-        # keep the booleans
-        for key, value in params.items():
-            if key not in ['service_attrs', 'attrs']:
-                res['autoconfigured_hosts_definitions'][name][key] = value
-
-        # translate the service_attrs
-        if 'services_attrs' in params:
-            res['autoconfigured_hosts_definitions'][
-                name]['services_attrs'] = {}
-            for service in services:
-                if service in params['services_attrs']:
-                    # we have to preserve service_description attribute
-                    # because in the template it is the value used as
-                    # name (because there is not an additional
-                    # subdictionary to store the name like
-                    # in objects_definitions)
-                    res['autoconfigured_hosts_definitions'][
-                        name]['services_attrs'][service] = _translate_attrs(
-                            service,
-                            'service',
-                            types_renamed['service'],
-                            params['services_attrs'][service], False)
-
-            for service in services_loop:
-                if service in params['services_attrs']:
-                    res['autoconfigured_hosts_definitions'][
-                     name]['services_attrs'][service] = {}
-                    for subservice in params['services_attrs'][service]:
-                        res['autoconfigured_hosts_definitions'][
-                            name]['services_attrs'][
-                                service][subservice] = _translate_attrs(
-                                    service,
-                                    'service',
-                                    types_renamed['service'],
-                                    params['services_attrs'][
-                                        service][subservice])
-    return res
-
-
 def objects():
-    return objects_icinga2()
+    '''
+    function to load the dictionary from pillar
+    the dictionary contains the objects definitions to add in icinga2
+
+    the autoconfigured_hosts_definitions dictionary contains the
+    definitions of hosts created with the configuration_add_auto_host
+    macro
+
+    the objects_definitions dictionary contains the defintinions of
+    objects created with the configuration_add_object_macro
+
+    the purge_definitions list contains the files to delete
+
+    example:
+        autoconfigured_hosts_definitions:
+          localhost:
+            hostname: "localhost"
+            attrs:
+              address: 127.0.0.1
+              display_name: "localhost"
+            ssh: true
+            services_attrs:
+         objects_definitions:
+           mycommand:
+             attrs:
+              command: /usr/bin/mycommand
+              arguments:
+                -arg: value
+           name: mycommand
+           file: command.conf
+           type: CheckCommand
+           template: false
+        purge_definitions:
+          - commands.conf
+    '''
+    locs = __salt__['mc_locations.settings']()
+    # XXX: import the centreon configuration
+    # generated with
+    # ./parse.py icinga2 hosts.cfg  hostgroups.cfg services.cfg \
+    # hostTemplates.cfg  serviceTemplates.cfg checkcommands.cfg \
+    # timeperiods.cfg contacts.cfg contactgroups.cfg meta_* \
+    # misccommands.cfg servicegroups.cfg  \
+    # > /srv/salt/makina-states/mc_states/modules/mc_icinga2_from_centreon.py
+
+    # try to load from a pillar file
+    data = __salt__['mc_pillar.yaml_load']('/srv/pillar/icinga2.sls')
+    if not data or not isinstance(data, dict):
+        data = {}
+    if 'objects_definitions' not in data:
+        data['objects_definitions'] = {}
+    if 'purge_definitions' not in data:
+        data['purge_definitions'] = []
+    if 'autoconfigured_hosts_definitions' not in data:
+        data['autoconfigured_hosts_definitions'] = {}
+    return data
 
 
 def format(dictionary, quote_keys=False, quote_values=True):
@@ -788,7 +116,8 @@ def format(dictionary, quote_keys=False, quote_values=True):
         else:
             res_key = key
 
-        if key in ['type', 'template', 'types', 'states']: # ugly hack
+        # ugly hack
+        if key in ['type', 'template', 'types', 'states']:
             quote_value = False
         else:
             quote_value = quote_values
@@ -859,15 +188,10 @@ def get_settings_for_object(target=None, obj=None, attr=None):
     expand the subdictionaries which are not cached
     in mc_icinga2.settings.objects
     '''
-    pref = 'makina-states.services.monitoring.icinga2.objects.'
     if 'purge_definitions' == target:
-        res = __salt__['mc_utils.defaults'](
-            pref + target,
-            {target: objects()[target]})[target]
+        res = objects()[target]
     else:
-        res = __salt__['mc_utils.defaults'](
-            pref + target+'.'+obj,
-            objects()[target][obj])
+        res = objects()[target][obj]
         if attr:
             res = res[attr]
     return res
@@ -897,15 +221,19 @@ def settings():
         dict_objects['autoconfigured_hosts_definitions'] = dict_objects[
             'autoconfigured_hosts_definitions'].keys()
 
+        # where the icinga2 objects configuration will be written
+        dict_objects['directory'] = (locs['conf_dir'] +
+                                     "/icinga/objects/salt_generated")
+
         # generate default password
         icinga2_reg = __salt__[
             'mc_macros.get_local_registry'](
                 'icinga2', registry_format='pack')
 
-        password_ido = icinga2_reg.setdefault('ido.db_password',
-                                              __salt__['mc_utils.generate_password']())
-        password_cgi = icinga2_reg.setdefault('cgi.root_account_password',
-                                              __salt__['mc_utils.generate_password']())
+        password_ido = icinga2_reg.setdefault('ido.db_password', __salt__[
+            'mc_utils.generate_password']())
+        password_cgi = icinga2_reg.setdefault('cgi.root_account_password',__salt__[
+            'mc_utils.generate_password']())
 
         module_ido2db_database = {
             'type': "pgsql",

@@ -2,12 +2,21 @@
 icinga2-pre-install:
   mc_proxy.hook:
     - watch_in:
+      - mc_proxy: icinga2-predefault-conf
       - mc_proxy: icinga2-post-install
       - mc_proxy: icinga2-pre-conf
       - mc_proxy: icinga2-post-conf
       - mc_proxy: icinga2-pre-restart
       - mc_proxy: icinga2-post-restart
 icinga2-post-install:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: icinga2-predefault-conf
+      - mc_proxy: icinga2-pre-conf
+      - mc_proxy: icinga2-post-conf
+      - mc_proxy: icinga2-pre-restart
+      - mc_proxy: icinga2-post-restart
+icinga2-predefault-conf:
   mc_proxy.hook:
     - watch_in:
       - mc_proxy: icinga2-pre-conf

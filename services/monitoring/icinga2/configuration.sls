@@ -14,6 +14,39 @@ include:
   - makina-states.services.monitoring.icinga2.services
 
 # general configuration
+{% for confd in data.icinga_conf.include_recursive %}
+{% set confd = data.configuration_directory + '/'+confd|replace('"', '') %}
+icinga2-confddefault-rename:
+  file.rename:
+    - name: {{confd}}.default
+    - source: {{confd}}
+    - user: root
+    - group: root
+    - force: true
+    - watch:
+      - mc_proxy: icinga2-predefault-conf
+    - watch_in:
+      - mc_proxy: icinga2-pre-conf
+    - onlyif: |
+              for i in commands.conf downtimes.conf groups.conf hosts notifications.conf services.conf templates.conf timeperiods.conf users.conf;do
+                if test -e "{{confd}}/${i}";then exit 0;fi
+              done
+              exit 1
+
+icinga2-confddefault-recreate-confd:
+  file.directory:
+    - name: {{confd}}
+    - user: root
+    - group: root
+    - mode: 755
+    - force: true
+    - makedirs: true
+    - watch:
+      - file: icinga2-confddefault-rename
+    - watch_in:
+      - mc_proxy: icinga2-pre-conf
+{% endfor %}
+
 icinga2-conf:
   file.managed:
     - name: {{data.configuration_directory}}/icinga2.conf
@@ -198,6 +231,7 @@ icinga2-ido2db-conf:
 icinga2-ido2db-enable:
   cmd.run:
     - name: icinga2-enable-feature ido-{{data.modules.ido2db.database.type}}
+    - unless: test -e /etc/icinga2/features-enabled/ido-pgsql.conf
     - watch:
       - mc_proxy: icinga2-pre-conf
     - watch_in:
@@ -247,6 +281,7 @@ icinga2-ido2db-init-sysvinit-conf:
 icinga2-mklivestatus-enable:
   cmd.run:
     - name: icinga2-enable-feature livestatus
+    - unless: test -e /etc/icinga2/features-enabled/livestatus.conf
     - watch:
       - mc_proxy: icinga2-pre-conf
     - watch_in:
@@ -305,27 +340,32 @@ icinga2-configuration-remove-objects-conf:
     - makedirs: true
     - user: root
     - group: root
-    -  mode: 755
+    - mode: 755
     - watch:
       - mc_proxy: icinga2-configuration-pre-clean-directories
     - watch_in:
       - mc_proxy: icinga2-configuration-post-clean-directories
     - contents: |
-                #!/bin/bash
-                files=({{salt['mc_icinga2.remove_configuration_object'](get=True)}});
-                for i in "${files[@]}"; do
-                    rm -f "$i";
-                done;
-
+                #!/usr/bin/env bash
+                ret=0
+                {% for i in salt['mc_icinga2.remove_configuration_object'](get=True) %}
+                if [ -e "{{f}}" ];then
+                  rm -f "{{f}}"
+                  lret="${?}"
+                  if [ "x${lret}" != "x0" ];then ret=${lret};fi
+                fi
+                {% endfor %}
+                exit ${ret}
   cmd.run:
     - name: {{tmpf}}
+    - onlyif: |
+              #!/usr/bin/env bash
+              {% for i in salt['mc_icinga2.remove_configuration_object'](get=True) %}
+              if [ -e "{{i}}" ];then exit 0;fi
+              {% endfor %}
+              exit 1
     - watch:
       - file: icinga2-configuration-remove-objects-conf
       - mc_proxy: icinga2-configuration-pre-clean-directories
     - watch_in:
       - mc_proxy: icinga2-configuration-post-clean-directories
-
-{#
-{%- import "makina-states/services/monitoring/icinga2/macros.jinja" as icinga2 with context %}
-{{icinga2.icinga2AddWatcher('foo', '/bin/echo', args=[1]) }}
-#}

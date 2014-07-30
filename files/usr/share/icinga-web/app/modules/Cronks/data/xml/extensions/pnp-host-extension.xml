@@ -1,124 +1,96 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <!-- MANAGED VIA SALT - DO NOT EDIT -->
 {%- set data = salt['mc_utils.json_load'](data) %}
-<template match-pattern="{{data.match_pattern}}">
+<template match-pattern="icinga-(host-template|.+-host-problems)">
     <option>
-            {% for name, parameter in data.option.items() %}
-                <parameter name="{{name}}">
-                    {% for key1, value1 in parameter.items() %}
-                    {% if value1 is mapping %}
-                     {% if 'parameter' == key1 or key1.startswith('parameter_') %}
+                <parameter name="rowEvents">
                      <parameter>
-                     {% else %}
-                     <parameter name="{{key1}}">
-                     {% endif %}
-
-
-                         {% for key2, value2 in value1.items() %}
-                         {% if value2 is mapping %}
-                          {% if 'parameter' == key2 or key2.startswith('parameter_') %}
-                          <parameter>
-                          {% else %}
-                          <parameter name="{{key2}}">
-                          {% endif %}
-
-
-                              {% for key3, value3 in value2.items() %}
-                              {% if value3 is mapping %}
-                               {% if 'parameter' == key3 or key3.startswith('parameter_') %}
+                         <parameter name="menuid">pnp4nagios</parameter>
+                          <parameter name="items">
                                <parameter>
-                               {% else %}
-                               <parameter name="{key3}}">
-                               {% endif %}
-
-                                   {% for key4, value4 in value3.items() %}
-                                   {% if value4 is mapping %}
-                                    {% if 'parameter' == key4 or key4.startswith('parameter_') %}
-                                    <parameter>
-                                    {% else %}
-                                    <parameter name="{{key4}}">
-                                    {% endif %}
-
-                                        {% for key5, value5 in value4.items() %}
-                                        {% if value5 is mapping %}
-                                         {% if 'parameter' == key5 or key5.startswith('parameter_') %}
-                                         <parameter>
-                                         {% else %}
-                                         <parameter name="{{key5}}">
-                                         {% endif %}
-
-                                             {% for key6, value6 in value5.items() %}
-                                                 <parameter name="{{key6}}">{{value6}}</parameter>
-                                             {% endfor %}
-
-                                         </parameter>
-                                        {% else %}
-
-                                        <parameter name="{{key5}}">{{value5}}</parameter>
-                                        {% endif %}
-                                        {% endfor %}
-
+                                   <parameter name="target">sub</parameter>
+                                   <parameter name="menuid">pnp4nagios_host_detail</parameter>
+                                   <parameter name="text">Detail</parameter>
+                                   <parameter name="tooltip">Chart Detail for this host</parameter>
+                                    <parameter name="handler">
+                                        <parameter name="click">Cronk.grid.handler.URL.open</parameter>
                                     </parameter>
-                                   {% else %}
-                                   <parameter name="{{key4}}">{{value4}}</parameter>
-                                   {% endif %}
-                                   {% endfor %}
-
-
+                                    <parameter name="handlerArguments">
+                                        <parameter name="url"><![CDATA[{{data.pnpfornagios_url}}/graph?host={host_name}&srv=_HOST_]]></parameter>
+                                        <parameter name="cronkTitle">Chart for {host_name}</parameter>
+                                        <parameter name="activateOnClick">true</parameter>
+                                    </parameter>
+                                   <parameter name="model"></parameter>
+                                    <parameter name="conditions">
+                                         <parameter>
+                                                 <parameter name="condition">show</parameter>
+                                                 <parameter name="fn"><![CDATA[ 
+                                                                 function() { 
+                                                                     if (this.getRecord().get("process_performance_data") == "1") { 
+                                                                         return true; 
+                                                                     } else { 
+                                                                         return false; 
+                                                                     } 
+                                                                 } 
+                                                             ]]></parameter>
+                                         </parameter>
+                                    </parameter>
+                                   <parameter name="iconCls">icinga-icon-hostlightning</parameter>
+                                   <parameter name="xtype">grideventbutton</parameter>
                                </parameter>
-                              {% else %}
-                              <parameter name="{{key3}}">{{value3}}</parameter>
-                              {% endif %}
-                              {% endfor %}
-
-
+                               <parameter>
+                                   <parameter name="target">sub</parameter>
+                                   <parameter name="menuid">pnp4nagios_host_image_hover</parameter>
+                                   <parameter name="text">Graph</parameter>
+                                   <parameter name="tooltip">Host performance chart</parameter>
+                                    <parameter name="handler">
+                                        <parameter name="click">Cronk.grid.handler.URL.imagePanel</parameter>
+                                    </parameter>
+                                    <parameter name="handlerArguments">
+                                        <parameter name="src"><![CDATA[http://{{data.pnpfornagios_url}}/pnp4nagios/index.php/image?host={host_name}&srv=_HOST_&view=0]]></parameter>
+                                        <parameter name="iconCls">icinga-icon-image-arrow</parameter>
+                                        <parameter name="width">400</parameter>
+                                        <parameter name="title">Hostgraph for {host_name}</parameter>
+                                    </parameter>
+                                   <parameter name="model"></parameter>
+                                    <parameter name="conditions">
+                                         <parameter>
+                                                 <parameter name="condition">show</parameter>
+                                                 <parameter name="fn"><![CDATA[ 
+                                                                 function() { 
+                                                                     if (this.getRecord().get("process_performance_data") == "1") { 
+                                                                         return true; 
+                                                                     } else { 
+                                                                         return false; 
+                                                                     } 
+                                                                 } 
+                                                             ]]></parameter>
+                                         </parameter>
+                                    </parameter>
+                                   <parameter name="iconCls">icinga-icon-image-arrow</parameter>
+                                   <parameter name="xtype">grideventbutton</parameter>
+                               </parameter>
                           </parameter>
-                         {% else %}
-                         <parameter name="{{key2}}">{{value2}}</parameter>
-                         {% endif %}
-                         {% endfor %}
-
-
+                         <parameter name="title">PNP4Nagios</parameter>
                      </parameter>
-                    {% else %}
-                     <parameter name="{{key1}}">{{value1}}</parameter>
-                    {% endif %}
-                    {% endfor%}
-
                 </parameter>
-            {% endfor %}
     </option>
-
-
     <fields>
-        {% for name, field in data.fields.items() %}
-         <field name="{{name}}">
-
+         <field name="process_performance_data">
              <datasource>
-                 {% for key, value in field.datasource.items() %}
-                 <parameter name="{{key}}">{{value}}</parameter>
-                 {% endfor %}
+                 <parameter name="field">HOST_PROCESS_PERFORMANCE_DATA</parameter>
              </datasource>
-
              <display>
-                 {% for key, value in field.display.items() %}
-                 <parameter name="{{key}}">{{value}}</parameter>
-                 {% endfor %}
+                 <parameter name="visible">false</parameter>
+                 <parameter name="label"></parameter>
              </display>
-
              <filter>
-                 {% for key, value in field.filter.items() %}
-                 <parameter name="{{key}}">{{value}}</parameter>
-                 {% endfor %}
+                 <parameter name="enabled">false</parameter>
              </filter>
-
              <order>
-                 {% for key, value in field.order.items() %}
-                 <parameter name="{{key}}">{{value}}</parameter>
-                 {% endfor %}
+                 <parameter name="default">false</parameter>
+                 <parameter name="enabled">false</parameter>
              </order>
-
          </field>
-        {% endfor %}
     </fields>
 </template>

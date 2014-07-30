@@ -23,10 +23,6 @@ Use the makina-states.services.backup.burp.server to :
 - The backuped machines must access the burp server on **4971** port.
 - We offer a way to access clients via a ssh gateway
 
-An exemple pillar for a direct accessible box::
-
-An exemple pillar for a box reached through a gateway::
-
 Burp uses a 'check for backup timer', each client will have a cron that ask the
 server to know if it is time for the client to be backuped, and in this case,
 the backup starts from the client.
