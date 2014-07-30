@@ -138,10 +138,3 @@ pnp4nagios-npcd-init-sysvinit-conf:
     - defaults:
       data: |
             {{sdata}}
-
-
-
-{%- import "makina-states/services/monitoring/pnp4nagios/macros.jinja" as pnp4nagios with context %}
-{#
-{{png4nagios.pnp4nagiosAddWatcher('foo', '/bin/echo', args=[1]) }}
-#}
