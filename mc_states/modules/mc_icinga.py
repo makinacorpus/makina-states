@@ -73,7 +73,7 @@ def objects():
     '''
     locs = __salt__['mc_locations.settings']()
     data = __salt__['mc_pillar.yaml_load']('/srv/pillar/icinga.sls')
-    if not data:
+    if not data or not isinstance(data, dict):
         data = {}
     if 'objects_definitions' not in data:
         data['objects_definitions'] = {}
@@ -81,6 +81,7 @@ def objects():
         data['purge_definitions'] = []
     if 'autoconfigured_hosts_definitions' not in data:
         data['autoconfigured_hosts_definitions'] = {}
+    return data
 
 
 def get_settings_for_object(target=None, obj=None, attr=None):
@@ -338,8 +339,10 @@ def settings():
 
         password_ido = icinga_reg.setdefault('ido.db_password', __salt__[
             'mc_utils.generate_password']())
-        password_cgi = icinga_reg.setdefault('cgi.root_account_password, __salt__[
-            'mc_utils.generate_password']())
+        password_cgi = icinga_reg.setdefault('cgi.root_account_password',
+                                             __salt__[
+                                                 'mc_utils.generate_password'
+                                             ]())
 
         module_ido2db_database = {
             'type': "pgsql",
@@ -1647,13 +1650,14 @@ def add_auto_configuration_host_settings(hostname,
                 if 'cmdarg_interface' in services_attrs['network'][name]:
                     services_attrs['network'][
                         name]['service_description'] = services_default_attrs[
-                            'network']['default']['service_description']+
-                    services_attrs['network'][name]['cmdarg_interface'].upper()
+                            'network']['default']['service_description']
+                    + services_attrs['network'][
+                        name]['cmdarg_interface'].upper()
                 else:
                     services_attrs['network'][
                         name]['service_description'] = services_default_attrs[
-                            'network']['default']['service_description']+
-                    services_default_attrs['network'][
+                            'network']['default']['service_description']
+                    + services_default_attrs['network'][
                         'default']['cmdarg_interface'].upper()
             if 'use' not in network:
                 if 'cmdarg_interface' in services_attrs['network'][name]:
@@ -1664,8 +1668,8 @@ def add_auto_configuration_host_settings(hostname,
                 else:
                     services_attrs['network'][
                         name]['use'] = services_default_attrs['network'][
-                            'default']['use']+
-                    services_default_attrs['network'][
+                            'default']['use']
+                    + services_default_attrs['network'][
                         'default']['cmdarg_interface'].upper()
 
             for key, value in services_default_attrs['network'][
@@ -1897,8 +1901,8 @@ def add_auto_configuration_host_settings(hostname,
     # build the check command with args
     for service in services:
         if service in services_attrs:
-            if 'check_command' in services_attrs[service]
-            and '!' not in services_attrs[service]['check_command']:
+            if ('check_command' in services_attrs[service]
+                    and '!' not in services_attrs[service]['check_command']):
 
                 args = [str(services_attrs[service]['check_command'])]
 
@@ -1925,9 +1929,9 @@ def add_auto_configuration_host_settings(hostname,
     for service in services_loop:
         if service in services_attrs:
             for subservice in services_attrs[service]:
-                if 'check_command' in services_attrs[service][subservice]
-                and '!' not in services_attrs[service][
-                        subservice]['check_command']:
+                if ('check_command' in services_attrs[service][subservice]
+                    and '!' not in services_attrs[service][
+                        subservice]['check_command']):
 
                     args = [str(services_attrs[service][
                         subservice]['check_command'])]

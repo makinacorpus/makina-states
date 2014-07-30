@@ -89,7 +89,7 @@ def objects():
 
     # try to load from a pillar file
     data = __salt__['mc_pillar.yaml_load']('/srv/pillar/icinga2.sls')
-    if not data:
+    if not data or not isinstance(data, dict):
         data = {}
     if 'objects_definitions' not in data:
         data['objects_definitions'] = {}
