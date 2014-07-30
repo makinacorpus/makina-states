@@ -268,24 +268,14 @@ def settings():
                         'endpoints': "[ NodeName ]"},
                 },
                 'modules': {
-                    'perfdata': {
-                        'enabled': True,
-                    },
+                    'perfdata': {'enabled': True},
                     'livestatus': {
                         'enabled': True,
-                        'sockets': {
-                            'livestatus-tcp': {
-                                'socket_type': "tcp",
-                                'bind_host': "127.0.0.1",
-                                'bind_port': 6558,
-                            },
-                            'livestatus-unix': {
-                                'socket_type': "unix",
-                                'socket_path': (
-                                    "/var/run/icinga2/cmd/livestatus"
-                                )
-                            }
-                        },
+                        'bind_host': "127.0.0.1",
+                        'bind_port': 6558,
+                        'socket_path': (
+                            "/var/run/icinga2/cmd/livestatus"
+                        )
                     },
                     'ido2db': {
                         'enabled': True,

@@ -190,16 +190,11 @@ def settings():
                     'session_auto_start': 0,
                     'extensions_packages': ['php5-gd'],
                 },
-                'icinga_cfg': {
-                    'location': "/etc/icinga/icinga.cfg",
-                    'marker_start': "# START managed zone pnp4nagios",
-                    'marker_end': "# END managed zone pnp4nagios",
                     'content': [
                         "process_performance_data=1",
                         ("broker_module=/usr/lib/pnp4nagios/npcdmod.o "
                          "config_file=/etc/pnp4nagios/npcd.cfg"),
                     ],
-                },
                 'npcd_cfg': {
                     'user': "nagios",
                     'group': "nagios",
@@ -246,7 +241,9 @@ def settings():
                         'multisite_base_url': "/check_mk",
                         'multisite_site': "",
                         'auth_enabled': "FALSE",
-                        'livestatus_socket': "unix:/var/lib/icinga/rw/live",
+                        'livestatus_socket': (
+                            "unix:/var/run/icinga2/cmd/livestatus"
+                        ),
                         'allowed_for_all_services': "",
                         'allowed_for_all_hosts': "",
                         'allowed_for_service_links': "EVERYONE",
