@@ -15,7 +15,6 @@ import logging
 import copy
 import mc_states.utils
 
-import hmac
 import hashlib
 
 __name = 'nagvis'
@@ -66,32 +65,8 @@ def settings():
                 web_directory
                     location under which webpages of nagvis will be available
                 fastcgi_pass
-                    socket used to contact fastcgi server in order to interpret php files
-
-            icinga_cgi
-                dictionary to store values used in templates given in
-                vh_content_source and vh_top_source
-
-                enabled
-                    enable a web directory to serve cgi files. If True, icinga-cgi
-                    will no be installed and configured automatically.
-
-                web_directory
-                    location under which webpages of icinga-cgi will be available
-                realm
-                    message displayed for digest authentication
-                htpasswd_file
-                    location of file storing users password
-                htdoc_dir
-                    root location for web_directory
-                images_dir
-                    directory where images used by cgi are stored
-                styles_dir
-                    directory where css used by cgi are stored
-                cgi_dir
-                    directory where cgi files are located
-                uwsgi_pass
-                    socket used to contact uwsgi server
+                    socket used to contact fastcgi server in order
+                    to interpret php files
 
         phpfpm
             dictionary to store values of phpfpm configuration
@@ -124,7 +99,8 @@ def settings():
                 location of configuration directory
             HTDOCS_DIR
                 location of webserver root
-                I have not modified this value because it seems it doesn't work when we use a subdirectory
+                I have not modified this value because it seems
+                it doesn't work when we use a subdirectory
             CONST_NEEDED_PHP_VERSION
                 str
             SESSION_NAME
@@ -176,12 +152,14 @@ def settings():
             AUTH_NOT_TRUST_USERNAME
                 "true" or "false"
             AUTH_PASSWORD_SALT
-                salt used for password. We notice the salt used is the same for all passwords which is a security weakness.
+                salt used for password. We notice the salt used is
+                the same for all passwords which is a security weakness.
 
         nagvis_ini_php
             dictionary to store values used in nagvis_ini_php
             each subdictionary represents an ini section
-            if a key is not present, the directive will not be added in the configuration file
+            if a key is not present, the directive will
+            not be added in the configuration file
 
             global
                 dictionary to store values of global section in nagvis_ini_php
@@ -409,7 +387,8 @@ def settings():
                 each subdictionary corresponds to a "backend_foo" section
 
                 foo
-                    dictionary to store values of foo backend. foo must be replaced with the name of the backend
+                    dictionary to store values of foo backend. foo must
+                    be replaced with the name of the backend
                     the keys and values expected depends on the backend type
 
                     backendtype
@@ -420,7 +399,8 @@ def settings():
                 each subdictionary corresponds to a "rotation_foo" section
 
                 foo
-                    dictionary to store values of foo rotation. foo must be replaced with the name of the rotation
+                    dictionary to store values of foo rotation.
+                    foo must be replaced with the name of the rotation
 
                     maps
                         list of maps which are in the rotation
@@ -432,7 +412,8 @@ def settings():
                 each subdictionary corresponds to a "action_foo" section
 
                 foo
-                    dictionary to store values of foo action. foo must be replaced with the name of the action
+                    dictionary to store values of foo action.
+                    foo must be replaced with the name of the action
 
                     action_type
                         type of action
@@ -586,23 +567,30 @@ def settings():
             'mc_macros.get_local_registry'](
                 'nagvis', registry_format='pack')
 
-        password_web_root_account = nagvis_reg.setdefault('web.root_account_password', __salt__['mc_utils.generate_password']())
+        password_web_root_account = nagvis_reg.setdefault(
+            'web.root_account_password',
+            __salt__['mc_utils.generate_password']())
 
         root_account = {
             'password': password_web_root_account,
-            'salt': "29d58ead6a65f5c00342ae03cdc6d26565e20954", # if you change this, you must change it in php
+            # if you change this, you must change it in php
+            'salt': "29d58ead6a65f5c00342ae03cdc6d26565e20954",
         }
 
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.monitoring.nagvis', {
                 'package': ['nagvis'],
                 'configuration_directory': locs['conf_dir']+"/nagvis",
-                'root_account': { # we considere that the root_account has the ID 1
+                'root_account': {
+                    # we considere that the root_account has the ID 1
                     'user': "admin",
-                    'hashed_password': hashlib.sha1(root_account['salt']+root_account['password']).hexdigest(),
+                    'hashed_password': hashlib.sha1(
+                        root_account['salt'] +
+                        root_account['password']).hexdigest(),
                     'salt': root_account['salt'],
-                    'default_password': "868103841a2244768b2dbead5dbea2b533940e20", # default value that we find if before nagvis
-                    # configuration. It is the password set during installation
+                    # default value that we find if before nagvis
+                    'default_password': (
+                        "868103841a2244768b2dbead5dbea2b533940e20"),
                 },
                 'nginx': {
                     'domain': "nagvis.localhost",
@@ -611,11 +599,14 @@ def settings():
                         "salt://makina-states/files/etc/nginx/"
                         "sites-available/nagvis.content.conf"
                     ),
-                    'vh_top_source': ("salt://makina-states/files/"
-                                      "etc/nginx/sites-available/nagvis.top.conf"),
+                    'vh_top_source': (
+                        "salt://makina-states/files/"
+                        "etc/nginx/sites-available/nagvis.top.conf"),
                     'nagvis': {
                         'web_directory': "/nagvis",
-                        'fastcgi_pass': "unix:/var/spool/www/nagvis_localhost.fpm.sock",
+                        'fastcgi_pass': (
+                            "unix:/var/spool/www/"
+                            "nagvis_localhost.fpm.sock"),
                     },
                 },
                 'phpfpm': {
@@ -747,14 +738,25 @@ def settings():
                         'showinmultisite': 1,
                         # 'stylesheet': "",
                         'urltarget': "_self",
-                        'hosturl': "[htmlcgi]/status.cgi?host=[host_name]",
-                        'hostgroupurl': "[htmlcgi]/status.cgi?hostgroup=[hostgroup_name]",
-                        'serviceurl': "[htmlcgi]/extinfo.cgi?type=2&host=[host_name]&service=[service_description]",
-                        'servicegroupurl': "[htmlcgi]/status.cgi?servicegroup=[servicegroup_name]&style=detail",
-                        'mapurl': "[htmlbase]/index.php?mod=Map&act=view&show=[map_name]",
+                        'hosturl': (
+                            "[htmlcgi]/status.cgi?host=[host_name]"),
+                        'hostgroupurl': (
+                            "[htmlcgi]/status.cgi?hostgroup=[hostgroup_name]"),
+                        'serviceurl': (
+                            "[htmlcgi]/extinfo.cgi?type=2"
+                            "&host=[host_name]&"
+                            "service=[service_description]"),
+                        'servicegroupurl': (
+                            "[htmlcgi]/status.cgi?"
+                            "servicegroup=[servicegroup_name]"
+                            "&style=detail"),
+                        'mapurl': ("[htmlbase]/index.php?mod=Map"
+                                   "&act=view&show=[map_name]"),
                         'view_template': "default",
                         'label_show': 0,
-                        'line_weather_colors': "10:#8c00ff,25:#2020ff,40:#00c0ff,55:#00f000,70:#f0f000,85:#ffc000,100:#ff0000",
+                        'line_weather_colors': (
+                            "10:#8c00ff,25:#2020ff,40:#00c0ff,55:"
+                            "#00f000,70:#f0f000,85:#ffc000,100:#ff0000"),
                     },
                     'index': {
                         'backgroundcolor': "#ffffff",
