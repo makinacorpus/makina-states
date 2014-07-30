@@ -119,12 +119,13 @@ def settings():
            salt://makina-states/files/etc/bind/named.conf.default-zones
         zone_template
            salt://makina-states/files/etc/bind/pri_zone.zone
+
         loglevel
 
            default
                 error
            general
-                'error
+                error
            database
                 error
            config

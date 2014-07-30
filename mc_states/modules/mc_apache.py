@@ -500,10 +500,10 @@ def vhost_settings(domain, doc_root, **kwargs):
         eat some shit, kill yourself and set that to True
     log_level
         log level
-    [ssl_]interface
+    ssl_interface/interface
         interface of the namevirtualhost (like in "*:80"),
         default is "*"
-    [ssl_]port
+    ssl_port/port
         port of the namevirtualhost (like in "*:80"),
         default is "80" and "443" for ssl version
     '''
