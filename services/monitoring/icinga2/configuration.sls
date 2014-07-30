@@ -344,13 +344,24 @@ icinga2-configuration-remove-objects-conf:
     - watch_in:
       - mc_proxy: icinga2-configuration-post-clean-directories
     - contents: |
-                #!/bin/bash
-                files=({{salt['mc_icinga2.remove_configuration_object'](get=True)}});
-                for i in "${files[@]}"; do
-                    rm -f "$i";
-                done;
+                #!/usr/bin/env bash
+                ret=0
+                {% for i in salt['mc_icinga2.remove_configuration_object'](get=True) %}
+                if [ -e "{{f}}" ];then
+                  rm -f "{{f}}"
+                  lret="${?}"
+                  if [ "x${lret}" != "x0" ];then ret=${lret};fi
+                fi
+                {% endfor %}
+                exit ${ret}
   cmd.run:
     - name: {{tmpf}}
+    - onlyif: |
+              #!/usr/bin/env bash
+              {% for i in salt['mc_icinga2.remove_configuration_object'](get=True) %}
+              if [ -e "{{i}}" ];then exit 0;fi
+              {% endfor %}
+              exit 1
     - watch:
       - file: icinga2-configuration-remove-objects-conf
       - mc_proxy: icinga2-configuration-pre-clean-directories
