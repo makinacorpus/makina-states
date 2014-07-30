@@ -24,7 +24,7 @@
 # Credit:  Tobi Oetiker, http://people.ee.ethz.ch/~oetiker/webtools/rrdtool/
 #
 
-# URL rewriting is used by default to create friendly URLs. 
+# URL rewriting is used by default to create friendly URLs.
 # Set this value to '0' if URL rewriting is not available on your system.
 #
 $conf['use_url_rewriting'] = {{data.config_php.conf.use_url_rewriting}};
@@ -44,7 +44,7 @@ $conf['zgraph_width'] = "{{data.config_php.conf.zgraph_width}}";
 $conf['zgraph_height'] = "{{data.config_php.conf.zgraph_height}}";
 #
 # Right zoom box offset.
-# rrdtool 1.3.x = 30px 
+# rrdtool 1.3.x = 30px
 # rrdtool 1.4.x = 22px
 #
 $conf['right_zoom_offset'] = {{data.config_php.conf.right_zoom_offset}};
@@ -83,14 +83,14 @@ $conf['page_dir'] = "{{data.config_php.conf.page_dir}}";
 $conf['refresh'] = "{{data.config_php.conf.refresh}}";
 #
 # Max age for RRD files in seconds
-# 
-$conf['max_age'] = {{data.config_php.conf.max_age}};   
 #
-# Directory for temporary files used for PDF creation 
+$conf['max_age'] = {{data.config_php.conf.max_age}};
+#
+# Directory for temporary files used for PDF creation
 #
 $conf['temp'] = "{{data.config_php.conf.temp}}";
 #
-# Link back to Nagios or Thruk ( www.thruk.org ) 
+# Link back to Nagios or Thruk ( www.thruk.org )
 #
 $conf['nagios_base'] = "{{data.config_php.conf.nagios_base}}";
 
@@ -105,14 +105,14 @@ $conf['multisite_base_url'] = "{{data.config_php.conf.multisite_base_url}}";
 $conf['multisite_site'] = "{{data.config_php.conf.multisite_site}}";
 
 #
-# check authorization against mk_livestatus API 
+# check authorization against mk_livestatus API
 # Available since 0.6.10
 #
 $conf['auth_enabled'] = {{data.config_php.conf.auth_enabled}};
 
 #
 # Livestatus socket path
-# 
+#
 #$conf['livestatus_socket'] = "tcp:localhost:6557";
 $conf['livestatus_socket'] = "{{data.config_php.conf.livestatus_socket}}";
 
@@ -127,7 +127,7 @@ $conf['allowed_for_all_hosts'] = "{{data.config_php.conf.allowed_for_all_hosts}}
 # Which user is allowed to see additional service links ?
 # Keywords: EVERYONE NONE <USERNAME>
 # Example: conf['allowed_for_service_links'] = "nagiosadmin,operator";
-# 
+#
 $conf['allowed_for_service_links'] = "{{data.config_php.conf.allowed_for_service_links}}";
 
 #
@@ -138,7 +138,7 @@ $conf['allowed_for_host_search'] = "{{data.config_php.conf.allowed_for_host_sear
 
 #
 # Who can use the host overview ?
-# This function is called if no Service Description is given.  
+# This function is called if no Service Description is given.
 #
 $conf['allowed_for_host_overview'] = "{{data.config_php.conf.allowed_for_host_overview}}";
 
@@ -150,13 +150,13 @@ $conf['allowed_for_host_overview'] = "{{data.config_php.conf.allowed_for_host_ov
 $conf['allowed_for_pages'] = "{{data.config_php.conf.allowed_for_pages}}";
 
 #
-# Which timerange should be used for the host overview site ? 
+# Which timerange should be used for the host overview site ?
 # use a key from array $views[]
 #
-$conf['overview-range'] = {{data.config_php.conf.overview_range}} ;
+$conf['overview-range'] = 1;
 
 #
-# Scale the preview images used in /popup 
+# Scale the preview images used in /popup
 #
 $conf['popup-width'] = "{{data.config_php.conf.popup_width}}";
 
@@ -167,17 +167,17 @@ $conf['popup-width'] = "{{data.config_php.conf.popup_width}}";
 $conf['ui-theme'] = '{{data.config_php.conf.ui_theme}}';
 
 # Language definitions to use.
-# valid options are en_US, de_DE, es_ES, ru_RU, fr_FR 
+# valid options are en_US, de_DE, es_ES, ru_RU, fr_FR
 #
 $conf['lang'] = "{{data.config_php.conf.lang}}";
 
 #
 # Date format
 #
-$conf['date_fmt'] = "{{data.config_php.conf.date_fmt}}";
+$conf['date_fmt'] = "d.m.y G:i";
 
 #
-# This option breaks down the template name based on _ and then starts to 
+# This option breaks down the template name based on _ and then starts to
 # build it up and check the different template directories for a suitable template.
 #
 # Example:
@@ -186,30 +186,30 @@ $conf['date_fmt'] = "{{data.config_php.conf.date_fmt}}";
 #
 # It will find and match on check_esx3 first in templates dir then in templates.dist
 #
-$conf['enable_recursive_template_search'] = {{data.config_php.conf.enable_recursive_template_search}};
+$conf['enable_recursive_template_search'] = 1;
 
 #
 # Direct link to the raw XML file.
 #
-$conf['show_xml_icon'] = {{data.config_php.conf.show_xml_icon}};
+$conf['show_xml_icon'] = 1;
 
 #
 # Use FPDF Lib for PDF creation ?
 #
-$conf['use_fpdf'] = {{data.config_php.conf.use_fpdf}};
+$conf['use_fpdf'] = 1;
 
 #
 # Use this file as PDF background.
 #
-$conf['background_pdf'] = "{{data.config_php.conf.background_pdf}}" ;
+$conf['background_pdf'] = "/etc/pnp4nagios/background.pdf";
 
 #
 # Enable Calendar
 #
-$conf['use_calendar'] = {{data.config_php.conf.use_calendar}};
+$conf['use_calendar'] = 1;
 
 #
-# Define default views with title and start timerange in seconds 
+# Define default views with title and start timerange in seconds
 #
 # remarks: required escape on " with backslash
 #
@@ -252,11 +252,11 @@ if (is_array($templates_d) && (count($templates_d) > 0)) {
 #
 # Directory to search for special templates
 #
-$conf['special_template_dir'] = "{{data.config_php.conf.special_template_dir}}";
+$conf['special_template_dir'] = "/etc/pnp4nagios/templates.special";
 
 #
 # Regex to detect mobile devices
 # This regex is evaluated against the USER_AGENT String
 #
-$conf['mobile_devices'] = "{{data.config_php.conf.mobile_device}}";
+$conf['mobile_devices'] = "iPhone|iPod|iPad|android";
 ?>
