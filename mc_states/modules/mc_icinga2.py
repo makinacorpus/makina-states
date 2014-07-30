@@ -304,12 +304,13 @@ def settings():
                 },
             }
         )
-        data['has_pgsql'] = 'pgsql' == data['ino2db']['database']['type']
-        data['has_mysql'] = 'mysql' == data['ino2db']['database']['type']
+        ido2db = data['modules']['ido2db']
+        data['has_pgsql'] = 'pgsql' == ido2db['database']['type']
+        data['has_mysql'] = 'mysql' == ido2db['database']['type']
         if data['has_pgsql']:
-            data['ino2db']['package'] = [
+            ido2db['package'] = [
                 'icinga2-ido-{0}'.format(
-                    data['ino2db']['datatabase']['type'])]
+                    ido2db['database']['type'])]
         if data['has_pgsql'] and data['has_mysql']:
             raise ValueError('choose only one sgbd')
         if not (data['has_pgsql'] or data['has_mysql']):
