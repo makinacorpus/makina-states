@@ -1748,28 +1748,54 @@ def get_makina_states_variables(id_, ttl=60):
     return memoize_cache(_do_ms_var, [id_], {}, cache_key, ttl)
 
 
+def get_supervision_conf_kind(id_, kind):
+    rdata = {}
+    supervision = query('supervision_configurations')
+    for cid, data in supervision.items():
+        if data.get(kind, '') == id_:
+            rdata.update(data.get('{0}_conf'.format(kind), {}))
+    return rdata
+
+
+def get_supervision_pnp_conf(id_, ttl=60):
+    def _do_ms_var(id_):
+        return get_supervision_conf_kind(id_, 'pnp')
+    cache_key = 'mc_pillar.get_supervision_pnp_conf{0}'.format(id_)
+    return memoize_cache(_do_ms_var, [id_], {}, cache_key, ttl)
+
+
+def get_supervision_navgis_conf(id_, ttl=60):
+    def _do_ms_var(id_):
+        return get_supervision_conf_kind(id_, 'nagis')
+    cache_key = 'mc_pillar.get_supervision_navgis_conf{0}'.format(id_)
+    return memoize_cache(_do_ms_var, [id_], {}, cache_key, ttl)
+
+
+def get_supervision_ui_conf(id_, ttl=60):
+    def _do_ms_var(id_):
+        return get_supervision_conf_kind(id_, 'ui')
+    cache_key = 'mc_pillar.get_supervision_ui_conf{0}'.format(id_)
+    return memoize_cache(_do_ms_var, [id_], {}, cache_key, ttl)
+
+
 def get_supervision_master_conf(id_, ttl=60):
     def _do_ms_var(id_):
-        rdata = {}
-        supervision = query('supervision_configurations')
-        for cid, data in supervision.items():
-            if data.get('master', '') == id_:
-                rdata.update(data.get('master_conf', {}))
-        return rdata
+        return get_supervision_conf_kind(id_, 'master')
     cache_key = 'mc_pillar.get_supervision_master_conf{0}'.format(id_)
     return memoize_cache(_do_ms_var, [id_], {}, cache_key, ttl)
 
 
-def is_supervision_master(id_, ttl=60):
-    def _do_ms_var(id_):
+def is_supervision_kind(id_, kind, ttl=60):
+    def _do_ms_var(id_, kind):
         supervision = query('supervision_configurations')
         if not supervision:
             return False
         for cid, data in supervision.items():
-            if data.get('master', '') == id_:
+            if data.get(kind, '') == id_:
                 return True
         return False
-    cache_key = 'mc_pillar.is_supervision_master{0}'.format(id_)
-    return memoize_cache(_do_ms_var, [id_], {}, cache_key, ttl)
+    cache_key = 'mc_pillar.is_supervision_master{0}{1}'.format(id_,
+                                                               kind)
+    return memoize_cache(_do_ms_var, [id_, kind], {}, cache_key, ttl)
 
 # vim:set et sts=4 ts=4 tw=80:
