@@ -171,7 +171,8 @@ def settings():
         pillar = __pillar__
         local_conf = __salt__['mc_macros.get_local_registry'](
             'nginx', registry_format='pack')
-        naxsi_ui_pass = local_conf.get('naxsi_pass', secure_password(32))
+        naxsi_ui_pass = local_conf.setdefault('naxsi_ui_pass',
+                                              secure_password(32))
         locations = __salt__['mc_locations.settings']()
         nbcpus = __grains__.get('num_cpus', '4')
         epoll = False

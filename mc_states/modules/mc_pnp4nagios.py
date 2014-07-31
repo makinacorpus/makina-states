@@ -65,6 +65,7 @@ def settings():
                     message displayed for digest authentication
                 htpasswd_file
                     location of file storing users password
+                    or url for ldap authent
                 htdoc_dir
                     root location for web_directory
 
@@ -135,7 +136,7 @@ def settings():
                         'fastcgi_pass': ("unix:/var/spool/www/"
                                          "pnp4nagios_localhost.fpm.sock"),
                         'realm': "Authentication",
-                        'htpasswd_file': "/etc/icinga/htpasswd.users",
+                        'htpasswd_file': "/etc/icinga2/htpasswd.users",
                         'htdocs_dir': "/usr/share/icinga/htdocs/",
                     },
                 },
