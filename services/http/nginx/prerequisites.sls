@@ -24,7 +24,9 @@ nginx-base:
 nginx-clean:
   cmd.run:
     - name: sed -i -e "/nginx/d" /etc/apt/sources.list.d/haproxy.list
-    - onlyif: test -e /etc/apt/sources.list.d/haproxy.list && grep -q nginx /etc/apt/sources.list.d/haproxy.list
+    - onlyif: |
+              if test -e /etc/apt/sources.list.d/haproxy.list;then grep -q nginx /etc/apt/sources.list.d/haproxy.list;exit ${?};fi
+              exit 1
     - watch:
       - mc_proxy: nginx-pre-install-hook
       - pkgrepo: nginx-base
