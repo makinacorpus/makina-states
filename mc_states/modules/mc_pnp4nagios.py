@@ -68,34 +68,6 @@ def settings():
                 htdoc_dir
                     root location for web_directory
 
-
-            icinga_cgi
-                dictionary to store values used in templates given in
-                vh_content_source and vh_top_source
-
-                enabled
-                    enable a web directory to serve cgi files.
-                    If True, icinga-cgi will no be installed and
-                    configured automatically.
-
-                web_directory
-                    location under which webpages of icinga-cgi
-                    will be available
-                realm
-                    message displayed for digest authentication
-                htpasswd_file
-                    location of file storing users password
-                htdoc_dir
-                    root location for web_directory
-                images_dir
-                    directory where images used by cgi are stored
-                styles_dir
-                    directory where css used by cgi are stored
-                cgi_dir
-                    directory where cgi files are located
-                uwsgi_pass
-                    socket used to contact uwsgi server
-
         phpfpm
             dictionary to store values of phpfpm configuration
 
@@ -148,7 +120,6 @@ def settings():
             'makina-states.services.monitoring.pnp4nagios', {
                 'package': ['pnp4nagios-bin', 'pnp4nagios-web'],
                 'configuration_directory': locs['conf_dir']+"/pnp4nagios",
-                'icinga2': True,
                 'nginx': {
                     'domain': "pnp4nagios.localhost",
                     'doc_root': "/usr/share/pnp4nagios/html/",
@@ -195,9 +166,7 @@ def settings():
                     'sleep_time': 15,
                     'load_threshold': 0.0,
                     'pid_file': "/var/run/npcd.pid",
-                    # TODO: I don't find the correct value in documentation
-                    # was /var/lib/icinga/perfdata.dump for icinga 1
-                    'perfdata_file': "/var/spool/icinga2/",
+                    'perfdata_file': "/var/spool/icinga2/perfdata.dump",
                     'perfdata_spool_filename': "perfdata",
                     'perfdata_file_processing_interval': 15,
                 },

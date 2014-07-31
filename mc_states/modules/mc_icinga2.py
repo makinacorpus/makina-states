@@ -56,6 +56,10 @@ def objects():
 
     the purge_definitions list contains the files to delete
 
+    the "notification" and "parents" are under "attrs"
+    but in fact it creates other objects like HostDependency
+    or Notification
+
     example:
         autoconfigured_hosts_definitions:
           localhost:
@@ -68,6 +72,12 @@ def objects():
          objects_definitions:
            mycommand:
              attrs:
+              parents:
+                - parent1
+                - parent2
+              notification:
+                command: "notify-by-email"
+                users = ["user1"]
               command: /usr/bin/mycommand
               arguments:
                 -arg: value
@@ -198,6 +208,59 @@ def get_settings_for_object(target=None, obj=None, attr=None):
 
 def settings():
     '''
+    icinga2 settings
+
+    location
+        installation directory
+
+    package
+        list of packages to install icinga
+    has_pgsql
+        install and configure a postgresql service in order to be used
+        with ido2db module
+    has_mysql
+        install and configure a mysql service in order to be used with
+        ido2db module
+    user
+        icinga user
+    group
+        icinga group
+    cmdgroup
+        group for the command file
+    pidfile
+        file to store icinga2 pid
+    niceness
+        priority of icinga process
+    configuration_directory
+        directory to store configuration
+    objects
+       dictionary to configure objects
+
+       directory
+           directory in which objects will be stored. The
+           directory should be listed in "include_recursive"
+           values
+    icinga_conf
+        include
+            list of configuration files
+            quotes have to be added for real directories
+        include_recursive
+            list of directory containing files configuration
+    constants_conf
+        values for constants conf
+    zones_conf
+        values for zones conf
+    modules
+        perfdata
+            enabled
+                enable the perfdata module
+        livestatus
+            enabled
+                enable the livestatus module
+        ido2db
+            enabled
+                enable the ido2db module
+
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():

@@ -128,14 +128,7 @@ def settings():
         dictionary to configure objects
 
         directory
-            directory in which objects will be stored. All the files
-            in this directory are removed when salt is executed
-        filescopy
-            the list of programs which have to be copied in /root/
-            admin_scripts/nagios/
-        commands_static_values
-            dictionary to store values used in check_commands in
-            configuration_add_auto_host macro
+            directory in which objects will be stored.
         objects_definitions
             dictionary to store objects configuration like commands,
             contacts, timeperiods, ...
