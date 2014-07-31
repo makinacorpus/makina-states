@@ -85,7 +85,7 @@ def objects():
     # hostTemplates.cfg  serviceTemplates.cfg checkcommands.cfg \
     # timeperiods.cfg contacts.cfg contactgroups.cfg meta_* \
     # misccommands.cfg servicegroups.cfg  \
-    # > /srv/salt/makina-states/mc_states/modules/mc_icinga2_from_centreon.py
+    # > /srv/pillar/icinga2.sls
 
     # try to load from a pillar file
     data = __salt__['mc_pillar.yaml_load']('/srv/pillar/icinga2.sls')
@@ -179,7 +179,7 @@ def format(dictionary, quote_keys=False, quote_values=True):
                     'utf-8').replace('"', '\\"')+'"'
             else:
                 res[res_key] = value
-    return __salt__['mc_utils.json_dump'](res)
+    return res
 
 
 def get_settings_for_object(target=None, obj=None, attr=None):
