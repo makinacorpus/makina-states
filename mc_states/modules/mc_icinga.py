@@ -533,6 +533,17 @@ def settings():
                     '$USER9_TESTPWD$': "CHANGETHIS"
                 },
                 'modules': {
+                    # for pnp4nagios
+                    'broker': {
+                        'enabled': True,
+                        'icinga_cfg': {
+                            'content': [
+                                "process_performance_data=1",
+                                ("broker_module=/usr/lib/pnp4nagios/npcdmod.o "
+                                 "config_file=/etc/pnp4nagios/npcd.cfg"),
+                            ]
+                        }
+                    },
                     'mklivestatus': {
                         'enabled': True,
                         'socket': "/var/lib/icinga/rw/live",

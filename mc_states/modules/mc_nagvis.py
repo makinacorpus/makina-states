@@ -592,7 +592,7 @@ def settings():
                         root_account['salt'] +
                         root_account['password']).hexdigest(),
                     'salt': root_account['salt'],
-                    # default value that we find if before nagvis
+                    # default value that we find in nagvis configuration
                     'default_password': (
                         "868103841a2244768b2dbead5dbea2b533940e20"),
                 },
@@ -615,8 +615,7 @@ def settings():
                 },
                 'phpfpm': {
                     'open_basedir': (
-                        "/var/lib/icinga/rw/"
-                        ":/usr/share/php/php-gettext/"
+                        "/usr/share/php/php-gettext/"
                         ":/etc/nagvis/"
                         ":/var/lib/nagvis/"
                         ":/var/cache/nagvis/"),

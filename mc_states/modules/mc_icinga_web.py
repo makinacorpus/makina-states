@@ -635,7 +635,7 @@ def settings():
         locs = __salt__['mc_locations.settings']()
 
         # get default ido database connectionfrom mc_icinga
-        icinga_settings = __salt__['mc_icinga.settings']()
+        icinga_settings = __salt__['mc_icinga2.settings']()
         ido2db_database = icinga_settings['modules']['ido2db']['database']
         icinga_web_reg = __salt__[
             'mc_macros.get_local_registry'](

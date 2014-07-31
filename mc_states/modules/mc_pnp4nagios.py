@@ -110,18 +110,6 @@ def settings():
             session_auto_start
                 must be 0 to run icinga-web
 
-        icinga_cfg
-            location
-                location of icinga.cfg file
-            marker_start
-                the beginning of the zone which will be replace.
-                this zone contains the "process_performance_data"
-                and "broker_module" directives
-            marked_end
-                the end of the zone which will be replace.
-            content
-                the replacment content
-
         npcd_cfg
             dictionary to store configuration of npcd.cfg file
         config_php
@@ -160,6 +148,7 @@ def settings():
             'makina-states.services.monitoring.pnp4nagios', {
                 'package': ['pnp4nagios-bin', 'pnp4nagios-web'],
                 'configuration_directory': locs['conf_dir']+"/pnp4nagios",
+                'icinga2': True,
                 'nginx': {
                     'domain': "pnp4nagios.localhost",
                     'doc_root': "/usr/share/pnp4nagios/html/",
@@ -182,19 +171,14 @@ def settings():
                 'phpfpm': {
                     'open_basedir': (
                         "/usr/bin/rrdtool"
-                        ":/etc/pnp4nagios/:"
-                        "/usr/share/php/kohana2/system/:"
-                        "/usr/share/php/kohana2/system/config/:"
-                        "/var/lib/pnp4nagios/perfdata/"),
+                        ":/etc/pnp4nagios/"
+                        ":/usr/share/php/kohana2/system/"
+                        ":/usr/share/php/kohana2/system/config/"
+                        ":/var/lib/pnp4nagios/perfdata/"),
                     'doc_root': '/usr/share/pnp4nagios/',
                     'session_auto_start': 0,
                     'extensions_packages': ['php5-gd'],
                 },
-                    'content': [
-                        "process_performance_data=1",
-                        ("broker_module=/usr/lib/pnp4nagios/npcdmod.o "
-                         "config_file=/etc/pnp4nagios/npcd.cfg"),
-                    ],
                 'npcd_cfg': {
                     'user': "nagios",
                     'group': "nagios",
@@ -202,7 +186,7 @@ def settings():
                     'log_file': "/var/log/pnp4nagios/npcd.log",
                     'max_logfile_size': 10485760,
                     'log_level': 2,
-                    'perfdata_spool_dir': "/var/lib/icinga/spool/",
+                    'perfdata_spool_dir': "/var/spool/icinga2/perfdata",
                     'perfdata_file_run_cmd': (
                         "/usr/lib/pnp4nagios/libexec/process_perfdata.pl"),
                     'perfdata_file_run_cmd_args': "-b",
@@ -211,7 +195,9 @@ def settings():
                     'sleep_time': 15,
                     'load_threshold': 0.0,
                     'pid_file': "/var/run/npcd.pid",
-                    'perfdata_file': "/var/lib/icinga/perfdata.dump",
+                    # TODO: I don't find the correct value in documentation
+                    # was /var/lib/icinga/perfdata.dump for icinga 1
+                    'perfdata_file': "/var/spool/icinga2/",
                     'perfdata_spool_filename': "perfdata",
                     'perfdata_file_processing_interval': 15,
                 },
