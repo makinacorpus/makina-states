@@ -16,7 +16,9 @@ pnp4nagios-pkgs:
 
 disable-apache2-sa:
   service.disabled:
-    - name: apache2
+    - names:
+      - apache2
+      - nagios3
     - watch:
       - pkg: pnp4nagios-pkgs
       - mc_proxy: pnp4nagios-pre-install
@@ -24,7 +26,9 @@ disable-apache2-sa:
       - mc_proxy: pnp4nagios-post-install
 disable-apache2-sd:
   service.dead:
-    - name: apache2
+    - names:
+      - apache2
+      - nagios3
     - watch:
       - pkg: pnp4nagios-pkgs
       - mc_proxy: pnp4nagios-pre-install
