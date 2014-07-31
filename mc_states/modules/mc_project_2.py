@@ -1929,16 +1929,25 @@ def report():
             'mccloud_vm_ssh_port': '22',
         }
 
+
+    ips = [a 
+           for a in __grains__.get('ipv4', [])
+           if not a.startswith('127.0')]
+    if ips:
+        ips = 'IP(s): ' + ', '.join(ips) + '\n'
+    if ips.endswith(','):
+        ips = ips[:-1]
     if os.path.exists(pt):
         ret += '''
 {id}:
+{ips}
 SSH Config:
 Host {id}
 Port {conf[mccloud_vm_ssh_port]}
 User root
 ServerAliveInterval 5
 
-'''.format(conf=vmconf, id=target)
+'''.format(conf=vmconf, id=target, ips=ips)
     projects = os.listdir(pt)
     if projects:
         ret += 'Projects:'

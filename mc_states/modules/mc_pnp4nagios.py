@@ -68,34 +68,6 @@ def settings():
                 htdoc_dir
                     root location for web_directory
 
-
-            icinga_cgi
-                dictionary to store values used in templates given in
-                vh_content_source and vh_top_source
-
-                enabled
-                    enable a web directory to serve cgi files.
-                    If True, icinga-cgi will no be installed and
-                    configured automatically.
-
-                web_directory
-                    location under which webpages of icinga-cgi
-                    will be available
-                realm
-                    message displayed for digest authentication
-                htpasswd_file
-                    location of file storing users password
-                htdoc_dir
-                    root location for web_directory
-                images_dir
-                    directory where images used by cgi are stored
-                styles_dir
-                    directory where css used by cgi are stored
-                cgi_dir
-                    directory where cgi files are located
-                uwsgi_pass
-                    socket used to contact uwsgi server
-
         phpfpm
             dictionary to store values of phpfpm configuration
 
@@ -109,18 +81,6 @@ def settings():
                 root location for php-fpm
             session_auto_start
                 must be 0 to run icinga-web
-
-        icinga_cfg
-            location
-                location of icinga.cfg file
-            marker_start
-                the beginning of the zone which will be replace.
-                this zone contains the "process_performance_data"
-                and "broker_module" directives
-            marked_end
-                the end of the zone which will be replace.
-            content
-                the replacment content
 
         npcd_cfg
             dictionary to store configuration of npcd.cfg file
@@ -182,19 +142,14 @@ def settings():
                 'phpfpm': {
                     'open_basedir': (
                         "/usr/bin/rrdtool"
-                        ":/etc/pnp4nagios/:"
-                        "/usr/share/php/kohana2/system/:"
-                        "/usr/share/php/kohana2/system/config/:"
-                        "/var/lib/pnp4nagios/perfdata/"),
+                        ":/etc/pnp4nagios/"
+                        ":/usr/share/php/kohana2/system/"
+                        ":/usr/share/php/kohana2/system/config/"
+                        ":/var/lib/pnp4nagios/perfdata/"),
                     'doc_root': '/usr/share/pnp4nagios/',
                     'session_auto_start': 0,
                     'extensions_packages': ['php5-gd'],
                 },
-                    'content': [
-                        "process_performance_data=1",
-                        ("broker_module=/usr/lib/pnp4nagios/npcdmod.o "
-                         "config_file=/etc/pnp4nagios/npcd.cfg"),
-                    ],
                 'npcd_cfg': {
                     'user': "nagios",
                     'group': "nagios",
@@ -202,7 +157,7 @@ def settings():
                     'log_file': "/var/log/pnp4nagios/npcd.log",
                     'max_logfile_size': 10485760,
                     'log_level': 2,
-                    'perfdata_spool_dir': "/var/lib/icinga/spool/",
+                    'perfdata_spool_dir': "/var/spool/icinga2/perfdata",
                     'perfdata_file_run_cmd': (
                         "/usr/lib/pnp4nagios/libexec/process_perfdata.pl"),
                     'perfdata_file_run_cmd_args': "-b",
@@ -211,7 +166,7 @@ def settings():
                     'sleep_time': 15,
                     'load_threshold': 0.0,
                     'pid_file': "/var/run/npcd.pid",
-                    'perfdata_file': "/var/lib/icinga/perfdata.dump",
+                    'perfdata_file': "/var/spool/icinga2/perfdata.dump",
                     'perfdata_spool_filename': "perfdata",
                     'perfdata_file_processing_interval': 15,
                 },

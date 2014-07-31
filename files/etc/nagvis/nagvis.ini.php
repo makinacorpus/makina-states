@@ -44,23 +44,23 @@ authorisationmodule="{{data.nagvis_ini_php.global.authorisationmodule}}"
 ; Sets the size of the controls in unlocked (edit) mode of the frontend. This
 ; defaults to a value of 10 which makes each control be sized to 10px * 10px.
 
-controls_size="{{data.nagvis_ini_php.global.controls_size}}"
+controls_size="10"
 
 ;
 ; Dateformat of the time/dates shown in nagvis (For valid format see PHP docs)
 
-dateformat="{{data.nagvis_ini_php.global.dateformat}}"
+dateformat="Y-m-d H:i:s"
 
 ;
 ; Used to configure the preselected options in the "acknowledge problem" dialog
 
-dialog_ack_sticky="{{data.nagvis_ini_php.global.dialog_ack_sticky}}"
+dialog_ack_sticky="1"
 
 
-dialog_ack_notify="{{data.nagvis_ini_php.global.dialog_ack_notify}}"
+dialog_ack_notify="1"
 
 
-dialog_ack_persist="{{data.nagvis_ini_php.global.dialog_ack_persist}}"
+dialog_ack_persist="0"
 
 ;
 ; File group and mode are applied to all files which are written by NagVis.
@@ -98,12 +98,12 @@ http_proxy_auth="{{data.nagvis_ini_php.global.http_proxy_auth}}"
 {% endif %}
 ; Set the timeout (in seconds) for outbound HTTP requests (for example geomap requests)
 
-http_timeout="{{data.nagvis_ini_php.global.http_timeout}}"
+http_timeout="10"
 
 ;
 ; Defines which translations of NagVis are available to the users
 
-language_available="{{data.nagvis_ini_php.global.language_available}}"
+language_available="de_DE,en_US,es_ES,fr_FR,pt_BR"
 
 ; Language detection steps to use. Available:
 ;  - User:    The user selection
@@ -112,12 +112,12 @@ language_available="{{data.nagvis_ini_php.global.language_available}}"
 ;  - Browser: Detection by user agent information from the browser
 ;  - Config:  Use configured default language (See below)
 
-language_detection="{{data.nagvis_ini_php.global.language_detection}}"
+language_detection="user,session,browser,config"
 
 ;
 ; Select language (Available by default: en_US, de_DE, fr_FR, pt_BR)
 
-language="{{data.nagvis_ini_php.global.language}}"
+language="en_US"
 
 ;
 ; Defines the logon module to use. There are three logon modules to be used by
@@ -155,23 +155,16 @@ language="{{data.nagvis_ini_php.global.language}}"
 ;
 ;
 
-logonmodule="{{data.nagvis_ini_php.global.logonmodule}}"
+logonmodule="LogonMixed"
 
-logonenvvar="{{data.nagvis_ini_php.global.logonenvvar}}"
-logonenvcreateuser="{{data.nagvis_ini_php.global.logonenvcreateuser}}"
-logonenvcreaterole="{{data.nagvis_ini_php.global.logonenvcreaterole}}"
-
-{% if 'LogonMultisite' == data.nagvis_ini_php.global.logonmodule %}
-logon_multisite_htpasswd="{{data.nagvis_ini_php.global.logon_multisite_htpasswd}}"
-logon_multisite_secret="{{data.nagvis_ini_php.global.logon_multisite_secret}}"
-logon_multisite_createuser="{{data.nagvis_ini_php.global.logon_multisite_createuser}}"
-logon_multisite_createrole="{{data.nagvis_ini_php.global.logon_multisite_createrole}}"
-{% endif %}
+logonenvvar="REMOTE_USER"
+logonenvcreateuser="1"
+logonenvcreaterole="Guests"
 
 ;
 ; Default rotation time of pages in rotations
 
-refreshtime="{{data.nagvis_ini_php.global.refreshtime}}"
+refreshtime="60"
 
 ;
 ; Some user information is stored in sessions which are identified by session
@@ -180,40 +173,40 @@ refreshtime="{{data.nagvis_ini_php.global.refreshtime}}"
 ; Domain to set the cookie for. By default NagVis tries to auto-detect this
 ; options value by using the webserver's environment variables.
 
-sesscookiedomain="{{data.nagvis_ini_php.global.sesscookiedomain}}"
+sesscookiedomain="auto-detect"
 
 ; Absolute web path to set the cookie for. This defaults to configured
 ; paths/htmlbase option
 
-sesscookiepath="{{data.nagvis_ini_php.global.sesscookiepath}}"
+sesscookiepath="auto-detect"
 
 ; Lifetime of the NagVis session cookie in seconds. The default value is set to
 ; 24 hours. The NagVis session cookie contents will be renewed on every page
 ; visit. If a session is idle for more time than configured here it will become
 ; invalid.
 
-sesscookieduration="{{data.nagvis_ini_php.global.sesscookieduration}}"
+sesscookieduration="86400"
 
 ;
 ; Start page to redirect the user to when first visiting NagVis without
 ; special parameters.
 
-startmodule="{{data.nagvis_ini_php.global.startmodule}}"
+startmodule="Overview"
 
 
-startaction="{{data.nagvis_ini_php.global.startaction}}"
+startaction="view"
 
 ; The startshow parameter is only used by some views at the moment. It is used
 ; by the Map module.
 
-startshow="{{data.nagvis_ini_php.global.startshow}}"
+startshow=""
 
 ;
 ; Turn on to enable some shinken related features in NagVis, like the
 ; min_business_impact-filter on automaps which can be used to render automaps
 ; based on the shinken attribute "business_impact".
 
-shinken_features="{{data.nagvis_ini_php.global.shinken_features}}"
+shinken_features="0"
 
 
 ; Path definitions
@@ -238,227 +231,172 @@ htmlcgi="{{data.nagvis_ini_php.paths.htmlcgi}}"
 backend="{{data.nagvis_ini_php.defaults.backend}}"
 
 ; background color of maps
-
-backgroundcolor="{{data.nagvis_ini_php.defaults.backgroundcolor}}"
+backgroundcolor="transparent"
 
 ; Enable/Disable the context menu on map objects. With the context menu you are
 ; able to bind commands or links to your map objects
-
-contextmenu="{{data.nagvis_ini_php.defaults.contextmenu}}"
+contextmenu="1"
 
 ; Choose the default context template
-
-contexttemplate="{{data.nagvis_ini_php.defaults.contexttemplate}}"
+contexttemplate="default"
 
 ; Raise frontend events for problematic objects also on page loading. Set to 1 to
 ; enable this feature
-
-event_on_load="{{data.nagvis_ini_php.defaults.event_on_load}}"
+event_on_load="0"
 
 ; Repeat frontend events in the given interval. The interval is configured in seconds.
-
-event_repeat_interval="{{data.nagvis_ini_php.defaults.event_repeat_interval}}"
+event_repeat_interval="0"
 
 ; The time in seconds to repeat alerts for a problematic ojects for as configured in
 ; event_repeat_interval. This value defaults to -1, this leads to repeated events
 ; till the problematic state has been fixed.
-
-event_repeat_duration="{{data.nagvis_ini_php.defaults.event_repeat_duration}}"
+event_repeat_duration="-1"
 
 ; Enable/Disable changing background color on state changes (Configured color is
 ; shown when summary state is PENDING, OK or UP)
-
-eventbackground="{{data.nagvis_ini_php.defaults.eventbackground}}"
+eventbackground="0"
 
 ; Enable/Disable highlighting of the state changing object by adding a flashing
 ; border
-
-eventhighlight="{{data.nagvis_ini_php.defaults.eventhighlight}}"
+eventhighlight="1"
 
 ; The duration of the event highlight in milliseconds (10 seconds by default)
-
-eventhighlightduration="{{data.nagvis_ini_php.defaults.eventhighlightduration}}"
+eventhighlightduration="10000"
 
 ; The interval of the event highlight in milliseconds (0.5 seconds by default)
-
-eventhighlightinterval="{{data.nagvis_ini_php.defaults.eventhighlightinterval}}"
+eventhighlightinterval="500"
 
 ; Enable/Disable the eventlog in the new javascript frontend. The eventlog keeps
 ; track of important actions and information
-
-eventlog="{{data.nagvis_ini_php.defaults.eventlog}}"
+eventlog="0"
 
 ; Loglevel of the eventlog (available: debug, info, warning, critical)
-
-eventloglevel="{{data.nagvis_ini_php.defaults.eventloglevel}}"
+eventloglevel="info"
 
 ; Number of events kept in the scrollback
-
-eventlogevents="{{data.nagvis_ini_php.defaults.eventlogevents}}"
+eventlogevents="24"
 
 ; Height of the eventlog when visible in px
-
-eventlogheight="{{data.nagvis_ini_php.defaults.eventlogheight}}"
+eventlogheight="100"
 
 ; Hide/Show the eventlog on page load
-
-eventloghidden="{{data.nagvis_ini_php.defaults.eventloghidden}}"
+eventloghidden="1"
 
 ; Enable/Disable scrolling to the icon which changed the state when the icon is
 ; out of the visible scope
-
-eventscroll="{{data.nagvis_ini_php.defaults.eventscroll}}"
+eventscroll="1"
 
 ; Enable/Disable sound signals on state changes
-
-eventsound="{{data.nagvis_ini_php.defaults.eventsound}}"
+eventsound="1"
 
 ; enable/disable header menu
-
-headermenu="{{data.nagvis_ini_php.defaults.headermenu}}"
+headermenu="1"
 
 ; header template
-
-headertemplate="{{data.nagvis_ini_php.defaults.headertemplate}}"
+headertemplate="default"
 
 ; Enable/Diable the fading effect of the submenus in the header menu
-
-headerfade="{{data.nagvis_ini_php.defaults.headerfade}}"
+headerfade="0"
 
 ; enable/disable hover menu
-
-hovermenu="{{data.nagvis_ini_php.defaults.hovermenu}}"
+hovermenu="1"
 
 ; hover template
-
-hovertemplate="{{data.nagvis_ini_php.defaults.hovertemplate}}"
+hovertemplate="default"
 
 ; hover menu open delay (seconds)
-
-hoverdelay="{{data.nagvis_ini_php.defaults.hoverdelay}}"
+hoverdelay="0"
 
 ; show children in hover menus
-
-hoverchildsshow="{{data.nagvis_ini_php.defaults.hoverchildsshow}}"
+hoverchildsshow="1"
 
 ; limit shown child objects to n
-
-hoverchildslimit="{{data.nagvis_ini_php.defaults.hoverchildslimit}}"
+hoverchildslimit="10"
 
 ; order method of children (desc: descending, asc: ascending)
-
-hoverchildsorder="{{data.nagvis_ini_php.defaults.hoverchildsorder}}"
+hoverchildsorder="asc"
 
 ; sort method of children (s: state, a: alphabetical)
-
-hoverchildssort="{{data.nagvis_ini_php.defaults.hoverchildssort}}"
+hoverchildssort="a"
 
 ; default icons
 
-icons="{{data.nagvis_ini_php.defaults.icons}}"
+icons="std_medium"
 
 ; recognize only hard states (not soft)
-
-onlyhardstates="{{data.nagvis_ini_php.defaults.onlyhardstates}}"
+onlyhardstates="0"
 
 ; recognize service states in host/hostgroup objects
-
-recognizeservices="{{data.nagvis_ini_php.defaults.recognizeservices}}"
+recognizeservices="1"
 
 ; show map in lists (dropdowns, index page, ...)
-
-showinlists="{{data.nagvis_ini_php.defaults.showinlists}}"
-
-; show map in multisite snapin
-
-showinmultisite="{{data.nagvis_ini_php.defaults.showinmultisite}}"
+showinlists="1"
 
 ; Name of the custom stylesheet to use on the maps (The file needs to be located
 ; in the share/nagvis/styles directory)
 
-{% if data.nagvis_ini_php.defaults.get('stylesheet', None) %}
-stylesheet="{{data.nagvis_ini_php.defaults.stylesheet}}"
-{% endif %}
-
 ; target for the icon links
-
-urltarget="{{data.nagvis_ini_php.defaults.urltarget}}"
+urltarget="_self"
 
 ; URL template for host object links
-
-hosturl="{{data.nagvis_ini_php.defaults.hosturl}}"
+hosturl="[htmlcgi]/status.cgi?host=[host_name]"
 
 ; URL template for hostgroup object links
-
-hostgroupurl="{{data.nagvis_ini_php.defaults.hostgroupurl}}"
+hostgroupurl="[htmlcgi]/status.cgi?hostgroup=[hostgroup_name]"
 
 ; URL template for service object links
-
-serviceurl="{{data.nagvis_ini_php.defaults.serviceurl}}"
+serviceurl="[htmlcgi]/extinfo.cgi?type=2&host=[host_name]&service=[service_description]"
 
 ; URL template for servicegroup object links
-
-servicegroupurl="{{data.nagvis_ini_php.defaults.servicegroupurl}}"
+servicegroupurl="[htmlcgi]/status.cgi?servicegroup=[servicegroup_name]&style=detail"
 
 ; URL template for nested map links
-
-mapurl="{{data.nagvis_ini_php.defaults.mapurl}}"
+mapurl="[htmlbase]/index.php?mod=Map&act=view&show=[map_name]"
 
 ; Templates to be used for the different views.
-
-view_template="{{data.nagvis_ini_php.defaults.view_template}}"
+view_template="default"
 
 ; Enable/disable object labels for all objects
-
-label_show="{{data.nagvis_ini_php.defaults.label_show}}"
+label_show="0"
 
 ; Configure the colors used by weathermap lines
-
-line_weather_colors="{{data.nagvis_ini_php.defaults.line_weather_colors}}"
+line_weather_colors="10:#8c00ff,25:#2020ff,40:#00c0ff,55:#00f000,70:#f0f000,85:#ffc000,100:#ff0000"
 
 
 ; Options to configure the Overview page of NagVis
 [index]
 ; Color of the overview background
-
-backgroundcolor="{{data.nagvis_ini_php.index.backgroundcolor}}"
+backgroundcolor="#ffffff"
 
 ; Set number of map cells per row
-
-cellsperrow="{{data.nagvis_ini_php.index.cellsperrow}}"
+cellsperrow="4"
 
 ; enable/disable header menu
-
-headermenu="{{data.nagvis_ini_php.index.headermenu}}"
+headermenu="1"
 
 ; header template
-
-headertemplate="{{data.nagvis_ini_php.index.headertemplate}}"
+headertemplate="default"
 
 ; Enable/Disable map listing
-
-showmaps="{{data.nagvis_ini_php.index.showmaps}}"
+showmaps="1"
 
 ; Enable/Disable geomap listing
-;   Note: It is disabled here since it is unfinished yet and not for production
-;         use in current 1.5 code.
-
-showgeomap="{{data.nagvis_ini_php.index.showgeomap}}"
+; Note: It is disabled here since it is unfinished yet and not for production
+; use in current 1.5 code.
+showgeomap="0"
 
 ; Enable/Disable rotation listing
-
-showrotations="{{data.nagvis_ini_php.index.showrotations}}"
+showrotations="1"
 
 ; Enable/Disable map thumbnails
-
-showmapthumbs="{{data.nagvis_ini_php.index.showmapthumbs}}"
+showmapthumbs="0"
 
 
 ; Options for the Automap
 [automap]
 ; Default URL parameters for links to the automap
 
-defaultparams="{{data.nagvis_ini_php.automap.defaultparams}}"
+defaultparams="&childLayers=2"
 
 ; Default root host (NagVis uses this if it can't detect it via backend)
 ; You can configure a hostname here or use "<<<monitoring>>>" as "virtual"
@@ -476,45 +414,38 @@ graphvizpath="{{data.nagvis_ini_php.automap.graphvizpath}}"
 [wui]
 ; map lock time (minutes). When a user edits a map other users trying to edit
 ; the map are warned about this fact.
-
-maplocktime="{{data.nagvis_ini_php.wui.maplocktime}}"
+maplocktime="5"
 
 ; Show/hide the grid
-
-grid_show="{{data.nagvis_ini_php.wui.grid_show}}"
+grid_show="0"
 
 ; The color of the grid lines
-
-grid_color="{{data.nagvis_ini_php.wui.grid_color}}"
+grid_color="#F7F7F7"
 
 ; The space between the single grid lines in pixels
-
-grid_steps="{{data.nagvis_ini_php.wui.grid_steps}}"
+grid_steps="32"
 
 
 ; Options for the new Javascript worker
 [worker]
 ; The interval in seconds in which the worker will check for objects which need
 ; to be updated
-
 interval="{{data.nagvis_ini_php.worker.interval}}"
 
 ; The maximum number of parameters used in ajax http requests
 ; Some intrusion detection/prevention systems have a problem with
 ; too many parameters in the url. Give 0 for no limit.
-
-requestmaxparams="{{data.nagvis_ini_php.worker.requestmaxparams}}"
+requestmaxparams="0"
 
 ; The maximum length of http request urls during ajax http requests
 ; Some intrusion detection/prevention systems have a problem with
 ; queries being too long
-
-requestmaxlength="{{data.nagvis_ini_php.worker.requestmaxlength}}"
+requestmaxlength="1900"
 
 ; The retention time of the states in the frontend in seconds. The state
 ; information will be refreshed after this time
+updateobjectstates="15"
 
-updateobjectstates="{{data.nagvis_ini_php.worker.updateobjectstates}}"
 
 
 ; ----------------------------
@@ -594,176 +525,53 @@ updateobjectstates="{{data.nagvis_ini_php.worker.updateobjectstates}}"
 ; objects. The default values should fit most needs.
 ;
 
-down="{{data.nagvis_ini_php.states.down}}"
+down="10"
+down_ack="6"
+down_downtime="6"
+unreachable="9"
+unreachable_ack="6"
+unreachable_downtime="6"
+critical="8"
+critical_ack="6"
+critical_downtime="6"
+warning="7"
+warning_ack="5"
+warning_downtime="5"
+unknown="4"
+unknown_ack="3"
+unknown_downtime="3"
+error="4"
+error_ack="3"
+error_downtime="3"
+up="2"
+ok="1"
+unchecked="0"
+pending="0"
 
-
-down_ack="{{data.nagvis_ini_php.states.down_ack}}"
-
-
-down_downtime="{{data.nagvis_ini_php.states.down_downtime}}"
-
-
-unreachable="{{data.nagvis_ini_php.states.unreachable}}"
-
-
-unreachable_ack="{{data.nagvis_ini_php.states.unreachable_ack}}"
-
-
-unreachable_downtime="{{data.nagvis_ini_php.states.unreachable_downtime}}"
-
-
-critical="{{data.nagvis_ini_php.states.critical}}"
-
-
-critical_ack="{{data.nagvis_ini_php.states.critical_ack}}"
-
-
-critical_downtime="{{data.nagvis_ini_php.states.critical_downtime}}"
-
-
-warning="{{data.nagvis_ini_php.states.warning}}"
-
-
-warning_ack="{{data.nagvis_ini_php.states.warning_ack}}"
-
-
-warning_downtime="{{data.nagvis_ini_php.states.warning_downtime}}"
-
-
-unknown="{{data.nagvis_ini_php.states.unknown}}"
-
-
-unknown_ack="{{data.nagvis_ini_php.states.unknown_ack}}"
-
-
-unknown_downtime="{{data.nagvis_ini_php.states.unknown_downtime}}"
-
-
-error="{{data.nagvis_ini_php.states.error}}"
-
-
-error_ack="{{data.nagvis_ini_php.states.error_ack}}"
-
-
-error_downtime="{{data.nagvis_ini_php.states.error_downtime}}"
-
-
-up="{{data.nagvis_ini_php.states.up}}"
-
-
-ok="{{data.nagvis_ini_php.states.ok}}"
-
-
-unchecked="{{data.nagvis_ini_php.states.unchecked}}"
-
-
-pending="{{data.nagvis_ini_php.states.pending}}"
-
-;
 ; Colors of the different states. The colors are used in lines and hover menus
 ; and for example in the frontend highlight and background event handler
-;
+; 
 
-unreachable_bgcolor="{{data.nagvis_ini_php.states.unreachable_bgcolor}}"
-
-
-unreachable_color="{{data.nagvis_ini_php.states.unreachable_color}}"
-
-{% if data.nagvis_ini_php.states.get('unreachable_ack_bgcolor', None) %}
-unreachable_ack_bgcolor="{{data.nagvis_ini_php.states.unreachable_ack_bgcolor}}"
-{% endif %}
-
-{% if data.nagvis_ini_php.states.get('unreachable_downtime_bgcolor', None) %}
-unreachable_downtime_bgcolor="{{data.nagvis_ini_php.states.unreachable_downtime_bgcolor}}"
-{% endif %}
-
-down_bgcolor="{{data.nagvis_ini_php.states.down_bgcolor}}"
-
-
-down_color="{{data.nagvis_ini_php.states.down_color}}"
-
-
-{% if data.nagvis_ini_php.states.get('down_ack_bgcolor', None) %}
-down_ack_bgcolor="{{data.nagvis_ini_php.states.down_ack_bgcolor}}"
-{% endif %}
-
-{% if data.nagvis_ini_php.states.get('down_downtime_bgcolor', None) %}
-down_downtime_bgcolor="{{data.nagvis_ini_php.states.down_downtime_bgcolor}}"
-{% endif %}
-
-critical_bgcolor="{{data.nagvis_ini_php.states.critical_bgcolor}}"
-
-
-critical_color="{{data.nagvis_ini_php.states.critical_color}}"
-
-
-
-{% if data.nagvis_ini_php.states.get('critical_ack_bgcolor', None) %}
-critical_ack_bgcolor="{{data.nagvis_ini_php.states.critical_ack_bgcolor}}"
-{% endif %}
-
-{% if data.nagvis_ini_php.states.get('critical_downtime_bgcolor', None) %}
-critical_downtime_bgcolor="{{data.nagvis_ini_php.states.critical_downtime_bgcolor}}"
-{% endif %}
-
-warning_bgcolor="{{data.nagvis_ini_php.states.warning_bgcolor}}"
-
-
-warning_color="{{data.nagvis_ini_php.states.warning_color}}"
-
-
-{% if data.nagvis_ini_php.states.get('warning_ack_bgcolor', None) %}
-warning_ack_bgcolor="{{data.nagvis_ini_php.states.warning_ack_bgcolor}}"
-{% endif %}
-
-{% if data.nagvis_ini_php.states.get('warning_downtime_bgolor', None) %}
-warning_downtime_bgcolor="{{data.nagvis_ini_php.states.warning_downtime_bgcolor}}"
-{% endif %}
-
-
-unknown_bgcolor="{{data.nagvis_ini_php.states.unknown_bgcolor}}"
-
-
-unknown_color="{{data.nagvis_ini_php.states.unknown_color}}"
-
-
-{% if data.nagvis_ini_php.states.get('unknown_ack_bgolor', None) %}
-unknown_ack_bgcolor="{{data.nagvis_ini_php.states.unknown_ack_bgcolor}}"
-{% endif %}
-
-{% if data.nagvis_ini_php.states.get('unknown_downtime_bgolor', None) %}
-unknown_downtime_bgcolor="{{data.nagvis_ini_php.states.unknown_downtime_bgcolor}}"
-{% endif %}
-
-
-error_bgcolor="{{data.nagvis_ini_php.states.error_bgcolor}}"
-
-
-error_color="{{data.nagvis_ini_php.states.error_color}}"
-
-
-up_bgcolor="{{data.nagvis_ini_php.states.up_bgcolor}}"
-
-
-up_color="{{data.nagvis_ini_php.states.up_color}}"
-
-
-ok_bgcolor="{{data.nagvis_ini_php.states.ok_bgcolor}}"
-
-
-ok_color="{{data.nagvis_ini_php.states.ok_color}}"
-
-
-unchecked_bgcolor="{{data.nagvis_ini_php.states.unchecked_bgcolor}}"
-
-
-unchecked_color="{{data.nagvis_ini_php.states.unchecked_color}}"
-
-
-pending_bgcolor="{{data.nagvis_ini_php.states.pending_bgcolor}}"
-
-
-pending_color="{{data.nagvis_ini_php.states.pending_color}}"
+unreachable_bgcolor="#F1811B"
+unreachable_color="#F1811B"
+down_bgcolor="#FF0000"
+down_color="#FF0000"
+critical_bgcolor="#FF0000"
+critical_color="#FF0000"
+warning_bgcolor="#FFFF00"
+warning_color="#FFFF00"
+unknown_bgcolor="#FFCC66"
+unknown_color="#FFCC66"
+error_bgcolor="#0000FF"
+error_color="#0000FF"
+up_bgcolor="#00FF00"
+up_color="#00FF00"
+ok_bgcolor="#00FF00"
+ok_color="#00FF00"
+unchecked_bgcolor="#C0C0C0"
+unchecked_color="#C0C0C0"
+pending_bgcolor="#C0C0C0"
+pending_color="#C0C0C0"
 
 ;
 ; Sound of the different states to be used by the sound eventhandler in the
@@ -771,35 +579,10 @@ pending_color="{{data.nagvis_ini_php.states.pending_color}}"
 ; worse state.
 ;
 
-unreachable_sound="{{data.nagvis_ini_php.states.unreachable_sound}}"
-
-
-down_sound="{{data.nagvis_ini_php.states.down_sound}}"
-
-
-critical_sound="{{data.nagvis_ini_php.states.critical_sound}}"
-
-
-warning_sound="{{data.nagvis_ini_php.states.warning_sound}}"
-
-{% if data.nagvis_ini_php.states.get('unknown_sound', None) %}
-unknown_sound="{{data.nagvis_ini_php.states.unknown_sound}}"
-{% endif %}
-{% if data.nagvis_ini_php.states.get('error_sound', None) %}
-error_sound="{{data.nagvis_ini_php.states.error_sound}}"
-{% endif %}
-{% if data.nagvis_ini_php.states.get('up_sound', None) %}
-up_sound="{{data.nagvis_ini_php.states.up_sound}}"
-{% endif %}
-{% if data.nagvis_ini_php.states.get('ok_sound', None) %}
-ok_sound="{{data.nagvis_ini_php.states.ok_sound}}"
-{% endif %}
-{% if data.nagvis_ini_php.states.get('unchecked_sound', None) %}
-unchecked_sound="{{data.nagvis_ini_php.states.unchecked_sound}}"
-{% endif %}
-{% if data.nagvis_ini_php.states.get('pending_sound', None) %}
-pending_sound="{{data.nagvis_ini_php.states.pending_sound}}"
-{% endif %}
+unreachable_sound="std_unreachable.mp3"
+down_sound="std_down.mp3"
+critical_sound="std_critical.mp3"
+warning_sound="std_warning.mp3"
 
 ; -------------------------
 ; EOF

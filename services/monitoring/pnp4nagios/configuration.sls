@@ -31,22 +31,6 @@ pnp4nagios-conf:
       data: |
             {{sdata}}
 
-# icinga configuration
-pnp4nagios-icinga-conf:
-  file.blockreplace:
-    - name: {{data.icinga_cfg.location}}
-    - marker_start: "{{data.icinga_cfg.marker_start}}"
-    - marker_end: "{{data.icinga_cfg.marker_end}}"
-    - show_changes: True
-    - watch:
-      - mc_proxy: pnp4nagios-pre-conf
-    - watch_in:
-      - mc_proxy: pnp4nagios-post-conf
-    - content: |
-               {% for line in data.icinga_cfg.content %}
-               {{line}}
-               {% endfor %}
-
 # npcd daemon configuration
 pnp4nagios-npcd-conf:
   file.managed:
