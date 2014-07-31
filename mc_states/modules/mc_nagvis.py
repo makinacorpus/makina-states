@@ -239,116 +239,15 @@ def settings():
                 base
                     location of nagvis installation
                 htmlbase
-                    location of php files. It should be the same value that nginx.nagvis.web_directory
+                    location of php files. It should be the same value that
+                    nginx.nagvis.web_directory
+
             defaults
-                dictionary to store values of defaults section in nagvis_ini_php
+                dictionary to store values of defaults section in
+                nagvis_ini_php
 
                 backend
                     default backend
-                backgroundcolor
-                    background color
-                contextmenu
-                    1 or 0
-                contexttemplate
-                    template
-                event_on_load
-                    1 or 0
-                event_repeat_interval
-                    1 or 0
-                event_repeat_duration
-                    number
-                eventbackground
-                    1 or 0
-                eventhighlight
-                    1 or 0
-                eventhighlightduration
-                    number
-                eventhighlightinterval
-                    number
-                eventlog
-                    1 or 0
-                eventloglevel
-                    number
-                eventlogevents
-                    number
-                eventlogheight
-                    number
-                eventloghidden
-                    1 or 0
-                eventscroll
-                    1 or 0
-                eventsound
-                    1 or 0
-                headermenu
-                    1 or 0
-                headertemplate
-                    name of header template
-                headerfade
-                    1 or 0
-                hovermenu
-                    1 or 0
-                hovertemplate
-                    name of hover template
-                hoverdelay
-                    number
-                hoverchildsshow
-                    1 or 0
-                hoverchildslimit
-                    number
-                hoverchildsorder
-                    "asc" or "desc"
-                hoverchildssort
-                    "s"
-                icons
-                    name of icons
-                onlyhardstates
-                    1 or 0
-                recognizeservices
-                    1 or 0
-                showinlists
-                    1 or 0
-                showinmultisite
-                    1 or 0
-                stylesheet
-                    ""
-                urltarget
-                    "_self"
-                hosturl
-                    url for hosts
-                hostgroupurl
-                    url for hostgroups
-                serviceurl
-                    url for services
-                servicegroupurl
-                    url for servicegroups
-                mapurl
-                    url of maps
-                view_template
-                    name of the view template
-                label_show
-                    1 or 0
-                line_weather_colors
-                    .
-
-            index
-                dictionary to store values of index section in nagvis_ini_php
-
-                backgroundcolor
-                    background color
-                cellsperrow
-                    number
-                headermenu
-                    1 or 0
-                headertemplate
-                    header template
-                showmaps
-                    1 or 0
-                showgeomap
-                    1 or 0
-                showrotations
-                    1 or 0
-                showmapthumbs
-                    1 or 0
 
             automap
                 dictionary to store values of automap section in nagvis_ini_php
@@ -359,18 +258,6 @@ def settings():
                     default root
                 graphvizpath
                     location of graphviz binary
-
-            wui
-                dictionary to store values of wui section in nagvis_ini_php
-
-                maplocktime
-                    map lock time
-                grid_show
-                    1 or 0
-                grid_color
-                    grid color
-                grid_steps
-                    scale of the grid
 
             worker
                 dictionary to store values of worker section in nagvis_ini_php
@@ -429,136 +316,6 @@ def settings():
                         domain
                     username
                         username
-
-            states
-                dictionary to store values of states section in nagvis_ini_php
-
-                down
-                    .
-                down_ack
-                    .
-                down_downtime
-                    .
-                unreachable
-                    .
-                unreachable_ack
-                    .
-                unreachable_downtime
-                    .
-                critical
-                    .
-                critical_ack
-                    .
-                critical_downtime
-                    .
-                warning
-                    .
-                warning_ack
-                    .
-                warning_downtime
-                    .
-                unknown
-                    .
-                unknown_ack
-                    .
-                unknown_downtime
-                    .
-                error
-                    .
-                error_ack
-                    .
-                error_downtime
-                    .
-                up
-                    .
-                ok
-                    .
-                unchecked
-                    .
-                pending
-                    .
-
-                unreachable_bgcolor
-                    .
-                unreachable_color
-                    .
-                unreachable_ack_bgcolor
-                    .
-                unreachable_downtime_bgcolor
-                    .
-                down_bgcolor
-                    .
-                down_color
-                    .
-                down_ack_bgcolor
-                    .
-                down_downtime_bgcolor
-                    .
-                critical_bgcolor
-                    .
-                critical_color
-                    .
-                critical_ack_bgcolor
-                    .
-                critical_downtime_bgcolor
-                    .
-                warning_bgcolor
-                    .
-                warning_color
-                    .
-                warning_ack_bgcolor
-                    .
-                warning_downtime_bgcolor
-                    .
-                unknown_bgcolor
-                    .
-                unknown_color
-                    .
-                unknown_ack_bgcolor
-                    .
-                unknown_downtime_bgcolor
-                    .
-                error_bgcolor
-                    .
-                error_color
-                    .
-                up_bgcolor
-                    .
-                up_color
-                    .
-                ok_bgcolor
-                    .
-                ok_color
-                    .
-                unchecked_bgcolor
-                    .
-                unchecked_color
-                    .
-                pending_bgcolor
-                    .
-                pending_color
-                    .
-                unreachable_sound
-                    .
-                down_sound
-                    .
-                critical_sound
-                    .
-                warning_sound
-                    .
-                unknown_sound
-                    .
-                error_sound
-                    .
-                up_sound
-                    .
-                ok_sound
-                    .
-                unchecked_sound
-                    .
-                pending_sound
-                    .
-
 
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
@@ -707,81 +464,11 @@ def settings():
                     },
                     'defaults': {
                         'backend': "live_1",
-                        'backgroundcolor': "transparent",
-                        'contextmenu': 1,
-                        'contexttemplate': "default",
-                        'event_on_load': 0,
-                        'event_repeat_interval': 0,
-                        'event_repeat_duration': -1,
-                        'eventbackground': 0,
-                        'eventhighlight': 1,
-                        'eventhighlightduration': 10000,
-                        'eventhighlightinterval': 500,
-                        'eventlog': 0,
-                        'eventloglevel': "info",
-                        'eventlogevents': 24,
-                        'eventlogheight': 100,
-                        'eventloghidden': 1,
-                        'eventscroll': 1,
-                        'eventsound': 1,
-                        'headermenu': 1,
-                        'headertemplate': "default",
-                        'headerfade': 0,
-                        'hovermenu': 1,
-                        'hovertemplate': "default",
-                        'hoverdelay': 0,
-                        'hoverchildsshow': 1,
-                        'hoverchildslimit': 10,
-                        'hoverchildsorder': "asc",
-                        'hoverchildssort': "a",
-                        'icons': "std_medium",
-                        'onlyhardstates': 0,
-                        'recognizeservices': 1,
-                        'showinlists': 1,
-                        'showinmultisite': 1,
-                        # 'stylesheet': "",
-                        'urltarget': "_self",
-                        'hosturl': (
-                            "[htmlcgi]/status.cgi?host=[host_name]"),
-                        'hostgroupurl': (
-                            "[htmlcgi]/status.cgi?hostgroup=[hostgroup_name]"),
-                        'serviceurl': (
-                            "[htmlcgi]/extinfo.cgi?type=2"
-                            "&host=[host_name]&"
-                            "service=[service_description]"),
-                        'servicegroupurl': (
-                            "[htmlcgi]/status.cgi?"
-                            "servicegroup=[servicegroup_name]"
-                            "&style=detail"),
-                        'mapurl': ("[htmlbase]/index.php?mod=Map"
-                                   "&act=view&show=[map_name]"),
-                        'view_template': "default",
-                        'label_show': 0,
-                        'line_weather_colors': (
-                            "10:#8c00ff,25:#2020ff,40:#00c0ff,55:"
-                            "#00f000,70:#f0f000,85:#ffc000,100:#ff0000"),
-                    },
-                    'index': {
-                        'backgroundcolor': "#ffffff",
-                        'cellsperrow': 4,
-                        'headermenu': 1,
-                        'headertemplate': "default",
-                        'showmaps': 1,
-                        'showgeomap': 0,
-                        'showrotations': 1,
-                        'showmapthumbs': 0,
                     },
                     'automap': {
                         'defaultparams': "&childLayers=2",
                         'defaultroot': "/",
                         'graphvizpath': "/usr/bin/",
-                    },
-                    'wui': {
-                        'maplocktime': 5,
-                        'grid_show': 0,
-                        # 'grid_color': "#D5DCEF",
-                        'grid_color': "#F7F7F7",
-                        'grid_steps': 32,
                     },
                     'worker': {
                         'interval': 5,
@@ -816,72 +503,8 @@ def settings():
                         #     'username': "",
                         # },
                     },
-                    'states': {
-                        'down': 10,
-                        'down_ack': 6,
-                        'down_downtime': 6,
-                        'unreachable': 9,
-                        'unreachable_ack': 6,
-                        'unreachable_downtime': 6,
-                        'critical': 8,
-                        'critical_ack': 6,
-                        'critical_downtime': 6,
-                        'warning': 7,
-                        'warning_ack': 5,
-                        'warning_downtime': 5,
-                        'unknown': 4,
-                        'unknown_ack': 3,
-                        'unknown_downtime': 3,
-                        'error': 4,
-                        'error_ack': 3,
-                        'error_downtime': 3,
-                        'up': 2,
-                        'ok': 1,
-                        'unchecked': 0,
-                        'pending': 0,
-                        'unreachable_bgcolor': "#F1811B",
-                        'unreachable_color': "#F1811B",
-                        # 'unreachable_ack_bgcolor': "",
-                        # 'unreachable_downtime_bgcolor': "",
-                        'down_bgcolor': "#FF0000",
-                        'down_color': "#FF0000",
-                        # 'down_ack_bgcolor': "",
-                        # 'down_downtime_bgcolor': "",
-                        'critical_bgcolor': "#FF0000",
-                        'critical_color': "#FF0000",
-                        'critical_ack_bgcolor': "",
-                        'critical_downtime_bgcolor': "",
-                        'warning_bgcolor': "#FFFF00",
-                        'warning_color': "#FFFF00",
-                        # 'warning_ack_bgcolor': "",
-                        # 'warning_downtime_bgcolor': "",
-                        'unknown_bgcolor': "#FFCC66",
-                        'unknown_color': "#FFCC66",
-                        # 'unknown_ack_bgcolor': "",
-                        # 'unknown_downtime_bgcolor': "",
-                        'error_bgcolor': "#0000FF",
-                        'error_color': "#0000FF",
-                        'up_bgcolor': "#00FF00",
-                        'up_color': "#00FF00",
-                        'ok_bgcolor': "#00FF00",
-                        'ok_color': "#00FF00",
-                        'unchecked_bgcolor': "#C0C0C0",
-                        'unchecked_color': "#C0C0C0",
-                        'pending_bgcolor': "#C0C0C0",
-                        'pending_color': "#C0C0C0",
-                        'unreachable_sound': "std_unreachable.mp3",
-                        'down_sound': "std_down.mp3",
-                        'critical_sound': "std_critical.mp3",
-                        'warning_sound': "std_warning.mp3",
-                        # 'unknown_sound': "",
-                        # 'error_sound': "",
-                        # 'up_sound': "",
-                        # 'ok_sound': "",
-                        # 'unchecked_sound': "",
-                        # 'pending_sound': "",
-                    },
                 },
-        })
+                })
 
         __salt__['mc_macros.update_local_registry'](
             'nagvis', nagvis_reg,
@@ -901,9 +524,9 @@ def add_map_settings(name, _global, objects, keys_mapping, **kwargs):
     kwargs.setdefault('keys_mapping', keys_mapping)
     nagvisSettings = __salt__['mc_utils.dictupdate'](nagvisSettings, kwargs)
     # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
-    nagvisSettings['data'] = copy.deepcopy(nagvisSettings)
-    nagvisSettings['data']['extra'] = copy.deepcopy(nagvisSettings)
-    nagvisSettings['extra'] = copy.deepcopy(nagvisSettings)
+    # nagvisSettings['data'] = copy.deepcopy(nagvisSettings)
+    # nagvisSettings['data']['extra'] = copy.deepcopy(nagvisSettings)
+    # nagvisSettings['extra'] = copy.deepcopy(nagvisSettings)
     return nagvisSettings
 
 def add_geomap_settings(name, hosts, **kwargs):
@@ -915,9 +538,9 @@ def add_geomap_settings(name, hosts, **kwargs):
     kwargs.setdefault('hosts', hosts)
     nagvisSettings = __salt__['mc_utils.dictupdate'](nagvisSettings, kwargs)
     # retro compat // USE DEEPCOPY FOR LATER RECURSIVITY !
-    nagvisSettings['data'] = copy.deepcopy(nagvisSettings)
-    nagvisSettings['data']['extra'] = copy.deepcopy(nagvisSettings)
-    nagvisSettings['extra'] = copy.deepcopy(nagvisSettings)
+    # nagvisSettings['data'] = copy.deepcopy(nagvisSettings)
+    # nagvisSettings['data']['extra'] = copy.deepcopy(nagvisSettings)
+    # nagvisSettings['extra'] = copy.deepcopy(nagvisSettings)
     return nagvisSettings
 
 
