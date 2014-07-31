@@ -37,7 +37,6 @@ boot_salt_top
 .unit.log
 /app
 /baseimage.*
-/bin
 /buildout/buildout.cfg
 /corpus-*
 /data
@@ -72,3 +71,16 @@ boot_salt_top
 /tests/mc_states
 /docker/virtualenv-makina-states-*
 /docker/*.log
+/var/run
+/var/log
+/etc/salt/minion.d
+/etc/salt/makina-states
+/requirements/git_requirements.txt
+/salt/makina-projects
+/pillar/makina-projects
+/pillar/pillar.d
+/pillar/overrides
+/etc/makina-states/
+/var/cache
+/venv
+/etc/masterless_pillars/
