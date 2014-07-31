@@ -14,6 +14,21 @@ pnp4nagios-pkgs:
       - {{package}}
       {% endfor %}
 
-
+disable-apache2-sa:
+  service.disabled:
+    - name: apache2
+    - watch:
+      - pkg: pnp4nagios-pkgs
+      - mc_proxy: pnp4nagios-pre-install
+    - watch_in:
+      - mc_proxy: pnp4nagios-post-install
+disable-apache2-sd:
+  service.dead:
+    - name: apache2
+    - watch:
+      - pkg: pnp4nagios-pkgs
+      - mc_proxy: pnp4nagios-pre-install
+    - watch_in:
+      - mc_proxy: pnp4nagios-post-install
 # it nagios3 may be a dependency for pnp4nagios (in the unbuntu package)
 
