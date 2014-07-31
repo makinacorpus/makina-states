@@ -150,6 +150,9 @@ def settings():
         data = {}
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.backup.burp', {
+                'admins': 'root',
+                'cron_activated': True,
+                'cron_periodicity': '0 0,6,12,18 * * *',
                 'ver': '1.3.48',
                 'user': 'root',
                 'group': 'root',
