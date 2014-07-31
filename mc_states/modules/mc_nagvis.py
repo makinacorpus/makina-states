@@ -231,6 +231,7 @@ def settings():
                         "salt://makina-states/files/"
                         "etc/nginx/sites-available/nagvis.top.conf"),
                     'nagvis': {
+                        'htpasswd_file': '/etc/icinga2/htpasswd.users',
                         'web_directory': "/nagvis",
                         'fastcgi_pass': (
                             "unix:/var/spool/www/"
