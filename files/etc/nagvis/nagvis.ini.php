@@ -20,7 +20,7 @@
 ; Enable/Disable logging of security related user actions in Nagvis. For
 ; example user logins and logouts are logged in var/nagvis-audit.log
 
-audit_log="{{data.nagvis_ini_php.global.audit_log}}"
+audit_log="1"
 
 ;
 ; Defines the authentication module to use. By default NagVis uses the built-in
@@ -44,23 +44,23 @@ authorisationmodule="{{data.nagvis_ini_php.global.authorisationmodule}}"
 ; Sets the size of the controls in unlocked (edit) mode of the frontend. This
 ; defaults to a value of 10 which makes each control be sized to 10px * 10px.
 
-controls_size="{{data.nagvis_ini_php.global.controls_size}}"
+controls_size="10"
 
 ;
 ; Dateformat of the time/dates shown in nagvis (For valid format see PHP docs)
 
-dateformat="{{data.nagvis_ini_php.global.dateformat}}"
+dateformat="Y-m-d H:i:s"
 
 ;
 ; Used to configure the preselected options in the "acknowledge problem" dialog
 
-dialog_ack_sticky="{{data.nagvis_ini_php.global.dialog_ack_sticky}}"
+dialog_ack_sticky="1"
 
 
-dialog_ack_notify="{{data.nagvis_ini_php.global.dialog_ack_notify}}"
+dialog_ack_notify="1"
 
 
-dialog_ack_persist="{{data.nagvis_ini_php.global.dialog_ack_persist}}"
+dialog_ack_persist="0"
 
 ;
 ; File group and mode are applied to all files which are written by NagVis.
@@ -98,12 +98,12 @@ http_proxy_auth="{{data.nagvis_ini_php.global.http_proxy_auth}}"
 {% endif %}
 ; Set the timeout (in seconds) for outbound HTTP requests (for example geomap requests)
 
-http_timeout="{{data.nagvis_ini_php.global.http_timeout}}"
+http_timeout="10"
 
 ;
 ; Defines which translations of NagVis are available to the users
 
-language_available="{{data.nagvis_ini_php.global.language_available}}"
+language_available="de_DE,en_US,es_ES,fr_FR,pt_BR"
 
 ; Language detection steps to use. Available:
 ;  - User:    The user selection
@@ -112,12 +112,12 @@ language_available="{{data.nagvis_ini_php.global.language_available}}"
 ;  - Browser: Detection by user agent information from the browser
 ;  - Config:  Use configured default language (See below)
 
-language_detection="{{data.nagvis_ini_php.global.language_detection}}"
+language_detection="user,session,browser,config"
 
 ;
 ; Select language (Available by default: en_US, de_DE, fr_FR, pt_BR)
 
-language="{{data.nagvis_ini_php.global.language}}"
+language="en_US"
 
 ;
 ; Defines the logon module to use. There are three logon modules to be used by
@@ -155,23 +155,16 @@ language="{{data.nagvis_ini_php.global.language}}"
 ;
 ;
 
-logonmodule="{{data.nagvis_ini_php.global.logonmodule}}"
+logonmodule="LogonMixed"
 
-logonenvvar="{{data.nagvis_ini_php.global.logonenvvar}}"
-logonenvcreateuser="{{data.nagvis_ini_php.global.logonenvcreateuser}}"
-logonenvcreaterole="{{data.nagvis_ini_php.global.logonenvcreaterole}}"
-
-{% if 'LogonMultisite' == data.nagvis_ini_php.global.logonmodule %}
-logon_multisite_htpasswd="{{data.nagvis_ini_php.global.logon_multisite_htpasswd}}"
-logon_multisite_secret="{{data.nagvis_ini_php.global.logon_multisite_secret}}"
-logon_multisite_createuser="{{data.nagvis_ini_php.global.logon_multisite_createuser}}"
-logon_multisite_createrole="{{data.nagvis_ini_php.global.logon_multisite_createrole}}"
-{% endif %}
+logonenvvar="REMOTE_USER"
+logonenvcreateuser="1"
+logonenvcreaterole="Guests"
 
 ;
 ; Default rotation time of pages in rotations
 
-refreshtime="{{data.nagvis_ini_php.global.refreshtime}}"
+refreshtime="60"
 
 ;
 ; Some user information is stored in sessions which are identified by session
@@ -180,40 +173,40 @@ refreshtime="{{data.nagvis_ini_php.global.refreshtime}}"
 ; Domain to set the cookie for. By default NagVis tries to auto-detect this
 ; options value by using the webserver's environment variables.
 
-sesscookiedomain="{{data.nagvis_ini_php.global.sesscookiedomain}}"
+sesscookiedomain="auto-detect"
 
 ; Absolute web path to set the cookie for. This defaults to configured
 ; paths/htmlbase option
 
-sesscookiepath="{{data.nagvis_ini_php.global.sesscookiepath}}"
+sesscookiepath="auto-detect"
 
 ; Lifetime of the NagVis session cookie in seconds. The default value is set to
 ; 24 hours. The NagVis session cookie contents will be renewed on every page
 ; visit. If a session is idle for more time than configured here it will become
 ; invalid.
 
-sesscookieduration="{{data.nagvis_ini_php.global.sesscookieduration}}"
+sesscookieduration="86400"
 
 ;
 ; Start page to redirect the user to when first visiting NagVis without
 ; special parameters.
 
-startmodule="{{data.nagvis_ini_php.global.startmodule}}"
+startmodule="Overview"
 
 
-startaction="{{data.nagvis_ini_php.global.startaction}}"
+startaction="view"
 
 ; The startshow parameter is only used by some views at the moment. It is used
 ; by the Map module.
 
-startshow="{{data.nagvis_ini_php.global.startshow}}"
+startshow=""
 
 ;
 ; Turn on to enable some shinken related features in NagVis, like the
 ; min_business_impact-filter on automaps which can be used to render automaps
 ; based on the shinken attribute "business_impact".
 
-shinken_features="{{data.nagvis_ini_php.global.shinken_features}}"
+shinken_features="0"
 
 
 ; Path definitions
@@ -437,25 +430,22 @@ grid_steps="32"
 [worker]
 ; The interval in seconds in which the worker will check for objects which need
 ; to be updated
-
-interval="{{data.nagvis_ini_php.worker.interval}}"
+interval="5"
 
 ; The maximum number of parameters used in ajax http requests
 ; Some intrusion detection/prevention systems have a problem with
 ; too many parameters in the url. Give 0 for no limit.
-
-requestmaxparams="{{data.nagvis_ini_php.worker.requestmaxparams}}"
+requestmaxparams="0"
 
 ; The maximum length of http request urls during ajax http requests
 ; Some intrusion detection/prevention systems have a problem with
 ; queries being too long
-
-requestmaxlength="{{data.nagvis_ini_php.worker.requestmaxlength}}"
+requestmaxlength="1900"
 
 ; The retention time of the states in the frontend in seconds. The state
 ; information will be refreshed after this time
+updateobjectstates="15"
 
-updateobjectstates="{{data.nagvis_ini_php.worker.updateobjectstates}}"
 
 
 ; ----------------------------

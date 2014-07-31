@@ -1,4 +1,4 @@
-<?PHP
+<?php
 /* MANAGED VIA SALT -- DO NOT EDIT */
 {% set data = salt['mc_utils.json_load'](data) %}
 
@@ -24,7 +24,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  *****************************************************************************/
- 
+
 /**
  * @author	Lars Michelsen <lars@vertical-visions.de>
  */
@@ -99,7 +99,7 @@ define('SESSION_NAME', 'nagvis_session');
 
 // Other basic constants
 define('REQUIRES_AUTHORISATION', true);
-define('GET_STATE', true});
+define('GET_STATE', true);
 define('GET_PHYSICAL_PATH', false);
 define('DONT_GET_OBJECT_STATE', false);
 define('DONT_GET_SINGLE_MEMBER_STATES', false);

@@ -5,7 +5,8 @@
 mc_nagvis / nagvis functions
 ============================================
 
-You can add your own key/values in backends, rotations and actions subdictionaries.
+You can add your own key/values in backends,
+rotations and actions subdictionaries.
 
 '''
 
@@ -83,76 +84,6 @@ def settings():
         global_php
             dictionary to store values used in global.php
 
-            CONST_VERSION
-                str
-            PROFILE
-                "true" or "false"
-            DEBUG
-                "true" or "false"
-            DEBUGLEVEL
-                number
-            DEBUGFILE
-                location of file
-            CONST_MAINCFG
-                location of nagvis.ini.php
-            CONST_MAINCFG_CACHE
-                location of cache directory
-            CONST_MAINCFG_DIR
-                location of configuration directory
-            HTDOCS_DIR
-                location of webserver root
-                I have not modified this value because it seems
-                it doesn't work when we use a subdirectory
-            CONST_NEEDED_PHP_VERSION
-                str
-            SESSION_NAME
-                name of cookie session
-            REQUIRES_AUTHORISATION
-                "true" or "false"
-            GET_STATE
-                "true" or "false"
-            GET_PHYSICAL_PATH
-                "true" or "false"
-            DONT_GET_OBJECT_STATE
-                "true" or "false"
-            DONT_GET_SINGLE_MEMBER_STATES
-                "true" or "false"
-            GET_SINGLE_MEMBER_STATES
-                "true" or "false"
-            HANDLE_USERCFG
-                "true" or "false"
-            ONLY_USERCFG
-                "true" or "false"
-            ONLY_STATE
-                "true" or "false"
-            COMPLETE
-                "true" or "false"
-            IS_VIEW
-                "true" or "false"
-            ONLY_GLOBAL
-                "true" or "false"
-            GET_CHILDS
-                "true" or "false"
-            SUMMARY_STATE
-                "true" or "false"
-            COUNT_QUERY
-                "true" or "false"
-            MEMBER_QUERY
-                "true" or "false"
-            HOST_QUERY
-                "true" or "false"
-            AUTH_MAX_PASSWORD_LENGTH
-                number
-            AUTH_MAX_USERNAME_LENGTH
-                number
-            AUTH_MAX_ROLENAME_LENGTH
-                number
-            AUTH_PERMISSION_WILDCARD
-                str
-            AUTH_TRUST_USERNAME
-                "true" or "false"
-            AUTH_NOT_TRUST_USERNAME
-                "true" or "false"
             AUTH_PASSWORD_SALT
                 salt used for password. We notice the salt used is
                 the same for all passwords which is a security weakness.
@@ -166,22 +97,10 @@ def settings():
             global
                 dictionary to store values of global section in nagvis_ini_php
 
-                audit_log
-                    1 or 0
                 authmodule
                     name of authentication module
                 authorisationmodule
                     name of authorisation module
-                controls_size
-                    controls size
-                dateformat
-                    date format
-                dialog_ack_sticky
-                    .
-                dialog_ack_notify
-                    .
-                dialog_ack_persist
-                    .
                 file_group
                     group used to launch nagvis script
                 file_mode
@@ -192,46 +111,6 @@ def settings():
                     http proxy
                 http_proxy_auth
                     auth for http proxy
-                http_timeout
-                    timeout
-                language_available
-                    language available
-                language_detection
-                    language detection
-                language
-                    default language
-                logonmodule
-                    for old style authentication
-                logonenvvar
-                    header containing username
-                logonenvcreateuser
-                    1 or 0
-                logonenvcreaterole
-                    .
-                logon_multisite_htpasswd
-                    location of htpasswd file used by logon multisite
-                logon_multisite_secret
-                    .
-                logon_multisite_createuser
-                    1 or 0
-                logon_multisite_createrole
-                    .
-                refreshtime
-                    automatically refresh
-                sesscookiedomain
-                    session cookie domain
-                sesscookiepath
-                    session cookie path
-                sesscookieduration
-                    session cookie lifetime
-                startmodule
-                    .
-                startaction
-                    .
-                startshow
-                    .
-                shinken_features
-                    1 or 0
 
             paths
                 dictionary to store values of paths section in nagvis_ini_php
@@ -258,18 +137,6 @@ def settings():
                     default root
                 graphvizpath
                     location of graphviz binary
-
-            worker
-                dictionary to store values of worker section in nagvis_ini_php
-
-                interval
-                    number
-                requestmaxparams
-                    number
-                requestmaxlength
-                    number
-                updateobjectstates
-                    number
 
             backends
                 dictionary to store values of backends section in
@@ -388,39 +255,13 @@ def settings():
                 },
                 'nagvis_ini_php': {
                     'global': {
-                        'audit_log': 1,
                         'authmodule': "CoreAuthModSQLite",
                         'authorisationmodule': "CoreAuthorisationModSQLite",
-                        'controls_size': 10,
-                        'dateformat': "Y-m-d H:i:s",
-                        'dialog_ack_sticky': 1,
-                        'dialog_ack_notify': 1,
-                        'dialog_ack_persist': 0,
                         'file_group': "www-data",
                         'file_mode': 660,
                         'geomap_server': "http://geomap.nagvis.org/",
                         # 'http_proxy': "",
                         # 'http_proxy_auth': "",
-                        'http_timeout': 10,
-                        'language_available': "de_DE,en_US,es_ES,fr_FR,pt_BR",
-                        'language_detection': "user,session,browser,config",
-                        'language': "en_US",
-                        'logonmodule': "LogonMixed",
-                        'logonenvvar': "REMOTE_USER",
-                        'logonenvcreateuser': 1,
-                        'logonenvcreaterole': "Guests",
-                        'logon_multisite_htpasswd': "",
-                        'logon_multisite_secret': "",
-                        'logon_multisite_createuser': 1,
-                        'logon_multisite_createrole': "Guest",
-                        'refreshtime': 60,
-                        'sesscookiedomain': "auto-detect",
-                        'sesscookiepath': "auto-detect",
-                        'sesscookieduration': 86400,
-                        'startmodule': "Overview",
-                        'startaction': "view",
-                        'startshow': "",
-                        'shinken_features': 0,
                     },
                     'paths': {
                         'base': "/usr/share/nagvis/",
@@ -431,15 +272,8 @@ def settings():
                         'backend': "live_1",
                     },
                     'automap': {
-                        'defaultparams': "&childLayers=2",
                         'defaultroot': "/",
                         'graphvizpath': "/usr/bin/",
-                    },
-                    'worker': {
-                        'interval': 5,
-                        'requestmaxparams': 0,
-                        'requestmaxlength': 1900,
-                        'updateobjectstates': 15,
                     },
                     'backends': {
                         'live_1': {
@@ -494,6 +328,7 @@ def add_map_settings(name, _global, objects, keys_mapping, **kwargs):
     # nagvisSettings['extra'] = copy.deepcopy(nagvisSettings)
     return nagvisSettings
 
+
 def add_geomap_settings(name, hosts, **kwargs):
     '''Settings for the add_geomap macro'''
     nagvisSettings = copy.deepcopy(__salt__['mc_nagvis.settings']())
@@ -507,7 +342,6 @@ def add_geomap_settings(name, hosts, **kwargs):
     # nagvisSettings['data']['extra'] = copy.deepcopy(nagvisSettings)
     # nagvisSettings['extra'] = copy.deepcopy(nagvisSettings)
     return nagvisSettings
-
 
 
 def dump():
