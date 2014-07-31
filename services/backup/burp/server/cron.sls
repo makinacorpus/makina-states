@@ -7,6 +7,7 @@ burp-cron-cmd:
     - mode: 755
     - contents: |
                 #!/usr/bin/env bash
+                . /etc/profile
                 LOG="/var/log/burpcron.log"
                 lock="${0}.lock"
                 if [ -e "${lock}" ];then
