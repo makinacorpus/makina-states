@@ -35,7 +35,7 @@ icinga_web-{{file}}-conf:
     - name: {{data.configuration_directory}}/conf.d/{{file}}.xml
     - source: {{data.templates.get(
                    file,
-                   'salt://makina-states/files/etc/icinga-web/conf.d/{0}.xml'.format(file)}}
+                   'salt://makina-states/files/etc/icinga-web/conf.d/{0}.xml'.format(file))}}
     - template: jinja
     - makedirs: true
     - user: root

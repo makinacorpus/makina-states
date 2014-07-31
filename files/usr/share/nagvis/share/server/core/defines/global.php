@@ -54,10 +54,10 @@ set_include_path(
 // Enable/Disable profiling of NagVis using xhprof.  To make use of this the
 // xhprof php module needs to be loaded and the xhprof_lib directory needs
 // to be available in /var/www.
-define('PROFILE', false);
+define('PROFILE', {{data.global_php.PROFILE}});
 
 // enable/disable the debug mode
-define('DEBUG', false);
+define('DEBUG', {{data.global_php.DEBUG}});
 
 /**
  * For desired debug output add these possible values:
@@ -65,7 +65,7 @@ define('DEBUG', false);
  * 2: progress information in the functions
  * 4: render time
  */
-define('DEBUGLEVEL', 6);
+define('DEBUGLEVEL', {{data.global_php.DEBUGLEVEL}});
 
 // Path to the debug file
 define('DEBUGFILE', '../../../var/nagvis-debug.log');

@@ -251,10 +251,14 @@ def settings():
                                             'php5-sqlite'],
                 },
                 'global_php': {
+                    'PROFILE': "false",
+                    'DEBUG': "false",
+                    'DEBUGLEVEL': 6,
                     'AUTH_PASSWORD_SALT': root_account['salt'],
                 },
                 'nagvis_ini_php': {
                     'global': {
+                        'audit_log': 1,
                         'authmodule': "CoreAuthModSQLite",
                         'authorisationmodule': "CoreAuthorisationModSQLite",
                         'file_group': "www-data",
@@ -274,6 +278,9 @@ def settings():
                     'automap': {
                         'defaultroot': "/",
                         'graphvizpath': "/usr/bin/",
+                    },
+                    'worker': {
+                        'interval': 5,
                     },
                     'backends': {
                         'live_1': {
@@ -303,6 +310,7 @@ def settings():
                         # },
                     },
                 },
+                'templates': {},
                 })
 
         __salt__['mc_macros.update_local_registry'](

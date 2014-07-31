@@ -18,7 +18,9 @@ include:
 nagvis-conf:
   file.managed:
     - name: {{data.configuration_directory}}/nagvis.ini.php
-    - source: salt://makina-states/files/etc/nagvis/nagvis.ini.php
+    - source: {{data.templates.get(
+                   'nagvis.ini.php',
+                   'salt://makina-states/files/etc/nagvis/nagvis.ini.php')}}
     - template: jinja
     - makedirs: true
     - user: root
@@ -35,7 +37,9 @@ nagvis-conf:
 nagvis-global-conf:
   file.managed:
     - name: /usr/share/nagvis/share/server/core/defines/global.php
-    - source: salt://makina-states/files/usr/share/nagvis/share/server/core/defines/global.php
+    - source: {{data.templates.get(
+                   'global.php',
+                   'salt://makina-states/files/usr/share/nagvis/share/server/core/defines/global.php')}}
     - template: jinja
     - makedirs: true
     - user: root

@@ -20,7 +20,7 @@
 ; Enable/Disable logging of security related user actions in Nagvis. For
 ; example user logins and logouts are logged in var/nagvis-audit.log
 
-audit_log="1"
+audit_log="{{data.nagvis_ini_php.global.audit_log}}"
 
 ;
 ; Defines the authentication module to use. By default NagVis uses the built-in
@@ -396,7 +396,7 @@ showmapthumbs="0"
 [automap]
 ; Default URL parameters for links to the automap
 
-defaultparams="{{data.nagvis_ini_php.automap.defaultparams}}"
+defaultparams="&childLayers=2"
 
 ; Default root host (NagVis uses this if it can't detect it via backend)
 ; You can configure a hostname here or use "<<<monitoring>>>" as "virtual"
@@ -430,7 +430,7 @@ grid_steps="32"
 [worker]
 ; The interval in seconds in which the worker will check for objects which need
 ; to be updated
-interval="5"
+interval="{{data.nagvis_ini_php.worker.interval}}"
 
 ; The maximum number of parameters used in ajax http requests
 ; Some intrusion detection/prevention systems have a problem with
