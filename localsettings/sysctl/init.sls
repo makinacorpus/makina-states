@@ -19,47 +19,8 @@ sysctl-net.core.somaxconn:
     - require_in:
       - mc_proxy: sysctl-post-hook
 
-sysctl-net-ip_local_port_range:
-  sysctl.present:
-    - name: net.ipv4.ip_local_port_range
-    - value: {{kernel.ip_local_port_range}}
-    - require_in:
-      - mc_proxy: sysctl-post-hook
-
 {% set isTravis = nodetypes_registry.is.travis %}
-{# increase TCP max buffer size settable using setsockopt() #}
-sysctl-net.core.rmem__wmem_max:
-  sysctl.present:
-    - names:
-      - net.core.rmem_max
-      - net.core.wmem_max
-    - value: {{kernel.rwmemmax}}
-    - require_in:
-      - mc_proxy: sysctl-post-hook
-
-{# increase Linux autotuning TCP buffer limit #}
-sysctl-net.ipv4.tcp_rmem:
-  sysctl.present:
-    - names:
-      - net.ipv4.tcp_rmem
-    - value: {{kernel.tcp_rmem}}
-    - require_in:
-      - mc_proxy: sysctl-post-hook
-sysctl-net.ipv4.tcp_wmem:
-  sysctl.present:
-    - names:
-      - net.ipv4.tcp_wmem
-    - value:  {{kernel.tcp_wmem}}
-    - require_in:
-      - mc_proxy: sysctl-post-hook
-
-sysctl-net-congestionprotocol:
-  sysctl.present:
-    - name: net.ipv4.tcp_congestion_control
-    - value: {{kernel.tcp_congestion_control}}
-    - require_in:
-      - mc_proxy: sysctl-post-hook
-
+{% if not (isTravis or isLxc) %}
 {# increase the length of the processor input queue #}
 sysctl-tcp_max_sync_backlog:
   sysctl.present:
@@ -124,22 +85,6 @@ sysctl-net.ipv4.tcp_timestamps:
     - value: {{kernel.tcp_timestamps}}
     - require_in:
       - mc_proxy: sysctl-post-hook
-
-sysctl-net-various:
-  sysctl.present:
-    - names:
-      {# Enable select acknowledgments #}
-      - net.ipv4.tcp_sack
-      - net.ipv4.tcp_fack
-      {# to take advantage of net.ipv4.tcp_max_syn_backlog= tuning #}
-      - net.ipv4.tcp_syncookies
-      {# Turn on window scaling which can be an option to enlarge the transfer window: #}
-      - net.ipv4.tcp_window_scaling
-      - net.ipv4.tcp_moderate_rcvbuf
-    - value: 1
-    - require_in:
-      - mc_proxy: sysctl-post-hook
-{% if not (isTravis or isLxc) %}
 sysctl-net.ipv4.vm.min_free_kbytes:
   sysctl.present:
     - name: vm.min_free_kbytes
@@ -155,6 +100,60 @@ sysctl-vm.swappiness:
     - require_in:
       - mc_proxy: sysctl-post-hook
 
+sysctl-net-ip_local_port_range:
+  sysctl.present:
+    - name: net.ipv4.ip_local_port_range
+    - value: {{kernel.ip_local_port_range}}
+    - require_in:
+      - mc_proxy: sysctl-post-hook
+
+{# increase TCP max buffer size settable using setsockopt() #}
+sysctl-net.core.rmem__wmem_max:
+  sysctl.present:
+    - names:
+      - net.core.rmem_max
+      - net.core.wmem_max
+    - value: {{kernel.rwmemmax}}
+    - require_in:
+      - mc_proxy: sysctl-post-hook
+
+{# increase Linux autotuning TCP buffer limit #}
+sysctl-net.ipv4.tcp_rmem:
+  sysctl.present:
+    - names:
+      - net.ipv4.tcp_rmem
+    - value: {{kernel.tcp_rmem}}
+    - require_in:
+      - mc_proxy: sysctl-post-hook
+sysctl-net.ipv4.tcp_wmem:
+  sysctl.present:
+    - names:
+      - net.ipv4.tcp_wmem
+    - value:  {{kernel.tcp_wmem}}
+    - require_in:
+      - mc_proxy: sysctl-post-hook
+
+sysctl-net-congestionprotocol:
+  sysctl.present:
+    - name: net.ipv4.tcp_congestion_control
+    - value: {{kernel.tcp_congestion_control}}
+    - require_in:
+      - mc_proxy: sysctl-post-hook
+
+sysctl-net-various:
+  sysctl.present:
+    - names:
+      {# Enable select acknowledgments #}
+      - net.ipv4.tcp_sack
+      - net.ipv4.tcp_fack
+      {# to take advantage of net.ipv4.tcp_max_syn_backlog= tuning #}
+      - net.ipv4.tcp_syncookies
+      {# Turn on window scaling which can be an option to enlarge the transfer window: #}
+      - net.ipv4.tcp_window_scaling
+      - net.ipv4.tcp_moderate_rcvbuf
+    - value: 1
+    - require_in:
+      - mc_proxy: sysctl-post-hook
 {% endif %}
 {% endif %}
 # vim: set nofoldenable:
