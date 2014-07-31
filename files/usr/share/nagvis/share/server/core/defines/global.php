@@ -30,7 +30,7 @@
  */
 
 // NagVis Version
-define('CONST_VERSION', '{{data.global_php.CONST_VERSION}}');
+define('CONST_VERSION', '1.7.10');
 
 // Set PHP error handling to standard level
 // Different levels for php versions below 5.1 because PHP 5.1 reports
@@ -54,10 +54,10 @@ set_include_path(
 // Enable/Disable profiling of NagVis using xhprof.  To make use of this the
 // xhprof php module needs to be loaded and the xhprof_lib directory needs
 // to be available in /var/www.
-define('PROFILE', {{data.global_php.PROFILE}});
+define('PROFILE', false);
 
 // enable/disable the debug mode
-define('DEBUG', {{data.global_php.DEBUG}});
+define('DEBUG', false);
 
 /**
  * For desired debug output add these possible values:
@@ -65,10 +65,10 @@ define('DEBUG', {{data.global_php.DEBUG}});
  * 2: progress information in the functions
  * 4: render time
  */
-define('DEBUGLEVEL', {{data.global_php.DEBUGLEVEL}});
+define('DEBUGLEVEL', 6);
 
 // Path to the debug file
-define('DEBUGFILE', '{{data.global_php.DEBUGFILE}}');
+define('DEBUGFILE', '../../../var/nagvis-debug.log');
 
 // It is possible to define a conf.d directory for splitting the main
 // configuration in several files. Only the values defined in the CONST_MAINCFG
@@ -82,57 +82,57 @@ define('DEBUGFILE', '{{data.global_php.DEBUGFILE}}');
 // The last value wins.
 //
 // Path to the main configuration file
-define('CONST_MAINCFG', '{{data.global_php.CONST_MAINCFG}}');
-define('CONST_MAINCFG_CACHE', '{{data.global_php.CONST_MAINCFG_CACHE}}');
+define('CONST_MAINCFG', '/etc/nagvis/nagvis.ini.php');
+define('CONST_MAINCFG_CACHE', '/var/cache/nagvis/nagvis-conf');
 
 // Path to the main configuration conf.d directory
-define('CONST_MAINCFG_DIR', '{{data.global_php.CONST_MAINCFG_DIR}}');
+define('CONST_MAINCFG_DIR', '/etc/nagvis/conf.d');
 
 // The directory below the NagVis root which is shared by the webserver
-define('HTDOCS_DIR', '{{data.global_php.HTDOCS_DIR}}');
+define('HTDOCS_DIR', 'share');
 
 // Needed minimal PHP version
-define('CONST_NEEDED_PHP_VERSION', '{{data.global_php.CONST_NEEDED_PHP_VERSION}}');
+define('CONST_NEEDED_PHP_VERSION', '5.0');
 
 // NagVis session name
-define('SESSION_NAME', '{{data.global_php.SESSION_NAME}}');
+define('SESSION_NAME', 'nagvis_session');
 
 // Other basic constants
-define('REQUIRES_AUTHORISATION', {{data.global_php.REQUIRES_AUTHORISATION}});
-define('GET_STATE', {{data.global_php.GET_STATE}});
-define('GET_PHYSICAL_PATH', {{data.global_php.GET_PHYSICAL_PATH}});
-define('DONT_GET_OBJECT_STATE', {{data.global_php.DONT_GET_OBJECT_STATE}});
-define('DONT_GET_SINGLE_MEMBER_STATES', {{data.global_php.DONT_GET_SINGLE_MEMBER_STATES}});
-define('GET_SINGLE_MEMBER_STATES', {{data.global_php.GET_SINGLE_MEMBER_STATES}});
-define('HANDLE_USERCFG', {{data.global_php.HANDLE_USERCFG}});
-define('ONLY_USERCFG', {{data.global_php.ONLY_USERCFG}});
+define('REQUIRES_AUTHORISATION', true);
+define('GET_STATE', true});
+define('GET_PHYSICAL_PATH', false);
+define('DONT_GET_OBJECT_STATE', false);
+define('DONT_GET_SINGLE_MEMBER_STATES', false);
+define('GET_SINGLE_MEMBER_STATES', true);
+define('HANDLE_USERCFG', true);
+define('ONLY_USERCFG', true);
 
-define('ONLY_STATE', {{data.global_php.ONLY_STATE}});
-define('COMPLETE', {{data.global_php.COMPLETE}});
+define('ONLY_STATE', true);
+define('COMPLETE', false);
 
-define('IS_VIEW', {{data.global_php.IS_VIEW}});
-define('ONLY_GLOBAL', {{data.global_php.ONLY_GLOBAL}});
-define('GET_CHILDS', {{data.global_php.GET_CHILDS}});
-define('SET_KEYS', {{data.global_php.SET_KEYS}});
-define('SUMMARY_STATE', {{data.global_php.SUMMARY_STATE}});
-define('COUNT_QUERY', {{data.global_php.COUNT_QUERY}});
-define('MEMBER_QUERY', {{data.global_php.MEMBER_QUERY}});
-define('HOST_QUERY', {{data.global_php.HOST_QUERY}});
+define('IS_VIEW', true);
+define('ONLY_GLOBAL', true);
+define('GET_CHILDS', true);
+define('SET_KEYS', true);
+define('SUMMARY_STATE', true);
+define('COUNT_QUERY', true);
+define('MEMBER_QUERY', true);
+define('HOST_QUERY', true);
 
 // Maximum length for usernames/passwords
-define('AUTH_MAX_PASSWORD_LENGTH', {{data.global_php.AUTH_MAX_PASSWORD_LENGTH}});
-define('AUTH_MAX_USERNAME_LENGTH', {{data.global_php.AUTH_MAX_USERNAME_LENGTH}});
-define('AUTH_MAX_ROLENAME_LENGTH', {{data.global_php.AUTH_MAX_ROLENAME_LENGTH}});
+define('AUTH_MAX_PASSWORD_LENGTH', 30);
+define('AUTH_MAX_USERNAME_LENGTH', 30);
+define('AUTH_MAX_ROLENAME_LENGTH', 30);
 
 // Permission wildcard
-define('AUTH_PERMISSION_WILDCARD', '{{data.global_php.AUTH_PERMISSION_WILDCARD}}');
+define('AUTH_PERMISSION_WILDCARD', '*');
 
 // This is being used when logging in using LogonEnv for trusting the given user
-define('AUTH_TRUST_USERNAME', {{data.global_php.AUTH_TRUST_USERNAME}});
-define('AUTH_NOT_TRUST_USERNAME', {{data.global_php.AUTH_NOT_TRUST_USERNAME}});
+define('AUTH_TRUST_USERNAME', true);
+define('AUTH_NOT_TRUST_USERNAME', false);
 
 // Salt for the password hashes
-// Note: If you change this you will need to rehash all saved 
+// Note: If you change this you will need to rehash all saved
 //       password hashes
 define('AUTH_PASSWORD_SALT', '{{data.global_php.AUTH_PASSWORD_SALT}}');
 ?>
