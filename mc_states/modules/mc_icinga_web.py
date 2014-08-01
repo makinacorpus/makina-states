@@ -403,6 +403,11 @@ def settings():
                 'templates': {},
                 'has_jasper': False,
         })
+        data['nginx']['icinga_web']['fastcgi_pass'] = (
+            "unix:/var/spool/www/{0}.fpm.sock".format(
+                data['nginx']['domain'].replace('.', '_')
+            )
+        )
         __salt__['mc_macros.update_local_registry'](
             'icinga_web', icinga_web_reg,
             registry_format='pack')

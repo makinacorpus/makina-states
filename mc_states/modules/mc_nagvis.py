@@ -313,6 +313,11 @@ def settings():
                 },
                 'templates': {},
                 })
+        data['nginx']['navgis']['fastcgi_pass'] = (
+            "unix:/var/spool/www/{0}.fpm.sock".format(
+                data['nginx']['domain'].replace('.', '_')
+            )
+        )
 
         __salt__['mc_macros.update_local_registry'](
             'nagvis', nagvis_reg,
