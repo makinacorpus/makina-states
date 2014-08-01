@@ -365,6 +365,14 @@ def settings():
                         digestmod=hashlib.sha256).hexdigest(),
                     'salt': root_account['salt'],
                 },
+                'ldap_auth': {
+                    'url': '',  # ldap://
+                    'binddn': '',
+                    'bindpw': '',
+                    'filter_user': '',
+                    'base_dn': '',
+                    'tls': False,
+                },
                 'databases': {'ido2db': ido2db_database,
                               'web': web_database},
                 'nginx': {
