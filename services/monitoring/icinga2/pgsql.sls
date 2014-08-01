@@ -18,6 +18,14 @@ include:
   - makina-states.services.db.postgresql.hooks
   {% endif %}
 
+icinga2-cli-pkgs:
+  pkg.installed:
+    - pkgs: [postgresql-client]
+    - watch:
+      - mc_proxy: makina-postgresql-post-base
+    - watch_in:
+      - mc_proxy: icinga2-pre-install
+
 {% if data.create_pgsql %}
 # create database
 {{ pgsql.postgresql_db(db=data.modules.ido2db.database.name) }}
@@ -29,6 +37,20 @@ include:
 
 {% endif %}
 
+{% if 'socket' in data.databases.web %}
+{% set uri = "postgresql://{0}:{1}@[{2}]/{3}".format(
+  data.modules.ido2db.database.user,
+  data.modules.ido2db.database.password,
+  data.modules.ido2db.database.socket,
+  data.modules.ido2db.database.name) %}
+{% else %}
+{% set uri = "postgresql://{0}:{1}@{2}:{3}/{4}".format(
+  data.modules.ido2db.database.user,
+  data.modules.ido2db.database.password,
+  data.modules.ido2db.database.host,
+  data.modules.ido2db.database.port,
+  data.modules.ido2db.database.name) %}
+{% endif %}
 # import schema
 {% set tmpf = '/tmp/icinga2-ido.schema.sql' %}
 icinga2-import-pgsql-schema:
@@ -44,17 +66,10 @@ icinga2-import-pgsql-schema:
       data: |
             {{sdata}}
   cmd.run:
-    {% if 'socket' in data.modules.ido2db.database %}
-    - name: psql "postgresql://{{data.modules.ido2db.database.user}}:{{data.modules.ido2db.database.password}}@[{{data.modules.ido2db.database.socket}}]/{{data.modules.ido2db.database.name}}" -f "{{tmpf}}"
-    {% else %}
-    - name: psql "postgresql://{{data.modules.ido2db.database.user}}:{{data.modules.ido2db.database.password}}@{{data.modules.ido2db.database.host}}:{{data.modules.ido2db.database.port}}/{{data.modules.ido2db.database.name}}" -f "{{tmpf}}"
-    {% endif %}
-    {% if 'socket' in data.modules.ido2db.database %}
-    - unless: echo "select * from icinga_commands;" | psql "postgresql://{{data.modules.ido2db.database.user}}:{{data.modules.ido2db.database.password}}@[{{data.modules.ido2db.database.socket}}]/{{data.modules.ido2db.database.name}}"
-    {% else %}
-    - unless: echo "select * from icinga_commands;" | psql "postgresql://{{data.modules.ido2db.database.user}}:{{data.modules.ido2db.database.password}}@{{data.modules.ido2db.database.host}}:{{data.modules.ido2db.database.port}}/{{data.modules.ido2db.database.name}}"
-    {% endif %}
+    - name: psql "{{uri}}" -f "{{tmpf}}"
+    - unless: echo "select * from icinga_commands;" | psql "{{uri}}"
     - watch:
+      - pkg: icinga2-cli-pkgs
       - file: icinga2-import-pgsql-schema
       - mc_proxy: makina-postgresql-post-base
     - watch_in:
