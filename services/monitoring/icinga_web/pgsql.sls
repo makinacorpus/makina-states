@@ -64,7 +64,7 @@ icinga_web-import-pgsql-schema:
             {{sdata}}
   cmd.run:
     - name: psql "{{uri}}" -f "{{tmpf}}"
-    - unless: echo "select * from icinga_commands;" | psql "{{uri}}"
+    - unless: echo "select * from nsm_log;" | psql "{{uri}}" --set ON_ERROR_STOP=1
     - watch:
       - pkg: icinga2-web-cli-pkgs
       - file: icinga_web-import-pgsql-schema
