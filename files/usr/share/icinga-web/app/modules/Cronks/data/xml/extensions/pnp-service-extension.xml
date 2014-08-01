@@ -16,7 +16,7 @@
                                         <parameter name="click">Cronk.grid.handler.URL.open</parameter>
                                     </parameter>
                                     <parameter name="handlerArguments">
-                                        <parameter name="url"><![CDATA[http://{{data.pnpfornagios_url}}/pnp4nagios/index.php/graph?host={host_name}&srv={service_name}]]></parameter>
+                                        <parameter name="url"><![CDATA[http://{{data.modules.pnp4nagios.pnpfornagios_url}}/pnp4nagios/index.php/graph?host={host_name}&srv={service_name}]]></parameter>
                                         <parameter name="cronkTitle">Chart for {host_name}/{service_name}</parameter>
                                         <parameter name="activateOnClick">true</parameter>
                                     </parameter>
@@ -47,7 +47,7 @@
                                         <parameter name="click">Cronk.grid.handler.URL.imagePanel</parameter>
                                     </parameter>
                                     <parameter name="handlerArguments">
-                                        <parameter name="src"><![CDATA[http://{{data.pnpfornagios_url}}/pnp4nagios/index.php/image?host={host_name}&srv={service_name}&view=0]]></parameter>
+                                        <parameter name="src"><![CDATA[http://{{data.modules.pnp4nagios.pnpfornagios_url}}/pnp4nagios/index.php/image?host={host_name}&srv={service_name}&view=0]]></parameter>
                                         <parameter name="iconCls">icinga-icon-image-arrow</parameter>
                                         <parameter name="width">400</parameter>
                                         <parameter name="title">Servicegraph for {service_name}</parameter>

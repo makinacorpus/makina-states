@@ -7,6 +7,7 @@ burp-cron-cmd:
     - mode: 755
     - contents: |
                 #!/usr/bin/env bash
+                . /etc/profile
                 LOG="/var/log/burpcron.log"
                 lock="${0}.lock"
                 if [ -e "${lock}" ];then
@@ -31,7 +32,7 @@ burp-cron:
     - contents: |
                 #!/usr/bin/env bash
                 MAILTO="{{data.admins}}"
-                {{data.cron_periodicity}} root "/usr/bin/burp-cron.sh"
+                {{data.cron_periodicity}} root su -c "/usr/bin/burp-cron.sh"
     - user: root
     - makedirs: true
     - use_vt: true

@@ -1764,10 +1764,10 @@ def get_supervision_pnp_conf(id_, ttl=60):
     return memoize_cache(_do_ms_var, [id_], {}, cache_key, ttl)
 
 
-def get_supervision_navgis_conf(id_, ttl=60):
+def get_supervision_nagvis_conf(id_, ttl=60):
     def _do_ms_var(id_):
-        return get_supervision_conf_kind(id_, 'nagis')
-    cache_key = 'mc_pillar.get_supervision_navgis_conf{0}'.format(id_)
+        return get_supervision_conf_kind(id_, 'nagvis')
+    cache_key = 'mc_pillar.get_supervision_nagvis_conf{0}'.format(id_)
     return memoize_cache(_do_ms_var, [id_], {}, cache_key, ttl)
 
 

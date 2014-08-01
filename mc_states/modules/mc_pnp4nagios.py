@@ -65,6 +65,7 @@ def settings():
                     message displayed for digest authentication
                 htpasswd_file
                     location of file storing users password
+                    or url for ldap authent
                 htdoc_dir
                     root location for web_directory
 
@@ -135,7 +136,7 @@ def settings():
                         'fastcgi_pass': ("unix:/var/spool/www/"
                                          "pnp4nagios_localhost.fpm.sock"),
                         'realm': "Authentication",
-                        'htpasswd_file': "/etc/icinga/htpasswd.users",
+                        'htpasswd_file': "/etc/icinga2/htpasswd.users",
                         'htdocs_dir': "/usr/share/icinga/htdocs/",
                     },
                 },
@@ -185,8 +186,8 @@ def settings():
                         'pdf_margin_top': 30,
                         'pdf_margin_left': 17.5,
                         'pdf_margin_right': 10,
-                        'graph_opt': "",
                         'pdf_graph_opt': "",
+                        'graph_opt': "",
                         'rrdbase': "/var/lib/pnp4nagios/perfdata/",
                         'page_dir': "/etc/pnp4nagios/pages/",
                         'refresh': 90,
@@ -205,23 +206,13 @@ def settings():
                         'allowed_for_host_search': "EVERYONE",
                         'allowed_for_host_overview': "EVERYONE",
                         'allowed_for_pages': "EVERYONE",
-                        'overview_range': 1,
                         'popup_width': "300px",
                         'ui_theme': 'smoothness',
                         'lang': "en_US",
-                        'date_fmt': "d.m.y G:i",
-                        'enable_recursive_template_search': 1,
-                        'show_xml_icon': 1,
-                        'use_fpdf': 1,
-                        'background_pdf': "/etc/pnp4nagios/background.pdf",
-                        'use_calendar': 1,
                         'RRD_DAEMON_OPTS': "",
                         'template_dirs': [
                             "/etc/pnp4nagios/templates",
                             "/usr/share/pnp4nagios/html/templates.dist"],
-                        'special_template_dir': (
-                            "/etc/pnp4nagios/templates.special"),
-                        'mobile_device': "iPhone|iPod|iPad|android",
                     },
                     'views': {
                         '4 Hours': {

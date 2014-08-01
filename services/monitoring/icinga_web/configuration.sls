@@ -46,8 +46,8 @@ icinga_web-{{file}}-conf:
     - watch_in:
       - mc_proxy: icinga_web-post-conf
     - defaults:
-      data: |
-            {{sdata}}
+        data: |
+              {{sdata}}
 {% endfor %}
 
 # sometimes, the password in /usr/share/icinga-web/config/databases.xml is not updated
@@ -122,7 +122,7 @@ icinga_web-module-pnp4nagios-template-{{name}}-conf:
     - watch_in:
       - mc_proxy: icinga_web-post-conf
     - defaults:
-      data: |
-            {{ salt['mc_utils.json_dump'](template) }}
+        data: |
+              {{ salt['mc_utils.json_dump'](data) }}
 {% endfor %}
 {% endif %}

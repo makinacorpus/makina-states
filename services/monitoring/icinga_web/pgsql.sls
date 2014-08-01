@@ -9,12 +9,21 @@
 include:
 
   # install postgresql
-  {% if data.has_pgsql %}
+  {% if data.has_pgsql and data.create_pgsql %}
   - makina-states.services.db.postgresql
   {% else %}
   - makina-states.services.db.postgresql.hooks
   {% endif %}
 
+icinga2-web-cli-pkgs:
+  pkg.installed:
+    - pkgs: [postgresql-client]
+    - watch:
+      - mc_proxy: makina-postgresql-post-base
+    - watch_in:
+       - mc_proxy: icinga_web-pre-install
+
+{% if data.create_pgsql %}
 # create database
 {{ pgsql.postgresql_db(db=data.databases.web.name) }}
 
@@ -23,8 +32,24 @@ include:
                          password=data.databases.web.password,
                          db=data.databases.web.name) }}
 
+{% endif %}
+
 # import schema
 {% set tmpf = '/tmp/icinga-web.schema.sql' %}
+{% if 'socket' in data.databases.web %}
+{% set uri = "postgresql://{0}:{1}@[{2}]/{3}".format(
+  data.databases.web.user,
+  data.databases.web.password,
+  data.databases.web.socket,
+  data.databases.web.name) %}
+{% else %}
+{% set uri = "postgresql://{0}:{1}@{2}:{3}/{4}".format(
+  data.databases.web.user,
+  data.databases.web.password,
+  data.databases.web.host,
+  data.databases.web.port,
+  data.databases.web.name) %}
+{% endif %}
 icinga_web-import-pgsql-schema:
   file.managed:
     - name: {{tmpf}}
@@ -38,63 +63,17 @@ icinga_web-import-pgsql-schema:
       data: |
             {{sdata}}
   cmd.run:
-    {% if 'socket' in data.databases.web %}
-    - name: psql "postgresql://{{data.databases.web.user}}:{{data.databases.web.password}}@[{{data.databases.web.socket}}]/{{data.databases.web.name}}" -f "{{tmpf}}"
-    {% else %}
-    - name: psql "postgresql://{{data.databases.web.user}}:{{data.databases.web.password}}@{{data.databases.web.host}}:{{data.databases.web.port}}/{{data.databases.web.name}}" -f "{{tmpf}}"
-    {% endif %}
+    - name: psql "{{uri}}" -f "{{tmpf}}"
+    - unless: echo "select * from icinga_commands;" | psql "{{uri}}"
     - watch:
+      - pkg: icinga2-web-cli-pkgs
       - file: icinga_web-import-pgsql-schema
       - mc_proxy: makina-postgresql-post-base
     - watch_in:
       - mc_proxy: icinga_web-pre-install
 
-# check schema importation
-{% set tmpf = '/tmp/icinga-web.check.sql' %}
-icinga_web-check-pgsql-schema:
-  file.managed:
-    - name: {{tmpf}}
-    - source: ''
-    - template: jinja
-    - makedirs: true
-    - user: root
-    - group: root
-    - mode: 755
-    - contents: |
-                #!/bin/bash
-                sql_queries=(
-                 "select 16=count(*) as ok from information_schema.tables where table_schema='public'"
-                 "select 96=count(*) as ok from information_schema.table_constraints"
-                 "select 28=count(*) as ok from pg_index as idx
-                  join pg_class as i on i.oid = idx.indexrelid
-                  join pg_namespace as ns on ns.oid = i.relnamespace and ns.nspname = any(current_schemas(false))"
-                )
-                for query in "${sql_queries[@]}"; do
-                 {% if 'socket' in data.databases.web %}
-                  res="$(echo "select row_to_json(row) from ($query) row;" | psql -t "postgresql://{{data.databases.web.user}}:{{data.databases.web.password}}@[{{data.databases.web.socket}}]/{{data.databases.web.name}}" | jq .ok)"
-                 {% else %}
-                  res="$(echo "select row_to_json(row) from ($query) row;" | psql -t "postgresql://{{data.databases.web.user}}:{{data.databases.web.password}}@{{data.databases.web.host}}:{{data.databases.web.port}}/{{data.databases.web.name}}" | jq .ok)"
-                 {% endif %}
-                 if [ "true" != "$res" ]; then
-                  echo "Error with query \"$query;\"";
-                  rm "{{tmpf}}";
-                  exit 1;
-                fi
-                done;
-                echo "OK";
-                rm {{tmpf}};
-                exit 0;
-
-  cmd.run:
-    - name: {{tmpf}}
-    - watch:
-       - cmd: icinga_web-import-pgsql-schema
-       - file: icinga_web-check-pgsql-schema
-    - watch_in:
-       - mc_proxy: icinga_web-pre-install
-
 # delete logs in the database
-# TODO: it is not a good idea but doctrine compilation reset serial when 
+# TODO: it is not a good idea but doctrine compilation reset serial when
 # configuration change that produces "duplicate primary key in nsm_log"
 {% set tmpf = '/tmp/icinga-web.clearlogs.sql' %}
 icinga_web-clear-dblogs:
@@ -108,26 +87,18 @@ icinga_web-clear-dblogs:
     - mode: 755
     - contents: |
                 #!/bin/bash
-                sql_queries=(
-                 'delete from nsm_log'
-                )
+                sql_queries=('delete from nsm_log')
                 for query in "${sql_queries[@]}"; do
-                 {% if 'socket' in data.databases.web %}
-                  res="$(echo "$query;" | psql -t "postgresql://{{data.databases.web.user}}:{{data.databases.web.password}}@[{{data.databases.web.socket}}]/{{data.databases.web.name}}")"
-                 {% else %}
-                  res="$(echo "$query;" | psql -t "postgresql://{{data.databases.web.user}}:{{data.databases.web.password}}@{{data.databases.web.host}}:{{data.databases.web.port}}/{{data.databases.web.name}}")"
-                 {% endif %}
+                  res="$(echo "$query;" | psql -t "{{uri}}")"
                 done;
                 rm {{tmpf}};
                 exit 0;
-
   cmd.run:
     - name: {{tmpf}}
     - watch:
-       - cmd: icinga_web-check-pgsql-schema
-       - file: icinga_web-clear-dblogs
+      - pkg: icinga2-web-cli-pkgs
+      - cmd: icinga_web-import-pgsql-schema
+      - file: icinga_web-clear-dblogs
     - watch_in:
-       - mc_proxy: icinga_web-pre-install
-
-
+      - mc_proxy: icinga_web-pre-install
 {% endif %}

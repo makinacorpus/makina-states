@@ -68,27 +68,6 @@ pnp4nagios-rraconf:
             {{sdata}}
 
 # startup configuration
-{% if grains['os'] in ['Ubuntu'] %}
-{#
-pnp4nagios-npcd-init-upstart-conf:
-  file.managed:
-    - name: {{ locs['conf_dir'] }}/init/npcd.conf
-    - source: salt://makina-states/files/etc/init/npcd.conf
-    - template: jinja
-    - makedirs: true
-    - user: root
-    - group: root
-    - mode: 644
-    - watch:
-      - mc_proxy: pnp4nagios-pre-conf
-    - watch_in:
-      - mc_proxy: pnp4nagios-post-conf
-    - defaults:
-      data: |
-            {{sdata}}
-#}
-{% endif %}
-
 pnp4nagios-npcd-init-default-conf:
   file.managed:
     - name: {{ locs['conf_dir'] }}/default/npcd
