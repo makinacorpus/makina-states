@@ -288,6 +288,8 @@ def settings():
             'name': "icinga_web",
         }
 
+        for data in [ido2db_database, web_database]:
+            data.setdefault('prefix', '')
         root_account = {
             'password': password_web_root_account,
             'salt': isalt,
@@ -330,6 +332,7 @@ def settings():
             'makina-states.services.monitoring.icinga_web', {
                 'package': ['icinga-web'],
                 'configuration_directory': locs['conf_dir']+"/icinga-web",
+                'create_pgsql': True,
                 'has_pgsql': ('pgsql' == web_database['type']
                               and has_sgbd),
                 'has_mysql': ('mysql' == web_database['type']
@@ -374,6 +377,7 @@ def settings():
                         "salt://makina-states/files/etc/"
                         "nginx/sites-available/icinga-web.top.conf"),
                     'icinga_web': {
+                        'htpasswd_file': '/etc/icinga2/htpasswd.users',
                         'web_directory': "/icinga-web",
                         'images_dir': ("/usr/share/icinga-web/app"
                                        "/modules/$1/pub/images/$2"),
