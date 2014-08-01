@@ -330,7 +330,7 @@ def settings():
         }
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.monitoring.icinga_web', {
-                'package': ['icinga-web'],
+                'package': ['icinga-web', 'php5-ldap'],
                 'configuration_directory': locs['conf_dir']+"/icinga-web",
                 'create_pgsql': True,
                 'has_pgsql': ('pgsql' == web_database['type']
