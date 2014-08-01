@@ -123,8 +123,6 @@ def default_settings():
       The default master to link to into salt cloud profile
     master_port
       The default master port to link to into salt cloud profile
-    mode
-      (salt or mastersal (default)t)
     pvdir
       salt cloud providers directory
     pfdir
@@ -133,8 +131,6 @@ def default_settings():
       bootsalt branch to use (default: master or prod if prod)
     bootsalt_args
       makina-states bootsalt args in salt mode
-    bootsalt_mastersalt_args
-      makina-states bootsalt args in mastersalt mode
     keep_tmp
       keep tmp files
     ssh_gateway (all the gw params are opt.)
@@ -161,17 +157,17 @@ def default_settings():
             is this minion a cloud operating vm
 
     '''
-    root = '/srv/mastersalt'
-    prefix = '/etc/mastersalt'
+    msr = __salt__['mc_locations.msr']()
+    pr = __salt__['mc_locations.first_pillar_root']()
+    root = msr
+    prefix = os.path.join(msr, 'etc/salt')
     try:
         id_ = __grains__['id']
     except (TypeError, KeyError):
         id_ = __opts__['id']
     data = {
         'root': root,
-        'all_pillar_dir': (
-            '/srv/mastersalt-pillar/cloud-controller'
-        ),
+        'all_pillar_dir': pr + '/cloud-controller',
         'ssl': {
             'cert_days': 365*1000,
             'ca': {
@@ -200,16 +196,10 @@ def default_settings():
         'ssl_dir': '{all_sls_dir}/ssl',
         'ssl_pillar_dir': '{all_pillar_dir}/ssl',
         'prefix': prefix,
-        'mode': 'mastersalt',
-        'script': ('/srv/mastersalt/makina-states/'
-                   '_scripts/boot-salt.sh'),
+        'script': msr+'/_scripts/boot-salt.sh',
         'bootstrap_shell': 'bash',
-        'bootsalt_args': '-C --reattach -no-M',
-        'bootsalt_mastersalt_args': (
-            '-C --reattach --mastersalt-minion'),
-        'bootsalt_branch': None,
-        'master_port': __opts__.get('master_port'),
-
+        'bootsalt_args': '-C --no-colors',
+        'bootsalt_branch': 'v2',
         'pvdir': prefix + "/cloud.providers.d",
         'pfdir': prefix + "/cloud.profiles.d",
         # states registry settings
@@ -230,21 +220,18 @@ def default_settings():
 def extpillar_settings(id_=None, ttl=PILLAR_TTL, *args, **kw):
     '''
     return the cloud global configuation
-    opts['id'] should resolve to mastersalt
     '''
     def _do(id_=None, limited=False):
         _s = __salt__
         _o = __opts__
         if id_ is None:
-            id_ = _s['mc_pillar.mastersalt_minion_id']()
+            id_ = _s['mc_pillar.minion_id']()
         conf = _s['mc_pillar.get_configuration'](
-            _s['mc_pillar.mastersalt_minion_id']())
+            _s['mc_pillar.minion_id']())
         extdata = _s['mc_pillar.get_global_clouf_conf']('cloud')
-        mid = _s['mc_pillar.mastersalt_minion_id']()
+        mid = _s['mc_pillar.minion_id']()
         default_env = _s['mc_env.ext_pillar'](id_).get('env', '')
         default_port = 4506
-        if 'mastersalt' in _o['config_dir']:
-            default_port = 4606
         data = _s['mc_utils.dictupdate'](
             _s['mc_utils.dictupdate'](
                 default_settings(), {
@@ -303,7 +290,7 @@ def is_a_controller(id_=None, ttl=PILLAR_TTL):
         _s = __salt__
         conf = _s['mc_pillar.get_configuration'](id_)
         if (
-            (_s['mc_pillar.mastersalt_minion_id']() == id_)
+            (_s['mc_pillar.minion_id']() == id_)
             or conf.get('cloud_master', False)
         ):
             return True
@@ -563,7 +550,7 @@ def ext_pillar(id_, prefixed=True, ttl=PILLAR_TTL, *args, **kw):
 
         This can be accessed client side via mc_cloud.settings/expositions
 
-            mastersalt-call mc_cloud.settings -> expositions / vms or cns
+            salt-call mc_cloud.settings -> expositions / vms or cns
 
 
     '''
@@ -571,7 +558,7 @@ def ext_pillar(id_, prefixed=True, ttl=PILLAR_TTL, *args, **kw):
         data = {}
         _s = __salt__
         # run that to aliment the cache
-        _s['mc_pillar.mastersalt_minion_id']()
+        _s['mc_pillar.minion_id']()
         extdata = extpillar_settings(id_, limited=limited)
         vms = _s['mc_cloud_compute_node.get_vms']()
         targets = _s['mc_cloud_compute_node.get_targets']()
@@ -640,27 +627,8 @@ On node side, after ext pillar is loaded
 
 def is_(typ, ttl=120):
     def do(typ):
-        in_mastersalt = __salt__['mc_controllers.mastersalt_mode']()
-        def _fdo(typ, ttl):
-            gr = 'makina-states.cloud.is.{0}'.format(typ)
-            try:
-                return __salt__[
-                    'mc_remote.local_mastersalt_call'
-                ]('mc_utils.get', gr, ttl=ttl)
-            except mc_states.saltapi.MastersaltNotRunning:
-                log.debug('mc_cloud.is_: Mastersalt not running')
-                return {'result': False}
-            except mc_states.saltapi.MastersaltNotInstalled:
-                log.debug('mc_cloud.is_: Mastersalt not installed')
-                return {'result': False}
-        days15 = 15*24*60*60
-        if in_mastersalt:
-            days15 = 0
-        # if we are a 'kind', (result: True), cache it way longer
-        ret = _fdo(typ, days15)['result']
-        # in other case, retry in case of vm and  without using cache
-        if (typ in ['vm']) and not ret:
-            ret = _fdo(typ, 0)['result']
+        gr = 'makina-states.cloud.is.{0}'.format(typ)
+        ret = __salt__['mc_utils.get'](gr, False)
         return ret
     cache_key = '{0}.{1}.{2}'.format(__name, 'is_', typ)
     return __salt__['mc_utils.memoize_cache'](do, [typ], {}, cache_key, ttl)
@@ -696,15 +664,8 @@ def settings(ttl=60):
         _o = __opts__
         ct_registry = _s['mc_controllers.registry']()
         salt_settings = _s['mc_salt.settings']()
-        if (
-            ct_registry['is']['mastersalt']
-            or _s['mc_cloud.is_controller']()
-        ):
-            root = salt_settings['msaltRoot']
-            prefix = salt_settings['mconfPrefix']
-        else:
-            root = salt_settings['saltRoot']
-            prefix = salt_settings['confPrefix']
+        root = salt_settings['salt_root']
+        prefix = __opts__['config_dir']
         #    fic.write(pformat(__opts__))
         data = _s['mc_utils.defaults'](
             'makina-states.cloud',
@@ -717,7 +678,7 @@ def settings(ttl=60):
                             _o['pillar_roots']['base'][0],
                             'cloud-controller')),
                     'ssl': {'ca': {'ca_name': _s[
-                        'mc_pillar.mastersalt_minion_id']()}},
+                        'mc_pillar.minion_id']()}},
                     'prefix': prefix,
                     'pvdir': prefix + "/cloud.providers.d",
                     'pfdir': prefix + "/cloud.profiles.d",
@@ -727,13 +688,6 @@ def settings(ttl=60):
                 'prod': 'v2',
                 'preprod': 'v2',
             }.get(_s['mc_env.settings']()['default_env'], None)
-        if not data['bootsalt_branch']:
-            if data['mode'] == 'mastersalt':
-                k = 'mastersaltCommonData'
-            else:
-                k = 'saltCommonData'
-            data['bootsalt_branch'] = salt_settings[k][
-                'confRepos']['makina-states']['rev']
         if not data['bootsalt_branch']:
             data['bootsalt_branch'] = 'master'
         return data
@@ -761,8 +715,6 @@ def get_cloud_settings():
     if from_extpillar:
         reg = _s['mc_controllers.registry']()
         if (
-            reg['is']['salt_master'] or
-            reg['is']['salt_minion'] or
             not _s['mc_pillar.has_db']()
         ):
             from_extpillar = False

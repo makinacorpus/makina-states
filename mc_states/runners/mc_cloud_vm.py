@@ -91,7 +91,7 @@ def vm_initial_highstate(vm, ret=None, output=True):
 
     ::
 
-        mastersalt-run -lall mc_cloud_vm.vm_initial_highstate foo.domain.tld
+        salt-run -lall mc_cloud_vm.vm_initial_highstate foo.domain.tld
     '''
     _s = __salt__
     vm_data = _s['mc_api.get_vm'](vm)
@@ -139,7 +139,7 @@ def vm_preprovision(vm, ret=None, output=True):
 
     ::
 
-        mastersalt-run -lall mc_cloud_vm.vm_preprovision foo.domain.tld
+        salt-run -lall mc_cloud_vm.vm_preprovision foo.domain.tld
     '''
     return vm_configure('preprovision', vm, ret, output)
 
@@ -155,7 +155,7 @@ def vm_sshkeys(vm, ret=None, output=True):
 
      ::
 
-        mastersalt-run -lall mc_cloud_vm.vm_sshkeys foo.domain.tld
+        salt-run -lall mc_cloud_vm.vm_sshkeys foo.domain.tld
 
     '''
     return vm_configure('sshkeys', vm, ret, output)
@@ -170,7 +170,7 @@ def vm_ping(vm, ret=None, output=True):
 
     ::
 
-        mastersalt-run -lall mc_cloud_vm.vm_ping foo.domain.tld
+        salt-run -lall mc_cloud_vm.vm_ping foo.domain.tld
 
     '''
     fname = 'mc_cloud_vm.provision.ping'
@@ -268,7 +268,7 @@ def provision(vm, steps=None, ret=None, output=True):
 
     ::
 
-        mastersalt-run -lall mc_cloud_vm.provision foo.domain.tld
+        salt-run -lall mc_cloud_vm.provision foo.domain.tld
 
     '''
     fname = 'mc_cloud_vm.provision'
@@ -323,7 +323,7 @@ def post_provision(vm, ret=None, output=True):
 
     ::
 
-        mastersalt-run -lall mc_cloud_vm.post_provision foo.domain.tld
+        salt-run -lall mc_cloud_vm.post_provision foo.domain.tld
     '''
     fname = 'mc_cloud_vm.post_provision'
     _s = __salt__
@@ -374,12 +374,12 @@ def provision_vms(compute_node=None,
 
     ::
 
-        mastersalt-run -lall mc_cloud_vm.provision_vms host1.domain.tld
-        mastersalt-run -lall mc_cloud_vm.provision_vms \
+        salt-run -lall mc_cloud_vm.provision_vms host1.domain.tld
+        salt-run -lall mc_cloud_vm.provision_vms \
                 host1.domain.tld only=['foo.domain.tld']
-        mastersalt-run -lall mc_cloud_vm.provision_vms \
+        salt-run -lall mc_cloud_vm.provision_vms \
                 only=['foo.domain.tld']
-        mastersalt-run -lall mc_cloud_vm.provision_vms \
+        salt-run -lall mc_cloud_vm.provision_vms \
                 host1.domain.tld skip=['foo2.domain.tld']
 
     '''
@@ -462,10 +462,10 @@ def post_provision_vms(cn,
 
     ::
 
-        mastersalt-run -lall mc_cloud_vm.post_provision_vms host1.domain.tld
-        mastersalt-run -lall mc_cloud_vm.post_provision_vms \
+        salt-run -lall mc_cloud_vm.post_provision_vms host1.domain.tld
+        salt-run -lall mc_cloud_vm.post_provision_vms \
                 host1.domain.tld only=['foo.domain.tld']
-        mastersalt-run -lall mc_cloud_vm.post_provision_vms \
+        salt-run -lall mc_cloud_vm.post_provision_vms \
                 host1.domain.tld skip=['foo2.domain.tld']
 
     '''
@@ -536,9 +536,9 @@ def orchestrate(compute_node=None,
 
     ::
 
-        mastersalt-run mc_cloud_vm.orchestrate t.dom.fr
-        mastersalt-run mc_cloud_vm.orchestrate t.dom.fr only=['foo.domain.tld']
-        mastersalt-run mc_cloud_vm.orchestrate t.dom.fr skip=['foo.domain.tld']
+        salt-run mc_cloud_vm.orchestrate t.dom.fr
+        salt-run mc_cloud_vm.orchestrate t.dom.fr only=['foo.domain.tld']
+        salt-run mc_cloud_vm.orchestrate t.dom.fr skip=['foo.domain.tld']
 
     '''
     fname = 'mc_cloud_vm.orchestrate'

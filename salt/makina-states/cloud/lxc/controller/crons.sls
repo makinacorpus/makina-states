@@ -4,7 +4,7 @@ remove-syncron-lxc-ms:
   cron.absent:
     - minute: {{settings.lxc.cron_minute}}
     - hour: {{settings.lxc.cron_hour}}
-    - name: /usr/bin/mastersalt-run -linfo mc_lxc.sync_images > /dev/null
+    - name: /usr/bin/salt-run -linfo mc_lxc.sync_images > /dev/null
     - identifier: ms lxc image synchronniser
 
 syncron-lxc-ms:
@@ -14,5 +14,5 @@ syncron-lxc-ms:
     - user: root
     - group: root
     - contents: |
-                {{settings.lxc.cron_minute}} {{settings.lxc.cron_hour}} * * * /usr/bin/mastersalt-run -linfo mc_lxc.sync_images > /dev/null
+                {{settings.lxc.cron_minute}} {{settings.lxc.cron_hour}} * * * /usr/bin/salt-run -linfo mc_lxc.sync_images > /dev/null
 {% endif %}

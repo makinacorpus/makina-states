@@ -101,12 +101,13 @@ def settings():
 
 
 def test(name="thisisatest"):
+    msr = __salt__['mc_loations.msr']()
     vm = {"bridge": "lxcbr1",
           "backing": "dir",
           "ip": "10.5.0.7",
           "bootstrap_shell": "bash",
           "gateway": "10.5.0.1",
-          "script": "/srv/mastersalt/makina-states/_scripts/boot-salt.sh",
+          "script": msr + "/_scripts/boot-salt.sh",
           "minion": {"master": __opts__['master'],
                      "master_port": __opts__['master_port']},
           "clone_from": "makina-states-trusty",
@@ -118,8 +119,6 @@ def test(name="thisisatest"):
           "target": __opts__['id'],
           "mac": "00:16:3e:11:31:64",
           "ssh_gateway_user": "root",
-          "script_args": ("-C --reattach "
-                          "--mastersalt-minion "
-                          "-b v2 --reattach-dir {0}"),
+          "script_args": ("-C"),
           "ssh_gateway_port": 22}
     return __salt__['lxc.cloud_init'](name, vm_=vm)
