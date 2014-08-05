@@ -1,4 +1,4 @@
-# MASTERSALT DATABASE
+# MAKINA-STATES DATABASE
 
 # format version
 format: 1
@@ -101,22 +101,17 @@ format: 1
 #   - manage_ssh_server: switch to activate ssh server servers configuration
 #   - manage_ssl: switch to activate ssl certs exposure
 #   - manage_sudoers: switch to configure sudoers
-#   - mastersalt:  configure the mastersalt Minion id/real FQDN
-#   - mastersaltdn: configure the mastersalt uri
-#   - mastersalt_master: switch to configure this host as a mastersalt master
-#   - mastersalt_port: configure the mastersalt port
+#   - master: switch to configure this host as a infra master
 #   - supervision_client:  does this host needs to install supervision client tools
 #   - cloud_control_kvm: signals that this cluster master will be abl to orchetrate kvms vms
 #   - cloud_control_lxc: signals that this cluster master will be abl to orchetrate lxc vms
 #   - cloud_master: signals that this host is a cluster master
-#   - cloud_master: signals that this host is a mastersalt master (singleton)
+#   - cloud_master: signals that this host is a master (singleton)
 #    manage_exposed_glocal_conf: expose global conf flags via pillar
 configurations:
   default: {}
-    # you may use here a DNS targetting a failover ip (default to real master name)
-    #mastersaltdn: mastersalt.makina-corpus.net
   mymaster.foo.net:
-    mastersalt_master: true
+    master: true
     cloud_master: true
     #custom_pillar:
     #  makina-states.localsettings.provider:
@@ -166,7 +161,7 @@ configurations:
     manage_ssh_server: false
     manage_ssl: false
     manage_sudoers: false
-    mastersalt_master: false
+    master: false
 {% endmacro %}
   msr-lxc-ref-precise.foo.net:
     {{nopillar()}}
@@ -177,7 +172,7 @@ configurations:
 #  provider2-1.mydomain.tld:
 #    backup_mode: burp-server
 #  provider1-dc1-1.mydomain.tld:
-#    mastersalt_master: true
+#    master: true
 #    cloud_master: true
 
 # List of bare metal hosts presents in your infrastructure
@@ -260,7 +255,7 @@ configurations:
 #       raw_opts_post:
 #         - use_backend bck_dev-foo.makina-corpus.net if host_dev-foo.makina-corpus.net
 
-# hosts to provision via mastersalt, but not hosting vms
+# hosts to provision via master, but not hosting vms
 # standalone_hosts:
 #   provider2-1.mydomain.tld: {}
 
@@ -609,7 +604,7 @@ backup_configurations:
       - ".*makina-states.*-lxc.*.tar.*xz.*"
       - ".*srv/mountpoints.*"
       - ".*srv/remounts.*"
-      - ".*srv.*mastersalt.*makina-states.*"
+      - ".*srv.*makina-states.*"
       - ".*srv.*projects.*archives.*"
       - ".*srv.*salt.*makina-states.*"
       - ".*var.*cache.*apt.*"
@@ -662,7 +657,7 @@ backup_configurations:
       - ".*nobackup.*"
       - ".*lost.found.*"
       - ".*makina-states.*-lxc.*.tar.*xz"
-      - ".*srv.*mastersalt.*makina-states.*"
+      - ".*srv.*makina-states.*"
       - ".*srv/mountpoints.*"
       - ".*srv/remounts.*"
       - ".*srv.*projects.*archives.*"
