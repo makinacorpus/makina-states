@@ -2894,7 +2894,7 @@ def get_dns_slave_conf(id_, ttl=PILLAR_TTL):
         if not _s[__name + '.is_dns_slave'](id_):
             return {}
         pref = 'makina-states.services.dns.bind'
-        rdata = {pref: True}
+        rdata = {pref: True, pref + '.is_slave': True}
         candidates = OrderedDict()
         domains = _s[__name + '.get_slaves_zones_for'](id_)
         candidates = []
@@ -2948,6 +2948,7 @@ def get_dns_master_conf(id_, ttl=PILLAR_TTL):
             return {}
         pref = 'makina-states.services.dns.bind'
         rdata = {pref: True}
+        rdata = {pref: True, pref + '.is_master': True}
         altdomains = []
         for domains in _s[__name + '.query'](
             'managed_alias_zones', {}
