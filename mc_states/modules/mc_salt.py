@@ -111,9 +111,6 @@ def settings():
                 'name': 'https://github.com/saltstack/salt-testing.git',
                 'rev': 'develop',
                 'target': '{venv_path}/src/salttesting'},
-            'm2crypto': {
-                'name': 'https://github.com/makinacorpus/M2Crypto.git',
-                'target': '{venv_path}/src/m2crypto'},
             #'salt-formulae': {
             #    'name': 'http://github.com/saltstack-formulas/salt-formula.git',
             #    'link': {'target': '{salt_root}/formulas/salt/salt',

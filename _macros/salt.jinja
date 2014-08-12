@@ -449,7 +449,6 @@ update-makinastates-{{ data.name }}-reqs:
       - mc_proxy: dummy-pre-{{ data.name }}-service-restart
 
 {% for i in ['docker-py',
-             'm2crypto',
              'salt',
              'salttesting'] %}
 update-makinastates-{{ data.name }}-git-reqs-{{i}}:

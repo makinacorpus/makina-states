@@ -93,7 +93,7 @@ check_python() {
         || trigger_py_die "pycrypto"
     "${SALT_PYTHON}" -c "import zmq" >/dev/null 2>&1\
         || trigger_py_die "pyzmq"
-    for i in ipaddr ipwhois M2Crypto tornado\
+    for i in ipaddr ipwhois tornado\
         pyasn1 requests urllib3 salt salttesting\
         ;do
         "${SALT_PYTHON}" -c "import ${i}" >/dev/null 2>&1\
