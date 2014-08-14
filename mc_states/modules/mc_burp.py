@@ -325,10 +325,6 @@ def settings():
                 )
                 cl['ssh_cmd'] += proxy_cmd
                 cl['rsh_cmd'] += proxy_cmd
-
-            # backup host is only a client to query backups
-            # and restore
-            # we do not backup the backups locally
             cl.setdefault('activated', True)
             cl.setdefault('restore_client', '')
             restore_clients = [a for a in cl['restore_client'].split(',')
@@ -337,7 +333,15 @@ def settings():
                 restore_clients.append(data['server_conf']['fqdn'])
             cl['restore_client'] = ','.join(restore_clients)
             if cl['cname'] == data['server_conf']['fqdn']:
-                cl['activated'] = False
+                # backup host is only a client to query backups
+                # and restore
+                # we usually do not backup the backups locally
+                excreg = cl.setdefault('exclude_regex', [])
+                if data['server_conf']['directory'] not in excreg:
+                    excreg.append('{0}.*'.format(
+                        data['server_conf']['directory'].replace(
+                            '/', '.*')))
+                cl.setdefault('activated', True)
                 cl['port'] = data['server_conf']['client_port']
                 cl['status_port'] = data['server_conf']['client_status_port']
             if not cl['activated']:
