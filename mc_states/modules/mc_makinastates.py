@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 __name = 'config'
 J = os.path.join
 DEFAULT_OS = 'ubuntu'
-DEFAULT_RELEASE = 'vivid'
+DEFAULT_RELEASE = 'xenial'
 DEFAULT_IMG = None
 PREFIX = 'makina-states.{0}'.format(__name)
 
@@ -36,7 +36,7 @@ def settings():
                 'github_user': None,
                 'github_password': None,
                 'releases': {
-                    'ubuntu': ['trusty', 'vivid']
+                    'ubuntu': ['trusty', 'vivid', 'xenial']
                 }
             }
         )

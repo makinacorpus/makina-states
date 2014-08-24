@@ -82,7 +82,7 @@ def settings():
         debian_stable = "wheezy"
         ddist = debian_stable
         ubuntu_lts = "trusty"
-        ubuntu_last = "vivid"
+        ubuntu_last = "xenial"
         lts_dist = debian_stable
         mirrors = {
             'ovh': 'http://mirror.ovh.net/ftp.ubuntu.com/',
