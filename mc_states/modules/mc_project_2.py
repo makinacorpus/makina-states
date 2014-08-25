@@ -468,7 +468,8 @@ def _prepare_configuration(name, *args, **kwargs):
         cfg['user'] = '{name}-user'
     # retro compat, let default_group beeing editor on old prods
     default_group = _s['mc_usergroup.settings']()['group']
-    tddir = '/srv/projects/{0}'.format(name)
+    locs = _s['mc_locations.settings']()
+    tddir = '{1}/{0}'.format(name, locs['projects_dir'])
     search_editor_dirs = [
         tddir,
         os.path.join(tddir, 'archives'),
