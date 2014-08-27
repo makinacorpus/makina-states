@@ -12,6 +12,9 @@ try:
 except:
     HAS_PIP = False
 
+version = {}
+execfile("mc_states/version.py", version)
+
 
 def read(*rnames):
     return open(
@@ -27,7 +30,7 @@ classifiers = [
     "Topic :: Software Development"]
 
 name = 'mc_states'
-version = "1.0"
+version = version['VERSION']
 src_dir = '.'
 install_requires = ["setuptools"]
 extra_requires = {}
