@@ -117,6 +117,10 @@ mailbox_size_limit = {{data.mailbox_size_limit}}
 mailbox_command = procmail -a "$EXTENSION"
 recipient_delimiter = +
 
+# tls
+# http://www.postfix.org/TLS_README.html#client_tls_may
+smtp_tls_security_level = may
+
 # debug_peer_list=mail.foo.com
 # debug_peer_level=3
 
