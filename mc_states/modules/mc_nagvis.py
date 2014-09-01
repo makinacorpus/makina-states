@@ -313,7 +313,7 @@ def settings():
                 },
                 'templates': {},
                 })
-        data['nginx']['navgis']['fastcgi_pass'] = (
+        data['nginx']['nagvis']['fastcgi_pass'] = (
             "unix:/var/spool/www/{0}.fpm.sock".format(
                 data['nginx']['domain'].replace('.', '_')
             )
