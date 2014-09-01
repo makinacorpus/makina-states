@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- MANAGED VIA SALT - DO NOT EDIT -->
+{%- set data = salt['mc_utils.json_load'](data) %}
 <settings xmlns:ae="http://agavi.org/agavi/config/global/envelope/1.0">
-<!--
-	+++ Site configuration file +++
-	
+<!-- +++ Site configuration file +++
 	This file won't be overwritten
-	
--->
-	  <setting name="defaults">
+  -->
+<!-- MANAGED VIA SALT - DO NOT EDIT -->
+  <setting name="defaults">
               <ae:parameter name="auth_authoritative">true</ae:parameter>
               <ae:parameter name="auth_groups">icinga_user</ae:parameter>
               <ae:parameter name="auth_resume">true</ae:parameter>
@@ -15,9 +13,8 @@
               <ae:parameter name="auth_update">false</ae:parameter>
               <ae:parameter name="auth_enable">true</ae:parameter>
 	  </setting>
-         
 	  <setting name="auth_key">
-             
+
               <ae:parameter name="auth_authoritative">true</ae:parameter>
               <ae:parameter name="auth_groups">icinga_user</ae:parameter>
               <ae:parameter name="auth_resume">true</ae:parameter>
@@ -25,11 +22,43 @@
               <ae:parameter name="auth_update">false</ae:parameter>
               <ae:parameter name="auth_enable">true</ae:parameter>
 	  </setting>
-<!--
+{% if data.ldap_auth.url %}
 	<setting name="provider">
--->
-	<!--
 		<ae:parameter name="openldap-ldap1">
+			<ae:parameter name="auth_module">AppKit</ae:parameter>
+			<ae:parameter name="auth_provider">Auth.Provider.LDAP</ae:parameter>
+			<ae:parameter name="auth_enable">true</ae:parameter>
+			<ae:parameter name="auth_authoritative">true</ae:parameter>
+			<ae:parameter name="auth_create">true</ae:parameter>
+			<ae:parameter name="auth_update">true</ae:parameter>
+			<ae:parameter name="auth_map">
+				<ae:parameter name="user_firstname">givenName</ae:parameter>
+				<ae:parameter name="user_lastname">sn</ae:parameter>
+				<ae:parameter name="user_email">mail</ae:parameter>
+			</ae:parameter>
+      <ae:parameter name="ldap_dsn">{{data.ldap_auth.url}}</ae:parameter>
+      {% if data.ldap_auth.tls %}
+      <ae:parameter name="ldap_start_tls">true</ae:parameter>
+      {% else %}
+      <ae:parameter name="ldap_start_tls">false</ae:parameter>
+      {% endif %}
+      <ae:parameter name="ldap_base_dn">{{data.ldap_auth.base_dn}}</ae:parameter>
+      {% if data.ldap_auth.binddn %}
+      <ae:parameter name="ldap_binddn">{{data.ldap_auth.binddn}}</ae:parameter>
+      {% endif %}
+      {% if data.ldap_auth.bindpw %}
+      <ae:parameter name="ldap_bindpw"><![CDATA[{{data.ldap_auth.bindpw}}]]></ae:parameter>
+      {% endif %}
+      {% if data.ldap_auth.filter_user %}
+      <ae:parameter name="ldap_filter_user"><![CDATA[{{data.ldap_auth.filter_user}}]]></ae:parameter>
+      {% endif %}
+		</ae:parameter>
+{% endif %}
+</setting>
+<!--
+
+	<setting name="provider">
+ 		<ae:parameter name="openldap-ldap1">
 			<ae:parameter name="auth_module">AppKit</ae:parameter>
 			<ae:parameter name="auth_provider">Auth.Provider.LDAP</ae:parameter>
 			<ae:parameter name="auth_enable">true</ae:parameter>
@@ -39,7 +68,7 @@
 			<ae:parameter name="auth_map">
 				<ae:parameter name="user_firstname">givenName</ae:parameter>
 				<ae:parameter name="user_lastname">sn</ae:parameter>
-				<ae:parameter name="user_email">mail</ae:parameter> 
+				<ae:parameter name="user_email">mail</ae:parameter>
 			</ae:parameter>
 			<ae:parameter name="ldap_dsn">ldap://ldap.myopenldap.foo/</ae:parameter>
             <ae:parameter name="ldap_start_tls">false</ae:parameter>
@@ -48,12 +77,11 @@
 			<ae:parameter name="ldap_bindpw"><![CDATA[XXXXXXXXX]]></ae:parameter>
 			<ae:parameter name="ldap_filter_user"><![CDATA[(&(uid=__USERNAME__))]]></ae:parameter>
 		</ae:parameter>
-	-->
-<!--
-   	</setting>
+    -->
+
+
 
 	<setting name="message">
--->
 	<!--
 		<ae:parameter name="show">true</ae:parameter>
 		<ae:parameter name="title">¡Hola</ae:parameter>
@@ -61,7 +89,5 @@
 		<ae:parameter name="include_file"></ae:parameter>
 		<ae:parameter name="expand_first">false</ae:parameter>
 	-->
-<!--
 	</setting>
--->	
 </settings>
