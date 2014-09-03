@@ -74,7 +74,33 @@ def rrs(domain):
     return rdata
 
 
+def get_dns_slave_conf(id_, gconf=None, ms_vars=None):
+    if not __salt__['mc_pillar.is_dns_slave'](id_):
+        return {}
+    rdata = {
+        'makina-states.services.dns.bind': True
+    }
+    dnsmasters = {}
+    domains = __salt__[
+        'mc_pillar.get_slaves_zones_for'](id_)
+    for domain, masterdn in domains.items():
+        master = __salt__['mc_pillar.ip_for'](
+            masterdn)
+        if masterdn not in dnsmasters:
+            dnsmasters.update({masterdn: master})
+    rdata['makina-states.services.dns.bind'
+          '.zones.{0}'.format(domain)] = {
+              'server_type': 'slave',
+              'masters': [master]}
+    for dnsmaster, masterip in dnsmasters.items():
+        rdata.update(
+            slave_key(id_, dnsmaster, master=False))
+    return rdata
+
+
 def get_dns_master_conf(id_, gconf=None, ms_vars=None):
+    if not __salt__['mc_pillar.is_dns_master'](id_):
+        return {}
     rdata = {
         'makina-states.services.dns.bind': True
     }
@@ -399,6 +425,7 @@ def ext_pillar(id_, pillar, *args, **kw):
         get_burp_server_conf,
         get_default_env_conf,
         get_dns_master_conf,
+        get_dns_slave_conf,
         get_etc_hosts_conf,
         get_fail2ban_conf,
         get_ldap_client_conf,
