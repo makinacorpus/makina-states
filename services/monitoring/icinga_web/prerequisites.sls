@@ -2,11 +2,32 @@
 {% set icinga_webSettings = salt['mc_icinga_web.settings']() %}
 include:
   - makina-states.services.monitoring.icinga_web.hooks
+{% set pkgssettings = salt['mc_pkgs.settings']() %}
+{% if grains['os_family'] in ['Debian'] %}
+{% set dist = pkgssettings.udist %}
+{% endif %}
+{% if grains['os'] in ['Debian'] %}
+{% set dist = pkgssettings.ubuntu_lts %}
+{% endif %}
+
+icinga_web-base:
+  pkgrepo.managed:
+    - humanname: icingaweb ppa
+    - name: deb http://ppa.launchpad.net/formorer/icinga-web/ubuntu {{dist}} main
+    - dist: {{dist}}
+    - file: {{ salt['mc_locations.settings']().conf_dir }}/apt/sources.list.d/icingaweb.list
+    - keyid: 36862847
+    - keyserver: keyserver.ubuntu.com
+    - watch:
+      - mc_proxy: icinga_web-pre-install
+    - watch_in:
+      - mc_proxy: icinga_web-post-install
 
 icinga_web-pkgs:
   pkg.{{pkgssettings['installmode']}}:
     - watch:
       - mc_proxy: icinga_web-pre-install
+      - pkgrepo: icinga_web-base
     - watch_in:
       - mc_proxy: icinga_web-post-install
     - pkgs:
@@ -16,7 +37,7 @@ icinga_web-pkgs:
 
 {% if icinga_webSettings.modules.pnp4nagios.enabled %}
 icinga_web-pnp4nagios-pkgs:
-  pkg.{{pkgssettings['installmode']}}:
+  pkg.latest:
     - watch:
       - mc_proxy: icinga_web-pre-install
       - pkg: icinga_web-pkgs

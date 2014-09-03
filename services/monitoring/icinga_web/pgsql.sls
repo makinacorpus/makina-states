@@ -64,13 +64,51 @@ icinga_web-import-pgsql-schema:
             {{sdata}}
   cmd.run:
     - name: psql "{{uri}}" -f "{{tmpf}}"
-    - unless: echo "select * from icinga_commands;" | psql "{{uri}}"
+    - unless: echo "select * from nsm_log;" | psql "{{uri}}" --set ON_ERROR_STOP=1
     - watch:
       - pkg: icinga2-web-cli-pkgs
       - file: icinga_web-import-pgsql-schema
       - mc_proxy: makina-postgresql-post-base
     - watch_in:
       - mc_proxy: icinga_web-pre-install
+
+# update root password
+{% set tmpf = '/tmp/icinga-web.password.sql' %}
+icinga_web-reset-root-pw:
+  file.managed:
+    - name: {{tmpf}}
+    - source: ''
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 755
+    - unless: |
+              if [ x" {{data.root_account.hashed_password}}{{data.root_account.salt}}" = x"$(echo "select user_password||user_salt from nsm_user where user_name='{{data.root_account.login}}'"|psql "{{uri}}" -t)" ];then
+                exit 1
+              fi
+              exit 0
+    - contents: |
+                #!/bin/bash
+                query="update nsm_user set user_password='{{data.root_account.hashed_password}}', user_salt='{{data.root_account.salt}}' where user_name='{{data.root_account.login}}'"
+                echo "$query;" | psql --set ON_ERROR_STOP=1 -t "{{uri}}"
+                res=${?}
+                rm -f {{tmpf}};
+                exit $res
+  cmd.run:
+    - unless: |
+              if [ x" {{data.root_account.hashed_password}}{{data.root_account.salt}}" = x"$(echo "select user_password||user_salt from nsm_user where user_name='{{data.root_account.login}}'"|psql "{{uri}}" -t)" ];then
+                exit 0
+              fi
+              exit 1
+    - name: {{tmpf}}
+    - watch:
+      - pkg: icinga2-web-cli-pkgs
+      - cmd: icinga_web-import-pgsql-schema
+      - file: icinga_web-reset-root-pw
+    - watch_in:
+      - mc_proxy: icinga_web-pre-install
+
 
 # delete logs in the database
 # TODO: it is not a good idea but doctrine compilation reset serial when

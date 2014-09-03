@@ -15,7 +15,7 @@ icinga2-base:
   cmd.run:
     - name: wget http://packages.icinga.org/icinga.key -O - | apt-key add -
     - user: root
-    - unmess: apt-key list|grep -q Icinga
+    - unless: apt-key list|grep -q Icinga
   pkgrepo.managed:
     - humanname: icinga ppa
     - name: deb  http://packages.icinga.org/{{grains['os'].lower()}}/ icinga-{{dist}} main

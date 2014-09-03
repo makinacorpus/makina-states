@@ -7,6 +7,7 @@
                 can hide passwords and other system related information
                 from the users
             -->
-            
+            <settings>
+            </settings>
     </ae:configuration>
 </ae:configurations>

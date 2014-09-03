@@ -15,7 +15,6 @@
 <databases xmlns:db="http://agavi.org/agavi/config/parts/databases/1.0" 
            xmlns:ae="http://agavi.org/agavi/config/global/envelope/1.0">
     <db:database name="icinga_web" class="AppKitDoctrineDatabase">
-        <!-- will be overridden by a include! -->
         {% if data.databases.web.get('socket', None) %}
         <ae:parameter name="dsn">{{data.databases.web.type}}://{{data.databases.web.user}}:{{data.databases.web.password}}@[{{data.databases.web.socket}}]/{{data.databases.web.name}}</ae:parameter>
         {% else %}
@@ -40,13 +39,7 @@
 
     </db:database>
 
-    <!-- comment this if you do not want to use debconf with dbconfig-common -->
-    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="/etc/icinga-web/conf.d/database-web.xml#xpointer(databases/node())">
-        <xi:fallback></xi:fallback>
-    </xi:include>
-
     <db:database xmlns="http://agavi.org/agavi/config/parts/databases/1.0" name="icinga" class="IcingaDoctrineDatabase">
-        <!-- will be overridden by a include! -->
         {% if data.databases.ido2db.get('socket', None) %}
         <ae:parameter name="dsn">{{data.databases.ido2db.type}}://{{data.databases.ido2db.user}}:{{data.databases.ido2db.password}}@[{{data.databases.ido2db.socket}}]/{{data.databases.ido2db.name}}</ae:parameter>
         {% else %}
@@ -67,13 +60,4 @@
             <ae:parameter name="use_query_cache">true</ae:parameter>
         </ae:parameter>
     </db:database>
-
-
-    <!-- comment this if you do not want to use debconf with dbconfig-common for the IDO database -->
-    <xi:
-      include xmlns:xi="http://www.w3.org/2001/XInclude"
-      href="/etc/icinga-web/conf.d/database-ido.xml#xpointer(databases/node())">
-        <xi:fallback></xi:fallback>
-    </xi:include>
-
 </databases>

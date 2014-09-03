@@ -53,9 +53,12 @@ icinga_web-{{file}}-conf:
 # sometimes, the password in /usr/share/icinga-web/config/databases.xml is not updated
 # "I noticed that /etc/icinga-web doesn't seem to be parsed. at the very least, /etc/icinga-web/databases.xml doesn't seem to be."
 # manually update
-icinga_web-usr-databases-conf:
+
+icinga_web-usr-database-conf:
   file.managed:
-    - name: /usr/share/icinga-web/app/config/databases.xml
+    - names:
+      - /usr/share/icinga-web/app/config/databases.xml
+      - /etc/icinga-web/conf.d/database-web.xml
     - source: salt://makina-states/files/usr/share/icinga-web/app/config/databases.xml
     - template: jinja
     - makedirs: true
@@ -64,7 +67,6 @@ icinga_web-usr-databases-conf:
     - mode: 644
     - watch:
       - mc_proxy: icinga_web-pre-conf
-      - file: icinga_web-databases-conf
     - watch_in:
       - mc_proxy: icinga_web-post-conf
     - defaults:
@@ -99,6 +101,27 @@ icinga_web-usr-cronks-2-conf:
 icinga_web-clear-cache:
   cmd.run:
     - name: rm -f /var/cache/icinga-web/config/*
+    - watch:
+      - mc_proxy: icinga_web-pre-conf
+    - watch_in:
+      - mc_proxy: icinga_web-post-conf
+
+# let xml includes resolve absolute path in /etc
+icinga_web-etc-sym-connf:
+  file.symlink:
+    - names:
+      - /usr/share/icinga-web/app/config/etc
+      - /usr/share/icinga-web/app/modules/AppKit/config/etc
+    - target: /etc
+    - watch:
+      - mc_proxy: icinga_web-pre-conf
+    - watch_in:
+      - mc_proxy: icinga_web-post-conf
+
+icinga_web-etc-sym-tmpcronks:
+  file.symlink:
+    - name: /var/cache/icinga-web/tmp
+    - target: /usr/share/icinga-web/tmp
     - watch:
       - mc_proxy: icinga_web-pre-conf
     - watch_in:

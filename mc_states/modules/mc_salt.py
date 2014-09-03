@@ -127,6 +127,8 @@ def settings():
                             '{salt_root}/makina-states/mc_states/modules'],
             'returner_dirs': ['{salt_root}/_returners',
                               '{salt_root}/makina-states/mc_states/returners'],
+            'pillar_dirs': ['{salt_root}/_pillar',
+                           '{salt_root}/makina-states/mc_states/pillar'],
             'grain_dirs': ['{salt_root}/_grains',
                            '{salt_root}/makina-states/mc_states/grains'],
             'states_dirs': ['{salt_root}/_states',
@@ -306,7 +308,7 @@ def settings():
                 'file_ignore_glob': [],
                 'fileserver_backend':  ['roots', 'git'],
                 'gitfs_remotes': '[]',
-                'ext_pillar': {},
+                'ext_pillar': {'mc_pillar': ''},
                 'pillar_opts': True,
                 'order_masters': True,
                 'syndic_master': None,
@@ -485,5 +487,6 @@ def settings():
 
 def dump():
     return mc_states.utils.dump(__salt__, __name)
+
 
 #

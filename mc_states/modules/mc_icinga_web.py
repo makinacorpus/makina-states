@@ -277,6 +277,8 @@ def settings():
         password_web_root_account = icinga_web_reg.setdefault(
             'web.root_account_password',
             __salt__['mc_utils.generate_password']())
+        if not password_web_root_account:
+            password_web_root_account = icinga_web_reg['web.root_account_password'] = __salt__['mc_utils.generate_password'](8)
 
         web_database = {
             'type': "pgsql",
@@ -330,7 +332,11 @@ def settings():
         }
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.monitoring.icinga_web', {
-                'package': ['icinga-web'],
+                'package': ['icinga-web', 'php5-ldap',
+                            'php5', 'php5-cli', 'php-pear',
+                            'php5-xmlrpc', 'php5-xsl',
+                            'php-soap', 'php5-gd',
+                            'php5-ldap'],
                 'configuration_directory': locs['conf_dir']+"/icinga-web",
                 'create_pgsql': True,
                 'has_pgsql': ('pgsql' == web_database['type']
@@ -359,11 +365,20 @@ def settings():
                 },
                 'root_account': {
                     'login': "root",
+                    'clear': root_account['password'],
                     'hashed_password': hmac.new(
                         root_account['salt'],
                         root_account['password'],
                         digestmod=hashlib.sha256).hexdigest(),
                     'salt': root_account['salt'],
+                },
+                'ldap_auth': {
+                    'url': '',  # ldap://
+                    'binddn': '',
+                    'bindpw': '',
+                    'filter_user': "(&(uid=__USERNAME__))",
+                    'base_dn': '',
+                    'tls': False,
                 },
                 'databases': {'ido2db': ido2db_database,
                               'web': web_database},
@@ -394,6 +409,7 @@ def settings():
                 'phpfpm': {
                     'open_basedir': (
                         "/usr/share/icinga-web/"
+                        ":/etc"
                         ":/var/cache/icinga-web/"
                         ":/var/log/icinga-web/"),
                     'extensions_packages': ['php5-pgsql'],
@@ -403,6 +419,11 @@ def settings():
                 'templates': {},
                 'has_jasper': False,
         })
+        data['nginx']['icinga_web']['fastcgi_pass'] = (
+            "unix:/var/spool/www/{0}.fpm.sock".format(
+                data['nginx']['domain'].replace('.', '_')
+            )
+        )
         __salt__['mc_macros.update_local_registry'](
             'icinga_web', icinga_web_reg,
             registry_format='pack')

@@ -1182,7 +1182,7 @@ def serial_for(domain,
     return _doserialfor(domain, serial)
 
 
-def rrs_for(domain):
+def rrs_for(domain, aslist=False):
     '''Return all configured records for a domain
     take all rr found for the "ips" & "ipsfo" tables for domain
         - Make NS records for everything in ns_map
@@ -1203,6 +1203,8 @@ def rrs_for(domain):
         rrs_a_for(domain) + '\n' +
         rrs_cnames_for(domain)
     )
+    if aslist:
+        rr = [a for a in rr.split('\n') if a.strip()]
     return rr
 
 

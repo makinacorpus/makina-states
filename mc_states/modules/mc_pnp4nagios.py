@@ -250,6 +250,11 @@ def settings():
                     ],
                 },
         })
+        data['nginx']['pnp4nagios']['fastcgi_pass'] = (
+            "unix:/var/spool/www/{0}.fpm.sock".format(
+                data['nginx']['domain'].replace('.', '_')
+            )
+        )
 
         __salt__['mc_macros.update_local_registry'](
             'pnp4nagios', pnp4nagios_reg,
