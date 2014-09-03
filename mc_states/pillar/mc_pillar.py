@@ -19,6 +19,145 @@ log = logging.getLogger(__name__)
 __name = 'salt'
 
 
+def manage_network_common(fqdn):
+    rdata = {
+        'makina-states.localsettings.network.managed': True,
+        'makina-states.localsettings.hostname': fqdn.split('.')[0]
+    }
+    return rdata
+
+
+def manage_bridged_fo_kvm_network(fqdn, host, ipsfo,
+                                  ipsfo_map, ips,
+                                  thisip=None,
+                                  ifc='eth0'):
+    ''''
+    setup the network adapters configuration
+    for a kvm vm on an ip failover setup'''
+    rdata = {}
+    if not thisip:
+        thisip = ipsfo[ipsfo_map[fqdn][0]]
+    gw = __salt__['mc_network.get_gateway'](
+        host, ips[host][0])
+    rdata.update(manage_network_common(fqdn))
+    rdata['makina-states.localsettings.network.ointerfaces'] = [{
+        ifc: {
+            'address': thisip,
+            'netmask': __salt__[
+                'mc_network.get_fo_netmask'](fqdn, thisip),
+            'broadcast': __salt__[
+                'mc_network.get_fo_broadcast'](fqdn, thisip),
+            'dnsservers': __salt__[
+                'mc_network.get_dnss'](fqdn, thisip),
+            'post-up': [
+                'route add {0} dev {1}'.format(gw, ifc),
+                'route add default gw {0}'.format(gw),
+            ]
+        }
+    }]
+
+
+def manage_baremetal_network(fqdn, ipsfo, ipsfo_map,
+                             ips, thisip=None,
+                             thisipfos=None, ifc='',
+                             out_nic='eth0'):
+    rdata = {}
+    if not thisip:
+        thisip = ips[fqdn][0]
+    if not thisipfos:
+        thisipfos = []
+        thisipifosdn = ipsfo_map.get(fqdn, [])
+        for dns in thisipifosdn:
+            thisipfos.append(ipsfo[dns])
+    rdata.update(manage_network_common(fqdn))
+    # br0: we use br0 as main interface with by
+    # defaultonly one port to escape to internet
+    if 'br' in ifc:
+        net = rdata[
+            'makina-states.localsettings.network.'
+            'ointerfaces'
+        ] = [{
+            ifc: {
+                'address': thisip,
+                'bridge_ports': out_nic,
+                'broadcast': __salt__[
+                    'mc_network.get_broadcast'](fqdn, thisip),
+                'netmask': __salt__[
+                    'mc_network.get_netmask'](fqdn, thisip),
+                'gateway': __salt__[
+                    'mc_network.get_gateway'](fqdn, thisip),
+                'dnsservers': __salt__[
+                    'mc_network.get_dnss'](fqdn, thisip)
+            }},
+            {out_nic: {'mode': 'manual'}},
+        ]
+    # eth0/em0: do not use bridge but a
+    # real interface
+    else:
+        ifc = out_nic
+        net = rdata[
+            'makina-states.localsettings.network.'
+            'ointerfaces'
+        ] = [{
+            ifc: {
+                'address': thisip,
+                'broadcast': __salt__[
+                    'mc_network.get_broadcast'](fqdn, thisip),
+                'netmask': __salt__[
+                    'mc_network.get_netmask'](fqdn, thisip),
+                'gateway': __salt__[
+                    'mc_network.get_gateway'](fqdn, thisip),
+                'dnsservers': __salt__[
+                    'mc_network.get_dnss'](fqdn, thisip)
+            }
+        }]
+    if thisipfos:
+        for ix, thisipfo in enumerate(thisipfos):
+            ifinfo = {"{0}_{1}".format(ifc, ix): {
+                'ifname': "{0}:{1}".format(ifc, ix),
+                'address': thisipfo,
+                'netmask': __salt__[
+                    'mc_network.get_fo_netmask'](fqdn, thisipfo),
+                'broadcast': __salt__[
+                    'mc_network.get_fo_broadcast'](fqdn, thisipfo),
+            }}
+            net.append(ifinfo)
+    return rdata
+
+
+def get_sysnet_conf(id_, gconf=None, ms_vars=None):
+    gconf = get_global_conf(id_, gconf)
+    ms_vars = get_makina_states_variables(id_, ms_vars=ms_vars)
+    rdata = {}
+    net = __salt__['mc_pillar.load_network_infrastructure']()
+    ips = net['ips']
+    ipsfo = net['ipsfo']
+    ipsfo_map = net['ipsfo_map']
+    if not (
+        ms_vars.get('is_bm', False)
+        and gconf.get('manage_network', False)
+    ):
+        return {}
+    if id_ in net['non_managed_hosts']:
+        return {}
+    if id_ in net['baremetal_hosts']:
+        # always use bridge as main_if
+        rdata.update(
+            manage_baremetal_network(
+                id_, ipsfo, ipsfo_map, ips, ifc='br0'))
+    else:
+        for vt, targets in net['vms'].items():
+            if vt != 'kvm':
+                continue
+            for target, vms in targets.items():
+                if id_ not in vms:
+                    continue
+                manage_bridged_fo_kvm_network(
+                    id_, target, ipsfo,
+                    ipsfo_map, ips)
+    return rdata
+
+
 def get_global_conf(id_, gconf=None, ms_vars=None):
     if not gconf:
         gconf = __salt__['mc_pillar.get_configuration'](id_)
@@ -308,15 +447,6 @@ def get_shorewall_conf(id_, gconf=None, ms_vars=None):
     return rdata
 
 
-def get_sysnet_conf(id_, gconf=None, ms_vars=None):
-    gconf = get_global_conf(id_, gconf)
-    ms_vars = get_makina_states_variables(id_, ms_vars=ms_vars)
-    rdata = {}
-    if ms_vars.get('is_bm', False) and gconf.get('manage_network', False):
-        rdata['a'] = 'b'
-    return rdata
-
-
 def get_autoupgrade_conf(id_, gconf=None, ms_vars=None):
     ms_vars = get_makina_states_variables(id_, ms_vars=ms_vars)
     gconf = get_global_conf(id_, gconf)
@@ -324,6 +454,149 @@ def get_autoupgrade_conf(id_, gconf=None, ms_vars=None):
     if ms_vars.get('is_bm', False):
         rdata['makina-states.localsettings.autoupgrade'] = gconf[
             'manage_autoupgrades']
+    return rdata
+
+
+def get_cloud_vm_conf(id_, gconf=None, ms_vars=None):
+    rdata = {}
+    gconf = get_global_conf(id_, gconf)
+    ms_vars = get_makina_states_variables(id_, ms_vars=ms_vars)
+
+    cloud_vm_attrs = __salt__['mc_pillar.query']('cloud_vm_attrs')
+    nvars  = __salt__['mc_pillar.load_network_infrastructure']()
+    supported_vts = ['lxc']
+    for vt, targets in nvars['vms'].items():
+        if vt not in supported_vts:
+            continue
+        for compute_node, vms in targets.items():
+            if compute_node in nvars['non_managed_hosts']:
+                continue
+            k = ('makina-states.cloud.lxc.'
+                 'vms.{0}').format(compute_node)
+            pvms = rdata.setdefault(k, {})
+            for vm in vms:
+                if vm in nvars['non_managed_hosts']:
+                    continue
+                dvm = pvms.setdefault(vm, {})
+                metadata = cloud_vm_attrs.get(vm, {})
+                metadata.setdefault('profile_type',
+                                    'dir')
+                if 'password' not in metadata:
+                    metadata.setdefault(
+                        'password',
+                        __salt__[
+                            'mc_pillar.get_passwords'
+                        ](vm)['clear']['root'])
+                dvm.update(metadata)
+    return rdata
+
+
+def get_cloud_compute_node_conf(id_, gconf=None, ms_vars=None):
+    rdata = {}
+    gconf = get_global_conf(id_, gconf)
+    ms_vars = get_makina_states_variables(id_, ms_vars=ms_vars)
+# detect computes nodes by searching for related vms configurations
+    supported_vts = ['lxc']
+    done_hosts = []
+    nvars  = __salt__['mc_pillar.load_network_infrastructure']()
+    cloud_cn_attrs = nvars['cloud_cn_attrs']
+    for vt, targets in nvars['vms'].items():
+        if vt not in supported_vts:
+            continue
+        for compute_node, vms in targets.items():
+            if not (
+                (compute_node not in done_hosts)
+                and
+                (compute_node not in ms_vars['non_managed_hosts'])
+            ):
+                done_hosts.append(compute_node)
+                rdata['makina-states.cloud.saltify'
+                      '.targets.{0}'.format(
+                          compute_node)] = {
+                    'password': __salt__[
+                        'mc_pillar.get_passwords'](
+                            compute_node
+                        )['clear']['root'],
+                    'ssh_username': 'root'
+                }
+            metadata = cloud_cn_attrs.get(compute_node, {})
+
+            haproxy_pre = metadata.get('haproxy', {}).get('raw_opts_pre', [])
+            haproxy_post = metadata.get('haproxy', {}).get('raw_opts_post', [])
+            for suf, opts in [
+                a for a in [
+                    ['pre,', haproxy_pre],
+                    ['post', haproxy_post]
+                ] if a[1]
+            ]:
+                rdata[
+                    'makina-states.cloud.compute_node.conf.'
+                    '{0}.http_proxy.raw_opts_{1}'.format(
+                        compute_node, suf)] = opts
+
+    for vt, targets in nvars['vms'].items():
+        if vt not in supported_vts:
+            continue
+        for compute_node, vms in targets.items():
+            if not (
+                compute_node not in done_hosts
+                and
+                compute_node not in nvars['non_managed_hosts']
+            ):
+                continue
+            done_hosts.append(compute_node)
+            k = ('makina-states.cloud.'
+                 'saltify.targets.{0}').format(
+                     compute_node)
+            rdata[k] = {
+                'password': __salt__[
+                    'mc_pillar.get_passwords'](
+                        compute_node)['clear']['root'],
+                'ssh_username': 'root'
+            }
+
+        for host, data in nvars['standalone_hosts'].items():
+            if host in done_hosts:
+                continue
+            done_hosts.append(compute_node)
+            sk = ('makina-states.cloud.saltify.'
+                  'targets.{0}').format(host)
+            rdata[sk] = {
+                'ssh_username': data.get(
+                    'ssh_username', 'root')
+            }
+            for k, val in data.items():
+                if val and val not in ['ssh_username']:
+                    rdata[sk][k] = val
+    return rdata
+
+
+def get_cloud_image_conf(id_, gconf=None, ms_vars=None):
+    rdata = {}
+    if gconf.get('cloud_images'):
+        rdata.update(gconf['cloud_images'])
+    return rdata
+
+
+def get_cloudmaster_conf(id_, gconf=None, ms_vars=None):
+    gconf = get_global_conf(id_, gconf)
+    ms_vars = get_makina_states_variables(id_, ms_vars=ms_vars)
+    if not gconf.get('cloud_master', False):
+        return {}
+    gconf = get_global_conf(id_, gconf)
+    pref = 'makina-states.cloud'
+    rdata = {
+        pref + '.generic': True,
+        pref + '.master': gconf['mastersaltdn'],
+        pref + '.master_port': gconf['mastersalt_port'],
+        pref + '.saltify': True,
+        pref + '.lxc': True,
+        pref + '.lxc.defaults.backing': 'dir'
+    }
+    for i in [get_cloud_image_conf,
+              get_cloud_vm_conf,
+              get_cloud_compute_node_conf]:
+        rdata.update(i(id_, gconf=gconf, ms_vars=ms_vars))
     return rdata
 
 
@@ -420,6 +693,7 @@ def ext_pillar(id_, pillar, *args, **kw):
     gconf = get_global_conf(id_)
     ms_vars = get_makina_states_variables(id_)
     for callback in [
+        get_cloudmaster_conf,
         get_autoupgrade_conf,
         get_backup_client_conf,
         get_burp_server_conf,
