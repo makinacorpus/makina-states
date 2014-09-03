@@ -646,6 +646,50 @@ def get_backup_client_conf(id_, gconf=None, ms_vars=None):
     return rdata
 
 
+def get_supervision_master_conf(id_, gconf=None, ms_vars=None):
+    rdata = {}
+    rdata['makina-states.services.monitoring.icinga2'] = __salt__[
+        'mc_pillar.get_supervision_master_conf'](id_)
+
+    rdata['makina-states.services.monitoring.'
+          'icinga2.modules.cgi.enabled'] = False
+    return rdata
+
+
+def get_supervision_nagvis_conf(id_, gconf=None, ms_vars=None):
+    rdata = {}
+    rdata['makina-states.services.monitoring.nagvis'] = __salt__[
+        'mc_pillar.get_supervision_nagvis_conf'](id_)
+    return rdata
+
+
+def get_supervision_pnp_conf(id_, gconf=None, ms_vars=None):
+    rdata = {}
+    rdata['makina-states.services.monitoring.pnp4nagios'] = __salt__[
+        'mc_pillar.get_supervision_pnp_conf'](id_)
+    return rdata
+
+
+def get_supervision_ui_conf(id_, gconf=None, ms_vars=None):
+    rdata = {}
+    rdata['makina-states.services.monitoring.icinga_web'] = __salt__[
+        'mc_pillar.get_supervision_ui_conf'](id_)
+    return rdata
+
+
+def get_supervision_confs(id_, gconf=None, ms_vars=None):
+    rdata = {}
+    for kind in ['master', 'ui', 'pnp', 'nagvis']:
+        if __salt__['mc_pillar.is_supervision_kind'](id_, kind):
+            rdata.update({
+                'master': get_supervision_master_conf,
+                'ui': get_supervision_ui_conf,
+                'pnp': get_supervision_pnp_conf,
+                'nagvis': get_supervision_nagvis_conf
+            }[kind](id_, gconf=gconf, ms_vars=ms_vars))
+    return rdata
+
+
 def get_etc_hosts_conf(id_, gconf=None, ms_vars=None):
     gconf = get_global_conf(id_, gconf)
     rdata = {}
@@ -693,6 +737,7 @@ def ext_pillar(id_, pillar, *args, **kw):
     gconf = get_global_conf(id_)
     ms_vars = get_makina_states_variables(id_)
     for callback in [
+        get_supervision_confs,
         get_cloudmaster_conf,
         get_autoupgrade_conf,
         get_backup_client_conf,
