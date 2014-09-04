@@ -1204,7 +1204,7 @@ def rrs_for(domain, aslist=False):
         rrs_cnames_for(domain)
     )
     if aslist:
-        rr = [a for a in rr.split('\n') if a.strip()]
+        rr = [a.strip() for a in rr.split('\n') if a.strip()]
     return rr
 
 
