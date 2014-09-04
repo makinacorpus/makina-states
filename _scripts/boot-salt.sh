@@ -380,7 +380,7 @@ get_minion_id_() {
 }
 
 mastersalt_get_minion_id() {
-    get_minion_id_ "${MCONF_PREFIX}" "${MASTERSALT_MINION_ID}" "$FORCE_MASTERSALT_MINION_ID"
+    get_minion_id_ "$CONF_PREFIX" "$SALT_MINION_ID" "$FORCE_SALT_MINION_ID"
 }
 
 
