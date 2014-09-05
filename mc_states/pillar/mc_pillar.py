@@ -205,14 +205,16 @@ def rrs(domain):
     else:
         soans = master
 
-    rrs = [a.strip() 
+    soans += "."
+
+    rrs = [a.strip()
            for a in __salt__['mc_pillar.rrs_for'](domain, aslist=True)
            if a.strip()]
     rdata = {
         'allow_transfer': allow_transfer,
         'serial': __salt__['mc_pillar.serial_for'](domain),
         'soa_ns': soans,
-        'soa_contact': 'postmaster.{0}'.format(domain),
+        'soa_contact': 'postmaster.{0}.'.format(domain),
         'rrs': rrs}
     log.error(rrs)
     return rdata

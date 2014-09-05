@@ -9,8 +9,7 @@ $TTL {{data.ttl}}
         {{data.expire}}   ; Expire
         {{data.minimum}}) ; Minimum negative caching
 {% if salt['mc_utils.is_a_list'](data.rrs) %}
-{% for rr in data.rrs %}
-{{rr}}
+{% for rr in data.rrs %}{{rr}}
 {% endfor %}
 {% else %}
 {{data.rrs}}
