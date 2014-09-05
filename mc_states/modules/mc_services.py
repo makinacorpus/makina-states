@@ -84,6 +84,7 @@ def registry():
             'log.ulogd': {'force': True, 'active': ulogden},
             'base.ntp': {'force': True, 'active': ntpen},
             'base.ssh': {'force': True, 'active': sshen},
+            'dns.dhcpd': {'active': False},
             'dns.bind': {'force': True, 'active': binden},
             'dns.slapd.master': {'active': False},
             'dns.slapd.slave': {'active': False},
