@@ -2711,6 +2711,10 @@ def get_supervision_objects_defs(id_):
             backup_servers = query('backup_servers', {})
         except Exception:
             backup_servers = {}
+        try:
+            backup_excluded = query('backup_excluded', {})
+        except Exception:
+            backup_excluded = {}
         for host in [a for a in hhosts]:
             hdata = hhosts[host]
             if host in backup_servers:
@@ -2753,6 +2757,9 @@ def get_supervision_objects_defs(id_):
             # backup refreshness
             # if host not in physical_hosts_to_check:
             #    hdata['backup_burp_age'] = False
+            if host in backup_excluded:
+                hdata['backup_burp_age'] = False
+                hdata['burp_counters'] = False
             if hdata.get('backup_burp_age', None) is not False:
                 bsm = __salt__[__name + '.query']('backup_server_map', {})
                 burp_default_server = bsm['default']
