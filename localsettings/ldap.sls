@@ -49,13 +49,15 @@ nslcd:
       - cmd: nscd-restart
   file.managed:
     - name: {{ locs.conf_dir }}/nslcd.conf
+    - makedirs: true
     - user: nslcd
     - group: nslcd
     - mode: '0600'
     - template: jinja
     - source: salt://makina-states/files{{ locs.conf_dir }}/nslcd.conf
-    - require:
+    - require_in:
       - pkg: ldap-pkgs
+    - require:
       - file: ldap-cacerts-cert
     - defaults:
       data: |
@@ -98,11 +100,13 @@ nslcd-nsswitch-conf:
       - {{ locs.conf_dir }}/pam_ldap.conf
     - user: root
     - group: root
+    - makedirs: true
     - mode: '0644'
     - template: jinja
     - source: salt://makina-states/files{{ locs.conf_dir }}/ldap.conf
-    - require:
+    - require_in:
       - pkg: ldap-pkgs
+    - require:
       - file: ldap-cacerts-cert
     - defaults:
           data: |
@@ -115,11 +119,13 @@ nslcd-nsswitch-conf:
     - name: {{ locs.conf_dir }}/ldap/ldap.conf
     - user: root
     - group: root
+    - makedirs: true
     - mode: '0644'
     - template: jinja
     - source: salt://makina-states/files{{ locs.conf_dir }}/ldap/ldap.conf
-    - require:
+    - require_in:
       - pkg: ldap-pkgs
+    - require:
       - file: ldap-cacerts-cert
     - defaults:
       data: |
@@ -141,6 +147,7 @@ ldap-cacerts-cert:
   file.managed:
     - require_in:
       - mc_proxy: users-pre-hook
+      - pkg: ldap-pkgs
     - name: {{ locs.conf_dir }}/ssl/cacerts/cacert.pem
     - user: root
     - makedirs: true
