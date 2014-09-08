@@ -216,7 +216,6 @@ def rrs(domain):
         'soa_ns': soans,
         'soa_contact': 'postmaster.{0}.'.format(domain),
         'rrs': rrs}
-    log.error(rrs)
     return rdata
 
 
