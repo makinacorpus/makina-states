@@ -258,6 +258,7 @@ def settings():
         iface_opts = {
             'vpn': '',
             'net': phy_opts,
+            'lan': phy_opts,
             'rpn': phy_opts,
             'brnet': bridged_net_opts,
             'lxc': bridged_opts,
@@ -313,7 +314,16 @@ def settings():
         if not data['no_default_net_bridge'] and not has_br0:
             gifaces.append(('br0', []))
 
+        configuredifs = []
+        if data['interfaces']:
+            for a in data['interfaces'].values():
+                for ifc in a:
+                    ifcc = ifc.get('interface', None)
+                    if ifcc and ifcc not in configuredifs:
+                        configuredifs.append(ifcc)
         for iface, ips in gifaces:
+            if iface in configuredifs:
+                continue
             if 'lo' in iface:
                 continue
             z = 'net'
@@ -368,7 +378,7 @@ def settings():
             for m in data['default_masqs']:
                 if m not in data['masqs']:
                     data['masqs'].append(m)
-
+        end_policies = []
         if not data['no_default_policies']:
             # fw -> defined zones: auth
             for z in data['zones']:
@@ -420,25 +430,28 @@ def settings():
                 data['default_policies'].append({
                     'source': '$FW', 'dest': 'rpn', 'policy': 'ACCEPT'})
 
+                
             # drop all traffic by default if not in permissive_mode
             if not data['permissive_mode']:
-                data['default_policies'].append({
+                end_policies.append({
                     'source': 'all', 'dest': 'all',
                     'policy': 'REJECT', 'loglevel': info_loglevel})
-                data['default_policies'].append({
+                end_policies.append({
                     'source': 'net', 'dest': 'all',
                     'policy': 'DROP', 'loglevel': info_loglevel})
             else:
-                data['default_policies'].append({
+                end_policies.append({
                     'source': 'all', 'dest': 'all', 'policy': 'ACCEPT'})
-                data['default_policies'].append({
+                end_policies.append({
                     'source': 'net', 'dest': 'all', 'policy': 'ACCEPT'})
 
         # ATTENTION WE MERGE, so reverse order to append at begin
         data['default_policies'].reverse()
+        end_policies.reverse()
         for rdata in data['default_policies']:
             if rdata not in data['policies']:
                 data['policies'].insert(0, rdata)
+        data['policies'].extend(end_policies)
 
         if not data['no_default_rules']:
             if nodetypes_registry['is']['lxccontainer']:

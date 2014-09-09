@@ -308,7 +308,7 @@ def settings():
                 'file_ignore_glob': [],
                 'fileserver_backend':  ['roots', 'git'],
                 'gitfs_remotes': '[]',
-                'ext_pillar': {'mc_pillar': ''},
+                'ext_pillar': {'mc_pillar': {}},
                 'pillar_opts': True,
                 'order_masters': True,
                 'syndic_master': None,

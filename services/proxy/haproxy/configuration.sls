@@ -92,8 +92,6 @@ makina-haproxy-errors:
     - source: salt://makina-states/files/etc/haproxy/errors
     - dir_mode: 755
     - file_mode: 644
-    - defaults: |
-                {{salt['mc_utils.json_dump'](data)}}
     - makedirs: true
     - user: root
     - group: root
