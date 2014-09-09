@@ -494,7 +494,13 @@ def _merge_statuses(ret, cret, step=None):
         ret['raw_comment'] += '\nExecution step: {0}'.format(cret)
     for k in ['raw_comment', 'comment']:
         if k in cret:
-            ret[k] += '\n{{{0}}}'.format(k).format(**cret)
+            try:
+                ret[k] += '\n{{{0}}}'.format(k).format(**cret)
+            except UnicodeEncodeError:
+                if isinstance(cret[k], unicode):
+                    ret[k] += cret[k].encode('utf-8')
+                else:
+                    ret[k] += cret[k].decode('utf-8').encode('utf-8')
     if not ret['result']:
         _append_comment(ret,
                         summary='Deployment aborted due to error',
