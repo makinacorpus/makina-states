@@ -14,5 +14,6 @@
 #
 #  makina-states.controllers.mastersalt_master: False
 #}
-{{ salt['mc_macros.autoinclude'](salt['mc_controllers.registry']()) }}
-  - makina-states.common.autocommit
+{{ salt['mc_macros.autoinclude'](
+     salt['mc_controllers.registry'](),
+     additional_includes=['makina-states.common.autocommit']) }}
