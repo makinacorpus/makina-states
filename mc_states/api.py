@@ -883,7 +883,7 @@ def compat_kwarg(kw, new, olds=None):
         olds = []
     if not isinstance(olds, list):
         olds = [olds]
-    for k in new + [olds]:
+    for k in [new] + olds:
         if k in kw:
             return kw[k]
     return kw[new]
