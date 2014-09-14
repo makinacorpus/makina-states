@@ -37,7 +37,8 @@ icinga2-cli-pkgs:
 
 {% endif %}
 
-{% if 'socket' in data.databases.web %}
+{% if data.modules.ido2db.enabled %}
+{% if 'socket' in data.modules.ido2db.database.host %}
 {% set uri = "postgresql://{0}:{1}@[{2}]/{3}".format(
   data.modules.ido2db.database.user,
   data.modules.ido2db.database.password,
@@ -50,6 +51,7 @@ icinga2-cli-pkgs:
   data.modules.ido2db.database.host,
   data.modules.ido2db.database.port,
   data.modules.ido2db.database.name) %}
+{% endif %}
 {% endif %}
 # import schema
 {% set tmpf = '/tmp/icinga2-ido.schema.sql' %}
