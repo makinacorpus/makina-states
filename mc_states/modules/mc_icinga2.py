@@ -34,7 +34,9 @@ __docformat__ = 'restructuredtext en'
 # Import python libs
 
 from salt.utils.odict import OrderedDict
+import os
 import logging
+import traceback
 import copy
 import mc_states.utils
 from mc_states.utils import memoize_cache
@@ -47,6 +49,7 @@ log = logging.getLogger(__name__)
 def svc_name(key):
     key = key.replace('/', 'SLASH')
     key = key.replace(':', '_')
+    return key
 
 
 def reencode_webstrings(str_list):
@@ -75,7 +78,7 @@ def load_objects(core=True, ttl=120):
     the objects_definitions dictionary contains the defintinions of
     objects created with the configuration_add_object_macro
 
-    the purge_definitions list contains the files to delete
+    the purges list contains the files to delete
 
     the "notification" and "parents" are under "attrs"
     but in fact it creates other objects like HostDependency
@@ -167,15 +170,16 @@ def objects(core=True, ttl=120):
                                    lambda x: x.startswith('T_')],
                     'NotificationCommand': [lambda x: x.startswith('NC_'),
                                             lambda x: x.startswith('N_')],
-                    'HostTemplate': [lambda x: x.startswith('HT_')],
-                    'ServiceTemplate': [lambda x: x.startswith('ST_')],
+                    'Host': [lambda x: x.startswith('HT_'),
+                             lambda x: x.startswith('H_'),],
+                    'Service': [lambda x: x.startswith('ST_'),
+                                lambda x: x.startswith('S_')],
                     'User': [lambda x: x.startswith('U_')],
                     'UserGroup': [lambda x: x.startswith('G_')],
                     'HostGroup': [lambda x: x.startswith('HG_')],
                     'ServiceGroup': [lambda x: x.startswith('GS_'),
                                      lambda x: x.startswith('SG_')],
                     'HostGroup': [lambda x: x.startswith('HG_')],
-                    'Service': [lambda x: x.startswith('S_')],
                     'CheckCommand': [lambda x: x.startswith('check_'),
                                      lambda x: x.startswith('C_'),
                                      lambda x: x.startswith('EV_'),
@@ -187,31 +191,30 @@ def objects(core=True, ttl=120):
                             break
                     if typ_:
                         break
-            if typ_ in ['Service', 'Host'] and tp:
-                typ_ += 'Template'
             file_ = {'NotificationCommand': 'misccommands.conf',
                      'TimePeriod': 'timeperiods.conf',
                      'CheckCommand': 'checkcommands.conf',
                      'User': 'contacts.conf',
                      'UserGroup': 'contactgroups.conf',
+                     'HostGroup': 'hostgroups.conf',
                      'Service': 'services.conf',
-                     'ServiceTemplate': 'servicesTemplates.conf',
-                     'Host': 'contacts.conf',
-                     'HostTemplate': 'hostTemplates.conf'}
-
+                     'ServiceGroup': 'servicegroups.conf',
+                     'Host': 'contacts.conf'}
             # guess configuration file from type
             ft = data.setdefault('file', file_.get(typ_, None))
             data['file'] = ft
             data['type'] = typ_
+            data.setdefault('attrs', {})
             rdata['objects'][obj] = data
-            fdata = rdata['objects_by_file'].setdefault('file', OrderedDict())
+            fdata = rdata['objects_by_file'].setdefault(
+                data['file'], OrderedDict())
             fdata[obj] = data
         return rdata
     cache_key = 'mc_icinga2.objects___cache__'
     return memoize_cache(_do, [core], {}, cache_key, ttl)
 
 
-def format(dictionary, quote_keys=False, quote_values=True):
+def format(dictionary, quote_keys=False, quote_values=True, init=True):
     '''
     function to transform all values in a dictionary in string
     and adding quotes.
@@ -220,43 +223,47 @@ def format(dictionary, quote_keys=False, quote_values=True):
     This should be ["v1", "v2"] this can be done in jinja
     template but the template is already complex
     '''
+    def quotev(v):
+        if not v.startswith('"'):
+            v = '"' + str(v.replace('"', '\\"')) + '"'
+        return v
     res = {}
-    for key, value in dictionary.items():
+    for key, value in copy.deepcopy(dictionary).items():
         if quote_keys:
-            res_key = '"'+str(key)+'"'
+            res_key = quotev(key)
         else:
             res_key = key
 
         # ugly hack
-        if key in ['type', 'template', 'types', 'states']:
+        if key in ['template',
+                   'types', 'states', 'import']:
             quote_value = False
+        elif key in ['command']:
+            quote_value = True
         else:
             quote_value = quote_values
 
         if isinstance(value, dict):  # recurse
             # in theses subdictionaries, the keys are also quoted
             if key in ['arguments', 'ranges']:
-                res[res_key] = format(value, True, True)
+                res[res_key] = format(value, True, True, False)
             # theses dictionaries contains booleans
-            elif key in ['services_enabled', 'services_loop_enabled']:
-                res[res_key] = format(value, False, False)
+            elif key in ['services_enabled']:
+                res[res_key] = format(value, False, False, False)
             else:
-                res[res_key] = format(value, quote_keys, quote_value)
+                res[res_key] = format(value, quote_keys, quote_value, False)
         elif isinstance(value, list):
             # theses lists are managed in the template,
             # we only quote each string in the list
             if key in ['import', 'parents']:
-                res[res_key] = map((
-                    lambda v: '"' + str(v).replace('"', '\\"') + '"'), value)
+                res[res_key] = map(quotev, value)
             else:
 
                 res[res_key] = '['
                 # suppose that all values in list are strings
                 # escape '"' char and quote each strings
                 if quote_value:
-                    res[res_key] += ', '.join(
-                        map((lambda v: '"' + str(v).replace(
-                            '"', '\\"') + '"'), value))
+                    res[res_key] += ', '.join(map(quotev, value))
                 else:
                     res[res_key] += ', '.join(value)
                 res[res_key] += ']'
@@ -275,19 +282,18 @@ def format(dictionary, quote_keys=False, quote_values=True):
             res[res_key] = value
         elif key.endswith('_interval'):  # a bad method to find a time
             res[res_key] = value
-        elif isinstance(value, bool) and not quote_value:
-            res[res_key] = value
+        elif isinstance(value, bool):
+            res[res_key] = (value is True) and 'true' or 'false'
         elif isinstance(value, int):
             res[res_key] = str(value)
         elif isinstance(value, unicode):
             if quote_value:
-                res[res_key] = '"' + value.replace('"', '\\"') + '"'
+                res[res_key] = quotev(value)
             else:
                 res[res_key] = value
         else:
             if quote_value:
-                res[res_key] = '"' + str(value).decode(
-                    'utf-8').replace('"', '\\"')+'"'
+                res[res_key] = quotev(str(value).decode('utf-8'))
             else:
                 res[res_key] = value
     return res
@@ -407,6 +413,7 @@ def settings():
                 },
                 'constants_conf': {
                     'PluginDir': "\"/usr/lib/nagios/plugins\"",
+                    'USER1': "\"/usr/lib/nagios/plugins\"",
                     'ZoneName': "NodeName",
                 },
                 'zones_conf': {
@@ -470,12 +477,12 @@ def replace_chars(s):
 def remove_configuration_objects():
     '''Add the file in the file's list to be removed'''
     icingaSettings_complete = __salt__['mc_icinga2.settings']()
-    files = objects()['purge_definitions']
+    files = __salt__['mc_icinga2.load_objects']()['purges']
     todel = []
-    prefix = icingaSettings_complete['objects']['directory']
+    prefix = icingaSettings_complete['gen_directory']
     for f in files:
-        pretendants = [os.path.join(prefix, filen),
-                       filen]
+        pretendants = [os.path.join(prefix, f),
+                       f]
         for p in pretendants:
             if os.path.exists(p):
                 todel.append(p)
@@ -485,16 +492,20 @@ def remove_configuration_objects():
 def autoconfigured_hosts(ttl=60):
     def _do():
         rdata = OrderedDict()
-        for host, data in objects['autoconfigured_hosts'].items():
-            rdata[host] = __salt__['mc_icinga2.autoconfigured_host'](host)
+        objs = __salt__['mc_icinga2.load_objects']()[ 'autoconfigured_hosts']
+        for host, data in objs.items():
+            rdata[host] = __salt__['mc_icinga2.autoconfigured_host'](
+                host, data=data)
+        return rdata
     cache_key = 'mc_icinga2.autoconfigured_hosts__cache__'
-    return memoize_cache(_do, [core], {}, cache_key, ttl)
+    return memoize_cache(_do, [], {}, cache_key, ttl)
 
 
-def autoconfigured_host(host, ttl=60):
-    def _do():
-        data = __salt__['mc_icinga2.load_objects']()[
-            'autoconfigured_hosts'][host]
+def autoconfigured_host(host, data=None, ttl=60):
+    def _do(host, data):
+        if data is None:
+            data = __salt__['mc_icinga2.load_objects']()[
+                'autoconfigured_hosts'][host]
         data = copy.deepcopy(data)
         # automatic name from ID
         if not data.get('name', ''):
@@ -502,11 +513,21 @@ def autoconfigured_host(host, ttl=60):
         # automatic hostname from ID
         if not data.get('hostname', ''):
             data['hostname'] = host
-        rdata = __salt__['mc_icinga2.autoconfigure_host'](
-            data['hostname'], **data)
+        try:
+            rdata = __salt__['mc_icinga2.autoconfigure_host'](
+                data['hostname'], **data)
+            for k in ['name', 'hostname']:
+                rdata[k] = data[k]
+        except Exception, exc:
+            trace = traceback.format_exc()
+            log.error('Supervision autoconfiguration '
+                      'routine failed for {0}'.format(host))
+            log.error(trace)
+            log.error('{0}'.format(data))
+            raise exc
         return rdata
-    cache_key = 'mc_icinga2.autoconfigured_hosts__cache__{0}'.format(host)
-    return memoize_cache(_do, [], {}, cache_key, ttl)
+    cache_key = 'mc_icinga2.autoconfigured_host__cache__{0}'.format(host)
+    return memoize_cache(_do, [host, data], {}, cache_key, ttl)
 
 
 def autoconfigure_host(host,
@@ -563,8 +584,8 @@ def autoconfigure_host(host,
                        web_openid=False,
                        **kwargs):
     disk_space_mode_maps = {
-        'lazy': 'ST_LAZY_DISK_SPACE',
-        'ulazy': 'ST_ULAZY_DISK_SPACE',
+        'large': 'ST_LARGE_DISK_SPACE',
+        'ularge': 'ST_ULARGE_DISK_SPACE',
         None: 'ST_DISK_SPACE'}
     memory_mode_maps = {
         'large': 'ST_MEMORY_LARGE',
@@ -615,7 +636,7 @@ def autoconfigure_host(host,
                 'ware_raid',
                 'web_apache_status']
     services_multiple = ['dns_association', 'solr', 'web_openid', 'web']
-    rdata = {}
+    rdata = {"host.name": host}
     icingaSettings = __salt__['mc_icinga2.settings']()
     if attrs is None:
         attrs = {}
@@ -698,6 +719,8 @@ def autoconfigure_host(host,
         'fail2ban': {
             'import': ["ST_PROCESS_FAIL2BAN"]},
         'process_gunicorn': {
+            'import': ["ST_PROCESS_GUNICORN"]},
+        'process_gunicorn_django': {
             'import': ["ST_PROCESS_GUNICORN_DJANGO"]},
         'haproxy': {
             'import': ["ST_HAPROXY_STATS"]},
@@ -765,8 +788,8 @@ def autoconfigure_host(host,
         ):
             services_enabled_types.append(s)
     for svc in services_enabled_types:
-        if svc in ['disk_space', 'nic_cards'] + services_multiple:
-            if svc in ['disk_space', 'nic_cards']:
+        if svc in ['disk_space', 'nic_card'] + services_multiple:
+            if svc in ['disk_space', 'nic_card']:
                 values = eval(svc)
             else:
                 values = services_attrs.get(svc, {})
@@ -774,21 +797,23 @@ def autoconfigure_host(host,
             for v in keys:
                 vdata = services_attrs.get(svc, {}).get(v, {})
                 skey = svc_name('{0}_{1}_{2}'.format(host, svc, v).upper())
-                ss = add_check(services_enabled,
+                ss = add_check(host,
+                               services_enabled,
                                svc,
                                skey,
                                services_default_attrs.get(svc, {}),
                                vdata)[skey]
-                if svc in ['disk_space', 'nic_cards']:
+                if svc in ['disk_space', 'nic_card']:
                     ss[{'disk_space': 'vars.path',
                         'nic_card': 'vars.interface'}[svc]] = v
                 # transform value in string: ['a', 'b'] => '"a" -s "b"'
-                if svc in ['solr', 'web'] and 'var.strings' in ss:
+                if svc in ['solr', 'web'] and 'vars.strings' in ss:
                     ss['vars.strings'] = reencode_webstrings(
-                        services_attrs[web_type][name]['vars.strings'])
+                        services_attrs[svc][v]['vars.strings'])
         else:
             skey = svc_name('{0}_{1}'.format(host, svc).upper())
-            ss = add_check(services_enabled,
+            ss = add_check(host,
+                           services_enabled,
                            svc,
                            skey,
                            services_default_attrs[svc],
@@ -796,8 +821,9 @@ def autoconfigure_host(host,
     return rdata
 
 
-def add_check(services_enabled, svc, skey, default_value, vdata):
+def add_check(host, services_enabled, svc, skey, default_value, vdata):
     ss = __salt__['mc_utils.dictupdate'](copy.deepcopy(default_value), vdata)
+    ss['host.name'] = host
     ss['service_description'] = skey
     ss['makinastates_service_type'] = svc
     services_enabled[skey] = ss
