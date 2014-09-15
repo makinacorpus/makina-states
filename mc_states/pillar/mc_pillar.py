@@ -693,6 +693,7 @@ def get_supervision_confs(id_, gconf=None, ms_vars=None):
                 'pnp': get_supervision_pnp_conf,
                 'nagvis': get_supervision_nagvis_conf
             }[kind](id_, gconf=gconf, ms_vars=ms_vars))
+    rdata.update(__salt__['mc_pillar.get_supervision_objects_defs'](id_))
     return rdata
 
 

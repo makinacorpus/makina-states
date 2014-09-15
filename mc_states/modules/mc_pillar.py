@@ -1759,6 +1759,15 @@ def get_supervision_conf_kind(id_, kind):
     return rdata
 
 
+def get_supervision_objects_defs(id_):
+    rdata = {}
+    if is_supervision_kind(id_, 'master'):
+        data = query('supervision_configurations')
+        rdata.update(
+            {'icinga2_definitions': data.get('definitions', {})})
+    return rdata
+
+
 def get_supervision_pnp_conf(id_, ttl=60):
     def _do_ms_var(id_):
         return get_supervision_conf_kind(id_, 'pnp')

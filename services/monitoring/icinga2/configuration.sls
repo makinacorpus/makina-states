@@ -9,6 +9,7 @@
 {% set data = salt['mc_icinga2.settings']() %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 
+
 include:
   - makina-states.services.monitoring.icinga2.hooks
   - makina-states.services.monitoring.icinga2.services
@@ -129,30 +130,12 @@ icinga2-{{f}}-conf:
 # add objects configuration
 {% import "makina-states/services/monitoring/icinga2/init.sls" as icinga2 with context %}
 
-# purge objects (the macro add the files into a list)
-{% for file in salt['mc_icinga2.get_settings_for_object']('purge_definitions') %}
-{{ icinga2.configuration_remove_object(file=file) }}
-{% endfor %}
-
 # add templates and commands (and contacts, timeperiods...)
-{% for name in data.objects.objects_definitions %}
-{% set file = salt['mc_icinga2.get_settings_for_object']('objects_definitions', name, 'file') %}
-{{ icinga2.configuration_add_object(file=file, fromsettings=name) }}
-{% endfor %}
-
-# add autoconfigured hosts
-{% for name in data.objects.autoconfigured_hosts_definitions %}
-{% set hostname = salt['mc_icinga2.get_settings_for_object'](
-    'autoconfigured_hosts_definitions', name, 'hostname') %}
-{{ icinga2.configuration_add_auto_host(hostname=hostname, fromsettings=name) }}
-{% endfor %}
-
-# really add the files
-{% for file in salt['mc_icinga2.add_configuration_object'](get=True) %}
+{% for file in salt['mc_icinga2.objects']().objects_by_file %}
 {% set state_name_salt =  salt['mc_icinga2.replace_chars'](file) %}
 icinga2-configuration-{{state_name_salt}}-add-objects-conf:
   file.managed:
-    - name: {{data.objects.directory}}/{{file}}
+    - name: {{data.gen_directory}}/{{file}}
     - source: salt://makina-states/files/etc/icinga2/conf.d/template.conf
     - user: root
     - group: root
@@ -164,14 +147,40 @@ icinga2-configuration-{{state_name_salt}}-add-objects-conf:
       - mc_proxy: icinga2-configuration-post-object-conf
     - template: jinja
     - defaults:
-      file: |
-            {{salt['mc_utils.json_dump'](file)}}
+        file: |
+              {{salt['mc_utils.json_dump'](file)}}
+{% endfor %}
 
+# add autoconfigured hosts
+{% for hostname, odata in salt['mc_icinga2.autoconfigured_hosts']().items() %}
+# add the host/hostgroup object and its services with only one state (the host and its services are in the same file)
+# having all services associated to a host in one file avoid to delete files for disabled services
+# the macro configuration_remove_object isn't called so much
+
+# the main difference with the previous version, where there was one file per service is that the loops over services 
+# are done in the template, not in the sls file.
+icinga2-configuration-{{odata.state_name_salt}}-add-auto-host-conf:
+  file.managed:
+    - name: {{odata.directory}}/{{odata.file}}
+    - source: salt://makina-states/files/etc/icinga2/conf.d/template_auto_configuration_host.conf
+    - user: root
+    - group: root
+    - mode: 644
+    - makedirs: True
+    - watch:
+      - mc_proxy: icinga2-configuration-pre-object-conf
+    - watch_in:
+      - mc_proxy: icinga2-configuration-post-object-conf
+    - template: jinja
+    - defaults:
+        hostname: |
+                  {{salt['mc_utils.json_dump'](hostname)}}
 {% endfor %}
 
 # really delete the files
 # if there is a lot of files, it is better to use the "source" argument instead of the "contents" argument
 {% set tmpf="/tmp/delete.sh" %}
+# purge objects (the macro add the files into a list)
 icinga2-configuration-remove-objects-conf:
   file.managed:
     - name: {{tmpf}}
@@ -187,7 +196,7 @@ icinga2-configuration-remove-objects-conf:
     - contents: |
                 #!/usr/bin/env bash
                 ret=0
-                {% for i in salt['mc_icinga2.remove_configuration_object'](get=True) %}
+                {% for i in salt['mc_icinga2.remove_configuration_objects']() %}
                 if [ -e "{{f}}" ];then
                   rm -f "{{f}}"
                   lret="${?}"
@@ -199,7 +208,7 @@ icinga2-configuration-remove-objects-conf:
     - name: {{tmpf}}
     - onlyif: |
               #!/usr/bin/env bash
-              {% for i in salt['mc_icinga2.remove_configuration_object'](get=True) %}
+              {% for i in salt['mc_icinga2.remove_configuration_objects']() %}
               if [ -e "{{i}}" ];then exit 0;fi
               {% endfor %}
               exit 1
