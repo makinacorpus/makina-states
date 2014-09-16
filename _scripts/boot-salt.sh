@@ -28,11 +28,6 @@ EOF
     fi
 }
 
-#mkdir() {
-#    echo "$@" >> /foo
-#    /bin/mkdir $@
-#}
-
 get_curgitpackid() {
     python << EOF
 try:
@@ -65,8 +60,11 @@ THIS="$(get_abspath ${THIS})"
 export PATH
 
 is_container() {
-    cat -e /proc/1/environ 2>/dev/null|grep -q container=
-    echo "${?}"
+    if cat -e /proc/1/cgroups 2>/dev/null|egrep -q 'docker|lxc';then
+        echo "0"
+    else
+        echo "1"
+    fi
 }
 
 filter_host_pids() {
@@ -161,35 +159,7 @@ check_connectivity() {
     echo ${ret}
 }
 
-warn_log() {
-    if [ -e "${SALT_BOOT_CMDFILE}" ] \
-        || [ -e "${SALT_BOOT_OUTFILE}" ] \
-        || [ -e "${SALT_BOOT_LOGFILE}" ];\
-    then
-        bs_log "logs for salt executions availables in:"
-        if [ -e "${SALT_BOOT_OUTFILE}" ];then
-            bs_log "    - ${SALT_BOOT_OUTFILE}"
-        fi
-        if [ -e "${SALT_BOOT_LOGFILE}" ];then
-            bs_log "    - ${SALT_BOOT_LOGFILE}"
-        fi
-        if [ -e "${SALT_BOOT_CMDFILE}" ];then
-            bs_log "    - ${SALT_BOOT_CMDFILE}"
-        fi
-        travis_log
-    fi
-}
-
-travis_log() {
-    if [ "x${TRAVIS_DEBUG}" != "x" ] && [ "x$(get_salt_nodetype)" = "xtravis" ];then
-        cat "${SALT_BOOT_OUTFILE}"
-        cat "${SALT_BOOT_LOGFILE}"
-        cat "${SALT_BOOT_CMDFILE}"
-    fi
-}
-
 die_() {
-    warn_log
     ret=${1}
     shift
     printf "${CYAN}PROBLEM DETECTED, BOOTSALT FAILED${NORMAL}\n" 1>&2
@@ -613,10 +583,14 @@ set_vars() {
     BASE_PACKAGES="${BASE_PACKAGES} libmemcached-dev acl build-essential m4 libtool pkg-config autoconf gettext bzip2"
     BASE_PACKAGES="${BASE_PACKAGES} groff man-db automake libsigc++-2.0-dev tcl8.5 python-dev"
     BASE_PACKAGES="${BASE_PACKAGES} debconf-utils swig libssl-dev libgmp3-dev libffi-dev"
+    DO_NODETYPE="${DO_NODETYPE:-"y"}"
     DO_SALT="${DO_SALT:-"y"}"
     DO_MASTERSALT="${DO_MASTERSALT:-"y"}"
     if [ "x$(get_do_mastersalt)" != "xy" ];then
         DO_MASTERSALT="no"
+    fi
+    if [ "x${DO_NODETYPE}" != "xy" ];then
+        DO_NODETYPE="no"
     fi
     if [ "x${DO_SALT}" != "xy" ];then
         DO_SALT="no"
@@ -639,9 +613,8 @@ set_vars() {
     SALT_MS="${SALT_ROOT}/makina-states"
     SALT_PILLAR="${SALT_PILLAR:-$PREFIX/pillar}"
     SALT_BOOT_SYNC_CODE="${SALT_BOOT_SYNC_CODE:-}"
+    SALT_BOOT_SYNC_DEPS="${SALT_BOOT_SYNC_DEPS:-onlysync}"
     SALT_BOOT_NOCONFIRM="${SALT_BOOT_NOCONFIRM:-}"
-    SALT_BOOT_OUTFILE="${SALT_MS}/.boot_salt.$(get_chrono).out"
-    SALT_BOOT_LOGFILE="${SALT_MS}/.boot_salt.$(get_chrono).log"
     SALT_BOOT_ONLY_PREREQS="${SALT_BOOT_ONLY_PREREQS}"
     SALT_BOOT_ONLY_INSTALL_SALT="${SALT_BOOT_ONLY_INSTALL_SALT}"
     MASTERSALT_PILLAR="${MASTERSALT_PILLAR:-$PREFIX/mastersalt-pillar}"
@@ -657,8 +630,6 @@ set_vars() {
     # global installation marker
     SALT_BOOT_NOW_INSTALLED=""
     # the current mastersalt.makinacorpus.net hostname
-    BOOT_LOGS="${SALT_MS}/.bootlogs"
-    MBOOT_LOGS="${MASTERSALT_MS}/.bootlogs"
     # base sls bootstrap
     bootstrap_pref="makina-states.bootstraps"
     bootstrap_nodetypes_pref="${bootstrap_pref}.nodetypes"
@@ -975,12 +946,12 @@ set_vars() {
     export SALT_BOOT_ONLY_PREREQS SALT_BOOT_ONLY_INSTALL_SALT
     export BS_MS_ASSOCIATION_RESTART_MINION BS_MS_ASSOCIATION_RESTART_MASTER
     export BS_ASSOCIATION_RESTART_MASTER BS_ASSOCIATION_RESTART_MINION
-    export DO_PIP DO_MS_PIP DO_MASTERSALT DO_SALT DO_REFRESH_MODULES
+    export DO_PIP DO_MS_PIP DO_MASTERSALT DO_SALT DO_REFRESH_MODULES DO_NODETYPE
     export FORCE_SALT_BOOT_SKIP_CHECKOUTS
     export ONLY_BUILDOUT_REBOOTSTRAP
     export EGGS_GIT_DIRS
     export TRAVIS_DEBUG SALT_BOOT_LIGHT_VARS TRAVIS
-    export IS_SALT_UPGRADING SALT_BOOT_SYNC_CODE SALT_BOOT_INITIAL_HIGHSTATE
+    export IS_SALT_UPGRADING SALT_BOOT_SYNC_CODE SALT_BOOT_INITIAL_HIGHSTATE SALT_BOOT_SYNC_DEPS
     export SALT_REBOOTSTRAP BUILDOUT_REBOOTSTRAP VENV_REBOOTSTRAP
     export IS_SALT IS_SALT_MASTER IS_SALT_MINION
     export IS_MASTERSALT IS_MASTERSALT_MASTER IS_MASTERSALT_MINION
@@ -1310,146 +1281,37 @@ get_mastersaltcall_args() {
 
 salt_call_wrapper_() {
     last_salt_retcode=-1
-    salt_call_prefix=${1};shift
-    outf="${SALT_BOOT_OUTFILE}"
-    logf="${SALT_BOOT_LOGFILE}"
-    cmdf="${SALT_BOOT_CMDFILE}"
-    saltargs=" --retcode-passthrough --out=yaml --out-file="$outf" --log-file="$logf""
+    contextual_ms=${1};shift
+    saltargs=" --retcode-passthrough"
     if [ "x${SALT_BOOT_DEBUG}" != "x" ];then
         saltargs="${saltargs} -l${SALT_BOOT_DEBUG_LEVEL}"
     else
-        saltargs="${saltargs} -lquiet"
+        saltargs="${saltargs} -linfo"
     fi
     if [ "x$(get_salt_nodetype)" = "xtravis" ];then
         touch /tmp/travisrun
         ( while [ -f /tmp/travisrun ];do sleep 15;echo "keep me open";sleep 45;done; )&
     fi
-    echo "$(date): ${salt_call_prefix}/bin/salt-call $saltargs ${@}" >> "$cmdf"
-    ${salt_call_prefix}/bin/salt-call ${saltargs} ${@}
+    bs_log "Calling:"
+    echo ""\
+        "${contextual_ms}/bin/python ${contextual_ms}/mc_states/saltcaller.py" \
+        " --validate-states --no-display-ret --use-vt -v --executable" \
+        " ${contextual_ms}/bin/salt-call ${saltargs} ${@}"
+    "${contextual_ms}/bin/python" "${contextual_ms}/mc_states/saltcaller.py" \
+        --validate-states --no-display-ret --use-vt -v --executable \
+        "${contextual_ms}/bin/salt-call" ${saltargs} ${@}
     last_salt_retcode=${?}
     if [ "x$(get_salt_nodetype)" = "xtravis" ];then
         rm -f /tmp/travisrun
     fi
-    STATUS="NOTSET"
-    yaml_check=1
-    if [ -e "${outf}" ];then
-      stmpf=$(mktemp)
-      cat > "${stmpf}" << EOF
-from __future__ import (absolute_import, division, print_function)
-import yaml, sys, codecs
-from pprint import pprint
-ret = 0
-statecheck = False
-saltargs = """
-${saltargs}
-${@}
-"""
-for i in ['state.highstate', 'state.sls']:
-    if i in saltargs:
-        statecheck = True
-if statecheck:
-    with codecs.open("${outf}", "r", "utf-8") as fic:
-        fdata = fic.read()
-        if not fdata:
-            print("no file content")
-            sys.exit(1)
-        data = yaml.load(fdata)
-        if not isinstance(data, dict):
-            print("no state data in\n{0}".format(pprint(data)))
-            sys.exit(1)
-        for i, rdata in data.items():
-            if not isinstance(rdata, dict):
-                print("no state rdata in\n{0}".format(pprint(rdata)))
-                sys.exit(1)
-            if ret:
-                break
-            for j, statedata in rdata.items():
-                if statedata.get('result', None) is False:
-                    pprint(statedata)
-                    ret = 1
-                    break
-sys.exit(ret)
-EOF
-        "${salt_call_prefix}/bin/python" "${stmpf}"
-        yaml_check=${?}
-        rm -f "${stmpf}"
-    fi
-    if [ "x${yaml_check}" != "x0" ] && [ "x${last_salt_retcode}" != "x0" ] && [ "x${last_salt_retcode}" != "x2" ];then
-        STATUS="ERROR"
-        bs_log "salt-call ERROR, check ${logf} and ${outf} for details" 2>&2
-        last_salt_retcode=100
-    fi
-    no_output_log=""
-    if [ -e "$logf" ];then
-        if grep  -q "No matching sls found" "$logf";then
-            STATUS="ERROR"
-            bs_log "salt-call  ERROR DETECTED : No matching sls found" 1>&2
-            last_salt_retcode=101
-            no_output_log="y"
-        elif egrep -q "\[salt.(state|crypt)[ ]*\]\[(ERROR|CRITICAL)[ ]*\]" "$logf";then
-            STATUS="ERROR"
-            bs_log "salt-call  ERROR DETECTED, check ${logf} for details" 1>&2
-            egrep "\[salt.state       \]\[ERROR   \]" "${logf}" 1>&2;
-            last_salt_retcode=102
-            no_output_log="y"
-        elif egrep  -q "Rendering SLS .*failed" "${logf}";then
-            STATUS="ERROR"
-            bs_log "salt-call  ERROR DETECTED : Rendering failed" 1>&2
-            last_salt_retcode=103
-            no_output_log="y"
-        fi
-    fi
-    if [ -e "${outf}" ];then
-        if [ "x${yaml_check}" = "x0" ];then
-            last_salt_retcode=0
-            STATUS="OK"
-        elif [ "x${yaml_check}" != "x0" ];then
-            if [ "x${no_output_log}" = "x" ];then
-                bs_log "partial content of $outf, check this file for full output" 1>&2
-            fi
-            egrep -B4 "result: false" "${outf}" 1>&2;
-            last_salt_retcode=104
-            STATUS="ERROR"
-        elif egrep  -q "Rendering SLS .*failed" "${outf}";then
-            if [ "x${no_output_log}" = "x" ];then
-                bs_log "salt-call  ERROR DETECTED : Rendering failed (o)" 1>&2
-            fi
-            last_salt_retcode=103
-            STATUS="ERROR"
-        fi
-    fi
-    if [ "x${STATUS}" != "xERROR" ] \
-        && [ "x${last_salt_retcode}" != "x0" ]\
-        && [ "x${last_salt_retcode}" != "x2" ];\
-    then
-        last_salt_retcode=0
-    fi
-    for i in "${SALT_BOOT_OUTFILE}" "${SALT_BOOT_LOGFILE}" "${SALT_BOOT_CMDFILE}";do
-        if [ -e "${i}" ];then
-            chmod 600 "${i}" 1>/dev/null 2>/dev/null
-        fi
-    done
+    return ${last_salt_retcode}
 }
 
 salt_call_wrapper() {
-    chrono="$(get_full_chrono)"
-    if [ ! -d "${BOOT_LOGS}" ];then
-        mkdir -pv "${BOOT_LOGS}"
-    fi
-    SALT_BOOT_OUTFILE="${BOOT_LOGS}/boot_salt.${chrono}.out"
-    SALT_BOOT_LOGFILE="${BOOT_LOGS}/boot_salt.${chrono}.log"
-    SALT_BOOT_CMDFILE="${BOOT_LOGS}/boot_salt_cmd"
     salt_call_wrapper_ "${SALT_MS}" $(get_saltcall_args) ${@}
 }
 
 mastersalt_call_wrapper() {
-    chrono="$(get_full_chrono)"
-    if [ ! -d "${MBOOT_LOGS}" ];then
-        mkdir -pv ${MBOOT_LOGS}
-    fi
-    SALT_BOOT_OUTFILE="${MBOOT_LOGS}/boot_salt.${chrono}.out"
-    SALT_BOOT_LOGFILE="${MBOOT_LOGS}/boot_salt.${chrono}.log"
-    SALT_BOOT_CMDFILE="${MBOOT_LOGS}/boot_salt_cmd"
     salt_call_wrapper_ "${MASTERSALT_MS}" $(get_mastersaltcall_args) -c ${MCONF_PREFIX} ${@}
 }
 
@@ -1990,11 +1852,18 @@ setup_virtualenv() {
         bs_log "Pip install in place for $skind"
     else
         bs_log "Python install incomplete for $skind"
-        pip install -U --download-cache "${PIP_CACHE}" -r requirements/requirements.txt
+        if pip --help | grep -q download-cache;then
+            copt="--download-cache"
+        else
+            copt="--cache-dir"
+        fi
+        pip install -U $copt "${PIP_CACHE}" -r requirements/requirements.txt
+        die_in_error "requirements/requirements.txt doesnt install"
         if [ "x${install_git}" != "x" ];then
-            pip install -U --download-cache "${PIP_CACHE}" -e "git+$(get_salt_url)@$(get_salt_branch)#egg=salt"
-            pip install -U --download-cache "${PIP_CACHE}" -r requirements/git_requirements.txt
-            pip install -U --download-cache "${PIP_CACHE}" -r requirements/git_salt_requirements.txt
+            pip install -U $copt "${PIP_CACHE}" --no-deps -e "git+$(get_salt_url)@$(get_salt_branch)#egg=salt"
+            die_in_error "salt develop doesnt install"
+            pip install -U $copt "${PIP_CACHE}" --no-deps -r requirements/git_salt_requirements.txt
+            die_in_error "requirements/git_salt_requirements.txt doesnt install"
         else
             cwd="${PWD}"
             for i in docker-py salttesting salt m2crypto;do
@@ -3373,7 +3242,6 @@ make_association() {
                 ret="${?}"
                 if [ "x${ret}" != "x0" ];then
                     bs_log "Failed accepting keys"
-                    warn_log
                     exit 1
                 else
                     bs_log "Accepted key"
@@ -3394,7 +3262,6 @@ make_association() {
             minion_challenge
             if [ "x${challenged_ms}" = "x" ];then
                 bs_log "Failed accepting salt key on master for ${minion_id}"
-                warn_log
                 exit 1
             fi
             minion_id="$(get_minion_id)"
@@ -3403,7 +3270,6 @@ make_association() {
         fi
         if [ "x${registered}" = "x" ];then
             bs_log "Failed accepting salt key on ${SALT_MASTER_IP} for ${minion_id}"
-            warn_log
             exit 1
         fi
     fi
@@ -3462,7 +3328,6 @@ make_mastersalt_association() {
                 ret="${?}"
                 if [ "x${ret}" != "x0" ];then
                     bs_log "Failed accepting mastersalt keys"
-                    warn_log
                     exit 1
                 else
                     bs_log "Accepted mastersalt key"
@@ -3489,7 +3354,6 @@ make_mastersalt_association() {
             mastersalt_minion_challenge
             if [ "x${challenged_ms}" = "x" ];then
                 bs_log "Failed accepting salt key on master for ${minion_id}"
-                warn_log
                 exit 1
             fi
             minion_id="$(get_minion_id)"
@@ -3498,7 +3362,6 @@ make_mastersalt_association() {
         fi
         if [ "x${registered}" = "x" ];then
             bs_log "Failed accepting mastersalt key on $(get_mastersalt) for ${minion_id}"
-            warn_log
             exit 1
         fi
     fi
@@ -3532,13 +3395,8 @@ run_salt_bootstrap_() {
     bs=${2}
     bs_log "Running ${salt_type} bootstrap: ${bs}"
     ${salt_type}_call_wrapper --local state.sls ${bs}
-    if [ "x${SALT_BOOT_DEBUG}" != "x" ];then cat "${SALT_BOOT_OUTFILE}";fi
-    warn_log
     if [ "x${last_salt_retcode}" != "x0" ];then
         echo "${salt_type}: Failed bootstrap: ${bs}"
-        if [ "x${TRAVIS}" != "x" ];then
-            cat "${SALT_BOOT_OUTFILE}" "${SALT_BOOT_LOGFILE}"
-        fi
         exit 1
     fi
 }
@@ -3551,6 +3409,18 @@ run_mastersalt_bootstrap() {
     run_salt_bootstrap_ mastersalt ${@}
 }
 
+install_nodetype() {
+    if [ "x${DO_NODETYPE_INSTALL}" != "x" ];then
+        # run mastersalt master+minion boot_nodetype bootstrap
+        ${SED} -i -e "/makina-states.nodetypes.$(get_salt_nodetype):/ d"  "${MCONF_PREFIX}/grains"
+        echo "makina-states.nodetypes.$(get_salt_nodetype): true" >> "${MCONF_PREFIX}/grains"
+        if [ "x$(get_salt_nodetype)" != "xscratch" ]; then
+            run_mastersalt_bootstrap ${mastersalt_bootstrap_nodetype}
+        fi
+    else:
+        bs_log "Nodetype bootstrap for $(get_salt_nodetype) skipped"
+    fi
+}
 
 install_mastersalt_daemons() {
     if [ "x$(get_do_mastersalt)" = "xno" ];then return;fi
@@ -3628,11 +3498,6 @@ install_mastersalt_daemons() {
             killall_local_mastersalt_minions
         fi
 
-        # run mastersalt master+minion boot_nodetype bootstrap
-        ${SED} -i -e "/makina-states.nodetypes.$(get_salt_nodetype):/ d"  "${MCONF_PREFIX}/grains"
-        echo "makina-states.nodetypes.$(get_salt_nodetype): true" >> "${MCONF_PREFIX}/grains"
-        run_mastersalt_bootstrap ${mastersalt_bootstrap_nodetype}
-
         # run mastersalt master setup
         if [ "x${IS_MASTERSALT_MASTER}" != "x" ] && [ "x$(get_local_mastersalt_mode)" != "xmasterless" ];then
             run_mastersalt_bootstrap ${mastersalt_bootstrap_master}
@@ -3706,8 +3571,6 @@ highstate_in_mastersalt_env() {
             bs_yellow_log " [bs] mastersalt highstate running offline !"
         fi
         mastersalt_call_wrapper ${LOCAL} state.highstate
-        if [ "x${SALT_BOOT_DEBUG}" != "x" ];then cat "${SALT_BOOT_OUTFILE}";fi
-        warn_log
         if [ "x${last_salt_retcode}" != "x0" ];then
             bs_log "Failed highstate for mastersalt"
             exit 1
@@ -3729,8 +3592,6 @@ highstate_in_salt_env() {
             LOCAL="--local ${LOCAL}"
         fi
         salt_call_wrapper ${LOCAL} state.highstate
-        if [ "x${SALT_BOOT_DEBUG}" != "x" ];then cat "${SALT_BOOT_OUTFILE}";fi
-        warn_log
         if [ "x${last_salt_retcode}" != "x0" ];then
             bs_log "Failed highstate"
             exit 1
@@ -3743,19 +3604,6 @@ highstate_in_salt_env() {
 run_highstates() {
     highstate_in_salt_env
     highstate_in_mastersalt_env
-}
-
-cleanup_old_installs() {
-    if [ "x$(egrep "bootstrapped\.salt" ${MCONF_PREFIX}/grains 2>/dev/null |wc -l|${SED} -e "s/ //g")" != "x0" ];then
-        bs_log "Cleanup old mastersalt grains"
-        "${SED}" -i -e "/bootstrap\.salt/d" "${MCONF_PREFIX}/grains"
-        mastersalt_call_wrapper --local saltutil.sync_grains
-    fi
-    if [ "x$(grep mastersalt ${CONF_PREFIX}/grains 2>/dev/null |wc -l|${SED} -e "s/ //g")" != "x0" ];then
-        bs_log "Cleanup old salt grains"
-        "${SED}" -i -e "/mastersalt/d" "${CONF_PREFIX}/grains"
-        salt_call_wrapper --local saltutil.sync_grains
-    fi
 }
 
 bs_help() {
@@ -3817,12 +3665,8 @@ usage() {
     bs_help "    --upgrade" "Run bootsalt upgrade code (primarely destinated to run as the highstate wrapper to use in crons)" "" "${IS_SALT_UPGRADING}"
     bs_help "    --refresh-modules" "refresh salt & mastersalt modules, grains & pillar (refresh all)" "" "y"
     bs_help "    --synchronize-code" "Only sync sourcecode" "${SALT_BOOT_SYNC_CODE}" y
-    bs_help "    --check-alive" "restart daemons if they are down" "" "y"
-    bs_help "    --restart-daemons" "restart master & minions daemons" "" "y"
-    bs_help "    --kill" "Kill all daemons" "${SALT_BOOT_CLEANUP}" y
+    bs_help "    --synchronize-deps" "When sync sourcecode, also get git dependencies" "${SALT_BOOT_SYNC_DEPS}" y
     bs_help "    --cleanup" "Cleanup old execution logfiles" "${SALT_BOOT_CLEANUP}" y
-    bs_help "    --restart-masters" "restart master daemons" "" "y"
-    bs_help "    --restart-minions" "restart minion daemons" "" "y"
     bs_help "    --reattach" "Reattach a mastersalt minion ba${SED} install to a new master (saltcloud/config.seed) (need new key/confs via --reattach-dir)" "${SALT_REATTACH}" y
     if [ "x${SALT_LONG_HELP}" != "x" ];then
         bs_help "    --salt-rebootstrap" "Redo salt bootstrap" "${SALT_REBOOTSTRAP}" "y"
@@ -3838,8 +3682,10 @@ usage() {
         bs_help "    -p|--prefix <path>" "prefix path" "${PREFIX}" yi
     fi
     bs_log "  Switches"
-    bs_help "    --only-do-salt" "Skip any mastersalt step" "" y
-    bs_help "    --only-do-mastersalt" "Skip any salt step" "" y
+    bs_help "    --only-nodetype" "Do only nodetype bootstrap states" "" y
+    bs_help "    --only-salt" "Do only salt states" "" y
+    bs_help "    --only-mastersalt" "Do only mastersalt states" "" y
+    bs_help "    --no-nodetype" "Do not run nodetype bootstrap" "" y
     bs_help "    --no-mastersalt" "Do not install mastersalt daemons" "" y
     bs_help "    --no-salt" "Do not install salt daemons" "" y
     bs_help "    --pack" "Do run git pack (gc) if necessary" "" y
@@ -3958,6 +3804,7 @@ parse_cli_opts() {
             SALT_BOOT_KILL="1"
             argmatch="1"
         fi
+        # do not remove yet for retro compat
         if [ "x${1}" = "x--check-alive" ];then
             SALT_BOOT_LIGHT_VARS="1"
             SALT_BOOT_SKIP_HIGHSTATES="1"
@@ -4004,6 +3851,10 @@ parse_cli_opts() {
             SALT_BOOT_SKIP_CHECKOUTS="1"
             argmatch="1"
         fi
+        if [ "x${1}" = "x--synchronize-deps" ];then
+            SALT_BOOT_SYNC_DEPS="1"
+            argmatch="1"
+        fi
         if [ "x${1}" = "x--synchronize-code" ];then
             SALT_BOOT_LIGHT_VARS="1"
             SALT_BOOT_SYNC_CODE="1"
@@ -4043,14 +3894,22 @@ parse_cli_opts() {
             SALT_BOOT_ONLY_INSTALL_SALT="yes"
             argmatch="1"
         fi
+        if [ "x${1}" = "x--only-nodetype" ];then
+            DO_NODETYPE="y"
+            DO_SALT="no"
+            DO_MASTERSALT="no"
+            argmatch="1"
+        fi
         if [ "x${1}" = "x--only-salt" ];then
             DO_SALT="y"
+            DO_NODETYPE="no"
             DO_MASTERSALT="no"
             argmatch="1"
         fi
         if [ "x${1}" = "x--only-mastersalt" ];then
-            DO_SALT="no"
             DO_MASTERSALT="y"
+            DO_NODETYPE="no"
+            DO_SALT="no"
             argmatch="1"
         fi
         if [ "x${1}" = "x-no-M" ] || [ "x${1}" = "x--no-salt-master" ];then
@@ -4061,6 +3920,10 @@ parse_cli_opts() {
         if [ "x${1}" = "x-no-N" ] || [ "x${1}" = "x--no-salt-minion" ];then
             FORCE_IS_SALT_MINION="no"
             IS_SALT_MINION=""
+            argmatch="1"
+        fi
+        if [ "x${1}" = "x--no-nodetype" ];then
+            DO_NODETYPE="no"
             argmatch="1"
         fi
         if [ "x${1}" = "x--no-salt" ];then
@@ -4210,41 +4073,6 @@ ps_etime() {
     ${PS} -eo pid,comm,etime,args | perl -ane '@t=reverse(split(/[:-]/, $F[2])); $s=$t[0]+$t[1]*60+$t[2]*3600+$t[3]*86400;$cmd=join(" ", @F[3..$#F]);print "$F[0]\t$s\t$F[1]\t$F[2]\t$cmd\n"'
 }
 
-start_missing_or_dead() {
-    if [ "x$(get_local_salt_mode)" != "xmasterless" ]\
-        && [ "x${IS_SALT_MASTER}" != "x" ]\
-        && [ $(master_processes) -lt 2 ];then
-        if [ "x${QUIET}" = "x" ];then
-            bs_log "Zero master, restarting them all"
-        fi
-        killall_local_masters
-        restart_local_masters
-    fi
-    if [ "x${IS_MASTERSALT_MASTER}" != "x" ] && [ $(mastersalt_master_processes) -lt 2 ];then
-        if [ "x${QUIET}" = "x" ];then
-            bs_log "Zero mastersalt master, restarting them all"
-        fi
-        killall_local_mastersalt_masters
-        restart_local_mastersalt_masters
-    fi
-    if [ "x$(get_local_salt_mode)" != "xmasterless" ]\
-        && [ "x${IS_SALT_MINION}" != "x" ]\
-        && [ $(minion_processes) -gt 5 ];then
-        if [ "x${QUIET}" = "x" ];then
-            bs_log "More than one or zero minion, restarting them all"
-        fi
-        killall_local_minions
-        restart_local_minions
-    fi
-    if [ "x${IS_MASTERSALT_MINION}" != "x" ] && [ $(mastersalt_minion_processes) -gt 5 ];then
-        if [ "x${QUIET}" = "x" ];then
-            bs_log "More than one or zero mastersalt minion, restarting them all"
-        fi
-        killall_local_mastersalt_minions
-        restart_local_mastersalt_minions
-    fi
-}
-
 check_alive() {
     if [ -e "${ALIVE_MARKER}" ];then
         return
@@ -4355,11 +4183,9 @@ kill_old_syncs() {
 }
 
 synchronize_code() {
-    install_prerequisites
-    cleanup_old_installs
     restart_modes=""
     kill_old_syncs
-    setup_and_maybe_update_code onlysync
+    setup_and_maybe_update_code "${SALT_BOOT_SYNC_DEPS}"
     exit_status=0
     if [ "x${QUIET}" = "x" ];then
         bs_log "Code updated"
@@ -4378,43 +4204,6 @@ synchronize_code() {
                 fi
             fi
         fi
-        # normally minions are now runned in multiprocessing
-        # meaning that we do not need to reload minion for it
-        # to see new code (that was not the case, a long ago).
-        # The only place would be if we stored modules in _modules
-        # on mastersalt, but here a manual call to sync is sufficient
-        # For now, refreshing the code (git pull) is totally sufficient
-        #if [ "x$(get_do_mastersalt)" != "x" ] \
-        #    && [ "x${IS_MASTERSALT}" != "x" ] \
-        #    && [ "x$(get_local_mastersalt_mode)" = "xremote" ];then
-        #    mastersalt_call_wrapper saltutil.clear_cache
-        #    if [ "x${last_salt_retcode}" != "x0" ];then
-        #        bs_log "mastersalt cache cleared but there was a problem"
-        #        exit_status=1
-        #    else
-        #        if [ "x${QUIET}" = "x" ];then
-        #            bs_log "mastersalt cache cleared"
-        #        fi
-        #    fi
-        #    if [ "x${last_salt_retcode}" != "x0" ];then
-        #        bs_log "refreshed mastersalt modules but there was a problem"
-        #        exit_status=1
-        #    else
-        #        if [ "x${QUIET}" = "x" ];then
-        #            bs_log "refreshed mastersalt modules"
-        #        fi
-        #    fi
-        #    mastersalt_call_wrapper saltutil.refresh_modules
-        #    #mastersalt_call_wrapper saltutil.sync_all
-        #    #if [ "x${last_salt_retcode}" != "x0" ];then
-        #    #    bs_log "refreshed mastersalt modules but there was a problem"
-        #    #    exit_status=1
-        #    #else
-        #    #    if [ "x${QUIET}" = "x" ];then
-        #    #        bs_log "refreshed mastersalt modules"
-        #    #    fi
-        #    #fi
-        #fi
     fi
 }
 
@@ -4483,7 +4272,6 @@ initial_highstates() {
 }
 
 cleanup_execlogs() {
-    cleanup_old_installs
     LOG_LIMIT="${LOG_LIMIT:-20}"
     # keep 20 local exec logs only
     for dir in "${SALT_MS}/.bootlogs" "${MASTERSALT_MS}/.bootlogs";do
@@ -4572,9 +4360,11 @@ if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
         do_install=""
     fi
     if [ "x${SALT_BOOT_SYNC_CODE}" != "x" ];then
+        install_prerequisites
         synchronize_code no_refresh
         do_install=""
     elif [ "x${DO_REFRESH_MODULES}" != "x" ];then
+        install_prerequisites
         synchronize_code
         do_install=""
     fi
@@ -4603,11 +4393,12 @@ if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
         recap
         set_dns
         install_prerequisites
-        setup_and_maybe_update_code
+        synchronize_code
         setup_virtualenvs
         MS_EXIT_STATUS=$?
         if [ "x${SALT_BOOT_ONLY_PREREQS}" = "x" ];then
             create_salt_skeleton
+            install_nodetype
             install_mastersalt_env
             install_salt_env
             MS_EXIT_STATUS=$?

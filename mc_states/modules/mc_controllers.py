@@ -134,9 +134,11 @@ def registry():
         ](__name, defaults={
             'mastersalt_minion': {'active': False},
             'mastersalt_master': {'active': False},
+            'mastersalt_masterless': {'active': False},
             'mastersalt': {'active': False},
             'salt_minion': {'active': False},
             'salt_master': {'active': False},
+            'salt_masterless': {'active': False},
             'salt': {'active': False},
         })
     return _registry()
