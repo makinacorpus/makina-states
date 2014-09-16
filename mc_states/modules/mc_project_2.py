@@ -168,11 +168,11 @@ def _raw_hs(mapping):
 
 
 def _force_cli_retcode(ret):
-     # cli codeerr = 3 in case of failure
-     if not ret['result']:
-         __context__['retcode'] = 3
-     else:
-         __context__['retcode'] = 0
+    # cli codeerr = 3 in case of failure
+    if not ret['result']:
+        __context__['retcode'] = 3
+    else:
+        __context__['retcode'] = 0
 
 
 def remove_path(path):
