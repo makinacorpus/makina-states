@@ -42,6 +42,7 @@ import mc_states.utils
 from mc_states.utils import memoize_cache
 
 __name = 'icinga2'
+_default = object()
 
 log = logging.getLogger(__name__)
 
@@ -204,7 +205,18 @@ def objects(core=True, ttl=120):
             ft = data.setdefault('file', file_.get(typ_, None))
             data['file'] = ft
             data['type'] = typ_
-            data.setdefault('attrs', {})
+            attrs = data.setdefault('attrs', {})
+            members = attrs.get('members', _default)
+            if members is not _default:
+                if 'members_link' not in attrs:
+                    if typ_ in ['Service']:
+                        attrs['members_link'] = 'host.name'
+                if 'members_link_operator' not in attrs:
+                    if isinstance(members, list):
+                        mlo = 'in'
+                    else:
+                        mlo = '=='
+                    attrs['members_link_operator'] = mlo
             rdata['objects'][obj] = data
             fdata = rdata['objects_by_file'].setdefault(
                 data['file'], OrderedDict())
@@ -235,8 +247,8 @@ def format(dictionary, quote_keys=False, quote_values=True, init=True):
             res_key = key
 
         # ugly hack
-        if key in ['template',
-                   'types', 'states', 'import']:
+        if key in ['template', 'type', 'types', 'states', 'import',
+                   'members_link_operator', 'members_link']:
             quote_value = False
         elif key in ['command']:
             quote_value = True
@@ -245,8 +257,12 @@ def format(dictionary, quote_keys=False, quote_values=True, init=True):
 
         if isinstance(value, dict):  # recurse
             # in theses subdictionaries, the keys are also quoted
-            if key in ['arguments', 'ranges']:
+            if key in ['arguments',
+                       'ranges']:
                 res[res_key] = format(value, True, True, False)
+            # theses dictionaries are quoted
+            elif key in ['notification']:
+                res[res_key] = format(value, False, True, False)
             # theses dictionaries contains booleans
             elif key in ['services_enabled']:
                 res[res_key] = format(value, False, False, False)
@@ -414,7 +430,15 @@ def settings():
                 'constants_conf': {
                     'PluginDir': "\"/usr/lib/nagios/plugins\"",
                     'USER1': "\"/usr/lib/nagios/plugins\"",
-                    'ZoneName': "NodeName",
+                    'SNMPCOMMUNITY': "\"public\"",
+                    'USER3_SNMPCRYPT': '\"secret\"',
+                    'USER4_SNMPPASS': '\"secret\"',
+                    'USER5_SNMPUSER': '\"user\"',
+                    'USER6_AUTHPAIR': '\"tsa:pw\"',
+                    'USER7_SSHKEY': '\"/root/.ssh/id_rsa.pub\"',
+                    'USER8_TESTUSER': "\"tsa\"",
+                    'USER9_TESTPWD': "\"pw\"",
+                    'ZoneName': "\"NodeName\"",
                 },
                 'zones_conf': {
                     'object Endpoint NodeName': {
@@ -532,6 +556,8 @@ def autoconfigured_host(host, data=None, ttl=60):
 
 def autoconfigure_host(host,
                        attrs=None,
+                       imports = None,
+                       no_default_imports=False,
                        services_attrs=None,
                        ssh_user='root',
                        ssh_addr='',
@@ -560,6 +586,7 @@ def autoconfigure_host(host,
                        megaraid_sas=False,
                        memory_mode=None,
                        memory=True,
+                       ping=True,
                        nic_card=None,
                        ntp_peers=False,
                        ntp_time=False,
@@ -580,7 +607,8 @@ def autoconfigure_host(host,
                        swap=True,
                        ware_raid=False,
                        web_apache_status=False,
-                       web=False,
+                       web=None,
+                       web_noalert=None,
                        web_openid=False,
                        **kwargs):
     disk_space_mode_maps = {
@@ -616,6 +644,7 @@ def autoconfigure_host(host,
                 'nic_card',
                 'ntp_peers',
                 'ntp_time',
+                'ping',
                 'postgres_port',
                 'process_epmd',
                 'process_gunicorn',
@@ -631,11 +660,13 @@ def autoconfigure_host(host,
                 'ssh',
                 'solr',
                 'web',
+                'web_noalert',
                 'web_openid',
                 'swap',
                 'ware_raid',
                 'web_apache_status']
-    services_multiple = ['dns_association', 'solr', 'web_openid', 'web']
+    services_multiple = ['dns_association',
+                         'web_noalert', 'solr', 'web_openid', 'web']
     rdata = {"host.name": host}
     icingaSettings = __salt__['mc_icinga2.settings']()
     if attrs is None:
@@ -648,6 +679,8 @@ def autoconfigure_host(host,
         web_openid = []
     if web is None:
         web = []
+    if web_noalert is None:
+        web_noalert = []
     filen = '/'.join(['hosts', host+'.conf'])
     if disk_space is None:
         disk_space = ['/']
@@ -662,12 +695,24 @@ def autoconfigure_host(host,
     rdata.update({'type': 'Host',
                   'directory': icingaSettings['gen_directory'],
                   'attrs': attrs,
+                  'hostname': host,
                   'file': filen,
                   'state_name_salt': replace_chars(filen)})
     services_enabled = rdata.setdefault('services_enabled', OrderedDict())
     services_enabled_types = rdata.setdefault('services_enabled_types', [])
-    attrs.setdefault('type',  'Host')
-    attrs.setdefault('hostname',  host)
+    imports = attrs.setdefault('import',  imports)
+    if not imports:
+        imports = []
+    if not no_default_imports:
+        default_imports = ['HT_BASE']
+        for i in [
+            a for a in default_imports
+            if not a in imports
+        ]:
+            imports.append(i)
+    if isinstance(imports, basestring):
+        imports = imports.split(',')
+    attrs['import'] = imports
     attrs.setdefault('vars.ssh_user', ssh_user)
     attrs.setdefault('vars.ssh_addr', ssh_addr)
     attrs.setdefault('vars.ssh_port', ssh_port)
@@ -695,11 +740,11 @@ def autoconfigure_host(host,
         'process_beam': {
             'import': ["ST_PROCESS_BEAM"]},
         'process_python': {
-            'import': ["ST_BEAM_PYTHON"]},
+            'import': ["ST_PROCESS_PYTHON"]},
         'cron': {
             'import': ["ST_SSH_PROC_CRON"]},
         'ddos': {
-            'import': ["ST_SSH_DDOS"]},
+            'import': ["ST_DDOS"]},
         'apt': {
             'import': ["ST_APT"]},
         'dns_association_hostname': {
@@ -760,6 +805,8 @@ def autoconfigure_host(host,
             'import': ["ST_PROCESS_POSTGRESQL"]},
         'snmpd_memory_control': {
             'import': ["ST_SNMPD_MEMORY_CONTROL"]},
+        'ping': {
+            'import': ["ST_PING"]},
         'solr': {
             'import': ["ST_SOLR"]},
         'ssh': {
@@ -774,13 +821,16 @@ def autoconfigure_host(host,
             'import': ["ST_WEB_OPENID"]},
         'web': {
             'import': ["ST_WEB"]},
+        'web_noalert': {
+            'import': ["ST_WEB_NOALERT"]},
         'megaraid_sas': {
             'import': ["ST_MEGARAID_SAS"]},
         'raid': {
             'import': ["ST_RAID"]},
         'sas': {
             'import': ["ST_SAS"]}}
-    # if we defined extra properties on a service, enable it automatically
+    # if we defined extra properties on a service,
+    # enable it automatically
     for s in services:
         if (
             s not in services_enabled_types
@@ -789,14 +839,18 @@ def autoconfigure_host(host,
             services_enabled_types.append(s)
     for svc in services_enabled_types:
         if svc in ['disk_space', 'nic_card'] + services_multiple:
+            default_vals = {
+                'web': {'PUBLIC_DEFAULT': {}}
+            }
             if svc in ['disk_space', 'nic_card']:
                 values = eval(svc)
             else:
-                values = services_attrs.get(svc, {})
+                values = services_attrs.get(svc,
+                                            default_vals.get(svc, {}))
             keys = [a for a in values]
             for v in keys:
                 vdata = services_attrs.get(svc, {}).get(v, {})
-                skey = svc_name('{0}_{1}_{2}'.format(host, svc, v).upper())
+                skey = svc_name('{1}_{2}'.format(host, svc, v).upper())
                 ss = add_check(host,
                                services_enabled,
                                svc,
@@ -807,11 +861,14 @@ def autoconfigure_host(host,
                     ss[{'disk_space': 'vars.path',
                         'nic_card': 'vars.interface'}[svc]] = v
                 # transform value in string: ['a', 'b'] => '"a" -s "b"'
-                if svc in ['solr', 'web'] and 'vars.strings' in ss:
+                if (
+                    svc in ['solr', 'web', 'web_noalert']
+                    and 'vars.strings' in ss
+                ):
                     ss['vars.strings'] = reencode_webstrings(
                         services_attrs[svc][v]['vars.strings'])
         else:
-            skey = svc_name('{0}_{1}'.format(host, svc).upper())
+            skey = svc_name('{1}'.format(host, svc).upper())
             ss = add_check(host,
                            services_enabled,
                            svc,
@@ -825,7 +882,7 @@ def add_check(host, services_enabled, svc, skey, default_value, vdata):
     ss = __salt__['mc_utils.dictupdate'](copy.deepcopy(default_value), vdata)
     ss['host.name'] = host
     ss['service_description'] = skey
-    ss['makinastates_service_type'] = svc
+    ss['vars.makinastates_service_type'] = svc
     services_enabled[skey] = ss
     return services_enabled
 
