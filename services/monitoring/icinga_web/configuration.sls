@@ -76,7 +76,7 @@ icinga_web-usr-database-conf:
 icinga_web-usr-cronks-conf:
   file.copy:
     - name: /usr/share/icinga-web/app/config/cronks.xml
-    - source:  {{data.configuration_directory}}/conf.d/cronks.xml
+    - source: /etc/icinga-web/conf.d/cronks.xml
     - makedirs: true
     - force: True
     - watch:
@@ -119,10 +119,22 @@ icinga_web-etc-sym-connf:
       - mc_proxy: icinga_web-post-conf
 
 icinga_web-etc-sym-tmpcronks:
+  cmd.run:
+    - onlyif: test -d /var/cache/icinga-web/tmp && test ! -h /var/cache/icinga-web/tmp
+    - name: |
+            if [ ! -d /usr/share/icinga-web/tmp ];then
+              mkdir -p /usr/share/icinga-web/tmp
+            fi
+            if [ ! -h /var/cache/icinga-web/tmp ];then
+              mv -vf /var/cache/icinga-web/tmp/* /usr/share/icinga-web/tmp
+              rm -rf /var/cache/icinga-web/tmp
+            fi
   file.symlink:
+    - onlyif: test ! -d /var/cache/icinga-web/tmp
     - name: /var/cache/icinga-web/tmp
     - target: /usr/share/icinga-web/tmp
     - watch:
+      - cmd: icinga_web-etc-sym-tmpcronks
       - mc_proxy: icinga_web-pre-conf
     - watch_in:
       - mc_proxy: icinga_web-post-conf
