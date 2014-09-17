@@ -383,6 +383,9 @@ def settings():
                 'databases': {'ido2db': ido2db_database,
                               'web': web_database},
                 'nginx': {
+                    'ssl_cacert': '',
+                    'ssl_cert': '',
+                    'ssl_key': '',
                     'domain': "icinga-web.localhost",
                     'doc_root': "/usr/share/icinga-web/www/",
                     'vh_content_source': (
@@ -410,6 +413,7 @@ def settings():
                     'open_basedir': (
                         "/usr/share/icinga-web/"
                         ":/etc"
+                        ":/var/run/icinga2/cmd/"
                         ":/var/cache/icinga-web/"
                         ":/var/log/icinga-web/"),
                     'extensions_packages': ['php5-pgsql'],

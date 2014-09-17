@@ -94,6 +94,14 @@ def settings():
         raw setting for nginx (see nginx documentation)
     multi_accept
         raw setting for nginx (see nginx documentation)
+    ssl_cert
+        ssl_cert content if any
+    ssl_key
+        ssl_key content if any
+    ssl_cacert
+        ssl_cacert content if any
+    ssl_redirect
+        unconditionnal www -> ssl redirect
     user
         nginx user
     server_names_hash_bucket_size
@@ -136,7 +144,7 @@ def settings():
         do we redirect server aliases to main domain
     port
         http port (80)
-    sshl_port
+    ssh_port
         https port (443)
     default_domains
         default domains to server ['localhost']
@@ -250,7 +258,7 @@ def settings():
                 'redirect_aliases': True,
                 'port': '80',
                 'default_domains': ['localhost'],
-                'sshl_port': '443',
+                'ssh_port': '443',
                 'default_activation': True,
                 'package': 'nginx',
                 'docdir': '/usr/share/doc/nginx',
@@ -306,6 +314,7 @@ def vhost_settings(domain, doc_root, **kwargs):
     kwargs.setdefault('active', nginxSettings['default_activation'])
     kwargs.setdefault('server_name', kwargs['domain'])
     kwargs.setdefault('default_server', False)
+    kwargs.setdefault('ssl_redirect', False)
     kwargs.setdefault('server_aliases', None)
     kwargs.setdefault('doc_root', doc_root)
     kwargs.setdefault('vh_top_source', nginxSettings['vhost_top_template'])
@@ -318,6 +327,10 @@ def vhost_settings(domain, doc_root, **kwargs):
     nginxSettings['data'] = copy.deepcopy(nginxSettings)
     nginxSettings['data']['extra'] = copy.deepcopy(nginxSettings)
     nginxSettings['extra'] = copy.deepcopy(nginxSettings)
+    for k in ['ssl_key', 'ssl_cert', 'ssl_cacert']:
+        kwargs.setdefault(
+            k + '_path', "/etc/ssl/nginx/{0}_{1}.pem".format(domain,
+                                                             k))
     return nginxSettings
 
 

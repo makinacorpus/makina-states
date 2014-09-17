@@ -236,7 +236,11 @@ def format(dictionary, quote_keys=False, quote_values=True, init=True):
     template but the template is already complex
     '''
     def quotev(v):
-        if not v.startswith('"'):
+        donotquote = False
+        # cases that we should not quote (eg: variables construction)
+        if ' + ' in v:
+            donotquote = True
+        if not donotquote and not v.startswith('"'):
             v = '"' + str(v.replace('"', '\\"')) + '"'
         return v
     res = {}

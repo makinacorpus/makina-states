@@ -221,6 +221,9 @@ def settings():
                         "868103841a2244768b2dbead5dbea2b533940e20"),
                 },
                 'nginx': {
+                    'ssl_cacert': '',
+                    'ssl_cert': '',
+                    'ssl_key': '',
                     'domain': "nagvis.localhost",
                     'doc_root': "/usr/share/nagvis/www/",
                     'vh_content_source': (
