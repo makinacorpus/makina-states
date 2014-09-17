@@ -1760,11 +1760,13 @@ def get_supervision_conf_kind(id_, kind):
                 nginx = rdata['nginx']
                 nginx = rdata.setdefault('nginx', {})
                 domain = rdata.get('nginx', {}).get('domain', id_)
-                cert, key = __salt__['mc_ssl.ssl_certs'](domain, True)[0]
+                cert, key = __salt__['mc_ssl.selfsigned_ssl_certs'](domain, True)[0]
+                # unlonwn ca signed certs do not work in nginx
+                #cert, key = __salt__['mc_ssl.ssl_certs'](domain, True)[0]
+                #nginx['ssl_cacert'] = __salt__['mc_ssl.get_cacert'](True)
                 nginx['ssl_key'] = key
                 nginx['ssl_cert'] = cert
                 nginx['ssl_redirect'] = True
-                nginx['ssl_cacert'] = __salt__['mc_ssl.get_cacert'](True)
 
     return rdata
 

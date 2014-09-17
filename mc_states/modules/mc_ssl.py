@@ -195,6 +195,7 @@ def get_selfsigned_cert_for(domain, gen=False, domain_csr_data=None):
             for k, val in cloudSettings['ssl']['ca'].items():
                 if val and (k not in ['CN', 'days', 'ca_name']):
                     domain_csr_data.setdefault(k, val)
+            domain_csr_data.setdefault('days', '372000')
             ret = __salt__['tls.create_self_signed_cert'](tls_dir='', **domain_csr_data)
         finally:
             __salt__['tls.set_ca_path'](old_d)
