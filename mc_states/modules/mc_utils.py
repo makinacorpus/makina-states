@@ -506,4 +506,11 @@ def sls_available(sls, pillar=True):
     return ret
 
 
+def indent(tstring, spaces=16, char=' '):
+    data = ''
+    for ix, i in enumerate(tstring.split('\n')):
+        if ix > 0:
+            data += char * spaces
+        data += i + '\n'
+    return data
 #

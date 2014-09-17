@@ -314,8 +314,14 @@ def vhost_settings(domain, doc_root, **kwargs):
     kwargs.setdefault('active', nginxSettings['default_activation'])
     kwargs.setdefault('server_name', kwargs['domain'])
     kwargs.setdefault('default_server', False)
+    kwargs.setdefault('ssl_ciphers', 'HIGH:!aNULL:!MD5')
+    kwargs.setdefault('ssl_port', 443)
+    kwargs.setdefault('ssl_protocols', 'SSLv3 TLSv1 TLSv1.1 TLSv1.2')
     kwargs.setdefault('ssl_redirect', False)
+    kwargs.setdefault('ssl_cacert_first', False)
     kwargs.setdefault('server_aliases', None)
+    kwargs.setdefault('ssl_session_cache', 'shared:SSL:10m')
+    kwargs.setdefault('ssl_session_timeout', '10m')
     kwargs.setdefault('doc_root', doc_root)
     kwargs.setdefault('vh_top_source', nginxSettings['vhost_top_template'])
     kwargs.setdefault('vh_template_source',
@@ -327,8 +333,20 @@ def vhost_settings(domain, doc_root, **kwargs):
     nginxSettings['data'] = copy.deepcopy(nginxSettings)
     nginxSettings['data']['extra'] = copy.deepcopy(nginxSettings)
     nginxSettings['extra'] = copy.deepcopy(nginxSettings)
-    for k in ['ssl_key', 'ssl_cert', 'ssl_cacert']:
-        kwargs.setdefault(
+    if nginxSettings.get('ssl_cert', ''):
+        nginxSettings['ssl_bundle'] = ''
+        certs = ['ssl_cert']
+        if nginxSettings.get('ssl_cacert', ''):
+            if nginxSettings['ssl_cacert_first']:
+                certs.insert(0, 'ssl_cacert')
+            else:
+                certs.append('ssl_cacert')
+        for cert in certs:
+            nginxSettings['ssl_bundle'] += nginxSettings[cert]
+            if not nginxSettings['ssl_bundle'].endswith('\n'):
+                nginxSettings['ssl_bundle'] += '\n'
+    for k in ['ssl_bundle', 'ssl_key', 'ssl_cert', 'ssl_cacert']:
+        nginxSettings.setdefault(
             k + '_path', "/etc/ssl/nginx/{0}_{1}.pem".format(domain,
                                                              k))
     return nginxSettings
