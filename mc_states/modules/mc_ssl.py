@@ -323,7 +323,7 @@ def load_selfsigned_certs(path):
 
 
 def get_selfsigned_certs_dir():
-    cloudSettings = _salt__['mc_cloud.settings']()
+    cloudSettings = __salt__['mc_cloud.settings']()
     ssl_gen_d = cloudSettings['ssl_pillar_dir']
     certs_dir = os.path.join(ssl_gen_d, 'selfsigned')
     return certs_dir
