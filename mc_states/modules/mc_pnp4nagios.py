@@ -122,6 +122,9 @@ def settings():
                 'package': ['pnp4nagios-bin', 'pnp4nagios-web'],
                 'configuration_directory': locs['conf_dir']+"/pnp4nagios",
                 'nginx': {
+                    'ssl_cacert': '',
+                    'ssl_cert': '',
+                    'ssl_key': '',
                     'domain': "pnp4nagios.localhost",
                     'doc_root': "/usr/share/pnp4nagios/html/",
                     'vh_content_source': (

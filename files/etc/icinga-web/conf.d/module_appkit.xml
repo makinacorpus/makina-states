@@ -8,7 +8,9 @@
             <settings>            
 <setting name="ajax.timeout">240000</setting>
 <setting name="debug.verbose">
-<ae:parameter>API_Views_ApiDQLViewModel</ae:parameter>
+  <!--
+  <ae:parameter>API_Views_ApiDQLViewModel</ae:parameter>
+  -->
 </setting>
 
                 <!-- Ajax default request timeout (ms), 4 minutes == 240000 -->

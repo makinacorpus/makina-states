@@ -51,6 +51,27 @@ makina-nginx-virtualhost-{{ small_name }}-top:
     - watch_in:
       - mc_proxy: nginx-post-conf-hook
 
+
+
+{% for k in ['ssl_bundle', 'ssl_key', 'ssl_cert', 'ssl_cacert'] %}
+{% set ssld = data.get(k, '') %}
+{% if ssld %}
+makina-nginx-virtualhost-{{ small_name }}-ssl-{{k}}:
+  file.managed:
+    - user: www-data
+    - group: root
+    - mode: 750
+    - name: {{data[k + '_path']}}
+    - contents: |
+                {{salt['mc_utils.indent'](ssld, 16)}}
+    - makedirs: true
+    - watch:
+      - mc_proxy: nginx-pre-conf-hook
+    - watch_in:
+      - mc_proxy: nginx-post-conf-hook
+{% endif %}
+{% endfor %}
+
 makina-nginx-virtualhost-{{ small_name }}:
   file.managed:
     - user: root

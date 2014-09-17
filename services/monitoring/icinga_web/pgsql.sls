@@ -85,9 +85,9 @@ icinga_web-reset-root-pw:
     - mode: 755
     - unless: |
               if [ x" {{data.root_account.hashed_password}}{{data.root_account.salt}}" = x"$(echo "select user_password||user_salt from nsm_user where user_name='{{data.root_account.login}}'"|psql "{{uri}}" -t)" ];then
-                exit 1
+                exit 0
               fi
-              exit 0
+              exit 1
     - contents: |
                 #!/bin/bash
                 query="update nsm_user set user_password='{{data.root_account.hashed_password}}', user_salt='{{data.root_account.salt}}' where user_name='{{data.root_account.login}}'"
@@ -130,9 +130,11 @@ icinga_web-clear-dblogs:
                   res="$(echo "$query;" | psql -t "{{uri}}")"
                 done;
                 rm {{tmpf}};
+                echo "changed=false"
                 exit 0;
   cmd.run:
     - name: {{tmpf}}
+#    - stateful: true
     - watch:
       - pkg: icinga2-web-cli-pkgs
       - cmd: icinga_web-import-pgsql-schema

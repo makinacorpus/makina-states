@@ -38,7 +38,6 @@ icinga_web-www-dir:
     - watch_in:
       - mc_proxy: icinga_web-pre-install
 
-  
 icinga_web-www-dir-link-docroot:
   file.symlink:
     - name: {{data.nginx.doc_root}}/{{data.nginx.icinga_web.web_directory}}
