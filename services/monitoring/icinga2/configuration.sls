@@ -217,3 +217,4 @@ icinga2-configuration-remove-objects-conf:
       - mc_proxy: icinga2-configuration-pre-clean-directories
     - watch_in:
       - mc_proxy: icinga2-configuration-post-clean-directories
+

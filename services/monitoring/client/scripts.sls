@@ -1,3 +1,12 @@
+install-nagios-plugins:
+  pkg.installed:
+    - pkgs:
+      - nagios-plugins
+      - nagios-plugins-contrib
+      - nagios-plugins-extra
+      - nagios-plugins-openstack
+      - libcrypt-des-perl
+
 ms-scripts-d:
   file.directory:
     - names:
@@ -29,30 +38,22 @@ ms-scripts-d:
 ] %}
 {% endfor %}
 #}
-misc-distributed-plugins-rec:
+
+{% for i in ['misc', 'nagios'] %}
+{{i}}-distributed-plugins-rec:
   file.recurse:
-    - name: /root/admin_scripts/misc/
-    - source: salt://makina-states/files/root/admin_scripts/misc/
+    - name: /usr/local/admin_scripts/{{i}}/
+    - source: salt://makina-states/files/usr/local/admin_scripts/{{i}}/
     - user: root
     - group: root
     - makedirs: true
-    - file_mode: 700
-    - dir_mode: 700
+    - include_pat: '*'
+    - file_mode: 755
+    - dir_mode: 755
     - template: jinja
     - require:
       - file: ms-scripts-d
-nagios-distributed-plugins-rec:
-  file.recurse:
-    - name: /root/admin_scripts/nagios/
-    - source: salt://makina-states/files/root/admin_scripts/nagios/
-    - user: root
-    - group: root
-    - makedirs: true
-    - file_mode: 700
-    - dir_mode: 700
-    - template: jinja
-    - require:
-      - file: ms-scripts-d
+{% endfor %}
 # old MC installs, do some symlinks
 {% for g in [
 'check_ntp_peer',

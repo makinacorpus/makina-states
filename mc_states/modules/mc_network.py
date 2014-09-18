@@ -29,6 +29,11 @@ import datetime
 import re
 from salt.utils.odict import OrderedDict
 import traceback
+try:
+    from ipwhois import IPWhois
+    HAS_IPWHOIS = True
+except ImportError:
+    HAS_IPWHOIS = False
 from mc_states.utils import memoize_cache
 
 __name = 'network'
@@ -321,6 +326,55 @@ def settings():
         netdata['interfaces_order'] = [a for a in netdata['interfaces']]
         return netdata
     return _settings()
+
+
+def whois_data(ip, ttl=60*30):
+    def _do(ip_):
+        data = {}
+        if not HAS_IPWHOIS:
+            return data
+        try:
+            data = IPWhois(ip).lookup()
+            search_data = {'ovh': ['ovh'],
+                           'phpnet': ['phpnet'],
+                           'online': ['proxad', 'iliad']}
+            for provider, search_terms in search_data.items():
+                for i in search_terms:
+                    for j in data.get('nets', []):
+                        for k, val in j.items():
+                            if k in ['abuse_emails',
+                                     'description',
+                                     'handle',
+                                     'name']:
+                                if val and i in val.lower():
+                                        data['is_{0}'.format(provider)] = True
+                                        break
+        except:
+            log.error(traceback.format_exc())
+            data = {}
+        return data
+    cache_key = 'mc_network.whois_data_{0}'.format(ip)
+    return memoize_cache(_do, [ip], {}, cache_key, ttl)
+
+
+def is_phpnet(ip):
+    data = whois_data(ip)
+    return data.get('is_phpnet', False)
+
+
+def is_online(ip):
+    data = whois_data(ip)
+    return data.get('is_ovh', False)
+
+
+def is_ovh(ip):
+    data = whois_data(ip)
+    return data.get('is_online', False)
+
+
+def providers():
+    return ['online', 'ovh', 'phpnet']
+
 
 def dump():
     return mc_states.utils.dump(__salt__,__name)

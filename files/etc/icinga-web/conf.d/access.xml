@@ -4,12 +4,12 @@
 <ae:configurations xmlns="http://icinga.org/api/config/parts/access/1.0"
     xmlns:ae="http://agavi.org/agavi/config/global/envelope/1.0">
     <ae:configuration>
-        <!-- Document resources 
-            http://docs.icinga.org/latest/en/icinga-web-config.html#configweb-access 
+        <!-- Document resources
+            http://docs.icinga.org/latest/en/icinga-web-config.html#configweb-access
             https://wiki.icinga.org/display/howtos/access.xml -->
         <!-- Map your instances to hosts here -->
         <instances>
-            <!-- For slave commands seperate hosts with ';' 
+            <!-- For slave commands seperate hosts with ';'
                     <instance name="default">localhost;host1;host15</instance> -->
             <instance name="default">localhost</instance>
         </instances>
@@ -28,15 +28,16 @@
                 <!-- allowed to be written to -->
                 <write>
                     <files>
-                        <resource name="icinga_pipe">/var/lib/icinga/rw/icinga.cmd</resource>
+                      <resource name="icinga_pipe">/var/run/icinga2/cmd/icinga2.cmd</resource>
                     </files>
-                    
+
                 </write>
                 <!-- allowed to be executed -->
                 <execute>
                     <files>
                         <resource name="grep">/bin/grep</resource>
                         <resource name="icinga_bin">/usr/sbin/icinga</resource>
+                        <resource name="icinga_bin">/usr/sbin/icinga2</resource>
                         <resource name="echo">/bin/echo</resource>
                         <resource name="icinga_service">/usr/bin/service icinga</resource>
                         <resource name="ls">/bin/ls</resource>

@@ -34,6 +34,7 @@ VIRT_TYPES = {
     'lxc': {}
 }
 _RP = 'reverse_proxies'
+_SW_RP = 'shorewall_reverse_proxies'
 _CUR_API = 2
 
 
@@ -351,6 +352,15 @@ def get_firewall_toggle():
         'makina-states.cloud.compute_node.has.firewall', True)
 
 
+def get_snmp_port_end():
+    return __salt__['mc_utils.get'](
+        'makina-states.cloud.compute_node.snmp_start_port', '39999')
+
+
+def get_snmp_port_start():
+    return __salt__['mc_utils.get'](
+        'makina-states.cloud.compute_node.snmp_start_port', 30000)
+
 def get_ssh_port_end():
     return __salt__['mc_utils.get'](
         'makina-states.cloud.compute_node.ssh_start_port', '50000')
@@ -359,6 +369,15 @@ def get_ssh_port_end():
 def get_ssh_port_start():
     return __salt__['mc_utils.get'](
         'makina-states.cloud.compute_node.ssh_start_port', 40000)
+
+
+def _find_available_snmp_port(targets, target, data):
+    ip = data['ip']
+    ip_parts = ip.split('.')
+    snmp_start_port = int(get_snmp_port_start())
+    return (int(snmp_start_port) +
+            (256 * int(ip_parts[2])) +
+            int(ip_parts[3]))
 
 
 def _find_available_port(targets, target, data):
@@ -502,6 +521,101 @@ def _get_next_available_port(ports, start, stop):
             return i
     raise ValueError('mc_compute_node: No more available ssh port in'
                      '{0}:{1}'.format(start, stop))
+
+
+def get_snmp_mapping_for_target(target, target_data=None):
+    _s = __salt__.get
+    if target_data is None:
+        target_data = get_settings_for_target(target)
+    mapping = {}
+    vms_infos = target_data.get('vms', {})
+    # generate or refresh ssh mappings
+    for vm in vms_infos:
+        mapping[vm] = _s('mc_cloud_compute_node.get_snmp_port')(
+            target, vm, target_data=target_data)
+    return mapping
+
+
+def set_snmp_port(target, vm, port, target_data=None):
+    if target_data is None:
+        target_data = get_settings_for_target(target)
+    ssh_map = get_conf_for_target(target, 'snmp_map', {})
+    if ssh_map.get(vm, None) != port:
+        ssh_map[vm] = port
+        set_conf_for_target(target, 'snmp_map', ssh_map)
+    return get_conf_for_target(target, 'snmp_map', {}).get(vm, None)
+
+
+def cleanup_snmp_ports(target, target_data=None):
+    '''This is a maintenance routine which can be called to cleanup
+    ssh ports when range exhaustion is incoming'''
+    if target_data is None:
+        target_data = get_settings_for_target(target)
+    vms_infos = target_data.get('vms', {})
+    snmp_map = get_conf_for_target(target, 'snmp_map', {})
+    # filter old vms grains
+    need_sync = True
+    for avm in [a for a in snmp_map]:
+        if avm not in vms_infos:
+            del snmp_map[avm]
+            need_sync = True
+    if need_sync:
+        set_conf_for_target(target, 'snmp_map', snmp_map)
+    return get_conf_for_target(target, 'snmp_map', {})
+
+
+def get_snmp_port(vm, target=None, target_data=None):
+    _s = __salt__.get
+    _settings = settings()
+    if target is None:
+        target = __salt__['mc_cloud_compute_node.target_for_vm'](vm)
+    if target_data is None:
+        target_data = get_settings_for_target(target)
+    vms_infos = target_data.get('vms', {})
+    start = int(_settings['snmp_port_range_start'])
+    end = int(_settings['snmp_port_range_end'])
+    snmp_map = get_conf_for_target(target, 'snmp_map', {})
+    for a in [a for a in snmp_map]:
+        snmp_map[a] = int(snmp_map[a])
+    port = snmp_map.get(vm, None)
+    if port is None:
+        if vm in vms_infos:
+            port = _get_next_available_port(snmp_map.values(), start, end)
+            _s('mc_cloud_compute_node.set_snmp_port')(
+                target, vm, port, target_data=target_data)
+        else:
+            raise ValueError('{0} is not a vm of {1}'.format(vm, target))
+    return port
+
+
+def feed_sw_reverse_proxies_for_target(target, target_data=None):
+    _s = __salt__.get
+    _settings = settings()
+    if target_data is None:
+        target_data = get_settings_for_target(target)
+    vms_infos = target_data.get('vms', {})
+    reversep = _get_rp(target_data)
+    sw_proxies = reversep.setdefault('sw_proxies', [])
+    for vm, data in vms_infos.items():
+        snmp_port = _s('mc_cloud_compute_node.get_snmp_port')(
+            vm, target=target,
+            target_data=target_data)
+        ssh_port = _s('mc_cloud_compute_node.get_ssh_port')(
+            vm, target=target,
+            target_data=target_data)
+        vt = 'lxc'
+        sw_proxies.append({'comment': 'snmp for {0}'.format(vm)})
+        sw_proxies.append({'action': 'DNAT',
+                           'source': 'all',
+                           'dest': '{1}:{0}:161'.format(data['ip'], vt),
+                           'proto': 'udp', 'dport': snmp_port})
+        sw_proxies.append({'comment': 'ssh {0}'.format(vm)})
+        for i in ['tcp', 'udp']:
+            sw_proxies.append({'action': 'DNAT',
+                               'source': 'all',
+                               'dest': '{1}:{0}:22'.format(data['ip'], vt),
+                               'proto': i, 'dport': ssh_port})
+    return reversep
 
 
 def get_ssh_mapping_for_target(target, target_data=None):
@@ -678,8 +792,16 @@ def get_settings_for_target(target, target_data=None):
     target_data['firewall'] = get_firewall_toggle()
     feed_http_reverse_proxy_for_target(target, target_data)
     feed_ssh_reverse_proxies_for_target(target, target_data)
+    feed_sw_reverse_proxies_for_target(target, target_data)
     return target_data
 
+
+def get_shorewall_reverse_proxies_for_target(target):
+    '''Get reverse proxy information mapping for a specicific target
+    See feed_reverse_proxy_for_target'''
+    target_data = get_settings_for_target(target)
+    return dict([(k, target_data[k]) for k in target_data
+                 if k in (_RP, 'target')])
 
 def get_reverse_proxies_for_target(target):
     '''Get reverse proxy information mapping for a specicific target
@@ -759,6 +881,8 @@ def settings():
                 'has': {'firewall': get_firewall_toggle()},
                 'ssh_port_range_start': get_ssh_port_start(),
                 'ssh_port_range_end': get_ssh_port_end(),
+                'snmp_port_range_start': get_snmp_port_start(),
+                'snmp_port_range_end': get_snmp_port_end(),
                 'targets': get_vms()
             })
         return data

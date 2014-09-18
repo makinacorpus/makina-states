@@ -30,10 +30,18 @@
 # --------------------------------------------------------------------
 # configuration
 # --------------------------------------------------------------------
-PROGNAME=$(basename $0)
+PROGNAME="$(basename $0)"
+CWD="${PWD}"
+cd "$(dirname $0)"
+W="${PWD}"
+cd "${CWD}"
 ERR_MESG=()
 export PATH="/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin"
-LIBEXEC="/root/admin_scripts/nagios"
+if [ -e /usr/lib/nagios/plugins/utils.sh ];then
+    LIBEXEC="/usr/lib/nagios/plugins"
+else
+    LIBEXEC="${W}"
+fi
 . $LIBEXEC/utils.sh
 SUPERVISORCTL=$1
 
