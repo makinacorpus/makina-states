@@ -1342,7 +1342,8 @@ def get_shorewall_settings(id_=None, ttl=60):
             'makina-states.services.firewall.shorewall': True,
             'makina-states.services.firewall.shorewall.no_snmp': False,
             'makina-states.services.firewall.shorewall.no_ldap': False}
-        p_param = 'makina-states.services.firewall.shorewall.params.RESTRICTED_{0}'
+        p_param = ('makina-states.services.firewall.'
+                   'shorewall.params.RESTRICTED_{0}')
         for param, val in restrict.items():
             shw_params[p_param.format(param.upper())] = val
         ips = load_network_infrastructure()['ips']
@@ -1354,24 +1355,6 @@ def get_shorewall_settings(id_=None, ttl=60):
         for param, value in shorewall_overrides.get(id_, {}).items():
             param = 'makina-states.services.firewall.shorewall.' + param
             shw_params[param] = value
-        rules = shw_params.setdefault(
-            'makina-states.services.firewall.shorewall.rules', [])
-        done_hosts = []
-        for vt, targets in nvars['vms'].items():
-            if vt not in ['lxc']:
-                continue
-            for compute_node, vms in targets.items():
-                if compute_node == id_:
-                    done_hosts.append(id_)
-                    break
-        for h in done_hosts:
-            tdata = __salt__[
-                'mc_cloud_compute_node.get_settings_for_target'
-            ](h)
-            trules = tdata.get('reverse_proxies', {}).get('sw_proxies', [])
-            for r in trules:
-                if r not in rules:
-                    rules.append(r)
         return shw_params
     cache_key = 'mc_pillar.get_shorewall_settings_{0}'.format(id_)
     return memoize_cache(_do_sw, [id_], {}, cache_key, ttl)

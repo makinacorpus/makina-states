@@ -791,17 +791,11 @@ def get_settings_for_target(target, target_data=None):
             target_data['ssl_certs'].append((certname, fullcert))
     target_data['firewall'] = get_firewall_toggle()
     feed_http_reverse_proxy_for_target(target, target_data)
-    feed_ssh_reverse_proxies_for_target(target, target_data)
+    # now done via shorewall
+    # feed_ssh_reverse_proxies_for_target(target, target_data)
     feed_sw_reverse_proxies_for_target(target, target_data)
     return target_data
 
-
-def get_shorewall_reverse_proxies_for_target(target):
-    '''Get reverse proxy information mapping for a specicific target
-    See feed_reverse_proxy_for_target'''
-    target_data = get_settings_for_target(target)
-    return dict([(k, target_data[k]) for k in target_data
-                 if k in (_RP, 'target')])
 
 def get_reverse_proxies_for_target(target):
     '''Get reverse proxy information mapping for a specicific target

@@ -501,7 +501,7 @@ def get_cloud_compute_node_conf(id_, gconf=None, ms_vars=None):
     rdata = {}
     gconf = get_global_conf(id_, gconf)
     ms_vars = get_makina_states_variables(id_, ms_vars=ms_vars)
-# detect computes nodes by searching for related vms configurations
+    # detect computes nodes by searching for related vms configurations
     supported_vts = ['lxc']
     done_hosts = []
     nvars  = __salt__['mc_pillar.load_network_infrastructure']()

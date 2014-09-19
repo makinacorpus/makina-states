@@ -408,6 +408,8 @@ def get_settings_for_vm(target, vm, full=True):
     if full:
         lxc_data['ssh_reverse_proxy_port'] = __salt__[
             'mc_cloud_compute_node.get_ssh_port'](vm=vm, target=target)
+        lxc_data['snmp_reverse_proxy_port'] = __salt__[
+            'mc_cloud_compute_node.get_snmp_port'](vm=vm, target=target)
 
     additional_ips = lxc_data.setdefault('additional_ips', [])
     for ix, ipinfos in enumerate(additional_ips):
