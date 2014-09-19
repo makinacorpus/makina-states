@@ -568,7 +568,20 @@ def settings():
                         'rp', {}).get(
                             'reverse_proxies', {}).get(
                                 'sw_proxies', [])
-                    data['default_rules'].extend(cloud_rules)
+                    for r in cloud_rules:
+                        rules = []
+                        # replace all target by each other zone that the
+                        # DNATed one
+                        if ':' in r.get('dest', ''):
+                            z = r['dest'].split(':')[0]
+                            for i in data['zones']:
+                                if not i == z:
+                                    target_r = r.copy()
+                                    target_r['source'] = i
+                                    rules.append(target_r)
+                        else:
+                            rules.append(r)
+                        data['default_rules'].extend(rules)
                 except:
                     log.error("ERROR IN CLOUD SHOREWALL RULES")
                     log.error(traceback.format_exc())
