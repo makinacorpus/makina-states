@@ -224,6 +224,8 @@ def settings():
         if noeth and ems:
             rpnem = ems[-1]
         for iface, ips in ifaces:
+            # filter out v6 addresses
+            ips = [a for a in ips if not ':' in a]
             if ips:
                 if not default_ip:
                     default_ip = ips[0]
