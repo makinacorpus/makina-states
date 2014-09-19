@@ -62,8 +62,11 @@ def default_net():
         default_if = 'eth0'
     else:
         default_if = nifaces[0]
-    # if a bridge bas the if port, use that instead
-    if brifs and not __grains__['ip_interfaces'].get(default_if):
+    # if a bridge has the if port, use that instead
+    v4addr = [a
+              for a in __grains__['ip_interfaces'].get(default_if, [])
+              if ':' not in a]
+    if brifs and not v4addr:
         for br in brifs:
             res = __salt__['cmd.run']('brctl show {0}'.format(br))
             ifs = []
