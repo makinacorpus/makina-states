@@ -1369,7 +1369,6 @@ def get_shorewall_settings(id_=None, ttl=60):
                 'mc_cloud_compute_node.get_settings_for_target'
             ](h)
             trules = tdata.get('reverse_proxies', {}).get('sw_proxies', [])
-            import pdb;pdb.set_trace()  ## Breakpoint ##
             for r in trules:
                 if r not in rules:
                     rules.append(r)
