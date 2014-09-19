@@ -11,6 +11,7 @@ __docformat__ = 'restructuredtext en'
 # Import python libs
 import socket
 import logging
+import traceback
 from distutils.version import LooseVersion
 import mc_states.utils
 from salt.utils.odict import OrderedDict
@@ -561,22 +562,16 @@ def settings():
             cloud_c_settings = __salt__['mc_cloud_compute_node.settings']()
             is_compute_node = __salt__['mc_cloud_compute_node.is_compute_node']()
             if is_compute_node and not data['no_computenode']:
-                cstart, cend = (
-                    cloud_c_settings['ssh_port_range_start'],
-                    cloud_c_settings['ssh_port_range_end'],
-                )
-                append_rules_for_zones(data['default_rules'],
-                                       {'comment': 'corpus computenode'})
-                for proto in protos:
-                    append_rules_for_zones(
-                        data['default_rules'],
-                        {'action': 'ACCEPT',
-                         'source': 'all', 'dest': 'fw',
-                         'proto': proto,
-                         'dport': (
-                             '{0}:{1}'
-                         ).format(cstart, cend)},
-                        zones=data['internal_zones'])
+                try:
+                    cloud_reg = __salt__['mc_cloud_compute_node.cn_settings']()
+                    cloud_rules = cloud_reg.get('cnSettings', {}).get(
+                        'rp', {}).get(
+                            'reverse_proxies', {}).get(
+                                'sw_proxies', [])
+                    data['default_rules'].extend(cloud_rules)
+                except:
+                    log.error("ERROR IN CLOUD SHOREWALL RULES")
+                    log.error(traceback.format_exc())
             # enable mastersalt traffic if any
             if (
                 controllers_registry['is']['mastersalt_master']
