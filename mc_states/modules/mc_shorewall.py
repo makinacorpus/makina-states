@@ -575,7 +575,7 @@ def settings():
                         if ':' in r.get('dest', ''):
                             z = r['dest'].split(':')[0]
                             for i in data['zones']:
-                                if not i in [zn 'fw']:
+                                if not i in [z, 'fw']:
                                     target_r = r.copy()
                                     target_r['source'] = i
                                     rules.append(target_r)
