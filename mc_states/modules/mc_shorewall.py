@@ -43,7 +43,7 @@ def guess_shorewall_ver():
     return ver
 
 
-def get_macro(name, action):
+def get_macro(name, action, immediate=True):
     if guess_shorewall_ver() < '4.5.10':
         fmt = '{name}/{action}'
     else:
@@ -430,7 +430,7 @@ def settings():
                 data['default_policies'].append({
                     'source': '$FW', 'dest': 'rpn', 'policy': 'ACCEPT'})
 
-                
+
             # drop all traffic by default if not in permissive_mode
             if not data['permissive_mode']:
                 end_policies.append({
@@ -452,6 +452,33 @@ def settings():
             if rdata not in data['policies']:
                 data['policies'].insert(0, rdata)
         data['policies'].extend(end_policies)
+
+        # snmp should be filtered even in permissive mode
+        if not data['no_default_rules']:
+            data['default_rules'].append({'comment': 'snmp'})
+            if data['permissive_mode']:
+                if data['no_snmp']:
+                    action = 'DROP'
+                else:
+                    action = 'ACCEPT'
+                data['default_rules'].append(
+                    {'action': 'ACCEPT!',
+                     'source': '$SALT_RESTRICTED_SNMP', 'dest': 'fw',
+                     'proto': 'udp', 'dport': '161'})
+                data['default_rules'].append(
+                    {'action': 'DROP!',
+                     'source': 'all', 'dest': 'fw',
+                     'proto': 'udp', 'dport': '161'})
+            else:
+                if data['no_snmp']:
+                    action = 'DROP'
+                else:
+                    action = 'ACCEPT'
+                append_rules_for_zones(
+                    data['default_rules'],
+                    {'action': get_macro('SNMP', action),
+                     'source': '$SALT_RESTRICTED_SNMP', 'dest': 'all'},
+                    zones=data['internal_zones'])
 
         if not data['no_default_rules']:
             if nodetypes_registry['is']['lxccontainer']:
@@ -475,7 +502,6 @@ def settings():
                     'action': get_macro('Invalid', action),
                     'source': 'net', 'dest': 'all'},
                     zones=data['internal_zones'])
-
 
         if not data['no_default_rules'] and not data['permissive_mode']:
             data['default_rules'].append({'comment': 'lxc dhcp traffic'})
@@ -690,17 +716,6 @@ def settings():
                 data['default_rules'],
                 {'action': get_macro('Mail', action),
                  'source': 'all', 'dest': 'all'},
-                zones=data['internal_zones'])
-
-            data['default_rules'].append({'comment': 'snmp'})
-            if data['no_snmp']:
-                action = 'DROP'
-            else:
-                action = 'ACCEPT'
-            append_rules_for_zones(
-                data['default_rules'],
-                {'action': get_macro('SNMP', action),
-                 'source': '$SALT_RESTRICTED_SNMP', 'dest': 'all'},
                 zones=data['internal_zones'])
 
             data['default_rules'].append({'comment': 'ftp'})
