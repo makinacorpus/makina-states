@@ -113,6 +113,7 @@ def settings():
         grains = __grains__
         pillar = __pillar__
         data_net = __salt__['mc_network.default_net']()
+        netsettings = __salt__['mc_network.settings']()
         default_netmask = data_net['default_netmask']
         gifaces = data_net['gifaces']
         default_if = data_net['default_if']
@@ -572,10 +573,12 @@ def settings():
                         rules = []
                         # replace all target by each other zone that the
                         # DNATed one
+                        # force ip
+                        r['odest'] = netsettings.get('main_ip', '-')
                         if ':' in r.get('dest', ''):
                             z = r['dest'].split(':')[0]
                             for i in data['zones']:
-                                if not i in [z, 'fw']:
+                                if i not in [z, 'fw']:
                                     target_r = r.copy()
                                     target_r['source'] = i
                                     rules.append(target_r)
