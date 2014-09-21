@@ -23,9 +23,9 @@ nginx-base:
 # clean typo in old confs
 nginx-clean:
   cmd.run:
-    - name: sed -i -e "/nginx/d" /etc/apt/sources.list.d/haproxy.list
+    - name: sed -i -e "/nginx/d" /etc/apt/sources.list.d/nginx.list
     - onlyif: |
-              if test -e /etc/apt/sources.list.d/haproxy.list;then grep -q nginx /etc/apt/sources.list.d/haproxy.list;exit ${?};fi
+              if test -e /etc/apt/sources.list.d/nginx.list;then grep -q nginx /etc/apt/sources.list.d/nginx.list;exit ${?};fi
               exit 1
     - watch:
       - mc_proxy: nginx-pre-install-hook
