@@ -233,10 +233,10 @@ def get_dns_slave_conf(id_, gconf=None, ms_vars=None):
             masterdn)
         if masterdn not in dnsmasters:
             dnsmasters.update({masterdn: master})
-    rdata['makina-states.services.dns.bind'
-          '.zones.{0}'.format(domain)] = {
-              'server_type': 'slave',
-              'masters': [master]}
+        rdata['makina-states.services.dns.bind'
+              '.zones.{0}'.format(domain)] = {
+                  'server_type': 'slave',
+                  'masters': [master]}
     for dnsmaster, masterip in dnsmasters.items():
         rdata.update(
             slave_key(id_, dnsmaster, master=False))
@@ -501,7 +501,7 @@ def get_cloud_compute_node_conf(id_, gconf=None, ms_vars=None):
     rdata = {}
     gconf = get_global_conf(id_, gconf)
     ms_vars = get_makina_states_variables(id_, ms_vars=ms_vars)
-# detect computes nodes by searching for related vms configurations
+    # detect computes nodes by searching for related vms configurations
     supported_vts = ['lxc']
     done_hosts = []
     nvars  = __salt__['mc_pillar.load_network_infrastructure']()

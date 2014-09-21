@@ -17,8 +17,9 @@ import traceback
 from mc_states.utils import memoize_cache
 import random
 import string
-
 log = logging.getLogger(__name__)
+
+
 DOMAIN_PATTERN = '(@{0})|({0}\\.?)$'
 DOTTED_DOMAIN_PATTERN = '((^{0}\\.?$)|(\\.(@{0})|({0}\\.?)))$'
 
@@ -1311,6 +1312,7 @@ def get_shorewall_settings(id_=None, ttl=60):
         allowed_to_snmp = allowed_ips[:]
         allowed_to_ssh = allowed_ips[:]
         infra = get_db_infrastructure_maps()
+        nvars  = __salt__['mc_pillar.load_network_infrastructure']()
         vms = infra['vms']
         # configure shorewall for a particular host
         # if at least one ip is natted
@@ -1332,16 +1334,16 @@ def get_shorewall_settings(id_=None, ttl=60):
         if not restrict_ssh:
             restrict['ssh'] = 'all'
         for param in [a for a in restrict]:
-            if ',all' in  restrict[param]:
+            if ',all' in restrict[param]:
                 restrict[param] = 'all'
             if restrict[param] == 'net:all':
                 restrict[param] = 'all'
         shw_params = {
-          'makina-states.services.firewall.shorewall': True,
-          'makina-states.services.firewall.shorewall.no_snmp': False,
-          'makina-states.services.firewall.shorewall.no_ldap': False,
-        }
-        p_param = 'makina-states.services.firewall.shorewall.params.RESTRICTED_{0}'
+            'makina-states.services.firewall.shorewall': True,
+            'makina-states.services.firewall.shorewall.no_snmp': False,
+            'makina-states.services.firewall.shorewall.no_ldap': False}
+        p_param = ('makina-states.services.firewall.'
+                   'shorewall.params.RESTRICTED_{0}')
         for param, val in restrict.items():
             shw_params[p_param.format(param.upper())] = val
         ips = load_network_infrastructure()['ips']
@@ -1762,8 +1764,8 @@ def get_supervision_conf_kind(id_, kind):
                 domain = rdata.get('nginx', {}).get('domain', id_)
                 cert, key = __salt__['mc_ssl.selfsigned_ssl_certs'](domain, True)[0]
                 # unlonwn ca signed certs do not work in nginx
-                #cert, key = __salt__['mc_ssl.ssl_certs'](domain, True)[0]
-                #nginx['ssl_cacert'] = __salt__['mc_ssl.get_cacert'](True)
+                # cert, key = __salt__['mc_ssl.ssl_certs'](domain, True)[0]
+                # nginx['ssl_cacert'] = __salt__['mc_ssl.get_cacert'](True)
                 nginx['ssl_key'] = key
                 nginx['ssl_cert'] = cert
                 nginx['ssl_redirect'] = True
@@ -1773,10 +1775,91 @@ def get_supervision_conf_kind(id_, kind):
 
 def get_supervision_objects_defs(id_):
     rdata = {}
+    providers = __salt__['mc_network.providers']()
     if is_supervision_kind(id_, 'master'):
         data = query('supervision_configurations')
-        rdata.update(
-            {'icinga2_definitions': data.get('definitions', {})})
+        defs = data.get('definitions', {})
+        sobjs = defs.setdefault('objects', OrderedDict())
+        hhosts = defs.setdefault('autoconfigured_hosts', OrderedDict())
+        maps = __salt__['mc_pillar.get_db_infrastructure_maps']()
+        for host, vts in maps['bms'].items():
+            hdata = hhosts.setdefault(host, OrderedDict())
+            attrs = hdata.setdefault('attrs', OrderedDict())
+            groups = attrs.setdefault('groups', [])
+            parents = attrs.setdefault('parents', [])
+            tipaddr = attrs.setdefault('address', ip_for(host))
+            if vts:
+                hdata['memory_mode'] = 'large'
+            for vt in ['lxc', 'kvm', 'xen', 'docker']:
+                attrs['vars.{0}'.format(vt)] = vt in vts
+                if vt in vts:
+                    [groups.append(i)
+                     for i in ['HG_HYPERVISOR',
+                               'HG_HYPERVISOR_{0}'.format(vt)]
+                     if i not in groups]
+            # try to guess provider from name to avoid a whois lookup
+            host_provider = None
+            for provider in providers:
+                if host.startswith(provider):
+                    host_provider = provider
+                    break
+            if not host_provider:
+                for provider in providers:
+                    if __salt__['mc_network.is_{0}'.format(provider)]:
+                        host_provider = provider
+                        break
+            if host_provider:
+                [groups.append(i)
+                 for i in ['HG_HOSTS',
+                           'HG_PROVIDER',
+                           'HG_PROVIDER_{0}'.format(host_provider)]
+                 if i not in groups]
+            if host not in maps['non_managed_hosts']:
+                ds = hdata.setdefault('disk_space', [])
+                for i in ['/', '/srv']:
+                    if i not in ds:
+                        ds.append(i)
+        for vm, vdata in maps['vms'].items():
+            vt = vdata['vt']
+            ssh_port = 22
+            snmp_port = 161
+            host = vdata['target']
+            host_ip = ip_for(host)
+            hdata = hhosts.setdefault(vm, OrderedDict())
+            attrs = hdata.setdefault('attrs', OrderedDict())
+            parents = attrs.setdefault('parents', [])
+            if host not in parents:
+                parents.append(host)
+            tipaddr = attrs.setdefault('address', ip_for(vm))
+            no_common_checks = False
+            if tipaddr == host_ip:
+                no_common_checks = True
+            groups = attrs.setdefault('groups', [])
+            [groups.append(i)
+             for i in ['HG_HOSTS', 'HG_VMS', 'HG_VM_{0}'.format(vt)]
+             if i not in groups]
+            # those checks are useless on lxc
+            if vt in ['lxc']:
+                if vm not in maps['non_managed_hosts']:
+                    ssh_port = 22
+                    snmp_port = 161
+                    no_common_checks = True
+            if no_common_checks:
+                hdata.update({'disk_space': False,
+                              'load_avg': False,
+                              'memory': False,
+                              'apt': False,
+                              'swap': False,
+                              'ping': False,
+                              'nic_card': False})
+            attrs['vars.ssh_port'] = ssh_port
+            attrs['vars.SNMP_PORT'] = snmp_port
+        for host, hdata in hhosts.items():
+            groups = hdata.get('attrs', {}).get('groups', [])
+            for g in groups:
+                if g not in sobjs:
+                    sobjs[g] = {'attrs': {'display_name': g}}
+        rdata.update({'icinga2_definitions': defs})
     return rdata
 
 

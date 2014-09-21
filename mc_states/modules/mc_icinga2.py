@@ -184,6 +184,7 @@ def objects(core=True, ttl=120):
                     'CheckCommand': [lambda x: x.startswith('check_'),
                                      lambda x: x.startswith('C_'),
                                      lambda x: x.startswith('EV_'),
+                                     lambda x: x.startswith('CSSH'),
                                      lambda x: x.startswith('CSSH_')],
                 }.items():
                     for test in tests:
@@ -439,7 +440,7 @@ def settings():
                     'USER4_SNMPPASS': '\"secret\"',
                     'USER5_SNMPUSER': '\"user\"',
                     'USER6_AUTHPAIR': '\"tsa:pw\"',
-                    'USER7_SSHKEY': '\"/root/.ssh/id_rsa.pub\"',
+                    'SSHKEY': '\"/var/lib/nagios/id_rsa_supervision\"',
                     'USER8_TESTUSER': "\"tsa\"",
                     'USER9_TESTPWD': "\"pw\"",
                     'ZoneName': "\"NodeName\"",
@@ -449,6 +450,10 @@ def settings():
                         'host': "NodeName"},
                     'object Zone ZoneName': {
                         'endpoints': "[ NodeName ]"},
+                },
+                'ssh': {
+                    'id_rsa_supervision': '',
+                    'id_rsa_supervision.pub': '',
                 },
                 'modules': {
                     'perfdata': {'enabled': True},

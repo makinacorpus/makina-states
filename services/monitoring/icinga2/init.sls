@@ -5,6 +5,7 @@ include:
   - makina-states.services.monitoring.icinga2.mysql
   - makina-states.services.monitoring.icinga2.nginx
 #}
+  - makina-states.services.monitoring.client
 {% if data.has_pgsql %}
   - makina-states.services.monitoring.icinga2.pgsql
 {% endif %}

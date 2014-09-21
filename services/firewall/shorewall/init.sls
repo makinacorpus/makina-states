@@ -13,7 +13,7 @@ include:
 shorewall-orchestrate:
   mc_proxy.hook:
     - watch:
-      - file: rc-local
+      - file: rc-local-d
       - mc_proxy: lxc-post-inst
       - mc_proxy: docker-post-inst
     - watch_in:

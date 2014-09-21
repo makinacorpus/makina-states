@@ -11,6 +11,7 @@ __docformat__ = 'restructuredtext en'
 # Import python libs
 import socket
 import logging
+import traceback
 from distutils.version import LooseVersion
 import mc_states.utils
 from salt.utils.odict import OrderedDict
@@ -43,7 +44,7 @@ def guess_shorewall_ver():
     return ver
 
 
-def get_macro(name, action):
+def get_macro(name, action, immediate=True):
     if guess_shorewall_ver() < '4.5.10':
         fmt = '{name}/{action}'
     else:
@@ -112,6 +113,7 @@ def settings():
         grains = __grains__
         pillar = __pillar__
         data_net = __salt__['mc_network.default_net']()
+        netsettings = __salt__['mc_network.settings']()
         default_netmask = data_net['default_netmask']
         gifaces = data_net['gifaces']
         default_if = data_net['default_if']
@@ -430,7 +432,7 @@ def settings():
                 data['default_policies'].append({
                     'source': '$FW', 'dest': 'rpn', 'policy': 'ACCEPT'})
 
-                
+
             # drop all traffic by default if not in permissive_mode
             if not data['permissive_mode']:
                 end_policies.append({
@@ -452,6 +454,33 @@ def settings():
             if rdata not in data['policies']:
                 data['policies'].insert(0, rdata)
         data['policies'].extend(end_policies)
+
+        # snmp should be filtered even in permissive mode
+        if not data['no_default_rules']:
+            data['default_rules'].append({'comment': 'snmp'})
+            if data['permissive_mode']:
+                if data['no_snmp']:
+                    action = 'DROP'
+                else:
+                    action = 'ACCEPT'
+                data['default_rules'].append(
+                    {'action': 'ACCEPT!',
+                     'source': '$SALT_RESTRICTED_SNMP', 'dest': 'fw',
+                     'proto': 'udp', 'dport': '161'})
+                data['default_rules'].append(
+                    {'action': 'DROP!',
+                     'source': 'all', 'dest': 'fw',
+                     'proto': 'udp', 'dport': '161'})
+            else:
+                if data['no_snmp']:
+                    action = 'DROP'
+                else:
+                    action = 'ACCEPT'
+                append_rules_for_zones(
+                    data['default_rules'],
+                    {'action': get_macro('SNMP', action),
+                     'source': '$SALT_RESTRICTED_SNMP', 'dest': 'all'},
+                    zones=data['internal_zones'])
 
         if not data['no_default_rules']:
             if nodetypes_registry['is']['lxccontainer']:
@@ -475,7 +504,6 @@ def settings():
                     'action': get_macro('Invalid', action),
                     'source': 'net', 'dest': 'all'},
                     zones=data['internal_zones'])
-
 
         if not data['no_default_rules'] and not data['permissive_mode']:
             data['default_rules'].append({'comment': 'lxc dhcp traffic'})
@@ -535,22 +563,31 @@ def settings():
             cloud_c_settings = __salt__['mc_cloud_compute_node.settings']()
             is_compute_node = __salt__['mc_cloud_compute_node.is_compute_node']()
             if is_compute_node and not data['no_computenode']:
-                cstart, cend = (
-                    cloud_c_settings['ssh_port_range_start'],
-                    cloud_c_settings['ssh_port_range_end'],
-                )
-                append_rules_for_zones(data['default_rules'],
-                                       {'comment': 'corpus computenode'})
-                for proto in protos:
-                    append_rules_for_zones(
-                        data['default_rules'],
-                        {'action': 'ACCEPT',
-                         'source': 'all', 'dest': 'fw',
-                         'proto': proto,
-                         'dport': (
-                             '{0}:{1}'
-                         ).format(cstart, cend)},
-                        zones=data['internal_zones'])
+                try:
+                    cloud_reg = __salt__['mc_cloud_compute_node.cn_settings']()
+                    cloud_rules = cloud_reg.get('cnSettings', {}).get(
+                        'rp', {}).get(
+                            'reverse_proxies', {}).get(
+                                'sw_proxies', [])
+                    for r in cloud_rules:
+                        rules = []
+                        # replace all target by each other zone that the
+                        # DNATed one
+                        # force ip
+                        r['odest'] = netsettings.get('main_ip', '-')
+                        if ':' in r.get('dest', ''):
+                            z = r['dest'].split(':')[0]
+                            for i in data['zones']:
+                                if i not in [z, 'fw']:
+                                    target_r = r.copy()
+                                    target_r['source'] = i
+                                    rules.append(target_r)
+                        else:
+                            rules.append(r)
+                        data['default_rules'].extend(rules)
+                except:
+                    log.error("ERROR IN CLOUD SHOREWALL RULES")
+                    log.error(traceback.format_exc())
             # enable mastersalt traffic if any
             if (
                 controllers_registry['is']['mastersalt_master']
@@ -690,17 +727,6 @@ def settings():
                 data['default_rules'],
                 {'action': get_macro('Mail', action),
                  'source': 'all', 'dest': 'all'},
-                zones=data['internal_zones'])
-
-            data['default_rules'].append({'comment': 'snmp'})
-            if data['no_snmp']:
-                action = 'DROP'
-            else:
-                action = 'ACCEPT'
-            append_rules_for_zones(
-                data['default_rules'],
-                {'action': get_macro('SNMP', action),
-                 'source': '$SALT_RESTRICTED_SNMP', 'dest': 'all'},
                 zones=data['internal_zones'])
 
             data['default_rules'].append({'comment': 'ftp'})
