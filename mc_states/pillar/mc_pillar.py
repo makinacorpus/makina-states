@@ -233,10 +233,10 @@ def get_dns_slave_conf(id_, gconf=None, ms_vars=None):
             masterdn)
         if masterdn not in dnsmasters:
             dnsmasters.update({masterdn: master})
-    rdata['makina-states.services.dns.bind'
-          '.zones.{0}'.format(domain)] = {
-              'server_type': 'slave',
-              'masters': [master]}
+        rdata['makina-states.services.dns.bind'
+              '.zones.{0}'.format(domain)] = {
+                  'server_type': 'slave',
+                  'masters': [master]}
     for dnsmaster, masterip in dnsmasters.items():
         rdata.update(
             slave_key(id_, dnsmaster, master=False))
