@@ -915,5 +915,13 @@ backup_configurations:
 #     no_smtp: false
 #     no_ftp: false
 
-
+# SSH configuration overrides to access hosts
+#ssh_hosts: {}
+#  vm.makina-corpus.net:
+#    ssh_gateway: xxxx.makina-corpus.net
+#    ssh_host: vm.makina-corpus.net
+#    # (opt) ssh_host: 10.5.0.2
+#    # (opt) ssh_gateway_port: 22
+#    # (opt) ssh_gateway_key: '/root/.ssh/id_rsa'
+#    # (opt) ssh_user: root
 # vim: set ft=yaml sts=2 ts=2 ai et:

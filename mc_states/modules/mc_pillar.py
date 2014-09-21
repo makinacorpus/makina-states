@@ -3652,6 +3652,19 @@ def get_dns_resolvers(id_, ttl=PILLAR_TTL):
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
+def get_ssh_hosts(ttl=PILLAR_TTL):
+    def _do():
+        try:
+            ssh_hosts = query('ssh_hosts')
+        except NoResultError:
+            log.info('No ssh_hosts section in configuration')
+            ssh_hosts = {}
+        return ssh_hosts
+    cache_key = __name + '.get_ssh_hosts8'
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
+
+
+
 def get_db_md5(ttl=10):
     def _do():
         with open(get_db()) as fic:
