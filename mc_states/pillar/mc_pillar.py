@@ -28,6 +28,7 @@ def ext_pillar(id_, pillar, *args, **kw):
         'mc_pillar.get_burp_server_conf',
         'mc_pillar.get_cloudmaster_conf',
         'mc_pillar.get_default_env_conf',
+        'mc_pillar.get_dhcpd_conf',
         'mc_pillar.get_dns_master_conf',
         'mc_pillar.get_dns_slave_conf',
         'mc_pillar.get_etc_hosts_conf',

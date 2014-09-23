@@ -4,12 +4,12 @@
 include:
   - makina-states.services.dns.dhcpd.hooks
   - makina-states.services.dns.dhcpd.services
-{% for tp in [ '/etc/default/isc-dhcp-server', ] %}
+{% for file, tp in settings.templates.items() %}
 dhcpd_config_{{tp}}:
   file.managed:
-    - name: {{tp}}
+    - name: {{file}}
     - makedirs: true
-    - source: salt://makina-states/files{{tp}}
+    - source: {{tp}}
     - template: jinja
     - mode: 750
     - user: root

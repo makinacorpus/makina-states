@@ -2652,6 +2652,18 @@ def get_burp_server_conf(id_):
     return rdata
 
 
+def get_dhcpd_conf(id_):
+    try:
+        conf = query('dhcpd_conf')[id_]
+    except KeyError:
+        conf = {}
+    if not conf:
+        return {}
+    return {
+        'makina-states.services.dns.dhcpd': conf
+    }
+
+
 def get_slapd_pillar_conf(id_):
     rdata = {}
     if (

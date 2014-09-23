@@ -47,11 +47,26 @@ def settings():
         dhcpdData = __salt__['mc_utils.defaults'](
             'makina-states.services.dns.dhcpd', {
                 'dhcpd_directory': "/etc/dhcpd",
+                'templates': {
+                  '/etc/default/isc-dhcp-server': 'salt://makina-states/files/etc/default/isc-dhcp-server',
+                  '/etc/dhcp/dhcpd.conf': 'salt://makina-states/files/etc/dhcp/dhcpd.conf',
+                },
                 'extra_dirs': [
                 ],
                 'defaults': {
                     'INTERFACES': '',
                     'OPTIONS': '',
+                },
+                'subnets': {},
+                'hosts': {},
+                'conf': {
+                    'ddns_update_style': 'none',
+                    'domain_name': 'example.org',
+                    'default_lease_time': '864000',
+                    'max_lease_time': '864000',
+                    'log_facility': 'local7',
+                    'domain_name_servers': (
+                        'ns1.example.org, ns2.example.org'),
                 },
                 'pkgs': ['dhcp3-server'],
                 'service_name': 'isc-dhcp-server',
