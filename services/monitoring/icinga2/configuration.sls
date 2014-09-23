@@ -130,6 +130,7 @@ icinga2-{{f}}-conf:
 # add objects configuration
 {% import "makina-states/services/monitoring/icinga2/init.sls" as icinga2 with context %}
 
+
 # add templates and commands (and contacts, timeperiods...)
 {% for file in salt['mc_icinga2.objects']().objects_by_file %}
 {% set state_name_salt =  salt['mc_icinga2.replace_chars'](file) %}
@@ -151,18 +152,48 @@ icinga2-configuration-{{state_name_salt}}-add-objects-conf:
               {{salt['mc_utils.json_dump'](file)}}
 {% endfor %}
 
+{#
+### a file per host, abandonned as hard to maintain
+### and not performant
+## add autoconfigured hosts
+#{% for hostname, odata in salt['mc_icinga2.autoconfigured_hosts']().items() %}
+## add the host/hostgroup object and its services with only one state (the host and its services are in the same file)
+## having all services associated to a host in one file avoid to delete files for disabled services
+## the macro configuration_remove_object isn't called so much
+#
+## the main difference with the previous version, where there was one file per service is that the loops over services
+## are done in the template, not in the sls file.
+#icinga2-configuration-add-auto-host-conf:
+#  file.managed:
+#    - name: {{odata.directory}}/{{odata.file}}
+#    - source: salt://makina-states/files/etc/icinga2/conf.d/template_auto_configuration_hosts.conf
+#    - user: root
+#    - group: root
+#    - mode: 644
+#    - makedirs: True
+#    - watch:
+#      - mc_proxy: icinga2-configuration-pre-object-conf
+#    - watch_in:
+#      - mc_proxy: icinga2-configuration-post-object-conf
+#    - template: jinja
+#    - defaults:
+#        hostname: |
+#                  {{salt['mc_utils.json_dump'](hostname)}}
+#{% endfor %}
+#}
+
+
 # add autoconfigured hosts
-{% for hostname, odata in salt['mc_icinga2.autoconfigured_hosts']().items() %}
 # add the host/hostgroup object and its services with only one state (the host and its services are in the same file)
 # having all services associated to a host in one file avoid to delete files for disabled services
 # the macro configuration_remove_object isn't called so much
 
-# the main difference with the previous version, where there was one file per service is that the loops over services 
+# the main difference with the previous version, where there was one file per service is that the loops over services
 # are done in the template, not in the sls file.
-icinga2-configuration-{{odata.state_name_salt}}-add-auto-host-conf:
+icinga2-configuration-add-auto-host-confs:
   file.managed:
-    - name: {{odata.directory}}/{{odata.file}}
-    - source: salt://makina-states/files/etc/icinga2/conf.d/template_auto_configuration_host.conf
+    - name: {{data.gen_directory}}/autohosts.conf
+    - source: salt://makina-states/files/etc/icinga2/conf.d/template_auto_configuration_hosts.conf
     - user: root
     - group: root
     - mode: 644
@@ -172,49 +203,4 @@ icinga2-configuration-{{odata.state_name_salt}}-add-auto-host-conf:
     - watch_in:
       - mc_proxy: icinga2-configuration-post-object-conf
     - template: jinja
-    - defaults:
-        hostname: |
-                  {{salt['mc_utils.json_dump'](hostname)}}
-{% endfor %}
-
-# really delete the files
-# if there is a lot of files, it is better to use the "source" argument instead of the "contents" argument
-{% set tmpf="/tmp/delete.sh" %}
-# purge objects (the macro add the files into a list)
-icinga2-configuration-remove-objects-conf:
-  file.managed:
-    - name: {{tmpf}}
-    - source: ''
-    - makedirs: true
-    - user: root
-    - group: root
-    - mode: 755
-    - watch:
-      - mc_proxy: icinga2-configuration-pre-clean-directories
-    - watch_in:
-      - mc_proxy: icinga2-configuration-post-clean-directories
-    - contents: |
-                #!/usr/bin/env bash
-                ret=0
-                {% for i in salt['mc_icinga2.remove_configuration_objects']() %}
-                if [ -e "{{f}}" ];then
-                  rm -f "{{f}}"
-                  lret="${?}"
-                  if [ "x${lret}" != "x0" ];then ret=${lret};fi
-                fi
-                {% endfor %}
-                exit ${ret}
-  cmd.run:
-    - name: {{tmpf}}
-    - onlyif: |
-              #!/usr/bin/env bash
-              {% for i in salt['mc_icinga2.remove_configuration_objects']() %}
-              if [ -e "{{i}}" ];then exit 0;fi
-              {% endfor %}
-              exit 1
-    - watch:
-      - file: icinga2-configuration-remove-objects-conf
-      - mc_proxy: icinga2-configuration-pre-clean-directories
-    - watch_in:
-      - mc_proxy: icinga2-configuration-post-clean-directories
 
