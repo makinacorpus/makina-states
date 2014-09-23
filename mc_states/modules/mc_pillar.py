@@ -2246,7 +2246,6 @@ def get_sysnet_conf(id_):
 
 
 def get_snmpd_conf(id_):
-    return __salt__['mc_pillar.get_snmpd_conf'](id_, gconf, ms_vars)
     data = __salt__['mc_pillar.get_snmpd_settings'](id_)
     gconf = get_configuration(id_)
     rdata = {}
