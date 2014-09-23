@@ -36,7 +36,6 @@ boot_salt_top
 .saltcheck
 include
 lib
-local
 /bin
 .mr.developer.cfg
 develop-eggs/

@@ -1,0 +1,126 @@
+#!/bin/bash
+PROGRAM="check_one_nagios";
+VERSION="0.1";
+AUTHOR="Régis Leroy regis.leroy@makina-corpus.com";
+NICK="ONE_NAGIOS"
+OK=0;
+WARNING=1;
+CRITICAL=2;
+UNKNOWN=3;
+PENDING=4;
+
+print_version() {
+    echo $PROGRAM
+    echo "Version: $VERSION Author: $AUTHOR";
+    echo "-------------------------------------------------------------------------------------"
+}
+
+print_help() {
+    print_version
+    echo "";
+    echo "$PROGRAM : Check you have only one Nagios Master process on Linux";
+    echo "";
+    echo "The Nagios process is usually present with numerous forks. so counting the number of";
+    echo "Nagios processes will never tell you you have an old nagios main process still alive.";
+    echo "I wrote this script to ensure an old Nagios main process is not still running after ";
+    echo "a Nagios restart. This script is filtering the nagiso process list on the status column";
+    echo "as usually only one of the Nagios process shoudl have the Ssl STAT tag where 's'means";
+    echo "it's a session leader and l that it's a multithreaded process.";
+    print_usage
+}
+
+print_usage() {
+    echo "USAGE: $PROGRAM [OPTIONS]";
+    echo;
+    echo "-h|--help     : show program help";
+    echo "-v|--version  : show program version";
+    echo "-c|--command  : Command used to filter ps output (by default '/usr/local/nagios/bin/nagios')";
+    echo "-s|--status   : Status of the process used to filter ps output (by default 'Ssl')";
+}
+
+COMMAND="/usr/local/nagios/bin/nagios";
+STATUS="Ssl";
+ARGS=`getopt vhc:s: $*`;
+while test -n "$1"; do
+    case "$1" in
+      -help|-h)
+          shift;
+          print_help;
+          exit $UNKNOWN;
+      ;;
+      –version|-v)
+          shift;
+          print_version ;
+          exit $UNKNOWN;
+      ;;
+      –command|-c)
+          shift;
+          COMMAND=$1;
+          shift;
+      ;;
+      –status|-s)
+          shift;
+          STATUS=$1;
+          shift;
+      ;;
+      *)
+          echo 
+          echo "====================================="
+          echo "$NICK UNKNOWN - Unknown argument: $1";
+          echo "====================================="
+          echo
+          print_help;
+          exit $UNKNOWN;
+      ;;
+    esac;
+done
+
+PS=`which ps`;
+if [ ! ${PS} ]; then
+  echo "$NICK UNKNOWN - You do not have the ps utility?"
+  exit $UNKNOWN
+fi
+
+GREP=`which grep`;
+if [ ! ${GREP} ]; then
+  echo "$NICK UNKNOWN - You do not have the grep utility?"
+  exit $UNKNOWN
+fi
+
+TR=`which tr`;
+if [ ! ${TR} ]; then
+  echo "$NICK UNKNOWN - You do not have the tr utility?"
+  exit $UNKNOWN
+fi
+
+CUT=`which cut`;
+if [ ! ${CUT} ]; then
+  echo "$NICK UNKNOWN - You do not have the cut utility?"
+  exit $UNKNOWN
+fi
+
+WC=`which wc`;
+if [ ! ${WC} ]; then
+  echo "$NICK UNKNOWN - You do not have the wc utility?"
+  exit $UNKNOWN
+fi
+
+COUNT=`${PS} aux|${GREP} "${COMMAND}"|${GREP} -v grep|${TR} -s " "|${CUT} -d " " -f 8|${GREP} ${STATUS}|${WC} -l`;
+if [ "0" == "${COUNT}" ]; then
+    echo "*******" >> /tmp/debug_check_one_nagios
+    echo "COUNT: ${COUNT} problem detected (${STATUS} ${COMMAND})" >> /tmp/debug_check_one_nagios
+    `${PS} aux|${GREP} "${COMMAND}"|${GREP} -v grep >> /tmp/debug_check_one_nagios`;
+    echo "*******" >> /tmp/debug_check_one_nagios
+    `${PS} aux|${GREP} "${COMMAND}"|${GREP} -v grep|${TR} -s " "|${CUT} -d " " -f 8|${GREP} ${STATUS} >> /tmp/debug_check_one_nagios`;
+    echo "*******" >> /tmp/debug_check_one_nagios
+    echo "$NICK CRITICAL - No nagios main process found, check your arguments?";
+    exit $CRITICAL;
+else 
+    if [ "1" == "${COUNT}" ]; then
+        echo "$NICK OK - only one Main nagios process detected";
+        exit $OK;
+    else
+        echo "$NICK CRITICAL - Too much Nagios main process detected: ${COUNT}. You'll may have big problems soon. Kill the oldest one.";
+        exit $CRITICAL;
+    fi
+fi
