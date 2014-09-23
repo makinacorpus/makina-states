@@ -39,4 +39,9 @@ icinga2-pkgs:
       {%  for package in icinga2Settings.modules.ido2db.package %}
       - {{package}}
       {%  endfor %}
-
+      - rdtool
+      - librrds-perl
+      - libconfig-inifiles-perl
+      - libnet-snmp-perl libsnmp-perl
+      - libgetopt-long-descriptive-perl
+      - libfindbin-libs-perl

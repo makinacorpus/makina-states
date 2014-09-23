@@ -141,6 +141,7 @@ def objects(core=True, ttl=120):
     def _do(core):
         rdata = OrderedDict()
         data = __salt__['mc_icinga2.load_objects'](core=core)
+        settings = __salt__['mc_icinga2.settings']()
         rdata['raw_objects'] = data['objects']
         rdata['objects'] = OrderedDict()
         rdata['objects_by_file'] = OrderedDict()
@@ -206,6 +207,12 @@ def objects(core=True, ttl=120):
             ft = data.setdefault('file', file_.get(typ_, None))
             data['file'] = ft
             data['type'] = typ_
+            # declare constants as var for them to be resolved
+            # by macro calls
+            if obj == 'C_BASE':
+                for i in settings['constants_conf']:
+                    data['attrs'][
+                        'vars.{0}'.format(i)] = '{0} + ""'.format(i)
             attrs = data.setdefault('attrs', {})
             members = attrs.get('members', _default)
             if members is not _default:
@@ -227,6 +234,18 @@ def objects(core=True, ttl=120):
     return memoize_cache(_do, [core], {}, cache_key, ttl)
 
 
+def quotev(v, valtype=''):
+    donotquote = False
+    # cases that we should not quote (eg: variables construction)
+    if valtype == 'command' and v.count('$') >= 2:
+        donotquote = True
+    if ' + ' in v:
+        donotquote = True
+    if not donotquote and not v.startswith('"'):
+        v = '"' + str(v.replace('"', '\\"')) + '"'
+    return v
+
+
 def format(dictionary, quote_keys=False, quote_values=True, init=True):
     '''
     function to transform all values in a dictionary in string
@@ -236,20 +255,16 @@ def format(dictionary, quote_keys=False, quote_values=True, init=True):
     This should be ["v1", "v2"] this can be done in jinja
     template but the template is already complex
     '''
-    def quotev(v):
-        donotquote = False
-        # cases that we should not quote (eg: variables construction)
-        if ' + ' in v:
-            donotquote = True
-        if not donotquote and not v.startswith('"'):
-            v = '"' + str(v.replace('"', '\\"')) + '"'
-        return v
     res = {}
     for key, value in copy.deepcopy(dictionary).items():
         if quote_keys:
             res_key = quotev(key)
         else:
             res_key = key
+
+        valtype = None
+        #if key == 'command':
+        #    valtype = 'command'
 
         # ugly hack
         if key in ['template', 'type', 'types', 'states', 'import',
@@ -309,12 +324,13 @@ def format(dictionary, quote_keys=False, quote_values=True, init=True):
             res[res_key] = str(value)
         elif isinstance(value, unicode):
             if quote_value:
-                res[res_key] = quotev(value)
+                res[res_key] = quotev(value, valtype=valtype)
             else:
                 res[res_key] = value
         else:
             if quote_value:
-                res[res_key] = quotev(str(value).decode('utf-8'))
+                res[res_key] = quotev(str(value).decode('utf-8'),
+                                      valtype=valtype)
             else:
                 res[res_key] = value
     return res
@@ -435,14 +451,17 @@ def settings():
                 'constants_conf': {
                     'PluginDir': "\"/usr/lib/nagios/plugins\"",
                     'USER1': "\"/usr/lib/nagios/plugins\"",
-                    'SNMPCOMMUNITY': "\"public\"",
-                    'USER3_SNMPCRYPT': '\"secret\"',
-                    'USER4_SNMPPASS': '\"secret\"',
-                    'USER5_SNMPUSER': '\"user\"',
-                    'USER6_AUTHPAIR': '\"tsa:pw\"',
+                    'CUSTM_ADM_SCRIPTS': (
+                        '\"/usr/local/admin_scripts/nagios\"'),
+                    'SNMP_CRYPT': '\"secret\"',
+                    'SNMP_PASS': '\"secret\"',
+                    'SNMP_USER': '\"user\"',
+                    'SNMP_AUTH': '\"sha\"',
+                    'SNMP_PRIV': '\"des\"',
+                    'TEST_AUTHPAIR': '\"tsa:pw\"',
+                    'TESTUSER': "\"tsa\"",
+                    'TESTPWD': "\"pw\"",
                     'SSHKEY': '\"/var/lib/nagios/id_rsa_supervision\"',
-                    'USER8_TESTUSER': "\"tsa\"",
-                    'USER9_TESTPWD': "\"pw\"",
                     'ZoneName': "\"NodeName\"",
                 },
                 'zones_conf': {
@@ -571,6 +590,7 @@ def autoconfigure_host(host,
                        ssh_user='root',
                        ssh_addr='',
                        ssh_port=22,
+                       snmp_port=161,
                        ssh_timeout=30,
                        apt=True,
                        backup_burp_age=True,
@@ -605,6 +625,7 @@ def autoconfigure_host(host,
                        process_gunicorn_django=False,
                        process_gunicorn=False,
                        process_ircbot=False,
+                       process_slapd=False,
                        process_mysql=False,
                        process_postgres=False,
                        process_python=False,
@@ -661,6 +682,7 @@ def autoconfigure_host(host,
                 'process_ircbot',
                 'process_beam',
                 'process_python',
+                'process_slapd',
                 'process_mysql',
                 'process_postgres',
                 'raid',
@@ -772,6 +794,8 @@ def autoconfigure_host(host,
             'import': ["ST_PROCESS_EPMD"]},
         'fail2ban': {
             'import': ["ST_PROCESS_FAIL2BAN"]},
+        'process_slapd': {
+            'import': ["ST_PROCESS_SLAPD"]}, 
         'process_gunicorn': {
             'import': ["ST_PROCESS_GUNICORN"]},
         'process_gunicorn_django': {
