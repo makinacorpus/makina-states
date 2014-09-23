@@ -12,7 +12,7 @@ rm -rf nagios_plugins nagios*plugins*gz*
 #centreon plugins
 wget "http://download.centreon.com/index.php?id=4320" -O centreonp.tgz
 tar xzf centreonp.tgz
-rsync -azv --delete centreon-*/plugins centreon_plugins
+rsync -azv --delete centreon-*/plugins/ centreon_plugins/
 find centreon_plugins/src/ -type f |xargs sed -i -re "s:@NAGIOS_PLUGINS@:/usr/local/admin_scripts/nagios/centreon_plugins/src:g"
 find centreon_plugins/src/ -type f |xargs sed -i -re "s:@CENTPLUGINS_TMP@:/tmp:g"
 rm -rf centreon-* centreo*tgz
