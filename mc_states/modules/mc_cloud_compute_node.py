@@ -536,9 +536,7 @@ def get_snmp_mapping_for_target(target, target_data=None):
     return mapping
 
 
-def set_snmp_port(target, vm, port, target_data=None):
-    if target_data is None:
-        target_data = get_settings_for_target(target)
+def set_snmp_port(target, vm, port):
     ssh_map = get_conf_for_target(target, 'snmp_map', {})
     if ssh_map.get(vm, None) != port:
         ssh_map[vm] = port
@@ -564,14 +562,11 @@ def cleanup_snmp_ports(target, target_data=None):
     return get_conf_for_target(target, 'snmp_map', {})
 
 
-def get_snmp_port(vm, target=None, target_data=None):
+def get_snmp_port(vm, target=None):
     _s = __salt__.get
     _settings = settings()
     if target is None:
         target = __salt__['mc_cloud_compute_node.target_for_vm'](vm)
-    if target_data is None:
-        target_data = get_settings_for_target(target)
-    vms_infos = target_data.get('vms', {})
     start = int(_settings['snmp_port_range_start'])
     end = int(_settings['snmp_port_range_end'])
     snmp_map = get_conf_for_target(target, 'snmp_map', {})
@@ -579,12 +574,9 @@ def get_snmp_port(vm, target=None, target_data=None):
         snmp_map[a] = int(snmp_map[a])
     port = snmp_map.get(vm, None)
     if port is None:
-        if vm in vms_infos:
-            port = _get_next_available_port(snmp_map.values(), start, end)
-            _s('mc_cloud_compute_node.set_snmp_port')(
-                target, vm, port, target_data=target_data)
-        else:
-            raise ValueError('{0} is not a vm of {1}'.format(vm, target))
+        port = _get_next_available_port(snmp_map.values(), start, end)
+        _s('mc_cloud_compute_node.set_snmp_port')(
+            target, vm, port)
     return port
 
 
@@ -598,11 +590,9 @@ def feed_sw_reverse_proxies_for_target(target, target_data=None):
     sw_proxies = reversep.setdefault('sw_proxies', [])
     for vm, data in vms_infos.items():
         snmp_port = _s('mc_cloud_compute_node.get_snmp_port')(
-            vm, target=target,
-            target_data=target_data)
+            vm, target=target)
         ssh_port = _s('mc_cloud_compute_node.get_ssh_port')(
-            vm, target=target,
-            target_data=target_data)
+            vm, target=target)
         vt = 'lxc'
         sw_proxies.append({'comment': 'snmp for {0}'.format(vm)})
         sw_proxies.append({'action': 'DNAT',
@@ -631,9 +621,7 @@ def get_ssh_mapping_for_target(target, target_data=None):
     return mapping
 
 
-def set_ssh_port(target, vm, port, target_data=None):
-    if target_data is None:
-        target_data = get_settings_for_target(target)
+def set_ssh_port(target, vm, port):
     ssh_map = get_conf_for_target(target, 'ssh_map', {})
     if ssh_map.get(vm, None) != port:
         ssh_map[vm] = port
@@ -659,14 +647,11 @@ def cleanup_ssh_ports(target, target_data=None):
     return get_conf_for_target(target, 'ssh_map', {})
 
 
-def get_ssh_port(vm, target=None, target_data=None):
+def get_ssh_port(vm, target=None):
     _s = __salt__.get
     _settings = settings()
     if target is None:
         target = __salt__['mc_cloud_compute_node.target_for_vm'](vm)
-    if target_data is None:
-        target_data = get_settings_for_target(target)
-    vms_infos = target_data.get('vms', {})
     start = int(_settings['ssh_port_range_start'])
     end = int(_settings['ssh_port_range_end'])
     ssh_map = get_conf_for_target(target, 'ssh_map', {})
@@ -674,12 +659,9 @@ def get_ssh_port(vm, target=None, target_data=None):
         ssh_map[a] = int(ssh_map[a])
     port = ssh_map.get(vm, None)
     if port is None:
-        if vm in vms_infos:
-            port = _get_next_available_port(ssh_map.values(), start, end)
-            _s('mc_cloud_compute_node.set_ssh_port')(
-                target, vm, port, target_data=target_data)
-        else:
-            raise ValueError('{0} is not a vm of {1}'.format(vm, target))
+        port = _get_next_available_port(ssh_map.values(), start, end)
+        _s('mc_cloud_compute_node.set_ssh_port')(
+            target, vm, port)
     return port
 
 

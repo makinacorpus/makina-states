@@ -165,6 +165,8 @@ def settings():
                 'pkgs': ['bind9',
                          'bind9utils',
                          'bind9-host'],
+                'transfers_out': '20000',
+                'transfers_in': '20000',
                 'forwarders': [],
                 'config_dir': '/etc/bind',
                 'bind_config': '/etc/bind/named.conf',
