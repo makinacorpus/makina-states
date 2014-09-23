@@ -15,4 +15,5 @@ tar xzf centreonp.tgz
 rsync -azv --delete centreon-*/plugins/ centreon_plugins/
 find centreon_plugins/src/ -type f |xargs sed -i -re "s:@NAGIOS_PLUGINS@:/usr/local/admin_scripts/nagios/centreon_plugins/src:g"
 find centreon_plugins/src/ -type f |xargs sed -i -re "s:@CENTPLUGINS_TMP@:/tmp:g"
+chmod +x  centreon_plugins/src/chec* centreon_plugins/src/*resul*
 rm -rf centreon-* centreo*tgz
