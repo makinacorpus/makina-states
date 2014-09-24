@@ -31,7 +31,7 @@
 # my $CMD_APT = "/usr/bin/apt-get update ; /usr/bin/apt-get -s upgrade";
 #
 use strict;
-use lib '/usr/lib/nagios/plugins';
+use lib '/usr/lib/nagios/plugins';use lib '/usr/local/lib/nagios/plugins';
 use utils qw(%ERRORS &print_revision &support &usage);
 use Getopt::Long;
 

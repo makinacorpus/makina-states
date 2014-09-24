@@ -17,3 +17,9 @@ find centreon_plugins/src/ -type f |xargs sed -i -re "s:@NAGIOS_PLUGINS@:/usr/lo
 find centreon_plugins/src/ -type f |xargs sed -i -re "s:@CENTPLUGINS_TMP@:/tmp:g"
 chmod +x  centreon_plugins/src/chec* centreon_plugins/src/*resul*
 rm -rf centreon-* centreo*tgz
+for i in $(find -type f);do
+    if [ "x$(grep -q /local/lib/nagios/plugins $i;echo $?)" != "x0" ];then
+        sed -i -re "s|use lib '/usr/lib/nagios/plugins/?';|use lib '/usr/lib/nagios/plugins';use lib '/usr/local/lib/nagios/plugins';|g" $i
+        sed -i -re "s|use lib \"/usr/lib/nagios/plugins/?\";|use lib '/usr/lib/nagios/plugins';use lib '/usr/local/lib/nagios/plugins';|g" $i
+    fi
+done

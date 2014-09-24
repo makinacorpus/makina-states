@@ -32,11 +32,10 @@ use Getopt::Long;
 # Nagios specific
 
 use lib "/usr/local/admin_scripts/nagios/centreon_plugins/src";
+use utils qw(%ERRORS);
+
 # centreon specific
 require "/usr/local/admin_scripts/nagios/centreon_plugins/src/Centreon/SNMP/Utils.pm";
-
-my %ERRORS = ('OK' => 0, 'WARNING' => 1, 'CRITICAL' => 2, 'UNKNOWN' => 3);
-
 my %OPTION = (
     "host" => undef,
     "snmp-community" => "public", "snmp-version" => 1, "snmp-port" => 161, 
