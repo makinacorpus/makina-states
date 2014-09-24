@@ -600,8 +600,8 @@ def autoconfigure_host(host,
                        disk_space=None,
                        dns_association=False,
                        dns_association_hostname=True,
-                       drbd=False,
-                       fail2ban=False,
+                       drbd=None,
+                       fail2ban=True,
                        haproxy=False,
                        load_avg=True,
                        mail_cyrus_imap_connections=False,
@@ -633,6 +633,7 @@ def autoconfigure_host(host,
                        sas=False,
                        snmpd_memory_control=False,
                        solr=False,
+                       supervisor=None,
                        ssh=True,
                        swap=True,
                        ware_raid=False,
@@ -689,6 +690,7 @@ def autoconfigure_host(host,
                 'sas',
                 'snmpd_memory_control',
                 'ssh',
+                'supervisor',
                 'solr',
                 'web',
                 'web_noalert',
@@ -696,7 +698,8 @@ def autoconfigure_host(host,
                 'swap',
                 'ware_raid',
                 'web_apache_status']
-    services_multiple = ['dns_association',
+    services_multiple = ['disk_space', 'nic_card', 'dns_association', 
+                         'supervisor', 'drbd',
                          'web_noalert', 'solr', 'web_openid', 'web']
     rdata = {"host.name": host}
     icingaSettings = __salt__['mc_icinga2.settings']()
@@ -706,8 +709,14 @@ def autoconfigure_host(host,
         services_attrs = {}
     if solr is None:
         solr = []
+    if drbd is None:
+        drbd = []
+    if drbd is True:
+        drbd = [0]
     if web_openid is None:
         web_openid = []
+    if supervisor is None:
+        supervisor = []
     if web is None:
         web = []
     if web_noalert is None:
@@ -774,6 +783,8 @@ def autoconfigure_host(host,
             'import': ["ST_PROCESS_PYTHON"]},
         'cron': {
             'import': ["ST_SSH_PROC_CRON"]},
+        'supervisor': {
+            'import': ["ST_SUPERVISOR_STATUS"]},
         'ddos': {
             'import': ["ST_DDOS"]},
         'apt': {
@@ -795,7 +806,7 @@ def autoconfigure_host(host,
         'fail2ban': {
             'import': ["ST_PROCESS_FAIL2BAN"]},
         'process_slapd': {
-            'import': ["ST_PROCESS_SLAPD"]}, 
+            'import': ["ST_PROCESS_SLAPD"]},
         'process_gunicorn': {
             'import': ["ST_PROCESS_GUNICORN"]},
         'process_gunicorn_django': {
@@ -871,11 +882,11 @@ def autoconfigure_host(host,
         ):
             services_enabled_types.append(s)
     for svc in services_enabled_types:
-        if svc in ['disk_space', 'nic_card'] + services_multiple:
+        if svc in services_multiple:
             default_vals = {
                 'web': {'PUBLIC_DEFAULT': {}}
             }
-            if svc in ['disk_space', 'nic_card']:
+            if svc in ['drbd', 'disk_space', 'nic_card', 'supervisor']:
                 values = eval(svc)
             else:
                 values = services_attrs.get(svc,
@@ -890,9 +901,13 @@ def autoconfigure_host(host,
                                skey,
                                services_default_attrs.get(svc, {}),
                                vdata)[skey]
+                if svc in ['drbd']:
+                    ss['vars.device'] = v
                 if svc in ['disk_space', 'nic_card']:
                     ss[{'disk_space': 'vars.path',
                         'nic_card': 'vars.interface'}[svc]] = v
+                if svc == 'supervisor':
+                    ss['vars.command'] = v
                 # transform value in string: ['a', 'b'] => '"a" -s "b"'
                 if (
                     svc in ['solr', 'web', 'web_noalert']
