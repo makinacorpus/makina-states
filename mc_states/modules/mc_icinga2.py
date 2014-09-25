@@ -615,7 +615,6 @@ def autoconfigure_host(host,
                        mail_pop_test_account=False,
                        mail_server_queues=False,
                        mail_smtp=False,
-                       megaraid_sas=False,
                        memory_mode=None,
                        memory=True,
                        ping=True,
@@ -632,15 +631,14 @@ def autoconfigure_host(host,
                        process_mysql=False,
                        process_postgres=False,
                        process_python=False,
-                       raid=False,
-                       sas=False,
+                       raid=None,
                        snmpd_memory_control=False,
-                       solr=False,
                        supervisor=None,
                        ssh=True,
                        swap=True,
-                       ware_raid=False,
-                       web_apache_status=False,
+                       apache_status=False,
+                       remote_apache_status=False,
+                       tomcat=None,
                        web=None,
                        web_noalert=None,
                        web_openid=False,
@@ -674,7 +672,6 @@ def autoconfigure_host(host,
                 'mail_pop_test_account',
                 'mail_server_queues',
                 'mail_smtp',
-                'megaraid_sas',
                 'nic_card',
                 'ntp_peers',
                 'ntp_time',
@@ -690,28 +687,25 @@ def autoconfigure_host(host,
                 'process_mysql',
                 'process_postgres',
                 'raid',
-                'sas',
                 'snmpd_memory_control',
                 'ssh',
                 'supervisor',
-                'solr',
+                'tomcat',
                 'web',
                 'web_noalert',
                 'web_openid',
                 'swap',
-                'ware_raid',
-                'web_apache_status']
-    services_multiple = ['disk_space', 'nic_card', 'dns_association', 
-                         'supervisor', 'drbd',
-                         'web_noalert', 'solr', 'web_openid', 'web']
+                'remote_apache_status',
+                'apache_status']
+    services_multiple = ['disk_space', 'nic_card', 'dns_association',
+                         'supervisor', 'drbd', 'raid', 'tomcat',
+                         'web_noalert', 'web_openid', 'web']
     rdata = {"host.name": host}
     icingaSettings = __salt__['mc_icinga2.settings']()
     if attrs is None:
         attrs = {}
     if services_attrs is None:
         services_attrs = {}
-    if solr is None:
-        solr = []
     if drbd is None:
         drbd = []
     if drbd is True:
@@ -720,6 +714,8 @@ def autoconfigure_host(host,
         web_openid = []
     if supervisor is None:
         supervisor = []
+    if tomcat is None:
+        tomcat = []
     if web is None:
         web = []
     if web_noalert is None:
@@ -731,6 +727,8 @@ def autoconfigure_host(host,
         nic_card = ['eth0']
     if not disk_space:
         disk_space = []
+    if not raid:
+        raid = []
     if not nic_card:
         nic_card = []
     if not ssh_addr:
@@ -854,15 +852,15 @@ def autoconfigure_host(host,
             'import': ["ST_SNMPD_MEMORY_CONTROL"]},
         'ping': {
             'import': ["ST_PING"]},
-        'solr': {
-            'import': ["ST_SOLR"]},
         'ssh': {
             'import': ["ST_SSH"]},
         'swap': {
             'import': ["ST_SWAP"]},
-        'ware_raid': {
-            'import': ["ST_WARE_RAID"]},
-        'web_apache_status': {
+        'tomcat': {
+            'import': ["ST_TOMCAT"]},
+        'remote_apache_status': {
+            'import': ["ST_REMOTE_APACHE_STATUS"]},
+        'apache_status': {
             'import': ["ST_APACHE_STATUS"]},
         'web_openid': {
             'import': ["ST_WEB_OPENID"]},
@@ -870,11 +868,13 @@ def autoconfigure_host(host,
             'import': ["ST_WEB"]},
         'web_noalert': {
             'import': ["ST_WEB_NOALERT"]},
+        'ware_raid': {
+            'import': ["ST_WARE_RAID"]},
         'megaraid_sas': {
             'import': ["ST_MEGARAID_SAS"]},
-        'raid': {
+        'md_raid': {
             'import': ["ST_RAID"]},
-        'sas': {
+        'sas_raid': {
             'import': ["ST_SAS"]}}
     # if we defined extra properties on a service,
     # enable it automatically
@@ -887,9 +887,11 @@ def autoconfigure_host(host,
     for svc in services_enabled_types:
         if svc in services_multiple:
             default_vals = {
-                'web': {'PUBLIC_DEFAULT': {}}
+                'web': {'PUBLIC_DEFAULT': {}},
+                'tomcat': {'PUBLIC_DEFAULT': {}}
             }
-            if svc in ['drbd', 'disk_space', 'nic_card', 'supervisor']:
+            if svc in ['raid', 'drbd', 'disk_space',
+                       'nic_card', 'supervisor']:
                 values = eval(svc)
             else:
                 values = services_attrs.get(svc,
@@ -898,11 +900,14 @@ def autoconfigure_host(host,
             for v in keys:
                 vdata = services_attrs.get(svc, {}).get(v, {})
                 skey = svc_name('{1}_{2}'.format(host, svc, v).upper())
+                ksvc = svc
+                if svc in ['raid']:
+                    ksvc = v + '_raid'
                 ss = add_check(host,
                                services_enabled,
                                svc,
                                skey,
-                               services_default_attrs.get(svc, {}),
+                               services_default_attrs.get(ksvc, {}),
                                vdata)[skey]
                 if svc in ['drbd']:
                     ss['vars.device'] = v
@@ -913,7 +918,7 @@ def autoconfigure_host(host,
                     ss['vars.command'] = v
                 # transform value in string: ['a', 'b'] => '"a" -s "b"'
                 if (
-                    svc in ['solr', 'web', 'web_noalert']
+                    svc in ['web', 'web_noalert']
                     and 'vars.strings' in ss
                 ):
                     ss['vars.strings'] = reencode_webstrings(
