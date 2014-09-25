@@ -42,6 +42,7 @@ icinga2-pkgs:
       - rrdtool
       - librrds-perl
       - libconfig-inifiles-perl
-      - libnet-snmp-perl libsnmp-perl
+      - libnet-snmp-perl
+      - libsnmp-perl
       - libgetopt-long-descriptive-perl
       - libfindbin-libs-perl

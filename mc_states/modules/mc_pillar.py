@@ -1855,7 +1855,9 @@ def get_supervision_objects_defs(id_):
                     break
             if not host_provider:
                 for provider in providers:
-                    if __salt__['mc_network.is_{0}'.format(provider)]:
+                    if __salt__[
+                        'mc_network.is_{0}'.format(provider)
+                    ](attrs['address']):
                         host_provider = provider
                         break
             if host_provider:
@@ -1915,6 +1917,7 @@ def get_supervision_objects_defs(id_):
             attrs['vars.SNMP_HOST'] = snmp_host
             attrs['vars.SSH_PORT'] = ssh_port
             attrs['vars.SNMP_PORT'] = snmp_port
+
         for host, hdata in hhosts.items():
             parents = hdata.setdefault('attrs', {}).setdefault('parents', [])
             rparents = [a for a in parents if a != id_]
@@ -1922,6 +1925,8 @@ def get_supervision_objects_defs(id_):
             for g in groups:
                 if g not in sobjs:
                     sobjs[g] = {'attrs': {'display_name': g}}
+                if 'HG_PROVIDER_' in g:
+                    parents.append(g.replace('HG_PROVIDER_', ''))
             # if we defined parents but no address, we should rely on an
             # dns query to get the ip fromand cross it over the failover map
             # as the goal is to resolve any mounted failover ip as the
@@ -1938,10 +1943,21 @@ def get_supervision_objects_defs(id_):
                         hdata['attrs']['address'] = addr
                         hdata.update(disable_common_checks)
                         break
-            if id_ not in parents:
-                parents.append(id_)
+            #if id_ not in parents and id_ not in maps['vms']:
+            #    parents.append(id_)
             if not hdata['attrs'].get('address'):
                 raise ValueError('no address defined for {0}'.format(host))
+            if id_ == host:
+                for i in parents[:]:
+                    parents.pop()
+        for g in [a for a in sobjs]:
+            if 'HG_PROVIDER_' in g:
+                sobjs[g.replace('HG_PROVIDER_', '')] = {
+                    'type': 'Host',
+                    'attrs': {
+                        'import': ['HT_BASE'],
+                        'groups': [g, 'HG_PROVIDER'],
+                        'address': '127.0.0.1'}}
         rdata.update({'icinga2_definitions': defs})
     return rdata
 
