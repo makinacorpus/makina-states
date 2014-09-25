@@ -102,6 +102,7 @@ def settings():
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.backup.db_smart_backup', {
                 'cron_minute': '1',
+                'types': ['mongod', 'slapd', 'mysql', 'postgresql', 'elasticsearch'],
                 'backup_path_prefix': locs['srv_dir'] + '/backups',
                 'cron_hour': '1',
                 'dbexclude': '',
