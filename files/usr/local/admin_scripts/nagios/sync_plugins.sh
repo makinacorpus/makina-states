@@ -23,5 +23,6 @@ for i in $(find -type f);do
         sed -i -re "s|use lib \"/usr/lib/nagios/plugins/?\";|use lib '/usr/lib/nagios/plugins';use lib '/usr/local/lib/nagios/plugins';|g" $i
     fi
 done
+rm -f check_mem.pl check_mem.php
 wget "https://raw.githubusercontent.com/justintime/nagios-plugins/master/check_mem/check_mem.pl"
 wget "https://raw.githubusercontent.com/justintime/nagios-plugins/master/check_mem/check_mem.php"
