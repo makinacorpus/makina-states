@@ -3,6 +3,7 @@ install-nagios-plugins:
     - pkgs:
       - nagios-plugins
       - nagios-plugins-contrib
+      - libwww-perl
       - nagios-plugins-extra
       - nagios-plugins-openstack
       - libcrypt-des-perl

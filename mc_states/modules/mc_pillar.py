@@ -1918,7 +1918,8 @@ def get_supervision_objects_defs(id_):
             attrs['vars.SSH_PORT'] = ssh_port
             attrs['vars.SNMP_PORT'] = snmp_port
 
-        for host, hdata in hhosts.items():
+        for host in [a for a in hhosts]:
+            hdata = hhosts[host]
             parents = hdata.setdefault('attrs', {}).setdefault('parents', [])
             rparents = [a for a in parents if a != id_]
             groups = hdata.get('attrs', {}).get('groups', [])
@@ -1950,6 +1951,7 @@ def get_supervision_objects_defs(id_):
             if id_ == host:
                 for i in parents[:]:
                     parents.pop()
+            hdata['parents'] = __salt__['mc_utils.uniquify'](parents)
         for g in [a for a in sobjs]:
             if 'HG_PROVIDER_' in g:
                 sobjs[g.replace('HG_PROVIDER_', '')] = {
