@@ -202,7 +202,7 @@ def objects(core=True, ttl=120):
                      'HostGroup': 'hostgroups.conf',
                      'Service': 'services.conf',
                      'ServiceGroup': 'servicegroups.conf',
-                     'Host': 'contacts.conf'}
+                     'Host': 'hosts.conf'}
             # guess configuration file from type
             ft = data.setdefault('file', file_.get(typ_, None))
             data['file'] = ft
@@ -243,6 +243,7 @@ def quotev(v, valtype=''):
         donotquote = True
     if not donotquote and not v.startswith('"'):
         v = '"' + str(v.replace('"', '\\"')) + '"'
+    v = v .replace('+ ""', '').replace("+ ''", '')
     return v
 
 
@@ -461,6 +462,8 @@ def settings():
                     'TEST_AUTHPAIR': '\"tsa:pw\"',
                     'TESTUSER': "\"tsa\"",
                     'TESTPWD': "\"pw\"",
+                    'MAIL': "\"@foo.com\"",
+                    'MX': "\"@mail.foo.com\"",
                     'SSHKEY': '\"/var/lib/nagios/id_rsa_supervision\"',
                     'ZoneName': "\"NodeName\"",
                 },
