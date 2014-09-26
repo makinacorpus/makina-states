@@ -7,6 +7,7 @@ install-nagios-plugins:
       - nagios-plugins-extra
       - nagios-plugins-openstack
       - libcrypt-des-perl
+      - libxml-xpath-perl
 
 ms-scripts-d:
   file.directory:
