@@ -638,6 +638,8 @@ def autoconfigure_host(host,
                        swap=True,
                        apache_status=False,
                        remote_apache_status=False,
+                       nginx_status=False,
+                       remote_nginx_status=False,
                        tomcat=None,
                        web=None,
                        web_noalert=None,
@@ -695,6 +697,8 @@ def autoconfigure_host(host,
                 'web_noalert',
                 'web_openid',
                 'swap',
+                'remote_nginx_status',
+                'nginx_status',
                 'remote_apache_status',
                 'apache_status']
     services_multiple = ['disk_space', 'nic_card', 'dns_association',
@@ -858,6 +862,10 @@ def autoconfigure_host(host,
             'import': ["ST_SWAP"]},
         'tomcat': {
             'import': ["ST_TOMCAT"]},
+        'remote_nginx_status': {
+            'import': ["ST_REMOTE_NGINX_STATUS"]},
+        'nginx_status': {
+            'import': ["ST_NGINX_STATUS"]},
         'remote_apache_status': {
             'import': ["ST_REMOTE_APACHE_STATUS"]},
         'apache_status': {
@@ -870,12 +878,12 @@ def autoconfigure_host(host,
             'import': ["ST_WEB_NOALERT"]},
         'ware_raid': {
             'import': ["ST_WARE_RAID"]},
-        'megaraid_sas': {
-            'import': ["ST_MEGARAID_SAS"]},
+        'megaraid_sas_raid': {
+            'import': ["ST_MEGARAID_SAS_RAID"]},
         'md_raid': {
-            'import': ["ST_RAID"]},
+            'import': ["ST_MD_RAID"]},
         'sas_raid': {
-            'import': ["ST_SAS"]}}
+            'import': ["ST_SAS_RAID"]}}
     # if we defined extra properties on a service,
     # enable it automatically
     for s in services:
@@ -931,6 +939,8 @@ def autoconfigure_host(host,
                            skey,
                            services_default_attrs[svc],
                            services_attrs.get(svc, {}))[skey]
+    if host == 'ovh-r4-2.makina-corpus.net':
+        import pdb;pdb.set_trace()  ## Breakpoint ##
     return rdata
 
 

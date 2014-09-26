@@ -15,6 +15,8 @@ use Digest::MD5 qw(md5 md5_hex);
 
 
 # Nagios specific
+use lib "/usr/lib/nagios/plugins";
+use lib "/usr/local/lib/nagios/plugins";
 use lib "/usr/local/nagios/libexec";
 use utils qw($TIMEOUT);
 
