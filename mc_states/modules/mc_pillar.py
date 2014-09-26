@@ -1188,7 +1188,7 @@ def serial_for(domain,
                     for soa in answer:
                         if soa.serial > dns_serial:
                             dns_serial = soa.serial
-            if dns_serial != serial:
+            if dns_serial != serial and dns_serial > 0:
                 serial = dns_serial + 1
         except Exception, ex:
             trace = traceback.format_exc()
