@@ -5,6 +5,7 @@ import json
 import copy
 # Import python libs
 import os
+import dns
 import socket
 import logging
 import time
@@ -918,34 +919,7 @@ def get_slaves_zones_for(fqdn, ttl=60):
 
 
 def rrs_mx_for(domain, ttl=60):
-    '''Return all configured NS records for a domain'''
-    def _do_mx(domain):
-        db = load_network_infrastructure()
-        rrs_ttls = db['rrs_ttls']
-        mx_map = db['mx_map']
-        ips = db['ips']
-        all_rrs = OrderedDict()
-        servers = mx_map.get(domain, {})
-        for fqdn in servers:
-            rrs = all_rrs.setdefault(fqdn, [])
-            dfqdn = fqdn
-            if not dfqdn.endswith('.'):
-                dfqdn += '.'
-            for rr in rr_entry(
-                '@', [dfqdn],
-                priority=servers[fqdn].get('priority', '10'),
-                record_type='MX'
-            ).split('\n'):
-                if rr not in rrs:
-                    rrs.append(rr)
-        rr = filter_rr_str(all_rrs)
-        return rr
-    cache_key = 'mc_pillar.rrs_mx_for_{0}'.format(domain)
-    return memoize_cache(_do_mx, [domain], {}, cache_key, ttl)
-
-
-def rrs_mx_for(domain, ttl=60):
-    '''Return all configured NS records for a domain'''
+    '''Return all configured MX records for a domain'''
     def _do_mx(domain):
         db = load_network_infrastructure()
         rrs_ttls = db['rrs_ttls']
@@ -1127,7 +1101,8 @@ def rrs_cnames_for(domain, ttl=60):
 
 def serial_for(domain,
                serial=None,
-               autoinc=True):
+               autoinc=True,
+               force_serial=None):
     '''Get the serial for a DNS zone
 
     If serial is given: we take that as a value
@@ -1144,6 +1119,8 @@ def serial_for(domain,
 
             - if this local value is greater than the
               current serial, this becomes the serial,
+        - at the end, we try to reach the nameservers in the wild
+          to adapt our serial if it is too low or too high
     '''
     def _doserialfor(domain, serial=None, ttl=60):
         db = __salt__['mc_pillar.load_network_infrastructure']()
@@ -1183,10 +1160,42 @@ def serial_for(domain,
                     dns_reg_serial = serial
                 if dns_reg_serial > serial:
                     serial = dns_reg_serial
-        dns_reg[domain] = serial
         # only update the ttl on expiraton or creation
         if stale:
             dns_reg[ttl_key] = time.time()
+        if force_serial:
+            serial = force_serial
+        # in any case, if NS in the domain are reachable,
+        # we query each ones to get the max(serial) + 1
+        # this avoid real situation errors and serial
+        # mismatch between master and slaves
+        # If our serial is inferior, we take this serial as a value
+        try:
+            resolver = dns.resolver.Resolver()
+            resolver.timeout = 10
+            resolver.lifetime = 10
+            query = resolver.query(domain, 'NS', tcp=True)
+            dns_serial = 0
+            for qns in query:
+                ns = qns.to_text()
+                if not ns.endswith('.'):
+                    ns += domain + '.'
+                ns = ns[:-1]
+                request = dns.message.make_query(domain, dns.rdatatype.SOA)
+                res = dns.query.tcp(request, ns, timeout=30)
+
+                for answer in res.answer:
+                    for soa in answer:
+                        if soa.serial > dns_serial:
+                            dns_serial = soa.serial
+            if dns_serial != serial:
+                serial = dns_serial + 1
+        except Exception, ex:
+            trace = traceback.format_exc()
+            log.error('DNSSERIALS: {0}'.format(ex))
+            log.error('DNSSERIALS: {0}'.format(domain))
+            log.error(trace)
+        dns_reg[domain] = serial
         __salt__['mc_macros.update_local_registry'](
             'dns_serials', dns_reg, registry_format='pack')
         return serial
@@ -1894,7 +1903,7 @@ def get_supervision_objects_defs(id_):
                         host, vm, virt_type=vt))
             # we can access sshd and snpd on cloud vms
             # thx to special port mappings
-            if is_cloud_vm(vm) and (vm_parent != host):
+            if is_cloud_vm(vm) and (vm_parent != host) and vt in ['lxc']:
                 ssh_port = (
                     __salt__['mc_cloud_compute_node.get_ssh_port'](
                         vm, host))
