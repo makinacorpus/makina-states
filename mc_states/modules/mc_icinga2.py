@@ -939,8 +939,6 @@ def autoconfigure_host(host,
                            skey,
                            services_default_attrs[svc],
                            services_attrs.get(svc, {}))[skey]
-    if host == 'ovh-r4-2.makina-corpus.net':
-        import pdb;pdb.set_trace()  ## Breakpoint ##
     return rdata
 
 
