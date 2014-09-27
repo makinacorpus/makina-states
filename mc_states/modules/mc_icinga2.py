@@ -584,9 +584,8 @@ def autoconfigured_host(host, data=None, ttl=60):
             for k in ['name', 'hostname']:
                 rdata[k] = data[k]
         except Exception, exc:
-            import pdb;pdb.set_trace()  ## Breakpoint ##
             rdata = __salt__['mc_icinga2.autoconfigure_host'](
-                data['hostname'], **data) 
+                data['hostname'], **data)
             trace = traceback.format_exc()
             log.error('Supervision autoconfiguration '
                       'routine failed for {0}'.format(host))
@@ -883,7 +882,7 @@ def autoconfigure_host(host,
         'web_openid': {
             'import': ["ST_WEB_OPENID"]},
         'web': {
-            'import': []},
+            'import': ['ST_WEB_BASE']},
         'ware_raid': {
             'import': ["ST_WARE_RAID"]},
         'megaraid_sas_raid': {
@@ -929,32 +928,24 @@ def autoconfigure_host(host,
                 # HTTP_STRING / HTTP_STRING_AUTH
                 # HTTPS_STRING / HTTPS_STRING_AUTH
                 if svc == 'web':
-                    http_host = '$HOSTADDRESS$'
                     if ss.get('vars.http_remote', False):
                         command = 'CSSH_HTTP'
                         http_host = '127.0.0.1'
                         ss.setdefault('vars.http_host', http_host)
                     else:
                         command = 'C_HTTP'
-                    http_port = 80
+                    http_port = '80'
                     if ss.get('vars.http_ssl', False):
-                        http_port = 443
+                        http_port = '443'
                         command += 'S'
                     command += '_STRING'
                     if ss.get('vars.http_auth', False):
                         command += '_AUTH'
                     ss['check_command'] = command
                     http_port = ss.setdefault('vars.port', http_port)
-                    ss.setdefault('vars.http_servername', '$host.name$')
-                    ss.setdefault('vars.url', '/')
-                    ss.setdefault('vars.warning', '4')
-                    ss.setdefault('vars.critical', '6')
-                    ss.setdefault('vars.timeout', '8')
-                    ss.setdefault('vars.strings', 'html')
-                    #ss.setdefault('vars.http_host', http_host)
-                    simports = ss.setdefault('import', [])
                     # switch service to not alert if it is
                     # selected in custom attributes
+                    simports = ss.setdefault('import', [])
                     if ss.get('vars.http_no_alert', False):
                         root_service = 'ST_BASE'
                         inv_service = 'ST_ALERT'
@@ -969,8 +960,9 @@ def autoconfigure_host(host,
                     if root_service not in simports:
                         simports.append(root_service)
                     # transform value in string: ['a', 'b'] => '"a" -s "b"'
-                    ss['vars.strings'] = reencode_webstrings(
-                        ss['vars.strings'])
+                    if 'vars.strings' in ss:
+                        ss['vars.strings'] = reencode_webstrings(
+                            ss['vars.strings'])
                 if svc in ['drbd']:
                     ss['vars.device'] = v
                 if svc in ['disk_space', 'nic_card']:
@@ -989,6 +981,17 @@ def autoconfigure_host(host,
                            services_attrs.get(svc, {}))[skey]
             object_uniquify(ss)
     return rdata
+
+
+def order_keys(data):
+    def sort_keys(k):
+        s = '1_'
+        if k == 'import':
+            s = '0_'
+        return s + k
+    keys = [a for a in data]
+    keys.sort(key=sort_keys)
+    return [(a, data[a]) for a in keys]
 
 
 def add_check(host, services_enabled, svc, skey, default_value, vdata):
