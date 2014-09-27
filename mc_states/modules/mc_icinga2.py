@@ -35,6 +35,7 @@ __docformat__ = 'restructuredtext en'
 
 from salt.utils.odict import OrderedDict
 import os
+import socket
 import logging
 import traceback
 import copy
@@ -902,8 +903,8 @@ def autoconfigure_host(host,
     for svc in services_enabled_types:
         if svc in services_multiple:
             default_vals = {
-                'web': {'PUBLIC_DEFAULT': {}},
-                'tomcat': {'PUBLIC_DEFAULT': {}}
+                'web': {host: {}},
+                'tomcat': {host: {}}
             }
             if svc in ['raid', 'drbd', 'disk_space',
                        'nic_card', 'supervisor']:
@@ -963,6 +964,21 @@ def autoconfigure_host(host,
                     if 'vars.strings' in ss:
                         ss['vars.strings'] = reencode_webstrings(
                             ss['vars.strings'])
+                    # with this a http check can be as simple as:
+                    # web:
+                    #   www.domain.com: {}
+                    #   www.domain.net: {strings: net}
+                    if (
+                        ('vars.http_servername' not in ss)
+                        and ('.' in v)
+                    ):
+                        # check that v is DNS resolvable
+                        socket.setdefaulttimeout(2)
+                        try:
+                            socket.gethostbyname(v)
+                            ss['vars.http_servername'] = v
+                        except:
+                            pass
                 if svc in ['drbd']:
                     ss['vars.device'] = v
                 if svc in ['disk_space', 'nic_card']:
