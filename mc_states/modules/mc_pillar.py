@@ -1142,6 +1142,7 @@ def serial_for(domain,
         except (ValueError, TypeError):
             db_serial = serial
         tnow = time.time()
+        dnow = datetime.datetime.now()
         ttl_key = '{0}__ttl__'.format(domain)
         stale = False
         try:
@@ -1195,6 +1196,12 @@ def serial_for(domain,
             log.error('DNSSERIALS: {0}'.format(ex))
             log.error('DNSSERIALS: {0}'.format(domain))
             log.error(trace)
+        # try to respect the Year-mo-da-xx convention
+        # if serial is way behind the current day
+        ymdx = int('{0:04d}{1:02d}{2:02d}'.format(
+            dnow.year, dnow.month, dnow.day))
+        if ymdx > (serial//100):
+            serial = (ymdx * 100) + 1
         dns_reg[domain] = serial
         __salt__['mc_macros.update_local_registry'](
             'dns_serials', dns_reg, registry_format='pack')
