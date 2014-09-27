@@ -3,16 +3,19 @@ install-nagios-plugins:
     - pkgs:
       - nagios-plugins
       - nagios-plugins-contrib
+      - libwww-perl
       - nagios-plugins-extra
       - nagios-plugins-openstack
       - libcrypt-des-perl
+      - libxml-xpath-perl
 
 ms-scripts-d:
   file.directory:
     - names:
       - /root/admin_scripts/nagios/
+      - /usr/local/admin_scripts/nagios/
     - makedirs: true
-    - mode: 700
+    - mode: 755
 {#
 {% for g in [
 'check_3ware_raid',
@@ -41,16 +44,9 @@ ms-scripts-d:
 
 {% for i in ['misc', 'nagios'] %}
 {{i}}-distributed-plugins-rec:
-  file.recurse:
-    - name: /usr/local/admin_scripts/{{i}}/
-    - source: salt://makina-states/files/usr/local/admin_scripts/{{i}}/
+  cmd.run:
+    - name: rsync -a /srv/mastersalt/makina-states/files/usr/local/admin_scripts/{{i}}/ /usr/local/admin_scripts/{{i}}/
     - user: root
-    - group: root
-    - makedirs: true
-    - include_pat: '*'
-    - file_mode: 755
-    - dir_mode: 755
-    - template: jinja
     - require:
       - file: ms-scripts-d
 {% endfor %}
@@ -62,5 +58,5 @@ ms-scripts-d:
 nagios-syms-{{g}}:
   file.symlink:
     - name: /root/{{g}}
-    - target: /root/admin_scripts/nagios/{{g}}
+    - target: /usr/local/admin_scripts/nagios/{{g}}
 {% endfor %}

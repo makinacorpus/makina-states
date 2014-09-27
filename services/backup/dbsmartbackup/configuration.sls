@@ -13,16 +13,6 @@
 {% set data=salt['mc_dbsmartbackup.settings']() %}
 {% set settings=salt['mc_utils.json_dump'](salt['mc_dbsmartbackup.settings']()) %}
 run_dbsmartbackups:
-  file.managed:
-    - name: {{locs.bin_dir}}/run_dbsmartbackups.sh
-    - source: salt://makina-states/files/usr/bin/run_dbsmartbackups.sh
-    - mode: 750
-    - user: root
-    - group: root
-    - template: jinja
-    - context:
-      settings: |
-                {{settings}}
   cron.absent: {# retro compat #}
     - identifier: db_smart_backup cron
     - name: {{locs.bin_dir}}/run_dbsmartbackups.sh
@@ -39,7 +29,7 @@ run_dbsmartbackups-cron:
     - group: root
     - template: jinja
     - contents: |
-                {{data.cron_minute}} {{data.cron_hour}} * * * root {{locs.bin_dir}}/run_dbsmartbackups.sh
+                {{data.cron_minute}} {{data.cron_hour}} * * * root {{locs.apps_dir}}/db_smart_backup/run_dbsmartbackups.sh --quiet --no-colors
 
 dbsmartbackup_pg_conf:
   file.managed:

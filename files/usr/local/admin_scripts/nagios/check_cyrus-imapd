@@ -1,0 +1,126 @@
+#!/bin/bash
+###################################################################
+# check_cyrus-imapd is developped with GPL Licence 2.0
+#
+# GPL License: http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
+#
+# Developped by : Bjoern Bongermino
+#
+###################################################################
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+####################################################################
+
+# Uncomment to enable debugging
+# set -x
+
+PROGNAME=`basename $0`
+VERSION="Version 1.1"
+AUTHOR="Bjoern Bongermino (http://www.bongermino.de)"
+
+STATE_OK=0
+STATE_WARNING=1
+STATE_CRITICAL=2
+STATE_UNKNOWN=3
+
+warning=0
+critical=0
+
+print_version() {
+    echo "$PROGNAME $VERSION $AUTHOR"
+}
+
+print_help() {
+    print_version $PROGNAME $VERSION
+    echo ""
+    echo "$PROGNAME - Cyrus IMAPd Load Monitoring for Nagios"
+    echo ""
+    echo "$PROGNAME is a Nagios plugin to check the current load"
+    echo "of a Cyrus IMAPd server."
+    echo ""
+    echo "Usage: $PROGNAME -w WARN-Level -c CRIT-Level"
+    echo ""
+    echo "Options:"
+    echo "  -w)"
+    echo "     Warning level for connections"
+    echo "  -c)"
+    echo "     Crtitical level for connections"
+    echo "  -h)"
+    echo "     This help"
+    echo "  -v)"
+    echo "     Version"
+    exit $STATE_OK
+}
+
+# Check for parameters
+while test -n "$1"; do
+    case "$1" in
+		-h)
+			print_help
+			exit $STATE_OK;;
+		-v)
+			print_version
+			exit $STATE_OK;;
+		-w)
+			warning=$2
+			shift
+			;;
+		-c)
+			critical=$2
+			shift
+			;;
+		*)
+			check_cyrus
+			;;
+	esac
+	shift
+done
+
+check_cyrus() {
+# Get IMAP Configuration Directory
+CONFIGDIR=$(awk -F : '/^configdirectory:/ { gsub(/ /, "", $2); print $2 }' /etc/imapd.conf 2> /dev/null)
+PROCDIR="${CONFIGDIR}/proc"
+
+# Check for cyrus process is running
+if [ `ps faux | grep cyrmaster | wc -l` -lt 1 ]; then
+		echo "Cyrus-IMAPd Load CRITICAL - cyrmaster proccess is not running."
+	  exit $STATE_CRITICAL
+fi
+
+# Print the number of connections to the imap server
+connections=`ls ${PROCDIR} | wc -l`
+
+# Read the proc files and get the logged in users
+authenticated_users=`awk '{ split(substr($0, match($0, "]")+1), a); if (a[1] != "") print a[1] }' ${PROCDIR}/* | wc -l`
+
+# Read the proc files and get the number of unique users
+unique_users=`awk '{ split(substr($0, match($0, "]")+1), a); if (a[1] != "") print a[1] }' ${PROCDIR}/* | sort -u | wc -l`
+}
+
+check_cyrus
+values="Overall Connections: $connections, Authenticated Users=$authenticated_users, Unique Users=$unique_users"
+perfdata="connections=$connections;; authenticated_users=$authenticated_users;; unique_users=$unique_users;;"
+
+if [ $warning -gt 0 ] && [ $critical -gt 0 ]; then
+   if [ $connections -gt $critical ]; then
+      echo -n "Cyrus-IMAPd Load CRITICAL - $values | $perfdata"
+      exit $STATE_CRITICAL
+   elif [ $connections -gt $warning ]; then
+      echo -n "Cyrus-IMAPd Load WARNING - $values | $perfdata"
+      exit $STATE_WARNING
+   else
+      echo -n "Cyrus-IMAPd Load OK - $values | $perfdata"
+      exit $STATE_OK
+   fi
+else
+   echo -n "Cyrus-IMAPd Load OK - $values | $perfdata"
+   exit $STATE_OK
+fi

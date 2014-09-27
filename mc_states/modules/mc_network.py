@@ -333,13 +333,28 @@ def settings():
     return _settings()
 
 
-def whois_data(ip, ttl=60*30):
-    def _do(ip_):
+def whois_data(ip, ttl=30, whois_ttl=60*60*24*30):
+    '''
+    Make a whois request and return data
+    For evident performance questons,
+    We cache whois data for one month!'''
+    def _do(ip_, whois_ttl):
         data = {}
         if not HAS_IPWHOIS:
             return data
         try:
-            data = IPWhois(ip).lookup()
+            wreg = __salt__[
+                'mc_macros.get_local_registry'](
+                    'whois_data', registry_format='pack')
+            if ip in wreg:
+                if time.time() >= wreg[ip]['t'] + whois_ttl:
+                    del wreg[ip]
+            data = wreg.get(ip, {}).get('data', {})
+            if not data:
+                data = IPWhois(ip).lookup()
+            cdata = wreg.setdefault(ip, {})
+            cdata.setdefault('t', time.time())
+            cdata.setdefault('data', data)
             search_data = {'ovh': ['ovh'],
                            'phpnet': ['phpnet'],
                            'online': ['proxad', 'iliad']}
@@ -354,12 +369,15 @@ def whois_data(ip, ttl=60*30):
                                 if val and i in val.lower():
                                         data['is_{0}'.format(provider)] = True
                                         break
+            __salt__['mc_macros.update_local_registry'](
+                'whois_data', wreg,
+                registry_format='pack')
         except:
             log.error(traceback.format_exc())
             data = {}
         return data
     cache_key = 'mc_network.whois_data_{0}'.format(ip)
-    return memoize_cache(_do, [ip], {}, cache_key, ttl)
+    return memoize_cache(_do, [ip, whois_ttl], {}, cache_key, ttl)
 
 
 def is_phpnet(ip):
@@ -369,12 +387,12 @@ def is_phpnet(ip):
 
 def is_online(ip):
     data = whois_data(ip)
-    return data.get('is_ovh', False)
+    return data.get('is_online', False)
 
 
 def is_ovh(ip):
     data = whois_data(ip)
-    return data.get('is_online', False)
+    return data.get('is_ovh', False)
 
 
 def providers():

@@ -5,6 +5,7 @@ import json
 import copy
 # Import python libs
 import os
+import dns
 import socket
 import logging
 import time
@@ -918,34 +919,7 @@ def get_slaves_zones_for(fqdn, ttl=60):
 
 
 def rrs_mx_for(domain, ttl=60):
-    '''Return all configured NS records for a domain'''
-    def _do_mx(domain):
-        db = load_network_infrastructure()
-        rrs_ttls = db['rrs_ttls']
-        mx_map = db['mx_map']
-        ips = db['ips']
-        all_rrs = OrderedDict()
-        servers = mx_map.get(domain, {})
-        for fqdn in servers:
-            rrs = all_rrs.setdefault(fqdn, [])
-            dfqdn = fqdn
-            if not dfqdn.endswith('.'):
-                dfqdn += '.'
-            for rr in rr_entry(
-                '@', [dfqdn],
-                priority=servers[fqdn].get('priority', '10'),
-                record_type='MX'
-            ).split('\n'):
-                if rr not in rrs:
-                    rrs.append(rr)
-        rr = filter_rr_str(all_rrs)
-        return rr
-    cache_key = 'mc_pillar.rrs_mx_for_{0}'.format(domain)
-    return memoize_cache(_do_mx, [domain], {}, cache_key, ttl)
-
-
-def rrs_mx_for(domain, ttl=60):
-    '''Return all configured NS records for a domain'''
+    '''Return all configured MX records for a domain'''
     def _do_mx(domain):
         db = load_network_infrastructure()
         rrs_ttls = db['rrs_ttls']
@@ -1127,7 +1101,8 @@ def rrs_cnames_for(domain, ttl=60):
 
 def serial_for(domain,
                serial=None,
-               autoinc=True):
+               autoinc=True,
+               force_serial=None):
     '''Get the serial for a DNS zone
 
     If serial is given: we take that as a value
@@ -1144,6 +1119,8 @@ def serial_for(domain,
 
             - if this local value is greater than the
               current serial, this becomes the serial,
+        - at the end, we try to reach the nameservers in the wild
+          to adapt our serial if it is too low or too high
     '''
     def _doserialfor(domain, serial=None, ttl=60):
         db = __salt__['mc_pillar.load_network_infrastructure']()
@@ -1165,6 +1142,7 @@ def serial_for(domain,
         except (ValueError, TypeError):
             db_serial = serial
         tnow = time.time()
+        dnow = datetime.datetime.now()
         ttl_key = '{0}__ttl__'.format(domain)
         stale = False
         try:
@@ -1183,10 +1161,48 @@ def serial_for(domain,
                     dns_reg_serial = serial
                 if dns_reg_serial > serial:
                     serial = dns_reg_serial
-        dns_reg[domain] = serial
         # only update the ttl on expiraton or creation
         if stale:
             dns_reg[ttl_key] = time.time()
+        if force_serial:
+            serial = force_serial
+        # in any case, if NS in the domain are reachable,
+        # we query each ones to get the max(serial) + 1
+        # this avoid real situation errors and serial
+        # mismatch between master and slaves
+        # If our serial is inferior, we take this serial as a value
+        try:
+            resolver = dns.resolver.Resolver()
+            resolver.timeout = 10
+            resolver.lifetime = 10
+            query = resolver.query(domain, 'NS', tcp=True)
+            dns_serial = 0
+            for qns in query:
+                ns = qns.to_text()
+                if not ns.endswith('.'):
+                    ns += domain + '.'
+                ns = ns[:-1]
+                request = dns.message.make_query(domain, dns.rdatatype.SOA)
+                res = dns.query.tcp(request, ns, timeout=30)
+
+                for answer in res.answer:
+                    for soa in answer:
+                        if soa.serial > dns_serial:
+                            dns_serial = soa.serial
+            if dns_serial != serial and dns_serial > 0:
+                serial = dns_serial + 1
+        except Exception, ex:
+            trace = traceback.format_exc()
+            log.error('DNSSERIALS: {0}'.format(ex))
+            log.error('DNSSERIALS: {0}'.format(domain))
+            log.error(trace)
+        # try to respect the Year-mo-da-xx convention
+        # if serial is way behind the current day
+        ymdx = int('{0:04d}{1:02d}{2:02d}'.format(
+            dnow.year, dnow.month, dnow.day))
+        if ymdx > (serial//100):
+            serial = (ymdx * 100) + 1
+        dns_reg[domain] = serial
         __salt__['mc_macros.update_local_registry'](
             'dns_serials', dns_reg, registry_format='pack')
         return serial
@@ -1855,7 +1871,9 @@ def get_supervision_objects_defs(id_):
                     break
             if not host_provider:
                 for provider in providers:
-                    if __salt__['mc_network.is_{0}'.format(provider)]:
+                    if __salt__[
+                        'mc_network.is_{0}'.format(provider)
+                    ](attrs['address']):
                         host_provider = provider
                         break
             if host_provider:
@@ -1892,7 +1910,7 @@ def get_supervision_objects_defs(id_):
                         host, vm, virt_type=vt))
             # we can access sshd and snpd on cloud vms
             # thx to special port mappings
-            if is_cloud_vm(vm) and (vm_parent != host):
+            if is_cloud_vm(vm) and (vm_parent != host) and vt in ['lxc']:
                 ssh_port = (
                     __salt__['mc_cloud_compute_node.get_ssh_port'](
                         vm, host))
@@ -1915,13 +1933,17 @@ def get_supervision_objects_defs(id_):
             attrs['vars.SNMP_HOST'] = snmp_host
             attrs['vars.SSH_PORT'] = ssh_port
             attrs['vars.SNMP_PORT'] = snmp_port
-        for host, hdata in hhosts.items():
+
+        for host in [a for a in hhosts]:
+            hdata = hhosts[host]
             parents = hdata.setdefault('attrs', {}).setdefault('parents', [])
             rparents = [a for a in parents if a != id_]
             groups = hdata.get('attrs', {}).get('groups', [])
             for g in groups:
                 if g not in sobjs:
                     sobjs[g] = {'attrs': {'display_name': g}}
+                if 'HG_PROVIDER_' in g:
+                    parents.append(g.replace('HG_PROVIDER_', ''))
             # if we defined parents but no address, we should rely on an
             # dns query to get the ip fromand cross it over the failover map
             # as the goal is to resolve any mounted failover ip as the
@@ -1938,10 +1960,22 @@ def get_supervision_objects_defs(id_):
                         hdata['attrs']['address'] = addr
                         hdata.update(disable_common_checks)
                         break
-            if id_ not in parents:
-                parents.append(id_)
+            #if id_ not in parents and id_ not in maps['vms']:
+            #    parents.append(id_)
             if not hdata['attrs'].get('address'):
                 raise ValueError('no address defined for {0}'.format(host))
+            if id_ == host:
+                for i in parents[:]:
+                    parents.pop()
+            hdata['parents'] = __salt__['mc_utils.uniquify'](parents)
+        for g in [a for a in sobjs]:
+            if 'HG_PROVIDER_' in g:
+                sobjs[g.replace('HG_PROVIDER_', '')] = {
+                    'type': 'Host',
+                    'attrs': {
+                        'import': ['HT_BASE'],
+                        'groups': [g, 'HG_PROVIDER'],
+                        'address': '127.0.0.1'}}
         rdata.update({'icinga2_definitions': defs})
     return rdata
 

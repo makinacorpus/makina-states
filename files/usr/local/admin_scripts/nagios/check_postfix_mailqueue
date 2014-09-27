@@ -127,43 +127,14 @@ if [ $warning -gt 0 ] && [ $critical -gt 0 ]; then
    if [ $deferred -gt $critical ]; then
       echo -n "Postfix Mailqueue CRITICAL - $values | $perfdata"
       exit $STATE_CRITICAL
-   elif [ $active -gt $critical ]; then
-      echo -n "Postfix Mailqueue CRITICAL - $values | $perfdata"
-      exit $STATE_CRITICAL
-   elif [ $maildrop -gt $critical ]; then
-      echo -n "Postfix Mailqueue CRITICAL - $values | $perfdata"
-      exit $STATE_CRITICAL
-   elif [ $incoming -gt $critical ]; then
-      echo -n "Postfix Mailqueue CRITICAL - $values | $perfdata"
-      exit $STATE_CRITICAL
-   elif [ $corrupt -gt $critical ]; then
-      echo -n "Postfix Mailqueue CRITICAL - $values | $perfdata"
-      exit $STATE_CRITICAL
-   elif [ $hold -gt $critical ]; then
-      echo -n "Postfix Mailqueue CRITICAL - $values | $perfdata"
-      exit $STATE_CRITICAL
- 
    elif [ $deferred -gt $warning ]; then
       echo -n "Postfix Mailqueue WARNING - $values | $perfdata"
       exit $STATE_WARNING
-   elif [ $active -gt $warning ]; then
-      echo -n "Postfix Mailqueue WARNING - $values | $perfdata"
-      exit $STATE_WARNING
-   elif [ $maildrop -gt $warning ]; then
-      echo -n "Postfix Mailqueue WARNING - $values | $perfdata"
-      exit $STATE_WARNING
-   elif [ $incoming -gt $warning ]; then
-      echo -n "Postfix Mailqueue WARNING - $values | $perfdata"
-      exit $STATE_WARNING
-   elif [ $corrupt -gt $warning ]; then
-      echo -n "Postfix Mailqueue WARNING - $values | $perfdata"
-      exit $STATE_WARNING
-   elif [ $hold -gt $warning ]; then
-      echo -n "Postfix Mailqueue WARNING - $values | $perfdata"
-      exit $STATE_WARNING
+   else
+      echo -n "Postfix Mailqueue OK - $values | $perfdata"
+      exit $STATE_OK
    fi
+else
+   echo -n "Postfix Mailqueue OK - $values | $perfdata"
+   exit $STATE_OK
 fi
-
-echo -n "Postfix Mailqueue OK - $values | $perfdata"
-exit $STATE_OK
-
