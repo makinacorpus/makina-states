@@ -26,3 +26,7 @@ done
 rm -f check_mem.pl check_mem.php
 wget "https://raw.githubusercontent.com/justintime/nagios-plugins/master/check_mem/check_mem.pl"
 wget "https://raw.githubusercontent.com/justintime/nagios-plugins/master/check_mem/check_mem.php"
+wget "http://labs.consol.de/download/shinken-nagios-plugins/check_mysql_health-2.1.8.2.tar.gz"
+tar xzvf check_mysql_health-*z
+cd check_mysql_health-2* && ./configure --with-statefiles-dir=/tmp --prefix=$PWD && make && make install && cp -f libexec/check* ..
+rm -f check_mysql_health-*z check_mysql_health-2*
