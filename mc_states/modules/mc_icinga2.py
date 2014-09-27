@@ -53,6 +53,16 @@ def svc_name(key):
     return key
 
 
+def object_uniquify(attrs):
+    if 'import' in attrs:
+        attrs['import'] = __salt__['mc_utils.uniquify'](
+            attrs['import'])
+    if 'parents' in attrs:
+        attrs['parents'] = __salt__['mc_utils.uniquify'](
+            attrs['parents'])
+    return attrs
+
+
 def reencode_webstrings(str_list):
     # transform list of values in
     # string ['a', 'b'] becomes '"a" -s "b"'
@@ -228,7 +238,7 @@ def objects(core=True, ttl=120):
             rdata['objects'][obj] = data
             fdata = rdata['objects_by_file'].setdefault(
                 data['file'], OrderedDict())
-            fdata[obj] = data
+            fdata[obj] = object_uniquify(data)
         return rdata
     cache_key = 'mc_icinga2.objects___cache__'
     return memoize_cache(_do, [core], {}, cache_key, ttl)
@@ -574,6 +584,9 @@ def autoconfigured_host(host, data=None, ttl=60):
             for k in ['name', 'hostname']:
                 rdata[k] = data[k]
         except Exception, exc:
+            import pdb;pdb.set_trace()  ## Breakpoint ##
+            rdata = __salt__['mc_icinga2.autoconfigure_host'](
+                data['hostname'], **data) 
             trace = traceback.format_exc()
             log.error('Supervision autoconfiguration '
                       'routine failed for {0}'.format(host))
@@ -620,7 +633,7 @@ def autoconfigure_host(host,
                        ping=True,
                        nic_card=None,
                        ntp_peers=False,
-                       ntp_time=False,
+                       ntp_time=True,
                        postgres_port=False,
                        process_beam=False,
                        process_epmd=False,
@@ -642,7 +655,6 @@ def autoconfigure_host(host,
                        remote_nginx_status=False,
                        tomcat=None,
                        web=None,
-                       web_noalert=None,
                        web_openid=False,
                        **kwargs):
     disk_space_mode_maps = {
@@ -694,7 +706,6 @@ def autoconfigure_host(host,
                 'supervisor',
                 'tomcat',
                 'web',
-                'web_noalert',
                 'web_openid',
                 'swap',
                 'remote_nginx_status',
@@ -703,7 +714,7 @@ def autoconfigure_host(host,
                 'apache_status']
     services_multiple = ['disk_space', 'nic_card', 'dns_association',
                          'supervisor', 'drbd', 'raid', 'tomcat',
-                         'web_noalert', 'web_openid', 'web']
+                         'web_openid', 'web']
     rdata = {"host.name": host}
     icingaSettings = __salt__['mc_icinga2.settings']()
     if attrs is None:
@@ -722,8 +733,6 @@ def autoconfigure_host(host,
         tomcat = []
     if web is None:
         web = []
-    if web_noalert is None:
-        web_noalert = []
     filen = '/'.join(['hosts', host+'.conf'])
     if disk_space is None:
         disk_space = ['/']
@@ -762,6 +771,7 @@ def autoconfigure_host(host,
     attrs.setdefault('vars.ssh_addr', ssh_addr)
     attrs.setdefault('vars.ssh_port', ssh_port)
     attrs.setdefault('vars.ssh_timeout', ssh_timeout)
+    object_uniquify(rdata['attrs'])
     # services for which a loop is used in the macro
     if (
         dns_association_hostname
@@ -873,9 +883,7 @@ def autoconfigure_host(host,
         'web_openid': {
             'import': ["ST_WEB_OPENID"]},
         'web': {
-            'import': ["ST_WEB"]},
-        'web_noalert': {
-            'import': ["ST_WEB_NOALERT"]},
+            'import': []},
         'ware_raid': {
             'import': ["ST_WARE_RAID"]},
         'megaraid_sas_raid': {
@@ -909,7 +917,7 @@ def autoconfigure_host(host,
                 vdata = services_attrs.get(svc, {}).get(v, {})
                 skey = svc_name('{1}_{2}'.format(host, svc, v).upper())
                 ksvc = svc
-                if svc in ['raid']:
+                if svc == 'raid':
                     ksvc = v + '_raid'
                 ss = add_check(host,
                                services_enabled,
@@ -917,6 +925,52 @@ def autoconfigure_host(host,
                                skey,
                                services_default_attrs.get(ksvc, {}),
                                vdata)[skey]
+                # switch between
+                # HTTP_STRING / HTTP_STRING_AUTH
+                # HTTPS_STRING / HTTPS_STRING_AUTH
+                if svc == 'web':
+                    http_host = '$HOSTADDRESS$'
+                    if ss.get('vars.http_remote', False):
+                        command = 'CSSH_HTTP'
+                        http_host = '127.0.0.1'
+                        ss.setdefault('vars.http_host', http_host)
+                    else:
+                        command = 'C_HTTP'
+                    http_port = 80
+                    if ss.get('vars.http_ssl', False):
+                        http_port = 443
+                        command += 'S'
+                    command += '_STRING'
+                    if ss.get('vars.http_auth', False):
+                        command += '_AUTH'
+                    ss['check_command'] = command
+                    http_port = ss.setdefault('vars.port', http_port)
+                    ss.setdefault('vars.http_servername', '$host.name$')
+                    ss.setdefault('vars.url', '/')
+                    ss.setdefault('vars.warning', '4')
+                    ss.setdefault('vars.critical', '6')
+                    ss.setdefault('vars.timeout', '8')
+                    ss.setdefault('vars.strings', 'html')
+                    #ss.setdefault('vars.http_host', http_host)
+                    simports = ss.setdefault('import', [])
+                    # switch service to not alert if it is
+                    # selected in custom attributes
+                    if ss.get('vars.http_no_alert', False):
+                        root_service = 'ST_BASE'
+                        inv_service = 'ST_ALERT'
+                    else:
+                        root_service = 'ST_ALERT'
+                        inv_service = 'ST_BASE'
+                    try:
+                        simports.pop(simports.index(inv_service))
+                    except ValueError:
+                        pass
+                    root_service = 'ST_WEB_BASE'
+                    if root_service not in simports:
+                        simports.append(root_service)
+                    # transform value in string: ['a', 'b'] => '"a" -s "b"'
+                    ss['vars.strings'] = reencode_webstrings(
+                        ss['vars.strings'])
                 if svc in ['drbd']:
                     ss['vars.device'] = v
                 if svc in ['disk_space', 'nic_card']:
@@ -924,13 +978,7 @@ def autoconfigure_host(host,
                         'nic_card': 'vars.interface'}[svc]] = v
                 if svc == 'supervisor':
                     ss['vars.command'] = v
-                # transform value in string: ['a', 'b'] => '"a" -s "b"'
-                if (
-                    svc in ['web', 'web_noalert']
-                    and 'vars.strings' in ss
-                ):
-                    ss['vars.strings'] = reencode_webstrings(
-                        services_attrs[svc][v]['vars.strings'])
+                object_uniquify(ss)
         else:
             skey = svc_name('{1}'.format(host, svc).upper())
             ss = add_check(host,
@@ -939,6 +987,7 @@ def autoconfigure_host(host,
                            skey,
                            services_default_attrs[svc],
                            services_attrs.get(svc, {}))[skey]
+            object_uniquify(ss)
     return rdata
 
 
