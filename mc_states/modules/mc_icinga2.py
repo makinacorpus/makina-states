@@ -585,13 +585,9 @@ def autoconfigured_host(host, data=None, ttl=60):
             for k in ['name', 'hostname']:
                 rdata[k] = data[k]
         except Exception, exc:
-            rdata = __salt__['mc_icinga2.autoconfigure_host'](
-                data['hostname'], **data)
-            trace = traceback.format_exc()
-            log.error('Supervision autoconfiguration '
-                      'routine failed for {0}'.format(host))
-            log.error(trace)
-            log.error('{0}'.format(data))
+            log.warning(
+                'Failed autohost for {0}: {1} \n{2}'.format(
+                    host, exc, traceback.format_exc()))
             raise exc
         return rdata
     cache_key = 'mc_icinga2.autoconfigured_host__cache__{0}'.format(host)
@@ -617,8 +613,7 @@ def autoconfigure_host(host,
                        dns_association=False,
                        dns_association_hostname=True,
                        drbd=None,
-                       fail2ban=True,
-                       haproxy=False,
+                       haproxy_stats=False,
                        load_avg=True,
                        mail_cyrus_imap_connections=False,
                        mail_imap=False,
@@ -634,15 +629,17 @@ def autoconfigure_host(host,
                        nic_card=None,
                        ntp_peers=False,
                        ntp_time=True,
-                       postgres_port=False,
+                       postgresql_port=False,
                        process_beam=False,
                        process_epmd=False,
+                       process_fail2ban=True,
                        process_gunicorn_django=False,
                        process_gunicorn=False,
                        process_ircbot=False,
+                       process_memcached=False,
                        process_slapd=False,
                        process_mysql=False,
-                       process_postgres=False,
+                       process_postgresql=False,
                        process_python=False,
                        raid=None,
                        snmpd_memory_control=False,
@@ -675,8 +672,8 @@ def autoconfigure_host(host,
                 'dns_association',
                 'dns_association_hostname',
                 'drbd',
-                'fail2ban',
-                'haproxy',
+                'process_fail2ban',
+                'haproxy_stats',
                 'load_avg',
                 'mail_cyrus_imap_connections',
                 'mail_imap',
@@ -690,7 +687,7 @@ def autoconfigure_host(host,
                 'ntp_peers',
                 'ntp_time',
                 'ping',
-                'postgres_port',
+                'postgresql_port',
                 'process_epmd',
                 'process_gunicorn',
                 'process_gunicorn_django',
@@ -698,8 +695,9 @@ def autoconfigure_host(host,
                 'process_beam',
                 'process_python',
                 'process_slapd',
+                'process_memcached',
                 'process_mysql',
-                'process_postgres',
+                'process_postgresql',
                 'raid',
                 'snmpd_memory_control',
                 'ssh',
@@ -790,20 +788,6 @@ def autoconfigure_host(host,
     # the keys are the services names,
     # not the commands names (use the service filename)
     services_default_attrs = {
-        'backup_burp_age': {
-            'import': ["ST_BACKUP_BURP_AGE"]},
-        'process_beam': {
-            'import': ["ST_PROCESS_BEAM"]},
-        'process_python': {
-            'import': ["ST_PROCESS_PYTHON"]},
-        'cron': {
-            'import': ["ST_SSH_PROC_CRON"]},
-        'supervisor': {
-            'import': ["ST_SUPERVISOR_STATUS"]},
-        'ddos': {
-            'import': ["ST_DDOS"]},
-        'apt': {
-            'import': ["ST_APT"]},
         'dns_association_hostname': {
             'import': ["ST_DNS_ASSOCIATION_hostname"],
             'vars.hostname': dns_hostname,
@@ -814,86 +798,32 @@ def autoconfigure_host(host,
             'vars.dns_address': dns_address},
         'disk_space': {
             'import': [st_disk]},
-        'drbd': {
-            'import': ["ST_DRBD"]},
-        'process_epmd': {
-            'import': ["ST_PROCESS_EPMD"]},
-        'fail2ban': {
-            'import': ["ST_PROCESS_FAIL2BAN"]},
-        'process_slapd': {
-            'import': ["ST_PROCESS_SLAPD"]},
-        'process_gunicorn': {
-            'import': ["ST_PROCESS_GUNICORN"]},
-        'process_gunicorn_django': {
-            'import': ["ST_PROCESS_GUNICORN_DJANGO"]},
-        'haproxy': {
-            'import': ["ST_HAPROXY_STATS"]},
-        'process_ircbot': {
-            'import': ["ST_PROCESS_IRCBOT"]},
-        'load_avg': {
-            'import': ["ST_LOAD_AVG"]},
-        'mail_cyrus_imap_connections': {
-            'import': ["ST_MAIL_CYRUS_IMAP_CONNECTIONS"]},
-        'mail_imap': {
-            'import': ["ST_MAIL_IMAP"]},
-        'mail_imap_ssl': {
-            'import': ["ST_MAIL_IMAP_SSL"]},
-        'mail_pop': {
-            'import': ["ST_MAIL_POP"]},
-        'mail_pop_ssl': {
-            'import': ["ST_MAIL_POP_SSL"]},
-        'mail_pop_test_account': {
-            'import': ["ST_MAIL_POP3_TEST_ACCOUNT"]},
-        'mail_server_queues': {
-            'import': ["ST_MAIL_SERVER_QUEUES"]},
-        'mail_smtp': {
-            'import': ["ST_MAIL_SMTP"]},
         'memory': {
-            'import': [st_mem]},
-        'process_mysql': {
-            'import': ["ST_PROCESS_MYSQL"]},
-        'nic_card': {
-            'import': ["ST_NETWORK"]},
-        'ntp_peers': {
-            'import': ["ST_NTP_PEERS"]},
-        'ntp_time': {
-            'import': ["ST_NTP_TIME"]},
-        'postgres_port': {
-            'import': ["ST_POSTGRESQL_PORT"]},
-        'process_postgres': {
-            'import': ["ST_PROCESS_POSTGRESQL"]},
-        'snmpd_memory_control': {
-            'import': ["ST_SNMPD_MEMORY_CONTROL"]},
-        'ping': {
-            'import': ["ST_PING"]},
-        'ssh': {
-            'import': ["ST_SSH"]},
-        'swap': {
-            'import': ["ST_SWAP"]},
-        'tomcat': {
-            'import': ["ST_TOMCAT"]},
-        'remote_nginx_status': {
-            'import': ["ST_REMOTE_NGINX_STATUS"]},
-        'nginx_status': {
-            'import': ["ST_NGINX_STATUS"]},
-        'remote_apache_status': {
-            'import': ["ST_REMOTE_APACHE_STATUS"]},
-        'apache_status': {
-            'import': ["ST_APACHE_STATUS"]},
-        'web_openid': {
-            'import': ["ST_WEB_OPENID"]},
-        'web': {
-            'import': ['ST_WEB_BASE']},
-        'ware_raid': {
-            'import': ["ST_WARE_RAID"]},
-        'megaraid_sas_raid': {
-            'import': ["ST_MEGARAID_SAS_RAID"]},
-        'md_raid': {
-            'import': ["ST_MD_RAID"]},
-        'sas_raid': {
-            'import': ["ST_SAS_RAID"]}}
+            'import': [st_mem]}}
     # if we defined extra properties on a service,
     # enable it automatically
+    if process_postgresql:
+        services_enabled_types.extend(['postgresql_connection_time'])
+    if process_mysql:
+        services_enabled_types.extend(['mysql_connection_time',
+                                       'mysql_tablecache_hitrate',
+                                       'mysql_table_fragmentation',
+                                       'mysql_long_running_procs',
+                                       'mysql_open_files',
+                                       'mysql_index_usage',
+                                       'mysql_qcache_lowmem_prunes',
+                                       'mysql_table_lock_contention',
+                                       'mysql_log_waits',
+                                       'mysql_threads_cached',
+                                       'mysql_threads_running',
+                                       'mysql_threads_connected',
+                                       'mysql_threads_created',
+                                       'mysql_connects_aborted',
+                                       'mysql_threads_connected',
+                                       'mysql_slow_queries',
+                                       'mysql_bufferpool_hitrate',
+                                       'mysql_bufferpool_wait_free',
+                                       'mysql_tmp_disk_tables'])
     for s in services:
         if (
             s not in services_enabled_types
@@ -919,11 +849,16 @@ def autoconfigure_host(host,
                 ksvc = svc
                 if svc == 'raid':
                     ksvc = v + '_raid'
+                default_attrs = services_default_attrs
+                if ksvc not in default_attrs:
+                    default_attrs = {
+                        ksvc: {
+                            'import': ['ST_{0}'.format(ksvc.upper())]}}
                 ss = add_check(host,
                                services_enabled,
                                svc,
                                skey,
-                               services_default_attrs.get(ksvc, {}),
+                               default_attrs.get(ksvc, {}),
                                vdata)[skey]
                 # switch between
                 # HTTP_STRING / HTTP_STRING_AUTH
@@ -957,7 +892,7 @@ def autoconfigure_host(host,
                         simports.pop(simports.index(inv_service))
                     except ValueError:
                         pass
-                    root_service = 'ST_WEB_BASE'
+                    root_service = 'ST_WEB'
                     if root_service not in simports:
                         simports.append(root_service)
                     # transform value in string: ['a', 'b'] => '"a" -s "b"'
@@ -989,11 +924,16 @@ def autoconfigure_host(host,
                 object_uniquify(ss)
         else:
             skey = svc_name('{1}'.format(host, svc).upper())
+            default_attrs = services_default_attrs
+            if svc not in default_attrs:
+                default_attrs = {
+                    svc: {
+                        'import': ['ST_{0}'.format(svc.upper())]}}
             ss = add_check(host,
                            services_enabled,
                            svc,
                            skey,
-                           services_default_attrs[svc],
+                           default_attrs[svc],
                            services_attrs.get(svc, {}))[skey]
             object_uniquify(ss)
     return rdata

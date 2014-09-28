@@ -30,3 +30,5 @@ wget "http://labs.consol.de/download/shinken-nagios-plugins/check_mysql_health-2
 tar xzvf check_mysql_health-*z
 cd check_mysql_health-2* && ./configure --with-statefiles-dir=/tmp --prefix=$PWD && make && make install && cp -f libexec/check* ..
 rm -f check_mysql_health-*z check_mysql_health-2*
+
+cp /usr/lib/nagios/plugins/check_http .
