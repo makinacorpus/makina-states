@@ -638,8 +638,8 @@ def autoconfigure_host(host,
                        process_ircbot=False,
                        process_memcached=False,
                        process_slapd=False,
-                       process_mysql=False,
-                       process_postgresql=False,
+                       process_mysql=None,
+                       process_postgresql=None,
                        process_python=False,
                        raid=None,
                        snmpd_memory_control=False,
@@ -661,6 +661,19 @@ def autoconfigure_host(host,
     memory_mode_maps = {
         'large': 'ST_MEMORY_LARGE',
         None: 'ST_MEMORY'}
+    if process_postgresql is None:
+        if (
+            'postgresl' in host
+            or 'pgsql' in host
+        ):
+            process_postgresql = True
+        else:
+            process_postgresql = False
+    if process_mysql is None:
+        if 'mysql' in host:
+            process_mysql = True
+        else:
+            process_mysql = False
     st_mem = memory_mode_maps.get(memory_mode, None)
     st_disk = disk_space_mode_maps.get(disk_space_mode, None)
     services = ['backup_burp_age',
