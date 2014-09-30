@@ -76,6 +76,12 @@ def saltify(name, output=True, ret=None):
                     "sudo_password",
                 ]:
                     if data.get(var):
+                        if (
+                            var == "script_args"
+                            and  "from-sal" in data[var]
+                            and not " -m " in data[var]
+                        ):
+                            data[var] += " -m {0}".format(name)
                         kwargs[var] = data[var]
                 try:
                     info = __salt__['cloud.profile'](
