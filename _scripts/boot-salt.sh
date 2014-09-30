@@ -1931,6 +1931,14 @@ EOF
                 rm -f "${i}"
             fi
         done
+        if [ "x${SALT_CLOUD}" != "x" ] && [ -e "${SALT_CLOUD_DIR}/minion" ];then
+             for conf in "${MCONF_PREFIX}/minion.d/00_global.conf" "${MCONF_PREFIX}/minion";do
+                 if [ -e "${conf}" ];then
+                    echo "sed -i -re s/^master: .*/master: ${MASTERSALT}/g ${conf}"
+                    sed -i -re "s/^master: .*/master: ${MASTERSALT}/g" "${conf}"
+                 fi
+             done
+        fi
         if [ "x${IS_SALT_MINION}" != "x" ];then
             minion_test=""
             if [ -e ${ETC_INIT}/salt-minion.conf ] || [ -e ${ETC_INIT}.d/salt-minion ];then
