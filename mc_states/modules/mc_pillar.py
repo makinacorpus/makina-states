@@ -1838,15 +1838,22 @@ def get_supervision_objects_defs(id_):
                              'ping': False,
                              'nic_card': False}
     providers = __salt__['mc_network.providers']()
+
     if is_supervision_kind(id_, 'master'):
         data = query('supervision_configurations')
         defs = data.get('definitions', {})
         sobjs = defs.setdefault('objects', OrderedDict())
         hhosts = defs.setdefault('autoconfigured_hosts', OrderedDict())
+        for hhost in [a for a in hhosts]:
+            for i in ['attrs', 'services_attrs']:
+                hhosts[hhost].setdefault(i, OrderedDict())
+                if not isinstance(hhosts[hhost][i], dict):
+                    hhosts[hhost][i] = OrderedDict()
         maps = __salt__['mc_pillar.get_db_infrastructure_maps']()
         for host, vts in maps['bms'].items():
             hdata = hhosts.setdefault(host, OrderedDict())
             attrs = hdata.setdefault('attrs', OrderedDict())
+            sattrs = hdata.setdefault('services_attrs', OrderedDict())
             groups = attrs.setdefault('groups', [])
             parents = attrs.setdefault('parents', [])
             tipaddr = attrs.setdefault('address', ip_for(host))
@@ -1896,6 +1903,7 @@ def get_supervision_objects_defs(id_):
             host_ip = ip_for(host)
             hdata = hhosts.setdefault(vm, OrderedDict())
             attrs = hdata.setdefault('attrs', OrderedDict())
+            sattrs = hdata.setdefault('services_attrs', OrderedDict())
             parents = attrs.setdefault('parents', [])
             tipaddr = attrs.setdefault('address', ip_for(vm))
             ssh_host = snmp_host = tipaddr
@@ -1937,6 +1945,7 @@ def get_supervision_objects_defs(id_):
         for host in [a for a in hhosts]:
             hdata = hhosts[host]
             parents = hdata.setdefault('attrs', {}).setdefault('parents', [])
+            sattrs = hdata.setdefault('services_attrs', OrderedDict())
             rparents = [a for a in parents if a != id_]
             groups = hdata.get('attrs', {}).get('groups', [])
             for g in groups:
@@ -1960,6 +1969,13 @@ def get_supervision_objects_defs(id_):
                         hdata['attrs']['address'] = addr
                         hdata.update(disable_common_checks)
                         break
+            if hdata.get('backup_burp_age', None) is not False:
+                bsm = query('backup_server_map')
+                burp_default_server = bsm['default']
+                burp_server = bsm.get(host, burp_default_server)
+                burpattrs = sattrs.setdefault('backup_burp_age', {})
+                burpattrs.setdefault('vars.SSH_HOST', burp_server)
+                burpattrs.setdefault('vars.SSH_PORT', 22)
             #if id_ not in parents and id_ not in maps['vms']:
             #    parents.append(id_)
             if not hdata['attrs'].get('address'):
