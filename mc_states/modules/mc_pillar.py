@@ -1598,6 +1598,8 @@ def backup_default_configuration_type_for(id_, ttl=60):
                 id_ = 'default-vm'
             else:
                 id_ = 'default'
+        else:
+            id_ = 'default'
         return confs.get(id_, None)
     cache_key = 'mc_pillar.backup_default_configuration_type_for{0}'.format(
         id_)
@@ -1607,6 +1609,10 @@ def backup_default_configuration_type_for(id_, ttl=60):
 def backup_configuration_type_for(id_, ttl=60):
     def _do(id_):
         confs = query('backup_configuration_map')
+        qconfs = query('backup_configurations')
+        # for trivial joins (on id_, do it automatically)
+        if not confs.get(id_, None) and id_ in qconfs:
+            confs[id_] = id_
         return confs.get(id_, None)
     cache_key = 'mc_pillar.backup_configuration_type_for{0}'.format(id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
@@ -1638,13 +1644,14 @@ def backup_configuration_for(id_, ttl=60):
         data = __salt__['mc_utils.dictupdate'](data, default_conf)
         # load per host conf
         if conf_id != default_conf_id:
+            tata =1
             for k in [a for a in conf if a.startswith('add_')]:
                 adding = k.split('add_', 1)[1]
                 ddata = data.setdefault(adding, [])
                 ddata.extend([a for a in conf[k] if a not in ddata])
             data = __salt__['mc_utils.dictupdate'](data, conf)
         for cfg in [default_conf, conf]:
-            for revove_key in ['remove', 'delete', 'del']:
+            for remove_key in ['remove', 'delete', 'del']:
                 for k, val in [a
                                for a in cfg.items()
                                if a[0].startswith('remove_')]:
@@ -2292,6 +2299,17 @@ def get_sysnet_conf(id_):
                 manage_bridged_fo_kvm_network(
                     id_, target, ipsfo,
                     ipsfo_map, ips)
+    return rdata
+
+
+def get_supervision_client_conf(id_):
+    gconf = get_configuration(id_)
+    rdata = {}
+    pref = "makina-states.services.monitoring.client"
+    if gconf.get('supervision_client', False):
+        rdata.update({
+            pref: True,
+        })
     return rdata
 
 
