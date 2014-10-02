@@ -729,12 +729,12 @@ def autoconfigure_host(host,
                          'processes', 'web_openid', 'web']
     rdata = {"host.name": host}
     icingaSettings = __salt__['mc_icinga2.settings']()
-    if 'postgresql' not in processes:
+    if 'postgres' not in processes:
         if (
             'postgresl' in host
             or 'pgsql' in host
         ):
-            processes.append('postgresql')
+            processes.append('postgres')
     if 'mysql' not in processes:
         if 'mysql' in host:
             processes.append('mysql')
@@ -843,7 +843,7 @@ def autoconfigure_host(host,
             'import': [st_mem]}}
     # if we defined extra properties on a service,
     # enable it automatically
-    if 'postgresl' in processes:
+    if 'postgres' in processes:
         services_enabled_types.extend(['postgresql_connection_time'])
     if 'mongod' in processes:
         services_enabled_types.extend([
@@ -946,6 +946,8 @@ def autoconfigure_host(host,
                         http_port = '443'
                         command += 'S'
                     command += '_STRING'
+                    if ss.get('vars.http_expect'):
+                        command += '_E'
                     if ss.get('vars.http_auth', False):
                         command += '_AUTH'
                     ss['check_command'] = command
