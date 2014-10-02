@@ -44,18 +44,20 @@ postgresql-pg_conf-conf-{{pgver}}:
       - mc_proxy: {{orchestrate['base']['postbase']}}
       - service: makina-postgresql-service-reload
 
-append-to-pg-conf-{{pgver}}-block:
-  file.blockreplace:
-    - name: /etc/postgresql/{{pgver}}/main/postgresql.conf
-    - marker_start: "#-- start salt managed zonestart -- PLEASE, DO NOT EDIT"
-    - marker_end: "#-- end salt managed zonestart --"
-    - content: ''
-    - append_if_not_found: True
-    - backup: '.bak'
-    - show_changes: True
-    - require:
-        - file: postgresql-pg_conf-conf-{{pgver}}
-    - watch_in:
-      - mc_proxy: {{orchestrate['base']['postbase']}}
-      - service: makina-postgresql-service-reload
+# caused too much restart pb
+# use confdir in any other case
+#append-to-pg-conf-{{pgver}}-block:
+#  file.blockreplace:
+#    - name: /etc/postgresql/{{pgver}}/main/postgresql.conf
+#    - marker_start: "#-- start salt managed zonestart -- PLEASE, DO NOT EDIT"
+#    - marker_end: "#-- end salt managed zonestart --"
+#    - content: ''
+#    - append_if_not_found: True
+#    - backup: '.bak'
+#    - show_changes: True
+#    - require:
+#        - file: postgresql-pg_conf-conf-{{pgver}}
+#    - watch_in:
+#      - mc_proxy: {{orchestrate['base']['postbase']}}
+#      - service: makina-postgresql-service-reload
 {% endfor %}

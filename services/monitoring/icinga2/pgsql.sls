@@ -69,7 +69,14 @@ icinga2-import-pgsql-schema:
             {{sdata}}
   cmd.run:
     - name: psql "{{uri}}" -f "{{tmpf}}"
-    - unless: echo "select * from icinga_commands;" | psql "{{uri}}" --set ON_ERROR_STOP=1
+    # wait if pgsql in restarted
+    - unless: |
+              if [ x"$(echo "select * from icinga_commands;" | psql "{{uri}}" --set ON_ERROR_STOP=1;echo $?)" != "x0" ];then
+                sleep 2
+                echo "select * from icinga_commands;" | psql "{{uri}}" --set ON_ERROR_STOP=1 
+                exit ${?}
+              fi
+              exit 0
     - watch:
       - pkg: icinga2-cli-pkgs
       - file: icinga2-import-pgsql-schema

@@ -226,6 +226,9 @@ def objects(core=True, ttl=120):
                         'vars.{0}'.format(i)] = '{0} + ""'.format(i)
             attrs = data.setdefault('attrs', {})
             members = attrs.get('members', _default)
+            notification = data.setdefault('notification', [])
+            if typ_ in ['Host', 'Service'] and notification:
+                add_notification(attrs, notification)
             if members is not _default:
                 if 'members_link' not in attrs:
                     if typ_ in ['Service']:
@@ -594,9 +597,28 @@ def autoconfigured_host(host, data=None, ttl=60):
     return memoize_cache(_do, [host, data], {}, cache_key, ttl)
 
 
+def add_notification(attrs, notification_list=None):
+    if not notification_list:
+        notification_list = []
+    if notification_list:
+        onotification = attrs.setdefault('notification', OrderedDict())
+        onotification.setdefault('command', 'N_service-notify-by-email')
+        for notifier in notification_list:
+            ntyp = 'users'
+            if notifier.startswith('G_'):
+                ntyp = 'user_groups'
+            users = onotification.setdefault(ntyp, [])
+            if notifier not in users:
+                users.append(notifier)
+    return attrs
+
+
 def autoconfigure_host(host,
                        attrs=None,
-                       imports = None,
+                       groups=None,
+                       notification=None,
+                       default_notifiers=None,
+                       imports=None,
                        no_default_imports=False,
                        services_attrs=None,
                        ssh_user='root',
@@ -623,6 +645,7 @@ def autoconfigure_host(host,
                        mail_pop_test_account=False,
                        mail_server_queues=False,
                        mail_smtp=False,
+                       mongodb=False,
                        memory_mode=None,
                        memory=True,
                        ping=True,
@@ -630,17 +653,7 @@ def autoconfigure_host(host,
                        ntp_peers=False,
                        ntp_time=True,
                        postgresql_port=False,
-                       process_beam=False,
-                       process_epmd=False,
-                       process_fail2ban=True,
-                       process_gunicorn_django=False,
-                       process_gunicorn=False,
-                       process_ircbot=False,
-                       process_memcached=False,
-                       process_slapd=False,
-                       process_mysql=None,
-                       process_postgresql=None,
-                       process_python=False,
+                       processes=None,
                        raid=None,
                        snmpd_memory_control=False,
                        supervisor=None,
@@ -661,21 +674,18 @@ def autoconfigure_host(host,
     memory_mode_maps = {
         'large': 'ST_MEMORY_LARGE',
         None: 'ST_MEMORY'}
-    if process_postgresql is None:
-        if (
-            'postgresl' in host
-            or 'pgsql' in host
-        ):
-            process_postgresql = True
-        else:
-            process_postgresql = False
-    if process_mysql is None:
-        if 'mysql' in host:
-            process_mysql = True
-        else:
-            process_mysql = False
     st_mem = memory_mode_maps.get(memory_mode, None)
     st_disk = disk_space_mode_maps.get(disk_space_mode, None)
+
+    if not processes:
+        processes = []
+    for i, val in kwargs.items():
+        if i.startswith('process_') and val:
+            processes.append('process_'.join(i.split('process_')[1:]))
+        for i in ['fail2ban']:
+            if kwargs.get('process_' + i, True):
+                processes.append(i)
+    processes = __salt__['mc_utils.uniquify'](processes)
     services = ['backup_burp_age',
                 'cron',
                 'ddos',
@@ -685,7 +695,6 @@ def autoconfigure_host(host,
                 'dns_association',
                 'dns_association_hostname',
                 'drbd',
-                'process_fail2ban',
                 'haproxy_stats',
                 'load_avg',
                 'mail_cyrus_imap_connections',
@@ -697,20 +706,12 @@ def autoconfigure_host(host,
                 'mail_server_queues',
                 'mail_smtp',
                 'nic_card',
+                'mongodb',
                 'ntp_peers',
                 'ntp_time',
                 'ping',
                 'postgresql_port',
-                'process_epmd',
-                'process_gunicorn',
-                'process_gunicorn_django',
-                'process_ircbot',
-                'process_beam',
-                'process_python',
-                'process_slapd',
-                'process_memcached',
-                'process_mysql',
-                'process_postgresql',
+                'processes',
                 'raid',
                 'snmpd_memory_control',
                 'ssh',
@@ -725,9 +726,28 @@ def autoconfigure_host(host,
                 'apache_status']
     services_multiple = ['disk_space', 'nic_card', 'dns_association',
                          'supervisor', 'drbd', 'raid', 'tomcat',
-                         'web_openid', 'web']
+                         'processes', 'web_openid', 'web']
     rdata = {"host.name": host}
     icingaSettings = __salt__['mc_icinga2.settings']()
+    if 'postgresql' not in processes:
+        if (
+            'postgresl' in host
+            or 'pgsql' in host
+        ):
+            processes.append('postgresql')
+    if 'mysql' not in processes:
+        if 'mysql' in host:
+            processes.append('mysql')
+    if not notification:
+        notification = []
+    # special sysadmin notifiations
+    if not default_notifiers:
+        default_notifiers = ['G_Sysadmins']
+    for i in default_notifiers:
+        if i not in notification:
+            notification.append(i)
+    if not groups:
+        groups = []
     if attrs is None:
         attrs = {}
     if services_attrs is None:
@@ -772,7 +792,7 @@ def autoconfigure_host(host,
         default_imports = ['HT_BASE']
         for i in [
             a for a in default_imports
-            if not a in imports
+            if a not in imports
         ]:
             imports.append(i)
     if isinstance(imports, basestring):
@@ -782,6 +802,11 @@ def autoconfigure_host(host,
     attrs.setdefault('vars.ssh_addr', ssh_addr)
     attrs.setdefault('vars.ssh_port', ssh_port)
     attrs.setdefault('vars.ssh_timeout', ssh_timeout)
+    hgroups = attrs.setdefault('groups',  [])
+    for i in groups:
+        if i not in hgroups:
+            hgroups.append(i)
+    add_notification(attrs, notification)
     object_uniquify(rdata['attrs'])
     # services for which a loop is used in the macro
     if (
@@ -809,15 +834,30 @@ def autoconfigure_host(host,
             'import': ["ST_DNS_ASSOCIATION"],
             'vars.hostname': dns_hostname,
             'vars.dns_address': dns_address},
+        'mongodb': {
+            'import': ["ST_MONGODB"],
+            'check_command': "CSSH_CHECK_MONGODB_AUTH"},
         'disk_space': {
             'import': [st_disk]},
         'memory': {
             'import': [st_mem]}}
     # if we defined extra properties on a service,
     # enable it automatically
-    if process_postgresql:
+    if 'postgresl' in processes:
         services_enabled_types.extend(['postgresql_connection_time'])
-    if process_mysql:
+    if 'mongod' in processes:
+        services_enabled_types.extend([
+            'mongodb_connect',
+            'mongodb_collections',
+            'mongodb_databases',
+            'mongodb_connections',
+            'mongodb_index_miss_ratio',
+            'mongodb_last_flush_time',
+            'mongodb_flushing',
+            'mongodb_lock',
+            'mongodb_memory_mapped',
+            'mongodb_memory'])
+    if 'mysql' in processes:
         services_enabled_types.extend(['mysql_connection_time',
                                        'mysql_tablecache_hitrate',
                                        'mysql_table_fragmentation',
@@ -844,12 +884,16 @@ def autoconfigure_host(host,
         ):
             services_enabled_types.append(s)
     for svc in services_enabled_types:
+        if svc in ['mongodb', 'mongodb_auth']:
+            continue
+        checks = []
         if svc in services_multiple:
             default_vals = {
                 'web': {host: {}},
                 'tomcat': {host: {}}
             }
             if svc in ['raid', 'drbd', 'disk_space',
+                       'processes',
                        'nic_card', 'supervisor']:
                 values = eval(svc)
             else:
@@ -860,8 +904,9 @@ def autoconfigure_host(host,
                 vdata = services_attrs.get(svc, {}).get(v, {})
                 skey = svc_name('{1}_{2}'.format(host, svc, v).upper())
                 ksvc = svc
-                if svc == 'raid':
-                    ksvc = v + '_raid'
+                for svc_type in ['raid']:
+                    if svc == svc_type:
+                        ksvc = '{0}_{1}'.format(v, svc_type)
                 default_attrs = services_default_attrs
                 if ksvc not in default_attrs:
                     default_attrs = {
@@ -876,6 +921,19 @@ def autoconfigure_host(host,
                 # switch between
                 # HTTP_STRING / HTTP_STRING_AUTH
                 # HTTPS_STRING / HTTPS_STRING_AUTH
+                if svc == 'processes':
+                    ss['vars.process'] = v
+                mongo_auth = False
+                # let us authenticate to mongodb by defining
+                # vars.mongo_user
+                # vars.mongo_password on the host definition
+                if 'mongo' in svc:
+                    for i in ['mongo_user', 'mongo_password']:
+                        if attrs.get(i, ''):
+                            ss['vars.' + i] = attrs[i]
+                            mongo_auth = True
+                if mongo_auth:
+                    ss['chech_command'] = 'CSSH_CHECK_MONGODB_AUTH'
                 if svc == 'web':
                     if ss.get('vars.http_remote', False):
                         command = 'CSSH_HTTP'
@@ -948,6 +1006,9 @@ def autoconfigure_host(host,
                            skey,
                            default_attrs[svc],
                            services_attrs.get(svc, {}))[skey]
+            checks.append(ss)
+        for ss in checks:
+            add_notification(ss, notification)
             object_uniquify(ss)
     return rdata
 
