@@ -502,7 +502,6 @@ set_vars() {
         SALT_CLOUD="${SALT_CLOUD:-}"
     fi
     DEFAULT_DOMAINNAME="local"
-    SALT_CLOUD_DIR="${SALT_CLOUD_DIR:-"/tmp/.saltcloud"}"
     SALT_BOOT_LOCK_FILE="/tmp/boot_salt_sleep-$(get_full_chrono)"
     LAST_RETCODE_FILE="/tmp/boot_salt_rc-$(get_full_chrono)"
     QUIET=${QUIET:-}
@@ -625,6 +624,15 @@ set_vars() {
     MASTERSALT_INIT_PRESENT=""
     # when we come from salt cloud, will never have to
     # test for mastersalt, it is explictly set
+    if [ "x${SALT_CLOUD}" != "x" ];then
+        if [ "x${SALT_CLOUD_DIR}" = "x" ];then
+            if [ "x$(echo "${0}"|sed -e "s/.*saltcloud.*/match/g")" = "xmatch" ];then
+                SALT_CLOUD_DIR="${SALT_CLOUD_DIR:-"$(dirname ${0})"}"
+            else
+                SALT_CLOUD_DIR="${SALT_CLOUD_DIR:-"/tmp/.saltcloud"}"
+            fi
+        fi
+    fi
     if [ "x${SALT_CLOUD}" = "x" ];then
         if [ -e "${ETC_INIT}.d/mastersalt-master" ]\
             || [ -e "${ETC_INIT}/mastersalt-master.conf" ]\
@@ -1931,6 +1939,18 @@ EOF
                 rm -f "${i}"
             fi
         done
+        if [ "x${SALT_CLOUD}" != "x" ] && [ -e "${SALT_CLOUD_DIR}/minion" ];then
+            for conf in "${MASTERSALT_PILLAR}/mastersalt_minion.sls" "${MASTERSALT_PILLAR}/mastersalt.sls";do
+                if [ -e "${conf}" ];then
+                    sed -i -re "s/^makina-states.controllers.mastersalt_minion.settings.master:.*/makina-states.controllers.mastersalt_minion.settings.master: ${MASTERSALT}/g" "${conf}"
+                 fi
+             done
+             for conf in "${MCONF_PREFIX}/minion.d/00_global.conf" "${MCONF_PREFIX}/minion";do
+                 if [ -e "${conf}" ];then
+                    sed -i -re "s/^master: .*/master: ${MASTERSALT}/g" "${conf}"
+                 fi
+             done
+        fi
         if [ "x${IS_SALT_MINION}" != "x" ];then
             minion_test=""
             if [ -e ${ETC_INIT}/salt-minion.conf ] || [ -e ${ETC_INIT}.d/salt-minion ];then

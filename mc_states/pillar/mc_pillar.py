@@ -41,6 +41,7 @@ def ext_pillar(id_, pillar, *args, **kw):
         'mc_pillar.get_shorewall_conf',
         'mc_pillar.get_slapd_pillar_conf',
         'mc_pillar.get_snmpd_conf',
+        'mc_pillar.get_supervision_client_conf',
         'mc_pillar.get_ssh_groups_conf',
         'mc_pillar.get_ssh_keys_conf',
         'mc_pillar.get_sudoers_conf',

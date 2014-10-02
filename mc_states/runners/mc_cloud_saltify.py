@@ -53,6 +53,8 @@ def saltify(name, output=True, ret=None):
     try:
         already_exists = __salt__['mc_cloud_controller.exists'](name)
         data = None
+        thisid = cli('grains.items')['id']
+        already_exists = False
         if already_exists:
             success = green('{0} is already saltified'.format(name))
         else:
@@ -76,6 +78,13 @@ def saltify(name, output=True, ret=None):
                     "sudo_password",
                 ]:
                     if data.get(var):
+                        if var == "script_args":
+                            if "from-sal" in data[var]:
+                                if " --mastersalt " not in data[var]:
+                                    data[var] += " --mastersalt {0}".format(
+                                        data.get('master', thisid))
+                                if " -m " not in data[var]:
+                                    data[var] += " -m {0}".format(name)
                         kwargs[var] = data[var]
                 try:
                     info = __salt__['cloud.profile'](

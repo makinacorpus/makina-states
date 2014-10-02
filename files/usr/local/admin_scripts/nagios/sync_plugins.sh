@@ -24,5 +24,26 @@ for i in $(find -type f);do
     fi
 done
 rm -f check_mem.pl check_mem.php
+
 wget "https://raw.githubusercontent.com/justintime/nagios-plugins/master/check_mem/check_mem.pl"
 wget "https://raw.githubusercontent.com/justintime/nagios-plugins/master/check_mem/check_mem.php"
+
+wget "http://labs.consol.de/download/shinken-nagios-plugins/check_mysql_health-2.1.8.2.tar.gz"
+tar xzvf check_mysql_health-*z
+cd check_mysql_health-2* && ./configure --with-statefiles-dir=/tmp --prefix=$PWD && make && make install && cp -f libexec/check* ..
+rm -f check_mysql_health-*z check_mysql_health-2*
+
+cp /usr/lib/nagios/plugins/check_http .
+
+wget "http://bucardo.org/downloads/check_postgres-2.21.0.tar.gz"
+tar xzvf check_postgres-*z
+cp -f check_postgres-2.21.0/check_postgres.pl ./
+rm -f check_postgres-*z check_postgres-2*
+
+rm -f check_mongodb.py
+wget "https://github.com/mzupan/nagios-plugin-mongodb/raw/master/check_mongodb.py"
+chmod +x check_mongodb.py
+
+rm -f check_elasticsearch
+wget "https://github.com/anchor/nagios-plugin-elasticsearch/raw/master/check_elasticsearch"
+chmod +x check_elasticsearch

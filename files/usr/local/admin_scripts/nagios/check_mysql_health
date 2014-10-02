@@ -3228,7 +3228,7 @@ $PROGNAME = "check_mysql_health";
 $REVISION = '$Revision: 2.1.8.2 $';
 $CONTACT = 'gerhard.lausser@consol.de';
 $TIMEOUT = 60;
-$STATEFILESDIR = '/var/tmp/check_mysql_health';
+$STATEFILESDIR = '/tmp';
 $needs_restart = 0;
 
 my @modes = (

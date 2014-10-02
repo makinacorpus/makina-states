@@ -1598,6 +1598,8 @@ def backup_default_configuration_type_for(id_, ttl=60):
                 id_ = 'default-vm'
             else:
                 id_ = 'default'
+        else:
+            id_ = 'default'
         return confs.get(id_, None)
     cache_key = 'mc_pillar.backup_default_configuration_type_for{0}'.format(
         id_)
@@ -1607,6 +1609,10 @@ def backup_default_configuration_type_for(id_, ttl=60):
 def backup_configuration_type_for(id_, ttl=60):
     def _do(id_):
         confs = query('backup_configuration_map')
+        qconfs = query('backup_configurations')
+        # for trivial joins (on id_, do it automatically)
+        if not confs.get(id_, None) and id_ in qconfs:
+            confs[id_] = id_
         return confs.get(id_, None)
     cache_key = 'mc_pillar.backup_configuration_type_for{0}'.format(id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
@@ -1638,13 +1644,14 @@ def backup_configuration_for(id_, ttl=60):
         data = __salt__['mc_utils.dictupdate'](data, default_conf)
         # load per host conf
         if conf_id != default_conf_id:
+            tata =1
             for k in [a for a in conf if a.startswith('add_')]:
                 adding = k.split('add_', 1)[1]
                 ddata = data.setdefault(adding, [])
                 ddata.extend([a for a in conf[k] if a not in ddata])
             data = __salt__['mc_utils.dictupdate'](data, conf)
         for cfg in [default_conf, conf]:
-            for revove_key in ['remove', 'delete', 'del']:
+            for remove_key in ['remove', 'delete', 'del']:
                 for k, val in [a
                                for a in cfg.items()
                                if a[0].startswith('remove_')]:
@@ -1838,15 +1845,22 @@ def get_supervision_objects_defs(id_):
                              'ping': False,
                              'nic_card': False}
     providers = __salt__['mc_network.providers']()
+
     if is_supervision_kind(id_, 'master'):
         data = query('supervision_configurations')
         defs = data.get('definitions', {})
         sobjs = defs.setdefault('objects', OrderedDict())
         hhosts = defs.setdefault('autoconfigured_hosts', OrderedDict())
+        for hhost in [a for a in hhosts]:
+            for i in ['attrs', 'services_attrs']:
+                hhosts[hhost].setdefault(i, OrderedDict())
+                if not isinstance(hhosts[hhost][i], dict):
+                    hhosts[hhost][i] = OrderedDict()
         maps = __salt__['mc_pillar.get_db_infrastructure_maps']()
         for host, vts in maps['bms'].items():
             hdata = hhosts.setdefault(host, OrderedDict())
             attrs = hdata.setdefault('attrs', OrderedDict())
+            sattrs = hdata.setdefault('services_attrs', OrderedDict())
             groups = attrs.setdefault('groups', [])
             parents = attrs.setdefault('parents', [])
             tipaddr = attrs.setdefault('address', ip_for(host))
@@ -1896,11 +1910,12 @@ def get_supervision_objects_defs(id_):
             host_ip = ip_for(host)
             hdata = hhosts.setdefault(vm, OrderedDict())
             attrs = hdata.setdefault('attrs', OrderedDict())
+            sattrs = hdata.setdefault('services_attrs', OrderedDict())
             parents = attrs.setdefault('parents', [])
             tipaddr = attrs.setdefault('address', ip_for(vm))
-            ssh_host = snmp_host = tipaddr
-            snmp_port = 161
-            ssh_port = 22
+            ssh_host = snmp_host = attrs.get('vars.SSH_HOST', tipaddr)
+            ssh_port = attrs.get('vars.SSH_PORT', 22)
+            snmp_port = attrs.get('vars.SNMP_PORT', 161)
             if host not in parents:
                 parents.append(host)
             # set the local ip for snmp and ssh
@@ -1918,7 +1933,7 @@ def get_supervision_objects_defs(id_):
                     __salt__['mc_cloud_compute_node.get_snmp_port'](
                         vm, host))
             no_common_checks = False
-            if tipaddr == host_ip:
+            if tipaddr == host_ip and vt in ['lxc']:
                 no_common_checks = True
             groups = attrs.setdefault('groups', [])
             [groups.append(i)
@@ -1937,6 +1952,7 @@ def get_supervision_objects_defs(id_):
         for host in [a for a in hhosts]:
             hdata = hhosts[host]
             parents = hdata.setdefault('attrs', {}).setdefault('parents', [])
+            sattrs = hdata.setdefault('services_attrs', OrderedDict())
             rparents = [a for a in parents if a != id_]
             groups = hdata.get('attrs', {}).get('groups', [])
             for g in groups:
@@ -1960,10 +1976,19 @@ def get_supervision_objects_defs(id_):
                         hdata['attrs']['address'] = addr
                         hdata.update(disable_common_checks)
                         break
-            #if id_ not in parents and id_ not in maps['vms']:
+            if hdata.get('backup_burp_age', None) is not False:
+                bsm = query('backup_server_map')
+                burp_default_server = bsm['default']
+                burp_server = bsm.get(host, burp_default_server)
+                burpattrs = sattrs.setdefault('backup_burp_age', {})
+                burpattrs.setdefault('vars.SSH_HOST', burp_server)
+                burpattrs.setdefault('vars.SSH_PORT', 22)
+            # if id_ not in parents and id_ not in maps['vms']:
             #    parents.append(id_)
             if not hdata['attrs'].get('address'):
-                raise ValueError('no address defined for {0}'.format(host))
+                log.error('no address defined for {0}'.format(host))
+                hhosts.pop(host, None)
+                continue
             if id_ == host:
                 for i in parents[:]:
                     parents.pop()
@@ -2276,6 +2301,17 @@ def get_sysnet_conf(id_):
                 manage_bridged_fo_kvm_network(
                     id_, target, ipsfo,
                     ipsfo_map, ips)
+    return rdata
+
+
+def get_supervision_client_conf(id_):
+    gconf = get_configuration(id_)
+    rdata = {}
+    pref = "makina-states.services.monitoring.client"
+    if gconf.get('supervision_client', False):
+        rdata.update({
+            pref: True,
+        })
     return rdata
 
 
@@ -2677,6 +2713,13 @@ def get_burp_server_conf(id_):
     if __salt__['mc_pillar.is_burp_server'](id_):
         conf = __salt__['mc_pillar.backup_server_settings_for'](id_)
         rdata['makina-states.services.backup.burp.server'] = True
+        confs = query('backup_server_configurations')
+        if id_ in confs:
+            for i, val in confs[id_].items():
+                rdata[
+                    'makina-states.services.'
+                    'backup.burp.{0}'.format(i)
+                ] = val
         for host, conf in conf['confs'].items():
             if conf['type'] in ['burp']:
                 rdata[

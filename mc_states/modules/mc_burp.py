@@ -279,8 +279,12 @@ def settings():
             'ssl_peer_cn', data['server_conf']['fqdn'])
         data['clients'].setdefault(data['server_conf']['fqdn'], {})
         hour = [0, 20, 40]
+        removes = []
         for cname in [a for a in data['clients']]:
             cl = data['clients'][cname]
+            if not isinstance(cl, dict):
+                removes.append(cname)
+                continue
             cl['cname'] = cname
             ssh_port = cl.get('ssh_port', '')
             if ssh_port:
@@ -383,6 +387,8 @@ def settings():
                      if a.count('makina-states.local.burp.') >= 1]
         for a in to_delete:
             local_conf.pop(a, None)
+        for i in removes:
+            data['clients'].pop(i, None)
         salt['mc_macros.update_registry_params'](
             'burp', local_conf, registry_format='pack')
         return data

@@ -128,11 +128,11 @@ def sf_release(images=None):
         salt-call -all mc_lxc.sf_release
     '''
     _cli = __salt__.get
+    imgSettings = __salt__['mc_cloud_images.settings']()
     if isinstance(images, basestring):
         images = [images]
     if images is None:
         images = [a for a in imgSettings['lxc']['images']]
-    imgSettings = __salt__['mc_cloud_images.settings']()
     gret = {'rets': [], 'result': True, 'comment': 'sucess', 'changes': {}}
     mc_lxc.sync_image_reference_containers(imgSettings, gret,
                                            _cmd_runner=_run, force=True)
