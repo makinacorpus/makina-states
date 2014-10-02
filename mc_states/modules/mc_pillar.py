@@ -2711,6 +2711,13 @@ def get_burp_server_conf(id_):
     if __salt__['mc_pillar.is_burp_server'](id_):
         conf = __salt__['mc_pillar.backup_server_settings_for'](id_)
         rdata['makina-states.services.backup.burp.server'] = True
+        confs = query('backup_server_configurations')
+        if id_ in confs:
+            for i, val in confs[id_].items():
+                rdata[
+                    'makina-states.services.'
+                    'backup.burp.{0}'.format(i)
+                ] = val
         for host, conf in conf['confs'].items():
             if conf['type'] in ['burp']:
                 rdata[

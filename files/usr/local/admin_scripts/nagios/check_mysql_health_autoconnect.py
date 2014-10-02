@@ -41,8 +41,10 @@ def main():
         argv = sys.argv[:]
         args = []
         if os.path.exists(CNF):
-            with open(CNF) as fic:
+            try:
+                fic = open(CNF)
                 content = fic.read()
+                fic.close()
                 if '--hostname' not in argv:
                     args += ['--hostname', find_val(content, 'host')]
                 if '--socket' not in argv:
@@ -51,6 +53,8 @@ def main():
                     args += ['--username', find_val(content, 'user')]
                 if '--password' not in argv:
                     args += ['--password', find_val(content, 'password')]
+            except IOError:
+                pass
         if '--mode' not in argv:
             args += ['--mode', 'connection-time']
         args = [a.strip() for a in args]

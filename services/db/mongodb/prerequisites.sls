@@ -26,6 +26,7 @@ mongodb-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
       - mongodb-org
+      - python-pymongo
     - watch:
       - mc_proxy: mongodb-pre-install
     - watch_in:

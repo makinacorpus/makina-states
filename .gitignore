@@ -49,5 +49,6 @@ src/
 .restart_salt_minion
 !files/*
 !files/usr/bin
+!files/usr/local
 !_states
 !_modules
