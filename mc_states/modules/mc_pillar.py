@@ -1913,9 +1913,9 @@ def get_supervision_objects_defs(id_):
             sattrs = hdata.setdefault('services_attrs', OrderedDict())
             parents = attrs.setdefault('parents', [])
             tipaddr = attrs.setdefault('address', ip_for(vm))
-            ssh_host = snmp_host = tipaddr
-            snmp_port = 161
-            ssh_port = 22
+            ssh_host = snmp_host = attrs.get('vars.SSH_HOST', tipaddr)
+            ssh_port = attrs.get('vars.SSH_PORT', 22)
+            snmp_port = attrs.get('vars.SNMP_PORT', 161)
             if host not in parents:
                 parents.append(host)
             # set the local ip for snmp and ssh
@@ -1933,7 +1933,7 @@ def get_supervision_objects_defs(id_):
                     __salt__['mc_cloud_compute_node.get_snmp_port'](
                         vm, host))
             no_common_checks = False
-            if tipaddr == host_ip:
+            if tipaddr == host_ip and vt in ['lxc']:
                 no_common_checks = True
             groups = attrs.setdefault('groups', [])
             [groups.append(i)
@@ -1983,10 +1983,12 @@ def get_supervision_objects_defs(id_):
                 burpattrs = sattrs.setdefault('backup_burp_age', {})
                 burpattrs.setdefault('vars.SSH_HOST', burp_server)
                 burpattrs.setdefault('vars.SSH_PORT', 22)
-            #if id_ not in parents and id_ not in maps['vms']:
+            # if id_ not in parents and id_ not in maps['vms']:
             #    parents.append(id_)
             if not hdata['attrs'].get('address'):
-                raise ValueError('no address defined for {0}'.format(host))
+                log.error('no address defined for {0}'.format(host))
+                hhosts.pop(host, None)
+                continue
             if id_ == host:
                 for i in parents[:]:
                     parents.pop()

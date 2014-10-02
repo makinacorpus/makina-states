@@ -43,3 +43,7 @@ rm -f check_postgres-*z check_postgres-2*
 rm -f check_mongodb.py
 wget "https://github.com/mzupan/nagios-plugin-mongodb/raw/master/check_mongodb.py"
 chmod +x check_mongodb.py
+
+rm -f check_elasticsearch
+wget "https://github.com/anchor/nagios-plugin-elasticsearch/raw/master/check_elasticsearch"
+chmod +x check_elasticsearch
