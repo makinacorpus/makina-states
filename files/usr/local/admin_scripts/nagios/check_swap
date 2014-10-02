@@ -5,7 +5,7 @@ export LANG=C LC_ALL=C
 cd $(dirname $0)
 bin=./check_swap.bin
 for i in /usr/lib/nagios/plugins;do
-    if [ *e "${i}/check_swap" ];then
+    if [ -e "${i}/check_swap" ];then
         bin="${i}/check_swap"
         break
     fi
