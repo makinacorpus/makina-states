@@ -54,13 +54,13 @@ if [ -e /etc/debian_version ];then
         fi
     fi
 fi
-if [ ! -e burp/README ];then
-    rm -rf burp
-    git clone https://github.com/grke/burp.git
+wget https://github.com/grke/burp/archive/${VER}.tar.gz
+if [ ! -e burp-$VER/README ];then
+    rm -rf burp-$VER
+    tar xzvf ${VER}.tar.gz
+    #git clone https://github.com/grke/burp.git
 fi &&\
-cd burp && \
-git fetch --all &&\
-git reset --hard "remotes/origin/${VER}" &&\
+cd burp-${VER} && \
 if [ "x$build_uthash" != "x" ];then
     if [ "x$(dpkg -l uthash-dev|grep "1.9.7-1"|wc -l|sed -e "s/ //g")" = "x0" ];then
         wget http://ftp.us.debian.org/debian/pool/main/u/uthash/uthash-dev_1.9.7-1_all.deb &&\
@@ -74,3 +74,5 @@ ret=$?
 if [ "x$ret" != "x0" ];then
     exit $ret
 fi
+#git fetch --all &&\
+#git reset --hard "remotes/origin/${VER}" &&\

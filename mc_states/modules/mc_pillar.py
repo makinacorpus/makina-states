@@ -1901,6 +1901,9 @@ def get_supervision_objects_defs(id_):
                 for i in ['/', '/srv']:
                     if i not in ds:
                         ds.append(i)
+            no_common_checks = hdata.get('no_common_checks', False)
+            if no_common_checks:
+                hdata.update(disable_common_checks)
         vm_parent = None
         if is_cloud_vm(id_):
             vm_parent = maps['vms'][id_]['target']
@@ -1932,7 +1935,7 @@ def get_supervision_objects_defs(id_):
                 snmp_port = (
                     __salt__['mc_cloud_compute_node.get_snmp_port'](
                         vm, host))
-            no_common_checks = False
+            no_common_checks = vdata.get('no_common_checks', False)
             if tipaddr == host_ip and vt in ['lxc']:
                 no_common_checks = True
             groups = attrs.setdefault('groups', [])
