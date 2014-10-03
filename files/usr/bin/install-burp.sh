@@ -54,11 +54,13 @@ if [ -e /etc/debian_version ];then
         fi
     fi
 fi
-if [ ! -e burp/README ];then
-    rm -rf burp
-    git clone https://github.com/grke/burp.git
+wget https://github.com/grke/burp/archive/${VER}.tar.gz
+if [ ! -e burp-$VER/README ];then
+    rm -rf burp-$VER
+    tar xzvf ${VER}.tar.gz
+    #git clone https://github.com/grke/burp.git
 fi &&\
-cd burp && \
+cd burp-${VER} && \
 git fetch --all &&\
 git reset --hard "remotes/origin/${VER}" &&\
 if [ "x$build_uthash" != "x" ];then
