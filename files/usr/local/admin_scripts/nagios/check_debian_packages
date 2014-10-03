@@ -48,10 +48,11 @@ if ( -e '/etc/debian_version') {
 	open(my $fh, '<:encoding(UTF-8)', '/etc/debian_version');
 	while (my $row = <$fh>) {
 	  chomp $row;
+	  if (!$row =~ /^\d+?$/){
 	  if (substr($row, 0, 1) < "6" ){
 		print "OK - This debian is not checked anymore\n";
 		exit($ERRORS{OK});
-	  }
+	  }}
 	}
 	
 }
