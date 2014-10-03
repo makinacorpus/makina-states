@@ -61,8 +61,6 @@ if [ ! -e burp-$VER/README ];then
     #git clone https://github.com/grke/burp.git
 fi &&\
 cd burp-${VER} && \
-git fetch --all &&\
-git reset --hard "remotes/origin/${VER}" &&\
 if [ "x$build_uthash" != "x" ];then
     if [ "x$(dpkg -l uthash-dev|grep "1.9.7-1"|wc -l|sed -e "s/ //g")" = "x0" ];then
         wget http://ftp.us.debian.org/debian/pool/main/u/uthash/uthash-dev_1.9.7-1_all.deb &&\
@@ -76,3 +74,6 @@ ret=$?
 if [ "x$ret" != "x0" ];then
     exit $ret
 fi
+
+#git fetch --all &&\
+#git reset --hard "remotes/origin/${VER}" &&\
