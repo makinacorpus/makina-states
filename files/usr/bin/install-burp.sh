@@ -74,6 +74,5 @@ ret=$?
 if [ "x$ret" != "x0" ];then
     exit $ret
 fi
-
 #git fetch --all &&\
 #git reset --hard "remotes/origin/${VER}" &&\
