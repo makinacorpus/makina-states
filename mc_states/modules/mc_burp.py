@@ -289,13 +289,14 @@ def settings():
             ssh_port = cl.get('ssh_port', '')
             if ssh_port:
                 ssh_port = '-p {0}'.format(ssh_port)
-            cl['rsh_cmd'] = 'ssh {1} {2} {0} {3}'.format(
+            cl['rsh_cmd'] = 'ssh {1} {2} {4} {0} {3}'.format(
                 '-oStrictHostKeyChecking=no',
                 # Set hosts key database path to /dev/null, ie, non-existing
                 '-oUserKnownHostsFile=/dev/null',
                 # Don't re-use the SSH connection. Less failures.
                 '-oControlPath=none',
                 ssh_port,
+                '-oPreferredAuthentications=publickey'
             )
             cl['rsh_dst'] = '{1}@{0}'.format(cname,
                                              cl.get('ssh_user', 'root'))
@@ -314,7 +315,7 @@ def settings():
                 # Setup ProxyCommand
                 proxy_cmd = (
                     ' -oProxyCommand="'
-                    'ssh {0} {1} {2} {3} {4}@{5} {6} '
+                    'ssh {0} {1} {2} {7} {3} {4}@{5} {6} '
                     'nc -q0 %h %p"'
                 ).format(
                     '-oStrictHostKeyChecking=no',
@@ -325,7 +326,8 @@ def settings():
                     ssh_gateway_key,
                     cl.get('ssh_gateway_user', 'root'),
                     ssh_gateway,
-                    ssh_gateway_port
+                    ssh_gateway_port,
+                    '-oPreferredAuthentications=publickey'
                 )
                 cl['ssh_cmd'] += proxy_cmd
                 cl['rsh_cmd'] += proxy_cmd
