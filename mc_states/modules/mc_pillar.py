@@ -2851,6 +2851,32 @@ def get_dhcpd_conf(id_, ttl=60):
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 
+def get_dns_resolvers(id_, ttl=60):
+    def _do(id_):
+        rdata = {}
+        db = get_db_infrastructure_maps()
+        resolvers = set()
+        if id_ in db['vms']:
+            resolvers.add(ip_for(db['vms'][id_]['target']))
+        try:
+            conf = query('dns_resolvers')
+            conf = conf.get(
+                id_,
+                conf.get('default', []))
+        except KeyError:
+            log.error('no dns_resolvers section in database')
+        if not isinstance(conf, list):
+            conf = []
+        for i in conf:
+            resolvers.add(i)
+        p = 'makina-states.services.dns.bind.'
+        if resolvers:
+            rdata[p + 'default_dnses'] = [a for a in resolvers]
+        return rdata
+    cache_key = 'mc_pillar.get_dns_resolvers{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+
+
 def get_slapd_pillar_conf(id_, ttl=60):
     def _do(id_):
         rdata = {}
