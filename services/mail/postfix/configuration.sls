@@ -151,6 +151,8 @@ makina-postfix-postalias:
 makina-postfix-postmap-{{f}}:
   cmd.watch:
     - name: |
+            cd /etc/postfix;
+            chown postfix:postfix "{{f}}" "{{f}}.db" "{{f}}.local" "{{f}}.local.db";
             postmap hash:/{{locs.conf_dir}}/postfix/{{f}}.local;
             postmap hash:/{{locs.conf_dir}}/postfix/{{f}};
             echo "changed=yes"
