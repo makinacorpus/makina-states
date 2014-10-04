@@ -2757,7 +2757,7 @@ def get_slapd_pillar_conf(id_):
             val = data.get(k, None)
             if val:
                 rdata[
-                    'makina-states.services.dns.slapd.{0}'.format(val)
+                    'makina-states.services.dns.slapd.{0}'.format(k)
                 ] = val
     return rdata
 
