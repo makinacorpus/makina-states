@@ -15,7 +15,7 @@ install-burp-configuration-sync:
                 import os
                 import time
                 ret = 0
-                timeout = 60 * 15
+                timeout = 60 * 2
                 batch = 20
                 done = {}
                 clients = [{% for client in data['clients'] %}    "{{client}}",
