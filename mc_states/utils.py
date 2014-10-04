@@ -8,9 +8,11 @@ Utilities functions
 __docformat__ = 'restructuredtext en'
 import copy
 from time import time
+import logging
 import socket
 
 
+log = logging.getLogger(__name__)
 AUTO_NAMES = {'_registry': 'registry',
               '_settings': 'settings',
               '_metadata': 'metadata'}
@@ -133,6 +135,7 @@ def cache_check(cache, time_key, key, ttl_key):
     if time_check != cache[time_key] and key in cache:
         for k in [time_key, ttl_key, key]:
             if k in cache:
+                # log.error('poping stale cache {0}'.format(k))
                 cache.pop(k)
     return cache
 
@@ -177,6 +180,7 @@ def memoize_cache(func, args=None, kwargs=None,
     ttl_key = '{0}_ttl'.format(key)
     cache[ttl_key] = seconds
     last_access = cache.setdefault('last_access', now)
+    # log.error(cache.keys())
     # global cleanup each 2 minutes
     if last_access > (now + (2 * 60)):
         for old_time_key in [a

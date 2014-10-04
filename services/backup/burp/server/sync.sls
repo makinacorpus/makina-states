@@ -15,7 +15,7 @@ install-burp-configuration-sync:
                 import os
                 import time
                 ret = 0
-                timeout = 60 * 15
+                timeout = 60 * 2
                 batch = 20
                 done = {}
                 clients = [{% for client in data['clients'] %}    "{{client}}",
@@ -36,16 +36,13 @@ install-burp-configuration-sync:
                     with open("{{data.server_conf.directory}}/{0}/backup".format(i), 'w') as fic:
                       fic.write('\n')
                     todo.append("/etc/burp/clients/{0}/sync.sh".format(i))
-                # poll per 10
-                now = time.time()
-                will_timeout = now + timeout
-                def check_timeout(t=None):
-                  if not t:
-                    t = time.time()
+                def check_timeout(will_timeout):
+                  t = time.time()
                   if t >= will_timeout:
                     raise ValueError('Timeout !')
                 while todo:
-                  check_timeout()
+                  # poll per 10
+                  now = time.time()
                   doing = []
                   for i in range(batch):
                     try:
@@ -55,20 +52,28 @@ install-burp-configuration-sync:
                   if not doing:
                     todo = False
                   else:
+                    will_timeout = now + timeout
                     syncs = {}
                     for cmd in doing:
                       syncs[cmd] = async_backup(cmd)
                     while syncs:
-                      check_timeout()
+                      check_timeout(will_timeout)
                       for cmd in [a for a in syncs]:
                         if syncs[cmd].poll() is not None:
                           done[cmd] = syncs.pop(cmd)
+                    check_timeout(will_timeout)
+                missed = []
                 for a, p in done.items():
                   if p.returncode:
                     print "Missed {0} (1)".format(a, p.returncode)
                     print p.stdout.read()
                     print p.stderr.read()
                     ret = 1
+                    missed.append(a)
+                if missed:
+                  print "Missed:"
+                  for i in missed:
+                    print "    - {0}".format(i)
                 sys.exit(ret)
   cmd.run:
     - name: /etc/burp/clients/sync.py

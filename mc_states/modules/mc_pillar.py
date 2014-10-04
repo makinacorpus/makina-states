@@ -131,7 +131,8 @@ def query(doc_types, ttl=30, default=_marker, **kwargs):
     if len(doc_types) == 1:
         try:
             if skwargs:
-                cache_key = 'mc_pillar.query_{0}{1}'.format(doc_types[0], skwargs)
+                cache_key = 'mc_pillar.query_{0}{1}'.format(
+                    doc_types[0], skwargs)
                 return memoize_cache(query_filter,
                                      [doc_types[0]],
                                      kwargs, cache_key, ttl)
@@ -580,7 +581,7 @@ def rr_a(fqdn, fail_over=None, ttl=60):
     def _do(fqdn, fail_over):
         ips = ips_for(fqdn, fail_over=fail_over)
         return rr_entry(fqdn, ips)
-    cache_key = 'mc_pillar.rrs_a_{0}_{1}_{2}'.format(domain, fqdn, fail_over)
+    cache_key = 'mc_pillar.rrs_a_{0}_{1}_{2}'.format(fqdn, fqdn, fail_over)
     return memoize_cache(_do, [fqdn, fail_over], {}, cache_key, ttl)
 
 
@@ -1823,25 +1824,33 @@ def get_makina_states_variables(id_, ttl=60):
     return memoize_cache(_do_ms_var, [id_], {}, cache_key, ttl)
 
 
-def get_supervision_conf_kind(id_, kind):
-    rdata = {}
-    supervision = query('supervision_configurations')
-    for cid, data in supervision.items():
-        if data.get(kind, '') == id_:
-            rdata.update(data.get('{0}_conf'.format(kind), {}))
-            if 'nginx' in rdata:
-                nginx = rdata['nginx']
-                nginx = rdata.setdefault('nginx', {})
-                domain = rdata.get('nginx', {}).get('domain', id_)
-                cert, key = __salt__['mc_ssl.selfsigned_ssl_certs'](domain, True)[0]
-                # unlonwn ca signed certs do not work in nginx
-                # cert, key = __salt__['mc_ssl.ssl_certs'](domain, True)[0]
-                # nginx['ssl_cacert'] = __salt__['mc_ssl.get_cacert'](True)
-                nginx['ssl_key'] = key
-                nginx['ssl_cert'] = cert
-                nginx['ssl_redirect'] = True
+def get_supervision_conf_kind(id_, kind, ttl=60):
+    def _do(id_, kind):
+        rdata = {}
+        try:
+            supervision = query('supervision_configurations')
+        except KeyError:
+            log.error('no supervision_configurations in database')
+            return rdata
+        for cid, data in supervision.items():
+            if data.get(kind, '') == id_:
+                rdata.update(data.get('{0}_conf'.format(kind), {}))
+                if 'nginx' in rdata:
+                    nginx = rdata['nginx']
+                    nginx = rdata.setdefault('nginx', {})
+                    domain = rdata.get('nginx', {}).get('domain', id_)
+                    cert, key = __salt__['mc_ssl.selfsigned_ssl_certs'](domain, True)[0]
+                    # unlonwn ca signed certs do not work in nginx
+                    # cert, key = __salt__['mc_ssl.ssl_certs'](domain, True)[0]
+                    # nginx['ssl_cacert'] = __salt__['mc_ssl.get_cacert'](True)
+                    nginx['ssl_key'] = key
+                    nginx['ssl_cert'] = cert
+                    nginx['ssl_redirect'] = True
 
-    return rdata
+        return rdata
+    cache_key = 'mc_pillar.get_supervision_conf_kind{0}_{1}'.format(
+        id_, kind)
+    return memoize_cache(_do, [id_, kind], {}, cache_key, ttl)
 
 
 def is_cloud_vm(target):
@@ -2071,17 +2080,20 @@ def get_supervision_ui_conf(id_, ttl=60):
 
 
 def is_supervision_kind(id_, kind, ttl=60):
-    def _do_ms_var(id_, kind):
-        supervision = query('supervision_configurations')
+    def _do(id_, kind):
+        try:
+            supervision = query('supervision_configurations')
+        except KeyError:
+            log.error('no supervision_configurations section in database')
+            supervision = {}
         if not supervision:
             return False
         for cid, data in supervision.items():
             if data.get(kind, '') == id_:
                 return True
         return False
-    cache_key = 'mc_pillar.is_supervision_master{0}{1}'.format(id_,
-                                                               kind)
-    return memoize_cache(_do_ms_var, [id_, kind], {}, cache_key, ttl)
+    cache_key = 'mc_pillar.is_supervision_kind{0}{1}'.format(id_, kind)
+    return memoize_cache(_do, [id_, kind], {}, cache_key, ttl)
 
 
 def format_rrs(domain, alt=None):
@@ -2408,19 +2420,22 @@ def get_supervision_master_conf(id_, ttl=60):
     return memoize_cache(_do_ms_var, [id_], {}, cache_key, ttl)
 
 
-def get_supervision_confs(id_):
-    rdata = {}
-    for kind in ['master', 'ui', 'pnp', 'nagvis']:
-        if __salt__['mc_pillar.is_supervision_kind'](id_, kind):
-            rdata.update({
-                'master': get_supervision_master_conf,
-                'ui': get_supervision_ui_conf,
-                'pnp': get_supervision_pnp_conf,
-                'nagvis': get_supervision_nagvis_conf
-            }[kind](id_))
-    rdata.update(
-        __salt__['mc_pillar.get_supervision_objects_defs'](id_))
-    return rdata
+def get_supervision_confs(id_, ttl=60):
+    def _do(id_):
+        rdata = {}
+        for kind in ['master', 'ui', 'pnp', 'nagvis']:
+            if __salt__['mc_pillar.is_supervision_kind'](id_, kind):
+                rdata.update({
+                    'master': get_supervision_master_conf,
+                    'ui': get_supervision_ui_conf,
+                    'pnp': get_supervision_pnp_conf,
+                    'nagvis': get_supervision_nagvis_conf
+                }[kind](id_))
+        rdata.update(
+            __salt__['mc_pillar.get_supervision_objects_defs'](id_))
+        return rdata
+    cache_key = 'mc_pillar.get_supervision_confs{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 
 def get_sudoers_conf(id_):
@@ -2520,60 +2535,69 @@ def get_ldap_client_conf(id_):
     rdata = {}
     if is_salt_managed(id_) and gconf.get('ldap_client', False):
         conf = __salt__['mc_pillar.get_ldap_configuration'](id_)
-        rdata['makina-states.localsettings.ldap'] = {
-            'ldap_uri': conf['ldap_uri'],
-            'ldap_base': conf['ldap_base'],
-            'ldap_passwd': conf['ldap_passwd'],
-            'ldap_shadow': conf['ldap_shadow'],
-            'ldap_group': conf['ldap_group'],
-            'ldap_cacert': conf['ldap_cacert'],
-            'enabled': conf['enabled'],
-            'nslcd': {'ssl': conf['nslcd']['ssl']}}
+        p = 'makina-states.localsettings.ldap.'
+        for i in [
+            'ldap_uri',
+            'ldap_base',
+            'ldap_passwd',
+            'ldap_shadow',
+            'ldap_group',
+            'ldap_cacert',
+            'enabled',
+        ]:
+            if conf.get(i):
+                rdata[p + i] = conf[i]
+        if 'ssl' in conf.get('nslcd', {}):
+            rdata[p + 'nslcd.ssl'] = conf['nslcd']['ssl']
     return rdata
 
 
-def get_mail_conf(id_):
-    gconf = get_configuration(id_)
-    if not gconf.get('manage_mails', False):
-        return {}
-    data = {}
-    mail_conf = __salt__['mc_pillar.get_mail_configuration'](id_)
-    dest = mail_conf['default_dest'].format(id=id_)
-    data['makina-states.services.mail.postfix'] = True
-    mode = 'makina-states.services.mail.postfix.mode'
-    data[mode] = mail_conf['mode']
-    if is_managed(id_):
-        if is_salt_managed(id_) and mail_conf.get('transports'):
-            transports = data.setdefault(
-                'makina-states.services.mail.postfix.transport', [])
-            for entry, host in mail_conf['transports'].items():
-                if entry != '*':
-                    transports.append({
-                        'transport': entry,
-                        'nexthop': 'relay:[{0}]'.format(host)})
-            if '*' in mail_conf['transports']:
-                transports.append(
-                    {'nexthop':
-                     'relay:[{0}]'.format(mail_conf['transports']['*'])})
-            if mail_conf['auth']:
-                passwds = data.setdefault(
-                    'makina-states.services.mail.postfix.sasl_passwd', [])
-                data['makina-states.services.mail.postfix.auth'] = True
-                for entry, host in mail_conf['smtp_auth'].items():
-                    passwds.append({
-                        'entry': '[{0}]'.format(entry),
-                        'user': host['user'],
-                        'password': host['password']})
-            if mail_conf.get('virtual_map'):
-                vmap = data.setdefault(
-                    'makina-states.services.mail.postfix.virtual_map', {})
-            for record in mail_conf['virtual_map']:
-                for item, val in record.items():
-                    vmap[item.format(id=id_, dest=dest)] = val.format(
-                        id=id_, dest=dest)
-        else:
-            data[mode] = 'localdeliveryonly'
-    return data
+def get_mail_conf(id_, ttl=60):
+    def _do(id_):
+        gconf = get_configuration(id_)
+        if not gconf.get('manage_mails', False):
+            return {}
+        data = {}
+        mail_conf = __salt__['mc_pillar.get_mail_configuration'](id_)
+        dest = mail_conf['default_dest'].format(id=id_)
+        data['makina-states.services.mail.postfix'] = True
+        mode = 'makina-states.services.mail.postfix.mode'
+        data[mode] = mail_conf['mode']
+        if is_managed(id_):
+            if is_salt_managed(id_) and mail_conf.get('transports'):
+
+                transports = data.setdefault(
+                    'makina-states.services.mail.postfix.transport', [])
+                for entry, host in mail_conf['transports'].items():
+                    if entry != '*':
+                        transports.append({
+                            'transport': entry,
+                            'nexthop': 'relay:[{0}]'.format(host)})
+                if '*' in mail_conf['transports']:
+                    transports.append(
+                        {'nexthop':
+                         'relay:[{0}]'.format(mail_conf['transports']['*'])})
+                if mail_conf['auth']:
+                    passwds = data.setdefault(
+                        'makina-states.services.mail.postfix.sasl_passwd', [])
+                    data['makina-states.services.mail.postfix.auth'] = True
+                    for entry, host in mail_conf['smtp_auth'].items():
+                        passwds.append({
+                            'entry': '[{0}]'.format(entry),
+                            'user': host['user'],
+                            'password': host['password']})
+                if mail_conf.get('virtual_map'):
+                    vmap = data.setdefault(
+                        'makina-states.services.mail.postfix.virtual_map', {})
+                for record in mail_conf['virtual_map']:
+                    for item, val in record.items():
+                        vmap[item.format(id=id_, dest=dest)] = val.format(
+                            id=id_, dest=dest)
+            else:
+                data[mode] = 'localdeliveryonly'
+        return data
+    cache_key = 'mc_pillar.get_mail_conf{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 
 def get_ssh_keys_conf(id_):
@@ -2792,7 +2816,11 @@ def get_burp_server_conf(id_):
     if __salt__['mc_pillar.is_burp_server'](id_):
         conf = __salt__['mc_pillar.backup_server_settings_for'](id_)
         rdata['makina-states.services.backup.burp.server'] = True
-        confs = query('backup_server_configurations')
+        try:
+            confs = query('backup_server_configurations')
+        except KeyError:
+            conf = {}
+            log.error(' no backup_server_configurations section in database')
         if id_ in confs:
             for i, val in confs[id_].items():
                 rdata[
@@ -2808,33 +2836,39 @@ def get_burp_server_conf(id_):
     return rdata
 
 
-def get_dhcpd_conf(id_):
-    try:
-        conf = query('dhcpd_conf')[id_]
-    except KeyError:
-        conf = {}
-    if not conf:
-        return {}
-    return {
-        'makina-states.services.dns.dhcpd': conf
-    }
+def get_dhcpd_conf(id_, ttl=60):
+    def _do(id_):
+        try:
+            conf = query('dhcpd_conf')[id_]
+        except KeyError:
+            log.error('no dhcpd_conf section in database')
+            conf = {}
+        if not conf:
+            return {}
+        p = 'makina-states.services.dns.dhcpd'
+        return {p: conf}
+    cache_key = 'mc_pillar.get_dhcpd_conf{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 
-def get_slapd_pillar_conf(id_):
-    rdata = {}
-    if (
-        __salt__['mc_pillar.is_ldap_master'](id_)
-        or __salt__['mc_pillar.is_ldap_slave'](id_)
-    ):
-        data = __salt__['mc_pillar.get_slapd_conf'](id_)
-        rdata['makina-states.services.dns.slapd'] = True
-        for k in ['tls_cacert', 'tls_cert', 'tls_key',
-                  'mode', 'config_pw', 'root_dn', 'dn', 'root_pw']:
-            val = data.get(k, None)
-            if val:
-                rdata[
-                    'makina-states.services.dns.slapd.{0}'.format(val)
-                ] = val
-    return rdata
+def get_slapd_pillar_conf(id_, ttl=60):
+    def _do(id_):
+        rdata = {}
+        if (
+            __salt__['mc_pillar.is_ldap_master'](id_)
+            or __salt__['mc_pillar.is_ldap_slave'](id_)
+        ):
+            data = __salt__['mc_pillar.get_slapd_conf'](id_)
+            rdata['makina-states.services.dns.slapd'] = True
+            for k in ['tls_cacert', 'tls_cert', 'tls_key',
+                      'mode', 'config_pw', 'root_dn', 'dn', 'root_pw']:
+                val = data.get(k, None)
+                if val:
+                    rdata[
+                        'makina-states.services.dns.slapd.{0}'.format(k)
+                    ] = val
+        return rdata
+    cache_key = 'mc_pillar.get_slapd_conf{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 # vim:set et sts=4 ts=4 tw=80:
