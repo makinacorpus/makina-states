@@ -257,6 +257,7 @@ burp-{{client}}-cronjob:
     - group: root
     - watch:
       - mc_proxy: burp-pre-conf-hook
+      - file: etc-burp-burp-client.{{client}}-backup-init
     - watch_in:
       - mc_proxy: burp-post-conf-hook
       - mc_proxy: burp-post-restart-hook
