@@ -20,7 +20,7 @@ download-{{name}}-{{tversion}}:
     - source_hash: md5={{imgdata.lxc_tarball_md5}}
     - archive_format: tar
     - if_missing: {{cwd}}/rootfs/etc/salt
-    - tar_options: -xJf
+    - tar_options: xJ
     - watch:
       - file: download-{{name}}-{{tversion}}
 restore-specialfiles-{{name}}:
