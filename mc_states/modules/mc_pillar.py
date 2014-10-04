@@ -2449,15 +2449,20 @@ def get_ldap_client_conf(id_):
     rdata = {}
     if gconf.get('ldap_client', False):
         conf = __salt__['mc_pillar.get_ldap_configuration'](id_)
-        rdata['makina-states.localsettings.ldap'] = {
-            'ldap_uri': conf['ldap_uri'],
-            'ldap_base': conf['ldap_base'],
-            'ldap_passwd': conf['ldap_passwd'],
-            'ldap_shadow': conf['ldap_shadow'],
-            'ldap_group': conf['ldap_group'],
-            'ldap_cacert': conf['ldap_cacert'],
-            'enabled': conf['enabled'],
-            'nslcd': {'ssl': conf['nslcd']['ssl']}}
+        p = 'makina-states.localsettings.ldap.'
+        for i in [
+            'ldap_uri',
+            'ldap_base',
+            'ldap_passwd',
+            'ldap_shadow',
+            'ldap_group',
+            'ldap_cacert',
+            'enabled',
+        ]:
+            if conf.get(i):
+                rdata[p + i] = conf[i]
+        if 'ssl' in conf.get('nslcd', {}):
+            rdata[p + 'nslcd.ssl'] = conf['nslcd']['ssl']
     return rdata
 
 
