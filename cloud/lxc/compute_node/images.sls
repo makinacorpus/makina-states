@@ -33,7 +33,7 @@ restore-specialfiles-{{name}}:
       - archive: download-{{name}}-{{tversion}}
 restore-acls-{{name}}:
   cmd.run:
-    - name: setfacl --restore=acls.txt && touch acls_done
+    - name: setfacl --restore=acls.txt;touch acls_done
     - cwd: {{cwd}}
     - unless: test -e {{cwd}}/acls_done
     - user: root
