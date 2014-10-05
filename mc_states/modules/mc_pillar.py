@@ -2670,11 +2670,19 @@ def get_passwords_conf(id_):
     return rdata
 
 
+def get_custom_pillar_conf(id_):
+    rdata = {}
+    gconf = get_configuration(id_)
+    if gconf.get('custom_pillar'):
+        rdata.update(gconf['custom_pillar'])
+    return rdata
+
+
 def get_cloud_image_conf(id_):
     rdata = {}
     gconf = get_configuration(id_)
-    if gconf.get('cloud_images'):
-        rdata.update(gconf['cloud_images'])
+    if gconf.get('custom_pillar'):
+        rdata.update(gconf['custom_pillar'])
     return rdata
 
 

@@ -24,6 +24,7 @@ def ext_pillar(id_, pillar, *args, **kw):
     data = {}
     for callback in [
         'mc_pillar.get_dns_resolvers',
+        'mc_pillar.get_custom_pillar_conf',
         'mc_pillar.get_autoupgrade_conf',
         'mc_pillar.get_backup_client_conf',
         'mc_pillar.get_burp_server_conf',
