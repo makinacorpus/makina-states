@@ -13,6 +13,7 @@ import os
 import logging
 import time
 import traceback
+from mc_states.utils import memoize_cache, invalidate_memoize_cache
 from salt.exceptions import SaltException
 from salt.utils.odict import OrderedDict
 from mc_states.api import(
@@ -32,19 +33,19 @@ from salt.renderers.yaml import get_yaml_loader
 log = logging.getLogger(__name__)
 DEFAULT_SUF = 'makina-states.local'
 DEFAULT_LOCAL_REG_NAME = '{0}.{{0}}'.format(DEFAULT_SUF)
+RKEY = 'mcreg_{0}'
 
 class NoRegistryLoaderFound(SaltException):
     """."""
 
 
-def registry_kind_get(kind):
-    if not kind in _REGISTRY:
-        _REGISTRY[kind] = {}
-    return _REGISTRY[kind]
-
-
-def registry_kind_set(kind, value):
-    _REGISTRY[kind] = value
+# normally not more used
+# def registry_kind_get(kind):
+#     if not kind in _REGISTRY:
+#         _REGISTRY[kind] = {}
+#     return _REGISTRY[kind]
+# def registry_kind_set(kind, value):
+#     _REGISTRY[kind] = value
 
 
 def is_item_active(registry_name,
@@ -183,15 +184,6 @@ def encode_local_registry(name, registry, registry_format='yaml'):
     os.chmod(registryf, 0700)
 
 
-def invalidate_cached_registry(name):
-    popping = []
-    for k in _LOCAL_REG_CACHE:
-        if k.startswith('{0}___'.format(name)):
-            popping.append(k)
-    for k in popping:
-        _LOCAL_REG_CACHE.pop(k, None)
-
-
 def get_local_registry(name,
                        cached=True,
                        cachetime=60,
@@ -217,10 +209,8 @@ def get_local_registry(name,
         '/etc/salt',  name, registry_format)
     shared_registryf = os.path.join(
         '/etc/makina-states/{0}.{1}'.format(name, registry_format))
-    registry = OrderedDict()
     # cache local registries one minute
-    pkey = '{0}____'.format(name)
-    key = '{0}{1}'.format(pkey, time.time() // cachetime)
+    key = '{0}_{1}'.format('mcreg', name)
     if name not in not_shared:
         to_load = [mastersalt_registryf,
                    salt_registryf,
@@ -230,14 +220,15 @@ def get_local_registry(name,
             '{0}/makina-states/{1}.{2}'.format(
                 __opts__['config_dir'], name, registry_format)
         ]
-    if (key not in _LOCAL_REG_CACHE) or (not cached):
-        invalidate_cached_registry(name)
+
+    def _do(name, to_load, registry_format):
+        registry = OrderedDict()
         for registryf in to_load:
             dregistry = os.path.dirname(registryf)
             if not os.path.exists(dregistry):
                 os.makedirs(dregistry)
             if os.path.exists(registryf):
-                _LOCAL_REG_CACHE[key] = registry = __salt__[
+                registry = __salt__[
                     'mc_utils.dictupdate'](
                         registry,
                         __salt__[
@@ -250,9 +241,12 @@ def get_local_registry(name,
                     nk = spl.join(k.split(spl)[1:])
                     registry[nk] = registry[k]
                     registry.pop(k)
-    elif cached:
-        registry = _LOCAL_REG_CACHE[key]
-    return registry
+        return registry
+    cache_key = RKEY.format(key)
+    force_run = not cached
+    return memoize_cache(
+        _do, [name, to_load, registry_format], {},
+        cache_key, cachetime, force_run=force_run)
 
 
 _default = object()
@@ -260,7 +254,7 @@ _default = object()
 
 def update_registry_params(registry_name, params, registry_format='yaml'):
     '''Update the desired local registry'''
-    invalidate_cached_registry(registry_name)
+    invalidate_memoize_cache(RKEY.format(registry_name))
     registry = get_local_registry(
         registry_name, registry_format=registry_format)
     changes = {}
@@ -291,7 +285,7 @@ def update_registry_params(registry_name, params, registry_format='yaml'):
     if changes:
         encode_local_registry(
             registry_name, registry, registry_format=registry_format)
-        invalidate_cached_registry(registry_name)
+        invalidate_memoize_cache(RKEY.format(registry_name))
     return changes
 
 
