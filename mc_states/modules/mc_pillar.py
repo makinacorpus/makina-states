@@ -14,6 +14,7 @@ import copy
 import mc_states.utils
 import datetime
 import re
+from salt.utils.pycrypto import secure_password
 from salt.utils.odict import OrderedDict
 import traceback
 from mc_states.utils import memoize_cache
@@ -153,7 +154,6 @@ def _load_network(ttl=60):
         data = {}
         data['rrs_ttls'] = __salt__['mc_pillar.query']('rrs_ttls')
         data['cnames'] = __salt__['mc_pillar.query']('cnames')
-        data['standalone_hosts'] = __salt__['mc_pillar.query']('standalone_hosts')
         data['cloud_cn_attrs'] = __salt__['mc_pillar.query']('cloud_cn_attrs')
         data['cloud_vm_attrs'] = __salt__['mc_pillar.query']('cloud_vm_attrs')
         data['non_managed_hosts'] = __salt__['mc_pillar.query']('non_managed_hosts')
@@ -372,7 +372,6 @@ def load_network_infrastructure(ttl=60):
     def _do_nt():
         data = _load_network()
         cnames = data['cnames']
-        standalone_hosts = data['standalone_hosts']
         non_managed_hosts = data['non_managed_hosts']
         cloud_vm_attrs = data['cloud_vm_attrs']
         cloud_cn_attrs = data['cloud_cn_attrs']
@@ -712,7 +711,10 @@ def get_slapd_conf(id_, ttl=60):
 
 def is_ldap_slave(id_, ttl=60):
     def _do(id_):
-        if id_ in __salt__['mc_pillar.get_ldap']()['slaves']:
+        if (
+            is_managed(id_)
+            and id_ in __salt__['mc_pillar.get_ldap']()['slaves']
+        ):
             return True
         return False
     cache_key = 'mc_pillar.is_ldap_slave_{0}'.format(id_)
@@ -721,7 +723,10 @@ def is_ldap_slave(id_, ttl=60):
 
 def is_ldap_master(id_, ttl=60):
     def _do(id_):
-        if id_ in __salt__['mc_pillar.get_ldap']()['masters']:
+        if (
+            is_managed(id_)
+            and id_ in __salt__['mc_pillar.get_ldap']()['masters']
+        ):
             return True
         return False
     cache_key = 'mc_pillar.is_ldap_master_{0}'.format(id_)
@@ -1272,8 +1277,24 @@ def get_db_infrastructure_maps(ttl=60):
                         cloud_vms.append(vm)
                     vms.update({vm: {'target': target,
                                      'vt': vt}})
+        standalone_hosts = {}
+        for i in bms:
+            if (
+                i not in cloud_compute_nodes
+                and i not in non_managed_hosts
+            ):
+                standalone_hosts.setdefault(i, {})
         data = {'bms': bms,
-                'non_managed_hosts': query('non_managed_hosts'),
+                'hosts': sorted(
+                    __salt__['mc_utils.uniquify'](
+                        [a for a in bms]
+                        + [a for a in vms]
+                        + [a for a in non_managed_hosts]
+                        + [a for a in cloud_compute_nodes]
+                        + [a for a in standalone_hosts]
+                    )),
+                'non_managed_hosts': non_managed_hosts,
+                'standalone_hosts': standalone_hosts,
                 'cloud_compute_nodes': cloud_compute_nodes,
                 'cloud_vms': cloud_vms,
                 'vms': vms}
@@ -1351,6 +1372,7 @@ def get_shorewall_settings(id_=None, ttl=60):
         allowed_to_snmp = allowed_ips[:]
         allowed_to_ssh = allowed_ips[:]
         infra = get_db_infrastructure_maps()
+        ivars  = __salt__['mc_pillar.get_db_infrastructure_maps']()
         nvars  = __salt__['mc_pillar.load_network_infrastructure']()
         vms = infra['vms']
         # configure shorewall for a particular host
@@ -1383,9 +1405,10 @@ def get_shorewall_settings(id_=None, ttl=60):
             'makina-states.services.firewall.shorewall.no_ldap': False}
         p_param = ('makina-states.services.firewall.'
                    'shorewall.params.RESTRICTED_{0}')
-        for param, val in restrict.items():
-            shw_params[p_param.format(param.upper())] = val
-        ips = load_network_infrastructure()['ips']
+        if is_salt_managed(id_):
+            for param, val in restrict.items():
+                shw_params[p_param.format(param.upper())] = val
+        # ips = load_network_infrastructure()['ips']
         # dot not scale !
         #for ip in ips:
         #    sip = __salt__['mc_localsettings.get_pillar_sw_ip'](ip)
@@ -1582,9 +1605,12 @@ def get_sudoers(id_=None, ttl=60):
     def _do_sudoers(id_, sysadmins=None):
         sudoers_map = __salt__['mc_pillar.query']('sudoers_map')
         sudoers = sudoers_map.get(id_, [])
-        for s in sudoers_map['default']:
-            if s not in (sudoers + ['infra']):
-                sudoers.append(s)
+        if is_salt_managed(id_):
+            for s in sudoers_map['default']:
+                if s not in (sudoers + ['infra']):
+                    sudoers.append(s)
+        else:
+            sudoers = []
         return sudoers
     cache_key = 'mc_pillar.get_sudoers_{0}'.format(id_)
     return memoize_cache(_do_sudoers, [id_], {}, cache_key, ttl)
@@ -1877,6 +1903,12 @@ def get_supervision_objects_defs(id_):
             attrs.setdefault('vars.SNMP_PORT', 161)
             attrs.setdefault('vars.SSH_HOST', attrs['address'])
             attrs.setdefault('vars.SNMP_HOST', attrs['address'])
+            sconf = get_snmpd_conf(id_)
+            p = ('makina-states.services.monitoring.'
+                 'snmpd.default_')
+            attrs.setdefault('vars.SNMP_PASS', sconf[p + 'password'])
+            attrs.setdefault('vars.SNMP_CRYPT', sconf[p + 'key'])
+            attrs.setdefault('vars.SNMP_USER',  sconf[p + 'user'])
             if vts:
                 hdata['memory_mode'] = 'large'
             for vt in ['lxc', 'kvm', 'xen', 'docker']:
@@ -1928,6 +1960,12 @@ def get_supervision_objects_defs(id_):
             ssh_host = snmp_host = attrs.get('vars.SSH_HOST', tipaddr)
             ssh_port = attrs.get('vars.SSH_PORT', 22)
             snmp_port = attrs.get('vars.SNMP_PORT', 161)
+            sconf = get_snmpd_conf(id_)
+            p = ('makina-states.services.monitoring.'
+                 'snmpd.default_')
+            attrs.setdefault('vars.SNMP_PASS', sconf[p + 'password'])
+            attrs.setdefault('vars.SNMP_CRYPT', sconf[p + 'key'])
+            attrs.setdefault('vars.SNMP_USER',  sconf[p + 'user'])
             if host not in parents:
                 parents.append(host)
             # set the local ip for snmp and ssh
@@ -2330,18 +2368,31 @@ def get_supervision_client_conf(id_):
     return rdata
 
 
-def get_snmpd_conf(id_):
-    data = __salt__['mc_pillar.get_snmpd_settings'](id_)
-    gconf = get_configuration(id_)
-    rdata = {}
-    pref = "makina-states.services.monitoring.snmpd"
-    if gconf.get('manage_snmpd', False):
-        rdata.update({
-            pref: True,
-            pref + ".default_user": data['user'],
-            pref + ".default_password": data['password'],
-            pref + ".default_key": data['key']})
-    return rdata
+def get_snmpd_conf(id_, ttl=60):
+    def _do(id_):
+        gconf = get_configuration(id_)
+        rdata = {}
+        pref = "makina-states.services.monitoring.snmpd"
+        if is_salt_managed(id_):
+            data = __salt__['mc_pillar.get_snmpd_settings'](id_)
+        else:
+            local_conf = __salt__['mc_macros.get_local_registry'](
+                'pillar_snmpd', registry_format='pack')
+            data = local_conf.setdefault(id_, {})
+            data['user'] = secure_password(8)
+            data['password'] = secure_password(12)
+            data['key'] = secure_password(32)
+            __salt__['mc_macros.update_local_registry'](
+                'pillar_snmpd', local_conf, registry_format='pack')
+        if gconf.get('manage_snmpd', False):
+            rdata.update({
+                pref: True,
+                pref + ".default_user": data['user'],
+                pref + ".default_password": data['password'],
+                pref + ".default_key": data['key']})
+        return rdata
+    cache_key = 'mc_pillar.get_snmpd_conf{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 
 def get_backup_client_conf(id_):
@@ -2391,7 +2442,7 @@ def get_sudoers_conf(id_):
     gconf = get_configuration(id_)
     rdata = {}
     pref = "makina-states.localsettings.admin.sudoers"
-    if gconf.get('manage_sudoers', False):
+    if is_salt_managed(id_) and gconf.get('manage_sudoers', False):
         rdata.update({
             pref: __salt__['mc_pillar.get_sudoers'](id_)})
     return rdata
@@ -2427,20 +2478,40 @@ def get_shorewall_conf(id_):
 
 
 def get_autoupgrade_conf(id_):
-    ms_vars = get_makina_states_variables(id_)
-    gconf = get_configuration(id_)
     rdata = {}
-    if ms_vars.get('is_bm', False):
+    if is_managed(id_):
+        gconf = get_configuration(id_)
         rdata['makina-states.localsettings.autoupgrade'] = gconf[
             'manage_autoupgrades']
     return rdata
+
+
+def is_managed(id_, ttl=60):
+    """"Known in our infra but maybe not a salt minon"""
+    def _do(id_):
+        db = get_db_infrastructure_maps()
+        return id_ in db['hosts']
+    cache_key = 'mc_pillar.is__managed_{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+
+
+def is_salt_managed(id_, ttl=60):
+    """"Known in our infra / and also a salt minion"""
+    def _do(id_):
+        db = get_db_infrastructure_maps()
+        return is_managed(id_) and id_ not in db['non_managed_hosts']
+    cache_key = 'mc_pillar.is_salt_managed_{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 
 def get_fail2ban_conf(id_):
     gconf = get_configuration(id_)
     rdata = {}
     pref = "makina-states.services.firewall.fail2ban"
-    if gconf.get('manage_snmpd', False):
+    if (
+        gconf.get('manage_snmpd', False)
+        and is_salt_managed(id_)
+    ):
         rdata.update({
             pref: True,
             pref + ".ignoreip": __salt__['mc_pillar.whitelisted'](id_)})
@@ -2462,7 +2533,7 @@ def get_ntp_server_conf(id_):
 def get_ldap_client_conf(id_):
     gconf = get_configuration(id_)
     rdata = {}
-    if gconf.get('ldap_client', False):
+    if is_salt_managed(id_) and gconf.get('ldap_client', False):
         conf = __salt__['mc_pillar.get_ldap_configuration'](id_)
         p = 'makina-states.localsettings.ldap.'
         for i in [
@@ -2490,35 +2561,40 @@ def get_mail_conf(id_, ttl=60):
         mail_conf = __salt__['mc_pillar.get_mail_configuration'](id_)
         dest = mail_conf['default_dest'].format(id=id_)
         data['makina-states.services.mail.postfix'] = True
-        data['makina-states.services.mail.postfix.mode'] = mail_conf['mode']
-        if mail_conf.get('transports'):
-            transports = data.setdefault(
-                'makina-states.services.mail.postfix.transport', [])
-            for entry, host in mail_conf['transports'].items():
-                if entry != '*':
-                    transports.append({
-                        'transport': entry,
-                        'nexthop': 'relay:[{0}]'.format(host)})
-            if '*' in mail_conf['transports']:
-                transports.append(
-                    {'nexthop':
-                     'relay:[{0}]'.format(mail_conf['transports']['*'])})
-            if mail_conf['auth']:
-                passwds = data.setdefault(
-                    'makina-states.services.mail.postfix.sasl_passwd', [])
-                data['makina-states.services.mail.postfix.auth'] = True
-                for entry, host in mail_conf['smtp_auth'].items():
-                    passwds.append({
-                        'entry': '[{0}]'.format(entry),
-                        'user': host['user'],
-                        'password': host['password']})
-            if mail_conf.get('virtual_map'):
-                vmap = data.setdefault(
-                    'makina-states.services.mail.postfix.virtual_map', {})
-            for record in mail_conf['virtual_map']:
-                for item, val in record.items():
-                    vmap[item.format(id=id_, dest=dest)] = val.format(
-                        id=id_, dest=dest)
+        mode = 'makina-states.services.mail.postfix.mode'
+        data[mode] = mail_conf['mode']
+        if is_managed(id_):
+            if is_salt_managed(id_) and mail_conf.get('transports'):
+
+                transports = data.setdefault(
+                    'makina-states.services.mail.postfix.transport', [])
+                for entry, host in mail_conf['transports'].items():
+                    if entry != '*':
+                        transports.append({
+                            'transport': entry,
+                            'nexthop': 'relay:[{0}]'.format(host)})
+                if '*' in mail_conf['transports']:
+                    transports.append(
+                        {'nexthop':
+                         'relay:[{0}]'.format(mail_conf['transports']['*'])})
+                if mail_conf['auth']:
+                    passwds = data.setdefault(
+                        'makina-states.services.mail.postfix.sasl_passwd', [])
+                    data['makina-states.services.mail.postfix.auth'] = True
+                    for entry, host in mail_conf['smtp_auth'].items():
+                        passwds.append({
+                            'entry': '[{0}]'.format(entry),
+                            'user': host['user'],
+                            'password': host['password']})
+                if mail_conf.get('virtual_map'):
+                    vmap = data.setdefault(
+                        'makina-states.services.mail.postfix.virtual_map', {})
+                for record in mail_conf['virtual_map']:
+                    for item, val in record.items():
+                        vmap[item.format(id=id_, dest=dest)] = val.format(
+                            id=id_, dest=dest)
+            else:
+                data[mode] = 'localdeliveryonly'
         return data
     cache_key = 'mc_pillar.get_mail_conf{0}'.format(id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
@@ -2530,7 +2606,7 @@ def get_ssh_keys_conf(id_):
     pref = "makina-states.services.base.ssh.server"
     adm_pref = "makina-states.localsettings.admin.sysadmins_keys"
     a_adm_pref = "makina-states.localsettings.admin.absent_keys"
-    if gconf.get('manage_ssh_keys', False):
+    if is_salt_managed(id_) and gconf.get('manage_ssh_keys', False):
         absent_keys = []
         for k in __salt__['mc_pillar.get_removed_keys'](id_):
             absent_keys.append({k: {}})
@@ -2594,11 +2670,19 @@ def get_passwords_conf(id_):
     return rdata
 
 
+def get_custom_pillar_conf(id_):
+    rdata = {}
+    gconf = get_configuration(id_)
+    if gconf.get('custom_pillar'):
+        rdata.update(gconf['custom_pillar'])
+    return rdata
+
+
 def get_cloud_image_conf(id_):
     rdata = {}
     gconf = get_configuration(id_)
-    if gconf.get('cloud_images'):
-        rdata.update(gconf['cloud_images'])
+    if gconf.get('custom_pillar'):
+        rdata.update(gconf['custom_pillar'])
     return rdata
 
 
@@ -2662,6 +2746,7 @@ def get_cloud_compute_node_conf(id_):
     supported_vts = ['lxc']
     done_hosts = []
     nvars  = __salt__['mc_pillar.load_network_infrastructure']()
+    ivars  = __salt__['mc_pillar.get_db_infrastructure_maps']()
     cloud_cn_attrs = nvars['cloud_cn_attrs']
     for vt, targets in nvars['vms'].items():
         if vt not in supported_vts:
@@ -2718,7 +2803,7 @@ def get_cloud_compute_node_conf(id_):
                 'ssh_username': 'root'
             }
 
-        for host, data in nvars['standalone_hosts'].items():
+        for host, data in ivars['standalone_hosts'].items():
             if host in done_hosts:
                 continue
             done_hosts.append(compute_node)
@@ -2771,6 +2856,32 @@ def get_dhcpd_conf(id_, ttl=60):
         p = 'makina-states.services.dns.dhcpd'
         return {p: conf}
     cache_key = 'mc_pillar.get_dhcpd_conf{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+
+
+def get_dns_resolvers(id_, ttl=60):
+    def _do(id_):
+        rdata = {}
+        db = get_db_infrastructure_maps()
+        resolvers = set()
+        if id_ in db['vms']:
+            resolvers.add(ip_for(db['vms'][id_]['target']))
+        try:
+            conf = query('dns_resolvers')
+            conf = conf.get(
+                id_,
+                conf.get('default', []))
+        except KeyError:
+            log.error('no dns_resolvers section in database')
+        if not isinstance(conf, list):
+            conf = []
+        for i in conf:
+            resolvers.add(i)
+        p = 'makina-states.services.dns.bind.'
+        if resolvers:
+            rdata[p + 'default_dnses'] = [a for a in resolvers]
+        return rdata
+    cache_key = 'mc_pillar.get_dns_resolvers{0}'.format(id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 

@@ -14,15 +14,33 @@ download-{{name}}-{{tversion}}:
     - makedirs: true
     - group: root
     - mode: 755
-  archive.extracted:
-    - name: {{cwd}}
-    - source: {{imgdata.lxc_tarball}}
-    - source_hash: md5={{imgdata.lxc_tarball_md5}}
-    - archive_format: tar
-    - if_missing: {{cwd}}/rootfs/etc/salt
-    - tar_options: -xJf
+  cmd.run:
+    - onlyif: test ! -e "{{cwd}}/rootfs/etc/salt"
+    - use_vt: true
+    - name: |
+            set -x;
+            dest="{{cwd}}/../$(basename "{{imgdata.lxc_tarball}}")"
+            if [ -e "${dest}" ];then
+              if [ "x$(md5sum "${dest}"|awk '{print $1}')" != "x{{imgdata.lxc_tarball_md5}}" ];then
+                rm -f "${dest}"
+              fi
+            fi
+            if [ ! -e "${dest}" ];then
+              cd "{{cwd}}/.."
+              wget --no-check-certificate "{{imgdata.lxc_tarball}}";
+            fi
+            cd "{{cwd}}"
+            tar xJf "${dest}";
     - watch:
       - file: download-{{name}}-{{tversion}}
+  archive.extracted:
+    - name: {{cwd}}
+    - source:
+    - source_hash: md5=
+    - archive_format: tar
+    - if_missing:
+    - tar_options: xJ
+
 restore-specialfiles-{{name}}:
   cmd.run:
     - name: cp -a /dev/log {{cwd}}/rootfs/dev/log
@@ -30,15 +48,16 @@ restore-specialfiles-{{name}}:
     - cwd: {{cwd}}
     - user: root
     - watch:
-      - archive: download-{{name}}-{{tversion}}
-restore-acls-{{name}}:
-  cmd.run:
-    - name: setfacl --restore=acls.txt && touch acls_done
-    - cwd: {{cwd}}
-    - unless: test -e {{cwd}}/acls_done
-    - user: root
-    - watch:
-      - cmd: restore-specialfiles-{{name}}
+      - cmd: download-{{name}}-{{tversion}}
+# more harm than good, let highstate restore them
+# restore-acls-{{name}}:
+#   cmd.run:
+#     - name: setfacl --restore=acls.txt;touch acls_done
+#     - cwd: {{cwd}}
+#     - unless: test -e {{cwd}}/acls_done
+#     - user: root
+#     - watch:
+#       - cmd: restore-specialfiles-{{name}}
 {{name}}-stop-default-lxc-container:
   lxc.stopped:
     - name: {{name}}

@@ -380,6 +380,7 @@ def provision(vm, compute_node=None, vt=None,
     if steps is None:
         steps = ['register_configuration_on_cn',
                  'spawn',
+                 'volumes',
                  'register_configuration',
                  'preprovision',
                  # 'sshkeys',

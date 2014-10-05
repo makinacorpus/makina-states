@@ -188,8 +188,12 @@ def orchestrate(output=True, only=None, skip=None, ret=None, refresh=False):
     saltified_error = ret['changes'].setdefault('saltified_errors', [])
     targets = [a for a in settings['targets']]
     targets = filter_compute_nodes(targets, skip, only)
+    thisid = cli('grains.items')['id']
     targets.sort()
     for idx, compute_node in enumerate(targets):
+        if thisid == compute_node:
+            # do not saltify ourselves
+            continue
         try:
             cret = saltify(compute_node, output=False)
             if cret['result']:

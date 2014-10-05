@@ -68,11 +68,17 @@ def cn_sls_pillar(target, ttl=api.RUNNER_CACHE_TIME):
         cloudSettingsData['prefix'] = cloudSettings['prefix']
         cloudSettingsData = cloudSettingsData
         cnSettingsData = cnSettingsData
+        vmSettings = {}
         pillar = {'cloudSettings': cloudSettingsData,
+                  'vmSettings': vmSettings,
                   'cnSettings': cnSettingsData}
         # add to the compute node pillar all the VT specific pillars
         for vt in vts:
             cid = 'mc_cloud_{0}.cn_sls_pillar'.format(vt)
+            vid = 'mc_cloud_{0}.vm_sls_pillar'.format(vt)
+            for vm, vdata in  cnSettingsData['cn']['vms'].items():
+                if vt == vdata.get('virt_type', ''):
+                    vmSettings[vm] = __salt__[vid](target, vm)
             if cid in __salt__:
                 pillar.update(__salt__[cid](target))
         # add to the compute node pillar all the VM pillars
