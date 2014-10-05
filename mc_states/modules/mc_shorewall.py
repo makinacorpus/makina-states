@@ -16,6 +16,8 @@ from distutils.version import LooseVersion
 import mc_states.utils
 from salt.utils.odict import OrderedDict
 
+from mc_states import ping
+
 __name = 'shorewall'
 
 log = logging.getLogger(__name__)
@@ -73,7 +75,21 @@ def prefered_ips(bclients):
         try:
             clients.append(socket.gethostbyname(client))
         except Exception:
-            clients.append(client)
+            # try to ping
+            ret = None
+            for i in range(4):
+                try:
+                    ret = ping.do_one(client, 4)
+                except:
+                    ret = None
+                if ret is not None:
+                    break
+            if ret is not None:
+                clients.append(client)
+            else:
+                log.error(
+                    'target for shorewall is neither pinguable '
+                    'or resolvable: {0}'.format(client))
     return clients
 
 
