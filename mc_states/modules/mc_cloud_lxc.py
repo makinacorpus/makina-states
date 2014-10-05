@@ -289,6 +289,8 @@ def get_settings_for_vm(target, vm, full=True):
         full
             internal boolean to not retrieve some informations to
             avoid cycles, do not use unless you know what you do.
+        fstab
+            list of fstab entries
     '''
     cloudSettings = __salt__['mc_cloud.settings']()
     _s = __salt__
@@ -389,6 +391,7 @@ def get_settings_for_vm(target, vm, full=True):
               'ssh_gateway_key',
               'ssh_gateway_port',
               "gateway",
+              "fstab",
               'vgname', 'ssh_username', 'users', 'sudo',
               'lxc_conf_unset', 'lxc_conf']:
         lxc_data.setdefault(

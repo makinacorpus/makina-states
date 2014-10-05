@@ -186,7 +186,7 @@ def upgrade_vt(target, ret=None, output=True):
             ret['result'] = False
             ret['comment'] += yellow(
                 'lxc {0} failed to'
-                ' reboot: {1}\n'.format(lxc, ex.message))
+                ' reboot: {1}\n'.format(lxc, ex))
     cli('mc_macros.update_local_registry', 'lxc_to_restart',
         {'todo': [a for a in todo if a not in done]}, salt_target=target)
     salt_output(ret, __opts__, output=output)
@@ -378,7 +378,7 @@ def vm_spawn(vm,
         except Exception, ex:
             ret['trace'] += '{0}\n'.format(traceback.format_exc())
             ret['result'] = False
-            ret['comment'] += red(ex.message)
+            ret['comment'] += red("{0}".format(ex))
     if ret['result']:
         cret = __salt__['mc_cloud_vm.lazy_register_configuration'](
             vm, compute_node)
