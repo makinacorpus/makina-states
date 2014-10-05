@@ -310,6 +310,33 @@ def vm_ping(vm, compute_node=None, vt=None, ret=None, output=True):
     return ret
 
 
+def vm_fix_dns(vm,
+               compute_node=None,
+               vt='lxc',
+               ret=None,
+               output=True,
+               force=False):
+    func_name = 'mc_cloud_lxc.vm_fix_dns {0}'.format(vm)
+    __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    if not ret:
+        ret = result()
+    # if we found some default dnses, set them as soon as we can
+    # to avoid state orchestration problems and DNS issues that
+    # would break the minion network
+    dnses = cli('mc_bind.settings', salt_target=vm)['default_dnses']
+    if dnses:
+        cmd = 'echo > /etc/resolv.conf;echo >> /etc/resolv.conf;'
+        for i in dnses:
+            cmd += 'echo "nameserver \"{0}\"">>/etc/resolv.conf;'.format(i)
+        cret = cli('cmd.retcode', cmd, salt_target=vm)
+        if cret:
+            ret['result'] = False
+            ret['comment'] += red('pb with dns on {0}'.format(vm))
+    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+    return ret
+
+
 def step(vm, step, compute_node=None, vt=None, ret=None, output=True):
     '''Execute a step on a VM noder'''
     func_name = 'mc_cloud_vm.provision.step {0} {1}'.format(vm, step)
@@ -380,6 +407,7 @@ def provision(vm, compute_node=None, vt=None,
     if steps is None:
         steps = ['register_configuration_on_cn',
                  'spawn',
+                 'fix_dns',
                  'volumes',
                  'register_configuration',
                  'preprovision',
@@ -842,5 +870,4 @@ def orchestrate(compute_node,
     salt_output(ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
-
 # vim:set et sts=4 ts=4 tw=80:
