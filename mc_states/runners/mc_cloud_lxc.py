@@ -399,7 +399,12 @@ def vm_spawn(vm,
     return ret
 
 
-def vm_volumes(vm, compute_node=None, ret=None, output=True):
+def vm_volumes(vm,
+               compute_node=None,
+               vt='lxc',
+               ret=None,
+               output=True,
+               force=False):
     func_name = 'mc_cloud_lxc.vm_spawn {0}'.format(vm)
     __salt__['mc_api.time_log']('start {0}'.format(func_name))
     if not ret:
