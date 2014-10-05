@@ -29,6 +29,7 @@ from salt.exceptions import (
 )
 from salt.runner import RunnerClient
 from mc_states import api
+from mc_states.utils import memoize_cache
 
 
 log = logging.getLogger(__name__)
@@ -118,7 +119,6 @@ __FUN_TIMEOUT = {
     'grains.items': 100,
     'state.sls': 60*60*5,
 }
-__CACHED_CALLS = {}
 __CACHED_FUNS = {
     'test.ping': 3 * 60,  # cache ping for 3 minutes
     'lxc.list':  2,  # cache lxc.list for 2 seconds,
@@ -146,41 +146,6 @@ __CACHED_FUNS = {
 }
 
 
-def invalidate(laps=None,
-               target=None,
-               fun=None,
-               sargs=None,
-               skw=None,
-               skwargs=None):
-    '''Invalidate something in the api cached calls
-    by matching on any of the parameters'''
-    if (
-        laps is None
-        and target is None
-        and fun is None
-        and sargs is None
-        and skw is None
-        and skwargs is None
-    ):
-        return
-    args = [laps, target, fun, sargs, skw, skwargs]
-    popping = []
-    for key in __CACHED_CALLS:
-        match = None
-        for j, arg in enumerate(args):
-            if arg is None:
-                continue
-            if match is not False:
-                if arg == key[j]:
-                    match = True
-                else:
-                    match = False
-        if match:
-            popping.append(key)
-    for pop in popping:
-        __CACHED_CALLS.pop(pop)
-
-
 def _minion_opts(cfgdir=None, cfg=None):
     if not cfgdir:
         cfgdir = salt.syspaths.CONFIG_DIR
@@ -199,7 +164,6 @@ def _master_opts(cfgdir=None, cfg=None):
         cfg = os.path.join(cfgdir, cfg)
     opts = config.master_config(cfg)
     return opts
-
 
 
 def master_opts(*args, **kwargs):
@@ -280,7 +244,14 @@ def client(fun, *args, **kw):
                 timeout for jobs
             salt_job_poll
                 poll interval to wait for job finish result
+            salt_ttl
+                cache ttl
+                either 2 seconds or see __CACHED_FUNS preselector
     '''
+    ttl = kw.pop('salt_ttl',
+                 __CACHED_FUNS.get(fun, None))
+    # if we did not select a ttl, be sure not to cache
+    force_run = ttl is None
     try:
         poll = kw.pop('salt_job_poll')
     except KeyError:
@@ -321,11 +292,6 @@ def client(fun, *args, **kw):
         kwargs = kw.pop('kwargs')
     except KeyError:
         kwargs = {}
-    laps = time.time()
-    cache = False
-    if fun in __CACHED_FUNS:
-        cache = True
-        laps = laps // __CACHED_FUNS[fun]
     try:
         sargs = json.dumps(args)
     except TypeError:
@@ -338,11 +304,7 @@ def client(fun, *args, **kw):
         skwargs = json.dumps(kwargs)
     except TypeError:
         skwargs = ''
-    cache_key = (laps, target, fun, sargs, skw, skwargs)
-    if (
-        not cache
-        or (cache and (cache_key not in __CACHED_CALLS))
-    ):
+    def _do(target, fun, args, kw, kwargs):
         # timeout for the master to return data
         # about a specific job
         wait_for_res = float({
@@ -470,11 +432,10 @@ def client(fun, *args, **kw):
             raise
         except TypeError:
             pass
-        if cache:
-            __CACHED_CALLS[cache_key] = ret
-    elif cache and cache_key in __CACHED_CALLS:
-        ret = __CACHED_CALLS[cache_key]
-    return ret
+        return ret
+    cache_key = 'mcapi_' + '_'.join([target, fun, sargs, skw, skwargs])
+    return memoize_cache(_do, [target, fun, args, kw, kwargs],
+                         cache_key, ttl, force_run=force_run)
 
 
 def _errmsg(ret, msg):

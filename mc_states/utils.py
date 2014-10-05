@@ -19,7 +19,7 @@ AUTO_NAMES = {'_registry': 'registry',
 
 
 
-_CACHEKEY = '{0}__CACHEKEY'
+_CACHEKEY = 'localreg_{0}_{1}'
 _LOCAL_CACHE = {}
 
 
@@ -33,44 +33,23 @@ def lazy_subregistry_get(__salt__, registry):
     def wrapper(func):
         key = AUTO_NAMES.get(func.__name__, func.__name__)
         def _call(*a, **kw):
-            try:
-                REG = __salt__['mc_macros.registry_kind_get'](registry)
-            except:
-                pass
-                #import traceback
-                #trace = traceback.format_exc()
-                #import pprint
-                #with open('/foo', 'w') as fic:
-                #    fic.write(pprint.pformat(__salt__.keys()))
-                #with open('/foo', 'w') as fic:
-              #    fic.write(trace)
             # TODO: replace the next line with the two others with a better test
             # cache each registry 5 minutes. which should be sufficient
             # to render the whole sls files
             # remember that the registry is a reference and even cached
             # it will be editable
-            nocache = False
+            force_run = False
             if kw:
-                nocache = True
-            tkey = "{0}".format(time() // (60 * 5))
-            ckey = _CACHEKEY.format(key)
-            if ckey not in REG:
-                REG[ckey] = ''
-            if tkey != REG[ckey] and key in REG:
-                del REG[key]
-            ret = None
-            if (key not in REG) or nocache:
+                force_run = True
+            ttl = 5 * 60
+            def _do(func, a, kw):
                 ret = func(*a, **kw)
-                if not nocache:
-                    REG[key] = ret
-                    REG[key]['reg_kind'] = registry
-                    REG[key]['reg_func_name'] = key
-                    filter_locals(REG[key])
-                    REG[ckey] = tkey
-                    __salt__['mc_macros.registry_kind_set'](registry, REG)
-                    REG = __salt__['mc_macros.registry_kind_get'](registry)
-            if key in REG:
-                ret = REG[key]
+                ret = filter_locals(ret)
+                return ret
+            ckey = _CACHEKEY.format(registry, key)
+            ret = memoize_cache(
+                _do, [func, a, kw], {},  ckey,
+                seconds=ttl, force_run=force_run)
             return ret
         return _call
     return wrapper
@@ -142,11 +121,13 @@ def cache_check(cache, time_key, key, ttl_key):
 
 def memoize_cache(func, args=None, kwargs=None,
                   key='cache_key_{0}',
-                  seconds=60, cache=None):
+                  seconds=60, cache=None, force_run=False):
     '''Memoize the func in the cache
     in the key 'key' and store
     the cached time in 'cache_key'
     for further check of stale cache
+
+    if force_run is set, we will uncondionnaly run.
     EG::
 
       >>> def serial_for(domain,
@@ -167,6 +148,8 @@ def memoize_cache(func, args=None, kwargs=None,
         seconds = int(seconds)
     except Exception:
         # in case of errors on seconds, try to run without cache
+        seconds = 1
+    if not seconds:
         seconds = 1
     if args is None:
         args = []
@@ -191,10 +174,26 @@ def memoize_cache(func, args=None, kwargs=None,
             cache_check(cache, old_time_key, old_key, old_ttl_key)
     cache['last_access'] = now
     cache_check(cache, time_key, key, ttl_key)
-    if key not in cache:
-        cache[key] = func(*args, **kwargs)
+    ret = cache.get(key, None)
+    if force_run or (key not in cache):
+        ret = func(*args, **kwargs)
+    if not force_run and ret is not None:
+        cache[key] = ret
         cache[time_key] = "{0}".format(time() // (seconds))
         cache[ttl_key] = seconds
-    return cache[key]
+    return ret
+
+
+def invalidate_memoize_cache(key='cache_key_{0}', cache=None):
+    if cache is None:
+        cache = _LOCAL_CACHE
+    key += '_'
+    keys = [key,
+            '{0}_time_check'.format(key),
+            '{0}_ttl'.format(key)]
+    for k in keys:
+        cache.pop(k, None)
+
+
 
 # vim:set et sts=4 ts=4 tw=80:
