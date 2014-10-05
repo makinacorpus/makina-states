@@ -405,7 +405,7 @@ def vm_volumes(vm,
                ret=None,
                output=True,
                force=False):
-    func_name = 'mc_cloud_lxc.vm_spawn {0}'.format(vm)
+    func_name = 'mc_cloud_lxc.vm_volumes {0}'.format(vm)
     __salt__['mc_api.time_log']('start {0}'.format(func_name))
     if not ret:
         ret = result()
