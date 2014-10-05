@@ -15,6 +15,7 @@ import crypt
 import getpass
 import pwd
 import re
+import logging
 import salt.utils
 from salt.utils.odict import OrderedDict
 from salt.utils import yamldumper
@@ -30,6 +31,7 @@ from salt.utils.pycrypto import secure_password
 
 
 _default_marker = object()
+log = logging.getLogger(__name__)
 
 
 def generate_password(length=None):
@@ -513,4 +515,23 @@ def indent(tstring, spaces=16, char=' '):
             data += char * spaces
         data += i + '\n'
     return data
+
+
+def manage_file(name, **kwargs):
+    '''Easier wrapper to file.manage_file'''
+    for i in [a for a in kwargs if '__' in a]:
+        kwargs.pop(i, None)
+    log.error(kwargs.keys())
+    kwargs.setdefault('mode', '755')
+    kwargs.setdefault('backup', None)
+    kwargs.setdefault('contents', None)
+    kwargs.setdefault('makedirs', True)
+    kwargs.setdefault('user', 'root')
+    kwargs.setdefault('group', 'root')
+    kwargs.setdefault('saltenv', 'base')
+    kwargs.setdefault('ret', None)
+    kwargs.setdefault('sfn', None)
+    kwargs.setdefault('source', None)
+    kwargs.setdefault('source_sum', None)
+    return __salt__['file.manage_file'](name, **kwargs)
 #
