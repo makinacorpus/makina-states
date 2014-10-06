@@ -21,6 +21,16 @@ __name = 'salt'
 
 
 def ext_pillar(id_, pillar, *args, **kw):
+    dbpath = os.path.join(
+        __opts__['pillar_roots']['base'][0],
+        'database.yaml')
+    if not os.path.exists(dbpath):
+        msg = 'DATABASE DOES NOT EXISTS: {0}'.format(dbpath)
+        if 'mastersalt' in dbpath:
+            raise ValueError(msg)
+        else:
+            log.error(msg)
+            return {}
     try:
         profile_enabled = kw.get('profile', False)
     except:
