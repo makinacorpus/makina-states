@@ -640,12 +640,13 @@ salt-{{ data.daemon_name }}-logs:
 # done to mitigate authentication errors on restart
 salt-restart-{{ data.daemon_name }}:
   cmd.run:
-    - name: >
-            service {{ data.daemon_name }} stop ;\
-            service {{ data.daemon_name }} start &&\
-            echo "Reloading {{ data.daemon_name }}" &&\
-            sleep 5 &&\
+    - name: |
+            service {{ data.daemon_name }} stop;{% if salt['mc_controllers.masterless']() %}
+            service {{ data.daemon_name }} start && \
+            echo "Reloading {{ data.daemon_name }}" \
+            sleep 5 && \
             rm -f "{{ data.msr }}/.restart_{{ data.daemon_name }}"
+            {%endif%}
     - onlyif: ls "{{ data.msr }}/.restart_{{ data.daemon_name }}"
     - require:
       - mc_proxy: dummy-pre-{{ data.daemon_name }}-service-restart
@@ -653,6 +654,21 @@ salt-restart-{{ data.daemon_name }}:
     - require_in:
       - dummy-post-{{ data.daemon_name }}-service-restart
 
+{% if salt['mc_controllers.masterless']() %}
+asalt-{{ data.daemon_name }}:
+  service.disabled:
+    - name: {{ data.daemon_name }}
+    - require:
+      - mc_proxy: dummy-post-{{ data.name }}-service-restart
+      - mc_proxy: dummy-post-{{ data.service_name }}-service-restart
+salt-{{ data.daemon_name }}:
+  service.dead:
+    - name: {{ data.daemon_name }}
+    - require:
+      - service: asalt-{{ data.daemon_name }}
+      - mc_proxy: dummy-post-{{ data.name }}-service-restart
+      - mc_proxy: dummy-post-{{ data.service_name }}-service-restart
+{% else %}
 salt-{{ data.daemon_name }}:
   service.running:
     - name: {{ data.daemon_name }}
@@ -660,6 +676,7 @@ salt-{{ data.daemon_name }}:
     - require:
       - mc_proxy: dummy-post-{{ data.name }}-service-restart
       - mc_proxy: dummy-post-{{ data.service_name }}-service-restart
+{%endif%}
 
 salt-{{ data.daemon_name }}-remove-minionid:
   file.absent:
