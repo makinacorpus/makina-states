@@ -7,6 +7,7 @@ Utilities functions
 # -*- coding: utf-8 -*-
 __docformat__ = 'restructuredtext en'
 import copy
+import traceback
 from time import time
 import os
 import logging
@@ -25,6 +26,9 @@ _LOCAL_CACHE = {}
 _default = object()
 
 try:
+    # XXX; for now disable Memcached support
+    # needs more thinking about salt/mastersalt cohabitation
+    raise Exception()
     import pylibmc
     HAS_PYLIBMC = True
 except:
@@ -42,7 +46,6 @@ try:
     _MC.set('ping', 'ping')
 except:
     _MC = None
-
 
 
 def lazy_subregistry_get(__salt__, registry):
@@ -130,9 +133,10 @@ def is_valid_ip(ip_or_name):
 
 def cache_check(cache, key):
     '''Invalidate record in cache  if expired'''
-    if key not in cache:
-        cache[key] = {}
-    entry = cache[key]
+    try:
+        entry = cache[key]
+    except KeyError:
+        entry = {}
     ttl = entry.get('ttl', 0)
     if not ttl:
         ttl = 0
@@ -205,9 +209,13 @@ def memoize_cache(func, args=None, kwargs=None,
     # else:
     #     log.error("return cached")
     if not force_run and ret is not _default:
-        cache[key] = {'value': ret,
-                      'time': time(),
-                      'ttl': seconds}
+        try:
+            cache[key] = {'value': ret,
+                          'time': time(),
+                          'ttl': seconds}
+        except Exception:
+            trace = traceback.format_exc()
+            log.error('error while settings cache {0}'.format(trace))
     return ret
 
 
@@ -219,10 +227,13 @@ def remove_entry(cache, key):
     if key not in cache:
         return
     # do not garbage collector now, so not del !
-    if not _MC:
-        cache.pop(key, None)
-    else:
-        cache.delete(key)
+    try:
+        if not _MC:
+            cache.pop(key, None)
+        else:
+            cache.delete(key)
+    except KeyError:
+        pass
 
 
 def invalidate_memoize_cache(key='cache_key_{0}', cache=None, *a, **kw):
