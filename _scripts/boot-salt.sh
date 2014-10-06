@@ -1220,7 +1220,11 @@ install_prerequisites() {
 # - We will check for fatal errors in logs
 # - We will check for any false return in output state structure
 get_saltcall_args() {
-    get_module_args "${SALT_ROOT}" "${SALT_MS}"
+    LOCAL=""
+    if [ "x$(get_local_salt_mode)" = "xmasterless" ];then
+        LOCAL="--local"
+    fi
+    echo "${LOCAL} $(get_module_args "${LOCAL}" "${SALT_ROOT}" "${SALT_MS}")"
 }
 
 get_mastersaltcall_args() {
@@ -1309,14 +1313,10 @@ salt_call_wrapper() {
     if [ ! -d "${BOOT_LOGS}" ];then
         mkdir -pv "${BOOT_LOGS}"
     fi
-    LOCAL=""
-    if [ "x$(get_local_salt_mode)" = "xmasterless" ];then
-        LOCAL="--local"
-    fi
     SALT_BOOT_OUTFILE="${BOOT_LOGS}/boot_salt.${chrono}.out"
     SALT_BOOT_LOGFILE="${BOOT_LOGS}/boot_salt.${chrono}.log"
     SALT_BOOT_CMDFILE="${BOOT_LOGS}/boot_salt_cmd"
-    salt_call_wrapper_ "${LOCAL}" "${SALT_MS}" $(get_saltcall_args) ${@}
+    salt_call_wrapper_ "${SALT_MS}" $(get_saltcall_args) ${@}
 }
 
 mastersalt_call_wrapper() {
