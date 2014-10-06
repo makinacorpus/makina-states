@@ -20,7 +20,7 @@ loglevelfmt = (
 
 def get_local_salt_mode():
     try:
-        wtih open(
+        with open(
             '/etc/makina-states/local_salt_mode'
         ) as fic:
             local_salt_mode = fic.read().strip()
