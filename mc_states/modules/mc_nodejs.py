@@ -46,6 +46,8 @@ def settings():
                     'system': [],
                      cur_nodejsver: [],
                 },
+                'npmPackages': [],
+                'systemNpmPackages': [],
             }
         )
         return nodejsData
