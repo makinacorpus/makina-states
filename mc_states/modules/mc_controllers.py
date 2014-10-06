@@ -60,8 +60,7 @@ def settings():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
         saltmods = __salt__
-        data = dict(resolver=saltmods['mc_utils.format_resolve'],
-                    metadata=saltmods['mc_{0}.metadata'.format(__name)]())
+        data = dict(metadata=saltmods['mc_{0}.metadata'.format(__name)]())
         return data
     return _settings()
 

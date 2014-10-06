@@ -26,7 +26,6 @@ def settings():
     '''nodetypes settings registry'''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        resolver = __salt__['mc_utils.format_resolve']
         metadata = __salt__['mc_{0}.metadata'.format(__name)]()
         return locals()
     return _settings()

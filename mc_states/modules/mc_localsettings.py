@@ -48,7 +48,6 @@ def settings():
         saltmods = __salt__  # affect to a var to see further pep8 errors
         pillar = __pillar__
         resolver = saltmods['mc_utils.format_resolve']
-        data['resolver'] = resolver
         data['grainsPref'] = 'makina-states.localsettings.'
         data['default_env'] = saltmods['mc_env.settings']()['env']
         data['locations'] = saltmods['mc_locations.settings']()
