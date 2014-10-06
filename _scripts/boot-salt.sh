@@ -2269,9 +2269,11 @@ lazy_start_salt_daemons() {
     if [ "x${IS_SALT_MASTER}" != "x" ];then
         if [ "x$(master_processes)" = "x0" ];then
             restart_local_masters
-            sleep 2
+            if [ "x$(get_local_salt_mode)" != "xmasterless" ];then
+                sleep 2
+            fi
         fi
-        if [ "x$(master_processes)" = "x0" ];then
+        if [ "x$(get_local_salt_mode)" != "xmasterless" ] && [ "x$(master_processes)" = "x0" ];then
             die "Salt Master start failed"
         fi
 
@@ -2279,13 +2281,15 @@ lazy_start_salt_daemons() {
     if [ "x${IS_SALT_MINION}" != "x" ];then
         if [ "x$(minion_processes)" = "x0" ];then
             restart_local_minions
-            if [ "x${SALT_CLOUD}" = "x" ];then
-                sleep 1
-            else
-                sleep 2
-            fi
-            if [ "x$(minion_processes)" = "x0" ];then
-                die "Salt Minion start failed"
+            if [ "x$(get_local_salt_mode)" != "xmasterless" ];then
+                if [ "x${SALT_CLOUD}" = "x" ];then
+                    sleep 1
+                else
+                    sleep 2
+                fi
+                if [ "x$(minion_processes)" = "x0" ];then
+                    die "Salt Minion start failed"
+                fi
             fi
         fi
     fi
@@ -2425,7 +2429,9 @@ install_salt_daemons() {
             # restart salt salt-master after setup
             bs_log "Forcing salt master restart"
             restart_local_masters
-            sleep 10
+            if [ "x$(get_local_salt_mode)" != "xmasterless" ];then
+                sleep 10
+            fi
         fi
         # restart salt minion
         if [ "x${IS_SALT_MINION}" != "x" ];then
@@ -2575,7 +2581,9 @@ minion_challenge() {
         if [ "x${SALT_MASTER_DNS}" = "xlocalhost" ] && [ "x$(hostname|sed -e "s/.*devhost.*/match/")" = "xmatch" ];then
             debug_msg "Forcing salt master restart"
             restart_local_masters
-            sleep 10
+            if [ "x$(get_local_salt_mode)" != "xmasterless" ];then
+                sleep 10
+            fi
         fi
         restart_local_minions
         resultping="1"
@@ -2583,7 +2591,9 @@ minion_challenge() {
             resultping="$(salt_ping_test)"
             if [ "x${resultping}" != "x0" ];then
                 bs_yellow_log " sub challenge try (${i}/${global_tries}) (${j}/${inner_tries})"
-                sleep 1
+                if [ "x$(get_local_salt_mode)" != "xmasterless" ];then
+                    sleep 1
+                fi
             else
                 break
             fi
@@ -2712,8 +2722,10 @@ make_association() {
         fi
         travis_sys_info
         minion_id="$(get_minion_id)"
-        if [ "x${minion_id}" = "x" ];then
-            die "Minion did not start correctly, the minion_id cache file is always empty"
+        if [ "x$(get_local_salt_mode)" != "xmasterless" ];then
+            if [ "x${minion_id}" = "x" ];then
+                die "Minion did not start correctly, the minion_id cache file is always empty"
+            fi
         fi
     fi
     # only accept key on fresh install (no keys stored)
