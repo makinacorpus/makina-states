@@ -21,6 +21,7 @@ AUTO_NAMES = {'_registry': 'registry',
 
 _CACHEKEY = 'localreg_{0}_{1}'
 _LOCAL_CACHE = {}
+_default = object()
 
 
 def lazy_subregistry_get(__salt__, registry):
@@ -106,16 +107,17 @@ def is_valid_ip(ip_or_name):
     return valid
 
 
-def cache_check(cache, time_key, key, ttl_key):
+def cache_check(cache, key):
     '''Invalidate record in cache  if expired'''
-    time_check = "{0}".format(time() // cache[ttl_key])
-    if time_key not in cache:
-        cache[time_key] = 0.0
-    if time_check != cache[time_key] and key in cache:
-        for k in [time_key, ttl_key, key]:
-            if k in cache:
-                # log.error('poping stale cache {0}'.format(k))
-                cache.pop(k)
+    entry = cache.get(key, {})
+    ttl = entry.get('ttl', 0)
+    if not ttl:
+        ttl = 0
+    entry.setdefault('time', 0)
+    if abs(time() - entry['time']) > ttl:
+        # log.error(
+        #      'poping stale cache {0}'.format(k))
+        cache.pop(key, None)
     return cache
 
 
@@ -157,43 +159,35 @@ def memoize_cache(func, args=None, kwargs=None,
         kwargs = {}
     if cache is None:
         cache = _LOCAL_CACHE
-    key += '_'
     now = time()
-    time_key = '{0}_time_check'.format(key)
-    ttl_key = '{0}_ttl'.format(key)
-    cache[ttl_key] = seconds
-    last_access = cache.setdefault('last_access', now)
+    last_access = cache.setdefault('last_access',
+                                   now)
     # log.error(cache.keys())
     # global cleanup each 2 minutes
     if last_access > (now + (2 * 60)):
-        for old_time_key in [a
-                             for a in cache
-                             if a.endswith('_time_check')]:
-            old_key = old_time_key.split('_time_check')[0]
-            old_ttl_key = old_time_key.split('_time_check')[0] + '_ttl'
-            cache_check(cache, old_time_key, old_key, old_ttl_key)
+        for k in [a for a in cache
+                  if a not in ['last_access']]:
+            cache_check(cache, k)
     cache['last_access'] = now
-    cache_check(cache, time_key, key, ttl_key)
-    ret = cache.get(key, None)
-    if force_run or (key not in cache):
+    cache_check(cache, key)
+    entry = cache.get(key, {})
+    ret = entry.get('value', _default)
+    if force_run or (ret is _default):
         ret = func(*args, **kwargs)
-    if not force_run and ret is not None:
-        cache[key] = ret
-        cache[time_key] = "{0}".format(time() // (seconds))
-        cache[ttl_key] = seconds
+    # else:
+    #     log.error("return cached")
+    if not force_run and ret is not _default:
+        cache[key] = {'value': ret,
+                      'time': time(),
+                      'ttl': seconds}
     return ret
 
 
 def invalidate_memoize_cache(key='cache_key_{0}', cache=None):
     if cache is None:
         cache = _LOCAL_CACHE
-    key += '_'
-    keys = [key,
-            '{0}_time_check'.format(key),
-            '{0}_ttl'.format(key)]
-    for k in keys:
-        cache.pop(k, None)
-
-
-
+    cache.pop(key, None)
+    if key == 'ALL_ENTRIES':
+        for i in cache:
+            cache.pop(i, None)
 # vim:set et sts=4 ts=4 tw=80:
