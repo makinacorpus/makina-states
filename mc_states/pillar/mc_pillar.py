@@ -13,15 +13,23 @@ import re
 import os
 import logging
 import traceback
+import cProfile, pstats
 
 
 log = logging.getLogger(__name__)
-
 __name = 'salt'
 
 
 def ext_pillar(id_, pillar, *args, **kw):
+    try:
+        profile_enabled = kw.get('profile', False)
+    except:
+        profile_enabled = False
+    log.error(profile_enabled)
     data = {}
+    if profile_enabled:
+        pr = cProfile.Profile()
+        pr.enable()
     for callback in [
         'mc_pillar.get_dns_resolvers',
         'mc_pillar.get_custom_pillar_conf',
@@ -58,6 +66,22 @@ def ext_pillar(id_, pillar, *args, **kw):
             log.error('ERROR in mc_pillar: {0}'.format(callback))
             log.error(ex)
             log.error(trace)
+    if profile_enabled:
+        pr.disable()
+        if not os.path.isdir('/tmp/stats'):
+            os.makedirs('/tmp/stats')
+        ficp = '/tmp/stats/{0}.pstats'.format(id_)
+        fico = '/tmp/stats/{0}.dot'.format(id_)
+        ficn = '/tmp/stats/{0}.stats'.format(id_)
+        os.system(
+            '/srv/mastersalt/makina-states/bin/pyprof2calltree '
+            '-i {0} -o {1}'.format(ficp, fico))
+        if not os.path.exists(ficp):
+            pr.dump_stats(ficp)
+            with open(ficn, 'w') as fic:
+                ps = pstats.Stats(
+                    pr, stream=fic).sort_stats('cumulative')
+                ps.print_stats()
     return data
 
 # vim:set et sts=4 ts=4 tw=80:

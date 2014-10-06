@@ -4,6 +4,7 @@ Services
 .. toctree::
    :maxdepth: 3
 
+   cache.rst
    backup/index.rst
    base/index.rst
    collab/index.rst

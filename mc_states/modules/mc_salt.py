@@ -275,6 +275,12 @@ def settings():
             'tcp_keepalive_intvl': '-1',
             'win_repo_cachefile': 'salt://win/repo/winrepo.p',
         })
+
+        worker_t, mid_worker_t, low_worker_t = '5', '3', '1'
+        # under 5Gb, lower the worker threads to minimum
+        if __grains__['mem_total'] < 5000:
+            worker_t = mid_worker_t = low_worker_t
+
         #  default master settings
         saltMasterData = saltmods['mc_utils.dictupdate'](
             saltCommonData.copy(), {
@@ -284,8 +290,8 @@ def settings():
                 'publish_port': '4505',
                 'ret_port': '4506',
                 'max_open_files': '100000',
-                'worker_threads': '5',
-                'dev_worker_threads': '2',
+                'worker_threads': worker_t,
+                'dev_worker_threads': mid_worker_t,
                 'keep_jobs': '24',
                 'timeout': '120',
                 'output': None,
@@ -445,11 +451,10 @@ def settings():
 
 
         # in salt master mode (non mastersalt), spawn only one
-        # worker not to alieate all box ressources only for idle
+        # worker not to alienate all box ressources only for idle
         # salt masters
-        data['saltMasterData']['worker_threads'] = "3"
-        data['saltMasterData']['dev_worker_threads'] = "3"
-
+        data['saltMasterData']['worker_threads'] = low_worker_t
+        data['saltMasterData']['dev_worker_threads'] = low_worker_t
         keys = ['saltname', 'prefix', 'projects_root', 'vagrant_root',
                 'resetperms',
                 'saltRoot', 'confPrefix', 'cachePrefix', 'runPrefix',

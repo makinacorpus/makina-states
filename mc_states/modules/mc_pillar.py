@@ -2362,9 +2362,7 @@ def get_supervision_client_conf(id_):
     rdata = {}
     pref = "makina-states.services.monitoring.client"
     if gconf.get('supervision_client', False):
-        rdata.update({
-            pref: True,
-        })
+        rdata.update({pref: True})
     return rdata
 
 
@@ -2872,7 +2870,9 @@ def get_dns_resolvers(id_, ttl=60):
                 id_,
                 conf.get('default', []))
         except KeyError:
-            log.error('no dns_resolvers section in database')
+            log.error(
+                'no dns_resolvers section in database for {0}'.format(id_))
+            conf = []
         if not isinstance(conf, list):
             conf = []
         for i in conf:
@@ -2904,5 +2904,19 @@ def get_slapd_pillar_conf(id_, ttl=60):
         return rdata
     cache_key = 'mc_pillar.get_slapd_conf{0}'.format(id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
+
+
+def test():
+    def do():
+        log.error('foo')
+        return 1
+    memoize_cache(do, [], {}, 'foo', 2)
+    memoize_cache(do, [], {}, 'foo', 2)
+    memoize_cache(do, [], {}, 'foo', 2)
+    time.sleep(3)
+    memoize_cache(do, [], {}, 'foo', 2)
+    from mc_states.utils import _LOCAL_CACHE
+    from pprint import pprint
+    pprint(_LOCAL_CACHE)
 
 # vim:set et sts=4 ts=4 tw=80:
