@@ -186,7 +186,7 @@ def memoize_cache(func, args=None, kwargs=None,
             cache = _MC
     now = time()
     if 'last_access' not in cache:
-        cache.set('last_access', now)
+        cache['last_access'] = now
     last_access = cache['last_access']
     # log.error(cache.keys())
     # global cleanup each 2 minutes
