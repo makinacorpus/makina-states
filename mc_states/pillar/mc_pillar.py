@@ -25,7 +25,6 @@ def ext_pillar(id_, pillar, *args, **kw):
         profile_enabled = kw.get('profile', False)
     except:
         profile_enabled = False
-    log.error(profile_enabled)
     data = {}
     if profile_enabled:
         pr = cProfile.Profile()
