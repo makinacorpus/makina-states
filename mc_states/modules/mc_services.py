@@ -120,6 +120,7 @@ def registry():
             'http.apache_modfcgid': {'active': False},
             'http.apache_modfastcgi': {'active': False},
             'virt.docker': {'active': False},
+            'cache.memcached': {'active': False},
             'virt.docker-shorewall': {'active': False},
             'virt.lxc': {'active': False},
             'virt.lxc-shorewall': {'active': False},

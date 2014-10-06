@@ -1,0 +1,6 @@
+# managed via salt - do not edit
+# Set this to no to disable memcached.
+
+{% set data=salt['mc_utils.json_load'](data) %}
+{% set conf=data.defaults %}
+ENABLE_MEMCACHED={{conf.ENABLED}}
