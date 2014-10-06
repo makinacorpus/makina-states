@@ -20,6 +20,8 @@ import salt.utils
 from salt.utils.odict import OrderedDict
 from salt.utils import yamldumper
 from mc_states import api
+
+import mc_states.utils
 import yaml
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
@@ -515,6 +517,10 @@ def indent(tstring, spaces=16, char=' '):
             data += char * spaces
         data += i + '\n'
     return data
+
+
+def invalidate_memoize_cache(*args, **kw):
+    return mc_states.utils.invalidate_memoize_cache(*args, **kw)
 
 
 def manage_file(name, **kwargs):

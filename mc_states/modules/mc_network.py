@@ -333,7 +333,7 @@ def settings():
     return _settings()
 
 
-def whois_data(ip, ttl=30, whois_ttl=60*60*24*30):
+def whois_data(ip, ttl=24*60*60, whois_ttl=60*60*24*30):
     '''
     Make a whois request and return data
     For evident performance questons,

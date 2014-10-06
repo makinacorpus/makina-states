@@ -8,6 +8,7 @@ Utilities functions
 __docformat__ = 'restructuredtext en'
 import copy
 from time import time
+import os
 import logging
 import socket
 
@@ -22,6 +23,26 @@ AUTO_NAMES = {'_registry': 'registry',
 _CACHEKEY = 'localreg_{0}_{1}'
 _LOCAL_CACHE = {}
 _default = object()
+
+try:
+    import pylibmc
+    HAS_PYLIBMC = True
+except:
+    HAS_PYLIBMC = False
+
+
+try:
+    if not HAS_PYLIBMC:
+        raise Exception()
+    _MC = pylibmc.Client(
+        [os.environ.get('MC_SERVER', "127.0.0.1")],
+        binary=True,
+        behaviors={"tcp_nodelay": True,
+                   "ketama": True})
+    _MC.set('ping', 'ping')
+except:
+    _MC = None
+
 
 
 def lazy_subregistry_get(__salt__, registry):
@@ -109,7 +130,9 @@ def is_valid_ip(ip_or_name):
 
 def cache_check(cache, key):
     '''Invalidate record in cache  if expired'''
-    entry = cache.get(key, {})
+    if key not in cache:
+        cache[key] = {}
+    entry = cache[key]
     ttl = entry.get('ttl', 0)
     if not ttl:
         ttl = 0
@@ -117,7 +140,7 @@ def cache_check(cache, key):
     if abs(time() - entry['time']) > ttl:
         # log.error(
         #      'poping stale cache {0}'.format(k))
-        cache.pop(key, None)
+        remove_entry(cache, key)
     return cache
 
 
@@ -159,9 +182,12 @@ def memoize_cache(func, args=None, kwargs=None,
         kwargs = {}
     if cache is None:
         cache = _LOCAL_CACHE
+        if _MC:
+            cache = _MC
     now = time()
-    last_access = cache.setdefault('last_access',
-                                   now)
+    if 'last_access' not in cache:
+        cache.set('last_access', now)
+    last_access = cache['last_access']
     # log.error(cache.keys())
     # global cleanup each 2 minutes
     if last_access > (now + (2 * 60)):
@@ -170,7 +196,9 @@ def memoize_cache(func, args=None, kwargs=None,
             cache_check(cache, k)
     cache['last_access'] = now
     cache_check(cache, key)
-    entry = cache.get(key, {})
+    if key not in cache:
+        cache[key] = {}
+    entry = cache[key]
     ret = entry.get('value', _default)
     if force_run or (ret is _default):
         ret = func(*args, **kwargs)
@@ -183,11 +211,26 @@ def memoize_cache(func, args=None, kwargs=None,
     return ret
 
 
-def invalidate_memoize_cache(key='cache_key_{0}', cache=None):
+def remove_entry(cache, key):
     if cache is None:
         cache = _LOCAL_CACHE
-    cache.pop(key, None)
+        if _MC:
+            cache = _MC
+    if key not in cache:
+        return
+    # do not garbage collector now, so not del !
+    if not _MC:
+        cache.pop(key, None)
+    else:
+        cache.delete(key)
+
+
+def invalidate_memoize_cache(key='cache_key_{0}', cache=None, *a, **kw):
+    remove_entry(cache, key)
     if key == 'ALL_ENTRIES':
-        for i in cache:
-            cache.pop(i, None)
+        if _MC:
+            _MC.flush_all()
+        else:
+            for i in cache:
+                remove_entry(cache, i)
 # vim:set et sts=4 ts=4 tw=80:
