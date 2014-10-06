@@ -10,6 +10,7 @@ mc_utils / Some usefull small tools
 import copy
 import os
 import salt.utils.dictupdate
+import cProfile, pstats
 from salt.exceptions import SaltException
 import crypt
 import getpass
@@ -517,6 +518,45 @@ def indent(tstring, spaces=16, char=' '):
             data += char * spaces
         data += i + '\n'
     return data
+
+
+def profile(func, *args, **kw):
+    if not __opts__.get('ms_profile_enabled', False):
+        raise Exception('Profile not enabled')
+    kw = copy.deepcopy(kw)
+    for i in [a for a in kw if a.startswith('__')]:
+        kw.pop(i, None)
+    pr = cProfile.Profile()
+    pr.enable()
+    ret = __salt__[func](*args, **kw)
+    pr.disable()
+    if not os.path.isdir('/tmp/stats'):
+        os.makedirs('/tmp/stats')
+    ficp = '/tmp/stats/{0}.pstats'.format(func)
+    fico = '/tmp/stats/{0}.dot'.format(func)
+    ficcl = '/tmp/stats/{0}.calls.stats'.format(func)
+    ficn = '/tmp/stats/{0}.cumulative.stats'.format(func)
+    fict = '/tmp/stats/{0}.total.stats'.format(func)
+    for i in [ficp, fico, ficn, fict, ficcl]:
+        if os.path.exists(i):
+            os.unlink(i)
+    pr.dump_stats(ficp)
+    with open(ficn, 'w') as fic:
+        ps = pstats.Stats(
+            pr, stream=fic).sort_stats('cumulative')
+        ps.print_stats()
+    with open(ficcl, 'w') as fic:
+        ps = pstats.Stats(
+            pr, stream=fic).sort_stats('calls')
+        ps.print_stats()
+    with open(fict, 'w') as fic:
+        ps = pstats.Stats(
+            pr, stream=fic).sort_stats('tottime')
+        ps.print_stats()
+    os.system(
+        '/srv/mastersalt/makina-states/bin/pyprof2calltree '
+        '-i {0} -o {1}'.format(ficp, fico))
+    return ret, ficp, fico, ficn, ficcl, fict
 
 
 def invalidate_memoize_cache(*args, **kw):
