@@ -18,9 +18,6 @@ log = logging.getLogger(__name__)
 AUTO_NAMES = {'_registry': 'registry',
               '_settings': 'settings',
               '_metadata': 'metadata'}
-
-
-
 _CACHEKEY = 'localreg_{0}_{1}'
 _LOCAL_CACHE = {}
 _default = object()
