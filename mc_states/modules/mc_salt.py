@@ -18,6 +18,19 @@ loglevelfmt = (
     "[%(name)-17s][%(levelname)-8s] %(message)s'")
 
 
+def get_local_salt_mode():
+    try:
+        wtih open(
+            '/etc/makina-states/local_salt_mode'
+        ) as fic:
+            local_salt_mode = fic.read().strip()
+    except:
+        local_salt_mode = ''
+    if local_salt_mode not in ['masterless', 'remote']:
+        local_salt_mode = 'masterless'
+    return local_salt_mode
+
+
 def settings():
     '''Registry of settings decriving salt installation
 
@@ -28,6 +41,7 @@ def settings():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
         saltmods = __salt__
+        local_salt_mode = get_local_salt_mode()
         local_conf = __salt__['mc_macros.get_local_registry'](
             'salt', registry_format='pack')
         nodetypes_reg = saltmods['mc_nodetypes.registry']()
@@ -120,6 +134,7 @@ def settings():
         tcron3 = local_conf.setdefault('tcron_3', tcron3)
 
         saltCommonData = {
+            'local_salt_mode': local_salt_mode,
             'id': saltmods['config.option']('makina-states.minion_id',
                                             saltmods['config.option']('id', None)),
             'mailto': 'root',
@@ -444,6 +459,7 @@ def settings():
         data['mcachePrefix'] = mastersaltCommonData['cache_prefix']
         data['mrunPrefix'] = mastersaltCommonData['run_prefix']
         data['mlogPrefix'] = mastersaltCommonData['log_prefix']
+        data['local_salt_mode'] = mastersaltCommonData['local_salt_mode']
         data['mpillarRoot'] = mastersaltCommonData['pillar_root']
         mmsr = data['mmsr'] = msaltroot + '/makina-states'
         data['mresetperms'] = mmsr + '/_scripts/reset-perms.py'

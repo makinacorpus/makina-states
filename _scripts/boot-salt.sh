@@ -345,6 +345,20 @@ set_colors() {
     fi
 }
 
+get_local_salt_mode() {
+    default_mode="masterless"
+    salt_mode="$(get_conf local_salt_mode)"
+    if [ "x${FORCE_LOCAL_SALT_MODE}" != "x" ];then
+        salt_mode="${FORCE_LOCAL_SALT_MODE}"
+    fi
+    thistest="$(echo "${salt_mode}"|egrep -q '^(remote|masterless)$';echo "${?}")"
+    if [ "x${thistest}" != "x0" ];then
+        salt_mode="${default_mode}"
+    fi
+    store_conf local_salt_mode "${salt_mode}"
+    echo "${salt_mode}"
+}
+
 get_minion_id_() {
     confdir="${1}"
     force="${3}"
@@ -501,6 +515,7 @@ set_vars() {
     else
         SALT_CLOUD="${SALT_CLOUD:-}"
     fi
+    LOCAL_SALT_MODE="$(get_local_salt_mode)"
     DEFAULT_DOMAINNAME="local"
     SALT_BOOT_LOCK_FILE="/tmp/boot_salt_sleep-$(get_full_chrono)"
     LAST_RETCODE_FILE="/tmp/boot_salt_rc-$(get_full_chrono)"
@@ -976,6 +991,7 @@ recap_(){
     bs_yellow_log "---------------"
     bs_log "NICKNAME_FQDN/HOST/DOMAIN: ${NICKNAME_FQDN}/${HOST}/${DOMAINNAME}"
     bs_log "DATE: ${CHRONO}"
+    bs_log "LOCAL_SALT_MODE: $(get_local_salt_mode)"
     bs_log "SALT_NODETYPE: $(get_salt_nodetype)"
     if [ "x${SALT_CLOUD}" != "x" ];then
         bs_log "-> SaltCloud mode"
@@ -1293,10 +1309,14 @@ salt_call_wrapper() {
     if [ ! -d "${BOOT_LOGS}" ];then
         mkdir -pv "${BOOT_LOGS}"
     fi
+    LOCAL=""
+    if [ "x$(get_local_salt_mode)" = "xmasterless" ];then
+        LOCAL="--local"
+    fi
     SALT_BOOT_OUTFILE="${BOOT_LOGS}/boot_salt.${chrono}.out"
     SALT_BOOT_LOGFILE="${BOOT_LOGS}/boot_salt.${chrono}.log"
     SALT_BOOT_CMDFILE="${BOOT_LOGS}/boot_salt_cmd"
-    salt_call_wrapper_ "${SALT_MS}" $(get_saltcall_args) ${@}
+    salt_call_wrapper_ "${LOCAL}" "${SALT_MS}" $(get_saltcall_args) ${@}
 }
 
 mastersalt_call_wrapper() {
@@ -2470,7 +2490,9 @@ restart_local_mastersalt_minions() {
 }
 
 restart_local_masters() {
-    if [ ! -e "${ALIVE_MARKER}" ] && [ "x${IS_SALT_MASTER}" != "x" ];then
+    if [ "x$(get_local_salt_mode)" = "xmasterless" ];then
+        killall_local_masters
+    elif [ ! -e "${ALIVE_MARKER}" ] && [ "x${IS_SALT_MASTER}" != "x" ];then
         service_ salt-master stop
         killall_local_masters
         service_ salt-master restart
@@ -2478,7 +2500,9 @@ restart_local_masters() {
 }
 
 restart_local_minions() {
-    if [ ! -e "${ALIVE_MARKER}" ] && [ "x${IS_SALT_MINION}" != "x" ];then
+    if [ "x$(get_local_salt_mode)" = "xmasterless" ];then
+        killall_local_minions
+    elif [ ! -e "${ALIVE_MARKER}" ] && [ "x${IS_SALT_MINION}" != "x" ];then
         service_ salt-minion stop
         killall_local_minions
         service_ salt-minion restart
@@ -2582,7 +2606,7 @@ mastersalt_minion_challenge() {
     inner_tries="5"
     for i in `seq ${global_tries}`;do
         if [ "x${MASTERSALT}" = "xlocalhost" ] && [ "x$(hostname|sed -e "s/.*devhost.*/match/")" = "xmatch" ];then
-            debug_msg "Forcing salt mastersalt master restart" 
+            debug_msg "Forcing salt mastersalt master restart"
             restart_local_mastersalt_masters
             sleep 10
         fi
@@ -2609,8 +2633,10 @@ mastersalt_minion_challenge() {
 }
 
 salt_master_connectivity_check() {
-    if [ "x$(check_connectivity ${SALT_MASTER_IP} ${SALT_MASTER_PORT} 30)" != "x0" ];then
-        die "SaltMaster is unreachable (${SALT_MASTER_IP}/${SALT_MASTER_PORT})"
+    if [ "x$(get_local_salt_mode)" != "xmasterless" ];then
+        if [ "x$(check_connectivity ${SALT_MASTER_IP} ${SALT_MASTER_PORT} 30)" != "x0" ];then
+            die "SaltMaster is unreachable (${SALT_MASTER_IP}/${SALT_MASTER_PORT})"
+        fi
     fi
 }
 
@@ -2669,7 +2695,9 @@ make_association() {
     fi
     if [ "x${BS_ASSOCIATION_RESTART_MASTER}" != "x" ];then
         restart_local_masters
-        sleep 10
+        if [ "x$(get_local_salt_mode)" != "xmasterless" ];then
+            sleep 10
+        fi
     fi
     if [ "x${BS_ASSOCIATION_RESTART_MINION}" != "x" ];then
         restart_local_minions
@@ -2679,7 +2707,9 @@ make_association() {
     fi
     if [ "x$(minion_processes)" = "x0" ];then
         restart_local_minions
-        sleep $(get_delay_time)
+        if [ "x$(get_local_salt_mode)" != "xmasterless" ];then
+            sleep $(get_delay_time)
+        fi
         travis_sys_info
         minion_id="$(get_minion_id)"
         if [ "x${minion_id}" = "x" ];then
@@ -2697,7 +2727,9 @@ make_association() {
         if [ "x${SALT_MASTER_DNS}" = "xlocalhost" ];then
             debug_msg "Forcing salt master restart"
             restart_local_masters
-            sleep 10
+            if [ "x$(get_local_salt_mode)" != "xmasterless" ];then
+                sleep 10
+            fi
         fi
         if [ "x${SALT_MASTER_DNS}" != "xlocalhost" ] &&  [ "x${SALT_NO_CHALLENGE}" = "x" ];then
             challenge_message
@@ -2722,7 +2754,9 @@ make_association() {
         debug_msg "Forcing salt minion restart"
         restart_local_minions
         gen_salt_keys
-        salt_master_connectivity_check 20
+        if [ "x$(get_local_salt_mode)" != "xmasterless" ];then
+            salt_master_connectivity_check 20
+        fi
         bs_log "Waiting for salt minion key hand-shake"
         minion_id="$(get_minion_id)"
         if [ "x$(salt_ping_test)" = "x0" ] && [ "x${minion_keys}" != "x0" ];then
@@ -3461,6 +3495,7 @@ usage() {
     bs_help "--no-salt:" "Do not install salt daemons" "" y
     bs_help "-no-M|--no-salt-master:" "Do not install a salt master" "${IS_SALT_MASTER}" y
     bs_help "-m|--minion-id:" "Minion id" "$(get_minion_id)" y
+    bs_help "--local-salt-mode:" "Do we run masterless (masterless/remote)" "$(get_local_salt_mode)" y
     bs_help "--mastersalt-minion-id:" "Mastersalt minion id (default to minionid)" "$(mastersalt_get_minion_id)" y
     bs_help "--salt-master-dns <hostname>:" "DNS of the salt master" "${SALT_MASTER_DNS}" y
     bs_help "--salt-master-port <port>:"        "Port of the salt master" "${MASTERSALT_MASTER_PORT}" y
@@ -3684,6 +3719,9 @@ parse_cli_opts() {
             IS_MASTERSALT_MINION="y"
             argmatch="1"
         fi
+        if [ "x${1}" = "x--local-salt-mode" ];then
+            FORCE_LOCAL_SALT_MODE="${2}";sh="2";argmatch="1"
+        fi
         if [ "x${1}" = "x-no-M" ] || [ "x${1}" = "x--no-salt-master" ];then
             FORCE_IS_SALT_MASTER="no"
             IS_SALT_MASTER=""
@@ -3742,7 +3780,7 @@ parse_cli_opts() {
         fi
         if [ "x${1}" = "x--salt-cloud-dir" ];then
             SALT_CLOUD_DIR="$2";sh="2";argmatch="1"
-            SALT_CLOUD="1" 
+            SALT_CLOUD="1"
             SALT_BOOT_SKIP_HIGHSTATES="1"
         fi
         if [ "x${1}" = "x--salt-master-dns" ];then
