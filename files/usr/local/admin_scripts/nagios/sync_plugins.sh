@@ -47,3 +47,7 @@ chmod +x check_mongodb.py
 rm -f check_elasticsearch
 wget "https://github.com/anchor/nagios-plugin-elasticsearch/raw/master/check_elasticsearch"
 chmod +x check_elasticsearch
+
+wget https://raw.github.com/glensc/nagios-plugin-check_raid/master/check_raid.pl -O check_raid.pl
+chmod +x check_raid.pl 
+
