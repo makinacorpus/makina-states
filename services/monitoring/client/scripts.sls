@@ -4,7 +4,9 @@ install-nagios-plugins:
       - nagios-plugins
       - nagios-plugins-contrib
       - libwww-perl
+      {% if grains['os'] not in ['Debian'] %}
       - nagios-plugins-extra
+      {% endif %}
       - nagios-plugins-openstack
       - libcrypt-des-perl
       - libxml-xpath-perl
