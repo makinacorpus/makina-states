@@ -1659,11 +1659,12 @@ def backup_configuration_for(id_, ttl=60):
         if id_ in db['non_managed_hosts'] and not conf_id:
             conf_id = __salt__['mc_pillar.backup_configuration_type_for'](
                 'default')
-            #raise ValueError(
+            # raise ValueError(
             #    'No backup info for {0}'.format(id_))
         # load default conf
-        default_conf = confs.get(default_conf_id, OrderedDict())
-        conf = confs.get(conf_id, OrderedDict())
+        default_conf = copy.deepcopy(
+            confs.get(default_conf_id, OrderedDict()))
+        conf = copy.deepcopy(confs.get(conf_id, OrderedDict()))
         for k in [a for a in default_conf if a.startswith('add_')]:
             adding = k.split('add_', 1)[1]
             ddata = data.setdefault(adding, [])
@@ -1671,7 +1672,6 @@ def backup_configuration_for(id_, ttl=60):
         data = __salt__['mc_utils.dictupdate'](data, default_conf)
         # load per host conf
         if conf_id != default_conf_id:
-            tata =1
             for k in [a for a in conf if a.startswith('add_')]:
                 adding = k.split('add_', 1)[1]
                 ddata = data.setdefault(adding, [])
