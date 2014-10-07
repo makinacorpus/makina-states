@@ -16,6 +16,7 @@ install-burp-configuration-sync:
                 import time
                 ret = 0
                 timeout = 60 * 2
+                timeout = 15
                 batch = 20
                 done = {}
                 clients = [{% for client in data['clients'] %}    "{{client}}",
@@ -28,6 +29,7 @@ install-burp-configuration-sync:
                                              stderr=subprocess.PIPE)
                   return process
                 todo = []
+                missed = []
                 # init & launch
                 for i in clients:
                   if os.path.isdir("{{data.server_conf.directory}}/"+i):
@@ -56,13 +58,19 @@ install-burp-configuration-sync:
                     syncs = {}
                     for cmd in doing:
                       syncs[cmd] = async_backup(cmd)
-                    while syncs:
+                    try:
+                      while syncs:
+                        check_timeout(will_timeout)
+                        for cmd in [a for a in syncs]:
+                          if syncs[cmd].poll() is not None:
+                            done[cmd] = syncs.pop(cmd)
                       check_timeout(will_timeout)
-                      for cmd in [a for a in syncs]:
-                        if syncs[cmd].poll() is not None:
-                          done[cmd] = syncs.pop(cmd)
-                    check_timeout(will_timeout)
-                missed = []
+                    except ValueError:
+                      for i in [a for a in syncs]:
+                        missed.append(
+                            "Missed {0}".format(i))
+                      pr = syncs.pop(i)
+                      pr.kill()
                 for a, p in done.items():
                   if p.returncode:
                     print "Missed {0} (1)".format(a, p.returncode)
