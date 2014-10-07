@@ -1196,7 +1196,7 @@ def serial_for(domain,
                         if soa.serial > dns_serial:
                             dns_serial = soa.serial
             if dns_serial != serial and dns_serial > 0:
-                serial = dns_serial + 1
+                serial = dns_serial
         except Exception, ex:
             trace = traceback.format_exc()
             log.error('DNSSERIALS: {0}'.format(ex))
@@ -1207,7 +1207,9 @@ def serial_for(domain,
         ymdx = int('{0:04d}{1:02d}{2:02d}'.format(
             dnow.year, dnow.month, dnow.day))
         if ymdx > (serial//100):
-            serial = (ymdx * 100) + 1
+            serial = (ymdx * 100)
+        if not force_serial:
+            serial += 1
         dns_reg[domain] = serial
         __salt__['mc_macros.update_local_registry'](
             'dns_serials', dns_reg, registry_format='pack')
