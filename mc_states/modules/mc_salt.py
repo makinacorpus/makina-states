@@ -18,6 +18,19 @@ loglevelfmt = (
     "[%(name)-17s][%(levelname)-8s] %(message)s'")
 
 
+def get_local_salt_mode():
+    try:
+        with open(
+            '/etc/makina-states/local_salt_mode'
+        ) as fic:
+            local_salt_mode = fic.read().strip()
+    except:
+        local_salt_mode = ''
+    if local_salt_mode not in ['masterless', 'remote']:
+        local_salt_mode = 'masterless'
+    return local_salt_mode
+
+
 def settings():
     '''Registry of settings decriving salt installation
 
@@ -28,6 +41,7 @@ def settings():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
         saltmods = __salt__
+        local_salt_mode = get_local_salt_mode()
         local_conf = __salt__['mc_macros.get_local_registry'](
             'salt', registry_format='pack')
         nodetypes_reg = saltmods['mc_nodetypes.registry']()
@@ -120,6 +134,7 @@ def settings():
         tcron3 = local_conf.setdefault('tcron_3', tcron3)
 
         saltCommonData = {
+            'local_salt_mode': local_salt_mode,
             'id': saltmods['config.option']('makina-states.minion_id',
                                             saltmods['config.option']('id', None)),
             'mailto': 'root',
@@ -213,9 +228,12 @@ def settings():
             'cython_enable': False,
             'failhard': False,
             'log_granular_levels': {},
+            'ext_pillar': {'mc_pillar': {}},
+            'pillar_opts': True,
             'salt_modules': [
                 '_grains',
                 '_modules',
+                '_pillars',
                 '_renderers',
                 '_runners',
                 '_returners',
@@ -247,6 +265,8 @@ def settings():
             'ipc_mode': 'ipc',
             'tcp_pub_port': '4510',
             'tcp_pull_port': '4511',
+            'pillar_dirs': ['{salt_root}/_pillar',
+                            '{salt_root}/makina-states/mc_states/pillar'],
             'module_dirs': ['{salt_root}/_modules',
                             '{salt_root}/makina-states/mc_states/modules'],
             'returner_dirs': ['{salt_root}/_returners',
@@ -314,8 +334,6 @@ def settings():
                 'file_ignore_glob': [],
                 'fileserver_backend':  ['roots', 'git'],
                 'gitfs_remotes': '[]',
-                'ext_pillar': {'mc_pillar': {}},
-                'pillar_opts': True,
                 'order_masters': True,
                 'syndic_master': None,
                 'syndic_master_port': '4506',
@@ -444,6 +462,7 @@ def settings():
         data['mcachePrefix'] = mastersaltCommonData['cache_prefix']
         data['mrunPrefix'] = mastersaltCommonData['run_prefix']
         data['mlogPrefix'] = mastersaltCommonData['log_prefix']
+        data['local_salt_mode'] = mastersaltCommonData['local_salt_mode']
         data['mpillarRoot'] = mastersaltCommonData['pillar_root']
         mmsr = data['mmsr'] = msaltroot + '/makina-states'
         data['mresetperms'] = mmsr + '/_scripts/reset-perms.py'

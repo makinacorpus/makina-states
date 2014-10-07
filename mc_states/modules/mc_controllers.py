@@ -39,10 +39,20 @@ def has_mastersalt():
 
 def mastersalt_mode():
     return (
-        (has_mastersalt() 
-         and 'mastersalt' in __salt__['mc_utils.get']('config_dir'))
-        or (not has_mastersalt() 
-            and not 'mastersalt' in __salt__['mc_utils.get']('config_dir')))
+        (
+            has_mastersalt()
+            and 'mastersalt' in __salt__['mc_utils.get']('config_dir')
+        ) or (
+            not has_mastersalt()
+            and 'mastersalt' not in __salt__['mc_utils.get']('config_dir')))
+
+
+def masterless():
+    ret = False
+    if not mastersalt_mode():
+        if __salt__['mc_salt.get_local_salt_mode']():
+            ret = True
+    return ret
 
 
 def settings():
@@ -50,8 +60,7 @@ def settings():
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
         saltmods = __salt__
-        data = dict(resolver=saltmods['mc_utils.format_resolve'],
-                    metadata=saltmods['mc_{0}.metadata'.format(__name)]())
+        data = dict(metadata=saltmods['mc_{0}.metadata'.format(__name)]())
         return data
     return _settings()
 

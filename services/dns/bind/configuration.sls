@@ -175,7 +175,6 @@ bind_config_rndc:
 {% for zone in settings.zones %}
 {{ install_zone(zone) }}
 {% endfor %}
-{% endif %}
 
 bind-checkconf-zones:
   file.managed:
@@ -211,5 +210,5 @@ bind-checkconf-zones:
       - mc_proxy: bind-post-conf
     - watch_in:
       - mc_proxy: bind-check-conf
-
+{% endif %}
 

@@ -1,4 +1,5 @@
 {% set locs = salt['mc_locations.settings']() %}
+{% set nodejs = salt['mc_nodejs.settings']() %}
 {% macro npmInstall(npmPackage, npmVersion="system") %}
 npm-packages-{{npmPackage}}:
   cmd.run:
@@ -15,9 +16,8 @@ npm-packages-{{npmPackage}}:
             fi
     {% endif %}
 {% endmacro %}
-{% for npmPackage in npmPackages -%}
-{{ npmInstall(npmPackage) }}
-{%- endfor %}
-{% for ver, package in npmAppPackages.items() %}
-{{npmInstall(package, version=ver}}
+{% for package, vers in nodejs.systemNpmPackages %}
+{% for ver in vers %}
+{{npmInstall(package, versio=ver)}}
+{% endfor %}
 {% endfor %}

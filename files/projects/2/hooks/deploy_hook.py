@@ -186,7 +186,7 @@ def deploy(name, loglevel, logfile, lock, **kwargs):
     exitcode = 0
     try:
         cmds = [
-            ['salt-call', '--retcode-passthrough',
+            ['salt-call', '--local', '--retcode-passthrough',
                 '-l{0}'.format(loglevel), 'mc_project.deploy', name]
         ]
         for cmd in cmds:

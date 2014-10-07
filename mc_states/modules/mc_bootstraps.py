@@ -27,7 +27,6 @@ def settings():
     def _settings():
         saltmods = __salt__
         data = {
-            'resolver': saltmods['mc_utils.format_resolve'],
             'metadata': saltmods['mc_{0}.metadata'.format(__name)](),
         }
         return data
