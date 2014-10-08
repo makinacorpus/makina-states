@@ -9,6 +9,7 @@ mc_cloud_compute_node / cloud compute node related functions
 __docformat__ = 'restructuredtext en'
 # Import python libs
 import logging
+import copy
 import random
 import os
 from mc_states.utils import memoize_cache
@@ -31,11 +32,28 @@ __name = 'mc_cloud_compute_node'
 log = logging.getLogger(__name__)
 
 VIRT_TYPES = {
-    'lxc': {}
+    'docker': {},
+    'xen': {},
+    'lxc': {'supported': True},
+    'kvm': {'supported': True}
 }
 _RP = 'reverse_proxies'
 _SW_RP = 'shorewall_reverse_proxies'
 _CUR_API = 2
+_default = object()
+
+def get_vts(supported=None):
+    vts = copy.deepcopy(VIRT_TYPES)
+    if supported is not None:
+        for i in [a
+                  for a in vts
+                  if vts[a].get('supported') != supported]:
+            vts.pop(i, None)
+    return vts
+
+
+def get_supported():
+    return VIRT_TYPES
 
 
 def gen_mac():
@@ -873,9 +891,13 @@ def is_compute_node():
 
 def get_targets_and_vms_for_virt_type(virt_type):
     _s = __salt__
-    virtsettings = _s['mc_cloud_{0}.settings'.format(virt_type)]()
-    vtargets = virtsettings.get('vms', {})
-    return vtargets
+    k = 'mc_cloud_{0}.settings'.format(virt_type)
+    if k in _s:
+        virtsettings = _s[k]()
+        vtargets = virtsettings.get('vms', {})
+        return vtargets
+    else:
+        return  {}
 
 
 def targets():
@@ -911,6 +933,14 @@ def get_vms():
             for vmname in all_infos[t]:
                 vms.setdefault(vmname, virt_type)
                 vts.add(virt_type)
+            # for each vt, we can have no vms
+            # so we test for a compute node without vms
+            # declared in the pillar as an empty dict
+            for vt in get_vts(supported=True):
+
+                k = 'makina-states.cloud.{0}.vms.{1}'.format(vt, t)
+                if __pillar__.get(k, _default) is not _default:
+                    vts.add(vt)
             target['virt_types'] = [a for a in vts]
             target['vms'] = vms
     return data

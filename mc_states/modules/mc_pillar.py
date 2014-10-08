@@ -1913,7 +1913,7 @@ def get_supervision_objects_defs(id_):
             attrs.setdefault('vars.SNMP_USER',  sconf[p + 'user'])
             if vts:
                 hdata['memory_mode'] = 'large'
-            for vt in ['lxc', 'kvm', 'xen', 'docker']:
+            for vt in __salt__['mc_cloud_compute_node.get_vts']():
                 attrs['vars.{0}'.format(vt)] = vt in vts
                 if vt in vts:
                     [groups.append(i)
@@ -2688,7 +2688,6 @@ def get_cloud_image_conf(id_):
 
 def get_cloudmaster_conf(id_):
     gconf = get_configuration(id_)
-    ms_vars = get_makina_states_variables(id_)
     if not gconf.get('cloud_master', False):
         return {}
     gconf = get_configuration(id_)
@@ -2698,9 +2697,9 @@ def get_cloudmaster_conf(id_):
         pref + '.master': gconf['mastersaltdn'],
         pref + '.master_port': gconf['mastersalt_port'],
         pref + '.saltify': True,
-        pref + '.lxc': True,
-        pref + '.lxc.defaults.backing': 'dir'
-    }
+        pref + '.lxc': gconf['cloud_control_lxc'],
+        pref + '.kvm': gconf['cloud_control_kvm'],
+        pref + '.lxc.defaults.backing': 'dir'}
     for i in [get_cloud_image_conf,
               get_cloud_vm_conf,
               get_cloud_compute_node_conf]:
@@ -2712,23 +2711,24 @@ def get_cloud_vm_conf(id_):
     rdata = {}
     cloud_vm_attrs = __salt__['mc_pillar.query']('cloud_vm_attrs')
     nvars  = __salt__['mc_pillar.load_network_infrastructure']()
-    supported_vts = ['lxc']
+    supported_vts = __salt__['mc_cloud_compute_node.get_vts'](
+        supported=True)
     for vt, targets in nvars['vms'].items():
         if vt not in supported_vts:
             continue
         for compute_node, vms in targets.items():
             if compute_node in nvars['non_managed_hosts']:
                 continue
-            k = ('makina-states.cloud.lxc.'
-                 'vms.{0}').format(compute_node)
+            k = ('makina-states.cloud.{0}.'
+                 'vms.{1}').format(vt, compute_node)
             pvms = rdata.setdefault(k, {})
             for vm in vms:
                 if vm in nvars['non_managed_hosts']:
                     continue
                 dvm = pvms.setdefault(vm, {})
                 metadata = cloud_vm_attrs.get(vm, {})
-                metadata.setdefault('profile_type',
-                                    'dir')
+                if vt == 'lxc':
+                    metadata.setdefault('profile_type', 'dir')
                 if 'password' not in metadata:
                     metadata.setdefault(
                         'password',
@@ -2743,7 +2743,8 @@ def get_cloud_compute_node_conf(id_):
     rdata = {}
     ms_vars = get_makina_states_variables(id_)
     # detect computes nodes by searching for related vms configurations
-    supported_vts = ['lxc']
+    supported_vts = __salt__['mc_cloud_compute_node.get_vts'](
+        supported=True)
     done_hosts = []
     nvars  = __salt__['mc_pillar.load_network_infrastructure']()
     ivars  = __salt__['mc_pillar.get_db_infrastructure_maps']()

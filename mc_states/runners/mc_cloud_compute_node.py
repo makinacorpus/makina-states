@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+    #!/usr/bin/env python
 '''
 .. _runner_mc_cloud_compute_node:
 
@@ -17,6 +17,7 @@ import logging
 import salt.client
 import salt.payload
 import salt.utils
+from mc_states.modules.mc_utils import dictupdate
 from salt.utils import check_state_result
 import salt.output
 import salt.minion
@@ -52,6 +53,7 @@ def cn_sls_pillar(target, ttl=api.RUNNER_CACHE_TIME):
     def _do(target):
         cloudSettings = cli('mc_cloud.settings')
         cloudSettingsData = {}
+        imgSettingsData = {}
         cnSettingsData = {}
         cnSettingsData['cn'] = cli(
             'mc_cloud_compute_node.get_settings_for_target', target)
@@ -69,8 +71,16 @@ def cn_sls_pillar(target, ttl=api.RUNNER_CACHE_TIME):
         cloudSettingsData = cloudSettingsData
         cnSettingsData = cnSettingsData
         vmSettings = {}
+        imgSettings = cli('mc_cloud_images.settings')
+        for name, imageData in imgSettings.get('kvm', {}).get('images', {}).items():
+            imgSettingsData[name] = {
+                'kvm_tarball': imageData['kvm_tarball'],
+                'kvm_tarball_md5': imageData['kvm_tarball_md5'],
+                'kvm_tarball_name': imageData['kvm_tarball_name'],
+                'kvm_tarball_ver': imageData['kvm_tarball_ver']}
         pillar = {'cloudSettings': cloudSettingsData,
                   'vmSettings': vmSettings,
+                  'imgSettings': imgSettingsData,
                   'cnSettings': cnSettingsData}
         # add to the compute node pillar all the VT specific pillars
         for vt in vts:
@@ -80,7 +90,7 @@ def cn_sls_pillar(target, ttl=api.RUNNER_CACHE_TIME):
                 if vt == vdata.get('virt_type', ''):
                     vmSettings[vm] = __salt__[vid](target, vm)
             if cid in __salt__:
-                pillar.update(__salt__[cid](target))
+                pillar = dictupdate(pillar, __salt__[cid](target))
         # add to the compute node pillar all the VM pillars
         return pillar
     cache_key = 'mc_cloud_compute_node.cn_sls_pillar_{0}'.format(target)

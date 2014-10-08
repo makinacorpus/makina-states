@@ -53,24 +53,16 @@ def cn_sls_pillar(target, ttl=api.RUNNER_CACHE_TIME, output=False):
     __salt__['mc_api.time_log']('start {0}'.format(func_name))
     def _do(target):
         pillar = {}
-        imgSettings = cli('mc_cloud_images.settings')
         lxcSettings = cli('mc_cloud_lxc.settings')
         imgSettingsData = {}
         lxcSettingsData = {}
-        for name, imageData in imgSettings['lxc']['images'].items():
-            imgSettingsData[name] = {
-                'lxc_tarball': imageData['lxc_tarball'],
-                'lxc_tarball_md5': imageData['lxc_tarball_md5'],
-                'lxc_tarball_name': imageData['lxc_tarball_name'],
-                'lxc_tarball_ver': imageData['lxc_tarball_ver']}
         for v in ['use_bridge', 'bridge',
                   'gateway', 'netmask_full',
                   'network', 'netmask']:
             lxcSettingsData[v] = lxcSettings['defaults'][v]
         # imgSettingsData = api.json_dump(imgSettingsData)
         # lxcSettingsData = api.json_dump(lxcSettingsData)
-        pillar.update({'lxcSettings': lxcSettingsData,
-                       'imgSettings': imgSettingsData})
+        pillar.update({'lxcSettings': lxcSettingsData})
         return pillar
     cache_key = 'mc_cloud_lxc.cn_sls_pillar_{0}'.format(target)
     ret = memoize_cache(_do, [target], {}, cache_key, ttl)
