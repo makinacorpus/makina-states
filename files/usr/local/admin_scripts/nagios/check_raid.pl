@@ -11,7 +11,7 @@
 # 2004-2006 Steve Shipway, university of auckland,
 # http://www.steveshipway.org/forum/viewtopic.php?f=20&t=417&p=3211
 # Steve Shipway Thanks M Carmier for megaraid section.
-# 2009-2013 Elan Ruusamäe <glen@pld-linux.org>
+# 2009-2014 Elan Ruusamäe <glen@pld-linux.org>
 
 # Requires: Perl 5.8 for the open(my $fh , '-|', @CMD) syntax.
 # You can workaround for earlier Perl it as:
@@ -70,9 +70,9 @@ our $debug = 0;
 
 # paths for which()
 our @paths = split /:/, $ENV{'PATH'};
-unshift(@paths, qw(/usr/local/nrpe /usr/local/bin /sbin /usr/sbin /bin /usr/sbin));
+unshift(@paths, qw(/usr/local/nrpe /usr/local/bin /sbin /usr/sbin /bin /usr/sbin /opt/bin));
 
-# lookup program from list of possibele filenames
+# lookup program from list of possible filenames
 # search is performed from $PATH plus additional hardcoded @paths
 sub which {
 	for my $prog (@_) {
@@ -95,6 +95,21 @@ my (%ERRORS) = (OK => 0, WARNING => 1, CRITICAL => 2, UNKNOWN => 3);
 
 # status to set when RAID is in resync state
 our $resync_status = $ERRORS{WARNING};
+
+# status to set when RAID is in check state
+our $check_status = $ERRORS{OK};
+
+# status to set when PD is spare
+our $spare_status = $ERRORS{OK};
+
+# status to set when BBU is in learning cycle.
+our $bbulearn_status = $ERRORS{WARNING};
+
+# status to set when Write Cache has failed.
+our $cache_fail_status = $ERRORS{WARNING};
+
+# check status of BBU
+our $bbu_monitoring = 0;
 
 # return list of programs this plugin needs
 # @internal
@@ -206,6 +221,48 @@ sub resync {
 	return $this;
 }
 
+# helper to set status for check
+# returns $this to allow fluent api
+sub check_status {
+	my ($this) = @_;
+	$this->status($check_status);
+	return $this;
+}
+
+# helper to set status for spare
+# returns $this to allow fluent api
+sub spare {
+	my ($this) = @_;
+	$this->status($spare_status);
+	return $this;
+}
+
+# helper to set status for BBU learning cycle
+# returns $this to allow fluent api
+sub bbulearn {
+	my ($this) = @_;
+	$this->status($bbulearn_status);
+	return $this;
+}
+
+# helper to set status when Write Cache fails
+# returns $this to allow fluent api
+sub cache_fail {
+	my ($this) = @_;
+	$this->status($cache_fail_status);
+	return $this;
+}
+
+# helper to get/set bbu monitoring
+sub bbu_monitoring {
+	my ($this, $val) = @_;
+
+	if (defined $val) {
+		$bbu_monitoring = $val;
+	}
+	$bbu_monitoring;
+}
+
 # setup status message text
 sub message {
 	my ($this, $message) = @_;
@@ -293,6 +350,26 @@ sub format_bytes($) {
 		return sprintf("%.2f KiB", $bytes / K);
 	}
 	return "$bytes B";
+}
+
+# disable sudo temporarily
+sub nosudo_cmd {
+	my ($this, $command, $cb) = @_;
+
+	my ($res, @res);
+
+	my $sudo = $this->{sudo};
+	$this->{sudo} = 0;
+
+	if (wantarray) {
+		@res = $this->cmd($command, $cb);
+	} else {
+		$res = $this->cmd($command, $cb);
+	}
+
+	$this->{sudo} = $sudo;
+
+	return wantarray ? @res : $res;
 }
 
 # build up command for $command
@@ -386,9 +463,34 @@ sub commands {
 	}
 }
 
+# lists contoller devices (type=storage)
+# this will fail (return empty list) if sg module is not present
+# return /dev/sgX nodes
+sub list_sg {
+	my $this = shift;
+
+	my @scan = $this->scan;
+
+	my @devs = map { $_->{sgnode} } grep { $_->{type} eq 'storage' && $_->{sgnode} ne '-' } @scan;
+	return wantarray ? @devs : \@devs;
+}
+
+# list disk nodes one for each controller
+# return /dev/sdX nodes
+sub list_dd {
+	my $this = shift;
+
+	my @scan = $this->scan;
+	my @devs = map { $_->{devnode} } grep { $_->{type} eq 'disk' && $_->{devnode} ne '-' && $_->{sgnode} } @scan;
+	return wantarray ? @devs : \@devs;
+}
+
 # scan lsscsi output
 sub scan {
 	my $this = shift;
+
+	# cache inside single run
+	return wantarray ? @{$this->{sdevs}} : $this->{sdevs} if $this->{sdevs};
 
 	# Scan such output:
 	# [0:0:0:0]    disk    HP       LOGICAL VOLUME   3.00  /dev/sda   /dev/sg0
@@ -423,6 +525,7 @@ sub scan {
 	}
 	close $fh;
 
+	$this->{sdevs} = \@sdevs;
 	return wantarray ? @sdevs : \@sdevs;
 }
 
@@ -558,6 +661,7 @@ sub parse {
 
 	my (@md, %md);
 	my $fh = $this->cmd('mdstat');
+	my $arr_checking = 0;
 	while (<$fh>) {
 		chomp;
 
@@ -569,7 +673,7 @@ sub parse {
 		if (my($dev, $active, $ro, $rest) = m{^
 			(\S+)\s+:\s+ # mdname
 			(\S+)\s+     # active: "inactive", "active"
-			(\((?:auto-)?read-only\))? # readonly
+			(\((?:auto-)?read-only\)\s+)? # readonly
 			(.+)         # personality name + disks
 		}x) {
 			my @parts = split /\s/, $rest;
@@ -651,8 +755,12 @@ sub parse {
 		# linux-2.6.33/drivers/md/md.c, status_resync
 		# [==>..................]  resync = 13.0% (95900032/732515712) finish=175.4min speed=60459K/sec
 		# [=>...................]  check =  8.8% (34390144/390443648) finish=194.2min speed=30550K/sec
-		if (my($action, $perc, $eta, $speed) = m{(resync|recovery|check|reshape)\s+=\s+([\d.]+%) \(\d+/\d+\) finish=([\d.]+min) speed=(\d+K/sec)}) {
+		if (my($action, $perc, $eta, $speed) = m{(resync|recovery|reshape)\s+=\s+([\d.]+%) \(\d+/\d+\) finish=([\d.]+min) speed=(\d+K/sec)}) {
 			$md{resync_status} = "$action:$perc $speed ETA: $eta";
+			next;
+		} elsif (($perc, $eta, $speed) = m{check\s+=\s+([\d.]+%) \(\d+/\d+\) finish=([\d.]+min) speed=(\d+K/sec)}) {
+			$md{check_status} = "check:$perc $speed ETA: $eta";
+			$arr_checking = 1;
 			next;
 		}
 
@@ -664,6 +772,19 @@ sub parse {
 		push(@md, { %md } ) if %md;
 	}
 	close $fh;
+
+	# One of the arrays is in checking state, which could be because there is a scheduled sync of all MD arrays
+	# In such a case, all of the arrays are scheduled to by checked, but only one of them is actually running the check
+	# while the others are in "resync=DELAYED" state.
+	# We don't want to receive notifications in such case, so we check for this particular case here
+	if ($arr_checking && scalar(@md) >= 2) {
+		foreach my $dev (@md) {
+			if ( $dev->{resync_status} && $dev->{resync_status} eq "resync=DELAYED") {
+				delete $dev->{resync_status};
+				$dev->{check_status} = "check=DELAYED";
+			}
+		}
+	}
 
 	return wantarray ? @md : \@md;
 }
@@ -693,6 +814,10 @@ sub check {
 		} elsif ($md{resync_status}) {
 			$this->resync;
 			$s .= "$md{status} ($md{resync_status})";
+
+		} elsif ($md{check_status}) {
+			$this->check_status;
+			$s .= "$md{status} ($md{check_status})";
 
 		} elsif ($md{status} =~ /_/) {
 			$this->critical;
@@ -812,16 +937,17 @@ sub sudo {
 	);
 }
 
-sub check {
+# parse physical devices
+sub parse_pd {
 	my $this = shift;
 
+	my (@pd, %pd);
+	my $rc = -1;
 	my $fh = $this->cmd('pdlist');
-	my (@status, @pdata, @longout, @devs, @vols, @bats, %cur, $rc);
-	$rc = -1;
 	while (<$fh>) {
 		if (my($s) = /Device Id: (\S+)/) {
-			push(@devs, { %cur }) if %cur;
-			%cur = ( dev => $s, state => undef, name => undef );
+			push(@pd, { %pd }) if %pd;
+			%pd = ( dev => $s, state => undef, name => undef, predictive => undef );
 			next;
 		}
 
@@ -836,120 +962,222 @@ sub check {
 			# 'Unconfigured(good), Spun Up'
 			# 'Unconfigured(good), Spun down'
 			$s =~ s/,.+//;
-			$cur{state} = $s;
+			$pd{state} = $s;
+
+			if (defined($pd{predictive})) {
+				$pd{state} = $pd{predictive};
+			}
+			next;
+		}
+
+		if (my($s) = /Predictive Failure Count: (\d+)/) {
+			if ($s > 0) {
+				$pd{predictive} = 'Predictive';
+			}
 			next;
 		}
 
 		if (my($s) = /Inquiry Data: (.+)/) {
 			# trim some spaces
 			$s =~ s/\s+/ /g; $s =~ s/^\s+|\s+$//g;
-			$cur{name} = $s;
+			$pd{name} = $s;
 			next;
 		}
+
 		if (my($s) = /Exit Code: (\d+x\d+)/) {
 			$rc = hex($s);
 		}
+		else {
+			$rc = 0;
+		}
 	}
-	unless (close $fh) {
-		$this->critical;
-	}
-	$this->critical if $rc;
-	push(@devs, { %cur }) if %cur;
+	push(@pd, { %pd }) if %pd;
 
-	my %cur_vol;
-	$fh = $this->cmd('ldinfo');
-	$rc = -1;
+	$this->critical unless close $fh;
+	$this->critical if $rc;
+
+	return \@pd;
+}
+
+sub parse_ld {
+	my $this = shift;
+
+	my (@ld, %ld);
+	my $rc = -1;
+	my $fh = $this->cmd('ldinfo');
 	while (<$fh>) {
 		if (my($drive_id, $target_id) = /Virtual (?:Disk|Drive)\s*:\s*(\d+)\s*\(Target Id:\s*(\d+)\)/i) {
-			push(@vols, { %cur_vol }) if %cur_vol;
-			# Default to DriveID:TragetID in case no Name is given ...
-			%cur_vol = ( name => "DISK$drive_id.$target_id", state => undef );
+			push(@ld, { %ld }) if %ld;
+			# Default to DriveID:TargetID in case no Name is given ...
+			%ld = ( name => "DISK$drive_id.$target_id", state => undef );
 			next;
 		}
 
 		if (my($name) = /Name\s*:\s*(\S+)/) {
 			# Add a symbolic name, if given
-			$cur_vol{name} = $name;
+			$ld{name} = $name;
 			next;
 		}
 
 		if (my($s) = /State\s*:\s*(\S+)/) {
-			$cur_vol{state} = $s;
+			$ld{state} = $s;
 			next;
 		}
+
+		if (my($s) = /Default Cache Policy\s*:\s*(.+)/) {
+			$ld{default_cache} = [split /,\s*/, $s];
+			next;
+		}
+
+		if (my($s) = /Current Cache Policy\s*:\s*(.+)/) {
+			$ld{current_cache} = [split /,\s*/, $s];
+			next;
+		}
+
 		if (my($s) = /Exit Code: (\d+x\d+)/) {
 			$rc = hex($s);
+		} else {
+			$rc = 0;
 		}
 	}
-	unless (close $fh) {
-		$this->critical;
-	}
-	$this->critical if $rc;
-	push(@vols, { %cur_vol }) if %cur_vol;
+	push(@ld, { %ld }) if %ld;
 
-	# check battery
-	$fh = $this->cmd('battery');
-	my (%cur_bat);
+	$this->critical unless close $fh;
+	$this->critical if $rc;
+
+	return \@ld;
+}
+
+# check battery
+sub parse_bbu {
+	my $this = shift;
+
+	return undef unless $this->bbu_monitoring;
+
+	my %default_bbu = (
+		name => undef, state => '???', charging_status => '???', missing => undef,
+		learn_requested => undef, replacement_required => undef,
+		learn_cycle_requested => undef, learn_cycle_active => '???',
+		pack_will_fail => undef, temperature => undef, temperature_state => undef,
+		voltage => undef, voltage_state => undef
+	);
+
+	my (@bbu, %bbu);
+	my $fh = $this->cmd('battery');
 	while (<$fh>) {
+		# handle when bbu status get gives an error. see issue #32
+		if (my($s) = /Get BBU Status Failed/) {
+			last;
+		}
+
 		if (my($s) = /BBU status for Adapter: (.+)/) {
-			push(@bats, { %cur_bat }) if %cur_bat;
-			%cur_bat = (
-				name => $s, state => '???', missing => undef, learn_requested => undef,
-				replacement_required => undef, pack_will_fail => undef, temperature => undef,
-				temperature_state => undef, voltage => undef, voltage_state => undef
-			);
+			push(@bbu, { %bbu }) if %bbu;
+			%bbu = %default_bbu;
+			$bbu{name} = $s;
 			next;
 		}
-		if (my($s) = /Battery State\s*: (.+)/) {
-			$cur_bat{state} = $s;
+#=cut
+# according to current sample data, Battery State never has value
+		if (my($s) = /Battery State\s*: ?(.*)/i) {
+			if (!$s) { $s = 'Faulty'; };
+			$bbu{state} = $s;
+			next;
+		}
+#=cut
+		if (my($s) = /Charging Status\s*: (\w*)/) {
+			$bbu{charging_status} = $s;
 			next;
 		}
 		if (my($s) = /Battery Pack Missing\s*: (\w*)/) {
-			$cur_bat{missing} = $s;
+			$bbu{missing} = $s;
 			next;
 		}
 		if (my($s) = /Battery Replacement required\s*: (\w*)/) {
-			$cur_bat{replacement_required} = $s;
+			$bbu{replacement_required} = $s;
+			next;
+		}
+		if (my($s) = /Learn Cycle Requested\s*: (\w*)/) {
+			$bbu{learn_cycle_requested} = $s;
+			next;
+		}
+		if (my($s) = /Learn Cycle Active\s*: (\w*)/) {
+			$bbu{learn_cycle_active} = $s;
 			next;
 		}
 		if (my($s) = /Pack is about to fail & should be replaced\s*: (\w*)/) {
-			$cur_bat{pack_will_fail} = $s;
+			$bbu{pack_will_fail} = $s;
 			next;
 		}
 		# Temperature: 18 C
 		if (my($s) = /Temperature: (\d+) C/) {
-			$cur_bat{temperature} = $s;
+			$bbu{temperature} = $s;
 			next;
 		}
 		# Temperature : OK
 		if (my($s) = /  Temperature\s*: (\w*)/) {
-			$cur_bat{temperature_state} = $s;
+			$bbu{temperature_state} = $s;
 			next;
 		}
 		# Voltage: 4074 mV
 		if (my($s) = /Voltage: (\d+) mV/) {
-			$cur_bat{voltage} = $s;
+			$bbu{voltage} = $s;
 			next;
 		}
 		# Voltage : OK
 		if (my($s) = /Voltage\s*: (\w*)/) {
-			$cur_bat{voltage_state} = $s;
+			$bbu{voltage_state} = $s;
 			next;
 		}
+
 	}
-	close $fh;
-	push(@bats, { %cur_bat}) if %cur_bat;
+	$this->critical unless close $fh;
+
+	push(@bbu, { %bbu }) if %bbu;
+
+	return \@bbu;
+}
+
+sub parse {
+	my $this = shift;
+
+	my $pd = $this->parse_pd;
+	my $ld = $this->parse_ld;
+	my $bbu = $this->parse_bbu;
+
+	my @devs = @$pd if $pd;
+	my @vols = @$ld if $ld;
+	my @bats = @$bbu if $bbu;
+
+	return {
+		logical => $ld,
+		physical => $pd,
+		battery => $bbu,
+	};
+}
+
+sub check {
+	my $this = shift;
+
+	my $c = $this->parse;
 
 	my @vstatus;
-	foreach my $vol (@vols) {
+	foreach my $vol (@{$c->{logical}}) {
 		push(@vstatus, sprintf "%s:%s", $vol->{name}, $vol->{state});
 		if ($vol->{state} ne 'Optimal') {
 			$this->critical;
 		}
+
+		# check cache policy, #65
+		my @wt = grep { /WriteThrough/ } @{$vol->{current_cache}};
+		if (@wt) {
+			my @default = grep { /WriteThrough/ } @{$vol->{default_cache}};
+			# alert if WriteThrough is configured in default
+			$this->cache_fail unless @default;
+		}
 	}
 
 	my %dstatus;
-	foreach my $dev (@devs) {
+	foreach my $dev (@{$c->{physical}}) {
 		if ($dev->{state} eq 'Online' || $dev->{state} eq 'Hotspare' || $dev->{state} eq 'Unconfigured(good)') {
 			push(@{$dstatus{$dev->{state}}}, sprintf "%02d", $dev->{dev});
 
@@ -961,9 +1189,14 @@ sub check {
 	}
 
 	my (%bstatus, @bpdata, @blongout);
-	foreach my $bat (@bats) {
-		if ($bat->{state} !~ /Operational|Optimal/) {
-			$this->critical;
+	foreach my $bat (@{$c->{battery}}) {
+		if ($bat->{state} !~ /^(Operational|Optimal)$/) {
+			# BBU learn cycle in progress.
+			if ($bat->{charging_status} =~ /^(Charging|Discharging)$/ && $bat->{learn_cycle_active} eq 'Yes') {
+				$this->bbulearn;
+			} else {
+				$this->critical;
+			}
 		}
 		if ($bat->{missing} ne 'No') {
 			$this->critical;
@@ -989,7 +1222,7 @@ sub check {
 		# Return current battery temparature & voltage.
 		#
 		# Battery0=18;4074
-		push(@bpdata, sprintf "Battery%s=%s;%s", $bat->{name}, $bat->{temperature}, $bat->{voltage});
+		push(@bpdata, sprintf "Battery%s_T=%s;;;; Battery%s_V=%s;;;;", $bat->{name}, $bat->{temperature}, $bat->{name}, $bat->{voltage});
 
 		# Long output.
 		# Detailed plugin output.
@@ -1004,22 +1237,28 @@ sub check {
 		push(@blongout, join("\n", grep {/./}
 			"Battery$bat->{name}:",
 			" - State: $bat->{state}",
+			" - Charging status: $bat->{charging_status}",
+			" - Learn cycle requested: $bat->{learn_cycle_requested}",
+			" - Learn cycle active: $bat->{learn_cycle_active}",
 			" - Missing: $bat->{missing}",
 			" - Replacement required: $bat->{replacement_required}",
-			defined($bat->{pack_will_fail}) ?  " - About to fail: $bat->{pack_will_fail}" : "",
+			defined($bat->{pack_will_fail}) ? " - About to fail: $bat->{pack_will_fail}" : "",
 			" - Temperature: $bat->{temperature_state} ($bat->{temperature} C)",
 			" - Voltage: $bat->{voltage_state} ($bat->{voltage} mV)",
 		));
 	}
 
-	push(@status,
-		'Volumes(' . ($#vols + 1) . '): ' . join(',', @vstatus) .
-		'; Devices(' . ($#devs + 1) . '): ' . $this->join_status(\%dstatus) .
-		(@bats ?  '; Batteries(' . ($#bats + 1) . '): ' . $this->join_status(\%bstatus) : '')
-	);
+	my @cstatus;
+	push(@cstatus, 'Volumes(' . ($#{$c->{logical}} + 1) . '): ' . join(',', @vstatus));
+	push(@cstatus, 'Devices(' . ($#{$c->{physical}} + 1) . '): ' . $this->join_status(\%dstatus));
+	push(@cstatus, 'Batteries(' . ($#{$c->{battery}} + 1) . '): ' . $this->join_status(\%bstatus)) if @{$c->{battery}};
+	my @status = join('; ', @cstatus);
+
+	my @pdata;
 	push(@pdata,
 		join('\n', @bpdata)
 	);
+	my @longout;
 	push(@longout,
 		join('\n', @blongout)
 	);
@@ -1274,8 +1513,8 @@ sub check {
 
 	my $read = $this->cmd('container list', \$write);
 	while (<$read>) {
- 		# 0    Mirror  465GB            Valid   0:00:0 64.0KB: 465GB Normal                        0  032511 17:55:06
- 		# /dev/sda             root             0:01:0 64.0KB: 465GB Normal                        1  032511 17:55:06
+		# 0    Mirror  465GB            Valid   0:00:0 64.0KB: 465GB Normal                        0  032511 17:55:06
+		# /dev/sda             root             0:01:0 64.0KB: 465GB Normal                        1  032511 17:55:06
 		if (my($dsk, $stat) = /(\d:\d\d?:\d+)\s+\S+:\s?\S+\s+(\S+)/) {
 			next unless $this->valid($dsk);
 			$dsk =~ s#:#/#g;
@@ -1313,7 +1552,8 @@ sub program_names {
 
 sub commands {
 	{
-		'status' => ['-|', '@CMD'],
+		'status' => ['-|', '@CMD', '-i', '$id'],
+		'get_controller_no' => ['-|', '@CMD', '-p'],
 		'sync status' => ['-|', '@CMD', '-n'],
 	}
 }
@@ -1325,8 +1565,10 @@ sub sudo {
 
 	my $cmd = $this->{program};
 	(
-	"CHECK_RAID ALL=(root) NOPASSWD: $cmd",
+	"CHECK_RAID ALL=(root) NOPASSWD: $cmd -i [0-9]",
+	"CHECK_RAID ALL=(root) NOPASSWD: $cmd -i [1-9][0-9]",
 	"CHECK_RAID ALL=(root) NOPASSWD: $cmd -n",
+	"CHECK_RAID ALL=(root) NOPASSWD: $cmd -p",
 	);
 }
 
@@ -1334,7 +1576,18 @@ sub parse {
 	my $this = shift;
 
 	my (%ld, %pd);
-	my $fh = $this->cmd('status');
+	my $fh = $this->cmd('get_controller_no');
+	my $id;
+	while (<$fh>) {
+		chomp;
+		if ( /^Found.*id=(\d{1,2}),.*/ ) {
+			$id = $1;
+			last;
+		}
+	}
+	close $fh;
+
+	$fh = $this->cmd('status',{ '$id' => $id });
 
 	my %VolumeTypesHuman = (
 		IS => 'RAID-0',
@@ -1391,7 +1644,7 @@ sub parse {
 				flags => [ split ' ', $flags ],
 			};
 		} else {
-			warn "mpt unparsed: [$_]\n";
+			warn "mpt unparsed: [$_]";
 			$this->unknown;
 		}
 	}
@@ -1408,10 +1661,10 @@ sub parse {
 			}
 			# mpt-status.c GetResyncPercentage
 			# scsi_id:0 70%
-			elsif (my($scsi_id, $percent) = /^scsi_id:(\d)+ (\d+)%/) {
+			elsif (my($scsi_id, $percent) = /^scsi_id:(\d+) (\d+)%/) {
 				$pd{$scsi_id}{resync} = int($percent);
 			} else {
-				warn "mpt: [$_]\n";
+				warn "mpt unparsed: [$_]";
 				$this->unknown;
 			}
 		}
@@ -1611,7 +1864,7 @@ sub parse {
 
 					$pd{$p{id}} = { %p };
 				} else {
-					warn "[$section] [$_]\n";
+					warn "[$section] [$_]";
 					$this->unknown;
 				}
 
@@ -1633,7 +1886,7 @@ sub parse {
 				} elsif (/^$/) {
 					$ld{$l{number}} = { %l };
 				} else {
-					warn "[$section] [$_]\n";
+					warn "[$section] [$_]";
 					$this->unknown;
 				}
 
@@ -1651,7 +1904,7 @@ sub parse {
 						$ad{$a{number}} = { %a };
 					}
 				} else {
-					warn "[$section] [$_]\n";
+					warn "[$section] [$_]";
 					$this->unknown;
 				}
 
@@ -1810,12 +2063,11 @@ sub check {
 }
 
 package tw_cli;
-# TODO: rename to 3ware?
-# 3ware SATA RAID
-# check designed from check_3ware.sh by:
-# Sander Klein <sander [AT] pictura [dash] dp [DOT] nl>
-# http://www.pictura-dp.nl/
-# Version 20070706
+# tw_cli(8) is a Command Line Interface Storage Management Software for
+# AMCC/3ware ATA RAID Controller(s).
+# Owned by LSI currently: https://en.wikipedia.org/wiki/3ware
+#
+# http://www.cyberciti.biz/files/tw_cli.8.html
 use base 'plugin';
 
 # register
@@ -1842,75 +2094,236 @@ sub sudo {
 	"CHECK_RAID ALL=(root) NOPASSWD: $cmd info*";
 }
 
+sub trim { my $s = shift; $s =~ s/^\s+|\s+$//g; return $s };
+
+sub to_i {
+	my $i = shift;
+	return $i if $i !~ /^\d+$/;
+	return int($i);
+}
+
+sub parse {
+	my $this = shift;
+
+	my (%c);
+	# scan controllers
+	my $fh = $this->cmd('info');
+	while (<$fh>) {
+		if (my($ctl, $model, $ports, $drives, $units, $notopt, $rrate, $vrate, $bbu) = m{^
+			(c\d+)\s+   # Controller
+			(\S+)\s+    # Model
+			(\d+)\s+    # (V)Ports
+			(\d+)\s+    # Drives
+			(\d+)\s+    # Units
+			(\d+)\s+    # NotOpt: Not Optional
+			            # Not Optimal refers to any state except OK and VERIFYING.
+						# Other states include INITIALIZING, INIT-PAUSED,
+						# REBUILDING, REBUILD-PAUSED, DEGRADED, MIGRATING,
+						# MIGRATE-PAUSED, RECOVERY, INOPERABLE, and UNKNOWN.
+			(\d+)\s+    # RRate: Rebuild Rate
+			(\d+|-)\s+  # VRate: Verify Rate
+			(\S+|-)?    # BBU
+		}x) {
+			$c{$ctl} = {
+				model => $model,
+				ports => int($ports),
+				drives => int($drives),
+				units => int($units),
+				optimal => int(!$notopt),
+				rrate => int($rrate),
+				vrate => to_i($vrate),
+				bbu => $bbu,
+			};
+		}
+	}
+	close $fh;
+
+	# no controllers? skip early
+	return unless %c;
+
+	for my $c (keys %c) {
+		# get each unit on controllers
+		$fh = $this->cmd('unitstatus', { '$controller' => $c });
+		while (<$fh>) {
+			if (my($u, $type, $status, $p_rebuild, $p_vim, $strip, $size, $cache, $avrify) = m{^
+				(u\d+)\s+ # Unit
+				(\S+)\s+  # UnitType
+				(\S+)\s+  # Status
+				(\S+)\s+  # %RCmpl: The %RCompl reports the percent completion
+				          # of the unit's Rebuild, if this task is in progress.
+				(\S+)\s+  # %V/I/M: The %V/I/M reports the percent completion
+				          # of the unit's Verify, Initialize, or Migrate,
+						  # if one of these are in progress.
+				(\S+)\s+  # Strip
+				(\S+)\s+  # Size(GB)
+				(\S+)\s+  # Cache
+				(\S+)     # AVrify
+			}x) {
+				$c{$c}{unitstatus}{$u} = {
+					type => $type,
+					status => $status,
+					rebuild_percent => $p_rebuild,
+					vim_percent => $p_vim,
+					strip => $strip,
+					size => $size,
+					cache => $cache,
+					avrify => $avrify,
+				};
+				next;
+			}
+
+			if (m{^u\d+}) {
+				$this->unknown;
+				warn "unparsed: [$_]";
+			}
+		}
+		close $fh;
+
+		# get individual disk status
+		$fh = $this->cmd('drivestatus', { '$controller' => $c });
+		# common regexp
+		my $r = qr{^
+			(p\d+)\s+       # Port
+			(\S+)\s+        # Status
+			(\S+)\s+        # Unit
+			([\d.]+\s[TG]B|-)\s+ # Size
+		}x;
+
+		while (<$fh>) {
+			# skip empty line
+			next if /^$/;
+
+			# Detect version
+			if (/^Port/) {
+				# <=9.5.1: Blocks Serial
+				$r .= qr{
+					(\S+)\s+  # Blocks
+					(.+)      # Serial
+				}x;
+				next;
+			} elsif (/^VPort/) {
+				# >=9.5.2: Type Phy Encl-Slot Model
+				$r .= qr{
+					(\S+)\s+ # Type
+					(\S+)\s+ # Phy
+					(\S+)\s+ # Encl-Slot
+					(.+)     # Model
+				}x;
+				next;
+			}
+
+			if (my($port, $status, $unit, $size, @rest) = ($_ =~ $r)) {
+				# do not report disks not present
+				# tw_cli 9.5.2 and above do not list these at all
+				next if $status eq 'NOT-PRESENT';
+				my %p;
+
+				if (@rest <= 2) {
+					my ($blocks, $serial) = @rest;
+					%p = (
+						blocks => to_i($blocks),
+						serial => trim($serial),
+					);
+				} else {
+					my ($type, $phy, $encl, $model) = @rest;
+					%p = (
+						type => $type,
+						phy => to_i($phy),
+						encl => $encl,
+						model => $model,
+					);
+				}
+
+				$c{$c}{drivestatus}{$port} = {
+					status => $status,
+					unit => $unit,
+					size => $size,
+					%p,
+				};
+
+				next;
+			}
+
+			if (m{^p\d+}) {
+				$this->unknown;
+				warn "unparsed: [$_]";
+			}
+		}
+		close $fh;
+	}
+
+	return \%c;
+}
+
 sub check {
 	my $this = shift;
 
 	# status messages pushed here
 	my @status;
 
-	my (@c);
-	# scan controllers
-	my $fh = $this->cmd('info');
-	while (<$fh>) {
-		if (my($c, $model) = /^(c\d+)\s+(\S+)/) {
-			push(@c, [$c, $model]);
-		}
-	}
-	close $fh;
-
-	unless (@c) {
-		$this->warning;
+	my $c = $this->parse;
+	if (!$c) {
+		$this->unknown;
 		$this->message("No Adapters were found on this machine");
-		return;
 	}
 
-	for my $i (@c) {
-		my ($c, $model) = @$i;
-		# check each unit on controllers
-		$fh = $this->cmd('unitstatus', { '$controller' => $c });
+	# process each controller
+	while (my($cid, $c) = each %$c) {
 		my @cstatus;
-		while (<$fh>) {
-			next unless (my($u, $s, $p, $p2) = /^(u\d+)\s+\S+\s+(\S+)\s+(\S+)\s+(\S+)/);
 
-			if ($s eq 'OK') {
-				push(@cstatus, "$u:$s");
+		while (my($uid, $u) = each %{$c->{unitstatus}}) {
+			my $s = $u->{status};
 
-			} elsif ($s =~ 'INITIALIZING|MIGRATING') {
+			if ($s =~ /INITIALIZING|MIGRATING/) {
 				$this->warning;
-				push(@cstatus, "$u:$s $p2");
+				$s .= " $u->{vim_percent}";
 
 			} elsif ($s eq 'VERIFYING') {
 				$this->resync;
-				push(@cstatus, "$u:$s $p2");
+				$s .= " $u->{vim_percent}";
 
 			} elsif ($s eq 'REBUILDING') {
 				$this->warning;
-				push(@cstatus, "$u:$s $p");
+				$s .= " $u->{rebuild_percent}";
 
 			} elsif ($s eq 'DEGRADED') {
 				$this->critical;
-				push(@cstatus, "$u:$s");
-			} else {
-				push(@cstatus, "$u:$_");
-				$this->unknown;
+
+			} elsif ($s ne 'OK') {
+				$this->critical;
+
 			}
-			push(@status, "$c($model): ". join(',', @cstatus));
+
+			my @ustatus = $s;
+
+			# report cache, no checking
+			if ($u->{cache} && $u->{cache} ne '-')  {
+				push(@ustatus, "Cache:$u->{cache}");
+			}
+
+			push(@status, "$cid($c->{model}): $uid($u->{type}): ".join(', ', @ustatus));
 		}
-		close $fh;
 
 		# check individual disk status
-		$fh = $this->cmd('drivestatus', { '$controller' => $c });
-		my (@p, @ds);
-		while (<$fh>) {
-			next unless (my($p, $s,) = /^(p\d+)\s+(\S+)\s+.+\s+.+\s+.+/);
-			push(@ds, "$p:$s");
-			foreach (@ds) {
-				$this->critical unless (/p\d+:(OK|NOT-PRESENT)/);
-			}
-		}
+		my %ds;
+		foreach my $p (sort { $a cmp $b } keys %{$c->{drivestatus}}) {
+			my $d = $c->{drivestatus}->{$p};
+			my $ds = $d->{status};
+			$this->critical unless $ds eq 'OK';
 
-		push(@status, "(disks: ".join(' ', @ds). ")");
-		close $fh;
+			if ($d->{unit} eq '-') {
+				$ds = 'SPARE';
+			}
+
+			push(@{$ds{$ds}}, $p);
+		}
+		push(@status, "Drives($c->{drives}): ".$this->join_status(\%ds)) if %ds;
+
+		# check BBU
+		if ($c->{bbu} && $c->{bbu} ne '-')  {
+			$this->critical if $c->{bbu} ne 'OK';
+			push(@status, "BBU: $c->{bbu}");
+		}
 	}
 
 	return unless @status;
@@ -2003,6 +2416,8 @@ sub parse_status {
 			$task{priority} = $1;
 		} elsif (/^\s+Percentage complete\s+: (\d+)/) {
 			$task{percent} = $1;
+		} elsif (/^Invalid controller number/) {
+			;
 		} else {
 			warn "Unknown line: [$_]";
 			# FIXME: ->message() gets overwritten later on
@@ -2041,7 +2456,7 @@ sub parse_config {
 	my ($this, $status) = @_;
 
 	# Controller information, Logical/Physical device info
-	my (%c, @ld, $ld, @pd, $pd);
+	my (%c, @ld, $ld, @pd, $ch, $pd);
 
 	my $fh = $this->cmd('getconfig');
 	my ($section, $subsection, $ok);
@@ -2073,6 +2488,7 @@ sub parse_config {
 					$this->parse_error($_);
 				}
 				undef($ld);
+				$ch = 0;
 				undef($pd);
 				undef($subsection);
 				next;
@@ -2132,14 +2548,14 @@ sub parse_config {
 					$c{battery_time_full} = "${d}d${h}h${m}m";
 
 				} else {
-					warn "Battery not parsed: [$_]\n";
+					warn "Battery not parsed: [$_]";
 				}
 
 			} elsif ($subsection eq 'Controller ZMM Information') {
 				if (my($bs) = /^\s+Status\s*:\s*(.*)$/) {
 					$c{zmm_status} = $bs;
 				} else {
-					warn "ZMM not parsed: [$_]\n";
+					warn "ZMM not parsed: [$_]";
 				}
 
 			} elsif ($subsection eq 'Controller Version Information') {
@@ -2154,69 +2570,94 @@ sub parse_config {
 			} elsif ($subsection eq 'Controller Vital Product Data') {
 				# not parsed yet
 			} else {
-				warn "SUBSECTION of [$section] NOT PARSED: [$subsection] [$_]\n";
+				warn "SUBSECTION of [$section] NOT PARSED: [$subsection] [$_]";
 			}
 
 		} elsif ($section eq 'Physical Device information') {
-			if (my($n) = /Device #(\d+)/) {
+			if (my($c) = /Channel #(\d+)/) {
+				$ch = int($c);
+				undef($pd);
+			} elsif (my($n) = /Device #(\d+)/) {
 				$pd = int($n);
-			} elsif (my($ps) = /Power State\s+:\s+(.+)/) {
-				$pd[$pd]{power_state} = $ps;
-			} elsif (my($st) = /^\s+State\s+:\s+(.+)/) {
-				$pd[$pd]{status} = $st;
-			} elsif (my($su) = /Supported\s+:\s+(.+)/) {
-				$pd[$pd]{supported} = $su;
-			} elsif (my($vnd) = /Vendor\s+:\s*(.*)/) {
-				# allow edits, i.e removed 'Vendor' value from test data
-				$pd[$pd]{vendor} = $vnd;
-			} elsif (my($mod) = /Model\s+:\s+(.+)/) {
-				$pd[$pd]{model} = $mod;
-			} elsif (my($fw) = /Firmware\s+:\s*(.*)/) {
-				$pd[$pd]{firmware} = $fw;
-			} elsif (my($sn) = /Serial number\s+:\s+(.+)/) {
-				$pd[$pd]{serial} = $sn;
-			} elsif (my($wwn) = /World-wide name\s+:\s+(.+)/) {
-				$pd[$pd]{wwn} = $wwn;
-			} elsif (my($sz) = /Size\s+:\s+(.+)/) {
-				$pd[$pd]{size} = $sz;
-			} elsif (my($wc) = /Write Cache\s+:\s+(.+)/) {
-				$pd[$pd]{write_cache} = $wc;
-			} elsif (my($ssd) = /SSD\s+:\s+(.+)/) {
-				$pd[$pd]{ssd} = $ssd;
-			} elsif (my($fru) = /FRU\s+:\s+(.+)/) {
-				$pd[$pd]{fru} = $fru;
-			} elsif (my($esd) = /Reported ESD(?:\(.+\))?\s+:\s+(.+)/) {
-				$pd[$pd]{esd} = $esd;
-			} elsif (my($ncq) = /NCQ status\s+:\s+(.+)/) {
-				$pd[$pd]{ncq} = $ncq;
-			} elsif (my($pfa) = /PFA\s+:\s+(.+)/) {
-				$pd[$pd]{pfa} = $pfa;
-			} elsif (my($e) = /Enclosure ID\s+:\s+(.+)/) {
-				$pd[$pd]{enclosure} = $e;
-			} elsif (my($t) = /Type\s+:\s+(.+)/) {
-				$pd[$pd]{type} = $t;
-			} elsif (my($smart) = /S\.M\.A\.R\.T\.(?:\s+warnings)?\s+:\s+(.+)/) {
-				$pd[$pd]{smart} = $smart;
-			} elsif (my($speed) = /Transfer Speed\s+:\s+(.+)/) {
-				$pd[$pd]{speed} = $speed;
-			} elsif (my($l) = /Reported Location\s+:\s+(.+)/) {
-				$pd[$pd]{location} = $l;
-			} elsif (my($sps) = /Supported Power States\s+:\s+(.+)/) {
-				$pd[$pd]{power_states} = $sps;
-			} elsif (my($cd) = /Reported Channel,Device(?:\(.+\))?\s+:\s+(.+)/) {
-				$pd[$pd]{cd} = $cd;
-			} elsif (my($type) = /Device is an?\s+(.+)/) {
-				$pd[$pd]{devtype} = $type;
-			} elsif (/Status of Enclosure services device/) {
-				while (<$fh>) {
-					last if /^$/;
-					if (my($temp) = /Temperature\s+(.+)/) {
-						$pd[$pd]{enclosure_temp} = $temp;
-					}
-					# here's actually more to parse
+			} elsif (not defined $pd) {
+				if (/Transfer Speed\s+:\s+(.+)/) {
+					# not parsed yet
+				} elsif (/Initiator at SCSI ID/) {
+					# not parsed yet
+				} elsif (/No physical drives attached/) {
+					# ignored
+				} else {
+					warn "Unparsed Physical Device data: [$_]";
 				}
 			} else {
-				warn "Unparsed Physical Device data: [$_]\n";
+				if (my($ps) = /Power State\s+:\s+(.+)/) {
+					$pd[$ch][$pd]{power_state} = $ps;
+				} elsif (my($st) = /^\s+State\s+:\s+(.+)/) {
+					$pd[$ch][$pd]{status} = $st;
+				} elsif (my($su) = /Supported\s+:\s+(.+)/) {
+					$pd[$ch][$pd]{supported} = $su;
+				} elsif (my($sf) = /Dedicated Spare for\s+:\s+(.+)/) {
+					$pd[$ch][$pd]{spare} = $sf;
+				} elsif (my($vnd) = /Vendor\s+:\s*(.*)/) {
+					# allow edits, i.e removed 'Vendor' value from test data
+					$pd[$ch][$pd]{vendor} = $vnd;
+				} elsif (my($mod) = /Model\s+:\s+(.+)/) {
+					$pd[$ch][$pd]{model} = $mod;
+				} elsif (my($fw) = /Firmware\s+:\s*(.*)/) {
+					$pd[$ch][$pd]{firmware} = $fw;
+				} elsif (my($sn) = /Serial number\s+:\s+(.+)/) {
+					$pd[$ch][$pd]{serial} = $sn;
+				} elsif (my($wwn) = /World-wide name\s+:\s+(.+)/) {
+					$pd[$ch][$pd]{wwn} = $wwn;
+				} elsif (my($sz) = /Size\s+:\s+(.+)/) {
+					$pd[$ch][$pd]{size} = $sz;
+				} elsif (my($wc) = /Write Cache\s+:\s+(.+)/) {
+					$pd[$ch][$pd]{write_cache} = $wc;
+				} elsif (my($ssd) = /SSD\s+:\s+(.+)/) {
+					$pd[$ch][$pd]{ssd} = $ssd;
+				} elsif (my($fru) = /FRU\s+:\s+(.+)/) {
+					$pd[$ch][$pd]{fru} = $fru;
+				} elsif (my($esd) = /Reported ESD(?:\(.+\))?\s+:\s+(.+)/) {
+					$pd[$ch][$pd]{esd} = $esd;
+				} elsif (my($ncq) = /NCQ status\s+:\s+(.+)/) {
+					$pd[$ch][$pd]{ncq} = $ncq;
+				} elsif (my($pfa) = /PFA\s+:\s+(.+)/) {
+					$pd[$ch][$pd]{pfa} = $pfa;
+				} elsif (my($e) = /Enclosure ID\s+:\s+(.+)/) {
+					$pd[$ch][$pd]{enclosure} = $e;
+				} elsif (my($t) = /Type\s+:\s+(.+)/) {
+					$pd[$ch][$pd]{type} = $t;
+				} elsif (my($smart) = /S\.M\.A\.R\.T\.(?:\s+warnings)?\s+:\s+(.+)/) {
+					$pd[$ch][$pd]{smart} = $smart;
+				} elsif (my($speed) = /Transfer Speed\s+:\s+(.+)/) {
+					$pd[$ch][$pd]{speed} = $speed;
+				} elsif (my($l) = /Reported Location\s+:\s+(.+)/) {
+					$pd[$ch][$pd]{location} = $l;
+				} elsif (my($sps) = /Supported Power States\s+:\s+(.+)/) {
+					$pd[$ch][$pd]{power_states} = $sps;
+				} elsif (my($cd) = /Reported Channel,Device(?:\(.+\))?\s+:\s+(.+)/) {
+					$pd[$ch][$pd]{cd} = $cd;
+				} elsif (my($type) = /Device is an?\s+(.+)/) {
+					$pd[$ch][$pd]{devtype} = $type;
+				} elsif (/Status of Enclosure/) {
+					# ignored
+				} elsif (my($temp) = /Temperature.*:\s+(.+)/) {
+					$pd[$ch][$pd]{temperature} = $temp;
+				} elsif (/(Fan \d+|Speaker) status/) {
+					# not parsed yet
+				} elsif (/Expander ID\s+:/) {
+					# not parsed yet
+				} elsif (/Enclosure Logical Identifier\s+:/) {
+					# not parsed yet
+				} elsif (/Expander SAS Address\s+:/) {
+					# not parsed yet
+				} elsif (/MaxCache (Capable|Assigned)\s+:\s+(.+)/) {
+					# not parsed yet
+				} elsif (/Power supply \d+ status/) {
+					# not parsed yet
+				} else {
+					warn "Unparsed Physical Device data: [$_]";
+				}
 			}
 
 		} elsif ($section =~ /Logical (device|drive) information/) {
@@ -2252,7 +2693,7 @@ sub parse_config {
 		} elsif ($section =~ /MaxCache 3\.0 information/) {
 			# not parsed yet
 		} else {
-			warn "NOT PARSED: [$section] [$_]\n";
+			warn "NOT PARSED: [$section] [$_]";
 		}
 	}
 	close $fh;
@@ -2364,11 +2805,41 @@ sub check {
 		}
 	}
 
+	# check for physical devices
+	my %pd;
+	my $pd_resync = 0;
+	for my $ch (@{$data->{physical}}) {
+		for my $pd (@{$ch}) {
+			# skip not disks
+			next if not defined $pd;
+			next if $pd->{devtype} =~ 'Enclosure';
+
+			if ($pd->{status} eq 'Rebuilding') {
+				$this->resync;
+				$pd_resync++;
+
+			} elsif ($pd->{status} eq 'Dedicated Hot-Spare') {
+				$this->spare;
+				$pd->{status} = "$pd->{status} for $pd->{spare}";
+
+			} elsif ($pd->{status} !~ '^Online|Hot[- ]Spare') {
+				$this->critical;
+			}
+
+			my $id = $pd->{serial} || $pd->{wwn};
+			push(@{$pd{$pd->{status}}}, $id);
+		}
+	}
+
 	# check for logical devices
 	for my $ld (@{$data->{logical}}) {
 		next unless $ld; # FIXME: fix that script assumes controllers start from '0'
 
-		$this->critical if $ld->{status} !~ /Optimal|Okay/;
+		if ($ld->{status} eq 'Degraded' && $pd_resync) {
+			$this->warning;
+		} elsif ($ld->{status} !~ /Optimal|Okay/) {
+			$this->critical;
+		}
 
 		my $id = $ld->{id};
 		if ($ld->{name}) {
@@ -2382,18 +2853,6 @@ sub check {
 		if (defined $ld->{defunct_segments} && $ld->{defunct_segments} ne 'No') {
 			push(@status, "Defunct segments: $ld->{defunct_segments}");
 		}
-	}
-
-	# check for physical devices
-	my %pd;
-	for my $pd (@{$data->{physical}}) {
-		# skip not disks
-		next if $pd->{devtype} =~ 'Enclosure services device';
-
-		$this->critical if $pd->{status} !~ /Online/;
-
-		my $id = $pd->{serial} || $pd->{wwn};
-		push(@{$pd{$pd->{status}}}, $id);
 	}
 
 	push(@status, "Drives: ".$this->join_status(\%pd)) if %pd;
@@ -2604,9 +3063,11 @@ sub program_names {
 
 sub commands {
 	{
-		'detect hpsa' => ['<', '/sys/module/hpsa/refcnt'],
 		'controller status' => ['-|', '@CMD', '@devs'],
+		'controller status verbose' => ['-|', '@CMD', '-V', '@devs'],
+		'cciss_vol_status version' => ['>&2', '@CMD', '-v'],
 
+		'detect hpsa' => ['<', '/sys/module/hpsa/refcnt'],
 		'detect cciss' => ['<', '/proc/driver/cciss'],
 		'cciss proc' => ['<', '/proc/driver/cciss/$controller'],
 	}
@@ -2620,22 +3081,31 @@ sub sudo {
 
 	my $cmd = $this->{program};
 
+	my $v1_10 = $this->cciss_vol_status_version >= 1.10;
+
 	my @sudo;
 	my @cciss_devs = $this->detect;
 	if (@cciss_devs) {
 		my $c = join(' ', @cciss_devs);
-		push(@sudo, "CHECK_RAID ALL=(root) NOPASSWD: $cmd $c");
+		if ($v1_10) {
+			push(@sudo, "CHECK_RAID ALL=(root) NOPASSWD: $cmd -V $c");
+		} else {
+			push(@sudo, "CHECK_RAID ALL=(root) NOPASSWD: $cmd $c");
+		}
 	}
 
 	my @cciss_disks = $this->detect_disks(@cciss_devs);
-	if (@cciss_disks) {
+	if (!$v1_10 && @cciss_disks) {
 		my $smartctl = smartctl->new();
-		my $cmd = $smartctl->{program};
-		foreach my $ref (@cciss_disks) {
-			my ($dev, $diskopt, $disk) = @$ref;
-			# escape comma for sudo
-			$diskopt =~ s/,/\\$&/g;
-			push(@sudo, "CHECK_RAID ALL=(root) NOPASSWD: $cmd -H $dev $diskopt$disk");
+
+		if ($smartctl->active) {
+			my $cmd = $smartctl->{program};
+			foreach my $ref (@cciss_disks) {
+				my ($dev, $diskopt, $disk) = @$ref;
+				# escape comma for sudo
+				$diskopt =~ s/,/\\$&/g;
+				push(@sudo, "CHECK_RAID ALL=(root) NOPASSWD: $cmd -H $dev $diskopt$disk");
+			}
 		}
 	}
 
@@ -2647,6 +3117,21 @@ sub detect {
 	my $this = shift;
 
 	my ($fh, @devs);
+
+	# try lsscsi first
+	my $lsscsi = lsscsi->new();
+	if ($lsscsi->active) {
+		# for cciss_vol_status < 1.10 we need /dev/sgX nodes, columns which are type storage
+		@devs = $lsscsi->list_sg;
+
+		# cciss_vol_status 1.10 can process disk nodes too even if sg is not present
+		my $v1_10 = $this->cciss_vol_status_version >= 1.10;
+		if (!@devs && $v1_10) {
+			@devs = $lsscsi->list_dd;
+		}
+
+		return wantarray ? @devs : \@devs if @devs;
+	}
 
 	# check hpsa devs
 	eval { $fh = $this->cmd('detect hpsa'); };
@@ -2720,6 +3205,199 @@ sub detect_disks {
 	return wantarray ? @devs : \@devs;
 }
 
+# parse version out of "cciss_vol_status version 1.09"
+# NOTE: it prints the output to stderr, but may print to stdout in the future
+sub cciss_vol_status_version {
+	my $this = shift;
+
+	# cache inside single run
+	return $this->{cciss_vol_status_version} if defined $this->{cciss_vol_status_version};
+
+	my $version = sub {
+		my $fh = $this->nosudo_cmd('cciss_vol_status version');
+		my ($line) = <$fh>;
+		close $fh;
+		return 0 unless $line;
+
+		if (my($v) = $line =~ /^cciss_vol_status version ([\d.]+)$/) {
+			return 0 + $v;
+		}
+		return 0;
+	};
+
+	return $this->{cciss_vol_status_version} = &$version();
+}
+
+sub trim { my $s = shift; $s =~ s/^\s+|\s+$//g; return $s };
+
+# we process until we find end of sentence (dot at the end of the line)
+sub consume_diagnostic {
+	my ($this, $fh, $s) = @_;
+
+	my $diagnostic = '';
+	while (1) {
+		my $s = <$fh>;
+		last unless $s;
+		chomp;
+		$diagnostic .= ' '. trim($s);
+		last if $s =~ /\.$/;
+	}
+	return trim($diagnostic);
+}
+
+sub parse {
+	my $this = shift;
+	my @devs = @_;
+
+	my (%c, $cdev);
+
+	# cciss_vol_status 1.10 has -V option to print more info about controller and disks.
+	my $v1_10 = $this->cciss_vol_status_version >= 1.10;
+
+	# add all devs at once to commandline, cciss_vol_status can do that
+	my $fh = $this->cmd($v1_10 ? 'controller status verbose' : 'controller status', { '@devs' => \@devs });
+	while (<$fh>) {
+		chomp;
+
+		if (/Controller:/) {
+			# this is first item when new controller is found
+			# reset previous state
+			undef $cdev;
+			next;
+		}
+
+		# catch enclosures, print_bus_status()
+		# /dev/cciss/c1d0: (Smart Array P800) Enclosure MSA70 (S/N: SGA651004J) on Bus 2, Physical Port 1E status: OK.
+		# /dev/cciss/c0d0: (Smart Array 6i) Enclosure PROLIANT 6L2I (S/N: ) on Bus 0, Physical Port J1 status: OK.
+		if (my($file, $board_name, $name, $sn, $bus, $port1, $port2, $status) = m{
+			^(/dev/[^:]+):\s        # File
+			\(([^)]+)\)\s           # Board Name
+			Enclosure\s(.+)\s      # Enclosure Name
+			\(S/N:\s(\S*)\)\s       # Enclosure SN
+			on\sBus\s(\d+),\s       # Bus Number
+			Physical\sPort\s(.)     # physical_port1
+			(.)\s                   # physical_port2
+			status:\s(.*?)\.        # status (without a dot)
+		}x) {
+			$c{$file}{enclosures}{$bus} = {
+				board_name => $board_name,
+				name => $name,
+				sn => $sn,
+				bus => int($bus),
+				phys1 => $port1,
+				phys2 => $port2,
+				status => $status,
+			};
+			next;
+		}
+
+		# volume status, print_volume_status()
+		# /dev/cciss/c0d0: (Smart Array P400i) RAID 1 Volume 0 status: OK
+		# /dev/sda: (Smart Array P410i) RAID 1 Volume 0 status: OK.
+		if (my($file, $board_name, $raid_level, $volume_number, $certain, $status) = m{
+			^(/dev/[^:]+):\s        # File
+			\(([^)]+)\)\s           # Board Name
+			(RAID\s\d+|\([^)]+\))\s # RAID level
+			Volume\s(\d+)           # Volume number
+			(\(\?\))?\s             # certain?
+			status:\s(.*?)\.        # status (without a dot)
+		}x) {
+			$cdev = $file;
+			$c{$file}{volumes}{$volume_number} = {
+				board_name => $board_name,
+				raid_level => $raid_level,
+				volume_number => $volume_number,
+				certain => int(not defined $certain),
+				status => $status,
+			};
+
+			$c{$file}{board_name} = $board_name;
+			next;
+		}
+
+		next unless $cdev;
+
+		if (my ($count) = /Physical drives: (\d+)/) {
+			$c{$cdev}{'pd count'} = $count;
+			next;
+		}
+
+		# check_physical_drives(file, fd);
+		# NOTE: check for physical drives is enabled with -V or -s option (-V enables -s)
+		# cciss_vol_status.c format_phys_drive_location()
+		if (my ($phys1, $phys2, $box, $bay, $model, $serial_no, $fw_rev, $status) = m{
+			\sconnector\s(.)(.)\s # Phys connector 1&2
+			box\s(\d+)\s          # phys_box_on_bus
+			bay\s(\d+)\s          # phys_bay_in_box
+			(.{40})\s             # model
+			(.{40})\s             # serial no
+			(.{8})\s              # fw rev
+			(.+)                  # status
+		$}x) {
+			my $slot = "$phys1$phys2-$box-$bay";
+			$c{$cdev}{drives}{$slot} = {
+				'slot' => $slot,
+				'phys1' => $phys1,
+				'phys2' => $phys2,
+				'box' => int($box),
+				'bay' => int($bay),
+
+				'model' => trim($model),
+				'serial' => trim($serial_no),
+				'fw' => trim($fw_rev),
+				'status' => $status,
+			};
+			next;
+		}
+
+		# TODO
+		# check_fan_power_temp(file, ctlrtype, fd, num_controllers);
+
+		# check_nonvolatile_cache_status(file, ctlrtype, fd, num_controllers);
+		# /dev/cciss/c0d0(Smart Array P400i:0): Non-Volatile Cache status:
+		if (my($file, $board_name, $instance) = m{^(/dev/[^(]+)\((.+):(\d+)\): Non-Volatile Cache status}) {
+			# $file and $dev may differ, so store it
+			$c{$cdev}{cache} = {
+				'file' => $file,
+				'board' => $board_name,
+				'instance' => int($instance),
+			};
+			next;
+		}
+
+		if (defined($c{$cdev}{cache})) {
+			my $cache = $c{$cdev}{cache};
+			my %map = (
+				configured => qr/Cache configured: (.+)/,
+				read_cache_memory => qr/Read cache memory: (.+)/,
+				write_cache_memory => qr/Write cache memory: (.+)/,
+				write_cache_enabled => qr/Write cache enabled: (.+)/,
+				flash_cache => qr/Flash backed cache present/,
+				disabled_temporarily => qr/Write cache temporarily disabled/,
+				disabled_permanently => qr/Write Cache permanently disabled/,
+			);
+			my $got;
+			while (my($k, $r) = each %map) {
+				next unless (my($v) = $_ =~ $r);
+				$cache->{$k} = $v;
+				$got = 1;
+
+				# consume extended diagnostic
+				if ($k =~ /disabled_(temporari|permanentl)ly/) {
+					$cache->{"$k diagnostic"} = $this->consume_diagnostic($fh);
+				}
+			}
+
+			next if $got;
+		}
+
+		warn "Unparsed[$_]";
+	}
+	close($fh);
+
+	return \%c;
+}
+
 sub check {
 	my $this = shift;
 	my @devs = $this->detect;
@@ -2733,23 +3411,77 @@ sub check {
 	# status messages pushed here
 	my @status;
 
-	# add all devs at once, cciss_vol_status can do that
-	my $fh = $this->cmd('controller status', { '@devs' => \@devs });
-	while (<$fh>) {
-		chomp;
-		# strip for better pattern matching
-		s/\.\s*$//;
+	my $res = $this->parse(@devs);
+	for my $dev (sort {$a cmp $b} keys %$res) {
+		my $c = $res->{$dev};
+		my @bstatus;
 
-		# /dev/cciss/c0d0: (Smart Array P400i) RAID 1 Volume 0 status: OK
-		# /dev/sda: (Smart Array P410i) RAID 1 Volume 0 status: OK.
-		if (my($s) = /status: (.*?)$/) {
-			if ($s !~ '^OK') {
+		# check volumes
+		my @vstatus;
+		for my $vn (sort {$a cmp $b} keys %{$c->{volumes}}) {
+			my $v = $c->{volumes}->{$vn};
+			if ($v->{status} !~ '^OK') {
 				$this->critical;
 			}
-			push(@status, $_);
+			push(@vstatus, "Volume $v->{volume_number} ($v->{raid_level}): $v->{status}");
 		}
+
+		push(@bstatus, @vstatus) if @vstatus;
+
+		# check physical devices
+		if ($c->{'pd count'}) {
+			my %pd;
+			for my $ps (sort {$a cmp $b} keys %{$c->{drives}}) {
+				my $pd = $c->{drives}{$ps};
+				if ($pd->{status} !~ '^OK') {
+					$this->critical;
+					$ps .= "($pd->{serial})";
+				}
+				push(@{$pd{$pd->{status}}}, $ps);
+			}
+			push(@bstatus, "Drives($c->{'pd count'}): ". $this->join_status(\%pd));
+		}
+
+		# check enclosures
+		if ($c->{enclosures}) {
+			my @e;
+			for my $i (sort {$a cmp $b} keys %{$c->{enclosures}}) {
+				my $e = $c->{enclosures}{$i};
+
+				my $s = "$e->{name}";
+				$s .= "($e->{sn})" if $e->{sn};
+				$s .= ": $e->{status}";
+				if ($e->{status} !~ '^OK') {
+					$this->critical;
+				}
+				push(@e, $s);
+			}
+			push(@bstatus, "Enclosures: ". join(', ', @e));
+		}
+
+		# check cache
+		if ($c->{cache} && $c->{cache}->{configured} eq 'Yes') {
+			my $cache = $c->{cache};
+			my @cstatus = 'Cache:';
+
+			if ($cache->{write_cache_enabled} eq 'Yes') {
+				push(@cstatus, "WriteCache");
+
+			} elsif ($cache->{disabled_temporarily} || $cache->{disabled_permanently}) {
+				# disabled diagnostic is available, but it's too long to print here
+				push(@cstatus, "WriteCache:DISABLED");
+				$this->cache_fail;
+			}
+
+			push(@cstatus, "FlashCache") if $cache->{flash_cache};
+			push(@cstatus, "ReadMem:$cache->{read_cache_memory}") if $cache->{read_cache_memory};
+			push(@cstatus, "WriteMem:$cache->{write_cache_memory}") if $cache->{write_cache_memory};
+
+			push(@bstatus, join(' ', @cstatus));
+		}
+
+		push(@status, "$dev($c->{board_name}): ". join(', ', @bstatus));
 	}
-	close($fh);
 
 	unless (@status) {
 		return;
@@ -2760,8 +3492,11 @@ sub check {
 
 	$this->message(join(', ', @status));
 
-	# allow skip for testing
-	unless ($this->{no_smartctl}) {
+	# cciss_vol_status 1.10 with -V (or -s) checks individual disk health anyway
+	my $v1_10 = $this->cciss_vol_status_version >= 1.10;
+
+	# no_smartctl: allow skip from tests
+	if (!$v1_10 && !$this->{no_smartctl}) {
 		# check also individual disk health
 		my @disks = $this->detect_disks(@devs);
 		if (@disks) {
@@ -2942,6 +3677,7 @@ sub commands {
 	{
 		'controller list' => ['-|', '@CMD', 'LIST'],
 		'controller status' => ['-|', '@CMD', '$controller', 'STATUS'],
+		'device status' => ['-|', '@CMD', '$controller', 'DISPLAY'],
 	}
 }
 
@@ -2954,6 +3690,7 @@ sub sudo {
 	(
 		"CHECK_RAID ALL=(root) NOPASSWD: $cmd LIST",
 		"CHECK_RAID ALL=(root) NOPASSWD: $cmd * STATUS",
+		"CHECK_RAID ALL=(root) NOPASSWD: $cmd * DISPLAY",
 	);
 }
 
@@ -2965,9 +3702,12 @@ sub detect {
 	my $fh = $this->cmd('controller list');
 
 	my $success = 0;
+	my $state="";
+	my $noctrlstate="No Controllers";
 	while (<$fh>) {
 		chomp;
-		#		  Adapter     Vendor  Device                        SubSys  SubSys
+
+		#         Adapter     Vendor  Device                        SubSys  SubSys
 		# Index    Type          ID      ID    Pci Address          Ven ID  Dev ID
 		# -----  ------------  ------  ------  -----------------    ------  ------
 		#   0     SAS2008     1000h    72h     00h:03h:00h:00h      1028h   1f1eh
@@ -2975,10 +3715,30 @@ sub detect {
 			push(@ctrls, $c);
 		}
 		$success = 1 if /SAS2IRCU: Utility Completed Successfully/;
+
+		# handle the case where there's no hardware present.
+		# when there is no controller, we get
+		# root@i41:/tmp$ /usr/sbin/sas2ircudsr LIST
+		# LSI Corporation SAS2 IR Configuration Utility.
+		# Version 18.00.00.00 (2013.11.18)
+		# Copyright (c) 2009-2013 LSI Corporation. All rights reserved.
+
+		# SAS2IRCU: MPTLib2 Error 1
+		# root@i41:/tmp$ echo $?
+		# 1
+
+		if ( /SAS2IRCU: MPTLib2 Error 1/ ) {
+			$state = $noctrlstate;
+			$success = 1 ;
+		}
+
 	}
 
 	unless (close $fh) {
-		$this->critical;
+		#sas2ircu exits 1 (but close exits 256) when we close fh if we have no controller, so handle that, too
+		if ( $? != 256 && $state eq $noctrlstate ) {
+			$this->critical;
+		}
 	}
 	unless ($success) {
 		$this->critical;
@@ -2987,16 +3747,22 @@ sub detect {
 	return wantarray ? @ctrls : \@ctrls;
 }
 
+sub  trim { my $s = shift; $s =~ s/^\s+|\s+$//g; return $s };
+sub ltrim { my $s = shift; $s =~ s/^\s+//;       return $s };
+sub rtrim { my $s = shift; $s =~ s/\s+$//;       return $s };
+
 sub check {
 	my $this = shift;
 
 	my @ctrls = $this->detect;
 
 	my @status;
+	my $numvols=0;
 	# determine the RAID states of each controller
 	foreach my $c (@ctrls) {
-		my $fh = $this->cmd('controller status', {  '$controller' => $c });
+		my $fh = $this->cmd('controller status', { '$controller' => $c });
 
+		my $novolsstate="No Volumes";
 		my $state;
 		my $success = 0;
 		while (<$fh>) {
@@ -3005,12 +3771,129 @@ sub check {
 			# match adapter lines
 			if (my($s) = /^\s*Volume state\s*:\s*(\w+)\s*$/) {
 				$state = $s;
+				$numvols++;
 				if ($state ne "Optimal") {
 					$this->critical;
 				}
 			}
 			$success = 1 if /SAS2IRCU: Utility Completed Successfully/;
+
+			##handle the case where there are no volumes configured
+			#
+			# SAS2IRCU: there are no IR volumes on the controller!
+			# SAS2IRCU: Error executing command STATUS.
+			#
+
+			if ( /SAS2IRCU: there are no IR volumes on the controller!/ ) {
+				#even though this isn't the last line, go ahead and set success.
+				$success = 1;
+				$state = $novolsstate;
+			}
+
 		}
+
+		unless (close $fh) {
+			#sas2ircu exits 256 when we close fh if we have no volumes, so handle that, too
+			if ( $? != 256 && $state eq $novolsstate ) {
+				$this->critical;
+				$state = $!;
+			}
+		}
+
+		unless ($success) {
+			$this->critical;
+			$state = "SAS2IRCU Unknown exit";
+		}
+
+		unless ($state) {
+			$state = "Unknown Error";
+		}
+
+		my $finalvolstate=$state;
+		#push(@status, "ctrl #$c: $numvols Vols: $state");
+
+
+		#####  now look at the devices.
+		# Device is a Hard disk
+		#   Enclosure #                             : 2
+		#   Slot #                                  : 0
+		#   SAS Address                             : 500065b-3-6789-abe0
+		#   State                                   : Ready (RDY)
+		#   Size (in MB)/(in sectors)               : 3815447/7814037167
+		#   Manufacturer                            : ATA
+		#   Model Number                            : ST4000DM000-1F21
+		#   Firmware Revision                       : CC52
+		#   Serial No                               : S30086G4
+		#   GUID                                    : 5000c5006d27b344
+		#   Protocol                                : SATA
+		#   Drive Type                              : SATA_HDD
+
+		$fh = $this->cmd('device status', { '$controller' => $c });
+		$state="";
+		$success = 0;
+		my $enc="";
+		my $slot="";
+		my @data;
+		my $device="";
+		my $numslots=0;
+		my $finalstate;
+		my $finalerrors="";
+
+		while ( my $line = <$fh> ) {
+			chomp $line;
+			# Device is a Hard disk
+			# Device is a Hard disk
+			# Device is a Enclosure services device
+			#
+			#lets make sure we're only checking disks.  we dont support other devices right now
+			if ( "$line" eq 'Device is a Hard disk' ) {
+				$device='disk';
+			} elsif ( $line =~ /^Device/ )  {
+				$device='other';
+			}
+
+			if ( "$device" eq 'disk' ) {
+				if ( $line =~ /Enclosure #|Slot #|State / ) {
+					#find our enclosure #
+					if ( $line =~ /^  Enclosure # / ) {
+						@data = split /:/, $line;
+						$enc=trim($data[1]);
+						#every time we hit a new enclosure line, reset our state and slot
+						undef $state;
+						undef $slot;
+					}
+					#find our slot #
+					if ( $line =~ /^  Slot # / ) {
+						@data = split /:/, $line;
+						$slot=trim($data[1]);
+						$numslots++
+					}
+					#find our state
+					if ( $line =~ /^  State / ) {
+						@data = split /:/, $line;
+						$state=ltrim($data[1]);
+
+						#for test
+						#if ($numslots == 10 ) { $state='FREDFISH';}
+
+						#when we get a state, test on it and report it..
+						if ( $state =~ /Optimal|Ready/ ) {
+							#do nothing at the moment.
+						} else {
+							$this->critical;
+							$finalstate=$state;
+							$finalerrors="$finalerrors ERROR:Ctrl$c:Enc$enc:Slot$slot:$state";
+						}
+					}
+				}
+			}
+
+			if ( $line =~ /SAS2IRCU: Utility Completed Successfully/) {
+				$success = 1;
+			}
+
+		} #end while
+
 
 		unless (close $fh) {
 			$this->critical;
@@ -3026,7 +3909,19 @@ sub check {
 			$state = "Unknown Error";
 		}
 
-		push(@status, "ctrl #$c: $state")
+		unless($finalstate) {
+			$finalstate=$state;
+		}
+
+		#per controller overall report
+		#push(@status, ":$numslots Drives:$finalstate:$finalerrors");
+		push(@status, "ctrl #$c: $numvols Vols: $finalvolstate: $numslots Drives: $finalstate:$finalerrors:");
+
+	}
+
+	##if we didn't get a status out of the controllers and an empty ctrls array, we must not have any.
+	unless (@status && @ctrls) {
+		push(@status, "No Controllers");
 	}
 
 	return unless @status;
@@ -3158,8 +4053,10 @@ sub check {
 	my $fh = $this->cmd('controller status');
 	while (<$fh>) {
 		# Numeric slot
-		if (my($model, $slot) = /^(\S.+) in Slot (\d+)/) {
+		if (my($model, $slot) = /^(\S.+) in Slot (.+)/) {
+			$slot =~ s/ \(Embedded\)//;
 			$targets{"slot=$slot"} = $model;
+			$this->unknown if $slot !~ /^\d+$/;
 			next;
 		}
 		# Named Entry
@@ -3176,9 +4073,9 @@ sub check {
 		return;
 	}
 
-
 	# Scan logical drives
-	while (my($target, $model) = each %targets) {
+	for my $target (sort {$a cmp $b} keys %targets) {
+		my $model = $targets{$target};
 		# check each controllers
 		my $fh = $this->cmd('logicaldrive status', { '$target' => $target });
 
@@ -3199,35 +4096,37 @@ sub check {
 
 			# logicaldrive 1 (68.3 GB, RAID 1, OK)
 			# capture only status
-			if (my($drive, $s) = /^\s+logicaldrive (\d+) \([\d.]+ .B, [^,]+, (\S+)\)$/) {
+			if (my($drive, $s) = /^\s+logicaldrive (\d+) \([\d.]+ .B, [^,]+, ([^\)]+)\)$/) {
 				# Offset 1 is each logical drive status
 				$array{$array}[1]{$drive} = $s;
+				next;
+			}
+
+			# Error: The controller identified by "slot=attr_value_slot_unknown" was not detected.
+			if (/Error:/) {
+				$this->unknown;
 			}
 		}
-		close $fh;
+		$this->unknown unless close $fh;
 
 		my @cstatus;
 		while (my($array, $d) = each %array) {
 			my ($astatus, $ld) = @$d;
 
-			if ($astatus eq 'OK') {
-				push(@cstatus, "Array $array($astatus)");
-			} else {
-				my @astatus;
-				# extra details for non-normal arrays
-				foreach my $lun (sort { $a cmp $b } keys %$ld) {
-					my $s = $ld->{$lun};
-					push(@astatus, "LUN$lun:$s");
+			my @astatus;
+			# extra details for non-normal arrays
+			foreach my $lun (sort { $a cmp $b } keys %$ld) {
+				my $s = $ld->{$lun};
+				push(@astatus, "LUN$lun:$s");
 
-					if ($s eq 'OK' or $s eq 'Disabled') {
-					} elsif ($s eq 'Failed' or $s eq 'Interim Recovery Mode') {
-						$this->critical;
-					} elsif ($s eq 'Rebuild' or $s eq 'Recover') {
-						$this->warning;
-					}
+				if ($s eq 'OK' or $s eq 'Disabled') {
+				} elsif ($s eq 'Failed' or $s eq 'Interim Recovery Mode') {
+					$this->critical;
+				} elsif ($s eq 'Rebuild' or $s eq 'Recover') {
+					$this->warning;
 				}
-				push(@cstatus, "Array $array($astatus)[". join(',', @astatus). "]");
 			}
+			push(@cstatus, "Array $array($astatus)[". join(',', @astatus). "]");
 		}
 		push(@status, "$model: ".join(', ', @cstatus));
 	}
@@ -3353,7 +4252,7 @@ sub check {
 		next if $usage eq 'N.A.';
 
 		# use array id in output: shorter
-		my $array_id = defined($arrays{$usage}) ?  ($arrays{$usage})->[0] : undef;
+		my $array_id = defined($arrays{$usage}) ? ($arrays{$usage})->[0] : undef;
 		my $array_name = defined $array_id ? "Array#$array_id" : $usage;
 
 		# assume critical if Usage is not one of:
@@ -3369,6 +4268,9 @@ sub check {
 			$this->warning;
 		} elsif ($usage =~ /HotSpare/) {
 			# hotspare is OK
+			push(@{$drivestatus{$array_name}}, $id);
+		} elsif ($usage =~ /Pass Through/) {
+			# Pass Through is OK
 			push(@{$drivestatus{$array_name}}, $id);
 		} else {
 			push(@{$drivestatus{$array_name}}, $id);
@@ -3394,8 +4296,18 @@ sub program_names {
 
 sub commands {
 	{
-		'read' => ['-|', '@CMD', '-r'],
+		'dmraid' => ['-|', '@CMD', '-r'],
 	}
+}
+
+sub active ($) {
+	my ($this) = @_;
+
+	# easy way out. no executable
+	return 0 unless -e $this->{commands}{dmraid}[1];
+
+	# check if dmraid is empty
+	return keys %{$this->parse} > 0;
 }
 
 sub sudo {
@@ -3412,7 +4324,7 @@ sub parse {
 	my $this = shift;
 
 	my (%arrays);
-	my $fh = $this->cmd('read');
+	my $fh = $this->cmd('dmraid');
 	while (<$fh>) {
 		chomp;
 		next unless (my($device, $format, $name, $type, $status, $sectors) = m{^
@@ -3486,9 +4398,9 @@ use Getopt::Long;
 
 my ($opt_V, $opt_d, $opt_h, $opt_W, $opt_S, $opt_p, $opt_l);
 my (%ERRORS) = (OK => 0, WARNING => 1, CRITICAL => 2, UNKNOWN => 3);
-my ($VERSION) = "3.0.6";
+my ($VERSION) = "3.2.1";
 my ($message, $status, $perfdata, $longoutput);
-my ($opt_O) = $ERRORS{UNKNOWN};
+my ($noraid_state) = $ERRORS{UNKNOWN};
 
 #####################################################################
 $ENV{'BASH_ENV'} = '';
@@ -3504,7 +4416,7 @@ sub find_file {
 
 sub print_usage() {
 	print join "\n",
-	"Usage: check_raid [-h] [-V] [-S] [-O] [list of devices to ignore]",
+	"Usage: check_raid [-h] [-V] [-S] [list of devices to ignore]",
 	"",
 	"Options:",
 	" -h, --help",
@@ -3520,15 +4432,21 @@ sub print_usage() {
 	" -l, --list-plugins",
 	"    Lists active plugins",
 	" --resync=STATE",
-	"    Set status as STATE if RAID is in resync state. Defaults to WARNING",
+	"    Return STATE if RAID is in resync state. Defaults to WARNING",
+	" --check=STATE",
+	"    Return STATE if RAID is in check state. Defaults to OK",
 	" --noraid=STATE",
 	"    Return STATE if no RAID controller is found. Defaults to UNKNOWN",
+	" --bbulearn=STATE",
+	"    Return STATE if Backup Battery Unit (BBU) learning cycle is in progress. Defaults to WARNING",
+	" --bbu-monitoring",
+	"    Enable experimental monitoring of the BBU status",
 	"";
 }
 
 sub print_help() {
 	print "check_raid, v$VERSION\n";
-	print "Copyright (c) 2004-2006 Steve Shipway, Copyright (c) 2009-2013, Elan Ruusamäe <glen\@pld-linux.org>
+	print "Copyright (c) 2004-2006 Steve Shipway, Copyright (c) 2009-2014, Elan Ruusamäe <glen\@pld-linux.org>
 
 This plugin reports the current server's RAID status
 https://github.com/glensc/nagios-plugin-check_raid
@@ -3537,6 +4455,64 @@ https://github.com/glensc/nagios-plugin-check_raid
 	print_usage();
 }
 
+# return first "#includedir" directive from $sudoers file
+sub parse_sudoers_includedir {
+	my ($sudoers) = @_;
+
+	open my $fh, '<', $sudoers or die "Can't open: $sudoers: $!";
+	while (<$fh>) {
+		if (my ($dir) = /^#includedir\s+(.+)$/) {
+			return $dir;
+		}
+	}
+	close $fh or die $!;
+
+	return undef;
+}
+
+# return size of file
+# does not check for errors
+sub filesize {
+	my ($file) = @_;
+	return (stat($file))[7];
+}
+
+# get contents of a file
+sub cat {
+	my ($file) = @_;
+	open(my $fh, '<', $file) or die "Can't open $file: $!";
+	local $/ = undef;
+	local $_ = <$fh>;
+	close($fh) or die $!;
+
+	return $_;
+}
+
+# return FALSE if files are identical
+# return TRUE if files are different
+# return TRUE if any of the files is missing
+sub filediff {
+	my ($file1, $file2) = @_;
+
+	# return TRUE if neither of them exist
+	return 1 unless -f $file1;
+	return 1 unless -f $file2;
+
+	my $f1 = cat($file1);
+	my $f2 = cat($file2);
+
+	# wipe comments
+	$f1 =~ s/^#.+$//m;
+	$f2 =~ s/^#.+$//m;
+
+	# return TRUE if they differ
+	return $f1 ne $f2;
+}
+
+# update sudoers file
+#
+# if sudoers config has "#includedir" directive, add file to that dir
+# otherwise update main sudoers file
 sub sudoers {
 	my ($dry_run) = @_;
 
@@ -3566,6 +4542,7 @@ sub sudoers {
 		# also this avoids installing ourselves twice.
 		"# Lines matching CHECK_RAID added by $0 -S on ". scalar localtime,
 		"User_Alias CHECK_RAID=nagios",
+		"Defaults:CHECK_RAID !requiretty",
 
 		# actual rules from plugins
 		join("\n", @sudo),
@@ -3587,6 +4564,15 @@ sub sudoers {
 	die "Unable to write to sudoers file '$sudoers'.\n" unless -w $sudoers;
 	die "visudo program not found\n" unless -x $visudo;
 
+	# parse sudoers file for "#includedir" directive
+	my $sudodir = parse_sudoers_includedir($sudoers);
+	if ($sudodir) {
+		# sudo will read each file in /etc/sudoers.d, skipping file names that
+		# end in ~ or contain a . character to avoid causing problems with
+		# package manager or editor temporary/backup files
+		$sudoers = "$sudodir/check_raid";
+	}
+
 	warn "Updating file $sudoers\n";
 
 	# NOTE: secure as visudo itself: /etc is root owned
@@ -3595,25 +4581,33 @@ sub sudoers {
 	# setup to have sane perm for new sudoers file
 	umask(0227);
 
-	# insert old sudoers
-	open my $old, '<', $sudoers or die $!;
 	open my $fh, '>', $new or die $!;
-	while (<$old>) {
-		print $fh $_;
-	}
-	close $old or die $!;
 
-	# insert new rules
+	# insert old sudoers
+	if (!$sudodir) {
+		open my $old, '<', $sudoers or die $!;
+		while (<$old>) {
+			print $fh $_;
+		}
+		close $old or die $!;
+	}
+
+	# insert the rules
 	print $fh @rules;
 	close $fh;
 
 	# validate sudoers
 	system($visudo, '-c', '-f', $new) == 0 or unlink($new),exit $? >> 8;
 
-	# use the new file
-	rename($new, $sudoers) or die $!;
-
-	warn "$sudoers file updated.\n";
+	# check if they differ
+	if (filediff($sudoers, $new)) {
+		# use the new file
+		rename($new, $sudoers) or die $!;
+		warn "$sudoers file updated.\n";
+	} else {
+		warn "$sudoers file not changed.\n";
+		unlink($new);
+	}
 }
 
 # Print active plugins
@@ -3648,7 +4642,11 @@ GetOptions(
 	'S' => \$opt_S, 'sudoers' => \$opt_S,
 	'W' => \$opt_W, 'warnonly' => \$opt_W,
 	'resync=s' => sub { setstate(\$plugin::resync_status, @_); },
-	'noraid=s' => sub { setstate(\$opt_O, @_); },
+	'check=s' => sub { setstate(\$plugin::check_status, @_); },
+	'noraid=s' => sub { setstate(\$noraid_state, @_); },
+	'bbulearn=s' => sub { setstate(\$plugin::bbulearn_status, @_); },
+	'cache-fail=s' => sub { setstate(\$plugin::cache_fail_status, @_); },
+	'bbu-monitoring' => \$plugin::bbu_monitoring,
 	'p=s' => \$opt_p, 'plugin=s' => \$opt_p,
 	'l' => \$opt_l, 'list-plugins' => \$opt_l,
 ) or exit($ERRORS{UNKNOWN});
@@ -3702,7 +4700,11 @@ foreach my $pn (@plugins) {
 		$message .= "$pn:[Plugin error]";
 		next;
 	}
-	$status = $plugin->status if $plugin->status > $status;
+	if ($plugin->message or $noraid_state == $ERRORS{UNKNOWN}) {
+		$status = $plugin->status if $plugin->status > $status;
+	} else {
+		$status = $noraid_state if $noraid_state > $status;
+	}
 	$message .= '; ' if $message;
 	$message .= "$pn:[".$plugin->message."]";
 	$message .= ' | ' . $plugin->perfdata if $plugin->perfdata;
@@ -3720,8 +4722,8 @@ if ($message) {
 		print "UNKNOWN: ";
 	}
 	print "$message\n";
-} elsif ($opt_O) {
-	$status = $ERRORS{OK};
+} elsif ($noraid_state != $ERRORS{UNKNOWN}) {
+	$status = $noraid_state;
 	print "No RAID configuration found\n";
 } else {
 	$status = $ERRORS{UNKNOWN};

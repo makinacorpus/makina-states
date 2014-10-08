@@ -434,7 +434,7 @@ def client(fun, *args, **kw):
             pass
         return ret
     cache_key = 'mcapi_' + '_'.join([target, fun, sargs, skw, skwargs])
-    return memoize_cache(_do, [target, fun, args, kw, kwargs],
+    return memoize_cache(_do, [target, fun, args, kw, kwargs], {},
                          cache_key, ttl, force_run=force_run)
 
 

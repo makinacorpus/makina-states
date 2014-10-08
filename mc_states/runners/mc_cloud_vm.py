@@ -76,6 +76,7 @@ def vm_sls_pillar(compute_node, vm, ttl=api.RUNNER_CACHE_TIME):
         vmSettingsData['vm_name'] = vm
         vt = targets.get(compute_node, {}).get('vms', {}).get(vm, None)
         vmSettingsData['vm_vt'] = vt
+        supported_vts = cli('mc_cloud_compute_node.get_vts', supported=True)
         # vmSettingsData = api.json_dump(vmSettingsData)
         # cloudSettingsData = api.json_dump(cloudSettingsData)
         # cnSettingsData = api.json_dump(cnSettingsData)
@@ -88,7 +89,7 @@ def vm_sls_pillar(compute_node, vm, ttl=api.RUNNER_CACHE_TIME):
                   'vmSettings': vmSettingsData,
                   'isdevhost': cli('mc_nodetypes.registry')['is']['devhost'],
                   'cnSettings': cnSettingsData}
-        if vt in ['lxc']:
+        if vt in supported_vts:
             vtVmData = cli(
                 'mc_cloud_{0}.get_settings_for_vm'.format(vt),
                 compute_node, vm, full=False)
@@ -312,11 +313,11 @@ def vm_ping(vm, compute_node=None, vt=None, ret=None, output=True):
 
 def vm_fix_dns(vm,
                compute_node=None,
-               vt='lxc',
+               vt=None,
                ret=None,
                output=True,
                force=False):
-    func_name = 'mc_cloud_lxc.vm_fix_dns {0}'.format(vm)
+    func_name = 'mc_cloud_vm.vm_fix_dns {0}'.format(vm)
     __salt__['mc_api.time_log']('start {0}'.format(func_name))
     if not ret:
         ret = result()
@@ -360,7 +361,7 @@ def step(vm, step, compute_node=None, vt=None, ret=None, output=True):
             ret['result'] = False
         except Exception, exc:
             trace = traceback.format_exc()
-            ret['trace'] += 'lxcprovision: {0} in {1}\n'.format(
+            ret['trace'] += 'VM provision: {0} in {1}\n'.format(
                 exc, cid_)
             ret['trace'] += trace
             ret['result'] = False

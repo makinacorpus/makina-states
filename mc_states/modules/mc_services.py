@@ -122,6 +122,7 @@ def registry():
             'virt.docker': {'active': False},
             'cache.memcached': {'active': False},
             'virt.docker-shorewall': {'active': False},
+            'virt.kvm': {'active': False},
             'virt.lxc': {'active': False},
             'virt.lxc-shorewall': {'active': False},
             'mastersalt_minion': {'active': False},

@@ -7,6 +7,11 @@ qgis-repo:
     - file: {{ locs.conf_dir }}/apt/sources.list.d/qgis.list
     - keyid: '47765B75'
     - keyserver: {{pkgssettings.keyserver }}
+    - require:
+      - cmd: qgis-repo
+  cmd.run:
+    - name: sudo apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 030561BEDD45F6C3
+    - unless: apt-key list|grep -q DD45F6C3
 
 prereq-qgis:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:

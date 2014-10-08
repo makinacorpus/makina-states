@@ -94,6 +94,7 @@ def settings():
             cron_sync = False
         data = __salt__['mc_utils.defaults'](
             'makina-states.cloud.images', {
+                'kvm': {},
                 'lxc': {
                     'images_root': '/var/lib/lxc',
                     'images': images,

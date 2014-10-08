@@ -490,6 +490,16 @@ etc-{{data.name}}-dirs-perms:
       - file: salt-{{data.name}}-dirs-restricted
       - mc_proxy: dummy-pre-{{data.name}}-service-restart
 
+{% set upaths = [data.salt_root + '/makina-states/files'] %}
+{{data.name}}-dirs-urestricted-perms:
+  cmd.run:
+    - name: setfacl -R -b -k {% for a in upaths %} "{{a}}"{% endfor%}
+    - require:
+      - cmd: {{data.name}}-dirs-perms
+      - cmd: etc-{{data.name}}-dirs-perms
+      - file: salt-{{data.name}}-dirs-restricted
+      - cmd: {{data.name}}-dirs-restricted-perms
+      - mc_proxy: dummy-pre-{{data.name}}-service-restart
 {% endmacro %}
 
 {#-
