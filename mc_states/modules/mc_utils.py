@@ -222,7 +222,8 @@ def is_iter(value):
     )
 
 
-def get(key, default='', local_registry=None):
+def get(key, default='',
+        local_registry=None, registry_format='pack'):
     '''Same as 'config.get' but with different retrieval order.
 
     This routine traverses these data stores in this order:
@@ -249,7 +250,8 @@ def get(key, default='', local_registry=None):
                 local_registry = reg
                 break
     if isinstance(local_registry, basestring):
-        local_registry = __salt__['mc_macros.get_local_registry'](local_registry)
+        local_registry = __salt__['mc_macros.get_local_registry'](
+            local_registry, registry_format=registry_format)
     ret = salt.utils.traverse_dict(__opts__, key, '_|-')
     if ret != '_|-':
         return ret

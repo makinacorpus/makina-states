@@ -709,12 +709,14 @@ def get_configuration(name, *args, **kwargs):
                              'no_user',
                              'no_default_includes']
 
-    # we can override many of default values via pillar/grains
+    # we can override many of default values via pillar/localreg
     for k in overridable_variables:
         if k in ignored_keys:
             continue
         cfg[k] = __salt__['mc_utils.get'](
-            'makina-projects.{0}.{1}'.format(name, k), cfg[k])
+            '{0}:{1}'.format(name, k), cfg[k],
+            local_registry='makina_projects',
+            registry_format='pack')
     try:
         cfg['keep_archives'] = int(cfg['keep_archives'])
     except (TypeError, ValueError, KeyError):
@@ -802,8 +804,11 @@ def set_configuration(name, cfg=None, *args, **kwargs):
     '''set or update a local (grains) project configuration'''
     if not cfg:
         cfg = get_configuration(name, *args, **kwargs)
-    __salt__['grains.setval']('makina-projects.{0}'.format(name),
-                              _get_filtered_cfg(cfg))
+    local_conf = __salt__['mc_macros.get_local_registry'](
+        'makina_projects', registry_format='pack')
+    local_conf[name] = _get_filtered_cfg(cfg)
+    __salt__['mc_macros.update_local_registry'](
+        'makina_projects', local_conf, registry_format='pack')
     return get_configuration(name)
 
 
@@ -1936,7 +1941,7 @@ def report():
         }
 
 
-    ips = [a 
+    ips = [a
            for a in __grains__.get('ipv4', [])
            if not a.startswith('127.0')]
     if ips:
