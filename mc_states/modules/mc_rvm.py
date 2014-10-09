@@ -46,14 +46,15 @@ def settings():
     def _settings():
         saltmods = __salt__
         grains = __grains__
-        # users data
-         # RVM
+        locations = __salt__['mc_locations.settings']()
         data = saltmods['mc_utils.defaults'](
             'makina-states.localsettings.rvm', {
                 'url': RVM_URL,
                 'rubies': ['1.9.3'],
                 'user': 'rvm',
-                'group': 'rvm'
+                'group': 'rvm',
+                'branch': 'stable',
+                'path': locations['rvm_path'],
             })
         return data
     return _settings()
