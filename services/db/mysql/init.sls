@@ -9,3 +9,4 @@ include:
 {% import "makina-states/services/db/mysql/macros.sls" as macros with context %}
 {% set gen_settings = macros.gen_settings %}
 {% set mysql_db = macros.mysql_db %}
+{% set mysql_user = macros.mysql_user %}
