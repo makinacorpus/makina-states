@@ -18,6 +18,12 @@ include:
   - makina-states.services.db.postgresql.hooks
   {% endif %}
 
+icinga-check-pw:
+  cmd.run:
+    - name: test "x{{data.modules.ido2db.database.password}}" != "x"
+    - require_in:
+      - mc_proxy: icinga2-safe-checks
+
 icinga2-cli-pkgs:
   pkg.installed:
     - pkgs: [postgresql-client]
@@ -73,7 +79,7 @@ icinga2-import-pgsql-schema:
     - unless: |
               if [ x"$(echo "select * from icinga_commands;" | psql "{{uri}}" --set ON_ERROR_STOP=1;echo $?)" != "x0" ];then
                 sleep 2
-                echo "select * from icinga_commands;" | psql "{{uri}}" --set ON_ERROR_STOP=1 
+                echo "select * from icinga_commands;" | psql "{{uri}}" --set ON_ERROR_STOP=1
                 exit ${?}
               fi
               exit 0
@@ -81,6 +87,7 @@ icinga2-import-pgsql-schema:
       - pkg: icinga2-cli-pkgs
       - file: icinga2-import-pgsql-schema
       - mc_proxy: makina-postgresql-post-base
+      - mc_proxy: icinga2-safe-checks
     - watch_in:
       - mc_proxy: icinga2-pre-install
 {% endif %}
