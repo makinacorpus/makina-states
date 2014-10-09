@@ -27,12 +27,12 @@ DOMAIN_PATTERN = '(@{0})|({0}\\.?)$'
 DOTTED_DOMAIN_PATTERN = '((^{0}\\.?$)|(\\.(@{0})|({0}\\.?)))$'
 
 
-def yaml_load(*args, **kw):
-    return __salt__['mc_utils.cyaml_load'](*args, **kw)
+def yaml_load(*args, **kw3):
+    return __salt__['mc_utils.cyaml_load'](*args, **kw3)
 
 
-def yaml_dump(*args, **kw):
-    return __salt__['mc_utils.cyaml_dump'](*args, **kw)
+def yaml_dump(*args, **kw4):
+    return __salt__['mc_utils.cyaml_dump'](*args, **kw4)
 
 
 def generate_password(length=None):
@@ -41,6 +41,7 @@ def generate_password(length=None):
 
 class IPRetrievalError(KeyError):
     ''''''
+
 
 class NoResultError(KeyError):
     ''''''
@@ -62,7 +63,6 @@ def retrieval_error(exc, fqdn, recurse=None):
     exc.recurse = recurse
     raise exc
 
-
 def get_fqdn_domains(fqdn):
     domains = []
     if fqdn.endswith('.'):
@@ -77,7 +77,7 @@ def get_fqdn_domains(fqdn):
     return domains
 
 # to be easily mockable in tests while having it cached
-def loaddb_do(*a, **kw):
+def loaddb_do(*a, **kw5):
     dbpath = os.path.join(
         __opts__['pillar_roots']['base'][0],
         'database.yaml')
@@ -91,13 +91,14 @@ def loaddb_do(*a, **kw):
             raise ValueError('Db is invalid for {0}'.format(item))
     return db
 
+
 def load_db(ttl=60):
     cache_key = 'mc_pillar.load_db'
     return memoize_cache(__salt__['mc_pillar.loaddb_do'],
                          [], {}, cache_key, ttl)
 
 
-def query_filter(doc_type, **kwargs):
+def query_filter(doc_type, **kwargs6):
     db = __salt__['mc_pillar.load_db']()
     docs = db[doc_type]
     if doc_type in ['ipsfo_map',
@@ -106,24 +107,24 @@ def query_filter(doc_type, **kwargs):
                     'hosts',
                     'passwords_map',
                     'burp_configurations']:
-        if 'q' in kwargs:
+        if 'q' in kwargs6:
             try:
-                docs = docs[kwargs['q']]
+                docs = docs[kwargs6['q']]
             except KeyError:
-                raise NoResultError('{0} -> {1}'.format(doc_type, kwargs['q']))
+                raise NoResultError('{0} -> {1}'.format(doc_type, kwargs6['q']))
     return docs
 
 
 _marker = object()
 
 
-def query(doc_types, ttl=30, default=_marker, **kwargs):
+def query(doc_types, ttl=30, default=_marker, **kwargs8):
     skwargs = ''
     try:
-        skwargs = json.dumps(kwargs)
+        skwargs = json.dumps(kwargs8)
     except:
         try:
-            skwargs = repr(kwargs)
+            skwargs = repr(kwargs8)
         except:
             pass
     if not isinstance(doc_types, list):
@@ -135,17 +136,17 @@ def query(doc_types, ttl=30, default=_marker, **kwargs):
                     doc_types[0], skwargs)
                 return memoize_cache(query_filter,
                                      [doc_types[0]],
-                                     kwargs, cache_key, ttl)
+                                     kwargs8, cache_key, ttl)
             else:
-                return query_filter(doc_types[0], **kwargs)
+                return query_filter(doc_types[0], **kwargs8)
         except NoResultError:
             if default is not _marker:
                 return default
     raise RuntimeError('Invalid invocation')
 
 
-def query_first(doc_types, ttl=30, **kwargs):
-    return query(doc_types, ttl, **kwargs)[0]
+def query_first(doc_types, ttl=30, **kwargs7):
+    return query(doc_types, ttl, **kwargs7)[0]
 
 
 def _load_network(ttl=60):
@@ -183,7 +184,7 @@ def ips_for(fqdn,
             fail_over=None,
             recurse=None,
             ignore_aliases=None,
-            ignore_cnames=None, **kw):
+            ignore_cnames=None, **kwa2):
     '''
     Get all ip for a domain, try as a FQDN first and then
     try to append the specified domain
@@ -422,6 +423,9 @@ def load_network_infrastructure(ttl=60):
         cvms = OrderedDict()
         for vt, targets in vms.items():
             for target, _vms in targets.items():
+                if _vms is None:
+                    log.error('No vms for {0}, error?'.format(target))
+                    continue
                 for _vm in _vms:
                     cvms[_vm] = target
 
@@ -526,7 +530,7 @@ def load_network_infrastructure(ttl=60):
     return memoize_cache(_do_nt, [], {}, cache_key, ttl)
 
 
-def ip_for(fqdn, *args, **kw):
+def ip_for(fqdn, *args, **kwa1):
     '''
     Get an ip for a domain, try as a FQDN first and then
     try to append the specified domain
@@ -537,7 +541,7 @@ def ip_for(fqdn, *args, **kw):
             If failOver exists and fail_over=true, all ips
             will be returned
     '''
-    return ips_for(fqdn, *args, **kw)[0]
+    return ips_for(fqdn, *args, **kwa1)[0]
 
 
 def rr_entry(fqdn, targets, priority='10', record_type='A'):
@@ -1274,6 +1278,9 @@ def get_db_infrastructure_maps(ttl=60):
                     vts.append(vt)
                 if target not in bms:
                     bms.append(target)
+                if lvms is None:
+                    log.error('No vms for {0}, error?'.format(target))
+                    continue
                 for vm in lvms:
                     if vm not in non_managed_hosts:
                         cloud_vms.append(vm)
@@ -2351,6 +2358,8 @@ def get_sysnet_conf(id_):
             if vt != 'kvm':
                 continue
             for target, vms in targets.items():
+                if vms is None:
+                    log.error('No vms for {0}, error?'.format(target))
                 if id_ not in vms:
                     continue
                 manage_bridged_fo_kvm_network(

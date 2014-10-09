@@ -1,4 +1,10 @@
 {# mysql orchestration hooks #}
+mysql-db-create-hook:
+  mc_proxy.hook: []
+mysql-db-create-user-hook:
+  mc_proxy.hook: []
+mysql-db-grant-hook:
+  mc_proxy.hook: []
 mysql-pre-install-hook:
   mc_proxy.hook:
     - watch_in:

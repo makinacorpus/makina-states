@@ -11,11 +11,11 @@
 {%- macro rvm_env() %}
     - env:
       - rvm_prefix: {{locs.rvm_prefix}}
-      - rvm_path: {{locs.rvm_path}}
+      - path: {{locs.rvm_path}}
 {%- endmacro %}
 rvm-deps:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
-    - names:
+    - pkgs:
 {# rvm deps #}
       - bash
       - coreutils
@@ -52,47 +52,79 @@ rvm-deps:
       - ruby
       - ruby1.9.3
 
-{{rvms.rvm_group}}-group:
+{{rvms.group}}-group:
   group.present:
-    - name: {{rvms.rvm_group}}
+    - name: {{rvms.group}}
 
-{{rvms.rvm_user}}-user:
+{{rvms.user}}-user:
   user.present:
-    - name: {{rvms.rvm_user}}
-    - gid: {{rvms.rvm_group}}
+    - name: {{rvms.user}}
+    - gid: {{rvms.group}}
     - home: /home/rvm
     - require:
-      - group: {{rvms.rvm_group}}
+      - group: {{rvms.group}}
 
 rvm-dir:
  file.directory:
     - name: {{locs.rvm_path}}
-    - group: {{rvms.rvm_group}}
-    - user: {{rvms.rvm_user}}
+    - group: {{rvms.group}}
+    - user: {{rvms.user}}
     - require:
-      - user: {{rvms.rvm_user}}
-      - group: {{rvms.rvm_group}}
+      - user: {{rvms.user}}
+      - group: {{rvms.group}}
 
 rvm-setup:
   cmd.run:
-    - name: curl -s {{rvms.rvm_url}} | bash -s stable
+    - name: |
+            cd /tmp
+            wget -O rvm-installer "{{rvms.url}}"
+            chmod +x rvm-installer
+            ./rvm-installer {{rvms.branch}}
+    - use_vt: true
     - unless: test -e {{locs.rvm_path}}/bin/rvm
     - require:
       - pkg: rvm-deps
       - file: rvm-dir
-      - user:  {{rvms.rvm_user}}-user
+      - user:  {{rvms.user}}-user
 
-{%- for ruby in rvms.rubies %}
-rvm-{{ruby}}:
+
+{% macro install_ruby(version, suf='') %}
+rvm-{{version}}{{suf}}:
   cmd.run:
-    - name: {{locs.rvm}} install {{ruby}}
-    - unless: test -e {{locs.rvm_path}}/rubies/{{ruby}}*/bin
-    {% if full %}
+    - name: {{locs.rvm}} install {{version}}
+    - use_vt: true
+    - unless: test -e {{locs.rvm_path}}/rubies/*{{version}}*/bin
+    - require_in:
+      - cmd: active-rvm-bundler-hook
     - require:
       - cmd: rvm-setup
-    {% endif %}
+{% endmacro %}
+
+{%- for ruby in rvms.rubies %}
+{{install_ruby(ruby)}}
 {%- endfor %}
 
 active-rvm-bundler-hook:
   cmd.run:
-    - name: {{saltmac.msr}}/_scripts/reset-perms.py' --dmode 0700 --fmode 0700 --paths "{{locs.rvm_path}}/hooks/after_cd_bundler"
+    - name: {{saltmac.msr}}/_scripts/reset-perms.py --dmode 0700 --fmode 0700 --paths "{{locs.rvm_path}}/hooks/after_cd_bundler"
+    - require_in:
+      - mc_proxy: rvm-last
+
+rvm-last:
+  mc_proxy.hook: []
+
+
+{% macro rvm(cmd, state='rvm', version='1.9.3', gemset='global', user='root', vt=True) %}
+{{state}}:
+  cmd.run:
+    - name: >
+            bash --login -c ". /etc/profile
+            && . /usr/local/rvm/scripts/rvm
+            && rvm --create use {{version.strip()}}@{{gemset.strip()}}
+            && {{cmd}}"
+    {% if vt %}
+    - use_vt: {{vt}}
+    {%endif%}
+{% endmacro %}
+
+

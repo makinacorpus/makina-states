@@ -60,40 +60,13 @@ makina-mysql-db-{{ state_uid }}:
     - connection_pass: "{{ mysqlData.conn_pass }}"
     - saltenv:
       - LC_ALL: en_US.utf8
+    - require_in:
+      - mc_proxy: mysql-db-create-hook
 {%- if user_creation -%}
-{%   for currenthost in host -%}
-{%-     set host_simple=currenthost.replace('.', '_').replace(' ','_').replace('%','_') %}
-makina-mysql-user-{{ state_uid }}-{{ host_simple }}:
-  mysql_user.present:
-    - name: "{{ user }}"
-    - password: "{{ password }}"
-    - allow_passwordless: False
-    - host: "{{ currenthost }}"
-    - connection_host: "{{ mysql_host }}"
-    - connection_user: "{{ mysqlData.conn_user }}"
-    - connection_pass: "{{ mysqlData.conn_pass }}"
-    - saltenv:
-      - LC_ALL: en_US.utf8
-    - require:
-      - mysql_database: makina-mysql-db-{{ state_uid }}
-makina-mysql-user-grants-{{ state_uid }}-{{ host_simple }}:
-  mysql_grants.present:
-    - name: "MySQL General grants for {{ user }}"
-    - grant: "ALL"
-    - database: "{{ db }}.*"
-    - user: "{{ user }}"
-    - host: "{{ currenthost }}"
-    - connection_host: "{{ mysql_host }}"
-    - connection_user: "{{ mysqlData.conn_user }}"
-    - connection_pass: "{{ mysqlData.conn_pass }}"
-    - saltenv:
-      - LC_ALL: en_US.utf8
-    - require:
-      - mysql_database: makina-mysql-db-{{ state_uid }}
-      - mysql_user: makina-mysql-user-{{ state_uid }}-{{ host_simple }}
-{%-   endfor %}
+{{- mysql_user(user, password, mysql_host=mysql_host, 
+               host=host, state_uid=state_uid, databases=[db]) }}
 {%- endif %}
-{% endmacro %}
+{%- endmacro %}
 
 {# Thiks macro will generate the /etc/my/local.cnf
    which is used to tune and configure mysql.
@@ -160,3 +133,66 @@ makina-mysql-settings{{suf}}:
       - mc_proxy: mysql-post-default-tuning-hook
       {% endif %}
 {% endmacro%}
+
+
+{% macro mysql_user(
+    user, password, host=None, grant='ALL',
+    allow_passwordless=False, mysql_host=None, databases=None, state_uid=None) %}
+{%- if not host %}
+{%-   set host=['%'] %}
+{%- elif host is string %}
+{%-   set host=[host] %}
+{%- endif %}
+{%- if not databases %}
+{%-   set databases = [] %}
+{%- endif %}
+{%- if not mysql_host %}
+{%-   set mysql_host=mysqlData.conn_host %}
+{%- endif %}
+{%- if not state_uid %}
+{%-   set state_uid=(user+''.join(host)).replace(
+            '%', '_').replace('.', '_').replace(' ','_') %}
+{%- endif %}
+{%- for currenthost in host %}
+{%-  set host_simple=currenthost.replace('.', '_').replace(' ','_').replace('%','_') %}
+makina-mysql-cuser-{{ state_uid }}-{{ host_simple }}:
+  mysql_user.present:
+    - name: "{{ user }}"
+    - password: "{{ password }}"
+    - allow_passwordless: {{allow_passwordless}}
+    - host: "{{ currenthost }}"
+    - connection_host: "{{ mysql_host }}"
+    - connection_user: "{{ mysqlData.conn_user }}"
+    - connection_pass: "{{ mysqlData.conn_pass }}"
+    - saltenv:
+      - LC_ALL: en_US.utf8
+    - require:
+      - mc_proxy: mysql-db-create-hook
+    - require_in:
+      - mc_proxy: mysql-db-create-user-hook
+
+{%-  if not databases %}
+{#- global user as superuser #}
+{%-   set databases = ['*', '*.*'] %}
+{%-  endif %}
+{%-  for db in databases %}
+{%-   set sdb = db.replace('*', 'star') %}
+makina-mysql-cuser-grants-{{ state_uid }}-{{ host_simple }}-{{sdb}}:
+  mysql_grants.present:
+    - name: "MySQL General grants for {{ user }}"
+    - grant: "{{grant}}"
+    - database: "{{ db }}.*"
+    - user: "{{ user }}"
+    - host: "{{ currenthost }}"
+    - connection_host: "{{ mysql_host }}"
+    - connection_user: "{{ mysqlData.conn_user }}"
+    - connection_pass: "{{ mysqlData.conn_pass }}"
+    - saltenv:
+      - LC_ALL: en_US.utf8
+    - require:
+      - mc_proxy: mysql-db-create-user-hook
+    - require_in:
+      - mc_proxy: mysql-db-grant-hook
+{%-  endfor %}
+{%- endfor %}
+{% endmacro %}

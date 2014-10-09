@@ -532,7 +532,7 @@ set_vars() {
     BUILDOUT_REBOOTSTRAP="${BUILDOUT_REBOOTSTRAP:-${VENV_REBOOTSTRAP}}"
     SALT_REBOOTSTRAP="${SALT_REBOOTSTRAP:-${VENV_REBOOTSTRAP}}"
     BASE_PACKAGES=""
-    BASE_PACKAGES="$BASE_PACKAGES memcached libmemcached-dev build-essential m4 libtool pkg-config autoconf gettext bzip2"
+    BASE_PACKAGES="$BASE_PACKAGES libmemcached-dev build-essential m4 libtool pkg-config autoconf gettext bzip2"
     BASE_PACKAGES="$BASE_PACKAGES groff man-db automake libsigc++-2.0-dev tcl8.5 python-dev"
     if [ "x${DISTRIB_CODENAME}" != "xlenny" ];then
         BASE_PACKAGES="$BASE_PACKAGES libyaml-dev python2.7 python2.7-dev"
