@@ -12,6 +12,9 @@ from mc_states import api
 
 
 APIS = {
+    'sync_hooks': {
+        '2': 'mc_project_2.sync_hooks',
+    },
     'report': {
         '2': 'mc_project_2.report',
     },
@@ -124,6 +127,10 @@ def unlink(name, *args, **kwargs):
 
 def install(name, *args, **kwargs):
     return _api_switcher('install', name, *args, **kwargs)
+
+
+def sync_hooks(name, *args, **kwargs):
+    return _api_switcher('sync_hooks', name, *args, **kwargs)
 
 
 def link(name, *args, **kwargs):

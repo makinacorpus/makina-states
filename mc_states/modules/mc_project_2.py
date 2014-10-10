@@ -933,47 +933,58 @@ exit $res;'''.format(user=user)
     return ret
 
 
-def sync_hooks(name, git, user, group, deploy_hooks=False,
-               ret=None, bare=True, api_version=API_VERSION):
+def sync_hooks(name, ret=None, api_version=API_VERSION, *args, **kwargs):
     _s = __salt__.get
+    cfg = get_configuration(name, *args, **kwargs)
+    user, groups, group = cfg['user'], cfg['groups'], cfg['group']
     if not ret:
-        ret = _get_ret(user)
-    lgit = git
-    if not bare:
-        lgit = os.path.join(lgit, '.git')
+        ret = _get_ret(cfg['name'])
+    local_remote = cfg['project_git_root']
+    project_git = os.path.join(cfg['project_root'], '.git')
+    params = {
+        'FORCE_MARKER': local_remote+'/hooks/force_marker',
+        'api_version': api_version, 'name': name}
     cret = _state_exec(sfile, 'managed',
-                       name=os.path.join(lgit, 'hooks/pre-receive'),
+                       name=os.path.join(local_remote, 'hooks/pre-receive'),
                        source=(
                            'salt://makina-states/files/projects/2/'
                            'hooks/pre-receive'),
-                       defaults={'api_version': api_version, 'name': name},
+                       defaults=params,
                        user=user, group=group, mode='750', template='jinja')
     cret = _state_exec(sfile, 'managed',
-                       name=os.path.join(lgit, 'hooks/post-receive'),
+                       name=os.path.join(local_remote, 'hooks/post-receive'),
                        source=(
                            'salt://makina-states/files/projects/2/'
                            'hooks/post-receive'),
-                       defaults={'api_version': api_version, 'name': name},
+                       defaults=params,
                        user=user, group=group, mode='750', template='jinja')
     cret = _state_exec(sfile, 'managed',
-                       name=os.path.join(lgit, 'hooks/deploy_hook.py'),
+                       name=os.path.join(local_remote, 'hooks/deploy_hook.py'),
                        source=(
                            'salt://makina-states/files/projects/2/'
                            'hooks/deploy_hook.py'),
-                       defaults={'api_version': api_version, 'name': name},
+                       defaults=params,
+                       user=user, group=group, mode='750')
+    cret = _state_exec(sfile, 'managed',
+                       name=os.path.join(project_git, 'hooks/pre-push'),
+                       source=(
+                           'salt://makina-states/files/projects/2/'
+                           'hooks/pre-push'),
+                       template='jinja',
+                       defaults=params,
                        user=user, group=group, mode='750')
     if not cret['result']:
         raise ProjectInitException(
-            'Can\'t set git hooks for {0}\n{1}'.format(git, cret['comment']))
+            'Can\'t set git hooks for {0}\n{1}'.format(name, cret['comment']))
     else:
         _append_comment(
-            ret, summary='Git Hooks for {0}'.format(git))
-        #_append_comment(ret, body=indent(cret['comment']))
+            ret, summary='Git Hooks for {0}'.format(name))
+    return ret
 
 
-def init_repo(cfg, git, user, group, deploy_hooks=False,
-                   ret=None, bare=True, init_salt=False,
-                   init_pillar=False, api_version=API_VERSION):
+def init_repo(cfg, git, user, group,
+              ret=None, bare=True, init_salt=False,
+              init_pillar=False, api_version=API_VERSION):
     _s = __salt__.get
     if not ret:
         ret = _get_ret(user)
@@ -1440,14 +1451,12 @@ def init_project(name, *args, **kwargs):
             init_repo(cfg, localgit, user, group, ret=ret,
                       init_salt=init_salt, init_pillar=init_pillar,
                       bare=True)
-            if hook:
-                sync_hooks(name, localgit, user, group, ret=ret,
-                           bare=True, api_version=cfg['api_version'])
             init_repo(cfg, wc, user, group, ret=ret, bare=False)
             for working_copy, remote in [(localgit, wc),
                                          (wc, localgit)]:
                 set_git_remote(working_copy, user, remote, ret=ret)
             fetch_last_commits(wc, user, ret=ret)
+        sync_hooks(name, ret=ret, api_version=cfg['api_version'])
         # to mutally sync remotes, all repos must be created
         # first, so we need to cut off and reiterate over
         # the same iterables, but in 2 times
@@ -1924,6 +1933,20 @@ def notify(name, *args, **kwargs):
     cfg = get_configuration(name, *args, **kwargs)
     cret = _step_exec(cfg, 'notify')
     return cret
+
+
+def sync_hooks_for_all():
+    '''
+    Get connection details & projects report
+    '''
+    pt = '/srv/projects'
+    projects = os.listdir(pt)
+    ret = _get_ret('project')
+    if projects:
+        for pj in projects:
+            if os.path.exists(os.path.join(pt, pj, 'project', '.git')):
+                ret = _merge_statuses(ret, sync_hooks(pj))
+    return ret
 
 
 def report():
