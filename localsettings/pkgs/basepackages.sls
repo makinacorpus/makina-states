@@ -71,6 +71,7 @@ sys-pkgs:
       - dialog
       - findutils
       - htop
+      - pv
       - links
       - locales
       - man-db
