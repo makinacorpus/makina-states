@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+W=$(dirname "{{FORCE_MARKER}}")
+if [ ! -e "${W}" ];then
+    mkdir -p "${W}"
+fi
+touch "{{FORCE_MARKER}}"
+# vim:set et sts=4 ts=4 tw=80 ft=bash:
