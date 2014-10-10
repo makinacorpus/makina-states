@@ -29,7 +29,6 @@ def ext_pillar(id_, pillar, *args, **kw):
         if 'mastersalt' in dbpath:
             raise ValueError(msg)
         else:
-            log.error(msg)
             return {}
     try:
         profile_enabled = kw.get('profile', False)
