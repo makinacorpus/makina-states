@@ -10,6 +10,7 @@ mc_macros / macros helpers
 # Import salt libs
 import msgpack
 import os
+import copy
 import logging
 import time
 import traceback
@@ -33,7 +34,14 @@ from salt.renderers.yaml import get_yaml_loader
 log = logging.getLogger(__name__)
 DEFAULT_SUF = 'makina-states.local'
 DEFAULT_LOCAL_REG_NAME = '{0}.{{0}}'.format(DEFAULT_SUF)
-RKEY = 'mcreg_{0}'
+RKEY = 'mcreg_{0}_{1}'
+REGISTRY_FORMATS = ['pack', 'yaml']
+_default = object()
+
+
+def get_registry_formats():
+    return copy.deepcopy(REGISTRY_FORMATS)
+
 
 class NoRegistryLoaderFound(SaltException):
     """."""
@@ -184,7 +192,7 @@ def encode_local_registry(name, registry, registry_format='yaml'):
     os.chmod(registryf, 0700)
 
 
-def get_local_registry(name,
+def _get_local_registry(name,
                        cached=True,
                        cachetime=60,
                        registry_format='yaml'):
@@ -220,7 +228,6 @@ def get_local_registry(name,
             '{0}/makina-states/{1}.{2}'.format(
                 __opts__['config_dir'], name, registry_format)
         ]
-
     def _do(name, to_load, registry_format):
         registry = OrderedDict()
         for registryf in to_load:
@@ -242,19 +249,42 @@ def get_local_registry(name,
                     registry[nk] = registry[k]
                     registry.pop(k)
         return registry
-    cache_key = RKEY.format(key)
+    cache_key = RKEY.format(key, registry_format)
     force_run = not cached
     return memoize_cache(
         _do, [name, to_load, registry_format], {},
         cache_key, cachetime, force_run=force_run)
 
 
-_default = object()
+def get_local_registry(name,
+                       cached=True,
+                       cachetime=60,
+                       registry_format='yaml'):
+    local_registry = _get_local_registry(
+        name,
+        cached=cached,
+        cachetime=cachetime,
+        registry_format=registry_format)
+    # try to find the localreg in another format
+    if not local_registry:
+        formats = [
+            a
+            for a in get_registry_formats()
+            if not a == registry_format]
+        for f in formats:
+            local_registry = _get_local_registry(
+                name,
+                cached=cached,
+                cachetime=cachetime,
+                registry_format=f)
+            if local_registry:
+                break
+    return local_registry
 
 
 def update_registry_params(registry_name, params, registry_format='yaml'):
     '''Update the desired local registry'''
-    invalidate_memoize_cache(RKEY.format(registry_name))
+    invalidate_memoize_cache(RKEY.format(registry_name, registry_format))
     registry = get_local_registry(
         registry_name, registry_format=registry_format)
     changes = {}
@@ -285,7 +315,7 @@ def update_registry_params(registry_name, params, registry_format='yaml'):
     if changes:
         encode_local_registry(
             registry_name, registry, registry_format=registry_format)
-        invalidate_memoize_cache(RKEY.format(registry_name))
+        invalidate_memoize_cache(RKEY.format(registry_name, registry_format))
     return changes
 
 
