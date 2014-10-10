@@ -832,7 +832,7 @@ def settings():
                      'source': 'fw:127.0.0.1',
                      'dest': "all",
                      'proto': proto,
-                     'dport': '4971,4972'},
+                     'dport': '4971,4972,4973,4974'},
                     zones=data['internal_zones'])
             for proto in protos:
                 append_rules_for_zones(
@@ -841,7 +841,7 @@ def settings():
                      'source': '$SALT_RESTRICTED_BURP',
                      'dest': "all",
                      'proto': proto,
-                     'dport': '4971,4972'},
+                     'dport': '4971,4972,4973,4974'},
                     zones=data['internal_zones'])
             # also accept configured hosts
             burpsettings = __salt__['mc_burp.settings']()

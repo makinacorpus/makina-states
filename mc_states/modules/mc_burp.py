@@ -219,6 +219,8 @@ def settings():
                     'dedup_group': 'linux',
                     'mode': 'client',
                     'port': '4971',
+                    'restore_port': '4973',
+                    'restore_status_port': '4974',
                     'pidfile': '/var/run/burp.client.pid',
                     'syslog': '0',
                     'stdout': '1',
