@@ -2,9 +2,28 @@
 # Set ENABLED to 1 if you want the init script to start haproxy.
 {% set data = salt['mc_utils.json_load'](data) %}
 ENABLED="{{data.enabled}}"
+EXTRAOPTS="{% if data.extra_opts %} {{data.extra_opts}}{%endif%}"
 # Add extra flags here.
-{% if data.extra_opts %}
-EXTRAOPTS="{{data.extra_opts}}"
-{% else %}
+
 #EXTRAOPTS="-de -m 16"
-{% endif %}
+CONFIGDIR=/etc/haproxy
+get_opts() {
+    opts=""
+    for j in backends dispatchers listeners extra;do
+        idir="${CONFIGDIR}/${j}"
+        if [ -e ${idir} ];then
+            for f in $(find "${idir}" -name "*cfg"|sort -nk2);do
+                opts="${opts} -f ${f}"
+            done
+        fi
+    done
+    echo "${opts}"
+}
+
+haproxy_check_perms() {
+	[ -d "$RUNDIR" ] || mkdir "$RUNDIR"
+	chown haproxy:haproxy "$RUNDIR"
+	chmod 2775 "$RUNDIR"
+}
+
+EXTRAOPTS="${EXTRAOPTS} $(get_opts)"
