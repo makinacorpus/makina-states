@@ -835,6 +835,16 @@ def settings():
                      'dport': '4971,4972,4973,4974'},
                     zones=data['internal_zones'])
             for proto in protos:
+                for i in ['lxc', 'kvm', 'docker']:
+                    if i in data['zones']:
+                        append_rules_for_zones(
+                        data['default_rules'],
+                        {'action': action,
+                         'source': i,
+                         'dest': "all",
+                         'proto': proto,
+                         'dport': '4971,4972,4973,4974'},
+                        zones=data['internal_zones'])
                 append_rules_for_zones(
                     data['default_rules'],
                     {'action': action,
