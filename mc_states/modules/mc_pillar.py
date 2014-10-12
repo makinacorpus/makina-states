@@ -2368,6 +2368,15 @@ def get_sysnet_conf(id_):
     return rdata
 
 
+def get_check_raid_conf(id_):
+    rdata = {}
+    maps = __salt__['mc_pillar.get_db_infrastructure_maps']()
+    pref = "makina-states.nodetypes.check_raid"
+    if id_ in maps['bms']:
+        rdata.update({pref: True})
+    return rdata
+
+
 def get_supervision_client_conf(id_):
     gconf = get_configuration(id_)
     rdata = {}

@@ -152,7 +152,7 @@ def settings():
             'makina-states.services.backup.burp', {
                 'admins': 'root',
                 'cron_activated': True,
-                'cron_periodicity': '0 0,6,12,18 * * *',
+                'cron_periodicity': '40 0,6,12,18 * * *',
                 'ver': '1.3.48',
                 'user': 'root',
                 'group': 'root',
@@ -219,6 +219,8 @@ def settings():
                     'dedup_group': 'linux',
                     'mode': 'client',
                     'port': '4971',
+                    'restore_port': '4973',
+                    'restore_status_port': '4974',
                     'pidfile': '/var/run/burp.client.pid',
                     'syslog': '0',
                     'stdout': '1',

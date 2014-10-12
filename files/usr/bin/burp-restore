@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+burp -c "/etc/burp/burp-client-restore.conf" "$@"

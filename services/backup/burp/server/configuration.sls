@@ -61,6 +61,9 @@ etc-burp-burp-server.conf-{{f}}:
 {% for f in [
   '/etc/default/burp-server',
   '/etc/init.d/burp-server',
+  '/etc/init.d/burp-restore',
+  '/etc/default/burp-restore',
+  '/etc/burp/burp-restore.conf',
   '/etc/burp/burp-server.conf',
   '/etc/burp/timer_script',
   '/etc/burp/notify_script',
@@ -138,6 +141,8 @@ etc-burp-burp-client.{{client}}-backup-init:
   '/etc/logrotate.d/burp',
   '/etc/default/burp-client',
   '/etc/init.d/burp-client',
+  '/etc/burp/burp-client-restore.conf',
+  '/usr/bin/burp-restore',
   '/etc/burp/timer_script',
   '/etc/burp/notify_script',
   '/etc/burp/burp.conf',

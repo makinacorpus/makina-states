@@ -29,7 +29,6 @@ def ext_pillar(id_, pillar, *args, **kw):
         if 'mastersalt' in dbpath:
             raise ValueError(msg)
         else:
-            log.error(msg)
             return {}
     try:
         profile_enabled = kw.get('profile', False)
@@ -66,6 +65,7 @@ def ext_pillar(id_, pillar, *args, **kw):
         'mc_pillar.get_sudoers_conf',
         'mc_pillar.get_supervision_confs',
         'mc_pillar.get_sysnet_conf',
+        'mc_pillar.get_check_raid_conf',
     ]:
         try:
             data = __salt__['mc_utils.dictupdate'](

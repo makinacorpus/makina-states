@@ -14,7 +14,7 @@ makina-rsyslog-configuration-check:
       - mc_proxy: rsyslog-pre-restart-hook
 
 {% set sdata =salt['mc_utils.json_dump'](data) %}
-{% for f in [
+{% set files = [
   '/etc/rsyslog.conf',
   '/etc/rsyslog.d/20-ufw.conf',
   '/etc/rsyslog.d/49-udp.conf',
@@ -22,11 +22,15 @@ makina-rsyslog-configuration-check:
   '/etc/rsyslog.d/haproxy.conf',
   '/etc/rsyslog.d/postfix.conf',
 ] %}
+{% if grains['os'] in ['Debian'] %}
+{%  do files.append('/etc/init.d/rsyslog') %}
+{% endif %}
+{% for f in files  %}
 makina-rsyslog-{{f}}:
   file.managed:
     - name: {{f}}
     - makedirs: true
-    - source: salt://makina-states/files/{{f}}
+    - source: salt://makina-states/files{{f}}
     - user: root
     - group: root
     - mode: 755

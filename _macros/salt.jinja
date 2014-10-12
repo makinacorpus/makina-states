@@ -450,6 +450,7 @@ etc-{{data.name}}-dirs-perms:
             {{ settings.c.o.resetperms }}
             -u root -g "{{ ugs.group }}"
             --dmode 0770 --fmode 0770
+            --no-recursive
             --only-acls
             --paths "{{ data.projects_root }}"
     - require:
