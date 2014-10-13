@@ -14,9 +14,8 @@ include:
 before-ubuntu-pkg-install-proxy:
   mc_proxy.hook:
     - watch:
-        - file: apt-sources-list
         - mc_proxy: before-pkg-install-proxy
-        - cmd: apt-update-after
+        - mc_proxy: after-base-pkgmgr-config-proxy
     - watch_in:
       {% if grains['os'] == 'Ubuntu' %}
       - pkg: ubuntu-pkgs
