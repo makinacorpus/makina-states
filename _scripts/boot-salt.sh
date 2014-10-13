@@ -1292,7 +1292,35 @@ salt_call_wrapper_() {
         fi
     fi
     if [ -e "${outf}" ];then
-        if egrep -q "result: false" "${outf}";then
+      tmpf=$(mktemp)
+      cat > $tmpf << EOF
+import yaml, sys, codecs
+with codecs.open('$outf', 'r', 'utf-8') as fic:
+    fdata = fic.read()
+    if not fdata:
+        sys.exit(1)
+    data = yaml.load(fdata)
+    if not data:
+        sys.exit(1)
+    if isinstance(data, dict):
+        sys.exit(1)
+    ret = 0
+    for i, rdata in data.items():
+        if ret:
+            break
+        for j, statedata in rdata.items():
+            if statedata.get('result', None) is False:
+                ret = 1
+                break
+    sys.exit(ret)
+EOF
+        "${salt_call_prefix}/bin/mypy" "${tmpf}"
+        yaml_check=${?}
+        rm -f "${tmpf}"
+        if [ "x${yaml_check}" = "x0" ];then
+            last_salt_retcode=0
+            STATUS="OK"
+        elif [ "x${yaml_check}" != "x0" ];then
             if [ "x${no_output_log}" = "x" ];then
                 bs_log "partial content of $outf, check this file for full output" 1>&2
             fi
