@@ -1266,7 +1266,45 @@ salt_call_wrapper_() {
         rm -f /tmp/travisrun
     fi
     STATUS="NOTSET"
-    if [ "x${last_salt_retcode}" != "x0" ] && [ "x${last_salt_retcode}" != "x2" ];then
+    yaml_check=1
+    if [ -e "${outf}" ];then
+      stmpf=$(mktemp)
+      cat > "${stmpf}" << EOF
+from __future__ import (absolute_import, division,
+                        print_function, unicode_literals)
+import yaml, sys, codecs
+from pprint import pprint
+with codecs.open("$outf", "r", "utf-8") as fic:
+    fdata = fic.read()
+    if not fdata:
+        print("no file content")
+        sys.exit(1)
+    data = yaml.load(fdata)
+    if not data:
+        print("no data in\n{0}".format(pprint(data)))
+        sys.exit(1)
+    if not isinstance(data, dict):
+        print("no state datain\n{0}".format(pprint(data)))
+        sys.exit(1)
+    ret = 0
+    for i, rdata in data.items():
+        if not isinstance(rdata, dict):
+            print("no state rdata in\n{0}".format(pprint(rdata)))
+            sys.exit(1)
+        if ret:
+            break
+        for j, statedata in rdata.items():
+            if statedata.get('result', None) is False:
+                pprint(statedata)
+                ret = 1
+                break
+    sys.exit(ret)
+EOF
+        "${salt_call_prefix}/bin/mypy" "${stmpf}"
+        yaml_check=${?}
+        rm -f "${stmpf}"
+    fi
+    if [ "x${yaml_check}" != "x0" ] && [ "x${last_salt_retcode}" != "x0" ] && [ "x${last_salt_retcode}" != "x2" ];then
         STATUS="ERROR"
         bs_log "salt-call ERROR, check ${logf} and ${outf} for details" 2>&2
         last_salt_retcode=100
@@ -1292,31 +1330,6 @@ salt_call_wrapper_() {
         fi
     fi
     if [ -e "${outf}" ];then
-      tmpf=$(mktemp)
-      cat > $tmpf << EOF
-import yaml, sys, codecs
-with codecs.open('$outf', 'r', 'utf-8') as fic:
-    fdata = fic.read()
-    if not fdata:
-        sys.exit(1)
-    data = yaml.load(fdata)
-    if not data:
-        sys.exit(1)
-    if isinstance(data, dict):
-        sys.exit(1)
-    ret = 0
-    for i, rdata in data.items():
-        if ret:
-            break
-        for j, statedata in rdata.items():
-            if statedata.get('result', None) is False:
-                ret = 1
-                break
-    sys.exit(ret)
-EOF
-        "${salt_call_prefix}/bin/mypy" "${tmpf}"
-        yaml_check=${?}
-        rm -f "${tmpf}"
         if [ "x${yaml_check}" = "x0" ];then
             last_salt_retcode=0
             STATUS="OK"
