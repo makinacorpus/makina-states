@@ -11,8 +11,7 @@ packages="$packages megacli megaide-status megaide-spyd mpt-status lsiutil sas2i
 do_aptget() {
     export UCF_FORCE_CONFFOLD=1
     export DEBIAN_FRONTEND=noninteractive
-    apt-get install -y --force-yes\
-        -o Dpkg::Options::="--force-confold" ${packages}
+    apt-get install -y --force-yes -o Dpkg::Options::="--force-confold" ${packages}
         #adaptec-universal-storage-snmpd\
         #adaptec-universal-storage-mib\
         #adaptec-storage-manager-agent\
