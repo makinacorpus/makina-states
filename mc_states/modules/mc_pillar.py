@@ -1884,7 +1884,6 @@ def get_supervision_objects_defs(id_):
     disable_common_checks = {'disk_space': False,
                              'load_avg': False,
                              'memory': False,
-                             'apt': False,
                              'swap': False,
                              'ping': False,
                              'nic_card': False}
@@ -1942,10 +1941,12 @@ def get_supervision_objects_defs(id_):
                         break
             if host_provider:
                 [groups.append(i)
-                 for i in ['HG_HOSTS',
-                           'HG_PROVIDER',
+                 for i in ['HG_PROVIDER',
                            'HG_PROVIDER_{0}'.format(host_provider)]
                  if i not in groups]
+            [groups.append(i)
+             for i in ['HG_HOSTS', 'HG_BMS']
+             if i not in groups]
             if host not in maps['non_managed_hosts']:
                 ds = hdata.setdefault('disk_space', [])
                 for i in ['/', '/srv']:
@@ -2014,6 +2015,9 @@ def get_supervision_objects_defs(id_):
             sattrs = hdata.setdefault('services_attrs', OrderedDict())
             rparents = [a for a in parents if a != id_]
             groups = hdata.get('attrs', {}).get('groups', [])
+            no_common_checks = hdata.get('no_common_checks', False)
+            if no_common_checks:
+                hdata.update(disable_common_checks)
             for g in groups:
                 if g not in sobjs:
                     sobjs[g] = {'attrs': {'display_name': g}}

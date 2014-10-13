@@ -12,18 +12,23 @@ include:
 {% endif %}
 
 icinga2-base:
+  file.absent:
+    - name: {{ salt['mc_locations.settings']().conf_dir }}/apt/sources.list.d/icinga.list
   cmd.run:
     - name: wget http://packages.icinga.org/icinga.key -O - | apt-key add -
     - user: root
     - unless: apt-key list|grep -q Icinga
   pkgrepo.managed:
     - humanname: icinga ppa
-    - name: deb  http://packages.icinga.org/{{grains['os'].lower()}}/ icinga-{{dist}} main
-    - dist: icinga-{{dist}}
-    - file: {{ salt['mc_locations.settings']().conf_dir }}/apt/sources.list.d/icinga.list
+    - name: deb http://ppa.launchpad.net/formorer/icinga/ubuntu {{dist}} main
+    - dist: {{dist}}
+    - file: {{ salt['mc_locations.settings']().conf_dir }}/apt/sources.list.d/icinga2.list
+    - keyid: "36862847"
+    - keyserver: keyserver.ubuntu.com
     - watch:
       - mc_proxy: icinga2-pre-install
       - cmd: icinga2-base
+      - file: icinga2-base
 
 icinga2-pkgs:
   pkg.{{pkgssettings['installmode']}}:
