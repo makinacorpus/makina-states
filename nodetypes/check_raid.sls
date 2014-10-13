@@ -8,7 +8,7 @@ install-raid:
     - user: root
     - group: root
   cmd.run:
-    - name: /usr/bin/install_raid_tools.sh
+    - name: su -c "/usr/bin/install_raid_tools.sh"
     - use_vt: true
     - require:
       - file: install-raid

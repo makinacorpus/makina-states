@@ -12,8 +12,6 @@ if [ "x$(which mpt-status 2>/dev/null)" != "x" ];then
         if [ "x$(mpt-status -p 2>/dev/null|grep -q "Found SCSI";echo ${?})" = "x0" ];then
             plugins="${plugins},mpt"
         fi
-    elif [ "x$(mpt-status 2>/dev/null |grep ATA|wc -l)" != "x0" ];then
-        plugins="${plugins},mpt"
     fi
 fi
 if [ "x$(which megacli 2>/dev/null)" != "x" ];then

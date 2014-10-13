@@ -3,7 +3,7 @@ RELEASE="wheezy"
 packages=""
 packages="$packages mdadm 3ware-status tw-cli 3dm2 aacraid-status arcconf hrconf"
 packages="$packages cciss-vol-status hpacucli megaraid-status megactl megamgr dellmgr megaclisas-status"
-packages="$packages megacli megaide-status megaide-spyd mpt-status lsiutil sas2ircu sas2ircu-status"
+packages="$packages megacli megaide-status mpt-status lsiutil sas2ircu sas2ircu-status"
 #if [ "x$(lsb_release --id 2>/dev/null|grep -q Ubuntu;echo $?)" = "x0" ];then
 #    RELEASE="precise"
 #fi
