@@ -257,7 +257,7 @@ detect_os() {
             BEFORE_RARING=y
         fi
         if [ "x${DISTRIB_CODENAME}" = "xraring" ] || [ "x${EARLY_UBUNTU}" != "x" ];then
-            BEFORE_SAUCY=y
+            BEFORE_SAUCY="y"
         fi
         if [ "x${DISTRIB_ID}" = "xUbuntu" ];then
             IS_UBUNTU="y"
@@ -292,6 +292,7 @@ detect_os() {
         SALT_BOOT_OS="ubuntu"
         DISTRIB_NEXT_RELEASE="saucy"
         DISTRIB_BACKPORT="${DISTRIB_NEXT_RELEASE}"
+        IS_DEBIAN=""
     elif [ "x${IS_DEBIAN}" != "x" ];then
         if [ "x${DISTRIB_CODENAME}"  = "xwheezy" ];then
             DISTRIB_NEXT_RELEASE="jessie"
@@ -432,18 +433,29 @@ set_valid_upstreams() {
     VALID_BRANCHES=$(echo "${VALID_BRANCHES}")
 }
 
+
+get_conf_root() {
+    conf_root="${CONF_ROOT:-"/etc"}"
+    if [ "x${conf_root}" = "x" ];then
+        conf_root="/etc"
+    fi
+    echo $conf_root
+}
+
 get_conf(){
     key="${1}"
-    echo $(cat "${CONF_ROOT}/makina-states/$key" 2>/dev/null)
+    conf_root="$(get_conf_root)"
+    echo $(cat "${conf_root}/makina-states/$key" 2>/dev/null)
 }
 
 store_conf(){
     key="${1}"
     val="${2}"
-    if [ ! -d "${CONF_ROOT}/makina-states" ];then
-        mkdir -pv "${CONF_ROOT}/makina-states"
+    conf_root="$(get_conf_root)"
+    if [ ! -d "${conf_root}/makina-states" ];then
+        mkdir -pv "${conf_root}/makina-states"
     fi
-    echo "${val}">"${CONF_ROOT}/makina-states/${key}"
+    echo "${val}">"${conf_root}/makina-states/${key}"
 }
 
 set_conf() {
@@ -532,7 +544,7 @@ set_vars() {
     BUILDOUT_REBOOTSTRAP="${BUILDOUT_REBOOTSTRAP:-${VENV_REBOOTSTRAP}}"
     SALT_REBOOTSTRAP="${SALT_REBOOTSTRAP:-${VENV_REBOOTSTRAP}}"
     BASE_PACKAGES=""
-    BASE_PACKAGES="$BASE_PACKAGES libmemcached-dev build-essential m4 libtool pkg-config autoconf gettext bzip2"
+    BASE_PACKAGES="$BASE_PACKAGES libmemcached-dev acl build-essential m4 libtool pkg-config autoconf gettext bzip2"
     BASE_PACKAGES="$BASE_PACKAGES groff man-db automake libsigc++-2.0-dev tcl8.5 python-dev"
     if [ "x${DISTRIB_CODENAME}" != "xlenny" ];then
         BASE_PACKAGES="$BASE_PACKAGES libyaml-dev python2.7 python2.7-dev"
