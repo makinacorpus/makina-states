@@ -1274,31 +1274,33 @@ from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
 import yaml, sys, codecs
 from pprint import pprint
-with codecs.open("$outf", "r", "utf-8") as fic:
-    fdata = fic.read()
-    if not fdata:
-        print("no file content")
-        sys.exit(1)
-    data = yaml.load(fdata)
-    if not data:
-        print("no data in\n{0}".format(pprint(data)))
-        sys.exit(1)
-    if not isinstance(data, dict):
-        print("no state datain\n{0}".format(pprint(data)))
-        sys.exit(1)
-    ret = 0
-    for i, rdata in data.items():
-        if not isinstance(rdata, dict):
-            print("no state rdata in\n{0}".format(pprint(rdata)))
+ret = 0
+statecheck = False
+for i in ['state.highstate', 'state.sls']:
+    if i in "${saltargs//\"/} ${@//\"/}":
+        statecheck = True
+if statecheck:
+    with codecs.open("$outf", "r", "utf-8") as fic:
+        fdata = fic.read()
+        if not fdata:
+            print("no file content")
             sys.exit(1)
-        if ret:
-            break
-        for j, statedata in rdata.items():
-            if statedata.get('result', None) is False:
-                pprint(statedata)
-                ret = 1
+        data = yaml.load(fdata)
+        if not isinstance(data, dict):
+            print("no state data in\n{0}".format(pprint(data)))
+            sys.exit(1)
+        for i, rdata in data.items():
+            if not isinstance(rdata, dict):
+                print("no state rdata in\n{0}".format(pprint(rdata)))
+                sys.exit(1)
+            if ret:
                 break
-    sys.exit(ret)
+            for j, statedata in rdata.items():
+                if statedata.get('result', None) is False:
+                    pprint(statedata)
+                    ret = 1
+                    break
+sys.exit(ret)
 EOF
         "${salt_call_prefix}/bin/mypy" "${stmpf}"
         yaml_check=${?}
