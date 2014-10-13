@@ -2133,8 +2133,10 @@ EOF
     echo "makina-states.minion_id: $(get_minion_id)">>"${SALT_PILLAR}/salt.sls"
 
     "${SED}" -i -e "s/.*\.master:.*/makina-states.controllers.salt_minion.master: $(get_minion_id)/g" "${SALT_PILLAR}/salt_minion.sls"
+    if [ ! -e "${MCONF_PREFIX}" ];then
+        mkdir -p "${MCONF_PREFIX}"
+    fi
     touch "${MCONF_PREFIX}/grains"
-
     "${SED}" -i -e "/^    id:/ d" "${CONF_PREFIX}/grains"
     "${SED}" -i -e "/makina-states.minion_id:/ d" "${CONF_PREFIX}/grains"
     echo "makina-states.minion_id: $(get_minion_id)">>"${CONF_PREFIX}/grains"
