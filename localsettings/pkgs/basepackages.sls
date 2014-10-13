@@ -5,7 +5,6 @@
 #}
 
 {{ salt['mc_macros.register']('localsettings', 'pkgs.basepackages') }}
-{% if salt['mc_controllers.mastersalt_mode']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 include:
   - makina-states.localsettings.pkgs.hooks
@@ -14,9 +13,8 @@ include:
 before-ubuntu-pkg-install-proxy:
   mc_proxy.hook:
     - watch:
-        - file: apt-sources-list
         - mc_proxy: before-pkg-install-proxy
-        - cmd: apt-update-after
+        - mc_proxy: after-base-pkgmgr-config-proxy
     - watch_in:
       {% if grains['os'] == 'Ubuntu' %}
       - pkg: ubuntu-pkgs
@@ -60,9 +58,19 @@ ubuntu-pkgs:
 sys-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
+      {% if salt['mc_controllers.mastersalt_mode']() %}
       - acpid
-      - bridge-utils
+      - lynx
+      - lvm2
+      - smartmontools
+      - zerofree
+      - ncdu
+      - xfsprogs
+      - mc
+      - gdisk
+      {% endif %}
       - acl
+      - bridge-utils
       - libacl1-dev
       - bash-completion
       - bzip2
@@ -83,12 +91,7 @@ sys-pkgs:
       - jq
       {% endif %}
       - lsof
-      - lvm2
-      - lynx
-      - mc
       - mlocate
-      - gdisk
-      - ncdu
       - psmisc
       - pwgen
       - python
@@ -97,15 +100,11 @@ sys-pkgs:
       - bsdtar
       - socat
       - screen
-      - smartmontools
       - tmux
-      - screen
       - tzdata
       - tree
       - unzip
       - vim
-      - xfsprogs
-      - zerofree
       - zip
       {% if grains['os_family'] == 'Debian' -%}
       - python-software-properties
@@ -147,28 +146,28 @@ net-pkgs:
       - wget
       - curl
       - dnsutils
+      - net-tools
+      - openssh-server
+      - rsync
+      - tcpdump
+      - telnet
+      - traceroute
+      - whois
+      {% if salt['mc_controllers.mastersalt_mode']() %}
       - ethtool
       - ifenslave-2.6
       - iftop
       - iptraf
-      - net-tools
       - nmap
       - ntp
-      - openssh-server
-      - rsync
       - sipcalc
-      - tcpdump
-      - telnet
-      - traceroute
       - vlan
       - wakeonlan
-      - wget
-      - whois
+      {% endif %}
 
 salt-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
       - python-apt
       - libgmp3-dev
-{% endif %}
 {% endif %}

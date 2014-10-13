@@ -257,7 +257,7 @@ detect_os() {
             BEFORE_RARING=y
         fi
         if [ "x${DISTRIB_CODENAME}" = "xraring" ] || [ "x${EARLY_UBUNTU}" != "x" ];then
-            BEFORE_SAUCY=y
+            BEFORE_SAUCY="y"
         fi
         if [ "x${DISTRIB_ID}" = "xUbuntu" ];then
             IS_UBUNTU="y"
@@ -292,6 +292,7 @@ detect_os() {
         SALT_BOOT_OS="ubuntu"
         DISTRIB_NEXT_RELEASE="saucy"
         DISTRIB_BACKPORT="${DISTRIB_NEXT_RELEASE}"
+        IS_DEBIAN=""
     elif [ "x${IS_DEBIAN}" != "x" ];then
         if [ "x${DISTRIB_CODENAME}"  = "xwheezy" ];then
             DISTRIB_NEXT_RELEASE="jessie"
@@ -432,18 +433,29 @@ set_valid_upstreams() {
     VALID_BRANCHES=$(echo "${VALID_BRANCHES}")
 }
 
+
+get_conf_root() {
+    conf_root="${CONF_ROOT:-"/etc"}"
+    if [ "x${conf_root}" = "x" ];then
+        conf_root="/etc"
+    fi
+    echo $conf_root
+}
+
 get_conf(){
     key="${1}"
-    echo $(cat "${CONF_ROOT}/makina-states/$key" 2>/dev/null)
+    conf_root="$(get_conf_root)"
+    echo $(cat "${conf_root}/makina-states/$key" 2>/dev/null)
 }
 
 store_conf(){
     key="${1}"
     val="${2}"
-    if [ ! -d "${CONF_ROOT}/makina-states" ];then
-        mkdir -pv "${CONF_ROOT}/makina-states"
+    conf_root="$(get_conf_root)"
+    if [ ! -d "${conf_root}/makina-states" ];then
+        mkdir -pv "${conf_root}/makina-states"
     fi
-    echo "${val}">"${CONF_ROOT}/makina-states/${key}"
+    echo "${val}">"${conf_root}/makina-states/${key}"
 }
 
 set_conf() {
@@ -532,7 +544,7 @@ set_vars() {
     BUILDOUT_REBOOTSTRAP="${BUILDOUT_REBOOTSTRAP:-${VENV_REBOOTSTRAP}}"
     SALT_REBOOTSTRAP="${SALT_REBOOTSTRAP:-${VENV_REBOOTSTRAP}}"
     BASE_PACKAGES=""
-    BASE_PACKAGES="$BASE_PACKAGES libmemcached-dev build-essential m4 libtool pkg-config autoconf gettext bzip2"
+    BASE_PACKAGES="$BASE_PACKAGES libmemcached-dev acl build-essential m4 libtool pkg-config autoconf gettext bzip2"
     BASE_PACKAGES="$BASE_PACKAGES groff man-db automake libsigc++-2.0-dev tcl8.5 python-dev"
     if [ "x${DISTRIB_CODENAME}" != "xlenny" ];then
         BASE_PACKAGES="$BASE_PACKAGES libyaml-dev python2.7 python2.7-dev"
@@ -1254,7 +1266,47 @@ salt_call_wrapper_() {
         rm -f /tmp/travisrun
     fi
     STATUS="NOTSET"
-    if [ "x${last_salt_retcode}" != "x0" ] && [ "x${last_salt_retcode}" != "x2" ];then
+    yaml_check=1
+    if [ -e "${outf}" ];then
+      stmpf=$(mktemp)
+      cat > "${stmpf}" << EOF
+from __future__ import (absolute_import, division,
+                        print_function, unicode_literals)
+import yaml, sys, codecs
+from pprint import pprint
+ret = 0
+statecheck = False
+for i in ['state.highstate', 'state.sls']:
+    if i in "${saltargs//\"/} ${@//\"/}":
+        statecheck = True
+if statecheck:
+    with codecs.open("$outf", "r", "utf-8") as fic:
+        fdata = fic.read()
+        if not fdata:
+            print("no file content")
+            sys.exit(1)
+        data = yaml.load(fdata)
+        if not isinstance(data, dict):
+            print("no state data in\n{0}".format(pprint(data)))
+            sys.exit(1)
+        for i, rdata in data.items():
+            if not isinstance(rdata, dict):
+                print("no state rdata in\n{0}".format(pprint(rdata)))
+                sys.exit(1)
+            if ret:
+                break
+            for j, statedata in rdata.items():
+                if statedata.get('result', None) is False:
+                    pprint(statedata)
+                    ret = 1
+                    break
+sys.exit(ret)
+EOF
+        "${salt_call_prefix}/bin/mypy" "${stmpf}"
+        yaml_check=${?}
+        rm -f "${stmpf}"
+    fi
+    if [ "x${yaml_check}" != "x0" ] && [ "x${last_salt_retcode}" != "x0" ] && [ "x${last_salt_retcode}" != "x2" ];then
         STATUS="ERROR"
         bs_log "salt-call ERROR, check ${logf} and ${outf} for details" 2>&2
         last_salt_retcode=100
@@ -1280,7 +1332,10 @@ salt_call_wrapper_() {
         fi
     fi
     if [ -e "${outf}" ];then
-        if egrep -q "result: false" "${outf}";then
+        if [ "x${yaml_check}" = "x0" ];then
+            last_salt_retcode=0
+            STATUS="OK"
+        elif [ "x${yaml_check}" != "x0" ];then
             if [ "x${no_output_log}" = "x" ];then
                 bs_log "partial content of $outf, check this file for full output" 1>&2
             fi
@@ -2121,8 +2176,10 @@ EOF
     echo "makina-states.minion_id: $(get_minion_id)">>"${SALT_PILLAR}/salt.sls"
 
     "${SED}" -i -e "s/.*\.master:.*/makina-states.controllers.salt_minion.master: $(get_minion_id)/g" "${SALT_PILLAR}/salt_minion.sls"
+    if [ ! -e "${MCONF_PREFIX}" ];then
+        mkdir -p "${MCONF_PREFIX}"
+    fi
     touch "${MCONF_PREFIX}/grains"
-
     "${SED}" -i -e "/^    id:/ d" "${CONF_PREFIX}/grains"
     "${SED}" -i -e "/makina-states.minion_id:/ d" "${CONF_PREFIX}/grains"
     echo "makina-states.minion_id: $(get_minion_id)">>"${CONF_PREFIX}/grains"

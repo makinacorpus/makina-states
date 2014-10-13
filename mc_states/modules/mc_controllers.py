@@ -30,10 +30,14 @@ def has_mastersalt():
             has_mastersalt = 'mastersalt' in fic.read()
     except Exception:
         pass
-    if not has_mastersalt:
-        has_mastersalt = os.path.exists('/etc/mastersalt')
-    if not has_mastersalt:
-        has_mastersalt = os.path.exists('/usr/bin/mastersalt')
+    for i in [
+        '/etc/mastersalt/minion',
+        '/usr/bin/mastersalt',
+        '/etc/mastersalt/master'
+    ]:
+        has_mastersalt = os.path.exists(i)
+        if has_mastersalt:
+            break
     return has_mastersalt
 
 
@@ -42,9 +46,7 @@ def mastersalt_mode():
         (
             has_mastersalt()
             and 'mastersalt' in __salt__['mc_utils.get']('config_dir')
-        ) or (
-            not has_mastersalt()
-            and 'mastersalt' not in __salt__['mc_utils.get']('config_dir')))
+        ))
 
 
 def masterless():
