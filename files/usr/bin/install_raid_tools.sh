@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 RELEASE="wheezy"
-
+packages=""
 packages="$packages mdadm 3ware-status tw-cli 3dm2 aacraid-status arcconf hrconf"
 packages="$packages cciss-vol-status hpacucli megaraid-status megactl megamgr dellmgr megaclisas-status"
 packages="$packages megacli megaide-status megaide-spyd mpt-status lsiutil sas2ircu sas2ircu-status"
