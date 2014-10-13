@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 RELEASE="wheezy"
+
+packages="$packages mdadm 3ware-status tw-cli 3dm2 aacraid-status arcconf hrconf"
+packages="$packages cciss-vol-status hpacucli megaraid-status megactl megamgr dellmgr megaclisas-status"
+packages="$packages megacli megaide-status megaide-spyd mpt-status lsiutil sas2ircu sas2ircu-status"
 #if [ "x$(lsb_release --id 2>/dev/null|grep -q Ubuntu;echo $?)" = "x0" ];then
 #    RELEASE="precise"
 #fi
@@ -8,28 +12,7 @@ do_aptget() {
     export UCF_FORCE_CONFFOLD=1
     export DEBIAN_FRONTEND=noninteractive
     apt-get install -y --force-yes\
-        -o Dpkg::Options::="--force-confold" \
-        mdadm\
-        3ware-status\
-        tw-cli\
-        3dm2\
-        aacraid-status\
-        arcconf\
-        hrconf\
-        cciss-vol-status\
-        hpacucli\
-        megaraid-status\
-        megactl\
-        megamgr\
-        dellmgr\
-        megaclisas-status\
-        megacli\
-        megaide-status\
-        megaide-spyd\
-        mpt-status\
-        lsiutil\
-        sas2ircu\
-        sas2ircu-status
+        -o Dpkg::Options::="--force-confold" ${packages}
         #adaptec-universal-storage-snmpd\
         #adaptec-universal-storage-mib\
         #adaptec-storage-manager-agent\
