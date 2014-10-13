@@ -28,10 +28,11 @@
 bind-set-defaultdns-{{suf}}-1:
   cmd.run:
     - unless: |
+              {% if salt['mc_controllers.mastersalt_mode']()%}
               rm /etc/resolv.conf;echo > /etc/resolv.conf;
               {%- for i in dnsservers  %}
               echo "nameserver {{i}}" >> /etc/resolv.conf;
-              {% endfor -%}
+              {% endfor -%}{% endif%}
               /bin/true
     - user: root
     {# only if dnsmask/resolvconf is there #}
