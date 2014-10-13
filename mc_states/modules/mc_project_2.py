@@ -829,6 +829,9 @@ def init_user_groups(user, groups=None, ret=None):
                 raise ProjectInitException('Can\'t manage {0} group'.format(g))
             else:
                 _append_comment(ret, body=indent(cret['comment']))
+    if not os.path.exists('/home/users'):
+	os.makedirs('/home/users')
+	os.chmod('/home/users', 0755)
     if not _s('user.info')(user):
         cret = _state_exec(suser, 'present',
                            user,
