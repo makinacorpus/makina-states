@@ -136,8 +136,8 @@ def settings(**kwargs):
             'var_log': data['logdir'],
             'myCnf': None,
             'conn_host': 'localhost',
-            'conn_user': 'root',
-            'conn_pass': 'secret',
+            'conn_user': None,
+            'conn_pass': None,
             'character_set': 'utf8',
             'collate': 'utf8_general_ci',
             'noDNS': True,
@@ -319,6 +319,10 @@ def settings(**kwargs):
         data.setdefault('tmp_table_size_M',
                         int((data['available_mem'] / 10)))
         mysql_reg['root_password'] = data['root_passwd']
+        if data['conn_user'] is None:
+            data['conn_user'] = 'root'
+        if data['conn_pass'] is None:
+            data['conn_pass'] = data['root_passwd']
         __salt__['mc_macros.update_local_registry'](
             'mysql', mysql_reg, registry_format='pack')
         return data
