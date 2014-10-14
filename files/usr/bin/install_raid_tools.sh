@@ -39,6 +39,7 @@ install_debian() {
          /etc/default/cciss-vol-statusd\
          /etc/default/megaide-statusd\
          /etc/default/megaraid-statusd\
+         /etc/default/mpt-statusd\
          /etc/default/sas2ircu-statusd\
          /etc/default/aacraid-statusd\
          /etc/default/megaclisas-statusd\
@@ -48,9 +49,9 @@ install_debian() {
 cat > "${i}" << EOF
 RUN_DAEMON=no
 EOF
+        fi
         ${i//default/init.d} stop
         update-rc.d -f $(basename $i) remove
-        fi
     done
 }
 
