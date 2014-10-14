@@ -241,19 +241,24 @@ def _get_local_registry(name,
                         __salt__[
                             'mc_macros.{0}_load_local_registry'.format(
                                 registry_format)](name, registryf))
-                # unprefix local simple registries
-                loc_k = DEFAULT_LOCAL_REG_NAME.format(name)
-                for k in [t for t in registry if t.startswith(loc_k)]:
-                    spl = loc_k + '.'
-                    nk = spl.join(k.split(spl)[1:])
-                    registry[nk] = registry[k]
-                    registry.pop(k)
+            _unprefix(registry, name)
         return registry
     cache_key = RKEY.format(key, registry_format)
     force_run = not cached
     return memoize_cache(
         _do, [name, to_load, registry_format], {},
         cache_key, cachetime, force_run=force_run)
+
+
+def _unprefix(registry, name):
+    # unprefix local simple registries
+    loc_k = DEFAULT_LOCAL_REG_NAME.format(name)
+    for k in [t for t in registry if t.startswith(loc_k)]:
+        spl = loc_k + '.'
+        nk = spl.join(k.split(spl)[1:])
+        registry[nk] = registry[k]
+        registry.pop(k)
+    return registry
 
 
 def get_local_registry(name,
@@ -279,6 +284,7 @@ def get_local_registry(name,
                 registry_format=f)
             if local_registry:
                 break
+    _unprefix(local_registry, name)
     return local_registry
 
 

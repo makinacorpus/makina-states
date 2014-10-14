@@ -37,6 +37,25 @@ _default_marker = object()
 log = logging.getLogger(__name__)
 
 
+def generate_stored_password(key, length=None, force=False):
+    if length is None:
+        length = 16
+    reg = __salt__[
+            'mc_macros.get_local_registry'](
+                'local_passwords', registry_format='pack')
+    sav = False
+    if not key in reg:
+        sav = True
+    rootpw = reg.setdefault(key, __salt__['mc_utils.generate_password'](length))
+    if force or not rootpw:
+        rootpw = __salt__['mc_utils.generate_password'](length)
+        sav = True
+    reg[key] = rootpw
+    __salt__['mc_macros.update_local_registry']( 
+        'local_passwords', reg, registry_format='pack')
+    return rootpw
+
+
 def generate_password(length=None):
     if length is None:
         length = 16
