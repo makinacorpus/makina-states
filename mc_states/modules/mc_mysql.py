@@ -99,6 +99,8 @@ def settings(**kwargs):
                 'mysql', registry_format='pack')
         rootpw = mysql_reg.setdefault(
             'root_password', __salt__['mc_utils.generate_password']())
+        if not rootpw:
+            rootpw = __salt__['mc_utils.generate_password']()
         grains = __grains__
         pillar = __pillar__
         locs = __salt__['mc_locations.settings']()
@@ -147,7 +149,7 @@ def settings(**kwargs):
             'user': 'mysql',
             'users': OrderedDict(),
             'group': 'mysql',
-            'root_passwd': rootpw,
+            'root_passwd': None,
             'number_of_table_indicator': 400,
             'innodb_flush_method': 'O_DSYNC',
             'innodb_flush_log_at_trx_commit': 1,
@@ -312,6 +314,8 @@ def settings(**kwargs):
         # RAM when the request is running, so if you use something like
         # 1024Mo prey that queries using this amount
         # of temporary data are not running too often...
+        if data['root_passwd'] is None:
+            data['root_passwd'] = rootpw
         data.setdefault('tmp_table_size_M',
                         int((data['available_mem'] / 10)))
         mysql_reg['root_password'] = data['root_passwd']

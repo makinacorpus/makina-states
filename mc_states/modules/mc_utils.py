@@ -38,6 +38,8 @@ log = logging.getLogger(__name__)
 
 
 def generate_password(length=None):
+    if length is None:
+        length = 16
     return secure_password(length)
 
 
