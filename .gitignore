@@ -1,4 +1,5 @@
 .*installed.cfg
+makina.scripts
 files/root/admin_scripts/nagios/nagios_plugins/
 MegaSAS.log
 .initial_hs
