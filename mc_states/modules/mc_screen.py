@@ -46,11 +46,13 @@ def settings():
                 '/etc/screenrc': None
               },
               'hardstatus' : [ 
-                  "string '%{gk}[ %{G}%H %{g}][%= "
-                  "%{wk}%?%-Lw%?%{=b kR}(%{W}%n*%f "
-                  "%t%?(%u)%?%{=b kR})%{= "
-                  "kw}%?%+Lw%?%?%= %{g}][%{Y}%l%{g}]%{=b C}[ "
-                  "%m/%d %c ]%{W}'"],
+                   "on",
+                   "alwayslastline",
+                   "string '%{gk}[ %{G}%H %{g}][%= "
+                   "%{wk}%?%-Lw%?%{=b kR}(%{W}%n*%f "
+                   "%t%?(%u)%?%{=b kR})%{= "
+                   "kw}%?%+Lw%?%?%= %{g}][%{Y}%l%{g}]%{=b C}[ "
+                   "%m/%d %c ]%{W}'"],
             })
         return data
     return _settings()
