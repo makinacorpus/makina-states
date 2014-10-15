@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 RELEASE="wheezy"
+packages=""
+packages="$packages mdadm 3ware-status tw-cli 3dm2 aacraid-status arcconf hrconf"
+packages="$packages cciss-vol-status hpacucli megaraid-status megactl megamgr dellmgr megaclisas-status"
+packages="$packages megacli megaide-status mpt-status lsiutil sas2ircu sas2ircu-status"
 #if [ "x$(lsb_release --id 2>/dev/null|grep -q Ubuntu;echo $?)" = "x0" ];then
 #    RELEASE="precise"
 #fi
@@ -7,29 +11,7 @@ RELEASE="wheezy"
 do_aptget() {
     export UCF_FORCE_CONFFOLD=1
     export DEBIAN_FRONTEND=noninteractive
-    apt-get install -y --force-yes\
-        -o Dpkg::Options::="--force-confold" \
-        mdadm\
-        3ware-status\
-        tw-cli\
-        3dm2\
-        aacraid-status\
-        arcconf\
-        hrconf\
-        cciss-vol-status\
-        hpacucli\
-        megaraid-status\
-        megactl\
-        megamgr\
-        dellmgr\
-        megaclisas-status\
-        megacli\
-        megaide-status\
-        megaide-spyd\
-        mpt-status\
-        lsiutil\
-        sas2ircu\
-        sas2ircu-status
+    apt-get install -y --force-yes -o Dpkg::Options::="--force-confold" ${packages}
         #adaptec-universal-storage-snmpd\
         #adaptec-universal-storage-mib\
         #adaptec-storage-manager-agent\
@@ -57,6 +39,7 @@ install_debian() {
          /etc/default/cciss-vol-statusd\
          /etc/default/megaide-statusd\
          /etc/default/megaraid-statusd\
+         /etc/default/mpt-statusd\
          /etc/default/sas2ircu-statusd\
          /etc/default/aacraid-statusd\
          /etc/default/megaclisas-statusd\
@@ -66,9 +49,9 @@ install_debian() {
 cat > "${i}" << EOF
 RUN_DAEMON=no
 EOF
+        fi
         ${i//default/init.d} stop
         update-rc.d -f $(basename $i) remove
-        fi
     done
 }
 

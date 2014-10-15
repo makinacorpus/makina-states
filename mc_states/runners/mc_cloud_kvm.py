@@ -209,7 +209,6 @@ def install_vt(target, output=True):
         target)
     __salt__['mc_api.time_log']('start {0}'.format(func_name))
     ret = result()
-    import pdb;pdb.set_trace()  ## Breakpoint ##
     ret['comment'] += yellow('Installing kvm on {0}\n'.format(target))
     for step in [
         configure_grains,
