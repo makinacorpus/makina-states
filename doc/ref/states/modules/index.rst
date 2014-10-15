@@ -77,6 +77,7 @@ Subregistries
    mc_updatedb.rst
    mc_usergroup.rst
    mc_uwsgi.rst
+   mc_screen.rst
 
 
 Other modules
