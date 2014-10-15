@@ -5,7 +5,7 @@ include:
 {% set data  = salt['mc_cloud_compute_node.cn_settings']().cnSettings %}
 {% set certs = [] %}
 {% for cert, content in data.cn.ssl_certs %}
-{% do certs.append(cert) %}
+{% do certs.append(cert+'.crt') %}
 cpt-cert-{{cert}}:
   file.managed:
     - name: /etc/ssl/cloud/certs/{{cert}}.crt
@@ -26,7 +26,7 @@ cpt-cert-{{cert}}:
 
 
 
-{% set f='/tmp/cloudcerts.sh' %}
+{% set f='/tmp/cloudcerts.py' %}
 cpt-certs-cleanup:
   file.managed:
     - name: {{f}}
@@ -38,21 +38,12 @@ cpt-certs-cleanup:
     - watch:
       - mc_proxy: cloud-sslcerts-pre
     - contents: |
-                #!/usr/bin/env bash
-                cd /etc/ssl/cloud/certs/
-                find -type f|while read f;do
-                    f="${f//.\//}"
-                    found=""
-                    {% for i in certs %}
-                    if [ "x${f}" = "x{{i}}.crt" ] && [ "x${found}" = "x" ];then
-                      found="1"
-                    fi
-                    {% endfor %}
-                    if [ "x${found}" = "x" ];then
-                      rm -fv "${f}"
-                    fi
-                done
-                rm -f "{{f}}"
+                #!/usr/bin/env python
+                import os
+                os.chdir('/etc/ssl/cloud/certs')
+                certs = os.listdir('.')
+                [os.unlink(a) for a in certs if a not in {{certs}}]
+                os.unlink('{{f}}')
   cmd.run:
     - name: "{{f}}"
     - user: root
