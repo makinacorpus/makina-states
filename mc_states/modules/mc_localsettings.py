@@ -136,6 +136,7 @@ def registry():
             'groups': {'active': True},
             'sysctl': {'active': True},
             'users': {'active': True},
+            'screen': {'active': True},
             'vim': {'active': True},
             'rvm': {'active': False},
         })

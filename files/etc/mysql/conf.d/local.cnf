@@ -11,6 +11,7 @@ socket      = {{ data.sockdir }}/mysqld.sock
 #
 # * Basic Settings
 #
+socket      = {{ data.sockdir }}/mysqld.sock
 max_connections = {{ data.nb_connections }}
 user            = mysql
 pid-file        = {{ data.sockdir }}/mysqld.pid

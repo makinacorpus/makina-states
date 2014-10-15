@@ -340,7 +340,7 @@ def configure_sshkeys(target, ret=None, output=True):
 
 
 def configure_sslcerts(target, ret=None, output=True):
-    '''shorewall configuration'''
+    '''deploy SSL certificates on compute node'''
     return _configure('sslcerts', target, ret, output)
 
 

@@ -39,3 +39,4 @@ EG: to disable the default vim configuration, either set a grain or a pillar val
    sysctl.rst
    users.rst
    vim.rst
+   screen.rst

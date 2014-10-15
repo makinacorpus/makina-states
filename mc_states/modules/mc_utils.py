@@ -32,9 +32,63 @@ import string
 import random
 from salt.utils.pycrypto import secure_password
 
+try:
+    import chardet
+    HAS_CHARDET = True
+except ImportError:
+    HAS_CHARDET = False
+
 
 _default_marker = object()
 log = logging.getLogger(__name__)
+
+
+def magicstring(thestr):
+    """Convert any string to UTF-8 ENCODED one"""
+    if not HAS_CHARDET:
+        log.error('No chardet support !')
+        return thestr
+    seek = False
+    if isinstance(thestr, unicode):
+        try:
+            thestr = thestr.encode('utf-8')
+        except Exception:
+            seek = True
+    if seek:
+        try:
+            detectedenc = chardet.detect(thestr).get('encoding')
+        except Exception:
+            detectedenc = None
+        if detectedenc:
+            sdetectedenc = detectedenc.lower()
+        else:
+            sdetectedenc = ''
+        if sdetectedenc.startswith('iso-8859'):
+            detectedenc = 'ISO-8859-15'
+
+        found_encodings = [
+            'ISO-8859-15', 'TIS-620', 'EUC-KR',
+            'EUC-JP', 'SHIFT_JIS', 'GB2312', 'utf-8', 'ascii',
+        ]
+        if sdetectedenc not in ('utf-8', 'ascii'):
+            try:
+                if not isinstance(thestr, unicode):
+                    thestr = thestr.decode(detectedenc)
+                thestr = thestr.encode(detectedenc)
+            except:
+                for idx, i in enumerate(found_encodings):
+                    try:
+                        if not isinstance(thestr, unicode) and detectedenc:
+                            thestr = thestr.decode(detectedenc)
+                        thestr = thestr.encode(i)
+                        break
+                    except:
+                        if idx == (len(found_encodings) - 1):
+                            raise
+    if isinstance(thestr, unicode):
+        thestr = thestr.encode('utf-8')
+    thestr = thestr.decode('utf-8').encode('utf-8')
+    return thestr
 
 
 def generate_stored_password(key, length=None, force=False):
@@ -51,7 +105,7 @@ def generate_stored_password(key, length=None, force=False):
         rootpw = __salt__['mc_utils.generate_password'](length)
         sav = True
     reg[key] = rootpw
-    __salt__['mc_macros.update_local_registry']( 
+    __salt__['mc_macros.update_local_registry'](
         'local_passwords', reg, registry_format='pack')
     return rootpw
 
@@ -383,8 +437,15 @@ def defaults(prefix,
     pkeys = {}
     for a in datadict:
         if a not in ignored_keys:
-            pkeys[a] = ('{0}.{1}'.format(prefix, a),
-                        datadict[a])
+            to_unicode = False
+            for i in prefix, a:
+                if isinstance(i, unicode):
+                    to_unicode = True
+                    break
+            k = '{0}.{1}'.format(magicstring(prefix), magicstring(a))
+            if to_unicode:
+                k = k.decode('utf-8')
+            pkeys[a] = (k , datadict[a])
     for key, value_data in pkeys.items():
         value_key, default_value = value_data
         # special key to completly overrides the dictionnary
