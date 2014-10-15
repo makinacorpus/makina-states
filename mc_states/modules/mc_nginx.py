@@ -212,6 +212,8 @@ def settings():
                 'use_naxsi': False,
                 'use_naxsi_secrules': True,
                 'naxsi_ui_user': 'naxsi_web',
+                'proxy_headers_hash_max_size': '1024',
+                'proxy_headers_hash_bucket_size': '128',
                 'naxsi_ui_pass': naxsi_ui_pass,
                 'naxsi_ui_host': '127.0.01',
                 'naxsi_ui_intercept_port': '18080',

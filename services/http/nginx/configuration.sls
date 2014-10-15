@@ -54,6 +54,7 @@ makina-nginx-minimal-{{f}}:
     settings['basedir'] + '/fastcgi_fpm_drupal_private_files.conf',
     settings['basedir'] + '/fastcgi_microcache_zone.conf',
     settings['basedir'] + '/fastcgi_params',
+    settings['basedir'] + '/fastcgi_params_common',
     settings['basedir'] + '/koi-utf',
     settings['basedir'] + '/koi-win',
     settings['basedir'] + '/map_cache.conf',

@@ -43,7 +43,7 @@ def settings():
                 'doc_root': '/var/www/default',
                 'serveradmin_mail': 'webmaster@localhost',
                 'socket_directory': '/var/spool/www',
-                'upload_max_filesize': '5M',
+                'upload_max_filesize': '5000000M',
             })
         return wwwData
     return _settings()
