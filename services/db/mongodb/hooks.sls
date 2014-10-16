@@ -42,3 +42,12 @@ mongodb-pre-hardrestart:
 
 mongodb-post-hardrestart:
   mc_proxy.hook: []
+
+
+mongodb-db-create-hook:
+  mc_proxy.hook: []
+mongodb-db-create-user-hook:
+  mc_proxy.hook: []
+mongodb-db-grant-hook:
+  mc_proxy.hook: []
+

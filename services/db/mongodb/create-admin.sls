@@ -20,7 +20,7 @@ makina-mongodb-createadmin:
                       {role: "root", db: "admin"}
                       ]})
   cmd.run:
-    - name: mongo /etc/mongodbuser.js && service mongod restart
+    - name: mongo /etc/mongodbuser.js && service mongod restart;ret=${?};rm -f /etc/mongodbuser.js;exit ${ret}
     - unless: echo "use admin"|mongo -u "{{data.admin}}" -p "{{data.password}}"  admin
     - watch:
       - mc_proxy: mongodb-post-hardrestart
