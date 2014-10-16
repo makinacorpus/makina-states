@@ -63,6 +63,7 @@ makina-mongodb-{{db}}create-{{user}}-{{state_uid}}:
                     user: "{{user}}",
                     pwd: "{{password}}",
                     roles: [
+                      {role: "dbAdmin", db: "{{db}}"},
                       {role: "readWrite", db: "{{db}}"},
                       {role: "read", db: "{{db}}"}
                       ]});
