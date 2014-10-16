@@ -52,26 +52,23 @@ makina-mongodb-{{db}}create-{{user}}-{{state_uid}}:
     - source: ''
     - mode: 600
     - user: root
-
     - contents: |
                 mongo = new Mongo();
                 db = mongo.getDB("admin");
                 db.auth('{{mongodbData.admin}}', '{{mongodbData.password}}');
                 db = db.getSiblingDB("{{db}}");
                 if (!db.getUser("{{user}}")) {
-                  db.createUser({
-                    user: "{{user}}",
-                    pwd: "{{password}}",
-                    roles: [
-                      {role: "dbAdmin", db: "{{db}}"},
-                      {role: "readWrite", db: "{{db}}"},
-                      {role: "read", db: "{{db}}"}
-                      ]});
+                  db.createUser({user: "{{user}}",
+                                 pwd: "{{password}}",
+                                 roles: []});
                 }
+                db.grantRolesToUser("{{user}}",
+                                    [{role: "dbAdmin", db: "{{db}}"},
+                                     {role: "readWrite", db: "{{db}}"},
+                                     {role: "read", db: "{{db}}"}]);
   cmd.run:
     - name: mongo /etc/mongodbuser.js;ret=${?};rm -f /etc/mongodbuser.js;exit ${ret}
     - use_vt: true
-    - unless: echo "use {{db}}"|mongo -u "{{user}}" -p "{{data.password}}"  "{{db}}"
     - watch:
       - mc_proxy: mongodb-post-hardrestart
 {%- endfor %}
