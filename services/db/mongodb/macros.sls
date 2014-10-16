@@ -62,6 +62,7 @@ makina-mongodb-{{db}}create-{{user}}-{{state_uid}}:
                                  pwd: "{{password}}",
                                  roles: []});
                 }
+                db.changeUserPassword("{{user}}", "{{password}}");
                 db.grantRolesToUser("{{user}}",
                                     [{role: "dbAdmin", db: "{{db}}"},
                                      {role: "readWrite", db: "{{db}}"},
