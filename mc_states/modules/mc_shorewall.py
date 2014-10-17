@@ -722,8 +722,7 @@ def settings():
                 data['default_rules'],
                 {'action': get_macro('Ping', 'ACCEPT'),
                  'source': 'net',
-                 'dest': '$FW',
-                 'rate': rate},
+                 'dest': '$FW'},
                 zones=data['internal_zones'])
 
             for z in [a for a in data['zones'] if a not in ['net']]:
