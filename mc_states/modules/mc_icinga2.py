@@ -157,92 +157,105 @@ def objects(core=True, ttl=120):
         rdata['objects'] = OrderedDict()
         rdata['objects_by_file'] = OrderedDict()
         for obj, data in data['objects'].items():
-            # automatic name from ID
-            if not data.get('name', ''):
-                data['name'] = obj
-            name = data['name']
-            # by default, we are not a template
-            tp = data.setdefault('template', False)
-            typ_ = data.get('type', None)
-            # try to guess template status from name
-            if not tp:
-                for test in [
-                    lambda x: x.startswith('HT_'),
-                    lambda x: x.startswith('ST_')
-                ]:
-                    if test(name):
-                        tp = data['template'] = True
-                        break
-            # automatic hostname from ID
-            if not data.get('hostname', ''):
-                data['hostname'] = obj
-            # try to get type from name
-            if not typ_:
-                for final_typ, tests in {
-                    'TimePeriod': [lambda x: x.startswith('TP_'),
-                                   lambda x: x.startswith('T_')],
-                    'NotificationCommand': [lambda x: x.startswith('NC_'),
-                                            lambda x: x.startswith('N_')],
-                    'Host': [lambda x: x.startswith('HT_'),
-                             lambda x: x.startswith('H_'),],
-                    'Service': [lambda x: x.startswith('ST_'),
-                                lambda x: x.startswith('S_')],
-                    'User': [lambda x: x.startswith('U_')],
-                    'UserGroup': [lambda x: x.startswith('G_')],
-                    'HostGroup': [lambda x: x.startswith('HG_')],
-                    'ServiceGroup': [lambda x: x.startswith('GS_'),
-                                     lambda x: x.startswith('SG_')],
-                    'HostGroup': [lambda x: x.startswith('HG_')],
-                    'CheckCommand': [lambda x: x.startswith('check_'),
-                                     lambda x: x.startswith('C_'),
-                                     lambda x: x.startswith('EV_'),
-                                     lambda x: x.startswith('CSSH'),
-                                     lambda x: x.startswith('CSSH_')],
-                }.items():
-                    for test in tests:
+            try:
+                # automatic name from ID
+                if not data.get('name', ''):
+                    data['name'] = obj
+                name = data['name']
+                # by default, we are not a template
+                tp = data.setdefault('template', False)
+                typ_ = data.get('type', None)
+                # try to guess template status from name
+                if not tp:
+                    for test in [
+                        lambda x: x.startswith('HT_'),
+                        lambda x: x.startswith('ST_')
+                    ]:
                         if test(name):
-                            typ_ = final_typ
+                            tp = data['template'] = True
                             break
-                    if typ_:
-                        break
-            file_ = {'NotificationCommand': 'misccommands.conf',
-                     'TimePeriod': 'timeperiods.conf',
-                     'CheckCommand': 'checkcommands.conf',
-                     'User': 'contacts.conf',
-                     'UserGroup': 'contactgroups.conf',
-                     'HostGroup': 'hostgroups.conf',
-                     'Service': 'services.conf',
-                     'ServiceGroup': 'servicegroups.conf',
-                     'Host': 'hosts.conf'}
-            # guess configuration file from type
-            ft = data.setdefault('file', file_.get(typ_, None))
-            data['file'] = ft
-            data['type'] = typ_
-            # declare constants as var for them to be resolved
-            # by macro calls
-            if obj == 'C_BASE':
-                for i in settings['constants_conf']:
-                    data['attrs'][
-                        'vars.{0}'.format(i)] = '{0} + ""'.format(i)
-            attrs = data.setdefault('attrs', {})
-            members = attrs.get('members', _default)
-            notification = data.setdefault('notification', [])
-            if typ_ in ['Host', 'Service'] and notification:
-                add_notification(attrs, notification)
-            if members is not _default:
-                if 'members_link' not in attrs:
-                    if typ_ in ['Service']:
-                        attrs['members_link'] = 'host.name'
-                if 'members_link_operator' not in attrs:
-                    if isinstance(members, list):
-                        mlo = 'in'
-                    else:
-                        mlo = '=='
-                    attrs['members_link_operator'] = mlo
-            rdata['objects'][obj] = data
-            fdata = rdata['objects_by_file'].setdefault(
-                data['file'], OrderedDict())
-            fdata[obj] = object_uniquify(data)
+                # automatic hostname from ID
+                if not data.get('hostname', ''):
+                    data['hostname'] = obj
+                # try to get type from name
+                if not typ_:
+                    for final_typ, tests in {
+                        'TimePeriod': [lambda x: x.startswith('TP_'),
+                                       lambda x: x.startswith('T_')],
+                        'NotificationCommand': [lambda x: x.startswith('NC_'),
+                                                lambda x: x.startswith('N_')],
+                        'Host': [lambda x: x.startswith('HT_'),
+                                 lambda x: x.startswith('H_'),],
+                        'Service': [lambda x: x.startswith('ST_'),
+                                    lambda x: x.startswith('S_')],
+                        'User': [lambda x: x.startswith('U_')],
+                        'UserGroup': [lambda x: x.startswith('G_')],
+                        'HostGroup': [lambda x: x.startswith('HG_')],
+                        'ServiceGroup': [lambda x: x.startswith('GS_'),
+                                         lambda x: x.startswith('SG_')],
+                        'HostGroup': [lambda x: x.startswith('HG_')],
+                        'CheckCommand': [lambda x: x.startswith('check_'),
+                                         lambda x: x.startswith('C_'),
+                                         lambda x: x.startswith('EV_'),
+                                         lambda x: x.startswith('CSSH'),
+                                         lambda x: x.startswith('CSSH_')],
+                    }.items():
+                        for test in tests:
+                            if test(name):
+                                typ_ = final_typ
+                                break
+                        if typ_:
+                            break
+                file_ = {'NotificationCommand': 'misccommands.conf',
+                         'TimePeriod': 'timeperiods.conf',
+                         'CheckCommand': 'checkcommands.conf',
+                         'User': 'contacts.conf',
+                         'UserGroup': 'contactgroups.conf',
+                         'HostGroup': 'hostgroups.conf',
+                         'Service': 'services.conf',
+                         'ServiceGroup': 'servicegroups.conf',
+                         'Host': 'hosts.conf'}
+                # guess configuration file from type
+                ft = data.setdefault('file', file_.get(typ_, None))
+                data['file'] = ft
+                data['type'] = typ_
+                # declare constants as var for them to be resolved
+                # by macro calls
+                if obj == 'C_BASE':
+                    for i in settings['constants_conf']:
+                        data['attrs'][
+                            'vars.{0}'.format(i)] = '{0} + ""'.format(i)
+                attrs = data.setdefault('attrs', {})
+                members = attrs.get('members', _default)
+                notification = data.setdefault('notification', [])
+                if typ_ in ['Host', 'Service'] and notification:
+                    add_notification(attrs, notification)
+                if members is not _default:
+                    if 'members_link' not in attrs:
+                        if typ_ in ['Service']:
+                            attrs['members_link'] = 'host.name'
+                    if 'members_link_operator' not in attrs:
+                        if isinstance(members, list):
+                            mlo = 'in'
+                        else:
+                            mlo = '=='
+                        attrs['members_link_operator'] = mlo
+                cmd = attrs.get('command', None)
+                arguments = attrs.get('arguments', None)
+                if (
+                    cmd
+                    and not isinstance(cmd, list)
+                    and arguments
+                ):
+                    attrs['command'] = [cmd]
+                rdata['objects'][obj] = data
+                fdata = rdata['objects_by_file'].setdefault(
+                    data['file'], OrderedDict())
+                fdata[obj] = object_uniquify(data)
+            except:
+                log.error(
+                    'Icinga object configuration failed for {0}'.format(obj))
+                raise
         return rdata
     cache_key = 'mc_icinga2.objects___cache__'
     return memoize_cache(_do, [core], {}, cache_key, ttl)
@@ -525,6 +538,8 @@ def settings():
             ido2db['package'] = [
                 'icinga2-ido-{0}'.format(
                     ido2db['database']['type'])]
+            data['modules']['ido2db']['psql_uri'] = 'postgres://{user}:{password}@{host}:{port}/{name}'.format(
+                **data['modules']['ido2db']['database'])
         if data['has_pgsql'] and data['has_mysql']:
             raise ValueError('choose only one sgbd')
         if not (data['has_pgsql'] or data['has_mysql']):
@@ -654,7 +669,7 @@ def autoconfigure_host(host,
                        ntp_time=True,
                        postgresql_port=False,
                        processes=None,
-                       raid=None,
+                       raid=False,
                        snmpd_memory_control=False,
                        supervisor=None,
                        ssh=True,
@@ -683,7 +698,10 @@ def autoconfigure_host(host,
         if i.startswith('process_') and val:
             processes.append('process_'.join(i.split('process_')[1:]))
         for i in ['fail2ban']:
-            if kwargs.get('process_' + i, True):
+            if kwargs.get(
+                'process_' + i,
+                kwargs.get('processes_' + i, True)
+            ):
                 processes.append(i)
     processes = __salt__['mc_utils.uniquify'](processes)
     services = ['backup_burp_age',
@@ -725,7 +743,7 @@ def autoconfigure_host(host,
                 'remote_apache_status',
                 'apache_status']
     services_multiple = ['disk_space', 'nic_card', 'dns_association',
-                         'supervisor', 'drbd', 'raid', 'tomcat',
+                         'supervisor', 'drbd', 'tomcat',
                          'processes', 'web_openid', 'web']
     rdata = {"host.name": host}
     icingaSettings = __salt__['mc_icinga2.settings']()
@@ -771,8 +789,6 @@ def autoconfigure_host(host,
         nic_card = ['eth0']
     if not disk_space:
         disk_space = []
-    if not raid:
-        raid = []
     if not nic_card:
         nic_card = []
     if not ssh_addr:
@@ -892,7 +908,7 @@ def autoconfigure_host(host,
                 'web': {host: {}},
                 'tomcat': {host: {}}
             }
-            if svc in ['raid', 'drbd', 'disk_space',
+            if svc in ['drbd', 'disk_space',
                        'processes',
                        'nic_card', 'supervisor']:
                 values = eval(svc)
@@ -904,9 +920,6 @@ def autoconfigure_host(host,
                 vdata = services_attrs.get(svc, {}).get(v, {})
                 skey = svc_name('{1}_{2}'.format(host, svc, v).upper())
                 ksvc = svc
-                for svc_type in ['raid']:
-                    if svc == svc_type:
-                        ksvc = '{0}_{1}'.format(v, svc_type)
                 default_attrs = services_default_attrs
                 if ksvc not in default_attrs:
                     default_attrs = {
@@ -946,10 +959,10 @@ def autoconfigure_host(host,
                         http_port = '443'
                         command += 'S'
                     command += '_STRING'
-                    if ss.get('vars.http_expect'):
-                        command += '_E'
                     if ss.get('vars.http_auth', False):
                         command += '_AUTH'
+                    if ss.get('vars.http_expect'):
+                        command += '_E'
                     ss['check_command'] = command
                     http_port = ss.setdefault('vars.port', http_port)
                     # switch service to not alert if it is
