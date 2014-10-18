@@ -14,6 +14,7 @@ mc_cloud_lxc / lxc registry for compute nodes
 import logging
 
 from mc_states import saltapi
+from salt.utils.odict import OrderedDict
 
 # early in mcpillar, we dont have __salt__
 from mc_states.grains.makina_grains import _is_lxc
@@ -140,7 +141,8 @@ def vm_extpillar(vm, data, *args, **kw):
     '''
     Get per LXC container specific settings
     '''
-    backing = data['profile'].setdefault('backing', 'dir')
+    profile = data.setdefault('profile', OrderedDict())
+    backing = profile.setdefault('backing', {})
     # dhcp now
     # data['network_profile']['eth0']['ipv4'] = data['ip']
     data['network_profile']['eth0']['hwaddr'] = data['mac']
