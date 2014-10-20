@@ -54,7 +54,7 @@ if [ -e /etc/debian_version ];then
         fi
     fi
 fi
-wget https://github.com/grke/burp/archive/${VER}.tar.gz
+wget -c https://github.com/grke/burp/archive/${VER}.tar.gz -O ${VER}.tar.gz
 if [ ! -e burp-$VER/README ];then
     rm -rf burp-$VER
     tar xzvf ${VER}.tar.gz
