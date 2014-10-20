@@ -1884,11 +1884,12 @@ def get_supervision_objects_defs(id_):
     disable_common_checks = {'disk_space': False,
                              'load_avg': False,
                              'memory': False,
+                             'ntp_time': False,
                              'swap': False,
                              'ping': False,
                              'nic_card': False}
     providers = __salt__['mc_network.providers']()
-
+    physical_hosts_to_check = set()
     if is_supervision_kind(id_, 'master'):
         data = query('supervision_configurations')
         defs = data.get('definitions', {})
@@ -1901,6 +1902,7 @@ def get_supervision_objects_defs(id_):
                     hhosts[hhost][i] = OrderedDict()
         maps = __salt__['mc_pillar.get_db_infrastructure_maps']()
         for host, vts in maps['bms'].items():
+            physical_hosts_to_check.add(host)
             hdata = hhosts.setdefault(host, OrderedDict())
             attrs = hdata.setdefault('attrs', OrderedDict())
             sattrs = hdata.setdefault('services_attrs', OrderedDict())
@@ -1959,6 +1961,7 @@ def get_supervision_objects_defs(id_):
         if is_cloud_vm(id_):
             vm_parent = maps['vms'][id_]['target']
         for vm, vdata in maps['vms'].items():
+            physical_hosts_to_check.add(host)
             vt = vdata['vt']
             host = vdata['target']
             host_ip = ip_for(host)
@@ -2039,6 +2042,10 @@ def get_supervision_objects_defs(id_):
                         hdata['attrs']['address'] = addr
                         hdata.update(disable_common_checks)
                         break
+            # do not check dummy ip failover'ed hosts for
+            # backup refreshness
+            #if host not in physical_hosts_to_check:
+            #    hdata['backup_burp_age'] = False
             if hdata.get('backup_burp_age', None) is not False:
                 bsm = query('backup_server_map')
                 burp_default_server = bsm['default']

@@ -74,7 +74,7 @@ snmpd-user:
 {% endif %}
     - watch_in:
       - mc_proxy: snmpd-post-conf-hook
-    - unless: grep -q  {{data['default_user']}} /usr/share/snmp/snmpd.conf
+    - unless: snmpgetnext -t 0.5 -v 3 -n "" -u "{{data.default_user}}" -a SHA -A "{{data.default_password}}" -x DES -X "{{data.default_key}}" -l authPriv localhost:161 system
     - name: |
             is_lxc() {
                 echo  "$(cat -e /proc/1/environ |grep container=lxc|wc -l|sed -e "s/ //g")"
