@@ -7,6 +7,7 @@ mc_utils / Some usefull small tools
 '''
 
 # Import salt libs
+import datetime
 import copy
 import os
 import salt.utils.dictupdate
@@ -49,6 +50,13 @@ def magicstring(thestr):
         log.error('No chardet support !')
         return thestr
     seek = False
+    if (
+        isinstance(thestr, (int, float, long,
+                            datetime.date,
+                            datetime.time,
+                            datetime.datetime))
+    ):
+        thestr = "{0}".format(thestr)
     if isinstance(thestr, unicode):
         try:
             thestr = thestr.encode('utf-8')

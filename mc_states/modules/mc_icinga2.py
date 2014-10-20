@@ -34,6 +34,7 @@ __docformat__ = 'restructuredtext en'
 # Import python libs
 
 from salt.utils.odict import OrderedDict
+import re
 import os
 import socket
 import logging
@@ -44,6 +45,8 @@ from mc_states.utils import memoize_cache
 
 __name = 'icinga2'
 _default = object()
+_activated = object()
+_disabled = object()
 
 log = logging.getLogger(__name__)
 
@@ -634,6 +637,7 @@ def autoconfigure_host(host,
                        notification=None,
                        default_notifiers=None,
                        imports=None,
+                       no_default_checks=False,
                        no_default_imports=False,
                        services_attrs=None,
                        ssh_user='root',
@@ -641,47 +645,78 @@ def autoconfigure_host(host,
                        ssh_port=22,
                        snmp_port=161,
                        ssh_timeout=30,
-                       apt=True,
-                       backup_burp_age=True,
-                       cron=False,
-                       ddos=False,
+                       apt=None,
+                       backup_burp_age=None,
+                       cron=None,
+                       ddos=None,
                        disk_space_mode=None,
                        disk_space=None,
-                       dns_association=False,
-                       dns_association_hostname=True,
+                       dns_association=None,
+                       dns_association_hostname=None,
                        drbd=None,
-                       haproxy_stats=False,
-                       load_avg=True,
-                       mail_cyrus_imap_connections=False,
-                       mail_imap=False,
-                       mail_imap_ssl=False,
-                       mail_pop=False,
-                       mail_pop_ssl=False,
-                       mail_pop_test_account=False,
-                       mail_server_queues=False,
-                       mail_smtp=False,
-                       mongodb=False,
+                       haproxy_stats=None,
+                       load_avg=None,
+                       mail_cyrus_imap_connections=None,
+                       mail_imap=None,
+                       mail_imap_ssl=None,
+                       mail_pop=None,
+                       mail_pop_ssl=None,
+                       mail_pop_test_account=None,
+                       mail_server_queues=None,
+                       mail_smtp=None,
+                       mongodb=None,
                        memory_mode=None,
-                       memory=True,
-                       ping=True,
+                       memory=None,
+                       ping=None,
                        nic_card=None,
-                       ntp_peers=False,
-                       ntp_time=True,
-                       postgresql_port=False,
+                       ntp_peers=None,
+                       ntp_time=None,
+                       postgresql_port=None,
                        processes=None,
-                       raid=False,
-                       snmpd_memory_control=False,
+                       raid=None,
+                       snmpd_memory_control=None,
                        supervisor=None,
-                       ssh=True,
-                       swap=True,
-                       apache_status=False,
-                       remote_apache_status=False,
-                       nginx_status=False,
-                       remote_nginx_status=False,
+                       ssh=None,
+                       swap=None,
+                       apache_status=None,
+                       remote_apache_status=None,
+                       nginx_status=None,
+                       remote_nginx_status=None,
                        tomcat=None,
                        web=None,
-                       web_openid=False,
+                       web_openid=None,
                        **kwargs):
+    if attrs is None:
+        attrs = {}
+    if services_attrs is None:
+        services_attrs = {}
+    # allow to select no_default_checks in yaml
+    # but also llow some services to be manually activated to be checked
+    for _default, checks in [
+        (True,
+         ['apt', 'backup_burp_age', 'load_avg', 'memory',
+          'dns_association_hostname', 'ping', 'ntp_time',
+          'ssh', 'swap']),
+        (False,
+         ['cron', 'ddos', 'dns_association', 'haproxy_stats',
+          'mail_cyrus_imap_connections', 'mail_imap',
+          'mail_imap_ssl', 'mail_pop', 'mail_pop_ssl',
+          'mail_pop_test_account', 'mail_server_queues',
+          'mail_smtp', 'mongodb', 'ntp_peers', 'postgresql_port',
+          'raid', 'snmpd_memory_control', 'apache_status',
+          'remote_apache_status', 'nginx_status', 'remote_nginx_status',
+          'web_openid'])
+    ]:
+        for check in checks:
+            init_val = eval(check)
+            if init_val is None:
+                exec('{0}={1}'.format(check, _default))
+            # if manually selected On, be sure to select it for a run
+            # even if we activated no_default_checks
+            elif init_val is False:
+                services_attrs.pop(check, None)
+            elif bool(init_val):
+                services_attrs.setdefault(check, {})
     disk_space_mode_maps = {
         'large': 'ST_LARGE_DISK_SPACE',
         'ularge': 'ST_ULARGE_DISK_SPACE',
@@ -766,10 +801,6 @@ def autoconfigure_host(host,
             notification.append(i)
     if not groups:
         groups = []
-    if attrs is None:
-        attrs = {}
-    if services_attrs is None:
-        services_attrs = {}
     if drbd is None:
         drbd = []
     if drbd is True:
@@ -881,7 +912,8 @@ def autoconfigure_host(host,
                                        'mysql_open_files',
                                        'mysql_index_usage',
                                        'mysql_qcache_lowmem_prunes',
-                                       'mysql_table_lock_contention',
+                                       # more noise than good
+                                       # 'mysql_table_lock_contention',
                                        'mysql_log_waits',
                                        'mysql_threads_cached',
                                        'mysql_threads_running',
@@ -896,7 +928,8 @@ def autoconfigure_host(host,
     for s in services:
         if (
             s not in services_enabled_types
-            and (s in services_attrs or bool(eval(s)))
+            and (s in services_attrs
+                 or (not no_default_checks and bool(eval(s))))
         ):
             services_enabled_types.append(s)
     for svc in services_enabled_types:
@@ -935,6 +968,11 @@ def autoconfigure_host(host,
                 # HTTP_STRING / HTTP_STRING_AUTH
                 # HTTPS_STRING / HTTPS_STRING_AUTH
                 if svc == 'processes':
+                    for pattern in [
+                        'fail2ban',
+                    ]:
+                        if re.search(pattern, v):
+                            ss['vars.check_interval'] = '19200m'
                     ss['vars.process'] = v
                 mongo_auth = False
                 # let us authenticate to mongodb by defining
