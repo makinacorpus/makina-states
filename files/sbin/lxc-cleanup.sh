@@ -6,7 +6,7 @@ FROZEN_PACKAGES="udev whoopsie ntp fuse grub-common grub-pc grub-pc-bin grub2-co
 if [ -f /.dockerinit ];then
     FROZEN_PACKAGES="$FROZEN_PACKAGES resolvconf"
 fi
-for i in $FROZEN;do
+for i in $FROZEN_PACKAGES;do
     echo $i hold | dpkg --set-selections || /bin/true
 done
 # disabling fstab
