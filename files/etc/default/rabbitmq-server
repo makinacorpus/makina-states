@@ -1,0 +1,23 @@
+# This file is sourced by /etc/init.d/rabbitmq-server. Its primary
+# reason for existing is to allow adjustment of system limits for the
+# rabbitmq-server process.
+#
+# Maximum number of open file handles. This will need to be increased
+# to handle many simultaneous connections. Refer to the system
+# documentation for ulimit (in man bash) for more information.
+# MANAGED VIA SALT  - DO NOT EDIT
+{% set data=salt['mc_utils.json_load'](data) %}
+{% if data.defaults.ulimit %}
+ulimit -n 1024
+{% endif %}
+
+
+RABBITMQ_CONFIG_FILE={{data.defaults.RABBITMQ_CONFIG_FILE}}
+RABBITMQ_BASE={{data.defaults.RABBITMQ_BASE}}
+RABBITMQ_NODE_IP_ADDRESS={{data.defaults.RABBITMQ_NODE_IP_ADDRESS}}
+RABBITMQ_NODE_PORT={{data.defaults.RABBITMQ_NODE_PORT}}
+RABBITMQ_LOG_BASE={{data.defaults.RABBITMQ_LOG_BASE}}
+
+if [ -e /etc/default/rabbitmq-server.local ];then
+    . /etc/default/rabbitmq-server.local
+fi

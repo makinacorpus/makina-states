@@ -218,6 +218,7 @@ def settings():
                 'no_ntp': False,
                 'no_web': False,
                 'no_ldap': False,
+                'no_rabbitmq': False,
                 'no_ftp': False,
                 'no_burp': False,
                 'no_mumble': False,
@@ -289,7 +290,7 @@ def settings():
 
         if not data['no_default_params']:
             for p in ['SYSLOG', 'SSH', 'SNMP', 'PING', 'LDAP', 'SALT',
-                      'NTP', 'MUMBLE', 'DNS', 'WEB', 'MONGODB',
+                      'NTP', 'MUMBLE', 'DNS', 'WEB', 'MONGODB', 'RABBITMQ',
                       'BURP', 'MYSQL', 'POSTGRESQL', 'FTP']:
                 default = 'fw:127.0.0.1'
                 if p in ['SSH', 'DNS', 'PING', 'WEB', 'MUMBLE']:
@@ -787,6 +788,29 @@ def settings():
                 {'action': get_macro('MySQL', action),
                  'source': '$SALT_RESTRICTED_MYSQL', 'dest': 'all'},
                 zones=data['internal_zones'])
+
+            data['default_rules'].append({'comment': 'rabbitmq'})
+            if data['no_rabbitmq']:
+                action = 'DROP'
+            else:
+                action = 'ACCEPT'
+            for proto in protos:
+                append_rules_for_zones(
+                    data['default_rules'],
+                    {'action': action,
+                     'source': '$SALT_RESTRICTED_RABBITMQ',
+                     'dest': 'fw',
+                     'proto': proto,
+                     'dport': '15672'},
+                    zones=data['internal_zones'])
+                append_rules_for_zones(
+                    data['default_rules'],
+                    {'action': action,
+                     'source': '$SALT_RESTRICTED_RABBITMQ',
+                     'dest': 'fw',
+                     'proto': proto,
+                     'dport': '25672'},
+                    zones=data['internal_zones'])
 
             data['default_rules'].append({'comment': 'mumble'})
             if data['no_mumble']:

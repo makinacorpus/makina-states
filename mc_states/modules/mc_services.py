@@ -113,6 +113,7 @@ def registry():
             'monitoring.client': {'active': False},
             #'php.common': {'active': False},
             'proxy.haproxy': {'active': False},
+            'queue.rabbitmq': {'active': False},
             'php.common': {'active': False},
             'php.modphp': {'active': False},
             'php.phpfpm': {'active': False},
