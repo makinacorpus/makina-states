@@ -12,11 +12,12 @@ ulimit -n 1024
 {% endif %}
 
 
-RABBITMQ_CONFIG_FILE={{data.defaults.RABBITMQ_CONFIG_FILE}}
-RABBITMQ_BASE={{data.defaults.RABBITMQ_BASE}}
-RABBITMQ_NODE_IP_ADDRESS={{data.defaults.RABBITMQ_NODE_IP_ADDRESS}}
-RABBITMQ_NODE_PORT={{data.defaults.RABBITMQ_NODE_PORT}}
-RABBITMQ_LOG_BASE={{data.defaults.RABBITMQ_LOG_BASE}}
+export RABBITMQ_CONFIG_FILE={{data.defaults.RABBITMQ_CONFIG_FILE}}
+export RABBITMQ_BASE={{data.defaults.RABBITMQ_BASE}}
+export RABBITMQ_NODE_IP_ADDRESS={{data.defaults.RABBITMQ_NODE_IP_ADDRESS}}
+export RABBITMQ_NODE_PORT={{data.defaults.RABBITMQ_NODE_PORT}}
+export RABBITMQ_LOG_BASE={{data.defaults.RABBITMQ_LOG_BASE}}
+export RABBITMQ_NODENAME={{data.defaults.RABBITMQ_NODENAME}}
 
 if [ -e /etc/default/rabbitmq-server.local ];then
     . /etc/default/rabbitmq-server.local

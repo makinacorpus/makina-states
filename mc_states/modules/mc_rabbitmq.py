@@ -40,10 +40,11 @@ def settings():
                 'password': pw,
                 'defaults': {
                     'ulimit': 1024,
+                    'RABBITMQ_NODENAME': 'rabbit@' + __grains__['host'],
                     'RABBITMQ_BASE': '/var/lib/rabbitmq/mnesia/',
                     'RABBITMQ_CONFIG_FILE': '/etc/rabbitmq/rabbitmq',
-                    'RABBITMQ_NODE_IP_ADDRESS': '127.0.0.1',
-                    'RABBITMQ_NODE_PORT': 25672,
+                    'RABBITMQ_NODE_IP_ADDRESS': "'0.0.0.0'",
+                    'RABBITMQ_NODE_PORT': 5672,
                     'RABBITMQ_LOG_BASE': '/var/log/rabbitmq',
                 },
                 'dbs': {
