@@ -92,6 +92,12 @@ makina-php-pool-{{ data.pool_name }}-logrotate:
     - require_in:
       - mc_proxy: makina-php-pre-restart
 
+makina-php-pool-var-log-phpfpm-{{data.pool_name}}:
+  file.symlink:
+    - makedirs: true
+    - name: /var/log/phpfpm/{{data.pool_name}}
+    - target: {{data.log_dir}}
+
 makina-php-pool-{{ data.pool_name }}-directories:
   file.directory:
     - user: {{ data.fpm_user }}
