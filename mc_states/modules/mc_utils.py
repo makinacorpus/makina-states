@@ -99,7 +99,7 @@ def magicstring(thestr):
     return thestr
 
 
-def generate_stored_password(key, length=None, force=False):
+def generate_stored_password(key, length=None, force=False, value=None):
     if length is None:
         length = 16
     reg = __salt__[
@@ -112,6 +112,8 @@ def generate_stored_password(key, length=None, force=False):
     if force or not rootpw:
         rootpw = __salt__['mc_utils.generate_password'](length)
         sav = True
+    if value is not None:
+        rootpw = value
     reg[key] = rootpw
     __salt__['mc_macros.update_local_registry'](
         'local_passwords', reg, registry_format='pack')
