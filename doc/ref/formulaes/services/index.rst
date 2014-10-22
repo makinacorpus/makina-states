@@ -20,6 +20,7 @@ Services
    openstack/index.rst
    php/index.rst
    proxy/index.rst
+   queue.rst
    log/index.rst
    virt/index.rst
 

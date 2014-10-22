@@ -7,6 +7,7 @@ mc_utils / Some usefull small tools
 '''
 
 # Import salt libs
+import datetime
 import copy
 import os
 import salt.utils.dictupdate
@@ -49,6 +50,13 @@ def magicstring(thestr):
         log.error('No chardet support !')
         return thestr
     seek = False
+    if (
+        isinstance(thestr, (int, float, long,
+                            datetime.date,
+                            datetime.time,
+                            datetime.datetime))
+    ):
+        thestr = "{0}".format(thestr)
     if isinstance(thestr, unicode):
         try:
             thestr = thestr.encode('utf-8')
@@ -91,7 +99,7 @@ def magicstring(thestr):
     return thestr
 
 
-def generate_stored_password(key, length=None, force=False):
+def generate_stored_password(key, length=None, force=False, value=None):
     if length is None:
         length = 16
     reg = __salt__[
@@ -104,6 +112,8 @@ def generate_stored_password(key, length=None, force=False):
     if force or not rootpw:
         rootpw = __salt__['mc_utils.generate_password'](length)
         sav = True
+    if value is not None:
+        rootpw = value
     reg[key] = rootpw
     __salt__['mc_macros.update_local_registry'](
         'local_passwords', reg, registry_format='pack')

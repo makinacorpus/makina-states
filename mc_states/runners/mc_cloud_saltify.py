@@ -86,17 +86,25 @@ def saltify(name, output=True, ret=None):
                                 if " -m " not in data[var]:
                                     data[var] += " -m {0}".format(name)
                         kwargs[var] = data[var]
+
                 try:
-                    info = __salt__['cloud.profile'](
-                        data['profile'],
-                        [name],
-                        vm_overrides=kwargs)
-                except Exception, exc:
-                    trace = traceback.format_exc()
-                    ret['trace'] = trace
-                    raise FailedStepError(red('{0}'.format(exc)))
-                ret = process_cloud_return(
-                    name, info, driver='saltify', ret=ret)
+                    ping = cli('test.ping', salt_target=name)
+                    success = green('{0} is already saltified')
+                    ret['result'] = True
+                except Exception:
+                    ping = False
+                if not ping:
+                    try:
+                        info = __salt__['cloud.profile'](
+                            data['profile'],
+                            [name],
+                            vm_overrides=kwargs)
+                    except Exception, exc:
+                        trace = traceback.format_exc()
+                        ret['trace'] = trace
+                        raise FailedStepError(red('{0}'.format(exc)))
+                    ret = process_cloud_return(
+                        name, info, driver='saltify', ret=ret)
             if ret['result']:
                 ret['comment'] = success
             if not output:

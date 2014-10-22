@@ -441,23 +441,27 @@ def _get_rp(target):
 
 
 def _configure_http_reverses(reversep, domain, ip):
-    backend_name = 'bck_{0}'.format(domain)
-    sbackend_name = 'securebck_{0}'.format(domain)
     # http
     http_proxy = reversep['http_proxy']
     https_proxy = reversep['https_proxy']
-    rule = 'acl host_{0} hdr(host) -i {0}'.format(domain)
+    sane_domain = domain.replace('*', 'star')
+    backend_name = 'bck_{0}'.format(sane_domain)
+    sbackend_name = 'securebck_{0}'.format(sane_domain)
+    if domain.startswith('*.'):
+        rule = 'acl host_{0} hdr_end(host) -i {1}'.format(sane_domain, domain[2:])
+    else:
+        rule = 'acl host_{0} hdr(host) -i {0}'.format(sane_domain)
     if rule not in http_proxy['raw_opts']:
         http_proxy['raw_opts'].insert(0, rule)
         https_proxy['raw_opts'].insert(0, rule)
-    rule = 'use_backend {1} if host_{0}'.format(domain, backend_name)
+    rule = 'use_backend {1} if host_{0}'.format(sane_domain, backend_name)
     if rule not in http_proxy['raw_opts']:
         http_proxy['raw_opts'].append(rule)
     # https
     sslr = 'http-request set-header X-SSL %[ssl_fc]'
     if sslr not in https_proxy['raw_opts']:
         https_proxy['raw_opts'].insert(0, sslr)
-    rule = 'use_backend {1} if host_{0}'.format(domain, sbackend_name)
+    rule = 'use_backend {1} if host_{0}'.format(sane_domain, sbackend_name)
     if rule not in https_proxy['raw_opts']:
         https_proxy['raw_opts'].append(rule)
     # http/https raw rules
@@ -469,8 +473,8 @@ def _configure_http_reverses(reversep, domain, ip):
         https_proxy['raw_opts'].append(rule)
     for rule in http_proxy['raw_opts_post']:
         http_proxy['raw_opts'].append(rule)
-    _add_server_to_backend(reversep, backend_name, domain, ip)
-    _add_server_to_backend(reversep, sbackend_name, domain, ip, kind='https')
+    _add_server_to_backend(reversep, backend_name, sane_domain, ip)
+    _add_server_to_backend(reversep, sbackend_name, sane_domain, ip, kind='https')
 
 
 def _init_http_proxies(target_data, reversep):
