@@ -14,6 +14,7 @@ import logging
 import traceback
 from distutils.version import LooseVersion
 import mc_states.utils
+import ipaddr
 from salt.utils.odict import OrderedDict
 
 from mc_states import ping
