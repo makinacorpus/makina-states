@@ -574,6 +574,24 @@ def settings():
                          'source': "dck", 'dest': "$FW",
                          'proto': proto,
                          'dport': '4505,4506,4605,4606'})
+            # DNATed external sources ips
+            # force ip
+            source_ips = [netsettings.get('main_ip', '-')]
+            # search ip failover
+            for sifc, sdata in netsettings['interfaces'].items():
+                if (
+                    ':' in sifc
+                    and (sifc.startswith('br') or sifc.startswith('eth'))
+                ):
+                    addr = sdata.get('address', None)
+                    try:
+                        # filter on ipv4 and non rfc1918
+                        if not ':' in addr:
+                            is_private = ipaddr.IPAddress(addr).is_private
+                    except Exception:
+                        is_private = False
+                    if addr and not is_private and not (addr in source_ips):
+                        source_ips.append(addr)
 
             # enable compute node redirection port ange if any
             # XXX: this is far from perfect, now we open a port range which
@@ -589,25 +607,7 @@ def settings():
                                 'sw_proxies', [])
                     for r in cloud_rules:
                         rules = []
-                        # replace all target by each other zone that the
-                        # DNATed external sources ips
-                        # force ip
-                        source_ips = [netsettings.get('main_ip', '-')]
-                        # search ip failover
-                        for sifc, sdata in netsettings['interfaces'].items():
-                            if (
-                                ':' in sifc
-                                and (sifc.startswith('br') or sifc.startswith('eth'))
-                            ):
-                                addr = sdata.get('address', None)
-                                try:
-                                    # filter on ipv4 and non rfc1918
-                                    if not ':' in addr:
-                                        is_private = ipaddr.IPAddress(addr).is_private
-                                except:
-                                    is_private = False
-                                if addr and not is_private and not (addr in source_ips):
-                                    source_ips.append(addr)
+                        # replace all DNAT rules to use each external ip
                         if ':' in r.get('dest', ''):
                             z = r['dest'].split(':')[0]
                             rr = r.copy()
