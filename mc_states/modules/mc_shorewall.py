@@ -602,7 +602,7 @@ def settings():
                                 try:
                                     # filter on ipv4 and non rfc1918
                                     if not ':' in addr:
-                                        is_private = ipaddr.IPAddress(addr)
+                                        is_private = ipaddr.IPAddress(addr).is_private
                                 except:
                                     is_private = False
                                 if addr and not is_private and not (addr in source_ips):
