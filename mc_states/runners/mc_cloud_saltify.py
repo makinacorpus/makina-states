@@ -169,7 +169,7 @@ def filter_compute_nodes(nodes, skip, only):
     return targets
 
 
-def orchestrate(output=True, only=None, skip=None, ret=None, refresh=False):
+def orchestrate(only=None, skip=None, ret=None, output=True, refresh=False):
     '''Parse saltify settings to saltify all targets
 
         output
