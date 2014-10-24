@@ -204,3 +204,21 @@ icinga2-configuration-add-auto-host-confs:
       - mc_proxy: icinga2-configuration-post-object-conf
     - template: jinja
 
+{% for i in [
+  '/usr/bin/icinga-service-mail.sh',
+  '/usr/bin/icinga-host-mail.sh',
+] %}
+icinga2-configuration-scripts-{{i}}:
+  file.managed:
+    - name: {{i}}
+    - source: salt://makina-states/files{{i}}
+    - user: root
+    - group: root
+    - mode: 755
+    - makedirs: True
+    - watch:
+      - mc_proxy: icinga2-configuration-pre-object-conf
+    - watch_in:
+      - mc_proxy: icinga2-configuration-post-object-conf
+    - template: jinja
+{% endfor%}
