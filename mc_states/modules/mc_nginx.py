@@ -231,7 +231,7 @@ def settings():
                 'open_file_cache': 'max=200000 inactive=5m',
                 'open_file_cache_valid': '6m',
                 'open_file_cache_min_uses': '2',
-                'open_file_cache_errors': 'on',
+                'open_file_cache_errors': 'off',
                 'epoll': epoll,
                 'default_type': 'application/octet-stream',
                 'worker_processes': nbcpus,
