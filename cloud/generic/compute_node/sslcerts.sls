@@ -40,10 +40,11 @@ cpt-certs-cleanup:
     - contents: |
                 #!/usr/bin/env python
                 import os
-                os.chdir('/etc/ssl/cloud/certs')
-                certs = os.listdir('.')
-                [os.unlink(a) for a in certs if a not in {{certs}}]
-                os.unlink('{{f}}')
+                if os.path.exists('/etc/ssl/cloud/certs'):
+                  os.chdir('/etc/ssl/cloud/certs')
+                  certs = os.listdir('.')
+                  [os.unlink(a) for a in certs if a not in {{certs}}]
+                  os.unlink('{{f}}')
   cmd.run:
     - name: "{{f}}"
     - user: root
