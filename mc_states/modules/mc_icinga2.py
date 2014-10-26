@@ -172,7 +172,9 @@ def objects(core=True, ttl=120):
                 if not tp:
                     for test in [
                         lambda x: x.startswith('HT_'),
-                        lambda x: x.startswith('ST_')
+                        lambda x: x.startswith('ST_'),
+                        lambda x: x.startswith('NT_'),
+                        lambda x: x.startswith('NCT_')
                     ]:
                         if test(name):
                             tp = data['template'] = True
@@ -185,10 +187,13 @@ def objects(core=True, ttl=120):
                     for final_typ, tests in {
                         'TimePeriod': [lambda x: x.startswith('TP_'),
                                        lambda x: x.startswith('T_')],
-                        'NotificationCommand': [lambda x: x.startswith('NC_'),
-                                                lambda x: x.startswith('N_')],
+                        'NotificationCommand': (
+                            [lambda x: x.startswith('NC_'),
+                             lambda x: x.startswith('NCT_')]),
+                        'Notification': [lambda x: x.startswith('N_'),
+                                         lambda x: x.startswith('NT_')],
                         'Host': [lambda x: x.startswith('HT_'),
-                                 lambda x: x.startswith('H_'),],
+                                 lambda x: x.startswith('H_')],
                         'Service': [lambda x: x.startswith('ST_'),
                                     lambda x: x.startswith('S_')],
                         'User': [lambda x: x.startswith('U_')],
@@ -209,7 +214,8 @@ def objects(core=True, ttl=120):
                                 break
                         if typ_:
                             break
-                file_ = {'NotificationCommand': 'misccommands.conf',
+                file_ = {'NotificationCommand': 'notifications.conf',
+                         'Notification': 'notifications.conf',
                          'TimePeriod': 'timeperiods.conf',
                          'CheckCommand': 'checkcommands.conf',
                          'User': 'contacts.conf',
@@ -231,8 +237,13 @@ def objects(core=True, ttl=120):
                 attrs = data.setdefault('attrs', {})
                 members = attrs.get('members', _default)
                 notification = data.setdefault('notification', [])
+                # convert single notification form
+                # to standard list one (a list of one element)
+                data['notification'] = notification
                 if typ_ in ['Host', 'Service'] and notification:
-                    add_notification(attrs, notification)
+                    add_notification(attrs, notification,
+                                     is_host=typ_ in ['Host'],
+                                     is_service=typ_ in ['Service'])
                 if members is not _default:
                     if 'members_link' not in attrs:
                         if typ_ in ['Service']:
@@ -294,12 +305,9 @@ def format(dictionary, quote_keys=False, quote_values=True, init=True):
             res_key = key
 
         valtype = None
-        #if key == 'command':
-        #    valtype = 'command'
-
         # ugly hack
         if key in ['template', 'type', 'types', 'states', 'import',
-                   'members_link_operator', 'members_link']:
+                   'raw_config', 'members_link_operator', 'members_link']:
             quote_value = False
         elif key in ['command']:
             quote_value = True
@@ -322,10 +330,13 @@ def format(dictionary, quote_keys=False, quote_values=True, init=True):
         elif isinstance(value, list):
             # theses lists are managed in the template,
             # we only quote each string in the list
-            if key in ['import', 'parents']:
+            if key in ['notification']:
+                res[res_key] = []
+                for v in value:
+                    res[res_key].append(format(v, False, True, False))
+            elif key in ['import', 'parents']:
                 res[res_key] = map(quotev, value)
             else:
-
                 res[res_key] = '['
                 # suppose that all values in list are strings
                 # escape '"' char and quote each strings
@@ -557,7 +568,11 @@ def settings():
 def replace_chars(s):
     res = s
     for char in list('/.:_'):
-        res = res.replace(char, '-')
+        try:
+            res = res.replace(char, '-')
+        except:
+            import pdb;pdb.set_trace()  ## Breakpoint ##
+            raise
     return res
 
 
@@ -615,17 +630,78 @@ def autoconfigured_host(host, data=None, ttl=60):
     return memoize_cache(_do, [host, data], {}, cache_key, ttl)
 
 
-def add_notification(attrs, notification_list=None):
+def add_notification(attrs,
+                     notification_list=None,
+                     default_notifiers=None,
+                     is_service=None,
+                     is_host=None):
+    '''Add a basic per-mail notification
+    If you want that a notification becomes the default one,
+    just set vars.default_email_notification: true in
+    your notification object definition
+
+    '''
+    if not attrs:
+        attrs = {}
+    if is_service:
+        is_host = False
+    if is_host:
+        is_service = False
+    if not is_service and not is_host:
+        if 'address' in attrs:
+            is_host = True
+        elif 'address6' in attrs:
+            is_host = True
+        else:
+            is_service = True
+
     if not notification_list:
         notification_list = []
+    onotifications = attrs.setdefault('notification', [])
+    if not isinstance(onotifications, list):
+        # single notification definition (as a dict)
+        if isinstance(onotifications, dict):
+            onotifications = [onotifications]
+        if not onotifications:
+            onotifications = []
+        attrs['notification'] = onotifications
+    # special sysadmin notifiations
+    if not default_notifiers:
+        default_notifiers = ['G_Sysadmins']
+    for i in default_notifiers:
+        if i not in notification_list:
+            notification_list.append(i)
     if notification_list:
-        onotification = attrs.setdefault('notification', OrderedDict())
-        onotification.setdefault('command', 'N_service-notify-by-email')
+        # search for our special notification
+        default_notification = {}
+        for i in onotifications:
+            if i.get('vars.default_email_notification', False):
+                default_notification = i
+                break
+        # if notifications were defined for the object
+        # but we did not found any notication, take the first
+        # as the default one
+        if not default_notification:
+            if onotifications:
+                default_notification = onotifications[0]
+            else:
+                default_notification = {}
+                default_notification.setdefault('import', [])
+                onotifications.append(default_notification)
+            default_notification['vars.default_email_notification'] = True
+        imports = default_notification.setdefault('import', [])
+        if is_host:
+            default_import = 'NT_HOST'
+        if is_service:
+            default_import = 'NT_SERVICE'
+        for simport in ['NT_BASE', default_import]:
+            if simport not in imports:
+                imports.append(simport)
         for notifier in notification_list:
             ntyp = 'users'
             if notifier.startswith('G_'):
                 ntyp = 'user_groups'
-            users = onotification.setdefault(ntyp, [])
+            users = default_notification.setdefault(ntyp, [])
             if notifier not in users:
                 users.append(notifier)
     return attrs
@@ -793,12 +869,6 @@ def autoconfigure_host(host,
             processes.append('mysql')
     if not notification:
         notification = []
-    # special sysadmin notifiations
-    if not default_notifiers:
-        default_notifiers = ['G_Sysadmins']
-    for i in default_notifiers:
-        if i not in notification:
-            notification.append(i)
     if not groups:
         groups = []
     if drbd is None:
@@ -853,7 +923,7 @@ def autoconfigure_host(host,
     for i in groups:
         if i not in hgroups:
             hgroups.append(i)
-    add_notification(attrs, notification)
+    add_notification(attrs, notification, default_notifiers, is_host=True)
     object_uniquify(rdata['attrs'])
     # services for which a loop is used in the macro
     if (
@@ -932,17 +1002,13 @@ def autoconfigure_host(host,
                  or (not no_default_checks and bool(eval(s))))
         ):
             services_enabled_types.append(s)
+    checks = []
     for svc in services_enabled_types:
         if svc in ['mongodb', 'mongodb_auth']:
             continue
-        checks = []
         if svc in services_multiple:
-            default_vals = {
-                'web': {host: {}},
-                'tomcat': {host: {}}
-            }
-            if svc in ['drbd', 'disk_space',
-                       'processes',
+            default_vals = {'web': {host: {}}, 'tomcat': {host: {}}}
+            if svc in ['drbd', 'disk_space', 'processes',
                        'nic_card', 'supervisor']:
                 values = eval(svc)
             else:
@@ -956,8 +1022,7 @@ def autoconfigure_host(host,
                 default_attrs = services_default_attrs
                 if ksvc not in default_attrs:
                     default_attrs = {
-                        ksvc: {
-                            'import': ['ST_{0}'.format(ksvc.upper())]}}
+                        ksvc: {'import': ['ST_{0}'.format(ksvc.upper())]}}
                 ss = add_check(host,
                                services_enabled,
                                svc,
@@ -1006,19 +1071,9 @@ def autoconfigure_host(host,
                     # switch service to not alert if it is
                     # selected in custom attributes
                     simports = ss.setdefault('import', [])
-                    if ss.get('vars.http_no_alert', False):
-                        root_service = 'ST_BASE'
-                        inv_service = 'ST_ALERT'
-                    else:
-                        root_service = 'ST_ALERT'
-                        inv_service = 'ST_BASE'
-                    try:
-                        simports.pop(simports.index(inv_service))
-                    except ValueError:
-                        pass
-                    root_service = 'ST_WEB'
-                    if root_service not in simports:
-                        simports.append(root_service)
+                    for simported in ['ST_WEB']:
+                        if simported not in simports:
+                            simports.append(simported)
                     # transform value in string: ['a', 'b'] => '"a" -s "b"'
                     if 'vars.strings' in ss:
                         ss['vars.strings'] = reencode_webstrings(
@@ -1046,6 +1101,7 @@ def autoconfigure_host(host,
                 if svc == 'supervisor':
                     ss['vars.command'] = v
                 object_uniquify(ss)
+                checks.append(ss)
         else:
             skey = svc_name('{1}'.format(host, svc).upper())
             default_attrs = services_default_attrs
@@ -1060,9 +1116,9 @@ def autoconfigure_host(host,
                            default_attrs[svc],
                            services_attrs.get(svc, {}))[skey]
             checks.append(ss)
-        for ss in checks:
-            add_notification(ss, notification)
-            object_uniquify(ss)
+    for ss in checks:
+        add_notification(ss, notification, default_notifiers, is_service=True)
+        object_uniquify(ss)
     return rdata
 
 
