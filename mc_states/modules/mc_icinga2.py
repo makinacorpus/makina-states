@@ -692,8 +692,16 @@ def add_notification(attrs,
         imports = default_notification.setdefault('import', [])
         if is_host:
             default_import = 'NT_HOST'
+            intv = 'host.vars.n_interval + ""'
         if is_service:
             default_import = 'NT_SERVICE'
+            intv = 'service.vars.n_interval + ""'
+        # XXX: conditionnal notification interval based on underlying
+        # service or host does not work that way yet, searching ...
+        # for not, sett interval to zero (only one alert per state change and
+        # norepeat)
+        intv = 0
+        default_notification.setdefault('interval', intv)
         for simport in ['NT_BASE', default_import]:
             if simport not in imports:
                 imports.append(simport)
