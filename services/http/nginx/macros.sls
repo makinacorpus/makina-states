@@ -106,7 +106,7 @@ makina-nginx-virtualhost-{{ small_name }}-content:
     - watch_in:
       - mc_proxy: nginx-post-conf-hook
 
-{{ toggle_vhost(data.domain, active=data.active) }}
+{{ toggle_vhost(data.vhost_basename, active=data.active) }}
 {% endmacro %}
 
 
