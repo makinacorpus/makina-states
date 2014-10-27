@@ -27,5 +27,5 @@ fpm-makina-php-reload:
       # reload service in case of package install
       - mc_proxy: makina-php-post-restart
     - enable: True
-    - reload: True
+    # does not work pretty well, use complete restart - reload: True
 #}

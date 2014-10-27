@@ -568,11 +568,7 @@ def settings():
 def replace_chars(s):
     res = s
     for char in list('/.:_'):
-        try:
-            res = res.replace(char, '-')
-        except:
-            import pdb;pdb.set_trace()  ## Breakpoint ##
-            raise
+        res = res.replace(char, '-')
     return res
 
 
@@ -692,15 +688,15 @@ def add_notification(attrs,
         imports = default_notification.setdefault('import', [])
         if is_host:
             default_import = 'NT_HOST'
-            intv = 'host.vars.n_interval + ""'
+        #     intv = 'host.vars.n_interval + ""'
         if is_service:
             default_import = 'NT_SERVICE'
-            intv = 'service.vars.n_interval + ""'
+        #     intv = 'service.vars.n_interval + ""'
         # XXX: conditionnal notification interval based on underlying
         # service or host does not work that way yet, searching ...
         # for not, sett interval to zero (only one alert per state change and
         # norepeat)
-        intv = 0
+        intv = attrs.get('vars.n_interval', 0)
         default_notification.setdefault('interval', intv)
         for simport in ['NT_BASE', default_import]:
             if simport not in imports:
@@ -952,19 +948,30 @@ def autoconfigure_host(host,
     # not the commands names (use the service filename)
     services_default_attrs = {
         'dns_association_hostname': {
-            'import': ["ST_DNS_ASSOCIATION_hostname"],
             'vars.hostname': dns_hostname,
             'vars.dns_address': dns_address},
         'dns_association': {
-            'import': ["ST_DNS_ASSOCIATION"],
             'vars.hostname': dns_hostname,
             'vars.dns_address': dns_address},
+        'load_avg': {
+            #'vars.n_interval': 6000,
+        },
         'mongodb': {
-            'import': ["ST_MONGODB"],
             'check_command': "CSSH_CHECK_MONGODB_AUTH"},
         'disk_space': {
+            'vars.n_interval': 6000,
             'import': [st_disk]},
+        'backup_burp_age': {
+            'vars.n_interval': 72000,
+        },
+        'web': {
+            'vars.n_interval': 7200,
+        },
+        'raid': {
+            'vars.n_interval': 6000,
+        },
         'memory': {
+            'vars.n_interval': 6000,
             'import': [st_mem]}}
     # if we defined extra properties on a service,
     # enable it automatically
@@ -1026,16 +1033,12 @@ def autoconfigure_host(host,
             for v in keys:
                 vdata = services_attrs.get(svc, {}).get(v, {})
                 skey = svc_name('{1}_{2}'.format(host, svc, v).upper())
-                ksvc = svc
-                default_attrs = services_default_attrs
-                if ksvc not in default_attrs:
-                    default_attrs = {
-                        ksvc: {'import': ['ST_{0}'.format(ksvc.upper())]}}
+                svc_attrs = get_svc_attrs(services_default_attrs, svc)
                 ss = add_check(host,
                                services_enabled,
                                svc,
                                skey,
-                               default_attrs.get(ksvc, {}),
+                               svc_attrs,
                                vdata)[skey]
                 # switch between
                 # HTTP_STRING / HTTP_STRING_AUTH
@@ -1112,22 +1115,24 @@ def autoconfigure_host(host,
                 checks.append(ss)
         else:
             skey = svc_name('{1}'.format(host, svc).upper())
-            default_attrs = services_default_attrs
-            if svc not in default_attrs:
-                default_attrs = {
-                    svc: {
-                        'import': ['ST_{0}'.format(svc.upper())]}}
+            svc_attrs = get_svc_attrs(services_default_attrs, svc)
             ss = add_check(host,
                            services_enabled,
                            svc,
                            skey,
-                           default_attrs[svc],
+                           svc_attrs,
                            services_attrs.get(svc, {}))[skey]
             checks.append(ss)
     for ss in checks:
         add_notification(ss, notification, default_notifiers, is_service=True)
         object_uniquify(ss)
     return rdata
+
+
+def get_svc_attrs(default_attrs, ksvc):
+    svc_attrs = default_attrs.setdefault(ksvc, OrderedDict())
+    svc_attrs.setdefault('import', ['ST_{0}'.format(ksvc.upper())])
+    return svc_attrs
 
 
 def order_keys(data):

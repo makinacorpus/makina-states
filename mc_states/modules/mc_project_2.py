@@ -508,17 +508,19 @@ def _merge_statuses(ret, cret, step=None):
     return ret
 
 
-def _init_context():
+def _init_context(name=None):
     if not 'ms_projects' in __opts__:
         __opts__['ms_projects'] = OrderedDict()
     if not 'ms_project_name' in __opts__:
         __opts__['ms_project_name'] = None
     if not 'ms_project' in __opts__:
         __opts__['ms_project'] = None
+    if name:
+        __opts__['ms_project_name'] = name
 
 
 def set_project(cfg):
-    _init_context()
+    _init_context(cfg.get('name', None))
     __opts__['ms_project_name'] = cfg['name']
     __opts__['ms_project'] = cfg
     __opts__['ms_projects'][cfg['name']] = cfg
@@ -531,7 +533,7 @@ def get_project(name):
 
 
 def _get_contextual_cached_project(name):
-    _init_context()
+    _init_context(name=name)
     # throw KeyError if not already loaded
     cfg = __opts__['ms_projects'].setdefault(
         __opts__['ms_project_name'], get_default_configuration())

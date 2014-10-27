@@ -301,16 +301,17 @@ def vhost_settings(domain, doc_root, **kwargs):
     kwargs.update(extra)
     kwargs.setdefault('small_name',
                       domain.replace('.', '_').replace('-', '_'))
+    vhost_basename = kwargs.setdefault('vhost_basename', domain)
     kwargs.setdefault(
         'vhost_available_file',
-        nginxSettings['basedir'] + "/sites-available/" + domain + ".conf")
+        nginxSettings['basedir'] + "/sites-available/" + vhost_basename + ".conf")
     kwargs.setdefault(
         'vhost_content_file',
         (nginxSettings['basedir'] + "/sites-available/" +
-         domain + ".content.conf"))
+         vhost_basename + ".content.conf"))
     kwargs.setdefault(
         'vhost_top_file',
-        nginxSettings['basedir'] + "/sites-available/" + domain + ".top.conf")
+        nginxSettings['basedir'] + "/sites-available/" + vhost_basename + ".top.conf")
     kwargs.setdefault('redirect_aliases', True)
     kwargs.setdefault('domain', domain)
     kwargs.setdefault('active', nginxSettings['default_activation'])
