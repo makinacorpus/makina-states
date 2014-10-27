@@ -954,15 +954,18 @@ def autoconfigure_host(host,
             'vars.hostname': dns_hostname,
             'vars.dns_address': dns_address},
         'load_avg': {
-            'vars.n_interval': 6000,
+            #'vars.n_interval': 6000,
         },
         'mongodb': {
             'check_command': "CSSH_CHECK_MONGODB_AUTH"},
         'disk_space': {
             'vars.n_interval': 6000,
             'import': [st_disk]},
-        'web': {
+        'backup_burp_age': {
             'vars.n_interval': 72000,
+        },
+        'web': {
+            'vars.n_interval': 7200,
         },
         'raid': {
             'vars.n_interval': 6000,
