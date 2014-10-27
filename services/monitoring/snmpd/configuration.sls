@@ -98,3 +98,4 @@ snmpd-user:
               -X DES -x {{data['default_key']}} {{data['default_user']}}
 
 {% endif %}
+            service snmpd start;
