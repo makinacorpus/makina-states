@@ -132,7 +132,11 @@ icinga2-{{f}}-conf:
 
 
 # add templates and commands (and contacts, timeperiods...)
-{% for file in salt['mc_icinga2.objects']().objects_by_file %}
+{% for file, tdata in salt['mc_icinga2.objects']().objects_by_file.items() %}
+{% if not file %}
+UNCATEGORIZED
+{{tdata}}
+{%else %}
 {% set state_name_salt =  salt['mc_icinga2.replace_chars'](file) %}
 icinga2-configuration-{{state_name_salt}}-add-objects-conf:
   file.managed:
@@ -150,6 +154,7 @@ icinga2-configuration-{{state_name_salt}}-add-objects-conf:
     - defaults:
         file: |
               {{salt['mc_utils.json_dump'](file)}}
+{% endif %}
 {% endfor %}
 
 {#

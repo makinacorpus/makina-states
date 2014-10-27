@@ -2056,9 +2056,12 @@ def get_supervision_objects_defs(id_):
             # if id_ not in parents and id_ not in maps['vms']:
             #    parents.append(id_)
             if not hdata['attrs'].get('address'):
-                log.error('no address defined for {0}'.format(host))
-                hhosts.pop(host, None)
-                continue
+                try:
+                    hdata['attrs']['address'] = ip_for(host)
+                except Exception:
+                    log.error('no address defined for {0}'.format(host))
+                    hhosts.pop(host, None)
+                    continue
             if id_ == host:
                 for i in parents[:]:
                     parents.pop()
