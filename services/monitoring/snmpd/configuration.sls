@@ -74,7 +74,22 @@ snmpd-user:
 {% endif %}
     - watch_in:
       - mc_proxy: snmpd-post-conf-hook
-    - unless: snmpgetnext -t 0.5 -v 3 -n "" -u "{{data.default_user}}" -a SHA -A "{{data.default_password}}" -x DES -X "{{data.default_key}}" -l authPriv localhost:161 system
+    - unless: |
+             export LC_ALL="C" LANG="C"
+             output=$(snmpgetnext -t 0.5 -v 3 -n "" -u "{{data.default_user}}" -a SHA -A "{{data.default_password}}" -x DES -X "{{data.default_key}}" -l authPriv localhost:161 system 2>&1)
+             ret=$?
+             if [ "x${ret}" = "x0" ];then
+              if [ "x$(echo "${output}"|grep -q Error;echo "${?}")" = "x0" ];then
+                ret=1
+              fi
+              if [ "x$(echo "${output}"|grep -q authorizationError;echo "${?}")" = "x0" ];then
+                ret=1
+              fi
+              if [ "x$(echo "${output}"|grep -q denied;echo "${?}")" = "x0" ];then
+                ret=1
+              fi
+             fi
+             exit ${ret}
     - name: |
             is_lxc() {
                 echo  "$(cat -e /proc/1/environ |grep container=lxc|wc -l|sed -e "s/ //g")"
