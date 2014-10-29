@@ -68,9 +68,12 @@ sys-pkgs:
       - xfsprogs
       - mc
       - gdisk
-      {% endif %}
-      - acl
+      - pv
+      - links
       - bridge-utils
+      {% endif %}
+      - htop
+      - acl
       - libacl1-dev
       - bash-completion
       - bzip2
@@ -78,9 +81,6 @@ sys-pkgs:
       - cronolog
       - dialog
       - findutils
-      - htop
-      - pv
-      - links
       - locales
       - man-db
       - libopts25
@@ -147,13 +147,13 @@ net-pkgs:
       - curl
       - dnsutils
       - net-tools
-      - openssh-server
       - rsync
       - tcpdump
       - telnet
       - traceroute
       - whois
       {% if salt['mc_controllers.mastersalt_mode']() %}
+      - openssh-server
       - ethtool
       - ifenslave-2.6
       - iftop

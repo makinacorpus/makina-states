@@ -606,6 +606,7 @@ set_vars() {
     SALT_MINION_CONTROLLER_DEFAULT="salt_minion"
     SALT_MINION_CONTROLLER_INPUTED="${SALT_MINION_CONTROLLER}"
     SALT_MINION_CONTROLLER="${SALT_MINION_CONTROLLER:-$SALT_MINION_CONTROLLER_DEFAULT}"
+    SALT_LIGHT_INSTALL=""
     NICKNAME_FQDN="$(get_minion_id)"
     HOST="$(echo "${NICKNAME_FQDN}"|awk -F'.' '{print $1}')"
     if [ "x$(echo "${NICKNAME_FQDN}"|grep -q \.;echo ${?})" = "x0" ];then
@@ -934,8 +935,12 @@ set_vars() {
         store_conf bootsalt_mode salt
     fi
 
+    if [ "x$(get_local_salt_mode)" = "xmasterless" ] && [ "x${IS_MASTERSALT}" = "x" ];then
+	SALT_LIGHT_INSTALL="y"
+    fi
+
     # export variables to support a restart
-    export ONLY_BUILDOUT_REBOOTSTRAP
+    export ONLY_BUILDOUT_REBOOTSTRAP SALT_LIGHT_INSTALL
     export TRAVIS_DEBUG SALT_BOOT_LIGHT_VARS DO_REFRESH_MODULES
     export IS_SALT_UPGRADING SALT_BOOT_SYNC_CODE SALT_BOOT_INITIAL_HIGHSTATE
     export SALT_REBOOTSTRAP BUILDOUT_REBOOTSTRAP VENV_REBOOTSTRAP
@@ -1001,7 +1006,11 @@ recap_(){
     bs_yellow_log "----------------------------------------------------------"
     bs_yellow_log "HOST variables:"
     bs_yellow_log "---------------"
-    bs_log "NICKNAME_FQDN/HOST/DOMAIN: ${NICKNAME_FQDN}/${HOST}/${DOMAINNAME}"
+    if [ "x${SALT_LIGHT_INSTALL}" = "x" ];then
+	    bs_log "NICKNAME_FQDN/HOST/DOMAIN: ${NICKNAME_FQDN}/${HOST}/${DOMAINNAME}"
+    else
+	    bs_log "Light install, minion id: $(get_minion_id)"
+    fi
     bs_log "DATE: ${CHRONO}"
     bs_log "LOCAL_SALT_MODE: $(get_local_salt_mode)"
     bs_log "SALT_NODETYPE: $(get_salt_nodetype)"
@@ -4157,7 +4166,8 @@ synchronize_code() {
 
 set_dns() {
     if [ "${NICKNAME_FQDN}" != "x" ];then
-        if [ "x$(cat /etc/hostname 2>/dev/null|sed -e "s/ //")" != "x$(echo "${HOST}"|sed -e "s/ //g")" ];then
+        if [ "x$(cat /etc/hostname 2>/dev/null|sed -e "s/ //")" != "x$(echo "${HOST}"|sed -e "s/ //g")" ]\
+           && [ "x${SALT_LIGHT_INSTALL}" = "x" ];then
             bs_log "Resetting hostname file to ${HOST}"
             echo "${HOST}" > /etc/hostname
 
@@ -4168,17 +4178,20 @@ set_dns() {
             fi
             echo "${HOST}" > /etc/salt/minion_id
         fi
-        if [ -e "$(which domainname 2>/dev/null)" ];then
+        if [ -e "$(which domainname 2>/dev/null)" ]\
+           && [ "x${SALT_LIGHT_INSTALL}" = "x" ];then
             if [ "x$(domainname)" != "x$(echo "${DOMAINNAME}"|sed -e "s/ //g")" ];then
                 bs_log "Resetting domainname to ${DOMAINNAME}"
                 domainname "${DOMAINNAME}"
             fi
         fi
-        if [ "x$(hostname)" != "x$(echo "${NICKNAME_FQDN}"|sed -e "s/ //g")" ];then
+        if [ "x$(hostname)" != "x$(echo "${NICKNAME_FQDN}"|sed -e "s/ //g")" ]\
+           && [ "x${SALT_LIGHT_INSTALL}" = "x" ];then
             bs_log "Resetting hostname to ${NICKNAME_FQDN}"
             hostname "${NICKNAME_FQDN}"
         fi
-        if [ "x$(egrep -q "127.*${NICKNAME_FQDN}" /etc/hosts;echo ${?})" != "x0" ];then
+        if [ "x$(egrep -q "127.*${NICKNAME_FQDN}" /etc/hosts;echo ${?})" != "x0" ]\
+           && [ "x${SALT_LIGHT_INSTALL}" = "x" ];then
             bs_log "Adding new core hostname alias to localhost"
             echo "127.0.0.1 ${NICKNAME_FQDN}">/tmp/hosts
             cat /etc/hosts>>/tmp/hosts
