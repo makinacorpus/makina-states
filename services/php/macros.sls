@@ -84,6 +84,8 @@ makina-php-pool-{{ data.pool_name.replace('*', 'star') }}-logrotate:
         name: "{{data.pool_name}}"
         logdir: {{data.log_dir}}
         rotate: {{data.rotate}}
+        user: {{ data.fpm_user }}
+        group: {{data.fpm_group }}
     - mode: 644
     - user: root
     - group: root
