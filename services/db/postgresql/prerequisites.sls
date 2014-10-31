@@ -27,6 +27,7 @@ postgresql-pkgs:
       {% for pgver in settings.versions %}
       - postgresql-{{pgver}}
       - postgresql-server-dev-{{pgver}}
+      - postgresql-{{pgver}}-pgextwlist
       {% endfor %}
       - libpq-dev
       - pgtune
