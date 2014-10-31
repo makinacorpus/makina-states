@@ -64,7 +64,7 @@ makina-php-pool-{{ data.pool_name }}:
     - user: root
     - group: root
     - mode: 664
-    - name: {{ data.etcdir }}/fpm/pool.d/{{ data.pool_name }}.conf
+    - name: "{{ data.etcdir }}/fpm/pool.d/{{ data.pool_name }}.conf"
     - source: {{ data.pool_template_source }}
     - template: 'jinja'
     - defaults:
@@ -75,13 +75,13 @@ makina-php-pool-{{ data.pool_name }}:
     - watch_in:
       - mc_proxy: makina-php-pre-restart
 
-makina-php-pool-{{ data.pool_name }}-logrotate:
+makina-php-pool-{{ data.pool_name.replace('*', 'star') }}-logrotate:
   file.managed:
     - name: "{{locs.conf_dir}}/logrotate.d/fpm.{{data.pool_name}}.conf"
     - source: salt://makina-states/files/etc/logrotate.d/fpmpool.conf
     - template: jinja
     - defaults:
-        name: {{data.pool_name}}
+        name: "{{data.pool_name}}"
         logdir: {{data.log_dir}}
         rotate: {{data.rotate}}
     - mode: 644
@@ -98,7 +98,7 @@ makina-php-pool-var-log-phpfpm-{{data.pool_name}}:
     - name: /var/log/phpfpm/{{data.pool_name}}
     - target: {{data.log_dir}}
 
-makina-php-pool-{{ data.pool_name }}-directories:
+makina-php-pool-{{ data.pool_name.replace('*', 'star') }}-directories:
   file.directory:
     - user: {{ data.fpm_user }}
     - group: {{data.fpm_group }}
