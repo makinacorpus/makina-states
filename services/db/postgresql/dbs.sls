@@ -56,7 +56,11 @@ include:
 
 {{ version }}-{{ owner }}-groups-makina-postgresql-grant:
   cmd.run:
-    - name: echo "GRANT ALL PRIVILEGES ON DATABASE {{ db }} TO {{ owner }};"|psql-{{version}}
+    - name: |
+            set -e
+            echo "GRANT ALL PRIVILEGES ON DATABASE {{ db }} TO {{ owner }};"|psql-{{version}} -v ON_ERROR_STOP=1 {{db}}
+            echo "ALTER SCHEMA public OWNER TO {{ owner }};"|psql-{{version}} -v ON_ERROR_STOP=1 {{db}}
+            echo "GRANT ALL PRIVILEGES ON SCHEMA public TO {{ owner }};"|psql-{{version}} -v ON_ERROR_STOP=1 {{db}}
     - user: {{ user }}
     - require:
       - mc_postgres_database: {{version}}-{{ db }}-makina-postgresql-database
