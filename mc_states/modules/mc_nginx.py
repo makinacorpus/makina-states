@@ -300,7 +300,7 @@ def vhost_settings(domain, doc_root, **kwargs):
     extra = kwargs.pop('extra', {})
     kwargs.update(extra)
     kwargs.setdefault('small_name',
-                      domain.replace('.', '_').replace('-', '_'))
+                      domain.replace('.', '_').replace('-', '_').replace('*', 'star'))
     vhost_basename = kwargs.setdefault('vhost_basename', domain)
     kwargs.setdefault(
         'vhost_available_file',
