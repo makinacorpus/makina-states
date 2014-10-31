@@ -53,7 +53,7 @@ EOF
         ${i//default/init.d} stop
         update-rc.d -f $(basename $i) remove
     done
-    ps aux|grep init.d|grep statusd|grep check_|awk '{print $2}'|xargs kill -9
+    ps aux|grep init.d|grep statusd|grep check_|awk '{print $2}'|xargs kill -9 || /bin/true
 
 }
 
