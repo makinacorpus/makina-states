@@ -42,6 +42,12 @@ except ImportError:
 
 _default_marker = object()
 log = logging.getLogger(__name__)
+ 
+
+def odict(instance=True):
+  if instance:
+    return OrderedDict()
+  return OrderedDict
 
 
 def magicstring(thestr):
