@@ -12,6 +12,8 @@ makina-mysql-pkgs:
       - {{ mysqlSettings.packages.dev }}
     - watch:
       - mc_proxy: mysql-pre-install-hook
+    - watch_in:
+      - mc_proxy: mysql-post-install-hook
 
 {#-
 # Ensure mysqlDb python binding is available for the minion
@@ -25,6 +27,8 @@ mysql-msalt-pythonmysqldb-pip-install:
     - onlyif: test -e /salt-venv/mastersalt/bin/pip
     - require:
       - pkg: makina-mysql-pkgs
+    - watch_in:
+      - mc_proxy: mysql-post-install-hook
 
 mysql-salt-pythonmysqldb-pip-install:
   pip.installed:
@@ -33,6 +37,8 @@ mysql-salt-pythonmysqldb-pip-install:
     - onlyif: test -e /salt-venv/salt/bin/pip
     - require:
       - pkg: makina-mysql-pkgs
+    - watch_in:
+      - mc_proxy: mysql-post-install-hook
 
 mysql-salt-pythonmysqldb-pip-install-module-reloader:
   cmd.watch:
@@ -43,4 +49,3 @@ mysql-salt-pythonmysqldb-pip-install-module-reloader:
       - pip: mysql-salt-pythonmysqldb-pip-install
     - watch_in:
       - mc_proxy: mysql-post-install-hook
-
