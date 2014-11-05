@@ -2806,10 +2806,14 @@ def get_cloud_compute_node_conf(id_):
             haproxy_post = metadata.get('haproxy', {}).get('raw_opts_post', [])
             for suf, opts in [
                 a for a in [
-                    ['pre,', haproxy_pre],
+                    ['pre', haproxy_pre],
                     ['post', haproxy_post]
                 ] if a[1]
             ]:
+                rdata[
+                    'makina-states.cloud.compute_node.conf.'
+                    '{0}.https_proxy.raw_opts_{1}'.format(
+                        compute_node, suf)] = opts
                 rdata[
                     'makina-states.cloud.compute_node.conf.'
                     '{0}.http_proxy.raw_opts_{1}'.format(

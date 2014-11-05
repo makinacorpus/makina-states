@@ -464,15 +464,6 @@ def _configure_http_reverses(reversep, domain, ip):
     rule = 'use_backend {1} if host_{0}'.format(sane_domain, sbackend_name)
     if rule not in https_proxy['raw_opts']:
         https_proxy['raw_opts'].append(rule)
-    # http/https raw rules
-    for rule in reversed(https_proxy['raw_opts_pre']):
-        https_proxy['raw_opts'].insert(0, rule)
-    for rule in reversed(http_proxy['raw_opts_pre']):
-        http_proxy['raw_opts'].insert(0, rule)
-    for rule in https_proxy['raw_opts_post']:
-        https_proxy['raw_opts'].append(rule)
-    for rule in http_proxy['raw_opts_post']:
-        http_proxy['raw_opts'].append(rule)
     _add_server_to_backend(reversep, backend_name, sane_domain, ip)
     _add_server_to_backend(reversep, sbackend_name, sane_domain, ip, kind='https')
 
@@ -534,6 +525,17 @@ def feed_http_reverse_proxy_for_target(target, target_data=None):
         vm = target_data['vms'][vmname]
         for domain in vm['domains']:
             _configure_http_reverses(reversep, domain, vm['ip'])
+    # http/https raw rules
+    for http_proxy in [
+        reversep['http_proxy'],
+        reversep['https_proxy']
+    ]:
+        if not http_proxy.get('raw_rules_done', None):
+            for rule in reversed(http_proxy['raw_opts_pre']):
+                http_proxy['raw_opts'].insert(0, rule)
+            for rule in http_proxy['raw_opts_post']:
+                http_proxy['raw_opts'].append(rule)
+            http_proxy['raw_rules_done'] = 1
     return reversep
 
 
