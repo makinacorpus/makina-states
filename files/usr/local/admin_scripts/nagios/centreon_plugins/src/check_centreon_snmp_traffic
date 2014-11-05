@@ -532,8 +532,8 @@ if ( $speed_card == 0 ) {
 my $in_perfparse_traffic_str = sprintf("%.1f",abs($in_perfparse_traffic));
 my $out_perfparse_traffic_str = sprintf("%.1f",abs($out_perfparse_traffic));
 
-$in_perfparse_traffic_str =~ s/\./,/g;
-$out_perfparse_traffic_str =~ s/\./,/g;
+#$in_perfparse_traffic_str =~ s/\./,/g;
+#$out_perfparse_traffic_str =~ s/\./,/g;
 
 my $status = "OK";
 
@@ -551,7 +551,8 @@ printf("Traffic In : %.2f ".$in_prefix."b/s (".$in_usage." %%), Out : %.2f ".$ou
 if ($opt_S) {
     printf(" - Link Speed : %d", $speed_card);
 }
-printf("|traffic_in=".$in_perfparse_traffic_str."Bits/s;$warningBit;$criticalBit;0;$speed_card traffic_out=".$out_perfparse_traffic_str."Bits/s;$warningBit;$criticalBit;0;$speed_card\n");
+#printf("|traffic_in=".$in_perfparse_traffic_str."Bits/s;$warningBit;$criticalBit;0;$speed_card traffic_out=".$out_perfparse_traffic_str."Bits/s;$warningBit;$criticalBit;0;$speed_card\n");
+printf("|traffic_in=".$in_perfparse_traffic_str."c;$warningBit;$criticalBit;0;$speed_card traffic_out=".$out_perfparse_traffic_str."c;$warningBit;$criticalBit;0;$speed_card\n");
 exit($ERRORS{$status});
 
 sub print_usage () {
