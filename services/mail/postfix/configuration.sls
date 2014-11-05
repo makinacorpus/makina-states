@@ -43,9 +43,6 @@ include:
     - watch_in:
       - mc_proxy: postfix-post-conf-hook
       - mc_proxy: postfix-pre-restart-hook
-    - defaults:
-      data: |
-            {{salt['mc_utils.json_dump'](postfixSettings)}}
 
 makina-postfix-chroot-hosts-sync:
   cmd.run:
@@ -102,9 +99,6 @@ makina-postfix-{{f}}:
     - source: salt://makina-states/files/etc/postfix/{{f}}
     - user: postfix
     - template: jinja
-    - defaults:
-      data: |
-            {{salt['mc_utils.json_dump'](postfixSettings)}}
     - group: root
     - mode: 740
     - watch:

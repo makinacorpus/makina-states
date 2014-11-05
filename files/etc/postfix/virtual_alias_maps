@@ -1,4 +1,6 @@
-{% set data = salt['mc_utils.json_load'](data) %}
-{% for i, v in data.virtual_map.items() %}
+{% set data = salt['mc_postfix.settings']() %}
+{% for record in data.virtual_map %}
+{% for i, v in record.items() %}
 {{i}} {{v}}
+{% endfor %}
 {% endfor %}

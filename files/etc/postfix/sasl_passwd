@@ -1,4 +1,4 @@
-{% set data = salt['mc_utils.json_load'](data) %}
+{% set data = salt['mc_postfix.settings']() %}
 {% for h in data['sasl_passwd'] %}
 {{h.entry}} {{h.user}}:{{h.password}}
 {% endfor %}
