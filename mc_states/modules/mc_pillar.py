@@ -2630,7 +2630,7 @@ def get_mail_conf(id_, ttl=60):
                 a
                 for a in mail_conf
                 if a not in ['mode', 'smtp_auth',
-                             'auth', 'virtual_map' 'transports']
+                             'auth', 'virtual_map', 'transports']
             ]:
                 p = 'makina-states.services.mail.postfix.{0}'.format(k)
                 data[p] = mail_conf[k]
