@@ -51,3 +51,5 @@ chmod +x check_elasticsearch
 wget https://raw.github.com/glensc/nagios-plugin-check_raid/master/check_raid.pl -O check_raid.pl
 chmod +x check_raid.pl 
 
+
+echo "dont forget changes to snmp traffic (, -> . for perfdata)
