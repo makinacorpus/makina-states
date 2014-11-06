@@ -1991,6 +1991,8 @@ ServerAliveInterval 5
     if projects:
         ret += 'Projects:'
         for pj in projects:
+            if os.path.isfile(os.path.join(pt, pj)):
+                continue
             conf = __salt__[
                 'mc_project.get_configuration'](pj)
             ret += '''
