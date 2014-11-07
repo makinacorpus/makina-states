@@ -47,7 +47,7 @@
                                         <parameter name="click">Cronk.grid.handler.URL.imagePanel</parameter>
                                     </parameter>
                                     <parameter name="handlerArguments">
-                                        <parameter name="src"><![CDATA[http://{{data.modules.pnp4nagios.pnpfornagios_url}}/pnp4nagios/index.php/image?host={host_name}&srv=_HOST_&view=0]]></parameter>
+                                        <parameter name="src"><![CDATA[{{data.modules.pnp4nagios.pnpfornagios_url}}/pnp4nagios/index.php/image?host={host_name}&srv=_HOST_&view=0]]></parameter>
                                         <parameter name="iconCls">icinga-icon-image-arrow</parameter>
                                         <parameter name="width">400</parameter>
                                         <parameter name="title">Hostgraph for {host_name}</parameter>

@@ -1342,19 +1342,6 @@ def get_configuration(id_=None, ttl=60):
     return memoize_cache(_do_conf, [id_], {}, cache_key, ttl)
 
 
-def get_mail_configuration(id_=None, ttl=60):
-    if not id_:
-        id_ = __opts__['id']
-    def _do_mail(id_, sysadmins=None):
-        mail_settings = __salt__['mc_pillar.query']('mail_configurations')
-        data = copy.deepcopy(mail_settings['default'])
-        if id_ in mail_settings:
-            data = __salt__['mc_utils.dictupdate'](data, mail_settings[id_])
-        return data
-    cache_key = 'mc_pillar.get_mail_configuration_{0}'.format(id_)
-    return memoize_cache(_do_mail, [id_], {}, cache_key, ttl)
-
-
 def get_snmpd_settings(id_=None, ttl=60):
     if not id_:
         id_ = __opts__['id']
@@ -2590,11 +2577,19 @@ def get_mail_conf(id_, ttl=60):
         if not gconf.get('manage_mails', False):
             return {}
         data = {}
-        mail_conf = __salt__['mc_pillar.get_mail_configuration'](id_)
+        mail_settings = __salt__['mc_pillar.query']('mail_configurations')
+        mail_conf = copy.deepcopy(mail_settings.get('default', {}))
+        if id_ in mail_settings:
+            idconf = copy.deepcopy(mail_settings[id_])
+            if 'no_inherit' not in mail_conf:
+                mail_conf = __salt__['mc_utils.dictupdate'](
+                    mail_conf, idconf)
+            else:
+                mail_conf = idconf
         dest = mail_conf['default_dest'].format(id=id_)
         data['makina-states.services.mail.postfix'] = True
         mode = 'makina-states.services.mail.postfix.mode'
-        data[mode] = mail_conf['mode']
+        data[mode] = mail_conf.get('mode', None)
         if is_managed(id_):
             if is_salt_managed(id_) and mail_conf.get('transports'):
 
@@ -2609,24 +2604,36 @@ def get_mail_conf(id_, ttl=60):
                     transports.append(
                         {'nexthop':
                          'relay:[{0}]'.format(mail_conf['transports']['*'])})
-                if mail_conf['auth']:
-                    passwds = data.setdefault(
-                        'makina-states.services.mail.postfix.sasl_passwd', [])
-                    data['makina-states.services.mail.postfix.auth'] = True
-                    for entry, host in mail_conf['smtp_auth'].items():
-                        passwds.append({
-                            'entry': '[{0}]'.format(entry),
-                            'user': host['user'],
-                            'password': host['password']})
-                if mail_conf.get('virtual_map'):
-                    vmap = data.setdefault(
-                        'makina-states.services.mail.postfix.virtual_map', {})
-                for record in mail_conf['virtual_map']:
-                    for item, val in record.items():
-                        vmap[item.format(id=id_, dest=dest)] = val.format(
-                            id=id_, dest=dest)
             else:
                 data[mode] = 'localdeliveryonly'
+            if mail_conf.get('auth', False):
+                passwds = data.setdefault(
+                    'makina-states.services.mail.postfix.sasl_passwd', [])
+                data['makina-states.services.mail.postfix.auth'] = True
+                for entry, host in mail_conf['smtp_auth'].items():
+                    passwds.append({
+                        'entry': '[{0}]'.format(entry),
+                        'user': host['user'],
+                        'password': host['password']})
+            if mail_conf.get('virtual_map', None):
+                vmap = data.setdefault(
+                    'makina-states.services.mail.postfix.virtual_map',
+                    [])
+                for record in mail_conf['virtual_map']:
+                    for item, val in record.items():
+                        vmap.append(
+                            {item.format(
+                                id=id_, dest=dest): val.format(
+                                    id=id_, dest=dest)})
+            # proxy other keys as is
+            for k in [
+                a
+                for a in mail_conf
+                if a not in ['mode', 'smtp_auth',
+                             'auth', 'virtual_map', 'transports']
+            ]:
+                p = 'makina-states.services.mail.postfix.{0}'.format(k)
+                data[p] = mail_conf[k]
         return data
     cache_key = 'mc_pillar.get_mail_conf{0}'.format(id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
@@ -2806,10 +2813,14 @@ def get_cloud_compute_node_conf(id_):
             haproxy_post = metadata.get('haproxy', {}).get('raw_opts_post', [])
             for suf, opts in [
                 a for a in [
-                    ['pre,', haproxy_pre],
+                    ['pre', haproxy_pre],
                     ['post', haproxy_post]
                 ] if a[1]
             ]:
+                rdata[
+                    'makina-states.cloud.compute_node.conf.'
+                    '{0}.https_proxy.raw_opts_{1}'.format(
+                        compute_node, suf)] = opts
                 rdata[
                     'makina-states.cloud.compute_node.conf.'
                     '{0}.http_proxy.raw_opts_{1}'.format(

@@ -106,7 +106,7 @@ def settings():
                 'relay_domains': OrderedDict(),
                 'sasl_passwd': [],
                 'transport': [],
-                'virtual_map': OrderedDict(),
+                'virtual_map': [],
                 'local_dest': 'root',
             }
         )
@@ -114,9 +114,11 @@ def settings():
             data['local_dest'] = 'vagrant@localhost'
             data['mode'] = 'localdeliveryonly'
         if data['mode'] in ['redirect']:
-            data['virtual_map']['/.*/'] = data['local_dest']
+            data['virtual_map'].insert(
+                0, {'/.*/':  data['local_dest']})
         if data['mode'] in ['localdeliveryonly']:
-            data['virtual_map']['/.*/'] = 'root@localhost'
+            data['virtual_map'].insert(
+                0, {'/.*/': 'root@localhost'})
         for h in [
             'localhost.local',
             'localhost',

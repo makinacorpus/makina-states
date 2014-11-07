@@ -1,4 +1,4 @@
-{% set data = salt['mc_utils.json_load'](data) %}
+{% set data = salt['mc_postfix.settings']() %}
 {% for host, action in data.relay_domains.items() %}
 {{host}} {{action}}
 {% endfor %}

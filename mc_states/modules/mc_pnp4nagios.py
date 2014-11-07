@@ -160,7 +160,7 @@ def settings():
                     'log_type': "syslog",
                     'log_file': "/var/log/pnp4nagios/npcd.log",
                     'max_logfile_size': 10485760,
-                    'log_level': 2,
+                    'log_level': 0,
                     'perfdata_spool_dir': "/var/spool/icinga2/perfdata",
                     'perfdata_file_run_cmd': (
                         "/usr/lib/pnp4nagios/libexec/process_perfdata.pl"),

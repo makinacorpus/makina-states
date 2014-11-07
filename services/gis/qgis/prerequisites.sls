@@ -1,6 +1,8 @@
 {% set pkgssettings = salt['mc_pkgs.settings']() %}
-{% set locs = salt['mc_locations.settings']() %}
 {% if grains['os_family'] in ['Debian'] %}
+include:
+  - makina-states.services.gis.ubuntugis
+{% set locs = salt['mc_locations.settings']() %}
 qgis-repo:
   pkgrepo.managed:
     - name: deb http://qgis.org/debian {{pkgssettings.dist}} main
@@ -17,8 +19,9 @@ prereq-qgis:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - require:
       - pkgrepo: qgis-repo
+      - mc_proxy: ubuntugis-post-install-hook
     - pkgs:
-      - qgis-mapserver
+      - qgis-server
       - curl
       - {{salt['mc_php.settings']().packages['curl'] }}
       - {{salt['mc_php.settings']().packages['sqlite'] }}

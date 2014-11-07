@@ -280,8 +280,8 @@ if ($response->is_success) {
   	#			($ScoreBoard =~ tr/R//),($ScoreBoard =~ tr/W//),($ScoreBoard =~ tr/K//),($ScoreBoard =~ tr/D//),
   	#			($ScoreBoard =~ tr/C//),($ScoreBoard =~ tr/L//),($ScoreBoard =~ tr/G//),
   	#			$ReqPerSec, $BytesPerReq,$BytesPerSec,$Accesses);
-	 $PerfData = sprintf ("Idle=%d Busy=%d Starting=%d Reading=%d Sending=%d Keepalive=%d ".
-  			      "DNS=%d Closing=%d Logging=%d Finishing=%d ReqPerSec=%f",
+	 $PerfData = sprintf ("Idle=%0.2f Busy=%0.2f Starting=%0.2f Reading=%0.2f Sending=%0.2f Keepalive=%0.2f ".
+  			      "DNS=%0.2f Closing=%0.2f Logging=%0.2f Finishing=%0.2f ReqPerSec=%0.2f",
 				($IdleWorkers),($BusyWorkers),($ScoreBoard =~ tr/S//),
 				($ScoreBoard =~ tr/R//),($ScoreBoard =~ tr/W//),($ScoreBoard =~ tr/K//),($ScoreBoard =~ tr/D//),
 				($ScoreBoard =~ tr/C//),($ScoreBoard =~ tr/L//),($ScoreBoard =~ tr/G//),
@@ -294,11 +294,11 @@ if ($response->is_success) {
   												$ReqPerSec, $BytesPerReq, $BytesPerSec);
 
 	 $PerfData = sprintf ("Idle=%d Busy=%d Slots=%d ".
-	 												 "Connect=%d Close=%d HardError=%d ".
-	 												 "Read=%d ReadPost=%d Write=%d ".
-	 												 "HandleRequest=%d RequestStart=%d ReqestEnd=%d ".
-	 												 "ResponseStart=%d ResponseEnd=%d ".
-	 												 "ReqPerSec=%f BytesPerReq=%d BytesPerSec=%f Accesses=%d",
+	 												 "Connect=%0.2f Close=%0.2f HardError=%0.2f ".
+	 												 "Read=%0.2f ReadPost=%0.2f Write=%0.2f ".
+	 												 "HandleRequest=%0.2f RequestStart=%0.2f ReqestEnd=%0.2f ".
+	 												 "ResponseStart=%0.2f ResponseEnd=%0.2f ".
+	 												 "ReqPerSec=%f BytesPerReq=%0.2f BytesPerSec=%f Accesses=%0.2f",
   												($IdleWorkers),($BusyWorkers),($TotalSlots),
   												($ScoreBoard =~ tr/\.//),($ScoreBoard =~ tr/C//),($ScoreBoard =~ tr/E//),
   												($ScoreBoard =~ tr/r//),($ScoreBoard =~ tr/R//),($ScoreBoard =~ tr/W//),
