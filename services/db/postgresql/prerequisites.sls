@@ -58,3 +58,12 @@ pguser-to-ssl-cert:
       - mc_proxy: {{orchestrate['base']['prepkg']}}
     - require_in:
       - mc_proxy: {{orchestrate['base']['postpkg']}}
+  cmd.wait:
+    - watch:
+      - user: pguser-to-ssl-cert
+    - name: service postgresql restart
+    - require:
+      - pkg: postgresql-pkgs
+      - mc_proxy: {{orchestrate['base']['prepkg']}}
+    - require_in:
+      - mc_proxy: {{orchestrate['base']['postpkg']}}
