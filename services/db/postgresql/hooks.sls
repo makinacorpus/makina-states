@@ -5,6 +5,10 @@
 #   - databases
 #   - users
 #}
+
+include:
+  - makina-states.localsettings.ssl.hooks
+
 {% macro proxy(name, text='') %}
 {{name}}:
   mc_proxy.hook:
@@ -29,6 +33,7 @@
 {{proxy(prepkg, '''
     - watch:
       - mc_proxy: {0}
+      - mc_proxy: ssl-certs-post-hook
     - watch_in:
       - mc_proxy: {1}
 '''.format(prebase, presetup))}}
@@ -107,7 +112,6 @@
 '''.format(postuser, postinst))}}
 {{proxy(postfixowner)}}
 {% endfor %}
-
 
 pgsql-service-restart-hook:
   mc_proxy.hook: []

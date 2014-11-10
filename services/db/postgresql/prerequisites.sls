@@ -47,3 +47,14 @@ postpkg-pgtune:
     - require_in:
       - mc_proxy: {{orchestrate['base']['postpkg']}}
     {% endif %}
+
+pguser-to-ssl-cert:
+  user.present:
+    - name: postgres
+    - optional_groups: [ssl-cert]
+    - remove_groups: false
+    - require:
+      - pkg: postgresql-pkgs
+      - mc_proxy: {{orchestrate['base']['prepkg']}}
+    - require_in:
+      - mc_proxy: {{orchestrate['base']['postpkg']}}
