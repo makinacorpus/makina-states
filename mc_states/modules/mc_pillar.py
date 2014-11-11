@@ -687,7 +687,9 @@ def get_ldap(ttl=60):
                 sdata.setdefault('tls_cert', ssl_infos[1])
                 sdata.setdefault('tls_key', ssl_infos[2])
         rids = {}
-        for server in [a for a in slaves]:
+        slavesids = [a for a in slaves]
+        slavesids.sort()
+        for server in slavesids:
             adata = slaves[server]
             master = adata.setdefault('master', None)
             if masters and not master:
