@@ -239,7 +239,6 @@ def settings():
                     ('timeout', 3),
                     ('scope', 'sub'),
                     ('retry', "5 5 5 +"),
-                    ('searchbase', "dc=mcjam,dc=org"),
                     ('type', 'refreshAndPersist'),
                     ('interval', "00:00:04:00")]),
                 'olcloglevel': "sync",
@@ -253,6 +252,7 @@ def settings():
                 'default_schema': True,
                 'fd_schema': True,
             })
+        data['syncrepl'].setdefault('searchbase', data['dn'])
         local_conf['cn_pass'] = data['config_pw']
         local_conf['dn_pass'] = data['root_pw']
         for k in ['eroot_pw', 'econfig_pw']:
