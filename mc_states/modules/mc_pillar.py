@@ -679,6 +679,13 @@ def get_ldap(ttl=60):
                 sdata = data[kind][server] = copy.deepcopy(adata)
                 for k, val in default.items():
                     sdata.setdefault(k, val)
+                ssl_domain = sdata.setdefault('cert_domain', server)
+                # maybe generate and get the ldap certificates info
+                ssl_infos = __salt__['mc_ssl.ca_ssl_certs'](
+                    ssl_domain, as_text=True)[0]
+                sdata.setdefault('tls_cacert', ssl_infos[0])
+                sdata.setdefault('tls_cert', ssl_infos[1])
+                sdata.setdefault('tls_key', ssl_infos[2])
         for server in [a for a in slaves]:
             adata = slaves[server]
             master = adata.setdefault('master', None)
@@ -687,10 +694,10 @@ def get_ldap(ttl=60):
             if not adata['master']:
                 slaves.pop(server)
                 continue
-            sdata = masters.get(master, OrderedDict())
+            sdata = masters.get(adata['master'], OrderedDict())
             srepl = copy.deepcopy(
                 sdata.setdefault('syncrepl', OrderedDict()))
-            srepl.setdefault('provider', 'ldap://{0}'.format(master))
+            srepl.setdefault('provider', 'ldap://{0}'.format(adata['master']))
             srepl = __salt__['mc_utils.dictupdate'](
                 srepl, adata.setdefault("syncrepl", OrderedDict()))
             adata['syncrepl'] = srepl
@@ -717,14 +724,6 @@ def get_slapd_conf(id_, ttl=60):
         elif is_slave:
             data = conf['slaves'][id_]
             data['mode'] = 'slave'
-        if is_master or is_slave:
-            ssl_domain = data.setdefault('cert_domain', id_)
-            # maybe generate and get the ldap certificates info
-            ssl_infos = __salt__['mc_ssl.ca_ssl_certs'](
-                ssl_domain, as_text=True)[0]
-            data.setdefault('tls_cacert', ssl_infos[0])
-            data.setdefault('tls_cert', ssl_infos[1])
-            data.setdefault('tls_key', ssl_infos[2])
         rdata = OrderedDict()
         if data:
             rdata['makina-states.services.dns.slapd'] = True

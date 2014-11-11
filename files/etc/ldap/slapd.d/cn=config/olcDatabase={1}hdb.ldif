@@ -47,5 +47,5 @@ entryCSN: 20140507162342.230263Z#000000#000#000000
 modifiersName: cn=config
 modifyTimestamp: 20140507162342Z
 {%- if data.get('s_syncrepl', '') %}
-olcSyncrepl: {{data['s_syncrepl'].encode('base64')}}
+olcSyncrepl: {{data['s_syncrepl']}}
 {%- endif %}

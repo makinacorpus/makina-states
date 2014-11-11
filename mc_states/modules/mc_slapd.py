@@ -154,6 +154,17 @@ def sha_pw(pw):
     #return encode("{SHA}" + h.hexdigest())
 
 
+def encode_ldap(k, val):
+    s_ = ''
+    if not isinstance(val, list):
+        val = [val]
+    for v in val:
+        chunks = [v[i:i+54] for i in range(0, len(v), 54)]
+        s_ += '\n{0}: '.format(k) + '\n '.join(chunks)
+        s_ = s_.strip()
+    return s_
+
+
 def settings():
     '''
     slapd registry
@@ -272,11 +283,9 @@ def settings():
                     for a in data['acls_schema'][:]]
             data['acls'] = acls
         s_aclchema = ''
+        s_aclchema = ''
         if data['acls']:
-            for acl in acls:
-                chunks = [acl[i:i+54] for i in range(0, len(acl), 54)]
-                s_aclchema += '\nolcAccess: ' + '\n '.join(chunks)
-                s_aclchema = s_aclchema.strip()
+            s_aclchema = encode_ldap('olcAccess', data['acls'])
         data['s_aclchema'] = s_aclchema
         if data['fd_schema']:
             for i in [
@@ -303,7 +312,7 @@ def settings():
             for k, val in data['syncrepl'].items():
                 srepl += ' {0}={1}'.format(k, sync_ldap_quote(k, val))
                 srepl = srepl.strip()
-        data['s_syncrepl'] = srepl
+        data['s_syncrepl'] = encode_ldap("olcSyncrepl", srepl)
         __salt__['mc_macros.update_registry_params'](
             'slapd', local_conf, registry_format='pack')
         return data

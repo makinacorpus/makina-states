@@ -215,7 +215,7 @@ def latest(name,
                     cmd = "git rev-parse " + rev + '^{commit}'
                     retcode = __salt__['cmd.retcode'](cmd,
                                                       cwd=target,
-                                                      runas=user)
+                                                      user=user)
                     # there is a issues #3938 addressing this
                     if 0 != retcode or always_fetch:
                         __salt__['git.fetch'](target,
@@ -230,7 +230,7 @@ def latest(name,
 
                 # check if we are on a branch to merge changes
                 cmd = "git symbolic-ref -q HEAD > /dev/null"
-                retcode = __salt__['cmd.retcode'](cmd, cwd=target, runas=user)
+                retcode = __salt__['cmd.retcode'](cmd, cwd=target, user=user)
                 # XXX: the real different with git.latest is here
                 # we pull
                 # but also fetch and merge --only-ff in case of errors
@@ -258,7 +258,7 @@ def latest(name,
                                 branch=branch,
                                 rev=rev,
                             )
-                            __salt__['cmd.run_stdout'](cmd, cwd=target, runas=user)
+                            __salt__['cmd.run_stdout'](cmd, cwd=target, user=user)
                             pull()
                         else:
                             if (
@@ -318,7 +318,6 @@ def latest(name,
             name,
             rev=rev,
             target=target,
-            runas=runas,
             user=user,
             force=force,
             force_checkout=force_checkout,
