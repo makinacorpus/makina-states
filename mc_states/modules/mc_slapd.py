@@ -165,6 +165,14 @@ def encode_ldap(k, val):
     return s_
 
 
+def order_syncrepl(k):
+        if k == '{0}rid':
+            i = 0
+        else:
+            i = 1
+        return '{0}_{1}'.format(i, k)
+
+
 def settings():
     '''
     slapd registry
@@ -233,7 +241,7 @@ def settings():
                     ('retry', "5 5 5 +"),
                     ('searchbase', "dc=mcjam,dc=org"),
                     ('type', 'refreshAndPersist'),
-                    ('interval', "00,00,04,00")]),
+                    ('interval', "00:00:04:00")]),
                 'olcloglevel': "sync",
                 'tls_cacert': '',
                 'tls_cert': '',
@@ -308,8 +316,11 @@ def settings():
                 if i not in cn_config_files:
                     cn_config_files.append(i)
         srepl = ''
+        keys = [a for a in data['syncrepl']]
+        keys.sort(key=order_syncrepl)
         if data['syncrepl'].get('provider', ''):
-            for k, val in data['syncrepl'].items():
+            for k in keys:
+                val = data['syncrepl'][k]
                 srepl += ' {0}={1}'.format(k, sync_ldap_quote(k, val))
                 srepl = srepl.strip()
         data['s_syncrepl'] = encode_ldap("olcSyncrepl", srepl)
