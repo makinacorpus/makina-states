@@ -33,9 +33,6 @@ slapd_config_{{tp}}:
     - mode: 750
     - user: {{settings.user}}
     - group: {{settings.group}}
-    - defaults:
-      data: |
-            {{yameld_data}}
     - watch:
       - mc_proxy: slapd-pre-conf
     - watch_in:
@@ -51,9 +48,6 @@ slapd_config_{{tp}}:
     - mode: 640
     - user: {{settings.user}}
     - group: {{settings.group}}
-    - defaults:
-      data: |
-            {{yameld_data}}
     - watch:
       - mc_proxy: slapd-pre-conf
     - watch_in:

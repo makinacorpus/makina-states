@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 __docformat__ = 'restructuredtext en'
+import random
+import re
+import os
+import cProfile, pstats
 import json
 import copy
 # Import python libs
-import os
 import dns
 import socket
 import logging
@@ -13,11 +16,11 @@ from pprint import pformat
 import copy
 import mc_states.utils
 import datetime
-import re
 from salt.utils.pycrypto import secure_password
 from salt.utils.odict import OrderedDict
 import traceback
 from mc_states.utils import memoize_cache
+import mc_states.utils
 import random
 import string
 log = logging.getLogger(__name__)
@@ -667,8 +670,8 @@ def get_ldap(ttl=60):
     def _do_getldap():
         db = load_network_infrastructure()
         data = OrderedDict()
-        data.setdefault('masters', OrderedDict())
-        data.setdefault('slaves', OrderedDict())
+        masters = data.setdefault('masters', OrderedDict())
+        slaves = data.setdefault('slaves', OrderedDict())
         default = db['ldap_maps'].get('default', OrderedDict())
         for kind in ['masters', 'slaves']:
             for server, adata in db['ldap_maps'].get(kind,
@@ -676,6 +679,34 @@ def get_ldap(ttl=60):
                 sdata = data[kind][server] = copy.deepcopy(adata)
                 for k, val in default.items():
                     sdata.setdefault(k, val)
+                ssl_domain = sdata.setdefault('cert_domain', server)
+                # maybe generate and get the ldap certificates info
+                ssl_infos = __salt__['mc_ssl.ca_ssl_certs'](
+                    ssl_domain, as_text=True)[0]
+                sdata.setdefault('tls_cacert', ssl_infos[0])
+                sdata.setdefault('tls_cert', ssl_infos[1])
+                sdata.setdefault('tls_key', ssl_infos[2])
+        rids = {}
+        slavesids = [a for a in slaves]
+        slavesids.sort()
+        for server in slavesids:
+            adata = slaves[server]
+            master = adata.setdefault('master', None)
+            if masters and not master:
+                adata['master'] = [a for a in masters][0]
+            if not adata['master']:
+                slaves.pop(server)
+                continue
+            rid = rids.setdefault(master, 100) + 1
+            rids[master] = rid
+            sdata = masters.get(adata['master'], OrderedDict())
+            srepl = copy.deepcopy(
+                sdata.setdefault('syncrepl', OrderedDict()))
+            srepl.setdefault('provider', 'ldap://{0}'.format(adata['master']))
+            srepl = __salt__['mc_utils.dictupdate'](
+                srepl, adata.setdefault("syncrepl", OrderedDict()))
+            srepl['{0}rid'] = '{0}'.format(rid)
+            adata['syncrepl'] = srepl
         return data
     cache_key = 'mc_pillar.getldap'
     return memoize_cache(_do_getldap, [], {}, cache_key, ttl)
@@ -685,32 +716,30 @@ def get_slapd_conf(id_, ttl=60):
     '''
     Return pillar information to configure makina-states.services.dns.slapd
     '''
-    def _do_getldap(id_):
+    def _do_slapd(id_):
         is_master = is_ldap_master(id_)
         is_slave = is_ldap_slave(id_)
         if is_master and is_slave:
             raise ValueError(
                 'Cant be at the same time master and ldap slave: {0}'.format(id_))
-        if not is_master and not is_slave:
-            raise ValueError(
-                'Choose between master and ldap slave: {0}'.format(id_))
         conf = get_ldap()
+        data = OrderedDict()
         if is_master:
             data = conf['masters'][id_]
             data['mode'] = 'master'
         elif is_slave:
             data = conf['slaves'][id_]
             data['mode'] = 'slave'
-        ssl_domain = data.setdefault('cert_domain', id_)
-        # maybe generate and get the ldap certificates info
-        ssl_infos = __salt__['mc_ssl.ca_ssl_certs'](
-            ssl_domain, as_text=True)[0]
-        data.setdefault('tls_cacert', ssl_infos[0])
-        data.setdefault('tls_cert', ssl_infos[1])
-        data.setdefault('tls_key', ssl_infos[2])
-        return data
+        rdata = OrderedDict()
+        if data:
+            rdata['makina-states.services.dns.slapd'] = True
+            for k in data:
+                rdata[
+                    'makina-states.services.dns.slapd.{0}'.format(k)
+                ] = data[k]
+        return rdata
     cache_key = 'mc_pillar.get_ldap_conf_for_{0}'.format(id_)
-    return memoize_cache(_do_getldap, [id_], {}, cache_key, ttl)
+    return memoize_cache(_do_slapd, [id_], {}, cache_key, ttl)
 
 
 def is_ldap_slave(id_, ttl=60):
@@ -1404,6 +1433,9 @@ def get_shorewall_settings(id_=None, ttl=60):
         if is_salt_managed(id_):
             for param, val in restrict.items():
                 shw_params[p_param.format(param.upper())] = val
+        is_ldap = is_ldap_master(id_) or is_ldap_slave(id_)
+        if is_ldap:
+            shw_params[p_param.format('LDAP')] = 'all'
         # ips = load_network_infrastructure()['ips']
         # dot not scale !
         #for ip in ips:
@@ -2931,25 +2963,79 @@ def get_dns_resolvers(id_, ttl=60):
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 
-def get_slapd_pillar_conf(id_, ttl=60):
-    def _do(id_):
-        rdata = {}
-        if (
-            __salt__['mc_pillar.is_ldap_master'](id_)
-            or __salt__['mc_pillar.is_ldap_slave'](id_)
-        ):
-            data = __salt__['mc_pillar.get_slapd_conf'](id_)
-            rdata['makina-states.services.dns.slapd'] = True
-            for k in ['tls_cacert', 'tls_cert', 'tls_key',
-                      'mode', 'config_pw', 'root_dn', 'dn', 'root_pw']:
-                val = data.get(k, None)
-                if val:
-                    rdata[
-                        'makina-states.services.dns.slapd.{0}'.format(k)
-                    ] = val
-        return rdata
-    cache_key = 'mc_pillar.get_slapd_conf{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+def ext_pillar(id_, pillar=None, *args, **kw):
+    if pillar is None:
+        pillar = OrderedDict()
+    dbpath = os.path.join(__opts__['pillar_roots']['base'][0],
+                          'database.yaml')
+    if not os.path.exists(dbpath):
+        msg = 'DATABASE DOES NOT EXISTS: {0}'.format(dbpath)
+        if 'mastersalt' in dbpath:
+            raise ValueError(msg)
+        else:
+            return {}
+    try:
+        profile_enabled = kw.get('profile', False)
+    except:
+        profile_enabled = False
+    data = {}
+    if profile_enabled:
+        pr = cProfile.Profile()
+        pr.enable()
+    for callback in [
+        'mc_pillar.get_dns_resolvers',
+        'mc_pillar.get_custom_pillar_conf',
+        'mc_pillar.get_autoupgrade_conf',
+        'mc_pillar.get_backup_client_conf',
+        'mc_pillar.get_burp_server_conf',
+        'mc_pillar.get_cloudmaster_conf',
+        'mc_pillar.get_default_env_conf',
+        'mc_pillar.get_dhcpd_conf',
+        'mc_pillar.get_dns_master_conf',
+        'mc_pillar.get_dns_slave_conf',
+        'mc_pillar.get_etc_hosts_conf',
+        'mc_pillar.get_fail2ban_conf',
+        'mc_pillar.get_ldap_client_conf',
+        'mc_pillar.get_mail_conf',
+        'mc_pillar.get_ntp_server_conf',
+        'mc_pillar.get_packages_conf',
+        'mc_pillar.get_passwords_conf',
+        'mc_pillar.get_shorewall_conf',
+        'mc_pillar.get_slapd_conf',
+        'mc_pillar.get_snmpd_conf',
+        'mc_pillar.get_supervision_client_conf',
+        'mc_pillar.get_ssh_groups_conf',
+        'mc_pillar.get_ssh_keys_conf',
+        'mc_pillar.get_sudoers_conf',
+        'mc_pillar.get_supervision_confs',
+        'mc_pillar.get_sysnet_conf',
+        'mc_pillar.get_check_raid_conf',
+    ]:
+        try:
+            data = __salt__['mc_utils.dictupdate'](
+                data, __salt__[callback](id_))
+        except Exception, ex:
+            trace = traceback.format_exc()
+            log.error('ERROR in mc_pillar: {0}'.format(callback))
+            log.error(ex)
+            log.error(trace)
+    if profile_enabled:
+        pr.disable()
+        if not os.path.isdir('/tmp/stats'):
+            os.makedirs('/tmp/stats')
+        ficp = '/tmp/stats/{0}.pstats'.format(id_)
+        fico = '/tmp/stats/{0}.dot'.format(id_)
+        ficn = '/tmp/stats/{0}.stats'.format(id_)
+        os.system(
+            '/srv/mastersalt/makina-states/bin/pyprof2calltree '
+            '-i {0} -o {1}'.format(ficp, fico))
+        if not os.path.exists(ficp):
+            pr.dump_stats(ficp)
+            with open(ficn, 'w') as fic:
+                ps = pstats.Stats(
+                    pr, stream=fic).sort_stats('cumulative')
+                ps.print_stats()
+    return data
 
 
 def test():
