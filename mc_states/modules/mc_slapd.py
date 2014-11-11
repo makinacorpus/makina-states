@@ -23,6 +23,7 @@ from salt.utils.pycrypto import secure_password
 import base64
 import getpass
 import hashlib
+from salt.utils.odict import OrderedDict
 from base64 import urlsafe_b64encode as encode
 import os
 __name = 'slapd'
@@ -49,7 +50,7 @@ default_acl_schema = [
         "{{1}}"
         " to attrs=uid,cn,sn,homeDirectory,"
         "uidNumber,gidNumber,memberUid,loginShell,employeeType"
-        " by dn.base=\"cn=admin,{data[dn]}\" write  "
+        " by dn.base=\"cn=admin,{data[dn]}\" write"
         " by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
         " by dn.base=\"cn=ldapwriter,ou=virtual,ou=people,{data[dn]}\" read"
         " by anonymous read"
@@ -62,7 +63,8 @@ default_acl_schema = [
         " by dn.base=\"cn=admin,{data[dn]}\" write"
         " by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
         " by dn.base=\"cn=ldapwriter,ou=virtual,ou=people,{data[dn]}\" write"
-        " by self write  by * read"
+        " by self write"
+        " by * read"
     ),
     (
         "{{3}}"
@@ -125,6 +127,13 @@ default_acl_schema = [
 ]
 
 
+def sync_ldap_quote(k, val):
+    if k in ['scope', 'retry', 'searchbase', 'credentials',
+               'binddn']:
+        val = '"{0}"'.format(val)
+    return val
+
+
 def salt_pw(pw):
     salt = secure_password(8)
     h = hashlib.sha1(pw)
@@ -167,11 +176,11 @@ def settings():
              'olcOverlay={1}syncprov.ldif'),
             '/etc/ldap/slapd.d/cn=config/cn=schema.ldif',
             '/etc/ldap/slapd.d/cn=config/olcDatabase={1}hdb.ldif',
-            #'/etc/ldap/slapd.d/cn=config/olcDatabase={-1}frontend.ldif',
+            '/etc/ldap/slapd.d/cn=config/olcDatabase={-1}frontend.ldif',
             '/etc/ldap/slapd.d/cn=config/olcDatabase={0}config.ldif',
             '/etc/ldap/slapd.d/cn=config/cn=module{0}.ldif',
         ]
-        slapdData = __salt__['mc_utils.defaults'](
+        data = __salt__['mc_utils.defaults'](
             'makina-states.services.dns.slapd', {
                 'slapd_directory': "/etc/ldap/slapd.d",
                 'extra_dirs': [
@@ -205,7 +214,15 @@ def settings():
                 'eroot_pw': '',
                 'loglevel': 'sync',
                 'syncprov': True,
-                'syncrepl': None,
+                'syncrepl': OrderedDict([
+                    ('starttls', "yes"),
+                    ('tls_reqcert', "allow"),
+                    ('timeout', 3),
+                    ('scope', 'sub'),
+                    ('retry', "5 5 5 +"),
+                    ('searchbase', "dc=mcjam,dc=org"),
+                    ('type', 'refreshAndPersist'),
+                    ('interval', "00,00,04,00")]),
                 'olcloglevel': "sync",
                 'tls_cacert': '',
                 'tls_cert': '',
@@ -217,21 +234,21 @@ def settings():
                 'default_schema': True,
                 'fd_schema': True,
             })
-        local_conf['cn_pass'] = slapdData['config_pw']
-        local_conf['dn_pass'] = slapdData['root_pw']
+        local_conf['cn_pass'] = data['config_pw']
+        local_conf['dn_pass'] = data['root_pw']
         for k in ['eroot_pw', 'econfig_pw']:
-            if not slapdData[k]:
-                slapdData[k] = sha_pw(slapdData[k[1:]])
-        if not slapdData['root_dn']:
-            slapdData['root_dn'] = 'cn=admin,{0}'.format(slapdData['dn'])
-        cn_config_files = slapdData['cn_config_files']
-        if not slapdData['tls_cert']:
-            info = __salt__['mc_ssl.ca_ssl_certs'](slapdData['cert_domain'])[0]
-            slapdData['tls_cacert'] = info[0]
-            slapdData['tls_cert'] = info[1]
-            slapdData['tls_key'] = info[2]
-        cn_config_files = slapdData['cn_config_files']
-        if slapdData['default_schema']:
+            if not data[k]:
+                data[k] = sha_pw(data[k[1:]])
+        if not data['root_dn']:
+            data['root_dn'] = 'cn=admin,{0}'.format(data['dn'])
+        cn_config_files = data['cn_config_files']
+        if not data['tls_cert']:
+            info = __salt__['mc_ssl.ca_ssl_certs'](data['cert_domain'])[0]
+            data['tls_cacert'] = info[0]
+            data['tls_cert'] = info[1]
+            data['tls_key'] = info[2]
+        cn_config_files = data['cn_config_files']
+        if data['default_schema']:
             for i in [
                 '/etc/ldap/slapd.d/cn=config.ldif',
                 '/etc/ldap/slapd.d/cn=config/cn=schema/cn={0}core.ldif',
@@ -250,11 +267,18 @@ def settings():
             ]:
                 if i not in cn_config_files:
                     cn_config_files.append(i)
-        if not slapdData['acls']:
-            acls = [a.format(data=slapdData)
-                    for a in slapdData['acls_schema'][:]]
-            slapdData['acls'] = acls
-        if slapdData['fd_schema']:
+        if not data['acls']:
+            acls = [a.format(data=data)
+                    for a in data['acls_schema'][:]]
+            data['acls'] = acls
+        s_aclchema = ''
+        if data['acls']:
+            for acl in acls:
+                chunks = [acl[i:i+54] for i in range(0, len(acl), 54)]
+                s_aclchema += '\nolcAccess: ' + '\n '.join(chunks)
+                s_aclchema = s_aclchema.strip()
+        data['s_aclchema'] = s_aclchema
+        if data['fd_schema']:
             for i in [
                 '/etc/ldap/slapd.d/cn=config/cn=schema/cn={5}service-fd.ldif',
                 ('/etc/ldap/slapd.d/cn=config/'
@@ -274,9 +298,15 @@ def settings():
             ]:
                 if i not in cn_config_files:
                     cn_config_files.append(i)
+        srepl = ''
+        if data['syncrepl'].get('provider', ''):
+            for k, val in data['syncrepl'].items():
+                srepl += ' {0}={1}'.format(k, sync_ldap_quote(k, val))
+                srepl = srepl.strip()
+        data['s_syncrepl'] = srepl
         __salt__['mc_macros.update_registry_params'](
             'slapd', local_conf, registry_format='pack')
-        return slapdData
+        return data
     return _settings()
 
 

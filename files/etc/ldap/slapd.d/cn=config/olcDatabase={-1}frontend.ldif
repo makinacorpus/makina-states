@@ -1,9 +1,27 @@
 # AUTO-GENERATED FILE - DO NOT EDIT!! Use ldapmodify.
-{%- set data = salt['mc_utils.json_load'](data) %}
+{%- set data=salt['mc_slapd.settings']() %}
 dn: olcDatabase={-1}frontend
 objectClass: olcDatabaseConfig
 objectClass: olcFrontendConfig
 olcDatabase: {-1}frontend
+olcAddContentAcl: FALSE
+olcLastMod: TRUE
+olcMaxDerefDepth: 0
+olcReadOnly: FALSE
+olcSchemaDN: cn=Subschema
+olcSizeLimit: 5000
+olcSyncUseSubentry: FALSE
+olcMonitoring: FALSE
+structuralObjectClass: olcDatabaseConfig
+entryUUID: b2d27176-6a4f-1033-86d6-773bdb858bca
+creatorsName: cn=config
+createTimestamp: 20140507162342Z
+entryCSN: 20140507165431.978200Z#000000#000#000000
+modifiersName: cn=admin,cn=config
+modifyTimestamp: 20140507165431Z
+{%- if data.get('s_aclchema', '')%}
+{{data.s_aclchema}}
+{%- else -%}
 olcAccess: {0}to attrs=userPassword,sambaNTPassword,sambaLMPassword,sambaPwdLa
  stSet,sambaPWDMustChange  by dn.base="cn=admin,{{data.dn}}" write  by dn.
  base="uid=fd-admin,ou=people,{{data.dn}}" write  by dn.base="cn=ldapwrite
@@ -41,18 +59,4 @@ olcAccess: {8}to dn.base=""  by * read
 olcAccess: {9}to *  by dn.base="cn=admin,{{data.dn}}" write  by dn.base="u
  id=fd-admin,ou=people,{{data.dn}}" write  by dn.base="cn=replicator,ou=vi
  rtual,ou=people,{{data.dn}}" read  by * read
-olcAddContentAcl: FALSE
-olcLastMod: TRUE
-olcMaxDerefDepth: 0
-olcReadOnly: FALSE
-olcSchemaDN: cn=Subschema
-olcSizeLimit: 5000
-olcSyncUseSubentry: FALSE
-olcMonitoring: FALSE
-structuralObjectClass: olcDatabaseConfig
-entryUUID: b2d27176-6a4f-1033-86d6-773bdb858bca
-creatorsName: cn=config
-createTimestamp: 20140507162342Z
-entryCSN: 20140507165431.978200Z#000000#000#000000
-modifiersName: cn=admin,cn=config
-modifyTimestamp: 20140507165431Z
+{%- endif -%}
