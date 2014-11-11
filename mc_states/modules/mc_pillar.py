@@ -686,6 +686,7 @@ def get_ldap(ttl=60):
                 sdata.setdefault('tls_cacert', ssl_infos[0])
                 sdata.setdefault('tls_cert', ssl_infos[1])
                 sdata.setdefault('tls_key', ssl_infos[2])
+        rids = {}
         for server in [a for a in slaves]:
             adata = slaves[server]
             master = adata.setdefault('master', None)
@@ -694,12 +695,15 @@ def get_ldap(ttl=60):
             if not adata['master']:
                 slaves.pop(server)
                 continue
+            rid = rids.setdefault(master, 100) + 1
+            rids[master] = rid
             sdata = masters.get(adata['master'], OrderedDict())
             srepl = copy.deepcopy(
                 sdata.setdefault('syncrepl', OrderedDict()))
             srepl.setdefault('provider', 'ldap://{0}'.format(adata['master']))
             srepl = __salt__['mc_utils.dictupdate'](
                 srepl, adata.setdefault("syncrepl", OrderedDict()))
+            srepl['{0}rid'] = '{0}'.format(rid)
             adata['syncrepl'] = srepl
         return data
     cache_key = 'mc_pillar.getldap'
