@@ -498,6 +498,8 @@ def vhost_settings(domain, doc_root, **kwargs):
         False by default, if your project use .htaccess
         files, then prey for your soul,
         eat some shit, kill yourself and set that to True
+    vhost_basename:
+        basename of file in /etc/apache*/site-*
     log_level
         log level
     ssl_interface/interface
@@ -544,6 +546,7 @@ def vhost_settings(domain, doc_root, **kwargs):
     kwargs.setdefault('server_name', domain)
     kwargs.setdefault('ssl_interface', "*")
     kwargs.setdefault('port', 80)
+    vhost_basename = kwargs.setdefault('vhost_basename', domain)
     kwargs.setdefault('ssl_port', 443)
     kwargs.setdefault('redirect_aliases', True)
     kwargs.setdefault('allow_htaccess', False)
@@ -559,17 +562,17 @@ def vhost_settings(domain, doc_root, **kwargs):
         "{basedir}/{number}-{domain}"
     ).format(number=number,
              basedir=apacheSettings['ivhostdir'],
-             domain=domain)
+             domain=vhost_basename)
     kwargs['evhost'] = (
         "{basedir}/{number}-{domain}"
     ).format(number=number,
              basedir=apacheSettings['evhostdir'],
-             domain=domain)
+             domain=vhost_basename)
     kwargs['avhost'] = (
         "{basedir}/{number}-{domain}"
     ).format(number=number,
              basedir=apacheSettings['vhostdir'],
-             domain=domain)
+             domain=vhost_basename)
     data = _s['mc_utils.dictupdate'](apacheSettings,
                                      kwargs)
     return data

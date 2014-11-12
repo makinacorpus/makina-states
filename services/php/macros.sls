@@ -100,17 +100,30 @@ makina-php-pool-var-log-phpfpm-{{data.pool_name}}:
     - name: /var/log/phpfpm/{{data.pool_name}}
     - target: {{data.log_dir}}
 
-makina-php-pool-{{ data.pool_name.replace('*', 'star') }}-directories:
+{% for i in [data.private_dir, data.tmp_dir, data.log_dir] %}
+makina-php-pool-{{ data.pool_name.replace('*', 'star') }}-directories-{{i}}:
   file.directory:
     - user: {{ data.fpm_user }}
     - group: {{data.fpm_group }}
     - mode: "2775"
     - makedirs: True
-    - names:
-      - {{ data.private_dir }}
-      - {{ data.tmp_dir }}
-      - {{ data.log_dir }}
-      - {{ data.doc_root }}
+    - name: {{i}}
+    - unless: test -h "{{i}}"
+    - require:
+      - mc_proxy: makina-php-post-inst
+    - require_in:
+      - mc_proxy: makina-php-pre-restart
+      - mc_proxy: makina-php-pool-{{ data.pool_name.replace('*', 'star') }}-directories
+{% endfor %}
+
+# compatibility
+makina-php-pool-{{ data.pool_name.replace('*', 'star') }}-directories:
+  file.exists:
+    - user: {{ data.fpm_user }}
+    - group: {{data.fpm_group }}
+    - mode: "2775"
+    - makedirs: True
+    - name: {{ data.doc_root }}
     - require:
       - mc_proxy: makina-php-post-inst
     - require_in:
