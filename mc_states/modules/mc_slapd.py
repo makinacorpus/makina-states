@@ -250,6 +250,7 @@ def settings():
                 'master_uri': '',
                 'cert_domain': grains['id'],
                 'default_schema': True,
+                'schemas': [],
                 'fd_schema': True,
             })
         data['syncrepl'].setdefault('searchbase', data['dn'])
@@ -266,6 +267,7 @@ def settings():
             data['tls_cacert'] = info[0]
             data['tls_cert'] = info[1]
             data['tls_key'] = info[2]
+        schemas = data['schemas']
         cn_config_files = data['cn_config_files']
         if data['default_schema']:
             for i in [
@@ -275,15 +277,11 @@ def settings():
                 ('/etc/ldap/slapd.d/cn=config/'
                  'cn=schema/cn={2}inetorgperson.ldif'),
                 '/etc/ldap/slapd.d/cn=config/cn=schema/cn={3}misc.ldif',
-                '/etc/ldap/slapd.d/cn=config/cn=schema/cn={4}rfc2307bis.ldif',
-                '/etc/ldap/slapd.d/cn=config/cn=schema/cn={8}samba.ldif',
-                '/etc/ldap/slapd.d/cn=config/cn=schema/cn={11}ldapns.ldif',
                 '/etc/ldap/slapd.d/cn=config/cn=schema/cn={19}mozilla.ldif',
-                '/etc/ldap/slapd.d/cn=config/cn=schema/cn={15}sudo.ldif',
-                ('/etc/ldap/slapd.d/cn=config/'
-                 'cn=schema/cn={17}openssh-lpk.ldif'),
                 '/etc/ldap/slapd.d/cn=config/cn=schema/cn={20}extension.ldif',
             ]:
+                if i not in schemas:
+                    schemas.append(i)
                 if i not in cn_config_files:
                     cn_config_files.append(i)
         if not data['acls']:
@@ -297,22 +295,45 @@ def settings():
         data['s_aclchema'] = s_aclchema
         if data['fd_schema']:
             for i in [
-                '/etc/ldap/slapd.d/cn=config/cn=schema/cn={5}service-fd.ldif',
                 ('/etc/ldap/slapd.d/cn=config/'
-                 'cn=schema/cn={6}systems-fd-conf.ldif'),
-                '/etc/ldap/slapd.d/cn=config/cn=schema/cn={7}systems-fd.ldif',
-                '/etc/ldap/slapd.d/cn=config/cn=schema/cn={9}core-fd.ldif',
-                ('/etc/ldap/slapd.d/cn=config/cn=schema/'
-                 'cn={10}core-fd-conf.ldif'),
-                ('/etc/ldap/slapd.d/cn=config/cn=schema/'
-                 'cn={12}recovery-fd.ldif'),
-                '/etc/ldap/slapd.d/cn=config/cn=schema/cn={13}mail-fd.ldif',
-                ('/etc/ldap/slapd.d/cn=config/cn=schema/'
-                 'cn={14}mail-fd-conf.ldif'),
-                ('/etc/ldap/slapd.d/cn=config/cn=schema/'
-                 'cn={16}sudo-fd-conf.ldif'),
-                '/etc/ldap/slapd.d/cn=config/cn=schema/cn={18}gpg-fd.ldif',
+                 'cn=schema/cn={21}rfc2307bis.ldif'),
+                ('/etc/ldap/slapd.d/cn=config/'
+                 'cn=schema/cn={22}samba.ldif'),
+                ('/etc/ldap/slapd.d/cn=config/'
+                 'cn=schema/cn={23}core-fd.ldif'),
+                ('/etc/ldap/slapd.d/cn=config/'
+                 'cn=schema/cn={24}core-fd-conf.ldif'),
+                ('/etc/ldap/slapd.d/cn=config/'
+                 'cn=schema/cn={25}sudo-fd-conf.ldif'),
+                ('/etc/ldap/slapd.d/cn=config/'
+                 'cn=schema/cn={26}sudo.ldif'),
+                ('/etc/ldap/slapd.d/cn=config/'
+                 'cn=schema/cn={27}service-fd.ldif'),
+                ('/etc/ldap/slapd.d/cn=config/'
+                 'cn=schema/cn={28}systems-fd-conf.ldif'),
+                ('/etc/ldap/slapd.d/cn=config/'
+                 'cn=schema/cn={29}systems-fd.ldif'),
+                ('/etc/ldap/slapd.d/cn=config/'
+                 'cn=schema/cn={30}recovery-fd.ldif'),
+                ('/etc/ldap/slapd.d/cn=config/'
+                 'cn=schema/cn={31}mail-fd-conf.ldif'),
+                ('/etc/ldap/slapd.d/cn=config/'
+                 'cn=schema/cn={32}mail-fd.ldif'),
+                ('/etc/ldap/slapd.d/cn=config/'
+                 'cn=schema/cn={33}gpg-fd.ldif'),
+                ('/etc/ldap/slapd.d/cn=config/'
+                 'cn=schema/cn={34}ldapns.ldif'),
+                ('/etc/ldap/slapd.d/cn=config/'
+                 'cn=schema/cn={35}openssh-lpk.ldif'),
+                ('/etc/ldap/slapd.d/cn=config/'
+                 'cn=schema/cn={36}pgp-keyserver.ldif'),
+                ('/etc/ldap/slapd.d/cn=config/'
+                 'cn=schema/cn={37}pgp-recon.ldif'),
+                ('/etc/ldap/slapd.d/cn=config/'
+                 'cn=schema/cn={38}pgp-remte-prefs.ldif'),
             ]:
+                if i not in schemas:
+                    schemas.append(i)
                 if i not in cn_config_files:
                     cn_config_files.append(i)
         srepl = ''
@@ -323,7 +344,7 @@ def settings():
                 val = data['syncrepl'][k]
                 srepl += ' {0}={1}'.format(k, sync_ldap_quote(k, val))
                 srepl = srepl.strip()
-        data['s_syncrepl'] = encode_ldap("olcSyncrepl", srepl)
+            data['s_syncrepl'] = encode_ldap("olcSyncrepl", srepl)
         __salt__['mc_macros.update_registry_params'](
             'slapd', local_conf, registry_format='pack')
         return data
