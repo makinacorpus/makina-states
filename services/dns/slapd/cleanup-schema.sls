@@ -27,7 +27,7 @@ slapd-d-cleanup-schema:
                                 print("Removing {0}".format(pt))
                                 os.remove(pt)
                                 changed=True
-                print("changed={0}".format(changed))
+                print("changed={0}".format(changed).lower())
 
     - makedirs: true
     - mode: 700

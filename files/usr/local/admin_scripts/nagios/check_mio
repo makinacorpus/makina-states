@@ -1,0 +1,228 @@
+#!/bin/sh
+
+#  This is Nagios plugin that checks I/O activity (iops,await,I/O througput speed) on block devices
+#
+#  Version 2014102101 (YYYYMMDDxx)
+#
+#  Author: Dimitar Fidanov <dimitar@fidanov.net>
+#  Based on code by Simon Deziel <simon.deziel@gmail.com>
+#
+#  The latest version can be found at:
+#  https://fidanov.net/c0d3/nagios-plugins/mio/
+#
+#  See README for more details
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+export ENV=""
+export CDPATH=""
+
+STATE_OK=0
+STATE_WARNING=1
+STATE_CRITICAL=2
+STATE_UNKNOWN=3
+MSG_OK="I/O OK"
+MSG_WARNING="I/O WARNING"
+MSG_CRITICAL="I/O CRITICAL"
+MSG_UNKNOWN="I/O UNKNOWN"
+SCRIPT_NAME=$(basename $0)
+
+p_ok () {
+  echo "$MSG_OK $1"
+  exit "$STATE_OK"
+}
+p_warning () {
+  echo "$MSG_WARNING $1"
+  exit "$STATE_WARNING"
+}
+p_critical () {
+  echo "$MSG_CRITICAL $1"
+  exit "$STATE_CRITICAL"
+}
+p_unknown () {
+  echo "$MSG_UNKNOWN $1"
+  exit "$STATE_UNKNOWN"
+}
+
+usage () {
+  cat << EOF
+This is Nagios plugin that checks I/O activity (iops,await,I/O througput speed) on block devices
+
+Usage: $SCRIPT_NAME -d <disk> -w <iops>,<await>,<read_data>,<write_data> -c <iops>,<await>,<read_data>,<write_data>  
+
+Where:
+  -d block device (w/o /dev)
+  -w warning values
+  -c critical values
+  iops - transactions per seconds (tps)
+  await - average wait time for all requests (ms)
+  read_data - data read (bytes per second)
+  write_wata - data written (bytes per second)
+
+Example: $SCRIPT_NAME -d sda -w 200,2000,52428800,52428800 -c 400,4000,104857600,104857600
+
+EOF
+exit 0
+}
+
+# Check arguments
+if [ "$#" -eq 0 ]; then
+  usage
+fi
+
+# process command line args
+while [ ! -z "$1" ]; do
+  case $1 in
+    -d|--disk)     shift; DISK="$1";;
+    -w|--warning)  shift; WARNING="$1";;
+    -c|--critical) shift; CRITICAL="$1";;
+    -h|--help)     usage;;
+  esac
+  shift
+done
+
+# check arguments
+
+# check block dev
+[ -z "$DISK" ]     && p_unknown "Specify a block device using -d <block>, ex: -d sda"
+
+# Warning thresholds
+[ -z "$WARNING" ]  && p_unknown "Missing warning thresholds, use -w <io/s,read,write>"
+WARN_IOPS="$(echo "$WARNING" | cut -d , -f 1)"
+WARN_WAIT="$(echo "$WARNING" | cut -d , -f 2)"
+WARN_READ="$(echo "$WARNING" | cut -d , -f 3)"
+WARN_WRITE="$(echo "$WARNING" | cut -d , -f 4)"
+[ -z "$WARN_IOPS" -o -z "$WARN_WAIT" -o -z "$WARN_READ" -o -z "$WARN_WRITE" ] && p_unknown "Invalid warning thresholds"
+
+# Critical thresholds
+[ -z "$CRITICAL" ] && p_unknown "Missing critical thresholds, use -c <io/s,read,write>"
+CRIT_IOPS="$(echo "$CRITICAL" | cut -d , -f 1)"
+CRIT_WAIT="$(echo "$CRITICAL" | cut -d , -f 2)"
+CRIT_READ="$(echo "$CRITICAL" | cut -d , -f 3)"
+CRIT_WRITE="$(echo "$CRITICAL" | cut -d , -f 4)"
+[ -z "$CRIT_IOPS" -o -z "$CRIT_WAIT" -o -z "$CRIT_READ" -o -z "$CRIT_WRITE" ] && p_unknown "Invalid critical thresholds"
+
+# Get current disk stats
+[ -r "/sys/block/$DISK/stat" ] || p_unknown "Unable to read the current disk stats"
+CURRENT_DISK_STAT="$(cat /sys/block/$DISK/stat)"
+CURRENT_RUN_TIMESTAMP="$(date +%s)"
+[ -z "$CURRENT_DISK_STAT" ] && p_unknown "Unable to read the current disk stats"
+
+# Get previous disk stats
+PREVIOUS_STAT_FILE="/var/tmp/$SCRIPT_NAME.$DISK"
+if [ ! -e "$PREVIOUS_STAT_FILE" ]; then
+  echo "$CURRENT_DISK_STAT" > "$PREVIOUS_STAT_FILE"
+  # XXX: returning unknown should not send a notification since
+  #      Nagios check multiple times before alerting
+  p_unknown "First run, no info on previous run yet."
+fi
+[ -r "$PREVIOUS_STAT_FILE" ] || p_unknown "Unable to read the previous disk stats"
+PREVIOUS_DISK_STAT="$(cat $PREVIOUS_STAT_FILE)"
+PREVIOUS_RUN_TIMESTAMP="$(date +%s -r $PREVIOUS_STAT_FILE)"
+[ -z "$PREVIOUS_DISK_STAT" ] && rm -f "$PREVIOUS_STAT_FILE" && \
+  p_unknown "Unable to read the previous disk stats"
+
+# Previous stats
+[ -z "$PREVIOUS_DISK_STAT" ] && rm -f "$PREVIOUS_STAT_FILE" && p_unknown "Invalid previous disk stats"
+PREVIOUS_IO_READ="$(echo $PREVIOUS_DISK_STAT | awk '{print $1}')"
+PREVIOUS_SECTOR_READ="$(echo $PREVIOUS_DISK_STAT | awk '{print $3}')"
+PREVIOUS_IO_WRITE="$(echo $PREVIOUS_DISK_STAT | awk '{print $5}')"
+PREVIOUS_SECTOR_WRITE="$(echo $PREVIOUS_DISK_STAT | awk '{print $7}')"
+PREVIOUS_WAIT="$(echo $PREVIOUS_DISK_STAT | awk '{print $11}')"
+[ -z "$PREVIOUS_IO_READ" -o -z "$PREVIOUS_SECTOR_READ" -o -z "$PREVIOUS_IO_WRITE" -o -z "$PREVIOUS_SECTOR_WRITE" -o -z "$PREVIOUS_WAIT" ] && \
+rm -f "$PREVIOUS_STAT_FILE" && p_unknown "Invalid previous block stats"
+
+# Current stats
+[ -z "$CURRENT_DISK_STAT" ] && p_unknown "Invalid previous disk stats"
+CURRENT_IO_READ="$(echo $CURRENT_DISK_STAT | awk '{print $1}')"
+CURRENT_SECTOR_READ="$(echo $CURRENT_DISK_STAT | awk '{print $3}')"
+CURRENT_IO_WRITE="$(echo $CURRENT_DISK_STAT | awk '{print $5}')"
+CURRENT_SECTOR_WRITE="$(echo $CURRENT_DISK_STAT | awk '{print $7}')"
+CURRENT_WAIT="$(echo $CURRENT_DISK_STAT | awk '{print $11}')"
+[ -z "$CURRENT_IO_READ" -o -z "$CURRENT_SECTOR_READ" -o -z "$CURRENT_IO_WRITE" -o -z "$CURRENT_SECTOR_WRITE" -o -z "$CURRENT_WAIT" ] && \
+p_unknown "Invalid current block stats"
+
+
+# Elapsed time between current and previous run
+TIME_DELTA="$(($CURRENT_RUN_TIMESTAMP - $PREVIOUS_RUN_TIMESTAMP))"
+[ "$TIME_DELTA" -lt 1 ] && p_unknown "Invalid time delta between previous and current runs"
+
+# Save current run stats into previous stat file
+echo "$CURRENT_DISK_STAT" 2>/dev/null > "$PREVIOUS_STAT_FILE" || p_unknown "Unable to save current stats in ${PREVIOUS_STAT_FILE}, plase check file owner/permissions"
+
+# Calculate counters
+REQ_READ="$((($CURRENT_IO_READ - $PREVIOUS_IO_READ) / $TIME_DELTA ))"
+REQ_WRITE="$((($CURRENT_IO_WRITE - $PREVIOUS_IO_WRITE) / $TIME_DELTA ))"
+IOPS="$(((($CURRENT_IO_READ - $PREVIOUS_IO_READ) + ($CURRENT_IO_WRITE - $PREVIOUS_IO_WRITE)) / $TIME_DELTA ))"
+DATA_READ="$((($CURRENT_SECTOR_READ - $PREVIOUS_SECTOR_READ) * 512 / $TIME_DELTA ))"
+DATA_WRITE="$((($CURRENT_SECTOR_WRITE - $PREVIOUS_SECTOR_WRITE) * 512 / $TIME_DELTA ))"
+if [ "$CURRENT_WAIT" -ge "$PREVIOUS_WAIT" ]; then
+        WAIT="$((($CURRENT_WAIT - $PREVIOUS_WAIT) / $TIME_DELTA ))"
+else # counter wrap
+        WAIT="$(((4294967296 - $PREVIOUS_WAIT + $CURRENT_WAIT) / $TIME_DELTA ))"
+fi
+[ "$REQ_READ" -lt 0 -o "$REQ_WRITE" -lt 0 -o "$IOPS" -lt 0 -o "$DATA_READ" -lt 0 -o "$DATA_WRITE" -lt 0 -o "$WAIT" -lt 0 ] && p_unknown "Invalid calculated block stats"
+
+CRIT=0
+WARN=0
+OUTPUT=""
+
+# Compare IOPS against thresholds
+if [ "$IOPS" -gt "$CRIT_IOPS" ]; then
+  CRIT="1"
+  OUTPUT="${OUTPUT} iops:${IOPS}/${CRIT_IOPS}"
+elif [ "$IOPS" -gt "$WARN_IOPS" ]; then
+  WARN="1"
+  OUTPUT="${OUTPUT} iops:${IOPS}/${WARN_IOPS}"
+fi
+
+# Compare WAIT against thresholds
+if [ "$WAIT" -gt "$CRIT_WAIT" ]; then
+  CRIT="1"
+  OUTPUT="${OUTPUT} await:${WAIT}/${CRIT_WAIT}"
+elif [ "$WAIT" -gt "$WARN_WAIT" ]; then
+  WARN="1"
+  OUTPUT="${OUTPUT} await:${WAIT}/${WARN_WAIT}"
+fi
+
+# Compare read data against thresholds
+if [ "$DATA_READ" -gt "$CRIT_READ" ]; then
+  CRIT="1"
+  OUTPUT="${OUTPUT} data_read:${DATA_READ}/${CRIT_READ}"
+elif [ "$DATA_READ" -gt "$WARN_READ" ]; then
+  WARN="1"
+  OUTPUT="${OUTPUT} data_read:${DATA_READ}/${WARN_READ}"
+fi
+
+# Compare write data against thresholds
+if [ "$DATA_WRITE" -gt "$CRIT_WRITE" ]; then
+  CRIT="1"
+  OUTPUT="${OUTPUT} data_write:${DATA_WRITE}/${CRIT_WRITE}"
+elif [ "$DATA_WRITE" -gt "$WARN_WRITE" ]; then
+  WARN="1"
+  OUTPUT="${OUTPUT} data_write:${DATA_WRITE}/${WARN_WRITE}"
+fi
+
+
+# Output status and perf data
+OUTPUT="${OUTPUT} |req_read=${REQ_READ}r/s;;; req_write=${REQ_WRITE}r/s;;; await=${WAIT}ms;;; data_read=${DATA_READ}b/s;;; data_write=${DATA_WRITE}b/s;;;"
+if [ "$CRIT" -eq 0 -a "$WARN" -eq 0 ]; then
+  p_ok "$OUTPUT"
+elif [ "$CRIT" -eq 1 ]; then
+  p_critical "$OUTPUT"
+else
+  p_warning "$OUTPUT"
+fi
+
