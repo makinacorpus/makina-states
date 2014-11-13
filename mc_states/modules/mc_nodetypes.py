@@ -53,6 +53,20 @@ def registry():
         return reg
     return _registry()
 
+
+def is_vm():
+    reg = registry()
+    for i in [
+        'kvm',
+        'travis',
+        'lxccontainer',
+        'dockercontainer',
+    ]:
+        if reg['is'].get(i, False):
+            return True
+    return False
+
+
 def dump():
     return mc_states.utils.dump(__salt__, __name)
 
