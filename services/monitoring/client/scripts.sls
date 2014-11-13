@@ -1,9 +1,13 @@
+
 install-nagios-plugins:
   pkg.installed:
     - pkgs:
       - nagios-plugins
       - nagios-plugins-contrib
       - libwww-perl
+      {% if has_sysstat %}
+      - sysstat
+      {%endif %}
       {% if grains['os'] not in ['Debian'] %}
       - nagios-plugins-extra
       {% endif %}
@@ -11,6 +15,21 @@ install-nagios-plugins:
       - libcrypt-des-perl
       - libxml-xpath-perl
       - libsys-statistics-linux-perl
+
+{% for f, mode in {
+  '/etc/default/sysstat': 555,
+  '/etc/cron.d/sysstat': 755,
+  }.items() %}
+monitoring-/etc/default/sysstat:
+  file.managed:
+    - name: {{f}}
+    - source: salt://makina-states/files{{f}}
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: {{mode}}
+{% endfor %}
 
 ms-scripts-d:
   file.directory:
