@@ -116,7 +116,7 @@ def settings():
 
                 'group': g,
                 'allowgroups': [
-                    'root', 'sudo', 'wheel', 'admin', 'ubuntu', g],
+                    'sftponly', 'root', 'sudo', 'wheel', 'admin', 'ubuntu', g],
                 'allowusers': ['root', 'sysadmin', 'ubuntu'],
                 'settings': {
                     'AuthorizedKeysFile': AuthorizedKeysFile,

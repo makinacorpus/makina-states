@@ -1,9 +1,13 @@
+{% set data = salt['mc_monitoring.settings']() %}
 install-nagios-plugins:
   pkg.installed:
     - pkgs:
       - nagios-plugins
       - nagios-plugins-contrib
       - libwww-perl
+      {% if data.has_sysstat %}
+      - sysstat
+      {%endif %}
       {% if grains['os'] not in ['Debian'] %}
       - nagios-plugins-extra
       {% endif %}
@@ -11,6 +15,37 @@ install-nagios-plugins:
       - libcrypt-des-perl
       - libxml-xpath-perl
       - libsys-statistics-linux-perl
+
+{% for f, mode in {
+  '/etc/default/sysstat': 555,
+  '/etc/cron.d/sysstat': 755,
+  '/etc/sysstat/sysstat': 755,
+  '/etc/sysstat/sysstat.ioconf': 755,
+
+  }.items() %}
+monitoring-{{f}}:
+  file.managed:
+    - name: {{f}}
+    - source: salt://makina-states/files{{f}}
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: {{mode}}
+    - watch_in:
+      - service: monitoring-sysstat-svc
+{% endfor %}
+
+{% if data.has_sysstat %}
+monitoring-sysstat-svc:
+  service.running:
+    - name: sysstat
+    - enable: True
+{% else %}
+monitoring-sysstat-svc:
+  service.dead:
+    - name: sysstat
+{% endif %}
 
 ms-scripts-d:
   file.directory:

@@ -55,3 +55,5 @@ chmod +x check_raid.pl
 echo "dont forget changes to snmp traffic (, -> . for perfdata)"
 echo "sync http://exchange.nagios.org/directory/Plugins/Operating-Systems/Linux/check_linux_stats/details"
 
+wget "https://fidanov.net/c0d3/nagios-plugins/mio/check_mio" -O check_mio
+chmod +x "check_mio"

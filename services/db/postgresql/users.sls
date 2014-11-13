@@ -52,7 +52,7 @@
     - pg_version : {{version}}
     - db_host: {{db_host if db_host != None else 'null'}}
     - db_port: {{db_port if db_port != None else 'null'}}
-    - runas: {{ user }}
+    - user: {{ user }}
     - require_in:
       - mc_proxy: {{orchestrate[version]['postuser']}}
     - require:
