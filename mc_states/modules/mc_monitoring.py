@@ -31,7 +31,11 @@ def settings():
                 'has_sysstat': has_sysstat and "true" or "false",
                 'sysstat_rotate_periodicity': '59 23 * * *',
                 'sysstat_periodicity': '*/3 * * * *',
-                'sysstat_rotate': '60 2',
+                'sysstat_rotate_count': '60 2',
+                'sysstat_count': '20 3',
+                'sysstat_history': 3*31,
+                'sysstat_compress': 2*31,
+                'sysstat_sadc_opts': "-S XDISK",
             }
         )
         return monitoringData

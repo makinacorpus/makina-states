@@ -19,6 +19,9 @@ install-nagios-plugins:
 {% for f, mode in {
   '/etc/default/sysstat': 555,
   '/etc/cron.d/sysstat': 755,
+  '/etc/sysstat/sysstat': 755,
+  '/etc/sysstat/sysstat.ioconf': 755,
+
   }.items() %}
 monitoring-{{f}}:
   file.managed:

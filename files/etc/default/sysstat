@@ -1,3 +1,4 @@
+# managed via salt / do not edit
 #
 # Default settings for /etc/init.d/sysstat, /etc/cron.d/sysstat
 # and /etc/cron.daily/sysstat files

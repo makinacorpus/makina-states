@@ -1,0 +1,19 @@
+# managed via salt / do not edit
+# sysstat configuration file. See sysstat(5) manual page.
+
+{% set data = salt['mc_monitoring.settings']() %}
+# How long to keep log files (in days).
+# Used by sa2(8) script
+# If value is greater than 28, then log files are kept in
+# multiple directories, one for each month.
+HISTORY={{data.sysstat_history}}
+
+# Compress (using gzip or bzip2) sa and sar files older than (in days):
+COMPRESSAFTER={{data.sysstat_compress}}
+
+# Parameters for the system activity data collector (see sadc(8) manual page)
+# which are used for the generation of log files.
+# By default contains the `-S DISK' option responsible for generating disk
+# statisitcs. Use `-S XALL' to collect all available statistics.
+SADC_OPTIONS="{{data.sysstat_sadc_opts}}"
+

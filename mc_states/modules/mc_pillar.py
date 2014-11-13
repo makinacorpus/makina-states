@@ -1987,6 +1987,9 @@ def get_supervision_objects_defs(id_):
             attrs.setdefault('vars.SNMP_PASS', sconf[p + 'password'])
             attrs.setdefault('vars.SNMP_CRYPT', sconf[p + 'key'])
             attrs.setdefault('vars.SNMP_USER',  sconf[p + 'user'])
+            hdata['sar'] = ['cpu', 'task', 'queueln_load',
+                            'io_transfer', 'memory_stat', 'memory_util',
+                            'pagestat']
             if vts:
                 hdata['memory_mode'] = 'large'
             for vt in __salt__['mc_cloud_compute_node.get_vts']():
