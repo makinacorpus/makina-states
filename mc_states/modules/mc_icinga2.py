@@ -764,6 +764,7 @@ def autoconfigure_host(host,
                        remote_nginx_status=None,
                        tomcat=None,
                        web=None,
+                       sar=None,
                        web_openid=None,
                        **kwargs):
     if attrs is None:
@@ -779,7 +780,7 @@ def autoconfigure_host(host,
           'ssh', 'swap']),
         (False,
          ['cron', 'ddos', 'dns_association', 'haproxy_stats',
-          'mail_cyrus_imap_connections', 'mail_imap',
+          'mail_cyrus_imap_connections', 'mail_imap', 'sar',
           'mail_imap_ssl', 'mail_pop', 'mail_pop_ssl',
           'mail_pop_test_account', 'mail_server_queues',
           'mail_smtp', 'mongodb', 'ntp_peers', 'postgresql_port',
@@ -855,10 +856,11 @@ def autoconfigure_host(host,
                 'swap',
                 'remote_nginx_status',
                 'nginx_status',
+                'sar',
                 'remote_apache_status',
                 'apache_status']
     services_multiple = ['disk_space', 'nic_card', 'dns_association',
-                         'supervisor', 'drbd', 'tomcat',
+                         'supervisor', 'drbd', 'tomcat', 'sar',
                          'processes', 'web_openid', 'web']
     rdata = {"host.name": host}
     icingaSettings = __salt__['mc_icinga2.settings']()
@@ -894,6 +896,8 @@ def autoconfigure_host(host,
         nic_card = ['eth0']
     if not disk_space:
         disk_space = []
+    if not sar:
+        sar = []
     if not nic_card:
         nic_card = []
     if not ssh_addr:
@@ -1023,7 +1027,7 @@ def autoconfigure_host(host,
             continue
         if svc in services_multiple:
             default_vals = {'web': {host: {}}, 'tomcat': {host: {}}}
-            if svc in ['drbd', 'disk_space', 'processes',
+            if svc in ['drbd', 'disk_space', 'processes', 'sar',
                        'nic_card', 'supervisor']:
                 values = eval(svc)
             else:
@@ -1061,6 +1065,8 @@ def autoconfigure_host(host,
                             mongo_auth = True
                 if mongo_auth:
                     ss['chech_command'] = 'CSSH_CHECK_MONGODB_AUTH'
+                if svc == 'sar':
+                    ss['vars.sar_profile'] = v
                 if svc == 'web':
                     if ss.get('vars.http_remote', False):
                         command = 'CSSH_HTTP'
