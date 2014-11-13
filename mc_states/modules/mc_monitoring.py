@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 '''
 
-.. _module_mc_casperjs:
+.. _module_mc_monitoring:
 
-mc_casperjs / casperjs/npm registry
+mc_monitoring registry
 ============================================
 
 '''
@@ -11,46 +11,34 @@ mc_casperjs / casperjs/npm registry
 import logging
 import mc_states.utils
 
-__name = 'casperjs'
+__name = 'monitoring'
 
 log = logging.getLogger(__name__)
 
 
 def settings():
     '''
-    casperjs
+    monitoring
 
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
         grains = __grains__
         pillar = __pillar__
-        locations = __salt__['mc_locations.settings']()
-        # casperjs
-        cur_casperjsver = '1.1-beta3'
-        casperjsData = __salt__['mc_utils.defaults'](
-            'makina-states.localsettings.casperjs', {
-                'url': (
-                    'https://github.com/n1k0/casperjs/archive/{0}.tar.gz'
-                ),
-                'shas': {
-                    '1.1-beta3.tar.gz':  (
-                        '552db60dbdedd185f1bd6bc83ab2c816'),
-                    '1.1-beta3':  (
-                        '4a4858917a2ef4f8274ae86032694568'),
-                },
-                'versions': [cur_casperjsver],
-                'version': cur_casperjsver,
-                'arch': 'x86_64',
-                'location': locations['apps_dir']+'/casperjs',
-                'bn': "casperjs-{0}-linux-{1}",
+        has_sysstat = not __salt__['mc_nodetypes.is_vm']()
+        monitoringData = __salt__['mc_utils.defaults'](
+            'makina-states.services.monitoring.client', {
+                'has_sysstat': has_sysstat,
+                'sysstat_rotate_periodicity': '59 23 * * *',
+                'sysstat_periodicity': '*/3 * * * *',
+                'sysstat_rotate': '60 2',
             }
         )
-        return casperjsData
+        return monitoringData
     return _settings()
 
 
 def dump():
     return mc_states.utils.dump(__salt__,__name)
 
-#
+# 
