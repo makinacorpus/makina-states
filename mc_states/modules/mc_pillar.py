@@ -2984,6 +2984,28 @@ def get_dhcpd_conf(id_, ttl=60):
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 
+def get_pkgmgr_conf(id_, ttl=60):
+    def _do(id_):
+        rdata = {}
+        try:
+            conf = __salt__['mc_pillar.query']('pkgmgr_conf')
+            conf = conf.get(
+                id_,
+                conf.get('default', OrderedDict()))
+        except KeyError:
+            log.error(
+                'no pkgsmgr_conf in database for {0}'.format(id_))
+            conf = {}
+        if not isinstance(conf, dict):
+            conf = {}
+        p = 'makina-states.localsettings.pkgs.'
+        for item,val in conf.items():
+            rdata[p + item] = val
+        return rdata
+    cache_key = 'mc_pillar.get_pkgmgr_conf{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+
+
 def get_dns_resolvers(id_, ttl=60):
     def _do(id_):
         rdata = {}
@@ -3057,6 +3079,7 @@ def ext_pillar(id_, pillar=None, *args, **kw):
         'mc_pillar.get_ssh_keys_conf',
         'mc_pillar.get_sudoers_conf',
         'mc_pillar.get_supervision_confs',
+        'mc_pillar.get_pkgmgr_conf',
         'mc_pillar.get_sysnet_conf',
         'mc_pillar.get_check_raid_conf',
     ]:
