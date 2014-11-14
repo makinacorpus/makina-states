@@ -81,15 +81,21 @@ def settings():
             country = country[:2].upper()
         else:
             country = 'fr'
+        lcert, lkey = __salt__[
+            'mc_ssl.selfsigned_ssl_certs'](
+                grains['fqdn'], as_text=True)[0]
+        idata = {
+            'country': country,
+            'st': 'Pays de Loire',
+            'l': 'NANTES',
+            'o': 'NANTES',
+            'cn': grains['fqdn'],
+            'email': grains['fqdn'],
+            'certificate': lcert,
+            'certificate_key': lkey,
+        }
         data = saltmods['mc_utils.defaults'](
-            'makina-states.localsettings.ssl', {
-                'country': country,
-                'st': 'Pays de Loire',
-                'l': 'NANTES',
-                'o': 'NANTES',
-                'cn': grains['fqdn'],
-                'email': grains['fqdn'],
-            })
+            'makina-states.localsettings.ssl', idata)
         return data
     return _settings()
 
@@ -126,8 +132,60 @@ def get_cacert(as_text=False):
     return path
 
 
+def get_custom_cert_for(domain):
+    cloudSettings = __salt__['mc_cloud.settings']()
+    ssl_gen_d = cloudSettings['ssl_pillar_dir']
+    certp = os.path.join(
+        ssl_gen_d, 'custom', '{0}.crt'.format(domain))
+    bcertp = os.path.join(
+        ssl_gen_d, 'custom', '{0}.bundle.crt'.format(domain))
+    certk = os.path.join(
+        ssl_gen_d, 'custom', '{0}.key'.format(domain))
+    # try also to resolve a wildcard certificate if possible
+    if domain.count('.') >= 2:
+        wdomain = '*.' + '.'.join(domain.split('.')[1:])
+    else:
+        wdomain = None
+    if wdomain:
+        wcertp = os.path.join(
+            ssl_gen_d, 'custom', '{0}.crt'.format(wdomain))
+        wbcertp = os.path.join(
+            ssl_gen_d, 'custom', '{0}.bundle.crt'.format(wdomain))
+        wcertk = os.path.join(
+            ssl_gen_d, 'custom', '{0}.key'.format(wdomain))
+        if os.path.exists(wbcertp):
+            wcertp = wbcertp
+        # only use wild card if we have not a more precise certificate
+        if not os.path.exists(certp) and not os.path.exists(bcertp):
+            bcertp = wbcertp
+            certp = wcertp
+            certk = wcertk
+    if os.path.exists(bcertp):
+        certp = bcertp
+    for i in [certp, certk]:
+        if not os.path.exists(i):
+            raise CertificateNotFoundError(
+                "No such custom cert for '{0}'".format(domain))
+    return certp, certk
+
+
 def get_cert_for(domain, gen=False, domain_csr_data=None):
-    '''Generate or return certificate for domain'''
+    '''
+    Generate or return certificate for domain
+
+    The certificates are stored inside <pillar_root>/cloud-controller/ssl
+
+    Search order precedence:
+
+      - ./custom/<domain>.<tld>
+      - wildcard certificate: ./custom/*.<tld>
+      - signed by the controller: ./<cloudcotroller>/certs/<domain>.<tld>
+
+    '''
+    try:
+        return get_custom_cert_for(domain)
+    except CertificateNotFoundError:
+        pass
     ensure_ca_present()
     if domain_csr_data is None:
         domain_csr_data = {}
@@ -138,9 +196,9 @@ def get_cert_for(domain, gen=False, domain_csr_data=None):
     bcertp = os.path.join(ssl_gen_d, ca, 'certs', '{0}.bundle.crt'.format(domain))
     certk = os.path.join(ssl_gen_d, ca, 'certs', '{0}.key'.format(domain))
     cacertp = os.path.join(ssl_gen_d, ca, '{0}_ca_cert.crt'.format(ca))
-    selfsigned = False
+    generated = False
     if gen and not os.path.exists(certp):
-        selfsigned = True
+        generated = True
         old_d = __opts__.get('ca.cert_base_path', '')
         try:
             __salt__['tls.set_ca_path'](ssl_gen_d)
@@ -166,20 +224,41 @@ def get_cert_for(domain, gen=False, domain_csr_data=None):
     if not os.path.exists(certp):
         raise CertificateNotFoundError(
             'Certificate not found for {0}'.format(domain))
-    if selfsigned and not os.path.exists(bcertp) and os.path.exists(cacertp):
+    # generate bundle
+    if (
+        generated
+        and os.path.exists(cacertp)
+        and os.path.exists(certp)
+        and not os.path.exists(bcertp)
+    ):
         data = ''
         for f in [cacertp, certp]:
             with open(f) as fic:
                 data += fic.read()
-            with open(bcertp, 'w') as fic:
-                fic.write(data)
+        with open(bcertp, 'w') as fic:
+            fic.write(data)
     #if os.path.exists(bcertp):
     #    certp = bcertp
     return certp, certk
 
 
 def get_selfsigned_cert_for(domain, gen=False, domain_csr_data=None):
-    '''Generate or return certificate for domain'''
+    '''
+    Generate or return certificate for domain
+
+    The certificates are stored inside <pillar_root>/cloud-controller/ssl
+
+    Search precedence:
+
+      - ./custom/<domain>.<tld>
+      - wildcard certificate: ./custom/*.<tld>
+      - selfsigned: ./selfsigned/certs/<domain>.<tld>
+
+    '''
+    try:
+        return get_custom_cert_for(domain)
+    except CertificateNotFoundError:
+        pass
     ensure_ca_present()
     if domain_csr_data is None:
         domain_csr_data = {}
@@ -448,7 +527,6 @@ def selfsigned_ssl_certs(domains, as_text=False):
         if crt_data not in ssl_certs:
             ssl_certs.append(crt_data)
     return ssl_certs
-
 
 
 def ssl_certs(domains, as_text=False):

@@ -2974,6 +2974,20 @@ def get_burp_server_conf(id_):
     return rdata
 
 
+def get_ssl_conf(id_, ttl=60):
+    def _do(id_):
+        lcert, lkey = __salt__[
+            'mc_ssl.selfsigned_ssl_certs'](
+                id_, as_text=True)[0]
+        p = 'makina-states.localsettings.ssl.'
+        rdata = OrderedDict()
+        rdata[p + 'certificate'] = lcert
+        rdata[p + 'certificate_key'] = lkey
+        return rdata
+    cache_key = 'mc_pillar.get_ssl_conf{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+
+
 def get_dhcpd_conf(id_, ttl=60):
     def _do(id_):
         try:
@@ -3080,6 +3094,7 @@ def ext_pillar(id_, pillar=None, *args, **kw):
         'mc_pillar.get_slapd_conf',
         'mc_pillar.get_snmpd_conf',
         'mc_pillar.get_supervision_client_conf',
+        'mc_pillar.get_ssl_conf',
         'mc_pillar.get_ssh_groups_conf',
         'mc_pillar.get_ssh_keys_conf',
         'mc_pillar.get_sudoers_conf',
