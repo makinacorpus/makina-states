@@ -102,6 +102,13 @@ def settings():
         else:
             root = salt_settings['saltRoot']
             prefix = salt_settings['confPrefix']
+
+        #f = '/{0}.txt'.format(__grains__['id'])
+        #with open(f, 'w') as fic:
+        #    from pprint import pformat
+        #    fic.write(pformat(__grains__))
+        #    fic.write('\n')
+        #    fic.write(pformat(__opts__))
         data = __salt__['mc_utils.defaults'](
             'makina-states.cloud', {
                 'root': root,
@@ -114,7 +121,7 @@ def settings():
                 'ssl': {
                     'cert_days': 365*1000,
                     'ca': {
-                        'ca_name': __grains__['id'],
+                        'ca_name': __opts__['id'],
                         'bits': 2048,
                         'days': 365*1000,
                         'CN': 'makina-states-cloud-controller',
@@ -154,7 +161,7 @@ def settings():
                     '-C --from-salt-cloud --mastersalt-minion'),
                 'bootsalt_branch': None,
                 'master_port': __salt__['config.get']('master_port'),
-                'master': __grains__['fqdn'],
+                'master': __opts__['id'],
                 'saltify_profile': 'salt',
                 'pvdir': prefix + "/cloud.providers.d",
                 'pfdir': prefix + "/cloud.profiles.d",
