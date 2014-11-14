@@ -720,14 +720,14 @@ def get_ldap(ttl=60):
 
     '''
     def _do_getldap():
-        db = load_network_infrastructure()
         data = OrderedDict()
         masters = data.setdefault('masters', OrderedDict())
         slaves = data.setdefault('slaves', OrderedDict())
         default = __salt__['mc_pillar.query']('ldap_maps').get('default', OrderedDict())
         for kind in ['masters', 'slaves']:
-            for server, adata in __salt__['mc_pillar.query']('ldap_maps').get(kind,
-                                                     OrderedDict()).items():
+            for server, adata in __salt__[
+                'mc_pillar.query'
+            ]('ldap_maps').get(kind, OrderedDict()).items():
                 sdata = data[kind][server] = copy.deepcopy(adata)
                 for k, val in default.items():
                     sdata.setdefault(k, val)
@@ -1916,7 +1916,8 @@ def get_supervision_conf_kind(id_, kind, ttl=60):
                     nginx = rdata['nginx']
                     nginx = rdata.setdefault('nginx', {})
                     domain = rdata.get('nginx', {}).get('domain', id_)
-                    cert, key = __salt__['mc_ssl.selfsigned_ssl_certs'](domain, True)[0]
+                    cert, key = __salt__[
+                        'mc_ssl.selfsigned_ssl_certs'](domain, True)[0]
                     # unlonwn ca signed certs do not work in nginx
                     # cert, key = __salt__['mc_ssl.ssl_certs'](domain, True)[0]
                     # nginx['ssl_cacert'] = __salt__['mc_ssl.get_cacert'](True)
@@ -2047,6 +2048,7 @@ def get_supervision_objects_defs(id_):
             sconf = get_snmpd_conf(id_)
             p = ('makina-states.services.monitoring.'
                  'snmpd.default_')
+            attrs.setdefault('vars.makina_host', host)
             attrs.setdefault('vars.SNMP_PASS', sconf[p + 'password'])
             attrs.setdefault('vars.SNMP_CRYPT', sconf[p + 'key'])
             attrs.setdefault('vars.SNMP_USER',  sconf[p + 'user'])
