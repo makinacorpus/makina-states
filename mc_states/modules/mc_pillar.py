@@ -2991,14 +2991,14 @@ def get_ssl_conf(id_, ttl=60):
         # load also a selfsigned wildcard
         # certificate for all of those domains
         for d in todo.values():
-            if d.count('.') >= 2:
+            if d.count('.') >= 2 and not d.startswith('*.'):
                 wd = '*.' + '.'.join(d.split('.')[1:])
                 todo[wd] = wd
         for did, domain in todo.items():
             lcert, lkey = __salt__[
                 'mc_ssl.selfsigned_ssl_certs'](
                     domain, as_text=True)[0]
-            rdata[p + did] = (lcert, lkey)
+            rdata[p + 'certificates.' + did] = (lcert, lkey)
         return rdata
     cache_key = 'mc_pillar.get_ssl_conf{0}'.format(id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
