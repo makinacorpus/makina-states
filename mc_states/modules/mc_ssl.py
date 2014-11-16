@@ -81,23 +81,37 @@ def settings():
             country = country[:2].upper()
         else:
             country = 'fr'
-        lcert, lkey = __salt__[
-            'mc_ssl.selfsigned_ssl_certs'](
-                grains['fqdn'], as_text=True)[0]
-        idata = {
-            'country': country,
-            'st': 'Pays de Loire',
-            'l': 'NANTES',
-            'o': 'NANTES',
-            'cn': grains['fqdn'],
-            'email': grains['fqdn'],
-            'certificate': lcert,
-            'certificate_key': lkey,
-        }
         data = saltmods['mc_utils.defaults'](
-            'makina-states.localsettings.ssl', idata)
+            'makina-states.localsettings.ssl', {
+                'country': country,
+                'st': 'Pays de Loire',
+                'l': 'NANTES',
+                'o': 'NANTES',
+                'cn': grains['fqdn'],
+                'email': grains['fqdn'],
+                'certificates': OrderedDict()})
+        certs = data['certificates']
+        if grains['fqdn'] not in certs:
+            lcert, lkey = __salt__[
+                'mc_ssl.selfsigned_ssl_certs'](
+                    grains['fqdn'], as_text=True)[0]
+            certs[grains['fqdn']] = (lcert, lkey)
         return data
     return _settings()
+
+
+def get_configured_cert(domain, ttl=60):
+    settings = __salt__['mc_ssl.settings']()
+    certs = settings['certificates']
+    if domain.count('.') >= 2:
+        wd = '*.' + '.'.join(domain.split('.')[1:])
+    configured = certs.get(
+        domain, certs.get(wd, None))
+    if not configured:
+        configured = __salt__[
+            'mc_ssl.selfsigned_ssl_certs'](
+                __grains__['fqdn'], as_text=True)[0]
+    return configured
 
 
 def ensure_ca_present():
