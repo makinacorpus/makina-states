@@ -765,6 +765,7 @@ def autoconfigure_host(host,
                        tomcat=None,
                        web=None,
                        sar=None,
+                       rbl=None,
                        web_openid=None,
                        **kwargs):
     if attrs is None:
@@ -781,7 +782,7 @@ def autoconfigure_host(host,
         (False,
          ['cron', 'ddos', 'dns_association', 'haproxy_stats',
           'mail_cyrus_imap_connections', 'mail_imap', 'sar',
-          'mail_imap_ssl', 'mail_pop', 'mail_pop_ssl',
+          'mail_imap_ssl', 'mail_pop', 'mail_pop_ssl', 'rbl',
           'mail_pop_test_account', 'mail_server_queues',
           'mail_smtp', 'mongodb', 'ntp_peers', 'postgresql_port',
           'raid', 'snmpd_memory_control', 'apache_status',
@@ -849,6 +850,7 @@ def autoconfigure_host(host,
                 'raid',
                 'snmpd_memory_control',
                 'ssh',
+                'rbl',
                 'supervisor',
                 'tomcat',
                 'web',
@@ -861,7 +863,7 @@ def autoconfigure_host(host,
                 'apache_status']
     services_multiple = ['disk_space', 'nic_card', 'dns_association',
                          'supervisor', 'drbd', 'tomcat', 'sar',
-                         'processes', 'web_openid', 'web']
+                         'rbl', 'processes', 'web_openid', 'web']
     rdata = {"host.name": host}
     icingaSettings = __salt__['mc_icinga2.settings']()
     if 'postgres' not in processes:
@@ -896,6 +898,8 @@ def autoconfigure_host(host,
         nic_card = ['eth0']
     if not disk_space:
         disk_space = []
+    if not rbl:
+        rbl = []
     if not sar:
         sar = []
     if not nic_card:
@@ -1027,7 +1031,7 @@ def autoconfigure_host(host,
             continue
         if svc in services_multiple:
             default_vals = {'web': {host: {}}, 'tomcat': {host: {}}}
-            if svc in ['drbd', 'disk_space', 'processes', 'sar',
+            if svc in ['drbd', 'disk_space', 'processes', 'sar', 'rbl',
                        'nic_card', 'supervisor']:
                 values = eval(svc)
             else:
@@ -1065,6 +1069,8 @@ def autoconfigure_host(host,
                             mongo_auth = True
                 if mongo_auth:
                     ss['chech_command'] = 'CSSH_CHECK_MONGODB_AUTH'
+                if svc == 'rbl':
+                    ss['vars.checked_address'] = v
                 if svc == 'sar':
                     ss['vars.sar_profile'] = v
                 if svc == 'web':
