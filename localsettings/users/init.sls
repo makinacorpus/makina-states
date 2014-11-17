@@ -10,10 +10,6 @@
 # Idea is to create any user/group needed for ssh managment
 #}
 
-# too dangerous to not keep the sync state not in sync with users
-include:
-  - makina-states.localsettings.shell
-
 {% set locs = salt['mc_locations.settings']() %}
 {% set usergroup = salt['mc_usergroup.settings']() %}
 {% macro create_user(id, udata) %}
@@ -231,6 +227,8 @@ makina-{{id}}-bashrc-load:
 {% endmacro %}
 
 include:
+  # too dangerous to not keep the sync state not in sync with users
+  - makina-states.localsettings.shell
   - makina-states.localsettings.users.hooks
   - makina-states.localsettings.groups
   - makina-states.localsettings.sudo
