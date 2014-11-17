@@ -28,6 +28,7 @@ makina-ngin-naxsi-ui-running:
     - enable: True
 {% else %}
   service.dead:
+    - enable: False
 {% endif %}
     - name: nginx-naxsi-ui
     - watch_in:

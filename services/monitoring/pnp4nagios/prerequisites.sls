@@ -29,6 +29,7 @@ disable-apache2-sd:
     - names:
       - apache2
       - nagios3
+    - enable: False
     - watch:
       - pkg: pnp4nagios-pkgs
       - mc_proxy: pnp4nagios-pre-install
