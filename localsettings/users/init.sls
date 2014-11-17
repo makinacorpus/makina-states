@@ -177,7 +177,13 @@ makina-{{id}}-bashprofile-load-acc:
               # only apply if we have no inclusion yet
               if [ "x${ETC_PROFILE_LOADED}" = "x" ];then
                 . '{{ locs.conf_dir }}/profile'
-                export ETC_PROFILE_LOADED="1"
+              fi
+            fi
+            if [ -e '{{bashrc}}' ];then
+              # only apply if we have no inclusion yet
+              if [ "x${BASH_RC_LOADED}" = "x" ];then
+                export BASH_RC_LOADED="1"
+                . '{{bashrc}}'
               fi
             fi
     - require_in:
@@ -202,9 +208,9 @@ makina-{{id}}-bashrc-load-acc:
     - text: |
             if [ -f '{{bashprofile}}' ];then
               # only apply if we have no inclusion yet
-              if [ "x${BASH_PROFILE_LOADED" = "x"  ];then
-                . '{{bashprofile}}'
+              if [ "x${BASH_PROFILE_LOADED}" = "x"  ];then
                 export BASH_PROFILE_LOADED="1"
+                . '{{bashprofile}}'
               fi
             fi
     - require_in:
