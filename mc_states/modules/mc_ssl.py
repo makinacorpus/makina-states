@@ -147,7 +147,7 @@ def get_configured_cert(domain, ttl=60):
             if data:
                 pretendants.append(data)
         if not pretendants:
-            pretendants.append(
+            pretendants.extend(
                 __salt__['mc_ssl.selfsigned_ssl_certs'](
                     __grains__['fqdn'], as_text=True))
         pretendants.sort(key=selfsigned_last)
