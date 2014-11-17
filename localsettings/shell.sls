@@ -21,13 +21,14 @@ makina-etc-profile-acc:
     - text: |
             if [ -d {{ locs.conf_dir }}/profile.d ]; then
               # only apply if we have no inclusion yet
-              if [ "$(grep -h 'profile\.d' {{ locs.conf_dir }}/profile|wc -l)" -lt "4" ];then
+              if [ "x${ETC_PROFILED_LOADED}" = "x" ];then
                 for i in {{ locs.conf_dir }}/profile.d/*.sh; do
                   if [ -r $i ]; then
                     . $i;
                   fi;
                 done;
                 unset i;
+                ETC_PROFILED_LOADED="1"
               fi
             fi
     - require_in:
