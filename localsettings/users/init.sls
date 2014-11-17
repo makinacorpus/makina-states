@@ -173,10 +173,17 @@ makina-{{id}}-bashprofile-load-acc:
   file.accumulated:
     - filename: {{bashprofile}}
     - text: |
-            if [[ -f '{{ locs.conf_dir }}/profile' ]];then
+            if [ -f '{{ locs.conf_dir }}/profile' ];then
               # only apply if we have no inclusion yet
-              if [[ "$(grep -h '{{ locs.conf_dir }}/profile' '{{bashrc}}' '{{bashprofile}}'|egrep -v "^#"|wc -l)" -lt "4" ]];then
+              if [ "x${ETC_PROFILE_LOADED}" = "x" ];then
                 . '{{ locs.conf_dir }}/profile'
+              fi
+            fi
+            if [ -e '{{bashrc}}' ];then
+              # only apply if we have no inclusion yet
+              if [ "x${BASH_RC_LOADED}" = "x" ];then
+                export BASH_RC_LOADED="1"
+                . '{{bashrc}}'
               fi
             fi
     - require_in:
@@ -199,9 +206,10 @@ makina-{{id}}-bashrc-load-acc:
   file.accumulated:
     - filename: {{bashrc}}
     - text: |
-            if [[ -f '{{bashprofile}}' ]];then
+            if [ -f '{{bashprofile}}' ];then
               # only apply if we have no inclusion yet
-              if [[ "$(grep -h '.bash_profile' '{{bashrc}}'|egrep -v "^#"|wc -l)" -lt "4" ]];then
+              if [ "x${BASH_PROFILE_LOADED}" = "x"  ];then
+                export BASH_PROFILE_LOADED="1"
                 . '{{bashprofile}}'
               fi
             fi
@@ -225,6 +233,8 @@ makina-{{id}}-bashrc-load:
 {% endmacro %}
 
 include:
+  # too dangerous to not keep the sync state not in sync with users
+  - makina-states.localsettings.shell
   - makina-states.localsettings.users.hooks
   - makina-states.localsettings.groups
   - makina-states.localsettings.sudo

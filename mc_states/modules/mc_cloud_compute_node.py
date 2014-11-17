@@ -488,10 +488,24 @@ def _init_http_proxies(target_data, reversep):
 
     ssl_bind = '*:443 ssl'
     if target_data['ssl_certs']:
+        wildcard = ''
+        if reversep['target'].count('.') >= 2:
+            wildcard = '*.' + '.'.join(reversep['target'].split('.')[1:])
+        # We must serve the compute node SSL certificate as the default one
+        # search a wildcard
+        if wildcard and wildcard in [a[0] for a in target_data['ssl_certs']]:
+            first_cert = wildcard
+        # else for the precise domain of the compute node
+        elif reversep['target'] in [a[0] for a in target_data['ssl_certs']]:
+            first_cert = reversep['target']
+        # error if we couldnt get any case
+        else:
+            raise ValueError('No such cert for compute node'
+                             ' {0}'.format(reversep['target']))
         ssl_bind += (
             ' crt /etc/ssl/cloud/certs/{0}.crt'
             ' crt /etc/ssl/cloud/certs'
-        ).format(reversep['target'])
+        ).format(first_cert)
     reversep.setdefault(
         'https_proxy', {
             'name': "secure-" + reversep['target'],

@@ -25,6 +25,7 @@ from copy import deepcopy
 import os
 from salt.utils.odict import OrderedDict
 import mc_states.utils
+from mc_states.utils import memoize_cache
 import M2Crypto
 try:
     import OpenSSL
@@ -81,23 +82,78 @@ def settings():
             country = country[:2].upper()
         else:
             country = 'fr'
-        lcert, lkey = __salt__[
-            'mc_ssl.selfsigned_ssl_certs'](
-                grains['fqdn'], as_text=True)[0]
-        idata = {
-            'country': country,
-            'st': 'Pays de Loire',
-            'l': 'NANTES',
-            'o': 'NANTES',
-            'cn': grains['fqdn'],
-            'email': grains['fqdn'],
-            'certificate': lcert,
-            'certificate_key': lkey,
-        }
         data = saltmods['mc_utils.defaults'](
-            'makina-states.localsettings.ssl', idata)
+            'makina-states.localsettings.ssl', {
+                'country': country,
+                'st': 'Pays de Loire',
+                'l': 'NANTES',
+                'o': 'NANTES',
+                'cn': grains['fqdn'],
+                'email': grains['fqdn'],
+                'certificates': OrderedDict()})
+        certs = data['certificates']
+        if grains['fqdn'] not in certs:
+            lcert, lkey = __salt__[
+                'mc_ssl.selfsigned_ssl_certs'](
+                    grains['fqdn'], as_text=True)[0]
+            certs[grains['fqdn']] = (lcert, lkey)
         return data
     return _settings()
+
+
+def selfsigned_last(v):
+    k = '0'
+    try:
+        cert = OpenSSL.crypto.load_certificate(
+            OpenSSL.crypto.FILETYPE_PEM, v[0])
+    except Exception:
+        cert = None
+    if cert:
+        try:
+            subject, issuer = (
+                "{0}".format(cert.get_subject()),
+                "{0}".format(cert.get_issuer()))
+        except Exception:
+            subject = '1'
+            issuer = '2'
+        if subject == issuer:
+            # selfsigned
+            k = '1'
+        elif 'makina-states' in subject.lower():
+            k = '1'
+        elif 'makina-states' in issuer.lower():
+            k = '1'
+    return '{0}_{1}'.format(k, v)
+
+
+def get_configured_cert(domain, ttl=60):
+    '''
+    Return any configured ssl cert for domain or the wildward domain
+    matching the precise domain.
+    It will prefer to use any reeal signed certificate over a self
+    signed certificate'''
+    def _do(domain):
+        pretendants = []
+        if domain == 'localhost':
+            domain = __grains__['fqdn']
+        settings = __salt__['mc_ssl.settings']()
+        certs = settings['certificates']
+        domains = [domain]
+        if domain.count('.') >= 2 and not domain.startswith('*.'):
+            wd = '*.' + '.'.join(domain.split('.')[1:])
+            domains.append(wd)
+        for d in domains:
+            data = certs.get(d, None)
+            if data:
+                pretendants.append(data)
+        if not pretendants:
+            pretendants.extend(
+                __salt__['mc_ssl.selfsigned_ssl_certs'](
+                    __grains__['fqdn'], as_text=True))
+        pretendants.sort(key=selfsigned_last)
+        return pretendants[0]
+    cache_key = 'mc_ssl.get_configured_cert{0}'.format(domain)
+    return memoize_cache(_do, [domain], {}, cache_key, ttl)
 
 
 def ensure_ca_present():
@@ -142,7 +198,7 @@ def get_custom_cert_for(domain):
     certk = os.path.join(
         ssl_gen_d, 'custom', '{0}.key'.format(domain))
     # try also to resolve a wildcard certificate if possible
-    if domain.count('.') >= 2:
+    if domain.count('.') >= 2 and not domain.startswith('*.'):
         wdomain = '*.' + '.'.join(domain.split('.')[1:])
     else:
         wdomain = None

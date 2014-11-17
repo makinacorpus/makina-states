@@ -354,6 +354,25 @@ def configure_firewall(target, ret=None, output=True):
     return _configure('firewall', target, ret, output)
 
 
+def reconfigure_front(target, ret=None, output=True):
+    '''
+    Small hook to reconfigure the reverse proxy part of
+    a compute node, meaned to be used via the CLI
+    '''
+    for i in [
+        configure_host,
+        configure_sshkeys,
+        configure_sslcerts,
+        configure_firewall,
+        configure_reverse_proxy
+    ]:
+        ret = i(target, ret=ret, output=False)
+        if not ret['result']:
+            break
+    salt_output(ret, __opts__, output=output)
+    return ret
+
+
 def configure_reverse_proxy(target, ret=None, output=True):
     '''haproxy configuration'''
     return _configure('reverse_proxy', target, ret, output)

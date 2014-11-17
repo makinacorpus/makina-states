@@ -2976,13 +2976,29 @@ def get_burp_server_conf(id_):
 
 def get_ssl_conf(id_, ttl=60):
     def _do(id_):
-        lcert, lkey = __salt__[
-            'mc_ssl.selfsigned_ssl_certs'](
-                id_, as_text=True)[0]
         p = 'makina-states.localsettings.ssl.'
         rdata = OrderedDict()
-        rdata[p + 'certificate'] = lcert
-        rdata[p + 'certificate_key'] = lkey
+        cloud_vm_attrs = __salt__['mc_pillar.query']('cloud_vm_attrs')
+        #
+        # tie extra domains of vms to a A record: part2
+        # try to resolve leftover ips
+        todo = OrderedDict([(id_, id_)])
+        _data = cloud_vm_attrs.get(id_,
+                                   OrderedDict())
+        domains = _data.get('domains', [])
+        for domain in domains:
+            todo[domain] = domain
+        # load also a selfsigned wildcard
+        # certificate for all of those domains
+        for d in todo.values():
+            if d.count('.') >= 2 and not d.startswith('*.'):
+                wd = '*.' + '.'.join(d.split('.')[1:])
+                todo[wd] = wd
+        for did, domain in todo.items():
+            lcert, lkey = __salt__[
+                'mc_ssl.selfsigned_ssl_certs'](
+                    domain, as_text=True)[0]
+            rdata[p + 'certificates.' + did] = (lcert, lkey)
         return rdata
     cache_key = 'mc_pillar.get_ssl_conf{0}'.format(id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)

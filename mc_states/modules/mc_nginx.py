@@ -94,10 +94,6 @@ def settings():
         raw setting for nginx (see nginx documentation)
     multi_accept
         raw setting for nginx (see nginx documentation)
-    ssl_cert
-        ssl_cert content if any
-    ssl_key
-        ssl_key content if any
     ssl_cacert
         ssl_cacert content if any
     ssl_redirect
@@ -294,7 +290,12 @@ def settings():
 
 
 def vhost_settings(domain, doc_root, **kwargs):
-    '''Settings for the nginx macro'''
+    '''Settings for the nginx macro
+    ssl_cert
+        ssl_cert content if any
+    ssl_key
+        ssl_key content if any
+    '''
     nginxSettings = copy.deepcopy(__salt__['mc_nginx.settings']())
     # retro compat
     extra = kwargs.pop('extra', {})
@@ -336,6 +337,10 @@ def vhost_settings(domain, doc_root, **kwargs):
     nginxSettings['data'] = copy.deepcopy(nginxSettings)
     nginxSettings['data']['extra'] = copy.deepcopy(nginxSettings)
     nginxSettings['extra'] = copy.deepcopy(nginxSettings)
+    lcert, lkey = __salt__[
+        'mc_ssl.get_configured_cert'](domain)
+    nginxSettings['ssl_cert'] = lcert
+    nginxSettings['ssl_key'] = lkey
     if nginxSettings.get('ssl_cert', ''):
         nginxSettings['ssl_bundle'] = ''
         certs = ['ssl_cert']

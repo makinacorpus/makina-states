@@ -57,3 +57,6 @@ echo "sync http://exchange.nagios.org/directory/Plugins/Operating-Systems/Linux/
 
 wget "https://fidanov.net/c0d3/nagios-plugins/mio/check_mio" -O check_mio
 chmod +x "check_mio"
+
+wget https://raw.githubusercontent.com/egeland/nagios-rbl-check/master/check_rbl.py -O check_rbl.py
+chmod +x check_rbl.py
