@@ -44,10 +44,15 @@ makina-nginx-minimal-{{f}}:
     - watch_in:
       - mc_proxy: nginx-post-conf-hook
 {% endfor %}
+
+{# disable naxsi
+'/usr/share/nginx-naxsi-ui/naxsi-ui/nx_extract.py',
+'/etc/init.d/nginx-naxsi-ui',
+'/etc/default/nginx-naxsi-ui',
+settings['basedir'] + '/naxsi.conf',
+settings['basedir'] + '/naxsi-ui.conf',
+#}
 {% for f in [
-    '/usr/share/nginx-naxsi-ui/naxsi-ui/nx_extract.py',
-    '/etc/init.d/nginx-naxsi-ui',
-    '/etc/default/nginx-naxsi-ui',
     settings['basedir'] + '/drupal_cron_allowed_hosts.conf',
     settings['basedir'] + '/fastcgi_fpm_drupal.conf',
     settings['basedir'] + '/fastcgi_fpm_drupal_params.conf',
@@ -60,9 +65,7 @@ makina-nginx-minimal-{{f}}:
     settings['basedir'] + '/map_cache.conf',
     settings['basedir'] + '/microcache_fcgi.conf',
     settings['basedir'] + '/mime.types',
-    settings['basedir'] + '/naxsi.conf',
     settings['basedir'] + '/naxsi_core.rules',
-    settings['basedir'] + '/naxsi-ui.conf',
     settings['basedir'] + '/nginx.conf',
     settings['basedir'] + '/php_fpm_status_vhost.conf',
     settings['basedir'] + '/php_fpm_status_allowed_hosts.conf',

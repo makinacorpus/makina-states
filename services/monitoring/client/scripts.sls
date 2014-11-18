@@ -45,6 +45,7 @@ monitoring-sysstat-svc:
 monitoring-sysstat-svc:
   service.dead:
     - name: sysstat
+    - enable: False
 {% endif %}
 
 ms-scripts-d:

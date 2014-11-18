@@ -22,11 +22,13 @@ makina-nginx-restart:
       - mc_proxy: nginx-pre-restart-hook
 
 makina-ngin-naxsi-ui-running:
-{% if settings.use_naxsi %}
+{# totally disable naxui for now #}
+{% if False %}
   service.running:
     - enable: True
 {% else %}
   service.dead:
+    - enable: False
 {% endif %}
     - name: nginx-naxsi-ui
     - watch_in:
