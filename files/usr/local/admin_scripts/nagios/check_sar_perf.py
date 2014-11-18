@@ -104,6 +104,7 @@ class SarNRPE:
                 badchars=['%','/']
                 columns[i] = ''.join(j for j in columns[i] if j not in badchars)
                 string = "%s=%s" %(columns[i].strip('%/'), "{0}".format(data[i].strip()).replace(',', '.'))
+                string = string.replace('=:', '=0.0')
                 self.stats.append(string)
                 #print "Appended data: ", data[i]
 
