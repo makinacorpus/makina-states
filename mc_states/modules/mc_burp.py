@@ -219,6 +219,8 @@ def settings():
                     'restore_client_port': '4973',
                     'restore_client_status_port': '7974',
                     'restore_pidfile': '/var/run/burp.restore.pid',
+                    'restore_lockfile': '/var/run/burp-server-restore.lock',
+                    'lockfile': '/var/run/burp-server.lock',
                 },
                 'client_common': {
                     'dedup_group': 'linux',
@@ -250,6 +252,8 @@ def settings():
                     'restore_script_post': None,
                     'include': ['/'],
                     'exclude': None,
+                    'restore_lockfile': '/var/run/burp-client.restore.lock',
+                    'lockfile': '/var/run/burp-client.lock',
                     'exclude_ext': ['pyc',
                                     'pyo'],
                     'exclude_regex': None,
