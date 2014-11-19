@@ -210,6 +210,8 @@ icinga2-configuration-add-auto-host-confs:
     - template: jinja
 
 {% for i in [
+  '/usr/bin/icinga-service-irc.sh',
+  '/usr/bin/icinga-host-irc.sh', 
   '/usr/bin/icinga-service-mail.sh',
   '/usr/bin/icinga-host-mail.sh',
 ] %}
