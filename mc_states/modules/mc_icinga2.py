@@ -508,6 +508,16 @@ def settings():
                     'SSHKEY': '\"/var/lib/nagios/id_rsa_supervision\"',
                     'ZoneName': "\"NodeName\"",
                 },
+                'irc': {
+                    'channel': '#test',
+                    'ssl': 'False',
+                    'key': '',
+                    'server_name': 'freenode',
+                    'server': 'irc.freenode.net:6667',
+                    'enabled': True,
+                    'nick': 'makina_icinga',
+                    'server_password': '',
+                },
                 'zones_conf': {
                     'object Endpoint NodeName': {
                         'host': "NodeName"},
@@ -637,6 +647,7 @@ def add_notification(attrs,
     your notification object definition
 
     '''
+    icingaSettings = __salt__['mc_icinga2.settings']()
     if not attrs:
         attrs = {}
     if is_service:
@@ -669,11 +680,19 @@ def add_notification(attrs,
             notification_list.append(i)
     if notification_list:
         # search for our special notification
-        default_notification = {}
+        default_notification = None
+        default_irc_notification = None
         for i in onotifications:
             if i.get('vars.default_email_notification', False):
                 default_notification = i
+            if i.get('vars.default_irc_notification', False):
+                default_irc_notification = i
+            if None not in [default_notification, default_irc_notification]:
                 break
+        if default_notification is None:
+            default_notification = {}
+        if default_irc_notification is None:
+            default_irc_notification = {}
         # if notifications were defined for the object
         # but we did not found any notication, take the first
         # as the default one
@@ -686,11 +705,15 @@ def add_notification(attrs,
                 onotifications.append(default_notification)
             default_notification['vars.default_email_notification'] = True
         imports = default_notification.setdefault('import', [])
+        default_notification.setdefault(
+            'vars.n_name', 'mail_notification')
         if is_host:
             default_import = 'NT_HOST'
+            default_irc_import = 'NT_HOST_IRC'
         #     intv = 'host.vars.n_interval + ""'
         if is_service:
             default_import = 'NT_SERVICE'
+            default_irc_import = 'NT_SERVICE_IRC'
         #     intv = 'service.vars.n_interval + ""'
         # XXX: conditionnal notification interval based on underlying
         # service or host does not work that way yet, searching ...
@@ -708,6 +731,27 @@ def add_notification(attrs,
             users = default_notification.setdefault(ntyp, [])
             if notifier not in users:
                 users.append(notifier)
+        if icingaSettings['irc']['enabled']:
+            if not default_irc_notification:
+                # take the second, here !
+                if len(onotifications) > 1:
+                    default_irc_notification = onotifications[1]
+                else:
+                    default_irc_notification = {}
+                    default_irc_notification.setdefault('import', [])
+                    onotifications.append(default_irc_notification)
+                default_irc_notification[
+                    'vars.default_irc_notification'] = True
+            default_irc_notification.setdefault(
+                'vars.n_name', 'irc_notification')
+            users = default_irc_notification.setdefault('users', [])
+            if 'U_bot' not in users:
+                users.append('U_bot')
+            irc_imports = default_irc_notification.setdefault('import', [])
+            default_irc_notification.setdefault('interval', intv)
+            for simport in ['NT_BASE', default_irc_import]:
+                if simport not in irc_imports:
+                    irc_imports.append(simport)
     return attrs
 
 
