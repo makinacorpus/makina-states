@@ -53,7 +53,9 @@
 {% set ugs = salt['mc_usergroup.settings']() %}
 {% set apacheData = salt['mc_apache.settings']() %}
 {% set locs = salt['mc_locations.settings']() %}
+{% set phpSettings = salt['mc_php.settings']() %}
 
+{% set s_ALL = phpSettings.s_all %}
 {% macro fpm_pool(domain, doc_root) %}
 {% set data = salt['mc_php.fpmpool_settings'](
                           domain, doc_root, **kwargs) %}
@@ -148,3 +150,31 @@ makina-php-pool-{{ data.pool_name.replace('*', 'star') }}-directories:
       - mc_proxy: makina-apache-post-conf
       - mc_proxy: makina-php-post-conf
 {% endmacro %}
+
+{% macro toggle_ext(ext, activation_status=True) %}
+{% if activation_status %}
+makina-php-{{ext}}-install:
+  cmd.run:
+    - name: {{ locs.sbin_dir }}/php5enmod {{s_ALL}} {{ext}}
+    {% if grains['os'] in ['Ubuntu'] %}
+    - unless: {{ locs.sbin_dir }}/php5query -q -s cli -m {{ext}}
+    {% endif %}
+    - onlyif: test -e {{ locs.sbin_dir }}/php5enmod
+    - require:
+      - mc_proxy: makina-php-pre-conf
+    - watch_in:
+      - mc_proxy: makina-php-post-conf
+{%   else %}
+makina-php-{{ext}}-disable:
+  cmd.run:
+    - name: {{ locs.sbin_dir }}/php5dismod {{s_ALL}} {{ext}}
+    {% if grains['os'] in ['Ubuntu'] %}
+    - onlyif: {{ locs.sbin_dir }}/php5query -q -s cli -m {{ext}}
+    {% endif %}
+    - unless: test ! -e {{ locs.sbin_dir }}/php5enmod
+    - require:
+      - mc_proxy: makina-php-pre-conf
+    - watch_in:
+      - mc_proxy: makina-php-post-conf
+{%   endif %}
+{%  endmacro %}

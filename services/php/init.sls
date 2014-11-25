@@ -6,5 +6,6 @@
 {% set apacheData = macros.apacheData %}
 {% set nodetypes = macros.nodetypes%}
 {% set phpData = macros.phpData %}
+{% set toggle_ext = macros.toggle_ext %}
 {% set locs = macros.locs %}
 {% set default_pool_template_source = macros.default_pool_template_source %}

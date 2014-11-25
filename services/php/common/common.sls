@@ -1,6 +1,7 @@
 {% set locs = salt['mc_locations.settings']() %}
 {% set phpSettings = salt['mc_php.settings']()  %}
 {% set s_ALL = phpSettings.s_all %}
+{% import "makina-states/services/php/macros.sls" as macros with context %}
 
 {#- Common php installations (mod_php or php-fpm) files #}
 include:
@@ -53,6 +54,9 @@ makina-php-composer:
       - mc_proxy: makina-php-post-inst
     - watch_in:
       - mc_proxy: makina-php-pre-conf
+
+{{ macros.toggle_ext('xdebug', phpSettings.xdebug_install and phpSettings.xdebug_enabled) }}
+
 #--------------------- APC (mostly deprecated)
 {% if phpSettings.apc_install %}
 makina-php-apc:
@@ -75,65 +79,7 @@ makina-php-apc:
     - watch_in:
       - mc_proxy: makina-php-pre-conf
 
-{% if not (
-    (grains['os'] in 'Ubuntu')
-    and (salt['mc_pkgs.settings']().udist not in ['precise'])
-) %}
-{%   if phpSettings.apc_enabled %}
-makina-php-apc-install:
-  cmd.run:
-    - name: {{ locs.sbin_dir }}/php5enmod {{s_ALL}} apcu
-    {% if grains['os'] in ['Ubuntu'] %}
-    - onlyif: test -e {{ locs.sbin_dir }}/php5enmod
-    - unless: {{ locs.sbin_dir }}/php5query -q -s cli -m apcu
-    {% endif %}
-    - require:
-      - mc_proxy: makina-php-pre-conf
-      - file: makina-php-apc
-    - watch_in:
-      - mc_proxy: makina-php-post-conf
-{%   else %}
-makina-php-apc-disable:
-  cmd.run:
-    - name: {{ locs.sbin_dir }}/php5dismod {{s_ALL}} apcu
-    {% if grains['os'] in ['Ubuntu'] %}
-    - onlyif: {{ locs.sbin_dir }}/php5query -q -s cli -m apcu
-    {% endif %}
-    - unless: test ! -e {{ locs.sbin_dir }}/php5enmod
-    - require:
-      - mc_proxy: makina-php-pre-conf
-      - file: makina-php-apc
-    - watch_in:
-      - mc_proxy: makina-php-post-conf
-{%   endif %}
+{% if not ( (grains['os'] in 'Ubuntu') and (salt['mc_pkgs.settings']().udist not in ['precise'])) %}
+{{ macros.toggle_ext('apcu', apc_enabled)}}
 {% endif %}
-
-#--------------------- XDEBUG
-{% if (
-    phpSettings.xdebug_install
-    and phpSettings.xdebug_enabled) %}
-makina-php-xdebug-install:
-  cmd.run:
-    - name: {{ locs.sbin_dir }}/php5enmod {{s_ALL}} xdebug
-    {% if grains['os'] in ['Ubuntu'] %}
-    - unless: {{ locs.sbin_dir }}/php5query -q -s cli -m xdebug
-    {% endif %}
-    - onlyif: test -e {{ locs.sbin_dir }}/php5enmod
-    - require:
-      - mc_proxy: makina-php-pre-conf
-    - watch_in:
-      - mc_proxy: makina-php-post-conf
-{%   else %}
-makina-php-xdebug-disable:
-  cmd.run:
-    - name: {{ locs.sbin_dir }}/php5dismod {{s_ALL}} xdebug
-    {% if grains['os'] in ['Ubuntu'] %}
-    - onlyif: {{ locs.sbin_dir }}/php5query -q -s cli -m xdebug
-    {% endif %}
-    - unless: test ! -e {{ locs.sbin_dir }}/php5enmod
-    - require:
-      - mc_proxy: makina-php-pre-conf
-    - watch_in:
-      - mc_proxy: makina-php-post-conf
-{%   endif %}
 {% endif %}
