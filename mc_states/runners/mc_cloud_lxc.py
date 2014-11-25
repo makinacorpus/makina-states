@@ -352,7 +352,7 @@ def vm_spawn(vm,
             #     cret['result'] = False
             # cret = cret[vm]['runner_return']
             # XXX: using the lxc runner which is now faster and nicer.
-            cret = __salt__['lxc.cloud_init'](
+            cret = __salt__['mc_lxc_fork.cloud_init'](
                 [vm], host=compute_node, **profile_data)
             if not cret['result']:
                 # convert to regular dict for pformat

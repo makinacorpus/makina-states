@@ -1133,7 +1133,7 @@ def autoconfigure_host(host,
                         command += '_AUTH'
                     if ss.get('vars.http_expect'):
                         command += '_E'
-                    ss['check_command'] = command
+                    ss.setdefault('check_command', command)
                     http_port = ss.setdefault('vars.port', http_port)
                     # switch service to not alert if it is
                     # selected in custom attributes

@@ -2099,25 +2099,31 @@ def get_supervision_objects_defs(id_):
                     sobjs[g] = {'attrs': {'display_name': g}}
                 if 'HG_PROVIDER_' in g:
                     parents.append(g.replace('HG_PROVIDER_', ''))
-            # if we defined parents but no address, we should rely on an
-            # dns query to get the ip fromand cross it over the failover map
-            # as the goal is to resolve any mounted failover ip as the
-            # address of this supervised entry
-            if (
-                'address' not in hdata['attrs']
-                and rparents
-            ):
+            # try to get addr from dns
+            if 'address' not in hdata['attrs']:
                 socket.setdefaulttimeout(1)
-                addr = socket.gethostbyname(host)
-                failover = [a for a in parents if a in net['ipsfo_map']]
-                for h in failover:
-                    if addr in ips_for(h, fail_over=True):
-                        hdata['attrs']['address'] = addr
-                        hdata.update(disable_common_checks)
-                        break
+                try:
+                    addr = socket.gethostbyname(host)
+                    # if we can determine that this entry is a vm
+                    # we should disable some checks
+                    # if this address is a failover
+                    if rparents:
+                        failover = [a
+                                    for a in parents
+                                    if a in net['ipsfo_map']]
+                        for h in failover:
+                            if addr in ips_for(h, fail_over=True):
+                                hdata.update(disable_common_checks)
+                                break
+                    hdata['attrs']['address'] = addr
+                except Exception:
+                    trace = traceback.format_exc()
+                    log.error('Error while determining addr for'
+                              ' {0}'.format(host))
+                    log.error(trace)
             # do not check dummy ip failover'ed hosts for
             # backup refreshness
-            #if host not in physical_hosts_to_check:
+            # if host not in physical_hosts_to_check:
             #    hdata['backup_burp_age'] = False
             if hdata.get('backup_burp_age', None) is not False:
                 bsm = __salt__['mc_pillar.query']('backup_server_map')
