@@ -379,6 +379,7 @@ def get_settings_for_vm(target, vm, full=True):
         d_ct = lxc_defaults['default_container']
     lxc_data.setdefault('from_container', d_ct)
     lxc_data.setdefault('ssh_gateway', None)
+    lxc_data.setdefault('bootstrap_shell', 'bash')
     lxc_data = saltapi.complete_gateway(lxc_data, lxcSettings)
     for i in ['bootsalt_branch',
               "master", "master_port", "autostart",
