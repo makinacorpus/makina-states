@@ -70,7 +70,6 @@ vimrc-config-block-{{i}}:
     - backup: '.bak'
     - show_changes: True
 {% endfor %}
-{% endif %}
 
 vimrc_configs-touch-global:
   file.managed:
@@ -114,3 +113,4 @@ vimrc-config-block-global:
     - append_if_not_found: True
     - backup: '.bak'
     - show_changes: True
+{% endif %}
