@@ -273,6 +273,33 @@ def _vm_configure(what, target, compute_node, vm, ret, output):
     return ret
 
 
+def _load_profile(compute_node, data, profile_data=None):
+    if profile_data is None:
+        profile_data = {
+            'target': compute_node,
+            'dnsservers': data.get("dnsservers", ["8.8.8.8", "4.4.4.4"]),
+            'minion': {
+                'master': data['master'],
+                'master_port': data['master_port']}}
+    for var in ["from_container", "snapshot", "image",
+                "additional_ips",
+                "bootstrap_shell",
+                "gateway", "bridge", "mac", "lxc_conf_unset",
+                "ssh_gateway", "ssh_gateway_user", "ssh_gateway_port",
+                "ssh_gateway_key", "ip", "netmask",
+                "size", "backing", "vgname", "script",
+                "lvname", "script_args", "dnsserver",
+                "ssh_username", "password", "lxc_conf"]:
+        val = data.get(var)
+        if val:
+            if var in ['script_args']:
+                if '--salt-cloud-dir' not in val:
+                    val = '{0} {1}'.format(
+                        val, '--salt-cloud-dir {0}')
+            profile_data[var] = val
+    return profile_data
+
+
 def vm_spawn(vm,
              compute_node=None,
              vt='lxc',
@@ -298,35 +325,9 @@ def vm_spawn(vm,
     reg = __salt__['mc_cloud_vm.lazy_register_configuration_on_cn'](
         vm, compute_node)
     pillar = __salt__['mc_cloud_vm.vm_sls_pillar'](compute_node, vm)
-    target = compute_node
     data = pillar['vtVmData']
     cloudSettings = pillar['cloudSettings']
-    profile = data.get(
-        'profile',
-        'ms-{0}-dir-sratch'.format(target))
-    profile_data = {
-        'target': target,
-        'dnsservers': data.get("dnsservers", ["8.8.8.8", "4.4.4.4"]),
-        'minion': {
-            'master': data['master'],
-            'master_port': data['master_port'],
-        }
-    }
-    for var in ["from_container", "snapshot", "image",
-                "additional_ips",
-                "gateway", "bridge", "mac", "lxc_conf_unset",
-                "ssh_gateway", "ssh_gateway_user", "ssh_gateway_port",
-                "ssh_gateway_key", "ip", "netmask",
-                "size", "backing", "vgname", "script",
-                "lvname", "script_args", "dnsserver",
-                "ssh_username", "password", "lxc_conf"]:
-        val = data.get(var)
-        if val:
-            if var in ['script_args']:
-                if '--salt-cloud-dir' not in val:
-                    val = '{0} {1}'.format(
-                        val, '--salt-cloud-dir {0}')
-            profile_data[var] = val
+    profile_data = _load_profile(compute_node, data)
     marker = "{cloudSettings[prefix]}/pki/master/minions/{vm}".format(
         cloudSettings=cloudSettings, vm=vm)
     lret = cli('cmd.run_all', 'test -e {0}'.format(marker))
@@ -345,12 +346,6 @@ def vm_spawn(vm,
         ping = False
     if force or (lret['retcode'] and not ping):
         try:
-            # XXX: Code to use with salt-cloud
-            # cret = __salt__['cloud.profile'](
-            #     profile, [vm], vm_overrides=profile_data)
-            # if vm not in cret:
-            #     cret['result'] = False
-            # cret = cret[vm]['runner_return']
             # XXX: using the lxc runner which is now faster and nicer.
             cret = __salt__['mc_lxc_fork.cloud_init'](
                 [vm], host=compute_node, **profile_data)
@@ -384,6 +379,99 @@ def vm_spawn(vm,
                   'mc_cloud_lxc_containers', reg)
     if not ret['result'] and not ret['comment']:
         ret['comment'] = ('Failed to provision lxc {0},'
+                          ' see {1} mastersalt-minion log').format(
+                              vm, compute_node)
+    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+    return ret
+
+
+def vm_reconfigure(vm,
+                   compute_node=None,
+                   vt='lxc',
+                   ret=None,
+                   output=True,
+                   force=False):
+    '''
+    Reconfigure the vm if neccessary
+
+    ::
+
+        mastersalt-run -lall mc_cloud_lxc.vm_reconfigure_net foo.domain.tld
+
+    '''
+    func_name = 'mc_cloud_lxc.vm_spawn {0}'.format(vm)
+    __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    if not ret:
+        ret = result()
+    compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
+    reg = cli('mc_macros.get_local_registry', 'mc_cloud_lxc_containers')
+    provisioned_containers = reg.setdefault('provisioned_containers',
+                                            OrderedDict())
+    containers = provisioned_containers.setdefault(compute_node, [])
+    reg = __salt__['mc_cloud_vm.lazy_register_configuration_on_cn'](
+        vm, compute_node)
+    pillar = __salt__['mc_cloud_vm.vm_sls_pillar'](compute_node, vm)
+    data = pillar['vtVmData']
+    cloudSettings = pillar['cloudSettings']
+    profile_data = _load_profile(compute_node, data)
+    marker = "{cloudSettings[prefix]}/pki/master/minions/{vm}".format(
+        cloudSettings=cloudSettings, vm=vm)
+    lret = cli('cmd.run_all', 'test -e {0}'.format(marker))
+    lret['retcode'] = 1
+    try:
+        ping = False
+        if vm in containers:
+            ping = cli('test.ping', salt_timeout=10, salt_target=vm)
+    except Exception:
+        ping = False
+    if force or (lret['retcode'] and not ping):
+        try:
+            kw = OrderedDict()
+            # XXX: using the lxc runner which is now faster and nicer.
+            args = _cli('mc_lxc_fork.cloud_init_interface',
+                        profile_data, salt_target=compute_node)
+            for i in [
+                'name',
+                'cpu',
+                'cpuset',
+                'cpushare',
+                'memory',
+                'profile',
+                'network_profile',
+                'nic_opts',
+                'bridge',
+                'gateway',
+                'autostart'
+            ]:
+                if i in args:
+                    kw[i] = args[i]
+            cret = _cli('mc_lxc_fork.reconfigure',
+                        kw, salt_target=compute_node)
+            if not cret['result']:
+                ret['trace'] += 'FAILURE ON LXC {0}:\n{1}\n'.format(
+                    vm, pformat(dict(cret)))
+                merge_results(ret, cret)
+                ret['result'] = False
+            else:
+                ret['comment'] += '{0} provisioned\n'.format(vm)
+        except Exception, ex:
+            ret['trace'] += '{0}\n'.format(traceback.format_exc())
+            ret['result'] = False
+            ret['comment'] += red("{0}".format(ex))
+    if ret['result']:
+        cret = __salt__['mc_cloud_vm.lazy_register_configuration'](
+            vm, compute_node)
+        if not cret['result']:
+            ret['result'] = False
+            ret['comment'] += (
+                'Error was applying cloud configuration on {0}\n').format(vm)
+    if ret['result']:
+        containers.append(vm)
+        reg = cli('mc_macros.update_local_registry',
+                  'mc_cloud_lxc_containers', reg)
+    if not ret['result'] and not ret['comment']:
+        ret['comment'] = ('Failed to reconfigure lxc {0},'
                           ' see {1} mastersalt-minion log').format(
                               vm, compute_node)
     salt_output(ret, __opts__, output=output)
