@@ -2597,7 +2597,6 @@ def _run(name,
         raise CommandExecutionError(
             'Container \'{0}\' is not running'.format(name)
         )
-    log.info(name, cmd)
     if attachable(name):
         if isinstance(keep_env, salt._compat.string_types):
             keep_env = keep_env.split(',')
