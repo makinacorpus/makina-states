@@ -289,6 +289,7 @@ def cloud_init_interface(name, vm_=None, **kwargs):
     pub_key = vm_.get('pub_key', None)
     priv_key = vm_.get('priv_key', None)
     size = vm_.get('size', '20G')
+    sh = vm_.get('boottstrap_shell', 'sh')
     script = vm_.get('script', None)
     script_args = vm_.get('script_args', None)
     if image:
@@ -383,7 +384,7 @@ def cloud_init_interface(name, vm_=None, **kwargs):
     )
     lxc_init_interface['bootstrap_url'] = script
     lxc_init_interface['bootstrap_args'] = script_args
-    lxc_init_interface['bootstrap_shell'] = 'sh'
+    lxc_init_interface['bootstrap_shell'] = sh
     lxc_init_interface['autostart'] = autostart
     lxc_init_interface['users'] = users
     lxc_init_interface['password'] = password
@@ -1032,7 +1033,9 @@ def init(name,
     does_exist = exists(name)
     to_reboot = False
     remove_seed_marker = False
-    if clone_from:
+    if does_exist:
+        pass
+    elif clone_from:
         remove_seed_marker = True
         try:
             clone(name, clone_from, profile=profile, **kwargs)
@@ -1138,7 +1141,7 @@ def init(name,
                 return ret
             changes.append({'password': 'Password(s) updated'})
             if cmd_retcode(name,
-                           'sh -c \'touch "{0}"; test -e "{0}"'.format(gid),
+                           'sh -c \'touch "{0}"; test -e "{0}"\''.format(gid),
                            ignore_retcode=True) != 0:
                 ret['comment'] = 'Failed to set password marker'
                 if changes:
@@ -1173,9 +1176,20 @@ def init(name,
                 if changes:
                     ret['changes'] = changes_dict
                 return ret
+            changes.append(
+                {'bootstrap': 'Container already bootstrapped'}
+            )
 
     if seed or seed_cmd:
-        if seed:
+        gid = '/.lxc.initial_seed'
+        # retro compatibility, test also old markers
+        gids = [gid, '/lxc.initial_seed']
+        if any(cmd_retcode(name,
+                           'test -e {0}'.format(x),
+                           ignore_retcode=True) == 0
+               for x in gids):
+            pass
+        elif seed:
             try:
                 result = bootstrap(
                     name, config=salt_config,
@@ -1200,7 +1214,7 @@ def init(name,
                         ret['changes'] = changes_dict
                     return ret
                 changes.append(
-                    {'bootstrap': 'Continer successfully bootstrapped'}
+                    {'bootstrap': 'Container successfully bootstrapped'}
                 )
         elif seed_cmd:
             try:
@@ -2222,6 +2236,7 @@ def set_password(name, users, password, encrypted=True):
 
 set_pass = set_password
 
+
 def update_lxc_conf(name, lxc_conf, lxc_conf_unset):
     '''
     Edit LXC configuration options
@@ -2406,6 +2421,12 @@ def bootstrap(name,
 
     bootstrap_args
         salt bootstrap script arguments
+        custom bootstrap args are totally custom, it is up to the user to
+        insert the placeholder for the config directory ( {0} )
+        For example, some salt bootstrap script do not use at all ``-c``
+        eg::
+
+            --arg1 --arg2 -c {0}
 
     bootstrap_shell
         shell to execute the script into
@@ -2441,9 +2462,10 @@ def bootstrap(name,
     if not c_info:
         return None
 
-    if bootstrap_args:
-        bootstrap_args = '{0} -c {{0}}'.format(bootstrap_args)
-    else:
+    # custom bootstrap args are totally custom, it is up to the user to
+    # insert the placeholder for the config directory ( {0} )
+    # For example, some salt bootstrap script do not use at all -c
+    if not bootstrap_args:
         bootstrap_args = '-c {0}'
     if not bootstrap_shell:
         bootstrap_shell = 'sh'
@@ -2480,14 +2502,13 @@ def bootstrap(name,
                     'mkdir -p {0}'.format(dest_dir),
                     'chmod 700 {0}'.format(dest_dir),
                 ]:
-                    if run_cmd(name, cmd, stdout=True):
+                    if run_cmd(name, cmd):
                         log.error(
                             ('tmpdir {0} creation'
                              ' failed ({1}').format(dest_dir, cmd))
                         return False
-                cp(name,
-                   bs_,
-                   '{0}/bootstrap.sh'.format(dest_dir))
+                dbs = '{0}/bootstrap.sh'.format(dest_dir)
+                cp(name, bs_, dbs)
                 cp(name, cfg_files['config'],
                    os.path.join(configdir, 'minion'))
                 cp(name, cfg_files['privkey'],
@@ -2495,13 +2516,14 @@ def bootstrap(name,
                 cp(name, cfg_files['pubkey'],
                    os.path.join(configdir, 'minion.pub'))
                 bootstrap_args = bootstrap_args.format(configdir)
-                cmd = ('{0} /tmp/bootstrap.sh {1}'
-                       .format(bootstrap_shell, bootstrap_args))
+                cmd = ('{0} {1} {2}'
+                       .format(bootstrap_shell, dbs, bootstrap_args))
                 # log ASAP the forged bootstrap command which can be wrapped
                 # out of the output in case of unexpected problem
                 log.info('Running {0} in LXC container \'{1}\''
                          .format(cmd, name))
-                ret = cmd_retcode(name, cmd, use_vt=True) == 0
+                ret = cmd_retcode(name, cmd, output_loglevel='info',
+                                  use_vt=True) == 0
             else:
                 ret = False
         else:
@@ -2516,7 +2538,7 @@ def bootstrap(name,
         if orig_state == 'stopped':
             stop(name)
         elif orig_state == 'frozen':
-            lxc.freeze(name)
+            freeze(name)
         # mark seeded upon successful install
         if ret:
             cmd_run(name, 'touch \'{0}\''.format(SEED_MARKER))
@@ -2575,6 +2597,7 @@ def _run(name,
         raise CommandExecutionError(
             'Container \'{0}\' is not running'.format(name)
         )
+    log.info(name, cmd)
     if attachable(name):
         if isinstance(keep_env, salt._compat.string_types):
             keep_env = keep_env.split(',')
