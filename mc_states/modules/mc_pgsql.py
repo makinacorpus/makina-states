@@ -219,6 +219,11 @@ def settings():
                      'user': 'all',
                      'address': '10.5.0.0/16',
                      'method': 'md5'},
+                    {'type': 'host',
+                     'db': 'all',
+                     'user': 'all',
+                     'address': '0.0.0.0/32',
+                     'method': 'md5'},
                 ]
             }
         )
