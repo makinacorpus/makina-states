@@ -178,7 +178,7 @@ makina-{{id}}-bashprofile-load-acc:
   file.accumulated:
     - filename: {{bashprofile}}
     - text: |
-            USERENV="$(whoami)_${$}"
+            USERENV="$(echo $(whoami)_${$}|sed -e "s/\(-\)//g")"
             if [ -f '{{ locs.conf_dir }}/profile' ];then
               # only apply if we have no inclusion yet
               if [ "x$(env|grep -q "${USERENV}_BASH_RC_PROFILE_LOADED";echo ${?})" = "x1" ];then
@@ -298,7 +298,7 @@ makina-{{id}}-bashrc-load-acc:
               #fi
             fi
             ############
-            USERENV="$(whoami)_${$}"
+            USERENV="$(echo $(whoami)_${$}|sed -e "s/\(-\)//g")"
             if [ -f '{{bashprofile}}' ];then
               # only apply if we have no inclusion yet
               if [ "x$(env|grep -q "${USERENV}_BASH_PROFILE_LOADED";echo ${?})" = "x1" ];then
