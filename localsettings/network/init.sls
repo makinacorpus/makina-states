@@ -26,7 +26,7 @@ network-cfg-reset:
     - group: root
     - mode: '0755'
     - template: jinja
-    - name: {{ locs.conf_dir }}/etc/network/if-up.d/reset-net-bridges
+    - name: {{ locs.conf_dir }}/network/if-up.d/reset-net-bridges
     - source: salt://makina-states/files/etc/network/if-up.d/reset-net-bridges
 
 network-cfg:
