@@ -19,7 +19,7 @@ makina-etc-profile-acc:
   file.accumulated:
     - filename: {{ locs.conf_dir }}/profile
     - text: |
-            USERENV="$(whoami)_${$}"
+            USERENV="$(echo $(whoami)_${$}|sed -e "s/\(-\)//g")"
             if [ -d {{ locs.conf_dir }}/profile.d ]; then
               # only apply if we have no inclusion yet
               if [ "x$(env|grep -q "${USERENV}_ETC_PROFILED_LOADED";echo ${?})" = "x1" ];then

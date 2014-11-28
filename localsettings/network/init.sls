@@ -17,9 +17,22 @@ include:
 {%  if salt['mc_controllers.mastersalt_mode']() %}
 {%- if mcnet.networkManaged %}
 {%- if grains['os_family'] in ['Debian'] %}
+
+network-cfg-reset:
+  file.managed:
+    - require_in:
+      - mc_proxy: network-last-hook
+    - user: root
+    - group: root
+    - mode: '0755'
+    - template: jinja
+    - name: {{ locs.conf_dir }}/network/if-up.d/reset-net-bridges
+    - source: salt://makina-states/files/etc/network/if-up.d/reset-net-bridges
+
 network-cfg:
   file.managed:
     - watch_in:
+      - file: network-cfg-reset
       - mc_proxy: network-last-hook
     - user: root
     - group: root
@@ -51,7 +64,7 @@ network-cfg-{{ifc}}:
 
 network-services-{{ifc}}:
   cmd.watch:
-    - name: ifdown {{ifn}};ifconfig {{ifn}} down;ifup {{ifn}}
+    - name: ifdown {{ifn}};ifconfig {{ifn}} down;ifup {{ifn}};ret=${?};ifup {{ifn}};exit ${ret}
     - watch_in:
       - mc_proxy: network-last-hook
     - watch:
