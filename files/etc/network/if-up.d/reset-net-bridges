@@ -1,0 +1,984 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+from __future__ import (absolute_import, division,
+                        print_function, unicode_literals)
+__docformat__ = 'restructuredtext en'
+
+'''
+This script reconnect each KVM or LXC virtual interface
+to its belonging bridge upon network restart where bridges
+are destroyed and restarted.
+This script must either be manually ran (without argument,
+as it introspect the current config)
+or placed inside eg /etc/network/if-up.d on Debian
+
+This script is released as a part of the makina-states repository
+and belongs to the same license and authorship.
+'''
+
+import os
+import sys
+import re
+import tempfile
+import random
+from time import time
+import copy
+from subprocess import Popen, PIPE
+import traceback
+try:
+    from thread import get_ident as _get_ident
+except ImportError:
+    from dummy_thread import get_ident as _get_ident
+
+
+re_flags = re.M | re.U | re.S
+link_start = re.compile('^\d+:', re_flags)
+spaces_sep = re.compile('  +', re_flags)
+supported_ifs = re.compile(
+    r' ?(?P<iface>(?P<type>vnet|veth)[^: ]+):?', re_flags)
+bridge_re = re.compile(
+    r'[ ]+master[ ]+(?P<link>[^ $]+)', re_flags)
+
+supported_states = re.compile(
+    r'state (?P<state>up|unknown)', re_flags)
+_LOCAL_CACHE = {}
+_default = object()
+
+
+def gen_mac(prefix='AC:DE:48'):
+    '''
+    Generates a MAC address with the defined OUI prefix.
+
+    Common prefixes:
+
+     - ``00:16:3E`` -- Xen
+     - ``00:18:51`` -- OpenVZ
+     - ``00:50:56`` -- VMware (manually generated)
+     - ``52:54:00`` -- QEMU/KVM
+     - ``AC:DE:48`` -- PRIVATE
+
+    References:
+
+     - http://standards.ieee.org/develop/regauth/oui/oui.txt
+     - https://www.wireshark.org/tools/oui-lookup.html
+     - https://en.wikipedia.org/wiki/MAC_address
+    '''
+    return '{0}:{1:02X}:{2:02X}:{3:02X}'.format(prefix,
+                                                random.randint(0, 0xff),
+                                                random.randint(0, 0xff),
+                                                random.randint(0, 0xff))
+
+
+class OrderedDict(dict):
+    '''Dictionary that remembers insertion order'''
+    def __init__(self, *args, **kwds):  # pylint: disable=E1003
+        '''Initialize an ordered dictionary.  Signature is the same as for
+        regular dictionaries, but keyword arguments are not recommended
+        because their insertion order is arbitrary.
+
+        '''
+        super(OrderedDict, self).__init__()  # pylint: disable=E1003
+        if len(args) > 1:
+            raise TypeError(
+                'expected at most 1 arguments, got {0}'.format(len(args))
+            )
+        try:
+            self.__root
+        except AttributeError:
+            self.__root = root = []                     # sentinel node
+            root[:] = [root, root, None]
+            self.__map = {}
+        self.__update(*args, **kwds)
+
+    def __setitem__(self, key, value, dict_setitem=dict.__setitem__):
+        'od.__setitem__(i, y) <==> od[i]=y'
+        if key not in self:
+            root = self.__root
+            last = root[0]
+            last[1] = root[0] = self.__map[key] = [last, root, key]
+        dict_setitem(self, key, value)
+
+    def __delitem__(self, key, dict_delitem=dict.__delitem__):
+        'od.__delitem__(y) <==> del od[y]'
+        dict_delitem(self, key)
+        link_prev, link_next, key = self.__map.pop(key)
+        link_prev[1] = link_next
+        link_next[0] = link_prev
+
+    def __iter__(self):
+        'od.__iter__() <==> iter(od)'
+        root = self.__root
+        curr = root[1]
+        while curr is not root:
+            yield curr[2]
+            curr = curr[1]
+
+    def __reversed__(self):
+        'od.__reversed__() <==> reversed(od)'
+        root = self.__root
+        curr = root[0]
+        while curr is not root:
+            yield curr[2]
+            curr = curr[0]
+
+    def clear(self):
+        'od.clear() -> None.  Remove all items from od.'
+        try:
+            for node in self.__map.itervalues():
+                del node[:]
+            root = self.__root
+            root[:] = [root, root, None]
+            self.__map.clear()
+        except AttributeError:
+            pass
+        dict.clear(self)
+
+    def popitem(self, last=True):
+        ''''''
+        if not self:
+            raise KeyError('dictionary is empty')
+        root = self.__root
+        if last:
+            link = root[0]
+            link_prev = link[0]
+            link_prev[1] = root
+            root[0] = link_prev
+        else:
+            link = root[1]
+            link_next = link[1]
+            root[1] = link_next
+            link_next[0] = root
+        key = link[2]
+        del self.__map[key]
+        value = dict.pop(self, key)
+        return key, value
+
+    # -- the following methods do not depend on the internal structure --
+
+    def keys(self):
+        'od.keys() -> list of keys in od'
+        return list(self)
+
+    def values(self):
+        'od.values() -> list of values in od'
+        return [self[key] for key in self]
+
+    def items(self):
+        'od.items() -> list of (key, value) pairs in od'
+        return [(key, self[key]) for key in self]
+
+    def iterkeys(self):
+        'od.iterkeys() -> an iterator over the keys in od'
+        return iter(self)
+
+    def itervalues(self):
+        'od.itervalues -> an iterator over the values in od'
+        for k in self:
+            yield self[k]
+
+    def iteritems(self):
+        'od.iteritems -> an iterator over the (key, value) items in od'
+        for k in self:
+            yield (k, self[k])
+
+    def update(*args, **kwds):  # pylint: disable=E0211
+        ''''''
+        if len(args) > 2:
+            raise TypeError(
+                'update() takes at most 2 positional '
+                'arguments ({0} given)'.format(len(args))
+            )
+        elif not args:
+            raise TypeError('update() takes at least 1 argument (0 given)')
+        self = args[0]
+        # Make progressively weaker assumptions about "other"
+        other = ()
+        if len(args) == 2:
+            other = args[1]
+        if isinstance(other, dict):
+            for key in other:
+                self[key] = other[key]
+        elif hasattr(other, 'keys'):
+            for key in other:
+                self[key] = other[key]
+        else:
+            for key, value in other:
+                self[key] = value
+        for key, value in kwds.items():
+            self[key] = value
+
+    __update = update
+
+    __marker = object()
+
+    def pop(self, key, default=__marker):
+        '''
+        '''
+        if key in self:
+            result = self[key]
+            del self[key]
+            return result
+        if default is self.__marker:
+            raise KeyError(key)
+        return default
+
+    def setdefault(self, key, default=None):
+        'od.setdefault(k[,d]) -> od.get(k,d), also set od[k]=d if k not in od'
+        if key in self:
+            return self[key]
+        self[key] = default
+        return default
+
+    def __repr__(self, _repr_running={}):  # pylint: disable=W0102
+        'od.__repr__() <==> repr(od)'
+        call_key = id(self), _get_ident()
+        if call_key in _repr_running:
+            return '...'
+        _repr_running[call_key] = 1
+        try:
+            if not self:
+                return '{0}()'.format(self.__class__.__name__)
+            return '{0}({1!r})'.format(self.__class__.__name__, self.items())
+        finally:
+            del _repr_running[call_key]
+
+    def __reduce__(self):
+        'Return state information for pickling'
+        items = [[k, self[k]] for k in self]
+        inst_dict = vars(self).copy()
+        for k in vars(OrderedDict()):
+            inst_dict.pop(k, None)
+        if inst_dict:
+            return (self.__class__, (items,), inst_dict)
+        return self.__class__, (items,)
+
+    def copy(self):
+        'od.copy() -> a shallow copy of od'
+        return self.__class__(self)
+
+    @classmethod
+    def fromkeys(cls, iterable, value=None):
+        '''OD.fromkeys(S[, v]) -> New ordered dictionary with keys from S
+        and values equal to v (which defaults to None).
+
+        '''
+        d = cls()
+        for key in iterable:
+            d[key] = value
+        return d
+
+    def __eq__(self, other):
+        '''od.__eq__(y) <==> od==y.  Comparison to another OD is order-sensitive
+        while comparison to a regular mapping is order-insensitive.
+
+        '''
+        if isinstance(other, OrderedDict):
+            return len(self) == len(other) and self.items() == other.items()
+        return dict.__eq__(self, other)
+
+    def __ne__(self, other):
+        return not self == other
+
+
+def _network_conf(conf_tuples=None, **kwargs):
+    nic = {}
+    ret = []
+    nic_opts = {}
+    if not conf_tuples:
+        conf_tuples = []
+    old = _get_veths(conf_tuples)
+    if not nic and not nic_opts and not old:
+        return ret
+    kwargs = copy.deepcopy(kwargs)
+    gateway = kwargs.pop('gateway', None)
+    bridge = kwargs.get('bridge', None)
+
+    ifs = [a for a in old]
+    ifs.sort()
+    gateway_set = False
+    for dev in ifs:
+        args = {}
+        opts = nic_opts.get(dev, {}) if nic_opts else {}
+        old_if = old.get(dev, {})
+        flags = opts.get('flags', '')
+        mac = opts.get('mac', '')
+        type_ = opts.get('type', args.get('type', ''))
+        link = opts.get('link', args.get('link', ''))
+        ipv4 = opts.get('ipv4')
+        ipv6 = opts.get('ipv6')
+        infos = OrderedDict([
+            ('lxc.network.type', {
+                'test': not type_,
+                'value': type_,
+                'old': old_if.get('lxc.network.type'),
+                'default': 'veth'}),
+            ('lxc.network.name', {
+                'test': False,
+                'value': dev,
+                'old': dev,
+                'default': dev}),
+            ('lxc.network.flags', {
+                'test': not flags,
+                'value': flags,
+                'old': old_if.get('lxc.network.flags'),
+                'default': 'up'}),
+            ('lxc.network.link', {
+                'test': not link,
+                'value': link,
+                'old': old_if.get('lxc.network.link'),
+                'default': 'br0'}),
+            ('lxc.network.hwaddr', {
+                'test': not mac,
+                'value': mac,
+                'old': old_if.get('lxc.network.hwaddr'),
+                'default': gen_mac()}),
+            ('lxc.network.ipv4', {
+                'test': not ipv4,
+                'value': ipv4,
+                'old': old_if.get('lxc.network.ipv4', ''),
+                'default': None}),
+            ('lxc.network.ipv6', {
+                'test': not ipv6,
+                'value': ipv6,
+                'old': old_if.get('lxc.network.ipv6', ''),
+                'default': None})])
+        # for each parameter, if not explicitly set, the
+        # config value present in the LXC configuration should
+        # take precendence over the profile configuration
+        for info in list(infos.keys()):
+            bundle = infos[info]
+            if bundle['test']:
+                if bundle['old']:
+                    bundle['value'] = bundle['old']
+                elif bundle['default']:
+                    bundle['value'] = bundle['default']
+        for info, data in infos.items():
+            if data['value']:
+                ret.append({info: data['value']})
+        for key, val in args.items():
+            if key == 'link' and bridge:
+                val = bridge
+            val = opts.get(key, val)
+            if key in (
+                'type', 'flags', 'name',
+                'gateway', 'mac', 'link', 'ipv4', 'ipv6'
+            ):
+                continue
+            ret.append({'lxc.network.{0}'.format(key): val})
+        # gateway (in automode) must be appended following network conf !
+        if not gateway:
+            gateway = args.get('gateway', None)
+        if gateway is not None and not gateway_set:
+            ret.append({'lxc.network.ipv4.gateway': gateway})
+            # only one network gateway ;)
+            gateway_set = True
+    # normally, this wont happen
+    # set the gateway if specified even if we did
+    # not managed the network underlying
+    if gateway is not None and not gateway_set:
+        ret.append({'lxc.network.ipv4.gateway': gateway})
+        # only one network gateway ;)
+        gateway_set = True
+
+    new = _get_veths(ret)
+    # verify that we did not loose the mac settings
+    for iface in [a for a in new]:
+        ndata = new[iface]
+        nmac = ndata.get('lxc.network.hwaddr', '')
+        ntype = ndata.get('lxc.network.type', '')
+        omac, otype = '', ''
+        if iface in old:
+            odata = old[iface]
+            omac = odata.get('lxc.network.hwaddr', '')
+            otype = odata.get('lxc.network.type', '')
+        # default for network type is setted here
+        # attention not to change the network type
+        # without a good and explicit reason to.
+        if otype and not ntype:
+            ntype = otype
+        if not ntype:
+            ntype = 'veth'
+        new[iface]['lxc.network.type'] = ntype
+        if omac and not nmac:
+            new[iface]['lxc.network.hwaddr'] = omac
+
+    ret = []
+    for val in new.values():
+        iface = OrderedDict()
+        for row in val:
+            iface[row] = val[row]
+        ret.append(iface)
+    return ret
+
+
+def _rand_cpu_str(cpu):
+    '''
+    Return a random subset of cpus for the cpuset config
+    '''
+    cpu = int(cpu)
+    avail = __salt__['status.nproc']()
+    if cpu < avail:
+        return '0-{0}'.format(avail)
+    to_set = set()
+    while len(to_set) < cpu:
+        choice = random.randint(0, avail - 1)
+        if choice not in to_set:
+            to_set.add(str(choice))
+    return ','.join(sorted(to_set))
+
+
+class LXCConfig(object):
+    '''
+    LXC configuration data
+    Stolen from mc_lxc_fork (fork of saltstack lxc module)
+    '''
+    pattern = re.compile(r'^(\S+)(\s*)(=)(\s*)(.*)')
+    non_interpretable_pattern = re.compile(r'^((#.*)|(\s*))$')
+
+    def __init__(self, **kwargs):
+        kwargs = copy.deepcopy(kwargs)
+        self.name = kwargs.pop('name', None)
+        self.data = []
+        if self.name:
+            self.path = '/var/lib/lxc/{0}/config'.format(self.name)
+            if os.path.isfile(self.path):
+                with open(self.path) as f:
+                    for l in f.readlines():
+                        match = self.pattern.findall((l.strip()))
+                        if match:
+                            self.data.append((match[0][0], match[0][-1]))
+                        match = self.non_interpretable_pattern.findall(
+                            (l.strip()))
+                        if match:
+                            self.data.append(('', match[0][0]))
+        else:
+            self.path = None
+
+        def _replace(key, val):
+            if val:
+                self._filter_data(key)
+                self.data.append((key, val))
+
+        old_net = self._filter_data('lxc.network')
+        net_datas = _network_conf(conf_tuples=old_net, **kwargs)
+        if net_datas:
+            for row in net_datas:
+                self.data.extend(list(row.items()))
+
+    def as_string(self):
+        chunks = []
+
+        def _process(item):
+            sep = ' = '
+            if not item[0]:
+                sep = ''
+            chunks.append('{0[0]}{1}{0[1]}'.format(item, sep))
+        map(_process, self.data)
+        return '\n'.join(chunks) + '\n'
+
+    def write(self):
+        if self.path:
+            content = self.as_string()
+            # 2 step rendering to be sure not to open/wipe the config
+            # before as_string succeeds.
+            with open(self.path, 'w') as fic:
+                fic.write(content)
+                fic.flush()
+
+    def tempfile(self):
+        # this might look like the function name is shadowing the
+        # module, but it's not since the method belongs to the class
+        f = tempfile.NamedTemporaryFile()
+        f.write(self.as_string())
+        f.flush()
+        return f
+
+    def _filter_data(self, pattern):
+        '''
+        Removes parameters which match the pattern from the config data
+        '''
+        removed = []
+        data = []
+        for param in self.data:
+            if not param[0].startswith(pattern):
+                data.append(param)
+            else:
+                removed.append(param)
+        self.data = data
+        return removed
+
+
+def _get_veths(net_data):
+    '''
+    Parse the nic setup inside lxc conf tuples back to a dictionary indexed by
+    network interface
+    '''
+    if isinstance(net_data, dict):
+        net_data = list(net_data.items())
+    nics = OrderedDict()
+    current_nic = OrderedDict()
+    for item in net_data:
+        if item and isinstance(item, dict):
+            item = list(item.items())[0]
+        if item[0] == 'lxc.network.type':
+            current_nic = OrderedDict()
+        if item[0] == 'lxc.network.name':
+            nics[item[1].strip()] = current_nic
+        current_nic[item[0].strip()] = item[1].strip()
+    return nics
+
+
+def cache_check(cache, key):
+    '''Invalidate record in cache  if expired'''
+    try:
+        entry = cache[key]
+    except KeyError:
+        entry = {}
+    ttl = entry.get('ttl', 0)
+    if not ttl:
+        ttl = 0
+    entry.setdefault('time', 0)
+    if abs(time() - entry['time']) > ttl:
+        # log.error(
+        #      'poping stale cache {0}'.format(k))
+        remove_entry(cache, key)
+    return cache
+
+
+def memoize_cache(func, args=None, kwargs=None,
+                  key='cache_key_{0}',
+                  seconds=60, cache=None, force_run=False):
+    '''Memoize the func in the cache
+    in the key 'key' and store
+    the cached time in 'cache_key'
+    for further check of stale cache
+
+    if force_run is set, we will uncondionnaly run.
+    EG::
+
+      >>> def serial_for(domain,
+      ...                serials=None,
+      ...                serial=None,
+      ...                autoinc=True):
+      ...     def _do(domain):
+      ...         serial = int(
+      ...                 datetime.datetime.now().strftime(
+      ...                         '%Y%m%d01'))
+      ...         return db_serial
+      ...     cache_key = 'dnsserials_t_{0}'.format(domain)
+      ...     return memoize_cache(
+      ...         _do, [domain], {}, cache_key, 60)
+
+    '''
+    try:
+        seconds = int(seconds)
+    except Exception:
+        # in case of errors on seconds, try to run without cache
+        seconds = 1
+    if not seconds:
+        seconds = 1
+    if args is None:
+        args = []
+    if kwargs is None:
+        kwargs = {}
+    if cache is None:
+        cache = _LOCAL_CACHE
+    now = time()
+    if 'last_access' not in cache:
+        cache['last_access'] = now
+    last_access = cache['last_access']
+    # log.error(cache.keys())
+    # global cleanup each 2 minutes
+    if last_access > (now + (2 * 60)):
+        for k in [a for a in cache
+                  if a not in ['last_access']]:
+            cache_check(cache, k)
+    cache['last_access'] = now
+    cache_check(cache, key)
+    if key not in cache:
+        cache[key] = {}
+    entry = cache[key]
+    ret = entry.get('value', _default)
+    if force_run or (ret is _default):
+        ret = func(*args, **kwargs)
+    # else:
+    #     log.error("return cached")
+    if not force_run and ret is not _default:
+        try:
+            cache[key] = {'value': ret,
+                          'time': time(),
+                          'ttl': seconds}
+        except Exception:
+            trace = traceback.format_exc()
+            print('error while settings cache {0}'.format(trace))
+    return ret
+
+
+def remove_entry(cache, key):
+    if cache is None:
+        cache = _LOCAL_CACHE
+    if key not in cache:
+        return
+    # do not garbage collector now, so not del !
+    try:
+        cache.pop(key, None)
+    except KeyError:
+        pass
+
+
+def invalidate_memoize_cache(key='cache_key_{0}', cache=None, *a, **kw):
+    remove_entry(cache, key)
+    if key == 'ALL_ENTRIES':
+        for i in cache:
+            remove_entry(cache, i)
+
+
+def popen(command, *args, **kwargs):
+    async = kwargs.pop('async', False)
+    env = kwargs.pop('env', {})
+    env.setdefault('LANG', 'C')
+    env.setdefault('LC_ALL', 'C')
+    environ = copy.deepcopy(os.environ)
+    if isinstance(env, dict):
+        environ.update(env)
+    if args:
+        args = list(args)
+        args.insert(0, command)
+        shell = False
+    else:
+        args = command
+        shell = True
+    p = Popen(args, shell=shell, env=environ,
+              stdin=PIPE, stdout=PIPE, stderr=PIPE, **kwargs)
+    if not async:
+        p.wait()
+    return p
+
+
+def get_output(command, *args, **kwargs):
+    get_process = kwargs.pop('get_process', False)
+    p = popen(command, *args, **kwargs)
+    out = p.stdout.read()
+    err = p.stderr.read()
+    if not isinstance(out, unicode):
+        try:
+            out = out.decode('utf-8')
+        except:
+            pass
+    if not isinstance(err, unicode):
+        try:
+            err = err.decode('utf-8')
+        except:
+            pass
+    if not out.endswith(u'\n'):
+        sep = u'\n'
+    else:
+        sep = u''
+    ret = u'{0}{1}{2}'.format(out, sep, err)
+    if get_process:
+        ret = [ret, p]
+    return ret
+
+
+def get_cached_output(command, *args, **kwargs):
+    def _do(command, args, kwargs):
+        return get_output(command, *args, **kwargs)
+    ttl = kwargs.pop('ttl', 60)
+    cache_key = 'get_cached_output{0}{1}{2}'.format(command, args, kwargs)
+    return memoize_cache(_do, [command, args, kwargs], {}, cache_key, ttl)
+
+
+def which(program, environ=None, key='PATH', split=':'):
+    if not environ:
+        environ = os.environ
+    PATH = environ.get(key, '').split(split)
+    for entry in PATH:
+        fp = os.path.abspath(os.path.join(entry, program))
+        if os.path.exists(fp):
+            return fp
+        if (
+            (sys.platform.startswith('win')
+             or sys.platform.startswith('cyg'))
+            and os.path.exists(fp + '.exe')
+        ):
+            return fp + '.exe'
+    raise IOError('Program not fond: %s in %s ' % (program, PATH))
+
+try:
+    ip = which('ip')
+except IOError:
+    ip = None
+
+try:
+    brctl = which('brctl')
+except IOError:
+    brctl = None
+
+try:
+    virsh = which('virsh')
+except IOError:
+    virsh = None
+
+
+try:
+    lxcls = which('lxc-ls')
+except IOError:
+    lxcls = None
+
+
+def get_states(states):
+    if not states:
+        states = []
+    if isinstance(states, basestring):
+        states = states.split(',')
+    statesl = []
+    for i in states:
+        if not isinstance(i, unicode):
+            i = i.decode('utf-8')
+        statesl.append(i)
+    return statesl
+
+
+def get_lxc_info(infos, info, multiple=False):
+    infor = []
+    for line in infos.split('\n'):
+        line = line.strip()
+        if ':' not in line:
+            continue
+        parts = line.split(':')
+        line_t, line_i = parts[0], ':'.join(parts[1:])
+        if line_t.lower() == info.lower():
+            if line_t.lower() in ['state', 'name']:
+                line_i = line_i.lower()
+            line_i = line_i.strip()
+            if line_i not in infor:
+                infor.append(line_i)
+            if not multiple:
+                break
+    if infor and not multiple:
+        infor = infor[0]
+    return infor
+
+
+def get_peer_name(container, veth_host, ttl=60):
+    def _do(container, veth_host):
+        veth = get_cached_output('ethtool -S {0}'.format(veth_host))
+        vethn = None
+        eth = None
+        # get veth main interface id
+        for i in veth.split(u'\n'):
+            if 'peer_ifindex' in i:
+                vethn = i.split()[1].strip()
+                break
+        if vethn:
+            # get the real if name from the attached vh pair
+            links = get_cached_output('lxc-attach -n "{0}" ip link'.format(container))
+            for i in links.split(u'\n'):
+                if i.strip().startswith(u'{0}: '.format(vethn)):
+                    eth = i.split(u':')[1].strip()
+                    break
+        return eth
+    cache_key = 'get_peer_name{0}{1}'.format(container, veth_host)
+    return memoize_cache(_do, [container, veth_host], {}, cache_key, ttl)
+
+
+def get_lxc_bridge(lxc_config, iface, ttl=60):
+    def _do(container, iface):
+        eths = _get_veths(lxc_config.data)
+        return eths.get(iface, {}).get('lxc.network.link', '')
+    cache_key = 'get_lxc_bridge{0}{1}'.format(lxc_config, iface)
+    return memoize_cache(_do, [lxc_config, iface], {}, cache_key, ttl)
+
+
+def get_lxc_mac(lxc_config, iface, ttl=60):
+    def _do(container, iface):
+        eths = _get_veths(lxc_config.data)
+        return eths.get(iface, {}).get('lxc.network.hwaddr', '')
+    cache_key = 'get_lxc_mac{0}{1}'.format(lxc_config, iface)
+    return memoize_cache(_do, [lxc_config, iface], {}, cache_key, ttl)
+
+
+def lxc_domains(states=None, ttl=60):
+    def _do(states):
+        states = get_states(states)
+        out = get_cached_output('lxc-ls').strip().split()
+        domains = {}
+        if out:
+            for domain in out:
+                domaininfos = get_cached_output(
+                    'lxc-info -n "{0}"'.format(domain))
+                name = get_lxc_info(domaininfos, 'name')
+                links = get_lxc_info(domaininfos, 'link', multiple=True)
+                state = get_lxc_info(domaininfos, 'state')
+                if state and (state not in states):
+                    continue
+                domains[name] = {'id': name,
+                                 'state': state,
+                                 'line': domaininfos}
+                ifaces = domains[name].setdefault('ifaces', {})
+                if state in [u'running']:
+                    for link in links:
+                        peer = get_peer_name(domain, link)
+                        # if we got the interface name, search in the
+                        # lxc config the attached bridge
+                        if (
+                            peer and os.path.exists(
+                                '/var/lib/lxc/{0}'.format(domain))
+                        ):
+                            lxc_config = LXCConfig(name=domain)
+                            bridge = get_lxc_bridge(lxc_config, peer)
+                            mac = get_lxc_mac(lxc_config, peer)
+                            if not bridge:
+                                continue
+                            ifaces[link] = {'type': 'veth',
+                                            'link': bridge,
+                                            'model': 'veth',
+                                            'mac': mac}
+        return domains
+    cache_key = 'lxc_domains{0}'.format(states)
+    return memoize_cache(_do, [states], {}, cache_key, ttl)
+
+
+def libvirt_domains(states=None, ttl=60):
+    def _do(states):
+        states = get_states(states)
+        out = get_cached_output('virsh list --all').strip()
+        domains = {}
+        if out and out.lower().startswith('id'):
+            out = out.split(u'\n')[2:]
+            for domaininfos in out:
+                try:
+                    id_, name, state = domaininfos.strip().split()
+                except ValueError:
+                    continue
+                if state and (state not in states):
+                    continue
+                domains[name] = {'id': id_,
+                                 'state': state,
+                                 'raw': domaininfos}
+                ifaces = domains[name].setdefault('ifaces', {})
+                if state in [u'running']:
+                    netifs = get_cached_output(
+                        'virsh domiflist "{0}"'.format(name))
+                    nout = netifs.split(u'\n')[2:]
+                    for netinfos in nout:
+                        try:
+                            iface, typ_, link, model, mac = (
+                                netinfos.strip().split())
+                        except ValueError:
+                            continue
+                        ifaces[iface] = {
+                            'type': typ_,
+                            'link': link,
+                            'model': model,
+                            'mac': mac}
+        return domains
+    cache_key = 'libvirt_domains{0}'.format(states)
+    return memoize_cache(_do, [states], {}, cache_key, ttl)
+
+
+def find_bridge_for_iface(iface_type, iface, ttl=60):
+    '''
+    try to find linked network bridge in
+    the virtualized tech configuration
+    '''
+    def _do(iface_type, iface):
+        bridge = None
+        domains = {}
+        if (iface_type == 'veth') and lxcls:
+            domains = lxc_domains('running')
+        elif (iface_type == 'vnet') and virsh:
+            domains = libvirt_domains('running')
+        for domain, data in domains.items():
+            if iface in data['ifaces']:
+                bridge = data['ifaces'][iface]['link']
+                break
+        return bridge
+    cache_key = 'find_ip_for_iface{0}{1}'.format(iface_type, iface)
+    return memoize_cache(_do, [iface_type, iface], {}, cache_key, ttl)
+
+
+def get_interfaces():
+    ifs = {'out': {}}
+    ifaces = ifs.setdefault('ifaces', {'veth': {},
+                                       'vnet': {}})
+    out = get_output('ip', *['link'])
+    if 'link/ether' not in out:
+        print('invalid output for ip link')
+        return ifs
+    lines = out.split(u'\n')
+    groups = []
+    g = []
+    for i in lines:
+        match = link_start.search(i)
+        if match:
+            groups.append(g)
+            g = [i]
+        else:
+            g.append(i)
+    groups = [u' '.join(a) for a in groups if a]
+    for group in groups:
+        match = supported_ifs.search(group)
+        brmatch = bridge_re.search(group)
+        if match:
+            infos = match.groupdict()
+            if not brmatch:
+                try:
+                    bridge = find_bridge_for_iface(
+                        infos['type'], infos['iface'])
+                except Exception:
+                    print(traceback.format_exc())
+                    bridge = None
+            else:
+                bridge = brmatch.groupdict()['link']
+            ifaces[infos['type']][infos['iface']] = {'bridge': bridge,
+                                                     'raw': group}
+    return ifs
+
+
+def main():
+    if not ip:
+        print('no bridge managment, bailing out')
+        sys.exit(0)
+    ifs = get_interfaces()
+    for vtype, vdata in ifs['ifaces'].items():
+        for ifc, data in vdata.items():
+            bridge = data.setdefault('bridge', None)
+            if not bridge:
+                continue
+            current_bridge = spaces_sep.sub(
+                ' ', get_output('ip link show dev '
+                                '"{0}"'.format(bridge)))
+            if not supported_states.search(current_bridge.lower()):
+                ret, p = get_output('ip link set up dev '
+                                    '{0}'.format(bridge),
+                                    get_process=True)
+                current_bridge = spaces_sep.sub(
+                    ' ', get_output('ip link show dev '
+                                    '"{0}"'.format(bridge)))
+            if not supported_states.search(current_bridge.lower()):
+                print('Linking {0} to {1}: '
+                      'failed to bring up bridge'.format(ifc, bridge))
+                print(current_bridge)
+            current_link = get_output('ip link show dev "{0}"'.format(ifc))
+            if ' master ' not in current_link:
+                print('Linking {0} to {1}'.format(ifc, bridge))
+                out, p = get_output('ip link set dev {0} '
+                                    'master {1}'.format(ifc, bridge),
+                                    get_process=True)
+                out = spaces_sep.sub(' ', out)
+                bout = spaces_sep.sub(
+                    ' ', get_output('ip link show dev "{0}"'.format(ifc)))
+                if p.returncode != 0:
+                    print(out)
+                    print(bout)
+                    bout = ''
+                if 'master {0}'.format(bridge) not in bout:
+                    print('Linking {0} to {1} failed'.format(ifc, bridge))
+                    print(bout)
+                    continue
+
+
+if __name__ == '__main__':
+    main()
+# vim:set et sts=4 ts=4 tw=80 ft=python:
