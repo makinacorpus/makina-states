@@ -243,7 +243,7 @@ def settings():
                 'tcp_nodelay': True,
                 'tcp_nopush': True,
                 'reset_timedout_connection': 'on',
-                'client_body_timeout': '10',
+                'client_body_timeout': 4 * 60 * 60,
                 'send_timeout': '2',
                 'keepalive_requests': '100000',
                 'keepalive_timeout': '30',
