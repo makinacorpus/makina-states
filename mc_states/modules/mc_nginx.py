@@ -244,7 +244,7 @@ def settings():
                 'tcp_nopush': True,
                 'reset_timedout_connection': 'on',
                 'client_body_timeout': 4 * 60 * 60,
-                'send_timeout': '2',
+                'send_timeout': '60s',
                 'keepalive_requests': '100000',
                 'keepalive_timeout': '30',
                 'types_hash_max_size': '2048',
