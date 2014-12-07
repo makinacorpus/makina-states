@@ -304,14 +304,26 @@ etc-{{ data.name }}-dirs:
   file.directory:
     - names:
       - {{ localRoot }}
-      - {{ localRoot }}/makina-projects
       - {{ pillarRoot }}
-      - {{ prefix }}/projects
       {# - {{ prefix }}/vagrant #}
     - user: root
     - group: {{ group }}
     - file_mode: "0770"
     - dir_mode: "0770"
+    - makedirs: True
+    - require:
+      - group: salt-{{ data.name }}-{{ group }}
+
+etc-{{ data.name }}-projects-dirs:
+  file.directory:
+    - names:
+      - {{ localRoot }}/makina-projects
+      - {{ prefix }}/projects
+      {# - {{ prefix }}/vagrant #}
+    - user: root
+    - group: {{ group }}
+    - file_mode: "0771"
+    - dir_mode: "0771"
     - makedirs: True
     - require:
       - group: salt-{{ data.name }}-{{ group }}
@@ -449,7 +461,7 @@ etc-{{data.name}}-dirs-perms:
     - name: >
             {{ settings.c.o.resetperms }}
             -u root -g "{{ ugs.group }}"
-            --dmode 0770 --fmode 0770
+            --dmode 0771 --fmode 0771
             --no-recursive
             --only-acls
             --paths "{{ data.projects_root }}"
