@@ -18,6 +18,7 @@ Documentation of this module is available with::
 
 '''
 import yaml
+import requests
 # Import python libs
 import os
 import logging
@@ -35,6 +36,12 @@ try:
 except ImportError:
     HAS_IPWHOIS = False
 from mc_states.utils import memoize_cache
+import contextlib
+import socket
+import urllib2
+
+# Import salt libs
+from salt.utils.validate.net import ipv4_addr as _ipv4_addr
 
 __name = 'network'
 
@@ -402,8 +409,29 @@ def providers():
 def dump():
     return mc_states.utils.dump(__salt__,__name)
 
-#
-# -*- coding: utf-8 -*-
-__docformat__ = 'restructuredtext en'
 
+def ext_ip():
+    '''
+    Return the external IP address reported by ipecho.net
+    '''
+
+def ext_ip():
+    '''
+    Return the external IP address
+    '''
+    check_ips = ('http://ipecho.net/plain',
+                 'http://v4.ident.me')
+
+    for url in check_ips:
+        try:
+            with contextlib.closing(urllib2.urlopen(url, timeout=3)) as req:
+                ip_ = req.read().strip()
+                if not _ipv4_addr(ip_):
+                    continue
+            return ip_
+        except (urllib2.HTTPError,
+                urllib2.URLError,
+                socket.timeout):
+            continue
+    return ''
 # vim:set et sts=4 ts=4 tw=80:
