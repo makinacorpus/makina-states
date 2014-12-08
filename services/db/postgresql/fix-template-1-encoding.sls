@@ -37,7 +37,7 @@ makina-postgresql-{{version}}-fix-template1:
   cmd.run:
     - user: {{default_user}}
     - name: psql-{{version}} template1 -f {{tmpf}}
-    - unless: psql -t -A -F';;;' -c'\l'|egrep '^template1;;;'|egrep -i 'utf.?8;;;$'
+    - unless: psql -t -A -F';;;' -c'\l'|egrep '^template1;;;'|egrep -i "{{locale[0:2]}}"|egrep -i 'utf.?8;;;$'
     - require:
       - file: makina-postgresql-{{version}}-fix-template1
       - mc_proxy: {{orchestrate['base']['presetup']}}
