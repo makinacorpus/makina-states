@@ -16,9 +16,12 @@ include:
 # utf-8 db creation from this template
 # we then recreate template1 with right lctype !
 #}
-{% macro fix(version) %}
-{% set tmpf = '/tmp/psql.{0}fix.sql'.format(version) %}
-makina-postgresql-{{version}}-fix-template1:
+{% macro fix(version, db='template1', template='template1') %}
+{% set tmpf = '/tmp/psql.{0}-{1}-fix.sql'.format(version, db) %}
+{% if db == 'template1' %}
+{%  set template = 'template0' %}
+{% endif %}
+makina-postgresql-{{version}}-fix-{{db}}:
   file.managed:
     - require:
       - mc_proxy: pgsql-wrappers
@@ -26,29 +29,41 @@ makina-postgresql-{{version}}-fix-template1:
     - source: ''
     - user: {{default_user}}
     - contents: |
+                {% if db == 'template1' %}
                 update pg_database set datallowconn = TRUE where datname = 'template0';
-                \c template0
                 update pg_database set datistemplate = FALSE where datname = 'template1';
-                drop database template1;
-                create database template1 with template = template0 encoding = '{{encoding}}' LC_CTYPE = '{{locale}}' LC_COLLATE = '{{locale}}';
+                {% endif %}
+                \c {{template}}
+                drop database {{db}};
+                create database {{db}} with template = {{template}} encoding = '{{encoding}}' LC_CTYPE = '{{locale}}' LC_COLLATE = '{{locale}}';
+                \c {{db}}
+                {% if db == 'postgis' %}
+                create extension hstore;
+                create extension postgis;
+                create extension postgis_topology;
+                create extension fuzzystrmatch;
+                create extension postgis_tiger_geocoder;
+                {% endif %}
+                {% if db == 'template1' %}
                 update pg_database set datistemplate = TRUE where datname = 'template1';
-                \c template1
                 update pg_database set datallowconn = FALSE where datname = 'template0';
+                {% endif %}
   cmd.run:
     - user: {{default_user}}
-    - name: psql-{{version}} template1 -f {{tmpf}}
-    - unless: psql -t -A -F';;;' -c'\l'|egrep '^template1;;;'|egrep -i 'utf.?8;;;$'
+    - name: psql-{{version}} {{db}} -f {{tmpf}}
+    - unless: psql -t -A -F';;;' -c'\l'|egrep '^{{db}};;;'|egrep -i "{{locale[0:2]}}"|egrep -i 'utf.?8;;;$'
     - require:
-      - file: makina-postgresql-{{version}}-fix-template1
+      - file: makina-postgresql-{{version}}-fix-{{db}}
       - mc_proxy: {{orchestrate['base']['presetup']}}
     - require_in:
       - mc_proxy: {{orchestrate['base']['postbase']}}
-makina-postgresql-{{version}}-fix-template1-cleanup:
+makina-postgresql-{{version}}-fix-{{db}}-cleanup:
   file.absent:
     - name: {{tmpf}}
     - require:
-      - cmd: makina-postgresql-{{version}}-fix-template1
+      - cmd: makina-postgresql-{{version}}-fix-{{db}}
 {% endmacro %}
 {%- for version in settings.versions %}
-{{ fix(version) }}
+{{ fix(version, db='template1') }}
+{{ fix(version, db='postgis') }}
 {%- endfor %}

@@ -160,7 +160,7 @@ def settings():
                 'defaultPgVersion': defaultPgVersion,
                 'versions': [defaultPgVersion],
                 'encoding': 'utf8',
-                'locale': 'en_US.UTF-8',
+                'locale': 'fr_FR.UTF-8',
                 'postgis': {'2.1': [defaultPgVersion, '9.2']},
                 'postgis_db': 'postgis',
                 'pg_conf': {
@@ -222,7 +222,7 @@ def settings():
                     {'type': 'host',
                      'db': 'all',
                      'user': 'all',
-                     'address': '0.0.0.0/32',
+                     'address': '0.0.0.0/0',
                      'method': 'md5'},
                 ]
             }

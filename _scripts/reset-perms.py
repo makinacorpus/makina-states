@@ -437,8 +437,11 @@ def reset(path):
         if not options.quiet: print('Skipped content:')
         pprint.pprint(skipped)
 
+done = []
 for pt in options.paths:
-    reset(pt)
+    if not pt in done:
+        reset(pt)
+        done.append(pt)
 
 """
 Profiled optimization was done with zope example::

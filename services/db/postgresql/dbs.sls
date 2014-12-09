@@ -43,6 +43,10 @@ include:
     - template: {{template }}
     - tablespace: {{ tablespace }}
     - pg_version: {{version}}
+    # if database exists
+    # do not run as default locate can change over time and make this
+    # state fail whenever the database already easist and works well
+    - onlyif: test "x$(echo "SELECT datname FROM pg_database;"|su postgres -c "psql -t -A -F"---""|egrep -q "^{{db}}$";echo $?)" = "x1"
     - user: {{ user }}
     - require:
       - mc_proxy: {{orchestrate[version]['predb']}}
