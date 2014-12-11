@@ -113,7 +113,6 @@ def _cn_configure(what, target, ret, output):
     return ret
 
 
-
 def configure_grains(target, ret=None, output=True):
     '''install compute node grain markers'''
     return _cn_configure('grains', target, ret, output)
@@ -429,8 +428,8 @@ def vm_reconfigure(vm,
         try:
             kw = OrderedDict()
             # XXX: using the lxc runner which is now faster and nicer.
-            args = _cli('mc_lxc_fork.cloud_init_interface',
-                        profile_data, salt_target=compute_node)
+            args = cli('mc_lxc_fork.cloud_init_interface',
+                       profile_data, salt_target=compute_node)
             for i in [
                 'name',
                 'cpu',
@@ -446,15 +445,15 @@ def vm_reconfigure(vm,
             ]:
                 if i in args:
                     kw[i] = args[i]
-            cret = _cli('mc_lxc_fork.reconfigure',
-                        kw, salt_target=compute_node)
+            cret = cli('mc_lxc_fork.reconfigure',
+                       kw, salt_target=compute_node)
             if not cret['result']:
                 ret['trace'] += 'FAILURE ON LXC {0}:\n{1}\n'.format(
                     vm, pformat(dict(cret)))
                 merge_results(ret, cret)
                 ret['result'] = False
             else:
-                ret['comment'] += '{0} provisioned\n'.format(vm)
+                ret['comment'] += '{0} reconfigured\n'.format(vm)
         except Exception, ex:
             ret['trace'] += '{0}\n'.format(traceback.format_exc())
             ret['result'] = False
