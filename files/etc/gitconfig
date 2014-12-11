@@ -26,6 +26,7 @@
 
 [alias]
         changes=diff --name-status -r
+        dc = diff --cached
         rc = rebase --continue
         st = status
         ci = commit

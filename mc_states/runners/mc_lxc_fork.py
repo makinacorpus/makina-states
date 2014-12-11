@@ -7,22 +7,22 @@ Control Linux Containers via Salt
 '''
 
 # Import python libs
-from __future__ import print_function
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import time
 import os
 import copy
 import logging
-from salt.ext.six import string_types
 
 # Import Salt libs
-from salt.utils.odict import OrderedDict
 import salt.client
+import salt.utils
 import salt.utils.virt
 import salt.utils.cloud
 import salt.key
-import salt.ext.six as six
+from salt.utils.odict import OrderedDict as _OrderedDict
 
+# Import 3rd-party lib
+import salt.ext.six as six
 
 log = logging.getLogger(__name__)
 
@@ -85,7 +85,7 @@ def find_guest(name, quiet=False):
 
     .. code-block:: bash
 
-        salt-run mc_lxc_fork.find_guest name
+        salt-run lxc.find_guest name
     '''
     if quiet:
         log.warn('\'quiet\' argument is being deprecated. Please migrate to --quiet')
@@ -124,7 +124,7 @@ def init(names, host=None, saltcloud_mode=False, quiet=False, **kwargs):
 
     .. code-block:: bash
 
-        salt-run mc_lxc_fork.init name host=minion_id [cpuset=cgroups_cpuset] \\
+        salt-run lxc.init name host=minion_id [cpuset=cgroups_cpuset] \\
                 [cpushare=cgroups_cpushare] [memory=cgroups_memory] \\
                 [template=lxc template name] [clone=original name] \\
                 [nic=nic_profile] [profile=lxc_profile] \\
@@ -141,7 +141,7 @@ def init(names, host=None, saltcloud_mode=False, quiet=False, **kwargs):
 
     saltcloud_mode
         init the container with the saltcloud opts format instead
-        See mc_lxc_fork.init_interface module documentation
+        See lxc.init_interface module documentation
 
     cpuset
         cgroups cpuset.
@@ -191,7 +191,7 @@ def init(names, host=None, saltcloud_mode=False, quiet=False, **kwargs):
         ret['comment'] = 'A host must be provided'
         ret['result'] = False
         return ret
-    if isinstance(names, string_types):
+    if isinstance(names, six.string_types):
         names = names.split(',')
     if not isinstance(names, list):
         ret['comment'] = 'Container names are not formed as a list'
@@ -253,7 +253,7 @@ def init(names, host=None, saltcloud_mode=False, quiet=False, **kwargs):
                 host, 'mc_lxc_fork.cloud_init_interface', args + [kw],
                 expr_form='list', timeout=600).get(host, {})
         name = kw.pop('name', name)
-        # be sure not to seed an alrady seeded host
+        # be sure not to seed an already seeded host
         kw['seed'] = seeds[name]
         if not kw['seed']:
             kw.pop('seed_cmd', '')
@@ -262,12 +262,12 @@ def init(names, host=None, saltcloud_mode=False, quiet=False, **kwargs):
              name,
              client.cmd_iter(host, 'mc_lxc_fork.init', args, kwarg=kw, timeout=600)))
     done = ret.setdefault('done', [])
-    errors = ret.setdefault('errors', OrderedDict())
+    errors = ret.setdefault('errors', _OrderedDict())
 
     for ix, acmd in enumerate(cmds):
         hst, container_name, cmd = acmd
         containers = ret.setdefault(hst, [])
-        herrs = errors.setdefault(hst, OrderedDict())
+        herrs = errors.setdefault(hst, _OrderedDict())
         serrs = herrs.setdefault(container_name, [])
         sub_ret = next(cmd)
         error = None
@@ -306,10 +306,10 @@ def init(names, host=None, saltcloud_mode=False, quiet=False, **kwargs):
         if explicit_auth:
             fcontent = ''
             if os.path.exists(key):
-                with open(key) as fic:
+                with salt.utils.fopen(key) as fic:
                     fcontent = fic.read().strip()
             if pub_key.strip() != fcontent:
-                with open(key, 'w') as fic:
+                with salt.utils.fopen(key, 'w') as fic:
                     fic.write(pub_key)
                     fic.flush()
         mid = j_ret.get('mid', None)
@@ -339,7 +339,7 @@ def init(names, host=None, saltcloud_mode=False, quiet=False, **kwargs):
 
 def cloud_init(names, host=None, quiet=False, **kwargs):
     '''
-    Wrapper for using mc_lxc_fork.init in saltcloud compatibility mode
+    Wrapper for using lxc.init in saltcloud compatibility mode
 
     names
         Name of the containers, supports a single name or a comma delimited
@@ -389,7 +389,7 @@ def list_(host=None, quiet=False):
 
     .. code-block:: bash
 
-        salt-run mc_lxc_fork.list [host=minion_id]
+        salt-run lxc.list [host=minion_id]
     '''
     it = _list_iter(host)
     ret = {}
@@ -407,7 +407,7 @@ def purge(name, delete_key=True, quiet=False):
 
     .. code-block:: bash
 
-        salt-run mc_lxc_fork.purge name
+        salt-run lxc.purge name
     '''
     data = _do_names(name, 'destroy')
     if data is False:
@@ -431,7 +431,7 @@ def start(name, quiet=False):
 
     .. code-block:: bash
 
-        salt-run mc_lxc_fork.start name
+        salt-run lxc.start name
     '''
     data = _do_names(name, 'start')
     if data and not quiet:
@@ -445,7 +445,7 @@ def stop(name, quiet=False):
 
     .. code-block:: bash
 
-        salt-run mc_lxc_fork.stop name
+        salt-run lxc.stop name
     '''
     data = _do_names(name, 'stop')
     if data and not quiet:
@@ -459,7 +459,7 @@ def freeze(name, quiet=False):
 
     .. code-block:: bash
 
-        salt-run mc_lxc_fork.freeze name
+        salt-run lxc.freeze name
     '''
     data = _do_names(name, 'freeze')
     if data and not quiet:
@@ -473,7 +473,7 @@ def unfreeze(name, quiet=False):
 
     .. code-block:: bash
 
-        salt-run mc_lxc_fork.unfreeze name
+        salt-run lxc.unfreeze name
     '''
     data = _do_names(name, 'unfreeze')
     if data and not quiet:
@@ -487,9 +487,9 @@ def info(name, quiet=False):
 
     .. code-block:: bash
 
-        salt-run mc_lxc_fork.info name
+        salt-run lxc.info name
     '''
     data = _do_names(name, 'info')
     if data and not quiet:
         __progress__(data, outputter='lxc_info')
-    return data 
+    return data
