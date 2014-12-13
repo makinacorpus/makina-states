@@ -2327,7 +2327,6 @@ __install() {
 }
 
 kill_ms_daemons() {
-    upgrade_from_buildout
     killall_local_mastersalt_masters
     killall_local_mastersalt_minions
     killall_local_minions
@@ -3327,7 +3326,6 @@ killall_local_minions() {
 
 restart_local_mastersalt_masters() {
     if [ "x$(get_do_mastersalt)" = "xno" ];then return;fi
-    upgrade_from_buildout
     if [ "x$(get_local_mastersalt_mode)" = "xmasterless" ];then
         stop_and_disable_service mastersalt-master
     else
@@ -3344,7 +3342,6 @@ restart_local_mastersalt_masters() {
 
 restart_local_mastersalt_minions() {
     if [ "x$(get_do_mastersalt)" = "xno" ];then return;fi
-    upgrade_from_buildout
     if [ "x$(get_local_mastersalt_mode)" = "xmasterless" ];then
         killall_local_mastersalt_minions
         stop_and_disable_service mastersalt-minion
@@ -3361,7 +3358,6 @@ restart_local_mastersalt_minions() {
 
 restart_local_masters() {
     if [ "x${DO_SALT}" = "xno" ];then return;fi
-    upgrade_from_buildout
     if [ "x$(get_local_salt_mode)" = "xmasterless" ];then
         stop_and_disable_service salt-master
     else
@@ -3377,7 +3373,6 @@ restart_local_masters() {
 
 restart_local_minions() {
     if [ "x${DO_SALT}" = "xno" ];then return;fi
-    upgrade_from_buildout
     if [ "x$(get_local_salt_mode)" = "xmasterless" ];then
         stop_and_disable_service salt-minion
     else
@@ -4029,39 +4024,6 @@ run_highstates() {
 }
 
 cleanup_old_installs() {
-    if [ -e "${SALT_MS}/.installed.cfg" ] || [ -e "${MASTERSALT_MS}/.installed.cfg" ];then
-        upgrade_from_buildout
-    fi
-    #for conf in "${minion_conf}" "${mminion_conf}";do
-    #    if [ -e "$conf" ];then
-    #        if [ "x$(egrep "^grain_dirs:" "${conf}"|wc -l|${SED} -e "s/ //g")" = "x0" ];then
-    #            bs_log "Patching grains_dirs -> grain_dirs in ${conf}"
-    #            "${SED}" -i -e "s:grains_dirs:grain_dirs:g" "${conf}"
-    #        fi
-    #        for i in grains modules renderers returners states;do
-    #            if [ "x$(grep "makina-states/mc_states/${i}" "${conf}"|wc -l|${SED} -e "s/ //g")" = "x0" ];then
-    #                bs_log "Patching ext_mods/${i} to mc_states/${i} in $conf"
-    #                new_path="makina-states/mc_states/${i}"
-    #                "${SED}" -i -e "s:makina-states/_${i}:${new_path}:g" "$conf"
-    #                "${SED}" -i -e "s:makina-states/_${i}/mc_${i}:${new_path}:g" "$conf"
-    #                "${SED}" -i -e "s:makina-states/ext_mods/mc_states/${i}:${new_path}:g" "$conf"
-    #                "${SED}" -i -e "s:makina-states/ext_mods/${i}:${new_path}:g" "$conf"
-    #                "${SED}" -i -e "s:makina-states/ext_mods/mc_${i}:${new_path}:g" "$conf"
-    #                "${SED}" -i -e "s:makina-states/mc_salt/mc_${i}:${new_path}:g" "$conf"
-    #            fi
-    #        done
-    #    fi
-    #done
-    #ls \
-    #    "${SALT_MS}/_states/mc_apache.py"* \
-    #    2>/dev/null|while read oldmode;do
-    #    rm -fv "${oldmode}"
-    #done
-    #ls -d \
-    #    "${MASTERSALT_MS}/_modules/"    \
-    #    2>/dev/null|while read oldmode;do
-    #    rm -frv "${oldmode}"
-    #done
     if [ "x$(egrep "bootstrapped\.salt" ${MCONF_PREFIX}/grains 2>/dev/null |wc -l|${SED} -e "s/ //g")" != "x0" ];then
         bs_log "Cleanup old mastersalt grains"
         "${SED}" -i -e "/bootstrap\.salt/d" "${MCONF_PREFIX}/grains"
@@ -4663,20 +4625,6 @@ kill_old_syncs() {
             kill -9 "${pid}"
         fi
     done
-}
-
-upgrade_from_buildout() {
-    # upgrade from old buildout ba${SED} install
-    s_venv=""
-    if [ ! -e "${SALT_VENV_PATH}/bin/salt-call" ];then
-        s_venv="1"
-    fi
-    if [ "x${IS_MASTERSALT}" != "x" ] && [ ! -e "${MASTERSALT_VENV_PATH}/bin/salt-call" ];then
-        s_venv="1"
-    fi
-    if [ "x${s_venv}" != "x" ];then
-        setup_virtualenvs
-    fi
 }
 
 synchronize_code() {
