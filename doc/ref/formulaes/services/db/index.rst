@@ -9,3 +9,4 @@ Services
    mongodb.rst
    mysql.rst
    postgresql.rst
+   redis.rst

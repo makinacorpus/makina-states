@@ -79,6 +79,7 @@ Subregistries
    mc_uwsgi.rst
    mc_screen.rst
    mc_rabbitmq.rst
+   mc_redis.rst
 
 
 Other modules
