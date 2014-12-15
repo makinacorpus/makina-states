@@ -58,7 +58,9 @@ __func_alias__ = {
     'ls_': 'ls'
 }
 
-DEFAULT_NIC_PROFILE = {'eth0': {}}
+DEFAULT_NIC = 'eth0'
+DEFAULT_NIC_PROFILE = {}
+DEFAULT_NIC_PROFILES = {DEFAULT_NIC: copy.deepcopy(DEFAULT_NIC_PROFILE)}
 SEED_MARKER = '/lxc.initial_seed'
 PATH = 'PATH=/bin:/usr/bin:/sbin:/usr/sbin:/opt/bin:' \
        '/usr/local/bin:/usr/local/sbin'
@@ -398,7 +400,7 @@ def cloud_init_interface(name, vm_=None, **kwargs):
     lxc_init_interface['autostart'] = autostart
     lxc_init_interface['users'] = users
     lxc_init_interface['password'] = password
-    lxc_init_interface['network_profile'] = {}
+    lxc_init_interface['network_profile'] = DEFAULT_NIC
     lxc_init_interface['memory'] = vm_.get('memory', 0)  # nolimit
     for i in ['cpu', 'cpuset', 'cpushare']:
         if vm_.get(i, None):
@@ -452,7 +454,11 @@ def get_network_profile(name=None):
     net_profile = __salt__['config.get'](
         'lxc.network_profile.{0}'.format(name)
     )
-    return net_profile if net_profile is not None else DEFAULT_NIC_PROFILE
+    if not net_profile:
+        net_profile = None
+    return net_profile if net_profile is not None else copy.deepcopy(
+        DEFAULT_NIC_PROFILE
+    )
 
 
 def _rand_cpu_str(cpu):
@@ -472,20 +478,20 @@ def _rand_cpu_str(cpu):
 
 
 def _network_conf(conf_tuples=None, **kwargs):
-    nic = kwargs.pop('network_profile', None)
+    network_profile = kwargs.pop('network_profile', None)
     ret = []
     nic_opts = kwargs.pop('nic_opts', {})
     if not conf_tuples:
         conf_tuples = []
     old = _get_veths(conf_tuples)
-    if not nic and not nic_opts and not old:
+    if not network_profile and not nic_opts and not old:
         return ret
     kwargs = copy.deepcopy(kwargs)
     gateway = kwargs.pop('gateway', None)
     bridge = kwargs.get('bridge', None)
 
-    if isinstance(nic, dict):
-        nicp = get_network_profile(nic)
+    if isinstance(network_profile, basestring):
+        nicp = get_network_profile(network_profile)
         if nic_opts:
             for dev, args in nic_opts.items():
                 ethx = nicp.setdefault(dev, {})
@@ -838,8 +844,8 @@ def init(name,
          cpushare=None,
          memory=None,
          profile=None,
-         network_profile=None,
-         nic=None,
+         network_profile=_marker,
+         nic=_marker,
          nic_opts=None,
          cpu=None,
          autostart=True,
@@ -1001,13 +1007,15 @@ def init(name,
            'result': False,
            'changes': {}}
 
-    if nic:
+    if bool(nic) and nic is not _marker:
         salt.utils.warn_until(
             'Boron',
             'The \'nic\' argument to \'lxc.init\' has been deprecated, '
             'please use \'network_profile\' instead.'
         )
         network_profile = nic
+    if network_profile is _marker:
+        network_profile = DEFAULT_NIC
 
     # Changes is a pointer to changes_dict['init']. This method is used so that
     # we can have a list of changes as they are made, providing an ordered list
@@ -3426,7 +3434,7 @@ def edit_conf(conf_file,
     net_changes = []
     if nic_opts:
         net_changes = _config_list(conf, only_net=True,
-                                   **{'network_profile': {},
+                                   **{'network_profile': DEFAULT_NIC,
                                       'nic_opts': nic_opts})
         if net_changes:
             lxc_config.extend(net_changes)
@@ -3557,7 +3565,7 @@ def reconfigure(name,
             return profile_match
         return kw_overrides_match
     if nic_opts is not None and not network_profile:
-        network_profile = {}
+        network_profile = 'eth0'
 
     if autostart is not None:
         autostart = select('autostart', autostart)
