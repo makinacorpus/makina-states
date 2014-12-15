@@ -378,7 +378,7 @@ def vm_spawn(vm,
                   'mc_cloud_lxc_containers', reg)
     if not ret['result'] and not ret['comment']:
         ret['comment'] = ('Failed to provision lxc {0},'
-                          ' see {1} mastersalt-minion log').format(
+                          ' see {1}, see mastersalt-minion log').format(
                               vm, compute_node)
     salt_output(ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))

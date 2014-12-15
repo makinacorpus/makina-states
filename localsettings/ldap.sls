@@ -72,8 +72,8 @@ nslcd-nsswitch-conf:
       - mc_proxy: users-pre-hook
     - name: {{ locs.conf_dir }}/nsswitch.conf
     - search_only: ''
-    - pattern: '^(passwd|group|shadow):\s*compat( ldap)*'
-    - repl: '\1: compat ldap'
+    - pattern: '^(?P<title>passwd|group|shadow):\s*compat( ldap)*'
+    - repl: '\g<title>: compat ldap'
     - flags: ['MULTILINE', 'DOTALL']
     - watch_in:
       - cmd: nscd-restart
