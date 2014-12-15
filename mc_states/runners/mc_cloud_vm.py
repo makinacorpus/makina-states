@@ -427,6 +427,9 @@ def provision(vm, compute_node=None, vt=None,
                                             vt=vt,
                                             output=False)
         merge_results(ret, cret)
+        # break on first failure
+        if ret['result'] is False:
+            break
     if ret['result']:
         ret['comment'] += green(
             '{0}/{1}/{2} deployed\n').format(compute_node, vt, vm)
