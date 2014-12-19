@@ -780,6 +780,7 @@ def autoconfigure_host(host,
                        drbd=None,
                        haproxy_stats=None,
                        load_avg=None,
+                       inotify=None,
                        mail_cyrus_imap_connections=None,
                        mail_imap=None,
                        mail_imap_ssl=None,
@@ -829,6 +830,7 @@ def autoconfigure_host(host,
           'mail_imap_ssl', 'mail_pop', 'mail_pop_ssl', 'rbl',
           'mail_pop_test_account', 'mail_server_queues',
           'mail_smtp', 'mongodb', 'ntp_peers', 'postgresql_port',
+          'inotify',
           'raid', 'snmpd_memory_control', 'apache_status',
           'remote_apache_status', 'nginx_status', 'remote_nginx_status',
           'web_openid'])
@@ -886,6 +888,7 @@ def autoconfigure_host(host,
                 'mail_smtp',
                 'nic_card',
                 'mongodb',
+                'inotify',
                 'ntp_peers',
                 'ntp_time',
                 'ping',
@@ -1112,7 +1115,7 @@ def autoconfigure_host(host,
                             ss['vars.' + i] = attrs[i]
                             mongo_auth = True
                 if mongo_auth:
-                    ss['chech_command'] = 'CSSH_CHECK_MONGODB_AUTH'
+                    ss['check_command'] = 'CSSH_CHECK_MONGODB_AUTH'
                 if svc == 'rbl':
                     ss['vars.checked_address'] = v
                 if svc == 'sar':

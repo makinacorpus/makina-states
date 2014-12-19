@@ -9,7 +9,16 @@ __docformat__ = 'restructuredtext en'
 import sys
 import glob
 import os
-import argparse
+try:
+    import argparse
+    HAS_ARGPARSE = True
+except ImportError:
+    HAS_ARGPARSE = False
+try:
+    import optparse
+    HAS_OPTPARSE = True
+except ImportError:
+    HAS_OPTPARSE = False
 from subprocess import Popen, PIPE
 import traceback
 
@@ -80,10 +89,7 @@ class Check(object):
         self.exit(self._ok, msg=msg, perfdata=perfdata)
 
     def opt_parser(self):
-        parser = self.parser = argparse.ArgumentParser(
-            prog=self._program,
-            description=("Get Perfdata around inotify metrics"))
-        default_ts = 4
+        default_ts = 128
         try:
             # try to get it from sysctls
             default_ts = int(popen(
@@ -92,29 +98,61 @@ class Check(object):
         except Exception:
             pass
         warning_ts = round(default_ts*90/100)
-        parser.add_argument('-t', '--track-threshold',
-                            default=500, const=500,
-                            type=int, nargs='?',
-                            dest='track',
-                            help=('Warning watch instances threshold,'
-                                  ' %(default)s]'))
-        parser.add_argument('-w', '--warning',
-                            default=warning_ts, const=warning_ts,
-                            type=int, nargs='?',
-                            dest='warning',
-                            help=('Warning watch instance threshold,'
-                                  ' %(default)s]'))
-        parser.add_argument('-c', '--critical',
-                            default=default_ts, const=default_ts,
-                            type=int, nargs='?',
-                            dest='critical',
-                            help=('Critical watch instance threshold,'
-                                  ' %(default)s]'))
-        self.args = vars(parser.parse_args())
-        if self.args['warning'] >= self.args['critical']:
-            self.unknown(('Warning thresold ({0}) should be lower than the '
-                          'critical one ({1})').format(self.args['warning'],
-                                                       self.args['critical']))
+        if True or not HAS_ARGPARSE:
+            parser = self.parser = optparse.OptionParser()
+            parser.add_option('-t', '--track-threshold',
+                              default=500,
+                              action='store', type='int',
+                              dest='track',
+                              help=('Warning watch instances threshold,'
+                                    ' %(default)s]'))
+            parser.add_option('-w', '--warning',
+                              default=warning_ts,
+                              action='store', type='int',
+                              dest='warning',
+                              help=('Warning watch instance threshold,'
+                                    ' %(default)s]'))
+            parser.add_option('-c', '--critical',
+                              default=default_ts,
+                              action='store', type='int',
+                              dest='critical',
+                              help=('Critical watch instance threshold,'
+                                    ' %(default)s]'))
+            (options, args) = parser.parse_args()
+            self.args = vars(options)
+            if self.args['warning'] >= self.args['critical']:
+                self.unknown(
+                    ('Warning thresold ({0}) should be lower than the '
+                     'critical one ({1})').format(self.args['warning'],
+                                                  self.args['critical']))
+
+        else:
+            parser = self.parser = argparse.ArgumentParser(
+                prog=self._program,
+                description=("Get Perfdata around inotify metrics"))
+            parser.add_argument('-t', '--track-threshold',
+                                default=500, const=500,
+                                type=int, nargs='?',
+                                dest='track',
+                                help=('Warning watch instances threshold,'
+                                      ' %(default)s]'))
+            parser.add_argument('-w', '--warning',
+                                default=warning_ts, const=warning_ts,
+                                type=int, nargs='?',
+                                dest='warning',
+                                help=('Warning watch instance threshold,'
+                                      ' %(default)s]'))
+            parser.add_argument('-c', '--critical',
+                                default=default_ts, const=default_ts,
+                                type=int, nargs='?',
+                                dest='critical',
+                                help=('Critical watch instance threshold,'
+                                      ' %(default)s]'))
+            self.args = vars(parser.parse_args())
+            if self.args['warning'] >= self.args['critical']:
+                self.unknown(('Warning thresold ({0}) should be lower than the '
+                              'critical one ({1})').format(self.args['warning'],
+                                                           self.args['critical']))
 
     def get_file_consumers(self):
         ret, ps = popen('lsof')
