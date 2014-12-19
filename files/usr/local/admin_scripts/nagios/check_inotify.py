@@ -83,7 +83,7 @@ class Check(object):
         parser = self.parser = argparse.ArgumentParser(
             prog=self._program,
             description=("Get Perfdata around inotify metrics"))
-        default_ts = 4
+        default_ts = 128
         try:
             # try to get it from sysctls
             default_ts = int(popen(
