@@ -154,6 +154,16 @@ sysctl-net-various:
     - value: 1
     - require_in:
       - mc_proxy: sysctl-post-hook
+{% for s, val in kernel.items() %}
+{% if '.' in s %}
+sysctl-{{s}}:
+  sysctl.present:
+    - name: {{s}}
+    - value: {{val}}
+    - require_in:
+      - mc_proxy: sysctl-post-hook
+{% endif %}
+{% endfor %}
 {% endif %}
 {% endif %}
 # vim: set nofoldenable:

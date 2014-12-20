@@ -1661,8 +1661,6 @@ def regenerate_passwords(ids_=None, users=None):
 
 
 def get_ssh_groups(id_=None, ttl=60):
-    if not id_:
-        id_ = __opts__['id']
     def _do_ssh_grp(id_, sysadmins=None):
         db_ssh_groups = __salt__['mc_pillar.query']('ssh_groups')
         ssh_groups = db_ssh_groups.get(
@@ -1988,6 +1986,7 @@ def get_supervision_objects_defs(id_):
             attrs.setdefault('vars.SNMP_PASS', sconf[p + 'password'])
             attrs.setdefault('vars.SNMP_CRYPT', sconf[p + 'key'])
             attrs.setdefault('vars.SNMP_USER',  sconf[p + 'user'])
+            hdata['inotify'] = True
             hdata['sar'] = ['cpu', 'task', 'queueln_load',
                             'io_transfer', 'memory_stat', 'memory_util',
                             'pagestat']
@@ -2046,6 +2045,8 @@ def get_supervision_objects_defs(id_):
             ssh_port = attrs.get('vars.SSH_PORT', 22)
             snmp_port = attrs.get('vars.SNMP_PORT', 161)
             sconf = get_snmpd_conf(id_)
+            if vt in ['kvm', 'xen']:
+                hdata['inotify'] = True
             p = ('makina-states.services.monitoring.'
                  'snmpd.default_')
             attrs.setdefault('vars.makina_host', host)
