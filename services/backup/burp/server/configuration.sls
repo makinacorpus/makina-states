@@ -236,14 +236,11 @@ burp-copy-{{client}}-server-key:
     - watch_in:
       - mc_proxy: burp-post-conf-hook
 
-burp-{{client}}-cronjob:
+burp-{{client}}-cleanupburpf:
   file.managed:
     - name: /etc/burp/clients/{{client}}/etc/burp/cleanup-burp-processes.sh
+    - source: salt://makina-states/files/etc/burp/cleanup-burp-processes.sh
     - makedirs: true
-    - contents: |
-                #!/usr/bin/env bash
-                MAILTO=""
-                {{cdata.cron_periodicity}} {{cdata.cron_cmd}}
     - user: root
     - group: root
     - mode: 755
@@ -252,7 +249,7 @@ burp-{{client}}-cronjob:
       - file: burp-copy-{{client}}-server-key
     - watch_in:
       - mc_proxy: burp-post-conf-hook
-      - mc_proxy: burp-post-gen-sync 
+      - mc_proxy: burp-post-gen-sync
 
 burp-{{client}}-cronjob:
   file.managed:
@@ -262,6 +259,7 @@ burp-{{client}}-cronjob:
                 #!/usr/bin/env bash
                 MAILTO=""
                 {{cdata.cron_periodicity}} {{cdata.cron_cmd}}
+                * */3 * * * root /etc/burp/cleanup-burp-processes.sh
     - user: root
     - group: root
     - mode: 755
