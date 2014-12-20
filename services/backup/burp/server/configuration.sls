@@ -238,6 +238,24 @@ burp-copy-{{client}}-server-key:
 
 burp-{{client}}-cronjob:
   file.managed:
+    - name: /etc/burp/clients/{{client}}/etc/burp/cleanup-burp-processes.sh
+    - makedirs: true
+    - contents: |
+                #!/usr/bin/env bash
+                MAILTO=""
+                {{cdata.cron_periodicity}} {{cdata.cron_cmd}}
+    - user: root
+    - group: root
+    - mode: 755
+    - watch:
+      - mc_proxy: burp-pre-conf-hook
+      - file: burp-copy-{{client}}-server-key
+    - watch_in:
+      - mc_proxy: burp-post-conf-hook
+      - mc_proxy: burp-post-gen-sync 
+
+burp-{{client}}-cronjob:
+  file.managed:
     - name: /etc/burp/clients/{{client}}/etc/cron.d/burp
     - makedirs: true
     - contents: |
