@@ -867,6 +867,12 @@ def autoconfigure_host(host,
             ):
                 processes.append(i)
     processes = __salt__['mc_utils.uniquify'](processes)
+    for i, val in kwargs.items():
+        if i.startswith('process_') and not val:
+            try:
+                processes.pop(processes.index(i))
+            except (ValueError, IndexError):
+                continue
     services = ['backup_burp_age',
                 'cron',
                 'ddos',
