@@ -2087,8 +2087,14 @@ def get_supervision_objects_defs(id_):
             attrs['vars.SSH_PORT'] = ssh_port
             attrs['vars.SNMP_PORT'] = snmp_port
 
+        try:
+            backup_servers = query('backup_servers')
+        except Exception:
+            backup_servers = {}
         for host in [a for a in hhosts]:
             hdata = hhosts[host]
+            if host in backup_servers:
+                hdata['burp_counters'] = True
             parents = hdata.setdefault('attrs', {}).setdefault('parents', [])
             sattrs = hdata.setdefault('services_attrs', OrderedDict())
             rparents = [a for a in parents if a != id_]
@@ -2157,6 +2163,12 @@ def get_supervision_objects_defs(id_):
                         'address': '127.0.0.1'}}
         rdata.update({'icinga2_definitions': defs})
     return rdata
+
+
+def get_supervision_objects_defs_for(id_, for_):
+    return get_supervision_objects_defs(id_).get(
+        'icinga2_definitions', {}).get(
+            'autoconfigured_hosts', {}).get(for_, {})
 
 
 def get_supervision_pnp_conf(id_, ttl=60):
