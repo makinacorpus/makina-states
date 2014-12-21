@@ -176,7 +176,7 @@ class Check(object):
         vt_counters = time_counters.items()
         vt_counters.sort(lambda x, y: int(10000*(x[1] - y[1])))
         st_counters = size_counters.items()
-        st_counters.sort(lambda x, y: int(10000*(x[1] - y[1])))
+        st_counters.sort(lambda x, y: int((x[1] - y[1])))
         return counters
 
     def get_watch_instances_counters(self):
