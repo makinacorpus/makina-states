@@ -1795,27 +1795,35 @@ increment_gitpack_id() {
     fi
 }
 
+git_pack_dir() {
+    f="${1}"
+    cd "${f}/.."
+    # pack each 10th call
+    git_counter="$(($(get_pack_marker_value) % 10))"
+    if [ "x${git_counter}" = "x0" ];then
+        bs_log "Git packing ${f}"
+        git prune || /bin/true
+        git gc --aggressive || /bin/true
+    else
+        bs_log "Git packing ${f} skipped (${git_counter}/10)"
+    fi
+    if [ "x${?}" = "x0" ];then
+        increment_gitpack_id
+    fi
+}
+
 git_pack() {
     bs_log "Maybe packing git repositories"
     # pack git repositories in salt scope
     find\
-        "${VENV_PATH}"\
+        "${SALT_VENV_PATH}/src" \
+        "${MASTERSALT_VENV_PATH}/src" \
         "${SALT_ROOT}"\
         "${MASTERSALT_ROOT}"\
         "${SALT_PILLAR}"\
         "${MASTERSALT_PILLAR}"\
         -name .git -type d|while read f;do
-        cd "${f}/.."
-        # pack each 10th call
-        git_counter="$(($(get_pack_marker_value) % 10))"
-        if [ "x${git_counter}" = "x0" ];then
-            bs_log "Git packing ${f}"
-            git prune || /bin/true
-            git gc --aggressive || /bin/true
-        else
-            bs_log "Git packing ${f} skipped (${git_counter}/10)"
-        fi
-        increment_gitpack_id
+            git_pack_dir "${f}"
     done
 }
 
