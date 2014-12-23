@@ -35,8 +35,9 @@ install-burp-configuration-sync:
                   if os.path.isdir("{{data.server_conf.directory}}/"+i):
                     if not os.path.exists("{{data.server_conf.directory}}/"+i):
                       os.makedirs("{{data.server_conf.directory}}/"+i)
-                    with open("{{data.server_conf.directory}}/{0}/backup".format(i), 'w') as fic:
-                      fic.write('\n')
+                    if not os.path.exists("{{data.server_conf.directory}}/"+i+"/current"):
+                      with open("{{data.server_conf.directory}}/{0}/backup".format(i), 'w') as fic:
+                        fic.write('\n')
                     todo.append("/etc/burp/clients/{0}/sync.sh".format(i))
                 def check_timeout(will_timeout):
                   t = time.time()

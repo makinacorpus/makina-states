@@ -771,6 +771,7 @@ def autoconfigure_host(host,
                        ssh_timeout=30,
                        apt=None,
                        backup_burp_age=None,
+                       burp_counters=None,
                        cron=None,
                        ddos=None,
                        disk_space_mode=None,
@@ -813,61 +814,8 @@ def autoconfigure_host(host,
                        rbl=None,
                        web_openid=None,
                        **kwargs):
-    if attrs is None:
-        attrs = {}
-    if services_attrs is None:
-        services_attrs = {}
-    # allow to select no_default_checks in yaml
-    # but also llow some services to be manually activated to be checked
-    for _default, checks in [
-        (True,
-         ['apt', 'backup_burp_age', 'load_avg', 'memory',
-          'dns_association_hostname', 'ping', 'ntp_time',
-          'ssh', 'swap']),
-        (False,
-         ['cron', 'ddos', 'dns_association', 'haproxy_stats',
-          'mail_cyrus_imap_connections', 'mail_imap', 'sar',
-          'mail_imap_ssl', 'mail_pop', 'mail_pop_ssl', 'rbl',
-          'mail_pop_test_account', 'mail_server_queues',
-          'mail_smtp', 'mongodb', 'ntp_peers', 'postgresql_port',
-          'inotify',
-          'raid', 'snmpd_memory_control', 'apache_status',
-          'remote_apache_status', 'nginx_status', 'remote_nginx_status',
-          'web_openid'])
-    ]:
-        for check in checks:
-            init_val = eval(check)
-            if init_val is None:
-                exec('{0}={1}'.format(check, _default))
-            # if manually selected On, be sure to select it for a run
-            # even if we activated no_default_checks
-            elif init_val is False:
-                services_attrs.pop(check, None)
-            elif bool(init_val):
-                services_attrs.setdefault(check, {})
-    disk_space_mode_maps = {
-        'large': 'ST_LARGE_DISK_SPACE',
-        'ularge': 'ST_ULARGE_DISK_SPACE',
-        None: 'ST_DISK_SPACE'}
-    memory_mode_maps = {
-        'large': 'ST_MEMORY_LARGE',
-        None: 'ST_MEMORY'}
-    st_mem = memory_mode_maps.get(memory_mode, None)
-    st_disk = disk_space_mode_maps.get(disk_space_mode, None)
-
-    if not processes:
-        processes = []
-    for i, val in kwargs.items():
-        if i.startswith('process_') and val:
-            processes.append('process_'.join(i.split('process_')[1:]))
-        for i in ['fail2ban']:
-            if kwargs.get(
-                'process_' + i,
-                kwargs.get('processes_' + i, True)
-            ):
-                processes.append(i)
-    processes = __salt__['mc_utils.uniquify'](processes)
     services = ['backup_burp_age',
+                'burp_counters',
                 'cron',
                 'ddos',
                 'apt',
@@ -911,6 +859,57 @@ def autoconfigure_host(host,
     services_multiple = ['disk_space', 'nic_card', 'dns_association',
                          'supervisor', 'drbd', 'tomcat', 'sar',
                          'rbl', 'processes', 'web_openid', 'web']
+    if attrs is None:
+        attrs = {}
+    if services_attrs is None:
+        services_attrs = {}
+    # allow to select no_default_checks in yaml
+    # but also llow some services to be manually activated to be checked
+    non_defaults = ['apt', 'backup_burp_age', 'load_avg', 'memory',
+                    'dns_association_hostname', 'ping', 'ntp_time',
+                    'ssh', 'swap']
+    defaults = [a for a in services + services_multiple
+                if a not in non_defaults]
+    for _default, checks in [(True, non_defaults),
+                             (False, defaults)]:
+        for check in checks:
+            init_val = eval(check)
+            if init_val is None:
+                exec('{0}={1}'.format(check, _default))
+            # if manually selected On, be sure to select it for a run
+            # even if we activated no_default_checks
+            elif init_val is False:
+                services_attrs.pop(check, None)
+            elif bool(init_val):
+                services_attrs.setdefault(check, {})
+    disk_space_mode_maps = {
+        'large': 'ST_LARGE_DISK_SPACE',
+        'ularge': 'ST_ULARGE_DISK_SPACE',
+        None: 'ST_DISK_SPACE'}
+    memory_mode_maps = {
+        'large': 'ST_MEMORY_LARGE',
+        None: 'ST_MEMORY'}
+    st_mem = memory_mode_maps.get(memory_mode, None)
+    st_disk = disk_space_mode_maps.get(disk_space_mode, None)
+
+    if not processes:
+        processes = []
+    for i, val in kwargs.items():
+        if i.startswith('process_') and val:
+            processes.append('process_'.join(i.split('process_')[1:]))
+        for i in ['fail2ban']:
+            if kwargs.get(
+                'process_' + i,
+                kwargs.get('processes_' + i, True)
+            ):
+                processes.append(i)
+    processes = __salt__['mc_utils.uniquify'](processes)
+    for i, val in kwargs.items():
+        if i.startswith('process_') and not val:
+            try:
+                processes.pop(processes.index(i))
+            except (ValueError, IndexError):
+                continue
     rdata = {"host.name": host}
     icingaSettings = __salt__['mc_icinga2.settings']()
     if 'postgres' not in processes:

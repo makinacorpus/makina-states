@@ -79,11 +79,15 @@ def settings():
         #
         # KERNEL OPTIMIZATIONS
         #
+        max_user_instances = '128'
+        max_user_watches = '8192'
         try:
             # try to get an uppper value for hight memory servers
             vmfree = int(((grains['mem_total']/64)*1024*1024)/1000)
             if vmfree < 30000:
                 raise Exception('too low, use default')
+            max_user_instances = '512'
+            max_user_watches = '100000'
         except:
             # sane default for at least 1gb hardware
             vmfree = '65536'
@@ -102,6 +106,8 @@ def settings():
                 'tcp_congestion_control': 'cubic',
                 'tcp_max_tw_buckets': '2000000',
                 'tcp_tw_recycle': '0',
+                'fs.inotify.max_user_instances': max_user_instances,
+                'fs.inotify.max_user_watches': max_user_watches,
                 'vm_min_free_kbytes': vmfree,
                 'tcp_syn_retries': '2',
                 'tcp_tw_reuse': '1',
