@@ -3,7 +3,6 @@ include:
   - makina-states.services.db.redis.prerequisites
   - makina-states.services.db.redis.configuration
   - makina-states.services.db.redis.service
-  - makina-states.services.db.redis.create-admin
   - makina-states.services.backup.dbsmartbackup
 
 {# macro exports #}
