@@ -38,9 +38,6 @@ dbsmartbackup_pg_conf:
     - makedirs: true
     - template: jinja
     - mode: 700
-    - context:
-      settings: |
-                {{settings}}
 
 dbsmartbackup_mysql_conf:
   file.managed:
@@ -49,9 +46,6 @@ dbsmartbackup_mysql_conf:
     - makedirs: true
     - template: jinja
     - mode: 700
-    - context:
-      settings: |
-                {{settings}}
 
 dbsmartbackup_mongodb.conf:
   file.managed:
@@ -60,9 +54,14 @@ dbsmartbackup_mongodb.conf:
     - makedirs: true
     - template: jinja
     - mode: 700
-    - context:
-      settings: |
-                {{settings}}
+
+dbsmartbackup_redis.conf:
+  file.managed:
+    - name: /etc/dbsmartbackup/redis.conf
+    - source: salt://makina-states/files/etc/dbsmartbackup/redis.conf
+    - makedirs: true
+    - template: jinja
+    - mode: 700
 
 dbsmartbackup_slapd.conf:
   file.managed:
@@ -71,7 +70,3 @@ dbsmartbackup_slapd.conf:
     - makedirs: true
     - template: jinja
     - mode: 700
-    - context:
-      settings: |
-                {{settings}}
-
