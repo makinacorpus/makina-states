@@ -1,24 +1,33 @@
 {% set data = salt['mc_redis.settings']() %}
-{% set sdata = salt['mc_utils.json_dump'](data) %}
 include:
   - makina-states.services.db.redis.hooks
   - makina-states.services.db.redis.service
 
-{% for f in ['/etc/redisd.conf']%}
+{% for f, tdata in data.templates.items() %}
 makina-redis-{{f}}:
   file.managed:
     - name: {{f}}
-    - source: salt://makina-states/files{{f}}
-    - user: root
+    - source: "{{tdata.get('template', 'salt://makina-states/files'+f)}}"
+    - user: "{{tdata.get('user', 'redis')}}"
+    - group: "{{tdata.get('group', 'redis')}}"
+    - mode: "{{tdata.get('mode', 750)}}"
     - makedirs: true
-    - group: root
-    - mode: 744
     - template: jinja
-    - defaults:
-      data: |
-            {{sdata}}
     - watch:
       - mc_proxy: redis-pre-conf
     - watch_in:
       - mc_proxy: redis-post-conf
 {% endfor %}
+
+makina-redis-localconf:
+  file.managed:
+    - name: /etc/redis/redis.local.conf
+    - user: redis
+    - group: redis
+    - mode: 750
+    - makedirs: true
+    - source: ''
+    - watch:
+      - mc_proxy: redis-pre-conf
+    - watch_in:
+      - mc_proxy: redis-post-conf

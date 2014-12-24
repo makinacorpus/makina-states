@@ -1,11 +1,12 @@
+{% set redisSettings = salt['mc_redis.settings']() %}
 include:
   - makina-states.services.db.redis.hooks
 
 makina-redis-service:
   service.running:
-    - name: redisd
+    - name: {{redisSettings.service}}
     - enable: true
-    - reload: true
+    {# does not work - reload: true #}
     - watch:
       - mc_proxy: redis-pre-restart
     - watch_in:
@@ -13,7 +14,7 @@ makina-redis-service:
 
 makina-redis-restart-service:
   service.running:
-    - name: redisd
+    - name: {{redisSettings.service}}
     - enable: true
     - watch:
       - mc_proxy: redis-pre-hardrestart

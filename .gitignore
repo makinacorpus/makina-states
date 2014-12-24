@@ -1,4 +1,5 @@
 .*installed.cfg
+*.swp
 makina.scripts
 MegaSAS.log
 .initial_hs

@@ -1,0 +1,12 @@
+# MANAGED VIA SALT - DO NOT EDIT DIRECTLY
+{%- set data = salt['mc_redis.settings']() %}
+# redis-server configure options
+
+# ULIMIT: Call ulimit -n with this argument prior to invoking Redis itself.
+# This may be required for high-concurrency environments. Redis itself cannot
+# alter its limits as it is not being run as root. (default: do not call
+# ulimit)
+#
+{% if data.get('ulimit', 0) %}
+ULIMIT={{data.ulimit}}
+{% endif%}
