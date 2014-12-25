@@ -158,7 +158,7 @@ check_connectivity() {
             tempo="$((${tempo} - 1))"
             # one of
             # Connection to 127.0.0.1 4506 port [tcp/*] succeeded!
-            # devhost4.local [127.0.0.1] 4506 (?) open
+            # foo [127.0.0.1] 4506 (?) open
             test "$(${NC} -w 5 -v -z ${ip} ${port} 2>&1|egrep "open$|Connection.*succeeded"|wc -l|sed -e "s/ //g")" != "0";
             ret="${?}"
             if [ "x${ret}" = "x0" ];then
@@ -3467,13 +3467,6 @@ minion_challenge() {
     global_tries="30"
     inner_tries="5"
     for i in `seq ${global_tries}`;do
-        if [ "x${SALT_MASTER_DNS}" = "xlocalhost" ] && [ "x$(hostname|${SED} -e "s/.*devhost.*/match/")" = "xmatch" ];then
-            debug_msg "Forcing salt master restart"
-            restart_local_masters
-            if [ "x$(get_local_salt_mode)" != "xmasterless" ];then
-                sleep 10
-            fi
-        fi
         restart_local_minions
         resultping="1"
         for j in `seq ${inner_tries}`;do
@@ -3508,13 +3501,6 @@ mastersalt_minion_challenge() {
     global_tries="30"
     inner_tries="5"
     for i in `seq ${global_tries}`;do
-        if [ "x$(get_mastersalt)" = "xlocalhost" ] && [ "x$(hostname|${SED} -e "s/.*devhost.*/match/")" = "xmatch" ];then
-            debug_msg "Forcing salt mastersalt master restart"
-            restart_local_mastersalt_masters
-            if [ "x$(get_local_mastersalt_mode)" != "xmasterless" ];then
-                sleep 10
-            fi
-        fi
         restart_local_mastersalt_minions
         resultping="1"
         for j in `seq ${inner_tries}`;do
