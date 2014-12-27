@@ -276,71 +276,25 @@ dns_resolve() {
     echo ${res}
 }
 
+## set environment variables determining the underlying os
 detect_os() {
     # make as a function to be copy/pasted as-is in multiple scripts
     set_progs
     UNAME="${UNAME:-"$(uname | awk '{print tolower($1)}')"}"
-    IS_UBUNTU=""
-    IS_DEBIAN=""
-    CONF_ROOT="${CONF_ROOT:-"/etc"}"
-    if [ -e "${CONF_ROOT}/lsb-release" ];then
-        . ${CONF_ROOT}/lsb-release
-        if [ "x${DISTRIB_CODENAME}" = "xlucid" ]\
-            || [ "x${DISTRIB_CODENAME}" = "xmaverick" ]\
-            || [ "x${DISTRIB_CODENAME}" = "xnatty" ]\
-            || [ "x${DISTRIB_CODENAME}" = "xoneiric" ]\
-            || [ "x${DISTRIB_CODENAME}" = "xprecise" ]\
-            || [ "x${DISTRIB_CODENAME}" = "xquantal" ]\
-            ;then
-            EARLY_UBUNTU=y
-            BEFORE_RARING=y
-        fi
-        if [ "x${DISTRIB_CODENAME}" = "xraring" ] || [ "x${EARLY_UBUNTU}" != "x" ];then
-            BEFORE_SAUCY="y"
-        fi
-        if [ "x${DISTRIB_ID}" = "xUbuntu" ];then
-            IS_UBUNTU="y"
-        fi
+    DISTRIB_CODENAME=""
+    DISTRIB_ID=""
+    DISTRIB_BACKPORT=""
+    if hash -r lsb_release >/dev/null 2>&1;then
+        DISTRIB_ID=$(lsb_release -si)
+        DISTRIB_CODENAME=$(lsb_release -sc)
+        DISTRIB_RELEASE=$(lsb_release -sr)
+    else
+        echo "unespected case, no lsb_release"
+        exit 1
     fi
-    if [ -e "${CONF_ROOT}/os-release" ];then
-        OS_RELEASE_ID=$(egrep ^ID= ${CONF_ROOT}/os-release|"${SED}" -e "s/ID=//g")
-        OS_RELEASE_NAME=$(egrep ^NAME= ${CONF_ROOT}/os-release|"${SED}" -e "s/NAME=""//g")
-        OS_RELEASE_VERSION=$(egrep ^VERSION= ${CONF_ROOT}/os-release|"${SED}" -e "s/VERSION=/""/g")
-        OS_RELEASE_PRETTY_NAME=$(egrep ^PRETTY_NAME= ${CONF_ROOT}/os-release|"${SED}" -e "s/PRETTY_NAME=""//g")
-
+    if [ "x${DISTRIB_ID}" = "xDebian" ];then
+        DISTRIB_BACKPORT="${DISTRIB_CODENAME}-backports"
     fi
-    if [ -e "${CONF_ROOT}/debian_version" ] && [ "x${OS_RELEASE_ID}" = "xdebian" ] && [ "x${DISTRIB_ID}" != "xUbuntu" ];then
-        IS_DEBIAN="y"
-        SALT_BOOT_OS="debian"
-        # Debian GNU/Linux 7 (wheezy) -> wheezy
-        DISTRIB_CODENAME="$(echo ${OS_RELEASE_PRETTY_NAME} | "${SED}" -e "s/.*(\\(.*\\)).*/\1/g")"
-    fi
-    DEBIAN_VERSION=$(cat /etc/debian_version 2>/dev/null)
-    if [ -e "${CONF_ROOT}/debian_version" ];then
-        IS_DEBIAN="y"
-        SALT_BOOT_OS="debian"
-        # Debian GNU/Linux 7 (wheezy) -> wheezy
-        if grep -q lenny /etc/apt/sources.list 2>/dev/null;then
-            DISTRIB_CODENAME="lenny"
-        fi
-    fi
-    if [ "x${DISTRIB_CODENAME}" = "xlenny" ];then
-        export CFLAGS="-I/usr/local/include" LDFLAGS="-L/usr/local/lib"
-    fi
-    if [ "x${IS_UBUNTU}" != "x" ];then
-        SALT_BOOT_OS="ubuntu"
-        DISTRIB_NEXT_RELEASE="saucy"
-        DISTRIB_BACKPORT="${DISTRIB_NEXT_RELEASE}"
-        IS_DEBIAN=""
-    elif [ "x${IS_DEBIAN}" != "x" ];then
-        if [ "x${DISTRIB_CODENAME}"  = "xwheezy" ];then
-            DISTRIB_NEXT_RELEASE="jessie"
-        elif [ "x${DISTRIB_CODENAME}"  = "xsqueeze" ];then
-            DISTRIB_NEXT_RELEASE="wheezy"
-        fi
-        DISTRIB_BACKPORT="wheezy-backports"
-    fi
-
 }
 
 get_module_args() {
@@ -736,10 +690,6 @@ set_vars() {
     if [ "x${DO_SALT}" != "xy" ];then
         DO_SALT="no"
     fi
-    if [ "x${DISTRIB_CODENAME}" != "xlenny" ];then
-        BASE_PACKAGES="${BASE_PACKAGES} libyaml-dev python2.7 python2.7-dev"
-        BASE_PACKAGES="${BASE_PACKAGES} libzmq3-dev"
-    fi
     BASE_PACKAGES="${BASE_PACKAGES} swig libssl-dev debconf-utils python-virtualenv"
     BASE_PACKAGES="${BASE_PACKAGES} git rsync"
     BASE_PACKAGES="${BASE_PACKAGES} libgmp3-dev"
@@ -1092,7 +1042,7 @@ set_vars() {
     fi
 
     # try to get a released version of the virtualenv to speed up installs
-    VENV_URL="${VENV_URL:-"https://github.com/makinacorpus/makina-states/releases/download/attachedfiles/virtualenv-makina-states-${SALT_BOOT_OS}-${DISTRIB_CODENAME}-stable.tar.xz"}"
+    VENV_URL="${VENV_URL:-"https://github.com/makinacorpus/makina-states/releases/download/attachedfiles/virtualenv-makina-states-${DISTRIB_ID}-${DISTRIB_CODENAME}-stable.tar.xz"}"
     declare -A VENV_URLS_MD5
     VENV_URLS_MD5[ahttps://github.com/makinacorpus/makina-states/releases/download/attachedfiles/virtualenv-makina-states-ubuntu-vivid-stable.tar.xz]="940c8d19e6b7d25dffb091634ddf629a"
     VENV_URLS_MD5[ahttps://github.com/makinacorpus/makina-states/releases/download/attachedfiles/virtualenv-makina-states-ubuntu-trusty-stable.tar.xz]="4a8a83c02846770b4686b4b01b9b8e18"
@@ -1240,7 +1190,7 @@ recap_(){
     need_confirm="${1}"
     debug="${2:-$SALT_BOOT_DEBUG}"
     bs_yellow_log "----------------------------------------------------------"
-    bs_yellow_log " MAKINA-STATES BOOTSTRAPPER (@$(get_ms_branch)) FOR $SALT_BOOT_OS"
+    bs_yellow_log " MAKINA-STATES BOOTSTRAPPER (@$(get_ms_branch)) FOR $DISTRIB_ID"
     bs_yellow_log "   - ${THIS} [--help] [--long-help]"
     bs_yellow_log " Those informations have been written to:"
     bs_yellow_log "   - ${TMPDIR}/boot_salt_top"
@@ -1409,47 +1359,23 @@ lazy_apt_get_install() {
 setup_backports() {
     # on ubuntu enable backports (saucy) release repos, & on debian just backport
     # saucy is now on archives !
-    if [ "x${BEFORE_SAUCY}" != "x" ] && [ "x${IS_UBUNTU}" != "x" ];then
-        bs_log "Activating backport from ${DISTRIB_BACKPORT} to ${DISTRIB_CODENAME}"
-        if [ "x${TRAVIS}" != "x" ];then
-            bs_log "pre apt/sources.list"
-            cat /etc/apt/sources.list
-        fi
-        cp  ${CONF_ROOT}/apt/sources.list "${CONF_ROOT}/apt/sources.list.${CHRONO}.sav"
-        "${SED}" -i -re "s/(([a-z]{2}\.)?(archives?.ubuntu.com))(.*)(${DISTRIB_CODENAME})(.*)/old-releases.ubuntu.com\4${DISTRIB_BACKPORT}\6 # \1/g" /etc/apt/sources.list
-        if [ "x${TRAVIS}" != "x" ];then
-            bs_log "pre apt/sources.list"
-            cat /etc/apt/sources.list
-        fi
-    fi
-    if [ "x${IS_DEBIAN}" != "x" ];then
+    if [ "x${DISTRIB_BACKPORT}" != "x" ] && greq -vq "${DISTRIB_BACKPORT}" ${CONF_ROOT}/etc/apt/sources.list;then
         bs_log "Activating backport from ${DISTRIB_BACKPORT} to ${DISTRIB_CODENAME}"
         cp  ${CONF_ROOT}/apt/sources.list "${CONF_ROOT}/apt/sources.list.${CHRONO}.sav"
         "${SED}" "/^deb.*${DISTRIB_BACKPORT}/d" -i ${CONF_ROOT}/apt/sources.list
-        echo "#backport added by boot-salt">/tmp/aptsrc
-        egrep "^deb.* ${DISTRIB_CODENAME} " ${CONF_ROOT}/apt/sources.list|"${SED}" -i -e "s/${DISTRIB_CODENAME}/${DISTRIB_BACKPORT}/g" > /tmp/aptsrc
-        cat /tmp/aptsrc >> ${CONF_ROOT}/apt/sources.list
-        rm -f /tmp/aptsrc
+        echo "# backport added by boot-salt">/tmp/aptsrc
+        egrep "^deb.* ${DISTRIB_CODENAME} " ${CONF_ROOT}/apt/sources.list | \
+            "${SED}" -i -e "s/${DISTRIB_CODENAME}/${DISTRIB_BACKPORT}/g" \
+            > /tmp/aptsrc${CHRONO}
+        cat /tmp/aptsrc${CHRONO} >> ${CONF_ROOT}/apt/sources.list
+        rm -f /tmp/aptsrc${CHRONO}
     fi
 
 }
 
 teardown_backports() {
-    # on ubuntu disable backports release repos, & on debian just backport
-    # saucy is now on archives !
-    if [ "x${BEFORE_SAUCY}" != "x" ] && [ "x${IS_UBUNTU}" != "x" ];then
-        bs_log "Removing backport from $DISTRIB_BACKPORT to $DISTRIB_CODENAME"
-        if [ "x${TRAVIS}" != "x" ];then
-            bs_log "TEARDOWN: pre apt/sources.list"
-            cat /etc/apt/sources.list
-        fi
-        "${SED}" -i -re "s/(old-releases.ubuntu.com)(.*)(${DISTRIB_BACKPORT})(.*)( # )(.*) *$/\6\2${DISTRIB_CODENAME}\4/g" "${CONF_ROOT}/apt/sources.list"
-        if [ "x${TRAVIS}" != "x" ];then
-            bs_log "TEARDOWN: pre apt/sources.list"
-            cat /etc/apt/sources.list
-        fi
-    fi
-    # leave the backport in placs on debian
+    # deactivated, too much risk
+    : noop
 }
 
 install_prerequisites() {
@@ -1458,26 +1384,6 @@ install_prerequisites() {
         bs_log "Check package dependencies"
     fi
     lazy_apt_get_install python-software-properties curl
-    # XXX: only lts package in this ppa
-    if [ "x${DISTRIB_CODENAME}" != "xlenny" ];then
-        if     [ "x$(is_apt_installed libzmq3    )" = "xno" ] \
-            || [ "x$(is_apt_installed libzmq3-dev)" = "xno" ];\
-            then
-            bs_log "Installing ZeroMQ3"
-            setup_backports
-            apt-get remove -y --force-yes libzmq libzmq1 libzmq-dev 1>/dev/null 2>/dev/null
-            apt-get update -qq && lazy_apt_get_install libzmq3-dev
-            ret="${?}"
-            if [ "x${ret}" != "x0" ];then
-                die_ ${ret} "Install of zmq3 failed"
-            fi
-            ret="${?}"
-            teardown_backports && apt-get update
-            if [ "x${ret}" != "x0" ];then
-                die_ ${ret} "Teardown backports failed"
-            fi
-        fi
-    fi
     for i in ${BASE_PACKAGES};do
         if [ "x$(dpkg-query -s ${i} 2>/dev/null|egrep "^Status:"|grep installed|wc -l|${SED} -e "s/ //g")" = "x0" ];then
             to_install="${to_install} ${i}"
@@ -2169,17 +2075,13 @@ setup_virtualenv() {
         || [ ! -e "${venv_path}/include" ] \
         ;then
         bs_log "Creating virtualenv in ${venv_path}"
-        vargs=""
-        if [ "x${DISTRIB_CODENAME}" = "xlenny" ];then
-            vargs="--python=$(which python2.7)"
-        fi
         if [ ! -e "${PIP_CACHE}" ];then
             mkdir -p "${PIP_CACHE}"
         fi
         if [ ! -e "${venv_path}" ];then
             mkdir -p "${venv_path}"
         fi
-        virtualenv $vargs --system-site-packages --unzip-setuptools ${venv_path} &&\
+        virtualenv --system-site-packages --unzip-setuptools ${venv_path} &&\
         . "${venv_path}/bin/activate" &&\
         "${venv_path}/bin/easy_install" -U setuptools &&\
         "${venv_path}/bin/pip" install -U pip&&\
