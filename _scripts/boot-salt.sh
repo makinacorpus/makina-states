@@ -65,7 +65,8 @@ THIS="$(get_abspath ${THIS})"
 export PATH
 
 is_container() {
-    echo  "$(cat -e /proc/1/environ |grep container=|wc -l|sed -e "s/ //g")"
+    cat -e /proc/1/environ 2>/dev/null|grep -q container=
+    echo "${?}"
 }
 
 filter_host_pids() {
