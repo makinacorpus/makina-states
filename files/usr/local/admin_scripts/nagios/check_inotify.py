@@ -154,8 +154,8 @@ class Check(object):
                 unknown_ret = ('Warning thresold ({0}) should be '
                                'lower than the '
                                'critical one ({1})')
-                self.unknown(unknow_ret.format(self.args['warning'],
-                                               self.args['critical']))
+                self.unknown(unknown_ret.format(self.args['warning'],
+                                                self.args['critical']))
 
     def get_file_consumers(self):
         ret, ps = popen('lsof')
