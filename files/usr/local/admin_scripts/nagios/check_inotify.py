@@ -98,7 +98,7 @@ class Check(object):
             )[0][0].split()[-1])
         except Exception:
             pass
-        warning_ts = round(default_ts*90/100)
+        warning_ts = round(default_ts * 90 / 100)
         if True or not HAS_ARGPARSE:
             parser = self.parser = optparse.OptionParser()
             parser.add_option('-t', '--track-threshold',
@@ -151,9 +151,11 @@ class Check(object):
                                       ' %(default)s]'))
             self.args = vars(parser.parse_args())
             if self.args['warning'] >= self.args['critical']:
-                self.unknown(('Warning thresold ({0}) should be lower than the '
-                              'critical one ({1})').format(self.args['warning'],
-                                                           self.args['critical']))
+                unknown_ret = ('Warning thresold ({0}) should be '
+                               'lower than the '
+                               'critical one ({1})')
+                self.unknown(unknow_ret.format(self.args['warning'],
+                                               self.args['critical']))
 
     def get_file_consumers(self):
         ret, ps = popen('lsof')
