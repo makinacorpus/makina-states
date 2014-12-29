@@ -98,16 +98,7 @@ set_progs() {
     BHOST="$(which host 2>/dev/null)"
     DIG="$(which dig 2>/dev/null)"
     NSLOOKUP="$(which nslookup 2>/dev/null)"
-    lxc_ps=$(which lxc-ps 1>/dev/null 2>/dev/null)
-    if [ "x$(egrep "^container=" /proc/1/environ|wc -l|sed -e "s/ //g")" = "x0" ];then
-        # we are in a container !
-        lxc_ps=""
-    fi
-    if [ "x${lxc_ps}" != "x" ];then
-        PS="$lxc_ps --host --"
-    else
-        PS="$(which ps)"
-    fi
+    PS="$(which ps)"
     export SED GETENT PERL PYTHON DIG NSLOOKUP PS
 }
 
