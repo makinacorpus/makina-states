@@ -6,7 +6,6 @@ from __future__ import (absolute_import,
                         unicode_literals)
 __docformat__ = 'restructuredtext en'
 
-import sys
 import glob
 import os
 try:
@@ -20,6 +19,8 @@ try:
 except ImportError:
     HAS_OPTPARSE = False
 from subprocess import Popen, PIPE
+
+import sys
 import traceback
 
 
@@ -176,13 +177,11 @@ class Check(object):
         return data
 
     def get_openfiles_counters(self):
+        fs_enc = sys.getfilesystemencoding()
         ret, ps = popen('lsof')
-        lines = ret[0].split('\n')
+        lines = ret[0].decode(fs_enc).splitlines()
         open_files = len(lines) - 1
-        inot_files = 0
-        for i in lines:
-            if 'anon_inode' in i:
-                inot_files += 1
+        inot_files = len([line for line in lines  if 'anon_inode' in line])
         return {'open_files': open_files,
                 'inotify_openfiles': inot_files}
 
