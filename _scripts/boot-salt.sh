@@ -99,7 +99,14 @@ set_progs() {
     DIG="$(which dig 2>/dev/null)"
     NSLOOKUP="$(which nslookup 2>/dev/null)"
     PS="$(which ps)"
-    export SED GETENT PERL PYTHON DIG NSLOOKUP PS
+    NC=$(which nc 2>/dev/null)
+    NETCAT=$(which netcat 2>/dev/null)
+    if [ ! -e "${NC}" ];then
+        if [ -e "${NETCAT}" ];then
+            NC=${NETCAT}
+        fi
+    fi
+    export SED GETENT PERL PYTHON DIG NSLOOKUP PS NC
 }
 
 sanitize_changeset() {
@@ -131,28 +138,20 @@ get_do_mastersalt() {
     echo "${ret}"
 }
 
-# 1: connection failure
+# X: connection failure
 # 0: connection success
 check_connectivity() {
     ip=${1}
     tempo="${3:-1}"
     port=${2}
-    NC=$(which nc 2>/dev/null)
-    NETCAT=$(which netcat 2>/dev/null)
     ret="0"
-    if [ ! -e "${NC}" ];then
-        if [ -e "${NETCAT}" ];then
-            NC=${NETCAT}
-        fi
-    fi
     if [ -e "${NC}" ];then
         while [ "x${tempo}" != "x0" ];do
             tempo="$((${tempo} - 1))"
             # one of
             # Connection to 127.0.0.1 4506 port [tcp/*] succeeded!
             # foo [127.0.0.1] 4506 (?) open
-            test "$(${NC} -w 5 -v -z ${ip} ${port} 2>&1|egrep "open$|Connection.*succeeded"|wc -l|sed -e "s/ //g")" != "0";
-            ret="${?}"
+            ret=$(${NC} -w 5 -v -z ${ip} ${port} 2>&1|egrep -q "open$|Connection.*succeeded";echo ${?})
             if [ "x${ret}" = "x0" ];then
                 break
             fi
