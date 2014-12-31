@@ -222,6 +222,7 @@ test_online() {
 dns_resolve() {
     ahost="${1}"
     resolvers="hostsv4 hostsv6"
+    res=""
     for i in\
         "${GETENT}"\
         "${PERL}"\
@@ -234,24 +235,20 @@ dns_resolve() {
             resolvers="${resolvers} ${i}"
         fi
     done
-    if [ "x${resolvers}" = "x" ];then
-        die "${DNS_RESOLUTION_FAILED}"
-    fi
-    res=""
     for resolver in ${resolvers};do
-        if [ "x$(echo ${resolver} | grep -q hostsv4;echo "${?}")" = "x0" ];then
+        if echo ${resolver} | grep -q hostsv4;then
             res=$(${GETENT} ahostsv4 ${ahost}|head -n1 2>/dev/null| awk '{ print $1 }')
-        elif [ "x$(echo ${resolver} | grep -q hostsv6;echo "${?}")" = "x0" ];then
+        elif echo ${resolver} | grep -q hostsv6;then
             res=$(${GETENT} ahostsv6 ${ahost}|head -n1 2>/dev/null| awk '{ print $1 }')
-        elif [ "x$(echo ${resolver} | grep -q dig;echo "${?}")" = "x0" ];then
+        elif echo ${resolver} | grep -q dig;then
             res=$(${resolver} ${ahost} 2>/dev/null| awk '/^;; ANSWER SECTION:$/ { getline ; print $5 }')
-        elif [ "x$(echo ${resolver} | grep -q nslookup;echo "${?}")" = "x0" ];then
+        elif echo ${resolver} | grep -q nslookup;then
             res=$(${resolver} ${ahost} 2>/dev/null| awk '/^Address: / { print $2  }')
-        elif [ "x$(echo ${resolver} | grep -q python;echo "${?}")" = "x0" ];then
+        elif echo ${resolver} | grep -q python;then
             res=$(${resolver} -c "import socket;print socket.gethostbyname('${ahost}')" 2>/dev/null)
-        elif [ "x$(echo ${resolver} | grep -q perl;echo "${?}")" = "x0" ];then
+        elif echo ${resolver} | grep -q perl;then
             res=$(${resolver} -e "use Socket;\$packed_ip=gethostbyname(\"${ahost}\");print inet_ntoa(\$packed_ip)")
-        elif [ "x$(echo ${resolver} | grep -q getent;echo "${?}")" = "x0" ];then
+        elif echo ${resolver} | grep -q getent;then
             res=$(${resolver} ahosts ${ahost}|head -n1 2>/dev/null| awk '{ print $1 }')
         fi
         # do not accet ipv6 resolutions
