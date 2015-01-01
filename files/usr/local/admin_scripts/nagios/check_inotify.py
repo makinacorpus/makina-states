@@ -6,7 +6,6 @@ from __future__ import (absolute_import,
                         unicode_literals)
 __docformat__ = 'restructuredtext en'
 
-import sys
 import glob
 import os
 try:
@@ -20,6 +19,8 @@ try:
 except ImportError:
     HAS_OPTPARSE = False
 from subprocess import Popen, PIPE
+
+import sys
 import traceback
 
 
@@ -97,7 +98,7 @@ class Check(object):
             )[0][0].split()[-1])
         except Exception:
             pass
-        warning_ts = round(default_ts*90/100)
+        warning_ts = round(default_ts * 90 / 100)
         if True or not HAS_ARGPARSE:
             parser = self.parser = optparse.OptionParser()
             parser.add_option('-t', '--track-threshold',
@@ -150,9 +151,11 @@ class Check(object):
                                       ' %(default)s]'))
             self.args = vars(parser.parse_args())
             if self.args['warning'] >= self.args['critical']:
-                self.unknown(('Warning thresold ({0}) should be lower than the '
-                              'critical one ({1})').format(self.args['warning'],
-                                                           self.args['critical']))
+                unknown_ret = ('Warning thresold ({0}) should be '
+                               'lower than the '
+                               'critical one ({1})')
+                self.unknown(unknown_ret.format(self.args['warning'],
+                                                self.args['critical']))
 
     def get_file_consumers(self):
         ret, ps = popen('lsof')
@@ -176,13 +179,11 @@ class Check(object):
         return data
 
     def get_openfiles_counters(self):
+        fs_enc = sys.getfilesystemencoding()
         ret, ps = popen('lsof')
-        lines = ret[0].split('\n')
+        lines = ret[0].decode(fs_enc).splitlines()
         open_files = len(lines) - 1
-        inot_files = 0
-        for i in lines:
-            if 'anon_inode' in i:
-                inot_files += 1
+        inot_files = len([line for line in lines  if 'anon_inode' in line])
         return {'open_files': open_files,
                 'inotify_openfiles': inot_files}
 
