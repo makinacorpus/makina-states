@@ -215,6 +215,7 @@ def settings():
                 'no_dns': False,
                 'no_ping': False,
                 'no_smtp': False,
+                'no_redis': False,
                 'no_ssh': False,
                 'no_ntp': False,
                 'no_web': False,
@@ -292,7 +293,7 @@ def settings():
         if not data['no_default_params']:
             for p in ['SYSLOG', 'SSH', 'SNMP', 'PING', 'LDAP', 'SALT',
                       'NTP', 'MUMBLE', 'DNS', 'WEB', 'MONGODB', 'RABBITMQ',
-                      'BURP', 'MYSQL', 'POSTGRESQL', 'FTP']:
+                      'BURP', 'MYSQL', 'REDIS', 'POSTGRESQL', 'FTP']:
                 default = 'fw:127.0.0.1'
                 if p in ['SSH', 'DNS', 'PING', 'WEB', 'MUMBLE']:
                     default = 'all'
@@ -774,6 +775,21 @@ def settings():
                 {'action': get_macro('FTP', action),
                  'source': '$SALT_RESTRICTED_FTP', 'dest': 'all'},
                 zones=data['internal_zones'])
+
+            data['default_rules'].append({'comment': 'redis'})
+            if data['no_redis']:
+                action = 'DROP'
+            else:
+                action = 'ACCEPT'
+            for proto in protos:
+                append_rules_for_zones(
+                    data['default_rules'],
+                    {'action': action,
+                     'source': '$SALT_RESTRICTED_REDIS',
+                     'dest': 'fw',
+                     'proto': proto,
+                     'dport': '6379'},
+                    zones=data['internal_zones'])
 
             data['default_rules'].append({'comment': 'postgresql'})
             if data['no_postgresql']:

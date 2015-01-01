@@ -16,6 +16,7 @@
 {%- if not udata %}{%- set udata = {} %}{%endif%}
 {%- set ssk_keys = udata.setdefault('ssh_keys', []) %}
 {%- set ssk_absent_keys = udata.setdefault('ssh_absent_keys', []) %}
+{%- set ugroup = udata.setdefault('group', id) %}
 {%- set groups = udata.setdefault('groups', []) %}
 {%- set system = udata.setdefault('system', False) %}
 {%- set password = udata.setdefault('password', False) %}
@@ -34,7 +35,7 @@
 
 {{ id }}:
   group.present:
-    - name: {{ id }}
+    - name: {{ ugroup }}
     - system: {{system}}
   file.directory:
     - require:

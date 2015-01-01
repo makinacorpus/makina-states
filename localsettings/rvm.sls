@@ -79,6 +79,7 @@ rvm-setup:
             cd /tmp
             wget -O rvm-installer "{{rvms.url}}"
             chmod +x rvm-installer
+            curl -sSL https://rvm.io/mpapis.asc | gpg --import -
             ./rvm-installer {{rvms.branch}}
     - use_vt: true
     - unless: test -e {{locs.rvm_path}}/bin/rvm
