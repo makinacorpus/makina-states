@@ -295,17 +295,10 @@ get_module_args() {
 
 interactive_tempo(){
     if [ "x${SALT_REATTACH}" = "x" ];then
-        tempo="${@}"
-        tempo_txt="${tempo}"
-        if [ -f "${PYTHON}" ] && [ ${tempo_txt} -ge 60 ];then
-            tempo_txt="$(python -c "print ${tempo} / 60") minute(s)"
-        else
-            tempo_txt="${tempo} second(s)"
-        fi
-        bs_yellow_log "The installation will continue in ${tempo_txt}"
+        bs_yellow_log "The installation will continue in ${1:-60} seconds"
         bs_yellow_log "unless you press enter to continue or C-c to abort"
         bs_yellow_log "-------------------  ????  -----------------------"
-        read -t ${tempo}
+        read -t ${1:-60}
         bs_yellow_log "Continuing..."
     fi
 }
