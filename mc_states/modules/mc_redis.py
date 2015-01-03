@@ -44,6 +44,7 @@ def settings():
                     ('/etc/redis/redis.conf', {})]),
                 'packages':  [
                     'redis-server',
+                    'libredis-perl',
                     'python-redis',
                     'redis-tools',
                 ],
