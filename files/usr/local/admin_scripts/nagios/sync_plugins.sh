@@ -60,3 +60,6 @@ chmod +x "check_mio"
 
 wget https://raw.githubusercontent.com/egeland/nagios-rbl-check/master/check_rbl.py -O check_rbl.py
 chmod +x check_rbl.py
+
+wget "https://raw.githubusercontent.com/willixix/WL-NagiosPlugins/master/check_redis.pl" -O check_redis.pl
+chmod +x check_redis.pl
