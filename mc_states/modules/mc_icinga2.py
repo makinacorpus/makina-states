@@ -799,6 +799,7 @@ def autoconfigure_host(host,
                        ntp_time=None,
                        postgresql_port=None,
                        processes=None,
+                       fullpath_processes=None,
                        raid=None,
                        snmpd_memory_control=None,
                        supervisor=None,
@@ -841,6 +842,7 @@ def autoconfigure_host(host,
                 'ntp_time',
                 'ping',
                 'postgresql_port',
+                'fullpath_processes',
                 'processes',
                 'raid',
                 'snmpd_memory_control',
@@ -858,7 +860,8 @@ def autoconfigure_host(host,
                 'apache_status']
     services_multiple = ['disk_space', 'nic_card', 'dns_association',
                          'supervisor', 'drbd', 'tomcat', 'sar',
-                         'rbl', 'processes', 'web_openid', 'web']
+                         'rbl', 'fullpath_processes', 'processes',
+                         'web_openid', 'web']
     if attrs is None:
         attrs = {}
     if services_attrs is None:
@@ -894,6 +897,8 @@ def autoconfigure_host(host,
 
     if not processes:
         processes = []
+    if not fullpath_processes:
+        fullpath_processes = []
     for i, val in kwargs.items():
         if i.startswith('process_') and val:
             processes.append('process_'.join(i.split('process_')[1:]))
@@ -903,6 +908,7 @@ def autoconfigure_host(host,
                 kwargs.get('processes_' + i, True)
             ):
                 processes.append(i)
+    fullpath_processes = __salt__['mc_utils.uniquify'](fullpath_processes)
     processes = __salt__['mc_utils.uniquify'](processes)
     for i, val in kwargs.items():
         if i.startswith('process_') and not val:
@@ -1078,7 +1084,7 @@ def autoconfigure_host(host,
         if svc in services_multiple:
             default_vals = {'web': {host: {}}, 'tomcat': {host: {}}}
             if svc in ['drbd', 'disk_space', 'processes', 'sar', 'rbl',
-                       'nic_card', 'supervisor']:
+                       'fullpath_processes', 'nic_card', 'supervisor']:
                 values = eval(svc)
             else:
                 values = services_attrs.get(svc,
@@ -1097,7 +1103,7 @@ def autoconfigure_host(host,
                 # switch between
                 # HTTP_STRING / HTTP_STRING_AUTH
                 # HTTPS_STRING / HTTPS_STRING_AUTH
-                if svc == 'processes':
+                if svc in ['fullpath_processes', 'processes']:
                     for pattern in [
                         'fail2ban',
                     ]:
