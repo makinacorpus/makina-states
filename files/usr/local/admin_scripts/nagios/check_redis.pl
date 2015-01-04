@@ -410,6 +410,7 @@
 #   Matt McMillan
 #   Jon Schulz
 #   M Spiegle
+#   Mathieu Le Marec - Pasquet
 #
 # ============================ START OF PROGRAM CODE =============================
 
@@ -518,6 +519,7 @@ my $o_verb=     undef;          # verbose mode
 my $o_version=  undef;          # version info option
 my $o_variables=undef;          # list of variables for warn and critical
 my $o_perfvars= undef;          # list of variables to include in performance data
+my $o_skipperfvars= undef;      # list of variables to skip in performance data
 my $o_warn=     undef;          # warning level option
 my $o_crit=     undef;          # Critical level option
 my $o_perf=     undef;          # Performance data option
@@ -532,7 +534,7 @@ my @o_querykey=();		# query this key, this option maybe repeated so its an array
 my $o_prevperf= undef;		# performance data given with $SERVICEPERFDATA$ macro
 my $o_prevtime= undef;		# previous time plugin was run $LASTSERVICECHECK$ macro
 my $o_ratelabel=undef;		# prefix and suffix for creating rate variables
-my $o_rsuffix='_rate';		# default suffix	
+my $o_rsuffix='_rate';		# default suffix
 my $o_rprefix='';
 
 ## Additional global variables
@@ -619,6 +621,8 @@ Performance Data Processing Options:
    This allows to list variables which values will go only into perfparse
    output (and not for threshold checking). The option by itself (emply value)
    is same as a special value '*' and specify to output all variables.
+ -S, --skipperfvars=[STRING[,STRING[,STRING...]]]
+   This allows to list variables which values will be skipped from perfdata line
  -P, --prev_perfdata
    Previous performance data (normally put '-P \$SERVICEPERFDATA\$' in nagios
    command definition). This is used to calculate rate of change for counter
@@ -835,6 +839,7 @@ sub lib_init {
     # These used to be global variables, now these are object local variables in self with accessor
     my @allVars = ();		# all variables after options processing
     my @perfVars = ();		# performance variables list [renamed from @o_perfVarsL in earlier code]
+    my @skipPerfVars = ();    	# skipped performance variables list [renamed from @o_perfVarsL in earlier code]
     my %thresholds=();		# hash array of thresholds for above variables, [this replaced @o_warnL and @o_critL in earlier code]
     my %dataresults= ();	# This is where data is loaded. It is a hash with variable names as keys and array array for value:
 				#   $dataresults{$var}[0] - undef of value of this variable
@@ -854,6 +859,7 @@ sub lib_init {
                 # library internal data structures
 		_allVars => \@allVars,
 		_perfVars => \@perfVars,
+		_skipPerfVars => \@skipPerfVars,
 	        _thresholds => \%thresholds,
 		_dataresults => \%dataresults,
 		_datavars => \%dataVars,
@@ -875,6 +881,7 @@ sub lib_init {
 		o_warn => undef,		# Comma-separated list of warning thresholds for each checked variable
 		o_perf => undef,		# defined or undef. perf option means all data from variables also goes as PERFDATA
 		o_perfvars => undef,		# List of variables only for PERFDATA
+		o_skipperfvars => undef,        # List of variables only for PERFDATA
                 o_prevperf => undef, 		# previously saved performance data coming from $SERVICEPERFDATA$ macro
 	        # library special input variables (similar to options)
 		o_rprefix => '',		# prefix used to distinguish rate variables
@@ -1231,6 +1238,7 @@ sub set_perfdata {
     my $thresholds = $self->{'_thresholds'};
     my $known_vars = $self->{'knownStatusVars'};
     my $bdata = $adata;
+    my $skipPerfVars = $self->{'_skipPerfVars'};
     my $vr = undef;
 
     # default operation is ADD
@@ -1239,6 +1247,12 @@ sub set_perfdata {
     }
     else {
 	$opt = uc $opt;
+    }
+    #print "$avar \n";
+    #foreach (@$skipPerfVars) { print "$_\n"; }
+    if (grep(/$avar/, @$skipPerfVars)) {
+            $self->verb("Perfvar: $avar skipped from PERFOUT");
+            return;
     }
     if (defined($adata)) {
 	# if only data wthout "var=" create proper perf line
@@ -1260,7 +1274,6 @@ sub set_perfdata {
 	}
 	# preset perfdata in dataresults array
 	$dataresults->{$avar}=[undef,0,0,''] if !defined($dataresults->{$avar});
-	$dataresults->{$avar}[2]=-1;
 	if ($opt eq "REPLACE" || !exists($dataresults->{$avar}[3]) || $dataresults->{$avar}[3] eq '') {
 	    $dataresults->{$avar}[3]=$bdata;
 	}
@@ -1913,12 +1926,13 @@ sub additional_options_help {
 #		    ARG5 - option --crit or -c : comma-separated critical thresholds for variables in ARG3
 #		    ARG6 - option --perf or -f in WL's plugin: all regular variables should also go to perf data
 #		    ARG7 - option --perfvars or -A in WL's plugins: command-separated list of variables whose data goes to PERF output
-#		    ARG8 - prefix to distinguish rate variables, maybe "" but usually this is "rate_"
-#		    ARG9 - suffix to distinguish rate variables, only if ARG7 is "", otherwise optional and absent
+#		    ARG8 - option --skipperfvars or -S in WL's plugins: command-separated list of variables whose data is skipped from PERF output
+#		    ARG9 - prefix to distinguish rate variables, maybe "" but usually this is "rate_"
+#		    ARG10 - suffix to distinguish rate variables, only if ARG7 is "", otherwise optional and absent
 #  @RETURNS       : nothing (future: 1 on success, 0 on error)
 #  @PRIVACY & USE : PUBLIC, To be used shortly after GetOptions. Must be used as an object instance function
 sub options_startprocessing {
-    my ($self, $Options, $o_verb, $o_variables, $o_warn, $o_crit, $o_perf, $o_perfvars, $o_rprefix, $o_rsuffix) = @_;
+    my ($self, $Options, $o_verb, $o_variables, $o_warn, $o_crit, $o_perf, $o_perfvars, $o_skipperfvars, $o_rprefix, $o_rsuffix) = @_;
 
     # Copy input parameters to object hash array, set them if not present
     $o_rprefix="" if !defined($o_rprefix);
@@ -1928,6 +1942,7 @@ sub options_startprocessing {
     $o_variables="" if !defined($o_variables);
     $self->{'o_variables'} = $o_variables;
     $self->{'o_perfvars'} = $o_perfvars;
+    $self->{'o_skipperfvars'} = $o_skipperfvars;
     $self->{'o_crit'} = $o_crit;
     $self->{'o_warn'} = $o_warn;
     $self->{'o_perf'} = $o_perf;
@@ -1936,12 +1951,17 @@ sub options_startprocessing {
     $self->{'verbose'} = $o_verb if defined($o_verb);
     # start processing
     my $perfVars = $self->{'_perfVars'};
+    my $skipPerfVars = $self->{'_skipPerfVars'};
     my $ar_varsL = $self->{'_ar_varsL'};
     my $ar_critLv = $self->{'_ar_critLv'};
     my $ar_warnLv = $self->{'_ar_warnLv'};
     my $known_vars = $self->{'knownStatusVars'};
     $o_rprefix = lc $o_rprefix;
     $o_rsuffix = lc $o_rsuffix;
+    # process o_skçipperfvars option
+    if (defined($o_skipperfvars)) {
+	@{$skipPerfVars} = split( /,/ , lc $o_skipperfvars );
+    }
     # process o_perfvars option
     if (defined($o_perfvars)) {
 	@{$perfVars} = split( /,/ , lc $o_perfvars );
@@ -2289,10 +2309,9 @@ sub main_perfvars {
 
     $self->main_checkvars() if !exists($self->{'_called_main_checkvars'});
     if (exists($self->{'_called_main_perfvars'})) { return; }
-
     for (my $i=0;$i<scalar(@{$perfVars});$i++) {
 	$avar=$perfVars->[$i];
-	if (!defined($datavars->{$avar}) || scalar(@{$datavars->{$avar}})==0) {
+        if (!defined($datavars->{$avar}) || scalar(@{$datavars->{$avar}})==0) {
 		$self->verb("Perfvar: $avar selected for PERFOUT but data not available");
 	}
 	else {
@@ -2521,6 +2540,7 @@ sub check_options {
         'w:s'   => \$o_warn,            'warn:s'        => \$o_warn,
 	'f:s'   => \$o_perf,            'perfparse:s'   => \$o_perf,
 	'A:s'   => \$o_perfvars,        'perfvars:s'    => \$o_perfvars,
+	'S:s'   => \$o_skipperfvars,    'skipperfvars:s' => \$o_skipperfvars,
         'T:s'   => \$o_timecheck,       'response_time:s' => \$o_timecheck,
         'R:s'   => \$o_hitrate,         'hitrate:s'     => \$o_hitrate,
         'r:s'   => \$o_repdelay,        'replication_delay:s' => \$o_repdelay,
@@ -2541,7 +2561,7 @@ sub check_options {
     if (defined($o_version)) { p_version(); exit $ERRORS{"UNKNOWN"} };
 
     # now start options processing in the library
-    $nlib->options_startprocessing(\%Options, $o_verb, $o_variables, $o_warn, $o_crit, $o_perf, $o_perfvars, $o_rprefix, $o_rsuffix);
+    $nlib->options_startprocessing(\%Options, $o_verb, $o_variables, $o_warn, $o_crit, $o_perf, $o_perfvars, $o_skipperfvars, $o_rprefix, $o_rsuffix);
 
     # additional variables/options calculated and added by this plugin
     if (defined($o_timecheck) && $o_timecheck ne '') {
