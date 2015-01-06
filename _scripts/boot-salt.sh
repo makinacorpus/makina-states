@@ -320,74 +320,66 @@ set_colors() {
     fi
 }
 
-get_salt_url() {
-    setting="salt_url"
-    conf_url="$(get_conf ${setting})"
-    param_url="${SALT_URL}"
-    setting_url="${SALT_URL:-"https://github.com/makinacorpus/salt.git"}"
-    if [ "x${param_url}" != "x" ];then
-        setting_url="${param_url}"
-    elif [ "x${conf_url}" != "x" ];then
-        setting_url="${conf_url}"
+get_default_knob() {
+    key="${1}"
+    stored_param="$(get_conf ${key})"
+    cli_param="${2}"
+    default="${3:-}"
+    if [ "x${cli_param}" != "x" ];then
+        setting="${cli_param}"
+    elif [ "x${stored_param}" != "x" ];then
+        setting="${stored_param}"
+    else
+        setting="${default}"
     fi
-    store_conf ${setting} "${setting_url}"
-    echo "${setting_url}"
+    if [ "x${stored_param}" != "x${setting}" ];then
+        store_conf ${key} "${setting}"
+    fi
+    echo "${setting}"
+}
+
+get_conf_root() {
+    conf_root="${CONF_ROOT:-"/etc"}"
+    if [ "x${conf_root}" = "x" ];then
+        conf_root="/etc"
+    fi
+    echo $conf_root
+}
+
+get_conf(){
+    key="${1}"
+    conf_root="$(get_conf_root)"
+    echo $(cat "${conf_root}/makina-states/$key" 2>/dev/null)
+}
+
+store_conf(){
+    key="${1}"
+    val="${2}"
+    conf_root="$(get_conf_root)"
+    if [ ! -d "${conf_root}/makina-states" ];then
+        mkdir -pv "${conf_root}/makina-states"
+    fi
+    echo "${val}">"${conf_root}/makina-states/${key}"
+}
+
+get_salt_url() {
+    get_default_knob salt_url "${SALT_URL}" "https://github.com/makinacorpus/salt.git"
 }
 
 get_salt_branch() {
-    setting="salt_branch"
-    conf_url="$(get_conf ${setting})"
-    param_url="${SALT_BRANCH}"
-    setting_url="${SALT_BRANCH:-"develop"}"
-    if [ "x${param_url}" != "x" ];then
-        setting_url="${param_url}"
-    elif [ "x${conf_url}" != "x" ];then
-        setting_url="${conf_url}"
-    fi
-    store_conf ${setting} "${setting_url}"
-    echo "${setting_url}"
+    get_default_knob salt_branch "${SALT_BRANCH}" "develop"
 }
 
 get_ms_url() {
-    setting="ms_url"
-    conf_url="$(get_conf ${setting})"
-    param_url="${MAKINASTATES_URL}"
-    setting_url="${MAKINASTATES_URL:-"https://github.com/makinacorpus/makina-states.git"}"
-    if [ "x${param_url}" != "x" ];then
-        setting_url="${param_url}"
-    elif [ "x${conf_url}" != "x" ];then
-        setting_url="${conf_url}"
-    fi
-    store_conf ${setting} "${setting_url}"
-    echo "${setting_url}"
+    get_default_knob ms_url "${MAKINASTATES_URL}" "https://github.com/makinacorpus/makina-states.git"
 }
 
 get_local_mastersalt_mode() {
-    default_mode="remote"
-    mastersalt_mode="$(get_conf local_mastersalt_mode)"
-    if [ "x${FORCE_LOCAL_MASTERSALT_MODE}" != "x" ];then
-        mastersalt_mode="${FORCE_LOCAL_MASTERSALT_MODE}"
-    fi
-    thistest="$(echo "${mastersalt_mode}"|egrep -q '^(remote|masterless)$';echo "${?}")"
-    if [ "x${thistest}" != "x0" ];then
-        mastersalt_mode="${default_mode}"
-    fi
-    store_conf local_mastersalt_mode "${mastersalt_mode}"
-    echo "${mastersalt_mode}"
+    get_default_knob local_mastersalt_mode "${FORCE_LOCAL_MASTERSALT_MODE}" "remote"
 }
 
 get_local_salt_mode() {
-    default_mode="masterless"
-    salt_mode="$(get_conf local_salt_mode)"
-    if [ "x${FORCE_LOCAL_SALT_MODE}" != "x" ];then
-        salt_mode="${FORCE_LOCAL_SALT_MODE}"
-    fi
-    thistest="$(echo "${salt_mode}"|egrep -q '^(remote|masterless)$';echo "${?}")"
-    if [ "x${thistest}" != "x0" ];then
-        salt_mode="${default_mode}"
-    fi
-    store_conf local_salt_mode "${salt_mode}"
-    echo "${salt_mode}"
+    get_default_knob local_salt_mode "${FORCE_LOCAL_SALT_MODE}" "masterless"
 }
 
 get_minion_id() {
@@ -481,34 +473,6 @@ get_mastersalt() {
         mastersalt="localhost"
     fi
     echo "${mastersalt}"
-}
-
-get_conf_root() {
-    conf_root="${CONF_ROOT:-"/etc"}"
-    if [ "x${conf_root}" = "x" ];then
-        conf_root="/etc"
-    fi
-    echo $conf_root
-}
-
-get_conf(){
-    key="${1}"
-    conf_root="$(get_conf_root)"
-    echo $(cat "${conf_root}/makina-states/$key" 2>/dev/null)
-}
-
-store_conf(){
-    key="${1}"
-    val="${2}"
-    conf_root="$(get_conf_root)"
-    if [ ! -d "${conf_root}/makina-states" ];then
-        mkdir -pv "${conf_root}/makina-states"
-    fi
-    echo "${val}">"${conf_root}/makina-states/${key}"
-}
-
-set_conf() {
-    store_conf "${@}"
 }
 
 validate_changeset() {
@@ -1826,9 +1790,11 @@ setup_and_maybe_update_code() {
                             fi
                         fi
                         if  [ "x${i}" = "x${ms}/src/salttesting" ]\
-                         || [ "x${i}" = "x${ms}/src/SaltTesting" ]\
-                         || [ "x${i}" = "x${ms}/src/salt" ];then
+                         || [ "x${i}" = "x${ms}/src/SaltTesting" ];then
                             co_branch="develop"
+                        fi
+                        if [ "x${i}" = "x${ms}/src/salt" ];then
+                            co_branch="$(get_salt_branch)"
                         fi
                         if [ "x${QUIET}" = "x" ];then
                             bs_log "Upgrading ${i}"
@@ -4629,7 +4595,7 @@ initial_highstates() {
             ret="${?}"
         fi
         if [ "x${ret}" = "x0" ];then
-            set_conf initial_highstate 1
+            store_conf initial_highstate 1
         fi
     fi
     exit ${ret}
