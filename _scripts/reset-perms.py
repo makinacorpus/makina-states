@@ -258,6 +258,7 @@ def collect_acl(path, mode, uid=UID, gid=GID, is_dir=False):
     if is_dir:
         acl += ',d:{0}'.format(uacl)
         acl += ',d:{0}'.format(gacl)
+
     for user in options.users:
         aclmode = perms['USR']
         if ':' in user:
@@ -272,9 +273,9 @@ def collect_acl(path, mode, uid=UID, gid=GID, is_dir=False):
         acl += ",g:{0}:{1}".format(group, aclmode)
         if is_dir:
             acl += ",d:g:{0}:{1}".format(group, aclmode)
-    if not acl in ACLS:
+    if acl not in ACLS:
         ACLS[acl] = []
-    if not path in ACLS[acl]:
+    if path not in ACLS[acl]:
         ACLS[acl].append(path)
 
 
@@ -396,6 +397,7 @@ def collect_paths(path,
             if mode not in UNIX_PERMS:
                 UNIX_PERMS[mode] = []
             UNIX_PERMS[mode].append(path)
+
         if is_dir and recursive:
             # skip top level cachedirs
             todo = []
@@ -408,6 +410,7 @@ def collect_paths(path,
                 todo.append(sp)
             for spath in todo:
                 collect_paths(spath, recursive=recursive)
+
             # for spath in todo:
             #     for root, dirs, files in os.walk(spath):
             #         for subpaths in [files, dirs]:
@@ -439,7 +442,7 @@ def reset(path):
 
 done = []
 for pt in options.paths:
-    if not pt in done:
+    if pt not in done:
         reset(pt)
         done.append(pt)
 
