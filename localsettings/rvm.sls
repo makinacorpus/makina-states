@@ -80,7 +80,7 @@ rvm-setup:
             wget -O rvm-installer "{{rvms.url}}"
             chmod +x rvm-installer
             curl -sSL https://rvm.io/mpapis.asc | gpg --import -
-            ./rvm-installer {{rvms.branch}}
+            ./rvm-installer {{rvms.branch}} && {{locs.rvm}} fix-permissions
     - use_vt: true
     - unless: test -e {{locs.rvm_path}}/bin/rvm
     - require:
@@ -92,7 +92,7 @@ rvm-setup:
 {% macro install_ruby(version, suf='') %}
 rvm-{{version}}{{suf}}:
   cmd.run:
-    - name: {{locs.rvm}} install {{version}}
+    - name: {{locs.rvm}} install {{version}} && {{locs.rvm}} fix-permissions
     - use_vt: true
     - unless: test -e {{locs.rvm_path}}/rubies/*{{version}}*/bin
     - require_in:
@@ -127,5 +127,3 @@ rvm-last:
     - use_vt: {{vt}}
     {%endif%}
 {% endmacro %}
-
-

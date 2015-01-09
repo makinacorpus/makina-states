@@ -2,6 +2,7 @@
 gmark="/root/.salt_lxc_core_packages"
 ms="/srv/salt/makina-states"
 ntp_postinst="$ms/files/root/debbuild/ntp_postinst"
+apt_update=""
 for i in resolvconf fuse ntp;do
     mark="${gmark}_${i}"
     if [ ! -e "$mark" ];then
@@ -11,6 +12,10 @@ for i in resolvconf fuse ntp;do
         cd "${i}"
         rm -f ${i}*deb
         set -e
+        if [ "x${apt_update}" = "x" ];then
+            apt-get udpate
+            apt_update="1"
+        fi
         apt-get download -y $i
         dpkg-deb -X ${i}*deb build
         dpkg-deb -e ${i}*deb build/DEBIAN
