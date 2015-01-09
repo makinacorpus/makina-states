@@ -45,6 +45,7 @@ icinga_web-{{file}}-conf:
       - mc_proxy: icinga_web-pre-conf
     - watch_in:
       - mc_proxy: icinga_web-post-conf
+      - file: icinga_web-usr-cronks-conf
     - defaults:
         data: |
               {{sdata}}
