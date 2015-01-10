@@ -535,13 +535,6 @@ get_bootsalt_mode() {
     echo "${bootsalt_mode}"
 }
 
-store_nodetype() {
-    n="${1}"
-    if [ "x${n}" != "x" ];then
-        store_conf nodetype "${n}"
-    fi
-}
-
 validate_nodetype() {
     n="${1}"
     if [ "x${n}" != "x" ];then
@@ -552,6 +545,7 @@ validate_nodetype() {
         else
             saltms=""
         fi
+        # at first we may have download just the bootsalt script, fallback on well known nodetypes
         if [ ! -e "${saltms}/nodetypes/${n}.sls" ];then
             # invalid nodetype, use default
             if ! echo "${n}" | egrep -q "devhost|dockercontainer|kvm|laptop|lxccontainer|server|scratch|travis|vagrantvm|vm";then
@@ -563,37 +557,19 @@ validate_nodetype() {
 }
 
 get_default_nodetype() {
-    saved_nt="$(validate_nodetype $(get_conf nodetype))"
     fallback_nt="server"
-    DEFAULT_NT="${saved_nt}"
-    if [ "x${saved_nt}" = "x" ] || [ "x${saved_nt}" = "x${fallback_nt}" ];then
-        DEFAULT_NT=""
-    fi
-    if [ "x${DEFAULT_NT}" = "x" ];then
-        if [ "x${TRAVIS}" != "x" ];then
-            DEFAULT_NT="travis"
-        elif [ "x$(is_container)" != "x0" ];then
-            DEFAULT_NT="lxccontainer"
-        fi
-    fi
-    if [ "x${DEFAULT_NT}" = "xlxccontainer" ] && [ "x$(is_container)" = "x0" ] ;then
+    if [ "x${TRAVIS}" != "x" ];then
+        DEFAULT_NT="travis"
+    elif [ "x$(is_container)" != "x0" ];then
+        DEFAULT_NT="lxccontainer"
+    else
         DEFAULT_NT="${fallback_nt}"
     fi
-    DEFAULT_NT="$(validate_nodetype ${DEFAULT_NT})"
-    if [ "x${DEFAULT_NT}" = "x" ];then
-        DEFAULT_NT="${fallback_nt}"
-    fi
-    echo "${DEFAULT_NT}"
+    echo "$(validate_nodetype ${DEFAULT_NT})"
 }
 
 get_salt_nodetype() {
-    nodetype="$(validate_nodetype ${FORCE_SALT_NODETYPE:-$(get_default_nodetype)})"
-    if [ "x${nodetype}" = "x" ];then
-        nodetype="$(get_default_nodetype)"
-    fi
-    # verify that the requested branch exists
-    store_nodetype "${nodetype}"
-    echo "${nodetype}"
+    get_default_knob nodetype "$(validate_nodetype ${FORCE_SALT_NODETYPE})" "$(get_default_nodetype)"
 }
 
 set_vars() {
