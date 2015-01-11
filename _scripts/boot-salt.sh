@@ -71,7 +71,7 @@ is_container() {
 
 filter_host_pids() {
     pids=""
-    if [ "x$(is_container)" != "x0" ];then
+    if [ "x$(is_container)" = "x0" ];then
         pids="${pids} $(echo "${@}")"
     else
         for pid in ${@};do
@@ -560,7 +560,7 @@ get_default_nodetype() {
     fallback_nt="server"
     if [ "x${TRAVIS}" != "x" ];then
         DEFAULT_NT="travis"
-    elif [ "x$(is_container)" != "x0" ];then
+    elif [ "x$(is_container)" = "x0" ];then
         DEFAULT_NT="lxccontainer"
     else
         DEFAULT_NT="${fallback_nt}"
