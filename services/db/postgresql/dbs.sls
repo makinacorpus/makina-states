@@ -69,6 +69,31 @@ include:
     - require:
       - mc_postgres_database: {{version}}-{{ db }}-makina-postgresql-database
 
+{{ version }}-{{ owner }}-fix-owner:
+  file.managed:
+    - name: /etc/postgresql/{{version}}-{{db}}-owners.sql
+    - mode: 0755
+    - user: root
+    - group: root
+    - template: jinja
+    - contents: |
+                SELECT 'ALTER TABLE '|| schemaname || '.' || tablename ||' OWNER TO {{owner}};'
+                FROM pg_tables WHERE NOT schemaname IN ('pg_catalog', 'information_schema')
+                ORDER BY schemaname, tablename;"
+                SELECT 'ALTER SEQUENCE '|| sequence_schema || '.' || sequence_name ||' OWNER TO {{owner}};'
+                FROM information_schema.sequences WHERE NOT sequence_schema IN ('pg_catalog', 'information_schema')
+                ORDER BY sequence_schema, sequence_name;"
+                SELECT 'ALTER VIEW '|| table_schema || '.' || table_name ||' OWNER TO {{owner}};'
+                FROM information_schema.views WHERE NOT table_schema IN ('pg_catalog', 'information_schema')
+                ORDER BY table_schema, table_name;"
+  cmd.run:
+    - name: cat /etc/postgresql/{{version}}-{{db}}-owners.sql|psql-{{version}} -v ON_ERROR_STOP=1 {{db}}
+    - user: {{ user }}
+    - watch:
+      - mc_proxy: {{orchestrate[version]['prefixowner'] }}
+    - watch_in:
+      - mc_proxy: {{orchestrate[version]['postfixowner'] }}
+
 {#
 # needed for extensions to be scheduled on sub databases, eg we install postgis, and postgis_database
 # postgis is the postgis_database template.
