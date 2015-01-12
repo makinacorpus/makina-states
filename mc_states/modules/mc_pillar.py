@@ -1953,8 +1953,7 @@ def get_supervision_objects_defs(id_):
                              'memory': False,
                              'ntp_time': False,
                              'swap': False,
-                             'ping': False,
-                             'nic_card': False}
+                             'ping': False}
     providers = __salt__['mc_network.providers']()
     physical_hosts_to_check = set()
     if is_supervision_kind(id_, 'master'):
@@ -1991,6 +1990,7 @@ def get_supervision_objects_defs(id_):
                              ['cpu', 'task', 'queueln_load',
                               'io_transfer', 'memory_stat', 'memory_util',
                               'pagestat'])
+            hdata.setdefault('nic_card', ['eth0'])
             if vts:
                 hdata['memory_mode'] = 'large'
             for vt in __salt__['mc_cloud_compute_node.get_vts']():
@@ -2046,6 +2046,7 @@ def get_supervision_objects_defs(id_):
             ssh_port = attrs.get('vars.SSH_PORT', 22)
             snmp_port = attrs.get('vars.SNMP_PORT', 161)
             sconf = get_snmpd_conf(id_)
+            nic_cards = ['eth0']
             if vt in ['kvm', 'xen']:
                 hdata.setdefault('inotify', True)
             p = ('makina-states.services.monitoring.'
@@ -2073,6 +2074,9 @@ def get_supervision_objects_defs(id_):
             no_common_checks = vdata.get('no_common_checks', False)
             if tipaddr == host_ip and vt in ['lxc']:
                 no_common_checks = True
+            if tipaddr != host_ip and vt in ['lxc', 'docker']:
+                # specific ip on lxc, monitor eth1
+                nic_cards.append('eth1')
             groups = attrs.setdefault('groups', [])
             [groups.append(i)
              for i in ['HG_HOSTS', 'HG_VMS', 'HG_VM_{0}'.format(vt)]
@@ -2086,6 +2090,7 @@ def get_supervision_objects_defs(id_):
             attrs['vars.SNMP_HOST'] = snmp_host
             attrs['vars.SSH_PORT'] = ssh_port
             attrs['vars.SNMP_PORT'] = snmp_port
+            hdata.setdefault('nic_card', nic_cards)
 
         try:
             backup_servers = query('backup_servers')
