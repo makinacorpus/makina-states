@@ -600,7 +600,7 @@ def remove_configuration_objects():
 def autoconfigured_hosts(ttl=60):
     def _do():
         rdata = OrderedDict()
-        objs = __salt__['mc_icinga2.load_objects']()[ 'autoconfigured_hosts']
+        objs = __salt__['mc_icinga2.load_objects']()['autoconfigured_hosts']
         for host, data in objs.items():
             rdata[host] = __salt__['mc_icinga2.autoconfigured_host'](
                 host, data=data)
@@ -869,7 +869,7 @@ def autoconfigure_host(host,
     if services_attrs is None:
         services_attrs = {}
     # allow to select no_default_checks in yaml
-    # but also llow some services to be manually activated to be checked
+    # but also allow some services to be manually activated to be checked
     non_defaults = ['apt', 'backup_burp_age', 'load_avg', 'memory',
                     'dns_association_hostname', 'ping', 'ntp_time',
                     'ssh', 'swap']
@@ -879,11 +879,13 @@ def autoconfigure_host(host,
                              (False, defaults)]:
         for check in checks:
             init_val = eval(check)
+            manual = True
             if init_val is None:
+                manual = False
                 exec('{0}={1}'.format(check, _default))
             # if manually selected On, be sure to select it for a run
             # even if we activated no_default_checks
-            elif init_val is False:
+            if init_val is False and manual is False:
                 services_attrs.pop(check, None)
             elif bool(init_val):
                 services_attrs.setdefault(check, {})
