@@ -80,7 +80,6 @@ include:
                 SELECT 'ALTER SCHEMA "' || n.NSPNAME || '" OWNER TO {{owner}};'
                 FROM PG_CATALOG.PG_NAMESPACE n
                 WHERE n.NSPNAME NOT ILIKE 'PG_%' AND n.NSPNAME NOT ILIKE 'INFORMATION_SCHEMA';
-                SELECT 'ALTER SEQUENCE "'|| sequence_schema || '"."' || sequence_name ||'" OWNER TO {{owner}};'
                 SELECT 'ALTER TABLE "'|| schemaname || '"."' || tablename ||'" OWNER TO {{owner}};'
                 FROM pg_tables WHERE NOT schemaname IN ('pg_catalog', 'information_schema')
                 ORDER BY schemaname, tablename;
