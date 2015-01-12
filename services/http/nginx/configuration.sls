@@ -19,6 +19,7 @@ nginx-vhost-dirs:
 
 {% set modes = {
   '/etc/init.d/nginx-naxsi-ui': 755,
+  '/etc/init.d/nginx': 755,
 } %}
 
 {% set sdata =salt['mc_utils.json_dump'](settings)  %}
@@ -76,6 +77,7 @@ settings['basedir'] + '/naxsi-ui.conf',
     settings['basedir'] + '/uwsgi_params',
     settings['basedir'] + '/win-utf',
     '/etc/default/nginx',
+    '/etc/init.d/nginx',
 ] %}
 makina-nginx-minimal-{{f}}:
   file.managed:
