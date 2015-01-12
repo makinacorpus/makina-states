@@ -1,4 +1,7 @@
 #! /usr/bin/perl -w
+#
+# MODIFICATION MAKINA: add options_port to cache file
+#
 ################################################################################
 # Copyright 2004-2013 MERETHIS
 # Centreon is developped by : Julien Mathis and Romain Le Merlus under
@@ -190,7 +193,7 @@ my $OID_DESC = $centreon{MIB2}{$supported_oids{$opt_o}};
 my $OID_OPERSTATUS = $centreon{MIB2}{IF_OPERSTATUS};
 my @operstatus = ("up","down","testing", "unknown", "dormant", "notPresent", "lowerLayerDown");
 
-my $cacheFile = "$centplugins_path/traffic_cache_". $OPTION{'host'};
+my $cacheFile = "$centplugins_path/traffic_cache_". $OPTION{'host'}."_".$OPTION{'snmp-port'};
 my $result;
 my $mustCreateFile = 0;
 my $countLine;
@@ -335,6 +338,7 @@ if ($opt_s) {
 }
 
 
+
 $result = Centreon::SNMP::Utils::get_snmp_leef([$OID_OPERSTATUS.".".$interface, $OID_IN, $OID_OUT, $OID_SPEED], $session, $ERRORS{'UNKNOWN'},
                                                defined($opt_n) ? "You must specify interface name when option -n is used." : undef);
 if (!defined($result->{$OID_OPERSTATUS.".".$interface}) || $result->{$OID_OPERSTATUS.".".$interface} eq "") {
@@ -391,8 +395,8 @@ $last_out_bits  = 0;
 
 my $flg_created = 0;
 
-if (-e "$centplugins_path/traffic_if".$interface."_".$OPTION{'host'}) {
-    open(FILE,"<"."$centplugins_path/traffic_if".$interface."_".$OPTION{'host'});
+if (-e "$centplugins_path/traffic_if".$interface."_".$OPTION{'host'}."_".$OPTION{'snmp-port'}) {
+    open(FILE,"<"."$centplugins_path/traffic_if".$interface."_".$OPTION{'host'}."_".$OPTION{'snmp-port'});
     while($row = <FILE>){
         @last_values = split(":",$row);
         $last_check_time = $last_values[0];
@@ -407,8 +411,8 @@ if (-e "$centplugins_path/traffic_if".$interface."_".$OPTION{'host'}) {
 
 $update_time = time();
 
-unless (open(FILE,">"."$centplugins_path/traffic_if".$interface."_".$OPTION{'host'})){
-    print "Check mod for temporary file : $centplugins_path/traffic_if".$interface."_".$OPTION{'host'}. " !\n";
+unless (open(FILE,">"."$centplugins_path/traffic_if".$interface."_".$OPTION{'host'}."_".$OPTION{'snmp-port'})){
+    print "Check mod for temporary file : $centplugins_path/traffic_if".$interface."_".$OPTION{'host'}."_".$OPTION{'snmp-port'}. " !\n";
     exit $ERRORS{"UNKNOWN"};
 }
 print FILE "$update_time:$in_bits:$out_bits";
