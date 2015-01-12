@@ -16,6 +16,7 @@ PY="${VENV}/bin/python"
 LOGLEVEL="${LOGLEVEL:-info}"
 EXTRA_ARGS=""
 if [ -e "${FORCE_MARKER}" ];then
+    echo "Pushing from local copy, authorized"
     rm -f "${FORCE_MARKER}"
     ret="0"
 elif [ "x${BRANCH}"  = "xmaster" ];then
