@@ -29,8 +29,8 @@ nginx-clean:
               exit 1
     - watch:
       - mc_proxy: nginx-pre-install-hook
-      - pkgrepo: nginx-base
     - watch_in:
+      - pkgrepo: nginx-base
       - mc_proxy: nginx-post-install-hook
       - mc_proxy: nginx-pre-hardrestart-hook
       - mc_proxy: nginx-pre-restart-hook

@@ -64,6 +64,8 @@
 {%- set postdb = ver+'-makina-postgresql-post-create-db' %}
 {%- set preuser = ver+'-makina-postgresql-pre-create-user' %}
 {%- set postuser = ver+'-makina-postgresql-post-create-user' %}
+{%- set prefixowner = ver+'-makina-postgresql-pre-fix-owner' %}
+{%- set postfixowner = ver+'-makina-postgresql-post-fix-owner' %}
 {%- do orchestrate.update({ver: {} }) %}
 {%- do orchestrate[ver].update({
   'pregroup': pregroup,
@@ -72,6 +74,8 @@
   'postdb': postdb,
   'preuser': preuser,
   'postuser': postuser,
+  'prefixowner': prefixowner,
+  'postfixowner': postfixowner,
 }) %}
 {{proxy(pregroup, '''
     - watch:
@@ -95,4 +99,11 @@
       - mc_proxy: {1}
 '''.format(postbase, postinst))}}
 {{proxy(postuser)}}
+{{proxy(prefixowner, '''
+    - watch:
+      - mc_proxy: {0}
+    - watch_in:
+      - mc_proxy: {1}
+'''.format(postuser, postinst))}}
+{{proxy(postfixowner)}}
 {% endfor %}

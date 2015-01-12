@@ -69,6 +69,41 @@ include:
     - require:
       - mc_postgres_database: {{version}}-{{ db }}-makina-postgresql-database
 
+{{ version }}-{{ owner }}-fix-owner:
+  file.managed:
+    - name: /etc/postgresql/{{version}}-{{db}}-owners.sql
+    - mode: 0755
+    - user: root
+    - group: root
+    - template: jinja
+    - contents: |
+                SELECT 'ALTER SCHEMA "' || n.NSPNAME || '" OWNER TO {{owner}};'
+                FROM PG_CATALOG.PG_NAMESPACE n
+                WHERE n.NSPNAME NOT ILIKE 'PG_%' AND n.NSPNAME NOT ILIKE 'INFORMATION_SCHEMA';
+                SELECT 'ALTER SEQUENCE "'|| sequence_schema || '"."' || sequence_name ||'" OWNER TO {{owner}};'
+                SELECT 'ALTER TABLE "'|| schemaname || '"."' || tablename ||'" OWNER TO {{owner}};'
+                FROM pg_tables WHERE NOT schemaname IN ('pg_catalog', 'information_schema')
+                ORDER BY schemaname, tablename;
+                SELECT 'ALTER SEQUENCE "'|| sequence_schema || '"."' || sequence_name ||'" OWNER TO {{owner}};'
+                FROM information_schema.sequences WHERE NOT sequence_schema IN ('pg_catalog', 'information_schema')
+                ORDER BY sequence_schema, sequence_name;
+                SELECT 'ALTER VIEW "'|| table_schema || '"."' || table_name ||'" OWNER TO {{owner}};'
+                FROM information_schema.views WHERE NOT table_schema IN ('pg_catalog', 'information_schema')
+                ORDER BY table_schema, table_name;
+  cmd.run:
+    - name: |
+            set -e
+            fic="/tmp/postgresql_{{version}}-{{db}}-do-owners.sql"
+            psql-{{version}} -f "/etc/postgresql/{{version}}-{{db}}-owners.sql" -t -q -v ON_ERROR_STOP=1 {{db}} | grep ALTER > "${fic}"
+            psql-{{version}} -f "${fic}" -v ON_ERROR_STOP=1 "{{db}}"
+            rm -f "${fic}"
+    - user: {{ user }}
+    - watch:
+      - file: {{ version }}-{{ owner }}-fix-owner
+      - mc_proxy: {{orchestrate[version]['prefixowner'] }}
+    - watch_in:
+      - mc_proxy: {{orchestrate[version]['postfixowner'] }}
+
 {#
 # needed for extensions to be scheduled on sub databases, eg we install postgis, and postgis_database
 # postgis is the postgis_database template.
