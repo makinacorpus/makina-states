@@ -989,7 +989,7 @@ def get_slaves_for(id_, ttl=60):
     return memoize_cache(_do_getslavesfor, [id_], {}, cache_key, ttl)
 
 
-def get_ns(domain):
+def get_ns(domain, ttl=60):
     '''Get the first configured public name server for domain'''
     def _do(domain):
         return get_nss_for_zone(domain)[0]
