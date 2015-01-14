@@ -450,7 +450,11 @@ def errmsg(msg):
     raise MessageError(msg)
 
 
-def salt_output(ret, __opts__, output=True, onlyret=False):
+def salt_output(ret,
+                __opts__,
+                output=True,
+                onlyret=False,
+                __jid_event__=None):
     if output:
         api.msplitstrip(ret)
         # copy the result to zresult key for bare out to really
@@ -460,8 +464,13 @@ def salt_output(ret, __opts__, output=True, onlyret=False):
         ret['z_900_result'] = ret['result']
         dret = ret
         if onlyret:
-             dret = dret['z_900_result']
-        salt.output.display_output(dret, '', __opts__)
+            dret = dret['z_900_result']
+        if __jid_event__ is None:
+            salt.output.display_output(dret, '', __opts__)
+        else:
+            __jid_event__.fire_event(
+                {'data': dret, 'outputter': 'nested'},
+                'print')
         del ret['z_500_output']
         del ret['z_700_comment']
         del ret['z_900_result']
