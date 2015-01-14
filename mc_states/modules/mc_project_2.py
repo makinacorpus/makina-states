@@ -43,6 +43,8 @@ from mc_states.api import (
     uniquify,
 )
 
+import mc_states.saltapi
+
 import mc_states.project
 from mc_states.project import (
     ENVS,
@@ -261,10 +263,8 @@ def _get_ret(name, *args, **kwargs):
 
 
 def _colors(color=None):
-    colors = salt.utils.get_colors(__opts__.get('color'))
-    if color:
-        return colors[color]
-    return colors
+    return mc_states.saltapi._colors(
+        color=color, colorize=__opts__.get('color'))
 
 
 def _append_comment(ret,

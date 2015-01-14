@@ -507,8 +507,20 @@ def check_point(ret, __opts__, output=True):
 
 def _colors(color=None, colorize=True):
     colors = salt.utils.get_colors(colorize)
+    if colors and isinstance(colors, dict):
+        # compat to old themes
+        colors.update({'PURPLE':  colors.get('MAGENTA', ''),
+                       'LIGHT_PURPLE': colors.get('LIGHT_MAGENTA', ''),
+                       'PURPLE_BOLD': colors.get('LIGHT_MAGENTA', ''),
+                       'RED_BOLD': colors.get('LIGHT_RED', ''),
+                       'BROWN': colors.get('YELLOW', '')})
     if color:
-        return colors[color]
+        if color not in colors:
+            log.error('No such color {0}'.format(color))
+            ret = ''
+        else:
+            ret = colors[color]
+        return ret
     return colors
 
 
