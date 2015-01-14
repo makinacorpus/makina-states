@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import absolute_import, print_function
 '''
 
 .. _runner_mc_cloud_controller:
@@ -107,7 +108,7 @@ def dns_conf(output=True, ret=None):
         ['makina-states.cloud.generic.controller.dnsconf'], **kw)
     check_point(kw['ret'], __opts__, output=output)
     run_vt_hook('post_dns_conf_on_controller', ret=kw['ret'], output=output)
-    salt_output(kw['ret'], __opts__, output=output)
+    __salt__['mc_api.out'](kw['ret'], __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return kw['ret']
 
@@ -128,7 +129,7 @@ def deploy(output=True, ret=None):
          'makina-states.cloud.saltify'], **kw)
     check_point(kw['ret'], __opts__, output=output)
     run_vt_hook('post_deploy_controller', ret=kw['ret'], output=output)
-    salt_output(kw['ret'], __opts__, output=output)
+    __salt__['mc_api.out'](kw['ret'], __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return kw['ret']
 
@@ -293,9 +294,9 @@ def orchestrate(skip=None,
         merge_results(ret, cret)
         trace = traceback.format_exc()
         ret['output'] += '\n{0}'.format(trace)
-        salt_output(ret, __opts__, output=output)
+        __salt__['mc_api.out'](ret, __opts__, output=output)
         raise
-    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 

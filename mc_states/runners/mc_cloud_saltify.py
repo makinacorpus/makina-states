@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import absolute_import, print_function
 '''
 
 .. _runner_mc_cloud_vm:
@@ -147,8 +148,8 @@ def saltify(name, output=True, ret=None):
                 name, 'saltified', True)
     except FailedStepError:
         ret['result'] = False
-        salt_output(ret, __opts__, output=output)
-    salt_output(ret, __opts__, output=output)
+        __salt__['mc_api.out'](ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     return ret
 
 
@@ -222,7 +223,7 @@ def orchestrate(only=None, skip=None, ret=None, output=True, refresh=False):
     if not comment:
         comment = green('All targets were successfuly saltified.')
     ret['comment'] += '\n{0}'.format(comment)
-    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     return ret
 
 #

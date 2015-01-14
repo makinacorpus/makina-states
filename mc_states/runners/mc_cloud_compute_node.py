@@ -1,4 +1,5 @@
-    #!/usr/bin/env python
+#!/usr/bin/env python
+from __future__ import absolute_import, print_function
 '''
 .. _runner_mc_cloud_compute_node:
 
@@ -140,7 +141,7 @@ def upgrade_vts(target, ret=None, output=True):
     if ret['result']:
         ret['comment'] += yellow(
             '{0} is now upgraded to host vms\n'.format(target))
-    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
@@ -156,7 +157,7 @@ def install_vts(target, ret=None, output=True):
     if ret['result']:
         ret['comment'] += yellow(
             '{0} is now ready to host vms\n'.format(target))
-    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
@@ -171,7 +172,7 @@ def _configure(what, target, ret, output):
     ret =  __salt__['mc_api.apply_sls'](
         '{0}.{1}'.format(_GPREF, what), **{
             'salt_target': target, 'ret': ret})
-    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
@@ -203,7 +204,7 @@ def register_configuration(target, ret=None, output=True):
         ret['result'] = False
         ret['comment'] += red('Configuration failed to store'
                               ' on {0}\n'.format(target))
-    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
@@ -329,7 +330,7 @@ def register_configurations(only=None, only_vms=None,
             ret['trace'] = ''
             ret['comment'] += green('All computes nodes vms '
                                     'were preconfigured\n')
-    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
@@ -369,7 +370,7 @@ def reconfigure_front(target, ret=None, output=True):
         ret = i(target, ret=ret, output=False)
         if not ret['result']:
             break
-    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     return ret
 
 
@@ -430,7 +431,7 @@ def deploy(target, output=True, ret=None, hooks=True, pre=True, post=True):
     if hooks and post:
         run_vt_hook('post_deploy_compute_node',
                     ret=ret, target=target, output=output)
-    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
@@ -449,7 +450,7 @@ def post_deploy(target, ret=None, output=True):
         check_point(ret, __opts__, output=output)
     hook = 'post_post_deploy_compute_node'
     run_vt_hook(hook, ret=ret, target=target, output=output)
-    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
@@ -546,7 +547,7 @@ def provision_compute_nodes(skip=None, only=None,
         if ret['result']:
             ret['trace'] = ''
             ret['comment'] += green('All computes nodes were provisionned\n')
-    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
@@ -608,7 +609,7 @@ def post_provision_compute_nodes(skip=None, only=None,
             ret['trace'] = ''
             ret['comment'] += green(
                 'All computes nodes were postprovisionned\n')
-    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
@@ -719,7 +720,7 @@ def orchestrate(skip=None,
                         skip_vms.append(vm)
                         lresult = False
     ret['result'] = lresult
-    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
@@ -754,10 +755,6 @@ def report(targets, ret=None, refresh=False, output=True):
             cli('mc_project.report', salt_target=target)
         )
     ret['result'] = sret
-    salt_output(ret, __opts__, output=output, onlyret=True)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
-
-
-
-#
