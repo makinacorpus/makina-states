@@ -56,11 +56,14 @@ def settings():
     return _settings()
 
 
+def ext_pillar(id_, *args, **kw):
+    rdata = {}
+    conf = __salt__['mc_pillar.get_configuration'](id_)
+    rdata['default_env'] = rdata['env'] = conf['default_env']
+    return rdata
+
+
 def dump():
     return mc_states.utils.dump(__salt__,__name)
-
-#
-# -*- coding: utf-8 -*-
-__docformat__ = 'restructuredtext en'
 
 # vim:set et sts=4 ts=4 tw=80:

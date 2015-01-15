@@ -11,12 +11,15 @@ __docformat__ = 'restructuredtext en'
 # Import python libs
 import logging
 import os
+import copy
 import yaml
 import mc_states.utils
 
 from mc_states import saltapi
 
 from mc_states.runners import mc_lxc
+from mc_states.modules.mc_lxc import (
+    is_lxc)
 
 from salt.utils.odict import OrderedDict
 __name = 'mc_cloud_images'
@@ -104,6 +107,85 @@ def settings():
                 }
             })
         return data
+    return _settings()
+
+
+def ext_pillar(id_, *args, **kw):
+    '''
+    cloudcontroller images templates settings
+
+    /
+
+        lxc
+            specific lxc images settings
+
+            images
+                mapping of images informations
+            cron_sync
+                activate the img synchronnizer
+            cron_hour
+                hour for the img synchronnizer
+            cron_minute
+                minute for the img synchronnizer
+    '''
+    def _settings():
+        _s = __salt__
+        # attention first image here is the default !
+        conf = _s['mc_pillar.get_configuration'](id_)
+        try:
+            extdata = copy.deepcopy(
+                _s['mc_pillar.query']('cloud_settings').get('images', {})
+            )
+        except KeyError:
+            log.warning('No cloud_settings section in database')
+            extdata = {}
+        images = OrderedDict()
+        cloud_settings = _s['mc_cloud.settings']()
+        is_devhost = os.path.exists('/root/vagrant/provision_settings.sh')
+        images['makina-states-trusty'] = {}
+        root = cloud_settings['root']
+        for img in images:
+            images[img]['builder_ref'] = '{0}-lxc-ref.foo.net'.format(img)
+            md5_file = os.path.join(
+                root,
+                'makina-states/versions/'
+                '{0}-lxc_version.txt.md5'.format(img))
+            ver_file = os.path.join(
+                root,
+                'makina-states/versions/'
+                '{0}-lxc_version.txt'.format(img))
+            if (
+                not os.path.exists(ver_file)
+                and not os.path.exists(md5_file)
+            ):
+                continue
+            with open(ver_file) as fic:
+                images[img]['lxc_tarball_ver'] = fic.read().strip()
+            with open(md5_file) as fic:
+                images[img]['lxc_tarball_md5'] = fic.read().strip()
+            images[img]['lxc_tarball'] = (
+                'https://downloads.sourceforge.net/makinacorpus'
+                '/makina-states/'
+                '{1}-lxc-{0}.tar.xz'
+            ).format(images[img]['lxc_tarball_ver'], img)
+            images[img]['lxc_tarball_name'] = os.path.basename(
+                images[img]['lxc_tarball'])
+        cron_sync = True
+        if (is_lxc() or is_devhost):
+            cron_sync = False
+        data = _s['mc_utils.dictupdate']({
+            'kvm': {},
+            'lxc': {'images_root': '/var/lib/lxc',
+                    'images': images,
+                    'cron_sync': cron_sync,
+                    'cron_hour': '3',
+                    'cron_minute': '3'}
+        }, extdata)
+        if not conf.get('cloud_master', False):
+            data = {}
+        _p = 'makina-states.cloud.images'
+        data = _s['mc_utils.format_resolve'](data)
+        return {_p: data}
     return _settings()
 
 

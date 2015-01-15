@@ -10,10 +10,13 @@ mc_cloud / cloud registries & functions
 
 # Import salt libs
 import os
+import copy
 import mc_states.utils
 import yaml
+import logging
 
 __name = 'cloud'
+log = logging.getLogger(__name__)
 
 
 def is_vm():
@@ -189,6 +192,123 @@ def settings():
             data['bootsalt_branch'] = 'master'
 
         return data
+    return _settings()
+
+
+def ext_pillar(id_, *args, **kw):
+    '''
+    '''
+    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    def _settings():
+        """
+        makina-states cloud global configuration options
+
+        master
+          The default master to link to into salt cloud profile
+        master_port
+          The default master port to link to into salt cloud profile
+        mode
+          (salt or mastersal (default)t)
+        pvdir
+          salt cloud providers directory
+        pfdir
+          salt cloud profile directory
+        bootsalt_branch
+          bootsalt branch to use (default: master or prod if prod)
+        bootsalt_args
+          makina-states bootsalt args in salt mode
+        bootsalt_mastersalt_args
+          makina-states bootsalt args in mastersalt mode
+        keep_tmp
+          keep tmp files
+        ssh_gateway (all the gw params are opt.)
+             ssh gateway info
+        ssh_gateway_port
+             ssh gateway info
+        ssh_gateway_user
+             ssh gateway info
+        ssh_gateway_key
+             ssh gateway info
+        ssh_gateway_password
+             ssh gateway info
+
+        """
+        _s = __salt__
+        conf = _s['mc_pillar.get_configuration'](id_)
+        if not conf.get('cloud_master', False):
+            return {}
+        try:
+            extdata = copy.deepcopy(
+                _s['mc_pillar.query']('cloud_settings').get('cloud', {})
+            )
+        except KeyError:
+            log.warning('No cloud_settings section in database')
+            extdata = {}
+        root = '/srv/mastersalt'
+        prefix = '/etc/mastersalt'
+        default_env = _s['mc_env.ext_pillar'](
+            id_).get('env', '')
+        data = __salt__['mc_utils.dictupdate']({
+            'root': root,
+            'all_pillar_dir': (
+                '/srv/mastersalt-pillar/cloud-controller'
+            ),
+            'ssl': {
+                'cert_days': 365*1000,
+                'ca': {
+                    'ca_name': id_,
+                    'bits': 2048,
+                    'days': 365*1000,
+                    'CN': 'makina-states-cloud-controller',
+                    'C': 'FR',
+                    'ST': 'PdL',
+                    'L': 'Nantes',
+                    'O': 'Makina Corpus',
+                    'OU': None,
+                    'emailAddress': 'contact@makina-corpus.com',
+                }
+            },
+            'all_sls_dir': 'cloud-controller',
+            'compute_node_sls_dir': (
+                '{all_sls_dir}/controller'
+            ),
+            'compute_node_sls_dir': (
+                '{all_sls_dir}/compute_node'
+            ),
+            'compute_node_pillar_dir': (
+                '{all_pillar_dir}/compute_node'
+            ),
+            'ssl_dir': '{all_sls_dir}/ssl',
+            'ssl_pillar_dir': '{all_pillar_dir}/ssl',
+            'prefix': prefix,
+            'mode': 'mastersalt',
+            'script': (
+                '/srv/mastersalt/makina-states/'
+                '_scripts/boot-salt.sh'),
+            'bootsalt_args': '-C --from-salt-cloud -no-M',
+            'bootsalt_mastersalt_args': (
+                '-C --from-salt-cloud --mastersalt-minion'),
+            'bootsalt_branch': None,
+            'master_port': __opts__.get('master_port'),
+            'master': id_,
+            'saltify_profile': 'salt',
+            'pvdir': prefix + "/cloud.providers.d",
+            'pfdir': prefix + "/cloud.profiles.d",
+            'ssh_gateway_password': None,
+            'ssh_gateway': None,
+            'ssh_gateway_user': 'root',
+            'ssh_gateway_key': '/root/.ssh/id_dsa',
+            'ssh_gateway_port': 22,
+        }, extdata)
+        if not data['bootsalt_branch']:
+            data['bootsalt_branch'] = {
+                'dev': 'master',
+                'prod': 'stable',
+                'preprod': 'stable',
+            }.get(default_env, 'stable')
+        data =  _s['mc_utils.format_resolve'](data) 
+        _p = 'makina-states.cloud'
+        return {_p: data}
     return _settings()
 
 

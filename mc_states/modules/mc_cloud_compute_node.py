@@ -366,25 +366,30 @@ def default_has(vts=None, **kwargs):
 
 
 def get_firewall_toggle():
+    """DEPRECATED"""
     return __salt__['mc_utils.get'](
         'makina-states.cloud.compute_node.has.firewall', True)
 
 
 def get_snmp_port_end():
+    """DEPRECATED"""
     return __salt__['mc_utils.get'](
         'makina-states.cloud.compute_node.snmp_start_port', '39999')
 
 
 def get_snmp_port_start():
+    """DEPRECATED"""
     return __salt__['mc_utils.get'](
         'makina-states.cloud.compute_node.snmp_start_port', 30000)
 
 def get_ssh_port_end():
+    """DEPRECATED"""
     return __salt__['mc_utils.get'](
         'makina-states.cloud.compute_node.ssh_start_port', '50000')
 
 
 def get_ssh_port_start():
+    """DEPRECATED"""
     return __salt__['mc_utils.get'](
         'makina-states.cloud.compute_node.ssh_start_port', 40000)
 
@@ -405,6 +410,72 @@ def _find_available_port(targets, target, data):
     return (int(ssh_start_port) +
             (256 * int(ip_parts[2])) +
             int(ip_parts[3]))
+
+
+def ext_pillar(id_, pillar, *args, **kw):
+    '''
+    compute node related settings
+    THIS IS USED ON THE CONTROLLER SIDE !
+    overridable in database for default settings
+    in cloud_cn_attrs:default
+
+    targets
+        a mapping indexed by target minions ids
+
+        vms
+        A mapping indexed by vm minion ids and containing some info::
+
+           {vm name: virt type}
+
+        virt_types
+            a list of supported virt types (lxc)
+    has
+        global configuration toggle
+
+        firewall
+            global firewall toggle
+
+    ssh_port_range_start
+        from where we start to enable ssh NAT ports.
+        Default to 40000.
+
+    ssh_port_range_end
+
+        from where we end to enable ssh NAT ports.
+        Default to 50000.
+
+    Basically the compute node needs to:
+
+        - setup reverse proxying
+        - setup it's local internal addressing dns to point to private ips
+        - everything else that's local to the compute node
+
+    The computes nodes are often created implicitly by registration of vms
+    on specific drivers like LXC but you can register some manually.
+
+    makina-states.cloud.compute_node.settings.targets.devhost11.local: {}
+
+    To add or modify a value, use the mc_utils.default habitual way of
+    modifying the default dict.
+    '''
+    # TODO: reenable cache
+    #@mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    def _settings():
+        _s = __salt__
+        extdata = copy.deepcopy(
+            _s['mc_pillar.query']('cloud_cn_attrs').get('default', {})
+        )
+        _s = __salt__
+        data = _s['mc_utils.dictupdate']({
+            'has': {'firewall': True},
+            'ssh_port_range_start': 30000,
+            'ssh_port_range_end': 39999,
+            'snmp_port_range_start': 30000,
+            'snmp_port_range_end': 39999,
+        }, extdata)
+        return data
+    res = _settings()
+    return res
 
 
 def _add_server_to_backend(reversep, backend_name, domain, ip, kind='http'):
@@ -842,9 +913,41 @@ def cn_settings(ttl=60):
     return memoize_cache(_do, [], {}, cache_key, ttl)
 
 
+def get_cloud_vms_conf():
+    rdata = {}
+    cloud_vm_attrs = __salt__['mc_pillar.query']('cloud_vm_attrs')
+    supported_vts = __salt__['mc_cloud_compute_node.get_vts'](
+        supported=True)
+    for vt, targets in __salt__['mc_pillar.query']('vms').items():
+        if vt not in supported_vts:
+            continue
+        for compute_node, vms in targets.items():
+            if compute_node in __salt__['mc_pillar.query'](
+                'non_managed_hosts'):
+                continue
+            vtdata = rdata.setdefault(vt, OrderedDict())
+            pvms = vtdata.setdefault(compute_node, OrderedDict())
+            for vm in vms:
+                if vm in __salt__['mc_pillar.query']('non_managed_hosts'):
+                    continue
+                dvm = pvms.setdefault(vm, OrderedDict())
+                metadata = cloud_vm_attrs.get(vm, OrderedDict())
+                if vt == 'lxc':
+                    metadata.setdefault('profile_type', 'dir')
+                if 'password' not in metadata:
+                    metadata.setdefault(
+                        'password',
+                        __salt__[
+                            'mc_pillar.get_passwords'
+                        ](vm)['clear']['root'])
+                dvm.update(metadata)
+    return rdata
+
+
 def settings():
     '''
     compute node related settings
+    **DEPRECATED**
     THIS IS USED ON THE CONTROLLER SIDE !
 
     targets
@@ -917,7 +1020,7 @@ def get_targets_and_vms_for_virt_type(virt_type):
         vtargets = virtsettings.get('vms', {})
         return vtargets
     else:
-        return  {}
+        return {}
 
 
 def targets():
@@ -945,7 +1048,7 @@ def get_vms():
     '''Return all vms indexed by targets'''
     data = OrderedDict()
     for virt_type in VIRT_TYPES:
-        all_infos = get_targets_and_vms_for_virt_type(virt_type)
+        all_infos = get_cloud_vms_conf().get(virt_type, {})
         for t in all_infos:
             target = data.setdefault(t, {})
             vms = {}
@@ -982,5 +1085,6 @@ def get_vms_for_target(target):
 
 def dump():
     return mc_states.utils.dump(__salt__,__name)
+
 
 # vim:set et sts=4 ts=4 tw=80:

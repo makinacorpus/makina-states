@@ -2591,14 +2591,6 @@ def get_packages_conf(id_):
     return rdata
 
 
-def get_default_env_conf(id_):
-    conf = get_configuration(id_)
-    rdata = {}
-    conf = __salt__['mc_pillar.get_configuration'](id_)
-    rdata['default_env'] = conf['default_env']
-    return rdata
-
-
 def get_shorewall_conf(id_):
     gconf = get_configuration(id_)
     rdata = {}
@@ -3120,7 +3112,6 @@ def ext_pillar(id_, pillar=None, *args, **kw):
         'mc_pillar.get_backup_client_conf',
         'mc_pillar.get_burp_server_conf',
         'mc_pillar.get_cloudmaster_conf',
-        'mc_pillar.get_default_env_conf',
         'mc_pillar.get_dhcpd_conf',
         'mc_pillar.get_dns_master_conf',
         'mc_pillar.get_dns_slave_conf',
@@ -3143,6 +3134,9 @@ def ext_pillar(id_, pillar=None, *args, **kw):
         'mc_pillar.get_pkgmgr_conf',
         'mc_pillar.get_sysnet_conf',
         'mc_pillar.get_check_raid_conf',
+        #
+        'mc_env.ext_pillar',
+        #
     ]:
         try:
             data = __salt__['mc_utils.dictupdate'](
