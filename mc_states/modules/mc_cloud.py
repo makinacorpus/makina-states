@@ -168,7 +168,9 @@ def extpillar_settings(id_=None, *args, **kw):
     return data
 
 
-def is_a_vm(id_):
+def is_a_vm(id_=None):
+    if id_ is None:
+        id_ = __grains__['id']
     _s = __salt__
     vms = _s['mc_cloud_compute_node.get_all_vms']()
     if id_ in vms:
@@ -176,7 +178,9 @@ def is_a_vm(id_):
     return False
 
 
-def is_a_compute_node(id_):
+def is_a_compute_node(id_=None):
+    if id_ is None:
+        id_ = __grains__['id']
     _s = __salt__
     targets = _s['mc_cloud_compute_node.get_all_targets']()
     if id_ in targets:
@@ -185,6 +189,8 @@ def is_a_compute_node(id_):
 
 
 def is_a_controller(id_):
+    if id_ is None:
+        id_ = __grains__['id']
     _s = __salt__
     conf = _s['mc_pillar.get_configuration'](id_)
     if (
@@ -193,6 +199,14 @@ def is_a_controller(id_):
     ):
         return True
     return False
+
+
+def is_a_cloud_member(id_=None):
+    if id_ is None:
+        id_ = __grains__['id']
+    return any([is_a_vm(id_),
+                is_a_compute_node(id_),
+                is_a_controller(id_)])
 
 
 def ext_pillar(id_, *args, **kw):

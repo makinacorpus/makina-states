@@ -127,8 +127,8 @@ def ext_pillar(id_, *args, **kw):
     Images extpillar
     '''
     _s = __salt__
-    conf = _s['mc_pillar.get_configuration'](id_)
-    if conf.get('cloud_master', False):
+    expose = False
+    if _s['mc_cloud.is_a_cloud_member'](id_):
         expose = True
     data = {}
     if expose:
