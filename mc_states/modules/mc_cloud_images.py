@@ -132,13 +132,7 @@ def ext_pillar(id_, *args, **kw):
         _s = __salt__
         # attention first image here is the default !
         conf = _s['mc_pillar.get_configuration'](id_)
-        try:
-            extdata = copy.deepcopy(
-                _s['mc_pillar.query']('cloud_settings').get('images', {})
-            )
-        except KeyError:
-            log.warning('No cloud_settings section in database')
-            extdata = {}
+        extdata = _s['mc_pillar.get_global_clouf_conf']('images')
         images = OrderedDict()
         cloud_settings = _s['mc_cloud.settings']()
         is_devhost = os.path.exists('/root/vagrant/provision_settings.sh')

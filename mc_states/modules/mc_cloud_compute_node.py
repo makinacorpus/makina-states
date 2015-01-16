@@ -41,6 +41,8 @@ _RP = 'reverse_proxies'
 _SW_RP = 'shorewall_reverse_proxies'
 _CUR_API = 2
 _default = object()
+PREFIX = 'makina-states.cloud.compute_node'
+
 
 def get_vts(supported=None):
     vts = copy.deepcopy(VIRT_TYPES)
@@ -63,13 +65,91 @@ def gen_mac():
                                                random.randint(0x00, 0xFF)]))
 
 
+def default_settings():
+    '''
+    **DEPRECATED**
+    THIS IS USED ON THE CONTROLLER SIDE !
+
+    targets
+        a mapping indexed by target minions ids
+
+        vms
+        A mapping indexed by vm minion ids and containing some info::
+
+           {vm name: virt type}
+
+        virt_types
+            a list of supported virt types (lxc)
+    has
+        global configuration toggle
+
+        firewall
+            global firewall toggle
+
+    ssh_port_range_start
+        from where we start to enable ssh NAT ports.
+        Default to 40000.
+
+    ssh_port_range_end
+
+        from where we end to enable ssh NAT ports.
+        Default to 50000.
+
+    Basically the compute node needs to:
+
+        - setup reverse proxying
+        - setup it's local internal addressing dns to point to private ips
+        - everything else that's local to the compute node
+
+    The computes nodes are often created implicitly by registration of vms
+    on specific drivers like LXC but you can register some manually.
+
+    makina-states.cloud.compute_node.settings.targets.devhost11.local: {}
+
+    To add or modify a value, use the mc_utils.default habitual way of
+    modifying the default dict.
+    '''
+    data = {'has': {'firewall': True},
+            'targets': OrderedDict(),
+            'ssh_port_range_start': 40000,
+            'ssh_port_range_end': 50000,
+            'snmp_port_range_start': 30000,
+            'snmp_port_range_end': 39999}
+    return data
+
+
+def extpillar_settings(id_):
+    _s = __salt__
+    data = _s['mc_utils.dictupdate'](
+        _s['mc_utils.dictupdate'](
+            default_settings(),
+            _s['mc_pillar.get_global_clouf_conf'](
+                'cloud_cn_attrs', 'default')),
+        _s['mc_pillar.get_global_clouf_conf']('cloud_cn_attrs', id_))
+    return data
+
+
+def ext_pillar(id_, *args, **kw):
+    '''
+    compute node extpillar
+    '''
+    _s = __salt__
+    settings = extpillar_settings(id_)
+    data = {
+        'makina-states.cloud_compute_node': settings
+    }
+    return data
+
+
 def _encode(value):
     '''encode using msgpack backend'''
     return msgpack.packb({'value': value})
 
 
 def _fencode(filep, value):
-    '''encode in a file using msgpack backend'''
+    '''
+    Encode in a file using msgpack backend
+    '''
     dfilep = os.path.dirname(filep)
     if not os.path.exists(dfilep):
         os.makedirs(dfilep)
@@ -99,12 +179,10 @@ def _decode(filep):
 def del_conf_for_target(target, setting):
     '''Register a specific setting for a specific target'''
     target = target.replace('.', '')
-    cloudSettings = __salt__['mc_cloud.settings']()
-    filep = os.path.join(
-        cloudSettings['compute_node_pillar_dir'],
-        target, 'settings',
-        setting + '.pack'
-    )
+    cloudSettings = __salt__['mc_cloud.extpillar_settings']()
+    filep = os.path.join(cloudSettings['compute_node_pillar_dir'],
+                         target, 'settings',
+                         setting + '.pack')
     if os.path.exists(filep):
         os.unlink(filep)
 
@@ -112,12 +190,10 @@ def del_conf_for_target(target, setting):
 def set_conf_for_target(target, setting, value):
     '''Register a specific setting for a specific target'''
     target = target.replace('.', '')
-    cloudSettings = __salt__['mc_cloud.settings']()
-    filep = os.path.join(
-        cloudSettings['compute_node_pillar_dir'],
-        target, 'settings',
-        setting + '.pack'
-    )
+    cloudSettings = __salt__['mc_cloud.extpillar_settings']()
+    filep = os.path.join(cloudSettings['compute_node_pillar_dir'],
+                         target, 'settings',
+                         setting + '.pack')
     _fencode(filep, value)
     return value
 
@@ -125,11 +201,9 @@ def set_conf_for_target(target, setting, value):
 def get_conf_for_target(target, setting, default=None):
     '''get the stored specific setting for a specific target'''
     target = target.replace('.', '')
-    cloudSettings = __salt__['mc_cloud.settings']()
-    filep = os.path.join(
-        cloudSettings['compute_node_pillar_dir'],
-        target, 'settings', setting + '.pack'
-    )
+    cloudSettings = __salt__['mc_cloud.extpillar_settings']()
+    filep = os.path.join(cloudSettings['compute_node_pillar_dir'],
+                         target, 'settings', setting + '.pack')
     value = default
     if os.path.exists(filep):
         value = _decode(filep)
@@ -139,19 +213,36 @@ def get_conf_for_target(target, setting, default=None):
 def set_conf_for_vm(target, virt_type, vm, setting, value):
     target = target.replace('.', '')
     vm = vm.replace('.', '')
-    cloudSettings = __salt__['mc_cloud.settings']()
-    filep = os.path.join(
-        cloudSettings['compute_node_pillar_dir'],
-        target, virt_type, vm, 'settings',
-        setting + '.pack'
-    )
+    cloudSettings = __salt__['mc_cloud.extpillar_settings']()
+    filep = os.path.join(cloudSettings['compute_node_pillar_dir'],
+                         target, virt_type, vm, 'settings',
+                         setting + '.pack')
     _fencode(filep, value)
     return value
 
 
+def get_conf_for_vm(target,
+                    virt_type,
+                    vm,
+                    setting,
+                    default=None):
+    '''.'''
+    target = target.replace('.', '')
+    vm = vm.replace('.', '')
+    cloudSettings = __salt__['mc_cloud.default_settings']()
+    filep = os.path.join(cloudSettings['compute_node_pillar_dir'],
+                         target, virt_type, vm, 'settings', setting + '.pack')
+    value = default
+    if os.path.exists(filep):
+        value = _decode(filep)
+    return value
+
+
 def find_mac_for_vm(target, virt_type, vm, default=None):
-    '''Generate and assign a mac addess to a specific
-    vm on a specific host'''
+    '''
+    Generate and assign a mac addess to a specific
+    vm on a specific host
+    '''
     mac = get_conf_for_vm(target, virt_type, vm, 'mac')
     if not mac:
         mac = default
@@ -170,7 +261,8 @@ def find_password_for_vm(target,
                          vm,
                          default=None,
                          pwlen=32):
-    '''Return the vm password after creating it
+    '''
+    Return the vm password after creating it
     the first time
     '''
     password = get_conf_for_vm(target, virt_type, vm, 'password')
@@ -200,8 +292,10 @@ def _construct_ips_dict(target):
 
 
 def cleanup_allocated_ips(target):
-    '''Maintenance routine to cleanup ips when ip
-    exhaution arrises'''
+    '''
+    Maintenance routine to cleanup ips when ip
+    exhaution arrises
+    '''
     allocated_ips = _construct_ips_dict(target)
     existing_vms = get_vms_for_target(target)
     # recycle old ips for unexisting vms
@@ -225,15 +319,19 @@ def cleanup_allocated_ips(target):
 
 
 def get_allocated_ips(target):
-    '''Get the allocated ips for a specific target'''
+    '''
+    Get the allocated ips for a specific target
+    '''
     allocated_ips = _construct_ips_dict(target)
     return allocated_ips
 
 
 def remove_allocated_ip(target, ip, vm=None):
-    '''Remove any ip from the allocated IP registry.
+    '''
+    Remove any ip from the allocated IP registry.
     If vm is specified, it must also match a vm
-    which is allocated to this ip'''
+    which is allocated to this ip
+    '''
     sync = False
     all_ips = get_allocated_ips(target)
     if ip in all_ips['ips'].values():
@@ -249,12 +347,16 @@ def remove_allocated_ip(target, ip, vm=None):
 
 
 def target_for_vm(vm, target=None):
-    '''Get target for a vm'''
+    '''
+    Get target for a vm
+    '''
     return get_vm(vm)['target']
 
 
 def vt_for_vm(vm, target=None):
-    '''Get VT for a vm'''
+    '''
+    Get VT for a vm
+    '''
     return get_vm(vm)['vt']
 
 
@@ -264,7 +366,8 @@ def find_ip_for_vm(target,
                    virt_type=None,
                    network=api.NETWORK,
                    netmask=api.NETMASK):
-    '''Search for:
+    '''
+    Search for:
 
         - an ip already allocated
         - an random available ip in the range
@@ -325,36 +428,22 @@ def find_ip_for_vm(target,
 
 def set_allocated_ip(target, vm, ip, vt=None):
     '''
-    For force/set an ip use::
+    Allocate an ip for a vm on a compute node for a specific vt
 
-        set_allocated_ip(target, vmname, '1.2.3.4')
+    >>> set_allocated_ip(target, vmname, '2.2.3.4')
 
     '''
     if vt is None:
-        vt = get_vms_for_target(target).get(vm, 'lxc')
+        vms = get_vms_for_target(target)
+        if vms:
+            vt = vms[0]
+        else:
+            vt = 'lxc'
     allocated_ips = get_allocated_ips(target)
     allocated_ips['ips'][vm] = ip
     set_conf_for_vm(target, vt, vm, 'ip4', ip)
     set_conf_for_target(target, 'allocated_ips', allocated_ips)
     return get_allocated_ips(target)
-
-
-def get_conf_for_vm(target,
-                    virt_type,
-                    vm,
-                    setting,
-                    default=None):
-    '''.'''
-    target = target.replace('.', '')
-    vm = vm.replace('.', '')
-    cloudSettings = __salt__['mc_cloud.settings']()
-    filep = os.path.join(
-        cloudSettings['compute_node_pillar_dir'],
-        target, virt_type, vm, 'settings', setting + '.pack')
-    value = default
-    if os.path.exists(filep):
-        value = _decode(filep)
-    return value
 
 
 def default_has(vts=None, **kwargs):
@@ -365,121 +454,8 @@ def default_has(vts=None, **kwargs):
     return vts
 
 
-def get_firewall_toggle():
-    """DEPRECATED"""
-    return __salt__['mc_utils.get'](
-        'makina-states.cloud.compute_node.has.firewall', True)
-
-
-def get_snmp_port_end():
-    """DEPRECATED"""
-    return __salt__['mc_utils.get'](
-        'makina-states.cloud.compute_node.snmp_start_port', '39999')
-
-
-def get_snmp_port_start():
-    """DEPRECATED"""
-    return __salt__['mc_utils.get'](
-        'makina-states.cloud.compute_node.snmp_start_port', 30000)
-
-def get_ssh_port_end():
-    """DEPRECATED"""
-    return __salt__['mc_utils.get'](
-        'makina-states.cloud.compute_node.ssh_start_port', '50000')
-
-
-def get_ssh_port_start():
-    """DEPRECATED"""
-    return __salt__['mc_utils.get'](
-        'makina-states.cloud.compute_node.ssh_start_port', 40000)
-
-
-def _find_available_snmp_port(targets, target, data):
-    ip = data['ip']
-    ip_parts = ip.split('.')
-    snmp_start_port = int(get_snmp_port_start())
-    return (int(snmp_start_port) +
-            (256 * int(ip_parts[2])) +
-            int(ip_parts[3]))
-
-
-def _find_available_port(targets, target, data):
-    ip = data['ip']
-    ip_parts = ip.split('.')
-    ssh_start_port = int(get_ssh_port_start())
-    return (int(ssh_start_port) +
-            (256 * int(ip_parts[2])) +
-            int(ip_parts[3]))
-
-
-def ext_pillar(id_, pillar, *args, **kw):
-    '''
-    compute node related settings
-    THIS IS USED ON THE CONTROLLER SIDE !
-    overridable in database for default settings
-    in cloud_cn_attrs:default
-
-    targets
-        a mapping indexed by target minions ids
-
-        vms
-        A mapping indexed by vm minion ids and containing some info::
-
-           {vm name: virt type}
-
-        virt_types
-            a list of supported virt types (lxc)
-    has
-        global configuration toggle
-
-        firewall
-            global firewall toggle
-
-    ssh_port_range_start
-        from where we start to enable ssh NAT ports.
-        Default to 40000.
-
-    ssh_port_range_end
-
-        from where we end to enable ssh NAT ports.
-        Default to 50000.
-
-    Basically the compute node needs to:
-
-        - setup reverse proxying
-        - setup it's local internal addressing dns to point to private ips
-        - everything else that's local to the compute node
-
-    The computes nodes are often created implicitly by registration of vms
-    on specific drivers like LXC but you can register some manually.
-
-    makina-states.cloud.compute_node.settings.targets.devhost11.local: {}
-
-    To add or modify a value, use the mc_utils.default habitual way of
-    modifying the default dict.
-    '''
-    # TODO: reenable cache
-    #@mc_states.utils.lazy_subregistry_get(__salt__, __name)
-    def _settings():
-        _s = __salt__
-        extdata = copy.deepcopy(
-            _s['mc_pillar.query']('cloud_cn_attrs').get('default', {})
-        )
-        _s = __salt__
-        data = _s['mc_utils.dictupdate']({
-            'has': {'firewall': True},
-            'ssh_port_range_start': 30000,
-            'ssh_port_range_end': 39999,
-            'snmp_port_range_start': 30000,
-            'snmp_port_range_end': 39999,
-        }, extdata)
-        return data
-    res = _settings()
-    return res
-
-
 def _add_server_to_backend(reversep, backend_name, domain, ip, kind='http'):
-    """The domain is ppurely informative here"""
+    '''The domain is ppurely informative here'''
     _backends = reversep.setdefault('{0}_backends'.format(kind), {})
     bck = _backends.setdefault(backend_name,
                                {'name': backend_name,
@@ -597,7 +573,8 @@ def _init_http_proxies(target_data, reversep):
 
 
 def feed_http_reverse_proxy_for_target(target, target_data=None):
-    '''Get reverse proxy information mapping for a specicific target
+    '''
+    Get reverse proxy information mapping for a specicific target
     This return a useful mappings of infos to reverse proxy http
     and ssh services with haproxy
     '''
@@ -654,8 +631,10 @@ def set_snmp_port(target, vm, port):
 
 
 def cleanup_snmp_ports(target, target_data=None):
-    '''This is a maintenance routine which can be called to cleanup
-    ssh ports when range exhaustion is incoming'''
+    '''
+    This is a maintenance routine which can be called to cleanup
+    ssh ports when range exhaustion is incoming
+    '''
     if target_data is None:
         target_data = get_settings_for_target(target)
     vms_infos = target_data.get('vms', {})
@@ -673,9 +652,9 @@ def cleanup_snmp_ports(target, target_data=None):
 
 def get_snmp_port(vm, target=None):
     _s = __salt__.get
-    _settings = settings()
     if target is None:
         target = __salt__['mc_cloud_compute_node.target_for_vm'](vm)
+    _settings = _s['mc_cloud_compute_node.extpillar_settings'](target)
     start = int(_settings['snmp_port_range_start'])
     end = int(_settings['snmp_port_range_end'])
     snmp_map = get_conf_for_target(target, 'snmp_map', {})
@@ -758,9 +737,9 @@ def cleanup_ssh_ports(target, target_data=None):
 
 def get_ssh_port(vm, target=None):
     _s = __salt__.get
-    _settings = settings()
     if target is None:
         target = __salt__['mc_cloud_compute_node.target_for_vm'](vm)
+    _settings = _s['mc_cloud_compute_node.extpillar_settings'](target)
     start = int(_settings['ssh_port_range_start'])
     end = int(_settings['ssh_port_range_end'])
     ssh_map = get_conf_for_target(target, 'ssh_map', {})
@@ -774,9 +753,28 @@ def get_ssh_port(vm, target=None):
     return port
 
 
+def _find_available_snmp_port(targets, target, data):
+    ip = data['ip']
+    ip_parts = ip.split('.')
+    snmp_start_port = int(_s['mc_cloud_compute_node.extpillar_settings'](
+        target)['snmp_port_range_start'])
+    return (int(snmp_start_port) +
+            (256 * int(ip_parts[2])) +
+            int(ip_parts[3]))
+
+
+def _find_available_port(targets, target, data):
+    ip = data['ip']
+    ip_parts = ip.split('.')
+    ssh_start_port = int(_s['mc_cloud_compute_node.extpillar_settings'](
+        target)['ssh_port_range_start'])
+    return (int(ssh_start_port) +
+            (256 * int(ip_parts[2])) +
+            int(ip_parts[3]))
+
+
 def feed_ssh_reverse_proxies_for_target(target, target_data=None):
     _s = __salt__.get
-    _settings = settings()
     if target_data is None:
         target_data = get_settings_for_target(target)
     vms_infos = target_data.get('vms', {})
@@ -805,7 +803,8 @@ def _add_vt_to_target(target, vt):
 
 
 def get_settings_for_target(target, target_data=None):
-    '''Return specific compute node related settings for a specific target
+    '''
+    Return specific compute node related settings for a specific target
 
         target
             target name
@@ -896,139 +895,54 @@ def get_reverse_proxies_for_target(target):
                  if k in (_RP, 'target')])
 
 
-def cn_settings(ttl=60):
-    '''
-    compute node related settings
-    THIS IS USED ON THE COMPUTE NODE SIDE !
-    '''
-    def _do():
-        reg = __salt__['mc_macros.get_local_registry'](
-            'cloud_compute_node_settings',
-            registry_format='pack')
-        if 'cnSettings' not in reg:
-            raise ValueError(
-                'Registry not yet configured')
-        return reg
-    cache_key = 'mc_cloud_compute_node.cn_settings'
-    return memoize_cache(_do, [], {}, cache_key, ttl)
-
-
 def get_cloud_vms_conf():
     rdata = {}
-    cloud_vm_attrs = __salt__['mc_pillar.query']('cloud_vm_attrs')
-    supported_vts = __salt__['mc_cloud_compute_node.get_vts'](
+    _s = __salt__
+    settings = _s['mc_cloud.extpillar_settings']()
+    cloud_cn_attrs = _s['mc_pillar.query']('cloud_cn_attrs')
+    cloud_vm_attrs = _s['mc_pillar.query']('cloud_vm_attrs')
+    supported_vts = _s['mc_cloud_compute_node.get_vts'](
         supported=True)
-    for vt, targets in __salt__['mc_pillar.query']('vms').items():
+    for vt, targets in _s['mc_pillar.query']('vms').items():
         if vt not in supported_vts:
             continue
-        for compute_node, vms in targets.items():
-            if compute_node in __salt__['mc_pillar.query'](
-                'non_managed_hosts'):
+        if not settings.get(vt, False):
+            continue
+        for cn, vms in targets.items():
+            if cn in _s['mc_pillar.query']('non_managed_hosts'):
                 continue
             vtdata = rdata.setdefault(vt, OrderedDict())
-            pvms = vtdata.setdefault(compute_node, OrderedDict())
+            dcn = vtdata.setdefault(cn, OrderedDict())
+            dcn.setdefault('conf', cloud_cn_attrs.get(cn, OrderedDict()))
+            pvms = dcn.setdefault('vms', OrderedDict())
+            vts = dcn.setdefault('vts', [])
+            if vt not in vts:
+                vts.append(vt)
             for vm in vms:
-                if vm in __salt__['mc_pillar.query']('non_managed_hosts'):
+                if vm in _s['mc_pillar.query']('non_managed_hosts'):
                     continue
-                dvm = pvms.setdefault(vm, OrderedDict())
-                metadata = cloud_vm_attrs.get(vm, OrderedDict())
-                if vt == 'lxc':
-                    metadata.setdefault('profile_type', 'dir')
-                if 'password' not in metadata:
-                    metadata.setdefault(
-                        'password',
-                        __salt__[
-                            'mc_pillar.get_passwords'
-                        ](vm)['clear']['root'])
-                dvm.update(metadata)
+                pvms.setdefault(vm, cloud_vm_attrs.get(vm, OrderedDict()))
     return rdata
 
 
-def settings():
+def get_vms():
     '''
-    compute node related settings
-    **DEPRECATED**
-    THIS IS USED ON THE CONTROLLER SIDE !
-
-    targets
-        a mapping indexed by target minions ids
-
-        vms
-        A mapping indexed by vm minion ids and containing some info::
-
-           {vm name: virt type}
-
-        virt_types
-            a list of supported virt types (lxc)
-    has
-        global configuration toggle
-
-        firewall
-            global firewall toggle
-
-    ssh_port_range_start
-        from where we start to enable ssh NAT ports.
-        Default to 40000.
-
-    ssh_port_range_end
-
-        from where we end to enable ssh NAT ports.
-        Default to 50000.
-
-    Basically the compute node needs to:
-
-        - setup reverse proxying
-        - setup it's local internal addressing dns to point to private ips
-        - everything else that's local to the compute node
-
-    The computes nodes are often created implicitly by registration of vms
-    on specific drivers like LXC but you can register some manually.
-
-    makina-states.cloud.compute_node.settings.targets.devhost11.local: {}
-
-    To add or modify a value, use the mc_utils.default habitual way of
-    modifying the default dict.
+    Return all vms indexed by targets
     '''
-    # TODO: reenable cache
-    #@mc_states.utils.lazy_subregistry_get(__salt__, __name)
-    def _settings():
-        _s = __salt__
-        data = _s['mc_utils.defaults'](
-            'makina-states.cloud.compute_node', {
-                'has': {'firewall': get_firewall_toggle()},
-                'ssh_port_range_start': get_ssh_port_start(),
-                'ssh_port_range_end': get_ssh_port_end(),
-                'snmp_port_range_start': get_snmp_port_start(),
-                'snmp_port_range_end': get_snmp_port_end(),
-                'targets': get_vms()
-            })
-        return data
-    res = _settings()
-    return res
-
-
-def is_compute_node():
-    _settings = settings()
-    return __salt__['mc_utils.get']('makina-states.cloud.is.compute_node')
-
-
-def get_targets_and_vms_for_virt_type(virt_type):
-    _s = __salt__
-    k = 'mc_cloud_{0}.settings'.format(virt_type)
-    if k in _s:
-        virtsettings = _s[k]()
-        vtargets = virtsettings.get('vms', {})
-        return vtargets
-    else:
-        return {}
-
-
-def targets():
-    '''Get all configured compute nodes'''
-    _s = __salt__
-    _settings = settings()
-    return dict([(a, v.get('virt_types', []))
-                 for a, v in _settings['targets'].items()])
+    data = OrderedDict()
+    vm_confs = get_cloud_vms_conf()
+    virt_types = [a for a in VIRT_TYPES if settings.get(a)]
+    for virt_type in virt_types:
+        all_vt_infos = vm_confs.get(virt_type, {})
+        for t in all_vt_infos:
+            target = data.setdefault(t, {})
+            vts = target.setdefault('virt_types', [])
+            vms = target.setdefault('vms', {})
+            if virt_type not in vts:
+                vts.append(virt_type)
+            for vmname in all_vt_infos.get(t, {}):
+                vms.setdefault(vmname, virt_type)
+    return data
 
 
 def get_vms_per_type(target):
@@ -1044,29 +958,9 @@ def get_vms_per_type(target):
     return all_targets
 
 
-def get_vms():
-    '''Return all vms indexed by targets'''
-    data = OrderedDict()
-    for virt_type in VIRT_TYPES:
-        all_infos = get_cloud_vms_conf().get(virt_type, {})
-        for t in all_infos:
-            target = data.setdefault(t, {})
-            vms = {}
-            vts = set()
-            for vmname in all_infos[t]:
-                vms.setdefault(vmname, virt_type)
-                vts.add(virt_type)
-            # for each vt, we can have no vms
-            # so we test for a compute node without vms
-            # declared in the pillar as an empty dict
-            for vt in get_vts(supported=True):
-
-                k = 'makina-states.cloud.{0}.vms.{1}'.format(vt, t)
-                if __pillar__.get(k, _default) is not _default:
-                    vts.add(vt)
-            target['virt_types'] = [a for a in vts]
-            target['vms'] = vms
-    return data
+def get_vms_for_target(target):
+    '''Return all vms for a target'''
+    return get_vms().get(target, {}).get('vms', [])
 
 
 def get_vm(vm):
@@ -1078,13 +972,96 @@ def get_vm(vm):
     raise KeyError('{0} vm not found'.format(vm))
 
 
-def get_vms_for_target(target):
-    '''Return all vms for a target'''
-    return get_vms().get(target, {}).get('vms', [])
+
+def get_targets_and_vms_for_virt_type(virt_type):
+    _s = __salt__
+    k = 'mc_cloud_{0}.settings'.format(virt_type)
+    if k in _s:
+        virtsettings = _s[k]()
+        vtargets = virtsettings.get('vms', {})
+        return vtargets
+    else:
+        return {}
 
 
-def dump():
-    return mc_states.utils.dump(__salt__,__name)
+def targets():
+    '''
+    Get all configured compute nodes
+    '''
+    _s = __salt__
+    _settings = settings()
+    return dict([(a, v.get('virt_types', []))
+                 for a, v in _settings['targets'].items()])
+
+'''
+Methods usable
+After the pillar has loaded, on the compute node itself
+'''
 
 
+def settings():
+    '''
+    compute node related settings
+    '''
+    _s = __salt__
+    data = _s['mc_utils.defaults'](PREFIX, default_settings())
+    return data
+
+
+def is_compute_node():
+    return __salt__['mc_utils.get']('makina-states.cloud.is.compute_node')
+
+
+'''
+DEPRECATED
+'''
+
+
+def cn_settings(ttl=60):
+    '''
+    DEPRECATED
+    compute node related settings
+    THIS IS USED ON THE COMPUTE NODE SIDE !
+    '''
+    def _do():
+        reg = __salt__['mc_macros.get_local_registry'](
+            'cloud_compute_node_settings',
+            registry_format='pack')
+        if 'cnSettings' not in reg:
+            raise ValueError(
+                'Registry not yet configured')
+        return reg
+    cache_key = 'mc_cloud_compute_node.cn_settings'
+    return memoize_cache(_do, [], {}, cache_key, ttl)
+
+
+
+def get_firewall_toggle():
+    '''DEPRECATED'''
+    return __salt__['{0}.default_settings'.format(
+        PREFIX)]()['has']['firewall']
+
+
+def get_snmp_port_end():
+    '''DEPRECATED'''
+    return __salt__['{0}.default_settings'.format(
+        PREFIX)]()['snmp_port_range_end']
+
+
+def get_snmp_port_start():
+    '''DEPRECATED'''
+    return __salt__['{0}.default_settings'.format(
+        PREFIX)]()['snmp_port_range_start']
+
+
+def get_ssh_port_end():
+    '''DEPRECATED'''
+    return __salt__['{0}.default_settings'.format(
+        PREFIX)]()['ssh_port_range_end']
+
+
+def get_ssh_port_start():
+    '''DEPRECATED'''
+    return __salt__['{0}.default_settings'.format(
+        PREFIX)]()['ssh_port_range_start']
 # vim:set et sts=4 ts=4 tw=80:

@@ -2032,6 +2032,7 @@ def get_supervision_objects_defs(id_):
         vm_parent = None
         if is_cloud_vm(id_):
             vm_parent = maps['vms'][id_]['target']
+        ext_pillars = {}
         for vm, vdata in maps['vms'].items():
             physical_hosts_to_check.add(host)
             vt = vdata['vt']
@@ -2059,9 +2060,12 @@ def get_supervision_objects_defs(id_):
                 parents.append(host)
             # set the local ip for snmp and ssh
             if vm_parent == host:
-                ssh_host = snmp_host = (
-                    __salt__['mc_cloud_compute_node.find_ip_for_vm'](
-                        host, vm, virt_type=vt))
+                ssh_host = snmp_host = 'localhost'
+                ext_pillar = __salt__['mc_cloud_vm.extpillar_for'](vm, vt)
+                if vt in ext_pillar:
+                    k = 'makina-states.cloud.{0}.vms.{1}'.format(vt, vm)
+                    if k in ext_pillars.get(vt, {}):
+                        ssh_host = snmp_host = ext_pillars[vt][k]['ip']
             # we can access sshd and snpd on cloud vms
             # thx to special port mappings
             if is_cloud_vm(vm) and (vm_parent != host) and vt in ['lxc']:
@@ -2820,14 +2824,6 @@ def get_custom_pillar_conf(id_):
     return rdata
 
 
-def get_cloud_image_conf(id_):
-    rdata = {}
-    gconf = get_configuration(id_)
-    if gconf.get('custom_pillar'):
-        rdata.update(gconf['custom_pillar'])
-    return rdata
-
-
 def get_cloudmaster_conf(id_):
     gconf = get_configuration(id_)
     if not gconf.get('cloud_master', False):
@@ -2842,14 +2838,14 @@ def get_cloudmaster_conf(id_):
         pref + '.lxc': gconf['cloud_control_lxc'],
         pref + '.kvm': gconf['cloud_control_kvm'],
         pref + '.lxc.defaults.backing': 'dir'}
-    for i in [get_cloud_image_conf,
-              get_cloud_vm_conf,
+    for i in [get_cloud_vm_conf,
               get_cloud_compute_node_conf]:
         rdata.update(i(id_))
     return rdata
 
 
 def get_cloud_vm_conf(id_):
+    """DEPRECATED"""
     rdata = {}
     cloud_vm_attrs = __salt__['mc_pillar.query']('cloud_vm_attrs')
     nvars  = __salt__['mc_pillar.load_network_infrastructure']()
@@ -2869,8 +2865,6 @@ def get_cloud_vm_conf(id_):
                     continue
                 dvm = pvms.setdefault(vm, {})
                 metadata = cloud_vm_attrs.get(vm, {})
-                if vt == 'lxc':
-                    metadata.setdefault('profile_type', 'dir')
                 if 'password' not in metadata:
                     metadata.setdefault(
                         'password',
@@ -3136,6 +3130,7 @@ def ext_pillar(id_, pillar=None, *args, **kw):
         'mc_pillar.get_check_raid_conf',
         #
         'mc_env.ext_pillar',
+        'mc_cloud_images.ext_pillar',
         #
     ]:
         try:
@@ -3163,6 +3158,22 @@ def ext_pillar(id_, pillar=None, *args, **kw):
                     pr, stream=fic).sort_stats('cumulative')
                 ps.print_stats()
     return data
+
+
+def get_global_conf(section, entry):
+    try:
+        extdata = copy.deepcopy(
+            _s['mc_pillar.query'](section)
+        )
+        if not extdata:
+            log.warning('No {0} section in global cloud conf:'
+                        ' cloud_setings'.fortmat(entry))
+    except KeyError:
+        log.warning('No {0} section in database'.format(section))
+        extdata = {}
+
+def get_global_clouf_conf(entry):
+    return get_global_clouf_conf('cloud_settings', entry)
 
 
 def test():

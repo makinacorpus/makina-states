@@ -25,6 +25,12 @@ log = logging.getLogger(__name__)
 MAC_GID = 'makina-states.cloud.lxc.vmsettings.{0}.{1}.mac'
 PW_GID = 'makina-states.cloud.lxc.vmsettings.{0}.{1}.password'
 IP_GID = 'makina-states.cloud.lxc.vmsettings.{0}.{1}.ip'
+VT = 'lxc'
+PREFIX = 'makina-states.cloud.{0}'.format(VT)
+
+
+def vt():
+    return VT
 
 
 def is_lxc():
@@ -66,58 +72,15 @@ def is_lxc():
     return lxc
 
 
-def settings():
-    '''Lxc registry
+def default_settings():
+    '''
+    Default lxc container settings
 
-    TODO:
-    This may be needed to be database backended in the future.
-    As well, we may need iterator loops inside jinja templates
-    to not eat that much memory loading large datasets.
-
-    makina-states.services.cloud.lxc
-        The settings of lxc containers that are meaningful on the
-        cloud controller
-
-    cloud defaults (makina-states.services.cloud.lxc)
-        defaults settings to provision lxc containers
-        Those are all redefinable at each container level
-
-        LXC API:
-
-        mode
-            (salt (default) or mastersalt)
-
-        ssh_gateway
-            ssh gateway info
-        ssh_gateway_port
-            ssh gateway info
-        ssh_gateway_user
-            ssh gateway info
-        ssh_gateway_key
-            ssh gateway info
-        size
-            default filesystem size for container on lvm
-            None
         default_container
             default image
-        gateway
-            10.5.0.1
-        master
-            master to uplink the container to
-            None
-        master_port
-            '4506'
         image
             LXC template to use
             'ubuntu'
-        network
-            '10.5.0.0'
-        netmask
-            '16'
-        netmask_full
-            '255.255.0.0'
-        autostart
-            lxc is autostarted
         profile
             default size profile to use (medium) (apply only to lvm)
         profile_type
@@ -135,642 +98,47 @@ def settings():
         bridge
             we install via states a bridge in 10.5/16 lxcbr1)
             'lxcbr1'
-        sudo
-            True
-        use_bridge
-            True
         backing
             (lvm, overlayfs, dir, brtfs) 'lvm'
-        users
-            ['root', 'sysadmin']
-        ssh_username
-            'ubuntu'
         vgname
             'data'
         lvname
             'data'
         lxc_conf
             []
-        lxc_conf_unset'
+        lxc_conf_unset
             []
-    vms
-        List of containers ids classified by host ids::
+        vms
+            List of containers ids classified by host ids::
 
-            (Mapping of {hostid: [vmid]})
+                (Mapping of {hostid: [vmid]})
 
-        The settings are not stored here for obvious performance reasons
-    '''
-    # TODO: reenable cache
-    #@mc_states.utils.lazy_subregistry_get(__salt__, __name)
-    def _settings():
-        grains = __grains__
-        pillar = __pillar__
-        _s = __salt__
-        cloudSettings = _s['mc_cloud.settings']()
-        imgSettings = _s['mc_cloud_images.settings']()
-        nt_registry = _s['mc_nodetypes.registry']()
-        default_container = [a for a in imgSettings['lxc']['images']][0]
-        default_vm = OrderedDict()
-        # no lvm on devhost
-        # nor cron sync
-        # dptype = 'lvm'
-        # backing = 'lvm'
-        dptype = 'dir'
-        backing = 'dir'
-        if nt_registry['is']['devhost']:
-            backing = dptype = 'overlayfs'
-            # backing = dptype = 'dir'
-        default_snapshot = False
-        if nt_registry['is']['devhost']:
-            default_snapshot = True
-        lxcSettings = _s['mc_utils.defaults'](
-            'makina-states.cloud.lxc', {
-                'dnsservers': ['8.8.8.8', '4.4.4.4'],
-                'defaults': {
-                    'default_container': default_container,
-                    'autostart': True,
-                    'snapshot': default_snapshot,
-                    'size': None,  # via profile
-                    'profile': 'medium',
-                    'profile_type': dptype,
-                    'gateway': '10.5.0.1',
-                    'mode': cloudSettings['mode'],
-                    'ssh_gateway': cloudSettings['ssh_gateway'],
-                    'ssh_gateway_password': cloudSettings[
-                        'ssh_gateway_password'],
-                    'ssh_gateway_user': cloudSettings['ssh_gateway_user'],
-                    'ssh_gateway_key': cloudSettings['ssh_gateway_key'],
-                    'ssh_gateway_port': cloudSettings['ssh_gateway_port'],
-                    'master': cloudSettings['master'],
-                    'master_port': cloudSettings['master_port'],
-                    'image': 'ubuntu',
-                    'network': '10.5.0.0',
-                    'netmask': '16',
-                    'bootsalt_branch': cloudSettings['bootsalt_branch'],
-                    'netmask_full': '255.255.0.0',
-                    'bridge': 'lxcbr1',
-                    'main_bridge': 'br0',
-                    'sudo': True,
-                    'use_bridge': True,
-                    'backing': backing,
-                    'users': ['root', 'sysadmin'],
-                    'ssh_username': 'ubuntu',
-                    'vgname': 'lxc',
-                    'lvname': None,
-                    'lxc_conf': [],
-                    'lxc_conf_unset': [],
-                },
-                'vms': default_vm,
-                'lxc_cloud_profiles': {
-                    'xxxtrem': {'size': '2000g', },
-                    'xxtrem': {'size': '1000g', },
-                    'xtrem': {'size': '500g', },
-                    'xxxlarge': {'size': '100g', },
-                    'xxlarge': {'size': '50g', },
-                    'large': {'size': '20g', },
-                    'medium': {'size': '10g', },
-                    'small': {'size': '5g', },
-                    'xsmall': {'size': '3g', },
-                    'xxsmall': {'size': '1g', },
-                    'xxxsmall': {'size': '500m', },
-                }
-            }
-        )
-        # do not store in cached
-        # registry the whole conf, memory would explode
-        try:
-            vms = lxcSettings.pop('vms')
-        except:
-            vms = OrderedDict()
-        lxcSettings['vms'] = vm_ids = OrderedDict()
-        for i in lxcSettings:
-            if i.startswith('vms.'):
-                del lxcSettings[i]
-        for target in [a for a in vms]:
-            vm_ids.setdefault(target, [])
-            data = vms[target]
-            if data is None:
-                vms[target] = []
-                continue
-            for vmname in data:
-                vm_ids[target].append(vmname)
-        return lxcSettings
-    return _settings()
-
-
-def get_settings_for_vm(target, vm, full=True):
-    '''get per container specific settings
-
-    All the defaults defaults registry settings are redinable here +
-    This is for the moment the only backend of corpus cloud infra.
-    If you want to implement another backend, mimic the dictionnary
-    for this method and also settings.
-
-        Corpus API
-
-        ip
-            do not set it, or use at ure own risk, prefer just to read the
-            value. This is the main ip (private network)
-        aditonnal_ips
-            additionnal ips which will be wired on the main bridge (br0)
-            which is connected to internet.
-            Be aware that you may use manual virtual mac addresses
-            providen by you provider (online, ovh).
-            This is a list of mappings {ip: '', mac: '',netmask:''}
-            eg::
-
-                makina-states.cloud.lxc.vms.<target>.<name>.additionnal_ips:
-                  - {'mac': '00:16:3e:01:29:40',
-                     'gateway': None, (default)
-                     'link': 'br0', (default)
-                     'netmask': '32', (default)
-                     'ip': '22.1.4.25'}
-        domains
-            list of domains tied with this host (first is minion id
-            and main domain name, it is automaticly added)
-        full
-            internal boolean to not retrieve some informations to
-            avoid cycles, do not use unless you know what you do.
-        fstab
-            list of fstab entries
-    '''
-    cloudSettings = __salt__['mc_cloud.settings']()
-    _s = __salt__
-    lxcSettings = settings()
-    lxc_defaults = lxcSettings['defaults']
-    master = lxc_defaults['master']
-    # if it is not a distant minion, use private gateway ip
-    if __grains__['id'] == target:
-        master = lxc_defaults['gateway']
-    # filter dicts and overiddes
-    lxc_data = _s['mc_utils.defaults'](
-        'makina-states.cloud.lxc.vms.{0}.{1}'.format(target, vm),
-        {})
-    if not lxc_data:
-        plxc_data = _s['mc_utils.defaults'](
-            'makina-states.cloud.lxc.vms.{0}'.format(target), {})
-        if plxc_data:
-            lxc_data = plxc_data.get(vm, {})
-    lxc_data.setdefault('master', master)
-    lxc_data['password'] = _s[
-        'mc_cloud_compute_node.find_password_for_vm'
-    ](target, 'lxc', vm, default=lxc_data.get('password', None))
-    lxc_data.setdefault('master', master)
-    lxc_data.setdefault('ssh_gateway', target)
-    lxc_data['mac'] = _s[
-        'mc_cloud_compute_node.find_mac_for_vm'
-    ](target, 'lxc', vm, default=lxc_data.get('mac', None))
-    # shortcut name for profiles
-    # small -> ms-target-small
-    profile_type = lxc_data.get(
-        'profile_type',
-        lxc_defaults['profile_type'])
-    profile = lxc_data.get('profile',
-                           lxc_defaults['profile'])
-    if (
-        profile in lxcSettings['lxc_cloud_profiles']
-        and 'profile' in lxc_data
-    ):
-        del lxc_data['profile']
-    if 'overlayfs' in profile_type or 'scratch' in profile_type:
-        sprofile = ''
-        lxc_data['backing'] = 'overlayfs'
-    elif 'dir' in profile_type or 'scratch' in profile_type:
-        sprofile = ''
-        lxc_data['backing'] = 'dir'
-    else:
-        sprofile = '-{0}'.format(profile)
-    lxc_data.setdefault(
-        'profile', _s['mc_cloud_controller.gen_id'](
-            'ms-{0}{1}-{2}'.format(
-                target, sprofile, profile_type)))
-    lxc_data.setdefault('name', vm)
-    lxc_data.setdefault('domains', [])
-    if vm not in lxc_data['domains']:
-        lxc_data['domains'].insert(0, vm)
-
-    def _sort_domains(dom):
-        if dom == vm:
-            return '0{0}'.format(dom)
-        else:
-            return '1{0}'.format(dom)
-    lxc_data['domains'].sort(key=_sort_domains)
-    lxc_data.setdefault('mode', lxc_defaults['mode'])
-    lxc_data.setdefault('size', None)
-    lxc_data.setdefault('snapshot', lxc_defaults['snapshot'])
-    if 'mastersalt' in lxc_data.get('mode', 'salt'):
-        default_args = cloudSettings['bootsalt_mastersalt_args']
-    else:
-        default_args = cloudSettings['bootsalt_args']
-    if 'mastersalt' in lxc_data.get('mode', 'salt'):
-        script = cloudSettings['script']
-    else:
-        script = cloudSettings['script']
-    lxc_data['script'] = lxc_data.get('script', script)
-    lxc_data['script_args'] = lxc_data.get('script_args',
-                                           default_args)
-    branch = lxc_data.get('bootsalt_branch',
-                          cloudSettings['bootsalt_branch'])
-    if (
-        not '-b' in lxc_data['script_args']
-        or not '--branch' in lxc_data['script_args']
-    ):
-        lxc_data['script_args'] += ' -b {0}'.format(branch)
-    d_ct = None
-    if not 'scratch' in profile_type:
-        d_ct = lxc_defaults['default_container']
-    lxc_data.setdefault('from_container', d_ct)
-    lxc_data.setdefault('ssh_gateway', None)
-    lxc_data.setdefault('bootstrap_shell', 'bash')
-    lxc_data = saltapi.complete_gateway(lxc_data, lxcSettings)
-    for i in ['bootsalt_branch',
-              "master", "master_port", "autostart",
-              'size', 'image', 'main_bridge',
-              'bridge', 'network', 'netmask',
-              'gateway', 'dnsservers',
-              'backing', 'vgname', 'lvname',
-              'ssh_gateway_password',
-              'ssh_gateway_user',
-              'ssh_gateway_key',
-              'ssh_gateway_port',
-              "gateway",
-              "fstab",
-              'vgname', 'ssh_username', 'users', 'sudo',
-              'lxc_conf_unset', 'lxc_conf']:
-        lxc_data.setdefault(
-            i, lxc_defaults.get(i,
-                                lxcSettings.get(i, None)))
-    if ('overlayfs' in profile_type) or ('dir' in profile_type):
-        for k in ['lvname', 'vgname', 'size']:
-            if k in lxc_data:
-                del lxc_data[k]
-    # at this stage, only get already allocated ips
-    lxc_data['ip'] = _s['mc_cloud_compute_node.find_ip_for_vm'](
-        target, vm,
-        virt_type='lxc',
-        network=lxc_data['network'],
-        netmask=lxc_data['netmask'],
-        default=lxc_data.get('ip'))
-    if full:
-        lxc_data['ssh_reverse_proxy_port'] = __salt__[
-            'mc_cloud_compute_node.get_ssh_port'](vm=vm, target=target)
-        lxc_data['snmp_reverse_proxy_port'] = __salt__[
-            'mc_cloud_compute_node.get_snmp_port'](vm=vm, target=target)
-
-    additional_ips = lxc_data.setdefault('additional_ips', [])
-    for ix, ipinfos in enumerate(additional_ips):
-        k = '{0}_{1}_{2}_aip_fo'.format(target, vm, ix)
-        mac = ipinfos.setdefault('mac', None)
-        if not mac:
-            mac = __salt__['mc_cloud_compute_node.get_conf_for_vm'](
-                target, 'lxc', vm, k, default=mac)
-        if not mac:
-            __salt__['mc_cloud_compute_node.set_conf_for_vm'](
-                target, 'lxc', vm,
-                k, __salt__['mc_cloud_compute_node.gen_mac']())
-        ipinfos['mac'] = mac
-        ipinfos.setdefault('gateway', None)
-        if ipinfos['gateway']:
-            lxc_data['gateway'] = None
-        ipinfos.setdefault('netmask', '32')
-        ipinfos.setdefault('link', 'br0')
-    return lxc_data
-
-
-def dump():
-    return mc_states.utils.dump(__salt__,__name)
-
-
-def vm_ext_pillar(vm, target, **kw):
-    '''get per container specific settings
-
-    All the defaults defaults registry settings are redinable here +
-    This is for the moment the only backend of corpus cloud infra.
-    If you want to implement another backend, mimic the dictionnary
-    for this method and also settings.
-
-        Corpus API
-
-        ip
-            do not set it, or use at ure own risk, prefer just to read the
-            value. This is the main ip (private network)
-        aditonnal_ips
-            additionnal ips which will be wired on the main bridge (br0)
-            which is connected to internet.
-            Be aware that you may use manual virtual mac addresses
-            providen by you provider (online, ovh).
-            This is a list of mappings {ip: '', mac: '',netmask:''}
-            eg::
-
-                makina-states.cloud.lxc.vms.<target>.<name>.additionnal_ips:
-                  - {'mac': '00:16:3e:01:29:40',
-                     'gateway': None, (default)
-                     'link': 'br0', (default)
-                     'netmask': '32', (default)
-                     'ip': '22.1.4.25'}
-        domains
-            list of domains tied with this host (first is minion id
-            and main domain name, it is automaticly added)
-        fstab
-            list of fstab entries
+            The settings are not stored here for obvious performance reasons
     '''
     _s = __salt__
-    _g = __grains__
-    try:
-        lxc_data = copy.deepcopy(
-            _s['mc_pillar.query']('cloud_vm_attrs').get(vm, {})
-        )
-    except Exception:
-        lxc_data = {}
-    cloudSettings = _s['mc_cloud.settings']()
-    lxcSettings = kw.get('default_settings', settings())
-    lxc_defaults = lxcSettings['defaults']
-    master = lxc_defaults['master']
-    # if it is not a distant minion, use private gateway ip
-    if _g['id'] == target:
-        master = lxc_defaults['gateway']
-    # filter dicts and overiddes
-    lxc_data.setdefault('master', master)
-    lxc_data['password'] = _s[
-        'mc_cloud_compute_node.find_password_for_vm'
-    ](target, 'lxc', vm, default=lxc_data.get('password', None))
-    lxc_data.setdefault('master', master)
-    lxc_data.setdefault('ssh_gateway', target)
-    lxc_data['mac'] = _s[
-        'mc_cloud_compute_node.find_mac_for_vm'
-    ](target, 'lxc', vm, default=lxc_data.get('mac', None))
-    # shortcut name for profiles
-    # small -> ms-target-small
-    profile_type = lxc_data.get(
-        'profile_type',
-        lxc_defaults['profile_type'])
-    profile = lxc_data.get('profile',
-                           lxc_defaults['profile'])
-    if (
-        profile in lxcSettings['lxc_cloud_profiles']
-        and 'profile' in lxc_data
-    ):
-        del lxc_data['profile']
-    if 'overlayfs' in profile_type or 'scratch' in profile_type:
-        sprofile = ''
-        lxc_data['backing'] = 'overlayfs'
-    elif 'dir' in profile_type or 'scratch' in profile_type:
-        sprofile = ''
-        lxc_data['backing'] = 'dir'
-    else:
-        sprofile = '-{0}'.format(profile)
-    lxc_data.setdefault(
-        'profile', _s['mc_cloud_controller.gen_id'](
-            'ms-{0}{1}-{2}'.format(
-                target, sprofile, profile_type)))
-    lxc_data.setdefault('name', vm)
-    lxc_data.setdefault('domains', [])
-    if vm not in lxc_data['domains']:
-        lxc_data['domains'].insert(0, vm)
-
-    def _sort_domains(dom):
-        if dom == vm:
-            return '0{0}'.format(dom)
-        else:
-            return '1{0}'.format(dom)
-    lxc_data['domains'].sort(key=_sort_domains)
-    lxc_data.setdefault('mode', lxc_defaults['mode'])
-    lxc_data.setdefault('size', None)
-    lxc_data.setdefault('snapshot', lxc_defaults['snapshot'])
-    if 'mastersalt' in lxc_data.get('mode', 'salt'):
-        default_args = cloudSettings['bootsalt_mastersalt_args']
-    else:
-        default_args = cloudSettings['bootsalt_args']
-    if 'mastersalt' in lxc_data.get('mode', 'salt'):
-        script = cloudSettings['script']
-    else:
-        script = cloudSettings['script']
-    lxc_data['script'] = lxc_data.get('script', script)
-    lxc_data['script_args'] = lxc_data.get('script_args',
-                                           default_args)
-    branch = lxc_data.get('bootsalt_branch',
-                          cloudSettings['bootsalt_branch'])
-    if (
-        '-b' not in lxc_data['script_args']
-        or '--branch' not in lxc_data['script_args']
-    ):
-        lxc_data['script_args'] += ' -b {0}'.format(branch)
-    d_ct = None
-    if 'scratch' not in profile_type:
-        d_ct = lxc_defaults['default_container']
-    lxc_data.setdefault('from_container', d_ct)
-    lxc_data.setdefault('ssh_gateway', None)
-    lxc_data.setdefault('bootstrap_shell', 'bash')
-    lxc_data = saltapi.complete_gateway(lxc_data, lxcSettings)
-    for i in ['bootsalt_branch',
-              "master", "master_port", "autostart",
-              'size', 'image', 'main_bridge',
-              'bridge', 'network', 'netmask',
-              'gateway', 'dnsservers',
-              'backing', 'vgname', 'lvname',
-              'ssh_gateway_password',
-              'ssh_gateway_user',
-              'ssh_gateway_key',
-              'ssh_gateway_port',
-              "gateway",
-              "fstab",
-              'vgname', 'ssh_username', 'users', 'sudo',
-              'lxc_conf_unset', 'lxc_conf']:
-        lxc_data.setdefault(
-            i, lxc_defaults.get(i,
-                                lxcSettings.get(i, None)))
-    if ('overlayfs' in profile_type) or ('dir' in profile_type):
-        for k in ['lvname', 'vgname', 'size']:
-            if k in lxc_data:
-                del lxc_data[k]
-    # at this stage, only get already allocated ips
-    lxc_data['ip'] = _s['mc_cloud_compute_node.find_ip_for_vm'](
-        target, vm,
-        virt_type='lxc',
-        network=lxc_data['network'],
-        netmask=lxc_data['netmask'],
-        default=lxc_data.get('ip'))
-    lxc_data['ssh_reverse_proxy_port'] = _s[
-        'mc_cloud_compute_node.get_ssh_port'](vm=vm, target=target)
-    lxc_data['snmp_reverse_proxy_port'] = _s[
-        'mc_cloud_compute_node.get_snmp_port'](vm=vm, target=target)
-
-    additional_ips = lxc_data.setdefault('additional_ips', [])
-    for ix, ipinfos in enumerate(additional_ips):
-        k = '{0}_{1}_{2}_aip_fo'.format(target, vm, ix)
-        mac = ipinfos.setdefault('mac', None)
-        if not mac:
-            mac = _s['mc_cloud_compute_node.get_conf_for_vm'](
-                target, 'lxc', vm, k, default=mac)
-        if not mac:
-            _s['mc_cloud_compute_node.set_conf_for_vm'](
-                target, 'lxc', vm,
-                k, _s['mc_cloud_compute_node.gen_mac']())
-        ipinfos['mac'] = mac
-        ipinfos.setdefault('gateway', None)
-        if ipinfos['gateway']:
-            lxc_data['gateway'] = None
-        ipinfos.setdefault('netmask', '32')
-        ipinfos.setdefault('link', 'br0')
-    return lxc_data
-
-
-def ext_pillar(id_, *args, **kw):
-    '''Lxc registry
-
-    TODO:
-    This may be needed to be database backended in the future.
-    As well, we may need iterator loops inside jinja templates
-    to not eat that much memory loading large datasets.
-
-    makina-states.services.cloud.lxc
-        The settings of lxc containers that are meaningful on the
-        cloud controller
-
-    cloud defaults (makina-states.services.cloud.lxc)
-        defaults settings to provision lxc containers
-        Those are all redefinable at each container level
-
-        LXC API:
-
-        mode
-            (salt (default) or mastersalt)
-
-        ssh_gateway
-            ssh gateway info
-        ssh_gateway_port
-            ssh gateway info
-        ssh_gateway_user
-            ssh gateway info
-        ssh_gateway_key
-            ssh gateway info
-        size
-            default filesystem size for container on lvm
-            None
-        default_container
-            default image
-        gateway
-            10.5.0.1
-        master
-            master to uplink the container to
-            None
-        master_port
-            '4506'
-        image
-            LXC template to use
-            'ubuntu'
-        network
-            '10.5.0.0'
-        netmask
-            '16'
-        netmask_full
-            '255.255.0.0'
-        autostart
-            lxc is autostarted
-        profile
-            default size profile to use (medium) (apply only to lvm)
-        profile_type
-            default profile type to use (lvm)
-
-                lvm
-                    lvm backend from default container
-                lvm-scratch
-                    lvm backend from default lxc template
-                dir
-                    dir backend from default container
-                dir-scratch
-                    dir backend from default lxc template
-
-        bridge
-            we install via states a bridge in 10.5/16 lxcbr1)
-            'lxcbr1'
-        sudo
-            True
-        use_bridge
-            True
-        backing
-            (lvm, overlayfs, dir, brtfs) 'lvm'
-        users
-            ['root', 'sysadmin']
-        ssh_username
-            'ubuntu'
-        vgname
-            'data'
-        lvname
-            'data'
-        lxc_conf
-            []
-        lxc_conf_unset'
-            []
-    vms
-        List of containers ids classified by host ids::
-
-            (Mapping of {hostid: [vmid]})
-
-        The settings are not stored here for obvious performance reasons
-    '''
-    def _settings():
-        _s = __salt__
-        conf = _s['mc_pillar.get_configuration'](id_)
-        try:
-            extdata = copy.deepcopy(
-                _s['mc_pillar.query']('cloud_settings').get('lxc', {})
-            )
-        except KeyError:
-            log.warning('No cloud_settings section in database')
-            extdata = {}
-        cloudSettings = _s['mc_cloud.settings']()
-        imgSettings = _s['mc_cloud_images.settings']()
-        default_container = [a for a in imgSettings['lxc']['images']][0]
-        # no lvm on devhost
-        # nor cron sync
-        # dptype = 'lvm'
-        # backing = 'lvm'
-        dptype = 'dir'
-        backing = 'dir'
-        is_devhost = os.path.exists('/root/vagrant/provision_settings.sh')
-        default_snapshot = False
-        if is_devhost:
-            default_snapshot = True
-            backing = dptype = 'overlayfs'
-            # backing = dptype = 'dir'
-        lxcSettings = _s['mc_utils.dictupdate']({
-            'dnsservers': ['8.8.8.8', '4.4.4.4'],
+    imgSettings = _s['mc_cloud_images.default_settings']()
+    default_container = [a for a in imgSettings['lxc']['images']][0]
+    dptype = 'dir'
+    backing = 'dir'
+    if _s['mc_cloud_vm.is_devhost']():
+        backing = dptype = 'overlayfs'
+    vmSettings = _s['mc_utils.dictupdate'](
+        _s['mc_cloud_vm.default_settings'](), {
             'defaults': {
                 'default_container': default_container,
-                'autostart': True,
-                'snapshot': default_snapshot,
-                'size': None,  # via profile
                 'profile': 'medium',
                 'profile_type': dptype,
+                #
                 'gateway': '10.5.0.1',
-                'mode': cloudSettings['mode'],
-                'ssh_gateway': cloudSettings['ssh_gateway'],
-                'ssh_gateway_password': cloudSettings[
-                    'ssh_gateway_password'],
-                'ssh_gateway_user': cloudSettings['ssh_gateway_user'],
-                'ssh_gateway_key': cloudSettings['ssh_gateway_key'],
-                'ssh_gateway_port': cloudSettings['ssh_gateway_port'],
-                'master': cloudSettings['master'],
-                'master_port': cloudSettings['master_port'],
-                'image': 'ubuntu',
                 'network': '10.5.0.0',
-                'additional_ips': [],
-                'domains': [id_],
-                'netmask': '16',
-                'bootsalt_branch': cloudSettings['bootsalt_branch'],
-                'netmask_full': '255.255.0.0',
                 'bridge': 'lxcbr1',
-                'main_bridge': 'br0',
-                'sudo': True,
-                'use_bridge': True,
+                #
                 'backing': backing,
-                'users': ['root', 'sysadmin'],
-                'ssh_username': 'ubuntu',
                 'vgname': 'lxc',
                 'lvname': None,
+                #
                 'lxc_conf': [],
-                'lxc_conf_unset': [],
+                'lxc_conf_unset': []
             },
             'lxc_cloud_profiles': {
                 'xxxtrem': {'size': '2000g'},
@@ -783,33 +151,109 @@ def ext_pillar(id_, *args, **kw):
                 'small': {'size': '5g'},
                 'xsmall': {'size': '3g'},
                 'xxsmall': {'size': '1g'},
-                'xxxsmall': {'size': '500m'},
+                'xxxsmall': {'size': '500m'}
             }
-        }, extdata)
-        lxcSettings['vms'] = vm_ids = OrderedDict()
-        for i in lxcSettings:
-            if i.startswith('vms.'):
-                del lxcSettings[i]
-        vms = _s[
-            'mc_cloud_compute_node.get_cloud_vms_conf'
-        ]().get('lxc', {})
-        lxc_vms = {}
-        for target, tdata in vms.items():
-            vm_ids.setdefault(target, [])
-            tdata = vms[target]
-            if tdata is None:
-                vms[target] = []
-                continue
-            for vmname in tdata:
-                vm_ids[target].append(vmname)
-                lxc_vms[vmname] = target
-        if id_ in lxc_vms:
-            lxcSettings = vm_ext_pillar(
-                id_, lxc_vms[id_], default_settings=lxcSettings)
-        elif not conf.get('cloud_master', False):
-                lxcSettings = {}
-        lxcSettings = _s['mc_utils.format_resolve'](lxcSettings)
-        _p = 'makina-states.cloud.lxc'
-        return {_p: lxcSettings}
-    return _settings()
+        }
+    )
+    return vmSettings
+
+
+def settings():
+    '''Lxc registry
+
+    '''
+    _s = __salt__
+    id_ = __grains__['id']
+    cloudSettings = _s['mc_cloud.settings']()
+    imgSettings = _s['mc_cloud_images.settings']()
+    default_container = [a for a in imgSettings['lxc']['images']][0]
+    backing = dptype = 'dir'
+    if _s['mc_cloud_vm.is_devhost']():
+        backing = dptype = 'overlayfs'
+    additionnal_defaults = {'profile_type': dptype,
+                            'default_container': default_container,
+                            'backing': backing}
+    vtSettings = _s['mc_utils.defaults'](
+        PREFIX,
+        _s['mc_cloud_vm.mangle_default_settings'](
+            id_,
+            cloudSettings,
+            default_settings,
+            additionnal_defaults=additionnal_defaults))
+    # do not store in cached
+    # registry the whole conf, memory would explode
+    try:
+        vms = vtSettings.pop('vms')
+    except:
+        vms = OrderedDict()
+    vtSettings['vms'] = vm_ids = OrderedDict()
+    for i in vtSettings:
+        if i.startswith('vms.'):
+            del vtSettings[i]
+    for target in [a for a in vms]:
+        vm_ids.setdefault(target, [])
+        data = vms[target]
+        if data is None:
+            vms[target] = []
+            continue
+        for vmname in data:
+            vm_ids[target].append(vmname)
+    return vtSettings
+
+
+def get_settings_for_vm(target, vm, vmSettings=None, cloudSettings=None, **kw):
+    '''
+    Get per LXC container specific settings
+
+        fstab
+            list of fstab entries
+    '''
+    _s = __salt__
+    _g = __grains__
+    vm_data = _s['mc_pillar.get_global_clouf_conf'](
+        'cloud_vm_attrs', vm)
+    if vmSettings is None:
+        vmSettings = settings()
+    if cloudSettings is None:
+        cloudSettings = _s['mc_cloud.settings']()
+    vm_defaults = {'default_container': None,
+                   'lvname': None,
+                   'fstab': None,
+                   'lxc_conf': None,
+                   'lxc_conf_unset': None}
+    vm_data = _s['mc_cloud_vm.default_settings_for_vm'](
+        target, VT, vm, cloudSettings, vmSettings, vm_defaults, vm_data
+    )
+    if ('overlayfs' in vm_data['backing']) or ('dir' in vm_data['backing']):
+        for k in ['lvname', 'vgname', 'size']:
+            if k in vm_data:
+                del vm_data[k]
+    return vm_data
+
+
+def vm_extpillar(vm, target, vmSettings=None, cloudSettings=None, **kw):
+    '''
+    Get specific settings for a container
+    '''
+    return {'{0}.vms.{1}'.format(PREFIX, vm): get_settings_for_vm(
+        vm, target, cloudSettings=cloudSettings, vmSettings=vmSettings, **kw)}
+
+
+def ext_pillar(id_, *args, **kw):
+    '''
+    LXC extpillar
+    '''
+    _s = __salt__
+    imgSettings = _s['mc_cloud_images.settings']()
+    default_container = [a for a in imgSettings[VT]['images']][0]
+    additionnal_defaults = {'default_container': default_container}
+    if _s['mc_cloud_vm.is_devhost']():
+        additionnal_defaults[
+            'backing'
+        ] = additionnal_defaults[
+            'profile_type'] = 'overlayfs'
+    # any additionnal VT specific settings
+    return _s['mc_cloud_vm.vt_extpillar'](
+        id_, PREFIX, VT, default_settings,  vm_extpillar,
+        additionnal_defaults=additionnal_defaults)
 # vim:set et sts=4 ts=4 tw=80:
