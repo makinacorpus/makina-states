@@ -18,19 +18,7 @@ import logging
 
 __name = 'cloud'
 log = logging.getLogger(__name__)
-
-
-def is_vm():
-    is_proxied = False
-    gr = 'makina-states.cloud.is.vm'
-    try:
-        with open('/etc/mastersalt/grains') as fic:
-            is_proxied = bool(yaml.load(fic).get(gr))
-    except Exception:
-        pass
-    if not is_proxied:
-        is_proxied = __salt__['mc_utils.get'](gr)
-    return is_proxied
+PREFIX = 'makina-states.cloud'
 
 
 def default_settings():
@@ -138,6 +126,11 @@ def default_settings():
         'saltify': True,
         'lxc': False,
         'kvm': False,
+        'is': {
+            'compute_node': False,
+            'vm': False,
+            'controller': False,
+        },
         'lxc.defaults.backing': 'dir'
     }
     return data
@@ -175,19 +168,104 @@ def extpillar_settings(id_=None, *args, **kw):
     return data
 
 
+def is_a_vm(id_):
+    _s = __salt__
+    vms = _s['mc_cloud_compute_node.get_all_vms']()
+    if id_ in vms:
+        return True
+    return False
+
+
+def is_a_compute_node(id_):
+    _s = __salt__
+    targets = _s['mc_cloud_compute_node.get_all_targets']()
+    if id_ in targets:
+        return True
+    return False
+
+
+def is_a_controller(id_):
+    _s = __salt__
+    conf = _s['mc_pillar.get_configuration'](id_)
+    if (
+        (__opts__['id'] == id_)
+        or conf.get('cloud_master', False)
+    ):
+        return True
+    return False
+
+
 def ext_pillar(id_, *args, **kw):
     '''
     makina-states cloud extpillar
     '''
+    data = {}
     _s = __salt__
-    _o = __opts__
-    settings = extpillar_settings(id_)
-    return {_p: data}
+    extdata = extpillar_settings(id_)
+    vms = _s['mc_cloud_compute_node.get_all_vms']()
+    targets = _s['mc_cloud_compute_node.get_all_targets']()
+    if is_a_vm(id_):
+        extdata['is']['vm'] = True
+        vmvt = vms[id_]['vt']
+        extdata['is']['{0}_vm'.format(vmvt)] = True
+        nodetype_vt = {'lxc': 'lxccontainer',
+                       'docker': 'dockercontainer',
+                       'kvm': 'kvm'}.get(vmvt, None)
+        if nodetype_vt:
+            for pref in [
+                'makina-states.nodetypes.is',
+                'makina-states.nodetypes.has'
+            ]:
+                spref = '{0}.{1}'.format(pref, nodetype_vt)
+                data[spref] = True
+    if is_a_compute_node(id_):
+        extdata['is']['compute_node'] = True
+        for i in targets[id_]['vts']:
+            extdata['is']['{0}_compute_node'.format(i)] = True
+    if any([
+        extdata['is']['controller'],
+        extdata['is']['compute_node']
+    ]):
+        data.update(
+            _s['mc_cloud_compute_node.ext_pillar'](id_)
+        )
+    if is_a_controller(id_):
+        extdata['is']['controller'] = True
+    # if any of vm/computenode/controller
+    # expose global cloud conf
+    if any(extdata['is'].values()):
+        data[PREFIX] = extdata
+    return data
 
 
 '''
 On node side, after ext pillar is loaded
 '''
+
+
+def is_(typ):
+    is_proxied = False
+    gr = 'makina-states.cloud.is.{0}'.format(typ)
+    try:
+        with open('/etc/mastersalt/grains') as fic:
+            is_proxied = bool(yaml.load(fic).get(gr))
+    except Exception:
+        pass
+    if not is_proxied:
+        is_proxied = __salt__['mc_utils.get'](gr)
+    return is_proxied
+
+
+def is_vm():
+    return is_('vm')
+
+
+def is_compute_node():
+    return is_('compute_node')
+
+
+def is_controller():
+    return is_('controller')
 
 
 def metadata():
@@ -259,7 +337,6 @@ def registry():
             'generic': {'active': False},
             'lxc': {'active': False},
             'kvm': {'active': False},
-            'saltify': {'active': False},
-        })
+            'saltify': {'active': False}})
     return _registry()
 #

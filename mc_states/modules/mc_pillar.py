@@ -2062,10 +2062,9 @@ def get_supervision_objects_defs(id_):
             if vm_parent == host:
                 ssh_host = snmp_host = 'localhost'
                 ext_pillar = __salt__['mc_cloud_vm.extpillar_for'](vm, vt)
-                if vt in ext_pillar:
-                    k = 'makina-states.cloud.{0}.vms.{1}'.format(vt, vm)
-                    if k in ext_pillars.get(vt, {}):
-                        ssh_host = snmp_host = ext_pillars[vt][k]['ip']
+                k = 'makina-states.cloud.{0}.vms.{1}'.format(vt, vm)
+                if k in ext_pillars:
+                    ssh_host = snmp_host = ext_pillar[k]['ip']
             # we can access sshd and snpd on cloud vms
             # thx to special port mappings
             if is_cloud_vm(vm) and (vm_parent != host) and vt in ['lxc']:
@@ -3161,19 +3160,24 @@ def ext_pillar(id_, pillar=None, *args, **kw):
 
 
 def get_global_conf(section, entry):
+    _s = __salt__
     try:
         extdata = copy.deepcopy(
-            _s['mc_pillar.query'](section)
+            _s['mc_pillar.query'](section).get(entry)
         )
         if not extdata:
-            log.warning('No {0} section in global cloud conf:'
-                        ' cloud_setings'.fortmat(entry))
+            if entry not in ['default']:
+                log.warning('No {0} section in global cloud conf:'
+                            ' {1}'.format(entry, section))
+            extdata = {}
     except KeyError:
         log.warning('No {0} section in database'.format(section))
         extdata = {}
+    return extdata
+
 
 def get_global_clouf_conf(entry):
-    return get_global_clouf_conf('cloud_settings', entry)
+    return get_global_conf('cloud_settings', entry)
 
 
 def test():

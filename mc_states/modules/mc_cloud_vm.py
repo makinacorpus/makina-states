@@ -24,13 +24,7 @@ from mc_states.utils import memoize_cache
 __name = 'mc_cloud_vm'
 
 log = logging.getLogger(__name__)
-
-def is_devhost():
-    is_devhost = os.path.exists('/root/vagrant/provision_settings.sh')
-    default_snapshot = False
-    if is_devhost:
-        default_snapshot = True
-    return is_devhost
+PREFIX = 'makina-states.cloud.vms'
 
 
 def default_settings():
@@ -112,7 +106,7 @@ def default_settings():
         'defaults': {
             #
             'image': 'ubuntu',
-            'default_snapshot': _s['mc_cloud_vm.is_devhost'](),
+            'default_snapshot': _s['mc_nodetypes.is_devhost'](),
             'autostart': True,
             #
             'gateway': '127.0.0.1',
@@ -149,38 +143,13 @@ def default_settings():
     return vmSettings
 
 
-def vm_settings(suf='', ttl=60):
-    '''
-    VM cloud related settings
-    THIS IS USED ON THE VM SIDE !
-    '''
-    def _do(suf):
-        reg = __salt__['mc_macros.get_local_registry'](
-            'cloud_vm_settings{0}'.format(suf),
-            registry_format='pack')
-        if 'vmSettings' not in reg:
-            raise ValueError(
-                'Registry not yet configured {0}'.format(
-                    suf))
-        return reg
-    cache_key = 'mc_cloud_vm.vm_settings{0}'.format(suf)
-    return memoize_cache(_do, [suf], {}, cache_key, ttl)
-
-
-def settings(suf='', ttl=60):
-    '''
-    Alias to vm_settings
-    '''
-    return vm_settings(suf=suf, ttl=ttl)
-
-
-def default_settings_for_vm(target,
-                            vt,
-                            vm,
-                            cloudSettings,
-                            vmSettings,
-                            vm_defaults,
-                            vm_data):
+def vm_default_settings(target,
+                        vt,
+                        vm,
+                        cloudSettings,
+                        vmSettings,
+                        vm_defaults,
+                        vm_data):
 
     '''
     Get per VM specific settings
@@ -229,13 +198,12 @@ def default_settings_for_vm(target,
     data = {
         'mac': _s[
             'mc_cloud_compute_node.find_mac_for_vm'
-        ](target, vt, vm, default=vm_data.get('mac', None)),
+        ](vm, default=vm_data.get('mac', None)),
         'name': vm,
         'domains': [vm],
         'password': _s[
             'mc_cloud_compute_node.find_password_for_vm'
-        ](target, vt, vm,
-          default=_s['mc_pillar.get_passwords'](vm)['clear']['root']),
+        ](vm, default=_s['mc_pillar.get_passwords'](vm)['clear']['root']),
         'master': master,
         'master_port': None,
         'autostart': None,
@@ -300,11 +268,10 @@ def default_settings_for_vm(target,
         mac = ipinfos.setdefault('mac', None)
         if not mac:
             mac = _s['mc_cloud_compute_node.get_conf_for_vm'](
-                target, vt, vm, k, default=mac)
+                vm, k, default=mac)
         if not mac:
             _s['mc_cloud_compute_node.set_conf_for_vm'](
-                target, vt, vm,
-                k, _s['mc_cloud_compute_node.gen_mac']())
+                vm, k, _s['mc_cloud_compute_node.gen_mac']())
         ipinfos['mac'] = mac
         ipinfos.setdefault('gateway', None)
         if ipinfos['gateway']:
@@ -314,65 +281,11 @@ def default_settings_for_vm(target,
     return vm_data
 
 
-def expose_pillar(id_, vt, vm_pillar_fun, vtSettings, cloudSettings):
-    _s = __salt__
-    conf = _s['mc_pillar.get_configuration'](id_)
-    vm_ids = vtSettings.setdefault('vms', OrderedDict())
-    non_managed_hosts = _s['mc_pillar.query']('non_managed_hosts')
-    data = OrderedDict()
-    for i in vtSettings:
-        if i.startswith('vms.'):
-            del vtSettings[i]
-    vms = _s[
-        'mc_cloud_compute_node.get_cloud_vms_conf'
-    ]().get(vt, {})
-    vt_vms = {}
-    for target, tdata in vms.items():
-        vm_ids.setdefault(target, [])
-        tdata = vms[target]
-        if tdata is None:
-            vms[target] = []
-            continue
-        for vmname in tdata:
-            vm_ids[target].append(vmname)
-            vt_vms[vmname] = target
-
-    vtSettings = _s['mc_utils.format_resolve'](vtSettings)
-    if id_ not in non_managed_hosts:
-        # expose vm conf to vm
-        if id_ in vt_vms:
-            data['makina-states.cloud.is.vm.{0}'.format(vt)] = True
-            data['makina-states.cloud.is.vm'] = True
-            data.update(vm_pillar_fun(id_, vt_vms[id_],
-                                      cloudSettings=cloudSettings,
-                                      default_settings=vtSettings))
-        # expose to compute node their relative vm configurations
-        if id_ in vms:
-            data['makina-states.cloud.is.compute_node.{0}'.format(vt)] = True
-            data['makina-states.cloud.is.compute_node'] = True
-            for owned_vm in vms[id_]:
-                if (owned_vm not in vt_vms) or (id_ == owned_vm):
-                    continue
-                data.update(vm_pillar_fun(owned_vm, id_,
-                                          cloudSettings=cloudSettings,
-                                          default_settings=vtSettings))
-        # expose global conf to cloud master and cloud nodes
-        if (
-            conf.get('cloud_master', False)
-            or id_ in vms
-            or id_ in vt_vms
-        ):
-            data['makina-states.cloud.{0}'.format(vt)] = vtSettings
-            if not (id_ in vms or id_ in vt_vms):
-                data['makina-states.cloud.vt_vms'] = vt_vms
-    return data
-
-
-def overridable_default_settings(id_=None, cloudSettings):
+def overridable_default_settings(id_, cloudSettings):
     if id_ is None:
         id_ = __grains__['id']
     default_snapshot = False
-    if _s['mc_cloud_vm.is_devhost']():
+    if _s['mc_nodetypes.is_devhost']():
         default_snapshot = True
     data = {'defaults': {'snapshot': default_snapshot,
                          'mode': cloudSettings['mode'],
@@ -394,55 +307,109 @@ def mangle_default_settings(id_,
                             defaults_fun,
                             extdata=None,
                             additionnal_defaults=None):
+    _s = __salt__
     if not additionnal_defaults:
         additionnal_defaults = {}
     if not extdata:
         extdata = None
     data = _s['mc_utils.dictupdate'](
         _s['mc_utils.dictupdate'](
-            defaults_fun(),
+            _s[defaults_fun],
             _s['mc_utils.dictupdate'](
                 _s['mc_cloud_vm.overridable_default_settings'](
                     id_, cloudSettings), additionnal_defaults
             )
-        ), extdata
-    )
+        ), extdata)
     return data
 
 
-def vm_settings_for(vm, ttl=60):
-    '''
-    VM cloud related settings
-    THIS IS USED ON THE COMPUTE NODE SIDE !
-    '''
-    def _do(vm):
-        return vm_settings('_' + vm)
-    cache_key = ('mc_cloud_vm.vm_settings_for'
-                 '{0}').format(vm)
-    return memoize_cache(_do, [vm], {}, cache_key, ttl)
-
-
-def vt_extpillar(id_,
-                 prefix,
-                 vt,
-                 default_settings_fun,
-                 vm_ext_pillar_fun,
-                 additionnal_defaults=None):
-    cloudSettings = _s['mc_cloud.default_settings']()
-    extdata = _s['mc_pillar.get_global_clouf_conf'](vt)
+def vt_extpillar_settings(id_, vt,
+                          default_settings_fun=None,
+                          additionnal_defaults=None):
+    _s = __salt__
+    if not default_settings_fun:
+        default_settings_fun = _s['mc_cloud_{0}.default_settings'.format(vt)]
     if not additionnal_defaults:
         additionnal_defaults = {}
+    extdata = _s['mc_pillar.get_global_clouf_conf'](vt)
+    cloudSettings = _s['mc_cloud.extpillar_settings']()
     vtSettings = _s['mc_cloud_vm.mangle_default_settings'](
         id_,
         cloudSettings,
         default_settings_fun,
         extdata=extdata,
         additionnal_defaults=additionnal_defaults)
-    data = _s['mc_cloud_vm.expose_pillar'](
-        id_, vt, vm_ext_pillar_fun, vtSettings, cloudSettings)
+    return vtSettings
+
+
+def vt_extpillar(id_,
+                 prefix,
+                 vt,
+                 default_settings_fun=None,
+                 vm_extpillar_fun=None,
+                 additionnal_defaults=None):
+    _s = __salt__
+    if not vm_extpillar_fun:
+        vm_extpillar_fun = _s['mc_cloud_{0}.vm_extpillar'.format(vt)]
+    cloudSettings = _s['mc_cloud.extpillar_settings']()
+    vtSettings = vt_extpillar_settings(
+        id_, vt, default_settings_fun=default_settings_fun)
     return {prefix: data}
 
 
 def extpillar_for(vm, vt):
     return __salt__['mc_cloud_{0}.ext_pillar'.format(vt)](vm)
+
+
+def extpillar(id_, *args, **kw):
+    _s = __salt__
+    data = OrderedDict()
+    conf = _s['mc_pillar.get_configuration'](id_)
+    vm_ids = vtSettings.setdefault('vms', OrderedDict())
+    vms = all_vms = _s['mc_cloud_compute_node.get_all_vms']()
+    targets = _s['mc_cloud_compute_node.get_all_targets']()
+    virt_types = []
+    if id_ not in targets and id_ not in vms:
+        return {}
+    if id_ in vms:
+        vt = vms[id_]['virt_type']
+        if vt not in virt_types:
+            virt_types.append(vt)
+    if id_ in targets:
+        vms = targets[id_]['vms']
+        [virt_types.append(i) for i in targets[id_]['virt_types']
+         if i not in virt_types]
+    for vt in virt_types:
+        data['makina-states.cloud.{0}'.format(vt)] = {}
+    for vm, vmdata in vms.items():
+        vmextdata = extpillar_for(vm, vt)
+        vt = vmdata['vt']
+        data['{0}.{1}'.format(PREFIX, vt)] = vm_pillar_fun(
+            id_, vt_vms[id_],
+            cloudSettings=cloudSettings,
+            default_settings=vtSettings)
+
+'''
+Methods usable
+After the pillar has loaded, on the compute node itself
+'''
+
+
+def settings(vt, additionnal_defaults=None):
+    _s = __salt__
+    if additionnal_defaults is None:
+        additionnal_defaults = {}
+    cloudSettings = _s['mc_cloud.settings']()
+    mod = 'mc_cloud_{0}'.format(vt)
+    default_settings_fun = '{0}.default_settings'.format(mod)
+    prefix = 'makina-states.cloud.{0}'.format(vt)
+    data = _s['mc_utils.defaults'](prefix, _s[default_settings_fun]())
+    vtSettings = _s['mc_utils.defaults'](
+        prefix,
+        _s['mc_cloud_vm.mangle_default_settings'](
+            __grains__['id'],
+            cloudSettings,
+            default_settings,
+            additionnal_defaults=additionnal_defaults))
+    return vtSettings
 # vim:set et sts=4 ts=4 tw=81:

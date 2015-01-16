@@ -69,51 +69,11 @@ def default_settings():
                 'network': '10.6.0.0',
                 'bridge': 'kvmbr1',
                 'profile': 'medium',
-                'pools': {'vg': {'type': 'lvm'}},
-            },
-        }
-    )
+                'pools': {'vg': {'type': 'lvm'}}}})
     return vmSettings
 
 
-def settings():
-    '''
-    KVM registry
-    '''
-    _s = __salt__
-    cloudSettings = _s['mc_cloud.settings']()
-    id_ = __grains__['id']
-    # any additionnal VT specific settings
-    additionnal_defaults = {}
-    vtSettings = _s['mc_utils.defaults'](
-        PREFIX,
-        _s['mc_cloud_vm.mangle_default_settings'](
-            id_,
-            cloudSettings,
-            default_settings,
-            additionnal_defaults=additionnal_defaults))
-    # do not store in cached
-    # registry the whole conf, memory would explode
-    try:
-        vms = vtSettings.pop('vms')
-    except:
-        vms = OrderedDict()
-    vtSettings['vms'] = vm_ids = OrderedDict()
-    for i in vtSettings:
-        if i.startswith('vms.'):
-            del vtSettings[i]
-    for target in [a for a in vms]:
-        vm_ids.setdefault(target, [])
-        data = vms[target]
-        if data is None:
-            vms[target] = []
-            continue
-        for vmname in data:
-            vm_ids[target].append(vmname)
-    return vtSettings
-
-
-def get_settings_for_vm(target, vm, vmSettings=None, cloudSettings=None, **kw):
+def vm_extpillar(vm, target, vmSettings=None, cloudSettings=None, **kw):
     '''
     Get per KVM vm specific settings
 
@@ -127,7 +87,7 @@ def get_settings_for_vm(target, vm, vmSettings=None, cloudSettings=None, **kw):
     if cloudSettings is None:
         cloudSettings = _s['mc_cloud.settings']()
     vm_defaults = {'pools': None}
-    vm_data = _s['mc_cloud_vm.default_settings_for_vm'](
+    vm_data = _s['mc_cloud_vm.vm_default_settings'](
         target, VT, vm, cloudSettings, vmSettings, vm_defaults, vm_data
     )
     if ('overlayfs' in vm_data['backing']) or ('dir' in vm_data['backing']):
@@ -137,15 +97,7 @@ def get_settings_for_vm(target, vm, vmSettings=None, cloudSettings=None, **kw):
     return vm_data
 
 
-def vm_extpillar(vm, target, vmSettings=None, cloudSettings=None, **kw):
-    '''
-    Get specific settings for a vm
-    '''
-    return {'{0}.vms.{1}'.format(PREFIX, vm): get_settings_for_vm(
-        vm, target, cloudSettings=cloudSettings, vmSettings=vmSettings, **kw)}
-
-
-def ext_pillar(id_, *args, **kw):
+def vt_extpillar(id_, *args, **kw):
     '''
     KVM extpillar
     '''
@@ -153,6 +105,22 @@ def ext_pillar(id_, *args, **kw):
     # any additionnal VT specific settings
     additionnal_defaults = {}
     return _s['mc_cloud_vm.vt_extpillar'](
-        id_, PREFIX, VT, default_settings,  vm_extpillar,
-        additionnal_defaults=additionnal_defaults)
+        id_, PREFIX, VT, additionnal_defaults=additionnal_defaults)
+
+
+'''
+After pillar has been loaded, on node side
+'''
+
+
+def settings():
+    '''
+    KVM registry
+    '''
+    _s = __salt__
+    # any additionnal VT specific settings
+    additionnal_defaults = {}
+    vtSettings = _s['mc_cloud_vm.settings'](
+        VT, additionnal_defaults=additionnal_defaults)
+    return vtSettings
 # vim:set et sts=4 ts=4 tw=80:
