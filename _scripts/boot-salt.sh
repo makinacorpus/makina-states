@@ -1254,17 +1254,15 @@ recap() {
 }
 
 is_apt_installed() {
-    if [ "x$(dpkg-query -s ${@} 2>/dev/null|egrep "^Status:"|grep installed|wc -l|${SED} -e "s/ //g")"  = "x0" ];then
-        echo "no"
-    else
-        echo "yes"
+    if ! dpkg-query -s ${@} 2>/dev/null|egrep "^Status:"|grep -q installed;then
+        return 1
     fi
 }
 
 lazy_apt_get_install() {
     to_install=""
     for i in ${@};do
-         if [ "x$(is_apt_installed ${i})" != "xyes" ];then
+         if ! is_apt_installed ${i};then
              to_install="${to_install} ${i}"
          fi
     done
