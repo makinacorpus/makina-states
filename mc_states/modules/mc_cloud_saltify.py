@@ -163,6 +163,19 @@ def target_ext_pillar(name, c_data=None):
     return c_data
 
 
+def _add_host(_s, done_hosts, rdata, host):
+    done_hosts.append(host)
+    rdata[host] = target_ext_pillar(host, {
+        'password': _s['mc_pillar.get_passwords'](
+            host
+        )['clear']['root'],
+        'ssh_username': 'root'})
+    rdata[host] = _s['mc_utils.dictupdate'](
+        rdata[host],
+        _s['mc_pillar.get_cloud_conf_for_cn'](
+            host).get('salfify', {}))
+
+
 def ext_pillar(id_, ttl=60, *args, **kw):
     def _do(id_):
         _s = __salt__
@@ -172,51 +185,27 @@ def ext_pillar(id_, ttl=60, *args, **kw):
         supported_vts = _s['mc_cloud_compute_node.get_vts']()
         done_hosts = []
         ivars = _s['mc_pillar.get_db_infrastructure_maps']()
-        nmh = _s['mc_pillar.query']( 'non_managed_hosts')
+        nmh = _s['mc_pillar.query']('non_managed_hosts')
         for vt, targets in _s['mc_pillar.query']('vms').items():
             if vt not in supported_vts:
                 continue
-            for compute_node, vms in targets.items():
+            for host, vms in targets.items():
                 if any([
-                    (compute_node in done_hosts),
-                    (compute_node in nmh)
+                    (host in done_hosts),
+                    (host in nmh)
                 ]):
                     continue
-                done_hosts.append(compute_node)
-                rdata[compute_node] = target_ext_pillar(compute_node, {
-                    'password': _s['mc_pillar.get_passwords'](
-                        compute_node
-                    )['clear']['root'],
-                    'ssh_username': 'root'})
-        for vt, targets in _s['mc_pillar.query']('vms').items():
-            if vt not in supported_vts:
+                _add_host(_s, done_hosts, rdata, host)
+        for host, data in ivars['standalone_hosts'].items():
+            if any([
+                (host in done_hosts),
+                (host in nmh)
+            ]):
                 continue
-            for compute_node, vms in targets.items():
-                if any([
-                    (compute_node in done_hosts),
-                    (compute_node in nmh)
-                ]):
-                    continue
-                done_hosts.append(compute_node)
-                rdata[compute_node] = target_ext_pillar(
-                    compute_node, {
-                        'password': _s[
-                            'mc_pillar.get_passwords'](
-                                compute_node)['clear']['root'],
-                        'ssh_username': 'root'})
-            for host, data in ivars['standalone_hosts'].items():
-                if any([
-                    (compute_node in done_hosts),
-                    (compute_node in nmh)
-                ]):
-                    continue
-                done_hosts.append(compute_node)
-                rdata[host] = target_ext_pillar(
-                    host, {'ssh_username': data.get(
-                        'ssh_username', 'root')})
-                for k, val in data.items():
-                    if val and val not in ['ssh_username']:
-                        rdata[host][k] = val
+            _add_host(_s, done_hosts, rdata, host)
+            for k, val in data.items():
+                if val and val not in ['ssh_username']:
+                    rdata[host][k] = val
         data = default_settings(_s['mc_cloud.extpillar_settings']())
         data['targets'] = rdata
         return {PREFIX: data}
