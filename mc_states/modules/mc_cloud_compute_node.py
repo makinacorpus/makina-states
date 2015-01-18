@@ -838,6 +838,7 @@ def ext_pillar(id_, prefixed=True, *args, **kw):
     compute node extpillar
     '''
     _s = __salt__
+    expose = False
     if _s['mc_cloud.is_a_compute_node'](id_):
         expose = True
     if not expose:
