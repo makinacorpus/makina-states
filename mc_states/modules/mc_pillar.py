@@ -3,6 +3,7 @@
 __docformat__ = 'restructuredtext en'
 import random
 import re
+import inspect
 import os
 import cProfile, pstats
 import json
@@ -28,6 +29,17 @@ log = logging.getLogger(__name__)
 
 DOMAIN_PATTERN = '(@{0})|({0}\\.?)$'
 DOTTED_DOMAIN_PATTERN = '((^{0}\\.?$)|(\\.(@{0})|({0}\\.?)))$'
+
+
+def mastersalt_minion_id():
+    return __salt__['mc_utils.local_minion_id']()
+
+
+def mmid():
+    '''
+    Alias
+    '''
+    return mastersalt_minion_id()
 
 
 def yaml_load(*args, **kw3):
@@ -1993,7 +2005,7 @@ def get_supervision_objects_defs(id_):
             hdata.setdefault('nic_card', ['eth0'])
             if vts:
                 hdata['memory_mode'] = 'large'
-            for vt in __salt__['mc_cloud_compute_node.get_vts']():
+            for vt in __salt__['mc_cloud_compute_node.get_all_vts']():
                 attrs['vars.{0}'.format(vt)] = vt in vts
                 if vt in vts:
                     [groups.append(i)
@@ -2069,11 +2081,9 @@ def get_supervision_objects_defs(id_):
             # thx to special port mappings
             if is_cloud_vm(vm) and (vm_parent != host) and vt in ['lxc']:
                 ssh_port = (
-                    __salt__['mc_cloud_compute_node.get_ssh_port'](
-                        vm, host))
+                    __salt__['mc_cloud_compute_node.get_ssh_port'](vm))
                 snmp_port = (
-                    __salt__['mc_cloud_compute_node.get_snmp_port'](
-                        vm, host))
+                    __salt__['mc_cloud_compute_node.get_snmp_port'](vm))
             no_common_checks = vdata.get('no_common_checks', False)
             if tipaddr == host_ip and vt in ['lxc']:
                 no_common_checks = True
@@ -2823,142 +2833,6 @@ def get_custom_pillar_conf(id_):
     return rdata
 
 
-def get_cloudmaster_conf(id_):
-    gconf = get_configuration(id_)
-    if not gconf.get('cloud_master', False):
-        return {}
-    gconf = get_configuration(id_)
-    pref = 'makina-states.cloud'
-    rdata = {
-        pref + '.generic': True,
-        pref + '.master': gconf['mastersaltdn'],
-        pref + '.master_port': gconf['mastersalt_port'],
-        pref + '.saltify': True,
-        pref + '.lxc': gconf['cloud_control_lxc'],
-        pref + '.kvm': gconf['cloud_control_kvm'],
-        pref + '.lxc.defaults.backing': 'dir'}
-    for i in [get_cloud_vm_conf,
-              get_cloud_compute_node_conf]:
-        rdata.update(i(id_))
-    return rdata
-
-
-def get_cloud_vm_conf(id_):
-    """DEPRECATED"""
-    rdata = {}
-    cloud_vm_attrs = __salt__['mc_pillar.query']('cloud_vm_attrs')
-    nvars  = __salt__['mc_pillar.load_network_infrastructure']()
-    supported_vts = __salt__['mc_cloud_compute_node.get_vts'](
-        supported=True)
-    for vt, targets in __salt__['mc_pillar.query']('vms').items():
-        if vt not in supported_vts:
-            continue
-        for compute_node, vms in targets.items():
-            if compute_node in __salt__['mc_pillar.query']('non_managed_hosts'):
-                continue
-            k = ('makina-states.cloud.{0}.'
-                 'vms.{1}').format(vt, compute_node)
-            pvms = rdata.setdefault(k, {})
-            for vm in vms:
-                if vm in __salt__['mc_pillar.query']('non_managed_hosts'):
-                    continue
-                dvm = pvms.setdefault(vm, {})
-                metadata = cloud_vm_attrs.get(vm, {})
-                if 'password' not in metadata:
-                    metadata.setdefault(
-                        'password',
-                        __salt__[
-                            'mc_pillar.get_passwords'
-                        ](vm)['clear']['root'])
-                dvm.update(metadata)
-    return rdata
-
-
-def get_cloud_compute_node_conf(id_):
-    rdata = {}
-    ms_vars = get_makina_states_variables(id_)
-    # detect computes nodes by searching for related vms configurations
-    supported_vts = __salt__['mc_cloud_compute_node.get_vts'](
-        supported=True)
-    done_hosts = []
-    nvars  = __salt__['mc_pillar.load_network_infrastructure']()
-    ivars  = __salt__['mc_pillar.get_db_infrastructure_maps']()
-    cloud_cn_attrs = __salt__['mc_pillar.query']('cloud_cn_attrs')
-    for vt, targets in __salt__['mc_pillar.query']('vms').items():
-        if vt not in supported_vts:
-            continue
-        for compute_node, vms in targets.items():
-            if not (
-                (compute_node not in done_hosts)
-                and
-                (compute_node not in __salt__['mc_pillar.query']('non_managed_hosts'))
-            ):
-                done_hosts.append(compute_node)
-                rdata['makina-states.cloud.saltify'
-                      '.targets.{0}'.format(
-                          compute_node)] = {
-                    'password': __salt__[
-                        'mc_pillar.get_passwords'](
-                            compute_node
-                        )['clear']['root'],
-                    'ssh_username': 'root'
-                }
-            metadata = cloud_cn_attrs.get(compute_node, {})
-
-            haproxy_pre = metadata.get('haproxy', {}).get('raw_opts_pre', [])
-            haproxy_post = metadata.get('haproxy', {}).get('raw_opts_post', [])
-            for suf, opts in [
-                a for a in [
-                    ['pre', haproxy_pre],
-                    ['post', haproxy_post]
-                ] if a[1]
-            ]:
-                rdata[
-                    'makina-states.cloud.compute_node.conf.'
-                    '{0}.https_proxy.raw_opts_{1}'.format(
-                        compute_node, suf)] = opts
-                rdata[
-                    'makina-states.cloud.compute_node.conf.'
-                    '{0}.http_proxy.raw_opts_{1}'.format(
-                        compute_node, suf)] = opts
-
-    for vt, targets in __salt__['mc_pillar.query']('vms').items():
-        if vt not in supported_vts:
-            continue
-        for compute_node, vms in targets.items():
-            if not (
-                compute_node not in done_hosts
-                and
-                compute_node not in __salt__['mc_pillar.query']('non_managed_hosts')
-            ):
-                continue
-            done_hosts.append(compute_node)
-            k = ('makina-states.cloud.'
-                 'saltify.targets.{0}').format(
-                     compute_node)
-            rdata[k] = {
-                'password': __salt__[
-                    'mc_pillar.get_passwords'](
-                        compute_node)['clear']['root'],
-                'ssh_username': 'root'
-            }
-
-        for host, data in ivars['standalone_hosts'].items():
-            if host in done_hosts:
-                continue
-            done_hosts.append(compute_node)
-            sk = ('makina-states.cloud.saltify.'
-                  'targets.{0}').format(host)
-            rdata[sk] = {
-                'ssh_username': data.get(
-                    'ssh_username', 'root')
-            }
-            for k, val in data.items():
-                if val and val not in ['ssh_username']:
-                    rdata[sk][k] = val
-    return rdata
-
-
 def get_burp_server_conf(id_):
     rdata = {}
     if __salt__['mc_pillar.is_burp_server'](id_):
@@ -3104,7 +2978,6 @@ def ext_pillar(id_, pillar=None, *args, **kw):
         'mc_pillar.get_autoupgrade_conf',
         'mc_pillar.get_backup_client_conf',
         'mc_pillar.get_burp_server_conf',
-        'mc_pillar.get_cloudmaster_conf',
         'mc_pillar.get_dhcpd_conf',
         'mc_pillar.get_dns_master_conf',
         'mc_pillar.get_dns_slave_conf',
@@ -3127,6 +3000,7 @@ def ext_pillar(id_, pillar=None, *args, **kw):
         'mc_pillar.get_pkgmgr_conf',
         'mc_pillar.get_sysnet_conf',
         'mc_pillar.get_check_raid_conf',
+        #'mc_pillar.get_cloudmaster_conf',
         #
         'mc_env.ext_pillar',
         'mc_cloud_images.ext_pillar',
@@ -3159,25 +3033,114 @@ def ext_pillar(id_, pillar=None, *args, **kw):
     return data
 
 
-def get_global_conf(section, entry):
-    _s = __salt__
-    try:
-        extdata = copy.deepcopy(
-            _s['mc_pillar.query'](section).get(entry)
-        )
-        if not extdata:
-            if entry not in ['default']:
-                log.warning('No {0} section in global cloud conf:'
-                            ' {1}'.format(entry, section))
+def get_global_conf(section, entry=10, ttl=30):
+    def _do(section, entry):
+        _s = __salt__
+        try:
+            extdata = copy.deepcopy(
+                _s['mc_pillar.query'](section).get(entry))
+            if not extdata:
+                if entry not in ['default']:
+                    log.debug('No {0} section in global cloud conf:'
+                              ' {1}'.format(entry, section))
+                extdata = {}
+        except KeyError:
+            log.warning('No {0} section in database'.format(section))
             extdata = {}
-    except KeyError:
-        log.warning('No {0} section in database'.format(section))
-        extdata = {}
-    return extdata
+        return extdata
+    cache_key = 'mc_pillar.get_global_conf{0}{1}'.format(section, entry)
+    return memoize_cache(_do, [section, entry], {}, cache_key, ttl)
 
 
-def get_global_clouf_conf(entry):
-    return get_global_conf('cloud_settings', entry)
+def get_global_clouf_conf(entry, ttl=30):
+    def _do(entry):
+        return get_global_conf('cloud_settings', entry)
+    cache_key = 'mc_pillar.get_global_cloudconf{0}'.format(entry)
+    return memoize_cache(_do, [entry], {}, cache_key, ttl)
+
+
+def get_cloud_conf(ttl=30):
+    def _do():
+        rdata = OrderedDict()
+        dvms = rdata.setdefault('vms', OrderedDict())
+        dcns = rdata.setdefault('cns', OrderedDict())
+        _s = __salt__
+        _settings = _s['mc_cloud.extpillar_settings']()
+        cloud_cn_attrs = _s['mc_pillar.query']('cloud_cn_attrs')
+        cloud_vm_attrs = _s['mc_pillar.query']('cloud_vm_attrs')
+        supported_vts = _s['mc_cloud_compute_node.get_vts']()
+        for vt, targets in _s['mc_pillar.query']('vms').items():
+            if vt not in supported_vts:
+                continue
+            if not _settings.get(vt, False):
+                continue
+            for cn, vms in targets.items():
+                if cn in _s['mc_pillar.query']('non_managed_hosts'):
+                    continue
+                dcn = dcns.setdefault(cn, OrderedDict())
+                dcns[cn] = dcn
+                dcn.setdefault('conf', cloud_cn_attrs.get(cn, OrderedDict()))
+                cn_vms = dcn.setdefault('vms', OrderedDict())
+                vts = dcn.setdefault('vts', [])
+                if vt not in vts:
+                    vts.append(vt)
+                for vm in vms:
+                    if vm in _s['mc_pillar.query']('non_managed_hosts'):
+                        continue
+                    vmdata = dvms.setdefault(vm, OrderedDict())
+                    cvmdata = cloud_vm_attrs.get(vm, OrderedDict())
+                    vmdata = _s['mc_utils.dictupdate'](vmdata, cvmdata)
+                    vmdata['vt'] = vt
+                    dvms[vm] = cn_vms[vm] = vmdata
+        return rdata
+    cache_key = 'mc_pillar.get_cloud_conf'
+    return memoize_cache(_do, [], {}, cache_key, ttl)
+
+
+def get_cloud_conf_by_cns():
+    return copy.deepcopy(get_cloud_conf()['cns'])
+
+
+def get_cloud_conf_by_vts(ttl=30):
+    def _do():
+        data = OrderedDict()
+        for cn, cdata in get_cloud_conf_by_cns().items():
+            cvms = cdata.pop('vms')
+            for vm, vmdata in cvms.items():
+                vt = vmdata['vt']
+                vtdata = data.setdefault(vt, OrderedDict())
+                vcndata = vtdata.setdefault(cn, copy.deepcopy(cdata))
+                vcnvms = vcndata.setdefault('vms', OrderedDict())
+                vcnvms[vm] = vmdata
+        return data
+    cache_key = 'mc_pillar.get_cloud_conf_by_vts'
+    return memoize_cache(_do, [], {}, cache_key, ttl)
+
+
+def get_cloud_conf_by_vms():
+    return copy.deepcopy(get_cloud_conf()['vms'])
+
+
+def get_cloud_entry_for_cn(id_, default=None):
+    if not default:
+        default = {}
+    return get_cloud_conf_by_cns().get(id_, default)
+
+
+def get_cloud_conf_for_cn(id_, default=None):
+    return get_cloud_entry_for_cn(id_, default=default).get('conf', {})
+
+
+def get_cloud_conf_for_vt(id_, default=None):
+    if not default:
+        default = {}
+    return get_cloud_conf_by_vts().get(id_, default)
+
+
+def get_cloud_conf_for_vm(id_, default=None):
+    if not default:
+        default = {}
+    return get_cloud_conf_by_vms().get(id_, default)
 
 
 def test():
@@ -3193,4 +3156,160 @@ def test():
     from pprint import pprint
     pprint(_LOCAL_CACHE)
 
+
+'''
+DEPRECATED
+'''
+# def get_cloudmaster_conf(id_):
+#     gconf = get_configuration(id_)
+#     if not gconf.get('cloud_master', False):
+#         return {}
+#     gconf = get_configuration(id_)
+#     pref = 'makina-states.cloud'
+#     rdata = {
+#         pref + '.generic': True,
+#         pref + '.master': gconf['mastersaltdn'],
+#         pref + '.master_port': gconf['mastersalt_port'],
+#         pref + '.saltify': True,
+#         pref + '.lxc': gconf['cloud_control_lxc'],
+#         pref + '.kvm': gconf['cloud_control_kvm'],
+#         pref + '.lxc.defaults.backing': 'dir'}
+#     for i in [get_cloud_vm_conf,
+#               get_cloud_compute_node_conf]:
+#         rdata.update(i(id_))
+#     return rdata
+
+
+# def get_cloud_vm_conf(id_):
+#     """DEPRECATED"""
+#     rdata = {}
+#     cloud_vm_attrs = __salt__['mc_pillar.query']('cloud_vm_attrs')
+#     nvars  = __salt__['mc_pillar.load_network_infrastructure']()
+#     supported_vts = __salt__['mc_cloud_compute_node.get_vts']()
+#     for vt, targets in __salt__['mc_pillar.query']('vms').items():
+#         if vt not in supported_vts:
+#             continue
+#         for compute_node, vms in targets.items():
+#             if compute_node in __salt__['mc_pillar.query']('non_managed_hosts'):
+#                 continue
+#             k = ('makina-states.cloud.{0}.'
+#                  'vms.{1}').format(vt, compute_node)
+#             pvms = rdata.setdefault(k, {})
+#             for vm in vms:
+#                 if vm in __salt__['mc_pillar.query']('non_managed_hosts'):
+#                     continue
+#                 dvm = pvms.setdefault(vm, {})
+#                 metadata = cloud_vm_attrs.get(vm, {})
+#                 if 'password' not in metadata:
+#                     metadata.setdefault(
+#                         'password',
+#                         __salt__[
+#                             'mc_pillar.get_passwords'
+#                         ](vm)['clear']['root'])
+#                 dvm.update(metadata)
+#     return rdata
+
+
+def get_cloud_compute_node_conf(id_):
+    rdata = {}
+    ms_vars = get_makina_states_variables(id_)
+    # detect computes nodes by searching for related vms configurations
+    supported_vts = __salt__['mc_cloud_compute_node.get_vts']()
+    done_hosts = []
+    nvars  = __salt__['mc_pillar.load_network_infrastructure']()
+    ivars  = __salt__['mc_pillar.get_db_infrastructure_maps']()
+    cloud_cn_attrs = __salt__['mc_pillar.query']('cloud_cn_attrs')
+    for vt, targets in __salt__['mc_pillar.query']('vms').items():
+        if vt not in supported_vts:
+            continue
+        for compute_node, vms in targets.items():
+            if not (
+                (compute_node not in done_hosts)
+                and
+                (compute_node not in __salt__['mc_pillar.query'](
+                    'non_managed_hosts'))
+            ):
+                done_hosts.append(compute_node)
+                rdata['makina-states.cloud.saltify'
+                      '.targets.{0}'.format(
+                          compute_node)] = {
+                    'password': __salt__[
+                        'mc_pillar.get_passwords'](
+                            compute_node
+                        )['clear']['root'],
+                    'ssh_username': 'root'
+                }
+            metadata = cloud_cn_attrs.get(compute_node, {})
+
+            haproxy_pre = metadata.get('haproxy', {}).get('raw_opts_pre', [])
+            haproxy_post = metadata.get('haproxy', {}).get('raw_opts_post', [])
+            for suf, opts in [
+                a for a in [
+                    ['pre', haproxy_pre],
+                    ['post', haproxy_post]
+                ] if a[1]
+            ]:
+                rdata[
+                    'makina-states.cloud.compute_node.conf.'
+                    '{0}.https_proxy.raw_opts_{1}'.format(
+                        compute_node, suf)] = opts
+                rdata[
+                    'makina-states.cloud.compute_node.conf.'
+                    '{0}.http_proxy.raw_opts_{1}'.format(
+                        compute_node, suf)] = opts
+
+    for vt, targets in __salt__['mc_pillar.query']('vms').items():
+        if vt not in supported_vts:
+            continue
+        for compute_node, vms in targets.items():
+            if not (
+                compute_node not in done_hosts
+                and
+                compute_node not in __salt__['mc_pillar.query'](
+                    'non_managed_hosts')
+            ):
+                continue
+            done_hosts.append(compute_node)
+            k = ('makina-states.cloud.'
+                 'saltify.targets.{0}').format(
+                     compute_node)
+            rdata[k] = {
+                'password': __salt__[
+                    'mc_pillar.get_passwords'](
+                        compute_node)['clear']['root'],
+                'ssh_username': 'root'
+            }
+
+        for host, data in ivars['standalone_hosts'].items():
+            if host in done_hosts:
+                continue
+            done_hosts.append(compute_node)
+            sk = ('makina-states.cloud.saltify.'
+                  'targets.{0}').format(host)
+            rdata[sk] = {
+                'ssh_username': data.get(
+                    'ssh_username', 'root')
+            }
+            for k, val in data.items():
+                if val and val not in ['ssh_username']:
+                    rdata[sk][k] = val
+    return rdata
+
+
+def loaded():
+    stack = inspect.stack()
+    fun_names = [n[3] for n in stack]
+
+    try:
+        ret = __pillar__.get('mc_pillar.loaded', False)
+        if ret and (
+            True in [(
+                ('extpillar' in a)
+                or ('ext_pillar' in a)
+            ) for a in fun_names]
+        ):
+            ret = False
+    except Exception:
+        ret = False
+    return ret
 # vim:set et sts=4 ts=4 tw=80:

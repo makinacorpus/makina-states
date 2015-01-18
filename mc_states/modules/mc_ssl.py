@@ -54,6 +54,15 @@ class MissingCertError(CertificateCreationError):
     pass
 
 
+def get_cloud_settings():
+    extpillar = not __salt__['mc_pillar.loaded']()
+    if extpillar:
+        cloudSettings = __salt__['mc_cloud.extpillar_settings']()
+    else:
+        cloudSettings = __salt__['mc_cloud.settings']()
+    return cloudSettings
+
+
 def settings():
     '''
     ssl registry
@@ -157,7 +166,7 @@ def get_configured_cert(domain, ttl=60):
 
 
 def ensure_ca_present():
-    cloudSettings = __salt__['mc_cloud.settings']()
+    cloudSettings = get_cloud_settings()
     ssl_gen_d = cloudSettings['ssl_pillar_dir']
     old_d = __opts__.get('ca.cert_base_path', '')
     try:
@@ -173,7 +182,7 @@ def ensure_ca_present():
 
 
 def get_cacert(as_text=False):
-    cloudSettings = __salt__['mc_cloud.settings']()
+    cloudSettings = get_cloud_settings()
     ssl_gen_d = cloudSettings['ssl_pillar_dir']
     old_d = __opts__.get('ca.cert_base_path', '')
     path = None
@@ -189,7 +198,7 @@ def get_cacert(as_text=False):
 
 
 def get_custom_cert_for(domain):
-    cloudSettings = __salt__['mc_cloud.settings']()
+    cloudSettings = get_cloud_settings()
     ssl_gen_d = cloudSettings['ssl_pillar_dir']
     certp = os.path.join(
         ssl_gen_d, 'custom', '{0}.crt'.format(domain))
@@ -245,7 +254,7 @@ def get_cert_for(domain, gen=False, domain_csr_data=None):
     ensure_ca_present()
     if domain_csr_data is None:
         domain_csr_data = {}
-    cloudSettings = __salt__['mc_cloud.settings']()
+    cloudSettings = get_cloud_settings()
     ssl_gen_d = cloudSettings['ssl_pillar_dir']
     ca = cloudSettings['ssl']['ca']['ca_name']
     certp = os.path.join(ssl_gen_d, ca, 'certs', '{0}.crt'.format(domain))
@@ -318,7 +327,7 @@ def get_selfsigned_cert_for(domain, gen=False, domain_csr_data=None):
     ensure_ca_present()
     if domain_csr_data is None:
         domain_csr_data = {}
-    cloudSettings = __salt__['mc_cloud.settings']()
+    cloudSettings = get_cloud_settings()
     ssl_gen_d = get_selfsigned_certs_dir()
     certp = os.path.join(ssl_gen_d, 'certs', '{0}.crt'.format(domain))
     certk = os.path.join(ssl_gen_d, 'certs', '{0}.key'.format(domain))
@@ -459,14 +468,14 @@ def load_selfsigned_certs(path):
 
 
 def get_selfsigned_certs_dir():
-    cloudSettings = __salt__['mc_cloud.settings']()
+    cloudSettings = get_cloud_settings()
     ssl_gen_d = cloudSettings['ssl_pillar_dir']
     certs_dir = os.path.join(ssl_gen_d, 'selfsigned')
     return certs_dir
 
 
 def get_certs_dir():
-    cloudSettings = __salt__['mc_cloud.settings']()
+    cloudSettings = get_cloud_settings()
     ca = cloudSettings['ssl']['ca']['ca_name']
     ssl_gen_d = cloudSettings['ssl_pillar_dir']
     certs_dir = os.path.join(ssl_gen_d, ca, 'certs')

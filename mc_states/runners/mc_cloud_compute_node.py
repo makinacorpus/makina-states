@@ -58,7 +58,7 @@ def cn_sls_pillar(target, ttl=api.RUNNER_CACHE_TIME):
         cnSettingsData = {}
         cnSettingsData['cn'] = cli(
             'mc_cloud_compute_node.get_settings_for_target', target)
-        vt_data = cnSettingsData['cn'].get('virt_types', {})
+        vt_data = cnSettingsData['cn'].get('vts', {})
         vts = []
         for vt, enabled in vt_data.items():
             if enabled:
@@ -88,7 +88,7 @@ def cn_sls_pillar(target, ttl=api.RUNNER_CACHE_TIME):
             cid = 'mc_cloud_{0}.cn_sls_pillar'.format(vt)
             vid = 'mc_cloud_{0}.vm_sls_pillar'.format(vt)
             for vm, vdata in  cnSettingsData['cn']['vms'].items():
-                if vt == vdata.get('virt_type', ''):
+                if vt == vdata.get('vt', ''):
                     vmSettings[vm] = __salt__[vid](target, vm)
             if cid in __salt__:
                 pillar = dictupdate(pillar, __salt__[cid](target))

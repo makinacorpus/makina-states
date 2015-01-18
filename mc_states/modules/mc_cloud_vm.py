@@ -24,10 +24,15 @@ from mc_states.utils import memoize_cache
 __name = 'mc_cloud_vm'
 
 log = logging.getLogger(__name__)
+VT = 'vm'
 PREFIX = 'makina-states.cloud.vms'
 
 
-def default_settings():
+def vt(vt=VT):
+    return vt
+
+
+def vt_default_settings(cloudSettings, imgSettings, ttl=60):
     '''
     VM default settings
     This may be needed to be database backended in the future.
@@ -99,58 +104,68 @@ def default_settings():
 
         The settings are not stored here for obvious performance reasons
     '''
-    _s = __salt__
-    cloudSettings = _s['mc_cloud.default_settings']()
-    vmSettings = {
-        'dnsservers': ['8.8.8.8', '4.4.4.4'],
-        'defaults': {
-            #
-            'image': 'ubuntu',
-            'default_snapshot': _s['mc_nodetypes.is_devhost'](),
-            'autostart': True,
-            #
-            'gateway': '127.0.0.1',
-            'use_bridge': True,
-            'main_bridge': 'br0',
-            'netmask': '16',
-            'network': '10.3.0.0',
-            'netmask_full': '255.255.0.0',
-            'bridge': 'br0',
-            'additional_ips': [],
-            'domains': [__grains__['id']],
-            #
-            'ssh_gateway': cloudSettings['ssh_gateway'],
-            'ssh_username': 'ubuntu',
-            'ssh_gateway_password': cloudSettings[
-                'ssh_gateway_password'],
-            'ssh_gateway_user': cloudSettings['ssh_gateway_user'],
-            'ssh_gateway_key': cloudSettings['ssh_gateway_key'],
-            'ssh_gateway_port': cloudSettings['ssh_gateway_port'],
-            #
-            'master': cloudSettings['master'],
-            'mode': cloudSettings['mode'],
-            'master_port': cloudSettings['master_port'],
-            'bootsalt_branch': cloudSettings['bootsalt_branch'],
-            #
-            'sudo': True,
-            'users': ['root', 'sysadmin'],
-            #
-            'size': None,  # via profile
-            'backing': 'lvm',
-        },
-        'vms': OrderedDict(),
-    }
-    return vmSettings
+    def _do(cloudSettings, imgSettings):
+        _s = __salt__
+        default_snapshot = False
+        if _s['mc_nodetypes.is_devhost']():
+            default_snapshot = True
+        vt_settings = {
+            'vt': VT,
+            'defaults': {
+                'dnsservers': ['8.8.8.8', '4.4.4.4'],
+                #
+                'image': 'ubuntu',
+                'snapshot': default_snapshot,
+                'autostart': True,
+                #
+                'target': None,
+                'gateway': '127.0.0.1',
+                'use_bridge': True,
+                'main_bridge': 'br0',
+                'ip': None,
+                'mac': None,
+                'netmask': '16',
+                'network': '10.3.0.0',
+                'netmask_full': '255.255.0.0',
+                'bridge': 'br0',
+                'additional_ips': [],
+                'name': __grains__['id'],
+                'domains': [__grains__['id']],
+                #
+                'ssh_gateway': cloudSettings['ssh_gateway'],
+                'ssh_username': 'ubuntu',
+                'ssh_gateway_password': cloudSettings[
+                    'ssh_gateway_password'],
+                'ssh_gateway_user': cloudSettings['ssh_gateway_user'],
+                'ssh_gateway_key': cloudSettings['ssh_gateway_key'],
+                'ssh_gateway_port': cloudSettings['ssh_gateway_port'],
+                #
+                'master': cloudSettings['master'],
+                'mode': cloudSettings['mode'],
+                'master_port': cloudSettings['master_port'],
+                'bootsalt_branch': cloudSettings['bootsalt_branch'],
+                'bootsalt_shell': cloudSettings['bootsalt_shell'],
+                'script': cloudSettings['script'],
+                'script_args': cloudSettings['bootsalt_mastersalt_args'],
+                #
+                'ssh_reverse_proxy_port': None,
+                'snmp_reverse_proxy_port': None,
+                #
+                'password': None,
+                'sudo': True,
+                'users': ['root', 'sysadmin'],
+                #
+                'size': None,  # via profile
+                'backing': 'lvm',
+            },
+            'vms': OrderedDict(),
+        }
+        return vt_settings
+    cache_key = 'mc_cloud_vm.default_settings'
+    return memoize_cache(_do, [cloudSettings, imgSettings], {}, cache_key, ttl)
 
 
-def vm_default_settings(target,
-                        vt,
-                        vm,
-                        cloudSettings,
-                        vmSettings,
-                        vm_defaults,
-                        vm_data):
-
+def vm_default_settings(vm, cloudSettings, imgSettings, extpillar=False):
     '''
     Get per VM specific settings
      All the defaults defaults registry settings are redinable here +
@@ -181,7 +196,56 @@ def vm_default_settings(target,
             list of domains tied with this host (first is minion id
             and main domain name, it is automaticly added)
     '''
-    _g = __grains__
+    _s = __salt__
+    vm_infos = _s['mc_cloud_compute_node.get_vm'](vm)
+    target, vt = vm_infos['target'], vm_infos['vt']
+    if extpillar:
+        vt_settings = _s['mc_cloud_vm.vt_extpillar'](target, vt)
+    else:
+        vt_settings = _s['mc_cloud_vm.vt_default_settings'.format(vt)](
+            cloudSettings, imgSettings)
+
+    # if it is not a distant minion, use private gateway ip
+    master = vt_settings['defaults']['master']
+    if _s['mc_pillar.mastersalt_minion_id']() == target:
+        master = vt_settings['gateway']
+    node = 'mc_cloud_compute_node.'
+    data = _s['mc_utils.dictupdate'](vt_settings['defaults'], {
+        'name': vm,
+        'vt': vt_settings['vt'],
+        'target': target,
+        'master': master,
+        'domains': [vm],
+        'gateway': target,
+        'ssh_reverse_proxy_port':  _s[node + 'get_ssh_port'](vm),
+        'snmp_reverse_proxy_port': _s[node + 'get_snmp_port'](vm)})
+    return data
+
+
+def vm_registry(prefixed=True):
+    prefix = PREFIX + "."
+    if not prefixed:
+        prefix = ''
+    data = OrderedDict([('{0}vts'.format(prefix), OrderedDict()),
+                        ('{0}vms'.format(prefix), OrderedDict())])
+    return data
+
+
+def vt_extpillar_settings(vt, ttl=60):
+    def _do(vt):
+        _s = __salt__
+        fun = 'mc_cloud_{0}.vt_default_settings'.format(vt)
+        extdata = _s['mc_pillar.get_global_clouf_conf'](vt)
+        cloudSettings = _s['mc_cloud.extpillar_settings']()
+        imgSettings = _s['mc_cloud_images.extpillar_settings']()
+        data = cloudSettings = _s['mc_utils.dictupdate'](
+            _s[fun](cloudSettings, imgSettings), extdata)
+        return data
+    cache_key = 'mc_cloud_vm.vt_extpillar_settings{0}'.format(vt)
+    return memoize_cache(_do, [vt], {}, cache_key, ttl)
+
+
+def vm_extpillar_settings(vm, ttl=30):
     _s = __salt__
 
     def _sort_domains(dom):
@@ -189,205 +253,129 @@ def vm_default_settings(target,
             return '0{0}'.format(dom)
         else:
             return '1{0}'.format(dom)
-
-    vm_defaults = vmSettings.get('defaults', {})
-    master = vm_defaults['master']
-    # if it is not a distant minion, use private gateway ip
-    if _g['id'] == target:
-        master = vm_defaults['gateway']
-    data = {
-        'mac': _s[
-            'mc_cloud_compute_node.find_mac_for_vm'
-        ](vm, default=vm_data.get('mac', None)),
-        'name': vm,
-        'domains': [vm],
-        'password': _s[
+    def _do(vm):
+        cloudSettings = _s['mc_cloud.extpillar_settings']()
+        imgSettings = _s['mc_cloud_images.extpillar_settings']()
+        data = _s['mc_pillar.get_cloud_conf_for_vm'](vm)
+        data = _s['mc_utils.dictupdate'](
+            vm_default_settings(
+                vm, cloudSettings, imgSettings, extpillar=True),
+            data)
+        find_ip = 'mc_cloud_compute_node.find_ip_for_vm'
+        data['ip'] = _s[find_ip](vm,
+                                 network=data['network'],
+                                 netmask=data['netmask'],
+                                 default=data.get('ip'))
+        data['mac'] = _s['mc_cloud_compute_node.find_mac_for_vm'](
+            vm, default=data.get('mac', None)),
+        data['password'] = _s[
             'mc_cloud_compute_node.find_password_for_vm'
-        ](vm, default=_s['mc_pillar.get_passwords'](vm)['clear']['root']),
-        'master': master,
-        'master_port': None,
-        'autostart': None,
-        'size': None,
-        'bootsalt_shell': cloudSettings['bootsalt_shell'],
-        'bootsalt_branch': None,
-        'script': cloudSettings['script'],
-        'script_args': cloudSettings['bootsalt_mastersalt_args'],
-        'snapshot': None,
-        'image': None,
-        'main_bridge': None,
-        'ip': None,
-        'additional_ips': None,
-        'bridge': None,
-        'network': None,
-        'netmask': None,
-        'dnsservers': None,
-        'ssh_gateway': None,
-        'ssh_gateway_password': None,
-        'ssh_gateway_user': None,
-        'ssh_gateway_key': None,
-        'ssh_gateway_port': None,
-        'gateway': target,
-        'ssh_username': None,
-        'users': None,
-        'mode': None,
-        'vgname': None,
-        'backing': None,
-        'sudo': None,
-        'ssh_reverse_proxy_port': _s[
-            'cloud_compute_node.get_ssh_port'](
-                vm=vm, target=target),
-        'snmp_reverse_proxy_port': _s[
-            'mc_cloud_compute_node.get_snmp_port'](
-                vm=vm, target=target)
-    }
-    for i, val in _s['mc_utils.dictupdate'](
-        data, vm_defaults
-    ).items():
-        if val is None:
-            val = vmSettings.get(i, vm_defaults.get(i, None))
-        vm_data.setdefault(i, val)
-    vm_data = saltapi.complete_gateway(vm_data, vmSettings)
-    if vm not in vm_data['domains']:
-        vm_data['domains'].insert(0, vm)
-    vm_data['domains'].sort(key=_sort_domains)
-    if (
-        '-b' not in vm_data['script_args']
-        or '--branch' not in vm_data['script_args']
-    ):
-        vm_data['script_args'] += ' -b {0}'.format(
-            vm_data['bootsalt_branch'])
-    # at this stage, only get already allocated ips
-    vm_data['ip'] = _s['mc_cloud_compute_node.find_ip_for_vm'](
-        target, vm,
-        virt_type=vt,
-        network=vm_data['network'],
-        netmask=vm_data['netmask'],
-        default=vm_data.get('ip'))
-    for ix, ipinfos in enumerate(vm_data['additional_ips']):
-        k = '{0}_{1}_{2}_aip_fo'.format(target, vm, ix)
-        mac = ipinfos.setdefault('mac', None)
-        if not mac:
-            mac = _s['mc_cloud_compute_node.get_conf_for_vm'](
-                vm, k, default=mac)
-        if not mac:
-            _s['mc_cloud_compute_node.set_conf_for_vm'](
-                vm, k, _s['mc_cloud_compute_node.gen_mac']())
-        ipinfos['mac'] = mac
-        ipinfos.setdefault('gateway', None)
-        if ipinfos['gateway']:
-            vm_data['gateway'] = None
-        ipinfos.setdefault('netmask', '32')
-        ipinfos.setdefault('link', 'br0')
-    return vm_data
+        ](vm, default=_s['mc_pillar.get_passwords'](vm)['clear']['root'])
+        data = saltapi.complete_gateway(data, data)
+        if vm not in data['domains']:
+            data['domains'].insert(0, vm)
+        data['domains'].sort(key=_sort_domains)
+        if (
+            ('-b' not in data['script_args'])
+            and ('--branch' not in data['script_args'])
+        ):
+            data['script_args'] += ' -b {0}'.format(
+                data['bootsalt_branch'])
+        # at this stage, only get already allocated ips
+
+        for ix, ipinfos in enumerate(data['additional_ips']):
+            k = '{0}_{1}_{2}_aip_fo'.format(data['target'], vm, ix)
+            mac = ipinfos.setdefault('mac', None)
+            if not mac:
+                mac = _s['mc_cloud_compute_node.get_conf_for_vm'](
+                    vm, k, default=mac)
+            if not mac:
+                _s['mc_cloud_compute_node.set_conf_for_vm'](
+                    vm, k, _s['mc_cloud_compute_node.gen_mac']())
+            ipinfos['mac'] = mac
+            ipinfos.setdefault('gateway', None)
+            if ipinfos['gateway']:
+                data['gateway'] = None
+            ipinfos.setdefault('netmask', '32')
+            ipinfos.setdefault('link', 'br0')
+        return data
+    cache_key = 'mc_cloud_vm.extpillar_settings{0}'.format(vm)
+    return memoize_cache(_do, [vm], {}, cache_key, ttl)
 
 
-def overridable_default_settings(id_, cloudSettings):
-    if id_ is None:
-        id_ = __grains__['id']
-    default_snapshot = False
-    if _s['mc_nodetypes.is_devhost']():
-        default_snapshot = True
-    data = {'defaults': {'snapshot': default_snapshot,
-                         'mode': cloudSettings['mode'],
-                         'ssh_gateway': cloudSettings['ssh_gateway'],
-                         'ssh_gateway_password': cloudSettings[
-                             'ssh_gateway_password'],
-                         'ssh_gateway_user': cloudSettings['ssh_gateway_user'],
-                         'ssh_gateway_key': cloudSettings['ssh_gateway_key'],
-                         'ssh_gateway_port': cloudSettings['ssh_gateway_port'],
-                         'master': cloudSettings['master'],
-                         'master_port': cloudSettings['master_port'],
-                         'domains': [id_],
-                         'bootsalt_branch': cloudSettings['bootsalt_branch']}}
-    return data
+def vt_extpillar(target, vt, ttl=60):
+    def _do(target, vt):
+        _s = __salt__
+        extdata = _s['mc_pillar.get_cloud_conf_for_cn'](target).get(vt, {})
+        data = vt_extpillar_settings(vt)
+        fun = 'mc_cloud_{0}.vt_extpillar'.format(vt)
+        data = _s['mc_utils.dictupdate'](
+            _s['mc_utils.dictupdate'](data, _s[fun](target, data)), extdata)
+        return data
+    cache_key = 'mc_cloud_vm.vt_extpillar{0}{1}'.format(target, vt)
+    return memoize_cache(_do, [target, vt], {}, cache_key, ttl)
 
 
-def mangle_default_settings(id_,
-                            cloudSettings,
-                            defaults_fun,
-                            extdata=None,
-                            additionnal_defaults=None):
+def vm_extpillar(id_, ttl=60):
+    def _do(id_):
+        _s = __salt__
+        extdata = _s['mc_pillar.get_cloud_conf_for_vm'](id_)
+        data = vm_extpillar_settings(id_)
+        fun = 'mc_cloud_{0}.vm_extpillar'.format(data['vt'])
+        data = _s['mc_utils.dictupdate'](
+            _s['mc_utils.dictupdate'](data, _s[fun](id_, data)), extdata)
+        return data
+    cache_key = 'mc_cloud_vm.vm_extpillar{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+
+
+def domains_for(vm, domains=None):
     _s = __salt__
-    if not additionnal_defaults:
-        additionnal_defaults = {}
-    if not extdata:
-        extdata = None
-    data = _s['mc_utils.dictupdate'](
-        _s['mc_utils.dictupdate'](
-            _s[defaults_fun],
-            _s['mc_utils.dictupdate'](
-                _s['mc_cloud_vm.overridable_default_settings'](
-                    id_, cloudSettings), additionnal_defaults
-            )
-        ), extdata)
-    return data
+    if domains is None:
+        domains = []
+    vm_settings = _s['mc_cloud_vm.vm_extpillar_settings'](vm)
+    for domain in vm_settings['domains']:
+        if domain not in domains:
+            domains.append(domain)
+    domains = _s['mc_utils.uniquify']([vm] + domains)
+    return domains
 
 
-def vt_extpillar_settings(id_, vt,
-                          default_settings_fun=None,
-                          additionnal_defaults=None):
-    _s = __salt__
-    if not default_settings_fun:
-        default_settings_fun = _s['mc_cloud_{0}.default_settings'.format(vt)]
-    if not additionnal_defaults:
-        additionnal_defaults = {}
-    extdata = _s['mc_pillar.get_global_clouf_conf'](vt)
-    cloudSettings = _s['mc_cloud.extpillar_settings']()
-    vtSettings = _s['mc_cloud_vm.mangle_default_settings'](
-        id_,
-        cloudSettings,
-        default_settings_fun,
-        extdata=extdata,
-        additionnal_defaults=additionnal_defaults)
-    return vtSettings
+def ext_pillar(id_, ttl=60, *args, **kw):
+    def _do(id_):
+        _s = __salt__
+        all_vms = _s['mc_cloud_compute_node.get_vms']()
+        targets = _s['mc_cloud_compute_node.get_targets']()
+        vms, vts = OrderedDict(), []
+        target = None
+        if id_ not in targets and id_ not in all_vms:
+            return {}
+        if id_ in all_vms:
+            vt = all_vms[id_]['vt']
+            if vt not in vts:
+                vts.append(vt)
+            vms[id_] = all_vms[id_]
+            target = all_vms[id_]['target']
+        if id_ in targets:
+            target = id_
+            for vm_, vmdata_ in targets[id_]['vms'].items():
+                vms[vm_] = vmdata_
+            [vts.append(i) for i in targets[id_]['vts']
+             if i not in vts]
+        data = vm_registry()
+        vts_pillar = data[PREFIX + '.vts']
+        vms_pillar = data[PREFIX + '.vms']
+        for vt in vts:
+            vts_pillar[vt] = _s['mc_cloud_vm.vt_extpillar'](target, vt)
+        for vm, vmdata in vms.items():
+            vt = vmdata['vt']
+            vm_settings = _s['mc_cloud_vm.vm_extpillar'](vm)
+            vm_settings['vt'] = vt
+            vms_pillar[vm] = vm_settings
+        return data
+    cache_key = 'mc_cloud_vm.ext_pillar{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
-
-def vt_extpillar(id_,
-                 prefix,
-                 vt,
-                 default_settings_fun=None,
-                 vm_extpillar_fun=None,
-                 additionnal_defaults=None):
-    _s = __salt__
-    if not vm_extpillar_fun:
-        vm_extpillar_fun = _s['mc_cloud_{0}.vm_extpillar'.format(vt)]
-    cloudSettings = _s['mc_cloud.extpillar_settings']()
-    vtSettings = vt_extpillar_settings(
-        id_, vt, default_settings_fun=default_settings_fun)
-    return {prefix: data}
-
-
-def extpillar_for(vm, vt):
-    return __salt__['mc_cloud_{0}.ext_pillar'.format(vt)](vm)
-
-
-def extpillar(id_, *args, **kw):
-    _s = __salt__
-    data = OrderedDict()
-    conf = _s['mc_pillar.get_configuration'](id_)
-    vm_ids = vtSettings.setdefault('vms', OrderedDict())
-    vms = all_vms = _s['mc_cloud_compute_node.get_all_vms']()
-    targets = _s['mc_cloud_compute_node.get_all_targets']()
-    virt_types = []
-    if id_ not in targets and id_ not in vms:
-        return {}
-    if id_ in vms:
-        vt = vms[id_]['virt_type']
-        if vt not in virt_types:
-            virt_types.append(vt)
-    if id_ in targets:
-        vms = targets[id_]['vms']
-        [virt_types.append(i) for i in targets[id_]['virt_types']
-         if i not in virt_types]
-    for vt in virt_types:
-        data['makina-states.cloud.{0}'.format(vt)] = {}
-    for vm, vmdata in vms.items():
-        vmextdata = extpillar_for(vm, vt)
-        vt = vmdata['vt']
-        data['{0}.{1}'.format(PREFIX, vt)] = vm_pillar_fun(
-            id_, vt_vms[id_],
-            cloudSettings=cloudSettings,
-            default_settings=vtSettings)
 
 '''
 Methods usable
@@ -395,21 +383,49 @@ After the pillar has loaded, on the compute node itself
 '''
 
 
-def settings(vt, additionnal_defaults=None):
+def settings():
     _s = __salt__
-    if additionnal_defaults is None:
-        additionnal_defaults = {}
-    cloudSettings = _s['mc_cloud.settings']()
-    mod = 'mc_cloud_{0}'.format(vt)
-    default_settings_fun = '{0}.default_settings'.format(mod)
-    prefix = 'makina-states.cloud.{0}'.format(vt)
-    data = _s['mc_utils.defaults'](prefix, _s[default_settings_fun]())
-    vtSettings = _s['mc_utils.defaults'](
-        prefix,
-        _s['mc_cloud_vm.mangle_default_settings'](
-            __grains__['id'],
-            cloudSettings,
-            default_settings,
-            additionnal_defaults=additionnal_defaults))
-    return vtSettings
+    settings = _s['mc_utils.defaults'](PREFIX, vm_registry(prefixed=False))
+    return settings
+
+
+def vt_settings(vt=VT):
+    _s = __salt__
+    data = settings()['vms'].get(vt, {})
+    if data:
+        vt_fun = 'mc_cloud_{0}.vt_default_settings'.format(vt)
+        cloudSettings = _s['mc_cloud.settings']()
+        imgSettings = _s['mc_cloud_images.settings']()
+        data = _s['mc_utils.dictupdate'](
+            data,  _s[vt_fun](cloudSettings, imgSettings))
+    return data
+
+
+def vm_settings(id_=None):
+    if not id_:
+        id_ = __grains__['id']
+    _s = __salt__
+    data = settings()['vms'].get(id_, {})
+    if data and ('vt' in 'data'):
+        vt = data['vt']
+        fun = 'mc_cloud_{0}.vm_default_settings'.format(vt)
+        cloudSettings = _s['mc_cloud.settings']()
+        imgSettings = _s['mc_cloud_images.settings']()
+        data = _s['mc_utils.dictupdate'](
+            data, _s[fun](cloudSettings, imgSettings))
+    return data
+
+
+def vts_settings():
+    data = OrderedDict()
+    for vt in data['vts']:
+        data[vt] = vt_settings(vt)
+    return data
+
+
+def vms_settings():
+    data = OrderedDict()
+    for id_ in data['vms']:
+        data[id_] = vm_settings(id_)
+    return data
 # vim:set et sts=4 ts=4 tw=81:

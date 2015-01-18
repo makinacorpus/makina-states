@@ -21,8 +21,8 @@ def ext_pillar(id_, pillar, *args, **kw):
         #'mc_cloud_compute_node.ext_pillar'
     ]:
         data = __salt__['mc_utils.dictupdate'](
-            data,
-            __salt__[i](id_, pillar, *args, **kw))
+            data, __salt__[i](id_, pillar, *args, **kw))
+    data['mc_pillar.loaded'] = True
     return data
 
 # vim:set et sts=4 ts=4 tw=80:

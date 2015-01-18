@@ -22,15 +22,12 @@ _errmsg = saltapi._errmsg
 __name = 'mc_cloud_lxc'
 
 log = logging.getLogger(__name__)
-MAC_GID = 'makina-states.cloud.lxc.vmsettings.{0}.{1}.mac'
-PW_GID = 'makina-states.cloud.lxc.vmsettings.{0}.{1}.password'
-IP_GID = 'makina-states.cloud.lxc.vmsettings.{0}.{1}.ip'
 VT = 'lxc'
 PREFIX = 'makina-states.cloud.{0}'.format(VT)
 
 
 def vt():
-    return VT
+    return __salt__['mc_cloud_vm.vt'](VT)
 
 
 def is_lxc():
@@ -72,7 +69,7 @@ def is_lxc():
     return lxc
 
 
-def default_settings():
+def vt_default_settings(cloudSettings, imgSettings):
     '''
     Default lxc container settings
 
@@ -102,6 +99,8 @@ def default_settings():
             (lvm, overlayfs, dir, brtfs) 'lvm'
         vgname
             'data'
+        fstab
+            list of fstab entries
         lvname
             'data'
         lxc_conf
@@ -116,30 +115,30 @@ def default_settings():
             The settings are not stored here for obvious performance reasons
     '''
     _s = __salt__
-    imgSettings = _s['mc_cloud_images.default_settings']()
     default_container = [a for a in imgSettings['lxc']['images']][0]
     dptype = 'dir'
     backing = 'dir'
     if _s['mc_nodetypes.is_devhost']():
         backing = dptype = 'overlayfs'
     vmSettings = _s['mc_utils.dictupdate'](
-        _s['mc_cloud_vm.default_settings'](), {
-            'defaults': {
-                'default_container': default_container,
-                'profile': 'medium',
-                'profile_type': dptype,
-                #
-                'gateway': '10.5.0.1',
-                'network': '10.5.0.0',
-                'bridge': 'lxcbr1',
-                #
-                'backing': backing,
-                'vgname': 'lxc',
-                'lvname': None,
-                #
-                'lxc_conf': [],
-                'lxc_conf_unset': []
-            },
+        _s['mc_cloud_vm.vt_default_settings'](cloudSettings, imgSettings), {
+            'vt': VT,
+            'defaults': {'default_container': default_container,
+                         'profile': 'medium',
+                         'profile_type': dptype,
+                         #
+                         'gateway': '10.5.0.1',
+                         'network': '10.5.0.0',
+                         'bridge': 'lxcbr1',
+                         #
+                         'backing': backing,
+                         'vgname': 'lxc',
+                         'lvname': None,
+                         #
+                         #
+                         'fstab': None,
+                         'lxc_conf': [],
+                         'lxc_conf_unset': []},
             'lxc_cloud_profiles': {
                 'xxxtrem': {'size': '2000g'},
                 'xxtrem': {'size': '1000g'},
@@ -151,88 +150,25 @@ def default_settings():
                 'small': {'size': '5g'},
                 'xsmall': {'size': '3g'},
                 'xxsmall': {'size': '1g'},
-                'xxxsmall': {'size': '500m'}
-            }
-        }
-    )
+                'xxxsmall': {'size': '500m'}}})
     return vmSettings
 
 
-def vm_extpillar(vm, target, vmSettings=None, cloudSettings=None, **kw):
-    '''
-    Get per LXC container specific settings
-
-        fstab
-            list of fstab entries
-    '''
-    _s = __salt__
-    _g = __grains__
-    vm_data = _s['mc_pillar.get_global_clouf_conf'](
-        'cloud_vm_attrs', vm)
-    if vmSettings is None:
-        vmSettings = settings()
-    if cloudSettings is None:
-        cloudSettings = _s['mc_cloud.settings']()
-    vm_defaults = {'default_container': None,
-                   'lvname': None,
-                   'fstab': None,
-                   'lxc_conf': None,
-                   'lxc_conf_unset': None}
-    vm_data = _s['mc_cloud_vm.vm_default_settings'](
-        target, VT, vm, cloudSettings, vmSettings, vm_defaults, vm_data
-    )
-    if ('overlayfs' in vm_data['backing']) or ('dir' in vm_data['backing']):
-        for k in ['lvname', 'vgname', 'size']:
-            if k in vm_data:
-                del vm_data[k]
-    return vm_data
-
-
-def vt_extpillar(vm, target, vmSettings=None, cloudSettings=None, **kw):
+def vt_extpillar(target, data, *args, **kw):
     '''
     LXC extpillar
     '''
-    _s = __salt__
-    imgSettings = _s['mc_cloud_images.settings']()
-    default_container = [a for a in imgSettings[VT]['images']][0]
-    additionnal_defaults = {'default_container': default_container}
-    if _s['mc_nodetypes.is_devhost']():
-        additionnal_defaults[
-            'backing'
-        ] = additionnal_defaults[
-            'profile_type'] = 'overlayfs'
-    data = OrderedDict()
-
-    def get_vm_pillar(vm):
-        vm_prefix = '{0}.vms.{1}'.format(PREFIX, vm)
-        vm_pillar = _s['mc_cloud_vm.vt_extpillar'](
-            vm, PREFIX, VT, additionnal_defaults=additionnal_defaults)
-        return {vm_prefix: vm_pillar}
-
     return data
 
 
-'''
-After pillar has been loaded, on node side
-'''
-
-
-def settings():
-    '''Lxc registry
-
+def vm_extpillar(vm, data, *args, **kw):
     '''
-    _s = __salt__
-    id_ = __grains__['id']
-    cloudSettings = _s['mc_cloud.settings']()
-    imgSettings = _s['mc_cloud_images.settings']()
-    default_container = [a for a in imgSettings['lxc']['images']][0]
-    backing = dptype = 'dir'
-    if _s['mc_nodetypes.is_devhost']():
-        backing = dptype = 'overlayfs'
-    additionnal_defaults = {'profile_type': dptype,
-                            'default_container': default_container,
-                            'backing': backing}
-    vtSettings = _s['mc_cloud_vm.settings'](
-        VT, additionnal_defaults=additionnal_defaults)
-    return vtSettings
+    Get per LXC container specific settings
+    '''
+    backing = data.setdefault('backing', 'dir')
+    if ('overlayfs' in backing) or ('dir' in backing):
+        for k in ['lvname', 'vgname', 'size']:
+            if k in data:
+                del data[k]
+    return data
 # vim:set et sts=4 ts=4 tw=80:

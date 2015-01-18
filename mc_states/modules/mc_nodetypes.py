@@ -56,7 +56,7 @@ def registry():
 
 
 def is_devhost():
-    return makina_grains.is_devhost()
+    return makina_grains._is_devhost()
 
 
 def is_vm():

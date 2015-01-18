@@ -77,7 +77,7 @@ def run_vt_hook(hook_name,
             vts = settings['vts']
         else:
             settings = cli('mc_cloud_compute_node.settings')
-            vts = settings['targets'][target]['virt_types']
+            vts = settings['targets'][target]['vts']
     if isinstance(vts, basestring):
         vts = [vts]
     for vt in vts:

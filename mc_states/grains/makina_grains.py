@@ -22,8 +22,7 @@ from mc_states.modules.mc_lxc import (
     is_lxc)
 
 
-
-def devhost_num():
+def _devhost_num():
     num = subprocess.Popen(
         'bash -c "if [ -f /root/vagrant/provision_settings.sh ];'
         'then . /root/vagrant/provision_settings.sh;'
@@ -33,8 +32,8 @@ def devhost_num():
     return num
 
 
-def is_devhost():
-    return devhost_num() != ''
+def _is_devhost():
+    return _devhost_num() != ''
 
 
 def get_makina_grains():
@@ -55,7 +54,7 @@ def get_makina_grains():
         grains['makina.docker'] = True
     if os.path.exists('/var/log/upstart'):
         grains['makina.upstart'] = True
-    num = devhost_num()
+    num = _devhost_num()
     routes = subprocess.Popen(
         'bash -c "netstat -nr"',
         shell=True, stdout=subprocess.PIPE

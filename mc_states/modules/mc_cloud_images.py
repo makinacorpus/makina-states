@@ -14,6 +14,7 @@ import os
 import copy
 import yaml
 import mc_states.utils
+from mc_states.utils import memoize_cache
 
 from mc_states import saltapi
 
@@ -96,30 +97,34 @@ def default_settings():
     return data
 
 
-def extpillar_settings(id_=None):
-    cid = __opts__['id']
-    _s = __salt__
-    extdata = _s['mc_pillar.get_global_clouf_conf']('images')
-    mextdata = _s['mc_pillar.get_global_clouf_conf']('images_{0}'.format(cid))
-    data = {}
-    cloud_settings = _s['mc_cloud.extpillar_settings']()
-    is_devhost = _s['mc_nodetypes.is_devhost']()
-    cron_sync = True
-    if (is_lxc() or is_devhost):
-        cron_sync = False
-    data = _s['mc_utils.dictupdate'](
-        _s['mc_utils.dictupdate'](
-            default_settings(), extdata),
-        mextdata)
-    if id_:
-        cextdata = _s['mc_pillar.get_global_clouf_conf'](
-            'images_{0}'.format(id_))
-        data = _s['mc_utils.dictupdate'](data, cextdata)
-    data['root'] = cloud_settings['root']
-    data['cron_sync'] = cron_sync
-    data = complete_images(data)
-    data = _s['mc_utils.format_resolve'](data)
-    return data
+def extpillar_settings(id_=None, ttl=30):
+    def _do(id_=None):
+        cid = __opts__['id']
+        _s = __salt__
+        extdata = _s['mc_pillar.get_global_clouf_conf']('images')
+        mextdata = _s['mc_pillar.get_global_clouf_conf'](
+            'images_{0}'.format(cid))
+        data = {}
+        cloud_settings = _s['mc_cloud.extpillar_settings']()
+        is_devhost = _s['mc_nodetypes.is_devhost']()
+        cron_sync = True
+        if (is_lxc() or is_devhost):
+            cron_sync = False
+        data = _s['mc_utils.dictupdate'](
+            _s['mc_utils.dictupdate'](
+                default_settings(), extdata),
+            mextdata)
+        if id_:
+            cextdata = _s['mc_pillar.get_global_clouf_conf'](
+                'images_{0}'.format(id_))
+            data = _s['mc_utils.dictupdate'](data, cextdata)
+        data['root'] = cloud_settings['root']
+        data['cron_sync'] = cron_sync
+        data = complete_images(data)
+        data = _s['mc_utils.format_resolve'](data)
+        return data
+    cache_key = 'mc_cloud_images.extpillar_settings{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 
 def ext_pillar(id_, *args, **kw):

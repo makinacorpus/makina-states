@@ -19,6 +19,7 @@ import os
 from salt.utils.odict import OrderedDict
 import copy
 import mc_states.utils
+from mc_states.utils import memoize_cache
 from salt.modules import tls as tlsm
 import M2Crypto
 
@@ -84,59 +85,75 @@ def ssl_certs(domains):
 
 
 def default_settings():
-    data = __salt__['mc_utils.defaults'](
-        'makina-states.cloud.controller', {
-            'controller': __opts__['id'],
+    data = {'controller': _s['mc_pillar.mastersalt_minion_id'](),
+            'kinds': {'generic': True,
+                      'saltify': True,
+                      'lxc': False,
+                      'kvm': False},
             'compute_nodes': OrderedDict(),
-            'vms': OrderedDict()})
+            'vms': OrderedDict()}
     return data
 
 
-def extpillar_settings(id_=None):
-    _s = __salt__
-    extdata = {}
-    data = _s['mc_utils.dictupdate'](default_settings(), extdata)
-    return data
+def extpillar_settings(id_=None, ttl=30):
+    def _do(id_=None):
+        _s = __salt__
+        gconf = _s['mc_pillar.get_configuration'](
+            _s['mc_pillar.mastersalt_minion_id']())
+        gdata = {'kinds': {'lxc': gconf.get('cloud_control_lxc', False),
+                           'kvm': gconf.get('cloud_control_kvm', False)}}
+        extdata = _s['mc_pillar.get_global_clouf_conf']('cloud')
+        data = _s['mc_utils.dictupdate'](default_settings(),
+                                         _s['mc_utils.dictupdate'](gdata, extdata))
+        return data
+    cache_key = 'mc_cloud_controller.extpillar_settings{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 
-def ext_pillar(id_=None):
-    _s = __salt__
-    expose = any([_s['mc_cloud.is_a_controller'](id_),
-                  _s['mc_cloud.is_a_vm'](id_),
-                  _s['mc_cloud.is_a_compute_node'](id_)])
-    if not expose:
-        return {}
-    data = extpillar_settings(id_)
-    conf_targets = _s['mc_cloud_compute_node.get_vms']()
-    conf_vms = _s['mc_cloud_compute_node.get_all_vms']()
-    compute_node_data = copy.deepcopy(conf_targets.get(id_, None))
-    dtargets = data['compute_nodes']
-    dvms = data['vms']
-    if _s['mc_cloud.is_a_controller'](id_):
-        expose = True
-        dtargets = _s['mc_utils.dictupdate'](dtargets, conf_targets)
-        dvms = _s['mc_utils.dictupdate'](dvms, conf_vms)
-    if _s['mc_cloud.is_a_compute_node'](id_):
-        expose = True
-        dtargets = _s['mc_utils.dictupdate'](
-            dtargets, {id_: compute_node_data})
-        dvms = _s['mc_utils.dictupdate'](
-            dvms, dict([(vm, copy.deepcopy(conf_vms[vm]))
-                        for vm in conf_targets[id_]['vms']]))
-    if _s['mc_cloud.is_a_vm'](id_):
-        expose = True
-        tid = conf_vms[id_]['target']
-        tdata = copy.deepcopy(conf_targets[tid])
-        tdata['vms'] = dict([(vm, tdata['vms'][vm])
-                             for vm in tdata['vms']
-                             if vm == id_])
-        dtargets = _s['mc_utils.dictupdate'](
-            dtargets, {tid: tdata})
-        dvms = _s['mc_utils.dictupdate'](
-            dvms, {id_: copy.deepcopy(conf_vms[id_])})
-    data['compute_nodes'] = dtargets
-    data['vms'] = dvms
-    return {PREFIX: data}
+def ext_pillar(id_=None, ttl=30):
+    def _do(id_=None):
+        _s = __salt__
+        expose = any([_s['mc_cloud.is_a_controller'](id_),
+                      _s['mc_cloud.is_a_vm'](id_),
+                      _s['mc_cloud.is_a_compute_node'](id_)])
+        if not expose:
+            return {}
+        data = extpillar_settings(id_)
+        conf_targets = _s['mc_cloud_compute_node.get_targets']()
+        conf_vms = _s['mc_cloud_compute_node.get_vms']()
+        compute_node_data = conf_targets.get(id_, None)
+        dtargets = data['compute_nodes']
+        dvms = data['vms']
+        if _s['mc_cloud.is_a_controller'](id_):
+            expose = True
+            dtargets = _s['mc_utils.dictupdate'](dtargets, conf_targets)
+            dvms = _s['mc_utils.dictupdate'](dvms, conf_vms)
+        else:
+            data.pop('kinds', None)
+        if _s['mc_cloud.is_a_compute_node'](id_):
+            expose = True
+            dtargets = _s['mc_utils.dictupdate'](
+                dtargets, {id_: compute_node_data})
+            dvms = _s['mc_utils.dictupdate'](
+                dvms, dict([(vm, conf_vms[vm])
+                            for vm in conf_targets[id_]['vms']]))
+        if _s['mc_cloud.is_a_vm'](id_):
+            expose = True
+            tid = conf_vms[id_]['target']
+            tdata = conf_targets[tid]
+            tdata['vms'] = dict([(vm, tdata['vms'][vm])
+                                 for vm in tdata['vms']
+                                 if vm == id_])
+            dtargets = _s['mc_utils.dictupdate'](
+                dtargets, {tid: tdata})
+            dvms = _s['mc_utils.dictupdate'](
+                dvms, {id_: conf_vms[id_]})
+        data['compute_nodes'] = dtargets
+        data['vms'] = dvms
+        return {PREFIX: data}
+    cache_key = 'mc_cloud_controller.extpillar{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+
 
 def settings():
     '''

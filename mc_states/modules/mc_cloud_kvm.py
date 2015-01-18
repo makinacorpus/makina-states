@@ -20,15 +20,12 @@ _errmsg = saltapi._errmsg
 __name = 'mc_cloud_kvm'
 
 log = logging.getLogger(__name__)
-MAC_GID = 'makina-states.cloud.kvm.vmsettings.{0}.{1}.mac'
-PW_GID = 'makina-states.cloud.kvm.vmsettings.{0}.{1}.password'
-IP_GID = 'makina-states.cloud.kvm.vmsettings.{0}.{1}.ip'
 VT = 'kvm'
 PREFIX = 'makina-states.cloud.{0}'.format(VT)
 
 
 def vt():
-    return VT
+    return __salt__['mc_cloud_vm.vt'](VT)
 
 
 def is_kvm():
@@ -50,7 +47,7 @@ def is_kvm():
     return kvm
 
 
-def default_settings():
+def vt_default_settings(cloudSettings, imgSettings):
     '''
     Default KVM vm settings
 
@@ -63,64 +60,27 @@ def default_settings():
     '''
     _s = __salt__
     vmSettings = _s['mc_utils.dictupdate'](
-        _s['mc_cloud_vm.default_settings'](), {
-            'defaults': {
-                'gateway': '10.6.0.1',
-                'network': '10.6.0.0',
-                'bridge': 'kvmbr1',
-                'profile': 'medium',
-                'pools': {'vg': {'type': 'lvm'}}}})
+        _s['mc_cloud_vm.vt_default_settings'](cloudSettings, imgSettings), {
+            'vt': VT,
+            'defaults': {'gateway': '10.6.0.1',
+                         'network': '10.6.0.0',
+                         'bridge': 'kvmbr1',
+                         'profile': 'medium',
+                         'pools': {'vg': {'type': 'lvm'}}}})
     return vmSettings
 
 
-def vm_extpillar(vm, target, vmSettings=None, cloudSettings=None, **kw):
-    '''
-    Get per KVM vm specific settings
 
-    '''
-    _s = __salt__
-    _g = __grains__
-    vm_data = _s['mc_pillar.get_global_clouf_conf'](
-        'cloud_vm_attrs', vm)
-    if vmSettings is None:
-        vmSettings = settings()
-    if cloudSettings is None:
-        cloudSettings = _s['mc_cloud.settings']()
-    vm_defaults = {'pools': None}
-    vm_data = _s['mc_cloud_vm.vm_default_settings'](
-        target, VT, vm, cloudSettings, vmSettings, vm_defaults, vm_data
-    )
-    if ('overlayfs' in vm_data['backing']) or ('dir' in vm_data['backing']):
-        for k in ['lvname', 'vgname', 'size']:
-            if k in vm_data:
-                del vm_data[k]
-    return vm_data
-
-
-def vt_extpillar(id_, *args, **kw):
+def vt_extpillar(target, data, **kw):
     '''
     KVM extpillar
     '''
-    _s = __salt__
-    # any additionnal VT specific settings
-    additionnal_defaults = {}
-    return _s['mc_cloud_vm.vt_extpillar'](
-        id_, PREFIX, VT, additionnal_defaults=additionnal_defaults)
+    return data
 
 
-'''
-After pillar has been loaded, on node side
-'''
-
-
-def settings():
+def vm_extpillar(vm, data, *args, **kw):
     '''
-    KVM registry
+    Get per KVM specific settings
     '''
-    _s = __salt__
-    # any additionnal VT specific settings
-    additionnal_defaults = {}
-    vtSettings = _s['mc_cloud_vm.settings'](
-        VT, additionnal_defaults=additionnal_defaults)
-    return vtSettings
+    return data
 # vim:set et sts=4 ts=4 tw=80:

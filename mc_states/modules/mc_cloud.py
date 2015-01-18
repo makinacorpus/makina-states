@@ -12,6 +12,7 @@ mc_cloud / cloud registries & functions
 import os
 import copy
 import mc_states.utils
+from mc_states.utils import memoize_cache
 import socket
 import yaml
 import logging
@@ -103,9 +104,8 @@ def default_settings():
         'ssl_pillar_dir': '{all_pillar_dir}/ssl',
         'prefix': prefix,
         'mode': 'mastersalt',
-        'script': (
-            '/srv/mastersalt/makina-states/'
-            '_scripts/boot-salt.sh'),
+        'script': ('/srv/mastersalt/makina-states/'
+                   '_scripts/boot-salt.sh'),
         'bootsalt_shell': 'bash',
         'bootsalt_args': '-C --from-salt-cloud -no-M',
         'bootsalt_mastersalt_args': (
@@ -126,79 +126,90 @@ def default_settings():
         'saltify': True,
         'lxc': False,
         'kvm': False,
-        'is': {
-            'compute_node': False,
-            'vm': False,
-            'controller': False,
-        },
+        'is': {'compute_node': False,
+               'vm': False,
+               'controller': False},
         'lxc.defaults.backing': 'dir'
     }
     return data
 
 
-def extpillar_settings(id_=None, *args, **kw):
+def extpillar_settings(id_=None, ttl=30, *args, **kw):
     '''
     return the cloud global configuation
     opts['id'] should resolve to mastersalt
     '''
-    _s = __salt__
-    _o = __opts__
-    if id_ is None:
-        id_ = __opts__['id']
-    conf = _s['mc_pillar.get_configuration'](_o['id'])
-    extdata = _s['mc_pillar.get_global_clouf_conf']('cloud')
-    default_env = _s['mc_env.ext_pillar'](id_).get('env', '')
-    data = _s['mc_utils.dictupdate'](
-        _s['mc_utils.dictupdate'](
-            default_settings(), {'ssl': {'ca': {'ca_name': id_}},
-                                 'master_port': _o.get('master_port'),
-                                 'master': id_,
-                                 # states registry settings
-                                 'generic': True,
-                                 'saltify': True,
-                                 'lxc': conf.get('cloud_control_lxc', False),
-                                 'kvm': conf.get('cloud_control_kvm', False)}
-        ), extdata)
-    if not data['bootsalt_branch']:
-        data['bootsalt_branch'] = {'dev': 'master',
-                                   'prod': 'stable',
-                                   'preprod': 'stable'}.get(
-                                       default_env, 'stable')
-    data = _s['mc_utils.format_resolve'](data)
-    return data
+    def _do(id_=None):
+        _s = __salt__
+        _o = __opts__
+        if id_ is None:
+            id_ = _s['mc_pillar.mastersalt_minion_id']()
+        conf = _s['mc_pillar.get_configuration'](
+            _s['mc_pillar.mastersalt_minion_id']())
+        extdata = _s['mc_pillar.get_global_clouf_conf']('cloud')
+        default_env = _s['mc_env.ext_pillar'](id_).get('env', '')
+        data = _s['mc_utils.dictupdate'](
+            _s['mc_utils.dictupdate'](
+                default_settings(), {
+                    'ssl': {'ca': {'ca_name': id_}},
+                    'master_port': _o.get('master_port'),
+                    'master': id_,
+                    # states registry settings
+                    'generic': True,
+                    'saltify': True,
+                    'lxc': conf.get('cloud_control_lxc', False),
+                    'kvm': conf.get('cloud_control_kvm', False)}
+            ), extdata)
+        if not data['bootsalt_branch']:
+            data['bootsalt_branch'] = {'dev': 'master',
+                                       'prod': 'stable',
+                                       'preprod': 'stable'}.get(
+                                           default_env, 'stable')
+        data = _s['mc_utils.format_resolve'](data)
+        return data
+    cache_key = 'mc_cloud.extpillar_settings{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 
-def is_a_vm(id_=None):
-    if id_ is None:
-        id_ = __grains__['id']
-    _s = __salt__
-    vms = _s['mc_cloud_compute_node.get_all_vms']()
-    if id_ in vms:
-        return True
-    return False
+def is_a_vm(id_=None, ttl=30):
+    def _do(id_=None):
+        if id_ is None:
+            id_ = __grains__['id']
+        _s = __salt__
+        vms = _s['mc_cloud_compute_node.get_vms']()
+        if id_ in vms:
+            return True
+        return False
+    cache_key = 'mc_cloud.is_a_vm{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+
+def is_a_compute_node(id_=None, ttl=30):
+    def _do(id_=None):
+        if id_ is None:
+            id_ = __grains__['id']
+        _s = __salt__
+        targets = _s['mc_cloud_compute_node.get_targets']()
+        if id_ in targets:
+            return True
+        return False
+    cache_key = 'mc_cloud.is_a_compute_node{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 
-def is_a_compute_node(id_=None):
-    if id_ is None:
-        id_ = __grains__['id']
-    _s = __salt__
-    targets = _s['mc_cloud_compute_node.get_all_targets']()
-    if id_ in targets:
-        return True
-    return False
-
-
-def is_a_controller(id_):
-    if id_ is None:
-        id_ = __grains__['id']
-    _s = __salt__
-    conf = _s['mc_pillar.get_configuration'](id_)
-    if (
-        (__opts__['id'] == id_)
-        or conf.get('cloud_master', False)
-    ):
-        return True
-    return False
+def is_a_controller(id_=None, ttl=30):
+    def _do(id_):
+        if id_ is None:
+            id_ = __grains__['id']
+        _s = __salt__
+        conf = _s['mc_pillar.get_configuration'](id_)
+        if (
+            (_s['mc_pillar.mastersalt_minion_id']() == id_)
+            or conf.get('cloud_master', False)
+        ):
+            return True
+        return False
+    cache_key = 'mc_cloud.is_a_controller{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 
 def is_a_cloud_member(id_=None):
@@ -216,8 +227,8 @@ def ext_pillar(id_, *args, **kw):
     data = {}
     _s = __salt__
     extdata = extpillar_settings(id_)
-    vms = _s['mc_cloud_compute_node.get_all_vms']()
-    targets = _s['mc_cloud_compute_node.get_all_targets']()
+    vms = _s['mc_cloud_compute_node.get_vms']()
+    targets = _s['mc_cloud_compute_node.get_targets']()
     if is_a_vm(id_):
         extdata['is']['vm'] = True
         vmvt = vms[id_]['vt']
@@ -318,10 +329,11 @@ def settings():
                     os.path.join(
                         _o['pillar_roots']['base'][0],
                         'cloud-controller')),
-                'ssl': {'ca': {'ca_name': _o['id']}},
+                'ssl': {'ca': {'ca_name': _s[
+                    'mc_pillar.mastersalt_minion_id']()}},
                 'prefix': prefix,
                 'master_port': _s['config.get']('master_port'),
-                'master': _o['id'],
+                'master': _s['mc_pillar.mastersalt_minion_id'](),
                 'pvdir': prefix + "/cloud.providers.d",
                 'pfdir': prefix + "/cloud.profiles.d",
             }))

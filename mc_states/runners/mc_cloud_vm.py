@@ -72,12 +72,12 @@ def vm_sls_pillar(compute_node, vm, ttl=api.RUNNER_CACHE_TIME):
         cloudSettingsData['prefix'] = cloudSettings['prefix']
         cnsettings = cli('mc_cloud_compute_node.settings')
         targets = cnsettings.get('targets', {})
-        cnSettingsData['virt_types'] = targets.get(
-            compute_node, {}).get('virt_types', [])
+        cnSettingsData['vt'] = targets.get(
+            compute_node, {}).get('vts', [])
         vmSettingsData['vm_name'] = vm
         vt = targets.get(compute_node, {}).get('vms', {}).get(vm, None)
         vmSettingsData['vm_vt'] = vt
-        supported_vts = cli('mc_cloud_compute_node.get_vts', supported=True)
+        supported_vts = cli('mc_cloud_compute_node.get_vts')
         # vmSettingsData = api.json_dump(vmSettingsData)
         # cloudSettingsData = api.json_dump(cloudSettingsData)
         # cnSettingsData = api.json_dump(cnSettingsData)
@@ -635,7 +635,7 @@ def register_configurations(compute_node,
     gerror = ret['changes'].setdefault('vms_in_error', {})
     configured = gprov.setdefault(compute_node, [])
     configuration_error = gerror.setdefault(compute_node, [])
-    vms = settings['targets'].get(compute_node, {'virt_types': [], 'vms': {}})
+    vms = settings['targets'].get(compute_node, {'vts': [], 'vms': {}})
     vms = filter_vms(compute_node, vms['vms'], skip, only)
     kvms = [a for a in vms]
     kvms.sort()
@@ -722,7 +722,7 @@ def provision_vms(compute_node,
     gerror = ret['changes'].setdefault('vms_in_error', {})
     provisionned = gprov.setdefault(compute_node, [])
     provision_error = gerror.setdefault(compute_node, [])
-    vms = settings['targets'].get(compute_node, {'virt_types': [], 'vms': {}})
+    vms = settings['targets'].get(compute_node, {'vts': [], 'vms': {}})
     vms = filter_vms(compute_node, vms['vms'], skip, only)
     kvms = [a for a in vms]
     kvms.sort()
@@ -802,7 +802,7 @@ def post_provision_vms(compute_node,
     gprov = ret['changes'].setdefault('postp_vms_in_error', {})
     provisionned = gprov.setdefault(compute_node, [])
     provision_error = gerror.setdefault(compute_node, [])
-    vms = settings['targets'].get(compute_node, {'virt_types': [], 'vms': {}})
+    vms = settings['targets'].get(compute_node, {'vts': [], 'vms': {}})
     vms = filter_vms(compute_node, vms['vms'], skip, only)
     kvms = [a for a in vms]
     kvms.sort()
