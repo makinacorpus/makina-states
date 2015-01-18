@@ -248,17 +248,21 @@ def ext_pillar(id_, *args, **kw):
         for i in targets[id_]['vts']:
             extdata['is']['{0}_compute_node'.format(i)] = True
     if any([
+        extdata['is']['vm'],
+        extdata['is']['compute_node']
+    ]):
+        data.update(_s['mc_cloud_vm.ext_pillar'](id_))
+    if any([
         extdata['is']['controller'],
         extdata['is']['compute_node']
     ]):
-        data.update(
-            _s['mc_cloud_compute_node.ext_pillar'](id_)
-        )
+        data.update(_s['mc_cloud_compute_node.ext_pillar'](id_))
     if is_a_controller(id_):
         extdata['is']['controller'] = True
     # if any of vm/computenode/controller
     # expose global cloud conf
     if any(extdata['is'].values()):
+        data.update(_s['mc_cloud_images.ext_pillar'](id_))
         data[PREFIX] = extdata
     return data
 

@@ -2073,10 +2073,8 @@ def get_supervision_objects_defs(id_):
             # set the local ip for snmp and ssh
             if vm_parent == host:
                 ssh_host = snmp_host = 'localhost'
-                ext_pillar = __salt__['mc_cloud_vm.extpillar_for'](vm, vt)
-                k = 'makina-states.cloud.{0}.vms.{1}'.format(vt, vm)
-                if k in ext_pillars:
-                    ssh_host = snmp_host = ext_pillar[k]['ip']
+                ext_pillar = __salt__['mc_cloud_vm.vm_extpillar'](vm)
+                ssh_host = snmp_host = ext_pillar['ip']
             # we can access sshd and snpd on cloud vms
             # thx to special port mappings
             if is_cloud_vm(vm) and (vm_parent != host) and vt in ['lxc']:
@@ -3003,7 +3001,7 @@ def ext_pillar(id_, pillar=None, *args, **kw):
         #'mc_pillar.get_cloudmaster_conf',
         #
         'mc_env.ext_pillar',
-        'mc_cloud_images.ext_pillar',
+        'mc_cloud.ext_pillar',
         #
     ]:
         try:

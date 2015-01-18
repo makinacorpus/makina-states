@@ -580,7 +580,8 @@ def get_kind_port(vm, target=None, kind='ssh'):
     port = kind_map.get(vm, None)
     if port is None:
         port = _get_next_available_port(kind_map.values(), start, end)
-        _s['mc_cloud_compute_node.set_{0}_port'.format(kind)](target, vm, port)
+        _s['mc_cloud_compute_node.set_kind_port'.format(kind)](
+            vm, port, target=target, kind=kind)
     return port
 
 
