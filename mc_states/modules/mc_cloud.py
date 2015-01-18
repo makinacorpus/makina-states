@@ -259,6 +259,7 @@ def ext_pillar(id_, *args, **kw):
         data.update(_s['mc_cloud_compute_node.ext_pillar'](id_))
     if is_a_controller(id_):
         extdata['is']['controller'] = True
+        data.update(_s['mc_cloud_saltify.ext_pillar'](id_))
     # if any of vm/computenode/controller
     # expose global cloud conf
     if any(extdata['is'].values()):
