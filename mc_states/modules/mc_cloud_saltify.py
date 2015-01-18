@@ -160,6 +160,9 @@ def target_ext_pillar(name, c_data=None):
     if c_data['no_sudo_password']:
         sudo_password = None
     c_data['sudo_password'] = sudo_password
+    c_data = _s['mc_utils.dictupdate'](
+        c_data,
+        _s['mc_pillar.get_cloud_conf_for_cn'](name).get('saltify', {}))
     return c_data
 
 
@@ -170,10 +173,6 @@ def _add_host(_s, done_hosts, rdata, host):
             host
         )['clear']['root'],
         'ssh_username': 'root'})
-    rdata[host] = _s['mc_utils.dictupdate'](
-        rdata[host],
-        _s['mc_pillar.get_cloud_conf_for_cn'](
-            host).get('salfify', {}))
 
 
 def ext_pillar(id_, ttl=60, *args, **kw):
