@@ -160,9 +160,11 @@ def target_ext_pillar(name, c_data=None):
     if c_data['no_sudo_password']:
         sudo_password = None
     c_data['sudo_password'] = sudo_password
+    v = 'saltify'
     c_data = _s['mc_utils.dictupdate'](
-        c_data,
-        _s['mc_pillar.get_cloud_conf_for_cn'](name).get('saltify', {}))
+        c_data, _s['mc_pillar.get_global_clouf_conf'](v))
+    c_data = _s['mc_utils.dictupdate'](
+        c_data, _s['mc_pillar.get_cloud_conf_for_cn'](name).get(v, {}))
     return c_data
 
 
