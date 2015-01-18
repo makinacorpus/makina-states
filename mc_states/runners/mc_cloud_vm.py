@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import absolute_import, print_function
 '''
 
 .. _runner_mc_cloud_vm:
@@ -71,12 +72,12 @@ def vm_sls_pillar(compute_node, vm, ttl=api.RUNNER_CACHE_TIME):
         cloudSettingsData['prefix'] = cloudSettings['prefix']
         cnsettings = cli('mc_cloud_compute_node.settings')
         targets = cnsettings.get('targets', {})
-        cnSettingsData['virt_types'] = targets.get(
-            compute_node, {}).get('virt_types', [])
+        cnSettingsData['vt'] = targets.get(
+            compute_node, {}).get('vts', [])
         vmSettingsData['vm_name'] = vm
         vt = targets.get(compute_node, {}).get('vms', {}).get(vm, None)
         vmSettingsData['vm_vt'] = vt
-        supported_vts = cli('mc_cloud_compute_node.get_vts', supported=True)
+        supported_vts = cli('mc_cloud_compute_node.get_vts')
         # vmSettingsData = api.json_dump(vmSettingsData)
         # cloudSettingsData = api.json_dump(cloudSettingsData)
         # cnSettingsData = api.json_dump(cnSettingsData)
@@ -144,7 +145,7 @@ def _vm_configure(what, target, compute_node, vm, ret, output):
             'salt_target': target,
             'ret': ret,
             'sls_kw': {'pillar': vm_sls_pillar(compute_node, vm)}})
-    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
@@ -223,7 +224,7 @@ def vm_initial_highstate(vm, compute_node=None, vt=None,
             )
     else:
         ret['comment'] += 'Initial highstate already done on {0}\n'.format(vm)
-    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     return ret
 
 
@@ -306,7 +307,7 @@ def vm_ping(vm, compute_node=None, vt=None, ret=None, output=True):
     else:
         comment = red('VM {0} is unreachable\n')
     ret['comment'] += comment.format(vm)
-    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
@@ -333,7 +334,7 @@ def vm_fix_dns(vm,
         if cret:
             ret['result'] = False
             ret['comment'] += red('pb with dns on {0}'.format(vm))
-    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
@@ -371,7 +372,7 @@ def step(vm, step, compute_node=None, vt=None, ret=None, output=True):
         if ret['result']:
             ret['trace'] = ''
             ret['output'] = ''
-    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
@@ -436,7 +437,7 @@ def provision(vm, compute_node=None, vt=None,
     else:
         ret['comment'] += red(
             '{0}/{1}/{2} failed to deploy\n').format(compute_node, vt, vm)
-    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
@@ -477,7 +478,7 @@ def post_provision(vm, compute_node=None, vt=None, ret=None, output=True):
     else:
         ret['comment'] += red(
             '{0}/{1}/{2} failed to deploy\n').format(compute_node, vt, vm)
-    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
@@ -589,7 +590,7 @@ def register_configuration(vm,
         ret['result'] = False
         ret['comment'] += red('VM Configuration failed to store'
                               ' on {0}\n'.format(salt_target))
-    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
@@ -634,7 +635,7 @@ def register_configurations(compute_node,
     gerror = ret['changes'].setdefault('vms_in_error', {})
     configured = gprov.setdefault(compute_node, [])
     configuration_error = gerror.setdefault(compute_node, [])
-    vms = settings['targets'].get(compute_node, {'virt_types': [], 'vms': {}})
+    vms = settings['targets'].get(compute_node, {'vts': [], 'vms': {}})
     vms = filter_vms(compute_node, vms['vms'], skip, only)
     kvms = [a for a in vms]
     kvms.sort()
@@ -690,7 +691,7 @@ def register_configurations(compute_node,
         if ret['result']:
             ret['trace'] = ''
             ret['comment'] += green('All vms were configured\n')
-    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
@@ -721,7 +722,7 @@ def provision_vms(compute_node,
     gerror = ret['changes'].setdefault('vms_in_error', {})
     provisionned = gprov.setdefault(compute_node, [])
     provision_error = gerror.setdefault(compute_node, [])
-    vms = settings['targets'].get(compute_node, {'virt_types': [], 'vms': {}})
+    vms = settings['targets'].get(compute_node, {'vts': [], 'vms': {}})
     vms = filter_vms(compute_node, vms['vms'], skip, only)
     kvms = [a for a in vms]
     kvms.sort()
@@ -770,7 +771,7 @@ def provision_vms(compute_node,
         if ret['result']:
             ret['trace'] = ''
             ret['comment'] += green('All vms were provisionned\n')
-    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
@@ -801,7 +802,7 @@ def post_provision_vms(compute_node,
     gprov = ret['changes'].setdefault('postp_vms_in_error', {})
     provisionned = gprov.setdefault(compute_node, [])
     provision_error = gerror.setdefault(compute_node, [])
-    vms = settings['targets'].get(compute_node, {'virt_types': [], 'vms': {}})
+    vms = settings['targets'].get(compute_node, {'vts': [], 'vms': {}})
     vms = filter_vms(compute_node, vms['vms'], skip, only)
     kvms = [a for a in vms]
     kvms.sort()
@@ -844,7 +845,7 @@ def post_provision_vms(compute_node,
         if ret['result']:
             ret['trace'] = ''
             ret['comment'] += green('All vms were post provisionned\n')
-    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
@@ -872,7 +873,7 @@ def orchestrate(compute_node,
     ret = provision_vms(compute_node, skip=skip, only=only,
                         output=output, refresh=False,
                         ret=ret)
-    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 # vim:set et sts=4 ts=4 tw=80:

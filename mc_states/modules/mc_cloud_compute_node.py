@@ -31,18 +31,26 @@ __name = 'mc_cloud_compute_node'
 
 log = logging.getLogger(__name__)
 
-VIRT_TYPES = {
-    'docker': {},
-    'xen': {},
-    'lxc': {'supported': True},
-    'kvm': {'supported': True}
-}
+VIRT_TYPES = {'docker': {'supported': False},
+              'xen': {'supported': False},
+              'openvz': {'supported': False},
+              'lxc': {'supported': True},
+              'kvm': {'supported': True}}
 _RP = 'reverse_proxies'
 _SW_RP = 'shorewall_reverse_proxies'
 _CUR_API = 2
 _default = object()
+PREFIX = 'makina-states.cloud.compute_node'
 
-def get_vts(supported=None):
+
+def get_all_vts(supported=None):
+    '''
+    Get makina-states.cloud VTS
+
+        * supported=None: all
+        * supported=True: supported vt
+        * supported=False: unsupported vt
+    '''
     vts = copy.deepcopy(VIRT_TYPES)
     if supported is not None:
         for i in [a
@@ -52,811 +60,48 @@ def get_vts(supported=None):
     return vts
 
 
-def get_supported():
-    return VIRT_TYPES
-
-
-def gen_mac():
-    return ':'.join(map(lambda x: "%02x" % x, [0x00, 0x16, 0x3E,
-                                               random.randint(0x00, 0x7F),
-                                               random.randint(0x00, 0xFF),
-                                               random.randint(0x00, 0xFF)]))
-
-
-def _encode(value):
-    '''encode using msgpack backend'''
-    return msgpack.packb({'value': value})
-
-
-def _fencode(filep, value):
-    '''encode in a file using msgpack backend'''
-    dfilep = os.path.dirname(filep)
-    if not os.path.exists(dfilep):
-        os.makedirs(dfilep)
-    with open(filep, 'w') as fic:
-        fic.write(_encode(value))
-    try:
-        os.chmod(filep, 0700)
-    except:
-        pass
-
-
-def _decode(filep):
-    '''decode in a file using msgpack backend'''
-    value = None
-    try:
-        if os.path.exists(filep):
-            with open(filep) as fic:
-                rvalue = fic.read()
-                value = msgpack.unpackb(rvalue)['value']
-    except msgpack.exceptions.UnpackValueError:
-        log.error('decoding error, removing stale {0}'.format(filep))
-        os.unlink(filep)
-        value = None
-    return value
-
-
-def del_conf_for_target(target, setting):
-    '''Register a specific setting for a specific target'''
-    target = target.replace('.', '')
-    cloudSettings = __salt__['mc_cloud.settings']()
-    filep = os.path.join(
-        cloudSettings['compute_node_pillar_dir'],
-        target, 'settings',
-        setting + '.pack'
-    )
-    if os.path.exists(filep):
-        os.unlink(filep)
-
-
-def set_conf_for_target(target, setting, value):
-    '''Register a specific setting for a specific target'''
-    target = target.replace('.', '')
-    cloudSettings = __salt__['mc_cloud.settings']()
-    filep = os.path.join(
-        cloudSettings['compute_node_pillar_dir'],
-        target, 'settings',
-        setting + '.pack'
-    )
-    _fencode(filep, value)
-    return value
-
-
-def get_conf_for_target(target, setting, default=None):
-    '''get the stored specific setting for a specific target'''
-    target = target.replace('.', '')
-    cloudSettings = __salt__['mc_cloud.settings']()
-    filep = os.path.join(
-        cloudSettings['compute_node_pillar_dir'],
-        target, 'settings', setting + '.pack'
-    )
-    value = default
-    if os.path.exists(filep):
-        value = _decode(filep)
-    return value
-
-
-def set_conf_for_vm(target, virt_type, vm, setting, value):
-    target = target.replace('.', '')
-    vm = vm.replace('.', '')
-    cloudSettings = __salt__['mc_cloud.settings']()
-    filep = os.path.join(
-        cloudSettings['compute_node_pillar_dir'],
-        target, virt_type, vm, 'settings',
-        setting + '.pack'
-    )
-    _fencode(filep, value)
-    return value
-
-
-def find_mac_for_vm(target, virt_type, vm, default=None):
-    '''Generate and assign a mac addess to a specific
-    vm on a specific host'''
-    mac = get_conf_for_vm(target, virt_type, vm, 'mac')
-    if not mac:
-        mac = default
-    if not mac:
-        mac = gen_mac()
-        if not mac:
-            raise Exception(
-                'Error while setting grainmac for {0}/{1}'.format(target,
-                                                                  vm))
-        set_conf_for_vm(target, virt_type, vm, 'mac', mac)
-    return mac
-
-
-def find_password_for_vm(target,
-                         virt_type,
-                         vm,
-                         default=None,
-                         pwlen=32):
-    '''Return the vm password after creating it
-    the first time
+def get_vts(supported=True):
     '''
-    password = get_conf_for_vm(target, virt_type, vm, 'password')
-    if not password:
-        password = default
-    if not password:
-        password = secure_password(pwlen)
-        if not password:
-            raise Exception('Error while setting password '
-                            'grain for {0}/{1}'.format(target, vm))
-    return password
-
-
-def _construct_ips_dict(target):
-    allocated_ips = get_conf_for_target(target, 'allocated_ips')
-    sync = False
-    if (allocated_ips is None) or (not isinstance(allocated_ips, dict)):
-        allocated_ips = {}
-    for k in ['api', 'ips']:
-        if k not in allocated_ips:
-            sync = True
-    allocated_ips.setdefault('api', _CUR_API)
-    allocated_ips.setdefault('ips', {})
-    if sync:
-        set_conf_for_target(target, 'allocated_ips', allocated_ips)
-    return allocated_ips
-
-
-def cleanup_allocated_ips(target):
-    '''Maintenance routine to cleanup ips when ip
-    exhaution arrises'''
-    allocated_ips = _construct_ips_dict(target)
-    existing_vms = get_vms_for_target(target)
-    # recycle old ips for unexisting vms
-    sync = False
-    done = []
-    cur_ips = allocated_ips.setdefault('ips', {})
-    for name in [n for n in cur_ips]:
-        ip = cur_ips[name]
-        # doublon ip
-        if ip in done:
-            remove_allocated_ip(target, ip, vm=name)
-        else:
-            done.append(ip)
-        # ip not allocated to any vm
-        if name not in existing_vms:
-            sync = True
-            del cur_ips[name]
-    if sync:
-        set_conf_for_target(target, 'allocated_ips', allocated_ips)
-    return allocated_ips
-
-
-def get_allocated_ips(target):
-    '''Get the allocated ips for a specific target'''
-    allocated_ips = _construct_ips_dict(target)
-    return allocated_ips
-
-
-def remove_allocated_ip(target, ip, vm=None):
-    '''Remove any ip from the allocated IP registry.
-    If vm is specified, it must also match a vm
-    which is allocated to this ip'''
-    sync = False
-    all_ips = get_allocated_ips(target)
-    if ip in all_ips['ips'].values():
-        for i in [a for a in all_ips['ips']]:
-            if all_ips['ips'][i] == ip:
-                if vm is not None and vm == i:
-                    continue
-                del all_ips['ips'][i]
-                sync = True
-    if sync:
-        set_conf_for_target(target, 'allocated_ips', all_ips)
-    return get_allocated_ips(target)['ips']
-
-
-def target_for_vm(vm, target=None):
-    '''Get target for a vm'''
-    return get_vm(vm)['target']
-
-
-def vt_for_vm(vm, target=None):
-    '''Get VT for a vm'''
-    return get_vm(vm)['vt']
-
-
-def find_ip_for_vm(target,
-                   vm,
-                   default=None,
-                   virt_type=None,
-                   network=api.NETWORK,
-                   netmask=api.NETMASK):
-    '''Search for:
-
-        - an ip already allocated
-        - an random available ip in the range
-
-    To get and maybe allocate an ip for a vm call
-
-        find_ip_for_vm(target, vmname)
-
-    For force/set an ip use::
-
-        set_allocated_ip(target, vmname, '1.2.3.4')
-
+    Alias to get_all_vts
+    At the difference of supported is True by default
     '''
-    if not HAS_NETADDR:
-        raise Exception('netaddr required for ip generation')
-    allocated_ips = get_allocated_ips(target)
-    ip4 = None
-    if virt_type is None:
-        virt_type = get_vms_for_target(target).get(vm, None)
-    if virt_type:
-        try:
-            ip4 = get_conf_for_vm(target, virt_type, vm, 'ip4')
-        except msgpack.exceptions.UnpackValueError:
-            ip4 = None
-    if not virt_type:
-        virt_type = 'novtset'
-    if not ip4:
-        ip4 = default
-    if not ip4:
-        # get network bounds
-        network = netaddr.IPNetwork('{0}/{1}'.format(network, netmask))
-        # converts stringued ips to IPAddress objects
-        all_ips = allocated_ips['ips'].values()
-        for try_ip in network[2:-2]:  # skip the firsts and last for gateways
-            parts = try_ip.bits().split('.')
-            stry_ip = "{0}".format(try_ip)
-            if (
-                stry_ip in all_ips  # already allocated
-            ) or (
-                parts[-1] in ['00000000', '11111111']  # 10.*.*.0 or 10.*.*.255
-            ):
-                continue
-            else:
-                ip4 = stry_ip
-                break
-            raise Exception('Did not get an available ip in the {2} network'
-                            ' for {0}/{1}'.format(target, vm, virt_type))
-        set_conf_for_vm(target, virt_type, vm, 'ip4', ip4)
-    if not ip4:
-        raise Exception('Did not get an available ip for {0}/{1}'.format(
-            target, vm))
-    cur_ip = allocated_ips['ips'].get(vm)
-    if ip4 and (ip4 != cur_ip):
-        allocated_ips['ips'][vm] = ip4
-        set_conf_for_target(target, 'allocated_ips', allocated_ips)
-    return ip4
+    return get_all_vts(supported=supported)
 
 
-def set_allocated_ip(target, vm, ip, vt=None):
+def default_settings():
     '''
-    For force/set an ip use::
+    Default compute node settings
 
-        set_allocated_ip(target, vmname, '1.2.3.4')
+    target
+        target minion id
 
-    '''
-    if vt is None:
-        vt = get_vms_for_target(target).get(vm, 'lxc')
-    allocated_ips = get_allocated_ips(target)
-    allocated_ips['ips'][vm] = ip
-    set_conf_for_vm(target, vt, vm, 'ip4', ip)
-    set_conf_for_target(target, 'allocated_ips', allocated_ips)
-    return get_allocated_ips(target)
-
-
-def get_conf_for_vm(target,
-                    virt_type,
-                    vm,
-                    setting,
-                    default=None):
-    '''.'''
-    target = target.replace('.', '')
-    vm = vm.replace('.', '')
-    cloudSettings = __salt__['mc_cloud.settings']()
-    filep = os.path.join(
-        cloudSettings['compute_node_pillar_dir'],
-        target, virt_type, vm, 'settings', setting + '.pack')
-    value = default
-    if os.path.exists(filep):
-        value = _decode(filep)
-    return value
-
-
-def default_has(vts=None, **kwargs):
-    if vts is None:
-        vts = {}
-    for vt in VIRT_TYPES:
-        vts.setdefault(vt, bool(kwargs.get(vt, False)))
-    return vts
-
-
-def get_firewall_toggle():
-    return __salt__['mc_utils.get'](
-        'makina-states.cloud.compute_node.has.firewall', True)
-
-
-def get_snmp_port_end():
-    return __salt__['mc_utils.get'](
-        'makina-states.cloud.compute_node.snmp_start_port', '39999')
-
-
-def get_snmp_port_start():
-    return __salt__['mc_utils.get'](
-        'makina-states.cloud.compute_node.snmp_start_port', 30000)
-
-def get_ssh_port_end():
-    return __salt__['mc_utils.get'](
-        'makina-states.cloud.compute_node.ssh_start_port', '50000')
-
-
-def get_ssh_port_start():
-    return __salt__['mc_utils.get'](
-        'makina-states.cloud.compute_node.ssh_start_port', 40000)
-
-
-def _find_available_snmp_port(targets, target, data):
-    ip = data['ip']
-    ip_parts = ip.split('.')
-    snmp_start_port = int(get_snmp_port_start())
-    return (int(snmp_start_port) +
-            (256 * int(ip_parts[2])) +
-            int(ip_parts[3]))
-
-
-def _find_available_port(targets, target, data):
-    ip = data['ip']
-    ip_parts = ip.split('.')
-    ssh_start_port = int(get_ssh_port_start())
-    return (int(ssh_start_port) +
-            (256 * int(ip_parts[2])) +
-            int(ip_parts[3]))
-
-
-def _add_server_to_backend(reversep, backend_name, domain, ip, kind='http'):
-    """The domain is ppurely informative here"""
-    _backends = reversep.setdefault('{0}_backends'.format(kind), {})
-    bck = _backends.setdefault(backend_name,
-                               {'name': backend_name,
-                                'raw_opts': [
-                                    'balance roundrobin',
-                                ],
-                                'servers': []})
-    # for now rely on settings xforwardedfor header
-    if reversep['{0}_proxy'.format(kind)].get(
-        'http_proxy_mode', 'xforwardedfor'
-    ) == 'xforwardedfor':
-        bck['raw_opts'].append('option http-server-close')
-        bck['raw_opts'].append('option forwardfor')
-    else:
-        # in not much time we ll switch to the haproxy proxy protocol which
-        # leverage the xforwardedfor hack
-        bck['raw_opts'].append('source 0.0.0.0 usesrc clientip')
-    srv = {'name': 'srv_{0}{1}'.format(domain, len(bck['servers']) + 1),
-           'bind': '{0}:80'.format(ip),
-           'opts': 'check'}
-    if not srv['bind'] in [a.get('bind') for a in bck['servers']]:
-        bck['servers'].append(srv)
-
-
-def _get_rp(target):
-    _default_rp = {
-        'target': target['target'],
-    }
-    return target.setdefault(_RP, _default_rp)
-
-
-def _configure_http_reverses(reversep, domain, ip):
-    # http
-    http_proxy = reversep['http_proxy']
-    https_proxy = reversep['https_proxy']
-    sane_domain = domain.replace('*', 'star')
-    backend_name = 'bck_{0}'.format(sane_domain)
-    sbackend_name = 'securebck_{0}'.format(sane_domain)
-    if domain.startswith('*.'):
-        rule = 'acl host_{0} hdr_end(host) -i {1}'.format(sane_domain, domain[2:])
-    else:
-        rule = 'acl host_{0} hdr(host) -i {0}'.format(sane_domain)
-    if rule not in http_proxy['raw_opts']:
-        http_proxy['raw_opts'].insert(0, rule)
-        https_proxy['raw_opts'].insert(0, rule)
-    rule = 'use_backend {1} if host_{0}'.format(sane_domain, backend_name)
-    if rule not in http_proxy['raw_opts']:
-        http_proxy['raw_opts'].append(rule)
-    # https
-    sslr = 'http-request set-header X-SSL %[ssl_fc]'
-    if sslr not in https_proxy['raw_opts']:
-        https_proxy['raw_opts'].insert(0, sslr)
-    rule = 'use_backend {1} if host_{0}'.format(sane_domain, sbackend_name)
-    if rule not in https_proxy['raw_opts']:
-        https_proxy['raw_opts'].append(rule)
-    _add_server_to_backend(reversep, backend_name, sane_domain, ip)
-    _add_server_to_backend(reversep, sbackend_name, sane_domain, ip, kind='https')
-
-
-def _init_http_proxies(target_data, reversep):
-    http_proxy_mode = target_data.get('http_proxy_mode', 'xforwardedfor')
-    reversep.setdefault(
-        'http_proxy', {
-            'name': reversep['target'],
-            'mode': 'http',
-            'http_proxy_mode': http_proxy_mode,
-            'bind': '*:80',
-            'raw_opts_pre': __salt__['mc_utils.get'](
-                'makina-states.cloud.compute_node.conf.'
-                '{0}.http_proxy.raw_opts_pre'.format(
-                    reversep['target'])),
-            'raw_opts_post': __salt__['mc_utils.get'](
-                'makina-states.cloud.compute_node.conf.'
-                '{0}.http_proxy.raw_opts_post'.format(
-                    reversep['target'])),
-            'raw_opts': []})
-
-    ssl_bind = '*:443 ssl'
-    if target_data['ssl_certs']:
-        wildcard = ''
-        if reversep['target'].count('.') >= 2:
-            wildcard = '*.' + '.'.join(reversep['target'].split('.')[1:])
-        # We must serve the compute node SSL certificate as the default one
-        # search a wildcard
-        if wildcard and wildcard in [a[0] for a in target_data['ssl_certs']]:
-            first_cert = wildcard
-        # else for the precise domain of the compute node
-        elif reversep['target'] in [a[0] for a in target_data['ssl_certs']]:
-            first_cert = reversep['target']
-        # error if we couldnt get any case
-        else:
-            raise ValueError('No such cert for compute node'
-                             ' {0}'.format(reversep['target']))
-        ssl_bind += (
-            ' crt /etc/ssl/cloud/certs/{0}.crt'
-            ' crt /etc/ssl/cloud/certs'
-        ).format(first_cert)
-    reversep.setdefault(
-        'https_proxy', {
-            'name': "secure-" + reversep['target'],
-            'mode': 'http',
-            'http_proxy_mode': http_proxy_mode,
-            'raw_opts_pre': (
-                __salt__['mc_utils.get'](
-                    'makina-states.cloud.compute_node.conf.'
-                    '{0}.https_proxy.raw_opts_pre'.format(
-                        reversep['target']), [])),
-            'raw_opts_post': __salt__['mc_utils.get'](
-                'makina-states.cloud.compute_node.conf.'
-                '{0}.https_proxy.raw_opts_post'.format(
-                    reversep['target']), []),
-            'bind': ssl_bind,
-            'raw_opts': []})
-    return reversep
-
-
-def feed_http_reverse_proxy_for_target(target, target_data=None):
-    '''Get reverse proxy information mapping for a specicific target
-    This return a useful mappings of infos to reverse proxy http
-    and ssh services with haproxy
-    '''
-    _s = __salt__.get
-    if target_data is None:
-        target_data = get_settings_for_target(target)
-    reversep = _get_rp(target_data)
-    _init_http_proxies(target_data, reversep)
-    for vmname in target_data['vms']:
-        vm = target_data['vms'][vmname]
-        for domain in vm['domains']:
-            _configure_http_reverses(reversep, domain, vm['ip'])
-    # http/https raw rules
-    for http_proxy in [
-        reversep['http_proxy'],
-        reversep['https_proxy']
-    ]:
-        if not http_proxy.get('raw_rules_done', None):
-            for rule in reversed(http_proxy['raw_opts_pre']):
-                http_proxy['raw_opts'].insert(0, rule)
-            for rule in http_proxy['raw_opts_post']:
-                http_proxy['raw_opts'].append(rule)
-            http_proxy['raw_rules_done'] = 1
-    return reversep
-
-
-def _get_next_available_port(ports, start, stop):
-    for i in range(start, stop + 1):
-        if i not in ports:
-            return i
-    raise ValueError('mc_compute_node: No more available ssh port in'
-                     '{0}:{1}'.format(start, stop))
-
-
-def get_snmp_mapping_for_target(target, target_data=None):
-    _s = __salt__.get
-    if target_data is None:
-        target_data = get_settings_for_target(target)
-    mapping = {}
-    vms_infos = target_data.get('vms', {})
-    # generate or refresh ssh mappings
-    for vm in vms_infos:
-        mapping[vm] = _s('mc_cloud_compute_node.get_snmp_port')(
-            target, vm, target_data=target_data)
-    return mapping
-
-
-def set_snmp_port(target, vm, port):
-    ssh_map = get_conf_for_target(target, 'snmp_map', {})
-    if ssh_map.get(vm, None) != port:
-        ssh_map[vm] = port
-        set_conf_for_target(target, 'snmp_map', ssh_map)
-    return get_conf_for_target(target, 'snmp_map', {}).get(vm, None)
-
-
-def cleanup_snmp_ports(target, target_data=None):
-    '''This is a maintenance routine which can be called to cleanup
-    ssh ports when range exhaustion is incoming'''
-    if target_data is None:
-        target_data = get_settings_for_target(target)
-    vms_infos = target_data.get('vms', {})
-    snmp_map = get_conf_for_target(target, 'snmp_map', {})
-    # filter old vms grains
-    need_sync = True
-    for avm in [a for a in snmp_map]:
-        if avm not in vms_infos:
-            del snmp_map[avm]
-            need_sync = True
-    if need_sync:
-        set_conf_for_target(target, 'snmp_map', snmp_map)
-    return get_conf_for_target(target, 'snmp_map', {})
-
-
-def get_snmp_port(vm, target=None):
-    _s = __salt__.get
-    _settings = settings()
-    if target is None:
-        target = __salt__['mc_cloud_compute_node.target_for_vm'](vm)
-    start = int(_settings['snmp_port_range_start'])
-    end = int(_settings['snmp_port_range_end'])
-    snmp_map = get_conf_for_target(target, 'snmp_map', {})
-    for a in [a for a in snmp_map]:
-        snmp_map[a] = int(snmp_map[a])
-    port = snmp_map.get(vm, None)
-    if port is None:
-        port = _get_next_available_port(snmp_map.values(), start, end)
-        _s('mc_cloud_compute_node.set_snmp_port')(
-            target, vm, port)
-    return port
-
-
-def feed_sw_reverse_proxies_for_target(target, target_data=None):
-    _s = __salt__.get
-    _settings = settings()
-    if target_data is None:
-        target_data = get_settings_for_target(target)
-    vms_infos = target_data.get('vms', {})
-    reversep = _get_rp(target_data)
-    sw_proxies = reversep.setdefault('sw_proxies', [])
-    for vm, data in vms_infos.items():
-        snmp_port = _s('mc_cloud_compute_node.get_snmp_port')(
-            vm, target=target)
-        ssh_port = _s('mc_cloud_compute_node.get_ssh_port')(
-            vm, target=target)
-        vt = 'lxc'
-        sw_proxies.append({'comment': 'snmp for {0}'.format(vm)})
-        sw_proxies.append({'action': 'DNAT',
-                           'source': 'all',
-                           'dest': '{1}:{0}:161'.format(data['ip'], vt),
-                           'proto': 'udp', 'dport': snmp_port})
-        sw_proxies.append({'comment': 'ssh {0}'.format(vm)})
-        for i in ['tcp', 'udp']:
-            sw_proxies.append({'action': 'DNAT',
-                               'source': 'all',
-                               'dest': '{1}:{0}:22'.format(data['ip'], vt),
-                               'proto': i, 'dport': ssh_port})
-    return reversep
-
-
-def get_ssh_mapping_for_target(target, target_data=None):
-    _s = __salt__.get
-    if target_data is None:
-        target_data = get_settings_for_target(target)
-    mapping = {}
-    vms_infos = target_data.get('vms', {})
-    # generate or refresh ssh mappings
-    for vm in vms_infos:
-        mapping[vm] = _s('mc_cloud_compute_node.get_ssh_port')(
-            target, vm, target_data=target_data)
-    return mapping
-
-
-def set_ssh_port(target, vm, port):
-    ssh_map = get_conf_for_target(target, 'ssh_map', {})
-    if ssh_map.get(vm, None) != port:
-        ssh_map[vm] = port
-        set_conf_for_target(target, 'ssh_map', ssh_map)
-    return get_conf_for_target(target, 'ssh_map', {}).get(vm, None)
-
-
-def cleanup_ssh_ports(target, target_data=None):
-    '''This is a maintenance routine which can be called to cleanup
-    ssh ports when range exhaustion is incoming'''
-    if target_data is None:
-        target_data = get_settings_for_target(target)
-    vms_infos = target_data.get('vms', {})
-    ssh_map = get_conf_for_target(target, 'ssh_map', {})
-    # filter old vms grains
-    need_sync = True
-    for avm in [a for a in ssh_map]:
-        if avm not in vms_infos:
-            del ssh_map[avm]
-            need_sync = True
-    if need_sync:
-        set_conf_for_target(target, 'ssh_map', ssh_map)
-    return get_conf_for_target(target, 'ssh_map', {})
-
-
-def get_ssh_port(vm, target=None):
-    _s = __salt__.get
-    _settings = settings()
-    if target is None:
-        target = __salt__['mc_cloud_compute_node.target_for_vm'](vm)
-    start = int(_settings['ssh_port_range_start'])
-    end = int(_settings['ssh_port_range_end'])
-    ssh_map = get_conf_for_target(target, 'ssh_map', {})
-    for a in [a for a in ssh_map]:
-        ssh_map[a] = int(ssh_map[a])
-    port = ssh_map.get(vm, None)
-    if port is None:
-        port = _get_next_available_port(ssh_map.values(), start, end)
-        _s('mc_cloud_compute_node.set_ssh_port')(
-            target, vm, port)
-    return port
-
-
-def feed_ssh_reverse_proxies_for_target(target, target_data=None):
-    _s = __salt__.get
-    _settings = settings()
-    if target_data is None:
-        target_data = get_settings_for_target(target)
-    vms_infos = target_data.get('vms', {})
-    reversep = _get_rp(target_data)
-    ssh_proxies = reversep.setdefault('ssh_proxies', [])
-    for vm, data in vms_infos.items():
-        port = _s('mc_cloud_compute_node.get_ssh_port')(
-            vm, target=target,
-            target_data=target_data)
-        ssh_proxy = {'name': 'lst_{0}'.format(vm),
-                     'bind': ':{0}'.format(port),
-                     'mode': 'tcp',
-                     'raw_opts': [],
-                     'servers': [{
-                         'name': 'sshserver',
-                         'bind': '{0}:22'.format(data['ip']),
-                         'opts': 'check'}]}
-        if ssh_proxy not in ssh_proxies:
-            ssh_proxies.append(ssh_proxy)
-    return reversep
-
-
-def _add_vt_to_target(target, vt):
-    vts = target.setdefault('virt_types', OrderedDict())
-    default_has(vts, **{vt: False})
-
-
-def get_settings_for_target(target, target_data=None):
-    '''Return specific compute node related settings for a specific target
-
-        target
-            target name
-        reverse_proxies
-            mapping of reverse proxies info
-        domains
-            list of domains served by host
-        virt_types
-            virt types supported by the box.
-            This is a mapping and the value is weither the virt type is
-            enabled or not
-        ssl_certs
-            (certname, cert+key string) tuples
-        vms
-            light mappings infos of underlying vms
-
-                ip
-                    ip of vm
-                virt_type
-                    virt type of vm
-                domains
-                    domains related to the vm
-                vmname
-                    name of the vm
-    '''
-    _s = __salt__
-    # iterate over all supported vts
-    if target_data is None:
-        target_data = {
-            'ssl_certs': [],
-        }
-    target_data['target'] = target
-    target_domains = target_data.setdefault('domains', [])
-    vms = get_vms_per_type(target)
-    for virt_type, vm_ids in vms.items():
-        _add_vt_to_target(target_data, virt_type)
-        target_data['virt_types'][virt_type] = True
-        vms = target_data.setdefault('vms', OrderedDict())
-        # TODO: make this configurable
-        target_data['http_proxy_mode'] = 'xforwardedfor'
-        for vmname in vm_ids:
-            vm_settings = _s[
-                'mc_cloud_{0}.get_settings_for_vm'.format(virt_type)
-            ](target, vmname, full=False)
-            ip = vm_settings['ip']
-            # reload allocated_ips each time in case settings were updated
-            allocated_ips = get_allocated_ips(target)
-            # assert that the allocated_ips configuration has
-            # been updated
-            assert ip in allocated_ips['ips'].values()
-            for domain in vm_settings['domains']:
-                if domain not in target_domains:
-                    target_domains.append(domain)
-            # link onto the host the vm infos
-            target_data['vms'][vmname] = {
-                'virt_type':  virt_type,
-                'ip': ip,
-                'domains': vm_settings['domains'],
-                'vmname':  vm_settings['name']}
-            if target_data.get('virt_type', '') in ['lxc', 'docker']:
-                target_data['virt_types']['lxc'] = True
-    domains = [target] + target_domains
-    for cert, key in __salt__['mc_ssl.ssl_certs'](domains):
-        certname = cert
-        if certname.endswith('.crt'):
-            certname = os.path.basename(certname)[:-4]
-        if certname.endswith('.bundle'):
-            certname = os.path.basename(certname)[:-7]
-        fullcert = ''
-        for f in [cert, key]:
-            with open(f) as fic:
-                fullcert += fic.read()
-        if fullcert not in [a[1] for a in target_data['ssl_certs']]:
-            target_data['ssl_certs'].append((certname, fullcert))
-    target_data['firewall'] = get_firewall_toggle()
-    feed_http_reverse_proxy_for_target(target, target_data)
-    # now done via shorewall
-    # feed_ssh_reverse_proxies_for_target(target, target_data)
-    feed_sw_reverse_proxies_for_target(target, target_data)
-    return target_data
-
-
-def get_reverse_proxies_for_target(target):
-    '''Get reverse proxy information mapping for a specicific target
-    See feed_reverse_proxy_for_target'''
-    target_data = get_settings_for_target(target)
-    return dict([(k, target_data[k]) for k in target_data
-                 if k in (_RP, 'target')])
-
-
-def cn_settings(ttl=60):
-    '''
-    compute node related settings
-    THIS IS USED ON THE COMPUTE NODE SIDE !
-    '''
-    def _do():
-        reg = __salt__['mc_macros.get_local_registry'](
-            'cloud_compute_node_settings',
-            registry_format='pack')
-        if 'cnSettings' not in reg:
-            raise ValueError(
-                'Registry not yet configured')
-        return reg
-    cache_key = 'mc_cloud_compute_node.cn_settings'
-    return memoize_cache(_do, [], {}, cache_key, ttl)
-
-
-def settings():
-    '''
-    compute node related settings
-    THIS IS USED ON THE CONTROLLER SIDE !
-
-    targets
-        a mapping indexed by target minions ids
-
-        vms
+    all_vms
+        contain compute node vms on compute node
+        contain all vms on controller
         A mapping indexed by vm minion ids and containing some info::
 
            {vm name: virt type}
 
-        virt_types
-            a list of supported virt types (lxc)
+    all_targets
+        a mapping indexed by target minions ids
+        containing either only the compute node on compute node
+                          all the compute nodes on controller
+    vms
+        vms on compute node or empty dict
+
+    targets
+        a mapping indexed by target minions ids containing also vms and
+        supported vt
+
+    reverse_proxies
+        mapping of reverse proxies info
+
+    domains
+        list of domains served by host
+
+    vts
+        a list of supported virt types (lxc)
+
     has
         global configuration toggle
 
@@ -886,101 +131,833 @@ def settings():
     To add or modify a value, use the mc_utils.default habitual way of
     modifying the default dict.
     '''
-    # TODO: reenable cache
-    #@mc_states.utils.lazy_subregistry_get(__salt__, __name)
-    def _settings():
-        _s = __salt__
-        data = _s['mc_utils.defaults'](
-            'makina-states.cloud.compute_node', {
-                'has': {'firewall': get_firewall_toggle()},
-                'ssh_port_range_start': get_ssh_port_start(),
-                'ssh_port_range_end': get_ssh_port_end(),
-                'snmp_port_range_start': get_snmp_port_start(),
-                'snmp_port_range_end': get_snmp_port_end(),
-                'targets': get_vms()
-            })
+    target = __grains__['id']
+    data = {'has': {'firewall': True},
+            'target': target,
+            'vms': OrderedDict(),
+            'domains': [],
+            'vts': [],
+            'ssl_certs': [],
+            'http_port': 80,
+            'https_port': 443,
+            'reverse_proxies': default_reverse_proxy(target),
+            'ssh_port_range_start': 40000,
+            'ssh_port_range_end': 50000,
+            'snmp_port_range_start': 30000,
+            'snmp_port_range_end': 39999}
+    return data
+
+
+def get_targets(vt=None, ttl=30):
+    '''
+    Return all vms indexed by targets
+    '''
+    def _do(vt=None):
+        data = OrderedDict()
+        cloudSettings = __salt__['mc_cloud.extpillar_settings']()
+        vm_confs = __salt__['mc_pillar.get_cloud_conf_by_vts']()
+        dvts = [a for a in VIRT_TYPES if cloudSettings.get(a)]
+        for cvt in dvts:
+            all_vt_infos = vm_confs.get(cvt, {})
+            for t in all_vt_infos:
+                target = data.setdefault(t, {})
+                vts = target.setdefault('vts', [])
+                vms = target.setdefault('vms', {})
+                if cvt not in vts:
+                    vts.append(cvt)
+                if vt and (vt != cvt):
+                    continue
+
+                for vmname in all_vt_infos[t]['vms']:
+                    vms.setdefault(vmname, {'vt': cvt, 'target': t})
         return data
-    res = _settings()
-    return res
+    cache_key = 'mc_cloud_cn.get_targets{0}'.format(vt)
+    return copy.deepcopy(memoize_cache(_do, [vt], {}, cache_key, ttl))
 
 
-def is_compute_node():
-    _settings = settings()
-    return __salt__['mc_utils.get']('makina-states.cloud.is.compute_node')
+def get_vms(vt=None, vm=None, ttl=30):
+    '''
+    Returns vms indexed by name
+    '''
+    def _do(vt, vm):
+        _targets = get_targets(vt=vt)
+        rdata = {}
+        for target, tdata in _targets.items():
+            for tvm, vmdata in tdata['vms'].items():
+                rdata[tvm] = vmdata
+        if vm:
+            rdata = rdata[vm]
+        _targets = get_targets(vt=vt)
+        return rdata
+    cache_key = 'mc_cloud_cn.get_vm{0}{1}'.format(vt, vm)
+    return memoize_cache(_do, [vt, vm], {}, cache_key, ttl)
 
 
-def get_targets_and_vms_for_virt_type(virt_type):
+def get_vm(vm, ttl=30):
+    def _do(vm):
+        try:
+            return get_vms(vm=vm)
+        except KeyError:
+            raise KeyError('{0} vm not found'.format(vm))
+    cache_key = 'mc_cloud_cn.get_vm{0}'.format(vm)
+    return memoize_cache(_do, [vm], {}, cache_key, ttl)
+
+
+def target_for_vm(vm, target=None, ttl=30):
+    '''
+    Get target for a vm
+    '''
+    def _do(vm, target=None):
+        return get_vm(vm)['target']
+    cache_key = 'mc_cloud_cn.target_for_vm{0}{1}'.format(vm, target)
+    return memoize_cache(_do, [vm, target], {}, cache_key, ttl)
+
+
+def vt_for_vm(vm, target=None):
+    '''
+    Get VT for a vm
+    '''
+    return get_vm(vm)['vt']
+
+
+def get_vms_for_target(target, vt=None):
+    '''
+    Return all vms for a target
+    '''
+    return get_targets(vt=vt).get(target, {}).get('vms', {})
+
+
+def get_targets_and_vms_for_vt(vt):
     _s = __salt__
-    k = 'mc_cloud_{0}.settings'.format(virt_type)
-    if k in _s:
-        virtsettings = _s[k]()
-        vtargets = virtsettings.get('vms', {})
-        return vtargets
-    else:
-        return  {}
-
-
-def targets():
-    '''Get all configured compute nodes'''
-    _s = __salt__
-    _settings = settings()
-    return dict([(a, v.get('virt_types', []))
-                 for a, v in _settings['targets'].items()])
+    data = get_targets(vt=vt)
+    for cn in [a for a in data]:
+        if not data[cn]['vms']:
+            data.pop(cn, None)
+    return data
 
 
 def get_vms_per_type(target):
-    '''Return all vms indexed by virt_type for a special target'''
+    '''
+    Return all vms indexed by vt for a special target
+    '''
     all_targets = OrderedDict()
-    for virt_type in VIRT_TYPES:
-        per_type = all_targets.setdefault(virt_type, set())
-        all_infos = get_targets_and_vms_for_virt_type(virt_type)
-        for vmname in all_infos.get(target, []):
+    for vt in VIRT_TYPES:
+        per_type = all_targets.setdefault(vt, set())
+        all_infos = get_targets_and_vms_for_vt(vt)
+        for vmname in all_infos.get(target, {}).get('vms', []):
             per_type.add(vmname)
     for i in [a for a in all_targets]:
         all_targets[i] = [a for a in all_targets[i]]
     return all_targets
 
 
-def get_vms():
-    '''Return all vms indexed by targets'''
-    data = OrderedDict()
-    for virt_type in VIRT_TYPES:
-        all_infos = get_targets_and_vms_for_virt_type(virt_type)
-        for t in all_infos:
-            target = data.setdefault(t, {})
-            vms = {}
-            vts = set()
-            for vmname in all_infos[t]:
-                vms.setdefault(vmname, virt_type)
-                vts.add(virt_type)
-            # for each vt, we can have no vms
-            # so we test for a compute node without vms
-            # declared in the pillar as an empty dict
-            for vt in get_vts(supported=True):
+def _encode(value):
+    '''encode using msgpack backend'''
+    return msgpack.packb({'value': value})
 
-                k = 'makina-states.cloud.{0}.vms.{1}'.format(vt, t)
-                if __pillar__.get(k, _default) is not _default:
-                    vts.add(vt)
-            target['virt_types'] = [a for a in vts]
-            target['vms'] = vms
+
+def _fencode(filep, value):
+    '''
+    Encode in a file using msgpack backend
+    '''
+    dfilep = os.path.dirname(filep)
+    if not os.path.exists(dfilep):
+        os.makedirs(dfilep)
+    with open(filep, 'w') as fic:
+        fic.write(_encode(value))
+    try:
+        os.chmod(filep, 0700)
+    except:
+        pass
+
+
+def _decode(filep):
+    '''decode in a file using msgpack backend'''
+    value = None
+    try:
+        if os.path.exists(filep):
+            with open(filep) as fic:
+                rvalue = fic.read()
+                value = msgpack.unpackb(rvalue)['value']
+    except msgpack.exceptions.UnpackValueError:
+        log.error('decoding error, removing stale {0}'.format(filep))
+        os.unlink(filep)
+        value = None
+    return value
+
+
+def del_conf_for_target(target, setting):
+    '''Register a specific setting for a specific target'''
+    target = target.replace('.', '')
+    cloudSettings = __salt__['mc_cloud.extpillar_settings']()
+    filep = os.path.join(cloudSettings['compute_node_pillar_dir'],
+                         target, 'settings',
+                         setting + '.pack')
+    if os.path.exists(filep):
+        os.unlink(filep)
+
+
+def set_conf_for_target(target, setting, value):
+    '''Register a specific setting for a specific target'''
+    target = target.replace('.', '')
+    cloudSettings = __salt__['mc_cloud.extpillar_settings']()
+    filep = os.path.join(cloudSettings['compute_node_pillar_dir'],
+                         target, 'settings',
+                         setting + '.pack')
+    _fencode(filep, value)
+    return value
+
+
+def get_conf_for_target(target, setting, default=None):
+    '''get the stored specific setting for a specific target'''
+    target = target.replace('.', '')
+    cloudSettings = __salt__['mc_cloud.extpillar_settings']()
+    filep = os.path.join(cloudSettings['compute_node_pillar_dir'],
+                         target, 'settings', setting + '.pack')
+    value = default
+    if os.path.exists(filep):
+        value = _decode(filep)
+    return value
+
+
+def set_conf_for_vm(vm, setting, value, target=None):
+    if target is None:
+        target = target_for_vm(vm)
+    target = target.replace('.', '')
+    vm = vm.replace('.', '')
+    cloudSettings = __salt__['mc_cloud.extpillar_settings']()
+    filep = os.path.join(cloudSettings['compute_node_pillar_dir'],
+                         target, 'vms', vm, 'settings',
+                         setting + '.pack')
+    _fencode(filep, value)
+    return value
+
+
+def get_conf_for_vm(vm, setting, default=None, target=None):
+    '''.'''
+    if target is None:
+        target = target_for_vm(vm)
+    target = target.replace('.', '')
+    vm = vm.replace('.', '')
+    cloudSettings = __salt__['mc_cloud.extpillar_settings']()
+    filep = os.path.join(cloudSettings['compute_node_pillar_dir'],
+                         target, 'vms', vm, 'settings', setting + '.pack')
+    value = default
+    if os.path.exists(filep):
+        value = _decode(filep)
+    return value
+
+
+def find_mac_for_vm(vm, default=None, target=None):
+    '''
+    Generate and assign a mac addess to a specific
+    vm on a specific host
+    '''
+    if target is None:
+        target = target_for_vm(vm)
+    mac = get_conf_for_vm(vm, 'mac', target=target)
+    if not mac:
+        mac = default
+    if not mac:
+        mac = gen_mac()
+        if not mac:
+            raise Exception(
+                'Error while setting grainmac for {0}/{1}'.format(target, vm))
+        set_conf_for_vm(vm, 'mac', mac, target=target)
+    return mac
+
+
+def find_password_for_vm(vm, default=None, pwlen=32, target=None):
+    '''
+    Return the vm password after creating it
+    the first time
+    '''
+    if target is None:
+        target = target_for_vm(vm)
+    password = get_conf_for_vm(vm, 'password', target=target)
+    if not password:
+        password = default
+    if not password:
+        password = secure_password(pwlen)
+        if not password:
+            raise Exception('Error while setting password '
+                            'grain for {0}/{1}'.format(target, vm))
+    return password
+
+
+def _construct_ips_dict(target):
+    allocated_ips = get_conf_for_target(target, 'allocated_ips')
+    sync = False
+    if (allocated_ips is None) or (not isinstance(allocated_ips, dict)):
+        allocated_ips = {}
+    for k in ['api', 'ips']:
+        if k not in allocated_ips:
+            sync = True
+    allocated_ips.setdefault('api', _CUR_API)
+    allocated_ips.setdefault('ips', {})
+    if sync:
+        set_conf_for_target(target, 'allocated_ips', allocated_ips)
+    return allocated_ips
+
+
+def get_allocated_ips(target):
+    '''
+    Get the allocated ips for a specific target
+    '''
+    allocated_ips = _construct_ips_dict(target)
+    return allocated_ips
+
+
+def remove_allocated_ip(target, ip, vm=None):
+    '''
+    Remove any ip from the allocated IP registry.
+    If vm is specified, it must also match a vm
+    which is allocated to this ip
+    '''
+    sync = False
+    all_ips = get_allocated_ips(target)
+    if ip in all_ips['ips'].values():
+        for i in [a for a in all_ips['ips']]:
+            if all_ips['ips'][i] == ip:
+                if vm is not None and vm == i:
+                    continue
+                del all_ips['ips'][i]
+                sync = True
+    if sync:
+        set_conf_for_target(target, 'allocated_ips', all_ips)
+    return get_allocated_ips(target)['ips']
+
+
+def find_ip_for_vm(vm,
+                   default=None,
+                   network=api.NETWORK,
+                   netmask=api.NETMASK,
+                   target=None):
+    '''
+    Search for:
+
+        - an ip already allocated
+        - an random available ip in the range
+
+    To get and maybe allocate an ip for a vm call
+
+        find_ip_for_vm(target, vmname)
+
+    For force/set an ip use::
+
+        set_allocated_ip(target, vmname, '1.2.3.4')
+
+    '''
+    if target is None:
+        target = target_for_vm(vm)
+    if not HAS_NETADDR:
+        raise Exception('netaddr required for ip generation')
+    allocated_ips = get_allocated_ips(target)
+    ip4 = None
+    vmdata = get_vms()[vm]
+    vt = vmdata.get('vt', None)
+    if vt:
+        try:
+            ip4 = get_conf_for_vm(vm, 'ip4', target=target)
+        except msgpack.exceptions.UnpackValueError:
+            ip4 = None
+    if not ip4:
+        ip4 = default
+    if not ip4:
+        # get network bounds
+        network = netaddr.IPNetwork('{0}/{1}'.format(network, netmask))
+        # converts stringued ips to IPAddress objects
+        all_ips = allocated_ips['ips'].values()
+        for try_ip in network[2:-2]:  # skip the firsts and last for gateways
+            parts = try_ip.bits().split('.')
+            stry_ip = "{0}".format(try_ip)
+            if (
+                stry_ip in all_ips  # already allocated
+            ) or (
+                parts[-1] in ['00000000', '11111111']  # 10.*.*.0 or 10.*.*.255
+            ):
+                continue
+            else:
+                ip4 = stry_ip
+                break
+            raise Exception('Did not get an available ip in the {2} network'
+                            ' for {0}/{1}'.format(target, vm, vt))
+        set_conf_for_vm(vm, 'ip4', ip4, target=target)
+    if not ip4:
+        raise Exception('Did not get an available ip for {0}/{1}'.format(
+            target, vm))
+    cur_ip = allocated_ips['ips'].get(vm)
+    if ip4 and (ip4 != cur_ip):
+        allocated_ips['ips'][vm] = ip4
+        set_conf_for_target(target, 'allocated_ips', allocated_ips)
+    return ip4
+
+
+def set_allocated_ip(vm, ip, target=None):
+    '''
+    Allocate an ip for a vm on a compute node for a specific vt
+
+    >>> set_allocated_ip(target, vmname, '2.2.3.4')
+
+    '''
+    if target is None:
+        target = target_for_vm(vm)
+    allocated_ips = get_allocated_ips(target)
+    allocated_ips['ips'][vm] = ip
+    set_conf_for_vm(vm, 'ip4', ip, target=target)
+    set_conf_for_target(target, 'allocated_ips', allocated_ips)
+    return get_allocated_ips(target)
+
+
+def domains_for(target, domains=None):
+    _s = __salt__
+    if domains is None:
+        domains = []
+    vms = get_vms_per_type(target)
+    for vt, vm_ids in vms.items():
+        for vm in vm_ids:
+            domains = _s['mc_cloud_vm.domains_for'](vm, domains=domains)
+    domains = _s['mc_utils.uniquify']([target] + domains)
+    return domains
+
+
+
+def ssl_certs_for(target, domains=None, ssl_certs=None):
+    _s = __salt__
+    if ssl_certs is None:
+        ssl_certs = []
+    domains = domains_for(target)
+    for cert, key in _s['mc_ssl.ssl_certs'](domains):
+        certname = cert
+        if certname.endswith('.crt'):
+            certname = os.path.basename(certname)[:-4]
+        if certname.endswith('.bundle'):
+            certname = os.path.basename(certname)[:-7]
+        fullcert = ''
+        for f in [cert, key]:
+            with open(f) as fic:
+                fullcert += fic.read()
+        if fullcert not in [a[1] for a in ssl_certs]:
+            ssl_certs.append((certname, fullcert))
+    return ssl_certs
+
+
+def gen_mac():
+    return ':'.join(map(lambda x: "%02x" % x, [0x00, 0x16, 0x3E,
+                                               random.randint(0x00, 0x7F),
+                                               random.randint(0x00, 0xFF),
+                                               random.randint(0x00, 0xFF)]))
+
+
+def default_reverse_proxy(target):
+    data = OrderedDict([('target', target),
+                        ('sw_proxies', []),
+                        ('http_proxy', OrderedDict()),
+                        ('http_backends', OrderedDict()),
+                        ('https_proxy', OrderedDict()),
+                        ('https_backends', OrderedDict())])
     return data
 
 
-def get_vm(vm):
-    for target, data in get_vms().items():
-        vt = data.get('vms', {}).get(vm, None)
-        if vt:
-            vm = {'target': target, 'vt': vt}
-            return vm
-    raise KeyError('{0} vm not found'.format(vm))
+def _get_next_available_port(ports, start, stop):
+    for i in range(start, stop + 1):
+        if i not in ports:
+            return i
+    raise ValueError('mc_compute_node: No more available ssh port in'
+                     '{0}:{1}'.format(start, stop))
 
 
-def get_vms_for_target(target):
-    '''Return all vms for a target'''
-    return get_vms().get(target, {}).get('vms', [])
+def get_kind_port(vm, target=None, kind='ssh'):
+    _s = __salt__
+    if target is None:
+        target = __salt__['mc_cloud_compute_node.target_for_vm'](vm)
+    _settings = _s['mc_cloud_compute_node.cn_extpillar_settings'](target)
+    start = int(_settings[kind + '_port_range_start'])
+    end = int(_settings[kind + '_port_range_end'])
+    kind_map = get_conf_for_target(target, kind + '_map', {})
+    for a in [a for a in kind_map]:
+        kind_map[a] = int(kind_map[a])
+    port = kind_map.get(vm, None)
+    if port is None:
+        port = _get_next_available_port(kind_map.values(), start, end)
+        _s['mc_cloud_compute_node.set_kind_port'.format(kind)](
+            vm, port, target=target, kind=kind)
+    return port
 
 
-def dump():
-    return mc_states.utils.dump(__salt__,__name)
+def set_kind_port(vm, port, target=None, kind='ssh'):
+    if target is None:
+        target = __salt__['mc_cloud_compute_node.target_for_vm'](vm)
+    kind_map = get_conf_for_target(target, kind + '_map', {})
+    if kind_map.get(vm, None) != port:
+        kind_map[vm] = port
+        set_conf_for_target(target, kind + '_map', kind_map)
+    return get_conf_for_target(target, kind + '_map', {}).get(vm, None)
 
+
+def set_ssh_port(vm, port, target=None):
+    return set_kind_port(vm, port, target=target, kind='ssh')
+
+
+def get_ssh_port(vm, target=None):
+    return get_kind_port(vm, target=target, kind='ssh')
+
+
+def set_snmp_port(vm, port, target=None):
+    return set_kind_port(vm, port, target=target, kind='snmp')
+
+
+def get_snmp_port(vm, target=None):
+    return get_kind_port(vm, target=target, kind='snmp')
+
+
+def default_has(vts=None, **kwargs):
+    if vts is None:
+        vts = {}
+    for vt in VIRT_TYPES:
+        vts.setdefault(vt, bool(kwargs.get(vt, False)))
+    return vts
+
+
+def _add_server_to_backends(reversep, frontend, backend_name, domain, ip):
+    '''The domain is ppurely informative here'''
+    _s = __salt__
+    kind = 'http'
+    if ' ssl ' in frontend['bind']:
+        kind = 'https'
+    _backends = reversep['{0}_backends'.format(kind)]
+    bck = _backends.setdefault(backend_name, OrderedDict())
+    bck = _s['mc_utils.dictupdate']({'name': backend_name,
+                                     'raw_opts': ['balance roundrobin'],
+                                     'servers': []}, bck)
+    # for now rely on settings xforwardedfor header
+    if reversep['{0}_proxy'.format(kind)].get(
+        'http_proxy_mode', 'xforwardedfor'
+    ) == 'xforwardedfor':
+        bck['raw_opts'].append('option http-server-close')
+        bck['raw_opts'].append('option forwardfor')
+    else:
+        # in not much time we ll switch to the haproxy proxy protocol which
+        # leverage the xforwardedfor hack
+        bck['raw_opts'].append('source 0.0.0.0 usesrc clientip')
+    srv = {'name': 'srv_{0}{1}'.format(domain, len(bck['servers']) + 1),
+           'bind': '{0}:80'.format(ip),
+           'opts': 'check'}
+    if srv['bind'] not in [a.get('bind') for a in bck['servers']]:
+        bck['servers'].append(srv)
+    return reversep
+
+
+def _configure_http_reverses(reversep, domain, ip):
+    # http
+    http_proxy = reversep['http_proxy']
+    https_proxy = reversep['https_proxy']
+    dom_id = domain.replace('*', 'star')
+    backend_name = 'bck_{0}'.format(dom_id)
+    sbackend_name = 'securebck_{0}'.format(dom_id)
+    if domain.startswith('*.'):
+        rule = 'acl host_{0} hdr_end(host) -i {1}'.format(dom_id, domain[2:])
+    else:
+        rule = 'acl host_{0} hdr(host) -i {0}'.format(dom_id)
+    if rule not in http_proxy['raw_opts']:
+        http_proxy['raw_opts'].insert(0, rule)
+        https_proxy['raw_opts'].insert(0, rule)
+    rule = 'use_backend {1} if host_{0}'.format(dom_id, backend_name)
+    if rule not in http_proxy['raw_opts']:
+        http_proxy['raw_opts'].append(rule)
+    # https
+    sslr = 'http-request set-header X-SSL %[ssl_fc]'
+    if sslr not in https_proxy['raw_opts']:
+        https_proxy['raw_opts'].insert(0, sslr)
+    rule = 'use_backend {1} if host_{0}'.format(dom_id, sbackend_name)
+    if rule not in https_proxy['raw_opts']:
+        https_proxy['raw_opts'].append(rule)
+    _add_server_to_backends(reversep, http_proxy, backend_name, dom_id, ip)
+    _add_server_to_backends(reversep, https_proxy, sbackend_name, dom_id, ip)
+    return reversep
+
+
+def default_http_proxy(target,
+                       proxy_mode=None,
+                       ssl=False,
+                       port=None,
+                       ssl_certs=None,
+                       **kw):
+    if proxy_mode is None:
+        proxy_mode = 'xforwardedfor'
+    name = target
+    extra_bind = ''
+    if ssl:
+        extra_bind += ' ssl'
+        if not port:
+            port = 443
+        name = 'secure-{0}'.format(name)
+        if ssl_certs:
+            wildcard = ''
+            if target.count('.') >= 2:
+                wildcard = '*.' + '.'.join(target.split('.')[1:])
+            # We must serve the compute node SSL certificate as the default one
+            # search a wildcard
+            if wildcard and wildcard in [a[0] for a in ssl_certs]:
+                first_cert = wildcard
+            # else for the precise domain of the compute node
+            elif target in [a[0] for a in ssl_certs]:
+                first_cert = target
+            # error if we couldnt get any case
+            else:
+                raise ValueError('No such cert for compute node'
+                                 ' {0}'.format(target))
+            extra_bind += (' crt /etc/ssl/cloud/certs/{0}.crt'
+                           ' crt /etc/ssl/cloud/certs').format(first_cert)
+    else:
+        if not port:
+            port = 80
+    data = {'name': name,
+            'mode': 'http',
+            'http_proxy_mode': proxy_mode,
+            'bind': '*:{0}{1}'.format(port, extra_bind),
+            'raw_opts_pre': [],
+            'raw_opts_post': [],
+            'raw_opts': []}
+    return data
+
+
+def default_https_proxy(*args, **kw):
+    kw.setdefault('ssl', True)
+    return default_http_proxy(*args, **kw)
+
+
+def _init_http_proxies(data,
+                       port=None,
+                       ssl_port=None,
+                       proxy_mode=None,
+                       ssl_certs=None):
+    for k in ['http', 'https']:
+        port = {'http': port, 'https': ssl_port}[k]
+        key = '{0}_proxy'.format(k)
+        h = __salt__['mc_utils.dictupdate'](
+            default_http_proxy(data['target'],
+                               proxy_mode=proxy_mode,
+                               ssl=k == 'https',
+                               ssl_certs=ssl_certs,
+                               port=port),
+            data[key])
+        data[key] = h
+    return data
+
+
+def feed_http_reverse_proxy_for_target(target_data):
+    '''
+    Get reverse proxy information mapping for a specicific target
+    This return a useful mappings of infos to reverse proxy http
+    and ssh services with haproxy
+    '''
+    _s = __salt__
+    reversep = target_data['reverse_proxies']
+    # dict init
+    _init_http_proxies(reversep,
+                       port=target_data.get('http_port', None),
+                       ssl_port=target_data.get('https_port', None),
+                       ssl_certs=target_data.get('ssl_certs', []),
+                       proxy_mode=target_data.get('http_proxy_mode',
+                                                  'xforwardedfor'))
+    # http/https automatic rules
+    for vmname in target_data['vms']:
+        vm = target_data['vms'][vmname]
+        for domain in vm['domains']:
+            _configure_http_reverses(reversep, domain, vm['ip'])
+    # http/https raw rules
+    for http_proxy in [reversep['http_proxy'], reversep['https_proxy']]:
+        if not http_proxy.get('raw_rules_done', None):
+            for rule in reversed(http_proxy['raw_opts_pre']):
+                http_proxy['raw_opts'].insert(0, rule)
+            for rule in http_proxy['raw_opts_post']:
+                http_proxy['raw_opts'].append(rule)
+            http_proxy['raw_rules_done'] = 1
+    return target_data
+
+
+def feed_sw_reverse_proxies_for_target(target_data):
+    _s = __salt__
+    t = target_data['target']
+    vms_infos = target_data.get('vms', {})
+    sw_proxies = target_data['reverse_proxies']['sw_proxies']
+    for vm, data in vms_infos.items():
+        snmp_port = _s['mc_cloud_compute_node.get_snmp_port'](vm, target=t)
+        ssh_port = _s['mc_cloud_compute_node.get_ssh_port'](vm, target=t)
+        vt = data['vt']
+        sw_proxies.append({'comment': 'snmp for {0}'.format(vm)})
+        sw_proxies.append({'action': 'DNAT',
+                           'source': 'all',
+                           'dest': '{1}:{0}:161'.format(data['ip'], vt),
+                           'proto': 'udp', 'dport': snmp_port})
+        sw_proxies.append({'comment': 'ssh {0}'.format(vm)})
+        for i in ['tcp', 'udp']:
+            sw_proxies.append({'action': 'DNAT',
+                               'source': 'all',
+                               'dest': '{1}:{0}:22'.format(data['ip'], vt),
+                               'proto': i, 'dport': ssh_port})
+    target_data['reverse_proxies']['sw_proxies'] = sw_proxies
+    return target_data
+
+
+def cn_extpillar_settings(id_=None, ttl=30):
+    def _do(id_=None):
+        _s = __salt__
+        if id_ is None:
+            id_ = _s['mc_pillar.mastersalt_minion_id']()
+        conf = _s['mc_pillar.get_cloud_entry_for_cn'](id_)
+        dconf = _s['mc_pillar.get_cloud_conf_for_cn']('default')
+        data = _s['mc_utils.dictupdate'](
+            _s['mc_utils.dictupdate'](
+                _s['mc_utils.dictupdate'](default_settings(), dconf),
+                conf.get('conf', {})), {'target': id_,
+                                        'reverse_proxies': {'target': id_}})
+        data['vts'] = conf.get('vts', [])
+        return data
+    cache_key = 'mc_cloud_cn.cn_extpillar_settings{0}'.format(id_)
+    return copy.deepcopy(memoize_cache(_do, [id_], {}, cache_key, ttl))
+
+
+def extpillar_settings(id_=None, ttl=30):
+    def _do(id_=None):
+        _s = __salt__
+        data = cn_extpillar_settings(id_=id_)
+        for _vm, _vm_data in get_vms_for_target(id_).items():
+            data['vms'][_vm] = _s['mc_cloud_vm.vm_extpillar_settings'](_vm)
+        # can only be done after some infos is loaded
+        for k in ['domains', 'ssl_certs']:
+            fun = 'mc_cloud_compute_node.{0}_for'.format(k)
+            data[k] = _s[fun](id_, data[k])
+        return data
+    cache_key = 'mc_cloud_cn.extpillar_settings{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+
+
+def ext_pillar(id_, prefixed=True, *args, **kw):
+    '''
+    compute node extpillar
+    '''
+    _s = __salt__
+    expose = False
+    if _s['mc_cloud.is_a_compute_node'](id_):
+        expose = True
+    if not expose:
+        return {}
+    data = extpillar_settings(id_)
+    # can only be done after some infos is loaded -- part2
+    data['reverse_proxies']['target'] = data['target'] = id_
+    haproxy_pre = data.get('haproxy', {}).get('raw_opts_pre', [])
+    haproxy_post = data.get('haproxy', {}).get('raw_opts_post', [])
+    for suf, opts in [
+        a for a in [
+            ['pre', haproxy_pre],
+            ['post', haproxy_post]
+        ] if a[1]
+    ]:
+        for subsection in ['https_proxy', 'http_proxy']:
+            proxy = data['reverse_proxies'].setdefault(
+                subsection, OrderedDict())
+            proxy['raw_opts_{0}'.format(suf)] = opts
+    data = feed_http_reverse_proxy_for_target(data)
+    data = feed_sw_reverse_proxies_for_target(data)
+    if prefixed:
+        data = {PREFIX: data}
+    return data
+
+
+'''
+Helper methods usable only after a full extpillar loading
+on the controller node
+'''
+
+
+def cleanup_allocated_ips(target):
+    '''
+    Maintenance routine to cleanup ips when ip
+    exhaution arrises
+    '''
+    allocated_ips = _construct_ips_dict(target)
+    existing_vms = get_vms_for_target(target)
+    # recycle old ips for unexisting vms
+    sync = False
+    done = []
+    cur_ips = allocated_ips.setdefault('ips', {})
+    for name in [n for n in cur_ips]:
+        ip = cur_ips[name]
+        # doublon ip
+        if ip in done:
+            remove_allocated_ip(target, ip, vm=name)
+        else:
+            done.append(ip)
+        # ip not allocated to any vm
+        if name not in existing_vms:
+            sync = True
+            del cur_ips[name]
+    if sync:
+        set_conf_for_target(target, 'allocated_ips', allocated_ips)
+    return allocated_ips
+
+
+def cleanup_ports_mapping(target, kind='ssh'):
+    '''
+    This is a maintenance routine which can be called to cleanup
+    ports when range exhaustion is incoming
+    '''
+    _s = __salt__
+    target_data = ext_pillar(target)
+    vms_infos = target_data.get('vms', {})
+    kind_map = get_conf_for_target(target, kind + '_map', {})
+    # filter old vms grains
+    need_sync = True
+    for avm in [a for a in kind_map]:
+        if avm not in vms_infos:
+            del kind_map[avm]
+            need_sync = True
+    if need_sync:
+        set_conf_for_target(target, kind + '_map', kind_map)
+    return get_conf_for_target(target, kind + '_map', {})
+
+
+def cleanup_ssh_ports(target):
+    return cleanup_ports_mapping(target, kind='ssh')
+
+
+def cleanup_snmp_ports(target):
+    return cleanup_ports_mapping(target, kind='snmp')
+
+
+def get_ports_mapping_for_target(target, kind='ssh'):
+    _s = __salt__
+    target_data = ext_pillar(target)
+    mapping = {}
+    vms_infos = target_data['vms']
+    # generate or refresh ssh mappings
+    fun = 'mc_cloud_compute_node.get_{0}_port'.format(kind)
+    for vm in vms_infos:
+        mapping[vm] = _s[fun](vm, target=target)
+    return mapping
+
+
+def get_snmp_mapping_for_target(target):
+    return get_ports_mapping_for_target(target, kind='snmp')
+
+
+def get_ssh_mapping_for_target(target):
+    return get_ports_mapping_for_target(target, kind='ssh')
+
+
+'''
+Methods usable
+After the pillar has loaded, on the compute node itself
+'''
+
+
+def settings():
+    '''
+    compute node related settings
+    '''
+    _s = __salt__
+    data = _s['mc_utils.defaults'](PREFIX, default_settings())
+    return data
 # vim:set et sts=4 ts=4 tw=80:

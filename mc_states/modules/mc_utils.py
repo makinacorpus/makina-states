@@ -32,6 +32,10 @@ except ImportError:
 import string
 import random
 from salt.utils.pycrypto import secure_password
+import salt.utils.network
+from salt.config import master_config, minion_config
+
+_CACHE = {'mid': None}
 
 try:
     import chardet
@@ -42,14 +46,56 @@ except ImportError:
 
 _default_marker = object()
 log = logging.getLogger(__name__)
- 
+
+
+def uniquify(*a, **kw):
+    return api.uniquify(*a, **kw)
+
 
 def odict(instance=True):
-  if instance:
-    return OrderedDict()
-  return OrderedDict
+    if instance:
+        return OrderedDict()
+    return OrderedDict
 
 
+def local_minion_id(force=False):
+    '''
+    search in running config root
+    then in well known config mastersalt root
+    then in well known config salt root
+    then use regular salt function
+    '''
+    mid = _CACHE['mid']
+    if mid and not force:
+        return mid
+    paths = api.uniquify([
+        __opts__['config_dir'], '/etc/mastersalt', '/etc/salt'])
+    for path in paths:
+        for cfgn, fun in OrderedDict(
+            [('master', master_config),
+             ('minion', minion_config)]
+        ).items():
+            cfg = os.path.join(path, cfgn)
+            if os.path.exists(cfg):
+                try:
+                    cfgo = fun(cfg)
+                    mid = cfgo.get('id', None)
+                    if mid.endswith('_master'):
+                        mid = None
+                except Exception:
+                    pass
+            if mid:
+                break
+        if mid:
+            break
+    # normally we should never hit this case as salt generates
+    # internally during config parsing the minion id
+    if not mid:
+        mid = salt.utils.network.generate_minion_id()
+    _CACHE['mid'] = mid
+    return mid
+
+ 
 def magicstring(thestr):
     """Convert any string to UTF-8 ENCODED one"""
     if not HAS_CHARDET:
@@ -130,10 +176,6 @@ def generate_password(length=None):
     if length is None:
         length = 16
     return secure_password(length)
-
-
-def uniquify(seq):
-    return api.uniquify(seq)
 
 
 class _CycleError(Exception):
@@ -478,7 +520,11 @@ def defaults(prefix,
                 value = overridden[prefix][key]
             else:
                 nvalue = default_value[:]
-                if value and (value != nvalue) and (value is not _default_marker):
+                if (
+                    value
+                    and (value != nvalue)
+                    and (value is not _default_marker)
+                ):
                     if nvalue is None:
                         nvalue = []
                     nvalue.extend(value)

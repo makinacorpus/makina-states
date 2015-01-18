@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import absolute_import, print_function
 '''
 
 .. _mc_runners_mc_api:
@@ -36,13 +37,19 @@ from mc_states.saltapi import (
 log = logging.getLogger(__name__)
 
 
-def time_log(msg='Point', categ='CLOUD_TIMER'):
-    msg = '{2}::{0}:: {1}'.format(
-        datetime.datetime.now().strftime('%Y-%d-%d_%H-%M-%S.%f'),
-        msg, categ)
-    if __opts__.get('makina_states_timing_log_enabled', False):
-        log.debug(msg)
+def out(ret, __opts__, output=True, onlyret=False):
+    return salt_output(ret,
+                       __opts__,
+                       output=output,
+                       onlyret=onlyret,
+                       __jid_event__= __jid_event__)
 
+
+def time_log(msg='Point', categ='CLOUD_TIMER'):
+    __jid_event__.fire_event(
+        {'data': msg, 'category': categ},
+        'makina_cloud'
+    )
 
 def cli(*args, **kwargs):
     '''Correctly forward salt globals to a regular
@@ -222,5 +229,11 @@ def apply_sls(slss, concurrent=True, *a, **kwargs):
     sls_kw.setdefault('concurrent', concurrent)
     return apply_sls_('state.sls', slss, *a, **kwargs)
 
+
+def ping():
+    import time
+    time.sleep(2)
+    print ('foo')
+    return 'bar'
 
 # vim:set et sts=4 ts=4 tw=80:

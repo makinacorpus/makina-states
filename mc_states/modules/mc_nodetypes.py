@@ -9,6 +9,7 @@ mc_nodetypes / nodetypes registry
 
 import os
 import mc_states.utils
+from  mc_states.grains import makina_grains
 
 __name = 'nodetypes'
 
@@ -52,6 +53,10 @@ def registry():
         })
         return reg
     return _registry()
+
+
+def is_devhost():
+    return makina_grains._is_devhost()
 
 
 def is_vm():

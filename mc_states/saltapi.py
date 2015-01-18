@@ -450,7 +450,11 @@ def errmsg(msg):
     raise MessageError(msg)
 
 
-def salt_output(ret, __opts__, output=True, onlyret=False):
+def salt_output(ret,
+                __opts__,
+                output=True,
+                onlyret=False,
+                __jid_event__=None):
     if output:
         api.msplitstrip(ret)
         # copy the result to zresult key for bare out to really
@@ -460,8 +464,13 @@ def salt_output(ret, __opts__, output=True, onlyret=False):
         ret['z_900_result'] = ret['result']
         dret = ret
         if onlyret:
-             dret = dret['z_900_result']
-        salt.output.display_output(dret, '', __opts__)
+            dret = dret['z_900_result']
+        if __jid_event__ is None:
+            salt.output.display_output(dret, '', __opts__)
+        else:
+            __jid_event__.fire_event(
+                {'data': dret, 'outputter': 'nested'},
+                'print')
         del ret['z_500_output']
         del ret['z_700_comment']
         del ret['z_900_result']
@@ -507,8 +516,20 @@ def check_point(ret, __opts__, output=True):
 
 def _colors(color=None, colorize=True):
     colors = salt.utils.get_colors(colorize)
+    if colors and isinstance(colors, dict):
+        # compat to old themes
+        colors.update({'PURPLE':  colors.get('MAGENTA', ''),
+                       'LIGHT_PURPLE': colors.get('LIGHT_MAGENTA', ''),
+                       'PURPLE_BOLD': colors.get('LIGHT_MAGENTA', ''),
+                       'RED_BOLD': colors.get('LIGHT_RED', ''),
+                       'BROWN': colors.get('YELLOW', '')})
     if color:
-        return colors[color]
+        if color not in colors:
+            log.error('No such color {0}'.format(color))
+            ret = ''
+        else:
+            ret = colors[color]
+        return ret
     return colors
 
 

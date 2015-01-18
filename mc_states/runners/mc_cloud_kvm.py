@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import absolute_import, print_function
 '''
 
 .. _runner_mc_cloud_kvm:
@@ -65,7 +66,7 @@ def cn_sls_pillar(target, ttl=api.RUNNER_CACHE_TIME, output=False):
     ret = memoize_cache(_do, [target], {}, cache_key, ttl)
     cret = result()
     cret['result'] = ret
-    salt_output(cret, __opts__, output=output)
+    __salt__['mc_api.out'](cret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
@@ -86,7 +87,7 @@ def post_deploy_controller(output=True):
     ret = __salt__['mc_api.apply_sls'](
         ['{0}.postdeploy'.format(pref)],
         **{'ret': ret})
-    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
@@ -105,7 +106,7 @@ def _cn_configure(what, target, ret, output):
         '{0}.{1}'.format(pref, what), **{
             'salt_target': target,
             'ret': ret})
-    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
@@ -178,7 +179,7 @@ def upgrade_vt(target, ret=None, output=True):
     #             ' reboot: {1}\n'.format(kvm, ex))
     # cli('mc_macros.update_local_registry', 'kvm_to_restart',
     #     {'todo': [a for a in todo if a not in done]}, salt_target=target)
-    # salt_output(ret, __opts__, output=output)
+    # __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
@@ -198,7 +199,7 @@ def sync_images(target, output=True, ret=None):
     #    merge_results(ret, iret)
     #    ret['comment'] += yellow(
     #        'KVM: images failed to synchronnise on {0}\n'.format(target))
-    #salt_output(ret, __opts__, output=output)
+    #__salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
@@ -220,7 +221,7 @@ def install_vt(target, output=True):
         except FailedStepError:
             pass
     __salt__['mc_cloud_kvm.sync_images'](target, output=False, ret=ret)
-    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
@@ -247,7 +248,7 @@ def post_post_deploy_compute_node(target, output=True):
         clr = red
         status = 'failure'
     ret['comment'] += clr(msg.format(status))
-    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
@@ -267,7 +268,7 @@ def _vm_configure(what, target, compute_node, vm, ret, output):
         '{0}.{1}'.format(pref, what), **{
             'salt_target': target,
             'ret': ret})
-    salt_output(ret, __opts__, output=output)
+    __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
@@ -385,7 +386,7 @@ def _vm_configure(what, target, compute_node, vm, ret, output):
 #         ret['comment'] = ('Failed to provision kvm {0},'
 #                           ' see {1} mastersalt-minion log').format(
 #                               vm, compute_node)
-#     salt_output(ret, __opts__, output=output)
+#     __salt__['mc_api.out'](ret, __opts__, output=output)
 #     __salt__['mc_api.time_log']('end {0}'.format(func_name))
 #     return ret
 # 
@@ -443,7 +444,7 @@ def _vm_configure(what, target, compute_node, vm, ret, output):
 #         else:
 #             ret['comment'] += yellow(
 #                 'Container {0} rebooted\n'.format(vm))
-#     salt_output(ret, __opts__, output=output)
+#     __salt__['mc_api.out'](ret, __opts__, output=output)
 #     __salt__['mc_api.time_log']('end {0}'.format(func_name))
 #     return ret
 # 
