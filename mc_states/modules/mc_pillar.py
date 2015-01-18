@@ -3208,90 +3208,90 @@ DEPRECATED
 #     return rdata
 
 
-def get_cloud_compute_node_conf(id_):
-    rdata = {}
-    ms_vars = get_makina_states_variables(id_)
-    # detect computes nodes by searching for related vms configurations
-    supported_vts = __salt__['mc_cloud_compute_node.get_vts']()
-    done_hosts = []
-    nvars  = __salt__['mc_pillar.load_network_infrastructure']()
-    ivars  = __salt__['mc_pillar.get_db_infrastructure_maps']()
-    cloud_cn_attrs = __salt__['mc_pillar.query']('cloud_cn_attrs')
-    for vt, targets in __salt__['mc_pillar.query']('vms').items():
-        if vt not in supported_vts:
-            continue
-        for compute_node, vms in targets.items():
-            if not (
-                (compute_node not in done_hosts)
-                and
-                (compute_node not in __salt__['mc_pillar.query'](
-                    'non_managed_hosts'))
-            ):
-                done_hosts.append(compute_node)
-                rdata['makina-states.cloud.saltify'
-                      '.targets.{0}'.format(
-                          compute_node)] = {
-                    'password': __salt__[
-                        'mc_pillar.get_passwords'](
-                            compute_node
-                        )['clear']['root'],
-                    'ssh_username': 'root'
-                }
-            metadata = cloud_cn_attrs.get(compute_node, {})
-
-            haproxy_pre = metadata.get('haproxy', {}).get('raw_opts_pre', [])
-            haproxy_post = metadata.get('haproxy', {}).get('raw_opts_post', [])
-            for suf, opts in [
-                a for a in [
-                    ['pre', haproxy_pre],
-                    ['post', haproxy_post]
-                ] if a[1]
-            ]:
-                rdata[
-                    'makina-states.cloud.compute_node.conf.'
-                    '{0}.https_proxy.raw_opts_{1}'.format(
-                        compute_node, suf)] = opts
-                rdata[
-                    'makina-states.cloud.compute_node.conf.'
-                    '{0}.http_proxy.raw_opts_{1}'.format(
-                        compute_node, suf)] = opts
-
-    for vt, targets in __salt__['mc_pillar.query']('vms').items():
-        if vt not in supported_vts:
-            continue
-        for compute_node, vms in targets.items():
-            if not (
-                compute_node not in done_hosts
-                and
-                compute_node not in __salt__['mc_pillar.query'](
-                    'non_managed_hosts')
-            ):
-                continue
-            done_hosts.append(compute_node)
-            k = ('makina-states.cloud.'
-                 'saltify.targets.{0}').format(
-                     compute_node)
-            rdata[k] = {
-                'password': __salt__[
-                    'mc_pillar.get_passwords'](
-                        compute_node)['clear']['root'],
-                'ssh_username': 'root'
-            }
-
-        for host, data in ivars['standalone_hosts'].items():
-            if host in done_hosts:
-                continue
-            done_hosts.append(compute_node)
-            sk = ('makina-states.cloud.saltify.'
-                  'targets.{0}').format(host)
-            rdata[sk] = {
-                'ssh_username': data.get(
-                    'ssh_username', 'root')
-            }
-            for k, val in data.items():
-                if val and val not in ['ssh_username']:
-                    rdata[sk][k] = val
-    return rdata
+#def get_cloud_compute_node_conf(id_):
+#    rdata = {}
+#    ms_vars = get_makina_states_variables(id_)
+#    # detect computes nodes by searching for related vms configurations
+#    supported_vts = __salt__['mc_cloud_compute_node.get_vts']()
+#    done_hosts = []
+#    nvars  = __salt__['mc_pillar.load_network_infrastructure']()
+#    ivars  = __salt__['mc_pillar.get_db_infrastructure_maps']()
+#    cloud_cn_attrs = __salt__['mc_pillar.query']('cloud_cn_attrs')
+#    for vt, targets in __salt__['mc_pillar.query']('vms').items():
+#        if vt not in supported_vts:
+#            continue
+#        for compute_node, vms in targets.items():
+#            if not (
+#                (compute_node not in done_hosts)
+#                and
+#                (compute_node not in __salt__['mc_pillar.query'](
+#                    'non_managed_hosts'))
+#            ):
+#                done_hosts.append(compute_node)
+#                rdata['makina-states.cloud.saltify'
+#                      '.targets.{0}'.format(
+#                          compute_node)] = {
+#                    'password': __salt__[
+#                        'mc_pillar.get_passwords'](
+#                            compute_node
+#                        )['clear']['root'],
+#                    'ssh_username': 'root'
+#                }
+#            metadata = cloud_cn_attrs.get(compute_node, {})
+#
+#            haproxy_pre = metadata.get('haproxy', {}).get('raw_opts_pre', [])
+#            haproxy_post = metadata.get('haproxy', {}).get('raw_opts_post', [])
+#            for suf, opts in [
+#                a for a in [
+#                    ['pre', haproxy_pre],
+#                    ['post', haproxy_post]
+#                ] if a[1]
+#            ]:
+#                rdata[
+#                    'makina-states.cloud.compute_node.conf.'
+#                    '{0}.https_proxy.raw_opts_{1}'.format(
+#                        compute_node, suf)] = opts
+#                rdata[
+#                    'makina-states.cloud.compute_node.conf.'
+#                    '{0}.http_proxy.raw_opts_{1}'.format(
+#                        compute_node, suf)] = opts
+#
+#    for vt, targets in __salt__['mc_pillar.query']('vms').items():
+#        if vt not in supported_vts:
+#            continue
+#        for compute_node, vms in targets.items():
+#            if not (
+#                compute_node not in done_hosts
+#                and
+#                compute_node not in __salt__['mc_pillar.query'](
+#                    'non_managed_hosts')
+#            ):
+#                continue
+#            done_hosts.append(compute_node)
+#            k = ('makina-states.cloud.'
+#                 'saltify.targets.{0}').format(
+#                     compute_node)
+#            rdata[k] = {
+#                'password': __salt__[
+#                    'mc_pillar.get_passwords'](
+#                        compute_node)['clear']['root'],
+#                'ssh_username': 'root'
+#            }
+#
+#        for host, data in ivars['standalone_hosts'].items():
+#            if host in done_hosts:
+#                continue
+#            done_hosts.append(compute_node)
+#            sk = ('makina-states.cloud.saltify.'
+#                  'targets.{0}').format(host)
+#            rdata[sk] = {
+#                'ssh_username': data.get(
+#                    'ssh_username', 'root')
+#            }
+#            for k, val in data.items():
+#                if val and val not in ['ssh_username']:
+#                    rdata[sk][k] = val
+#    return rdata
 
 
 def loaded():
