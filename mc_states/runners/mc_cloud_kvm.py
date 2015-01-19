@@ -48,37 +48,10 @@ def cli(*args, **kwargs):
     return __salt__['mc_api.cli'](*args, **kwargs)
 
 
-def cn_sls_pillar(target, ttl=api.RUNNER_CACHE_TIME, output=False):
-    '''limited cloud pillar to expose to a compute node'''
-    func_name = 'mc_cloud_kvm.cn_sls_pillar {0}'.format(target)
-    __salt__['mc_api.time_log']('start {0}'.format(func_name))
-    def _do(target):
-        pillar = {}
-        kvmSettings = cli('mc_cloud_kvm.settings')
-        kvmSettingsData = {}
-        for v in ['use_bridge', 'bridge', 'pools',
-                  'gateway', 'netmask_full',
-                  'network', 'netmask']:
-            kvmSettingsData[v] = kvmSettings['defaults'][v]
-        pillar.update({'kvmSettings': kvmSettingsData})
-        return pillar
-    cache_key = 'mc_cloud_kvm.cn_sls_pillar_{0}'.format(target)
-    ret = memoize_cache(_do, [target], {}, cache_key, ttl)
-    cret = result()
-    cret['result'] = ret
-    __salt__['mc_api.out'](cret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end {0}'.format(func_name))
-    return ret
-
-
-def vm_sls_pillar(compute_node, vm):
-    '''Retro compatible wrapper'''
-    pillar = __salt__['mc_cloud_vm.vm_sls_pillar'](compute_node, vm)
-    return pillar
-
-
 def post_deploy_controller(output=True):
-    '''Prepare cloud controller KVM configuration'''
+    '''
+    Prepare cloud controller KVM configuration
+    '''
     func_name = 'mc_cloud_kvm.post_deploy_controller'
     __salt__['mc_api.time_log']('start {0}'.format(func_name))
     ret = result()
@@ -93,7 +66,6 @@ def post_deploy_controller(output=True):
 
 
 def _cn_configure(what, target, ret, output):
-    __salt__['mc_cloud_compute_node.lazy_register_configuration'](target)
     func_name = 'mc_cloud_kvm._cn_configure {0} {1}'.format(
         what, target)
     __salt__['mc_api.time_log']('start {0}'.format(func_name))
@@ -111,14 +83,10 @@ def _cn_configure(what, target, ret, output):
     return ret
 
 
-
-def configure_grains(target, ret=None, output=True):
-    '''install compute node grain markers'''
-    return _cn_configure('grains', target, ret, output)
-
-
 def configure_install_kvm(target, ret=None, output=True):
-    '''install kvm'''
+    '''
+    install kvm
+    '''
     return _cn_configure('install_kvm', target, ret, output)
 
 
@@ -128,7 +96,8 @@ def configure_install_kvm(target, ret=None, output=True):
 
 
 def upgrade_vt(target, ret=None, output=True):
-    '''Upgrade KVM hosts
+    '''
+    Upgrade KVM hosts
     This will reboot all containers upon kvm upgrade
     Containers are marked as being rebooted, and unmarked
     as soon as this script unmark explicitly them to be
@@ -138,84 +107,33 @@ def upgrade_vt(target, ret=None, output=True):
     __salt__['mc_api.time_log']('start {0}'.format(func_name))
     if not ret:
         ret = result()
-    # ret['comment'] += yellow('Upgrading kvm on {0}\n'.format(target))
-    # version = cli('cmd.run', 'kvm-info --version', salt_target=target)
-    # # run the install SLS which should take care of upgrading
-    # for step in [configure_install_kvm]:
-    #     try:
-    #         step(target, ret=ret, output=False)
-    #     except FailedStepError:
-    #         ret['result'] = False
-    #         ret['comment'] += red('Failed to upgrade kvm\n')
-    #         return ret
-    # # after upgrading
-    # nversion = cli('cmd.run', 'kvm-info --version', salt_target=target)
-    # if nversion != version:
-    #     containers = cli('kvm.list', salt_target=target)
-    #     reg = cli('mc_macros.update_local_registry', 'kvm_to_restart',
-    #               {'todo': containers.get('running', [])},
-    #               salt_target=target)
-    #     ret['comment'] += red('Upgraded kvm\n')
-    # else:
-    #     ret['comment'] += red('kvm was already at the last version\n')
-    # reg = cli('mc_macros.get_local_registry',
-    #           'kvm_to_restart', salt_target=target)
-    # todo = reg.get('todo', [])
-    # done = []
-    # for kvm in todo:
-    #     try:
-    #         stopret = cli('kvm.stop', kvm, salt_target=target)
-    #         if not stopret['result']:
-    #             raise ValueError('wont stop')
-    #         startret = cli('kvm.start', kvm, salt_target=target)
-    #         if not startret['result']:
-    #             raise ValueError('wont start')
-    #         ret['comment'] += yellow('Rebooted {0}\n'.format(kvm))
-    #         done.append(kvm)
-    #     except Exception, ex:
-    #         ret['result'] = False
-    #         ret['comment'] += yellow(
-    #             'kvm {0} failed to'
-    #             ' reboot: {1}\n'.format(kvm, ex))
-    # cli('mc_macros.update_local_registry', 'kvm_to_restart',
-    #     {'todo': [a for a in todo if a not in done]}, salt_target=target)
-    # __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
 
 def sync_images(target, output=True, ret=None):
-    '''sync images on target'''
-    func_name = 'mc_cloud_kvm.sync_images {0}'.format(
-        target)
+    '''
+    sync images on target
+    '''
+    func_name = 'mc_cloud_kvm.sync_images {0}'.format(target)
     __salt__['mc_api.time_log']('start {0}'.format(func_name))
     if ret is None:
         ret = result()
-    #iret = __salt__['mc_kvm.sync_images'](only=[target])
-    #if iret['result']:
-    #    ret['comment'] += yellow(
-    #        'KVM: images synchronnised on {0}\n'.format(target))
-    #else:
-    #    merge_results(ret, iret)
-    #    ret['comment'] += yellow(
-    #        'KVM: images failed to synchronnise on {0}\n'.format(target))
-    #__salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
 
 
 def install_vt(target, output=True):
-    '''install & configure kvm'''
-    func_name = 'mc_cloud_kvm.install_vt {0}'.format(
-        target)
+    '''
+    install & configure kvm
+    '''
+    func_name = 'mc_cloud_kvm.install_vt {0}'.format(target)
     __salt__['mc_api.time_log']('start {0}'.format(func_name))
     ret = result()
     ret['comment'] += yellow('Installing kvm on {0}\n'.format(target))
     for step in [
-        configure_grains,
         configure_install_kvm,
-        #configure_images
-                ]:
+    ]:
         try:
             step(target, ret=ret, output=False)
         except FailedStepError:
@@ -227,7 +145,9 @@ def install_vt(target, output=True):
 
 
 def post_post_deploy_compute_node(target, output=True):
-    '''post deployment hook for controller'''
+    '''
+    post deployment hook for controller
+    '''
     func_name = 'mc_cloud_kvm.post_post_deploy_compute_node {0}'.format(
         target)
     __salt__['mc_api.time_log']('start {0}'.format(func_name))
@@ -254,7 +174,6 @@ def post_post_deploy_compute_node(target, output=True):
 
 
 def _vm_configure(what, target, compute_node, vm, ret, output):
-    __salt__['mc_cloud_vm.lazy_register_configuration'](vm, compute_node)
     func_name = 'mc_cloud_kvm._vm_configure {0} {1} {2} {3}'.format(
         what, target, compute_node, vm)
     __salt__['mc_api.time_log']('start {0}'.format(func_name))
@@ -496,5 +415,42 @@ def _vm_configure(what, target, compute_node, vm, ret, output):
 #     '''
 #     compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
 #     return _vm_configure('hostsfile', vm, compute_node, vm, ret, output)
+
+
+'''
+DEPRECATED
+'''
+#def cn_sls_pillar(target, ttl=api.RUNNER_CACHE_TIME, output=False):
+#    '''limited cloud pillar to expose to a compute node'''
+#    func_name = 'mc_cloud_kvm.cn_sls_pillar {0}'.format(target)
+#    __salt__['mc_api.time_log']('start {0}'.format(func_name))
+#    def _do(target):
+#        pillar = {}
+#        kvmSettings = cli('mc_cloud_kvm.settings')
+#        kvmSettingsData = {}
+#        for v in ['use_bridge', 'bridge', 'pools',
+#                  'gateway', 'netmask_full',
+#                  'network', 'netmask']:
+#            kvmSettingsData[v] = kvmSettings['defaults'][v]
+#        pillar.update({'kvmSettings': kvmSettingsData})
+#        return pillar
+#    cache_key = 'mc_cloud_kvm.cn_sls_pillar_{0}'.format(target)
+#    ret = memoize_cache(_do, [target], {}, cache_key, ttl)
+#    cret = result()
+#    cret['result'] = ret
+#    __salt__['mc_api.out'](cret, __opts__, output=output)
+#    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+#    return ret
+#
+#
+#def vm_sls_pillar(compute_node, vm):
+#    '''Retro compatible wrapper'''
+#    pillar = __salt__['mc_cloud_vm.vm_sls_pillar'](compute_node, vm)
+#    return pillar
+# 
+
+
+
+
 
 # vim:set et sts=4 ts=4 tw=80:
