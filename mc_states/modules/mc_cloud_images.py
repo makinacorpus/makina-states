@@ -119,7 +119,7 @@ def extpillar_settings(id_=None, ttl=30):
                 'images_{0}'.format(id_))
             data = _s['mc_utils.dictupdate'](data, cextdata)
         data['root'] = cloud_settings['root']
-        data['cron_sync'] = cron_sync
+        data['lxc']['cron_sync'] = cron_sync
         data = complete_images(data)
         data = _s['mc_utils.format_resolve'](data)
         return data
@@ -146,17 +146,16 @@ To execute on node after pillar is loaded
 '''
 
 
-def settings():
+def settings(ttl=60):
     '''
     Images registry
     '''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
-    def _settings():
+    def _do():
         _s = __salt__
         cloud_settings = _s['mc_cloud.settings']()
         root = cloud_settings['root']
         nt_registry = __salt__['mc_nodetypes.registry']()
-        cron_sync = True
+        cron_sync = None
         if (
                 nt_registry['is']['devhost']
                 or nt_registry['is']['lxccontainer']
@@ -167,9 +166,11 @@ def settings():
         data = __salt__['mc_utils.defaults'](PREFIX, default_settings())
         data['root'] = root
         data = complete_images(data)
-        data['cron_sync'] = cron_sync
+        if cron_sync is not None:
+            data['lxc']['cron_sync'] = cron_sync
         return data
-    return _settings()
+    cache_key = '{0}.{1}'.format(__name, 'settings')
+    return memoize_cache(_do, [], {}, cache_key, ttl)
 
 
 def _run(cmd):

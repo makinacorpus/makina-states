@@ -383,49 +383,64 @@ After the pillar has loaded, on the compute node itself
 '''
 
 
-def settings():
-    _s = __salt__
-    settings = _s['mc_utils.defaults'](PREFIX, vm_registry(prefixed=False))
-    return settings
+def settings(ttl=60):
+    def _do():
+        _s = __salt__
+        settings = _s['mc_utils.defaults'](PREFIX, vm_registry(prefixed=False))
+        return settings
+    cache_key = '{0}.{1}'.format(__name, 'settings')
+    return memoize_cache(_do, [], {}, cache_key, ttl)
 
 
-def vt_settings(vt=VT):
-    _s = __salt__
-    data = settings()['vms'].get(vt, {})
-    if data:
-        vt_fun = 'mc_cloud_{0}.vt_default_settings'.format(vt)
-        cloudSettings = _s['mc_cloud.settings']()
-        imgSettings = _s['mc_cloud_images.settings']()
-        data = _s['mc_utils.dictupdate'](
-            data,  _s[vt_fun](cloudSettings, imgSettings))
-    return data
+def vt_settings(vt=VT, ttl=60):
+    def _do(vt):
+        _s = __salt__
+        data = settings()['vms'].get(vt, {})
+        if data:
+            vt_fun = 'mc_cloud_{0}.vt_default_settings'.format(vt)
+            cloudSettings = _s['mc_cloud.settings']()
+            imgSettings = _s['mc_cloud_images.settings']()
+            data = _s['mc_utils.dictupdate'](
+                data,  _s[vt_fun](cloudSettings, imgSettings))
+        return data
+    cache_key = '{0}.{1}{2}'.format(__name, 'vt_settings', vt)
+    return memoize_cache(_do, [vt], {}, cache_key, ttl)
 
 
-def vm_settings(id_=None):
-    if not id_:
-        id_ = __grains__['id']
-    _s = __salt__
-    data = settings()['vms'].get(id_, {})
-    if data and ('vt' in 'data'):
-        vt = data['vt']
-        fun = 'mc_cloud_{0}.vm_default_settings'.format(vt)
-        cloudSettings = _s['mc_cloud.settings']()
-        imgSettings = _s['mc_cloud_images.settings']()
-        data = _s['mc_utils.dictupdate'](
-            data, _s[fun](cloudSettings, imgSettings))
-    return data
+def vm_settings(id_=None, ttl=60):
+    def _do(id_):
+        if not id_:
+            id_ = __grains__['id']
+        _s = __salt__
+        data = settings()['vms'].get(id_, {})
+        if data and ('vt' in 'data'):
+            vt = data['vt']
+            fun = 'mc_cloud_{0}.vm_default_settings'.format(vt)
+            cloudSettings = _s['mc_cloud.settings']()
+            imgSettings = _s['mc_cloud_images.settings']()
+            data = _s['mc_utils.dictupdate'](
+                data, _s[fun](cloudSettings, imgSettings))
+        return data
+    cache_key = '{0}.{1}{2}'.format(__name, 'vts_settings', id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 
-def vts_settings():
-    data = OrderedDict()
-    for vt in data['vts']:
-        data[vt] = vt_settings(vt)
-    return data
+def vts_settings(ttl=60):
+    def _do():
+        data = OrderedDict()
+        for vt in data['vts']:
+            data[vt] = vt_settings(vt)
+        return data
+    cache_key = '{0}.{1}'.format(__name, 'vts_settings')
+    return memoize_cache(_do, [], {}, cache_key, ttl)
 
 
-def vms_settings():
-    data = OrderedDict()
-    for id_ in data['vms']:
-        data[id_] = vm_settings(id_)
-    return data
+def vms_settings(ttl=60):
+    def _do():
+        data = OrderedDict()
+        for id_ in data['vms']:
+            data[id_] = vm_settings(id_)
+        return data
+    cache_key = '{0}.{1}'.format(__name, 'vms_settings')
+    return memoize_cache(_do, [], {}, cache_key, ttl)
 # vim:set et sts=4 ts=4 tw=81:
