@@ -645,6 +645,7 @@ def _add_server_to_backends(reversep, frontend, backend_name, domain, ip):
            'opts': 'check'}
     if srv['bind'] not in [a.get('bind') for a in bck['servers']]:
         bck['servers'].append(srv)
+    _backends[backend_name] = bck
     return reversep
 
 
@@ -953,11 +954,14 @@ After the pillar has loaded, on the compute node itself
 '''
 
 
-def settings():
+def settings(ttl=60):
     '''
     compute node related settings
     '''
-    _s = __salt__
-    data = _s['mc_utils.defaults'](PREFIX, default_settings())
-    return data
+    def _do():
+        _s = __salt__
+        data = _s['mc_utils.defaults'](PREFIX, default_settings())
+        return data
+    cache_key = '{0}.{1}'.format(__name, 'settings')
+    return memoize_cache(_do, [], {}, cache_key, ttl)
 # vim:set et sts=4 ts=4 tw=80:

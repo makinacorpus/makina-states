@@ -3104,6 +3104,10 @@ def get_cloud_conf_by_vts(ttl=30):
         data = OrderedDict()
         for cn, cdata in get_cloud_conf_by_cns().items():
             cvms = cdata.pop('vms')
+            for vt in cdata['vts']:
+                vtdata = data.setdefault(vt, OrderedDict())
+                vcndata = vtdata.setdefault(cn, OrderedDict())
+                vcnvms = vcndata.setdefault('vms', OrderedDict())
             for vm, vmdata in cvms.items():
                 vt = vmdata['vt']
                 vtdata = data.setdefault(vt, OrderedDict())

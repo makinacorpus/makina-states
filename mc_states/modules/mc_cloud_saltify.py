@@ -227,7 +227,7 @@ def settings(ttl=30):
         settings = _s['mc_utils.defaults'](PREFIX,
                                            default_settings(cloudSettings))
         return settings
-    cache_key = 'mc_cloud_saltify.settings'
+    cache_key = '{0}.{1}'.format(__name, 'settings')
     return memoize_cache(_do, [], {}, cache_key, ttl)
 
 # vim:set et sts=4 ts=4 tw=80:

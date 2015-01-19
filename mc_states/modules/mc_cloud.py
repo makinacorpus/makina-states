@@ -147,13 +147,18 @@ def extpillar_settings(id_=None, ttl=30, *args, **kw):
         conf = _s['mc_pillar.get_configuration'](
             _s['mc_pillar.mastersalt_minion_id']())
         extdata = _s['mc_pillar.get_global_clouf_conf']('cloud')
+        mid = _s['mc_pillar.mastersalt_minion_id']()
         default_env = _s['mc_env.ext_pillar'](id_).get('env', '')
+        default_port = 4506
+        if 'mastersalt' in _o['config_dir']:
+            default_port = 4606
         data = _s['mc_utils.dictupdate'](
             _s['mc_utils.dictupdate'](
                 default_settings(), {
                     'ssl': {'ca': {'ca_name': id_}},
-                    'master_port': _o.get('master_port'),
-                    'master': id_,
+                    'master_port': _o.get('ret_port',
+                                          _o.get('master_port', default_port)),
+                    'master': mid,
                     # states registry settings
                     'generic': True,
                     'saltify': True,
@@ -233,20 +238,20 @@ def ext_pillar(id_, *args, **kw):
         extdata['is']['vm'] = True
         vmvt = vms[id_]['vt']
         extdata['is']['{0}_vm'.format(vmvt)] = True
-        nodetype_vt = {'lxc': 'lxccontainer',
-                       'docker': 'dockercontainer',
-                       'kvm': 'kvm'}.get(vmvt, None)
-        if nodetype_vt:
-            for pref in [
-                'makina-states.nodetypes.is',
-                'makina-states.nodetypes.has'
-            ]:
-                spref = '{0}.{1}'.format(pref, nodetype_vt)
-                data[spref] = True
+        nodetype_vts = {'lxc': ['lxccontainer'],
+                        'docker': ['dockercontainer'],
+                        'kvm': ['kvm']}.get(vmvt, [])
+        for nodetype_vt in nodetype_vts:
+            spref = 'makina-states.nodetypes.is.{1}'.format(nodetype_vt)
+            data[spref] = True
     if is_a_compute_node(id_):
         extdata['is']['compute_node'] = True
         for i in targets[id_]['vts']:
             extdata['is']['{0}_compute_node'.format(i)] = True
+            extdata['is']['{0}_host'.format(i)] = True
+            data['makina-states.services.virt.' + i] = True
+        data['makina-states.services.is.proxy.haproxy'] = True
+        data['makina-states.services.is.firewall.shorewall'] = True
     if any([
         extdata['is']['vm'],
         extdata['is']['compute_node']
@@ -306,57 +311,58 @@ def metadata():
     return _metadata()
 
 
-def settings():
+def settings(ttl=60):
     '''
     Global cloud configuration
     '''
-    _s = __salt__
-    _g = __grains__
-    _o = __opts__
-    ct_registry = _s['mc_controllers.registry']()
-    salt_settings = _s['mc_salt.settings']()
-    if (
-        ct_registry['is']['mastersalt']
-        or ct_registry['is']['cloud_master']
-    ):
-        root = salt_settings['msaltRoot']
-        prefix = salt_settings['mconfPrefix']
-    else:
-        root = salt_settings['saltRoot']
-        prefix = salt_settings['confPrefix']
-    #    fic.write(pformat(__opts__))
-    data = _s['mc_utils.defaults'](
-        'makina-states.cloud',
-        _s['mc_utils.dictupdate'](
-            default_settings(), {
-                'root': root,
-                'all_pillar_dir': (
-                    os.path.join(
-                        _o['pillar_roots']['base'][0],
-                        'cloud-controller')),
-                'ssl': {'ca': {'ca_name': _s[
-                    'mc_pillar.mastersalt_minion_id']()}},
-                'prefix': prefix,
-                'master_port': _s['config.get']('master_port'),
-                'master': _s['mc_pillar.mastersalt_minion_id'](),
-                'pvdir': prefix + "/cloud.providers.d",
-                'pfdir': prefix + "/cloud.profiles.d",
-            }))
-    if not data['bootsalt_branch']:
-        data['bootsalt_branch'] = {
-            'prod': 'stable',
-            'preprod': 'stable',
-        }.get(_s['mc_env.settings']()['default_env'], None)
-    if not data['bootsalt_branch']:
-        if data['mode'] == 'mastersalt':
-            k = 'mastersaltCommonData'
+    def _do():
+        _s = __salt__
+        _g = __grains__
+        _o = __opts__
+        ct_registry = _s['mc_controllers.registry']()
+        salt_settings = _s['mc_salt.settings']()
+        if (
+            ct_registry['is']['mastersalt']
+            or ct_registry['is']['cloud_master']
+        ):
+            root = salt_settings['msaltRoot']
+            prefix = salt_settings['mconfPrefix']
         else:
-            k = 'saltCommonData'
-        data['bootsalt_branch'] = salt_settings[k][
-            'confRepos']['makina-states']['rev']
-    if not data['bootsalt_branch']:
-        data['bootsalt_branch'] = 'master'
-    return data
+            root = salt_settings['saltRoot']
+            prefix = salt_settings['confPrefix']
+        #    fic.write(pformat(__opts__))
+        data = _s['mc_utils.defaults'](
+            'makina-states.cloud',
+            _s['mc_utils.dictupdate'](
+                default_settings(), {
+                    'root': root,
+                    'all_pillar_dir': (
+                        os.path.join(
+                            _o['pillar_roots']['base'][0],
+                            'cloud-controller')),
+                    'ssl': {'ca': {'ca_name': _s[
+                        'mc_pillar.mastersalt_minion_id']()}},
+                    'prefix': prefix,
+                    'pvdir': prefix + "/cloud.providers.d",
+                    'pfdir': prefix + "/cloud.profiles.d",
+                }))
+        if not data['bootsalt_branch']:
+            data['bootsalt_branch'] = {
+                'prod': 'stable',
+                'preprod': 'stable',
+            }.get(_s['mc_env.settings']()['default_env'], None)
+        if not data['bootsalt_branch']:
+            if data['mode'] == 'mastersalt':
+                k = 'mastersaltCommonData'
+            else:
+                k = 'saltCommonData'
+            data['bootsalt_branch'] = salt_settings[k][
+                'confRepos']['makina-states']['rev']
+        if not data['bootsalt_branch']:
+            data['bootsalt_branch'] = 'master'
+        return data
+    cache_key = '{0}.{1}'.format(__name, 'settings')
+    return memoize_cache(_do, [], {}, cache_key, ttl)
 
 
 def registry():

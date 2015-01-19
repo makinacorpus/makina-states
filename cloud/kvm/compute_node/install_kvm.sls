@@ -1,4 +1,5 @@
-{% set data = salt['mc_cloud_compute_node.cn_settings']() %}
+{% set data = salt['mc_cloud_compute_node.settings']() %}
+{% set vmdata = salt['mc_cloud_vm.settings']() %}
 include:
   - makina-states.services.firewall.shorewall
   - makina-states.services.virt.kvm
@@ -6,7 +7,7 @@ include:
 {% if grains['os'] not in ['Ubuntu'] %}
 {% endif %}
 
-{% set kvmSettings =  data.get('kvmSettings', {}) %}
+{% set kvmSettings =  vmdata.vts.kvm %}
 kvm-noop:
   mc_proxy.hook: []
 

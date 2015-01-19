@@ -86,7 +86,7 @@ def ssl_certs(domains):
 
 def default_settings():
     data = {'controller': _s['mc_pillar.mastersalt_minion_id'](),
-            'kinds': {'generic': True,
+            'vts': {'generic': True,
                       'saltify': True,
                       'lxc': False,
                       'kvm': False},
@@ -100,7 +100,7 @@ def extpillar_settings(id_=None, ttl=30):
         _s = __salt__
         gconf = _s['mc_pillar.get_configuration'](
             _s['mc_pillar.mastersalt_minion_id']())
-        gdata = {'kinds': {'lxc': gconf.get('cloud_control_lxc', False),
+        gdata = {'vts': {'lxc': gconf.get('cloud_control_lxc', False),
                            'kvm': gconf.get('cloud_control_kvm', False)}}
         extdata = _s['mc_pillar.get_global_clouf_conf']('cloud')
         data = _s['mc_utils.dictupdate'](default_settings(),
@@ -129,7 +129,7 @@ def ext_pillar(id_=None, ttl=30):
             dtargets = _s['mc_utils.dictupdate'](dtargets, conf_targets)
             dvms = _s['mc_utils.dictupdate'](dvms, conf_vms)
         else:
-            data.pop('kinds', None)
+            data.pop('vts', None)
         if _s['mc_cloud.is_a_compute_node'](id_):
             expose = True
             dtargets = _s['mc_utils.dictupdate'](
@@ -155,11 +155,16 @@ def ext_pillar(id_=None, ttl=30):
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 
-def settings():
+def settings(ttl=60):
     '''
     compute node related settings
     '''
-    _s = __salt__
-    data = _s['mc_utils.defaults'](PREFIX, default_settings())
-    return data
+    def _do():
+        _s = __salt__
+        data = _s['mc_utils.defaults'](PREFIX, default_settings())
+        return data
+    cache_key = '{0}.{1}'.format(__name, 'settings')
+    return memoize_cache(_do, [], {}, cache_key, ttl)
+
+
 #

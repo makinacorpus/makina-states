@@ -1,10 +1,9 @@
 include:
   - makina-states.cloud.generic.hooks
-
 {# drop any configured ssl cert on the compute node #}
-{% set data  = salt['mc_cloud_compute_node.cn_settings']().cnSettings %}
+{% set data  = salt['mc_cloud_compute_node.settings']() %}
 {% set certs = [] %}
-{% for cert, content in data.cn.ssl_certs %}
+{% for cert, content in data.ssl_certs %}
 {% do certs.append(cert+'.crt') %}
 cpt-cert-{{cert}}:
   file.managed:
@@ -23,9 +22,6 @@ cpt-cert-{{cert}}:
     - watch_in:
       - mc_proxy: cloud-sslcerts
 {% endfor %}
-
-
-
 {% set f='/tmp/cloudcerts.py' %}
 cpt-certs-cleanup:
   file.managed:

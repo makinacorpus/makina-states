@@ -67,13 +67,18 @@ def is_item_active(registry_name,
     if not grains_pref:
         grains_pref = 'makina-states.{0}'.format(registry_name)
     local_reg = get_local_registry(registry_name)
-    config_entry = grains_pref + "." + item
-    if force:
-        val = default_status
-    else:
-        val =  __salt__['mc_utils.get'](config_entry,
-                                        default_status,
-                                        local_registry=local_reg)
+    for config_entry in [
+        grains_pref + ".is." + item,
+        grains_pref + "." + item
+    ]:
+        if force:
+            val = default_status
+        else:
+            val = __salt__['mc_utils.get'](config_entry,
+                                           _default,
+                                           local_registry=local_reg)
+            if val is not _default:
+                break
     return val
 
 
@@ -353,6 +358,13 @@ def get_registry(registry_configuration):
 
     Will activate the 'makina-states.controllers.salt_master' and
     deactivate all other states to be automaticly run
+
+    EG, for automatic activation of shorewall,
+    lookup in Configs for this key (pillar, grains, reg)::
+
+        makina-states.services.is.firewall.shorewall: true
+        makina-states.services.firewall.shorewall: true
+
 
     Idea why for the dict containing 'active', i did not choosed
     a simple boolean is to support other data in the near future.
