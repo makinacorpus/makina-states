@@ -53,7 +53,7 @@ def post_deploy_controller(output=True):
     Prepare cloud controller KVM configuration
     '''
     func_name = 'mc_cloud_kvm.post_deploy_controller'
-    __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    __salt__['mc_api.time_log']('start', func_name)
     ret = result()
     ret['comment'] = yellow('Installing controller kvm configuration\n')
     pref = 'makina-states.cloud.kvm.controller'
@@ -61,14 +61,13 @@ def post_deploy_controller(output=True):
         ['{0}.postdeploy'.format(pref)],
         **{'ret': ret})
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+    __salt__['mc_api.time_log']('end', func_name, ret=ret)
     return ret
 
 
 def _cn_configure(what, target, ret, output):
-    func_name = 'mc_cloud_kvm._cn_configure {0} {1}'.format(
-        what, target)
-    __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    func_name = 'mc_cloud_kvm._cn_configure'
+    __salt__['mc_api.time_log']('start', func_name, what, target)
     if ret is None:
         ret = result()
     ret['comment'] += yellow(
@@ -77,7 +76,7 @@ def _cn_configure(what, target, ret, output):
     ret =  __salt__['mc_api.apply_sls'](
         '{0}.{1}'.format(pref, what), **{'salt_target': target, 'ret': ret})
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+    __salt__['mc_api.time_log']('end', func_name, ret=ret)
     return ret
 
 
@@ -96,11 +95,11 @@ def upgrade_vt(target, ret=None, output=True):
     as soon as this script unmark explicitly them to be
     done.
     '''
-    func_name = 'mc_cloud_kvm.upgrade_vt {0}'.format(target)
-    __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    func_name = 'mc_cloud_kvm.upgrade_vt'
+    __salt__['mc_api.time_log']('start', func_name, target)
     if not ret:
         ret = result()
-    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+    __salt__['mc_api.time_log']('end', func_name, ret=ret)
     return ret
 
 
@@ -108,11 +107,11 @@ def sync_images(target, output=True, ret=None):
     '''
     sync images on target
     '''
-    func_name = 'mc_cloud_kvm.sync_images {0}'.format(target)
-    __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    func_name = 'mc_cloud_kvm.sync_images'
+    __salt__['mc_api.time_log']('start', func_name, target)
     if ret is None:
         ret = result()
-    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+    __salt__['mc_api.time_log']('end', func_name, ret=ret)
     return ret
 
 
@@ -120,8 +119,8 @@ def install_vt(target, output=True):
     '''
     install & configure kvm
     '''
-    func_name = 'mc_cloud_kvm.install_vt {0}'.format(target)
-    __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    func_name = 'mc_cloud_kvm.install_vt'
+    __salt__['mc_api.time_log']('start', func_name, target)
     ret = result()
     ret['comment'] += yellow('Installing kvm on {0}\n'.format(target))
     for step in [
@@ -133,7 +132,7 @@ def install_vt(target, output=True):
             pass
     __salt__['mc_cloud_kvm.sync_images'](target, output=False, ret=ret)
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+    __salt__['mc_api.time_log']('end', func_name)
     return ret
 
 
@@ -143,7 +142,7 @@ def post_post_deploy_compute_node(target, output=True):
     '''
     func_name = 'mc_cloud_kvm.post_post_deploy_compute_node {0}'.format(
         target)
-    __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    __salt__['mc_api.time_log']('start', func_name)
     ret = result()
     nodetypes_reg = cli('mc_nodetypes.registry')
     slss, pref = [], 'makina-states.cloud.kvm.compute_node'
@@ -161,14 +160,14 @@ def post_post_deploy_compute_node(target, output=True):
         status = 'failure'
     ret['comment'] += clr(msg.format(status))
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+    __salt__['mc_api.time_log']('end', func_name, ret=ret)
     return ret
 
 
 def _vm_configure(what, target, compute_node, vm, ret, output):
-    func_name = 'mc_cloud_kvm._vm_configure {0} {1} {2} {3}'.format(
-        what, target, compute_node, vm)
-    __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    func_name = 'mc_cloud_kvm._vm_configure'
+    __salt__['mc_api.time_log'](
+        'start', func_name, what, target, compute_node, vm)
     if ret is None:
         ret = result()
     ret['comment'] += yellow(
@@ -178,6 +177,6 @@ def _vm_configure(what, target, compute_node, vm, ret, output):
     ret =  __salt__['mc_api.apply_sls'](
         '{0}.{1}'.format(pref, what), **{'salt_target': target, 'ret': ret})
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+    __salt__['mc_api.time_log']('end', func_name, ret=ret)
     return ret
 # vim:set et sts=4 ts=4 tw=80:

@@ -54,7 +54,7 @@ def cli(*args, **kwargs):
 def _vm_configure(what, target, compute_node, vm, ret, output):
     func_name = 'mc_cloud_vm._vm_configure {0} {1} {2} {3}'.format(
         what, target, compute_node, vm)
-    __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    __salt__['mc_api.time_log']('start', func_name)
     if ret is None:
         ret = result()
     ret['comment'] += yellow(
@@ -65,7 +65,7 @@ def _vm_configure(what, target, compute_node, vm, ret, output):
         '{0}.{1}'.format(pref, what), **{'salt_target': target,
                                          'ret': ret})
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+    __salt__['mc_api.time_log']('end', func_name)
     return ret
 
 
@@ -182,7 +182,7 @@ def vm_ping(vm, compute_node=None, vt=None, ret=None, output=True):
 
     '''
     func_name = 'mc_cloud_vm.provision.ping {0}'.format(vm)
-    __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    __salt__['mc_api.time_log']('start', func_name)
     if ret is None:
         ret = result()
     try:
@@ -197,7 +197,7 @@ def vm_ping(vm, compute_node=None, vt=None, ret=None, output=True):
         comment = red('VM {0} is unreachable\n')
     ret['comment'] += comment.format(vm)
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+    __salt__['mc_api.time_log']('end', func_name)
     return ret
 
 
@@ -208,7 +208,7 @@ def vm_fix_dns(vm,
                output=True,
                force=False):
     func_name = 'mc_cloud_vm.vm_fix_dns {0}'.format(vm)
-    __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    __salt__['mc_api.time_log']('start', func_name)
     if not ret:
         ret = result()
     # if we found some default dnses, set them as soon as we can
@@ -224,7 +224,7 @@ def vm_fix_dns(vm,
             ret['result'] = False
             ret['comment'] += red('pb with dns on {0}'.format(vm))
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+    __salt__['mc_api.time_log']('end', func_name)
     return ret
 
 
@@ -233,7 +233,7 @@ def step(vm, step, compute_node=None, vt=None, ret=None, output=True):
     Execute a step on a VM node
     '''
     func_name = 'mc_cloud_vm.provision.step {0} {1}'.format(vm, step)
-    __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    __salt__['mc_api.time_log']('start', func_name)
     compute_node = __salt__['mc_api.get_compute_node'](vm)
     vt = __salt__['mc_api.get_vt'](vm)
     if ret is None:
@@ -264,7 +264,7 @@ def step(vm, step, compute_node=None, vt=None, ret=None, output=True):
             ret['trace'] = ''
             ret['output'] = ''
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+    __salt__['mc_api.time_log']('end', func_name)
     return ret
 
 
@@ -288,7 +288,7 @@ def provision(vm, compute_node=None, vt=None,
 
     '''
     func_name = 'mc_cloud_vm.provision {0}'.format(vm)
-    __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    __salt__['mc_api.time_log']('start', func_name)
     vt = __salt__['mc_api.get_vt'](vm)
     compute_node = __salt__['mc_api.get_compute_node'](vm)
     if isinstance(steps, basestring):
@@ -319,7 +319,7 @@ def provision(vm, compute_node=None, vt=None,
         ret['comment'] += red(
             '{0}/{1}/{2} failed to deploy\n').format(compute_node, vt, vm)
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+    __salt__['mc_api.time_log']('end', func_name)
     return ret
 
 
@@ -344,7 +344,7 @@ def post_provision(vm, compute_node=None, vt=None, ret=None, output=True):
         mastersalt-run -lall mc_cloud_vm.post_provision foo.domain.tld
     '''
     func_name = 'mc_cloud_vm.post_provision {0}'.format(vm)
-    __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    __salt__['mc_api.time_log']('start', func_name)
     if ret is None:
         ret = result()
     vmdata = _s['mc_api.get_vm'](vm)
@@ -362,13 +362,13 @@ def post_provision(vm, compute_node=None, vt=None, ret=None, output=True):
         ret['comment'] += red(
             '{0}/{1}/{2} failed to deploy\n').format(compute_node, vt, vm)
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+    __salt__['mc_api.time_log']('end', func_name)
     return ret
 
 
 def filter_vms(compute_node, vms, skip, only):
     func_name = 'mc_cloud_vm.filter_vms'
-    __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    __salt__['mc_api.time_log']('start', func_name)
     todo = {}
     for vm, data in vms.items():
         if vm in skip:
@@ -377,7 +377,7 @@ def filter_vms(compute_node, vms, skip, only):
             if vm not in only:
                 continue
         todo[vm] = data
-    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+    __salt__['mc_api.time_log']('end', func_name)
     return todo
 
 
@@ -396,7 +396,7 @@ def provision_vms(compute_node,
 
     '''
     func_name = 'mc_cloud_vm.provision_vms'
-    __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    __salt__['mc_api.time_log']('start', func_name)
     if ret is None:
         ret = result()
     _, only, __, skip = (
@@ -455,7 +455,7 @@ def provision_vms(compute_node,
             ret['trace'] = ''
             ret['comment'] += green('All vms were provisionned\n')
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+    __salt__['mc_api.time_log']('end', func_name)
     return ret
 
 
@@ -476,7 +476,7 @@ def post_provision_vms(compute_node,
     '''
     func_name = 'mc_cloud_vm.post_provision_vms'
     _s = __salt__
-    _s['mc_api.time_log']('start {0}'.format(func_name))
+    _s['mc_api.time_log']('start', func_name)
     if ret is None:
         ret = result()
     _, only, __, skip = (
@@ -529,7 +529,7 @@ def post_provision_vms(compute_node,
             ret['trace'] = ''
             ret['comment'] += green('All vms were post provisionned\n')
     _s['mc_api.out'](ret, __opts__, output=output)
-    _s['mc_api.time_log']('end {0}'.format(func_name))
+    _s['mc_api.time_log']('end', func_name)
     return ret
 
 
@@ -549,13 +549,13 @@ def orchestrate(compute_node,
 
     '''
     func_name = 'mc_cloud_vm.orchestrate'
-    __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    __salt__['mc_api.time_log']('start', func_name)
     if refresh:
         cli('saltutil.refresh_pillar')
     ret = provision_vms(compute_node, skip=skip, only=only,
                         output=output, refresh=False,
                         ret=ret)
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+    __salt__['mc_api.time_log']('end', func_name)
     return ret
 # vim:set et sts=4 ts=4 tw=80:

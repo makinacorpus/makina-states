@@ -63,10 +63,8 @@ def run_vt_hook(hook_name,
                 *args, **kwargs):
     '''Run an hook for a special vt
     on a controller, or a compute node or a vm'''
-    func_name = (
-        'mc_cloud_controller.run_vt_hook '
-        '{0} {1}').format(hook_name, target)
-    __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    func_name = 'mc_cloud_controller.run_vt_hook'
+    __salt__['mc_api.time_log']('start', func_name, hook_name, target)
     if target:
         kwargs['target'] = target
     if ret is None:
@@ -90,14 +88,16 @@ def run_vt_hook(hook_name,
             cret = __salt__[vid_](*args, **kwargs)
             merge_results(ret, cret)
             check_point(ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+    __salt__['mc_api.time_log']('end', func_name, ret=ret)
     return ret
 
 
 def dns_conf(output=True, ret=None):
-    '''Prepare cloud controller dns (BIND) server'''
+    '''
+    Prepare cloud controller dns (BIND) server
+    '''
     func_name = 'mc_cloud_controller.dns_conf'
-    __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    __salt__['mc_api.time_log']('start', func_name)
     if ret is None:
         ret = result()
     kw = {'ret': ret, 'output': output}
@@ -109,15 +109,17 @@ def dns_conf(output=True, ret=None):
     check_point(kw['ret'], __opts__, output=output)
     run_vt_hook('post_dns_conf_on_controller', ret=kw['ret'], output=output)
     __salt__['mc_api.out'](kw['ret'], __opts__, output=output)
-    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+    __salt__['mc_api.time_log']('end', func_name, ret=ret)
     return kw['ret']
 
 
 def deploy(output=True, ret=None):
-    '''Prepare cloud controller configuration
-    can also apply per virtualization type configuration'''
+    '''
+    Prepare cloud controller configuration
+    can also apply per virtualization type configuration
+    '''
     func_name = 'mc_cloud_controller.deploy'
-    __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    __salt__['mc_api.time_log']('start', func_name)
     if ret is None:
         ret = result()
     kw = {'ret': ret, 'output': output}
@@ -130,31 +132,20 @@ def deploy(output=True, ret=None):
     check_point(kw['ret'], __opts__, output=output)
     run_vt_hook('post_deploy_controller', ret=kw['ret'], output=output)
     __salt__['mc_api.out'](kw['ret'], __opts__, output=output)
-    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+    __salt__['mc_api.time_log']('end', func_name, ret=ret)
     return kw['ret']
 
 
 def exists(name):
-    '''return true if the 'target' is already provisionned'''
-    cloudSettings = cli('mc_cloud.settings')
+    '''
+    return true if the 'target' is already provisionned
+    '''
+    cloudSettings = __salt__['mc_api.get_cloud_settings']()
     key = '{prefix}/pki/master/minions/{name}'.format(
         prefix=cloudSettings['prefix'], name=name)
     already_exists = os.path.exists(key)
-    # time too consuming and no performant at all
-    # we will get bad error on a vm which exists on a specified compute
-    # node without beeing attached to the controller
-    # but that's life.
-    # if not already_exists:
-    #     try:
-    #         instance = __salt__['cloud.action'](
-    #             fun='show_instance', names=[name])
-    #         prov = str(instance.keys()[0])
-    #         if instance and 'Not Actioned' not in prov:
-    #             already_exists = True
-    #     except:
-    #         trace = traceback.format_exc()
-    #         log.warn(trace)
     return already_exists
+
 
 def gather_only_skip(only=None,
                      skip=None,
@@ -184,12 +175,10 @@ def gather_only_skip(only=None,
                     vm)
             if target not in only:
                 only.append(target)
-    return (
-        only,
-        only_vms,
-        skip,
-        skip_vms
-    )
+    return (only,
+            only_vms,
+            skip,
+            skip_vms)
 
 
 def orchestrate(skip=None,
@@ -233,7 +222,20 @@ def orchestrate(skip=None,
 
     '''
     func_name = 'mc_cloud_controller.orchestrate'
-    __salt__['mc_api.time_log']('start {0}'.format(func_name))
+    __salt__['mc_api.time_log']('start', func_name
+                                skip=skip,
+                                skip_vms=skip_vms,
+                                only=only,
+                                only_vms=only_vms,
+                                no_dns_conf=no_dns_conf,
+                                no_configure=no_configure,
+                                no_saltify=no_saltify,
+                                no_provision=no_provision,
+                                no_vms=no_vms,
+                                no_compute_nodes=no_compute_nodes,
+                                no_post_provision=no_post_provision,
+                                no_vms_post_provision=no_vms_post_provision,
+                                refresh=refresh)
     only, only_vms, skip, skip_vms = (
         __salt__['mc_cloud_controller.gather_only_skip'](
             only=only,
@@ -297,7 +299,13 @@ def orchestrate(skip=None,
         __salt__['mc_api.out'](ret, __opts__, output=output)
         raise
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end {0}'.format(func_name))
+    __salt__['mc_api.time_log']('end', func_name, ret=ret)
     return ret
 
+
+def report(*a, **kw):
+    '''
+    Alias to mc_cloud_compute_node.report
+    '''
+    return __salt__['mc_cloud_compute_node.report')(*a, **kw)
 #

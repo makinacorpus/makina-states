@@ -35,6 +35,7 @@ from mc_states.saltapi import (
     salt_output,
 )
 log = logging.getLogger(__name__)
+EVENT_TAG = 'makina_cloud'
 
 
 def out(ret, __opts__, output=True, onlyret=False):
@@ -45,11 +46,19 @@ def out(ret, __opts__, output=True, onlyret=False):
                        __jid_event__= __jid_event__)
 
 
-def time_log(msg='Point', categ='CLOUD_TIMER'):
-    __jid_event__.fire_event(
-        {'data': msg, 'category': categ},
-        'makina_cloud'
-    )
+def cloud_event(msg='', *args, **kw):
+    tag = kw.pop('event_tag', EVENT_TAG)
+    category = kw.pop('event_category', None)
+    payload = {'args': args, 'kw': kw,
+               'message': msg, 'category': category}
+    __jid_event__.fire_event(payload, tag)
+
+
+def time_log(lifecycle_id='start', fun, msg='', *args, **extra_data):
+    if not msg and (lifecycle_id in ['start', 'end']):
+        msg = '{0}: {1}'.format(lifecycle_id, fun)
+    return cloud_event(msg, category=lifecycle_id, *args, **extra_data)
+
 
 def cli(*args, **kwargs):
     '''Correctly forward salt globals to a regular
