@@ -75,9 +75,7 @@ def _cn_configure(what, target, ret, output):
         'KVM: Installing {1} on compute node {0}\n'.format(target, what))
     pref = 'makina-states.cloud.kvm.compute_node'
     ret =  __salt__['mc_api.apply_sls'](
-        '{0}.{1}'.format(pref, what), **{
-            'salt_target': target,
-            'ret': ret})
+        '{0}.{1}'.format(pref, what), **{'salt_target': target, 'ret': ret})
     __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
@@ -88,11 +86,6 @@ def configure_install_kvm(target, ret=None, output=True):
     install kvm
     '''
     return _cn_configure('install_kvm', target, ret, output)
-
-
-# def configure_images(target, ret=None, output=True):
-#     '''configure all images templates'''
-#     return _cn_configure('images', target, ret, output)
 
 
 def upgrade_vt(target, ret=None, output=True):
@@ -132,7 +125,7 @@ def install_vt(target, output=True):
     ret = result()
     ret['comment'] += yellow('Installing kvm on {0}\n'.format(target))
     for step in [
-        configure_install_kvm,
+        configure_install_kvm
     ]:
         try:
             step(target, ret=ret, output=False)
@@ -158,8 +151,7 @@ def post_post_deploy_compute_node(target, output=True):
         slss.append('{0}.devhost'.format(pref))
     if slss:
         ret =  __salt__['mc_api.apply_sls'](
-            slss, **{'salt_target': target,
-                     'ret': ret})
+            slss, **{'salt_target': target, 'ret': ret})
     msg = 'Post installation: {0}\n'
     if ret['result']:
         clr = green
@@ -184,273 +176,8 @@ def _vm_configure(what, target, compute_node, vm, ret, output):
         '{0}/{1}\n'.format(compute_node, vm, what))
     pref = 'makina-states.cloud.kvm.vm'
     ret =  __salt__['mc_api.apply_sls'](
-        '{0}.{1}'.format(pref, what), **{
-            'salt_target': target,
-            'ret': ret})
+        '{0}.{1}'.format(pref, what), **{'salt_target': target, 'ret': ret})
     __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end {0}'.format(func_name))
     return ret
-
-
-# def vm_spawn(vm,
-#              compute_node=None,
-#              vt='kvm',
-#              ret=None,
-#              output=True,
-#              force=False):
-#     '''spawn the vm
-# 
-#     ::
-# 
-#         mastersalt-run -lall mc_cloud_kvm.vm_spawn foo.domain.tld
-# 
-#     '''
-#     func_name = 'mc_cloud_kvm.vm_spawn {0}'.format(vm)
-#     __salt__['mc_api.time_log']('start {0}'.format(func_name))
-#     if not ret:
-#         ret = result()
-#     compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
-#     reg = cli('mc_macros.get_local_registry', 'mc_cloud_kvm_containers')
-#     provisioned_containers = reg.setdefault('provisioned_containers',
-#                                             OrderedDict())
-#     containers = provisioned_containers.setdefault(compute_node, [])
-#     reg = __salt__['mc_cloud_vm.lazy_register_configuration_on_cn'](
-#         vm, compute_node)
-#     pillar = __salt__['mc_cloud_vm.vm_sls_pillar'](compute_node, vm)
-#     target = compute_node
-#     data = pillar['vtVmData']
-#     cloudSettings = pillar['cloudSettings']
-#     profile = data.get(
-#         'profile',
-#         'ms-{0}-dir-sratch'.format(target))
-#     profile_data = {
-#         'target': target,
-#         'dnsservers': data.get("dnsservers", ["8.8.8.8", "4.4.4.4"]),
-#         'minion': {
-#             'master': data['master'],
-#             'master_port': data['master_port'],
-#         }
-#     }
-#     for var in ["from_container", "snapshot", "image",
-#                 "additional_ips",
-#                 "gateway", "bridge", "mac", "kvm_conf_unset",
-#                 "ssh_gateway", "ssh_gateway_user", "ssh_gateway_port",
-#                 "ssh_gateway_key", "ip", "netmask",
-#                 "size", "backing", "vgname", "script",
-#                 "lvname", "script_args", "dnsserver",
-#                 "ssh_username", "password", "kvm_conf"]:
-#         val = data.get(var)
-#         if val:
-#             if var in ['script_args']:
-#                 if '--salt-cloud-dir' not in val:
-#                     val = '{0} {1}'.format(
-#                         val, '--salt-cloud-dir {0}')
-#             profile_data[var] = val
-#     marker = "{cloudSettings[prefix]}/pki/master/minions/{vm}".format(
-#         cloudSettings=cloudSettings, vm=vm)
-#     lret = cli('cmd.run_all', 'test -e {0}'.format(marker))
-#     lret['retcode'] = 1
-#     # verify if VM is already reachable if already marked as provisioned
-#     # this add a 10 seconds overhead upon VM creation
-#     # but enable us from crashing a vm that was loosed from local
-#     # registry and where reprovisionning can be harmful
-#     # As we are pinguing it, we are managing it, we will not
-#     # enforce spawning here !
-#     try:
-#         ping = False
-#         if vm in containers:
-#             ping = cli('test.ping', salt_timeout=10, salt_target=vm)
-#     except Exception:
-#         ping = False
-#     if force or (lret['retcode'] and not ping):
-#         try:
-#             # XXX: Code to use with salt-cloud
-#             # cret = __salt__['cloud.profile'](
-#             #     profile, [vm], vm_overrides=profile_data)
-#             # if vm not in cret:
-#             #     cret['result'] = False
-#             # cret = cret[vm]['runner_return']
-#             # XXX: using the kvm runner which is now faster and nicer.
-#             cret = __salt__['kvm.cloud_init'](
-#                 [vm], host=compute_node, **profile_data)
-#             if not cret['result']:
-#                 # convert to regular dict for pformat
-#                 errors = dict(cret.pop('errors', {}))
-#                 hosts = {}
-#                 for h in errors:
-#                     hosts[h] = dict(errors[h])
-#                 cret['errors'] = hosts
-#                 ret['trace'] += 'FAILURE ON KVM {0}:\n{1}\n'.format(
-#                     vm, pformat(dict(cret)))
-#                 merge_results(ret, cret)
-#                 ret['result'] = False
-#             else:
-#                 ret['comment'] += '{0} provisioned\n'.format(vm)
-#         except Exception, ex:
-#             ret['trace'] += '{0}\n'.format(traceback.format_exc())
-#             ret['result'] = False
-#             ret['comment'] += red("{0}".format(ex))
-#     if ret['result']:
-#         cret = __salt__['mc_cloud_vm.lazy_register_configuration'](
-#             vm, compute_node)
-#         if not cret['result']:
-#             ret['result'] = False
-#             ret['comment'] += (
-#                 'Error was applying cloud configuration on {0}\n').format(vm)
-#     if ret['result']:
-#         containers.append(vm)
-#         reg = cli('mc_macros.update_local_registry',
-#                   'mc_cloud_kvm_containers', reg)
-#     if not ret['result'] and not ret['comment']:
-#         ret['comment'] = ('Failed to provision kvm {0},'
-#                           ' see {1} mastersalt-minion log').format(
-#                               vm, compute_node)
-#     __salt__['mc_api.out'](ret, __opts__, output=output)
-#     __salt__['mc_api.time_log']('end {0}'.format(func_name))
-#     return ret
-# 
-# 
-# def vm_volumes(vm,
-#                compute_node=None,
-#                vt='kvm',
-#                ret=None,
-#                output=True,
-#                force=False):
-#     func_name = 'mc_cloud_kvm.vm_volumes {0}'.format(vm)
-#     __salt__['mc_api.time_log']('start {0}'.format(func_name))
-#     if not ret:
-#         ret = result()
-#     compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
-#     content = "# generated by salt do not edit\n"
-#     vtdata = __salt__['mc_cloud_compute_node.cn_sls_pillar'](compute_node)['vmSettings'][vm]
-#     fstab = vtdata['vtVmData'].get('fstab', [])
-#     rmark = '/var/lib/kvm/{0}/restart_marker'.format(vm)
-#     if fstab:
-#         for i in fstab:
-#             content += i + '\n'
-#         cret = cli('mc_utils.manage_file',
-#                    name='/var/lib/kvm/{0}/fstab'.format(vm),
-#                    contents=content,
-#                    mode='750',
-#                    salt_target=compute_node)
-#         if not cret['result']:
-#             ret['result'] = False
-#             merge_results(ret, cret)
-#             ret['comment'] += red(
-#                 'fstab error in updating for {0}\n'.format(vm))
-#         elif cret['changes']:
-#             cret = cli('file.touch', rmark, salt_target=compute_node)
-#             ret['comment'] += yellow(
-#                 'fstab updated for {0}\n'.format(vm))
-#     cmd = ("kvm-stop -t 10 -n \"{0}\";"
-#            "kvm-start -d -n \"{0}\" &&"
-#            "rm -f \"{1}\"").format(vm, rmark)
-#     if ret['result'] and not cli(
-#         "cmd.retcode",
-#         "test -e \"{1}\" &&"
-#         "test \"x$(kvm-ls --fancy|grep RUNNING|"
-#         "awk '{{print $1}}'|egrep '^{0}$')\" = 'x{0}'".format(
-#             vm, rmark),
-#         salt_target=compute_node,
-#     ):
-#         # if container is running, restart it
-#         cret = cli('cmd.run_all', cmd, salt_target=compute_node)
-#         if cret['retcode']:
-#             ret['result'] = False
-#             merge_results(ret, cret)
-#             ret['comment'] += red(
-#                 'Container {0} error while rebooting\n'.format(vm))
-#         else:
-#             ret['comment'] += yellow(
-#                 'Container {0} rebooted\n'.format(vm))
-#     __salt__['mc_api.out'](ret, __opts__, output=output)
-#     __salt__['mc_api.time_log']('end {0}'.format(func_name))
-#     return ret
-# 
-# 
-# def vm_preprovision(vm, compute_node=None, vt='kvm', ret=None, output=True):
-#     '''install marker grains
-# 
-#     ::
-# 
-#         mastersalt-run -lall mc_cloud_kvm.vm_grains foo.domain.tld
-# 
-#     '''
-#     compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
-#     return _vm_configure('preprovision', vm, compute_node, vm, ret, output)
-# 
-# 
-# def vm_grains(vm, compute_node=None, vt='kvm', ret=None, output=True):
-#     '''install marker grains
-# 
-#     ::
-# 
-#         mastersalt-run -lall mc_cloud_kvm.vm_grains foo.domain.tld
-# 
-#     '''
-#     compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
-#     return _vm_configure('grains', vm, compute_node, vm, ret, output)
-# 
-# 
-# def vm_initial_setup(vm, compute_node=None, vt='kvm', ret=None, output=True):
-#     '''set initial password at least
-# 
-#     ::
-# 
-#         mastersalt-run -lall mc_cloud_kvm.vm_initial_setup foo.domain.tld
-# 
-# 
-#     '''
-#     compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
-#     return _vm_configure('initial_setup', vm, compute_node, vm, ret, output)
-# 
-# 
-# def vm_hostsfile(vm, compute_node=None, vt='kvm', ret=None, output=True):
-#     '''manage vm /etc/hosts to add link to host
-# 
-#     ::
-# 
-#         mastersalt-run -lall mc_cloud_kvm.vm_hostsfile foo.domain.tld
-# 
-#     '''
-#     compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
-#     return _vm_configure('hostsfile', vm, compute_node, vm, ret, output)
-
-
-'''
-DEPRECATED
-'''
-#def cn_sls_pillar(target, ttl=api.RUNNER_CACHE_TIME, output=False):
-#    '''limited cloud pillar to expose to a compute node'''
-#    func_name = 'mc_cloud_kvm.cn_sls_pillar {0}'.format(target)
-#    __salt__['mc_api.time_log']('start {0}'.format(func_name))
-#    def _do(target):
-#        pillar = {}
-#        kvmSettings = cli('mc_cloud_kvm.settings')
-#        kvmSettingsData = {}
-#        for v in ['use_bridge', 'bridge', 'pools',
-#                  'gateway', 'netmask_full',
-#                  'network', 'netmask']:
-#            kvmSettingsData[v] = kvmSettings['defaults'][v]
-#        pillar.update({'kvmSettings': kvmSettingsData})
-#        return pillar
-#    cache_key = 'mc_cloud_kvm.cn_sls_pillar_{0}'.format(target)
-#    ret = memoize_cache(_do, [target], {}, cache_key, ttl)
-#    cret = result()
-#    cret['result'] = ret
-#    __salt__['mc_api.out'](cret, __opts__, output=output)
-#    __salt__['mc_api.time_log']('end {0}'.format(func_name))
-#    return ret
-#
-#
-#def vm_sls_pillar(compute_node, vm):
-#    '''Retro compatible wrapper'''
-#    pillar = __salt__['mc_cloud_vm.vm_sls_pillar'](compute_node, vm)
-#    return pillar
-# 
-
-
-
-
-
 # vim:set et sts=4 ts=4 tw=80:

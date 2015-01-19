@@ -524,49 +524,4 @@ def vm_hostsfile(vm, compute_node=None, vt='lxc', ret=None, output=True):
     '''
     compute_node = __salt__['mc_cloud_vm.get_compute_node'](vm, compute_node)
     return _vm_configure('hostsfile', vm, compute_node, vm, ret, output)
-
-
-
-
-'''
-DEPRECATED
-'''
-
-#def cn_sls_pillar(target, ttl=api.RUNNER_CACHE_TIME, output=False):
-#    '''limited cloud pillar to expose to a compute node'''
-#    func_name = 'mc_cloud_lxc.cn_sls_pillar {0}'.format(target)
-#    __salt__['mc_api.time_log']('start {0}'.format(func_name))
-#    def _do(target):
-#        pillar = {}
-#        lxcSettings = cli('mc_cloud_lxc.settings')
-#        imgSettingsData = {}
-#        lxcSettingsData = {}
-#        for v in ['use_bridge', 'bridge',
-#                  'gateway', 'netmask_full',
-#                  'network', 'netmask']:
-#            lxcSettingsData[v] = lxcSettings['defaults'][v]
-#        # imgSettingsData = api.json_dump(imgSettingsData)
-#        # lxcSettingsData = api.json_dump(lxcSettingsData)
-#        pillar.update({'lxcSettings': lxcSettingsData})
-#        return pillar
-#    cache_key = 'mc_cloud_lxc.cn_sls_pillar_{0}'.format(target)
-#    ret = memoize_cache(_do, [target], {}, cache_key, ttl)
-#    cret = result()
-#    cret['result'] = ret
-#    __salt__['mc_api.out'](cret, __opts__, output=output)
-#    __salt__['mc_api.time_log']('end {0}'.format(func_name))
-#    return ret
-#
-#
-#
-#def configure_grains(target, ret=None, output=True):
-#    '''install compute node grain markers'''
-#    return _cn_configure('grains', target, ret, output)
-#
-# 
-#
-#def vm_sls_pillar(compute_node, vm):
-#    '''Retro compatible wrapper'''
-#    pillar = __salt__['mc_cloud_vm.vm_sls_pillar'](compute_node, vm)
-#    return pillar
 # vim:set et sts=4 ts=4 tw=80:

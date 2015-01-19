@@ -124,13 +124,32 @@ __CACHED_FUNS = {
     'lxc.list':  2,  # cache lxc.list for 2 seconds,
     'grains.items': 100,
 
-    'mc_cloud_lxc.get_settings_for_vm': 900,
-    'mc_cloud_compute_node.get_settings_for_target': 900,
-    'mc_cloud_compute_node.get_reverse_proxies_for_target': 900,
     'mc_cloud_compute_node.settings': 600,
-    'mc_cloud_controller.settings': 600,
     'mc_cloud_images.settings': 900,
-    'mc_cloud_lxc.settings': 900,
+    'mc_cloud_controller.settings': 600,
+    'mc_cloud_vm.settings': 900,
+    'mc_cloud.settings': 900,
+
+    'mc_cloud_compute_node.ext_pillar': 600,
+    'mc_cloud_controller.ext_pillar': 600,
+    'mc_cloud_vm.ext_pillar': 600,
+    'mc_cloud_images.ext_pillar': 900,
+    'mc_cloud.ext_pillar': 900,
+
+    'mc_cloud_compute_node.extpillar_settings': 600,
+    'mc_cloud_controller.extpillar_settings': 600,
+    'mc_cloud_vm.extpillar_settings': 600,
+    'mc_cloud.extpillar_settings': 900,
+    'mc_cloud_images.extpillar_settings': 900,
+
+    'mc_cloud_compute_node.ext_pillar': 600,
+    'mc_cloud_vm.vt_extpillar': 600,
+    'mc_cloud_vm.vm_extpillar': 600,
+
+    'mc_cloud_vm.vt_settings': 600,
+    'mc_cloud_vm.vm_settings': 600,
+    'mc_cloud_vm.vts_settings': 600,
+    'mc_cloud_vm.vms_settings': 600,
 
     'mc_nodetypes.registry': 900,
     'mc_cloud.registry': 900,
@@ -138,7 +157,6 @@ __CACHED_FUNS = {
     'mc_controllers.registry': 900,
     'mc_localsettings.registry': 900,
 
-    'mc_cloud.settings': 900,
     'mc_nodetypes.settings': 900,
     'mc_controllers.settings': 900,
     'mc_services.settings': 600,
