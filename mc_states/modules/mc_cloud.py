@@ -147,13 +147,18 @@ def extpillar_settings(id_=None, ttl=30, *args, **kw):
         conf = _s['mc_pillar.get_configuration'](
             _s['mc_pillar.mastersalt_minion_id']())
         extdata = _s['mc_pillar.get_global_clouf_conf']('cloud')
+        mid = _s['mc_pillar.mastersalt_minion_id']()
         default_env = _s['mc_env.ext_pillar'](id_).get('env', '')
+        default_port = 4506
+        if 'mastersalt' in _o['config_dir']:
+            default_port = 4606
         data = _s['mc_utils.dictupdate'](
             _s['mc_utils.dictupdate'](
                 default_settings(), {
                     'ssl': {'ca': {'ca_name': id_}},
-                    'master_port': _o.get('master_port'),
-                    'master': id_,
+                    'master_port': _o.get('ret_port',
+                                          _o.get('master_port', default_port)),
+                    'master': mid,
                     # states registry settings
                     'generic': True,
                     'saltify': True,
@@ -233,20 +238,20 @@ def ext_pillar(id_, *args, **kw):
         extdata['is']['vm'] = True
         vmvt = vms[id_]['vt']
         extdata['is']['{0}_vm'.format(vmvt)] = True
-        nodetype_vt = {'lxc': 'lxccontainer',
-                       'docker': 'dockercontainer',
-                       'kvm': 'kvm'}.get(vmvt, None)
-        if nodetype_vt:
-            for pref in [
-                'makina-states.nodetypes.is',
-                'makina-states.nodetypes.has'
-            ]:
-                spref = '{0}.{1}'.format(pref, nodetype_vt)
-                data[spref] = True
+        nodetype_vts = {'lxc': ['lxccontainer'],
+                        'docker': ['dockercontainer'],
+                        'kvm': ['kvm']}.get(vmvt, [])
+        for nodetype_vt in nodetype_vts:
+            spref = 'makina-states.nodetypes.is.{1}'.format(nodetype_vt)
+            data[spref] = True
     if is_a_compute_node(id_):
         extdata['is']['compute_node'] = True
         for i in targets[id_]['vts']:
             extdata['is']['{0}_compute_node'.format(i)] = True
+            extdata['is']['{0}_host'.format(i)] = True
+            data['makina-states.services.virt.' + i] = True
+        data['makina-states.services.is.proxy.haproxy'] = True
+        data['makina-states.services.is.firewall.shorewall'] = True
     if any([
         extdata['is']['vm'],
         extdata['is']['compute_node']
@@ -338,8 +343,6 @@ def settings(ttl=60):
                     'ssl': {'ca': {'ca_name': _s[
                         'mc_pillar.mastersalt_minion_id']()}},
                     'prefix': prefix,
-                    'master_port': _s['config.get']('master_port'),
-                    'master': _s['mc_pillar.mastersalt_minion_id'](),
                     'pvdir': prefix + "/cloud.providers.d",
                     'pfdir': prefix + "/cloud.profiles.d",
                 }))

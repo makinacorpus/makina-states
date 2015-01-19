@@ -208,7 +208,7 @@ def vm_default_settings(vm, cloudSettings, imgSettings, extpillar=False):
     # if it is not a distant minion, use private gateway ip
     master = vt_settings['defaults']['master']
     if _s['mc_pillar.mastersalt_minion_id']() == target:
-        master = vt_settings['gateway']
+        master = vt_settings['defaults']['gateway']
     node = 'mc_cloud_compute_node.'
     data = _s['mc_utils.dictupdate'](vt_settings['defaults'], {
         'name': vm,

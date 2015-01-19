@@ -597,15 +597,24 @@ def settings():
             # enable compute node redirection port ange if any
             # XXX: this is far from perfect, now we open a port range which
             # will be avalaible for connection and the controller will use that
-            cloud_c_settings = __salt__['mc_cloud_compute_node.settings']()
-            is_compute_node = __salt__['mc_cloud_compute_node.is_compute_node']()
+            is_compute_node = __salt__['mc_cloud.is_compute_node']()
             if is_compute_node and not data['no_computenode']:
                 try:
-                    cloud_reg = __salt__['mc_cloud_compute_node.cn_settings']()
-                    cloud_rules = cloud_reg.get('cnSettings', {}).get(
-                        'rp', {}).get(
-                            'reverse_proxies', {}).get(
-                                'sw_proxies', [])
+                    cloud_rules = []
+                    try:
+                        cloud_reg = __salt__['mc_cloud_compute_node.settings']()
+                        cloud_rules = cloud_reg.get(
+                            'reverse_proxies', {}).get('sw_proxies', [])
+                    except Exception:
+                        cloud_rules = []
+                    if not cloud_rules:
+                        # before refactor transition
+                        lcloud_reg = __salt__['mc_cloud_compute_node.cn_settings']()
+                        cloud_rules = lcloud_reg.get(
+                            'cnSettings', {}).get(
+                                'rp', {}).get(
+                                    'reverse_proxies', {}).get(
+                                        'sw_proxies', [])
                     for r in cloud_rules:
                         rules = []
                         # replace all DNAT rules to use each external ip

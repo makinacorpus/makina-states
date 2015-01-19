@@ -645,6 +645,7 @@ def _add_server_to_backends(reversep, frontend, backend_name, domain, ip):
            'opts': 'check'}
     if srv['bind'] not in [a.get('bind') for a in bck['servers']]:
         bck['servers'].append(srv)
+    _backends[backend_name] = bck
     return reversep
 
 

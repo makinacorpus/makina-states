@@ -201,7 +201,7 @@ def orchestrate(skip=None,
                 no_saltify=False,
                 no_provision=False,
                 no_vms=False,
-                no_compute_node_provision=False,
+                no_compute_nodes=False,
                 no_post_provision=False,
                 no_vms_post_provision=False,
                 output=True,
@@ -221,7 +221,7 @@ def orchestrate(skip=None,
             explicit list of vm to deploy
         no_provision
             skip compute node & vm provision
-        no_compute_node_provision
+        no_compute_nodes
             skip configuration of compute nodes
         no_vms
             do not provision vms
@@ -280,7 +280,7 @@ def orchestrate(skip=None,
                 only=only,
                 only_vms=only_vms,
                 no_provision=no_provision,
-                no_compute_node_provision=no_compute_node_provision,
+                no_compute_nodes=no_compute_nodes,
                 no_post_provision=no_post_provision,
                 no_vms_post_provision=no_vms_post_provision,
                 no_vms=no_vms,
