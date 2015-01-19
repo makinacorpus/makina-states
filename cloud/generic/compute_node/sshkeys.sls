@@ -1,4 +1,4 @@
-{% set cloudSettings  = salt['mc_cloud_compute_node.cn_settings']().cloudSettings %}
+{% set cloudSettings  = salt['mc_cloud.settings']() %}
 insdsakey:
   ssh_auth.present:
     - source: salt://{{cloudSettings.all_sls_dir}}/rootkey-dsa.pub

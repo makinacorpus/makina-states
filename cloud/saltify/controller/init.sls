@@ -4,7 +4,7 @@
 {% set pfdir = cloudSettings.pfdir %}
 
 include:
-  - makina-states.cloud.saltify.hooks
+  - makina-states.cloud.saltify.controller.hooks
 
 providers_saltify_salt:
   file.managed:

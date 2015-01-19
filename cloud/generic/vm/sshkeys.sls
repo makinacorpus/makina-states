@@ -1,5 +1,4 @@
-{% set data = salt['mc_cloud_vm.vm_settings']() %}
-{% set cloudSettings = data.cloudSettings %}
+{% set cloudSettings = salt['mc_cloud.settings']() %} 
 include:
     - makina-states.services.base.ssh.rootkey
 {% for k in ['rsa', 'dsa'] %}

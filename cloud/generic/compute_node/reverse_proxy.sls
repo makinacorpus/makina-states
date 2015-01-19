@@ -11,7 +11,6 @@
  # eg ip: 10.5.0.2 will have its ssh port mapped to 40002 on host
  # eg ip: 10.5.1.2 will have its ssh port mapped to 40258 on host
  #}
-{% set data = salt['mc_cloud_compute_node.cn_settings']().cnSettings %}
 include:
   - makina-states.services.proxy.haproxy
   - makina-states.cloud.generic.hooks
@@ -32,8 +31,5 @@ cpt-cloud-haproxy-cfg:
     - mode: 644
     - makedirs: true
     - template: jinja
-    - defaults:
-      cdata: |
-             {{salt['mc_utils.json_dump'](data.rp.reverse_proxies)}}
     - watch_in:
       - mc_proxy: haproxy-post-conf-hook

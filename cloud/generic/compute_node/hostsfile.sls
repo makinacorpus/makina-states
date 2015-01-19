@@ -1,13 +1,10 @@
-{% set data = salt['mc_cloud_compute_node.cn_settings']() %}
-{% set compute_node_settings = data.cnSettings %}
-{% set cloudSettings = data.cloudSettings %}
+{% set vmsdata = salt['mc_cloud_vm.settings']() %}
 {% set domains = [] %}
-{% set tdata = compute_node_settings.cn %}
 
 configure-cloud-{{opts.id}}-hostfiles:
   mc_proxy.hook: []
 
-{% for vmname, data in tdata.vms.items() -%}
+{% for vmname, data in vmsdata.vms.items() -%}
 {%  for domain in data['domains'] %}
 {%    if not domain in domains%}
 {%      do domains.append(domain)%}
