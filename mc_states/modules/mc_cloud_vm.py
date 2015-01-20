@@ -106,6 +106,7 @@ def vt_default_settings(cloudSettings, imgSettings, ttl=60):
     '''
     def _do(cloudSettings, imgSettings):
         _s = __salt__
+        _g = __grains__
         default_snapshot = False
         if _s['mc_nodetypes.is_devhost']():
             default_snapshot = True
@@ -129,8 +130,8 @@ def vt_default_settings(cloudSettings, imgSettings, ttl=60):
                 'netmask_full': '255.255.0.0',
                 'bridge': 'br0',
                 'additional_ips': [],
-                'name': __grains__['id'],
-                'domains': [__grains__['id']],
+                'name': _g['id'],
+                'domains': [_g['id']],
                 #
                 'ssh_gateway': cloudSettings['ssh_gateway'],
                 'ssh_username': 'ubuntu',
@@ -157,6 +158,7 @@ def vt_default_settings(cloudSettings, imgSettings, ttl=60):
                 #
                 'size': None,  # via profile
                 'backing': 'lvm',
+                'pools': [{'name': 'vg', 'type': 'lvm'}]
             },
             'vms': OrderedDict(),
         }
@@ -310,7 +312,7 @@ def vt_extpillar(target, vt, ttl=60):
         data = vt_extpillar_settings(vt)
         fun = 'mc_cloud_{0}.vt_extpillar'.format(vt)
         data = _s['mc_utils.dictupdate'](
-            _s['mc_utils.dictupdate'](data, _s[fun](target, data)), extdata)
+            _s[fun](target, data), extdata)
         return data
     cache_key = 'mc_cloud_vm.vt_extpillar{0}{1}'.format(target, vt)
     return memoize_cache(_do, [target, vt], {}, cache_key, ttl)
@@ -323,7 +325,7 @@ def vm_extpillar(id_, ttl=60):
         data = vm_extpillar_settings(id_)
         fun = 'mc_cloud_{0}.vm_extpillar'.format(data['vt'])
         data = _s['mc_utils.dictupdate'](
-            _s['mc_utils.dictupdate'](data, _s[fun](id_, data)), extdata)
+            _s[fun](id_, data), extdata)
         return data
     cache_key = 'mc_cloud_vm.vm_extpillar{0}'.format(id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
