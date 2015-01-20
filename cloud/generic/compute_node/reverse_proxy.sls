@@ -23,13 +23,7 @@ cloud-haproxy-sshcerts:
       - mc_proxy: haproxy-post-conf-hook
 
 cpt-cloud-haproxy-cfg:
-  file.managed:
+  file.absent:
     - name: {{salt['mc_haproxy.settings']().config_dir}}/extra/cloudcontroller.cfg
-    - source: salt://makina-states/files/etc/haproxy/cloudcontroller.cfg
-    - user: root
-    - group: root
-    - mode: 644
-    - makedirs: true
-    - template: jinja
     - watch_in:
       - mc_proxy: haproxy-post-conf-hook
