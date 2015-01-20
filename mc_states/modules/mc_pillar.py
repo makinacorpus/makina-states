@@ -95,12 +95,28 @@ def get_fqdn_domains(fqdn):
             domains.append(part)
     return domains
 
-# to be easily mockable in tests while having it cached
-def loaddb_do(*a, **kw5):
+
+def get_db():
     dbpath = os.path.join(
         __opts__['pillar_roots']['base'][0],
         'database.yaml')
-    with open(dbpath) as fic:
+    return dbpath
+
+
+def has_db():
+    db = get_db()
+    if ('yaml' in db) and db.startswith('/srv'):
+        return os.path.exists(db)
+    else:
+        return False
+
+
+# to be easily mockable in tests while having it cached
+def loaddb_do(*a, **kw5):
+    dbpath = get_db()
+    if not has_db():
+        raise KeyError("{0} is not present".format(dbpath))
+    with open(get_db()) as fic:
         db = yaml_load(fic.read())
     for item in db:
         types = (dict, list)
@@ -3310,6 +3326,8 @@ def loaded():
                 or ('ext_pillar' in a)
             ) for a in fun_names]
         ):
+            ret = False
+        if ret and not has_db():
             ret = False
     except Exception:
         ret = False
