@@ -1,6 +1,5 @@
 {% set pkgssettings = salt['mc_pkgs.settings']() %}
 {% set settings = salt['mc_bind.settings']() %}
-{% set yameld_data = salt['mc_utils.json_dump'](settings) %}
 {% set zones = salt['mc_bind.cached_zone_headers']() %}
 
 {% set checked_zones = {} %}
@@ -15,10 +14,9 @@ dns-rzones-{{zone}}-{{data.fpath}}:
     {% else %}
     {% if data.template %}
     - source: {{data.source}}
+    - context:
+        zoneid: {{zone}}
     - template: jinja
-    - defaults:
-      data: |
-            {{salt['mc_utils.json_dump'](data)}}
     {% endif %}
     {% endif %}
     - user: {{settings.zuser}}
@@ -101,9 +99,6 @@ bind_config_{{f}}:
     - user: root
     - group: root
     - mode: {{settings.mode}}
-    - defaults:
-      data: |
-            {{yameld_data}}
     - watch:
       - mc_proxy: bind-pre-conf
     - watch_in:
@@ -127,9 +122,6 @@ bind_config_{{tp}}:
     - user: {{settings.user}}
     - group: {{settings.group}}
     - mode: {{settings.mode}}
-    - defaults:
-      data: |
-            {{yameld_data}}
     - watch:
       - mc_proxy: bind-pre-conf
     - watch_in:
@@ -164,9 +156,6 @@ bind_config_rndc:
     - user: {{settings.user}}
     - group: {{settings.group}}
     - mode: {{settings.mode}}
-    - defaults:
-      data: |
-            {{yameld_data}}
     - watch:
       - mc_proxy: bind-pre-conf
     - watch_in:

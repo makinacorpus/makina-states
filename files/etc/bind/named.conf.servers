@@ -5,7 +5,7 @@
 // SERVERS
 //
 
-{% set data = salt['mc_utils.json_load'](data) %}
+{% set data = salt['mc_bind.settings']() %}
 {% for server, sdata in data['servers'].items() %}
 {% if sdata['keys'] %}
 server {{server}} {

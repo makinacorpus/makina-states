@@ -1,7 +1,7 @@
 # vim:syntax=apparmor
 # Last Modified: Fri Jun  1 16:43:22 2007
 #include <tunables/global>
-
+{% set data = salt['mc_bind.settings']() %}
 /usr/sbin/named {
   #include <abstractions/base>
   #include <abstractions/nameservice>

@@ -2,7 +2,7 @@
 // MANAGED VIA SALT DO NOT EDIT
 // *******************************
 
-{% set data = salt['mc_utils.json_load'](data) %}
+{% set data = salt['mc_bind.settings']() %}
 //
 // VIEWS, net is the default view
 //

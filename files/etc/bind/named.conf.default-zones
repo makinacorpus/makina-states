@@ -2,7 +2,7 @@
 // MANAGED VIA SALT DO NOT EDIT
 // *******************************
 // prime the server with knowledge of the root servers
-{% set data = salt['mc_utils.json_load'](data) %}
+{% set data = salt['mc_bind.settings']() %}
 zone "." {
       type hint;
       file "/etc/bind/db.root";
