@@ -16,9 +16,6 @@ makina-etc-{{f}}:
     - user: root
     - group: root
     - mode: "0700"
-    - defaults:
-      data: |
-            {{salt['mc_utils.json_dump'](data)}}
     - watch:
       - mc_proxy: fail2ban-pre-conf-hook
     - watch_in:
@@ -33,9 +30,6 @@ makina-etc-fail2ban-fail2ban-conf:
     - user: root
     - group: root
     - mode: "0700"
-    - defaults:
-      data: |
-            {{salt['mc_utils.json_dump']( data)}}
     - watch:
       - mc_proxy: makina-fail2ban-pre-conf
     - watch_in:

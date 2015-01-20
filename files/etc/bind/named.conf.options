@@ -1,7 +1,7 @@
 // *******************************
 // MANAGED VIA SALT DO NOT EDIT
 // *******************************
-{% set data = salt['mc_utils.json_load'](data) %}
+{% set data = salt['mc_bind.settings']() %}
 options {
         directory "{{data.cache_directory}}";
         statistics-file "{{data.cache_directory}}/named.stats";
