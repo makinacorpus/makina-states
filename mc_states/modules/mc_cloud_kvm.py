@@ -66,7 +66,7 @@ def vt_default_settings(cloudSettings, imgSettings):
                          'network': '10.6.0.0',
                          'bridge': 'kvmbr1',
                          'profile': 'medium',
-                         'pools': {'vg': {'type': 'lvm'}}}})
+                         'pools': [{'name': 'vg', 'type': 'lvm'}]}})
     return vmSettings
 
 

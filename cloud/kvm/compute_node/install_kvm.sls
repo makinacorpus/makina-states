@@ -11,7 +11,8 @@ include:
 kvm-noop:
   mc_proxy.hook: []
 
-{% for i, tdata in kvmSettings.get('pools', {}).items() %}
+{% for tdata in kvmSettings.defaults.get('pools', []) %}
+{% set i = tdata.name %}
 {% if tdata.get('type') == 'lvm' %}
 # only define if vg exists and vg is not an active
 # libvirt pool
@@ -24,14 +25,14 @@ kvm-define-pool-{{i}}:
 
 kvm-start-pool-{{i}}:
   cmd.run:
-    - onlyif: test "x$(virsh pool-list --details|awk '{print $1}'|egrep -q '^v{{i}}';echo ${?})" = "x0" && test "x$(LC_ALL=C virsh pool-list --details|egrep "^[ ]*{{i}} .*"|head -n 1|awk '{print $2}')" != "xrunning"
+    - onlyif: test "x$(virsh pool-list --all --details|awk '{print $1}'|egrep -q '^{{i}}';echo ${?})" = "x0" && test "x$(LC_ALL=C virsh pool-list --details|egrep "^[ ]*{{i}} .*"|head -n 1|awk '{print $2}')" != "xrunning"
     - name: virsh pool-start {{i}}
     - watch:
       - mc_proxy: kvm-post-inst
       - cmd: kvm-define-pool-{{i}}
 kvm-autostart-pool-{{i}}:
   cmd.run:
-    - onlyif: test "x$(virsh pool-list --details|awk '{print $1}'|egrep -q '^{{i}}';echo ${?})" = "x0" && test "x$(LC_ALL=C virsh pool-list --details|egrep "^[ ]*{{i}} .*"|head -n 1|awk '{print $3}')" != "xyes"
+    - onlyif: test "x$(virsh pool-list --all --details|awk '{print $1}'|egrep -q '^{{i}}';echo ${?})" = "x0" && test "x$(LC_ALL=C virsh pool-list --details|egrep "^[ ]*{{i}} .*"|head -n 1|awk '{print $3}')" != "xyes"
     - name: virsh pool-autostart {{i}}
     - watch:
       - mc_proxy: kvm-post-inst
