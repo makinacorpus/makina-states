@@ -246,7 +246,8 @@ def get_timeout_error(wait_for_res,
 
 
 def client(fun, *args, **kw):
-    '''Execute a salt function on a specific minion using the salt api.
+    '''
+    Execute a salt function on a specific minion using the salt api.
     This will set automatic timeouts for well known functions.
     This will also call well known api calls for a specific time.
 
@@ -322,12 +323,11 @@ def client(fun, *args, **kw):
         skwargs = json.dumps(kwargs)
     except TypeError:
         skwargs = ''
+
     def _do(target, fun, args, kw, kwargs):
         # timeout for the master to return data
         # about a specific job
-        wait_for_res = float({
-            'test.ping': '5',
-        }.get(fun, '120'))
+        wait_for_res = float({'test.ping': '5', }.get(fun, '120'))
         conn = _client(cfgdir=cfgdir, cfg=cfg)
         runner = _runner(cfgdir=cfgdir, cfg=cfg)
         ping_retries = 0

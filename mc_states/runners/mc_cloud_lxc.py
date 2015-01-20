@@ -194,9 +194,8 @@ def post_post_deploy_compute_node(target, output=True):
     if nodetypes_reg['is']['devhost']:
         slss.append('{0}.devhost'.format(pref))
     if slss:
-        ret =  __salt__['mc_api.apply_sls'](
-            slss, **{'salt_target': target,
-                     'ret': ret})
+        ret = __salt__['mc_api.apply_sls'](
+            slss, **{'salt_target': target, 'ret': ret})
     msg = 'Post installation: {0}\n'
     if ret['result']:
         clr = green
@@ -206,7 +205,7 @@ def post_post_deploy_compute_node(target, output=True):
         status = 'failure'
     ret['comment'] += clr(msg.format(status))
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end', func_name; ret=ret)
+    __salt__['mc_api.time_log']('end', func_name, ret=ret)
     return ret
 
 

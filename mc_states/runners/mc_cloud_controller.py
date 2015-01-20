@@ -222,7 +222,7 @@ def orchestrate(skip=None,
 
     '''
     func_name = 'mc_cloud_controller.orchestrate'
-    __salt__['mc_api.time_log']('start', func_name
+    __salt__['mc_api.time_log']('start', func_name,
                                 skip=skip,
                                 skip_vms=skip_vms,
                                 only=only,
@@ -307,5 +307,5 @@ def report(*a, **kw):
     '''
     Alias to mc_cloud_compute_node.report
     '''
-    return __salt__['mc_cloud_compute_node.report')(*a, **kw)
+    return __salt__['mc_cloud_compute_node.report'](*a, **kw)
 #

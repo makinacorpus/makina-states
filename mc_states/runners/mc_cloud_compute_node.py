@@ -346,8 +346,8 @@ def provision_compute_nodes(skip=None, only=None,
 
 def post_provision_compute_nodes(skip=None, only=None,
                                  output=True, refresh=False, ret=None):
-    '''post provision all compute nodes
-
+    '''
+    post provision all compute nodes
     '''
     func_name = 'mc_compute_node.post_provision_compute_nodes'
     __salt__['mc_api.time_log']('start', func_name)
@@ -358,7 +358,7 @@ def post_provision_compute_nodes(skip=None, only=None,
         ret = result()
     if refresh:
         cli('saltutil.refresh_pillar')
-    settings = cli('mc_cloud_compute_node.settings')
+    settings = __salt__['mc_cloud_controller.ext_pillar'](__opts__['id'])
     provision = ret['changes'].setdefault('postp_cns_provisionned', [])
     provision_error = ret['changes'].setdefault('postp_cns_in_error', [])
     targets = [a for a in settings['targets']]
@@ -418,7 +418,8 @@ def orchestrate(skip=None,
                 output=True,
                 refresh=True,
                 ret=None):
-    '''Orchestrate the whole cloud deployment.
+    '''
+    Orchestrate the whole cloud deployment.
     In this order:
 
         - provision compute nodes minus the skipped one
@@ -456,7 +457,18 @@ def orchestrate(skip=None,
             do not run the vms post provision
     '''
     func_name = 'mc_compute_node.orchestrate'
-    __salt__['mc_api.time_log']('start', func_name)
+    __salt__['mc_api.time_log']('start', func_name,
+                                skip=skip,
+                                skip_vms=skip_vms,
+                                only=only,
+                                only_vms=only_vms,
+                                no_compute_nodes=no_compute_nodes,
+                                no_provision=no_provision,
+                                no_post_provision=no_post_provision,
+                                no_vms_post_provision=no_vms_post_provision,
+                                no_vms=no_vms,
+                                refresh=refresh,
+                                ret=ret)
     if refresh:
         cli('saltutil.refresh_pillar')
     if ret is None:
