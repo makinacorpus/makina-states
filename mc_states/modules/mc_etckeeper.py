@@ -25,6 +25,10 @@ def settings():
         # etckeeper
         etckeeperData = __salt__['mc_utils.defaults'](
             'makina.localsettings.etckeeper', {
+                'configs': {
+                    '/etc/cron.daily/etckeeper': {'mode': '0750'},
+                    '/etc/etckeeper/etckeeper.conf' : {'mode': '0644'},
+                },
                 'pm': 'apt',
                 'installer': 'dpkg',
                 'specialfilewarning': False,
