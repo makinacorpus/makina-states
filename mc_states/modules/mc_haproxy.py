@@ -10,6 +10,7 @@ __docformat__ = 'restructuredtext en'
 # Import python libs
 import logging
 import os
+from salt.utils.odict import OrderedDict
 import mc_states.utils
 
 __name = 'haproxy'
@@ -34,28 +35,9 @@ def settings():
         #('rspidel ^Set-cookie:\ IP=    '
         # '# do not let this cookie tell '
         # 'our internal IP address'),
-        df_listeners = {
-            #'default-listener': {
-            #    'bind': '0.0.0.0:10001',
-            #    'raw_opts': [
 
-            #        'balance roundrobin',
-            #    ],
-            #    'servers': [
-            #        {
-            #            'name': 'appl1',
-            #            'bind': '192.168.34.23:8080',
-            #            'opts': (
-            #                'cookie '
-            #                'app1inst1 check '
-            #                'inter 2000 '
-            #                'rise 2 '
-            #                'fall 5'
-            #            )
-            #        }
-            #    ]
-            #},
-        }
+        haproxy_password = __salt__['mc_utils.generate_stored_password'](
+            'mc_haproxy.password')
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.proxy.haproxy', {
                 'location': locs['conf_dir'] + '/haproxy',
@@ -64,8 +46,22 @@ def settings():
                 'config': 'haproxy.cfg',
                 'user': 'haproxy',
                 'group': 'haproxy',
-                'defaults': {'extra_opts': '',
-                             'enabled': '1'},
+                'defaults': {'extra_opts': '', 'enabled': '1'},
+                'configs': {'/etc/haproxy/haproxy.cfg': {},
+                            '/etc/haproxy/extra/backends.cfg': {},
+                            '/etc/haproxy/extra/dispatchers.cfg': {},
+                            '/etc/haproxy/extra/frontends.cfg': {},
+                            '/etc/haproxy/extra/listeners.cfg': {},
+                            '/etc/logrotate.d/haproxy': {},
+                            '/etc/default/haproxy': {'mode': 755},
+                            '/etc/init.d/haproxy': {'mode': 755},
+
+                            '/etc/haproxy/errors/403.http': {},
+                            '/etc/haproxy/errors/408.http': {},
+                            '/etc/haproxy/errors/500.http': {},
+                            '/etc/haproxy/errors/502.http': {},
+                            '/etc/haproxy/errors/503.http': {},
+                            '/etc/haproxy/errors/504.http': {}},
                 'config': {
                     'global': {
                         'logfacility': 'local0',
@@ -102,18 +98,14 @@ def settings():
                             'uri': '/_balancer_status_',
                             'refresh': '5s',
                             'realm': 'haproxy\ statistics',
-                            'auth': 'admin:admin',
+                            'auth': 'admin:{0}'.format(haproxy_password),
                         },
                     }
                 },
-                'listeners': df_listeners,
-                'backends': {},
-                'frontends': {},
-                'dispatchers': {
-                   # 'appl2': {
-                   #     'uri': '0.0.0.0:8082',
-                   #     'uris': ['192.168.135.17:80']}
-                },
+                'listeners': OrderedDict(),
+                'backends': OrderedDict(),
+                'frontends': OrderedDict(),
+                'dispatchers': OrderedDict(),
             }
         )
         return data

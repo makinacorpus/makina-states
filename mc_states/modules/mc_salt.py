@@ -494,6 +494,10 @@ def settings():
         for key in keys:
             data['c']['o'][key] = data['{0}{1}'.format(pref, key)]
         data['data_mappings'] = {
+            'common': {
+                'salt': saltCommonData,
+                'mastersalt': mastersaltCommonData,
+            },
             'master': {
                 'salt': saltMasterData,
                 'mastersalt': mastersaltMasterData,

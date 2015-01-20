@@ -1,4 +1,5 @@
 #!/bin/sh
+{% set data = salt['mc_etckeeper.settings']() %}
 set -e
 msg=${1:-"daily autocommit"}
 if [ -x /usr/bin/etckeeper ] && [ -e /etc/etckeeper/etckeeper.conf ]; then

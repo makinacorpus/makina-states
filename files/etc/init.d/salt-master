@@ -1,5 +1,5 @@
 #!/bin/sh
-{% set salt_data = salt['mc_utils.json_load'](salt_data) %}
+{% set salt_data = salt['mc_salt.settings']().data_mappings[service_name][salt_mode] %}
 ### BEGIN INIT INFO
 # Provides:          {{salt_data['name']}}-{{salt_data['daemon_name']}}
 # Required-Start:    $remote_fs $network

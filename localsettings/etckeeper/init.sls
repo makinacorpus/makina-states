@@ -19,37 +19,23 @@ etckeeper-pkgs:
     - watch_in:
       - name: etckeeper-initial
       - mc_proxy: etckeeper-run-hook
-      - file: etckeeper-conf
+      - file: etckeeper-/etc/etckeeper/etckeeper.conf
 
-etckeeper-cron:
+
+{%- for config, cdata in defaults.configs.items() %}
+{% set mode = cdata.get('mode', '0700') %}
+etckeeper-{{config}}:
   file.managed:
-    - name: {{locs.conf_dir}}/cron.daily/etckeeper
+    - name: {{config}}
+    - source : {{cdata.get('template', 'salt://makina-states/files'+config)}}
     - makedirs: True
-    - source: salt://makina-states/files/etc/cron.daily/etckeeper
     - template: jinja
-    - defaults:
-      data: |
-            {{salt['mc_utils.json_dump'](defaults)}}
     - user: root
     - group: root
     - mode: 750
     - watch_in:
       - mc_proxy: etckeeper-run-hook
-
-etckeeper-conf:
-  file.managed:
-    - name: {{locs.conf_dir}}/etckeeper/etckeeper.conf
-    - makedirs: True
-    - source: salt://makina-states/files/etc/etckeeper/etckeeper.conf
-    - template: jinja
-    - defaults:
-      data: |
-            {{salt['mc_utils.json_dump'](defaults)}}
-    - user: root
-    - group: root
-    - mode: 644
-    - watch_in:
-      - mc_proxy: etckeeper-run-hook
+{% endfor %}
 
 etckeeper-initial:
   cmd.run:
@@ -58,7 +44,7 @@ etckeeper-initial:
            /usr/bin/etckeeper commit "Initial commit";
     - require:
        - pkg: etckeeper-pkgs
-       - file: etckeeper-conf
+       - file: etckeeper-/etc/etckeeper/etckeeper.conf
     - unless: test -d {{locs.conf_dir}}/.git
 
 etckeeper-perms:

@@ -21,7 +21,4 @@ tz-conf:
     - user: root
     - group: root
     - template: jinja
-    - defaults:
-      data: |
-            {{ salt['mc_utils.json_dump'](defaults)}}
 {% endif %}

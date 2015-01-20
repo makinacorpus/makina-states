@@ -101,6 +101,7 @@ dummy-{{ name }}-layout:
 #}
 {% macro daemon_dummies(mode) %}
 {% for service_name in data_mappings %}
+{% if service_name not in ['common'] %}
 {% set data = data_mappings[service_name][mode] %}
 # salt master/minion state will attach to this for the minion to be configured
 # before being really restarted
@@ -125,6 +126,7 @@ dummy-post-{{ data.service_name }}-service-restart:
    mc_proxy.hook:
     - require:
       - mc_proxy: dummy-post-{{ data.daemon_name }}-service-restart
+{% endif %}
 {% endfor %}
 {% endmacro %}
 
@@ -152,7 +154,6 @@ dummy-post-{{ data.service_name }}-service-restart:
 {%- set logPrefix = resolver('{log_prefix}', data) %}
 {%- set pillarRoot = resolver('{pillar_root}', data) %}
 {%- set localMsr = resolver('{salt_root}/makina-states', data) %}
-{%- set json_data = salt['mc_utils.json_dump'](resolver(data)) %}
 {%- set repos = data['confRepos'] %}
 {% for cur_name in  [
   'salt',
@@ -178,8 +179,9 @@ salt-{{ data.name }}-{{cur_name}}-bin:
     - mode: 755
     - makedirs: True
     - template: jinja
-    - salt_data: |
-                 {{ json_data }}
+    - context:
+        salt_mode: {{data.name}}
+        service_name: common
     - bin_name: {{cur_name}}
     - require:
       - cmd: update-makinastates-{{ data.name }}
@@ -439,8 +441,9 @@ salt-{{ data.name }}-logrotate:
     - template: jinja
     - name: {{ locs.conf_dir }}/logrotate.d/{{ data.name }}.conf
     - source: salt://makina-states/files/etc/logrotate.d/salt.conf
-    - salt_data: |
-                 {{ json_data }}
+    - context:
+        salt_mode: {{data.name}}
+        service_name: common
 
 {#- Fix permissions and ownerships
 # recurse does not seem to work well to reset perms #}
@@ -529,15 +532,15 @@ etc-{{data.name}}-dirs-perms:
 {%- set logPrefix = resolver('{log_prefix}', data) %}
 {%- set pillarRoot = resolver('{pillar_root}', data) %}
 {%- set localMsr = resolver('{salt_root}/makina-states', data) %}
-{%- set json_data = salt['mc_utils.json_dump'](data) %}
 salt-{{ data.daemon_name }}-conf-global:
   file.managed:
     - name: {{ confPrefix }}/{{ data.service_name }}.d/00_global.conf
     - template: jinja
     - makedirs: true
     - source: salt://makina-states/files/etc/salt/{{ data.service_name }}.d/00_global.conf
-    - salt_data: |
-                 {{ json_data }}
+    - context:
+        salt_mode: {{data.name}}
+        service_name: {{data.service_name}}
     - require:
       - mc_proxy: dummy-{{data.name}}-layout
     - require_in:
@@ -579,8 +582,9 @@ salt-{{ data.daemon_name }}-conf:
     - name: {{ confPrefix }}/{{ data.service_name }}
     - template: jinja
     - source: salt://makina-states/files/etc/salt/{{ data.service_name }}
-    - salt_data: |
-                 {{ json_data }}
+    - context:
+        salt_mode: {{data.name}}
+        service_name: {{data.service_name}}
     - require:
       - mc_proxy: dummy-{{data.name}}-layout
     - require_in:
@@ -597,8 +601,9 @@ salt-{{ data.daemon_name }}-job:
     - root: {{ data.msr }}
     - saltname: {{ data.name }}
     - saltconfig: {{ confPrefix }}
-    - salt_data: |
-                 {{ json_data }}
+    - context:
+        salt_mode: {{data.name}}
+        service_name: {{data.service_name}}
     - require:
       - mc_proxy: dummy-{{data.name}}-layout
     - require_in:
@@ -616,8 +621,9 @@ salt-{{ data.daemon_name }}-job:
     - root: {{ data.msr }}
     - saltconfig: {{ confPrefix }}
     - saltname: {{ data.name }}
-    - salt_data: |
-                 {{ json_data }}
+    - context:
+        salt_mode: {{data.name}}
+        service_name: {{data.service_name}}
     - require:
       - mc_proxy: dummy-{{data.name}}-layout
     - require_in:
@@ -650,8 +656,9 @@ salt-{{ data.daemon_name }}-sock-dir:
 
 salt-{{ data.daemon_name }}-logs:
   file.managed:
-    - salt_data: |
-                 {{ json_data }}
+    - context:
+        salt_mode: {{data.name}}
+        service_name: {{data.service_name}}
     - names:
       - {{ logPrefix }}/key
       - {{ logPrefix }}/{{ data.daemon_name }}
@@ -723,7 +730,6 @@ salt-{{ data.daemon_name }}-remove-minionid:
   mode,  data_mappings[service_name]['salt']) %}
 {%- endif %}
 {{ install_salt_common_daemon(adata=data, full=full) }}
-{% set json_data = salt['mc_utils.json_dump'](data) %}
 
 salt-{{ data.name }}-remove-minionid:
   file.absent:
@@ -744,8 +750,9 @@ salt-{{ data.name }}-{{cur_name}}-bin:
     - mode: 700
     - makedirs: True
     - template: jinja
-    - salt_data: |
-                 {{ json_data }}
+    - context:
+        salt_mode: {{data.name}}
+        service_name: {{data.service_name}}
     - require:
       - cmd: update-makinastates-{{ data.name }}
     - require_in:
@@ -759,9 +766,10 @@ salt-{{ data.daemon_name }}-conf-devhost-global:
     - name: {{ data.conf_prefix }}/{{ data.service_name }}.d/10_devhost.conf
     - template: jinja
     - makedirs: true
+    - context:
+        salt_mode: {{data.name}}
+        service_name: {{data.service_name}}
     - source: salt://makina-states/files/etc/salt/{{ data.service_name }}.d/10_devhost.conf
-    - salt_data: |
-                 {{ json_data }}
     - require:
       - mc_proxy: dummy-{{data.name}}-layout
     - require_in:

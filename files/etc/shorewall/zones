@@ -14,7 +14,7 @@
 ###############################################################################
 #ZONE	TYPE	OPTIONS			IN			OUT
 #              		    		OPTIONS			OPTIONS
-{% set shwdata = salt['mc_utils.json_load'](shwdata) %}
+{% set shwdata = salt['mc_shorewall.settings']() %}
 {% for i, data in shwdata['zones'].items() -%}
 {{ i }} {{ data['type'] }} {{ data.get('options', ' - ') }} {{ data.get('in', ' - ') }} {{ data.get('out', ' - ') }}
 {% endfor -%}

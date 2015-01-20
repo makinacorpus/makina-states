@@ -1,4 +1,4 @@
-{% set data = salt['mc_utils.json_load'](data) %}
+{% set data = salt['mc_haproxy.settings']() %}
 /var/log/haproxy.log {
     daily
     rotate {{data.rotate}}

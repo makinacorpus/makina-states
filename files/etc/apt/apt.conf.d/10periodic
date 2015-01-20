@@ -1,5 +1,5 @@
 // MANAGED VIA SALT DO NOT EDIT
-{% set data = salt['mc_utils.json_load'](data) %}
+{% set data = salt['mc_autoupgrade.settings']() %}
 APT::Periodic::Update-Package-Lists "{{data.unattended.UpdatePackageLists}}";
 APT::Periodic::Download-Upgradeable-Packages "{{data.unattended.DownloadUpgradeablePackages}}";
 APT::Periodic::AutocleanInterval "{{data.unattended.autoclean}}";

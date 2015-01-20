@@ -55,12 +55,7 @@ class MissingCertError(CertificateCreationError):
 
 
 def get_cloud_settings():
-    extpillar = not __salt__['mc_pillar.loaded']()
-    if extpillar:
-        cloudSettings = __salt__['mc_cloud.extpillar_settings']()
-    else:
-        cloudSettings = __salt__['mc_cloud.settings']()
-    return cloudSettings
+    return __salt__['mc_cloud.get_cloud_settings']()
 
 
 def settings():

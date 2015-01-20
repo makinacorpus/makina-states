@@ -619,6 +619,7 @@ def default_has(vts=None, **kwargs):
     return vts
 
 
+
 def _add_server_to_backends(reversep, frontend, backend_name, domain, ip):
     '''The domain is ppurely informative here'''
     _s = __salt__
@@ -627,22 +628,22 @@ def _add_server_to_backends(reversep, frontend, backend_name, domain, ip):
         kind = 'https'
     _backends = reversep['{0}_backends'.format(kind)]
     bck = _backends.setdefault(backend_name, OrderedDict())
-    bck = _s['mc_utils.dictupdate']({'name': backend_name,
-                                     'raw_opts': ['balance roundrobin'],
-                                     'servers': []}, bck)
+    default_raw_opts = ['balance roundrobin', 'source 0.0.0.0 usesrc clientip']
     # for now rely on settings xforwardedfor header
     if reversep['{0}_proxy'.format(kind)].get(
         'http_proxy_mode', 'xforwardedfor'
     ) == 'xforwardedfor':
-        bck['raw_opts'].append('option http-server-close')
-        bck['raw_opts'].append('option forwardfor')
-    else:
-        # in not much time we ll switch to the haproxy proxy protocol which
-        # leverage the xforwardedfor hack
-        bck['raw_opts'].append('source 0.0.0.0 usesrc clientip')
+        default_raw_opts.append('option http-server-close')
+        default_raw_opts.append('option forwardfor')
+    bck = _s['mc_utils.dictupdate']({'name': backend_name,
+                                     'raw_opts': [],
+                                     'servers': []}, bck)
     srv = {'name': 'srv_{0}{1}'.format(domain, len(bck['servers']) + 1),
            'bind': '{0}:80'.format(ip),
            'opts': 'check'}
+    [bck['raw_opts'].append(a)
+     for a in default_raw_opts if a not in bck['raw_opts']]
+    bck['raw_opts'].sort(key=lambda x: x)
     if srv['bind'] not in [a.get('bind') for a in bck['servers']]:
         bck['servers'].append(srv)
     _backends[backend_name] = bck
@@ -689,10 +690,10 @@ def default_http_proxy(target,
     name = target
     extra_bind = ''
     if ssl:
+        scheme = 'https'
         extra_bind += ' ssl'
         if not port:
             port = 443
-        name = 'secure-{0}'.format(name)
         if ssl_certs:
             wildcard = ''
             if target.count('.') >= 2:
@@ -711,14 +712,16 @@ def default_http_proxy(target,
             extra_bind += (' crt /etc/ssl/cloud/certs/{0}.crt'
                            ' crt /etc/ssl/cloud/certs').format(first_cert)
     else:
+        scheme = 'http'
         if not port:
             port = 80
-    data = {'name': name,
+    data = {'name': '{0}-{1}'.format(scheme, name),
             'mode': 'http',
             'http_proxy_mode': proxy_mode,
             'bind': '*:{0}{1}'.format(port, extra_bind),
             'raw_opts_pre': [],
             'raw_opts_post': [],
+            'raw_rules_done': False,
             'raw_opts': []}
     return data
 
@@ -769,12 +772,12 @@ def feed_http_reverse_proxy_for_target(target_data):
             _configure_http_reverses(reversep, domain, vm['ip'])
     # http/https raw rules
     for http_proxy in [reversep['http_proxy'], reversep['https_proxy']]:
-        if not http_proxy.get('raw_rules_done', None):
+        if not http_proxy.get('raw_rules_done', False):
             for rule in reversed(http_proxy['raw_opts_pre']):
                 http_proxy['raw_opts'].insert(0, rule)
             for rule in http_proxy['raw_opts_post']:
                 http_proxy['raw_opts'].append(rule)
-            http_proxy['raw_rules_done'] = 1
+            http_proxy['raw_rules_done'] = False
     return target_data
 
 
@@ -862,8 +865,21 @@ def ext_pillar(id_, prefixed=True, *args, **kw):
             proxy['raw_opts_{0}'.format(suf)] = opts
     data = feed_http_reverse_proxy_for_target(data)
     data = feed_sw_reverse_proxies_for_target(data)
+    haproxy_opts = OrderedDict()
+    http_proxy = data['reverse_proxies']['http_proxy']
+    https_proxy = data['reverse_proxies']['https_proxy']
+    for typ, bdatadict in (
+        ("frontends", {http_proxy['name']:  http_proxy}),
+        ("frontends", {https_proxy['name']: https_proxy}),
+        ("backends", data['reverse_proxies']['http_backends']),
+        ("backends", data['reverse_proxies']['https_backends']),
+    ):
+        pref = 'makina-states.services.proxy.haproxy'
+        for id_, bdata in bdatadict.items():
+            haproxy_opts[pref + '.{0}.{1}'.format(typ, id_)] = bdata
     if prefixed:
         data = {PREFIX: data}
+    data.update(haproxy_opts)
     return data
 
 

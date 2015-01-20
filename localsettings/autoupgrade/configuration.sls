@@ -14,9 +14,6 @@ autoupgrade-conf-{{f}}:
     - makedirs: True
     - source: salt://makina-states/files{{f}}
     - template: jinja
-    - defaults:
-      data: |
-            {{salt['mc_utils.json_dump'](data)}}
     - user: root
     - group: root
     - mode: 644

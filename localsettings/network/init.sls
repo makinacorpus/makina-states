@@ -40,9 +40,6 @@ network-cfg:
     - template: jinja
     - name: {{ locs.conf_dir }}/network/interfaces
     - source: salt://makina-states/files/etc/network/interfaces
-    - context:
-      data: |
-            {{salt['mc_utils.json_dump'](mcnet)}}
 
 {% for ifc in mcnet.interfaces_order %}
 {% set ifn = mcnet.interfaces[ifc]['ifname'] %}
@@ -58,9 +55,7 @@ network-cfg-{{ifc}}:
     - name: {{ locs.conf_dir }}/network/interfaces.d/interface.{{ifn}}.cfg
     - source: salt://makina-states/files/etc/network/interface
     - context:
-      ifname: {{ifc}}
-      data: |
-            {{salt['mc_utils.json_dump']( mcnet)}}
+        ifname: {{ifc}}
 
 network-services-{{ifc}}:
   cmd.watch:

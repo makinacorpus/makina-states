@@ -126,24 +126,23 @@ def settings():
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
+        _s = __salt__
         protos = ['tcp', 'udp']
-        grains = __grains__
+        _g = __grains__
         pillar = __pillar__
-        data_net = __salt__['mc_network.default_net']()
-        netsettings = __salt__['mc_network.settings']()
+        data_net = _s['mc_network.default_net']()
+        netsettings = _s['mc_network.settings']()
         default_netmask = data_net['default_netmask']
         gifaces = data_net['gifaces']
         default_if = data_net['default_if']
         default_route = data_net['default_route']
         default_net = data_net['default_net']
-        services_registry = __salt__['mc_services.registry']()
-        controllers_registry = __salt__['mc_controllers.registry']()
-        nodetypes_registry = __salt__['mc_nodetypes.registry']()
-        locs = __salt__['mc_locations.settings']()
-        providers = __salt__['mc_provider.settings']()
+        services_registry = _s['mc_services.registry']()
+        controllers_registry = _s['mc_controllers.registry']()
+        nodetypes_registry = _s['mc_nodetypes.registry']()
+        locs = _s['mc_locations.settings']()
+        providers = _s['mc_provider.settings']()
         have_rpn = providers['have_rpn']
-        #if ((grains['os'] not in ['Debian'])
-        #   and (grains.get('lsb_distrib_codename') not in ['precise'])):
         ulogd = False
         if nodetypes_registry['is']['lxccontainer']:
             ulogd = True
@@ -168,7 +167,7 @@ def settings():
             rif = default_route.get('iface', 'eth0')
             if rif == 'eth0':
                 permissive_mode = True
-        data = __salt__['mc_utils.defaults'](
+        data = _s['mc_utils.defaults'](
             'makina-states.services.firewall.shorewall', {
                 # mapping of list of mappings
                 'interfaces': OrderedDict(),
@@ -230,11 +229,28 @@ def settings():
                 'permissive_mode': permissive_mode,
                 'ifformat': shwIfformat,
                 'ulogd': ulogd,
+                'configs': {'/etc/shorewall/interfaces': {"mode": "0700"},
+                            '/etc/shorewall/masq': {"mode": "0700"},
+                            '/etc/shorewall/nat': {"mode": "0700"},
+                            '/etc/shorewall/proxyarp': {"mode": "0700"},
+                            '/etc/shorewall/params': {"mode": "0700"},
+                            '/etc/shorewall/policy': {"mode": "0700"},
+                            '/etc/rc.local.d/shorewall.sh': {"mode": "0755"},
+                            '/etc/init.d/shorewall': {"mode": "0755"},
+                            '/etc/init.d/shorewall6': {"mode": "0755"},
+                            '/etc/shorewall/rules': {"mode": "0700"},
+                            '/etc/shorewall/shorewall.conf': {"mode": "0700"},
+                            '/etc/shorewall/zones': {"mode": "0700"}},
                 # retro compat
-                'enabled': __salt__['mc_utils.get'](
+                'enabled': _s['mc_utils.get'](
                     'makina-states.services.shorewall.enabled', True),
 
             })
+        shareds = ['macro.mongodb']
+        if _g['os'] in ['Debian']:
+            shareds.extend(['macro.PostgreSQL', 'macro.Mail'])
+        for i in shareds:
+            data['configs']['/usr/share/shorewall/' + i] = {'mode': "0700"}
         info_loglevel = 'info'
         if data['ulogd']:
             info_loglevel = 'NFLOG'
@@ -288,7 +304,7 @@ def settings():
         # service access restrictions
         # enable all by default, but can by overriden easily in config
         # this will act at shorewall parameters in later rules
-        burpsettings = __salt__['mc_burp.settings']()
+        burpsettings = _s['mc_burp.settings']()
 
         if not data['no_default_params']:
             for p in ['SYSLOG', 'SSH', 'SNMP', 'PING', 'LDAP', 'SALT',
@@ -597,19 +613,19 @@ def settings():
             # enable compute node redirection port ange if any
             # XXX: this is far from perfect, now we open a port range which
             # will be avalaible for connection and the controller will use that
-            is_compute_node = __salt__['mc_cloud.is_compute_node']()
+            is_compute_node = _s['mc_cloud.is_compute_node']()
             if is_compute_node and not data['no_computenode']:
                 try:
                     cloud_rules = []
                     try:
-                        cloud_reg = __salt__['mc_cloud_compute_node.settings']()
+                        cloud_reg = _s['mc_cloud_compute_node.settings']()
                         cloud_rules = cloud_reg.get(
                             'reverse_proxies', {}).get('sw_proxies', [])
                     except Exception:
                         cloud_rules = []
                     if not cloud_rules:
                         # before refactor transition
-                        lcloud_reg = __salt__['mc_cloud_compute_node.cn_settings']()
+                        lcloud_reg = _s['mc_cloud_compute_node.cn_settings']()
                         cloud_rules = lcloud_reg.get(
                             'cnSettings', {}).get(
                                 'rp', {}).get(
@@ -921,7 +937,7 @@ def settings():
                      'dport': '4971,4972,4973,4974'},
                     zones=data['internal_zones'])
             # also accept configured hosts
-            burpsettings = __salt__['mc_burp.settings']()
+            burpsettings = _s['mc_burp.settings']()
             clients = 'net:'
             clients += ','.join(prefered_ips(burpsettings['clients']))
             for proto in protos:

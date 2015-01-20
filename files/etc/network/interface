@@ -2,7 +2,7 @@
 # and how to activate them. For more information, see interfaces(5).
 #   DO NOT EDIT !
 # MANAGED via SALT !
-{% set data = salt['mc_utils.json_load'](data) %}
+{% set data = salt['mc_network.settings']() %}
 {% set network_interfaces = data.interfaces %}
 {% set ifc = network_interfaces[ifname] %}
 {% set real_ifname = ifc.get('ifname') -%}

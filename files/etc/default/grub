@@ -3,6 +3,7 @@
 # /boot/grub/grub.cfg.
 # For full documentation of the options in this file, see:
 #   info -f grub -n 'Simple configuration'
+{% set data = salt['mc_grub.settings']() %}
 
 GRUB_DEFAULT=0
 GRUB_HIDDEN_TIMEOUT=0

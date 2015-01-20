@@ -5,7 +5,7 @@
 # The loopback network interface
 auto lo
 iface lo inet loopback
-{% set data = salt['mc_utils.json_load'](data) %}
+{% set data = salt['mc_network.settings']() %}
 {% for ifname in data.interfaces_order %}
 source /etc/network/interfaces.d/interface.{{data.interfaces[ifname].ifname}}.cfg
 {% endfor -%}

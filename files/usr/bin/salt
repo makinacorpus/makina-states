@@ -1,5 +1,5 @@
 #!/bin/sh
-{% set salt_data = salt['mc_utils.json_load'](salt_data) %}
+{% set salt_data = salt['mc_salt.settings']().data_mappings[service_name][salt_mode] %}
 export PATH="{{salt_data['salt_root']}}/makina-states/bin:${PATH}"
 target="$1"
 shift

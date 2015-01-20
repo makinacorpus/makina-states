@@ -24,9 +24,6 @@ grub-cfg{{i}}:
     - template: jinja
     - name: {{i}}
     - source: salt://makina-states/files{{i}}
-    - defaults:
-        data: |
-              {{salt['mc_utils.json_dump'](data)}}
 {% endfor %}
 {% endif %}
 {% endif %}
