@@ -127,7 +127,7 @@ def extpillar_settings(id_=None, ttl=30):
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 
-def ext_pillar(id_, *args, **kw):
+def ext_pillar(id_, prefixed=True, *args, **kw):
     '''
     Images extpillar
     '''
@@ -137,7 +137,9 @@ def ext_pillar(id_, *args, **kw):
         expose = True
     data = {}
     if expose:
-        data = {PREFIX: extpillar_settings(id_)}
+        data = extpillar_settings(id_)
+    if prefixed:
+        data = {PREFIX: data}
     return data
 
 

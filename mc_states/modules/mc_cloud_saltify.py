@@ -177,8 +177,8 @@ def _add_host(_s, done_hosts, rdata, host):
         'ssh_username': 'root'})
 
 
-def ext_pillar(id_, ttl=60, *args, **kw):
-    def _do(id_):
+def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
+    def _do(id_, prefixed):
         _s = __salt__
         if not _s['mc_cloud.is_a_controller']():
             return {}
@@ -209,9 +209,11 @@ def ext_pillar(id_, ttl=60, *args, **kw):
                     rdata[host][k] = val
         data = default_settings(_s['mc_cloud.extpillar_settings']())
         data['targets'] = rdata
-        return {PREFIX: data}
-    cache_key = 'mc_cloud_saltify.ext_pillar{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+        if prefixed:
+            data = {PREFIX: data}
+        return data
+    cache_key = 'mc_cloud_saltify.ext_pillar{0}{1}'.format(id_, prefixed)
+    return memoize_cache(_do, [id_, prefixed], {}, cache_key, ttl)
 
 
 '''

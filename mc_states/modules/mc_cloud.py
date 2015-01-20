@@ -225,52 +225,60 @@ def is_a_cloud_member(id_=None):
                 is_a_controller(id_)])
 
 
-def ext_pillar(id_, *args, **kw):
+def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
     '''
     makina-states cloud extpillar
     '''
-    data = {}
-    _s = __salt__
-    extdata = extpillar_settings(id_)
-    vms = _s['mc_cloud_compute_node.get_vms']()
-    targets = _s['mc_cloud_compute_node.get_targets']()
-    if is_a_vm(id_):
-        extdata['is']['vm'] = True
-        vmvt = vms[id_]['vt']
-        extdata['is']['{0}_vm'.format(vmvt)] = True
-        nodetype_vts = {'lxc': ['lxccontainer'],
-                        'docker': ['dockercontainer'],
-                        'kvm': ['kvm']}.get(vmvt, [])
-        for nodetype_vt in nodetype_vts:
-            spref = 'makina-states.nodetypes.is.{1}'.format(nodetype_vt)
-            data[spref] = True
-    if is_a_compute_node(id_):
-        extdata['is']['compute_node'] = True
-        for i in targets[id_]['vts']:
-            extdata['is']['{0}_compute_node'.format(i)] = True
-            extdata['is']['{0}_host'.format(i)] = True
-            data['makina-states.services.virt.' + i] = True
-        data['makina-states.services.is.proxy.haproxy'] = True
-        data['makina-states.services.is.firewall.shorewall'] = True
-    if any([
-        extdata['is']['vm'],
-        extdata['is']['compute_node']
-    ]):
-        data.update(_s['mc_cloud_vm.ext_pillar'](id_))
-    if any([
-        extdata['is']['controller'],
-        extdata['is']['compute_node']
-    ]):
-        data.update(_s['mc_cloud_compute_node.ext_pillar'](id_))
-    if is_a_controller(id_):
-        extdata['is']['controller'] = True
-        data.update(_s['mc_cloud_saltify.ext_pillar'](id_))
-    # if any of vm/computenode/controller
-    # expose global cloud conf
-    if any(extdata['is'].values()):
-        data.update(_s['mc_cloud_images.ext_pillar'](id_))
-        data[PREFIX] = extdata
-    return data
+    def _do(id_, prefixed):
+        data = {}
+        _s = __salt__
+        mid = _s['mc_pillar.mastersalt_minion_id']()
+        extdata = extpillar_settings(id_)
+        vms = _s['mc_cloud_compute_node.get_vms']()
+        targets = _s['mc_cloud_compute_node.get_targets']()
+        if is_a_vm(id_):
+            extdata['is']['vm'] = True
+            vmvt = vms[id_]['vt']
+            extdata['is']['{0}_vm'.format(vmvt)] = True
+            nodetype_vts = {'lxc': ['lxccontainer'],
+                            'docker': ['dockercontainer'],
+                            'kvm': ['kvm']}.get(vmvt, [])
+            for nodetype_vt in nodetype_vts:
+                spref = 'makina-states.nodetypes.is.{1}'.format(nodetype_vt)
+                data[spref] = True
+        if is_a_compute_node(id_):
+            extdata['is']['compute_node'] = True
+            for i in targets[id_]['vts']:
+                extdata['is']['{0}_compute_node'.format(i)] = True
+                extdata['is']['{0}_host'.format(i)] = True
+                data['makina-states.services.virt.' + i] = True
+            data['makina-states.services.is.proxy.haproxy'] = True
+            data['makina-states.services.is.firewall.shorewall'] = True
+        if any([
+            extdata['is']['vm'],
+            extdata['is']['compute_node']
+        ]):
+            data.update(_s['mc_cloud_vm.ext_pillar'](id_))
+        if any([
+            extdata['is']['controller'],
+            extdata['is']['compute_node']
+        ]):
+            data.update(_s['mc_cloud_compute_node.ext_pillar'](id_))
+        if is_a_controller(id_):
+            extdata['is']['controller'] = True
+            data.update(_s['mc_cloud_saltify.ext_pillar'](id_))
+        # if any of vm/computenode/controller
+        # expose global cloud conf
+        if any(extdata['is'].values()):
+            data.update(_s['mc_cloud_controller.ext_pillar'](id_))
+            data.update(_s['mc_cloud_images.ext_pillar'](id_))
+            if prefixed:
+                data[PREFIX] = extdata
+            else:
+                data = _s['mc_utils.dictupdate'](data, extdata)
+        return data
+    cache_key = 'mc_cloud.ext_pillar{0}{1}'.format(id_, prefixed)
+    return memoize_cache(_do, [id_, prefixed], {}, cache_key, ttl)
 
 
 '''

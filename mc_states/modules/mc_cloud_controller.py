@@ -85,6 +85,7 @@ def ssl_certs(domains):
 
 
 def default_settings():
+    _s = __salt__
     data = {'controller': _s['mc_pillar.mastersalt_minion_id'](),
             'vts': {'generic': True,
                       'saltify': True,
@@ -110,8 +111,10 @@ def extpillar_settings(id_=None, ttl=30):
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 
-def ext_pillar(id_=None, ttl=30):
-    def _do(id_=None):
+def ext_pillar(id_=None, prefixed=True, ttl=30):
+    def _do(id_=None, prefixed=True):
+        if not id_:
+            id_ = __grains__['id']
         _s = __salt__
         expose = any([_s['mc_cloud.is_a_controller'](id_),
                       _s['mc_cloud.is_a_vm'](id_),
@@ -144,15 +147,15 @@ def ext_pillar(id_=None, ttl=30):
             tdata['vms'] = dict([(vm, tdata['vms'][vm])
                                  for vm in tdata['vms']
                                  if vm == id_])
-            dtargets = _s['mc_utils.dictupdate'](
-                dtargets, {tid: tdata})
-            dvms = _s['mc_utils.dictupdate'](
-                dvms, {id_: conf_vms[id_]})
+            dtargets = _s['mc_utils.dictupdate'](dtargets, {tid: tdata})
+            dvms = _s['mc_utils.dictupdate'](dvms, {id_: conf_vms[id_]})
         data['compute_nodes'] = dtargets
         data['vms'] = dvms
-        return {PREFIX: data}
-    cache_key = 'mc_cloud_controller.extpillar{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+        if prefixed:
+            data = {PREFIX: data}
+        return data
+    cache_key = 'mc_cloud_controller.extpillar{0}{1}'.format(id_, prefixed)
+    return memoize_cache(_do, [id_, prefixed], {}, cache_key, ttl)
 
 
 def settings(ttl=60):

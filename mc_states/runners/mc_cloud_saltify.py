@@ -49,6 +49,8 @@ def cli(*args, **kwargs):
 
 def saltify(name, output=True, ret=None):
     '''Saltify a specific target'''
+    func_name = 'mc_compute_saltify.saltify'
+    __salt__['mc_api.time_log']('start', func_name, name)
     if not ret:
         ret = result()
     try:
@@ -150,6 +152,7 @@ def saltify(name, output=True, ret=None):
         ret['result'] = False
         __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.out'](ret, __opts__, output=output)
+    __salt__['mc_api.time_log']('end', func_name, ret=ret)
     return ret
 
 
@@ -183,6 +186,8 @@ def orchestrate(only=None, skip=None, ret=None, output=True, refresh=False):
         refresh
             refresh pillar
     '''
+    func_name = 'mc_compute_saltify.orchestrate'
+    __salt__['mc_api.time_log']('start', func_name, skip=skip, only=only)
     if skip is None:
         skip = []
     if only is None:
@@ -224,6 +229,6 @@ def orchestrate(only=None, skip=None, ret=None, output=True, refresh=False):
         comment = green('All targets were successfuly saltified.')
     ret['comment'] += '\n{0}'.format(comment)
     __salt__['mc_api.out'](ret, __opts__, output=output)
+    __salt__['mc_api.time_log']('end', func_name, ret=ret)
     return ret
-
 #

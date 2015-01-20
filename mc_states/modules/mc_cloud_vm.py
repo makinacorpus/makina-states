@@ -341,8 +341,8 @@ def domains_for(vm, domains=None):
     return domains
 
 
-def ext_pillar(id_, ttl=60, *args, **kw):
-    def _do(id_):
+def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
+    def _do(id_, prefixed):
         _s = __salt__
         all_vms = _s['mc_cloud_compute_node.get_vms']()
         targets = _s['mc_cloud_compute_node.get_targets']()
@@ -362,9 +362,13 @@ def ext_pillar(id_, ttl=60, *args, **kw):
                 vms[vm_] = vmdata_
             [vts.append(i) for i in targets[id_]['vts']
              if i not in vts]
-        data = vm_registry()
-        vts_pillar = data[PREFIX + '.vts']
-        vms_pillar = data[PREFIX + '.vms']
+        data = vm_registry(prefixed=prefixed)
+        if prefixed:
+            vts_pillar = data[PREFIX + '.vts']
+            vms_pillar = data[PREFIX + '.vms']
+        else:
+            vts_pillar = data['vts']
+            vms_pillar = data['vms']
         for vt in vts:
             vts_pillar[vt] = _s['mc_cloud_vm.vt_extpillar'](target, vt)
         for vm, vmdata in vms.items():
@@ -373,8 +377,8 @@ def ext_pillar(id_, ttl=60, *args, **kw):
             vm_settings['vt'] = vt
             vms_pillar[vm] = vm_settings
         return data
-    cache_key = 'mc_cloud_vm.ext_pillar{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    cache_key = 'mc_cloud_vm.ext_pillar{0}{1}'.format(id_, prefixed)
+    return memoize_cache(_do, [id_, prefixed], {}, cache_key, ttl)
 
 
 '''
