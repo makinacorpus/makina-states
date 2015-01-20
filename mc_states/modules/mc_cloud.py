@@ -331,7 +331,7 @@ def settings(ttl=60):
         salt_settings = _s['mc_salt.settings']()
         if (
             ct_registry['is']['mastersalt']
-            or ct_registry['is']['cloud_master']
+            or _s['mc_cloud.is_controller']()
         ):
             root = salt_settings['msaltRoot']
             prefix = salt_settings['mconfPrefix']
