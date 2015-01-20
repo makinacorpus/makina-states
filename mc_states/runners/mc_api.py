@@ -204,10 +204,10 @@ def apply_sls(slss, concurrent=True, *a, **kwargs):
 
 def get_cloud_controller_settings(ttl=60):
     def _do():
-        func_name = 'mc_api.get_cloud_controller_settings'
-        __salt__['mc_api.time_log']('start', func_name, __opts__['id'])
+        fname = 'mc_api.get_cloud_controller_settings'
+        __salt__['mc_api.time_log']('start', fname, __opts__['id'])
         settings = cli('mc_cloud.ext_pillar', __opts__['id'], prefixed=False)
-        __salt__['mc_api.time_log']('end', func_name, settings=settings)
+        __salt__['mc_api.time_log']('end', fname, settings=settings)
         return settings
     cache_key = 'rmc_api.get_cloud_controller_settings'
     return memoize_cache(_do, [], {}, cache_key, ttl)
@@ -217,10 +217,10 @@ def get_cloud_settings(id_=None, ttl=60):
     def _do(id_):
         if not id_:
             id_ = __opts__['id']
-        func_name = 'mc_api.get_cloud_settings'
-        __salt__['mc_api.time_log']('start', func_name)
+        fname = 'mc_api.get_cloud_settings'
+        __salt__['mc_api.time_log']('start', fname, id_)
         settings = cli('mc_cloud.ext_pillar', id_, prefixed=False)
-        __salt__['mc_api.time_log']('end', func_name, settings=settings)
+        __salt__['mc_api.time_log']('end', fname, settings=settings)
         return settings
     cache_key = 'rmc_api.get_cloud_settings'
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
@@ -228,12 +228,12 @@ def get_cloud_settings(id_=None, ttl=60):
 
 def get_vm(vm, ttl=60):
     def _do(vm):
-        func_name = 'mc_api.get_vm'
-        __salt__['mc_api.time_log']('start', func_name)
+        fname = 'mc_api.get_vm'
+        __salt__['mc_api.time_log']('start', fname, vm)
         vmdata = cli('mc_cloud_vm.vm_extpillar', vm)
         if not vmdata.get('vt', None):
             raise KeyError('vm is empty for {0}'.format(vm))
-        __salt__['mc_api.time_log']('end', func_name, vm=vm, vmdata=vmdata)
+        __salt__['mc_api.time_log']('end', fname, vm=vm, vmdata=vmdata)
         return vmdata
     cache_key = 'rmc_api.get_vm{0}'.format(vm)
     return memoize_cache(_do, [vm], {}, cache_key, ttl)
@@ -241,46 +241,46 @@ def get_vm(vm, ttl=60):
 
 def get_vt(vm, ttl=60):
     def _do(vm):
-        func_name = 'mc_api.get_vt'
-        __salt__['mc_api.time_log']('start', func_name)
+        fname = 'mc_api.get_vt'
+        __salt__['mc_api.time_log']('start', fname, vm)
         vt = cli('mc_cloud_compute_node.vt_for_vm', vm)
         if not vt:
             raise KeyError('vt is empty for {0}'.format(vm))
-        __salt__['mc_api.time_log']('end', func_name, vm=vm, vt=vt)
+        __salt__['mc_api.time_log']('end', fname, vm=vm, vt=vt)
         return vt
     cache_key = 'rmc_api.get_vt{0}'.format(vm)
     return memoize_cache(_do, [vm], {}, cache_key, ttl)
 
 
-def get_compute_node(vm, ttl=60):
-    def _do(vm):
-        func_name = 'mc_api.get_compute_node'
-        __salt__['mc_api.time_log']('start', func_name, vm)
-        compute_node = cli('mc_cloud_compute_node.target_for_vm', vm)
-        if not compute_node:
-            raise KeyError('compute node is empty for {0}'.format(vm))
-        __salt__['mc_api.time_log'](
-            'end', func_name, compute_node=compute_node)
-        return compute_node
-    cache_key = 'rmc_api.get_cn{0}'.format(vm)
-    return memoize_cache(_do, [vm], {}, cache_key, ttl)
-
-
 def get_compute_node_settings(compute_node=None, vm=None, ttl=60):
     def _do(compute_node, vm):
-        func_name = 'mc_api.get_compute_node_settings'
+        fname = 'mc_api.get_compute_node_settings'
+        __salt__['mc_api.time_log']('start', fname, compute_node, vm)
         if not compute_node and vm:
             compute_node = get_compute_node(vm)
         if not compute_node and not vm:
             raise Exception('Choose at least one cn or one vm')
-        __salt__['mc_api.time_log']('start', func_name)
         data = cli('mc_cloud_compute_node.ext_pillar',
                    compute_node, prefixed=False)
-        __salt__['mc_api.time_log']('end', func_name, data=data)
+        __salt__['mc_api.time_log']('end', fname, data=data)
         return data
     cache_key = 'rmc_api.get_compute_node_settings{0}{1}'.format(
         compute_node, vm)
     return memoize_cache(_do, [compute_node, vm], {}, cache_key, ttl)
+
+
+def get_compute_node(vm, ttl=60):
+    def _do(vm):
+        fname = 'mc_api.get_compute_node'
+        __salt__['mc_api.time_log']('start', fname, vm)
+        compute_node = cli('mc_cloud_compute_node.target_for_vm', vm)
+        if not compute_node:
+            raise KeyError('compute node is empty for {0}'.format(vm))
+        __salt__['mc_api.time_log'](
+            'end', fname, compute_node=compute_node)
+        return compute_node
+    cache_key = 'rmc_api.get_cn{0}'.format(vm)
+    return memoize_cache(_do, [vm], {}, cache_key, ttl)
 
 
 def ping():

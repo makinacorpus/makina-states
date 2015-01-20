@@ -244,7 +244,7 @@ def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
                             'docker': ['dockercontainer'],
                             'kvm': ['kvm']}.get(vmvt, [])
             for nodetype_vt in nodetype_vts:
-                spref = 'makina-states.nodetypes.is.{1}'.format(nodetype_vt)
+                spref = 'makina-states.nodetypes.is.{0}'.format(nodetype_vt)
                 data[spref] = True
         if is_a_compute_node(id_):
             extdata['is']['compute_node'] = True

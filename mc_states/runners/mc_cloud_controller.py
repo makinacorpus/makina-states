@@ -61,10 +61,12 @@ def run_vt_hook(hook_name,
                 vts=None,
                 output=True,
                 *args, **kwargs):
-    '''Run an hook for a special vt
-    on a controller, or a compute node or a vm'''
-    func_name = 'mc_cloud_controller.run_vt_hook'
-    __salt__['mc_api.time_log']('start', func_name, hook_name, target)
+    '''
+    Run an hook for a special vt
+    on a controller, or a compute node or a vm
+    '''
+    fname = 'mc_cloud_controller.run_vt_hook'
+    __salt__['mc_api.time_log']('start', fname, hook_name, target)
     if target:
         kwargs['target'] = target
     if ret is None:
@@ -81,14 +83,12 @@ def run_vt_hook(hook_name,
     for vt in vts:
         vid_ = 'mc_cloud_{0}.{1}'.format(vt, hook_name)
         if vid_ in __salt__:
-            ret['comment'] += (
-                green('\n --> ') + blue(vid_) + green(' hook\n')
-            )
+            ret['comment'] += green('\n --> ') + blue(vid_) + green(' hook\n')
             kwargs['output'] = False
             cret = __salt__[vid_](*args, **kwargs)
             merge_results(ret, cret)
             check_point(ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end', func_name, ret=ret)
+    __salt__['mc_api.time_log']('end', fname, ret=ret)
     return ret
 
 
@@ -96,8 +96,8 @@ def dns_conf(output=True, ret=None):
     '''
     Prepare cloud controller dns (BIND) server
     '''
-    func_name = 'mc_cloud_controller.dns_conf'
-    __salt__['mc_api.time_log']('start', func_name)
+    fname = 'mc_cloud_controller.dns_conf'
+    __salt__['mc_api.time_log']('start', fname)
     if ret is None:
         ret = result()
     kw = {'ret': ret, 'output': output}
@@ -109,7 +109,7 @@ def dns_conf(output=True, ret=None):
     check_point(kw['ret'], __opts__, output=output)
     run_vt_hook('post_dns_conf_on_controller', ret=kw['ret'], output=output)
     __salt__['mc_api.out'](kw['ret'], __opts__, output=output)
-    __salt__['mc_api.time_log']('end', func_name, ret=ret)
+    __salt__['mc_api.time_log']('end', fname, ret=ret)
     return kw['ret']
 
 
@@ -118,8 +118,8 @@ def deploy(output=True, ret=None):
     Prepare cloud controller configuration
     can also apply per virtualization type configuration
     '''
-    func_name = 'mc_cloud_controller.deploy'
-    __salt__['mc_api.time_log']('start', func_name)
+    fname = 'mc_cloud_controller.deploy'
+    __salt__['mc_api.time_log']('start', fname)
     if ret is None:
         ret = result()
     kw = {'ret': ret, 'output': output}
@@ -132,7 +132,7 @@ def deploy(output=True, ret=None):
     check_point(kw['ret'], __opts__, output=output)
     run_vt_hook('post_deploy_controller', ret=kw['ret'], output=output)
     __salt__['mc_api.out'](kw['ret'], __opts__, output=output)
-    __salt__['mc_api.time_log']('end', func_name, ret=ret)
+    __salt__['mc_api.time_log']('end', fname, ret=ret)
     return kw['ret']
 
 
@@ -221,8 +221,8 @@ def orchestrate(skip=None,
 
 
     '''
-    func_name = 'mc_cloud_controller.orchestrate'
-    __salt__['mc_api.time_log']('start', func_name,
+    fname = 'mc_cloud_controller.orchestrate'
+    __salt__['mc_api.time_log']('start', fname,
                                 skip=skip,
                                 skip_vms=skip_vms,
                                 only=only,
@@ -299,7 +299,7 @@ def orchestrate(skip=None,
         __salt__['mc_api.out'](ret, __opts__, output=output)
         raise
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end', func_name, ret=ret)
+    __salt__['mc_api.time_log']('end', fname, ret=ret)
     return ret
 
 

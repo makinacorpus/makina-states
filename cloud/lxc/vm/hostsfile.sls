@@ -1,6 +1,6 @@
 {% set data = salt['mc_cloud_vm.vm_settings']() %}
 {% set vmname = data.name %}
-{% set devhost = salt['mc_nodetypes.is_devhost'] %}
+{% set devhost = salt['mc_nodetypes.is_devhost']() %}
 {% set domains = [] %}
 {# only for extra domains, we map to localhost
    the main domain is mapped to the local ip via another state #}

@@ -9,7 +9,7 @@ thishost:
 thisip:
   file.managed:
     - name: /this_port
-    - contents: "{{data.ssh_reverse_proxy_host}}"
+    - contents: "{{data.ssh_reverse_proxy_port}}"
     - user: root
     - mode: 755
 
