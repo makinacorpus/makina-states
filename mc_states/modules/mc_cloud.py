@@ -384,4 +384,22 @@ def registry():
             'kvm': {'active': False},
             'saltify': {'active': False}})
     return _registry()
+
+
+def get_cloud_settings():
+    _s = __salt__
+    from_extpillar = not _s['mc_pillar.loaded']()
+    if from_extpillar:
+        reg = _s['mc_controllers.registry']()
+        if (
+            reg['is']['salt_master']
+            or reg['is']['salt_minion']
+            or not _s['mc_pillar.has_db']()
+        ):
+            from_extpillar = False
+    if from_extpillar:
+        cloudSettings = _s['mc_cloud.extpillar_settings']()
+    else:
+        cloudSettings = _s['mc_cloud.settings']()
+    return cloudSettings
 #

@@ -55,23 +55,7 @@ class MissingCertError(CertificateCreationError):
 
 
 def get_cloud_settings():
-    from_extpillar = not __salt__['mc_pillar.loaded']()
-    reg = __salt__['mc_controllers.registry']()
-    mastersalt_master = reg['is']['mastersalt_master']
-    salt_master = reg['is']['salt_master']
-    salt_minion = reg['is']['salt_minion']
-    is_minion = 'minion' in __opts__.get('conf_file', '')
-    has_db = __salt__['mc_pillar.has_db']()
-    if (
-        from_extpillar and
-        (is_minion or salt_master or salt_minion or not has_db)
-    ):
-        from_extpillar = False
-    if from_extpillar:
-        cloudSettings = __salt__['mc_cloud.extpillar_settings']()
-    else:
-        cloudSettings = __salt__['mc_cloud.settings']()
-    return cloudSettings
+    return __salt__['mc_cloud.get_cloud_settings']()
 
 
 def settings():
