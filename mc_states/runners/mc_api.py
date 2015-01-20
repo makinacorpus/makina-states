@@ -209,7 +209,7 @@ def get_cloud_controller_settings(ttl=60):
         settings = cli('mc_cloud.ext_pillar', __opts__['id'], prefixed=False)
         __salt__['mc_api.time_log']('end', func_name, settings=settings)
         return settings
-    cache_key = 'mc_api.get_cloud_controller_settings'
+    cache_key = 'rmc_api.get_cloud_controller_settings'
     return memoize_cache(_do, [], {}, cache_key, ttl)
 
 
@@ -222,7 +222,7 @@ def get_cloud_settings(id_=None, ttl=60):
         settings = cli('mc_cloud.ext_pillar', id_, prefixed=False)
         __salt__['mc_api.time_log']('end', func_name, settings=settings)
         return settings
-    cache_key = 'mc_api.get_cloud_settings'
+    cache_key = 'rmc_api.get_cloud_settings'
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 
@@ -235,7 +235,7 @@ def get_vm(vm, ttl=60):
             raise KeyError('vm is empty for {0}'.format(vm))
         __salt__['mc_api.time_log']('end', func_name, vm=vm, vmdata=vmdata)
         return vmdata
-    cache_key = 'mc_api.get_vm{0}'.format(vm)
+    cache_key = 'rmc_api.get_vm{0}'.format(vm)
     return memoize_cache(_do, [vm], {}, cache_key, ttl)
 
 
@@ -248,7 +248,7 @@ def get_vt(vm, ttl=60):
             raise KeyError('vt is empty for {0}'.format(vm))
         __salt__['mc_api.time_log']('end', func_name, vm=vm, vt=vt)
         return vt
-    cache_key = 'mc_api.get_vt{0}'.format(vm)
+    cache_key = 'rmc_api.get_vt{0}'.format(vm)
     return memoize_cache(_do, [vm], {}, cache_key, ttl)
 
 
@@ -262,7 +262,7 @@ def get_compute_node(vm, ttl=60):
         __salt__['mc_api.time_log'](
             'end', func_name, compute_node=compute_node)
         return compute_node
-    cache_key = 'mc_api.get_cn{0}'.format(vm)
+    cache_key = 'rmc_api.get_cn{0}'.format(vm)
     return memoize_cache(_do, [vm], {}, cache_key, ttl)
 
 
@@ -278,7 +278,7 @@ def get_compute_node_settings(compute_node=None, vm=None, ttl=60):
                    compute_node, prefixed=False)
         __salt__['mc_api.time_log']('end', func_name, data=data)
         return data
-    cache_key = 'mc_api.get_compute_node_settings{0}{1}'.format(
+    cache_key = 'rmc_api.get_compute_node_settings{0}{1}'.format(
         compute_node, vm)
     return memoize_cache(_do, [compute_node, vm], {}, cache_key, ttl)
 
