@@ -218,7 +218,6 @@ def vm_default_settings(vm, cloudSettings, imgSettings, extpillar=False):
         'target': target,
         'master': master,
         'domains': [vm],
-        'gateway': target,
         'ssh_reverse_proxy_port':  _s[node + 'get_ssh_port'](vm),
         'snmp_reverse_proxy_port': _s[node + 'get_snmp_port'](vm)})
     return data
@@ -255,6 +254,7 @@ def vm_extpillar_settings(vm, ttl=30):
             return '0{0}'.format(dom)
         else:
             return '1{0}'.format(dom)
+
     def _do(vm):
         cloudSettings = _s['mc_cloud.extpillar_settings']()
         imgSettings = _s['mc_cloud_images.extpillar_settings']()
