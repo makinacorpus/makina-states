@@ -49,6 +49,7 @@ def out(ret, __opts__, output=True, onlyret=False):
 def cloud_event(msg='', *args, **kw):
     tag = kw.pop('event_tag', EVENT_TAG)
     category = kw.pop('event_category', None)
+    kw['event_atetime'] = datetime.datetime.now().isoformat()
     payload = {'args': args, 'kw': kw,
                'message': msg, 'category': category}
     __jid_event__.fire_event(payload, tag)
@@ -59,7 +60,8 @@ def time_log(lifecycle_id='start', fun=None, *args, **extra_data):
     if not msg and (lifecycle_id in ['start', 'end']):
         msg = 'timer_{0}: {1}'.format(lifecycle_id, fun)
         lifecycle_id = 'timer_' + lifecycle_id
-    return cloud_event(msg, event_category=lifecycle_id, *args, **extra_data)
+    return cloud_event(
+        msg, event_category=lifecycle_id, fun=fun, *args, **extra_data)
 
 
 def cli(*args, **kwargs):
@@ -226,7 +228,7 @@ def get_cloud_settings(id_=None, ttl=60):
 
 def get_vm(vm, ttl=60):
     def _do(vm):
-        func_name = 'mc_api.get_vm {0}'.format(vm)
+        func_name = 'mc_api.get_vm'
         __salt__['mc_api.time_log']('start', func_name)
         vmdata = cli('mc_cloud_vm.vm_extpillar', vm)
         if not vmdata.get('vt', None):
@@ -239,7 +241,7 @@ def get_vm(vm, ttl=60):
 
 def get_vt(vm, ttl=60):
     def _do(vm):
-        func_name = 'mc_api.get_vt {0} {1}'.format(vm)
+        func_name = 'mc_api.get_vt'
         __salt__['mc_api.time_log']('start', func_name)
         vt = cli('mc_cloud_compute_node.vt_for_vm', vm)
         if not vt:
@@ -252,30 +254,32 @@ def get_vt(vm, ttl=60):
 
 def get_compute_node(vm, ttl=60):
     def _do(vm):
-        func_name = 'mc_api.get_cn {0} {1}'.format(vm)
-        __salt__['mc_api.time_log']('start', func_name)
+        func_name = 'mc_api.get_compute_node'
+        __salt__['mc_api.time_log']('start', func_name, vm)
         compute_node = cli('mc_cloud_compute_node.target_for_vm', vm)
         if not compute_node:
             raise KeyError('compute node is empty for {0}'.format(vm))
-        __salt__['mc_api.time_log']('end', func_name, compute=compute)
+        __salt__['mc_api.time_log'](
+            'end', func_name, compute_node=compute_node)
         return compute_node
-    cache_key = 'mc_api.get_cn{0}{1}'.format(vm)
+    cache_key = 'mc_api.get_cn{0}'.format(vm)
     return memoize_cache(_do, [vm], {}, cache_key, ttl)
 
 
 def get_compute_node_settings(compute_node=None, vm=None, ttl=60):
     def _do(compute_node, vm):
+        func_name = 'mc_api.get_compute_node_settings'
         if not compute_node and vm:
             compute_node = get_compute_node(vm)
         if not compute_node and not vm:
             raise Exception('Choose at least one cn or one vm')
-        func_name = 'mc_api.get_cn_s {0} {1}'.format(vm)
         __salt__['mc_api.time_log']('start', func_name)
         data = cli('mc_cloud_compute_node.ext_pillar',
                    compute_node, prefixed=False)
         __salt__['mc_api.time_log']('end', func_name, data=data)
         return data
-    cache_key = 'mc_api.get_cn_settings{0}{1}'.format(compute_node, vm)
+    cache_key = 'mc_api.get_compute_node_settings{0}{1}'.format(
+        compute_node, vm)
     return memoize_cache(_do, [compute_node, vm], {}, cache_key, ttl)
 
 
