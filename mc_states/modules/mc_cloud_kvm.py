@@ -65,10 +65,8 @@ def vt_default_settings(cloudSettings, imgSettings):
             'defaults': {'gateway': '10.6.0.1',
                          'network': '10.6.0.0',
                          'bridge': 'kvmbr1',
-                         'profile': 'medium',
-                         'pools': {'vg': {'type': 'lvm'}}}})
+                         'profile': 'medium'}})
     return vmSettings
-
 
 
 def vt_extpillar(target, data, **kw):

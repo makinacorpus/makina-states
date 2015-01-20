@@ -1,2 +1,2 @@
-include:
-  - makina-states.cloud.lxc.vm.hostsfile
+cloud-kvm-vmnoop:
+  mc_proxy.hook: []
