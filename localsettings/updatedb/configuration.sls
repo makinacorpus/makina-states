@@ -3,7 +3,6 @@ include:
 
 {% if salt['mc_controllers.mastersalt_mode']() %}
 {% set data = salt['mc_updatedb.settings']() %}
-{% set sdata = salt['mc_utils.json_dump'](data) %}
 {% for f in ['/etc/updatedb.conf'] %}
 etc-update-{{f}}:
   file.managed:
@@ -16,8 +15,5 @@ etc-update-{{f}}:
     - template: jinja
     - makedirs: true
     - group: root
-    - defaults:
-      data: |
-            {{sdata}}
 {% endfor %}
 {% endif %}

@@ -8,8 +8,6 @@
 {% if salt['mc_controllers.mastersalt_mode']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 
-{% set ydata = salt['mc_utils.json_dump'](salt['mc_ldap.settings']()) %}
-
 include:
   - makina-states.localsettings.nscd
   - makina-states.localsettings.users.hooks
@@ -57,9 +55,6 @@ nslcd:
     - require:
       - pkg: ldap-pkgs
       - file: ldap-cacerts-cert
-    - defaults:
-      data: |
-            {{ydata}}
     - watch_in:
       - cmd: nscd-restart
     - require_in:
@@ -104,9 +99,6 @@ nslcd-nsswitch-conf:
     - require:
       - pkg: ldap-pkgs
       - file: ldap-cacerts-cert
-    - defaults:
-          data: |
-                {{ydata}}
     - require_in:
       - mc_proxy: users-pre-hook
 {% endif %}
@@ -121,9 +113,6 @@ nslcd-nsswitch-conf:
     - require:
       - pkg: ldap-pkgs
       - file: ldap-cacerts-cert
-    - defaults:
-      data: |
-            {{ydata}}
     - require_in:
       - mc_proxy: users-pre-hook
 

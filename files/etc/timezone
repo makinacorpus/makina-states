@@ -1,2 +1,2 @@
-{%- set data = salt['mc_utils.json_load'](data) -%}
+{%- set data = salt['mc_timezone.settings']() -%}
 {{data.tz}}
