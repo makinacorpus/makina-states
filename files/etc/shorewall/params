@@ -25,7 +25,7 @@
 #		net	eth0		130.252.100.255	routefilter,norfc1918
 #
 ###############################################################################
-{% set shwdata = salt['mc_utils.json_load'](shwdata) %}
+{% set shwdata = salt['mc_shorewall.settings']() %}
 {% if shwdata.ulogd %}
 LOG=NFLOG
 {% else %}

@@ -14,7 +14,7 @@
 # For information about entries in this file, type "man shorewall-interfaces"
 ###############################################################################
 {# on debian, we have an old shorewall 4.5.5 #}
-{% set shwdata = salt['mc_utils.json_load'](shwdata) %}
+{% set shwdata = salt['mc_shorewall.settings']() %}
 {{shwdata.ifformat.replace('??', '?') }}
 ###############################################################################
 #ZONE	INTERFACE	OPTIONS

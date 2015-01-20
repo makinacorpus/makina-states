@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-{% set shwdata = salt['mc_utils.json_load'](shwdata) %}
+{% set shwdata = salt['mc_shorewall.settings']() %}
 # do not return error code not to mess upstart 
 {% if grains.get('os_family', '') in ['Debian'] %}
     if [[ "x${1}" = "xfromsalt" ]];then 

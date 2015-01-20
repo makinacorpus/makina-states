@@ -4,7 +4,6 @@
 #}
 {%- set locs = salt['mc_locations.settings']() %}
 {% set settings = salt['mc_shorewall.settings']() %}
-{% set yamled_shwdata = salt['mc_utils.json_dump'](settings) %}
 {% set reg = salt['mc_services.registry']() %}
 include:
   - makina-states.services.firewall.shorewall.hooks
@@ -23,93 +22,21 @@ shorewall-config:
     - watch_in:
       - mc_proxy: shorewall-postconf
 
-{% for i in ['shorewall', 'shorewall6'] %}
-shorewall-initd{{i}}:
-  file.managed:
-    - name: /etc/init.d/{{i}}
-    - source : salt://makina-states/files/etc/init.d/{{i}}
-    - template: jinja
-    - mode: 755
-    - user: root
-    - group: root
-    - watch_in:
-      - mc_proxy: shorewall-preconf
-    - watch_in:
-      - mc_proxy: shorewall-postconf
-{% endfor %}
-
-{%- for config in [
-  'interfaces',
-  'masq',
-  'nat',
-  'proxyarp',
-  'params',
-  'policy',
-  'rules',
-  'shorewall.conf',
-  'zones',
-] %}
+{%- for config, cdata in settings.configs.items() %}
+{% set mode = cdata.get('mode', '0700') %}
 etc-shorewall-{{config}}:
   file.managed:
-    - name: {{ locs.conf_dir }}/shorewall/{{config}}
-    - source : salt://makina-states/files/etc/shorewall/{{config}}
+    - name: {{config}}
+    - source : {{cdata.get('template', 'salt://makina-states/files'+config)}}
     - template: jinja
     - user: root
     - group: root
-    - mode: "0700"
-    - defaults:
-      shwdata: |
-               {{ yamled_shwdata }}
+    - mode: "{{mode}}"
     - watch_in:
       - mc_proxy: shorewall-preconf
     - watch_in:
       - mc_proxy: shorewall-postconf
 {%- endfor %}
-{% set shareds = ['macro.mongodb'] %}
-{% if grains['os'] in ['Debian'] %}
-{% do shareds.extend(['macro.PostgreSQL',
-                      'macro.Mail'])%}
-{% endif %}
-{% for shared in shareds %}
-shorewall-shared-{{shared}}:
-  file.managed:
-    - name: /usr/share/shorewall/{{shared}}
-    - source : salt://makina-states/files/usr/share/shorewall/{{shared}}
-    - template: jinja
-    - user: root
-    - group: root
-    - mode: "0700"
-    - defaults:
-      shwdata: |
-               {{ yamled_shwdata }}
-    - watch_in:
-      - mc_proxy: shorewall-preconf
-    - watch_in:
-      - mc_proxy: shorewall-postconf
-{%- endfor %}
-
-
-{#-
-# shorewall is not managed via init scripts as we really need
-# everything to be up before firewall to cut the garden off.
-#}
-shorewall-rc-local-d:
-  file.managed:
-    - name: {{ locs.conf_dir }}/rc.local.d/shorewall.sh
-    - source : salt://makina-states/files/etc/rc.local.d/shorewall.sh
-    - defaults:
-        shwdata: |
-                 {{ yamled_shwdata }}
-    - mode: 0755
-    - makedirs: true
-    - template: jinja
-    - user: root
-    - group: root
-    - watch_in:
-      - mc_proxy: shorewall-preconf
-    - watch_in:
-      - mc_proxy: shorewall-postconf
-
 shorewall-test-cfg:
   file.exists:
     - name: {{ locs.conf_dir }}/shorewall/shorewall.conf

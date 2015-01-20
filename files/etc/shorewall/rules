@@ -14,7 +14,7 @@
 ######################################################################################################################################################################################
 #ACTION		SOURCE		DEST		PROTO	DEST	SOURCE		ORIGINAL	RATE		USER/	MARK	CONNLIMIT	TIME         HEADERS         SWITCH
 #							PORT	PORT(S)		DEST		LIMIT		GROUP
-{% set shwdata = salt['mc_utils.json_load'](shwdata) %}
+{% set shwdata = salt['mc_shorewall.settings']() %}
 {% for key in ['all', 'established', 'related', 'new'] -%}
 {% set section=key.upper() -%}
 {% if shwdata.sw_ver > '4.1'%}
