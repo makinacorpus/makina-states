@@ -498,7 +498,7 @@ def get_zone(zone):
     views = zdata['views']
     if zdata['server_type'] not in ['master', 'slave']:
         raise ValueError('invalid {0} type for {1}'.format(
-            zdata['server_type', zone]))
+            zdata['server_type'], zone))
     if not views:
         for v in defaults['default_views']:
             if not v in views:
