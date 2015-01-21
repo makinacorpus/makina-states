@@ -522,8 +522,9 @@ def report(targets, ret=None, refresh=False, output=True):
     cloud deployment
     '''
     fname = 'mc_compute_node.report'
-    __salt__['mc_api.time_log']('start', fname)
-    settings = cli('mc_cloud_compute_node.ext_pillar', prefixed=False)
+    _s = __salt__
+    _s['mc_api.time_log']('start', fname)
+    settings = _s['mc_api.get_cloud_controller_settings']()
     if ret is None:
         ret = result()
     if refresh:
@@ -532,8 +533,8 @@ def report(targets, ret=None, refresh=False, output=True):
     if not isinstance(targets, list):
         targets = targets.split(',')
     for target in targets:
-        if target in settings['targets']:
-            for vm in settings['targets'][target]['vms']:
+        if target in settings['compute_nodes']:
+            for vm in settings['compute_nodes'][target]['vms']:
                 if vm not in targets:
                     targets.append(vm)
     for idx, target in enumerate(targets):

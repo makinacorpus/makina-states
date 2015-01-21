@@ -1962,10 +1962,10 @@ def report():
     ret = ''
     target = __grains__['id']
     try:
-        vmconf = __salt__['mc_cloud_vm.settings']()
+        vmconf = __salt__['mc_cloud_vm.vm_settings']()
     except ValueError:
         vmconf = {
-            'mccloud_vm_ssh_port': '22',
+            'ssh_reverse_proxy_port': '22',
         }
 
 
@@ -1982,7 +1982,7 @@ def report():
 {ips}
 SSH Config:
 Host {id}
-Port {conf[mccloud_vm_ssh_port]}
+Port {conf[ssh_reverse_proxy_port]}
 User root
 ServerAliveInterval 5
 
