@@ -13,7 +13,7 @@ for i in resolvconf fuse ntp;do
         rm -f ${i}*deb
         set -e
         if [ "x${apt_update}" = "x" ];then
-            apt-get udpate
+            apt-get update
             apt_update="1"
         fi
         apt-get download -y $i
