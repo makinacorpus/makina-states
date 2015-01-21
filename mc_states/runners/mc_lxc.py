@@ -61,6 +61,10 @@ def test_same_versions(origin, destination, force=False):
 
 
 def sync_container(cmd_runner, ret, origin, destination, force=False):
+    _s = __salt__
+    fname = 'mc_lxc.sync_container'
+    _s['mc_api.time_log'](
+        'end', fname, origin, destination, force=force)
     if os.path.exists(origin) and os.path.exists(destination):
         if test_same_versions(origin, destination, force=force):
             return ret
@@ -80,11 +84,15 @@ def sync_container(cmd_runner, ret, origin, destination, force=False):
                 '\nRSYNC(local builder) reset failed {0}'.format(
                     destination))
             ret['result'] = False
+    _s['mc_api.time_log']('end', fname, ret=ret)
     return ret
 
 
 def sync_image_reference_containers(imgSettings, ret, _cmd_runner=None,
                                     force=False):
+    _s = __salt__
+    fname = 'mc_lxc.sync_image_reference_containers'
+    _s['mc_api.time_log']('end', fname, ret=ret)
     if _cmd_runner is None:
         def _cmd_runner(cmd):
             return cli('cmd.run_all', cmd)
@@ -101,6 +109,7 @@ def sync_image_reference_containers(imgSettings, ret, _cmd_runner=None,
                        '/var/lib/lxc/{0}/rootfs'.format(bref),
                        '/var/lib/lxc/{0}.tmp/rootfs'.format(img),
                        force=force)
+    _s['mc_api.time_log']('end', fname, ret=ret)
 
 
 def sync_images(only=None, force=False, output=True, force_output=False):
@@ -117,6 +126,9 @@ def sync_images(only=None, force=False, output=True, force_output=False):
             :images: list of image to sync to lxc minions
             :containers: all minion targets will be synced with that list of images
     '''
+    _s = __salt__
+    fname = 'mc_lxc.sync_images'
+    _s['mc_api.time_log']('start', fname, only, force=force)
     if not only:
         only = []
     if isinstance(only, basestring):
@@ -126,15 +138,22 @@ def sync_images(only=None, force=False, output=True, force_output=False):
     dest = '/root/.ssh/.lxc.pub'
     this_ = saltapi.get_local_target()
     orig = 'salt://.lxcsshkey.pub'
-    imgSettings = cli('mc_cloud_images.settings')
-    lxcSettings = cli('mc_cloud_lxc.settings')
+    imgSettings = _s['mc_api.get_cloud_images_settings']()
+    controllersettings = _s['mc_api.get_cloud_controller_settings']()
     rsync_cmd = (
         'rsync -aA --delete-excluded --exclude="makina-states-lxc-*xz"'
         ' --numeric-ids '
     )
     sync_image_reference_containers(imgSettings, ret, force=force)
     root = master_opts()['file_roots']['base'][0]
-    for target in lxcSettings.get('vms', {}):
+    lxctargets = []
+    for vm, vmdata in controllersettings['vms'].items():
+        if (
+            (vmdata['vt'] == 'lxc')
+            and (vmdata['target'] not in lxctargets)
+        ):
+            lxctargets.append(vmdata['target'])
+    for target in lxctargets:
         if only and (target not in only):
             continue
         # skip local minion :) (in fact no)
@@ -302,5 +321,6 @@ def sync_images(only=None, force=False, output=True, force_output=False):
     # return mail error only on error
     if force_output or (output and not ret['result']):
         salt.output.display_output(ret, 'yaml', __opts__)
+    _s['mc_api.time_log']('end', fname, ret=ret)
     return ret
 #

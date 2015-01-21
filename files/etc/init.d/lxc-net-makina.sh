@@ -18,8 +18,8 @@
 # Taken from ubuntu's lxc-net upstart config and adopted to init script
 # original author: Serge Hallyn <serge.hallyn@canonical.com>
 
-{% set vmdata = salt['mc_cloud_compute_vm.settings']() %}
-{% set data = vmdata.vts.lxc %}
+{% set vmdata = salt['mc_cloud_vm.settings']() %}
+{% set data = vmdata.vts.lxc.defaults %}
 
 USE_LXC_BRIDGE="{{data.use_bridge}}"
 USE_LXC_BRIDGE="{{data.use_bridge}}"

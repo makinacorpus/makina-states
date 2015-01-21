@@ -80,7 +80,7 @@ def upgrade_vts(target, ret=None, output=True):
     __salt__['mc_api.time_log']('start', fname, target)
     if ret is None:
         ret = result()
-    ret = run_vt_hook(target, 'upgrade_vt', ret=ret, output=output)
+    ret = run_vt_hook('upgrade_vt', target=target, ret=ret, output=output)
     if ret['result']:
         ret['comment'] += yellow(
             '{0} is now upgraded to host vms\n'.format(target))
@@ -97,7 +97,7 @@ def install_vts(target, ret=None, output=True):
     __salt__['mc_api.time_log']('start', fname, target)
     if ret is None:
         ret = result()
-    ret = run_vt_hook(target, 'install_vt', ret=ret, output=output)
+    ret = run_vt_hook('install_vt', target=target, ret=ret, output=output)
     if ret['result']:
         ret['comment'] += yellow(
             '{0} is now ready to host vms\n'.format(target))
@@ -234,12 +234,12 @@ def post_deploy(target, ret=None, output=True):
     if ret is None:
         ret = result()
     hook = 'pre_post_deploy_compute_node'
-    run_vt_hook(target, hook, ret=ret, output=output)
+    run_vt_hook(hook, target=target, ret=ret, output=output)
     for step in []:
         step(target, ret=ret, output=False)
         check_point(ret, __opts__, output=output)
     hook = 'post_post_deploy_compute_node'
-    run_vt_hook(target, hook, ret=ret, output=output)
+    run_vt_hook(hook, target=target, ret=ret, output=output)
     __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end', fname, ret=ret)
     return ret
@@ -250,6 +250,10 @@ def filter_compute_nodes(nodes, skip, only):
     fname = 'mc_compute_node.filter_compute_nodes'
     __salt__['mc_api.time_log']('start', fname)
     targets = []
+    if isinstance(skip, basestring):
+        skip = skip.split(',')
+    if isinstance(only, basestring):
+        only = only.split(',')
     for a in nodes:
         if a not in skip and a not in targets:
             targets.append(a)
@@ -293,7 +297,7 @@ def provision_compute_nodes(skip=None, only=None,
     settings = __salt__['mc_api.get_cloud_controller_settings']()
     provision = ret['changes'].setdefault('cns_provisionned', [])
     provision_error = ret['changes'].setdefault('cns_in_error', [])
-    targets = [a for a in settings['targets']]
+    targets = [a for a in settings['compute_nodes']]
     targets = filter_compute_nodes(targets, skip, only)
     for idx, cn in enumerate(targets):
         cret = result()
@@ -353,7 +357,7 @@ def post_provision_compute_nodes(skip=None, only=None,
     settings = __salt__['mc_api.get_cloud_controller_settings']()
     provision = ret['changes'].setdefault('postp_cns_provisionned', [])
     provision_error = ret['changes'].setdefault('postp_cns_in_error', [])
-    targets = [a for a in settings['targets']]
+    targets = [a for a in settings['compute_nodes']]
     targets = filter_compute_nodes(targets, skip, only)
     for idx, cn in enumerate(targets):
         cret = result()
@@ -466,10 +470,9 @@ def orchestrate(skip=None,
             only=only, only_vms=only_vms,
             skip=skip, skip_vms=skip_vms))
     if not no_provision:
-        provision_compute_nodes(
-            skip=skip, only=only,
-            no_compute_nodes=no_compute_nodes,
-            output=False, refresh=False, ret=ret)
+        provision_compute_nodes(skip=skip, only=only,
+                                no_compute_nodes=no_compute_nodes,
+                                output=False, refresh=False, ret=ret)
         for a in ret.setdefault('cns_in_error', []):
             if a not in skip:
                 lresult = False
