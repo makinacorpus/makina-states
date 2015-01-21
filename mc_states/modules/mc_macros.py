@@ -61,7 +61,8 @@ def is_item_active(registry_name,
                    default_status=False,
                    grains_pref=None,
                    force=False):
-    '''Look in pillar/grains/localconfig for registry
+    '''
+    Look in pillar/grains/localconfig for registry
     activation status
     '''
     if not grains_pref:
@@ -77,8 +78,10 @@ def is_item_active(registry_name,
             val = __salt__['mc_utils.get'](config_entry,
                                            _default,
                                            local_registry=local_reg)
-            if val is not _default:
-                break
+        if val is not _default:
+            break
+    if val is _default:
+        val = default_status
     return val
 
 
