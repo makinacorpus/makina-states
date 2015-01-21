@@ -66,29 +66,31 @@ def run_vt_hook(hook_name,
     on a controller, or a compute node or a vm
     '''
     fname = 'mc_cloud_controller.run_vt_hook'
-    __salt__['mc_api.time_log']('start', fname, hook_name, target)
+    _s = __salt__
+    _s['mc_api.time_log']('start', fname, hook_name, target)
     if target:
         kwargs['target'] = target
     if ret is None:
         ret = result()
     if not vts:
         if not target:
-            settings = cli('mc_cloud_controller.settings')
-            vts = settings['vts']
+            settings = _s['mc_api.get_cloud_controller_settings']()
+            vts = [vt for vt in settings['vts']
+                   if settings['vts'][vt] and vt not in ['generic', 'saltify']]
         else:
-            settings = cli('mc_cloud_compute_node.settings')
-            vts = settings['targets'][target]['vts']
+            settings = _s['mc_api.get_compute_node_settings'](target)
+            vts = settings['vts']
     if isinstance(vts, basestring):
         vts = [vts]
     for vt in vts:
         vid_ = 'mc_cloud_{0}.{1}'.format(vt, hook_name)
-        if vid_ in __salt__:
+        if vid_ in _s:
             ret['comment'] += green('\n --> ') + blue(vid_) + green(' hook\n')
             kwargs['output'] = False
-            cret = __salt__[vid_](*args, **kwargs)
+            cret = _s[vid_](*args, **kwargs)
             merge_results(ret, cret)
             check_point(ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end', fname, ret=ret)
+    _s['mc_api.time_log']('end', fname, ret=ret)
     return ret
 
 
@@ -170,9 +172,7 @@ def gather_only_skip(only=None,
     if only_vms and not only:
         # fiter compute nodes here
         for vm in only_vms:
-            target = __salt__[
-                'mc_cloud_vm.get_compute_node'](
-                    vm)
+            target = __salt__['mc_api.get_vm'](vm)['target']
             if target not in only:
                 only.append(target)
     return (only,

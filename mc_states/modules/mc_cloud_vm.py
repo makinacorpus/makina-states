@@ -269,7 +269,7 @@ def vm_extpillar_settings(vm, ttl=30):
                                  netmask=data['netmask'],
                                  default=data.get('ip'))
         data['mac'] = _s['mc_cloud_compute_node.find_mac_for_vm'](
-            vm, default=data.get('mac', None)),
+            vm, default=data.get('mac', None))
         data['password'] = _s[
             'mc_cloud_compute_node.find_password_for_vm'
         ](vm, default=_s['mc_pillar.get_passwords'](vm)['clear']['root'])
@@ -311,8 +311,7 @@ def vt_extpillar(target, vt, ttl=60):
         extdata = _s['mc_pillar.get_cloud_conf_for_cn'](target).get(vt, {})
         data = vt_extpillar_settings(vt)
         fun = 'mc_cloud_{0}.vt_extpillar'.format(vt)
-        data = _s['mc_utils.dictupdate'](
-            _s[fun](target, data), extdata)
+        data = _s['mc_utils.dictupdate'](_s[fun](target, data), extdata)
         return data
     cache_key = 'mc_cloud_vm.vt_extpillar{0}{1}'.format(target, vt)
     return memoize_cache(_do, [target, vt], {}, cache_key, ttl)
@@ -324,8 +323,7 @@ def vm_extpillar(id_, ttl=60):
         extdata = _s['mc_pillar.get_cloud_conf_for_vm'](id_)
         data = vm_extpillar_settings(id_)
         fun = 'mc_cloud_{0}.vm_extpillar'.format(data['vt'])
-        data = _s['mc_utils.dictupdate'](
-            _s[fun](id_, data), extdata)
+        data = _s['mc_utils.dictupdate'](_s[fun](id_, data), extdata)
         return data
     cache_key = 'mc_cloud_vm.vm_extpillar{0}'.format(id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
@@ -336,9 +334,8 @@ def domains_for(vm, domains=None):
     if domains is None:
         domains = []
     vm_settings = _s['mc_cloud_vm.vm_extpillar_settings'](vm)
-    for domain in vm_settings['domains']:
-        if domain not in domains:
-            domains.append(domain)
+    [domains.append(domain) for domain in vm_settings['domains']
+     if domain not in domains]
     domains = _s['mc_utils.uniquify']([vm] + domains)
     return domains
 
