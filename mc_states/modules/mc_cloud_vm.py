@@ -220,7 +220,7 @@ def vm_default_settings(vm, cloudSettings, imgSettings, extpillar=False):
         'domains': [vm],
         'ssh_reverse_proxy_port':  _s[node + 'get_ssh_port'](vm),
         'snmp_reverse_proxy_port': _s[node + 'get_snmp_port'](vm)})
-    return data
+    return copy.deepcopy(data)
 
 
 def vm_registry(prefixed=True):

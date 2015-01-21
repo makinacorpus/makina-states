@@ -628,7 +628,10 @@ def _add_server_to_backends(reversep, frontend, backend_name, domain, ip):
         kind = 'https'
     _backends = reversep['{0}_backends'.format(kind)]
     bck = _backends.setdefault(backend_name, OrderedDict())
-    default_raw_opts = ['balance roundrobin', 'source 0.0.0.0 usesrc clientip']
+    default_raw_opts = [
+        'balance roundrobin',
+        #'source 0.0.0.0 usesrc clientip'
+    ]
     # for now rely on settings xforwardedfor header
     if reversep['{0}_proxy'.format(kind)].get(
         'http_proxy_mode', 'xforwardedfor'
