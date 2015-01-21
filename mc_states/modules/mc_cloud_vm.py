@@ -164,7 +164,8 @@ def vt_default_settings(cloudSettings, imgSettings, ttl=60):
         }
         return vt_settings
     cache_key = 'mc_cloud_vm.default_settings'
-    return memoize_cache(_do, [cloudSettings, imgSettings], {}, cache_key, ttl)
+    return copy.deepcopy(
+        memoize_cache(_do, [cloudSettings, imgSettings], {}, cache_key, ttl))
 
 
 def vm_default_settings(vm, cloudSettings, imgSettings, extpillar=False):
@@ -324,6 +325,11 @@ def vm_extpillar(id_, ttl=60):
         data = vm_extpillar_settings(id_)
         fun = 'mc_cloud_{0}.vm_extpillar'.format(data['vt'])
         data = _s['mc_utils.dictupdate'](_s[fun](id_, data), extdata)
+        # special case as domains is a list but we always want for
+        # the vm id to be un domains list even if overriden in
+        # extpillar
+        if id_ not in data['domains']:
+            data['domains'].insert(0, id_)
         return data
     cache_key = 'mc_cloud_vm.vm_extpillar{0}'.format(id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
