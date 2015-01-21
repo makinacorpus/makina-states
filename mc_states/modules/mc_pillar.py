@@ -391,7 +391,8 @@ def ips_for(fqdn,
 
 
 def load_network_infrastructure(ttl=60):
-    '''This loads the structure while validating it for
+    '''
+    This loads the structure while validating it for
     reverse ip lookups
     We need a local cache to store the ips resolved from different
     datasource, DO NOT USE QUERY() DIRECTLY HERE
@@ -628,7 +629,7 @@ def ip_for(fqdn, *args, **kwa1):
 
 
 def rr_entry(fqdn, targets, priority='10', record_type='A'):
-    db = load_network_infrastructure()
+    load_network_infrastructure()
     rrs_ttls = __salt__['mc_pillar.query']('rrs_ttls')
     if record_type in ['MX']:
         priority = ' {0}'.format(priority)
@@ -673,9 +674,10 @@ def rr_a(fqdn, fail_over=None, ttl=60):
 
 
 def whitelisted(dn, ttl=60):
-    '''Return all configured NS records for a domain'''
+    '''
+    Return all configured NS records for a domain'''
     def _do_whitel(dn):
-        db = load_network_infrastructure()
+        load_network_infrastructure()
         allow = __salt__['mc_pillar.query']('default_allowed_ips_names')
         allow = allow.get(dn, allow['default'])
         w = []
@@ -701,7 +703,9 @@ def filter_rr_str(all_rrs):
 
 
 def rrs_txt_for(domain, ttl=60):
-    '''Return all configured NS records for a domain'''
+    '''
+    Return all configured NS records for a domain
+    '''
     def _do(domain):
         rrs_ttls = __salt__['mc_pillar.query']('rrs_ttls')
         rrs_txts = __salt__['mc_pillar.query']('rrs_txt')
@@ -731,7 +735,8 @@ def rrs_txt_for(domain, ttl=60):
 
 
 def get_ldap(ttl=60):
-    '''Get a map of relationship between name servers
+    '''
+    Get a map of relationship between name servers
     that is used in the pillar to attribute roles
     and configuration to name servers
 
@@ -748,12 +753,14 @@ def get_ldap(ttl=60):
 
     '''
     def _do_getldap():
+        _s = __salt__
         data = OrderedDict()
         masters = data.setdefault('masters', OrderedDict())
         slaves = data.setdefault('slaves', OrderedDict())
-        default = __salt__['mc_pillar.query']('ldap_maps').get('default', OrderedDict())
+        default = _s['mc_pillar.query']('ldap_maps').get(
+            'default', OrderedDict())
         for kind in ['masters', 'slaves']:
-            for server, adata in __salt__[
+            for server, adata in _s[
                 'mc_pillar.query'
             ]('ldap_maps').get(kind, OrderedDict()).items():
                 sdata = data[kind][server] = copy.deepcopy(adata)
@@ -761,7 +768,7 @@ def get_ldap(ttl=60):
                     sdata.setdefault(k, val)
                 ssl_domain = sdata.setdefault('cert_domain', server)
                 # maybe generate and get the ldap certificates info
-                ssl_infos = __salt__['mc_ssl.ca_ssl_certs'](
+                ssl_infos = _s['mc_ssl.ca_ssl_certs'](
                     ssl_domain, as_text=True)[0]
                 sdata.setdefault('tls_cacert', ssl_infos[0])
                 sdata.setdefault('tls_cert', ssl_infos[1])
@@ -780,10 +787,9 @@ def get_ldap(ttl=60):
             rid = rids.setdefault(master, 100) + 1
             rids[master] = rid
             sdata = masters.get(adata['master'], OrderedDict())
-            srepl = copy.deepcopy(
-                sdata.setdefault('syncrepl', OrderedDict()))
+            srepl = copy.deepcopy(sdata.setdefault('syncrepl', OrderedDict()))
             srepl.setdefault('provider', 'ldap://{0}'.format(adata['master']))
-            srepl = __salt__['mc_utils.dictupdate'](
+            srepl = _s['mc_utils.dictupdate'](
                 srepl, adata.setdefault("syncrepl", OrderedDict()))
             srepl['{0}rid'] = '{0}'.format(rid)
             adata['syncrepl'] = srepl
@@ -826,7 +832,7 @@ def is_ldap_slave(id_, ttl=60):
     def _do(id_):
         if (
             is_managed(id_)
-            and id_ in __salt__['mc_pillar.get_ldap']()['slaves']
+            and id_ in get_ldap()['slaves']
         ):
             return True
         return False
@@ -838,7 +844,7 @@ def is_ldap_master(id_, ttl=60):
     def _do(id_):
         if (
             is_managed(id_)
-            and id_ in __salt__['mc_pillar.get_ldap']()['masters']
+            and id_ in get_ldap()['masters']
         ):
             return True
         return False
@@ -847,7 +853,8 @@ def is_ldap_master(id_, ttl=60):
 
 
 def get_nss(ttl=60):
-    '''Get a map of relationship between name servers
+    '''
+    Get a map of relationship between name servers
     that is used in the pillar to attribute roles
     and configuration to name servers
 
@@ -889,7 +896,8 @@ def get_nss(ttl=60):
 
 
 def get_ns_master(id_, dns_servers=None, default=None, ttl=60):
-    '''Grab masters in this form::
+    '''
+    Grab masters in this form::
 
         dns_servers:
             zoneid_dn:
@@ -920,7 +928,8 @@ def get_ns_master(id_, dns_servers=None, default=None, ttl=60):
 
 
 def get_ns_slaves(id_, dns_servers=None, default=None, ttl=60):
-    '''Grab slaves in this form::
+    '''
+    Grab slaves in this form::
 
         dns_servers:
             zoneid_dn:
@@ -967,7 +976,8 @@ def get_ns_slaves(id_, dns_servers=None, default=None, ttl=60):
 
 
 def get_nss_for_zone(id_, ttl=60):
-    '''Return all masters and slaves for a zone
+    '''
+    Return all masters and slaves for a zone
 
     If there is a master but no slaves, the master becomes also the only slave
     for that zone
@@ -988,7 +998,8 @@ def get_nss_for_zone(id_, ttl=60):
 
 
 def get_slaves_for(id_, ttl=60):
-    '''Get all public exposed dns servers slaves
+    '''
+    Get all public exposed dns servers slaves
     for a specific dns master
     Return something like::
 
@@ -1018,7 +1029,8 @@ def get_slaves_for(id_, ttl=60):
 
 
 def get_ns(domain, ttl=60):
-    '''Get the first configured public name server for domain'''
+    '''
+    Get the first configured public name server for domain'''
     def _do(domain):
         return get_nss_for_zone(domain)[0]
     cache_key = 'mc_pillar.get_ns_{0}'.format(domain)
@@ -1038,7 +1050,8 @@ def get_slaves_zones_for(fqdn, ttl=60):
 
 
 def rrs_mx_for(domain, ttl=60):
-    '''Return all configured MX records for a domain'''
+    '''
+    Return all configured MX records for a domain'''
     def _do_mx(domain):
         mx_map = __salt__['mc_pillar.query']('mx_map')
         all_rrs = OrderedDict()
@@ -1062,7 +1075,8 @@ def rrs_mx_for(domain, ttl=60):
 
 
 def rrs_ns_for(domain, ttl=60):
-    '''Return all configured NS records for a domain'''
+    '''
+    Return all configured NS records for a domain'''
     def _dorrsnsfor(domain):
         db = load_network_infrastructure()
         rrs_ttls = __salt__['mc_pillar.query']('rrs_ttls')
@@ -1095,7 +1109,8 @@ def rrs_ns_for(domain, ttl=60):
 
 
 def rrs_a_for(domain, ttl=60):
-    '''Return all configured A records for a domain'''
+    '''
+    Return all configured A records for a domain'''
     def _dorrsafor(domain):
         db = load_network_infrastructure()
         rrs_ttls = __salt__['mc_pillar.query']('rrs_ttls')
@@ -1121,7 +1136,8 @@ def rrs_a_for(domain, ttl=60):
 
 
 def rrs_raw_for(domain, ttl=60):
-    '''Return all configured TXT records for a domain'''
+    '''
+    Return all configured TXT records for a domain'''
     def _dorrsrawfor(domain):
         # add all A from simple ips
         db = load_network_infrastructure()
@@ -1143,7 +1159,8 @@ def rrs_raw_for(domain, ttl=60):
 
 
 def rrs_cnames_for(domain, ttl=60):
-    '''Return all configured CNAME records for a domain'''
+    '''
+    Return all configured CNAME records for a domain'''
     def _dorrscnamesfor(domain):
         db = load_network_infrastructure()
         managed_dns_zones = __salt__['mc_pillar.query']('managed_dns_zones')
@@ -1221,7 +1238,8 @@ def serial_for(domain,
                serial=None,
                autoinc=True,
                force_serial=None):
-    '''Get the serial for a DNS zone
+    '''
+    Get the serial for a DNS zone
 
     If serial is given: we take that as a value
     Else:
@@ -1330,7 +1348,8 @@ def serial_for(domain,
 
 
 def rrs_for(domain, aslist=False):
-    '''Return all configured records for a domain
+    '''
+    Return all configured records for a domain
     take all rr found for the "ips" & "ipsfo" tables for domain
         - Make NS records for everything in ns_map
         - Make MX records for everything in mx_map
@@ -1356,7 +1375,8 @@ def rrs_for(domain, aslist=False):
 
 
 def get_db_infrastructure_maps(ttl=60):
-    '''Return a struct::
+    '''
+    Return a struct::
 
          {'bms': {'xx-1.yyy.net': ['lxc'],
                   'xx-4.yyy.net': ['lxc']},
@@ -1567,7 +1587,9 @@ def get_sysadmins_keys(id_=None, ttl=60):
 
 
 def delete_password_for(id_, user='root', ttl=60):
-    '''Cleanup a password entry from the local password database'''
+    '''
+    Cleanup a password entry from the local password database
+    '''
     if not id_:
         id_ = __opts__['id']
     pw_reg = __salt__['mc_macros.get_local_registry'](
@@ -1586,8 +1608,10 @@ def delete_password_for(id_, user='root', ttl=60):
 
 def get_password(id_, user='root', ttl=60, regenerate=False, length=12,
                  force=False):
-    '''Return user/password mappings for a particular host from
-    a global pillar passwords map. Create it if not done'''
+    '''
+    Return user/password mappings for a particular host from
+    a global pillar passwords map. Create it if not done
+    '''
     if not id_:
         id_ = __opts__['id']
     def _do_pass(id_, user='root'):
@@ -1636,7 +1660,8 @@ def get_password(id_, user='root', ttl=60, regenerate=False, length=12,
 
 
 def get_passwords(id_, ttl=60):
-    '''Return user/password mappings for a particular host from
+    '''
+    Return user/password mappings for a particular host from
     a global pillar passwords map
     Take in priority pw from the db map
     But if does not exists in the db, lookup inside the local one
@@ -1702,8 +1727,6 @@ def get_ssh_groups(id_=None, ttl=60):
 
 
 def get_sudoers(id_=None, ttl=60):
-    if not id_:
-        id_ = __opts__['id']
     def _do_sudoers(id_, sysadmins=None):
         sudoers_map = __salt__['mc_pillar.query']('sudoers_map')
         sudoers = sudoers_map.get(id_, [])
@@ -1749,36 +1772,40 @@ def backup_configuration_type_for(id_, ttl=60):
 
 def backup_configuration_for(id_, ttl=60):
     def _do(id_):
-        db = get_db_infrastructure_maps()
-        default_conf_id = __salt__[
+        # load database object cache
+        get_db_infrastructure_maps()
+        _s = __salt__
+        default_conf_id = _s[
             'mc_pillar.backup_default_configuration_type_for'](id_)
-        confs = __salt__['mc_pillar.query']('backup_configurations')
-        conf_id = __salt__['mc_pillar.backup_configuration_type_for'](id_)
+        confs = _s['mc_pillar.query']('backup_configurations')
+        conf_id = _s['mc_pillar.backup_configuration_type_for'](id_)
         data = OrderedDict()
-        if id_ not in __salt__['mc_pillar.query']('non_managed_hosts') and not default_conf_id:
+        if (
+            id_ not in _s['mc_pillar.query']('non_managed_hosts')
+            and not default_conf_id
+        ):
             raise ValueError(
                 'No backup info for {0}'.format(id_))
-        if id_ in __salt__['mc_pillar.query']('non_managed_hosts') and not conf_id:
-            conf_id = __salt__['mc_pillar.backup_configuration_type_for'](
+        if id_ in _s['mc_pillar.query']('non_managed_hosts') and not conf_id:
+            conf_id = _s['mc_pillar.backup_configuration_type_for'](
                 'default')
             # raise ValueError(
             #    'No backup info for {0}'.format(id_))
         # load default conf
-        default_conf = copy.deepcopy(
-            confs.get(default_conf_id, OrderedDict()))
+        default_conf = copy.deepcopy(confs.get(default_conf_id, OrderedDict()))
         conf = copy.deepcopy(confs.get(conf_id, OrderedDict()))
         for k in [a for a in default_conf if a.startswith('add_')]:
             adding = k.split('add_', 1)[1]
             ddata = data.setdefault(adding, [])
             ddata.extend([a for a in default_conf[k] if a not in ddata])
-        data = __salt__['mc_utils.dictupdate'](data, default_conf)
+        data = _s['mc_utils.dictupdate'](data, default_conf)
         # load per host conf
         if conf_id != default_conf_id:
             for k in [a for a in conf if a.startswith('add_')]:
                 adding = k.split('add_', 1)[1]
                 ddata = data.setdefault(adding, [])
                 ddata.extend([a for a in conf[k] if a not in ddata])
-            data = __salt__['mc_utils.dictupdate'](data, conf)
+            data = _s['mc_utils.dictupdate'](data, conf)
         for cfg in [default_conf, conf]:
             for remove_key in ['remove', 'delete', 'del']:
                 for k, val in [a
@@ -2060,7 +2087,6 @@ def get_supervision_objects_defs(id_):
         vm_parent = None
         if is_cloud_vm(id_):
             vm_parent = maps['vms'][id_]['target']
-        ext_pillars = {}
         for vm, vdata in maps['vms'].items():
             physical_hosts_to_check.add(host)
             vt = vdata['vt']
@@ -2245,124 +2271,106 @@ def is_supervision_kind(id_, kind, ttl=60):
 
 
 def format_rrs(domain, alt=None):
-    infos = __salt__['mc_pillar.get_nss_for_zone'](domain)
+    _s = __salt__
+    infos = _s['mc_pillar.get_nss_for_zone'](domain)
     master = infos['master']
     slaves = infos['slaves']
     allow_transfer = []
     if slaves:
         slaveips = []
         for s in slaves:
-            slaveips.append('key "{0}"'.format(
-                __salt__['mc_pillar.ip_for'](s)))
+            slaveips.append('key "{0}"'.format(_s['mc_pillar.ip_for'](s)))
         allow_transfer = slaveips
         soans = slaves.keys()[0]
     else:
         soans = master
-
     soans += "."
     if not alt:
         alt = domain
     rrs = [a.strip().replace(domain, alt)
-           for a in __salt__['mc_pillar.rrs_for'](domain, aslist=True)
+           for a in _s['mc_pillar.rrs_for'](domain, aslist=True)
            if a.strip()]
-    rdata = {
-        'allow_transfer': allow_transfer,
-        'serial': __salt__['mc_pillar.serial_for'](domain),
-        'soa_ns': soans.replace(domain, alt),
-        'soa_contact': 'postmaster.{0}.'.format(domain).replace(
-            domain, alt),
-        'rrs': rrs}
+    rdata = {'allow_transfer': allow_transfer,
+             'serial': _s['mc_pillar.serial_for'](domain),
+             'soa_ns': soans.replace(domain, alt),
+             'soa_contact': 'postmaster.{0}.'.format(domain).replace(domain,
+                                                                     alt),
+             'rrs': rrs}
     return rdata
 
 
 def slave_key(id_, dnsmaster=None, master=True):
-    ip_for = __salt__['mc_pillar.ip_for']
+    pref = 'makina-states.services.dns.bind'
+    _s = __salt__
+    ip_for = _s['mc_pillar.ip_for']
     rdata = {}
     oip = ip_for(id_)
     if not master:
         mip = ip_for(dnsmaster)
         # on slave side, declare the master as the tsig
         # key consumer
-        rdata[
-            'makina-states.services.dns.bind.servers.{0}'.format(
-                mip)] = {'keys': [oip]}
+        rdata[pref + 'servers.{0}'.format(mip)] = {'keys': [oip]}
     # on both, say to encode with the client tsig key when daemons
     # are talking to each other
-    rdata['makina-states.services.dns.bind.keys.{0}'.format(oip)] = {
-        'secret': __salt__['mc_bind.tsig_for'](oip)}
+    rdata[pref + '.keys.{0}'.format(oip)] = {
+        'secret': _s['mc_bind.tsig_for'](oip)}
     return rdata
 
 
 def get_dns_slave_conf(id_):
-    if not __salt__['mc_pillar.is_dns_slave'](id_):
+    _s = __salt__
+    if not _s['mc_pillar.is_dns_slave'](id_):
         return {}
-    rdata = {
-        'makina-states.services.dns.bind': True
-    }
+    pref = 'makina-states.services.dns.bind'
+    rdata = {pref: True}
     dnsmasters = {}
-    domains = __salt__[
-        'mc_pillar.get_slaves_zones_for'](id_)
+    domains = _s['mc_pillar.get_slaves_zones_for'](id_)
     for domain, masterdn in domains.items():
-        master = __salt__['mc_pillar.ip_for'](
-            masterdn)
+        master = _s['mc_pillar.ip_for'](masterdn)
         if masterdn not in dnsmasters:
             dnsmasters.update({masterdn: master})
-        rdata['makina-states.services.dns.bind'
-              '.zones.{0}'.format(domain)] = {
-                  'server_type': 'slave',
-                  'masters': [master]}
+        rdata[pref + '.zones.{0}'.format(domain)] = {
+            'server_type': 'slave', 'masters': [master]}
     for dnsmaster, masterip in dnsmasters.items():
-        rdata.update(
-            slave_key(id_, dnsmaster, master=False))
+        rdata.update(slave_key(id_, dnsmaster, master=False))
     return rdata
 
 
 def get_dns_master_conf(id_):
-    if not __salt__['mc_pillar.is_dns_master'](id_):
+    _s = __salt__
+    if not _s['mc_pillar.is_dns_master'](id_):
         return {}
-    rdata = {
-        'makina-states.services.dns.bind': True
-    }
+    pref = 'makina-states.services.dns.bind'
+    rdata = {pref: True}
     altdomains = []
-    for domains in __salt__['mc_pillar.query'](
+    for domains in _s['mc_pillar.query'](
         'managed_alias_zones'
     ).values():
         altdomains.extend(domains)
-    for domain in __salt__[
+    for domain in _s[
         'mc_pillar.query'](
             'managed_dns_zones'):
         if domain not in altdomains:
-            rdata[
-                'makina-states.services.dns.bind'
-                '.zones.{0}'.format(domain)] = __salt__[
-                    'mc_pillar.format_rrs'](domain)
-    for domain, altdomains in __salt__[
+            rdata[pref + '.zones.{0}'.format(domain)] = _s[
+                'mc_pillar.format_rrs'](domain)
+    for domain, altdomains in _s[
         'mc_pillar.query'](
             'managed_alias_zones').items():
         for altdomain in altdomains:
-            srrs = __salt__['mc_pillar.format_rrs'](
+            srrs = _s['mc_pillar.format_rrs'](
                 domain, alt=altdomain)
             rdata['makina-states.services.dns.bind'
                   '.zones.{0}'.format(altdomain)] = srrs
-    dnsslaves = __salt__[
-        'mc_pillar.get_slaves_for'](id_)['all']
+    dnsslaves = _s['mc_pillar.get_slaves_for'](id_)['all']
     if dnsslaves:
         # slave tsig declaration
-        rdata[
-            'makina-states.services.dns.bind.slaves'
-        ] = [__salt__['mc_pillar.ip_for'](slv)
-             for slv in dnsslaves]
+        rdata[pref + '.slaves'] = [_s['mc_pillar.ip_for'](slv)
+                                   for slv in dnsslaves]
         for dn in dnsslaves:
             rdata.update(slave_key(dn))
             rdata[
-                'makina-states.services.dns.bind'
-                '.servers.{0}'.format(
-                    __salt__['mc_pillar.ip_for'](dn)
-                )
-            ] = {
-                'keys': [
-                    __salt__['mc_pillar.ip_for'](dn)]
-            }
+                pref + '.servers.{0}'.format(_s['mc_pillar.ip_for'](dn))
+            ] = {'keys': [_s['mc_pillar.ip_for'](dn)]}
     return rdata
 
 
@@ -2485,8 +2493,6 @@ def get_sysnet_conf(id_):
         and gconf.get('manage_network', False)
     ):
         return {}
-    if id_ in __salt__['mc_pillar.query']('non_managed_hosts'):
-        return {}
     if id_ in __salt__['mc_pillar.query']('baremetal_hosts'):
         # always use bridge as main_if
         rdata.update(
@@ -2541,7 +2547,11 @@ def get_snmpd_conf(id_, ttl=60):
             data['key'] = secure_password(32)
             __salt__['mc_macros.update_local_registry'](
                 'pillar_snmpd', local_conf, registry_format='pack')
-        if gconf.get('manage_snmpd', False):
+        rdata[pref] = True
+        if (
+            gconf.get('manage_snmpd', False)
+            and id_ not in query('non_managed_hosts')
+        ):
             rdata.update({
                 pref: True,
                 pref + ".default_user": data['user'],
@@ -2636,7 +2646,9 @@ def get_autoupgrade_conf(id_):
 
 
 def is_managed(id_, ttl=60):
-    """"Known in our infra but maybe not a salt minon"""
+    """
+    Known in our infra but maybe not a salt minon
+    """
     def _do(id_):
         db = get_db_infrastructure_maps()
         return id_ in db['hosts']
@@ -2645,10 +2657,13 @@ def is_managed(id_, ttl=60):
 
 
 def is_salt_managed(id_, ttl=60):
-    """"Known in our infra / and also a salt minion"""
+    """
+    Known in our infra / and also a salt minion where we expose most
+    of the ext_pillars
+    """
     def _do(id_):
-        db = get_db_infrastructure_maps()
-        return is_managed(id_) and id_ not in __salt__['mc_pillar.query']('non_managed_hosts')
+        get_db_infrastructure_maps()
+        return is_managed(id_) and id_ not in query('non_managed_hosts')
     cache_key = 'mc_pillar.is_salt_managed_{0}'.format(id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
@@ -2657,10 +2672,7 @@ def get_fail2ban_conf(id_):
     gconf = get_configuration(id_)
     rdata = {}
     pref = "makina-states.services.firewall.fail2ban"
-    if (
-        gconf.get('manage_snmpd', False)
-        and is_salt_managed(id_)
-    ):
+    if gconf.get('manage_snmpd', False):
         rdata.update({
             pref: True,
             pref + ".ignoreip": __salt__['mc_pillar.whitelisted'](id_)})
@@ -2712,8 +2724,7 @@ def get_mail_conf(id_, ttl=60):
         if id_ in mail_settings:
             idconf = copy.deepcopy(mail_settings[id_])
             if 'no_inherit' not in mail_conf:
-                mail_conf = __salt__['mc_utils.dictupdate'](
-                    mail_conf, idconf)
+                mail_conf = __salt__['mc_utils.dictupdate'](mail_conf, idconf)
             else:
                 mail_conf = idconf
         dest = mail_conf['default_dest'].format(id=id_)
@@ -2770,19 +2781,16 @@ def get_mail_conf(id_, ttl=60):
 
 
 def get_ssh_keys_conf(id_):
-    gconf = get_configuration(id_)
     rdata = {}
     pref = "makina-states.services.base.ssh.server"
     adm_pref = "makina-states.localsettings.admin.sysadmins_keys"
     a_adm_pref = "makina-states.localsettings.admin.absent_keys"
-    if is_salt_managed(id_) and gconf.get('manage_ssh_keys', False):
-        absent_keys = []
-        for k in __salt__['mc_pillar.get_removed_keys'](id_):
-            absent_keys.append({k: {}})
-        rdata.update({
-            adm_pref: __salt__['mc_pillar.get_sysadmins_keys'](id_),
-            a_adm_pref: absent_keys,
-            pref + ".chroot_sftp": True})
+    absent_keys = []
+    for k in __salt__['mc_pillar.get_removed_keys'](id_):
+        absent_keys.append({k: {}})
+    rdata.update({adm_pref: __salt__['mc_pillar.get_sysadmins_keys'](id_),
+                  a_adm_pref: absent_keys,
+                  pref + ".chroot_sftp": True})
     return rdata
 
 
@@ -2822,7 +2830,8 @@ def get_passwords_conf(id_):
       the groups which have access to specific machines
     '''
     gconf = get_configuration(id_)
-    ms_vars = get_makina_states_variables(id_)
+    # load objects
+    get_makina_states_variables(id_)
     rdata = {}
     pref = "makina-states.localsettings"
     apref = pref + ".admin"
@@ -2881,8 +2890,7 @@ def get_ssl_conf(id_, ttl=60):
         # tie extra domains of vms to a A record: part2
         # try to resolve leftover ips
         todo = OrderedDict([(id_, id_)])
-        _data = cloud_vm_attrs.get(id_,
-                                   OrderedDict())
+        _data = cloud_vm_attrs.get(id_, OrderedDict())
         domains = _data.get('domains', [])
         for domain in domains:
             todo[domain] = domain
@@ -2894,8 +2902,7 @@ def get_ssl_conf(id_, ttl=60):
                 todo[wd] = wd
         for did, domain in todo.items():
             lcert, lkey = __salt__[
-                'mc_ssl.selfsigned_ssl_certs'](
-                    domain, as_text=True)[0]
+                'mc_ssl.selfsigned_ssl_certs'](domain, as_text=True)[0]
             rdata[p + 'certificates.' + did] = (lcert, lkey)
         return rdata
     cache_key = 'mc_pillar.get_ssl_conf{0}'.format(id_)
@@ -2932,7 +2939,7 @@ def get_pkgmgr_conf(id_, ttl=60):
         if not isinstance(conf, dict):
             conf = {}
         p = 'makina-states.localsettings.pkgs.'
-        for item,val in conf.items():
+        for item, val in conf.items():
             rdata[p + item] = val
         return rdata
     cache_key = 'mc_pillar.get_pkgmgr_conf{0}'.format(id_)
@@ -2968,13 +2975,13 @@ def get_dns_resolvers(id_, ttl=60):
 
 
 def ext_pillar(id_, pillar=None, *args, **kw):
+    _s = __salt__
     if pillar is None:
         pillar = OrderedDict()
-    dbpath = os.path.join(__opts__['pillar_roots']['base'][0],
-                          'database.yaml')
-    if not os.path.exists(dbpath):
-        msg = 'DATABASE DOES NOT EXISTS: {0}'.format(dbpath)
+    if not has_db():
+        dbpath = get_db()
         if 'mastersalt' in dbpath:
+            msg = 'DATABASE DOES NOT EXISTS: ' + dbpath
             raise ValueError(msg)
         else:
             return {}
@@ -2986,43 +2993,59 @@ def ext_pillar(id_, pillar=None, *args, **kw):
     if profile_enabled:
         pr = cProfile.Profile()
         pr.enable()
-    for callback in [
-        'mc_pillar.get_dns_resolvers',
-        'mc_pillar.get_custom_pillar_conf',
-        'mc_pillar.get_autoupgrade_conf',
-        'mc_pillar.get_backup_client_conf',
-        'mc_pillar.get_burp_server_conf',
-        'mc_pillar.get_dhcpd_conf',
-        'mc_pillar.get_dns_master_conf',
-        'mc_pillar.get_dns_slave_conf',
-        'mc_pillar.get_etc_hosts_conf',
-        'mc_pillar.get_fail2ban_conf',
-        'mc_pillar.get_ldap_client_conf',
-        'mc_pillar.get_mail_conf',
-        'mc_pillar.get_ntp_server_conf',
-        'mc_pillar.get_packages_conf',
-        'mc_pillar.get_passwords_conf',
-        'mc_pillar.get_shorewall_conf',
-        'mc_pillar.get_slapd_conf',
-        'mc_pillar.get_snmpd_conf',
-        'mc_pillar.get_supervision_client_conf',
-        'mc_pillar.get_ssl_conf',
-        'mc_pillar.get_ssh_groups_conf',
-        'mc_pillar.get_ssh_keys_conf',
-        'mc_pillar.get_sudoers_conf',
-        'mc_pillar.get_supervision_confs',
-        'mc_pillar.get_pkgmgr_conf',
-        'mc_pillar.get_sysnet_conf',
-        'mc_pillar.get_check_raid_conf',
-        #'mc_pillar.get_cloudmaster_conf',
-        #
-        'mc_env.ext_pillar',
-        'mc_cloud.ext_pillar',
-        #
-    ]:
+    for callback, copts in {
+        'mc_cloud.ext_pillar': {},
+        'mc_env.ext_pillar': {'only_managed': False},
+        'mc_pillar.get_autoupgrade_conf': {'only_managed': False},
+        'mc_pillar.get_backup_client_conf': {'only_managed': False},
+        'mc_pillar.get_burp_server_conf': {},
+        'mc_pillar.get_check_raid_conf': {},
+        'mc_pillar.get_custom_pillar_conf': {'only_managed': False},
+        'mc_pillar.get_dhcpd_conf': {'only_managed': False},
+        'mc_pillar.get_dns_master_conf': {},
+        'mc_pillar.get_dns_resolvers': {'only_managed': False},
+        'mc_pillar.get_dns_slave_conf': {},
+        'mc_pillar.get_etc_hosts_conf': {'only_managed': False},
+        'mc_pillar.get_fail2ban_conf': {},
+        'mc_pillar.get_ldap_client_conf': {},
+        'mc_pillar.get_mail_conf': {'only_managed': False},
+        'mc_pillar.get_ntp_server_conf': {},
+        'mc_pillar.get_packages_conf': {'only_managed': False},
+        'mc_pillar.get_passwords_conf': {},
+        'mc_pillar.get_pkgmgr_conf': {'only_managed': False},
+        'mc_pillar.get_shorewall_conf': {'only_managed': False},
+        'mc_pillar.get_slapd_conf': {},
+        'mc_pillar.get_snmpd_conf': {'only_known': False},
+        'mc_pillar.get_ssh_groups_conf': {},
+        'mc_pillar.get_ssh_keys_conf': {},
+        'mc_pillar.get_ssl_conf': {},
+        'mc_pillar.get_sudoers_conf': {},
+        'mc_pillar.get_supervision_client_conf': {},
+        'mc_pillar.get_supervision_confs': {},
+        'mc_pillar.get_sysnet_conf': {},
+    }.items():
         try:
-            data = __salt__['mc_utils.dictupdate'](
-                data, __salt__[callback](id_))
+            if '.' not in callback:
+                callback = 'mc_pillar.{0}'.format(callback)
+            #
+            # CONDITIONNAL PILLAR EXPOSURE
+            #
+            # if minion is not a minion managed via ext pillar
+            # and we did not force this specific ext pillar function
+            # if force execution for those minions
+            # known from the database but not managed via extpillar
+            # and minion is known, force execution
+            skip = True
+            if is_salt_managed(id_):
+                skip = False
+            else:
+                if not copts.get('only_managed', True):
+                    skip = False
+                if is_managed(id_) and not copts.get('only_known', True):
+                    skip = False
+            if skip:
+                continue
+            data = _s['mc_utils.dictupdate'](data, _s[callback](id_))
         except Exception, ex:
             trace = traceback.format_exc()
             log.error('ERROR in mc_pillar: {0}'.format(callback))
@@ -3173,145 +3196,6 @@ def test():
     from mc_states.utils import _LOCAL_CACHE
     from pprint import pprint
     pprint(_LOCAL_CACHE)
-
-
-'''
-DEPRECATED
-'''
-# def get_cloudmaster_conf(id_):
-#     gconf = get_configuration(id_)
-#     if not gconf.get('cloud_master', False):
-#         return {}
-#     gconf = get_configuration(id_)
-#     pref = 'makina-states.cloud'
-#     rdata = {
-#         pref + '.generic': True,
-#         pref + '.master': gconf['mastersaltdn'],
-#         pref + '.master_port': gconf['mastersalt_port'],
-#         pref + '.saltify': True,
-#         pref + '.lxc': gconf['cloud_control_lxc'],
-#         pref + '.kvm': gconf['cloud_control_kvm'],
-#         pref + '.lxc.defaults.backing': 'dir'}
-#     for i in [get_cloud_vm_conf,
-#               get_cloud_compute_node_conf]:
-#         rdata.update(i(id_))
-#     return rdata
-
-
-# def get_cloud_vm_conf(id_):
-#     """DEPRECATED"""
-#     rdata = {}
-#     cloud_vm_attrs = __salt__['mc_pillar.query']('cloud_vm_attrs')
-#     nvars  = __salt__['mc_pillar.load_network_infrastructure']()
-#     supported_vts = __salt__['mc_cloud_compute_node.get_vts']()
-#     for vt, targets in __salt__['mc_pillar.query']('vms').items():
-#         if vt not in supported_vts:
-#             continue
-#         for compute_node, vms in targets.items():
-#             if compute_node in __salt__['mc_pillar.query']('non_managed_hosts'):
-#                 continue
-#             k = ('makina-states.cloud.{0}.'
-#                  'vms.{1}').format(vt, compute_node)
-#             pvms = rdata.setdefault(k, {})
-#             for vm in vms:
-#                 if vm in __salt__['mc_pillar.query']('non_managed_hosts'):
-#                     continue
-#                 dvm = pvms.setdefault(vm, {})
-#                 metadata = cloud_vm_attrs.get(vm, {})
-#                 if 'password' not in metadata:
-#                     metadata.setdefault(
-#                         'password',
-#                         __salt__[
-#                             'mc_pillar.get_passwords'
-#                         ](vm)['clear']['root'])
-#                 dvm.update(metadata)
-#     return rdata
-
-
-#def get_cloud_compute_node_conf(id_):
-#    rdata = {}
-#    ms_vars = get_makina_states_variables(id_)
-#    # detect computes nodes by searching for related vms configurations
-#    supported_vts = __salt__['mc_cloud_compute_node.get_vts']()
-#    done_hosts = []
-#    nvars  = __salt__['mc_pillar.load_network_infrastructure']()
-#    ivars  = __salt__['mc_pillar.get_db_infrastructure_maps']()
-#    cloud_cn_attrs = __salt__['mc_pillar.query']('cloud_cn_attrs')
-#    for vt, targets in __salt__['mc_pillar.query']('vms').items():
-#        if vt not in supported_vts:
-#            continue
-#        for compute_node, vms in targets.items():
-#            if not (
-#                (compute_node not in done_hosts)
-#                and
-#                (compute_node not in __salt__['mc_pillar.query'](
-#                    'non_managed_hosts'))
-#            ):
-#                done_hosts.append(compute_node)
-#                rdata['makina-states.cloud.saltify'
-#                      '.targets.{0}'.format(
-#                          compute_node)] = {
-#                    'password': __salt__[
-#                        'mc_pillar.get_passwords'](
-#                            compute_node
-#                        )['clear']['root'],
-#                    'ssh_username': 'root'
-#                }
-#            metadata = cloud_cn_attrs.get(compute_node, {})
-#
-#            haproxy_pre = metadata.get('haproxy', {}).get('raw_opts_pre', [])
-#            haproxy_post = metadata.get('haproxy', {}).get('raw_opts_post', [])
-#            for suf, opts in [
-#                a for a in [
-#                    ['pre', haproxy_pre],
-#                    ['post', haproxy_post]
-#                ] if a[1]
-#            ]:
-#                rdata[
-#                    'makina-states.cloud.compute_node.conf.'
-#                    '{0}.https_proxy.raw_opts_{1}'.format(
-#                        compute_node, suf)] = opts
-#                rdata[
-#                    'makina-states.cloud.compute_node.conf.'
-#                    '{0}.http_proxy.raw_opts_{1}'.format(
-#                        compute_node, suf)] = opts
-#
-#    for vt, targets in __salt__['mc_pillar.query']('vms').items():
-#        if vt not in supported_vts:
-#            continue
-#        for compute_node, vms in targets.items():
-#            if not (
-#                compute_node not in done_hosts
-#                and
-#                compute_node not in __salt__['mc_pillar.query'](
-#                    'non_managed_hosts')
-#            ):
-#                continue
-#            done_hosts.append(compute_node)
-#            k = ('makina-states.cloud.'
-#                 'saltify.targets.{0}').format(
-#                     compute_node)
-#            rdata[k] = {
-#                'password': __salt__[
-#                    'mc_pillar.get_passwords'](
-#                        compute_node)['clear']['root'],
-#                'ssh_username': 'root'
-#            }
-#
-#        for host, data in ivars['standalone_hosts'].items():
-#            if host in done_hosts:
-#                continue
-#            done_hosts.append(compute_node)
-#            sk = ('makina-states.cloud.saltify.'
-#                  'targets.{0}').format(host)
-#            rdata[sk] = {
-#                'ssh_username': data.get(
-#                    'ssh_username', 'root')
-#            }
-#            for k, val in data.items():
-#                if val and val not in ['ssh_username']:
-#                    rdata[sk][k] = val
-#    return rdata
 
 
 def loaded():

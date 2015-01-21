@@ -49,7 +49,7 @@ def out(ret, __opts__, output=True, onlyret=False):
 def cloud_event(msg='', *args, **kw):
     tag = kw.pop('event_tag', EVENT_TAG)
     category = kw.pop('event_category', None)
-    kw['event_atetime'] = datetime.datetime.now().isoformat()
+    kw['event_datetime'] = datetime.datetime.now().isoformat()
     payload = {'args': args, 'kw': kw,
                'message': msg, 'category': category}
     __jid_event__.fire_event(payload, tag)
