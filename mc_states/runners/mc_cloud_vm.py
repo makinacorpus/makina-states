@@ -273,7 +273,7 @@ def provision(vm, steps=None, ret=None, output=True):
     _s['mc_api.time_log']('start', fname, vm, step=steps)
     vm_data = _s['mc_api.get_vm'](vm)
     vt = vm_data['vt']
-    cn = vm_data['compute_node']
+    cn = vm_data['target']
     if isinstance(steps, basestring):
         steps = steps.split(',')
     if steps is None:
@@ -287,7 +287,7 @@ def provision(vm, steps=None, ret=None, output=True):
     if ret is None:
         ret = result()
     for step in steps:
-        cret = _s['mc_cloud_vm.step'](vm, output=False)
+        cret = _s['mc_cloud_vm.step'](vm, step, output=False)
         merge_results(ret, cret)
         # break on first failure
         if ret['result'] is False:
@@ -347,6 +347,12 @@ def filter_vms(compute_node, vms, skip, only):
     fname = 'mc_cloud_vm.filter_vms'
     __salt__['mc_api.time_log']('start', fname)
     todo = {}
+    if isinstance(only, basestring):
+        only = only.split(',')
+    if isinstance(skip, basestring):
+        skip = skip.split(',')
+    if isinstance(vms, basestring):
+        vms = vms.split(',')
     for vm, data in vms.items():
         if vm in skip:
             continue
@@ -373,12 +379,12 @@ def provision_vms(cn,
 
     '''
     fname = 'mc_cloud_vm.provision_vms'
-    __salt__['mc_api.time_log']('start', fname)
     _s = __salt__
+    _s['mc_api.time_log']('start', fname, cn, skip=skip, only=only)
     if ret is None:
         ret = result()
     _, only, __, skip = (
-        __salt__['mc_cloud_controller.gather_only_skip'](
+        _s['mc_cloud_controller.gather_only_skip'](
             only_vms=only, skip_vms=skip))
     if refresh:
         cli('saltutil.refresh_pillar')
@@ -387,8 +393,8 @@ def provision_vms(cn,
     gerror = ret['changes'].setdefault('vms_in_error', {})
     provisionned = gprov.setdefault(cn, [])
     provision_error = gerror.setdefault(cn, [])
-    vms = settings.get(cn, {'vts': [], 'vms': {}})
-    vms = filter_vms(cn, vms['vms'], skip, only)
+    vms = settings.get('vms', {})
+    vms = filter_vms(cn, vms, skip, only)
     kvms = [a for a in vms]
     kvms.sort()
     for idx, vm in enumerate(kvms):
@@ -434,7 +440,7 @@ def provision_vms(cn,
     return ret
 
 
-def post_provision_vms(compute_node,
+def post_provision_vms(cn,
                        skip=None, only=None, ret=None,
                        output=True, refresh=False):
     '''
@@ -451,7 +457,7 @@ def post_provision_vms(compute_node,
     '''
     fname = 'mc_cloud_vm.post_provision_vms'
     _s = __salt__
-    _s['mc_api.time_log']('start', fname)
+    _s['mc_api.time_log']('start', fname, cn, skip=skip, only=only)
     if ret is None:
         ret = result()
     _, only, __, skip = (
@@ -459,13 +465,13 @@ def post_provision_vms(compute_node,
             only_vms=only, skip_vms=skip))
     if refresh:
         cli('saltutil.refresh_pillar')
-    settings = _s['mc_api.get_compute_node_settings'](compute_node)
+    settings = _s['mc_api.get_compute_node_settings'](cn)
     gerror = ret['changes'].setdefault('postp_vms_provisionned', {})
     gprov = ret['changes'].setdefault('postp_vms_in_error', {})
-    provisionned = gprov.setdefault(compute_node, [])
-    provision_error = gerror.setdefault(compute_node, [])
-    vms = settings.get(compute_node, {'vts': [], 'vms': {}})
-    vms = filter_vms(compute_node, vms['vms'], skip, only)
+    provisionned = gprov.setdefault(cn, [])
+    provision_error = gerror.setdefault(cn, [])
+    vms = settings.get('vms', {})
+    vms = filter_vms(cn, vms, skip, only)
     kvms = [a for a in vms]
     kvms.sort()
     for idx, vm in enumerate(kvms):
@@ -478,9 +484,8 @@ def post_provision_vms(compute_node,
             trace = traceback.format_exc()
             cret = {'result': False,
                     'output': 'unknown error on {0}/{2}\n{1}'.format(
-                        compute_node, exc, vm),
-                    'comment': 'unknown error on {0}/{1}\n'.format(
-                        compute_node, vm),
+                        cn, exc, vm),
+                    'comment': 'unknown error on {0}/{1}\n'.format(cn, vm),
                     'trace': trace}
         if cret['result']:
             if vm not in provisionned:

@@ -80,7 +80,7 @@ def upgrade_vts(target, ret=None, output=True):
     __salt__['mc_api.time_log']('start', fname, target)
     if ret is None:
         ret = result()
-    ret = run_vt_hook('upgrade_vt', ret=ret, target=target, output=output)
+    ret = run_vt_hook(target, 'upgrade_vt', ret=ret, output=output)
     if ret['result']:
         ret['comment'] += yellow(
             '{0} is now upgraded to host vms\n'.format(target))
@@ -97,7 +97,7 @@ def install_vts(target, ret=None, output=True):
     __salt__['mc_api.time_log']('start', fname, target)
     if ret is None:
         ret = result()
-    ret = run_vt_hook('install_vt', ret=ret, target=target, output=output)
+    ret = run_vt_hook(target, 'install_vt', ret=ret, output=output)
     if ret['result']:
         ret['comment'] += yellow(
             '{0} is now ready to host vms\n'.format(target))
@@ -234,12 +234,12 @@ def post_deploy(target, ret=None, output=True):
     if ret is None:
         ret = result()
     hook = 'pre_post_deploy_compute_node'
-    run_vt_hook(hook, ret=ret, target=target, output=output)
+    run_vt_hook(target, hook, ret=ret, output=output)
     for step in []:
         step(target, ret=ret, output=False)
         check_point(ret, __opts__, output=output)
     hook = 'post_post_deploy_compute_node'
-    run_vt_hook(hook, ret=ret, target=target, output=output)
+    run_vt_hook(target, hook, ret=ret, output=output)
     __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end', fname, ret=ret)
     return ret

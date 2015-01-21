@@ -206,7 +206,8 @@ def get_cloud_controller_settings(ttl=60):
     def _do():
         fname = 'mc_api.get_cloud_controller_settings'
         __salt__['mc_api.time_log']('start', fname, __opts__['id'])
-        settings = cli('mc_cloud.ext_pillar', __opts__['id'], prefixed=False)
+        settings = cli('mc_cloud_controller.ext_pillar',
+                       __opts__['id'], prefixed=False)
         __salt__['mc_api.time_log']('end', fname, settings=settings)
         return settings
     cache_key = 'rmc_api.get_cloud_controller_settings'
