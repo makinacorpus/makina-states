@@ -63,3 +63,4 @@ find /etc/init/*salt* |grep -v override| while read fic
     do
         echo manual > ${fic//.conf}.override
     done
+find /var/cache/apt/archives -name "*deb" -type f -delete 2>/dev/null
