@@ -187,7 +187,7 @@ def query_first(doc_types, ttl=30, **kwargs7):
 
 def _load_network(ttl=60):
     def _do():
-        db = __salt__['mc_pillar.load_db']()
+        __salt__['mc_pillar.load_db']()
         data = {}
         data['cnames'] = __salt__['mc_pillar.query']('cnames')
         data['ips'] = __salt__['mc_pillar.query']('ips')
@@ -2000,9 +2000,22 @@ def is_cloud_compute_node(target):
     return ret
 
 
+def get_non_supervised_hosts(ttl=60):
+    def _do():
+        try:
+            hosts = query('non_supervised_hosts')
+        except KeyError:
+            hosts = []
+        return hosts
+
+    cache_key = 'mc_pillar.get_non_supervised_hosts'
+    return memoize_cache(_do, [], {}, cache_key, ttl)
+
+
 def get_supervision_objects_defs(id_):
     rdata = {}
     net = load_network_infrastructure()
+    non_supervised_hosts = get_non_supervised_hosts()
     disable_common_checks = {'disk_space': False,
                              'load_avg': False,
                              'memory': False,
@@ -2016,13 +2029,15 @@ def get_supervision_objects_defs(id_):
         defs = data.get('definitions', {})
         sobjs = defs.setdefault('objects', OrderedDict())
         hhosts = defs.setdefault('autoconfigured_hosts', OrderedDict())
-        for hhost in [a for a in hhosts]:
+        for hhost in [a for a in hhosts if a not in non_supervised_hosts]:
             for i in ['attrs', 'services_attrs']:
                 hhosts[hhost].setdefault(i, OrderedDict())
                 if not isinstance(hhosts[hhost][i], dict):
                     hhosts[hhost][i] = OrderedDict()
         maps = __salt__['mc_pillar.get_db_infrastructure_maps']()
         for host, vts in maps['bms'].items():
+            if host in non_supervised_hosts:
+                continue
             physical_hosts_to_check.add(host)
             hdata = hhosts.setdefault(host, OrderedDict())
             attrs = hdata.setdefault('attrs', OrderedDict())
@@ -2088,6 +2103,8 @@ def get_supervision_objects_defs(id_):
         if is_cloud_vm(id_):
             vm_parent = maps['vms'][id_]['target']
         for vm, vdata in maps['vms'].items():
+            if vm in non_supervised_hosts:
+                continue
             physical_hosts_to_check.add(host)
             vt = vdata['vt']
             host = vdata['target']
@@ -2219,6 +2236,12 @@ def get_supervision_objects_defs(id_):
                         'import': ['HT_BASE'],
                         'groups': [g, 'HG_PROVIDER'],
                         'address': '127.0.0.1'}}
+        # be sure to skip non supervised hosts
+        for h in [
+            h for h in defs['autoconfigured_hosts']
+            if h in non_supervised_hosts
+        ]:
+            defs['autoconfigured_hosts'].pop(h, None)
         rdata.update({'icinga2_definitions': defs})
     return rdata
 
