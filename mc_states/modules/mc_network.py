@@ -156,6 +156,8 @@ def get_dnss(dn, ip):
     '''Get server dnss
     '''
     defaults = ['127.0.0.1', '8.8.8.8', '4.4.4.4']
+    if 'sys-' in dn:
+        defaults.insert(1, '213.186.33.99')
     if 'ovh-' in dn:
         defaults.insert(1, '213.186.33.99')
     if 'online-' in dn:
@@ -362,9 +364,10 @@ def whois_data(ip, ttl=24*60*60, whois_ttl=60*60*24*30):
             cdata = wreg.setdefault(ip, {})
             cdata.setdefault('t', time.time())
             cdata.setdefault('data', data)
-            search_data = {'ovh': ['ovh'],
+            search_data = {'ovh': ['ovh', 'sys'],
                            'phpnet': ['phpnet'],
                            'online': ['proxad', 'iliad']}
+            search_data['sys'] = search_data['ovh']
             for provider, search_terms in search_data.items():
                 for i in search_terms:
                     for j in data.get('nets', []):
@@ -403,17 +406,12 @@ def is_ovh(ip):
 
 
 def providers():
-    return ['online', 'ovh', 'phpnet']
+    return ['online', 'ovh', 'phpnet', 'sys']
 
 
 def dump():
     return mc_states.utils.dump(__salt__,__name)
 
-
-def ext_ip():
-    '''
-    Return the external IP address reported by ipecho.net
-    '''
 
 def ext_ip():
     '''

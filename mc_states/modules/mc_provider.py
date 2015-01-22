@@ -33,6 +33,8 @@ def settings():
                 are we on an online host
             ovh
                 are we on an ovh host
+            sys
+                are we on an soyoustart host
 
         have_rpn
             online specific: do we have rpn
@@ -42,6 +44,7 @@ def settings():
     def _settings():
         grains = __grains__
         is_ovh = 'ovh' in __grains__['id']
+        is_sys = __grains__['id'].startswith('sys-')
         is_online = 'online-dc' in __grains__['id']
         have_rpn = None
         ifaces = grains['ip_interfaces'].items()
@@ -50,6 +53,7 @@ def settings():
                 'is': {
                     'online': is_online,
                     'ovh': is_ovh,
+                    'sys': is_sys,
                 },
                 'have_rpn': have_rpn,
             })
