@@ -1669,12 +1669,14 @@ handle_upgrades() {
 }
 
 service_() {
-    service="${1}"
+    s="${1}"
     shift
-    if [ -e "$(which service 2>/dev/null)" ];then
-        service "${service}" "${@}"
-    else
-        /etc/init.d/${service} "${@}"
+    if [ "x$(grep -q manual /etc/init/${s}.override 2>/dev/null)" != "x0" ];then
+        if [ -e "$(which service 2>/dev/null)" ];then
+            service "${s}" "${@}"
+        else
+            /etc/init.d/${s} "${@}"
+        fi
     fi
 }
 
@@ -3987,7 +3989,9 @@ ps_etime() {
 }
 
 start_missing_or_dead() {
-    if [ "x${IS_SALT_MASTER}" != "x" ] && [ "x$(master_processes)" = "x0" ];then
+    if [ "x$(get_local_salt_mode)" != "xmasterless" ]\
+        && [ "x${IS_SALT_MASTER}" != "x" ]\
+        && [ "x$(master_processes)" = "x0" ];then
         if [ "x${QUIET}" = "x" ];then
             bs_log "Zero master, restarting them all"
         fi
@@ -4001,14 +4005,16 @@ start_missing_or_dead() {
         killall_local_mastersalt_masters
         restart_local_mastersalt_masters
     fi
-    if [ "x${IS_SALT_MINION}" != "x" ] && [ "x$(minion_processes)" != "x1" ];then
+    if [ "x$(get_local_salt_mode)" != "xmasterless" ]\
+        && [ "x${IS_SALT_MINION}" != "x" ]\
+        && [ "x$(minion_processes)" != "x2" ];then
         if [ "x${QUIET}" = "x" ];then
             bs_log "More than one or zero minion, restarting them all"
         fi
         killall_local_minions
         restart_local_minions
     fi
-    if [ "x${IS_MASTERSALT_MINION}" != "x" ] && [ "x$(mastersalt_minion_processes)" != "x1" ];then
+    if [ "x${IS_MASTERSALT_MINION}" != "x" ] && [ "x$(mastersalt_minion_processes)" != "x2" ];then
         if [ "x${QUIET}" = "x" ];then
             bs_log "More than one or zero mastersalt minion, restarting them all"
         fi
@@ -4044,7 +4050,7 @@ check_alive() {
         seconds="$(echo "$psline"|awk '{print $2}')"
         pid="$(filter_host_pids $(echo $psline|awk '{print $1}'))"
         if [ "x${pid}" != "x" ] && [ "${seconds}" -gt "$((60*60*12))" ];then
-            bs_log "Something went wrong with last restart, killing old salt call process: $pid"
+            bs_log "Something went wrong with last restart(mastersalt), killing old salt call process: $pid"
             bs_log "$psline"
             killall_local_mastersalt_masters
             killall_local_mastersalt_minions
@@ -4055,7 +4061,7 @@ check_alive() {
         seconds="$(echo "$psline"|awk '{print $2}')"
         pid="$(filter_host_pids $(echo $psline|awk '{print $1}'))"
         if [ "x${pid}" != "x" ] && [ "${seconds}" -gt "$((60*60*12))" ];then
-            bs_log "Something went wrong with last restart, killing old salt call process: $pid"
+            bs_log "Something went wrong with last restart(salt), killing old salt call process: $pid"
             bs_log "$psline"
             killall_local_masters
             killall_local_minions

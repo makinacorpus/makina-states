@@ -99,8 +99,10 @@ def settings():
             #'online': 'http://mirror.ovh.net/ubuntu',
             'online': 'http://ftp.free.fr/mirrors/ftp.ubuntu.com/ubuntu',
         }
+        # so you start
+        mirrors['sys'] = mirrors['ovh']
         umirror = mirrors['ovh']
-        for provider in ['ovh', 'online']:
+        for provider in [a for a in mirrors]:
             for test in ['id', 'fqdn', 'domain', 'host', 'nodename']:
                 val = saltmods['mc_utils.get'](test, '')
                 if isinstance(val, basestring):

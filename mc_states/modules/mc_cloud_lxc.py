@@ -73,7 +73,7 @@ def vt_default_settings(cloudSettings, imgSettings):
     '''
     Default lxc container settings
 
-        default_container
+        from_container
             default image
         image
             LXC template to use
@@ -115,7 +115,7 @@ def vt_default_settings(cloudSettings, imgSettings):
             The settings are not stored here for obvious performance reasons
     '''
     _s = __salt__
-    default_container = [a for a in imgSettings['lxc']['images']][0]
+    from_container = [a for a in imgSettings['lxc']['images']][0]
     dptype = 'dir'
     backing = 'dir'
     if _s['mc_nodetypes.is_devhost']():
@@ -123,7 +123,7 @@ def vt_default_settings(cloudSettings, imgSettings):
     vmSettings = _s['mc_utils.dictupdate'](
         _s['mc_cloud_vm.vt_default_settings'](cloudSettings, imgSettings), {
             'vt': VT,
-            'defaults': {'default_container': default_container,
+            'defaults': {'from_container': from_container,
                          'profile': 'medium',
                          'profile_type': dptype,
                          #
@@ -166,6 +166,8 @@ def vm_extpillar(vm, data, *args, **kw):
     Get per LXC container specific settings
     '''
     backing = data.setdefault('backing', 'dir')
+    if data['from_container'] is not None:
+        del data['image']
     if ('overlayfs' in backing) or ('dir' in backing):
         for k in ['lvname', 'vgname', 'size']:
             if k in data:

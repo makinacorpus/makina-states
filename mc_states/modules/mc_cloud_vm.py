@@ -181,11 +181,11 @@ def vm_default_settings(vm, cloudSettings, imgSettings, extpillar=False):
         ip
             do not set it, or use at ure own risk, prefer just to read the
             value. This is the main ip (private network)
-        aditonnal_ips
+        additional_ips
             additionnal ips which will be wired on the main bridge (br0)
             which is connected to internet.
             Be aware that you may use manual virtual mac addresses
-            providen by you provider (online, ovh).
+            providen by you provider (online, ovh, sys).
             This is a list of mappings {ip: '', mac: '',netmask:''}
             eg::
 

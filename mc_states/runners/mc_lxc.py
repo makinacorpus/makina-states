@@ -27,6 +27,10 @@ from mc_states import api
 from mc_states import saltapi
 
 
+def _noop(*a, **kw):
+    return True
+
+
 def master_opts(*args, **kwargs):
     if not kwargs:
         kwargs = {}
@@ -60,8 +64,24 @@ def test_same_versions(origin, destination, force=False):
     return force or (dold_ver == old_ver)
 
 
-def sync_container(cmd_runner, ret, origin, destination, force=False):
-    _s = __salt__
+def get__salt__(__salt__from_exec=None):
+    try:
+        _s = __salt__
+    except NameError:
+        if __salt__from_exec is None:
+            raise
+        # from exec module (mock factorization hack)
+        _s = {'mc_api.time_log': _noop,
+              'mc_api.get_cloud_controller_settings': (
+                  __salt__from_exec['mc_cloud_controller.settings']),
+              'mc_api.get_image_settings': (
+                  __salt__from_exec['mc_cloud_images.settings'])}
+    return _s
+
+
+def sync_container(cmd_runner, ret, origin, destination,
+                   __salt__from_exec=None, force=False):
+    _s = get__salt__(__salt__from_exec)
     fname = 'mc_lxc.sync_container'
     _s['mc_api.time_log'](
         'end', fname, origin, destination, force=force)
@@ -89,10 +109,10 @@ def sync_container(cmd_runner, ret, origin, destination, force=False):
 
 
 def sync_image_reference_containers(imgSettings, ret, _cmd_runner=None,
-                                    force=False):
-    _s = __salt__
+                                    force=False, __salt__from_exec=None):
+    _s = get__salt__(__salt__from_exec)
     fname = 'mc_lxc.sync_image_reference_containers'
-    _s['mc_api.time_log']('end', fname, ret=ret)
+    _s['mc_api.time_log']('start', fname)
     if _cmd_runner is None:
         def _cmd_runner(cmd):
             return cli('cmd.run_all', cmd)
@@ -104,15 +124,21 @@ def sync_image_reference_containers(imgSettings, ret, _cmd_runner=None,
         sync_container(_cmd_runner, ret,
                        '/var/lib/lxc/{0}/rootfs'.format(bref),
                        '/var/lib/lxc/{0}/rootfs'.format(img),
+                       __salt__from_exec=__salt__from_exec,
                        force=force)
         sync_container(_cmd_runner, ret,
                        '/var/lib/lxc/{0}/rootfs'.format(bref),
                        '/var/lib/lxc/{0}.tmp/rootfs'.format(img),
+                       __salt__from_exec=__salt__from_exec,
                        force=force)
     _s['mc_api.time_log']('end', fname, ret=ret)
 
 
-def sync_images(only=None, force=False, output=True, force_output=False):
+def sync_images(only=None,
+                force=False,
+                output=True,
+                force_output=False,
+                __salt__from_exec=None):
     '''
     Sync the 'makina-states' image to all configured LXC hosts minions
     WARNING: it checks .ms_version inside the rootfs of the LXC
@@ -124,11 +150,11 @@ def sync_images(only=None, force=False, output=True, force_output=False):
 
             :images_root: master filesystem root to lxc containers
             :images: list of image to sync to lxc minions
-            :containers: all minion targets will be synced with that list of images
+            :containers: all minion targets will be synced
+                         with that list of images
     '''
-    _s = __salt__
     fname = 'mc_lxc.sync_images'
-    _s['mc_api.time_log']('start', fname, only, force=force)
+    _s = get__salt__(__salt__from_exec)
     if not only:
         only = []
     if isinstance(only, basestring):
