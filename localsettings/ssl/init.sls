@@ -6,6 +6,8 @@ include:
 {% set certs = [] %}
 {% for cert, content in data.certificates.items() %}
 {% do certs.append(cert+'.crt') %}
+{% do certs.append(cert+'.key') %}
+{% do certs.append(cert+'.only.crt') %}
 cpt-cert-{{cert}}-s:
   file.managed:
     - name: /etc/ssl/cloud/certs/{{cert}}.only.crt
@@ -19,8 +21,10 @@ cpt-cert-{{cert}}-s:
     - template: jinja
     - watch:
       - mc_proxy: cloud-sslcerts-pre
+      - mc_proxy: ssl-certs-pre-hook
     - watch_in:
       - mc_proxy: cloud-sslcerts 
+      - mc_proxy: ssl-certs-post-hook
 cpt-cert-{{cert}}-o:
   file.managed:
     - name: /etc/ssl/cloud/certs/{{cert}}.key
@@ -34,8 +38,10 @@ cpt-cert-{{cert}}-o:
     - template: jinja
     - watch:
       - mc_proxy: cloud-sslcerts-pre
+      - mc_proxy: ssl-certs-pre-hook
     - watch_in:
       - mc_proxy: cloud-sslcerts  
+      - mc_proxy: ssl-certs-post-hook
 cpt-cert-{{cert}}:
   file.managed:
     - name: /etc/ssl/cloud/certs/{{cert}}.crt
@@ -49,8 +55,10 @@ cpt-cert-{{cert}}:
     - template: jinja
     - watch:
       - mc_proxy: cloud-sslcerts-pre
+      - mc_proxy: ssl-certs-pre-hook
     - watch_in:
       - mc_proxy: cloud-sslcerts
+      - mc_proxy: ssl-certs-post-hook
 {% endfor %}
 {% set f='/tmp/cloudcerts.py' %}
 cpt-certs-cleanup:
@@ -77,5 +85,7 @@ cpt-certs-cleanup:
     - watch:
       - file: cpt-certs-cleanup
       - mc_proxy: cloud-sslcerts-pre
+      - mc_proxy: ssl-certs-pre-hook
     - watch_in:
       - mc_proxy: cloud-sslcerts 
+      - mc_proxy: ssl-certs-post-hook
