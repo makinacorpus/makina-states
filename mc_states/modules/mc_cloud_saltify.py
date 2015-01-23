@@ -113,68 +113,71 @@ def default_settings(cloudSettings):
     return data
 
 
-def target_ext_pillar(name, c_data=None):
-    '''Settings for bootstrapping a target using saltcloud saltify
+def target_extpillar(name, c_data=None, ttl=60):
+    '''
+    Settings for bootstrapping a target using saltcloud saltify
     driver (something accessible via ssh)
     mappings in the form:
 
-
     '''
-    _s = __salt__
-    if c_data is None:
-        c_data = OrderedDict()
-    sdata = default_settings(_s['mc_cloud.extpillar_settings']())
-    del sdata['targets']
-    branch = c_data.get('bootsalt_branch', sdata['bootsalt_branch'])
-    defaults = OrderedDict()
-    name = c_data.get('name', name)
-    defaults.update({'name': name,
-                     'id': name,
-                     'profile': 'ms-salt-minion',
-                     'ssh_host': c_data.get('ip', name)})
-    c_data = _s['mc_utils.dictupdate'](
-        _s['mc_utils.dictupdate'](sdata, c_data), defaults)
-    c_data = saltapi.complete_gateway(c_data, sdata)
-    if (
-        ('-b' not in c_data['script_args'])
-        and ('--branch' not in c_data['script_args'])
-    ):
-        defaults['script_args'] = (
-            c_data['script_args'] + ' -b {0}'.format(branch))
+    def _do(name, c_data):
+        _s = __salt__
+        if c_data is None:
+            c_data =  OrderedDict([
+                ('password', _s['mc_pillar.get_passwords'](
+                    name
+                )['clear']['root']),
+                ('ssh_username', 'root')])
+        sdata = default_settings(_s['mc_cloud.extpillar_settings']())
+        del sdata['targets']
+        branch = c_data.get('bootsalt_branch', sdata['bootsalt_branch'])
+        defaults = OrderedDict()
+        name = c_data.get('name', name)
+        defaults.update({'name': name,
+                         'id': name,
+                         'profile': 'ms-salt-minion',
+                         'ssh_host': c_data.get('ip', name)})
+        c_data = _s['mc_utils.dictupdate'](
+            _s['mc_utils.dictupdate'](sdata, c_data), defaults)
+        c_data = saltapi.complete_gateway(c_data, sdata)
+        if (
+            ('-b' not in c_data['script_args'])
+            and ('--branch' not in c_data['script_args'])
+        ):
+            defaults['script_args'] = (
+                c_data['script_args'] + ' -b {0}'.format(branch))
 
-    if (
-        not c_data['ssh_keyfile']
-        and not c_data['password']
-        and sdata['ssh_gateway_key']
-    ):
-        c_data['ssh_keyfile'] = sdata['ssh_gateway_key']
-    if c_data['ssh_keyfile'] and c_data['password']:
-        raise ValueError('Not possible to have sshkey + password '
-                         'for \n{0}'.format(pformat(c_data)))
-    if not c_data['ssh_keyfile'] and not c_data['password']:
-        raise ValueError('We should either have one of sshkey + '
-                         'password for \n{0}'.format(pformat(c_data)))
-    sudo_password = c_data['sudo_password']
-    if not sudo_password:
-        sudo_password = c_data['password']
-    if c_data['no_sudo_password']:
-        sudo_password = None
-    c_data['sudo_password'] = sudo_password
-    v = 'saltify'
-    c_data = _s['mc_utils.dictupdate'](
-        c_data, _s['mc_pillar.get_global_clouf_conf'](v))
-    c_data = _s['mc_utils.dictupdate'](
-        c_data, _s['mc_pillar.get_cloud_conf_for_cn'](name).get(v, {}))
-    return c_data
+        if (
+            not c_data['ssh_keyfile']
+            and not c_data['password']
+            and sdata['ssh_gateway_key']
+        ):
+            c_data['ssh_keyfile'] = sdata['ssh_gateway_key']
+        if c_data['ssh_keyfile'] and c_data['password']:
+            raise ValueError('Not possible to have sshkey + password '
+                             'for \n{0}'.format(pformat(c_data)))
+        if not c_data['ssh_keyfile'] and not c_data['password']:
+            raise ValueError('We should either have one of sshkey + '
+                             'password for \n{0}'.format(pformat(c_data)))
+        sudo_password = c_data['sudo_password']
+        if not sudo_password:
+            sudo_password = c_data['password']
+        if c_data['no_sudo_password']:
+            sudo_password = None
+        c_data['sudo_password'] = sudo_password
+        v = 'saltify'
+        c_data = _s['mc_utils.dictupdate'](
+            c_data, _s['mc_pillar.get_global_clouf_conf'](v))
+        c_data = _s['mc_utils.dictupdate'](
+            c_data, _s['mc_pillar.get_cloud_conf_for_cn'](name).get(v, {}))
+        return c_data
+    cache_key = '{0}.{1}'.format(PREFIX, name)
+    return memoize_cache(_do, [name, c_data], {}, cache_key, ttl)
 
 
 def _add_host(_s, done_hosts, rdata, host):
     done_hosts.append(host)
-    rdata[host] = target_ext_pillar(host, {
-        'password': _s['mc_pillar.get_passwords'](
-            host
-        )['clear']['root'],
-        'ssh_username': 'root'})
+    rdata[host] = target_extpillar(host)
 
 
 def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
@@ -198,10 +201,7 @@ def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
                     continue
                 _add_host(_s, done_hosts, rdata, host)
         for host, data in ivars['standalone_hosts'].items():
-            if any([
-                (host in done_hosts),
-                (host in nmh)
-            ]):
+            if any([(host in done_hosts), (host in nmh)]):
                 continue
             _add_host(_s, done_hosts, rdata, host)
             for k, val in data.items():
@@ -212,7 +212,7 @@ def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
         if prefixed:
             data = {PREFIX: data}
         return data
-    cache_key = 'mc_cloud_saltify.ext_pillar{0}{1}'.format(id_, prefixed)
+    cache_key = '{0}.ext_pillar{1}{2}'.format(PREFIX, id_, prefixed)
     return memoize_cache(_do, [id_, prefixed], {}, cache_key, ttl)
 
 
@@ -229,7 +229,15 @@ def settings(ttl=30):
         settings = _s['mc_utils.defaults'](PREFIX,
                                            default_settings(cloudSettings))
         return settings
-    cache_key = '{0}.{1}'.format(__name, 'settings')
+    cache_key = '{0}.{1}'.format(PREFIX, 'settings')
     return memoize_cache(_do, [], {}, cache_key, ttl)
 
+
+def target_settings(id_=None, ttl=30):
+    def _do(id_):
+        if id_ is None:
+            id_ = __grains__['id']
+        return settings()['targets'].get(id_, {})
+    cache_key = '{0}.{1}.{2}'.format(PREFIX, 'target_settings', id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
 # vim:set et sts=4 ts=4 tw=80:

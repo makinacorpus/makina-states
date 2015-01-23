@@ -48,13 +48,16 @@ def cli(*args, **kwargs):
 
 
 def saltify(name, output=True, ret=None):
-    '''Saltify a specific target'''
+    '''
+    Saltify a specific target
+    '''
     func_name = 'mc_compute_saltify.saltify'
-    __salt__['mc_api.time_log']('start', func_name, name)
+    _s = __salt__
+    _s['mc_api.time_log']('start', func_name, name)
     if not ret:
         ret = result()
     try:
-        already_exists = __salt__['mc_cloud_controller.exists'](name)
+        already_exists = _s['mc_cloud_controller.exists'](name)
         data = None
         thisid = cli('grains.items')['id']
         already_exists = False
@@ -62,12 +65,12 @@ def saltify(name, output=True, ret=None):
             success = green('{0} is already saltified'.format(name))
         else:
             try:
-                data = cli('mc_cloud_saltify.settings_for_target', name)
+                data = _s['mc_api.get_cloud_saltify_settings_for_target'](name)
                 if not isinstance(data, dict):
                     raise SaltyficationError(red('{0}'.format(data)))
             except KeyError:
                 data = None
-            if data is None:
+            if data is None or not data:
                 raise SaltyficationError(
                     red('Saltify target {0} is not configured'.format(name)))
 
@@ -89,7 +92,6 @@ def saltify(name, output=True, ret=None):
                                 if " -m " not in data[var]:
                                     data[var] += " -m {0}".format(name)
                         kwargs[var] = data[var]
-
                 try:
                     ping = cli('test.ping', salt_target=name)
                     success = green('{0} is already saltified')
@@ -98,10 +100,8 @@ def saltify(name, output=True, ret=None):
                     ping = False
                 if not ping:
                     try:
-                        info = __salt__['cloud.profile'](
-                            data['profile'],
-                            [name],
-                            vm_overrides=kwargs)
+                        info = _s['cloud.profile'](
+                            data['profile'], [name], vm_overrides=kwargs)
                     except Exception, exc:
                         trace = traceback.format_exc()
                         ret['trace'] = trace
@@ -114,24 +114,25 @@ def saltify(name, output=True, ret=None):
                 ret['changes'] = {}
             check_point(ret, __opts__)
         # once saltified, also be sure that this host had
-        #a time to accomplish it's setup through a full initial
+        # a time to accomplish it's setup through a full initial
         # highstate
         if not cli('mc_cloud_compute_node.get_conf_for_target',
                    name, 'saltified'):
-            if data is  None:
-                data = cli('mc_cloud_saltify.settings_for_target', name)
-            csettings = cli('mc_cloud.settings')
+            if data is None:
+                data = _s['mc_api.get_cloud_saltify_settings_for_target'](name)
+            csettings = _s['mc_api.get_cloud_settings']()
             proxycmd = ''
             if data.get('ssh_gateway', None):
-                args = '-oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null'
+                args = ('-oStrictHostKeyChecking=no'
+                        ' -oUserKnownHostsFile=/dev/null')
                 args += '-oControlPath=none'
                 if 'ssh_key' in data:
                     args += ' -i {0}'.format(data['ssh_key'])
                 if 'ssh_port' in data:
                     args += ' -p {0}'.format(data['ssh_port'])
-                proxycmd = '-o\"ProxyCommand=ssh {1} {2} nc -w300 {1} 22\"'.format(
-                    data['ssh_gateway'], name, args
-                )
+                proxycmd = (
+                    '-o\"ProxyCommand=ssh {1} {2} nc -w300 {1} 22\"').format(
+                        data['ssh_gateway'], name, args)
             cmd = (
                 'ssh {2} {0} {1}/makina-states/_scripts/boot-salt.sh '
                 '--initial-highstate'
@@ -150,9 +151,9 @@ def saltify(name, output=True, ret=None):
                 name, 'saltified', True)
     except FailedStepError:
         ret['result'] = False
-        __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end', func_name, ret=ret)
+        _s['mc_api.out'](ret, __opts__, output=output)
+    _s['mc_api.out'](ret, __opts__, output=output)
+    _s['mc_api.time_log']('end', func_name, ret=ret)
     return ret
 
 
@@ -186,8 +187,9 @@ def orchestrate(only=None, skip=None, ret=None, output=True, refresh=False):
         refresh
             refresh pillar
     '''
+    _s = __salt__
     func_name = 'mc_compute_saltify.orchestrate'
-    __salt__['mc_api.time_log']('start', func_name, skip=skip, only=only)
+    _s['mc_api.time_log']('start', func_name, skip=skip, only=only)
     if skip is None:
         skip = []
     if only is None:
@@ -197,7 +199,7 @@ def orchestrate(only=None, skip=None, ret=None, output=True, refresh=False):
     if refresh:
         cli('saltutil.refresh_pillar')
     comment = ''
-    settings = cli('mc_cloud_saltify.settings')
+    settings = _s['mc_api.get_cloud_saltify_settings']()
     saltified = ret['changes'].setdefault('saltified', [])
     saltified_error = ret['changes'].setdefault('saltified_errors', [])
     targets = [a for a in settings['targets']]
@@ -228,7 +230,7 @@ def orchestrate(only=None, skip=None, ret=None, output=True, refresh=False):
     if not comment:
         comment = green('All targets were successfuly saltified.')
     ret['comment'] += '\n{0}'.format(comment)
-    __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end', func_name, ret=ret)
+    _s['mc_api.out'](ret, __opts__, output=output)
+    _s['mc_api.time_log']('end', func_name, ret=ret)
     return ret
 #

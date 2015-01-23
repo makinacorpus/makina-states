@@ -132,6 +132,7 @@ def vt_default_settings(cloudSettings, imgSettings, ttl=60):
                 'additional_ips': [],
                 'name': _g['id'],
                 'domains': [_g['id']],
+                'ssl_certs': OrderedDict(),
                 #
                 'ssh_gateway': cloudSettings['ssh_gateway'],
                 'ssh_username': 'ubuntu',
@@ -429,6 +430,9 @@ def vm_settings(id_=None, ttl=60):
             imgSettings = _s['mc_cloud_images.settings']()
             data = _s['mc_utils.dictupdate'](
                 data, _s[fun](cloudSettings, imgSettings))
+        for i in data['ssl_certs']:
+            data.setdefault('makina-states.localsettings.ssl'
+                            'certificates.{0}'.format(i[0]), i[2], i[3])
         return data
     cache_key = '{0}.{1}{2}'.format(__name, 'vts_settings', id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
