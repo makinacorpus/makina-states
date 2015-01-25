@@ -210,7 +210,7 @@ def get_cloud_saltify_settings(ttl=60):
                        __opts__['id'], prefixed=False)
         __salt__['mc_api.time_log']('end', fname, settings=settings)
         return settings
-    cache_key = 'rmc_api.get_cloud_images_settings'
+    cache_key = 'rmc_api.get_cloud_saltify_settings'
     return memoize_cache(_do, [], {}, cache_key, ttl)
 
 
@@ -221,7 +221,7 @@ def get_cloud_saltify_settings_for_target(id_, ttl=60):
         settings = cli('mc_cloud_saltify.target_extpillar', id_)
         __salt__['mc_api.time_log']('end', fname, settings=settings)
         return settings
-    cache_key = 'rmc_api.get_cloud_images_settings{0}'.format(id_)
+    cache_key = 'rmc_api.get_cloud_saltify_settings{0}'.format(id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 
