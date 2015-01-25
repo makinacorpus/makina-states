@@ -969,6 +969,12 @@ def settings():
                 chain = ssl_chain(cert, cdata[0])
                 key = ssl_key(cdata[1])
                 data['certificates'][cert] = chain[0], key, chain[1]
+        for cert in [a for a in data['certificates']]:
+            cdata = data['certificates'][cert]
+            try:
+                cdata[2]
+            except Exception:
+                raise Exception('Invalid auth chain for {0}'.format(cert))
         return data
     return _settings()
 # vim:set et sts=4 ts=4 tw=80:
