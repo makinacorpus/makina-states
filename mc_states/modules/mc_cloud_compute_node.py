@@ -521,29 +521,6 @@ def domains_for(target, domains=None):
     return domains
 
 
-def ssl_certs_for(target, domains=None, ssl_certs=None):
-    _s = __salt__
-    if ssl_certs is None:
-        ssl_certs = []
-    domains = domains_for(target)
-    for cert, key in _s['mc_ssl.ssl_certs'](domains):
-        certname = cert
-        if certname.endswith('.crt'):
-            certname = os.path.basename(certname)[:-4]
-        if certname.endswith('.bundle'):
-            certname = os.path.basename(certname)[:-7]
-        fullcert = ''
-        data = {cert: None, key: None}
-        for f in [cert, key]:
-            with open(f) as fic:
-                content = fic.read() 
-                fullcert += content
-                data[f] = content
-        if fullcert not in [a[1] for a in ssl_certs]:
-            ssl_certs.append((certname, fullcert, data[cert], data[key]))
-    return ssl_certs
-
-
 def gen_mac():
     return ':'.join(map(lambda x: "%02x" % x, [0x00, 0x16, 0x3E,
                                                random.randint(0x00, 0x7F),
@@ -619,7 +596,6 @@ def default_has(vts=None, **kwargs):
     for vt in VIRT_TYPES:
         vts.setdefault(vt, bool(kwargs.get(vt, False)))
     return vts
-
 
 
 def _add_server_to_backends(reversep, frontend, backend_name, domain, ip):
@@ -700,9 +676,7 @@ def default_http_proxy(target,
         if not port:
             port = 443
         if ssl_certs:
-            wildcard = ''
-            if target.count('.') >= 2:
-                wildcard = '*.' + '.'.join(target.split('.')[1:])
+            wildcard = __salt__['mc_ssl.get_wildcard'](target)
             # We must serve the compute node SSL certificate as the default one
             # search a wildcard
             if wildcard and wildcard in [a[0] for a in ssl_certs]:
@@ -835,12 +809,10 @@ def extpillar_settings(id_=None, ttl=30):
         for _vm, _vm_data in get_vms_for_target(id_).items():
             data['vms'][_vm] = _s['mc_cloud_vm.vm_extpillar_settings'](_vm)
         # can only be done after some infos is loaded
-        for k in ['domains', 'ssl_certs']:
-            fun = 'mc_cloud_compute_node.{0}_for'.format(k)
-            data[k] = _s[fun](id_, data[k])
-        for i in data['ssl_certs']:
-            data.setdefault('makina-states.localsettings.ssl'
-                            'certificates.{0}'.format(i[0]), i[2], i[3])
+        domains = domains_for(id_, data['domains'])
+        data['ssl_certs'] = _s['mc_cloud.ssl_certs_for'](
+            id_, domains, data['ssl_certs'])
+        _s['mc_cloud.add_ms_ssl_certs'](data)
         return data
     cache_key = 'mc_cloud_cn.extpillar_settings{0}'.format(id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
