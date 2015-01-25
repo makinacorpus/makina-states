@@ -16,7 +16,7 @@ include:
 {% do sbcerts.append(cert+'.bundle.crt') %}
 {% do sfcerts.append(cert+'.full.crt') %}
 {% for flav in ['bundle', 'key', 'full', 'only'] %}
-{% set ext = flav.endswith('key') and '.key' or '.crt'%} 
+{% set ext = flav.endswith('key') and '.key' or '.crt'%}
 {% if ext == '.crt' and flav not in ['only'] %}
 {% set pref = '.' + flav %}
 {% else %}
@@ -38,7 +38,7 @@ cpt-cert-{{cert}}-{{flav}}:
       - mc_proxy: ssl-certs-pre-hook
     - watch_in:
       - cmd: cpt-certs-cleanup
-      - mc_proxy: cloud-sslcerts 
+      - mc_proxy: cloud-sslcerts
       - mc_proxy: ssl-certs-post-hook
 {% endfor%}
 cpt-cert-{{cert}}-haproxy-dir:
@@ -60,6 +60,7 @@ cpt-cert-{{cert}}-haproxy-dir:
       - mc_proxy: cloud-sslcerts
       - mc_proxy: ssl-certs-post-hook
 {% endfor %}
+{% if salt['mc_controllers.mastersalt_mode']() %}
 {% set f='/tmp/cloudcerts.py' %}
 cpt-certs-cleanup:
   file.managed:
@@ -92,5 +93,6 @@ cpt-certs-cleanup:
       - mc_proxy: cloud-sslcerts-pre
       - mc_proxy: ssl-certs-pre-hook
     - watch_in:
-      - mc_proxy: cloud-sslcerts 
+      - mc_proxy: cloud-sslcerts
       - mc_proxy: ssl-certs-post-hook
+{% endif %}
