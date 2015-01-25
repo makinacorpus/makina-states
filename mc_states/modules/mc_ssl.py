@@ -43,6 +43,14 @@ class CertificateNotFoundError(Exception):
     pass
 
 
+class CertificateFileNotFoundError(CertificateNotFoundError):
+    pass
+
+
+class CertificateKeyFileNotFoundError(CertificateFileNotFoundError):
+    pass
+
+
 class CertificateCreationError(Exception):
     pass
 
@@ -57,7 +65,6 @@ class MissingCertError(CertificateCreationError):
 
 def get_cloud_settings():
     return __salt__['mc_cloud.get_cloud_settings']()
-
 
 
 def get_wildcard(domain):
@@ -310,7 +317,7 @@ def ssl_chain(common_name, cert_string):
         if cert_cn is None:
             cert_cn = [a for a in composants if a not in cns][0]
         if cert_cn:
-            cert = composants[cn]['cert']
+            cert = composants[cert_cn]['cert']
     # else, we got a selfsigned certificate
     else:
         cert = cert_string
@@ -367,8 +374,29 @@ def get_cacert(as_text=False):
 
 
 def get_custom_cert_for(domain):
+    '''
+    Seach for certificate and key file inside pillar folder
+
+    pillarroot/cloud-controller/ssl/custom:
+
+        <domain>.key
+            contain private ,key
+        <domain>.crt
+            contain cert
+        <domain>.auth.crt
+            contain auth chain
+        <domain>.bundle.crt
+            <generated if not present>
+            contain cert + auth chain
+        <domain>.full.crt
+            <generated if not present>
+            contain cert + auth chain + key
+    '''
+
     cloudSettings = get_cloud_settings()
     ssl_gen_d = cloudSettings['ssl_pillar_dir']
+    fcertp = os.path.join(
+        ssl_gen_d, 'custom', '{0}.full.crt'.format(domain))
     acertp = os.path.join(
         ssl_gen_d, 'custom', '{0}.auth.crt'.format(domain))
     certp = os.path.join(
@@ -379,6 +407,8 @@ def get_custom_cert_for(domain):
         ssl_gen_d, 'custom', '{0}.key'.format(domain))
     wdomain = get_wildcard(domain)
     if wdomain:
+        wfcertp = os.path.join(
+            ssl_gen_d, 'custom', '{0}.full.crt'.format(wdomain))
         wacertp = os.path.join(
             ssl_gen_d, 'custom', '{0}.auth.crt'.format(wdomain))
         wcertp = os.path.join(
@@ -391,12 +421,46 @@ def get_custom_cert_for(domain):
             wcertp = wbcertp
         # only use wild card if we have not a more precise certificate
         if not os.path.exists(certp) and not os.path.exists(bcertp):
+            fcertp = wfcertp
             acertp = wacertp
             bcertp = wbcertp
             certp = wcertp
             certk = wcertk
+    if not os.path.exists(bcertp):
+        content = ''
+        for fil in [certp, acertp]:
+            if not os.path.exists(fil):
+                raise CertificateFileNotFoundError(
+                    'Cert info is not valid for {0} ({1})'.format(domain, fil))
+            with open(fil) as fic:
+                content += fic.read()
+            if not content.endswith('\n'):
+                content += '\n'
+        if content.strip():
+            with open(bcertp, 'w') as fic:
+                fic.write(content)
+        else:
+            raise CertificateFileNotFoundError('Cert info is not valid for {0}'.format(domain))
+    if not os.path.exists(fcertp):
+        content = ''
+        for fil in [bcertp, certk]:
+            if not os.path.exists(fil):
+                raise CertificateKeyFileNotFoundError(
+                    'Cert info is not valid for {0} ({1})'.format(domain, fil))
+            with open(fil) as fic:
+                content += fic.read()
+            if not content.endswith('\n'):
+                content += '\n'
+        if content.strip():
+            with open(fcertp, 'w') as wfic:
+                wfic.write(content)
+        else:
+            raise CertificateKeyFileNotFoundError('Cert info is not valid for {0}'.format(domain))
     if os.path.exists(bcertp):
         certp = bcertp
+    for item in [certk, fcertp]:
+        if os.path.exists(item):
+            os.chmod(item, 0770)
     for i in [certp, certk]:
         if not os.path.exists(i):
             raise CertificateNotFoundError(
@@ -412,15 +476,23 @@ def get_cert_for(domain, gen=False, domain_csr_data=None):
 
     Search order precedence:
 
-      - ./custom/<domain>.<tld>
-      - wildcard certificate: ./custom/*.<tld>
-      - signed by the controller: ./<cloudcotroller>/certs/<domain>.<tld>
+      - ./custom/<subdomain>.<domain>.<tld>
+      - wildcard certificate: ./custom/*.<domain>.<tld>
+      - signed by the controller: ./<cloudcontroller>/certs/*.<domain>.<tld>
+      - signed by the controller: ./<cloudcontroller>/certs/<sub>.<domain>.<tld>
 
     '''
     try:
         return get_custom_cert_for(domain)
     except CertificateNotFoundError:
         pass
+    if not domain.startswith('*.'):
+        wdomain = get_wildcard(domain)
+        if wdomain:
+            try:
+                return get_cert_for(wdomain)
+            except CertificateNotFoundError:
+                pass
     ensure_ca_present()
     if domain_csr_data is None:
         domain_csr_data = {}
@@ -485,15 +557,23 @@ def get_selfsigned_cert_for(domain, gen=False, domain_csr_data=None):
 
     Search precedence:
 
-      - ./custom/<domain>.<tld>
-      - wildcard certificate: ./custom/*.<tld>
-      - selfsigned: ./selfsigned/certs/<domain>.<tld>
+      - ./custom/<subdomain>.<domain>.<tld>
+      - wildcard certificate: ./custom/*.<domain>.<tld>
+      - selfsigned: ./selfsigned/certs/*.<domain>.<tld>
+      - selfsigned: ./selfsigned/certs/<subdomain>.<domain>.<tld>
 
     '''
     try:
         return get_custom_cert_for(domain)
     except CertificateNotFoundError:
         pass
+    if not domain.startswith('*.'):
+        wdomain = get_wildcard(domain)
+        if wdomain:
+            try:
+                return get_selfsigned_cert_for(wdomain)
+            except CertificateNotFoundError:
+                pass
     ensure_ca_present()
     if domain_csr_data is None:
         domain_csr_data = {}
@@ -529,14 +609,13 @@ def load_certs(path):
     '''
     exacts = {}
     alts = {}
-    certs_dir = get_certs_dir()
-    if certs_dir and not os.path.exists(certs_dir):
-        os.makedirs(certs_dir)
+    if path and not os.path.exists(path):
+        os.makedirs(path)
     for cert in os.listdir(path):
         if not cert.endswith('.crt'):
             continue
-        certp = os.path.join(certs_dir, cert)
-        certk = os.path.join(certs_dir, "{0}.key".format(cert[:-4]))
+        certp = os.path.join(path, cert)
+        certk = os.path.join(path, "{0}.key".format(cert[:-4]))
         certo = OpenSSL.crypto.load_certificate(
             OpenSSL.crypto.FILETYPE_PEM, open(certp).read())
         for i in ("{0}".format(certo.get_subject())).split('/'):
@@ -598,10 +677,7 @@ def load_selfsigned_certs(path):
 
 
 def get_selfsigned_certs_dir():
-    cloudSettings = get_cloud_settings()
-    ssl_gen_d = cloudSettings['ssl_pillar_dir']
-    certs_dir = os.path.join(ssl_gen_d, 'selfsigned')
-    return certs_dir
+    return os.path.join(get_cloud_settings()['ssl_pillar_dir'], 'selfsigned')
 
 
 def get_certs_dir():
@@ -612,37 +688,67 @@ def get_certs_dir():
     return certs_dir
 
 
-def search_matching_certificate(domain, as_text=False):
-    '''Search in the pillar certificate directory the
-    certificate belonging to a particular domain'''
+def get_custom_certs_dir():
+    return os.path.join(get_cloud_settings()['ssl_pillar_dir'], 'custom')
+
+
+def search_matching_certificate(domain, as_text=False, selfsigned=True):
+    '''
+    Search in the pillar certificate directory the
+    certificate belonging to a particular domain
+    '''
     if not HAS_SSL:
         raise Exception('Missing pyopenssl')
-    certs_dir = get_certs_dir()
     certp, certk = None, None
-    # try to get a exact-matchinf filename<->domain
+    # try to get a exact-matching filename<->domain
+    try:
+        certp, certk = get_custom_cert_for(domain)
+    except CertificateNotFoundError:
+        pass
+    # try to get a selfsigned cert
+    try:
+        certp, certk = get_selfsigned_cert_for(domain)
+    except CertificateNotFoundError:
+        pass
+    # try to get a exact-matching filename<->domain
+    # signed by the local CA
     try:
         certp, certk = get_cert_for(domain)
     except CertificateNotFoundError:
         pass
     # parse certificates to see if we can find an exactly but misnamed cert
+    exacts, alts = [], []
     if not certp:
-        exacts, alts = load_certs(certs_dir)
-        for cert_domain in exacts:
-            if domain_match(domain, cert_domain):
-                data = exacts[cert_domain]
-                certp, certk = data['cert'], data['key']
-                break
-    # parse certificates to see if we can find a certificate
-    # with a subjectAltName extension matching our domain
-    if not certp:
-        for cert_domain in alts:
-            if domain_match(domain, cert_domain):
-                data = alts[cert_domain]
-                certp, certk = data['cert'], data['key']
+        for certs_dir in [
+            get_custom_certs_dir(),
+            get_selfsigned_certs_dir(),
+            get_certs_dir(),
+        ]:
+            _exacts, _alts = load_certs(certs_dir)
+            exacts.extend(_exacts)
+            alts.extend(_alts)
+            if not certp:
+                for cert_domain in exacts:
+                    if domain_match(domain, cert_domain):
+                        data = exacts[cert_domain]
+                        certp, certk = data['cert'], data['key']
+                        break
+            # parse certificates to see if we can find a certificate
+            # with a subjectAltName extension matching our domain
+            if not certp:
+                for cert_domain in alts:
+                    if domain_match(domain, cert_domain):
+                        data = alts[cert_domain]
+                        certp, certk = data['cert'], data['key']
+                        break
+            if certp:
                 break
     # last resort, try to generate a certificate throught our CA
     if not certp:
-        certp, certk = get_cert_for(domain, gen=True)
+        fun = get_cert_for
+        if selfsigned:
+            fun = get_selfsigned_cert_for
+        certp, certk = fun(domain, gen=True)
     if (not certp) or (certp and not os.path.exists(certp)):
         raise MissingCertError(
             '{1}: Missing cert: {0}'.format(certp, domain))
@@ -666,7 +772,7 @@ def search_matching_selfsigned_certificate(domain, as_text=False):
         raise Exception('Missing pyopenssl')
     certs_dir = get_selfsigned_certs_dir()
     certp, certk = None, None
-    # try to get a exact-matchinf filename<->domain
+    # try to get a exact-matching filename<->domain
     try:
         certp, certk = get_selfsigned_cert_for(domain)
     except CertificateNotFoundError:
@@ -863,6 +969,12 @@ def settings():
                 chain = ssl_chain(cert, cdata[0])
                 key = ssl_key(cdata[1])
                 data['certificates'][cert] = chain[0], key, chain[1]
+        for cert in [a for a in data['certificates']]:
+            cdata = data['certificates'][cert]
+            try:
+                cdata[2]
+            except Exception:
+                raise Exception('Invalid auth chain for {0}'.format(cert))
         return data
     return _settings()
 # vim:set et sts=4 ts=4 tw=80:

@@ -1971,7 +1971,7 @@ def get_supervision_conf_kind(id_, kind, ttl=60):
                     domain = rdata.get('nginx', {}).get('domain', id_)
                     cert, key = __salt__[
                         'mc_ssl.selfsigned_ssl_certs'](domain, True)[0]
-                    # unlonwn ca signed certs do not work in nginx
+                    # unknown ca signed certs do not work in nginx
                     # cert, key = __salt__['mc_ssl.ssl_certs'](domain, True)[0]
                     # nginx['ssl_cacert'] = __salt__['mc_ssl.get_cacert'](True)
                     nginx['ssl_key'] = key
@@ -2904,34 +2904,6 @@ def get_burp_server_conf(id_):
     return rdata
 
 
-def get_ssl_conf(id_, ttl=60):
-    def _do(id_):
-        p = 'makina-states.localsettings.ssl.'
-        rdata = OrderedDict()
-        cloud_vm_attrs = __salt__['mc_pillar.query']('cloud_vm_attrs')
-        #
-        # tie extra domains of vms to a A record: part2
-        # try to resolve leftover ips
-        todo = OrderedDict([(id_, id_)])
-        _data = cloud_vm_attrs.get(id_, OrderedDict())
-        domains = _data.get('domains', [])
-        for domain in domains:
-            todo[domain] = domain
-        # load also a selfsigned wildcard
-        # certificate for all of those domains
-        for d in todo.values():
-            if d.count('.') >= 2 and not d.startswith('*.'):
-                wd = '*.' + '.'.join(d.split('.')[1:])
-                todo[wd] = wd
-        for did, domain in todo.items():
-            lcert, lkey = __salt__[
-                'mc_ssl.selfsigned_ssl_certs'](domain, as_text=True)[0]
-            rdata[p + 'certificates.' + did] = (lcert, lkey)
-        return rdata
-    cache_key = 'mc_pillar.get_ssl_conf{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
-
-
 def get_dhcpd_conf(id_, ttl=60):
     def _do(id_):
         try:
@@ -3205,6 +3177,70 @@ def get_cloud_conf_for_vm(id_, default=None):
     if not default:
         default = {}
     return get_cloud_conf_by_vms().get(id_, default)
+
+
+def get_domains_for(id_, ttl=60):
+    def _do(id_):
+        _s = __salt__
+        gconf = get_configuration(id_)
+        domains = [a for a in gconf.get('domains', [])]
+        try:
+            cn_attrs = _s['mc_pillar.query']('cloud_cn_attrs')
+        except KeyError:
+            cn_attrs = {}
+        try:
+            vm_attrs = _s['mc_pillar.query']('cloud_vm_attrs')
+        except KeyError:
+            vm_attrs = {}
+        cloud = get_cloud_conf()
+        vms = []
+        if id_ in cloud['vms'].keys():
+            vms.append(id_)
+        if id_ in cloud['cns'].keys():
+            domains += [a for a in cn_attrs.get(id_, {}).get('domains', [])]
+            for vm in cloud['cns'][id_]['vms']:
+                vms.append(vm)
+        for vm in vms:
+            domains += [a for a in vm_attrs.get(vm, {}).get('domains', [])]
+        # tie extra domains of vms to a A record: part2
+        # try to resolve leftover ips
+        todo = OrderedDict([(id_, id_)])
+        for domain in domains:
+            todo[domain] = domain
+        return todo
+    cache_key = 'mc_pillar.get_domains_for{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+
+
+def add_ssl_cert(common_name, cert_content, cert_key, data=None):
+    if not isinstance(data, dict):
+        data = {}
+    p = 'makina-states.localsettings.ssl.'
+    data[p + 'certificates.' + common_name] = cert_content, cert_key
+    return data
+
+
+def get_ssl_conf(id_, ttl=60):
+    def _do(id_):
+        _s = __salt__
+        p = 'makina-states.localsettings.ssl.'
+        rdata = OrderedDict()
+        todo = get_domains_for(id_)
+        # load also a selfsigned wildcard
+        # certificate for all of those domains
+        for d in todo.values():
+            if d.count('.') >= 2 and not d.startswith('*.'):
+                wd = '*.' + '.'.join(d.split('.')[1:])
+                todo[wd] = wd
+        for did, domain in todo.items():
+            lcert, lkey = _s[
+                'mc_ssl.selfsigned_ssl_certs'](domain, as_text=True)[0]
+            cert = _s['mc_ssl.load_cert'](
+                _s['mc_ssl.ssl_chain'](domain, lcert)[0])
+            add_ssl_cert(cert.get_subject().CN, lcert, lkey, rdata)
+        return rdata
+    cache_key = 'mc_pillar.get_ssl_conf{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 
 def test():

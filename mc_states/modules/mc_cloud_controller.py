@@ -43,47 +43,6 @@ def gen_id(name):
     return name.replace('.', '-')
 
 
-def ensure_ca_present():
-    '''Retrocompat'''
-    return __salt__['mc_ssl.ensure_ca_present']()
-
-
-def get_cert_for(domain, gen=False, domain_csr_data=None):
-    '''Retrocompat'''
-    return __salt__['mc_ssl.get_cert_for'](
-        domain, gen, domain_csr_data)
-
-
-def is_certificate_matching_domain(cert_path, domain):
-    '''Retrocompat'''
-    return __salt__['mc_ssl.is_certificate_matching_domain'](domain)
-
-
-def domain_match(domain, cert_domain):
-    '''Retrocompat'''
-    return __salt__['mc_ssl.domain'](domain, cert_domain)
-
-
-def load_certs(path):
-    '''Retrocompat'''
-    return __salt__['mc_ssl.domain_match'](path)
-
-
-def get_certs_dir():
-    '''Retrocompat'''
-    return __salt__['mc_ssl.get_certs_dir']()
-
-
-def search_matching_certificate(domain):
-    '''Retrocompat'''
-    return __salt__['mc_ssl.search_matching_certificate'](domain)
-
-
-def ssl_certs(domains):
-    '''Retrocompat'''
-    return __salt__['mc_ssl.ssl_certs'](domains)
-
-
 def default_settings():
     _s = __salt__
     data = {'controller': _s['mc_pillar.mastersalt_minion_id'](),

@@ -225,6 +225,47 @@ def is_a_cloud_member(id_=None):
                 is_a_controller(id_)])
 
 
+def ssl_certs_for(main_domain, domains=None, ssl_certs=None):
+    _s = __salt__
+    if ssl_certs is None:
+        ssl_certs = []
+    if not isinstance(domains, list):
+        domains = []
+    domains = [a for a in domains]
+    if main_domain not in domains:
+        domains.insert(0, main_domain)
+    domains = _s['mc_utils.uniquify'](domains)
+    for cert, key in _s['mc_ssl.ssl_certs'](domains):
+        certname = cert
+        if certname.endswith('.crt'):
+            certname = os.path.basename(certname)[:-4]
+        if certname.endswith('.bundle'):
+            certname = os.path.basename(certname)[:-7]
+        data = {'full': '', cert: None, key: None}
+        for f in [cert, key]:
+            with open(f) as fic:
+                content = fic.read()
+                data['full'] += content
+                data[f] = content
+        try:
+            certname = _s['mc_ssl.load_cert'](
+                _s['mc_ssl.ssl_chain'](certname, data[cert])[0]
+            ).get_subject().CN
+        except Exception:
+            pass
+        if certname not in [a[0] for a in ssl_certs]:
+            ssl_certs.append((certname, data['full'], data[cert], data[key]))
+    return ssl_certs
+
+
+def add_ms_ssl_certs(data, extdata=None):
+    if not isinstance(extdata, dict):
+        extdata = data
+    for i in extdata.get('ssl_certs', []):
+        __salt__['mc_pillar.add_ssl_cert'](i[0], i[2], i[3], data=data)
+    return data
+
+
 def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
     '''
     makina-states cloud extpillar
@@ -232,7 +273,8 @@ def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
     def _do(id_, prefixed):
         data = {}
         _s = __salt__
-        mid = _s['mc_pillar.mastersalt_minion_id']()
+        # run that to aliment the cache
+        _s['mc_pillar.mastersalt_minion_id']()
         extdata = extpillar_settings(id_)
         vms = _s['mc_cloud_compute_node.get_vms']()
         targets = _s['mc_cloud_compute_node.get_targets']()

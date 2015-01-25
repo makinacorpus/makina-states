@@ -132,7 +132,7 @@ def vt_default_settings(cloudSettings, imgSettings, ttl=60):
                 'additional_ips': [],
                 'name': _g['id'],
                 'domains': [_g['id']],
-                'ssl_certs': OrderedDict(),
+                'ssl_certs': [],
                 #
                 'ssh_gateway': cloudSettings['ssh_gateway'],
                 'ssh_username': 'ubuntu',
@@ -319,6 +319,18 @@ def vt_extpillar(target, vt, ttl=60):
     return memoize_cache(_do, [target, vt], {}, cache_key, ttl)
 
 
+def domains_for(vm, domains=None):
+    _s = __salt__
+    if domains is None:
+        vm_settings = _s['mc_cloud_vm.vm_extpillar_settings'](vm)
+        domains =vm_settings['domains']
+    # special case as domains is a list but we always want for
+    # the vm id to be un domains list even if overriden in
+    # extpillar
+    domains = _s['mc_utils.uniquify']([vm] + domains)
+    return domains
+
+
 def vm_extpillar(id_, ttl=60):
     def _do(id_):
         _s = __salt__
@@ -326,25 +338,13 @@ def vm_extpillar(id_, ttl=60):
         data = vm_extpillar_settings(id_)
         fun = 'mc_cloud_{0}.vm_extpillar'.format(data['vt'])
         data = _s['mc_utils.dictupdate'](_s[fun](id_, data), extdata)
-        # special case as domains is a list but we always want for
-        # the vm id to be un domains list even if overriden in
-        # extpillar
-        if id_ not in data['domains']:
-            data['domains'].insert(0, id_)
+        domains = domains_for(id_, data['domains'])
+        data['ssl_certs'] = _s['mc_cloud.ssl_certs_for'](
+            id_, domains, data['ssl_certs'])
+        _s['mc_cloud.add_ms_ssl_certs'](data)
         return data
     cache_key = 'mc_cloud_vm.vm_extpillar{0}'.format(id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
-
-
-def domains_for(vm, domains=None):
-    _s = __salt__
-    if domains is None:
-        domains = []
-    vm_settings = _s['mc_cloud_vm.vm_extpillar_settings'](vm)
-    [domains.append(domain) for domain in vm_settings['domains']
-     if domain not in domains]
-    domains = _s['mc_utils.uniquify']([vm] + domains)
-    return domains
 
 
 def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
@@ -382,6 +382,7 @@ def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
             vm_settings = _s['mc_cloud_vm.vm_extpillar'](vm)
             vm_settings['vt'] = vt
             vms_pillar[vm] = vm_settings
+            _s['mc_cloud.add_ms_ssl_certs'](data, vm_settings)
         return data
     cache_key = 'mc_cloud_vm.ext_pillar{0}{1}'.format(id_, prefixed)
     return memoize_cache(_do, [id_, prefixed], {}, cache_key, ttl)
@@ -430,9 +431,7 @@ def vm_settings(id_=None, ttl=60):
             imgSettings = _s['mc_cloud_images.settings']()
             data = _s['mc_utils.dictupdate'](
                 data, _s[fun](cloudSettings, imgSettings))
-        for i in data['ssl_certs']:
-            data.setdefault('makina-states.localsettings.ssl'
-                            'certificates.{0}'.format(i[0]), i[2], i[3])
+        _s['mc_cloud_compute_node.add_ms_ssl_certs'](data)
         return data
     cache_key = '{0}.{1}{2}'.format(__name, 'vts_settings', id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
