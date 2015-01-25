@@ -36,6 +36,7 @@ except:
 
 __name = 'ssl'
 log = logging.getLogger(__name__)
+PREFIX = 'makina-states.localsettings.ssl'
 
 
 class CertificateNotFoundError(Exception):
@@ -58,106 +59,279 @@ def get_cloud_settings():
     return __salt__['mc_cloud.get_cloud_settings']()
 
 
-def settings():
+
+def get_wildcard(domain):
+    wdomain = None
+    # try also to resolve a wildcard certificate if possible
+    # and honnor that we cant wildcard TLD (we should not be a subdomain of a tld domain)
+    if domain.count('.') >= 2 and not domain.startswith('*.'):
+        wdomain = '*.' + '.'.join(domain.split('.')[1:])
+    return wdomain
+
+
+def domain_match_wildcard(domain, wildcard_or_domain):
     '''
-    ssl registry
+    Test if a common name matches a wild card::
 
-    country
-        country
-    st
-        st
-    l
-        l
-    o
-        organization
-    cn
-        common name
-    email
-        mail
+        >>> match_wildcard('foo.dom.net', '*.foo.dom.net')
+        True
+        >>> match_wildcard('www.foo.dom.net', '*.foo.dom.net')
+        True
+        >>> match_wildcard('foo.dom.net', 'foo.dom.net')
+        True
+        >>> match_wildcard('www.foo.dom.net', 'foo.dom.net')
+        True
+        >>> match_wildcard('dom.net', '*.dom.net')
+        True
+        >>> match_wildcard('www.dom.net', '*.dom.net')
+        True
+        >>> match_wildcard('dom.net', 'dom.net')
+        True
+        >>> match_wildcard('www.dom.net', 'dom.net')
+        True
+
     '''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
-    def _settings():
-        saltmods = __salt__
-        grains = __grains__
-        # users data
-        # SSL settings for reuse in states
-        country = saltmods['grains.get']('defaultlanguage')
-        if country:
-            country = country[:2].upper()
-        else:
-            country = 'fr'
-        data = saltmods['mc_utils.defaults'](
-            'makina-states.localsettings.ssl', {
-                'country': country,
-                'st': 'Pays de Loire',
-                'l': 'NANTES',
-                'o': 'NANTES',
-                'cn': grains['fqdn'],
-                'email': grains['fqdn'],
-                'certificates': OrderedDict()})
-        certs = data['certificates']
-        if grains['fqdn'] not in certs:
-            lcert, lkey = __salt__[
-                'mc_ssl.selfsigned_ssl_certs'](
-                    grains['fqdn'], as_text=True)[0]
-            certs[grains['fqdn']] = (lcert, lkey)
-        return data
-    return _settings()
+    if not wildcard_or_domain.startswith('*.'):
+        wildcard_or_domain = '*.' + wildcard_or_domain
+    wildcard_or_domain = wildcard_or_domain.lower()
+    domain = domain.lower()
+    wdomain = get_wildcard(domain)
+    wildcardmatch = wdomain == wildcard_or_domain
+    exact_match = False
+    if len(wildcard_or_domain) > 3:
+        exact_match = domain == wildcard_or_domain[2:]
+    return wildcardmatch or exact_match
 
 
-def selfsigned_last(v):
-    k = '0'
+def domain_match(domain, cert_domain, wildcard_match=False):
+    '''
+    Test if a domain exactly match other domain
+    the other domain can be a wildcard, and
+    this only match top level wildcards as per openssl spec::
+
+        >>> domain_match('a.com', 'a.com')
+        True
+        >>> domain_match('a.com', '*.a.com')
+        False
+        >>> domain_match('a.a.com', '*.a.com')
+        True
+        >>> domain_match('a.a.a.com', '*.a.com')
+        False
+        >>> domain_match('aaa.a.com', '*.a.com')
+        True
+        >>> domain_match('a', '*')
+        False
+        >>> domain_match('a.a', '*.a')
+        False
+    '''
+    ret = False
+    if domain.lower() == cert_domain.lower():
+        ret = True
+    if cert_domain.startswith('*.') and not ret:
+        wildcard_match = True
+    if wildcard_match and not ret:
+        ret = domain_match_wildcard(domain, cert_domain)
+    return ret
+
+
+def load_key(cert_text_or_file):
+    if (
+        cert_text_or_file
+        and ('\n' not in cert_text_or_file)
+        and os.path.exists(cert_text_or_file)
+    ):
+        with open(cert_text_or_file) as fic:
+            cert_text_or_file = fic.read()
     try:
-        cert = OpenSSL.crypto.load_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, v[0])
+        cert = OpenSSL.crypto.load_privatekey(
+            OpenSSL.crypto.FILETYPE_PEM, cert_text_or_file)
     except Exception:
         cert = None
+    return cert
+
+
+def load_cert(cert_text_or_file):
+    if (
+        cert_text_or_file
+        and ('\n' not in cert_text_or_file)
+        and os.path.exists(cert_text_or_file)
+    ):
+        with open(cert_text_or_file) as fic:
+            cert_text_or_file = fic.read()
+    try:
+        cert = OpenSSL.crypto.load_certificate(
+            OpenSSL.crypto.FILETYPE_PEM, cert_text_or_file)
+    except Exception:
+        cert = None
+    return cert
+
+
+def ssl_infos(cert_text, **kw):
+    '''
+    Get some infos out of a PEM certificates
+    kw can contain default values
+
+        issuer
+            cert issuer
+        subject
+            cert subject
+    '''
+    data = {'subject_r': '',
+            'subject': None,
+            'issuer': None,
+            'issuer_r': ''}
+    data.update(kw)
+    cert = load_cert(cert_text)
     if cert:
         try:
-            subject, issuer = (
-                "{0}".format(cert.get_subject()),
-                "{0}".format(cert.get_issuer()))
+            data['subject'] = cert.get_subject()
+            data['subject_r'] = "{0}".format(cert.get_subject())
         except Exception:
-            subject = '1'
-            issuer = '2'
-        if subject == issuer:
-            # selfsigned
-            k = '1'
-        elif 'makina-states' in subject.lower():
-            k = '1'
-        elif 'makina-states' in issuer.lower():
-            k = '1'
-    return '{0}_{1}'.format(k, v)
+            pass
+        try:
+            data['issuer'] = cert.get_issuer()
+            data['issuer_r'] = "{0}".format(cert.get_issuer())
+        except Exception:
+            pass
+    return data
 
 
-def get_configured_cert(domain, ttl=60):
+def ssl_keys(cert_string):
     '''
-    Return any configured ssl cert for domain or the wildward domain
-    matching the precise domain.
-    It will prefer to use any reeal signed certificate over a self
-    signed certificate'''
-    def _do(domain):
-        pretendants = []
-        if domain == 'localhost':
-            domain = __grains__['fqdn']
-        settings = __salt__['mc_ssl.settings']()
-        certs = settings['certificates']
-        domains = [domain]
-        if domain.count('.') >= 2 and not domain.startswith('*.'):
-            wd = '*.' + '.'.join(domain.split('.')[1:])
-            domains.append(wd)
-        for d in domains:
-            data = certs.get(d, None)
-            if data:
-                pretendants.append(data)
-        if not pretendants:
-            pretendants.extend(
-                __salt__['mc_ssl.selfsigned_ssl_certs'](
-                    __grains__['fqdn'], as_text=True))
-        pretendants.sort(key=selfsigned_last)
-        return pretendants[0]
-    cache_key = 'mc_ssl.get_configured_cert{0}'.format(domain)
-    return memoize_cache(_do, [domain], {}, cache_key, ttl)
+    Extract valid ssl keys from a string or a file
+    '''
+    if (
+        cert_string
+        and ('\n' not in cert_string)
+        and os.path.exists(cert_string)
+    ):
+        with open(cert_string) as fic:
+            cert_string = fic.read()
+    keys = []
+    if cert_string and cert_string.strip():
+        certstring = ''
+        for i in cert_string.splitlines():
+            if (
+                certstring
+                or ('-----BEGIN PRIVATE KEY-----' in i)
+            ):
+                certstring += i.strip()
+                if not certstring.endswith('\n'):
+                    certstring += '\n'
+            if certstring and ('-----END PRIVATE KEY-----' in i.strip()):
+                ocert = load_key(certstring)
+                if ocert is not None:
+                    # valid cert
+                    keys.append(certstring)
+                certstring = ''
+    return keys
+
+
+def ssl_key(cert_string):
+    '''
+    Extract valid ssl keys from a string or a file & return the first
+    '''
+    return ssl_keys(cert_string)[0]
+
+
+def ssl_chain(common_name, cert_string):
+    '''
+    Extract the cerfificate and auth chain for a certificate
+    file or string containing one or multiple certificates
+
+    Return a tuble:
+
+        - The certificate maching the common name
+          If  not found, assume the first of the given certs
+        - The rest of certificates as the ssl chain authentication
+    '''
+
+    if (
+        cert_string
+        and ('\n' not in cert_string)
+        and os.path.exists(cert_string)
+    ):
+        with open(cert_string) as fic:
+            cert_string = fic.read()
+    cert_cn, cert, chain = None, None, ''
+    composants, cns = OrderedDict(), []
+    if cert_string and cert_string.strip():
+        full_certs = []
+        certstring = ''
+        for i in cert_string.splitlines():
+            if (
+                certstring
+                or ('-----BEGIN CERTIFICATE-----' in i)
+            ):
+                certstring += i.strip()
+                if not certstring.endswith('\n'):
+                    certstring += '\n'
+            if certstring and ('-----END CERTIFICATE-----' in i.strip()):
+                ocert = load_cert(certstring)
+                if ocert is not None:
+                    # valid cert
+                    full_certs.append(certstring)
+                certstring = ''
+        if full_certs:
+            for ccert in full_certs:
+                infos = ssl_infos(ccert)
+                infos['cert'] = ccert
+                try:
+                    CN = infos['subject'].CN
+                except Exception:
+                    CN = ''
+                if CN:
+                    composants[CN] = infos
+    # we have certificates in, and not just one
+    # we can compose an ssl authentication chain
+    if composants and (len(composants) > 1):
+        # filter out the domain which will not be part of the ssl chain
+        for cn, data in composants.items():
+            append = False
+            # if we match the cert name subject, we got the cert
+            # of this box
+            if domain_match(common_name, cn):
+                cert_cn = cn
+            # or we match exactly the common name
+            else:
+                append = True
+            if append:
+                cns.append(cn)
+        # if we did not match the last routine,
+        # assume that the real certificate is the first of the chain
+        if not cns:
+            for ix, cn in enumerate(composants):
+                if ix == 0:
+                    cert_cn = cn
+                cns.append(cn)
+    # if we have cns, we have a ssl_chain
+    if cns:
+        chain = ''.join([composants[cn]['cert'].strip() + '\n' for cn in cns])
+        if cert_cn is None:
+            cert_cn = [a for a in composants if a not in cns][0]
+        if cert_cn:
+            cert = composants[cn]['cert']
+    # else, we got a selfsigned certificate
+    else:
+        cert = cert_string
+    return cert, chain
+
+
+def selfsigned_last(ctuple):
+    '''
+    Certificate tuple containing in first element
+    the text of the PEM certificate
+    '''
+    data = ssl_infos(ctuple[0], subject_r='1', issuer_r='2')
+    subject, issuer = data['subject_r'], data['issuer_r']
+    k, v = '0', subject + ' ' + issuer
+    if subject == issuer:
+        k = '1'
+    elif 'makina-states' in subject.lower():
+        k = '1'
+    elif 'makina-states' in issuer.lower():
+        k = '1'
+    return '{0}_{1}'.format(k, v)
 
 
 def ensure_ca_present():
@@ -195,18 +369,18 @@ def get_cacert(as_text=False):
 def get_custom_cert_for(domain):
     cloudSettings = get_cloud_settings()
     ssl_gen_d = cloudSettings['ssl_pillar_dir']
+    acertp = os.path.join(
+        ssl_gen_d, 'custom', '{0}.auth.crt'.format(domain))
     certp = os.path.join(
         ssl_gen_d, 'custom', '{0}.crt'.format(domain))
     bcertp = os.path.join(
         ssl_gen_d, 'custom', '{0}.bundle.crt'.format(domain))
     certk = os.path.join(
         ssl_gen_d, 'custom', '{0}.key'.format(domain))
-    # try also to resolve a wildcard certificate if possible
-    if domain.count('.') >= 2 and not domain.startswith('*.'):
-        wdomain = '*.' + '.'.join(domain.split('.')[1:])
-    else:
-        wdomain = None
+    wdomain = get_wildcard(domain)
     if wdomain:
+        wacertp = os.path.join(
+            ssl_gen_d, 'custom', '{0}.auth.crt'.format(wdomain))
         wcertp = os.path.join(
             ssl_gen_d, 'custom', '{0}.crt'.format(wdomain))
         wbcertp = os.path.join(
@@ -217,6 +391,7 @@ def get_custom_cert_for(domain):
             wcertp = wbcertp
         # only use wild card if we have not a more precise certificate
         if not os.path.exists(certp) and not os.path.exists(bcertp):
+            acertp = wacertp
             bcertp = wbcertp
             certp = wcertp
             certk = wcertk
@@ -342,46 +517,6 @@ def get_selfsigned_cert_for(domain, gen=False, domain_csr_data=None):
         raise CertificateNotFoundError(
             'Certificate not found for {0}'.format(domain))
     return certp, certk
-
-
-def is_certificate_matching_domain(cert_path, domain):
-    ret = False
-    return ret
-
-
-def domain_match(domain, cert_domain):
-    '''Test if a domain exactly match other domain
-    the other domain can be a wildcard, and
-    this only match top level wildcards as per openssl spec::
-
-        >>> domain_match('a.com', 'a.com')
-        True
-        >>> domain_match('a.com', '*.a.com')
-        False
-        >>> domain_match('a.a.com', '*.a.com')
-        True
-        >>> domain_match('a.a.a.com', '*.a.com')
-        False
-        >>> domain_match('aaa.a.com', '*.a.com')
-        True
-        >>> domain_match('a', '*')
-        False
-        >>> domain_match('a.a', '*.a')
-        False
-    '''
-    ret = False
-    if domain.lower() == cert_domain.lower():
-        ret = True
-    if cert_domain.startswith('*.'):
-        parts = cert_domain.split('.')
-        dparts = domain.split('.')
-        if (
-            (len(parts) == len(dparts))
-            and (len(parts) > 2)
-            and dparts[1:] == parts[1:]
-        ):
-            ret = True
-    return ret
 
 
 def load_certs(path):
@@ -523,8 +658,10 @@ def search_matching_certificate(domain, as_text=False):
 
 
 def search_matching_selfsigned_certificate(domain, as_text=False):
-    '''Search in the pillar certificate directory the
-    certificate belonging to a particular domain'''
+    '''
+    Search in the pillar certificate directory the
+    certificate belonging to a particular domain
+    '''
     if not HAS_SSL:
         raise Exception('Missing pyopenssl')
     certs_dir = get_selfsigned_certs_dir()
@@ -624,7 +761,108 @@ def ca_ssl_certs(domains, as_text=False):
     return rdomains
 
 
-def dump():
-    return mc_states.utils.dump(__salt__,__name)
+def common_settings(ttl=60):
+    def _do():
+        _s,  _g = __salt__, __grains__
+        country = _s['grains.get']('defaultlanguage')
+        if country:
+            country = country[:2].upper()
+        else:
+            country = 'fr'
+        data = _s['mc_utils.defaults'](
+            PREFIX, {'country': country,
+                     'st': 'Pays de Loire',
+                     'l': 'NANTES',
+                     'o': 'NANTES',
+                     'cn': _g['fqdn'],
+                     'email': _g['fqdn'],
+                     'certificates': OrderedDict()})
+        return data
+    cache_key = 'mc_ssl.common_settings'
+    return memoize_cache(_do, [], {}, cache_key, ttl)
 
+
+def get_configured_cert(domain, ttl=60):
+    '''
+    Return any configured ssl cert for domain or the wildward domain
+    matching the precise domain.
+    It will prefer to use any real signed certificate over a self
+    signed certificate
+    '''
+    def _do(domain):
+        _s,  _g = __salt__, __grains__
+        pretendants = []
+        if domain == 'localhost':
+            domain = _g['fqdn']
+        settings = _s['mc_ssl.common_settings']()
+        certs = settings['certificates']
+        domains = [domain]
+        if domain.count('.') >= 2 and not domain.startswith('*.'):
+            wd = '*.' + '.'.join(domain.split('.')[1:])
+            domains.append(wd)
+        for d in domains:
+            data = certs.get(d, None)
+            if data:
+                pretendants.append(data)
+        if not pretendants:
+            cert = selfsigned_ssl_certs(domain, as_text=True)[0]
+            pretendants.append((cert[0], cert[1], ''))
+            certs[domain] = cert[0], cert[1], ''
+        pretendants.sort(key=selfsigned_last)
+        return pretendants[0]
+    cache_key = 'mc_ssl.get_configured_cert{0}'.format(domain)
+    return memoize_cache(_do, [domain], {}, cache_key, ttl)
+
+
+def settings():
+    '''
+    ssl registry
+
+    country
+        country
+
+    st
+        st
+
+    l
+        l
+
+    o
+        organization
+
+    cn
+        common name
+
+    email
+        mail
+
+    certs
+        mapping of COMMON_NAME: (cert_text, key_text, cacert_chain_txt)
+
+            * cert_text and cacert_chain_txt contain x509 certs, concatenated
+            * chain_txt is an empty string if selfsigned or not found
+            * key we will validated to be a valid private key
+            * all certs will be validated to be x509 certs
+
+    '''
+    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    def _settings():
+        data = common_settings()
+        # be sure to load cert for localdomain in data.certificates
+        get_configured_cert(__grains__['fqdn'])
+        # be sure to have the chain part of the triple if available
+        for cert in [a for a in data['certificates']]:
+            cdata = data['certificates'][cert]
+            do_chain_load = False
+            if len(cdata) < 3:
+                do_chain_load = True
+            else:
+                if not cdata[2]:
+                    do_chain_load = True
+            if do_chain_load:
+                chain = ssl_chain(cert, cdata[0])
+                key = ssl_key(cdata[1])
+                data['certificates'][cert] = chain[0], key, chain[1]
+        return data
+    return _settings()
 # vim:set et sts=4 ts=4 tw=80:
