@@ -37,7 +37,7 @@ cpt-cert-{{cert}}-{{flav}}:
       - mc_proxy: cloud-sslcerts-pre
       - mc_proxy: ssl-certs-pre-hook
     - watch_in:
-      - cmd: cpt-certs-cleanup
+      - mc_proxy: ssl-certs-clean-certs
       - mc_proxy: cloud-sslcerts
       - mc_proxy: ssl-certs-post-hook
 {% endfor%}
@@ -56,7 +56,7 @@ cpt-cert-{{cert}}-haproxy-dir:
       - mc_proxy: cloud-sslcerts-pre
       - mc_proxy: ssl-certs-pre-hook
     - watch_in:
-      - cmd: cpt-certs-cleanup
+      - mc_proxy: ssl-certs-clean-certs
       - mc_proxy: cloud-sslcerts
       - mc_proxy: ssl-certs-post-hook
 {% endfor %}
