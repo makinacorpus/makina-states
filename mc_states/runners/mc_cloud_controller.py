@@ -130,7 +130,7 @@ def deploy(output=True, ret=None):
     run_vt_hook('pre_deploy_controller', ret=kw['ret'], output=output)
     __salt__['mc_api.apply_sls'](
         ['makina-states.cloud.generic.controller',
-         'makina-states.cloud.saltify'], **kw)
+         'makina-states.cloud.saltify.controller'], **kw)
     check_point(kw['ret'], __opts__, output=output)
     run_vt_hook('post_deploy_controller', ret=kw['ret'], output=output)
     __salt__['mc_api.out'](kw['ret'], __opts__, output=output)
@@ -297,6 +297,7 @@ def orchestrate(skip=None,
         trace = traceback.format_exc()
         ret['output'] += '\n{0}'.format(trace)
         __salt__['mc_api.out'](ret, __opts__, output=output)
+        ret['result'] = False
         raise
     __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end', fname, ret=ret)
@@ -308,4 +309,11 @@ def report(*a, **kw):
     Alias to mc_cloud_compute_node.report
     '''
     return __salt__['mc_cloud_compute_node.report'](*a, **kw)
+
+
+def test(*a, **kw):
+    import time
+    print('bar')
+    time.sleep(2)
+    raise FailedStepError('foo')
 #

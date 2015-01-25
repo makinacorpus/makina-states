@@ -135,6 +135,7 @@ def registry():
             'sudo': {'active': True},
             'groups': {'active': True},
             'sysctl': {'active': True},
+            'ssl': {'active': True},
             'users': {'active': True},
             'screen': {'active': True},
             'vim': {'active': True},

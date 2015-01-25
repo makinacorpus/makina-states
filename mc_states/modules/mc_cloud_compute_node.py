@@ -521,7 +521,6 @@ def domains_for(target, domains=None):
     return domains
 
 
-
 def ssl_certs_for(target, domains=None, ssl_certs=None):
     _s = __salt__
     if ssl_certs is None:
@@ -534,11 +533,14 @@ def ssl_certs_for(target, domains=None, ssl_certs=None):
         if certname.endswith('.bundle'):
             certname = os.path.basename(certname)[:-7]
         fullcert = ''
+        data = {cert: None, key: None}
         for f in [cert, key]:
             with open(f) as fic:
-                fullcert += fic.read()
+                content = fic.read() 
+                fullcert += content
+                data[f] = content
         if fullcert not in [a[1] for a in ssl_certs]:
-            ssl_certs.append((certname, fullcert))
+            ssl_certs.append((certname, fullcert, data[cert], data[key]))
     return ssl_certs
 
 
@@ -836,6 +838,9 @@ def extpillar_settings(id_=None, ttl=30):
         for k in ['domains', 'ssl_certs']:
             fun = 'mc_cloud_compute_node.{0}_for'.format(k)
             data[k] = _s[fun](id_, data[k])
+        for i in data['ssl_certs']:
+            data.setdefault('makina-states.localsettings.ssl'
+                            'certificates.{0}'.format(i[0]), i[2], i[3])
         return data
     cache_key = 'mc_cloud_cn.extpillar_settings{0}'.format(id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)

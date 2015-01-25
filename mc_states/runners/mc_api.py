@@ -202,6 +202,29 @@ def apply_sls(slss, concurrent=True, *a, **kwargs):
     return apply_sls_('state.sls', slss, *a, **kwargs)
 
 
+def get_cloud_saltify_settings(ttl=60):
+    def _do():
+        fname = 'mc_api.get_cloud_saltify_settings'
+        __salt__['mc_api.time_log']('start', fname, __opts__['id'])
+        settings = cli('mc_cloud_saltify.ext_pillar',
+                       __opts__['id'], prefixed=False)
+        __salt__['mc_api.time_log']('end', fname, settings=settings)
+        return settings
+    cache_key = 'rmc_api.get_cloud_images_settings'
+    return memoize_cache(_do, [], {}, cache_key, ttl)
+
+
+def get_cloud_saltify_settings_for_target(id_, ttl=60):
+    def _do(id_):
+        fname = 'mc_api.get_cloud_saltify_settings_for_target'
+        __salt__['mc_api.time_log']('start', fname, id_)
+        settings = cli('mc_cloud_saltify.target_extpillar', id_)
+        __salt__['mc_api.time_log']('end', fname, settings=settings)
+        return settings
+    cache_key = 'rmc_api.get_cloud_images_settings{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+
+
 def get_cloud_images_settings(ttl=60):
     def _do():
         fname = 'mc_api.get_cloud_images_settings'
