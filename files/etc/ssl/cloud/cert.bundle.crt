@@ -1,4 +1,3 @@
 {%- set data  = salt['mc_ssl.settings']()['certificates'][certid] -%}
 {{-data[0]}}
 {{-data[2]}}
-{{-data[1]}}
