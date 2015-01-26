@@ -431,7 +431,6 @@ def vm_settings(id_=None, ttl=60):
             imgSettings = _s['mc_cloud_images.settings']()
             data = _s['mc_utils.dictupdate'](
                 data, _s[fun](cloudSettings, imgSettings))
-        _s['mc_cloud_compute_node.add_ms_ssl_certs'](data)
         return data
     cache_key = '{0}.{1}{2}'.format(__name, 'vts_settings', id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)

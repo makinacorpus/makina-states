@@ -2,7 +2,7 @@
 {% set imgSettings = salt['mc_cloud_images.settings']() %}
 {% set cloudSettings = salt['mc_cloud.settings']() %}
 {% set sprefix = cloudSettings.prefix %}
-{% for name, imgdata in imgSettings['lxc'].items() %}
+{% for name, imgdata in imgSettings['lxc']['images'].items() %}
 {% set cwd = '/var/lib/lxc/{0}'.format(name) %}
 {% set arc = '{0}/{1}'.format(name, imgdata['lxc_tarball_name']) %}
 {% set tversion  = imgdata['lxc_tarball_ver'] %}

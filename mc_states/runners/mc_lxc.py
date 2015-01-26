@@ -117,6 +117,11 @@ def sync_image_reference_containers(imgSettings, ret, _cmd_runner=None,
         def _cmd_runner(cmd):
             return cli('cmd.run_all', cmd)
 
+    try:    
+        imgSettings['lxc']['images']
+    except:
+        import pdb;pdb.set_trace()  ## Breakpoint ##
+
     for img in imgSettings['lxc']['images']:
         bref = imgSettings['lxc']['images'][img]['builder_ref']
         # try to find the local img reference building counterpart
@@ -158,7 +163,7 @@ def sync_images(only=None,
     if not only:
         only = []
     if isinstance(only, basestring):
-        only = [only]
+        only = only.split(',')
     ret = saltapi.result()
     ret['targets'] = OrderedDict()
     dest = '/root/.ssh/.lxc.pub'
