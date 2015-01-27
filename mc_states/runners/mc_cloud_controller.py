@@ -185,6 +185,7 @@ def orchestrate(skip=None,
                 skip_vms=None,
                 only=None,
                 only_vms=None,
+                no_controller=False,
                 no_dns_conf=False,
                 no_configure=False,
                 no_saltify=False,
@@ -196,7 +197,8 @@ def orchestrate(skip=None,
                 output=True,
                 refresh=True,
                 ret=None):
-    '''install controller, compute node, vms & run postdeploy
+    '''
+    install controller, compute node, vms & run postdeploy
 
         no_configure
             skip configuring the cloud controller
@@ -228,6 +230,7 @@ def orchestrate(skip=None,
                                 only=only,
                                 only_vms=only_vms,
                                 no_dns_conf=no_dns_conf,
+                                no_controller=no_controller,
                                 no_configure=no_configure,
                                 no_saltify=no_saltify,
                                 no_provision=no_provision,
@@ -247,27 +250,30 @@ def orchestrate(skip=None,
     if refresh:
         cli('saltutil.refresh_pillar')
     cret = result()
+    gret = True
     try:
         # only deploy base configuration if we did not set
         # a specific saltify/computenode/vm switch
-        if not no_dns_conf:
-            dns_conf(output=False, ret=cret)
-            check_point(cret, __opts__, output=output)
-            del cret['result']
-            merge_results(ret, cret)
-        if not no_configure:
-            cret = result()
-            # test that all hosts resolve else
-            # for the dns migration
-            deploy(output=False, ret=cret)
-            check_point(cret, __opts__, output=output)
-            del cret['result']
-            merge_results(ret, cret)
+        if not no_controller:
+            if not no_dns_conf:
+                dns_conf(output=False, ret=cret)
+                check_point(cret, __opts__, output=output)
+                del cret['result']
+                merge_results(ret, cret)
+            if not no_configure:
+                cret = result()
+                # test that all hosts resolve else
+                # for the dns migration
+                deploy(output=False, ret=cret)
+                check_point(cret, __opts__, output=output)
+                del cret['result']
+                merge_results(ret, cret)
         if not no_saltify:
             cret = result()
             __salt__['mc_cloud_saltify.orchestrate'](
                 only=only, skip=skip, ret=cret,
                 output=False, refresh=False)
+            check_point(cret, __opts__, output=output)
             del cret['result']
             merge_results(ret, cret)
         cn_in_error = cret['changes'].get('saltified_errors', [])
@@ -276,6 +282,7 @@ def orchestrate(skip=None,
                 skip = []
             skip += cn_in_error
             cret = result()
+            cret['result'] = False
             __salt__['mc_cloud_compute_node.orchestrate'](
                 skip=skip,
                 skip_vms=skip_vms,
@@ -289,6 +296,9 @@ def orchestrate(skip=None,
                 refresh=False,
                 output=False,
                 ret=cret)
+            # make the global exec continue if the provision of a CN failed
+            if not cret['result']:
+                gret = cret['result']
             del cret['result']
             merge_results(ret, cret)
             cn_in_error = cret['changes'].get('provision_error', [])
@@ -298,10 +308,71 @@ def orchestrate(skip=None,
         ret['output'] += '\n{0}'.format(trace)
         __salt__['mc_api.out'](ret, __opts__, output=output)
         ret['result'] = False
-        raise
+    # make the exec fail if the provision of at least one CN failed
+    ret['result'] = gret and ret['result']
     __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end', fname, ret=ret)
     return ret
+
+
+def prepare_controller(no_saltify=True,
+                       no_compute_nodes=True,
+                       no_vms=True,
+                       *a, **kw):
+    '''
+    Shortcut to prepare the controller
+
+    (DNS; VT orchestration)
+    '''
+    return orchestrate(no_saltify=no_saltify,
+                       no_compute_nodes=no_compute_nodes,
+                       no_vms=no_vms,
+                       *a, **kw)
+
+
+def saltify_node(target,
+                 no_controller=True,
+                 no_compute_nodes=True,
+                 no_vms=True,
+                 *a, **kw):
+    '''
+    Shortcut to only saltify something
+    '''
+    return orchestrate(no_controller=no_controller,
+                       no_compute_nodes=no_compute_nodes,
+                       no_vms=no_vms,
+                       only=target,
+                       *a, **kw)
+
+
+def configure_vm(target,
+                 no_controller=True,
+                 no_compute_nodes=True,
+                 no_saltify=True,
+                 *a, **kw):
+    '''
+    Shortcut to only configure vm
+    '''
+    return orchestrate(no_controller=no_controller,
+                       no_saltify=no_saltify,
+                       no_compute_nodes=no_compute_nodes,
+                       only_vms=target,
+                       *a, **kw)
+
+
+def configure_node(target,
+                   no_saltify=True,
+                   no_vms=True,
+                   no_controller=True,
+                   *a, **kw):
+    '''
+    Shortcut to only configure a compute node
+    '''
+    return orchestrate(no_controller=no_controller,
+                       no_saltify=no_saltify,
+                       no_vms=no_vms,
+                       only=target,
+                       *a, **kw)
 
 
 def report(*a, **kw):
