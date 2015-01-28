@@ -12,11 +12,11 @@ mc_cloud_saltify / cloud related variables
 '''
 __docformat__ = 'restructuredtext en'
 # Import salt libs
+import copy
 import mc_states.utils
 from pprint import pformat
 from salt.utils.odict import OrderedDict
 from mc_states import saltapi
-import copy
 from mc_states.utils import memoize_cache
 
 __name = 'cloud_saltify'
@@ -110,7 +110,7 @@ def default_settings(cloudSettings):
             'sudo_password': None,
             'no_sudo_password': None,
             'targets': OrderedDict()}
-    return data
+    return copy.deepcopy(data)
 
 
 def target_extpillar(name, c_data=None, ttl=60):
@@ -183,8 +183,6 @@ def _add_host(_s, done_hosts, rdata, host):
 def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
     def _do(id_, prefixed):
         _s = __salt__
-        if not _s['mc_cloud.is_a_controller']():
-            return {}
         rdata = {}
         supported_vts = _s['mc_cloud_compute_node.get_vts']()
         done_hosts = []
@@ -209,6 +207,12 @@ def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
                     rdata[host][k] = val
         data = default_settings(_s['mc_cloud.extpillar_settings']())
         data['targets'] = rdata
+        if not _s['mc_cloud.is_a_controller'](id_):
+            if id_ in data['targets']:
+                for i in [a for a in data['targets'] if a != id_]:
+                    data['targets'].pop(i, None)
+            else:
+                return {}
         if prefixed:
             data = {PREFIX: data}
         return data
