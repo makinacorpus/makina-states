@@ -1963,11 +1963,12 @@ def report():
     target = __grains__['id']
     try:
         vmconf = __salt__['mc_cloud_vm.vm_settings']()
+        if not vmconf and isinstance(vmconf, dict):
+            raise ValueError('not a vm')
     except ValueError:
         vmconf = {
             'ssh_reverse_proxy_port': '22',
         }
-
 
     ips = [a
            for a in __grains__.get('ipv4', [])

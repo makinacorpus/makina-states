@@ -95,7 +95,7 @@ def local_minion_id(force=False):
     _CACHE['mid'] = mid
     return mid
 
- 
+
 def magicstring(thestr):
     """Convert any string to UTF-8 ENCODED one"""
     if not HAS_CHARDET:
@@ -355,9 +355,50 @@ def is_iter(value):
     )
 
 
+def traverse_dict(data, key, delimiter=salt.utils.DEFAULT_TARGET_DELIM):
+    '''
+    Handle the fact to traverse dicts with '.' as it was an old
+    default and makina-states relies a lot on it
+
+    This restore the old behavior of something that can be traversed
+
+    makina-states.foo:
+        bar:
+            c: true
+
+    can be traversed with makina-states.foo.bar.c
+    '''
+    delimiters = [delimiter, salt.utils.DEFAULT_TARGET_DELIM, ':', '.']
+    ret = dv = '_|-'
+    for dl in delimiters:
+        for cdl in reversed(delimiters):
+            ret = salt.utils.traverse_dict(data, key, dv, delimiter=dl)
+            if ret != dv:
+                return ret
+            if cdl in key and dl not in key:
+                nkey = key.replace(cdl, dl)
+                ret = salt.utils.traverse_dict(data, nkey, dv, delimiter=dl)
+                if ret != dv:
+                    return ret
+                # if the dict is not at the end, we try to progressivily
+                # combine the delimiters from the start of the key
+                # a.c.d.e will be tested then for
+                # a.c:d:e will be tested then for
+                # a.c.d:e will be tested then for
+                # we do not test the last element as it is the exact key !
+                for i in range(key.count(cdl)-1):
+                    dkey = nkey.replace(dl, cdl, i+1)
+                    ret = salt.utils.traverse_dict(data, dkey, dv, delimiter=dl)
+                    if ret != dv:
+                        return ret
+    return ret
+
+
 def get(key, default='',
-        local_registry=None, registry_format='pack'):
-    '''Same as 'config.get' but with different retrieval order.
+        local_registry=None, registry_format='pack',
+        delimiter=salt.utils.DEFAULT_TARGET_DELIM):
+    '''
+    Same as 'config.get' but with different retrieval order.
 
     This routine traverses these data stores in this order:
 
@@ -375,6 +416,7 @@ def get(key, default='',
 
         salt '*' mc_utils.get pkg:apache
     '''
+    _s, _g, _p, _o = __salt__, __grains__, __pillar__, __opts__
     if local_registry is None:
         local_prefs = [(a, 'makina-states.{0}.'.format(a))
                        for a in api._GLOBAL_KINDS]
@@ -383,23 +425,22 @@ def get(key, default='',
                 local_registry = reg
                 break
     if isinstance(local_registry, basestring):
-        local_registry = __salt__['mc_macros.get_local_registry'](
+        local_registry = _s['mc_macros.get_local_registry'](
             local_registry, registry_format=registry_format)
-    ret = salt.utils.traverse_dict(__opts__, key, '_|-')
+    ret = traverse_dict(_o, key, delimiter=delimiter)
     if ret != '_|-':
         return ret
-    ret = salt.utils.traverse_dict(__pillar__, key, '_|-')
+    ret = traverse_dict(_p, key, delimiter=delimiter)
     if ret != '_|-':
         return ret
     if local_registry is not None:
-        ret = salt.utils.traverse_dict(local_registry, key, '_|-')
+        ret = traverse_dict(local_registry, key, delimiter=delimiter)
         if ret != '_|-':
             return ret
-    ret = salt.utils.traverse_dict(__grains__, key, '_|-')
+    ret = traverse_dict(_g, key, delimiter=delimiter)
     if ret != '_|-':
         return ret
-    ret = salt.utils.traverse_dict(__pillar__.get('master', OrderedDict()),
-                                   key, '_|-')
+    ret = traverse_dict(_p.get('master', {}), key, delimiter=delimiter)
     if ret != '_|-':
         return ret
     return default
