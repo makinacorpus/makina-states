@@ -747,6 +747,9 @@ def feed_http_reverse_proxy_for_target(target_data):
     # http/https automatic rules
     for vmname in target_data['vms']:
         vm = target_data['vms'][vmname]
+        if 'geotrek' in vmname and '-fr' in vmname:
+            with open('/test', 'a') as fic:
+                fic.write('{0}\n'.format(vm['domains']))
         for domain in vm['domains']:
             _configure_http_reverses(reversep, domain, vm['ip'])
     # http/https raw rules
@@ -809,9 +812,9 @@ def extpillar_settings(id_=None, ttl=30):
         for _vm, _vm_data in get_vms_for_target(id_).items():
             data['vms'][_vm] = _s['mc_cloud_vm.vm_extpillar_settings'](_vm)
         # can only be done after some infos is loaded
-        domains = domains_for(id_, data['domains'])
+        data['domains'] = domains_for(id_, data['domains'])
         data['ssl_certs'] = _s['mc_cloud.ssl_certs_for'](
-            id_, domains, data['ssl_certs'])
+            id_, data['domains'], data['ssl_certs'])
         _s['mc_cloud.add_ms_ssl_certs'](data)
         return data
     cache_key = 'mc_cloud_cn.extpillar_settings{0}'.format(id_)
