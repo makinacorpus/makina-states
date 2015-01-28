@@ -747,9 +747,6 @@ def feed_http_reverse_proxy_for_target(target_data):
     # http/https automatic rules
     for vmname in target_data['vms']:
         vm = target_data['vms'][vmname]
-        if 'geotrek' in vmname and '-fr' in vmname:
-            with open('/test', 'a') as fic:
-                fic.write('{0}\n'.format(vm['domains']))
         for domain in vm['domains']:
             _configure_http_reverses(reversep, domain, vm['ip'])
     # http/https raw rules
