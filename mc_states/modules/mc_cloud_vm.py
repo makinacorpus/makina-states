@@ -338,9 +338,9 @@ def vm_extpillar(id_, ttl=60):
         data = vm_extpillar_settings(id_)
         fun = 'mc_cloud_{0}.vm_extpillar'.format(data['vt'])
         data = _s['mc_utils.dictupdate'](_s[fun](id_, data), extdata)
-        domains = domains_for(id_, data['domains'])
+        data['domains'] = domains_for(id_, data['domains'])
         data['ssl_certs'] = _s['mc_cloud.ssl_certs_for'](
-            id_, domains, data['ssl_certs'])
+            id_, data['domains'], data['ssl_certs'])
         _s['mc_cloud.add_ms_ssl_certs'](data)
         return data
     cache_key = 'mc_cloud_vm.vm_extpillar{0}'.format(id_)

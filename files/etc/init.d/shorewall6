@@ -13,12 +13,16 @@
 case "$1" in
     start)
       exit 0
+      ;;
     stop)
       exit 0
+      ;;
     status)
       exit 0
+      ;;
     restart|force-reload)
       exit 0
+      ;;
     *)
         echo "Usage: $0 {start|stop|status|restart|force-reload}" >&2
         exit 3
