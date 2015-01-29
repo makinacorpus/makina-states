@@ -1203,7 +1203,7 @@ def init(name,
             return ret
 
     # set the default user/password, only the first time
-    if password:
+    if ret.get('result', True) and password:
         gid = '/.lxc.initial_pass'
         gids = [gid,
                 '/lxc.initial_pass',
@@ -1231,7 +1231,7 @@ def init(name,
                     ret['result'] = False
 
     # set dns servers if any, only the first time
-    if dnsservers:
+    if ret.get('result', True) and dnsservers:
         # retro compatibility, test also old markers
         gid = '/.lxc.initial_dns'
         gids = [gid,
@@ -1266,7 +1266,8 @@ def init(name,
                        ignore_retcode=True) == 0
            for x in gids):
         skip_bootstrap = True
-    if skip_bootstrap:
+
+    if skip_bootstrap or not ret.get('result', True):
         pass
     elif seed or seed_cmd:
         if seed:
@@ -1316,7 +1317,7 @@ def init(name,
                                       .format(seed_cmd)}
                     )
 
-    if not start_:
+    if ret.get('result', True) and not start_:
         try:
             stop(name)
         except (SaltInvocationError, CommandExecutionError) as exc:
