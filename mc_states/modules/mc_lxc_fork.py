@@ -385,7 +385,6 @@ def cloud_init_interface(name, vm_=None, **kwargs):
     lxc_init_interface['bridge'] = bridge
     lxc_init_interface['gateway'] = gateway
     lxc_init_interface['nic_opts'] = nic_opts
-    lxc_init_interface['clone'] = from_container
     lxc_init_interface['clone_from'] = from_container
     lxc_init_interface['profile'] = profile
     lxc_init_interface['snapshot'] = snapshot
