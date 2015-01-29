@@ -832,7 +832,7 @@ def selfsigned_ssl_certs(domains, as_text=False):
     return ssl_certs
 
 
-def ssl_certs(domains, as_text=False):
+def ssl_certs(domains, **kw):
     '''
     Maybe Generate
     and Return SSL certificate and key paths for domain
@@ -840,6 +840,10 @@ def ssl_certs(domains, as_text=False):
     this generates a signed certificate with a generated
     certificate authority with the name of the current
     minion.
+
+
+    Return a xtuple (cert, key)
+    Cert can contain multiple certs (full chain of certification)
     '''
     if not domains:
         raise ValueError('domains must be set')
@@ -848,22 +852,26 @@ def ssl_certs(domains, as_text=False):
     ssl_certs = []
     for domain in domains:
         crt_data = search_matching_certificate(
-            domain, as_text=as_text)
+            domain, as_text=True)
         if crt_data not in ssl_certs:
             ssl_certs.append(crt_data)
     return ssl_certs
 
 
-def ca_ssl_certs(domains, as_text=False):
+def ca_ssl_certs(domains, **kwargs):
     '''
     Wrapper to ssl_certs to also return the cacert
     information
+    Return a triple (ert, key, ca)
+    if ca is none: ca==''
     '''
-
-    cacert = get_cacert(as_text=as_text)
     rdomains = []
-    for domain in ssl_certs(domains, as_text=as_text):
-        rdomains.append((cacert,) + domain)
+    if isinstance(domains, basestring):
+        domains = domains.split(',')
+    for domain in domains:
+        data = ssl_certs(domain, as_text=True)[0]
+        cert, chain = ssl_chain(domain, data[0])
+        rdomains.append((cert, data[1], chain))
     return rdomains
 
 

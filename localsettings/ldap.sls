@@ -66,7 +66,6 @@ nslcd-nsswitch-conf:
     - require_in:
       - mc_proxy: users-pre-hook
     - name: {{ locs.conf_dir }}/nsswitch.conf
-    - search_only: ''
     - pattern: '^(?P<title>passwd|group|shadow):\s*compat( ldap)*'
     - repl: '\g<title>: compat ldap'
     - flags: ['MULTILINE', 'DOTALL']

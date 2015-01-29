@@ -264,9 +264,9 @@ def settings():
         cn_config_files = data['cn_config_files']
         if not data['tls_cert']:
             info = __salt__['mc_ssl.ca_ssl_certs'](data['cert_domain'])[0]
-            data['tls_cacert'] = info[0]
-            data['tls_cert'] = info[1]
-            data['tls_key'] = info[2]
+            data['tls_cacert'] = info[2]
+            data['tls_cert'] = info[0]
+            data['tls_key'] = info[1]
         schemas = data['schemas']
         cn_config_files = data['cn_config_files']
         if data['default_schema']:
