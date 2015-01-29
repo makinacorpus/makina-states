@@ -33,7 +33,6 @@ gitorious_base_ssh_configs-append-{{ i }}:
     - require:
       - file: gitorious_base_ssh_configs-touch-{{ i }}
     - name : {{ home }}/.ssh/config
-    - user: {{ i }}
     - text: |
             # entry managed via salt !
             host=    gitorious.makina-corpus.net
