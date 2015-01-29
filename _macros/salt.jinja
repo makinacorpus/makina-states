@@ -714,7 +714,7 @@ salt-{{ data.daemon_name }}-remove-minionid:
       - {{ data.conf_prefix }}/minion_id
       - {{locs.conf_dir}}/salt/minion_id
       - {{locs.conf_dir}}/mastersalt/minion_id
-    - requir_in:
+    - require_in:
       - mc_proxy: dummy-post-{{ data.name }}-service-restart
       - mc_proxy: dummy-post-{{ data.service_name }}-service-restart
 {% endmacro %}
