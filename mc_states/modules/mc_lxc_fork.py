@@ -298,6 +298,7 @@ def cloud_init_interface(name, vm_=None, **kwargs):
     if not dnsservers:
         dnsservers = ['8.8.8.8', '4.4.4.4']
     password = vm_.get('password', 's3cr3t')
+    password_encrypted = vm_.get('password_encrypted', False)
     fstype = vm_.get('fstype', None)
     lvname = vm_.get('lvname', None)
     pub_key = vm_.get('pub_key', None)
@@ -403,12 +404,14 @@ def cloud_init_interface(name, vm_=None, **kwargs):
     lxc_init_interface['autostart'] = autostart
     lxc_init_interface['users'] = users
     lxc_init_interface['password'] = password
+    lxc_init_interface['password_encrypted'] = password_encrypted
     lxc_init_interface['network_profile'] = DEFAULT_NIC
     lxc_init_interface['memory'] = vm_.get('memory', 0)  # nolimit
     for i in ['cpu', 'cpuset', 'cpushare']:
         if vm_.get(i, None):
             lxc_init_interface[i] = vm_[i]
     return lxc_init_interface
+
 
 def get_network_profile(name=None):
     '''
@@ -1261,13 +1264,13 @@ def init(name,
     # retro compatibility, test also old markers
     gid = '/.lxc.initial_seed'
     gids = [gid, '/lxc.initial_seed']
-    if any(cmd_retcode(name,
-                       'test -e {0}'.format(x),
-                       ignore_retcode=True) == 0
-           for x in gids):
-        skip_bootstrap = True
-
-    if skip_bootstrap or not ret.get('result', True):
+    if (
+        any(cmd_retcode(name,
+                        'test -e {0}'.format(x),
+                        ignore_retcode=True) == 0
+            for x in gids)
+        or not ret.get('result', True)
+    ):
         pass
     elif seed or seed_cmd:
         if seed:
@@ -2723,10 +2726,17 @@ def _run(name,
             # use the below path instead to prevent
             env += ' --set-var {0}'.format(PATH)
 
-        cmd = (
-            'lxc-attach --clear-env {0} -n {1} -- {2}'
-            .format(env, pipes.quote(name), cmd)
-        )
+        if isinstance(cmd, list):
+            lcmd = 'lxc-attach --clear-env {0} -n {1} --'.format(
+                env, pipes.quote(name))
+            for i in cmd:
+                lcmd += ' {0}'.format(pipes.quote(i))
+            cmd = lcmd
+        else:
+            cmd = (
+                'lxc-attach --clear-env {0} -n {1} -- {2}'
+                .format(env, pipes.quote(name), cmd)
+            )
 
         if not use_vt:
             ret = __salt__[cmd_func](cmd,
