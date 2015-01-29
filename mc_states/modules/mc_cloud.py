@@ -235,26 +235,17 @@ def ssl_certs_for(main_domain, domains=None, ssl_certs=None):
     if main_domain not in domains:
         domains.insert(0, main_domain)
     domains = _s['mc_utils.uniquify'](domains)
-    for cert, key in _s['mc_ssl.ssl_certs'](domains):
-        certname = cert
-        if certname.endswith('.crt'):
-            certname = os.path.basename(certname)[:-4]
-        if certname.endswith('.bundle'):
-            certname = os.path.basename(certname)[:-7]
-        data = {'full': '', cert: None, key: None}
-        for f in [cert, key]:
-            with open(f) as fic:
-                content = fic.read()
-                data['full'] += content
-                data[f] = content
-        try:
-            certname = _s['mc_ssl.load_cert'](
-                _s['mc_ssl.ssl_chain'](certname, data[cert])[0]
-            ).get_subject().CN
-        except Exception:
-            pass
-        if certname not in [a[0] for a in ssl_certs]:
-            ssl_certs.append((certname, data['full'], data[cert], data[key]))
+    for domain in domains:
+        for cert, key, chain in _s['mc_ssl.ca_ssl_certs'](domain):
+            full = cert + chain + key
+            try:
+                certname = _s['mc_ssl.load_cert'](
+                    _s['mc_ssl.ssl_chain'](domain, cert)[0]
+                ).get_subject().CN
+            except Exception:
+                pass
+            if certname not in [a[0] for a in ssl_certs]:
+                ssl_certs.append((certname, full, cert, key, chain))
     return ssl_certs
 
 

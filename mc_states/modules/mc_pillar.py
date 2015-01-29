@@ -770,9 +770,9 @@ def get_ldap(ttl=60):
                 # maybe generate and get the ldap certificates info
                 ssl_infos = _s['mc_ssl.ca_ssl_certs'](
                     ssl_domain, as_text=True)[0]
-                sdata.setdefault('tls_cacert', ssl_infos[0])
-                sdata.setdefault('tls_cert', ssl_infos[1])
-                sdata.setdefault('tls_key', ssl_infos[2])
+                sdata.setdefault('tls_cacert', ssl_infos[2])
+                sdata.setdefault('tls_cert', ssl_infos[0])
+                sdata.setdefault('tls_key', ssl_infos[1])
         rids = {}
         slavesids = [a for a in slaves]
         slavesids.sort()
