@@ -146,7 +146,7 @@ def vt_default_settings(cloudSettings, imgSettings, ttl=60):
                 'mode': cloudSettings['mode'],
                 'master_port': cloudSettings['master_port'],
                 'bootsalt_branch': cloudSettings['bootsalt_branch'],
-                'bootsalt_shell': cloudSettings['bootsalt_shell'],
+                'bootstrap_shell': cloudSettings['bootstrap_shell'],
                 'script': cloudSettings['script'],
                 'script_args': cloudSettings['bootsalt_mastersalt_args'],
                 #
