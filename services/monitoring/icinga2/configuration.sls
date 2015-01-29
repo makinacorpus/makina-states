@@ -33,8 +33,6 @@ icinga2-confddefault-rename:
   file.rename:
     - name: {{confd}}.default
     - source: {{confd}}
-    - user: root
-    - group: root
     - force: true
     - watch:
       - mc_proxy: icinga2-predefault-conf
