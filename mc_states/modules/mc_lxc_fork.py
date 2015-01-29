@@ -1228,6 +1228,7 @@ def init(name,
                 if cmd_retcode(name,
                                ('sh -c \'touch "{0}"; test -e "{0}"\''
                                 .format(gid)),
+                               python_shell=True,
                                ignore_retcode=True) != 0:
                     ret['comment'] = 'Failed to set password marker'
                     changes[-1]['password'] += '. ' + ret['comment'] + '.'
@@ -1256,6 +1257,7 @@ def init(name,
                 if cmd_retcode(name,
                                ('sh -c \'touch "{0}"; test -e "{0}"\''
                                 .format(gid)),
+                               python_shell=True,
                                ignore_retcode=True) != 0:
                     ret['comment'] = 'Failed to set DNS marker'
                     changes[-1]['dns'] += '. ' + ret['comment'] + '.'
@@ -2229,7 +2231,7 @@ def info(name):
             ret['memory_free'] = free
             ret['size'] = cmd_run_stdout(name,
                                         'df /|tail -n1|awk \'{{print $2}}\'',
-                                         python_shell=False)
+                                         python_shell=True)
 
             # First try iproute2
             ip_cmd = cmd_run_all(name, 'ip link show', python_shell=False)
@@ -2587,7 +2589,7 @@ def bootstrap(name,
         cmd = ('sh -c "if command -v salt-minion; then '
             'salt-call --local service.stop salt-minion; exit 0; '
             'else exit 1; fi"')
-        needs_install = cmd_retcode(name, cmd) == 1
+        needs_install = cmd_retcode(name, cmd, python_shell=True) == 1
     seeded = cmd_retcode(name, 'test -e \'{0}\''.format(SEED_MARKER)) == 0
     tmp = tempfile.mkdtemp()
     if seeded and not unconditional_install:
@@ -3334,7 +3336,7 @@ def cp(name, source, dest, makedirs=False):
         __salt__['cmd.run_stdout'](
             'cat "{0}" | lxc-attach --clear-env --set-var {1} -n {2} -- '
             'tee "{3}"'.format(source, PATH, name, dest),
-            python_shell=False
+            python_shell=True
         )
         return source_md5 == _get_md5(name, dest)
     # Checksums matched, no need to copy, just return True
