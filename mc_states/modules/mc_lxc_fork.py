@@ -1742,7 +1742,7 @@ def ls_():
     try:
         return __context__['lxc.ls']
     except KeyError:
-        output = __salt__['tmd.run']('lxc-ls | sort -u', python_shell=True)
+        output = __salt__['cmd.run']('lxc-ls | sort -u', python_shell=True)
         __context__['lxc.ls'] = output.splitlines()
     return __context__['lxc.ls']
 
