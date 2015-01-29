@@ -13,6 +13,7 @@ shorewall-preinstall:
       - mc_proxy: shorewall-activation
 shorewall-postinstall:
   mc_proxy.hook:
+    - watch_in:
       - mc_proxy: shorewall-preconf
       - mc_proxy: shorewall-postconf
       - mc_proxy: shorewall-activation
