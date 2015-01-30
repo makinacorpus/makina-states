@@ -3233,11 +3233,13 @@ def get_ssl_conf(id_, ttl=60):
                 wd = '*.' + '.'.join(d.split('.')[1:])
                 todo[wd] = wd
         for did, domain in todo.items():
-            lcert, lkey = _s[
-                'mc_ssl.selfsigned_ssl_certs'](domain, as_text=True)[0]
-            cert = _s['mc_ssl.load_cert'](
-                _s['mc_ssl.ssl_chain'](domain, lcert)[0])
-            add_ssl_cert(cert.get_subject().CN, lcert, lkey, rdata)
+            for certdata in _s[
+                'mc_ssl.ssl_certs'](domain, as_text=True):
+                lcert = certdata[0]
+                lkey = certdata[1]
+                scert, schain = _s['mc_ssl.ssl_chain'](domain, lcert)
+                cinfos = _s['mc_ssl.load_cert'](scert)
+                add_ssl_cert(cinfos.get_subject().CN, lcert, lkey, rdata)
         return rdata
     cache_key = 'mc_pillar.get_ssl_conf{0}'.format(id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
