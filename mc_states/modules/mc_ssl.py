@@ -66,11 +66,17 @@ def get_cloud_settings():
     return __salt__['mc_cloud.get_cloud_settings']()
 
 
+def is_wildcard(domain):
+    if domain.count('.') >= 2 and not domain.startswith('*.'):
+        return True
+    return False
+
+
 def get_wildcard(domain):
     wdomain = None
     # try also to resolve a wildcard certificate if possible
     # and honnor that we cant wildcard TLD (we should not be a subdomain of a tld domain)
-    if domain.count('.') >= 2 and not domain.startswith('*.'):
+    if is_wildcard(domain):
         wdomain = '*.' + '.'.join(domain.split('.')[1:])
     return wdomain
 
