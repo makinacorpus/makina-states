@@ -22,3 +22,4 @@
 # from minion.d/*.conf (minion.d is a directory in the same directory
 # as the main minion config file).
 {{ get_config('default_include', 'minion.d/*.conf') }}
+# vim:set ft=sls:

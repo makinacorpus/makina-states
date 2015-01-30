@@ -25,3 +25,4 @@
 # from master.d/*.conf (master.d is a directory in the same directory
 # as the main master config file)
 {{ get_config('default_include', 'master.d/*.conf') }}
+# vim:set ft=sls:
