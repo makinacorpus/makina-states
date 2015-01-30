@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 '''
 
@@ -216,21 +215,28 @@ def ssl_keys(cert_string):
             cert_string = fic.read()
     keys = []
     if cert_string and cert_string.strip():
-        certstring = ''
+        content, start_rsa, start_dsa, stop_dsa, stop_rsa = (
+            '', False, False, False, False)
         for i in cert_string.splitlines():
-            if (
-                certstring
-                or ('-----BEGIN PRIVATE KEY-----' in i)
-            ):
-                certstring += i.strip()
-                if not certstring.endswith('\n'):
-                    certstring += '\n'
-            if certstring and ('-----END PRIVATE KEY-----' in i.strip()):
-                ocert = load_key(certstring)
+            if '-----BEGIN PRIVATE KEY-----' in i:
+                start_dsa = True
+            if '-----BEGIN RSA PRIVATE KEY-----' in i:
+                start_rsa = True
+            if '-----END PRIVATE KEY-----' in i:
+                stop_dsa = True
+            if '-----END RSA PRIVATE KEY-----' in i:
+                stop_rsa = True
+            if content or start_rsa or start_dsa:
+                content += i.strip()
+                if not content.endswith('\n'):
+                    content += '\n'
+            if content and (stop_dsa or stop_rsa):
+                ocert = load_key(content)
                 if ocert is not None:
                     # valid cert
-                    keys.append(certstring)
-                certstring = ''
+                    keys.append(content)
+                content, start_rsa, start_dsa, stop_dsa, stop_rsa = (
+                    '', False, False, False, False)
     return keys
 
 
