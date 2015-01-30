@@ -3229,8 +3229,8 @@ def get_ssl_conf(id_, ttl=60):
         # load also a selfsigned wildcard
         # certificate for all of those domains
         for d in todo.values():
-            if d.count('.') >= 2 and not d.startswith('*.'):
-                wd = '*.' + '.'.join(d.split('.')[1:])
+            wd = _s['mc_ssl.get_wildcard'](d)
+            if wd:
                 todo[wd] = wd
         for did, domain in todo.items():
             for certdata in _s['mc_ssl.ssl_certs'](domain, as_text=True):

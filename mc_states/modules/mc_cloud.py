@@ -253,7 +253,7 @@ def add_ms_ssl_certs(data, extdata=None):
     if not isinstance(extdata, dict):
         extdata = data
     for i in extdata.get('ssl_certs', []):
-        __salt__['mc_pillar.add_ssl_cert'](i[0], i[2], i[3], data=data)
+        __salt__['mc_pillar.add_ssl_cert'](i[0], i[2] + i[5], i[3], data=data)
     return data
 
 
