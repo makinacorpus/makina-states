@@ -21,7 +21,12 @@ nscd-restart:
             fi
     - require:
       - pkg: nscd-pkgs
-
+    - watch_in:
+      - mc_proxy: nscd-end-hook
+touch-etc-nsswitch-conf:
+  file.touch:
+    - name: {{ locs.conf_dir }}/nsswitch.conf
+{% if nscd.service_enabled %}
 nscd:
   service.running:
     - enable: True
@@ -30,8 +35,31 @@ nscd:
     - watch:
       - pkg: nscd-pkgs
       - file: touch-etc-nsswitch-conf
-
-touch-etc-nsswitch-conf:
-  file.touch:
-    - name: {{ locs.conf_dir }}/nsswitch.conf
+    - watch_in:
+      - mc_proxy: nscd-end-hook
+{% else %}
+nscd-e:
+  service.dead:
+    - names:
+      - nscd
+    - enable: False
+    - watch:
+      - pkg: nscd-pkgs
+      - file: touch-etc-nsswitch-conf
+    - watch_in:
+      - mc_proxy: nscd-end-hook
+nscd:
+  service.disabled:
+    - names:
+      - shorewall
+      - shorewall6
+    - watch:
+      - pkg: nscd-pkgs
+      - file: touch-etc-nsswitch-conf
+    - watch_in:
+      - mc_proxy: nscd-end-hook
 {% endif %}
+{% endif %}
+
+nscd-end-hook:
+  mc_proxy.hook: []
