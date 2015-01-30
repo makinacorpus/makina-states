@@ -2065,4 +2065,656 @@ def get_supervision_objects_defs(id_):
                 hdata['memory_mode'] = 'large'
             for vt in __salt__['mc_cloud_compute_node.get_all_vts']():
                 attrs['vars.{0}'.format(vt)] = vt in vts
-          
+                if vt in vts:
+                    [groups.append(i)
+                     for i in ['HG_HYPERVISOR',
+                               'HG_HYPERVISOR_{0}'.format(vt)]
+                     if i not in groups]
+            # try to guess provider from name to avoid a whois lookup
+            host_provider = None
+            for provider in providers:
+                if host.startswith(provider):
+                    host_provider = provider
+                    break
+            if not host_provider:
+                for provider in providers:
+                    if __salt__[
+                        'mc_network.is_{0}'.format(provider)
+                    ](attrs['address']):
+                        host_provider = provider
+                        break
+            if host_provider:
+                [groups.append(i)
+                 for i in ['HG_PROVIDER',
+                           'HG_PROVIDER_{0}'.format(host_provider)]
+                 if i not in groups]
+            [groups.append(i)
+             for i in ['HG_HOSTS', 'HG_BMS']
+             if i not in groups]
+            if host not in __salt__['mc_pillar.query']('non_managed_hosts'):
+                ds = hdata.setdefault('disk_space', [])
+                for i in ['/', '/srv']:
+                    if i not in ds:
+                        ds.append(i)
+            no_common_checks = hdata.get('no_common_checks', False)
+            if no_common_checks:
+                hdata.update(disable_common_checks)
+        vm_parent = None
+        if is_cloud_vm(id_):
+            vm_parent = maps['vms'][id_]['target']
+        for vm, vdata in maps['vms'].items():
+            if vm in non_supervised_hosts:
+                continue
+            physical_hosts_to_check.add(host)
+            vt = vdata['vt']
+            host = vdata['target']
+            host_ip = ip_for(host)
+            hdata = hhosts.setdefault(vm, OrderedDict())
+            attrs = hdata.setdefault('attrs', OrderedDict())
+            sattrs = hdata.setdefault('services_attrs', OrderedDict())
+            parents = attrs.setdefault('parents', [])
+            tipaddr = attrs.setdefault('address', ip_for(vm))
+            ssh_host = snmp_host = attrs.get('vars.SSH_HOST', tipaddr)
+            ssh_port = attrs.get('vars.SSH_PORT', 22)
+            snmp_port = attrs.get('vars.SNMP_PORT', 161)
+            sconf = get_snmpd_conf(id_)
+            nic_cards = ['eth0']
+            if vt in ['kvm', 'xen']:
+                hdata.setdefault('inotify', True)
+            p = ('makina-states.services.monitoring.'
+                 'snmpd.default_')
+            attrs.setdefault('vars.makina_host', host)
+            attrs.setdefault('vars.SNMP_PASS', sconf[p + 'password'])
+            attrs.setdefault('vars.SNMP_CRYPT', sconf[p + 'key'])
+            attrs.setdefault('vars.SNMP_USER',  sconf[p + 'user'])
+            if host not in parents:
+                parents.append(host)
+            # set the local ip for snmp and ssh
+            if vm_parent == host:
+                ssh_host = snmp_host = 'localhost'
+                ext_pillar = __salt__['mc_cloud_vm.vm_extpillar'](vm)
+                ssh_host = snmp_host = ext_pillar['ip']
+            # we can access sshd and snpd on cloud vms
+            # thx to special port mappings
+            if is_cloud_vm(vm) and (vm_parent != host) and vt in ['lxc']:
+                ssh_port = (
+                    __salt__['mc_cloud_compute_node.get_ssh_port'](vm))
+                snmp_port = (
+                    __salt__['mc_cloud_compute_node.get_snmp_port'](vm))
+            no_common_checks = vdata.get('no_common_checks', False)
+            if tipaddr == host_ip and vt in ['lxc']:
+                no_common_checks = True
+            if tipaddr != host_ip and vt in ['lxc', 'docker']:
+                # specific ip on lxc, monitor eth1
+                nic_cards.append('eth1')
+            groups = attrs.setdefault('groups', [])
+            [groups.append(i)
+             for i in ['HG_HOSTS', 'HG_VMS', 'HG_VM_{0}'.format(vt)]
+             if i not in groups]
+            # those checks are useless on lxc
+            if vt in ['lxc'] and vm in __salt__['mc_pillar.query']('non_managed_hosts'):
+                no_common_checks = True
+            if no_common_checks:
+                hdata.update(disable_common_checks)
+            attrs['vars.SSH_HOST'] = ssh_host
+            attrs['vars.SNMP_HOST'] = snmp_host
+            attrs['vars.SSH_PORT'] = ssh_port
+            attrs['vars.SNMP_PORT'] = snmp_port
+            hdata.setdefault('nic_card', nic_cards)
+
+        try:
+            backup_servers = query('backup_servers')
+        except Exception:
+            backup_servers = {}
+        for host in [a for a in hhosts]:
+            hdata = hhosts[host]
+            if host in backup_servers:
+                hdata['burp_counters'] = True
+            parents = hdata.setdefault('attrs', {}).setdefault('parents', [])
+            sattrs = hdata.setdefault('services_attrs', OrderedDict())
+            rparents = [a for a in parents if a != id_]
+            groups = hdata.get('attrs', {}).get('groups', [])
+            no_common_checks = hdata.get('no_common_checks', False)
+            if no_common_checks:
+                hdata.update(disable_common_checks)
+            for g in groups:
+                if g not in sobjs:
+                    sobjs[g] = {'attrs': {'display_name': g}}
+                if 'HG_PROVIDER_' in g:
+                    parents.append(g.replace('HG_PROVIDER_', ''))
+            # try to get addr from dns
+            if 'address' not in hdata['attrs']:
+                socket.setdefaulttimeout(1)
+                try:
+                    addr = socket.gethostbyname(host)
+                    # if we can determine that this entry is a vm
+                    # we should disable some checks
+                    # if this address is a failover
+                    if rparents:
+                        failover = [a
+                                    for a in parents
+                                    if a in net['ipsfo_map']]
+                        for h in failover:
+                            if addr in ips_for(h, fail_over=True):
+                                hdata.update(disable_common_checks)
+                                break
+                    hdata['attrs']['address'] = addr
+                except Exception:
+                    trace = traceback.format_exc()
+                    log.error('Error while determining addr for'
+                              ' {0}'.format(host))
+                    log.error(trace)
+            # do not check dummy ip failover'ed hosts for
+            # backup refreshness
+            # if host not in physical_hosts_to_check:
+            #    hdata['backup_burp_age'] = False
+            if hdata.get('backup_burp_age', None) is not False:
+                bsm = __salt__['mc_pillar.query']('backup_server_map')
+                burp_default_server = bsm['default']
+                burp_server = bsm.get(host, burp_default_server)
+                burpattrs = sattrs.setdefault('backup_burp_age', {})
+                burpattrs.setdefault('vars.SSH_HOST', burp_server)
+                burpattrs.setdefault('vars.SSH_PORT', 22)
+            # if id_ not in parents and id_ not in maps['vms']:
+            #    parents.append(id_)
+            if not hdata['attrs'].get('address'):
+                try:
+                    hdata['attrs']['address'] = ip_for(host)
+                except Exception:
+                    log.error('no address defined for {0}'.format(host))
+                    hhosts.pop(host, None)
+                    continue
+            if id_ == host:
+                for i in parents[:]:
+                    parents.pop()
+            hdata['parents'] = __salt__['mc_utils.uniquify'](parents)
+        for g in [a for a in sobjs]:
+            if 'HG_PROVIDER_' in g:
+                sobjs[g.replace('HG_PROVIDER_', '')] = {
+                    'type': 'Host',
+                    'attrs': {
+                        'import': ['HT_BASE'],
+                        'groups': [g, 'HG_PROVIDER'],
+                        'address': '127.0.0.1'}}
+        # be sure to skip non supervised hosts
+        for h in [
+            h for h in defs['autoconfigured_hosts']
+            if h in non_supervised_hosts
+        ]:
+            defs['autoconfigured_hosts'].pop(h, None)
+        rdata.update({'icinga2_definitions': defs})
+    return rdata
+
+
+def get_supervision_objects_defs_for(id_, for_):
+    return get_supervision_objects_defs(id_).get(
+        'icinga2_definitions', {}).get(
+            'autoconfigured_hosts', {}).get(for_, {})
+
+
+def get_supervision_pnp_conf(id_, ttl=60):
+    def _do_ms_var(id_):
+        k = 'makina-states.services.monitoring.pnp4nagios'
+        return {k: get_supervision_conf_kind(id_, 'pnp')}
+    cache_key = 'mc_pillar.get_supervision_pnp_conf{0}'.format(id_)
+    return memoize_cache(_do_ms_var, [id_], {}, cache_key, ttl)
+
+
+def get_supervision_nagvis_conf(id_, ttl=60):
+    def _do_ms_var(id_):
+        k = 'makina-states.services.monitoring.nagvis'
+        return {k: get_supervision_conf_kind(id_, 'nagvis')}
+    cache_key = 'mc_pillar.get_supervision_nagvis_conf{0}'.format(id_)
+    return memoize_cache(_do_ms_var, [id_], {}, cache_key, ttl)
+
+
+def get_supervision_ui_conf(id_, ttl=60):
+    def _do_ms_var(id_):
+        k = 'makina-states.services.monitoring.icinga_web'
+        return {k: get_supervision_conf_kind(id_, 'ui')}
+    cache_key = 'mc_pillar.get_supervision_ui_conf{0}'.format(id_)
+    return memoize_cache(_do_ms_var, [id_], {}, cache_key, ttl)
+
+
+def is_supervision_kind(id_, kind, ttl=60):
+    def _do(id_, kind):
+        try:
+            supervision = __salt__['mc_pillar.query']('supervision_configurations')
+        except KeyError:
+            log.error('no supervision_configurations section in database')
+            supervision = {}
+        if not supervision:
+            return False
+        for cid, data in supervision.items():
+            if data.get(kind, '') == id_:
+                return True
+        return False
+    cache_key = 'mc_pillar.is_supervision_kind{0}{1}'.format(id_, kind)
+    return memoize_cache(_do, [id_, kind], {}, cache_key, ttl)
+
+
+def format_rrs(domain, alt=None):
+    _s = __salt__
+    infos = _s['mc_pillar.get_nss_for_zone'](domain)
+    master = infos['master']
+    slaves = infos['slaves']
+    allow_transfer = []
+    if slaves:
+        slaveips = []
+        for s in slaves:
+            slaveips.append('key "{0}"'.format(_s['mc_pillar.ip_for'](s)))
+        allow_transfer = slaveips
+        soans = slaves.keys()[0]
+    else:
+        soans = master
+    soans += "."
+    if not alt:
+        alt = domain
+    rrs = [a.strip().replace(domain, alt)
+           for a in _s['mc_pillar.rrs_for'](domain, aslist=True)
+           if a.strip()]
+    rdata = {'allow_transfer': allow_transfer,
+             'serial': _s['mc_pillar.serial_for'](domain),
+             'soa_ns': soans.replace(domain, alt),
+             'soa_contact': 'postmaster.{0}.'.format(domain).replace(domain,
+                                                                     alt),
+             'rrs': rrs}
+    return rdata
+
+
+def slave_key(id_, dnsmaster=None, master=True):
+    pref = 'makina-states.services.dns.bind'
+    _s = __salt__
+    ip_for = _s['mc_pillar.ip_for']
+    rdata = {}
+    oip = ip_for(id_)
+    if not master:
+        mip = ip_for(dnsmaster)
+        # on slave side, declare the master as the tsig
+        # key consumer
+        rdata[pref + 'servers.{0}'.format(mip)] = {'keys': [oip]}
+    # on both, say to encode with the client tsig key when daemons
+    # are talking to each other
+    rdata[pref + '.keys.{0}'.format(oip)] = {
+        'secret': _s['mc_bind.tsig_for'](oip)}
+    return rdata
+
+
+def get_dns_slave_conf(id_):
+    _s = __salt__
+    if not _s['mc_pillar.is_dns_slave'](id_):
+        return {}
+    pref = 'makina-states.services.dns.bind'
+    rdata = {pref: True}
+    dnsmasters = {}
+    domains = _s['mc_pillar.get_slaves_zones_for'](id_)
+    for domain, masterdn in domains.items():
+        master = _s['mc_pillar.ip_for'](masterdn)
+        if masterdn not in dnsmasters:
+            dnsmasters.update({masterdn: master})
+        rdata[pref + '.zones.{0}'.format(domain)] = {
+            'server_type': 'slave', 'masters': [master]}
+    for dnsmaster, masterip in dnsmasters.items():
+        rdata.update(slave_key(id_, dnsmaster, master=False))
+    return rdata
+
+
+def get_dns_master_conf(id_):
+    _s = __salt__
+    if not _s['mc_pillar.is_dns_master'](id_):
+        return {}
+    pref = 'makina-states.services.dns.bind'
+    rdata = {pref: True}
+    altdomains = []
+    for domains in _s['mc_pillar.query'](
+        'managed_alias_zones'
+    ).values():
+        altdomains.extend(domains)
+    for domain in _s[
+        'mc_pillar.query'](
+            'managed_dns_zones'):
+        if domain not in altdomains:
+            rdata[pref + '.zones.{0}'.format(domain)] = _s[
+                'mc_pillar.format_rrs'](domain)
+    for domain, altdomains in _s[
+        'mc_pillar.query'](
+            'managed_alias_zones').items():
+        for altdomain in altdomains:
+            srrs = _s['mc_pillar.format_rrs'](
+                domain, alt=altdomain)
+            rdata['makina-states.services.dns.bind'
+                  '.zones.{0}'.format(altdomain)] = srrs
+    dnsslaves = _s['mc_pillar.get_slaves_for'](id_)['all']
+    if dnsslaves:
+        # slave tsig declaration
+        rdata[pref + '.slaves'] = [_s['mc_pillar.ip_for'](slv)
+                                   for slv in dnsslaves]
+        for dn in dnsslaves:
+            rdata.update(slave_key(dn))
+            rdata[
+                pref + '.servers.{0}'.format(_s['mc_pillar.ip_for'](dn))
+            ] = {'keys': [_s['mc_pillar.ip_for'](dn)]}
+    return rdata
+
+
+def manage_network_common(fqdn):
+    rdata = {
+        'makina-states.localsettings.network.managed': True,
+        'makina-states.localsettings.hostname': fqdn.split('.')[0]
+    }
+    return rdata
+
+
+def manage_bridged_fo_kvm_network(fqdn, host, ipsfo,
+                                  ipsfo_map, ips,
+                                  thisip=None,
+                                  ifc='eth0'):
+    ''''
+    setup the network adapters configuration
+    for a kvm vm on an ip failover setup'''
+    rdata = {}
+    if not thisip:
+        thisip = ipsfo[ipsfo_map[fqdn][0]]
+    gw = __salt__['mc_network.get_gateway'](
+        host, ips[host][0])
+    rdata.update(manage_network_common(fqdn))
+    rdata['makina-states.localsettings.network.ointerfaces'] = [{
+        ifc: {
+            'address': thisip,
+            'netmask': __salt__[
+                'mc_network.get_fo_netmask'](fqdn, thisip),
+            'broadcast': __salt__[
+                'mc_network.get_fo_broadcast'](fqdn, thisip),
+            'dnsservers': __salt__[
+                'mc_network.get_dnss'](fqdn, thisip),
+            'post-up': [
+                'route add {0} dev {1}'.format(gw, ifc),
+                'route add default gw {0}'.format(gw),
+            ]
+        }
+    }]
+
+
+def manage_baremetal_network(fqdn, ipsfo, ipsfo_map,
+                             ips, thisip=None,
+                             thisipfos=None, ifc='',
+                             out_nic='eth0'):
+    rdata = {}
+    if not thisip:
+        thisip = ips[fqdn][0]
+    if not thisipfos:
+        thisipfos = []
+        thisipifosdn = ipsfo_map.get(fqdn, [])
+        for edns in thisipifosdn:
+            thisipfos.append(ipsfo[edns])
+    rdata.update(manage_network_common(fqdn))
+    # br0: we use br0 as main interface with by
+    # defaultonly one port to escape to internet
+    if 'br' in ifc:
+        net = rdata[
+            'makina-states.localsettings.network.'
+            'ointerfaces'
+        ] = [{
+            ifc: {
+                'address': thisip,
+                'bridge_ports': out_nic,
+                'broadcast': __salt__[
+                    'mc_network.get_broadcast'](fqdn, thisip),
+                'netmask': __salt__[
+                    'mc_network.get_netmask'](fqdn, thisip),
+                'gateway': __salt__[
+                    'mc_network.get_gateway'](fqdn, thisip),
+                'dnsservers': __salt__[
+                    'mc_network.get_dnss'](fqdn, thisip)
+            }},
+            {out_nic: {'mode': 'manual'}},
+        ]
+    # eth0/em0: do not use bridge but a
+    # real interface
+    else:
+        ifc = out_nic
+        net = rdata[
+            'makina-states.localsettings.network.'
+            'ointerfaces'
+        ] = [{
+            ifc: {
+                'address': thisip,
+                'broadcast': __salt__[
+                    'mc_network.get_broadcast'](fqdn, thisip),
+                'netmask': __salt__[
+                    'mc_network.get_netmask'](fqdn, thisip),
+                'gateway': __salt__[
+                    'mc_network.get_gateway'](fqdn, thisip),
+                'dnsservers': __salt__[
+                    'mc_network.get_dnss'](fqdn, thisip)
+            }
+        }]
+    if thisipfos:
+        for ix, thisipfo in enumerate(thisipfos):
+            ifinfo = {"{0}_{1}".format(ifc, ix): {
+                'ifname': "{0}:{1}".format(ifc, ix),
+                'address': thisipfo,
+                'netmask': __salt__[
+                    'mc_network.get_fo_netmask'](fqdn, thisipfo),
+                'broadcast': __salt__[
+                    'mc_network.get_fo_broadcast'](fqdn, thisipfo),
+            }}
+            net.append(ifinfo)
+    return rdata
+
+
+def get_sysnet_conf(id_):
+    gconf = get_configuration(id_)
+    ms_vars = get_makina_states_variables(id_)
+    rdata = {}
+    net = __salt__['mc_pillar.load_network_infrastructure']()
+    ips = net['ips']
+    ipsfo = net['ipsfo']
+    ipsfo_map = net['ipsfo_map']
+    if not (
+        ms_vars.get('is_bm', False)
+        and gconf.get('manage_network', False)
+    ):
+        return {}
+    if id_ in __salt__['mc_pillar.query']('baremetal_hosts'):
+        # always use bridge as main_if
+        rdata.update(
+            manage_baremetal_network(
+                id_, ipsfo, ipsfo_map, ips, ifc='br0'))
+    else:
+        for vt, targets in __salt__['mc_pillar.query']('vms').items():
+            if vt != 'kvm':
+                continue
+            for target, vms in targets.items():
+                if vms is None:
+                    log.error('No vms for {0}, error?'.format(target))
+                if id_ not in vms:
+                    continue
+                manage_bridged_fo_kvm_network(
+                    id_, target, ipsfo,
+                    ipsfo_map, ips)
+    return rdata
+
+
+def get_check_raid_conf(id_):
+    rdata = {}
+    maps = __salt__['mc_pillar.get_db_infrastructure_maps']()
+    pref = "makina-states.nodetypes.check_raid"
+    if id_ in maps['bms']:
+        rdata.update({pref: True})
+    return rdata
+
+
+def get_supervision_client_conf(id_):
+    gconf = get_configuration(id_)
+    rdata = {}
+    pref = "makina-states.services.monitoring.client"
+    if gconf.get('supervision_client', False):
+        rdata.update({pref: True})
+    return rdata
+
+
+def get_snmpd_conf(id_, ttl=60):
+    def _do(id_):
+        gconf = get_configuration(id_)
+        rdata = {}
+        pref = "makina-states.services.monitoring.snmpd"
+        if is_salt_managed(id_):
+            data = __salt__['mc_pillar.get_snmpd_settings'](id_)
+        else:
+            local_conf = __salt__['mc_macros.get_local_registry'](
+                'pillar_snmpd', registry_format='pack')
+            data = local_conf.setdefault(id_, {})
+            data['user'] = secure_password(8)
+            data['password'] = secure_password(12)
+            data['key'] = secure_password(32)
+            __salt__['mc_macros.update_local_registry'](
+                'pillar_snmpd', local_conf, registry_format='pack')
+        rdata[pref] = True
+        if (
+            gconf.get('manage_snmpd', False)
+            and id_ not in query('non_managed_hosts')
+        ):
+            rdata.update({
+                pref: True,
+                pref + ".default_user": data['user'],
+                pref + ".default_password": data['password'],
+                pref + ".default_key": data['key']})
+        return rdata
+    cache_key = 'mc_pillar.get_snmpd_conf{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+
+
+def get_backup_client_conf(id_):
+    gconf = get_configuration(id_)
+    rdata = {}
+    if gconf.get('manage_backups', False):
+        conf = __salt__['mc_pillar.get_configuration'](id_)
+        mode = conf['backup_mode']
+        if mode == 'rdiff':
+            rdata['makina-states.services.backup.rdiff-backup'] = True
+        elif 'burp' in mode:
+            rdata['makina-states.services.backup.burp.client'] = True
+    return rdata
+
+
+def get_supervision_master_conf(id_, ttl=60):
+    def _do_ms_var(id_):
+        rdata = {}
+        k = 'makina-states.services.monitoring.icinga2'
+        rdata[k] = get_supervision_conf_kind(id_, 'master')
+        rdata['makina-states.services.monitoring.'
+              'icinga2.modules.cgi.enabled'] = False
+        return rdata
+    cache_key = 'mc_pillar.get_supervision_master_conf{0}'.format(id_)
+    return memoize_cache(_do_ms_var, [id_], {}, cache_key, ttl)
+
+
+def get_supervision_confs(id_, ttl=60):
+    def _do(id_):
+        rdata = {}
+        for kind in ['master', 'ui', 'pnp', 'nagvis']:
+            if __salt__['mc_pillar.is_supervision_kind'](id_, kind):
+                rdata.update({
+                    'master': get_supervision_master_conf,
+                    'ui': get_supervision_ui_conf,
+                    'pnp': get_supervision_pnp_conf,
+                    'nagvis': get_supervision_nagvis_conf
+                }[kind](id_))
+        rdata.update(
+            __salt__['mc_pillar.get_supervision_objects_defs'](id_))
+        return rdata
+    cache_key = 'mc_pillar.get_supervision_confs{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+
+
+def get_sudoers_conf(id_):
+    gconf = get_configuration(id_)
+    rdata = {}
+    pref = "makina-states.localsettings.admin.sudoers"
+    if is_salt_managed(id_) and gconf.get('manage_sudoers', False):
+        rdata.update({
+            pref: __salt__['mc_pillar.get_sudoers'](id_)})
+    return rdata
+
+
+def get_packages_conf(id_):
+    gconf = get_configuration(id_)
+    rdata = {}
+    pref = "makina-states.localsettings.pkgs.apt"
+    if gconf.get('manage_packages', False):
+        rdata.update({
+            pref + ".ubuntu.mirror": "http://mirror.ovh.net/ftp.ubuntu.com/",
+            pref + ".debian.mirror": (
+                "http://mirror.ovh.net/ftp.debian.org/debian/")
+        })
+    return rdata
+
+
+def get_shorewall_conf(id_):
+    gconf = get_configuration(id_)
+    rdata = {}
+    if gconf.get('manage_shorewall', False):
+        rdata.update(__salt__['mc_pillar.get_shorewall_settings'](id_))
+    return rdata
+
+
+def get_autoupgrade_conf(id_):
+    rdata = {}
+    if is_managed(id_):
+        gconf = get_configuration(id_)
+        rdata['makina-states.localsettings.autoupgrade'] = gconf[
+            'manage_autoupgrades']
+    return rdata
+
+
+def is_managed(id_, ttl=60):
+    """
+    Known in our infra but maybe not a salt minon
+    """
+    def _do(id_):
+        db = get_db_infrastructure_maps()
+        return id_ in db['hosts']
+    cache_key = 'mc_pillar.is__managed_{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+
+
+def is_salt_managed(id_, ttl=60):
+    """
+    Known in our infra / and also a salt minion where we expose most
+    of the ext_pillars
+    """
+    def _do(id_):
+        get_db_infrastructure_maps()
+        return is_managed(id_) and id_ not in query('non_managed_hosts')
+    cache_key = 'mc_pillar.is_salt_managed_{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+
+
+def get_fail2ban_conf(id_):
+    gconf = get_configuration(id_)
+    rdata = {}
+    pref = "makina-states.services.firewall.fail2ban"
+    if gconf.get('manage_snmpd', False):
+        rdata.update({
+            pref: True,
+            pref + ".ignoreip": __salt__['mc_pillar.whitelisted'](id_)})
+    return rdata
+
+
+def get_ntp_server_conf(id_):
+    gconf = get_configuration(id_)
+    rdata = {}
+    if gconf.get('manage_ntp_server', False):
+        rdata.update({
+            'makina-states.services.base.ntp.kod': False,
+            'makina-states.services.base.ntp.peer': False,
+            'makina-states.services.base.ntp.trap': False,
+            'makina-states.services.base.ntp.query': False})
+    return rdata
+
+
+def get_ldap_client_conf(id_):
+    gconf = get_configuration(id_)
+    rdata = {}
+    if is_salt_managed(id_) and gconf
