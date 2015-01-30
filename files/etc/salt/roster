@@ -7,3 +7,5 @@
   {% for item, val in data.items() -%}{{item}}: {{val}}
   {% endfor %}
 {% endfor %}
+
+# vim:set ft=sls:
