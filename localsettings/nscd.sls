@@ -6,6 +6,7 @@
 {{ salt['mc_macros.register']('localsettings', 'nscd') }}
 {% if salt['mc_controllers.mastersalt_mode']() %}
 {%- set locs = salt['mc_locations.settings']() %}
+{%- set nscd = salt['mc_nscd.settings']() %}
 nscd-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
@@ -32,7 +33,7 @@ nscd:
     - enable: True
     - require:
       - cmd: nscd-restart
-    - watch:
+    - require:
       - pkg: nscd-pkgs
       - file: touch-etc-nsswitch-conf
     - watch_in:
@@ -43,7 +44,7 @@ nscd-e:
     - names:
       - nscd
     - enable: False
-    - watch:
+    - require:
       - pkg: nscd-pkgs
       - file: touch-etc-nsswitch-conf
     - watch_in:
@@ -51,9 +52,8 @@ nscd-e:
 nscd:
   service.disabled:
     - names:
-      - shorewall
-      - shorewall6
-    - watch:
+      - nscd
+    - require:
       - pkg: nscd-pkgs
       - file: touch-etc-nsswitch-conf
     - watch_in:
