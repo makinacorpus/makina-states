@@ -382,6 +382,36 @@ def report(*a, **kw):
     return __salt__['mc_cloud_compute_node.report'](*a, **kw)
 
 
+def remove(node_name,
+           destroy=False,
+           remove_key=True,
+           only_stop=False,
+           **kwargs):
+    '''
+    Remove a node
+    NOTE: only lxc vms are supported for now
+    Actually this consists in:
+
+        - disabling crons
+        - disabling services
+        - unlinking the key from mastersalt
+
+    '''
+    _s = __salt__
+    settings = _s['mc_api.get_cloud_controller_settings']()
+    if node_name not in settings['vms']:
+        return False
+    vm = settings['vms'][node_name]
+    fun = 'mc_cloud_{0[vt]}.remove'.format(vm)
+    if fun not in _s:
+        return False
+    kwargs['remove_key'] = remove_key
+    kwargs['destroy'] = destroy
+    kwargs['only_stop'] = only_stop
+    ret = _s[fun](node_name, **kwargs)
+    return ret
+
+
 def test(*a, **kw):
     import time
     print('bar')

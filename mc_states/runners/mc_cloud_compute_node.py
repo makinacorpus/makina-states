@@ -551,4 +551,11 @@ def report(targets, ret=None, refresh=False, output=True):
     __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end', fname, ret=ret)
     return ret
+
+
+def remove(cn, **kwargs):
+    _s = __salt__
+    ret = _s['mc_api.remove'](cn, **kwargs)
+    return ret
+
 #

@@ -490,4 +490,31 @@ def vm_preprovision(vm, ret=None, output=True):
 
     '''
     return vm_configure('preprovision', vm, ret=ret, output=output)
+
+
+def remove(vm, **kwargs):
+    '''
+    Remove a container
+    '''
+    _s = __salt__
+    vm_data = _s['mc_api.get_vm'](vm)
+    tgt = vm_data['target']
+    ret = _s['mc_api.remove'](vm,
+                              sshport=vm_data['ssh_reverse_proxy_port'],
+                              sshhost=tgt,
+                              **kwargs)
+    if ret and kwargs.get('destroy', False):
+        only_stop = kwargs.get('only_stop', False)
+        if cli('test.ping', salt_target=tgt):
+            if not cli('lxc.exists', vm, salt_target=tgt):
+                return True
+            if 'running' == cli('lxc.state', vm, salt_target=tgt):
+                ret = cli('mc_lxc_fork.stop', vm, salt_target=tgt)
+            ret = cli('mc_lxc_fork.reconfigure', vm,
+                      autostart=False, salt_target=tgt)
+            if not only_stop:
+                ret = cli('mc_lxc_fork.destroy', vm,
+                          salt_target=tgt)['result']
+    return ret
+
 # vim:set et sts=4 ts=4 tw=80:

@@ -2450,10 +2450,12 @@ def manage_baremetal_network(fqdn, ipsfo, ipsfo_map,
     rdata.update(manage_network_common(fqdn))
     # br0: we use br0 as main interface with by
     # defaultonly one port to escape to internet
+
+    pref = ('makina-states.localsettings.network.'
+            'ointerfaces')
     if 'br' in ifc:
         net = rdata[
-            'makina-states.localsettings.network.'
-            'ointerfaces'
+            pref
         ] = [{
             ifc: {
                 'address': thisip,
@@ -2474,8 +2476,7 @@ def manage_baremetal_network(fqdn, ipsfo, ipsfo_map,
     else:
         ifc = out_nic
         net = rdata[
-            'makina-states.localsettings.network.'
-            'ointerfaces'
+            pref
         ] = [{
             ifc: {
                 'address': thisip,
@@ -2533,6 +2534,18 @@ def get_sysnet_conf(id_):
                 manage_bridged_fo_kvm_network(
                     id_, target, ipsfo,
                     ipsfo_map, ips)
+    pref = ('makina-states.localsettings.network.'
+            'ointerfaces')
+    try:
+        net_ext_pillar = query('network_settings')[id_]
+    except KeyError:
+        net_ext_pillar = {}
+    if net_ext_pillar and rdata.get(pref, None):
+        for i in range(len(rdata[pref])):
+            for ifc in [ifc for ifc in net_ext_pillar
+                        if ifc in rdata[pref][i]]:
+                rdata[pref][i][ifc] = __salt__['mc_utils.dictupdate'](
+                    rdata[pref][i][ifc], net_ext_pillar[ifc])
     return rdata
 
 
