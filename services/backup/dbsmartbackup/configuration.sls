@@ -70,3 +70,11 @@ dbsmartbackup_slapd.conf:
     - makedirs: true
     - template: jinja
     - mode: 700
+
+dbsmartbackup_elasticsearch_conf:
+  file.managed:
+    - name: /etc/dbsmartbackup/elasticsearch.conf
+    - source: salt://makina-states/files/etc/dbsmartbackup/elasticsearch.conf
+    - makedirs: true
+    - template: jinja
+    - mode: 700
