@@ -182,6 +182,10 @@ class _CycleError(Exception):
     """."""
 
 
+def deepcopy(arg):
+    return copy.deepcopy(arg)
+
+
 def dictupdate(dict1, dict2):
     '''
     Merge two dictionnaries recursively
