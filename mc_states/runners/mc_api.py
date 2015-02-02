@@ -15,6 +15,7 @@ import salt.output
 from pprint import pformat
 from mc_states.utils import memoize_cache
 import traceback
+import salt.wheel
 import datetime
 import logging
 
@@ -317,6 +318,49 @@ def get_compute_node(vm, ttl=60):
         return compute_node
     cache_key = 'rmc_api.get_cn{0}'.format(vm)
     return memoize_cache(_do, [vm], {}, cache_key, ttl)
+
+
+def remove(id_,
+           sshport=22,
+           sshhost=None,
+           destroy=False,
+           remove_key=True,
+           **kwargs):
+    '''
+    Remove salt linking to a host (common code)
+    This requires ssh access
+    '''
+    _s = __salt__
+    if not sshhost:
+        sshhost = id_
+    if remove_key:
+        wheel = salt.wheel.Wheel(__opts__)
+        ret = wheel.call_func('key.delete', match=id_)
+    settings = _s['mc_api.get_cloud_controller_settings']()
+    if not (
+        id_ in settings['vms']
+        or id_ in settings['compute_nodes']
+    ):
+        raise Exception('not handled node {0}'.format(id_))
+    cmd = 'ssh {0} -p {1} /bin/true'.format(sshhost, sshport)
+    ret = not bool(cli('cmd.retcode', cmd))
+    if not ret:
+        log.error('{0} not running'.format(id_))
+        return True
+    # unactivate cron
+    cli('cmd.run',
+        ('ssh {0} -p {1} '
+         'sed -re "s/^#*/#/g" -i /etc/cron.d/*salt*'
+         '').format(sshhost, sshport))
+    services = ['salt-master', 'salt-minion',
+                'mastersalt-master', 'mastersalt-minion']
+    cmd = ('ssh {0} -p {1} "for i in {2};do'
+           ' if [ -e "/etc/init/\${{i}}.conf" ];then'
+           ' echo manual>/etc/init/\${{i}}.override;'
+           ' fi;service \${{i}} stop;done"').format(
+               sshhost, sshport, ' '.join(services))
+    cli('cmd.run', cmd)
+    return True
 
 
 def ping():
