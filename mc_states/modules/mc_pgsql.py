@@ -152,16 +152,23 @@ def settings():
         #
         # default activated postgresql versions & settings:
         #
-        defaultPgVersion = '9.3'
+        defaultPgVersion = '9.4'
+        for i in ['9.3', '9.2', '9.1']:
+            # if we have old wrappers, include the old versions
+            # to list of installed pgsql
+            if os.path.exists('/usr/bin/psql-{0}'.format(i)):
+                defaultPgVersion = i
+                break
+        defaultVersions = [defaultPgVersion]
         pgSettings = __salt__['mc_utils.defaults'](
             'makina-states.services.db.postgresql', {
                 'user': 'postgres',
                 'version': defaultPgVersion,
                 'defaultPgVersion': defaultPgVersion,
-                'versions': [defaultPgVersion],
+                'versions': defaultVersions,
                 'encoding': 'utf8',
                 'locale': 'fr_FR.UTF-8',
-                'postgis': {'2.1': [defaultPgVersion, '9.2']},
+                'postgis': {'2.1': defaultVersions + ['9.2']},
                 'postgis_db': 'postgis',
                 'pg_conf': {
                     'default': {
