@@ -12,14 +12,21 @@ include:
 # https://github.com/joyent/node/wiki/Installing-Node.js-via-package-manager#ubuntu-mint-elementary-os
 # We also install the official binaries inside /srv/app/nodejs/<ver>
 #}
+nodejs-repo-old:
+  file.absent:
+    - names:
+      - "{{locs.conf_dir}}/apt/sources.list.d/nodejs.list"
+      - "{{locs.conf_dir}}/apt/sources.list.d/nodejsn.list"
+      - "{{locs.conf_dir}}/apt/sources.list.d/nodejs_a.list"
+      - "{{locs.conf_dir}}/apt/sources.list.d/nodejs_b.list"
 nodejs-repo:
   pkgrepo.managed:
     - name: nodejs
     - humanname: Node.js PPA
-    - name: deb http://ppa.launchpad.net/chris-lea/node.js/ubuntu {{pkgsettings.dist}} main
+    - name: deb https://deb.nodesource.com/node {{pkgsettings.dist}} main
     - dist: {{pkgsettings.dist}}
-    - file: {{locs.conf_dir}}/apt/sources.list.d/nodejs.list
-    - keyid: C7917B12
+    - file: {{locs.conf_dir}}/apt/sources.list.d/nodejs_c.list
+    - key_url: "https://deb.nodesource.com/gpgkey/nodesource.gpg.key"
     - keyserver: keyserver.ubuntu.com
     - watch:
       - mc_proxy: nodejs-pre-system-install
