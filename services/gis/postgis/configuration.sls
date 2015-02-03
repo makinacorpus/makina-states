@@ -7,13 +7,14 @@ include:
 {% for postgisVer, pgvers in pgSettings.postgis.items() -%}
 {%  for pgVer in pgvers -%}
 {%    if pgVer in pgSettings.versions -%}
-{{ pgsql.postgresql_db(dbname, full=full) }}
+{{ pgsql.postgresql_db(dbname, full=full, version=pgVer) }}
 {{ pgsql.install_pg_exts(
     ["postgis",
      "postgis_topology",
      "fuzzystrmatch",
      "postgis_tiger_geocoder"],
     db=dbname,
+    versions=[pgVer],
     full=full) }}
 {%-    endif %}
 {%-  endfor %}
