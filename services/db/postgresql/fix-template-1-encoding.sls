@@ -52,11 +52,19 @@ makina-postgresql-{{version}}-fix-{{db}}:
     - user: {{default_user}}
     - name: psql-{{version}} {{db}} -f {{tmpf}}
     - unless: psql -t -A -F';;;' -c'\l'|egrep '^{{db}};;;'|egrep -i "{{locale[0:2]}}"|egrep -i 'utf.?8;;;$'
+    {% if db in ['template0', 'template1'] %}
     - require:
       - file: makina-postgresql-{{version}}-fix-{{db}}
       - mc_proxy: {{orchestrate['base']['presetup']}}
     - require_in:
       - mc_proxy: {{orchestrate['base']['postbase']}}
+    {%else%}
+    - require:
+      - file: makina-postgresql-{{version}}-fix-{{db}}
+      - mc_proxy: {{orchestrate[version]['postdb']}}
+    - require_in:
+      - mc_proxy: {{orchestrate[version]['preuser']}}
+    {%endif%}
 makina-postgresql-{{version}}-fix-{{db}}-cleanup:
   file.absent:
     - name: {{tmpf}}
