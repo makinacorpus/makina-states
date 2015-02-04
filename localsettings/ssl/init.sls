@@ -103,14 +103,14 @@ cpt-certs-install-openssl:
     - name: |
             set -e
             if [ -e /usr/local/share/ca-certificates ];then
-              cd /etc/ssl/cloud/certs/
+              cd /etc/ssl/cloud/separate/
               find -name "*.crt" | while read i
               do
                 cp "${i}" /usr/local/share/ca-certificates/"${i}"
               done
               update-ca-certificates
             fi
-    - onlyif: "test $(ls /etc/ssl/cloud/certs/*crt|wc -c) -gt 0"
+    - onlyif: "test $(ls /etc/ssl/cloud/separate/*crt|wc -c) -gt 0"
     - watch:
       - mc_proxy: cloud-sslcerts-pre
       - mc_proxy: ssl-certs-pre-hook
