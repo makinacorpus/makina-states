@@ -24,7 +24,7 @@ include:
                         user=default_user,
                         version=settings.defaultPgVersion,
                         extensions=None,
-                        full=True) -%}
+                        full=True, suf='') -%}
 {# group name is by default the db name #}
 {% if not extensions %}
 {% set extensions = [] %}
@@ -32,7 +32,7 @@ include:
 {%- if not owner -%}
 {%-   set owner = '%s_owners' % db %}
 {%- endif -%}
-{{ groups.postgresql_group(owner, user=user, login=True) }}
+{{ groups.postgresql_group(owner, user=user, login=True, suf=suf) }}
 {{version}}-{{ db }}-makina-postgresql-database:
   mc_postgres_database.present:
     - name: {{ db }}
@@ -58,7 +58,7 @@ include:
       - mc_proxy: {{version}}-{{ template }}-makina-postgresql-database-post-hook
       {% endif %}
 
-{{ version }}-{{ owner }}-groups-makina-postgresql-grant:
+{{ version }}-{{ owner }}-groups-makina-postgresql-grant{{suf}}:
   cmd.run:
     - name: |
             set -e
@@ -69,7 +69,7 @@ include:
     - require:
       - mc_postgres_database: {{version}}-{{ db }}-makina-postgresql-database
 
-{{ version }}-{{ owner }}-fix-owner:
+{{ version }}-{{ owner }}-fix-owner{{suf}}:
   file.managed:
     - name: /etc/postgresql/{{version}}-{{db}}-owners.sql
     - mode: 0755
@@ -77,6 +77,7 @@ include:
     - group: root
     - template: jinja
     - contents: |
+                ALTER DATABASE {{db}} OWNER TO {{owner}};
                 SELECT 'ALTER SCHEMA "' || n.NSPNAME || '" OWNER TO {{owner}};'
                 FROM PG_CATALOG.PG_NAMESPACE n
                 WHERE n.NSPNAME NOT ILIKE 'PG_%' AND n.NSPNAME NOT ILIKE 'INFORMATION_SCHEMA';
@@ -98,7 +99,7 @@ include:
             rm -f "${fic}"
     - user: {{ user }}
     - watch:
-      - file: {{ version }}-{{ owner }}-fix-owner
+      - file: {{ version }}-{{ owner }}-fix-owner{{suf}}
       - mc_proxy: {{orchestrate[version]['prefixowner'] }}
     - watch_in:
       - mc_proxy: {{orchestrate[version]['postfixowner'] }}
@@ -111,7 +112,7 @@ include:
 {{version}}-{{ db }}-makina-postgresql-database-post-hook:
   mc_proxy.hook:
     - watch:
-      - cmd: {{ version }}-{{ owner }}-groups-makina-postgresql-grant
+      - cmd: {{ version }}-{{ owner }}-groups-makina-postgresql-grant{{suf}}
 
 {{ ext.install_pg_ext('adminpack', db=db, version=version, user=default_user) }}
 {{version}}-{{ db }}-makina-postgresql-database-endpost-hook:

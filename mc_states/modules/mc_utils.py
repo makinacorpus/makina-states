@@ -11,16 +11,17 @@ import datetime
 import copy
 import os
 import salt.utils.dictupdate
-import cProfile, pstats
+from pprint import pformat
+import cProfile
+import pstats
 from salt.exceptions import SaltException
 import crypt
-import getpass
-import pwd
 import re
 import logging
 import salt.utils
 from salt.utils.odict import OrderedDict
 from salt.utils import yamldumper
+import salt.loader
 from mc_states import api
 
 import mc_states.utils
@@ -29,8 +30,6 @@ try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
     from yaml import Loader, Dumper
-import string
-import random
 from salt.utils.pycrypto import secure_password
 import salt.utils.network
 from salt.config import master_config, minion_config
@@ -755,7 +754,9 @@ def invalidate_memoize_cache(*args, **kw):
 
 
 def manage_file(name, **kwargs):
-    '''Easier wrapper to file.manage_file'''
+    '''
+    Easier wrapper to file.manage_file
+    '''
     for i in [a for a in kwargs if '__' in a]:
         kwargs.pop(i, None)
     log.error(kwargs.keys())
@@ -771,4 +772,65 @@ def manage_file(name, **kwargs):
     kwargs.setdefault('source', None)
     kwargs.setdefault('source_sum', None)
     return __salt__['file.manage_file'](name, **kwargs)
+
+
+def _outputters(outputter=None):
+    outputters = salt.loader.outputters(__opts__)
+    if outputter:
+        return outputters[outputter]
+    return outputters
+
+
+def output(mapping, raw=False, outputter='highstate'):
+    '''
+    This return a formatted output
+    '''
+    color = __opts__.get('color', None)
+    slashre = re.compile('[\\\]+', re.S | re.U | re.X)
+    __opts__['color'] = not raw
+    try:
+        if isinstance(mapping, dict) and (outputter == 'highstate'):
+            ret = _outputters(outputter)({'local': mapping})
+        else:
+            ret = _outputters(outputter)(mapping)
+    except MemoryError:
+        # try to print out something in RAW MODE
+        mmapping = copy.deepcopy(mapping)
+        # ugly hack inside:
+        # on error while display message
+        # with recursive \\, just try to strip them
+        # and reuse the outputter
+        try:
+            if not isinstance(mmapping, dict):
+                raise ValueError('not a dict, trying raw output')
+            for state in [
+                i for i in mmapping
+                if isinstance(mmapping[i], dict)
+            ]:
+                if not isinstance(mmapping[state], dict):
+                    continue
+                for k in [
+                    j for j in mmapping[state]
+                    if isinstance(mapping[state][j], basestring)
+                ]:
+                    mmapping[state][k] = slashre.sub('', mmapping[state][k])
+            if outputter == 'highstate':
+                ret = _outputters(outputter)({'local': mmapping})
+            else:
+                ret = _outputters(outputter)(mmapping)
+        except Exception:
+            # try to print out something in RAW MODE
+            # without outputter formatting
+            try:
+                ret = pformat(mmapping)
+            except Exception:
+                try:
+                    ret = u"{0}".format(mmapping)
+                except Exception:
+                    try:
+                        ret = "{0}".format(mmapping)
+                    except Exception:
+                        raise
+    __opts__['color'] = color
+    return ret
 #
