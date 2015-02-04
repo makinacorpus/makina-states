@@ -95,4 +95,24 @@ cpt-certs-cleanup:
     - watch_in:
       - mc_proxy: cloud-sslcerts
       - mc_proxy: ssl-certs-post-hook
+      - cmd: cpt-certs-install-openssl
 {% endif %}
+
+cpt-certs-install-openssl:
+  cmd.run:
+    - name: |
+            set -e
+            if [ -e /usr/local/share/ca-certificates ];then
+              cd /etc/ssl/cloud/certs/
+              find -name "*.crt" | while read i
+              do
+                cp "${i}" /usr/local/share/ca-certificates/"${i}"
+              done
+              update-ca-certificates
+            fi
+    - onlyif: "test $(ls /etc/ssl/cloud/certs/*crt|wc -c) -gt 0"
+    - watch:
+      - mc_proxy: cloud-sslcerts-pre
+      - mc_proxy: ssl-certs-pre-hook
+    - watch_in:
+      - mc_proxy: ssl-certs-post-hook
