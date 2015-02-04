@@ -11,16 +11,10 @@ import yaml.error
 import datetime
 import os
 import logging
-import socket
-from pprint import pformat
 import shutil
-import sys
 import traceback
 import uuid
 import yaml
-
-
-
 import copy
 from salt.utils.odict import OrderedDict
 import salt.template
@@ -28,14 +22,11 @@ from salt.states import group as sgroup
 from salt.states import user as suser
 from salt.states import file as sfile
 from salt.states import git as sgit
-#from mc_states.states import mc_git as sgit
 from salt.states import cmd as scmd
 import salt.output
 import salt.loader
 import salt.utils
 import salt.exceptions
-
-from mc_states.utils import is_valid_ip
 from mc_states.api import (
     splitstrip,
     msplitstrip,
@@ -150,23 +141,12 @@ def _filter_ret(ret, raw=False):
     return ret
 
 
-def _outputters(outputter=None):
-    outputters = salt.loader.outputters(__opts__)
-    if outputter:
-        return outputters[outputter]
-    return outputters
+def _hs(mapping, raw=False, outputter='highstate'):
+    return __salt__['mc_utils.output'](mapping, raw=raw, outputter=outputter)
 
 
-def _hs(mapping, raw=False):
-    color = __opts__.get('color', None)
-    __opts__['color'] = not raw
-    ret = _outputters('highstate')({'local': mapping})
-    __opts__['color'] = color
-    return ret
-
-
-def _raw_hs(mapping):
-    return _hs(mapping, raw=True)
+def _raw_hs(mapping, outputter='highstate'):
+    return _hs(mapping, raw=True, outputter=outputter)
 
 
 def _force_cli_retcode(ret):
