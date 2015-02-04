@@ -19,7 +19,7 @@
                          db_host=None,
                          db_port=None,
                          version=settings.defaultPgVersion,
-                         full=True) %}
+                         full=True, suf='') %}
 {%- if not groups %}
 {%-   set groups = [] %}
 {%- endif %}
@@ -37,7 +37,7 @@
                               version=version,
                               suf='-{0}-user'.format(name)) }}
 {%- endfor %}
-{{version}}-{{ name }}-makina-services-postgresql-user:
+{{version}}-{{ name }}-makina-services-postgresql-user{{suf}}:
   mc_postgres_user.present:
     - name: {{name}}
     - superuser: {{superuser if superuser != None else 'null'}}
