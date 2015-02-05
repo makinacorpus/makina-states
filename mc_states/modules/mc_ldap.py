@@ -141,8 +141,6 @@ def ldapEn(saltmods):
     return settings(saltmods).get('enabled', False)
 
 
-def dump():
-    return mc_states.utils.dump(__salt__,__name)
 
 #
 # -*- coding: utf-8 -*-

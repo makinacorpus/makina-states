@@ -409,8 +409,6 @@ def providers():
     return ['online', 'ovh', 'phpnet', 'sys']
 
 
-def dump():
-    return mc_states.utils.dump(__salt__,__name)
 
 
 def ext_ip():

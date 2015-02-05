@@ -266,7 +266,5 @@ def settings():
     return _settings()
 
 
-def dump():
-    return mc_states.utils.dump(__salt__,__name)
 
 #

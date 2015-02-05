@@ -82,7 +82,5 @@ def config_settings(config_name, config_file, enabled, **kwargs):
     uwsgiSettings['extra'] = copy.deepcopy(uwsgiSettings)
     return uwsgiSettings
 
-def dump():
-    return mc_states.utils.dump(__salt__,__name)
 
 #

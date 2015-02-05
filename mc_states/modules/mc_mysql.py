@@ -333,8 +333,6 @@ def settings(**kwargs):
     return _settings(**kwargs)
 
 
-def dump():
-    return mc_states.utils.dump(__salt__,__name)
 
 
 #

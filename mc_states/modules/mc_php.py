@@ -379,8 +379,6 @@ def get_fpm_socket_name(project):
                             settings['fpm_socket_name'])
 
 
-def dump():
-    return mc_states.utils.dump(__salt__, __name)
 
 
 def _composer_infos(composer='/usr/local/bin/composer'):

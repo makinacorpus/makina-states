@@ -85,7 +85,5 @@ def registry():
     return _registry()
 
 
-def dump():
-    return mc_states.utils.dump(__salt__, __name)
 
 #

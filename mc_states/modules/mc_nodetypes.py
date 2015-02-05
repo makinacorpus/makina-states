@@ -72,7 +72,5 @@ def is_vm():
     return False
 
 
-def dump():
-    return mc_states.utils.dump(__salt__, __name)
 
 #
