@@ -1,33 +1,39 @@
 {%- import "makina-states/services/db/postgresql/hooks.sls" as hooks with context %}
 
 include:
-  - makina-states.services.db.postgresql.hooks
-  - makina-states.services.db.postgresql.client
+  - makina-states.services.db.postgresql.hooks 
 
 {%- set orchestrate = hooks.orchestrate %}
 {%- set locs = salt['mc_locations.settings']() %}
 {% set pkgs = salt['mc_pkgs.settings']() %}
-{% set settings = salt['mc_pgsql.settings']() %}
+{% set settings = salt['mc_pgsql.settings']() %} 
+{%- if grains['os_family'] in ['Debian'] %}
+pgsql-repo:
+  pkgrepo.managed:
+    - name: deb http://apt.postgresql.org/pub/repos/apt/ {{pkgs.lts_dist}}-pgdg main
+    - file: {{ locs.conf_dir }}/apt/sources.list.d/pgsql.list
+    - keyid: 'ACCC4CF8'
+    - keyserver: {{pkgs.keyserver }}
+    - require:
+      - mc_proxy: {{orchestrate['base']['prepkg']}}
+    - require_in:
+      - mc_proxy: {{orchestrate['base']['postpkg']}}
+{%- endif %}
 
-postgresql-pkgs:
+postgresql-pkgs-client:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
       - python-virtualenv {# noop #}
       {% if grains['os_family'] in ['Debian'] %}
       {% for pgver in settings.versions %}
-      - postgresql-{{pgver}}
-      - postgresql-server-dev-{{pgver}}
-      - postgresql-{{pgver}}-pgextwlist
+      - postgresql-client-{{pgver}}
       {% endfor %}
       - libpq-dev
-      - pgtune
-      - postgresql-contrib
       {% endif %}
     {% if grains['os_family'] in ['Debian'] %}
     - require:
       - pkgrepo: pgsql-repo
-      - pkg: postgresql-pkgs-client
       - mc_proxy: {{orchestrate['base']['prepkg']}}
     - require_in:
       - mc_proxy: {{orchestrate['base']['postpkg']}}
-    {% endif %}
+    {% endif %} 
