@@ -1541,6 +1541,38 @@ def execute_garded_step(name,
                         *args, **kwargs)
 
 
+def sync_modules(name, *args, **kwargs):
+    cfg = get_configuration(name, *args, **kwargs)
+    ret = _get_ret(name, *args, **kwargs)
+    _s = __salt__
+    salt_root = cfg['salt_root']
+    system_salt = __opts__['file_roots']['base'][0]
+    for modules_t in [
+        'runners', 'grains',
+        'modules', 'pillars', 'renderers',
+        'returners',  'states'
+    ]:
+        _d = '_{0}'.format(modules_t)
+        orig = os.path.join(salt_root, _d)
+        dest = os.path.join(system_salt, _d)
+        if os.path.isdir(orig):
+            for i in [
+                a for a in os.listdir(orig)
+                if a.endswith('.py')
+            ]:
+                lnk = os.path.join(orig,  i)
+                lnkdst = os.path.join(dest, i)
+                if os.path.exists(lnkdst):
+                    _s['file.remove'](lnkdst)
+                if os.path.isfile(lnk):
+                    if not os.path.exists(dest):
+                        os.makedirs(dest)
+                    _append_comment(
+                        ret, summary=('Linking {0}'.format(lnkdst)))
+                    _s['file.symlink'](lnk, lnkdst)
+    return ret
+
+
 def deploy(name, *args, **kwargs):
     '''Deploy a project
 
@@ -1582,6 +1614,13 @@ def deploy(name, *args, **kwargs):
     # okay, if backups are now done and in OK status
     # hand tights for the deployment
 
+    if ret['result']:
+        guarded_step(cfg,
+                     ['sync_modules'],
+                     rollback=True,
+                     inner_step=True,
+                     ret=ret)
+
     only_steps = kwargs.get('only_steps', None)
     if ret['result']:
         guarded_step(cfg,
@@ -1591,6 +1630,7 @@ def deploy(name, *args, **kwargs):
                      ret=ret)
         cfg['force_reload'] = True
         cfg = get_configuration(name, *args, **kwargs)
+
     if ret['result']:
         guarded_step(cfg,
                      ['install'],
@@ -1727,6 +1767,12 @@ def install(name, only_steps=None, task_mode=False, *args, **kwargs):
         only_steps = only_steps.split(',')
     cfg = get_configuration(name, *args, **kwargs)
     ret = _get_ret(name, *args, **kwargs)
+    if ret['result']:
+        guarded_step(cfg,
+                     ['sync_modules'],
+                     rollback=True,
+                     inner_step=True,
+                     ret=ret)
     if not os.path.exists(cfg['installer_path']):
         raise ProjectInitException(
             'invalid project type or installer directory: {0}/{1}'.format(
@@ -1941,6 +1987,7 @@ def report():
     pt = '/srv/projects'
     ret = ''
     target = __grains__['id']
+    dconf = get_default_configuration()
     try:
         vmconf = __salt__['mc_cloud_vm.vm_settings']()
         if not vmconf and isinstance(vmconf, dict):
@@ -1962,12 +2009,12 @@ def report():
 {id}:
 {ips}
 SSH Config:
-Host {id}
-Port {conf[ssh_reverse_proxy_port]}
+Host {dconf[this_host]}
+Port {dconf[this_port]}
 User root
 ServerAliveInterval 5
 
-'''.format(conf=vmconf, id=target, ips=ips)
+'''.format(conf=vmconf, id=target, ips=ips, dconf=dconf)
     projects = os.listdir(pt)
     if projects:
         ret += 'Projects:'

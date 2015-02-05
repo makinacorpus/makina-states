@@ -42,6 +42,9 @@ APIS = {
     'install': {
         '2': 'mc_project_2.install',
     },
+    'sync_modules': {
+        '2': 'mc_project_2.sync_modules',
+    },
     'run_task': {
         '2': 'mc_project_2.run_task',
     },
@@ -139,6 +142,10 @@ def link(name, *args, **kwargs):
 
 def run_task(name, *args, **kwargs):
     return _api_switcher('run_task', name, *args, **kwargs)
+
+
+def sync_modules(name, *args, **kwargs):
+    return _api_switcher('sync_modules', name, *args, **kwargs)
 
 
 def doc_root(doc_root=None,
