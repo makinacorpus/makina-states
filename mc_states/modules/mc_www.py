@@ -49,7 +49,5 @@ def settings():
     return _settings()
 
 
-def dump():
-    return mc_states.utils.dump(__salt__,__name)
 
 # vim:set et sts=4 ts=4 tw=80:

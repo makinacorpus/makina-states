@@ -1223,7 +1223,5 @@ def add_check(host, services_enabled, svc, skey, default_value, vdata):
     return services_enabled
 
 
-def dump():
-    return mc_states.utils.dump(__salt__,__name)
 
 #

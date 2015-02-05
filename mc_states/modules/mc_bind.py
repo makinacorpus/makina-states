@@ -538,7 +538,5 @@ def get_zone(zone):
     return zdata
 
 
-def dump():
-    return mc_states.utils.dump(__salt__,__name)
 
 #

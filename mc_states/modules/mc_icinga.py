@@ -2213,6 +2213,4 @@ def clean_global_variables():
     del add_auto_configuration_host.objects
 
 
-def dump():
-    return mc_states.utils.dump(__salt__, __name)
 #

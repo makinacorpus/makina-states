@@ -361,7 +361,5 @@ def add_geomap_settings(name, hosts, **kwargs):
     return nagvisSettings
 
 
-def dump():
-    return mc_states.utils.dump(__salt__,__name)
 
 #

@@ -360,7 +360,5 @@ def vhost_settings(domain, doc_root, **kwargs):
     return nginxSettings
 
 
-def dump():
-    return mc_states.utils.dump(__salt__,__name)
 
 #
