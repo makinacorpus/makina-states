@@ -1550,7 +1550,7 @@ def sync_modules(name, *args, **kwargs):
     for modules_t in [
         'runners', 'grains',
         'modules', 'pillars', 'renderers',
-        'returners',  'runners', 'states'
+        'returners',  'states'
     ]:
         _d = '_{0}'.format(modules_t)
         orig = os.path.join(salt_root, _d)
