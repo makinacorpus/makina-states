@@ -1548,7 +1548,7 @@ def sync_modules(name, *args, **kwargs):
     salt_root = cfg['salt_root']
     system_salt = __opts__['file_roots']['base'][0]
     for modules_t in [
-        'runners', 'grains',
+        'runners', 'grains', 'outputters',
         'modules', 'pillars', 'renderers',
         'returners',  'states'
     ]:
