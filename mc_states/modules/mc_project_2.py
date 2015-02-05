@@ -461,19 +461,26 @@ def _defaultsConfiguration(
 
 def _merge_statuses(ret, cret, step=None):
     for d in ret, cret:
-        if not 'raw_comment' in d:
+        if 'raw_comment' not in d:
             d['raw_comment'] = ''
-    _append_separator(ret)
+    merge_comment = True
+    if 'comment' in cret:
+        if not (cret['comment'] and cret['comment'].strip()):
+            merge_comment = False
+    if merge_comment:
+        _append_separator(ret)
     if cret['result'] is False:
         ret['result'] = False
+    if cret is ret:
+        merge_comment = False
     if cret.get('changes', {}) and ('changes' in ret):
         ret['changes'].update(cret)
-    if step:
+    if merge_comment and bool(step):
         ret['comment'] += '\n{3}Execution step:{2} {1}{0}{2}'.format(
             step, _colors('YELLOW'), _colors('ENDC'), _colors('RED'))
         ret['raw_comment'] += '\nExecution step: {0}'.format(cret)
     for k in ['raw_comment', 'comment']:
-        if k in cret:
+        if merge_comment and (k in cret):
             try:
                 ret[k] += '\n{{{0}}}'.format(k).format(**cret)
             except UnicodeEncodeError:
@@ -1563,12 +1570,16 @@ def sync_modules(name, *args, **kwargs):
                 lnk = os.path.join(orig,  i)
                 lnkdst = os.path.join(dest, i)
                 if os.path.exists(lnkdst):
+                    if os.path.islink(lnkdst):
+                        if os.readlink(lnkdst) == lnk:
+                            continue
                     _s['file.remove'](lnkdst)
                 if os.path.isfile(lnk):
                     if not os.path.exists(dest):
                         os.makedirs(dest)
                     _append_comment(
-                        ret, summary=('Linking {0}'.format(lnkdst)))
+                        ret, summary=(
+                            'Linking {0} <- {1}'.format(lnkdst, lnk)))
                     _s['file.symlink'](lnk, lnkdst)
     return ret
 
