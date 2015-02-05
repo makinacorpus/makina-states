@@ -1941,6 +1941,7 @@ def report():
     pt = '/srv/projects'
     ret = ''
     target = __grains__['id']
+    dconf = get_default_configuration()
     try:
         vmconf = __salt__['mc_cloud_vm.vm_settings']()
         if not vmconf and isinstance(vmconf, dict):
@@ -1962,12 +1963,12 @@ def report():
 {id}:
 {ips}
 SSH Config:
-Host {id}
-Port {conf[ssh_reverse_proxy_port]}
+Host {dconf[this_host]}
+Port {dconf[this_port]}
 User root
 ServerAliveInterval 5
 
-'''.format(conf=vmconf, id=target, ips=ips)
+'''.format(conf=vmconf, id=target, ips=ips, dconf=dconf)
     projects = os.listdir(pt)
     if projects:
         ret += 'Projects:'
