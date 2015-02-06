@@ -20,7 +20,7 @@ include:
 {% do sacerts.append(paths['auth']) %}
 {% do sbcerts.append(paths['bundle']) %}
 {% do sfcerts.append(paths['full']) %}
-cpt-cert-{{paths.domaincert}}-dirs{{suf}}:
+cpt-cert-{{cert}}-{{paths.domaincert}}-dirs{{suf}}:
   file.directory:
     - names:
       - /etc/ssl/cloud
@@ -39,7 +39,7 @@ cpt-cert-{{paths.domaincert}}-dirs{{suf}}:
       - mc_proxy: ssl-certs-post-hook
 {% for flav in ['crt', 'key',
                 'authr', 'auth', 'bundle', 'full', 'only'] %}
-cpt-cert-{{paths.domaincert}}-{{flav}}{{suf}}:
+cpt-cert-{{cert}}-{{paths.domaincert}}-{{flav}}{{suf}}:
   file.managed:
     - name: {{paths[flav]}}
     - source: salt://makina-states/files/etc/ssl/cloud/cert.{{flav}}.crt
