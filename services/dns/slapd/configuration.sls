@@ -11,6 +11,18 @@ include:
   {% endif %}
   - makina-states.services.dns.slapd.services
 
+
+slapd_usertosslcerts:
+  user.present:
+    - name: {{settings.user}}
+    - remove_groups: False
+    - system: true
+    - optional_groups: [ssl-cert]
+    - watch:
+      - mc_proxy: slapd-post-install
+    - watch_in:
+      - mc_proxy: slapd-pre-conf
+
 slapd_directory:
   file.directory:
     - name: {{ settings.slapd_directory }}
