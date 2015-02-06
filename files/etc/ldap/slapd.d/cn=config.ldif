@@ -1,5 +1,6 @@
 # AUTO-GENERATED FILE - DO NOT EDIT!! Use ldapmodify.
 {%- set data=salt['mc_slapd.settings']() %}
+{%- set certinfo = salt['mc_ssl.get_cert_infos'](data.cert_domain) %}
 dn: {{data.config_dn}}
 objectClass: olcGlobal
 cn: {{data.config_cn}}
@@ -28,9 +29,10 @@ olcSizeLimit: 5000
 olcSockbufMaxIncoming: 262143
 olcSockbufMaxIncomingAuth: 16777215
 olcThreads: 16
-olcTLSCACertificateFile: /usr/local/share/ca-certificates/cacert{{data.cert_domain}}.crt
-olcTLSCertificateFile: /usr/local/share/ca-certificates/{{data.cert_domain}}.crt
-olcTLSCertificateKeyFile: /etc/ssl/custom/{{data.cert_domain}}.key
+{%- if certinfo.cert_data[2]%}
+olcTLSCACertificateFile: {{certinfo.authr}}{%endif%}
+olcTLSCertificateFile: {{certinfo.only}}
+olcTLSCertificateKeyFile: {{certinfo.key}}
 olcTLSVerifyClient: {{data.verify_client}}
 olcToolThreads: 1
 olcWriteTimeout: 0

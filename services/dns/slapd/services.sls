@@ -2,6 +2,10 @@
 {% set settings = salt['mc_slapd.settings']() %}
 {% set yameld_data = salt['mc_utils.json_dump'](settings) %}
 
+
+include:
+  - makina-states.localsettings.ssl.hooks
+
 slapd-checkconf:
   cmd.run:
     - name: slaptest -v   -F "{{settings.SLAPD_CONF}}" -d 32768 -u
@@ -9,6 +13,7 @@ slapd-checkconf:
     {# do not trigger reload but report problems #}
     - user: root
     - watch:
+      - mc_proxy: ssl-certs-post-hook
       - mc_proxy: slapd-pre-restart
     - watch_in:
       - mc_proxy: slapd-post-restart

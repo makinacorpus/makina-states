@@ -242,17 +242,13 @@ def settings():
                     ('type', 'refreshAndPersist'),
                     ('interval', "00:00:04:00")]),
                 'olcloglevel': "sync",
-                'tls_cacert': '',
-                'tls_cert': '',
-                'tls_key': '',
+                'cert_domain': grains['id'],
                 'acls': [],
                 'acls_schema': default_acl_schema,
                 'master_uri': '',
-                'cert_domain': grains['id'],
                 'default_schema': True,
                 'schemas': [],
-                'fd_schema': True,
-            })
+                'fd_schema': True})
         data['syncrepl'].setdefault('searchbase', data['dn'])
         local_conf['cn_pass'] = data['config_pw']
         local_conf['dn_pass'] = data['root_pw']
@@ -262,11 +258,6 @@ def settings():
         if not data['root_dn']:
             data['root_dn'] = 'cn=admin,{0}'.format(data['dn'])
         cn_config_files = data['cn_config_files']
-        if not data['tls_cert']:
-            info = __salt__['mc_ssl.ca_ssl_certs'](data['cert_domain'])[0]
-            data['tls_cacert'] = info[2]
-            data['tls_cert'] = info[0]
-            data['tls_key'] = info[1]
         schemas = data['schemas']
         cn_config_files = data['cn_config_files']
         if data['default_schema']:

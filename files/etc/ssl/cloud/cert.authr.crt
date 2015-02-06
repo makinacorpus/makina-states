@@ -1,0 +1,4 @@
+{%- set data  = salt['mc_ssl.settings']()['certificates'][certid] -%}
+{%- set certs = salt['mc_ssl.extract_certs'](data[2])[0] %}
+{%- do certs.reverse() %}
+{{-'\n'.join(certs)}}

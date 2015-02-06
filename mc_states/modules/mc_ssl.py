@@ -66,7 +66,7 @@ def get_cloud_settings():
     return __salt__['mc_cloud.get_cloud_settings']()
 
 
-def is_wildcard(domain):
+def is_wildcardable(domain):
     if domain.count('.') >= 2 and not domain.startswith('*.'):
         return True
     return False
@@ -76,7 +76,7 @@ def get_wildcard(domain):
     wdomain = None
     # try also to resolve a wildcard certificate if possible
     # and honnor that we cant wildcard TLD (we should not be a subdomain of a tld domain)
-    if is_wildcard(domain):
+    if is_wildcardable(domain):
         wdomain = '*.' + '.'.join(domain.split('.')[1:])
     return wdomain
 
@@ -253,18 +253,7 @@ def ssl_key(cert_string):
     return ssl_keys(cert_string)[0]
 
 
-def ssl_chain(common_name, cert_string):
-    '''
-    Extract the cerfificate and auth chain for a certificate
-    file or string containing one or multiple certificates
-
-    Return a tuble:
-
-        - The certificate maching the common name
-          If  not found, assume the first of the given certs
-        - The rest of certificates as the ssl chain authentication
-    '''
-
+def extract_certs(cert_string, common_name=None):
     if (
         cert_string
         and ('\n' not in cert_string)
@@ -272,10 +261,8 @@ def ssl_chain(common_name, cert_string):
     ):
         with open(cert_string) as fic:
             cert_string = fic.read()
-    cert_cn, cert, chain = None, None, ''
-    composants, cns = OrderedDict(), []
+    composants, cns, full_certs = OrderedDict(), [], []
     if cert_string and cert_string.strip():
-        full_certs = []
         certstring = ''
         for i in cert_string.splitlines():
             if (
@@ -303,13 +290,14 @@ def ssl_chain(common_name, cert_string):
                     composants[CN] = infos
     # we have certificates in, and not just one
     # we can compose an ssl authentication chain
+    cert_cn = None
     if composants and (len(composants) > 1):
         # filter out the domain which will not be part of the ssl chain
         for cn, data in composants.items():
             append = False
             # if we match the cert name subject, we got the cert
             # of this box
-            if domain_match(common_name, cn):
+            if common_name is not None and domain_match(common_name, cn):
                 cert_cn = cn
             # or we match exactly the common name
             else:
@@ -323,6 +311,23 @@ def ssl_chain(common_name, cert_string):
                 if ix == 0:
                     cert_cn = cn
                 cns.append(cn)
+    return full_certs, composants, cns, cert_cn
+
+
+def ssl_chain(common_name, cert_string):
+    '''
+    Extract the cerfificate and auth chain for a certificate
+    file or string containing one or multiple certificates
+
+    Return a tuble:
+
+        - The certificate maching the common name
+          If  not found, assume the first of the given certs
+        - The rest of certificates as the ssl chain authentication
+    '''
+    cert, chain = '', ''
+    full_certs, composants, cns, cert_cn = extract_certs(
+        cert_string, common_name=common_name)
     # if we have cns, we have a ssl_chain
     if cns:
         chain = ''.join([composants[cn]['cert'].strip() + '\n' for cn in cns])
@@ -902,10 +907,52 @@ def common_settings(ttl=60):
                      'o': 'NANTES',
                      'cn': _g['fqdn'],
                      'email': _g['fqdn'],
+                     'certificates_domains_map': OrderedDict(),
                      'certificates': OrderedDict()})
         return data
     cache_key = 'mc_ssl.common_settings'
-    return memoize_cache(_do, [], {}, cache_key, ttl)
+    return deepcopy(memoize_cache(_do, [], {}, cache_key, ttl))
+
+
+def reload_settings(data=None):
+    if data is None:
+        data = common_settings()
+    certs = data.pop('certificates', {})
+    dcerts = data.setdefault('certificates', OrderedDict())
+    matches = data.setdefault('certificates_domains_map', OrderedDict())
+    for cert in [a for a in certs]:
+        cdata = certs[cert]
+        do_chain_load = False
+        if len(cdata) < 3:
+            do_chain_load = True
+        if cdata and not do_chain_load and not cdata[2]:
+            if cdata[0].count('BEGIN CERTIFICATE') > 2:
+                do_chain_load = True
+        if not do_chain_load:
+            True
+        if do_chain_load:
+            chain = ssl_chain(cert, cdata[0])
+            key = ssl_key(cdata[1])
+            cdata = chain[0], key, chain[1]
+        try:
+            cert = ssl_infos(cdata[0])['subject'].CN
+        except Exception:
+            log.error('Error while decoding cert: {0}'.format(cert))
+        dcerts[cert] = cdata
+        matched_domains = [cert]
+        # XXX: load also here subAlNames
+        for i in matched_domains:
+            match = matches.setdefault(cert, [])
+            if cert not in match:
+                match.append(cert)
+    # be sure to index them by the CN defined in the cert
+    for cert in data['certificates']:
+        cdata = data['certificates'][cert]
+        try:
+            cdata[2]
+        except Exception:
+            raise Exception('Invalid auth chain for {0}'.format(cert))
+    return data
 
 
 def get_configured_cert(domain, ttl=60):
@@ -920,10 +967,10 @@ def get_configured_cert(domain, ttl=60):
         pretendants = []
         if domain == 'localhost':
             domain = _g['fqdn']
-        settings = _s['mc_ssl.common_settings']()
-        certs = settings['certificates']
+        ssettings = reload_settings()
+        certs = ssettings['certificates']
         domains = [domain]
-        if domain.count('.') >= 2 and not domain.startswith('*.'):
+        if is_wildcardable(domain):
             wd = '*.' + '.'.join(domain.split('.')[1:])
             domains.append(wd)
         for d in domains:
@@ -973,28 +1020,34 @@ def settings():
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        data = common_settings()
-        # be sure to load cert for localdomain in data.certificates
-        get_configured_cert(__grains__['fqdn'])
-        # be sure to have the chain part of the triple if available
-        for cert in [a for a in data['certificates']]:
-            cdata = data['certificates'][cert]
-            do_chain_load = False
-            if len(cdata) < 3:
-                do_chain_load = True
-            else:
-                if not cdata[2]:
-                    do_chain_load = True
-            if do_chain_load:
-                chain = ssl_chain(cert, cdata[0])
-                key = ssl_key(cdata[1])
-                data['certificates'][cert] = chain[0], key, chain[1]
-        for cert in [a for a in data['certificates']]:
-            cdata = data['certificates'][cert]
-            try:
-                cdata[2]
-            except Exception:
-                raise Exception('Invalid auth chain for {0}'.format(cert))
-        return data
+        data = reload_settings()
+        # even if we make a doublon here, it will be filtered by CN indexing
+        fqdn = __grains__['fqdn']
+        data['certificates'][fqdn] = get_configured_cert(fqdn)
+        return reload_settings(data)
     return _settings()
+
+
+def get_cert_infos(domain, ttl=60):
+    def _do(domain):
+        cdata = get_configured_cert(domain)
+        try:
+            domain = ssl_infos(cdata[0])['subject'].CN
+        except Exception:
+            log.error(
+                'Error while decoding cert for domain: {0}'.format(domain))
+        spath = '/etc/ssl/cloud/separate'
+        cpath = '/etc/ssl/cloud/certs'
+        return {'domaincert': domain,
+                'cert_data': cdata,
+                'crt': '{0}/{1}.crt'.format(cpath, domain),
+                'bundle': '{0}/{1}-{2}.crt'.format(spath, domain, 'bundle'),
+                'full': '{0}/{1}-{2}.crt'.format(spath, domain, 'full'),
+                'auth': '{0}/{1}-{2}.crt'.format(spath, domain, 'auth'),
+                'authr': '{0}/{1}-{2}.crt'.format(spath, domain, 'authr'),
+                'only': '{0}/{1}.crt'.format(spath, domain),
+                'key': '{0}/{1}.key'.format(spath, domain)}
+
+    cache_key = 'mc_ssl.get_cert_infos{0}'.format(domain)
+    return memoize_cache(_do, [domain], {}, cache_key, ttl)
 # vim:set et sts=4 ts=4 tw=80:
