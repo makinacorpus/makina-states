@@ -80,6 +80,8 @@ Subregistries
    mc_screen.rst
    mc_rabbitmq.rst
    mc_redis.rst
+   mc_remote.rst
+   mc_project_remote.rst
 
 
 Other modules
