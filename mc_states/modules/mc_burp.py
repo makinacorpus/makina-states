@@ -290,7 +290,8 @@ def settings():
         data['client_common'].setdefault(
             'ssl_peer_cn', data['server_conf']['fqdn'])
         data['clients'].setdefault(data['server_conf']['fqdn'], {})
-        hour = [0, 20, 40]
+        tries_per_hour = 15
+        hour = [i * (60 / tries_per_hour) for i in range(tries_per_hour)]
         removes = []
         for cname in [a for a in data['clients']]:
             cl = data['clients'][cname]
@@ -378,21 +379,26 @@ def settings():
                 # spray around the periodicity to spray the backup load
                 # all over the hour.
                 if k == 'cron_periodicity':
-                    val = timers.get(cname, None)
                     # val = None
+                    try:
+                        val = timers.get(cname, None)
+                        tries = val.split()[0].split(',')
+                        if not len(tries) == tries_per_hour:
+                            val = None
+                    except Exception:
+                        val = None
                     if not val:
                         per = hour[:]
                         for ix, item in enumerate(per[:]):
-                            item = item + (
-                                random.randint(0, 3) +
-                                random.randint(0, 3) +
-                                random.randint(0, 3) +
-                                random.randint(0, 3) +
-                                random.randint(0, 3) +
-                                random.randint(0, 3))  # max 18 < 20m in
+                            rand = random.randint(0, (60/tries_per_hour)) - 1
+                            if rand < 0:
+                                rand = 0
+                            item = item + rand
                             if item >= 60:
                                 item = item - 60
-                            per[ix] = item
+                            if item not in per:
+                                per[ix] = item
+                        per = __salt__['mc_utils.uniquify'](per)
                         val = '{0} * * * *'.format(','.join(
                             ["{0}".format(t) for t in per]))
                     timers[cname] = val
@@ -407,7 +413,4 @@ def settings():
             'burp', local_conf, registry_format='pack')
         return data
     return _settings()
-
-
-
 #

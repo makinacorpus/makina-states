@@ -4,7 +4,6 @@ include:
   - makina-states.services.backup.burp.server.services
 {% set data = salt['mc_burp.settings']() %}
 {% set ssdata = data.server_conf %}
-{% set sdata = salt['mc_utils.json_dump'](data.server_conf) %}
 
 etc-burp-CA:
   file.directory:
@@ -21,20 +20,20 @@ etc-burp-CA:
       - mc_proxy: burp-post-conf-hook
 
 etc-burp-ca-gen:
+  file.managed:
+    - name: /tmp/burpcagen.sh
+    - source: salt://makina-states/files//etc/burp/cagen.sh
+    - mode: 750
+    - user: {{data.user}}
+    - template: jinja
+    - makedirs: true
+    - group: {{data.group}}
   cmd.run:
-    - name: >
-            set -e &&
-            rm -rf /etc/burp/CA &&
-            if [ ! -e /etc/burp ];then mkdir -p /etc/burp;fi &&
-            burp_ca --dhfile {{ssdata.ssl_dhfile}} &&
-            burp_ca --ca_days 365000 -D 365000 -i --ca {{ssdata.ca_name}} &&
-            burp_ca --key --request --name {{ssdata.fqdn}} &&
-            burp_ca --days 365000 --batch --sign --ca {{ssdata.ca_name}} --name {{ssdata.fqdn}} &&
-            touch /etc/burp/CA/.done
-    - unless: test -e /etc/burp/CA/.done
+    - name: /tmp/burpcagen.sh
     - watch:
       - mc_proxy: burp-pre-conf-hook
       - file: etc-burp-CA
+      - file: etc-burp-ca-gen
     - watch_in:
       - mc_proxy: burp-post-conf-hook
 
@@ -49,8 +48,7 @@ etc-burp-burp-server.conf-{{f}}:
     - makedirs: true
     - group: {{data.group}}
     - defaults:
-      data: |
-            {{sdata}}
+        client: server_conf
     - watch:
       - cmd: etc-burp-ca-gen
     - watch_in:
@@ -79,8 +77,7 @@ etc-burp-burp-server.conf-{{f}}:
     - makedirs: true
     - group: {{data.group}}
     - defaults:
-      data: |
-            {{sdata}}
+        client: server_conf
     - watch:
       - cmd: etc-burp-ca-gen
     - watch_in:
@@ -121,7 +118,6 @@ burp-copy-server-cert:
       - mc_proxy: burp-post-conf-hook
 
 {% for client, cdata in data['clients'].items() %}
-{% set scdata = salt['mc_utils.json_dump'](cdata) %}
 etc-burp-burp-client.{{client}}-backup-init:
   file.directory:
     - names:
@@ -158,8 +154,7 @@ etc-burp-burp-client.{{client}}-conf-{{f}}:
     - makedirs: true
     - group: {{data.group}}
     - defaults:
-      data: |
-            {{scdata}}
+        client: {{client}}
     - watch:
       - mc_proxy: burp-pre-conf-hook
       - file: etc-burp-burp-client.{{client}}-backup-init
@@ -179,8 +174,7 @@ etc-burp-burp-client.{{client}}-confdir:
     - makedirs: true
     - group: {{data.group}}
     - defaults:
-      data: |
-            {{scdata}}
+        client: {{client}}
     - watch:
       - file: etc-burp-burp-client.{{client}}-backup-init
       - mc_proxy: burp-pre-conf-hook
@@ -188,16 +182,20 @@ etc-burp-burp-client.{{client}}-confdir:
       - mc_proxy: burp-post-conf-hook
 
 etc-burp-{{client}}-ca-gen:
+  file.managed:
+    - name: /tmp/burpclient{{client}}cagen.sh
+    - source: salt://makina-states/files//etc/burp/clientcagen.sh
+    - mode: 750
+    - defaults:
+        client: {{client}}
+    - user: {{data.user}}
+    - template: jinja
+    - makedirs: true
+    - group: {{data.group}}
   cmd.run:
-    - name: >
-            burp_ca --key --request --name {{cdata.cname}} &&
-            burp_ca --days 365000 --batch --sign --ca {{ssdata.ca_name}} --name {{cdata.cname}} &&
-            touch /etc/burp/CA/.{{client}}done
-    - unless: |
-              if test -e /etc/burp/CA/.{{client}}done;then exit 0;fi
-              if test -e /etc/burp/CA/{{cdata.cname}}.crt;then exit 0;fi
-              exit 1
+    - name: /tmp/burpclient{{client}}cagen.sh
     - watch:
+      - file: etc-burp-{{client}}-ca-gen
       - file: etc-burp-burp-client.{{client}}-confdir
       - mc_proxy: burp-pre-conf-hook
     - watch_in:
@@ -251,17 +249,17 @@ burp-{{client}}-cleanupburpf:
       - mc_proxy: burp-post-conf-hook
       - mc_proxy: burp-post-gen-sync
 
+    - template: jinja
 burp-{{client}}-cronjob:
   file.managed:
+    - source: salt://makina-states/files/etc/burp/clients/client/etc/cron.d/burp
     - name: /etc/burp/clients/{{client}}/etc/cron.d/burp
     - makedirs: true
-    - contents: |
-                #!/usr/bin/env bash
-                MAILTO=""
-                {{cdata.cron_periodicity}} {{cdata.cron_cmd}}
-                * */3 * * * root /etc/burp/cleanup-burp-processes.sh
+    - defaults:
+        client: {{client}}
     - user: root
     - group: root
+    - template: jinja
     - mode: 755
     - watch:
       - mc_proxy: burp-pre-conf-hook
@@ -272,10 +270,14 @@ burp-{{client}}-cronjob:
 
 {{client}}-install-burp-configuration:
   file.managed:
+    - source: salt://makina-states/files/etc/burp/clients/client/sync.sh
     - name: /etc/burp/clients/{{client}}/sync.sh
     - mode: 0755
+    - template: jinja
     - user: root
     - group: root
+    - defaults:
+        client: {{client}}
     - watch:
       - mc_proxy: burp-pre-conf-hook
       - file: etc-burp-burp-client.{{client}}-backup-init
@@ -283,15 +285,5 @@ burp-{{client}}-cronjob:
       - mc_proxy: burp-post-conf-hook
       - mc_proxy: burp-post-restart-hook
       - mc_proxy: burp-post-gen-sync
-    - contents: |
-            {{'#'}}!/usr/bin/env bash
-            echo "Syncing {{client}}"
-            {% for dir in ['burp', 'default', 'init.d', 'cron.d'] -%}rsync -azv -e '{{cdata['rsh_cmd']}}' /etc/burp/clients/{{client}}/etc/{{dir}}/ {{cdata['rsh_dst']}}:/etc/{{dir}}/ &&\
-            {% endfor -%}
-            /bin/true
-            {% if not cdata.activated -%}
-            {{cdata['ssh_cmd']}} rm -f /etc/cron.d/burp
-            {% endif %}
-            exit ${?}
 {% endfor %}
 {% endif %}

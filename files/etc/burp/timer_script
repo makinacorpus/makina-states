@@ -1,5 +1,5 @@
 #!/bin/bash
-#
+# MANAGED VIA SALT - DO NOT EDIT
 # Script that determines whether it is time to run a backup.
 
 echo "Running timer script: $@"

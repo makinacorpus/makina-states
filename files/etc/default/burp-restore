@@ -5,7 +5,9 @@
 
 #
 # This is a POSIX shell fragment
-#
+{% set settings = salt['mc_burp.settings']() %}
+{% if client != 'server_conf' %}{% set settings=settings['clients']%}{%endif%}
+{% set data=settings[client] %}
 
 RUN=yes
 
