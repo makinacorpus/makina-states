@@ -41,7 +41,3 @@ def registry():
             'mc_macros.construct_registry_configuration'
         ](__name, defaults={})
     return _registry()
-
-
-
-#

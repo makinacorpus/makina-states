@@ -150,7 +150,3 @@ def settings():
             data['server']['settings']['AllowUsers'] = ' '.join(data['server']['allowusers'])
         return data
     return _settings()
-
-
-
-#
