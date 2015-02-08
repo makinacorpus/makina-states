@@ -69,6 +69,11 @@ cpt-cert-{{cert}}-{{paths.domaincert}}-{{flav}}{{suf}}:
 cpt-certs-cleanup:
   file.managed:
     - name: {{f}}
+    - source: salt://makina-states/files{{f}}
+    - defaults:
+        f: {{f}}
+        certs: |
+               {{salt['mc_utils.json_dump'](certs)}}
     - user: root
     - group: root
     - mode: 700
@@ -76,19 +81,6 @@ cpt-certs-cleanup:
     - template: jinja
     - watch:
       - mc_proxy: cloud-sslcerts-pre
-    - contents: |
-                #!/usr/bin/env python
-                import os, sys
-                if os.path.exists('/etc/ssl/cloud/certs'):
-                  os.chdir('/etc/ssl/cloud/certs')
-                  certs = os.listdir('.')
-                  [os.unlink(a) for a in certs if a not in {{certs}}]
-                #if os.path.exists('/etc/ssl/cloud/separate'):
-                #  sinfos = {{sacerts}} + {{socerts}} + {{skeys}} + {{sfcerts}} + {{sbcerts}}
-                #  os.chdir('/etc/ssl/cloud/separate')
-                #  certs = os.listdir('.')
-                #  [os.unlink(a) for a in certs if a not in sinfos]
-                os.unlink('{{f}}')
   cmd.run:
     - name: "{{f}}"
     - user: root
@@ -115,7 +107,7 @@ cpt-certs-cleanup-openssl-cloud:
             find -name "*.crt" -type f | egrep '[*]' | while read i
             do
               rm -vf "${i}"
-            done   
+            done
     - onlyif: test -e /etc/ssl/cloud/separate
     - watch:
       - mc_proxy: cloud-sslcerts-pre
@@ -124,29 +116,28 @@ cpt-certs-cleanup-openssl-cloud:
       - cmd: cpt-certs-cleanup-openssl-cloud
       - mc_proxy: ssl-certs-post-hook
 #}
+{% set f = '/tmp/sslcacerts.sh' %}
 cpt-certs-install-openssl:
+  file.managed:
+    - name: "{{f}}"
+    - source: "salt://makina-states/files{{f}}"
+    - user: root
+    - defaults:
+      f: "{{f}}"
+    - group: root
+    - mode: 700
+    - makedirs: true
+    - template: jinja
+    - watch:
+      - mc_proxy: cloud-sslcerts-pre
   cmd.run:
-    - name: |
-            set -e
-            cd /etc/ssl/cloud/separate/
-            d="/usr/local/share/ca-certificates/ms_cloud"
-            if [ -e "${d}" ];then rm -rf "${d}";fi
-            mkdir -p "${d}"
-            find -name "*.crt"\
-              | grep -v -- "-bundle.crt"\
-              | grep -v -- "-full.crt"\
-              | while read i
-            do
-              #fd="${i}"
-              fd=$(echo "${i}" | sed -re 's/\*/star/g')
-              cp "${i}" "${d}/${fd}"
-            done
-            update-ca-certificates --fresh
+    - name: "{{f}}"
     - onlyif: |
               set -e
               test $(ls /etc/ssl/cloud/separate/*crt|wc -c) -gt 0
               test -e /usr/local/share/ca-certificates
     - watch:
+      - file: cpt-certs-install-openssl
       - mc_proxy: cloud-sslcerts-pre
       - mc_proxy: ssl-certs-pre-hook
     - watch_in:

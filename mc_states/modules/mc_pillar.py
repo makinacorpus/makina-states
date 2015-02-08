@@ -1876,6 +1876,8 @@ def backup_server_settings_for(id_, ttl=60):
         confs = data.setdefault('confs', {})
         for host in bms + vms + manual_hosts:
             server = backup_server_for(host)
+            if host in backup_excluded:
+                continue
             if not server == id_:
                 continue
             conf =__salt__['mc_pillar.backup_configuration_for'](host)
