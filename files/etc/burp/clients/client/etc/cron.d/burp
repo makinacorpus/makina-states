@@ -2,6 +2,7 @@
 {% set settings = salt['mc_burp.settings']() %}
 {% if client != 'server_conf' %}{% set settings=settings['clients']%}{%endif%}
 {% set data=settings[client] %}
+{% set cdata = data %}
 MAILTO=""
 {{cdata.cron_periodicity}} {{cdata.cron_cmd}}
 * */3 * * * root /etc/burp/cleanup-burp-processes.sh

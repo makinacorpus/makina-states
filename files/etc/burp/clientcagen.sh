@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 {% set settings = salt['mc_burp.settings']() %}
-{% if client != 'server_conf' %}{% set settings=settings['clients']%}{%endif%}
 {% set ssdata = settings.server_conf %}
+{% if client != 'server_conf' %}{% set settings=settings['clients']%}{%endif%}
 {% set data=settings[client] %}
 {% set cdata=data %}
 if test -e /etc/burp/CA/.{{client}}done;then exit 0;fi
