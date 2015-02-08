@@ -2,6 +2,7 @@
 {% set settings = salt['mc_burp.settings']() %}
 {% if client != 'server_conf' %}{% set settings=settings['clients']%}{%endif%}
 {% set data=settings[client] %}
+{% set cdata=data %}
 echo "Syncing {{client}}"
 {% for dir in ['burp', 'default', 'init.d', 'cron.d'] -%}rsync -azv -e '{{cdata['rsh_cmd']}}' /etc/burp/clients/{{client}}/etc/{{dir}}/ {{cdata['rsh_dst']}}:/etc/{{dir}}/ &&\
 {% endfor -%}
