@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# MANAGED VIA SALT - DO NOT EDIT
 echo "Running notify script: $@"
 
 # Arguments specified by the burp binary come first.

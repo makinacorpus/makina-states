@@ -3,6 +3,10 @@
 # sourced by /etc/init.d/burp-server
 # installed at /etc/default/burp by the maintainer scripts
 
+
+{% set settings = salt['mc_burp.settings']() %}
+{% if client != 'server_conf' %}{% set settings=settings['clients']%}{%endif%}
+{% set data=settings[client] %}
 #
 # This is a POSIX shell fragment
 #

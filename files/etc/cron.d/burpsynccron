@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+{% set data = salt['mc_burp.settings']() %}
+MAILTO="{{data.admins}}"
+{{data.cron_periodicity}} root su -c "/usr/bin/burp-cron.sh"
