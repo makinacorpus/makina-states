@@ -382,9 +382,8 @@ def settings():
                     # val = None
                     try:
                         val = timers.get(cname, None)
-                        val = None
-                        val = val.split()[0].split(',')
-                        if not len(val) == tries_per_hour:
+                        tries = val.split()[0].split(',')
+                        if not len(tries) == tries_per_hour:
                             val = None
                     except Exception:
                         val = None
@@ -399,6 +398,7 @@ def settings():
                                 item = item - 60
                             if item not in per:
                                 per[ix] = item
+                        per = __salt__['mc_utils.uniquify'](per)
                         val = '{0} * * * *'.format(','.join(
                             ["{0}".format(t) for t in per]))
                     timers[cname] = val
