@@ -4,7 +4,6 @@
 {% set ssdata = settings.server_conf %}
 {% set data=settings[client] %}
 {% set cdata=data %}
-set -e
 if test -e /etc/burp/CA/.{{client}}done;then exit 0;fi
 if test -e /etc/burp/CA/{{cdata.cname}}.crt;then exit 0;fi
 burp_ca --key --request --name {{cdata.cname}} &&\
