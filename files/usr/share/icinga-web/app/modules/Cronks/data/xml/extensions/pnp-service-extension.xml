@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <!-- MANAGED VIA SALT - DO NOT EDIT -->
-{%- set data = salt['mc_utils.json_load'](data) %}
+{%- set data = salt['mc_icinga_web.settings']() %}
 <template match-pattern="icinga-(service-template|.+-service-problems)">
     <option>
                 <parameter name="rowEvents">
