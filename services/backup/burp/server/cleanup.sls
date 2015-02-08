@@ -14,6 +14,7 @@ install-burp-configuration-cleanup:
     - name: /etc/burp/cleanup.sh
     - mode: 0755
     - user: root
+    - template: jinja
     - group: root
   cmd.run:
     - name: /etc/burp/cleanup.sh
