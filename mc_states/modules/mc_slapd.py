@@ -226,7 +226,7 @@ def settings():
                 ],
                 'cn_config_files': [],
                 'mode': 'master',
-                'writer_groups': ['ldapadministrators'],
+                'writer_groups': ['ldapwriters'],
                 'reader_groups':  ['ldapreaders'],
                 'admin_groups_acls': '',
                 'pkgs': ['ldap-utils', 'ca-certificates',
@@ -296,7 +296,10 @@ def settings():
                     schemas.append(i)
                 if i not in cn_config_files:
                     cn_config_files.append(i)
-        for mode, key in {'reader': 'read', 'writer': 'write'}.items():
+        for mode, key in OrderedDict([
+            ('writer', 'write'),
+            ('reader', 'read',)
+        ]).items():
             for group in data['{0}_groups'.format(mode)]:
                 match = 'cn={0},'.format(group)
                 if match in data['admin_groups_acls']:
