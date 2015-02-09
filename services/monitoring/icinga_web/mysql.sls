@@ -1,6 +1,5 @@
 {% set locs = salt['mc_locations.settings']() %}
 {% set data = salt['mc_icinga_web.settings']() %}
-{% set sdata = salt['mc_utils.json_dump'](data) %}
 
 {% if 'mysql' == data.databases.web.type %}
 
@@ -38,9 +37,6 @@ icinga_web-import-mysql-schema:
     - user: root
     - group: root
     - mode: 644
-    - defaults:
-      data: |
-            {{sdata}}
   cmd.run:
     {% if 'socket' in data.databases.web %}
   - name: mysql --socket="{{data.databases.web.socket}}" --user="{{data.databases.web.user}}" --password="{{data.databases.web.password}}" "{{data.modules.databases.web.name}}" < "{{tmpf}}"

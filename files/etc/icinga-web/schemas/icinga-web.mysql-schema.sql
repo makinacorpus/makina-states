@@ -1,4 +1,5 @@
-{% set data = salt['mc_utils.json_load'](data) %}
+{% set data = salt['mc_utils.mc_icinga_web.settings']() %}
+
 /* MANAGED VIA SALT -- DO NOT EDIT */
 /*****************************************************/
 /* Auto generated mysql SQL Schema file for icinga-web*/

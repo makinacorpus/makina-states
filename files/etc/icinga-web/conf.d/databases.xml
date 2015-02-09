@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- MANAGED VIA SALT - DO NOT EDIT -->
-{%- set data = salt['mc_utils.json_load'](data) %}
+{%- set data = salt['mc_icinga_web.settings']() %}
 <!--
     databases.xml
     Defines which databases to use to store internal icinga-data and where to request icinga monitoring status from

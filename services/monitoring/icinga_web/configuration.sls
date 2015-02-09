@@ -7,7 +7,6 @@
 
 {% set locs = salt['mc_locations.settings']() %}
 {% set data = salt['mc_icinga_web.settings']() %}
-{% set sdata = salt['mc_utils.json_dump'](data) %}
 
 include:
   - makina-states.services.monitoring.icinga_web.hooks
@@ -46,9 +45,6 @@ icinga_web-{{file}}-conf:
     - watch_in:
       - mc_proxy: icinga_web-post-conf
       - file: icinga_web-usr-cronks-conf
-    - defaults:
-        data: |
-              {{sdata}}
 {% endfor %}
 
 # sometimes, the password in /usr/share/icinga-web/config/databases.xml is not updated
@@ -70,9 +66,6 @@ icinga_web-usr-database-conf:
       - mc_proxy: icinga_web-pre-conf
     - watch_in:
       - mc_proxy: icinga_web-post-conf
-    - defaults:
-      data: |
-            {{sdata}}
 
 icinga_web-usr-cronks-conf:
   file.copy:

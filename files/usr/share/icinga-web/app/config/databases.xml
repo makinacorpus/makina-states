@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- MANAGED VIA SALT - DO NOT EDIT -->
-{%- set data = salt['mc_utils.json_load'](data) %}
+{%- set data = salt['mc_icinga_web.settings']() %}
 <ae:configurations xmlns:ae="http://agavi.org/agavi/config/global/envelope/1.0" xmlns="http://agavi.org/agavi/config/parts/databases/1.0">
     <!-- Some resources for:
         http://docs.icinga.org/latest/de/icinga-web-config.html#configweb-databases

@@ -1,4 +1,4 @@
-{% set data = salt['mc_utils.json_load'](data) %}
+{% set data = salt['mc_icinga_web.settings']() %}
 -- MANAGED VIA SALT -- DO NOT EDIT
 \set icinga_web_owner '{{data.databases.web.user}}';
 

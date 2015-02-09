@@ -1,6 +1,5 @@
 {% set locs = salt['mc_locations.settings']() %}
 {% set data = salt['mc_icinga_web.settings']() %}
-{% set sdata = salt['mc_utils.json_dump'](data) %}
 
 {% if 'pgsql' == data.databases.web.type %}
 
@@ -59,9 +58,6 @@ icinga_web-import-pgsql-schema:
     - user: root
     - group: root
     - mode: 644
-    - defaults:
-      data: |
-            {{sdata}}
   cmd.run:
     - name: psql "{{uri}}" -f "{{tmpf}}"
     - unless: echo "select * from nsm_log;" | psql "{{uri}}" --set ON_ERROR_STOP=1
