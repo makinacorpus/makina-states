@@ -126,12 +126,12 @@ default_acl_schema = [
     ),
     (
         "{{9}}"
-        "  to *"
+        " to *"
         "{data[admin_groups_acls]}"
-        "  by dn.base=\"cn=admin,{data[dn]}\" write"
-        "  by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
-        "  by dn.base=\"cn=replicator,ou=virtual,ou=people,{data[dn]}\" read"
-        "  by * read"
+        " by dn.base=\"cn=admin,{data[dn]}\" write"
+        " by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
+        " by dn.base=\"cn=replicator,ou=virtual,ou=people,{data[dn]}\" read"
+        " by * read"
     ),
 ]
 
@@ -168,8 +168,17 @@ def encode_ldap(k, val):
     if not isinstance(val, list):
         val = [val]
     for v in val:
-        chunks = [v[i:i+54] for i in range(0, len(v), 54)]
-        s_ += '\n{0}: '.format(k) + '\n '.join(chunks)
+        # chunks = [v[i:i+54].strip() for i in range(0, len(v), 54)]
+        ev = ''
+        for ix, chunk in enumerate(
+            v.strip().encode('base64').splitlines()
+        ):
+            if ix >= 1:
+                ev += ' '
+            ev += chunk
+            ev += '\n'
+        s_ += '\n{0}:: {1}'.format(k, ev)
+        # s_ += '\n{0}: {1}'.format(k, '\n'.join(chunks))
         s_ = s_.strip()
     return s_
 
@@ -299,7 +308,6 @@ def settings():
             acls = [a.format(data=data)
                     for a in data['acls_schema'][:]]
             data['acls'] = acls
-        s_aclchema = ''
         s_aclchema = ''
         if data['acls']:
             s_aclchema = encode_ldap('olcAccess', data['acls'])
