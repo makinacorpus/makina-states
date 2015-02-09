@@ -19,7 +19,7 @@ This have nice features like:
     - handling interactive passwords
     - using ssh gateways
     - transfering files using different fallback methods
-    - running a remote masterless salt installation
+    - running salt-call over remote (even masterless) salt installations
 
 '''
 
@@ -34,61 +34,94 @@ import os
 import tempfile
 import traceback
 import pipes
+import salt.minion
 import salt.utils
+import salt.utils.args
 import salt.utils.dictupdate
 import salt.utils.pycrypto
 import salt.utils.vt
 import salt.exceptions
+from salt.ext.six import string_types, integer_types
 
-_SSH_PASSWORD_PROMP_RE = re.compile(r'(?:.*)[Pp]assword(?: for .*)?:',
+_SSH_PASSWORD_PROMP_RE = re.compile('(([Pp]assword(: ?for.*)?:))',
                                     re.M | re.U)
 
+_SSH_IDENT_RE = re.compile(
+    '[^@]+@(?P<host>[^\']+)[ ]*\'s password:',
+    re.M | re.U)
 _LETTERSDIGITS_RE = re.compile(
     '[^{0}]'.format(string.ascii_letters + string.digits),
     re.M | re.U)
+
+
 _SH_WRAPPER = '''\
 #!/usr/bin/env bash
-set -x
+if [ "x{sh_wrapper_debug}" != "x" ];then set -x;fi
 {0}
 exit ${{?}}
 '''
 _SALT_CALL_WRAPPER = '''\
 #!/usr/bin/env bash
-set -x
-{salt_call} --retcode-passthrough {outputter} {local} {loglevel}\
-        {module_fun} {args}
-exit ${?}
+if [ "x{sh_wrapper_debug}" != "x" ];then set -x;fi
+exec {salt_call} --retcode-passthrough {outputter} {local} {loglevel}\\
+{salt_call_script}
+exit ${{?}}
 '''
 
 TRANSFER_FILE_SCRIPT = '''\
 #!/usr/bin/env sh
-if [ "x${{TRANSFER_DEBBUG}}" = "x1" ];then
+rsync_opts="-az"
+sftp_opts="-qqq"
+scp_opts="-qqq"
+if [ "x{sh_wrapper_debug}" != "x" ];then
     set -x
+    rsync_opts="${{rsync_opts}}vP"
+    sftp_opts=""
+    scp_opts=""
 fi
 ret=1
-fmode=$(stat -c "%a" "{1}")
-rsync -Pavz -e "ssh -p "{5}" {0}" "{1}" "{3}@{4}":"{2}" && fmode=''
+if ! test -e "{orig}";then
+    echo "Unexisting script file: {orig}"
+    exit 1
+fi
+fmode=$(stat -c "%a" "{orig}")
+rsync ${{rsync_opts}} \\
+        -e "ssh -p "{port}" {quoted_ssh_args}"\\
+        "{orig}" "{user}@{host}":"{dest}"\\
+        && fmode=''
 ret=${{?}}
 if [ "x${{ret}}" != "x0" ];then
-    scp -P "{5}" {0} "{1}" "{3}@{4}":"{2}"
+    scp ${{scp_opts}} -P "{port}" {ttyfree_ssh_args}\\
+            "{orig}" "{user}@{host}":"{dest}"
     ret=${{?}}
 fi
 if [ "x${{ret}}" != "x0" ];then
-  echo "put -p \\"{1}\\" \\"{2}\\"" > "{6}"
-  sftp  -b "{6}" -P "{5}" {0} "{3}@{4}"
+  echo "put -p \\"{orig}\\" \\"{dest}\\"" > "{tmpfile}"
+  if [ "x{sh_wrapper_debug}" != "x" ];then
+      sftp ${{sftp_opts}} -b "{tmpfile}" -P "{port}"\\
+              {ttyfree_ssh_args} "{user}@{host}"
+  else
+      sftp ${{sftp_opts}} -b "{tmpfile}" -P "{port}"\\
+              {ttyfree_ssh_args} "{user}@{host}" 1>/dev/null 2>&1
+  fi
   ret=${{?}}
-  rm -f "{6}"
+  rm -f "{tmpfile}"
 fi
 if [ "x${{ret}}" != "x0" ];then
-  gzip -ck "{1}" | ssh -p "{5}" {0} "{3}@{4}" 'gzip -d > "{2}"'
+  gzip -ck "{orig}" \\
+          | ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
+          'gzip -d > "{dest}"'
   ret=${{?}}
 fi
 if [ "x${{ret}}" != "x0" ];then
-  cat "{1}" | ssh -p "{5}" {0} "{3}@{4}" 'cat > "{2}"'
+  cat "{orig}" \\
+          | ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
+          'cat > "{dest}"'
   ret=${{?}}
 fi
 if [ "x${{ret}}" = "x0" ] && [ "x${{fmode}}" != "x" ];then
-  ssh -p "{5}" {0} "{3}@{4}" "set -x;chmod ${{fmode}} \\"{2}\\""
+  ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
+          "set -x;chmod ${{fmode}} \\"{dest}\\""
   ret=${{?}}
 fi
 exit ${{ret}}
@@ -145,6 +178,45 @@ class _SSHTransferFailed(_SSHCommandFailed):
     """."""
 
 
+def log_enabled_for(lvl='info', name=None):
+    if isinstance(lvl, string_types):
+        lvl = lvl.upper()
+    if isinstance(name, logging.Logger):
+        logger = name
+    if isinstance(name, string_types):
+        logger = logging.getLogger(name)
+    else:
+        logger = logging.root
+    effective_lvl = 0
+    while logger:
+        for hdlr in logger.handlers:
+            effective_lvl = hdlr.level
+            break
+        if not logger.propagate:
+            logger = None
+        else:
+            logger = logger.parent
+    try:
+        loglevel = int(logging._levelNames.get(lvl, 0))
+    except Exception:
+        loglevel = 0
+    return loglevel >= effective_lvl
+
+
+def _mangle_kw_for_script(kw=None):
+    if kw is None:
+        kw = {}
+    kw = copy.deepcopy(kw)
+    if isinstance(kw, dict):
+        for k in [a for a in kw if a.startswith('__')]:
+            kw.pop(a, None)
+        # add shell debug
+        kw['sh_wrapper_debug'] = ''
+        if log_enabled_for('debug'):
+            kw['sh_wrapper_debug'] = 1
+    return kw
+
+
 def _reraise(exc, typ=None, trace=None, message=None):
     '''
     Reraise an exception as somehow another.
@@ -189,6 +261,13 @@ class _AbstractSshSession(object):
         self._pid = -1
         self.stdout = ''
         self.stderr = ''
+        # raw encoded chunks
+        self.out_chunks = []
+        self.err_chunks = []
+        # utf8 encoded chunks
+        self.safe_out_chunks = []
+        self.safe_err_chunks = []
+        self.chunks = 0
 
     @property
     def proc(self):
@@ -212,7 +291,7 @@ class _AbstractSshSession(object):
             self._pid = self.proc.pid
         return self._pid
 
-    def interact(self, stdout, stderr, cstdout, cstderr):
+    def interact(self):
         raise Exception('not implemented')
 
     def run(self):
@@ -225,7 +304,26 @@ class _AbstractSshSession(object):
                     # calling the property starts the ssh session
                     while self.proc.has_unread_data:
                         try:
-                            self.interact(*self.proc.recv())
+                            cout, cerr =  self.proc.recv()
+                            if not cout:
+                                cout = ''
+                            if not cerr:
+                                cerr = ''
+                            if cout:
+                                scout = __salt__['mc_utils.magicstring'](cout)
+                                self.stdout += scout
+                                self.out_chunks.append(cout)
+                                self.safe_out_chunks.append(scout)
+                            if cerr:
+                                scerr = __salt__['mc_utils.magicstring'](cerr)
+                                self.stderr += scerr
+                                self.err_chunks.append(cerr)
+                                self.safe_err_chunks.append(scerr)
+                            cur_len = (len(self.err_chunks)
+                                       + len(self.out_chunks))
+                            if cur_len > self.chunks:
+                                self.chunks = cur_len
+                                self.interact()
                             if (
                                 self.timeout
                                 and ((time.time() - begin) >= self.timeout)
@@ -271,15 +369,15 @@ class _AbstractSshSession(object):
                     trace = exc.exec_ret['trace']
                 else:
                     retcode = 1254
+                exc.exec_ret.update({'pid': self.pid,
+                                     'stdout': self.stdout,
+                                     'stderr': self.stderr,
+                                     'retcode': retcode,
+                                     'trace': trace})
                 if retcode == 0:
                     return exc.exec_ret
                 else:
-                    exc.exec_ret.update({'pid': self.pid,
-                                         'stdout': self.stdout,
-                                         'stderr': self.stderr,
-                                         'retcode': retcode,
-                                         'trace': trace})
-                    _reraise(exc)
+                    _reraise(exc, trace=_trace)
         finally:
             if isinstance(self.proc, salt.utils.vt.Terminal):
                 self.proc.close(terminate=True, kill=True)
@@ -293,29 +391,44 @@ class _SSHPasswordChallenger(_AbstractSshSession):
         self.password_retries = kw.get('password_retries', 3)
         self.login_established = False
         self.sent_password = 0
+        self.pwd_index = 0
 
-    def interact(self, cstdout, cstderr):
+    def interact(self):
         '''
         Do the ssh password challenge
         '''
         _s = __salt__
-        if not cstdout:
-            cstdout = ''
-        if not cstderr:
-            cstderr = ''
-        self.stdout += __salt__['mc_utils.magicstring'](cstdout)
-        self.stderr += __salt__['mc_utils.magicstring'](cstderr)
-        if (
-            cstdout
-            and _SSH_PASSWORD_PROMP_RE.search(self.stdout)
-            and not self.login_established
-        ):
-            if self.password and (self.sent_password < self.password_retries):
-                self.sent_password += 1
-                self.proc.sendline(self.password)
-                self.login_established = True
-            else:
-                raise _SSHLoginError('Login failed: ' + self.cmd)
+        occ = _SSH_PASSWORD_PROMP_RE.findall(self.stdout)
+        self.cur_len = len(self.safe_out_chunks)
+        if occ and not self.login_established:
+            if self.password:
+                password_challenges = len(occ)
+                if (
+                    (password_challenges > self.sent_password)
+                    and not self.login_established
+                    and (self.sent_password < self.password_retries)
+                ):
+                    self.sent_password += 1
+                    host = ''
+                    m = _SSH_IDENT_RE.search(self.stdout)
+                    if m:
+                        host = ' on {0}'.format(m.groupdict()['host'])
+                    msg = 'Sending SSH password ({0}){1}'.format(
+                        self.sent_password, host)
+                    log.debug(msg)
+                    self.proc.sendline(self.password)
+                    self.pwd_index = self.cur_len - 1
+                elif all([
+                    [a > 1 for a in [password_challenges, self.sent_password]]
+                    + [password_challenges == self.sent_password]
+                ]):
+                    after_last_challenge_buf = ''.join(
+                        self.safe_out_chunks[self.pwd_index:])
+                    if after_last_challenge_buf.count('\n') > 0:
+                        self.login_established = True
+                        log.debug('SSH connection established')
+                else:
+                    raise _SSHLoginError('Login failed: ' + self.cmd)
         # 0.0125 is really too fast on some systems
         time.sleep(self.loop_interval)
 
@@ -400,6 +513,7 @@ def _get_ssh_args(**kw):
     if known_hosts_file != '/dev/null':
         host_key_checking = 'yes'
     ssh_args.extend(['-oStrictHostKeyChecking={0}'.format(host_key_checking),
+                     '-oLogLevel=QUIET',
                      '-oUserKnownHostsFile={0}'.format(known_hosts_file),
                      '-oControlPath=none'])
     if not password:
@@ -412,22 +526,30 @@ def _get_ssh_args(**kw):
     if ssh_gateway:
         if ':' in ssh_gateway:
             ssh_gateway, ssh_gateway_port = ssh_gateway.split(':')
+
+        ssh_gateway_args = [
+            # Don't add new hosts to the host key database
+            '-oStrictHostKeyChecking=no',
+            # Set hosts key database path to /dev/null
+            '-oUserKnownHostsFile={0}'.format(known_hosts_file),
+            # Don't re-use the SSH connection. Less failures.
+            '-oControlPath=none',
+            '-oPasswordAuthentication=no',
+            '-oChallengeResponseAuthentication=no',
+            '-oPubkeyAuthentication=yes',
+            '-oKbdInteractiveAuthentication=no',
+            '-oLogLevel=QUIET']
         ssh_args.extend([
             # Setup ProxyCommand
-            '-oProxyCommand="ssh {0} {1} {2} -i {3}'
-            ' {4}@{5} -p {6} nc -q0 %h %p"'
+            '-oProxyCommand="ssh {0} -i {1}'
+            ' {2}@{3} -p {4} nc -q0 %h %p"'
             ''.format(
-                # Don't add new hosts to the host key database
-                '-oStrictHostKeyChecking=no',
-                # Set hosts key database path to /dev/null, i.e., non-existing
-                '-oUserKnownHostsFile=/dev/null',
-                # Don't re-use the SSH connection. Less failures.
-                '-oControlPath=none',
+                ' '.join(ssh_gateway_args),
                 ssh_gateway_key,
                 ssh_gateway_user,
                 ssh_gateway,
                 ssh_gateway_port)])
-        log.info('Using SSH gateway {0}@{1}:{2}'.format(
+        log.debug('Using SSH gateway {0}@{1}:{2}'.format(
             ssh_gateway_user, ssh_gateway, ssh_gateway_port))
     return ssh_args
 
@@ -467,20 +589,25 @@ def ssh_transfer_file(host, orig, dest=None, **kw):
     kw = copy.deepcopy(kw)
     # as we chain three login,methods, we multiplicate password challenges
     kw['password_retries'] = kw.get('password_retries', 3) * 8
-    ssh_args = _get_ssh_args(**kw)
+    _ssh_args = _get_ssh_args(**kw)
     tmpfile = tempfile.mkstemp()[1]
     # transfer via scp, fallback on scp, fallback on rsync
-    ttyfree_sssh_args = ' '.join([a for a in ssh_args if a not in ['-t']])
-    sssh_args = ' '.join(ssh_args)
-    cmd = TRANSFER_FILE_SCRIPT.format(ttyfree_sssh_args,
-                                      orig,
-                                      dest,
-                                      user,
-                                      host,
-                                      port,
-                                      tmpfile,
-                                      sssh_args)
-    return interactive_ssh(cmd)
+    ttyfree_ssh_args = ' '.join([a for a in _ssh_args if a not in ['-t']])
+    quoted_ssh_args = ' '.join([a.replace('"', '\\"')
+                                for a in _ssh_args if a not in ['-t']])
+    ssh_args = ' '.join(_ssh_args)
+    cmd = TRANSFER_FILE_SCRIPT.format(
+        **_mangle_kw_for_script({
+            'ttyfree_ssh_args': ttyfree_ssh_args,
+            'quoted_ssh_args': quoted_ssh_args,
+            'orig': orig,
+            'dest': dest,
+            'user': user,
+            'host': host,
+            'port': port,
+            'tmpfile': tmpfile,
+            'ssh_args': ssh_args}))
+    return interactive_ssh(cmd, **kw)
 
 
 def ssh(host, script, **kw):
@@ -531,7 +658,7 @@ def ssh(host, script, **kw):
         inline_script = False
     else:
         inline_script = True
-        script = _SH_WRAPPER.format(script)
+        script = _SH_WRAPPER.format(script, **_mangle_kw_for_script(kw))
     if inline_script:
         tmpfh, script_p = tempfile.mkstemp()
         with salt.utils.fopen(script_p, 'w') as tmpfile:
@@ -557,28 +684,29 @@ def ssh(host, script, **kw):
         # chmod the script to be executable if it is not locally
         # indeed, the transfer script conserve execution permisions
         if not executable:
-            cmd = 'ssh {0} {3}@{4} -p {5} chmod +x {2}'.format(
+            cmd = 'ssh {0} "{3}@{4}" -p "{5}" "chmod +x \\{2}\\"'.format(
                 sssh_args, script_p, dest, user, host, port)
             cret = interactive_ssh(cmd, **copy.deepcopy(kw))
         # Exec the script, eventually
         log.info(msg)
-        cmd = 'ssh {0} {3}@{4} -p {5} {2}'.format(
+        cmd = 'ssh {0} "{3}@{4}" -p "{5}" "{2}"'.format(
             sssh_args, script_p, dest, user, host, port)
-        cret = interactive_ssh(cmd, *kw)
+        cret = interactive_ssh(cmd, **kw)
     except (_SSHExecError,) as exc:
         log.error("{0}".format(exc))
-        return exc.exec_ret
+        cret = exc.exec_ret
     finally:
         if inline_script and script_p and os.path.exists(script_p):
             os.remove(script_p)
         # try to delete the remove pass
         if transfered:
             try:
-                cmd = ('ssh {0} {3}@{4} -p {5} '
-                       '"if [ -f\'{2}\' ];then rm -f \'{2}\';fi'
+                cmd = ('ssh {0} "{3}@{4}" -p "{5}" '
+                       '"'
+                       'if [ -f\"{2}\" ];then rm -f \"{2}\";fi'
                        '"').format(
                            sssh_args, script_p, dest, user, host, port)
-                cret = interactive_ssh(cmd, **copy.deepcopy(kw))
+                interactive_ssh(cmd, **copy.deepcopy(kw))
             except _SSHExecError:
                 pass
     return cret
@@ -595,33 +723,112 @@ def ssh_retcode(host, script, **kw):
     return ssh(host, script, **kw)['retcode']
 
 
+def yamldump_arg(arg, default_flow_style=True, line_break='\n'):
+    '''
+    yaml.safe_dump the arg
+    This is the counterpart of salt.utils.args.yamlify_arg
+    '''
+    original_arg = arg
+    try:
+        # Explicit late import to avoid circular import. DO NOT MOVE THIS.
+        from salt.utils import yamldumper
+        import yaml
+        arg = yaml.dump(arg,
+                        line_break=line_break,
+                        default_flow_style=default_flow_style,
+                        Dumper=yamldumper.SafeOrderedDumper)
+    except Exception:
+        # In case anything goes wrong...
+        arg = original_arg
+    return arg
+
+
 def salt_call(host,
-              module_fun,
+              fun=None,
               arg=None,
               kwarg=None,
               outputter='json',
               loglevel='info',
               mode='salt',
               masterless=True,
-              *a, **kw):
+              salt_call_script=None,
+              *args, **kw):
     '''
     Executes a salt_call call remotely via ssh
     kwargs are forwarded to ssh helper functions !
     '''
     if arg is None:
         arg = []
-    elif isinstance(arg, basestring):
+    if not args:
+        args = []
+    if not isinstance(arg, (list, tuple)):
         arg = [arg]
+    else:
+        arg = [a for a in arg]
+    if isinstance(salt_call_script, string_types):
+        try:
+            if os.path.exists(salt_call_script):
+                with open(salt_call_script) as fic:
+                    salt_call_script = fic.read()
+        except Exception:
+            salt_call_script = None
+    if not salt_call_script:
+        salt_call_script = _SALT_CALL_WRAPPER
+    if fun is not None:
+        if not isinstance(fun, string_types):
+            raise ValueError('fun must be a string: {0}'.format(fun))
+        elif ' ' in fun:
+            raise ValueError('fun must only be the '
+                             'function (state.fun): {0}'.format(fun))
+    arg += [a for a in args]
     if kwarg is None:
         kwarg = {}
-    skwargs = {'outputter': '--out="{0}"'.format(outputter),
-               'local': bool(masterless) and '--local' or '',
-               'loglevel': '-l{0}'.format(loglevel),
-               'module_fun': module_fun,
-               'salt_call': mode == 'salt' and 'salt' or 'mastersalt-call',
-               'args': arg,
-               'kwarg': kwarg}
-    script = _SALT_CALL_WRAPPER.format(skwargs)
+    if not isinstance(arg, list):
+        raise ValueError('arg must be a list')
+    if not isinstance(kwarg, dict):
+        raise ValueError('kwarg must be a dict')
+    kwarg['__kwarg__'] = True
+    arg.append(kwarg)
+    arg, kwarg = salt.utils.args.parse_input(arg, condition=False)
+    sarg = ''
+    for i in arg:
+        try:
+            if i is None:
+                return 'null'
+            elif not isinstance(i, (string_types,
+                                    integer_types,
+                                    long,
+                                    complex,
+                                    bytearray,
+                                    float)):
+                return i
+
+            i = yamldump_arg(__salt__['mc_utils.magicstring'](i))
+            sarg += ' {0}'.format(pipes.quote(i))
+        except Exception:
+            try:
+                raise ValueError('Cannot serialize {0}'.format(arg))
+            except Exception:
+                raise ValueError(u'Cannot serialize {0}'.format(arg))
+    for k, i in kwarg.items():
+        try:
+            i = yamldump_arg(__salt__['mc_utils.magicstring'](i))
+            sarg += ' {0}={1}'.format(k, pipes.quote(i))
+        except Exception:
+            try:
+                raise ValueError('Cannot serialize {0}'.format(arg))
+            except Exception:
+                raise ValueError(u'Cannot serialize {0}'.format(arg))
+    skwargs = _mangle_kw_for_script({
+        'outputter': '--out="{0}"'.format(outputter),
+        'local': bool(masterless) and '--local' or '',
+        'loglevel': '-l{0}'.format(loglevel),
+        'salt_call': mode == 'salt' and 'salt' or 'mastersalt-call',
+        'salt_call_script': mode == 'salt' and 'salt' or 'mastersalt-call',
+        'fun': fun,
+        'arg': sarg,
+        'kwarg': skwarg})
+    script = salt_call_script.format(**skwargs)
     return ssh(host, script, *a, **kw)
 
 
@@ -630,7 +837,7 @@ def sls(host, sls, **kw):
     Run a state file on an host and fails on error
     kwargs are forwarded to ssh helper functions !
     '''
-    return salt_call(host, 'state.sls', arg=[sls])
+    return salt_call(host, 'state.sls "{0}"'.format(sls))
 
 
 def highstate(host, sls, **kw):
