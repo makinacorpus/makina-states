@@ -39,6 +39,7 @@ default_acl_schema = [
         "sambaLMPassword,sambaPwdLastSet,sambaPWDMustChange"
         " by dn.base=\"cn=admin,{data[dn]}\" write"
         " by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
+        " {data[admin_groups_acls]}"
         " by dn.base=\"cn=ldapwriter,ou=virtual,ou=people,{data[dn]}\" read"
         " by dn.base=\"cn=replicator,ou=virtual,ou=people,{data[dn]}\" read"
         " by dn.base=\"cn=ldapreader,ou=virtual,ou=people,{data[dn]}\" read"
@@ -50,6 +51,7 @@ default_acl_schema = [
         "{{1}}"
         " to attrs=uid,cn,sn,homeDirectory,"
         "uidNumber,gidNumber,memberUid,loginShell,employeeType"
+        " {data[admin_groups_acls]}"
         " by dn.base=\"cn=admin,{data[dn]}\" write"
         " by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
         " by dn.base=\"cn=ldapwriter,ou=virtual,ou=people,{data[dn]}\" read"
@@ -60,6 +62,7 @@ default_acl_schema = [
         "{{2}}"
         " to attrs=description,telephoneNumber,"
         "roomNumber,gecos,cn,sn,givenname,jpegPhoto"
+        " {data[admin_groups_acls]}"
         " by dn.base=\"cn=admin,{data[dn]}\" write"
         " by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
         " by dn.base=\"cn=ldapwriter,ou=virtual,ou=people,{data[dn]}\" write"
@@ -69,6 +72,7 @@ default_acl_schema = [
     (
         "{{3}}"
         " to attrs=homePhone,mobile"
+        " {data[admin_groups_acls]}"
         " by dn.base=\"cn=admin,{data[dn]}\" write"
         " by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
         " by dn.base=\"cn=ldapwriter,ou=virtual,ou=people,{data[dn]}\" write"
@@ -78,6 +82,7 @@ default_acl_schema = [
     (
         "{{4}}"
         " to dn.regex=\"(uid=.*,)?ou=People,{data[dn]}\""
+        " {data[admin_groups_acls]}"
         " by dn.base=\"cn=admin,{data[dn]}\" write"
         " by dn.base=\"uid=fd-admin,ou=people,dc={data[dn]}\" write"
         " by dn.base=\"cn=ldapwriter,ou=virtual,ou=people,{data[dn]}\" write"
@@ -88,6 +93,7 @@ default_acl_schema = [
     (
         "{{5}}"
         " to dn.subtree=\"ou=group,{data[dn]}\""
+        " {data[admin_groups_acls]}"
         " by dn.base=\"cn=admin,dc={data[dn]}\" write"
         " by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
         " by * read"
@@ -96,6 +102,7 @@ default_acl_schema = [
         "{{6}}"
         " to dn.subtree=\"ou=people,{data[dn]}\""
         " by dn.base=\"cn=admin,{data[dn]}\" write"
+        " {data[admin_groups_acls]}"
         " by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
         " by dn.base=\"cn=ldapwriter,ou=virtual,ou=people,{data[dn]}\" write"
         " by self write"
@@ -104,6 +111,7 @@ default_acl_schema = [
     (
         "{{7}}"
         " to dn.subtree=\"ou=contact,{data[dn]}\""
+        " {data[admin_groups_acls]}"
         " by dn.base=\"cn=admin,{data[dn]}\" write"
         " by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
         " by dn.base=\"cn=ldapwriter,ou=virtual,ou=people,{data[dn]}\" write"
@@ -119,6 +127,7 @@ default_acl_schema = [
     (
         "{{9}}"
         "  to *"
+        " {data[admin_groups_acls]}"
         "  by dn.base=\"cn=admin,{data[dn]}\" write"
         "  by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
         "  by dn.base=\"cn=replicator,ou=virtual,ou=people,{data[dn]}\" read"
@@ -208,6 +217,9 @@ def settings():
                 ],
                 'cn_config_files': [],
                 'mode': 'master',
+                'writer_groups': ['ldapadministrators'],
+                'reader_groups':  ['ldapreaders'],
+                'admin_groups_acls': '',
                 'pkgs': ['ldap-utils', 'ca-certificates',
                          'slapd', 'python-ldap'],
                 'user': 'openldap',
@@ -275,6 +287,13 @@ def settings():
                     schemas.append(i)
                 if i not in cn_config_files:
                     cn_config_files.append(i)
+        for mode, key in {'reader': 'read', 'writer': 'write'}.items():
+            for group in data['{0}_groups'.format(mode)]:
+                match = 'cn={0},'.format(group)
+                if match in data['admin_groups_acls']:
+                    continue
+                data['admin_groups_acls'] += (
+                    " by group.exact=\"cn={0},ou=Group,{data[dn]}\" {1}".format(group, key, data=data))
         if not data['acls']:
             acls = [a.format(data=data)
                     for a in data['acls_schema'][:]]
