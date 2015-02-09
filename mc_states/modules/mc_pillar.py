@@ -1850,12 +1850,21 @@ def backup_server_settings_for(id_, ttl=60):
         # hosts and current backup server
         # db['non_managed_hosts'] + [id_]
         gconf = get_configuration(id_)
-        backup_excluded = ['default', 'default-vm']
-        backup_excluded.extend(id_)
+        try:
+            backup_excluded = query('backup_excluded')
+            if not isinstance(backup_excluded, list):
+                raise ValueError('{0} is not a list for'
+                                 ' backup_excluded'.format(backup_excluded))
+        except Exception:
+            trace = traceback.format_exc()
+            log.error(trace)
+            backup_excluded = []
+        backup_excluded.extend(['default', 'default-vm', id_])
         manual_hosts = __salt__['mc_pillar.query']('backup_manual_hosts')
         non_managed_hosts = __salt__['mc_pillar.query']('non_managed_hosts')
-        backup_excluded.extend([a for a in __salt__['mc_pillar.query']('non_managed_hosts')
-                                if a not in manual_hosts])
+        backup_excluded.extend(
+            [a for a in __salt__['mc_pillar.query']('non_managed_hosts')
+             if a not in manual_hosts])
         bms = [a for a in db['bms']
                if a not in backup_excluded
                and get_configuration(a)['manage_backups']]
@@ -1875,9 +1884,9 @@ def backup_server_settings_for(id_, ttl=60):
                                       __salt__['mc_pillar.backup_server'](id_))
         confs = data.setdefault('confs', {})
         for host in bms + vms + manual_hosts:
-            server = backup_server_for(host)
             if host in backup_excluded:
                 continue
+            server = backup_server_for(host)
             if not server == id_:
                 continue
             conf =__salt__['mc_pillar.backup_configuration_for'](host)
