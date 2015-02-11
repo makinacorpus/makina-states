@@ -257,12 +257,13 @@ def get_handler(uri, **ckw):
 
     ::
 
-       >>> h = get_handler("ldap://ldap.foo.net",
+       >>> with get_handler("ldap://ldap.foo.net",
                            base="dc=foo,dc=org",
                            user="uid=xxx,ou=People,dc=x",
-                           password="xxx")
-       >>> h.query('objectClass=person')
-       >>> h.query('objectClass=groupOfNames')
+                                password="xxx") as h:
+       ...     h.query('objectClass=person')
+       ...     h.query('objectClass=groupOfNames')
+       >>>
 
     '''
     if not HAS_LDAP:
