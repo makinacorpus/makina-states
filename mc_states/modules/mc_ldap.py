@@ -20,6 +20,16 @@ Documentation of this module is available with::
 # Import ldap libs
 import logging
 import mc_states.utils
+from contextlib import contextmanager
+import salt.utils.odict
+try:
+    import ldap
+    HAS_LDAP = True
+except ImportError:
+    HAS_LDAP = False
+
+_marker = object()
+_HANDLERS = {}
 
 __name = 'ldap'
 
@@ -141,9 +151,132 @@ def ldapEn(saltmods):
     return settings(saltmods).get('enabled', False)
 
 
+class _ConnectionHandler(object):
 
-#
-# -*- coding: utf-8 -*-
-__docformat__ = 'restructuredtext en'
+    def __init__(self,
+                 uri,
+                 base=None,
+                 user=None,
+                 password=None,
+                 tls=None,
+                 retrieve_attributes=None,
+                 scope=None):
+        if tls is None:
+            tls = True
+        if not scope:
+            scope = 'subtree'
+        self.scope = getattr(ldap, 'SCOPE_{0}'.format(scope.upper()),
+                             'SCOPE_SUBTREE')
+        self.tls = tls
+        if retrieve_attributes is None:
+            retrieve_attributes = []
+        self.retrieve_attributes = retrieve_attributes
+        self.uri = uri
+        self.user = user
+        self.password = password
+        self.conns = salt.utils.odict.OrderedDict()
+        self.base = base
+
+    def query(self,
+              search,
+              retrieve_attributes=None,
+              conn=None,
+              base=None,
+              scope=None):
+        results = None
+        if conn is None:
+            conn = self.connect()
+        if base is None:
+            base = self.base
+        if scope is None:
+            scope = self.scope
+        if isinstance(scope, basestring):
+            scope = {'ONE': 'ONELEVEL'}.get(scope.upper(), scope.upper())
+            scope = getattr(ldap, 'SCOPE_{0}'.format(scope.upper()))
+        if retrieve_attributes is None:
+            retrieve_attributes = self.retrieve_attributes
+        if base is None:
+            raise ValueError('Please select a base')
+        if not search:
+            search = 'objectClass=top'
+        results = conn.search_st(base,
+                                 scope,
+                                 search,
+                                 retrieve_attributes,
+                                 timeout=60)
+        return results
+
+    def unbind(self, disconnect=None):
+        if isinstance(disconnect, tuple):
+            disconnect = [disconnect]
+        elif disconnect is None:
+            disconnect = [a for a in self.conns]
+        for connid in disconnect:
+            try:
+                self.conns[connid].unbind()
+            except:
+                pass
+            self.conns.pop(connid, None)
+
+    def connect(self):
+        conn = self.conns.get((self.uri, self.user), _marker)
+        if conn is _marker:
+            conn = ldap.initialize(self.uri)
+            if self.tls:
+                conn.start_tls_s()
+            if self.user:
+                conn.simple_bind_s(self.user, self.password)
+            else:
+                conn.simple_bind()
+            self.conns[(self.uri, self.user)] = conn
+        return conn
+
+
+@contextmanager
+def get_handler(uri, **ckw):
+    '''
+    Helper to handle a pool of ldap connexion and gracefully disconnects
+
+    This use the previous _ConnectionHandler on the behalf of a connexion
+    manager to handle gracefully connection and deconnection.
+
+      uri
+        ldap url
+      base
+        base to search
+      user
+        user dn
+      password
+        password
+      tls
+        activate tls encryption
+      retrieve_attributes
+        default query retrieved attributes
+      scope
+        default query scope
+
+    ::
+
+       >>> h = get_handler("ldap://mastersalt.makina-corpus.net",
+                           base="dc=mcjam,dc=org",
+                           user="uid=xxx,ou=People,dc=x",
+                           password="xxx")
+       >>> h.query('objectClass=person')
+       >>> h.query('objectClass=groupOfNames')
+
+    '''
+    if not HAS_LDAP:
+        raise IndexError('pythonldap is required')
+    kw = {}
+    for i in [a for a in ckw if not a.startswith('__')]:
+        kw[i] = ckw[i]
+    handler = _HANDLERS.get(uri, _marker)
+    if handler is _marker:
+        _HANDLERS[uri] = _ConnectionHandler(uri, **kw)
+    try:
+        yield _HANDLERS[uri]
+    finally:
+        _HANDLERS[uri].unbind()
+        _HANDLERS.pop(uri, None)
 
 # vim:set et sts=4 ts=4 tw=80:
