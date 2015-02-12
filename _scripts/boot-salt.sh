@@ -1463,24 +1463,6 @@ mastersalt_call_wrapper() {
     salt_call_wrapper_ "${MASTERSALT_MS}" $(get_mastersaltcall_args) -c ${MCONF_PREFIX} ${@}
 }
 
-get_grain() {
-    salt-call --local grains.get ${1} --out=raw 2>/dev/null
-}
-
-set_grain() {
-    grain="${1}"
-    bs_log "Testing salt grain '${grain}'"
-    if [ "x$(get_grain ${grain}|grep -iq True;echo $?)" != "x0" ];then
-        bs_log "Setting salt grain: ${grain}=true "
-        salt-call --local grains.setval ${grain} true
-        # sync grains rigth now, do not wait for reboot
-        die_in_error "setting ${grain}"
-        salt-call --local saltutil.sync_grains 1>/dev/null 2>/dev/null
-    else
-        bs_log "Grain '${grain}' already set"
-    fi
-}
-
 check_restartmarker_and_maybe_restart() {
     if [ "x${SALT_BOOT_IN_RESTART}" = "x" ] && [ "x${SALT_REATTACH}" = "x" ];then
         if [ "x${SALT_BOOT_NEEDS_RESTART}" != "x" ];then
