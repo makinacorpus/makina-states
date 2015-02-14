@@ -1023,13 +1023,6 @@ set_vars() {
 
 }
 
-setup() {
-    detect_os
-    set_progs
-    parse_cli_opts $LAUNCH_ARGS
-    set_vars # real variable affectation
-}
-
 check_py_modules() {
     # test if salt binaries are there & working
     kind="${1:-"salt"}"
@@ -1260,6 +1253,7 @@ is_apt_installed() {
 }
 
 lazy_apt_get_install() {
+    MS_WITH_PKGMGR_UPDATE=${MS_WITH_PKGMGR_UPDATE:-}
     to_install=""
     for i in ${@};do
          if ! is_apt_installed ${i};then
@@ -1268,6 +1262,9 @@ lazy_apt_get_install() {
     done
     if [ "x${to_install}" != "x" ];then
         bs_log "Installing ${to_install}"
+        if [ "x${MS_WITH_PKGMGR_UPDATE}" != "x" ];then
+            apt-get update
+        fi
         apt-get install -y --force-yes ${to_install}
     fi
 }
@@ -1295,20 +1292,10 @@ teardown_backports() {
 }
 
 install_prerequisites() {
-    to_install=""
     if [ "x${QUIET}" = "x" ];then
         bs_log "Check package dependencies"
     fi
-    for i in ${BASE_PACKAGES};do
-        if [ "x$(dpkg-query -s ${i} 2>/dev/null|egrep "^Status:"|grep installed|wc -l|${SED} -e "s/ //g")" = "x0" ];then
-            to_install="${to_install} ${i}"
-        fi
-    done
-    if [ "x${to_install}" != "x" ];then
-        bs_log "Installing pre requisites: ${to_install}"
-        echo 'changed=yes comment="prerequisites installed"'
-        apt-get update && lazy_apt_get_install ${to_install}
-    fi
+    MS_WITH_PKGMGR_UPDATE="y" lazy_apt_get_install ${BASE_PACKAGES}
 }
 
 # check if salt got errors:
@@ -4272,6 +4259,13 @@ parse_cli_opts() {
         usage
         exit 0
     fi
+}
+
+setup() {
+    detect_os
+    set_progs
+    parse_cli_opts $LAUNCH_ARGS
+    set_vars # real variable affectation
 }
 
 restart_daemons() {
