@@ -1295,7 +1295,8 @@ install_prerequisites() {
     if [ "x${QUIET}" = "x" ];then
         bs_log "Check package dependencies"
     fi
-    MS_WITH_PKGMGR_UPDATE="y" lazy_apt_get_install ${BASE_PACKAGES}
+    MS_WITH_PKGMGR_UPDATE="y" lazy_apt_get_install ${BASE_PACKAGES} \
+        || die " [bs] Failed install rerequisites"
 }
 
 # check if salt got errors:
@@ -1655,7 +1656,6 @@ setup_and_maybe_update_code() {
         fi
     fi
     if [ "x${SALT_BOOT_IN_RESTART}" = "x" ] && [ "x${is_offline}" = "x0" ];then
-        install_prerequisites || die " [bs] Failed install rerequisites"
         skip_co="${SALT_BOOT_SKIP_CHECKOUTS}"
         if [ "x$(is_basedirs_there)" = "x" ];then
             skip_co=""
@@ -1695,12 +1695,10 @@ setup_and_maybe_update_code() {
                     ln -sf "${venv_path}/src" "${ms}/src"
                 fi
                 if [ ! -e src ];then
-                    echo "pb with linking venv in ${ms}"
-                    exit 1
+                    die " [bs] pb with linking venv in ${ms}"
                 fi
                 if [ -d src ] && [ ! -h  src ];then
-                    echo "pb with linking venv in ${ms} (2)"
-                    exit 1
+                    die " [bs] pb with linking venv in ${ms} (2)"
                 fi
                 for i in "${ms}" "${ms}/src/"*;do
                     is_changeset=""
@@ -4417,6 +4415,7 @@ kill_old_syncs() {
 }
 
 synchronize_code() {
+    install_prerequisites
     cleanup_old_installs
     restart_modes=""
     kill_old_syncs
@@ -4476,9 +4475,6 @@ synchronize_code() {
         #    #    fi
         #    #fi
         #fi
-    fi
-    if [ "x${SALT_BOOT_INITIAL_HIGHSTATE}" = "x" ];then
-        exit ${exit_status}
     fi
 }
 
@@ -4618,79 +4614,78 @@ postinstall() {
 
 if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
     setup
+    MS_EXIT_STATUS=0
 
     if [ "x$(dns_resolve localhost)" = "x${DNS_RESOLUTION_FAILED}" ];then
         die "${DNS_RESOLUTION_FAILED}"
     fi
-    abort=""
+    do_install="1"
     if [ "x${SALT_BOOT_KILL}" != "x" ];then
         kill_ms_daemons
-        abort="1"
+        do_install=""
     fi
     if [ "x${SALT_BOOT_CLEANUP}" != "x" ];then
         cleanup_execlogs
-        abort="1"
+        do_install=""
     fi
     if [ "x${SALT_BOOT_CHECK_ALIVE}" != "x" ];then
         check_alive
-        abort="1"
+        do_install=""
     fi
     if [ "x${SALT_BOOT_INITIAL_HIGHSTATE}" != "x" ] \
         && [ x"$(get_conf initial_highstate)" = "x1" ];then
-        exit 0
+        do_install=""
     fi
     if [ "x${SALT_BOOT_SYNC_CODE}" != "x" ];then
         synchronize_code no_refresh
-    fi
-    if [ "x${DO_REFRESH_MODULES}" != "x" ];then
+        do_install=""
+    elif [ "x${DO_REFRESH_MODULES}" != "x" ];then
         synchronize_code
+        do_install=""
     fi
     if [ "x${FORCE_GIT_PACK}" = "x1" ];then
         git_pack
         if [ "x${ONLY_GIT_PACK}" = "x1" ];then
-            exit ${?}
+            MS_EXIT_STATUS="$?"
+            do_install=""
         fi
     fi
-    cleanup_old_installs
     if [ "x${SALT_BOOT_RESTART_MINIONS}" != "x" ];then
         restart_local_minions
         restart_local_mastersalt_minions
-        abort="1"
+        do_install=""
     fi
     if [ "x${SALT_BOOT_RESTART_MASTERS}" != "x" ];then
         restart_local_masters
         restart_local_mastersalt_masters
-        abort="1"
+        do_install=""
     fi
     if [ "x${SALT_BOOT_RESTART_DAEMONS}" != "x" ];then
         restart_daemons
-        abort="1"
+        do_install=""
     fi
-    if [ "x${abort}" = "x" ];then
+    if [ "x${do_install}" != "x" ];then
         recap
         set_dns
         install_prerequisites
         setup_and_maybe_update_code
         setup_virtualenvs
-        ret=$?
-        if [ "x${SALT_BOOT_ONLY_PREREQS}" != "x" ];then
-            exit $ret
+        MS_EXIT_STATUS=$?
+        if [ "x${SALT_BOOT_ONLY_PREREQS}" = "x" ];then
+            create_salt_skeleton
+            install_mastersalt_env
+            install_salt_env
+            MS_EXIT_STATUS=$?
+            if [ "x${SALT_BOOT_ONLY_INSTALL_SALT}" = "x" ];then
+                if [ "x${SALT_BOOT_INITIAL_HIGHSTATE}" != "x" ];then
+                    initial_highstates
+                else
+                    run_highstates
+                fi
+            fi
+            postinstall
         fi
-        create_salt_skeleton
-        install_mastersalt_env
-        install_salt_env
-        ret=$?
-        if [ "x${SALT_BOOT_ONLY_INSTALL_SALT}" != "x" ];then
-            exit $ret
-        fi
-        if [ "x${SALT_BOOT_INITIAL_HIGHSTATE}" != "x" ];then
-            initial_highstates
-        else
-            run_highstates
-        fi
-        # deprecated for a long time
-        postinstall
     fi
-    exit 0
+    exit $MS_EXIT_STATUS
 fi
 ## vim:set et sts=5 ts=4 tw=0:
