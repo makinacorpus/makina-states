@@ -4534,7 +4534,7 @@ initial_highstates() {
     if [ "x$(get_conf initial_highstate)" != "x1" ];then
         run_highstates
         ret="${?}"
-        # on failure try to sync code
+        # on failure try to sync code & redo
         if [ "x${ret}" != "x0" ];then
             SALT_BOOT_SKIP_CHECKOUTS=""
             synchronize_code && run_highstates
