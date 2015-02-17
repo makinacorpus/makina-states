@@ -585,8 +585,9 @@ set_vars() {
     HOST="$(hostname -f)"
     if [ $(hostname -f|sed -e "s/\./\.\n/g"|grep -c "\.") -ge 2 ];then
         DEFAULT_DOMAINNAME="$(hostname -f|sed -re "s/[^.]+\.(.*)/\1/g")"
-        HOST="$(hostname -f|sed -re "s/([^.]+)\.(.*)/\1/g")"
+        HOST="$(hostname -f|$SED -re "s/([^.]+)\.(.*)/\1/g")"
     fi
+    HOST=$(echo ${HOST} | $SED "s/ //g")
     SALT_BOOT_LOCK_FILE="/tmp/boot_salt_sleep-$(get_full_chrono)"
     LAST_RETCODE_FILE="/tmp/boot_salt_rc-$(get_full_chrono)"
     QUIET=${QUIET:-}
@@ -667,14 +668,14 @@ set_vars() {
     DO_MS_PIP="${DO_MS_PIP:-}"
     SALT_LIGHT_INSTALL=""
     NICKNAME_FQDN="$(get_minion_id)"
-    if [ "x$(echo "${NICKNAME_FQDN}"|grep -q \.;echo ${?})" = "x0" ];then
-        DOMAINNAME="$(echo "${NICKNAME_FQDN}"|${SED} -e "s/^[^.]*\.//g")"
-    else
-        DOMAINNAME="${DEFAULT_DOMAINNAME}"
-        NICKNAME_FQDN="${HOST}.${DOMAINNAME}"
+    DOMAINNAME="$(echo "${NICKNAME_FQDN}"|${SED} -e "s/^[^.]*\.//")"
+    DOMAINNAME="${DOMAINNAME:-${DEFAULT_DOMAINNAME}}"
+    # if the minion id does not container a FQDN, sets it
+    # we obviously sync system hostname with minion_id
+    if [ "x$(echo "${NICKNAME_FQDN}"|grep -q \.;echo ${?})" != "x0" ];then
+        NICKNAME_FQDN="${HOST}.${DEFAULT_DOMAINNAME}"
         set_dns
     fi
-
     # select the daemons to install but also
     # detect what is already present on the system
     if [ "x${SALT_CONTROLLER}" = "xsalt_master" ]\
@@ -1074,7 +1075,7 @@ do_pip() {
                 fic="$(mktemp)"
                 # strip the exec part of the pip wrapper, but let the code import
                 # to maybe throw an import error signaling a broken pip install
-                sed -e "s/exec(compile(\(.*\)))/compile(\1)/g" "${bin}" > "${fic}"
+                $SED -e "s/exec(compile(\(.*\)))/compile(\1)/g" "${bin}" > "${fic}"
                 "${py}" "${fic}" 1>/dev/null 2>/dev/null
                 if [ "x${?}" != "x0" ];then
                     ret="1"
@@ -4484,7 +4485,7 @@ set_dns_minionid() {
     shift
     eprefix=$@
     if [ "x${totest}" != "x" ];then
-        if [ "x$(cat "${eprefix}/minion_id" 2>/dev/null|${SED} -e "s/ //")" != "x$(echo "${HOST}"|${SED} -e "s/ //g")" ];then
+        if [ "x$(cat "${eprefix}/minion_id" 2>/dev/null|${SED} -e "s/ //")" != "x${HOST}" ];then
             if [ ! -d "${eprefix}" ];then
                 mkdir -p "${eprefix}"
             fi
@@ -4495,35 +4496,32 @@ set_dns_minionid() {
 
 
 set_dns() {
-    if [ "${NICKNAME_FQDN}" != "x" ];then
-        if [ "x$(cat /etc/hostname 2>/dev/null|${SED} -e "s/ //")" != "x$(echo "${HOST}"|${SED} -e "s/ //g")" ]\
-            && [ "x$(get_local_mastersalt_mode)" = "xmasterless" ];then
+    if [ "x${NICKNAME_FQDN}" != "x" ];then
+        if [ "x$(cat /etc/hostname 2>/dev/null|${SED} -e "s/ //")" != "x${HOST}" ];then
             bs_log "Resetting hostname file to ${HOST}"
             echo "${HOST}" > /etc/hostname
-
         fi
         set_dns_minionid "${IS_SALT}" "${CONF_PREFIX}"
         set_dns_minionid "${IS_MASTERSALT}" "${MCONF_PREFIX}"
-        if [ -e "$(which domainname 2>/dev/null)" ]\
-            && [ "x$(get_local_mastersalt_mode)" = "xmasterless" ];then
-            if [ "x$(domainname)" != "x$(echo "${DOMAINNAME}"|${SED} -e "s/ //g")" ];then
+        if hash -r domainname 2>/dev/null ;then
+            if [ "x$(domainname)" != "x${DOMAINNAME}" ];then
                 bs_log "Resetting domainname to ${DOMAINNAME}"
                 domainname "${DOMAINNAME}"
             fi
         fi
-        if [ "x$(hostname)" != "x$(echo "${NICKNAME_FQDN}"|${SED} -e "s/ //g")" ]\
-            && [ "x$(get_local_mastersalt_mode)" = "xmasterless" ];then
+        if [ "x$(hostname)" != "x${NICKNAME_FQDN}" ];then
             bs_log "Resetting hostname to ${NICKNAME_FQDN}"
             hostname "${NICKNAME_FQDN}"
         fi
-        if [ "x$(egrep -q "127.*${NICKNAME_FQDN}" /etc/hosts;echo ${?})" != "x0" ]\
-            && [ "x$(get_local_mastersalt_mode)" = "xmasterless" ];then
+        if ! egrep -q "127.*${NICKNAME_FQDN}" /etc/hosts;then
             bs_log "Adding new core hostname alias to localhost"
             echo "127.0.0.1 ${NICKNAME_FQDN}">/tmp/hosts
             cat /etc/hosts>>/tmp/hosts
             echo "127.0.0.1 ${NICKNAME_FQDN}">>/tmp/hosts
             if [ -f /tmp/hosts ];then
-                cp -f /tmp/hosts /etc/hosts
+                # do not use cp for docker  or any LAYERED FS shadowing compatiblity
+                cat /tmp/hosts > /etc/hosts
+                rm -f /tmp/hosts
             fi
         fi
     fi
