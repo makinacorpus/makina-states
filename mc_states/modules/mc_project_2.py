@@ -11,6 +11,7 @@ import yaml.error
 import datetime
 import os
 import logging
+import socket
 import shutil
 import traceback
 import uuid
@@ -307,7 +308,8 @@ def _step_exec(cfg, step, failhard=True):
 
 def get_default_configuration():
     conf = copy.deepcopy(DEFAULT_CONFIGURATION)
-    this_host, this_port = 'localhost', '22'
+    this_host = socket.gethostname()
+    this_port = 22
     if os.path.exists('/this_port'):
         with open('/this_port') as fic:
             this_port = fic.read().splitlines()[0].strip()
