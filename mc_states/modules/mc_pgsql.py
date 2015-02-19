@@ -182,6 +182,8 @@ def settings():
                         'datestyle': 'iso, dmy',
                         'timezone': 'localtime',
                         'max_connections': '100',
+                        'max_locks_per_transaction': '164',
+                        'max_pred_locks_per_transaction': '164',
                         'log_line_prefix': '%t ',
                         'log_timezone': 'localtime',
                         'shared_buffers': '128MB',

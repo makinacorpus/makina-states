@@ -68,7 +68,7 @@ set_progs() {
     if [ "x${PYTHON}" = "x" ];then
         PYTHON="$(which python 2>/dev/null)"
     fi
-    HOST="$(which host 2>/dev/null)"
+    BHOST="$(which host 2>/dev/null)"
     DIG="$(which dig 2>/dev/null)"
     NSLOOKUP="$(which nslookup 2>/dev/null)"
     lxc_ps=$(which lxc-ps 1>/dev/null 2>/dev/null)
@@ -197,7 +197,7 @@ dns_resolve() {
         "${GETENT}"\
         "${PERL}"\
         "${PYTHON}"\
-        "${HOST}"\
+        "${BHOST}"\
         "${NSLOOKUP}"\
         "${DIG}";\
     do
@@ -529,6 +529,11 @@ set_vars() {
     fi
     LOCAL_SALT_MODE="$(get_local_salt_mode)"
     DEFAULT_DOMAINNAME="local"
+    HOST="$(hostname -f)"
+    if [ $(hostname -f|sed -e "s/\./\.\n/g"|grep -c "\.") -ge 2 ];then
+        DEFAULT_DOMAINNAME="$(hostname -f|sed -re "s/[^.]+\.(.*)/\1/g")"
+        HOST="$(hostname -f|sed -re "s/([^.]+)\.(.*)/\1/g")"
+    fi
     SALT_BOOT_LOCK_FILE="/tmp/boot_salt_sleep-$(get_full_chrono)"
     LAST_RETCODE_FILE="/tmp/boot_salt_rc-$(get_full_chrono)"
     QUIET=${QUIET:-}
@@ -608,7 +613,6 @@ set_vars() {
     SALT_MINION_CONTROLLER="${SALT_MINION_CONTROLLER:-$SALT_MINION_CONTROLLER_DEFAULT}"
     SALT_LIGHT_INSTALL=""
     NICKNAME_FQDN="$(get_minion_id)"
-    HOST="$(echo "${NICKNAME_FQDN}"|awk -F'.' '{print $1}')"
     if [ "x$(echo "${NICKNAME_FQDN}"|grep -q \.;echo ${?})" = "x0" ];then
         DOMAINNAME="$(echo "${NICKNAME_FQDN}"|sed -e "s/^[^.]*\.//g")"
     else
@@ -795,7 +799,7 @@ set_vars() {
             fi
         fi
         for i in /etc/mastersalt/minion /etc/mastersalt/minion.d/00_global.conf;do
-            if [ "x${MASTERSALT}" = "x" ];then
+            if [ "x${MASTERSALT}" = "x" ] && [ -e "${i}" ];then
                 PMASTERSALT="$(egrep "^master: " ${i} |awk '{print $2}'|tail -n 1|sed -e "s/ //g")"
                 if [ "x${PMASTERSALT}" != "x" ];then
                     MASTERSALT="${PMASTERSALT}"
@@ -803,6 +807,10 @@ set_vars() {
                 fi
             fi
         done
+        if [ "x${MASTERSALT}" = "x" ] && [ "x${IS_MASTERSALT_MASTER}" ];then
+            MASTERSALT="${NICKNAME_FQDN}"
+            MASTERSALT_MASTER_DNS="${NICKNAME_FQDN}"
+        fi
 
         MASTERSALT_MASTER_DNS="${MASTERSALT_MASTER_DNS:-${MASTERSALT}}"
         MASTERSALT_MASTER_PORT="${MASTERSALT_MASTER_PORT:-"${MASTERSALT_PORT:-"4606"}"}"
@@ -4266,17 +4274,6 @@ postinstall() {
     fi
 }
 
-install_corpusreactor_glue() {
-    set_conf corpus_glue 1
-    mastersalt_call_wrapper makina-states.services.corpus.glue
-    if [ "x${SALT_BOOT_DEBUG}" != "x" ];then cat "${SALT_BOOT_OUTFILE}";fi
-    warn_log
-    if [ "x${last_salt_retcode}" != "x0" ];then
-        bs_log "Failed glue install for corpus"
-        exit 1
-    fi
-}
-
 if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
     parse_cli_opts $LAUNCH_ARGS
     set_vars # real variable affectation
@@ -4339,10 +4336,8 @@ if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
         else
             run_highstates
         fi
-        if [ "x$(get_conf corpus_glue)" = "x1" ];then
-            install_corpusreactor_glue
-        fi
-        maybe_install_projects
+        # deprecated for a long time
+        # maybe_install_projects
         maybe_run_tests
         postinstall
     fi

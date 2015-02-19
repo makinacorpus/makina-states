@@ -12,6 +12,15 @@ include:
   - makina-states.cloud.generic.hooks
   - makina-states.localsettings.ssl.hooks
 
+ssl-pkgs:
+  pkg.latest:
+    - pkgs:
+      - ca-certificates
+      - ssl-cert
+    - watch_in:
+      - mc_proxy: ssl-certs-pre-install
+      - mc_proxy: ssl-certs-post-install
+
 {% macro install_cert(cert, suf='') %}
 {% set paths = salt['mc_ssl.get_cert_infos'](cert) %}
 {% do certs.append(paths['crt']) %}

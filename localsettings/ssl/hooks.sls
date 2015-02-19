@@ -1,3 +1,12 @@
+ssl-certs-pre-install:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: ssl-certs-pre-hook
+      - mc_proxy: ssl-certs-post-install
+ssl-certs-post-install:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: ssl-certs-pre-hook
 ssl-certs-pre-hook:
   mc_proxy.hook:
     - watch_in:
