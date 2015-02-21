@@ -1,6 +1,5 @@
 {{ salt['mc_macros.register']('localsettings', 'ssl') }}
 {# drop any configured ssl cert on the compute node #}
-{% set data  = salt['mc_ssl.settings']() %}
 {% set certs = [] %}
 {% set sacerts = [] %}
 {% set socerts = [] %}
@@ -69,11 +68,12 @@ cpt-cert-{{cert}}-{{paths.domaincert}}-{{flav}}{{suf}}:
 {% endfor%}
 {% endmacro%}
 
+
+{% if salt['mc_controllers.mastersalt_mode']() %}
+{% set data  = salt['mc_ssl.settings']() %}
 {% for cert in data.certificates %}
 {{install_cert(cert)}}
 {% endfor %}
-
-{% if salt['mc_controllers.mastersalt_mode']() %}
 {% set f='/tmp/cloudcerts.py' %}
 cpt-certs-cleanup:
   file.managed:
@@ -102,7 +102,6 @@ cpt-certs-cleanup:
       - mc_proxy: ssl-certs-post-hook
       - cmd: cpt-certs-install-openssl
 {% endif %}
-
 {#
 cpt-certs-cleanup-openssl-cloud:
   cmd.run:
