@@ -75,7 +75,8 @@ def default_net():
               if ':' not in a]
     if brifs and not v4addr:
         for br in brifs:
-            res = __salt__['cmd.run']('brctl show {0}'.format(br))
+            res = __salt__['cmd.run'](
+                'brctl show {0}'.format(br), python_shell=True)
             ifs = []
             for line in res.split('\n'):
                 ifs.append(line.split()[-1].replace('\n', ''))

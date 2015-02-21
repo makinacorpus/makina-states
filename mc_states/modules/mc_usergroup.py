@@ -127,15 +127,6 @@ def settings():
             'nodetypes', 'vagrantvm'
         ):
             sysadmins_keys.append('salt://makina-states/files/ssh/vagrant.pub')
-            #if not os.path.exists(sshd):
-            #    os.makedirs(sshd)
-            #if True or not os.path.exists(vagrant_key_path):
-            #    ret = __salt__['cmd.run_all'](
-            #        'cp -f {curl -k https://raw.githubusercontent.com/mitchellh'
-            #        '/vagrant/master/keys/vagrant.pub >'
-            #        '{0}'.format(vagrant_key_path))
-            #    if ret['retcode']:
-            #        raise Exception('Cant install vagrant ssh key!')
         data['defaultSysadmins'] = get_default_sysadmins()
         grainsPref = 'makina-states.localsettings.'
         # the following part just feed the above users & user_keys variables

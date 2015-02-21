@@ -107,9 +107,10 @@ def vm_initial_highstate(vm, ret=None, output=True):
               "nc -w300 {vm} 22\" footarget "
               "test -e '/etc/makina-states/initial_highstate'").format(
                   vm=vm, target=cn, cloud_settings=cloud_settings)
-    cret = cli('cmd.run_all', unless)
+    cret = cli('cmd.run_all', unless, python_shell=True)
     if cret['retcode']:
-        rcret = cli('cmd.run_all', cmd, use_vt=True, output_loglevel='info')
+        rcret = cli('cmd.run_all', cmd, use_vt=True, python_shell=True,
+                    output_loglevel='info')
         if not rcret['retcode']:
             ret['comment'] = (
                 'Initial highstate done on {0}'.format(vm)

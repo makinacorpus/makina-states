@@ -115,7 +115,7 @@ def sync_image_reference_containers(imgSettings, ret, _cmd_runner=None,
     _s['mc_api.time_log']('start', fname)
     if _cmd_runner is None:
         def _cmd_runner(cmd):
-            return cli('cmd.run_all', cmd)
+            return cli('cmd.run_all', cmd, python_shell=True)
 
     imgSettings['lxc']['images']
     for img in imgSettings['lxc']['images']:
@@ -232,8 +232,7 @@ def sync_images(only=None,
                     cmd = (
                         'ps aux|egrep "rsync.*{0}"|grep -v grep|wc -l'
                     ).format(imgroot)
-                    cret = cli('cmd.run_all', cmd,
-                               python_shell=True,
+                    cret = cli('cmd.run_all', cmd, python_shell=True,
                                salt_timeout=timeout)
                     if cret['stdout'].strip() > '0':
                         _errmsg(
@@ -245,8 +244,8 @@ def sync_images(only=None,
                             'if [ -d {0} ];then '
                             '{1} {0}/ {0}.tmp/;'
                             'fi').format(imgroot, rsync_cmd)
-                        cret = cli('cmd.run_all', cmd,
-                                   python_shell=True, salt_target=target)
+                        cret = cli('cmd.run_all', cmd, python_shell=True,
+                                   salt_target=target)
                         if not cret['retcode']:
                             subret['comment'] += (
                                 '\n{0} RSYNC(local pre sync) complete'
@@ -258,9 +257,8 @@ def sync_images(only=None,
                     do_sync = True
                     try:
                         cmd = 'cat {0}.tmp/rootfs/.ms_version'.format(imgroot)
-                        ver = int(cli('cmd.run',
-                                      cmd, salt_timeout=timeout,
-                                      salt_target=host))
+                        ver = int(cli('cmd.run', cmd, python_shell=True,
+                                      salt_timeout=timeout, salt_target=host))
                         if lver == ver:
                             do_sync = False
                     except Exception:
@@ -271,8 +269,7 @@ def sync_images(only=None,
                             '{2} -z '
                             '{0}/ root@{1}:{0}.tmp/'
                         ).format(imgroot, host, rsync_cmd)
-                        cret = cli('cmd.run_all', cmd,
-                                   python_shell=True,
+                        cret = cli('cmd.run_all', cmd, python_shell=True,
                                    salt_timeout=timeout)
                         good = not cret['retcode']
                     if good:
@@ -286,8 +283,8 @@ def sync_images(only=None,
                         do_sync = True
                         try:
                             cmd = 'cat {0}/rootfs/.ms_version'.format(imgroot)
-                            dver = int(cli('cmd.run',
-                                           cmd, salt_timeout=timeout,
+                            dver = int(cli('cmd.run', cmd, python_shell=True,
+                                           salt_timeout=timeout,
                                            salt_target=host))
                             if dver == lver:
                                 do_sync = False
@@ -302,8 +299,8 @@ def sync_images(only=None,
                             cmd = (
                                 '{1} {0}.tmp/ {0}/'
                             ).format(imgroot, rsync_cmd)
-                            cret = cli('cmd.run_all', cmd,
-                                       python_shell=True, salt_target=target)
+                            cret = cli('cmd.run_all', cmd, python_shell=True,
+                                       salt_target=target)
                             good = not cret['retcode']
                         if good:
                             subret['comment'] += (

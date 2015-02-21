@@ -992,7 +992,7 @@ def init_repo(cfg, git, user, group,
         lgit = os.path.join(lgit, '.git')
     if os.path.exists(lgit):
         cmd = 'chown -Rf {0} "{2}"'.format(user, group, git)
-        cret = _s('cmd.run_all')(cmd)
+        cret = _s('cmd.run_all')(cmd, python_shell=True)
         if cret['retcode']:
             raise ProjectInitException(
                 'Can\'t set perms for {0}'.format(git))
@@ -1044,6 +1044,7 @@ def init_repo(cfg, git, user, group,
              ' git remote add origin {1} &&'
              ' git push -u origin master'
             ).format(igit, lgit),
+            python_shell=True,
             runas=user
         )
         if cret['retcode']:
@@ -1058,6 +1059,7 @@ def init_repo(cfg, git, user, group,
                 ('cd "{0}.tmp" &&'
                  ' git add . &&'
                  ' git commit -m "salt init"').format(lgit),
+                python_shell=True,
                 runas=user
             )
             if cret['retcode']:
@@ -1066,6 +1068,7 @@ def init_repo(cfg, git, user, group,
             cret = _s('cmd.run_all')(
                 ('cd "{0}.tmp" &&'
                  ' git push origin -u master').format(lgit),
+                python_shell=True,
                 runas=user
             )
             if cret['retcode']:
@@ -1073,7 +1076,7 @@ def init_repo(cfg, git, user, group,
                     'Can\'t push first salt commit in {0}'.format(git))
         if bare:
             cret = _s('cmd.run_all')(
-                ('rm -rf "{0}.tmp"').format(lgit), runas=user)
+                ('rm -rf "{0}.tmp"').format(lgit), python_shell=True, runas=user)
     #else:
     #    _append_comment(
     #        ret, body=indent('Commited first commit in {0}'.format(git)))
@@ -1141,11 +1144,11 @@ def fetch_last_commits(wc, user, origin='origin', ret=None):
                       'in working copy: {0}'.format(
                           wc, origin)))
     cret = _s('cmd.run_all')(
-        'git fetch {0}'.format(origin), cwd=wc, runas=user)
+        'git fetch {0}'.format(origin), cwd=wc, python_shell=True, runas=user)
     if cret['retcode']:
         raise ProjectInitException('Can\'t fetch git in {0}'.format(wc))
     cret = _s('cmd.run_all')(
-        'git fetch {0} --tags'.format(origin), cwd=wc, runas=user)
+        'git fetch {0} --tags'.format(origin), cwd=wc, python_shell=True, runas=user)
     if cret['retcode']:
         raise ProjectInitException('Can\'t fetch git tags in {0}'.format(wc))
     #else:
@@ -1158,7 +1161,7 @@ def git_log(wc, user='root'):
     _s = __salt__.get
     return _s('cmd.run')(
         'git log', env={'LANG': 'C', 'LC_ALL': 'C'},
-        cwd=wc, user=user)
+        cwd=wc, python_shell=True, user=user)
 
 
 def has_no_commits(wc, user='root'):
@@ -1175,24 +1178,25 @@ def set_upstream(wc, rev, user, origin='origin', ret=None):
                 wc, rev, origin)))
     # set branch upstreams
     try:
-        sver = _s('cmd.run_all')('git --version')['stdout'].split()[-1]
+        sver = _s('cmd.run_all')(
+            'git --version', python_shell=True)['stdout'].split()[-1]
         git_ver = float('.'.join(sver.split('.')[:2]))
     except (ValueError, TypeError):
         git_ver = 1.8
     if has_no_commits(wc, user=user):
         cret2 = _s('cmd.run_all')(
             'git reset --hard {1}/{0}'.format(
-                rev, origin), cwd=wc, runas=user)
+                rev, origin), cwd=wc, python_shell=True, runas=user)
         if cret2['retcode'] or cret2['retcode']:
             raise ProjectInitException(
                 'Can\'t reset to initial state in {0}'.format(wc))
     if git_ver < 1.8:
         cret2 = _s('cmd.run_all')(
             'git branch --set-upstream master {1}/{0}'.format(
-                rev, origin), cwd=wc, runas=user)
+                rev, origin), cwd=wc, python_shell=True, runas=user)
         cret1 = _s('cmd.run_all')(
             'git branch --set-upstream {0} {1}/{0}'.format(rev, origin),
-            cwd=wc, runas=user)
+            cwd=wc, python_shell=True, runas=user)
         if cret2['retcode'] or cret1['retcode']:
             out = splitstrip('{stdout}\n{stderr}'.format(**cret2))
             _append_comment(ret, body=indent(out))
@@ -1203,7 +1207,7 @@ def set_upstream(wc, rev, user, origin='origin', ret=None):
     else:
         cret = _s('cmd.run_all')(
             'git branch --set-upstream-to={1}/{0}'.format(rev, origin),
-            cwd=wc, runas=user)
+            cwd=wc, python_shell=True, runas=user)
         if cret['retcode']:
             out = splitstrip('{stdout}\n{stderr}'.format(**cret))
             _append_comment(ret, body=indent(out))
@@ -1216,7 +1220,7 @@ def set_upstream(wc, rev, user, origin='origin', ret=None):
 def working_copy_in_initial_state(wc, user='root'):
     _s = __salt__.get
     cret = _s('cmd.run_all')(
-        'git log --pretty=format:"%h:%s:%an"', cwd=wc, runas=user)
+        'git log --pretty=format:"%h:%s:%an"', cwd=wc, python_shell=True, runas=user)
     out = splitstrip('{stdout}\n{stderr}'.format(**cret))
     lines = out.splitlines()
     initial = False
@@ -1261,7 +1265,7 @@ def sync_working_copy(user, wc, rev=None, ret=None, origin=None):
         #        ret, body=indent('Repository {1}: {0}\n'.format(cret, wc)))
     else:
         cret = _s('cmd.run_all')('git pull {1} {0}'.format(rev, origin),
-                            cwd=wc, user=user)
+                            cwd=wc, python_shell=True, user=user)
         if cret['retcode']:
             # finally try to reset hard
             cret = _s('cmd.run_all')('git reset --hard {1}/{0}'.format(rev, origin),
@@ -1270,7 +1274,7 @@ def sync_working_copy(user, wc, rev=None, ret=None, origin=None):
                 # try to merge a bit but only what's mergeable
                 cret = _s('cmd.run_all')(
                     'git merge --ff-only {1}/{0}'.format(rev, origin),
-                    cwd=wc, user=user)
+                    cwd=wc, python_shell=True, user=user)
                 if cret['retcode']:
                     raise ProjectInitException(
                         'Can not sync from {0}/{1} in {2}'.format(

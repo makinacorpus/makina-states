@@ -348,10 +348,11 @@ def remove(id_,
         log.error('{0} not running'.format(id_))
         return True
     # unactivate cron
-    cli('cmd.run',
-        ('ssh {0} -p {1} '
-         'sed -re "s/^#*/#/g" -i /etc/cron.d/*salt*'
-         '').format(sshhost, sshport))
+
+    cmd = ('ssh {0} -p {1} '
+           'sed -re "s/^#*/#/g" -i /etc/cron.d/*salt*'
+           '').format(sshhost, sshport)
+    cli('cmd.run', cmd, python_shell=True)
     services = ['salt-master', 'salt-minion',
                 'mastersalt-master', 'mastersalt-minion']
     cmd = ('ssh {0} -p {1} "for i in {2};do'
@@ -359,7 +360,7 @@ def remove(id_,
            ' echo manual>/etc/init/\${{i}}.override;'
            ' fi;service \${{i}} stop;done"').format(
                sshhost, sshport, ' '.join(services))
-    cli('cmd.run', cmd)
+    cli('cmd.run', cmd, python_shell=True)
     return True
 
 
