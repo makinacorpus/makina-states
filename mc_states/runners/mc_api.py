@@ -363,6 +363,23 @@ def remove(id_,
     return True
 
 
+def destroy(id_,
+            sshport=22,
+            sshhost=None,
+            destroy=False,
+            remove_key=True,
+            **kwargs):
+    '''
+    Alias to remove
+    '''
+    return remove(id,
+                  sshhost=sshhost,
+                  sshport=sshport,
+                  destroy=destroy,
+                  remove_key=remove_key,
+                  **kwargs)
+
+
 def ping():
     import time
     time.sleep(2)

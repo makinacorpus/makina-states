@@ -538,4 +538,26 @@ def orchestrate(compute_node,
     __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end', fname, ret=ret)
     return ret
+
+
+def remove(vm, destroy=False, only_stop=False, **kwargs):
+    _s = __salt__
+    vm_data = _s['mc_api.get_vm'](vm)
+    tgt = vm_data['target']
+    fun_ = 'mc_cloud_{0}.remove'.format(vm_data['vt'])
+    ret = _s['mc_api.remove'](vm,
+                              sshport=vm_data['ssh_reverse_proxy_port'],
+                              sshhost=tgt,
+                              **kwargs)
+    if ret:
+        if fun_ in _s:
+            ret = _s[fun_](vm, destroy=destroy, only_stop=only_stop, **kwargs)
+    return ret
+
+
+def destroy(vm, **kwargs):
+    '''
+    Alias to remove
+    '''
+    return remove(vm, **kwargs)
 # vim:set et sts=4 ts=4 tw=80:
