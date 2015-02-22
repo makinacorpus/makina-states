@@ -588,10 +588,10 @@ def get_selfsigned_cert_for(domain, gen=False, domain_csr_data=None):
         wdomain = get_wildcard(domain)
         if wdomain:
             try:
-                return get_selfsigned_cert_for(wdomain)
+                return get_selfsigned_cert_for(wdomain, gen=gen)
             except CertificateNotFoundError:
                 pass
-    ensure_ca_present()
+    #ensure_ca_present()
     if domain_csr_data is None:
         domain_csr_data = {}
     cloudSettings = get_cloud_settings()
@@ -780,7 +780,7 @@ def search_matching_certificate(domain, as_text=False, selfsigned=True):
     return certp, certk
 
 
-def search_matching_selfsigned_certificate(domain, as_text=False):
+def search_matching_selfsigned_certificate(domain, gen=False, as_text=False):
     '''
     Search in the pillar certificate directory the
     certificate belonging to a particular domain
@@ -812,7 +812,7 @@ def search_matching_selfsigned_certificate(domain, as_text=False):
                 break
     # last resort, try to generate a certificate throught our CA
     if not certp:
-        certp, certk = get_selfsigned_cert_for(domain, gen=True)
+        certp, certk = get_selfsigned_cert_for(domain, gen=gen)
     if (not certp) or (certp and not os.path.exists(certp)):
         raise MissingCertError(
             '{1}: Missing cert: {0}'.format(certp, domain))
@@ -827,7 +827,7 @@ def search_matching_selfsigned_certificate(domain, as_text=False):
     return certp, certk
 
 
-def selfsigned_ssl_certs(domains, as_text=False):
+def selfsigned_ssl_certs(domains, gen=False, as_text=False):
     '''
     Maybe Generate
     and Return SSL certificate and key paths for domain
@@ -843,7 +843,7 @@ def selfsigned_ssl_certs(domains, as_text=False):
     ssl_certs = []
     for domain in domains:
         crt_data = search_matching_selfsigned_certificate(
-            domain, as_text=as_text)
+            domain, gen=gen, as_text=as_text)
         if crt_data not in ssl_certs:
             ssl_certs.append(crt_data)
     return ssl_certs
@@ -955,7 +955,7 @@ def reload_settings(data=None):
     return data
 
 
-def get_configured_cert(domain, ttl=60):
+def get_configured_cert(domain, gen=False, ttl=60):
     '''
     Return any configured ssl cert for domain or the wildward domain
     matching the precise domain.
@@ -978,7 +978,7 @@ def get_configured_cert(domain, ttl=60):
             if data:
                 pretendants.append(data)
         if not pretendants:
-            cert = selfsigned_ssl_certs(domain, as_text=True)[0]
+            cert = selfsigned_ssl_certs(domain, gen=gen, as_text=True)[0]
             pretendants.append((cert[0], cert[1], ''))
             certs[domain] = cert[0], cert[1], ''
         pretendants.sort(key=selfsigned_last)
@@ -1023,7 +1023,7 @@ def settings():
         data = reload_settings()
         # even if we make a doublon here, it will be filtered by CN indexing
         fqdn = __grains__['fqdn']
-        data['certificates'][fqdn] = get_configured_cert(fqdn)
+        data['certificates'][fqdn] = get_configured_cert(fqdn, gen=True)
         return reload_settings(data)
     return _settings()
 
