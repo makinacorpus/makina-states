@@ -810,12 +810,14 @@ def salt_call(host,
               arg=None,
               kwarg=None,
               outputter='json',
+              transformer=None,
               unparse=True,
               loglevel='info',
               salt_call_bin='salt-call',
               masterless=True,
               minion_id='local',
               salt_call_script=None,
+              strip_out=None,
               *args,
               **kw):
     '''
@@ -829,6 +831,8 @@ def salt_call(host,
         kwargs for the saltcall function
     outputter
         outputter for the saltcall return
+    transformer
+        outputter used to unparse the value returned from the call
     unparse
         unserialise the return and tries to
         split out the local result from
@@ -973,36 +977,89 @@ def salt_call(host,
             if line.startswith(result_sep):
                 collect = True
         ret['raw_result'] = ret['result'] = result
+    ret['transformer'] = None
+    ret['unparser'] = None
     if unparse:
         renderers = salt.loader.render(__opts__, __salt__)
+        outputters = salt.loader.outputters(__opts__)
         rtype = ret['result_type']
-        renderer = {'yaml': 'lyaml'}.get(rtype, rtype)
+        if transformer is None:
+            transformer = rtype
+        transformer = {'yaml': 'lyaml',
+                       'lyaml': 'lyaml',
+                       'highstate': 'highstate',
+                       'nested': 'nested',
+                       'json': 'json'}.get(transformer, 'noop')
+        unparser = {'yaml': 'lyaml',
+                    'lyaml': 'lyaml',
+                    'json': 'json'}.get(rtype, 'noop')
+        ret['transformer'] = transformer
+        ret['unparser'] = unparser
+        if unparser != 'noop':
+            try:
+                ret['result'] = renderers[unparser](ret['result'])
+            except Exception:
+                pass
         try:
-            if renderer in renderers:
-                ret['result'] = renderers[renderer](ret['result'])
+            if transformer != 'noop':
+                if transformer in renderers:
+                    ret['result'] = renderers[transformer](ret['result'])
+                elif transformer in outputters:
+                    ret['result'] = outputters[transformer](ret['result'])
         except salt.exceptions.SaltRenderError:
             trace = traceback.format_exc()
-            log.error(trace)
         if isinstance(ret['result'], dict):
             if [a for a in ret['result']] == [minion_id]:
                 ret['result'] = ret['result'][minion_id]
+            log.error(trace)
+    if strip_out and (ret['retcode'] in [0]):
+        ret['stdout'] = ret['stderr'] = ''
     return ret
 
 
-def sls(host, sls, **kw):
+def sls(host,
+        sls,
+        outputter='json',
+        transformer='highstate',
+        strip_out=True,
+        **kw):
     '''
     Run a state file on an host and fails on error
     kwargs are forwarded to ssh helper functions !
+
+    CLI Examples::
+
+        salt-call --local mc_remote.sls foo.net mysls
+
     '''
-    return salt_call(host, 'state.sls "{0}"'.format(sls))
+    kw.setdefault('outputter', outputter)
+    kw.setdefault('transformer', transformer)
+    kw.setdefault('strip_out', strip_out)
+    ret = salt_call(host, 'state.sls', sls, **kw)
+    if strip_out and (ret['retcode'] in [0]):
+        ret = ret['result']
+    return ret
 
 
-def highstate(host, sls, **kw):
+def highstate(host,
+              outputter='json',
+              transformer='highstate',
+              strip_out=True,
+              **kw):
     '''
     Run an highstate on an host and fails on error
     kwargs are forwarded to ssh helper functions !
+
+    CLI Examples::
+
+        salt-call --local mc_remote.highstate foo.net
+
     '''
-    return salt_call(host, 'state.highstate')
-
-
+    kw.setdefault('outputter', outputter)
+    kw.setdefault('transformer', transformer)
+    kw.setdefault('strip_out', strip_out)
+    ret = salt_call(host, 'state.highstate', **kw)
+    if strip_out and (ret['retcode'] in [0]):
+        ret = ret['result']
+    return ret
 # vim:set et sts=4 ts=4 tw=80:
