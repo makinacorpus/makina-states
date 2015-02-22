@@ -107,7 +107,8 @@ def upgrade_vt(target, ret=None, output=True):
     if not ret:
         ret = result()
     ret['comment'] += yellow('Upgrading lxc on {0}\n'.format(target))
-    version = cli('cmd.run', 'lxc-info --version', salt_target=target)
+    version = cli('cmd.run', 'lxc-info --version', python_shell=True,
+                  salt_target=target)
     # run the install SLS which should take care of upgrading
     for step in [configure_install_vt]:
         try:
@@ -117,7 +118,8 @@ def upgrade_vt(target, ret=None, output=True):
             ret['comment'] += red('Failed to upgrade lxc\n')
             return ret
     # after upgrading
-    nversion = cli('cmd.run', 'lxc-info --version', salt_target=target)
+    nversion = cli('cmd.run', 'lxc-info --version', python_shell=True,
+                   salt_target=target)
     if nversion != version:
         containers = cli('lxc.list', salt_target=target)
         reg = cli('mc_macros.update_local_registry', 'lxc_to_restart',
@@ -283,7 +285,7 @@ def vm_spawn(vm, ret=None, output=True, force=False):
     pdt = _load_profile(data)
     marker = "{cloudSettings[prefix]}/pki/master/minions/{vm}".format(
         cloudSettings=cloudSettings, vm=vm)
-    lret = cli('cmd.run_all', 'test -e {0}'.format(marker))
+    lret = cli('cmd.run_all', 'test -e {0}'.format(marker), python_shell=True)
     lret['retcode'] = 1
     # verify if VM is already reachable if already marked as provisioned
     # this add a 10 seconds overhead upon VM creation
@@ -354,7 +356,7 @@ def vm_reconfigure(vm, ret=None, output=True, force=False):
     containers = provisioned_containers.setdefault(cn, [])
     pdt = _load_profile(data)
     marker = "{cs[prefix]}/pki/master/minions/{vm}".format(cs=cs, vm=vm)
-    lret = cli('cmd.run_all', 'test -e {0}'.format(marker))
+    lret = cli('cmd.run_all', 'test -e {0}'.format(marker), python_shell=True)
     lret['retcode'] = 1
     try:
         ping = False
@@ -442,7 +444,7 @@ def vm_volumes(vm, ret=None, output=True, force=False):
             vm, rmark), salt_target=cn
     ):
         # if container is running, restart it
-        cret = cli('cmd.run_all', cmd, salt_target=cn)
+        cret = cli('cmd.run_all', cmd, python_shell=True, salt_target=cn)
         if cret['retcode']:
             ret['result'] = False
             merge_results(ret, cret)
@@ -492,29 +494,35 @@ def vm_preprovision(vm, ret=None, output=True):
     return vm_configure('preprovision', vm, ret=ret, output=output)
 
 
-def remove(vm, **kwargs):
+def remove(vm, destroy=False, only_stop=False, **kwargs):
     '''
     Remove a container
     '''
     _s = __salt__
     vm_data = _s['mc_api.get_vm'](vm)
     tgt = vm_data['target']
-    ret = _s['mc_api.remove'](vm,
-                              sshport=vm_data['ssh_reverse_proxy_port'],
-                              sshhost=tgt,
-                              **kwargs)
-    if ret and kwargs.get('destroy', False):
-        only_stop = kwargs.get('only_stop', False)
+    ret = None
+    if destroy:
         if cli('test.ping', salt_target=tgt):
             if not cli('lxc.exists', vm, salt_target=tgt):
                 return True
             if 'running' == cli('lxc.state', vm, salt_target=tgt):
                 ret = cli('mc_lxc_fork.stop', vm, salt_target=tgt)
+                if ret:
+                    log.info('{0}/{1} stopped'.format(tgt, vm))
             ret = cli('mc_lxc_fork.reconfigure', vm,
                       autostart=False, salt_target=tgt)
             if not only_stop:
-                ret = cli('mc_lxc_fork.destroy', vm,
-                          salt_target=tgt)['result']
+                ret = cli('mc_lxc_fork.destroy', vm, salt_target=tgt)['result']
+                if ret:
+                    log.info('{0}/{1} destroyed'.format(tgt, vm))
     return ret
+
+
+def destroy(vm, **kwargs):
+    '''
+    Alias to remove
+    '''
+    return remove(vm, **kwargs)
 
 # vim:set et sts=4 ts=4 tw=80:

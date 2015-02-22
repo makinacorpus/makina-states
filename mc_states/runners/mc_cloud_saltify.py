@@ -137,7 +137,7 @@ def saltify(name, output=True, ret=None):
                 'ssh {2} {0} {1}/makina-states/_scripts/boot-salt.sh '
                 '--initial-highstate'
             ).format(name, csettings['root'], proxycmd)
-            cmdret = cli('cmd.run_all', cmd)
+            cmdret = cli('cmd.run_all', cmd, python_shell=True)
             if cmdret['retcode']:
                 ret['result'] = False
                 ret['trace'] += 'Using cmd: \'{0}\''.format(cmd)

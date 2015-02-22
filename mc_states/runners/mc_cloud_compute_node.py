@@ -506,7 +506,7 @@ def orchestrate(skip=None,
                     compute_node, output=False,
                     skip=skip_vms, only=only_vms,
                     refresh=False, ret=ret)
-            vms_in_error = chg.setdefault('postp_vms_in_errors', {})
+            vms_in_error = chg.setdefault('postp_vms_in_error', {})
             for node in vms_in_error:
                 for vm in vms_in_error[node]:
                     if vm not in skip_vms:

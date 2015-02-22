@@ -176,7 +176,7 @@ def settings(ttl=60):
 
 
 def _run(cmd):
-    return __salt__['cmd.run_all'](cmd)
+    return __salt__['cmd.run_all'](cmd, python_shell=True)
 
 
 def sf_release(images=None):
@@ -227,7 +227,7 @@ def sf_release(images=None):
         if not os.path.exists(fdest):
             cmd = 'getfacl -R . > acls.txt'
             cret = _cli('cmd.run_all')(
-                cmd, cwd=container_p, salt_timeout=60 * 60)
+                cmd, cwd=container_p, python_shell=True, salt_timeout=60 * 60)
             if cret['retcode']:
                 _errmsg('error with acl')
             # ignore some paths in the acl file
@@ -251,6 +251,7 @@ def sf_release(images=None):
             cret = _cli('cmd.run_all')(
                 cmd,
                 cwd=container_p,
+                python_shell=True,
                 env={'XZ_OPT': '-7e'},
                 salt_timeout=60 * 60)
             if cret['retcode']:
@@ -258,17 +259,19 @@ def sf_release(images=None):
         cmd = 'rsync -avzP {0} {1}@{2}/{3}.tmp'.format(
             fdest, user, SFTP_URL, dest)
         cret = _cli('cmd.run_all')(
-            cmd, cwd=container_p, salt_timeout=8 * 60 * 60)
+            cmd, cwd=container_p, python_shell=True, salt_timeout=8 * 60 * 60)
         if cret['retcode']:
             return _errmsg(ret, 'error with uploading')
         cmd = 'echo "rename {0}.tmp {0}" | sftp {1}@{2}'.format(dest,
                                                                 user,
                                                                 SFTP_URL)
-        cret = _cli('cmd.run_all')(cmd, cwd=container_p, salt_timeout=60)
+        cret = _cli('cmd.run_all')(
+            cmd, cwd=container_p, python_shell=True, salt_timeout=60)
         if cret['retcode']:
             _errmsg(ret, 'error with renaming')
         cmd = "md5sum {0} |awk '{{print $1}}'".format(fdest)
-        cret = _cli('cmd.run_all')(cmd, cwd=container_p, salt_timeout=60 * 60)
+        cret = _cli('cmd.run_all')(
+            cmd, cwd=container_p, python_shell=True, salt_timeout=60 * 60)
         if cret['retcode']:
             _errmsg(ret, 'error with md5')
         with open(ver_file + ".md5", 'w') as f:
@@ -281,6 +284,7 @@ def sf_release(images=None):
              'git push').format(next_ver))
         cret = _cli('cmd.run_all')(cmd,
                                    cwd=root + '/makina-states',
+                                   python_shell=True,
                                    salt_timeout=60)
         if cret['retcode']:
             _errmsg(ret, 'error with commiting new version')

@@ -391,7 +391,7 @@ def _composer_infos(composer='/usr/local/bin/composer'):
         return ret
 
     cmd = '"{0}" --version'.format(composer)
-    result = __salt__['cmd.run_all'](cmd, runas='root')
+    result = __salt__['cmd.run_all'](cmd, python_shell=True, runas='root')
     retcode = result['retcode']
     if retcode == 0:
         ret['version'] = result['stdout']
@@ -399,7 +399,7 @@ def _composer_infos(composer='/usr/local/bin/composer'):
         raise exceptions.CommandExecutionError(result['stderr'])
 
     cmd = '"{0}" list --raw'.format(composer)
-    result = __salt__['cmd.run_all'](cmd, runas='root')
+    result = __salt__['cmd.run_all'](cmd, python_shell=True, runas='root')
     retcode = result['retcode']
     commandlines = []
     commands = {}
@@ -462,7 +462,7 @@ def composer_command(command=None, cwd=None, args=None, composer=None):
         return ret
 
     cmd = '"{0}" {1} {2}'.format(composer, command, args)
-    result = __salt__['cmd.run_all'](cmd, cwd=cwd, runas='root')
+    result = __salt__['cmd.run_all'](cmd, cwd=cwd, python_shell=True, runas='root')
 
     retcode = result['retcode']
     ret['msg'] = result['stdout']

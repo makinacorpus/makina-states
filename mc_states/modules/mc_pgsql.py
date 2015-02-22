@@ -46,7 +46,8 @@ def wrapper(wrappy):
             pgconf = __salt__['cmd.run_all'](
                 'find /etc/postgresql/{0} -name postgresql.conf'
                 '|head -n1'.format(
-                    pg_version))['stdout']
+                    pg_version),
+                python_shell=True)['stdout']
             if os.path.exists(pgconf):
                 with open(pgconf) as fic:
                     content = fic.read().splitlines()

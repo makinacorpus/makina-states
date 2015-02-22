@@ -107,9 +107,10 @@ def vm_initial_highstate(vm, ret=None, output=True):
               "nc -w300 {vm} 22\" footarget "
               "test -e '/etc/makina-states/initial_highstate'").format(
                   vm=vm, target=cn, cloud_settings=cloud_settings)
-    cret = cli('cmd.run_all', unless)
+    cret = cli('cmd.run_all', unless, python_shell=True)
     if cret['retcode']:
-        rcret = cli('cmd.run_all', cmd, use_vt=True, output_loglevel='info')
+        rcret = cli('cmd.run_all', cmd, use_vt=True, python_shell=True,
+                    output_loglevel='info')
         if not rcret['retcode']:
             ret['comment'] = (
                 'Initial highstate done on {0}'.format(vm)
@@ -364,7 +365,7 @@ def filter_vms(compute_node, vms, skip, only):
     return todo
 
 
-def provision_vms(cn,
+def provision_vms(compute_node=None,
                   skip=None, only=None, ret=None,
                   output=True, refresh=False):
     '''Provision all or selected vms on a compute node
@@ -375,14 +376,25 @@ def provision_vms(cn,
         mastersalt-run -lall mc_cloud_vm.provision_vms \
                 host1.domain.tld only=['foo.domain.tld']
         mastersalt-run -lall mc_cloud_vm.provision_vms \
+                only=['foo.domain.tld']
+        mastersalt-run -lall mc_cloud_vm.provision_vms \
                 host1.domain.tld skip=['foo2.domain.tld']
 
     '''
     fname = 'mc_cloud_vm.provision_vms'
     _s = __salt__
-    _s['mc_api.time_log']('start', fname, cn, skip=skip, only=only)
+    cn = compute_node
     if ret is None:
         ret = result()
+    if not cn:
+        if only:
+            if isinstance(only, basestring):
+                only = only.split(',')
+            vmdata = _s['mc_api.get_vm'](only[0])
+            cn = vmdata['target']
+        else:
+            raise ValueError('no compute node selected')
+    _s['mc_api.time_log']('start', fname, cn, skip=skip, only=only)
     _, only, __, skip = (
         _s['mc_cloud_controller.gather_only_skip'](
             only_vms=only, skip_vms=skip))
@@ -466,8 +478,8 @@ def post_provision_vms(cn,
     if refresh:
         cli('saltutil.refresh_pillar')
     settings = _s['mc_api.get_compute_node_settings'](cn)
-    gerror = ret['changes'].setdefault('postp_vms_provisionned', {})
-    gprov = ret['changes'].setdefault('postp_vms_in_error', {})
+    gprov = ret['changes'].setdefault('postp_vms_provisionned', {})
+    gerror = ret['changes'].setdefault('postp_vms_in_error', {})
     provisionned = gprov.setdefault(cn, [])
     provision_error = gerror.setdefault(cn, [])
     vms = settings.get('vms', {})
@@ -511,7 +523,7 @@ def post_provision_vms(cn,
     return ret
 
 
-def orchestrate(compute_node,
+def orchestrate(compute_node=None,
                 skip=None,
                 only=None,
                 output=True,
@@ -532,10 +544,33 @@ def orchestrate(compute_node,
         'start', fname, compute_node=compute_node, skip=skip, only=only)
     if refresh:
         cli('saltutil.refresh_pillar')
-    ret = provision_vms(compute_node, skip=skip, only=only,
+    ret = provision_vms(compute_node=compute_node,
+                        skip=skip, only=only,
                         output=output, refresh=False,
                         ret=ret)
     __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end', fname, ret=ret)
     return ret
+
+
+def remove(vm, destroy=False, only_stop=False, **kwargs):
+    _s = __salt__
+    vm_data = _s['mc_api.get_vm'](vm)
+    tgt = vm_data['target']
+    fun_ = 'mc_cloud_{0}.remove'.format(vm_data['vt'])
+    ret = _s['mc_api.remove'](vm,
+                              sshport=vm_data['ssh_reverse_proxy_port'],
+                              sshhost=tgt,
+                              **kwargs)
+    if ret:
+        if fun_ in _s:
+            ret = _s[fun_](vm, destroy=destroy, only_stop=only_stop, **kwargs)
+    return ret
+
+
+def destroy(vm, **kwargs):
+    '''
+    Alias to remove
+    '''
+    return remove(vm, **kwargs)
 # vim:set et sts=4 ts=4 tw=80:

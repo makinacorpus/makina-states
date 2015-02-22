@@ -258,7 +258,10 @@ def latest(name,
                                 branch=branch,
                                 rev=rev,
                             )
-                            __salt__['cmd.run_stdout'](cmd, cwd=target, user=user)
+                            __salt__['cmd.run_stdout'](cmd,
+                                                       cwd=target,
+                                                       python_shell=True,
+                                                       user=user)
                             pull()
                         else:
                             if (

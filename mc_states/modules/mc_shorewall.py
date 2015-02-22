@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 
 
 def guess_shorewall_ver():
-    ver = __salt__['cmd.run']('shorewall version')
+    ver = __salt__['cmd.run']('shorewall version', python_shell=True)
     for i in ['3' '4', '5']:
         if i in ver:
             return ver
