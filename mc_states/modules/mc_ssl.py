@@ -588,7 +588,7 @@ def get_selfsigned_cert_for(domain, gen=False, domain_csr_data=None):
         wdomain = get_wildcard(domain)
         if wdomain:
             try:
-                return get_selfsigned_cert_for(wdomain, gen=gen)
+                return get_selfsigned_cert_for(wdomain, gen=False)
             except CertificateNotFoundError:
                 pass
     #ensure_ca_present()
@@ -906,7 +906,8 @@ def common_settings(ttl=60):
                      'l': 'NANTES',
                      'o': 'NANTES',
                      'cn': _g['fqdn'],
-                     'email': _g['fqdn'],
+                     'email': 'root@' + _g['fqdn'],
+                     'domains': [_g['fqdn']],
                      'certificates_domains_map': OrderedDict(),
                      'certificates': OrderedDict()})
         return data
@@ -1023,7 +1024,8 @@ def settings():
         data = reload_settings()
         # even if we make a doublon here, it will be filtered by CN indexing
         fqdn = __grains__['fqdn']
-        data['certificates'][fqdn] = get_configured_cert(fqdn, gen=True)
+        for domain in data['domains']:
+            data['certificates'][domain] = get_configured_cert(domain, gen=True)
         return reload_settings(data)
     return _settings()
 
