@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from mc_states.saltapi import LXC_IMPLEMENTATION
 '''
 Control Linux Containers via Salt
 
@@ -8,6 +7,7 @@ Control Linux Containers via Salt
 
 # Import python libs
 from __future__ import absolute_import, print_function
+from mc_states.saltapi import LXC_IMPLEMENTATION
 import time
 import os
 import copy
