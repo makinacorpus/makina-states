@@ -69,11 +69,12 @@ cpt-cert-{{cert}}-{{paths.domaincert}}-{{flav}}{{suf}}:
 {% endmacro%}
 
 
-{% if salt['mc_controllers.mastersalt_mode']() %}
 {% set data  = salt['mc_ssl.settings']() %}
 {% for cert in data.certificates %}
 {{install_cert(cert)}}
 {% endfor %}
+
+{% if salt['mc_controllers.mastersalt_mode']() %}
 {% set f='/tmp/cloudcerts.py' %}
 cpt-certs-cleanup:
   file.managed:
