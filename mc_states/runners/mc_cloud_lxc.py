@@ -29,6 +29,7 @@ from salt.utils.odict import OrderedDict
 
 from mc_states import api
 from mc_states.saltapi import (
+    LXC_IMPLEMENTATION,
     merge_results,
     result,
     salt_output,
@@ -303,7 +304,7 @@ def vm_spawn(vm, ret=None, output=True, force=False):
         try:
             # XXX: using the lxc runner which is now faster and nicer.
             _s['mc_api.time_log']('start', 'lxc_vm_init',  vm, cn, pdt)
-            cret = _s['mc_lxc_fork.cloud_init']([vm], host=cn, **pdt)
+            cret = _s[LXC_IMPLEMENTATION + '.cloud_init']([vm], host=cn, **pdt)
             _s['mc_api.time_log']('end', 'lxc_vm_end',  vm=vm, cret=cret)
             if not cret['result']:
                 # convert to regular dict for pformat
@@ -368,7 +369,7 @@ def vm_reconfigure(vm, ret=None, output=True, force=False):
         try:
             kw = OrderedDict()
             # XXX: using the lxc runner which is now faster and nicer.
-            args = cli('mc_lxc_fork.cloud_init_interface', pdt, salt_target=cn)
+            args = cli(LXC_IMPLEMENTATION + '.cloud_init_interface', pdt, salt_target=cn)
             for i in [
                 'name',
                 'cpu',
@@ -385,7 +386,7 @@ def vm_reconfigure(vm, ret=None, output=True, force=False):
                 if i in args:
                     kw[i] = args[i]
             _s['mc_api.time_log']('start', 'lxc_vm_init',  vm, cn, pdata=kw)
-            cret = cli('mc_lxc_fork.reconfigure', kw, salt_target=cn)
+            cret = cli(LXC_IMPLEMENTATION + '.reconfigure', kw, salt_target=cn)
             _s['mc_api.time_log']('end', 'lxc_vm_end',  vm=vm, cret=cret)
             if not cret['result']:
                 ret['trace'] += 'FAILURE ON LXC {0}:\n{1}\n'.format(
@@ -507,13 +508,13 @@ def remove(vm, destroy=False, only_stop=False, **kwargs):
             if not cli('lxc.exists', vm, salt_target=tgt):
                 return True
             if 'running' == cli('lxc.state', vm, salt_target=tgt):
-                ret = cli('mc_lxc_fork.stop', vm, salt_target=tgt)
+                ret = cli(LXC_IMPLEMENTATION + '.stop', vm, salt_target=tgt)
                 if ret:
                     log.info('{0}/{1} stopped'.format(tgt, vm))
-            ret = cli('mc_lxc_fork.reconfigure', vm,
+            ret = cli(LXC_IMPLEMENTATION + '.reconfigure', vm,
                       autostart=False, salt_target=tgt)
             if not only_stop:
-                ret = cli('mc_lxc_fork.destroy', vm, salt_target=tgt)['result']
+                ret = cli(LXC_IMPLEMENTATION + '.destroy', vm, salt_target=tgt)['result']
                 if ret:
                     log.info('{0}/{1} destroyed'.format(tgt, vm))
     return ret

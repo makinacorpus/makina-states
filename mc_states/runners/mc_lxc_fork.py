@@ -1,22 +1,7 @@
 # -*- coding: utf-8 -*-
+from mc_states.saltapi import LXC_IMPLEMENTATION
 '''
 Control Linux Containers via Salt
-
-stable upstream of of salt/modules/lxc.py
-This was a first the original code i (with Matthew Williams) authored and
-contributed to salt, before a core salt dev took over it and advertise
-himself as the ultimate savior.
-
-He just evicted us for next developments without a glitch and despissing our
-original work without reasons or prior contact and started an agressive
-and non compatible rewrite which was just afterall just a bunch of code
-cleanups and styling rewrite with a few incompatiblities with the older
-modules...
-
-We do not permit for now any inclusion of any kind of the following codelines
-or any of the lxc_refactor makinacorpus/salt fork to go in salt-core
-(changesets after 2014-10-01). Feel free to contact @kiorky for any further
-details.
 
 :depends: lxc execution module
 '''
@@ -58,7 +43,7 @@ def _do(name, fun):
     client = salt.client.get_local_client(__opts__['conf_file'])
     cmd_ret = client.cmd_iter(
             host,
-            'mc_lxc_fork.{0}'.format(fun),
+            LXC_IMPLEMENTATION + '.{0}'.format(fun),
             [name],
             timeout=60)
     data = next(cmd_ret)
@@ -83,7 +68,7 @@ def _do_names(names, fun):
         for name in sub_names:
             cmds.append(client.cmd_iter(
                     host,
-                    'mc_lxc_fork.{0}'.format(fun),
+                    LXC_IMPLEMENTATION + '.{0}'.format(fun),
                     [name],
                     timeout=60))
         for cmd in cmds:
@@ -168,17 +153,28 @@ def init(names, host=None, saltcloud_mode=False, quiet=False, **kwargs):
     memory
         cgroups memory limit, in MB
 
+        .. versionchanged:: 2015.2.0
+            If no value is passed, no limit is set. In earlier Salt versions,
+            not passing this value causes a 1024MB memory limit to be set, and
+            it was necessary to pass ``memory=0`` to set no limit.
+
     template
         Name of LXC template on which to base this container
 
     clone
         Clone this container from an existing container
 
-    nic
-        Network interfaces profile (defined in config or pillar).
-
     profile
         A LXC profile (defined in config or pillar).
+
+    network_profile
+        Network profile to use for the container
+
+        .. versionadded:: Lithium
+
+    nic
+        .. deprecated:: Lithium
+            Use ``network_profile`` instead
 
     nic_opts
         Extra options for network interfaces. E.g.:
@@ -214,7 +210,7 @@ def init(names, host=None, saltcloud_mode=False, quiet=False, **kwargs):
         ret['result'] = False
         return ret
     log.info('Searching for LXC Hosts')
-    data = __salt__['mc_lxc_fork.list'](host, quiet=True)
+    data = __salt__[LXC_IMPLEMENTATION + '.list'](host, quiet=True)
     for host, containers in six.iteritems(data):
         for name in names:
             if name in sum(six.itervalues(containers), []):
@@ -266,7 +262,7 @@ def init(names, host=None, saltcloud_mode=False, quiet=False, **kwargs):
             kw = copy.deepcopy(kw)
             kw['name'] = name
             kw = client.cmd(
-                host, 'mc_lxc_fork.cloud_init_interface', args + [kw],
+                host, LXC_IMPLEMENTATION + '.cloud_init_interface', args + [kw],
                 expr_form='list', timeout=600).get(host, {})
         name = kw.pop('name', name)
         # be sure not to seed an already seeded host
@@ -276,7 +272,7 @@ def init(names, host=None, saltcloud_mode=False, quiet=False, **kwargs):
         cmds.append(
             (host,
              name,
-             client.cmd_iter(host, 'mc_lxc_fork.init', args, kwarg=kw, timeout=600)))
+             client.cmd_iter(host, LXC_IMPLEMENTATION + '.init', args, kwarg=kw, timeout=600)))
     done = ret.setdefault('done', [])
     errors = ret.setdefault('errors', _OrderedDict())
 
@@ -370,7 +366,7 @@ def cloud_init(names, host=None, quiet=False, **kwargs):
     '''
     if quiet:
         log.warn('\'quiet\' argument is being deprecated. Please migrate to --quiet')
-    return __salt__['mc_lxc_fork.init'](names=names, host=host,
+    return __salt__[LXC_IMPLEMENTATION + '.init'](names=names, host=host,
                                 saltcloud_mode=True, quiet=quiet, **kwargs)
 
 
@@ -380,7 +376,7 @@ def _list_iter(host=None):
     '''
     tgt = host or '*'
     client = salt.client.get_local_client(__opts__['conf_file'])
-    for container_info in client.cmd_iter(tgt, 'mc_lxc_fork.list'):
+    for container_info in client.cmd_iter(tgt, LXC_IMPLEMENTATION + '.list'):
         if not container_info:
             continue
         if not isinstance(container_info, dict):
@@ -510,4 +506,3 @@ def info(name, quiet=False):
     if data and not quiet:
         __jid_event__.fire_event({'data': data, 'outputter': 'lxc_info'}, 'progress')
     return data
-# vim:set et sts=4 ts=4 tw=80:
