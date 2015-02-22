@@ -39,6 +39,7 @@ import os
 import tempfile
 import traceback
 import pipes
+import salt.loader
 import salt.minion
 import salt.exceptions
 import salt.utils
