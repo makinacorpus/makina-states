@@ -999,19 +999,24 @@ def salt_call(host,
             try:
                 ret['result'] = renderers[unparser](ret['result'])
             except Exception:
-                pass
-        try:
-            if transformer != 'noop':
-                if transformer in renderers:
+                trace = traceback.format_exc()
+                log.error(trace)
+        if transformer != 'noop' and transformer != unparser:
+            if transformer in renderers:
+                try:
                     ret['result'] = renderers[transformer](ret['result'])
-                elif transformer in outputters:
+                except salt.exceptions.SaltRenderError:
+                    trace = traceback.format_exc()
+                    log.error(trace)
+            elif transformer in outputters:
+                try:
                     ret['result'] = outputters[transformer](ret['result'])
-        except salt.exceptions.SaltRenderError:
-            trace = traceback.format_exc()
+                except Exception:
+                    trace = traceback.format_exc()
+                    log.error(trace)
         if isinstance(ret['result'], dict):
             if [a for a in ret['result']] == [minion_id]:
                 ret['result'] = ret['result'][minion_id]
-            log.error(trace)
     if strip_out and (ret['retcode'] in [0]):
         ret['stdout'] = ret['stderr'] = ''
     return ret
