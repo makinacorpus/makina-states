@@ -35,6 +35,8 @@ from mc_states.utils import memoize_cache
 log = logging.getLogger(__name__)
 _CLIENTS = {}
 _RUNNERS = {}
+LXC_IMPLEMENTATION = 'mc_lxc_fork'
+LXC_IMPLEMENTATION = 'lxc'
 
 
 class SaltExit(SaltException):

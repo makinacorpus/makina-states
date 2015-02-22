@@ -5,21 +5,6 @@ Control Linux Containers via Salt
 :depends: lxc package for distribution
 
 lxc >= 1.0 (even beta alpha) is required
-Stable upstream of of salt/modules/lxc.py
-This was a first the original code i (with Matthew Williams) authored and
-contributed to salt, before a core salt dev took over it and advertise
-himself as the ultimate savior.
-
-He just evicted us for next developments without a glitch and despissing our
-original work without reasons or prior contact and started an agressive
-and non compatible rewrite which was just afterall just a bunch of code
-cleanups and styling rewrite with a few incompatiblities with the older
-modules...
-
-We do not permit for now any inclusion of any kind of the following codelines
-or any of the lxc_refactor makinacorpus/salt fork to go in salt-core
-(changesets after 2014-10-01). Feel free to contact @kiorky for any further
-details.
 
 '''
 
@@ -3670,7 +3655,7 @@ def reconfigure(name,
 
     .. code-block:: bash
 
-        salt-call -lall mc_lxc_fork.reconfigure foobar nic_opts="{'eth1': {'mac': '00:16:3e:dd:ee:44'}}" memory=4
+        salt-call -lall lxc.reconfigure foobar nic_opts="{'eth1': {'mac': '00:16:3e:dd:ee:44'}}" memory=4
 
     '''
     changes = {}
