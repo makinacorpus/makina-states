@@ -338,7 +338,7 @@ def vhost_settings(domain, doc_root, **kwargs):
     nginxSettings['data']['extra'] = copy.deepcopy(nginxSettings)
     nginxSettings['extra'] = copy.deepcopy(nginxSettings)
     lcert, lkey, lchain = __salt__[
-        'mc_ssl.get_configured_cert'](domain)
+        'mc_ssl.get_configured_cert'](domain, gen=True)
     nginxSettings['ssl_cert'] = lcert + lchain
     nginxSettings['ssl_key'] = lcert + lchain + lkey
     if nginxSettings.get('ssl_cert', ''):
