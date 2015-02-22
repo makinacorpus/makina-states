@@ -21,7 +21,7 @@ This have nice features like:
     - transfering files using different fallback methods
     - running salt-call over remote (even masterless) salt installations
 
-If this module gains salt core, there are some small  makina-states deps:
+If this module gains salt core, there are some small makina-states deps:
 
     - mc_states.renderers.lyaml
     - mc_states.modules.mc_utils.magicstring (which needs chardet)
