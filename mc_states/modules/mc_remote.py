@@ -35,6 +35,7 @@ import tempfile
 import traceback
 import pipes
 import salt.minion
+import salt.exceptions
 import salt.utils
 import salt.utils.args
 import salt.utils.dictupdate
@@ -42,10 +43,15 @@ import salt.utils.pycrypto
 import salt.utils.vt
 import salt.exceptions
 from salt.ext.six import string_types, integer_types
+import salt.ext.six as six
+
 
 _SSH_PASSWORD_PROMP_RE = re.compile('(([Pp]assword(: ?for.*)?:))',
                                     re.M | re.U)
 
+RESULT_SEP = '----- SALTCALL RESULT {0}'
+_SKIP_LINE_RE = re.compile(r"\+  *(touch|cp|cat|rm|exit|['][\]]) ",
+                           re.U | re.X)
 _SSH_IDENT_RE = re.compile(
     '[^@]+@(?P<host>[^\']+)[ ]*\'s password:',
     re.M | re.U)
@@ -63,9 +69,21 @@ exit ${{?}}
 _SALT_CALL_WRAPPER = '''\
 #!/usr/bin/env bash
 if [ "x{sh_wrapper_debug}" != "x" ];then set -x;fi
-exec {salt_call} --retcode-passthrough {outputter} {local} {loglevel}\\
-{salt_call_script}
-exit ${{?}}
+touch {quoted_outfile}
+chmod 700 {quoted_outfile}
+if [ ! -e {quoted_outfile} ];then
+    exit 666
+fi
+{salt_call_bin} --retcode-passthrough {outputter} {local} {loglevel}\\
+     --out-file="{outfile}" \\
+     {fun} {sarg}
+ret=${{?}}
+echo {result_sep}
+if [ -e {quoted_outfile} ];then
+    cat {quoted_outfile}
+    rm -f ${quoted_outfile}
+fi
+exit ${{ret}}
 '''
 
 TRANSFER_FILE_SCRIPT = '''\
@@ -120,8 +138,13 @@ if [ "x${{ret}}" != "x0" ];then
   ret=${{?}}
 fi
 if [ "x${{ret}}" = "x0" ] && [ "x${{fmode}}" != "x" ];then
-  ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
-          "set -x;chmod ${{fmode}} \\"{dest}\\""
+ if [ "x{sh_wrapper_debug}" != "x" ];then
+    ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
+       "set -x;chmod ${{fmode}} \\"{dest}\\""
+ else
+    ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
+      "chmod ${{fmode}} \\"{dest}\\""
+ fi
   ret=${{?}}
 fi
 exit ${{ret}}
@@ -152,6 +175,10 @@ class _SSHExecError(salt.utils.vt.TerminalException):
 
 class _SSHLoginError(_SSHExecError):
     """."""
+
+
+class _SSHTimeoutError(_SSHLoginError):
+    '''.'''
 
 
 class _SSHVtError(_SSHExecError):
@@ -211,7 +238,7 @@ def _mangle_kw_for_script(kw=None):
         for k in [a for a in kw if a.startswith('__')]:
             kw.pop(a, None)
         # add shell debug
-        kw['sh_wrapper_debug'] = ''
+        kw.setdefault('sh_wrapper_debug', '')
         if log_enabled_for('debug'):
             kw['sh_wrapper_debug'] = 1
     return kw
@@ -302,7 +329,7 @@ class _AbstractSshSession(object):
                 try:
                     begin = time.time()
                     # calling the property starts the ssh session
-                    while self.proc.has_unread_data:
+                    while self.proc.isalive() or self.proc.has_unread_data:
                         try:
                             cout, cerr =  self.proc.recv()
                             if not cout:
@@ -328,7 +355,7 @@ class _AbstractSshSession(object):
                                 self.timeout
                                 and ((time.time() - begin) >= self.timeout)
                             ):
-                                raise _SSHLoginError(
+                                raise _SSHTimeoutError(
                                     'Command timeout({0}s): {1}'.format(
                                         self.timeout, cmd))
                         except KeyboardInterrupt:
@@ -358,6 +385,8 @@ class _AbstractSshSession(object):
                     trace = ''
                 elif isinstance(exc, _SSHInterruptError):
                     retcode = 1251
+                elif isinstance(exc, _SSHTimeoutError):
+                    retcode = 1257
                 elif isinstance(exc, _SSHLoginError):
                     retcode = 1252
                 elif isinstance(exc, _SSHCommandTimeout):
@@ -369,11 +398,23 @@ class _AbstractSshSession(object):
                     trace = exc.exec_ret['trace']
                 else:
                     retcode = 1254
+                flows = {'stdout': self.stdout, 'stderr': self.stderr}
+                if retcode != 1252:
+                    # if command failed not for a login reason
+                    # stip out the password challenges lines
+                    for flow in [a for a in flows]:
+                        vflow = flows[flow]
+                        if not vflow:
+                            continue
+                        lines = []
+                        for line in vflow.splitlines():
+                            if not _SSH_IDENT_RE.match(line):
+                                lines.append(line)
+                        flows[flow] = '\n'.join(lines)
                 exc.exec_ret.update({'pid': self.pid,
-                                     'stdout': self.stdout,
-                                     'stderr': self.stderr,
                                      'retcode': retcode,
                                      'trace': trace})
+                exc.exec_ret.update(flows)
                 if retcode == 0:
                     return exc.exec_ret
                 else:
@@ -389,7 +430,6 @@ class _SSHPasswordChallenger(_AbstractSshSession):
         super(_SSHPasswordChallenger, self).__init__(cmd, *a, **kw)
         self.password = kw.get('password', None)
         self.password_retries = kw.get('password_retries', 3)
-        self.login_established = False
         self.sent_password = 0
         self.pwd_index = 0
 
@@ -400,12 +440,11 @@ class _SSHPasswordChallenger(_AbstractSshSession):
         _s = __salt__
         occ = _SSH_PASSWORD_PROMP_RE.findall(self.stdout)
         self.cur_len = len(self.safe_out_chunks)
-        if occ and not self.login_established:
+        if occ:
             if self.password:
                 password_challenges = len(occ)
                 if (
                     (password_challenges > self.sent_password)
-                    and not self.login_established
                     and (self.sent_password < self.password_retries)
                 ):
                     self.sent_password += 1
@@ -418,17 +457,21 @@ class _SSHPasswordChallenger(_AbstractSshSession):
                     log.debug(msg)
                     self.proc.sendline(self.password)
                     self.pwd_index = self.cur_len - 1
-                elif all([
-                    [a > 1 for a in [password_challenges, self.sent_password]]
-                    + [password_challenges == self.sent_password]
-                ]):
-                    after_last_challenge_buf = ''.join(
-                        self.safe_out_chunks[self.pwd_index:])
-                    if after_last_challenge_buf.count('\n') > 0:
-                        self.login_established = True
-                        log.debug('SSH connection established')
+                    test_establish = False
                 else:
-                    raise _SSHLoginError('Login failed: ' + self.cmd)
+                    test_establish = True
+                if test_establish:
+                    if all([
+                        [a > 1 for a in [password_challenges,
+                                         self.sent_password]]
+                        + [password_challenges == self.sent_password]
+                    ]):
+                        after_last_challenge_buf = ''.join(
+                            self.safe_out_chunks[self.pwd_index:])
+                        if after_last_challenge_buf.count('\n') > 0:
+                            log.debug('SSH connection established')
+                    else:
+                        raise _SSHLoginError('Login failed: ' + self.cmd)
         # 0.0125 is really too fast on some systems
         time.sleep(self.loop_interval)
 
@@ -641,6 +684,14 @@ def ssh(host, script, **kw):
             (see doc)
             to interact during ssh session
 
+    CLI Examples::
+
+        salt-call mc_remote.ssh foo.net ssh_gateway=127.0.0.1 port=40007 \\
+                "cat /etc/hostname" user=mytest password=secret
+
+        salt-call mc_remote.ssh foo.net \\
+                "cat /etc/hostname"
+
     '''
     rand = _LETTERSDIGITS_RE.sub('_', salt.utils.pycrypto.secure_password(64))
     tmpdir = kw.get('tmpdir', tempfile.tempdir or '/tmp')
@@ -723,7 +774,7 @@ def ssh_retcode(host, script, **kw):
     return ssh(host, script, **kw)['retcode']
 
 
-def yamldump_arg(arg, default_flow_style=True, line_break='\n'):
+def yamldump_arg(arg, default_flow_style=True, line_break='\n', strip=True):
     '''
     yaml.safe_dump the arg
     This is the counterpart of salt.utils.args.yamlify_arg
@@ -740,6 +791,12 @@ def yamldump_arg(arg, default_flow_style=True, line_break='\n'):
     except Exception:
         # In case anything goes wrong...
         arg = original_arg
+    if strip and isinstance(arg, (six.text_type, six.string_types)):
+        if arg.endswith('...\n'):
+            arg = arg[:-4]
+        if arg.endswith('\n'):
+            while arg and arg.endswith('\n'):
+                arg = arg[:-1]
     return arg
 
 
@@ -748,14 +805,65 @@ def salt_call(host,
               arg=None,
               kwarg=None,
               outputter='json',
+              unparse=True,
               loglevel='info',
-              mode='salt',
+              salt_call_bin='salt-call',
               masterless=True,
+              minion_id='local',
               salt_call_script=None,
-              *args, **kw):
+              *args,
+              **kw):
     '''
     Executes a salt_call call remotely via ssh
-    kwargs are forwarded to ssh helper functions !
+
+    fun
+        saltcall function to call
+    arg
+        args for the saltcall function
+    kwarg
+        kwargs for the saltcall function
+    outputter
+        outputter for the saltcall return
+    unparse
+        unserialise the return and tries to
+        split out the local result from
+        regular salt call
+    loglevel
+        loglevel to use
+    salt_call_bin
+        binary to run
+    masterless
+        do we run masterless (--local)
+    salt_call_script
+        override default salt call wrapper shell script
+    args
+        are appended to arg as arguments to the called salt function
+    kwargs
+        They are forwarded to ssh helper functions !
+
+    CLI Examples::
+
+        salt-call --local mc_remote.salt_call \\
+                foo.net test.ping
+
+        salt-call --local mc_remote.salt_call \\
+                foo.net cmd.run \\
+                'for i in $(seq 5);do echo $i;sleep 1;done' \\
+                kwarg='{use_vt: True, python_shell: True, user: ubuntu}' \\
+                ssh_gateway=127.0.0.1 port=40007
+
+        salt-call --local mc_remote.salt_call \\
+                foo.net cmd.run \\
+                'for i in $(seq 2);do echo $i;sleep 1;done;echo é' \\
+                kwarg='{use_vt: True, python_shell: True, user: ubuntu}' \\
+                outputter=yaml
+
+        salt-call --local mc_remote.salt_call \\
+                foo.net cmd.run \\
+                'for i in $(seq 2);do echo $i;sleep 1;done;echo é' \\
+                kwarg='{use_vt: True, python_shell: True, user: ubuntu}' \\
+                unparse=False outputter=yaml
+
     '''
     if arg is None:
         arg = []
@@ -793,18 +901,21 @@ def salt_call(host,
     sarg = ''
     for i in arg:
         try:
+            if isinstance(i, (six.text_type, six.string_types)):
+                i = __salt__['mc_utils.magicstring'](i)
             if i is None:
-                return 'null'
+                val = 'null'
             elif not isinstance(i, (string_types,
                                     integer_types,
                                     long,
                                     complex,
                                     bytearray,
                                     float)):
-                return i
-
-            i = yamldump_arg(__salt__['mc_utils.magicstring'](i))
-            sarg += ' {0}'.format(pipes.quote(i))
+                pass
+            else:
+                val = yamldump_arg(i)
+            val = ' {0}'.format(pipes.quote(val))
+            sarg += val
         except Exception:
             try:
                 raise ValueError('Cannot serialize {0}'.format(arg))
@@ -812,24 +923,65 @@ def salt_call(host,
                 raise ValueError(u'Cannot serialize {0}'.format(arg))
     for k, i in kwarg.items():
         try:
-            i = yamldump_arg(__salt__['mc_utils.magicstring'](i))
-            sarg += ' {0}={1}'.format(k, pipes.quote(i))
+            if isinstance(i, (six.text_type, six.string_types)):
+                i = __salt__['mc_utils.magicstring'](i)
+            val = yamldump_arg(i)
+            sarg += ' {0}={1}'.format(pipes.quote(k), pipes.quote(val))
         except Exception:
             try:
                 raise ValueError('Cannot serialize {0}'.format(arg))
             except Exception:
                 raise ValueError(u'Cannot serialize {0}'.format(arg))
+    rand = _LETTERSDIGITS_RE.sub('_', salt.utils.pycrypto.secure_password(64))
+    tmpdir = kw.get('tmpdir', tempfile.tempdir or '/tmp')
+    outfile = os.path.join(tmpdir, '{0}.out'.format(rand))
+    result_sep = RESULT_SEP.format(outfile)
+    sh_wrapper_debug = kw.get('sh_wrapper_debug', '')
     skwargs = _mangle_kw_for_script({
         'outputter': '--out="{0}"'.format(outputter),
         'local': bool(masterless) and '--local' or '',
+        'sh_wrapper_debug': sh_wrapper_debug,
         'loglevel': '-l{0}'.format(loglevel),
-        'salt_call': mode == 'salt' and 'salt' or 'mastersalt-call',
-        'salt_call_script': mode == 'salt' and 'salt' or 'mastersalt-call',
+        'salt_call_bin': salt_call_bin,
+        'salt_call_script': salt_call_script,
+        'outfile': outfile,
+        'quoted_outfile': pipes.quote(outfile),
+        'result_sep': pipes.quote(result_sep),
         'fun': fun,
-        'arg': sarg,
-        'kwarg': skwarg})
+        'arg': arg,
+        'kwarg': kwarg,
+        'sarg': sarg})
     script = salt_call_script.format(**skwargs)
-    return ssh(host, script, *a, **kw)
+    ret = ssh(host, script, **kw)
+    ret['result_type'] = outputter
+    ret['raw_result'] = 'NO RETURN FROM {0}'.format(outfile)
+    if ret['stdout']:
+        collect, result = False, ''
+        for line in ret['stdout'].splitlines():
+            skip_collect = False
+            if collect:
+                if sh_wrapper_debug:
+                    skip_collect = _SKIP_LINE_RE.search(line)
+                if not skip_collect:
+                    result += line
+                    result += "\n"
+            if line.startswith(result_sep):
+                collect = True
+        ret['raw_result'] = ret['result'] = result
+    if unparse:
+        renderers = salt.loader.render(__opts__, __salt__)
+        rtype = ret['result_type']
+        renderer = {'yaml': 'lyaml'}.get(rtype, rtype)
+        try:
+            if renderer in renderers:
+                ret['result'] = renderers[renderer](ret['result'])
+        except salt.exceptions.SaltRenderError:
+            trace = traceback.format_exc()
+            log.error(trace)
+        if isinstance(ret['result'], dict):
+            if [a for a in ret['result']] == [minion_id]:
+                ret['result'] = ret['result'][minion_id]
+    return ret
 
 
 def sls(host, sls, **kw):
@@ -846,4 +998,6 @@ def highstate(host, sls, **kw):
     kwargs are forwarded to ssh helper functions !
     '''
     return salt_call(host, 'state.highstate')
+
+
 # vim:set et sts=4 ts=4 tw=80:
