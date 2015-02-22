@@ -23,10 +23,8 @@ details.
 
 '''
 
-from __future__ import absolute_import
-
 # Import python libs
-from __future__ import print_function
+from __future__ import absolute_import, print_function
 import traceback
 import datetime
 import pipes
@@ -39,7 +37,6 @@ import time
 import shutil
 import re
 import random
-from salt.ext.six.moves.urllib.parse import urlparse as _urlparse  # pylint: disable=E0611
 
 # Import salt libs
 import salt
@@ -51,6 +48,10 @@ from salt.utils import vt
 from salt.exceptions import CommandExecutionError, SaltInvocationError
 import salt.utils.cloud
 import salt.config
+
+# Import 3rd-party libs
+import salt.ext.six as six
+from salt.ext.six.moves.urllib.parse import urlparse as _urlparse  # pylint: disable=import-error,no-name-in-module
 
 # Set up logging
 log = logging.getLogger(__name__)
@@ -114,70 +115,6 @@ def _ip_sort(ip):
     elif '::' in ip:
         idx = '100'
     return '{0}___{1}'.format(idx, ip)
-
-
-def get_container_profile(name=None, **kwargs):
-    '''
-    .. versionadded:: 2015.2.0
-
-    Gather a pre-configured set of container configuration parameters. If no
-    arguments are passed, an empty profile is returned.
-
-    Profiles can be defined in the minion or master config files, or in pillar
-    or grains, and are loaded using :mod:`config.get
-    <salt.modules.config.get>`. The key under which LXC profiles must be
-    configured is ``lxc.container_profile.profile_name``. An example container
-    profile would be as follows:
-
-    .. code-block:: yaml
-
-        lxc.container_profile:
-          ubuntu:
-            template: ubuntu
-            backing: lvm
-            vgname: lxc
-            size: 1G
-
-    Parameters set in a profile can be overridden by passing additional
-    container creation arguments (such as the ones passed to :mod:`lxc.create
-    <salt.modules.lxc.create>`) to this function.
-
-    A profile can be defined either as the name of the profile, or a dictionary
-    of variable names and values. See the :ref:`LXC Tutorial
-    <tutorial-lxc-profiles>` for more information on how to use LXC profiles.
-
-    CLI Example::
-
-    .. code-block:: bash
-
-        salt-call lxc.get_container_profile centos
-        salt-call lxc.get_container_profile ubuntu template=ubuntu backing=overlayfs
-    '''
-    if isinstance(name, dict):
-        profilename = name.pop('name', None)
-        return get_container_profile(profilename, **name)
-
-    if name is None:
-        profile_match = {}
-    else:
-        profile_match = \
-            __salt__['config.get'](
-                'lxc.container_profile.{0}'.format(name), {}
-            )
-    if not isinstance(profile_match, dict):
-        raise CommandExecutionError('Container profile must be a dictionary')
-
-    # Overlay the kwargs to override matched profile data
-    overrides = copy.deepcopy(kwargs)
-    for key in overrides.keys():
-        if key.startswith('__'):
-            # Remove pub data from kwargs
-            overrides.pop(key)
-    profile_match = salt.utils.dictupdate.update(
-        copy.deepcopy(profile_match),
-        overrides
-    )
-    return profile_match
 
 
 def cloud_init_interface(name, vm_=None, **kwargs):
@@ -304,7 +241,6 @@ def cloud_init_interface(name, vm_=None, **kwargs):
     pub_key = vm_.get('pub_key', None)
     priv_key = vm_.get('priv_key', None)
     size = vm_.get('size', '20G')
-    sh = vm_.get('boottstrap_shell', 'sh')
     script = vm_.get('script', None)
     script_args = vm_.get('script_args', None)
     if image:
@@ -380,6 +316,7 @@ def cloud_init_interface(name, vm_=None, **kwargs):
     lxc_init_interface = {}
     lxc_init_interface['name'] = name
     lxc_init_interface['config'] = config
+    lxc_init_interface['memory'] = vm_.get('memory', 0)  # nolimit
     lxc_init_interface['pub_key'] = pub_key
     lxc_init_interface['priv_key'] = priv_key
     lxc_init_interface['bridge'] = bridge
@@ -399,17 +336,97 @@ def cloud_init_interface(name, vm_=None, **kwargs):
     )
     lxc_init_interface['bootstrap_url'] = script
     lxc_init_interface['bootstrap_args'] = script_args
-    lxc_init_interface['bootstrap_shell'] = sh
+    lxc_init_interface['bootstrap_shell'] = vm_.get('bootstrap_shell', 'sh')
     lxc_init_interface['autostart'] = autostart
     lxc_init_interface['users'] = users
     lxc_init_interface['password'] = password
     lxc_init_interface['password_encrypted'] = password_encrypted
     lxc_init_interface['network_profile'] = DEFAULT_NIC
-    lxc_init_interface['memory'] = vm_.get('memory', 0)  # nolimit
     for i in ['cpu', 'cpuset', 'cpushare']:
         if vm_.get(i, None):
             lxc_init_interface[i] = vm_[i]
     return lxc_init_interface
+
+
+def get_container_profile(name=None, **kwargs):
+    '''
+    .. versionadded:: 2015.2.0
+
+    Gather a pre-configured set of container configuration parameters. If no
+    arguments are passed, an empty profile is returned.
+
+    Profiles can be defined in the minion or master config files, or in pillar
+    or grains, and are loaded using :mod:`config.get
+    <salt.modules.config.get>`. The key under which LXC profiles must be
+    configured is ``lxc.container_profile.profile_name``. An example container
+    profile would be as follows:
+
+    .. code-block:: yaml
+
+        lxc.container_profile:
+          ubuntu:
+            template: ubuntu
+            backing: lvm
+            vgname: lxc
+            size: 1G
+
+    Parameters set in a profile can be overridden by passing additional
+    container creation arguments (such as the ones passed to :mod:`lxc.create
+    <salt.modules.lxc.create>`) to this function.
+
+    A profile can be defined either as the name of the profile, or a dictionary
+    of variable names and values. See the :ref:`LXC Tutorial
+    <tutorial-lxc-profiles>` for more information on how to use LXC profiles.
+
+    CLI Example::
+
+    .. code-block:: bash
+
+        salt-call lxc.get_container_profile centos
+        salt-call lxc.get_container_profile ubuntu template=ubuntu backing=overlayfs
+    '''
+    if isinstance(name, dict):
+        profilename = name.pop('name', None)
+        return get_container_profile(profilename, **name)
+
+    if name is None:
+        profile_match = {}
+    else:
+        profile_match = \
+            __salt__['config.get'](
+                'lxc.container_profile:{0}'.format(name),
+                default=None,
+                merge='recurse'
+            )
+        if profile_match is None:
+            # Try legacy profile location
+            profile_match = \
+                __salt__['config.get']('lxc.profile:{0}'.format(name), None)
+            if profile_match is not None:
+                salt.utils.warn_until(
+                    'Boron',
+                    'lxc.profile has been deprecated, please configure LXC '
+                    'container profiles under lxc.container_profile instead'
+                )
+            else:
+                # No matching profile, make the profile an empty dict so that
+                # overrides can be applied below.
+                profile_match = {}
+
+    if not isinstance(profile_match, dict):
+        raise CommandExecutionError('Container profile must be a dictionary')
+
+    # Overlay the kwargs to override matched profile data
+    overrides = copy.deepcopy(kwargs)
+    for key in overrides.keys():
+        if key.startswith('__'):
+            # Remove pub data from kwargs
+            overrides.pop(key)
+    profile_match = salt.utils.dictupdate.update(
+        copy.deepcopy(profile_match),
+        overrides
+    )
+    return profile_match
 
 
 def get_network_profile(name=None):
@@ -451,15 +468,25 @@ def get_network_profile(name=None):
 
         salt-call lxc.get_network_profile default
     '''
-    # Legacy location (lxc.nic)
-    net_profile = __salt__['config.get']('lxc.nic', {}).get(name)
-    if net_profile is not None:
-        return net_profile
-    net_profile = __salt__['config.get'](
-        'lxc.network_profile.{0}'.format(name)
-    )
-    if not net_profile:
+    if name is None:
         net_profile = None
+    else:
+        net_profile = \
+            __salt__['config.get'](
+                'lxc.network_profile:{0}'.format(name),
+                default=None,
+                merge='recurse'
+            )
+        if net_profile is None:
+            # Try legacy profile location
+            net_profile = \
+                __salt__['config.get']('lxc.nic:{0}'.format(name), None)
+            if net_profile is not None:
+                salt.utils.warn_until(
+                    'Boron',
+                    'lxc.nic has been deprecated, please configure LXC '
+                    'network profiles under lxc.network_profile instead'
+                )
     return net_profile if net_profile is not None else copy.deepcopy(
         DEFAULT_NIC_PROFILE
     )
@@ -482,22 +509,22 @@ def _rand_cpu_str(cpu):
 
 
 def _network_conf(conf_tuples=None, **kwargs):
-    network_profile = kwargs.pop('network_profile', None)
+    nic = kwargs.pop('network_profile', None)
     ret = []
     nic_opts = kwargs.pop('nic_opts', {})
     if not conf_tuples:
         conf_tuples = []
     old = _get_veths(conf_tuples)
-    if not network_profile and not nic_opts and not old:
+    if not nic and not nic_opts and not old:
         return ret
     kwargs = copy.deepcopy(kwargs)
     gateway = kwargs.pop('gateway', None)
     bridge = kwargs.get('bridge', None)
 
-    if isinstance(network_profile, basestring):
-        nicp = get_network_profile(network_profile)
+    if isinstance(nic, (six.string_types, six.text_type)):
+        nicp = get_network_profile(nic)
         if nic_opts:
-            for dev, args in nic_opts.items():
+            for dev, args in six.iteritems(nic_opts):
                 ethx = nicp.setdefault(dev, {})
                 try:
                     ethx = salt.utils.dictupdate.update(ethx, args)
@@ -566,14 +593,14 @@ def _network_conf(conf_tuples=None, **kwargs):
             for info, data in infos.items():
                 if data['value']:
                     ret.append({info: data['value']})
-            for key, val in args.items():
+            for key, val in six.iteritems(args):
                 if key == 'link' and bridge:
                     val = bridge
                 val = opts.get(key, val)
-                if key in (
+                if key in [
                     'type', 'flags', 'name',
                     'gateway', 'mac', 'link', 'ipv4', 'ipv6'
-                ):
+                ]:
                     continue
                 ret.append({'lxc.network.{0}'.format(key): val})
             # gateway (in automode) must be appended following network conf !
@@ -614,57 +641,33 @@ def _network_conf(conf_tuples=None, **kwargs):
             new[iface]['lxc.network.hwaddr'] = omac
 
     ret = []
-    for val in new.values():
-        iface = salt.utils.odict.OrderedDict()
+    for val in six.itervalues(new):
         for row in val:
-            iface[row] = val[row]
-        ret.append(iface)
+            ret.append(salt.utils.odict.OrderedDict([(row, val[row])]))
     return ret
-
-
-def _get_memory(memory):
-    '''
-    Handle the saltcloud driver and lxc runner memory restriction
-    differences.
-    Runner limits to 1024MB by default
-    SaltCloud does not restrict memory usage by default
-    '''
-    if memory is None:
-        memory = 1024
-    if memory:
-        memory = memory * 1024 * 1024
-    return memory
-
-
-def _get_autostart(autostart):
-    if autostart is None:
-        autostart = True
-    if autostart == 'keep':
-        return None
-    if autostart:
-        autostart = '1'
-    else:
-        autostart = '0'
-    return autostart
 
 
 def _get_lxc_default_data(**kwargs):
     kwargs = copy.deepcopy(kwargs)
     ret = {}
-    autostart = _get_autostart(kwargs.pop('autostart', None))
-    if autostart is not None:
-        ret['lxc.start.auto'] = autostart
-    memory = _get_memory(kwargs.pop('memory', None))
+    autostart = kwargs.get('autostart')
+    if autostart is None:
+        autostart = True
+    if autostart and (autostart != 'keep'):
+        ret['lxc.start.auto'] = '1'
+    else:
+        ret['lxc.start.auto'] = '0'
+    memory = kwargs.get('memory')
     if memory is not None:
-        ret['lxc.cgroup.memory.limit_in_bytes'] = memory
-    cpuset = kwargs.pop('cpuset', None)
-    if cpuset is not None:
+        ret['lxc.cgroup.memory.limit_in_bytes'] = memory * 1024
+    cpuset = kwargs.get('cpuset')
+    if cpuset:
         ret['lxc.cgroup.cpuset.cpus'] = cpuset
-    cpushare = kwargs.pop('cpushare', None)
-    cpu = kwargs.pop('cpu', None)
-    if cpushare is not None:
+    cpushare = kwargs.get('cpushare')
+    cpu = kwargs.get('cpu')
+    if cpushare:
         ret['lxc.cgroup.cpu.shares'] = cpushare
-    if cpu and (cpuset is not None):
+    if cpu and not cpuset:
         ret['lxc.cgroup.cpuset.cpus'] = _rand_cpu_str(cpu)
     return ret
 
@@ -679,7 +682,7 @@ def _config_list(conf_tuples=None, only_net=False, **kwargs):
     ret = []
     if not only_net:
         default_data = _get_lxc_default_data(**kwargs)
-        for k, val in default_data.items():
+        for k, val in six.iteritems(default_data):
             ret.append({k: val})
     net_datas = _network_conf(conf_tuples=conf_tuples, **kwargs)
     ret.extend(net_datas)
@@ -720,13 +723,13 @@ class _LXCConfig(object):
         if self.name:
             self.path = '/var/lib/lxc/{0}/config'.format(self.name)
             if os.path.isfile(self.path):
-                with salt.utils.fopen(self.path) as f:
-                    for l in f.readlines():
-                        match = self.pattern.findall((l.strip()))
+                with salt.utils.fopen(self.path) as fhr:
+                    for line in fhr.readlines():
+                        match = self.pattern.findall((line.strip()))
                         if match:
                             self.data.append((match[0][0], match[0][-1]))
                         match = self.non_interpretable_pattern.findall(
-                            (l.strip()))
+                            (line.strip()))
                         if match:
                             self.data.append(('', match[0][0]))
         else:
@@ -738,7 +741,7 @@ class _LXCConfig(object):
                 self.data.append((key, val))
 
         default_data = _get_lxc_default_data(**kwargs)
-        for key, val in default_data.items():
+        for key, val in six.iteritems(default_data):
             _replace(key, val)
         old_net = self._filter_data('lxc.network')
         net_datas = _network_conf(conf_tuples=old_net, **kwargs)
@@ -747,19 +750,12 @@ class _LXCConfig(object):
                 self.data.extend(list(row.items()))
 
         # be sure to reset harmful settings
-        for i in ['lxc.cgroup.memory.limit_in_bytes']:
-            if not default_data.get(i):
-                self._filter_data(i)
+        for idx in ['lxc.cgroup.memory.limit_in_bytes']:
+            if not default_data.get(idx):
+                self._filter_data(idx)
 
     def as_string(self):
-        chunks = []
-
-        def _process(item):
-            sep = ' = '
-            if not item[0]:
-                sep = ''
-            chunks.append('{0[0]}{1}{0[1]}'.format(item, sep))
-        map(_process, self.data)
+        chunks = ('{0[0]}{1}{0[1]}'.format(item, (' = ' if item[0] else '')) for item in self.data)
         return '\n'.join(chunks) + '\n'
 
     def write(self):
@@ -774,23 +770,23 @@ class _LXCConfig(object):
     def tempfile(self):
         # this might look like the function name is shadowing the
         # module, but it's not since the method belongs to the class
-        f = tempfile.NamedTemporaryFile()
-        f.write(self.as_string())
-        f.flush()
-        return f
+        ntf = tempfile.NamedTemporaryFile()
+        ntf.write(self.as_string())
+        ntf.flush()
+        return ntf
 
     def _filter_data(self, pattern):
         '''
         Removes parameters which match the pattern from the config data
         '''
         removed = []
-        data = []
+        filtered = []
         for param in self.data:
             if not param[0].startswith(pattern):
-                data.append(param)
+                filtered.append(param)
             else:
                 removed.append(param)
-        self.data = data
+        self.data = filtered
         return removed
 
 
@@ -812,9 +808,15 @@ def _get_base(**kwargs):
         return kw_overrides_match
 
     cntrs = ls_()
+
+    template = select('template')
     image = select('image')
     vgname = select('vgname')
-    template = select('template')
+    # remove the above three variables from kwargs, if they exist, to avoid
+    # duplicates if create() is invoked below.
+    for param in ('image', 'vgname', 'template'):
+        kwargs.pop(param, None)
+
     if image:
         proto = _urlparse(image).scheme
         img_tar = __salt__['cp.cache_file'](image)
@@ -824,15 +826,17 @@ def _get_base(**kwargs):
                 __salt__['config.get']('hash_type'))
         name = '__base_{0}_{1}_{2}'.format(proto, img_name, hash_)
         if name not in cntrs:
-            create(name, **kwargs)
+            create(name, template=template, image=image,
+                   vgname=vgname, **kwargs)
             if vgname:
                 rootfs = os.path.join('/dev', vgname, name)
                 edit_conf(info(name)['config'], out_format='commented',  **{'lxc.rootfs': rootfs})
         return name
     elif template:
-        name = '__base_{0}'.format(kwargs['template'])
+        name = '__base_{0}'.format(template)
         if name not in cntrs:
-            create(name, **kwargs)
+            create(name, template=template, image=image,
+                   vgname=vgname, **kwargs)
             if vgname:
                 rootfs = os.path.join('/dev', vgname, name)
                 edit_conf(info(name)['config'], out_format='commented', **{'lxc.rootfs': rootfs})
@@ -874,22 +878,6 @@ def init(name,
     will reset a bit the lxc configuration file but much of the hard work will
     be escaped as markers will prevent re-execution of harmful tasks.
 
-    CLI Example:
-
-    .. code-block:: bash
-
-        salt 'minion' lxc.init name [cpuset=cgroups_cpuset] \\
-                [cpushare=cgroups_cpushare] [memory=cgroups_memory] \\
-                [profile=lxc_profile] [network_proflile=network_profile] \\
-                [nic_opts=nic_opts] [start=(True|False)] [seed=(True|False)] \\
-                [install=(True|False)] [config=minion_config] \\
-                [approve_key=(True|False) [clone_from=original] \\
-                [autostart=True] [priv_key=/path_or_content] \\
-                [pub_key=/path_or_content] [bridge=lxcbr0] \\
-                [gateway=10.0.3.1] [dnsservers[dns1,dns2]] \\
-                [users=[foo]] [password='secret'] \\
-                [password_encrypted=(True|False)]
-
     name
         Name of the container
 
@@ -900,18 +888,28 @@ def init(name,
     cpus
         Select a random number of cpu cores and assign it to the cpuset, if the
         cpuset option is set then this option will be ignored
+
     cpuset
         Explicitly define the cpus this container will be bound to
+
     cpushare
-        cgroups cpu shares.
+        cgroups cpu shares
+
     autostart
         autostart container on reboot
+
     memory
-        cgroups memory limit, in MB.
-        (0 for nolimit, None for old default 1024MB)
+        cgroups memory limit, in MB
+
+        .. versionchanged:: 2015.2.0
+            If no value is passed, no limit is set. In earlier Salt versions,
+            not passing this value causes a 1024MB memory limit to be set, and
+            it was necessary to pass ``memory=0`` to set no limit.
+
     gateway
         the ipv4 gateway to use
         the default does nothing more than lxcutils does
+
     bridge
         the bridge to use
         the default does nothing more than lxcutils does
@@ -928,19 +926,27 @@ def init(name,
     nic_opts
         Extra options for network interfaces, will override
 
-        ``{"eth0": {"mac": "aa:bb:cc:dd:ee:ff", "ipv4": "10.1.1.1", "ipv6": "2001:db8::ff00:42:8329"}}``
+        ``{"eth0": {"hwaddr": "aa:bb:cc:dd:ee:ff", "ipv4": "10.1.1.1", "ipv6": "2001:db8::ff00:42:8329"}}``
 
         or
 
-        ``{"eth0": {"mac": "aa:bb:cc:dd:ee:ff", "ipv4": "10.1.1.1/24", "ipv6": "2001:db8::ff00:42:8329"}}``
+        ``{"eth0": {"hwaddr": "aa:bb:cc:dd:ee:ff", "ipv4": "10.1.1.1/24", "ipv6": "2001:db8::ff00:42:8329"}}``
 
     users
-        Sysadmins users to set the administrative password to
-        e.g. [root, ubuntu, sysadmin], default [root] and [root, ubuntu]
-        on ubuntu
+        Users for which the password defined in the ``password`` param should
+        be set. Can be passed as a comma separated list or a python list.
+        Defaults to just the ``root`` user.
+
     password
-        Set the initial password for default sysadmin users, at least root
-        but also can be used for sudoers, e.g. [root, ubuntu, sysadmin]
+        Set the initial password for the users defined in the ``users``
+        parameter
+
+    password_encrypted : False
+        Set to ``True`` to denote a password hash instead of a plaintext
+        password
+
+        .. versionadded:: 2015.2.0
+
     profile
         A LXC profile (defined in config or pillar).
         This can be either a real profile mapping or a string
@@ -1015,7 +1021,7 @@ def init(name,
                 [nic_opts=nic_opts] [start=(True|False)] \\
                 [seed=(True|False)] [install=(True|False)] \\
                 [config=minion_config] [approve_key=(True|False) \\
-                [clone=original] [autostart=True] \\
+                [clone_from=original] [autostart=True] \\
                 [priv_key=/path_or_content] [pub_key=/path_or_content] \\
                 [bridge=lxcbr0] [gateway=10.0.3.1] \\
                 [dnsservers[dns1,dns2]] \\
@@ -1059,6 +1065,8 @@ def init(name,
     if users is None:
         users = []
     dusers = ['root']
+    # think to touch the default user generated by default ubuntu template which
+    # has a really unsecure password too ...
     if __grains__['os'] in ['Ubuntu'] and 'ubuntu' not in users:
         dusers.append('ubuntu')
     for user in dusers:
@@ -1170,7 +1178,7 @@ def init(name,
             to_reboot = True
     if remove_seed_marker:
         cmd_run(name,
-                ['rm', '-f', SEED_MARKER],
+                'rm -f \'{0}\''.format(SEED_MARKER),
                 python_shell=False)
 
     # last time to be sure any of our property is correctly applied
@@ -1227,7 +1235,6 @@ def init(name,
                 if cmd_retcode(name,
                                ('sh -c \'touch "{0}"; test -e "{0}"\''
                                 .format(gid)),
-                               python_shell=True,
                                ignore_retcode=True) != 0:
                     ret['comment'] = 'Failed to set password marker'
                     changes[-1]['password'] += '. ' + ret['comment'] + '.'
@@ -1256,7 +1263,6 @@ def init(name,
                 if cmd_retcode(name,
                                ('sh -c \'touch "{0}"; test -e "{0}"\''
                                 .format(gid)),
-                               python_shell=True,
                                ignore_retcode=True) != 0:
                     ret['comment'] = 'Failed to set DNS marker'
                     changes[-1]['dns'] += '. ' + ret['comment'] + '.'
@@ -1540,6 +1546,11 @@ def create(name,
         raise SaltInvocationError(
             'Only one of \'template\' and \'image\' is permitted'
         )
+    elif not any((template, image, profile)):
+        raise SaltInvocationError(
+            'At least one of \'template\', \'image\', and \'profile\' is '
+            'required'
+        )
 
     options = select('options') or {}
     backing = select('backing')
@@ -1591,7 +1602,7 @@ def create(name,
                     .format(', '.join(missing_deps))
                 )
         cmd += ' --'
-        for key, val in options.items():
+        for key, val in six.iteritems(options):
             cmd += ' --{0} {1}'.format(key, val)
 
     ret = __salt__['cmd.run_all'](cmd,
@@ -1623,7 +1634,6 @@ def create(name,
 
 def clone(name,
           orig,
-          clone_from=None,
           profile=None,
           **kwargs):
     '''
@@ -1635,17 +1645,11 @@ def clone(name,
     orig
         Name of the original container to be cloned
 
-    clone_from
-        Name of the original container to be cloned (added for consistency,
-        does the same thing as ``orig``)
-
-        .. versionadded:: 2015.2.0
-
     profile
         Profile to use in container cloning (see
         :mod:`lxc.get_container_profile
         <salt.modules.lxc.get_container_profile>`). Values in a profile will be
-        overridden by the **Container Creation Arguments** listed below.
+        overridden by the **Container Cloning Arguments** listed below.
 
     **Container Cloning Arguments**
 
@@ -1672,16 +1676,10 @@ def clone(name,
             'Container \'{0}\' already exists'.format(name)
         )
 
-    if clone_from and orig:
-        log.warning('Both \'clone_from\' and \'orig\' were passed, ignoring '
-                    '\'orig\'')
-    elif orig and not clone_from:
-        clone_from = orig
-
-    _ensure_exists(clone_from)
-    if state(clone_from) != 'stopped':
+    _ensure_exists(orig)
+    if state(orig) != 'stopped':
         raise CommandExecutionError(
-            'Container \'{0}\' must be stopped to be cloned'.format(clone_from)
+            'Container \'{0}\' must be stopped to be cloned'.format(orig)
         )
 
     profile = get_container_profile(copy.deepcopy(profile))
@@ -1708,7 +1706,7 @@ def clone(name,
     if backing in ('dir', 'overlayfs', 'btrfs'):
         size = None
 
-    cmd = 'lxc-clone {0} -o {1} -n {2}'.format(snapshot, clone_from, name)
+    cmd = 'lxc-clone {0} -o {1} -n {2}'.format(snapshot, orig, name)
     if backing:
         backing = backing.lower()
         cmd += ' -B {0}'.format(backing)
@@ -1733,22 +1731,37 @@ def clone(name,
         )
 
 
-def ls_():
+def ls_(active=None):
     '''
     Return a list of the containers available on the minion
+
+    active
+        If ``True``, return only active (i.e. running) containers
+
+        .. versionadded:: 2015.2.0
 
     CLI Example:
 
     .. code-block:: bash
 
         salt '*' lxc.ls
+        salt '*' lxc.ls active=True
     '''
-    try:
-        return __context__['lxc.ls']
-    except KeyError:
-        output = __salt__['cmd.run']('lxc-ls | sort -u', python_shell=True)
-        __context__['lxc.ls'] = output.splitlines()
-    return __context__['lxc.ls']
+    contextvar = 'lxc.ls'
+    if active:
+        contextvar += '.active'
+    if contextvar in __context__:
+        return __context__[contextvar]
+    else:
+        ret = []
+        cmd = 'lxc-ls'
+        if active:
+            cmd += ' --active'
+        output = __salt__['cmd.run_stdout'](cmd, python_shell=False)
+        for line in output.splitlines():
+            ret.extend(line.split())
+        __context__[contextvar] = ret
+        return ret
 
 
 def list_(extra=False, limit=None):
@@ -2037,7 +2050,7 @@ def unfreeze(name):
     return _change_state('lxc-unfreeze', name, 'running')
 
 
-def destroy(name, stop=True):
+def destroy(name, stop=False):
     '''
     Destroy the named container.
 
@@ -2045,12 +2058,22 @@ def destroy(name, stop=True):
 
         Destroys all data associated with the container.
 
+    stop : False
+        If ``True``, the container will be destroyed even if it is
+        running/frozen.
+
+        .. versionchanged:: 2015.2.0
+            Default value changed to ``False``. This more closely matches the
+            behavior of ``lxc-destroy(1)``, and also makes it less likely that
+            an accidental command will destroy a running container that was
+            being used for important things.
+
     CLI Examples:
 
     .. code-block:: bash
 
         salt '*' lxc.destroy foo
-        salt '*' lxc.destroy foo stop=False
+        salt '*' lxc.destroy foo stop=True
     '''
     _ensure_exists(name)
     if not stop and state(name) != 'stopped':
@@ -2110,23 +2133,22 @@ def state(name):
 
 def get_parameter(name, parameter):
     '''
-    Returns the value of a cgroup parameter for a container.
+    Returns the value of a cgroup parameter for a container
 
     CLI Example:
 
     .. code-block:: bash
 
-        salt '*' lxc.get_parameter name parameter
+        salt '*' lxc.get_parameter container_name memory.limit_in_bytes
     '''
-    if not exists(name):
-        return None
-
+    _ensure_exists(name)
     cmd = 'lxc-cgroup -n {0} {1}'.format(name, parameter)
     ret = __salt__['cmd.run_all'](cmd, python_shell=False)
     if ret['retcode'] != 0:
-        return False
-    else:
-        return {parameter: ret['stdout'].strip()}
+        raise CommandExecutionError(
+            'Unable to retrieve value for \'{0}\''.format(parameter)
+        )
+    return ret['stdout'].strip()
 
 
 def set_parameter(name, parameter, value):
@@ -2216,21 +2238,19 @@ def info(name):
 
         if ret['state'] == 'running':
             try:
-                limit = int(get_parameter(name, 'memory.limit_in_bytes').get(
-                    'memory.limit_in_bytes'))
-            except (TypeError, ValueError):
+                limit = int(get_parameter(name, 'memory.limit_in_bytes'))
+            except (CommandExecutionError, TypeError, ValueError):
                 limit = 0
             try:
-                usage = int(get_parameter(name, 'memory.usage_in_bytes').get(
-                    'memory.usage_in_bytes'))
-            except (TypeError, ValueError):
+                usage = int(get_parameter(name, 'memory.usage_in_bytes'))
+            except (CommandExecutionError, TypeError, ValueError):
                 usage = 0
             free = limit - usage
             ret['memory_limit'] = limit
             ret['memory_free'] = free
-            ret['size'] = cmd_run_stdout(name,
-                                        'df /|tail -n1|awk \'{{print $2}}\'',
-                                         python_shell=True)
+            size = cmd_run_stdout(name, 'df /', python_shell=False)
+            # The size is the 2nd column of the last line
+            ret['size'] = size.splitlines()[-1].split()[1]
 
             # First try iproute2
             ip_cmd = cmd_run_all(name, 'ip link show', python_shell=False)
@@ -2493,6 +2513,24 @@ def set_dns(name, dnsservers=None, searchdomains=None):
     return True
 
 
+def _need_install(name):
+    ret = 0
+    has_minion = cmd_retcode(name, "command -v salt-minion")
+    # we assume that installing is when no minion is running
+    # but testing the executable presence is not enougth for custom
+    # installs where the bootstrap can do much more than installing
+    # the bare salt binaries.
+    if has_minion:
+        processes = cmd_run_stdout(name, "ps aux")
+        if 'salt-minion' not in processes:
+            ret = 1
+        else:
+            cmd_retcode(name, "salt-call --local service.stop salt-minion")
+    else:
+        ret = 1
+    return ret
+
+
 def bootstrap(name,
               config=None,
               approve_key=True,
@@ -2570,10 +2608,15 @@ def bootstrap(name,
     if not c_info:
         return None
 
-    # custom bootstrap args are totally custom, it is up to the user to
-    # insert the placeholder for the config directory ( {0} )
-    # For example, some salt bootstrap script do not use at all -c
-    if not bootstrap_args:
+    # default set here as we cannot set them
+    # in def as it can come from a chain of procedures.
+    if bootstrap_args:
+        # custom bootstrap args can be totally customized, and user could
+        # have inserted the placeholder for the config directory.
+        # For example, some salt bootstrap script do not use at all -c
+        if '{0}' not in bootstrap_args:
+            bootstrap_args += ' -c {0}'
+    else:
         bootstrap_args = '-c {0}'
     if not bootstrap_shell:
         bootstrap_shell = 'sh'
@@ -2581,14 +2624,10 @@ def bootstrap(name,
     orig_state = _ensure_running(name)
     if not orig_state:
         return orig_state
-
     if not force_install:
-        needs_install = True
+        needs_install = _need_install(name)
     else:
-        cmd = ('sh -c "if command -v salt-minion; then '
-            'salt-call --local service.stop salt-minion; exit 0; '
-            'else exit 1; fi"')
-        needs_install = cmd_retcode(name, cmd, python_shell=True) == 1
+        needs_install = True
     seeded = cmd_retcode(name, 'test -e \'{0}\''.format(SEED_MARKER)) == 0
     tmp = tempfile.mkdtemp()
     if seeded and not unconditional_install:
@@ -2727,17 +2766,10 @@ def _run(name,
             # use the below path instead to prevent
             env += ' --set-var {0}'.format(PATH)
 
-        if isinstance(cmd, list):
-            lcmd = 'lxc-attach --clear-env {0} -n {1} --'.format(
-                env, pipes.quote(name))
-            for i in cmd:
-                lcmd += ' {0}'.format(pipes.quote(i))
-            cmd = lcmd
-        else:
-            cmd = (
-                'lxc-attach --clear-env {0} -n {1} -- {2}'
-                .format(env, pipes.quote(name), cmd)
-            )
+        cmd = (
+            'lxc-attach --clear-env {0} -n {1} -- {2}'
+            .format(env, pipes.quote(name), cmd)
+        )
 
         if not use_vt:
             ret = __salt__[cmd_func](cmd,
@@ -3428,12 +3460,15 @@ def write_conf(conf_file, conf):
     # to avoid half written configs
     content = ''
     for line in conf:
-        if isinstance(line, str):
+        if isinstance(line, (six.text_type, six.string_types)):
             content += line
         elif isinstance(line, dict):
             for key in list(line.keys()):
                 out_line = None
-                if isinstance(line[key], (str, int, float)):
+                if isinstance(
+                    line[key],
+                    (six.text_type, six.string_types, six.integer_types, float)
+                ):
                     out_line = ' = '.join((key, "{0}".format(line[key])))
                 elif isinstance(line[key], dict):
                     out_line = ' = '.join((key, line[key]['value']))
@@ -3673,7 +3708,7 @@ def reconfigure(name,
             ('bridge', bridge),
             ('memory', memory)])
         kw = salt.utils.odict.OrderedDict()
-        for key, val in make_kw.items():
+        for key, val in six.iteritems(make_kw):
             if val is not None:
                 kw[key] = val
         new_cfg = _config_list(conf_tuples=old_chunks, **kw)

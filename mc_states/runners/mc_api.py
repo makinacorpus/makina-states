@@ -343,7 +343,7 @@ def remove(id_,
     ):
         raise Exception('not handled node {0}'.format(id_))
     cmd = 'ssh {0} -p {1} /bin/true'.format(sshhost, sshport)
-    ret = not bool(cli('cmd.retcode', cmd))
+    ret = not bool(cli('cmd.retcode', cmd, python_shell=True))
     if not ret:
         log.error('{0} not running'.format(id_))
         return True

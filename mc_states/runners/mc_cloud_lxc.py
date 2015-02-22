@@ -441,7 +441,7 @@ def vm_volumes(vm, ret=None, output=True, force=False):
         "test -e \"{1}\" &&"
         "test \"x$(lxc-ls --fancy|grep RUNNING|"
         "awk '{{print $1}}'|egrep '^{0}$')\" = 'x{0}'".format(
-            vm, rmark), salt_target=cn
+            vm, rmark), python_shell=True, salt_target=cn
     ):
         # if container is running, restart it
         cret = cli('cmd.run_all', cmd, python_shell=True, salt_target=cn)

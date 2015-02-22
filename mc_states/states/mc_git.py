@@ -230,7 +230,7 @@ def latest(name,
 
                 # check if we are on a branch to merge changes
                 cmd = "git symbolic-ref -q HEAD > /dev/null"
-                retcode = __salt__['cmd.retcode'](cmd, cwd=target, user=user)
+                retcode = __salt__['cmd.retcode'](cmd, python_shell=True, cwd=target, user=user)
                 # XXX: the real different with git.latest is here
                 # we pull
                 # but also fetch and merge --only-ff in case of errors
