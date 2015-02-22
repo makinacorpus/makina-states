@@ -134,14 +134,14 @@ def magicstring(thestr):
                 if not isinstance(thestr, unicode):
                     thestr = thestr.decode(detectedenc)
                 thestr = thestr.encode(detectedenc)
-            except:
+            except Exception:
                 for idx, i in enumerate(found_encodings):
                     try:
                         if not isinstance(thestr, unicode) and detectedenc:
                             thestr = thestr.decode(detectedenc)
                         thestr = thestr.encode(i)
                         break
-                    except:
+                    except Exception:
                         if idx == (len(found_encodings) - 1):
                             raise
     if isinstance(thestr, unicode):
