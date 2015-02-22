@@ -9,11 +9,17 @@ mc_state / module to execute functions on salt
 
 __docformat__ = 'restructuredtext en'
 
+import hashlib
 
-def patch(mod):
-    default = {'__env__': "base"}
+
+def patch(mod, key=None):
+    h = hashlib.new('sha512')
+    h.update(key)
+    sha = h.hexdigest()
+    default = {'__env__': "base", '__instance_id__': sha}
     for k in ['__env__',
               '__pillar__',
+              '__instance_id__',
               '__grains__',
               '__salt__',
               '__opts__']:
@@ -26,8 +32,9 @@ def patch(mod):
             setattr(mod, k, globals().get(k, default.get(k)))
 
 
-def unpatch(mod):
-    for k in [#'__env__',
+def unpatch(mod, key=None):
+    for k in ['__env__',
+              '__instance_id__',
               '__pillar__',
               '__grains__',
               '__salt__',
@@ -76,10 +83,19 @@ def sexec(mod, func, *a, **kw):
             user=user, group=group, mode='750', template='jinja')
     '''
     ret = None
+    key = repr(mod).split()[1] + func
     try:
-        patch(mod)
+        key += repr(a)
+    except Exception:
+        pass
+    try:
+        key += repr(kw)
+    except Exception:
+        pass
+    try:
+        patch(mod, key)
         ret = getattr(mod, func)(*a, **kw)
     finally:
-        unpatch(mod)
+        unpatch(mod, key)
     return ret
 # vim:set et sts=4 ts=4 tw=80:
