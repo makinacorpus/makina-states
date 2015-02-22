@@ -436,7 +436,6 @@ def get_installed_cert_for(domain):
             <generated if not present>
             contain cert + auth chain + key
     '''
-
     ssl_gen_d = "/etc/ssl/cloud/separate"
     fcertp = os.path.join(
         ssl_gen_d, '{0}-full.crt'.format(domain))
