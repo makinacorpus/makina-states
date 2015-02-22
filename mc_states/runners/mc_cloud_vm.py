@@ -204,7 +204,7 @@ def vm_fix_dns(vm, ret=None, output=True, force=False):
         cmd = 'echo > /etc/resolv.conf;echo >> /etc/resolv.conf;'
         for i in dnses:
             cmd += 'echo "nameserver \"{0}\"">>/etc/resolv.conf;'.format(i)
-        cret = cli('cmd.retcode', cmd, salt_target=vm)
+        cret = cli('cmd.retcode', cmd, python_shell=True, salt_target=vm)
         if cret:
             ret['result'] = False
             ret['comment'] += red('pb with dns on {0}'.format(vm))
