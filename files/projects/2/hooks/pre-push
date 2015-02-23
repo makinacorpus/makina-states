@@ -3,5 +3,7 @@ W=$(dirname "{{FORCE_MARKER}}")
 if [ ! -e "${W}" ];then
     mkdir -p "${W}"
 fi
-touch "{{FORCE_MARKER}}"
+if [ "x${1}" = "xorigin" ];then
+    touch "{{FORCE_MARKER}}"
+fi
 # vim:set et sts=4 ts=4 tw=80 ft=bash:
