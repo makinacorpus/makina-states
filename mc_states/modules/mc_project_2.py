@@ -96,6 +96,7 @@ DEFAULT_CONFIGURATION = {
     'current_archive_dir': None,
     'rollback': False,
     'this_host': 'localhost',
+    'this_localhost': 'localhost',
     'this_port': '22',
     #
 }
@@ -308,7 +309,7 @@ def _step_exec(cfg, step, failhard=True):
 
 def get_default_configuration():
     conf = copy.deepcopy(DEFAULT_CONFIGURATION)
-    this_host = socket.gethostname()
+    this_localhost = socket.gethostname()
     this_port = 22
     if os.path.exists('/this_port'):
         with open('/this_port') as fic:
@@ -317,6 +318,7 @@ def get_default_configuration():
         with open('/this_host') as fic:
             this_host = fic.read().splitlines()[0].strip()
     conf['this_host'] = this_host
+    conf['this_localhost'] = this_localhost
     conf['this_port'] = this_port
     return conf
 
@@ -2026,7 +2028,7 @@ def report():
 {id}:
 {ips}
 SSH Config:
-Host {dconf[this_host]}
+Host {dconf[this_localhost]}
 Port {dconf[this_port]}
 User root
 ServerAliveInterval 5
