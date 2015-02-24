@@ -41,14 +41,15 @@
   mc_postgres_user.present:
     - name: {{name}}
     - superuser: {{superuser if superuser != None else 'null'}}
-    - password: {{ password if password != None else 'null'}}
     - createdb: {{ createdb if createdb != None else 'null'}}
     - inherit: {{ inherit if inherit != None else 'null'}}
     - login: {{ login if login != None else 'null'}}
     - replication: {{ replication if replication != None else 'null'}}
     - encrypted: {{ encrypted if encrypted != None else 'null'}}
     - createroles: {{createroles if createroles != None else 'null'}}
+    {% if groups %}
     - groups: {{','.join(groups)}}
+    {% endif %}
     - pg_version : {{version}}
     - db_host: {{db_host if db_host != None else 'null'}}
     - db_port: {{db_port if db_port != None else 'null'}}
@@ -58,7 +59,7 @@
     - require:
       - mc_proxy: {{orchestrate[version]['preuser']}}
       - mc_proxy: {{orchestrate['base']['postbase']}}
-    - password: {{ password }}
+    - password: {{ password if password != None else 'null'}}
 {% endmacro %}
 
 {%- for user, data in settings.postgresqlUsers.items() %}
