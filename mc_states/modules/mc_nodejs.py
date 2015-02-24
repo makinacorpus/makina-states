@@ -38,6 +38,7 @@ def settings():
                     'node-v0.10.28-linux-x64.tar.gz': '4b9cf9437decea3d9913b694ea2e9b0a06ced2dd',
                     'node-v0.10.29-linux-x64.tar.gz': '570c45653fec04d29d2208bb2967bc88b2821537',
                     'node-v0.10.36-linux-x64.tar.gz': '350df861e161c34b97398fc1b440f3d80f174cf9',
+                    'node-v0.4.9.tar.gz': "ce9b62baa993b385b1efd66058503ea215a08389",
                 },
                 'versions': [cur_nodejsver],
                 'version': cur_nodejsver,
