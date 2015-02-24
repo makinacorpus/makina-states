@@ -23,7 +23,7 @@ postgresql-pg_hba-conf-{{pgver}}:
       - mc_proxy: {{orchestrate['base']['postpkg']}}
     - watch_in:
       - mc_proxy: {{orchestrate['base']['postbase']}}
-      - service: makina-postgresql-service-reload
+      - mc_proxy: pgsql-service-restart-hook
 
 append-to-pg-hba-{{pgver}}-block:
   file.blockreplace:
@@ -38,5 +38,5 @@ append-to-pg-hba-{{pgver}}-block:
         - file: postgresql-pg_hba-conf-{{pgver}}
     - watch_in:
       - mc_proxy: {{orchestrate['base']['postbase']}}
-      - service: makina-postgresql-service-reload
+      - mc_proxy: pgsql-service-restart-hook
 {% endfor %}

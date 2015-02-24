@@ -107,3 +107,8 @@
 '''.format(postuser, postinst))}}
 {{proxy(postfixowner)}}
 {% endfor %}
+
+
+pgsql-service-restart-hook:
+  mc_proxy.hook: []
+

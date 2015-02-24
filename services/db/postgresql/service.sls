@@ -12,6 +12,7 @@ makina-postgresql-service:
     - name: postgresql
     - watch:
       - mc_proxy: {{orchestrate['base']['postpkg']}}
+      - mc_proxy: pgsql-service-restart-hook
     - require_in:
       - mc_proxy: {{orchestrate['base']['postbase']}}
 
@@ -22,6 +23,7 @@ makina-postgresql-service-reload:
     {#- reload: True # reload is not working ! #}
     - require:
       - mc_proxy: {{orchestrate['base']['postpkg']}}
+      - mc_proxy: pgsql-service-restart-hook
     - require_in:
       - mc_proxy: {{orchestrate['base']['postbase']}}
     {# most watch requisites are linked here with watch_in #}
