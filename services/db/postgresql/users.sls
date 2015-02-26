@@ -35,7 +35,7 @@
 {{ groupsmac.postgresql_group(group,
                               user=user,
                               version=version,
-                              suf='-{0}-user'.format(name)) }}
+                              suf='-{0}{1}-user'.format(name, suf)) }}
 {%- endfor %}
 {{version}}-{{ name }}-makina-services-postgresql-user{{suf}}:
   mc_postgres_user.present:
