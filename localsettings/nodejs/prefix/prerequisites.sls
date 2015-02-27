@@ -107,7 +107,7 @@ npm-install-version-{{ version.replace('.', '_')}}.post{{suf}}:
   cmd.run:
     - name: "{{installer}}"
     - user: root
-    - unless: test -e "{{dest}}/bin/npma" && test "x$("{{dest}}"/bin/node "{{dest}}"/bin/npm --version)" = "x{{npm_ver}}"
+    - unless: test -e "{{dest}}/bin/npm" && test "x$("{{dest}}"/bin/node "{{dest}}"/bin/npm --version)" = "x{{npm_ver}}"
     - env:
         NPM_TAG: "{{tag}}"
         NODE: "{{dest}}/bin/node"
