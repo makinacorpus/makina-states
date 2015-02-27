@@ -12,9 +12,9 @@ include:
 nginx-remove-def:
   file.absent:
     - name: /etc/nginx/sites-enabled/default
-    - watch:
+    - require:
       - mc_proxy: nginx-pre-conf-hook
-    - watch_in:
+    - require_in:
       - mc_proxy: nginx-post-conf-hook
 
 

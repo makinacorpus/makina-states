@@ -17,7 +17,7 @@ import traceback
 log = logging.getLogger(__name__)
 
 
-def update(name, params):
+def update(name, params, **kw):
     '''
     Active or deactive a param in the named makina-states
     loccalregistry
@@ -66,11 +66,11 @@ def toggle(name, sls=None, slss=None, status=True):
     return update(name, dict([(a, status) for a in slss]))
 
 
-def present(name, sls=None, slss=None):
+def present(name, sls=None, slss=None, **kw):
     return toggle(name, sls=sls, slss=slss, status=True)
 
 
-def absent(name, sls=None, slss=None):
+def absent(name, sls=None, slss=None, **kw):
     return toggle(name, sls=sls, slss=slss, status=False)
 
 #
