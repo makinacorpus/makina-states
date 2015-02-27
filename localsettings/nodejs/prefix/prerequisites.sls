@@ -3,7 +3,7 @@
 include:
   - makina-states.localsettings.nodejs.hooks
 {#- Install specific versions of nodejs/npm  #}
-{% macro install(version, dest=None, hash=None, suf='manual', source_install=False, manual_npm=False) %}
+{% macro install(version, dest=None, hash=None, suf='manual', source_install=False, manual_npm=False, npm_ver='master') %}
 {% if grains['cpuarch'] == "x86_64" %}
 {% set arch = "x64" %}
 {% else %}
@@ -16,6 +16,7 @@ include:
 {% set base_url= "http://nodejs.org/dist/{a}" %}
 {% set source_install=True %}
 {% set manual_npm = True %}
+{% set npm_ver='1.0.106' %}
 {% endif %}
 
 {% if not dest %}
@@ -90,7 +91,10 @@ npm-version-{{version.replace('.', '_') }}{{suf}}:
 
 {% if manual_npm %}
 {% set installer = '/sbin/npm_install_{0}{1}.sh'.format(suf, version) %}
-{% set old_ver='1.0.106' %}
+{% set tag = npm_ver %}
+{% if npm_ver not in ['master']%}
+{% set tag = 'v{0}'.format(npm_ver) %}
+{% endif %}
 npm-install-version-{{ version.replace('.', '_')}}.post{{suf}}:
   file.managed:
     - name: "{{installer}}"
@@ -98,16 +102,15 @@ npm-install-version-{{ version.replace('.', '_')}}.post{{suf}}:
     - template: jinja
     - user: root
     - defaults:
-        node: "{{dest}}"
-        installer: "{{installer.replace('/', '_')}}"
-        old_ver: "{{old_ver}}"
-        tag_ver: "v{{old_ver}}"
     - group: root
     - mode: 700
   cmd.run:
     - name: "{{installer}}"
     - user: root
-    - unless: test -e "{{dest}}/bin/npm" && test "x$("{{dest}}"/bin/node "{{dest}}"/bin/npm --version)" = "x{{old_ver}}"
+    - unless: test -e "{{dest}}/bin/npma" && test "x$("{{dest}}"/bin/node "{{dest}}"/bin/npm --version)" = "x{{npm_ver}}"
+    - env:
+        NPM_TAG: "{{tag}}"
+        NODE: "{{dest}}/bin/node"
     - use_vt: true
     - watch:
       - file: npm-install-version-{{ version.replace('.', '_')}}.post{{suf}}

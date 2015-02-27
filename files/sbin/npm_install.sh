@@ -11,7 +11,10 @@
 # http://www.gnu.org/s/hello/manual/autoconf/Portable-Shell.html
 #
 # The only shell it won't ever work on is cmd.exe.
-export PATH="{{node}}/bin:$PATH"
+
+# make sure that node exists
+node="${NODE:-$(which node 2>/dev/null)}"
+export PATH="$(dirname "${node}"):$PATH"
 
 if [ "x$0" = "xsh" ]; then
   # run as curl | sh
@@ -50,9 +53,6 @@ else
   npm_config_loglevel="verbose"
 fi
 export npm_config_loglevel
-
-# make sure that node exists
-node="{{node}}/bin/node"
 test -f "${node}"
 ret=$?
 if [ $ret -eq 0 ] && [ -x "$node" ]; then
@@ -160,23 +160,20 @@ fi
 
 t="${npm_install}"
 
-install_old() {
+install_tag() {
     set -e
-    set -x
-    cd /tmp
-    if [ ! -e "{{installer}}" ];then
-        mkdir "{{installer}}"
-    fi
-    cd "{{installer}}"
+    echo "cloning npm ${node_version}/${NPM_TAG}"
+    tmp="/tmp/ms_npm_${NPM_TAG}_${node_version}"
+    if [ ! -e "${tmp}" ];then mkdir -p "${tmp}";fi
+    cd "${tmp}"
     if [ ! -e npm/.git ];then
         rm -rf npm
         git clone "https://github.com/npm/npm.git"
     fi
     cd npm
-    git reset --hard "{{tag_ver}}"
+    git reset --hard "${NPM_TAG}"
     # will fail on github cdn
-    set +x
-    echo "building npm"
+    echo "building npm ${node_version}/${NPM_TAG}"
     make || /bin/true
     node cli.js config set strict-ssl false
     if [ -e .building_ronn ];then rm .building_ronn;fi
@@ -184,15 +181,22 @@ install_old() {
     echo "installing npm"
     if [ -e .building_ronn ];then rm .building_ronn;fi
     make install
+    cd /
+    rm -rf "${tmp}"
     exit $?
 }
+
+NPM_TAG="${NPM_TAG:-"master"}"
+if [ "x${NPM_TAG}" != "x" ];then
+    install_tag
+fi
 
 if [ -z "$t" ]; then
   # switch based on node version.
   # note that we can only use strict sh-compatible patterns here.
   case $node_version in
     0.[01234567].* | v0.[01234567].*)
-        install_old
+        install_tag
       ;;
     *)
       echo "install npm@latest"
