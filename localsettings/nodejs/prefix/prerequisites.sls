@@ -3,7 +3,7 @@
 include:
   - makina-states.localsettings.nodejs.hooks
 {#- Install specific versions of nodejs/npm  #}
-{% macro install(version, dest=None, hash=None, suf='manual', source_install=False) %}
+{% macro install(version, dest=None, hash=None, suf='manual', source_install=False, manual_npm=False) %}
 {% if grains['cpuarch'] == "x86_64" %}
 {% set arch = "x64" %}
 {% else %}
@@ -15,6 +15,7 @@ include:
 {% if version[:4] in ['0.1.', '0.2.', '0.3.', '0.4.', '0.5.'] %}
 {% set base_url= "http://nodejs.org/dist/{a}" %}
 {% set source_install=True %}
+{% set manual_npm = True %}
 {% endif %}
 
 {% if not dest %}
@@ -68,6 +69,9 @@ npm-version-{{version.replace('.', '_') }}{{suf}}:
     - user: root
     - watch_in:
       - mc_proxy: nodejs-post-prefix-install
+    {% if manual_npm %}
+      - file: npm-install-version-{{ version.replace('.', '_')}}.post{{suf}}
+    {% endif %}
     - watch:
       - archive: npm-version-{{version.replace('.', '_')}}{{suf}}
   {% else %}
@@ -77,9 +81,38 @@ npm-version-{{version.replace('.', '_') }}{{suf}}:
     - user: root
     - watch_in:
       - mc_proxy: nodejs-post-prefix-install
+    {% if manual_npm %}
+      - file: npm-install-version-{{ version.replace('.', '_')}}.post{{suf}}
+    {% endif %}
     - watch:
       - archive: npm-version-{{version.replace('.', '_')}}{{suf}}
   {% endif %}
+
+{% if manual_npm %}
+{% set installer = '/sbin/npm_install_{0}{1}.sh'.format(suf, version) %}
+{% set old_ver='1.0.106' %}
+npm-install-version-{{ version.replace('.', '_')}}.post{{suf}}:
+  file.managed:
+    - name: "{{installer}}"
+    - source: salt://makina-states/files/sbin/npm_install.sh
+    - template: jinja
+    - user: root
+    - defaults:
+        node: "{{dest}}"
+        installer: "{{installer.replace('/', '_')}}"
+        old_ver: "{{old_ver}}"
+        tag_ver: "v{{old_ver}}"
+    - group: root
+    - mode: 700
+  cmd.run:
+    - name: "{{installer}}"
+    - user: root
+    - unless: test -e "{{dest}}/bin/npm" && test "x$("{{dest}}"/bin/node "{{dest}}"/bin/npm --version)" = "x{{old_ver}}"
+    - use_vt: true
+    - watch:
+      - file: npm-install-version-{{ version.replace('.', '_')}}.post{{suf}}
+{% endif %}
+
 
 npm-version-{{ version.replace('.', '_')}}.post{{suf}}:
   file.touch:
