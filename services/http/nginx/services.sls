@@ -7,19 +7,26 @@ makina-nginx-conf-syntax-check:
   cmd.run:
     - name: {{ salt['mc_salt.settings']().msr }}/_scripts/nginxConfCheck.sh
     - stateful: True
-    - require:
-       - mc_proxy: nginx-pre-restart-hook
-    - require_in:
-       - mc_proxy: makina-nginx-restart
+    - watch:
+      - mc_proxy: nginx-pre-restart-hook
+      - mc_proxy: nginx-pre-hardrestart-hook
+    - watch_in:
+      - service: makina-nginx-restart
+      - service: makina-nginx-reload
 
-makina-nginx-restart:
+{# compat: reload #}
+{% for i in ['reload', 'restart'] %}
+makina-nginx-{{i}}:
   service.running:
     - name: {{ settings.service }}
     - enable: True
-    - require_in:
+    - watch_in:
       - mc_proxy: nginx-post-restart-hook
-    - require:
+      - mc_proxy: nginx-post-hardrestart-hook
+    - watch:
       - mc_proxy: nginx-pre-restart-hook
+      - mc_proxy: nginx-pre-hardrestart-hook
+{% endfor %}
 
 makina-ngin-naxsi-ui-running:
 {# totally disable naxui for now #}
@@ -35,14 +42,3 @@ makina-ngin-naxsi-ui-running:
       - mc_proxy: nginx-post-restart-hook
     - require:
       - mc_proxy: nginx-pre-restart-hook
-
-makina-nginx-reload:
-  service.running:
-    - name: {{ settings.service }}
-    - enable: True
-    - reload: True
-    - require:
-      - mc_proxy: nginx-pre-hardrestart-hook
-    - require_in:
-      - mc_proxy: nginx-post-hardrestart-hook
-
