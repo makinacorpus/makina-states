@@ -1,24 +1,24 @@
 include:
   - makina-states.services.http.nginx.hooks
-#--- MAIN SERVICE RESTART/RELOAD watchers --------------
+#--- MAIN SERVICE RESTART/RELOAD requireers --------------
 # Configuration checker, always run before restart of graceful restart
 {% set settings = salt['mc_nginx.settings']() %}
 makina-nginx-conf-syntax-check:
   cmd.run:
     - name: {{ salt['mc_salt.settings']().msr }}/_scripts/nginxConfCheck.sh
     - stateful: True
-    - watch:
+    - require:
        - mc_proxy: nginx-pre-restart-hook
-    - watch_in:
+    - require_in:
        - mc_proxy: makina-nginx-restart
 
 makina-nginx-restart:
   service.running:
     - name: {{ settings.service }}
     - enable: True
-    - watch_in:
+    - require_in:
       - mc_proxy: nginx-post-restart-hook
-    - watch:
+    - require:
       - mc_proxy: nginx-pre-restart-hook
 
 makina-ngin-naxsi-ui-running:
@@ -31,22 +31,18 @@ makina-ngin-naxsi-ui-running:
     - enable: False
 {% endif %}
     - name: nginx-naxsi-ui
-    - watch_in:
+    - require_in:
       - mc_proxy: nginx-post-restart-hook
-    - watch:
+    - require:
       - mc_proxy: nginx-pre-restart-hook
-
-
 
 makina-nginx-reload:
   service.running:
     - name: {{ settings.service }}
     - enable: True
     - reload: True
-    - watch:
+    - require:
       - mc_proxy: nginx-pre-hardrestart-hook
-    - watch_in:
+    - require_in:
       - mc_proxy: nginx-post-hardrestart-hook
-
-
 

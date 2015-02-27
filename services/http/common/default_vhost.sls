@@ -54,10 +54,10 @@ makina-apache-default-vhost-index:
 #}
 makina-apache-remove-package-default-index:
   file.absent:
-    - name : {{ locs.var_dir }}/www/index.html
-    - watch:
+    - name: {{ locs.var_dir }}/www/index.html
+    - require:
       - mc_proxy: nginx-post-install-hook
       - mc_proxy: makina-apache-post-inst
-    - watch_in:
+    - require_in:
       - mc_proxy: makina-apache-pre-conf
       - mc_proxy: nginx-pre-conf-hook

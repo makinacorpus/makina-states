@@ -98,7 +98,3 @@ makina-nginx-minimal-{{f}}:
       - mc_proxy: nginx-post-conf-hook
 {% endfor %}
 
-
-
-
-

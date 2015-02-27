@@ -5,7 +5,7 @@ mc_proxy / Dummy state generation
 '''
 
 
-def hook(name, changes=None):
+def hook(name, changes=None, **kw):
     '''
     State that will always return ret, use that for orchestration purpose
 
