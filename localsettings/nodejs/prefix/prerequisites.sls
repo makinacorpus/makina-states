@@ -90,7 +90,7 @@ npm-version-{{version.replace('.', '_') }}{{suf}}:
   {% endif %}
 
 {% if manual_npm %}
-{% set installer = '/sbin/npm_install_{0}{1}.sh'.format(suf, version) %}
+{% set installer = '/sbin/npm_install.sh' %}
 {% set tag = npm_ver %}
 {% if npm_ver not in ['master']%}
 {% set tag = 'v{0}'.format(npm_ver) %}
@@ -98,7 +98,7 @@ npm-version-{{version.replace('.', '_') }}{{suf}}:
 npm-install-version-{{ version.replace('.', '_')}}.post{{suf}}:
   file.managed:
     - name: "{{installer}}"
-    - source: salt://makina-states/files/sbin/npm_install.sh
+    - source: salt://makina-states/files{{installer}}
     - template: jinja
     - user: root
     - defaults:
