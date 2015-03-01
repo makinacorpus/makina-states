@@ -54,7 +54,21 @@ def get_container(pid):
             if 'lxc' in content:
                 # 9:blkio:NAME
                 lxc = content.split('\n')[0].split(':')[-1]
+    if '/lxc' in lxc:
+        lxc = lxc.split('/lxc/', 1)[1]
     return lxc
+
+
+def is_lxc():
+    container = get_container(1)
+    if container not in ['MAIN_HOST']:
+        return True
+    return False
+
+
+def filter_host_pids(pids):
+    thishost = get_container(1)
+    return [a for a in pids if get_container(a) == thishost]
 
 
 class BaseCheck(object):

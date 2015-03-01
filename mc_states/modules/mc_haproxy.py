@@ -65,7 +65,9 @@ def settings():
                 'config': {
                     'global': {
                         'logfacility': 'local0',
-                        'loglevel': 'notice',
+                        # upgrade to info to debug # activation of keepalive
+                        # in cloud confs
+                        'loglevel': 'info',
                         'loghost': '127.0.0.1',
                         'nbproc': '',
                         'node': __grains__['id'],

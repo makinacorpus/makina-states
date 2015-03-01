@@ -614,7 +614,9 @@ def _add_server_to_backends(reversep, frontend, backend_name, domain, ip):
     if reversep['{0}_proxy'.format(kind)].get(
         'http_proxy_mode', 'xforwardedfor'
     ) == 'xforwardedfor':
-        default_raw_opts.append('option http-server-close')
+        # retry to enable full chain keepalive setups
+        # default_raw_opts.append('option http-server-close')
+        default_raw_opts.append('option http-keep-alive')
         default_raw_opts.append('option forwardfor')
     bck = _s['mc_utils.dictupdate']({'name': backend_name,
                                      'raw_opts': [],
