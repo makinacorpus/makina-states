@@ -48,3 +48,9 @@ makina-haproxy-default-cfg:
     - watch_in:
       - mc_proxy: haproxy-post-conf-hook
 {% endfor %}
+
+cpt-cloud-haproxy-cfg:
+  file.absent:
+    - name: {{salt['mc_haproxy.settings']().config_dir}}/extra/cloudcontroller.cfg
+    - watch_in:
+      - mc_proxy: haproxy-post-conf-hook

@@ -21,9 +21,3 @@ cloud-haproxy-sshcerts:
       - mc_proxy: cloud-sslcerts
     - watch_in:
       - mc_proxy: haproxy-post-conf-hook
-
-cpt-cloud-haproxy-cfg:
-  file.absent:
-    - name: {{salt['mc_haproxy.settings']().config_dir}}/extra/cloudcontroller.cfg
-    - watch_in:
-      - mc_proxy: haproxy-post-conf-hook
