@@ -99,4 +99,26 @@ def settings():
     return _settings()
 
 
-
+def test(name="thisisatest"):
+    vm = {"bridge": "lxcbr1",
+          "backing": "dir",
+          "ip": "10.5.0.7",
+          "bootstrap_shell": "bash",
+          "gateway": "10.5.0.1",
+          "script": "/srv/mastersalt/makina-states/_scripts/boot-salt.sh",
+          "minion": {"master": __opts__['master'],
+                     "master_port": __opts__['master_port']},
+          "from_container": "makina-states-trusty",
+          "ssh_username": "ubuntu", "ssh_gateway_key": "/root/.ssh/id_dsa",
+          "netmask": "16",
+          "password": "testtesttesttest",
+          "dnsservers": ["8.8.8.8", "4.4.4.4"],
+          "name": name,
+          "target": __opts__['id'],
+          "mac": "00:16:3e:11:31:64",
+          "ssh_gateway_user": "root",
+          "script_args": ("-C --from-salt-cloud "
+                          "--mastersalt-minion "
+                          "-b stable --salt-cloud-dir {0}"),
+          "ssh_gateway_port": 22}
+    return __salt__['lxc.cloud_init'](name, vm_=vm)
