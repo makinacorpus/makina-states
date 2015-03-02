@@ -1562,14 +1562,16 @@ def sync_modules(name, *args, **kwargs):
     _s = __salt__
     salt_root = cfg['salt_root']
     system_salt = __opts__['file_roots']['base'][0]
-    for modules_t in [
-        'runners', 'grains', 'outputters',
-        'modules', 'pillars', 'renderers',
-        'returners',  'states'
-    ]:
-        _d = '_{0}'.format(modules_t)
+    if _s['mc_controllers.mastersalt_mode']():
+       k = 'mastersalt'
+    else:
+       k = 'salt'
+    saltsettings = __salt__['mc_salt.settings']()[
+        'data_mappings']['minion'][k]
+    for config_opt, dirs in saltsettings['saltmods'].items():
+        dest = dirs[0]
+        _d = os.path.basename(dest)
         orig = os.path.join(salt_root, _d)
-        dest = os.path.join(system_salt, _d)
         if os.path.isdir(orig):
             for i in [
                 a for a in os.listdir(orig)

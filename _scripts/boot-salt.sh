@@ -1871,6 +1871,8 @@ create_salt_skeleton(){
             mkdir -pv "${d}"
         fi
     done
+    salt_root="${SALT_ROOT}"
+    conf_prefix="${CONF_PREFIX}"
     if [ ! -e "${CONF_PREFIX}/master" ];then
 
         cat > "${CONF_PREFIX}/master" << EOF
@@ -1882,13 +1884,12 @@ log_file: /var/log/salt/salt-master
 pidfile: /var/run/salt-master.pid
 file_roots: {"base":["${SALT_ROOT}"]}
 pillar_roots: {"base":["${SALT_PILLAR}"]}
-runner_dirs: [${SALT_ROOT}/runners, ${SALT_MS}/mc_states/runners]
-module_dirs: [${SALT_ROOT}/_modules, ${SALT_MS}/mc_states/modules]
-returner_dirs: [${SALT_ROOT}/_returners, ${SALT_MS}/mc_states/returners]
-states_dirs: [${SALT_ROOT}/_states, ${SALT_MS}/mc_states/states]
-grain_dirs: [${SALT_ROOT}/_grains, ${SALT_MS}/mc_states/grains]
-render_dirs: [${SALT_ROOT}/_renderers, ${SALT_MS}/mc_states/renderers]
 EOF
+        sed -re \
+            "s|\{salt_root\}|${salt_root}|g"\
+            "${salt_root}/makina-states/mc_states/modules_dirs.json" \
+            | sed -re "s/^[{}]$//g" \
+            >> "${conf_prefix}/master"
     fi
     touch "${CONF_PREFIX}/grains"
     if [ ! -e "${CONF_PREFIX}/minion" ];then
@@ -1904,15 +1905,17 @@ master: $SALT_MASTER_DNS
 master_port: ${SALT_MASTER_PORT}
 file_roots: {"base":["${SALT_ROOT}"]}
 pillar_roots: {"base":["${SALT_PILLAR}"]}
-module_dirs: [${SALT_ROOT}/_modules, ${SALT_MS}/mc_states/modules]
-returner_dirs: [${SALT_ROOT}/_returners, ${SALT_MS}/mc_states/returners]
-states_dirs: [${SALT_ROOT}/_states, ${SALT_MS}/mc_states/states]
-grain_dirs: [${SALT_ROOT}/_grains, ${SALT_MS}/mc_states/grains]
-render_dirs: [${SALT_ROOT}/_renderers, ${SALT_MS}/mc_states/renderers]
 EOF
+        sed -re \
+            "s|\{salt_root\}|${salt_root}|g"\
+            "${salt_root}/makina-states/mc_states/modules_dirs.json" \
+            | sed -re "s/^[{}]$//g" \
+            >> "${conf_prefix}/minion"
     fi
 
     # create etc/mastersalt
+    salt_root="${MASTERSALT_ROOT}"
+    conf_prefix="${MCONF_PREFIX}"
     if [ "x${IS_MASTERSALT}" != "x" ];then
         for d in \
             /var/run/mastersalt/mastersalt-master\
@@ -1940,13 +1943,12 @@ log_file: /var/log/mastersalt/mastersalt-master
 pidfile: /var/run/mastersalt-master.pid
 file_roots: {"base":["${MASTERSALT_ROOT}"]}
 pillar_roots: {"base":["${MASTERSALT_PILLAR}"]}
-runner_dirs: [${MASTERSALT_ROOT}/runners, ${MASTERSALT_MS}/mc_states/runners]
-module_dirs: [${MASTERSALT_ROOT}/_modules, ${MASTERSALT_MS}/mc_states/modules]
-returner_dirs: [${MASTERSALT_ROOT}/_returners, ${MASTERSALT_MS}/mc_states/returners]
-states_dirs: [${MASTERSALT_ROOT}/_states, ${MASTERSALT_MS}/mc_states/states]
-grain_dirs: [${MASTERSALT_ROOT}/_grains, ${MASTERSALT_MS}/mc_states/grains]
-render_dirs: [${MASTERSALT_ROOT}/_renderers, ${MASTERSALT_MS}/mc_states/renderers]
 EOF
+        sed -re \
+            "s|\{salt_root\}|${salt_root}|g"\
+            "${salt_root}/makina-states/mc_states/modules_dirs.json" \
+            | sed -re "s/^[{}]$//g" \
+            >> "${conf_prefix}/master"
         fi
         if [ ! -e "${MCONF_PREFIX}/minion" ];then
             cat > "${MCONF_PREFIX}/minion" << EOF
@@ -1961,12 +1963,12 @@ master: ${MASTERSALT_MASTER_DNS}
 master_port: ${MASTERSALT_MASTER_PORT}
 file_roots: {"base":["${MASTERSALT_ROOT}"]}
 pillar_roots: {"base":["${MASTERSALT_PILLAR}"]}
-module_dirs: [${MASTERSALT_ROOT}/_modules, ${MASTERSALT_MS}/mc_states/modules]
-returner_dirs: [${MASTERSALT_ROOT}/_returners, ${MASTERSALT_MS}/mc_states/returners]
-states_dirs: [${MASTERSALT_ROOT}/_states, ${MASTERSALT_MS}/mc_states/states]
-grain_dirs: [${MASTERSALT_ROOT}/_grains, ${MASTERSALT_MS}/mc_states/grains]
-render_dirs: [${MASTERSALT_ROOT}/_renderers, ${MASTERSALT_MS}/mc_states/renderers]
 EOF
+        sed -re \
+            "s|\{salt_root\}|${salt_root}|g"\
+            "${salt_root}/makina-states/mc_states/modules_dirs.json" \
+            | sed -re "s/^[{}]$//g" \
+            >> "${conf_prefix}/minion"
         fi
     fi
     # install salt cloud keys &  reconfigure any preprovisionned daemons

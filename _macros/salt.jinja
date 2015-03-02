@@ -381,8 +381,9 @@ salt-{{ data.name }}-{{ i }}:
 salt-{{ data.name }}-makina-states-dirs:
   file.directory:
     - names:
-      {% for i in data.salt_modules -%}
-      - {{ localRoot }}/{{ i }}
+      # first element is always /srv/salt/_<moddir>
+      {% for i, data in data.saltmods.items() -%}
+      - {{ data[0]}}
       {% endfor %}
 
 {#- update makina-state #}
