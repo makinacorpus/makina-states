@@ -9,6 +9,7 @@ mc_salt / salt related helpers
 # Import salt libs
 import mc_states.utils
 import random
+import json
 import os
 
 __name = 'salt'
@@ -121,35 +122,44 @@ def settings():
         tcron3 = tcron2 + 3
         if tcron3 >= 10:
             tcron3 -= 10
-        #cron_minion_checkalive = '0{0},1{0},2{0},3{0},4{0},5{0}'.format(tcron)
+        # cron_minion_checkalive = '0{0},1{0},2{0},3{0},4{0},5{0}'.format(tcron)
         cron_minion_checkalive = '{0}{1} 0,6,12,20 * * *'.format(tcrond, tcron)
         cron_sync_minute = '0{0},1{0},2{0},3{0},4{0},5{0}'.format(tcron2)
-        cron_minion_checkalive = local_conf.setdefault('cron_minion_checkalive',
-                                                 cron_minion_checkalive)
+        cron_minion_checkalive = local_conf.setdefault(
+            'cron_minion_checkalive', cron_minion_checkalive)
         cron_sync_minute = local_conf.setdefault('cron_sync_minute',
                                                  cron_sync_minute)
         tcrond = local_conf.setdefault('tcrond', tcrond)
         tcron = local_conf.setdefault('tcron', tcron)
         tcron2 = local_conf.setdefault('tcron_2', tcron2)
         tcron3 = local_conf.setdefault('tcron_3', tcron3)
-
+        # factorisation with bootsalt.sh
+        # search json definer
+        roots = ['/srv/salt', '/srv/mastersalt']
+        try:
+            root = __opts__['file_roots']['base'][0]
+            if root not in roots:
+                roots.append(root)
+        except IndexError:
+            # coming from ext_pillar
+            pass
+        saltmod_directories = None
+        for root in roots:
+            definer = os.path.join(
+                root, 'makina-states/mc_states/modules_dirs.json')
+            if os.path.exists(definer):
+                with open(definer) as fic:
+                    content = fic.read()
+                    saltmod_directories = json.loads(content.strip())
+                break
+        if saltmod_directories is None:
+            raise ValueError('Missing salt mods')
         saltCommonData = {
             'local_salt_mode': local_salt_mode,
             'id': saltmods['config.option']('makina-states.minion_id',
-                                            saltmods['config.option']('id', None)),
+                                            saltmods['config.option']('id',
+                                                                      None)),
             'mailto': 'root',
-            'module_dirs': ['{salt_root}/_modules',
-                            '{salt_root}/makina-states/mc_states/modules'],
-            'returner_dirs': ['{salt_root}/_returners',
-                              '{salt_root}/makina-states/mc_states/returners'],
-            'pillar_dirs': ['{salt_root}/_pillar',
-                           '{salt_root}/makina-states/mc_states/pillar'],
-            'grain_dirs': ['{salt_root}/_grains',
-                           '{salt_root}/makina-states/mc_states/grains'],
-            'states_dirs': ['{salt_root}/_states',
-                            '{salt_root}/makina-states/mc_states/states'],
-            'render_dirs': ['{salt_root}/_renderers',
-                            '{salt_root}/makina-states/mc_states/renderers'],
             'cron_auto_clean': crons,
             'cron_auto_sync': crons,
             'cron_auto_restart': crons,
@@ -230,16 +240,78 @@ def settings():
             'log_granular_levels': {},
             'ext_pillar': {'mc_pillar': {}},
             'pillar_opts': True,
-            'salt_modules': [
-                '_grains',
-                '_modules',
-                '_pillars',
-                '_renderers',
-                '_runners',
-                '_returners',
-                '_states',
-            ]
-        }
+            'salt_modules': {
+                'ssh_wrapper': {
+                    'option': 'wrapper_dirs',
+                    'top_directory': '_wrapper'},
+                'log_handlers': {
+                    'option': 'log_handlers_dirs',
+                    'top_directory': '_log_handlers'},
+                'clouds': {
+                    'option': 'cloud_dirs',
+                    'top_directory': '_clouds'},
+                'sdb': {
+                    'option': 'sdb_dirs',
+                    'top_directory': '_sdb'},
+                'beacons': {
+                    'option': 'beacons_dirs',
+                    'top_directory': '_beacons'},
+                'search': {
+                    'option': 'search_dirs',
+                    'top_directory': '_search'},
+                'fileserver': {
+                    'option': 'fileserver_dirs',
+                    'top_directory': '_fileserver'},
+                'roster': {
+                    'option': 'roster_dirs',
+                    'top_directory': '_roster'},
+                'netapi': {
+                    'option': 'netapi_dirs',
+                    'top_directory': '_netapi'},
+                'auth': {
+                    'option': 'auth_dirs',
+                    'top_directory': '_auth'},
+                # XXX
+                'queue': {
+                    'option': 'queue_dirs',
+                    'top_directory': '_queues'},
+                'outputters': {
+                    'option': 'outputter_dirs',
+                    'top_directory': '_output'},
+                # XXX
+                'wheel': {
+                    'option': 'wheel_dirs',
+                    'top_directory': '_wheel'},
+                'top': {
+                    'option': 'top_dirs',
+                    'top_directory': '_tops'},
+                'proxy': {
+                    'option': 'proxy_dirs',
+                    'top_directory': '_proxy'},
+                'grains': {
+                    'option': 'grain_dirs',
+                    'top_directory': '_grains'},
+                'modules': {
+                    'option': 'module_dirs',
+                    'top_directory': '_modules'},
+                'pillars': {
+                    'option': 'pillar_dirs',
+                    'top_directory': '_pillars'},
+                'renderers': {
+                    'option': 'render_dirs',
+                    'top_directory': '_renderers'},
+                'utils': {
+                    'option': 'utils_dirs',
+                    'top_directory': '_utils'},
+                'runners': {
+                    'option': 'runner_dirs',
+                    'top_directory': '_runners'},
+                'returners': {
+                    'option': 'returner_dirs',
+                    'top_directory': '_returners'},
+                'states': {
+                    'option': 'states_dirs',
+                    'top_directory': '_states'}}}
         #  default daemon overrides
         saltMinionData = saltmods['mc_utils.dictupdate'](saltCommonData.copy(), {
             'service_name': 'minion',
@@ -265,18 +337,6 @@ def settings():
             'ipc_mode': 'ipc',
             'tcp_pub_port': '4510',
             'tcp_pull_port': '4511',
-            'pillar_dirs': ['{salt_root}/_pillar',
-                            '{salt_root}/makina-states/mc_states/pillar'],
-            'module_dirs': ['{salt_root}/_modules',
-                            '{salt_root}/makina-states/mc_states/modules'],
-            'returner_dirs': ['{salt_root}/_returners',
-                              '{salt_root}/makina-states/mc_states/returners'],
-            'grain_dirs': ['{salt_root}/_grains',
-                           '{salt_root}/makina-states/mc_states/grains'],
-            'states_dirs': ['{salt_root}/_states',
-                            '{salt_root}/makina-states/mc_states/states'],
-            'render_dirs': ['{salt_root}/_renderers',
-                            '{salt_root}/makina-states/mc_states/renderers'],
             'providers': {},
             'autoload_dynamic_modules': True,
             'clean_dynamic_modules': True,
@@ -329,8 +389,6 @@ def settings():
                 'hash_type': 'md5',
                 'file_buffer_size': '1048576',
                 'file_ignore_regex': [],
-                'runner_dirs': ['{salt_root}/_runners',
-                                '{salt_root}/makina-states/mc_states/runners'],
                 'file_ignore_glob': [],
                 'fileserver_backend':  ['roots', 'git'],
                 'gitfs_remotes': '[]',
@@ -401,8 +459,27 @@ def settings():
         mastersaltMinionData = saltmods['mc_utils.dictupdate'](
             mastersaltMinionData, mastersaltMinionPillar.copy())
 
+        # modules directories injection
+        saltCommonData = saltmods['mc_utils.dictupdate'](
+            saltCommonData, saltmod_directories.copy())
+        saltMasterData = saltmods['mc_utils.dictupdate'](
+            saltMasterData, saltmod_directories.copy())
+        saltMinionData = saltmods['mc_utils.dictupdate'](
+            saltMinionData, saltmod_directories.copy())
+        mastersaltCommonData = saltmods['mc_utils.dictupdate'](
+            mastersaltCommonData, saltmod_directories.copy())
+        mastersaltMasterData = saltmods['mc_utils.dictupdate'](
+            mastersaltMasterData, saltmod_directories.copy())
+        mastersaltMinionData = saltmods['mc_utils.dictupdate'](
+            mastersaltMinionData, saltmod_directories.copy())
+        saltCommonData['saltmods'] = saltmod_directories.copy()
+        saltMasterData['saltmods'] = saltmod_directories.copy()
+        saltMinionData['saltmods'] = saltmod_directories.copy()
+        mastersaltCommonData['saltmods'] = saltmod_directories.copy()
+        mastersaltMasterData['saltmods'] = saltmod_directories.copy()
+        mastersaltMinionData['saltmods'] = saltmod_directories.copy()
         # new & prefered way:
-        # allow settings to also be modified ala mc_utils.default key/value pairs
+        # allow settings to also be modified ala mc_utils.default key/val pairs
         saltMasterData = saltmods['mc_utils.defaults'](
             'makina-states.controllers.salt_master.settings', saltMasterData)
         saltMinionData = saltmods['mc_utils.defaults'](
