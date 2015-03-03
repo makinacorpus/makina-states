@@ -1,1 +1,3 @@
 {# uwsgi macro helpers #}
+{%- import "makina-states/services/proxy/uwsgi/macros.sls" as uwsgi with context %}
+{% set config = uwsgi.config%}

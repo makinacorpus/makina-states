@@ -12,7 +12,6 @@
 {% macro config(config_name, config_file, enabled=True) %}
 {% set data = salt['mc_uwsgi.config_settings'](config_name, config_file, enabled, **kwargs) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
-
 uwsgi-{{config_name}}-conf:
   file.managed:
     - user: root
@@ -41,5 +40,4 @@ uwsgi-{{data.config_name}}-enable-conf:
     - watch_in:
       - mc_proxy: uwsgi-post-conf
 {% endif %}
-
 {% endmacro %}

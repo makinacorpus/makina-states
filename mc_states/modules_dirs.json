@@ -89,7 +89,7 @@
       "{salt_root}/makina-states/salt_fork/renderers"],
   "runner_dirs": [
       "{salt_root}/_runners",
-      "{salt_root}/makina-states/mc_states/runner",
+      "{salt_root}/makina-states/mc_states/runners",
       "{salt_root}/makina-states/salt_fork/runners"],
   "utils_dirs": [
       "{salt_root}/_utils",

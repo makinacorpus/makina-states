@@ -2,7 +2,6 @@
 {% set uwsgiSettings = salt['mc_uwsgi.settings']() %}
 include:
   - makina-states.services.proxy.uwsgi.hooks
-
 uwsgi-pkgs:
   pkg.{{pkgssettings['installmode']}}:
     - watch:
@@ -13,4 +12,3 @@ uwsgi-pkgs:
       {% for package in uwsgiSettings.package %}
       - {{package}}
       {% endfor %}
-
