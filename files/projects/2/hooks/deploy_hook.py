@@ -2,20 +2,31 @@
 from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
 '''
-corpus Deploy hook
+Singleton executor
 ===================
 
-This will call the mc_project_<API>.deploy function in turn
+This will call the 'CMDS' an allow only one execution at a time
+system wide.
 
-Once a deployment has been triggered:
+Once an execution has been triggered:
 
     - nothing can kill it except a kill -9
-    - main loop (and not main program!)  can maybe kill it after a timeout
+    - main loop (and not main program!) can maybe kill it after a timeout
     - Neither terminal closure or keyboard interrupt (SIGINT)
-      can stop the deployment
-    - the deploy function is anyway executed in background while output
+      can stop the execution
+    - the commands are always executed in background while their output
       is given in realtime to the connected terminal
 
+The behavior can be changed by tweaking:
+
+    - one of the main threads
+    - custom_communicate
+    - get_callback_args
+    - prepare_parser
+    - do_custom_parser
+    - get_worker_pids
+    - get_deployer_pids
+    - get_running_pids
 
 '''
 import traceback
@@ -38,11 +49,91 @@ from subprocess import Popen, PIPE
 from threading import Thread
 
 
-logger = logging.getLogger('deploy-main')
-worker_logger = logging.getLogger('deploy-worker')
-to_logger = logging.getLogger('timeout-watcher')
-rawlogger = logging.getLogger('rawlogger')
+# this match the log ! :)
+_name = 'deploy'
+logger = logging.getLogger('{0}-main'.format(_name))
+worker_logger = logging.getLogger('{0}-worker'.format(_name))
+to_logger = logging.getLogger('{0}-timeout-watcher'.format(_name))
+rawlogger = logging.getLogger('{0}-rawlogger'.format(_name))
 rawlogger.propagate = False
+LOG = "{tmpdir}/makina-states.{project_name}-deploy.log"
+LOCK = "{tmpdir}/.makina-states.{project_name}-deploy.lock"
+DEFAULT_TIMEOUT = 5 * 60 * 60
+DEFAULT_DELAY = None
+CMDS = [['salt-call', '--local', '--retcode-passthrough',
+         '-l{loglevel}', 'mc_project.deploy', '{0}']]
+
+
+def get_container(pid):
+    lxc = 'MAIN_HOST'
+    cg = '/proc/{0}/cgroup'.format(pid)
+    # lxc ?
+    if os.path.isfile(cg):
+        with open(cg) as fic:
+            content = fic.read()
+            if 'lxc' in content:
+                # 9:blkio:NAME
+                lxc = content.split('\n')[0].split(':')[-1]
+    if '/lxc' in lxc:
+        lxc = lxc.split('/lxc/', 1)[1]
+    return lxc
+
+
+def is_lxc():
+    container = get_container(1)
+    if container not in ['MAIN_HOST']:
+        return True
+    return False
+
+
+def filter_host_pids(pids):
+    thishost = get_container(1)
+    return [a for a in pids if get_container(a) == thishost]
+
+
+def popen(cargs=None, shell=True):
+    if not cargs:
+        cargs = []
+    ret, ps = None, None
+    if cargs:
+        ps = Popen(cargs, shell=shell, stdout=PIPE, stderr=PIPE)
+        ret = ps.communicate()
+    return ret, ps
+
+
+def get_worker_pids(*args, **kwargs):
+    '''
+    Search worker process
+    '''
+    ops = popen(
+        'ps aux'
+        '|grep mc_project.deploy'
+        '|grep {project_name}.deploy'
+        '|grep -v grep'
+        '|awk \'{{print $2}}\''.format(**kwargs))[0]
+    return ops[0] + ops[1] + "\n"
+
+
+def get_deployer_pids(*args, **kwargs):
+    '''
+    Search program process
+    '''
+    prog = sys.argv[0]
+    pps = popen(
+        'ps aux|grep \'{0}\'|grep -v grep'
+        '|awk \'{{print $2}}\''.format(prog))[0]
+    return pps[0] + pps[1] + "\n"
+
+
+def get_running_pids(*args, **kwargs):
+    ps = ''
+    ps += get_worker_pids(*args, **kwargs)
+    ps += get_deployer_pids(*args, **kwargs)
+    filtered = ["{0}".format(os.getpid())]
+    pids = [a.strip()
+            for a in ps.split()
+            if a.strip() and a not in filtered]
+    return filter_host_pids(pids)
 
 
 def logflush():
@@ -75,6 +166,7 @@ def init_file_logging(logfile, lvl=0):
 class Tee(object):
 
     def __init__(self, dup, orig, output=True, file_output=True):
+        self.buffer = ''
         self.dup = dup
         self.orig = orig
         self.output = output
@@ -83,6 +175,7 @@ class Tee(object):
     def write(self, s=''):
         if isinstance(s, unicode):
             s = s.encode('utf-8')
+        self.buffer += s
         if self.output:
             self.orig.write(s)
         if self.file_output:
@@ -98,7 +191,7 @@ class Tee(object):
 def init_worker(lockfile=None):
     '''
     only and only if lockfile is not there anymore,
-    e do not ignore sigterm and even do it.
+    do not ignore sigterm and even do it.
     '''
     def handle_sigs():
         def handle_sigterm(signum, frame):
@@ -121,6 +214,10 @@ class ProcessError(Exception):
 
 
 class TimeoutError(Exception):
+    '''.'''
+
+
+class InterruptError(ProcessError, KeyboardInterrupt):
     '''.'''
 
 
@@ -151,24 +248,41 @@ def printer(io_q, p_q, logfile, proc):
     p_q.put('d')
 
 
-def stream_watcher(io_q, p_q, identifier, stream):
+def stream_watcher(io_q, p_q, identifier, stream_queue, stream):
     for line in stream:
+        stream_queue.put(line)
         io_q.put((identifier, line))
     if not stream.closed:
         stream.close()
     p_q.put('d')
 
 
-def deploy(name, loglevel, logfile, lock, **kwargs):
+def custom_communicate(proc, stdout=None, stderr=None, delay=None):
+    retry_loop = False
+    if proc.returncode and not retry_loop:
+        raise Exception('stopped due to non zero return code')
+    return retry_loop, delay, stdout, stderr
+
+
+def deploy(callback_args, loglevel, logfile, lock, **kwargs):
     '''
     The real deploy work is done here !
     '''
     # think to remove locks in subshell
     # if main program has aborted before end of deployment
     worker_logger.info('start - deploy')
+    if not kwargs:
+        kwargs = {}
+    delay = kwargs.get('delay', None)
+    kwargs['loglevel'] = loglevel
+    kwargs['logfile'] = logfile
+    kwargs['lock'] = lock
     logflush()
-    with open(lock, 'w') as fic:
-        fic.write('locked')
+    # we need early py26
+    fic = open(lock, 'w')
+    fic.write('locked')
+    fic.flush()
+    fic.close()
     pids = [os.getpid()]
 
     def handle_sigusr2(signum, frame):
@@ -185,48 +299,79 @@ def deploy(name, loglevel, logfile, lock, **kwargs):
     signal.signal(signal.SIGUSR2, handle_sigusr2)
     exitcode = 0
     try:
-        cmds = [
-            ['salt-call', '--local', '--retcode-passthrough',
-                '-l{0}'.format(loglevel), 'mc_project.deploy', name]
-        ]
-        for cmd in cmds:
-            try:
-                io_q = Queue()
-                p_q = Queue()
-                if isinstance(cmd, list):
-                    proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
-                else:
-                    proc = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
-                # we are already daemonized multiprocess
-                # so the only option now is to thread out to
-                # parrallelize
-                threads = []
-                threads.append(
-                    Thread(target=stream_watcher, name='stderr-watcher',
-                           args=(io_q, p_q, 'STDERR', proc.stderr)).start()
-                )
-                threads.append(
-                    Thread(target=stream_watcher, name='stdout-watcher',
-                           args=(io_q, p_q, 'STDOUT', proc.stdout)).start()
-                )
-
-                threads.append(
-                    Thread(target=printer, name='printer',
-                           args=[io_q, p_q, logfile, proc]).start()
-                )
-                proc.wait()
-                for t in threads:
-                    ret = p_q.get()
-                    if t and ret in ['d']:
-                        t.join()
-                if proc.returncode:
-                    raise Exception('stopped due to non zero return code')
-            except Exception, ex:
-                worker_logger.error('{0} failed'.format(cmd))
-                worker_logger.error("{0}".format(ex))
-                logflush()
-                exitcode = 1
-                break
+        do_loop = True
+        while do_loop:
+            for cmd in CMDS:
+                try:
+                    io_q = Queue()
+                    p_q = Queue()
+                    streamout_queue = Queue()
+                    streamerr_queue = Queue()
+                    if isinstance(cmd, list):
+                        cmd = [a.format(*callback_args, **kwargs)
+                               for a in cmd]
+                        proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
+                    else:
+                        cmd = cmd.format(*callback_args, **kwargs)
+                        proc = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+                    # we are already daemonized multiprocess
+                    # so the only option now is to thread out to
+                    # parrallelize
+                    threads = []
+                    threads.append(
+                        Thread(
+                            target=stream_watcher, name='stderr-watcher',
+                            args=(io_q, p_q, 'STDERR',
+                                  streamerr_queue, proc.stderr)
+                        ).start()
+                    )
+                    threads.append(
+                        Thread(
+                            target=stream_watcher, name='stdout-watcher',
+                            args=(io_q, p_q, 'STDOUT',
+                                  streamout_queue, proc.stdout)
+                        ).start()
+                    )
+                    threads.append(
+                        Thread(target=printer, name='printer',
+                               args=[io_q, p_q, logfile, proc]).start()
+                    )
+                    proc.wait()
+                    for t in threads:
+                        ret = p_q.get()
+                        if t and ret in ['d']:
+                            t.join()
+                    stdout = ''
+                    while True:
+                        try:
+                            stdout += streamout_queue.get_nowait()
+                        except Empty:
+                            break
+                    stderr = ''
+                    while True:
+                        try:
+                            stdout += streamerr_queue.get_nowait()
+                        except Empty:
+                            break
+                    (do_loop, delay, stdout, stderr) = custom_communicate(
+                        proc, stdout, stderr, delay)
+                    if do_loop and delay:
+                        print('Looping again in {0}s'.format(delay))
+                        if delay:
+                            time.sleep(delay)
+                except Exception, ex:
+                    worker_logger.error('{0} failed'.format(cmd))
+                    worker_logger.error("{0}".format(ex))
+                    # XXX: do we really need the trace ?
+                    try:
+                        worker_logger.error(
+                            "{0}".format(traceback.format_exc()))
+                    except Exception:
+                        pass
+                    logflush()
+                    do_loop = False
+                    exitcode = 1
+                    break
         if not exitcode:
             worker_logger.info('Worker has deployed sucessfully')
             logflush()
@@ -234,6 +379,8 @@ def deploy(name, loglevel, logfile, lock, **kwargs):
             worker_logger.error('Worker has failed the deployment')
             logflush()
     finally:
+        for i in ['loglevel', 'logfile', 'lock']:
+            kwargs.pop(i, None)
         clean_locks(lock)
     # be sure to be killed
     return exitcode
@@ -363,8 +510,12 @@ def enter_mainloop(target,
                    exit_callback=None,
                    lockfile=None,
                    logfile=None,
-                   timeout=None):
-    '''Manage a multiprocessing pool
+                   timeout=None,
+                   delay=None,
+                   stdout_tee=None,
+                   stderr_tee=None):
+    '''
+    Manage a multiprocessing pool
 
     - If the protocol queue does not output anything, the pool runs
       indefinitly
@@ -394,13 +545,17 @@ def enter_mainloop(target,
     exit_callback
         a callcack taking the result of the function being processed
         and return it after eventual post processing
+    delay
+        if the main loop is retried, sleep a litte time (seconds)
+    stdout_tee
+        Tee tee object tied to stdout of the execution
+    stderr_tee
+        Tee tee object tied to stdin of the execution
     args
         positionnal arguments to call the function with
         if you dont want to use pool.map
-
     kwargs
         kwargs to give to the function in case of process
-
     Attention, the function must have the following signature:
 
             target(protocol_queue, message_queue, args, kwargs)
@@ -424,8 +579,9 @@ def enter_mainloop(target,
     to_p_queue = manager.Queue()
     ret = {'return': None}
 
-    def exit_callback(fret):
-        ret['return'] = fret
+    if exit_callback is None:
+        def exit_callback(fret):
+            ret['return'] = fret
     finished = False
     pools = [pool]
     try:
@@ -500,17 +656,32 @@ def enter_mainloop(target,
     return ret['return']
 
 
-def test_deploy(deploy_lock, log):
-    if os.path.exists(deploy_lock):
-        logger.info(
-            "A deployment seems already in progress\n"
-            "If something did go wrong, please "
-            "delete the {DEPLOY_LOCK} file".format(
-                DEPLOY_LOCK=deploy_lock))
-        logger.info(
-            "You can attach to and read the log file with:\n"
-            "   tail -f {0}".format(log))
-        sys.exit(128)
+def test_deploy(*args, **kwargs):
+    deploy_lock = kwargs['deploy_lock']
+    deploy_log = kwargs['deploy_log']
+    pids = get_running_pids(*args, **kwargs)
+    if pids or os.path.exists(deploy_lock):
+        if not pids:
+            logger.info(
+                "Stale lock, interrupted program?\n"
+                "We will delete the {DEPLOY_LOCK} file".format(
+                    DEPLOY_LOCK=deploy_lock))
+            os.remove(deploy_lock)
+        else:
+            logger.info(
+                "Already in progress (pids: {0})\n"
+                "If something did go wrong, please"
+                " delete the {DEPLOY_LOCK} file.\n"
+                "This program run multiple proceses, so multiple pids"
+                " is normal".format(
+                    pids,
+                    DEPLOY_LOCK=deploy_lock))
+            os.system('ps aufx -C4|egrep \'{0}\'|grep -v grep'.format(
+                "|".join(pids)))
+            logger.info(
+                "You can attach to and read the log file with:\n"
+                "   tail -f {0}".format(deploy_log))
+            sys.exit(128)
 
 
 def clean_locks(locks=None):
@@ -527,54 +698,75 @@ def clean_locks(locks=None):
                     lock, ex))
 
 
+def prepare_parser(parser):
+    parser.add_option("-p", dest="project_name")
+    parser.add_option("-r", dest="project_root",
+                      default="/srv/projects/{project_name}/project")
+    return parser
+
+
+def do_custom_parse(parser, options, args):
+    options.project_root = options.project_root.format(**vars(options))
+    if os.path.exists(options.project_root):
+        options.tmpdir = options.project_root
+    return parser, options, args
+
+
+def get_callback_args(parser, options, args):
+    return [options.project_name]
+
+
 def main():
     parser = OptionParser()
     tmpdir = os.environ.get('TMPDIR', '/tmp')
     parser.add_option("-l", dest="loglevel",
                       help="debug|error|info|all|quiet", default="info")
-    parser.add_option("--async", dest="async", action="store_false", default=True)
-    parser.add_option("-p", dest="project_name")
-    parser.add_option("-r", dest="project_root",
-                      default="/srv/projects/{0}/project")
+    parser.add_option("--async",
+                      dest="async", action="store_false", default=True)
+    parser.add_option("--retry-delay",
+                      dest="delay", action="store", default=DEFAULT_DELAY)
     parser.add_option("--tmpdir", dest="tmpdir", default=tmpdir)
     parser.add_option("-t", '--timeout', type="int",
-                      dest='timeout', default=5 * 60 * 60)
-    parser.add_option("--deploy-log", dest="deploy_log",
-                      default="{0}/makina-states.{1}-deploy.log")
-    parser.add_option("--deploy-lock", dest="deploy_lock",
-                      default="{0}/.makina-states.{1}-deploy.lock")
+                      dest='timeout', default=DEFAULT_TIMEOUT)
+    parser.add_option("--deploy-log", dest="deploy_log", default=LOG)
+    parser.add_option("--deploy-lock", dest="deploy_lock", default=LOCK)
+    parser = prepare_parser(parser)
     options, args = parser.parse_args()
-    if not options.loglevel in ['debug', 'quiet', 'error', 'info', 'all']:
+    if options.loglevel not in ['debug', 'quiet', 'error', 'info', 'all']:
         raise ValueError('invalid loglevel')
     lvl = logging.getLevelName(
         {'all': 'debug',
          'quiet': 'error'}.get(options.loglevel, options.loglevel).upper())
-    options.project_root = options.project_root.format(options.project_name)
-    if os.path.exists(options.project_root):
-        options.tmpdir = options.project_root
-    options.deploy_lock = options.deploy_lock.format(options.tmpdir,
-                                                     options.project_name)
-    options.deploy_log = options.deploy_log.format(options.tmpdir,
-                                                   options.project_name)
+    parser, options, args = do_custom_parse(parser, options, args)
+    options.deploy_lock = options.deploy_lock.format(**vars(options))
+    options.deploy_log = options.deploy_log.format(**vars(options))
     init_file_logging(options.deploy_log, lvl)
-    Tee(sys.stdout, sys.__stdout__)
-    Tee(sys.stderr, sys.__stderr__)
-    test_deploy(options.deploy_lock, options.deploy_log)
+    stdout_tee = Tee(sys.stdout, sys.__stdout__)
+    stderr_tee = Tee(sys.stderr, sys.__stderr__)
+    test_deploy(**vars(options))
     logger.info('start')
+    callback_args = get_callback_args(parser, options, args)
     try:
-        args = [options.project_name,
+        args = [callback_args,
                 options.loglevel,
                 options.deploy_log,
                 options.deploy_lock]
+        ckwargs = {'delay': options.delay}
         if not options.async:
-            exitcode = deploy(*args)
+            exitcode = deploy(*args, **ckwargs)
         else:
-            exitcode = enter_mainloop(_run_deploy, args=args,
+            exitcode = enter_mainloop(_run_deploy,
+                                      args=args,
+                                      kwargs=ckwargs,
                                       lockfile=options.deploy_lock,
                                       logfile=options.deploy_log,
-                                      timeout=options.timeout)
+                                      timeout=options.timeout,
+                                      delay=options.delay,
+                                      stderr_tee=stderr_tee,
+                                      stdout_tee=stdout_tee)
     except ProcessError:
         logger.error('processerror')
+        logger.error(traceback.format_exc())
         exitcode = 128
     except TimeoutError, ex:
         exitcode = 127
@@ -587,8 +779,8 @@ def main():
         exitcode = 126
     if exitcode != -1 and is_locked(options.deploy_lock):
         while(is_locked(options.deploy_lock)):
-            print("o")
-            pass
+            print("still locked")
+            time.sleep(0.5)
     if exitcode == -1:
         exitcode = 0
         logger.info('Deployment is continued in background')
@@ -610,5 +802,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-#
