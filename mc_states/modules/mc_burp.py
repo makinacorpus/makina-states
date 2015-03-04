@@ -270,7 +270,7 @@ def settings():
                         "* * * * *"
                     ),
                     'cron_cmd': (
-                        " {user} /etc/burp/cron.sh"
+                        " {user} /etc/burp/cron.sh 1>/dev/null 2>&1"
                     )
                 },
                 'clients': {
