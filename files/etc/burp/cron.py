@@ -50,18 +50,17 @@ from threading import Thread
 
 
 # this match the log ! :)
-_name = 'deploy'
+_name = 'burp-client'
 logger = logging.getLogger('{0}-main'.format(_name))
 worker_logger = logging.getLogger('{0}-worker'.format(_name))
 to_logger = logging.getLogger('{0}-timeout-watcher'.format(_name))
 rawlogger = logging.getLogger('{0}-rawlogger'.format(_name))
 rawlogger.propagate = False
-LOG = "{tmpdir}/makina-states.{project_name}-deploy.log"
-LOCK = "{tmpdir}/.makina-states.{project_name}-deploy.lock"
-DEFAULT_TIMEOUT = 5 * 60 * 60
-DEFAULT_DELAY = None
-CMDS = [['salt-call', '--local', '--retcode-passthrough',
-         '-l{loglevel}', 'mc_project.deploy', '{0}']]
+LOG = "/var/log/burp-client"
+LOCK = "/var/run/burp-client.lock"
+DEFAULT_TIMEOUT = 23 * 60 * 60
+DEFAULT_DELAY = 5
+CMDS = ['burp -a t 2>&1']
 
 
 def get_container(pid):
@@ -106,11 +105,8 @@ def get_worker_pids(*args, **kwargs):
     Search worker process
     '''
     ops = popen(
-        'ps aux'
-        '|grep mc_project.deploy'
-        '|grep {project_name}.deploy'
-        '|grep -v grep'
-        '|awk \'{{print $2}}\''.format(**kwargs))[0]
+        'ps aux|grep \'burp -a\'|grep -v grep'
+        '|awk \'{print $2}\'')[0]
     return ops[0] + ops[1] + "\n"
 
 
@@ -259,6 +255,22 @@ def stream_watcher(io_q, p_q, identifier, stream_queue, stream):
 
 def custom_communicate(proc, stdout=None, stderr=None, delay=None):
     retry_loop = False
+    for test in [
+        'Timer',
+        'SSL connect error'
+    ]:
+        for std in [stdout, stderr]:
+            if test in std:
+                retry_loop = True
+                break
+        if retry_loop:
+            break
+    for test in [
+        'Phase 1 begin',
+    ]:
+        if test in std:
+            retry_loop = False
+            break
     if proc.returncode and not retry_loop:
         raise Exception('stopped due to non zero return code')
     return retry_loop, delay, stdout, stderr
@@ -699,21 +711,17 @@ def clean_locks(locks=None):
 
 
 def prepare_parser(parser):
-    parser.add_option("-p", dest="project_name")
-    parser.add_option("-r", dest="project_root",
-                      default="/srv/projects/{project_name}/project")
+    # parser.add_option("-p", dest="project_name")
     return parser
 
 
 def do_custom_parse(parser, options, args):
-    options.project_root = options.project_root.format(**vars(options))
-    if os.path.exists(options.project_root):
-        options.tmpdir = options.project_root
+    # options.project_root = options.project_root.format(**vars(options))
     return parser, options, args
 
 
 def get_callback_args(parser, options, args):
-    return [options.project_name]
+    return []
 
 
 def main():
