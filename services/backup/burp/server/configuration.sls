@@ -269,7 +269,7 @@ burp-{{client}}-cronjob:
       - mc_proxy: burp-post-gen-sync
 
 
-{% for i in ['cron.py', 'cron.sh'] %}
+{% for i, jinja in [('cron.py', False), ('cron.sh', True)] %}
 burp-{{client}}-cronjob-{{i}}:
   file.managed:
     - source: salt://makina-states/files/etc/burp/{{i}}
@@ -279,7 +279,9 @@ burp-{{client}}-cronjob-{{i}}:
         client: {{client}}
     - user: root
     - group: root
+    {% if jinja %}
     - template: jinja
+    {% endif %}
     - mode: 755
     - watch:
       - mc_proxy: burp-pre-conf-hook
@@ -288,7 +290,7 @@ burp-{{client}}-cronjob-{{i}}:
       - mc_proxy: burp-post-conf-hook
       - mc_proxy: burp-post-gen-sync
 
-{% done %}
+{% endfor %}
 
 
 {{client}}-install-burp-configuration:
