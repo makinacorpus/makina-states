@@ -15,6 +15,9 @@ APIS = {
     'sync_hooks': {
         '2': 'mc_project_2.sync_hooks',
     },
+    'sync_hooks_for_all': {
+        '2': 'mc_project_2.sync_hooks_for_all',
+    }, 
     'report': {
         '2': 'mc_project_2.report',
     },
@@ -130,6 +133,10 @@ def unlink(name, *args, **kwargs):
 
 def install(name, *args, **kwargs):
     return _api_switcher('install', name, *args, **kwargs)
+
+
+def sync_hooks_for_all(*args, **kwargs):
+    return _api_switcher('sync_hooks_for_all', *args, **kwargs)
 
 
 def sync_hooks(name, *args, **kwargs):

@@ -1987,7 +1987,7 @@ def notify(name, *args, **kwargs):
     return cret
 
 
-def sync_hooks_for_all():
+def sync_hooks_for_all(*args, **kwargs):
     '''
     Get connection details & projects report
     '''
