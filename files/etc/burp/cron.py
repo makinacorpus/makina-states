@@ -256,7 +256,7 @@ def stream_watcher(io_q, p_q, identifier, stream_queue, stream):
 def custom_communicate(proc, stdout=None, stderr=None, delay=None):
     retry_loop = False
     for test in [
-        'Timer',
+        # 'Timer',
         'SSL connect error'
     ]:
         for std in [stdout, stderr]:
