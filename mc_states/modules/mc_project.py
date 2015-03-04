@@ -17,7 +17,7 @@ APIS = {
     },
     'sync_hooks_for_all': {
         '2': 'mc_project_2.sync_hooks_for_all',
-    }, 
+    },
     'report': {
         '2': 'mc_project_2.report',
     },
