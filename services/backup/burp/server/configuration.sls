@@ -288,7 +288,7 @@ burp-{{client}}-cronjob-{{i}}:
       - mc_proxy: burp-post-conf-hook
       - mc_proxy: burp-post-gen-sync
 
-{% done %}
+{% endfor %}
 
 
 {{client}}-install-burp-configuration:
