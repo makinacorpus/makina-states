@@ -270,9 +270,7 @@ def settings():
                         "* * * * *"
                     ),
                     'cron_cmd': (
-                        " {user} [ -x /usr/sbin/burp ] && "
-                        " /usr/sbin/burp -a t "
-                        "   >>/var/log/burp-client 2>&1"
+                        " {user} /etc/burp/cron.sh"
                     )
                 },
                 'clients': {
