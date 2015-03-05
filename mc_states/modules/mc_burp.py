@@ -141,7 +141,7 @@ def settings():
             'burp', registry_format='pack')
         ca_pass = local_conf.get('ca_pass', secure_password(32))
         server_pass = local_conf.get('server_pass', secure_password(32))
-        timers = local_conf.setdefault('timers', OrderedDict())
+        timers = local_conf.setdefault('timers_v2', OrderedDict())
         local_conf['ca_pass'] = ca_pass
         local_conf['server_pass'] = server_pass
         grains = __grains__
@@ -288,7 +288,7 @@ def settings():
         data['client_common'].setdefault(
             'ssl_peer_cn', data['server_conf']['fqdn'])
         data['clients'].setdefault(data['server_conf']['fqdn'], {})
-        tries_per_hour = 15
+        tries_per_hour = 1
         hour = [i * (60 / tries_per_hour) for i in range(tries_per_hour)]
         removes = []
         for cname in [a for a in data['clients']]:
@@ -397,7 +397,7 @@ def settings():
                             if item not in per:
                                 per[ix] = item
                         per = __salt__['mc_utils.uniquify'](per)
-                        val = '{0} * * * *'.format(','.join(
+                        val = '{0} */6 * * *'.format(','.join(
                             ["{0}".format(t) for t in per]))
                     timers[cname] = val
                 cl.setdefault(k, val)
