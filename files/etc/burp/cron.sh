@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # small wrapper to switch over the rigth python
-set -e
 if [ -f /etc/profile ];then
     . /etc/profile
 fi
