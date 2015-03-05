@@ -121,10 +121,6 @@ makina-php-pool-{{ data.pool_name.replace('*', 'star') }}-directories-{{i}}:
 # compatibility
 makina-php-pool-{{ data.pool_name.replace('*', 'star') }}-directories:
   file.exists:
-    - user: {{ data.fpm_user }}
-    - group: {{data.fpm_group }}
-    - mode: "2775"
-    - makedirs: True
     - name: {{ data.doc_root }}
     - require:
       - mc_proxy: makina-php-post-inst
