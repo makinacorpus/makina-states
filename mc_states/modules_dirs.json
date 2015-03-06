@@ -19,6 +19,10 @@
       "{salt_root}/_beacons",
       "{salt_root}/makina-states/mc_states/beacons",
       "{salt_root}/makina-states/salt_fork/beacons"],
+  "engines_dirs": [
+      "{salt_root}/_engines",
+      "{salt_root}/makina-states/mc_states/engines",
+      "{salt_root}/makina-states/salt_fork/engines"],
   "search_dirs": [
       "{salt_root}/_search",
       "{salt_root}/makina-states/mc_states/search",
