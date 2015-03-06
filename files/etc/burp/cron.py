@@ -29,6 +29,7 @@ The behavior can be changed by tweaking:
     - get_running_pids
 
 '''
+import re
 import traceback
 import datetime
 import time
@@ -105,9 +106,41 @@ def get_worker_pids(*args, **kwargs):
     Search worker process
     '''
     ops = popen(
-        'ps aux|grep \'burp -a\'|grep -v grep'
+        'ps aux|egrep \'burp -a\''
+        '|grep -v grep'
+        '|grep -v \'sh -c\''
         '|awk \'{print $2}\'')[0]
-    return ops[0] + ops[1] + "\n"
+    out = ops[0] + ops[1] + "\n"
+    # burp process can becomes zombie, just kill it after a while
+    pids = filter_host_pids(
+        [a.strip()
+         for a in out.split()
+         if a.strip() and a not in [os.getpid()]])
+    pidstimes = {}
+    chunk_re = re.compile('[:-]')
+    if pids:
+        details = popen('ps -eo pid,etime,comm,args')[0][0].splitlines()[1:]
+        for line in details:
+            infos = line.split()
+            pid = infos[0].strip()
+            if pid not in pids:
+                continue
+            multipliers = [1, 60, 3600, 86400]
+            etime = infos[1]
+            # dynamic version of
+            # setime = t[0] + t[1] * 60 + t[2] * 3600 + t[3] * 86400
+            try:
+                pidstimes[pid] = sum([(int(a) * multipliers[ix])
+                                      for ix, a in enumerate(
+                                          chunk_re.split(etime))])
+            except Exception:
+                continue
+    for pid, etime in pidstimes.items():
+        if True or etime > DEFAULT_TIMEOUT:
+            logger.info('Killing old process: {0}'.format(pid))
+            os.kill(int(pid), signal.SIGKILL)
+            pids = [a for a in pids if a != pid]
+    return pids
 
 
 def get_deployer_pids(*args, **kwargs):
@@ -122,14 +155,22 @@ def get_deployer_pids(*args, **kwargs):
 
 
 def get_running_pids(*args, **kwargs):
-    ps = ''
-    ps += get_worker_pids(*args, **kwargs)
-    ps += get_deployer_pids(*args, **kwargs)
+    ps = []
     filtered = ["{0}".format(os.getpid())]
-    pids = [a.strip()
-            for a in ps.split()
-            if a.strip() and a not in filtered]
-    return filter_host_pids(pids)
+    for pids in[
+        get_worker_pids(*args, **kwargs),
+        get_deployer_pids(*args, **kwargs)
+    ]:
+        if not isinstance(pids, list):
+            pids = [
+                a for item in [a.strip()
+                               for a in pids.split()
+                               if a.strip()
+                               and a not in filtered]]
+        for item in pids:
+            if item not in ps:
+                ps.append(item)
+    return filter_host_pids(ps)
 
 
 def logflush():

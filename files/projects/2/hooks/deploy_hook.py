@@ -126,14 +126,22 @@ def get_deployer_pids(*args, **kwargs):
 
 
 def get_running_pids(*args, **kwargs):
-    ps = ''
-    ps += get_worker_pids(*args, **kwargs)
-    ps += get_deployer_pids(*args, **kwargs)
+    ps = []
     filtered = ["{0}".format(os.getpid())]
-    pids = [a.strip()
-            for a in ps.split()
-            if a.strip() and a not in filtered]
-    return filter_host_pids(pids)
+    for pids in[
+        get_worker_pids(*args, **kwargs),
+        get_deployer_pids(*args, **kwargs)
+    ]:
+        if not isinstance(pids, list):
+            pids = [
+                a for item in [a.strip()
+                               for a in pids.split()
+                               if a.strip()
+                               and a not in filtered]]
+        for item in pids:
+            if item not in ps:
+                ps.append(item)
+    return filter_host_pids(ps)
 
 
 def logflush():
