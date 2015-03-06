@@ -136,7 +136,7 @@ def get_worker_pids(*args, **kwargs):
             except Exception:
                 continue
     for pid, etime in pidstimes.items():
-        if True or etime > DEFAULT_TIMEOUT:
+        if etime > DEFAULT_TIMEOUT:
             logger.info('Killing old process: {0}'.format(pid))
             os.kill(int(pid), signal.SIGKILL)
             pids = [a for a in pids if a != pid]
