@@ -19,6 +19,8 @@ nodejs-repo-old:
       - "{{locs.conf_dir}}/apt/sources.list.d/nodejsn.list"
       - "{{locs.conf_dir}}/apt/sources.list.d/nodejs_a.list"
       - "{{locs.conf_dir}}/apt/sources.list.d/nodejs_b.list"
+    - watch_in:
+      - mc_proxy: nodejs-post-system-install
 nodejs-repo:
   pkgrepo.managed:
     - name: nodejs
