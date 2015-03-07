@@ -52,54 +52,54 @@ log = logger = logging.getLogger(__name__)
 API_VERSION = '2'
 PROJECT_INJECTED_CONFIG_VAR = 'cfg'
 
-DEFAULT_CONFIGURATION = {
-    'name': None,
-    'minion_id': None,
-    'fqdn': None,
-    'default_env': None,
-    'installer': 'generic',
-    'keep_archives': KEEP_ARCHIVES,
+DEFAULT_CONFIGURATION = OrderedDict([
+    ('name', None),
+    ('minion_id', None),
+    ('fqdn', None),
+    ('default_env', None),
+    ('installer', 'generic'),
+    ('keep_archives', KEEP_ARCHIVES),
     #
-    'user': None,
-    'groups': [],
+    ('user', None),
+    ('groups', []),
     #
-    'raw_console_return': False,
+    ('raw_console_return', False),
     #
-    'only': None,
-    'only_steps': None,
+    ('only', None),
+    ('only_steps', None),
     #
-    'api_version': API_VERSION,
+    ('api_version', API_VERSION),
     #
-    'defaults': {},
-    'env_defaults': {},
-    'os_defaults': {},
+    ('defaults', OrderedDict()),
+    ('env_defaults', OrderedDict()),
+    ('os_defaults', OrderedDict()),
     #
-    'no_user': False,
-    'no_default_includes': False,
+    ('no_user', False),
+    ('no_default_includes', False),
     # INTERNAL
-    'data': {},
-    'sls_default_pillar': OrderedDict(),
-    'deploy_summary': None,
-    'deploy_ret': {},
-    'push_pillar_url': 'ssh://root@{this_host}:{this_port}{pillar_git_root}',
-    'push_salt_url': 'ssh://root@{this_host}:{this_port}{project_git_root}',
-    'project_dir': '{projects_dir}/{name}',
-    'project_root': '{project_dir}/project',
-    'deploy_marker': '{project_root}/.tmp_deploy',
-    'salt_root': '{project_root}/.salt',
-    'pillar_root': '{project_dir}/pillar',
-    'data_root': '{project_dir}/data',
-    'archives_root': '{project_dir}/archives',
-    'git_root': '{project_dir}/git',
-    'project_git_root': '{git_root}/project.git',
-    'pillar_git_root': '{git_root}/pillar.git',
-    'current_archive_dir': None,
-    'rollback': False,
-    'this_host': 'localhost',
-    'this_localhost': 'localhost',
-    'this_port': '22',
+    ('data', OrderedDict()),
+    ('sls_default_pillar', OrderedDict()),
+    ('deploy_summary', None),
+    ('deploy_ret', {}),
+    ('push_pillar_url', 'ssh://root@{this_host}:{this_port}{pillar_git_root}'),
+    ('push_salt_url', 'ssh://root@{this_host}:{this_port}{project_git_root}'),
+    ('project_dir', '{projects_dir}/{name}'),
+    ('project_root', '{project_dir}/project'),
+    ('deploy_marker', '{project_root}/.tmp_deploy'),
+    ('salt_root', '{project_root}/.salt'),
+    ('pillar_root', '{project_dir}/pillar'),
+    ('data_root', '{project_dir}/data'),
+    ('archives_root', '{project_dir}/archives'),
+    ('git_root', '{project_dir}/git'),
+    ('project_git_root', '{git_root}/project.git'),
+    ('pillar_git_root', '{git_root}/pillar.git'),
+    ('current_archive_dir', None),
+    ('rollback', False),
+    ('this_host', 'localhost'),
+    ('this_localhost', 'localhost'),
+    ('this_port', '22'),
     #
-}
+])
 STEPS = ['deploy',
          'archive',
          'release_sync',
@@ -339,31 +339,30 @@ def _defaultsConfiguration(
     if os.path.exists(sample):
         try:
             sample_data = OrderedDict()
-            with open(sample) as fic:
-                jinjarend = salt.loader.render(__opts__, __salt__)
-                sample_data_l = salt.template.compile_template(sample,
-                                                               jinjarend,
-                                                               __opts__['renderer'],
-                                                               'base')
-                #sample_data_l = __salt__['mc_utils.cyaml_load'](fic.read())
-                defaultsConfiguration['sls_default_pillar'] = sample_data_l
-                if not isinstance(sample_data_l, dict):
-                    sample_data_l = OrderedDict()
-                for k, val in sample_data_l.items():
-                    # retro compat
-                    retro = k.startswith('makina-states.') and (k.count('.') < 2)
-                    # only load first level makina-projects. sections
-                    if not retro and not k.startswith('makina-projects.'):
-                        continue
-                    if isinstance(val, dict):
-                        for k2, val2 in val.items():
-                            if isinstance(val2, dict):
-                                sample_data = _s['mc_utils.dictupdate'](
-                                    sample_data, val2)
-                            else:
-                                sample_data[k2] = val2
-                    else:
-                        sample_data[k] = val
+            if not os.path.exists(sample):
+                raise OSError('does not exists: {0}'.format(sample))
+            jinjarend = salt.loader.render(__opts__, __salt__)
+            sample_data_l = salt.template.compile_template(
+                sample, jinjarend, __opts__['renderer'], 'base')
+            #sample_data_l = __salt__['mc_utils.cyaml_load'](fic.read())
+            defaultsConfiguration['sls_default_pillar'] = sample_data_l
+            if not isinstance(sample_data_l, dict):
+                sample_data_l = OrderedDict()
+            for k, val in sample_data_l.items():
+                # retro compat
+                retro = k.startswith('makina-states.') and (k.count('.') < 2)
+                # only load first level makina-projects. sections
+                if not retro and not k.startswith('makina-projects.'):
+                    continue
+                if isinstance(val, dict):
+                    for k2, val2 in val.items():
+                        if isinstance(val2, dict):
+                            sample_data = _s['mc_utils.dictupdate'](
+                                sample_data, val2)
+                        else:
+                            sample_data[k2] = val2
+                else:
+                    sample_data[k] = val
         except (yaml.error.YAMLError, salt.exceptions.SaltException):
             trace = traceback.format_exc()
             error = (
@@ -389,7 +388,7 @@ def _defaultsConfiguration(
             copy.deepcopy(
                 _s['mc_utils.get'](
                     'makina-projects.{name}.env_defaults'.format(**cfg),
-                    {})))
+                    OrderedDict())))
         env_defaults = _dict_update(
             env_defaults,
             copy.deepcopy(
@@ -425,10 +424,10 @@ def _defaultsConfiguration(
                     OrderedDict())))
         memd_data = copy.deepcopy(
             _s['mc_utils.get'](
-            'makina-{subp}.{name}'.format(name=cfg['name'],
-                                          subp=subp),
-            OrderedDict()
-        ).get('data', OrderedDict()))
+                'makina-{subp}.{name}'.format(name=cfg['name'],
+                                              subp=subp),
+                OrderedDict()
+            ).get('data', OrderedDict()))
         if not isinstance(memd_data, dict):
             raise ValueError(
                 'data is not a dict for {0}, '
@@ -637,9 +636,9 @@ def get_configuration(name, *args, **kwargs):
     cfg['name'] = name
     cfg['minion_id'] = __grains__['id']
     cfg['fqdn'] = __grains__['fqdn']
-    cfg.update(dict([a
-                     for a in kwargs.items()
-                     if a[0] in cfg]))
+    cfg.update(OrderedDict([a
+                            for a in kwargs.items()
+                            if a[0] in cfg]))
     # we must also ignore keys setted on the call to the function
     # which are explictly setting a value
     ignored_keys = ['data', 'rollback']
@@ -715,14 +714,15 @@ def get_configuration(name, *args, **kwargs):
     except (TypeError, ValueError, KeyError):
         cfg['keep_archives'] = KEEP_ARCHIVES
     if nodata:
-        cfg['data'] = {}
+        cfg['data'] = OrderedDict()
     else:
-        cfg['data'] = _defaultsConfiguration(cfg,
-                                             cfg['default_env'],
-                                             defaultsConfiguration=cfg['defaults'],
-                                             env_defaults=cfg['env_defaults'],
-                                             os_defaults=cfg['os_defaults'])
-    if cfg['data'].get('sls_default_pillar', {}):
+        cfg['data'] = _defaultsConfiguration(
+            cfg,
+            cfg['default_env'],
+            defaultsConfiguration=cfg['defaults'],
+            env_defaults=cfg['env_defaults'],
+            os_defaults=cfg['os_defaults'])
+    if cfg['data'].get('sls_default_pillar', OrderedDict()):
         cfg['sls_default_pillar'] = cfg['data'].pop('sls_default_pillar')
     # some vars need to be setted just a that time
     cfg['group'] = cfg['groups'][0]
@@ -778,7 +778,7 @@ def _get_filtered_cfg(cfg):
                     'name',
                     'salt_root',
                     'rollback']
-    to_save = {}
+    to_save = OrderedDict()
     for sk in cfg:
         val = cfg[sk]
         if sk.startswith('skip_'):
@@ -1349,7 +1349,7 @@ def refresh_files_in_working_copy(name, force=False, *args, **kwargs):
             'salt/{0}'.format(fil, cfg['api_version']))
         cret = _state_exec(sfile, 'managed',
                            name=dest,
-                           source=template, defaults={},
+                           source=template, defaults=OrderedDict(),
                            user=user, group=group,
                            makedirs=True,
                            mode='770', template='jinja')
@@ -1393,7 +1393,7 @@ def init_salt_dir(cfg, parent, ret=None):
                 'salt/{0}'.format(fil, cfg['api_version']))
             cret = _state_exec(sfile, 'managed',
                                name=os.path.join(salt_root, '{0}').format(fil),
-                               source=template, defaults={},
+                               source=template, defaults=OrderedDict(),
                                user=user, group=group,
                                makedirs=True,
                                mode='770', template='jinja')

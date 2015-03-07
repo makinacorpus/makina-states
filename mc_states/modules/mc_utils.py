@@ -24,6 +24,8 @@ from salt.utils import yamldumper
 import salt.loader
 from mc_states import api
 
+from salt.ext import six as six
+
 import mc_states.utils
 import yaml
 try:
@@ -329,6 +331,45 @@ def format_resolve(value,
     return new
 
 
+def is_a_str(value):
+    """."""
+    return isinstance(value, six.string_types)
+
+
+def is_a_bool(value):
+    """."""
+    return isinstance(value, bool)
+
+
+def is_a_int(value):
+    """."""
+    return isinstance(value, int)
+
+
+def is_a_float(value):
+    """."""
+    return isinstance(value, float)
+
+
+def is_a_complex(value):
+    """."""
+    return isinstance(value, complex)
+
+
+def is_a_long(value):
+    """."""
+    return isinstance(value, long)
+
+
+def is_a_number(value):
+    return (
+        is_a_int(value)
+        or is_a_float(value)
+        or is_a_complex(value)
+        or is_a_long(value)
+    )
+
+
 def is_a_set(value):
     """."""
     return isinstance(value, set)
@@ -536,7 +577,7 @@ def defaults(prefix,
         overridden = OrderedDict()
     if prefix not in overridden:
         overridden[prefix] = OrderedDict()
-    pkeys = {}
+    pkeys = OrderedDict()
     for a in datadict:
         if a not in ignored_keys:
             to_unicode = False
@@ -659,9 +700,9 @@ def iyaml_dump(data):
     return yaml_dump(data, flow=True)
 
 
-def json_dump(data):
+def json_dump(data, pretty=False):
     """."""
-    return api.json_dump(data)
+    return api.json_dump(data, pretty=pretty)
 
 
 def json_load(data):

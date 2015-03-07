@@ -45,6 +45,7 @@
 #   /path/to/
 #           \_ docroot  <- doc_root
 #           \_ tmp      <- tmp files
+#               \_ sessions <- sessions files
 #           \_ private  <- private dir
 #           \_ log      <- logs (fpm ppol)
 #           \_ run      <- socket(s) & other runtime files path
@@ -85,6 +86,7 @@ makina-php-pool-{{ data.pool_name.replace('*', 'star') }}-logrotate:
     - defaults:
         name: "{{data.pool_name}}"
         logdir: {{data.log_dir}}
+        sessionsdir: "{{data.sessions_dir}}"
         rotate: {{data.rotate}}
         user: {{ data.fpm_user }}
         group: {{data.fpm_group }}
@@ -102,7 +104,7 @@ makina-php-pool-var-log-phpfpm-{{data.pool_name}}:
     - name: /var/log/phpfpm/{{data.pool_name}}
     - target: {{data.log_dir}}
 
-{% for i in [data.private_dir, data.tmp_dir, data.log_dir] %}
+{% for i in [data.private_dir, data.sessions_dir, data.tmp_dir, data.log_dir] %}
 makina-php-pool-{{ data.pool_name.replace('*', 'star') }}-directories-{{i}}:
   file.directory:
     - user: {{ data.fpm_user }}
