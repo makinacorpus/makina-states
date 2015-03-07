@@ -80,9 +80,13 @@ def json_load(data):
     return content
 
 
-def json_dump(data):
-    content = json.dumps(data)
-    content = content.replace('\n', ' ---ANTLISLASH_N--- ')
+def json_dump(data, pretty=False):
+    if pretty:
+        content = json.dumps(
+            data, indent=4, separators=(',', ': '))
+    else:
+        content = json.dumps(data)
+        content = content.replace('\n', ' ---ANTLISLASH_N--- ')
     return content
 
 

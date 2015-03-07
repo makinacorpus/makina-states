@@ -700,9 +700,9 @@ def iyaml_dump(data):
     return yaml_dump(data, flow=True)
 
 
-def json_dump(data):
+def json_dump(data, pretty=False):
     """."""
-    return api.json_dump(data)
+    return api.json_dump(data, pretty=pretty)
 
 
 def json_load(data):
