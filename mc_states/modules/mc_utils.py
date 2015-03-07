@@ -341,6 +341,35 @@ def is_a_bool(value):
     return isinstance(value, bool)
 
 
+def is_a_int(value):
+    """."""
+    return isinstance(value, int)
+
+
+def is_a_float(value):
+    """."""
+    return isinstance(value, float)
+
+
+def is_a_complex(value):
+    """."""
+    return isinstance(value, complex)
+
+
+def is_a_long(value):
+    """."""
+    return isinstance(value, long)
+
+
+def is_a_number(value):
+    return (
+        is_a_int(value)
+        or is_a_float(value)
+        or is_a_complex(value)
+        or is_a_long(value)
+    )
+
+
 def is_a_set(value):
     """."""
     return isinstance(value, set)
