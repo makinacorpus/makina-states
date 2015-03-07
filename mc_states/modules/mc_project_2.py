@@ -340,7 +340,7 @@ def _defaultsConfiguration(
         try:
             sample_data = OrderedDict()
             if not os.path.exists(sample):
-                raise OSError('does not exists: {0}'.format(fic))
+                raise OSError('does not exists: {0}'.format(sample))
             jinjarend = salt.loader.render(__opts__, __salt__)
             sample_data_l = salt.template.compile_template(
                 sample, jinjarend, __opts__['renderer'], 'base')
