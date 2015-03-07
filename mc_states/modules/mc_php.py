@@ -519,13 +519,17 @@ def fpmpool_settings(domain, doc_root, **kw):
         'log_dir', '{0}/{1}'.format(project_root, "log"))
     tmp_dir = kw.setdefault(
         'tmp_dir', '{0}/{1}'.format(project_root, "tmp"))
+
+    sessions_dir = kw.setdefault(
+        'sessions_dir', '{0}/{1}'.format(tmp_dir, "sessions"))
     kw.setdefault('session_cookie_domain', domain)
     kw.setdefault(
         'listen',
         os.path.join(www_reg['socket_directory'],
                      kw['socket_name']))
     open_basedir = [".", "..", doc_root, "/tmp",
-                    tmp_dir, private_dir, log_dir]
+                    tmp_dir, private_dir, log_dir,
+                    sessions_dir]
     include_path = [".", "..", doc_root,
                     os.path.join(doc_root, 'include'),
                     "/usr/lib/php5/20121212"]

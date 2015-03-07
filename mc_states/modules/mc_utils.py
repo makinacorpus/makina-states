@@ -24,6 +24,8 @@ from salt.utils import yamldumper
 import salt.loader
 from mc_states import api
 
+from salt.ext import six as six
+
 import mc_states.utils
 import yaml
 try:
@@ -327,6 +329,16 @@ def format_resolve(value,
                 else:
                     new = new_val
     return new
+
+
+def is_a_str(value):
+    """."""
+    return isinstance(value, six.string_types)
+
+
+def is_a_bool(value):
+    """."""
+    return isinstance(value, bool)
 
 
 def is_a_set(value):
