@@ -9,6 +9,8 @@
 {%- set locs = salt['mc_locations.settings']() %}
 
 include:
+  - makina-states.localsettings.ldap.hooks
+  - makina-states.localsettings.ldap.ldap_conf
   - makina-states.localsettings.nscd
   - makina-states.localsettings.users.hooks
 
@@ -36,6 +38,10 @@ ldap-pkgs:
       - libldap2-dev
       - libsasl2-dev
       {%- endif %}
+    - watch:
+      - mc_proxy: localldap-pre-install
+    - watch_in:
+      - mc_proxy: localldap-post-install
 
 nslcd:
   service.running:
@@ -55,8 +61,10 @@ nslcd:
     - require:
       - pkg: ldap-pkgs
       - file: ldap-cacerts-cert
+      - mc_proxy: localldap-pre-conf
     - watch_in:
       - cmd: nscd-restart
+      - mc_proxy: localldap-post-conf
     - require_in:
       - mc_proxy: users-pre-hook
 
@@ -69,7 +77,10 @@ nslcd-nsswitch-conf:
     - pattern: '^(?P<title>passwd|group|shadow):\s*compat( ldap)*'
     - repl: '\g<title>: compat ldap'
     - flags: ['MULTILINE', 'DOTALL']
+    - watch:
+      - mc_proxy: localldap-pre-conf
     - watch_in:
+      - mc_proxy: localldap-post-conf
       - cmd: nscd-restart
 
 {{ locs.conf_dir }}-pam.d-common-session:
@@ -95,26 +106,17 @@ nslcd-nsswitch-conf:
     - mode: '0644'
     - template: jinja
     - source: salt://makina-states/files{{ locs.conf_dir }}/ldap.conf
-    - require:
-      - pkg: ldap-pkgs
-      - file: ldap-cacerts-cert
-    - require_in:
-      - mc_proxy: users-pre-hook
-{% endif %}
-{{ locs.conf_dir }}-ldap-ldap.conf:
-  file.managed:
-    - name: {{ locs.conf_dir }}/ldap/ldap.conf
-    - user: root
-    - group: root
-    - mode: '0644'
-    - template: jinja
-    - source: salt://makina-states/files{{ locs.conf_dir }}/ldap/ldap.conf
+    - watch:
+      - mc_proxy: localldap-pre-conf
+    - watch_in:
+      - mc_proxy: localldap-post-conf
     - require:
       - pkg: ldap-pkgs
       - file: ldap-cacerts-cert
     - require_in:
       - mc_proxy: users-pre-hook
 
+{% endif %}
 makina-certd:
   file.directory:
     - name: {{ locs.conf_dir }}/ssl/cacerts
@@ -124,6 +126,10 @@ makina-certd:
     - makedirs: True
     - require_in:
       - mc_proxy: users-pre-hook
+    - watch:
+      - mc_proxy: localldap-pre-conf
+    - watch_in:
+      - mc_proxy: localldap-post-conf
 
 ldap-cacerts-cert:
   file.managed:
@@ -137,4 +143,8 @@ ldap-cacerts-cert:
     - template: jinja
     - source: salt://makina-states/files{{ locs.conf_dir }}/ssl/cacerts/cacert.pem
 {% endif %}
+    - watch:
+      - mc_proxy: localldap-pre-conf
+    - watch_in:
+      - mc_proxy: localldap-post-conf
 # vim: set nofoldenable:

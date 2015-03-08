@@ -9,6 +9,7 @@
 
 include:
   - makina-states.cloud.generic.hooks
+  - makina-states.localsettings.ldap.ldap_conf
   - makina-states.localsettings.ssl.hooks
 
 ssl-pkgs:
