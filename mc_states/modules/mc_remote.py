@@ -1030,8 +1030,13 @@ def salt_call(host,
                          a.startswith('+ ')])
                     ret['result'] = renderers[unparser](cret)
                 except:
-                    trace = traceback.format_exc()
-                    log.error(trace)
+                    if ret['raw_result'].startswith(
+                        'NO RETURN FROM'
+                    ):
+                        trace = traceback.format_exc()
+                        log.error(trace)
+                    else:
+                        raise
         if transformer != 'noop' and transformer != unparser:
             if transformer in renderers:
                 try:
@@ -1043,8 +1048,13 @@ def salt_call(host,
                 try:
                     ret['result'] = outputters[transformer](ret['result'])
                 except Exception:
-                    trace = traceback.format_exc()
-                    log.error(trace)
+                    if ret['raw_result'].startswith(
+                        'NO RETURN FROM'
+                    ):
+                        trace = traceback.format_exc()
+                        log.error(trace)
+                    else:
+                        raise
         if 'result' not in ret and ret.get('retcode'):
             ret['result'] = 'Salt Call Failed'
         if isinstance(ret['result'], dict):
