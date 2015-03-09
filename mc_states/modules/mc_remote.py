@@ -156,6 +156,59 @@ fi
 exit ${{ret}}
 '''
 
+TRANSFER_DIR_SCRIPT = '''\
+#!/usr/bin/env sh
+rsync_opts="-az"
+sftp_opts="-qqq"
+scp_opts="-qqq"
+if [ "x{sh_wrapper_debug}" != "x" ];then
+    set -x
+    rsync_opts="${{rsync_opts}}vP"
+    sftp_opts=""
+    scp_opts=""
+fi
+ret=1
+if ! test -e "{orig}";then
+    echo "Unexisting script file: {orig}"
+    exit 1
+fi
+fmode=$(stat -c "%a" "{orig}")
+rsync ${{rsync_opts}} \\
+        -e "ssh -p "{port}" {quoted_ssh_args}"\\
+        "{corig}" "{user}@{host}":"{cdest}"\\
+        && fmode=''
+ret=${{?}}
+if [ "x${{ret}}" != "x0" ];then
+    scp -r ${{scp_opts}} -P "{port}" {ttyfree_ssh_args}\\
+            "{orig}" "{user}@{host}":"{dest}"
+    ret=${{?}}
+fi
+if [ "x${{ret}}" != "x0" ];then
+  echo "put -p \\"{orig}\\" \\"{dest}\\"" > "{tmpfile}"
+  if [ "x{sh_wrapper_debug}" != "x" ];then
+      sftp -r ${{sftp_opts}} -b "{tmpfile}" -P "{port}"\\
+              {ttyfree_ssh_args} "{user}@{host}"
+  else
+      sftp -r ${{sftp_opts}} -b "{tmpfile}" -P "{port}"\\
+              {ttyfree_ssh_args} "{user}@{host}" 1>/dev/null 2>&1
+  fi
+  ret=${{?}}
+  rm -f "{tmpfile}"
+fi
+if [ "x${{ret}}" = "x0" ] && [ "x${{fmode}}" != "x" ];then
+ if [ "x{sh_wrapper_debug}" != "x" ];then
+    ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
+       "set -x;chmod ${{fmode}} \\"{dest}\\""
+ else
+    ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
+      "chmod ${{fmode}} \\"{dest}\\""
+ fi
+  ret=${{?}}
+fi
+exit ${{ret}}
+'''
+
+
 _marker = object()
 log = logging.getLogger(__name__)
 
@@ -653,6 +706,73 @@ def ssh_transfer_file(host, orig, dest=None, **kw):
         **_mangle_kw_for_script({
             'ttyfree_ssh_args': ttyfree_ssh_args,
             'quoted_ssh_args': quoted_ssh_args,
+            'orig': orig,
+            'dest': dest,
+            'user': user,
+            'host': host,
+            'port': port,
+            'tmpfile': tmpfile,
+            'ssh_args': ssh_args}))
+    return interactive_ssh(cmd, **kw)
+
+
+def ssh_transfer_dir(host, orig, dest=None, **kw):
+    '''
+    Transfer files to an host via ssh layer
+
+    This will try then fallback on next transfer method.
+    In order we try:
+        - rsync
+        - scp
+        - sftp
+        - gzip piped to dest host gunzip
+        - cat piped to dest host uncat
+
+    host
+        host to tranfer to
+    orig
+        filepath to transfer
+    dest
+        where to upload, defaults to orig
+    vt_loglevel
+        vt loglevel
+
+    Any extra keywords parameters will by forwarded to:
+        _get_ssh_args
+            (see doc)
+            to mangle connection details
+        interactive_ssh(& interaction_class)
+            (see doc)
+            to interact during ssh session
+    '''
+
+    append_slashes = kw.setdefault('append_slashes', True)
+    corig, cdest = orig, dest
+    if append_slashes:
+        if not orig.endswith('/'):
+            corig = orig + '/'
+        if not dest.endswith('/'):
+            cdest = dest + '/'
+    user = kw.get('user', 'root')
+    port = kw.get('port', 22)
+    if dest is None:
+        dest = orig
+    kw = copy.deepcopy(kw)
+    # as we chain three login,methods, we multiplicate password challenges
+    kw['password_retries'] = kw.get('password_retries', 3) * 8
+    _ssh_args = _get_ssh_args(**kw)
+    tmpfile = tempfile.mkstemp()[1]
+    # transfer via scp, fallback on scp, fallback on rsync
+    ttyfree_ssh_args = ' '.join([a for a in _ssh_args if a not in ['-t']])
+    quoted_ssh_args = ' '.join([a.replace('"', '\\"')
+                                for a in _ssh_args if a not in ['-t']])
+    ssh_args = ' '.join(_ssh_args)
+    cmd = TRANSFER_DIR_SCRIPT.format(
+        **_mangle_kw_for_script({
+            'ttyfree_ssh_args': ttyfree_ssh_args,
+            'quoted_ssh_args': quoted_ssh_args,
+            'corig': corig,
+            'cdest': cdest,
             'orig': orig,
             'dest': dest,
             'user': user,
