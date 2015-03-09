@@ -67,6 +67,31 @@ APIS = {
     'set_configuration': {
         '2': 'mc_project_2.set_configuration',
     },
+    # remote api
+    'deploy_remote_project': {
+        '2': 'mc_project_2.deploy_remote_project',
+    },
+    'sync_remote_pillar': {
+        '2': 'mc_project_2.sync_remote_pillar',
+    },
+    'sync_remote_project': {
+        '2': 'mc_project_2.sync_remote_project',
+    },
+    'init_local_remote_project': {
+        '2': 'mc_project_2.init_local_remote_project',
+    },
+    'init_local_remote_pillar': {
+        '2': 'mc_project_2.init_local_remote_pillar',
+    },
+    'init_remote_project': {
+        '2': 'mc_project_2.init_remote_project',
+    },
+    'clean_salt_git_commit': {
+        '2': 'mc_project_2.clean_salt_git_commit',
+    },
+    'init_remote_pillar': {
+        '2': 'mc_project_2.init_remote_pillar',
+    },
 }
 
 
@@ -190,4 +215,39 @@ def server_aliases(value):
 def get_common_vars(*args, **kwargs):
     '''Retro compat, wrapper to get_configuration'''
     return __salt__['mc_project_1.get_configuration'](*args, **kwargs)
+
 #
+# REMOTE API
+#
+
+
+def clean_salt_git_commit(name, *args, **kwargs):
+    return _api_switcher('clean_salt_git_commit', name, *args, **kwargs)
+
+
+def init_local_remote_pillar(name, *args, **kwargs):
+    return _api_switcher('init_local_remote_pillar', name, *args, **kwargs)
+
+
+def init_local_remote_project(name, *args, **kwargs):
+    return _api_switcher('init_local_remote_project', name, *args, **kwargs)
+
+
+def init_remote_pillar(name, *args, **kwargs):
+    return _api_switcher('init_remote_pillar', name, *args, **kwargs)
+
+
+def init_remote_project(name, *args, **kwargs):
+    return _api_switcher('init_remote_project', name, *args, **kwargs)
+
+
+def sync_remote_pillar(name, *args, **kwargs):
+    return _api_switcher('sync_remote_pillar', name, *args, **kwargs)
+
+
+def sync_remote_project(name, *args, **kwargs):
+    return _api_switcher('sync_remote_project', name, *args, **kwargs)
+
+
+def deploy_remote_project(name, *args, **kwargs):
+    return _api_switcher('deploy_remote_project', name, *args, **kwargs)
