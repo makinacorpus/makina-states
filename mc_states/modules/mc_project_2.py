@@ -12,6 +12,7 @@ import datetime
 import os
 import logging
 import socket
+import pprint
 import shutil
 import traceback
 import uuid
@@ -56,6 +57,7 @@ DEFAULT_CONFIGURATION = OrderedDict([
     ('name', None),
     ('minion_id', None),
     ('fqdn', None),
+    ('remote_host', '{fqdn}'),
     ('default_env', None),
     ('installer', 'generic'),
     ('keep_archives', KEEP_ARCHIVES),
@@ -87,6 +89,10 @@ DEFAULT_CONFIGURATION = OrderedDict([
     ('project_root', '{project_dir}/project'),
     ('deploy_marker', '{project_root}/.tmp_deploy'),
     ('salt_root', '{project_root}/.salt'),
+    ('remote_pillar_dir',
+     '{remote_projects_dir}/{remote_host}/{name}/pillar'),
+    ('remote_project_dir',
+     '{remote_projects_dir}/{remote_host}/{name}/project'),
     ('pillar_root', '{project_dir}/pillar'),
     ('data_root', '{project_dir}/data'),
     ('archives_root', '{project_dir}/archives'),
@@ -174,6 +180,7 @@ def remove_path(path):
         print
         print "'%s' was asked to be deleted but does not exists." % path
         print
+
 
 def _sls_exec(name, cfg, sls):
     # be sure of the current project beeing loaded in the context
@@ -498,22 +505,19 @@ def _merge_statuses(ret, cret, step=None):
     return ret
 
 
-def _init_context(name=None):
-    if not 'ms_projects' in __opts__:
+def _init_context(name=None, remote_host=None):
+    if 'ms_projects' not in __opts__:
         __opts__['ms_projects'] = OrderedDict()
-    if not 'ms_project_name' in __opts__:
-        __opts__['ms_project_name'] = None
-    if not 'ms_project' in __opts__:
+    if 'ms_project' not in __opts__:
         __opts__['ms_project'] = None
-    if name:
-        __opts__['ms_project_name'] = name
+    __opts__['ms_project_name'] = None
 
 
 def set_project(cfg):
     _init_context(cfg.get('name', None))
-    __opts__['ms_project_name'] = cfg['name']
     __opts__['ms_project'] = cfg
-    __opts__['ms_projects'][cfg['name']] = cfg
+    __opts__['ms_project_name'] = cfg['name']
+    __opts__['ms_projects'][(cfg['name'], cfg['remote_host'])] = cfg
     return cfg
 
 
@@ -522,13 +526,17 @@ def get_project(name):
     return get_configuration(name)
 
 
-def _get_contextual_cached_project(name):
+def _get_contextual_cached_project(name, remote_host=None):
     _init_context(name=name)
     # throw KeyError if not already loaded
-    cfg = __opts__['ms_projects'].setdefault(
-        __opts__['ms_project_name'], get_default_configuration())
-    __opts__['ms_project'] = cfg
-    __opts__['ms_project_name'] = cfg['name']
+    dcfg = get_default_configuration()
+    if not remote_host:
+        remote_host = dcfg['remote_host']
+    cfg = __opts__['ms_projects'].setdefault((name, remote_host), dcfg)
+    if remote_host == cfg['fqdn']:  # localhost
+        __opts__['ms_project'] = cfg
+        __opts__['ms_project_name'] = cfg['name']
+    __context__['ms_project'] = __opts__['ms_project']
     return cfg
 
 
@@ -625,7 +633,9 @@ def get_configuration(name, *args, **kwargs):
         makina-projects.foo.data.conf_port = 1234
 
     '''
-    cfg = _get_contextual_cached_project(name)
+    cfg = _get_contextual_cached_project(
+        name,
+        remote_host=kwarg.get('remote_host', None))
     nodata = kwargs.pop('nodata', False)
     if not (
         cfg.get('force_reload', True)
@@ -727,6 +737,8 @@ def get_configuration(name, *args, **kwargs):
     # some vars need to be setted just a that time
     cfg['group'] = cfg['groups'][0]
     cfg['projects_dir'] = __salt__['mc_locations.settings']()['projects_dir']
+    cfg['remote_projects_dir'] = __salt__[
+        'mc_locations.settings']()['remote_projects_dir']
 
     # we can try override default values via pillar/grains a last time
     # as format_resolve can have setted new entries
@@ -768,7 +780,7 @@ def get_configuration(name, *args, **kwargs):
     cfg['installer_path'] = installer_path
     # put the result inside the context
     cfg['force_reload'] = False
-    if not nodata:
+    if not nodata and not (cfg['remote_host'] == cfg['fqdn']):
         set_project(cfg)
     return cfg
 
@@ -2051,5 +2063,254 @@ Project: {conf[push_salt_url]}
 '''.format(conf=conf)
     return ret
 
-
 #
+# REMOTE API
+#
+
+
+class RemoteProjectException(salt.exceptions.SaltException):
+    """."""
+
+
+class RemoteProjectInitException(RemoteProjectException):
+    """."""
+
+
+class RemotePillarInitException(ProjectInitException):
+    """."""
+
+
+class RemoteProjectSyncError(RemoteProjectException):
+    """."""
+
+
+class RemoteProjectSyncPillarError(RemoteProjectSyncError):
+    """."""
+
+
+class RemoteProjectSyncProjectError(RemoteProjectSyncError):
+    """."""
+
+class RemoteProjectDeployError(RemoteProjectException):
+    """."""
+
+
+def clean_salt_git_commit(directory, commit=True):
+    if commit:
+        cret = __salt__['cmd.run_all']('touch init.sls;'
+                                       'git add init.sls;'
+                                       'git commit -am deployercommit',
+                                       cwd=directory, python_shell=True)
+    cret = __salt__['cmd.run']('git st',
+                               env={'LANG': 'C', 'LC_ALL': 'C'},
+                               cwd=directory, python_shell=True)
+    if 'nothing added to commit but untracked files present' in cret:
+        pass
+    elif 'nothing to commit' in cret:
+        pass
+    else:
+        raise RemotePillarInitException(
+            "{0}: git invalidstatus".format(directory), ret=cret)
+
+
+def init_local_remote_pillar(host, project, ssh_port=22, user='root', **kw):
+    _s = __salt__
+    # we only need a few constant properties, project is not existing locally
+    cfg = _s['mc_project.get_configuration'](project, remove_host=host)
+    pillar_dir = cfg['remote_pillar_dir']
+    pillars_dir = os.path.join(pillar_dir)
+    if not os.path.isdir(pillars_dir):
+        _s['file.makedirs_perms'](
+            pillars_dir, user='root', group='root', mode=750)
+    if not os.path.isdir(pillars_dir):
+        raise RemotePillarInitException(
+            "{0}: projects container creation failed".format(project))
+    if not os.path.isdir(pillar_dir):
+        init_repo(None, pillar_dir, bare=False, user='root', group='root')
+    if not os.path.exists(os.path.join(pillar_dir, '.git')):
+        raise RemotePillarInitException(
+            "{0}: git repository creation failed".format(project))
+    _s['git.remote_set'](
+        pillar_dir, 'prod',
+        'ssh://{user}@{host}:{ssh_port}/srv/projects'
+        '/{project}/git/pillar.git' .format(
+            user=user, host=host, ssh_port=ssh_port, project=project),
+        user=user)
+    _s['git.config_set'](
+        pillar_dir, 'user.email', 'makina-states@localhost')
+    _s['git.config_set'](
+        pillar_dir, 'user.name', 'makina-states')
+    clean_salt_git_commit(pillar_dir)
+
+
+def init_local_remote_project(host,
+                              project,
+                              git,
+                              rev=None,
+                              ssh_port=22,
+                              user='root',
+                              **kw):
+    _s = __salt__
+    if not rev:
+        rev = 'master'
+    pcfg = _s['mc_project.get_configuration'](project, remote_host=host)
+    rret = {'result': True}
+    project_dir = pcfg['remote_project_dir']
+    projects_dir = os.path.dirname(project_dir)
+    if not os.path.isdir(projects_dir):
+        _s['file.makedirs_perms'](
+            projects_dir, user='root', group='root', mode=750)
+    if not rret['changes']['result']:
+        raise RemoteProjectInitException("{0}: project {1} creation failed".format(
+            host, project))
+    if not os.path.exists(project_dir):
+        cret = _s['git.clone'](project_dir, git, user=user)
+    cret = _s['git.config_set'](
+        project_dir, 'user.email', 'makina-states@makina-corpus.com')
+    cret = _s['git.config_set'](project_dir, 'user.name', 'makina-states')
+    cret = _s['git.remote_set'](project_dir, 'origin', git)
+    cret = _s['git.fetch'](project_dir, 'origin')
+    cret = _s['git.reset'](project_dir, '--hard {0}'.format(rev))
+    clean_salt_git_commit(project_dir, commit=False)
+    tmpbare = os.path.jnoin(project_dir, 'bare')
+    if not os.path.exists(tmpbare):
+        cret = _s['git.clone'](tmpbare, project_dir, opts='--bare')
+    cret = _s['git.remote_set'](project_dir, 'bare', tmpbare)
+    cret = _s['git.push'](project_dir, 'bare',
+                          branch='', opts='--force master:master')
+    return cret
+
+
+def _init_remote_structure(host, project, ssh_port=22, user='root', **kw):
+    '''
+    Initialize a remote project structure over ssh
+    '''
+     _s = __salt__
+    dkey = 'mc_project_{0}_{1}'.format(host, project)
+    cret = __context__.get(dkey, {})
+    if cret.get('result', None):
+        return cret
+    if any([
+        _s['mc_remote.ssh'](
+            host, (
+                'set -e;'
+                'test -d /srv/salt/makina-projects/{0};'
+                'test -d /srv/pillar/makina-projects/{0};'
+                'test -d /srv/projects/{0}/project;'
+                'test -d /srv/projects/{0}/pillar;'
+                'test -d /srv/projects/{0}/git/pillar.git;'
+                'test -d /srv/projects/{0}/git/project.git'
+            ).format(project)
+        )['retcode'],
+    ]):
+        cret = _s['mc_remote.salt_call'](
+            host, 'mc_project.deploy', project, port=ssh_port, user=user, **kw)
+        if not cret['result'].get('result', False):
+            log.error(pprint.pformat(cret))
+            raise RemoteProjectInitException(
+                '{0}: project {1} init failed'.format(host, project),
+                ret=cret)
+    return __context__.setdefault(dkey, cret)
+
+
+def init_remote_pillar(host, project, ssh_port=22, user='root', **kw):
+    return _init_remote_structure(
+        host, project, ssh_port=ssh_port, user=user, **kw)
+
+
+def init_remote_project(host, project, ssh_port=22, user='root', **kw):
+    return _init_remote_structure(
+        host, project, ssh_port=ssh_port, user=user, **kw)
+
+
+def sync_remote_pillar(host,
+                       project,
+                       ssh_port=22,
+                       user='root',
+                       init_pillar=False,
+                       **kw):
+    cret = {}
+    pcfg = get_configuration(project, remote_host=host)
+    if init_pillar:
+        cret['init'] = init_remote_pillar(host, project, **kw)
+    try:
+        __salt__['git.push'](
+            pcfg['remote_pillar_dir'], 'prod', branch='',
+            opts='--force master:master')
+    except (salt.exceptions.CommandExecutionError,) as exc:
+        raise RemoteProjectSyncPillarError(
+            '{0}: project {1} pillar sync failed\n'
+            '{2}'.format(host, project, exc),
+            ret=cret)
+    cret['pushed'] = True
+    return cret
+
+
+def sync_remote_project(host,
+                        project,
+                        ssh_port=22,
+                        user='root',
+                        init_project=False,
+                        **kw):
+    _s = __salt__
+    project = get_project(**kw)
+    pcfg = _s['mc_project.get_configuration'](project, remote_host=host)
+    cret = {}
+    if init_project:
+        cret['init'] = init_local_remote_project(host, project, **kw)
+    remote_project_dir = pcfg['project_root']
+    localcopy = pcfg['remote_project_dir']
+    cret['create_remote_localcopy'] = _s['mc_remote.salt_call'](
+        host,
+        'file.makedirs_perms',
+        arg=[localcopy], kwarg={'user': 'root', 'group': 'root', 'mode': 750},
+        port=ssh_port, user=user)
+    cret['sync_files'] = _s['mc_remote.ssh_transfer_dir'](
+        host, localcopy, localcopy, port=ssh_port, user=user)
+    cret['set_remote'] = _s['mc_remote.salt_call'](
+        host,
+        'git.set_remote',
+        arg=[remote_project_dir, 'localcopy', localcopy],
+        kwarg={'user': '{0}-user'.format(user)},
+        useruser,
+        port=ssh_port)
+    cret['final_wc_sync'] = _s['mc_remote.salt_call'](
+        host,
+        'cmd.run',
+        arg=['set -e'
+             'git fetch localcopy;'
+             'git reset --hard localcopy/master'],
+        kwarg={'python_shell': True,
+               'use_vt': True,
+               'user': cfg['user']},
+        user=user,
+        port=ssh_port)
+    return cret
+
+
+def deploy_remote_project(host,
+                          project,
+                          ssh_port=22,
+                          user='root',
+                          pre_hook=None,
+                          post_hook=None,
+                          **kw):
+    crets = {'pre': None, 'result': None, 'post': None}
+    if pre_hook and (pre_hook in __salt__):
+        crets['pre'] = __salt__[pret_hook](
+            host, project, ssh_port=ssh_port, user=user, **kw)
+    if 'deploy_only' in kw:
+        kwarg['only'] = kw['deploy_only']
+    if 'deploy_only_steps' in kw:
+        kwarg['only_steps'] = kw['deploy_only_steps']
+        crets['result'] = __salt__['mc_remote.salt_call'](
+            'mc_project.deploy', arg=[project], kwarg=kwarg,
+            user=user, port=ssh_port)
+    if not crets['result']['result']:
+        log.error(pformat(crets))
+        raise RemoteProjectDeployError(
+            '{0}: {1}'.format(host, project), ret=crets)
+    if post_hook and (post_hook in __salt__):
+        crets['post'] = __salt__[post_hook](
+            host, project, ssh_port=ssh_port, user=user, **kw)
+    return crets
