@@ -289,7 +289,9 @@ class _AbstractSshSession(object):
         self.timeout = kw.get('timeout', False)
         self.loop_interval = kw.get('loop_interval', 0.05)
         self.display_ssh_output = kw.get('display_ssh_output', True)
-        self.output_loglevel = kw.get('output_loglevel', 'info')
+        self.output_loglevel = kw.get('vt_loglevel',
+                                      kw.get('output_loglevel',
+                                             'info'))
         self._proc = None
         self._pid = -1
         self.stdout = ''
@@ -621,6 +623,8 @@ def ssh_transfer_file(host, orig, dest=None, **kw):
         filepath to transfer
     dest
         where to upload, defaults to orig
+    vt_loglevel
+        vt loglevel
 
     Any extra keywords parameters will by forwarded to:
         _get_ssh_args
@@ -678,6 +682,8 @@ def ssh(host, script, **kw):
             we upload it as-is
         In other cases
             we wrap it in a simple shell wrapper before uploading
+    vt_loglevel
+        loglevel to use for vt
 
     Even in case of a command, it will be wrapped before execution to ease
     shell quoting
@@ -745,7 +751,8 @@ def ssh(host, script, **kw):
                 sssh_args, script_p, dest, user, host, port)
             cret = interactive_ssh(cmd, **copy.deepcopy(kw))
         # Exec the script, eventually
-        log.info(msg)
+        if kw.get('show_running_cmd', True):
+            log.info(msg)
         cmd = 'ssh {0} "{3}@{4}" -p "{5}" "{2}"'.format(
             sssh_args, script_p, dest, user, host, port)
         cret = interactive_ssh(cmd, **kw)
@@ -840,6 +847,8 @@ def salt_call(host,
         regular salt call
     loglevel
         loglevel to use
+    vt_loglevel
+        loglevel to use for vt
     salt_call_bin
         binary to run
     masterless
@@ -875,6 +884,17 @@ def salt_call(host,
                 unparse=False outputter=yaml
 
     '''
+    vt_lvl = kw.setdefault('vt_loglevel', 'warning')
+    lvl = kw.setdefault('loglevel', __opts__.get('log_level', 'warning'))
+    sc, dso = False, False
+    if vt_lvl in ['info', 'debug', 'trace']:
+        dso = True
+    if lvl in ['info', 'debug', 'trace']:
+        dso = True
+    if lvl in ['debug', 'trace']:
+        sc = True
+    kw.setdefault('display_ssh_output', dso)
+    kw.setdefault('show_running_cmd', sc)
     if arg is None:
         arg = []
     if not args:
@@ -947,11 +967,14 @@ def salt_call(host,
     outfile = os.path.join(tmpdir, '{0}.out'.format(rand))
     result_sep = RESULT_SEP.format(outfile)
     sh_wrapper_debug = kw.get('sh_wrapper_debug', '')
+    if not kw.get('vt_loglevel'):
+        kw['vt_loglevel'] = loglevel
     skwargs = _mangle_kw_for_script({
         'outputter': '--out="{0}"'.format(outputter),
         'local': bool(masterless) and '--local' or '',
         'sh_wrapper_debug': sh_wrapper_debug,
         'loglevel': '-l{0}'.format(loglevel),
+        'vt_loglevel': '-l{0}'.format(kw['vt_loglevel']),
         'salt_call_bin': salt_call_bin,
         'salt_call_script': salt_call_script,
         'outfile': outfile,
@@ -1000,8 +1023,15 @@ def salt_call(host,
             try:
                 ret['result'] = renderers[unparser](ret['result'])
             except Exception:
-                trace = traceback.format_exc()
-                log.error(trace)
+                try:
+                    # try to remove debugs from shell running with set -e
+                    cret = '\n'.join(
+                        [a for a in ret['result'].splitlines() if not
+                         a.startswith('+ ')])
+                    ret['result'] = renderers[unparser](cret)
+                except:
+                    trace = traceback.format_exc()
+                    log.error(trace)
         if transformer != 'noop' and transformer != unparser:
             if transformer in renderers:
                 try:
@@ -1015,6 +1045,8 @@ def salt_call(host,
                 except Exception:
                     trace = traceback.format_exc()
                     log.error(trace)
+        if 'result' not in ret and ret.get('retcode'):
+            ret['result'] = 'Salt Call Failed'
         if isinstance(ret['result'], dict):
             if [a for a in ret['result']] == [minion_id]:
                 ret['result'] = ret['result'][minion_id]
