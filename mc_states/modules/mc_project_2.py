@@ -45,7 +45,14 @@ from mc_states.project import (
     ProjectInitException,
     ProjectProcedureException,
     TooEarlyError,
-)
+    RemoteProjectException,
+    RemoteProjectInitException,
+    RemotePillarInitException,
+    RemoteProjectSyncError,
+    RemoteProjectSyncPillarError,
+    RemoteProjectSyncProjectError,
+    RemoteProjectDeployError)
+
 
 log = logger = logging.getLogger(__name__)
 
@@ -2045,40 +2052,6 @@ Project: {conf[push_salt_url]}
 #
 # REMOTE API
 #
-
-
-class RemoteProjectException(salt.exceptions.SaltException):
-    """."""
-
-    def __init__(self, *args, **kw):
-        super(RemoteProjectException, self).__init__()
-        self.deploy_args = args
-        self.deploy_kw = kw
-
-
-class RemoteProjectInitException(RemoteProjectException):
-    """."""
-
-
-class RemotePillarInitException(ProjectInitException):
-    """."""
-
-
-class RemoteProjectSyncError(RemoteProjectException):
-    """."""
-
-
-class RemoteProjectSyncPillarError(RemoteProjectSyncError):
-    """."""
-
-
-class RemoteProjectSyncProjectError(RemoteProjectSyncError):
-    """."""
-
-
-class RemoteProjectDeployError(RemoteProjectException):
-    """."""
-
 
 def clean_salt_git_commit(directory, commit=True):
     if commit:

@@ -41,4 +41,35 @@ class TooEarlyError(ProjectInitException):
     '''.'''
 
 
+class RemoteProjectException(salt.exceptions.SaltException):
+    """."""
+
+    def __init__(self, *args, **kw):
+        super(RemoteProjectException, self).__init__()
+        self.deploy_args = args
+        self.deploy_kw = kw
+
+
+class RemoteProjectInitException(RemoteProjectException):
+    """."""
+
+
+class RemotePillarInitException(ProjectInitException):
+    """."""
+
+
+class RemoteProjectSyncError(RemoteProjectException):
+    """."""
+
+
+class RemoteProjectSyncPillarError(RemoteProjectSyncError):
+    """."""
+
+
+class RemoteProjectSyncProjectError(RemoteProjectSyncError):
+    """."""
+
+
+class RemoteProjectDeployError(RemoteProjectException):
+    """."""
 # vim:set et sts=4 ts=4 tw=80:
