@@ -8,7 +8,7 @@ mc_states_project / general projects API
 '''
 # -*- coding: utf-8 -*-
 __docformat__ = 'restructuredtext en'
-from salt.exceptions import SaltException
+import salt.exceptions
 
 LAST_PROJECT_API_VERSION = "2"
 KEEP_ARCHIVES = 3
@@ -20,15 +20,15 @@ ENVS = {
 _DEFAULT = object()
 
 
-class ProjectException(SaltException):
+class ProjectException(salt.exceptions.SaltException):
     '''Project global exc'''
 
 
-class ProjectInitException(SaltException):
+class ProjectInitException(salt.exceptions.SaltException):
     '''Project init exc'''
 
 
-class ProjectProcedureException(SaltException):
+class ProjectProcedureException(salt.exceptions.SaltException):
     '''Project init exc'''
 
     def __init__(self, *args, **kw):
