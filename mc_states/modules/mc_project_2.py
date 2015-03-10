@@ -348,7 +348,7 @@ def _defaultsConfiguration(
     sample = os.path.join(cfg['wired_salt_root'],
                           'PILLAR.sample')
     if defaultsConfiguration is None:
-        defaultsConfiguration = OrderedDict()
+        defaultsConfiguration = {}
     if os.path.exists(sample):
         try:
             sample_data = OrderedDict()
@@ -357,7 +357,7 @@ def _defaultsConfiguration(
             jinjarend = salt.loader.render(__opts__, __salt__)
             sample_data_l = salt.template.compile_template(
                 sample, jinjarend, __opts__['renderer'], 'base')
-            #sample_data_l = __salt__['mc_utils.cyaml_load'](fic.read())
+            # sample_data_l = __salt__['mc_utils.cyaml_load'](fic.read())
             defaultsConfiguration['sls_default_pillar'] = sample_data_l
             if not isinstance(sample_data_l, dict):
                 sample_data_l = OrderedDict()
@@ -654,9 +654,7 @@ def get_configuration(name, *args, **kwargs):
     cfg['name'] = name
     cfg['minion_id'] = __grains__['id']
     cfg['fqdn'] = __grains__['fqdn']
-    cfg.update(OrderedDict([a
-                            for a in kwargs.items()
-                            if a[0] in cfg]))
+    cfg.update(dict([a for a in kwargs.items() if a[0] in cfg]))
     # we must also ignore keys setted on the call to the function
     # which are explictly setting a value
     ignored_keys = ['data', 'rollback']
@@ -799,7 +797,7 @@ def _get_filtered_cfg(cfg):
                     'name',
                     'salt_root',
                     'rollback']
-    to_save = OrderedDict()
+    to_save = {}
     for sk in cfg:
         val = cfg[sk]
         if sk.startswith('skip_'):
@@ -1062,6 +1060,20 @@ def init_repo(cfg, git, user, group,
                 python_shell=True,
                 runas=user
             )
+        else:
+            cret = _s('cmd.run_all')(
+                (
+                    'mkdir -p "{0}" &&'
+                    ' cd "{0}" &&'
+                    ' git init &&'
+                    ' touch .empty &&'
+                    ' git config user.email "makinastates@paas.tld" &&'
+                    ' git config user.name "makinastates" &&'
+                    ' git add .empty &&'
+                    ' git commit -am "initial"'
+                ).format(igit, lgit),
+                python_shell=True,
+                runas=user)
         if cret['retcode']:
             raise ProjectInitException(
                 'Can\'t add first commit in {0}'.format(git))
@@ -1349,7 +1361,7 @@ def refresh_files_in_working_copy(name, force=False, *args, **kwargs):
             'salt/{0}'.format(fil, cfg['api_version']))
         cret = _state_exec(sfile, 'managed',
                            name=dest,
-                           source=template, defaults=OrderedDict(),
+                           source=template, defaults={},
                            user=user, group=group,
                            makedirs=True,
                            mode='770', template='jinja')
@@ -1391,7 +1403,7 @@ def init_salt_dir(cfg, parent, ret=None):
                 'salt/{0}'.format(fil, cfg['api_version']))
             cret = _state_exec(sfile, 'managed',
                                name=os.path.join(salt_root, '{0}').format(fil),
-                               source=template, defaults=OrderedDict(),
+                               source=template, defaults={},
                                user=user, group=group,
                                makedirs=True,
                                mode='770', template='jinja')
@@ -2082,8 +2094,11 @@ def init_local_remote_pillar(host, project, ssh_port=22, user='root', **kw):
             pillars_dir, user='root', group='root', mode=750)
     if not os.path.isdir(pillars_dir):
         raise RemotePillarInitException(
-            "{0}: projects container creation failed".format(project))
-    if not os.path.isdir(pillar_dir):
+            "{0}: projects container creation failed ({1})".format(
+                project, pillars_dir))
+    if not os.path.exists(
+        os.path.join(pillar_dir, '.git', 'config')
+    ):
         init_repo(None, pillar_dir, bare=False, user='root', group='root')
     if not os.path.exists(os.path.join(pillar_dir, '.git')):
         raise RemotePillarInitException(
