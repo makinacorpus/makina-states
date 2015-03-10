@@ -30,6 +30,8 @@ If this module gains salt core, there are some small makina-states deps:
 
 import stat
 import time
+
+from pprint import pformat
 import re
 import string
 import sys
@@ -52,6 +54,21 @@ from salt.ext.six import string_types, integer_types
 import salt.ext.six as six
 
 
+class _EvalFalse(object):
+    def __nonzero__(self):
+        return False
+
+    def __unicode__(self):
+        return "Failed"
+
+    def __str__(self):
+        return "Failed"
+
+    def __repr__(self):
+        return "Failed"
+
+
+_EXECUTION_FAILED = _EvalFalse()
 _SSH_PASSWORD_PROMP_RE = re.compile('(([Pp]assword(: ?for.*)?:))',
                                     re.M | re.U)
 
@@ -87,7 +104,6 @@ ret=${{?}}
 echo {result_sep}
 if [ -e {quoted_outfile} ];then
     cat {quoted_outfile}
-    rm -f ${quoted_outfile}
 fi
 exit ${{ret}}
 '''
@@ -99,49 +115,109 @@ sftp_opts="-qqq"
 scp_opts="-qqq"
 if [ "x{sh_wrapper_debug}" != "x" ];then
     set -x
-    rsync_opts="${{rsync_opts}}vP"
+    rsync_opts="${{rsync_opts}}v"
     sftp_opts=""
     scp_opts=""
 fi
-ret=1
+if [ "x{progress}" = "x1" ] || [ "x{sh_wrapper_debug}" != "x" ];then
+    rsync_opts="${{rsync_opts}}P"
+fi
 if ! test -e "{orig}";then
-    echo "Unexisting script file: {orig}"
+    echo "Unexisting origin: {orig}"
     exit 1
 fi
 fmode=$(stat -c "%a" "{orig}")
-rsync ${{rsync_opts}} \\
-        -e "ssh -p "{port}" {quoted_ssh_args}"\\
-        "{orig}" "{user}@{host}":"{dest}"\\
-        && fmode=''
-ret=${{?}}
-if [ "x${{ret}}" != "x0" ];then
-    scp ${{scp_opts}} -P "{port}" {ttyfree_ssh_args}\\
-            "{orig}" "{user}@{host}":"{dest}"
+cmode=$(stat -c "%a" "{orig_container}")
+ret=0
+if [ "x{makedirs}" = "x1" ];then
+ if [ "x{sh_wrapper_debug}" != "x" ];then
+    ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
+      "set -x;\
+       if [ ! -e \\"{container}\\" ];then \
+        mkdir -pv \\"{container}\\";\
+        chmod -v  ${{cmode}} \\"{container}\\";\
+       fi"
+    ctret=${{?}}
+ else
+    ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
+      "if [ ! -e \\"{container}\\" ];then \
+        mkdir -p  \\"{container}\\";\
+        chmod     ${{cmode}} \\"{container}\\";\
+       fi"
+    ctret=${{?}}
+ fi
+ if [ "x${{ctret}}" != "x0" ];then
+     echo "Remote directory \\"{container}\\" creation failed">&2
+     ret=1
+ fi
+fi
+if [ "x${{ret}}" = "x0" ];then
+    ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
+            "test -e \\"{container}\\" \
+            && test ! -f  \\"{container}\\""
+    ctret=${{?}}
+    if [ "x${{ctret}}" != "x0" ];then
+        echo \
+"Remote directory \\"{container}\\" does not exits or is not a directory">&2
+        ret=1
+    fi
+fi
+if [ "x${{ret}}" = "x0" ];then
+    ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
+       "if [ -d \\"{dest}\\" ];then\
+         exit 1;\
+        else\
+         exit 0;\
+        fi"
+    if [ "x${{?}}" != "x0" ];then
+         echo \
+"Remote destination \\"{dest}\\" is a directory and not a file">&2
+         ret=1
+    fi
+fi
+if [ "x${{ret}}" = "x0" ];then
+    ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
+       "test -e \\"{container}\\""
+    if [ "x${{?}}" != "x0" ];then
+        echo "Remote directory \\"{container}\\" does not exits">&2
+        ret=1
+    fi
+fi
+if [ "x${{ret}}" = "x0" ];then
+    rsync ${{rsync_opts}} \\
+            -e "ssh -p "{port}" {quoted_ssh_args}"\\
+            "{orig}" "{user}@{host}":"{dest}"\\
+            && fmode=''
     ret=${{?}}
-fi
-if [ "x${{ret}}" != "x0" ];then
-  echo "put -p \\"{orig}\\" \\"{dest}\\"" > "{tmpfile}"
-  if [ "x{sh_wrapper_debug}" != "x" ];then
-      sftp ${{sftp_opts}} -b "{tmpfile}" -P "{port}"\\
-              {ttyfree_ssh_args} "{user}@{host}"
-  else
-      sftp ${{sftp_opts}} -b "{tmpfile}" -P "{port}"\\
-              {ttyfree_ssh_args} "{user}@{host}" 1>/dev/null 2>&1
-  fi
-  ret=${{?}}
-  rm -f "{tmpfile}"
-fi
-if [ "x${{ret}}" != "x0" ];then
-  gzip -ck "{orig}" \\
-          | ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
-          'gzip -d > "{dest}"'
-  ret=${{?}}
-fi
-if [ "x${{ret}}" != "x0" ];then
-  cat "{orig}" \\
-          | ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
-          'cat > "{dest}"'
-  ret=${{?}}
+    if [ "x${{ret}}" != "x0" ];then
+        scp ${{scp_opts}} -P "{port}" {ttyfree_ssh_args}\\
+                "{orig}" "{user}@{host}":"{dest}"
+        ret=${{?}}
+    fi
+    if [ "x${{ret}}" != "x0" ];then
+      echo "put -p \\"{orig}\\" \\"{dest}\\"" > "{tmpfile}"
+      if [ "x{sh_wrapper_debug}" != "x" ];then
+          sftp ${{sftp_opts}} -b "{tmpfile}" -P "{port}"\\
+                  {ttyfree_ssh_args} "{user}@{host}"
+      else
+          sftp ${{sftp_opts}} -b "{tmpfile}" -P "{port}"\\
+                  {ttyfree_ssh_args} "{user}@{host}" 1>/dev/null 2>&1
+      fi
+      ret=${{?}}
+      rm -f "{tmpfile}"
+    fi
+    if [ "x${{ret}}" != "x0" ];then
+      gzip -ck "{orig}" \\
+              | ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
+              'gzip -d > "{dest}"'
+      ret=${{?}}
+    fi
+    if [ "x${{ret}}" != "x0" ];then
+      cat "{orig}" \\
+              | ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
+              'cat > "{dest}"'
+      ret=${{?}}
+    fi
 fi
 if [ "x${{ret}}" = "x0" ] && [ "x${{fmode}}" != "x" ];then
  if [ "x{sh_wrapper_debug}" != "x" ];then
@@ -163,37 +239,94 @@ sftp_opts="-qqq"
 scp_opts="-qqq"
 if [ "x{sh_wrapper_debug}" != "x" ];then
     set -x
-    rsync_opts="${{rsync_opts}}vP"
+    rsync_opts="${{rsync_opts}}v"
     sftp_opts=""
     scp_opts=""
 fi
+if [ "x{progress}" = "x1" ] || [ "x{sh_wrapper_debug}" != "x" ];then
+    rsync_opts="${{rsync_opts}}P"
+fi
 ret=1
 if ! test -e "{orig}";then
-    echo "Unexisting script file: {orig}"
+    echo "Unexisting origin: {orig}"
     exit 1
 fi
 fmode=$(stat -c "%a" "{orig}")
-rsync ${{rsync_opts}} \\
-        -e "ssh -p "{port}" {quoted_ssh_args}"\\
-        "{corig}" "{user}@{host}":"{cdest}"\\
-        && fmode=''
-ret=${{?}}
-if [ "x${{ret}}" != "x0" ];then
-    scp -r ${{scp_opts}} -P "{port}" {ttyfree_ssh_args}\\
-            "{orig}" "{user}@{host}":"{dest}"
-    ret=${{?}}
+cmode=$(stat -c "%a" "{orig_container}")
+ret=0
+if [ "x{makedirs}" = "x1" ];then
+ if [ "x{sh_wrapper_debug}" != "x" ];then
+    ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
+      "set -x;\
+       if [ ! -e \\"{container}\\" ];then \
+        mkdir -pv \\"{container}\\";\
+        chmod -v  ${{cmode}} \\"{container}\\";\
+       fi"
+    ctret=${{?}}
+ else
+    ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
+      "if [ ! -e \\"{container}\\" ];then \
+        mkdir -p  \\"{container}\\";\
+        chmod     ${{cmode}} \\"{container}\\";\
+       fi"
+    ctret=${{?}}
+ fi
+ if [ "x${{ctret}}" != "x0" ];then
+     echo "Remote directory \\"{container}\\" creation failed">&2
+     ret=1
+ fi
 fi
-if [ "x${{ret}}" != "x0" ];then
-  echo "put -p \\"{orig}\\" \\"{dest}\\"" > "{tmpfile}"
-  if [ "x{sh_wrapper_debug}" != "x" ];then
-      sftp -r ${{sftp_opts}} -b "{tmpfile}" -P "{port}"\\
-              {ttyfree_ssh_args} "{user}@{host}"
-  else
-      sftp -r ${{sftp_opts}} -b "{tmpfile}" -P "{port}"\\
-              {ttyfree_ssh_args} "{user}@{host}" 1>/dev/null 2>&1
-  fi
-  ret=${{?}}
-  rm -f "{tmpfile}"
+if [ "x${{ret}}" = "x0" ];then
+    ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
+            "test -e \\"{container}\\" \
+            && test ! -f  \\"{container}\\""
+    ctret=${{?}}
+    if [ "x${{ctret}}" != "x0" ];then
+        echo \
+"Remote directory \\"{container}\\" does not exits or is not a directory">&2
+        ret=1
+    fi
+fi
+if [ "x${{ret}}" = "x0" ];then
+    ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
+       "if [ -e \\"{dest}\\" ];then\
+         if test -d \\"{dest}\\";then\
+            exit 0;\
+         else\
+            exit 1;\
+         fi
+        else\
+         exit 0;\
+        fi"
+    dret=${{?}}
+    if [ "x${{dret}}" != "x0" ];then
+      echo "Remote destination \\"{dest}\\" is not a directory">&2
+      ret=1
+    fi
+fi
+if [ "x${{ret}}" = "x0" ];then
+    rsync ${{rsync_opts}} \\
+            -e "ssh -p "{port}" {quoted_ssh_args}"\\
+            "{corig}" "{user}@{host}":"{cdest}"\\
+            && fmode=''
+    ret=${{?}}
+    if [ "x${{ret}}" != "x0" ];then
+        scp -r ${{scp_opts}} -P "{port}" {ttyfree_ssh_args}\\
+                "{orig}" "{user}@{host}":"{dest}"
+        ret=${{?}}
+    fi
+    if [ "x${{ret}}" != "x0" ];then
+      echo "put -p \\"{orig}\\" \\"{dest}\\"" > "{tmpfile}"
+      if [ "x{sh_wrapper_debug}" != "x" ];then
+          sftp -r ${{sftp_opts}} -b "{tmpfile}" -P "{port}"\\
+                  {ttyfree_ssh_args} "{user}@{host}"
+      else
+          sftp -r ${{sftp_opts}} -b "{tmpfile}" -P "{port}"\\
+                  {ttyfree_ssh_args} "{user}@{host}" 1>/dev/null 2>&1
+      fi
+      ret=${{?}}
+      rm -f "{tmpfile}"
+    fi
 fi
 if [ "x${{ret}}" = "x0" ] && [ "x${{fmode}}" != "x" ];then
  if [ "x{sh_wrapper_debug}" != "x" ];then
@@ -261,6 +394,10 @@ class _SSHCommandTimeout(_SSHCommandFailed):
 
 
 class _SSHTransferFailed(_SSHCommandFailed):
+    """."""
+
+
+class _SaltCallFailure(_SSHExecError):
     """."""
 
 
@@ -676,8 +813,12 @@ def ssh_transfer_file(host, orig, dest=None, **kw):
         filepath to transfer
     dest
         where to upload, defaults to orig
+    makedirs
+        create parents if any
     vt_loglevel
         vt loglevel
+    progress
+        activate transfers statsv
 
     Any extra keywords parameters will by forwarded to:
         _get_ssh_args
@@ -687,11 +828,27 @@ def ssh_transfer_file(host, orig, dest=None, **kw):
             (see doc)
             to interact during ssh session
     '''
-
     user = kw.get('user', 'root')
     port = kw.get('port', 22)
+    makedirs = kw.get('makedirs', False)
+    progress = kw.get('progress', False)
+    if makedirs:
+        makedirs = '1'
+    else:
+        makedirs = '0'
+    if progress:
+        progress = '1'
+    else:
+        progress = '0'
     if dest is None:
         dest = orig
+    if not os.path.exists(orig):
+        raise OSError("{0} does not exists".format(orig))
+    if not any([
+        os.path.islink(orig),
+        os.path.isfile(orig)
+    ]):
+        raise OSError("{0} is not a file".format(orig))
     kw = copy.deepcopy(kw)
     # as we chain three login,methods, we multiplicate password challenges
     kw['password_retries'] = kw.get('password_retries', 3) * 8
@@ -702,18 +859,32 @@ def ssh_transfer_file(host, orig, dest=None, **kw):
     quoted_ssh_args = ' '.join([a.replace('"', '\\"')
                                 for a in _ssh_args if a not in ['-t']])
     ssh_args = ' '.join(_ssh_args)
-    cmd = TRANSFER_FILE_SCRIPT.format(
-        **_mangle_kw_for_script({
-            'ttyfree_ssh_args': ttyfree_ssh_args,
-            'quoted_ssh_args': quoted_ssh_args,
-            'orig': orig,
-            'dest': dest,
-            'user': user,
-            'host': host,
-            'port': port,
-            'tmpfile': tmpfile,
-            'ssh_args': ssh_args}))
-    return interactive_ssh(cmd, **kw)
+    try:
+        cmd = TRANSFER_FILE_SCRIPT.format(
+            **_mangle_kw_for_script({
+                'ttyfree_ssh_args': ttyfree_ssh_args,
+                'quoted_ssh_args': quoted_ssh_args,
+                'orig': orig,
+                'dest': dest,
+                'progress': progress,
+                'user': user,
+                'orig_container': os.path.dirname(
+                    os.path.abspath(orig)),
+                'container': os.path.dirname(
+                    os.path.abspath(dest)),
+                'makedirs': makedirs,
+                'host': host,
+                'port': port,
+                'tmpfile': tmpfile,
+                'ssh_args': ssh_args}))
+        ret = interactive_ssh(cmd, **kw)
+    finally:
+        try:
+            if os.path.exists(tmpfile):
+                os.remove(tmpfile)
+        except Exception:
+            pass
+    return ret
 
 
 def ssh_transfer_dir(host, orig, dest=None, **kw):
@@ -734,8 +905,12 @@ def ssh_transfer_dir(host, orig, dest=None, **kw):
         filepath to transfer
     dest
         where to upload, defaults to orig
+    makedirs
+        create parents if any
     vt_loglevel
         vt loglevel
+    progress
+        activate transfer progress
 
     Any extra keywords parameters will by forwarded to:
         _get_ssh_args
@@ -745,22 +920,35 @@ def ssh_transfer_dir(host, orig, dest=None, **kw):
             (see doc)
             to interact during ssh session
     '''
-
+    makedirs = kw.get('makedirs', False)
+    user = kw.get('user', 'root')
+    port = kw.get('port', 22)
+    progress = kw.get('progress', False)
+    if makedirs:
+        makedirs = '1'
+    else:
+        makedirs = '0'
+    if progress:
+        progress = '1'
+    else:
+        progress = '0'
     append_slashes = kw.setdefault('append_slashes', True)
+    if dest is None:
+        dest = orig
     corig, cdest = orig, dest
     if append_slashes:
         if not orig.endswith('/'):
             corig = orig + '/'
         if not dest.endswith('/'):
             cdest = dest + '/'
-    user = kw.get('user', 'root')
-    port = kw.get('port', 22)
-    if dest is None:
-        dest = orig
     kw = copy.deepcopy(kw)
     # as we chain three login,methods, we multiplicate password challenges
     kw['password_retries'] = kw.get('password_retries', 3) * 8
     _ssh_args = _get_ssh_args(**kw)
+    if not os.path.exists(orig):
+        raise OSError("{0} does not exists".format(orig))
+    if os.path.isfile(orig):
+        raise OSError("{0} is not a directory".format(orig))
     tmpfile = tempfile.mkstemp()[1]
     # transfer via scp, fallback on scp, fallback on rsync
     ttyfree_ssh_args = ' '.join([a for a in _ssh_args if a not in ['-t']])
@@ -775,12 +963,26 @@ def ssh_transfer_dir(host, orig, dest=None, **kw):
             'cdest': cdest,
             'orig': orig,
             'dest': dest,
+            'progress': progress,
+            'orig_container': os.path.dirname(
+                os.path.abspath(orig)),
+            'container': os.path.dirname(
+                os.path.abspath(dest)),
+            'makedirs': makedirs,
             'user': user,
             'host': host,
             'port': port,
             'tmpfile': tmpfile,
             'ssh_args': ssh_args}))
-    return interactive_ssh(cmd, **kw)
+    try:
+        ret = interactive_ssh(cmd, **kw)
+    finally:
+        try:
+            if os.path.exists(tmpfile):
+                os.remove(tmpfile)
+        except Exception:
+            pass
+    return ret
 
 
 def ssh(host, script, **kw):
@@ -896,6 +1098,15 @@ def ssh(host, script, **kw):
     return cret
 
 
+def delete_remote(host, filepath, mode="-f", level='info', **kw):
+    '''
+    Delete a remote file (or directory)
+    '''
+    getattr(log, level)('Delete on {0}: {1}'.format(host, filepath))
+    rm_cmd = "rm {0} {1}".format(pipes.quote(mode), pipes.quote(filepath))
+    ssh(host, rm_cmd, **kw)
+
+
 def ssh_retcode(host, script, **kw):
     '''
     Wrapper to ssh_call
@@ -946,6 +1157,7 @@ def salt_call(host,
               minion_id='local',
               salt_call_script=None,
               strip_out=None,
+              hard_failure=False,
               *args,
               **kw):
     '''
@@ -1105,7 +1317,20 @@ def salt_call(host,
         'kwarg': kwarg,
         'sarg': sarg})
     script = salt_call_script.format(**skwargs)
-    ret = ssh(host, script, **kw)
+    level = kw["vt_loglevel"]
+    try:
+        if level in ['trace', 'garbage']:
+            level = 'debug'
+        if level in ['error', 'warning']:
+            level = 'info'
+        try:
+            ret = ssh(host, script, **kw)
+        except (Exception, SystemExit, KeyboardInterrupt) as exc:
+            typ, eargs, _trace = sys.exc_info()
+            _reraise(exc, trace=_trace)
+            level = "error"
+    finally:
+        delete_remote(host, skwargs['quoted_outfile'], level=level, **kw)
     ret['result_type'] = outputter
     ret['raw_result'] = 'NO RETURN FROM {0}'.format(outfile)
     if ret['stdout']:
@@ -1121,8 +1346,16 @@ def salt_call(host,
             if line.startswith(result_sep):
                 collect = True
         ret['raw_result'] = ret['result'] = result
+    if ret.get('retcode', 0):
+        try:
+            if int(ret['retcode']) >= 0:
+                ret['raw_result'] = ret.pop('result', None)
+                ret['result'] = _EXECUTION_FAILED
+        except (ValueError, TypeError,) as exc:
+            pass
     ret['transformer'] = None
     ret['unparser'] = None
+    log_trace = None
     if unparse:
         renderers = salt.loader.render(__opts__, __salt__)
         outputters = salt.loader.outputters(__opts__)
@@ -1139,7 +1372,7 @@ def salt_call(host,
                     'json': 'json'}.get(rtype, 'noop')
         ret['transformer'] = transformer
         ret['unparser'] = unparser
-        if unparser != 'noop':
+        if (unparser != 'noop') and ret.get('result', False):
             try:
                 ret['result'] = renderers[unparser](ret['result'])
             except Exception:
@@ -1153,17 +1386,20 @@ def salt_call(host,
                     if ret['raw_result'].startswith(
                         'NO RETURN FROM'
                     ):
-                        trace = traceback.format_exc()
-                        log.error(trace)
+                        ret['result'] = _EXECUTION_FAILED
+                        log_trace = traceback.format_exc()
                     else:
                         raise
-        if transformer != 'noop' and transformer != unparser:
+        if (
+            transformer != 'noop'
+            and transformer != unparser
+            and ret.get('result', _EXECUTION_FAILED) is not _EXECUTION_FAILED
+        ):
             if transformer in renderers:
                 try:
                     ret['result'] = renderers[transformer](ret['result'])
                 except salt.exceptions.SaltRenderError:
-                    trace = traceback.format_exc()
-                    log.error(trace)
+                    log_trace = traceback.format_exc()
             elif transformer in outputters:
                 try:
                     ret['result'] = outputters[transformer](ret['result'])
@@ -1171,18 +1407,55 @@ def salt_call(host,
                     if ret['raw_result'].startswith(
                         'NO RETURN FROM'
                     ):
-                        trace = traceback.format_exc()
-                        log.error(trace)
+                        ret['result'] = _EXECUTION_FAILED
+                        log_trace = traceback.format_exc()
                     else:
                         raise
         if 'result' not in ret and ret.get('retcode'):
-            ret['result'] = 'Salt Call Failed'
+            ret['result'] = _EXECUTION_FAILED
         if isinstance(ret['result'], dict):
             if [a for a in ret['result']] == [minion_id]:
                 ret['result'] = ret['result'][minion_id]
     if strip_out and (ret['retcode'] in [0]):
         ret['stdout'] = ret['stderr'] = ''
+    if not isinstance(ret, dict):
+        ret = _get_ret().update({
+            'stdout': '',
+            'retcode': 2,
+            'raw_result': ret,
+            'result': _EXECUTION_FAILED})
+    # consistent failure in all properties
+    # prepare also for hard failure in case
+    msg = "Salt call failed"
+    if ret.get('result', _EXECUTION_FAILED) is _EXECUTION_FAILED:
+        ret['result'] = None
+        try:
+            msg = "Salt call failed:\n{0}".format(pformat(ret))
+        except UnicodeEncodeError:
+            try:
+                msg = "Salt call failed:\n{0}".format(
+                    pformat(ret).encode('utf-8'))
+            except Exception:
+                msg = "Salt call failed"
+        except Exception:
+            try:
+                msg = "Salt call failed:\n{0}".format(ret)
+            except Exception:
+                msg = "Salt call failed"
+        if log_trace and isinstance(log_trace, six.string_types):
+            log.error(log_trace)
+    else:
+        ret['retcode'] = 0
+    if hard_failure:
+        raise _SaltCallFailure(msg, exec_ret=ret)
     return ret
+
+
+def hardstop_salt_call(*args, **kw):
+    if not kw:
+        kw = {}
+    kw['hard_failure'] = True
+    return salt_call(*args, **kw)
 
 
 def sls(host,
