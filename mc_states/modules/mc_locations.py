@@ -54,7 +54,7 @@ def settings():
                 'lxc_root': '',
                 'apps_dir': '{srv_dir}/apps',
                 'projects_dir': '{srv_dir}/projects',
-                'remotes_projects_dir': '{srv_dir}/remote_projects',
+                'remote_projects_dir': '{srv_dir}/remote_projects',
                 'conf_dir': '{root_dir}etc',
                 'initd_dir': '{conf_dir}/init.d',
                 'upstart_dir': '{conf_dir}/init',

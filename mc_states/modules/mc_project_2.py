@@ -324,6 +324,7 @@ def get_default_configuration():
     if os.path.exists('/this_host'):
         with open('/this_host') as fic:
             this_host = fic.read().splitlines()[0].strip()
+    conf['remote_host'] = __grains__['fqdn']
     conf['this_host'] = this_host
     conf['this_localhost'] = this_localhost
     conf['this_port'] = this_port
@@ -533,10 +534,11 @@ def _get_contextual_cached_project(name, remote_host=None):
     if not remote_host:
         remote_host = dcfg['remote_host']
     cfg = __opts__['ms_projects'].setdefault((name, remote_host), dcfg)
-    if remote_host == cfg['fqdn']:  # localhost
+    if remote_host == __grains__['fqdn']:
         __opts__['ms_project'] = cfg
         __opts__['ms_project_name'] = cfg['name']
     __context__['ms_project'] = __opts__['ms_project']
+    __context__['ms_projects'] = __opts__['ms_projects']
     return cfg
 
 
@@ -635,7 +637,7 @@ def get_configuration(name, *args, **kwargs):
     '''
     cfg = _get_contextual_cached_project(
         name,
-        remote_host=kwarg.get('remote_host', None))
+        remote_host=kwargs.get('remote_host', None))
     nodata = kwargs.pop('nodata', False)
     if not (
         cfg.get('force_reload', True)
@@ -780,7 +782,7 @@ def get_configuration(name, *args, **kwargs):
     cfg['installer_path'] = installer_path
     # put the result inside the context
     cfg['force_reload'] = False
-    if not nodata and not (cfg['remote_host'] == cfg['fqdn']):
+    if not nodata and not (cfg['remote_host'] == __grains__['fqdn']):
         set_project(cfg)
     return cfg
 
@@ -2071,6 +2073,11 @@ Project: {conf[push_salt_url]}
 class RemoteProjectException(salt.exceptions.SaltException):
     """."""
 
+    def __init__(self, *args, **kw):
+        super(RemoteProjectException, self).__init__()
+        self.deploy_args = args
+        self.deploy_kw = kw
+
 
 class RemoteProjectInitException(RemoteProjectException):
     """."""
@@ -2185,7 +2192,7 @@ def _init_remote_structure(host, project, ssh_port=22, user='root', **kw):
     '''
     Initialize a remote project structure over ssh
     '''
-     _s = __salt__
+    _s = __salt__
     dkey = 'mc_project_{0}_{1}'.format(host, project)
     cret = __context__.get(dkey, {})
     if cret.get('result', None):
@@ -2272,7 +2279,7 @@ def sync_remote_project(host,
         'git.set_remote',
         arg=[remote_project_dir, 'localcopy', localcopy],
         kwarg={'user': '{0}-user'.format(user)},
-        useruser,
+        user=user,
         port=ssh_port)
     cret['final_wc_sync'] = _s['mc_remote.salt_call'](
         host,
