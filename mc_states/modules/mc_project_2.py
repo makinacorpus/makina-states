@@ -418,7 +418,8 @@ def _defaultsConfiguration(
                 ).get('os_defaults', OrderedDict())))
 
     pillar_data = OrderedDict()
-    # load pillar prefix makina-states.projectname and makina-projects.projectname
+    # load pillar prefix makina-states.projectname and
+    # makina-projects.projectname
     # makina-states is the old prefix, retro compat
     for subp in ['states', 'projects']:
         pillar_data = _dict_update(
@@ -690,11 +691,12 @@ def get_configuration(name, *args, **kwargs):
         if isinstance(only, basestring):
             only = only.split(',')
         if not isinstance(only, list):
-            raise ValueError('invalid only for {1}: {0}'.format(only, cfg['name']))
+            raise ValueError('invalid only for {1}: {0}'.format(
+                only, cfg['name']))
     if only:
         forced = ['skip_deploy'] + ['skip_{0}'.format(o) for o in only]
         for s in [a for a in skipped]:
-            if not skipped[s] and not s in forced:
+            if not skipped[s] and s not in forced:
                 skipped[s] = True
         for s in forced:
             skipped[s] = False
@@ -752,7 +754,7 @@ def get_configuration(name, *args, **kwargs):
     # add/override data parameters via arguments given on cmdline
     for k in [a for a in kwargs
               if not a.startswith('__pub')
-              and not a in [b for b in DEFAULT_CONFIGURATION]]:
+              and a not in [b for b in DEFAULT_CONFIGURATION]]:
         cfg['data'][k] = kwargs[k]
     # finally resolve the format-variabilized dict key entries in
     # arbitrary conf mapping
@@ -835,8 +837,8 @@ def init_user_groups(user, groups=None, ret=None):
             else:
                 _append_comment(ret, body=indent(cret['comment']))
     if not os.path.exists('/home/users'):
-	os.makedirs('/home/users')
-	os.chmod('/home/users', 0755)
+        os.makedirs('/home/users')
+        os.chmod('/home/users', 0755)
     if not _s('user.info')(user):
         cret = _state_exec(suser, 'present',
                            user,
@@ -878,8 +880,6 @@ def init_project_dirs(cfg, ret=None):
         if not cret['result']:
             raise ProjectInitException(
                 'Can\'t manage {0} dir'.format(dr))
-        #else:
-        #    _append_comment(ret, body=indent(cret['comment']))
     for symlink, target in (
         (cfg['wired_salt_root'], cfg['salt_root']),
         (cfg['wired_pillar_root'], cfg['pillar_root']),
@@ -889,8 +889,6 @@ def init_project_dirs(cfg, ret=None):
             raise ProjectInitException(
                 'Can\'t manage {0} -> {1} symlink\n{2}'.format(
                     symlink, target, cret))
-        #else:
-        #    _append_comment(ret, body=indent(cret['comment']))
     return ret
 
 
@@ -902,7 +900,8 @@ def init_ssh_user_keys(user, failhard=False, ret=None):
     _append_comment(
         ret, summary='SSH keys management for {0}'.format(user))
     cmd = '''
-home="$(awk -F: -v v="{user}" '{{if ($1==v && $6!="") print $6}}' /etc/passwd)";
+home="$(awk -F: -v v="{user}" '{{if ($1==v && $6!="") print $6}}'\
+        /etc/passwd)";
 cd /root/.ssh;
 chown {user} $home;
 if [ ! -e $home/.ssh ];then
@@ -918,7 +917,8 @@ chmod -Rf 700 $home/.ssh/*;
 echo;echo "changed=false comment='do no trigger changes'"
 '''.format(user=user)
     onlyif = '''res=1;
-home="$(awk -F: -v v="{user}" '{{if ($1==v && $6!="") print $6}}' /etc/passwd)";
+home="$(awk -F: -v v="{user}" '{{if ($1==v && $6!="") print $6}}'\
+        /etc/passwd)";
 cd /root/.ssh;
 if [ "x$(stat -c %U "$home")" != "x$user" ];then
     res=0
@@ -936,8 +936,6 @@ exit $res;'''.format(user=user)
     if failhard and not cret['result']:
         raise ProjectInitException('SSH keys improperly configured\n'
                                    '{0}'.format(cret))
-    #else:
-    #    _append_comment(ret, body=indent('SSH keys in place if any'))
     return ret
 
 
@@ -1020,9 +1018,6 @@ def init_repo(cfg, git, user, group,
     if not cret['result']:
         raise ProjectInitException(
             'Can\'t manage {0} dir'.format(git))
-    #else:
-    #    _append_comment(ret, body=indent(cret['comment']))
-    # initialize an empty git
     cret = _state_exec(sgit,
                        'present',
                        git,
@@ -1032,8 +1027,6 @@ def init_repo(cfg, git, user, group,
     if not cret['result']:
         raise ProjectInitException(
             'Can\'t manage {0} dir'.format(git))
-    #else:
-    #    _append_comment(ret, body=indent(cret['comment']))
     create = False
     if len(os.listdir(lgit + '/refs/heads')) < 1:
         cret = git_log(lgit, user=user)
@@ -1046,21 +1039,22 @@ def init_repo(cfg, git, user, group,
         igit = lgit
         if bare:
             igit += '.tmp'
-        cret = _s('cmd.run_all')(
-            ('mkdir -p "{0}" &&'
-             ' cd "{0}" &&'
-             ' git init &&'
-             ' touch .empty &&'
-             ' git config user.email "makinastates@paas.tld" &&'
-             ' git config user.name "makinastates" &&'
-             ' git add .empty &&'
-             ' git commit -am "initial" &&'
-             ' git remote add origin {1} &&'
-             ' git push -u origin master'
-            ).format(igit, lgit),
-            python_shell=True,
-            runas=user
-        )
+            cret = _s('cmd.run_all')(
+                (
+                    'mkdir -p "{0}" &&'
+                    ' cd "{0}" &&'
+                    ' git init &&'
+                    ' touch .empty &&'
+                    ' git config user.email "makinastates@paas.tld" &&'
+                    ' git config user.name "makinastates" &&'
+                    ' git add .empty &&'
+                    ' git commit -am "initial" &&'
+                    ' git remote add origin {1} &&'
+                    ' git push -u origin master'
+                ).format(igit, lgit),
+                python_shell=True,
+                runas=user
+            )
         if cret['retcode']:
             raise ProjectInitException(
                 'Can\'t add first commit in {0}'.format(git))
@@ -1090,10 +1084,8 @@ def init_repo(cfg, git, user, group,
                     'Can\'t push first salt commit in {0}'.format(git))
         if bare:
             cret = _s('cmd.run_all')(
-                ('rm -rf "{0}.tmp"').format(lgit), python_shell=True, runas=user)
-    #else:
-    #    _append_comment(
-    #        ret, body=indent('Commited first commit in {0}'.format(git)))
+                ('rm -rf "{0}.tmp"').format(lgit),
+                python_shell=True, runas=user)
     return ret
 
 
@@ -1124,8 +1116,6 @@ def init_local_repository(wc, url, user, group, ret=None):
     if not cret['result']:
         raise ProjectInitException(
             'Can\'t initialize git dir  {0} dir'.format(wc))
-    #else:
-    #    _append_comment(ret, body=indent(cret['comment']))
 
 
 def set_git_remote(wc, user, localgit, remote='origin', ret=None):
@@ -1136,16 +1126,12 @@ def set_git_remote(wc, user, localgit, remote='origin', ret=None):
     if not ret:
         ret = _get_ret(user)
     # add the local and distant remotes
-    cret = _s('git.remote_set')(localgit, remote, wc , user=user)
+    cret = _s('git.remote_set')(localgit, remote, wc, user=user)
     if not cret:
         raise ProjectInitException(
             'Can\'t initialize git local remote '
-            '{0} from {1} in {2}'.format(
-                remote, lurl, wc))
-        #else:
-        #    _append_comment(ret,
-        #                    body=indent('LocalRemote {0} -> {1} set'.format(
-        #                        remote, lurl)))
+            '{0}  in {2}'.format(
+                remote, wc))
     return ret
 
 
@@ -1162,12 +1148,10 @@ def fetch_last_commits(wc, user, origin='origin', ret=None):
     if cret['retcode']:
         raise ProjectInitException('Can\'t fetch git in {0}'.format(wc))
     cret = _s('cmd.run_all')(
-        'git fetch {0} --tags'.format(origin), cwd=wc, python_shell=True, runas=user)
+        'git fetch {0} --tags'.format(origin),
+        cwd=wc, python_shell=True, runas=user)
     if cret['retcode']:
         raise ProjectInitException('Can\'t fetch git tags in {0}'.format(wc))
-    #else:
-    #    out = splitstrip('{stdout}\n{stderr}'.format(**cret))
-    #    _append_comment(ret, body=indent(out))
     return ret
 
 
@@ -1234,7 +1218,8 @@ def set_upstream(wc, rev, user, origin='origin', ret=None):
 def working_copy_in_initial_state(wc, user='root'):
     _s = __salt__.get
     cret = _s('cmd.run_all')(
-        'git log --pretty=format:"%h:%s:%an"', cwd=wc, python_shell=True, runas=user)
+        'git log --pretty=format:"%h:%s:%an"',
+        cwd=wc, python_shell=True, runas=user)
     out = splitstrip('{stdout}\n{stderr}'.format(**cret))
     lines = out.splitlines()
     initial = False
@@ -1274,16 +1259,14 @@ def sync_working_copy(user, wc, rev=None, ret=None, origin=None):
             raise ProjectInitException(
                 'Can not sync from {1}@{0} in {2}'.format(
                     origin, rev, wc))
-        #else:
-        #    _append_comment(
-        #        ret, body=indent('Repository {1}: {0}\n'.format(cret, wc)))
     else:
         cret = _s('cmd.run_all')('git pull {1} {0}'.format(rev, origin),
-                            cwd=wc, python_shell=True, user=user)
+                                 cwd=wc, python_shell=True, user=user)
         if cret['retcode']:
             # finally try to reset hard
-            cret = _s('cmd.run_all')('git reset --hard {1}/{0}'.format(rev, origin),
-                                cwd=wc, user=user)
+            cret = _s('cmd.run_all')(
+                'git reset --hard {1}/{0}'.format(rev, origin),
+                cwd=wc, user=user)
             if cret['retcode']:
                 # try to merge a bit but only what's mergeable
                 cret = _s('cmd.run_all')(
@@ -1332,8 +1315,6 @@ def init_pillar_dir(cfg, parent, ret=None):
         if not cret['result']:
             raise ProjectInitException(
                 'Can\'t create default {0}\n{1}'.format(fil, cret['comment']))
-        #else:
-        #    _append_comment(ret, body=indent(cret['comment']))
 
 
 def refresh_files_in_working_copy(name, force=False, *args, **kwargs):
@@ -1392,8 +1373,6 @@ def init_salt_dir(cfg, parent, ret=None):
     if not cret['result']:
         raise ProjectInitException(
             'Can\'t manage {0} dir'.format(salt_root))
-    #else:
-    #    _append_comment(ret, body=indent(cret['comment']))
     files = [os.path.join(salt_root, a)
              for a in os.listdir(salt_root)
              if a.endswith('.sls') and not os.path.isdir(a)]
@@ -1413,8 +1392,6 @@ def init_salt_dir(cfg, parent, ret=None):
                 raise ProjectInitException(
                     'Can\'t create default {0}\n{1}'.format(
                         fil, cret['comment']))
-            #else:
-            #    _append_comment(ret, body=indent(cret['comment']))
     return ret
 
 
@@ -1628,7 +1605,8 @@ def deploy(name, *args, **kwargs):
 
     Skip a particular step::
 
-        salt-call mc_project.deploy <name> skip_release_sync=True skip_archive=True skip_notify=True
+        salt-call mc_project.deploy <name> skip_release_sync=True \\
+                skip_archive=True skip_notify=True
 
     '''
     ret = _get_ret(name, *args, **kwargs)
@@ -1766,6 +1744,7 @@ def get_executable_slss_(path, installer_path, installer, task=False):
         return filtered
     slses = [a.split('.sls')[0]
              for a in filter(do_filter, os.listdir(path))]
+
     def sls_sort(a):
         '''
         >>> sorted(['0100_a', '0010_b', '0004_a','100_b',
@@ -1916,7 +1895,7 @@ def link_salt(name, *args, **kwargs):
     cfg = get_configuration(name, nodata=True, *args, **kwargs)
     ret = _get_ret(name, *args, **kwargs)
     kwargs.pop('ret', None)
-    if not  os.path.exists(cfg['wired_salt_root']):
+    if not os.path.exists(cfg['wired_salt_root']):
         os.symlink(cfg['salt_root'], cfg['wired_salt_root'])
         _append_comment(
             ret, body=indent(
@@ -2096,6 +2075,7 @@ class RemoteProjectSyncPillarError(RemoteProjectSyncError):
 class RemoteProjectSyncProjectError(RemoteProjectSyncError):
     """."""
 
+
 class RemoteProjectDeployError(RemoteProjectException):
     """."""
 
@@ -2166,8 +2146,9 @@ def init_local_remote_project(host,
         _s['file.makedirs_perms'](
             projects_dir, user='root', group='root', mode=750)
     if not rret['changes']['result']:
-        raise RemoteProjectInitException("{0}: project {1} creation failed".format(
-            host, project))
+        raise RemoteProjectInitException(
+            "{0}: project {1} creation failed".format(
+                host, project))
     if not os.path.exists(project_dir):
         cret = _s['git.clone'](project_dir, git, user=user)
     cret = _s['git.config_set'](
@@ -2304,6 +2285,7 @@ def deploy_remote_project(host,
     if pre_hook and (pre_hook in __salt__):
         crets['pre'] = __salt__[pret_hook](
             host, project, ssh_port=ssh_port, user=user, **kw)
+    kwarg = {}
     if 'deploy_only' in kw:
         kwarg['only'] = kw['deploy_only']
     if 'deploy_only_steps' in kw:
@@ -2312,7 +2294,7 @@ def deploy_remote_project(host,
             'mc_project.deploy', arg=[project], kwarg=kwarg,
             user=user, port=ssh_port)
     if not crets['result']['result']:
-        log.error(pformat(crets))
+        log.error(pprint.pformat(crets))
         raise RemoteProjectDeployError(
             '{0}: {1}'.format(host, project), ret=crets)
     if post_hook and (post_hook in __salt__):
