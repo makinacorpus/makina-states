@@ -1,3 +1,4 @@
+{% raw %}
 {% set cfg = opts['ms_project'] %}
 {% set dest = '{0}/project'.format(cfg['current_archive_dir']) %}
 {% set fdest = '{0}/project.failed'.format(cfg['current_archive_dir']) %}
@@ -18,3 +19,5 @@
     - user: {{cfg.user}}
     - require:
       - cmd:  {{cfg.name}}-rollback-faileproject-dir
+
+{% endraw %}
