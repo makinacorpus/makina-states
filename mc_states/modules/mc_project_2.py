@@ -39,30 +39,15 @@ from mc_states.api import (
 import mc_states.saltapi
 from salt.ext import six as six
 
-import mc_states.project
 import mc_states.project as projects_api
-from mc_states.project import (
-    ProjectProcedureException,
-    TooEarlyError,
-    RemoteProjectSyncUnCleanPillarError,
-    ProjectNotCleanError,
-    RemoteProjectException,
-    RemotePillarInitException,
-    RemoteProjectTransferProjectError,
-    RemoteProjectWCSyncProjectError,
-    RemoteProjectSyncError,
-    RemoteProjectSyncPushPillarError,
-    RemoteProjectSyncProjectError,
-    RemoteProjectDeployError)
-
 
 log = logger = logging.getLogger(__name__)
 
-
 API_VERSION = '2'
+ENVS = projects_api.ENVS
+KEEP_ARCHIVES = projects_api.KEEP_ARCHIVES
 PROJECT_INJECTED_CONFIG_VAR = 'cfg'
 DEFAULT_PROJECT_NAME = 'project'
-
 DEFAULT_CONFIGURATION = {
     'name': None,
     'minion_id': None,
@@ -141,9 +126,9 @@ def _state_exec(*a, **kw):
 def _stop_proc(message, step, ret):
     ret['raw_comment'] = message
     ret['result'] = False
-    raise ProjectProcedureException(ret['raw_comment'],
-                                    salt_step=step,
-                                    salt_ret=ret)
+    raise projects_api.ProjectProcedureException(ret['raw_comment'],
+                                                 salt_step=step,
+                                                 salt_ret=ret)
 
 
 def _check_proc(message, step, ret):
@@ -658,6 +643,8 @@ def get_configuration(name, *args, **kwargs):
         makina-projects.foo.data.conf_port = 1234
 
     '''
+    if not kwargs.get('remote_host', None):
+        kwargs.pop('remote_host', None)
     cfg = _get_contextual_cached_project(
         name,
         remote_host=kwargs.get('remote_host', None))
@@ -1011,6 +998,24 @@ def sync_hooks(name, ret=None, api_version=API_VERSION, *args, **kwargs):
     return ret
 
 
+def get_contextual_cfg_defaults(configs, project=None, remote_host=None):
+    thishost = __grains__['fqdn']
+    for data in configs:
+        if isinstance(data, dict):
+            if not project:
+                project = data.get('name', None)
+            rhost = data.get('remote_host', thishost)
+            if (
+                (remote_host is None)
+                and rhost
+                and (rhost  != thishost)
+            ):
+                remote_host = rhost
+    project = get_default_project(project)
+    return {'remote_host': remote_host,
+            'project': project}
+
+
 def init_repo(working_copy,
               user=None,
               group=None,
@@ -1020,12 +1025,18 @@ def init_repo(working_copy,
               init_pillar=False,
               init_data=None,
               project=None,
+              remote_host=None,
               cfg=None,
               api_version=API_VERSION):
     user, group = get_default_user_group(user=user, group=group)
     _s = __salt__
+    # seek project name & remote host
+    infos = get_contextual_cfg_defaults(
+        [init_data, cfg], project=project, remote_host=remote_host)
+    project = infos['project']
+    remote_host = infos['remote_host']
     if cfg is None:
-        cfg = get_configuration(get_default_project(project))
+        cfg = get_configuration(project, remote_host=remote_host)
     if init_data is None:
         init_data = cfg
     if not ret:
@@ -1387,19 +1398,22 @@ def get_default_user_group(user=None, group=None, **kw):
 
 def init_pillar_dir(directory,
                     init_data=None,
-                    name='project',
                     bare=False,
                     user=None,
                     group=None,
                     project=None,
+                    remote_host=None,
                     commit_all=False,
                     do_push=False,
                     **kw):
     user, group = get_default_user_group(user, group)
     files = [os.path.join(directory, 'init.sls')]
-    project = get_default_project(project)
+    infos = get_contextual_cfg_defaults(
+        [init_data], project=project, remote_host=remote_host)
+    project = infos['project']
+    remote_host = infos['remote_host']
     if not init_data:
-        init_data = get_configuration(project)
+        init_data = get_configuration(project, remote_host=remote_host)
     set_project(init_data)
     for fil in files:
         # if pillar is empty, create it
@@ -1412,7 +1426,6 @@ def init_pillar_dir(directory,
                 os.path.basename(fil)))
         if not init_data:
             init_data = {}
-        name = init_data.get('name', name)
         init_data = _get_filtered_cfg(init_data)
         for k in [a for a in init_data]:
             if k not in [
@@ -1426,9 +1439,9 @@ def init_pillar_dir(directory,
                 oinit_data[i] = val
             init_data = oinit_data
         defaults = {
-            'name': name,
+            'name': project,
             'cfg': yaml.dump({
-                'makina-projects.{0}'.format(name):
+                'makina-projects.{0}'.format(project):
                 init_data}, width=80, indent=2, default_flow_style=False)}
         cret = _state_exec(sfile, 'managed',
                            name=fil, source=template,
@@ -1455,6 +1468,7 @@ def refresh_files_in_working_copy(project_root,
                                   api_version=None,
                                   commit_all=False,
                                   do_push=False,
+                                  remote_host=None,
                                   *args,
                                   **kwargs):
     if not api_version:
@@ -1464,14 +1478,18 @@ def refresh_files_in_working_copy(project_root,
     ret = _get_ret(*args, **kwargs)
     _append_comment(
         ret, summary='Verify or initialise some default files')
+    infos = get_contextual_cfg_defaults(
+        [init_data], project=project, remote_host=remote_host)
+    project = infos['project']
+    remote_host = infos['remote_host']
     if not init_data:
-        init_data = get_configuration(project)
+        init_data = get_configuration(project, remote_host=remote_host)
     if not bare:
         if not os.path.exists(
             os.path.join(project_root, '.salt')
         ):
             if not force:
-                raise TooEarlyError('Too early to call me')
+                raise projects_api.TooEarlyError('Too early to call me')
             else:
                 ret = init_salt_dir(project_root,
                                     user=user,
@@ -1684,7 +1702,7 @@ def guarded_step(cfg,
                 cret = __salt__['mc_project_{1}.{0}'.format(
                     step, cfg['api_version'])](name, *args, **kwargs)
                 _merge_statuses(ret, cret, step=step)
-        except ProjectProcedureException, pr:
+        except projects_api.ProjectProcedureException, pr:
             # if we are not in an inner step, raise in first place !
             # and do not mark for rollback
             if inner_step:
@@ -2308,7 +2326,7 @@ def clean_salt_git_commit(directory, commit=True, **kw):
     elif 'nothing to commit' in cret['st']:
         pass
     else:
-        raise ProjectNotCleanError(
+        raise projects_api.ProjectNotCleanError(
             "{0}: git invalid status".format(directory), ret=cret)
     return cret
 
@@ -2324,7 +2342,6 @@ def _init_local_remote_directory(host,
                                  rev=None,
                                  **kw):
     _s = __salt__
-    exc_class = kw.get('exc_klass', BaseProjectInitException)
     try:
         if not rev:
             rev = 'master'
@@ -2336,7 +2353,7 @@ def _init_local_remote_directory(host,
                 container, user=user, group=group, mode=750)
         if not os.path.isdir(container):
             raise OSError(
-                "Project container creation failed ({1})".format(container))
+                "Project container creation failed ({0})".format(container))
         empty_directory = False
         if not os.path.exists(directory):
             empty_directory = True
@@ -2362,11 +2379,12 @@ def _init_local_remote_directory(host,
     except (
         OSError,
         salt.exceptions.CommandExecutionError,
-        ProjectNotCleanError
+        projects_api.ProjectNotCleanError
     ) as exc:
         scret = traceback.format_exc()
         raise_exc(
-            exc_klass,
+            kw.get('exc_klass',
+                   projects_api.BaseProjectInitException),
             msg=('{host}: remote project {project} '
                  'structure init failed'),
             detail_msg=('{host}: remote project {project} '
@@ -2388,7 +2406,7 @@ def init_local_remote_pillar(host,
     # we only need a few constant properties, project is not existing locally
     pcfg = _s['mc_project.get_configuration'](project, remote_host=host)
     cfg = _s['mc_project.get_configuration'](project)
-    directory = os.path.abspath(cfg['remote_pillar_dir'])
+    directory = os.path.abspath(pcfg['remote_pillar_dir'])
     cret = OrderedDict()
     try:
         cret = _init_local_remote_directory(
@@ -2401,7 +2419,8 @@ def init_local_remote_pillar(host,
             #
             init_pillar=True,
             init_data=pcfg,
-            exc_klass=RemotePillarInitException,
+            exc_klass=(
+                projects_api.RemotePillarInitException),
             **kw)
     except:
         raise
@@ -2415,7 +2434,6 @@ def init_local_remote_project(host,
                               **kw):
     _s = __salt__
     # we only need a few constant properties, project is not existing locally
-    directory = os.path.abspath(cfg['remote_pillar_dir'])
     pcfg = get_configuration(project, remote_host=host)
     cfg = get_configuration(project)
     directory = pcfg['remote_directory']
@@ -2431,7 +2449,8 @@ def init_local_remote_project(host,
             # no remote hsot here
             init_data=cfg,
             init_salt=True,
-            exc_klass=RemoteProjectDeployError,
+            exc_klass=(
+                projects_api.RemoteProjectInitException),
             **kw)
     except:
         raise
@@ -2570,11 +2589,11 @@ def sync_remote_pillar(host,
             user=user)
     except (
         salt.exceptions.CommandExecutionError,
-        ProjectNotCleanError
+        projects_api.ProjectNotCleanError
     ) as exc:
         trace = traceback.format_exc()
         raise_exc(
-            RemoteProjectSyncUnCleanPillarError,
+            projects_api.RemoteProjectSyncUnCleanPillarError,
             msg=('{host}: pillar for {project} clean failed'
                  ' (transfert)'),
             detail_msg=('{host}: pillar for project {project} clean failed'
@@ -2592,7 +2611,7 @@ def sync_remote_pillar(host,
     ) as exc:
         trace = traceback.format_exc()
         raise_exc(
-            RemoteProjectSyncPushPillarError,
+            projects_api.RemoteProjectSyncPushPillarError,
             msg=('{host}: pillar for {project} sync failed'
                  ' (transfert)'),
             detail_msg=('{host}: pillar for project {project} sync failed'
@@ -2652,7 +2671,7 @@ def sync_remote_project(host,
                 raise ValueError()
         except (ValueError,) as exc:
             raise_exc(
-                RemoteProjectTransferProjectError,
+                projects_api.RemoteProjectTransferProjectError,
                 msg=('{host}: project {project} sync failed'
                      ' (transfert)'),
                 detail_msg=('{host}: project {project} sync failed'
@@ -2665,7 +2684,7 @@ def sync_remote_project(host,
         except (Exception,) as exc:
             trace = traceback.format_exc()
             raise_exc(
-                RemoteProjectTransferProjectError,
+                projects_api.RemoteProjectTransferProjectError,
                 msg=('{host}: project {project} sync failed'
                      ' (transfert)'),
                 detail_msg=('{host}: project {project} sync failed'
@@ -2691,7 +2710,7 @@ def sync_remote_project(host,
             **ssh_kw)
         if cret['final_wc_sync']['retcode']:
             raise_exc(
-                RemoteProjectWCSyncProjectError,
+                projects_api.RemoteProjectWCSyncProjectError,
                 msg='{host}: project {project} sync failed',
                 detail_msg='{host}: project {project} sync failed:\n{scret}',
                 scret=repr_ret(cret),
@@ -2701,11 +2720,11 @@ def sync_remote_project(host,
                 project=project)
     except (
         salt.exceptions.CommandExecutionError,
-        ProjectNotCleanError
+        projects_api.ProjectNotCleanError
     ) as exc:
         trace = traceback.format_exc()
         raise_exc(
-            RemoteProjectSyncProjectError,
+            projects_api.RemoteProjectSyncProjectError,
             msg='{host}: project {project} sync failed',
             detail_msg='{host}: project {project} sync failed:\n{scret}',
             scret=trace,
@@ -2735,14 +2754,14 @@ def remote_deploy(host, project, **kw):
             scret = repr_ret(cret)
     except (
         salt.exceptions.CommandExecutionError,
-        ProjectNotCleanError
+        projects_api.ProjectNotCleanError
     ) as exc:
         scret = traceback.format_exc()
         failed = True
         original = exc
     if do_raise and failed:
         raise_exc(
-            RemoteProjectDeployError,
+            projects_api.RemoteProjectDeployError,
             msg='{host}: project {project} deploy failed',
             detail_msg='{host}: project {project} deploy failed:\n{scret}',
             scret=scret,

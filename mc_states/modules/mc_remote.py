@@ -296,7 +296,7 @@ if [ "x${{ret}}" != "x0" ];then
         echo "SSH connection did not estasblish(file),"\
              " will fallback on scp/sftp" >&2
         has_ssh=1
-    fi          
+    fi
 fi
 if [ "x${{ret}}" = "x0" ];then
     fmode=$(stat -c "%a" "{orig}")
@@ -1301,9 +1301,20 @@ def delete_remote(host, filepath, mode="-f", level='info', **kw):
     ssh(host, rm_cmd, **kw)
 
 
+def run(host, script, **kw):
+    '''
+    Wrapper to ssh but get only stdout
+
+    kwargs are forwarded to ssh helper functions !
+
+    returning only the code exist status
+    '''
+    return ssh(host, script, **kw)['stdout']
+
+
 def ssh_retcode(host, script, **kw):
     '''
-    Wrapper to ssh_call
+    Wrapper to ssh
 
     kwargs are forwarded to ssh helper functions !
 
