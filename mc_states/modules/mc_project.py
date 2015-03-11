@@ -24,6 +24,9 @@ APIS = {
     'deploy': {
         '2': 'mc_project_2.deploy',
     },
+    'init_repo': {
+        '2': 'mc_project_2.init_repo',
+    },
     'init_project': {
         '2': 'mc_project_2.init_project',
     },
@@ -68,14 +71,17 @@ APIS = {
         '2': 'mc_project_2.set_configuration',
     },
     # remote api
-    'deploy_remote_project': {
-        '2': 'mc_project_2.deploy_remote_project',
+    'remote_deploy': {
+        '2': 'mc_project_2.remote_deploy',
     },
     'sync_remote_pillar': {
         '2': 'mc_project_2.sync_remote_pillar',
     },
     'sync_remote_project': {
         '2': 'mc_project_2.sync_remote_project',
+    },
+    'sync_git_directory': {
+        '2': 'mc_project_2.sync_git_directory',
     },
     'init_local_remote_project': {
         '2': 'mc_project_2.init_local_remote_project',
@@ -88,6 +94,12 @@ APIS = {
     },
     'clean_salt_git_commit': {
         '2': 'mc_project_2.clean_salt_git_commit',
+    },
+    'remote_project_hook': {
+        '2': 'mc_project_2.remote_project_hook',
+    },
+    'orchestrate': {
+        '2': 'mc_project_2.orchestrate',
     },
     'init_remote_pillar': {
         '2': 'mc_project_2.init_remote_pillar',
@@ -180,6 +192,10 @@ def sync_modules(name, *args, **kwargs):
     return _api_switcher('sync_modules', name, *args, **kwargs)
 
 
+def init_repo(name, *args, **kwargs):
+    return _api_switcher('init_repo', name, *args, **kwargs)
+
+
 def doc_root(doc_root=None,
              domain=None,
              project_root=None,
@@ -213,7 +229,9 @@ def server_aliases(value):
 
 
 def get_common_vars(*args, **kwargs):
-    '''Retro compat, wrapper to get_configuration'''
+    '''
+    Retro compat, wrapper to get_configuration
+    '''
     return __salt__['mc_project_1.get_configuration'](*args, **kwargs)
 
 #
@@ -233,12 +251,20 @@ def init_local_remote_project(name, *args, **kwargs):
     return _api_switcher('init_local_remote_project', name, *args, **kwargs)
 
 
+def remote_project_hook(name, *args, **kwargs):
+    return _api_switcher('remote_project_hook', name, *args, **kwargs)
+
+
 def init_remote_pillar(name, *args, **kwargs):
     return _api_switcher('init_remote_pillar', name, *args, **kwargs)
 
 
 def init_remote_project(name, *args, **kwargs):
     return _api_switcher('init_remote_project', name, *args, **kwargs)
+
+
+def sync_git_directory(name, *args, **kwargs):
+    return _api_switcher('sync_git_directory', name, *args, **kwargs)
 
 
 def sync_remote_pillar(name, *args, **kwargs):
@@ -249,5 +275,8 @@ def sync_remote_project(name, *args, **kwargs):
     return _api_switcher('sync_remote_project', name, *args, **kwargs)
 
 
-def deploy_remote_project(name, *args, **kwargs):
-    return _api_switcher('deploy_remote_project', name, *args, **kwargs)
+def remote_deploy(name, *args, **kwargs):
+    return _api_switcher('remote_deploy', name, *args, **kwargs)
+
+def orchestrate(name, *args, **kwargs):
+    return _api_switcher('orchestrate', name, *args, **kwargs)

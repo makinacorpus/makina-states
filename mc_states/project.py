@@ -8,7 +8,7 @@ mc_states_project / general projects API
 '''
 # -*- coding: utf-8 -*-
 __docformat__ = 'restructuredtext en'
-from salt.exceptions import SaltException
+import salt.exceptions
 
 LAST_PROJECT_API_VERSION = "2"
 KEEP_ARCHIVES = 3
@@ -20,25 +20,78 @@ ENVS = {
 _DEFAULT = object()
 
 
-class ProjectException(SaltException):
+
+class _BaseProjectException(salt.exceptions.SaltException):
+    '''Project global exc'''
+    def __init__(self, *args, **kw):
+        if args:
+            cargs = [args[0]]
+        else:
+            cargs = []
+        super(_BaseProjectException, self).__init__(*cargs)
+        self.deploy_args = args
+        self.deploy_kw = kw
+        for attr in ['salt_ret', 'salt_step']:
+            if attr in self.deploy_kw:
+                setattr(self, attr, self.deploy_kw[attr])
+
+
+class ProjectException(_BaseProjectException):
     '''Project global exc'''
 
 
-class ProjectInitException(SaltException):
+class ProjectNotCleanError(ProjectException):
+    '''Project global exc'''
+
+
+class ProjectInitException(ProjectException):
     '''Project init exc'''
 
 
-class ProjectProcedureException(SaltException):
+class ProjectProcedureException(_BaseProjectException):
     '''Project init exc'''
-
-    def __init__(self, *args, **kw):
-        super(ProjectProcedureException, self).__init__(*args)
-        self.salt_ret = kw.get('salt_ret', None)
-        self.salt_step = kw.get('salt_step', None)
 
 
 class TooEarlyError(ProjectInitException):
     '''.'''
 
 
+class RemoteProjectException(ProjectException):
+    """."""
+
+
+class BaseProjectInitException(ProjectException):
+    """."""
+
+
+class RemoteProjectInitException(BaseProjectInitException):
+    """."""
+
+
+class RemotePillarInitException(BaseProjectInitException):
+    """."""
+
+
+class BaseRemoteProjectSyncError(RemoteProjectException):
+    """."""
+
+
+class RemoteProjectSyncError(BaseRemoteProjectSyncError):
+    """."""
+
+
+class RemoteProjectTransferError(RemoteProjectSyncError):
+    """."""
+
+
+class RemoteProjectWCSyncError(RemoteProjectSyncError):
+    """."""
+
+
+class RemoteProjectSyncRemoteError(RemoteProjectSyncError):
+    """."""
+
+
+class RemoteProjectDeployError(RemoteProjectException):
+    """."""
 # vim:set et sts=4 ts=4 tw=80:

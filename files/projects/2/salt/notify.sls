@@ -1,3 +1,4 @@
+{% raw %}
 {% set cfg = opts['ms_project'] %}
 {% set f= '{0}/project.failed'.format(cfg['current_archive_dir']) %}
 notification:
@@ -8,4 +9,4 @@ notification:
             {% else %}
             echo "Project {{cfg.name}} has been deployed !"
             {%endif %}
-
+{% endraw %}
