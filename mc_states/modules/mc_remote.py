@@ -1377,6 +1377,70 @@ def yamldump_arg(arg, default_flow_style=True, line_break='\n', strip=True):
     return arg
 
 
+def unparse_ret(ret, transformer, minion_id):
+    renderers = salt.loader.render(__opts__, __salt__)
+    outputters = salt.loader.outputters(__opts__)
+    rtype = ret['result_type']
+    log_trace = None
+    if transformer is None:
+        transformer = rtype
+    transformer = {'yaml': 'lyaml',
+                   'lyaml': 'lyaml',
+                   'highstate': 'highstate',
+                   'nested': 'nested',
+                   'json': 'json'}.get(transformer, 'noop')
+    unparser = {'yaml': 'lyaml',
+                'lyaml': 'lyaml',
+                'json': 'json'}.get(rtype, 'noop')
+    ret['transformer'] = transformer
+    ret['unparser'] = unparser
+    if (unparser != 'noop') and ret.get('result', False):
+        try:
+            ret['result'] = renderers[unparser](ret['result'])
+        except Exception:
+            try:
+                # try to remove debugs from shell running with set -e
+                cret = '\n'.join(
+                    [a for a in ret['result'].splitlines() if not
+                     a.startswith('+ ')])
+                ret['result'] = renderers[unparser](cret)
+            except:
+                if ret['raw_result'].startswith(
+                    'NO RETURN FROM'
+                ):
+                    ret['result'] = _EXECUTION_FAILED
+                    log_trace = traceback.format_exc()
+                else:
+                    raise
+    if (
+        transformer != 'noop'
+        and transformer != unparser
+        and ret.get('result', _EXECUTION_FAILED) is not _EXECUTION_FAILED
+    ):
+        if transformer in renderers:
+            try:
+                ret['result'] = renderers[transformer](ret['result'])
+            except salt.exceptions.SaltRenderError:
+                log_trace = traceback.format_exc()
+        elif transformer in outputters:
+            try:
+                ret['result'] = outputters[transformer](ret['result'])
+            except Exception:
+                if ret['raw_result'].startswith(
+                    'NO RETURN FROM'
+                ):
+                    ret['result'] = _EXECUTION_FAILED
+                    log_trace = traceback.format_exc()
+                else:
+                    raise
+    if 'result' not in ret and ret.get('retcode'):
+        ret['result'] = _EXECUTION_FAILED
+    if isinstance(ret['result'], dict):
+        if [a for a in ret['result']] == [minion_id]:
+            ret['result'] = ret['result'][minion_id]
+    return ret, log_trace
+
+
 def salt_call(host,
               fun=None,
               arg=None,
@@ -1573,6 +1637,7 @@ def salt_call(host,
         delete_remote(host, skwargs['quoted_outfile'], level=level, **kw)
     ret['result_type'] = outputter
     ret['raw_result'] = 'NO RETURN FROM {0}'.format(outfile)
+    log_trace = None
     if ret['stdout']:
         collect, result = False, ''
         for line in ret['stdout'].splitlines():
@@ -1589,73 +1654,23 @@ def salt_call(host,
     if ret.get('retcode', 0):
         try:
             if int(ret['retcode']) >= 0:
+                if unparse:
+                    try:
+                        ret, log_trace = unparse_ret(ret,
+                                                     transformer,
+                                                     minion_id)
+                    except Exception:
+                        pass
                 ret['raw_result'] = ret.pop('result', None)
                 ret['result'] = _EXECUTION_FAILED
         except (ValueError, TypeError,) as exc:
             pass
     ret['transformer'] = None
     ret['unparser'] = None
-    log_trace = None
     if unparse:
-        renderers = salt.loader.render(__opts__, __salt__)
-        outputters = salt.loader.outputters(__opts__)
-        rtype = ret['result_type']
-        if transformer is None:
-            transformer = rtype
-        transformer = {'yaml': 'lyaml',
-                       'lyaml': 'lyaml',
-                       'highstate': 'highstate',
-                       'nested': 'nested',
-                       'json': 'json'}.get(transformer, 'noop')
-        unparser = {'yaml': 'lyaml',
-                    'lyaml': 'lyaml',
-                    'json': 'json'}.get(rtype, 'noop')
-        ret['transformer'] = transformer
-        ret['unparser'] = unparser
-        if (unparser != 'noop') and ret.get('result', False):
-            try:
-                ret['result'] = renderers[unparser](ret['result'])
-            except Exception:
-                try:
-                    # try to remove debugs from shell running with set -e
-                    cret = '\n'.join(
-                        [a for a in ret['result'].splitlines() if not
-                         a.startswith('+ ')])
-                    ret['result'] = renderers[unparser](cret)
-                except:
-                    if ret['raw_result'].startswith(
-                        'NO RETURN FROM'
-                    ):
-                        ret['result'] = _EXECUTION_FAILED
-                        log_trace = traceback.format_exc()
-                    else:
-                        raise
-        if (
-            transformer != 'noop'
-            and transformer != unparser
-            and ret.get('result', _EXECUTION_FAILED) is not _EXECUTION_FAILED
-        ):
-            if transformer in renderers:
-                try:
-                    ret['result'] = renderers[transformer](ret['result'])
-                except salt.exceptions.SaltRenderError:
-                    log_trace = traceback.format_exc()
-            elif transformer in outputters:
-                try:
-                    ret['result'] = outputters[transformer](ret['result'])
-                except Exception:
-                    if ret['raw_result'].startswith(
-                        'NO RETURN FROM'
-                    ):
-                        ret['result'] = _EXECUTION_FAILED
-                        log_trace = traceback.format_exc()
-                    else:
-                        raise
-        if 'result' not in ret and ret.get('retcode'):
-            ret['result'] = _EXECUTION_FAILED
-        if isinstance(ret['result'], dict):
-            if [a for a in ret['result']] == [minion_id]:
-                ret['result'] = ret['result'][minion_id]
+        ret, log_trace = unparse_ret(ret,
+                                     transformer,
+                                     minion_id)
     if strip_out and (ret['retcode'] in [0]):
         ret['stdout'] = ret['stderr'] = ''
     if not isinstance(ret, dict):

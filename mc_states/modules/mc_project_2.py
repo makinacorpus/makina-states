@@ -2292,13 +2292,22 @@ def sync_git_directory(directory,
     return cret
 
 
-def repr_ret(cret):
+def repr_ret(lcret):
     sret = ''
-    if isinstance(cret, dict):
-        levels = ['trace', 'stdout', 'stderr']
+    rets = [lcret]
+    if isinstance(lcret, dict):
+        raw_res = lcret.get('raw_result', None)
+        if isinstance(raw_res, dict):
+            rets.append(raw_res)
+    done_levels = []
+    for cret in rets:
+        levels = ['comment', 'trace', 'stdout', 'stderr']
         if any([level in cret for level in levels]):
             out = ''
             for i in levels:
+                if (i not in cret) or (i in done_levels):
+                    continue
+                done_levels.append(i)
                 val = cret[i]
                 if not val:
                     val = ''
@@ -2826,17 +2835,30 @@ def sync_remote_project(host,
 
 
 def remote_deploy(host, project, **kw):
+    _s = __salt__
     ssh_kw = _s['mc_remote.ssh_kwargs'](kw)
-    kwarg = {}
-    if 'deploy_only' in kw:
-        kwarg['only'] = kw['deploy_only']
-    if 'deploy_only_steps' in kw:
-        kwarg['only_steps'] = kw['deploy_only_steps']
+    kwarg = kw.get('kwarg', {})
+
+    for opts in [
+        ('deploy_only', 'only'),
+        ('deploy_only_steps', 'only_steps')
+    ]:
+        for k in opts:
+            if k in kw and k not in kwarg:
+                kwarg[k] = kw[k]
+    # kwarg['only'] = 'install,fixperms'
+    for k in ['only', 'only_steps']:
+        if k not in kwarg:
+            continue
+        if isinstance(kwarg[k], list):
+            kwarg[k] = ",".join(kwarg[k])
     do_raise = kw.get('do_raise', True)
     original = None
     scret = ''
+    failed = False
     try:
         cret = __salt__['mc_remote.salt_call'](
+            host,
             'mc_project.deploy', arg=[project], kwarg=kwarg,
             **ssh_kw)
         if cret['retcode']:
@@ -2853,7 +2875,8 @@ def remote_deploy(host, project, **kw):
         raise_exc(
             projects_api.RemoteProjectDeployError,
             msg='{host}: project {project} deploy failed',
-            detail_msg='{host}: project {project} deploy failed:\n{scret}',
+            detail_msg=('{host}: project {project} deploy failed:'
+                        '\n{scret}'),
             scret=scret,
             cret=cret,
             host=host,
@@ -2864,20 +2887,20 @@ def remote_deploy(host, project, **kw):
 
 def orchestrate(host,
                 project,
-                init=None,
-                origin=None,
-                rev=None,
-                pillar_origin=None,
-                pillar_rev=None,
-                sync=None,
-                refresh=None,
-                deploy=True,
-                refresh_pillar=None,
-                refresh_project=None,
+                init=True,
                 init_project=None,
                 init_pillar=None,
+                sync=True,
                 sync_project=None,
                 sync_pillar=None,
+                refresh=True,
+                refresh_pillar=None,
+                refresh_project=None,
+                deploy=True,
+                pillar_origin=None,
+                pillar_rev=None,
+                origin=None,
+                rev=None,
                 pre_init_hook=None,
                 post_init_hook=None,
                 pre_sync_hook=None,
@@ -2912,31 +2935,37 @@ def orchestrate(host,
     refresh_pillar = bool(refresh_pillar)
     refresh_project = bool(refresh_project)
     # remake this available for hooks
-    kw['sync_pillar'] = sync_pillar
-    kw['sync_project'] = sync_project
-    kw['init_pillar'] = init_pillar
-    kw['init_project'] = init_project
+    opts = OrderedDict()
+    opts['pillar_origin'] = pillar_origin
+    opts['pillar_rev'] = pillar_rev
+    opts['origin'] = origin
+    opts['rev'] = rev
+    opts['sync_pillar'] = sync_pillar
+    opts['sync_project'] = sync_project
+    opts['init_pillar'] = init_pillar
+    opts['init_project'] = init_project
+    opts['refresh_pillar'] = refresh_pillar
+    opts['refresh_project'] = refresh_project
     #
     if init_pillar or init_project:
         crets['init_pre'] = remote_project_hook(
-            pre_init_hook, project, **kw)
-        _init_remote_structure(host, project, **kw)
+            pre_init_hook, host, project, opts, **kw)
     if init_pillar:
         crets['init_pillar'] = init_local_remote_pillar(
-            host, project,
-            origin=pillar_origin,
-            rev=pillar_rev,
+            host, project, refresh=False,
+            origin=pillar_origin, rev=pillar_rev,
             **kw)
     if init_project:
         crets['init_project'] = init_local_remote_project(
-            host, project, origin=origin, rev=rev, **kw)
+            host, project, refresh=False,
+            origin=origin, rev=rev, **kw)
     if init_pillar or init_project:
         crets['init_post'] = remote_project_hook(
-            post_init_hook, project, **kw)
+            post_init_hook, host, project, opts, **kw)
     #
     if sync_pillar or sync_project:
         crets['sync_pre'] = remote_project_hook(
-            pre_sync_hook, project, **kw)
+            pre_sync_hook, host, project, opts, **kw)
     if sync_pillar:
         crets['sync_pillar'] = sync_remote_pillar(
             host,
@@ -2957,18 +2986,20 @@ def orchestrate(host,
             **kw)
     if sync_pillar or sync_project:
         crets['sync_post'] = remote_project_hook(
-            post_sync_hook, project, **kw)
+            post_sync_hook, host, project, opts, **kw)
     #
     if deploy:
         crets['deploy_pre'] = remote_project_hook(
-            pre_hook, project, **kw)
+            pre_hook, host, project, opts, **kw)
         crets['deploy'] = remote_deploy(
             host, project, **kw)
         crets['deploy_post'] = remote_project_hook(
-            post_hook, project, **kw)
+            post_hook, host, project, opts, **kw)
     return crets
 
 
-def remote_project_hook(hook, host, project, **kw):
+def remote_project_hook(hook, host, project, opts, **kw):
     if hook and (hook in __salt__):
-        return __salt__[hook](host, project, user=user, **kw)
+        log.info('{0}/{1}: Running hook {2}'.format(
+            host, project, hook))
+        return __salt__[hook](host, project, ops, **kw)
